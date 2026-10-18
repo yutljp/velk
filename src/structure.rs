@@ -564,12 +564,13 @@ impl Structurer<'_> {
         latch
     }
 
+    /// The statements of a block that returns, following one unconditional
+    /// branch: a case body usually falls into the epilogue instead of
+    /// repeating `return` itself, and inlining that epilogue turns the case
+    /// into an early return instead of a `goto`.
     fn return_block(&self, index: usize) -> Option<Vec<Stmt>> {
         let block = self.blocks.get(index)?;
         if block.stmts.len() < 1 {
-            return None;
-        }
-        if !matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
             return None;
         }
         if block
@@ -577,6 +578,29 @@ impl Structurer<'_> {
             .iter()
             .any(|stmt| matches!(stmt, Stmt::Brif { .. } | Stmt::BrifFlags { .. } | Stmt::Br { .. }))
         {
+            // A single trailing branch may lead to the epilogue.
+            let mut stmts: Vec<Stmt> = block.stmts.clone();
+            let Some(Stmt::Br {
+                target: Some(target),
+            }) = stmts.pop()
+            else {
+                return None;
+            };
+            let rest = self.blocks.get(self.target(target)?)?;
+            if !matches!(rest.stmts.last(), Some(Stmt::Ret { .. })) {
+                return None;
+            }
+            if rest
+                .stmts
+                .iter()
+                .any(|stmt| matches!(stmt, Stmt::Br { .. } | Stmt::Switch { .. }))
+            {
+                return None;
+            }
+            stmts.extend(rest.stmts.clone());
+            return Some(stmts);
+        }
+        if !matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
             return None;
         }
         Some(block.stmts.clone())
