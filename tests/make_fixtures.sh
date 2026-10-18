@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-OUT=tests/out
+OUT=${VELK_OUT:-tests/out}
 CASES=tests/cases
 mkdir -p "$OUT"
 

@@ -298,6 +298,33 @@ tests/bench.sh       性能回帰(release ビルド、平均時間のしきい�
 ./tests/bench.sh           # 性能
 ```
 
+### 正本(1番台)はコンテナ、手元は環境差分
+
+x86-64 の Linux コンテナで固定版のツールチェーンを回し、その結果を正本に
+する。手元(macOS/arm64 など)の結果は環境差分として比べる。
+
+```bash
+docker compose run --rm canonical      # 正本: tests/out-canonical/(dump + ladder.txt + toolchain.txt)
+./tests/make_fixtures.sh && ./tests/smoke.sh && ./tests/ladder.sh
+./tests/dump.sh tests/out              # 手元の疑似 C を関数ごとに書き出す
+./tests/env-diff.sh --show 3           # 正本との差分(一致/不一致/片側のみ)
+```
+
+固定している版(compose.yml の `build.args` で上書きできる):
+
+| ツール | 版 | 備考 |
+|---|---|---|
+| OS | Ubuntu 24.04 | `platform: linux/amd64` |
+| clang / lld / LLVM | 18 | `llvm-strip` `llvm-objcopy` も同系列 |
+| Rust | 1.98.1 | rustup で固定 |
+| Go | 1.23.4 | 公式 tarball で固定 |
+
+`env-diff.sh` の読み方:
+
+- **一致** — 環境が変わっても同じ疑似 C(移植性が高い)
+- **不一致** — コンパイラ/版による codegen の差(実装の穴か、形の違い)
+- **正本のみ / 手元のみ** — 片方でしか復元できていない関数(実装の穴)
+
 `ladder.sh` は `tests/expect/ladder.tsv` を1行ずつ評価し、段ごとの通過数を出す
 (L0 算術 → L1 分岐 → L2 ループ → L3 定数除算 → L4 メモリ → L5 分岐表 →
 L6 ABI/異常系 → L7 Go・Rust)。理想的だが未到達の項目は `known_*` として

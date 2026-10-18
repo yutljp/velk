@@ -1,0 +1,30 @@
+# 正本（1番台）のテスト環境。x86-64 Linux で固定版のツールチェーンを動かし、
+# 結果を tests/out-canonical/ に残す。手元（macOS/arm64 など）の結果は
+# 環境差分として tests/env-diff.sh で比べる。
+#
+#   docker compose run --rm canonical        # 正本を回す
+#   docker compose run --rm canonical ./tests/env-diff.sh   # 差分も見る
+#
+# 版を変えるときは build.args を上書きする（Dockerfile の ARG と対応）:
+#   docker compose build --build-arg CLANG_MAJOR=19
+services:
+  canonical:
+    build:
+      context: ./docker
+      args:
+        CLANG_MAJOR: "18"
+        RUST_VERSION: "1.98.1"
+        GO_VERSION: "1.23.4"
+    image: velk-canonical:ubuntu24.04-clang18-rust1.98-go1.23
+    platform: linux/amd64
+    init: true
+    working_dir: /work
+    volumes:
+      # ソースは読み書き、ビルド成果物はコンテナ内に置く（ホストの
+      # target/ を x86 の成果物で汚さない）。
+      - .:/work
+    environment:
+      VELK_OUT: tests/out-canonical
+      CARGO_TARGET_DIR: /tmp/target
+      CARGO_TERM_COLOR: never
+    command: ["./tests/canonical.sh"]

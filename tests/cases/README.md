@@ -72,6 +72,19 @@ CLANG / CXX / LD_LLD / LLD_LINK / LLVM_STRIP / LLVM_OBJCOPY / RUSTC / GO_BIN
 rustc 1.98.1、Go 1.27.2 (`/usr/local/go/bin/go`)、LLVM 23 の `llvm-strip`
 (`/opt/homebrew/opt/llvm/bin`)。後ろ2つは PATH に追加済み。
 
+### 正本（コンテナ）と環境差分
+
+正本は x86-64 の Linux コンテナで回す（版は `compose.yml` で固定）:
+
+```sh
+docker compose run --rm canonical    # tests/out-canonical/ に dump, ladder.txt, toolchain.txt
+./tests/dump.sh tests/out            # 手元のダンプ
+./tests/env-diff.sh --show 3         # 差分（一致/不一致/片側のみ）
+```
+
+`env-diff.sh` は関数ごとの疑似 C を突き合わせる。一致は移植性が高い箇所、
+不一致はコンパイラ差、片側のみは復元漏れ（実装の穴）を示す。
+
 ### 他の環境で走らせる
 
 必要なもの: `clang`（クロス対象が使えること）、`ld.lld` / `lld-link`、

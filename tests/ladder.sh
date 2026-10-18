@@ -10,8 +10,9 @@
 # なったら has/nothas に昇格させる(放置を検出するため、通ったら警告する)。
 set -uo pipefail
 cd "$(dirname "$0")/.."
+FIX=${VELK_OUT:-tests/out}
 
-BIN=${BIN:-target/debug/velk}
+BIN=${BIN:-${CARGO_TARGET_DIR:-target}/debug/velk}
 EXPECT=tests/expect/ladder.tsv
 BUILD=0
 ONLY=
@@ -33,7 +34,7 @@ cargo build --quiet || { echo "cargo build failed" >&2; exit 1; }
 [ -x "$BIN" ] || { echo "missing $BIN" >&2; exit 1; }
 
 # フィクスチャが要求するツールチェーン。make_fixtures.sh が
-# tests/out/skipped.txt に印を残すので、無い場合は FAIL ではなく SKIP にする。
+# $FIX/skipped.txt に印を残すので、無い場合は FAIL ではなく SKIP にする。
 requires() {
   case "$1" in
     pe64.exe) echo pe64-link ;;
@@ -44,7 +45,7 @@ requires() {
     *) echo "" ;;
   esac
 }
-skips=tests/out/skipped.txt
+skips=$FIX/skipped.txt
 skipped_tool() {  # tool -> 導入されていないか
   [ -f "$skips" ] && grep -qx "$1" "$skips" 2>/dev/null
 }
@@ -52,11 +53,11 @@ skipped_tool() {  # tool -> 導入されていないか
 rendered() {  # fixture function -> 疑似 C (関数指定なしは inspect --limit)
   local fixture=$1 function=$2
   if [ "$function" = "-" ]; then
-    "$BIN" inspect "tests/out/$fixture" --limit 100000 2>/dev/null
+    "$BIN" inspect "$FIX/$fixture" --limit 100000 2>/dev/null
   else
     # Mach-O は `_name`、ELF は `name` なので両方試す。
-    "$BIN" decompile "tests/out/$fixture" --name "$function" 2>/dev/null \
-      || "$BIN" decompile "tests/out/$fixture" --name "_$function" 2>/dev/null
+    "$BIN" decompile "$FIX/$fixture" --name "$function" 2>/dev/null \
+      || "$BIN" decompile "$FIX/$fixture" --name "_$function" 2>/dev/null
   fi
 }
 
@@ -67,7 +68,7 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
   case "$level" in ''|'#'*) continue ;; esac
   [ -n "$ONLY" ] && [ "$level" != "$ONLY" ] && continue
   need=$(requires "$fixture")
-  if { [ ! -f "tests/out/$fixture" ] || { [ -n "$need" ] && skipped_tool "$need"; }; }; then
+  if { [ ! -f "$FIX/$fixture" ] || { [ -n "$need" ] && skipped_tool "$need"; }; }; then
     # A toolchain that is not installed is not a test failure.
     printf 'SKIP\t%s\t%s/%s\t%s が無いため未生成\n' \
       "$level" "$fixture" "$function" "${need:-fixture}" >> "$results"
@@ -114,7 +115,7 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
   esac
 done < "$EXPECT"
 
-fixture_cc=$(head -1 tests/out/toolchain.txt 2>/dev/null || true)
+fixture_cc=$(head -1 $FIX/toolchain.txt 2>/dev/null || true)
 echo "fixtures: ${fixture_cc:-unknown}"
 echo "== 段ごとの通過 =="
 awk -F'\t' '{ t[$2]++; if ($1=="PASS"||$1=="PROMOTE") p[$2]++ }

@@ -13,3 +13,4 @@ private/
 
 # 回帰フィクスチャ生成物
 tests/out/
+tests/out*/
