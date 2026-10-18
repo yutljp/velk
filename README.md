@@ -282,16 +282,32 @@ cargo build --release
 
 ## テスト
 
-```bash
-./tests/smoke.sh   # 機能回帰(ビルド/単体テスト/CLI 契約/性能)
-./tests/bench.sh   # 性能回帰(release ビルド、平均時間のしきい値監視)
+```
+tests/cases/        追跡するソース(C / C++ / Go / Rust)。最小限のケースを段ごとに置く
+tests/expect/       難易度ラダーの期待値(ladder.tsv)
+tests/make_fixtures.sh   cases/ → tests/out/(未追跡・ignore)を生成
+tests/smoke.sh       機能回帰(ビルド/単体テスト/CLI 契約/性能)
+tests/ladder.sh      難易度ラダー L0〜L7 の採点
+tests/bench.sh       性能回帰(release ビルド、平均時間のしきい値監視)
 ```
 
+```bash
+./tests/make_fixtures.sh   # 生成(ツールチェーンの無いケースは飛ばす)
+./tests/ladder.sh          # 難易度別の通過数と score
+./tests/smoke.sh           # 回帰
+./tests/bench.sh           # 性能
+```
+
+`ladder.sh` は `tests/expect/ladder.tsv` を1行ずつ評価し、段ごとの通過数を出す
+(L0 算術 → L1 分岐 → L2 ループ → L3 定数除算 → L4 メモリ → L5 分岐表 →
+L6 ABI/異常系 → L7 Go・Rust)。理想的だが未到達の項目は `known_*` として
+TODO に分け、達成すると「昇格候補」として知らせる。
+
 ホストの `clang` / `lld-link` / `clang++` / `rustc` / `go` で回帰用サンプル
-(PE64、AArch64 ELF、Mach-O、Go、Rust、C++、DWARF、20MB 入力)を生成し、
-`inspect` / `fncard` / `lift` / `decompile` / `siggen` / `identify` /
-`report` / MCP の契約を検査する。生成物は `tests/out/` に置かれ、
-リポジトリには含まれない。
+(PE64、AArch64 ELF、Mach-O、Go、Rust、C++、DWARF、20MB 入力)を
+`tests/cases/` から生成し、`inspect` / `fncard` / `lift` / `decompile` /
+`siggen` / `identify` / `report` / MCP の契約を検査する。生成物は
+`tests/out/` に置かれ、リポジトリには含まれない。
 
 `bench.sh` は 1 コマンドあたりの平均実行時間を測り、しきい値を超えると
 失敗する(例: 小規模入力 120ms、20MB 入力 300ms)。`ITER` で反復回数を

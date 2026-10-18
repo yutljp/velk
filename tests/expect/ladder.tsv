@@ -1,0 +1,79 @@
+# 難易度ラダー — 各段の期待値
+#
+# 列: level <TAB> fixture <TAB> function <TAB> kind <TAB> pattern
+#
+# kind:
+#   has          その文字列を含む
+#   nothas       その文字列を含まない
+#   count        関数数が pattern と等しい (function 列は "-")
+#   known_has    理想の期待値だが現状は満たさない (TODO。満たしたら has に昇格)
+#   known_nothas 同上 (現状は含んでしまう)
+#
+# `function` が "-" の行は対象関数を指定しない。
+# 期待値は「疑似 C として読める形」を書く。実装が良くなったら
+# known_* を has/nothas に変えて締めていく。
+
+# ---- L0 算術: そのまま式として戻る ----
+0	l0_arith_a64.o	add3	has	return a1 + a0 + a2;
+0	l0_arith_a64.o	scale	has	+ 0x3
+0	l0_arith_a64.o	pick	has	? a0 : a1
+0	l0_arith_a64.o	negate	has	return -a0;
+0	l0_arith_x64.o	add3	has	+ a2;
+0	l0_arith_x64.o	add3	known_has	uint32_t add3(uint32_t a0, uint32_t a1, uint32_t a2)
+0	l0_arith_x64.o	negate	has	return -a0;
+
+# ---- L1 分岐: 三項/if として読める。goto を残さない ----
+1	l1_branch_a64.o	classify	has	int32_t classify(int32_t a0)
+1	l1_branch_a64.o	classify	has	? 0x1 : 0x0
+1	l1_branch_a64.o	classify	nothas	goto
+1	l1_branch_a64.o	clamp	has	? a1 :
+1	l1_branch_a64.o	sign_of	has	0xffffffff
+1	l1_branch_x64.o	clamp	has	? a1 :
+
+# ---- L2 ループ: while / do-while として構造化 ----
+2	l2_loop_a64.o	sum_while	has	} while (
+2	l2_loop_a64.o	count_down	has	do {
+2	l2_loop_a64.o	find_first	has	} while (
+2	l2_loop_a64.o	sum_skip_odd	known_nothas	goto L_
+2	l2_loop_x64.o	sum_while	has	} while (
+
+# ---- L3 定数除算・剰余: マジックの復元 ----
+3	arm64_div.o	udiv3	has	return a0 / 0x3;
+3	arm64_div.o	sdiv3	has	a0 / 0x3
+3	arm64_div.o	sdiv3	has	int32_t
+3	arm64_div.o	umod3	has	a0 % 0x3
+3	arm64_div.o	hdiv3	has	/ 0x3
+3	arm64_div.o	lmod10	has	% 0xa
+3	x64_div.o	_l3	has	/ 0x3
+3	x64_div.o	_pmod8s	has	% 0x8
+
+# ---- L4 メモリ: メンバ・配列・文字列参照 ----
+4	l4_memory_a64.o	point_dot	has	field_0x0
+4	l4_memory_a64.o	point_dot	has	field_0x4
+4	l4_memory_a64.o	array_sum	has	x8 = x8 + 0x4;
+4	l4_memory_a64.o	bump	known_has	void bump(
+4	arm64_linked.elf	pick	has	"velk-aarch64-string"
+4	pe64.exe	msg_first	has	"velk-ref-string"
+
+# ---- L5 分岐表: ジャンプテーブルは switch へ ----
+5	arm64_jumptable.elf	d7	has	switch (a0)
+5	arm64_jumptable.elf	d7	has	case 9:
+5	l5_switch.elf	dense	known_has	case 10:
+
+# ---- L6 ABI と異常系: テールコール境界・引数・幅 ----
+6	tail_calls_stripped.o	-	count	3
+6	tail_indirect_stripped.o	-	count	2
+6	l6_abi_a64.o	six_args	has	a4 + a5
+6	l6_abi_a64.o	wide_add	has	uint64_t wide_add(uint64_t a0, uint64_t a1)
+6	l6_abi_a64.o	tail_direct	has	sub_<dynamic>();
+6	l6_abi_a64.o	tail_indirect	has	goto *(
+
+# ---- L7 言語ランタイム: Go pclntab / Rust デマングル / stripped ----
+7	go_stripped	-	has	main.add
+7	go_stripped	-	count	1482
+7	go_probe	-	has	main.divmod
+7	go_probe	-	has	main.sumSlice
+7	go_probe	main.add	known_has	uint64_t main_add(uint64_t a0, uint64_t a1)
+7	rust_demo	-	has	rust_demo::
+7	rust_probe_stripped	-	count	238
+7	rust_probe_stripped	-	has	_main

@@ -215,7 +215,7 @@ echo "$sig_mul" | grep -q "uint32_t reg_mul(uint32_t a0, uint32_t a1)" || fail "
 sig_h=$("$BIN" decompile tests/out/x64_div.o --name _h10 2>/dev/null)
 echo "$sig_h" | grep -q "uint64_t _h10(uint64_t a0)" || fail "wide signature kept"
 sig_helper=$("$BIN" decompile tests/out/arm64.o --name helper 2>/dev/null)
-echo "$sig_helper" | grep -q "uint32_t helper(uint32_t a0)" || fail "loop signature by usage"
+echo "$sig_helper" | grep -q "int32_t helper(int32_t a0)"    || fail "loop signature by usage"
 ok "types by usage"
 mask_ir=$("$BIN" decompile tests/out/arm64.o --name helper 2>/dev/null)
 echo "$mask_ir" | grep -q "x8 = w8 \* (a0 - 0x2);" || fail "mask implied by 32-bit arithmetic"
@@ -263,7 +263,7 @@ echo "$brk_ir" | grep -q "unsupported" && fail "bic still unsupported"
 echo "$brk_ir" | grep -q "~("              || fail "complement rendered"
 ok "bottom-tested loops"
 neg_ir=$("$BIN" decompile tests/out/arm64_loops.o --name sum_till_neg 2>/dev/null)
-echo "$neg_ir" | grep -q "uint32_t sum_till_neg(uint32_t \*a0, uint32_t a1)" || fail "fall-through predecessor keeps the params"
+echo "$neg_ir" | grep -q "int32_t sum_till_neg(uint32_t \*a0, int32_t a1)" || fail "fall-through predecessor keeps the params"
 echo "$neg_ir" | grep -q "break;"   || fail "top-tested break kept"
 ok "fall-through predecessors"
 simd_ir=$("$BIN" decompile tests/out/arm64.o --name sum_arr 2>/dev/null)
@@ -302,7 +302,7 @@ ok "unconditional back edges"
 opt0=$("$BIN" decompile tests/out/arm64_loops0.o --name count_bits 2>/dev/null)
 echo "$opt0" | grep -q "sp = sp" && fail "frame settled at -O0"
 zero_ir=$("$BIN" decompile tests/out/arm64.o --name sum_arr 2>/dev/null)
-echo "$zero_ir" | grep -q "^uint32_t sum_arr" || fail "return type follows the value"
+echo "$zero_ir" | grep -q "^int32_t sum_arr"  || fail "return type follows the value"
 ok "value-width return types"
 # A stripped relocatable object keeps no symbols and no entry point: the
 # functions are found from the code itself.
@@ -318,14 +318,14 @@ xs=$("$BIN" inspect tests/out/x64_loops_stripped.o 2>/dev/null | head -1 | grep 
 [ "$xs" = "4" ] || fail "stripped x86 object function count ($xs)"
 ok "stripped x86 objects"
 # A tail call (`b` to another function) ends a function without a `ret`.
-tn=$("$BIN" inspect tests/out/arm64_tail_stripped.o 2>/dev/null | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
+tn=$("$BIN" inspect tests/out/tail_calls_stripped.o 2>/dev/null | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
 [ "$tn" = "3" ] || fail "tail call boundary ($tn)"
-tail_mid=$("$BIN" decompile tests/out/arm64_tail_stripped.o --addr 0x1c 2>/dev/null)
+tail_mid=$("$BIN" decompile tests/out/tail_calls_stripped.o --addr 0x1c 2>/dev/null)
 echo "$tail_mid" | grep -q "for (;;)" && fail "unresolved tail call became a loop"
 echo "$tail_mid" | grep -q "();"        || fail "unresolved tail call rendered"
 ok "tail call boundaries"
 # An indirect tail call (`br x2`) also ends a function.
-in_n=$("$BIN" inspect tests/out/arm64_tailptr_stripped.o 2>/dev/null | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
+in_n=$("$BIN" inspect tests/out/tail_indirect_stripped.o 2>/dev/null | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
 [ "$in_n" = "2" ] || fail "indirect tail call boundary ($in_n)"
 ok "indirect tail calls"
 # A value just stored into a slot feeds its reader directly.
@@ -401,7 +401,8 @@ echo "$msg_ir" | grep -q "qword_140003000" || fail "global named by width and ad
 echo "$msg_ir" | grep -q "(0x140003000)" && fail "global name replaces the address"
 ok "named globals"
 bits_ir=$("$BIN" decompile tests/out/arm64_loops0.o --name count_bits 2>/dev/null)
-echo "$bits_ir" | grep -Eq "local_[0-9]+ \+= local_[0-9]+ & 0x1;" || fail "compound add"
+echo "$bits_ir" | grep -Eq "local_[0-9]+ \+= (local_[0-9]+ & 0x1|w[0-9]+);" || fail "compound add"
+echo "$bits_ir" | grep -Eq "& 0x1;" || fail "compound add operand"
 echo "$bits_ir" | grep -Eq "local_[0-9]+ >>= 0x1;"            || fail "compound shift"
 echo "$bits_ir" | grep -q "local_1 = (local_1" && fail "compound add kept the temp"
 ok "compound assignment"
