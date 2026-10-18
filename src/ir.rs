@@ -371,6 +371,8 @@ pub struct FunctionIr {
     pub accesses: Vec<String>,
     /// `(struct name, byte offset, field name)` from the debug info.
     pub members: Vec<(String, i64, String)>,
+    /// Argument registers a signed comparison reads.
+    pub signed_params: std::collections::HashSet<u16>,
     pub addr: u64,
     pub name: Option<String>,
     pub size: u64,

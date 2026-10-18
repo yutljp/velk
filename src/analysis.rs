@@ -127,13 +127,42 @@ fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collections::HashSet
             narrow(ir, param.index) && !param.ty.ends_with('*') && param.ty != "int32_t"
         })
         .collect();
-    for (param, narrow) in ir.params.iter_mut().zip(decided) {
-        if narrow {
+    let signed: Vec<bool> = ir
+        .params
+        .iter()
+        .map(|param| ir.signed_params.contains(&param.index) && !param.ty.ends_with('*'))
+        .collect();
+    let decided = decided;
+    for ((param, narrow), signed) in ir
+        .params
+        .iter_mut()
+        .zip(decided.iter().copied())
+        .zip(signed.iter().copied())
+    {
+        if signed {
+            // The comparison asked for a signed value; the width comes from
+            // the body, and an already signed type stays as it is.
+            param.ty = match param.ty.as_str() {
+                "uint32_t" => "int32_t".to_owned(),
+                "uint64_t" => {
+                    if narrow {
+                        "int32_t"
+                    } else {
+                        "int64_t"
+                    }
+                    .to_owned()
+                }
+                _ => param.ty.clone(),
+            };
+        } else if narrow {
             param.ty = "uint32_t".to_owned();
         }
     }
+    // A signed comparison somewhere in the body says the value it compares
+    // is signed, and a function that returns such a value returns it signed.
+    let signed_ret = !ir.signed_params.is_empty();
     if narrow_return {
-        ir.ret_type = "uint32_t".to_owned();
+        ir.ret_type = if signed_ret { "int32_t" } else { "uint32_t" }.to_owned();
     }
     if widen_return {
         ir.ret_type = if ir.ret_type == "int32_t" {

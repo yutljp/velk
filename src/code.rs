@@ -8,6 +8,8 @@ use crate::structure::{structure, Out};
 
 struct Ctx<'a> {
     isa: Isa,
+    /// The function returns nothing: a `return` carries no value.
+    void_return: bool,
     names: HashMap<u16, &'a str>,
     /// Rendered stack addresses that name a local slot, mapped to the
     /// local's name. Frame-relative accesses are reviewed once per
@@ -456,6 +458,7 @@ fn render_with(
         .collect();
     let ctx = Ctx {
         isa: ir.isa,
+        void_return: ir.ret_type == "void",
         names,
         slots: locals.slots,
         local_widths: locals.widths,
@@ -1105,6 +1108,7 @@ fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
         isa: ir.isa,
+        void_return: ir.ret_type == "void",
         names: HashMap::new(),
         slots: HashMap::new(),
         local_widths: HashMap::new(),
@@ -1657,7 +1661,14 @@ fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             },
             None => "sub_<dynamic>();".to_owned(),
         },
-        Stmt::Ret { value } => format!("return {};", render_expr(value, ctx)),
+        Stmt::Ret { value } => {
+            // A function that returns nothing carries no meaningful value.
+            if ctx.void_return {
+                "return;".to_owned()
+            } else {
+                format!("return {};", render_expr(value, ctx))
+            }
+        }
         Stmt::Unsupported { text } => format!("/* unsupported: {text} */"),
         Stmt::Trap => "__builtin_trap();".to_owned(),
     }

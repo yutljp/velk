@@ -17,6 +17,8 @@ pub struct Signature {
     pub params: Vec<Param>,
     pub ret: String,
     pub accesses: Vec<String>,
+    /// Argument registers a signed comparison reads: the parameter is signed.
+    pub signed: HashSet<u16>,
 }
 
 pub(crate) fn argument_registers(isa: Isa, format: Format) -> &'static [u16] {
@@ -54,6 +56,50 @@ fn reads(expr: &Expr, into: &mut HashSet<u16>) {
             reads(els, into);
         }
         Expr::Const(_) => {}
+    }
+}
+
+/// The condition kinds only a signed comparison produces.
+fn signed_cond(cond: crate::ir::Cond) -> bool {
+    matches!(
+        cond,
+        crate::ir::Cond::Lt | crate::ir::Cond::Gt | crate::ir::Cond::Le | crate::ir::Cond::Ge
+    )
+}
+
+/// Records the registers a signed comparison reads.
+fn note_signed_cond(cond: crate::ir::Cond, operands: &[&Expr], signed: &mut HashSet<u16>) {
+    if !signed_cond(cond) {
+        return;
+    }
+    for expr in operands {
+        reads(expr, signed);
+    }
+}
+
+/// Walks an expression for selects whose condition is signed.
+fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
+    match expr {
+        Expr::Bin { lhs, rhs, .. } => {
+            signed_in_expr(lhs, signed);
+            signed_in_expr(rhs, signed);
+        }
+        Expr::Load { addr, .. } => signed_in_expr(addr, signed),
+        Expr::SignExtend { value, .. } => signed_in_expr(value, signed),
+        Expr::Select {
+            cond,
+            lhs,
+            rhs,
+            then,
+            els,
+        } => {
+            note_signed_cond(*cond, &[lhs, rhs], signed);
+            signed_in_expr(lhs, signed);
+            signed_in_expr(rhs, signed);
+            signed_in_expr(then, signed);
+            signed_in_expr(els, signed);
+        }
+        Expr::Reg { .. } | Expr::Const(_) => {}
     }
 }
 
@@ -238,6 +284,31 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format) -> Signature {
         }
     }
 
+    // A signed comparison of an argument says the argument is signed: the
+    // condition is the only place the source's type shows through.
+    let mut signed: HashSet<u16> = HashSet::new();
+    for block in blocks {
+        for stmt in &block.stmts {
+            match stmt {
+                Stmt::Brif { cond, lhs, rhs, .. } => {
+                    note_signed_cond(*cond, &[lhs, rhs], &mut signed);
+                }
+                Stmt::Assign { value, .. } => signed_in_expr(value, &mut signed),
+                Stmt::Store { addr, value, .. } => {
+                    signed_in_expr(addr, &mut signed);
+                    signed_in_expr(value, &mut signed);
+                }
+                Stmt::Ret { value } => signed_in_expr(value, &mut signed),
+                Stmt::Switch { index, .. } => signed_in_expr(index, &mut signed),
+                _ => {}
+            }
+        }
+    }
+    let signed_args: HashSet<u16> = signed
+        .iter()
+        .filter_map(|register| origin.get(register).copied())
+        .collect();
+
     let mut ret = "uint64_t".to_owned();
     for block in blocks.iter().rev() {
         if let Some(Stmt::Ret { value }) = block.stmts.last() {
@@ -285,6 +356,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format) -> Signature {
         params,
         ret,
         accesses,
+        signed: signed_args,
     }
 }
 

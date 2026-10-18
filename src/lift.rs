@@ -689,7 +689,16 @@ fn lift_cs_family(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
     let decorate = |expr: Expr| -> Expr {
         match opcode {
             a64::Opcode::CSINC => Expr::bin(BinOp::Add, expr, Expr::constant(1)),
-            a64::Opcode::CSINV => Expr::bin(BinOp::Xor, expr, Expr::constant(u64::MAX)),
+            a64::Opcode::CSINV => {
+                // The complement is as wide as the destination, not as wide
+                // as a register file.
+                let ones = if dest.width >= 64 {
+                    u64::MAX
+                } else {
+                    (1u64 << dest.width) - 1
+                };
+                Expr::bin(BinOp::Xor, expr, Expr::constant(ones))
+            }
             _ => Expr::bin(BinOp::Sub, Expr::constant(0), expr),
         }
     };
@@ -714,7 +723,8 @@ fn lift_cs_family(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
         els: Box::new(els_value),
     };
     lifter.assign(dest, value);
-    lifter.last_compare = None;
+    // `cmp` flags stay live across the cs family: a following `csinv` still
+    // reads the comparison the `cset` used.
 }
 
 fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
@@ -745,7 +755,6 @@ fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
         els: Box::new(els_value),
     };
     lifter.assign(dest, value);
-    lifter.last_compare = None;
 }
 
 fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
@@ -943,12 +952,14 @@ pub fn lift(
 
     let signature = crate::signature::recover(&blocks, Isa::AArch64, image.format);
     let params = signature.params;
+    let signed_params = signature.signed;
     Ok(FunctionIr {
         isa: Isa::AArch64,
         params,
         ret_type: signature.ret,
         accesses: signature.accesses,
         members: Vec::new(),
+        signed_params,
         addr,
         name,
         size,

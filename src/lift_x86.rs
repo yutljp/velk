@@ -663,12 +663,14 @@ pub fn lift(
 
     let signature = crate::signature::recover(&blocks, Isa::X86_64, image.format);
     let params = signature.params;
+    let signed_params = signature.signed;
     Ok(FunctionIr {
         isa: Isa::X86_64,
         params,
         ret_type: signature.ret,
         accesses: signature.accesses,
         members: Vec::new(),
+        signed_params,
         addr,
         name,
         size,

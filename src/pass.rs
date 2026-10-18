@@ -200,6 +200,7 @@ mod tests {
             ret_type: "uint64_t".to_owned(),
             accesses: Vec::new(),
             members: Vec::new(),
+            signed_params: std::collections::HashSet::new(),
             addr: 0,
             name: None,
             size: 0,
@@ -237,6 +238,7 @@ mod tests {
             ret_type: "uint64_t".to_owned(),
             accesses: Vec::new(),
             members: Vec::new(),
+            signed_params: std::collections::HashSet::new(),
             addr: 0,
             name: None,
             size: 0,
@@ -878,13 +880,19 @@ pub fn dce(ir: &mut FunctionIr) {
                 .collect()
         })
         .collect();
+    // A block inside a cycle reads its own live-outs again on the next
+    // iteration, so its own reads are live at its boundary too.
+    let cyclic = cyclic_blocks(ir);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
-        let outer: std::collections::HashSet<u16> = reads
+        let mut outer: std::collections::HashSet<u16> = reads
             .iter()
             .enumerate()
             .filter(|(other, _)| *other != index)
             .flat_map(|(_, set)| set.iter().copied())
             .collect();
+        if cyclic.contains(&index) {
+            outer.extend(reads[index].iter().copied());
+        }
         // A removed statement can strand the one feeding it, so sweep until
         // nothing changes.
         loop {
@@ -1946,13 +1954,19 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
                 .collect()
         })
         .collect();
+    // A block inside a cycle reads its own live-outs again on the next
+    // iteration, so its own reads are live at its boundary too.
+    let cyclic = cyclic_blocks(ir);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
-        let outer: std::collections::HashSet<u16> = reads
+        let mut outer: std::collections::HashSet<u16> = reads
             .iter()
             .enumerate()
             .filter(|(other, _)| *other != index)
             .flat_map(|(_, set)| set.iter().copied())
             .collect();
+        if cyclic.contains(&index) {
+            outer.extend(reads[index].iter().copied());
+        }
         copy_propagate_block(block, &outer, avoid_duplication);
     }
 }
