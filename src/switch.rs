@@ -84,12 +84,21 @@ fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
         },
         _ => (0, checked.clone()),
     };
-    Option::Some((*limit as i64 + 1, Option::Some(*target), minimum, switch_base))
+    Option::Some((
+        *limit as i64 + 1,
+        Option::Some(*target),
+        minimum,
+        switch_base,
+    ))
 }
 
 pub fn apply(ir: &mut FunctionIr, recovered: &[Recovered]) {
     for entry in recovered {
-        let Some(block) = ir.blocks.iter_mut().find(|block| block.start == entry.block_start) else {
+        let Some(block) = ir
+            .blocks
+            .iter_mut()
+            .find(|block| block.start == entry.block_start)
+        else {
             continue;
         };
         if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { .. })) {
@@ -129,15 +138,16 @@ fn recognize(
     for position in 0..count {
         let offset = if signed {
             let bytes = image.read_vaddr(table + (position as u64) * 4, 4)?;
-            i64::from(i32::from_le_bytes([
-                bytes[0], bytes[1], bytes[2], bytes[3],
-            ]))
+            i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
         } else {
             let byte = image.read_vaddr(table + position as u64, 1)?[0];
             i64::from(byte) << scale
         };
         let case_target = base.wrapping_add(offset as u64);
-        if image.section_at(case_target).is_none_or(|section| !section.executable) {
+        if image
+            .section_at(case_target)
+            .is_none_or(|section| !section.executable)
+        {
             return None;
         }
         cases.push((minimum + position, case_target));
@@ -159,12 +169,14 @@ fn resolve(expr: &Expr, environment: &std::collections::HashMap<u16, Expr>) -> E
             Some(value) => value.clone(),
             None => expr.clone(),
         },
-        Expr::Bin { op, lhs, rhs } => Expr::bin(
-            *op,
-            resolve(lhs, environment),
-            resolve(rhs, environment),
-        ),
-        Expr::Load { addr, width, signed } => Expr::Load {
+        Expr::Bin { op, lhs, rhs } => {
+            Expr::bin(*op, resolve(lhs, environment), resolve(rhs, environment))
+        }
+        Expr::Load {
+            addr,
+            width,
+            signed,
+        } => Expr::Load {
             addr: Box::new(resolve(addr, environment)),
             width: *width,
             signed: *signed,
@@ -216,7 +228,10 @@ fn unwrap_mask(expr: &Expr) -> &Expr {
         rhs,
     } = expr
     {
-        if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff) | Expr::Const(u64::MAX)) {
+        if matches!(
+            rhs.as_ref(),
+            Expr::Const(0xffff_ffff) | Expr::Const(u64::MAX)
+        ) {
             return unwrap_mask(lhs);
         }
     }
@@ -247,7 +262,15 @@ fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, bool)> {
     } = value
     {
         let peeled = peel(lhs);
-        if let (Expr::Load { addr, width, signed }, Some(scale)) = (peeled, constant(rhs)) {
+        if let (
+            Expr::Load {
+                addr,
+                width,
+                signed,
+            },
+            Some(scale),
+        ) = (peeled, constant(rhs))
+        {
             if *width == 1 && !*signed {
                 if let (Some(table), Some(index)) = (table_address(addr), index_expression(addr)) {
                     return Some((base, table, index, scale as i64, false));
@@ -310,7 +333,11 @@ fn unscale(expr: Expr) -> Expr {
             rhs,
         } => match rhs.as_ref() {
             Expr::Const(scale) if *scale > 0 => *lhs,
-            _ => Expr::Bin { op: BinOp::Shl, lhs, rhs },
+            _ => Expr::Bin {
+                op: BinOp::Shl,
+                lhs,
+                rhs,
+            },
         },
         other => other,
     }
@@ -389,6 +416,112 @@ fn predecessors(ir: &FunctionIr) -> std::collections::HashMap<u64, usize> {
     counts
 }
 
+/// Restrict a candidate chain to the interval guaranteed by its sole incoming
+/// conditional edge. This matters when a compiler factors a boundary test out
+/// of a nested compare tree (e.g. `x > 4` enters the chain that tests 5..9).
+fn incoming_interval(
+    ir: &FunctionIr,
+    predecessors: &std::collections::HashMap<u64, usize>,
+    destination: usize,
+    value: &Expr,
+    lo: i64,
+    hi: i64,
+) -> Option<(i64, i64)> {
+    let destination_start = ir.blocks.get(destination)?.start;
+    if predecessors.get(&destination_start).copied().unwrap_or(0) != 1 {
+        return None;
+    }
+    let mut incoming = Vec::new();
+    for (source, block) in ir.blocks.iter().enumerate() {
+        let Some(last) = block.stmts.last() else {
+            continue;
+        };
+        match last {
+            Stmt::Brif {
+                cond,
+                lhs,
+                rhs: Expr::Const(k),
+                target,
+            } if (*target == destination_start || source + 1 == destination)
+                && same_value(lhs, value) =>
+            {
+                incoming.push((source, *cond, *k as i64, *target == destination_start));
+            }
+            _ => {}
+        }
+    }
+    if incoming.len() != 1 {
+        return None;
+    }
+    let (_, cond, k, taken_edge) = incoming[0];
+    let (taken, rest): (Vec<(i64, i64)>, Vec<(i64, i64)>) = match cond {
+        crate::ir::Cond::Eq => (
+            if (lo..=hi).contains(&k) {
+                vec![(k, k)]
+            } else {
+                Vec::new()
+            },
+            vec![
+                (lo, hi.min(k.saturating_sub(1))),
+                (lo.max(k.saturating_add(1)), hi),
+            ],
+        ),
+        crate::ir::Cond::Ne => (
+            vec![
+                (lo, hi.min(k.saturating_sub(1))),
+                (lo.max(k.saturating_add(1)), hi),
+            ],
+            if (lo..=hi).contains(&k) {
+                vec![(k, k)]
+            } else {
+                Vec::new()
+            },
+        ),
+        crate::ir::Cond::Lt => (
+            vec![(lo, hi.min(k.saturating_sub(1)))],
+            vec![(lo.max(k), hi)],
+        ),
+        crate::ir::Cond::Cc if lo >= 0 && k >= 0 => (
+            vec![(lo, hi.min(k.saturating_sub(1)))],
+            vec![(lo.max(k), hi)],
+        ),
+        crate::ir::Cond::Le => (
+            vec![(lo, hi.min(k))],
+            vec![(lo.max(k.saturating_add(1)), hi)],
+        ),
+        crate::ir::Cond::Ls if lo >= 0 && k >= 0 => (
+            vec![(lo, hi.min(k))],
+            vec![(lo.max(k.saturating_add(1)), hi)],
+        ),
+        crate::ir::Cond::Gt => (
+            vec![(lo.max(k.saturating_add(1)), hi)],
+            vec![(lo, hi.min(k))],
+        ),
+        crate::ir::Cond::Hi if lo >= 0 && k >= 0 => (
+            vec![(lo.max(k.saturating_add(1)), hi)],
+            vec![(lo, hi.min(k))],
+        ),
+        crate::ir::Cond::Ge => (
+            vec![(lo.max(k), hi)],
+            vec![(lo, hi.min(k.saturating_sub(1)))],
+        ),
+        crate::ir::Cond::Cs if lo >= 0 && k >= 0 => (
+            vec![(lo.max(k), hi)],
+            vec![(lo, hi.min(k.saturating_sub(1)))],
+        ),
+        _ => return None,
+    };
+    let intervals = if taken_edge { taken } else { rest };
+    let intervals: Vec<_> = intervals
+        .into_iter()
+        .filter(|(start, end)| start <= end)
+        .collect();
+    match intervals.as_slice() {
+        [(start, end)] => Some((*start, *end)),
+        _ => None,
+    }
+}
+
 struct ChainWalk<'a> {
     ir: &'a FunctionIr,
     position: std::collections::HashMap<u64, usize>,
@@ -462,12 +595,20 @@ impl ChainWalk<'_> {
         self.blocks.push(at);
         let (taken, rest): (Vec<(i64, i64)>, Vec<(i64, i64)>) = match cond {
             crate::ir::Cond::Eq => (
-                if k >= lo && k <= hi { vec![(k, k)] } else { Vec::new() },
+                if k >= lo && k <= hi {
+                    vec![(k, k)]
+                } else {
+                    Vec::new()
+                },
                 vec![(lo, hi.min(k - 1)), (lo.max(k + 1), hi)],
             ),
             crate::ir::Cond::Ne => (
                 vec![(lo, hi.min(k - 1)), (lo.max(k + 1), hi)],
-                if k >= lo && k <= hi { vec![(k, k)] } else { Vec::new() },
+                if k >= lo && k <= hi {
+                    vec![(k, k)]
+                } else {
+                    Vec::new()
+                },
             ),
             crate::ir::Cond::Lt | crate::ir::Cond::Cc => {
                 (vec![(lo, hi.min(k - 1))], vec![(lo.max(k), hi)])
@@ -490,10 +631,7 @@ impl ChainWalk<'_> {
             .into_iter()
             .filter(|(low, high)| high >= low)
             .collect();
-        let rest: Vec<(i64, i64)> = rest
-            .into_iter()
-            .filter(|(low, high)| high >= low)
-            .collect();
+        let rest: Vec<(i64, i64)> = rest.into_iter().filter(|(low, high)| high >= low).collect();
         if taken.is_empty() && rest.len() == 1 && rest[0] == (lo, hi) {
             // Everything the walked range holds leaves the dispatch here.
             if self.default.is_none() {
@@ -534,7 +672,7 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         .collect();
     let preds = predecessors(ir);
     let mut out: Vec<ChainSwitch> = Vec::new();
-    for block in ir.blocks.iter() {
+    for (block_index, block) in ir.blocks.iter().enumerate() {
         let Some(Stmt::Brif { lhs, rhs, .. }) = block.stmts.last() else {
             continue;
         };
@@ -572,13 +710,23 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
             continue;
         }
         if range_compare {
-            lo = lo.min(0);
+            let full_lo = lo.min(0);
+            if let Some((entry_lo, entry_hi)) = incoming_interval(ir, &preds, block_index, lhs, full_lo, hi)
+            {
+                lo = full_lo.max(entry_lo);
+                hi = hi.min(entry_hi);
+            } else {
+                lo = full_lo;
+            }
         }
-        if hi - lo > 256 {
+        if hi < lo || hi.saturating_sub(lo) > 256 {
             continue;
         }
         walk.walk(block.start, lo, hi);
-        if walk.failed || walk.cases.len() < 3 || walk.cases.len() > 256 {
+        // Two named values are enough: `structure_best` keeps the result only
+        // when it removes labels, so a small tree that reads better as a
+        // switch can win and anything else is dropped.
+        if walk.failed || walk.cases.len() < 2 || walk.cases.len() > 256 {
             continue;
         }
         let case_lo = *walk.cases.keys().next().unwrap();
@@ -589,7 +737,11 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         // Every case body must be outside the chain, and every chain block
         // but the head must be reachable only from the chain, so removing them
         // cannot strand another path.
-        if walk.cases.values().any(|target| walk.blocks.contains(target)) {
+        if walk
+            .cases
+            .values()
+            .any(|target| walk.blocks.contains(target))
+        {
             continue;
         }
         if walk
