@@ -560,7 +560,7 @@ if echo "$x86_div" | grep -q "unsupported"; then fail "x86 idiv unresolved"; fi
 ok "x86 idiv"
 
 x86_c=$("$BIN" decompile $FIX/pe64.exe --name reg_add 2>/dev/null)
-echo "$x86_c" | grep -q "uint32_t reg_add(uint64_t a0, uint64_t a1)" || fail "x86 decompile signature"
+echo "$x86_c" | grep -q "uint32_t reg_add(uint32_t a0, uint32_t a1)" || fail "x86 decompile signature"
 echo "$x86_c" | grep -q "return eax;"             || fail "x86 decompile return"
 ok "x86 decompile"
 

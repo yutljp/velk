@@ -329,11 +329,15 @@ fn collect_uses(
                     *wide_write = true;
                 }
             }
-            scan_reads(value, register, false, reads_narrow, seen);
+            // A 64-bit read that feeds a 32-bit result only contributes its
+            // low half: the source can be a 32-bit value. A local is typed by
+            // the narrowest use that explains every read, and this is that
+            // rule for the trivial case.
+            scan_reads(value, register, dest.width <= 32, reads_narrow, seen);
         }
-        Stmt::Store { addr, value, .. } => {
+        Stmt::Store { addr, value, width } => {
             scan_reads(addr, register, false, reads_narrow, seen);
-            scan_reads(value, register, false, reads_narrow, seen);
+            scan_reads(value, register, *width <= 4, reads_narrow, seen);
         }
         Stmt::Brif { lhs, rhs, .. } => {
             scan_reads(lhs, register, false, reads_narrow, seen);
