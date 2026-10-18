@@ -42,7 +42,12 @@ status=0
 ./tests/make_fixtures.sh || status=1
 ./tests/smoke.sh || status=1
 ./tests/ladder.sh | tee "$FIX/ladder.txt" || status=1
-./tests/dump.sh "$FIX" || status=1
+# 疑似 C のダンプは関数ごとに decompile するので重い。差分を取るときだけ。
+if [ "${VELK_DUMP:-1}" = 1 ]; then
+  ./tests/dump.sh "$FIX" || status=1
+else
+  echo "dump: skipped (VELK_DUMP=0)"
+fi
 
 echo
 echo "== 正本の結果 =="
