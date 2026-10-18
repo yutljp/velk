@@ -2831,6 +2831,18 @@ fn statement_register_dest(stmt: &Stmt) -> Option<u16> {
     }
 }
 
+/// A constant the widening multiply may have sign-extended.
+fn signed_const(expr: &Expr) -> Option<u64> {
+    match expr {
+        Expr::Const(value) => Some(*value),
+        Expr::SignExtend { value, width: 4 } => match value.as_ref() {
+            Expr::Const(value) => Some(*value & 0xffff_ffff),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
     let Expr::Bin {
         op: product_op,
@@ -2848,15 +2860,16 @@ fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
     ) {
         return None;
     }
-    // The compiler may emit either operand order.
-    let (leaf, magic_rhs) = if matches!(rhs.as_ref(), Expr::Const(_)) {
+    // The compiler may emit either operand order, and a widening multiply
+    // sign-extends the constant it multiplies by.
+    let (leaf, magic_rhs) = if signed_const(rhs).is_some() {
         (lhs.as_ref(), rhs.as_ref())
-    } else if matches!(lhs.as_ref(), Expr::Const(_)) {
+    } else if signed_const(lhs).is_some() {
         (rhs.as_ref(), lhs.as_ref())
     } else {
         return None;
     };
-    let Expr::Const(magic) = magic_rhs else {
+    let Some(magic) = signed_const(magic_rhs) else {
         return None;
     };
     let high_part = matches!(
@@ -2864,7 +2877,7 @@ fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
         crate::ir::BinOp::MulHigh | crate::ir::BinOp::MulHighS
     );
     let magic_cap = if high_part { u64::MAX } else { 0xffff_ffff };
-    if *magic == 0 || *magic > magic_cap {
+    if magic == 0 || magic > magic_cap {
         return None;
     }
     let Some(domain_bits) = leaf_domain(leaf) else {
@@ -2873,7 +2886,7 @@ fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
     let Some(operand) = leaf_operand(leaf) else {
         return None;
     };
-    Some((operand, *magic, domain_bits))
+    Some((operand, magic, domain_bits))
 }
 
 /// Canonical dividend: a masked 64-bit slot becomes its 32-bit register form so
@@ -2881,6 +2894,7 @@ fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
 fn leaf_operand(expr: &Expr) -> Option<Expr> {
     match expr {
         Expr::Reg { width, .. } if *width == 32 || *width == 64 => Some(expr.clone()),
+        Expr::SignExtend { width: 4, value } => Some(leaf_operand(value)?),
         Expr::SignExtend { .. } => Some(expr.clone()),
         Expr::Bin {
             op: crate::ir::BinOp::And,
@@ -2905,6 +2919,7 @@ fn leaf_operand(expr: &Expr) -> Option<Expr> {
 fn leaf_domain(expr: &Expr) -> Option<u64> {
     match expr {
         Expr::Reg { width, .. } if *width == 32 || *width == 64 => Some(u64::from(*width)),
+        Expr::SignExtend { width: 4, value } => leaf_domain(value),
         Expr::Bin {
             op: crate::ir::BinOp::And,
             lhs,
@@ -2941,6 +2956,7 @@ fn shift_of(value: &Expr) -> Option<(u16, u64)> {
 fn unwrap_leaf(expr: &Expr) -> Option<u16> {
     match expr {
         Expr::Reg { index, .. } => Some(*index),
+        Expr::SignExtend { width: 4, value } => unwrap_leaf(value),
         Expr::Bin {
             op: crate::ir::BinOp::And,
             lhs,

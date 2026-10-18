@@ -282,14 +282,26 @@ fn lift_msub(lifter: &mut Lifter, ops: [Operand; 4]) {
     lifter.assign(dest, value);
 }
 
-fn lift_umaddl(lifter: &mut Lifter, ops: [Operand; 4]) {
+fn lift_umaddl(lifter: &mut Lifter, ops: [Operand; 4], signed: bool) {
     let Some(dest) = destination(ops[0]) else {
         return;
     };
     let (Some(a), Some(b)) = (lifter.operand(ops[1], 32), lifter.operand(ops[2], 32)) else {
         return;
     };
-    let product = Expr::bin(BinOp::Mul, a, b);
+    // `smaddl` widens its operands *signed*: without that the product of a
+    // negative input keeps the wrong high half.
+    let widen = |expr: Expr| -> Expr {
+        if signed {
+            Expr::SignExtend {
+                value: Box::new(expr),
+                width: 4,
+            }
+        } else {
+            expr
+        }
+    };
+    let product = Expr::bin(BinOp::Mul, widen(a), widen(b));
     let value = match lifter.operand(ops[3], 64) {
         Some(base) => Expr::bin(BinOp::Add, product, base),
         None => product,
@@ -779,7 +791,8 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::CSEL => lift_csel(lifter, ops),
         O::CSINC | O::CSINV | O::CSNEG => lift_cs_family(lifter, ops, ins.opcode),
         O::MSUB => lift_msub(lifter, ops),
-        O::UMADDL | O::SMADDL => lift_umaddl(lifter, ops),
+        O::UMADDL => lift_umaddl(lifter, ops, false),
+        O::SMADDL => lift_umaddl(lifter, ops, true),
         O::MOVZ => lift_mov(lifter, ops, false),
         O::MOVN => lift_mov(lifter, ops, true),
         O::MOVK => lift_movk(lifter, ops),
