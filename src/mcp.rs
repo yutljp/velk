@@ -1,40 +1,51 @@
-//! Minimal MCP (Model Context Protocol) server over stdio.
+//! MCP server over stdio: one tool runs velk scripts, one serves their API docs.
 
 use std::io::{BufRead, Write};
+use std::time::Duration;
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
-use crate::{analysis, code, fncard, loader, pass, refs, sigs};
+use crate::script::Engine;
+
+const MAX_OUTPUT_CHARS: usize = 20_000;
+const DEFAULT_TIMEOUT_MS: u64 = 10_000;
+const MAX_TIMEOUT_MS: u64 = 120_000;
+
+const RUN_DESCRIPTION: &str = "Run a JavaScript snippet against the velk binary-analysis API and \
+return what it prints with console.log, then the value of its last expression. Filter and \
+aggregate inside the script so only the answer comes back. Opened binaries stay cached across \
+calls. Call velk_read_api for the full API.\n\nExample:\nconst b = velk.open(\"/path/to/bin\");\n\
+b.functions({ named: false }).length;\nconst f = b.getFunction(\"main\");\nconsole.log(f.signature());\n\
+f.decompile();";
+
+const READ_DESCRIPTION: &str = "Read the velk script API. Without a topic, returns the overview \
+and the list of topics; with a topic, returns its TypeScript declarations.";
+
+const TOPICS: [(&str, &str); 3] = [
+    ("binary", include_str!("api/binary.d.ts")),
+    ("func", include_str!("api/func.d.ts")),
+    ("types", include_str!("api/types.d.ts")),
+];
 
 pub fn serve() -> Result<(), String> {
-    let stdin = std::io::stdin();
+    let engine = Engine::new()?;
     let mut stdout = std::io::stdout().lock();
-    for line in stdin.lock().lines() {
-        let line = line.map_err(|error| error.to_string())?;
-        if line.trim().is_empty() {
+    for line in std::io::stdin().lock().lines() {
+        let line = line.map_err(|e| e.to_string())?;
+        let Ok(request) = serde_json::from_str::<Value>(&line) else {
             continue;
-        }
-        let request: Value = match serde_json::from_str(&line) {
-            Ok(value) => value,
-            Err(_) => continue,
         };
-        if let Some(response) = handle(&request) {
-            let text = serde_json::to_string(&response).map_err(|error| error.to_string())?;
-            writeln!(stdout, "{text}").map_err(|error| error.to_string())?;
-            stdout.flush().map_err(|error| error.to_string())?;
+        if let Some(response) = handle(&engine, &request) {
+            writeln!(stdout, "{response}").map_err(|e| e.to_string())?;
+            stdout.flush().map_err(|e| e.to_string())?;
         }
     }
     Ok(())
 }
 
-fn handle(request: &Value) -> Option<Value> {
-    let id = request.get("id").cloned();
-    let method = request.get("method")?.as_str()?;
-    if id.is_none() {
-        return None;
-    }
-    let id = id.unwrap();
-    let response = match method {
+fn handle(engine: &Engine, request: &Value) -> Option<Value> {
+    let id = request.get("id")?.clone();
+    let result = match request.get("method")?.as_str()? {
         "initialize" => Ok(json!({
             "protocolVersion": request
                 .pointer("/params/protocolVersion")
@@ -45,11 +56,10 @@ fn handle(request: &Value) -> Option<Value> {
         })),
         "ping" => Ok(json!({})),
         "tools/list" => Ok(json!({ "tools": tools() })),
-        "tools/call" => call_tool(request),
+        "tools/call" => call_tool(engine, request),
         _ => Err((-32601, "method not found")),
     };
-
-    Some(match response {
+    Some(match result {
         Ok(result) => json!({ "jsonrpc": "2.0", "id": id, "result": result }),
         Err((code, message)) => json!({
             "jsonrpc": "2.0",
@@ -61,297 +71,90 @@ fn handle(request: &Value) -> Option<Value> {
 
 fn tools() -> Value {
     json!([
-        tool(
-            "inspect",
-            "List discovered functions and section counts",
-            json!({
-                "path": string_schema(),
-                "limit": { "type": "integer", "minimum": 1 },
-                "json": { "type": "boolean" }
-            })
-        ),
-        tool(
-            "fncard",
-            "Function card with hard reasons, preview, strings and signature match",
-            target_schema()
-        ),
-        tool(
-            "report",
-            "JSON dossier with typed signature, accesses, references and evidence id",
-            target_schema()
-        ),
-        tool(
-            "decompile",
-            "Pseudo-C for one function",
-            target_schema()
-        ),
-        tool(
-            "siggen",
-            "Build a signature database from named functions",
-            json!({
-                "path": string_schema(),
-                "output": string_schema()
-            })
-        ),
-        tool(
-            "identify",
-            "Match functions against a signature database",
-            json!({
-                "path": string_schema(),
-                "sigs": string_schema()
-            })
-        )
+        {
+            "name": "velk_run_script",
+            "description": RUN_DESCRIPTION,
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "code": { "type": "string", "description": "JavaScript source" },
+                    "timeout_ms": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": MAX_TIMEOUT_MS,
+                        "description": format!("Default {DEFAULT_TIMEOUT_MS}")
+                    }
+                },
+                "required": ["code"],
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "velk_read_api",
+            "description": READ_DESCRIPTION,
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "topic": { "type": "string", "enum": TOPICS.map(|(name, _)| name) }
+                },
+                "additionalProperties": false
+            }
+        }
     ])
 }
 
-fn tool(name: &str, description: &str, properties: Value) -> Value {
-    json!({
-        "name": name,
-        "description": description,
-        "inputSchema": {
-            "type": "object",
-            "properties": properties,
-            "required": ["path"],
-            "additionalProperties": false
-        },
-    })
-}
-
-fn string_schema() -> Value {
-    json!({ "type": "string" })
-}
-
-fn target_schema() -> Value {
-    json!({
-        "path": string_schema(),
-        "name": string_schema(),
-        "addr": { "type": "integer", "minimum": 0 },
-        "preview": { "type": "integer", "minimum": 1 },
-        "sigs": string_schema()
-    })
-}
-
-fn call_tool(request: &Value) -> Result<Value, (i32, &'static str)> {
-    let name = request
-        .pointer("/params/name")
-        .and_then(Value::as_str)
-        .ok_or((-32602, "missing tool name"))?;
-    let arguments = request
-        .pointer("/params/arguments")
-        .cloned()
-        .unwrap_or_else(|| json!({}));
-    let text = match dispatch(name, &arguments) {
-        Ok(text) => text,
-        Err(message) => {
-            return Ok(json!({
-                "content": [{ "type": "text", "text": format!("error: {message}") }],
-                "isError": true
-            }));
-        }
+fn call_tool(engine: &Engine, request: &Value) -> Result<Value, (i32, &'static str)> {
+    let arguments = request.pointer("/params/arguments").unwrap_or(&Value::Null);
+    let (text, is_error) = match request.pointer("/params/name").and_then(Value::as_str) {
+        Some("velk_run_script") => run_script(engine, arguments),
+        Some("velk_read_api") => read_api(arguments),
+        Some(_) => return Err((-32602, "unknown tool")),
+        None => return Err((-32602, "missing tool name")),
     };
-    Ok(json!({ "content": [{ "type": "text", "text": text }] }))
+    Ok(json!({
+        "content": [{ "type": "text", "text": text }],
+        "isError": is_error
+    }))
 }
 
-fn path_argument(arguments: &Value) -> Result<std::path::PathBuf, String> {
-    arguments
-        .get("path")
-        .and_then(Value::as_str)
-        .map(std::path::PathBuf::from)
-        .ok_or_else(|| "missing path".to_owned())
-}
-
-fn function_argument<'a>(
-    image: &'a loader::Image,
-    arguments: &Value,
-) -> Result<&'a loader::Function, String> {
-    let name = arguments.get("name").and_then(Value::as_str);
-    let addr = arguments.get("addr").and_then(Value::as_u64);
-    if let Some(name) = name {
-        return image
-            .find_function_by_name(name)
-            .ok_or_else(|| format!("function not found: {name}"));
-    }
-    if let Some(addr) = addr {
-        return image
-            .functions
-            .get(&addr)
-            .ok_or_else(|| format!("function not found: 0x{addr:x}"));
-    }
-    Err("missing name or addr".to_owned())
-}
-
-fn database(arguments: &Value) -> Result<Option<sigs::Database>, String> {
-    match arguments.get("sigs").and_then(Value::as_str) {
-        Some(path) => {
-            let text = std::fs::read_to_string(path).map_err(|error| error.to_string())?;
-            let database = serde_json::from_str(&text).map_err(|error| error.to_string())?;
-            Ok(Some(database))
+fn run_script(engine: &Engine, arguments: &Value) -> (String, bool) {
+    let Some(code) = arguments.get("code").and_then(Value::as_str) else {
+        return ("missing code".to_owned(), true);
+    };
+    let millis = arguments
+        .get("timeout_ms")
+        .and_then(Value::as_u64)
+        .unwrap_or(DEFAULT_TIMEOUT_MS)
+        .clamp(1, MAX_TIMEOUT_MS);
+    let outcome = engine.run(code, Some(Duration::from_millis(millis)));
+    let mut text = truncate(outcome.output);
+    if let Some(error) = &outcome.error {
+        if !text.is_empty() {
+            text.push('\n');
         }
-        None => Ok(None),
+        text.push_str(&format!("error: {error}"));
+    }
+    (text, outcome.error.is_some())
+}
+
+fn read_api(arguments: &Value) -> (String, bool) {
+    match arguments.get("topic").and_then(Value::as_str) {
+        None => (include_str!("api/index.md").to_owned(), false),
+        Some(topic) => match TOPICS.iter().find(|(name, _)| *name == topic) {
+            Some((_, text)) => ((*text).to_owned(), false),
+            None => (format!("unknown topic: {topic}"), true),
+        },
     }
 }
 
-fn dispatch(name: &str, arguments: &Value) -> Result<String, String> {
-    let path = path_argument(arguments)?;
-    match name {
-        "inspect" => {
-            let image = loader::load(&path)?;
-            let limit = arguments
-                .get("limit")
-                .and_then(Value::as_u64)
-                .unwrap_or(40) as usize;
-            let summary = json!({
-                "format": image.format.to_string(),
-                "isa": image.isa.to_string(),
-                "entry": image.entry,
-                "n_sections": image.sections.len(),
-                "n_functions": image.functions.len(),
-                "named_functions": image.functions.values().filter(|f| f.name.is_some()).count(),
-                "functions": image.functions.values().take(limit).map(|function| json!({
-                    "addr": function.addr,
-                    "size": function.size,
-                    "name": function.name,
-                    "source": function.source.iter().map(ToString::to_string).collect::<Vec<_>>(),
-                })).collect::<Vec<_>>(),
-            });
-            Ok(serde_json::to_string_pretty(&summary).map_err(|error| error.to_string())?)
-        }
-        "fncard" => {
-            let image = loader::load(&path)?;
-            let function = function_argument(&image, arguments)?;
-            let preview = arguments
-                .get("preview")
-                .and_then(Value::as_u64)
-                .unwrap_or(24) as usize;
-            let size = function.size.unwrap_or(256);
-            let mut lifted = analysis::lift(&image, function, size).ok();
-            if let Some(ir) = lifted.as_mut() {
-                pass::simplify(ir);
-            }
-            let references = lifted
-                .as_ref()
-                .map(|ir| refs::collect(ir, &image))
-                .unwrap_or_default();
-            let strings: Vec<String> = references
-                .iter()
-                .filter_map(|reference| reference.text.clone())
-                .collect();
-            let hints = refs::name_hints(&strings);
-            let accesses = lifted
-                .as_ref()
-                .map(|ir| ir.accesses.clone())
-                .unwrap_or_default();
-            let database = database(arguments)?;
-            let identified = match (&database, &lifted) {
-                (Some(database), Some(ir)) => sigs::lookup(database, ir),
-                _ => None,
-            };
-            let card = fncard::build(
-                &image,
-                function,
-                preview,
-                lifted.as_ref(),
-                strings,
-                hints,
-                accesses,
-                identified,
-            );
-            Ok(serde_json::to_string_pretty(&card).map_err(|error| error.to_string())?)
-        }
-        "report" => {
-            let image = loader::load(&path)?;
-            let function = function_argument(&image, arguments)?;
-            let preview = arguments
-                .get("preview")
-                .and_then(Value::as_u64)
-                .unwrap_or(16) as usize;
-            let size = function.size.unwrap_or(256);
-            let mut lifted = analysis::lift(&image, function, size)?;
-            pass::simplify(&mut lifted);
-            let references = refs::collect(&lifted, &image);
-            let strings: Vec<String> = references
-                .iter()
-                .filter_map(|reference| reference.text.clone())
-                .collect();
-            let hints = refs::name_hints(&strings);
-            let database = database(arguments)?;
-            let identified = database.as_ref().and_then(|database| sigs::lookup(database, &lifted));
-            let card = fncard::build(
-                &image,
-                function,
-                preview,
-                Some(&lifted),
-                strings.clone(),
-                hints.clone(),
-                lifted.accesses.clone(),
-                identified.clone(),
-            );
-            let tokens = sigs::tokens(&lifted);
-            let evidence = sigs::hash(&tokens);
-            let params: Vec<Value> = lifted
-                .params
-                .iter()
-                .map(|param| json!({ "name": param.name, "type": param.ty }))
-                .collect();
-            let dossier = json!({
-                "evidence": evidence,
-                "card": card,
-                "signature": { "return": lifted.ret_type, "params": params },
-                "accesses": lifted.accesses,
-                "references": references.iter().map(|reference| reference.describe()).collect::<Vec<_>>(),
-                "strings": strings,
-                "name_hints": hints,
-                "identified": identified,
-                "tokens": tokens.len(),
-            });
-            Ok(serde_json::to_string_pretty(&dossier).map_err(|error| error.to_string())?)
-        }
-        "decompile" => {
-            let image = loader::load(&path)?;
-            let function = function_argument(&image, arguments)?;
-            let size = function.size.unwrap_or(256);
-            let mut lifted = analysis::lift(&image, function, size)?;
-            pass::simplify(&mut lifted);
-            let references = refs::collect(&lifted, &image);
-            let database = database(arguments)?;
-            let mut text = String::new();
-            if let Some(database) = &database {
-                if let Some(matched) = sigs::lookup(database, &lifted) {
-                    text.push_str(&format!("/* identified: {matched} */\n"));
-                }
-            }
-            text.push_str(&code::render(&mut lifted, &references, &code::callee_names(&image), code::data_ranges(&image)));
-            Ok(text)
-        }
-        "siggen" => {
-            let output = arguments
-                .get("output")
-                .and_then(Value::as_str)
-                .ok_or_else(|| "missing output".to_owned())?;
-            let image = loader::load(&path)?;
-            let database = sigs::build(&image);
-            let text = serde_json::to_string_pretty(&database).map_err(|error| error.to_string())?;
-            std::fs::write(output, text).map_err(|error| error.to_string())?;
-            Ok(format!("{} entries -> {output}", database.entries.len()))
-        }
-        "identify" => {
-            let sigs_path = arguments
-                .get("sigs")
-                .and_then(Value::as_str)
-                .ok_or_else(|| "missing sigs".to_owned())?;
-            let image = loader::load(&path)?;
-            let text = std::fs::read_to_string(sigs_path).map_err(|error| error.to_string())?;
-            let database: sigs::Database =
-                serde_json::from_str(&text).map_err(|error| error.to_string())?;
-            let matches = sigs::identify(&image, &database);
-            Ok(serde_json::to_string_pretty(&matches.iter().map(|hit| json!({
-                "addr": hit.addr,
-                "size": hit.size,
-                "current": hit.current,
-                "matched": hit.matched,
-            })).collect::<Vec<_>>())
-            .map_err(|error| error.to_string())?)
-        }
-        other => Err(format!("unknown tool: {other}")),
-    }
+fn truncate(mut text: String) -> String {
+    let Some((cut, _)) = text.char_indices().nth(MAX_OUTPUT_CHARS) else {
+        return text;
+    };
+    let dropped = text[cut..].chars().count();
+    text.truncate(cut);
+    text.push_str(&format!(
+        "\n[truncated {dropped} chars; filter or slice inside the script and run again]"
+    ));
+    text
 }

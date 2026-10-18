@@ -36,19 +36,27 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
-pub fn disassemble(image: &Image, addr: u64, len: u64, max_lines: usize) -> Vec<String> {
+/// With `stop_at_exit`, the listing ends at the first return or jump, which
+/// suits a preview but cuts a whole-function listing short.
+pub fn disassemble(
+    image: &Image,
+    addr: u64,
+    len: u64,
+    max_lines: usize,
+    stop_at_exit: bool,
+) -> Vec<String> {
     let Some(bytes) = image.read_vaddr(addr, len) else {
         return Vec::new();
     };
 
     match image.isa {
-        Isa::X86_64 => disassemble_x86(bytes, addr, max_lines),
-        Isa::AArch64 => disassemble_aarch64(bytes, addr, max_lines),
+        Isa::X86_64 => disassemble_x86(bytes, addr, max_lines, stop_at_exit),
+        Isa::AArch64 => disassemble_aarch64(bytes, addr, max_lines, stop_at_exit),
         Isa::Unsupported => Vec::new(),
     }
 }
 
-fn disassemble_x86(bytes: &[u8], addr: u64, max_lines: usize) -> Vec<String> {
+fn disassemble_x86(bytes: &[u8], addr: u64, max_lines: usize, stop_at_exit: bool) -> Vec<String> {
     use iced_x86::{Decoder, DecoderOptions, FlowControl, Instruction};
 
     let mut decoder = Decoder::with_ip(64, bytes, addr, DecoderOptions::NONE);
@@ -58,8 +66,9 @@ fn disassemble_x86(bytes: &[u8], addr: u64, max_lines: usize) -> Vec<String> {
     while lines.len() < max_lines && decoder.can_decode() {
         decoder.decode_out(&mut instruction);
         lines.push(format!("0x{:<12x} {}", instruction.ip(), instruction));
-        if matches!(
-            instruction.flow_control(),
+        if stop_at_exit
+            && matches!(
+                instruction.flow_control(),
             FlowControl::Return
                 | FlowControl::UnconditionalBranch
                 | FlowControl::Exception
@@ -72,7 +81,12 @@ fn disassemble_x86(bytes: &[u8], addr: u64, max_lines: usize) -> Vec<String> {
     lines
 }
 
-fn disassemble_aarch64(bytes: &[u8], addr: u64, max_lines: usize) -> Vec<String> {
+fn disassemble_aarch64(
+    bytes: &[u8],
+    addr: u64,
+    max_lines: usize,
+    stop_at_exit: bool,
+) -> Vec<String> {
     use yaxpeax_arch::{Decoder, ReaderBuilder};
     use yaxpeax_arm::armv8::a64;
 
@@ -90,7 +104,7 @@ fn disassemble_aarch64(bytes: &[u8], addr: u64, max_lines: usize) -> Vec<String>
                 lines.push(format!("0x{:<12x} {}", pc, instruction));
                 let returns = instruction.opcode == a64::Opcode::RET;
                 pc += 4;
-                if returns {
+                if stop_at_exit && returns {
                     break;
                 }
             }
@@ -115,7 +129,7 @@ pub fn build(
     identified: Option<String>,
 ) -> FunctionCard {
     let preview_len = func.size.unwrap_or(PREVIEW_MAX_BYTES).min(PREVIEW_MAX_BYTES);
-    let disasm_preview = disassemble(image, func.addr, preview_len, max_lines);
+    let disasm_preview = disassemble(image, func.addr, preview_len, max_lines, true);
 
     let mut hard_reasons = Vec::new();
     if func.size.is_none() {

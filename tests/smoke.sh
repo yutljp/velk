@@ -729,11 +729,15 @@ fi
 mcp_out=$(printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-  "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"decompile\",\"arguments\":{\"path\":\"$FIX/arm64.o\",\"name\":\"sum3\"}}}" \
+  "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"velk_run_script\",\"arguments\":{\"code\":\"velk.open('$FIX/arm64.o').getFunction('sum3').decompile()\"}}}" \
+  '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"velk_read_api","arguments":{"topic":"func"}}}' \
+  '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"velk_run_script","arguments":{"code":"while (true) {}","timeout_ms":200}}}' \
   | "$BIN" mcp 2>/dev/null)
-echo "$mcp_out" | grep -q '"tools"'          || fail "mcp tools/list"
-echo "$mcp_out" | grep -q '"decompile"'      || fail "mcp tool entry"
-echo "$mcp_out" | grep -q 'uint32_t sum3'    || fail "mcp tool call"
+echo "$mcp_out" | grep -q '"tools"'           || fail "mcp tools/list"
+echo "$mcp_out" | grep -q '"velk_run_script"' || fail "mcp tool entry"
+echo "$mcp_out" | grep -q 'uint32_t sum3'     || fail "mcp script call"
+echo "$mcp_out" | grep -q 'interface Func'    || fail "mcp api docs"
+echo "$mcp_out" | grep -q 'timed out'         || fail "mcp script timeout"
 ok "mcp server"
 
 # 20) 性能回帰(短い反復でしきい値のみ確認)

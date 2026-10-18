@@ -25,8 +25,11 @@ cargo build --release
 # シグネチャ DB の生成(名前付き関数から)
 ./target/release/velk siggen libsyms.o --output sigs.json
 
-# MCP サーバ(stdio; inspect / fncard / report / decompile / siggen / identify)
+# MCP サーバ(stdio; velk_run_script / velk_read_api)
 ./target/release/velk mcp
+
+# スクリプト API(src/api/*.d.ts)で解析する
+./target/release/velk run analyze.js
 
 # 関数ドシエ(型・参照・エビデンス ID を含む JSON)
 ./target/release/velk report libfoo.so --name target_fn
@@ -261,8 +264,9 @@ cargo build --release
   レジスタは従来どおり `(x & 0xffffffff)` で表す
 - 疑似 C: レジスタ変数による C 風コード。if/else・do-while・while(ヘッダ条件)・
   早期 return・ガード節・switch を構造化し、それ以外はラベルと goto で出力する
-- MCP: `velk mcp` が stdio で `inspect` / `fncard` / `report` / `decompile` /
-  `siggen` / `identify` を公開する
+- MCP: `velk mcp` が stdio で `velk_run_script`(JavaScript を内蔵 QuickJS で実行)と
+  `velk_read_api`(API の目次と `.d.ts`)を公開する。開いたバイナリと関数ごとの
+  解析結果はセッション中キャッシュされる。同じ API を `velk run <script.js>` でも使える
 - 性能(release、本機 20 回平均): 46MB 級 ELF の関数走査 6ms 前後、
   1 関数の lift/decompile 2〜3ms、20MB 入力の inspect 6ms 前後
 

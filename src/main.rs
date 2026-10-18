@@ -14,6 +14,8 @@ mod structure;
 mod switch;
 mod pass;
 mod refs;
+mod script;
+mod session;
 mod signature;
 mod sigs;
 
@@ -60,6 +62,8 @@ enum Command {
     Sections { path: std::path::PathBuf },
     /// Run the MCP server over stdio.
     Mcp,
+    /// Run a JavaScript file against the velk script API.
+    Run { path: std::path::PathBuf },
     /// Build a signature database from named functions.
     Siggen {
         path: std::path::PathBuf,
@@ -206,6 +210,16 @@ fn run(command: Command) -> Result<(), String> {
         }
         Command::Mcp => {
             mcp::serve()?;
+        }
+        Command::Run { path } => {
+            let code = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+            let outcome = script::Engine::new()?.run(&code, None);
+            if !outcome.output.is_empty() {
+                println!("{}", outcome.output);
+            }
+            if let Some(error) = outcome.error {
+                return Err(error);
+            }
         }
         Command::Sections { path } => {
             let image = loader::load(&path)?;
