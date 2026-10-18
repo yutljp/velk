@@ -62,6 +62,12 @@ for (;;) {
 
 正本（clang 18）の `arm64_jumptable.elf/d7` だけは `known_nothas` が残る。
 clang 18 は同じ switch を比較木に落とすため、入れ子の dispatch へ飛ぶ枝が
-ラベルとして残る（Apple clang は表に落とすのでラベルなし）。比較木を
-switch に再構成するのが次の一手で、試作では値→本体の対応までは取れている。
+ラベルとして残る（Apple clang は表に落とすのでラベルなし）。
+
+比較木 → switch の再構成（`switch::recover_chains`）は実装してあり、
+`structure_best` の第 3 戦略として「ラベルが減るなら採る」で入っている。
+強制的に採らせると外側の dispatch は `switch (x) { case 0: … }` まで戻る。
+残る障害は **case 本体が switch ブロックの出力範囲の外にある**ことで、
+`Stmt::Switch` の腕が `goto` に落ちる（入れ子 dispatch の本体が手前にある）。
+次は腕の本体を「範囲」ではなく「到達集合」で出す必要がある。
 
