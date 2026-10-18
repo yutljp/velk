@@ -58,11 +58,10 @@ pub fn lift(image: &Image, function: &Function, size: u64) -> Result<FunctionIr,
         // A final peephole: a read-modify-write reads as one statement, and
         // the constants forwarded into it can leave earlier stores dead.
         crate::pass::fuse_load_op_store(&mut ir);
-    crate::pass::simplify(&mut ir);
-    crate::pass::dce(&mut ir);
         crate::pass::simplify(&mut ir);
         crate::pass::dce(&mut ir);
         apply_width_types(&mut ir, &uniform_32);
+        apply_void_return(&mut ir);
         apply_dwarf_types(image, function.addr, &mut ir);
         return Ok(ir);
     }
@@ -99,6 +98,7 @@ pub fn lift(image: &Image, function: &Function, size: u64) -> Result<FunctionIr,
     crate::pass::simplify(&mut ir);
     crate::pass::dce(&mut ir);
     apply_width_types(&mut ir, &uniform_32);
+    apply_void_return(&mut ir);
     apply_dwarf_types(image, function.addr, &mut ir);
     Ok(ir)
 }
@@ -432,6 +432,80 @@ fn fits32(value: &crate::ir::Expr) -> bool {
         Expr::Select { then, els, .. } => fits32(then) && fits32(els),
         Expr::SignExtend { .. } => false,
     }
+}
+
+/// True when the expression reads `register`.
+fn reads_register(expr: &crate::ir::Expr, register: u16) -> bool {
+    use crate::ir::Expr;
+    match expr {
+        Expr::Reg { index, .. } => *index == register,
+        Expr::Const(_) => false,
+        Expr::Bin { lhs, rhs, .. } => {
+            reads_register(lhs, register) || reads_register(rhs, register)
+        }
+        Expr::Load { addr, .. } => reads_register(addr, register),
+        Expr::SignExtend { value, .. } => reads_register(value, register),
+        Expr::Select {
+            lhs, rhs, then, els, ..
+        } => {
+            reads_register(lhs, register)
+                || reads_register(rhs, register)
+                || reads_register(then, register)
+                || reads_register(els, register)
+        }
+    }
+}
+
+/// A function that returns nothing: the ABI return register is never written,
+/// the body has a side effect, and the register's only use is the final `ret`.
+/// A value that merely passes its first argument back (`int id(int x)`) has no
+/// side effect, so the guess does not touch its signature.
+fn apply_void_return(ir: &mut FunctionIr) {
+    use crate::ir::{Expr, Stmt};
+    const RET_REG: u16 = 0;
+    let mut written = false;
+    let mut side_effect = false;
+    let mut used_elsewhere = false;
+    let mut saw_ret = false;
+    for block in &ir.blocks {
+        for stmt in &block.stmts {
+            match stmt {
+                Stmt::Assign { dest, value } => {
+                    if dest.index == RET_REG {
+                        written = true;
+                    }
+                    used_elsewhere |= reads_register(value, RET_REG);
+                }
+                Stmt::Store { addr, value, .. } => {
+                    side_effect = true;
+                    used_elsewhere |= reads_register(addr, RET_REG);
+                    used_elsewhere |= reads_register(value, RET_REG);
+                }
+                Stmt::Call { .. } => side_effect = true,
+                Stmt::Ret { value } => {
+                    saw_ret = true;
+                    // `ret x0` alone is the shape: any computation on the
+                    // register means the function produced a value.
+                    if !matches!(value, Expr::Reg { index, .. } if *index == RET_REG) {
+                        used_elsewhere |= reads_register(value, RET_REG);
+                    }
+                }
+                Stmt::Brif { lhs, rhs, .. } => {
+                    used_elsewhere |= reads_register(lhs, RET_REG);
+                    used_elsewhere |= reads_register(rhs, RET_REG);
+                }
+                Stmt::BrifFlags { .. } | Stmt::Br { .. } | Stmt::Trap => {}
+                Stmt::BrIndirect { target } => used_elsewhere |= reads_register(target, RET_REG),
+                Stmt::Switch { index, .. } => used_elsewhere |= reads_register(index, RET_REG),
+                Stmt::Unsupported { .. } => {}
+            }
+        }
+    }
+    if !saw_ret || written || !side_effect || used_elsewhere {
+        return;
+    }
+    ir.ret_type = "void".to_owned();
+    ir.params.retain(|param| param.index != RET_REG);
 }
 
 fn apply_dwarf_types(image: &Image, addr: u64, ir: &mut FunctionIr) {
