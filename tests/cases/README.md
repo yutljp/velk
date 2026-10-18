@@ -34,12 +34,40 @@ tests/
 | L6 | テールコール境界・6 引数・64bit・stripped | `c/l6_abi.c`, `c/tail_*.c` | `-O2` / `llvm-strip` |
 | L7 | Go pclntab・Rust デマングル・stripped 像 | `go/*.go`, `rust/*.rs` | `go build`, `rustc -O` |
 
-いま残っている TODO は 2 件で、どちらも「goto を残さない構造化」:
+いま残っている TODO は 2 件で、どちらも「goto を残さない構造化」。調査した
+内容を残しておく:
 
-- `l2_loop_a64.o/sum_skip_odd` — `continue` を含むループで、コンパイラが
-  ラッチを本体の前に置く形。ループ回転（latch を末尾へ）が要る
-- `arm64_jumptable.elf/d7` — switch が比較木に落ちた形。if/else の折り畳み
-  （postdominator を見て合流点で else にする）が要る
+**`l2_loop_a64.o/sum_skip_odd`** — コンパイラはループを回転して置く:
+
+```
+0x6c: init
+0x78: b 0x88          # ループ先頭(0x88)へ
+0x7c: w9++; cmp; b.eq 0x9c   # ラッチと出口
+0x88: tbz w9,#0,0x7c         # 本体の入口（ここがヘッダ）
+0x8c: w8 += w9; str
+0x94: b 0x7c
+```
+
+CFG 自体は可約（外部入口は 0x88 だけ）だが、**ブロックの並びがアドレス順**
+なので、構文解析器はラッチ(0x7c)を先頭に読んでしまい `goto` が残る。必要なのは
+「ブロックグラフとレイアウトの分離」— Ghidra が `BlockGraph` と表示順を分けて
+いるのと同じ構成で、ループ本体を連続させ、分岐の暗黙 fallthrough を明示分岐に
+する正規化。素朴な並べ替えを試すと `sum_arr` の構造化が壊れたため、構文解析器
+側で「後方への `Br` はループの閉じ」として扱う対応も同時に要る。
+
+**`arm64_jumptable.elf/d7`** — switch が比較木に落ちた形:
+
+```
+if (x > 4) -> default
+if (x <= 1) -> 部分木(0/1)
+if (x == 2) -> body2 ; if (x == 3) -> body3 ; if (x != 4) -> default
+```
+
+**決定木を区間として評価**すれば
+`switch (x) { case 0..4 }` に戻せる。試作では値→本体の対応までは取れたが、
+case 本体を範囲でインライン化する既存レンダラが、共有本体・合流点のある形で
+ラベルを漏らした。次は「全 case 本体が同一の join に合流する」ことを検証して
+から変換する。
 
 ## ケースを足すとき
 
