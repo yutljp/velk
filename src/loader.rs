@@ -608,7 +608,33 @@ pub fn load(path: &Path) -> Result<Image, String> {
             if symbol.is_undefined() {
                 continue;
             }
-            let address = base.wrapping_add(offset);
+            let address = if isa_of(file.architecture()) == Isa::X86_64 {
+                // ELF x86-64 RELA entries point at the 4-byte displacement,
+                // one byte after the E8/E9 opcode. Key direct calls/jumps by
+                // instruction address, which is what the lifter reports.
+                let Some((section_file_offset, _)) = section.file_range() else {
+                    continue;
+                };
+                let Some(field_offset) = usize::try_from(section_file_offset)
+                    .ok()
+                    .and_then(|base| {
+                        usize::try_from(offset)
+                            .ok()
+                            .and_then(|offset| base.checked_add(offset))
+                    })
+                else {
+                    continue;
+                };
+                let Some(opcode_offset) = field_offset.checked_sub(1) else {
+                    continue;
+                };
+                if !matches!(bytes.get(opcode_offset), Some(0xe8 | 0xe9)) {
+                    continue;
+                }
+                base.wrapping_add(offset.saturating_sub(1))
+            } else {
+                base.wrapping_add(offset)
+            };
             relocations.insert(address, symbol.address());
         }
     }

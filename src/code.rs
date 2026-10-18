@@ -144,15 +144,24 @@ fn operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> String {
     }
 }
 
+fn render_value(value: &Expr, ctx: &Ctx<'_>) -> String {
+    match value {
+        // A bare function address in a value position is useful as a name.
+        // Nested constants in arithmetic remain numeric: an immediate can
+        // coincidentally equal a function's address.
+        Expr::Const(address) if *address != 0 => ctx
+            .callees
+            .get(address)
+            .map(|name| sanitize(name))
+            .unwrap_or_else(|| render_expr(value, ctx)),
+        _ => render_expr(value, ctx),
+    }
+}
+
 fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
     match value {
         Expr::Reg { index, width } => ctx.register(*index, *width),
-        Expr::Const(value) => match ctx.callees.get(value) {
-            // An address that names a function reads as that function; zero
-            // stays a constant, since an image may place code there.
-            Some(name) if *value != 0 => sanitize(name),
-            _ => format!("0x{value:x}"),
-        },
+        Expr::Const(value) => format!("0x{value:x}"),
         // Negation reads `-x`, not `0 - x`, the way mature decompilers
         // print the two's-complement negate idiom.
         Expr::Bin {
@@ -1584,13 +1593,13 @@ fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     return format!("{target} = {value};");
                 }
             }
-            format!("{target} = {};", render_expr(value, ctx))
+            format!("{target} = {};", render_value(value, ctx))
         }
         Stmt::Store { addr, value, width } => {
             if let Some(member) = member_access(addr, *width, ctx) {
                 return match update_of_same_location(addr, value) {
                     Some((op, rhs)) => format!("{} {}= {};", member, op, render_expr(rhs, ctx)),
-                    None => format!("{} = {};", member, render_expr(value, ctx)),
+                    None => format!("{} = {};", member, render_value(value, ctx)),
                 };
             }
             let address = render_expr(addr, ctx);
@@ -1599,20 +1608,20 @@ fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     Some((op, rhs)) => {
                         format!("{} {}= {};", name, op, render_expr(rhs, ctx))
                     }
-                    None => format!("{} = {};", name, render_expr(value, ctx)),
+                    None => format!("{} = {};", name, render_value(value, ctx)),
                 },
                 None => match global_name(addr, *width, ctx) {
                     Some(name) => match update_of_same_location(addr, value) {
                     Some((op, rhs)) => {
                         format!("{} {}= {};", name, op, render_expr(rhs, ctx))
                     }
-                    None => format!("{} = {};", name, render_expr(value, ctx)),
+                    None => format!("{} = {};", name, render_value(value, ctx)),
                 },
                     None => format!(
                         "*({} *)({}) = {};",
                         type_of(*width, false),
                         address,
-                        render_expr(value, ctx)
+                        render_value(value, ctx)
                     ),
                 },
             }
@@ -1637,7 +1646,8 @@ fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             None => "goto <dynamic>;".to_owned(),
         },
         Stmt::BrIndirect { target } => {
-            format!("goto *({});", render_expr(target, ctx))
+            let target = render_value(target, ctx);
+            format!("goto *({target});")
         }
         Stmt::Switch {
             index,
@@ -1666,7 +1676,7 @@ fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             if ctx.void_return {
                 "return;".to_owned()
             } else {
-                format!("return {};", render_expr(value, ctx))
+                format!("return {};", render_value(value, ctx))
             }
         }
         Stmt::Unsupported { text } => format!("/* unsupported: {text} */"),

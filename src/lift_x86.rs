@@ -280,7 +280,16 @@ fn is_setcc(mnemonic: Mnemonic) -> bool {
     )
 }
 
-fn lift_instruction(lifter: &mut Lifter, ins: &Instruction) -> bool {
+fn resolved_target(ins: &Instruction, relocation_target: Option<u64>) -> u64 {
+    relocation_target.unwrap_or_else(|| ins.near_branch_target())
+}
+
+fn lift_instruction(
+    lifter: &mut Lifter,
+    ins: &Instruction,
+    relocation_target: Option<u64>,
+    tail_call: bool,
+) -> bool {
     let was_extended = lifter.extended_dividend.take();
     if is_cmov(ins.mnemonic()) {
         let Some(source) = operand(lifter, ins, 1) else {
@@ -497,14 +506,21 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction) -> bool {
         }
         Mnemonic::Call => {
             lifter.stmts.push(Stmt::Call {
-                target: Some(ins.near_branch_target()),
+                target: Some(resolved_target(ins, relocation_target)),
             });
         }
         Mnemonic::Jmp => {
             if ins.op0_kind() == OpKind::NearBranch64 {
-                lifter.stmts.push(Stmt::Br {
-                    target: Some(ins.near_branch_target()),
-                });
+                let target = resolved_target(ins, relocation_target);
+                if tail_call {
+                    lifter.stmts.push(Stmt::Call {
+                        target: Some(target),
+                    });
+                } else {
+                    lifter.stmts.push(Stmt::Br {
+                        target: Some(target),
+                    });
+                }
             } else if let Some(target) = operand(lifter, ins, 0) {
                 lifter.stmts.push(Stmt::BrIndirect { target });
             }
@@ -554,11 +570,11 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction) -> bool {
                 let Some(cond) = condition(ins.condition_code()) else {
                     lifter.stmts.push(Stmt::BrifFlags {
                         cond: Cond::Eq,
-                        target: ins.near_branch_target(),
+                        target: resolved_target(ins, relocation_target),
                     });
                     return true;
                 };
-                let target = ins.near_branch_target();
+                let target = resolved_target(ins, relocation_target);
                 match lifter.last_compare.take() {
                     Some((lhs, rhs)) => lifter.stmts.push(Stmt::Brif {
                         cond,
@@ -578,10 +594,10 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction) -> bool {
     false
 }
 
-fn branch_target(ins: &Instruction) -> Option<u64> {
+fn branch_target(ins: &Instruction, relocation_target: Option<u64>) -> Option<u64> {
     match ins.flow_control() {
         FlowControl::UnconditionalBranch | FlowControl::ConditionalBranch => {
-            Some(ins.near_branch_target())
+            Some(resolved_target(ins, relocation_target))
         }
         _ => None,
     }
@@ -615,8 +631,9 @@ pub fn lift(
     }
 
     let mut targets = std::collections::HashSet::new();
-    for (_, instruction) in &decoded {
-        if let Some(target) = branch_target(instruction) {
+    for (ip, instruction) in &decoded {
+        let relocation_target = image.relocations.get(ip).copied();
+        if let Some(target) = branch_target(instruction, relocation_target) {
             targets.insert(target);
         }
     }
@@ -639,7 +656,14 @@ pub fn lift(
             current_start = *ip;
             lifter.last_compare = None;
         }
-        let terminated = lift_instruction(&mut lifter, instruction);
+        let relocation_target = image.relocations.get(ip).copied();
+        let tail_call = instruction.mnemonic() == Mnemonic::Jmp
+            && instruction.op0_kind() == OpKind::NearBranch64
+            && {
+                let target = resolved_target(instruction, relocation_target);
+                target != addr && image.functions.contains_key(&target)
+            };
+        let terminated = lift_instruction(&mut lifter, instruction, relocation_target, tail_call);
         if terminated {
             current.extend(std::mem::take(&mut lifter.stmts));
             blocks.push(Block {
