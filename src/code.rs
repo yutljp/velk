@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::ir::{reg_name, BinOp, Cond, Expr, FunctionIr, Stmt};
 use crate::loader::Isa;
-use crate::structure::{structure, Out};
+use crate::structure::{structure_best, Out};
 
 struct Ctx<'a> {
     isa: Isa,
@@ -505,7 +505,7 @@ fn render_with(
     // Render the body first, so the declarations only cover the slots the
     // pseudocode actually names.
     let mut body = String::new();
-    render_nodes(&structure(ir), 1, &mut body, &ctx);
+    render_nodes(&structure_best(ir), 1, &mut body, &ctx);
     for local in &decls {
         if local.width == 0 || !body.contains(&local.name) {
             continue;

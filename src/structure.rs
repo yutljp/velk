@@ -46,9 +46,58 @@ struct Structurer<'a> {
     blocks: &'a [crate::ir::Block],
     index: HashMap<u64, usize>,
     targeted: std::collections::HashSet<u64>,
+    /// Set when the blocks were reordered, so the shapes the new order creates
+    /// (a latch that closes with a branch, labels that can be folded) are
+    /// available.
+    reordered: bool,
+}
+
+/// Structures the function, trying a reordered layout when the address order
+/// leaves labels behind.
+///
+/// A loop whose latch the compiler laid out before its header cannot be
+/// folded in address order, and reordering fixes those while it can make
+/// other shapes worse. Trying both and keeping the one with fewer labels is
+/// what a decompiler does when it has more than one structuring strategy: the
+/// order is a rendering choice, so both describe the same graph.
+pub fn structure_best(ir: &FunctionIr) -> Vec<Out> {
+    let primary = structure(ir);
+    if label_count(&primary) == 0 {
+        return primary;
+    }
+    let mut alternative = ir.clone();
+    crate::pass::normalize_layout(&mut alternative);
+    let reordered = structure_with(&alternative, true);
+    if label_count(&reordered) < label_count(&primary) {
+        reordered
+    } else {
+        primary
+    }
+}
+
+fn label_count(nodes: &[Out]) -> usize {
+    nodes
+        .iter()
+        .map(|node| match node {
+            Out::Label(_) => 1,
+            Out::If { then, els, .. } => label_count(then) + label_count(els),
+            Out::DoWhile { body, .. } | Out::Forever { body } | Out::While { body, .. } => {
+                label_count(body)
+            }
+            Out::Switch { arms, default, .. } => {
+                arms.iter().map(|(_, body)| label_count(body)).sum::<usize>()
+                    + default.as_ref().map_or(0, |body| label_count(body))
+            }
+            _ => 0,
+        })
+        .sum()
 }
 
 pub fn structure(ir: &FunctionIr) -> Vec<Out> {
+    structure_with(ir, false)
+}
+
+fn structure_with(ir: &FunctionIr, reordered: bool) -> Vec<Out> {
     let index: HashMap<u64, usize> = ir
         .blocks
         .iter()
@@ -81,6 +130,7 @@ pub fn structure(ir: &FunctionIr) -> Vec<Out> {
         blocks: &ir.blocks,
         index,
         targeted,
+        reordered,
     };
     let mut nodes = structurer.emit(0, ir.blocks.len());
     let mut used = std::collections::HashSet::new();
@@ -89,6 +139,85 @@ pub fn structure(ir: &FunctionIr) -> Vec<Out> {
     prune_unreachable(&mut nodes);
     flatten_early_returns(&mut nodes);
     nodes
+}
+
+/// A conditional branch to the block right after the loop reads as `break`.
+fn fold_exit_branches(nodes: &mut [Out], exit: Option<u64>) {
+    let Some(exit) = exit else {
+        return;
+    };
+    for node in nodes.iter_mut() {
+        match node {
+            Out::Stmt(Stmt::Brif {
+                cond,
+                lhs,
+                rhs,
+                target,
+            }) if *target == exit => {
+                *node = Out::If {
+                    cond: *cond,
+                    lhs: lhs.clone(),
+                    rhs: rhs.clone(),
+                    then: vec![Out::Break],
+                    els: Vec::new(),
+                };
+            }
+            Out::If { then, els, .. } => {
+                fold_exit_branches(then, Some(exit));
+                fold_exit_branches(els, Some(exit));
+            }
+            Out::DoWhile { body, .. } | Out::Forever { body } | Out::While { body, .. } => {
+                fold_exit_branches(body, Some(exit));
+            }
+            Out::Switch { arms, default, .. } => {
+                for (_, body) in arms.iter_mut() {
+                    fold_exit_branches(body, Some(exit));
+                }
+                if let Some(body) = default {
+                    fold_exit_branches(body, Some(exit));
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// `if (c) goto L; ...; L:` inside one body is `if (!c) { ... }`.
+fn fold_label_branches(nodes: &mut Vec<Out>) {
+    loop {
+        let Some(label_at) = nodes.iter().position(|node| matches!(node, Out::Label(_))) else {
+            return;
+        };
+        let Out::Label(target) = nodes[label_at] else {
+            return;
+        };
+        let branch_at = (0..label_at).rev().find(|position| {
+            matches!(
+                &nodes[*position],
+                Out::Stmt(Stmt::Brif { target: inner, .. }) if *inner == target
+            )
+        });
+        let Some(branch_at) = branch_at else {
+            return;
+        };
+        let Out::Stmt(Stmt::Brif {
+            cond, lhs, rhs, ..
+        }) = nodes[branch_at].clone()
+        else {
+            return;
+        };
+        let body: Vec<Out> = nodes
+            .splice(branch_at + 1..label_at, std::iter::empty())
+            .collect();
+        nodes[branch_at] = Out::If {
+            cond: cond.invert(),
+            lhs,
+            rhs,
+            then: body,
+            els: Vec::new(),
+        };
+        nodes.remove(branch_at + 1);
+    }
 }
 
 fn terminates(nodes: &[Out]) -> bool {
@@ -678,6 +807,32 @@ impl Structurer<'_> {
                 index += 1;
                 continue;
             };
+            // A loop whose latch closes with an unconditional branch back to
+            // this block: only the reordered layout produces it.
+            if self.reordered {
+                if let Some(latch) = self.back_edge_latch(index, to) {
+                    let exit = self.blocks.get(latch + 1).map(|next| next.start);
+                    let mut body = self.emit(index, latch);
+                    // The header is the loop's entry: the branch that named it
+                    // is the loop itself, so the label has no jumper left.
+                    if matches!(body.first(), Some(Out::Label(label)) if *label == block.start) {
+                        body.remove(0);
+                    }
+                    if self.targeted.contains(&self.blocks[latch].start) {
+                        body.push(Out::Label(self.blocks[latch].start));
+                    }
+                    body.extend(self.plain(
+                        &self.blocks[latch].stmts[..self.blocks[latch].stmts.len() - 1],
+                    ));
+                    rewrite_loop_exits(&mut body, exit, Some(block.start));
+                    fold_exit_branches(&mut body, exit);
+                    fold_label_branches(&mut body);
+                    out.push(Out::Forever { body });
+                    index = latch + 1;
+                    continue;
+                }
+            }
+
             // A bottom-tested loop starts here and ends at its latch.
             if let Some((latch, cond, lhs, rhs)) = self.bottom_latch(index, to) {
                 let mut body = self.plain(&block.stmts);

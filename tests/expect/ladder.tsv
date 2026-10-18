@@ -36,9 +36,9 @@
 2	l2_loop_a64.o	sum_while	has	} while (
 2	l2_loop_a64.o	count_down	has	do {
 2	l2_loop_a64.o	find_first	has	} while (
-2	l2_loop_a64.o	sum_skip_odd	has	while (true)
-2	l2_loop_a64.o	sum_skip_odd	has	continue;
-2	l2_loop_a64.o	sum_skip_odd	known_nothas	goto L_
+2	l2_loop_a64.o	sum_skip_odd	has	for (;;)
+2	l2_loop_a64.o	sum_skip_odd	has	break;
+2	l2_loop_a64.o	sum_skip_odd	nothas	goto L_
 2	l2_loop_x64.o	sum_while	has	} while (
 
 # ---- L3 定数除算・剰余: マジックの復元 ----
