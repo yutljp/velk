@@ -2401,6 +2401,25 @@ fn magic_block(
     let mut replacements: Vec<(usize, Expr)> = Vec::new();
     let mut index = 0usize;
 
+    // The widened signed division written with named shifts:
+    //   x = sext32(a) * m
+    //   s = x >> 63      (or the sign of the truncated high half: v >> 31)
+    //   x = x >> k
+    //   r = (x & 0xffffffff) + (s & 0xffffffff)
+    // is `a / d`, and LLVM emits it as `smull` plus two shifts.
+    if let Some((probe, leaf, divisor)) = widened_signed_site(&block.stmts) {
+        if let Stmt::Assign { dest, value } = &mut block.stmts[probe] {
+            let in_return = dest.index == 0;
+            *value = division(leaf.clone(), divisor);
+            if let Some(param) = operand_index(&leaf) {
+                domains.insert((param, true));
+            }
+            if in_return {
+                narrowed.push((0, true));
+            }
+        }
+    }
+
     // Signed power-of-two division collapses from its sign select; run before
     // the widening-product scans so either shape claims the block cleanly.
     if let Some((sar_index, select_index, adjusted_def, divisor, leaf, domain_bits)) =
@@ -2843,6 +2862,132 @@ fn signed_const(expr: &Expr) -> Option<u64> {
     }
 }
 
+/// The last definition of a register before `before`.
+fn def_before(stmts: &[crate::ir::Stmt], before: usize, reg: u16) -> Option<usize> {
+    (0..before).rev().find(|index| {
+        matches!(
+            &stmts[*index],
+            crate::ir::Stmt::Assign { dest, .. } if dest.index == reg
+        )
+    })
+}
+
+/// The register a masked read looks at.
+fn view_base(expr: &Expr) -> Option<u16> {
+    match strip_mask(expr) {
+        Expr::Reg { index, .. } => Some(*index),
+        _ => None,
+    }
+}
+
+/// `Reg >> k` as (register, k).
+fn inline_shift(expr: &Expr) -> Option<(u16, u64)> {
+    let Expr::Bin { op, lhs, rhs } = strip_mask(expr) else {
+        return None;
+    };
+    if !matches!(op, crate::ir::BinOp::Shr | crate::ir::BinOp::Sar) {
+        return None;
+    }
+    let Expr::Const(amount) = rhs.as_ref() else {
+        return None;
+    };
+    Some((view_base(lhs)?, *amount))
+}
+
+/// The division site `(statement, dividend, divisor)` of the widened form, if
+/// this block holds one.
+fn widened_signed_site(stmts: &[crate::ir::Stmt]) -> Option<(usize, Expr, u64)> {
+    for probe in 0..stmts.len() {
+        let crate::ir::Stmt::Assign { value, .. } = &stmts[probe] else {
+            continue;
+        };
+        let Expr::Bin {
+            op: crate::ir::BinOp::Add,
+            lhs,
+            rhs,
+        } = value
+        else {
+            continue;
+        };
+        // A term is the shift a side reads: `Reg{x} >> k`, whether the shift
+        // is written into the add or given a statement of its own.
+        let term = |expr: &Expr| -> Option<(u16, u64)> {
+            if let Some(found) = inline_shift(expr) {
+                return Some(found);
+            }
+            let reg = view_base(expr)?;
+            let at = def_before(stmts, probe, reg)?;
+            shift_statement(&stmts[at])
+        };
+        let (left, right) = (term(lhs), term(rhs));
+        // Case A: the high half and the sign term of one product.
+        if let (Some((left_source, left_amount)), Some((right_source, right_amount))) = (left, right) {
+            if left_source == right_source
+                && (left_amount == 63 || right_amount == 63)
+                && left_amount != right_amount
+            {
+                let high = if left_amount == 63 { right_amount } else { left_amount };
+                if high >= 32 {
+                    if let Some(found) = widened_product(stmts, probe, left_source, high) {
+                        return Some((probe, found.0, found.1));
+                    }
+                }
+            }
+        }
+        // Case B: `v + (v >> 31)`, the sign of the truncated high half.
+        let narrow = |plain: &Expr, shifted: &Expr| -> Option<(u16, u64, usize)> {
+            let (shifted_reg, amount) = inline_shift(shifted)?;
+            if amount != 31 || view_base(plain)? != shifted_reg {
+                return None;
+            }
+            let view_at = def_before(stmts, probe, shifted_reg)?;
+            let (_, view) = assign_of(&stmts[view_at])?;
+            let base = view_base(view).unwrap_or(shifted_reg);
+            let high_at = def_before(stmts, view_at, base)?;
+            let (source, high) = shift_statement(&stmts[high_at])?;
+            (high >= 32).then_some((source, high, high_at))
+        };
+        let narrow_hit = narrow(lhs, rhs).or_else(|| narrow(rhs, lhs));
+        if let Some((source, high, high_at)) = narrow_hit {
+            if let Some(found) = widened_product(stmts, high_at, source, high) {
+                return Some((probe, found.0, found.1));
+            }
+        }
+    }
+    None
+}
+
+/// The dividend and divisor of the product the shifts read.
+fn widened_product(
+    stmts: &[crate::ir::Stmt],
+    before: usize,
+    source: u16,
+    shift: u64,
+) -> Option<(Expr, u64)> {
+    let product_at = def_before(stmts, before, source)?;
+    let (_, product) = assign_of(&stmts[product_at])?;
+    let (leaf, magic, _) = magic_product(strip_mask(product))?;
+    let divisor = magic_divisor_signed64(magic, shift, 32)?;
+    Some((leaf, divisor))
+}
+
+/// `Shr|Sar(Reg{x}, k)` as (x, k).
+fn shift_statement(stmt: &crate::ir::Stmt) -> Option<(u16, u64)> {
+    let crate::ir::Stmt::Assign { value, .. } = stmt else {
+        return None;
+    };
+    let Expr::Bin { op, lhs, rhs } = value else {
+        return None;
+    };
+    if !matches!(op, crate::ir::BinOp::Shr | crate::ir::BinOp::Sar) {
+        return None;
+    }
+    let Expr::Const(amount) = rhs.as_ref() else {
+        return None;
+    };
+    Some((view_base(lhs)?, *amount))
+}
+
 fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
     let Expr::Bin {
         op: product_op,
@@ -2894,7 +3039,15 @@ fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
 fn leaf_operand(expr: &Expr) -> Option<Expr> {
     match expr {
         Expr::Reg { width, .. } if *width == 32 || *width == 64 => Some(expr.clone()),
-        Expr::SignExtend { width: 4, value } => Some(leaf_operand(value)?),
+        // The sign-extended form is the 32-bit view of the register, the
+        // same way a mask spells it.
+        Expr::SignExtend { width: 4, value } => match value.as_ref() {
+            Expr::Reg { index, .. } => Some(Expr::Reg {
+                index: *index,
+                width: 32,
+            }),
+            other => leaf_operand(other),
+        },
         Expr::SignExtend { .. } => Some(expr.clone()),
         Expr::Bin {
             op: crate::ir::BinOp::And,

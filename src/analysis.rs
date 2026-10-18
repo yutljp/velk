@@ -173,6 +173,21 @@ fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collections::HashSet
     }
 }
 
+/// The last value assigned to a register anywhere in the body.
+fn last_definition(ir: &FunctionIr, index: u16) -> Option<crate::ir::Expr> {
+    let mut found = None;
+    for block in &ir.blocks {
+        for stmt in &block.stmts {
+            if let crate::ir::Stmt::Assign { dest, value } = stmt {
+                if dest.index == index {
+                    found = Some(value.clone());
+                }
+            }
+        }
+    }
+    found
+}
+
 /// True when the function's last return moves a value whose 64-bit inputs
 /// are not explained by any narrow use.
 fn returns_wide(ir: &FunctionIr) -> bool {
@@ -182,8 +197,19 @@ fn returns_wide(ir: &FunctionIr) -> bool {
     }) else {
         return false;
     };
+    // A wide read of the return register follows one definition: a division
+    // narrowed to 32 bits is not wide just because it lands in a 64-bit
+    // register. A narrow read already states its width.
+    let mut resolved = value.clone();
+    if let crate::ir::Expr::Reg { index, width } = value {
+        if *width > 32 {
+            if let Some(definition) = last_definition(ir, *index) {
+                resolved = definition;
+            }
+        }
+    }
     let mut wide: Vec<u16> = Vec::new();
-    collect_wide_regs(value, false, &mut wide);
+    collect_wide_regs(&resolved, false, &mut wide);
     wide.iter()
         .any(|index| *index == WIDE_VALUE || !narrow_only(ir, *index))
 }
@@ -206,6 +232,26 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
                 && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
             {
                 collect_wide_regs(lhs, true, wide);
+                return;
+            }
+            // A division or remainder keeps the width of its dividend: the
+            // register it happens to land in says nothing about it.
+            if matches!(
+                op,
+                crate::ir::BinOp::DivS
+                    | crate::ir::BinOp::DivU
+                    | crate::ir::BinOp::ModS
+                    | crate::ir::BinOp::ModU
+            ) {
+                let dividend_narrow = matches!(
+                    lhs.as_ref(),
+                    Expr::SignExtend { width, .. } if *width <= 4
+                ) || matches!(
+                    lhs.as_ref(),
+                    Expr::Bin { op: crate::ir::BinOp::And, rhs, .. }
+                        if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+                );
+                collect_wide_regs(lhs, narrow || dividend_narrow, wide);
                 return;
             }
             collect_wide_regs(lhs, narrow, wide);

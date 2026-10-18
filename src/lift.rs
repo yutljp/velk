@@ -720,7 +720,7 @@ fn lift_cs_family(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
         .map_or_else(|| (a.clone(), Expr::constant(0)), |pair| pair);
     let mut then_value = a.clone();
     let mut els_value = decorate(b.clone());
-    let mut cond = cond;
+    let mut cond = sign_condition(cond, &rhs);
     // A boolean materialisation puts the zero branch first; flip so the
     // condition reads the way the source comparison wrote it.
     if matches!(then_value, Expr::Const(0)) && !matches!(els_value, Expr::Const(0)) {
@@ -737,6 +737,20 @@ fn lift_cs_family(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
     lifter.assign(dest, value);
     // `cmp` flags stay live across the cs family: a following `csinv` still
     // reads the comparison the `cset` used.
+}
+
+/// `mi`/`pl` after a comparison against zero are the signed `<`/`>=` of the
+/// other operand: with a zero subtrahend the subtraction cannot overflow, so
+/// the sign flag and the less-than flag agree.
+fn sign_condition(cond: Cond, rhs: &Expr) -> Cond {
+    if !matches!(rhs, Expr::Const(0)) {
+        return cond;
+    }
+    match cond {
+        Cond::Mi => Cond::Lt,
+        Cond::Pl => Cond::Ge,
+        other => other,
+    }
 }
 
 fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
@@ -759,6 +773,7 @@ fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
         .last_compare
         .clone()
         .map_or_else(|| (then_value.clone(), Expr::constant(0)), |pair| pair);
+    let cond = sign_condition(cond, &rhs);
     let value = Expr::Select {
         cond,
         lhs: Box::new(lhs),
