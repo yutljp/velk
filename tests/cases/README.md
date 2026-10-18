@@ -58,9 +58,10 @@ tests/
 `ladder.sh` はそのフィクスチャを FAIL ではなく **SKIP** として数える
 （ツールチェーンの有無で採点が赤くならない）。
 
-このマシンでの実測: Apple clang 21.0.0、Homebrew LLD 23.1.3、
-rustc 1.98.1、Go 1.27.2 は `/tmp/goroot`（PATH 外）、`llvm-strip` は
-`/opt/homebrew/opt/llvm/bin`（PATH 外）。
+このマシンでの実測 (2026-10): Apple clang 21.0.0、Homebrew LLD 23.1.3、
+rustc 1.98.1、Go 1.27.2 は `/usr/local/go/bin/go`、LLVM (`llvm-strip` /
+`llvm-objcopy`) は `/opt/homebrew/opt/llvm/bin`。Go と LLVM が PATH に
+無くても、スクリプトが上記の場所を探すので `GO_BIN=` の指定は不要。
 - `-O2` は実際のバイナリに近いが、コンパイラが形を畳むことがある。
   ループや switch を測りたいときは `volatile` を挟むか `-O1` にする
   （L2 と L4 がその例）。

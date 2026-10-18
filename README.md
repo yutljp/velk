@@ -313,8 +313,10 @@ TODO に分け、達成すると「昇格候補」として知らせる。
 失敗する(例: 小規模入力 120ms、20MB 入力 300ms)。`ITER` で反復回数を
 指定できる。
 
-`go` が PATH にある(または `GO_BIN` を指定する)場合、stripped Go バイナリも
-生成し、`pclntab` からの関数名復元を検証する。
+`go` が見つかる場合(`PATH`、`GO_BIN`、`/usr/local/go/bin/go` の順に探す)、
+stripped Go バイナリも生成し、`pclntab` からの関数名復元を検証する。
+見つからないツールチェーンのケースは `tests/out/skipped.txt` に記録され、
+ラダーでは SKIP として扱われる(FAIL にはしない)。
 
 ## ライセンス
 
