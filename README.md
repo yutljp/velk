@@ -327,8 +327,10 @@ docker compose run --rm canonical      # 正本: tests/out-canonical/(dump + lad
 
 `ladder.sh` は `tests/expect/ladder.tsv` を1行ずつ評価し、段ごとの通過数を出す
 (L0 算術 → L1 分岐 → L2 ループ → L3 定数除算 → L4 メモリ → L5 分岐表 →
-L6 ABI/異常系 → L7 Go・Rust)。理想的だが未到達の項目は `known_*` として
-TODO に分け、達成すると「昇格候補」として知らせる。
+L6 ABI/異常系 → L7 Go・Rust)。1行は `has`（含む）/ `nothas`（含まない）/
+`count`（関数数）/ `has_any`（`A|B` のどれか）で書き、コンパイラによって
+形が変わる箇所は `has_any` にする。理想的だが未到達の項目は `known_*` として
+TODO に分け、達成すると「昇格候補」として知らせ、通ったら `has` に締める。
 
 ホストの `clang` / `lld-link` / `clang++` / `rustc` / `go` で回帰用サンプル
 (PE64、AArch64 ELF、Mach-O、Go、Rust、C++、DWARF、20MB 入力)を

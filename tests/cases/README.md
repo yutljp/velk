@@ -34,6 +34,13 @@ tests/
 | L6 | テールコール境界・6 引数・64bit・stripped | `c/l6_abi.c`, `c/tail_*.c` | `-O2` / `llvm-strip` |
 | L7 | Go pclntab・Rust デマングル・stripped 像 | `go/*.go`, `rust/*.rs` | `go build`, `rustc -O` |
 
+いま残っている TODO は 2 件で、どちらも「goto を残さない構造化」:
+
+- `l2_loop_a64.o/sum_skip_odd` — `continue` を含むループで、コンパイラが
+  ラッチを本体の前に置く形。ループ回転（latch を末尾へ）が要る
+- `arm64_jumptable.elf/d7` — switch が比較木に落ちた形。if/else の折り畳み
+  （postdominator を見て合流点で else にする）が要る
+
 ## ケースを足すとき
 
 1. `tests/cases/<lang>/<name>.<ext>` に**最小のソース**を置く。先頭コメントに
