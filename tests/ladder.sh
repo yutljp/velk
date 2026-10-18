@@ -106,6 +106,8 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
   esac
 done < "$EXPECT"
 
+fixture_cc=$(head -1 tests/out/toolchain.txt 2>/dev/null || true)
+echo "fixtures: ${fixture_cc:-unknown}"
 echo "== 段ごとの通過 =="
 awk -F'\t' '{ t[$2]++; if ($1=="PASS"||$1=="PROMOTE") p[$2]++ }
   END { for (l=0; l<10; l++) if (t[l]) printf "  L%d  %2d/%2d\n", l, p[l]+0, t[l] }' "$results"

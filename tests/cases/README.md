@@ -58,10 +58,32 @@ tests/
 `ladder.sh` はそのフィクスチャを FAIL ではなく **SKIP** として数える
 （ツールチェーンの有無で採点が赤くならない）。
 
-このマシンでの実測 (2026-10): Apple clang 21.0.0、Homebrew LLD 23.1.3、
-rustc 1.98.1、Go 1.27.2 は `/usr/local/go/bin/go`、LLVM (`llvm-strip` /
-`llvm-objcopy`) は `/opt/homebrew/opt/llvm/bin`。Go と LLVM が PATH に
-無くても、スクリプトが上記の場所を探すので `GO_BIN=` の指定は不要。
+### ツールの探し方
+
+`make_fixtures.sh` は **`which` でコマンドを探す**。場所を決め打ちしないので、
+どの環境でも PATH に通っていれば同じように動く。PATH に無いものは環境変数で
+差し替える:
+
+```
+CLANG / CXX / LD_LLD / LLD_LINK / LLVM_STRIP / LLVM_OBJCOPY / RUSTC / GO_BIN
+```
+
+このマシンでの例: Apple clang 21.0.0 (`/usr/bin/clang`)、Homebrew LLD 23.1.3、
+rustc 1.98.1、Go 1.27.2 (`/usr/local/go/bin/go`)、LLVM 23 の `llvm-strip`
+(`/opt/homebrew/opt/llvm/bin`)。後ろ2つは PATH に追加済み。
+
+### コンパイラの違いと校正
+
+疑似 C の細部（定数除算のマジック列、-O0 のループ構造、マスク省略）は
+**コンパイラごとに形が違う**。スイートは Apple clang の形で校正してあり、
+`tests/out/toolchain.txt` に記録したコンパイラがそれと違う場合、
+`smoke.sh` は該当ブロックを **skip**（FAIL にしない）し、`ladder.sh` は
+先頭に使ったコンパイラを表示する。
+
+- 校正済みで回すには、Apple clang を PATH の先に置く
+  (`PATH=/usr/local/go/bin:$PATH:/opt/homebrew/opt/llvm/bin`)
+- 別の clang で回すと、未対応の形がラダーの赤セルとして見える
+  （例: Homebrew clang 23 の `smull` 形式の `sdiv3`）
 - `-O2` は実際のバイナリに近いが、コンパイラが形を畳むことがある。
   ループや switch を測りたいときは `volatile` を挟むか `-O1` にする
   （L2 と L4 がその例）。
