@@ -1100,7 +1100,7 @@ impl Structurer<'_> {
                     // Cases sharing a target share a body, and each body
                     // ends where the next one starts.
                     let mut arms: Vec<(Vec<i64>, usize)> = Vec::new();
-                    let mut jumps: Vec<(i64, u64)> = Vec::new();
+                    let mut jumps: Vec<(i64, Vec<Out>)> = Vec::new();
                     for (case_value, address) in cases {
                         match self.target(*address) {
                             Some(target) if target > index && target < to => {
@@ -1109,8 +1109,20 @@ impl Structurer<'_> {
                                     None => arms.push((vec![*case_value], target)),
                                 }
                             }
-                            // The case leaves this range through a jump.
-                            _ => jumps.push((*case_value, *address)),
+                            // The case body sits outside this range: inline it
+                            // when it is an epilogue arm, otherwise jump.
+                            _ => {
+                                let body = match self
+                                    .target(*address)
+                                    .and_then(|at| self.return_block(at))
+                                {
+                                    Some(stmts) => self.plain(&stmts),
+                                    None => self.plain(&[Stmt::Br {
+                                        target: Some(*address),
+                                    }]),
+                                };
+                                jumps.push((*case_value, body));
+                            }
                         }
                     }
                     arms.sort_by_key(|(_, target)| *target);
@@ -1139,22 +1151,23 @@ impl Structurer<'_> {
                             (values.clone(), self.emit(*target, end_of(*target)))
                         })
                         .collect();
-                    for (case_value, address) in jumps {
-                        rendered.push((
-                            vec![case_value],
-                            self.plain(&[Stmt::Br {
-                                target: Some(address),
-                            }]),
-                        ));
+                    for (case_value, body) in jumps {
+                        rendered.push((vec![case_value], body));
                     }
                     let default_body = match default {
                         Some(address) => match self.target(*address) {
                             Some(target) if target > index && target < to => {
                                 Some(self.emit(target, end_of(target)))
                             }
-                            _ => Some(self.plain(&[Stmt::Br {
-                                target: Some(*address),
-                            }])),
+                            _ => Some(match self
+                                .target(*address)
+                                .and_then(|at| self.return_block(at))
+                            {
+                                Some(stmts) => self.plain(&stmts),
+                                None => self.plain(&[Stmt::Br {
+                                    target: Some(*address),
+                                }]),
+                            }),
                         },
                         None => None,
                     };
