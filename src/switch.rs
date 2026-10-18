@@ -37,7 +37,7 @@ pub fn recover(ir: &FunctionIr, image: &Image) -> Vec<Recovered> {
     recovered
 }
 
-fn bound(block: &Block) -> Option<(i64, Option<u64>, i64)> {
+fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
     let Stmt::Brif {
         cond,
         lhs,
@@ -53,8 +53,38 @@ fn bound(block: &Block) -> Option<(i64, Option<u64>, i64)> {
     let Expr::Const(limit) = rhs else {
         return Option::None;
     };
-    let minimum = subtract_constant(lhs).unwrap_or(0);
-    Option::Some((*limit as i64 + 1, Option::Some(*target), minimum))
+    // The bounds check may read a register that already holds `x - k`. Folding
+    // that offset into the switch makes the case values read as the
+    // source's own and the variable is `x` again.
+    let mut environment = std::collections::HashMap::new();
+    for stmt in &block.stmts {
+        if let Stmt::Assign { dest, value } = stmt {
+            let resolved = resolve(value, &environment);
+            environment.insert(dest.index, resolved);
+        }
+    }
+    let resolved = resolve(lhs, &environment);
+    let checked = unwrap_mask(&resolved);
+    let (minimum, switch_base) = match checked {
+        Expr::Bin {
+            op: BinOp::Sub,
+            lhs: value,
+            rhs: offset,
+        } => match constant(offset) {
+            Some(offset) => (offset as i64, (**value).clone()),
+            None => (0, checked.clone()),
+        },
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs: value,
+            rhs: offset,
+        } => match constant(offset) {
+            Some(offset) => (-(offset as i64), (**value).clone()),
+            None => (0, checked.clone()),
+        },
+        _ => (0, checked.clone()),
+    };
+    Option::Some((*limit as i64 + 1, Option::Some(*target), minimum, switch_base))
 }
 
 pub fn apply(ir: &mut FunctionIr, recovered: &[Recovered]) {
@@ -78,7 +108,7 @@ fn recognize(
     block: &Block,
     target: &Expr,
     image: &Image,
-    bound: Option<(i64, Option<u64>, i64)>,
+    bound: Option<(i64, Option<u64>, i64, Expr)>,
 ) -> Option<Recovered> {
     let mut environment: std::collections::HashMap<u16, Expr> = std::collections::HashMap::new();
     for stmt in &block.stmts {
@@ -90,7 +120,7 @@ fn recognize(
     let resolved = resolve(target, &environment);
     let (base, table, index, scale, signed) = table_pattern(&resolved)?;
 
-    let (count, default, minimum) = bound?;
+    let (count, default, minimum, switch_base) = bound?;
     if count <= 0 || count > 4096 {
         return None;
     }
@@ -113,6 +143,8 @@ fn recognize(
         cases.push((minimum + position, case_target));
     }
 
+    // With an offset folded out, the switch reads its own variable again.
+    let index = if minimum == 0 { index } else { switch_base };
     Some(Recovered {
         block_start: block.start,
         index,
@@ -176,15 +208,19 @@ fn constant(expr: &Expr) -> Option<u64> {
     }
 }
 
-fn subtract_constant(expr: &Expr) -> Option<i64> {
-    match expr {
-        Expr::Bin {
-            op: BinOp::Sub,
-            rhs,
-            ..
-        } => constant(rhs).map(|value| value as i64),
-        _ => None,
+/// Drops a `& 0xffffffff` that only narrows the value.
+fn unwrap_mask(expr: &Expr) -> &Expr {
+    if let Expr::Bin {
+        op: BinOp::And,
+        lhs,
+        rhs,
+    } = expr
+    {
+        if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff) | Expr::Const(u64::MAX)) {
+            return unwrap_mask(lhs);
+        }
     }
+    expr
 }
 
 /// Matches `base + (table[index] << scale)` and its word-offset variant.
