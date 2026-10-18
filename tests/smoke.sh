@@ -703,7 +703,12 @@ echo "$mcp_out" | grep -q 'uint32_t sum3'    || fail "mcp tool call"
 ok "mcp server"
 
 # 20) 性能回帰(短い反復でしきい値のみ確認)
-ITER=10 ./tests/bench.sh >/dev/null 2>&1 || fail "performance bench"
-ok "performance bench"
+# エミュレーション上の計測は意味がないので、正本では VELK_BENCH=0 で飛ばす。
+if [ "${VELK_BENCH:-1}" = 1 ]; then
+  ITER=10 ./tests/bench.sh >/dev/null 2>&1 || fail "performance bench"
+  ok "performance bench"
+else
+  echo "skip: 性能計測 (VELK_BENCH=0)" >&2
+fi
 
 echo "smoke: all checks passed"

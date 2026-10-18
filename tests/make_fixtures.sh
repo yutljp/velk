@@ -25,11 +25,26 @@ resolve() {  # resolve <env-var-name> <command>
   printf '%s' "$value"
 }
 
-CLANG=$(resolve CLANG clang)
-if [ -z "$CLANG" ]; then
-  echo "skip: clang not found (PATH に通すか CLANG= で指定する)" >&2
-  exit 1
-fi
+# 前回と同じツールチェーンで、生成物が揃っていれば作り直さない。
+# VELK_FORCE_FIXTURES=1 で強制再生成。
+fingerprint() {
+  printf '%s\n' "$CLANG" "$CXX" "$LD_LLD" "$LLD_LINK" "$STRIP" "$OBJCOPY" "$RUSTC" "$GO_BIN"
+  "$CLANG" --version 2>/dev/null | head -1
+}
+up_to_date() {
+  [ "${VELK_FORCE_FIXTURES:-0}" = 1 ] && return 1
+  [ -f "$OUT/.stamp" ] && [ -f "$OUT/.manifest" ] || return 1
+  [ "$(cat "$OUT/.stamp")" = "$(fingerprint)" ] || return 1
+  # ソースかビルダーが新しければ作り直す。
+  [ -z "$(find "$CASES" -type f -newer "$OUT/.stamp" -print -quit 2>/dev/null)" ] || return 1
+  [ "$0" -nt "$OUT/.stamp" ] && return 1
+  while IFS= read -r name; do
+    [ -z "$name" ] && continue
+    [ -e "$OUT/$name" ] || return 1
+  done < "$OUT/.manifest"
+  return 0
+}
+
 CXX=$(resolve CXX clang++)
 LD_LLD=$(resolve LD_LLD ld.lld)
 LLD_LINK=$(resolve LLD_LINK lld-link)
@@ -37,6 +52,18 @@ STRIP=$(resolve LLVM_STRIP llvm-strip)
 OBJCOPY=$(resolve LLVM_OBJCOPY llvm-objcopy)
 RUSTC=$(resolve RUSTC rustc)
 GO_BIN=$(resolve GO_BIN go)
+
+CLANG=$(resolve CLANG clang)
+if [ -z "$CLANG" ]; then
+  echo "skip: clang not found (PATH に通すか CLANG= で指定する)" >&2
+  exit 1
+fi
+
+
+if up_to_date; then
+  echo "fixtures: $(grep -c . "$OUT/.manifest") up to date in $OUT (VELK_FORCE_FIXTURES=1 で再生成)"
+  exit 0
+fi
 
 # 生成できたもの・飛ばしたものを最後に一覧する。
 built=()
@@ -179,6 +206,8 @@ cp "$OUT/clang.txt" "$OUT/toolchain.txt"
 # ladder.sh が「どのフィクスチャが縮退しているか」を知るための印。
 printf '%s\n' "${skipped[@]:-}" | sed '/^$/d' > "$OUT/skipped.txt"
 
+printf '%s\n' "${built[@]:-}" | sed '/^$/d' > "$OUT/.manifest"
+fingerprint > "$OUT/.stamp"
 echo "fixtures: ${#built[@]} built in $OUT"
 if [ ${#skipped[@]} -gt 0 ]; then
   echo "skipped: ${skipped[*]} (対応するケースは ladder で SKIP になる)"

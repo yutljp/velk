@@ -92,6 +92,14 @@ docker compose run --rm canonical    # tests/out-canonical/ に dump, ladder.txt
 `env-diff.sh` は関数ごとの疑似 C を突き合わせる。一致は移植性が高い箇所、
 不一致はコンパイラ差、片側のみは復元漏れ（実装の穴）を示す。
 
+時間を短く保つための道具:
+
+| 変数 | 効果 |
+|---|---|
+| `VELK_FORCE_FIXTURES=1` | フィクスチャを必ず作り直す（既定は指紋とソースの新旧で判定） |
+| `VELK_DUMP=0` | 正本のダンプを飛ばす（数十秒短縮） |
+| `VELK_BENCH=0` | smoke の性能計測を飛ばす（エミュレーションでは無意味） |
+
 ### 他の環境で走らせる
 
 必要なもの: `clang`（クロス対象が使えること）、`ld.lld` / `lld-link`、

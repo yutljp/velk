@@ -310,6 +310,25 @@ docker compose run --rm canonical      # 正本: tests/out-canonical/(dump + lad
 ./tests/env-diff.sh --show 3           # 正本との差分(一致/不一致/片側のみ)
 ```
 
+実行時間(このマシン、Apple M3 + Rosetta):
+
+| 場面 | 時間 |
+|---|---|
+| 初回(イメージビルド込み) | 約 4 分 |
+| 2 回目以降(ビルドキャッシュ + フィクスチャ再利用) | 約 70 秒 |
+| うち smoke | 約 40 秒 / ladder 約 16 秒 / フィクスチャ 0.1 秒 |
+
+速さのための仕掛け:
+
+- `target/` と cargo のレジストリを**名前付きボリューム**に置き、実行ごとに
+  フルビルドしない(`cargo-target`, `cargo-registry`)
+- フィクスチャは**ツールチェーンの指紋とソースの新旧**で再生成を判定する
+  (変わりがなければ 0.1 秒)。強制するときは `VELK_FORCE_FIXTURES=1`
+- 疑似 C のダンプは関数ごとに decompile するので重い。既定では正本で実行し、
+  急ぐときは `VELK_DUMP=0`
+- 実行時間の計測はエミュレーションでは意味がないので `VELK_BENCH=0`
+  (性能は手元で測る)
+
 固定している版(compose.yml の `build.args` で上書きできる):
 
 | ツール | 版 | 備考 |
