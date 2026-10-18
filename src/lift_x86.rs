@@ -661,7 +661,7 @@ pub fn lift(
         return Err("no instructions decoded".to_owned());
     }
 
-    let signature = crate::signature::recover(&blocks, Isa::X86_64, image.format);
+    let signature = crate::signature::recover(&blocks, Isa::X86_64, image.format, image.go);
     let params = signature.params;
     let signed_params = signature.signed;
     Ok(FunctionIr {

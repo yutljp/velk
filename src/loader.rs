@@ -118,6 +118,8 @@ pub struct Image {
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
+    /// The image carries a Go pclntab, so its functions follow the Go ABI.
+    pub go: bool,
 }
 
 impl Image {
@@ -224,6 +226,7 @@ impl Image {
 
     fn add_go_functions(&mut self) {
         let mut discovered = crate::go::functions(self);
+        self.go = !discovered.is_empty();
         discovered.sort_by_key(|function| function.addr);
         discovered.dedup_by_key(|function| function.addr);
         let addresses: Vec<u64> = discovered.iter().map(|function| function.addr).collect();
@@ -679,6 +682,7 @@ pub fn load(path: &Path) -> Result<Image, String> {
         sections,
         functions,
         relocations,
+        go: false,
     };
     image.add_go_functions();
     image.add_dwarf_functions();

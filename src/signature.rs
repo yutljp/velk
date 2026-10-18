@@ -21,9 +21,13 @@ pub struct Signature {
     pub signed: HashSet<u16>,
 }
 
-pub(crate) fn argument_registers(isa: Isa, format: Format) -> &'static [u16] {
+pub(crate) fn argument_registers(isa: Isa, format: Format, go: bool) -> &'static [u16] {
     match isa {
         Isa::AArch64 => &[0, 1, 2, 3, 4, 5, 6, 7],
+        // Go's internal ABI hands the integer arguments to rax, rbx, rcx,
+        // rdi, rsi, r8, r9, r10, r11 in that order; the platform C ABI order
+        // would find no parameters at all in a small Go function.
+        Isa::X86_64 if go => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
         Isa::X86_64 => match format {
             Format::Pe => &[1, 2, 8, 9],
             _ => &[7, 6, 2, 1, 8, 9],
@@ -103,8 +107,8 @@ fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
     }
 }
 
-pub fn recover(blocks: &[Block], isa: Isa, format: Format) -> Signature {
-    let arguments = argument_registers(isa, format);
+pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signature {
+    let arguments = argument_registers(isa, format, go);
     let universe: HashSet<u16> = arguments.iter().copied().collect();
 
     // Must-written registers at block entry: entry block starts empty, and
