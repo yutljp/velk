@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 OUT=${VELK_OUT:-tests/out}
 CASES=tests/cases
 mkdir -p "$OUT"
+OUT_ABS=$(cd "$OUT" && pwd)
 
 # ツールは which で探す。場所を決め打ちしないので、PATH に通っていれば
 # どの環境でも同じように動く。PATH に無いものは環境変数で差し替える。
@@ -135,9 +136,9 @@ fi
 # --- Go(名前は pclntab から; Go がある場合のみ) ---
 if [ -n "$GO_BIN" ] && [ -x "$GO_BIN" ]; then
   ( cd "$CASES/go" && GO111MODULE=off CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-      "$GO_BIN" build -trimpath -ldflags "-s -w" -o "../../out/go_stripped" add.go )
+      "$GO_BIN" build -trimpath -ldflags "-s -w" -o "$OUT_ABS/go_stripped" add.go )
   ( cd "$CASES/go" && GO111MODULE=off CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-      "$GO_BIN" build -trimpath -ldflags "-s -w" -o "../../out/go_probe" probe.go )
+      "$GO_BIN" build -trimpath -ldflags "-s -w" -o "$OUT_ABS/go_probe" probe.go )
   built+=(go_stripped go_probe)
 else
   echo "warn: go not found (PATH に通すか GO_BIN= で指定する); Go fixtures skipped" >&2
@@ -171,8 +172,9 @@ if [ ! -f "$OUT/arm64_big.o" ] || [ "$OUT/arm64.o" -nt "$OUT/arm64_big.o" ]; the
 fi
 
 # どのコンパイラで作ったかを記録する（アサーションの校正に使う）。
-"$CLANG" --version 2>/dev/null | head -1 > "$OUT/toolchain.txt" || true
-printf 'clang: %s\n' "$CLANG" >> "$OUT/toolchain.txt"
+"$CLANG" --version 2>/dev/null | head -1 > "$OUT/clang.txt" || true
+printf 'clang: %s\n' "$CLANG" >> "$OUT/clang.txt"
+cp "$OUT/clang.txt" "$OUT/toolchain.txt"
 
 # ladder.sh が「どのフィクスチャが縮退しているか」を知るための印。
 printf '%s\n' "${skipped[@]:-}" | sed '/^$/d' > "$OUT/skipped.txt"
