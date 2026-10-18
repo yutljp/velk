@@ -34,6 +34,8 @@ services:
       CARGO_NET_OFFLINE: "false"
       # 実行時間の計測はエミュレーションでは意味がない（性能は手元で測る）。
       VELK_BENCH: "0"
+      # 関数ごとの疑似 C ダンプは明示指定時だけ（通常の検証を高速化）。
+      VELK_DUMP: "0"
     command: ["./tests/canonical.sh"]
 
 volumes:

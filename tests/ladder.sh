@@ -78,13 +78,13 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
   out=$(rendered "$fixture" "$function")
   case "$kind" in
     count)
-      got=$(printf '%s\n' "$out" | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
+      got=$(sed -n '1s/.*functions: \([0-9]*\).*/\1/p' <<< "$out")
       [ "$got" = "$pattern" ] && ok=1 || ok=0
       detail="関数数 $got (期待 $pattern)"
       ;;
     count_min)
       # ホストの標準ライブラリ次第で変わる数は下限だけ見る。
-      got=$(printf '%s\n' "$out" | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
+      got=$(sed -n '1s/.*functions: \([0-9]*\).*/\1/p' <<< "$out")
       [ -n "$got" ] && [ "$got" -ge "$pattern" ] && ok=1 || ok=0
       detail="関数数 $got (期待 >= $pattern)"
       ;;

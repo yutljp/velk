@@ -304,7 +304,9 @@ x86-64 の Linux コンテナで固定版のツールチェーンを回し、そ
 する。手元(macOS/arm64 など)の結果は環境差分として比べる。
 
 ```bash
-docker compose run --rm canonical      # 正本: tests/out-canonical/(dump + ladder.txt + toolchain.txt)
+docker compose run --rm canonical      # 高速な正本検証: smoke + ladder + toolchain
+# dump が必要なときだけ明示的に有効化（長時間かかる）
+docker compose run --rm -e VELK_DUMP=1 canonical
 ./tests/make_fixtures.sh && ./tests/smoke.sh && ./tests/ladder.sh
 ./tests/dump.sh tests/out              # 手元の疑似 C を関数ごとに書き出す
 ./tests/env-diff.sh --show 3           # 正本との差分(一致/不一致/片側のみ)
@@ -315,8 +317,7 @@ docker compose run --rm canonical      # 正本: tests/out-canonical/(dump + lad
 | 場面 | 時間 |
 |---|---|
 | 初回(イメージビルド込み) | 約 4 分 |
-| 2 回目以降(ビルドキャッシュ + フィクスチャ再利用) | 約 70 秒 |
-| うち smoke | 約 40 秒 / ladder 約 16 秒 / フィクスチャ 0.1 秒 |
+| 2 回目以降(ビルドキャッシュ + フィクスチャ再利用、dump なし) | 約 33 秒 |
 
 速さのための仕掛け:
 
@@ -324,8 +325,8 @@ docker compose run --rm canonical      # 正本: tests/out-canonical/(dump + lad
   フルビルドしない(`cargo-target`, `cargo-registry`)
 - フィクスチャは**ツールチェーンの指紋とソースの新旧**で再生成を判定する
   (変わりがなければ 0.1 秒)。強制するときは `VELK_FORCE_FIXTURES=1`
-- 疑似 C のダンプは関数ごとに decompile するので重い。既定では正本で実行し、
-  急ぐときは `VELK_DUMP=0`
+- 疑似 C のダンプは関数ごとに decompile するので重い。既定は無効で、必要な
+  ときだけ `-e VELK_DUMP=1` で生成する
 - 実行時間の計測はエミュレーションでは意味がないので `VELK_BENCH=0`
   (性能は手元で測る)
 
