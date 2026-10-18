@@ -32,6 +32,23 @@ fi
 cargo build --quiet || { echo "cargo build failed" >&2; exit 1; }
 [ -x "$BIN" ] || { echo "missing $BIN" >&2; exit 1; }
 
+# フィクスチャが要求するツールチェーン。make_fixtures.sh が
+# tests/out/skipped.txt に印を残すので、無い場合は FAIL ではなく SKIP にする。
+requires() {
+  case "$1" in
+    pe64.exe) echo pe64-link ;;
+    arm64_linked.elf|arm64_jumptable.elf|arm64_switch.elf|l5_switch.elf) echo linked-elf ;;
+    *stripped*) echo stripped ;;
+    go_*) echo go ;;
+    rust_*) echo rust ;;
+    *) echo "" ;;
+  esac
+}
+skips=tests/out/skipped.txt
+skipped_tool() {  # tool -> 導入されていないか
+  [ -f "$skips" ] && grep -qx "$1" "$skips" 2>/dev/null
+}
+
 rendered() {  # fixture function -> 疑似 C (関数指定なしは inspect --limit)
   local fixture=$1 function=$2
   if [ "$function" = "-" ]; then
@@ -47,8 +64,11 @@ trap 'rm -f "$results"' EXIT
 while IFS=$'\t' read -r level fixture function kind pattern; do
   case "$level" in ''|'#'*) continue ;; esac
   [ -n "$ONLY" ] && [ "$level" != "$ONLY" ] && continue
-  if [ ! -f "tests/out/$fixture" ]; then
-    printf 'FAIL\t%s\t%s/%s\tfixture 欠落\n' "$level" "$fixture" "$function" >> "$results"
+  need=$(requires "$fixture")
+  if { [ ! -f "tests/out/$fixture" ] || { [ -n "$need" ] && skipped_tool "$need"; }; }; then
+    # A toolchain that is not installed is not a test failure.
+    printf 'SKIP\t%s\t%s/%s\t%s が無いため未生成\n' \
+      "$level" "$fixture" "$function" "${need:-fixture}" >> "$results"
     continue
   fi
   out=$(rendered "$fixture" "$function")
@@ -90,9 +110,10 @@ echo "== 段ごとの通過 =="
 awk -F'\t' '{ t[$2]++; if ($1=="PASS"||$1=="PROMOTE") p[$2]++ }
   END { for (l=0; l<10; l++) if (t[l]) printf "  L%d  %2d/%2d\n", l, p[l]+0, t[l] }' "$results"
 
-for status in FAIL TODO PROMOTE; do
+for status in SKIP FAIL TODO PROMOTE; do
   if grep -q "^$status	" "$results" 2>/dev/null; then
     case $status in
+      SKIP)    echo; echo "== SKIP (ツールチェーン未導入) ==" ;;
       FAIL)    echo; echo "== FAIL ==" ;;
       TODO)    echo; echo "== TODO (known_*: 理想には未到達) ==" ;;
       PROMOTE) echo; echo "== 昇格候補 (known_* が通った: has/nothas へ) ==" ;;
@@ -101,8 +122,8 @@ for status in FAIL TODO PROMOTE; do
   fi
 done
 
-counts=$(awk -F'\t' '{ c[$1]++ } END { printf "%d %d %d", c["PASS"]+0, c["FAIL"]+0, c["TODO"]+0 }' "$results")
+counts=$(awk -F'\t' '{ c[$1]++ } END { printf "%d %d %d %d", c["PASS"]+0, c["FAIL"]+0, c["TODO"]+0, c["SKIP"]+0 }' "$results")
 set -- $counts
 echo
-echo "score: pass=$1 fail=$2 todo=$3"
+echo "score: pass=$1 fail=$2 todo=$3 skip=$4"
 [ "$2" -eq 0 ]

@@ -44,10 +44,23 @@ tests/
    現状の実装では満たせない理想は `known_has`/`known_nothas` にして TODO に置く。
 4. `./tests/ladder.sh --build` で採点し、`./tests/smoke.sh` で回帰を確認する。
 
-## 注意
+## コンパイル環境
 
-- ツールチェーンが無い場合はそのケースを飛ばす（`clang`/`ld.lld`/`lld-link`/
-  `rustc`/`go`）。Go は `GO_BIN=/path/to/go` で指定できる。
+| ツール | 必須 | 無い場合 |
+|---|---|---|
+| `clang` | ○ | 何も作れない（エラー終了） |
+| `ld.lld` / `lld-link` | | リンク済み ELF / PE を飛ばす（該当ケースは ladder で SKIP） |
+| `llvm-strip` / `llvm-objcopy` | | stripped 像を飛ばす（SKIP）。PATH に無ければ Homebrew の LLVM を探す |
+| `rustc` | | Rust ケースを飛ばす（SKIP） |
+| `go` | | Go ケースを飛ばす（SKIP）。`GO_BIN=` で指定、無ければ一般的な導入先を探す |
+
+`make_fixtures.sh` は飛ばしたツールを `tests/out/skipped.txt` に記録し、
+`ladder.sh` はそのフィクスチャを FAIL ではなく **SKIP** として数える
+（ツールチェーンの有無で採点が赤くならない）。
+
+このマシンでの実測: Apple clang 21.0.0、Homebrew LLD 23.1.3、
+rustc 1.98.1、Go 1.27.2 は `/tmp/goroot`（PATH 外）、`llvm-strip` は
+`/opt/homebrew/opt/llvm/bin`（PATH 外）。
 - `-O2` は実際のバイナリに近いが、コンパイラが形を畳むことがある。
   ループや switch を測りたいときは `volatile` を挟むか `-O1` にする
   （L2 と L4 がその例）。
