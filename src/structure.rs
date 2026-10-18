@@ -595,6 +595,39 @@ impl Structurer<'_> {
         }
     }
 
+    /// True when the blocks in `[from, to)` fall through to `to` in order.
+    fn region_falls_into(&self, from: usize, to: usize) -> bool {
+        if from >= to {
+            return false;
+        }
+        for index in from..to {
+            let next = if index + 1 < to {
+                Some(self.blocks[index + 1].start)
+            } else {
+                Some(self.blocks[to].start)
+            };
+            match self.blocks[index].stmts.last() {
+                Some(Stmt::Br {
+                    target: Some(target),
+                }) => {
+                    if Some(*target) != next {
+                        return false;
+                    }
+                }
+                Some(
+                    Stmt::Brif { .. }
+                    | Stmt::BrifFlags { .. }
+                    | Stmt::BrIndirect { .. }
+                    | Stmt::Switch { .. }
+                    | Stmt::Ret { .. }
+                    | Stmt::Trap,
+                ) => return false,
+                _ => {}
+            }
+        }
+        true
+    }
+
     fn emit(&mut self, from: usize, to: usize) -> Vec<Out> {
         let mut out = Vec::new();
         let mut index = from;
@@ -682,6 +715,30 @@ impl Structurer<'_> {
                                     lhs,
                                     rhs,
                                     body,
+                                });
+                                index = destination;
+                                continue;
+                            }
+
+                            // if-then: the branch skips a straight-line
+                            // region that falls into its own target, which
+                            // is `if (!cond) { region }` with the target
+                            // following. Reordering leaves this shape at the
+                            // end of a loop body, where the region is the body
+                            // and the target is the latch.
+                            if destination > fallthrough
+                                && self.region_falls_into(fallthrough, destination)
+                            {
+                                out.extend(
+                                    self.plain(&block.stmts[..block.stmts.len() - 1]),
+                                );
+                                let then = self.emit(fallthrough, destination);
+                                out.push(Out::If {
+                                    cond: cond.invert(),
+                                    lhs: lhs.clone(),
+                                    rhs: rhs.clone(),
+                                    then,
+                                    els: Vec::new(),
                                 });
                                 index = destination;
                                 continue;
