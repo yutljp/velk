@@ -54,7 +54,9 @@ rendered() {  # fixture function -> 疑似 C (関数指定なしは inspect --li
   if [ "$function" = "-" ]; then
     "$BIN" inspect "tests/out/$fixture" --limit 100000 2>/dev/null
   else
-    "$BIN" decompile "tests/out/$fixture" --name "$function" 2>/dev/null
+    # Mach-O は `_name`、ELF は `name` なので両方試す。
+    "$BIN" decompile "tests/out/$fixture" --name "$function" 2>/dev/null \
+      || "$BIN" decompile "tests/out/$fixture" --name "_$function" 2>/dev/null
   fi
 }
 
@@ -77,6 +79,12 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
       got=$(printf '%s\n' "$out" | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
       [ "$got" = "$pattern" ] && ok=1 || ok=0
       detail="関数数 $got (期待 $pattern)"
+      ;;
+    count_min)
+      # ホストの標準ライブラリ次第で変わる数は下限だけ見る。
+      got=$(printf '%s\n' "$out" | head -1 | grep -o "functions: [0-9]*" | grep -o "[0-9]*")
+      [ -n "$got" ] && [ "$got" -ge "$pattern" ] && ok=1 || ok=0
+      detail="関数数 $got (期待 >= $pattern)"
       ;;
     has|known_has)
       printf '%s' "$out" | grep -qF "$pattern" && ok=1 || ok=0

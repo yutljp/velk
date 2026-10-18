@@ -33,6 +33,14 @@ need_fixture() {
 }
 
 BIN=target/debug/velk
+
+# x86-64 のシンボルは Mach-O だと `_name`、ELF だと `name`。どちらでも引く。
+dec() {  # dec <fixture> <name>
+  "$BIN" decompile "tests/out/$1" --name "$2" 2>/dev/null \
+    || "$BIN" decompile "tests/out/$1" --name "_$2" 2>/dev/null \
+    || "$BIN" decompile "tests/out/$1" --name "${2#_}" 2>/dev/null
+}
+
 cargo build --quiet
 cargo test --quiet 2>/dev/null || fail "unit tests"
 [ -x "$BIN" ] || fail "binary not built"
@@ -121,11 +129,11 @@ if [ "$calibrated_ok" = 1 ]; then
   echo "$lm10" | grep -q "a0 % 0xa"        || fail "msub unwind mod s64 10"
   um10b=$("$BIN" decompile tests/out/arm64_div.o --name umod10b 2>/dev/null)
   echo "$um10b" | grep -q "a0 % 0xa"       || fail "msub unwind mod u64 10"
-  umx=$("$BIN" decompile tests/out/x64_div.o --name _umod3x 2>/dev/null)
+  umx=$(dec x64_div.o _umod3x)
   echo "$umx" | grep -q "% 0x3"            || fail "x86 lea unwind mod u32"
-  smx=$("$BIN" decompile tests/out/x64_div.o --name _smod3x 2>/dev/null)
+  smx=$(dec x64_div.o _smod3x)
   echo "$smx" | grep -q "% 0x3"            || fail "x86 lea unwind mod s32"
-  lmx=$("$BIN" decompile tests/out/x64_div.o --name _lmod10x 2>/dev/null)
+  lmx=$(dec x64_div.o _lmod10x)
   lm16=$("$BIN" decompile tests/out/arm64_div.o --name lmod16 2>/dev/null)
   echo "$lm16" | grep -q "% 0x10"         || fail "cset-pow2 mod s64"
   echo "$lm16" | grep -q "int64_t"        || fail "cset-pow2 width 64"
@@ -134,7 +142,7 @@ if [ "$calibrated_ok" = 1 ]; then
   echo "$sd16" | grep -q "int32_t"        || fail "csel div16 dividend width"
   sm10=$("$BIN" decompile tests/out/arm64_div.o --name smod10 2>/dev/null)
   echo "$sm10" | grep -q "int32_t smod10" || fail "msub mod10 signed width"
-  sm3x=$("$BIN" decompile tests/out/x64_div.o --name _smod3x 2>/dev/null)
+  sm3x=$(dec x64_div.o _smod3x)
   ng=$("$BIN" decompile tests/out/arm64_div.o --name negate 2>/dev/null)
   echo "$ng" | grep -q "return -a0;"      || fail "negate render"
   echo "$ng" | grep -q "0x0 -" && fail "negate render kept 0 - x"
@@ -150,34 +158,34 @@ echo "$ld_ir" | grep -q "a0 / 0x3"        || fail "magic signed 64bit div"
 echo "$ld_ir" | grep -q "int64_t"        || fail "magic signed 64bit width"
 l10_ir=$("$BIN" decompile tests/out/arm64_div.o --name ldiv10 2>/dev/null)
 echo "$l10_ir" | grep -q "a0 / 0xa"      || fail "magic signed 64bit div10"
-x64_l3=$("$BIN" decompile tests/out/x64_div.o --name _l3 2>/dev/null)
+x64_l3=$(dec x64_div.o _l3)
 echo "$x64_l3" | grep -q "/ 0x3"         || fail "x64 signed 64bit div"
 echo "$x64_l3" | grep -q "int64_t"       || fail "x64 signed 64bit width"
-x64_h3=$("$BIN" decompile tests/out/x64_div.o --name _h3 2>/dev/null)
+x64_h3=$(dec x64_div.o _h3)
 echo "$x64_h3" | grep -q "/ 0x3"         || fail "x64 unsigned 64bit div"
-x64_sel=$("$BIN" decompile tests/out/x64_div.o --name _pdiv64 2>/dev/null)
+x64_sel=$(dec x64_div.o _pdiv64)
 echo "$x64_sel" | grep -q "/ 0x40"        || fail "x64 signed select div"
 echo "$x64_sel" | grep -q "int32_t"      || fail "x64 signed select width"
-x64_selq=$("$BIN" decompile tests/out/x64_div.o --name _qdiv64 2>/dev/null)
+x64_selq=$(dec x64_div.o _qdiv64)
 echo "$x64_selq" | grep -q "a0 / 0x40"   || fail "x64 signed select 64bit div"
-x64_sel10=$("$BIN" decompile tests/out/x64_div.o --name _pdiv10 2>/dev/null)
+x64_sel10=$(dec x64_div.o _pdiv10)
 echo "$x64_sel10" | grep -q "/ 0xa"      || fail "x64 signed sext div10"
 helper_cs=$("$BIN" decompile tests/out/arm64.o --name helper 2>/dev/null)
 echo "$helper_cs" | grep -q "t1 = x8 >> 0x1;"    || fail "cse temp"
 echo "$helper_cs" | grep -q "t1 << 0x1"       || fail "cse reuse"
 ok "cse temps"
-x64_fold=$("$BIN" decompile tests/out/x64_div.o --name _l3 2>/dev/null)
+x64_fold=$(dec x64_div.o _l3)
 echo "$x64_fold" | grep -q "0xfffffffffffffff8" && fail "frame prologue elision"
 echo "$x64_fold" | grep -q "rbp"                && fail "frame register elision"
 echo "$x64_fold" | grep -q "a0 / 0x3"           || fail "copy propagation into division"
-x64_mod=$("$BIN" decompile tests/out/x64_div.o --name _umod3x 2>/dev/null)
+x64_mod=$(dec x64_div.o _umod3x)
 echo "$x64_mod" | grep -q "rcx"                 && fail "dead copy removal"
 ok "x86 cleanup"
-p8s=$("$BIN" decompile tests/out/x64_div.o --name _pmod8s 2>/dev/null)
+p8s=$(dec x64_div.o _pmod8s)
 echo "$p8s" | grep -q "a0 % 0x8"        || fail "x86 signed pow2 mod"
-p16l=$("$BIN" decompile tests/out/x64_div.o --name _pmod16l 2>/dev/null)
+p16l=$(dec x64_div.o _pmod16l)
 echo "$p16l" | grep -q "a0 % 0x10"      || fail "x64 signed pow2 mod"
-p8u=$("$BIN" decompile tests/out/x64_div.o --name _pmod8x 2>/dev/null)
+p8u=$(dec x64_div.o _pmod8x)
 echo "$p8u" | grep -q "a0 & 0x7"        || fail "x86 unsigned pow2 mask"
 iz=$("$BIN" decompile tests/out/arm64_div.o --name is_zero 2>/dev/null)
 echo "$iz" | grep -q "a0 == 0x0"        || fail "cset eq compare"
@@ -192,7 +200,7 @@ echo "$use_ir" | grep -qE "(= x20|x20 =)" && fail "callee-save elision (x20)"
 echo "$use_ir" | grep -qE "(= x30|x30 =)" && fail "callee-save elision (x30)"
 echo "$use_ir" | grep -qE "(= x29|x29 =)" && fail "frame setup elision"
 ok "callee-save elision"
-fold_ret=$("$BIN" decompile tests/out/x64_div.o --name _umod3x 2>/dev/null)
+fold_ret=$(dec x64_div.o _umod3x)
 echo "$fold_ret" | grep -q "return a0 % 0x3;"  || fail "temporary inlining into ret"
 sum3_ir2=$("$BIN" decompile tests/out/arm64.o --name sum3 2>/dev/null)
 echo "$sum3_ir2" | grep -q "w8" && fail "temporary inlining (sum3)"
@@ -245,7 +253,7 @@ sig_zero=$("$BIN" decompile tests/out/arm64_div.o --name is_zero 2>/dev/null)
 echo "$sig_zero" | grep -q "uint32_t is_zero(uint32_t a0)" || fail "boolean signature by usage"
 sig_mul=$("$BIN" decompile tests/out/pe64.exe --name reg_mul 2>/dev/null)
 echo "$sig_mul" | grep -q "uint32_t reg_mul(uint32_t a0, uint32_t a1)" || fail "mul signature by usage"
-sig_h=$("$BIN" decompile tests/out/x64_div.o --name _h10 2>/dev/null)
+sig_h=$(dec x64_div.o _h10)
 echo "$sig_h" | grep -q "uint64_t _h10(uint64_t a0)" || fail "wide signature kept"
 sig_helper=$("$BIN" decompile tests/out/arm64.o --name helper 2>/dev/null)
 echo "$sig_helper" | grep -q "int32_t helper(int32_t a0)"    || fail "loop signature by usage"
@@ -317,7 +325,7 @@ simd_ir=$("$BIN" decompile tests/out/arm64.o --name sum_arr 2>/dev/null)
 echo "$simd_ir" | grep -A1 "if (a1 < 0x1) {" | grep -q "x8 = 0x0;" && fail "dead store before return in a SIMD function"
 echo "$simd_ir" | grep -q "return 0x0;" || fail "early return kept"
 ok "dead stores beside unmodeled code"
-wide_ir=$("$BIN" decompile tests/out/x64_div.o --name _umod10x 2>/dev/null)
+wide_ir=$(dec x64_div.o _umod10x)
 echo "$wide_ir" | grep -q "__umulh(a0, 0xcccccccccccccccd)"  || fail "wide multiply reads as its intrinsic"
 echo "$wide_ir" | grep -q " hi128 " && fail "wide multiply kept the infix"
 ok "wide multiply intrinsic"

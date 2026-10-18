@@ -60,7 +60,11 @@ built+=(pe64.exe)
 "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/arith_mixed.c" -o "$OUT/arm64.o"
 "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/divmod_a64.c"  -o "$OUT/arm64_div.o"
 "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/alt_names.c"   -o "$OUT/alt.o"
-"$CLANG" -arch x86_64 -O2 -c "$CASES/c/divmod_x64.c" -o "$OUT/x64_div.o"
+# Mach-O は Apple clang の -arch、それ以外の clang は --target で ELF にする
+# (シンボル名の下線の有無はテスト側の dec ヘルパが吸収する)。
+if ! "$CLANG" -arch x86_64 -O2 -c "$CASES/c/divmod_x64.c" -o "$OUT/x64_div.o" 2>/dev/null; then
+  "$CLANG" --target=x86_64-unknown-linux-gnu -O2 -c "$CASES/c/divmod_x64.c" -o "$OUT/x64_div.o"
+fi
 built+=(arm64.o arm64_div.o alt.o x64_div.o)
 
 # --- ループ(-O2 と -O0) ---

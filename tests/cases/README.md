@@ -72,6 +72,31 @@ CLANG / CXX / LD_LLD / LLD_LINK / LLVM_STRIP / LLVM_OBJCOPY / RUSTC / GO_BIN
 rustc 1.98.1、Go 1.27.2 (`/usr/local/go/bin/go`)、LLVM 23 の `llvm-strip`
 (`/opt/homebrew/opt/llvm/bin`)。後ろ2つは PATH に追加済み。
 
+### 他の環境で走らせる
+
+必要なもの: `clang`（クロス対象が使えること）、`ld.lld` / `lld-link`、
+`llvm-strip` / `llvm-objcopy`、`rustc`、`go`。すべて `which` で探し、
+無いものはそのケースだけ skip する。
+
+| 環境 | 期待 |
+|---|---|
+| macOS + Apple clang（+ 上記ツール） | 全アサーション実行（校正済み） |
+| macOS + Homebrew LLVM の clang | コンパイラ依存の断言を skip（3 ブロック） |
+| Linux（clang/lld/llvm-strip/rustc/go） | ビルドは通る想定。`x64_div.o` は `-arch` が無いので `--target=x86_64-unknown-linux-gnu`（ELF）で作る。疑似 C の断言は Apple clang 校正なので大半が skip になる |
+| CI | `./tests/make_fixtures.sh && ./tests/smoke.sh && ./tests/expect` の順。校正するなら下記 |
+
+校正（別コンパイラで厳密に回す）:
+
+```sh
+CLANG=/path/to/clang ./tests/make_fixtures.sh   # そのコンパイラで作り直す
+./tests/smoke.sh                                # 落ちた断言を確認
+# 期待値を更新したら tests/smoke.sh と tests/expect/ladder.tsv を直し、
+# tests/out/toolchain.txt の 1 行目がそのコンパイラになることを確認する
+```
+
+`x64_div.o` のシンボルは Mach-O だと `_name`、ELF だと `name` になる。
+`smoke.sh` / `ladder.sh` は両方を試すので、どちらの形式でも同じ断言が通る。
+
 ### コンパイラの違いと校正
 
 疑似 C の細部（定数除算のマジック列、-O0 のループ構造、マスク省略）は

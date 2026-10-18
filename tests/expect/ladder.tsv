@@ -6,6 +6,7 @@
 #   has          その文字列を含む
 #   nothas       その文字列を含まない
 #   count        関数数が pattern と等しい (function 列は "-")
+#   count_min    関数数が pattern 以上 (ホストの stdlib で変わるもの)
 #   known_has    理想の期待値だが現状は満たさない (TODO。満たしたら has に昇格)
 #   known_nothas 同上 (現状は含んでしまう)
 #
@@ -70,10 +71,10 @@
 
 # ---- L7 言語ランタイム: Go pclntab / Rust デマングル / stripped ----
 7	go_stripped	-	has	main.add
-7	go_stripped	-	count	1482
+7	go_stripped	-	count_min	500
 7	go_probe	-	has	main.divmod
 7	go_probe	-	has	main.sumSlice
 7	go_probe	main.add	known_has	uint64_t main_add(uint64_t a0, uint64_t a1)
 7	rust_demo	-	has	rust_demo::
-7	rust_probe_stripped	-	count	238
+7	rust_probe_stripped	-	count_min	50
 7	rust_probe_stripped	-	has	_main
