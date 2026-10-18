@@ -602,7 +602,9 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         }
         out.push(ChainSwitch {
             block_start: block.start,
-            index: lhs.clone(),
+            // The chain compares the value with its zero-extension stripped,
+            // and the dispatch reads best the same way.
+            index: normalized(lhs),
             cases: walk.cases.iter().map(|(k, v)| (*k, *v)).collect(),
             default: walk.default,
             blocks: walk.blocks,
