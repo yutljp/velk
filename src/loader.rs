@@ -580,6 +580,14 @@ pub fn load(path: &Path) -> Result<Image, String> {
     // would appear to jump into the middle of itself.
     let mut relocations = BTreeMap::new();
     for section in file.sections() {
+        // Only code carries branch relocations. Data sections such as
+        // `.eh_frame` also hold PC-relative relocations, and because an
+        // object's sections all start at zero their offsets collide with
+        // instruction addresses — a branch would then jump to the frame
+        // entry instead of its own target.
+        if !is_executable(section.kind()) {
+            continue;
+        }
         let base = section.address();
         for (offset, relocation) in section.relocations() {
             if !matches!(

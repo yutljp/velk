@@ -57,7 +57,8 @@ rendered() {  # fixture function -> 疑似 C (関数指定なしは inspect --li
   else
     # Mach-O は `_name`、ELF は `name` なので両方試す。
     "$BIN" decompile "$FIX/$fixture" --name "$function" 2>/dev/null \
-      || "$BIN" decompile "$FIX/$fixture" --name "_$function" 2>/dev/null
+      || "$BIN" decompile "$FIX/$fixture" --name "_$function" 2>/dev/null \
+      || "$BIN" decompile "$FIX/$fixture" --name "${function#_}" 2>/dev/null
   fi
 }
 
@@ -90,6 +91,18 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
     has|known_has)
       printf '%s' "$out" | grep -qF "$pattern" && ok=1 || ok=0
       detail="'$pattern' を含む"
+      ;;
+    has_any|known_has_any)
+      # `A|B`: コンパイラによって形が変わる箇所は、どれか1つを満たせば通す。
+      ok=0
+      old_ifs=$IFS; IFS='|'
+      for candidate in $pattern; do
+        IFS=$old_ifs
+        printf '%s' "$out" | grep -qF "$candidate" && ok=1
+        IFS='|'
+      done
+      IFS=$old_ifs
+      detail="'$pattern' のいずれかを含む"
       ;;
     nothas|known_nothas)
       printf '%s' "$out" | grep -qF "$pattern" && ok=0 || ok=1

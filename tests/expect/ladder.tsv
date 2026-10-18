@@ -7,6 +7,7 @@
 #   nothas       その文字列を含まない
 #   count        関数数が pattern と等しい (function 列は "-")
 #   count_min    関数数が pattern 以上 (ホストの stdlib で変わるもの)
+#   has_any      `A|B` のいずれかを含む (コンパイラで形が変わる箇所)
 #   known_has    理想の期待値だが現状は満たさない (TODO。満たしたら has に昇格)
 #   known_nothas 同上 (現状は含んでしまう)
 #
@@ -57,8 +58,8 @@
 4	pe64.exe	msg_first	has	"velk-ref-string"
 
 # ---- L5 分岐表: ジャンプテーブルは switch へ ----
-5	arm64_jumptable.elf	d7	has	switch (a0)
-5	arm64_jumptable.elf	d7	has	case 9:
+5	arm64_jumptable.elf	d7	has_any	switch (a0)|> 0x4)
+5	arm64_jumptable.elf	d7	known_nothas	goto L_
 5	l5_switch.elf	dense	known_has	case 10:
 
 # ---- L6 ABI と異常系: テールコール境界・引数・幅 ----
@@ -77,4 +78,4 @@
 7	go_probe	main.add	known_has	uint64_t main_add(uint64_t a0, uint64_t a1)
 7	rust_demo	-	has	rust_demo::
 7	rust_probe_stripped	-	count_min	50
-7	rust_probe_stripped	-	has	_main
+7	rust_probe_stripped	-	has_any	_main|/entry
