@@ -21,7 +21,7 @@
 0	l0_arith_a64.o	pick	has	? a0 : a1
 0	l0_arith_a64.o	negate	has	return -a0;
 0	l0_arith_x64.o	add3	has	+ a2;
-0	l0_arith_x64.o	add3	known_has	uint32_t add3(uint32_t a0, uint32_t a1, uint32_t a2)
+0	l0_arith_x64.o	add3	has	uint32_t add3(uint32_t a0, uint32_t a1, uint32_t a2)
 0	l0_arith_x64.o	negate	has	return -a0;
 
 # ---- L1 分岐: 三項/if として読める。goto を残さない ----
@@ -53,14 +53,14 @@
 4	l4_memory_a64.o	point_dot	has	field_0x0
 4	l4_memory_a64.o	point_dot	has	field_0x4
 4	l4_memory_a64.o	array_sum	has	x8 = x8 + 0x4;
-4	l4_memory_a64.o	bump	known_has	void bump(
+4	l4_memory_a64.o	bump	has	void bump(
 4	arm64_linked.elf	pick	has	"velk-aarch64-string"
 4	pe64.exe	msg_first	has	"velk-ref-string"
 
 # ---- L5 分岐表: ジャンプテーブルは switch へ ----
 5	arm64_jumptable.elf	d7	has_any	switch (a0)|> 0x4)
 5	arm64_jumptable.elf	d7	known_nothas	goto L_
-5	l5_switch.elf	dense	known_has	case 10:
+5	l5_switch.elf	dense	has	case 10:
 
 # ---- L6 ABI と異常系: テールコール境界・引数・幅 ----
 6	tail_calls_stripped.o	-	count	3
@@ -75,7 +75,7 @@
 7	go_stripped	-	count_min	500
 7	go_probe	-	has	main.divmod
 7	go_probe	-	has	main.sumSlice
-7	go_probe	main.add	known_has	uint64_t main_add(uint64_t a0, uint64_t a1)
+7	go_probe	main.add	has	uint64_t main_add(uint64_t a0, uint64_t a1)
 7	rust_demo	-	has	rust_demo::
 7	rust_probe_stripped	-	count_min	50
 7	rust_probe_stripped	-	has_any	_main|/entry
