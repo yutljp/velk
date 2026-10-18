@@ -59,7 +59,7 @@
 
 # ---- L5 分岐表: ジャンプテーブルは switch へ ----
 5	arm64_jumptable.elf	d7	has_any	switch (a0)|> 0x4)
-5	arm64_jumptable.elf	d7	nothas	goto L_
+5	arm64_jumptable.elf	d7	known_nothas	goto L_
 5	l5_switch.elf	dense	has	case 10:
 
 # ---- L6 ABI と異常系: テールコール境界・引数・幅 ----
