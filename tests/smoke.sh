@@ -11,8 +11,8 @@ command -v cargo >/dev/null 2>&1 || fail "cargo not found"
 ./tests/make_fixtures.sh >/dev/null
 
 # フィクスチャを作ったコンパイラ。符号付き除算・剰余のマジック列は
-# コンパイラごとに形が違うので、校正済みの Apple clang 以外では
-# そのブロックを飛ばす（ladder 側で TODO として見える）。
+# コンパイラごとに形が違うため、Apple clang 以外では
+# この compiler-specific な smoke assertion だけを飛ばす。
 fixture_cc=$(head -1 $FIX/toolchain.txt 2>/dev/null || true)
 cpp_calibrated=0
 case "$fixture_cc" in
