@@ -1,0 +1,16 @@
+[package]
+name = "velk"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.7", features = ["derive"] }
+cpp_demangle = "0.5.1"
+gimli = { version = "0.34.0", features = ["read"] }
+iced-x86 = "1.21.0"
+object = { version = "0.40.0", features = ["all"] }
+rustc-demangle = "0.1.28"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+yaxpeax-arch = "0.3"
+yaxpeax-arm = "0.5.0"

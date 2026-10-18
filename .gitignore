@@ -1,0 +1,15 @@
+# 個人メモや分析ノートを誤ってここに置かないためのガード
+*.md.bak
+notes/
+private/
+
+
+# Added by cargo
+
+/target
+
+# macOS ゴミ
+.DS_Store
+
+# 回帰フィクスチャ生成物
+tests/out/
