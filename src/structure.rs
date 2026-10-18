@@ -600,10 +600,26 @@ impl Structurer<'_> {
             stmts.extend(rest.stmts.clone());
             return Some(stmts);
         }
-        if !matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
+        if matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
+            return Some(block.stmts.clone());
+        }
+        // The block may fall through into the epilogue instead of ending in a
+        // branch: `if (x) { a = 0; } return a;` reads as `if (x) return 0;`
+        // once the epilogue is folded into the arm.
+        let next = self.blocks.get(index + 1)?;
+        if !matches!(next.stmts.last(), Some(Stmt::Ret { .. })) {
             return None;
         }
-        Some(block.stmts.clone())
+        if next
+            .stmts
+            .iter()
+            .any(|stmt| matches!(stmt, Stmt::Br { .. } | Stmt::Switch { .. }))
+        {
+            return None;
+        }
+        let mut stmts = block.stmts.clone();
+        stmts.extend(next.stmts.clone());
+        Some(stmts)
     }
 
     fn terminal_edge(&self, from: usize, limit: usize) -> Option<usize> {
