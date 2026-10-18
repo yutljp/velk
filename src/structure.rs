@@ -68,11 +68,29 @@ pub fn structure_best(ir: &FunctionIr) -> Vec<Out> {
     let mut alternative = ir.clone();
     crate::pass::normalize_layout(&mut alternative);
     let reordered = structure_with(&alternative, true);
-    if label_count(&reordered) < label_count(&primary) {
+    let reordered_count = label_count(&reordered);
+    let primary_count = label_count(&primary);
+    let mut best = if reordered_count < primary_count {
         reordered
     } else {
         primary
+    };
+    let mut best_count = label_count(&best);
+    // A compare tree that is a switch over one value: rebuilding the dispatch
+    // lets the case bodies lay out without a label each.
+    let mut chained = ir.clone();
+    let chains = crate::switch::recover_chains(&chained);
+    if !chains.is_empty() {
+        crate::switch::apply_chains(&mut chained, &chains);
+        let rebuilt = structure(&chained);
+        let count = label_count(&rebuilt);
+        if count < best_count {
+            best = rebuilt;
+            best_count = count;
+        }
     }
+    let _ = best_count;
+    best
 }
 
 fn label_count(nodes: &[Out]) -> usize {
