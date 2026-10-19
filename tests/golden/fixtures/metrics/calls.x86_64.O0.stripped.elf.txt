@@ -393,10 +393,10 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4,
         rax = *(uint32_t *)(rsp + 0x60);
         local_25 = eax;
         if (eax <= 0x28 /* unsigned */) {
-            v2 = local_24;
-            v1 = local_25;
-            rax = (int64_t)(int32_t)(v1) + *(uint64_t *)(v2 + 0x10);
-            *(uint32_t *)(v2) = v1 + 0x8;
+            v1 = local_24;
+            v2 = local_25;
+            rax = (int64_t)(int32_t)(v2) + *(uint64_t *)(v1 + 0x10);
+            *(uint32_t *)(v1) = v2 + 0x8;
             local_26 = rax;
         } else {
             v3 = local_24;
@@ -460,10 +460,10 @@ fn <unnamed> @ 0x201540 (size 296)
     store32((rax & #0xffffffff), (rsp + #0xffffffffffffff9c))
     brif hi (rax & #0xffffffff), #0x28 -> 0x201622
   blk5 @ 0x2015fd:
-    v2 = load64((rsp + #0xffffffffffffff90))
-    v1 = (load32((rsp + #0xffffffffffffff9c)) & #0xffffffff)
-    rax = (sext32(v1) + load64((v2 + #0x10)))
-    store32((((v1 & #0xffffffff) + #0x8) & #0xffffffff), v2)
+    v1 = load64((rsp + #0xffffffffffffff90))
+    v2 = (load32((rsp + #0xffffffffffffff9c)) & #0xffffffff)
+    rax = (sext32(v2) + load64((v1 + #0x10)))
+    store32((((v2 & #0xffffffff) + #0x8) & #0xffffffff), v1)
     store64(rax, (rsp + #0xffffffffffffff88))
     br 0x20163f
   blk6 @ 0x201622:

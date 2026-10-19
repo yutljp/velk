@@ -15,12 +15,16 @@ use crate::ir::cfg::{live_in, successors};
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, FunctionIr, Stmt, VALUE_BASE};
 
+/// The predecessor standing for the call into the function.
+pub const ENTRY: usize = usize::MAX;
+
 /// The value a block starts with for one register, chosen by the
 /// predecessor the path came from.
 #[derive(Debug, Clone)]
 pub struct Phi {
     pub value: u16,
-    /// One value per predecessor, in the order of `Ssa::predecessors`.
+    /// One value per predecessor, in the order of `Ssa::predecessors`; the
+    /// entry block's first is the value the function was called with.
     pub args: Vec<u16>,
 }
 
@@ -28,6 +32,8 @@ pub struct Phi {
 pub struct Ssa {
     /// The function with every register read and write renamed to its value.
     pub ir: FunctionIr,
+    /// The blocks each block is entered from; the entry block's list starts
+    /// with `ENTRY`, the call into the function.
     pub predecessors: Vec<Vec<usize>>,
     pub successors: Vec<Vec<usize>>,
     pub phis: Vec<Vec<Phi>>,
@@ -158,6 +164,9 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
     let count = ir.blocks.len();
     let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();
     let mut predecessors = vec![Vec::new(); count];
+    if count > 0 {
+        predecessors[0].push(ENTRY);
+    }
     for (block, next) in successors.iter().enumerate() {
         for successor in next {
             predecessors[*successor].push(block);
@@ -250,10 +259,15 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
             for position in 0..renamed.blocks[block].stmts.len() {
                 let stmt = &mut renamed.blocks[block].stmts[position];
                 let (writes, reads) = statement_registers(stmt);
-                let explicit = explicit_reads(stmt);
-                let mut implicit: Vec<(u16, u16)> = reads
-                    .difference(&explicit)
-                    .map(|register| (*register, builder.current(*register)))
+                // A call reads its argument registers whether or not it also
+                // names one, as the address it calls through.
+                let unnamed: Vec<u16> = match stmt {
+                    Stmt::Call { convention, .. } => convention.call_reads().collect(),
+                    _ => reads.difference(&explicit_reads(stmt)).copied().collect(),
+                };
+                let mut implicit: Vec<(u16, u16)> = unnamed
+                    .into_iter()
+                    .map(|register| (register, builder.current(register)))
                     .collect();
                 if !implicit.is_empty() {
                     implicit.sort_unstable();
@@ -332,9 +346,127 @@ pub fn propagate_constants(ir: &mut FunctionIr) {
 /// as each value's register still holds it wherever it is read, as it does
 /// after transformations that only rewrite reads into equal expressions.
 pub fn lower(ssa: &Ssa) -> FunctionIr {
+    lower_with(ssa, &HashMap::new())
+}
+
+/// The values joined through φs: each set is one variable of the program.
+fn congruence_classes(ssa: &Ssa) -> Vec<usize> {
+    let mut parent: Vec<usize> = (0..ssa.origin.len()).collect();
+    fn find(parent: &mut [usize], mut index: usize) -> usize {
+        while parent[index] != index {
+            parent[index] = parent[parent[index]];
+            index = parent[index];
+        }
+        index
+    }
+    for phi in ssa.phis.iter().flatten() {
+        let value = usize::from(phi.value - VALUE_BASE);
+        for arg in &phi.args {
+            let (a, b) = (
+                find(&mut parent, value),
+                find(&mut parent, usize::from(arg - VALUE_BASE)),
+            );
+            parent[a] = b;
+        }
+    }
+    (0..parent.len())
+        .map(|index| find(&mut parent, index))
+        .collect()
+}
+
+/// Gives each variable a register of `registers` holds once the value it
+/// held on entry is dead a name of its own, from `VARIABLE_BASE` up. The
+/// variable holding the entry value keeps the register, and so does one a
+/// call reads or writes without naming it.
+pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
+    // An unknown successor could read any register.
+    if ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }))
+    {
+        return;
+    }
+    let Some(ssa) = build(ir) else {
+        return;
+    };
+    let class = congruence_classes(&ssa);
+    let mut kept: HashSet<usize> = ssa
+        .entry
+        .values()
+        .map(|value| class[usize::from(value - VALUE_BASE)])
+        .collect();
+    for (_, value) in ssa
+        .implicit_reads
+        .values()
+        .chain(ssa.implicit_writes.values())
+        .flatten()
+    {
+        kept.insert(class[usize::from(value - VALUE_BASE)]);
+    }
+    // Code no path reaches keeps its registers.
+    let dominators = dom::dominators(&ssa.successors);
+    for (block, contents) in ssa.ir.blocks.iter().enumerate() {
+        if block == 0 || dominators.idom[block].is_some() {
+            continue;
+        }
+        for stmt in &contents.stmts {
+            if let Stmt::Assign { dest, .. } = stmt {
+                kept.insert(class[usize::from(dest.index - VALUE_BASE)]);
+            }
+        }
+    } // Number the new variables in the order their first definitions appear
+    // in the code, a φ before the statements of its block.
+    let mut first: HashMap<usize, (usize, usize)> = HashMap::new();
+    let mut note = |value: u16, at: (usize, usize)| {
+        let root = class[usize::from(value - VALUE_BASE)];
+        let entry = first.entry(root).or_insert(at);
+        *entry = (*entry).min(at);
+    };
+    for (block, list) in ssa.phis.iter().enumerate() {
+        for phi in list {
+            note(phi.value, (block, 0));
+        }
+    }
+    for (block, contents) in ssa.ir.blocks.iter().enumerate() {
+        for (position, stmt) in contents.stmts.iter().enumerate() {
+            if let Stmt::Assign { dest, .. } = stmt {
+                note(dest.index, (block, position + 1));
+            }
+        }
+    }
+    let mut order: Vec<(usize, usize)> = first
+        .into_iter()
+        .filter(|(root, _)| registers.contains(&ssa.origin[*root]) && !kept.contains(root))
+        .map(|(root, at)| (root, at.0 * 0x10000 + at.1))
+        .collect();
+    order.sort_by_key(|(_, at)| *at);
+    let names: HashMap<usize, u16> = order
+        .into_iter()
+        .enumerate()
+        .map(|(index, (root, _))| (root, crate::ir::VARIABLE_BASE + index as u16))
+        .collect();
+    if names.is_empty() {
+        return;
+    }
+    let renames: HashMap<u16, u16> = (0..ssa.origin.len())
+        .filter_map(|index| {
+            names
+                .get(&class[index])
+                .map(|name| (VALUE_BASE + index as u16, *name))
+        })
+        .collect();
+    *ir = lower_with(&ssa, &renames);
+}
+
+/// Leaves SSA form, giving each value its name in `renames` or else its register.
+fn lower_with(ssa: &Ssa, renames: &HashMap<u16, u16>) -> FunctionIr {
     let mut ir = ssa.ir.clone();
     let mut back = |index: u16| {
-        if Ssa::is_value(index) {
+        if let Some(name) = renames.get(&index) {
+            *name
+        } else if Ssa::is_value(index) {
             ssa.register_of(index)
         } else {
             index
@@ -449,6 +581,14 @@ pub fn verify(ssa: &Ssa) -> Result<(), String> {
     for (block, list) in ssa.phis.iter().enumerate() {
         for phi in list {
             for (predecessor, arg) in ssa.predecessors[block].iter().zip(&phi.args) {
+                if *predecessor == ENTRY {
+                    if !ssa.entry.values().any(|value| value == arg) {
+                        return Err(
+                            "the entry block's φ does not start from an entry value".to_owned()
+                        );
+                    }
+                    continue;
+                }
                 let end = ssa.ir.blocks[*predecessor].stmts.len() as isize;
                 check(*arg, *predecessor, end, true)?;
             }
@@ -512,10 +652,122 @@ mod tests {
     }
 
     #[test]
+    fn a_loop_back_to_the_entry_joins_the_entry_value() {
+        // 0: if (rdi == 0) return rax; 1: rax = rax + 1; goto 0
+        let rax = Expr::reg(0, 64);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(7, 64),
+                rhs: Expr::Const(0),
+                target: 0x20,
+            }],
+        );
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: vec![
+                assign(0, Expr::bin(BinOp::Add, rax.clone(), Expr::Const(1))),
+                Stmt::Br { target: Some(0) },
+            ],
+        });
+        ir.blocks.push(Block {
+            start: 0x20,
+            stmts: vec![Stmt::Ret { value: rax }],
+        });
+        let ssa = build(&ir).expect("builds");
+        verify(&ssa).expect("well formed");
+        let phi = ssa.phis[0].first().expect("a φ at the entry");
+        assert_eq!(
+            phi.args[0], ssa.entry[&0],
+            "the call brings the entry value"
+        );
+    }
+
+    #[test]
     fn lowering_gives_every_value_its_register_back() {
         let ir = counting_loop();
         let ssa = build(&ir).expect("builds");
         assert_ne!(ssa.ir.render(), ir.render());
         assert_eq!(lower(&ssa).render(), ir.render());
+    }
+}
+
+#[cfg(test)]
+mod split_tests {
+    use super::split_variables;
+    use crate::ir::VARIABLE_BASE;
+    use crate::ir::{BinOp, Block, CType, Cond, Expr, FunctionIr, Param, RegRef, Stmt};
+    use crate::loader::Isa;
+
+    const RSI: u16 = 6;
+
+    fn function(blocks: Vec<Vec<Stmt>>) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());
+        ir.blocks = blocks
+            .into_iter()
+            .enumerate()
+            .map(|(index, stmts)| Block {
+                start: 0x10 * index as u64,
+                stmts,
+            })
+            .collect();
+        ir.params = vec![Param {
+            index: RSI,
+            name: "n".to_owned(),
+            ty: CType::U64,
+        }];
+        ir
+    }
+
+    fn assign(index: u16, value: Expr) -> Stmt {
+        Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        }
+    }
+
+    fn counting_loop(start: Stmt) -> FunctionIr {
+        let rsi = Expr::reg(RSI, 64);
+        function(vec![
+            vec![assign(0, rsi.clone()), start],
+            vec![
+                assign(RSI, Expr::bin(BinOp::Add, rsi.clone(), Expr::Const(1))),
+                Stmt::Brif {
+                    cond: Cond::Ne,
+                    lhs: rsi.clone(),
+                    rhs: Expr::reg(0, 64),
+                    target: 0x10,
+                },
+            ],
+            vec![Stmt::Ret { value: rsi }],
+        ])
+    }
+
+    #[test]
+    fn a_counter_reusing_a_dead_parameter_is_a_variable_of_its_own() {
+        let mut ir = counting_loop(assign(RSI, Expr::Const(0)));
+        split_variables(&mut ir, &[RSI]);
+        let variable = Expr::reg(VARIABLE_BASE, 64);
+        assert!(
+            matches!(&ir.blocks[0].stmts[0], Stmt::Assign { value, .. } if *value == Expr::reg(RSI, 64))
+        );
+        assert!(
+            matches!(&ir.blocks[0].stmts[1], Stmt::Assign { dest, .. } if dest.index == VARIABLE_BASE)
+        );
+        assert!(
+            matches!(&ir.blocks[2].stmts[0], Stmt::Ret { value } if *value == variable),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_parameter_the_loop_updates_keeps_its_register() {
+        // The loop starts from the parameter itself.
+        let mut ir = counting_loop(assign(1, Expr::Const(0)));
+        let before = ir.render();
+        split_variables(&mut ir, &[RSI]);
+        assert_eq!(ir.render(), before);
     }
 }

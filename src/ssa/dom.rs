@@ -99,7 +99,8 @@ pub(crate) fn frontiers(successors: &[Vec<usize>], dominators: &Dominators) -> V
             .copied()
             .filter(|predecessor| reachable(*predecessor))
             .collect();
-        if reaching.len() < 2 {
+        // The call into the function enters the entry block too.
+        if reaching.len() + usize::from(block == 0) < 2 {
             continue;
         }
         for predecessor in reaching {

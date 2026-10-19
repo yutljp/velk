@@ -249,6 +249,7 @@ pub fn propagate(ssa: &mut Ssa) -> bool {
             .collect(),
     };
     solver.executable[0] = true;
+    solver.edges.insert((super::ENTRY, 0));
     for value in ssa.entry.values() {
         solver.values.insert(*value, Lattice::Varying);
     }
