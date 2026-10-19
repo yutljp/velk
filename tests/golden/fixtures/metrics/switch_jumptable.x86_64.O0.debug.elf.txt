@@ -7,11 +7,14 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202410 .bss */
 int d7(int x) {
+    uint32_t local_0; /* [sp-c] */
+    uint64_t local_1; /* [sp-40] */
+
     rsp = rsp - 0x8;
     rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = x;
+    local_0 = x;
     rax = x;
-    *(uint64_t *)(rbp - 0x38) = rax;
+    local_1 = rax;
     rax = rax - 0x9;
     if (rax + 0x9 > 0x9 /* unsigned */) {
         dword_202410 = 0xffffffff;
@@ -19,7 +22,7 @@ int d7(int x) {
         return dword_202410;
     }
     rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[*(uint64_t *)(rbp - 0x38)]);
+    rax = (int64_t)(int32_t)(dword_200158[local_1]);
     rax = rax + 0x200158;
     goto *(rax);
     for (;;) {
@@ -175,14 +178,14 @@ fn d7 @ 0x2011c0 (size 592)
   blk0 @ 0x2011c0:
     rsp = (rsp + #0xfffffffffffffff8)
     rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(edi, (rsp + #0xfffffffffffffffc))
     rax = (edi & #0xffffffff)
-    store64(rax, (rbp + #0xffffffffffffffc8))
+    store64(rax, (rsp + #0xffffffffffffffc8))
     rax = (rax - #0x9)
     brif hi (rax + #0x9), #0x9 -> 0x2013fe
   blk1 @ 0x2011d8:
     rcx = #0x200158
-    rax = sext32(load32((#0x200158 + (load64((rbp + #0xffffffffffffffc8)) * #0x4))))
+    rax = sext32(load32((#0x200158 + (load64((rsp + #0xffffffffffffffc8)) * #0x4))))
     rax = (rax + #0x200158)
     br rax
   blk2 @ 0x2011ec:

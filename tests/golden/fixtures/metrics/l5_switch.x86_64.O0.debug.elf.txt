@@ -27,10 +27,10 @@ int dense(int x) {
     rsp = rsp - 0x8;
     rbp = rsp;
     rsp = rsp - 0x10;
-    *(uint32_t *)(rbp - 0x4) = x;
+    *(uint32_t *)(rsp + 0x10 - 0x4) = x;
     rax = ((x - 0xa) & 0xffffffff);
     rcx = eax;
-    *(uint64_t *)(rbp - 0x10) = rcx;
+    *(uint64_t *)(rsp + 0x10 - 0x10) = rcx;
     rax = eax - 0xf;
     if (eax + 0xf > 0xf /* unsigned */) {
         dword_202760 = 0x0;
@@ -39,7 +39,7 @@ int dense(int x) {
         return dword_202760;
     }
     rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[*(uint64_t *)(rbp - 0x10)]);
+    rax = (int64_t)(int32_t)(dword_200158[*(uint64_t *)(rsp + 0x10 - 0x10)]);
     rax = rax + 0x200158;
     goto *(rax);
 L_201434:
@@ -134,15 +134,15 @@ fn dense @ 0x201400 (size 234)
     rsp = (rsp + #0xfffffffffffffff8)
     rbp = rsp
     rsp = (rsp - #0x10)
-    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(edi, ((rsp + #0x10) + #0xfffffffffffffffc))
     rax = (((edi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     rcx = (rax & #0xffffffff)
-    store64(rcx, (rbp + #0xfffffffffffffff0))
+    store64(rcx, ((rsp + #0x10) + #0xfffffffffffffff0))
     rax = (((rax & #0xffffffff) - #0xf) & #0xffffffff)
     brif hi (eax + #0xf), #0xf -> 0x2014d4
   blk1 @ 0x201420:
     rcx = #0x200158
-    rax = sext32(load32((#0x200158 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
+    rax = sext32(load32((#0x200158 + (load64(((rsp + #0x10) + #0xfffffffffffffff0)) * #0x4))))
     rax = (rax + #0x200158)
     br rax
   blk2 @ 0x201434:
@@ -558,29 +558,25 @@ fn c15 @ 0x2016d0 (size 21)
 -- decompile
 /* velk pseudo-C: sparse @ 0x2016f0 */
 int sparse(int x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x8) = x;
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-c] */
+
     eax = x;
-    *(uint32_t *)(rbp - 0xc) = eax;
+    local_0 = eax;
     if (eax - 0x1 == 0x0) {
-        *(uint32_t *)(rbp - 0x4) = 0x64;
-        rsp = rsp + 0x8;
-        return *(uint32_t *)(rbp - 0x4);
+        local_1 = 0x64;
+        return local_1;
     }
-    if (*(uint32_t *)(rbp - 0xc) - 0x32 == 0x0) {
-        *(uint32_t *)(rbp - 0x4) = 0x7;
-        rsp = rsp + 0x8;
-        return *(uint32_t *)(rbp - 0x4);
+    if (local_0 - 0x32 == 0x0) {
+        local_1 = 0x7;
+        return local_1;
     }
-    if (*(uint32_t *)(rbp - 0xc) - 0x12c == 0x0) {
-        *(uint32_t *)(rbp - 0x4) = 0x12c;
-        rsp = rsp + 0x8;
-        return *(uint32_t *)(rbp - 0x4);
+    if (local_0 - 0x12c == 0x0) {
+        local_1 = 0x12c;
+        return local_1;
     }
-    *(uint32_t *)(rbp - 0x4) = 0xffffffff;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x4);
+    local_1 = 0xffffffff;
+    return local_1;
 }
 -- signature
 int (int x)
@@ -589,35 +585,31 @@ int (int x)
 -- ir
 fn sparse @ 0x2016f0 (size 111)
   blk0 @ 0x2016f0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffff8))
     eax = (edi & #0xffffffff)
-    store32(eax, (rbp + #0xfffffffffffffff4))
+    store32(eax, (rsp + #0xffffffffffffffec))
     brif eq ((eax - #0x1) & #0xffffffff), #0x0 -> 0x20172f
   blk1 @ 0x201706:
     br 0x20170b
   blk2 @ 0x20170b:
-    brif eq ((load32((rbp + #0xfffffffffffffff4)) - #0x32) & #0xffffffff), #0x0 -> 0x20173b
+    brif eq ((load32((rsp + #0xffffffffffffffec)) - #0x32) & #0xffffffff), #0x0 -> 0x20173b
   blk3 @ 0x201717:
     br 0x20171c
   blk4 @ 0x20171c:
-    brif eq ((load32((rbp + #0xfffffffffffffff4)) - #0x12c) & #0xffffffff), #0x0 -> 0x201747
+    brif eq ((load32((rsp + #0xffffffffffffffec)) - #0x12c) & #0xffffffff), #0x0 -> 0x201747
   blk5 @ 0x20172a:
     br 0x201753
   blk6 @ 0x20172f:
-    store32(#0x64, (rbp + #0xfffffffffffffffc))
+    store32(#0x64, (rsp + #0xfffffffffffffff4))
     br 0x20175a
   blk7 @ 0x20173b:
-    store32(#0x7, (rbp + #0xfffffffffffffffc))
+    store32(#0x7, (rsp + #0xfffffffffffffff4))
     br 0x20175a
   blk8 @ 0x201747:
-    store32(#0x12c, (rbp + #0xfffffffffffffffc))
+    store32(#0x12c, (rsp + #0xfffffffffffffff4))
     br 0x20175a
   blk9 @ 0x201753:
-    store32(#0xffffffff, (rbp + #0xfffffffffffffffc))
+    store32(#0xffffffff, (rsp + #0xfffffffffffffff4))
   blk10 @ 0x20175a:
-    rsp = (rsp + #0x8)
-    ret load32((rbp + #0xfffffffffffffffc))
+    ret load32((rsp + #0xfffffffffffffff4))
 -- card
 {"addr":"0x2016f0","approxTokens":144,"blocks":11,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":111,"unsupported":0}

@@ -7,12 +7,7 @@
 -- decompile
 /* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
 uint32_t sub_2011a0(uint32_t a0) {
-    rbp = rsp - 0x8;
-    *(uint32_t *)(rbp - 0x4) = a0;
-    eax = a0 * 0x3;
-    *(uint32_t *)(rbp - 0x8) = eax;
-    eax = eax;
-    return eax + 0x1;
+    return a0 * 0x3 + 0x1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -21,12 +16,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011a0 (size 32)
   blk0 @ 0x2011a0:
-    rbp = (rsp + #0xfffffffffffffff8)
-    store32(edi, (rbp + #0xfffffffffffffffc))
-    eax = ((edi & #0xffffffff) * #0x3)
-    store32(eax, (rbp + #0xfffffffffffffff8))
-    eax = (eax & #0xffffffff)
-    ret ((eax + #0x1) & #0xffffffff)
+    ret ((((edi & #0xffffffff) * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2011a0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -61,11 +51,7 @@ fn <unnamed> @ 0x2011c0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 uint32_t sub_2011e0(uint32_t a0) {
-    rbp = rsp - 0x8;
-    *(uint32_t *)(rbp - 0x4) = a0;
-    eax = a0 - 0x7;
-    *(uint32_t *)(rbp - 0x8) = eax;
-    return eax;
+    return a0 - 0x7;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -74,10 +60,6 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011e0 (size 21)
   blk0 @ 0x2011e0:
-    rbp = (rsp + #0xfffffffffffffff8)
-    store32(edi, (rbp + #0xfffffffffffffffc))
-    eax = ((edi & #0xffffffff) - #0x7)
-    store32(eax, (rbp + #0xfffffffffffffff8))
-    ret (eax & #0xffffffff)
+    ret (((edi & #0xffffffff) - #0x7) & #0xffffffff)
 -- card
 {"addr":"0x2011e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":21,"sizeEstimated":true,"unsupported":0}

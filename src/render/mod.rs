@@ -201,13 +201,16 @@ fn update_of_same_location<'e>(
         BinOp::Mul => "*",
         _ => return None,
     };
-    let Expr::Load { addr: read, .. } = unmasked(lhs) else {
-        return None;
-    };
-    if read.as_ref() != addr {
-        return None;
+    let reads_place = |operand: &'e Expr| matches!(unmasked(operand), Expr::Load { addr: read, .. } if read.as_ref() == addr);
+    if reads_place(lhs) {
+        return Some((symbol, rhs));
     }
-    Some((symbol, rhs))
+    // `x = y + x` is `x += y` where the operands commute.
+    let commutes = matches!(
+        op,
+        BinOp::Add | BinOp::And | BinOp::Or | BinOp::Xor | BinOp::Mul
+    );
+    (commutes && reads_place(rhs)).then_some((symbol, lhs))
 }
 
 pub(crate) fn signature(ir: &FunctionIr) -> String {

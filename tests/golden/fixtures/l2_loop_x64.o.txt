@@ -122,10 +122,10 @@ fn sum_while @ 0x0 (size 239)
 /* velk pseudo-C: count_down @ 0xf0 */
 int32_t count_down(int32_t a0) {
     rax = (a0 >= 0x2 ? a0 : 0x1);
-    ecx = eax & 0x7;
+    ecx = rax & 0x7;
     rdx = 0x0;
     if (a0 < 0x8) { goto L_177; }
-    esi = -(eax & 0xfffffffffffffff8);
+    esi = -(rax & 0xfffffff8);
     rdx = 0x4;
     do {
         dword_204 = ((rdx - 0x3) & 0xffffffff);
@@ -161,11 +161,11 @@ int32_t (int32_t a0)
 fn count_down @ 0xf0 (size 157)
   blk0 @ 0xf0:
     rax = (select ge edi, #0x2 ? edi, #0x1 & #0xffffffff)
-    ecx = ((rax & #0xffffffff) & #0x7)
+    ecx = (rax & #0x7)
     rdx = #0x0
     brif lt edi, #0x8 -> 0x177
   blk1 @ 0x107:
-    esi = (#0x0 - ((rax & #0xffffffff) & #0xfffffffffffffff8))
+    esi = (#0x0 - (rax & #0xfffffff8))
     rdx = #0x4
   blk2 @ 0x120:
     store32(((rdx + #0xfffffffffffffffd) & #0xffffffff), #0x204)
@@ -199,15 +199,15 @@ fn count_down @ 0xf0 (size 157)
 == 0x190 sum_skip_odd
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x190 */
-int32_t sum_skip_odd(int64_t a0) {
-    if ((a0 & 0xffffffff) <= 0x0) {
+int32_t sum_skip_odd(int32_t a0) {
+    if (a0 <= 0x0) {
         return 0x0;
     }
-    if ((a0 & 0xffffffff) == 0x1) {
+    if (a0 == 0x1) {
         rcx = 0x0;
         rax = 0x0;
     } else {
-        edx = (a0 & 0xffffffff) & 0x7ffffffe;
+        edx = a0 & 0x7ffffffe;
         rcx = 0x0;
         rax = 0x0;
         do {
@@ -217,10 +217,10 @@ int32_t sum_skip_odd(int64_t a0) {
             rcx = ecx + 0x2;
         } while (edx != ecx);
     }
-    if ((a0 & 0xff & 0x1) == 0x0) {
+    if ((a0 & 0x1) == 0x0) {
         return rax;
     }
-    if ((rcx & 0xff & 0x1) != 0x0) {
+    if ((rcx & 0x1) != 0x0) {
         rcx = ecx + eax;
         dword_204 = ecx;
         rax = ecx;
@@ -228,7 +228,7 @@ int32_t sum_skip_odd(int64_t a0) {
     return rax;
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -244,7 +244,7 @@ fn sum_skip_odd @ 0x190 (size 71)
   blk3 @ 0x19f:
     ret #0x0
   blk4 @ 0x1a2:
-    edx = ((rdi & #0xffffffff) & #0x7ffffffe)
+    edx = (rdi & #0x7ffffffe)
     rcx = #0x0
     rax = #0x0
   blk5 @ 0x1b0:
@@ -254,9 +254,9 @@ fn sum_skip_odd @ 0x190 (size 71)
     rcx = (((rcx & #0xffffffff) + #0x2) & #0xffffffff)
     brif ne edx, (rcx & #0xffffffff) -> 0x1b0
   blk6 @ 0x1c1:
-    brif eq ((rdi & #0xff) & #0x1), #0x0 -> 0x1d6
+    brif eq (rdi & #0x1), #0x0 -> 0x1d6
   blk7 @ 0x1c7:
-    brif eq ((rcx & #0xff) & #0x1), #0x0 -> 0x1d6
+    brif eq (rcx & #0x1), #0x0 -> 0x1d6
   blk8 @ 0x1cc:
     rcx = (((rcx & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
     store32((rcx & #0xffffffff), #0x204)

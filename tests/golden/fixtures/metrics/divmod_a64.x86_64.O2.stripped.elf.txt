@@ -354,8 +354,7 @@ fn <unnamed> @ 0x201530 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
 uint32_t sub_201540(uint32_t a0) {
-    rax = (a0 == 0x0 ? 0x1 : 0x0) & 0xff & 0xff;
-    return rax;
+    return (a0 == 0x0 ? 0x1 : 0x0) & 0xff;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -364,8 +363,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201540 (size 16)
   blk0 @ 0x201540:
-    rax = ((select eq edi, #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
-    ret rax
+    ret (select eq edi, #0x0 ? #0x1, #0x0 & #0xff)
 -- card
 {"addr":"0x201540","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -373,8 +371,7 @@ fn <unnamed> @ 0x201540 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201550 @ 0x201550 */
 int32_t sub_201550(int32_t a0) {
-    rax = (a0 > 0x0 ? 0x1 : 0x0) & 0xff & 0xff;
-    return rax;
+    return (a0 > 0x0 ? 0x1 : 0x0) & 0xff;
 }
 -- signature
 int32_t (int32_t a0)
@@ -383,8 +380,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201550 (size 16)
   blk0 @ 0x201550:
-    rax = ((select gt edi, #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
-    ret rax
+    ret (select gt edi, #0x0 ? #0x1, #0x0 & #0xff)
 -- card
 {"addr":"0x201550","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 

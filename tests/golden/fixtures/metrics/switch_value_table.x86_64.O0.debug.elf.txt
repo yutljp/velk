@@ -6,12 +6,15 @@
 /* velk pseudo-C: dispatch @ 0x201180 */
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
+    uint32_t local_0; /* [sp-10] */
+    uint64_t local_1; /* [sp-18] */
+
     rsp = rsp - 0x8;
     rbp = rsp;
-    *(uint32_t *)(rbp - 0x8) = x;
+    local_0 = x;
     rax = ((x - 0xa) & 0xffffffff);
     rcx = eax;
-    *(uint64_t *)(rbp - 0x10) = rcx;
+    local_1 = rcx;
     rax = eax - 0x4;
     if (eax + 0x4 > 0x4 /* unsigned */) {
         *(uint32_t *)(rbp - 0x4) = 0x0;
@@ -19,7 +22,7 @@ int dispatch(int x) {
         return *(uint32_t *)(rbp - 0x4);
     }
     rcx = 0x200120;
-    rax = (int64_t)(int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
+    rax = (int64_t)(int32_t)(dword_200120[local_1]);
     rax = rax + 0x200120;
     goto *(rax);
 L_2011b0:
@@ -52,15 +55,15 @@ fn dispatch @ 0x201180 (size 120)
   blk0 @ 0x201180:
     rsp = (rsp + #0xfffffffffffffff8)
     rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffff8))
+    store32(edi, (rsp + #0xfffffffffffffff8))
     rax = (((edi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     rcx = (rax & #0xffffffff)
-    store64(rcx, (rbp + #0xfffffffffffffff0))
+    store64(rcx, (rsp + #0xfffffffffffffff0))
     rax = (((rax & #0xffffffff) - #0x4) & #0xffffffff)
     brif hi (eax + #0x4), #0x4 -> 0x2011ec
   blk1 @ 0x20119c:
     rcx = #0x200120
-    rax = sext32(load32((#0x200120 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
+    rax = sext32(load32((#0x200120 + (load64((rsp + #0xfffffffffffffff0)) * #0x4))))
     rax = (rax + #0x200120)
     br rax
   blk2 @ 0x2011b0:

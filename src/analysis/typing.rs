@@ -104,7 +104,7 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
         Expr::Const(_) => {}
         Expr::Bin { op, lhs, rhs } => {
             if matches!(op, crate::ir::BinOp::And)
-                && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+                && matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff)
             {
                 collect_wide_regs(lhs, true, wide);
                 return;
@@ -250,9 +250,9 @@ pub(crate) fn scan_reads(
         }
         Expr::Const(_) => {}
         Expr::Bin { op, lhs, rhs } => {
-            // Everything under `& 0xffffffff` reads at 32-bit width.
+            // Everything under a mask within 32 bits reads at most 32 bits.
             if matches!(op, crate::ir::BinOp::And)
-                && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+                && matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff)
             {
                 scan_reads(lhs, register, true, reads_narrow, seen);
                 return;
@@ -261,7 +261,8 @@ pub(crate) fn scan_reads(
             scan_reads(rhs, register, narrow, reads_narrow, seen);
         }
         Expr::Load { addr, .. } => scan_reads(addr, register, narrow, reads_narrow, seen),
-        Expr::SignExtend { value, .. } => scan_reads(value, register, narrow, reads_narrow, seen),
+        // An extension reads only its value's low bytes.
+        Expr::SignExtend { value, .. } => scan_reads(value, register, true, reads_narrow, seen),
         Expr::Select {
             lhs,
             rhs,
@@ -277,13 +278,13 @@ pub(crate) fn scan_reads(
     }
 }
 
-/// True when a wide write is masked to 32 bits or provably fits in them.
+/// True when a wide write is masked within 32 bits or provably fits in them.
 fn masked_wide(value: &crate::ir::Expr, _register: u16) -> bool {
     use crate::ir::Expr;
     if matches!(
         value,
         Expr::Bin { op: crate::ir::BinOp::And, rhs, .. }
-            if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+            if matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff)
     ) {
         return true;
     }

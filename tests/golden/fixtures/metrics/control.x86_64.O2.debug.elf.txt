@@ -15,8 +15,8 @@ int matrix_trace(int *m, int n) {
         return 0x0;
     }
     rcx = n;
-    rdx = ecx & 0x3;
-    r8 = ecx & 0x7ffffffc;
+    rdx = rcx & 0x3;
+    r8 = rcx & 0x7ffffffc;
     r9 = -rdx;
     r10 = 0x0;
     r11 = 0x0;
@@ -84,8 +84,8 @@ fn matrix_trace @ 0x201220 (size 242)
     brif le esi, #0x0 -> 0x20130f
   blk1 @ 0x201228:
     rcx = esi
-    rdx = (((rcx & #0xffffffff) & #0x3) & #0xffffffff)
-    r8 = (((rcx & #0xffffffff) & #0x7ffffffc) & #0xffffffff)
+    rdx = (rcx & #0x3)
+    r8 = (rcx & #0x7ffffffc)
     r9 = (#0x0 - rdx)
     r10 = #0x0
     r11 = #0x0
@@ -277,7 +277,7 @@ int short_circuit(int *p, int n) {
     }
     rax = 0x1;
     if (*(uint32_t *)(p) != 0x1) {
-        rax = (*(uint32_t *)(p + n * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
+        rax = (*(uint32_t *)(p + n * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
     }
     return rax;
 }
@@ -296,7 +296,7 @@ fn short_circuit @ 0x2013a0 (size 34)
     rax = #0x1
     brif eq load32(rdi), #0x1 -> 0x2013c1
   blk3 @ 0x2013b5:
-    rax = ((select eq load32(((rdi + (esi * #0x4)) + #0xfffffffffffffffc)), #0x1 ? #0x1, #0x0 & #0xff) & #0xff)
+    rax = (select eq load32(((rdi + (esi * #0x4)) + #0xfffffffffffffffc)), #0x1 ? #0x1, #0x0 & #0xff)
   blk4 @ 0x2013c1:
     ret rax
 -- card
@@ -315,7 +315,7 @@ int skip_negatives(int *p, int n) {
         n = 0x0;
         rax = 0x0;
     } else {
-        n = ecx & 0x7ffffff8;
+        n = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         /* unsupported: Pxor at 0x2013ff */
         r8 = 0x0;
@@ -355,8 +355,8 @@ fn skip_negatives @ 0x2013d0 (size 183)
   blk3 @ 0x2013e6:
     ret #0x0
   blk4 @ 0x2013e9:
-    rsi = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
-    rax = (((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) & #0xffffffff) << #0x5)
+    rsi = (rcx & #0x7ffffff8)
+    rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     unsupported: Pxor at 0x2013ff
     r8 = #0x0
     unsupported: Pxor at 0x201406

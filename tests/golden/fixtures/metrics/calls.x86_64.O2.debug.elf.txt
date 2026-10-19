@@ -369,7 +369,7 @@ int sum_varargs(int count, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, u
     if (count != 0x1) { goto L_20159b; }
     rax = 0x0;
 L_201574:
-    if ((count & 0xff & 0x1) == 0x0) {
+    if ((count & 0x1) == 0x0) {
         rsp = rsp + 0x58;
         return rax;
     }
@@ -450,7 +450,7 @@ fn sum_varargs @ 0x2014f0 (size 283)
   blk4 @ 0x201572:
     rax = #0x0
   blk5 @ 0x201574:
-    brif eq ((rdi & #0xff) & #0x1), #0x0 -> 0x201606
+    brif eq (rdi & #0x1), #0x0 -> 0x201606
   blk6 @ 0x20157e:
     brif cs (rdx & #0xffffffff), #0x29 -> 0x2015fb
   blk7 @ 0x201583:
@@ -462,7 +462,7 @@ fn sum_varargs @ 0x2014f0 (size 283)
     rsp = (rsp + #0x58)
     ret #0x0
   blk9 @ 0x20159b:
-    r8 = (((rdi & #0xffffffff) & #0x7ffffffe) & #0xffffffff)
+    r8 = (rdi & #0x7ffffffe)
     rax = #0x0
     br 0x2015c9
   blk10 @ 0x2015b0:

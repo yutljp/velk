@@ -33,7 +33,7 @@ int32_t sub_2011a0(int32_t a0) {
     rax = eax * 0x55555556;
     rax = eax + a0;
     rcx = rcx >> 0x1;
-    return ((((eax + (rcx + rcx * 0x2)) & 0xffffffff) - 0x1) & 0xffffffff);
+    return ((eax + (rcx + rcx * 0x2) - 0x1) & 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)
@@ -49,7 +49,7 @@ fn <unnamed> @ 0x2011a0 (size 48)
     rax = (((rax & #0xffffffff) * #0x55555556) & #0xffffffff)
     rax = (((rax & #0xffffffff) + (rdi & #0xffffffff)) & #0xffffffff)
     rcx = (rcx >> #0x1)
-    ret (((((rax & #0xffffffff) + (rcx + (rcx * #0x2))) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+    ret ((((rax & #0xffffffff) + (rcx + (rcx * #0x2))) + #0xffffffffffffffff) & #0xffffffff)
   blk2 @ 0x2011cb:
     ret #0x0
 -- card
@@ -85,7 +85,7 @@ int32_t sub_2011e0(uint32_t a0, int64_t a1) {
         rdx = 0x0;
         rax = 0x0;
     } else {
-        rdx = ecx & 0x7ffffff8;
+        rdx = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         /* unsupported: Pxor at 0x20120a */
         a1 = 0x0;
@@ -123,8 +123,8 @@ fn <unnamed> @ 0x2011e0 (size 140)
   blk3 @ 0x2011f1:
     ret #0x0
   blk4 @ 0x2011f4:
-    rdx = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
-    rax = (((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) & #0xffffffff) << #0x5)
+    rdx = (rcx & #0x7ffffff8)
+    rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     unsupported: Pxor at 0x20120a
     rsi = #0x0
     unsupported: Pxor at 0x201210

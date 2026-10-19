@@ -192,7 +192,7 @@ int (int row, int col)
 -- ir
 fn grid_get @ 0x2102e8 (size 28)
   blk0 @ 0x2102e8:
-    ret load32(((#0x220350 + (((w0 & #0x3) & #0xffffffff) << #0x5)) + (((w1 & #0x7) & #0xffffffff) << #0x2)))
+    ret load32(((#0x220350 + ((w0 & #0x3) << #0x5)) + ((w1 & #0x7) << #0x2)))
 -- card
 {"addr":"0x2102e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
@@ -211,7 +211,7 @@ uint64_t (int row, int col, int value)
 -- ir
 fn grid_set @ 0x210304 (size 28)
   blk0 @ 0x210304:
-    store32(w2, ((#0x220350 + ((((x0 & #0xffffffff) & #0x3) & #0xffffffff) << #0x5)) + (((w1 & #0x7) & #0xffffffff) << #0x2)))
+    store32(w2, ((#0x220350 + ((x0 & #0x3) << #0x5)) + ((w1 & #0x7) << #0x2)))
     ret x0
 -- card
 {"addr":"0x210304","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}

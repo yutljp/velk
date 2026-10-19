@@ -177,6 +177,20 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
         },
         Expr::SignExtend { value, width } => {
             let value = simplify_expr(*value, constants);
+            // The extension reads only its low bytes, which the kept bits of
+            // a partial register write do not reach.
+            let low = (1u64 << (u32::from(width.min(4)) * 8)).wrapping_sub(1);
+            let value = match &value {
+                Expr::Bin {
+                    op: crate::ir::BinOp::Or,
+                    lhs: a,
+                    rhs: b,
+                } => outside_mask(a, b, low)
+                    .or_else(|| outside_mask(b, a, low))
+                    .cloned()
+                    .unwrap_or(value),
+                _ => value,
+            };
             // In `(int8_t)(x & 0xff)` the mask repeats the extension's truncation.
             let value = match value {
                 Expr::Bin {
@@ -240,6 +254,24 @@ pub(crate) fn algebraic(expr: Expr) -> Expr {
         }
         crate::ir::BinOp::Sub if zero(rhs) => lhs.as_ref().clone(),
         crate::ir::BinOp::Add if zero(rhs) => lhs.as_ref().clone(),
+        // `(x & a) & b` is `x & (a & b)`.
+        crate::ir::BinOp::And
+            if let (
+                Expr::Const(outer),
+                Expr::Bin {
+                    op: crate::ir::BinOp::And,
+                    lhs: inner,
+                    rhs: inner_mask,
+                },
+            ) = (rhs.as_ref(), lhs.as_ref())
+                && let Expr::Const(inner_mask) = inner_mask.as_ref() =>
+        {
+            Expr::bin(
+                crate::ir::BinOp::And,
+                inner.as_ref().clone(),
+                Expr::Const(outer & inner_mask),
+            )
+        }
         // `((r & keep) | v) & mask` with `keep & mask == 0` is `v & mask`:
         // the kept bits of a partial register write fall outside the mask.
         crate::ir::BinOp::And

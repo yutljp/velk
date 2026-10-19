@@ -9,28 +9,28 @@
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 uint32_t sub_2011f0(uint64_t a0, uint32_t a1) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = a0;
-    *(uint32_t *)(rbp - 0xc) = a1;
+    uint64_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-14] */
+    uint32_t local_2; /* [sp-24] */
+
+    local_0 = a0;
+    local_1 = a1;
     /* unsupported (2 steps): Xorps at 0x2011fb, Movsd at 0x2011fe */
-    *(uint32_t *)(rbp - 0x1c) = 0x0;
-    while (*(uint32_t *)(rbp - 0x1c) < *(uint32_t *)(rbp - 0xc)) {
-        rax = *(uint64_t *)(rbp - 0x8);
-        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x1c));
+    local_2 = 0x0;
+    while (local_2 < local_1) {
+        rax = local_0;
+        rcx = (int64_t)(int32_t)(local_2);
         /* unsupported (3 steps): Movsd at 0x20121e, Addsd at 0x201223, Movsd at 0x201228 */
-        rax = *(uint32_t *)(rbp - 0x1c) + 0x1;
-        *(uint32_t *)(rbp - 0x1c) = eax;
+        rax = local_2 + 0x1;
+        local_2 = eax;
     }
-    if (*(uint32_t *)(rbp - 0xc) > 0x0) {
+    if (local_1 > 0x0) {
         /* unsupported (4 steps): Movsd at 0x201245, Cvtsi2sd at 0x20124a, Divsd at 0x20124f, Movsd at 0x201253 */
     } else {
         /* unsupported (3 steps): Xorps at 0x20125d, Movsd at 0x201260, Movsd at 0x20126a */
-        rsp = rsp + 0x8;
         return rax;
     }
     /* unsupported: Movsd at 0x20126a */
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -40,27 +40,25 @@ uint32_t (uint64_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x2011f0 (size 144)
   blk0 @ 0x2011f0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
-    store32(esi, (rbp + #0xfffffffffffffff4))
+    store64(rdi, (rsp + #0xfffffffffffffff0))
+    store32(esi, (rsp + #0xffffffffffffffec))
     unsupported: Xorps at 0x2011fb
     unsupported: Movsd at 0x2011fe
-    store32(#0x0, (rbp + #0xffffffffffffffe4))
+    store32(#0x0, (rsp + #0xffffffffffffffdc))
   blk1 @ 0x20120a:
-    rax = (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x20123b
+    rax = (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)
+    brif ge (rax & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x20123b
   blk2 @ 0x201216:
-    rax = load64((rbp + #0xfffffffffffffff8))
-    rcx = sext32(load32((rbp + #0xffffffffffffffe4)))
+    rax = load64((rsp + #0xfffffffffffffff0))
+    rcx = sext32(load32((rsp + #0xffffffffffffffdc)))
     unsupported: Movsd at 0x20121e
     unsupported: Addsd at 0x201223
     unsupported: Movsd at 0x201228
-    rax = ((load32((rbp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffe4))
+    rax = ((load32((rsp + #0xffffffffffffffdc)) + #0x1) & #0xffffffff)
+    store32((rax & #0xffffffff), (rsp + #0xffffffffffffffdc))
     br 0x20120a
   blk3 @ 0x20123b:
-    brif le load32((rbp + #0xfffffffffffffff4)), #0x0 -> 0x20125d
+    brif le load32((rsp + #0xffffffffffffffec)), #0x0 -> 0x20125d
   blk4 @ 0x201245:
     unsupported: Movsd at 0x201245
     unsupported: Cvtsi2sd at 0x20124a
@@ -73,7 +71,6 @@ fn <unnamed> @ 0x2011f0 (size 144)
     br 0x20126a
   blk6 @ 0x20126a:
     unsupported: Movsd at 0x20126a
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":144,"sizeEstimated":true,"unsupported":12}
@@ -152,22 +149,20 @@ fn <unnamed> @ 0x2012d0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 uint32_t sub_2012f0(void) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
+    uint32_t local_0; /* [sp-1c] */
+
     /* unsupported (5 steps): Movsd at 0x2012f4, Movsd at 0x2012f9, Movsd at 0x2012fe, Movsd at 0x201303, Ucomisd at 0x201308 */
     if (/* ls */ true) { goto L_20131f; }
-    *(uint32_t *)(rbp - 0x14) = 0xffffffff;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x14);
+    local_0 = 0xffffffff;
+    return local_0;
 L_20131f:
     /* unsupported (2 steps): Movsd at 0x20131f, Movsd at 0x201324 */
     rax = 0x0;
     ecx = 0x1;
     /* unsupported: Ucomisd at 0x201330 */
     rax = (0x0 > 0x0 /* unsigned */ ? ecx : eax);
-    *(uint32_t *)(rbp - 0x14) = eax;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x14);
+    local_0 = eax;
+    return local_0;
 }
 -- signature
 uint32_t ()
@@ -176,8 +171,6 @@ uint32_t ()
 -- ir
 fn <unnamed> @ 0x2012f0 (size 79)
   blk0 @ 0x2012f0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
     unsupported: Movsd at 0x2012f4
     unsupported: Movsd at 0x2012f9
     unsupported: Movsd at 0x2012fe
@@ -185,7 +178,7 @@ fn <unnamed> @ 0x2012f0 (size 79)
     unsupported: Ucomisd at 0x201308
     brif ls -> 0x20131f
   blk1 @ 0x201312:
-    store32(#0xffffffff, (rbp + #0xffffffffffffffec))
+    store32(#0xffffffff, (rsp + #0xffffffffffffffe4))
     br 0x20133a
   blk2 @ 0x20131f:
     unsupported: Movsd at 0x20131f
@@ -194,9 +187,8 @@ fn <unnamed> @ 0x2012f0 (size 79)
     rcx = #0x1
     unsupported: Ucomisd at 0x201330
     rax = (select hi #0x0, #0x0 ? (rcx & #0xffffffff), (rax & #0xffffffff) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffec))
+    store32((rax & #0xffffffff), (rsp + #0xffffffffffffffe4))
   blk3 @ 0x20133a:
-    rsp = (rsp + #0x8)
-    ret (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
+    ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card
 {"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":79,"sizeEstimated":true,"unsupported":8}

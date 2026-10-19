@@ -71,6 +71,29 @@ pub fn collect_reads(expr: &Expr, out: &mut std::collections::HashSet<u16>) {
 
 /// Substitutes register reads with values, for folding a loop header into
 /// the condition that consumes it.
+/// Replaces the reads of each register in a statement with its value.
+pub(crate) fn replace_reads(stmt: &mut Stmt, values: &[(u16, Expr)]) {
+    let replace = |expr: &mut Expr| *expr = substitute_values(expr.clone(), values);
+    match stmt {
+        Stmt::Assign { value, .. } | Stmt::Ret { value } => replace(value),
+        Stmt::Store { addr, value, .. } => {
+            replace(addr);
+            replace(value);
+        }
+        Stmt::Brif { lhs, rhs, .. } => {
+            replace(lhs);
+            replace(rhs);
+        }
+        Stmt::BrIndirect { target } => replace(target),
+        Stmt::Switch { index, .. } => replace(index),
+        Stmt::Call {
+            through: Some(through),
+            ..
+        } => replace(through),
+        _ => {}
+    }
+}
+
 pub fn substitute_values(expr: Expr, values: &[(u16, Expr)]) -> Expr {
     match expr {
         Expr::Reg { index, width } => match values.iter().find(|(reg, _)| *reg == index) {

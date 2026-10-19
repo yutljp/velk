@@ -8,16 +8,16 @@
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 uint32_t sub_2011c0(uint32_t a0) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = a0;
-    *(uint32_t *)(rbp - 0x8) = 0x0;
-    while (*(uint32_t *)(rbp - 0x4) != 0x0) {
-        *(uint32_t *)(rbp - 0x8) = (*(uint32_t *)(rbp - 0x4) & 0x1) + *(uint32_t *)(rbp - 0x8);
-        *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x4) >> 0x1;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+
+    local_0 = a0;
+    local_1 = 0x0;
+    while (local_0 != 0x0) {
+        local_1 += local_0 & 0x1;
+        local_0 >>= 0x1;
     }
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x8);
+    return local_1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -26,19 +26,16 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011c0 (size 64)
   blk0 @ 0x2011c0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
-    store32(#0x0, (rbp + #0xfffffffffffffff8))
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    store32(#0x0, (rsp + #0xfffffffffffffff0))
   blk1 @ 0x2011ce:
-    brif eq load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x2011f1
+    brif eq load32((rsp + #0xfffffffffffffff4)), #0x0 -> 0x2011f1
   blk2 @ 0x2011d8:
-    store32((((load32((rbp + #0xfffffffffffffffc)) & #0x1) + load32((rbp + #0xfffffffffffffff8))) & #0xffffffff), (rbp + #0xfffffffffffffff8))
-    store32((load32((rbp + #0xfffffffffffffffc)) >> #0x1), (rbp + #0xfffffffffffffffc))
+    store32((((load32((rsp + #0xfffffffffffffff4)) & #0x1) + load32((rsp + #0xfffffffffffffff0))) & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32((load32((rsp + #0xfffffffffffffff4)) >> #0x1), (rsp + #0xfffffffffffffff4))
     br 0x2011ce
   blk3 @ 0x2011f1:
-    rsp = (rsp + #0x8)
-    ret load32((rbp + #0xfffffffffffffff8))
+    ret load32((rsp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x2011c0","approxTokens":180,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
 
@@ -46,17 +43,18 @@ fn <unnamed> @ 0x2011c0 (size 64)
 -- decompile
 /* velk pseudo-C: sub_201200 @ 0x201200 */
 uint32_t sub_201200(uint32_t a0) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = a0;
-    *(uint32_t *)(rbp - 0x8) = 0x0;
-    *(uint32_t *)(rbp - 0xc) = 0x1;
-    while (*(uint32_t *)(rbp - 0xc) <= *(uint32_t *)(rbp - 0x4)) {
-        *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x8);
-        *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0xc) + 0x1;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+    uint32_t local_2; /* [sp-14] */
+
+    local_0 = a0;
+    local_1 = 0x0;
+    local_2 = 0x1;
+    while (local_2 <= local_0) {
+        local_1 += local_2;
+        local_2 += 0x1;
     }
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x8);
+    return local_1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -65,20 +63,17 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201200 (size 64)
   blk0 @ 0x201200:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
-    store32(#0x0, (rbp + #0xfffffffffffffff8))
-    store32(#0x1, (rbp + #0xfffffffffffffff4))
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    store32(#0x0, (rsp + #0xfffffffffffffff0))
+    store32(#0x1, (rsp + #0xffffffffffffffec))
   blk1 @ 0x201215:
-    brif gt load32((rbp + #0xfffffffffffffff4)), load32((rbp + #0xfffffffffffffffc)) -> 0x201238
+    brif gt load32((rsp + #0xffffffffffffffec)), load32((rsp + #0xfffffffffffffff4)) -> 0x201238
   blk2 @ 0x201221:
-    store32(((load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff8))) & #0xffffffff), (rbp + #0xfffffffffffffff8))
-    store32(((load32((rbp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff4))
+    store32(((load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xfffffffffffffff0))) & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32(((load32((rsp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffec))
     br 0x201215
   blk3 @ 0x201238:
-    rsp = (rsp + #0x8)
-    ret load32((rbp + #0xfffffffffffffff8))
+    ret load32((rsp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x201200","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
 
@@ -86,29 +81,30 @@ fn <unnamed> @ 0x201200 (size 64)
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
 uint32_t sub_201240(uint64_t a0, uint32_t a1) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = a0;
-    *(uint32_t *)(rbp - 0xc) = a1;
-    *(uint32_t *)(rbp - 0x10) = 0x0;
-    *(uint32_t *)(rbp - 0x14) = 0x0;
+    uint64_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-14] */
+    uint32_t local_2; /* [sp-18] */
+    uint32_t local_3; /* [sp-1c] */
+    uint32_t local_4; /* [sp-20] */
+
+    local_0 = a0;
+    local_1 = a1;
+    local_2 = 0x0;
+    local_3 = 0x0;
     for (;;) {
-        if (*(uint32_t *)(rbp - 0x14) >= *(uint32_t *)(rbp - 0xc)) {
-            rsp = rsp + 0x8;
-            return *(uint32_t *)(rbp - 0x10);
+        if (local_3 >= local_1) {
+            return local_2;
         }
-        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
-        rax = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4);
-        *(uint32_t *)(rbp - 0x18) = eax;
+        rcx = (int64_t)(int32_t)(local_3);
+        rax = *(uint32_t *)(local_0 + rcx * 0x4);
+        local_4 = eax;
         if (eax >= 0x0) { goto L_201282; }
-        rsp = rsp + 0x8;
-        return *(uint32_t *)(rbp - 0x10);
+        return local_2;
     L_201282:
-        *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(rbp - 0x18) + *(uint32_t *)(rbp - 0x10);
-        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
+        local_2 += local_4;
+        local_3 += 0x1;
     }
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x10);
+    return local_2;
 }
 -- signature
 uint32_t (uint64_t a0, uint32_t a1)
@@ -117,28 +113,25 @@ uint32_t (uint64_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x201240 (size 96)
   blk0 @ 0x201240:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
-    store32(esi, (rbp + #0xfffffffffffffff4))
-    store32(#0x0, (rbp + #0xfffffffffffffff0))
-    store32(#0x0, (rbp + #0xffffffffffffffec))
+    store64(rdi, (rsp + #0xfffffffffffffff0))
+    store32(esi, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+    store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk1 @ 0x201259:
-    brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201299
+    brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201299
   blk2 @ 0x201265:
-    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    rax = (load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffe8))
+    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
+    rax = (load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))) & #0xffffffff)
+    store32((rax & #0xffffffff), (rsp + #0xffffffffffffffe0))
     brif ge (rax & #0xffffffff), #0x0 -> 0x201282
   blk3 @ 0x20127d:
     br 0x201299
   blk4 @ 0x201282:
-    store32(((load32((rbp + #0xffffffffffffffe8)) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    store32(((load32((rbp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
+    store32(((load32((rsp + #0xffffffffffffffe0)) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
+    store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
     br 0x201259
   blk5 @ 0x201299:
-    rsp = (rsp + #0x8)
-    ret (load32((rbp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
 {"addr":"0x201240","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}
 
@@ -146,32 +139,32 @@ fn <unnamed> @ 0x201240 (size 96)
 -- decompile
 /* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
 uint32_t sub_2012a0(uint64_t a0, uint32_t a1) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = a0;
-    *(uint32_t *)(rbp - 0xc) = a1;
-    *(uint32_t *)(rbp - 0x10) = 0x0;
-    *(uint32_t *)(rbp - 0x14) = 0x0;
+    uint64_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-14] */
+    uint32_t local_2; /* [sp-18] */
+    uint32_t local_3; /* [sp-1c] */
+
+    local_0 = a0;
+    local_1 = a1;
+    local_2 = 0x0;
+    local_3 = 0x0;
     for (;;) {
-        if (*(uint32_t *)(rbp - 0x14) >= *(uint32_t *)(rbp - 0xc)) {
-            rsp = rsp + 0x8;
-            return *(uint32_t *)(rbp - 0x10);
+        if (local_3 >= local_1) {
+            return local_2;
         }
-        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
-        if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) != 0x0) { goto L_2012dc; }
-        rsp = rsp + 0x8;
-        return *(uint32_t *)(rbp - 0x10);
+        rcx = (int64_t)(int32_t)(local_3);
+        if (*(uint32_t *)(local_0 + rcx * 0x4) != 0x0) { goto L_2012dc; }
+        return local_2;
     L_2012dc:
-        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
-        if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) < 0x0) {
+        rcx = (int64_t)(int32_t)(local_3);
+        if (*(uint32_t *)(local_0 + rcx * 0x4) < 0x0) {
         } else {
-            rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
-            *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
+            rcx = (int64_t)(int32_t)(local_3);
+            local_2 += *(uint32_t *)(local_0 + rcx * 0x4);
         }
-        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
+        local_3 += 0x1;
     }
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x10);
+    return local_2;
 }
 -- signature
 uint32_t (uint64_t a0, uint32_t a1)
@@ -180,32 +173,29 @@ uint32_t (uint64_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x2012a0 (size 119)
   blk0 @ 0x2012a0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
-    store32(esi, (rbp + #0xfffffffffffffff4))
-    store32(#0x0, (rbp + #0xfffffffffffffff0))
-    store32(#0x0, (rbp + #0xffffffffffffffec))
+    store64(rdi, (rsp + #0xfffffffffffffff0))
+    store32(esi, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+    store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk1 @ 0x2012b9:
-    brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201312
+    brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201312
   blk2 @ 0x2012c5:
-    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    brif ne load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))), #0x0 -> 0x2012dc
+    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
+    brif ne load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))), #0x0 -> 0x2012dc
   blk3 @ 0x2012d7:
     br 0x201312
   blk4 @ 0x2012dc:
-    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    brif ge load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))), #0x0 -> 0x2012f3
+    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
+    brif ge load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))), #0x0 -> 0x2012f3
   blk5 @ 0x2012ee:
     br 0x201304
   blk6 @ 0x2012f3:
-    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    store32(((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
+    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
   blk7 @ 0x201304:
-    store32(((load32((rbp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
+    store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
     br 0x2012b9
   blk8 @ 0x201312:
-    rsp = (rsp + #0x8)
-    ret (load32((rbp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
 {"addr":"0x2012a0","approxTokens":180,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":119,"sizeEstimated":true,"unsupported":0}

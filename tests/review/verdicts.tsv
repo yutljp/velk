@@ -191,3 +191,407 @@ a7ed2b191382d6f4	arm64_linked.elf	pick	same	-
 4e7027ab022f7dc0	l5_switch.elf	sparse	different	the default path assigns -1 to a0 but has no return
 92413413a0424366	l5_switch.o	sparse	different	the default path assigns -1 to a0 but has no return
 b66c4231bedcf303	strings.o	pick	different	reads the kName pointer from qword_0: the data relocation is not applied
+61dd2ec766dfa531	alt.o	alt_helper	same	Closed form 2*C(n-1,3)+3*C(n-1,2)+(n-1) equals the sum of i*i for i<x, 0 for x<1.
+9437d6a29adc9bc7	arm64_debug.elf	sum_arr	unsure	Scalar tail and loop bounds are right, but the vector accumulation and its ADDV reduction into w8 are unsupported.
+9437d6a29adc9bc7	arm64_debug_stripped.elf	sum_arr	unsure	Scalar tail and loop bounds are right, but the vector accumulation and its ADDV reduction into w8 are unsupported.
+1f12eecc1c17d106	arm64_loops.o	count_bits	different	Loop computes the bit count in a0 correctly but the function falls off the end without returning a0 after the loop.
+fba76af369d84473	arm64_loops0.o	sum_until	same	total=0, i=1, signed i<=limit loop adding i, returns total.
+12ffb27ed0209a81	arm64_macho.o	_sum_arr	unsure	Scalar tail and loop bounds are right, but the vector accumulation and its ADDV reduction into w8 are unsupported.
+3dc7acd268fcb188	calls_a64.elf	factorial	unsure	Scalar loop multiplies n down to 2 correctly, but the vectorized product (w12, w11 from EXT/UMOV/FMOV) is unsupported.
+14b471e606a8703b	calls_a64.o	apply_table	same	Tail-calls table[a0 % 3](a1) via a0 - 3*(a0*0xaaaaaaab>>33); table base is an unresolved .o relocation (x9 = 0).
+18e505bd342729a3	calls_a64.o	is_even	same	For n!=0 the expression yields 1 for even and 0 for odd n (checked n=1..5), matching the mutual recursion.
+55af826a790bc4a9	cpp_classes_x64.o	total_area(Shape const* const*, int)	different	The virtual call `call *0x10(%rax)` (area via vtable slot 2) is rendered as a direct recursive call to total_area itself.
+57fe1c96df1b459f	cpp_demo.o	use(int)	same	Computes ns::mul(x,2) then tail-calls ns::add(x, result); the tail-call target shows as sub_<dynamic> (unresolved R_AARCH64_JUMP26 to ns::add).
+8137ca7dd3fa33e8	l1_branch_a64.o	clamp	same	x<lo -> lo, else x<hi ? x : hi, which equals the source including x==hi.
+e9e35e71c7595f67	l1_branch_x64.o	sign_of	same	x>0 -> 1, x<=0 -> -(x!=0) gives -1 or 0.
+dd1baf78431b6e8b	l2_loop_x64.o	sum_while	different	8x-unrolled loop and remainder loop store sink correctly, but the function falls off the end without returning rax after the remainder loop (sink shows as dword_ placeholders).
+32cf3e21160c153c	l4_memory_a64.o	array_sum	same	Sums a[0..n-1] with correct count-down loop, 0 for n<1.
+e9e83e7818f5309a	l5_switch.elf	dense	same	Range check x-10>15 -> g_sink=0; each case applies the right c0..c15 update to volatile g_sink and returns it.
+aa163e4616619483	metrics/alt_names.aarch64.O2.debug.elf	alt_helper	same	Closed form 2*C(n-1,3)+3*C(n-1,2)+(n-1) equals the sum of i*i for i<x, 0 for x<1.
+2e5cea1ebed70045	metrics/arith_mixed.aarch64.O0.debug.elf	helper	same	Straightforward O0 loop r += i*i for signed i<x.
+0d21bf709818fd97	metrics/arith_mixed.x86_64.O0.debug.elf	helper	same	Straightforward O0 loop r += i*i for signed i<x via frame slots.
+3b18905da8ae2099	metrics/arith_mixed.x86_64.O2.debug.elf	sum_arr	unsure	Scalar loop is right, but the SSE vector accumulation and horizontal add into eax are unsupported.
+f14a7066b6015388	metrics/calls.aarch64.O0.debug.elf	is_odd	unsure	Logic matches if w8 holds n, but n's spill/reload (STUR/LDUR) into w8 is unsupported.
+1261702f9c8662f4	metrics/calls.aarch64.O0.debug.elf	sum_varargs	same	AAPCS64 va_list setup (gr_offs=-56, vr_offs=-128, gr_top, stack) and va_arg int path (reg area while offs<=0, else stack) are correct; total returned.
+192d48c79d0eeba2	metrics/calls.aarch64.O2.debug.elf	is_odd	same	n==0 returns 0, else tail-calls is_even(n-1) and returns its result.
+75e552da4918d5d6	metrics/calls.x86_64.O0.debug.elf	apply_table	different	Indirect `call *%rax` through table[index%3] is rendered as a direct call sub_0() (and the div producing the index is unsupported).
+6759bbc7b9cc2064	metrics/calls.x86_64.O2.debug.elf	twice	same	Returns x+x.
+ba1b3310457ce073	metrics/calls.x86_64.O2.debug.elf	factorial	different	For n-1 not a multiple of 8 the vector path ends without the scalar remainder loop, and both paths fall off the end without returning rax.
+a6ac3f71621fce1a	metrics/calls.x86_64.O2.debug.elf	sum_varargs	different	Stack (overflow_arg_area) va_arg paths are wrong: odd-tail stack path falls into the pair loop and pair-loop stack paths return 0 instead of adding the stack value and continuing.
+63170f82ceddf200	metrics/control.aarch64.O0.debug.elf	sparse	same	Compares x with 1, 100, 1000, 10000 returning 10/20/30/40, else 0.
+81b2c67b93abae4e	metrics/control.aarch64.O2.debug.elf	matrix_trace	same	Double loop adds m[i*n+i] when i==j over i,j in [0,n).
+e61d3a84d61e9dee	metrics/control.aarch64.O2.debug.elf	find_pair	same	Inner loop j=i+1..n-1 with index w8=i*n+j, returns it when p[i]+p[j]==target, else -1.
+ea09626022c58628	metrics/control.x86_64.O0.debug.elf	short_circuit	different	Main path (p!=0, n>0) stores the result byte at rbp-0xd but falls off the end without returning it.
+7c05a6a29e3f958a	metrics/control.x86_64.O2.debug.elf	cleanup_on_error	different	After storing *out=a/b and setting rax=0, the function falls off the end without returning 0.
+475ca62a6d63a14e	metrics/divmod_a64.aarch64.O0.debug.elf	udiv3	unsure	Result depends on the unsupported UDIV that writes x0.
+26bed3f756d32c25	metrics/divmod_a64.aarch64.O0.debug.elf	hdiv10	unsure	Result depends on the unsupported UDIV that writes x0.
+9c0a7d90680704ce	metrics/divmod_a64.aarch64.O0.debug.elf	ldiv16	unsure	Result depends on the unsupported SDIV that writes x0.
+ae04aea512c9c461	metrics/divmod_a64.aarch64.O0.debug.elf	smod10	unsure	x - q*10 is right, but the quotient w9 comes from the unsupported SDIV.
+3fd58ab45baa639a	metrics/divmod_a64.aarch64.O0.debug.elf	smod4	unsure	x - q*4 is right, but the quotient w9 comes from the unsupported SDIV.
+020c24b6bff79800	metrics/divmod_a64.aarch64.O2.debug.elf	is_zero	same	Returns x==0.
+9cf7ff84b1950dc3	metrics/divmod_a64.x86_64.O0.debug.elf	udiv64	same	Unsigned x>>6 equals x/64.
+85cd71ccd6a7c0a0	metrics/divmod_a64.x86_64.O0.debug.elf	umod3	unsure	Returns edx (remainder) of the unsupported div by 3.
+a04ba4d3be1f12ef	metrics/divmod_a64.x86_64.O0.debug.elf	lmod16	different	Signed 64-bit remainder (cqo; idiv) is rendered as plain % on a uint64_t operand, i.e. unsigned modulo, which differs for negative x.
+236d8888ee8f212e	metrics/divmod_a64.x86_64.O0.debug.elf	lmod3	different	Signed 64-bit remainder (cqo; idiv) is rendered as plain % on a uint64_t operand, i.e. unsigned modulo, which differs for negative x.
+193e6a994ea3ca92	metrics/divmod_a64.x86_64.O2.debug.elf	is_pos	same	Returns x>0 (signed).
+8ddef62c7239fc22	metrics/divmod_x64.aarch64.O0.debug.elf	h10	unsure	Result depends on the unsupported UDIV that writes x0.
+c4bfefc873b356cb	metrics/divmod_x64.aarch64.O0.debug.elf	umod3x	unsure	x - q*3 is right, but the quotient w9 comes from the unsupported UDIV.
+ea64f83443919b53	metrics/divmod_x64.aarch64.O0.debug.elf	pmod16l	unsure	x - q*16 is right, but the quotient x9 comes from the unsupported SDIV.
+640d0156fe17cf50	metrics/divmod_x64.aarch64.O0.debug.elf	pdiv64	unsure	Result depends on the unsupported SDIV that writes x0.
+5ff2cfd008da5018	metrics/divmod_x64.x86_64.O0.debug.elf	l10	different	Signed 64-bit division (cqo; idiv) is rendered as plain / on a uint64_t operand, i.e. unsigned division, which differs for negative x.
+a09c2f5672483f55	metrics/divmod_x64.x86_64.O0.debug.elf	ldiv16x	different	Signed 64-bit division (cqo; idiv) is rendered as plain / on a uint64_t operand, i.e. unsigned division, which differs for negative x.
+677aed14753aa333	metrics/divmod_x64.x86_64.O0.debug.elf	pdiv16l	different	Signed 64-bit division (cqo; idiv) is rendered as plain / on a uint64_t operand, i.e. unsigned division, which differs for negative x.
+58a29de3e58cb942	metrics/float.aarch64.O0.debug.elf	average	unsure	Loop and n>0 test are right, but all floating-point accumulation, conversion and division are unsupported.
+249a1407e9e8614e	metrics/float.aarch64.O0.debug.elf	compare_doubles	unsure	Both FCMPs are unsupported, so the branch and select conditions are not modeled.
+1799f055e710bf9d	metrics/float.x86_64.O0.debug.elf	compare_doubles	unsure	Both ucomisd comparisons are unsupported, so the branch and select conditions are not modeled.
+994ebaa2077061b9	metrics/integers.aarch64.O0.debug.elf	widen_mul	same	(a&0xff)*(b&0xff) is at most 65025 so it equals the unsigned short product.
+7ea47897887d75df	metrics/integers.aarch64.O0.debug.elf	popcount	same	Kernighan loop x &= x-1 counting iterations.
+a655c6e7497dc2e5	metrics/integers.aarch64.O2.debug.elf	in_range	unsure	The CCMP that folds in x<=hi is unsupported; the shown x<=lo reads stale flags.
+1e4e46301509b24d	metrics/integers.x86_64.O0.debug.elf	mixed_sign	different	Computes a 32-bit (int32_t)a - b returned as uint32_t, but the source (movslq; subq) returns the 64-bit difference of sign-extended a and zero-extended b.
+370a203559140b35	metrics/integers.x86_64.O0.debug.elf	byte_swap	same	Same shifts and masks as the source.
+bcb3ff4912086f0f	metrics/integers.x86_64.O2.debug.elf	in_range	same	Returns (x<=hi) & (x>=lo) in the low byte.
+3d3e07684f830788	metrics/integers.x86_64.O2.debug.elf	min3	same	m=min(a,b); returns m>=c ? c : m, equal to m<c ? m : c.
+8689957399c2b8d4	metrics/l0_arith.x86_64.O2.debug.elf	scale	same	x*8 - x + 3 = 7x+3.
+6d75aa1c19c179de	metrics/l1_branch.aarch64.O2.debug.elf	classify	same	x<0 -> -1, x==0 -> 0, else 1.
+0ab31126a7ea36bc	metrics/l1_branch.x86_64.O0.debug.elf	sign_of	same	O0 frame form of x>0?1:(x<0?-1:0).
+315e0a90aae8164a	metrics/l2_loop.aarch64.O0.debug.elf	sum_while	same	Signed i<n loop, s+=i, sink=s, returns s.
+e92b7e0ec7021baa	metrics/l2_loop.aarch64.O2.debug.elf	sum_while	same	Do-while over i=0..n-1 storing s to sink each iteration, 0 for n<1.
+1e24c6898966badc	metrics/l2_loop.x86_64.O0.debug.elf	count_down	same	Do-while c++, n--, sink=c while signed n>0, returns c.
+5d139823c7894bb6	metrics/l2_loop.x86_64.O2.debug.elf	count_down	different	Unrolled and remainder loops store sink=1..max(n,1) correctly, but the function falls off the end without returning rax after the remainder loop.
+6e783f3df121786d	metrics/l4_memory.aarch64.O2.debug.elf	array_sum	unsure	Scalar tail and loop bounds are right, but the vector accumulation and its ADDV reduction into w8 are unsupported.
+d46edb231c924cb3	metrics/l5_switch.aarch64.O0.debug.elf	dense	unsure	Case mapping (x-25 = -15..0 -> c0..c15) and default store are right, but x reaches w8 only via the unsupported STUR/LDUR spill.
+a949f4cc3a442c8e	metrics/l5_switch.x86_64.O0.debug.elf	sparse	same	Compares x with 1, 50, 300 returning 100/7/300, else -1.
+1ff230b14919ee6d	metrics/l5_switch.x86_64.O2.debug.elf	c2	same	g_sink += 0xffffffe7 (-25) on the 32-bit volatile; t65 is dead.
+ebdc73616261dba4	metrics/l5_switch.x86_64.O2.debug.elf	c6	same	g_sink += 0xffffffcb (-53) on the 32-bit volatile; t65 is dead.
+b3bacb49da26d500	metrics/l5_switch.x86_64.O2.debug.elf	c10	same	g_sink += 0xffffffaf (-81) on the 32-bit volatile; t65 is dead.
+3a87ff3659a13182	metrics/l5_switch.x86_64.O2.debug.elf	c14	same	g_sink += 0xffffff93 (-109) on the 32-bit volatile; t65 is dead.
+7f0b99515137b6fa	metrics/loops.aarch64.O0.debug.elf	count_bits	same	O0 loop n += x&1, x >>= 1 (unsigned) while x != 0.
+811e9ab35ba5ba87	metrics/loops.aarch64.O2.debug.elf	count_bits	different	Loop computes the bit count in x correctly but the function falls off the end without returning it after the loop.
+7f4a479df4e63a32	metrics/loops.x86_64.O0.debug.elf	sum_until	same	O0 loop total += i for signed i<=limit starting at 1.
+2e571a335f58fdab	metrics/loops.x86_64.O2.debug.elf	sum_until	same	((n-2)*(n-1)>>1) + 2n - 1 (64-bit product) equals n(n+1)/2, 0 for n<=0.
+8acdd108a2b89b8e	metrics/memory.aarch64.O0.debug.elf	fill_bytes	same	Stores value to dst[i] for unsigned i<n.
+377acdda1d2f403d	metrics/memory.aarch64.O0.debug.elf	pointer_distance	unsure	(end-begin) is computed but the division by 4 is the unsupported SDIV that writes x0.
+5228c3dbc0c247bc	metrics/memory.aarch64.O2.debug.elf	string_length	different	The scan loop at 0x2102d4 is rendered as a call sub_2102d4() followed by return s, instead of looping until s[n]==0 and returning n.
+a10c11b1e22d566c	metrics/memory.x86_64.O0.debug.elf	read_volatile	same	Two separate reads of *p stored and summed.
+70ddc07484b909ae	metrics/memory.x86_64.O2.debug.elf	string_length	same	rax starts at -1 and increments until s[rax+1]==0, returning the length.
+7a7cfe675cfb7f74	metrics/structs.aarch64.O0.debug.elf	flags_level	same	ready (bit 0) clear -> mode (bits 1-3), else level (bits 4-7) from the low byte of f.
+9cba0355d46e27c5	metrics/structs.x86_64.O0.debug.elf	record_total	same	total += items[i].value (+8, 64-bit) * (short)items[i].count (+0x10), stride 0x18.
+7163b4422c14de21	metrics/structs.x86_64.O2.debug.elf	record_total	same	2x-unrolled loop and odd tail compute sum of value*count with the right offsets and stride.
+2b3413775ba1bd7b	metrics/switch_jumptable.aarch64.O2.debug.elf	d7	different	Case 8 adds 8 but omits the final store of g and the return, falling through into case 9 which adds 0..9 again.
+d3996a1fa27c5c3c	metrics/switch_value_table.aarch64.O2.debug.elf	dispatch	same	x-10 > 4 unsigned -> 0, else value table lookup.
+675bdd01cf3a8531	pe64.exe	reg_sign	same	Returns (short)b + (signed char)a.
+6741dadd5bda5721	pe64.obj	reg_abs	same	Returns -x<0 ? x : -x, i.e. |x| (32-bit long on Windows).
+2552a79fcf830099	switch_value_table.o	dispatch	same	x-10 > 4 unsigned -> 0, else table load; table base is an unresolved .o relocation (address 0).
+1a4954dc55197082	x64_loops.o	sum_until_zero	unsure	The cmov that zeroes negative p[i] (the continue) is unsupported, so the shown loop adds every nonzero element.
+48a2f8c31ad41be4	arm64.o	helper	same	Closed form (a-1)(a-2)(a-3)/3 + 3(a-1)(a-2)/2 + a - 1 equals sum of i*i for i<a (checked a=1..5, cubic), and a<1 returns 0.
+48a2f8c31ad41be4	arm64_debug.o	helper	same	Same closed-form sum of squares as the non-debug build, with a<1 returning 0.
+9e0052f21de09db4	arm64_div.o	is_zero	same	Returns a0 == 0 as 0/1.
+3acf0b42b0f5f935	arm64_loops.o	sum_till_neg	same	Count max(n,0), accumulates elements and stops before adding the first negative one, returning the previous total.
+4a6bd75bc3434815	arm64_loops0.o	sum_till_neg	same	Signed i<n loop, breaks on negative p[i] before adding, returns total.
+c210f5552f244a6b	arm64_switch.elf	dispatch	same	Unsigned range check x-10 > 4 returns 0, otherwise looks up the rodata value table (contents not shown but structure matches).
+ee765e7207a792c3	calls_a64.elf	is_odd	same	Mutual recursion turned into a loop; tracing both paths yields a0 & 1 for all n >= 0 (negative n recurses without bound in the source).
+95384bee38caf25b	calls_a64.o	apply_pointer	unsure	The indirect BLR call is unmodeled, so the return shows a1+1 instead of f(a1)+1; the result depends on the unsupported call.
+0c2a90bdecc70c5f	calls_a64.o	sum_varargs	different	Register-save-area test is printed as w12 <= 0x8 unsigned, which is never true for the negative gr_offs reaching it (should be signed gr_offs+8 <= 0, i.e. w12 <= -8), so int varargs passed in x1-x7 would never be read from the save area.
+6e66a5de9a552bd1	cpp_classes_x64.o	clamp_int(int)	same	max(min(v,255),0) equals clamp(v,0,255).
+460ef2cfcb120464	l0_arith_x64.o	add3	same	Returns a0+a1+a2.
+ec4c7ab8ae2530fc	l1_branch_a64.o	sign_of	same	x<1 ? (x!=0 ? -1 : 0) : 1 matches the sign function.
+00ef2ac185b0f97f	l2_loop_a64.o	sum_while	same	Accumulates i for i<n storing each partial sum to sink (address 0x0 is an unresolved relocation placeholder), returns sum.
+4942425e0f962dd5	l2_loop_x64.o	count_down	different	The 8x-unrolled loop and remainder loop store 1..max(n,1) to sink correctly, but after the remainder loop the function falls off the end with no return of rax, so the result is missing whenever max(n,1) % 8 != 0.
+d9dfa31969fdfed1	l4_memory_x64.o	point_dot	same	Returns a.x*b.x + a.y*b.y.
+e0591bc4a3edce83	l5_switch.o	dense	unsure	Default path is right, but the byte jump table contents and the inlined c0..c15 bodies are not shown, so the case-to-label mapping cannot be verified (table base also an unresolved .o relocation).
+f42284b26b92a9fd	metrics/alt_names.x86_64.O0.debug.elf	alt_helper	same	Signed i<x loop accumulating i*i in stack slots, returns r.
+23d57bef748ad54b	metrics/arith_mixed.aarch64.O0.debug.elf	sum_arr	same	Signed i<n loop summing p[i].
+35468a0b3e0d6333	metrics/arith_mixed.x86_64.O0.debug.elf	sum_arr	same	Signed i<n loop summing p[sext(i)].
+65b23f40985c81a8	metrics/calls.aarch64.O0.debug.elf	apply_table	unsure	STUR/LDUR/UDIV and the BLR call are unmodeled, so the index%3 and the call result (shown as returning x) cannot be verified.
+f48fb5859275081e	metrics/calls.aarch64.O0.debug.elf	is_even	unsure	Structure (n!=0 ? is_odd(n-1) : 1) looks right, but n reaches w8 only through the unsupported STUR/LDUR, so the tested value is not modeled.
+bcd7b1371ea939a3	metrics/calls.aarch64.O2.debug.elf	apply_table	same	index%3 via 0xaaaaaaab multiply-high, moves x into the argument register and tail-jumps to table[index%3].
+7ba3a5002285f598	metrics/calls.aarch64.O2.debug.elf	is_even	same	n==0 returns 1, otherwise tail-calls is_odd(n-1) and returns its result.
+f1317295bce34cc7	metrics/calls.x86_64.O0.debug.elf	apply_pointer	different	The indirect call through f (call rax after rax = f) is rendered as a direct call to sub_0 (address 0), so the callee is wrong as written; the argument x and the +1 are otherwise right.
+c0eb656717352e48	metrics/calls.x86_64.O2.debug.elf	pick_op	same	which==0 returns 0x2012f0 (twice, per the twice entry at that address), otherwise 0x201300 (square).
+acf1818b80352d6a	metrics/calls.x86_64.O2.debug.elf	is_odd	same	n==0 returns 0, otherwise tail-calls is_even(n-1) and returns its result.
+18717e042e38e992	metrics/control.aarch64.O0.debug.elf	matrix_trace	same	Nested signed loops adding m[i*n+j] when i==j.
+d175a7e19316a2f2	metrics/control.aarch64.O0.debug.elf	short_circuit	same	p==0 or n<=0 gives 0; p[0]==1 gives 1; otherwise p[n-1]==1.
+e4c9674655b5eb81	metrics/control.aarch64.O2.debug.elf	cleanup_on_error	different	Besides the unmodeled SDIV, the success path sets a = 0 and stores *out but then falls off the end without returning, so the 0 status is never returned.
+82034e469bc5fb7b	metrics/control.x86_64.O0.debug.elf	matrix_trace	same	Nested signed loops adding m[sext(i*n+j)] when i==j.
+61b4988a86493e8e	metrics/control.x86_64.O0.debug.elf	skip_negatives	same	Signed loop skipping negative p[i] and summing the rest.
+c9abd58880f91ba1	metrics/control.x86_64.O2.debug.elf	short_circuit	different	The early paths are right, but the last path computes rax = (p[n-1]==1) and then falls off the end without returning it.
+403886df5a86add6	metrics/divmod_a64.aarch64.O0.debug.elf	udiv10	unsure	The UDIV is unmodeled, so the quotient is not represented (it shows return x).
+a6d65e44a0f11d87	metrics/divmod_a64.aarch64.O0.debug.elf	sdiv3	unsure	The SDIV is unmodeled, so the quotient is not represented (it shows return x).
+75dbcd14e4768f7d	metrics/divmod_a64.aarch64.O0.debug.elf	smod3	unsure	x - q*3 is right, but q comes from the unmodeled SDIV.
+d4592fcb1ec227cf	metrics/divmod_a64.aarch64.O0.debug.elf	lmod10	unsure	x - q*10 is right, but q comes from the unmodeled SDIV.
+f3a0ae4f7f1ea62a	metrics/divmod_a64.aarch64.O0.debug.elf	lmod3	unsure	x - q*3 is right, but q comes from the unmodeled SDIV.
+4312a0e424de40bf	metrics/divmod_a64.aarch64.O2.debug.elf	is_pos	same	Returns x > 0 (signed) as 0/1.
+e1a9e2fcc387ba42	metrics/divmod_a64.x86_64.O0.debug.elf	hdiv3	unsure	The x86 div is unmodeled, so the returned rax is not the quotient as written.
+88cf1b6889e7bd55	metrics/divmod_a64.x86_64.O0.debug.elf	umod10	unsure	Returning the remainder (edx) is right, but it comes from the unmodeled div.
+14f27b69a18af4a3	metrics/divmod_a64.x86_64.O0.debug.elf	is_neg	same	Low byte set to x<0 (signed) and returned masked to 0/1.
+7d1fdd82231661f1	metrics/divmod_a64.x86_64.O0.debug.elf	ldiv3	same	Returns x / 3, read as signed division since no unsigned marker is given (signature type ignored).
+7aaee3b2eb99966f	metrics/divmod_x64.aarch64.O0.debug.elf	l3	unsure	The SDIV is unmodeled, so the quotient is not represented (it shows return x).
+be78a07786040a21	metrics/divmod_x64.aarch64.O0.debug.elf	u64	unsure	The UDIV is unmodeled, so the quotient is not represented (it shows return x).
+43aa9a1e0f56cfb7	metrics/divmod_x64.aarch64.O0.debug.elf	smod3x	unsure	x - q*3 is right, but q comes from the unmodeled SDIV.
+7a46165a27fa3d64	metrics/divmod_x64.aarch64.O0.debug.elf	pdiv16l	unsure	The SDIV is unmodeled, so the quotient is not represented (it shows return x).
+00a8636f5d2e08cd	metrics/divmod_x64.aarch64.O0.debug.elf	qdiv64	unsure	The SDIV is unmodeled, so the quotient is not represented (it shows return x).
+bf41204026c50e0a	metrics/divmod_x64.x86_64.O0.debug.elf	h3	unsure	The x86 div is unmodeled, so the returned rax is not the quotient as written.
+f0c2f7773328ebe1	metrics/divmod_x64.x86_64.O0.debug.elf	umod3x	unsure	Returning the remainder (edx) is right, but it comes from the unmodeled div.
+04535365461102db	metrics/divmod_x64.x86_64.O0.debug.elf	lmod10x	same	Returns x % 10, read as signed remainder since no unsigned marker is given (signature type ignored).
+c0667b143cd3d17d	metrics/float.aarch64.O0.debug.elf	lerp	unsure	All floating-point work (FSUB, FMADD, SIMD stores) is unmodeled.
+00b2e97c60646931	metrics/float.aarch64.O2.debug.elf	average	unsure	Loop bounds (n&~3 vector part plus remainder) look right, but every FP add, convert and divide is unmodeled.
+b00d4d3bd881cf29	metrics/float.x86_64.O2.debug.elf	average	unsure	Loop bounds (n&~7 unrolled part plus n&7 remainder) look right, but all SSE FP work is unmodeled.
+2e4a486197c6aadd	metrics/integers.aarch64.O0.debug.elf	mixed_sign	same	Sign-extended a minus zero-extended b in 64 bits.
+525af2f400e1e8a1	metrics/integers.aarch64.O0.debug.elf	min3	same	Signed min(a,b) and then min with c.
+d4be194a11139431	metrics/integers.aarch64.O2.debug.elf	rotate_left	unsure	The RORV is unmodeled, so the rotation is not represented (it shows return x).
+389eb8cd641f230d	metrics/integers.x86_64.O0.debug.elf	in_range	same	Result byte is 0 unless x>=lo, then x<=hi; returned as 0/1.
+512f09104aeef547	metrics/integers.x86_64.O0.debug.elf	labs_value	same	x<0 ? -x : x through stack slots.
+bb40ec54659d8d7f	metrics/integers.x86_64.O2.debug.elf	rotate_left	unsure	The rol is unmodeled, so the rotation is not represented (it shows return x).
+9592d0133a74d6f3	metrics/integers.x86_64.O2.debug.elf	labs_value	same	-x < 0 ? x : -x equals |x| for all defined x (x=0 gives 0).
+f0e647df2bdfa6c3	metrics/l1_branch.aarch64.O0.debug.elf	classify	same	Sign bit set gives -1, nonzero gives 1, otherwise 0.
+bf11580bbd976e78	metrics/l1_branch.aarch64.O2.debug.elf	clamp	same	x<lo ? lo : min(x,hi) equals the source clamp.
+6408eb4ac468c269	metrics/l1_branch.x86_64.O2.debug.elf	classify	same	x>=0 ? (x!=0) : -1.
+5ccb1f4c6f32d5d6	metrics/l2_loop.aarch64.O0.debug.elf	count_down	same	Do-while incrementing c, decrementing n, storing c to sink while n>0 (signed), returns c.
+4eee0f1bb808e305	metrics/l2_loop.aarch64.O2.debug.elf	sum_skip_odd	different	The loop path is right, but the n<1 path only sets w8 = 0 and falls off the end without returning (should return 0).
+627a191d32c8b472	metrics/l2_loop.x86_64.O0.debug.elf	sum_skip_odd	same	Signed i<n loop adding odd i and storing s to sink.
+8bcabaa82b43eeff	metrics/l2_loop.x86_64.O2.debug.elf	sum_skip_odd	same	2x-unrolled loop adds i+1 per even i and stores sink; the trailing path that falls off without return needs odd rcx, but rcx is always even, so it is unreachable.
+ab2996ac385d7559	metrics/l4_memory.x86_64.O0.debug.elf	array_sum	same	Signed i<n loop summing a[i].
+f9b5f37276a9fcb3	metrics/l5_switch.aarch64.O0.debug.elf	sparse	same	x==1 gives 100, 50 gives 7, 300 gives 300, otherwise -1.
+c97d6726ea01b457	metrics/l5_switch.x86_64.O2.debug.elf	dense	unsure	Range check and default (g_sink=0, return 0) are right, and each target calls one cK and returns g_sink, but the rodata jump table is not shown, so the case-to-callee mapping cannot be verified.
+8fc46c80a6023dd4	metrics/l5_switch.x86_64.O2.debug.elf	c3	same	g_sink |= 0x20 (32); t65 is a dead temporary.
+9e6f664cade99ab3	metrics/l5_switch.x86_64.O2.debug.elf	c7	same	g_sink |= 0x3c (60); t65 is a dead temporary.
+81dab15d0044e8b0	metrics/l5_switch.x86_64.O2.debug.elf	c11	same	g_sink |= 0x58 (88); t65 is a dead temporary.
+ed6bac23fadb3526	metrics/l5_switch.x86_64.O2.debug.elf	c15	same	g_sink |= 0x74 (116); t65 is a dead temporary.
+fb60b674d2e14ab1	metrics/loops.aarch64.O0.debug.elf	sum_until	same	i from 1 while i<=limit (signed), total += i.
+6d7e98b81a10349d	metrics/loops.aarch64.O2.debug.elf	sum_till_neg	same	Count max(n,0), stops before adding the first negative element, returns the previous total.
+8fe2333326766fea	metrics/loops.x86_64.O0.debug.elf	sum_till_neg	same	Signed i<n loop, returns total on a negative element, otherwise adds and continues.
+9137c474591214ca	metrics/loops.x86_64.O2.debug.elf	sum_till_neg	same	n clamped to >=0, loop returns the total before the first negative element.
+0d8a6dd5778c7266	metrics/memory.aarch64.O0.debug.elf	string_length	same	Counts bytes until NUL.
+bbdfc4a8221a9f2d	metrics/memory.aarch64.O0.debug.elf	read_volatile	same	Two separate loads of *p summed.
+922158eb2adeb7b4	metrics/memory.aarch64.O2.debug.elf	swap_ints	same	Saves *a, copies *b to *a, stores the saved value to *b (the extra return value is irrelevant for void).
+ed98b7a7d2e4c74d	metrics/memory.x86_64.O0.debug.elf	swap_ints	same	t=*a; *a=*b; *b=t through stack slots.
+c9e3c7ef0d8ad253	metrics/structs.aarch64.O0.debug.elf	record_total	same	Signed i<n loop adding the 64-bit field at +8 times the sign-extended 16-bit field at +0x10 with stride 0x18.
+79393f7e80a175a3	metrics/structs.aarch64.O2.debug.elf	record_total	unsure	Loop structure and bounds look right, but half the unrolled loads and the remainder value load (LDUR/LDURSH) are unmodeled, leaving x14/x15/x10 undefined.
+0dea35e4ff728f72	metrics/structs.x86_64.O0.debug.elf	big_make	same	Writes seed, seed+1, seed*2, seed*3 through the sret pointer and returns it.
+d2781acb9c49c33b	metrics/structs.x86_64.O2.debug.elf	flags_level	same	Bit0 (ready) chooses (f>>4)&0xf (level) or (f>>1)&7 (mode), consistent with a ready:1, mode:3, level:4 bitfield layout.
+106ca34854d65e75	metrics/switch_jumptable.x86_64.O0.debug.elf	d7	different	The bound check is rax = x - 9; if (rax > 0 unsigned), i.e. x != 9, so every x except 9 takes the default and 9 indexes the table; it should be x > 9 unsigned (sub/ja).
+6e8274ddb1193921	metrics/switch_value_table.x86_64.O0.debug.elf	dispatch	different	The bound check is eax = (x-10) - 4; if (eax > 0 unsigned), i.e. x != 14, so only x == 14 reaches the jump table; it should be (x-10) > 4 unsigned.
+dcbe822a9c19e442	pe64.exe	reg_abs	same	-x < 0 ? x : -x equals |x| (32-bit long on Windows).
+b8a3a6cb697bc037	pe64.obj	entry	same	Stores x = 5 and y = 35 (5*7) to the volatile locals; the volatile reload of x is folded, but the stored values match.
+61b60111e53ceaa1	x64_loops.o	count_bits	different	The loop body is right (adds x&1, shifts until zero), but after the loop the function falls off the end without returning the count in rax.
+4877adf613072772	arm64.o	sum_arr	unsure	Scalar loop and control flow are correct, but the vector-path sum comes from unmodeled SIMD (MOVI/LD/ADDV/FMOV).
+4877adf613072772	arm64_debug.o	sum_arr	unsure	Scalar loop and control flow are correct, but the vector-path sum comes from unmodeled SIMD (MOVI/LD/ADDV/FMOV).
+d4bcbb291a276d7d	arm64_div.o	is_pos	same	Returns x > 0 as 0/1 with a signed comparison.
+f3876c354ab0cab4	arm64_loops.o	sum_until_zero	same	Counts down n elements, breaks on zero, adds max(p[i],0) which matches skipping negatives.
+f7938aab1a8ca8d7	arm64_loops0.o	sum_until_zero	same	Loop over i < n (signed), returns total on zero element, skips negatives via sign bit, adds otherwise.
+95451cd26ff088ae	calls_a64.elf	apply_table	same	index % 3 via multiply-high, then tail-calls table[index%3] with x moved to the first argument.
+f7f9199c37cfe12f	calls_a64.elf	is_even	same	Closed form n-1-((n-(n!=1))&~1) yields 1 for even and 0 for odd n >= 1, matching the mutual recursion for all defined inputs.
+5ae6d138dde4281e	calls_a64.o	factorial	unsure	Scalar tail loop multiplies down to 2 correctly, but the vectorized product for n >= 9 comes from unmodeled SIMD.
+53dd2d0342b084c1	cpp_classes_a64.o	total_area(Shape const* const*, int)	unsure	Loop structure and vtable slot load are right, but the virtual call (BLR) is unmodeled so the accumulated return value is not represented.
+b653df0e4e40f240	cpp_classes_x64.o	dot_sum(Vec2 const&, Vec2 const&)	same	Returns (a.y+b.y)*(a.x+b.x).
+b8a1a618caf1f426	l0_arith_x64.o	scale	same	x*8 - x + 3 equals x*7 + 3.
+865f2b84b8597c0b	l1_branch_x64.o	classify	same	Returns -1 for negative, 0 for zero, 1 for positive.
+316242a146905290	l2_loop_a64.o	sum_skip_odd	same	Iterates i from 0 to n-1, adds odd i and stores to sink; sink address shows as unresolved relocation placeholder 0x0.
+a1d78c96ac41a712	l2_loop_x64.o	sum_skip_odd	same	Pairwise loop adds i+1 for each odd i and stores sink; trailing code is unreachable since rcx is always even; sink shows as placeholder dword_1ba/dword_1d4 (relocations).
+561d8f26bb0a261a	l4_memory_x64.o	array_sum	same	Sums a[0..n-1] for n > 0, returns 0 otherwise.
+59626b1dea008f31	l6_abi_x64.o	six_args	same	Sum of all six arguments.
+643783da78a0270a	metrics/alt_names.x86_64.O2.debug.elf	alt_sum3	same	Returns a + b + c.
+c6256aa7b6f89593	metrics/arith_mixed.aarch64.O2.debug.elf	helper	same	Closed form (x-1) + 3(x-1)(x-2)/2 + (x-1)(x-2)(x-3)/3 equals sum of i*i for i < x.
+68852fcabe083e32	metrics/arith_mixed.x86_64.O2.debug.elf	sum3	same	Returns a + b + c.
+670b038847e54b64	metrics/calls.aarch64.O0.debug.elf	apply_pointer	unsure	The indirect call (BLR) is unmodeled; the shown x + 1 ignores the call's return value, so the result cannot be judged.
+6a2a095099768b30	metrics/calls.aarch64.O0.debug.elf	sum9	same	Sums the eight register arguments plus the ninth stack argument at the entry sp.
+6f768a40013ea53e	metrics/calls.aarch64.O2.debug.elf	apply_pointer	unsure	The indirect call (BLR) is unmodeled; the shown x + 1 ignores the call's return value, so the result cannot be judged.
+bdef0a151cb44c23	metrics/calls.aarch64.O2.debug.elf	call_sum9	same	Passes x through x0, 1..7 in x1..x7 and 8 on the stack, tail-returns sum9's result.
+7b08e238ad9f05e3	metrics/calls.x86_64.O0.debug.elf	call_sum9	same	Sets rdi=x, rsi..r9=1..5, stacks 6,7,8 in order and returns sum9's result.
+57d5ecb78eac8e0a	metrics/calls.x86_64.O2.debug.elf	apply_table	same	Computes index % 3, moves x to the first argument and tail-jumps through the table.
+45c8f7717de65fb7	metrics/calls.x86_64.O2.debug.elf	is_even	same	Returns 1 for n == 0, otherwise tail-calls is_odd(n-1) and returns its result.
+aa08e9c2bc3b2be1	metrics/control.aarch64.O0.debug.elf	cleanup_on_error	unsure	Control flow and status values are correct, but the stored quotient a/b comes from an unmodeled SDIV.
+8f22f0b1030e7705	metrics/control.aarch64.O0.debug.elf	skip_negatives	same	Loop over i < n, skips negative elements via sign bit, adds non-negative ones.
+1251eb912130f7dc	metrics/control.aarch64.O2.debug.elf	short_circuit	different	The p[n-1]==1 path computes the result into p but falls off the end without returning it (the LDUR load of p[n-1] is also unmodeled).
+375fa5d3cf8e60b1	metrics/control.x86_64.O0.debug.elf	fallthrough	different	The range check is rax = x - 3; if (rax > 0 unsigned) which sends x = 0, 1, 2 to the default -1, whereas the source (ja after sub/cmp 3) only defaults for x >u 3.
+290e7dce0922b35d	metrics/control.x86_64.O0.debug.elf	find_pair	same	Nested signed loops over i < n and j in (i, n), returning i*n+j on a match and -1 otherwise.
+226c36a9a97b1dee	metrics/control.x86_64.O2.debug.elf	skip_negatives	unsure	Scalar loop correctly adds max(p[i],0), but the vector-path sum for n >= 8 comes from unmodeled SSE instructions.
+fdc6e21a0f15796f	metrics/divmod_a64.aarch64.O0.debug.elf	udiv64	unsure	The division result comes from an unmodeled UDIV; the shown return x is the undivided input.
+ece1ac3f8e13c9f1	metrics/divmod_a64.aarch64.O0.debug.elf	sdiv10	unsure	The division result comes from an unmodeled SDIV; the shown return x is the undivided input.
+a93871f8bd32bde9	metrics/divmod_a64.aarch64.O0.debug.elf	umod3	unsure	Remainder computed as x - q*3 but the quotient q comes from an unmodeled UDIV.
+9b1e5af54536e8fc	metrics/divmod_a64.aarch64.O0.debug.elf	umod10b	unsure	Remainder computed as x - q*10 but the quotient q comes from an unmodeled UDIV.
+f6c4daf2a1ebe3fb	metrics/divmod_a64.aarch64.O0.debug.elf	ldiv3	unsure	The division result comes from an unmodeled SDIV; the shown return x is the undivided input.
+3ee0505a47a09740	metrics/divmod_a64.x86_64.O0.debug.elf	udiv3	unsure	The quotient comes from an unmodeled div instruction.
+6464f689c2e763d2	metrics/divmod_a64.x86_64.O0.debug.elf	hdiv10	unsure	The quotient comes from an unmodeled div instruction.
+16a4a576455a4d29	metrics/divmod_a64.x86_64.O0.debug.elf	lmod10	unsure	Shows x % 10 on a uint64_t-typed x with no signedness marker, so it cannot be told whether the signed (idiv) remainder of the source is preserved for negative x.
+052afb24bf15aee0	metrics/divmod_a64.x86_64.O0.debug.elf	is_zero	same	Returns (x == 0) as 0/1.
+1f650d7866e0a458	metrics/divmod_a64.x86_64.O0.debug.elf	ldiv10	unsure	Shows x / 10 on a uint64_t-typed x with no signedness marker, so it cannot be told whether the signed (idiv) quotient of the source is preserved for negative x.
+d84fb69af4b08040	metrics/divmod_x64.aarch64.O0.debug.elf	l10	unsure	The division result comes from an unmodeled SDIV; the shown return x is the undivided input.
+e601f8fa4082dc73	metrics/divmod_x64.aarch64.O0.debug.elf	sdiv16x	unsure	The division result comes from an unmodeled SDIV; the shown return x is the undivided input.
+5ebfbad38a6bd0e7	metrics/divmod_x64.aarch64.O0.debug.elf	pmod8x	unsure	Remainder computed as x - q*8 but the quotient q comes from an unmodeled UDIV.
+3ea8e81f9d7eee18	metrics/divmod_x64.aarch64.O0.debug.elf	lmod10x	unsure	Remainder computed as x - q*10 but the quotient q comes from an unmodeled SDIV.
+756e9d7dba641131	metrics/divmod_x64.aarch64.O0.debug.elf	pdiv10	unsure	The division result comes from an unmodeled SDIV; the shown return x is the undivided input.
+e36998df4fcfc8c6	metrics/divmod_x64.x86_64.O0.debug.elf	h10	unsure	The quotient comes from an unmodeled div instruction.
+4d6ff96dae7ffba4	metrics/divmod_x64.x86_64.O0.debug.elf	pmod8x	same	x % 8 for unsigned x equals x & 7.
+6c8e4cba68131077	metrics/divmod_x64.x86_64.O0.debug.elf	umod10x	unsure	Returns rdx (remainder) but the remainder comes from an unmodeled div instruction.
+363b5a0888e16fbe	metrics/float.aarch64.O0.debug.elf	truncate_to_int	unsure	The double-to-int conversion (FCVTZS) is unmodeled.
+e0f4fd94ed86e673	metrics/float.aarch64.O2.debug.elf	compare_doubles	unsure	The floating-point compare (FCMP) is unmodeled, so the shown constant comparisons cannot represent the result.
+d0eebe4182d42f1a	metrics/float.x86_64.O2.debug.elf	compare_doubles	unsure	The floating-point compares (ucomisd) are unmodeled, so the shown constant comparisons cannot represent the result.
+cce30c9005fefed0	metrics/integers.aarch64.O0.debug.elf	in_range	same	x >= lo then (x - hi + hi) <= hi, i.e. x <= hi, with signed comparisons.
+f041740416acd9db	metrics/integers.aarch64.O0.debug.elf	labs_value	same	Returns -x when the sign bit is set, else x.
+602711afe369be00	metrics/integers.x86_64.O0.debug.elf	narrow_add	same	Sign-extends both bytes, adds, and returns the sign-extended low byte.
+fe8df409d3cd449d	metrics/integers.x86_64.O0.debug.elf	rotate_left	same	Returns (x << (k&31)) | (x >> ((32-k)&31)).
+60193e9abd735730	metrics/integers.x86_64.O0.debug.elf	mul_high	same	Returns the high 64 bits of the 128-bit unsigned product.
+e3ee376ce9f42e13	metrics/integers.x86_64.O2.debug.elf	popcount	different	The loop (count++, x &= x-1 while x != 0) is correct but falls off the end without returning rax, so the count is never returned for nonzero x.
+0e7c6486c4d7df0a	metrics/l0_arith.aarch64.O0.debug.elf	pick	same	Returns a if a > b, else b.
+8323d58387e56ab2	metrics/l1_branch.aarch64.O0.debug.elf	clamp	same	Returns lo if x < lo, hi if x > hi, else x, with signed comparisons.
+6aa13d729ec991e7	metrics/l1_branch.aarch64.O2.debug.elf	sign_of	same	Returns 1 for x > 0, -1 for x < 0, 0 for zero.
+95b48bca3a6477db	metrics/l1_branch.x86_64.O2.debug.elf	clamp	same	x < lo ? lo : min(x, hi) matches the source including x == hi.
+faee0c86601f05b4	metrics/l2_loop.aarch64.O0.debug.elf	sum_skip_odd	same	Loop over i < n, adds odd i to s and stores s to the sink global.
+2d9561728b28a5e6	metrics/l2_loop.aarch64.O2.debug.elf	find_first	same	Linear search returning the index of the first match or -1.
+9e1a253fde633561	metrics/l2_loop.x86_64.O0.debug.elf	find_first	same	Linear search returning the index of the first match or -1.
+c5fd3954ab153d04	metrics/l2_loop.x86_64.O2.debug.elf	find_first	same	Linear search returning the index of the first match or -1.
+fe4b59ae32a7505e	metrics/l4_memory.x86_64.O2.debug.elf	array_sum	unsure	Scalar loop is correct, but the vector-path sum for n >= 8 comes from unmodeled SSE instructions.
+2aef8aac8fd3b9ab	metrics/l5_switch.aarch64.O2.debug.elf	dense	same	Values 10..25 call c0..c15 then return g_sink; others store 0 to g_sink and return it.
+6226503bbb7551dc	metrics/l5_switch.x86_64.O2.debug.elf	c0	same	Adds 11 to g_sink (t65 is a dead temporary).
+d4a614bae13cb6a6	metrics/l5_switch.x86_64.O2.debug.elf	c4	same	Adds 39 to g_sink (t65 is a dead temporary).
+afff131a9e9c59ac	metrics/l5_switch.x86_64.O2.debug.elf	c8	same	Adds 67 to g_sink (t65 is a dead temporary).
+3e3e7f67339ddf99	metrics/l5_switch.x86_64.O2.debug.elf	c12	same	Adds 95 to g_sink (t65 is a dead temporary).
+f5a3106ff489cb23	metrics/l6_abi.x86_64.O0.debug.elf	wide_add	same	Returns a + b.
+aa6b2397aa76d3a3	metrics/loops.aarch64.O0.debug.elf	sum_till_neg	same	Loop over i < n, breaks on negative value, adds it otherwise.
+cbd360c7671a0fcd	metrics/loops.aarch64.O2.debug.elf	sum_until_zero	same	Counts down n elements, breaks on zero, adds max(p[i],0) which matches skipping negatives.
+cc9d64731fa37450	metrics/loops.x86_64.O0.debug.elf	sum_until_zero	same	O0 loop over i < n, returns on zero, skips negative (signed compare), adds otherwise.
+499b3c0e5be3f2f3	metrics/loops.x86_64.O2.debug.elf	sum_until_zero	unsure	Loop and zero break are right, but the cmov that clamps negative values to 0 is unmodeled, so negatives appear added.
+63afe726e4467f5b	metrics/memory.aarch64.O0.debug.elf	grid_get	unsure	Column index and row stride are right, but the row index x10 comes from an unmodeled sign-extend bitfield instruction.
+ea964b41d23dae55	metrics/memory.aarch64.O2.debug.elf	copy_bytes	different	After the 32-byte loop it tests n == 0x18 instead of (n & 0x18) == 0, and the 8-byte loop exits on x11 != 0x10 instead of reaching 0, giving wrong trip counts (SIMD copies themselves are also unmodeled).
+e4d19b8bb21833bf	metrics/memory.x86_64.O0.debug.elf	copy_bytes	same	O0 byte loop copying src[i] to dst[i] for i < n unsigned.
+542248d7e8078758	metrics/memory.x86_64.O2.debug.elf	copy_bytes	unsure	Tail loops (8-byte, n&3 bytes, 4-byte unrolled) and branches are correct, but the 32-byte block copy uses unmodeled movups.
+1226409091d3e83b	metrics/structs.aarch64.O0.debug.elf	point_add	same	Low halves add to sum.x and high halves (sp-0xc, sp-0x14) add to sum.y in the returned 8-byte struct.
+0a264473884ad54b	metrics/structs.aarch64.O2.debug.elf	flags_level	unsure	The bitfield extracts of level and mode are unmodeled, so w8/w9 and the ready test cannot be verified.
+1492e8350f28952e	metrics/structs.x86_64.O0.debug.elf	flags_level	same	Tests bit 0 (ready); returns byte >> 4 (level) if set, else (byte >> 1) & 7 (mode).
+ac7c3e0e3c71b105	metrics/structs.x86_64.O2.debug.elf	flags_set_mode	same	Stores (old & 0xf1) | ((mode << 1) & 0xe) into the flags byte, i.e. sets the 3-bit mode field.
+2f485f1907cfc877	metrics/switch_jumptable.x86_64.O2.debug.elf	d7	same	Each jump-table target adds 0+1+...+k to g for its case and returns g, default x >u 9 sets g = -1.
+53e3541a8b766a8f	metrics/switch_value_table.x86_64.O2.debug.elf	dispatch	same	Returns table[x-10] for x-10 <= 4 unsigned, else 0.
+ff05b9d66621a4ea	pe64.obj	reg_add	same	Returns a + b.
+76e2d2751f2b02bc	switch_jumptable.o	d7	different	Case 8 lacks the final store of g+8 and the return, so it falls through into case 9 and adds 1..9 again to the reloaded g (g placeholder 0x0 is a relocation).
+0fe11774c0c07da9	x64_loops.o	sum_until	same	(n-2)(n-1)/2 + 2n - 1 equals n(n+1)/2 for n > 0, else 0.
+c6256aa7b6f89593	arm64_debug.elf	helper	same	Closed form (x-1)(x-2)(x-3)/3 + 3(x-1)(x-2)/2 + x - 1 equals the sum of i*i for x >= 1 and returns 0 for x < 1.
+c6256aa7b6f89593	arm64_debug_stripped.elf	helper	same	Same closed form as the unstripped build; matches the sum of squares for x >= 1 and returns 0 otherwise.
+e53d893f02055f38	arm64_jumptable.elf	d7	different	Case 8 lacks the final store of g+8 and the return, so it falls through into case 9, which reloads g and adds 0..9 again (g gets +73 instead of +36).
+21c038bf41e4acbf	arm64_loops0.o	count_bits	same	Loop adds the low bit and shifts right logically until x is 0, then returns the count.
+8db8ced8f148b515	arm64_macho.o	_helper	same	Same closed-form sum of squares as the ELF build, with 0 returned for x < 1.
+9c15c6fc4868fdaf	calls_a64.elf	apply_pointer	unsure	The indirect call f(x) (BLR) is unsupported, so the pseudo-C returns a1+1 instead of f(x)+1; the result depends on the unmodelled call.
+780589f8441adb7a	calls_a64.elf	sum_varargs	different	The register-save-area test is rendered as w12 <= 8 (unsigned), which is never true for the negative __gr_offs, so register-passed varargs are never read; the real test is w12+8 <= 0.
+10a9616b00fbef77	calls_a64.o	is_odd	same	The unrolled countdown returns n mod 2 for every n >= 0 (checked on n = 0..7), which matches the mutual recursion; negative n has no defined result in the source.
+117f59f19cbf4317	cpp_classes_a64.o	clamp_int(int)	same	min(v,255) masked to 0 when negative is clamp to [0,255].
+894bcb5ec6cd7f8e	cpp_classes_x64.o	increment(int&)	same	Increments *value; the t65 temporary is dead.
+e9c96aadddb867db	l1_branch_a64.o	classify	same	Returns -1 for x < 0, 0 for x == 0 and 1 otherwise.
+8137ca7dd3fa33e8	l1_branch_x64.o	clamp	same	x < lo gives lo, otherwise min(x, hi), using signed compares.
+8ec2904813758082	l2_loop_a64.o	find_first	same	Returns -1 for n < 1, otherwise scans indices 0..n-1 and returns the first match or -1.
+a2c558e5b4de880a	l2_loop_x64.o	find_first	same	rax starts at -1 and is returned for n <= 0 or when nothing matches; otherwise returns the matching index.
+9f8baee6271dd44a	l4_memory_x64.o	bump	same	Increments the global (dword_36 is an unresolved .o relocation placeholder); the t65 temporary is dead.
+e4171110d1d63500	metrics/alt_names.aarch64.O0.debug.elf	alt_helper	same	Straightforward signed loop that adds i*i for i < x.
+0644e62da7070d5d	metrics/alt_names.x86_64.O2.debug.elf	alt_helper	same	Correct closed form of the sum of squares with 32-bit wraparound, and 0 for x <= 0.
+9437d6a29adc9bc7	metrics/arith_mixed.aarch64.O2.debug.elf	sum_arr	unsure	The scalar tail is correct, but the vectorized main loop (SIMD loads, adds, ADDV) is unsupported, so the sum for n >= 8 cannot be checked.
+6097531a0652408b	metrics/arith_mixed.x86_64.O2.debug.elf	helper	same	Correct closed form of the sum of squares, and 0 for x <= 0.
+1970d2c94cf4d9b0	metrics/calls.aarch64.O0.debug.elf	factorial	unsure	The STUR/LDUR spills and reloads of n are unsupported, so the values of w8 used for the test and the multiply are not modelled (the structure n>1 ? n*factorial(n-1) : 1 looks right).
+d722e2c2d4445f5a	metrics/calls.aarch64.O0.debug.elf	call_sum9	same	Passes x and 1..7 in x0..x7 and 8 on the stack, then returns sum9's result in x0.
+343e46c62a09212f	metrics/calls.aarch64.O2.debug.elf	factorial	unsure	The scalar tail multiplies n..2 correctly, but the vectorized product for n >= 9 (DUP/MOVI/EXT/UMOV and the vector multiply) is unsupported.
+4ecdd00c3f1ad376	metrics/calls.aarch64.O2.debug.elf	sum_varargs	different	The register-save-area test is rendered as w12 <= 8 (unsigned), which is never true for the negative __gr_offs, so register-passed varargs are never read; the real test is w12+8 <= 0.
+188208f79e3d4e25	metrics/calls.x86_64.O0.debug.elf	sum_varargs	same	Correct SysV va_list setup, gp_offset <= 40 register/overflow selection, and a signed i < count loop adding each int.
+8fbe34f9758af181	metrics/calls.x86_64.O2.debug.elf	apply_pointer	unsure	Arguments are set up correctly (rax=f, edi=x) and eax+1 is returned, but the indirect call through rax is shown as sub_0(), so the call target is not expressed.
+f57c6218901004fe	metrics/calls.x86_64.O2.debug.elf	call_sum9	same	rdi=x is passed through, rsi..r9 = 1..5, stack args 6,7,8 in ascending address order, and sum9's rax is returned.
+9c91ef6cba37ac06	metrics/control.aarch64.O0.debug.elf	fallthrough	same	Cases give 7, 6, 4 and 8, and default gives -1, which matches the fallthrough semantics.
+52a430c6b5ca05f6	metrics/control.aarch64.O0.debug.elf	find_pair	same	Nested signed loops with j starting at i+1 return i*n+j on a match, otherwise -1.
+78d8accfe9da0911	metrics/control.aarch64.O2.debug.elf	skip_negatives	unsure	The scalar tail (adding max(v,0)) is correct, but the vectorized loop (SIMD loads, SMAX, ADDV) is unsupported.
+4994e4cde3df7af3	metrics/control.x86_64.O0.debug.elf	sparse	same	Compares against 1, 100, 1000 and 10000, returning 10, 20, 30 and 40, otherwise 0.
+064486b92dc4e309	metrics/control.x86_64.O2.debug.elf	matrix_trace	same	The unrolled-by-4 j loop plus the remainder loop add m[i*n+i] exactly when j == i, so the result is the trace.
+f280e6a03f4c6141	metrics/control.x86_64.O2.debug.elf	find_pair	different	The search logic and the index ebx - r8d = i*n+j are right, but the found path at L_2014f6 ends with no return, so the computed index is never returned.
+2760ceae2fac300b	metrics/divmod_a64.aarch64.O0.debug.elf	hdiv3	unsure	The UDIV is unsupported; as written the function returns x unchanged.
+dd3b45c429255aba	metrics/divmod_a64.aarch64.O0.debug.elf	sdiv16	unsure	The SDIV is unsupported; as written the function returns x unchanged.
+552b028ad39a3547	metrics/divmod_a64.aarch64.O0.debug.elf	umod10	unsure	The UDIV that produces the quotient w9 is unsupported; the rest computes x - q*10.
+ccf698f29e730cf2	metrics/divmod_a64.aarch64.O0.debug.elf	lmod16	unsure	The SDIV that produces the quotient x9 is unsupported; the rest computes x - q*16.
+31165247ea3e0b60	metrics/divmod_a64.aarch64.O0.debug.elf	ldiv10	unsure	The SDIV is unsupported; as written the function returns x unchanged.
+e945fd394491cbc3	metrics/divmod_a64.x86_64.O0.debug.elf	udiv10	unsure	The div is unsupported; as written the function returns x in eax.
+2d0b7c85787649d6	metrics/divmod_a64.x86_64.O0.debug.elf	ldiv16	unsure	Rendered as x / 0x10 with x typed uint64_t and no signedness marker; the source needs signed division (it differs for negative x), and the signedness cannot be confirmed.
+c7bd29eeddd03a1d	metrics/divmod_a64.x86_64.O0.debug.elf	umod10b	unsure	The div is unsupported; as written the function returns rdx (the remainder register) without modelling it.
+fc30a493b9b510d6	metrics/divmod_a64.x86_64.O0.debug.elf	is_pos	same	Returns (x > 0) as 0 or 1 in the low byte, zero-extended.
+f798b1c3c4b61aea	metrics/divmod_a64.x86_64.O2.debug.elf	is_zero	same	Returns (x == 0) as 0 or 1.
+f8e6c82e9ec9ee3f	metrics/divmod_x64.aarch64.O0.debug.elf	h3	unsure	The UDIV is unsupported; as written the function returns x unchanged.
+b43a28e8e7281498	metrics/divmod_x64.aarch64.O0.debug.elf	ldiv16x	unsure	The SDIV is unsupported; as written the function returns x unchanged.
+42c46857d133a393	metrics/divmod_x64.aarch64.O0.debug.elf	pmod8s	unsure	The SDIV that produces the quotient w9 is unsupported; the rest computes x - q*8.
+f2363fc51051b780	metrics/divmod_x64.aarch64.O0.debug.elf	umod10x	unsure	The UDIV that produces the quotient x9 is unsupported; the rest computes x - q*10.
+667bada52d3f6f76	metrics/divmod_x64.x86_64.O0.debug.elf	l3	unsure	Rendered as x / 0x3 with x typed uint64_t and no signedness marker; the source needs signed division, and the signedness cannot be confirmed.
+04845493a172a299	metrics/divmod_x64.x86_64.O0.debug.elf	u64	unsure	The div is unsupported; as written the function returns x in eax.
+1a7ca0f0c970df59	metrics/divmod_x64.x86_64.O0.debug.elf	pmod16l	unsure	Rendered as x % 0x10 with x typed uint64_t and no signedness marker; the source needs a signed remainder (negative for negative x), and the signedness cannot be confirmed.
+4fa2e9b7ef4e6f72	metrics/divmod_x64.x86_64.O0.debug.elf	qdiv64	unsure	Rendered as x / 0x40 with x typed uint64_t and no signedness marker; the source needs signed division, and the signedness cannot be confirmed.
+bf6095a0c4deda3d	metrics/float.aarch64.O0.debug.elf	widen	unsure	The float-to-double conversion and the multiply are unsupported floating-point instructions.
+f559043acaae46c0	metrics/float.x86_64.O0.debug.elf	average	unsure	The integer loop control is right, but all floating-point accumulation and the division are unsupported.
+dff1ed2e0eab014b	metrics/integers.aarch64.O0.debug.elf	narrow_add	same	Adds the sign-extended bytes; the low byte equals (signed char)(a+b), and the return type narrows it.
+145ecd12575362e1	metrics/integers.aarch64.O0.debug.elf	rotate_left	same	Identical shift/or expression with 32-bit masking.
+61ce2586d22d1dec	metrics/integers.aarch64.O2.debug.elf	mixed_sign	unsure	The sign extension of a into x8 (bitfield SXTW) is unsupported, so x8 - b cannot be verified as (long long)a - b.
+2d2cec238fbd1d31	metrics/integers.x86_64.O0.debug.elf	widen_mul	same	Multiplies the two zero-extended bytes and returns the low 16 bits.
+a3cb17ab52d206c2	metrics/integers.x86_64.O0.debug.elf	popcount	same	x &= x-1 loop with a counter until x is 0.
+445bb822ac2356f1	metrics/integers.x86_64.O2.debug.elf	narrow_add	same	The low byte of a+b equals (signed char)(a+b); the return type narrows the result.
+73e2d3f318662a51	metrics/integers.x86_64.O2.debug.elf	byte_swap	unsure	The BSWAP is unsupported; as written the function returns x unchanged.
+af9effbfab3343ab	metrics/l0_arith.x86_64.O2.debug.elf	add3	same	Returns a+b+c.
+f3545eb4138a8f09	metrics/l1_branch.aarch64.O0.debug.elf	sign_of	same	Returns 1 for x > 0, otherwise -1 when x < 0 and 0 when x == 0.
+f09a313ef9d8d56e	metrics/l1_branch.x86_64.O0.debug.elf	classify	same	Returns -1, 0 or 1 using a signed compare.
+fe58c5cbe0e96c6f	metrics/l1_branch.x86_64.O2.debug.elf	sign_of	same	Returns 1 for x > 0, otherwise -(x != 0).
+9d92934a4d50477a	metrics/l2_loop.aarch64.O0.debug.elf	find_first	same	Signed loop over i < n that returns i on a match, otherwise -1.
+0b503a90caea719e	metrics/l2_loop.x86_64.O0.debug.elf	sum_while	same	Each iteration does s += i and sink = s, with a signed i < n test.
+7b71dad6712af853	metrics/l2_loop.x86_64.O2.debug.elf	sum_while	different	The unrolled and remainder loops compute s and store every partial sum to sink correctly, but the function ends after the remainder loop with no return, so the final s is not returned on that path.
+ee934b43df7e4867	metrics/l4_memory.aarch64.O0.debug.elf	array_sum	same	Signed loop that adds a[i].
+b0b3bfa436ad74e7	metrics/l4_memory.x86_64.O2.debug.elf	bump	same	Increments the global; the t65 temporary is dead.
+798c667a8617cc29	metrics/l5_switch.x86_64.O0.debug.elf	dense	different	The range check is rendered as rax = (x-10)-15; if (eax > 0 unsigned), i.e. x != 25, so every x except 25 takes the default; it should be (x-10) > 15 unsigned.
+dfd54f507890a758	metrics/l5_switch.x86_64.O2.debug.elf	c1	same	g_sink ^= 18; the t65 temporary is dead.
+12871b733b4c4eef	metrics/l5_switch.x86_64.O2.debug.elf	c5	same	g_sink ^= 46; the t65 temporary is dead.
+7f09d3679a7617de	metrics/l5_switch.x86_64.O2.debug.elf	c9	same	g_sink ^= 74; the t65 temporary is dead.
+8796e332bb56b067	metrics/l5_switch.x86_64.O2.debug.elf	c13	same	g_sink ^= 102; the t65 temporary is dead.
+888446e09a690e02	metrics/l6_abi.x86_64.O2.debug.elf	six_args	same	Returns the sum of all six arguments, reordered.
+a65ab39d75872317	metrics/loops.aarch64.O0.debug.elf	sum_until_zero	same	Breaks on 0, skips values with the sign bit set, adds the rest, with a signed i < n test.
+634e2e89527999a1	metrics/loops.x86_64.O0.debug.elf	count_bits	same	Adds x&1 and shifts right logically until x is 0.
+475437d5e940ce05	metrics/loops.x86_64.O2.debug.elf	count_bits	different	The loop body and its condition (old x > 1) are right, but the function ends after the do-while with no return, so the count in rax is never returned for x != 0.
+629dcacf02e8f2be	metrics/memory.aarch64.O0.debug.elf	copy_bytes	same	Copies bytes while i < n (unsigned).
+ee7b0df97d84c535	metrics/memory.aarch64.O0.debug.elf	grid_set	unsure	The row index x11 comes from an unsupported SXTW of row&3, so the address grid + row*32 + (col&7)*4 cannot be fully verified.
+eaf0e3abd77de367	metrics/memory.aarch64.O2.debug.elf	fill_bytes	different	When n != 0 the function just returns; the memset/byte stores that fill dst with value are missing.
+5ffee369925d7e4c	metrics/memory.x86_64.O0.debug.elf	fill_bytes	same	Byte loop stores value to dst[i] while i < n (unsigned).
+0ab5c663ba89fd9c	metrics/memory.x86_64.O2.debug.elf	fill_bytes	unsure	For n != 0 it sets up (dst, value&0xff, n) and calls a function, but the callee is shown as sub_0 rather than memset, so the fill cannot be confirmed.
+767cbd094596be08	metrics/structs.aarch64.O0.debug.elf	word_low_byte	same	Returns the low byte of the union word.
+520c503619f4ebf8	metrics/structs.aarch64.O2.debug.elf	flags_set_mode	unsure	The bitfield insert that builds w9 from mode is unsupported, so the inserted value (mode&7)<<1 cannot be verified.
+186839252078fe7f	metrics/structs.x86_64.O0.debug.elf	flags_set_mode	same	Byte = (byte & 0xf1) | ((mode & 7) << 1), which sets the 3-bit mode field at bit 1.
+dbe957ae6c5144a1	metrics/switch_jumptable.aarch64.O0.debug.elf	d7	same	Each case k adds j for j = 0..k to g and returns g, and default sets g = -1.
+60054be76b777a90	metrics/switch_value_table.aarch64.O0.debug.elf	dispatch	same	Maps 10..14 to 1, 3, 7, 9 and 11, otherwise 0.
+673192507479906f	pe64.exe	reg_add	same	Returns a+b.
+9fde34fed648abd3	pe64.obj	reg_sign	same	Returns sign-extended byte a plus sign-extended short b.
+80eedec53b674f82	switch_jumptable_x64.o	d7	same	Each jump target adds 0..k to g and stores and returns it, covering all 10 cases, and default stores -1; the varying dword_N are unresolved .o relocation placeholders for g.
+97fb62c3fefefaf4	x64_loops.o	sum_till_neg	same	Loops i < max(n,0), stops on a negative value keeping the previous total, and returns the total.
+25b92243b610e03d	arm64_jumptable.elf	d7	same	Each case k adds 0+1+...+(k-1) to g and returns it, and default stores and returns -1, matching the source loops.
+38c57372ec16bf10	arm64_loops.o	count_bits	same	Zero input returns 0, and the loop adds x&1 and shifts right while the old x is above 1 (unsigned), i.e. until x becomes 0.
+4d8916ff43c35890	calls_a64.elf	sum_varargs	same	The va_list setup and the gr_offs register/stack choice (offs>=0 or offs+8>0 goes to the stack) match AAPCS64 va_arg, and the 32-bit sum runs count times.
+ab231487a65cf750	calls_a64.o	sum_varargs	same	Same as the linked build: correct AAPCS64 va_list setup and va_arg register/stack choice, and the int sum runs count times.
+8e904d88cfe9ed38	cpp_classes_x64.o	total_area(Shape const* const*, int)	same	For n>0 it calls vtable slot +0x10 on each shapes[i] and sums the results, and returns 0 otherwise.
+d6a14a2f48a3caac	l2_loop_x64.o	sum_while	same	The 8x unrolled loop stores the correct prefix sums to sink and leaves s correct at the end of each iteration, and the remainder loop handles n&7.
+a1caf986ef4233f8	l2_loop_x64.o	count_down	same	Returns max(n,1) and stores 1..c to sink in order through the unrolled and remainder loops.
+ef7666d8d29fc1e8	metrics/calls.aarch64.O2.debug.elf	sum_varargs	same	The AAPCS64 va_list setup and the va_arg register/stack choice are correct, and the 32-bit sum runs count times.
+2ee030d43ea9e648	metrics/calls.x86_64.O0.debug.elf	apply_table	unsure	The index%3 that selects the table entry comes from an unsupported div, so the call target cannot be checked.
+dce41e5346697786	metrics/calls.x86_64.O0.debug.elf	apply_pointer	same	Calls f with x as the argument and returns the result plus 1.
+4f525c6ce94390f4	metrics/calls.x86_64.O2.debug.elf	factorial	unsure	The scalar path for n<9 is correct, but for n>=9 the product is computed in unsupported SIMD instructions.
+e1140f8df4109bad	metrics/calls.x86_64.O2.debug.elf	sum_varargs	same	The SysV va_list setup (gp_offset 8, reg_save_area, overflow area) and the gp_offset<=40 register/stack choice in the 2x unrolled loop and odd tail are correct.
+cfe59b1344d21fc8	metrics/control.aarch64.O2.debug.elf	cleanup_on_error	unsure	The control flow and status values are correct, but the stored quotient comes from an unsupported SDIV.
+aa322c970ea8994e	metrics/control.aarch64.O2.debug.elf	short_circuit	unsure	The p[n-1] load is an unsupported LDUR, so the second comparison's operand cannot be checked, although the rest is correct.
+0b498bbad4ecad4c	metrics/control.x86_64.O0.debug.elf	fallthrough	different	The jump table targets 0x20134c (case 1) and 0x201355 (case 2) have no label in the pseudo-C, so the computed goto cannot express cases 1 and 2 (results 6 and 4); only cases 0 (7), 3 (8) and default are shown.
+7859f232458b22b2	metrics/control.x86_64.O0.debug.elf	short_circuit	same	Returns 0 when p is null or n<=0, else 1 if p[0]==1, else (p[n-1]==1).
+41c55c1ccc55b76b	metrics/control.x86_64.O2.debug.elf	cleanup_on_error	same	Returns -1 when a<0 or b==0, else stores a/b (signed) to *out and returns 0.
+931c5d957a6b1cc1	metrics/control.x86_64.O2.debug.elf	short_circuit	same	Null and n<=0 checks return 0, then it returns 1 if p[0]==1, else compares p[n-1] (byte offset 4n-4) with 1.
+b748daf467126791	metrics/control.x86_64.O2.debug.elf	find_pair	same	The inner loop scans j=i+1..n-1 comparing p[i]+p[j], and the returned ebx-r8 equals i*n+j since r8=-1-i*(n+1); it returns -1 when nothing is found.
+744208443eacbd3c	metrics/divmod_a64.x86_64.O0.debug.elf	lmod16	same	Signed 64-bit x % 16.
+e3c01971169ec295	metrics/divmod_a64.x86_64.O0.debug.elf	lmod3	same	Signed 64-bit x % 3.
+cfcd133f1402c026	metrics/divmod_x64.x86_64.O0.debug.elf	l10	same	Signed 64-bit x / 10.
+ed899e454bb06bb2	metrics/divmod_x64.x86_64.O0.debug.elf	ldiv16x	same	Signed 64-bit x / 16.
+8b4b4e64f9347e20	metrics/divmod_x64.x86_64.O0.debug.elf	pdiv16l	same	Signed 64-bit x / 16.
+000e1e8bfc5f677b	metrics/integers.x86_64.O0.debug.elf	mixed_sign	same	Sign-extended a minus zero-extended b in 64 bits.
+815b15b42ad8c11e	metrics/integers.x86_64.O2.debug.elf	popcount	same	Counts the iterations of x &= x-1 until x is 0, returning 0 for 0.
+f0f04681b239dd21	metrics/l2_loop.aarch64.O2.debug.elf	sum_skip_odd	same	For i from 0 to n-1 it adds odd i to s and stores s to sink, returning 0 for n<1.
+94727f3eb28f3db1	metrics/l2_loop.x86_64.O2.debug.elf	sum_while	same	The 8x unrolled loop stores the correct prefix sums to sink and ends with the correct s, and the remainder loop handles n&7.
+069cacedb6a6233e	metrics/l2_loop.x86_64.O2.debug.elf	count_down	same	Returns max(n,1) and stores 1..c to sink in order.
+d7a8954f62d833e5	metrics/l5_switch.x86_64.O0.debug.elf	dense	same	x-10 above 15 (unsigned) sets g_sink=0, and the jump table entries map in order to labels calling c0..c15, after which g_sink is returned.
+61bd9d6ac8fc699a	metrics/loops.aarch64.O2.debug.elf	count_bits	same	Adds x&1 and shifts right until x is 0, returning 0 for 0.
+b5ac021e88447837	metrics/loops.x86_64.O2.debug.elf	count_bits	same	Adds x&1 and shifts right until x is 0, returning 0 for 0.
+25c9775b90140937	metrics/memory.aarch64.O2.debug.elf	copy_bytes	unsure	The 32-byte and 8-byte vectorized copy loops are unsupported SIMD loads and stores, so the copy for n>=8 with non-overlapping buffers cannot be checked, although the byte loop is correct.
+52deb16717708e96	metrics/memory.aarch64.O2.debug.elf	string_length	same	Scans until a zero byte and returns its index.
+a66437d705cf3bd0	metrics/switch_jumptable.aarch64.O2.debug.elf	d7	same	Each case k adds the sum of 0..k-1 to g and returns g, and default sets and returns -1.
+d2db7f4c4d7827cf	metrics/switch_jumptable.x86_64.O0.debug.elf	d7	same	The jump table entries resolve to the labelled loops for cases 0..9, each adding j for j<k+1 to g before returning g, and out-of-range x sets g=-1.
+5f4d0a6e71448ef9	metrics/switch_value_table.x86_64.O0.debug.elf	dispatch	same	The jump table entries resolve in order to labels returning 1,3,7,9,11, and out-of-range x returns 0.
+6dc9b32cb29abca7	switch_jumptable.o	d7	same	Same per-case sums as the source, with g at the decompiler's placeholder address for the unrelocated .bss (0x2e0), and default -1.
+bf85469ec93d7c29	x64_loops.o	count_bits	same	Adds x&1 and shifts right until x is 0, returning 0 for 0.

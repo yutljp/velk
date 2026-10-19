@@ -131,7 +131,7 @@ fn cleanup_on_error @ 0x2102a0 (size 96)
     store32(w1, (sp + #0x18))
     store64(x2, (sp + #0x10))
     store32(#0xffffffff, (sp + #0xc))
-    brif eq ((w0 & #0xffffffff) & #0x80000000), #0x0 -> 0x2102c8
+    brif eq (w0 & #0x80000000), #0x0 -> 0x2102c8
   blk1 @ 0x2102c0:
     br 0x2102c4
   blk2 @ 0x2102c4:
@@ -368,7 +368,7 @@ fn short_circuit @ 0x210434 (size 144)
     store32((load32((sp + #0xffffffffffffffec)) & #0xffffffff), (sp + #0xfffffffffffffff0))
     br 0x2104b4
   blk8 @ 0x2104b4:
-    ret (((load32((sp + #0xfffffffffffffff0)) & #0xffffffff) & #0x1) & #0xffffffff)
+    ret (load32((sp + #0xfffffffffffffff0)) & #0x1)
 -- card
 {"addr":"0x210434","approxTokens":240,"blocks":9,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":144,"unsupported":0}
 
@@ -415,7 +415,7 @@ fn skip_negatives @ 0x2104c4 (size 124)
   blk2 @ 0x2104ec:
     br 0x2104f0
   blk3 @ 0x2104f0:
-    brif eq ((load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0xffffffff) & #0x80000000), #0x0 -> 0x210508
+    brif eq (load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0x80000000), #0x0 -> 0x210508
   blk4 @ 0x210500:
     br 0x210504
   blk5 @ 0x210504:

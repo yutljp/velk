@@ -24,23 +24,16 @@
 /* velk pseudo-C: sub_210334 @ 0x210334 */
 /* ref: 0x200158 .rodata */
 uint32_t sub_210334(void) {
-    uint64_t local_0; /* [sp-10] */
-    uint64_t local_1; /* [sp-8] */
-    uint64_t local_2; /* [sp-20] */
+    uint64_t local_0; /* [sp-20] */
 
-    sp = sp - 0x20;
-    local_0 = x29;
-    local_1 = x30;
-    x29 = sp + 0x10;
     /* unsupported (2 steps): STUR at 0x210340, LDUR at 0x210344 */
     x8 = w8 - 0xa;
     x8 = w8;
-    local_2 = x8;
+    local_0 = x8;
     x8 = x8 - 0xf;
     if (x8 + 0xf > 0xf /* unsigned */) { goto L_2103f8; }
     x8 = 0x210368;
-    x9 = dword_200158[local_2];
-    x8 = 0x210368 + x9;
+    x8 = 0x210368 + dword_200158[local_0];
     switch (w8 - 0xa - 0xf) {
         case -15: goto L_210378;
         case -14: goto L_210380;
@@ -68,21 +61,16 @@ uint32_t ()
 -- ir
 fn <unnamed> @ 0x210334 (size 68)
   blk0 @ 0x210334:
-    sp = (sp - #0x20)
-    store64(x29, (sp + #0x10))
-    store64(x30, (sp + #0x18))
-    x29 = (sp + #0x10)
     unsupported: STUR at 0x210340
     unsupported: LDUR at 0x210344
     x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
     x8 = (x8 & #0xffffffff)
-    store64(x8, sp)
+    store64(x8, (sp + #0xffffffffffffffe0))
     x8 = (x8 - #0xf)
     brif hi (x8 + #0xf), #0xf -> 0x2103f8
   blk1 @ 0x21035c:
     x8 = #0x210368
-    x9 = load32((#0x200158 + (load64(sp) << #0x2)))s
-    x8 = (#0x210368 + x9)
+    x8 = (#0x210368 + load32((#0x200158 + (load64((sp + #0xffffffffffffffe0)) << #0x2)))s)
     switch ((((x8 & #0xffffffff) - #0xa) & #0xffffffff) - #0xf) [-15->0x210378, -14->0x210380, -13->0x210388, -12->0x210390, -11->0x210398, -10->0x2103a0, -9->0x2103a8, -8->0x2103b0, -7->0x2103b8, -6->0x2103c0, -5->0x2103c8, -4->0x2103d0, -3->0x2103d8, -2->0x2103e0, -1->0x2103e8, 0->0x2103f0] default 0x2103f8
 -- card
 {"addr":"0x210334","approxTokens":198,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":68,"sizeEstimated":true,"unsupported":2}

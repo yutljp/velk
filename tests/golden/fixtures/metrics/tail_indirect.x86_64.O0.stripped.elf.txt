@@ -6,9 +6,11 @@
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
 uint32_t sub_201180(uint32_t a0, uint32_t a1) {
-    rbp = rsp - 0x8;
-    *(uint64_t *)(rbp - 0x8) = a0;
-    *(uint32_t *)(rbp - 0xc) = a1;
+    uint64_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-14] */
+
+    local_0 = a0;
+    local_1 = a1;
     rax = a0;
     a0 = a1 + 0x1;
     (*(rax))();
@@ -21,9 +23,8 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x201180 (size 48)
   blk0 @ 0x201180:
-    rbp = (rsp + #0xfffffffffffffff8)
-    store64(rdi, (rbp + #0xfffffffffffffff8))
-    store32(esi, (rbp + #0xfffffffffffffff4))
+    store64(rdi, (rsp + #0xfffffffffffffff0))
+    store32(esi, (rsp + #0xffffffffffffffec))
     rax = rdi
     rdi = (((esi & #0xffffffff) + #0x1) & #0xffffffff)
     call *rax
@@ -35,11 +36,7 @@ fn <unnamed> @ 0x201180 (size 48)
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
 uint32_t sub_2011b0(uint32_t a0) {
-    rbp = rsp - 0x8;
-    *(uint32_t *)(rbp - 0x4) = a0;
-    eax = a0 + 0x5;
-    *(uint32_t *)(rbp - 0x8) = eax;
-    return eax;
+    return a0 + 0x5;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -48,10 +45,6 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011b0 (size 21)
   blk0 @ 0x2011b0:
-    rbp = (rsp + #0xfffffffffffffff8)
-    store32(edi, (rbp + #0xfffffffffffffffc))
-    eax = ((edi & #0xffffffff) + #0x5)
-    store32(eax, (rbp + #0xfffffffffffffff8))
-    ret (eax & #0xffffffff)
+    ret (((edi & #0xffffffff) + #0x5) & #0xffffffff)
 -- card
 {"addr":"0x2011b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":21,"sizeEstimated":true,"unsupported":0}

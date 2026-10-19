@@ -48,11 +48,11 @@ fn <unnamed> @ 0x21024c (size 32)
 == 0x21026c -
 -- decompile
 /* velk pseudo-C: sub_21026c @ 0x21026c */
-uint64_t sub_21026c(uint64_t a0, uint32_t a1) {
+uint64_t sub_21026c(uint32_t a0, uint32_t a1) {
     return (int64_t)(int32_t)(a0) - a1;
 }
 -- signature
-uint64_t (uint64_t a0, uint32_t a1)
+uint64_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -98,7 +98,7 @@ fn <unnamed> @ 0x21028c (size 84)
     store32((select le (((load32((sp + #0xfffffffffffffffc)) - w9) & #0xffffffff) + w9), w9 ? #0x1, #0x0 & #0xffffffff), (sp + #0xfffffffffffffff0))
     br 0x2102d0
   blk3 @ 0x2102d0:
-    ret ((load32((sp + #0xfffffffffffffff0)) & #0xffffffff) & #0x1)
+    ret (load32((sp + #0xfffffffffffffff0)) & #0x1)
 -- card
 {"addr":"0x21028c","approxTokens":222,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":84,"sizeEstimated":true,"unsupported":0}
 
@@ -115,7 +115,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x2102e0 (size 64)
   blk0 @ 0x2102e0:
-    ret ((((w0 & #0xffffffff) << ((w1 & #0xffffffff) & #0x1f)) | ((w0 & #0xffffffff) >> (((#0x20 - (w1 & #0xffffffff)) & #0x1f) & #0xffffffff))) & #0xffffffff)
+    ret ((((w0 & #0xffffffff) << (w1 & #0x1f)) | ((w0 & #0xffffffff) >> ((#0x20 - (w1 & #0xffffffff)) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x2102e0","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
 
@@ -190,7 +190,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x21036c (size 60)
   blk0 @ 0x21036c:
-    ret (((((((w0 & #0xffffffff) >> #0x8) & #0xff00) | ((w0 & #0xffffffff) >> #0x18)) | ((((w0 & #0xffffffff) << #0x8) & #0xffffffff) & #0xff0000)) | ((w0 & #0xffffffff) << #0x18)) & #0xffffffff)
+    ret (((((((w0 & #0xffffffff) >> #0x8) & #0xff00) | ((w0 & #0xffffffff) >> #0x18)) | (((w0 & #0xffffffff) << #0x8) & #0xff0000)) | ((w0 & #0xffffffff) << #0x18)) & #0xffffffff)
 -- card
 {"addr":"0x21036c","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":60,"sizeEstimated":true,"unsupported":0}
 

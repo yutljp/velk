@@ -56,14 +56,10 @@ fn <unnamed> @ 0x2013a0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
 uint64_t sub_2013c0(uint64_t a0) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = a0;
     rax = a0;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x2013d3 */
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -73,14 +69,10 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x2013c0 (size 32)
   blk0 @ 0x2013c0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x2013d3
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2013c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
@@ -89,14 +81,10 @@ fn <unnamed> @ 0x2013c0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2013e0 @ 0x2013e0 */
 uint64_t sub_2013e0(uint64_t a0) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = a0;
     rax = a0;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x2013f3 */
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -106,14 +94,10 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x2013e0 (size 32)
   blk0 @ 0x2013e0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x2013f3
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2013e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
@@ -122,14 +106,10 @@ fn <unnamed> @ 0x2013e0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_201400 @ 0x201400 */
 uint32_t sub_201400(uint32_t a0) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = a0;
     eax = a0;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x201411 */
-    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -139,14 +119,10 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201400 (size 32)
   blk0 @ 0x201400:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x201411
-    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201400","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
@@ -189,15 +165,11 @@ fn <unnamed> @ 0x201440 (size 32)
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 uint32_t sub_201460(uint32_t a0) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = a0;
     eax = a0;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x201471 */
     eax = rdx;
-    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -207,15 +179,11 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201460 (size 32)
   blk0 @ 0x201460:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x201471
     eax = rdx
-    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
@@ -250,7 +218,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2014a0 (size 16)
   blk0 @ 0x2014a0:
-    ret ((edi & #0xffffffff) & #0x7)
+    ret (edi & #0x7)
 -- card
 {"addr":"0x2014a0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -326,15 +294,11 @@ fn <unnamed> @ 0x201510 (size 32)
 -- decompile
 /* velk pseudo-C: sub_201530 @ 0x201530 */
 uint32_t sub_201530(uint64_t a0) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = a0;
     rax = a0;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x201543 */
     rax = rdx;
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -344,15 +308,11 @@ uint32_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x201530 (size 32)
   blk0 @ 0x201530:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x201543
     rax = rdx
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x201530","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}

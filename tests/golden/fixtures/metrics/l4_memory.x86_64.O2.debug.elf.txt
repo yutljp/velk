@@ -34,7 +34,7 @@ int array_sum(int *a, int n) {
         rdx = 0x0;
         rax = 0x0;
     } else {
-        rdx = ecx & 0x7ffffff8;
+        rdx = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         /* unsupported: Pxor at 0x20121a */
         n = 0x0;
@@ -72,8 +72,8 @@ fn array_sum @ 0x2011f0 (size 140)
   blk3 @ 0x201201:
     ret #0x0
   blk4 @ 0x201204:
-    rdx = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
-    rax = (((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) & #0xffffffff) << #0x5)
+    rdx = (rcx & #0x7ffffff8)
+    rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     unsupported: Pxor at 0x20121a
     rsi = #0x0
     unsupported: Pxor at 0x201220

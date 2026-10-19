@@ -69,7 +69,7 @@ fn sum_until @ 0x2101b4 (size 40)
   blk1 @ 0x2101bc:
     x8 = ((x8 & #0xffffffff) * (((x0 & #0xffffffff) - #0x2) & #0xffffffff))
     x8 = (x8 >> #0x1)
-    ret (((((x8 & #0xffffffff) + ((x0 & #0xffffffff) << #0x1)) & #0xffffffff) - #0x1) & #0xffffffff)
+    ret ((((x8 & #0xffffffff) + ((x0 & #0xffffffff) << #0x1)) - #0x1) & #0xffffffff)
   blk2 @ 0x2101d4:
     ret #0x0
 -- card

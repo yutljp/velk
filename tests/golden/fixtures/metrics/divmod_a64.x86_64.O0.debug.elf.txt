@@ -29,14 +29,10 @@
 -- decompile
 /* velk pseudo-C: udiv3 @ 0x201460 */
 uint32_t udiv3(uint32_t x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x201471 */
-    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -46,14 +42,10 @@ uint32_t (uint32_t x)
 -- ir
 fn udiv3 @ 0x201460 (size 21)
   blk0 @ 0x201460:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x201471
-    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201460","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":1}
@@ -62,14 +54,10 @@ fn udiv3 @ 0x201460 (size 21)
 -- decompile
 /* velk pseudo-C: udiv10 @ 0x201480 */
 uint32_t udiv10(uint32_t x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x201491 */
-    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -79,14 +67,10 @@ uint32_t (uint32_t x)
 -- ir
 fn udiv10 @ 0x201480 (size 21)
   blk0 @ 0x201480:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x201491
-    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201480","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":1}
@@ -112,14 +96,10 @@ fn udiv64 @ 0x2014a0 (size 15)
 -- decompile
 /* velk pseudo-C: hdiv3 @ 0x2014b0 */
 uint64_t hdiv3(uint64_t x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = x;
     rax = x;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x2014c3 */
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -129,14 +109,10 @@ uint64_t (uint64_t x)
 -- ir
 fn hdiv3 @ 0x2014b0 (size 24)
   blk0 @ 0x2014b0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x2014c3
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2014b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}
@@ -145,14 +121,10 @@ fn hdiv3 @ 0x2014b0 (size 24)
 -- decompile
 /* velk pseudo-C: hdiv10 @ 0x2014d0 */
 uint64_t hdiv10(uint64_t x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = x;
     rax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x2014e3 */
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -162,14 +134,10 @@ uint64_t (uint64_t x)
 -- ir
 fn hdiv10 @ 0x2014d0 (size 24)
   blk0 @ 0x2014d0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x2014e3
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2014d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}
@@ -263,15 +231,11 @@ fn smod3 @ 0x201570 (size 22)
 -- decompile
 /* velk pseudo-C: umod3 @ 0x201590 */
 uint32_t umod3(uint32_t x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x2015a1 */
     eax = rdx;
-    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -281,15 +245,11 @@ uint32_t (uint32_t x)
 -- ir
 fn umod3 @ 0x201590 (size 23)
   blk0 @ 0x201590:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x2015a1
     eax = rdx
-    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201590","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":1}
@@ -298,15 +258,11 @@ fn umod3 @ 0x201590 (size 23)
 -- decompile
 /* velk pseudo-C: umod10 @ 0x2015b0 */
 uint32_t umod10(uint32_t x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x2015c1 */
     eax = rdx;
-    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -316,15 +272,11 @@ uint32_t (uint32_t x)
 -- ir
 fn umod10 @ 0x2015b0 (size 23)
   blk0 @ 0x2015b0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x2015c1
     eax = rdx
-    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x2015b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":1}
@@ -367,15 +319,11 @@ fn lmod10 @ 0x2015f0 (size 27)
 -- decompile
 /* velk pseudo-C: umod10b @ 0x201610 */
 uint32_t umod10b(uint64_t x) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint64_t *)(rbp - 0x8) = x;
     rax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x201623 */
     rax = rdx;
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -385,15 +333,11 @@ uint32_t (uint64_t x)
 -- ir
 fn umod10b @ 0x201610 (size 27)
   blk0 @ 0x201610:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x201623
     rax = rdx
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x201610","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf"],"section":".text","size":27,"unsupported":1}
@@ -453,8 +397,8 @@ fn negate @ 0x201670 (size 14)
 -- decompile
 /* velk pseudo-C: is_neg @ 0x201680 */
 int is_neg(int x) {
-    rax = rax & 0xffffffffffffff00 | (x < 0x0 ? 0x1 : 0x0) & 0xff & 0xff;
-    return (rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff) & 0xff & 0xff;
+    rax = rax & 0xffffffffffffff00 | (x < 0x0 ? 0x1 : 0x0) & 0xff;
+    return rax & 0x1 & 0xff;
 }
 -- signature
 int (int x)
@@ -463,8 +407,8 @@ int (int x)
 -- ir
 fn is_neg @ 0x201680 (size 21)
   blk0 @ 0x201680:
-    rax = ((rax & #0xffffffffffffff00) | ((select lt (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
-    ret (((((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff)) & #0xff) & #0xff) & #0xffffffff)
+    rax = ((rax & #0xffffffffffffff00) | (select lt (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff))
+    ret ((rax & #0x1) & #0xff)
 -- card
 {"addr":"0x201680","approxTokens":150,"blocks":1,"hardReasons":[],"name":"is_neg","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":0}
 
@@ -472,8 +416,8 @@ fn is_neg @ 0x201680 (size 21)
 -- decompile
 /* velk pseudo-C: is_zero @ 0x2016a0 */
 int is_zero(int x) {
-    rax = rax & 0xffffffffffffff00 | (x == 0x0 ? 0x1 : 0x0) & 0xff & 0xff;
-    return (rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff) & 0xff & 0xff;
+    rax = rax & 0xffffffffffffff00 | (x == 0x0 ? 0x1 : 0x0) & 0xff;
+    return rax & 0x1 & 0xff;
 }
 -- signature
 int (int x)
@@ -482,8 +426,8 @@ int (int x)
 -- ir
 fn is_zero @ 0x2016a0 (size 21)
   blk0 @ 0x2016a0:
-    rax = ((rax & #0xffffffffffffff00) | ((select eq (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
-    ret (((((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff)) & #0xff) & #0xff) & #0xffffffff)
+    rax = ((rax & #0xffffffffffffff00) | (select eq (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff))
+    ret ((rax & #0x1) & #0xff)
 -- card
 {"addr":"0x2016a0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"is_zero","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":0}
 
@@ -491,8 +435,8 @@ fn is_zero @ 0x2016a0 (size 21)
 -- decompile
 /* velk pseudo-C: is_pos @ 0x2016c0 */
 int is_pos(int x) {
-    rax = rax & 0xffffffffffffff00 | (x > 0x0 ? 0x1 : 0x0) & 0xff & 0xff;
-    return (rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff) & 0xff & 0xff;
+    rax = rax & 0xffffffffffffff00 | (x > 0x0 ? 0x1 : 0x0) & 0xff;
+    return rax & 0x1 & 0xff;
 }
 -- signature
 int (int x)
@@ -501,8 +445,8 @@ int (int x)
 -- ir
 fn is_pos @ 0x2016c0 (size 21)
   blk0 @ 0x2016c0:
-    rax = ((rax & #0xffffffffffffff00) | ((select gt (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
-    ret (((((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff)) & #0xff) & #0xff) & #0xffffffff)
+    rax = ((rax & #0xffffffffffffff00) | (select gt (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff))
+    ret ((rax & #0x1) & #0xff)
 -- card
 {"addr":"0x2016c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"is_pos","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":0}
 

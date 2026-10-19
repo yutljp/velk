@@ -15,8 +15,8 @@ int32_t sub_201220(uint64_t a0, int32_t a1) {
         return 0x0;
     }
     rcx = a1;
-    rdx = ecx & 0x3;
-    r8 = ecx & 0x7ffffffc;
+    rdx = rcx & 0x3;
+    r8 = rcx & 0x7ffffffc;
     r9 = -rdx;
     r10 = 0x0;
     r11 = 0x0;
@@ -84,8 +84,8 @@ fn <unnamed> @ 0x201220 (size 256)
     brif le esi, #0x0 -> 0x20130f
   blk1 @ 0x201228:
     rcx = esi
-    rdx = (((rcx & #0xffffffff) & #0x3) & #0xffffffff)
-    r8 = (((rcx & #0xffffffff) & #0x7ffffffc) & #0xffffffff)
+    rdx = (rcx & #0x3)
+    r8 = (rcx & #0x7ffffffc)
     r9 = (#0x0 - rdx)
     r10 = #0x0
     r11 = #0x0
@@ -277,7 +277,7 @@ int32_t sub_2013a0(uint64_t a0, int32_t a1) {
     }
     rax = 0x1;
     if (*(uint32_t *)(a0) != 0x1) {
-        rax = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
+        rax = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
     }
     return rax;
 }
@@ -296,7 +296,7 @@ fn <unnamed> @ 0x2013a0 (size 48)
     rax = #0x1
     brif eq load32(rdi), #0x1 -> 0x2013c1
   blk3 @ 0x2013b5:
-    rax = ((select eq load32(((rdi + (esi * #0x4)) + #0xfffffffffffffffc)), #0x1 ? #0x1, #0x0 & #0xff) & #0xff)
+    rax = (select eq load32(((rdi + (esi * #0x4)) + #0xfffffffffffffffc)), #0x1 ? #0x1, #0x0 & #0xff)
   blk4 @ 0x2013c1:
     ret rax
 -- card
@@ -315,7 +315,7 @@ int32_t sub_2013d0(uint32_t *a0, int64_t a1) {
         a1 = 0x0;
         rax = 0x0;
     } else {
-        a1 = ecx & 0x7ffffff8;
+        a1 = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         /* unsupported: Pxor at 0x2013ff */
         r8 = 0x0;
@@ -355,8 +355,8 @@ fn <unnamed> @ 0x2013d0 (size 192)
   blk3 @ 0x2013e6:
     ret #0x0
   blk4 @ 0x2013e9:
-    rsi = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
-    rax = (((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) & #0xffffffff) << #0x5)
+    rsi = (rcx & #0x7ffffff8)
+    rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     unsupported: Pxor at 0x2013ff
     r8 = #0x0
     unsupported: Pxor at 0x201406

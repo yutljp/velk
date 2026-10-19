@@ -18,7 +18,7 @@ int (int x)
 -- ir
 fn tail_target @ 0x2011b0 (size 14)
   blk0 @ 0x2011b0:
-    ret ((((rdi + (rdi * #0x2)) & #0xffffffff) + #0x1) & #0xffffffff)
+    ret (((rdi + (rdi * #0x2)) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2011b0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
 

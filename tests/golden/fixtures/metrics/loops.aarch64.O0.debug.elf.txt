@@ -103,9 +103,9 @@ int sum_till_neg(int *p, int n) {
         if (local_3 >= local_1) {
             return local_2;
         }
-        w8 = *(uint32_t *)(local_0 + (local_3 << 0x2));
+        x8 = *(uint32_t *)(local_0 + (local_3 << 0x2));
         local_4 = w8;
-        if ((w8 & 0x80000000) == 0x0) { goto L_210290; }
+        if ((x8 & 0x80000000) == 0x0) { goto L_210290; }
         return local_2;
     L_210290:
         local_2 += local_4;
@@ -132,7 +132,7 @@ fn sum_till_neg @ 0x210244 (size 120)
   blk3 @ 0x210270:
     x8 = (load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0xffffffff)
     store32((x8 & #0xffffffff), (sp + #0xffffffffffffffe8))
-    brif eq ((x8 & #0xffffffff) & #0x80000000), #0x0 -> 0x210290
+    brif eq (x8 & #0x80000000), #0x0 -> 0x210290
   blk4 @ 0x210288:
     br 0x21028c
   blk5 @ 0x21028c:
@@ -198,7 +198,7 @@ fn sum_until_zero @ 0x2102bc (size 148)
   blk5 @ 0x2102fc:
     br 0x210344
   blk6 @ 0x210300:
-    brif eq ((load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0xffffffff) & #0x80000000), #0x0 -> 0x210318
+    brif eq (load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0x80000000), #0x0 -> 0x210318
   blk7 @ 0x210310:
     br 0x210314
   blk8 @ 0x210314:

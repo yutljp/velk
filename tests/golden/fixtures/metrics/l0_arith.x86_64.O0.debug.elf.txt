@@ -8,10 +8,6 @@
 -- decompile
 /* velk pseudo-C: add3 @ 0x2011c0 */
 int add3(int a, int b, int c) {
-    rbp = rsp - 0x8;
-    *(uint32_t *)(rbp - 0x4) = a;
-    *(uint32_t *)(rbp - 0x8) = b;
-    *(uint32_t *)(rbp - 0xc) = c;
     return a + b + c;
 }
 -- signature
@@ -21,10 +17,6 @@ int (int a, int b, int c)
 -- ir
 fn add3 @ 0x2011c0 (size 24)
   blk0 @ 0x2011c0:
-    rbp = (rsp + #0xfffffffffffffff8)
-    store32(edi, (rbp + #0xfffffffffffffffc))
-    store32(esi, (rbp + #0xfffffffffffffff8))
-    store32(edx, (rbp + #0xfffffffffffffff4))
     ret ((((edi & #0xffffffff) + (esi & #0xffffffff)) + (edx & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
@@ -50,17 +42,18 @@ fn scale @ 0x2011e0 (size 16)
 -- decompile
 /* velk pseudo-C: pick @ 0x2011f0 */
 int pick(int a, int b) {
-    rsp = rsp - 0x8;
-    rbp = rsp;
-    *(uint32_t *)(rbp - 0x4) = a;
-    *(uint32_t *)(rbp - 0x8) = b;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+    uint32_t local_2; /* [sp-14] */
+
+    local_0 = a;
+    local_1 = b;
     if (a > b) {
-        *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0x4);
+        local_2 = local_0;
     } else {
-        *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0x8);
+        local_2 = local_1;
     }
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0xc);
+    return local_2;
 }
 -- signature
 int (int a, int b)
@@ -69,19 +62,16 @@ int (int a, int b)
 -- ir
 fn pick @ 0x2011f0 (size 44)
   blk0 @ 0x2011f0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rbp + #0xfffffffffffffffc))
-    store32(esi, (rbp + #0xfffffffffffffff8))
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    store32(esi, (rsp + #0xfffffffffffffff0))
     brif le (edi & #0xffffffff), (esi & #0xffffffff) -> 0x201211
   blk1 @ 0x201206:
-    store32(load32((rbp + #0xfffffffffffffffc)), (rbp + #0xfffffffffffffff4))
+    store32(load32((rsp + #0xfffffffffffffff4)), (rsp + #0xffffffffffffffec))
     br 0x201217
   blk2 @ 0x201211:
-    store32(load32((rbp + #0xfffffffffffffff8)), (rbp + #0xfffffffffffffff4))
+    store32(load32((rsp + #0xfffffffffffffff0)), (rsp + #0xffffffffffffffec))
   blk3 @ 0x201217:
-    rsp = (rsp + #0x8)
-    ret load32((rbp + #0xfffffffffffffff4))
+    ret load32((rsp + #0xffffffffffffffec))
 -- card
 {"addr":"0x2011f0","approxTokens":156,"blocks":4,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
 

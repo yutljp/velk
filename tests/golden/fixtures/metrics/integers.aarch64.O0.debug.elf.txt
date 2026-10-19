@@ -97,7 +97,7 @@ fn in_range @ 0x21028c (size 84)
     store32((select le (((load32((sp + #0xfffffffffffffffc)) - w9) & #0xffffffff) + w9), w9 ? #0x1, #0x0 & #0xffffffff), (sp + #0xfffffffffffffff0))
     br 0x2102d0
   blk3 @ 0x2102d0:
-    ret ((load32((sp + #0xfffffffffffffff0)) & #0xffffffff) & #0x1)
+    ret (load32((sp + #0xfffffffffffffff0)) & #0x1)
 -- card
 {"addr":"0x21028c","approxTokens":222,"blocks":4,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}
 
@@ -114,7 +114,7 @@ uint32_t (uint32_t x, uint32_t k)
 -- ir
 fn rotate_left @ 0x2102e0 (size 64)
   blk0 @ 0x2102e0:
-    ret ((((w0 & #0xffffffff) << ((w1 & #0xffffffff) & #0x1f)) | ((w0 & #0xffffffff) >> (((#0x20 - (w1 & #0xffffffff)) & #0x1f) & #0xffffffff))) & #0xffffffff)
+    ret ((((w0 & #0xffffffff) << (w1 & #0x1f)) | ((w0 & #0xffffffff) >> ((#0x20 - (w1 & #0xffffffff)) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x2102e0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":0}
 
@@ -169,7 +169,7 @@ uint32_t (uint32_t x)
 -- ir
 fn byte_swap @ 0x21036c (size 60)
   blk0 @ 0x21036c:
-    ret (((((((w0 & #0xffffffff) >> #0x8) & #0xff00) | ((w0 & #0xffffffff) >> #0x18)) | ((((w0 & #0xffffffff) << #0x8) & #0xffffffff) & #0xff0000)) | ((w0 & #0xffffffff) << #0x18)) & #0xffffffff)
+    ret (((((((w0 & #0xffffffff) >> #0x8) & #0xff00) | ((w0 & #0xffffffff) >> #0x18)) | (((w0 & #0xffffffff) << #0x8) & #0xff0000)) | ((w0 & #0xffffffff) << #0x18)) & #0xffffffff)
 -- card
 {"addr":"0x21036c","approxTokens":186,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":60,"unsupported":0}
 

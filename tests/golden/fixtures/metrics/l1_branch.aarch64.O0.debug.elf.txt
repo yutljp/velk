@@ -30,7 +30,7 @@ int (int x)
 fn classify @ 0x210184 (size 76)
   blk0 @ 0x210184:
     store32(w0, (sp + #0xfffffffffffffff8))
-    brif eq ((w0 & #0xffffffff) & #0x80000000), #0x0 -> 0x2101a4
+    brif eq (w0 & #0x80000000), #0x0 -> 0x2101a4
   blk1 @ 0x210194:
     br 0x210198
   blk2 @ 0x210198:

@@ -8,12 +8,107 @@ use crate::passes::{copies, frame};
 /// adjustments, when the stack pointer is only ever a frame base.
 pub fn settle(ir: &mut FunctionIr) {
     let frames = block_frames(ir, stack_pointer(ir.isa));
+    if substitute_frame_pointer(ir, &frames) {
+        crate::passes::simplify::simplify(ir);
+        frame::elide_callee_saves(ir);
+    }
+    let frames = block_frames(ir, stack_pointer(ir.isa));
     if !canonical_frame(ir, &frames) {
         return;
     }
     rewrite_frame(ir, &frames);
     frame::drop_dead_frame_stores(ir);
     copies::inline_local_copies(ir);
+    crate::passes::simplify::simplify(ir);
+}
+
+/// Rewrites the reads of a frame pointer that the entry block sets once from
+/// the stack pointer as the stack addresses they are, so the frame settles
+/// like one addressed through the stack pointer. Other writes may only
+/// restore the caller's value on the way out. Returns whether it rewrote.
+fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool {
+    let sp = stack_pointer(ir.isa);
+    let fp = crate::arch::frame_pointer(ir.isa);
+    let Some(mut frame) = frames.first().copied().flatten() else {
+        return false;
+    };
+    // The setup, and the entry-frame offset it gives the frame pointer.
+    let mut setup = None;
+    for (position, stmt) in ir.blocks[0].stmts.iter().enumerate() {
+        match stmt {
+            Stmt::Assign { dest, value } if dest.index == fp => {
+                setup = frame_slot(value, frame, sp).map(|base| (position, base));
+                break;
+            }
+            Stmt::Assign { dest, value } if dest.index == sp => {
+                frame = adjusted(frame, value, sp);
+            }
+            _ => {}
+        }
+    }
+    let Some((setup_at, base)) = setup else {
+        return false;
+    };
+    // Any other write restores the caller's frame pointer before a return.
+    for (index, block) in ir.blocks.iter().enumerate() {
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            if (index, position) == (0, setup_at)
+                || !crate::ir::visit::statement_registers(stmt).0.contains(&fp)
+            {
+                continue;
+            }
+            let restores = matches!(
+                stmt,
+                Stmt::Assign {
+                    value: Expr::Load { .. },
+                    ..
+                }
+            ) && matches!(block.stmts.last(), Some(Stmt::Ret { .. }))
+                && block.stmts[position + 1..]
+                    .iter()
+                    .all(|later| !crate::ir::visit::statement_reads(later).contains(&fp));
+            if !restores {
+                return false;
+            }
+        }
+    }
+    for (index, block) in ir.blocks.iter_mut().enumerate() {
+        let Some(mut frame) = frames[index] else {
+            return false;
+        };
+        for (position, stmt) in block.stmts.iter_mut().enumerate() {
+            // The save before the setup reads the caller's frame pointer.
+            if index != 0 || position > setup_at {
+                let address = Expr::bin(
+                    BinOp::Add,
+                    Expr::reg(sp, 64),
+                    Expr::Const(base.wrapping_sub(frame) as u64),
+                );
+                crate::ir::visit::replace_reads(stmt, &[(fp, address)]);
+            }
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.index == sp
+            {
+                frame = adjusted(frame, value, sp);
+            }
+        }
+    }
+    ir.blocks[0].stmts.remove(setup_at);
+    true
+}
+
+/// The frame displacement after `sp = value`.
+fn adjusted(frame: i64, value: &Expr, sp: u16) -> i64 {
+    match value {
+        Expr::Bin { op, lhs, rhs } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) => {
+            match (op, rhs.as_ref()) {
+                (BinOp::Add, Expr::Const(delta)) => frame.wrapping_add(*delta as i64),
+                (BinOp::Sub, Expr::Const(delta)) => frame.wrapping_sub(*delta as i64),
+                _ => frame,
+            }
+        }
+        _ => frame,
+    }
 }
 
 /// True when every block has a known frame and the stack pointer is used only
@@ -315,4 +410,68 @@ pub(crate) fn block_frames(ir: &FunctionIr, sp: u16) -> Vec<Option<i64>> {
         .into_iter()
         .map(|frame| (frame != Some(i64::MIN)).then_some(frame).flatten())
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::settle;
+    use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
+    use crate::loader::Isa;
+
+    #[test]
+    fn locals_addressed_through_the_frame_pointer_settle() {
+        const RSP: u16 = 4;
+        const RBP: u16 = 5;
+        let at = |base: u16, offset: i64| {
+            Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(offset as u64))
+        };
+        let assign = |index, value| Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        };
+        let slot = |offset| Expr::Load {
+            addr: Box::new(at(RBP, offset)),
+            width: 4,
+            signed: false,
+        };
+        // push rbp; mov rbp, rsp; [rbp-4] = edi; eax = [rbp-4]; pop rbp; ret
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(RSP, at(RSP, -8)),
+                Stmt::Store {
+                    addr: Expr::reg(RSP, 64),
+                    value: Expr::reg(RBP, 64),
+                    width: 8,
+                },
+                assign(RBP, Expr::reg(RSP, 64)),
+                Stmt::Store {
+                    addr: at(RBP, -4),
+                    value: Expr::reg(7, 32),
+                    width: 4,
+                },
+                assign(0, slot(-4)),
+                assign(
+                    RBP,
+                    Expr::Load {
+                        addr: Box::new(Expr::reg(RSP, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                ),
+                assign(RSP, at(RSP, 8)),
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+
+        settle(&mut ir);
+
+        let reads_rbp = ir.blocks[0]
+            .stmts
+            .iter()
+            .any(|stmt| crate::ir::visit::statement_registers(stmt).1.contains(&RBP));
+        assert!(!reads_rbp, "{}", ir.render());
+    }
 }

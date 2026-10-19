@@ -124,10 +124,10 @@ fn sum_while @ 0x2011d0 (size 239)
 /* ref: 0x2023d4 .bss */
 int count_down(int n) {
     rax = (n >= 0x2 ? n : 0x1);
-    ecx = eax & 0x7;
+    ecx = rax & 0x7;
     rdx = 0x0;
     if (n < 0x8) { goto L_201347; }
-    esi = -(eax & 0xfffffffffffffff8);
+    esi = -(rax & 0xfffffff8);
     rdx = 0x4;
     do {
         dword_2023d4 = ((rdx - 0x3) & 0xffffffff);
@@ -163,11 +163,11 @@ int (int n)
 fn count_down @ 0x2012c0 (size 157)
   blk0 @ 0x2012c0:
     rax = (select ge edi, #0x2 ? edi, #0x1 & #0xffffffff)
-    ecx = ((rax & #0xffffffff) & #0x7)
+    ecx = (rax & #0x7)
     rdx = #0x0
     brif lt edi, #0x8 -> 0x201347
   blk1 @ 0x2012d7:
-    esi = (#0x0 - ((rax & #0xffffffff) & #0xfffffffffffffff8))
+    esi = (#0x0 - (rax & #0xfffffff8))
     rdx = #0x4
   blk2 @ 0x2012f0:
     store32(((rdx + #0xfffffffffffffffd) & #0xffffffff), #0x2023d4)
@@ -220,10 +220,10 @@ int sum_skip_odd(int n) {
             rcx = ecx + 0x2;
         } while (edx != ecx);
     }
-    if ((n & 0xff & 0x1) == 0x0) {
+    if ((n & 0x1) == 0x0) {
         return rax;
     }
-    if ((rcx & 0xff & 0x1) != 0x0) {
+    if ((rcx & 0x1) != 0x0) {
         rcx = ecx + eax;
         dword_2023d4 = ecx;
         rax = ecx;
@@ -247,7 +247,7 @@ fn sum_skip_odd @ 0x201360 (size 71)
   blk3 @ 0x20136f:
     ret #0x0
   blk4 @ 0x201372:
-    edx = ((rdi & #0xffffffff) & #0x7ffffffe)
+    edx = (rdi & #0x7ffffffe)
     rcx = #0x0
     rax = #0x0
   blk5 @ 0x201380:
@@ -257,9 +257,9 @@ fn sum_skip_odd @ 0x201360 (size 71)
     rcx = (((rcx & #0xffffffff) + #0x2) & #0xffffffff)
     brif ne edx, (rcx & #0xffffffff) -> 0x201380
   blk6 @ 0x201391:
-    brif eq ((rdi & #0xff) & #0x1), #0x0 -> 0x2013a6
+    brif eq (rdi & #0x1), #0x0 -> 0x2013a6
   blk7 @ 0x201397:
-    brif eq ((rcx & #0xff) & #0x1), #0x0 -> 0x2013a6
+    brif eq (rcx & #0x1), #0x0 -> 0x2013a6
   blk8 @ 0x20139c:
     rcx = (((rcx & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
     store32((rcx & #0xffffffff), #0x2023d4)
