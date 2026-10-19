@@ -380,32 +380,73 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         }
     }
 
-    let mut pointer_widths: HashMap<u16, u8> = HashMap::new();
-    let note = |addr: &Expr, width: u8, widths: &mut HashMap<u16, u8>| {
-        if let Some(base) = base_register(addr)
-            && let Some(param) = origin.get(&base)
+    // What each pointer argument points to: the first general-register
+    // access through it, or else the first scalar floating-point one. The
+    // high half of a vector says nothing about the element.
+    let mut pointer_elements: HashMap<u16, (bool, CType)> = HashMap::new();
+    let note = |addr: &Expr,
+                width: u8,
+                register: Option<u16>,
+                elements: &mut HashMap<u16, (bool, CType)>| {
+        let Some(param) = base_register(addr).and_then(|base| origin.get(&base)) else {
+            return;
+        };
+        let (float, element) = match register.and_then(|index| crate::arch::vector_half(isa, index))
         {
-            widths.entry(*param).or_insert(width);
+            Some(true) => return,
+            Some(false) if matches!(width, 4 | 8) => (
+                true,
+                CType::Named(if width == 4 { "float" } else { "double" }.to_owned()),
+            ),
+            Some(false) => return,
+            None => (false, CType::int(width, false)),
+        };
+        match elements.get(param) {
+            Some((false, _)) => {}
+            Some((true, _)) if float => {}
+            _ => {
+                elements.insert(*param, (float, element));
+            }
         }
     };
     for block in blocks {
         for stmt in &block.stmts {
             match stmt {
-                Stmt::Assign { value, .. } => {
+                Stmt::Assign { dest, value } => {
                     if let Some((addr, width)) = load_of(value) {
-                        note(addr, width, &mut pointer_widths);
+                        note(addr, width, Some(dest.index), &mut pointer_elements);
+                    }
+                    // A float operation reading memory reads a float there.
+                    if let Expr::Apply { op, args } = partial_write_source(value, dest.index)
+                        && let Some(precision) = op.result_precision()
+                    {
+                        for arg in args {
+                            if let Expr::Load { addr, width, .. } = arg
+                                && u32::from(*width) * 8 == u32::from(precision.bits())
+                            {
+                                note(addr, *width, Some(dest.index), &mut pointer_elements);
+                            }
+                        }
                     }
                 }
-                Stmt::Store { addr, width, .. } => {
-                    note(addr, *width, &mut pointer_widths);
+                Stmt::Store { addr, width, value } => {
+                    let register = match value {
+                        Expr::Reg { index, .. } => Some(*index),
+                        Expr::Bin { lhs, .. } => match lhs.as_ref() {
+                            Expr::Reg { index, .. } => Some(*index),
+                            _ => None,
+                        },
+                        _ => None,
+                    };
+                    note(addr, *width, register, &mut pointer_elements);
                 }
                 _ => {}
             }
         }
     }
     for param in &mut params {
-        if let Some(width) = pointer_widths.get(&param.index) {
-            param.ty = CType::pointer_to(CType::int(*width, false));
+        if let Some((_, element)) = pointer_elements.get(&param.index) {
+            param.ty = CType::pointer_to(element.clone());
         }
     }
 
@@ -440,6 +481,46 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
 
     let ret = crate::ir::cfg::own_return(blocks).map_or(CType::U64, expression_type);
 
+    // Field offsets count from the argument itself: a register only copied
+    // from it, never one advanced from it.
+    let mut copies: HashMap<u16, u16> = params
+        .iter()
+        .map(|param| (param.index, param.index))
+        .collect();
+    loop {
+        let mut changed = false;
+        for stmt in blocks.iter().flat_map(|block| &block.stmts) {
+            if let Stmt::Assign {
+                dest,
+                value: Expr::Reg { index, .. },
+            } = stmt
+                && !copies.contains_key(&dest.index)
+                && let Some(param) = copies.get(index).copied()
+            {
+                copies.insert(dest.index, param);
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    // A register advanced from the argument it copies counts from elsewhere.
+    let redefined: HashSet<u16> = blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .filter_map(|stmt| match stmt {
+            Stmt::Assign { dest, value } if !matches!(value, Expr::Reg { .. }) => {
+                let param = copies.get(&dest.index)?;
+                let mut read = HashSet::new();
+                reads(value, &mut read);
+                read.iter()
+                    .any(|register| copies.get(register) == Some(param))
+                    .then_some(dest.index)
+            }
+            _ => None,
+        })
+        .collect();
     let mut offsets: HashMap<u16, std::collections::BTreeMap<u64, u8>> = HashMap::new();
     for block in blocks {
         for stmt in &block.stmts {
@@ -454,7 +535,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             let Some((base, offset)) = split_address(addr) else {
                 continue;
             };
-            let Some(param) = origin.get(&base) else {
+            let Some(param) = copies.get(&base).filter(|_| !redefined.contains(&base)) else {
                 continue;
             };
             offsets

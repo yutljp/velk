@@ -18,6 +18,9 @@ pub(super) struct Lifter<'a> {
     /// Whether an operand of the instruction being lifted was one the lifter
     /// cannot express, so that its effect would be lost.
     incomplete: bool,
+    /// What each instruction reads and writes, for the registers an
+    /// unsupported one may change.
+    info: iced_x86::InstructionInfoFactory,
     extended_dividend: Option<u8>,
     /// The width of the high half of an unsigned dividend the previous
     /// instruction cleared (`xor edx, edx`).
@@ -34,6 +37,7 @@ impl<'a> Lifter<'a> {
             last_compare: None,
             flags_written: false,
             incomplete: false,
+            info: iced_x86::InstructionInfoFactory::new(),
             extended_dividend: None,
             zeroed_dividend: None,
             image,
@@ -179,6 +183,32 @@ fn gpr(reg: Register) -> Option<(u16, u8)> {
         _ => return Option::None,
     };
     Option::Some(pair)
+}
+
+/// The registers, as the IR numbers them, an instruction may write.
+fn written_registers(info: &mut iced_x86::InstructionInfoFactory, ins: &Instruction) -> Vec<u16> {
+    use iced_x86::OpAccess;
+    let mut out = Vec::new();
+    for used in info.info(ins).used_registers() {
+        if !matches!(
+            used.access(),
+            OpAccess::Write | OpAccess::ReadWrite | OpAccess::CondWrite | OpAccess::ReadCondWrite
+        ) {
+            continue;
+        }
+        let register = used.register();
+        if let Some((index, _)) = gpr(register.full_register()) {
+            out.push(index);
+        } else if (register.is_xmm() || register.is_ymm() || register.is_zmm())
+            && register.number() < 16
+        {
+            let slot = crate::arch::x86::XMM0 + 2 * register.number() as u16;
+            out.extend([slot, slot + 1]);
+        }
+    }
+    out.sort_unstable();
+    out.dedup();
+    out
 }
 
 /// The register whose second byte `reg` names (`ah`, `ch`, `dh`, `bh`).
@@ -628,9 +658,11 @@ fn lift_exchange(lifter: &mut Lifter, ins: &Instruction) {
         operand(lifter, ins, 1),
         operand_width(ins, 0),
     ) else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: format!("{:?} at 0x{:x}", ins.mnemonic(), ins.ip()),
-        });
+        lifter.stmts.push(Stmt::unsupported(format!(
+            "{:?} at 0x{:x}",
+            ins.mnemonic(),
+            ins.ip()
+        )));
         return;
     };
     let same_register = ins.op0_kind() == OpKind::Register
@@ -688,17 +720,20 @@ fn lift_exchange(lifter: &mut Lifter, ins: &Instruction) {
 /// `rol`, `ror`, `shld`, `shrd`, `bswap` and `bt`.
 fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
     let (Some(value), Some(width)) = (operand(lifter, ins, 0), operand_width(ins, 0)) else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: format!("{:?} at 0x{:x}", ins.mnemonic(), ins.ip()),
-        });
+        lifter.stmts.push(Stmt::unsupported(format!(
+            "{:?} at 0x{:x}",
+            ins.mnemonic(),
+            ins.ip()
+        )));
         return;
     };
     let bits = u64::from(width);
     match ins.mnemonic() {
         // The result of swapping a 16-bit register is undefined.
-        Mnemonic::Bswap if width == 16 => lifter.stmts.push(Stmt::Unsupported {
-            text: format!("bswap of a 16-bit register at 0x{:x}", ins.ip()),
-        }),
+        Mnemonic::Bswap if width == 16 => lifter.stmts.push(Stmt::unsupported(format!(
+            "bswap of a 16-bit register at 0x{:x}",
+            ins.ip()
+        ))),
         Mnemonic::Bswap => {
             let swapped = super::reverse_bytes(value, width, width / 8);
             write_destination(lifter, ins, swapped);
@@ -713,9 +748,9 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
         }
         // A bit string in memory may lie past the addressed operand.
         Mnemonic::Bt if ins.op0_kind() == OpKind::Memory && ins.op1_kind() == OpKind::Register => {
-            lifter.stmts.push(Stmt::Unsupported {
-                text: format!("bt at 0x{:x}", ins.ip()),
-            });
+            lifter
+                .stmts
+                .push(Stmt::unsupported(format!("bt at 0x{:x}", ins.ip())));
         }
         // The carry holds the bit; zero is left as it was.
         Mnemonic::Bt => {
@@ -736,9 +771,11 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
                 return;
             };
             if width < 32 {
-                lifter.stmts.push(Stmt::Unsupported {
-                    text: format!("{:?} at 0x{:x}", ins.mnemonic(), ins.ip()),
-                });
+                lifter.stmts.push(Stmt::unsupported(format!(
+                    "{:?} at 0x{:x}",
+                    ins.mnemonic(),
+                    ins.ip()
+                )));
                 return;
             }
             let (towards, from) = match ins.mnemonic() {
@@ -883,13 +920,11 @@ fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool) {
         return;
     };
     let Some(carry) = lifter.carry() else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: format!(
-                "{:?} on a carry not modelled at 0x{:x}",
-                ins.mnemonic(),
-                ins.ip()
-            ),
-        });
+        lifter.stmts.push(Stmt::unsupported(format!(
+            "{:?} on a carry not modelled at 0x{:x}",
+            ins.mnemonic(),
+            ins.ip()
+        )));
         return;
     };
     // The carry may read registers that keep the earlier flags' operands,
@@ -1039,9 +1074,10 @@ fn lift_instruction(
         };
         match select(lifter, ins, source, current) {
             Some(value) => write_destination(lifter, ins, value),
-            None => lifter.stmts.push(Stmt::Unsupported {
-                text: format!("cmov without compare at 0x{:x}", ins.ip()),
-            }),
+            None => lifter.stmts.push(Stmt::unsupported(format!(
+                "cmov without compare at 0x{:x}",
+                ins.ip()
+            ))),
         }
         return false;
     }
@@ -1056,9 +1092,10 @@ fn lift_instruction(
             .condition_test(ins.condition_code())
             .select(Expr::constant(1), Expr::constant(0))
         else {
-            lifter.stmts.push(Stmt::Unsupported {
-                text: format!("setcc without compare at 0x{:x}", ins.ip()),
-            });
+            lifter.stmts.push(Stmt::unsupported(format!(
+                "setcc without compare at 0x{:x}",
+                ins.ip()
+            )));
             return false;
         };
         let value = Expr::bin(BinOp::And, value, Expr::constant((1u64 << bits) - 1));
@@ -1113,9 +1150,9 @@ fn lift_instruction(
                     write_destination(lifter, ins, value);
                 }
             }
-            _ => lifter.stmts.push(Stmt::Unsupported {
-                text: format!("imul at 0x{:x}", ins.ip()),
-            }),
+            _ => lifter
+                .stmts
+                .push(Stmt::unsupported(format!("imul at 0x{:x}", ins.ip()))),
         },
         Mnemonic::Cmp => {
             if let (Some(a), Some(b)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) {
@@ -1233,9 +1270,10 @@ fn lift_instruction(
                 _ => 64,
             };
             if was_extended != Some(width.min(64)) && was_extended.is_none() {
-                lifter.stmts.push(Stmt::Unsupported {
-                    text: format!("idiv without cdq/cqo at 0x{:x}", ins.ip()),
-                });
+                lifter.stmts.push(Stmt::unsupported(format!(
+                    "idiv without cdq/cqo at 0x{:x}",
+                    ins.ip()
+                )));
                 return false;
             }
             let dividend = Lifter::read_reg(RAX, width);
@@ -1258,9 +1296,9 @@ fn lift_instruction(
                 _ => 64,
             };
             if was_zeroed.is_none() || !matches!(width, 32 | 64) {
-                lifter.stmts.push(Stmt::Unsupported {
-                    text: format!("div at 0x{:x}", ins.ip()),
-                });
+                lifter
+                    .stmts
+                    .push(Stmt::unsupported(format!("div at 0x{:x}", ins.ip())));
                 return false;
             }
             let dividend = Lifter::read_reg(RAX, width);
@@ -1411,9 +1449,9 @@ fn lift_instruction(
                 lifter.stmts.extend(test.branch(cond, target));
                 return true;
             }
-            lifter.stmts.push(Stmt::Unsupported {
-                text: format!("{other:?} at 0x{:x}", ins.ip()),
-            });
+            lifter
+                .stmts
+                .push(Stmt::unsupported(format!("{other:?} at 0x{:x}", ins.ip())));
         }
     }
     false
@@ -1465,15 +1503,27 @@ impl Machine for Lifter<'_> {
             };
         self.flags_written = false;
         self.incomplete = false;
+        let first = self.stmts.len();
         let ended = lift_instruction(self, instruction, relocation_target, tail_call);
         if self.incomplete {
-            self.stmts.push(Stmt::Unsupported {
-                text: format!(
-                    "{:?} operands at 0x{:x}",
-                    instruction.mnemonic(),
-                    instruction.ip()
-                ),
-            });
+            self.stmts.push(Stmt::unsupported(format!(
+                "{:?} operands at 0x{:x}",
+                instruction.mnemonic(),
+                instruction.ip()
+            )));
+        }
+        if self.stmts[first..]
+            .iter()
+            .any(|stmt| matches!(stmt, Stmt::Unsupported { writes: None, .. }))
+        {
+            let changed = written_registers(&mut self.info, instruction);
+            for stmt in &mut self.stmts[first..] {
+                if let Stmt::Unsupported { writes, .. } = stmt
+                    && writes.is_none()
+                {
+                    *writes = Some(changed.clone());
+                }
+            }
         }
         // Flags the instruction sets in a way not modelled are unknown.
         if instruction.rflags_modified() != 0 && !self.flags_written {

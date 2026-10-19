@@ -102,6 +102,13 @@ fn render_with(
     let ctx = Ctx {
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
+        float_return: ir.ret_type.is_sse_float().then(|| {
+            if ir.ret_type.to_string().contains("double") {
+                crate::ir::Precision::Double
+            } else {
+                crate::ir::Precision::Single
+            }
+        }),
         names,
         slots: locals.slots,
         local_widths: locals.widths,
@@ -243,10 +250,10 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     while index < nodes.len() {
         // Consecutive instructions the lifter could not model read as one
         // note instead of one comment per instruction.
-        if let Node::Stmt(Stmt::Unsupported { text }) = &nodes[index] {
+        if let Node::Stmt(Stmt::Unsupported { text, .. }) = &nodes[index] {
             let mut merged = text.clone();
             let mut count = 1;
-            while let Some(Node::Stmt(Stmt::Unsupported { text })) = nodes.get(index + count) {
+            while let Some(Node::Stmt(Stmt::Unsupported { text, .. })) = nodes.get(index + count) {
                 merged.push_str(", ");
                 merged.push_str(text);
                 count += 1;
@@ -604,11 +611,16 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             // A function that returns nothing carries no meaningful value.
             if ctx.void_return {
                 "return;".to_owned()
+            } else if let Some(precision) = ctx.float_return {
+                format!(
+                    "return {};",
+                    expr::float_operand(value, precision, ctx, 0, false)
+                )
             } else {
                 format!("return {};", render_value(value, ctx))
             }
         }
-        Stmt::Unsupported { text } => format!("/* unsupported: {text} */"),
+        Stmt::Unsupported { text, .. } => format!("/* unsupported: {text} */"),
         Stmt::Trap => "__builtin_trap();".to_owned(),
     }
 }

@@ -236,6 +236,9 @@ pub enum Operation {
     FloatMul(Precision),
     FloatDiv(Precision),
     FloatSqrt(Precision),
+    /// The sign flipped or cleared, NaNs included.
+    FloatNegate(Precision),
+    FloatAbs(Precision),
     /// `a * b + c`, rounded once.
     FloatMulAdd(Precision),
     /// One when the comparison holds and zero otherwise; a NaN makes the
@@ -279,6 +282,8 @@ impl Operation {
             | Operation::FloatMul(p)
             | Operation::FloatDiv(p)
             | Operation::FloatSqrt(p)
+            | Operation::FloatNegate(p)
+            | Operation::FloatAbs(p)
             | Operation::FloatMulAdd(p)
             | Operation::IntToFloat { to: p, .. }
             | Operation::FloatConvert { to: p, .. } => Some(p),
@@ -289,6 +294,8 @@ impl Operation {
     pub fn arity(self) -> usize {
         match self {
             Operation::FloatSqrt(_)
+            | Operation::FloatNegate(_)
+            | Operation::FloatAbs(_)
             | Operation::IntToFloat { .. }
             | Operation::FloatToInt { .. }
             | Operation::FloatConvert { .. }
@@ -478,6 +485,8 @@ pub(crate) fn operation_name(op: Operation) -> String {
         Operation::FloatMul(x) => format!("fmul.{}", p(x)),
         Operation::FloatDiv(x) => format!("fdiv.{}", p(x)),
         Operation::FloatSqrt(x) => format!("fsqrt.{}", p(x)),
+        Operation::FloatNegate(x) => format!("fneg.{}", p(x)),
+        Operation::FloatAbs(x) => format!("fabs.{}", p(x)),
         Operation::FloatMulAdd(x) => format!("fma.{}", p(x)),
         Operation::FloatEqual(x) => format!("feq.{}", p(x)),
         Operation::FloatLess(x) => format!("flt.{}", p(x)),
@@ -580,6 +589,14 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
         return format!("t{isode}", isode = temp_id(index));
     }
     match isa {
+        Isa::AArch64 if index >= crate::arch::aarch64::V0 => {
+            let number = (index - crate::arch::aarch64::V0) / 2;
+            match ((index - crate::arch::aarch64::V0) % 2, width) {
+                (1, _) => format!("v{number}_hi"),
+                (_, 32) => format!("s{number}"),
+                _ => format!("d{number}"),
+            }
+        }
         Isa::AArch64 => {
             if index == 31 && width == 64 {
                 "sp".to_owned()
@@ -660,14 +677,24 @@ pub enum Stmt {
     Ret {
         value: Expr,
     },
+    /// An instruction the lifter does not model, and the registers it may
+    /// write, when known; otherwise it may write any machine register.
     Unsupported {
         text: String,
+        writes: Option<Vec<u16>>,
     },
     /// A trap the CPU cannot return from (`int3`, `ud2`, `brk`).
     Trap,
 }
 
 impl Stmt {
+    pub fn unsupported(text: impl Into<String>) -> Self {
+        Stmt::Unsupported {
+            text: text.into(),
+            writes: None,
+        }
+    }
+
     /// Every expression the statement reads, in order.
     pub fn operands(&self) -> Vec<&Expr> {
         match self {
@@ -850,7 +877,7 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
             (None, None) => "call <dynamic>".to_owned(),
         },
         Stmt::Ret { value } => format!("ret {}", value.render(isa)),
-        Stmt::Unsupported { text } => format!("unsupported: {text}"),
+        Stmt::Unsupported { text, .. } => format!("unsupported: {text}"),
         Stmt::Trap => "trap".to_owned(),
     }
 }

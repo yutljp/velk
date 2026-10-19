@@ -8,7 +8,6 @@
 == 0x0 total_area(Shape const* const*, int)
 -- decompile
 /* velk pseudo-C: total_area(Shape const* const*, int) @ 0x0 */
-/* struct: a0 +0x0:uint64_t */
 int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     if (a1 < 0x1) {
         v2 = 0x0;
@@ -54,7 +53,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
   blk5 @ 0x48:
     ret (v2 & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","size":92,"unsupported":0}
+{"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","size":92,"unsupported":0}
 
 == 0x5c clamp_int(int)
 -- decompile
@@ -93,21 +92,33 @@ fn clamp_long(long) @ 0x70 (size 28)
 == 0x8c dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
 /* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0x8c */
-int64_t dot_sum_Vec2_const___Vec2_const__(int64_t a0) {
-    /* unsupported: FMOV at 0x9c */
-    return a0;
+/* struct: a0 +0x0:uint64_t */
+/* struct: a1 +0x0:uint64_t */
+int32_t dot_sum_Vec2_const___Vec2_const__(double *a0, double *a1) {
+    s0 = a0->field_0x0;
+    v0_hi = 0x0;
+    d1 = a1->field_0x0;
+    v1_hi = 0x0;
+    /* unsupported: ADD operands at 0x94 */
+    v1 = s0;
+    return v1;
 }
 -- signature
-int64_t (int64_t a0)
+int32_t (double * a0, double * a1)
 -- references
 
 -- ir
 fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
   blk0 @ 0x8c:
-    unsupported: FMOV at 0x9c
-    ret x0
+    d0 = load64(x0)
+    v0_hi = #0x0
+    d1 = load64(x1)
+    v1_hi = #0x0
+    unsupported: ADD operands at 0x94
+    v1 = (d0 & #0xffffffff)
+    ret v1
 -- card
-{"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","size":24,"unsupported":1}
+{"accesses":["a0 +0x0:uint64_t","a1 +0x0:uint64_t"],"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","size":24,"unsupported":1}
 
 == 0xa4 increment(int&)
 -- decompile

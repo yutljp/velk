@@ -8,7 +8,6 @@
 == 0x0 total_area(Shape const* const*, int)
 -- decompile
 /* velk pseudo-C: total_area(Shape const* const*, int) @ 0x0 */
-/* struct: a0 +0x0:uint64_t */
 int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     uint64_t local_0; /* [sp-28] */
 
@@ -58,7 +57,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
   blk5 @ 0x38:
     ret (rbp & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":216,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","size":69,"unsupported":0}
+{"addr":"0x0","approxTokens":216,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","size":69,"unsupported":0}
 
 == 0x50 clamp_int(int)
 -- decompile

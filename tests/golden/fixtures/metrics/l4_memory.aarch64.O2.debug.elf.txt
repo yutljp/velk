@@ -1,4 +1,4 @@
-# metrics/l4_memory.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 4 unsupported, 0 gotos
+# metrics/l4_memory.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
 0x2101d4 28 point_dot symtab,dwarf,unwind
 0x2101f0 140 array_sum symtab,dwarf,unwind
 0x21027c 20 bump symtab,dwarf,unwind
@@ -7,43 +7,61 @@
 == 0x2101d4 point_dot
 -- decompile
 /* velk pseudo-C: point_dot @ 0x2101d4 */
-int point_dot(struct point *a) {
-    /* unsupported (2 steps): DUP at 0x2101e0, FMOV at 0x2101e8 */
-    return a;
+/* struct: a +0x0:uint64_t */
+/* struct: b +0x0:uint64_t */
+int point_dot(struct point *a, struct point *b) {
+    s0 = a->x;
+    v0_hi = 0x0;
+    d1 = b->x;
+    v1_hi = 0x0;
+    /* unsupported: ADD operands at 0x2101e4 */
+    v1 = s0;
+    return v1;
 }
 -- signature
-int (struct point * a)
+int (struct point * a, struct point * b)
 -- references
 
 -- ir
 fn point_dot @ 0x2101d4 (size 28)
   blk0 @ 0x2101d4:
-    unsupported: DUP at 0x2101e0
-    unsupported: FMOV at 0x2101e8
-    ret x0
+    d0 = load64(x0)
+    v0_hi = #0x0
+    d1 = load64(x1)
+    v1_hi = #0x0
+    unsupported: ADD operands at 0x2101e4
+    v1 = (d0 & #0xffffffff)
+    ret v1
 -- card
-{"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":2}
+{"accesses":["a +0x0:uint64_t","b +0x0:uint64_t"],"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":1}
 
 == 0x2101f0 array_sum
 -- decompile
 /* velk pseudo-C: array_sum @ 0x2101f0 */
-/* struct: a +0x0:uint32_t */
 int array_sum(int *a, int n) {
     if (n < 0x1) {
         return 0x0;
     }
     v1 = n;
     if (n >= 0x8 /* unsigned */) {
-        /* unsupported (2 steps): MOVI at 0x21021c, MOVI at 0x210220 */
+        s0 = 0x0;
+        v0_hi = 0x0;
+        d1 = 0x0;
+        v1_hi = 0x0;
         v2 = v1 & 0x7ffffff8;
-        v3 = a + 0x10;
-        v4 = v2;
+        v4 = a + 0x10;
+        v5 = v2;
         do {
-            /* unsupported: SIMD vector pair load */
-            v4 = v4 - 0x8;
-            v3 = v3 + 0x20;
-        } while (v4 != 0x0);
-        /* unsupported (2 steps): ADDV at 0x210250, FMOV at 0x210254 */
+            d2 = *(uint64_t *)(v4 - 0x10);
+            v2_hi = *(uint64_t *)(v4 - 0x8);
+            d3 = *(uint64_t *)(v4);
+            v3_hi = *(uint64_t *)(v4 + 0x8);
+            v5 = v5 - 0x8;
+            v4 = v4 + 0x20;
+            /* unsupported (2 steps): ADD operands at 0x21023c, ADD operands at 0x210240 */
+        } while (v5 != 0x0);
+        /* unsupported (2 steps): ADD operands at 0x210248, ADDV at 0x210250 */
+        v3 = s0;
         if (v2 == v1) {
             return v3;
         }
@@ -51,14 +69,14 @@ int array_sum(int *a, int n) {
         v2 = 0x0;
         v3 = 0x0;
     }
-    v5 = a + (v2 << 0x2);
-    v6 = v1 - v2;
+    v6 = a + (v2 << 0x2);
+    v7 = v1 - v2;
     do {
-        v7 = *(uint32_t *)(v5);
-        v5 = v5 + 0x4;
-        v6 = v6 - 0x1;
-        v3 = v7 + v3;
-    } while (v6 != 0x0);
+        v8 = *(uint32_t *)(v6);
+        v6 = v6 + 0x4;
+        v7 = v7 - 0x1;
+        v3 = v8 + v3;
+    } while (v7 != 0x0);
     return v3;
 }
 -- signature
@@ -79,33 +97,41 @@ fn array_sum @ 0x2101f0 (size 140)
   blk3 @ 0x210210:
     ret #0x0
   blk4 @ 0x21021c:
-    unsupported: MOVI at 0x21021c
-    unsupported: MOVI at 0x210220
+    d0 = #0x0
+    v0_hi = #0x0
+    d1 = #0x0
+    v1_hi = #0x0
     v2 = (v1 & #0x7ffffff8)
-    v3 = (x0 + #0x10)
-    v4 = v2
+    v4 = (x0 + #0x10)
+    v5 = v2
   blk5 @ 0x210230:
-    unsupported: SIMD vector pair load
-    v4 = (v4 - #0x8)
-    v3 = (v3 + #0x20)
-    brif ne v4, #0x0 -> 0x210230
+    d2 = load64((v4 + #0xfffffffffffffff0))
+    v2_hi = load64((v4 + #0xfffffffffffffff8))
+    d3 = load64(v4)
+    v3_hi = load64((v4 + #0x8))
+    v5 = (v5 - #0x8)
+    v4 = (v4 + #0x20)
+    unsupported: ADD operands at 0x21023c
+    unsupported: ADD operands at 0x210240
+    brif ne v5, #0x0 -> 0x210230
   blk6 @ 0x210248:
+    unsupported: ADD operands at 0x210248
     unsupported: ADDV at 0x210250
-    unsupported: FMOV at 0x210254
+    v3 = (d0 & #0xffffffff)
     brif eq v2, v1 -> 0x210274
   blk7 @ 0x21025c:
-    v5 = (x0 + (v2 << #0x2))
-    v6 = (v1 - v2)
+    v6 = (x0 + (v2 << #0x2))
+    v7 = (v1 - v2)
   blk8 @ 0x210264:
-    v7 = (load32(v5) & #0xffffffff)
-    v5 = (v5 + #0x4)
-    v6 = (v6 - #0x1)
-    v3 = (((v7 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
-    brif ne v6, #0x0 -> 0x210264
+    v8 = (load32(v6) & #0xffffffff)
+    v6 = (v6 + #0x4)
+    v7 = (v7 - #0x1)
+    v3 = (((v8 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
+    brif ne v7, #0x0 -> 0x210264
   blk9 @ 0x210274:
     ret (v3 & #0xffffffff)
 -- card
-{"accesses":["a +0x0:uint32_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":5}
+{"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":4}
 
 == 0x21027c bump
 -- decompile

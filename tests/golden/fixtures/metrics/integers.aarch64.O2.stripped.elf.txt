@@ -100,24 +100,28 @@ fn <unnamed> @ 0x210238 (size 12)
 == 0x210244 -
 -- decompile
 /* velk pseudo-C: sub_210244 @ 0x210244 */
-int64_t sub_210244(int64_t a0) {
-    /* unsupported (4 steps): FMOV at 0x210244, CNT at 0x210248, UADDLV at 0x21024c, FMOV at 0x210250 */
-    return a0;
+int32_t sub_210244(int32_t a0) {
+    s0 = a0;
+    v0_hi = 0x0;
+    /* unsupported (2 steps): CNT at 0x210248, UADDLV at 0x21024c */
+    v1 = s0;
+    return v1;
 }
 -- signature
-int64_t (int64_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210244 (size 20)
   blk0 @ 0x210244:
-    unsupported: FMOV at 0x210244
+    s0 = w0
+    v0_hi = #0x0
     unsupported: CNT at 0x210248
     unsupported: UADDLV at 0x21024c
-    unsupported: FMOV at 0x210250
-    ret x0
+    v1 = s0
+    ret v1
 -- card
-{"addr":"0x210244","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":4}
+{"addr":"0x210244","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":2}
 
 == 0x210258 -
 -- decompile

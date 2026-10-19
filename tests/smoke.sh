@@ -56,7 +56,7 @@ ok "ir helper"
 
 arr_ir=$("$BIN" ir $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$arr_ir" | grep -q 'load32'                      || fail "ir sum_arr load"
-echo "$arr_ir" | grep -q 'unsupported: MOVI'           || fail "ir sum_arr unsupported marker"
+echo "$arr_ir" | grep -q 'unsupported: ADD operands'   || fail "ir sum_arr unsupported marker"
 ok "ir sum_arr"
 
 # 5) pseudo-C output
@@ -232,7 +232,7 @@ echo "$narrow_dest" | grep -q "+ (v4 << 0x1)) - 0x1;" || fail "mask implied by t
 echo "$narrow_dest" | grep -q "a0 = .*0xffffffff" && fail "return mask kept"
 ok "masks implied by the destination"
 masked_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
-echo "$masked_ir" | grep -q "v3 = v7 + v3;" || fail "mask bounded by its constant"
+echo "$masked_ir" | grep -qE "v3 = v[0-9]+ \+ v3;" || fail "mask bounded by its constant"
 echo "$masked_ir" | grep -q "w10 + w8) & 0xffffffff" && fail "bounded mask kept"
 ok "mask bounded by the constant"
 dwarf_ir=$("$BIN" decompile $FIX/arm64_debug.elf helper 2>/dev/null)
@@ -459,8 +459,8 @@ ok "decompile helper"
 
 ca=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$ca" | grep -q "uint32_t \*a0"         || fail "pointer parameter typing"
-echo "$ca" | grep -q "unsupported (2 steps): MOVI" || fail "decompile sum_arr unsupported note"
-echo "$ca" | grep -q "SIMD vector pair"      || fail "decompile sum_arr simd note"
+echo "$ca" | grep -q "unsupported (2 steps): ADD operands" || fail "decompile sum_arr unsupported note"
+echo "$ca" | grep -q "v2_hi = \*(uint64_t \*)" || fail "decompile sum_arr vector pair load"
 echo "$ca" | grep -q "return 0x0;"           || fail "decompile sum_arr early return"
 echo "$ca" | grep -q "do {"                  || fail "decompile sum_arr loop"
 echo "$ca" | grep -q "} while ("             || fail "decompile sum_arr loop condition"

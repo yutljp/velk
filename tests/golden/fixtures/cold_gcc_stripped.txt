@@ -361,7 +361,6 @@ fn <unnamed> @ 0x1280 (size 16)
 == 0x1290 -
 -- decompile
 /* velk pseudo-C: sub_1290 @ 0x1290 */
-/* struct: a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t */
 int32_t sub_1290(uint64_t *a0, int64_t a1, int32_t a2) {
     uint64_t local_0; /* [sp-20] */
     uint64_t local_1; /* [sp-78] */
@@ -481,7 +480,7 @@ fn <unnamed> @ 0x1290 (size 240)
     call 0x10a0()
     trap
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t"],"addr":"0x1290","approxTokens":198,"blocks":12,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":240,"unsupported":0}
+{"addr":"0x1290","approxTokens":198,"blocks":12,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":240,"unsupported":0}
 
 == 0x1380 -
 -- decompile

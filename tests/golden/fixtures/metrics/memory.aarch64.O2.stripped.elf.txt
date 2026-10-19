@@ -1,4 +1,4 @@
-# metrics/memory.aarch64.O2.stripped.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 3 unsupported, 1 gotos
+# metrics/memory.aarch64.O2.stripped.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x210214 176 - unwind,prologue
 0x2102c4 12 - unwind,prologue
 0x2102d0 24 - unwind,prologue
@@ -11,8 +11,6 @@
 == 0x210214 -
 -- decompile
 /* velk pseudo-C: sub_210214 @ 0x210214 */
-/* struct: a0 +0x0:uint8_t */
-/* struct: a1 +0x0:uint8_t */
 int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     if (a2 == 0x0) {
         return a0;
@@ -26,10 +24,16 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
                 v3 = a0 + 0x10;
                 v4 = v1;
                 do {
-                    /* unsupported: SIMD vector pair load */
+                    d0 = *(uint64_t *)(v2 - 0x10);
+                    v0_hi = *(uint64_t *)(v2 - 0x8);
+                    d1 = *(uint64_t *)(v2);
+                    v1_hi = *(uint64_t *)(v2 + 0x8);
                     v4 = v4 - 0x20;
                     v2 = v2 + 0x20;
-                    /* unsupported: SIMD vector pair store */
+                    *(uint64_t *)(v3 - 0x10) = d0;
+                    *(uint64_t *)(v3 - 0x8) = v0_hi;
+                    *(uint64_t *)(v3) = d1;
+                    *(uint64_t *)(v3 + 0x8) = v1_hi;
                     v3 = v3 + 0x20;
                 } while (v4 != 0x0);
                 if (v1 == a2) {
@@ -47,8 +51,11 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
             v7 = a0 + v5;
             v8 = v5 - v1;
             do {
+                d0 = *(uint64_t *)(v6);
+                v6 = v6 + 0x8;
                 v8 = v8 + 0x8;
-                /* unsupported: SIMD store */
+                *(uint64_t *)(v7) = d0;
+                v7 = v7 + 0x8;
             } while (v8 != 0x0);
             if (v1 == a2) {
                 return a0;
@@ -92,10 +99,16 @@ fn <unnamed> @ 0x210214 (size 176)
     v3 = (x0 + #0x10)
     v4 = v1
   blk6 @ 0x210250:
-    unsupported: SIMD vector pair load
+    d0 = load64((v2 + #0xfffffffffffffff0))
+    v0_hi = load64((v2 + #0xfffffffffffffff8))
+    d1 = load64(v2)
+    v1_hi = load64((v2 + #0x8))
     v4 = (v4 - #0x20)
     v2 = (v2 + #0x20)
-    unsupported: SIMD vector pair store
+    store64(d0, (v3 + #0xfffffffffffffff0))
+    store64(v0_hi, (v3 + #0xfffffffffffffff8))
+    store64(d1, v3)
+    store64(v1_hi, (v3 + #0x8))
     v3 = (v3 + #0x20)
     brif ne v4, #0x0 -> 0x210250
   blk7 @ 0x210268:
@@ -109,8 +122,11 @@ fn <unnamed> @ 0x210214 (size 176)
     v7 = (x0 + v5)
     v8 = (v5 - v1)
   blk10 @ 0x21028c:
+    d0 = load64(v6)
+    v6 = (v6 + #0x8)
     v8 = (v8 + #0x8)
-    unsupported: SIMD store
+    store64(d0, v7)
+    v7 = (v7 + #0x8)
     brif ne v8, #0x0 -> 0x21028c
   blk11 @ 0x21029c:
     brif eq v1, x2 -> 0x2102c0
@@ -128,7 +144,7 @@ fn <unnamed> @ 0x210214 (size 176)
   blk14 @ 0x2102c0:
     ret x0
 -- card
-{"accesses":["a0 +0x0:uint8_t","a1 +0x0:uint8_t"],"addr":"0x210214","approxTokens":240,"blocks":15,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":176,"unsupported":3}
+{"addr":"0x210214","approxTokens":240,"blocks":15,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":176,"unsupported":0}
 
 == 0x2102c4 -
 -- decompile

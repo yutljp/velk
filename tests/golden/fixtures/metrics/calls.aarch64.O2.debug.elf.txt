@@ -1,4 +1,4 @@
-# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 6 unsupported, 2 gotos
+# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 7 unsupported, 2 gotos
 0x2102c4 8 twice symtab,dwarf,unwind
 0x2102cc 8 square symtab,dwarf,unwind
 0x2102d4 28 pick_op symtab,dwarf,unwind
@@ -122,24 +122,32 @@ fn apply_pointer @ 0x21031c (size 32)
 == 0x21033c factorial
 -- decompile
 /* velk pseudo-C: factorial @ 0x21033c */
+/* ref: 0x200190 .rodata */
+/* ref: 0x200198 .rodata */
 int factorial(int n) {
     if (n >= 0x2) {
         if (n >= 0x9 /* unsigned */) {
             /* unsupported: DUP at 0x210360 */
-            v3 = 0x200000;
+            v4 = 0x200000;
             /* unsupported: MOVI at 0x210368 */
-            v4 = n - 0x1;
+            d1 = qword_200190;
+            v1_hi = qword_200198;
+            v5 = v3 - 0x1;
             /* unsupported (2 steps): MVNI at 0x210374, MVNI at 0x210378 */
-            v5 = v4 & 0xfffffff8;
-            /* unsupported: MOVI at 0x210384 */
-            v1 = n - v5;
-            v6 = v5;
+            v6 = v5 & 0xfffffff8;
+            /* unsupported (2 steps): ADD operands at 0x210380, MOVI at 0x210384 */
+            v1 = v3 - v6;
+            v7 = v6;
             do {
-                v6 = v6 - 0x8;
-            } while (v6 != 0x0);
-            /* unsupported (3 steps): EXT at 0x2103b0, UMOV at 0x2103b8, FMOV at 0x2103bc */
-            v2 = w12 * v6;
-            if (v4 == v5) {
+                /* unsupported: ADD operands at 0x210390 */
+                v7 = v7 - 0x8;
+                /* unsupported: ADD operands at 0x21039c */
+            } while (v7 != 0x0);
+            /* unsupported: EXT at 0x2103b0 */
+            v8 = d0 >> 0x20;
+            v9 = d0;
+            v2 = v9 * v8;
+            if (v5 == v6) {
                 return v2;
             }
         } else {
@@ -157,7 +165,8 @@ int factorial(int n) {
 -- signature
 int (int n)
 -- references
-
+0x200190 .rodata
+0x200198 .rodata
 -- ir
 fn factorial @ 0x21033c (size 160)
   blk0 @ 0x21033c:
@@ -172,24 +181,29 @@ fn factorial @ 0x21033c (size 160)
     br 0x2103c8
   blk4 @ 0x210360:
     unsupported: DUP at 0x210360
-    v3 = #0x200000
+    v4 = #0x200000
     unsupported: MOVI at 0x210368
-    v4 = ((x0 & #0xffffffff) - #0x1)
+    d1 = load64(#0x200190)
+    v1_hi = load64(#0x200198)
+    v5 = ((v3 & #0xffffffff) - #0x1)
     unsupported: MVNI at 0x210374
     unsupported: MVNI at 0x210378
-    v5 = (v4 & #0xfffffff8)
+    v6 = (v5 & #0xfffffff8)
+    unsupported: ADD operands at 0x210380
     unsupported: MOVI at 0x210384
-    v1 = (((x0 & #0xffffffff) - v5) & #0xffffffff)
-    v6 = v5
+    v1 = (((v3 & #0xffffffff) - v6) & #0xffffffff)
+    v7 = v6
   blk5 @ 0x210390:
-    v6 = (v6 - #0x8)
-    brif ne v6, #0x0 -> 0x210390
+    unsupported: ADD operands at 0x210390
+    v7 = (v7 - #0x8)
+    unsupported: ADD operands at 0x21039c
+    brif ne v7, #0x0 -> 0x210390
   blk6 @ 0x2103a8:
     unsupported: EXT at 0x2103b0
-    unsupported: UMOV at 0x2103b8
-    unsupported: FMOV at 0x2103bc
-    v2 = ((w12 * v6) & #0xffffffff)
-    brif eq v4, v5 -> 0x2103d8
+    v8 = (d0 >> #0x20)
+    v9 = d0
+    v2 = ((v9 * v8) & #0xffffffff)
+    brif eq v5, v6 -> 0x2103d8
   blk7 @ 0x2103c8:
     v2 = (((v1 & #0xffffffff) * (v2 & #0xffffffff)) & #0xffffffff)
     v1 = (((v1 & #0xffffffff) - #0x1) & #0xffffffff)
@@ -197,7 +211,7 @@ fn factorial @ 0x21033c (size 160)
   blk8 @ 0x2103d8:
     ret v2
 -- card
-{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":8}
+{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":9}
 
 == 0x2103dc is_odd
 -- decompile
@@ -300,59 +314,85 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
     uint64_t local_5; /* [sp-40] */
     uint64_t local_6; /* [sp-38] */
     uint64_t local_7; /* [sp-30] */
-    uint64_t local_8; /* [sp-18] */
-    uint64_t local_9; /* [sp-28] */
-    uint64_t local_10; /* [sp-20] */
+    uint64_t local_8; /* [sp-e0] */
+    uint64_t local_9; /* [sp-d8] */
+    uint64_t local_10; /* [sp-d0] */
+    uint64_t local_11; /* [sp-c8] */
+    uint64_t local_12; /* [sp-c0] */
+    uint64_t local_13; /* [sp-b8] */
+    uint64_t local_14; /* [sp-b0] */
+    uint64_t local_15; /* [sp-a8] */
+    uint64_t local_16; /* [sp-a0] */
+    uint64_t local_17; /* [sp-98] */
+    uint64_t local_18; /* [sp-90] */
+    uint64_t local_19; /* [sp-88] */
+    uint64_t local_20; /* [sp-80] */
+    uint64_t local_21; /* [sp-78] */
+    uint64_t local_22; /* [sp-70] */
+    uint64_t local_23; /* [sp-68] */
+    uint64_t local_24; /* [sp-18] */
+    uint64_t local_25; /* [sp-28] */
+    uint64_t local_26; /* [sp-20] */
 
-    v1 = 0xffffffffffffffc8;
-    v2 = &local_2;
-    v3 = 0xffffff80ffffffc8;
     local_0 = sp - 0x60;
     local_1 = 0xffffff80ffffffc8;
-    v4 = v2 + 0x38;
-    v5 = sp;
     local_2 = a1;
     local_3 = a2;
     local_4 = a3;
     local_5 = a4;
     local_6 = a5;
     local_7 = a6;
-    /* unsupported (4 steps): SIMD vector pair store, SIMD vector pair store, SIMD vector pair store, SIMD vector pair store */
-    local_8 = v4;
-    local_9 = a7;
-    local_10 = v5;
+    local_8 = d0;
+    local_9 = v0_hi;
+    local_10 = d1;
+    local_11 = v1_hi;
+    local_12 = d2;
+    local_13 = v2_hi;
+    local_14 = d3;
+    local_15 = v3_hi;
+    local_16 = d4;
+    local_17 = v4_hi;
+    local_18 = d5;
+    local_19 = v5_hi;
+    local_20 = d6;
+    local_21 = v6_hi;
+    local_22 = d7;
+    local_23 = v7_hi;
+    local_24 = &local_26;
+    local_25 = a7;
+    local_26 = sp;
     if (count < 0x1) {
-        v8 = 0x0;
-        return v8;
+        v3 = 0x0;
+        return v3;
     }
-    v6 = local_10;
-    v7 = local_8;
-    v8 = 0x0;
-    v9 = *(uint32_t *)&local_1;
+    v1 = local_26;
+    v2 = local_24;
+    v3 = 0x0;
+    v4 = *(uint32_t *)&local_1;
     for (;;) {
-        if ((v9 & 0x80000000) != 0x0) {
-            v11 = v9 + 0x8;
-            *(uint32_t *)&local_1 = v11;
-            if (v9 <= 0xfffffff8 /* unsigned */) {
-                v10 = v6;
-                v6 = v7 + (int64_t)(int32_t)(v9);
+        if ((v4 & 0x80000000) != 0x0) {
+            v6 = v4 + 0x8;
+            *(uint32_t *)&local_1 = v6;
+            if (v4 <= 0xfffffff8 /* unsigned */) {
+                v5 = v1;
+                v1 = v2 + (int64_t)(int32_t)(v4);
                 goto L_2104d4;
             }
         } else {
-            v11 = v9;
+            v6 = v4;
         }
-        v10 = v6 + 0x8;
-        local_10 = v10;
+        v5 = v1 + 0x8;
+        local_26 = v5;
     L_2104d4:
         count = count - 0x1;
-        v9 = v11;
-        v8 = *(uint32_t *)(v6) + v8;
-        v6 = v10;
+        v4 = v6;
+        v3 = *(uint32_t *)(v1) + v3;
+        v1 = v5;
         if (count == 0x0) {
             break;
         }
     }
-    return v8;
+    return v3;
 }
 -- signature
 int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -361,58 +401,65 @@ int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int6
 -- ir
 fn sum_varargs @ 0x210468 (size 188)
   blk0 @ 0x210468:
-    v1 = #0xffffffffffffffc8
-    v2 = (sp + #0xffffffffffffffa8)
-    v3 = #0xffffff80ffffffc8
     store64((sp + #0xffffffffffffffa0), (sp + #0xfffffffffffffff0))
     store64(#0xffffff80ffffffc8, (sp + #0xfffffffffffffff8))
-    v4 = (v2 + #0x38)
-    v5 = sp
     store64(x1, (sp + #0xffffffffffffffa8))
     store64(x2, (sp + #0xffffffffffffffb0))
     store64(x3, (sp + #0xffffffffffffffb8))
     store64(x4, (sp + #0xffffffffffffffc0))
     store64(x5, (sp + #0xffffffffffffffc8))
     store64(x6, (sp + #0xffffffffffffffd0))
-    unsupported: SIMD vector pair store
-    unsupported: SIMD vector pair store
-    unsupported: SIMD vector pair store
-    unsupported: SIMD vector pair store
-    store64(v4, (sp + #0xffffffffffffffe8))
+    store64(d0, (sp + #0xffffffffffffff20))
+    store64(v0_hi, (sp + #0xffffffffffffff28))
+    store64(d1, (sp + #0xffffffffffffff30))
+    store64(v1_hi, (sp + #0xffffffffffffff38))
+    store64(d2, (sp + #0xffffffffffffff40))
+    store64(v2_hi, (sp + #0xffffffffffffff48))
+    store64(d3, (sp + #0xffffffffffffff50))
+    store64(v3_hi, (sp + #0xffffffffffffff58))
+    store64(d4, (sp + #0xffffffffffffff60))
+    store64(v4_hi, (sp + #0xffffffffffffff68))
+    store64(d5, (sp + #0xffffffffffffff70))
+    store64(v5_hi, (sp + #0xffffffffffffff78))
+    store64(d6, (sp + #0xffffffffffffff80))
+    store64(v6_hi, (sp + #0xffffffffffffff88))
+    store64(d7, (sp + #0xffffffffffffff90))
+    store64(v7_hi, (sp + #0xffffffffffffff98))
+    store64((sp + #0xffffffffffffffe0), (sp + #0xffffffffffffffe8))
     store64(x7, (sp + #0xffffffffffffffd8))
-    store64(v5, (sp + #0xffffffffffffffe0))
+    store64(sp, (sp + #0xffffffffffffffe0))
     brif lt w0, #0x1 -> 0x210514
   blk1 @ 0x2104b8:
-    v6 = load64((sp + #0xffffffffffffffe0))
-    v7 = load64((sp + #0xffffffffffffffe8))
-    v8 = #0x0
-    v9 = (load32((sp + #0xfffffffffffffff8)) & #0xffffffff)
+    v1 = load64((sp + #0xffffffffffffffe0))
+    v2 = load64((sp + #0xffffffffffffffe8))
+    v3 = #0x0
+    v4 = (load32((sp + #0xfffffffffffffff8)) & #0xffffffff)
     br 0x2104ec
   blk2 @ 0x2104c8:
-    v10 = v6
-    v6 = (v7 + sext32(v9))
+    v5 = v1
+    v1 = (v2 + sext32(v4))
   blk3 @ 0x2104d4:
     w0 = (w0 - #0x1)
-    v9 = v11
-    v8 = ((load32(v6) + (v8 & #0xffffffff)) & #0xffffffff)
-    v6 = v10
+    v4 = v6
+    v3 = ((load32(v1) + (v3 & #0xffffffff)) & #0xffffffff)
+    v1 = v5
     brif eq w0, #0x0 -> 0x210518
   blk4 @ 0x2104ec:
-    brif ne (v9 & #0x80000000), #0x0 -> 0x2104f8
+    brif ne (v4 & #0x80000000), #0x0 -> 0x2104f8
   blk5 @ 0x2104f0:
-    v11 = v9
+    v6 = v4
     br 0x210508
   blk6 @ 0x2104f8:
-    v11 = ((v9 & #0xffffffff) + #0x8)
-    store32(v11, (sp + #0xfffffffffffffff8))
-    brif ls (v9 & #0xffffffff), #0xfffffff8 -> 0x2104c8
+    v6 = ((v4 & #0xffffffff) + #0x8)
+    store32(v6, (sp + #0xfffffffffffffff8))
+    brif ls (v4 & #0xffffffff), #0xfffffff8 -> 0x2104c8
   blk7 @ 0x210508:
-    v10 = (v6 + #0x8)
-    store64(v10, (sp + #0xffffffffffffffe0))
+    v5 = (v1 + #0x8)
+    store64(v5, (sp + #0xffffffffffffffe0))
     br 0x2104d4
   blk8 @ 0x210514:
-    v8 = #0x0
+    v3 = #0x0
   blk9 @ 0x210518:
-    ret (v8 & #0xffffffff)
+    ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":188,"unsupported":4}
+{"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":188,"unsupported":0}

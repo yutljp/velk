@@ -5,10 +5,13 @@ use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
-use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
+use crate::ir::{BinOp, Cond, Expr, Operation, Precision, RegRef, Stmt};
 
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
+    /// Whether an operand of the instruction being lifted was one the
+    /// lifter cannot express, so that its effect would be lost.
+    incomplete: std::cell::Cell<bool>,
     last_compare: Option<Flags>,
     image: &'a crate::loader::Image,
     summaries: super::Summaries<'a>,
@@ -23,6 +26,7 @@ impl<'a> Lifter<'a> {
     ) -> Self {
         Self {
             stmts: Vec::new(),
+            incomplete: Default::default(),
             last_compare: None,
             image,
             summaries,
@@ -67,6 +71,64 @@ impl<'a> Lifter<'a> {
         Expr::reg(crate::ir::EXCHANGE, 64)
     }
 
+    /// The low `bits` of a vector register.
+    fn read_simd(&self, slot: u16, bits: u16) -> Expr {
+        let register = Expr::reg(slot, 64);
+        if bits >= 64 {
+            register
+        } else {
+            Expr::bin(BinOp::And, register, Expr::constant((1 << bits) - 1))
+        }
+    }
+
+    /// A write of `bits` to a vector register, given as its low and high
+    /// halves: below 128 bits the high half is zero, and a scalar clears
+    /// the bits above it.
+    fn write_simd(&mut self, slot: u16, bits: u16, (low, high): (Expr, Expr)) {
+        let low = if bits < 64 {
+            Expr::bin(BinOp::And, low, Expr::constant((1 << bits) - 1))
+        } else {
+            low
+        };
+        self.assign(
+            RegRef {
+                index: slot,
+                width: 64,
+            },
+            low,
+        );
+        self.assign(
+            RegRef {
+                index: slot + 1,
+                width: 64,
+            },
+            high,
+        );
+    }
+
+    fn simd_store(&mut self, slot: u16, bits: u16, address: &Expr) {
+        preserve_compare(&mut self.last_compare, Write::Memory, &mut self.stmts);
+        if bits == 128 {
+            let high = Expr::bin(BinOp::Add, address.clone(), Expr::constant(8));
+            self.stmts.push(Stmt::Store {
+                addr: address.clone(),
+                value: Expr::reg(slot, 64),
+                width: 8,
+            });
+            self.stmts.push(Stmt::Store {
+                addr: high,
+                value: Expr::reg(slot + 1, 64),
+                width: 8,
+            });
+        } else {
+            self.stmts.push(Stmt::Store {
+                addr: address.clone(),
+                value: self.read_simd(slot, bits),
+                width: (bits / 8) as u8,
+            });
+        }
+    }
+
     /// The condition encoded as `code`; `al` and `nv` both always hold.
     fn test_code(&self, code: u8) -> Test {
         match Cond::from_code(code) {
@@ -79,9 +141,9 @@ impl<'a> Lifter<'a> {
     fn select(&mut self, dest: RegRef, test: Test, then: Expr, els: Expr) {
         match test.select(then, els) {
             Some(value) => self.assign(dest, value),
-            None => self.stmts.push(Stmt::Unsupported {
-                text: "conditional select on flags not modelled here".to_owned(),
-            }),
+            None => self.stmts.push(Stmt::unsupported(
+                "conditional select on flags not modelled here".to_owned(),
+            )),
         }
     }
 
@@ -157,7 +219,12 @@ impl<'a> Lifter<'a> {
                 })
             }
             Operand::PCOffset(offset) => Some(Expr::constant(offset as u64)),
-            _ => None,
+            Operand::Nothing => None,
+            // A vector operand, which the scalar handlers cannot express.
+            _ => {
+                self.incomplete.set(true);
+                None
+            }
         }
     }
 }
@@ -313,9 +380,7 @@ fn lift_inverted(lifter: &mut Lifter, ops: [Operand; 4], op: BinOp) {
     };
     let (Some(base), Some(mask)) = (lifter.operand(ops[1], width), lifter.operand(ops[2], width))
     else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: format!("{op:?} not"),
-        });
+        lifter.stmts.push(Stmt::unsupported(format!("{op:?} not")));
         return;
     };
     let inverted = Expr::bin(BinOp::Xor, mask, Expr::constant(u64::MAX));
@@ -380,9 +445,7 @@ fn lift_bic(lifter: &mut Lifter, ops: [Operand; 4], flags: bool) {
     };
     let (Some(base), Some(mask)) = (lifter.operand(ops[1], width), lifter.operand(ops[2], width))
     else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: "bic".to_owned(),
-        });
+        lifter.stmts.push(Stmt::unsupported("bic".to_owned()));
         return;
     };
     let inverted = Expr::bin(BinOp::Xor, mask, Expr::constant(u64::MAX));
@@ -491,9 +554,9 @@ fn lift_with_carry(lifter: &mut Lifter, ops: [Operand; 4], subtract: bool, flags
         lifter.operand(ops[2], dest.width),
         carry,
     ) else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: "carry not modelled here".to_owned(),
-        });
+        lifter
+            .stmts
+            .push(Stmt::unsupported("carry not modelled here".to_owned()));
         return;
     };
     // The carry may read registers that keep the earlier flags' operands,
@@ -651,23 +714,23 @@ fn lift_bitfield(lifter: &mut Lifter, ops: [Operand; 4], signed: bool) {
         );
         match value {
             Some(value) => lifter.assign(dest, value),
-            None => lifter.stmts.push(Stmt::Unsupported {
-                text: "bitfield shift".to_owned(),
-            }),
+            None => lifter
+                .stmts
+                .push(Stmt::unsupported("bitfield shift".to_owned())),
         }
     } else if imms + 1 == immr {
         match shift_expr(a64::ShiftStyle::LSL, dest.width as u64 - immr, source) {
             Some(value) => lifter.assign(dest, value),
-            None => lifter.stmts.push(Stmt::Unsupported {
-                text: "bitfield shift".to_owned(),
-            }),
+            None => lifter
+                .stmts
+                .push(Stmt::unsupported("bitfield shift".to_owned())),
         }
     } else {
         match bitfield_move(source, immr, imms, dest.width, signed) {
             Some(value) => lifter.assign(dest, value),
-            None => lifter.stmts.push(Stmt::Unsupported {
-                text: format!("bitfield immr={immr} imms={imms}"),
-            }),
+            None => lifter.stmts.push(Stmt::unsupported(format!(
+                "bitfield immr={immr} imms={imms}"
+            ))),
         }
     }
 }
@@ -743,9 +806,9 @@ fn lift_variable_shift(lifter: &mut Lifter, ops: [Operand; 4], shift: a64::Shift
             return;
         }
         _ => {
-            lifter.stmts.push(Stmt::Unsupported {
-                text: "rotate/extend".to_owned(),
-            });
+            lifter
+                .stmts
+                .push(Stmt::unsupported("rotate/extend".to_owned()));
             return;
         }
     };
@@ -834,6 +897,18 @@ fn write_back(lifter: &mut Lifter, writeback: Option<(RegRef, Expr)>) {
 }
 
 fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
+    if let Some((slot, bits)) = simd(ops[0]) {
+        let Some(mem) = memory(lifter, ops[1], (bits / 8) as u8) else {
+            lifter
+                .stmts
+                .push(Stmt::unsupported("load address".to_owned()));
+            return;
+        };
+        let halves = simd_load(&mem.address, bits);
+        lifter.write_simd(slot, bits, halves);
+        write_back(lifter, mem.writeback);
+        return;
+    }
     let Some(dest) = destination(ops[0]) else {
         return;
     };
@@ -847,9 +922,9 @@ fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
         _ => (4, false),
     };
     let Some(mem) = memory(lifter, ops[1], dest.width / 8) else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: "load address".to_owned(),
-        });
+        lifter
+            .stmts
+            .push(Stmt::unsupported("load address".to_owned()));
         return;
     };
     let value = Expr::Load {
@@ -862,15 +937,26 @@ fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
 }
 
 fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
+    if let Some((slot, bits)) = simd(ops[0]) {
+        let Some(mem) = memory(lifter, ops[1], (bits / 8) as u8) else {
+            lifter
+                .stmts
+                .push(Stmt::unsupported("store address".to_owned()));
+            return;
+        };
+        lifter.simd_store(slot, bits, &mem.address);
+        write_back(lifter, mem.writeback);
+        return;
+    }
     let width = match opcode {
         a64::Opcode::STRB => 1,
         a64::Opcode::STRH => 2,
         _ => match register_width(ops[0]) {
             Some(bits) => bits / 8,
             None => {
-                lifter.stmts.push(Stmt::Unsupported {
-                    text: "SIMD store".to_owned(),
-                });
+                lifter
+                    .stmts
+                    .push(Stmt::unsupported("SIMD store".to_owned()));
                 return;
             }
         },
@@ -880,9 +966,9 @@ fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
         return;
     };
     let Some(mem) = memory(lifter, ops[1], width) else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: "store address".to_owned(),
-        });
+        lifter
+            .stmts
+            .push(Stmt::unsupported("store address".to_owned()));
         return;
     };
     lifter.stmts.push(Stmt::Store {
@@ -894,16 +980,35 @@ fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
 }
 
 fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
+    if let (Some((first, bits)), Some((second, _))) = (simd(ops[0]), simd(ops[1])) {
+        let Some(mem) = memory(lifter, ops[2], (bits / 8) as u8) else {
+            return;
+        };
+        let second_addr = Expr::bin(
+            BinOp::Add,
+            mem.address.clone(),
+            Expr::constant(u64::from(bits / 8)),
+        );
+        if store {
+            lifter.simd_store(first, bits, &mem.address);
+            lifter.simd_store(second, bits, &second_addr);
+        } else {
+            // Both loads read memory as it was before either write.
+            let (a, b) = (simd_load(&mem.address, bits), simd_load(&second_addr, bits));
+            lifter.write_simd(first, bits, a);
+            lifter.write_simd(second, bits, b);
+        }
+        write_back(lifter, mem.writeback);
+        return;
+    }
     let (Some(first_bits), Some(second_bits)) = (register_width(ops[0]), register_width(ops[1]))
     else {
         // A vector pair touches registers the scalar IR does not model.
-        lifter.stmts.push(Stmt::Unsupported {
-            text: if store {
-                "SIMD vector pair store".to_owned()
-            } else {
-                "SIMD vector pair load".to_owned()
-            },
-        });
+        lifter.stmts.push(Stmt::unsupported(if store {
+            "SIMD vector pair store".to_owned()
+        } else {
+            "SIMD vector pair load".to_owned()
+        }));
         return;
     };
     let Some(mem) = memory(lifter, ops[2], 8) else {
@@ -954,6 +1059,368 @@ fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
     write_back(lifter, mem.writeback);
 }
 
+/// The registers, as the IR numbers them, an instruction may write: every
+/// register it names, and a base it writes back.
+fn written_registers(ins: &Instruction) -> Vec<u16> {
+    let vector = |number: u16| {
+        let slot = crate::arch::aarch64::V0 + 2 * number;
+        [slot, slot + 1]
+    };
+    let mut out = Vec::new();
+    for operand in ins.operands {
+        match operand {
+            Operand::Register(_, 31) => {}
+            Operand::Register(_, index) | Operand::RegisterOrSP(_, index) => out.push(index),
+            Operand::SIMDRegister(_, number)
+            | Operand::SIMDRegisterElements(_, number, _)
+            | Operand::SIMDRegisterElementsLane(_, number, ..)
+            | Operand::SIMDRegisterElementsMultipleLane(_, number, ..) => {
+                out.extend(vector(number))
+            }
+            Operand::SIMDRegisterGroup(_, number, _, count)
+            | Operand::SIMDRegisterGroupLane(number, _, count, _) => {
+                for offset in 0..u16::from(count) {
+                    out.extend(vector((number + offset) % 32));
+                }
+            }
+            Operand::RegPreIndex(base, _, true)
+            | Operand::RegPostIndex(base, _)
+            | Operand::RegPostIndexReg(base, _) => out.push(base),
+            _ => {}
+        }
+    }
+    out.sort_unstable();
+    out.dedup();
+    out
+}
+
+/// A vector register used whole or as a scalar: its low slot and its width
+/// in bits.
+fn simd(operand: Operand) -> Option<(u16, u16)> {
+    let Operand::SIMDRegister(size, number) = operand else {
+        return None;
+    };
+    let bits = match size {
+        a64::SIMDSizeCode::B => 8,
+        a64::SIMDSizeCode::H => 16,
+        a64::SIMDSizeCode::S => 32,
+        a64::SIMDSizeCode::D => 64,
+        a64::SIMDSizeCode::Q => 128,
+    };
+    Some((crate::arch::aarch64::V0 + 2 * number, bits))
+}
+
+fn precision(bits: u16) -> Option<Precision> {
+    match bits {
+        32 => Some(Precision::Single),
+        64 => Some(Precision::Double),
+        _ => None,
+    }
+}
+
+/// The low and high halves `bits` of memory at `address` fill.
+fn simd_load(address: &Expr, bits: u16) -> (Expr, Expr) {
+    let load = |addr: Expr, width: u8| Expr::Load {
+        addr: Box::new(addr),
+        width,
+        signed: false,
+    };
+    if bits == 128 {
+        let high = Expr::bin(BinOp::Add, address.clone(), Expr::constant(8));
+        (load(address.clone(), 8), load(high, 8))
+    } else {
+        (load(address.clone(), (bits / 8) as u8), Expr::constant(0))
+    }
+}
+
+/// A lane of a vector register: its slot, the bit it starts at there, and
+/// its width.
+fn lane(operand: Operand) -> Option<(u16, u64, u64)> {
+    let Operand::SIMDRegisterElementsLane(_, number, size, index) = operand else {
+        return None;
+    };
+    let bits: u64 = match size {
+        a64::SIMDSizeCode::B => 8,
+        a64::SIMDSizeCode::H => 16,
+        a64::SIMDSizeCode::S => 32,
+        a64::SIMDSizeCode::D => 64,
+        a64::SIMDSizeCode::Q => return None,
+    };
+    let start = u64::from(index) * bits;
+    let slot = crate::arch::aarch64::V0 + 2 * number + (start / 64) as u16;
+    Some((slot, start % 64, bits))
+}
+
+fn lane_value((slot, shift, bits): (u16, u64, u64)) -> Expr {
+    let value = Expr::bin(BinOp::Shr, Expr::reg(slot, 64), Expr::constant(shift));
+    if bits == 64 {
+        value
+    } else {
+        Expr::bin(BinOp::And, value, Expr::constant((1 << bits) - 1))
+    }
+}
+
+/// The scalar instructions on floating-point registers.
+fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+    use a64::Opcode as O;
+    let ops = ins.operands;
+    let read = |lifter: &Lifter, operand: Operand| -> Option<(Expr, Precision)> {
+        let (slot, bits) = simd(operand)?;
+        Some((lifter.read_simd(slot, bits), precision(bits)?))
+    };
+    let float = |op: Operation, args: Vec<Expr>| Expr::apply(op, args);
+    match ins.opcode {
+        O::FADD | O::FSUB | O::FMUL | O::FDIV | O::FNMUL => {
+            let (slot, bits) = simd(ops[0])?;
+            let ((a, p), (b, _)) = (read(lifter, ops[1])?, read(lifter, ops[2])?);
+            let value = match ins.opcode {
+                O::FADD => float(Operation::FloatAdd(p), vec![a, b]),
+                O::FSUB => float(Operation::FloatSub(p), vec![a, b]),
+                O::FMUL => float(Operation::FloatMul(p), vec![a, b]),
+                O::FDIV => float(Operation::FloatDiv(p), vec![a, b]),
+                _ => float(
+                    Operation::FloatNegate(p),
+                    vec![float(Operation::FloatMul(p), vec![a, b])],
+                ),
+            };
+            lifter.write_simd(slot, bits, (value, Expr::constant(0)));
+        }
+        O::FSQRT | O::FNEG | O::FABS => {
+            let (slot, bits) = simd(ops[0])?;
+            let (a, p) = read(lifter, ops[1])?;
+            let op = match ins.opcode {
+                O::FSQRT => Operation::FloatSqrt(p),
+                O::FNEG => Operation::FloatNegate(p),
+                _ => Operation::FloatAbs(p),
+            };
+            lifter.write_simd(slot, bits, (float(op, vec![a]), Expr::constant(0)));
+        }
+        // fmadd d, n, m, a is a + n * m; fmsub negates the product, fnmadd
+        // the whole, and fnmsub the addend.
+        O::FMADD | O::FMSUB | O::FNMADD | O::FNMSUB => {
+            let (slot, bits) = simd(ops[0])?;
+            let ((n, p), (m, _), (a, _)) = (
+                read(lifter, ops[1])?,
+                read(lifter, ops[2])?,
+                read(lifter, ops[3])?,
+            );
+            let negate = |value| float(Operation::FloatNegate(p), vec![value]);
+            let fused = |n, a| float(Operation::FloatMulAdd(p), vec![n, m.clone(), a]);
+            let value = match ins.opcode {
+                O::FMADD => fused(n, a),
+                O::FMSUB => fused(negate(n), a),
+                O::FNMADD => negate(fused(n, a)),
+                _ => fused(n, negate(a)),
+            };
+            lifter.write_simd(slot, bits, (value, Expr::constant(0)));
+        }
+        O::FCMP | O::FCMPE => {
+            let (a, p) = read(lifter, ops[0])?;
+            let b = match ops[1] {
+                Operand::ImmediateDouble(_) => Expr::constant(0),
+                operand => read(lifter, operand)?.0,
+            };
+            lifter.last_compare = Some(Flags::float_compare(a, b, p));
+        }
+        O::FCSEL => {
+            let (slot, bits) = simd(ops[0])?;
+            let ((a, _), (b, _)) = (read(lifter, ops[1])?, read(lifter, ops[2])?);
+            let Operand::ConditionCode(code) = ops[3] else {
+                return None;
+            };
+            match lifter.test_code(code).select(a, b) {
+                Some(value) => lifter.write_simd(slot, bits, (value, Expr::constant(0))),
+                None => lifter.stmts.push(Stmt::unsupported(
+                    "conditional select on flags not modelled here".to_owned(),
+                )),
+            }
+        }
+        O::FCVT => {
+            let (slot, bits) = simd(ops[0])?;
+            let (a, from) = read(lifter, ops[1])?;
+            let to = precision(bits)?;
+            let value = float(Operation::FloatConvert { from, to }, vec![a]);
+            lifter.write_simd(slot, bits, (value, Expr::constant(0)));
+        }
+        O::SCVTF | O::UCVTF => {
+            let (slot, bits) = simd(ops[0])?;
+            let source = register_width(ops[1])?;
+            let value = lifter.operand(ops[1], source)?;
+            let converted = float(
+                Operation::IntToFloat {
+                    signed: ins.opcode == O::SCVTF,
+                    bits: source,
+                    to: precision(bits)?,
+                },
+                vec![value],
+            );
+            lifter.write_simd(slot, bits, (converted, Expr::constant(0)));
+        }
+        O::FCVTZS | O::FCVTZU => {
+            let (a, from) = read(lifter, ops[1])?;
+            let converted = float(
+                Operation::FloatToInt {
+                    signed: ins.opcode == O::FCVTZS,
+                    bits: register_width(ops[0])?,
+                    from,
+                    saturating: true,
+                },
+                vec![a],
+            );
+            if let Some(dest) = destination(ops[0]) {
+                lifter.assign(dest, converted);
+            }
+        }
+        O::FMOV => match (ops[0], ops[1]) {
+            (Operand::SIMDRegister(..), Operand::SIMDRegister(..)) => {
+                let ((slot, bits), (from, _)) = (simd(ops[0])?, simd(ops[1])?);
+                let value = lifter.read_simd(from, bits);
+                lifter.write_simd(slot, bits, (value, Expr::constant(0)));
+            }
+            (Operand::SIMDRegister(..), Operand::Register(..)) => {
+                let (slot, bits) = simd(ops[0])?;
+                let value = lifter.operand(ops[1], bits as u8)?;
+                lifter.write_simd(slot, bits, (value, Expr::constant(0)));
+            }
+            (Operand::Register(..), Operand::SIMDRegister(..)) => {
+                let (from, bits) = simd(ops[1])?;
+                let value = lifter.read_simd(from, bits);
+                if let Some(dest) = destination(ops[0]) {
+                    lifter.assign(dest, value);
+                }
+            }
+            (Operand::SIMDRegister(..), Operand::ImmediateDouble(value)) => {
+                let (slot, bits) = simd(ops[0])?;
+                let pattern = match precision(bits)? {
+                    Precision::Double => value.to_bits(),
+                    Precision::Single => u64::from((value as f32).to_bits()),
+                };
+                lifter.write_simd(slot, bits, (Expr::constant(pattern), Expr::constant(0)));
+            }
+            // The upper half of a 128-bit register, which the rest keeps.
+            (Operand::SIMDRegisterElementsLane(_, number, a64::SIMDSizeCode::D, 1), source) => {
+                let value = lifter.operand(source, 64)?;
+                let slot = crate::arch::aarch64::V0 + 2 * number + 1;
+                lifter.assign(
+                    RegRef {
+                        index: slot,
+                        width: 64,
+                    },
+                    value,
+                );
+            }
+            (dest, Operand::SIMDRegisterElementsLane(_, number, a64::SIMDSizeCode::D, 1)) => {
+                let value = Expr::reg(crate::arch::aarch64::V0 + 2 * number + 1, 64);
+                if let Some(dest) = destination(dest) {
+                    lifter.assign(dest, value);
+                }
+            }
+            _ => return None,
+        },
+        // A lane read out to a vector or general register.
+        O::DUP | O::UMOV | O::SMOV if lane(ops[1]).is_some() => {
+            let source = lane(ops[1])?;
+            let value = lane_value(source);
+            match simd(ops[0]) {
+                Some((slot, bits)) if u64::from(bits) == source.2 => {
+                    lifter.write_simd(slot, bits, (value, Expr::constant(0)))
+                }
+                Some(_) => return None,
+                None => {
+                    let value = if ins.opcode == O::SMOV {
+                        Expr::SignExtend {
+                            value: Box::new(value),
+                            width: (source.2 / 8) as u8,
+                        }
+                    } else {
+                        value
+                    };
+                    if let Some(dest) = destination(ops[0]) {
+                        lifter.assign(dest, value);
+                    }
+                }
+            }
+        }
+        // A lane written from a general register or another lane; the rest
+        // of the register stays.
+        O::INS => {
+            let (slot, shift, bits) = lane(ops[0])?;
+            let value = match lane(ops[1]) {
+                Some(source) => lane_value(source),
+                None => lifter.operand(ops[1], bits as u8)?,
+            };
+            let ones = if bits == 64 {
+                u64::MAX
+            } else {
+                (1 << bits) - 1
+            };
+            let merged = if bits == 64 {
+                value
+            } else {
+                Expr::bin(
+                    BinOp::Or,
+                    Expr::bin(
+                        BinOp::And,
+                        Expr::reg(slot, 64),
+                        Expr::constant(!(ones << shift)),
+                    ),
+                    Expr::bin(
+                        BinOp::Shl,
+                        Expr::bin(BinOp::And, value, Expr::constant(ones)),
+                        Expr::constant(shift),
+                    ),
+                )
+            };
+            lifter.assign(
+                RegRef {
+                    index: slot,
+                    width: 64,
+                },
+                merged,
+            );
+        }
+        // Zero, or a 64-bit pattern in each half.
+        O::MOVI => {
+            let Operand::Imm64(value) = ops[1] else {
+                return None;
+            };
+            match ops[0] {
+                Operand::SIMDRegister(a64::SIMDSizeCode::D, number) => lifter.write_simd(
+                    crate::arch::aarch64::V0 + 2 * number,
+                    64,
+                    (Expr::constant(value), Expr::constant(0)),
+                ),
+                Operand::SIMDRegisterElements(size, number, a64::SIMDSizeCode::D)
+                    if value == 0 || size == a64::SIMDSizeCode::Q =>
+                {
+                    let high = if size == a64::SIMDSizeCode::Q {
+                        value
+                    } else {
+                        0
+                    };
+                    lifter.write_simd(
+                        crate::arch::aarch64::V0 + 2 * number,
+                        128,
+                        (Expr::constant(value), Expr::constant(high)),
+                    )
+                }
+                Operand::SIMDRegisterElements(size, number, _) if value == 0 => lifter.write_simd(
+                    crate::arch::aarch64::V0 + 2 * number,
+                    if size == a64::SIMDSizeCode::Q {
+                        128
+                    } else {
+                        64
+                    },
+                    (Expr::constant(0), Expr::constant(0)),
+                ),
+                _ => return None,
+            }
+        }
+        _ => return None,
+    }
+    Some(())
+}
+
 fn relative_target(operand: Operand, pc: u64) -> Option<u64> {
     match operand {
         Operand::PCOffset(offset) => Some(pc.wrapping_add(offset as u64)),
@@ -963,9 +1430,9 @@ fn relative_target(operand: Operand, pc: u64) -> Option<u64> {
 
 fn lift_cond_branch(lifter: &mut Lifter, ops: [Operand; 4], code: u8, pc: u64) -> bool {
     let Some(target) = lifter.target_of(ops[0], pc) else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: "branch target".to_owned(),
-        });
+        lifter
+            .stmts
+            .push(Stmt::unsupported("branch target".to_owned()));
         return true;
     };
     let test = lifter.test_code(code);
@@ -1078,6 +1545,9 @@ fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
 fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
     use a64::Opcode as O;
     let ops = ins.operands;
+    if lift_float(lifter, ins).is_some() {
+        return false;
+    }
 
     match ins.opcode {
         O::ADD => lift_alu(lifter, ops, BinOp::Add, false),
@@ -1212,9 +1682,9 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         }
         O::HINT => {}
         other => {
-            lifter.stmts.push(Stmt::Unsupported {
-                text: format!("{other:?} at 0x{pc:x}"),
-            });
+            lifter
+                .stmts
+                .push(Stmt::unsupported(format!("{other:?} at 0x{pc:x}")));
         }
     }
     false
@@ -1264,7 +1734,24 @@ impl Machine for Lifter<'_> {
     }
 
     fn step(&mut self, instruction: &Instruction, pc: u64) -> bool {
-        lift_instruction(self, instruction, pc)
+        self.incomplete.set(false);
+        let first = self.stmts.len();
+        let ended = lift_instruction(self, instruction, pc);
+        if self.incomplete.get() {
+            self.stmts.push(Stmt::unsupported(format!(
+                "{:?} operands at 0x{pc:x}",
+                instruction.opcode
+            )));
+        }
+        let changed = written_registers(instruction);
+        for stmt in &mut self.stmts[first..] {
+            if let Stmt::Unsupported { writes, .. } = stmt
+                && writes.is_none()
+            {
+                *writes = Some(changed.clone());
+            }
+        }
+        ended
     }
 
     fn take_statements(&mut self) -> Vec<Stmt> {

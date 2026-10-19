@@ -29,7 +29,6 @@ fn <unnamed> @ 0x2011e0 (size 15)
 == 0x2011f0 -
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
-/* struct: a0 +0x0:uint16_t, +0xffffffffffffffe8:uint16_t */
 int64_t sub_2011f0(uint16_t *a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
@@ -93,7 +92,7 @@ fn <unnamed> @ 0x2011f0 (size 111)
   blk8 @ 0x20125e:
     ret v3
 -- card
-{"accesses":["a0 +0x0:uint16_t, +0xffffffffffffffe8:uint16_t"],"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":111,"unsupported":0}
+{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":111,"unsupported":0}
 
 == 0x201260 -
 -- decompile

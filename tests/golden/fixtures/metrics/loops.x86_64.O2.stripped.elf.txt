@@ -127,7 +127,7 @@ int32_t sub_201210(uint32_t *a0, int32_t a1) {
             break;
         }
         /* unsupported: cmov without compare at 0x201229 */
-        v4 = v4 + v5;
+        v4 = v4 + r8d;
         v3 = v3 + 0x1;
     } while (v1 != v3);
     return v4;
@@ -150,7 +150,7 @@ fn <unnamed> @ 0x201210 (size 44)
     brif eq v5, #0x0 -> 0x201238
   blk3 @ 0x201229:
     unsupported: cmov without compare at 0x201229
-    v4 = (((v4 & #0xffffffff) + v5) & #0xffffffff)
+    v4 = (((v4 & #0xffffffff) + r8d) & #0xffffffff)
     v3 = (v3 + #0x1)
     brif ne v1, v3 -> 0x201220
   blk4 @ 0x201238:

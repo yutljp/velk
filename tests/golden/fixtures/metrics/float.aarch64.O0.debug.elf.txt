@@ -1,4 +1,4 @@
-# metrics/float.aarch64.O0.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 9 unsupported, 1 gotos
+# metrics/float.aarch64.O0.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101b4 160 average symtab,dwarf,unwind
 0x210254 48 lerp symtab,dwarf,unwind
 0x210284 24 truncate_to_int symtab,dwarf,unwind
@@ -11,28 +11,24 @@
 double average(double *values, int n) {
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-1c] */
+    uint64_t local_2; /* [sp-18] */
+    uint32_t local_3; /* [sp-1c] */
+    uint64_t local_4; /* [sp-28] */
 
     local_0 = values;
     local_1 = n;
-    /* unsupported (2 steps): MOVI at 0x2101c0, SIMD store */
     local_2 = 0x0;
-    while (true) {
-        v1 = local_1;
-        v2 = local_2 - v1;
-        if (v2 + v1 >= v1) break;
-        v3 = local_0;
-        v4 = local_2;
-        /* unsupported (2 steps): FADD at 0x2101f4, SIMD store */
-        local_2 += 0x1;
+    local_3 = 0x0;
+    while (local_3 < local_1) {
+        local_2 = local_2 + *(double *)(local_0 + (local_3 << 0x3));
+        local_3 += 0x1;
     }
-    v5 = local_1;
-    if (v5 <= 0x0) {
-        /* unsupported (2 steps): MOVI at 0x21023c, SIMD store */
-        return x32;
+    if (local_1 <= 0x0) {
+        local_4 = 0x0;
+        return local_4;
     }
-    /* unsupported (4 steps): FMOV at 0x210228, SCVTF at 0x21022c, FDIV at 0x210230, SIMD store */
-    return x32;
+    local_4 = local_2 / (double)(int32_t)local_1;
+    return local_4;
 }
 -- signature
 double (double * values, int n)
@@ -43,149 +39,125 @@ fn average @ 0x2101b4 (size 160)
   blk0 @ 0x2101b4:
     store64(x0, (sp + #0xfffffffffffffff8))
     store32(w1, (sp + #0xfffffffffffffff4))
-    unsupported: MOVI at 0x2101c0
-    unsupported: SIMD store
+    store64(#0x0, (sp + #0xffffffffffffffe8))
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk1 @ 0x2101d0:
-    v1 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    v2 = ((load32((sp + #0xffffffffffffffe4)) - (v1 & #0xffffffff)) & #0xffffffff)
-    brif ge (v2 + (v1 & #0xffffffff)), (v1 & #0xffffffff) -> 0x210210
+    brif ge load32((sp + #0xffffffffffffffe4)), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x210210
   blk2 @ 0x2101e0:
     br 0x2101e4
   blk3 @ 0x2101e4:
-    v3 = load64((sp + #0xfffffffffffffff8))
-    v4 = load32((sp + #0xffffffffffffffe4))s
-    unsupported: FADD at 0x2101f4
-    unsupported: SIMD store
+    store64(fadd.d(load64((sp + #0xffffffffffffffe8)), load64((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s << #0x3)))), (sp + #0xffffffffffffffe8))
     br 0x210200
   blk4 @ 0x210200:
     store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk5 @ 0x210210:
-    v5 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    brif le v5, #0x0 -> 0x21023c
+    brif le (load32((sp + #0xfffffffffffffff4)) & #0xffffffff), #0x0 -> 0x21023c
   blk6 @ 0x21021c:
     br 0x210220
   blk7 @ 0x210220:
-    unsupported: FMOV at 0x210228
-    unsupported: SCVTF at 0x21022c
-    unsupported: FDIV at 0x210230
-    unsupported: SIMD store
+    store64(fdiv.d(load64((sp + #0xffffffffffffffe8)), s32tof.d((load32((sp + #0xfffffffffffffff4)) & #0xffffffff))), (sp + #0xffffffffffffffd8))
     br 0x210248
   blk8 @ 0x21023c:
-    unsupported: MOVI at 0x21023c
-    unsupported: SIMD store
+    store64(#0x0, (sp + #0xffffffffffffffd8))
     br 0x210248
   blk9 @ 0x210248:
-    ret x32
+    ret load64((sp + #0xffffffffffffffd8))
 -- card
-{"addr":"0x2101b4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":10}
+{"addr":"0x2101b4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":0}
 
 == 0x210254 lerp
 -- decompile
 /* velk pseudo-C: lerp @ 0x210254 */
-float lerp(int64_t a0) {
-    /* unsupported (5 steps): SIMD store, SIMD store, SIMD store, FSUB at 0x210270, FMADD at 0x210278 */
-    return w32;
+float lerp(float a, float b, float t) {
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = a;
+    return fmaf(b - a, t, local_0);
 }
 -- signature
-float (int64_t a0)
+float (float a, float b, float t)
 -- references
 
 -- ir
 fn lerp @ 0x210254 (size 48)
   blk0 @ 0x210254:
-    unsupported: SIMD store
-    unsupported: SIMD store
-    unsupported: SIMD store
-    unsupported: FSUB at 0x210270
-    unsupported: FMADD at 0x210278
-    ret w32
+    store32(s0, (sp + #0xfffffffffffffffc))
+    ret (fma.s((fsub.s((s1 & #0xffffffff), (s0 & #0xffffffff)) & #0xffffffff), (s2 & #0xffffffff), load32((sp + #0xfffffffffffffffc))) & #0xffffffff)
 -- card
-{"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":5}
+{"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 
 == 0x210284 truncate_to_int
 -- decompile
 /* velk pseudo-C: truncate_to_int @ 0x210284 */
-int truncate_to_int(int64_t a0) {
-    /* unsupported (2 steps): SIMD store, FCVTZS at 0x210290 */
-    return a0;
+int truncate_to_int(double x) {
+    return (int32_t)x;
 }
 -- signature
-int (int64_t a0)
+int (double x)
 -- references
 
 -- ir
 fn truncate_to_int @ 0x210284 (size 24)
   blk0 @ 0x210284:
-    unsupported: SIMD store
-    unsupported: FCVTZS at 0x210290
-    ret x0
+    ret (f.dtos32.sat(d0) & #0xffffffff)
 -- card
-{"addr":"0x210284","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":2}
+{"addr":"0x210284","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x21029c widen
 -- decompile
 /* velk pseudo-C: widen @ 0x21029c */
-double widen(int64_t a0) {
-    /* unsupported (4 steps): SIMD store, FCVT at 0x2102a8, FMOV at 0x2102ac, FMUL at 0x2102b0 */
-    return x32;
+double widen(float x) {
+    return (double)x * 2.0;
 }
 -- signature
-double (int64_t a0)
+double (float x)
 -- references
 
 -- ir
 fn widen @ 0x21029c (size 32)
   blk0 @ 0x21029c:
-    unsupported: SIMD store
-    unsupported: FCVT at 0x2102a8
-    unsupported: FMOV at 0x2102ac
-    unsupported: FMUL at 0x2102b0
-    ret x32
+    ret fmul.d(f.stof.d((d0 & #0xffffffff)), #0x4000000000000000)
 -- card
-{"addr":"0x21029c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":4}
+{"addr":"0x21029c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
 
 == 0x2102bc compare_doubles
 -- decompile
 /* velk pseudo-C: compare_doubles @ 0x2102bc */
-int compare_doubles(void) {
-    uint32_t local_0; /* [sp-14] */
+int compare_doubles(double a, double b) {
+    uint64_t local_0; /* [sp-8] */
+    uint64_t local_1; /* [sp-10] */
+    uint32_t local_2; /* [sp-14] */
 
-    /* unsupported (3 steps): SIMD store, SIMD store, FCMP at 0x2102d0 */
-    if (/* pl */ true) { goto L_2102e8; }
-    local_0 = 0xffffffff;
-    return local_0;
-L_2102e8:
-    v1 = 0x0;
-    /* unsupported (2 steps): FCMP at 0x2102f4, conditional select on flags not modelled here */
-    local_0 = 0x0;
-    return local_0;
+    local_0 = a;
+    local_1 = b;
+    if (!(a < b)) {
+        local_2 = (local_1 < local_0);
+        return local_2;
+    }
+    local_2 = 0xffffffff;
+    return local_2;
 }
 -- signature
-int ()
+int (double a, double b)
 -- references
 
 -- ir
 fn compare_doubles @ 0x2102bc (size 84)
   blk0 @ 0x2102bc:
-    unsupported: SIMD store
-    unsupported: SIMD store
-    unsupported: FCMP at 0x2102d0
-    brif pl -> 0x2102e8
+    store64(d0, (sp + #0xfffffffffffffff8))
+    store64(d1, (sp + #0xfffffffffffffff0))
+    brif eq flt.d(d0, d1), #0x0 -> 0x2102e8
   blk1 @ 0x2102d8:
     br 0x2102dc
   blk2 @ 0x2102dc:
     store32(#0xffffffff, (sp + #0xffffffffffffffec))
     br 0x210304
   blk3 @ 0x2102e8:
-    v1 = #0x0
-    unsupported: FCMP at 0x2102f4
-    unsupported: conditional select on flags not modelled here
-    store32(#0x0, (sp + #0xffffffffffffffec))
+    store32((select eq flt.d(load64((sp + #0xfffffffffffffff0)), load64((sp + #0xfffffffffffffff8))), #0x0 ? #0x0, #0x1 & #0xffffffff), (sp + #0xffffffffffffffec))
     br 0x210304
   blk4 @ 0x210304:
     ret load32((sp + #0xffffffffffffffec))
 -- card
-{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":5}
+{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":0}

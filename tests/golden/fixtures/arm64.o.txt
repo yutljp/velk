@@ -1,4 +1,4 @@
-# arm64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
+# arm64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 2 unsupported, 0 gotos
 0x0 12 sum3 symtab,unwind
 0xc 68 helper symtab,unwind
 0x50 12 pair_sum symtab,unwind
@@ -74,23 +74,30 @@ fn pair_sum @ 0x50 (size 12)
 == 0x5c sum_arr
 -- decompile
 /* velk pseudo-C: sum_arr @ 0x5c */
-/* struct: a0 +0x0:uint32_t */
 int32_t sum_arr(uint32_t *a0, int32_t a1) {
     if (a1 < 0x1) {
         return 0x0;
     }
     v1 = a1;
     if (a1 >= 0x8 /* unsigned */) {
-        /* unsupported (2 steps): MOVI at 0x88, MOVI at 0x8c */
+        s0 = 0x0;
+        v0_hi = 0x0;
+        d1 = 0x0;
+        v1_hi = 0x0;
         v2 = v1 & 0x7ffffff8;
-        v3 = a0 + 0x10;
-        v4 = v2;
+        v4 = a0 + 0x10;
+        v5 = v2;
         do {
-            /* unsupported: SIMD vector pair load */
-            v4 = v4 - 0x8;
-            v3 = v3 + 0x20;
-        } while (v4 != 0x0);
-        /* unsupported (2 steps): ADDV at 0xbc, FMOV at 0xc0 */
+            d2 = *(uint64_t *)(v4 - 0x10);
+            v2_hi = *(uint64_t *)(v4 - 0x8);
+            d3 = *(uint64_t *)(v4);
+            v3_hi = *(uint64_t *)(v4 + 0x8);
+            v5 = v5 - 0x8;
+            v4 = v4 + 0x20;
+            /* unsupported (2 steps): ADD operands at 0xa8, ADD operands at 0xac */
+        } while (v5 != 0x0);
+        /* unsupported (2 steps): ADD operands at 0xb4, ADDV at 0xbc */
+        v3 = s0;
         if (v2 == v1) {
             return v3;
         }
@@ -98,14 +105,14 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
         v2 = 0x0;
         v3 = 0x0;
     }
-    v5 = a0 + (v2 << 0x2);
-    v6 = v1 - v2;
+    v6 = a0 + (v2 << 0x2);
+    v7 = v1 - v2;
     do {
-        v7 = *(uint32_t *)(v5);
-        v5 = v5 + 0x4;
-        v6 = v6 - 0x1;
-        v3 = v7 + v3;
-    } while (v6 != 0x0);
+        v8 = *(uint32_t *)(v6);
+        v6 = v6 + 0x4;
+        v7 = v7 - 0x1;
+        v3 = v8 + v3;
+    } while (v7 != 0x0);
     return v3;
 }
 -- signature
@@ -126,30 +133,38 @@ fn sum_arr @ 0x5c (size 140)
   blk3 @ 0x7c:
     ret #0x0
   blk4 @ 0x88:
-    unsupported: MOVI at 0x88
-    unsupported: MOVI at 0x8c
+    d0 = #0x0
+    v0_hi = #0x0
+    d1 = #0x0
+    v1_hi = #0x0
     v2 = (v1 & #0x7ffffff8)
-    v3 = (x0 + #0x10)
-    v4 = v2
+    v4 = (x0 + #0x10)
+    v5 = v2
   blk5 @ 0x9c:
-    unsupported: SIMD vector pair load
-    v4 = (v4 - #0x8)
-    v3 = (v3 + #0x20)
-    brif ne v4, #0x0 -> 0x9c
+    d2 = load64((v4 + #0xfffffffffffffff0))
+    v2_hi = load64((v4 + #0xfffffffffffffff8))
+    d3 = load64(v4)
+    v3_hi = load64((v4 + #0x8))
+    v5 = (v5 - #0x8)
+    v4 = (v4 + #0x20)
+    unsupported: ADD operands at 0xa8
+    unsupported: ADD operands at 0xac
+    brif ne v5, #0x0 -> 0x9c
   blk6 @ 0xb4:
+    unsupported: ADD operands at 0xb4
     unsupported: ADDV at 0xbc
-    unsupported: FMOV at 0xc0
+    v3 = (d0 & #0xffffffff)
     brif eq v2, v1 -> 0xe0
   blk7 @ 0xc8:
-    v5 = (x0 + (v2 << #0x2))
-    v6 = (v1 - v2)
+    v6 = (x0 + (v2 << #0x2))
+    v7 = (v1 - v2)
   blk8 @ 0xd0:
-    v7 = (load32(v5) & #0xffffffff)
-    v5 = (v5 + #0x4)
-    v6 = (v6 - #0x1)
-    v3 = (((v7 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
-    brif ne v6, #0x0 -> 0xd0
+    v8 = (load32(v6) & #0xffffffff)
+    v6 = (v6 + #0x4)
+    v7 = (v7 - #0x1)
+    v3 = (((v8 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
+    brif ne v7, #0x0 -> 0xd0
   blk9 @ 0xe0:
     ret (v3 & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0x5c","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","unwind"],"section":".text","size":140,"unsupported":5}
+{"addr":"0x5c","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","unwind"],"section":".text","size":140,"unsupported":4}

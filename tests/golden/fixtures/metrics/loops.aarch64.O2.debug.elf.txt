@@ -74,7 +74,6 @@ fn sum_until @ 0x2101b4 (size 40)
 == 0x2101dc sum_till_neg
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x2101dc */
-/* struct: p +0x0:uint32_t */
 int sum_till_neg(int *p, int n) {
     v1 = (n & ~(n >>> 0x1f) & 0xffffffff);
     v2 = 0x0;
@@ -111,12 +110,11 @@ fn sum_till_neg @ 0x2101dc (size 40)
   blk3 @ 0x2101fc:
     ret v3
 -- card
-{"accesses":["p +0x0:uint32_t"],"addr":"0x2101dc","approxTokens":156,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x2101dc","approxTokens":156,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x210204 sum_until_zero
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x210204 */
-/* struct: p +0x0:uint32_t */
 int sum_until_zero(int *p, int n) {
     if (n < 0x1) {
         return 0x0;
@@ -160,4 +158,4 @@ fn sum_until_zero @ 0x210204 (size 56)
   blk5 @ 0x210234:
     ret #0x0
 -- card
-{"accesses":["p +0x0:uint32_t"],"addr":"0x210204","approxTokens":168,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":56,"unsupported":0}
+{"addr":"0x210204","approxTokens":168,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":56,"unsupported":0}

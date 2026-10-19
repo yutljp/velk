@@ -29,7 +29,6 @@ fn rect_area @ 0x2011e0 (size 15)
 == 0x2011f0 record_total
 -- decompile
 /* velk pseudo-C: record_total @ 0x2011f0 */
-/* struct: items +0x0:uint16_t, +0xffffffffffffffe8:uint16_t */
 long record_total(struct record *items, int n) {
     if (n <= 0x0) {
         return 0x0;
@@ -93,7 +92,7 @@ fn record_total @ 0x2011f0 (size 111)
   blk8 @ 0x20125e:
     ret v3
 -- card
-{"accesses":["items +0x0:uint16_t, +0xffffffffffffffe8:uint16_t"],"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf","unwind"],"section":".text","size":111,"unsupported":0}
+{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf","unwind"],"section":".text","size":111,"unsupported":0}
 
 == 0x201260 point_add
 -- decompile

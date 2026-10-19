@@ -188,6 +188,8 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::FloatMul(p)
         | Operation::FloatDiv(p)
         | Operation::FloatSqrt(p)
+        | Operation::FloatNegate(p)
+        | Operation::FloatAbs(p)
         | Operation::FloatMulAdd(p)
         | Operation::FloatEqual(p)
         | Operation::FloatLess(p)
@@ -229,6 +231,10 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
         Operation::FloatSub(p) => arithmetic(p, |a, b| a - b, |a, b| a - b),
         Operation::FloatMul(p) => arithmetic(p, |a, b| a * b, |a, b| a * b),
         Operation::FloatDiv(p) => arithmetic(p, |a, b| a / b, |a, b| a / b),
+        Operation::FloatNegate(Precision::Double) => args[0] ^ (1 << 63),
+        Operation::FloatNegate(Precision::Single) => (args[0] ^ (1 << 31)) & mask(32),
+        Operation::FloatAbs(Precision::Double) => args[0] & !(1 << 63),
+        Operation::FloatAbs(Precision::Single) => args[0] & mask(31),
         Operation::FloatSqrt(Precision::Double) => double(args[0]).sqrt().to_bits(),
         Operation::FloatSqrt(Precision::Single) => u64::from(single(args[0]).sqrt().to_bits()),
         Operation::FloatMulAdd(Precision::Double) => double(args[0])

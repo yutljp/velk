@@ -21,6 +21,25 @@ pub mod aarch64 {
     pub const V0: u16 = 32;
 }
 
+/// The registers of either architecture, as the IR numbers them: general
+/// ones, x86's segment bases and xmm halves, AArch64's vector halves.
+pub fn machine_registers() -> std::ops::Range<u16> {
+    0..aarch64::V0 + 64
+}
+
+/// Whether `index` is half of a vector register: Some(true) for a high
+/// half, Some(false) for a low one, which also holds a scalar float.
+pub fn vector_half(isa: Isa, index: u16) -> Option<bool> {
+    let base = match isa {
+        Isa::X86_64 => x86::XMM0,
+        Isa::AArch64 => aarch64::V0,
+        Isa::Unsupported => return None,
+    };
+    (base..base + 64)
+        .contains(&index)
+        .then(|| (index - base) % 2 == 1)
+}
+
 pub fn frame_pointer(isa: Isa) -> u16 {
     match isa {
         Isa::AArch64 => 29,

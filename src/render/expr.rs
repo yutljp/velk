@@ -11,6 +11,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) isa: Isa,
     /// The function returns nothing: a `return` carries no value.
     pub(super) void_return: bool,
+    /// The precision of a float the function returns.
+    pub(super) float_return: Option<Precision>,
     pub(super) names: HashMap<u16, &'a str>,
     /// Rendered stack address to local name, computed once per function so a
     /// load and its store share a name even after the stack pointer moves.
@@ -105,7 +107,8 @@ fn precedence(expr: &Expr) -> u8 {
             Operation::FloatEqual(_) => 7,
             Operation::IntToFloat { .. }
             | Operation::FloatToInt { .. }
-            | Operation::FloatConvert { .. } => 12,
+            | Operation::FloatConvert { .. }
+            | Operation::FloatNegate(_) => 12,
             _ => 13,
         },
         _ => 13,
@@ -210,7 +213,7 @@ fn in_data(address: u64, ctx: &Ctx<'_>) -> bool {
 
 /// An argument of a floating-point operation: a constant reads as the
 /// number its bits hold.
-fn float_operand(
+pub(crate) fn float_operand(
     expr: &Expr,
     precision: Precision,
     ctx: &Ctx<'_>,
@@ -314,6 +317,8 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         Operation::FloatLessEqual(p) => infix(p, "<=", 8),
         Operation::FloatUnordered(p) => call("isunordered", Some(p)),
         Operation::FloatSqrt(p) => call(&format!("sqrt{}", suffix(p)), Some(p)),
+        Operation::FloatAbs(p) => call(&format!("fabs{}", suffix(p)), Some(p)),
+        Operation::FloatNegate(p) => format!("-{}", float_operand(&args[0], p, ctx, 12, false)),
         Operation::FloatMulAdd(p) => call(&format!("fma{}", suffix(p)), Some(p)),
         Operation::IntToFloat { signed, bits, to } => format!(
             "({})({}){}",

@@ -21,9 +21,7 @@ pub fn cse(ir: &mut FunctionIr) {
             let mut pending: Vec<Stmt> = Vec::new();
             let stmt = std::mem::replace(
                 &mut block.stmts[stmt_index],
-                Stmt::Unsupported {
-                    text: String::new(),
-                },
+                Stmt::unsupported(String::new()),
             );
             let rewritten = match stmt {
                 Stmt::Assign { dest, value } => Stmt::Assign {

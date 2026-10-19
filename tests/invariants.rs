@@ -310,8 +310,12 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
     }
     let exempt: &[u16] = match isa {
         // x8 the indirect result address, x19-x28 callee-saved, x29 frame,
-        // x30 link, 31 stack.
-        Isa::AArch64 => &[8, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+        // x30 link, 31 stack, v0-v7, which carry floating-point arguments,
+        // and the low halves of the callee-saved v8-v15.
+        Isa::AArch64 => &[
+            8, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+            40, 41, 42, 43, 44, 45, 46, 47, 48, 50, 52, 54, 56, 58, 60, 62,
+        ],
         // rax, whose al counts a variadic call's vector arguments and whose
         // other bits a partial write keeps; rbx, rsp, rbp, r12-r15, the fs and
         // gs segment bases, and xmm0-xmm7, which carry floating-point arguments.

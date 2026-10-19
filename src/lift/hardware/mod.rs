@@ -70,7 +70,9 @@ fn unsupported(ir: &FunctionIr) -> Option<String> {
         .iter()
         .flat_map(|block| &block.stmts)
         .find_map(|stmt| match stmt {
-            Stmt::Unsupported { text } => Some(text.split(' ').next().unwrap_or(text).to_owned()),
+            Stmt::Unsupported { text, .. } => {
+                Some(text.split(' ').next().unwrap_or(text).to_owned())
+            }
             _ => None,
         })
 }

@@ -29,6 +29,7 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
     let base = Ctx {
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
+        float_return: None,
         names: HashMap::new(),
         slots: HashMap::new(),
         local_widths: HashMap::new(),

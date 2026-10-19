@@ -1,4 +1,4 @@
-# metrics/control.x86_64.O2.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 4 unsupported, 4 gotos
+# metrics/control.x86_64.O2.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 5 unsupported, 4 gotos
 0x201220 242 - unwind,prologue
 0x201320 26 - unwind,prologue
 0x201340 23 - unwind,prologue
@@ -320,7 +320,7 @@ fn <unnamed> @ 0x2013a0 (size 34)
 == 0x2013d0 -
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
-int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
+int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
     }
@@ -341,17 +341,22 @@ int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
             xmm3_hi = *(uint64_t *)(a0 + v6 + 0x8);
             xmm4 = *(uint64_t *)(a0 + v6 + 0x10);
             xmm4_hi = *(uint64_t *)(a0 + v6 + 0x18);
-            /* unsupported: Pcmpgtd at 0x201421 */
             xmm5 = xmm3;
             xmm5_hi = xmm3_hi;
-            /* unsupported (2 steps): Paddd at 0x201429, Pcmpgtd at 0x201431 */
+            /* unsupported: Pcmpgtd at 0x201421 */
+            xmm5 = xmm5 & xmm3;
+            xmm5_hi = xmm5_hi & xmm3_hi;
+            /* unsupported: Paddd at 0x201429 */
             xmm3 = xmm4;
             xmm3_hi = xmm4_hi;
+            /* unsupported: Pcmpgtd at 0x201431 */
+            xmm3 = xmm3 & xmm4;
+            xmm3_hi = xmm3_hi & xmm4_hi;
             /* unsupported: Paddd at 0x201439 */
             v6 = v6 + 0x20;
         } while (v5 != v6);
         /* unsupported (5 steps): Paddd at 0x201446, Pshufd at 0x20144a, Paddd at 0x20144f, Pshufd at 0x201453, Paddd at 0x201458 */
-        v4 = 0x0;
+        v4 = (uint32_t)xmm0;
         if (v3 == v1) {
             return v4;
         }
@@ -367,7 +372,7 @@ int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
     return v4;
 }
 -- signature
-int32_t (uint64_t * a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -399,13 +404,17 @@ fn <unnamed> @ 0x2013d0 (size 183)
     xmm3_hi = load64(((rdi + v6) + #0x8))
     xmm4 = load64(((rdi + v6) + #0x10))
     xmm4_hi = load64(((rdi + v6) + #0x18))
-    unsupported: Pcmpgtd at 0x201421
     xmm5 = xmm3
     xmm5_hi = xmm3_hi
+    unsupported: Pcmpgtd at 0x201421
+    xmm5 = (xmm5 & xmm3)
+    xmm5_hi = (xmm5_hi & xmm3_hi)
     unsupported: Paddd at 0x201429
-    unsupported: Pcmpgtd at 0x201431
     xmm3 = xmm4
     xmm3_hi = xmm4_hi
+    unsupported: Pcmpgtd at 0x201431
+    xmm3 = (xmm3 & xmm4)
+    xmm3_hi = (xmm3_hi & xmm4_hi)
     unsupported: Paddd at 0x201439
     v6 = (v6 + #0x20)
     brif ne v5, v6 -> 0x201410
@@ -415,7 +424,7 @@ fn <unnamed> @ 0x2013d0 (size 183)
     unsupported: Paddd at 0x20144f
     unsupported: Pshufd at 0x201453
     unsupported: Paddd at 0x201458
-    v4 = #0x0
+    v4 = (xmm0 & #0xffffffff)
     brif eq v3, v1 -> 0x201486
   blk7 @ 0x201470:
     v7 = (load32((rdi + (v3 * #0x4))) & #0xffffffff)

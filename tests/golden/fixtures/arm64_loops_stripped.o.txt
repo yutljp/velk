@@ -74,7 +74,6 @@ fn <unnamed> @ 0x28 (size 40)
 == 0x50 -
 -- decompile
 /* velk pseudo-C: sub_50 @ 0x50 */
-/* struct: a0 +0x0:uint32_t */
 int32_t sub_50(uint32_t *a0, int32_t a1) {
     v1 = (a1 & ~(a1 >>> 0x1f) & 0xffffffff);
     v2 = 0x0;
@@ -111,12 +110,11 @@ fn <unnamed> @ 0x50 (size 40)
   blk3 @ 0x70:
     ret v3
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0x50","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x50","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":0}
 
 == 0x78 -
 -- decompile
 /* velk pseudo-C: sub_78 @ 0x78 */
-/* struct: a0 +0x0:uint32_t */
 int32_t sub_78(uint32_t *a0, int32_t a1) {
     if (a1 < 0x1) {
         return 0x0;
@@ -160,4 +158,4 @@ fn <unnamed> @ 0x78 (size 56)
   blk5 @ 0xa8:
     ret #0x0
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0x78","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":56,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x78","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":56,"sizeEstimated":true,"unsupported":0}

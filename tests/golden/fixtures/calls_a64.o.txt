@@ -1,4 +1,4 @@
-# calls_a64.o: elf aarch64 no entry, 11 functions, 0 lift failures, 6 unsupported, 2 gotos
+# calls_a64.o: elf aarch64 no entry, 11 functions, 0 lift failures, 7 unsupported, 2 gotos
 0x0 8 twice symtab,unwind
 0x8 8 square symtab,unwind
 0x10 28 pick_op symtab,unwind
@@ -127,20 +127,26 @@ int32_t factorial(int32_t a0) {
     if (a0 >= 0x2) {
         if (a0 >= 0x9 /* unsigned */) {
             /* unsupported: DUP at 0x9c */
-            v3 = 0x0;
+            v4 = 0x0;
             /* unsupported: MOVI at 0xa4 */
-            v4 = a0 - 0x1;
+            d1 = qword_280;
+            v1_hi = qword_288;
+            v5 = v3 - 0x1;
             /* unsupported (2 steps): MVNI at 0xb0, MVNI at 0xb4 */
-            v5 = v4 & 0xfffffff8;
-            /* unsupported: MOVI at 0xc0 */
-            v1 = a0 - v5;
-            v6 = v5;
+            v6 = v5 & 0xfffffff8;
+            /* unsupported (2 steps): ADD operands at 0xbc, MOVI at 0xc0 */
+            v1 = v3 - v6;
+            v7 = v6;
             do {
-                v6 = v6 - 0x8;
-            } while (v6 != 0x0);
-            /* unsupported (3 steps): EXT at 0xec, UMOV at 0xf4, FMOV at 0xf8 */
-            v2 = w12 * v6;
-            if (v4 == v5) {
+                /* unsupported: ADD operands at 0xcc */
+                v7 = v7 - 0x8;
+                /* unsupported: ADD operands at 0xd8 */
+            } while (v7 != 0x0);
+            /* unsupported: EXT at 0xec */
+            v8 = d0 >> 0x20;
+            v9 = d0;
+            v2 = v9 * v8;
+            if (v5 == v6) {
                 return v2;
             }
         } else {
@@ -173,24 +179,29 @@ fn factorial @ 0x78 (size 160)
     br 0x104
   blk4 @ 0x9c:
     unsupported: DUP at 0x9c
-    v3 = #0x0
+    v4 = #0x0
     unsupported: MOVI at 0xa4
-    v4 = ((x0 & #0xffffffff) - #0x1)
+    d1 = load64(#0x280)
+    v1_hi = load64(#0x288)
+    v5 = ((v3 & #0xffffffff) - #0x1)
     unsupported: MVNI at 0xb0
     unsupported: MVNI at 0xb4
-    v5 = (v4 & #0xfffffff8)
+    v6 = (v5 & #0xfffffff8)
+    unsupported: ADD operands at 0xbc
     unsupported: MOVI at 0xc0
-    v1 = (((x0 & #0xffffffff) - v5) & #0xffffffff)
-    v6 = v5
+    v1 = (((v3 & #0xffffffff) - v6) & #0xffffffff)
+    v7 = v6
   blk5 @ 0xcc:
-    v6 = (v6 - #0x8)
-    brif ne v6, #0x0 -> 0xcc
+    unsupported: ADD operands at 0xcc
+    v7 = (v7 - #0x8)
+    unsupported: ADD operands at 0xd8
+    brif ne v7, #0x0 -> 0xcc
   blk6 @ 0xe4:
     unsupported: EXT at 0xec
-    unsupported: UMOV at 0xf4
-    unsupported: FMOV at 0xf8
-    v2 = ((w12 * v6) & #0xffffffff)
-    brif eq v4, v5 -> 0x114
+    v8 = (d0 >> #0x20)
+    v9 = d0
+    v2 = ((v9 * v8) & #0xffffffff)
+    brif eq v5, v6 -> 0x114
   blk7 @ 0x104:
     v2 = (((v1 & #0xffffffff) * (v2 & #0xffffffff)) & #0xffffffff)
     v1 = (((v1 & #0xffffffff) - #0x1) & #0xffffffff)
@@ -198,7 +209,7 @@ fn factorial @ 0x78 (size 160)
   blk8 @ 0x114:
     ret v2
 -- card
-{"addr":"0x78","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","unwind"],"section":".text","size":160,"unsupported":8}
+{"addr":"0x78","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","unwind"],"section":".text","size":160,"unsupported":9}
 
 == 0x118 is_odd
 -- decompile
@@ -324,59 +335,85 @@ int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, 
     uint64_t local_5; /* [sp-40] */
     uint64_t local_6; /* [sp-38] */
     uint64_t local_7; /* [sp-30] */
-    uint64_t local_8; /* [sp-18] */
-    uint64_t local_9; /* [sp-28] */
-    uint64_t local_10; /* [sp-20] */
+    uint64_t local_8; /* [sp-e0] */
+    uint64_t local_9; /* [sp-d8] */
+    uint64_t local_10; /* [sp-d0] */
+    uint64_t local_11; /* [sp-c8] */
+    uint64_t local_12; /* [sp-c0] */
+    uint64_t local_13; /* [sp-b8] */
+    uint64_t local_14; /* [sp-b0] */
+    uint64_t local_15; /* [sp-a8] */
+    uint64_t local_16; /* [sp-a0] */
+    uint64_t local_17; /* [sp-98] */
+    uint64_t local_18; /* [sp-90] */
+    uint64_t local_19; /* [sp-88] */
+    uint64_t local_20; /* [sp-80] */
+    uint64_t local_21; /* [sp-78] */
+    uint64_t local_22; /* [sp-70] */
+    uint64_t local_23; /* [sp-68] */
+    uint64_t local_24; /* [sp-18] */
+    uint64_t local_25; /* [sp-28] */
+    uint64_t local_26; /* [sp-20] */
 
-    v1 = 0xffffffffffffffc8;
-    v2 = &local_2;
-    v3 = 0xffffff80ffffffc8;
     local_0 = sp - 0x60;
     local_1 = 0xffffff80ffffffc8;
-    v4 = v2 + 0x38;
-    v5 = sp;
     local_2 = a1;
     local_3 = a2;
     local_4 = a3;
     local_5 = a4;
     local_6 = a5;
     local_7 = a6;
-    /* unsupported (4 steps): SIMD vector pair store, SIMD vector pair store, SIMD vector pair store, SIMD vector pair store */
-    local_8 = v4;
-    local_9 = a7;
-    local_10 = v5;
+    local_8 = d0;
+    local_9 = v0_hi;
+    local_10 = d1;
+    local_11 = v1_hi;
+    local_12 = d2;
+    local_13 = v2_hi;
+    local_14 = d3;
+    local_15 = v3_hi;
+    local_16 = d4;
+    local_17 = v4_hi;
+    local_18 = d5;
+    local_19 = v5_hi;
+    local_20 = d6;
+    local_21 = v6_hi;
+    local_22 = d7;
+    local_23 = v7_hi;
+    local_24 = &local_26;
+    local_25 = a7;
+    local_26 = sp;
     if (a0 < 0x1) {
-        v8 = 0x0;
-        return v8;
+        v3 = 0x0;
+        return v3;
     }
-    v6 = local_10;
-    v7 = local_8;
-    v8 = 0x0;
-    v9 = *(uint32_t *)&local_1;
+    v1 = local_26;
+    v2 = local_24;
+    v3 = 0x0;
+    v4 = *(uint32_t *)&local_1;
     for (;;) {
-        if ((v9 & 0x80000000) != 0x0) {
-            v11 = v9 + 0x8;
-            *(uint32_t *)&local_1 = v11;
-            if (v9 <= 0xfffffff8 /* unsigned */) {
-                v10 = v6;
-                v6 = v7 + (int64_t)(int32_t)(v9);
+        if ((v4 & 0x80000000) != 0x0) {
+            v6 = v4 + 0x8;
+            *(uint32_t *)&local_1 = v6;
+            if (v4 <= 0xfffffff8 /* unsigned */) {
+                v5 = v1;
+                v1 = v2 + (int64_t)(int32_t)(v4);
                 goto L_230;
             }
         } else {
-            v11 = v9;
+            v6 = v4;
         }
-        v10 = v6 + 0x8;
-        local_10 = v10;
+        v5 = v1 + 0x8;
+        local_26 = v5;
     L_230:
         a0 = a0 - 0x1;
-        v9 = v11;
-        v8 = *(uint32_t *)(v6) + v8;
-        v6 = v10;
+        v4 = v6;
+        v3 = *(uint32_t *)(v1) + v3;
+        v1 = v5;
         if (a0 == 0x0) {
             break;
         }
     }
-    return v8;
+    return v3;
 }
 -- signature
 int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -385,58 +422,65 @@ int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5,
 -- ir
 fn sum_varargs @ 0x1c4 (size 188)
   blk0 @ 0x1c4:
-    v1 = #0xffffffffffffffc8
-    v2 = (sp + #0xffffffffffffffa8)
-    v3 = #0xffffff80ffffffc8
     store64((sp + #0xffffffffffffffa0), (sp + #0xfffffffffffffff0))
     store64(#0xffffff80ffffffc8, (sp + #0xfffffffffffffff8))
-    v4 = (v2 + #0x38)
-    v5 = sp
     store64(x1, (sp + #0xffffffffffffffa8))
     store64(x2, (sp + #0xffffffffffffffb0))
     store64(x3, (sp + #0xffffffffffffffb8))
     store64(x4, (sp + #0xffffffffffffffc0))
     store64(x5, (sp + #0xffffffffffffffc8))
     store64(x6, (sp + #0xffffffffffffffd0))
-    unsupported: SIMD vector pair store
-    unsupported: SIMD vector pair store
-    unsupported: SIMD vector pair store
-    unsupported: SIMD vector pair store
-    store64(v4, (sp + #0xffffffffffffffe8))
+    store64(d0, (sp + #0xffffffffffffff20))
+    store64(v0_hi, (sp + #0xffffffffffffff28))
+    store64(d1, (sp + #0xffffffffffffff30))
+    store64(v1_hi, (sp + #0xffffffffffffff38))
+    store64(d2, (sp + #0xffffffffffffff40))
+    store64(v2_hi, (sp + #0xffffffffffffff48))
+    store64(d3, (sp + #0xffffffffffffff50))
+    store64(v3_hi, (sp + #0xffffffffffffff58))
+    store64(d4, (sp + #0xffffffffffffff60))
+    store64(v4_hi, (sp + #0xffffffffffffff68))
+    store64(d5, (sp + #0xffffffffffffff70))
+    store64(v5_hi, (sp + #0xffffffffffffff78))
+    store64(d6, (sp + #0xffffffffffffff80))
+    store64(v6_hi, (sp + #0xffffffffffffff88))
+    store64(d7, (sp + #0xffffffffffffff90))
+    store64(v7_hi, (sp + #0xffffffffffffff98))
+    store64((sp + #0xffffffffffffffe0), (sp + #0xffffffffffffffe8))
     store64(x7, (sp + #0xffffffffffffffd8))
-    store64(v5, (sp + #0xffffffffffffffe0))
+    store64(sp, (sp + #0xffffffffffffffe0))
     brif lt w0, #0x1 -> 0x270
   blk1 @ 0x214:
-    v6 = load64((sp + #0xffffffffffffffe0))
-    v7 = load64((sp + #0xffffffffffffffe8))
-    v8 = #0x0
-    v9 = (load32((sp + #0xfffffffffffffff8)) & #0xffffffff)
+    v1 = load64((sp + #0xffffffffffffffe0))
+    v2 = load64((sp + #0xffffffffffffffe8))
+    v3 = #0x0
+    v4 = (load32((sp + #0xfffffffffffffff8)) & #0xffffffff)
     br 0x248
   blk2 @ 0x224:
-    v10 = v6
-    v6 = (v7 + sext32(v9))
+    v5 = v1
+    v1 = (v2 + sext32(v4))
   blk3 @ 0x230:
     w0 = (w0 - #0x1)
-    v9 = v11
-    v8 = ((load32(v6) + (v8 & #0xffffffff)) & #0xffffffff)
-    v6 = v10
+    v4 = v6
+    v3 = ((load32(v1) + (v3 & #0xffffffff)) & #0xffffffff)
+    v1 = v5
     brif eq w0, #0x0 -> 0x274
   blk4 @ 0x248:
-    brif ne (v9 & #0x80000000), #0x0 -> 0x254
+    brif ne (v4 & #0x80000000), #0x0 -> 0x254
   blk5 @ 0x24c:
-    v11 = v9
+    v6 = v4
     br 0x264
   blk6 @ 0x254:
-    v11 = ((v9 & #0xffffffff) + #0x8)
-    store32(v11, (sp + #0xfffffffffffffff8))
-    brif ls (v9 & #0xffffffff), #0xfffffff8 -> 0x224
+    v6 = ((v4 & #0xffffffff) + #0x8)
+    store32(v6, (sp + #0xfffffffffffffff8))
+    brif ls (v4 & #0xffffffff), #0xfffffff8 -> 0x224
   blk7 @ 0x264:
-    v10 = (v6 + #0x8)
-    store64(v10, (sp + #0xffffffffffffffe0))
+    v5 = (v1 + #0x8)
+    store64(v5, (sp + #0xffffffffffffffe0))
     br 0x230
   blk8 @ 0x270:
-    v8 = #0x0
+    v3 = #0x0
   blk9 @ 0x274:
-    ret (v8 & #0xffffffff)
+    ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x1c4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","unwind"],"section":".text","size":188,"unsupported":4}
+{"addr":"0x1c4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","unwind"],"section":".text","size":188,"unsupported":0}

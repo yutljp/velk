@@ -25,7 +25,7 @@ fn <unnamed> @ 0x2011e0 (size 15)
 == 0x2011f0 -
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
-int32_t sub_2011f0(uint64_t *a0, int32_t a1) {
+int32_t sub_2011f0(double *a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
     }
@@ -48,7 +48,7 @@ int32_t sub_2011f0(uint64_t *a0, int32_t a1) {
             v5 = v5 + 0x20;
         } while (v4 != v5);
         /* unsupported (5 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e */
-        v3 = 0x0;
+        v3 = (uint32_t)xmm1;
         if (v2 == v1) {
             return v3;
         }
@@ -63,7 +63,7 @@ int32_t sub_2011f0(uint64_t *a0, int32_t a1) {
     return v3;
 }
 -- signature
-int32_t (uint64_t * a0, int32_t a1)
+int32_t (double * a0, int32_t a1)
 -- references
 
 -- ir
@@ -102,7 +102,7 @@ fn <unnamed> @ 0x2011f0 (size 140)
     unsupported: Paddd at 0x201255
     unsupported: Pshufd at 0x201259
     unsupported: Paddd at 0x20125e
-    v3 = #0x0
+    v3 = (xmm1 & #0xffffffff)
     brif eq v2, v1 -> 0x20127b
   blk7 @ 0x201270:
     v3 = (((v3 & #0xffffffff) + load32((rdi + (v2 * #0x4)))) & #0xffffffff)

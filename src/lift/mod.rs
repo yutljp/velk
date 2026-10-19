@@ -390,7 +390,7 @@ fn build<M: Machine>(
     }
     pending.extend(machine.take_statements());
     if let Some(text) = stop {
-        pending.push(Stmt::Unsupported { text });
+        pending.push(Stmt::unsupported(text));
     }
     if !pending.is_empty() {
         blocks.push(Block {

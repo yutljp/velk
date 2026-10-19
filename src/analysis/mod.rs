@@ -167,8 +167,6 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         blocks = lift::lift(image, function.addr, size, &targets)?;
         tables = jump_table::recover(&blocks, image);
     }
-    let signature = signature::recover(&blocks, image.isa, image.format, image.go);
-    jump_table::apply(&mut blocks, &tables);
     let types = crate::loader::dwarf::function_types(image, function.addr);
     // A function returning a float returns it in xmm0 or v0.
     let declared = types.as_ref().and_then(|types| types.ret.as_ref());
@@ -188,6 +186,9 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             }
         }
     }
+    // The signature reads the returns as they now are.
+    let signature = signature::recover(&blocks, image.isa, image.format, image.go);
+    jump_table::apply(&mut blocks, &tables);
     let ir = FunctionIr {
         isa: image.isa,
         convention: crate::ir::Convention::of(image.isa, image.format, image.go),

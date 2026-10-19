@@ -7,28 +7,28 @@ extra functions | aarch64.O0 | 0/148
 extra functions | aarch64.O2 | 0/148
 extra functions | x86_64.O0 | 0/148
 extra functions | x86_64.O2 | 0/148
-parameter count | aarch64.O0 | 144/147
-parameter count | aarch64.O2 | 143/147
+parameter count | aarch64.O0 | 146/147
+parameter count | aarch64.O2 | 146/147
 parameter count | x86_64.O0 | 144/147
 parameter count | x86_64.O2 | 144/147
 parameter pointer | aarch64.O0 | 144/173
-parameter pointer | aarch64.O2 | 163/171
+parameter pointer | aarch64.O2 | 167/173
 parameter pointer | x86_64.O0 | 143/172
-parameter pointer | x86_64.O2 | 161/172
+parameter pointer | x86_64.O2 | 162/172
 parameter width | aarch64.O0 | 138/144
-parameter width | aarch64.O2 | 137/144
+parameter width | aarch64.O2 | 138/144
 parameter width | x86_64.O0 | 138/143
 parameter width | x86_64.O2 | 138/143
 parameter sign | aarch64.O0 | 122/138
-parameter sign | aarch64.O2 | 126/137
+parameter sign | aarch64.O2 | 126/138
 parameter sign | x86_64.O0 | 126/138
 parameter sign | x86_64.O2 | 126/138
 return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 143/148
 return void | x86_64.O0 | 126/148
 return void | x86_64.O2 | 143/148
-return width | aarch64.O0 | 114/120
-return width | aarch64.O2 | 110/120
+return width | aarch64.O0 | 115/120
+return width | aarch64.O2 | 115/120
 return width | x86_64.O0 | 115/120
 return width | x86_64.O2 | 115/120
 
@@ -301,21 +301,21 @@ divmod_x64.x86_64.O2 0x201450 pdiv64: ok
 divmod_x64.x86_64.O2 0x201460 qdiv64: ok
 divmod_x64.x86_64.O2 0x201470 pdiv10: ok
 float.aarch64.O0 0x2101b4 average: parameter 0 is a signed 8-byte integer, expected a pointer
-float.aarch64.O0 0x210254 lerp: 1 parameters, expected 3
-float.aarch64.O0 0x210284 truncate_to_int: returns 8 bytes, expected 4
+float.aarch64.O0 0x210254 lerp: ok
+float.aarch64.O0 0x210284 truncate_to_int: ok
 float.aarch64.O0 0x21029c widen: ok
-float.aarch64.O0 0x2102bc compare_doubles: 0 parameters, expected 2
-float.aarch64.O2 0x21019c average: parameter 0 is a signed 8-byte integer, expected a pointer
-float.aarch64.O2 0x21022c lerp: 1 parameters, expected 3
-float.aarch64.O2 0x210238 truncate_to_int: returns 8 bytes, expected 4
+float.aarch64.O0 0x2102bc compare_doubles: ok
+float.aarch64.O2 0x21019c average: ok
+float.aarch64.O2 0x21022c lerp: ok
+float.aarch64.O2 0x210238 truncate_to_int: ok
 float.aarch64.O2 0x210240 widen: ok
-float.aarch64.O2 0x21024c compare_doubles: 1 parameters, expected 2; returns 8 bytes, expected 4
+float.aarch64.O2 0x21024c compare_doubles: ok
 float.x86_64.O0 0x2011f0 average: parameter 0 is a signed 8-byte integer, expected a pointer
 float.x86_64.O0 0x201280 lerp: ok
 float.x86_64.O0 0x2012c0 truncate_to_int: ok
 float.x86_64.O0 0x2012d0 widen: ok
 float.x86_64.O0 0x2012f0 compare_doubles: ok
-float.x86_64.O2 0x2011b0 average: parameter 0 is a signed 8-byte integer, expected a pointer
+float.x86_64.O2 0x2011b0 average: ok
 float.x86_64.O2 0x201260 lerp: ok
 float.x86_64.O2 0x201270 truncate_to_int: ok
 float.x86_64.O2 0x201280 widen: ok
@@ -335,7 +335,7 @@ integers.aarch64.O2 0x21020c widen_mul: parameter 0 is 4 bytes, expected 1; para
 integers.aarch64.O2 0x21021c mixed_sign: parameter 1 signedness differs
 integers.aarch64.O2 0x210228 in_range: returns 4 bytes, expected 1
 integers.aarch64.O2 0x210238 rotate_left: parameter 1 signedness differs
-integers.aarch64.O2 0x210244 popcount: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
+integers.aarch64.O2 0x210244 popcount: parameter 0 signedness differs
 integers.aarch64.O2 0x210258 byte_swap: ok
 integers.aarch64.O2 0x210260 min3: ok
 integers.aarch64.O2 0x210274 labs_value: ok
@@ -408,7 +408,7 @@ l4_memory.aarch64.O0 0x2101dc point_dot: parameter 0 is a signed 8-byte integer,
 l4_memory.aarch64.O0 0x21021c array_sum: parameter 0 is a signed 8-byte integer, expected a pointer
 l4_memory.aarch64.O0 0x210280 bump: ok
 l4_memory.aarch64.O0 0x210294 banner_first: ok
-l4_memory.aarch64.O2 0x2101d4 point_dot: 1 parameters, expected 2; returns 8 bytes, expected 4
+l4_memory.aarch64.O2 0x2101d4 point_dot: ok
 l4_memory.aarch64.O2 0x2101f0 array_sum: ok
 l4_memory.aarch64.O2 0x21027c bump: ok
 l4_memory.aarch64.O2 0x210290 banner_first: ok
@@ -572,7 +572,7 @@ structs.aarch64.O0 0x21033c big_sum: ok
 structs.aarch64.O0 0x21036c word_low_byte: returns 4 bytes, expected 1
 structs.aarch64.O0 0x210384 flags_level: ok
 structs.aarch64.O0 0x2103d0 flags_set_mode: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 signedness differs; returns int64_t, expected void
-structs.aarch64.O2 0x2101dc rect_area: parameter 0 is a signed 8-byte integer, expected a pointer; returns 8 bytes, expected 4
+structs.aarch64.O2 0x2101dc rect_area: ok
 structs.aarch64.O2 0x2101f0 record_total: ok
 structs.aarch64.O2 0x210290 point_add: ok
 structs.aarch64.O2 0x2102a8 big_make: ok

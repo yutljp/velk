@@ -205,6 +205,12 @@ pub(crate) fn statement_registers(
             }
             writes.extend(convention.clobbered());
         }
+        // An unmodeled instruction may leave changed the registers it names,
+        // or any machine register when they are not known.
+        Stmt::Unsupported { writes: named, .. } => match named {
+            Some(named) => writes.extend(named),
+            None => writes.extend(crate::arch::machine_registers()),
+        },
         _ => {}
     }
     (writes, reads)

@@ -8,7 +8,7 @@
 == 0x2011b0 -
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
-double sub_2011b0(int64_t a0, int32_t a1) {
+double sub_2011b0(double *a0, int32_t a1) {
     xmm0 = 0x0;
     xmm1 = 0x0;
     if (a1 > 0x0) {
@@ -47,7 +47,7 @@ double sub_2011b0(int64_t a0, int32_t a1) {
     return xmm0;
 }
 -- signature
-double (int64_t a0, int32_t a1)
+double (double * a0, int32_t a1)
 -- references
 
 -- ir
