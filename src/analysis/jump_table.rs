@@ -7,6 +7,10 @@ pub struct Recovered {
     pub index: Expr,
     pub cases: Vec<(i64, u64)>,
     pub default: Option<u64>,
+    /// Where the table lies and how many bytes it takes, which the tests
+    /// read the cases' targets from.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub table: (u64, u64),
 }
 
 impl Recovered {
@@ -259,11 +263,17 @@ fn recognize(
     } else {
         Expr::bin(BinOp::Add, index, Expr::Const(minimum as u64))
     };
+    let entry_bytes = match entry {
+        Entry::Absolute => 8,
+        Entry::Offset32 => 4,
+        Entry::Byte => 1,
+    };
     Some(Recovered {
         block_start: block.start,
         index,
         cases,
         default,
+        table: (table, count as u64 * entry_bytes),
     })
 }
 

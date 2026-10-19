@@ -166,6 +166,53 @@ struct Check {
     mismatch: Option<String>,
 }
 
+/// The lifted function with each switch a jump table became turned back
+/// into the indirect jump it was, as a switch on the address itself over
+/// every block, or `None` without tables.
+fn indirect_jumps(
+    image: &Image,
+    function: &Function,
+    lifted: &crate::ir::FunctionIr,
+) -> Option<(crate::ir::FunctionIr, Vec<(u64, u64)>)> {
+    use crate::ir::Stmt;
+    if !lifted
+        .blocks
+        .iter()
+        .any(|block| matches!(block.stmts.last(), Some(Stmt::Switch { .. })))
+    {
+        return None;
+    }
+    let size = function.size.unwrap_or(super::UNKNOWN_SIZE);
+    let targets: std::collections::HashSet<u64> =
+        lifted.blocks.iter().map(|block| block.start).collect();
+    let raw = crate::lift::lift(image, function.addr, size, &targets).ok()?;
+    let tables = super::jump_table::recover(&raw, image)
+        .into_iter()
+        .map(|table| table.table)
+        .collect();
+    let mut indirect = lifted.clone();
+    for block in &mut indirect.blocks {
+        if !matches!(block.stmts.last(), Some(Stmt::Switch { .. })) {
+            continue;
+        }
+        let original = raw.iter().find(|other| other.start == block.start)?;
+        let Some(Stmt::BrIndirect { target }) = original.stmts.last() else {
+            return None;
+        };
+        let mut stmts = original.stmts.clone();
+        *stmts.last_mut().expect("a jump") = Stmt::Switch {
+            index: target.clone(),
+            cases: targets
+                .iter()
+                .map(|start| (*start as i64, *start))
+                .collect(),
+            default: None,
+        };
+        block.stmts = stmts;
+    }
+    Some((indirect, tables))
+}
+
 fn check(fixture: &Path, image: &Image, function: &Function) -> Check {
     let mut result = Check {
         lifted: false,
@@ -194,6 +241,38 @@ fn check(fixture: &Path, image: &Image, function: &Function) -> Check {
         }
     }
     let memory = initial_memory(image);
+    // A switch a jump table became goes where the indirect jump went, with
+    // the tables' bytes as the image holds them.
+    let indirect = indirect_jumps(image, function, &before);
+    if let Some((indirect, tables)) = &indirect {
+        let mut seeded = memory.clone();
+        for (start, length) in tables {
+            for word in (0..length.div_ceil(8)).map(|word| start + word * 8) {
+                if let Some(bytes) = image.read_vaddr(word, 8) {
+                    seeded.push((word, u64::from_le_bytes(bytes.try_into().expect("8 bytes"))));
+                }
+            }
+        }
+        for trial in 0..TRIALS {
+            let registers = registers(image, trial);
+            let setup = setup(image, trial, &registers, &seeded);
+            let jumped = eval::run(indirect, &setup);
+            let switched = eval::run(&before, &setup);
+            if !matches!(jumped, Outcome::Unknown(_))
+                && !matches!(switched, Outcome::Unknown(_))
+                && !same(&jumped, &switched, &before.ret_type)
+            {
+                result.mismatch = Some(format!(
+                    "{} {} {}: trial {trial}: jump table: {}",
+                    fixture.display(),
+                    crate::addr::format(function.addr),
+                    function.name.as_deref().unwrap_or("-"),
+                    describe(&jumped, &switched, &before.ret_type)
+                ));
+                return result;
+            }
+        }
+    }
     // The structured code, as blocks again, behaves as the optimized IR does.
     let structured = crate::render::structure::lower::lower(
         &after,
