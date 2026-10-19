@@ -369,6 +369,9 @@ pub const EXCHANGE: u16 = TEMP_BASE + 0x42;
 /// holds once its parameter is dead, printed as `v<n>`.
 pub const VARIABLE_BASE: u16 = TEMP_BASE + 0x100;
 
+/// Register indices from here up are SSA values, printed as `s<n>`.
+pub const VALUE_BASE: u16 = 0x2000;
+
 pub fn is_temp(index: u16) -> bool {
     index >= TEMP_BASE
 }
@@ -379,6 +382,9 @@ pub fn temp_id(index: u16) -> u64 {
 
 pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
     let _ = (isa, width);
+    if index >= VALUE_BASE {
+        return format!("s{}", index - VALUE_BASE);
+    }
     if index >= VARIABLE_BASE {
         return format!("v{}", index - VARIABLE_BASE + 1);
     }

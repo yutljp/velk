@@ -179,6 +179,20 @@ fn check(fixture: &Path, image: &Image, function: &Function) -> Check {
     result.lifted = true;
     let before = lifted.ir.clone();
     let after = optimize(image, lifted).ir;
+    // Both versions go into SSA form and back unchanged.
+    for ir in [&before, &after] {
+        let Some(ssa) = crate::ssa::build(ir) else {
+            continue;
+        };
+        let broken = crate::ssa::verify(&ssa).err().or_else(|| {
+            (crate::ssa::lower(&ssa).render() != ir.render())
+                .then(|| "lowering changes the function".to_owned())
+        });
+        if let Some(reason) = broken {
+            result.mismatch = Some(format!("ssa: {reason}"));
+            return result;
+        }
+    }
     let memory = initial_memory(image);
     for trial in 0..TRIALS {
         let registers = registers(image, trial);
