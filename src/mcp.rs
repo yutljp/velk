@@ -1,11 +1,16 @@
-//! MCP server over stdio: one tool runs velk scripts, one serves their API docs.
-
 use std::io::{BufRead, Write};
 use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use crate::error::{Error, Result};
 use crate::script::Engine;
+
+type RpcError = (i32, &'static str);
+
+const PARSE_ERROR: RpcError = (-32700, "parse error");
+const INVALID_REQUEST: RpcError = (-32600, "invalid request");
+const METHOD_NOT_FOUND: RpcError = (-32601, "method not found");
 
 const MAX_OUTPUT_CHARS: usize = 20_000;
 const DEFAULT_TIMEOUT_MS: u64 = 10_000;
@@ -22,31 +27,36 @@ const READ_DESCRIPTION: &str = "Read the velk script API. Without a topic, retur
 and the list of topics; with a topic, returns its TypeScript declarations.";
 
 const TOPICS: [(&str, &str); 3] = [
-    ("binary", include_str!("api/binary.d.ts")),
-    ("func", include_str!("api/func.d.ts")),
-    ("types", include_str!("api/types.d.ts")),
+    ("binary", include_str!("script/api/binary.d.ts")),
+    ("func", include_str!("script/api/func.d.ts")),
+    ("types", include_str!("script/api/types.d.ts")),
 ];
 
-pub fn serve() -> Result<(), String> {
+pub fn serve() -> Result<()> {
     let engine = Engine::new()?;
     let mut stdout = std::io::stdout().lock();
     for line in std::io::stdin().lock().lines() {
-        let line = line.map_err(|e| e.to_string())?;
-        let Ok(request) = serde_json::from_str::<Value>(&line) else {
+        let line = line.map_err(Error::Stdio)?;
+        if line.trim().is_empty() {
             continue;
+        }
+        let response = match serde_json::from_str::<Value>(&line) {
+            Ok(request) => handle(&engine, &request),
+            Err(_) => Some(reply(Value::Null, Err(PARSE_ERROR))),
         };
-        if let Some(response) = handle(&engine, &request) {
-            writeln!(stdout, "{response}").map_err(|e| e.to_string())?;
-            stdout.flush().map_err(|e| e.to_string())?;
+        if let Some(response) = response {
+            writeln!(stdout, "{response}").map_err(Error::Stdio)?;
+            stdout.flush().map_err(Error::Stdio)?;
         }
     }
     Ok(())
 }
 
+/// Answers a request; notifications, which carry no id, get no reply.
 fn handle(engine: &Engine, request: &Value) -> Option<Value> {
     let id = request.get("id")?.clone();
-    let result = match request.get("method")?.as_str()? {
-        "initialize" => Ok(json!({
+    let result = match request.get("method").and_then(Value::as_str) {
+        Some("initialize") => Ok(json!({
             "protocolVersion": request
                 .pointer("/params/protocolVersion")
                 .and_then(Value::as_str)
@@ -54,19 +64,24 @@ fn handle(engine: &Engine, request: &Value) -> Option<Value> {
             "capabilities": { "tools": {} },
             "serverInfo": { "name": "velk", "version": env!("CARGO_PKG_VERSION") }
         })),
-        "ping" => Ok(json!({})),
-        "tools/list" => Ok(json!({ "tools": tools() })),
-        "tools/call" => call_tool(engine, request),
-        _ => Err((-32601, "method not found")),
+        Some("ping") => Ok(json!({})),
+        Some("tools/list") => Ok(json!({ "tools": tools() })),
+        Some("tools/call") => call_tool(engine, request),
+        Some(_) => Err(METHOD_NOT_FOUND),
+        None => Err(INVALID_REQUEST),
     };
-    Some(match result {
+    Some(reply(id, result))
+}
+
+fn reply(id: Value, result: std::result::Result<Value, RpcError>) -> Value {
+    match result {
         Ok(result) => json!({ "jsonrpc": "2.0", "id": id, "result": result }),
         Err((code, message)) => json!({
             "jsonrpc": "2.0",
             "id": id,
             "error": { "code": code, "message": message }
         }),
-    })
+    }
 }
 
 fn tools() -> Value {
@@ -103,7 +118,7 @@ fn tools() -> Value {
     ])
 }
 
-fn call_tool(engine: &Engine, request: &Value) -> Result<Value, (i32, &'static str)> {
+fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, RpcError> {
     let arguments = request.pointer("/params/arguments").unwrap_or(&Value::Null);
     let (text, is_error) = match request.pointer("/params/name").and_then(Value::as_str) {
         Some("velk_run_script") => run_script(engine, arguments),
@@ -139,7 +154,7 @@ fn run_script(engine: &Engine, arguments: &Value) -> (String, bool) {
 
 fn read_api(arguments: &Value) -> (String, bool) {
     match arguments.get("topic").and_then(Value::as_str) {
-        None => (include_str!("api/index.md").to_owned(), false),
+        None => (include_str!("script/api/index.md").to_owned(), false),
         Some(topic) => match TOPICS.iter().find(|(name, _)| *name == topic) {
             Some((_, text)) => ((*text).to_owned(), false),
             None => (format!("unknown topic: {topic}"), true),

@@ -1,4 +1,4 @@
-# 個人メモや分析ノートを誤ってここに置かないためのガード
+# Keep personal notes and analysis files out of the repository
 *.md.bak
 notes/
 private/
@@ -8,9 +8,9 @@ private/
 
 /target
 
-# macOS ゴミ
+# macOS
 .DS_Store
 
-# 回帰フィクスチャ生成物
+# Generated regression fixtures
 tests/out/
 tests/out*/

@@ -1,21 +1,21 @@
-# 正本（canonical）のテスト環境。x86-64 の Linux で固定したバージョンを使う。
+# Canonical test environment: pinned toolchain versions on x86-64 Linux.
 #
-#   docker compose run --rm canonical      # compose.yml から
-#   docker build -t velk-canonical docker  # 直接ビルドする場合
+#   docker compose run --rm canonical      # via compose.yml
+#   docker build -t velk-canonical docker  # direct build
 #
-# ツールチェーンの版は ARG で固定する。変えたいときは compose.yml の
-# build.args で上書きし、tests/out-canonical/toolchain.txt に記録された
-# 実際の版をコミットメッセージに残す。
+# Toolchain versions are pinned with ARGs. To change them, override build.args
+# in compose.yml and put the actual versions recorded in
+# tests/out-canonical/toolchain.txt in the commit message.
 FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-# 固定する版（compose.yml から上書きできる）
+# Pinned versions (overridable from compose.yml)
 ARG CLANG_MAJOR=18
 ARG RUST_VERSION=1.98.1
 ARG GO_VERSION=1.23.4
 
-# clang/lld/llvm は同一系列で揃える。llvm-strip と llvm-objcopy は
-# llvm-<major> に入るので、その bin を PATH の先頭に置く。
+# Keep clang/lld/llvm on the same major version. llvm-strip and llvm-objcopy
+# ship in llvm-<major>, so its bin directory goes first on PATH.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       clang-${CLANG_MAJOR} lld-${CLANG_MAJOR} llvm-${CLANG_MAJOR} \
@@ -24,23 +24,20 @@ RUN apt-get update \
 
 ENV PATH=/usr/lib/llvm-${CLANG_MAJOR}/bin:/usr/local/bin:/usr/local/go/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# `which` で見つかる名前に揃える（テストはこの名前で解決する）。
+# Unversioned names so `which` finds them; the tests look tools up by these names.
 RUN for tool in clang clang++ ld.lld lld-link llvm-strip llvm-objcopy llvm-ar llvm-nm; do \
       target=/usr/lib/llvm-${CLANG_MAJOR}/bin/$tool; \
       [ -x "$target" ] && ln -sf "$target" "/usr/local/bin/$tool"; \
     done
 
-# Rust は rustup で版を固定する（最小プロファイル）。
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
       | sh -s -- -y --no-modify-path --profile minimal --default-toolchain ${RUST_VERSION} \
  && rustc --version && cargo --version
 
-# Go は公式 tarball で版を固定する。
 RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
       | tar -C /usr/local -xz \
  && go version
 
 WORKDIR /work
 
-# 何も指定しなければ正本のスイートを回す。
 CMD ["./tests/canonical.sh"]

@@ -1,5 +1,5 @@
-/* L0 — 算術・選択・符号。復元の最小単位。
- * 期待: 式がそのまま残る(定数畳み込み・マスク混入なし)。 */
+/* L0 — arithmetic, selection, signedness. The smallest unit of recovery.
+ * Expected: expressions survive as written (no folded constants, no stray masks). */
 int add3(int a, int b, int c) { return a + b + c; }
 int scale(int x) { return x * 7 + 3; }
 int pick(int a, int b) { return a > b ? a : b; }

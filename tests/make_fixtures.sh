@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# 回帰フィクスチャ生成。
-#   ソース: tests/cases/ (**追跡**)          生成物: tests/out/ (**未追跡・ignore**)
-# 必要なツールが無いケースは警告して飛ばす(残りは生成する)。
+# Build the regression fixtures.
+#   sources: tests/cases/ (tracked)          output: tests/out/ (untracked, ignored)
+# Cases whose tools are missing are skipped with a warning; the rest are still built.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -10,8 +10,8 @@ CASES=tests/cases
 mkdir -p "$OUT"
 OUT_ABS=$(cd "$OUT" && pwd)
 
-# ツールは which で探す。場所を決め打ちしないので、PATH に通っていれば
-# どの環境でも同じように動く。PATH に無いものは環境変数で差し替える。
+# Tools are looked up on PATH with `which`. Tools not on PATH can be set
+# with these environment variables:
 #
 #   CLANG / CXX / LD_LLD / LLD_LINK / LLVM_STRIP / LLVM_OBJCOPY / RUSTC / GO_BIN
 #
@@ -25,8 +25,8 @@ resolve() {  # resolve <env-var-name> <command>
   printf '%s' "$value"
 }
 
-# 前回と同じツールチェーンで、生成物が揃っていれば作り直さない。
-# VELK_FORCE_FIXTURES=1 で強制再生成。
+# Skip the rebuild when the toolchain is unchanged and every output exists.
+# VELK_FORCE_FIXTURES=1 forces a rebuild.
 fingerprint() {
   printf '%s\n' "$CLANG" "$CXX" "$LD_LLD" "$LLD_LINK" "$STRIP" "$OBJCOPY" "$RUSTC" "$GO_BIN"
   "$CLANG" --version 2>/dev/null | head -1
@@ -35,7 +35,7 @@ up_to_date() {
   [ "${VELK_FORCE_FIXTURES:-0}" = 1 ] && return 1
   [ -f "$OUT/.stamp" ] && [ -f "$OUT/.manifest" ] || return 1
   [ "$(cat "$OUT/.stamp")" = "$(fingerprint)" ] || return 1
-  # ソースかビルダーが新しければ作り直す。
+  # Rebuild if any source or this script is newer than the stamp.
   [ -z "$(find "$CASES" -type f -newer "$OUT/.stamp" -print -quit 2>/dev/null)" ] || return 1
   [ "$0" -nt "$OUT/.stamp" ] && return 1
   while IFS= read -r name; do
@@ -55,21 +55,20 @@ GO_BIN=$(resolve GO_BIN go)
 
 CLANG=$(resolve CLANG clang)
 if [ -z "$CLANG" ]; then
-  echo "skip: clang not found (PATH に通すか CLANG= で指定する)" >&2
+  echo "skip: clang not found (add it to PATH or set CLANG=)" >&2
   exit 1
 fi
 
 
 if up_to_date; then
-  echo "fixtures: $(grep -c . "$OUT/.manifest") up to date in $OUT (VELK_FORCE_FIXTURES=1 で再生成)"
+  echo "fixtures: $(grep -c . "$OUT/.manifest") up to date in $OUT (VELK_FORCE_FIXTURES=1 to rebuild)"
   exit 0
 fi
 
-# 生成できたもの・飛ばしたものを最後に一覧する。
 built=()
 skipped=()
 
-# --- PE64 (x86-64, CRT 非依存) ---
+# --- PE64 (x86-64, no CRT) ---
 "$CLANG" --target=x86_64-pc-windows-msvc -ffreestanding -O2 -c \
   "$CASES/c/pe64.c" -o "$OUT/pe64.obj"
 if [ -n "$LLD_LINK" ]; then
@@ -78,30 +77,30 @@ if [ -n "$LLD_LINK" ]; then
     /export:reg_negative /export:reg_abs /export:msg_first /export:reg_div \
     /export:reg_mod "$OUT/pe64.obj"
 else
-  echo "warn: lld-link not found (PATH か LLD_LINK=); PE fixture limited to COFF object" >&2
+  echo "warn: lld-link not found (PATH or LLD_LINK=); PE fixture limited to COFF object" >&2
   skipped+=(pe64-link)
   cp "$OUT/pe64.obj" "$OUT/pe64.exe"
 fi
 built+=(pe64.exe)
 
-# --- AArch64 / x86-64 の基本オブジェクト ---
+# --- basic AArch64 / x86-64 objects ---
 "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/arith_mixed.c" -o "$OUT/arm64.o"
 "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/divmod_a64.c"  -o "$OUT/arm64_div.o"
 "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/alt_names.c"   -o "$OUT/alt.o"
-# Mach-O は Apple clang の -arch、それ以外の clang は --target で ELF にする
-# (シンボル名の下線の有無はテスト側の dec ヘルパが吸収する)。
+# Apple clang builds Mach-O with -arch; other clang builds ELF with --target
+# (the dec helper in the tests handles the leading underscore on symbol names).
 if ! "$CLANG" -arch x86_64 -O2 -c "$CASES/c/divmod_x64.c" -o "$OUT/x64_div.o" 2>/dev/null; then
   "$CLANG" --target=x86_64-unknown-linux-gnu -O2 -c "$CASES/c/divmod_x64.c" -o "$OUT/x64_div.o"
 fi
 built+=(arm64.o arm64_div.o alt.o x64_div.o)
 
-# --- ループ(-O2 と -O0) ---
+# --- loops (-O2 and -O0) ---
 "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/loops.c" -o "$OUT/arm64_loops.o"
 "$CLANG" -target aarch64-unknown-linux-gnu -O0 -c "$CASES/c/loops.c" -o "$OUT/arm64_loops0.o"
 "$CLANG" -target x86_64-unknown-linux-gnu  -O2 -c "$CASES/c/loops.c" -o "$OUT/x64_loops.o"
 built+=(arm64_loops.o arm64_loops0.o x64_loops.o)
 
-# --- リンク済み ELF(文字列参照・値テーブル switch・ジャンプテーブル) ---
+# --- linked ELF (string references, value-table switch, jump table) ---
 if [ -n "$LD_LLD" ]; then
   for case in strings switch_value_table switch_jumptable; do
     "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/$case.c" -o "$OUT/$case.o"
@@ -111,11 +110,11 @@ if [ -n "$LD_LLD" ]; then
   "$LD_LLD" -m aarch64elf -e d7 -o "$OUT/arm64_jumptable.elf"  "$OUT/switch_jumptable.o"
   built+=(arm64_linked.elf arm64_switch.elf arm64_jumptable.elf)
 else
-  echo "warn: ld.lld not found (PATH か LD_LLD=); linked ELF fixtures skipped" >&2
+  echo "warn: ld.lld not found (PATH or LD_LLD=); linked ELF fixtures skipped" >&2
   skipped+=(linked-elf)
 fi
 
-# --- DWARF(名前・型・メンバ)と stripped 像 ---
+# --- DWARF (names, types, members) and stripped images ---
 if [ -n "$LD_LLD" ]; then
   "$CLANG" -g -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/arith_mixed.c" -o "$OUT/arm64_debug.o"
   "$LD_LLD" -m aarch64elf -e sum3 -o "$OUT/arm64_debug.elf" "$OUT/arm64_debug.o"
@@ -127,7 +126,7 @@ if [ -n "$LD_LLD" ]; then
   fi
 fi
 
-# --- stripped オブジェクト(関数発見: ret・テールコール・間接テールコール) ---
+# --- stripped objects (function discovery: ret, tail calls, indirect tail calls) ---
 if [ -n "$STRIP" ]; then
   "$STRIP" -s "$OUT/arm64_loops.o" -o "$OUT/arm64_loops_stripped.o"
   "$STRIP" -s "$OUT/x64_loops.o"   -o "$OUT/x64_loops_stripped.o"
@@ -137,13 +136,13 @@ if [ -n "$STRIP" ]; then
   done
   built+=(arm64_loops_stripped.o x64_loops_stripped.o tail_calls_stripped.o tail_indirect_stripped.o)
 else
-  echo "warn: llvm-strip not found (PATH か LLVM_STRIP=); stripped fixtures skipped" >&2
+  echo "warn: llvm-strip not found (PATH or LLVM_STRIP=); stripped fixtures skipped" >&2
   skipped+=(stripped)
 fi
 
-# --- 難易度ラダー用(L0/L1/L2/L4/L6 は両 ISA、L5 はリンク済み) ---
-# L4 は -O1: -O2 だとベクトル化でループが SIMD 列に置き換わり、
-# 「メモリ参照の復元」を測れなくなる。
+# --- difficulty ladder (L0/L1/L2/L4/L6 for both ISAs, L5 linked) ---
+# L4 uses -O1: at -O2 the loops are vectorized into SIMD code, which
+# defeats the memory-access recovery test.
 for case in l0_arith l1_branch l2_loop l6_abi; do
   "$CLANG" -target aarch64-unknown-linux-gnu -O2 -c "$CASES/c/$case.c" -o "$OUT/${case}_a64.o"
   "$CLANG" -target x86_64-unknown-linux-gnu  -O2 -c "$CASES/c/$case.c" -o "$OUT/${case}_x64.o"
@@ -160,7 +159,7 @@ if [ -n "$LD_LLD" ]; then
   built+=(l5_switch.elf)
 fi
 
-# --- Go(名前は pclntab から; Go がある場合のみ) ---
+# --- Go (names from pclntab; only if Go is installed) ---
 if [ -n "$GO_BIN" ] && [ -x "$GO_BIN" ]; then
   ( cd "$CASES/go" && GO111MODULE=off CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
       "$GO_BIN" build -trimpath -ldflags "-s -w" -o "$OUT_ABS/go_stripped" add.go )
@@ -168,11 +167,11 @@ if [ -n "$GO_BIN" ] && [ -x "$GO_BIN" ]; then
       "$GO_BIN" build -trimpath -ldflags "-s -w" -o "$OUT_ABS/go_probe" probe.go )
   built+=(go_stripped go_probe)
 else
-  echo "warn: go not found (PATH に通すか GO_BIN= で指定する); Go fixtures skipped" >&2
+  echo "warn: go not found (add it to PATH or set GO_BIN=); Go fixtures skipped" >&2
   skipped+=(go)
 fi
 
-# --- Rust / C++(デマングリング; ツールチェーンがある場合のみ) ---
+# --- Rust / C++ (demangling; only if the toolchain is installed) ---
 if [ -n "$RUSTC" ] && [ -x "$RUSTC" ]; then
   # --crate-name keeps the symbol namespace stable across file renames.
   "$RUSTC" -O --crate-name rust_demo  -o "$OUT/rust_demo"  "$CASES/rust/add.rs"
@@ -183,7 +182,7 @@ if [ -n "$RUSTC" ] && [ -x "$RUSTC" ]; then
     built+=(rust_probe_stripped)
   fi
 else
-  echo "warn: rustc not found (PATH か RUSTC=); Rust fixtures skipped" >&2
+  echo "warn: rustc not found (PATH or RUSTC=); Rust fixtures skipped" >&2
   skipped+=(rust)
 fi
 
@@ -192,23 +191,23 @@ if [ -n "$CXX" ] && [ -x "$CXX" ]; then
   built+=(cpp_demo.o)
 fi
 
-# --- 大容量入力(ローダ/走査の性能回帰; 20 MB の詰め物) ---
+# --- large input (loader/scan performance regression; 20 MB of padding) ---
 if [ ! -f "$OUT/arm64_big.o" ] || [ "$OUT/arm64.o" -nt "$OUT/arm64_big.o" ]; then
   cat "$OUT/arm64.o" > "$OUT/arm64_big.o"
   dd if=/dev/zero bs=1048576 count=20 >> "$OUT/arm64_big.o" 2>/dev/null
 fi
 
-# どのコンパイラで作ったかを記録する（アサーションの校正に使う）。
+# Record which compiler built the fixtures, for calibrating assertions.
 "$CLANG" --version 2>/dev/null | head -1 > "$OUT/clang.txt" || true
 printf 'clang: %s\n' "$CLANG" >> "$OUT/clang.txt"
 cp "$OUT/clang.txt" "$OUT/toolchain.txt"
 
-# ladder.sh が「どのフィクスチャが縮退しているか」を知るための印。
+# Tells ladder.sh which fixtures were not built, so they are reported as SKIP.
 printf '%s\n' "${skipped[@]:-}" | sed '/^$/d' > "$OUT/skipped.txt"
 
 printf '%s\n' "${built[@]:-}" | sed '/^$/d' > "$OUT/.manifest"
 fingerprint > "$OUT/.stamp"
 echo "fixtures: ${#built[@]} built in $OUT"
 if [ ${#skipped[@]} -gt 0 ]; then
-  echo "skipped: ${skipped[*]} (対応するケースは ladder で SKIP になる)"
+  echo "skipped: ${skipped[*]} (matching ladder cases will be SKIP)"
 fi

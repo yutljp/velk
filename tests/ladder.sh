@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# 難易度ラダー: tests/expect/ladder.tsv の期待値を1行ずつ評価し、
-# 段(L0..L7)ごとの通過数と全体のスコアを出す。
+# Difficulty ladder: check each expectation in tests/expect/ladder.tsv and
+# print pass counts per level (L0..L7) and an overall score.
 #
-#   ./tests/ladder.sh           評価だけ(FAIL があれば終了コード 1)
-#   ./tests/ladder.sh --build   先にフィクスチャを作り直す
-#   ./tests/ladder.sh --level 3 L3 だけ
+#   ./tests/ladder.sh           check only (exit code 1 on any FAIL)
+#   ./tests/ladder.sh --build   rebuild the fixtures first
+#   ./tests/ladder.sh --level 3 L3 only
 #
-# known_* の行は「理想の期待値だが現状は満たさない」TODO。満たすように
-# なったら has/nothas に昇格させる(放置を検出するため、通ったら警告する)。
+# known_* rows are TODOs: the ideal output, not met yet. Once one passes,
+# promote it to has/nothas (a passing known_* row is reported so it is not forgotten).
 set -uo pipefail
 cd "$(dirname "$0")/.."
 FIX=${VELK_OUT:-tests/out}
@@ -33,8 +33,8 @@ fi
 cargo build --quiet || { echo "cargo build failed" >&2; exit 1; }
 [ -x "$BIN" ] || { echo "missing $BIN" >&2; exit 1; }
 
-# フィクスチャが要求するツールチェーン。make_fixtures.sh が
-# $FIX/skipped.txt に印を残すので、無い場合は FAIL ではなく SKIP にする。
+# Toolchain each fixture needs. make_fixtures.sh records missing ones in
+# $FIX/skipped.txt, and those rows are reported as SKIP instead of FAIL.
 requires() {
   case "$1" in
     pe64.exe) echo pe64-link ;;
@@ -46,19 +46,19 @@ requires() {
   esac
 }
 skips=$FIX/skipped.txt
-skipped_tool() {  # tool -> 導入されていないか
+skipped_tool() {  # tool -> true if not installed
   [ -f "$skips" ] && grep -qx "$1" "$skips" 2>/dev/null
 }
 
-rendered() {  # fixture function -> 疑似 C (関数指定なしは inspect --limit)
+rendered() {  # fixture function -> pseudo-C (function "-" gives the `functions` listing)
   local fixture=$1 function=$2
   if [ "$function" = "-" ]; then
-    "$BIN" inspect "$FIX/$fixture" --limit 100000 2>/dev/null
+    "$BIN" functions "$FIX/$fixture" --limit 100000 2>/dev/null
   else
-    # Mach-O は `_name`、ELF は `name` なので両方試す。
-    "$BIN" decompile "$FIX/$fixture" --name "$function" 2>/dev/null \
-      || "$BIN" decompile "$FIX/$fixture" --name "_$function" 2>/dev/null \
-      || "$BIN" decompile "$FIX/$fixture" --name "${function#_}" 2>/dev/null
+    # Mach-O uses `_name` and ELF uses `name`, so try both.
+    "$BIN" decompile "$FIX/$fixture" "$function" 2>/dev/null \
+      || "$BIN" decompile "$FIX/$fixture" "_$function" 2>/dev/null \
+      || "$BIN" decompile "$FIX/$fixture" "${function#_}" 2>/dev/null
   fi
 }
 
@@ -71,7 +71,7 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
   need=$(requires "$fixture")
   if { [ ! -f "$FIX/$fixture" ] || { [ -n "$need" ] && skipped_tool "$need"; }; }; then
     # A toolchain that is not installed is not a test failure.
-    printf 'SKIP\t%s\t%s/%s\t%s が無いため未生成\n' \
+    printf 'SKIP\t%s\t%s/%s\tnot built: %s missing\n' \
       "$level" "$fixture" "$function" "${need:-fixture}" >> "$results"
     continue
   fi
@@ -80,20 +80,20 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
     count)
       got=$(sed -n '1s/.*functions: \([0-9]*\).*/\1/p' <<< "$out")
       [ "$got" = "$pattern" ] && ok=1 || ok=0
-      detail="関数数 $got (期待 $pattern)"
+      detail="function count $got (expected $pattern)"
       ;;
     count_min)
-      # ホストの標準ライブラリ次第で変わる数は下限だけ見る。
+      # The count depends on the host standard library, so check only a lower bound.
       got=$(sed -n '1s/.*functions: \([0-9]*\).*/\1/p' <<< "$out")
       [ -n "$got" ] && [ "$got" -ge "$pattern" ] && ok=1 || ok=0
-      detail="関数数 $got (期待 >= $pattern)"
+      detail="function count $got (expected >= $pattern)"
       ;;
     has|known_has)
       printf '%s' "$out" | grep -qF "$pattern" && ok=1 || ok=0
-      detail="'$pattern' を含む"
+      detail="contains '$pattern'"
       ;;
     has_any|known_has_any)
-      # `A|B`: コンパイラによって形が変わる箇所は、どれか1つを満たせば通す。
+      # `A|B`: output varies by compiler, so any one alternative passes.
       ok=0
       old_ifs=$IFS; IFS='|'
       for candidate in $pattern; do
@@ -102,13 +102,13 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
         IFS='|'
       done
       IFS=$old_ifs
-      detail="'$pattern' のいずれかを含む"
+      detail="contains one of '$pattern'"
       ;;
     nothas|known_nothas)
       printf '%s' "$out" | grep -qF "$pattern" && ok=0 || ok=1
-      detail="'$pattern' を含まない"
+      detail="does not contain '$pattern'"
       ;;
-    *) ok=0; detail="未知の kind: $kind" ;;
+    *) ok=0; detail="unknown kind: $kind" ;;
   esac
   case "$kind" in
     known_*)
@@ -130,17 +130,17 @@ done < "$EXPECT"
 
 fixture_cc=$(head -1 $FIX/toolchain.txt 2>/dev/null || true)
 echo "fixtures: ${fixture_cc:-unknown}"
-echo "== 段ごとの通過 =="
+echo "== passes per level =="
 awk -F'\t' '{ t[$2]++; if ($1=="PASS"||$1=="PROMOTE") p[$2]++ }
   END { for (l=0; l<10; l++) if (t[l]) printf "  L%d  %2d/%2d\n", l, p[l]+0, t[l] }' "$results"
 
 for status in SKIP FAIL TODO PROMOTE; do
   if grep -q "^$status	" "$results" 2>/dev/null; then
     case $status in
-      SKIP)    echo; echo "== SKIP (ツールチェーン未導入) ==" ;;
+      SKIP)    echo; echo "== SKIP (toolchain not installed) ==" ;;
       FAIL)    echo; echo "== FAIL ==" ;;
-      TODO)    echo; echo "== TODO (known_*: 理想には未到達) ==" ;;
-      PROMOTE) echo; echo "== 昇格候補 (known_* が通った: has/nothas へ) ==" ;;
+      TODO)    echo; echo "== TODO (known_*: ideal not reached yet) ==" ;;
+      PROMOTE) echo; echo "== PROMOTE (known_* passed: move to has/nothas) ==" ;;
     esac
     awk -F'\t' -v s="$status" '$1==s { printf "  L%s %s — %s\n", $2, $3, $4 }' "$results"
   fi

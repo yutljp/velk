@@ -1,0 +1,496 @@
+mod expr;
+mod locals;
+mod naming;
+pub mod structure;
+
+use crate::arch::stack_pointer;
+use expr::condition;
+use std::collections::HashMap;
+
+use crate::analysis::refs::Reference;
+use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
+use crate::passes::frame_slots::block_frames;
+use crate::render::expr::Ctx;
+use crate::render::expr::render_expr;
+use crate::render::expr::render_value;
+use crate::render::expr::type_of;
+use crate::render::locals::Locals;
+use crate::render::locals::stack_locals;
+use crate::render::naming::global_name;
+use crate::render::naming::member_access;
+use crate::render::naming::narrow_registers;
+use crate::render::naming::struct_fields;
+use crate::render::structure::{Node, structure_best};
+
+/// The non-executable section ranges, where a constant address names a
+/// global rather than a jump target.
+pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
+    image
+        .sections
+        .iter()
+        .filter(|section| !section.executable)
+        .map(|section| (section.vaddr, section.size))
+        .collect()
+}
+
+pub fn callee_names(image: &crate::loader::Image) -> HashMap<u64, String> {
+    image
+        .functions
+        .iter()
+        .filter_map(|(address, function)| {
+            function.name.as_ref().map(|name| (*address, name.clone()))
+        })
+        .collect()
+}
+
+pub fn render(
+    ir: &FunctionIr,
+    references: &[Reference],
+    callees: &HashMap<u64, String>,
+    data_ranges: &[(u64, u64)],
+) -> String {
+    let frames = block_frames(ir, stack_pointer(ir.isa));
+    let locals = stack_locals(ir, &frames);
+    render_with(ir, references, locals, callees, data_ranges)
+}
+
+fn render_with(
+    ir: &FunctionIr,
+    references: &[Reference],
+    locals: Locals,
+    callees: &HashMap<u64, String>,
+    data_ranges: &[(u64, u64)],
+) -> String {
+    let names: HashMap<u16, &str> = ir
+        .params
+        .iter()
+        .map(|param| (param.index, param.name.as_str()))
+        .collect();
+    let wide_params: std::collections::HashSet<u16> = ir
+        .params
+        .iter()
+        .filter(|param| !param.ty.is_narrow())
+        .map(|param| param.index)
+        .collect();
+    let (pointer_params, fields) = struct_fields(ir);
+    let narrow_regs = narrow_registers(ir);
+    let members: HashMap<(String, i64), String> = ir
+        .members
+        .iter()
+        .map(|member| {
+            (
+                (member.structure.clone(), member.offset),
+                member.name.clone(),
+            )
+        })
+        .collect();
+    // `struct pair *p` points at a `pair`, so `p->0x4` can take a name.
+    let pointees: HashMap<u16, String> = ir
+        .params
+        .iter()
+        .filter_map(|param| Some((param.index, param.ty.pointee_struct()?.to_owned())))
+        .collect();
+    let ctx = Ctx {
+        isa: ir.isa,
+        void_return: ir.ret_type == CType::Void,
+        names,
+        slots: locals.slots,
+        local_widths: locals.widths,
+        wide_params,
+        pointer_params,
+        fields,
+        callees,
+        data_ranges,
+        members,
+        pointees,
+        narrow_regs,
+        narrow_return: ir.ret_type.is_32_bit_int(),
+    };
+
+    let mut out = String::new();
+    let name = ir
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("sub_{:x}", ir.addr));
+    out.push_str(&format!("/* velk pseudo-C: {name} @ 0x{:x} */\n", ir.addr));
+    for reference in references {
+        out.push_str(&format!("/* ref: {} */\n", reference.describe()));
+    }
+    for access in ir.access_lines() {
+        out.push_str(&format!("/* struct: {access} */\n"));
+    }
+    out.push_str(&format!(
+        "{} {}({}) {{\n",
+        ir.ret_type,
+        sanitize(&name),
+        signature(ir)
+    ));
+    let mut decls = locals.decls;
+    // The numeric suffix of `local_N` is its order of first use.
+    decls.sort_by_key(|local| {
+        local
+            .name
+            .rsplit_once('_')
+            .and_then(|(_, index)| index.parse::<usize>().ok())
+            .unwrap_or(0)
+    });
+    // The body is rendered first so only slots it names get declared.
+    let mut body = String::new();
+    render_nodes(&structure_best(ir), 1, &mut body, &ctx);
+    for local in &decls {
+        if local.width == 0 || !body.contains(&local.name) {
+            continue;
+        }
+        indent(1, &mut out);
+        out.push_str(&format!(
+            "{} {}; /* [sp{}{:x}] */\n",
+            type_of(local.width, local.signed),
+            local.name,
+            if local.slot < 0 { "-" } else { "+" },
+            local.slot.unsigned_abs()
+        ));
+    }
+    let declared = decls
+        .iter()
+        .filter(|local| local.width != 0 && body.contains(&local.name))
+        .count();
+    if declared > 0 {
+        out.push('\n');
+    }
+    out.push_str(&body);
+    out.push_str("}\n");
+    out
+}
+
+/// A store of `op(load(same address), rhs)` is a compound assignment.
+fn update_of_same_location<'e>(addr: &Expr, value: &'e Expr) -> Option<(&'static str, &'e Expr)> {
+    let Expr::Bin { op, lhs, rhs } = value else {
+        return None;
+    };
+    let symbol = match op {
+        BinOp::Add => "+",
+        BinOp::Sub => "-",
+        BinOp::And => "&",
+        BinOp::Or => "|",
+        BinOp::Xor => "^",
+        BinOp::Shl => "<<",
+        BinOp::Shr => ">>",
+        BinOp::Sar => ">>",
+        BinOp::Mul => "*",
+        _ => return None,
+    };
+    let Expr::Load { addr: read, .. } = lhs.as_ref() else {
+        return None;
+    };
+    if read.as_ref() != addr {
+        return None;
+    }
+    Some((symbol, rhs))
+}
+
+pub(crate) fn signature(ir: &FunctionIr) -> String {
+    if ir.params.is_empty() {
+        return "void".to_owned();
+    }
+    ir.params
+        .iter()
+        .map(|param| {
+            if param.ty.is_pointer() {
+                format!("{}{}", param.ty, param.name)
+            } else {
+                format!("{} {}", param.ty, param.name)
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn indent(depth: usize, out: &mut String) {
+    for _ in 0..depth {
+        out.push_str("    ");
+    }
+}
+
+fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
+    let mut index = 0;
+    while index < nodes.len() {
+        // Consecutive instructions the lifter could not model read as one
+        // note instead of one comment per instruction.
+        if let Node::Stmt(Stmt::Unsupported { text }) = &nodes[index] {
+            let mut merged = text.clone();
+            let mut count = 1;
+            while let Some(Node::Stmt(Stmt::Unsupported { text })) = nodes.get(index + count) {
+                merged.push_str(", ");
+                merged.push_str(text);
+                count += 1;
+            }
+            indent(depth, out);
+            if count > 1 {
+                out.push_str(&format!(
+                    "/* unsupported ({} steps): {} */\n",
+                    count, merged
+                ));
+            } else {
+                out.push_str(&format!("/* unsupported: {} */\n", merged));
+            }
+            index += count;
+            continue;
+        }
+        render_node(&nodes[index], depth, out, ctx);
+        index += 1;
+    }
+}
+
+fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
+    match node {
+        Node::Stmt(stmt) => {
+            let text = render_stmt(stmt, ctx);
+            if !text.is_empty() {
+                for line in text.lines() {
+                    indent(depth, out);
+                    out.push_str(line);
+                    out.push('\n');
+                }
+            }
+        }
+        Node::Label(address) => {
+            indent(depth.saturating_sub(1), out);
+            out.push_str(&format!("L_{address:x}:\n"));
+        }
+        Node::If {
+            cond,
+            lhs,
+            rhs,
+            then,
+            els,
+        } => {
+            indent(depth, out);
+            out.push_str(&format!("if ({}) {{\n", condition(*cond, lhs, rhs, ctx)));
+            render_nodes(then, depth + 1, out, ctx);
+            if els.is_empty() {
+                indent(depth, out);
+                out.push_str("}\n");
+            } else {
+                indent(depth, out);
+                out.push_str("} else {\n");
+                render_nodes(els, depth + 1, out, ctx);
+                indent(depth, out);
+                out.push_str("}\n");
+            }
+        }
+        Node::Switch {
+            index,
+            arms,
+            default,
+        } => {
+            indent(depth, out);
+            out.push_str(&format!("switch ({}) {{\n", render_expr(index, ctx)));
+            for (values, body) in arms {
+                for value in values {
+                    indent(depth, out);
+                    out.push_str(&format!("case {value}:\n"));
+                }
+                render_nodes(body, depth + 1, out, ctx);
+            }
+            if let Some(body) = default {
+                indent(depth, out);
+                out.push_str("default:\n");
+                render_nodes(body, depth + 1, out, ctx);
+            }
+            indent(depth, out);
+            out.push_str("}\n");
+        }
+        Node::Break => {
+            indent(depth, out);
+            out.push_str("break;\n");
+        }
+        Node::Continue => {
+            indent(depth, out);
+            out.push_str("continue;\n");
+        }
+        Node::Forever { body } => {
+            indent(depth, out);
+            out.push_str("for (;;) {\n");
+            render_nodes(body, depth + 1, out, ctx);
+            indent(depth, out);
+            out.push_str("}\n");
+        }
+        Node::While {
+            prefix,
+            cond,
+            lhs,
+            rhs,
+            body,
+        } => {
+            indent(depth, out);
+            if prefix.is_empty() {
+                out.push_str(&format!("while ({}) {{\n", condition(*cond, lhs, rhs, ctx)));
+                render_nodes(body, depth + 1, out, ctx);
+            } else {
+                out.push_str("while (true) {\n");
+                render_nodes(prefix, depth + 1, out, ctx);
+                indent(depth + 1, out);
+                out.push_str(&format!(
+                    "if ({}) break;\n",
+                    condition(cond.invert(), lhs, rhs, ctx)
+                ));
+                render_nodes(body, depth + 1, out, ctx);
+            }
+            indent(depth, out);
+            out.push_str("}\n");
+        }
+        Node::DoWhile {
+            cond,
+            lhs,
+            rhs,
+            body,
+        } => {
+            indent(depth, out);
+            out.push_str("do {\n");
+            render_nodes(body, depth + 1, out, ctx);
+            indent(depth, out);
+            out.push_str(&format!(
+                "}} while ({});\n",
+                condition(*cond, lhs, rhs, ctx)
+            ));
+        }
+    }
+}
+
+pub(crate) fn sanitize(name: &str) -> String {
+    name.chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
+}
+
+pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
+    match stmt {
+        Stmt::Assign { dest, value } => {
+            // A destination whose readers only use the low 32 bits takes its
+            // 32-bit register name.
+            let target = if ctx.narrow_regs.contains(&dest.index)
+                && dest.index != 0
+                && !ctx.wide_params.contains(&dest.index)
+            {
+                ctx.register(dest.index, 32)
+            } else {
+                ctx.register(dest.index, dest.width)
+            };
+            // A register whose readers only use the low 32 bits never needs
+            // the zero extension, and the return register is already typed.
+            if let Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } = value
+            {
+                let truncates_param = match lhs.as_ref() {
+                    Expr::Reg { index, .. } => ctx.wide_params.contains(index),
+                    _ => false,
+                };
+                if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+                    && !truncates_param
+                    && (ctx.narrow_regs.contains(&dest.index)
+                        || (ctx.narrow_return && dest.index == 0))
+                {
+                    let value = match lhs.as_ref() {
+                        Expr::Reg { index, .. } => ctx.register(*index, 32),
+                        other => render_expr(other, ctx),
+                    };
+                    return format!("{target} = {value};");
+                }
+            }
+            format!("{target} = {};", render_value(value, ctx))
+        }
+        Stmt::Store { addr, value, width } => {
+            if let Some(member) = member_access(addr, *width, ctx) {
+                return match update_of_same_location(addr, value) {
+                    Some((op, rhs)) => format!("{} {}= {};", member, op, render_expr(rhs, ctx)),
+                    None => format!("{} = {};", member, render_value(value, ctx)),
+                };
+            }
+            let address = render_expr(addr, ctx);
+            match ctx.slots.get(&address) {
+                Some(name) => match update_of_same_location(addr, value) {
+                    Some((op, rhs)) => {
+                        format!("{} {}= {};", name, op, render_expr(rhs, ctx))
+                    }
+                    None => format!("{} = {};", name, render_value(value, ctx)),
+                },
+                None => match global_name(addr, *width, ctx) {
+                    Some(name) => match update_of_same_location(addr, value) {
+                        Some((op, rhs)) => {
+                            format!("{} {}= {};", name, op, render_expr(rhs, ctx))
+                        }
+                        None => format!("{} = {};", name, render_value(value, ctx)),
+                    },
+                    None => format!(
+                        "*({} *)({}) = {};",
+                        type_of(*width, false),
+                        address,
+                        render_value(value, ctx)
+                    ),
+                },
+            }
+        }
+        Stmt::Brif {
+            cond,
+            lhs,
+            rhs,
+            target,
+        } => format!(
+            "if ({}) {{ goto L_{:x}; }}",
+            condition(*cond, lhs, rhs, ctx),
+            target
+        ),
+        Stmt::BrifFlags { cond, target } => {
+            format!("if (/* {} */ true) {{ goto L_{:x}; }}", cond.text(), target)
+        }
+        Stmt::Br { target } => match target {
+            Some(target) => format!("goto L_{target:x};"),
+            None => "goto <dynamic>;".to_owned(),
+        },
+        Stmt::BrIndirect { target } => {
+            let target = render_value(target, ctx);
+            format!("goto *({target});")
+        }
+        Stmt::Switch {
+            index,
+            cases,
+            default,
+        } => {
+            let mut text = format!("switch ({}) {{\n", render_expr(index, ctx));
+            for (value, target) in cases {
+                text.push_str(&format!("    case {value}: goto L_{target:x};\n"));
+            }
+            if let Some(target) = default {
+                text.push_str(&format!("    default: goto L_{target:x};\n"));
+            }
+            text.push('}');
+            text
+        }
+        Stmt::Call { target } => match target {
+            Some(target) => match ctx.callees.get(target) {
+                Some(name) => format!("{}();", sanitize(name)),
+                None => format!("sub_{target:x}();"),
+            },
+            None => "sub_<dynamic>();".to_owned(),
+        },
+        Stmt::Ret { value } => {
+            // A function that returns nothing carries no meaningful value.
+            if ctx.void_return {
+                "return;".to_owned()
+            } else {
+                format!("return {};", render_value(value, ctx))
+            }
+        }
+        Stmt::Unsupported { text } => format!("/* unsupported: {text} */"),
+        Stmt::Trap => "__builtin_trap();".to_owned(),
+    }
+}

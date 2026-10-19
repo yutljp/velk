@@ -1,20 +1,18 @@
-//! Self-generated function signatures: build a shape database from symbols
-//! and match unnamed functions against it.
-
-use std::collections::HashMap;
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::analysis;
-use crate::ir::{Expr, FunctionIr, Stmt};
-use crate::loader::Image;
+use crate::error::{Error, Result};
+use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
+use crate::loader::Isa;
 
 const TOKEN_LIMIT: usize = 128;
+const VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry {
     pub name: String,
-    pub isa: String,
+    pub isa: Isa,
     pub size: u64,
     pub hash: String,
     pub tokens: Vec<String>,
@@ -26,21 +24,70 @@ pub struct Database {
     pub entries: Vec<Entry>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Match {
-    pub addr: u64,
-    pub size: u64,
-    pub current: Option<String>,
-    pub matched: String,
+impl Database {
+    pub fn new(mut entries: Vec<Entry>) -> Self {
+        entries.sort_by(|a, b| a.name.cmp(&b.name));
+        Self {
+            version: VERSION,
+            entries,
+        }
+    }
+
+    pub fn load(path: &Path) -> Result<Self> {
+        let text = std::fs::read_to_string(path).map_err(|source| Error::Io {
+            path: path.to_owned(),
+            source,
+        })?;
+        let value = serde_json::from_str(&text).map_err(|source| Error::SignatureFile {
+            path: path.to_owned(),
+            source,
+        })?;
+        Self::from_json(value)
+    }
+
+    pub fn from_json(value: serde_json::Value) -> Result<Self> {
+        let found = value.get("version").and_then(serde_json::Value::as_u64);
+        if found != Some(u64::from(VERSION)) {
+            return Err(Error::SignatureVersion {
+                found,
+                expected: VERSION,
+            });
+        }
+        serde_json::from_value(value).map_err(Error::SignatureData)
+    }
+
+    pub fn lookup(&self, ir: &FunctionIr) -> Option<&Entry> {
+        let tokens = tokens(ir);
+        if tokens.is_empty() {
+            return None;
+        }
+        let digest = hash(&tokens);
+        self.entries.iter().find(|entry| entry.hash == digest)
+    }
 }
 
-pub fn tokens(ir: &FunctionIr) -> Vec<String> {
+/// The database entry for a named function, or `None` when its body has no shape to match.
+pub fn entry(name: &str, size: Option<u64>, ir: &FunctionIr) -> Option<Entry> {
+    let tokens = tokens(ir);
+    (!tokens.is_empty()).then(|| Entry {
+        name: name.to_owned(),
+        isa: ir.isa,
+        size: size.unwrap_or(0),
+        hash: hash(&tokens),
+        tokens,
+    })
+}
+
+pub fn shape_hash(ir: &FunctionIr) -> String {
+    hash(&tokens(ir))
+}
+
+fn tokens(ir: &FunctionIr) -> Vec<String> {
     let mut out = Vec::new();
     for block in &ir.blocks {
         for stmt in &block.stmts {
             match stmt {
                 Stmt::Assign { value, .. } => expr_tokens(value, &mut out),
-                // The stored value and the address are part of the shape.
                 Stmt::Store {
                     addr, value, width, ..
                 } => {
@@ -85,7 +132,7 @@ fn expr_tokens(expr: &Expr, out: &mut Vec<String>) {
         Expr::Bin { op, lhs, rhs } => {
             expr_tokens(lhs, out);
             expr_tokens(rhs, out);
-            out.push(format!("{}", operator(*op)));
+            out.push(operator(*op).to_owned());
         }
         Expr::Load { addr, width, .. } => {
             expr_tokens(addr, out);
@@ -111,8 +158,7 @@ fn expr_tokens(expr: &Expr, out: &mut Vec<String>) {
     }
 }
 
-fn operator(op: crate::ir::BinOp) -> &'static str {
-    use crate::ir::BinOp;
+fn operator(op: BinOp) -> &'static str {
     match op {
         BinOp::Add => "add",
         BinOp::Sub => "sub",
@@ -132,7 +178,7 @@ fn operator(op: crate::ir::BinOp) -> &'static str {
     }
 }
 
-pub fn hash(tokens: &[String]) -> String {
+fn hash(tokens: &[String]) -> String {
     let mut value: u64 = 0xcbf2_9ce4_8422_2325;
     for token in tokens {
         for byte in token.as_bytes() {
@@ -143,75 +189,4 @@ pub fn hash(tokens: &[String]) -> String {
         value = value.wrapping_mul(0x0000_0100_0000_01b3);
     }
     format!("{value:016x}")
-}
-
-pub fn build(image: &Image) -> Database {
-    let mut entries = Vec::new();
-    for function in image.functions.values() {
-        let Some(name) = function.name.as_ref() else {
-            continue;
-        };
-        let size = function.size.unwrap_or(256);
-        let Ok(lifted) = analysis::lift(image, function, size) else {
-            continue;
-        };
-        let tokens = tokens(&lifted);
-        if tokens.is_empty() {
-            continue;
-        }
-        entries.push(Entry {
-            name: name.clone(),
-            isa: image.isa.to_string(),
-            size: function.size.unwrap_or(0),
-            hash: hash(&tokens),
-            tokens,
-        });
-    }
-    entries.sort_by(|a, b| a.name.cmp(&b.name));
-    Database {
-        version: 1,
-        entries,
-    }
-}
-
-pub fn lookup(database: &Database, ir: &FunctionIr) -> Option<String> {
-    let tokens = tokens(ir);
-    if tokens.is_empty() {
-        return None;
-    }
-    let digest = hash(&tokens);
-    database
-        .entries
-        .iter()
-        .find(|entry| entry.hash == digest)
-        .map(|entry| entry.name.clone())
-}
-
-pub fn identify(image: &Image, database: &Database) -> Vec<Match> {
-    let index: HashMap<&str, &Entry> = database
-        .entries
-        .iter()
-        .map(|entry| (entry.hash.as_str(), entry))
-        .collect();
-    let mut matches = Vec::new();
-    for function in image.functions.values() {
-        let size = function.size.unwrap_or(256);
-        let Ok(lifted) = analysis::lift(image, function, size) else {
-            continue;
-        };
-        let tokens = tokens(&lifted);
-        if tokens.is_empty() {
-            continue;
-        }
-        let digest = hash(&tokens);
-        if let Some(entry) = index.get(digest.as_str()) {
-            matches.push(Match {
-                addr: function.addr,
-                size: function.size.unwrap_or(0),
-                current: function.name.clone(),
-                matched: entry.name.clone(),
-            });
-        }
-    }
-    matches
 }

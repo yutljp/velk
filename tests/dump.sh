@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 疑似 C を関数ごとに書き出す。正本と手元の差分を取るための入力になる。
+# Write pseudo-C per function, as input for diffing canonical and local results.
 #
 #   ./tests/dump.sh tests/out-canonical   # -> tests/out-canonical/dump/<fixture>/<function>.c
 #
-# 出力は「関数名と本文」だけにして、コメント中のアドレスなど環境で
-# 変わりうる行は落とす（差分を意味のある差だけにするため）。
+# The header line, which carries the function's address, is dropped so the
+# files compare across environments.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 FIX=${1:-${VELK_OUT:-tests/out}}
@@ -24,20 +24,20 @@ for fixture in "$FIX"/*; do
   esac
   name=$(basename "$fixture")
   mkdir -p "$out/$name"
-  # 関数の一覧は inspect から取る（名前が無い像ではアドレスで引く）。
-  "$BIN" inspect "$fixture" --limit 100000 2>/dev/null | tail -n +3 \
+  # Take the function list from `functions`; unnamed functions are keyed by address.
+  "$BIN" functions "$fixture" --limit 100000 2>/dev/null | tail -n +3 \
     | awk '{print $1"\t"$3}' | while IFS=$'\t' read -r addr symbol; do
         [ -n "$addr" ] || continue
         key=${symbol}
         case "$symbol" in
           "<unnamed>"|"") key=$addr ;;
         esac
-        # Go のシンボルは `pkg/path.Name` を含むので、ファイル名に使える
-        # 文字へ落とす（`/` や空白は `_`）。
+        # Go symbols look like `pkg/path.Name`; map characters unsafe in file
+        # names (`/`, whitespace, ...) to `_`.
         key=$(printf '%s' "$key" | tr '/ \t:*?"<>|' '___________')
-        body=$("$BIN" decompile "$fixture" --addr "$addr" 2>/dev/null)
+        body=$("$BIN" decompile "$fixture" "$addr" 2>/dev/null)
         [ -n "$body" ] || continue
-        # 先頭のヘッダ行（アドレスを含む）は落とす。
+        # Drop the header line, which contains the address.
         printf '%s\n' "$body" | tail -n +2 > "$out/$name/$key.c"
       done
   count=$((count + 1))

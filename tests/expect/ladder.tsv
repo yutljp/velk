@@ -1,21 +1,21 @@
-# 難易度ラダー — 各段の期待値
+# Difficulty ladder — expectations per level
 #
-# 列: level <TAB> fixture <TAB> function <TAB> kind <TAB> pattern
+# columns: level <TAB> fixture <TAB> function <TAB> kind <TAB> pattern
 #
 # kind:
-#   has          その文字列を含む
-#   nothas       その文字列を含まない
-#   count        関数数が pattern と等しい (function 列は "-")
-#   count_min    関数数が pattern 以上 (ホストの stdlib で変わるもの)
-#   has_any      `A|B` のいずれかを含む (コンパイラで形が変わる箇所)
-#   known_has    理想の期待値だが現状は満たさない (TODO。満たしたら has に昇格)
-#   known_nothas 同上 (現状は含んでしまう)
+#   has          output contains the string
+#   nothas       output does not contain the string
+#   count        function count equals pattern (function column is "-")
+#   count_min    function count is at least pattern (when it depends on the host stdlib)
+#   has_any      contains one of `A|B` (when output varies by compiler)
+#   known_has    ideal expectation not met yet (TODO; promote to has once it passes)
+#   known_nothas same, for nothas (the output still contains it)
 #
-# `function` が "-" の行は対象関数を指定しない。
-# 期待値は「疑似 C として読める形」を書く。実装が良くなったら
-# known_* を has/nothas に変えて締めていく。
+# Rows with `function` "-" do not target a specific function.
+# Write expectations as readable pseudo-C. As the implementation improves,
+# tighten them by turning known_* rows into has/nothas.
 
-# ---- L0 算術: そのまま式として戻る ----
+# ---- L0 arithmetic: recovered as plain expressions ----
 0	l0_arith_a64.o	add3	has	return a1 + a0 + a2;
 0	l0_arith_a64.o	scale	has	+ 0x3
 0	l0_arith_a64.o	pick	has	? a0 : a1
@@ -24,7 +24,7 @@
 0	l0_arith_x64.o	add3	has	uint32_t add3(uint32_t a0, uint32_t a1, uint32_t a2)
 0	l0_arith_x64.o	negate	has	return -a0;
 
-# ---- L1 分岐: 三項/if として読める。goto を残さない ----
+# ---- L1 branches: readable as ternaries/if, no leftover goto ----
 1	l1_branch_a64.o	classify	has	int32_t classify(int32_t a0)
 1	l1_branch_a64.o	classify	has	? 0x1 : 0x0
 1	l1_branch_a64.o	classify	nothas	goto
@@ -32,7 +32,7 @@
 1	l1_branch_a64.o	sign_of	has	0xffffffff
 1	l1_branch_x64.o	clamp	has	? a1 :
 
-# ---- L2 ループ: while / do-while として構造化 ----
+# ---- L2 loops: structured as while / do-while ----
 2	l2_loop_a64.o	sum_while	has	} while (
 2	l2_loop_a64.o	count_down	has	do {
 2	l2_loop_a64.o	find_first	has	} while (
@@ -41,7 +41,7 @@
 2	l2_loop_a64.o	sum_skip_odd	nothas	goto L_
 2	l2_loop_x64.o	sum_while	has	} while (
 
-# ---- L3 定数除算・剰余: マジックの復元 ----
+# ---- L3 constant division/remainder: magic-number recovery ----
 3	arm64_div.o	udiv3	has	return a0 / 0x3;
 3	arm64_div.o	sdiv3	has	a0 / 0x3
 3	arm64_div.o	sdiv3	has	int32_t
@@ -51,7 +51,7 @@
 3	x64_div.o	_l3	has	/ 0x3
 3	x64_div.o	_pmod8s	has	% 0x8
 
-# ---- L4 メモリ: メンバ・配列・文字列参照 ----
+# ---- L4 memory: members, arrays, string references ----
 4	l4_memory_a64.o	point_dot	has	field_0x0
 4	l4_memory_a64.o	point_dot	has	field_0x4
 4	l4_memory_a64.o	array_sum	has	x8 = x8 + 0x4;
@@ -59,12 +59,12 @@
 4	arm64_linked.elf	pick	has	"velk-aarch64-string"
 4	pe64.exe	msg_first	has	"velk-ref-string"
 
-# ---- L5 分岐表: ジャンプテーブルは switch へ ----
+# ---- L5 switch tables: jump tables become switch ----
 5	arm64_jumptable.elf	d7	has_any	switch (a0)|> 0x4)
 5	arm64_jumptable.elf	d7	nothas	goto L_
 5	l5_switch.elf	dense	has	case 10:
 
-# ---- L6 ABI と異常系: テールコール境界・引数・幅 ----
+# ---- L6 ABI and edge cases: tail-call boundaries, arguments, widths ----
 6	tail_calls_stripped.o	-	count	3
 6	tail_indirect_stripped.o	-	count	2
 6	l6_abi_a64.o	six_args	has	a4 + a5
@@ -72,7 +72,7 @@
 6	l6_abi_a64.o	tail_direct	has	sub_<dynamic>();
 6	l6_abi_a64.o	tail_indirect	has	goto *(
 
-# ---- L7 言語ランタイム: Go pclntab / Rust デマングル / stripped ----
+# ---- L7 language runtimes: Go pclntab / Rust demangling / stripped ----
 7	go_stripped	-	has	main.add
 7	go_stripped	-	count_min	500
 7	go_probe	-	has	main.divmod
@@ -80,4 +80,4 @@
 7	go_probe	main.add	has	uint64_t main_add(uint64_t a0, uint64_t a1)
 7	rust_demo	-	has	rust_demo::
 7	rust_probe_stripped	-	count_min	50
-7	rust_probe_stripped	-	has_any	_main|/entry
+7	rust_probe_stripped	-	has_any	_main|entry

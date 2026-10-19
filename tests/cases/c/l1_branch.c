@@ -1,5 +1,5 @@
-/* L1 — 分岐。早期 return・if/else・入れ子の三項。
- * 期待: if 文として構造化され、goto を残さない。 */
+/* L1 — branches: early return, if/else, nested ternaries.
+ * Expected: structured as if statements with no leftover goto. */
 int classify(int x) {
     if (x < 0) return -1;
     if (x == 0) return 0;

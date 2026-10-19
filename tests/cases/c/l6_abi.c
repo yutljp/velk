@@ -1,5 +1,5 @@
-/* L6 — ABI の端。テールコール(直接/間接)・可変長引数・6 引数・64bit。
- * 期待: テールコールは境界として扱われ、可変長は va_list として注記される。 */
+/* L6 — ABI edge cases: tail calls (direct/indirect), varargs, 6 arguments, 64-bit.
+ * Expected: tail calls are treated as function boundaries; varargs are annotated as va_list. */
 typedef int (*fn)(int);
 
 __attribute__((noinline)) int tail_target(int x) {

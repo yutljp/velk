@@ -1,6 +1,6 @@
-/* L5 — 分岐表。密な表と疎な比較連鎖。
- * 値は規則性を崩してある(規則的だとコンパイラが算術に畳んでしまう)。
- * 期待: switch に戻り、各 case の値と本体が並ぶ。 */
+/* L5 — switch tables: a dense table and a sparse compare chain.
+ * The values are irregular on purpose; regular ones get folded into arithmetic.
+ * Expected: recovered as a switch listing each case value and body. */
 volatile int g_sink;
 /* Distinct callees force a jump table, and sixteen dense cases are enough
  * for clang 18 as well (with fewer it prefers a compare tree). Bodies that

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# 正本（canonical）の実行。x86-64 Linux のコンテナ内で回す。
+# Canonical run, inside the x86-64 Linux container.
 #
 #   docker compose run --rm canonical
 #
-# 結果は VELK_OUT（既定 tests/out-canonical）に残り、ホストから見える。
-# ここで作った疑似 C のダンプが「1番台」で、手元の結果は env-diff で
-# 環境差分として比べる。
+# Results go to VELK_OUT (default tests/out-canonical), visible from the host.
+# The pseudo-C dump produced here is the reference; compare local results
+# against it with env-diff.sh.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 export VELK_OUT=${VELK_OUT:-tests/out-canonical}
 FIX=$VELK_OUT
 mkdir -p "$FIX"
 
-echo "== 正本のツールチェーン =="
+echo "== canonical toolchain =="
 for tool in clang ld.lld lld-link llvm-strip llvm-objcopy rustc cargo go; do
   path=$(which "$tool" 2>/dev/null || true)
   if [ -n "$path" ]; then
@@ -22,7 +22,7 @@ for tool in clang ld.lld lld-link llvm-strip llvm-objcopy rustc cargo go; do
     esac
     printf '  %-14s %-40s %s\n' "$tool" "$path" "$version"
   else
-    printf '  %-14s (見つからない)\n' "$tool"
+    printf '  %-14s (not found)\n' "$tool"
   fi
 done
 {
@@ -42,7 +42,7 @@ status=0
 ./tests/make_fixtures.sh || status=1
 ./tests/smoke.sh || status=1
 ./tests/ladder.sh | tee "$FIX/ladder.txt" || status=1
-# 疑似 C のダンプは関数ごとに decompile するので重い。差分を取るときだけ。
+# The dump decompiles every function, which is slow; it is only needed for diffs.
 if [ "${VELK_DUMP:-1}" = 1 ]; then
   ./tests/dump.sh "$FIX" || status=1
 else
@@ -50,7 +50,7 @@ else
 fi
 
 echo
-echo "== 正本の結果 =="
+echo "== canonical results =="
 tail -1 "$FIX/ladder.txt" 2>/dev/null || true
-echo "ダンプ: $FIX/dump (関数ごとの疑似 C)"
+echo "dump: $FIX/dump (pseudo-C per function)"
 exit "$status"

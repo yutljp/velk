@@ -1,5 +1,5 @@
-// L7 — Rust。マングル名の復元と Option/panic 経路。
-// 期待: マングル名が読める形にデマングルされ、unwrap 経路が残る。
+// L7 — Rust: mangled names and the Option/panic path.
+// Expected: mangled names are demangled into readable form; the unwrap path remains.
 #[inline(never)]
 fn add(a: i32, b: i32) -> i32 { a + b }
 

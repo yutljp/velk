@@ -1,5 +1,5 @@
-// L7 — Go。pclntab の名前復元と、Go らしい本体の復元。
-// 期待: 関数名がパッケージ込みで出る。除算・range・型スイッチが読める形になる。
+// L7 — Go: names from pclntab and recovery of typical Go function bodies.
+// Expected: names include the package; division, range and type switches are readable.
 package main
 
 //go:noinline

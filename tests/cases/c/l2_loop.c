@@ -1,6 +1,6 @@
-/* L2 — ループ。while / do-while / for、break と continue。
- * ループが最適化で消えないよう、各周回で volatile に書く(形を保つため)。
- * 期待: while・do{}while として構造化され、break/continue が読み手に分かる。 */
+/* L2 — loops: while / do-while / for, break and continue.
+ * Each iteration writes to a volatile so the optimizer keeps the loop shape.
+ * Expected: structured as while and do{}while, with break/continue visible. */
 volatile int sink;
 
 int sum_while(int n) {

@@ -1,5 +1,5 @@
-/* L4 — メモリ。配列・構造体メンバ・グローバル・文字列リテラル。
- * 期待: メンバ名/配列添字/グローバル名/文字列参照が出る。 */
+/* L4 — memory: arrays, struct members, globals, string literals.
+ * Expected: member names, array indices, global names and string references appear. */
 struct point { int x; int y; };
 
 int point_dot(const struct point *a, const struct point *b) {

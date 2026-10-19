@@ -1,11 +1,11 @@
-# 正本（1番台）のテスト環境。x86-64 Linux で固定版のツールチェーンを動かし、
-# 結果を tests/out-canonical/ に残す。手元（macOS/arm64 など）の結果は
-# 環境差分として tests/env-diff.sh で比べる。
+# Canonical test environment: pinned toolchains on x86-64 Linux, results
+# written to tests/out-canonical/. Compare local results (macOS/arm64 etc.)
+# against them with tests/env-diff.sh.
 #
-#   docker compose run --rm canonical        # 正本を回す
-#   docker compose run --rm canonical ./tests/env-diff.sh   # 差分も見る
+#   docker compose run --rm canonical        # run the canonical suite
+#   docker compose run --rm canonical ./tests/env-diff.sh   # also show the diff
 #
-# 版を変えるときは build.args を上書きする（Dockerfile の ARG と対応）:
+# To change versions, override build.args (they map to the ARGs in the Dockerfile):
 #   docker compose build --build-arg CLANG_MAJOR=19
 services:
   canonical:
@@ -20,8 +20,8 @@ services:
     init: true
     working_dir: /work
     volumes:
-      # ソースは読み書き、ビルド成果物は名前付きボリュームに置く
-      # （ホストの target/ を x86 の成果物で汚さず、次の実行で再利用する）。
+      # Sources are mounted read-write; build output goes to named volumes
+      # so x86 artifacts stay out of the host target/ and are reused next run.
       - .:/work
       - cargo-registry:/root/.cargo/registry
       - cargo-git:/root/.cargo/git
@@ -30,11 +30,11 @@ services:
       VELK_OUT: tests/out-canonical
       CARGO_TARGET_DIR: /target
       CARGO_TERM_COLOR: never
-      # エミュレーションでも依存の再取得とフルビルドを避ける。
+      # Dependencies may be fetched; the named volumes keep them and the build between runs.
       CARGO_NET_OFFLINE: "false"
-      # 実行時間の計測はエミュレーションでは意味がない（性能は手元で測る）。
+      # Timings are meaningless under emulation; benchmark locally instead.
       VELK_BENCH: "0"
-      # 関数ごとの疑似 C ダンプは明示指定時だけ（通常の検証を高速化）。
+      # Per-function pseudo-C dumps only on request, to keep normal runs fast.
       VELK_DUMP: "0"
     command: ["./tests/canonical.sh"]
 

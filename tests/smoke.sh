@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# スモークテスト: フィクスチャ生成 → inspect/fncard の出力契約を検査
+# Smoke test: build the fixtures, then check the output contract of functions, card, ir and decompile
 set -euo pipefail
 cd "$(dirname "$0")/.."
 FIX=${VELK_OUT:-tests/out}
@@ -10,9 +10,9 @@ ok()   { echo "ok: $*"; }
 command -v cargo >/dev/null 2>&1 || fail "cargo not found"
 ./tests/make_fixtures.sh >/dev/null
 
-# フィクスチャを作ったコンパイラ。符号付き除算・剰余のマジック列は
-# コンパイラごとに形が違うため、Apple clang 以外では
-# この compiler-specific な smoke assertion だけを飛ばす。
+# Compiler that built the fixtures. Magic-number sequences for signed
+# division and remainder differ between compilers, so these
+# compiler-specific assertions are skipped unless it is Apple clang.
 fixture_cc=$(head -1 $FIX/toolchain.txt 2>/dev/null || true)
 cpp_calibrated=0
 case "$fixture_cc" in
@@ -28,129 +28,129 @@ esac
 fi
 skip_calibrated() {
   if [ "$calibrated_ok" = 1 ]; then return 1; fi
-  echo "skip: $* (フィクスチャは $fixture_cc で生成)" >&2
+  echo "skip: $* (fixtures built with $fixture_cc)" >&2
   return 0
 }
 
-# ツールチェーンが無くて生成されなかったフィクスチャは飛ばす。
+# Skip fixtures that were not built because their toolchain is missing.
 need_fixture() {
   if [ -f "$FIX/$1" ]; then return 0; fi
-  echo "skip: $2 ($FIX/$1 が未生成)" >&2
+  echo "skip: $2 ($FIX/$1 not built)" >&2
   return 1
 }
 
 BIN=${BIN:-${CARGO_TARGET_DIR:-target}/debug/velk}
 
-# x86-64 のシンボルは Mach-O だと `_name`、ELF だと `name`。どちらでも引く。
+# x86-64 symbols are `_name` in Mach-O and `name` in ELF; try both.
 dec() {  # dec <fixture> <name>
-  "$BIN" decompile "$FIX/$1" --name "$2" 2>/dev/null \
-    || "$BIN" decompile "$FIX/$1" --name "_$2" 2>/dev/null \
-    || "$BIN" decompile "$FIX/$1" --name "${2#_}" 2>/dev/null
+  "$BIN" decompile "$FIX/$1" "$2" 2>/dev/null \
+    || "$BIN" decompile "$FIX/$1" "_$2" 2>/dev/null \
+    || "$BIN" decompile "$FIX/$1" "${2#_}" 2>/dev/null
 }
 
 cargo build --quiet
 cargo test --quiet 2>/dev/null || fail "unit tests"
 [ -x "$BIN" ] || fail "binary not built"
 
-# 1) PE64: 形式/ISA/関数数
-pe_json=$("$BIN" inspect $FIX/pe64.exe --json 2>/dev/null)
+# 1) PE64: format, ISA, function count
+pe_json=$("$BIN" functions $FIX/pe64.exe --json 2>/dev/null)
 echo "$pe_json" | grep -q '"format": "pe"'          || fail "PE format detect"
-echo "$pe_json" | grep -q '"isa": "x86-64"'         || fail "PE64 isa detect"
-nf=$(echo "$pe_json" | sed -n 's/.*"n_functions": \([0-9]*\).*/\1/p')
+echo "$pe_json" | grep -q '"arch": "x86_64"'        || fail "PE64 isa detect"
+nf=$(echo "$pe_json" | sed -n 's/.*"functionCount": \([0-9]*\).*/\1/p')
 [ -n "$nf" ] && [ "$nf" -ge 3 ]                     || fail "PE64 function discovery (n=$nf)"
-ok "PE64 inspect (n_functions=$nf)"
+ok "PE64 functions (n_functions=$nf)"
 
-# 2) PE64: 関数カードの契約
-card=$("$BIN" fncard $FIX/pe64.exe --name reg_add --preview 8 2>/dev/null)
+# 2) PE64: function card contract
+card=$("$BIN" card $FIX/pe64.exe reg_add --budget 144 2>/dev/null)
 echo "$card" | grep -q '"name": "reg_add"'          || fail "card name"
-echo "$card" | grep -q '"size_estimated": true'     || fail "card size estimation"
+echo "$card" | grep -q '"sizeEstimated": true'      || fail "card size estimation"
 echo "$card" | grep -q 'lea eax'                    || fail "PE64 decode (lea eax)"
-ok "PE64 fncard (reg_add)"
+ok "PE64 card (reg_add)"
 
-# 3) AArch64 ELF: 節重なり解決 + デコード
-arm_json=$("$BIN" inspect $FIX/arm64.o --json 2>/dev/null)
-echo "$arm_json" | grep -q '"isa": "aarch64"'       || fail "AArch64 isa detect"
-arm_card=$("$BIN" fncard $FIX/arm64.o --name sum3 --preview 8 2>/dev/null)
+# 3) AArch64 ELF: overlapping section resolution and decoding
+arm_json=$("$BIN" functions $FIX/arm64.o --json 2>/dev/null)
+echo "$arm_json" | grep -q '"arch": "aarch64"'      || fail "AArch64 isa detect"
+arm_card=$("$BIN" card $FIX/arm64.o sum3 --budget 144 2>/dev/null)
 echo "$arm_card" | grep -q '"section": ".text"'     || fail "AArch64 section resolution (.text)"
 echo "$arm_card" | grep -q 'add w0, w8, w2'         || fail "AArch64 decode"
 echo "$arm_card" | grep -q '"blocks"'               || fail "function card IR summary"
-ok "AArch64 inspect/fncard"
+ok "AArch64 functions/card"
 
-# 4) AArch64 リフト: 算術・定数・分岐・ロード・未対応の明示
-sum3_ir=$("$BIN" lift $FIX/arm64.o --name sum3 2>/dev/null)
-echo "$sum3_ir" | grep -q "fn sum3"                     || fail "lift sum3 header"
-[ "$(echo "$sum3_ir" | grep -o ' + ' | wc -l | tr -d ' ')" -ge 2 ] || fail "lift sum3 adds"
-echo "$sum3_ir" | grep -q 'ret .*w2'                   || fail "lift sum3 ret"
-ok "lift sum3"
+# 4) AArch64 IR: arithmetic, constants, branches, loads, explicit unsupported markers
+sum3_ir=$("$BIN" ir $FIX/arm64.o sum3 2>/dev/null)
+echo "$sum3_ir" | grep -q "fn sum3"                     || fail "ir sum3 header"
+[ "$(echo "$sum3_ir" | grep -o ' + ' | wc -l | tr -d ' ')" -ge 2 ] || fail "ir sum3 adds"
+echo "$sum3_ir" | grep -q 'ret .*w2'                   || fail "ir sum3 ret"
+ok "ir sum3"
 
-helper_ir=$("$BIN" lift $FIX/arm64.o --name helper 2>/dev/null)
-echo "$helper_ir" | grep -q 'brif lt'                  || fail "lift helper branch"
-echo "$helper_ir" | grep -q -- '-> 0x48'               || fail "lift helper target"
-echo "$helper_ir" | grep -q '0x555'                   || fail "lift helper constant"
-echo "$helper_ir" | grep -q 'x8 = '                   || fail "lift helper assignment"
-ok "lift helper"
+helper_ir=$("$BIN" ir $FIX/arm64.o helper 2>/dev/null)
+echo "$helper_ir" | grep -q 'brif lt'                  || fail "ir helper branch"
+echo "$helper_ir" | grep -q -- '-> 0x48'               || fail "ir helper target"
+echo "$helper_ir" | grep -q '0x555'                   || fail "ir helper constant"
+echo "$helper_ir" | grep -q 'x8 = '                   || fail "ir helper assignment"
+ok "ir helper"
 
-arr_ir=$("$BIN" lift $FIX/arm64.o --name sum_arr 2>/dev/null)
-echo "$arr_ir" | grep -q 'load32'                      || fail "lift sum_arr load"
-echo "$arr_ir" | grep -q 'unsupported: MOVI'           || fail "lift sum_arr unsupported marker"
-ok "lift sum_arr"
+arr_ir=$("$BIN" ir $FIX/arm64.o sum_arr 2>/dev/null)
+echo "$arr_ir" | grep -q 'load32'                      || fail "ir sum_arr load"
+echo "$arr_ir" | grep -q 'unsupported: MOVI'           || fail "ir sum_arr unsupported marker"
+ok "ir sum_arr"
 
-# 5) 疑似 C 出力
-c3=$("$BIN" decompile $FIX/arm64.o --name sum3 2>/dev/null)
+# 5) pseudo-C output
+c3=$("$BIN" decompile $FIX/arm64.o sum3 2>/dev/null)
 echo "$c3" | grep -q "uint32_t sum3(uint32_t a0, uint32_t a1, uint32_t a2)" || fail "decompile sum3 signature"
 echo "$c3" | grep -q "return a1 + a0 + a2;"   || fail "decompile sum3 fold"
 [ "$(echo "$c3" | grep -c '0xffffffff')" -eq 0 ] || fail "decompile sum3 masks"
 echo "$c3" | grep -q "return "               || fail "decompile sum3 return"
-echo "$sum3_ir" | grep -q "ret ((w1 + w0) + w2)"  || fail "lift sum3 width"
-# 定数除算・剰余のマジック列はコンパイラごとに形が違う。校正してある
-# Apple clang 以外のフィクスチャでは、この塊を丸ごと飛ばす。
+echo "$sum3_ir" | grep -q "ret ((w1 + w0) + w2)"  || fail "ir sum3 width"
+# Magic-number sequences for constant division and remainder differ between
+# compilers. This block is calibrated for Apple clang and skipped otherwise.
 if [ "$calibrated_ok" = 1 ]; then
-  div_ir=$("$BIN" decompile $FIX/arm64_div.o --name udiv3 2>/dev/null)
+  div_ir=$("$BIN" decompile $FIX/arm64_div.o udiv3 2>/dev/null)
   echo "$div_ir" | grep -q "a0 / 0x3"       || fail "magic unsigned div"
-  sd_ir=$("$BIN" decompile $FIX/arm64_div.o --name sdiv3 2>/dev/null)
+  sd_ir=$("$BIN" decompile $FIX/arm64_div.o sdiv3 2>/dev/null)
   echo "$sd_ir" | grep -q "int32_t"        || fail "magic signed type"
   echo "$sd_ir" | grep -q "a0 / 0x3"       || fail "magic signed div"
-  hd_ir=$("$BIN" decompile $FIX/arm64_div.o --name hdiv3 2>/dev/null)
+  hd_ir=$("$BIN" decompile $FIX/arm64_div.o hdiv3 2>/dev/null)
   echo "$hd_ir" | grep -q "a0 / 0x3"        || fail "magic 64bit div"
   echo "$hd_ir" | grep -q "uint64_t"       || fail "magic 64bit width"
-  sd_ir=$("$BIN" decompile $FIX/arm64_div.o --name sdiv10 2>/dev/null)
+  sd_ir=$("$BIN" decompile $FIX/arm64_div.o sdiv10 2>/dev/null)
   echo "$sd_ir" | grep -q "a0 / 0xa"        || fail "magic signed scaled div10"
   echo "$sd_ir" | grep -q "int32_t"        || fail "magic signed scaled width"
-  sl_ir=$("$BIN" decompile $FIX/arm64_div.o --name sdiv16 2>/dev/null)
+  sl_ir=$("$BIN" decompile $FIX/arm64_div.o sdiv16 2>/dev/null)
   echo "$sl_ir" | grep -q "a0 / 0x10"      || fail "csel select signed div16"
-  ll_ir=$("$BIN" decompile $FIX/arm64_div.o --name ldiv16 2>/dev/null)
+  ll_ir=$("$BIN" decompile $FIX/arm64_div.o ldiv16 2>/dev/null)
   echo "$ll_ir" | grep -q "a0 / 0x10"      || fail "csel select signed div16 long"
-  um_ir=$("$BIN" decompile $FIX/arm64_div.o --name umod3 2>/dev/null)
+  um_ir=$("$BIN" decompile $FIX/arm64_div.o umod3 2>/dev/null)
   echo "$um_ir" | grep -q "a0 % 0x3"       || fail "multiplier unwind mod u32"
-  sm_ir=$("$BIN" decompile $FIX/arm64_div.o --name smod3 2>/dev/null)
-  if ! skip_calibrated "smod3 の巻き戻しは Apple clang の形で校正済み"; then
+  sm_ir=$("$BIN" decompile $FIX/arm64_div.o smod3 2>/dev/null)
+  if ! skip_calibrated "smod3 unwinding is calibrated for Apple clang output"; then
     echo "$sm_ir" | grep -q "a0 % 0x3"     || fail "multiplier unwind mod s32"
   fi
   echo "$sm_ir" | grep -q "int32_t"        || fail "multiplier unwind width"
-  lm_ir=$("$BIN" decompile $FIX/arm64_div.o --name lmod3 2>/dev/null)
+  lm_ir=$("$BIN" decompile $FIX/arm64_div.o lmod3 2>/dev/null)
   echo "$lm_ir" | grep -q "a0 % 0x3"       || fail "multiplier unwind mod s64"
   echo "$lm_ir" | grep -q "int64_t"        || fail "multiplier unwind width 64"
-  um10=$("$BIN" decompile $FIX/arm64_div.o --name umod10 2>/dev/null)
+  um10=$("$BIN" decompile $FIX/arm64_div.o umod10 2>/dev/null)
   echo "$um10" | grep -q "a0 % 0xa"      || fail "multiplier unwind mod u32 10"
-  lm10=$("$BIN" decompile $FIX/arm64_div.o --name lmod10 2>/dev/null)
+  lm10=$("$BIN" decompile $FIX/arm64_div.o lmod10 2>/dev/null)
   echo "$lm10" | grep -q "a0 % 0xa"        || fail "msub unwind mod s64 10"
-  um10b=$("$BIN" decompile $FIX/arm64_div.o --name umod10b 2>/dev/null)
+  um10b=$("$BIN" decompile $FIX/arm64_div.o umod10b 2>/dev/null)
   echo "$um10b" | grep -q "a0 % 0xa"       || fail "msub unwind mod u64 10"
   umx=$(dec x64_div.o _umod3x)
   echo "$umx" | grep -q "% 0x3"            || fail "x86 lea unwind mod u32"
   smx=$(dec x64_div.o _smod3x)
   echo "$smx" | grep -q "% 0x3"            || fail "x86 lea unwind mod s32"
   lmx=$(dec x64_div.o _lmod10x)
-  lm16=$("$BIN" decompile $FIX/arm64_div.o --name lmod16 2>/dev/null)
+  lm16=$("$BIN" decompile $FIX/arm64_div.o lmod16 2>/dev/null)
   echo "$lm16" | grep -q "% 0x10"         || fail "cset-pow2 mod s64"
   echo "$lm16" | grep -q "int64_t"        || fail "cset-pow2 width 64"
-  sm4=$("$BIN" decompile $FIX/arm64_div.o --name smod4 2>/dev/null)
-  sd16=$("$BIN" decompile $FIX/arm64_div.o --name sdiv16 2>/dev/null)
+  sm4=$("$BIN" decompile $FIX/arm64_div.o smod4 2>/dev/null)
+  sd16=$("$BIN" decompile $FIX/arm64_div.o sdiv16 2>/dev/null)
   echo "$sd16" | grep -q "int32_t"        || fail "csel div16 dividend width"
-  sm10=$("$BIN" decompile $FIX/arm64_div.o --name smod10 2>/dev/null)
+  sm10=$("$BIN" decompile $FIX/arm64_div.o smod10 2>/dev/null)
   echo "$sm10" | grep -q "int32_t smod10" || fail "msub mod10 signed width"
   sm3x=$(dec x64_div.o _smod3x)
-  ng=$("$BIN" decompile $FIX/arm64_div.o --name negate 2>/dev/null)
+  ng=$("$BIN" decompile $FIX/arm64_div.o negate 2>/dev/null)
   echo "$ng" | grep -q "return -a0;"      || fail "negate render"
   echo "$ng" | grep -q "0x0 -" && fail "negate render kept 0 - x"
   echo "$sm3x" | grep -q "int32_t _smod3x" || fail "x86 lea mod3 signed width"
@@ -158,12 +158,12 @@ if [ "$calibrated_ok" = 1 ]; then
   echo "$sm4" | grep -q "int32_t"         || fail "cset-pow2 width 32"
   echo "$lmx" | grep -q "% 0xa"            || fail "x64 lea unwind mod s64"
 else
-  echo "skip: 定数除算・剰余の復元 (フィクスチャは $fixture_cc で生成)" >&2
+  echo "skip: constant division/remainder recovery (fixtures built with $fixture_cc)" >&2
 fi
-ld_ir=$("$BIN" decompile $FIX/arm64_div.o --name ldiv3 2>/dev/null)
+ld_ir=$("$BIN" decompile $FIX/arm64_div.o ldiv3 2>/dev/null)
 echo "$ld_ir" | grep -q "a0 / 0x3"        || fail "magic signed 64bit div"
 echo "$ld_ir" | grep -q "int64_t"        || fail "magic signed 64bit width"
-l10_ir=$("$BIN" decompile $FIX/arm64_div.o --name ldiv10 2>/dev/null)
+l10_ir=$("$BIN" decompile $FIX/arm64_div.o ldiv10 2>/dev/null)
 echo "$l10_ir" | grep -q "a0 / 0xa"      || fail "magic signed 64bit div10"
 x64_l3=$(dec x64_div.o _l3)
 echo "$x64_l3" | grep -q "/ 0x3"         || fail "x64 signed 64bit div"
@@ -177,7 +177,7 @@ x64_selq=$(dec x64_div.o _qdiv64)
 echo "$x64_selq" | grep -q "a0 / 0x40"   || fail "x64 signed select 64bit div"
 x64_sel10=$(dec x64_div.o _pdiv10)
 echo "$x64_sel10" | grep -q "/ 0xa"      || fail "x64 signed sext div10"
-helper_cs=$("$BIN" decompile $FIX/arm64.o --name helper 2>/dev/null)
+helper_cs=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cs" | grep -q "t1 = x8 >> 0x1;"    || fail "cse temp"
 echo "$helper_cs" | grep -q "t1 << 0x1"       || fail "cse reuse"
 ok "cse temps"
@@ -194,13 +194,13 @@ p16l=$(dec x64_div.o _pmod16l)
 echo "$p16l" | grep -q "a0 % 0x10"      || fail "x64 signed pow2 mod"
 p8u=$(dec x64_div.o _pmod8x)
 echo "$p8u" | grep -q "a0 & 0x7"        || fail "x86 unsigned pow2 mask"
-iz=$("$BIN" decompile $FIX/arm64_div.o --name is_zero 2>/dev/null)
+iz=$("$BIN" decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$iz" | grep -q "a0 == 0x0"        || fail "cset eq compare"
-ip=$("$BIN" decompile $FIX/arm64_div.o --name is_pos 2>/dev/null)
+ip=$("$BIN" decompile $FIX/arm64_div.o is_pos 2>/dev/null)
 echo "$ip" | grep -q "a0 > 0x0"         || fail "cset gt compare"
 echo "$iz" | grep -q "? 0x1 : 0x0)"    || fail "cset boolean branches"
 ok "pow2 mod and cset"
-use_ir=$("$BIN" decompile $FIX/cpp_demo.o --name "use(int)" 2>/dev/null)
+use_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 if [ "$cpp_calibrated" = 1 ]; then
   # Apple clang's spill layout is stable enough to assert local-slot names.
   echo "$use_ir" | grep -q "local_0"        || fail "stack local naming"
@@ -217,128 +217,128 @@ echo "$use_ir" | grep -qE "(= x29|x29 =)" && fail "frame setup elision"
 ok "callee-save elision"
 fold_ret=$(dec x64_div.o _umod3x)
 echo "$fold_ret" | grep -q "return a0 % 0x3;"  || fail "temporary inlining into ret"
-sum3_ir2=$("$BIN" decompile $FIX/arm64.o --name sum3 2>/dev/null)
+sum3_ir2=$("$BIN" decompile $FIX/arm64.o sum3 2>/dev/null)
 echo "$sum3_ir2" | grep -q "w8" && fail "temporary inlining (sum3)"
 ok "temporary inlining"
-abs_ir=$("$BIN" decompile $FIX/pe64.exe --name reg_abs 2>/dev/null)
+abs_ir=$("$BIN" decompile $FIX/pe64.exe reg_abs 2>/dev/null)
 echo "$abs_ir" | grep -q "(a0 < 0x0 ? a0 : -a0)" || fail "double negation fold"
 echo "$abs_ir" | grep -q -- "-(-" && fail "double negation kept"
-sign_ir=$("$BIN" decompile $FIX/pe64.exe --name reg_sign 2>/dev/null)
+sign_ir=$("$BIN" decompile $FIX/pe64.exe reg_sign 2>/dev/null)
 echo "$sign_ir" | grep -q "(int8_t)(a0)"   || fail "sign-extend mask fold"
 echo "$sign_ir" | grep -q "0x1f" && fail "sign-extend artifact"
 ok "algebraic cleanup"
-abs_ret=$("$BIN" decompile $FIX/pe64.exe --name reg_abs 2>/dev/null)
+abs_ret=$("$BIN" decompile $FIX/pe64.exe reg_abs 2>/dev/null)
 echo "$abs_ret" | grep -q "return (a0 < 0x0 ? a0 : -a0);"      || fail "abs folds into the return"
-helper_cse=$("$BIN" decompile $FIX/arm64.o --name helper 2>/dev/null)
+helper_cse=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cse" | grep -q "t1 = x8 >> 0x1;" || fail "guarded inlining keeps the CSE temp"
 ok "two-round inlining"
-div_ir=$("$BIN" decompile $FIX/pe64.exe --name reg_div 2>/dev/null)
+div_ir=$("$BIN" decompile $FIX/pe64.exe reg_div 2>/dev/null)
 echo "$div_ir" | grep -q "return a0 / a1;"  || fail "runtime division inlining"
-mod_ir=$("$BIN" decompile $FIX/pe64.exe --name reg_mod 2>/dev/null)
+mod_ir=$("$BIN" decompile $FIX/pe64.exe reg_mod 2>/dev/null)
 echo "$mod_ir" | grep -q "a0 % a1"        || fail "idiv remainder dividend"
 ok "runtime division and remainder"
-stack_ir=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_until 2>/dev/null)
+stack_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$stack_ir" | grep -q "local_1"        || fail "stack locals named"
 echo "$stack_ir" | grep -q "local_2 += w9;"   || fail "stack local accumulation"
 echo "$stack_ir" | grep -q "sp + 0x4" && fail "stack address left raw"
 ok "stack locals"
-decl_ir=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_until 2>/dev/null)
+decl_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$decl_ir" | grep -qF "uint32_t local_1; /* [sp-c] */" || fail "stack local declaration"
 echo "$decl_ir" | grep -q "(local_1 & 0xffffffff)" && fail "local mask elided"
 echo "$decl_ir" | grep -q "local_2 += w9;"    || fail "32-bit register name"
 ok "stack local declarations"
-frame_ir=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_until 2>/dev/null)
+frame_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$frame_ir" | grep -qE "^ *sp = " && fail "frame adjustments hidden"
 echo "$frame_ir" | grep -q "sp + 0x4" && fail "frame slot canonicalized"
-loop_ir=$("$BIN" decompile $FIX/cpp_demo.o --name "use(int)" 2>/dev/null)
+loop_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$loop_ir" | grep -q "for (;;)" && fail "tail call read as a loop"
 echo "$loop_ir" | grep -q "ns__mul_int__int_()"  || fail "relocated call target"
 echo "$loop_ir" | grep -q "ns__add_int__int_()"  || fail "tail call to a named callee"
 ok "frame settling and endless loop"
-arr_ir=$("$BIN" decompile $FIX/arm64.o --name sum_arr 2>/dev/null)
+arr_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 if [ "$calibrated_ok" = 1 ]; then
   echo "$arr_ir" | grep -q "goto L_" && fail "sum_arr has no gotos"
 fi
 echo "$arr_ir" | grep -q "} else {"   || fail "if/else across a skipped block"
 echo "$arr_ir" | grep -q "x9 = a1;"                || fail "branch block prefix kept"
-helper_pre=$("$BIN" decompile $FIX/arm64.o --name helper 2>/dev/null)
+helper_pre=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_pre" | grep -q "x8 = a0 - 0x1;"  || fail "prefix before early return"
 ok "if/else structuring"
-sig_zero=$("$BIN" decompile $FIX/arm64_div.o --name is_zero 2>/dev/null)
+sig_zero=$("$BIN" decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$sig_zero" | grep -q "uint32_t is_zero(uint32_t a0)" || fail "boolean signature by usage"
-sig_mul=$("$BIN" decompile $FIX/pe64.exe --name reg_mul 2>/dev/null)
+sig_mul=$("$BIN" decompile $FIX/pe64.exe reg_mul 2>/dev/null)
 echo "$sig_mul" | grep -q "uint32_t reg_mul(uint32_t a0, uint32_t a1)" || fail "mul signature by usage"
 sig_h=$(dec x64_div.o _h10)
 echo "$sig_h" | grep -qE "uint64_t _?h10\(uint64_t a0\)" || fail "wide signature kept"
-sig_helper=$("$BIN" decompile $FIX/arm64.o --name helper 2>/dev/null)
+sig_helper=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$sig_helper" | grep -q "int32_t helper(int32_t a0)"    || fail "loop signature by usage"
 ok "types by usage"
-mask_ir=$("$BIN" decompile $FIX/arm64.o --name helper 2>/dev/null)
+mask_ir=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$mask_ir" | grep -q "x8 = w8 \* (a0 - 0x2);" || fail "mask implied by 32-bit arithmetic"
 echo "$mask_ir" | grep -q "x8 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
-narrow_ir=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_until 2>/dev/null)
+narrow_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 if [ "$calibrated_ok" = 1 ]; then
   echo "$narrow_ir" | grep -q "if (w8 > w9) break;" || fail "32-bit comparison kept"
 fi
 echo "$narrow_ir" | grep -q "local_2 += w9;"        || fail "compound store in a loop"
 ok "mask elision by width"
-narrow_dest=$("$BIN" decompile $FIX/arm64.o --name helper 2>/dev/null)
+narrow_dest=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$narrow_dest" | grep -q "+ (t1 << 0x1)) - 0x1;" || fail "mask implied by the return type"
 echo "$narrow_dest" | grep -q "a0 = .*0xffffffff" && fail "return mask kept"
 ok "masks implied by the destination"
-masked_ir=$("$BIN" decompile $FIX/arm64.o --name sum_arr 2>/dev/null)
+masked_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 if [ "$calibrated_ok" = 1 ]; then
   echo "$masked_ir" | grep -q "x8 = w10 + w8;" || fail "mask bounded by its constant"
   echo "$masked_ir" | grep -q "w10 + w8) & 0xffffffff" && fail "bounded mask kept"
   ok "mask bounded by the constant"
 else
-  echo "skip: マスクの省略 (フィクスチャは $fixture_cc で生成)" >&2
+  echo "skip: mask elision (fixtures built with $fixture_cc)" >&2
 fi
-if need_fixture arm64_debug.elf "DWARF の型"; then
-  dwarf_ir=$("$BIN" decompile $FIX/arm64_debug.elf --name helper 2>/dev/null)
+if need_fixture arm64_debug.elf "DWARF types"; then
+  dwarf_ir=$("$BIN" decompile $FIX/arm64_debug.elf helper 2>/dev/null)
   echo "$dwarf_ir" | grep -q "x8 = x - 0x1;"      || fail "narrow DWARF type read without a mask"
   echo "$dwarf_ir" | grep -q "(x & 0xffffffff)" && fail "narrow DWARF type keeps the mask"
   ok "narrow DWARF types"
 fi
-sign_ir2=$("$BIN" decompile $FIX/pe64.exe --name reg_sign 2>/dev/null)
+sign_ir2=$("$BIN" decompile $FIX/pe64.exe reg_sign 2>/dev/null)
 echo "$sign_ir2" | grep -q "(int8_t)(a0);"           || fail "sign-extended value needs no mask"
 echo "$sign_ir2" | grep -q "(int8_t)(a0) & 0xffffffff" && fail "sign-extend mask kept"
 ok "sign-extended widths"
-if need_fixture arm64_debug.o "退避した DWARF"; then
-  degraded=$("$BIN" decompile $FIX/arm64_debug.o --name sum3 2>/dev/null)
+if need_fixture arm64_debug.o "relocated DWARF"; then
+  degraded=$("$BIN" decompile $FIX/arm64_debug.o sum3 2>/dev/null)
   echo "$degraded" | grep -q "clang version" && fail "relocated DWARF name leaked"
   echo "$degraded" | grep -q "uint32_t sum3(uint32_t a0, uint32_t a1, uint32_t a2)" || fail "inferred signature kept"
   ok "relocated DWARF falls back"
 fi
-if need_fixture arm64_debug.elf "DWARF のメンバ名"; then
-  field_ir=$("$BIN" decompile $FIX/arm64_debug.elf --name pair_sum 2>/dev/null)
+if need_fixture arm64_debug.elf "DWARF member names"; then
+  field_ir=$("$BIN" decompile $FIX/arm64_debug.elf pair_sum 2>/dev/null)
   echo "$field_ir" | grep -q "p->a"   || fail "DWARF field name for the first member"
   echo "$field_ir" | grep -q "p->b"   || fail "DWARF field name for the second member"
   echo "$field_ir" | grep -q "field_0x" && fail "member kept its offset name"
   ok "DWARF member names"
 fi
-if need_fixture rust_demo "コードアドレスの命名"; then
+if need_fixture rust_demo "code address naming"; then
   if [ "$cpp_calibrated" = 1 ]; then
     # The Apple fixture embeds this code address directly; Linux clang routes
     # it through a GOT entry and is covered by relocation/call tests instead.
-    real_ir=$("$BIN" decompile $FIX/rust_demo --name main 2>/dev/null)
+    real_ir=$("$BIN" decompile $FIX/rust_demo rust_demo::main 2>/dev/null)
     echo "$real_ir" | grep -q "_i32_as_core__fmt__Display___fmt;" || fail "constant function address named"
     echo "$real_ir" | grep -q "local_2 = 0x100030234;" && fail "raw code address kept"
     ok "code addresses named"
   else
-    echo "skip: 直接コードアドレスの命名 (コンパイラが GOT 経由で参照)" >&2
+    echo "skip: direct code address naming (compiler references it through the GOT)" >&2
   fi
-  zero_ir=$("$BIN" decompile $FIX/arm64_big.o --name helper 2>/dev/null)
+  zero_ir=$("$BIN" decompile $FIX/arm64_big.o helper 2>/dev/null)
   echo "$zero_ir" | grep -q "return 0x0;" || fail "zero stays a constant"
 fi
-brk_ir=$("$BIN" decompile $FIX/arm64_loops.o --name sum_until_zero 2>/dev/null)
+brk_ir=$("$BIN" decompile $FIX/arm64_loops.o sum_until_zero 2>/dev/null)
 echo "$brk_ir" | grep -q "do {"            || fail "bottom-tested loop formed"
 echo "$brk_ir" | grep -q "break;"          || fail "loop exit reads as break"
 echo "$brk_ir" | grep -q "goto L_" && fail "loop exit kept a goto"
 echo "$brk_ir" | grep -q "unsupported" && fail "bic still unsupported"
 echo "$brk_ir" | grep -q "~("              || fail "complement rendered"
 ok "bottom-tested loops"
-neg_ir=$("$BIN" decompile $FIX/arm64_loops.o --name sum_till_neg 2>/dev/null)
+neg_ir=$("$BIN" decompile $FIX/arm64_loops.o sum_till_neg 2>/dev/null)
 if [ "$cpp_calibrated" = 1 ]; then
   echo "$neg_ir" | grep -q "int32_t sum_till_neg(uint32_t \*a0, int32_t a1)" || fail "fall-through predecessor keeps the params"
 else
@@ -349,7 +349,7 @@ else
 fi
 echo "$neg_ir" | grep -q "break;"   || fail "top-tested break kept"
 ok "fall-through predecessors"
-simd_ir=$("$BIN" decompile $FIX/arm64.o --name sum_arr 2>/dev/null)
+simd_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$simd_ir" | grep -A1 "if (a1 < 0x1) {" | grep -q "x8 = 0x0;" && fail "dead store before return in a SIMD function"
 echo "$simd_ir" | grep -q "return 0x0;" || fail "early return kept"
 ok "dead stores beside unmodeled code"
@@ -357,11 +357,11 @@ wide_ir=$(dec x64_div.o _umod10x)
 echo "$wide_ir" | grep -q "__umulh(a0, 0xcccccccccccccccd)"  || fail "wide multiply reads as its intrinsic"
 echo "$wide_ir" | grep -q " hi128 " && fail "wide multiply kept the infix"
 ok "wide multiply intrinsic"
-settled=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_till_neg 2>/dev/null)
+settled=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
 echo "$settled" | grep -q "local_0 = a0;"     || fail "frame settled past a pointer load"
 echo "$settled" | grep -q "sp = sp"           && fail "stack adjustments kept"
 ok "frame settling past pointer bases"
-narrow_dst=$("$BIN" decompile $FIX/arm64_loops.o --name sum_till_neg 2>/dev/null)
+narrow_dst=$("$BIN" decompile $FIX/arm64_loops.o sum_till_neg 2>/dev/null)
 if [ "$cpp_calibrated" = 1 ]; then
   echo "$narrow_dst" | grep -q "w8 = 0x0;" || fail "narrow destination uses its 32-bit name"
 else
@@ -369,20 +369,20 @@ else
 fi
 echo "$narrow_dst" | grep -q "return w8;" || fail "narrow destination read back"
 ok "narrow destination names"
-if need_fixture go_stripped "trap と未使用ローカル"; then
-  trap_ir=$("$BIN" decompile $FIX/go_stripped --name internal/abi.Kind.String 2>/dev/null)
+if need_fixture go_stripped "trap and unused locals"; then
+  trap_ir=$("$BIN" decompile $FIX/go_stripped internal/abi.Kind.String 2>/dev/null)
   echo "$trap_ir" | grep -q "__builtin_trap();" || fail "trap rendered"
   echo "$trap_ir" | grep -c "__builtin_trap();" | grep -qx 1 || fail "trap padding collapsed"
   echo "$trap_ir" | grep -q "Int3" && fail "int3 note kept"
   echo "$trap_ir" | grep -q "local_0;" && fail "unused local declared"
   ok "trap padding and unused locals"
 fi
-back_ir=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_till_neg 2>/dev/null)
+back_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
 if [ "$calibrated_ok" = 1 ]; then
   echo "$back_ir" | grep -q "for (;;) {"      || fail "unconditional back edge structured"
   echo "$back_ir" | grep -q "^L_c0:"         && fail "loop header kept as a label"
 fi
-python3 - "$back_ir" <<'PY'
+uv run python - "$back_ir" <<'PY'
 import re, sys
 body = sys.argv[1]
 gotos = set(re.findall(r'goto (L_[0-9a-f]+);', body))
@@ -390,9 +390,9 @@ labels = set(re.findall(r'^\s*(L_[0-9a-f]+):', body, flags=re.M))
 assert not (gotos - labels), f"dangling goto {gotos - labels}"
 PY
 ok "unconditional back edges"
-opt0=$("$BIN" decompile $FIX/arm64_loops0.o --name count_bits 2>/dev/null)
+opt0=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$opt0" | grep -q "sp = sp" && fail "frame settled at -O0"
-zero_ir=$("$BIN" decompile $FIX/arm64.o --name sum_arr 2>/dev/null)
+zero_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$zero_ir" | grep -q "^int32_t sum_arr"  || fail "return type follows the value"
 ok "value-width return types"
 # A stripped relocatable object keeps no symbols and no entry point: the
@@ -401,40 +401,41 @@ ok "value-width return types"
 stripped_ok=1
 [ -f $FIX/arm64_loops_stripped.o ] || stripped_ok=0
 if [ "$stripped_ok" = 1 ]; then
-  n=$("$BIN" inspect $FIX/arm64_loops_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
+  n=$("$BIN" functions $FIX/arm64_loops_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
   [ "$n" = "4" ] || fail "stripped object function count ($n)"
-  first=$("$BIN" inspect $FIX/arm64_loops_stripped.o 2>/dev/null | awk 'NR == 3 { print $1 }')
+  first=$("$BIN" functions $FIX/arm64_loops_stripped.o 2>/dev/null | awk 'NR == 3 { print $1 }')
   [ "$first" = "0x0" ] || fail "stripped object starts at its first function"
   # The address of the loop function depends on the compiler's layout, so
   # take it from the listing instead of pinning it.
-  loop_addr=$("$BIN" inspect $FIX/arm64_loops_stripped.o 2>/dev/null | awk 'NR == 6 { print $1 }')
-  loops=$("$BIN" decompile $FIX/arm64_loops_stripped.o --addr "$loop_addr" 2>/dev/null)
+  loop_addr=$("$BIN" functions $FIX/arm64_loops_stripped.o 2>/dev/null | awk 'NR == 6 { print $1 }')
+  loops=$("$BIN" decompile $FIX/arm64_loops_stripped.o "$loop_addr" 2>/dev/null)
   echo "$loops" | grep -q "do {"        || fail "stripped object body structured"
   echo "$loops" | grep -q "break;"      || fail "stripped object loop exit"
   ok "stripped relocatable objects"
-  xs=$("$BIN" inspect $FIX/x64_loops_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
+  xs=$("$BIN" functions $FIX/x64_loops_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
   [ "$xs" = "4" ] || fail "stripped x86 object function count ($xs)"
   ok "stripped x86 objects"
   # A tail call (`b` to another function) ends a function without a `ret`.
-  tn=$("$BIN" inspect $FIX/tail_calls_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
+  tn=$("$BIN" functions $FIX/tail_calls_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
   [ "$tn" = "3" ] || fail "tail call boundary ($tn)"
-  tail_addr=$("$BIN" inspect $FIX/tail_calls_stripped.o 2>/dev/null | tail -n +3 | sed -n 2p | awk '{print $1}')
-  tail_mid=$("$BIN" decompile $FIX/tail_calls_stripped.o --addr "$tail_addr" 2>/dev/null)
+  tail_addr=$("$BIN" functions $FIX/tail_calls_stripped.o 2>/dev/null | tail -n +3 | sed -n 2p | awk '{print $1}')
+  tail_mid=$("$BIN" decompile $FIX/tail_calls_stripped.o "$tail_addr" 2>/dev/null)
   echo "$tail_mid" | grep -q "for (;;)" && fail "unresolved tail call became a loop"
   echo "$tail_mid" | grep -q "();"        || fail "unresolved tail call rendered"
   ok "tail call boundaries"
   # An indirect tail call (`br x2`) also ends a function.
-  in_n=$("$BIN" inspect $FIX/tail_indirect_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
+  in_n=$("$BIN" functions $FIX/tail_indirect_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
   [ "$in_n" = "2" ] || fail "indirect tail call boundary ($in_n)"
   ok "indirect tail calls"
 else
-  echo "skip: stripped fixtures (llvm-strip が PATH に無い)" >&2
+  echo "skip: stripped fixtures (llvm-strip not on PATH)" >&2
 fi
 # A value just stored into a slot feeds its reader directly.
-fwd=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_till_neg 2>/dev/null)
+fwd=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
 echo "$fwd" | grep -q "x8 = local_3;" && fail "store not forwarded"
 echo "$fwd" | grep -q "x8 = w8;"      || fail "forwarded value missing"
-entry_fwd=$("$BIN" decompile $FIX/pe64.exe --name /entry 2>/dev/null)
+pe_entry=$("$BIN" functions $FIX/pe64.exe --json 2>/dev/null | sed -n 's/.*"entry": "\(0x[0-9a-f]*\)".*/\1/p')
+entry_fwd=$("$BIN" decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
 echo "$entry_fwd" | grep -q "local_" && fail "dead slot kept in the entry"
 echo "$entry_fwd" | grep -q "return \*(uint64_t \*)(rsp + 0x8);" || fail "stack argument read"
 ok "stored values forwarded"
@@ -480,15 +481,15 @@ ok "stored values forwarded"
 
 
 
-entry_ir=$("$BIN" decompile $FIX/pe64.exe --name /entry 2>/dev/null)
+entry_ir=$("$BIN" decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
 echo "$entry_ir" | grep -q "rax = local_0;" && fail "dead frame load removed"
 echo "$entry_ir" | grep -q "return \*(uint64_t \*)(rsp + 0x8);" || fail "stack argument read kept as an address"
 echo "$entry_ir" | grep -q "local_2" && fail "spurious slot after settling"
 ok "dead frame loads"
-moved_ir=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_until 2>/dev/null)
+moved_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$moved_ir" | grep -q "x8 = 0x1;" && fail "dead store before the loop"
 echo "$moved_ir" | grep -q "local_1 = 0x1;" || fail "live store before the loop"
-live_ir=$("$BIN" decompile $FIX/cpp_demo.o --name "use(int)" 2>/dev/null)
+live_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 if [ "$cpp_calibrated" = 1 ]; then
   echo "$live_ir" | grep -q "x19 = a0;" || fail "definition kept across a call"
 else
@@ -498,16 +499,16 @@ fi
 ok "flow-sensitive dead stores"
 
 
-pair_ir=$("$BIN" decompile $FIX/arm64.o --name pair_sum 2>/dev/null)
+pair_ir=$("$BIN" decompile $FIX/arm64.o pair_sum 2>/dev/null)
 echo "$pair_ir" | grep -q "a0->field_0x0"   || fail "member access at offset zero"
 echo "$pair_ir" | grep -q "a0->field_0x4"   || fail "member access at offset four"
 echo "$pair_ir" | grep -q "\*(uint32_t \*)" && fail "member access keeps the cast"
 ok "pointer members"
-msg_ir=$("$BIN" decompile $FIX/pe64.exe --name msg_first 2>/dev/null)
+msg_ir=$("$BIN" decompile $FIX/pe64.exe msg_first 2>/dev/null)
 echo "$msg_ir" | grep -q "qword_140003000" || fail "global named by width and address"
 echo "$msg_ir" | grep -q "(0x140003000)" && fail "global name replaces the address"
 ok "named globals"
-bits_ir=$("$BIN" decompile $FIX/arm64_loops0.o --name count_bits 2>/dev/null)
+bits_ir=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$bits_ir" | grep -Eq "local_[0-9]+ \+= (local_[0-9]+ & 0x1|w[0-9]+);" || fail "compound add"
 echo "$bits_ir" | grep -Eq "& 0x1;" || fail "compound add operand"
 echo "$bits_ir" | grep -Eq "local_[0-9]+ >>= 0x1;"            || fail "compound shift"
@@ -550,12 +551,12 @@ ok "compound assignment"
 
 ok "decompile sum3"
 
-ch=$("$BIN" decompile $FIX/arm64.o --name helper 2>/dev/null)
+ch=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$ch" | grep -q "if (a0 < 0x1)"         || fail "decompile helper branch"
 echo "$ch" | grep -q "return "               || fail "decompile helper return"
 ok "decompile helper"
 
-ca=$("$BIN" decompile $FIX/arm64.o --name sum_arr 2>/dev/null)
+ca=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$ca" | grep -q "uint32_t \*a0"         || fail "pointer parameter typing"
 echo "$ca" | grep -q "unsupported (2 steps): MOVI" || fail "decompile sum_arr unsupported note"
 echo "$ca" | grep -q "SIMD vector pair"      || fail "decompile sum_arr simd note"
@@ -564,103 +565,106 @@ echo "$ca" | grep -q "do {"                  || fail "decompile sum_arr loop"
 echo "$ca" | grep -q "} while ("             || fail "decompile sum_arr loop condition"
 ok "decompile sum_arr"
 
-# 6) x86-64 のリフトと疑似 C
-x86_ir=$("$BIN" lift $FIX/pe64.exe --name reg_add 2>/dev/null)
-echo "$x86_ir" | grep -q "eax = "                 || fail "x86 lift reg_add"
-echo "$x86_ir" | grep -q "ret eax"                || fail "x86 lift ret"
-ok "x86 lift reg_add"
+# 6) x86-64 IR and pseudo-C
+x86_ir=$("$BIN" ir $FIX/pe64.exe reg_add 2>/dev/null)
+echo "$x86_ir" | grep -q "eax = "                 || fail "x86 ir reg_add"
+echo "$x86_ir" | grep -q "ret eax"                || fail "x86 ir ret"
+ok "x86 ir reg_add"
 
-x86_mul=$("$BIN" lift $FIX/pe64.exe --name reg_mul 2>/dev/null)
-echo "$x86_mul" | grep -q " \* "                 || fail "x86 lift imul"
-ok "x86 lift imul"
+x86_mul=$("$BIN" ir $FIX/pe64.exe reg_mul 2>/dev/null)
+echo "$x86_mul" | grep -q " \* "                 || fail "x86 ir imul"
+ok "x86 ir imul"
 
-x86_sign=$("$BIN" decompile $FIX/pe64.exe --name reg_sign 2>/dev/null)
+x86_sign=$("$BIN" decompile $FIX/pe64.exe reg_sign 2>/dev/null)
 echo "$x86_sign" | grep -q "int8_t"             || fail "x86 movsx byte"
 echo "$x86_sign" | grep -q "int16_t"            || fail "x86 movsx word"
 ok "x86 lift sign extension"
 
-x86_max=$("$BIN" decompile $FIX/pe64.exe --name reg_max 2>/dev/null)
+x86_max=$("$BIN" decompile $FIX/pe64.exe reg_max 2>/dev/null)
 echo "$x86_max" | grep -q " ? "              || fail "x86 cmov select"
-x86_abs=$("$BIN" decompile $FIX/pe64.exe --name reg_abs 2>/dev/null)
+x86_abs=$("$BIN" decompile $FIX/pe64.exe reg_abs 2>/dev/null)
 echo "$x86_abs" | grep -q " ? "              || fail "x86 neg/cmov select"
 if echo "$x86_abs" | grep -q "unsupported: cmov"; then fail "x86 cmov unresolved"; fi
 ok "x86 cmov / setcc"
 
-x86_div=$("$BIN" decompile $FIX/pe64.exe --name reg_div 2>/dev/null)
+x86_div=$("$BIN" decompile $FIX/pe64.exe reg_div 2>/dev/null)
 echo "$x86_div" | grep -q " / "              || fail "x86 idiv quotient"
-x86_mod=$("$BIN" decompile $FIX/pe64.exe --name reg_mod 2>/dev/null)
+x86_mod=$("$BIN" decompile $FIX/pe64.exe reg_mod 2>/dev/null)
 echo "$x86_mod" | grep -q " % "              || fail "x86 idiv remainder"
 if echo "$x86_div" | grep -q "unsupported"; then fail "x86 idiv unresolved"; fi
 ok "x86 idiv"
 
-x86_c=$("$BIN" decompile $FIX/pe64.exe --name reg_add 2>/dev/null)
+x86_c=$("$BIN" decompile $FIX/pe64.exe reg_add 2>/dev/null)
 echo "$x86_c" | grep -q "uint32_t reg_add(uint32_t a0, uint32_t a1)" || fail "x86 decompile signature"
 echo "$x86_c" | grep -q "return eax;"             || fail "x86 decompile return"
 ok "x86 decompile"
 
-# 7) シグネチャ生成と同定(同型・別名の関数を形状で一致させる)
-"$BIN" siggen $FIX/arm64.o --output $FIX/sigs.json 2>/dev/null
-[ -s $FIX/sigs.json ]                          || fail "siggen output"
-grep -q '"name": "sum3"' $FIX/sigs.json        || fail "siggen entry sum3"
-ident=$("$BIN" identify $FIX/alt.o --sigs $FIX/sigs.json 2>/dev/null)
+# 7) build-signatures and identify (match same-shape functions under other names)
+"$BIN" build-signatures $FIX/arm64.o --output $FIX/sigs.json 2>/dev/null
+[ -s $FIX/sigs.json ]                          || fail "build-signatures output"
+grep -q '"name": "sum3"' $FIX/sigs.json        || fail "build-signatures entry sum3"
+ident=$("$BIN" identify $FIX/alt.o --signatures $FIX/sigs.json 2>/dev/null)
 echo "$ident" | grep -q "sum3"                      || fail "identify sum3 shape"
 echo "$ident" | grep -q "helper"                    || fail "identify helper shape"
 echo "$ident" | grep -q "identified 2 of 2"         || fail "identify count"
-ok "siggen / identify"
+ok "build-signatures / identify"
 
-# 8) while 構造化(ヘッダ条件 + 後方エッジ)
-loop_pc=$("$BIN" decompile $FIX/arm64_loops0.o --name count_bits 2>/dev/null)
+# 8) while structuring (header condition and back edge)
+loop_pc=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 if [ "$calibrated_ok" = 1 ]; then
   echo "$loop_pc" | grep -Eq "while \(local_[0-9]+ != 0x0\)" || fail "while structuring"
   echo "$loop_pc" | grep -q "if (x8 == 0x0) break;" && fail "while header folded"
-  loop_break=$("$BIN" decompile $FIX/arm64_loops0.o --name sum_until 2>/dev/null)
+  loop_break=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
   echo "$loop_break" | grep -q "if (w8 > w9) break;" || fail "while break condition"
   ok "while structuring"
 else
-  echo "skip: -O0 のループ構造化 (フィクスチャは $fixture_cc で生成)" >&2
+  echo "skip: -O0 loop structuring (fixtures built with $fixture_cc)" >&2
 fi
 
-# 9) データ参照(文字列)の復元
-msg=$("$BIN" decompile $FIX/pe64.exe --name msg_first 2>/dev/null)
+# 9) data (string) reference recovery
+msg=$("$BIN" decompile $FIX/pe64.exe msg_first 2>/dev/null)
 echo "$msg" | grep -q 'velk-ref-string'       || fail "string reference"
-msg_card=$("$BIN" fncard $FIX/pe64.exe --name msg_first 2>/dev/null)
+msg_card=$("$BIN" card $FIX/pe64.exe msg_first 2>/dev/null)
 echo "$msg_card" | grep -q 'velk-ref-string'  || fail "card string reference"
 echo "$msg_card" | grep -q 'velk_ref_string'   || fail "card name hint"
 ok "string references"
 
-# 10) 構造体アクセスの復元
-pair=$("$BIN" decompile $FIX/arm64.o --name pair_sum 2>/dev/null)
+# 10) struct access recovery
+pair=$("$BIN" decompile $FIX/arm64.o pair_sum 2>/dev/null)
 echo "$pair" | grep -q "struct: a0 +0x0:uint32_t, +0x4:uint32_t" || fail "struct access offsets"
-pair_card=$("$BIN" fncard $FIX/arm64.o --name pair_sum 2>/dev/null)
+pair_card=$("$BIN" card $FIX/arm64.o pair_sum 2>/dev/null)
 echo "$pair_card" | grep -q '"accesses"'    || fail "card struct accesses"
 ok "struct access recovery"
 
-# 11) AArch64 リンク済み ELF: adrp/add と文字列参照
+# 11) AArch64 linked ELF: adrp/add and string references
 if [ -f $FIX/arm64_linked.elf ]; then
-  linked=$("$BIN" decompile $FIX/arm64_linked.elf --name pick 2>/dev/null)
+  linked=$("$BIN" decompile $FIX/arm64_linked.elf pick 2>/dev/null)
   echo "$linked" | grep -q 'velk-aarch64-string' || fail "adrp string reference"
   ok "adrp / string reference"
 fi
 
-# 12) SIGGEN DB の自動適用
-"$BIN" siggen $FIX/arm64.o --output $FIX/sigs.json 2>/dev/null
-applied=$("$BIN" decompile $FIX/alt.o --name alt_sum3 --sigs $FIX/sigs.json 2>/dev/null)
+# 12) applying a signature database (--signatures)
+"$BIN" build-signatures $FIX/arm64.o --output $FIX/sigs.json 2>/dev/null
+applied=$("$BIN" decompile $FIX/alt.o alt_sum3 --signatures $FIX/sigs.json 2>/dev/null)
 echo "$applied" | grep -q "identified: sum3"  || fail "decompile signature matching"
-applied_card=$("$BIN" fncard $FIX/alt.o --name alt_sum3 --sigs $FIX/sigs.json 2>/dev/null)
+applied_card=$("$BIN" card $FIX/alt.o alt_sum3 --signatures $FIX/sigs.json 2>/dev/null)
 echo "$applied_card" | grep -q '"identified": "sum3"' || fail "card signature matching"
 ok "signature application"
 
-# 13) LLM 向けレポート(ドシエ + エビデンス ID)
-report=$("$BIN" report $FIX/arm64.o --name pair_sum 2>/dev/null)
-echo "$report" | grep -q '"evidence"'        || fail "report evidence"
-echo "$report" | grep -q '"signature"'       || fail "report signature"
-echo "$report" | grep -q 'uint32_t \*'      || fail "report typed param"
-echo "$report" | grep -q '"accesses"'        || fail "report accesses"
-ok "report dossier"
+# 13) typed pointer parameters and the script API (shape hash, signature)
+pair_c=$("$BIN" decompile $FIX/arm64.o pair_sum 2>/dev/null)
+echo "$pair_c" | grep -q 'uint32_t \*'           || fail "typed pointer parameter"
+script=$(mktemp)
+printf '%s\n' "const f = velk.open('$FIX/arm64.o').getFunction('pair_sum');" \
+  'console.log(f.shapeHash().length, f.signature().params.length);' > "$script"
+api=$("$BIN" run "$script" 2>/dev/null)
+rm -f "$script"
+[ "$api" = "16 1" ]                              || fail "script API (got: $api)"
+ok "script API"
 
-# 14) 拡張シフト付きアドレッシング(値テーブル型 switch)
+# 14) extend-and-shift addressing (value-table switch)
 if [ -f $FIX/arm64_switch.elf ]; then
-  sw=$("$BIN" decompile $FIX/arm64_switch.elf --name dispatch 2>/dev/null)
+  sw=$("$BIN" decompile $FIX/arm64_switch.elf dispatch 2>/dev/null)
   if [ "$calibrated_ok" = 1 ]; then
     echo "$sw" | grep -q "dword_200120\[w8\]"   || fail "extend-shift addressing as a table"
   fi
@@ -669,9 +673,9 @@ if [ -f $FIX/arm64_switch.elf ]; then
   ok "table-driven switch"
 fi
 
-# 15) 間接分岐ジャンプテーブルの switch 復元
+# 15) switch recovery from an indirect-branch jump table
 if [ -f $FIX/arm64_jumptable.elf ]; then
-  jt=$("$BIN" decompile $FIX/arm64_jumptable.elf --name d7 2>/dev/null)
+  jt=$("$BIN" decompile $FIX/arm64_jumptable.elf d7 2>/dev/null)
   echo "$jt" | grep -q "switch ("                 || fail "jump-table switch"
   echo "$jt" | grep -q "case 9:"                  || fail "jump-table cases"
   echo "$jt" | grep -q "case .*: goto" && fail "jump-table cases inlined"
@@ -683,49 +687,49 @@ if [ -f $FIX/arm64_jumptable.elf ]; then
   ok "jump-table switch"
 fi
 
-# 16) Go pclntab からの関数名復元(Go がある場合のみ)
+# 16) function names from the Go pclntab (only if Go is installed)
 if [ -f $FIX/go_stripped ]; then
-  go_json=$("$BIN" inspect $FIX/go_stripped --json 2>/dev/null)
-  echo "$go_json" | grep -q '"named_functions"'       || fail "go inspect"
-  go_list=$("$BIN" inspect $FIX/go_stripped --limit 5000 2>/dev/null)
+  go_json=$("$BIN" functions $FIX/go_stripped --json 2>/dev/null)
+  echo "$go_json" | grep -q '"functionCount"'         || fail "go functions"
+  go_list=$("$BIN" functions $FIX/go_stripped --limit 5000 2>/dev/null)
   echo "$go_list" | grep -q "main.twice"              || fail "go pclntab names"
-  go_card=$("$BIN" fncard $FIX/go_stripped --name main.twice 2>/dev/null)
-  echo "$go_card" | grep -q '"source": \['            || fail "go card"
-  echo "$go_card" | grep -q '"go"'                    || fail "go card source"
+  go_card=$("$BIN" card $FIX/go_stripped main.twice 2>/dev/null)
+  echo "$go_card" | grep -q '"nameSources": \['       || fail "go card"
+  echo "$go_card" | grep -q '"pclntab"'               || fail "go card source"
   ok "go pclntab"
 fi
 
-# 17) DWARF からの関数名・範囲復元
+# 17) function names and ranges from DWARF
 if [ -f $FIX/arm64_debug.elf ]; then
-  debug=$("$BIN" inspect $FIX/arm64_debug.elf 2>/dev/null)
+  debug=$("$BIN" functions $FIX/arm64_debug.elf 2>/dev/null)
   echo "$debug" | grep -q "symtab,dwarf"       || fail "dwarf merge"
   if [ -f $FIX/arm64_debug_stripped.elf ]; then
-    stripped=$("$BIN" inspect $FIX/arm64_debug_stripped.elf 2>/dev/null)
+    stripped=$("$BIN" functions $FIX/arm64_debug_stripped.elf 2>/dev/null)
     echo "$stripped" | grep -q "helper"        || fail "dwarf-only name"
     echo "$stripped" | grep -q "dwarf"         || fail "dwarf-only source"
-    stripped_pc=$("$BIN" decompile $FIX/arm64_debug_stripped.elf --name sum3 2>/dev/null)
+    stripped_pc=$("$BIN" decompile $FIX/arm64_debug_stripped.elf sum3 2>/dev/null)
     echo "$stripped_pc" | grep -q "int sum3(int a, int b, int c)" || fail "dwarf typed signature"
-    typed=$("$BIN" decompile $FIX/arm64_debug.elf --name pair_sum 2>/dev/null)
+    typed=$("$BIN" decompile $FIX/arm64_debug.elf pair_sum 2>/dev/null)
     echo "$typed" | grep -q "struct pair \*p"  || fail "dwarf struct parameter"
-    typed_arr=$("$BIN" decompile $FIX/arm64_debug.elf --name sum_arr 2>/dev/null)
+    typed_arr=$("$BIN" decompile $FIX/arm64_debug.elf sum_arr 2>/dev/null)
     echo "$typed_arr" | grep -q "int \*p, int n" || fail "dwarf array parameter"
   fi
   ok "dwarf names"
 fi
 
-# 18) Rust / C++ デマングリング
+# 18) Rust / C++ demangling
 if [ -f $FIX/rust_demo ]; then
-  rust_list=$("$BIN" inspect $FIX/rust_demo 2>/dev/null)
+  rust_list=$("$BIN" functions $FIX/rust_demo 2>/dev/null)
   echo "$rust_list" | grep -q "rust_demo::"   || fail "rust demangling"
   ok "rust demangling"
 fi
 if [ -f $FIX/cpp_demo.o ]; then
-  cpp_list=$("$BIN" inspect $FIX/cpp_demo.o 2>/dev/null)
+  cpp_list=$("$BIN" functions $FIX/cpp_demo.o 2>/dev/null)
   echo "$cpp_list" | grep -q "ns::add(int, int)" || fail "c++ demangling"
   ok "c++ demangling"
 fi
 
-# 19) MCP stdio サーバ
+# 19) MCP stdio server
 mcp_out=$(printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
@@ -740,13 +744,13 @@ echo "$mcp_out" | grep -q 'interface Func'    || fail "mcp api docs"
 echo "$mcp_out" | grep -q 'timed out'         || fail "mcp script timeout"
 ok "mcp server"
 
-# 20) 性能回帰(短い反復でしきい値のみ確認)
-# エミュレーション上の計測は意味がないので、正本では VELK_BENCH=0 で飛ばす。
+# 20) performance regression (a few iterations, limits only)
+# Timings under emulation are meaningless, so the canonical run sets VELK_BENCH=0.
 if [ "${VELK_BENCH:-1}" = 1 ]; then
   ITER=10 ./tests/bench.sh >/dev/null 2>&1 || fail "performance bench"
   ok "performance bench"
 else
-  echo "skip: 性能計測 (VELK_BENCH=0)" >&2
+  echo "skip: performance bench (VELK_BENCH=0)" >&2
 fi
 
 echo "smoke: all checks passed"
