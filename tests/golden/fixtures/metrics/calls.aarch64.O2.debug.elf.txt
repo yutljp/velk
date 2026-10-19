@@ -287,8 +287,8 @@ fn is_even @ 0x2103ec (size 20)
 == 0x210400 sum9
 -- decompile
 /* velk pseudo-C: sum9 @ 0x210400 */
-long sum9(long a, long b, long c, long d, long e, long f, long g, long h) {
-    return b + a + (c + d) + (e + f + g) + (h + *(uint64_t *)(sp));
+long sum9(long a, long b, long c, long d, long e, long f, long g, long h, long i) {
+    return b + a + (c + d) + (e + f + g) + (h + i);
 }
 -- signature
 long (long a, long b, long c, long d, long e, long f, long g, long h)
@@ -326,7 +326,7 @@ fn call_sum9 @ 0x210428 (size 64)
 == 0x210468 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x210468 */
-int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
+int sum_varargs(int count, ...) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-8] */
     uint64_t local_2; /* [sp-58] */
@@ -357,12 +357,12 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
 
     local_0 = sp - 0x60;
     local_1 = 0xffffff80ffffffc8;
-    local_2 = a1;
-    local_3 = a2;
-    local_4 = a3;
-    local_5 = a4;
-    local_6 = a5;
-    local_7 = a6;
+    local_2 = x1;
+    local_3 = x2;
+    local_4 = x3;
+    local_5 = x4;
+    local_6 = x5;
+    local_7 = x6;
     local_8 = d0;
     local_9 = v0_hi;
     local_10 = d1;
@@ -380,7 +380,7 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
     local_22 = d7;
     local_23 = v7_hi;
     local_24 = &local_26;
-    local_25 = a7;
+    local_25 = x7;
     local_26 = sp;
     if (count < 0x1) {
         v3 = 0x0;
@@ -416,7 +416,7 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
     return v3;
 }
 -- signature
-int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int (int count)
 -- references
 
 -- ir

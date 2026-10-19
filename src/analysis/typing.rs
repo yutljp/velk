@@ -597,6 +597,144 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
     ir.ret_type = CType::int(bytes, false);
 }
 
+/// Where each declared parameter lives, as the calling convention places
+/// it: in registers (several for a structure up to 16 bytes) or in the
+/// caller's frame. The debug info's signature replaces the recovered one,
+/// unused parameters included; a parameter the convention does not
+/// describe here keeps the recovered placement.
+fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut FunctionIr) {
+    use crate::ir::{Convention, StackParam};
+    let convention = ir.convention;
+    if convention == Convention::GoAmd64 {
+        return;
+    }
+    let integers = convention.arguments();
+    let floats = convention.float_arguments();
+    let recovered: std::collections::HashMap<u16, Param> = ir
+        .params
+        .iter()
+        .map(|param| (param.index, param.clone()))
+        .collect();
+    let (mut next_int, mut next_float) = (0usize, 0usize);
+    let mut stack = match convention {
+        Convention::SysV => 8,
+        Convention::Win64 => 40,
+        Convention::Aapcs64 | Convention::GoAmd64 => 0,
+    };
+    let mut params = Vec::new();
+    let mut stack_params = Vec::new();
+    // A structure returned through memory comes back to the address the
+    // caller passes first, ahead of the declared parameters.
+    let hidden = types
+        .ret_aggregate_size
+        .is_some_and(|size| returned_in_memory(convention, size));
+    if let (true, Some(ret)) = (hidden, &types.ret) {
+        params.push(Param {
+            index: integers[0],
+            name: "result".to_owned(),
+            ty: CType::pointer_to(ret.clone()),
+        });
+        next_int = 1;
+    }
+    let round = |size: u64| size.div_ceil(8) * 8;
+    for (position, ((name, ty), size)) in types
+        .params
+        .iter()
+        .zip(
+            types
+                .param_aggregate_sizes
+                .iter()
+                .chain(std::iter::repeat(&None)),
+        )
+        .enumerate()
+    {
+        let float = ty.as_ref().is_some_and(CType::is_sse_float);
+        // The parameter's place, counting a leading result pointer.
+        let index = position + usize::from(hidden);
+        let name = name.clone().unwrap_or_else(|| format!("a{index}"));
+        let ty = ty.clone().unwrap_or(CType::U64);
+        // The registers a parameter takes, or None for the stack.
+        let registers: Option<Vec<u16>> = match convention {
+            // Windows passes the first four by position, a structure that
+            // is not 1, 2, 4 or 8 bytes by reference.
+            Convention::Win64 => (index < 4).then(|| {
+                vec![if float {
+                    floats[index]
+                } else {
+                    integers[index]
+                }]
+            }),
+            _ => match size {
+                // Larger structures go in memory on System V and by
+                // reference on AArch64.
+                Some(size) if *size > 16 && convention == Convention::SysV => None,
+                Some(size) if *size > 16 => (next_int < integers.len()).then(|| {
+                    next_int += 1;
+                    vec![integers[next_int - 1]]
+                }),
+                Some(size) => {
+                    let needed = size.div_ceil(8) as usize;
+                    (next_int + needed <= integers.len()).then(|| {
+                        next_int += needed;
+                        integers[next_int - needed..next_int].to_vec()
+                    })
+                }
+                None if float => (next_float < floats.len()).then(|| {
+                    next_float += 1;
+                    vec![floats[next_float - 1]]
+                }),
+                None => (next_int < integers.len()).then(|| {
+                    next_int += 1;
+                    vec![integers[next_int - 1]]
+                }),
+            },
+        };
+        match registers {
+            Some(registers) => {
+                for (part, register) in registers.iter().enumerate() {
+                    let ty = if part == 0 { ty.clone() } else { CType::U64 };
+                    let name = if part == 0 {
+                        name.clone()
+                    } else {
+                        format!("{name}_{part}")
+                    };
+                    params.push(Param {
+                        index: *register,
+                        name,
+                        ty,
+                    });
+                }
+            }
+            None => {
+                let bytes = size.unwrap_or(8);
+                stack_params.push(StackParam {
+                    offset: stack,
+                    size: bytes,
+                    name,
+                    ty,
+                    position: index,
+                });
+                stack += round(bytes) as i64;
+            }
+        }
+    }
+    // Registers the body reads that the declaration does not name keep
+    // their recovered parameter, unless the function is variadic, whose
+    // further arguments those are.
+    if !types.variadic {
+        for param in recovered.values() {
+            if !params.iter().any(|placed| placed.index == param.index)
+                && !integers.contains(&param.index)
+                && !floats.contains(&param.index)
+            {
+                params.push(param.clone());
+            }
+        }
+    }
+    ir.params = params;
+    ir.stack_params = stack_params;
+}
+
 /// Whether a structure of `size` bytes is returned through memory the
 /// caller provides, at an address passed as the first argument.
 fn returned_in_memory(convention: crate::ir::Convention, size: u64) -> bool {
@@ -616,50 +754,24 @@ pub(crate) fn apply_dwarf_types(
     let Some(types) = types else {
         return;
     };
-    ir.members = types.members;
-    if !types.params.is_empty() {
-        // Debug info only renames, retypes and orders the recovered
-        // parameters; it never adds or drops any. A float parameter takes
-        // the next floating-point register, any other the next integer one.
-        let floats: Vec<u16> = ir.convention.float_arguments().to_vec();
-        let (mut float_params, mut int_params): (Vec<Param>, Vec<Param>) = ir
-            .params
-            .iter()
-            .cloned()
-            .partition(|param| floats.contains(&param.index));
-        float_params.reverse();
-        int_params.reverse();
-        let mut params = Vec::new();
-        // A structure returned through memory comes back to the address the
-        // caller passes first, ahead of the declared parameters.
-        if let (Some(size), Some(ret)) = (types.ret_aggregate_size, &types.ret)
-            && returned_in_memory(ir.convention, size)
-            && let Some(mut hidden) = int_params.pop()
-        {
-            hidden.name = "result".to_owned();
-            hidden.ty = CType::pointer_to(ret.clone());
-            params.push(hidden);
+    ir.members = types.members.clone();
+    // Only a declaration whose every parameter has a type the debug info
+    // could read replaces the recovered signature; otherwise its names go
+    // onto the recovered parameters in order.
+    if types.params.iter().all(|(_, ty)| ty.is_some()) {
+        ir.variadic = types.variadic;
+        if !types.params.is_empty() || types.ret_aggregate_size.is_some() {
+            place_parameters(&types, ir);
         }
-        for (name, ty) in &types.params {
-            let float = ty.as_ref().is_some_and(CType::is_sse_float);
-            let Some(mut param) = (if float {
-                float_params.pop()
-            } else {
-                int_params.pop()
-            }) else {
-                continue;
-            };
+    } else {
+        for (param, (name, ty)) in ir.params.iter_mut().zip(&types.params) {
             if let Some(name) = name {
                 param.name = name.clone();
             }
             if let Some(ty) = ty {
                 param.ty = ty.clone();
             }
-            params.push(param);
         }
-        params.extend(int_params.into_iter().rev());
-        params.extend(float_params.into_iter().rev());
-        ir.params = params;
     }
     if let Some(ret) = types.ret {
         ir.ret_type = ret;

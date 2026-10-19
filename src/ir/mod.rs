@@ -5,7 +5,7 @@ pub(crate) mod semantics;
 mod types;
 pub mod visit;
 
-pub use types::{Access, CType, Member, Param};
+pub use types::{Access, CType, Member, Param, StackParam};
 
 /// The integer calling convention a call follows: which registers carry
 /// its arguments and which it may overwrite.
@@ -826,6 +826,10 @@ pub struct FunctionIr {
     /// The calling convention the function itself follows.
     pub convention: Convention,
     pub params: Vec<Param>,
+    /// Parameters the debug info places in the caller's stack frame.
+    pub stack_params: Vec<StackParam>,
+    /// The debug info declares further, variadic, parameters.
+    pub variadic: bool,
     pub ret_type: CType,
     pub accesses: Vec<Access>,
     /// Structure fields the debug info names.
@@ -845,6 +849,8 @@ impl FunctionIr {
             isa,
             convention: Convention::of(isa, crate::loader::Format::Elf, false),
             params: Vec::new(),
+            stack_params: Vec::new(),
+            variadic: false,
             ret_type: CType::U64,
             accesses: Vec::new(),
             members: Vec::new(),

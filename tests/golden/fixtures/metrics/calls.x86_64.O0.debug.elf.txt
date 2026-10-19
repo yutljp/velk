@@ -248,15 +248,11 @@ fn is_even @ 0x201460 (size 57)
 == 0x2014a0 sum9
 -- decompile
 /* velk pseudo-C: sum9 @ 0x2014a0 */
-long sum9(long a, long b, long c, long d, long e, long f) {
-    uint64_t local_0; /* [sp+18] */
-    uint64_t local_1; /* [sp+10] */
-    uint64_t local_2; /* [sp+8] */
-
-    v1 = local_0;
-    v2 = local_1;
-    v3 = local_2;
-    return a + b + c + d + e + f + local_2 + local_1 + local_0;
+long sum9(long a, long b, long c, long d, long e, long f, long g, long h, long i) {
+    v1 = i;
+    v2 = h;
+    v3 = g;
+    return a + b + c + d + e + f + g + h + i;
 }
 -- signature
 long (long a, long b, long c, long d, long e, long f)
@@ -306,7 +302,8 @@ fn call_sum9 @ 0x2014f0 (size 80)
 == 0x201540 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x201540 */
-int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int64_t a5) {
+/* struct: rcx +0x0:uint32_t, +0x8:uint64_t */
+int sum_varargs(int count, ...) {
     uint64_t local_0; /* [sp-b8] */
     uint64_t local_1; /* [sp-b0] */
     uint64_t local_2; /* [sp-a8] */
@@ -354,11 +351,11 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
         local_14 = xmm7;
         local_15 = xmm7_hi;
     }
-    local_16 = a5;
-    local_17 = a4;
-    local_18 = a3;
-    local_19 = a2;
-    local_20 = a1;
+    local_16 = r9;
+    local_17 = r8;
+    local_18 = rcx;
+    local_19 = rdx;
+    local_20 = rsi;
     local_21 = count;
     v1 = &local_25;
     *(uint64_t *)(v1 + 0x10) = rsp - 0xe8;
@@ -389,7 +386,7 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     return local_22;
 }
 -- signature
-int (int count, int64_t a1, int64_t a2, uint32_t * a3, int64_t a4, int64_t a5)
+int (int count)
 -- references
 
 -- ir
@@ -453,4 +450,4 @@ fn sum_varargs @ 0x201540 (size 296)
   blk8 @ 0x20165c:
     ret load32((rsp + #0xffffffffffffffd4))
 -- card
-{"accesses":["a3 +0x0:uint32_t, +0x8:uint64_t"],"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":296,"unsupported":0}
+{"accesses":["rcx +0x0:uint32_t, +0x8:uint64_t"],"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":296,"unsupported":0}

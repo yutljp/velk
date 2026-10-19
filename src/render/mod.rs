@@ -254,20 +254,38 @@ fn update_of_same_location<'e>(
 }
 
 pub(crate) fn signature(ir: &FunctionIr) -> String {
-    if ir.params.is_empty() {
+    let declare = |ty: &CType, name: &str| {
+        if ty.is_pointer() {
+            format!("{ty}{name}")
+        } else {
+            format!("{ty} {name}")
+        }
+    };
+    // Parameters in the caller's frame take their declared places among the
+    // register ones.
+    let mut registers = ir.params.iter();
+    let mut parts = Vec::new();
+    for position in 0..ir.params.len() + ir.stack_params.len() {
+        match ir
+            .stack_params
+            .iter()
+            .find(|param| param.position == position)
+        {
+            Some(param) => parts.push(declare(&param.ty, &param.name)),
+            None => {
+                if let Some(param) = registers.next() {
+                    parts.push(declare(&param.ty, &param.name));
+                }
+            }
+        }
+    }
+    if ir.variadic {
+        parts.push("...".to_owned());
+    }
+    if parts.is_empty() {
         return "void".to_owned();
     }
-    ir.params
-        .iter()
-        .map(|param| {
-            if param.ty.is_pointer() {
-                format!("{}{}", param.ty, param.name)
-            } else {
-                format!("{} {}", param.ty, param.name)
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(", ")
+    parts.join(", ")
 }
 
 fn indent(depth: usize, out: &mut String) {

@@ -165,6 +165,18 @@ pub struct Param {
     pub ty: CType,
 }
 
+/// A parameter passed in the caller's stack frame.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StackParam {
+    /// Where it lies, from the stack pointer on entry.
+    pub offset: i64,
+    pub size: u64,
+    pub name: String,
+    pub ty: CType,
+    /// Its place among all the parameters, the register ones included.
+    pub position: usize,
+}
+
 /// The fields a function reads or writes through one pointer parameter.
 #[derive(Debug, Clone)]
 pub struct Access {

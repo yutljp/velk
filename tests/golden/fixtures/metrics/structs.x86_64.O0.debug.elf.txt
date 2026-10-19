@@ -134,7 +134,7 @@ fn big_make @ 0x201310 (size 52)
 == 0x201350 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x201350 */
-long big_sum(void) {
+long big_sum(struct big value) {
     v1 = rsp + 0x8;
     return *(uint64_t *)(v1) + *(uint64_t *)(v1 + 0x8) + *(uint64_t *)(v1 + 0x10) + *(uint64_t *)(v1 + 0x18);
 }

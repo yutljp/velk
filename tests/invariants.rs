@@ -268,6 +268,12 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
         return HashSet::new();
     }
     let mut written: HashSet<u16> = ir.params.iter().map(|param| param.index).collect();
+    // A variadic function's further arguments arrive in the argument
+    // registers its declaration leaves unnamed.
+    if ir.variadic {
+        written.extend(ir.convention.arguments());
+        written.extend(ir.convention.float_arguments());
+    }
     let mut read = HashSet::new();
     for stmt in stmts() {
         match stmt {

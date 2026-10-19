@@ -265,8 +265,119 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
     }
 }
 
+/// The bits of one value an Or-tree puts back where they were: each term
+/// is `x & m` with contiguous `m`, or `((x >> k) & m) << k`; when the
+/// terms are disjoint and cover bits 0 up to some width, the tree is `x`
+/// within that width.
+fn reassembled(expr: &Expr) -> Option<Expr> {
+    use crate::ir::BinOp;
+    let mut terms = Vec::new();
+    let mut work = vec![expr];
+    while let Some(term) = work.pop() {
+        match term {
+            Expr::Bin {
+                op: BinOp::Or,
+                lhs,
+                rhs,
+            } => work.extend([lhs.as_ref(), rhs.as_ref()]),
+            other => terms.push(other),
+        }
+    }
+    if terms.len() < 2 {
+        return None;
+    }
+    // A contiguous run of ones: its lowest bit and how many.
+    let run = |mask: u64| -> Option<(u32, u32)> {
+        if mask == 0 {
+            return None;
+        }
+        let low = mask.trailing_zeros();
+        let ones = (mask >> low).trailing_ones();
+        (ones == 64 || (mask >> low) >> ones == 0).then_some((low, ones))
+    };
+    let field = |term: &Expr| -> Option<(Expr, u32, u32)> {
+        match term {
+            Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } => {
+                let Expr::Const(mask) = rhs.as_ref() else {
+                    return None;
+                };
+                let (low, ones) = run(*mask)?;
+                Some((lhs.as_ref().clone(), low, ones))
+            }
+            Expr::Bin {
+                op: BinOp::Shl,
+                lhs,
+                rhs,
+            } => {
+                let (
+                    Expr::Const(up),
+                    Expr::Bin {
+                        op: BinOp::And,
+                        lhs: inner,
+                        rhs: mask,
+                    },
+                ) = (rhs.as_ref(), lhs.as_ref())
+                else {
+                    return None;
+                };
+                let (
+                    Expr::Const(mask),
+                    Expr::Bin {
+                        op: BinOp::Shr,
+                        lhs: source,
+                        rhs: down,
+                    },
+                ) = (mask.as_ref(), inner.as_ref())
+                else {
+                    return None;
+                };
+                let (0, ones) = run(*mask)? else {
+                    return None;
+                };
+                (matches!(down.as_ref(), Expr::Const(down) if down == up) && *up < 64).then(|| {
+                    (
+                        source.as_ref().clone(),
+                        *up as u32,
+                        ones.min(64 - *up as u32),
+                    )
+                })
+            }
+            _ => None,
+        }
+    };
+    let fields: Vec<(Expr, u32, u32)> = terms.into_iter().map(field).collect::<Option<_>>()?;
+    let source = fields[0].0.clone();
+    if fields.iter().any(|(value, ..)| *value != source) {
+        return None;
+    }
+    let mut ranges: Vec<(u32, u32)> = fields.iter().map(|(_, low, ones)| (*low, *ones)).collect();
+    ranges.sort_unstable();
+    let mut covered = 0;
+    for (low, ones) in ranges {
+        if low != covered {
+            return None;
+        }
+        covered += ones;
+    }
+    Some(if covered >= 64 {
+        source
+    } else {
+        Expr::bin(BinOp::And, source, Expr::constant((1 << covered) - 1))
+    })
+}
+
 /// Removes a double negation and the addition or subtraction of zero.
 pub(crate) fn algebraic(expr: Expr) -> Expr {
+    // Only where the operations around it see the same width.
+    if let Some(whole) = reassembled(&expr)
+        && crate::ir::semantics::width(&whole) == crate::ir::semantics::width(&expr)
+    {
+        return whole;
+    }
     let Expr::Bin { op, lhs, rhs } = &expr else {
         return expr;
     };

@@ -201,6 +201,8 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         isa: image.isa,
         convention: crate::ir::Convention::of(image.isa, image.format, image.go),
         params: signature.params,
+        stack_params: Vec::new(),
+        variadic: false,
         ret_type: match float_return {
             Some(precision) => crate::ir::CType::Named(
                 match precision {

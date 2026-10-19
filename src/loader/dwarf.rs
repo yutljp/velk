@@ -20,6 +20,10 @@ pub struct FunctionTypes {
     /// The size of a returned structure or union, which decides whether it
     /// comes back in registers or through memory the caller provides.
     pub ret_aggregate_size: Option<u64>,
+    /// The size of each parameter that is a structure or union.
+    pub param_aggregate_sizes: Vec<Option<u64>>,
+    /// Further, variadic, parameters follow the declared ones.
+    pub variadic: bool,
     /// The named fields of every structure in the unit.
     pub members: Vec<Member>,
 }
@@ -159,13 +163,23 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             };
             let depth = entry.depth();
             let mut params = Vec::new();
+            let mut param_aggregate_sizes = Vec::new();
+            let mut variadic = false;
             while let Ok(Some(child)) = entries.next_dfs() {
                 if child.depth() <= depth {
                     break;
                 }
+                if child.depth() == depth + 1 && child.tag() == gimli::DW_TAG_unspecified_parameters
+                {
+                    variadic = true;
+                }
                 if child.depth() != depth + 1 || child.tag() != gimli::DW_TAG_formal_parameter {
                     continue;
                 }
+                param_aggregate_sizes.push(match attribute(child, gimli::DW_AT_type) {
+                    Some(AttributeValue::UnitRef(offset)) => aggregate_size(&unit, offset, 8),
+                    _ => None,
+                });
                 let name = attribute(child, gimli::DW_AT_name)
                     .and_then(|value| attribute_string(&dwarf, &unit, value));
                 let ty = attribute(child, gimli::DW_AT_type)
@@ -183,6 +197,8 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 params,
                 ret,
                 ret_aggregate_size,
+                param_aggregate_sizes,
+                variadic,
                 members: structure_members(&dwarf, &unit),
             });
         }

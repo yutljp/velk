@@ -138,9 +138,9 @@ fn big_make @ 0x201280 (size 31)
 == 0x2012a0 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x2012a0 */
-long big_sum(void) {
-    v1 = *(uint64_t *)(rsp + 0x10) + *(uint64_t *)(rsp + 0x20);
-    xmm1 = (v1 | ((v1 >> 0x20) & 0xffffffff) << 0x20) + (*(uint64_t *)(rsp + 0x8) + *(uint64_t *)(rsp + 0x18));
+long big_sum(struct big value) {
+    v1 = value.b + value.d;
+    xmm1 = (v1 | ((v1 >> 0x20) & 0xffffffff) << 0x20) + (value.a + value.c);
     return xmm1;
 }
 -- signature
