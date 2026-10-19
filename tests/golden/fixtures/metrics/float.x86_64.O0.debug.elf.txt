@@ -201,8 +201,8 @@ L_20131f:
     rax = 0x0;
     rcx = 0x1;
     /* unsupported: Ucomisd at 0x201330 */
-    rax = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0);
-    local_2 = eax;
+    rax = 0x0;
+    local_2 = 0x0;
     return local_2;
 }
 -- signature
@@ -231,8 +231,8 @@ fn compare_doubles @ 0x2012f0 (size 79)
     rax = #0x0
     rcx = #0x1
     unsupported: Ucomisd at 0x201330
-    rax = (select hi #0x0, #0x0 ? #0x1, #0x0 & #0xffffffff)
-    store32((rax & #0xffffffff), (rsp + #0xffffffffffffffe4))
+    rax = #0x0
+    store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk3 @ 0x20133a:
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card

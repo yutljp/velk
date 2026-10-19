@@ -1,6 +1,7 @@
 pub mod cfg;
 #[cfg(test)]
 pub mod eval;
+pub(crate) mod semantics;
 mod types;
 pub mod visit;
 

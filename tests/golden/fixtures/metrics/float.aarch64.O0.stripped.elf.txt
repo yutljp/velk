@@ -158,10 +158,10 @@ int32_t sub_2102bc(void) {
     local_0 = 0xffffffff;
     return local_0;
 L_2102e8:
-    w8 = 0x0;
+    x8 = 0x0;
     /* unsupported: FCMP at 0x2102f4 */
-    w8 = (0x0 <= 0x0 ? 0x0 : 0x1);
-    local_0 = w8;
+    x8 = 0x0;
+    local_0 = 0x0;
     return local_0;
 }
 -- signature
@@ -183,8 +183,8 @@ fn <unnamed> @ 0x2102bc (size 84)
   blk3 @ 0x2102e8:
     x8 = #0x0
     unsupported: FCMP at 0x2102f4
-    x8 = (select le #0x0, #0x0 ? #0x0, #0x1 & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xffffffffffffffec))
+    x8 = #0x0
+    store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x210304
   blk4 @ 0x210304:
     ret load32((sp + #0xffffffffffffffec))

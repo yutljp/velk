@@ -7,6 +7,7 @@
 //! the statements.
 
 mod dom;
+pub mod sccp;
 
 use std::collections::{HashMap, HashSet};
 
@@ -315,6 +316,16 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
         implicit_reads,
         implicit_writes,
     })
+}
+
+/// Propagates constants across the function through its SSA form.
+pub fn propagate_constants(ir: &mut FunctionIr) {
+    let Some(mut ssa) = build(ir) else {
+        return;
+    };
+    if sccp::propagate(&mut ssa) {
+        *ir = lower(&ssa);
+    }
 }
 
 /// Leaves SSA form by giving every value its register back. Correct as long

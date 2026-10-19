@@ -163,13 +163,13 @@ fn <unnamed> @ 0x201280 (size 9)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 int32_t sub_201290(void) {
-    ecx = 0x0;
+    rcx = 0x0;
     /* unsupported: Ucomisd at 0x201292 */
-    ecx = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0) & 0xff;
+    rcx = 0x0;
     /* unsupported: Ucomisd at 0x201299 */
     rax = 0xffffffff;
-    rax = (0x0 <= 0x0 /* unsigned */ ? ecx : 0xffffffff);
-    return rax;
+    rax = 0x0;
+    return 0x0;
 }
 -- signature
 int32_t ()
@@ -180,10 +180,10 @@ fn <unnamed> @ 0x201290 (size 22)
   blk0 @ 0x201290:
     rcx = #0x0
     unsupported: Ucomisd at 0x201292
-    rcx = (select hi #0x0, #0x0 ? #0x1, #0x0 & #0xff)
+    rcx = #0x0
     unsupported: Ucomisd at 0x201299
     rax = #0xffffffff
-    rax = (select ls #0x0, #0x0 ? (rcx & #0xffffffff), #0xffffffff & #0xffffffff)
-    ret rax
+    rax = #0x0
+    ret #0x0
 -- card
 {"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":2}

@@ -157,10 +157,10 @@ int factorial(int n) {
         xmm6_hi = 0x0;
         /* unsupported (6 steps): Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3 */
         xmm1 = xmm6;
-        xmm1_hi = xmm6_hi;
+        xmm1_hi = 0x0;
         /* unsupported (7 steps): Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407 */
         xmm3 = xmm5;
-        xmm3_hi = xmm5_hi;
+        xmm3_hi = 0x0;
         /* unsupported (2 steps): Punpckldq at 0x201410, Paddd at 0x201414 */
         rax = ((eax - 0x8) & 0xffffffff);
     } while (eax != 0x0);
@@ -224,7 +224,7 @@ fn factorial @ 0x201370 (size 238)
     unsupported: Pmuludq at 0x2013df
     unsupported: Pshufd at 0x2013e3
     xmm1 = xmm6
-    xmm1_hi = xmm6_hi
+    xmm1_hi = #0x0
     unsupported: Punpckldq at 0x2013ec
     unsupported: Pshufd at 0x2013f0
     unsupported: Pmuludq at 0x2013f5
@@ -233,7 +233,7 @@ fn factorial @ 0x201370 (size 238)
     unsupported: Pmuludq at 0x201403
     unsupported: Pshufd at 0x201407
     xmm3 = xmm5
-    xmm3_hi = xmm5_hi
+    xmm3_hi = #0x0
     unsupported: Punpckldq at 0x201410
     unsupported: Paddd at 0x201414
     rax = (((rax & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)

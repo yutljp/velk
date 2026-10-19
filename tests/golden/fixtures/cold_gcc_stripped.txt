@@ -256,72 +256,66 @@ fn <unnamed> @ 0x11a0 (size 38)
 == 0x11d0 -
 -- decompile
 /* velk pseudo-C: sub_11d0 @ 0x11d0 */
-int64_t sub_11d0(void) {
-    rdi = 0x4010;
+int32_t sub_11d0(void) {
     rax = 0x4010;
-    if (0x4010 == 0x4010) {
-        return rax;
-    }
+    return 0x4010;
+L_11e3:
     rax = qword_3fe0;
     if (rax == 0x0) {
-        return rax;
+        return 0x4010;
     }
+L_11ef:
     goto *(rax);
 }
 -- signature
-int64_t ()
+int32_t ()
 -- references
 
 -- ir
 fn <unnamed> @ 0x11d0 (size 48)
   blk0 @ 0x11d0:
-    rdi = #0x4010
     rax = #0x4010
-    brif eq #0x4010, #0x4010 -> 0x11f8
+    br 0x11f8
   blk1 @ 0x11e3:
     rax = load64(#0x3fe0)
     brif eq rax, #0x0 -> 0x11f8
   blk2 @ 0x11ef:
     br rax
   blk3 @ 0x11f8:
-    ret rax
+    ret #0x4010
 -- card
 {"addr":"0x11d0","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x1200 -
 -- decompile
 /* velk pseudo-C: sub_1200 @ 0x1200 */
-int64_t sub_1200(void) {
-    rdi = 0x4010;
+int32_t sub_1200(void) {
     rax = 0x0;
-    rsi = 0x0;
-    if (0x0 == 0x0) {
-        return rax;
-    }
+    return 0x0;
+L_1224:
     rax = qword_3ff0;
     if (rax == 0x0) {
-        return rax;
+        return 0x0;
     }
+L_1230:
     goto *(rax);
 }
 -- signature
-int64_t ()
+int32_t ()
 -- references
 
 -- ir
 fn <unnamed> @ 0x1200 (size 64)
   blk0 @ 0x1200:
-    rdi = #0x4010
     rax = #0x0
-    rsi = #0x0
-    brif eq #0x0, #0x0 -> 0x1238
+    br 0x1238
   blk1 @ 0x1224:
     rax = load64(#0x3ff0)
     brif eq rax, #0x0 -> 0x1238
   blk2 @ 0x1230:
     br rax
   blk3 @ 0x1238:
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x1200","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
 

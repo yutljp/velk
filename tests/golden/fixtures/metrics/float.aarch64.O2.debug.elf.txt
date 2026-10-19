@@ -158,9 +158,9 @@ fn widen @ 0x210240 (size 12)
 /* velk pseudo-C: compare_doubles @ 0x21024c */
 int compare_doubles(void) {
     /* unsupported: FCMP at 0x21024c */
-    w8 = (0x0 > 0x0 ? 0x1 : 0x0);
-    w0 = (w8 >= 0x0 ? w8 : 0xffffffff);
-    return w0;
+    w8 = 0x0;
+    w0 = 0x0;
+    return 0x0;
 }
 -- signature
 int ()
@@ -170,8 +170,8 @@ int ()
 fn compare_doubles @ 0x21024c (size 16)
   blk0 @ 0x21024c:
     unsupported: FCMP at 0x21024c
-    w8 = select gt #0x0, #0x0 ? #0x1, #0x0
-    w0 = select ge w8, #0x0 ? w8, #0xffffffff
-    ret w0
+    w8 = #0x0
+    w0 = #0x0
+    ret #0x0
 -- card
 {"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":1}

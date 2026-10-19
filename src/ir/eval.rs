@@ -8,7 +8,8 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use super::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
+use super::semantics::{holds, mask, operand_width, sign_extend};
+use super::{BinOp, Block, Expr, FunctionIr, RegRef, Stmt};
 
 pub const STACK_TOP: u64 = 0x7fff_ff00_0000;
 const STACK_SPAN: u64 = 1 << 24;
@@ -115,80 +116,6 @@ pub fn hash(seed: u64, key: u64) -> u64 {
     value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
     value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
     value ^ (value >> 31)
-}
-
-fn mask(bits: u32) -> u64 {
-    if bits >= 64 {
-        u64::MAX
-    } else {
-        (1u64 << bits) - 1
-    }
-}
-
-fn sign_extend(value: u64, bits: u32) -> i64 {
-    if bits >= 64 {
-        value as i64
-    } else {
-        let shift = 64 - bits;
-        ((value << shift) as i64) >> shift
-    }
-}
-
-/// The width, in bits, at which an expression's value is meaningful; 0 for a constant.
-fn width(expr: &Expr) -> u32 {
-    match expr {
-        Expr::Reg { width, .. } => u32::from(*width),
-        Expr::Const(_) => 0,
-        Expr::Load { width, signed, .. } => {
-            if *signed {
-                64
-            } else {
-                u32::from(*width) * 8
-            }
-        }
-        Expr::SignExtend { .. } => 64,
-        Expr::Bin {
-            op: BinOp::And,
-            lhs,
-            rhs,
-        } => match rhs.as_ref() {
-            Expr::Const(value) if value.wrapping_add(1).is_power_of_two() => value.count_ones(),
-            _ => width(lhs).max(width(rhs)),
-        },
-        Expr::Bin { lhs, rhs, .. } => width(lhs).max(width(rhs)),
-        Expr::Select { then, els, .. } => width(then).max(width(els)),
-    }
-}
-
-fn operand_width(lhs: &Expr, rhs: &Expr) -> u32 {
-    match width(lhs).max(width(rhs)) {
-        0 => 64,
-        bits => bits,
-    }
-}
-
-fn holds(cond: Cond, a: u64, b: u64, bits: u32) -> bool {
-    let (a, b) = (a & mask(bits), b & mask(bits));
-    let (sa, sb) = (sign_extend(a, bits), sign_extend(b, bits));
-    let difference = a.wrapping_sub(b) & mask(bits);
-    let negative = sign_extend(difference, bits) < 0;
-    let overflow = ((a ^ b) & (a ^ difference)) >> (bits - 1) & 1 == 1;
-    match cond {
-        Cond::Eq => a == b,
-        Cond::Ne => a != b,
-        Cond::Cs => a >= b,
-        Cond::Cc => a < b,
-        Cond::Hi => a > b,
-        Cond::Ls => a <= b,
-        Cond::Ge => sa >= sb,
-        Cond::Lt => sa < sb,
-        Cond::Gt => sa > sb,
-        Cond::Le => sa <= sb,
-        Cond::Mi => negative,
-        Cond::Pl => !negative,
-        Cond::Vs => overflow,
-        Cond::Vc => !overflow,
-    }
 }
 
 impl Machine<'_> {
