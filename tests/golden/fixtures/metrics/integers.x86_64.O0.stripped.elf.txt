@@ -69,14 +69,14 @@ fn <unnamed> @ 0x2012a0 (size 32)
 == 0x2012c0 -
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
-uint32_t sub_2012c0(uint32_t a0, uint32_t a1) {
+uint64_t sub_2012c0(uint32_t a0, uint32_t a1) {
     rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
-    return (int32_t)(a0) - a1;
+    return (int64_t)(int32_t)(a0) - a1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+uint64_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir

@@ -161,7 +161,7 @@ int find_first(int *p, int n, int v) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x4);
         }
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x1c));
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x1c));
         if (*(uint32_t *)(*(uint64_t *)(rbp - 0x10) + rcx * 0x4) != *(uint32_t *)(rbp - 0x18)) { goto L_201330; }
         *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x1c);
         rsp = rsp + 0x8;

@@ -142,8 +142,8 @@ uint32_t sub_201360(uint32_t a0, uint32_t a1) {
     rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
-    rax = 0x202450 + ((int32_t)(a0 & 0x3) << 0x5);
-    return *(uint32_t *)(rax + (int32_t)(a1 & 0x7) * 0x4);
+    rax = 0x202450 + ((int64_t)(int32_t)(a0 & 0x3) << 0x5);
+    return *(uint32_t *)(rax + (int64_t)(int32_t)(a1 & 0x7) * 0x4);
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1)
@@ -164,17 +164,17 @@ fn <unnamed> @ 0x201360 (size 48)
 -- decompile
 /* velk pseudo-C: sub_201390 @ 0x201390 */
 /* ref: 0x202450 .bss */
-uint32_t sub_201390(uint32_t a0, uint32_t a1, uint32_t a2) {
+uint64_t sub_201390(uint32_t a0, uint32_t a1, uint32_t a2) {
     rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
     *(uint32_t *)(rbp - 0xc) = a2;
-    rax = 0x202450 + ((int32_t)(a0 & 0x3) << 0x5);
-    *(uint32_t *)(rax + (int32_t)(a1 & 0x7) * 0x4) = a2;
+    rax = 0x202450 + ((int64_t)(int32_t)(a0 & 0x3) << 0x5);
+    *(uint32_t *)(rax + (int64_t)(int32_t)(a1 & 0x7) * 0x4) = a2;
     return rax;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+uint64_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 0x202450 .bss
 -- ir

@@ -357,7 +357,7 @@ int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, u
     goto L_2104ec;
 L_2104c8:
     x13 = x10;
-    x10 = x9 + (int32_t)(x12);
+    x10 = x9 + (int64_t)(int32_t)(x12);
     for (;;) {
         count = count - 0x1;
         x12 = w11;
@@ -373,7 +373,7 @@ L_2104c8:
         } else {
             w11 = w12 + 0x8;
             *(uint32_t *)&local_1 = w11;
-            if (w12 <= 0xfffffffffffffff8 /* unsigned */) { goto L_2104c8; }
+            if (w12 <= 0xfffffff8 /* unsigned */) { goto L_2104c8; }
         }
         x13 = x10 + 0x8;
         local_10 = x13;
@@ -434,7 +434,7 @@ fn sum_varargs @ 0x210468 (size 188)
   blk6 @ 0x2104f8:
     w11 = ((x12 & #0xffffffff) + #0x8)
     store32(w11, (sp + #0xd8))
-    brif ls (x12 & #0xffffffff), #0xfffffffffffffff8 -> 0x2104c8
+    brif ls (x12 & #0xffffffff), #0xfffffff8 -> 0x2104c8
   blk7 @ 0x210508:
     x13 = (x10 + #0x8)
     store64(x13, (sp + #0xc0))

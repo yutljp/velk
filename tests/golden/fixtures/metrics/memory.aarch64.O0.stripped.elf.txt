@@ -180,7 +180,7 @@ uint32_t sub_21033c(uint32_t a0, uint32_t a1) {
     w9 = local_0 & 0x7;
     x8 = 0x220454;
     x8 = 0x220454 + (x10 << 0x5);
-    a0 = *(uint32_t *)(x8 + ((int32_t)(w9) << 0x2));
+    a0 = *(uint32_t *)(x8 + ((int64_t)(int32_t)(w9) << 0x2));
     return a0;
 }
 -- signature
@@ -220,7 +220,7 @@ uint64_t sub_210378(uint64_t a0, uint32_t a1, uint32_t a2) {
     w10 = local_1 & 0x7;
     x9 = 0x220454;
     x9 = 0x220454 + (x11 << 0x5);
-    *(uint32_t *)(x9 + ((int32_t)(w10) << 0x2)) = w8;
+    *(uint32_t *)(x9 + ((int64_t)(int32_t)(w10) << 0x2)) = w8;
     sp = sp + 0x10;
     return a0;
 }

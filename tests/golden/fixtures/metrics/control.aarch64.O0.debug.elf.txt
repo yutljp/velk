@@ -31,7 +31,7 @@ int matrix_trace(int *m, int n) {
                 break;
             }
             if (local_3 == local_4) {
-                local_2 += *(uint32_t *)(local_0 + ((int32_t)(local_3 * local_1 + local_4) << 0x2));
+                local_2 += *(uint32_t *)(local_0 + ((int64_t)(int32_t)(local_3 * local_1 + local_4) << 0x2));
             }
             local_4 += 0x1;
         }
@@ -329,7 +329,7 @@ int short_circuit(int *p, int n) {
     w9 = *(uint32_t *)(local_0) - 0x1;
     local_3 = 0x1;
     if (w9 != 0x0) {
-        local_3 = (*(uint32_t *)(local_0 + ((int32_t)(local_1 - 0x1) << 0x2)) - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
+        local_3 = (*(uint32_t *)(local_0 + ((int64_t)(int32_t)(local_1 - 0x1) << 0x2)) - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
         local_2 = local_3;
         return local_2 & 0x1;
     }

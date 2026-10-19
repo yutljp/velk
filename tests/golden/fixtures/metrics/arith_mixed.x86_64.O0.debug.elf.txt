@@ -97,7 +97,7 @@ int sum_arr(int *p, int n) {
     *(uint32_t *)(rbp - 0x10) = 0x0;
     *(uint32_t *)(rbp - 0x14) = 0x0;
     while (*(uint32_t *)(rbp - 0x14) < *(uint32_t *)(rbp - 0xc)) {
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
         *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
     }

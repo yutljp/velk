@@ -29,8 +29,8 @@ return void | x86_64.O0 | 123/148
 return void | x86_64.O2 | 141/145
 return width | aarch64.O0 | 103/120
 return width | aarch64.O2 | 107/117
-return width | x86_64.O0 | 108/117
-return width | x86_64.O2 | 110/117
+return width | x86_64.O0 | 109/117
+return width | x86_64.O2 | 111/117
 
 alt_names.aarch64.O0 0x21016c alt_sum3: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
 alt_names.aarch64.O0 0x210198 alt_helper: parameter 0 signedness differs
@@ -346,7 +346,7 @@ integers.aarch64.O2 0x210274 labs_value: ok
 integers.aarch64.O2 0x210280 mul_high: ok
 integers.x86_64.O0 0x201280 narrow_add: parameter 0 is 8 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.x86_64.O0 0x2012a0 widen_mul: parameter 0 is 8 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
-integers.x86_64.O0 0x2012c0 mixed_sign: parameter 0 signedness differs; returns 4 bytes, expected 8
+integers.x86_64.O0 0x2012c0 mixed_sign: parameter 0 signedness differs
 integers.x86_64.O0 0x2012e0 in_range: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; returns 4 bytes, expected 1
 integers.x86_64.O0 0x201320 rotate_left: ok
 integers.x86_64.O0 0x201350 popcount: ok
@@ -356,7 +356,7 @@ integers.x86_64.O0 0x201430 labs_value: parameter 0 signedness differs
 integers.x86_64.O0 0x201460 mul_high: ok
 integers.x86_64.O2 0x201210 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.x86_64.O2 0x201220 widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
-integers.x86_64.O2 0x201230 mixed_sign: parameter 0 signedness differs; returns 4 bytes, expected 8
+integers.x86_64.O2 0x201230 mixed_sign: parameter 0 signedness differs
 integers.x86_64.O2 0x201240 in_range: returns 8 bytes, expected 1
 integers.x86_64.O2 0x201250 rotate_left: ok
 integers.x86_64.O2 0x201260 popcount: ok
@@ -558,7 +558,7 @@ memory.x86_64.O0 0x201280 copy_bytes: parameter 0 is an unsigned 8-byte integer,
 memory.x86_64.O0 0x2012d0 fill_bytes: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; returns uint64_t, expected void
 memory.x86_64.O0 0x201320 string_length: parameter 0 is an unsigned 8-byte integer, expected a pointer
 memory.x86_64.O0 0x201360 grid_get: parameter 0 signedness differs; parameter 1 signedness differs
-memory.x86_64.O0 0x201390 grid_set: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; returns uint32_t, expected void
+memory.x86_64.O0 0x201390 grid_set: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; returns uint64_t, expected void
 memory.x86_64.O0 0x2013d0 pointer_distance: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer
 memory.x86_64.O0 0x2013f0 read_volatile: parameter 0 is an unsigned 8-byte integer, expected a pointer
 memory.x86_64.O0 0x201420 swap_ints: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer; returns uint64_t, expected void

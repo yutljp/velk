@@ -19,7 +19,7 @@ uint32_t sub_201180(uint32_t a0) {
     rax = eax - 0x4;
     if (eax + 0x4 > 0x4 /* unsigned */) { goto L_2011ec; }
     rcx = 0x200120;
-    rax = (int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
+    rax = (int64_t)(int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
     rax = rax + 0x200120;
     goto *(rax);
 }

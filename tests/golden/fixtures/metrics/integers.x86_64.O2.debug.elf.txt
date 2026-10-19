@@ -47,11 +47,11 @@ fn widen_mul @ 0x201220 (size 6)
 == 0x201230 mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x201230 */
-uint32_t mixed_sign(int a, uint32_t b) {
-    return (int32_t)(a) - b;
+uint64_t mixed_sign(int a, uint32_t b) {
+    return (int64_t)(int32_t)(a) - b;
 }
 -- signature
-uint32_t (int a, uint32_t b)
+uint64_t (int a, uint32_t b)
 -- references
 
 -- ir

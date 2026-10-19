@@ -137,11 +137,12 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
                 wide.push(WIDE_VALUE);
             }
         }
-        Expr::SignExtend { value, width } => {
-            if *width > 4 {
+        // The extension fills all 64 bits unless a mask narrows it again.
+        Expr::SignExtend { value, .. } => {
+            if !narrow {
                 wide.push(WIDE_VALUE);
             }
-            collect_wide_regs(value, narrow, wide);
+            collect_wide_regs(value, true, wide);
         }
         Expr::Select {
             lhs,

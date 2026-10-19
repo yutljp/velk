@@ -27,7 +27,7 @@ uint32_t sub_201330(uint32_t a0) {
     a0 = ((a0 - 0xa) & 0xffffffff);
     if (a0 > 0xf /* unsigned */) { goto L_2013c6; }
     rax = 0x200158;
-    rcx = (int32_t)(dword_200158[a0]);
+    rcx = (int64_t)(int32_t)(dword_200158[a0]);
     rcx = rcx + 0x200158;
     goto *(rcx);
 }

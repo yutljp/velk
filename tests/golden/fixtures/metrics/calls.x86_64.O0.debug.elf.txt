@@ -404,7 +404,7 @@ int sum_varargs(int count, uint64_t a1, uint32_t a2, uint32_t *a3, uint64_t a4, 
         if (eax <= 0x28 /* unsigned */) {
             a3 = *(uint64_t *)(rbp - 0xf0);
             a2 = *(uint32_t *)(rbp - 0xe4);
-            rax = (int32_t)(a2) + *(uint64_t *)(a3 + 0x10);
+            rax = (int64_t)(int32_t)(a2) + *(uint64_t *)(a3 + 0x10);
             a3->field_0x0 = a2 + 0x8;
             *(uint64_t *)(rbp - 0xf8) = rax;
         } else {

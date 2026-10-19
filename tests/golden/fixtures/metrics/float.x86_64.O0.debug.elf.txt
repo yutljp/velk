@@ -17,7 +17,7 @@ double average(double *values, int n) {
     *(uint32_t *)(rbp - 0x1c) = 0x0;
     while (*(uint32_t *)(rbp - 0x1c) < *(uint32_t *)(rbp - 0xc)) {
         rax = *(uint64_t *)(rbp - 0x8);
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x1c));
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x1c));
         /* unsupported (3 steps): Movsd at 0x20121e, Addsd at 0x201223, Movsd at 0x201228 */
         rax = *(uint32_t *)(rbp - 0x1c) + 0x1;
         *(uint32_t *)(rbp - 0x1c) = eax;

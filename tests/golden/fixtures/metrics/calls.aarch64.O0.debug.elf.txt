@@ -394,7 +394,7 @@ int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, u
         if (w8 > 0x0) {
             break;
         }
-        local_17 = local_11 + (int32_t)(local_16);
+        local_17 = local_11 + (int64_t)(int32_t)(local_16);
     L_2106b4:
         local_13 += *(uint32_t *)(local_17);
         local_14 += 0x1;

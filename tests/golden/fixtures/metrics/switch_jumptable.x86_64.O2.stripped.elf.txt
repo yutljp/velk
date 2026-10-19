@@ -9,7 +9,7 @@
 uint32_t sub_2011c0(uint32_t a0) {
     if (a0 > 0x9 /* unsigned */) { goto L_201376; }
     rcx = 0x200158;
-    rax = (int32_t)(dword_200158[a0]);
+    rax = (int64_t)(int32_t)(dword_200158[a0]);
     rax = rax + 0x200158;
     goto *(rax);
 }

@@ -11,7 +11,7 @@ uint32_t d7(uint32_t a0) {
         return eax;
     }
     rcx = 0x210;
-    rax = (int32_t)(dword_210[a0]);
+    rax = (int64_t)(int32_t)(dword_210[a0]);
     rax = rax + 0x210;
     goto *(rax);
 L_1b:

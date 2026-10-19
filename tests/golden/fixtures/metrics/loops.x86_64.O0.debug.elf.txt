@@ -97,7 +97,7 @@ int sum_till_neg(int *p, int n) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x10);
         }
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
         rax = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4);
         *(uint32_t *)(rbp - 0x18) = eax;
         if (eax >= 0x0) { goto L_201282; }
@@ -157,15 +157,15 @@ int sum_until_zero(int *p, int n) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x10);
         }
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
         if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) != 0x0) { goto L_2012dc; }
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x10);
     L_2012dc:
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
         if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) < 0x0) {
         } else {
-            rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+            rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
             *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
         }
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;

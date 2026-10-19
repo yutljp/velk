@@ -142,8 +142,8 @@ int grid_get(int row, int col) {
     rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = row;
     *(uint32_t *)(rbp - 0x8) = col;
-    rax = 0x202450 + ((int32_t)(row & 0x3) << 0x5);
-    return *(uint32_t *)(rax + (int32_t)(col & 0x7) * 0x4);
+    rax = 0x202450 + ((int64_t)(int32_t)(row & 0x3) << 0x5);
+    return *(uint32_t *)(rax + (int64_t)(int32_t)(col & 0x7) * 0x4);
 }
 -- signature
 int (int row, int col)
@@ -164,17 +164,17 @@ fn grid_get @ 0x201360 (size 47)
 -- decompile
 /* velk pseudo-C: grid_set @ 0x201390 */
 /* ref: 0x202450 .bss */
-uint32_t grid_set(int row, int col, int value) {
+uint64_t grid_set(int row, int col, int value) {
     rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = row;
     *(uint32_t *)(rbp - 0x8) = col;
     *(uint32_t *)(rbp - 0xc) = value;
-    rax = 0x202450 + ((int32_t)(row & 0x3) << 0x5);
-    *(uint32_t *)(rax + (int32_t)(col & 0x7) * 0x4) = value;
+    rax = 0x202450 + ((int64_t)(int32_t)(row & 0x3) << 0x5);
+    *(uint32_t *)(rax + (int64_t)(int32_t)(col & 0x7) * 0x4) = value;
     return rax;
 }
 -- signature
-uint32_t (int row, int col, int value)
+uint64_t (int row, int col, int value)
 -- references
 0x202450 .bss
 -- ir

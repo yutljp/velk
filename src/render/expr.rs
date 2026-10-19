@@ -309,6 +309,11 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
                 },
             }
         }
+        // A 32-bit value extends to 64 bits; a narrower one is promoted to
+        // int anyway, which is as far as C would take it.
+        Expr::SignExtend { value, width: 4 } => {
+            format!("(int64_t)(int32_t)({})", render_expr(value, ctx))
+        }
         Expr::SignExtend { value, width } => {
             format!("({})({})", type_of(*width, true), render_expr(value, ctx))
         }

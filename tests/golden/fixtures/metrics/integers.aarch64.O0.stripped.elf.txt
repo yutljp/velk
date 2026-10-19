@@ -49,7 +49,7 @@ fn <unnamed> @ 0x21024c (size 32)
 -- decompile
 /* velk pseudo-C: sub_21026c @ 0x21026c */
 uint64_t sub_21026c(uint64_t a0, uint32_t a1) {
-    return (int32_t)(a0) - a1;
+    return (int64_t)(int32_t)(a0) - a1;
 }
 -- signature
 uint64_t (uint64_t a0, uint32_t a1)

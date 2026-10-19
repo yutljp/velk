@@ -36,9 +36,9 @@ uint64_t sub_201270(uint64_t a0, uint32_t a1) {
     *(uint64_t *)(rbp - 0x18) = 0x0;
     *(uint32_t *)(rbp - 0x1c) = 0x0;
     while (*(uint32_t *)(rbp - 0x1c) < *(uint32_t *)(rbp - 0xc)) {
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
         rax = *(uint64_t *)(*(uint64_t *)(rbp - 0x8) + rcx + 0x8);
-        rdx = (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
+        rdx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
         rcx = (int16_t)(*(uint16_t *)(*(uint64_t *)(rbp - 0x8) + rdx + 0x10));
         rax = rax * rcx;
         *(uint64_t *)(rbp - 0x18) = rax + *(uint64_t *)(rbp - 0x18);

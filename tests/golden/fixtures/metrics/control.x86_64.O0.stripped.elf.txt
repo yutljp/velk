@@ -29,7 +29,7 @@ uint32_t sub_201230(uint64_t a0, uint32_t a1) {
                 break;
             }
             if (*(uint32_t *)(rbp - 0x14) == *(uint32_t *)(rbp - 0x18)) {
-                rcx = (int32_t)(*(uint32_t *)(rbp - 0x14) * *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x18));
+                rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14) * *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x18));
                 *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
             }
             *(uint32_t *)(rbp - 0x18) = *(uint32_t *)(rbp - 0x18) + 0x1;
@@ -152,7 +152,7 @@ uint32_t sub_201310(uint32_t a0) {
     rax = rax - 0x3;
     if (rax + 0x3 > 0x3 /* unsigned */) { goto L_20136f; }
     rcx = 0x200120;
-    rax = (int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
+    rax = (int64_t)(int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
     rax = rax + 0x200120;
     goto *(rax);
 }
@@ -328,7 +328,7 @@ uint32_t sub_201410(uint64_t a0, uint32_t a1) {
     *(uint8_t *)(rbp - 0xe) = rax & 0xff;
     if (t65 != 0x1) {
         rax = *(uint64_t *)(rbp - 0x8);
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0xc) - 0x1);
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0xc) - 0x1);
         t65 = *(uint32_t *)(rax + rcx * 0x4);
         rax = rax & 0xffffffffffffff00 | (*(uint32_t *)(rax + rcx * 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
         *(uint8_t *)(rbp - 0xe) = rax & 0xff;
@@ -396,10 +396,10 @@ uint32_t sub_201480(uint64_t a0, uint32_t a1) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x10);
         }
-        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
         if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) < 0x0) {
         } else {
-            rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+            rcx = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x14));
             *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
         }
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
@@ -458,8 +458,8 @@ uint32_t sub_2014e0(uint64_t a0, uint32_t a1, uint64_t a2) {
         *(uint32_t *)(rbp - 0x20) = *(uint32_t *)(rbp - 0x1c) + 0x1;
         for (;;) {
             if (*(uint32_t *)(rbp - 0x20) >= *(uint32_t *)(rbp - 0x14)) { goto L_20155a; }
-            a2 = (int32_t)(*(uint32_t *)(rbp - 0x20));
-            if (*(uint32_t *)(*(uint64_t *)(rbp - 0x10) + (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x4) + *(uint32_t *)(*(uint64_t *)(rbp - 0x10) + a2 * 0x4) != *(uint32_t *)(rbp - 0x18)) { goto L_201547; }
+            a2 = (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x20));
+            if (*(uint32_t *)(*(uint64_t *)(rbp - 0x10) + (int64_t)(int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x4) + *(uint32_t *)(*(uint64_t *)(rbp - 0x10) + a2 * 0x4) != *(uint32_t *)(rbp - 0x18)) { goto L_201547; }
             *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x1c) * *(uint32_t *)(rbp - 0x14) + *(uint32_t *)(rbp - 0x20);
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x4);

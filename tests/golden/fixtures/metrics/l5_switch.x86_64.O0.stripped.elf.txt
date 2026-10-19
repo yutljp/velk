@@ -37,7 +37,7 @@ uint32_t sub_201400(uint32_t a0) {
     rax = eax - 0xf;
     if (eax + 0xf > 0xf /* unsigned */) { goto L_2014d4; }
     rcx = 0x200158;
-    rax = (int32_t)(dword_200158[*(uint64_t *)(rbp - 0x10)]);
+    rax = (int64_t)(int32_t)(dword_200158[*(uint64_t *)(rbp - 0x10)]);
     rax = rax + 0x200158;
     goto *(rax);
 }

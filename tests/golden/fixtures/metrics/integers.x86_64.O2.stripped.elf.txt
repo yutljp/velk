@@ -47,11 +47,11 @@ fn <unnamed> @ 0x201220 (size 16)
 == 0x201230 -
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
-uint32_t sub_201230(uint32_t a0, uint32_t a1) {
-    return (int32_t)(a0) - a1;
+uint64_t sub_201230(uint32_t a0, uint32_t a1) {
+    return (int64_t)(int32_t)(a0) - a1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+uint64_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir

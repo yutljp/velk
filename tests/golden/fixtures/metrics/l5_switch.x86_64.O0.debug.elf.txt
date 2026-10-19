@@ -39,7 +39,7 @@ int dense(int x) {
         return dword_202760;
     }
     rcx = 0x200158;
-    rax = (int32_t)(dword_200158[*(uint64_t *)(rbp - 0x10)]);
+    rax = (int64_t)(int32_t)(dword_200158[*(uint64_t *)(rbp - 0x10)]);
     rax = rax + 0x200158;
     goto *(rax);
 L_201434:

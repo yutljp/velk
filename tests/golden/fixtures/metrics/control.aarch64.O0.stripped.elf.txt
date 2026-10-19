@@ -31,7 +31,7 @@ uint32_t sub_2101e4(uint32_t a0, uint32_t a1) {
                 break;
             }
             if (local_3 == local_4) {
-                local_2 += *(uint32_t *)(local_0 + ((int32_t)(local_3 * local_1 + local_4) << 0x2));
+                local_2 += *(uint32_t *)(local_0 + ((int64_t)(int32_t)(local_3 * local_1 + local_4) << 0x2));
             }
             local_4 += 0x1;
         }
@@ -329,7 +329,7 @@ uint32_t sub_210434(uint64_t a0, uint32_t a1) {
     w9 = *(uint32_t *)(local_0) - 0x1;
     local_3 = 0x1;
     if (w9 != 0x0) {
-        local_3 = (*(uint32_t *)(local_0 + ((int32_t)(local_1 - 0x1) << 0x2)) - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
+        local_3 = (*(uint32_t *)(local_0 + ((int64_t)(int32_t)(local_1 - 0x1) << 0x2)) - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
         local_2 = local_3;
         return local_2 & 0x1;
     }

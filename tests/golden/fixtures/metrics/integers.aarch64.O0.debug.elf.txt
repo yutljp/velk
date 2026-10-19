@@ -48,7 +48,7 @@ fn widen_mul @ 0x21024c (size 32)
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x21026c */
 uint64_t mixed_sign(int a, uint32_t b) {
-    return (int32_t)(a) - b;
+    return (int64_t)(int32_t)(a) - b;
 }
 -- signature
 uint64_t (int a, uint32_t b)

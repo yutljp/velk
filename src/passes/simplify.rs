@@ -35,6 +35,14 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             {
                 cancel_round_trip(lhs, width);
                 cancel_round_trip(rhs, width);
+                // A constant compares at the operands' width.
+                if width < 64 {
+                    for side in [&mut *lhs, &mut *rhs] {
+                        if let Expr::Const(value) = side {
+                            *value &= (1u64 << width) - 1;
+                        }
+                    }
+                }
             }
             if matches!(cond, crate::ir::Cond::Eq | crate::ir::Cond::Ne) {
                 move_offset_across(lhs, rhs);
