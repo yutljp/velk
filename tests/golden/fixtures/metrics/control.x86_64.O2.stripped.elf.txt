@@ -219,13 +219,7 @@ int32_t sub_201340(uint32_t a0) {
     int64_t v1;
 
     v1 = 0xffffffff;
-    switch (a0) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-        break;
-    default:
+    if (a0 > 0x3 /* unsigned */) {
         return v1;
     }
     v1 = dword_200120[a0];

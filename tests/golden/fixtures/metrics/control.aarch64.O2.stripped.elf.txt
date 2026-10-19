@@ -124,15 +124,10 @@ fn <unnamed> @ 0x210238 (size 32)
 /* velk pseudo-C: sub_210258 @ 0x210258 */
 /* ref: 0x200120 .rodata */
 int32_t sub_210258(uint32_t a0) {
-    switch (a0) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-        return dword_200120[a0];
-    default:
+    if (a0 > 0x3 /* unsigned */) {
         return 0xffffffff;
     }
+    return dword_200120[a0];
 }
 -- signature
 int32_t (uint32_t a0)

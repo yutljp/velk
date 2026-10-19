@@ -486,6 +486,11 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         if walk.failed || walk.cases.len() < 2 || walk.cases.len() > 256 {
             continue;
         }
+        // A range check sends every case one way: it stays an `if`.
+        let targets: std::collections::HashSet<u64> = walk.cases.values().copied().collect();
+        if targets.len() < 2 {
+            continue;
+        }
         let case_lo = *walk.cases.keys().next().unwrap();
         let case_hi = *walk.cases.keys().next_back().unwrap();
         if case_hi - case_lo + 1 != walk.cases.len() as i64 {

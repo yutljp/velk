@@ -1,4 +1,4 @@
-# metrics/l5_switch.x86_64.O2.stripped.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/l5_switch.x86_64.O2.stripped.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x201330 167 - unwind,prologue
 0x2013e0 8 - unwind,prologue
 0x2013f0 8 - unwind,prologue
@@ -28,80 +28,61 @@ int32_t sub_201330(int32_t a0) {
     int64_t v2;
 
     v1 = ((a0 - 0xa) & 0xffffffff);
-    switch (v1) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 11:
-    case 12:
-    case 13:
-    case 14:
-    case 15:
-        break;
-    default:
-        goto L_2013c6;
-    }
-    rax = 0x200158;
-    v2 = (int64_t)(int32_t)(dword_200158[v1]) + 0x200158;
-    switch (v1 + 0xa) {
-    case 10:
-        sub_2013e0();
-        return dword_20250c;
-    case 11:
-        sub_2013f0();
-        return dword_20250c;
-    case 12:
-        sub_201400();
-        return dword_20250c;
-    case 13:
-        sub_201410();
-        return dword_20250c;
-    case 14:
-        sub_201420();
-        return dword_20250c;
-    case 15:
-        sub_201430();
-        return dword_20250c;
-    case 16:
-        sub_201440();
-        return dword_20250c;
-    case 17:
-        sub_201450();
-        return dword_20250c;
-    case 18:
-        sub_201460();
-        return dword_20250c;
-    case 19:
-        sub_201470();
-        return dword_20250c;
-    case 20:
-        sub_201480();
-        return dword_20250c;
-    case 21:
-        sub_201490();
-        return dword_20250c;
-    case 22:
-        sub_2014a0();
-        return dword_20250c;
-    case 23:
-        sub_2014b0();
-        return dword_20250c;
-    case 24:
-        sub_2014c0();
-        return dword_20250c;
-    case 25:
-        sub_2014d0();
-        return dword_20250c;
-    default:
-        goto L_2013c6;
+    if (v1 <= 0xf /* unsigned */) {
+        rax = 0x200158;
+        v2 = (int64_t)(int32_t)(dword_200158[v1]) + 0x200158;
+        switch (v1 + 0xa) {
+        case 10:
+            sub_2013e0();
+            return dword_20250c;
+        case 11:
+            sub_2013f0();
+            return dword_20250c;
+        case 12:
+            sub_201400();
+            return dword_20250c;
+        case 13:
+            sub_201410();
+            return dword_20250c;
+        case 14:
+            sub_201420();
+            return dword_20250c;
+        case 15:
+            sub_201430();
+            return dword_20250c;
+        case 16:
+            sub_201440();
+            return dword_20250c;
+        case 17:
+            sub_201450();
+            return dword_20250c;
+        case 18:
+            sub_201460();
+            return dword_20250c;
+        case 19:
+            sub_201470();
+            return dword_20250c;
+        case 20:
+            sub_201480();
+            return dword_20250c;
+        case 21:
+            sub_201490();
+            return dword_20250c;
+        case 22:
+            sub_2014a0();
+            return dword_20250c;
+        case 23:
+            sub_2014b0();
+            return dword_20250c;
+        case 24:
+            sub_2014c0();
+            return dword_20250c;
+        case 25:
+            sub_2014d0();
+            return dword_20250c;
+        default:
+            goto L_2013c6;
+        }
     }
 L_2013c6:
     dword_20250c = 0x0;

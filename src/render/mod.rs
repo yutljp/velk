@@ -340,6 +340,32 @@ fn update_of_same_location<'e>(
     (commutes && reads_place(rhs)).then_some((symbol, lhs))
 }
 
+/// The `case` labels for `values`: a run of three or more consecutive values
+/// reads as one range, `case 2 ... 9`.
+fn case_labels(values: &[i64]) -> Vec<String> {
+    let mut sorted = values.to_vec();
+    sorted.sort_unstable();
+    let mut labels = Vec::new();
+    let mut start = 0;
+    while start < sorted.len() {
+        let mut end = start;
+        while end + 1 < sorted.len() && sorted[end + 1] == sorted[end].wrapping_add(1) {
+            end += 1;
+        }
+        if end - start >= 2 {
+            labels.push(format!("case {} ... {}", sorted[start], sorted[end]));
+        } else {
+            labels.extend(
+                sorted[start..=end]
+                    .iter()
+                    .map(|value| format!("case {value}")),
+            );
+        }
+        start = end + 1;
+    }
+    labels
+}
+
 /// `name` declared as `ty`, the star of a pointer next to the name.
 fn declaration(ty: &CType, name: &str) -> String {
     if ty.is_pointer() {
@@ -564,9 +590,9 @@ fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             indent(depth, out);
             out.push_str(&format!("switch ({}) {{\n", render_expr(index, ctx)));
             for (values, body) in arms {
-                for value in values {
+                for label in case_labels(values) {
                     indent(depth, out);
-                    out.push_str(&format!("case {value}:\n"));
+                    out.push_str(&format!("{label}:\n"));
                 }
                 render_nodes(body, depth + 1, out, ctx);
             }
@@ -766,8 +792,18 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             default,
         } => {
             let mut text = format!("switch ({}) {{\n", render_expr(index, ctx));
-            for (value, target) in cases {
-                text.push_str(&format!("    case {value}: goto L_{target:x};\n"));
+            let mut start = 0;
+            while start < cases.len() {
+                let target = cases[start].1;
+                let mut end = start + 1;
+                while end < cases.len() && cases[end].1 == target {
+                    end += 1;
+                }
+                let values: Vec<i64> = cases[start..end].iter().map(|(value, _)| *value).collect();
+                for label in case_labels(&values) {
+                    text.push_str(&format!("    {label}: goto L_{target:x};\n"));
+                }
+                start = end;
             }
             if let Some(target) = default {
                 text.push_str(&format!("    default: goto L_{target:x};\n"));

@@ -219,13 +219,7 @@ int fallthrough(int x) {
     int64_t v1;
 
     v1 = 0xffffffff;
-    switch (x) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-        break;
-    default:
+    if (x > 0x3 /* unsigned */) {
         return v1;
     }
     v1 = dword_200120[x];

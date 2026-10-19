@@ -8,16 +8,10 @@ int32_t dispatch(int32_t a0) {
     uint32_t v1;
 
     v1 = a0 - 0xa;
-    switch (v1) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-        return dword_24[v1];
-    default:
+    if (v1 > 0x4 /* unsigned */) {
         return 0x0;
     }
+    return dword_24[v1];
 }
 -- signature
 int32_t (int32_t a0)

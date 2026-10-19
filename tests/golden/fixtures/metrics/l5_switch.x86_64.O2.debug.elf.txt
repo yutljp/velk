@@ -1,4 +1,4 @@
-# metrics/l5_switch.x86_64.O2.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/l5_switch.x86_64.O2.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x201330 167 dense symtab,dwarf,unwind
 0x2013e0 8 c0 symtab,dwarf,unwind
 0x2013f0 8 c1 symtab,dwarf,unwind
@@ -28,80 +28,61 @@ int dense(int x) {
     int64_t v2;
 
     v1 = ((x - 0xa) & 0xffffffff);
-    switch (v1) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 11:
-    case 12:
-    case 13:
-    case 14:
-    case 15:
-        break;
-    default:
-        goto L_2013c6;
-    }
-    rax = 0x200158;
-    v2 = (int64_t)(int32_t)(dword_200158[v1]) + 0x200158;
-    switch (v1 + 0xa) {
-    case 10:
-        c0();
-        return g_sink;
-    case 11:
-        c1();
-        return g_sink;
-    case 12:
-        c2();
-        return g_sink;
-    case 13:
-        c3();
-        return g_sink;
-    case 14:
-        c4();
-        return g_sink;
-    case 15:
-        c5();
-        return g_sink;
-    case 16:
-        c6();
-        return g_sink;
-    case 17:
-        c7();
-        return g_sink;
-    case 18:
-        c8();
-        return g_sink;
-    case 19:
-        c9();
-        return g_sink;
-    case 20:
-        c10();
-        return g_sink;
-    case 21:
-        c11();
-        return g_sink;
-    case 22:
-        c12();
-        return g_sink;
-    case 23:
-        c13();
-        return g_sink;
-    case 24:
-        c14();
-        return g_sink;
-    case 25:
-        c15();
-        return g_sink;
-    default:
-        goto L_2013c6;
+    if (v1 <= 0xf /* unsigned */) {
+        rax = 0x200158;
+        v2 = (int64_t)(int32_t)(dword_200158[v1]) + 0x200158;
+        switch (v1 + 0xa) {
+        case 10:
+            c0();
+            return g_sink;
+        case 11:
+            c1();
+            return g_sink;
+        case 12:
+            c2();
+            return g_sink;
+        case 13:
+            c3();
+            return g_sink;
+        case 14:
+            c4();
+            return g_sink;
+        case 15:
+            c5();
+            return g_sink;
+        case 16:
+            c6();
+            return g_sink;
+        case 17:
+            c7();
+            return g_sink;
+        case 18:
+            c8();
+            return g_sink;
+        case 19:
+            c9();
+            return g_sink;
+        case 20:
+            c10();
+            return g_sink;
+        case 21:
+            c11();
+            return g_sink;
+        case 22:
+            c12();
+            return g_sink;
+        case 23:
+            c13();
+            return g_sink;
+        case 24:
+            c14();
+            return g_sink;
+        case 25:
+            c15();
+            return g_sink;
+        default:
+            goto L_2013c6;
+        }
     }
 L_2013c6:
     g_sink = 0x0;

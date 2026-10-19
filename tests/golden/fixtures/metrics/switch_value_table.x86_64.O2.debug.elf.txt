@@ -11,14 +11,7 @@ int dispatch(int x) {
 
     v1 = x - 0xa;
     v2 = 0x0;
-    switch (v1) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-        break;
-    default:
+    if (v1 > 0x4 /* unsigned */) {
         return v2;
     }
     v2 = dword_200120[v1];

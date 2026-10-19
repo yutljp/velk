@@ -1,4 +1,4 @@
-# metrics/control.x86_64.O0.debug.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 4 gotos
+# metrics/control.x86_64.O0.debug.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 3 gotos
 0x201230 137 matrix_trace symtab,dwarf,unwind
 0x2012c0 78 cleanup_on_error symtab,dwarf,unwind
 0x201310 107 fallthrough symtab,dwarf,unwind
@@ -142,34 +142,27 @@ int fallthrough(int x) {
     local_1 = 0x0;
     v1 = local_0;
     local_2 = v1;
-    switch (v1) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-        break;
-    default:
-        goto L_20136f;
-    }
-    v5 = (int64_t)(int32_t)(dword_200120[local_2]) + 0x200120;
-    switch (local_2) {
-    case 0:
-        local_1 += 0x1;
-        break;
-    case 1:
-        break;
-    case 2:
-        goto L_201355;
-    case 3:
-        local_1 = 0x8;
+    if (v1 <= 0x3 /* unsigned */) {
+        v5 = (int64_t)(int32_t)(dword_200120[local_2]) + 0x200120;
+        switch (local_2) {
+        case 0:
+            local_1 += 0x1;
+            break;
+        case 1:
+            break;
+        case 2:
+            goto L_201355;
+        case 3:
+            local_1 = 0x8;
+            return local_1;
+        default:
+            goto L_20136f;
+        }
+        local_1 += 0x2;
+    L_201355:
+        local_1 += 0x4;
         return local_1;
-    default:
-        goto L_20136f;
     }
-    local_1 += 0x2;
-L_201355:
-    local_1 += 0x4;
-    return local_1;
 L_20136f:
     local_1 = 0xffffffff;
     return local_1;
