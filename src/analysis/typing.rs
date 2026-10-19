@@ -597,6 +597,18 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
     ir.ret_type = CType::int(bytes, false);
 }
 
+/// Whether a structure of `size` bytes is returned through memory the
+/// caller provides, at an address passed as the first argument.
+fn returned_in_memory(convention: crate::ir::Convention, size: u64) -> bool {
+    use crate::ir::Convention;
+    match convention {
+        Convention::SysV => size > 16,
+        Convention::Win64 => !matches!(size, 1 | 2 | 4 | 8),
+        // AArch64 passes that address in x8, which is no argument.
+        Convention::Aapcs64 | Convention::GoAmd64 => false,
+    }
+}
+
 pub(crate) fn apply_dwarf_types(
     types: Option<crate::loader::dwarf::FunctionTypes>,
     ir: &mut FunctionIr,
@@ -618,6 +630,16 @@ pub(crate) fn apply_dwarf_types(
         float_params.reverse();
         int_params.reverse();
         let mut params = Vec::new();
+        // A structure returned through memory comes back to the address the
+        // caller passes first, ahead of the declared parameters.
+        if let (Some(size), Some(ret)) = (types.ret_aggregate_size, &types.ret)
+            && returned_in_memory(ir.convention, size)
+            && let Some(mut hidden) = int_params.pop()
+        {
+            hidden.name = "result".to_owned();
+            hidden.ty = CType::pointer_to(ret.clone());
+            params.push(hidden);
+        }
         for (name, ty) in &types.params {
             let float = ty.as_ref().is_some_and(CType::is_sse_float);
             let Some(mut param) = (if float {

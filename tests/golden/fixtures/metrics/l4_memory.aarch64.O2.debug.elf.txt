@@ -7,8 +7,6 @@
 == 0x2101d4 point_dot
 -- decompile
 /* velk pseudo-C: point_dot @ 0x2101d4 */
-/* struct: a +0x0:uint64_t */
-/* struct: b +0x0:uint64_t */
 int point_dot(struct point *a, struct point *b) {
     d0 = mul_lanes32(*(uint64_t *)(b), *(uint64_t *)(a));
     return (add_lanes32(((d0 >> 0x20) & 0xffffffff) * 0x100000001, d0) & 0xffffffff);

@@ -105,19 +105,18 @@ fn point_add @ 0x2012e0 (size 36)
 == 0x201310 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x201310 */
-/* struct: seed +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
-struct big big_make(long seed, int64_t a1) {
+struct big big_make(struct big *result, long seed) {
     uint64_t local_0; /* [sp-10] */
 
-    local_0 = a1;
-    *(uint64_t *)(seed) = a1;
-    *(uint64_t *)(seed + 0x8) = local_0 + 0x1;
-    *(uint64_t *)(seed + 0x10) = local_0 << 0x1;
-    *(uint64_t *)(seed + 0x18) = local_0 * 0x3;
-    return seed;
+    local_0 = seed;
+    result->a = seed;
+    result->b = local_0 + 0x1;
+    result->c = local_0 << 0x1;
+    result->d = local_0 * 0x3;
+    return result;
 }
 -- signature
-struct big (long seed, int64_t a1)
+struct big (struct big * result, long seed)
 -- references
 
 -- ir
@@ -130,7 +129,7 @@ fn big_make @ 0x201310 (size 52)
     store64((load64((rsp + #0xfffffffffffffff0)) * #0x3), (rdi + #0x18))
     ret rdi
 -- card
-{"accesses":["seed +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201310","approxTokens":192,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201310","approxTokens":192,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
 
 == 0x201350 big_sum
 -- decompile

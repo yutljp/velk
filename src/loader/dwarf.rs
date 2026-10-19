@@ -17,6 +17,9 @@ pub struct FunctionTypes {
     /// Parameter names and types; either may be absent from the debug info.
     pub params: Vec<(Option<String>, Option<CType>)>,
     pub ret: Option<CType>,
+    /// The size of a returned structure or union, which decides whether it
+    /// comes back in registers or through memory the caller provides.
+    pub ret_aggregate_size: Option<u64>,
     /// The named fields of every structure in the unit.
     pub members: Vec<Member>,
 }
@@ -91,6 +94,37 @@ fn type_name(
     }
 }
 
+/// The byte size of a structure or union type, through typedefs and
+/// qualifiers; None for any other type.
+fn aggregate_size(
+    unit: &Unit<EndianSlice<'_, LittleEndian>>,
+    offset: gimli::UnitOffset<usize>,
+    depth: usize,
+) -> Option<u64> {
+    if depth == 0 {
+        return None;
+    }
+    let entry = unit.entry(offset).ok()?;
+    match entry.tag() {
+        gimli::DW_TAG_structure_type | gimli::DW_TAG_union_type => {
+            match attribute(&entry, gimli::DW_AT_byte_size)? {
+                AttributeValue::Udata(size) => Some(size),
+                AttributeValue::Data1(size) => Some(u64::from(size)),
+                AttributeValue::Data2(size) => Some(u64::from(size)),
+                AttributeValue::Data4(size) => Some(u64::from(size)),
+                _ => None,
+            }
+        }
+        gimli::DW_TAG_typedef | gimli::DW_TAG_const_type | gimli::DW_TAG_volatile_type => {
+            match attribute(&entry, gimli::DW_AT_type)? {
+                AttributeValue::UnitRef(inner) => aggregate_size(unit, inner, depth - 1),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
 pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
     let dwarf = Dwarf::load(|id| -> Result<EndianSlice<'_, LittleEndian>, ()> {
         Ok(EndianSlice::new(section(image, id), LittleEndian))
@@ -110,6 +144,10 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             if resolve_low(&dwarf, &unit, entry) != Some(addr) {
                 continue;
             }
+            let ret_aggregate_size = match attribute(entry, gimli::DW_AT_type) {
+                Some(AttributeValue::UnitRef(offset)) => aggregate_size(&unit, offset, 8),
+                _ => None,
+            };
             // A subprogram without a type returns nothing.
             let ret = match attribute(entry, gimli::DW_AT_type) {
                 None => Some(crate::ir::CType::Void),
@@ -144,6 +182,7 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             return Some(FunctionTypes {
                 params,
                 ret,
+                ret_aggregate_size,
                 members: structure_members(&dwarf, &unit),
             });
         }
@@ -393,5 +432,3 @@ pub fn functions(image: &Image) -> Vec<DwarfFunction> {
     functions.dedup_by_key(|function| function.addr);
     functions
 }
-
-

@@ -149,9 +149,12 @@ fn render_with(
     for reference in references {
         out.push_str(&format!("/* ref: {} */\n", reference.describe()));
     }
-    // A pointer read as one scalar is no structure.
+    // A pointer read as one scalar is no structure, and one to a structure
+    // the debug info names needs no note of its fields.
     for (access, line) in ir.accesses.iter().zip(ir.access_lines()) {
-        if !ctx.elements.contains_key(&access.register) {
+        if !ctx.elements.contains_key(&access.register)
+            && !ctx.pointees.contains_key(&access.register)
+        {
             out.push_str(&format!("/* struct: {line} */\n"));
         }
     }

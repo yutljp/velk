@@ -11,7 +11,6 @@
 == 0x2101dc rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x2101dc */
-/* struct: r +0x0:uint64_t, +0x8:uint64_t */
 int rect_area(struct rect *r) {
     d1 = r->min.x;
     v1_hi = 0x0;
@@ -233,7 +232,6 @@ fn flags_level @ 0x2102d8 (size 20)
 == 0x2102ec flags_set_mode
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2102ec */
-/* struct: f +0x0:uint8_t */
 void flags_set_mode(struct flags *f, unsigned int mode) {
     v1 = f->field_0x0;
     f->field_0x0 = v1 & 0xfffffff1 | (mode & 0x7) << 0x1;
