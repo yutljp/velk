@@ -1,4 +1,4 @@
-# metrics/control.x86_64.O0.stripped.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 4 gotos
+# metrics/control.x86_64.O0.stripped.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 8 gotos
 0x201230 144 - prologue
 0x2012c0 80 - prologue
 0x201310 51 - prologue
@@ -142,16 +142,22 @@ fn <unnamed> @ 0x2012c0 (size 80)
 /* velk pseudo-C: sub_201310 @ 0x201310 */
 /* ref: 0x200120 .rodata */
 uint32_t sub_201310(uint32_t a0) {
-    uint64_t local_0; /* [sp-18] */
+    uint32_t local_0; /* [sp-c] */
+    uint64_t local_1; /* [sp-18] */
 
-    rax = a0;
-    local_0 = rax;
-    rax = rax - 0x3;
-    if (rax + 0x3 > 0x3 /* unsigned */) { goto L_20136f; }
-    rcx = 0x200120;
-    rax = (int64_t)(int32_t)(dword_200120[local_0]);
+    local_0 = a0;
+    rax = local_0;
+    local_1 = rax;
+    if (rax > 0x3 /* unsigned */) { goto L_20136f; }
+    rax = (int64_t)(int32_t)(dword_200120[local_1]);
     rax = rax + 0x200120;
-    goto *(rax);
+    switch (local_1) {
+        case 0: goto L_201343;
+        case 1: goto L_20134c;
+        case 2: goto L_201355;
+        case 3: goto L_201363;
+        default: goto L_20136f;
+    }
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -160,15 +166,14 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201310 (size 51)
   blk0 @ 0x201310:
-    rax = (edi & #0xffffffff)
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
     store64(rax, (rsp + #0xffffffffffffffe8))
-    rax = (rax - #0x3)
-    brif hi (rax + #0x3), #0x3 -> 0x20136f
+    brif hi rax, #0x3 -> 0x20136f
   blk1 @ 0x20132f:
-    rcx = #0x200120
     rax = sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4))))
     rax = (rax + #0x200120)
-    br rax
+    switch load64((rsp + #0xffffffffffffffe8)) [0->0x201343, 1->0x20134c, 2->0x201355, 3->0x201363] default 0x20136f
 -- card
 {"addr":"0x201310","approxTokens":174,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":51,"sizeEstimated":true,"unsupported":0}
 

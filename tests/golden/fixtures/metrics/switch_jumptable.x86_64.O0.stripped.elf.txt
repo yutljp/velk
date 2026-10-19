@@ -1,4 +1,4 @@
-# metrics/switch_jumptable.x86_64.O0.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/switch_jumptable.x86_64.O0.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 12 gotos
 0x2011c0 44 - prologue
 0x2011ec 548 - prologue
 
@@ -7,16 +7,28 @@
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 /* ref: 0x200158 .rodata */
 uint32_t sub_2011c0(uint32_t a0) {
-    uint64_t local_0; /* [sp-40] */
+    uint32_t local_0; /* [sp-c] */
+    uint64_t local_1; /* [sp-40] */
 
-    rax = a0;
-    local_0 = rax;
-    rax = rax - 0x9;
-    if (rax + 0x9 > 0x9 /* unsigned */) { goto L_2013fe; }
-    rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[local_0]);
+    local_0 = a0;
+    rax = local_0;
+    local_1 = rax;
+    if (rax > 0x9 /* unsigned */) { goto L_2013fe; }
+    rax = (int64_t)(int32_t)(dword_200158[local_1]);
     rax = rax + 0x200158;
-    goto *(rax);
+    switch (local_1) {
+        case 0: goto L_2011ec;
+        case 1: goto L_201221;
+        case 2: goto L_201256;
+        case 3: goto L_20128b;
+        case 4: goto L_2012c0;
+        case 5: goto L_2012f5;
+        case 6: goto L_20132a;
+        case 7: goto L_20135f;
+        case 8: goto L_201394;
+        case 9: goto L_2013c9;
+        default: goto L_2013fe;
+    }
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -25,15 +37,14 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011c0 (size 44)
   blk0 @ 0x2011c0:
-    rax = (edi & #0xffffffff)
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
     store64(rax, (rsp + #0xffffffffffffffc0))
-    rax = (rax - #0x9)
-    brif hi (rax + #0x9), #0x9 -> 0x2013fe
+    brif hi rax, #0x9 -> 0x2013fe
   blk1 @ 0x2011d8:
-    rcx = #0x200158
     rax = sext32(load32((#0x200158 + (load64((rsp + #0xffffffffffffffc0)) * #0x4))))
     rax = (rax + #0x200158)
-    br rax
+    switch load64((rsp + #0xffffffffffffffc0)) [0->0x2011ec, 1->0x201221, 2->0x201256, 3->0x20128b, 4->0x2012c0, 5->0x2012f5, 6->0x20132a, 7->0x20135f, 8->0x201394, 9->0x2013c9] default 0x2013fe
 -- card
 {"addr":"0x2011c0","approxTokens":168,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
 

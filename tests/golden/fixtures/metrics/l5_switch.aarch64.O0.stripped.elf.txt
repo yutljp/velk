@@ -33,23 +33,23 @@ uint32_t sub_210334(uint32_t a0) {
     if (x8 > 0xf /* unsigned */) { goto L_2103f8; }
     x8 = 0x210368;
     x8 = 0x210368 + dword_200158[local_1];
-    switch (*(uint32_t *)(sp - 0x34) - 0xa - 0xf) {
-        case -15: goto L_210378;
-        case -14: goto L_210380;
-        case -13: goto L_210388;
-        case -12: goto L_210390;
-        case -11: goto L_210398;
-        case -10: goto L_2103a0;
-        case -9: goto L_2103a8;
-        case -8: goto L_2103b0;
-        case -7: goto L_2103b8;
-        case -6: goto L_2103c0;
-        case -5: goto L_2103c8;
-        case -4: goto L_2103d0;
-        case -3: goto L_2103d8;
-        case -2: goto L_2103e0;
-        case -1: goto L_2103e8;
-        case 0: goto L_2103f0;
+    switch (*(uint32_t *)(sp - 0x34)) {
+        case 10: goto L_210378;
+        case 11: goto L_210380;
+        case 12: goto L_210388;
+        case 13: goto L_210390;
+        case 14: goto L_210398;
+        case 15: goto L_2103a0;
+        case 16: goto L_2103a8;
+        case 17: goto L_2103b0;
+        case 18: goto L_2103b8;
+        case 19: goto L_2103c0;
+        case 20: goto L_2103c8;
+        case 21: goto L_2103d0;
+        case 22: goto L_2103d8;
+        case 23: goto L_2103e0;
+        case 24: goto L_2103e8;
+        case 25: goto L_2103f0;
         default: goto L_2103f8;
     }
 }
@@ -67,7 +67,7 @@ fn <unnamed> @ 0x210334 (size 68)
   blk1 @ 0x21035c:
     x8 = #0x210368
     x8 = (#0x210368 + load32((#0x200158 + (load64((sp + #0xffffffffffffffe0)) << #0x2)))s)
-    switch (((load32((sp + #0xffffffffffffffcc)) - #0xa) & #0xffffffff) - #0xf) [-15->0x210378, -14->0x210380, -13->0x210388, -12->0x210390, -11->0x210398, -10->0x2103a0, -9->0x2103a8, -8->0x2103b0, -7->0x2103b8, -6->0x2103c0, -5->0x2103c8, -4->0x2103d0, -3->0x2103d8, -2->0x2103e0, -1->0x2103e8, 0->0x2103f0] default 0x2103f8
+    switch (load32((sp + #0xffffffffffffffcc)) & #0xffffffff) [10->0x210378, 11->0x210380, 12->0x210388, 13->0x210390, 14->0x210398, 15->0x2103a0, 16->0x2103a8, 17->0x2103b0, 18->0x2103b8, 19->0x2103c0, 20->0x2103c8, 21->0x2103d0, 22->0x2103d8, 23->0x2103e0, 24->0x2103e8, 25->0x2103f0] default 0x2103f8
 -- card
 {"addr":"0x210334","approxTokens":198,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":68,"sizeEstimated":true,"unsupported":0}
 

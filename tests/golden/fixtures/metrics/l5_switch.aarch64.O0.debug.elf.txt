@@ -45,98 +45,98 @@ int dense(int x) {
     x8 = 0x210368;
     x9 = dword_200158[local_1];
     x8 = 0x210368 + x9;
-    switch (*(uint32_t *)(sp - 0x14) - 0xa - 0xf) {
-    case -15:
+    switch (*(uint32_t *)(sp - 0x14)) {
+    case 10:
         c0();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -14:
+    case 11:
         c1();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -13:
+    case 12:
         c2();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -12:
+    case 13:
         c3();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -11:
+    case 14:
         c4();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -10:
+    case 15:
         c5();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -9:
+    case 16:
         c6();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -8:
+    case 17:
         c7();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -7:
+    case 18:
         c8();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -6:
+    case 19:
         c9();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -5:
+    case 20:
         c10();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -4:
+    case 21:
         c11();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -3:
+    case 22:
         c12();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -2:
+    case 23:
         c13();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case -1:
+    case 24:
         c14();
         x8 = 0x220000;
         x = dword_2205e8;
         sp = sp + 0x20;
         return x;
-    case 0:
+    case 25:
         c15();
         x8 = 0x220000;
         x = dword_2205e8;
@@ -171,7 +171,7 @@ fn dense @ 0x210334 (size 228)
     x8 = #0x210368
     x9 = load32((#0x200158 + (load64(sp) << #0x2)))s
     x8 = (#0x210368 + x9)
-    switch (((load32((sp + #0xffffffffffffffec)) - #0xa) & #0xffffffff) - #0xf) [-15->0x210378, -14->0x210380, -13->0x210388, -12->0x210390, -11->0x210398, -10->0x2103a0, -9->0x2103a8, -8->0x2103b0, -7->0x2103b8, -6->0x2103c0, -5->0x2103c8, -4->0x2103d0, -3->0x2103d8, -2->0x2103e0, -1->0x2103e8, 0->0x2103f0] default 0x2103f8
+    switch (load32((sp + #0xffffffffffffffec)) & #0xffffffff) [10->0x210378, 11->0x210380, 12->0x210388, 13->0x210390, 14->0x210398, 15->0x2103a0, 16->0x2103a8, 17->0x2103b0, 18->0x2103b8, 19->0x2103c0, 20->0x2103c8, 21->0x2103d0, 22->0x2103d8, 23->0x2103e0, 24->0x2103e8, 25->0x2103f0] default 0x2103f8
   blk2 @ 0x210378:
     call 0x210418
     br 0x210404

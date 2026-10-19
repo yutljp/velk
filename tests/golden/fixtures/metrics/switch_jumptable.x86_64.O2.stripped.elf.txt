@@ -1,4 +1,4 @@
-# metrics/switch_jumptable.x86_64.O2.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/switch_jumptable.x86_64.O2.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 12 gotos
 0x2011c0 27 - prologue
 0x2011db 500 - prologue
 
@@ -8,10 +8,20 @@
 /* ref: 0x200158 .rodata */
 uint32_t sub_2011c0(uint32_t a0) {
     if (a0 > 0x9 /* unsigned */) { goto L_201376; }
-    rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[a0]);
-    rax = rax + 0x200158;
-    goto *(rax);
+    rax = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
+    switch (a0) {
+        case 0: goto L_2011db;
+        case 1: goto L_2012ef;
+        case 2: goto L_201265;
+        case 3: goto L_201285;
+        case 4: goto L_2011e6;
+        case 5: goto L_201308;
+        case 6: goto L_20133d;
+        case 7: goto L_2012ac;
+        case 8: goto L_20137d;
+        case 9: goto L_201214;
+        default: goto L_201376;
+    }
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -22,10 +32,8 @@ fn <unnamed> @ 0x2011c0 (size 27)
   blk0 @ 0x2011c0:
     brif hi edi, #0x9 -> 0x201376
   blk1 @ 0x2011c9:
-    rcx = #0x200158
-    rax = sext32(load32((#0x200158 + (edi * #0x4))))
-    rax = (rax + #0x200158)
-    br rax
+    rax = (sext32(load32((#0x200158 + (edi * #0x4)))) + #0x200158)
+    switch edi [0->0x2011db, 1->0x2012ef, 2->0x201265, 3->0x201285, 4->0x2011e6, 5->0x201308, 6->0x20133d, 7->0x2012ac, 8->0x20137d, 9->0x201214] default 0x201376
 -- card
 {"addr":"0x2011c0","approxTokens":138,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
 

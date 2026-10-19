@@ -612,10 +612,25 @@ impl Structurer<'_> {
         )
     }
 
-    /// A block that ends in a return and branches nowhere.
+    /// A block that ends in a return and branches nowhere, reached only by
+    /// branches that can inline it: an unknown-flags branch or a switch
+    /// jumps to it by label.
     fn only_returns(&self, index: usize) -> bool {
+        let start = self.blocks[index].start;
+        let jumped_to = self
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| match stmt {
+                Stmt::BrifFlags { target, .. } => *target == start,
+                Stmt::Switch { cases, default, .. } => {
+                    cases.iter().any(|(_, target)| *target == start) || *default == Some(start)
+                }
+                _ => false,
+            });
         let stmts = &self.blocks[index].stmts;
-        matches!(stmts.last(), Some(Stmt::Ret { .. }))
+        !jumped_to
+            && matches!(stmts.last(), Some(Stmt::Ret { .. }))
             && !stmts.iter().any(|stmt| {
                 matches!(
                     stmt,

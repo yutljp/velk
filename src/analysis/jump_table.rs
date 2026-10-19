@@ -60,7 +60,7 @@ pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
             environment.insert(dest.index, resolved);
         }
     }
-    let resolved = resolve(lhs, &environment);
+    let resolved = cancel(resolve(lhs, &environment));
     let checked = unwrap_mask(&resolved);
     let (minimum, switch_base) = match checked {
         Expr::Bin {
@@ -123,7 +123,7 @@ fn recognize(
         }
     }
     let resolved = resolve(target, &environment);
-    let (base, table, index, scale, signed) = table_pattern(&resolved)?;
+    let (base, table, index, scale, entry) = table_pattern(&resolved)?;
 
     let (count, default, minimum, switch_base) = bound?;
     if count <= 0 || count > 4096 {
@@ -132,7 +132,10 @@ fn recognize(
 
     let mut cases = Vec::new();
     for position in 0..count {
-        let offset = if signed {
+        let offset = if entry == Entry::Absolute {
+            let bytes = image.read_vaddr(table + (position as u64) * 8, 8)?;
+            u64::from_le_bytes(bytes.try_into().ok()?) as i64
+        } else if entry == Entry::Offset32 {
             let bytes = image.read_vaddr(table + (position as u64) * 4, 4)?;
             i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
         } else {
@@ -156,6 +159,36 @@ fn recognize(
         cases,
         default,
     })
+}
+
+/// How a table entry gives its case's address.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Entry {
+    /// A byte, shifted and added to a base.
+    Byte,
+    /// A signed 32-bit offset from a base.
+    Offset32,
+    /// The address itself.
+    Absolute,
+}
+
+/// `(x - k) + k` and `(x + k) - k` are `x`.
+fn cancel(expr: Expr) -> Expr {
+    if let Expr::Bin { op, lhs, rhs } = &expr
+        && let Expr::Bin {
+            op: inner_op,
+            lhs: value,
+            rhs: inner_rhs,
+        } = lhs.as_ref()
+        && inner_rhs == rhs
+        && matches!(
+            (op, inner_op),
+            (BinOp::Add, BinOp::Sub) | (BinOp::Sub, BinOp::Add)
+        )
+    {
+        return value.as_ref().clone();
+    }
+    expr
 }
 
 pub(crate) fn resolve(expr: &Expr, environment: &std::collections::HashMap<u16, Expr>) -> Expr {
@@ -232,9 +265,15 @@ fn unwrap_mask(expr: &Expr) -> &Expr {
     expr
 }
 
-/// Matches `base + (table[index] << scale)` with a byte table, or
-/// `base + sext(table[index])` with a 32-bit signed offset table.
-fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, bool)> {
+/// Matches `base + (table[index] << scale)` with a byte table,
+/// `base + sext(table[index])` with a 32-bit signed offset table, or
+/// `table[index]` with a table of addresses.
+fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, Entry)> {
+    if let Expr::Load { addr, width: 8, .. } = expr
+        && let (Some(table), Some(index)) = (table_address(addr), index_expression(addr))
+    {
+        return Some((0, table, index, 0, Entry::Absolute));
+    }
     let Expr::Bin {
         op: BinOp::Add,
         lhs,
@@ -269,19 +308,23 @@ fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, bool)> {
             && !*signed
             && let (Some(table), Some(index)) = (table_address(addr), index_expression(addr))
         {
-            return Some((base, table, index, scale as i64, false));
+            return Some((base, table, index, scale as i64, Entry::Byte));
         }
     }
 
-    // Variant B: base + sext(load4(table + (index << 2)))
-    if let Expr::Load {
-        addr,
-        width: 4,
-        signed: true,
-    } = peel(value)
+    // Variant B: base + sext(load4(table + (index << 2))), the sign extension
+    // either in the load or around it.
+    let entry = match peel(value) {
+        Expr::SignExtend { value, width: 4 } => peel(value),
+        other => other,
+    };
+    let signed = matches!(peel(value), Expr::SignExtend { width: 4, .. })
+        || matches!(entry, Expr::Load { signed: true, .. });
+    if let Expr::Load { addr, width: 4, .. } = entry
+        && signed
         && let (Some(table), Some(index)) = (table_address(addr), index_expression(addr))
     {
-        return Some((base, table, index, 0, true));
+        return Some((base, table, index, 0, Entry::Offset32));
     }
 
     Option::None
@@ -320,6 +363,11 @@ fn index_expression(expr: &Expr) -> Option<Expr> {
 
 fn unscale(expr: Expr) -> Expr {
     match expr {
+        Expr::Bin {
+            op: BinOp::Mul,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(4 | 8)) => *lhs,
         Expr::Bin {
             op: BinOp::Shl,
             lhs,

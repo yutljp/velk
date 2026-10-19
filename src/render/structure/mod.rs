@@ -60,32 +60,64 @@ pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
     if label_count(&primary) == 0 {
         return primary;
     }
+    let mut candidates = Vec::new();
     let mut alternative = ir.clone();
     crate::passes::layout::normalize_layout(&mut alternative);
-    let reordered = structure_with(&alternative, true);
-    let reordered_count = label_count(&reordered);
-    let primary_count = label_count(&primary);
-    let mut best = if reordered_count < primary_count {
-        reordered
-    } else {
-        primary
-    };
-    let mut best_count = label_count(&best);
+    candidates.push(structure_with(&alternative, true));
     // A compare tree over one value, rebuilt as a switch, lays out its case
     // bodies without a label each.
     let mut chained = ir.clone();
     let chains = crate::render::structure::compare_chain::recover_chains(&chained);
     if !chains.is_empty() {
         crate::render::structure::compare_chain::apply_chains(&mut chained, &chains);
-        let rebuilt = structure(&chained);
-        let count = label_count(&rebuilt);
-        if count < best_count {
-            best = rebuilt;
-            best_count = count;
+        candidates.push(structure(&chained));
+    }
+    // A variant wins only with fewer labels and every goto into the function
+    // reaching exactly one of them.
+    let mut best = primary;
+    for candidate in candidates {
+        if label_count(&candidate) < label_count(&best) && labels_resolve(ir, &candidate) {
+            best = candidate;
         }
     }
-    let _ = best_count;
     best
+}
+
+/// True when every jump to a block of the function has exactly one label.
+fn labels_resolve(ir: &FunctionIr, nodes: &[Node]) -> bool {
+    fn labels(nodes: &[Node], found: &mut Vec<u64>) {
+        for node in nodes {
+            match node {
+                Node::Label(address) => found.push(*address),
+                Node::If { then, els, .. } => {
+                    labels(then, found);
+                    labels(els, found);
+                }
+                Node::DoWhile { body, .. } | Node::Forever { body } => labels(body, found),
+                Node::While { prefix, body, .. } => {
+                    labels(prefix, found);
+                    labels(body, found);
+                }
+                Node::Switch { arms, default, .. } => {
+                    for (_, body) in arms {
+                        labels(body, found);
+                    }
+                    if let Some(body) = default {
+                        labels(body, found);
+                    }
+                }
+                Node::Stmt(_) | Node::Break | Node::Continue => {}
+            }
+        }
+    }
+    let mut found = Vec::new();
+    labels(nodes, &mut found);
+    let mut targets = std::collections::HashSet::new();
+    collect_targets(nodes, &mut targets);
+    targets
+        .iter()
+        .filter(|target| ir.blocks.iter().any(|block| block.start == **target))
+        .all(|target| found.iter().filter(|label| *label == target).count() == 1)
 }
 
 fn label_count(nodes: &[Node]) -> usize {

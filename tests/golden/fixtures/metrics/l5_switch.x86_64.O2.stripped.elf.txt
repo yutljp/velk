@@ -1,4 +1,4 @@
-# metrics/l5_switch.x86_64.O2.stripped.elf: elf x86_64 no entry, 19 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/l5_switch.x86_64.O2.stripped.elf: elf x86_64 no entry, 19 functions, 0 lift failures, 0 unsupported, 18 gotos
 0x201330 29 - prologue
 0x20134d 147 - prologue
 0x2013e0 16 - prologue
@@ -26,10 +26,26 @@
 uint32_t sub_201330(uint32_t a0) {
     a0 = ((a0 - 0xa) & 0xffffffff);
     if (a0 > 0xf /* unsigned */) { goto L_2013c6; }
-    rax = 0x200158;
-    rcx = (int64_t)(int32_t)(dword_200158[a0]);
-    rcx = rcx + 0x200158;
-    goto *(rcx);
+    rcx = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
+    switch (a0) {
+        case 10: goto L_20134d;
+        case 11: goto L_201393;
+        case 12: goto L_201377;
+        case 13: goto L_201385;
+        case 14: goto L_201362;
+        case 15: goto L_20139a;
+        case 16: goto L_2013a8;
+        case 17: goto L_20138c;
+        case 18: goto L_2013b6;
+        case 19: goto L_201370;
+        case 20: goto L_2013af;
+        case 21: goto L_20135b;
+        case 22: goto L_201369;
+        case 23: goto L_2013a1;
+        case 24: goto L_201354;
+        case 25: goto L_20137e;
+        default: goto L_2013c6;
+    }
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -41,10 +57,8 @@ fn <unnamed> @ 0x201330 (size 29)
     rdi = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     brif hi (rdi & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
-    rax = #0x200158
-    rcx = sext32(load32((#0x200158 + (rdi * #0x4))))
-    rcx = (rcx + #0x200158)
-    br rcx
+    rcx = (sext32(load32((#0x200158 + (rdi * #0x4)))) + #0x200158)
+    switch (rdi & #0xffffffff) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
 -- card
 {"addr":"0x201330","approxTokens":144,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":29,"sizeEstimated":true,"unsupported":0}
 

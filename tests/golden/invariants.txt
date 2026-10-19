@@ -12,9 +12,7 @@ rust_probe 0x3f700 <alloc::vec::Vec<u8> as std::io::Write>::is_write_vectored: r
 rust_probe 0x52b10 <<core::io::error::OsFunctions>::DEFAULT::{closure#1} as core::ops::function::FnOnce<(i32,)>>::call_once: reads rax without assigning it
 rust_probe_stripped 0x161a0 -: reads rax without assigning it
 rust_probe_stripped 0x1fc6b -: reads rsi without assigning it
-rust_probe_stripped 0x1fcf2 -: reads rax without assigning it
 rust_probe_stripped 0x21da1 -: reads rsi without assigning it
-rust_probe_stripped 0x3213e -: goto L_32863 has no label
 rust_probe_stripped 0x34b8a -: reads rax without assigning it
 rust_probe_stripped 0x37c0d -: reads rax without assigning it
 rust_probe_stripped 0x37c1c -: reads rax without assigning it

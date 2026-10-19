@@ -1,4 +1,4 @@
-# switch_jumptable_x64.o: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 1 gotos
+# switch_jumptable_x64.o: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 527 d7 symtab
 
 == 0x0 d7
@@ -8,99 +8,130 @@ uint32_t d7(uint32_t a0) {
     if (a0 > 0x9 /* unsigned */) {
         rax = 0xffffffff;
         dword_238 = eax;
-        return eax;
+        rax = dword_238;
+        return rax;
     }
-    rcx = 0x210;
-    rax = (int64_t)(int32_t)(dword_210[a0]);
-    rax = rax + 0x210;
-    goto *(rax);
-L_1b:
-    rax = dword_238;
-    dword_238 = eax;
-    return eax;
-L_26:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    dword_238 += 0x2;
-    dword_238 += 0x3;
-    rax = dword_238 + 0x4;
-    dword_238 = eax;
-    return eax;
-L_54:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    dword_238 += 0x2;
-    dword_238 += 0x3;
-    dword_238 += 0x4;
-    dword_238 += 0x5;
-    dword_238 += 0x6;
-    dword_238 += 0x7;
-    dword_238 += 0x8;
-    rax = dword_238 + 0x9;
-    dword_238 = eax;
-    return eax;
-L_a5:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    rax = dword_238 + 0x2;
-    dword_238 = eax;
-    return eax;
-L_c5:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    dword_238 += 0x2;
-    rax = dword_238 + 0x3;
-    dword_238 = eax;
-    return eax;
-L_ec:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    dword_238 += 0x2;
-    dword_238 += 0x3;
-    dword_238 += 0x4;
-    dword_238 += 0x5;
-    dword_238 += 0x6;
-    rax = dword_238 + 0x7;
-    dword_238 = eax;
-    return eax;
-L_12f:
-    rax = dword_238;
-    dword_238 = eax;
-    rax = eax;
-    rax = eax + 0x1;
-    dword_238 = eax;
-    return eax;
-L_148:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    dword_238 += 0x2;
-    dword_238 += 0x3;
-    dword_238 += 0x4;
-    rax = dword_238 + 0x5;
-    dword_238 = eax;
-    return eax;
-L_17d:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    dword_238 += 0x2;
-    dword_238 += 0x3;
-    dword_238 += 0x4;
-    dword_238 += 0x5;
-    rax = dword_238 + 0x6;
-    dword_238 = eax;
-    return eax;
-L_1bd:
-    dword_238 = dword_238;
-    dword_238 += 0x1;
-    dword_238 += 0x2;
-    dword_238 += 0x3;
-    dword_238 += 0x4;
-    dword_238 += 0x5;
-    dword_238 += 0x6;
-    dword_238 += 0x7;
-    rax = dword_238 + 0x8;
-    dword_238 = eax;
-    return eax;
+    rax = (int64_t)(int32_t)(dword_210[a0]) + 0x210;
+    switch (a0) {
+    case 0:
+        rax = dword_238;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 1:
+        rax = dword_238;
+        dword_238 = eax;
+        rax = dword_238;
+        rax = eax + 0x1;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 2:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        rax = dword_238;
+        rax = eax + 0x2;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 3:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        dword_238 += 0x2;
+        rax = dword_238;
+        rax = eax + 0x3;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 4:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        dword_238 += 0x2;
+        dword_238 += 0x3;
+        rax = dword_238;
+        rax = eax + 0x4;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 5:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        dword_238 += 0x2;
+        dword_238 += 0x3;
+        dword_238 += 0x4;
+        rax = dword_238;
+        rax = eax + 0x5;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 6:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        dword_238 += 0x2;
+        dword_238 += 0x3;
+        dword_238 += 0x4;
+        dword_238 += 0x5;
+        rax = dword_238;
+        rax = eax + 0x6;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 7:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        dword_238 += 0x2;
+        dword_238 += 0x3;
+        dword_238 += 0x4;
+        dword_238 += 0x5;
+        dword_238 += 0x6;
+        rax = dword_238;
+        rax = eax + 0x7;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 8:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        dword_238 += 0x2;
+        dword_238 += 0x3;
+        dword_238 += 0x4;
+        dword_238 += 0x5;
+        dword_238 += 0x6;
+        dword_238 += 0x7;
+        rax = dword_238;
+        rax = eax + 0x8;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    case 9:
+        rax = dword_238;
+        dword_238 = eax;
+        dword_238 += 0x1;
+        dword_238 += 0x2;
+        dword_238 += 0x3;
+        dword_238 += 0x4;
+        dword_238 += 0x5;
+        dword_238 += 0x6;
+        dword_238 += 0x7;
+        dword_238 += 0x8;
+        rax = dword_238;
+        rax = eax + 0x9;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    default:
+        rax = 0xffffffff;
+        dword_238 = eax;
+        rax = dword_238;
+        return rax;
+    }
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -111,22 +142,23 @@ fn d7 @ 0x0 (size 527)
   blk0 @ 0x0:
     brif hi edi, #0x9 -> 0x1b6
   blk1 @ 0x9:
-    rcx = #0x210
-    rax = sext32(load32((#0x210 + (edi * #0x4))))
-    rax = (rax + #0x210)
-    br rax
+    rax = (sext32(load32((#0x210 + (edi * #0x4)))) + #0x210)
+    switch edi [0->0x1b, 1->0x12f, 2->0xa5, 3->0xc5, 4->0x26, 5->0x148, 6->0x17d, 7->0xec, 8->0x1bd, 9->0x54] default 0x1b6
   blk2 @ 0x1b:
     rax = (load32(#0x238) & #0xffffffff)
     br 0x202
   blk3 @ 0x26:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     store32((load32(#0x238) + #0x2), #0x238)
     store32((load32(#0x238) + #0x3), #0x238)
-    rax = ((load32(#0x238) + #0x4) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x4) & #0xffffffff)
     br 0x202
   blk4 @ 0x54:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     store32((load32(#0x238) + #0x2), #0x238)
     store32((load32(#0x238) + #0x3), #0x238)
@@ -135,57 +167,69 @@ fn d7 @ 0x0 (size 527)
     store32((load32(#0x238) + #0x6), #0x238)
     store32((load32(#0x238) + #0x7), #0x238)
     store32((load32(#0x238) + #0x8), #0x238)
-    rax = ((load32(#0x238) + #0x9) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x9) & #0xffffffff)
     br 0x202
   blk5 @ 0xa5:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    rax = ((load32(#0x238) + #0x2) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x2) & #0xffffffff)
     br 0x202
   blk6 @ 0xc5:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     store32((load32(#0x238) + #0x2), #0x238)
-    rax = ((load32(#0x238) + #0x3) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x3) & #0xffffffff)
     br 0x202
   blk7 @ 0xec:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     store32((load32(#0x238) + #0x2), #0x238)
     store32((load32(#0x238) + #0x3), #0x238)
     store32((load32(#0x238) + #0x4), #0x238)
     store32((load32(#0x238) + #0x5), #0x238)
     store32((load32(#0x238) + #0x6), #0x238)
-    rax = ((load32(#0x238) + #0x7) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x7) & #0xffffffff)
     br 0x202
   blk8 @ 0x12f:
     rax = (load32(#0x238) & #0xffffffff)
     store32((rax & #0xffffffff), #0x238)
-    rax = (rax & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
     rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
     br 0x202
   blk9 @ 0x148:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     store32((load32(#0x238) + #0x2), #0x238)
     store32((load32(#0x238) + #0x3), #0x238)
     store32((load32(#0x238) + #0x4), #0x238)
-    rax = ((load32(#0x238) + #0x5) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x5) & #0xffffffff)
     br 0x202
   blk10 @ 0x17d:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     store32((load32(#0x238) + #0x2), #0x238)
     store32((load32(#0x238) + #0x3), #0x238)
     store32((load32(#0x238) + #0x4), #0x238)
     store32((load32(#0x238) + #0x5), #0x238)
-    rax = ((load32(#0x238) + #0x6) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x6) & #0xffffffff)
     br 0x202
   blk11 @ 0x1b6:
     rax = #0xffffffff
     br 0x202
   blk12 @ 0x1bd:
-    store32((load32(#0x238) & #0xffffffff), #0x238)
+    rax = (load32(#0x238) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     store32((load32(#0x238) + #0x2), #0x238)
     store32((load32(#0x238) + #0x3), #0x238)
@@ -193,9 +237,11 @@ fn d7 @ 0x0 (size 527)
     store32((load32(#0x238) + #0x5), #0x238)
     store32((load32(#0x238) + #0x6), #0x238)
     store32((load32(#0x238) + #0x7), #0x238)
-    rax = ((load32(#0x238) + #0x8) & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x8) & #0xffffffff)
   blk13 @ 0x202:
     store32((rax & #0xffffffff), #0x238)
-    ret (rax & #0xffffffff)
+    rax = (load32(#0x238) & #0xffffffff)
+    ret rax
 -- card
 {"addr":"0x0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab"],"section":".text","size":527,"unsupported":0}

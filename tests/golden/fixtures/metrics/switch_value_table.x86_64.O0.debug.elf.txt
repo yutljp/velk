@@ -1,4 +1,4 @@
-# metrics/switch_value_table.x86_64.O0.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/switch_value_table.x86_64.O0.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201180 120 dispatch symtab,dwarf
 
 == 0x201180 dispatch
@@ -8,43 +8,39 @@
 int dispatch(int x) {
     uint32_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
+    uint32_t local_2; /* [sp-c] */
 
-    rsp = rsp - 0x8;
-    rbp = rsp;
     local_0 = x;
-    rax = ((x - 0xa) & 0xffffffff);
+    rax = ((local_0 - 0xa) & 0xffffffff);
     rcx = eax;
     local_1 = rcx;
-    rax = eax - 0x4;
-    if (eax + 0x4 > 0x4 /* unsigned */) {
-        *(uint32_t *)(rbp - 0x4) = 0x0;
-        rsp = rsp + 0x8;
-        return *(uint32_t *)(rbp - 0x4);
+    if (eax > 0x4 /* unsigned */) {
+        local_2 = 0x0;
+        return local_2;
     }
     rcx = 0x200120;
     rax = (int64_t)(int32_t)(dword_200120[local_1]);
     rax = rax + 0x200120;
-    goto *(rax);
-L_2011b0:
-    *(uint32_t *)(rbp - 0x4) = 0x1;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x4);
-L_2011bc:
-    *(uint32_t *)(rbp - 0x4) = 0x3;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x4);
-L_2011c8:
-    *(uint32_t *)(rbp - 0x4) = 0x7;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x4);
-L_2011d4:
-    *(uint32_t *)(rbp - 0x4) = 0x9;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x4);
-L_2011e0:
-    *(uint32_t *)(rbp - 0x4) = 0xb;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x4);
+    switch (((*(uint32_t *)&local_1 - 0xe) & 0xffffffff)) {
+    case -4:
+        local_2 = 0x1;
+        return local_2;
+    case -3:
+        local_2 = 0x3;
+        return local_2;
+    case -2:
+        local_2 = 0x7;
+        return local_2;
+    case -1:
+        local_2 = 0x9;
+        return local_2;
+    case 0:
+        local_2 = 0xb;
+        return local_2;
+    default:
+        local_2 = 0x0;
+        return local_2;
+    }
 }
 -- signature
 int (int x)
@@ -53,38 +49,34 @@ int (int x)
 -- ir
 fn dispatch @ 0x201180 (size 120)
   blk0 @ 0x201180:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rsp + #0xfffffffffffffff8))
-    rax = (((edi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
+    store32(edi, (rsp + #0xfffffffffffffff0))
+    rax = ((load32((rsp + #0xfffffffffffffff0)) + #0xfffffffffffffff6) & #0xffffffff)
     rcx = (rax & #0xffffffff)
-    store64(rcx, (rsp + #0xfffffffffffffff0))
-    rax = (((rax & #0xffffffff) - #0x4) & #0xffffffff)
-    brif hi (eax + #0x4), #0x4 -> 0x2011ec
+    store64(rcx, (rsp + #0xffffffffffffffe8))
+    brif hi (rax & #0xffffffff), #0x4 -> 0x2011ec
   blk1 @ 0x20119c:
     rcx = #0x200120
-    rax = sext32(load32((#0x200120 + (load64((rsp + #0xfffffffffffffff0)) * #0x4))))
+    rax = sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4))))
     rax = (rax + #0x200120)
-    br rax
+    switch ((load32((rsp + #0xffffffffffffffe8)) + #0xfffffffffffffff2) & #0xffffffff) [-4->0x2011b0, -3->0x2011bc, -2->0x2011c8, -1->0x2011d4, 0->0x2011e0] default 0x2011ec
   blk2 @ 0x2011b0:
-    store32(#0x1, (rbp + #0xfffffffffffffffc))
+    store32(#0x1, (rsp + #0xfffffffffffffff4))
     br 0x2011f3
   blk3 @ 0x2011bc:
-    store32(#0x3, (rbp + #0xfffffffffffffffc))
+    store32(#0x3, (rsp + #0xfffffffffffffff4))
     br 0x2011f3
   blk4 @ 0x2011c8:
-    store32(#0x7, (rbp + #0xfffffffffffffffc))
+    store32(#0x7, (rsp + #0xfffffffffffffff4))
     br 0x2011f3
   blk5 @ 0x2011d4:
-    store32(#0x9, (rbp + #0xfffffffffffffffc))
+    store32(#0x9, (rsp + #0xfffffffffffffff4))
     br 0x2011f3
   blk6 @ 0x2011e0:
-    store32(#0xb, (rbp + #0xfffffffffffffffc))
+    store32(#0xb, (rsp + #0xfffffffffffffff4))
     br 0x2011f3
   blk7 @ 0x2011ec:
-    store32(#0x0, (rbp + #0xfffffffffffffffc))
+    store32(#0x0, (rsp + #0xfffffffffffffff4))
   blk8 @ 0x2011f3:
-    rsp = (rsp + #0x8)
-    ret (load32((rbp + #0xfffffffffffffffc)) & #0xffffffff)
+    ret (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
 -- card
 {"addr":"0x201180","approxTokens":192,"blocks":9,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":120,"unsupported":0}

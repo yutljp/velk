@@ -84,6 +84,6 @@
 # Expectations the reference fixtures do not meet yet.
 2	arm64_loops.o	sum_till_neg	has	sum_till_neg(uint32_t *a0, int32_t a1)
 4	l2_loop_a64.o	count_down	known_has	sink
-5	switch_jumptable_x64.o	d7	known_has	switch (a0)
+5	switch_jumptable_x64.o	d7	has	switch (a0)
 6	calls_a64.elf	pick_op	known_has	twice
 6	cpp_demo.o	use(int)	has	ns__add_int__int_()

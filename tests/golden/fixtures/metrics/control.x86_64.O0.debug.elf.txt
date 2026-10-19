@@ -145,36 +145,35 @@ int fallthrough(int x) {
     uint32_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-18] */
 
-    rsp = rsp - 0x8;
-    rbp = rsp;
     local_0 = x;
     local_1 = 0x0;
-    rax = x;
+    rax = local_0;
     local_2 = rax;
-    rax = rax - 0x3;
-    if (rax + 0x3 > 0x3 /* unsigned */) {
-        *(uint32_t *)(rbp - 0x8) = 0xffffffff;
-        rsp = rsp + 0x8;
-        return *(uint32_t *)(rbp - 0x8);
+    if (rax > 0x3 /* unsigned */) {
+        local_1 = 0xffffffff;
+        return local_1;
     }
-    rcx = 0x200120;
     rax = (int64_t)(int32_t)(dword_200120[local_2]);
     rax = rax + 0x200120;
-    goto *(rax);
-L_201343:
-    rax = *(uint32_t *)(rbp - 0x8) + 0x1;
-    *(uint32_t *)(rbp - 0x8) = eax;
-    rax = eax;
-    rax = eax + 0x2;
-    *(uint32_t *)(rbp - 0x8) = eax;
-    rax = eax;
-    *(uint32_t *)(rbp - 0x8) = eax + 0x4;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x8);
-L_201363:
-    *(uint32_t *)(rbp - 0x8) = 0x8;
-    rsp = rsp + 0x8;
-    return *(uint32_t *)(rbp - 0x8);
+    switch (local_2) {
+    case 0:
+        local_1 += 0x1;
+        goto L_20134c;
+    case 1:
+    L_20134c:
+        local_1 += 0x2;
+        local_1 += 0x4;
+        return local_1;
+    case 2:
+        local_1 += 0x4;
+        return local_1;
+    case 3:
+        local_1 = 0x8;
+        return local_1;
+    default:
+        local_1 = 0xffffffff;
+        return local_1;
+    }
 }
 -- signature
 int (int x)
@@ -183,38 +182,31 @@ int (int x)
 -- ir
 fn fallthrough @ 0x201310 (size 107)
   blk0 @ 0x201310:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rbp = rsp
-    store32(edi, (rsp + #0xfffffffffffffffc))
-    store32(#0x0, (rsp + #0xfffffffffffffff8))
-    rax = (edi & #0xffffffff)
-    store64(rax, (rsp + #0xfffffffffffffff0))
-    rax = (rax - #0x3)
-    brif hi (rax + #0x3), #0x3 -> 0x20136f
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    store32(#0x0, (rsp + #0xfffffffffffffff0))
+    rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
+    store64(rax, (rsp + #0xffffffffffffffe8))
+    brif hi rax, #0x3 -> 0x20136f
   blk1 @ 0x20132f:
-    rcx = #0x200120
-    rax = sext32(load32((#0x200120 + (load64((rsp + #0xfffffffffffffff0)) * #0x4))))
+    rax = sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4))))
     rax = (rax + #0x200120)
-    br rax
+    switch load64((rsp + #0xffffffffffffffe8)) [0->0x201343, 1->0x20134c, 2->0x201355, 3->0x201363] default 0x20136f
   blk2 @ 0x201343:
-    rax = ((load32((rbp + #0xfffffffffffffff8)) + #0x1) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff8))
-    rax = (rax & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff8))
-    rax = (rax & #0xffffffff)
-    store32((((rax & #0xffffffff) + #0x4) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
+  blk3 @ 0x20134c:
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x2), (rsp + #0xfffffffffffffff0))
+  blk4 @ 0x201355:
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x4), (rsp + #0xfffffffffffffff0))
     br 0x201376
-  blk3 @ 0x201363:
-    store32(#0x8, (rbp + #0xfffffffffffffff8))
+  blk5 @ 0x201363:
+    store32(#0x8, (rsp + #0xfffffffffffffff0))
     br 0x201376
-  blk4 @ 0x20136f:
-    store32(#0xffffffff, (rbp + #0xfffffffffffffff8))
-  blk5 @ 0x201376:
-    rsp = (rsp + #0x8)
-    ret (load32((rbp + #0xfffffffffffffff8)) & #0xffffffff)
+  blk6 @ 0x20136f:
+    store32(#0xffffffff, (rsp + #0xfffffffffffffff0))
+  blk7 @ 0x201376:
+    ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x201310","approxTokens":234,"blocks":6,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":107,"unsupported":0}
+{"addr":"0x201310","approxTokens":234,"blocks":8,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":107,"unsupported":0}
 
 == 0x201380 sparse
 -- decompile

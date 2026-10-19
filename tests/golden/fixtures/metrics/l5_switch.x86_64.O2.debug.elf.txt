@@ -1,4 +1,4 @@
-# metrics/l5_switch.x86_64.O2.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/l5_switch.x86_64.O2.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201330 167 dense symtab,dwarf
 0x2013e0 8 c0 symtab,dwarf
 0x2013f0 8 c1 symtab,dwarf
@@ -29,79 +29,99 @@ int dense(int x) {
     x = ((x - 0xa) & 0xffffffff);
     if (x > 0xf /* unsigned */) {
         dword_20250c = 0x0;
-        return 0x0;
+        rax = dword_20250c;
+        return rax;
     }
     rsp = rsp - 0x8;
     local_0 = rax;
     rax = 0x200158;
-    rcx = (int64_t)(int32_t)(dword_200158[x]);
-    rcx = rcx + 0x200158;
-    goto *(rcx);
-L_20134d:
-    c0();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_201354:
-    c14();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_20135b:
-    c11();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_201362:
-    c4();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_201369:
-    c12();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_201370:
-    c9();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_201377:
-    c2();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_20137e:
-    c15();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_201385:
-    c3();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_20138c:
-    c7();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_201393:
-    c1();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_20139a:
-    c5();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_2013a1:
-    c13();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_2013a8:
-    c6();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_2013af:
-    c10();
-    rsp = rsp + 0x8;
-    return dword_20250c;
-L_2013b6:
-    c8();
-L_2013bb:
-    rsp = rsp + 0x8;
-    return dword_20250c;
+    rcx = (int64_t)(int32_t)(dword_200158[x]) + 0x200158;
+    switch (x) {
+    case 10:
+        c0();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 11:
+        c1();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 12:
+        c2();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 13:
+        c3();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 14:
+        c4();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 15:
+        c5();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 16:
+        c6();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 17:
+        c7();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 18:
+        c8();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 19:
+        c9();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 20:
+        c10();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 21:
+        c11();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 22:
+        c12();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 23:
+        c13();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 24:
+        c14();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 25:
+        c15();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    default:
+        dword_20250c = 0x0;
+        rax = dword_20250c;
+        return rax;
+    }
 }
 -- signature
 int (int x)
@@ -117,9 +137,8 @@ fn dense @ 0x201330 (size 167)
     rsp = (rsp + #0xfffffffffffffff8)
     store64(rax, rsp)
     rax = #0x200158
-    rcx = sext32(load32((#0x200158 + (rdi * #0x4))))
-    rcx = (rcx + #0x200158)
-    br rcx
+    rcx = (sext32(load32((#0x200158 + (rdi * #0x4)))) + #0x200158)
+    switch (rdi & #0xffffffff) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
   blk2 @ 0x20134d:
     call 0x2013e0
     br 0x2013bb
@@ -169,10 +188,12 @@ fn dense @ 0x201330 (size 167)
     call 0x201460
   blk18 @ 0x2013bb:
     rsp = (rsp + #0x8)
-    ret (load32(#0x20250c) & #0xffffffff)
+    rax = (load32(#0x20250c) & #0xffffffff)
+    ret rax
   blk19 @ 0x2013c6:
     store32(#0x0, #0x20250c)
-    ret #0x0
+    rax = (load32(#0x20250c) & #0xffffffff)
+    ret rax
 -- card
 {"addr":"0x201330","approxTokens":156,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":167,"unsupported":0}
 
