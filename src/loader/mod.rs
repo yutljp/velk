@@ -153,6 +153,8 @@ pub struct Image {
     /// Code split off a function, such as its cold part, by start and size:
     /// it belongs to the functions that branch into it.
     pub fragments: BTreeMap<u64, u64>,
+    /// The functions that never return; a call to one ends its block.
+    pub noreturn: std::collections::HashSet<u64>,
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
@@ -179,6 +181,7 @@ impl Image {
             functions: BTreeMap::new(),
             data_symbols: BTreeMap::new(),
             fragments: BTreeMap::new(),
+            noreturn: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
         }
@@ -611,6 +614,7 @@ pub fn load(path: &Path) -> Result<Image> {
         functions,
         data_symbols,
         fragments: BTreeMap::new(),
+        noreturn: Default::default(),
         relocations,
         go: false,
     };

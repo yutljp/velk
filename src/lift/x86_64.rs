@@ -995,10 +995,12 @@ fn lift_instruction(
                 ins.op0_kind(),
                 OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64
             ) {
-                lifter.stmts.push(call(
-                    lifter.image,
-                    Some(resolved_target(ins, relocation_target)),
-                ));
+                let target = resolved_target(ins, relocation_target);
+                lifter.stmts.push(call(lifter.image, Some(target)));
+                if lifter.image.noreturn.contains(&target) {
+                    lifter.stmts.push(Stmt::Trap);
+                    return true;
+                }
             } else if let Some(through) = operand(lifter, ins, 0) {
                 lifter.stmts.push(call_through(lifter.image, through));
             } else {

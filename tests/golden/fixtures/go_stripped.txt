@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 628 unsupported, 6069 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 626 unsupported, 5521 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1364,8 +1364,7 @@ L_466cc0:
 L_466cdc:
     local_0 = a0;
     runtime_morestack_noctxt();
-    a0 = local_0;
-    goto L_466cc0;
+    __builtin_trap();
 }
 -- signature
 int64_t (int64_t a0)
@@ -1386,48 +1385,50 @@ fn main.twice @ 0x466cc0 (size 64)
   blk2 @ 0x466cdc:
     store64(rax, (rsp + #0x8))
     call 0x461de0
+    trap
+  blk3 @ 0x466ce6:
     rax = load64((rsp + #0x8))
     br 0x466cc0
-  blk3 @ 0x466ced:
+  blk4 @ 0x466ced:
     trap
-  blk4 @ 0x466cee:
+  blk5 @ 0x466cee:
     trap
-  blk5 @ 0x466cef:
+  blk6 @ 0x466cef:
     trap
-  blk6 @ 0x466cf0:
+  blk7 @ 0x466cf0:
     trap
-  blk7 @ 0x466cf1:
+  blk8 @ 0x466cf1:
     trap
-  blk8 @ 0x466cf2:
+  blk9 @ 0x466cf2:
     trap
-  blk9 @ 0x466cf3:
+  blk10 @ 0x466cf3:
     trap
-  blk10 @ 0x466cf4:
+  blk11 @ 0x466cf4:
     trap
-  blk11 @ 0x466cf5:
+  blk12 @ 0x466cf5:
     trap
-  blk12 @ 0x466cf6:
+  blk13 @ 0x466cf6:
     trap
-  blk13 @ 0x466cf7:
+  blk14 @ 0x466cf7:
     trap
-  blk14 @ 0x466cf8:
+  blk15 @ 0x466cf8:
     trap
-  blk15 @ 0x466cf9:
+  blk16 @ 0x466cf9:
     trap
-  blk16 @ 0x466cfa:
+  blk17 @ 0x466cfa:
     trap
-  blk17 @ 0x466cfb:
+  blk18 @ 0x466cfb:
     trap
-  blk18 @ 0x466cfc:
+  blk19 @ 0x466cfc:
     trap
-  blk19 @ 0x466cfd:
+  blk20 @ 0x466cfd:
     trap
-  blk20 @ 0x466cfe:
+  blk21 @ 0x466cfe:
     trap
-  blk21 @ 0x466cff:
+  blk22 @ 0x466cff:
     trap
 -- card
-{"addr":"0x466cc0","approxTokens":156,"blocks":22,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x466cc0","approxTokens":156,"blocks":23,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
 
 == 0x466d00 main.main
 -- decompile
@@ -1452,7 +1453,7 @@ L_466d00:
     return rax;
 L_466d3f:
     runtime_morestack_noctxt();
-    goto L_466d00;
+    __builtin_trap();
 }
 -- signature
 int64_t ()
@@ -1478,56 +1479,58 @@ fn main.main @ 0x466d00 (size 96)
     ret rax
   blk2 @ 0x466d3f:
     call 0x461de0
+    trap
+  blk3 @ 0x466d45:
     br 0x466d00
-  blk3 @ 0x466d47:
+  blk4 @ 0x466d47:
     trap
-  blk4 @ 0x466d48:
+  blk5 @ 0x466d48:
     trap
-  blk5 @ 0x466d49:
+  blk6 @ 0x466d49:
     trap
-  blk6 @ 0x466d4a:
+  blk7 @ 0x466d4a:
     trap
-  blk7 @ 0x466d4b:
+  blk8 @ 0x466d4b:
     trap
-  blk8 @ 0x466d4c:
+  blk9 @ 0x466d4c:
     trap
-  blk9 @ 0x466d4d:
+  blk10 @ 0x466d4d:
     trap
-  blk10 @ 0x466d4e:
+  blk11 @ 0x466d4e:
     trap
-  blk11 @ 0x466d4f:
+  blk12 @ 0x466d4f:
     trap
-  blk12 @ 0x466d50:
+  blk13 @ 0x466d50:
     trap
-  blk13 @ 0x466d51:
+  blk14 @ 0x466d51:
     trap
-  blk14 @ 0x466d52:
+  blk15 @ 0x466d52:
     trap
-  blk15 @ 0x466d53:
+  blk16 @ 0x466d53:
     trap
-  blk16 @ 0x466d54:
+  blk17 @ 0x466d54:
     trap
-  blk17 @ 0x466d55:
+  blk18 @ 0x466d55:
     trap
-  blk18 @ 0x466d56:
+  blk19 @ 0x466d56:
     trap
-  blk19 @ 0x466d57:
+  blk20 @ 0x466d57:
     trap
-  blk20 @ 0x466d58:
+  blk21 @ 0x466d58:
     trap
-  blk21 @ 0x466d59:
+  blk22 @ 0x466d59:
     trap
-  blk22 @ 0x466d5a:
+  blk23 @ 0x466d5a:
     trap
-  blk23 @ 0x466d5b:
+  blk24 @ 0x466d5b:
     trap
-  blk24 @ 0x466d5c:
+  blk25 @ 0x466d5c:
     trap
-  blk25 @ 0x466d5d:
+  blk26 @ 0x466d5d:
     trap
-  blk26 @ 0x466d5e:
+  blk27 @ 0x466d5e:
     trap
-  blk27 @ 0x466d5f:
+  blk28 @ 0x466d5f:
     trap
 -- card
-{"addr":"0x466d00","approxTokens":198,"blocks":28,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x466d00","approxTokens":198,"blocks":29,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}

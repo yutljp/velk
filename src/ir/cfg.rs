@@ -4,10 +4,14 @@ use crate::ir::visit::statement_registers;
 use crate::ir::{Block, Expr, FunctionIr, Stmt};
 
 pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
-    let find = |address: u64| ir.blocks.iter().position(|block| block.start == address);
-    let fallthrough = (index + 1 < ir.blocks.len()).then_some(index + 1);
+    block_successors(&ir.blocks, index)
+}
+
+pub(crate) fn block_successors(blocks: &[Block], index: usize) -> Vec<usize> {
+    let find = |address: u64| blocks.iter().position(|block| block.start == address);
+    let fallthrough = (index + 1 < blocks.len()).then_some(index + 1);
     let mut out = Vec::new();
-    match ir.blocks[index].stmts.last() {
+    match blocks[index].stmts.last() {
         Some(Stmt::Br {
             target: Some(target),
         }) => out.extend(find(*target)),

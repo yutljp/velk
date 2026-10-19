@@ -320,8 +320,10 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
         if borrowed {
             // A callee-saved register the body uses is still only preserved
             // for the caller when the entry saves it and each return restores
-            // it: the round trip says nothing about the function itself.
+            // it: the round trip says nothing about the function itself,
+            // unless the body reads the saved value through the frame pointer.
             if callee_saved(ir, first.reg, sp)
+                && !reads_through_frame_pointer(ir, sp)
                 && saves_entry_value(ir, first)
                 && restores
                     .iter()
@@ -616,6 +618,43 @@ fn address_uses_stack(expr: &Expr) -> bool {
     }
 }
 
+/// Whether a register set to the stack pointer is read through as an
+/// address: right after a push it addresses the value pushed.
+fn reads_through_frame_pointer(ir: &FunctionIr, sp: u16) -> bool {
+    let pointers: std::collections::HashSet<u16> = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .filter_map(|stmt| match stmt {
+            Stmt::Assign { dest, value } if dest.index != sp && *value == Expr::reg(sp, 64) => {
+                Some(dest.index)
+            }
+            _ => None,
+        })
+        .collect();
+    fn loads_at(expr: &Expr, pointers: &std::collections::HashSet<u16>) -> bool {
+        match expr {
+            Expr::Load { addr, .. } if matches!(addr.as_ref(), Expr::Reg { index, .. } if pointers.contains(index)) => {
+                true
+            }
+            _ => crate::ir::visit::children(expr)
+                .into_iter()
+                .any(|child| loads_at(child, pointers)),
+        }
+    }
+    ir.blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| match stmt {
+            Stmt::Assign { value, .. } | Stmt::Ret { value } => loads_at(value, &pointers),
+            Stmt::Store { addr, value, .. } => {
+                loads_at(addr, &pointers) || loads_at(value, &pointers)
+            }
+            Stmt::Brif { lhs, rhs, .. } => loads_at(lhs, &pointers) || loads_at(rhs, &pointers),
+            _ => false,
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::{drop_dead_frame_stores, elide_callee_saves};
@@ -686,6 +725,31 @@ mod tests {
             stmts: other,
         });
         ir
+    }
+
+    #[test]
+    fn keeps_a_save_the_body_reads_through_the_frame_pointer() {
+        // The body reads the pushed rbp back through rbp, then uses rbp.
+        let mut ir = frame_pointer_function(vec![
+            assign(
+                3,
+                Expr::Load {
+                    addr: Box::new(Expr::reg(RBP, 64)),
+                    width: 8,
+                    signed: false,
+                },
+            ),
+            assign(RBP, Expr::reg(3, 64)),
+            Stmt::Store {
+                addr: Expr::Const(0x1000),
+                value: Expr::reg(RBP, 64),
+                width: 8,
+            },
+        ]);
+        ir.blocks[2].stmts.extend(restore());
+        let before = ir.render();
+        elide_callee_saves(&mut ir);
+        assert_eq!(ir.render(), before);
     }
 
     #[test]

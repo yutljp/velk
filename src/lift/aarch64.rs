@@ -1015,9 +1015,12 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             }
         }
         O::BL => {
-            lifter
-                .stmts
-                .push(call(lifter.image, lifter.target_of(ops[0], pc)));
+            let target = lifter.target_of(ops[0], pc);
+            lifter.stmts.push(call(lifter.image, target));
+            if target.is_some_and(|target| lifter.image.noreturn.contains(&target)) {
+                lifter.stmts.push(Stmt::Trap);
+                return true;
+            }
         }
         O::RET => {
             let value = Lifter::read_reg(0, 64);

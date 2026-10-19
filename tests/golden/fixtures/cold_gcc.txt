@@ -1,4 +1,4 @@
-# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 12 gotos
+# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 13 gotos
 0x1000 27 _init symtab
 0x1080 16 __cxa_finalize plt
 0x1090 16 __snprintf_chk plt
@@ -172,6 +172,7 @@ int64_t main(int64_t a0) {
     rdx = local_0 - *(uint64_t *)(fs_base + 0x28);
     if (rdx + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
         __stack_chk_fail();
+        __builtin_trap();
     } else {
         rsp = rsp + 0x48;
         return rax;
@@ -205,6 +206,7 @@ fn main @ 0x1120 (size 124)
     ret rax
   blk2 @ 0x1197:
     call 0x10b0
+    trap
 -- card
 {"addr":"0x1120","approxTokens":228,"blocks":3,"hardReasons":[],"name":"main","nameSources":["symtab","unwind"],"section":".text","size":124,"unsupported":0}
 
@@ -394,29 +396,45 @@ int32_t lookup(uint64_t *a0, int64_t a1, int64_t a2) {
     rsp = rsp - 0x50;
     local_0 = *(uint64_t *)(fs_base + 0x28);
     rax = 0x0;
-    if ((a1 & 0xffffffff) <= 0x0) { goto L_10e0; }
+    if ((a1 & 0xffffffff) <= 0x0) {
+        rbx = rsp;
+        rsp = rsp - 0x8;
+        local_2 = 0x0;
+        r9d = a2;
+        r8 = 0x2004;
+        local_1 = a1;
+        rcx = 0x40;
+        a2 = 0x2;
+        a1 = 0x40;
+        a0 = rbx;
+        rax = 0x0;
+        __snprintf_chk();
+        a1 = stderr_GLIBC_2_2_5;
+        a0 = rbx;
+        fputs();
+        goto L_111a;
+    }
     rbx = a0;
     rax = a0;
     rbp = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
     rcx = a0 + rbp;
-    goto L_12d9;
-L_12d0:
-    rax = rax + 0x18;
-    if (rax == rcx) { goto L_12fd; }
 L_12d9:
     if (*(uint32_t *)(rax) != (a2 & 0xffffffff)) { goto L_12d0; }
     rax = *(uint32_t *)(rax + 0x4);
     a2 = local_0 - *(uint64_t *)(fs_base + 0x28);
-    if (a2 + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
-        __stack_chk_fail();
-        _fini();
-        return rax;
-    }
+    if (a2 + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) { goto L_137b; }
     rsp = rsp + 0x50;
     rsp = rsp + 0x8;
     rsp = rsp + 0x8;
     rsp = rsp + 0x8;
     return rax;
+L_137b:
+    __stack_chk_fail();
+    __builtin_trap();
+L_12d0:
+    rax = rax + 0x18;
+    if (rax == rcx) { goto L_12fd; }
+    goto L_12d9;
 L_12fd:
     r12 = rsp;
     rsp = rsp - 0x8;
@@ -444,24 +462,7 @@ L_12fd:
         rbx = rbx + 0x18;
         __fprintf_chk();
     } while (rbx != rbp);
-    abort();
-    __builtin_trap();
-L_10e0:
-    rbx = rsp;
-    rsp = rsp - 0x8;
-    local_2 = 0x0;
-    r9d = a2;
-    r8 = 0x2004;
-    local_1 = a1;
-    rcx = 0x40;
-    a2 = 0x2;
-    a1 = 0x40;
-    a0 = rbx;
-    rax = 0x0;
-    __snprintf_chk();
-    a1 = stderr_GLIBC_2_2_5;
-    a0 = rbx;
-    fputs();
+L_111a:
     abort();
     __builtin_trap();
 }
@@ -531,7 +532,7 @@ fn lookup @ 0x1290 (size 240)
     br 0x111a
   blk9 @ 0x137b:
     call 0x10b0
-    br 0x1380
+    trap
   blk10 @ 0x10e0:
     rbx = rsp
     rsp = (rsp + #0xfffffffffffffff8)
@@ -551,11 +552,8 @@ fn lookup @ 0x1290 (size 240)
   blk11 @ 0x111a:
     call 0x10a0
     trap
-  blk12 @ 0x1380:
-    call 0x1380
-    ret rax
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t"],"addr":"0x1290","approxTokens":198,"blocks":13,"hardReasons":[],"name":"lookup","nameSources":["symtab","unwind"],"section":".text","size":240,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t"],"addr":"0x1290","approxTokens":198,"blocks":12,"hardReasons":[],"name":"lookup","nameSources":["symtab","unwind"],"section":".text","size":240,"unsupported":0}
 
 == 0x1380 _fini
 -- decompile

@@ -238,6 +238,7 @@ fn initial_memory(image: &Image) -> Vec<(u64, u64)> {
 fn open(path: &std::path::Path) -> Image {
     let mut image = loader::load(path).unwrap_or_else(|error| panic!("{error}"));
     super::absorb_jump_table_cases(&mut image);
+    super::mark_noreturn(&mut image);
     image
 }
 

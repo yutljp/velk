@@ -236,8 +236,12 @@ fn call_through(image: &Image, through: Expr) -> Stmt {
     }
 }
 
-/// A jump out of the function: the callee's result is this function's.
+/// A jump out of the function: the callee's result is this function's,
+/// unless the callee never returns.
 fn tail_call(image: &Image, target: Option<u64>) -> [Stmt; 2] {
+    if target.is_some_and(|target| image.noreturn.contains(&target)) {
+        return [call(image, target), Stmt::Trap];
+    }
     [
         call(image, target),
         Stmt::Ret {
