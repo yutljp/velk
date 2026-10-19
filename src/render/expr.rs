@@ -159,6 +159,12 @@ pub(crate) fn operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> St
 }
 
 pub(crate) fn render_value(value: &Expr, ctx: &Ctx<'_>) -> String {
+    // The address of a stack local reads as that.
+    if matches!(value, Expr::Bin { .. })
+        && let Some(name) = ctx.slots.get(&render_expr(value, ctx))
+    {
+        return format!("&{name}");
+    }
     match value {
         // Only a top-level constant becomes a function name: an immediate
         // inside arithmetic can coincidentally equal a function address.

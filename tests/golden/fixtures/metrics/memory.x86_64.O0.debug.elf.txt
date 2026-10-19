@@ -17,7 +17,7 @@ int64_t copy_bytes(void *dst, void *src, int64_t n) {
     uint64_t local_2; /* [sp-20] */
     uint64_t local_3; /* [sp-28] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_0;
     local_0 = dst;
     local_1 = src;
     local_2 = n;
@@ -65,7 +65,7 @@ int64_t fill_bytes(void *dst, int32_t value, int64_t n) {
     uint64_t local_2; /* [sp-20] */
     uint64_t local_3; /* [sp-28] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_0;
     local_0 = dst;
     local_1 = value & 0xff;
     local_2 = n;

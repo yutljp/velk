@@ -1358,7 +1358,7 @@ L_466cc0:
     rsp = rsp - 0x10;
     v1 = main_add(a0, a0);
     rsp = rsp + 0x10;
-    rsp = rsp + 0x8;
+    rsp = &local_0;
     return v1;
 L_466cdc:
     local_0 = a0;
@@ -1436,16 +1436,11 @@ int64_t main_main(void) {
 
 L_466d00:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466d3f; }
-    rsp = rsp - 0x8;
-    rsp = rsp - 0x10;
     local_0 = main_twice(0x15);
     runtime_printlock(rax);
     runtime_printint(local_0);
     runtime_printnl();
-    runtime_printunlock(rax);
-    rsp = rsp + 0x10;
-    rsp = rsp + 0x8;
-    return rax;
+    return runtime_printunlock(rax);
 L_466d3f:
     runtime_morestack_noctxt();
     __builtin_trap();
@@ -1459,16 +1454,12 @@ fn main.main @ 0x466d00 (size 96)
   blk0 @ 0x466d00:
     brif ls rsp, load64((r14 + #0x10)) -> 0x466d3f
   blk1 @ 0x466d06:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rsp = (rsp - #0x10)
     call 0x466cc0(#0x15)
-    store64(rax, (rsp + #0x8))
+    store64(rax, (rsp + #0xfffffffffffffff0))
     call 0x4305a0(rax)
-    call 0x430c40(load64((rsp + #0x8)))
+    call 0x430c40(load64((rsp + #0xfffffffffffffff0)))
     call 0x4307e0()
     call 0x430600(rax)
-    rsp = (rsp + #0x10)
-    rsp = (rsp + #0x8)
     ret rax
   blk2 @ 0x466d3f:
     call 0x461de0()

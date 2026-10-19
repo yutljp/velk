@@ -17,7 +17,7 @@ int64_t sub_201280(int64_t a0, int64_t a1, int64_t a2) {
     uint64_t local_2; /* [sp-20] */
     uint64_t local_3; /* [sp-28] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_0;
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
@@ -65,7 +65,7 @@ int64_t sub_2012d0(int64_t a0, int32_t a1, int64_t a2) {
     uint64_t local_2; /* [sp-20] */
     uint64_t local_3; /* [sp-28] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_0;
     local_0 = a0;
     local_1 = a1 & 0xff;
     local_2 = a2;

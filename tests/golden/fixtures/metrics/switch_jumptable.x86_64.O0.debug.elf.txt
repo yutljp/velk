@@ -20,7 +20,7 @@ int d7(int x) {
     uint32_t local_10; /* [sp-30] */
     uint32_t local_11; /* [sp-34] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_2;
     local_0 = x;
     rax = local_0;
     local_1 = rax;

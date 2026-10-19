@@ -304,14 +304,13 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     uint64_t local_9; /* [sp-28] */
     uint64_t local_10; /* [sp-20] */
 
-    sp = sp - 0xe0;
     x8 = 0xffffffffffffffc8;
-    x10 = sp + 0x88;
+    x10 = &local_2;
     x8 = 0xffffff80ffffffc8;
-    local_0 = sp + 0x80;
+    local_0 = sp - 0x60;
     local_1 = 0xffffff80ffffffc8;
     x8 = x10 + 0x38;
-    x9 = sp + 0xe0;
+    x9 = sp;
     local_2 = a1;
     local_3 = a2;
     local_4 = a3;
@@ -324,7 +323,6 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_10 = x9;
     if (a0 < 0x1) {
         x8 = 0x0;
-        sp = sp + 0xe0;
         return w8;
     }
     x10 = local_10;
@@ -341,7 +339,6 @@ L_2104c8:
         x8 = *(uint32_t *)(x10) + w8;
         x10 = x13;
         if (a0 == 0x0) {
-            sp = sp + 0xe0;
             return w8;
         }
     L_2104ec:
@@ -356,7 +353,6 @@ L_2104c8:
         local_10 = x13;
     }
     x8 = 0x0;
-    sp = sp + 0xe0;
     return w8;
 }
 -- signature
@@ -366,33 +362,32 @@ int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5,
 -- ir
 fn <unnamed> @ 0x210468 (size 188)
   blk0 @ 0x210468:
-    sp = (sp - #0xe0)
     x8 = #0xffffffffffffffc8
-    x10 = (sp + #0x88)
+    x10 = (sp + #0xffffffffffffffa8)
     x8 = #0xffffff80ffffffc8
-    store64((sp + #0x80), (sp + #0xd0))
-    store64(#0xffffff80ffffffc8, (sp + #0xd8))
+    store64((sp + #0xffffffffffffffa0), (sp + #0xfffffffffffffff0))
+    store64(#0xffffff80ffffffc8, (sp + #0xfffffffffffffff8))
     x8 = (x10 + #0x38)
-    x9 = (sp + #0xe0)
-    store64(x1, (sp + #0x88))
-    store64(x2, (sp + #0x90))
-    store64(x3, (sp + #0x98))
-    store64(x4, (sp + #0xa0))
-    store64(x5, (sp + #0xa8))
-    store64(x6, (sp + #0xb0))
+    x9 = sp
+    store64(x1, (sp + #0xffffffffffffffa8))
+    store64(x2, (sp + #0xffffffffffffffb0))
+    store64(x3, (sp + #0xffffffffffffffb8))
+    store64(x4, (sp + #0xffffffffffffffc0))
+    store64(x5, (sp + #0xffffffffffffffc8))
+    store64(x6, (sp + #0xffffffffffffffd0))
     unsupported: SIMD vector pair store
     unsupported: SIMD vector pair store
     unsupported: SIMD vector pair store
     unsupported: SIMD vector pair store
-    store64(x8, (sp + #0xc8))
-    store64(x7, (sp + #0xb8))
-    store64(x9, (sp + #0xc0))
+    store64(x8, (sp + #0xffffffffffffffe8))
+    store64(x7, (sp + #0xffffffffffffffd8))
+    store64(x9, (sp + #0xffffffffffffffe0))
     brif lt w0, #0x1 -> 0x210514
   blk1 @ 0x2104b8:
-    x10 = load64((sp + #0xc0))
-    x9 = load64((sp + #0xc8))
+    x10 = load64((sp + #0xffffffffffffffe0))
+    x9 = load64((sp + #0xffffffffffffffe8))
     x8 = #0x0
-    x12 = (load32((sp + #0xd8)) & #0xffffffff)
+    x12 = (load32((sp + #0xfffffffffffffff8)) & #0xffffffff)
     br 0x2104ec
   blk2 @ 0x2104c8:
     x13 = x10
@@ -410,16 +405,15 @@ fn <unnamed> @ 0x210468 (size 188)
     br 0x210508
   blk6 @ 0x2104f8:
     w11 = ((x12 & #0xffffffff) + #0x8)
-    store32(w11, (sp + #0xd8))
+    store32(w11, (sp + #0xfffffffffffffff8))
     brif ls (x12 & #0xffffffff), #0xfffffff8 -> 0x2104c8
   blk7 @ 0x210508:
     x13 = (x10 + #0x8)
-    store64(x13, (sp + #0xc0))
+    store64(x13, (sp + #0xffffffffffffffe0))
     br 0x2104d4
   blk8 @ 0x210514:
     x8 = #0x0
   blk9 @ 0x210518:
-    sp = (sp + #0xe0)
     ret (x8 & #0xffffffff)
 -- card
 {"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":188,"unsupported":4}

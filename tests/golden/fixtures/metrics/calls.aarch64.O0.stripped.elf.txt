@@ -334,7 +334,7 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     x8 = 0xffffffc8;
     local_9 = 0xffffffc8;
     local_10 = sp + 0xa0;
-    local_11 = sp + 0xe0;
+    local_11 = &local_14;
     local_12 = sp + 0x120;
     x8 = 0x0;
     local_13 = 0x0;
@@ -346,7 +346,7 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
             sp = sp + 0x120;
             return v1;
         }
-        local_15 = sp + 0x100;
+        local_15 = &local_9;
         x8 = local_9;
         local_16 = w8;
         if ((x8 & 0x80000000) == 0x0) {

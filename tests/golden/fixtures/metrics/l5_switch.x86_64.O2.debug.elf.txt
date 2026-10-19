@@ -29,98 +29,63 @@ int dense(int x) {
     v1 = ((x - 0xa) & 0xffffffff);
     if (v1 > 0xf /* unsigned */) {
         g_sink = 0x0;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     }
-    rsp = rsp - 0x8;
     local_0 = rax;
     rax = 0x200158;
     rcx = (int64_t)(int32_t)(dword_200158[v1]) + 0x200158;
     switch (v1) {
     case 10:
         c0();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 11:
         c1();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 12:
         c2();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 13:
         c3();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 14:
         c4();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 15:
         c5();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 16:
         c6();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 17:
         c7();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 18:
         c8();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 19:
         c9();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 20:
         c10();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 21:
         c11();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 22:
         c12();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 23:
         c13();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 24:
         c14();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     case 25:
         c15();
-        rsp = rsp + 0x8;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     default:
         g_sink = 0x0;
-        rax = g_sink;
-        return rax;
+        return g_sink;
     }
 }
 -- signature
@@ -134,8 +99,7 @@ fn dense @ 0x201330 (size 167)
     v1 = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     brif hi (v1 & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rax, rsp)
+    store64(rax, (rsp + #0xfffffffffffffff8))
     rax = #0x200158
     rcx = (sext32(load32((#0x200158 + (v1 * #0x4)))) + #0x200158)
     switch (v1 & #0xffffffff) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
@@ -187,13 +151,10 @@ fn dense @ 0x201330 (size 167)
   blk17 @ 0x2013b6:
     call 0x201460()
   blk18 @ 0x2013bb:
-    rsp = (rsp + #0x8)
-    rax = (load32(#0x20250c) & #0xffffffff)
-    ret rax
+    ret (load32(#0x20250c) & #0xffffffff)
   blk19 @ 0x2013c6:
     store32(#0x0, #0x20250c)
-    rax = (load32(#0x20250c) & #0xffffffff)
-    ret rax
+    ret (load32(#0x20250c) & #0xffffffff)
 -- card
 {"addr":"0x201330","approxTokens":156,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf","unwind"],"section":".text","size":167,"unsupported":0}
 

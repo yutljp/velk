@@ -388,7 +388,6 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     uint64_t local_22; /* [sp-d0] */
     uint64_t local_23; /* [sp-d8] */
 
-    rsp = rsp - 0x58;
     local_0 = a1;
     local_1 = a2;
     local_2 = a3;
@@ -412,11 +411,10 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         local_19 = xmm7;
         local_20 = xmm7_hi;
     }
-    local_21 = rsp - 0x60;
-    local_22 = rsp + 0x60;
+    local_21 = rsp - 0xb8;
+    local_22 = rsp + 0x8;
     local_23 = 0x3000000008;
     if (a0 <= 0x0) {
-        rsp = rsp + 0x58;
         return 0x0;
     }
     v1 = *(uint32_t *)&local_23;
@@ -426,14 +424,12 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     rax = 0x0;
 L_201574:
     if ((a0 & 0x1) == 0x0) {
-        rsp = rsp + 0x58;
         return rax;
     }
     if (v1 >= 0x29 /* unsigned */) { goto L_2015fb; }
     *(uint32_t *)&local_23 = v1 + 0x8;
     v3 = v2 + v1;
     rax = eax + *(uint32_t *)(v3);
-    rsp = rsp + 0x58;
     return rax;
 L_20159b:
     v5 = a0 & 0x7ffffffe;
@@ -466,7 +462,6 @@ L_2015c9:
 L_2015fb:
     local_22 = v3 + 0x8;
     rax = eax + *(uint32_t *)(v3);
-    rsp = rsp + 0x58;
     return rax;
 }
 -- signature
@@ -476,39 +471,38 @@ int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- ir
 fn <unnamed> @ 0x2014f0 (size 283)
   blk0 @ 0x2014f0:
-    rsp = (rsp - #0x58)
-    store64(rsi, (rsp + #0xffffffffffffffa8))
-    store64(rdx, (rsp + #0xffffffffffffffb0))
-    store64(rcx, (rsp + #0xffffffffffffffb8))
-    store64(r8, (rsp + #0xffffffffffffffc0))
-    store64(r9, (rsp + #0xffffffffffffffc8))
+    store64(rsi, (rsp + #0xffffffffffffff50))
+    store64(rdx, (rsp + #0xffffffffffffff58))
+    store64(rcx, (rsp + #0xffffffffffffff60))
+    store64(r8, (rsp + #0xffffffffffffff68))
+    store64(r9, (rsp + #0xffffffffffffff70))
     brif eq (rax & #0xff), #0x0 -> 0x201538
   blk1 @ 0x201511:
-    store64(xmm0, (rsp + #0xffffffffffffffd0))
-    store64(xmm0_hi, (rsp + #0xffffffffffffffd8))
-    store64(xmm1, (rsp + #0xffffffffffffffe0))
-    store64(xmm1_hi, (rsp + #0xffffffffffffffe8))
-    store64(xmm2, (rsp + #0xfffffffffffffff0))
-    store64(xmm2_hi, (rsp + #0xfffffffffffffff8))
-    store64(xmm3, rsp)
-    store64(xmm3_hi, (rsp + #0x8))
-    store64(xmm4, (rsp + #0x10))
-    store64(xmm4_hi, (rsp + #0x18))
-    store64(xmm5, (rsp + #0x20))
-    store64(xmm5_hi, (rsp + #0x28))
-    store64(xmm6, (rsp + #0x30))
-    store64(xmm6_hi, (rsp + #0x38))
-    store64(xmm7, (rsp + #0x40))
-    store64(xmm7_hi, (rsp + #0x48))
+    store64(xmm0, (rsp + #0xffffffffffffff78))
+    store64(xmm0_hi, (rsp + #0xffffffffffffff80))
+    store64(xmm1, (rsp + #0xffffffffffffff88))
+    store64(xmm1_hi, (rsp + #0xffffffffffffff90))
+    store64(xmm2, (rsp + #0xffffffffffffff98))
+    store64(xmm2_hi, (rsp + #0xffffffffffffffa0))
+    store64(xmm3, (rsp + #0xffffffffffffffa8))
+    store64(xmm3_hi, (rsp + #0xffffffffffffffb0))
+    store64(xmm4, (rsp + #0xffffffffffffffb8))
+    store64(xmm4_hi, (rsp + #0xffffffffffffffc0))
+    store64(xmm5, (rsp + #0xffffffffffffffc8))
+    store64(xmm5_hi, (rsp + #0xffffffffffffffd0))
+    store64(xmm6, (rsp + #0xffffffffffffffd8))
+    store64(xmm6_hi, (rsp + #0xffffffffffffffe0))
+    store64(xmm7, (rsp + #0xffffffffffffffe8))
+    store64(xmm7_hi, (rsp + #0xfffffffffffffff0))
   blk2 @ 0x201538:
-    store64((rsp + #0xffffffffffffffa0), (rsp + #0xffffffffffffff90))
-    store64((rsp + #0x60), (rsp + #0xffffffffffffff88))
-    store64(#0x3000000008, (rsp + #0xffffffffffffff80))
+    store64((rsp + #0xffffffffffffff48), (rsp + #0xffffffffffffff38))
+    store64((rsp + #0x8), (rsp + #0xffffffffffffff30))
+    store64(#0x3000000008, (rsp + #0xffffffffffffff28))
     brif le (rdi & #0xffffffff), #0x0 -> 0x201594
   blk3 @ 0x20155f:
-    v1 = (load32((rsp + #0xffffffffffffff80)) & #0xffffffff)
-    v2 = load64((rsp + #0xffffffffffffff90))
-    v3 = load64((rsp + #0xffffffffffffff88))
+    v1 = (load32((rsp + #0xffffffffffffff28)) & #0xffffffff)
+    v2 = load64((rsp + #0xffffffffffffff38))
+    v3 = load64((rsp + #0xffffffffffffff30))
     brif ne (rdi & #0xffffffff), #0x1 -> 0x20159b
   blk4 @ 0x201572:
     rax = #0x0
@@ -517,11 +511,10 @@ fn <unnamed> @ 0x2014f0 (size 283)
   blk6 @ 0x20157e:
     brif cs (v1 & #0xffffffff), #0x29 -> 0x2015fb
   blk7 @ 0x201583:
-    store32((((v1 & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff80))
+    store32((((v1 & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff28))
     v3 = (v2 + (v1 & #0xffffffff))
     br 0x201604
   blk8 @ 0x201594:
-    rsp = (rsp + #0x58)
     ret #0x0
   blk9 @ 0x20159b:
     v5 = (rdi & #0x7ffffffe)
@@ -531,7 +524,7 @@ fn <unnamed> @ 0x2014f0 (size 283)
     v3 = v6
     v6 = ((v1 & #0xffffffff) + v2)
     v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
-    store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff80))
+    store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff28))
   blk11 @ 0x2015c0:
     rax = (((rax & #0xffffffff) + load32(v6)) & #0xffffffff)
     v5 = (((v5 & #0xffffffff) + #0xfffffffffffffffe) & #0xffffffff)
@@ -542,24 +535,23 @@ fn <unnamed> @ 0x2014f0 (size 283)
     v6 = v3
     v3 = ((v1 & #0xffffffff) + v2)
     v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
-    store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff80))
+    store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff28))
     br 0x2015e9
   blk14 @ 0x2015e0:
     v6 = (v3 + #0x8)
-    store64(v6, (rsp + #0xffffffffffffff88))
+    store64(v6, (rsp + #0xffffffffffffff30))
   blk15 @ 0x2015e9:
     rax = (((rax & #0xffffffff) + load32(v3)) & #0xffffffff)
     brif cc (v1 & #0xffffffff), #0x29 -> 0x2015b0
   blk16 @ 0x2015f0:
     v3 = (v6 + #0x8)
-    store64(v3, (rsp + #0xffffffffffffff88))
+    store64(v3, (rsp + #0xffffffffffffff30))
     br 0x2015c0
   blk17 @ 0x2015fb:
-    store64((v3 + #0x8), (rsp + #0xffffffffffffff88))
+    store64((v3 + #0x8), (rsp + #0xffffffffffffff30))
   blk18 @ 0x201604:
     rax = (((rax & #0xffffffff) + load32(v3)) & #0xffffffff)
   blk19 @ 0x201606:
-    rsp = (rsp + #0x58)
     ret rax
 -- card
 {"addr":"0x2014f0","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":283,"unsupported":0}

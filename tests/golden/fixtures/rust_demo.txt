@@ -555,13 +555,12 @@ int32_t rust_demo__main(void) {
     uint64_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-8] */
 
-    rsp = rsp - 0x18;
     local_0 = 0x2a;
-    local_1 = rsp + 0x4;
+    local_1 = &local_0;
     rax = qword_55aa8;
     local_2 = rax;
     rdi = 0x5091;
-    rsi = rsp + 0x8;
+    rsi = &local_1;
     return (*(qword_55ab0))();
 }
 -- signature
@@ -572,13 +571,12 @@ int32_t ()
 -- ir
 fn rust_demo::main @ 0x14f90 (size 57)
   blk0 @ 0x14f90:
-    rsp = (rsp - #0x18)
-    store32(#0x2a, (rsp + #0x4))
-    store64((rsp + #0x4), (rsp + #0x8))
+    store32(#0x2a, (rsp + #0xffffffffffffffec))
+    store64((rsp + #0xffffffffffffffec), (rsp + #0xfffffffffffffff0))
     rax = load64(#0x55aa8)
-    store64(rax, (rsp + #0x10))
+    store64(rax, (rsp + #0xfffffffffffffff8))
     rdi = #0x5091
-    rsi = (rsp + #0x8)
+    rsi = (rsp + #0xfffffffffffffff0)
     call *load64(#0x55ab0)
     ret rax
 -- card

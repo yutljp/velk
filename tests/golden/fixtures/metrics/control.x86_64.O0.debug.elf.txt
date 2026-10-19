@@ -86,7 +86,7 @@ int cleanup_on_error(int a, int b, int *out) {
     uint64_t local_2; /* [sp-18] */
     uint32_t local_3; /* [sp-1c] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_1;
     local_0 = a;
     local_1 = b;
     local_2 = out;

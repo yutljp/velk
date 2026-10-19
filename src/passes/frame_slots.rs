@@ -16,10 +16,59 @@ pub fn settle(ir: &mut FunctionIr) {
     if !canonical_frame(ir, &frames) {
         return;
     }
+    let escapes = address_escapes(ir, &frames);
     rewrite_frame(ir, &frames);
-    frame::drop_dead_frame_stores(ir);
-    copies::inline_local_copies(ir);
+    // Code that has a slot's address may read or write it unseen.
+    if !escapes {
+        frame::drop_dead_frame_stores(ir);
+        copies::inline_local_copies(ir);
+    }
     crate::passes::simplify::simplify(ir);
+}
+
+/// Whether a frame slot's address is used as a value, beyond the address of
+/// a load or store, so the code may reach the slot through a pointer.
+fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
+    let sp = stack_pointer(ir.isa);
+    fn escapes(expr: &Expr, frame: i64, sp: u16) -> bool {
+        if frame_slot(expr, frame, sp).is_some() {
+            return true;
+        }
+        match expr {
+            Expr::Load { addr, .. } if frame_slot(addr, frame, sp).is_some() => false,
+            _ => crate::ir::visit::children(expr)
+                .into_iter()
+                .any(|child| escapes(child, frame, sp)),
+        }
+    }
+    for (position, block) in ir.blocks.iter().enumerate() {
+        let Some(mut frame) = frames[position] else {
+            continue;
+        };
+        for stmt in &block.stmts {
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.index == sp
+            {
+                frame = adjusted(frame, value, sp);
+                continue;
+            }
+            let operands: Vec<&Expr> = match stmt {
+                // The address a store writes is no escape; what it stores may be.
+                Stmt::Store { addr, value, .. } => {
+                    if frame_slot(addr, frame, sp).is_some() {
+                        vec![value]
+                    } else {
+                        vec![addr, value]
+                    }
+                }
+                other => other.operands(),
+            };
+            if operands.into_iter().any(|expr| escapes(expr, frame, sp)) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Rewrites the reads of a frame pointer that the entry block sets once from
@@ -117,7 +166,16 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
     let sp = stack_pointer(ir.isa);
     for (position, block) in ir.blocks.iter().enumerate() {
         let Some(frame) = frames[position] else {
-            return false;
+            // Code no path reaches, such as padding, may stay as it is
+            // unless it uses the stack pointer.
+            let uses_sp = block.stmts.iter().any(|stmt| {
+                let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+                writes.contains(&sp) || reads.contains(&sp)
+            });
+            if uses_sp {
+                return false;
+            }
+            continue;
         };
         for stmt in &block.stmts {
             match stmt {
@@ -173,6 +231,10 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
 /// True when the stack pointer appears in the value only as the address of a
 /// frame-slot load.
 fn frame_only(expr: &Expr, frame: i64, sp: u16) -> bool {
+    // A slot's address, such as a local array's, settles like its loads.
+    if frame_slot(expr, frame, sp).is_some() {
+        return true;
+    }
     match expr {
         Expr::Reg { index, .. } => *index != sp,
         Expr::Const(_) => true,
@@ -258,6 +320,12 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
 }
 
 fn rewrite_expr_frame(expr: &mut Expr, frame: i64, sp: u16) {
+    if !matches!(expr, Expr::Load { .. })
+        && let Some(slot) = frame_slot(expr, frame, sp)
+    {
+        *expr = frame_address(sp, slot);
+        return;
+    }
     match expr {
         Expr::Load { addr, .. } => {
             if let Some(slot) = frame_slot(addr, frame, sp) {
@@ -384,7 +452,7 @@ pub(crate) fn block_frames(ir: &FunctionIr, sp: u16) -> Vec<Option<i64>> {
                         successors.push(*target);
                     }
                 }
-                Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) => {}
+                Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
                 _ => {
                     if position + 1 < ir.blocks.len() {
                         successors.push(position + 1);

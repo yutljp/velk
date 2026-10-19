@@ -20,7 +20,7 @@ int32_t sub_2011c0(int32_t a0) {
     uint32_t local_10; /* [sp-30] */
     uint32_t local_11; /* [sp-34] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_2;
     local_0 = a0;
     rax = local_0;
     local_1 = rax;

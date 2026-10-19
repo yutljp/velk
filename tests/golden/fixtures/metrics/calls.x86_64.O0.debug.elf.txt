@@ -334,7 +334,7 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     uint32_t local_25; /* [sp-ec] */
     uint64_t local_26; /* [sp-100] */
 
-    rsp = rsp - 0x8;
+    rsp = &local_5;
     rsp = rsp - 0x80;
     if ((rax & 0xff) != 0x0) {
         local_0 = xmm0;
@@ -370,7 +370,7 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     for (;;) {
         if (local_23 >= local_21) {
             rsp = rsp + 0x80;
-            rsp = rsp + 0x8;
+            rsp = &local_7;
             return local_22;
         }
         local_24 = rsp + 0x60;
@@ -392,7 +392,7 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
         local_23 += 0x1;
     }
     rsp = rsp + 0x80;
-    rsp = rsp + 0x8;
+    rsp = &local_7;
     return local_22;
 }
 -- signature
