@@ -246,8 +246,9 @@ L_11e3:
     if (rax == 0x0) {
         return __TMC_END__;
     }
-L_11ef:
     goto *(rax);
+L_11f8:
+    return __TMC_END__;
 }
 -- signature
 int32_t ()
@@ -279,8 +280,9 @@ L_1224:
     if (rax == 0x0) {
         return 0x0;
     }
-L_1230:
     goto *(rax);
+L_1238:
+    return 0x0;
 }
 -- signature
 int32_t ()

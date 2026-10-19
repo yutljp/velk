@@ -15,6 +15,9 @@ pub(super) struct Lifter<'a> {
     last_compare: Option<Flags>,
     /// Whether the instruction being lifted set `last_compare`.
     flags_written: bool,
+    /// Whether an operand of the instruction being lifted was one the lifter
+    /// cannot express, so that its effect would be lost.
+    incomplete: bool,
     extended_dividend: Option<u8>,
     /// The width of the high half of an unsigned dividend the previous
     /// instruction cleared (`xor edx, edx`).
@@ -30,6 +33,7 @@ impl<'a> Lifter<'a> {
             stmts: Vec::new(),
             last_compare: None,
             flags_written: false,
+            incomplete: false,
             extended_dividend: None,
             zeroed_dividend: None,
             image,
@@ -48,6 +52,12 @@ impl<'a> Lifter<'a> {
         self.last_compare.as_ref().map_or(Test::Unknown, |flags| {
             flags.test(cond, crate::loader::Isa::X86_64)
         })
+    }
+
+    /// The carry flag as one or zero, when the flags here decide it.
+    fn carry(&self) -> Option<Expr> {
+        self.test(Cond::Cc)
+            .select(Expr::constant(1), Expr::constant(0))
     }
 
     fn read_reg(index: u16, width: u8) -> Expr {
@@ -155,6 +165,17 @@ fn gpr(reg: Register) -> Option<(u16, u8)> {
         _ => return Option::None,
     };
     Option::Some(pair)
+}
+
+/// The register whose second byte `reg` names (`ah`, `ch`, `dh`, `bh`).
+fn high_byte(reg: Register) -> Option<u16> {
+    match reg {
+        Register::AH => Some(0),
+        Register::CH => Some(1),
+        Register::DH => Some(2),
+        Register::BH => Some(3),
+        _ => None,
+    }
 }
 
 fn memory_width(ins: &Instruction) -> Option<u8> {
@@ -349,6 +370,8 @@ fn load(ins: &Instruction) -> Option<Expr> {
 fn immediate(ins: &Instruction, index: u32) -> Option<Expr> {
     let value = match ins.op_kind(index) {
         OpKind::Immediate8 => ins.immediate8() as u64,
+        OpKind::Immediate8_2nd => ins.immediate8_2nd() as u64,
+        OpKind::Immediate8to16 => ins.immediate8to16() as u16 as u64,
         OpKind::Immediate8to32 => ins.immediate8to32() as i64 as u64,
         OpKind::Immediate8to64 => ins.immediate8to64() as u64,
         OpKind::Immediate16 => ins.immediate16() as u64,
@@ -361,15 +384,31 @@ fn immediate(ins: &Instruction, index: u32) -> Option<Expr> {
     Some(Expr::constant(value))
 }
 
-fn operand(_lifter: &mut Lifter, ins: &Instruction, index: u32) -> Option<Expr> {
-    match ins.op_kind(index) {
+fn operand(lifter: &mut Lifter, ins: &Instruction, index: u32) -> Option<Expr> {
+    let value = match ins.op_kind(index) {
         OpKind::Register => {
-            let (register, width) = gpr(ins.op_register(index))?;
-            Some(Lifter::read_reg(register, width))
+            let register = ins.op_register(index);
+            if register == Register::None {
+                return None;
+            }
+            match (gpr(register), high_byte(register)) {
+                (Some((register, width)), _) => Some(Lifter::read_reg(register, width)),
+                (None, Some(register)) => Some(Expr::bin(
+                    BinOp::And,
+                    Expr::bin(BinOp::Shr, Expr::reg(register, 64), Expr::constant(8)),
+                    Expr::constant(0xff),
+                )),
+                _ => None,
+            }
         }
         OpKind::Memory => load(ins),
+        _ if index >= ins.op_count() => return None,
         _ => immediate(ins, index),
+    };
+    if value.is_none() {
+        lifter.incomplete = true;
     }
+    value
 }
 
 fn write_destination(lifter: &mut Lifter, ins: &Instruction, value: Expr) {
@@ -379,23 +418,38 @@ fn write_destination(lifter: &mut Lifter, ins: &Instruction, value: Expr) {
 fn write_operand(lifter: &mut Lifter, ins: &Instruction, index: u32, value: Expr) {
     match ins.op_kind(index) {
         OpKind::Register => {
-            if let Some((index, width)) = gpr(ins.op_register(index)) {
-                lifter.assign(index, width, value);
+            let register = ins.op_register(index);
+            match (gpr(register), high_byte(register)) {
+                (Some((index, width)), _) => lifter.assign(index, width, value),
+                // The second byte replaces bits 8..16 and keeps the rest.
+                (None, Some(index)) => {
+                    let kept = Expr::bin(BinOp::And, Expr::reg(index, 64), Expr::constant(!0xff00));
+                    let placed = Expr::bin(
+                        BinOp::Shl,
+                        Expr::bin(BinOp::And, value, Expr::constant(0xff)),
+                        Expr::constant(8),
+                    );
+                    lifter.assign(index, 64, Expr::bin(BinOp::Or, kept, placed));
+                }
+                _ => lifter.incomplete = true,
             }
         }
         OpKind::Memory => {
             if let (Some(addr), Some(width)) = (memory_address(ins), memory_width(ins)) {
                 preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
                 lifter.stmts.push(Stmt::Store { addr, value, width });
+            } else {
+                lifter.incomplete = true;
             }
         }
-        _ => {}
+        _ => lifter.incomplete = true,
     }
 }
 
 /// The width in bits of a general register or memory operand.
 fn operand_width(ins: &Instruction, index: u32) -> Option<u8> {
     match ins.op_kind(index) {
+        OpKind::Register if high_byte(ins.op_register(index)).is_some() => Some(8),
         OpKind::Register => gpr(ins.op_register(index)).map(|(_, width)| width),
         OpKind::Memory => memory_width(ins).map(|bytes| bytes * 8),
         _ => None,
@@ -435,8 +489,7 @@ fn lift_exchange(lifter: &mut Lifter, ins: &Instruction) {
     };
     let same_register = ins.op0_kind() == OpKind::Register
         && ins.op1_kind() == OpKind::Register
-        && gpr(ins.op0_register()).map(|(index, _)| index)
-            == gpr(ins.op1_register()).map(|(index, _)| index);
+        && ins.op0_register() == ins.op1_register();
     match ins.mnemonic() {
         Mnemonic::Xchg if same_register => {}
         Mnemonic::Xchg => {
@@ -496,6 +549,10 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
     };
     let bits = u64::from(width);
     match ins.mnemonic() {
+        // The result of swapping a 16-bit register is undefined.
+        Mnemonic::Bswap if width == 16 => lifter.stmts.push(Stmt::Unsupported {
+            text: format!("bswap of a 16-bit register at 0x{:x}", ins.ip()),
+        }),
         Mnemonic::Bswap => {
             let swapped = super::reverse_bytes(value, width, width / 8);
             write_destination(lifter, ins, swapped);
@@ -504,6 +561,7 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
             let Some(amount) = operand(lifter, ins, 1) else {
                 return;
             };
+            let amount = shift_count(amount, width);
             let right = ins.mnemonic() == Mnemonic::Ror;
             write_destination(lifter, ins, super::rotate(value, amount, width, right));
         }
@@ -513,7 +571,7 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
                 text: format!("bt at 0x{:x}", ins.ip()),
             });
         }
-        // The carry holds the bit, as `0 < bit` unsigned.
+        // The carry holds the bit; zero is left as it was.
         Mnemonic::Bt => {
             let Some(bit) = operand(lifter, ins, 1) else {
                 return;
@@ -524,7 +582,7 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
                 Expr::bin(BinOp::Shr, value, bit),
                 Expr::constant(1),
             );
-            lifter.set_flags(Flags::difference(Expr::constant(0), flag));
+            lifter.set_flags(Flags::carry(flag));
         }
         _ => {
             let (Some(source), Some(count)) = (operand(lifter, ins, 1), operand(lifter, ins, 2))
@@ -573,30 +631,57 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
     }
 }
 
-/// `mul rm` computes rdx:rax = rax * rm; rdx is written first so the high
-/// product still reads the original rax.
+/// One-operand `mul` and `imul`: the accumulator times the operand, with
+/// the product's low half in the accumulator and its high half in rdx (edx,
+/// dx), or the whole product in ax for bytes.
 fn lift_mul_high(lifter: &mut Lifter, ins: &Instruction, signed: bool) {
-    let Some((_, width)) = gpr(ins.op0_register()) else {
+    let (Some(source), Some(width)) = (operand(lifter, ins, 0), operand_width(ins, 0)) else {
+        lifter.incomplete = true;
         return;
     };
-    if width != 64 {
+    let multiplicand = Lifter::read_reg(RAX, width);
+    if width == 64 {
+        // The operand may be rdx, which the high half overwrites first.
+        let source = hold(lifter, source);
+        let high_op = if signed {
+            BinOp::MulHighS
+        } else {
+            BinOp::MulHigh
+        };
+        lifter.assign(
+            RDX,
+            64,
+            Expr::bin(high_op, multiplicand.clone(), source.clone()),
+        );
+        lifter.assign(RAX, 64, Expr::bin(BinOp::Mul, multiplicand, source));
         return;
     }
-    let Some(op_value) = operand(lifter, ins, 0) else {
+    let widen = |value: Expr| {
+        if signed {
+            Expr::SignExtend {
+                value: Box::new(value),
+                width: width / 8,
+            }
+        } else {
+            value
+        }
+    };
+    let product = Expr::bin(BinOp::Mul, widen(multiplicand), widen(source));
+    if width == 8 {
+        lifter.assign(RAX, 16, product);
         return;
-    };
-    let multiplicand = Lifter::read_reg(RAX, 64);
-    let high_op = if signed {
-        BinOp::MulHighS
-    } else {
-        BinOp::MulHigh
-    };
+    }
+    let product = hold(lifter, product);
     lifter.assign(
         RDX,
-        64,
-        Expr::bin(high_op, multiplicand.clone(), op_value.clone()),
+        width,
+        Expr::bin(
+            BinOp::Shr,
+            product.clone(),
+            Expr::constant(u64::from(width)),
+        ),
     );
-    lifter.assign(RAX, 64, Expr::bin(BinOp::Mul, multiplicand, op_value));
+    lifter.assign(RAX, width, product);
 }
 
 fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
@@ -623,16 +708,69 @@ fn select(lifter: &mut Lifter, ins: &Instruction, then: Expr, els: Expr) -> Opti
 }
 
 fn shift(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
-    let (Some(value), Some(amount)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) else {
+    let (Some(value), Some(amount), Some(width)) = (
+        operand(lifter, ins, 0),
+        operand(lifter, ins, 1),
+        operand_width(ins, 0),
+    ) else {
         return;
     };
+    let amount = shift_count(amount, width);
     // A shift by zero leaves the flags as they were.
-    let counted = matches!(amount, Expr::Const(count) if count & 0x3f != 0);
+    let counted = matches!(amount, Expr::Const(count) if count != 0);
     let value = Expr::bin(op, value, amount);
     if counted {
         lifter.set_flags(Flags::result(value.clone()));
     }
     write_destination(lifter, ins, value);
+}
+
+/// `adc` and `sbb`: a sum with the carry, or a difference less it. The
+/// flags keep only the carry out.
+fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool) {
+    let (Some(a), Some(b), Some(width)) = (
+        operand(lifter, ins, 0),
+        operand(lifter, ins, 1),
+        operand_width(ins, 0),
+    ) else {
+        return;
+    };
+    let Some(carry) = lifter.carry() else {
+        lifter.stmts.push(Stmt::Unsupported {
+            text: format!(
+                "{:?} on a carry not modelled at 0x{:x}",
+                ins.mnemonic(),
+                ins.ip()
+            ),
+        });
+        return;
+    };
+    // The carry may read registers that keep the earlier flags' operands,
+    // which keeping the new flags' operands overwrites.
+    let carry = hold(lifter, carry);
+    let (out, value) = if subtract {
+        (
+            super::flags::borrow_out(&a, &b, carry.clone()),
+            Expr::bin(BinOp::Sub, Expr::bin(BinOp::Sub, a, b), carry),
+        )
+    } else {
+        (
+            super::flags::carry_out(&a, &b, carry.clone(), u32::from(width)),
+            Expr::bin(BinOp::Add, Expr::bin(BinOp::Add, a, b), carry),
+        )
+    };
+    lifter.set_flags(Flags::carry(out));
+    write_destination(lifter, ins, value);
+}
+
+/// The count a shift or rotate uses: its low six bits for a 64-bit operand,
+/// its low five bits otherwise.
+fn shift_count(amount: Expr, width: u8) -> Expr {
+    let mask = if width == 64 { 63 } else { 31 };
+    match amount {
+        Expr::Const(count) => Expr::constant(count & mask),
+        amount => Expr::bin(BinOp::And, amount, Expr::constant(mask)),
+    }
 }
 
 fn condition(code: ConditionCode) -> Option<Cond> {
@@ -924,12 +1062,19 @@ fn lift_instruction(
             let updated = Expr::bin(op, value, Expr::constant(1));
             write_destination(lifter, ins, updated);
         }
-        Mnemonic::Cdq | Mnemonic::Cqo => {
-            let width = if ins.mnemonic() == Mnemonic::Cdq {
-                32
-            } else {
-                64
+        // rdx (edx, dx) receives copies of the accumulator's sign bit.
+        Mnemonic::Cwd | Mnemonic::Cdq | Mnemonic::Cqo => {
+            let width = match ins.mnemonic() {
+                Mnemonic::Cwd => 16,
+                Mnemonic::Cdq => 32,
+                _ => 64,
             };
+            let sign = Expr::bin(
+                BinOp::Sar,
+                Lifter::read_reg(RAX, width),
+                Expr::constant(u64::from(width) - 1),
+            );
+            lifter.assign(RDX, width, sign);
             lifter.extended_dividend = Some(width);
         }
         Mnemonic::Idiv => {
@@ -1090,7 +1235,22 @@ fn lift_instruction(
         | Mnemonic::Shrd
         | Mnemonic::Bswap
         | Mnemonic::Bt => lift_bits(lifter, ins),
-        Mnemonic::Nop | Mnemonic::Endbr64 => {}
+        Mnemonic::Nop
+        | Mnemonic::Endbr64
+        | Mnemonic::Reservednop
+        | Mnemonic::Pause
+        | Mnemonic::Wait
+        | Mnemonic::Cld => {}
+        Mnemonic::Adc => with_carry(lifter, ins, false),
+        Mnemonic::Sbb => with_carry(lifter, ins, true),
+        Mnemonic::Clc => lifter.set_flags(Flags::carry(Expr::constant(0))),
+        Mnemonic::Stc => lifter.set_flags(Flags::carry(Expr::constant(1))),
+        Mnemonic::Cmc => {
+            if let Some(carry) = lifter.carry() {
+                let flipped = Expr::bin(BinOp::Xor, carry, Expr::constant(1));
+                lifter.set_flags(Flags::carry(flipped));
+            }
+        }
         Mnemonic::Int3 | Mnemonic::Ud2 | Mnemonic::Hlt => {
             lifter.stmts.push(Stmt::Trap);
             return true;
@@ -1163,7 +1323,17 @@ impl Machine for Lifter<'_> {
                 target != self.function && self.image.functions.contains_key(&target)
             };
         self.flags_written = false;
+        self.incomplete = false;
         let ended = lift_instruction(self, instruction, relocation_target, tail_call);
+        if self.incomplete {
+            self.stmts.push(Stmt::Unsupported {
+                text: format!(
+                    "{:?} operands at 0x{:x}",
+                    instruction.mnemonic(),
+                    instruction.ip()
+                ),
+            });
+        }
         // Flags the instruction sets in a way not modelled are unknown.
         if instruction.rflags_modified() != 0 && !self.flags_written {
             self.last_compare = None;

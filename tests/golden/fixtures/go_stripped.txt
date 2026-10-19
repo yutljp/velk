@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 628 unsupported, 5186 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 492 unsupported, 2544 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1353,17 +1353,20 @@ int64_t main_twice(int64_t a0) {
     uint64_t local_0; /* [sp+8] */
 
 L_466cc0:
-    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466cdc; }
+    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) {
+        local_0 = a0;
+        runtime_morestack_noctxt();
+        __builtin_trap();
+    }
     rsp = rsp - 0x8;
     rsp = rsp - 0x10;
     v1 = main_add(a0, a0);
     rsp = rsp + 0x10;
     rsp = rsp + 0x8;
     return v1;
-L_466cdc:
-    local_0 = a0;
-    runtime_morestack_noctxt();
-    __builtin_trap();
+L_466ce6:
+    a0 = local_0;
+    goto L_466cc0;
 }
 -- signature
 int64_t (int64_t a0)
@@ -1435,16 +1438,18 @@ int64_t main_main(void) {
     uint64_t local_0; /* [sp-10] */
 
 L_466d00:
-    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466d3f; }
+    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) {
+        runtime_morestack_noctxt();
+        __builtin_trap();
+    }
     v1 = main_twice(0x15);
     local_0 = v1;
     runtime_printlock(v1);
     runtime_printint(local_0);
     v2 = runtime_printnl();
     return runtime_printunlock(v2);
-L_466d3f:
-    runtime_morestack_noctxt();
-    __builtin_trap();
+L_466d45:
+    goto L_466d00;
 }
 -- signature
 int64_t ()

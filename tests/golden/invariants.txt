@@ -1,0 +1,23 @@
+go_probe 0x4311e0 runtime.main: goto L_431500 has no label
+go_probe 0x4311e0 runtime.main: the pseudo-C drops `Call { target: Some(4594688), through: None, convention: GoAmd64, args: Some([Const(4718560)]), result: None }`
+go_probe 0x4311e0 runtime.main: the pseudo-C drops `Store { addr: Bin { op: Add, lhs: Reg { index: 4, width: 64 }, rhs: Const(64) }, value: Const(1), width: 8 }`
+go_probe 0x463be0 runtime.debugCallV2: goto L_463df1 has no label
+go_stripped 0x4311e0 runtime.main: goto L_431500 has no label
+go_stripped 0x4311e0 runtime.main: the pseudo-C drops `Call { target: Some(4594688), through: None, convention: GoAmd64, args: Some([Const(4718560)]), result: None }`
+go_stripped 0x4311e0 runtime.main: the pseudo-C drops `Store { addr: Bin { op: Add, lhs: Reg { index: 4, width: 64 }, rhs: Const(64) }, value: Const(1), width: 8 }`
+go_stripped 0x463be0 runtime.debugCallV2: goto L_463df1 has no label
+rust_demo 0x16a30 <core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::get_or_init<<addr2line::line::LazyLines>::borrow<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#0}>::{closure#0}, !>: goto L_188c5 has no label
+rust_demo 0x18a64 <std::backtrace_rs::symbolize::gimli::Cache>::with_global::<std::backtrace_rs::symbolize::gimli::resolve::{closure#1}>: goto L_1c177 has no label
+rust_demo 0x3a230 std::rt::lang_start_internal: goto L_3a8b3 has no label
+rust_demo 0x3bcb0 std::sys::fs::unix::readlink: goto L_3be84 has no label
+rust_demo 0x3bcb0 std::sys::fs::unix::readlink: the pseudo-C drops `Call { target: Some(338816), through: None, convention: SysV, args: Some([Reg { index: 14, width: 64 }]), result: None }`
+rust_probe 0x16a30 <core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::get_or_init<<addr2line::line::LazyLines>::borrow<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#0}>::{closure#0}, !>: goto L_188c5 has no label
+rust_probe 0x18a64 <std::backtrace_rs::symbolize::gimli::Cache>::with_global::<std::backtrace_rs::symbolize::gimli::resolve::{closure#1}>: goto L_1c177 has no label
+rust_probe 0x3a230 std::rt::lang_start_internal: goto L_3a8b3 has no label
+rust_probe 0x3bcb0 std::sys::fs::unix::readlink: goto L_3be84 has no label
+rust_probe 0x3bcb0 std::sys::fs::unix::readlink: the pseudo-C drops `Call { target: Some(338816), through: None, convention: SysV, args: Some([Reg { index: 14, width: 64 }]), result: None }`
+rust_probe_stripped 0x16a30 -: goto L_188c5 has no label
+rust_probe_stripped 0x18a64 -: goto L_1c177 has no label
+rust_probe_stripped 0x3a230 -: goto L_3a8b3 has no label
+rust_probe_stripped 0x3bcb0 -: goto L_3be84 has no label
+rust_probe_stripped 0x3bcb0 -: the pseudo-C drops `Call { target: Some(338816), through: None, convention: SysV, args: Some([Reg { index: 14, width: 64 }]), result: None }`

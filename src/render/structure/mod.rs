@@ -80,6 +80,8 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     let mut nodes = dominance::structure(ir)?;
     let mut used = std::collections::HashSet::new();
     collect_targets(&nodes, &mut used);
+    // Code the entry does not reach keeps its label, which names where it starts.
+    used.extend(dominance::entries(ir));
     prune_labels(&mut nodes, &used);
     prune_unreachable(&mut nodes);
     flatten_early_returns(&mut nodes);

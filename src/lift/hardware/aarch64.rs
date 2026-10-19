@@ -1,12 +1,5 @@
-//! Checks the AArch64 lifter against the processor running the tests: random
-//! data-processing instructions run once natively and once as lifted code in
-//! the interpreter, from the same registers, and must leave the same
-//! registers and satisfy the same conditions.
-//!
-//! Each case follows a flag-setting compare, so an instruction that reads
-//! the flags reads ones the lifter knows.
+//! AArch64 data-processing instructions, run natively from a code page.
 
-use std::collections::{BTreeMap, HashSet};
 use std::ffi::c_void;
 use std::sync::Once;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -14,10 +7,13 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use yaxpeax_arch::{Decoder, ReaderBuilder};
 use yaxpeax_arm::armv8::a64::{self, Operand};
 
-use super::lift;
-use crate::ir::eval::{self, hash};
-use crate::ir::{FunctionIr, Stmt};
-use crate::loader::{Image, Isa};
+use super::{
+    Findings, branches_on_unknown_flags, condition_differs, lifted, register_differences,
+    unsupported, value,
+};
+use crate::ir::FunctionIr;
+use crate::ir::eval::hash;
+use crate::loader::Isa;
 
 /// The general registers a case may use: the harness keeps its state
 /// pointer in x28, x18 belongs to the platform, and x29, x30 and sp hold
@@ -271,50 +267,6 @@ fn compare(seed: u64) -> u32 {
     FORMS[(hash(seed, 3) % 6) as usize] | register(4) << 16 | register(5) << 5
 }
 
-/// Register values that reach the edges of the arithmetic often.
-fn value(seed: u64, key: u64) -> u64 {
-    const EDGES: [u64; 9] = [
-        0,
-        1,
-        u64::MAX,
-        0x7fff_ffff,
-        0x8000_0000,
-        0xffff_ffff,
-        0x7fff_ffff_ffff_ffff,
-        0x8000_0000_0000_0000,
-        0x1_0000_0000,
-    ];
-    let pick = hash(seed, key);
-    match pick % 4 {
-        0 => EDGES[(pick >> 8) as usize % EDGES.len()],
-        1 => (pick >> 8) % 64,
-        2 => (pick >> 8) as u32 as u64,
-        _ => hash(seed, key ^ 0x55),
-    }
-}
-
-fn lifted(words: &[u32]) -> Option<FunctionIr> {
-    let code: Vec<u8> = words.iter().flat_map(|word| word.to_le_bytes()).collect();
-    let len = code.len() as u64;
-    let image = Image::from_code(Isa::AArch64, 0, code);
-    let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
-    ir.blocks = lift(&image, 0, len, &HashSet::new()).ok()?;
-    Some(ir)
-}
-
-fn setup<'a>(registers: &'a [(u16, u64)]) -> eval::Setup<'a> {
-    eval::Setup {
-        seed: 0,
-        convention: eval::Convention {
-            arguments: &[],
-            clobbered: &[],
-        },
-        registers,
-        memory: &[],
-        step_limit: 100,
-    }
-}
-
 /// Whether the condition with encoding `code` holds for `nzcv` as the
 /// processor reads it.
 fn condition(code: u32, nzcv: u64) -> bool {
@@ -336,23 +288,11 @@ fn condition(code: u32, nzcv: u64) -> bool {
     if code & 1 == 1 { !base } else { base }
 }
 
-#[derive(Default)]
-struct Findings {
-    unsupported: BTreeMap<String, usize>,
-    /// Disagreements by kind, each with how often it occurred and one example.
-    registers: BTreeMap<String, (usize, String)>,
-    conditions: BTreeMap<String, (usize, String)>,
-    tried: usize,
-    /// Encodings the decoder accepts but the processor does not define.
-    undefined: usize,
-}
-
-fn note(
-    kinds: &mut BTreeMap<String, (usize, String)>,
-    kind: String,
-    example: impl FnOnce() -> String,
-) {
-    kinds.entry(kind).or_insert_with(|| (0, example())).0 += 1;
+fn lift_words(words: &[u32]) -> Option<FunctionIr> {
+    lifted(
+        Isa::AArch64,
+        words.iter().flat_map(|word| word.to_le_bytes()).collect(),
+    )
 }
 
 fn check(page: &Page, seed: u64, findings: &mut Findings) {
@@ -377,19 +317,10 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
         .map(|(_, decoded)| format!("{:?}", decoded.opcode))
         .collect::<Vec<_>>()
         .join(" then ");
-    let Some(ir) = lifted(&[body.as_slice(), &[RET]].concat()) else {
+    let Some(ir) = lift_words(&[body.as_slice(), &[RET]].concat()) else {
         return;
     };
-    if let Some(text) = ir
-        .blocks
-        .iter()
-        .flat_map(|b| &b.stmts)
-        .find_map(|stmt| match stmt {
-            Stmt::Unsupported { text } => Some(text.clone()),
-            _ => None,
-        })
-    {
-        let name = text.split(' ').next().unwrap_or(&text).to_owned();
+    if let Some(name) = unsupported(&ir) {
         *findings.unsupported.entry(name).or_default() += 1;
         return;
     }
@@ -430,68 +361,42 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
             ir.render()
         )
     };
-    match eval::registers_after(&ir, &setup(&registers)) {
-        Ok(after) => {
-            let differ: Vec<String> = registers
-                .iter()
-                .filter_map(|(index, start)| {
-                    let modelled = after.get(index).copied().unwrap_or(*start);
-                    let real = state[usize::from(*index)];
-                    (modelled != real)
-                        .then(|| format!("x{index}: lifted {modelled:#x}, processor {real:#x}"))
-                })
-                .collect();
-            if !differ.is_empty() {
-                note(&mut findings.registers, kind, || {
-                    format!("{}\n  {}", describe(), differ.join("\n  "))
-                });
-                return;
-            }
-        }
-        // AArch64 divides by zero to zero, which C leaves undefined and the
-        // IR does too.
-        Err("division by zero") => {
-            findings.undefined += 1;
-            return;
-        }
-        Err(reason) => {
-            note(&mut findings.registers, kind, || {
-                format!("{}\n  {reason}", describe())
-            });
-            return;
-        }
+    if let Some(differ) = register_differences(
+        &ir,
+        &registers,
+        |index| state[usize::from(index)],
+        |index| format!("x{index}"),
+    ) {
+        Findings::note(&mut findings.registers, kind, || {
+            format!("{}\n  {differ}", describe())
+        });
+        return;
     }
 
     // b.<cond> +12; mov x0, #0; ret; mov x0, #1; ret
     let setter_kind = decode(setter).map_or(String::new(), |d| format!("{:?}", d.opcode));
     for code in 0..14 {
         let tail = [0x5400_0060 | code, 0xd280_0000, RET, 0xd280_0020, RET];
-        let Some(ir) = lifted(&[body.as_slice(), &tail].concat()) else {
+        let Some(ir) = lift_words(&[body.as_slice(), &tail].concat()) else {
             continue;
         };
         // Flags the lifter does not know are left to the branch.
-        let unknown = ir
-            .blocks
-            .iter()
-            .flat_map(|b| &b.stmts)
-            .any(|stmt| matches!(stmt, Stmt::BrifFlags { .. }));
-        if unknown {
+        if branches_on_unknown_flags(&ir) {
             continue;
         }
         let expected = condition(code, state[NZCV]);
-        match eval::run(&ir, &setup(&registers)) {
-            eval::Outcome::Return { value, .. } if (value == 1) == expected => {}
-            outcome => note(
+        if let Some(differ) = condition_differs(&ir, &registers, expected) {
+            Findings::note(
                 &mut findings.conditions,
                 format!("{setter_kind} then {kind}, condition {code}"),
                 || {
                     format!(
-                        "{}\n  condition {code}: processor {expected}, lifted {outcome:?}\n{}",
+                        "{}\n  condition {code}: {differ}\n{}",
                         describe(),
                         ir.render()
                     )
                 },
-            ),
+            );
         }
     }
 }
@@ -503,25 +408,5 @@ fn lifted_instructions_match_the_processor() {
     for seed in 0..100_000 {
         check(&page, seed, &mut findings);
     }
-    let shown = |kinds: &BTreeMap<String, (usize, String)>| {
-        kinds
-            .iter()
-            .map(|(kind, (count, example))| format!("{kind}: {count} cases, as in\n{example}"))
-            .collect::<Vec<_>>()
-            .join("\n\n")
-    };
-    assert!(
-        findings.registers.is_empty() && findings.conditions.is_empty(),
-        "of {} cases, {} kinds leave different registers and {} decide a condition differently\n\n{}\n\n{}\n\nunsupported: {:?}",
-        findings.tried,
-        findings.registers.len(),
-        findings.conditions.len(),
-        shown(&findings.registers),
-        shown(&findings.conditions),
-        findings.unsupported,
-    );
-    eprintln!(
-        "{} cases agree, {} undefined; unsupported: {:?}",
-        findings.tried, findings.undefined, findings.unsupported
-    );
+    findings.assert_agreement();
 }

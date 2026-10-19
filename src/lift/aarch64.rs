@@ -50,6 +50,23 @@ impl<'a> Lifter<'a> {
         })
     }
 
+    /// Copies `value` into a register of its own and reads it from there.
+    fn hold(&mut self, value: Expr) -> Expr {
+        preserve_compare(
+            &mut self.last_compare,
+            Write::Register(crate::ir::EXCHANGE, None),
+            &mut self.stmts,
+        );
+        self.stmts.push(Stmt::Assign {
+            dest: RegRef {
+                index: crate::ir::EXCHANGE,
+                width: 64,
+            },
+            value,
+        });
+        Expr::reg(crate::ir::EXCHANGE, 64)
+    }
+
     /// The condition encoded as `code`; `al` and `nv` both always hold.
     fn test_code(&self, code: u8) -> Test {
         match Cond::from_code(code) {
@@ -459,8 +476,9 @@ fn lift_conditional_compare(lifter: &mut Lifter, ops: [Operand; 4], sum: bool) {
 }
 
 /// `adc`, `sbc` and their flag-setting forms: a sum with the carry, or a
-/// difference less its complement. The flags they set are not modelled.
-fn lift_with_carry(lifter: &mut Lifter, ops: [Operand; 4], subtract: bool) {
+/// difference less its complement. The flag-setting forms keep only the
+/// carry they produce.
+fn lift_with_carry(lifter: &mut Lifter, ops: [Operand; 4], subtract: bool, flags: bool) {
     let carry = lifter
         .test(Cond::Cs)
         .select(Expr::constant(1), Expr::constant(0));
@@ -478,6 +496,24 @@ fn lift_with_carry(lifter: &mut Lifter, ops: [Operand; 4], subtract: bool) {
         });
         return;
     };
+    // The carry may read registers that keep the earlier flags' operands,
+    // which keeping the new flags' operands overwrites.
+    let carry = lifter.hold(carry);
+    // `sbc` adds the complement of its second operand and the carry.
+    let all = if dest.width == 64 {
+        u64::MAX
+    } else {
+        0xffff_ffff
+    };
+    let addend = if subtract {
+        Expr::bin(BinOp::Xor, b.clone(), Expr::constant(all))
+    } else {
+        b.clone()
+    };
+    if flags {
+        let out = super::flags::carry_out(&a, &addend, carry.clone(), u32::from(dest.width));
+        lifter.last_compare = Some(Flags::carry(out));
+    }
     let value = if subtract {
         let borrow = Expr::bin(BinOp::Xor, carry, Expr::constant(1));
         Expr::bin(BinOp::Sub, Expr::bin(BinOp::Sub, a, b), borrow)
@@ -1067,8 +1103,10 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::SMSUBL => lift_long_multiply(lifter, ops, true, true),
         O::CCMP => lift_conditional_compare(lifter, ops, false),
         O::CCMN => lift_conditional_compare(lifter, ops, true),
-        O::ADC | O::ADCS => lift_with_carry(lifter, ops, false),
-        O::SBC | O::SBCS => lift_with_carry(lifter, ops, true),
+        O::ADC => lift_with_carry(lifter, ops, false, false),
+        O::ADCS => lift_with_carry(lifter, ops, false, true),
+        O::SBC => lift_with_carry(lifter, ops, true, false),
+        O::SBCS => lift_with_carry(lifter, ops, true, true),
         O::BFM => lift_bitfield_insert(lifter, ops),
         O::MOVZ => lift_mov(lifter, ops, false),
         O::MOVN => lift_mov(lifter, ops, true),

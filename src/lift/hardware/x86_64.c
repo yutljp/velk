@@ -1,0 +1,92 @@
+/* Runs x86-64 instruction sequences for the lifter's differential test.
+ *
+ * Standard input holds records of a 32-bit code length, the code, sixteen
+ * 64-bit registers in encoding order and the flags. For each record the
+ * code runs from those registers and flags (rsp and r15 excepted, which the
+ * harness keeps), and standard output receives the registers and flags
+ * after it, then a byte: zero, or the signal the code raised. */
+
+#include <setjmp.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/mman.h>
+
+typedef struct {
+    uint64_t registers[16];
+    uint64_t flags;
+} State;
+
+#ifdef __APPLE__
+#define ENTER "_velk_enter"
+#else
+#define ENTER "velk_enter"
+#endif
+
+void velk_enter(State *state, void *code);
+
+__asm__(".intel_syntax noprefix\n"
+        ".globl " ENTER "\n" ENTER ":\n"
+        "push rbx\npush rbp\npush r12\npush r13\npush r14\npush r15\n"
+        "mov r15, rdi\n"
+        "push rsi\n"
+        "push qword ptr [r15 + 128]\npopfq\n"
+        "mov rax, [r15 + 0]\nmov rcx, [r15 + 8]\nmov rdx, [r15 + 16]\n"
+        "mov rbx, [r15 + 24]\nmov rbp, [r15 + 40]\nmov rsi, [r15 + 48]\n"
+        "mov rdi, [r15 + 56]\nmov r8, [r15 + 64]\nmov r9, [r15 + 72]\n"
+        "mov r10, [r15 + 80]\nmov r11, [r15 + 88]\nmov r12, [r15 + 96]\n"
+        "mov r13, [r15 + 104]\nmov r14, [r15 + 112]\n"
+        "call qword ptr [rsp]\n"
+        "mov [r15 + 0], rax\nmov [r15 + 8], rcx\nmov [r15 + 16], rdx\n"
+        "mov [r15 + 24], rbx\nmov [r15 + 40], rbp\nmov [r15 + 48], rsi\n"
+        "mov [r15 + 56], rdi\nmov [r15 + 64], r8\nmov [r15 + 72], r9\n"
+        "mov [r15 + 80], r10\nmov [r15 + 88], r11\nmov [r15 + 96], r12\n"
+        "mov [r15 + 104], r13\nmov [r15 + 112], r14\n"
+        "pushfq\npop qword ptr [r15 + 128]\n"
+        "add rsp, 8\n"
+        "pop r15\npop r14\npop r13\npop r12\npop rbp\npop rbx\n"
+        "ret\n"
+        ".att_syntax\n");
+
+static sigjmp_buf recovery;
+
+static void on_fault(int signal) { siglongjmp(recovery, signal); }
+
+int main(void) {
+    const size_t size = 1 << 16;
+    unsigned char *page = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
+                               MAP_PRIVATE | MAP_ANON, -1, 0);
+    if (page == MAP_FAILED) {
+        perror("mmap");
+        return 1;
+    }
+    int faults[] = {SIGILL, SIGFPE, SIGSEGV, SIGBUS, SIGTRAP};
+    for (size_t i = 0; i < sizeof faults / sizeof *faults; i++) {
+        struct sigaction action;
+        memset(&action, 0, sizeof action);
+        action.sa_handler = on_fault;
+        sigemptyset(&action.sa_mask);
+        sigaction(faults[i], &action, NULL);
+    }
+    uint32_t length;
+    while (fread(&length, sizeof length, 1, stdin) == 1) {
+        State state;
+        if (length + 1 > size || fread(page, 1, length, stdin) != length ||
+            fread(&state, sizeof state, 1, stdin) != 1) {
+            return 1;
+        }
+        page[length] = 0xc3;
+        volatile State result = state;
+        unsigned char status = (unsigned char)sigsetjmp(recovery, 1);
+        if (status == 0) {
+            State running = state;
+            velk_enter(&running, page);
+            result = running;
+        }
+        State out = result;
+        fwrite(&out, sizeof out, 1, stdout);
+        fwrite(&status, 1, 1, stdout);
+    }
+    return 0;
+}

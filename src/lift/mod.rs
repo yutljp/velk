@@ -1,13 +1,13 @@
 mod aarch64;
 mod flags;
-#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+#[cfg(test)]
 mod hardware;
 mod x86_64;
 
 use std::collections::HashSet;
 
 use crate::error::LiftError;
-use crate::ir::visit::{children, expr_reads, expr_width};
+use crate::ir::visit::{children, expr_reads};
 use crate::ir::{Block, Convention, Expr, FLAG_OPERANDS, RegRef, Stmt};
 use crate::loader::{Image, Isa, Summary};
 
@@ -209,7 +209,10 @@ fn preserve_compare(compare: &mut Option<flags::Flags>, write: Write<'_>, stmts:
         if !clobbered(operand) {
             continue;
         }
-        let width = expr_width(operand).unwrap_or(64);
+        let width = match crate::ir::semantics::width(operand) {
+            0 => 64,
+            bits => bits as u8,
+        };
         if let Write::Register(index, Some(value)) = write {
             if operand == value {
                 *operand = Expr::reg(index, width);

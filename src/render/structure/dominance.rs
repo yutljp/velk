@@ -68,28 +68,36 @@ impl<'a> Graph<'a> {
         let successors: Vec<Vec<usize>> = (0..count)
             .map(|block| successors(blocks, &index, block))
             .collect();
-        // Reverse postorder by an explicit stack.
+        // Reverse postorder by an explicit stack, from the entry and then
+        // from each block it does not reach.
         let mut order = vec![usize::MAX; count];
         let mut postorder = Vec::new();
         let mut visited = vec![false; count];
-        let mut stack = vec![(0usize, 0usize)];
-        visited[0] = true;
-        while let Some((block, next)) = stack.last_mut() {
-            if let Some(successor) = successors[*block].get(*next).copied() {
-                *next += 1;
-                if !visited[successor] {
-                    visited[successor] = true;
-                    stack.push((successor, 0));
+        let mut roots = Vec::new();
+        for root in 0..count {
+            if visited[root] {
+                continue;
+            }
+            roots.push(root);
+            let mut stack = vec![(root, 0usize)];
+            visited[root] = true;
+            while let Some((block, next)) = stack.last_mut() {
+                if let Some(successor) = successors[*block].get(*next).copied() {
+                    *next += 1;
+                    if !visited[successor] {
+                        visited[successor] = true;
+                        stack.push((successor, 0));
+                    }
+                } else {
+                    postorder.push(*block);
+                    stack.pop();
                 }
-            } else {
-                postorder.push(*block);
-                stack.pop();
             }
         }
         for (number, block) in postorder.iter().rev().enumerate() {
             order[*block] = number;
         }
-        let idom = crate::ssa::dom::dominators(&successors).idom;
+        let idom = forest_dominators(&successors, &roots);
         let mut children = vec![Vec::new(); count];
         for (block, parent) in idom.iter().enumerate() {
             if let Some(parent) = parent {
@@ -444,6 +452,41 @@ enum Enclosing {
     Switch { follow: Next },
 }
 
+/// The immediate dominator of each block under a root that precedes every
+/// block in `roots`; None for the blocks only that root dominates.
+fn forest_dominators(successors: &[Vec<usize>], roots: &[usize]) -> Vec<Option<usize>> {
+    // The shared root comes first, and every block moves up by one.
+    let shifted: Vec<Vec<usize>> = std::iter::once(roots.iter().map(|root| root + 1).collect())
+        .chain(
+            successors
+                .iter()
+                .map(|next| next.iter().map(|block| block + 1).collect()),
+        )
+        .collect();
+    crate::ssa::dom::dominators(&shifted).idom[1..]
+        .iter()
+        .map(|parent| parent.and_then(|parent| parent.checked_sub(1)))
+        .collect()
+}
+
+/// The blocks the entry does not reach, which start code of their own
+/// (an exception handler, or the target of a jump not followed).
+pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
+    if ir.blocks.is_empty() {
+        return Vec::new();
+    }
+    let graph = Graph::new(ir);
+    (1..ir.blocks.len())
+        .filter(|block| graph.idom[*block].is_none() && !padding(&ir.blocks[*block]))
+        .map(|block| ir.blocks[block].start)
+        .collect()
+}
+
+/// A block that only traps, as the filler between functions does.
+fn padding(block: &Block) -> bool {
+    block.stmts.iter().all(|stmt| matches!(stmt, Stmt::Trap))
+}
+
 /// Rewrites each jump as falling through, `break`, `continue` or a goto.
 fn resolve(nodes: &mut Vec<Node>, next: Next, enclosing: &mut Vec<Enclosing>) {
     let mut position = 0;
@@ -770,21 +813,20 @@ fn while_loop(body: &[Node]) -> Option<Node> {
 }
 
 /// The function structured by its dominator tree, or None when the tree is
-/// too deep to walk or code outside it, such as an indirect jump's target,
-/// would be lost.
+/// too deep to walk.
 pub(super) fn structure(ir: &FunctionIr) -> Option<Vec<Node>> {
     if ir.blocks.is_empty() {
         return Some(Vec::new());
     }
     let graph = Graph::new(ir);
-    let lost = ir.blocks.iter().enumerate().any(|(index, block)| {
-        graph.order[index] == usize::MAX
-            && !block.stmts.iter().all(|stmt| matches!(stmt, Stmt::Trap))
-    });
-    if lost {
-        return None;
-    }
     let mut nodes = graph.tree(0, 0)?;
+    // Code the entry does not reach, and joins of it with code the entry
+    // does reach, follow the function's own code.
+    for block in 1..ir.blocks.len() {
+        if graph.idom[block].is_none() && !padding(&ir.blocks[block]) {
+            nodes.extend(graph.tree(block, 0)?);
+        }
+    }
     resolve(&mut nodes, Next::Unknown, &mut Vec::new());
     shape(&mut nodes);
     Some(nodes)

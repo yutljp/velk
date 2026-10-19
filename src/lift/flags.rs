@@ -24,6 +24,8 @@ pub(super) enum Source {
     Result,
     /// Set to the given N, Z, C and V bits, from high to low (AArch64).
     Fixed(u8),
+    /// Only the carry is known, equal to the bit `lhs` (x86 `bt`).
+    Carry,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +73,10 @@ impl Flags {
 
     pub fn result(result: Expr) -> Self {
         Self::new(Source::Result, result, Expr::constant(0))
+    }
+
+    pub fn carry(bit: Expr) -> Self {
+        Self::new(Source::Carry, bit, Expr::constant(0))
     }
 
     pub fn fixed(nzcv: u8) -> Self {
@@ -149,6 +155,21 @@ impl Flags {
         let compare = |cond, lhs: &Expr, rhs: &Expr| Test::Compare(cond, lhs.clone(), rhs.clone());
         let zero = Expr::constant(0);
         match self.source {
+            Source::Carry => {
+                // On x86 "below" asks for a set carry, on AArch64 `hs`.
+                let set = if isa == Isa::X86_64 {
+                    Cond::Cc
+                } else {
+                    Cond::Cs
+                };
+                if cond == set {
+                    compare(Cond::Ne, a, &zero)
+                } else if cond == set.invert() {
+                    compare(Cond::Eq, a, &zero)
+                } else {
+                    Test::Unknown
+                }
+            }
             Source::Fixed(nzcv) => {
                 if fixed_holds(cond, nzcv) {
                     Test::Always
@@ -286,6 +307,36 @@ fn sum(a: &Expr, b: &Expr, bits: u32, cond: Cond, isa: Isa) -> Test {
         Cond::Gt => both(not(is_zero), not_negative),
         Cond::Le => not(both(not(is_zero), not_negative)),
     }
+}
+
+/// One when `a + b + carry` carries out of `bits`, for a carry of one or zero.
+pub(super) fn carry_out(a: &Expr, b: &Expr, carry: Expr, bits: u32) -> Expr {
+    let inverted = Expr::bin(BinOp::Xor, b.clone(), Expr::constant(mask(bits)));
+    let beyond = |cond| truth(Test::Compare(cond, a.clone(), inverted.clone()));
+    choose(carry, beyond(Cond::Cs), beyond(Cond::Hi))
+}
+
+/// One when `a - b - borrow` borrows, for a borrow of one or zero.
+pub(super) fn borrow_out(a: &Expr, b: &Expr, borrow: Expr) -> Expr {
+    let below = |cond| truth(Test::Compare(cond, a.clone(), b.clone()));
+    choose(borrow, below(Cond::Ls), below(Cond::Cc))
+}
+
+/// `then` when `bit` is set and `els` otherwise.
+fn choose(bit: Expr, then: Expr, els: Expr) -> Expr {
+    Expr::Select {
+        cond: Cond::Ne,
+        lhs: Box::new(bit),
+        rhs: Box::new(Expr::constant(0)),
+        then: Box::new(then),
+        els: Box::new(els),
+    }
+}
+
+/// One when the test holds and zero otherwise.
+fn truth(test: Test) -> Expr {
+    test.select(Expr::constant(1), Expr::constant(0))
+        .expect("a decided test")
 }
 
 fn not(test: Test) -> Test {
