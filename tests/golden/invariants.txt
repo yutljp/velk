@@ -1,64 +1,14 @@
 pe64.exe 0x140001090 -: reads rax without assigning it
 pe64.obj 0x90 entry: reads rax without assigning it
 rust_demo 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
-rust_demo 0x3cba0 std::sys::io::error::unix::is_interrupted: reads rax without assigning it
-rust_demo 0x3f3f0 <std::sys::stdio::unix::Stderr as std::io::Write>::is_write_vectored: reads rax without assigning it
-rust_demo 0x3f700 <alloc::vec::Vec<u8> as std::io::Write>::is_write_vectored: reads rax without assigning it
-rust_demo 0x52b10 <<core::io::error::OsFunctions>::DEFAULT::{closure#1} as core::ops::function::FnOnce<(i32,)>>::call_once: reads rax without assigning it
 rust_probe 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
-rust_probe 0x3cba0 std::sys::io::error::unix::is_interrupted: reads rax without assigning it
-rust_probe 0x3f3f0 <std::sys::stdio::unix::Stderr as std::io::Write>::is_write_vectored: reads rax without assigning it
-rust_probe 0x3f700 <alloc::vec::Vec<u8> as std::io::Write>::is_write_vectored: reads rax without assigning it
-rust_probe 0x52b10 <<core::io::error::OsFunctions>::DEFAULT::{closure#1} as core::ops::function::FnOnce<(i32,)>>::call_once: reads rax without assigning it
 rust_probe_stripped 0x161a0 -: reads rax without assigning it
 rust_probe_stripped 0x1fc6b -: reads rsi without assigning it
 rust_probe_stripped 0x21da1 -: reads rsi without assigning it
 rust_probe_stripped 0x34b8a -: reads rax without assigning it
-rust_probe_stripped 0x37c0d -: reads rax without assigning it
-rust_probe_stripped 0x37c1c -: reads rax without assigning it
-rust_probe_stripped 0x37c36 -: reads rax without assigning it
-rust_probe_stripped 0x37c45 -: reads rax without assigning it
 rust_probe_stripped 0x38779 -: reads rax without assigning it
 rust_probe_stripped 0x3b8e0 -: reads rax without assigning it
-rust_probe_stripped 0x3cbcb -: reads rax without assigning it
-rust_probe_stripped 0x3cbce -: reads rax without assigning it
-rust_probe_stripped 0x3cbd1 -: reads rax without assigning it
-rust_probe_stripped 0x3cbd4 -: reads rax without assigning it
-rust_probe_stripped 0x3cbd7 -: reads rax without assigning it
-rust_probe_stripped 0x3cbda -: reads rax without assigning it
-rust_probe_stripped 0x3cbdd -: reads rax without assigning it
-rust_probe_stripped 0x3cbe0 -: reads rax without assigning it
-rust_probe_stripped 0x3cbe3 -: reads rax without assigning it
-rust_probe_stripped 0x3cbe6 -: reads rax without assigning it
-rust_probe_stripped 0x3cbe9 -: reads rax without assigning it
-rust_probe_stripped 0x3cbec -: reads rax without assigning it
-rust_probe_stripped 0x3cbef -: reads rax without assigning it
-rust_probe_stripped 0x3cbf2 -: reads rax without assigning it
-rust_probe_stripped 0x3cbf5 -: reads rax without assigning it
-rust_probe_stripped 0x3cbf8 -: reads rax without assigning it
-rust_probe_stripped 0x3cbfb -: reads rax without assigning it
-rust_probe_stripped 0x3cbfe -: reads rax without assigning it
-rust_probe_stripped 0x3cc01 -: reads rax without assigning it
-rust_probe_stripped 0x3cc04 -: reads rax without assigning it
-rust_probe_stripped 0x3cc07 -: reads rax without assigning it
-rust_probe_stripped 0x3cc0a -: reads rax without assigning it
-rust_probe_stripped 0x3cc0d -: reads rax without assigning it
-rust_probe_stripped 0x3cc10 -: reads rax without assigning it
-rust_probe_stripped 0x3cc13 -: reads rax without assigning it
-rust_probe_stripped 0x3cc16 -: reads rax without assigning it
-rust_probe_stripped 0x3cc19 -: reads rax without assigning it
-rust_probe_stripped 0x3cc1f -: reads rax without assigning it
-rust_probe_stripped 0x3cc22 -: reads rax without assigning it
-rust_probe_stripped 0x3cc25 -: reads rax without assigning it
-rust_probe_stripped 0x3cc28 -: reads rax without assigning it
-rust_probe_stripped 0x3cc2b -: reads rax without assigning it
-rust_probe_stripped 0x3cc2e -: reads rax without assigning it
-rust_probe_stripped 0x3cc31 -: reads rax without assigning it
-rust_probe_stripped 0x3cc34 -: reads rax without assigning it
-rust_probe_stripped 0x3cc37 -: reads rax without assigning it
-rust_probe_stripped 0x3cc3a -: reads rax without assigning it
 rust_probe_stripped 0x3f973 -: reads rax without assigning it
 rust_probe_stripped 0x3f97f -: reads rax without assigning it
 rust_probe_stripped 0x3f996 -: reads rax without assigning it
 rust_probe_stripped 0x3f9a2 -: reads rax without assigning it
-rust_probe_stripped 0x52b10 -: reads rax without assigning it

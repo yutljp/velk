@@ -397,6 +397,78 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
     ir.params.retain(|param| param.index != arch::RETURN);
 }
 
+/// A function whose every return writes only the low byte or half-word of
+/// the return register (`sete al; ret`) returns that narrow value: the
+/// convention leaves the rest of the register undefined for the caller.
+pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
+    use crate::ir::{BinOp, Expr, Stmt};
+    // The new bits and their width in bytes, for `(ret & keep) | value`.
+    let partial = |value: &Expr| -> Option<(Expr, u8)> {
+        let Expr::Bin {
+            op: BinOp::Or,
+            lhs,
+            rhs,
+        } = value
+        else {
+            return None;
+        };
+        let Expr::Bin {
+            op: BinOp::And,
+            lhs: kept,
+            rhs: keep,
+        } = lhs.as_ref()
+        else {
+            return None;
+        };
+        if !matches!(kept.as_ref(), Expr::Reg { index, .. } if *index == arch::RETURN) {
+            return None;
+        }
+        let bytes = match keep.as_ref() {
+            Expr::Const(0xffff_ffff_ffff_ff00) => 1,
+            Expr::Const(0xffff_ffff_ffff_0000) => 2,
+            _ => return None,
+        };
+        Some((rhs.as_ref().clone(), bytes))
+    };
+    let mut width = None;
+    for block in &ir.blocks {
+        // A tail call returns its callee's value, whatever its width.
+        if matches!(
+            block.stmts.as_slice(),
+            [.., Stmt::Call { .. }, Stmt::Ret { .. }]
+        ) {
+            continue;
+        }
+        if let Some(Stmt::Ret { value }) = block.stmts.last() {
+            let Some((_, bytes)) = partial(value) else {
+                return;
+            };
+            if width.is_some_and(|width| width != bytes) {
+                return;
+            }
+            width = Some(bytes);
+        }
+    }
+    let Some(bytes) = width else {
+        return;
+    };
+    let mask = (1u64 << (u32::from(bytes) * 8)) - 1;
+    for block in &mut ir.blocks {
+        if matches!(
+            block.stmts.as_slice(),
+            [.., Stmt::Call { .. }, Stmt::Ret { .. }]
+        ) {
+            continue;
+        }
+        if let Some(Stmt::Ret { value }) = block.stmts.last_mut()
+            && let Some((low, _)) = partial(value)
+        {
+            *value = Expr::bin(BinOp::And, low, Expr::Const(mask));
+        }
+    }
+    ir.ret_type = CType::int(bytes, false);
+}
+
 pub(crate) fn apply_dwarf_types(image: &Image, addr: u64, ir: &mut FunctionIr) {
     let Some(types) = crate::loader::dwarf::function_types(image, addr) else {
         return;
@@ -426,8 +498,8 @@ pub(crate) fn apply_dwarf_types(image: &Image, addr: u64, ir: &mut FunctionIr) {
 
 #[cfg(test)]
 mod tests {
-    use super::apply_void_return;
-    use crate::ir::{CType, Expr, FunctionIr, Stmt};
+    use super::{apply_partial_return, apply_void_return};
+    use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
     use crate::loader::Isa;
 
     fn returns_register(isa: Isa) -> CType {
@@ -439,6 +511,34 @@ mod tests {
         );
         apply_void_return(&mut ir);
         ir.ret_type
+    }
+
+    #[test]
+    fn a_return_of_only_the_low_byte_is_a_byte() {
+        // sete al; ret: the rest of rax is whatever the caller left.
+        let flag = Expr::Select {
+            cond: crate::ir::Cond::Eq,
+            lhs: Box::new(Expr::reg(7, 32)),
+            rhs: Box::new(Expr::Const(4)),
+            then: Box::new(Expr::Const(1)),
+            els: Box::new(Expr::Const(0)),
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Or,
+                    Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(!0xff)),
+                    flag.clone(),
+                ),
+            }],
+        );
+        apply_partial_return(&mut ir);
+        assert_eq!(ir.ret_type, CType::int(1, false));
+        assert!(matches!(
+            &ir.blocks[0].stmts[0],
+            Stmt::Ret { value } if *value == Expr::bin(BinOp::And, flag, Expr::Const(0xff))
+        ));
     }
 
     #[test]

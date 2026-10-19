@@ -84,6 +84,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     passes::optimize(&mut ir, has_jump_tables);
     typing::apply_width_types(&mut ir, &uniform_32);
     typing::apply_void_return(&mut ir);
+    typing::apply_partial_return(&mut ir);
     typing::apply_dwarf_types(image, ir.addr, &mut ir);
     passes::simplify::simplify(&mut ir);
     let references = refs::collect(&ir, image);
