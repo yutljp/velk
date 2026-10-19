@@ -1,6 +1,7 @@
 mod jump_table;
 pub mod prototypes;
 pub mod refs;
+mod results;
 #[cfg(test)]
 mod semantics_tests;
 mod signature;
@@ -248,8 +249,15 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         Some(_) => None,
         None => float_result(&blocks, image.isa),
     };
+    // Without debug info, a function whose callers all ignore what is left
+    // in the return register returns nothing either. A linkage stub returns
+    // what the library function does, whatever these callers make of it.
+    let ignored = declared.is_none()
+        && float_return.is_none()
+        && !function.sources.contains(&crate::loader::NameSource::Plt)
+        && results::ignored_by_callers(image, function.addr);
     // A function the debug info says returns nothing returns no register.
-    if declared == Some(&crate::ir::CType::Void) {
+    if declared == Some(&crate::ir::CType::Void) || ignored {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
             if let crate::ir::Stmt::Ret { value } = stmt {
                 *value = crate::ir::Expr::constant(0);
@@ -273,6 +281,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         stack_params: Vec::new(),
         variadic: false,
         ret_type: match float_return {
+            _ if ignored => crate::ir::CType::Void,
             Some(precision) => crate::ir::CType::Named(
                 match precision {
                     crate::ir::Precision::Single => "float",

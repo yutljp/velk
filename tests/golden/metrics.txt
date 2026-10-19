@@ -25,7 +25,7 @@ parameter sign | x86_64.O0 | 126/138
 parameter sign | x86_64.O2 | 126/138
 return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 143/148
-return void | x86_64.O0 | 126/148
+return void | x86_64.O0 | 142/148
 return void | x86_64.O2 | 143/148
 return width | aarch64.O0 | 115/120
 return width | aarch64.O2 | 115/120
@@ -461,22 +461,22 @@ l5_switch.aarch64.O2 0x2104f8 c14: ok
 l5_switch.aarch64.O2 0x21050c c15: ok
 l5_switch.aarch64.O2 0x210524 sparse: ok
 l5_switch.x86_64.O0 0x201400 dense: ok
-l5_switch.x86_64.O0 0x2014f0 c0: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201510 c1: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201530 c2: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201550 c3: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201570 c4: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201590 c5: returns int32_t, expected void
-l5_switch.x86_64.O0 0x2015b0 c6: returns int32_t, expected void
-l5_switch.x86_64.O0 0x2015d0 c7: returns int32_t, expected void
-l5_switch.x86_64.O0 0x2015f0 c8: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201610 c9: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201630 c10: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201650 c11: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201670 c12: returns int32_t, expected void
-l5_switch.x86_64.O0 0x201690 c13: returns int32_t, expected void
-l5_switch.x86_64.O0 0x2016b0 c14: returns int32_t, expected void
-l5_switch.x86_64.O0 0x2016d0 c15: returns int32_t, expected void
+l5_switch.x86_64.O0 0x2014f0 c0: ok
+l5_switch.x86_64.O0 0x201510 c1: ok
+l5_switch.x86_64.O0 0x201530 c2: ok
+l5_switch.x86_64.O0 0x201550 c3: ok
+l5_switch.x86_64.O0 0x201570 c4: ok
+l5_switch.x86_64.O0 0x201590 c5: ok
+l5_switch.x86_64.O0 0x2015b0 c6: ok
+l5_switch.x86_64.O0 0x2015d0 c7: ok
+l5_switch.x86_64.O0 0x2015f0 c8: ok
+l5_switch.x86_64.O0 0x201610 c9: ok
+l5_switch.x86_64.O0 0x201630 c10: ok
+l5_switch.x86_64.O0 0x201650 c11: ok
+l5_switch.x86_64.O0 0x201670 c12: ok
+l5_switch.x86_64.O0 0x201690 c13: ok
+l5_switch.x86_64.O0 0x2016b0 c14: ok
+l5_switch.x86_64.O0 0x2016d0 c15: ok
 l5_switch.x86_64.O0 0x2016f0 sparse: ok
 l5_switch.x86_64.O2 0x201330 dense: ok
 l5_switch.x86_64.O2 0x2013e0 c0: ok

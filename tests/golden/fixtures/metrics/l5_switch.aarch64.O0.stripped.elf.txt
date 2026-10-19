@@ -175,7 +175,7 @@ void ()
 fn <unnamed> @ 0x210418 (size 20)
   blk0 @ 0x210418:
     store32((load32(#0x2205e8) + #0xb), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210418","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -194,7 +194,7 @@ void ()
 fn <unnamed> @ 0x21042c (size 24)
   blk0 @ 0x21042c:
     store32((load32(#0x2205e8) ^ #0x12), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x21042c","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
@@ -213,7 +213,7 @@ void ()
 fn <unnamed> @ 0x210444 (size 20)
   blk0 @ 0x210444:
     store32((load32(#0x2205e8) - #0x19), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210444","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -232,7 +232,7 @@ void ()
 fn <unnamed> @ 0x210458 (size 20)
   blk0 @ 0x210458:
     store32((load32(#0x2205e8) | #0x20), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210458","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -251,7 +251,7 @@ void ()
 fn <unnamed> @ 0x21046c (size 20)
   blk0 @ 0x21046c:
     store32((load32(#0x2205e8) + #0x27), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x21046c","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -270,7 +270,7 @@ void ()
 fn <unnamed> @ 0x210480 (size 24)
   blk0 @ 0x210480:
     store32((load32(#0x2205e8) ^ #0x2e), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210480","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
@@ -289,7 +289,7 @@ void ()
 fn <unnamed> @ 0x210498 (size 20)
   blk0 @ 0x210498:
     store32((load32(#0x2205e8) - #0x35), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210498","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -308,7 +308,7 @@ void ()
 fn <unnamed> @ 0x2104ac (size 20)
   blk0 @ 0x2104ac:
     store32((load32(#0x2205e8) | #0x3c), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x2104ac","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -327,7 +327,7 @@ void ()
 fn <unnamed> @ 0x2104c0 (size 20)
   blk0 @ 0x2104c0:
     store32((load32(#0x2205e8) + #0x43), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x2104c0","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -346,7 +346,7 @@ void ()
 fn <unnamed> @ 0x2104d4 (size 24)
   blk0 @ 0x2104d4:
     store32((load32(#0x2205e8) ^ #0x4a), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x2104d4","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
@@ -365,7 +365,7 @@ void ()
 fn <unnamed> @ 0x2104ec (size 20)
   blk0 @ 0x2104ec:
     store32((load32(#0x2205e8) - #0x51), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x2104ec","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -384,7 +384,7 @@ void ()
 fn <unnamed> @ 0x210500 (size 24)
   blk0 @ 0x210500:
     store32((load32(#0x2205e8) | #0x58), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210500","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
@@ -403,7 +403,7 @@ void ()
 fn <unnamed> @ 0x210518 (size 20)
   blk0 @ 0x210518:
     store32((load32(#0x2205e8) + #0x5f), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210518","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -422,7 +422,7 @@ void ()
 fn <unnamed> @ 0x21052c (size 24)
   blk0 @ 0x21052c:
     store32((load32(#0x2205e8) ^ #0x66), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x21052c","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
@@ -441,7 +441,7 @@ void ()
 fn <unnamed> @ 0x210544 (size 20)
   blk0 @ 0x210544:
     store32((load32(#0x2205e8) - #0x6d), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210544","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -460,7 +460,7 @@ void ()
 fn <unnamed> @ 0x210558 (size 24)
   blk0 @ 0x210558:
     store32((load32(#0x2205e8) | #0x74), #0x2205e8)
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210558","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 

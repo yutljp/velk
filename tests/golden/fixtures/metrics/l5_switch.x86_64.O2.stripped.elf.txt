@@ -195,7 +195,7 @@ void ()
 fn <unnamed> @ 0x2013e0 (size 8)
   blk0 @ 0x2013e0:
     store32((load32(#0x20250c) + #0xb), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2013e0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -214,7 +214,7 @@ void ()
 fn <unnamed> @ 0x2013f0 (size 8)
   blk0 @ 0x2013f0:
     store32((load32(#0x20250c) ^ #0x12), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2013f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -233,7 +233,7 @@ void ()
 fn <unnamed> @ 0x201400 (size 8)
   blk0 @ 0x201400:
     store32((load32(#0x20250c) + #0xffffffffffffffe7), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201400","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -252,7 +252,7 @@ void ()
 fn <unnamed> @ 0x201410 (size 8)
   blk0 @ 0x201410:
     store32((load32(#0x20250c) | #0x20), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201410","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -271,7 +271,7 @@ void ()
 fn <unnamed> @ 0x201420 (size 8)
   blk0 @ 0x201420:
     store32((load32(#0x20250c) + #0x27), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201420","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -290,7 +290,7 @@ void ()
 fn <unnamed> @ 0x201430 (size 8)
   blk0 @ 0x201430:
     store32((load32(#0x20250c) ^ #0x2e), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201430","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -309,7 +309,7 @@ void ()
 fn <unnamed> @ 0x201440 (size 8)
   blk0 @ 0x201440:
     store32((load32(#0x20250c) + #0xffffffffffffffcb), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201440","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -328,7 +328,7 @@ void ()
 fn <unnamed> @ 0x201450 (size 8)
   blk0 @ 0x201450:
     store32((load32(#0x20250c) | #0x3c), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201450","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -347,7 +347,7 @@ void ()
 fn <unnamed> @ 0x201460 (size 8)
   blk0 @ 0x201460:
     store32((load32(#0x20250c) + #0x43), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201460","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -366,7 +366,7 @@ void ()
 fn <unnamed> @ 0x201470 (size 8)
   blk0 @ 0x201470:
     store32((load32(#0x20250c) ^ #0x4a), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201470","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -385,7 +385,7 @@ void ()
 fn <unnamed> @ 0x201480 (size 8)
   blk0 @ 0x201480:
     store32((load32(#0x20250c) + #0xffffffffffffffaf), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201480","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -404,7 +404,7 @@ void ()
 fn <unnamed> @ 0x201490 (size 8)
   blk0 @ 0x201490:
     store32((load32(#0x20250c) | #0x58), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201490","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -423,7 +423,7 @@ void ()
 fn <unnamed> @ 0x2014a0 (size 8)
   blk0 @ 0x2014a0:
     store32((load32(#0x20250c) + #0x5f), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014a0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -442,7 +442,7 @@ void ()
 fn <unnamed> @ 0x2014b0 (size 8)
   blk0 @ 0x2014b0:
     store32((load32(#0x20250c) ^ #0x66), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014b0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -461,7 +461,7 @@ void ()
 fn <unnamed> @ 0x2014c0 (size 8)
   blk0 @ 0x2014c0:
     store32((load32(#0x20250c) + #0xffffffffffffff93), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
@@ -480,7 +480,7 @@ void ()
 fn <unnamed> @ 0x2014d0 (size 8)
   blk0 @ 0x2014d0:
     store32((load32(#0x20250c) | #0x74), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 

@@ -83,7 +83,11 @@ fn callees(image: &Image, addr: u64) -> Vec<u64> {
     out
 }
 
-fn body(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> Option<Vec<Block>> {
+pub(super) fn body(
+    image: &Image,
+    addr: u64,
+    summaries: crate::lift::Summaries<'_>,
+) -> Option<Vec<Block>> {
     let function = image.functions.get(&addr)?;
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     lift_with(image, addr, size, &HashSet::new(), summaries).ok()

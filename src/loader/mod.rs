@@ -164,6 +164,12 @@ pub struct Image {
     pub fragments: BTreeMap<u64, u64>,
     /// What is known of each function as a callee, filled on demand.
     pub summaries: std::sync::RwLock<HashMap<u64, Summary>>,
+    /// The direct calls and jumps the code makes, by target: the address of
+    /// each instruction. Built on first use.
+    pub branches_to: std::sync::OnceLock<HashMap<u64, Vec<u64>>>,
+    /// Whether some caller reads what the function returns, filled on
+    /// demand.
+    pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
@@ -191,6 +197,8 @@ impl Image {
             data_symbols: BTreeMap::new(),
             fragments: BTreeMap::new(),
             summaries: Default::default(),
+            branches_to: Default::default(),
+            result_reads: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
         }
@@ -624,6 +632,8 @@ pub fn load(path: &Path) -> Result<Image> {
         data_symbols,
         fragments: BTreeMap::new(),
         summaries: Default::default(),
+        branches_to: Default::default(),
+        result_reads: Default::default(),
         relocations,
         go: false,
     };

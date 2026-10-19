@@ -163,23 +163,18 @@ fn <unnamed> @ 0x201400 (size 234)
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
 /* ref: 0x202760 .bss */
-int32_t sub_2014f0(void) {
-    int32_t v1;
-
-    v1 = dword_202760 + 0xb;
-    dword_202760 = v1;
-    return v1;
+void sub_2014f0(void) {
+    dword_202760 += 0xb;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x2014f0 (size 21)
   blk0 @ 0x2014f0:
-    v1 = (load32(#0x202760) + #0xb)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0xb), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2014f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -187,23 +182,18 @@ fn <unnamed> @ 0x2014f0 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201510 @ 0x201510 */
 /* ref: 0x202760 .bss */
-int32_t sub_201510(void) {
-    int32_t v1;
-
-    v1 = dword_202760 ^ 0x12;
-    dword_202760 = v1;
-    return v1;
+void sub_201510(void) {
+    dword_202760 ^= 0x12;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201510 (size 21)
   blk0 @ 0x201510:
-    v1 = (load32(#0x202760) ^ #0x12)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x12), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201510","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -211,23 +201,18 @@ fn <unnamed> @ 0x201510 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201530 @ 0x201530 */
 /* ref: 0x202760 .bss */
-int32_t sub_201530(void) {
-    int32_t v1;
-
-    v1 = dword_202760 - 0x19;
-    dword_202760 = v1;
-    return v1;
+void sub_201530(void) {
+    dword_202760 -= 0x19;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201530 (size 21)
   blk0 @ 0x201530:
-    v1 = (load32(#0x202760) - #0x19)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x19), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201530","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -235,23 +220,18 @@ fn <unnamed> @ 0x201530 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201550 @ 0x201550 */
 /* ref: 0x202760 .bss */
-int32_t sub_201550(void) {
-    int32_t v1;
-
-    v1 = dword_202760 | 0x20;
-    dword_202760 = v1;
-    return v1;
+void sub_201550(void) {
+    dword_202760 |= 0x20;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201550 (size 21)
   blk0 @ 0x201550:
-    v1 = (load32(#0x202760) | #0x20)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x20), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201550","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -259,23 +239,18 @@ fn <unnamed> @ 0x201550 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201570 @ 0x201570 */
 /* ref: 0x202760 .bss */
-int32_t sub_201570(void) {
-    int32_t v1;
-
-    v1 = dword_202760 + 0x27;
-    dword_202760 = v1;
-    return v1;
+void sub_201570(void) {
+    dword_202760 += 0x27;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201570 (size 21)
   blk0 @ 0x201570:
-    v1 = (load32(#0x202760) + #0x27)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0x27), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201570","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -283,23 +258,18 @@ fn <unnamed> @ 0x201570 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201590 @ 0x201590 */
 /* ref: 0x202760 .bss */
-int32_t sub_201590(void) {
-    int32_t v1;
-
-    v1 = dword_202760 ^ 0x2e;
-    dword_202760 = v1;
-    return v1;
+void sub_201590(void) {
+    dword_202760 ^= 0x2e;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201590 (size 21)
   blk0 @ 0x201590:
-    v1 = (load32(#0x202760) ^ #0x2e)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x2e), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201590","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -307,23 +277,18 @@ fn <unnamed> @ 0x201590 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2015b0 @ 0x2015b0 */
 /* ref: 0x202760 .bss */
-int32_t sub_2015b0(void) {
-    int32_t v1;
-
-    v1 = dword_202760 - 0x35;
-    dword_202760 = v1;
-    return v1;
+void sub_2015b0(void) {
+    dword_202760 -= 0x35;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x2015b0 (size 21)
   blk0 @ 0x2015b0:
-    v1 = (load32(#0x202760) - #0x35)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x35), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2015b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -331,23 +296,18 @@ fn <unnamed> @ 0x2015b0 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2015d0 @ 0x2015d0 */
 /* ref: 0x202760 .bss */
-int32_t sub_2015d0(void) {
-    int32_t v1;
-
-    v1 = dword_202760 | 0x3c;
-    dword_202760 = v1;
-    return v1;
+void sub_2015d0(void) {
+    dword_202760 |= 0x3c;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x2015d0 (size 21)
   blk0 @ 0x2015d0:
-    v1 = (load32(#0x202760) | #0x3c)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x3c), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2015d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -355,23 +315,18 @@ fn <unnamed> @ 0x2015d0 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2015f0 @ 0x2015f0 */
 /* ref: 0x202760 .bss */
-int32_t sub_2015f0(void) {
-    int32_t v1;
-
-    v1 = dword_202760 + 0x43;
-    dword_202760 = v1;
-    return v1;
+void sub_2015f0(void) {
+    dword_202760 += 0x43;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x2015f0 (size 21)
   blk0 @ 0x2015f0:
-    v1 = (load32(#0x202760) + #0x43)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0x43), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2015f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -379,23 +334,18 @@ fn <unnamed> @ 0x2015f0 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201610 @ 0x201610 */
 /* ref: 0x202760 .bss */
-int32_t sub_201610(void) {
-    int32_t v1;
-
-    v1 = dword_202760 ^ 0x4a;
-    dword_202760 = v1;
-    return v1;
+void sub_201610(void) {
+    dword_202760 ^= 0x4a;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201610 (size 21)
   blk0 @ 0x201610:
-    v1 = (load32(#0x202760) ^ #0x4a)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x4a), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201610","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -403,23 +353,18 @@ fn <unnamed> @ 0x201610 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201630 @ 0x201630 */
 /* ref: 0x202760 .bss */
-int32_t sub_201630(void) {
-    int32_t v1;
-
-    v1 = dword_202760 - 0x51;
-    dword_202760 = v1;
-    return v1;
+void sub_201630(void) {
+    dword_202760 -= 0x51;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201630 (size 21)
   blk0 @ 0x201630:
-    v1 = (load32(#0x202760) - #0x51)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x51), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201630","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -427,23 +372,18 @@ fn <unnamed> @ 0x201630 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201650 @ 0x201650 */
 /* ref: 0x202760 .bss */
-int32_t sub_201650(void) {
-    int32_t v1;
-
-    v1 = dword_202760 | 0x58;
-    dword_202760 = v1;
-    return v1;
+void sub_201650(void) {
+    dword_202760 |= 0x58;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201650 (size 21)
   blk0 @ 0x201650:
-    v1 = (load32(#0x202760) | #0x58)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x58), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201650","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -451,23 +391,18 @@ fn <unnamed> @ 0x201650 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201670 @ 0x201670 */
 /* ref: 0x202760 .bss */
-int32_t sub_201670(void) {
-    int32_t v1;
-
-    v1 = dword_202760 + 0x5f;
-    dword_202760 = v1;
-    return v1;
+void sub_201670(void) {
+    dword_202760 += 0x5f;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201670 (size 21)
   blk0 @ 0x201670:
-    v1 = (load32(#0x202760) + #0x5f)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0x5f), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201670","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -475,23 +410,18 @@ fn <unnamed> @ 0x201670 (size 21)
 -- decompile
 /* velk pseudo-C: sub_201690 @ 0x201690 */
 /* ref: 0x202760 .bss */
-int32_t sub_201690(void) {
-    int32_t v1;
-
-    v1 = dword_202760 ^ 0x66;
-    dword_202760 = v1;
-    return v1;
+void sub_201690(void) {
+    dword_202760 ^= 0x66;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x201690 (size 21)
   blk0 @ 0x201690:
-    v1 = (load32(#0x202760) ^ #0x66)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x66), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201690","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -499,23 +429,18 @@ fn <unnamed> @ 0x201690 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2016b0 @ 0x2016b0 */
 /* ref: 0x202760 .bss */
-int32_t sub_2016b0(void) {
-    int32_t v1;
-
-    v1 = dword_202760 - 0x6d;
-    dword_202760 = v1;
-    return v1;
+void sub_2016b0(void) {
+    dword_202760 -= 0x6d;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x2016b0 (size 21)
   blk0 @ 0x2016b0:
-    v1 = (load32(#0x202760) - #0x6d)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x6d), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2016b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -523,23 +448,18 @@ fn <unnamed> @ 0x2016b0 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2016d0 @ 0x2016d0 */
 /* ref: 0x202760 .bss */
-int32_t sub_2016d0(void) {
-    int32_t v1;
-
-    v1 = dword_202760 | 0x74;
-    dword_202760 = v1;
-    return v1;
+void sub_2016d0(void) {
+    dword_202760 |= 0x74;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn <unnamed> @ 0x2016d0 (size 21)
   blk0 @ 0x2016d0:
-    v1 = (load32(#0x202760) | #0x74)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x74), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2016d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
