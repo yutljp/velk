@@ -162,6 +162,7 @@ pub(crate) fn statement_registers(
         }
         Stmt::Ret { value } => expr_reads(value, &mut reads),
         Stmt::BrIndirect { target } => expr_reads(target, &mut reads),
+        Stmt::Switch { index, .. } => expr_reads(index, &mut reads),
         Stmt::Call {
             through,
             convention,

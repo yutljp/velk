@@ -159,4 +159,27 @@ mod tests {
             assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
         }
     }
+
+    #[test]
+    fn keeps_the_index_a_switch_reads() {
+        let stmts = vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: 8,
+                    width: 64,
+                },
+                value: Expr::Const(1),
+            },
+            Stmt::Switch {
+                index: Expr::reg(8, 64),
+                cases: vec![(0, 0x100), (1, 0x200)],
+                default: None,
+            },
+        ];
+        for pass in [dce, dce_flow] {
+            let mut ir = FunctionIr::single_block(Isa::AArch64, stmts.clone());
+            pass(&mut ir);
+            assert_eq!(ir.blocks[0].stmts.len(), 2, "{}", ir.render());
+        }
+    }
 }
