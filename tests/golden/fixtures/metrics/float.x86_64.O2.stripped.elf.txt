@@ -9,42 +9,58 @@
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
 double sub_2011b0(double *a0, int32_t a1) {
-    xmm0 = 0x0;
-    xmm1 = 0x0;
+    double v1;
+    double v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v5;
+    int64_t v6;
+    double v7;
+    double v8;
+    double v9;
+    double v10;
+    double v11;
+    double v12;
+    double v13;
+    double *v14;
+    int64_t v15;
+
+    v1 = 0.0;
+    v2 = 0.0;
     if (a1 > 0x0) {
-        v1 = a1;
-        v2 = v1 & 0x7;
+        v3 = a1;
+        v4 = v3 & 0x7;
         if (a1 >= 0x8 /* unsigned */) {
-            v4 = v1 & 0x7ffffff8;
-            v3 = 0x0;
+            v6 = v3 & 0x7ffffff8;
+            v5 = 0x0;
             do {
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8);
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x8);
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x10);
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x18);
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x20);
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x28);
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x30);
-                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x38);
-                v3 = v3 + 0x8;
-            } while (v4 != v3);
+                v7 = v2 + a0[v5];
+                v8 = v7 + a0[v5 + 0x1];
+                v9 = v8 + a0[v5 + 0x2];
+                v10 = v9 + a0[v5 + 0x3];
+                v11 = v10 + a0[v5 + 0x4];
+                v12 = v11 + a0[v5 + 0x5];
+                v13 = v12 + a0[v5 + 0x6];
+                v2 = v13 + a0[v5 + 0x7];
+                v5 = v5 + 0x8;
+            } while (v6 != v5);
         } else {
-            v3 = 0x0;
+            v5 = 0x0;
         }
-        if (v2 != 0x0) {
-            v5 = a0 + v3 * 0x8;
-            v6 = 0x0;
+        if (v4 != 0x0) {
+            v14 = a0 + v5;
+            v15 = 0x0;
             do {
-                xmm1 = xmm1 + *(double *)(v5 + v6 * 0x8);
-                v6 = v6 + 0x1;
-            } while (v2 != v6);
+                v2 = v2 + v14[v15];
+                v15 = v15 + 0x1;
+            } while (v4 != v15);
         }
     }
     if (a1 <= 0x0) {
-        return xmm0;
+        return v1;
     }
-    xmm0 = xmm1 / (double)(int32_t)a1;
-    return xmm0;
+    v1 = v2 / (double)(int32_t)a1;
+    return v1;
 }
 -- signature
 double (double * a0, int32_t a1)
@@ -53,45 +69,45 @@ double (double * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2011b0 (size 161)
   blk0 @ 0x2011b0:
-    xmm0 = #0x0
-    xmm1 = #0x0
+    v1 = #0x0
+    v2 = #0x0
     brif le esi, #0x0 -> 0x20123d
   blk1 @ 0x2011c0:
-    v1 = esi
-    v2 = (v1 & #0x7)
+    v3 = esi
+    v4 = (v3 & #0x7)
     brif cs esi, #0x8 -> 0x2011d0
   blk2 @ 0x2011cc:
-    v3 = #0x0
+    v5 = #0x0
     br 0x201218
   blk3 @ 0x2011d0:
-    v4 = (v1 & #0x7ffffff8)
-    v3 = #0x0
+    v6 = (v3 & #0x7ffffff8)
+    v5 = #0x0
   blk4 @ 0x2011e0:
-    xmm1 = fadd.d(xmm1, load64((rdi + (v3 * #0x8))))
-    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x8)))
-    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x10)))
-    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x18)))
-    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x20)))
-    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x28)))
-    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x30)))
-    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x38)))
-    v3 = (v3 + #0x8)
-    brif ne v4, v3 -> 0x2011e0
+    v7 = fadd.d(v2, load64((rdi + (v5 * #0x8))))
+    v8 = fadd.d(v7, load64(((rdi + (v5 * #0x8)) + #0x8)))
+    v9 = fadd.d(v8, load64(((rdi + (v5 * #0x8)) + #0x10)))
+    v10 = fadd.d(v9, load64(((rdi + (v5 * #0x8)) + #0x18)))
+    v11 = fadd.d(v10, load64(((rdi + (v5 * #0x8)) + #0x20)))
+    v12 = fadd.d(v11, load64(((rdi + (v5 * #0x8)) + #0x28)))
+    v13 = fadd.d(v12, load64(((rdi + (v5 * #0x8)) + #0x30)))
+    v2 = fadd.d(v13, load64(((rdi + (v5 * #0x8)) + #0x38)))
+    v5 = (v5 + #0x8)
+    brif ne v6, v5 -> 0x2011e0
   blk5 @ 0x201218:
-    brif eq v2, #0x0 -> 0x20123d
+    brif eq v4, #0x0 -> 0x20123d
   blk6 @ 0x20121d:
-    v5 = (rdi + (v3 * #0x8))
-    v6 = #0x0
+    v14 = (rdi + (v5 * #0x8))
+    v15 = #0x0
   blk7 @ 0x201230:
-    xmm1 = fadd.d(xmm1, load64((v5 + (v6 * #0x8))))
-    v6 = (v6 + #0x1)
-    brif ne v2, v6 -> 0x201230
+    v2 = fadd.d(v2, load64((v14 + (v15 * #0x8))))
+    v15 = (v15 + #0x1)
+    brif ne v4, v15 -> 0x201230
   blk8 @ 0x20123d:
     brif le esi, #0x0 -> 0x201250
   blk9 @ 0x201241:
-    xmm0 = fdiv.d(xmm1, s32tof.d(esi))
+    v1 = fdiv.d(v2, s32tof.d(esi))
   blk10 @ 0x201250:
-    ret xmm0
+    ret v1
 -- card
 {"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":161,"unsupported":0}
 
@@ -99,8 +115,7 @@ fn <unnamed> @ 0x2011b0 (size 161)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 float sub_201260(float a0, float a1, float a2) {
-    a1 = a1 - a0;
-    return a0 + a1 * a2;
+    return a0 + (a1 - a0) * a2;
 }
 -- signature
 float (float a0, float a1, float a2)
@@ -109,8 +124,7 @@ float (float a0, float a1, float a2)
 -- ir
 fn <unnamed> @ 0x201260 (size 13)
   blk0 @ 0x201260:
-    xmm1 = fsub.s((xmm1 & #0xffffffff), (xmm0 & #0xffffffff))
-    ret fadd.s((xmm0 & #0xffffffff), (fmul.s((xmm1 & #0xffffffff), (uint32_t)xmm2) & #0xffffffff))
+    ret fadd.s((xmm0 & #0xffffffff), (fmul.s((fsub.s((xmm1 & #0xffffffff), (xmm0 & #0xffffffff)) & #0xffffffff), (uint32_t)xmm2) & #0xffffffff))
 -- card
 {"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
 
@@ -135,8 +149,10 @@ fn <unnamed> @ 0x201270 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 double sub_201280(float a0) {
-    a0 = (double)a0;
-    return a0 + a0;
+    double v1;
+
+    v1 = (double)a0;
+    return v1 + v1;
 }
 -- signature
 double (float a0)
@@ -145,8 +161,8 @@ double (float a0)
 -- ir
 fn <unnamed> @ 0x201280 (size 9)
   blk0 @ 0x201280:
-    xmm0 = f.stof.d((xmm0 & #0xffffffff))
-    ret fadd.d(xmm0, xmm0)
+    v1 = f.stof.d((xmm0 & #0xffffffff))
+    ret fadd.d(v1, v1)
 -- card
 {"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":9,"unsupported":0}
 
@@ -154,6 +170,8 @@ fn <unnamed> @ 0x201280 (size 9)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 int32_t sub_201290(double a0, double a1) {
+    int32_t v1;
+
     v1 = (a1 < a0) & 0xff;
     return (!(a0 < a1) ? v1 : 0xffffffff);
 }

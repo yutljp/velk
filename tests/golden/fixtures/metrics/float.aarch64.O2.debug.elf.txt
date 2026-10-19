@@ -9,46 +9,58 @@
 -- decompile
 /* velk pseudo-C: average @ 0x21019c */
 double average(double *values, int n) {
+    double v1;
+    int64_t v2;
+    int64_t v3;
+    double *v4;
+    int64_t v5;
+    double v6;
+    double v7;
+    double v8;
+    double v9;
+    double v10;
+    double *v13;
+    int64_t v14;
+    double v15;
+
     if (n < 0x1) {
         return 0.0;
     }
-    d0 = 0x0;
-    v1 = n;
+    v1 = 0.0;
+    v2 = n;
     if (n >= 0x4 /* unsigned */) {
-        v2 = v1 & 0x7ffffffc;
-        v3 = values + 0x10;
-        v4 = v2;
+        v3 = v2 & 0x7ffffffc;
+        v4 = values + 0x2;
+        v5 = v3;
         do {
-            d1 = *(uint64_t *)(v3 - 0x10);
-            v1_hi = *(uint64_t *)(v3 - 0x8);
-            d2 = *(uint64_t *)(v3);
-            v2_hi = *(uint64_t *)(v3 + 0x8);
-            v4 = v4 - 0x4;
-            v3 = v3 + 0x20;
-            d0 = d0 + d1;
-            d0 = d0 + v1_hi;
-            d0 = d0 + d2;
-            d0 = d0 + v2_hi;
-        } while (v4 != 0x0);
-        if (v2 == v1) {
+            v6 = v4[-0x2];
+            v7 = v4[-0x1];
+            v8 = *v4;
+            v9 = v4[0x1];
+            v5 = v5 - 0x4;
+            v4 = v4 + 0x4;
+            v10 = v1 + v6;
+            v1 = v10 + v7 + v8 + v9;
+        } while (v5 != 0x0);
+        if (v3 == v2) {
             goto L_210210;
         }
     } else {
-        v2 = 0x0;
+        v3 = 0x0;
     }
-    v5 = values + (v2 << 0x3);
-    v6 = v1 - v2;
+    v13 = values + v3;
+    v14 = v2 - v3;
     do {
-        d1 = *(uint64_t *)(v5);
-        v5 = v5 + 0x8;
-        v6 = v6 - 0x1;
-        d0 = d0 + d1;
-    } while (v6 != 0x0);
+        v15 = *v13;
+        v13 = v13 + 0x1;
+        v14 = v14 - 0x1;
+        v1 = v1 + v15;
+    } while (v14 != 0x0);
 L_210210:
     if (n <= 0x0) {
         return 0.0;
     }
-    return d0 / (double)(int32_t)n;
+    return v1 / (double)(int32_t)n;
 }
 -- signature
 double (double * values, int n)
@@ -59,43 +71,41 @@ fn average @ 0x21019c (size 144)
   blk0 @ 0x21019c:
     brif lt w1, #0x1 -> 0x210224
   blk1 @ 0x2101a4:
-    d0 = #0x0
-    v1 = w1
+    v1 = #0x0
+    v2 = w1
     brif cs w1, #0x4 -> 0x2101bc
   blk2 @ 0x2101b4:
-    v2 = #0x0
+    v3 = #0x0
     br 0x2101f8
   blk3 @ 0x2101bc:
-    v2 = (v1 & #0x7ffffffc)
-    v3 = (x0 + #0x10)
-    v4 = v2
+    v3 = (v2 & #0x7ffffffc)
+    v4 = (x0 + #0x10)
+    v5 = v3
   blk4 @ 0x2101c8:
-    d1 = load64((v3 + #0xfffffffffffffff0))
-    v1_hi = load64((v3 + #0xfffffffffffffff8))
-    d2 = load64(v3)
-    v2_hi = load64((v3 + #0x8))
-    v4 = (v4 - #0x4)
-    v3 = (v3 + #0x20)
-    d0 = fadd.d(d0, d1)
-    d0 = fadd.d(d0, v1_hi)
-    d0 = fadd.d(d0, d2)
-    d0 = fadd.d(d0, v2_hi)
-    brif ne v4, #0x0 -> 0x2101c8
+    v6 = load64((v4 + #0xfffffffffffffff0))
+    v7 = load64((v4 + #0xfffffffffffffff8))
+    v8 = load64(v4)
+    v9 = load64((v4 + #0x8))
+    v5 = (v5 - #0x4)
+    v4 = (v4 + #0x20)
+    v10 = fadd.d(v1, v6)
+    v1 = fadd.d(fadd.d(fadd.d(v10, v7), v8), v9)
+    brif ne v5, #0x0 -> 0x2101c8
   blk5 @ 0x2101f0:
-    brif eq v2, v1 -> 0x210210
+    brif eq v3, v2 -> 0x210210
   blk6 @ 0x2101f8:
-    v5 = (x0 + (v2 << #0x3))
-    v6 = (v1 - v2)
+    v13 = (x0 + (v3 << #0x3))
+    v14 = (v2 - v3)
   blk7 @ 0x210200:
-    d1 = load64(v5)
-    v5 = (v5 + #0x8)
-    v6 = (v6 - #0x1)
-    d0 = fadd.d(d0, d1)
-    brif ne v6, #0x0 -> 0x210200
+    v15 = load64(v13)
+    v13 = (v13 + #0x8)
+    v14 = (v14 - #0x1)
+    v1 = fadd.d(v1, v15)
+    brif ne v14, #0x0 -> 0x210200
   blk8 @ 0x210210:
     brif le w1, #0x0 -> 0x210224
   blk9 @ 0x210218:
-    ret fdiv.d(d0, s32tof.d(w1))
+    ret fdiv.d(v1, s32tof.d(w1))
   blk10 @ 0x210224:
     ret #0x0
 -- card
@@ -139,8 +149,10 @@ fn truncate_to_int @ 0x210238 (size 8)
 -- decompile
 /* velk pseudo-C: widen @ 0x210240 */
 double widen(float x) {
-    x = (double)x;
-    return x + x;
+    double v1;
+
+    v1 = (double)x;
+    return v1 + v1;
 }
 -- signature
 double (float x)
@@ -149,8 +161,8 @@ double (float x)
 -- ir
 fn widen @ 0x210240 (size 12)
   blk0 @ 0x210240:
-    d0 = f.stof.d((d0 & #0xffffffff))
-    ret fadd.d(d0, d0)
+    v1 = f.stof.d((d0 & #0xffffffff))
+    ret fadd.d(v1, v1)
 -- card
 {"addr":"0x210240","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 

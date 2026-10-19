@@ -65,6 +65,7 @@ fn <unnamed> @ 0x21026c (size 32)
 -- decompile
 /* velk pseudo-C: sub_21028c @ 0x21028c */
 int32_t sub_21028c(int32_t a0, int32_t a1, int32_t a2) {
+    int32_t v2;
     uint32_t local_0; /* [sp-4] */
     uint32_t local_1; /* [sp-c] */
     uint32_t local_2; /* [sp-10] */

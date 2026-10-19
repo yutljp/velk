@@ -460,7 +460,7 @@ ok "decompile helper"
 ca=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$ca" | grep -q "uint32_t \*a0"         || fail "pointer parameter typing"
 echo "$ca" | grep -q "sum_lanes32("            || fail "decompile sum_arr vector sum"
-echo "$ca" | grep -q "v2_hi = \*(uint64_t \*)" || fail "decompile sum_arr vector pair load"
+echo "$ca" | grep -q "uint64_t \*v[0-9]*;" || fail "decompile sum_arr vector pair load"
 echo "$ca" | grep -q "return 0x0;"           || fail "decompile sum_arr early return"
 echo "$ca" | grep -q "do {"                  || fail "decompile sum_arr loop"
 echo "$ca" | grep -q "} while ("             || fail "decompile sum_arr loop condition"
@@ -536,7 +536,9 @@ ok "string references"
 
 # 10) struct access recovery
 pair=$("$BIN" decompile $FIX/arm64.o pair_sum 2>/dev/null)
-echo "$pair" | grep -q "struct: a0 +0x0:uint32_t, +0x4:uint32_t" || fail "struct access offsets"
+echo "$pair" | grep -q "struct pair_sum_a0 {"  || fail "struct definition"
+echo "$pair" | grep -q "    int32_t field_0x4;" || fail "struct access offsets"
+echo "$pair" | grep -q "pair_sum(struct pair_sum_a0 \*a0)" || fail "struct parameter type"
 pair_card=$("$BIN" card $FIX/arm64.o pair_sum 2>/dev/null)
 echo "$pair_card" | grep -q '"accesses"'    || fail "card struct accesses"
 ok "struct access recovery"
@@ -556,7 +558,7 @@ ok "signature application"
 
 # 13) typed pointer parameters and the script API (shape hash, signature)
 pair_c=$("$BIN" decompile $FIX/arm64.o pair_sum 2>/dev/null)
-echo "$pair_c" | grep -q 'uint32_t \*'           || fail "typed pointer parameter"
+echo "$pair_c" | grep -q 'struct pair_sum_a0 \*a0'  || fail "typed pointer parameter"
 script=$(mktemp)
 printf '%s\n' "const f = velk.open('$FIX/arm64.o').getFunction('pair_sum');" \
   'console.log(f.shapeHash().length, f.signature().params.length);' > "$script"

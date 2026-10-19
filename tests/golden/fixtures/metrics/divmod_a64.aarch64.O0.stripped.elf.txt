@@ -182,6 +182,8 @@ fn <unnamed> @ 0x210474 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210490 @ 0x210490 */
 int32_t sub_210490(int32_t a0) {
+    int32_t v1;
+
     v1 = a0;
     return v1 - (int32_t)(v1) / 0x3 * 0x3;
 }
@@ -201,6 +203,8 @@ fn <unnamed> @ 0x210490 (size 36)
 -- decompile
 /* velk pseudo-C: sub_2104b4 @ 0x2104b4 */
 uint32_t sub_2104b4(int32_t a0) {
+    uint32_t v1;
+
     v1 = a0;
     return v1 - v1 / 0x3 * 0x3;
 }
@@ -220,6 +224,8 @@ fn <unnamed> @ 0x2104b4 (size 36)
 -- decompile
 /* velk pseudo-C: sub_2104d8 @ 0x2104d8 */
 uint32_t sub_2104d8(int32_t a0) {
+    uint32_t v1;
+
     v1 = a0;
     return v1 - v1 / 0xa * 0xa;
 }
@@ -239,6 +245,8 @@ fn <unnamed> @ 0x2104d8 (size 36)
 -- decompile
 /* velk pseudo-C: sub_2104fc @ 0x2104fc */
 int32_t sub_2104fc(int32_t a0) {
+    int32_t v1;
+
     v1 = a0;
     return v1 - (int32_t)(v1) / 0xa * 0xa;
 }
@@ -309,6 +317,8 @@ fn <unnamed> @ 0x210568 (size 36)
 -- decompile
 /* velk pseudo-C: sub_21058c @ 0x21058c */
 int32_t sub_21058c(int32_t a0) {
+    int32_t v1;
+
     v1 = a0;
     return v1 - (int32_t)(v1) / 0x4 * 0x4;
 }

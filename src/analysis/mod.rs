@@ -4,13 +4,14 @@ pub mod refs;
 #[cfg(test)]
 mod semantics_tests;
 mod signature;
+mod structures;
 mod summary;
-mod typing;
+pub(crate) mod typing;
 
 use std::collections::HashSet;
 
 use crate::error::LiftError;
-use crate::ir::FunctionIr;
+use crate::ir::{FunctionIr, Stmt};
 use crate::loader::{Function, Image};
 use crate::{lift, passes};
 use refs::Reference;
@@ -215,6 +216,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         },
         accesses: signature.accesses,
         members: Vec::new(),
+        structures: Vec::new(),
         signed_params: signature.signed,
         addr: function.addr,
         name: function.name.clone(),
@@ -239,18 +241,33 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     crate::ssa::count_variadic_arguments(&mut ir, image);
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the
-    // stack and frame pointers, which address the frame.
-    // So do the registers the lifter keeps flag operands and exchanged
-    // values in.
+    // stack pointer, and the frame pointer while it addresses the frame.
+    // So do the vector registers, each half on its own, and the registers
+    // the lifter keeps flag operands and exchanged values in.
+    let sp = crate::arch::stack_pointer(ir.isa);
+    let fp = crate::arch::frame_pointer(ir.isa);
+    let addresses_frame = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| match stmt {
+            Stmt::Assign { dest, value } if dest.index == fp => {
+                let mut read = HashSet::new();
+                crate::ir::visit::collect_reads(value, &mut read);
+                read.contains(&sp)
+            }
+            _ => false,
+        });
     let general: Vec<u16> = match ir.isa {
-        crate::loader::Isa::AArch64 => (0..=30)
-            .filter(|register| *register != 29)
-            .collect::<Vec<u16>>(),
-        _ => (0..16)
-            .filter(|register| !matches!(register, 4 | 5))
-            .collect(),
+        crate::loader::Isa::AArch64 => (0..=30).collect::<Vec<u16>>(),
+        _ => (0..16).collect(),
     }
     .into_iter()
+    .filter(|register| *register != sp && (*register != fp || !addresses_frame))
+    .chain(
+        crate::arch::machine_registers()
+            .filter(|register| crate::arch::vector_half(ir.isa, *register).is_some()),
+    )
     .chain(crate::ir::FLAG_OPERANDS)
     .chain(crate::ir::FLAG_CARRIED)
     .chain([crate::ir::EXCHANGE])
@@ -266,6 +283,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     typing::apply_partial_return(&mut ir);
     typing::apply_dwarf_types(types, &mut ir);
     passes::simplify::simplify(&mut ir);
+    structures::recover(&mut ir);
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);
     Analysis { ir, references }

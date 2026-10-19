@@ -185,6 +185,14 @@ pub struct Access {
     pub fields: Vec<(u64, CType)>,
 }
 
+/// A structure recovered from the accesses through a pointer, its fields
+/// in offset order.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Structure {
+    pub name: String,
+    pub fields: Vec<(u64, CType)>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Member {
     pub structure: String,

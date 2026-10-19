@@ -23,6 +23,10 @@ fn alt_sum3 @ 0x201170 (size 6)
 -- decompile
 /* velk pseudo-C: alt_helper @ 0x201180 */
 int alt_helper(int x) {
+    uint64_t v1;
+    int32_t v2;
+    int64_t v5;
+
     if (x <= 0x0) {
         return 0x0;
     }

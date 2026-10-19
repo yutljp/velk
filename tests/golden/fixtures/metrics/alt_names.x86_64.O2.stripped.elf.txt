@@ -23,6 +23,10 @@ fn <unnamed> @ 0x201170 (size 6)
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
 int32_t sub_201180(int32_t a0) {
+    uint64_t v1;
+    int32_t v2;
+    int64_t v5;
+
     if (a0 <= 0x0) {
         return 0x0;
     }

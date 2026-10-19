@@ -11,12 +11,17 @@
 == 0x2011e0 -
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
-/* struct: a0 +0x8:uint32_t, +0xc:uint32_t */
-int32_t sub_2011e0(uint32_t *a0) {
+struct sub_2011e0_a0 {
+    int32_t field_0x0;
+    int32_t field_0x4;
+    int32_t field_0x8;
+    int32_t field_0xc;
+};
+int32_t sub_2011e0(struct sub_2011e0_a0 *a0) {
     return (a0->field_0xc - a0->field_0x4) * (a0->field_0x8 - a0->field_0x0);
 }
 -- signature
-int32_t (uint32_t * a0)
+int32_t (struct sub_2011e0_a0 * a0)
 -- references
 
 -- ir
@@ -30,13 +35,21 @@ fn <unnamed> @ 0x2011e0 (size 15)
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 int64_t sub_2011f0(uint16_t *a0, int32_t a1) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    void *v5;
+    int64_t v6;
+    int64_t v7;
+
     if (a1 <= 0x0) {
         return 0x0;
     }
     v1 = a1;
     if (a1 != 0x1) {
         v4 = v1 & 0x7ffffffe;
-        v5 = a0 + 0x28;
+        v5 = a0 + 0x14;
         v2 = 0x0;
         v3 = 0x0;
         do {
@@ -53,7 +66,7 @@ int64_t sub_2011f0(uint16_t *a0, int32_t a1) {
         return v3;
     }
     v7 = v2 + v2 * 0x2;
-    v3 = v3 + (int16_t)(*(uint16_t *)(a0 + v7 * 0x8 + 0x10)) * *(uint64_t *)(a0 + v7 * 0x8 + 0x8);
+    v3 = v3 + (int16_t)(a0[v7 * 0x4 + 0x8]) * *(uint64_t *)(a0 + (v7 * 0x4 + 0x4));
     return v3;
 }
 -- signature
@@ -114,8 +127,13 @@ fn <unnamed> @ 0x201260 (size 26)
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
-/* struct: a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
-int64_t sub_201280(uint64_t *a0, int64_t a1) {
+struct sub_201280_a0 {
+    int64_t field_0x0;
+    int64_t field_0x8;
+    int64_t field_0x10;
+    int64_t field_0x18;
+};
+int64_t sub_201280(struct sub_201280_a0 *a0, int64_t a1) {
     a0->field_0x0 = a1;
     a0->field_0x8 = a1 + 0x1;
     a0->field_0x10 = a1 + a1;
@@ -123,7 +141,7 @@ int64_t sub_201280(uint64_t *a0, int64_t a1) {
     return a0;
 }
 -- signature
-int64_t (uint64_t * a0, int64_t a1)
+int64_t (struct sub_201280_a0 * a0, int64_t a1)
 -- references
 
 -- ir
@@ -141,9 +159,12 @@ fn <unnamed> @ 0x201280 (size 31)
 -- decompile
 /* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
 int64_t sub_2012a0(void) {
+    uint64_t v1;
+    int64_t v2;
+
     v1 = *(uint64_t *)(rsp + 0x10) + *(uint64_t *)(rsp + 0x20);
-    xmm1 = (v1 | ((v1 >> 0x20) & 0xffffffff) << 0x20) + (*(uint64_t *)(rsp + 0x8) + *(uint64_t *)(rsp + 0x18));
-    return xmm1;
+    v2 = (v1 | ((v1 >> 0x20) & 0xffffffff) << 0x20) + (*(uint64_t *)(rsp + 0x8) + *(uint64_t *)(rsp + 0x18));
+    return v2;
 }
 -- signature
 int64_t ()
@@ -153,8 +174,8 @@ int64_t ()
 fn <unnamed> @ 0x2012a0 (size 27)
   blk0 @ 0x2012a0:
     v1 = (load64((rsp + #0x10)) + load64((rsp + #0x20)))
-    xmm1 = (((v1 & #0xffffffff) | (((v1 >> #0x20) & #0xffffffff) << #0x20)) + (load64((rsp + #0x8)) + load64((rsp + #0x18))))
-    ret xmm1
+    v2 = (((v1 & #0xffffffff) | (((v1 >> #0x20) & #0xffffffff) << #0x20)) + (load64((rsp + #0x8)) + load64((rsp + #0x18))))
+    ret v2
 -- card
 {"addr":"0x2012a0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":27,"unsupported":0}
 
@@ -196,6 +217,11 @@ fn <unnamed> @ 0x2012d0 (size 23)
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 int64_t sub_2012f0(uint8_t *a0, int32_t a1) {
+    int64_t t1;
+    int64_t v1;
+    int64_t v3;
+    int64_t v4;
+
     v1 = *a0;
     t1 = a1 & 0xff;
     v3 = v1 & 0xffffffffffffff00 | v1 & 0xf1;

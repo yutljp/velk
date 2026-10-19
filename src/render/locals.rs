@@ -35,7 +35,6 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
         local_widths: HashMap::new(),
         wide_params: std::collections::HashSet::new(),
         signed_params: std::collections::HashSet::new(),
-        pointer_params: std::collections::HashSet::new(),
         fields: HashMap::new(),
         callees: &HashMap::new(),
         data_ranges: &[],
@@ -44,6 +43,8 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
         elements: HashMap::new(),
         narrow_regs: std::collections::HashSet::new(),
         narrow_return: false,
+        floats: HashMap::new(),
+        scaled: std::collections::HashSet::new(),
     };
     let accesses = frame_accesses(ir, sp, frames);
     let mut slot_names: HashMap<i64, Local> = HashMap::new();

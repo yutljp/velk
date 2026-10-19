@@ -23,8 +23,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) wide_params: std::collections::HashSet<u16>,
     /// Parameters declared as signed integers.
     pub(super) signed_params: std::collections::HashSet<u16>,
-    /// Parameters declared as pointers, with the fields their accesses name.
-    pub(super) pointer_params: std::collections::HashSet<u16>,
+    /// The fields the accesses through each pointer parameter name.
     pub(super) fields: HashMap<(u16, i64), (u8, bool)>,
     pub(super) callees: &'a HashMap<u64, String>,
     /// Non-executable `(start, size)` ranges: a constant address inside one is a global.
@@ -39,6 +38,10 @@ pub(crate) struct Ctx<'a> {
     pub(super) narrow_regs: std::collections::HashSet<u16>,
     /// The function returns a 32-bit value, so reg 0 needs no truncation.
     pub(super) narrow_return: bool,
+    /// Variables holding floats, with their precision.
+    pub(super) floats: HashMap<u16, Precision>,
+    /// Pointers whose arithmetic C scales by a pointee wider than a byte.
+    pub(super) scaled: std::collections::HashSet<u16>,
 }
 
 impl Ctx<'_> {
@@ -162,6 +165,17 @@ fn printed_precedence(expr: &Expr, ctx: &Ctx<'_>) -> u8 {
 
 /// Renders a child of an operator with binding strength `parent`, adding
 /// parentheses only when needed; `right` marks the right operand.
+/// An operand of an addition or a subtraction, where a typed pointer the
+/// IR moves by bytes is counted as bytes.
+fn pointer_operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> String {
+    match expr {
+        Expr::Reg { index, .. } if ctx.scaled.contains(index) => {
+            format!("(uint8_t *){}", ctx.register(*index, 64))
+        }
+        other => operand(other, ctx, parent, right),
+    }
+}
+
 pub(crate) fn operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> String {
     let text = render_expr(expr, ctx);
     let own = printed_precedence(expr, ctx);
@@ -440,6 +454,24 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
                 format!("({left} & {})", render_expr(rhs, ctx))
             }
         },
+        // Arithmetic on a pointer to scalars counts elements, as C does.
+        Expr::Bin {
+            op: BinOp::Add | BinOp::Sub,
+            ..
+        } if let Some((base, index)) = crate::render::naming::element_index(value, ctx) => {
+            let name = ctx.register(base, 64);
+            match index {
+                Expr::Const(0) => name,
+                Expr::Bin {
+                    op: BinOp::Sub,
+                    lhs,
+                    rhs,
+                } if matches!(lhs.as_ref(), Expr::Const(0)) => {
+                    format!("{name} - {}", operand(&rhs, ctx, 10, true))
+                }
+                index => format!("{name} + {}", operand(&index, ctx, 10, true)),
+            }
+        }
         // A constant with the top bit set is a negative displacement.
         Expr::Bin {
             op: BinOp::Add,
@@ -448,13 +480,13 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
         } => match rhs.as_ref() {
             Expr::Const(value) if *value >= 1 << 63 => format!(
                 "{} - 0x{:x}",
-                operand(lhs, ctx, 10, false),
+                pointer_operand(lhs, ctx, 10, false),
                 value.wrapping_neg()
             ),
             _ => format!(
                 "{} + {}",
-                operand(lhs, ctx, 10, false),
-                operand(rhs, ctx, 10, true)
+                pointer_operand(lhs, ctx, 10, false),
+                pointer_operand(rhs, ctx, 10, true)
             ),
         },
         Expr::Bin {
@@ -516,12 +548,14 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
         }
         Expr::Bin { op, lhs, rhs } => {
             let strength = precedence(value);
-            format!(
-                "{} {} {}",
-                operand(lhs, ctx, strength, false),
-                operator(*op),
-                operand(rhs, ctx, strength, true)
-            )
+            let side = |side: &Expr, right: bool| {
+                if matches!(op, BinOp::Sub) {
+                    pointer_operand(side, ctx, strength, right)
+                } else {
+                    operand(side, ctx, strength, right)
+                }
+            };
+            format!("{} {} {}", side(lhs, false), operator(*op), side(rhs, true))
         }
         Expr::Load {
             addr,

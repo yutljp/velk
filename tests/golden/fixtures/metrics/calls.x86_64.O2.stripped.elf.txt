@@ -96,6 +96,7 @@ fn <unnamed> @ 0x201330 (size 34)
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 int32_t sub_201360(int32_t a0, int32_t a1) {
+    int32_t v1;
     uint64_t local_0; /* [sp-8] */
 
     local_0 = rax;
@@ -131,6 +132,42 @@ fn <unnamed> @ 0x201360 (size 12)
 /* ref: 0x2001c0 .rodata */
 /* ref: 0x2001c8 .rodata */
 int32_t sub_201370(int32_t a0) {
+    int32_t t1;
+    int64_t v1;
+    int32_t v2;
+    int32_t v3;
+    int32_t v4;
+    uint64_t v7;
+    uint64_t v8;
+    uint64_t v9;
+    uint64_t v10;
+    uint64_t v11;
+    uint64_t v12;
+    uint64_t v13;
+    uint64_t v14;
+    int32_t v15;
+    uint64_t v16;
+    uint64_t v17;
+    uint64_t v18;
+    uint64_t v19;
+    int32_t v20;
+    int32_t v21;
+    int32_t v22;
+    int32_t v24;
+    uint64_t v25;
+    uint64_t v26;
+    int32_t v29;
+    int32_t v31;
+    int32_t v32;
+    int32_t v33;
+    uint64_t v36;
+    uint64_t v37;
+    uint64_t v39;
+    int32_t v42;
+    uint64_t v44;
+    int32_t v46;
+    uint32_t v47;
+
     v1 = 0x1;
     if (a0 < 0x2) {
         return v1;
@@ -138,66 +175,59 @@ int32_t sub_201370(int32_t a0) {
     if (a0 >= 0x9 /* unsigned */) {
         v2 = a0 - 0x1;
         v3 = v2 & 0xfffffffffffffff8;
-        xmm0 = a0;
+        v4 = a0;
         a0 = a0 - v3;
-        v4 = (uint32_t)xmm0 | (uint32_t)xmm0 << 0x20;
-        xmm0 = (uint32_t)xmm0 | (uint32_t)xmm0 << 0x20;
-        xmm0 = add_lanes32(xmm0, qword_200190);
-        xmm0_hi = add_lanes32(v4, qword_200198);
-        xmm1 = qword_2001a0;
-        xmm1_hi = qword_2001a8;
-        xmm2 = qword_2001c0;
-        xmm2_hi = qword_2001c8;
-        xmm4 = qword_2001b0;
-        xmm4_hi = qword_2001b8;
-        v5 = v3;
-        xmm3 = xmm1;
-        xmm3_hi = xmm1_hi;
+        v7 = add_lanes32(v4 | v4 << 0x20, qword_200190);
+        v8 = add_lanes32(v4 | v4 << 0x20, qword_200198);
+        v9 = qword_2001a0;
+        v10 = qword_2001a8;
+        v11 = qword_2001c0;
+        v12 = qword_2001c8;
+        v13 = qword_2001b0;
+        v14 = qword_2001b8;
+        v15 = v3;
+        v16 = v9;
+        v17 = v10;
         do {
-            xmm5 = add_lanes32(xmm0, xmm2);
-            xmm5_hi = add_lanes32(xmm0_hi, xmm2_hi);
-            xmm6 = (uint32_t)xmm0 * (uint32_t)xmm1;
-            xmm6_hi = (uint32_t)xmm0_hi * (uint32_t)xmm1_hi;
-            v6 = ((xmm1_hi >> 0x20) & 0xffffffff) | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20;
-            xmm7_hi = ((xmm0_hi >> 0x20 | ((xmm0_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * v6;
-            xmm7 = (((xmm0 >> 0x20 | ((xmm0 >> 0x20) & 0xffffffff) << 0x20) * (xmm1 >> 0x20 | ((xmm1 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) | (uint32_t)xmm7_hi << 0x20;
-            xmm1 = (uint32_t)xmm6 | (uint32_t)xmm6_hi << 0x20;
-            v7 = interleave_high32(xmm1, xmm7);
-            xmm1 = interleave_low32(xmm1, xmm7);
-            xmm1_hi = v7;
-            v8 = ((xmm5_hi >> 0x20) & 0xffffffff) | ((xmm5_hi >> 0x20) & 0xffffffff) << 0x20;
-            t1 = xmm5 >> 0x20;
-            xmm6 = t1 | t1 << 0x20;
-            xmm5 = (uint32_t)xmm5 * (uint32_t)xmm3;
-            xmm5_hi = (uint32_t)xmm5_hi * (uint32_t)xmm3_hi;
-            v9 = ((xmm3_hi >> 0x20) & 0xffffffff) | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20;
-            t1 = xmm3 >> 0x20;
-            xmm3 = ((t1 | t1 << 0x20) & 0xffffffff) * (uint32_t)xmm6;
-            xmm6 = (uint32_t)xmm3 | v9 * v8 << 0x20;
-            xmm3 = (uint32_t)xmm5 | (uint32_t)xmm5_hi << 0x20;
-            v10 = interleave_high32(xmm3, xmm6);
-            xmm3 = interleave_low32(xmm3, xmm6);
-            xmm3_hi = v10;
-            v11 = add_lanes32(xmm0_hi, xmm4_hi);
-            xmm0 = add_lanes32(xmm0, xmm4);
-            xmm0_hi = v11;
-            v5 = v5 - 0x8;
-        } while (v5 != 0x0);
-        t1 = xmm3 >> 0x20;
-        v12 = ((xmm3_hi >> 0x20 | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * ((xmm1_hi >> 0x20 | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff);
-        xmm2_hi = v12;
-        xmm3_hi = (uint32_t)xmm3_hi * (uint32_t)xmm1_hi;
-        v1 = ((((uint32_t)xmm2_hi | (uint32_t)xmm2_hi << 0x20) * (((t1 | t1 << 0x20) * (xmm1 >> 0x20 | ((xmm1 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) * (((uint32_t)xmm3_hi | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) * ((uint32_t)xmm3 * (uint32_t)xmm1))) & 0xffffffff);
+            v18 = add_lanes32(v7, v11);
+            v19 = add_lanes32(v8, v12);
+            v20 = v7 * v9;
+            v21 = v8 * v10;
+            v22 = ((v10 >> 0x20) & 0xffffffff) | ((v10 >> 0x20) & 0xffffffff) << 0x20;
+            v24 = ((v8 >> 0x20 | ((v8 >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * v22;
+            v25 = (((v7 >> 0x20 | ((v7 >> 0x20) & 0xffffffff) << 0x20) * (v9 >> 0x20 | ((v9 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) | v24 << 0x20;
+            v26 = v20 | v21 << 0x20;
+            v9 = interleave_low32(v26, v25);
+            v10 = interleave_high32(v26, v25);
+            t1 = v18 >> 0x20;
+            v29 = t1 | t1 << 0x20;
+            v31 = v18 * v16;
+            v32 = v19 * v17;
+            v33 = ((v17 >> 0x20) & 0xffffffff) | ((v17 >> 0x20) & 0xffffffff) << 0x20;
+            t1 = v16 >> 0x20;
+            v36 = (((t1 | t1 << 0x20) * v29) & 0xffffffff) | ((v33 * (v19 >> 0x20 | ((v19 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) << 0x20;
+            v37 = v31 | v32 << 0x20;
+            v16 = interleave_low32(v37, v36);
+            v17 = interleave_high32(v37, v36);
+            v39 = add_lanes32(v8, v14);
+            v7 = add_lanes32(v7, v13);
+            v8 = v39;
+            v15 = v15 - 0x8;
+        } while (v15 != 0x0);
+        t1 = v16 >> 0x20;
+        v42 = ((v17 >> 0x20 | ((v17 >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * ((v10 >> 0x20 | ((v10 >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff);
+        v44 = v17 * v10;
+        v1 = (((v42 | v42 << 0x20) * (((t1 | t1 << 0x20) * (v9 >> 0x20 | ((v9 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) * ((v44 | ((v44 >> 0x20) & 0xffffffff) << 0x20) * (v16 * v9))) & 0xffffffff);
         if (v2 == v3) {
             return v1;
         }
     }
     do {
         v1 = v1 * a0;
-        v14 = a0 - 0x1;
-        v15 = a0;
-        a0 = v14;
-    } while (v15 > 0x2 /* unsigned */);
+        v46 = a0 - 0x1;
+        v47 = a0;
+        a0 = v46;
+    } while (v47 > 0x2 /* unsigned */);
     return v1;
 }
 -- signature
@@ -221,64 +251,57 @@ fn <unnamed> @ 0x201370 (size 238)
   blk2 @ 0x201387:
     v2 = (rdi + #0xffffffffffffffff)
     v3 = (v2 & #0xfffffffffffffff8)
-    xmm0 = (rdi & #0xffffffff)
+    v4 = (rdi & #0xffffffff)
     rdi = (((rdi & #0xffffffff) - v3) & #0xffffffff)
-    v4 = ((xmm0 & #0xffffffff) | ((xmm0 & #0xffffffff) << #0x20))
-    xmm0 = ((xmm0 & #0xffffffff) | ((xmm0 & #0xffffffff) << #0x20))
-    xmm0 = add_lanes32(xmm0, load64(#0x200190))
-    xmm0_hi = add_lanes32(v4, load64(#0x200198))
-    xmm1 = load64(#0x2001a0)
-    xmm1_hi = load64(#0x2001a8)
-    xmm2 = load64(#0x2001c0)
-    xmm2_hi = load64(#0x2001c8)
-    xmm4 = load64(#0x2001b0)
-    xmm4_hi = load64(#0x2001b8)
-    v5 = v3
-    xmm3 = xmm1
-    xmm3_hi = xmm1_hi
+    v7 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x200190))
+    v8 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x200198))
+    v9 = load64(#0x2001a0)
+    v10 = load64(#0x2001a8)
+    v11 = load64(#0x2001c0)
+    v12 = load64(#0x2001c8)
+    v13 = load64(#0x2001b0)
+    v14 = load64(#0x2001b8)
+    v15 = v3
+    v16 = v9
+    v17 = v10
   blk3 @ 0x2013c0:
-    xmm5 = add_lanes32(xmm0, xmm2)
-    xmm5_hi = add_lanes32(xmm0_hi, xmm2_hi)
-    xmm6 = ((xmm0 & #0xffffffff) * (xmm1 & #0xffffffff))
-    xmm6_hi = ((xmm0_hi & #0xffffffff) * (xmm1_hi & #0xffffffff))
-    v6 = (((xmm1_hi >> #0x20) & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20))
-    xmm7_hi = ((((xmm0_hi >> #0x20) | (((xmm0_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (v6 & #0xffffffff))
-    xmm7 = (((((xmm0 >> #0x20) | (((xmm0 >> #0x20) & #0xffffffff) << #0x20)) * ((xmm1 >> #0x20) | (((xmm1 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff) | ((xmm7_hi & #0xffffffff) << #0x20))
-    xmm1 = ((xmm6 & #0xffffffff) | ((xmm6_hi & #0xffffffff) << #0x20))
-    v7 = interleave_high32(xmm1, xmm7)
-    xmm1 = interleave_low32(xmm1, xmm7)
-    xmm1_hi = v7
-    v8 = (((xmm5_hi >> #0x20) & #0xffffffff) | (((xmm5_hi >> #0x20) & #0xffffffff) << #0x20))
-    t1 = (xmm5 >> #0x20)
-    xmm6 = ((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20))
-    xmm5 = ((xmm5 & #0xffffffff) * (xmm3 & #0xffffffff))
-    xmm5_hi = ((xmm5_hi & #0xffffffff) * (xmm3_hi & #0xffffffff))
-    v9 = (((xmm3_hi >> #0x20) & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20))
-    t1 = (xmm3 >> #0x20)
-    xmm3 = ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) & #0xffffffff) * (xmm6 & #0xffffffff))
-    xmm6 = ((xmm3 & #0xffffffff) | ((((v9 & #0xffffffff) * (v8 & #0xffffffff)) & #0xffffffff) << #0x20))
-    xmm3 = ((xmm5 & #0xffffffff) | ((xmm5_hi & #0xffffffff) << #0x20))
-    v10 = interleave_high32(xmm3, xmm6)
-    xmm3 = interleave_low32(xmm3, xmm6)
-    xmm3_hi = v10
-    v11 = add_lanes32(xmm0_hi, xmm4_hi)
-    xmm0 = add_lanes32(xmm0, xmm4)
-    xmm0_hi = v11
-    v5 = (((v5 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
-    brif ne v5, #0x0 -> 0x2013c0
+    v18 = add_lanes32(v7, v11)
+    v19 = add_lanes32(v8, v12)
+    v20 = ((v7 & #0xffffffff) * (v9 & #0xffffffff))
+    v21 = ((v8 & #0xffffffff) * (v10 & #0xffffffff))
+    v22 = (((v10 >> #0x20) & #0xffffffff) | (((v10 >> #0x20) & #0xffffffff) << #0x20))
+    v24 = ((((v8 >> #0x20) | (((v8 >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (v22 & #0xffffffff))
+    v25 = (((((v7 >> #0x20) | (((v7 >> #0x20) & #0xffffffff) << #0x20)) * ((v9 >> #0x20) | (((v9 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff) | ((v24 & #0xffffffff) << #0x20))
+    v26 = ((v20 & #0xffffffff) | ((v21 & #0xffffffff) << #0x20))
+    v9 = interleave_low32(v26, v25)
+    v10 = interleave_high32(v26, v25)
+    t1 = (v18 >> #0x20)
+    v29 = ((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20))
+    v31 = ((v18 & #0xffffffff) * (v16 & #0xffffffff))
+    v32 = ((v19 & #0xffffffff) * (v17 & #0xffffffff))
+    v33 = (((v17 >> #0x20) & #0xffffffff) | (((v17 >> #0x20) & #0xffffffff) << #0x20))
+    t1 = (v16 >> #0x20)
+    v36 = (((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) * (v29 & #0xffffffff)) & #0xffffffff) | ((((v33 & #0xffffffff) * ((v19 >> #0x20) | (((v19 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff) << #0x20))
+    v37 = ((v31 & #0xffffffff) | ((v32 & #0xffffffff) << #0x20))
+    v16 = interleave_low32(v37, v36)
+    v17 = interleave_high32(v37, v36)
+    v39 = add_lanes32(v8, v14)
+    v7 = add_lanes32(v7, v13)
+    v8 = v39
+    v15 = (((v15 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
+    brif ne v15, #0x0 -> 0x2013c0
   blk4 @ 0x20141d:
-    t1 = (xmm3 >> #0x20)
-    v12 = ((((xmm3_hi >> #0x20) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (((xmm1_hi >> #0x20) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff))
-    xmm2_hi = v12
-    xmm3_hi = ((xmm3_hi & #0xffffffff) * (xmm1_hi & #0xffffffff))
-    v1 = (((((xmm2_hi & #0xffffffff) | ((xmm2_hi & #0xffffffff) << #0x20)) * ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) * ((xmm1 >> #0x20) | (((xmm1 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff)) * (((xmm3_hi & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) * (((xmm3 & #0xffffffff) * (xmm1 & #0xffffffff)) & #0xffffffff))) & #0xffffffff)
+    t1 = (v16 >> #0x20)
+    v42 = ((((v17 >> #0x20) | (((v17 >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (((v10 >> #0x20) | (((v10 >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff))
+    v44 = ((v17 & #0xffffffff) * (v10 & #0xffffffff))
+    v1 = (((((v42 & #0xffffffff) | ((v42 & #0xffffffff) << #0x20)) * ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) * ((v9 >> #0x20) | (((v9 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff)) * (((v44 & #0xffffffff) | (((v44 >> #0x20) & #0xffffffff) << #0x20)) * (((v16 & #0xffffffff) * (v9 & #0xffffffff)) & #0xffffffff))) & #0xffffffff)
     brif eq v2, v3 -> 0x20145d
   blk5 @ 0x201450:
     v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
-    v14 = (rdi + #0xffffffffffffffff)
-    v15 = rdi
-    rdi = v14
-    brif hi v15, #0x2 -> 0x201450
+    v46 = (rdi + #0xffffffffffffffff)
+    v47 = rdi
+    rdi = v46
+    brif hi v47, #0x2 -> 0x201450
   blk6 @ 0x20145d:
     ret v1
 -- card
@@ -386,6 +409,13 @@ fn <unnamed> @ 0x2014b0 (size 49)
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
 int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
+    uint64_t v1;
+    int64_t v2;
+    uint32_t *v3;
+    int64_t v4;
+    int32_t v6;
+    uint32_t *v7;
+    int32_t v8;
     uint64_t local_0; /* [sp-b0] */
     uint64_t local_1; /* [sp-a8] */
     uint64_t local_2; /* [sp-a0] */
@@ -448,7 +478,7 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         v4 = 0x0;
         for (;;) {
             if (v1 > 0x28 /* unsigned */) {
-                v7 = v3 + 0x8;
+                v7 = v3 + 0x2;
                 local_22 = v7;
             } else {
                 v7 = v3;
@@ -456,17 +486,17 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
                 v1 = v1 + 0x8;
                 *(uint32_t *)&local_23 = v1;
             }
-            v8 = v4 + *(uint32_t *)(v3);
+            v8 = v4 + *v3;
             if (v1 < 0x29 /* unsigned */) {
                 v3 = v7;
                 v7 = v1 + v2;
                 v1 = v1 + 0x8;
                 *(uint32_t *)&local_23 = v1;
             } else {
-                v3 = v7 + 0x8;
+                v3 = v7 + 0x2;
                 local_22 = v3;
             }
-            v4 = v8 + *(uint32_t *)(v7);
+            v4 = v8 + *v7;
             v6 = v6 - 0x2;
             if (v6 == 0x0) {
                 break;
@@ -479,12 +509,12 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         return v4;
     }
     if (v1 >= 0x29 /* unsigned */) {
-        local_22 = v3 + 0x8;
+        local_22 = v3 + 0x2;
     } else {
         *(uint32_t *)&local_23 = v1 + 0x8;
         v3 = v2 + v1;
     }
-    v4 = v4 + *(uint32_t *)(v3);
+    v4 = v4 + *v3;
     return v4;
 }
 -- signature

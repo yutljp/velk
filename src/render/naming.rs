@@ -233,105 +233,49 @@ pub(crate) fn global_name(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Strin
 }
 
 /// Every `register + offset` address a load inside `expr` reads through.
-fn field_loads(expr: &Expr, out: &mut Vec<(u16, i64)>) {
-    match expr {
-        Expr::Load { addr, .. } => {
-            if let Some((base, offset)) = member_address(addr) {
-                out.push((base, offset));
-            }
-            field_loads(addr, out);
-        }
-        Expr::Bin { lhs, rhs, .. } => {
-            field_loads(lhs, out);
-            field_loads(rhs, out);
-        }
-        Expr::SignExtend { value, .. } => field_loads(value, out),
-        Expr::Select {
-            lhs,
-            rhs,
-            then,
-            els,
-            ..
-        } => {
-            field_loads(lhs, out);
-            field_loads(rhs, out);
-            field_loads(then, out);
-            field_loads(els, out);
-        }
-        Expr::Apply { args, .. } => {
-            for arg in args {
-                field_loads(arg, out);
-            }
-        }
-        Expr::Reg { .. } | Expr::Const(_) => {}
-    }
-}
-
 /// `(pointer register, byte offset)` to the `(width, signed)` of the field there.
 pub(crate) type Fields = HashMap<(u16, i64), (u8, bool)>;
 
-/// The pointer parameters and the fields their accesses name, so a member
+/// The fields the accesses through pointer parameters name, so a member
 /// reads as `p->field_0x4` instead of a cast.
-pub(crate) fn struct_fields(ir: &FunctionIr) -> (std::collections::HashSet<u16>, Fields) {
+pub(crate) fn struct_fields(ir: &FunctionIr) -> Fields {
+    fn loads(expr: &Expr, out: &mut Vec<(Expr, u8, bool)>) {
+        if let Expr::Load {
+            addr,
+            width,
+            signed,
+        } = expr
+        {
+            out.push((addr.as_ref().clone(), *width, *signed));
+        }
+        for child in crate::ir::visit::children(expr) {
+            loads(child, out);
+        }
+    }
     let pointer_params: std::collections::HashSet<u16> = ir
         .params
         .iter()
         .filter(|param| param.ty.is_pointer())
         .map(|param| param.index)
         .collect();
-    let mut fields: HashMap<(u16, i64), (u8, bool)> = HashMap::new();
-    for block in &ir.blocks {
-        for stmt in &block.stmts {
-            let (addr, width, signed) = match stmt {
-                Stmt::Store {
-                    addr, width, value, ..
-                } => {
-                    let signed = matches!(value, Expr::Const(_));
-                    (addr, *width, signed)
-                }
-                Stmt::Assign { value, .. } => match value {
-                    Expr::Load {
-                        addr,
-                        width,
-                        signed,
-                        ..
-                    } => (addr.as_ref(), *width, *signed),
-                    // Loads nested inside a larger expression still name fields.
-                    other => {
-                        let mut loads = Vec::new();
-                        field_loads(other, &mut loads);
-                        for (base, offset) in loads {
-                            if pointer_params.contains(&base) {
-                                fields.entry((base, offset)).or_insert((4, false));
-                            }
-                        }
-                        continue;
-                    }
-                },
-                Stmt::Ret { .. } | Stmt::Call { .. } => {
-                    let mut loads = Vec::new();
-                    for value in stmt.operands() {
-                        field_loads(value, &mut loads);
-                    }
-                    for (base, offset) in loads {
-                        if pointer_params.contains(&base) {
-                            fields.entry((base, offset)).or_insert((4, false));
-                        }
-                    }
-                    continue;
-                }
-                _ => continue,
-            };
-            let Some((base, offset)) = member_address(addr) else {
-                continue;
-            };
-            if !pointer_params.contains(&base) {
-                continue;
-            }
+    let mut accesses = Vec::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Store { addr, width, value } = stmt {
+            accesses.push((addr.clone(), *width, matches!(value, Expr::Const(_))));
+        }
+        for value in stmt.operands() {
+            loads(value, &mut accesses);
+        }
+    }
+    let mut fields: Fields = HashMap::new();
+    for (addr, width, signed) in accesses {
+        if let Some((base, offset)) = member_address(&addr)
+            && pointer_params.contains(&base)
+        {
             fields.entry((base, offset)).or_insert((width, signed));
         }
     }
-    (pointer_params, fields)
+    fields
 }
 
 /// `p`, `p + k` or `p - k` as a register index and byte offset.
@@ -362,19 +306,18 @@ fn member_address(addr: &Expr) -> Option<(u16, i64)> {
 /// Renders a member access when the field table has that offset at the
 /// access's own width.
 pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
-    let (base, offset) = member_address(addr)?;
     // A pointer to scalars reads as one, or as an array of them.
-    if let Some(size) = ctx.elements.get(&base)
-        && *size == width
-        && offset % i64::from(*size) == 0
+    if let Some((base, index)) = element_index(addr, ctx)
+        && ctx.elements[&base] == width
     {
         let name = ctx.register(base, 64);
-        return Some(match offset / i64::from(*size) {
-            0 => format!("*{name}"),
-            index => format!("{name}[{index}]"),
+        return Some(match index {
+            Expr::Const(0) => format!("*{name}"),
+            index => format!("{name}[{}]", render_expr(&index, ctx)),
         });
     }
-    if !ctx.pointer_params.contains(&base) {
+    let (base, offset) = member_address(addr)?;
+    if !ctx.pointees.contains_key(&base) {
         return None;
     }
     let (field_width, _) = *ctx.fields.get(&(base, offset))?;
@@ -387,4 +330,105 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Str
         return Some(format!("{}->{}", ctx.register(base, 64), name));
     }
     Some(format!("{}->field_0x{:x}", ctx.register(base, 64), offset))
+}
+
+/// An address through a pointer to scalars, `p + i * size + k * size`, as
+/// the pointer and the element index `i + k`, which C scales by itself.
+pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(u16, Expr)> {
+    fn terms<'e>(expr: &'e Expr, negative: bool, out: &mut Vec<(&'e Expr, bool)>) {
+        match expr {
+            Expr::Bin {
+                op: BinOp::Add,
+                lhs,
+                rhs,
+            } => {
+                terms(lhs, negative, out);
+                terms(rhs, negative, out);
+            }
+            Expr::Bin {
+                op: BinOp::Sub,
+                lhs,
+                rhs,
+            } if matches!(rhs.as_ref(), Expr::Const(_)) => {
+                terms(lhs, negative, out);
+                terms(rhs, !negative, out);
+            }
+            other => out.push((other, negative)),
+        }
+    }
+    let mut found = Vec::new();
+    terms(addr, false, &mut found);
+    let mut bases = found.iter().filter_map(|(term, negative)| match term {
+        Expr::Reg { index, .. } if !negative && ctx.elements.contains_key(index) => Some(*index),
+        _ => None,
+    });
+    let base = bases.next()?;
+    if bases.next().is_some() {
+        return None;
+    }
+    let size = u64::from(ctx.elements[&base]);
+    let mut constant: u64 = 0;
+    let mut index: Option<Expr> = None;
+    let mut add = |term: Expr| {
+        index = Some(match index.take() {
+            Some(sum) => Expr::bin(BinOp::Add, sum, term),
+            None => term,
+        });
+    };
+    for (term, negative) in &found {
+        match term {
+            Expr::Reg { index, .. } if *index == base => {}
+            Expr::Const(value) if *negative => constant = constant.wrapping_sub(*value),
+            Expr::Const(value) => constant = constant.wrapping_add(*value),
+            _ if *negative => return None,
+            other => {
+                let (value, scale) = match other {
+                    Expr::Bin {
+                        op: BinOp::Mul,
+                        lhs,
+                        rhs,
+                    } => match (lhs.as_ref(), rhs.as_ref()) {
+                        (value, Expr::Const(scale)) | (Expr::Const(scale), value) => {
+                            (value, *scale)
+                        }
+                        _ => (*other, 1),
+                    },
+                    Expr::Bin {
+                        op: BinOp::Shl,
+                        lhs,
+                        rhs,
+                    } => match rhs.as_ref() {
+                        Expr::Const(shift) if *shift < 64 => (lhs.as_ref(), 1u64 << shift),
+                        _ => (*other, 1),
+                    },
+                    _ => (*other, 1),
+                };
+                if scale % size != 0 {
+                    return None;
+                }
+                add(match scale / size {
+                    1 => value.clone(),
+                    step => Expr::bin(BinOp::Mul, value.clone(), Expr::Const(step)),
+                });
+            }
+        }
+    }
+    if !constant.is_multiple_of(size) {
+        return None;
+    }
+    let steps = (constant as i64) / size as i64;
+    let index = match (index, steps) {
+        (None, steps) if steps < 0 => Expr::Bin {
+            op: BinOp::Sub,
+            lhs: Box::new(Expr::Const(0)),
+            rhs: Box::new(Expr::Const(steps.unsigned_abs())),
+        },
+        (None, steps) => Expr::Const(steps as u64),
+        (Some(index), 0) => index,
+        (Some(index), steps) if steps < 0 => {
+            Expr::bin(BinOp::Sub, index, Expr::Const(steps.unsigned_abs()))
+        }
+        (Some(index), steps) => Expr::bin(BinOp::Add, index, Expr::Const(steps as u64)),
+    };
+    Some((base, index))
 }

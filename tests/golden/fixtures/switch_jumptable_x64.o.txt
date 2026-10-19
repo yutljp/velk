@@ -5,6 +5,8 @@
 -- decompile
 /* velk pseudo-C: d7 @ 0x0 */
 int32_t d7(int32_t a0) {
+    int64_t v2;
+
     if (a0 <= 0x9 /* unsigned */) {
         v1 = (int64_t)(int32_t)(dword_210[a0]) + 0x210;
         switch (a0) {

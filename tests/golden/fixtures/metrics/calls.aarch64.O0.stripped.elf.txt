@@ -67,6 +67,7 @@ fn <unnamed> @ 0x210350 (size 44)
 /* velk pseudo-C: sub_21037c @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int32_t sub_21037c(int32_t a0, int32_t a1) {
+    uint32_t v1;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
@@ -98,6 +99,7 @@ fn <unnamed> @ 0x21037c (size 72)
 -- decompile
 /* velk pseudo-C: sub_2103c4 @ 0x2103c4 */
 int32_t sub_2103c4(int32_t a0, int32_t a1) {
+    int32_t v1;
     uint64_t local_0; /* [sp-18] */
     uint32_t local_1; /* [sp-1c] */
 
@@ -128,6 +130,7 @@ fn <unnamed> @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: sub_2103f4 @ 0x2103f4 */
 int32_t sub_2103f4(int32_t a0) {
+    int32_t v2;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
     uint32_t local_2; /* [sp-1c] */
@@ -172,6 +175,7 @@ fn <unnamed> @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210454 @ 0x210454 */
 int32_t sub_210454(int32_t a0) {
+    int64_t v2;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
@@ -213,6 +217,7 @@ fn <unnamed> @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int32_t sub_2104a0(int32_t a0) {
+    int64_t v2;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
@@ -298,6 +303,12 @@ fn <unnamed> @ 0x210564 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2105b0 @ 0x2105b0 */
 int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
+    int32_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v5;
+    int32_t v6;
     uint64_t local_0; /* [sp-90] */
     uint64_t local_1; /* [sp-88] */
     uint64_t local_2; /* [sp-a0] */

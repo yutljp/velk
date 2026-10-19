@@ -335,6 +335,8 @@ fn <unnamed> @ 0x201670 (size 14)
 -- decompile
 /* velk pseudo-C: sub_201680 @ 0x201680 */
 int32_t sub_201680(int32_t a0) {
+    int64_t v1;
+
     v1 = (a0 < 0x0) & 0xff;
     return v1 & 0x1;
 }
@@ -354,6 +356,8 @@ fn <unnamed> @ 0x201680 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2016a0 @ 0x2016a0 */
 int32_t sub_2016a0(int32_t a0) {
+    int64_t v1;
+
     v1 = (a0 == 0x0) & 0xff;
     return v1 & 0x1;
 }
@@ -373,6 +377,8 @@ fn <unnamed> @ 0x2016a0 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2016c0 @ 0x2016c0 */
 int32_t sub_2016c0(int32_t a0) {
+    int64_t v1;
+
     v1 = (a0 > 0x0) & 0xff;
     return v1 & 0x1;
 }

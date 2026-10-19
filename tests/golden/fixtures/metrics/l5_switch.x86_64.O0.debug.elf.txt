@@ -24,6 +24,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202760 .bss */
 int dense(int x) {
+    uint32_t v2;
     uint32_t local_0; /* [sp-c] */
     uint64_t local_1; /* [sp-18] */
 
@@ -466,6 +467,7 @@ fn c15 @ 0x2016d0 (size 21)
 -- decompile
 /* velk pseudo-C: sparse @ 0x2016f0 */
 int sparse(int x) {
+    int32_t v1;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-c] */
 

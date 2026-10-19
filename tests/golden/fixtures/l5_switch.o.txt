@@ -6,6 +6,11 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
+    uint64_t v1;
+    int64_t v6;
+    int32_t v8;
+    int32_t v9;
+
     v1 = a0 - 0xa;
     switch (v1) {
     case 0:

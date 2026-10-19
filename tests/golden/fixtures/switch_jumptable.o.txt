@@ -5,6 +5,53 @@
 -- decompile
 /* velk pseudo-C: d7 @ 0x0 */
 int32_t d7(int32_t a0) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v4;
+    int64_t v6;
+    int64_t v8;
+    int64_t v10;
+    int64_t v12;
+    int64_t v14;
+    int64_t v16;
+    int64_t v18;
+    int64_t v20;
+    int64_t v22;
+    int64_t v24;
+    int64_t v26;
+    int64_t v28;
+    int64_t v30;
+    int64_t v32;
+    int64_t v34;
+    int64_t v36;
+    int64_t v38;
+    int64_t v40;
+    int64_t v42;
+    int64_t v44;
+    int64_t v46;
+    int64_t v48;
+    int64_t v50;
+    int64_t v52;
+    int64_t v54;
+    int64_t v56;
+    int64_t v58;
+    int64_t v60;
+    int64_t v62;
+    int64_t v64;
+    int64_t v66;
+    int64_t v68;
+    int64_t v70;
+    int64_t v72;
+    int64_t v74;
+    int64_t v76;
+    int64_t v78;
+    int64_t v80;
+    int64_t v82;
+    int64_t v84;
+    int64_t v86;
+    int64_t v88;
+    int64_t v90;
+
     v1 = 0xffffffff;
     switch (a0) {
     case 0:

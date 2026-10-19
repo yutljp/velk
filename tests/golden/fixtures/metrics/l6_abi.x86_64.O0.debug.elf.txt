@@ -26,6 +26,7 @@ fn tail_target @ 0x2011e0 (size 22)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x201200 */
 int tail_direct(int x) {
+    int32_t v1;
     uint32_t local_0; /* [sp-c] */
 
     local_0 = x;

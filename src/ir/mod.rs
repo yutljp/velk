@@ -5,7 +5,7 @@ pub(crate) mod semantics;
 mod types;
 pub mod visit;
 
-pub use types::{Access, CType, Member, Param, StackParam};
+pub use types::{Access, CType, Member, Param, StackParam, Structure};
 
 /// The integer calling convention a call follows: which registers carry
 /// its arguments and which it may overwrite.
@@ -338,6 +338,28 @@ impl Operation {
             | Operation::FloatMulAdd(p)
             | Operation::IntToFloat { to: p, .. }
             | Operation::FloatConvert { to: p, .. } => Some(p),
+            _ => None,
+        }
+    }
+
+    /// The precision of the floats the operation reads, if it reads any.
+    pub fn argument_precision(self) -> Option<Precision> {
+        match self {
+            Operation::FloatAdd(p)
+            | Operation::FloatSub(p)
+            | Operation::FloatMul(p)
+            | Operation::FloatDiv(p)
+            | Operation::FloatSqrt(p)
+            | Operation::FloatNegate(p)
+            | Operation::FloatAbs(p)
+            | Operation::FloatRound(p, _)
+            | Operation::FloatMulAdd(p)
+            | Operation::FloatEqual(p)
+            | Operation::FloatLess(p)
+            | Operation::FloatLessEqual(p)
+            | Operation::FloatUnordered(p)
+            | Operation::FloatToInt { from: p, .. }
+            | Operation::FloatConvert { from: p, .. } => Some(p),
             _ => None,
         }
     }
@@ -834,6 +856,8 @@ pub struct FunctionIr {
     pub accesses: Vec<Access>,
     /// Structure fields the debug info names.
     pub members: Vec<Member>,
+    /// Structures recovered from the accesses through pointer parameters.
+    pub structures: Vec<Structure>,
     /// Argument registers a signed comparison reads.
     pub signed_params: std::collections::HashSet<u16>,
     pub addr: u64,
@@ -854,6 +878,7 @@ impl FunctionIr {
             ret_type: CType::U64,
             accesses: Vec::new(),
             members: Vec::new(),
+            structures: Vec::new(),
             signed_params: std::collections::HashSet::new(),
             addr: 0,
             name: None,

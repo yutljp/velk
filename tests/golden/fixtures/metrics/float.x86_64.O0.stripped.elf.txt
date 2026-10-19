@@ -9,6 +9,8 @@
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 int32_t sub_2011f0(int64_t a0, int32_t a1) {
+    int64_t v1;
+    int64_t v2;
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint64_t local_2; /* [sp-20] */
@@ -28,11 +30,11 @@ int32_t sub_2011f0(int64_t a0, int32_t a1) {
     }
     if (local_1 <= 0x0) {
         local_4 = 0x0;
-        xmm0 = local_4;
+        v3 = local_4;
         return v1;
     }
     local_4 = local_2 / (double)(int32_t)local_1;
-    xmm0 = local_4;
+    v3 = local_4;
     return v1;
 }
 -- signature
@@ -63,7 +65,7 @@ fn <unnamed> @ 0x2011f0 (size 129)
     store64(#0x0, (rsp + #0xffffffffffffffd0))
     br 0x20126a
   blk6 @ 0x20126a:
-    xmm0 = load64((rsp + #0xffffffffffffffd0))
+    v3 = load64((rsp + #0xffffffffffffffd0))
     ret v1
 -- card
 {"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":129,"unsupported":0}
@@ -72,17 +74,20 @@ fn <unnamed> @ 0x2011f0 (size 129)
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 double sub_201280(float a0, float a1, float a2) {
+    float v2;
+    float v3;
+    float v4;
+    double v5;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
     local_1 = a1;
-    a1 = a0;
-    a0 = local_1;
-    a0 = a0 & 0xffffffff00000000 | a0 - local_0;
-    a0 = a0 & 0xffffffff00000000 | a0 * a2;
-    a0 = a0 & 0xffffffff00000000 | a0 + a1;
-    return a0;
+    v2 = local_1;
+    v3 = v2 & 0xffffffff00000000 | v2 - local_0;
+    v4 = v3 & 0xffffffff00000000 | v3 * a2;
+    v5 = v4 & 0xffffffff00000000 | v4 + a0;
+    return v5;
 }
 -- signature
 double (float a0, float a1, float a2)
@@ -93,12 +98,11 @@ fn <unnamed> @ 0x201280 (size 49)
   blk0 @ 0x201280:
     store32(xmm0, (rsp + #0xfffffffffffffff4))
     store32(xmm1, (rsp + #0xfffffffffffffff0))
-    xmm1 = (xmm0 & #0xffffffff)
-    xmm0 = load32((rsp + #0xfffffffffffffff0))
-    xmm0 = ((xmm0 & #0xffffffff00000000) | fsub.s((xmm0 & #0xffffffff), load32((rsp + #0xfffffffffffffff4))))
-    xmm0 = ((xmm0 & #0xffffffff00000000) | fmul.s((xmm0 & #0xffffffff), (xmm2 & #0xffffffff)))
-    xmm0 = ((xmm0 & #0xffffffff00000000) | fadd.s((xmm0 & #0xffffffff), (xmm1 & #0xffffffff)))
-    ret xmm0
+    v2 = load32((rsp + #0xfffffffffffffff0))
+    v3 = ((v2 & #0xffffffff00000000) | fsub.s((v2 & #0xffffffff), load32((rsp + #0xfffffffffffffff4))))
+    v4 = ((v3 & #0xffffffff00000000) | fmul.s((v3 & #0xffffffff), (xmm2 & #0xffffffff)))
+    v5 = ((v4 & #0xffffffff00000000) | fadd.s((v4 & #0xffffffff), (xmm0 & #0xffffffff)))
+    ret v5
 -- card
 {"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":49,"unsupported":0}
 
@@ -124,7 +128,6 @@ fn <unnamed> @ 0x2012c0 (size 16)
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
 /* ref: 0x200120 .rodata */
 double sub_2012d0(float a0) {
-    a0 = a0;
     return (double)a0 * qword_200120;
 }
 -- signature
@@ -134,7 +137,6 @@ double (float a0)
 -- ir
 fn <unnamed> @ 0x2012d0 (size 32)
   blk0 @ 0x2012d0:
-    xmm0 = (xmm0 & #0xffffffff)
     ret fmul.d(f.stof.d((xmm0 & #0xffffffff)), load64(#0x200120))
 -- card
 {"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}

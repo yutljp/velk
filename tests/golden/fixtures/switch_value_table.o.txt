@@ -5,6 +5,8 @@
 -- decompile
 /* velk pseudo-C: dispatch @ 0x0 */
 int32_t dispatch(int32_t a0) {
+    uint32_t v1;
+
     v1 = a0 - 0xa;
     switch (v1) {
     case 0:

@@ -65,6 +65,8 @@ fn mixed_sign @ 0x201230 (size 9)
 -- decompile
 /* velk pseudo-C: in_range @ 0x201240 */
 _Bool in_range(int x, int lo, int hi) {
+    int64_t v1;
+
     v1 = rax & 0xffffffffffffff00 | (x <= hi) & 0xff;
     return v1 & 0xffffffffffffff00 | v1 & 0xff & ((x >= lo) & 0xff) & 0xff;
 }
@@ -101,6 +103,9 @@ fn rotate_left @ 0x201250 (size 7)
 -- decompile
 /* velk pseudo-C: popcount @ 0x201260 */
 int popcount(unsigned int x) {
+    int64_t v1;
+    int32_t v2;
+
     v1 = 0x0;
     if (x == 0x0) {
         return v1;

@@ -67,6 +67,7 @@ fn pick_op @ 0x210350 (size 44)
 /* velk pseudo-C: apply_table @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
+    uint32_t v1;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
@@ -98,6 +99,7 @@ fn apply_table @ 0x21037c (size 72)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2103c4 */
 int apply_pointer(void *f, int x) {
+    int32_t v1;
     uint64_t local_0; /* [sp-18] */
     uint32_t local_1; /* [sp-1c] */
 
@@ -128,6 +130,7 @@ fn apply_pointer @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2103f4 */
 int factorial(int n) {
+    int32_t v2;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
     uint32_t local_2; /* [sp-1c] */
@@ -172,6 +175,7 @@ fn factorial @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x210454 */
 int is_odd(int n) {
+    int64_t v2;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
@@ -213,6 +217,7 @@ fn is_odd @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: is_even @ 0x2104a0 */
 int is_even(int n) {
+    int64_t v2;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
@@ -298,6 +303,12 @@ fn call_sum9 @ 0x210564 (size 76)
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x2105b0 */
 int sum_varargs(int count, ...) {
+    int32_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v5;
+    int32_t v6;
     uint64_t local_0; /* [sp-90] */
     uint64_t local_1; /* [sp-88] */
     uint64_t local_2; /* [sp-a0] */

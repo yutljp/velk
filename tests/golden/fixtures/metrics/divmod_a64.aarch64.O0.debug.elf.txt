@@ -182,6 +182,8 @@ fn ldiv16 @ 0x210474 (size 28)
 -- decompile
 /* velk pseudo-C: smod3 @ 0x210490 */
 int smod3(int x) {
+    int32_t v1;
+
     v1 = x;
     return v1 - (int32_t)(v1) / 0x3 * 0x3;
 }
@@ -201,6 +203,8 @@ fn smod3 @ 0x210490 (size 36)
 -- decompile
 /* velk pseudo-C: umod3 @ 0x2104b4 */
 unsigned int umod3(unsigned int x) {
+    uint32_t v1;
+
     v1 = x;
     return v1 - v1 / 0x3 * 0x3;
 }
@@ -220,6 +224,8 @@ fn umod3 @ 0x2104b4 (size 36)
 -- decompile
 /* velk pseudo-C: umod10 @ 0x2104d8 */
 unsigned int umod10(unsigned int x) {
+    uint32_t v1;
+
     v1 = x;
     return v1 - v1 / 0xa * 0xa;
 }
@@ -239,6 +245,8 @@ fn umod10 @ 0x2104d8 (size 36)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x2104fc */
 int smod10(int x) {
+    int32_t v1;
+
     v1 = x;
     return v1 - (int32_t)(v1) / 0xa * 0xa;
 }
@@ -309,6 +317,8 @@ fn lmod16 @ 0x210568 (size 36)
 -- decompile
 /* velk pseudo-C: smod4 @ 0x21058c */
 int smod4(int x) {
+    int32_t v1;
+
     v1 = x;
     return v1 - (int32_t)(v1) / 0x4 * 0x4;
 }

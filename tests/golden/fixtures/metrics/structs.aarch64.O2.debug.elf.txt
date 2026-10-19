@@ -12,14 +12,17 @@
 -- decompile
 /* velk pseudo-C: rect_area @ 0x2101dc */
 int rect_area(struct rect *r) {
-    d1 = r->min.x;
-    v1_hi = 0x0;
-    v0_hi = 0x0;
-    s0 = sub_lanes32(*(uint64_t *)(r + 0x8), d1);
-    v0_hi = 0x0;
+    uint64_t v1;
+    int32_t v6;
+
+    v1 = r->min.x;
+    v2 = 0x0;
+    v3 = 0x0;
+    v4 = sub_lanes32(r->max.x, v1);
+    v5 = 0x0;
     /* unsupported: MUL at 0x2101e4 */
-    v1 = s0;
-    return v1;
+    v6 = s0;
+    return v6;
 }
 -- signature
 int (struct rect * r)
@@ -28,14 +31,14 @@ int (struct rect * r)
 -- ir
 fn rect_area @ 0x2101dc (size 20)
   blk0 @ 0x2101dc:
-    d1 = load64(x0)
-    v1_hi = #0x0
-    v0_hi = #0x0
-    d0 = sub_lanes32(load64((x0 + #0x8)), d1)
-    v0_hi = #0x0
+    v1 = load64(x0)
+    v2 = #0x0
+    v3 = #0x0
+    v4 = sub_lanes32(load64((x0 + #0x8)), v1)
+    v5 = #0x0
     unsupported: MUL at 0x2101e4
-    v1 = (d0 & #0xffffffff)
-    ret v1
+    v6 = (d0 & #0xffffffff)
+    ret v6
 -- card
 {"accesses":["r +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x2101dc","approxTokens":126,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":1}
 
@@ -43,6 +46,22 @@ fn rect_area @ 0x2101dc (size 20)
 -- decompile
 /* velk pseudo-C: record_total @ 0x2101f0 */
 long record_total(struct record *items, int n) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v5;
+    void *v6;
+    int64_t v7;
+    int64_t v8;
+    int64_t v9;
+    int64_t v10;
+    int64_t v11;
+    int64_t v12;
+    void *v13;
+    int64_t v14;
+    int64_t v15;
+
     if (n < 0x1) {
         return 0x0;
     }
@@ -51,7 +70,7 @@ long record_total(struct record *items, int n) {
         v2 = v1 & 0x7ffffffe;
         v4 = 0x0;
         v5 = 0x0;
-        v6 = items + 0x20;
+        v6 = (uint8_t *)items + 0x20;
         v7 = v2;
         do {
             v8 = *(uint64_t *)(v6 - 0x18);
@@ -72,7 +91,7 @@ long record_total(struct record *items, int n) {
         v3 = 0x0;
     }
     v12 = v1 - v2;
-    v13 = v2 * 0x18 + items + 0x10;
+    v13 = v2 * 0x18 + (uint8_t *)items + 0x10;
     do {
         v14 = *(uint64_t *)(v13 - 0x8);
         v15 = *(int16_t *)(v13);
@@ -154,6 +173,8 @@ fn point_add @ 0x210290 (size 24)
 -- decompile
 /* velk pseudo-C: big_make @ 0x2102a8 */
 struct big big_make(long seed) {
+    int64_t v1;
+
     v1 = seed << 0x1;
     *(uint64_t *)(x8) = seed;
     *(uint64_t *)(x8 + 0x8) = seed + 0x1;
@@ -233,6 +254,8 @@ fn flags_level @ 0x2102d8 (size 20)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2102ec */
 void flags_set_mode(struct flags *f, unsigned int mode) {
+    int32_t v1;
+
     v1 = f->field_0x0;
     f->field_0x0 = v1 & 0xfffffff1 | (mode & 0x7) << 0x1;
 }

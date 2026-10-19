@@ -7,12 +7,15 @@
 == 0x0 point_dot
 -- decompile
 /* velk pseudo-C: point_dot @ 0x0 */
-/* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
-int32_t point_dot(int32_t a0, uint32_t *a1) {
+struct point_dot_a1 {
+    int32_t field_0x0;
+    int32_t field_0x4;
+};
+int32_t point_dot(int32_t a0, struct point_dot_a1 *a1) {
     return a1->field_0x4 * *(uint32_t *)(a0 + 0x4) + a1->field_0x0 * *(uint32_t *)(a0);
 }
 -- signature
-int32_t (int32_t a0, uint32_t * a1)
+int32_t (int32_t a0, struct point_dot_a1 * a1)
 -- references
 
 -- ir
@@ -26,6 +29,10 @@ fn point_dot @ 0x0 (size 15)
 -- decompile
 /* velk pseudo-C: array_sum @ 0x10 */
 int32_t array_sum(int32_t a0, int32_t a1) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+
     if (a1 <= 0x0) {
         return 0x0;
     }

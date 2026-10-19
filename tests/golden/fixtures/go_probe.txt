@@ -1352,6 +1352,8 @@ fn main.add @ 0x466ca0 (size 32)
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
 int64_t main_divmod(int64_t a0, int64_t a1) {
+    int64_t v1;
+
     switch (a1) {
     case -1:
         v1 = -a0;
@@ -1442,10 +1444,14 @@ fn main.divmod @ 0x466cc0 (size 64)
 -- decompile
 /* velk pseudo-C: main.sumSlice @ 0x466d00 */
 int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+
     v1 = 0x0;
     v2 = 0x0;
     while (a1 > v1) {
-        v3 = *(uint64_t *)(a0 + v1 * 0x8);
+        v3 = a0[v1];
         v1 = v1 + 0x1;
         v2 = v2 + v3;
     }
@@ -1483,10 +1489,12 @@ fn main.sumSlice @ 0x466d00 (size 32)
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* struct: a0 +0x10:uint32_t */
 int32_t main_kindName(uint32_t *a0, int64_t a1) {
+    int32_t v1;
+
     if (a0 == 0x0) {
         return 0x0;
     }
-    v1 = a0->field_0x10;
+    v1 = *(uint32_t *)((uint8_t *)a0 + 0x10);
     if (v1 != 0x778cdb8) {
         if (v1 != 0xcb735792) {
             return 0x0;
@@ -1570,6 +1578,13 @@ fn main.kindName @ 0x466d20 (size 96)
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* ref: 0x4967e8 -> 0x1 ".text" */
 int64_t main_main(void) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v5;
+    int64_t v6;
+    int64_t v7;
     uint64_t local_0; /* [sp-38] */
     uint64_t local_1; /* [sp-40] */
     uint64_t local_2; /* [sp-28] */

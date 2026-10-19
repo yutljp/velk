@@ -147,6 +147,7 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1120 @ 0x1120 */
 int64_t sub_1120(int32_t a0) {
+    int64_t v1;
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-40] */
     uint64_t local_2; /* [sp-38] */
@@ -307,6 +308,9 @@ fn <unnamed> @ 0x1200 (size 64)
 -- decompile
 /* velk pseudo-C: sub_1240 @ 0x1240 */
 int64_t sub_1240(void) {
+    int64_t v1;
+    int64_t v2;
+
     if (byte_4028 != 0x0) {
         return rax;
     }
@@ -362,57 +366,72 @@ fn <unnamed> @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1290 @ 0x1290 */
 int32_t sub_1290(uint64_t *a0, int64_t a1, int32_t a2) {
+    int64_t v2;
+    uint32_t *v3;
+    int64_t v4;
+    int64_t v5;
+    int64_t v6;
+    int64_t v7;
+    uint32_t *v13;
+    int64_t v14;
+    int64_t v15;
+    int64_t v16;
+    int64_t v17;
+    int64_t v18;
+    int64_t v21;
+    int64_t v22;
+    int64_t v28;
     uint64_t local_0; /* [sp-20] */
     uint64_t local_1; /* [sp-78] */
     uint64_t local_2; /* [sp-70] */
 
     local_0 = *(uint64_t *)(fs_base + 0x28);
     if ((a1 & 0xffffffff) <= 0x0) {
-        v19 = rsp - 0x68;
+        v21 = rsp - 0x68;
         local_2 = 0x0;
-        v20 = a2;
+        v22 = a2;
         local_1 = a1;
         rax = 0x0;
-        __snprintf_chk(v19, 0x40, 0x2, 0x40, 0x2004, v20);
-        v26 = stderr;
-        fputs(v19, v26);
+        __snprintf_chk(v21, 0x40, 0x2, 0x40, 0x2004, v22);
+        v28 = stderr;
+        fputs(v21, v28);
     } else {
         v2 = a0;
         v3 = a0;
-        rbp = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
-        v4 = a0 + rbp;
-        while (*(uint32_t *)(v3) != a2) {
-            v3 = v3 + 0x18;
-            if (v3 == v4) {
+        v4 = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
+        v5 = (uint8_t *)a0 + v4;
+        while (*v3 != a2) {
+            v3 = v3 + 0x6;
+            if (v3 == v5) {
                 goto L_12fd;
             }
         }
-        rax = *(uint32_t *)(v3 + 0x4);
+        rax = v3[0x1];
         if (local_0 != *(uint64_t *)(fs_base + 0x28)) {
             __stack_chk_fail();
             __builtin_trap();
         }
         return rax;
     L_12fd:
-        v5 = rsp - 0x68;
-        v6 = a2;
+        v6 = rsp - 0x68;
+        v7 = a2;
         local_1 = a1;
         rax = 0x0;
-        v12 = v2 + 0x8;
-        rbp = rbp + v12;
-        __snprintf_chk(v5, 0x40, 0x2, 0x40, 0x2004, v6);
-        v13 = stderr;
-        fputs(v5, v13);
+        v13 = v2 + 0x8;
+        v14 = v4 + (uint8_t *)v13;
+        __snprintf_chk(v6, 0x40, 0x2, 0x40, 0x2004, v7);
+        v15 = stderr;
+        fputs(v6, v15);
         do {
-            v14 = *(uint32_t *)(v12 - 0x4);
-            v15 = stderr;
-            v16 = v12;
+            v16 = v13[-0x1];
+            v17 = stderr;
+            v18 = v13;
             rax = 0x0;
-            v17 = 0x201c;
-            v18 = 0x2;
-            v12 = v12 + 0x18;
-            __fprintf_chk(v15, 0x2, 0x201c, v16, v14);
-        } while (v12 != rbp);
+            v19 = 0x201c;
+            v20 = 0x2;
+            v13 = v13 + 0x6;
+            __fprintf_chk(v17, 0x2, 0x201c, v18, v16);
+        } while (v13 != v14);
     }
     abort();
     __builtin_trap();
@@ -429,12 +448,12 @@ fn <unnamed> @ 0x1290 (size 240)
   blk1 @ 0x12b4:
     v2 = rdi
     v3 = rdi
-    rbp = ((sext32(rsi) + (sext32(rsi) * #0x2)) << #0x3)
-    v4 = (rdi + rbp)
+    v4 = ((sext32(rsi) + (sext32(rsi) * #0x2)) << #0x3)
+    v5 = (rdi + v4)
     br 0x12d9
   blk2 @ 0x12d0:
     v3 = (v3 + #0x18)
-    brif eq v3, v4 -> 0x12fd
+    brif eq v3, v5 -> 0x12fd
   blk3 @ 0x12d9:
     brif ne load32(v3), (rdx & #0xffffffff) -> 0x12d0
   blk4 @ 0x12dd:
@@ -443,39 +462,39 @@ fn <unnamed> @ 0x1290 (size 240)
   blk5 @ 0x12f4:
     ret rax
   blk6 @ 0x12fd:
-    v5 = (rsp + #0xffffffffffffff98)
-    v6 = rdx
+    v6 = (rsp + #0xffffffffffffff98)
+    v7 = rdx
     store64(rsi, (rsp + #0xffffffffffffff88))
     rax = #0x0
-    v12 = (v2 + #0x8)
-    rbp = (rbp + v12)
-    call 0x1090(v5, #0x40, #0x2, #0x40, #0x2004, v6)
-    v13 = load64(#0x4020)
-    call 0x10c0(v5, v13)
-  blk7 @ 0x1350:
-    v14 = load32((v12 + #0xfffffffffffffffc))
+    v13 = (v2 + #0x8)
+    v14 = (v4 + v13)
+    call 0x1090(v6, #0x40, #0x2, #0x40, #0x2004, v7)
     v15 = load64(#0x4020)
-    v16 = v12
+    call 0x10c0(v6, v15)
+  blk7 @ 0x1350:
+    v16 = load32((v13 + #0xfffffffffffffffc))
+    v17 = load64(#0x4020)
+    v18 = v13
     rax = #0x0
-    v17 = #0x201c
-    v18 = #0x2
-    v12 = (v12 + #0x18)
-    call 0x10d0(v15, #0x2, #0x201c, v16, v14)
-    brif ne v12, rbp -> 0x1350
+    v19 = #0x201c
+    v20 = #0x2
+    v13 = (v13 + #0x18)
+    call 0x10d0(v17, #0x2, #0x201c, v18, v16)
+    brif ne v13, v14 -> 0x1350
   blk8 @ 0x1376:
     br 0x111a
   blk9 @ 0x137b:
     call 0x10b0()
     trap
   blk10 @ 0x10e0:
-    v19 = (rsp + #0xffffffffffffff98)
+    v21 = (rsp + #0xffffffffffffff98)
     store64(#0x0, (rsp + #0xffffffffffffff90))
-    v20 = rdx
+    v22 = rdx
     store64(rsi, (rsp + #0xffffffffffffff88))
     rax = #0x0
-    call 0x1090(v19, #0x40, #0x2, #0x40, #0x2004, v20)
-    v26 = load64(#0x4020)
-    call 0x10c0(v19, v26)
+    call 0x1090(v21, #0x40, #0x2, #0x40, #0x2004, v22)
+    v28 = load64(#0x4020)
+    call 0x10c0(v21, v28)
   blk11 @ 0x111a:
     call 0x10a0()
     trap

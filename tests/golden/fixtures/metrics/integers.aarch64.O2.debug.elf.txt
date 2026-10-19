@@ -82,6 +82,8 @@ fn in_range @ 0x210228 (size 16)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x210238 */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
+    int32_t t1;
+
     t1 = -k & 0x1f;
     return ((x >> t1 | x << (0x20 - t1 & 0x1f)) & 0xffffffff);
 }
@@ -101,11 +103,13 @@ fn rotate_left @ 0x210238 (size 12)
 -- decompile
 /* velk pseudo-C: popcount @ 0x210244 */
 int popcount(unsigned int x) {
-    s0 = x;
-    v0_hi = 0x0;
+    int32_t v3;
+
+    v1 = x;
+    v2 = 0x0;
     /* unsupported (2 steps): CNT at 0x210248, UADDLV at 0x21024c */
-    v1 = s0;
-    return v1;
+    v3 = s0;
+    return v3;
 }
 -- signature
 int (unsigned int x)
@@ -114,12 +118,12 @@ int (unsigned int x)
 -- ir
 fn popcount @ 0x210244 (size 20)
   blk0 @ 0x210244:
-    s0 = w0
-    v0_hi = #0x0
+    v1 = w0
+    v2 = #0x0
     unsupported: CNT at 0x210248
     unsupported: UADDLV at 0x21024c
-    v1 = s0
-    ret v1
+    v3 = s0
+    ret v3
 -- card
 {"addr":"0x210244","approxTokens":126,"blocks":1,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":2}
 

@@ -25,6 +25,7 @@ fn point_dot @ 0x201210 (size 44)
 -- decompile
 /* velk pseudo-C: array_sum @ 0x201240 */
 int array_sum(int *a, int n) {
+    int64_t v1;
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint32_t local_2; /* [sp-18] */

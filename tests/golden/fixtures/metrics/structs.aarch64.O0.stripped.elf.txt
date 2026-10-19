@@ -29,6 +29,8 @@ fn <unnamed> @ 0x2101fc (size 60)
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 int64_t sub_210238(int64_t a0, int32_t a1) {
+    uint64_t *v2;
+    int64_t v3;
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
     uint64_t local_2; /* [sp-18] */
@@ -41,7 +43,7 @@ int64_t sub_210238(int64_t a0, int32_t a1) {
     while (local_3 < local_1) {
         v2 = local_0 + local_3 * 0x18;
         v3 = *(int16_t *)(local_0 + local_3 * 0x18 + 0x10);
-        local_2 += *(uint64_t *)(v2 + 0x8) * v3;
+        local_2 += v2[0x1] * v3;
         local_3 += 0x1;
     }
     return local_2;
@@ -109,14 +111,15 @@ fn <unnamed> @ 0x2102c0 (size 56)
 -- decompile
 /* velk pseudo-C: sub_2102f8 @ 0x2102f8 */
 int64_t sub_2102f8(int64_t a0) {
+    uint64_t *v1;
     uint64_t local_0; /* [sp-8] */
 
     v1 = x8;
     local_0 = a0;
-    *(uint64_t *)(v1) = local_0;
-    *(uint64_t *)(v1 + 0x8) = local_0 + 0x1;
-    *(uint64_t *)(v1 + 0x10) = local_0 << 0x1;
-    *(uint64_t *)(v1 + 0x18) = local_0 * 0x3;
+    *v1 = local_0;
+    v1[0x1] = local_0 + 0x1;
+    v1[0x2] = local_0 << 0x1;
+    v1[0x3] = local_0 * 0x3;
     return a0;
 }
 -- signature
@@ -139,11 +142,17 @@ fn <unnamed> @ 0x2102f8 (size 68)
 == 0x21033c -
 -- decompile
 /* velk pseudo-C: sub_21033c @ 0x21033c */
-int64_t sub_21033c(uint64_t *a0) {
-    return *(uint64_t *)(a0) + *(uint64_t *)(a0 + 0x8) + *(uint64_t *)(a0 + 0x10) + *(uint64_t *)(a0 + 0x18);
+struct sub_21033c_a0 {
+    int64_t field_0x0;
+    int64_t field_0x8;
+    int64_t field_0x10;
+    int64_t field_0x18;
+};
+int64_t sub_21033c(struct sub_21033c_a0 *a0) {
+    return a0->field_0x0 + a0->field_0x8 + a0->field_0x10 + a0->field_0x18;
 }
 -- signature
-int64_t (uint64_t * a0)
+int64_t (struct sub_21033c_a0 * a0)
 -- references
 
 -- ir
@@ -157,6 +166,7 @@ fn <unnamed> @ 0x21033c (size 48)
 -- decompile
 /* velk pseudo-C: sub_21036c @ 0x21036c */
 int32_t sub_21036c(int32_t a0) {
+    int32_t v2;
     uint32_t local_0; /* [sp-4] */
 
     local_0 = a0;
@@ -220,9 +230,12 @@ fn <unnamed> @ 0x210384 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2103d0 @ 0x2103d0 */
 int64_t sub_2103d0(int64_t a0, int32_t a1) {
+    uint8_t *v1;
+    int32_t v2;
+
     v1 = a0;
-    v2 = *(uint8_t *)(v1);
-    *(uint8_t *)(v1) = v2 & 0xfffffff1 | (a1 & 0x7) << 0x1;
+    v2 = *v1;
+    *v1 = v2 & 0xfffffff1 | (a1 & 0x7) << 0x1;
     return a0;
 }
 -- signature

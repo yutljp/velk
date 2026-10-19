@@ -78,15 +78,15 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
 /// The registers signed operations read, and those unsigned ones read:
 /// comparisons, divisions and right shifts.
 #[derive(Default)]
-struct SignEvidence {
-    signed: std::collections::HashSet<u16>,
-    unsigned: std::collections::HashSet<u16>,
+pub(crate) struct SignEvidence {
+    pub(crate) signed: std::collections::HashSet<u16>,
+    pub(crate) unsigned: std::collections::HashSet<u16>,
     /// Some unsigned operation was seen, whatever it read.
     any_unsigned: bool,
 }
 
 impl SignEvidence {
-    fn of(ir: &FunctionIr) -> Self {
+    pub(crate) fn of(ir: &FunctionIr) -> Self {
         use crate::ir::Stmt;
         let mut evidence = Self::default();
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {

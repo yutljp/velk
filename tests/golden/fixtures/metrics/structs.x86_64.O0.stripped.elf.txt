@@ -29,6 +29,9 @@ fn <unnamed> @ 0x201240 (size 40)
 -- decompile
 /* velk pseudo-C: sub_201270 @ 0x201270 */
 int64_t sub_201270(int64_t a0, int32_t a1) {
+    int64_t v1;
+    int64_t v3;
+    int64_t v4;
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint64_t local_2; /* [sp-20] */
@@ -105,8 +108,13 @@ fn <unnamed> @ 0x2012e0 (size 36)
 == 0x201310 -
 -- decompile
 /* velk pseudo-C: sub_201310 @ 0x201310 */
-/* struct: a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
-int64_t sub_201310(uint64_t *a0, int64_t a1) {
+struct sub_201310_a0 {
+    int64_t field_0x0;
+    int64_t field_0x8;
+    int64_t field_0x10;
+    int64_t field_0x18;
+};
+int64_t sub_201310(struct sub_201310_a0 *a0, int64_t a1) {
     uint64_t local_0; /* [sp-10] */
 
     local_0 = a1;
@@ -117,7 +125,7 @@ int64_t sub_201310(uint64_t *a0, int64_t a1) {
     return a0;
 }
 -- signature
-int64_t (uint64_t * a0, int64_t a1)
+int64_t (struct sub_201310_a0 * a0, int64_t a1)
 -- references
 
 -- ir
@@ -136,8 +144,10 @@ fn <unnamed> @ 0x201310 (size 52)
 -- decompile
 /* velk pseudo-C: sub_201350 @ 0x201350 */
 int64_t sub_201350(void) {
+    uint64_t *v1;
+
     v1 = rsp + 0x8;
-    return *(uint64_t *)(v1) + *(uint64_t *)(v1 + 0x8) + *(uint64_t *)(v1 + 0x10) + *(uint64_t *)(v1 + 0x18);
+    return *v1 + v1[0x1] + v1[0x2] + v1[0x3];
 }
 -- signature
 int64_t ()
@@ -155,6 +165,7 @@ fn <unnamed> @ 0x201350 (size 25)
 -- decompile
 /* velk pseudo-C: sub_201370 @ 0x201370 */
 int32_t sub_201370(int32_t a0) {
+    int32_t v1;
     uint32_t local_0; /* [sp-c] */
 
     local_0 = a0;
@@ -178,6 +189,9 @@ fn <unnamed> @ 0x201370 (size 13)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
+    int64_t v1;
+    uint64_t v4;
+    uint64_t v6;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
@@ -218,10 +232,14 @@ fn <unnamed> @ 0x201380 (size 59)
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
 int64_t sub_2013c0(int64_t a0, int32_t a1) {
+    uint8_t *v2;
+    int64_t v4;
+    int64_t v6;
+
     v2 = a0;
-    v4 = *(uint8_t *)(v2);
+    v4 = *v2;
     v6 = v4 & 0xf1;
-    *(uint8_t *)(v2) = v6 & 0xffffffffffffff00 | (v6 & 0xff | (a1 & 0x7) << 0x1 & 0xff) & 0xff;
+    *v2 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (a1 & 0x7) << 0x1 & 0xff) & 0xff;
     return v2;
 }
 -- signature

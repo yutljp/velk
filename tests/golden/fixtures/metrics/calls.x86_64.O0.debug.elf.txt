@@ -100,6 +100,7 @@ fn apply_table @ 0x201360 (size 52)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2013a0 */
 int apply_pointer(void *f, int x) {
+    int32_t v1;
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
@@ -130,6 +131,8 @@ fn apply_pointer @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2013d0 */
 int factorial(int n) {
+    int64_t v1;
+    int32_t v2;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
     uint32_t local_2; /* [sp-14] */
@@ -173,6 +176,8 @@ fn factorial @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x201420 */
 int is_odd(int n) {
+    int64_t v1;
+    int64_t v2;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
@@ -211,6 +216,8 @@ fn is_odd @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: is_even @ 0x201460 */
 int is_even(int n) {
+    int64_t v1;
+    int64_t v2;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
@@ -304,6 +311,13 @@ fn call_sum9 @ 0x2014f0 (size 80)
 /* velk pseudo-C: sum_varargs @ 0x201540 */
 /* struct: rcx +0x0:uint32_t, +0x8:uint64_t */
 int sum_varargs(int count, ...) {
+    void *v1;
+    uint64_t v2;
+    void *v3;
+    int64_t v4;
+    int64_t v5;
+    uint64_t *v6;
+    int64_t v7;
     uint64_t local_0; /* [sp-b8] */
     uint64_t local_1; /* [sp-b0] */
     uint64_t local_2; /* [sp-a8] */
@@ -370,8 +384,8 @@ int sum_varargs(int count, ...) {
         local_26 = v2;
         if (v2 > 0x28 /* unsigned */) {
             v6 = local_24;
-            v7 = *(uint64_t *)(v6 + 0x8);
-            *(uint64_t *)(v6 + 0x8) = v7 + 0x8;
+            v7 = v6[0x1];
+            v6[0x1] = v7 + 0x8;
             local_27 = v7;
         } else {
             v3 = local_24;

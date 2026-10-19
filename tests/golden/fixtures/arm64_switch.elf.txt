@@ -6,6 +6,8 @@
 /* velk pseudo-C: dispatch @ 0x210164 */
 /* ref: 0x200120 .rodata */
 int32_t dispatch(int32_t a0) {
+    uint32_t v1;
+
     v1 = a0 - 0xa;
     switch (v1) {
     case 0:

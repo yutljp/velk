@@ -24,6 +24,7 @@ fn tail_one @ 0x2011a0 (size 22)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x2011c0 */
 int tail_two(int x) {
+    int32_t v1;
     uint32_t local_0; /* [sp-c] */
 
     local_0 = x;

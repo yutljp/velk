@@ -7,6 +7,8 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2023d0 .bss */
 int d7(int x) {
+    int64_t v2;
+
     if (x <= 0x9 /* unsigned */) {
         v1 = (int64_t)(int32_t)(dword_200158[x]) + 0x200158;
         switch (x) {

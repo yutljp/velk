@@ -29,6 +29,9 @@ fn rect_area @ 0x201240 (size 40)
 -- decompile
 /* velk pseudo-C: record_total @ 0x201270 */
 long record_total(struct record *items, int n) {
+    int64_t v1;
+    int64_t v3;
+    int64_t v4;
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint64_t local_2; /* [sp-20] */
@@ -135,8 +138,10 @@ fn big_make @ 0x201310 (size 52)
 -- decompile
 /* velk pseudo-C: big_sum @ 0x201350 */
 long big_sum(struct big value) {
+    uint64_t *v1;
+
     v1 = rsp + 0x8;
-    return *(uint64_t *)(v1) + *(uint64_t *)(v1 + 0x8) + *(uint64_t *)(v1 + 0x10) + *(uint64_t *)(v1 + 0x18);
+    return *v1 + v1[0x1] + v1[0x2] + v1[0x3];
 }
 -- signature
 long ()
@@ -154,6 +159,7 @@ fn big_sum @ 0x201350 (size 25)
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x201370 */
 unsigned char word_low_byte(union word w) {
+    int32_t v1;
     uint32_t local_0; /* [sp-c] */
 
     local_0 = w;
@@ -177,6 +183,9 @@ fn word_low_byte @ 0x201370 (size 13)
 -- decompile
 /* velk pseudo-C: flags_level @ 0x201380 */
 unsigned int flags_level(struct flags f) {
+    int64_t v1;
+    uint64_t v4;
+    uint64_t v6;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
@@ -217,10 +226,14 @@ fn flags_level @ 0x201380 (size 59)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2013c0 */
 void flags_set_mode(struct flags *f, unsigned int mode) {
+    uint8_t *v2;
+    int64_t v4;
+    int64_t v6;
+
     v2 = f;
-    v4 = *(uint8_t *)(v2);
+    v4 = *v2;
     v6 = v4 & 0xf1;
-    *(uint8_t *)(v2) = v6 & 0xffffffffffffff00 | (v6 & 0xff | (mode & 0x7) << 0x1 & 0xff) & 0xff;
+    *v2 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (mode & 0x7) << 0x1 & 0xff) & 0xff;
 }
 -- signature
 void (struct flags * f, unsigned int mode)

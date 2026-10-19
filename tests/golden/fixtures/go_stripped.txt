@@ -1350,6 +1350,7 @@ fn main.add @ 0x466ca0 (size 32)
 -- decompile
 /* velk pseudo-C: main.twice @ 0x466cc0 */
 int64_t main_twice(int64_t a0) {
+    int64_t v1;
     uint64_t local_0; /* [sp+8] */
 
 L_466cc0:
@@ -1435,6 +1436,8 @@ fn main.twice @ 0x466cc0 (size 64)
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d00 */
 int64_t main_main(void) {
+    int64_t v1;
+    int64_t v2;
     uint64_t local_0; /* [sp-10] */
 
 L_466d00:

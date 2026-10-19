@@ -11,6 +11,24 @@
 -- decompile
 /* velk pseudo-C: matrix_trace @ 0x201220 */
 int matrix_trace(int *m, int n) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v5;
+    int64_t v6;
+    int64_t v7;
+    int64_t v8;
+    int *v9;
+    int64_t v10;
+    int64_t v11;
+    int64_t v12;
+    int64_t v13;
+    int64_t v14;
+    int64_t v15;
+    int64_t v16;
+    int64_t v17;
+
     if (n <= 0x0) {
         return 0x0;
     }
@@ -23,25 +41,25 @@ int matrix_trace(int *m, int n) {
     v7 = 0x0;
     for (;;) {
         v8 = v6 * n;
-        v9 = m + v6 * 0x4;
+        v9 = m + v6;
         if (n >= 0x4 /* unsigned */) {
             v11 = 0x0;
             for (;;) {
                 v12 = v11;
                 if (v6 == v11) {
-                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
+                    v7 = v7 + v9[v8];
                 }
                 v13 = v12 + 0x1;
                 if (v6 == v13) {
-                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
+                    v7 = v7 + v9[v8];
                 }
                 v14 = v13 + 0x1;
                 if (v6 == v14) {
-                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
+                    v7 = v7 + v9[v8];
                 }
                 v15 = v14 + 0x1;
                 if (v6 == v15) {
-                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
+                    v7 = v7 + v9[v8];
                 }
                 v11 = v15 + 0x1;
                 if (v11 == v3) {
@@ -62,7 +80,7 @@ int matrix_trace(int *m, int n) {
         v17 = 0x0;
         for (;;) {
             if (v16 == v17) {
-                v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
+                v7 = v7 + v9[v8];
             }
             v17 = v17 - 0x1;
             if (v4 == v17) {
@@ -161,6 +179,8 @@ fn matrix_trace @ 0x201220 (size 242)
 -- decompile
 /* velk pseudo-C: cleanup_on_error @ 0x201320 */
 int cleanup_on_error(int a, int b, int *out) {
+    int64_t v1;
+
     v1 = 0xffffffff;
     if (a < 0x0) {
         return v1;
@@ -196,6 +216,8 @@ fn cleanup_on_error @ 0x201320 (size 26)
 /* velk pseudo-C: fallthrough @ 0x201340 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
+    int64_t v1;
+
     v1 = 0xffffffff;
     switch (x) {
     case 0:
@@ -281,6 +303,8 @@ fn sparse @ 0x201360 (size 61)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x2013a0 */
 int short_circuit(int *p, int n) {
+    int64_t v1;
+
     v1 = 0x0;
     if (p == 0x0) {
         return v1;
@@ -292,7 +316,7 @@ int short_circuit(int *p, int n) {
     if (*p == 0x1) {
         return v1;
     }
-    v1 = (*(uint32_t *)(p + n * 0x4 - 0x4) == 0x1) & 0xff;
+    v1 = (p[n - 0x1] == 0x1) & 0xff;
     return v1;
 }
 -- signature
@@ -320,6 +344,24 @@ fn short_circuit @ 0x2013a0 (size 34)
 -- decompile
 /* velk pseudo-C: skip_negatives @ 0x2013d0 */
 int skip_negatives(int *p, int n) {
+    uint64_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v6;
+    uint64_t v7;
+    uint64_t v8;
+    uint64_t v9;
+    uint64_t v10;
+    uint64_t v11;
+    uint64_t v12;
+    uint64_t v13;
+    uint64_t v14;
+    uint64_t v17;
+    uint64_t v18;
+    uint64_t v19;
+    int32_t v21;
+
     if (n <= 0x0) {
         return 0x0;
     }
@@ -327,27 +369,26 @@ int skip_negatives(int *p, int n) {
     if (n >= 0x8 /* unsigned */) {
         v2 = v1 & 0x7ffffff8;
         v4 = (v1 >> 0x3 & 0xfffffff) << 0x5;
-        xmm1 = 0x0;
-        v5 = 0x0;
-        xmm2 = 0x0;
-        xmm2_hi = 0x0;
-        xmm0 = 0x0;
-        xmm0_hi = 0x0;
+        v6 = 0x0;
+        v7 = 0x0;
+        v8 = 0x0;
+        v9 = 0x0;
+        v10 = 0x0;
         do {
-            xmm3 = *(uint64_t *)(p + v5);
-            xmm3_hi = *(uint64_t *)(p + v5 + 0x8);
-            xmm4 = *(uint64_t *)(p + v5 + 0x10);
-            xmm4_hi = *(uint64_t *)(p + v5 + 0x18);
-            xmm2 = add_lanes32(xmm2, greater_lanes32(xmm3, 0x0) & xmm3);
-            xmm2_hi = add_lanes32(xmm2_hi, greater_lanes32(xmm3_hi, 0x0) & xmm3_hi);
-            v6 = add_lanes32(xmm0_hi, greater_lanes32(xmm4_hi, 0x0) & xmm4_hi);
-            xmm0 = add_lanes32(xmm0, greater_lanes32(xmm4, 0x0) & xmm4);
-            xmm0_hi = v6;
-            v5 = v5 + 0x20;
-        } while (v4 != v5);
-        xmm0_hi = add_lanes32(xmm0_hi, xmm2_hi);
-        xmm1 = add_lanes32((uint32_t)xmm0_hi | ((xmm0_hi >> 0x20) & 0xffffffff) << 0x20, add_lanes32(xmm0, xmm2));
-        v3 = (add_lanes32(((xmm1 >> 0x20) & 0xffffffff) | ((xmm1 >> 0x20) & 0xffffffff) << 0x20, xmm1) & 0xffffffff);
+            v11 = *(uint64_t *)((uint8_t *)p + v6);
+            v12 = *(uint64_t *)((uint8_t *)p + v6 + 0x8);
+            v13 = *(uint64_t *)((uint8_t *)p + v6 + 0x10);
+            v14 = *(uint64_t *)((uint8_t *)p + v6 + 0x18);
+            v7 = add_lanes32(v7, greater_lanes32(v11, 0x0) & v11);
+            v8 = add_lanes32(v8, greater_lanes32(v12, 0x0) & v12);
+            v17 = add_lanes32(v10, greater_lanes32(v14, 0x0) & v14);
+            v9 = add_lanes32(v9, greater_lanes32(v13, 0x0) & v13);
+            v10 = v17;
+            v6 = v6 + 0x20;
+        } while (v4 != v6);
+        v18 = add_lanes32(v10, v8);
+        v19 = add_lanes32(v18 | ((v18 >> 0x20) & 0xffffffff) << 0x20, add_lanes32(v9, v7));
+        v3 = (add_lanes32(((v19 >> 0x20) & 0xffffffff) | ((v19 >> 0x20) & 0xffffffff) << 0x20, v19) & 0xffffffff);
         if (v2 == v1) {
             return v3;
         }
@@ -356,8 +397,8 @@ int skip_negatives(int *p, int n) {
         v3 = 0x0;
     }
     do {
-        v8 = *(uint32_t *)(p + v2 * 0x4);
-        v3 = v3 + (v8 <= 0x0 ? 0x0 : v8);
+        v21 = p[v2];
+        v3 = v3 + (v21 <= 0x0 ? 0x0 : v21);
         v2 = v2 + 0x1;
     } while (v1 != v2);
     return v3;
@@ -382,32 +423,31 @@ fn skip_negatives @ 0x2013d0 (size 183)
   blk4 @ 0x2013e9:
     v2 = (v1 & #0x7ffffff8)
     v4 = ((((v1 & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
-    xmm1 = #0x0
-    v5 = #0x0
-    xmm2 = #0x0
-    xmm2_hi = #0x0
-    xmm0 = #0x0
-    xmm0_hi = #0x0
+    v6 = #0x0
+    v7 = #0x0
+    v8 = #0x0
+    v9 = #0x0
+    v10 = #0x0
   blk5 @ 0x201410:
-    xmm3 = load64((rdi + v5))
-    xmm3_hi = load64(((rdi + v5) + #0x8))
-    xmm4 = load64(((rdi + v5) + #0x10))
-    xmm4_hi = load64(((rdi + v5) + #0x18))
-    xmm2 = add_lanes32(xmm2, (greater_lanes32(xmm3, #0x0) & xmm3))
-    xmm2_hi = add_lanes32(xmm2_hi, (greater_lanes32(xmm3_hi, #0x0) & xmm3_hi))
-    v6 = add_lanes32(xmm0_hi, (greater_lanes32(xmm4_hi, #0x0) & xmm4_hi))
-    xmm0 = add_lanes32(xmm0, (greater_lanes32(xmm4, #0x0) & xmm4))
-    xmm0_hi = v6
-    v5 = (v5 + #0x20)
-    brif ne v4, v5 -> 0x201410
+    v11 = load64((rdi + v6))
+    v12 = load64(((rdi + v6) + #0x8))
+    v13 = load64(((rdi + v6) + #0x10))
+    v14 = load64(((rdi + v6) + #0x18))
+    v7 = add_lanes32(v7, (greater_lanes32(v11, #0x0) & v11))
+    v8 = add_lanes32(v8, (greater_lanes32(v12, #0x0) & v12))
+    v17 = add_lanes32(v10, (greater_lanes32(v14, #0x0) & v14))
+    v9 = add_lanes32(v9, (greater_lanes32(v13, #0x0) & v13))
+    v10 = v17
+    v6 = (v6 + #0x20)
+    brif ne v4, v6 -> 0x201410
   blk6 @ 0x201446:
-    xmm0_hi = add_lanes32(xmm0_hi, xmm2_hi)
-    xmm1 = add_lanes32(((xmm0_hi & #0xffffffff) | (((xmm0_hi >> #0x20) & #0xffffffff) << #0x20)), add_lanes32(xmm0, xmm2))
-    v3 = (add_lanes32((((xmm1 >> #0x20) & #0xffffffff) | (((xmm1 >> #0x20) & #0xffffffff) << #0x20)), xmm1) & #0xffffffff)
+    v18 = add_lanes32(v10, v8)
+    v19 = add_lanes32(((v18 & #0xffffffff) | (((v18 >> #0x20) & #0xffffffff) << #0x20)), add_lanes32(v9, v7))
+    v3 = (add_lanes32((((v19 >> #0x20) & #0xffffffff) | (((v19 >> #0x20) & #0xffffffff) << #0x20)), v19) & #0xffffffff)
     brif eq v2, v1 -> 0x201486
   blk7 @ 0x201470:
-    v8 = load32((rdi + (v2 * #0x4)))
-    v3 = (((v3 & #0xffffffff) + select le (v8 & #0xffffffff), #0x0 ? #0x0, (v8 & #0xffffffff)) & #0xffffffff)
+    v21 = load32((rdi + (v2 * #0x4)))
+    v3 = (((v3 & #0xffffffff) + select le (v21 & #0xffffffff), #0x0 ? #0x0, (v21 & #0xffffffff)) & #0xffffffff)
     v2 = (v2 + #0x1)
     brif ne v1, v2 -> 0x201470
   blk8 @ 0x201486:
@@ -419,13 +459,24 @@ fn skip_negatives @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x201490 */
 int find_pair(int *p, int n, int target) {
+    int64_t v1;
+    uint64_t v2;
+    int64_t v3;
+    int *v4;
+    int64_t v5;
+    int64_t v6;
+    uint64_t v7;
+    int64_t v8;
+    int32_t v9;
+    int64_t v10;
+
     v1 = 0xffffffff;
     if (n <= 0x0) {
         return v1;
     }
     v2 = n;
     v3 = n ^ 0xffffffff;
-    v4 = p + 0x4;
+    v4 = p + 0x1;
     v5 = v2 - 0x1;
     v6 = 0xffffffffffffffff;
     v7 = 0x0;
@@ -433,17 +484,17 @@ int find_pair(int *p, int n, int target) {
         v8 = v7;
         v7 = v7 + 0x1;
         if (v7 < v2 /* unsigned */) {
-            ebp = *(uint32_t *)(p + v8 * 0x4);
-            v9 = 0x0;
+            v9 = p[v8];
+            v10 = 0x0;
             do {
-                if (*(uint32_t *)(v4 + v9 * 0x4) + ebp == target) {
+                if (v4[v10] + v9 == target) {
                     goto L_2014f6;
                 }
-                v9 = v9 + 0x1;
-            } while (v5 != v9);
+                v10 = v10 + 0x1;
+            } while (v5 != v10);
         }
         v6 = v6 + v3;
-        v4 = v4 + 0x4;
+        v4 = v4 + 0x1;
         v5 = v5 - 0x1;
         if (v7 == v2) {
             break;
@@ -452,7 +503,7 @@ int find_pair(int *p, int n, int target) {
 L_2014fb:
     return v1;
 L_2014f6:
-    v1 = v9 - v6;
+    v1 = v10 - v6;
     goto L_2014fb;
 }
 -- signature
@@ -482,17 +533,17 @@ fn find_pair @ 0x201490 (size 112)
     v7 = (v7 + #0x1)
     brif cs v7, v2 -> 0x2014c0
   blk4 @ 0x2014da:
-    rbp = load32((rdi + (v8 * #0x4)))
-    v9 = #0x0
+    v9 = load32((rdi + (v8 * #0x4)))
+    v10 = #0x0
   blk5 @ 0x2014e0:
-    brif eq ((load32((v4 + (v9 * #0x4))) + (rbp & #0xffffffff)) & #0xffffffff), edx -> 0x2014f6
+    brif eq ((load32((v4 + (v10 * #0x4))) + (v9 & #0xffffffff)) & #0xffffffff), edx -> 0x2014f6
   blk6 @ 0x2014ec:
-    v9 = (v9 + #0x1)
-    brif ne v5, v9 -> 0x2014e0
+    v10 = (v10 + #0x1)
+    brif ne v5, v10 -> 0x2014e0
   blk7 @ 0x2014f4:
     br 0x2014c0
   blk8 @ 0x2014f6:
-    v1 = (((v9 & #0xffffffff) - (v6 & #0xffffffff)) & #0xffffffff)
+    v1 = (((v10 & #0xffffffff) - (v6 & #0xffffffff)) & #0xffffffff)
   blk9 @ 0x2014fb:
   blk10 @ 0x2014ff:
     ret v1

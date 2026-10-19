@@ -6,6 +6,7 @@
 /* velk pseudo-C: sub_21018c @ 0x21018c */
 /* ref: 0x2204fc .bss */
 int32_t sub_21018c(int32_t a0) {
+    int64_t v1;
     uint32_t local_0; /* [sp-30] */
     uint32_t local_1; /* [sp-8] */
     uint32_t local_2; /* [sp-c] */

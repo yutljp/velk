@@ -2,6 +2,7 @@ mod expr;
 mod locals;
 mod naming;
 pub mod structure;
+mod variables;
 
 use crate::arch::stack_pointer;
 use expr::condition;
@@ -81,8 +82,24 @@ fn render_with(
         .filter(|param| matches!(param.ty, crate::ir::CType::Int { signed: true, .. }))
         .map(|param| param.index)
         .collect();
-    let (pointer_params, fields) = struct_fields(ir);
+    let fields = struct_fields(ir);
     let narrow_regs = narrow_registers(ir);
+    let float_return = ir.ret_type.is_sse_float().then(|| {
+        if ir.ret_type.to_string().contains("double") {
+            crate::ir::Precision::Double
+        } else {
+            crate::ir::Precision::Single
+        }
+    });
+    let variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    let floats: HashMap<u16, crate::ir::Precision> = variable_types
+        .iter()
+        .filter_map(|(index, ty)| match ty.to_string().as_str() {
+            "double" => Some((*index, crate::ir::Precision::Double)),
+            "float" => Some((*index, crate::ir::Precision::Single)),
+            _ => None,
+        })
+        .collect();
     let members: HashMap<(String, i64), String> = ir
         .members
         .iter()
@@ -114,22 +131,35 @@ fn render_with(
         })
         .filter_map(|param| Some((param.index, param.ty.pointee_size()?)))
         .collect();
+    let scaled: std::collections::HashSet<u16> = ir
+        .params
+        .iter()
+        .map(|param| (param.index, &param.ty))
+        .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
+        .filter(|(_, ty)| match ty {
+            CType::Pointer(target) => {
+                !matches!(target.as_ref(), CType::Void) && ty.pointee_size() != Some(1)
+            }
+            _ => false,
+        })
+        .map(|(index, _)| index)
+        .collect();
+    // A pointer variable moves along scalars as a parameter does.
+    let mut elements = elements;
+    elements.extend(
+        variable_types
+            .iter()
+            .filter_map(|(index, ty)| Some((*index, ty.pointee_size()?))),
+    );
     let ctx = Ctx {
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
-        float_return: ir.ret_type.is_sse_float().then(|| {
-            if ir.ret_type.to_string().contains("double") {
-                crate::ir::Precision::Double
-            } else {
-                crate::ir::Precision::Single
-            }
-        }),
+        float_return,
         names,
         slots: locals.slots,
         local_widths: locals.widths,
         wide_params,
         signed_params,
-        pointer_params,
         fields,
         callees,
         data_ranges,
@@ -138,6 +168,8 @@ fn render_with(
         elements,
         narrow_regs,
         narrow_return: ir.ret_type.is_32_bit_int(),
+        floats,
+        scaled,
     };
 
     let mut out = String::new();
@@ -157,6 +189,25 @@ fn render_with(
         {
             out.push_str(&format!("/* struct: {line} */\n"));
         }
+    }
+    for structure in &ir.structures {
+        out.push_str(&format!("struct {} {{\n", structure.name));
+        let mut end = 0;
+        for (offset, ty) in &structure.fields {
+            if *offset > end {
+                out.push_str(&format!(
+                    "    uint8_t gap_0x{end:x}[0x{:x}];\n",
+                    offset - end
+                ));
+            }
+            out.push_str(&format!("    {ty} field_0x{offset:x};\n"));
+            end = offset
+                + match ty {
+                    CType::Int { bytes, .. } => u64::from(*bytes),
+                    _ => 0,
+                };
+        }
+        out.push_str("};\n");
     }
     out.push_str(&format!(
         "{} {}({}) {{\n",
@@ -185,6 +236,16 @@ fn render_with(
         nodes.pop();
     }
     render_nodes(&nodes, 1, &mut body, &ctx);
+    let mut declared = 0;
+    for (index, ty) in &variable_types {
+        let name = ctx.register(*index, 64);
+        if !variables::mentions(&body, &name) {
+            continue;
+        }
+        indent(1, &mut out);
+        out.push_str(&format!("{};\n", declaration(ty, &name)));
+        declared += 1;
+    }
     for local in &decls {
         if local.width == 0 || !body.contains(&local.name) {
             continue;
@@ -198,7 +259,7 @@ fn render_with(
             local.slot.unsigned_abs()
         ));
     }
-    let declared = decls
+    declared += decls
         .iter()
         .filter(|local| local.width != 0 && body.contains(&local.name))
         .count();
@@ -253,14 +314,17 @@ fn update_of_same_location<'e>(
     (commutes && reads_place(rhs)).then_some((symbol, lhs))
 }
 
+/// `name` declared as `ty`, the star of a pointer next to the name.
+fn declaration(ty: &CType, name: &str) -> String {
+    if ty.is_pointer() {
+        format!("{ty}{name}")
+    } else {
+        format!("{ty} {name}")
+    }
+}
+
 pub(crate) fn signature(ir: &FunctionIr) -> String {
-    let declare = |ty: &CType, name: &str| {
-        if ty.is_pointer() {
-            format!("{ty}{name}")
-        } else {
-            format!("{ty} {name}")
-        }
-    };
+    let declare = declaration;
     // Parameters in the caller's frame take their declared places among the
     // register ones.
     let mut registers = ir.params.iter();
@@ -555,6 +619,12 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     return format!("{target} = {value};");
                 }
             }
+            if let Some(precision) = ctx.floats.get(&dest.index) {
+                return format!(
+                    "{target} = {};",
+                    expr::float_operand(value, *precision, ctx, 0, false)
+                );
+            }
             // The stack pointer moving reads as arithmetic, not a local's address.
             if dest.index == crate::arch::stack_pointer(ctx.isa) {
                 return format!("{target} = {};", render_expr(value, ctx));
@@ -674,5 +744,105 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         }
         Stmt::Unsupported { text, .. } => format!("/* unsupported: {text} */"),
         Stmt::Trap => "__builtin_trap();".to_owned(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render;
+    use crate::ir::{
+        BinOp, CType, Expr, FunctionIr, Operation, Param, Precision, RegRef, Stmt, VARIABLE_BASE,
+    };
+    use crate::loader::Isa;
+    use std::collections::HashMap;
+
+    fn rendered(ir: &FunctionIr) -> String {
+        render(ir, &[], &HashMap::new(), &[])
+    }
+
+    fn assign(index: u16, value: Expr) -> Stmt {
+        Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        }
+    }
+
+    fn load(addr: Expr, width: u8) -> Expr {
+        Expr::Load {
+            addr: Box::new(addr),
+            width,
+            signed: false,
+        }
+    }
+
+    #[test]
+    fn variables_are_declared_with_the_types_their_uses_give() {
+        let (sum, pointer, count) = (VARIABLE_BASE, VARIABLE_BASE + 1, VARIABLE_BASE + 2);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(pointer, Expr::reg(7, 64)),
+                assign(
+                    sum,
+                    Expr::Apply {
+                        op: Operation::FloatAdd(Precision::Double),
+                        args: vec![Expr::Const(0), load(Expr::reg(pointer, 64), 8)],
+                    },
+                ),
+                assign(
+                    count,
+                    Expr::bin(BinOp::Shr, Expr::reg(6, 64), Expr::Const(1)),
+                ),
+                assign(
+                    pointer,
+                    Expr::bin(BinOp::Add, Expr::reg(pointer, 64), Expr::reg(count, 64)),
+                ),
+                Stmt::Ret {
+                    value: Expr::reg(sum, 64),
+                },
+            ],
+        );
+        ir.ret_type = CType::Named("double".to_owned());
+        let text = rendered(&ir);
+        assert!(text.contains("    double v1;\n"), "{text}");
+        assert!(text.contains("    double *v2;\n"), "{text}");
+        assert!(text.contains("    int64_t v3;\n"), "{text}");
+        // The pointer moved by bytes moves by bytes in C too.
+        assert!(text.contains("v2 = (uint8_t *)v2 + v3;"), "{text}");
+    }
+
+    #[test]
+    fn a_pointer_to_scalars_is_indexed_by_elements() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: load(
+                    Expr::bin(
+                        BinOp::Add,
+                        Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(7, 64),
+                            Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(8)),
+                        ),
+                        Expr::Const(0x10),
+                    ),
+                    8,
+                ),
+            }],
+        );
+        ir.params = vec![
+            Param {
+                index: 7,
+                name: "a0".to_owned(),
+                ty: CType::pointer_to(CType::I64),
+            },
+            Param {
+                index: 6,
+                name: "a1".to_owned(),
+                ty: CType::I64,
+            },
+        ];
+        let text = rendered(&ir);
+        assert!(text.contains("return a0[a1 + 0x2];"), "{text}");
     }
 }

@@ -136,6 +136,7 @@ fn cleanup_on_error @ 0x2102a0 (size 96)
 -- decompile
 /* velk pseudo-C: fallthrough @ 0x210300 */
 int fallthrough(int x) {
+    int64_t v1;
     uint32_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
 
@@ -211,6 +212,7 @@ fn fallthrough @ 0x210300 (size 160)
 -- decompile
 /* velk pseudo-C: sparse @ 0x2103a0 */
 int sparse(int x) {
+    int64_t v1;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
 
@@ -283,6 +285,7 @@ fn sparse @ 0x2103a0 (size 148)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x210434 */
 int short_circuit(int *p, int n) {
+    int32_t v2;
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
     uint32_t local_2; /* [sp-10] */

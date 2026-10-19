@@ -267,6 +267,8 @@ fn <unnamed> @ 0x201490 (size 44)
 -- decompile
 /* velk pseudo-C: sub_2014c0 @ 0x2014c0 */
 int64_t sub_2014c0(uint64_t a0) {
+    int64_t v1;
+
     v1 = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
     return a0 - (v1 + v1 * 0x4);
 }

@@ -9,6 +9,9 @@
 /* velk pseudo-C: sub_2101c4 @ 0x2101c4 */
 /* ref: 0x220298 .bss */
 int32_t sub_2101c4(int32_t a0) {
+    int32_t v1;
+    int64_t v2;
+
     if (a0 < 0x1) {
         return 0x0;
     }
@@ -49,6 +52,9 @@ fn <unnamed> @ 0x2101c4 (size 60)
 /* velk pseudo-C: sub_210200 @ 0x210200 */
 /* ref: 0x220298 .bss */
 int32_t sub_210200(int32_t a0) {
+    int64_t v1;
+    int32_t v2;
+
     v1 = 0x0;
     v2 = (a0 > 0x1 ? a0 : 0x1);
     do {
@@ -80,6 +86,9 @@ fn <unnamed> @ 0x210200 (size 36)
 /* velk pseudo-C: sub_210224 @ 0x210224 */
 /* ref: 0x220298 .bss */
 int32_t sub_210224(int32_t a0) {
+    int64_t v1;
+    int64_t v2;
+
     if (a0 < 0x1) {
         v2 = 0x0;
         return v2;
@@ -130,12 +139,16 @@ fn <unnamed> @ 0x210224 (size 64)
 -- decompile
 /* velk pseudo-C: sub_210264 @ 0x210264 */
 int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
+    uint32_t *v1;
+    int64_t v2;
+    int64_t v3;
+
     if (a1 >= 0x1) {
         v1 = a0;
         v2 = 0x0;
         v3 = a1;
         do {
-            if (*(uint32_t *)(v1 + (v2 << 0x2)) == a2) {
+            if (v1[v2] == a2) {
                 goto L_210294;
             }
             v2 = v2 + 0x1;

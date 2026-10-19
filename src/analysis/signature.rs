@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::{Access, Block, CType, Convention, Expr, Param, Stmt};
+use crate::ir::{Access, Block, CType, Convention, Expr, Operation, Param, Stmt};
 use crate::loader::{Format, Isa};
 
 #[derive(Debug, Clone)]
@@ -380,25 +380,39 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         }
     }
 
+    // What a vector register holds, from the operations that read it: the
+    // floats of a float operation, or the lanes of an integer one.
+    let mut vector_reads: HashMap<u16, Option<u8>> = HashMap::new();
+    for stmt in blocks.iter().flat_map(|block| &block.stmts) {
+        for value in stmt.operands() {
+            vector_operands(value, &mut vector_reads);
+        }
+    }
     // What each pointer argument points to: the first general-register
-    // access through it, or else the first scalar floating-point one. The
-    // high half of a vector says nothing about the element.
+    // access through it, or else the first vector one whose value an
+    // operation reads as floats or lanes. The high half of a vector says
+    // nothing about the element.
     let mut pointer_elements: HashMap<u16, (bool, CType)> = HashMap::new();
     let note = |addr: &Expr,
                 width: u8,
                 register: Option<u16>,
+                read_as: Option<Option<u8>>,
                 elements: &mut HashMap<u16, (bool, CType)>| {
         let Some(param) = base_register(addr).and_then(|base| origin.get(&base)) else {
             return;
         };
+        let held = read_as.or_else(|| register.and_then(|index| vector_reads.get(&index).copied()));
         let (float, element) = match register.and_then(|index| crate::arch::vector_half(isa, index))
         {
             Some(true) => return,
-            Some(false) if matches!(width, 4 | 8) => (
-                true,
-                CType::Named(if width == 4 { "float" } else { "double" }.to_owned()),
-            ),
-            Some(false) => return,
+            Some(false) => match held {
+                Some(None) if matches!(width, 4 | 8) => (
+                    true,
+                    CType::Named(if width == 4 { "float" } else { "double" }.to_owned()),
+                ),
+                Some(Some(lane)) => (true, CType::int(lane, false)),
+                _ => return,
+            },
             None => (false, CType::int(width, false)),
         };
         match elements.get(param) {
@@ -414,17 +428,25 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             match stmt {
                 Stmt::Assign { dest, value } => {
                     if let Some((addr, width)) = load_of(value) {
-                        note(addr, width, Some(dest.index), &mut pointer_elements);
+                        note(addr, width, Some(dest.index), None, &mut pointer_elements);
                     }
-                    // A float operation reading memory reads a float there.
-                    if let Expr::Apply { op, args } = partial_write_source(value, dest.index)
-                        && let Some(precision) = op.result_precision()
-                    {
+                    // A float operation reading memory reads a float there,
+                    // and a lane operation lanes.
+                    if let Expr::Apply { op, args } = partial_write_source(value, dest.index) {
+                        let read_as = vector_reading(*op);
                         for arg in args {
                             if let Expr::Load { addr, width, .. } = arg
-                                && u32::from(*width) * 8 == u32::from(precision.bits())
+                                && (read_as != Some(None)
+                                    || op.argument_precision().map(|p| u32::from(p.bits()))
+                                        == Some(u32::from(*width) * 8))
                             {
-                                note(addr, *width, Some(dest.index), &mut pointer_elements);
+                                note(
+                                    addr,
+                                    *width,
+                                    Some(dest.index),
+                                    read_as,
+                                    &mut pointer_elements,
+                                );
                             }
                         }
                     }
@@ -438,7 +460,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                         },
                         _ => None,
                     };
-                    note(addr, *width, register, &mut pointer_elements);
+                    note(addr, *width, register, None, &mut pointer_elements);
                 }
                 _ => {}
             }
@@ -619,6 +641,49 @@ fn base_origin(expr: &Expr, origin: &HashMap<u16, u16>) -> Option<u16> {
             ..
         } => base_origin(lhs, origin),
         _ => None,
+    }
+}
+
+/// How an operation reads its arguments: as floats (`None`), or as lanes
+/// of some bytes.
+fn vector_reading(op: Operation) -> Option<Option<u8>> {
+    match op {
+        Operation::Lanes(_, bits)
+        | Operation::InterleaveLow(bits)
+        | Operation::InterleaveHigh(bits)
+        | Operation::SignBits(bits)
+        | Operation::SumLanes(bits) => Some(Some(bits / 8)),
+        _ if op.argument_precision().is_some() => Some(None),
+        _ => None,
+    }
+}
+
+/// The registers operations read as floats or as lanes, as
+/// `vector_reading` tells them.
+fn vector_operands(expr: &Expr, out: &mut HashMap<u16, Option<u8>>) {
+    if let Expr::Apply { op, args } = expr
+        && let Some(held) = vector_reading(*op)
+    {
+        for arg in args {
+            let register = match arg {
+                Expr::Reg { index, .. } => Some(*index),
+                Expr::Bin {
+                    op: crate::ir::BinOp::And,
+                    lhs,
+                    ..
+                } => match lhs.as_ref() {
+                    Expr::Reg { index, .. } => Some(*index),
+                    _ => None,
+                },
+                _ => None,
+            };
+            if let Some(register) = register {
+                out.entry(register).or_insert(held);
+            }
+        }
+    }
+    for child in crate::ir::visit::children(expr) {
+        vector_operands(child, out);
     }
 }
 

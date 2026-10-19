@@ -12,6 +12,7 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x201280 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
+    int64_t v1;
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
     uint64_t local_2; /* [sp-20] */
@@ -54,6 +55,7 @@ fn copy_bytes @ 0x201280 (size 79)
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x2012d0 */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
+    int64_t v1;
     uint64_t local_0; /* [sp-10] */
     uint8_t local_1; /* [sp-11] */
     uint64_t local_2; /* [sp-20] */
@@ -166,7 +168,7 @@ fn grid_set @ 0x201390 (size 53)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x2013d0 */
 long pointer_distance(int *begin, int *end) {
-    return (int64_t)(end - begin) >> 0x2;
+    return (int64_t)((uint8_t *)end - (uint8_t *)begin) >> 0x2;
 }
 -- signature
 long (int * begin, int * end)

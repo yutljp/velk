@@ -12,6 +12,24 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x210214 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
+    int64_t v1;
+    uint64_t *v2;
+    uint64_t *v3;
+    int64_t v4;
+    int64_t v5;
+    int64_t v6;
+    int64_t v7;
+    int64_t v8;
+    int64_t v9;
+    uint64_t *v10;
+    uint64_t *v11;
+    int64_t v12;
+    int64_t v13;
+    int64_t v14;
+    uint8_t *v15;
+    uint8_t *v16;
+    int64_t v17;
+
     if (n == 0x0) {
         return;
     }
@@ -24,17 +42,17 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
                 v3 = dst + 0x10;
                 v4 = v1;
                 do {
-                    d0 = *(uint64_t *)(v2 - 0x10);
-                    v0_hi = *(uint64_t *)(v2 - 0x8);
-                    d1 = *(uint64_t *)(v2);
-                    v1_hi = *(uint64_t *)(v2 + 0x8);
+                    v5 = v2[-0x2];
+                    v6 = v2[-0x1];
+                    v7 = *v2;
+                    v8 = v2[0x1];
                     v4 = v4 - 0x20;
-                    v2 = v2 + 0x20;
-                    *(uint64_t *)(v3 - 0x10) = d0;
-                    *(uint64_t *)(v3 - 0x8) = v0_hi;
-                    *(uint64_t *)(v3) = d1;
-                    *(uint64_t *)(v3 + 0x8) = v1_hi;
-                    v3 = v3 + 0x20;
+                    v2 = v2 + 0x4;
+                    v3[-0x2] = v5;
+                    v3[-0x1] = v6;
+                    *v3 = v7;
+                    v3[0x1] = v8;
+                    v3 = v3 + 0x4;
                 } while (v4 != 0x0);
                 if (v1 == n) {
                     return;
@@ -45,34 +63,34 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
             } else {
                 v1 = 0x0;
             }
-            v5 = v1;
+            v9 = v1;
             v1 = n & 0xfffffffffffffff8;
-            v6 = src + v5;
-            v7 = dst + v5;
-            v8 = v5 - v1;
+            v10 = src + v9;
+            v11 = dst + v9;
+            v12 = v9 - v1;
             do {
-                d0 = *(uint64_t *)(v6);
-                v6 = v6 + 0x8;
-                v8 = v8 + 0x8;
-                *(uint64_t *)(v7) = d0;
-                v7 = v7 + 0x8;
-            } while (v8 != 0x0);
+                v13 = *v10;
+                v10 = v10 + 0x1;
+                v12 = v12 + 0x8;
+                *v11 = v13;
+                v11 = v11 + 0x1;
+            } while (v12 != 0x0);
             if (v1 == n) {
                 return;
             }
         }
     }
 L_2102a4:
-    v9 = n - v1;
-    v10 = dst + v1;
-    v11 = src + v1;
+    v14 = n - v1;
+    v15 = dst + v1;
+    v16 = src + v1;
     do {
-        v12 = *(uint8_t *)(v11);
-        v11 = v11 + 0x1;
-        v9 = v9 - 0x1;
-        *(uint8_t *)(v10) = v12;
-        v10 = v10 + 0x1;
-    } while (v9 != 0x0);
+        v17 = *v16;
+        v16 = v16 + 0x1;
+        v14 = v14 - 0x1;
+        *v15 = v17;
+        v15 = v15 + 0x1;
+    } while (v14 != 0x0);
 }
 -- signature
 void (unsigned char * dst, unsigned char * src, unsigned long n)
@@ -98,16 +116,16 @@ fn copy_bytes @ 0x210214 (size 176)
     v3 = (x0 + #0x10)
     v4 = v1
   blk6 @ 0x210250:
-    d0 = load64((v2 + #0xfffffffffffffff0))
-    v0_hi = load64((v2 + #0xfffffffffffffff8))
-    d1 = load64(v2)
-    v1_hi = load64((v2 + #0x8))
+    v5 = load64((v2 + #0xfffffffffffffff0))
+    v6 = load64((v2 + #0xfffffffffffffff8))
+    v7 = load64(v2)
+    v8 = load64((v2 + #0x8))
     v4 = (v4 - #0x20)
     v2 = (v2 + #0x20)
-    store64(d0, (v3 + #0xfffffffffffffff0))
-    store64(v0_hi, (v3 + #0xfffffffffffffff8))
-    store64(d1, v3)
-    store64(v1_hi, (v3 + #0x8))
+    store64(v5, (v3 + #0xfffffffffffffff0))
+    store64(v6, (v3 + #0xfffffffffffffff8))
+    store64(v7, v3)
+    store64(v8, (v3 + #0x8))
     v3 = (v3 + #0x20)
     brif ne v4, #0x0 -> 0x210250
   blk7 @ 0x210268:
@@ -115,31 +133,31 @@ fn copy_bytes @ 0x210214 (size 176)
   blk8 @ 0x210270:
     brif eq (x2 & #0x18), #0x0 -> 0x2102a4
   blk9 @ 0x210278:
-    v5 = v1
+    v9 = v1
     v1 = (x2 & #0xfffffffffffffff8)
-    v6 = (x1 + v5)
-    v7 = (x0 + v5)
-    v8 = (v5 - v1)
+    v10 = (x1 + v9)
+    v11 = (x0 + v9)
+    v12 = (v9 - v1)
   blk10 @ 0x21028c:
-    d0 = load64(v6)
-    v6 = (v6 + #0x8)
-    v8 = (v8 + #0x8)
-    store64(d0, v7)
-    v7 = (v7 + #0x8)
-    brif ne v8, #0x0 -> 0x21028c
+    v13 = load64(v10)
+    v10 = (v10 + #0x8)
+    v12 = (v12 + #0x8)
+    store64(v13, v11)
+    v11 = (v11 + #0x8)
+    brif ne v12, #0x0 -> 0x21028c
   blk11 @ 0x21029c:
     brif eq v1, x2 -> 0x2102c0
   blk12 @ 0x2102a4:
-    v9 = (x2 - v1)
-    v10 = (x0 + v1)
-    v11 = (x1 + v1)
+    v14 = (x2 - v1)
+    v15 = (x0 + v1)
+    v16 = (x1 + v1)
   blk13 @ 0x2102b0:
-    v12 = (load8(v11) & #0xffffffff)
-    v11 = (v11 + #0x1)
-    v9 = (v9 - #0x1)
-    store8(v12, v10)
-    v10 = (v10 + #0x1)
-    brif ne v9, #0x0 -> 0x2102b0
+    v17 = (load8(v16) & #0xffffffff)
+    v16 = (v16 + #0x1)
+    v14 = (v14 - #0x1)
+    store8(v17, v15)
+    v15 = (v15 + #0x1)
+    brif ne v14, #0x0 -> 0x2102b0
   blk14 @ 0x2102c0:
     ret #0x0
 -- card
@@ -172,9 +190,12 @@ fn fill_bytes @ 0x2102c4 (size 12)
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102d0 */
 unsigned long string_length(char *s) {
+    int64_t v1;
+    int32_t v2;
+
     v1 = 0x0;
     do {
-        v2 = *(uint8_t *)(s + v1);
+        v2 = s[v1];
         v1 = v1 + 0x1;
     } while (v2 != 0x0);
     return v1 - 0x1;
@@ -237,7 +258,7 @@ fn grid_set @ 0x210304 (size 28)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x210320 */
 long pointer_distance(int *begin, int *end) {
-    return (int64_t)(end - begin) >> 0x2;
+    return (int64_t)((uint8_t *)end - (uint8_t *)begin) >> 0x2;
 }
 -- signature
 long (int * begin, int * end)
@@ -271,6 +292,8 @@ fn read_volatile @ 0x21032c (size 16)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x21033c */
 void swap_ints(int *a, int *b) {
+    int32_t v1;
+
     v1 = *a;
     *a = *b;
     *b = v1;
