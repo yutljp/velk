@@ -1,0 +1,531 @@
+//! The condition flags as the instruction that last set them leaves them,
+//! and each condition as a test on that instruction's values.
+//!
+//! A subtraction's flags are what a comparison of its operands decides,
+//! but a sum's carry and overflow, and the carry a logical operation
+//! clears, are not; each condition is turned into the comparison that
+//! decides it exactly, preferring one that reads as the source would.
+
+use crate::ir::semantics::{mask, operand_width};
+use crate::ir::{BinOp, Cond, Expr, Stmt};
+use crate::loader::Isa;
+
+/// The operation whose result set the flags.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Source {
+    /// `lhs - rhs`, as a compare or a subtraction sets them.
+    Difference,
+    /// `lhs + rhs`.
+    Sum,
+    /// A logical result `lhs`, with carry and overflow cleared.
+    Logic,
+    /// Only zero and sign follow the result `lhs`; carry and overflow mean
+    /// something else (an x86 shift).
+    Result,
+    /// Set to the given N, Z, C and V bits, from high to low (AArch64).
+    Fixed(u8),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct Flags {
+    pub source: Source,
+    pub lhs: Expr,
+    pub rhs: Expr,
+    /// False when the instruction left the carry as it was (x86 `inc`, `dec`).
+    pub carry: bool,
+    /// For a conditional compare, the condition under the earlier flags that
+    /// chose this compare; when it fails the flags are `otherwise`.
+    pub chosen: Option<Choice>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct Choice {
+    pub cond: Cond,
+    pub lhs: Expr,
+    pub rhs: Expr,
+    pub otherwise: u8,
+}
+
+/// What a condition is under the flags.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum Test {
+    Always,
+    Never,
+    Compare(Cond, Expr, Expr),
+    /// The flags do not decide it.
+    Unknown,
+}
+
+impl Flags {
+    pub fn difference(lhs: Expr, rhs: Expr) -> Self {
+        Self::new(Source::Difference, lhs, rhs)
+    }
+
+    pub fn sum(lhs: Expr, rhs: Expr) -> Self {
+        Self::new(Source::Sum, lhs, rhs)
+    }
+
+    pub fn logic(result: Expr) -> Self {
+        Self::new(Source::Logic, result, Expr::constant(0))
+    }
+
+    pub fn result(result: Expr) -> Self {
+        Self::new(Source::Result, result, Expr::constant(0))
+    }
+
+    pub fn fixed(nzcv: u8) -> Self {
+        Self::new(Source::Fixed(nzcv), Expr::constant(0), Expr::constant(0))
+    }
+
+    fn new(source: Source, lhs: Expr, rhs: Expr) -> Self {
+        Self {
+            source,
+            lhs,
+            rhs,
+            carry: true,
+            chosen: None,
+        }
+    }
+
+    /// These flags when `earlier` holds, and `otherwise` when it does not,
+    /// as a conditional compare sets them; None when `earlier` is unknown.
+    pub fn chosen_by(self, earlier: Test, otherwise: u8) -> Option<Self> {
+        match earlier {
+            Test::Always => Some(self),
+            Test::Never => Some(Self::fixed(otherwise)),
+            Test::Compare(cond, lhs, rhs) => Some(Self {
+                chosen: Some(Choice {
+                    cond,
+                    lhs,
+                    rhs,
+                    otherwise,
+                }),
+                ..self
+            }),
+            Test::Unknown => None,
+        }
+    }
+
+    /// Every expression the flags read, in the order of `FLAG_OPERANDS`.
+    pub fn operands_mut(&mut self) -> Vec<&mut Expr> {
+        let mut operands = vec![&mut self.lhs, &mut self.rhs];
+        if let Some(choice) = &mut self.chosen {
+            operands.push(&mut choice.lhs);
+            operands.push(&mut choice.rhs);
+        }
+        operands
+    }
+
+    /// The flags with the carry left unknown.
+    pub fn keeping_carry(self) -> Self {
+        Self {
+            carry: false,
+            ..self
+        }
+    }
+
+    /// `cond` under these flags. Conditions are named as after a compare,
+    /// so on x86, whose carry is a borrow, `Cs` is "above or equal".
+    pub fn test(&self, cond: Cond, isa: Isa) -> Test {
+        let own = self.own_test(cond, isa);
+        let Some(choice) = &self.chosen else {
+            return own;
+        };
+        let when = Test::Compare(choice.cond, choice.lhs.clone(), choice.rhs.clone());
+        if fixed_holds(cond, choice.otherwise) {
+            not(both(when, not(own)))
+        } else {
+            both(when, own)
+        }
+    }
+
+    fn own_test(&self, cond: Cond, isa: Isa) -> Test {
+        let (a, b) = (&self.lhs, &self.rhs);
+        let reads_carry = matches!(cond, Cond::Cs | Cond::Cc | Cond::Hi | Cond::Ls);
+        if reads_carry && !self.carry {
+            return Test::Unknown;
+        }
+        let bits = operand_width(a, b);
+        let compare = |cond, lhs: &Expr, rhs: &Expr| Test::Compare(cond, lhs.clone(), rhs.clone());
+        let zero = Expr::constant(0);
+        match self.source {
+            Source::Fixed(nzcv) => {
+                if fixed_holds(cond, nzcv) {
+                    Test::Always
+                } else {
+                    Test::Never
+                }
+            }
+            Source::Difference => {
+                let difference = || Expr::bin(BinOp::Sub, a.clone(), b.clone());
+                // Overflow when the operands differ in sign and the
+                // difference differs from the first.
+                let overflow = || {
+                    Expr::bin(
+                        BinOp::And,
+                        Expr::bin(BinOp::Xor, a.clone(), b.clone()),
+                        Expr::bin(BinOp::Xor, a.clone(), difference()),
+                    )
+                };
+                match (cond, b) {
+                    (Cond::Mi, Expr::Const(0)) => compare(Cond::Lt, a, b),
+                    (Cond::Pl, Expr::Const(0)) => compare(Cond::Ge, a, b),
+                    (Cond::Mi, _) => Test::Compare(Cond::Lt, difference(), zero),
+                    (Cond::Pl, _) => Test::Compare(Cond::Ge, difference(), zero),
+                    (Cond::Vs, _) => Test::Compare(Cond::Lt, overflow(), zero),
+                    (Cond::Vc, _) => Test::Compare(Cond::Ge, overflow(), zero),
+                    _ => compare(cond, a, b),
+                }
+            }
+            Source::Logic | Source::Result => {
+                let sign = |cond| match cond {
+                    Cond::Mi => Cond::Lt,
+                    Cond::Pl => Cond::Ge,
+                    other => other,
+                };
+                match cond {
+                    Cond::Eq | Cond::Ne | Cond::Mi | Cond::Pl => compare(sign(cond), a, &zero),
+                    _ if self.source == Source::Result => Test::Unknown,
+                    Cond::Vs => Test::Never,
+                    Cond::Vc => Test::Always,
+                    Cond::Ge | Cond::Lt | Cond::Gt | Cond::Le => compare(cond, a, &zero),
+                    // The carry is clear: on AArch64 that fails `hs`; on x86
+                    // it passes "above or equal", and "above" asks for nonzero.
+                    _ => match (isa, cond) {
+                        (Isa::X86_64, Cond::Cs) | (Isa::AArch64, Cond::Cc | Cond::Ls) => {
+                            Test::Always
+                        }
+                        (Isa::X86_64, Cond::Cc) | (Isa::AArch64, Cond::Cs | Cond::Hi) => {
+                            Test::Never
+                        }
+                        (_, Cond::Hi) => compare(Cond::Ne, a, &zero),
+                        _ => compare(Cond::Eq, a, &zero),
+                    },
+                }
+            }
+            Source::Sum => sum(a, b, bits, cond, isa),
+        }
+    }
+}
+
+/// `cond` after `a + b` at `bits` wide.
+fn sum(a: &Expr, b: &Expr, bits: u32, cond: Cond, isa: Isa) -> Test {
+    let all = mask(bits);
+    let lowest = 1u64 << (bits - 1);
+    let s = Expr::bin(BinOp::Add, a.clone(), b.clone());
+    if let Expr::Const(c) = b {
+        let c = c & all;
+        // Adding zero carries nothing and cannot overflow: AArch64 reads
+        // that as a logical result, x86 as a compare with zero.
+        if c == 0 {
+            let flags = match isa {
+                Isa::X86_64 => Flags::difference(a.clone(), Expr::constant(0)),
+                _ => Flags::logic(a.clone()),
+            };
+            return flags.test(cond, isa);
+        }
+        // `a + c` against zero is `a` against `-c`, which fits unless `c`
+        // is the lowest signed value.
+        if c != lowest {
+            let negated = Expr::constant(c.wrapping_neg() & all);
+            let cond = match (isa, cond) {
+                (_, Cond::Mi) => return Test::Compare(Cond::Lt, s, Expr::constant(0)),
+                (_, Cond::Pl) => return Test::Compare(Cond::Ge, s, Expr::constant(0)),
+                (_, Cond::Vs | Cond::Vc) => cond,
+                // On x86 the carry of a sum is set when `a >= -c`, which
+                // fails "above or equal" and "above".
+                (Isa::X86_64, Cond::Cs | Cond::Hi) => Cond::Cc,
+                (Isa::X86_64, Cond::Cc | Cond::Ls) => Cond::Cs,
+                (_, other) => other,
+            };
+            if !matches!(cond, Cond::Vs | Cond::Vc) {
+                return Test::Compare(cond, a.clone(), negated);
+            }
+        }
+    }
+    let zero = || Expr::constant(0);
+    let negated = match b {
+        Expr::Const(c) => Expr::constant(c.wrapping_neg() & all),
+        _ => Expr::bin(BinOp::Sub, zero(), b.clone()),
+    };
+    let is_zero = Test::Compare(Cond::Eq, a.clone(), negated);
+    // A carry out of the sum: `a > ~b`.
+    let inverted = Expr::bin(BinOp::Xor, b.clone(), Expr::constant(all));
+    let carry = Test::Compare(Cond::Hi, a.clone(), inverted);
+    // The flags' carry: set by a carry on AArch64, clear on x86.
+    let carry_flag = match isa {
+        Isa::X86_64 => not(carry),
+        _ => carry,
+    };
+    // Overflow when both operands differ in sign from the sum.
+    let overflow_bits = Expr::bin(
+        BinOp::And,
+        Expr::bin(BinOp::Xor, a.clone(), s.clone()),
+        Expr::bin(BinOp::Xor, b.clone(), s.clone()),
+    );
+    let overflow = Test::Compare(Cond::Lt, overflow_bits.clone(), zero());
+    // Sign equal to overflow: the sum before wrapping is not negative.
+    let not_negative = Test::Compare(
+        Cond::Ge,
+        Expr::bin(BinOp::Xor, s.clone(), overflow_bits),
+        zero(),
+    );
+    match cond {
+        Cond::Eq => is_zero,
+        Cond::Ne => not(is_zero),
+        Cond::Mi => Test::Compare(Cond::Lt, s, zero()),
+        Cond::Pl => Test::Compare(Cond::Ge, s, zero()),
+        Cond::Vs => overflow,
+        Cond::Vc => not(overflow),
+        Cond::Cs => carry_flag,
+        Cond::Cc => not(carry_flag),
+        Cond::Hi => both(carry_flag, not(is_zero)),
+        Cond::Ls => not(both(carry_flag, not(is_zero))),
+        Cond::Ge => not_negative,
+        Cond::Lt => not(not_negative),
+        Cond::Gt => both(not(is_zero), not_negative),
+        Cond::Le => not(both(not(is_zero), not_negative)),
+    }
+}
+
+fn not(test: Test) -> Test {
+    match test {
+        Test::Always => Test::Never,
+        Test::Never => Test::Always,
+        Test::Compare(cond, lhs, rhs) => Test::Compare(cond.invert(), lhs, rhs),
+        Test::Unknown => Test::Unknown,
+    }
+}
+
+/// Both tests hold, as one comparison of a selected value with zero.
+fn both(first: Test, second: Test) -> Test {
+    match (first, second) {
+        (Test::Never, _) | (_, Test::Never) => Test::Never,
+        (Test::Always, other) | (other, Test::Always) => other,
+        (Test::Unknown, _) | (_, Test::Unknown) => Test::Unknown,
+        (Test::Compare(c1, l1, r1), Test::Compare(c2, l2, r2)) => {
+            let inner = Expr::Select {
+                cond: c2,
+                lhs: Box::new(l2),
+                rhs: Box::new(r2),
+                then: Box::new(Expr::constant(1)),
+                els: Box::new(Expr::constant(0)),
+            };
+            let outer = Expr::Select {
+                cond: c1,
+                lhs: Box::new(l1),
+                rhs: Box::new(r1),
+                then: Box::new(inner),
+                els: Box::new(Expr::constant(0)),
+            };
+            Test::Compare(Cond::Ne, outer, Expr::constant(0))
+        }
+    }
+}
+
+impl Test {
+    /// `then` when the test holds and `els` otherwise; None when the flags
+    /// do not decide it.
+    pub fn select(self, then: Expr, els: Expr) -> Option<Expr> {
+        // A test that a truth value is nonzero, choosing one or zero, is
+        // that truth value.
+        if let (Test::Compare(Cond::Ne, value, Expr::Const(0)), Expr::Const(1), Expr::Const(0)) =
+            (&self, &then, &els)
+            && is_truth(value)
+        {
+            return Some(value.clone());
+        }
+        match self {
+            Test::Always => Some(then),
+            Test::Never => Some(els),
+            Test::Compare(cond, lhs, rhs) => Some(Expr::Select {
+                cond,
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+                then: Box::new(then),
+                els: Box::new(els),
+            }),
+            Test::Unknown => None,
+        }
+    }
+
+    pub fn invert(self) -> Test {
+        not(self)
+    }
+
+    /// A branch to `target` when the test holds; none when it never does,
+    /// and one on flags from elsewhere, named by `cond`, when the flags
+    /// here do not decide it.
+    pub fn branch(self, cond: Cond, target: u64) -> Option<Stmt> {
+        match self {
+            Test::Always => Some(Stmt::Br {
+                target: Some(target),
+            }),
+            Test::Never => None,
+            Test::Compare(cond, lhs, rhs) => Some(Stmt::Brif {
+                cond,
+                lhs,
+                rhs,
+                target,
+            }),
+            Test::Unknown => Some(Stmt::BrifFlags { cond, target }),
+        }
+    }
+}
+
+/// Whether `cond` holds for AArch64 flags N, Z, C, V given as four bits.
+fn fixed_holds(cond: Cond, nzcv: u8) -> bool {
+    let (n, z, c, v) = (nzcv & 8 != 0, nzcv & 4 != 0, nzcv & 2 != 0, nzcv & 1 != 0);
+    match cond {
+        Cond::Eq => z,
+        Cond::Ne => !z,
+        Cond::Cs => c,
+        Cond::Cc => !c,
+        Cond::Mi => n,
+        Cond::Pl => !n,
+        Cond::Vs => v,
+        Cond::Vc => !v,
+        Cond::Hi => c && !z,
+        Cond::Ls => !(c && !z),
+        Cond::Ge => n == v,
+        Cond::Lt => n != v,
+        Cond::Gt => !z && n == v,
+        Cond::Le => !(!z && n == v),
+    }
+}
+
+/// Whether `expr` is one or zero: a choice between truth values.
+fn is_truth(expr: &Expr) -> bool {
+    match expr {
+        Expr::Const(0 | 1) => true,
+        Expr::Select { then, els, .. } => is_truth(then) && is_truth(els),
+        _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Flags, Test, fixed_holds};
+    use crate::ir::eval::hash;
+    use crate::ir::semantics::{evaluate, holds, mask, operand_width, sign_extend};
+    use crate::ir::{Cond, Expr};
+    use crate::loader::Isa;
+
+    const CONDITIONS: [Cond; 14] = [
+        Cond::Eq,
+        Cond::Ne,
+        Cond::Cs,
+        Cond::Cc,
+        Cond::Mi,
+        Cond::Pl,
+        Cond::Vs,
+        Cond::Vc,
+        Cond::Hi,
+        Cond::Ls,
+        Cond::Ge,
+        Cond::Lt,
+        Cond::Gt,
+        Cond::Le,
+    ];
+
+    /// N, Z, C and V as four bits, with C as AArch64 means it: a
+    /// difference's "no borrow" and a sum's carry. x86 keeps a borrow and
+    /// a carry, which the conditions read inverted.
+    fn reference(kind: u8, a: u64, b: u64, bits: u32, isa: Isa) -> u8 {
+        let all = mask(bits);
+        let (a, b) = (a & all, b & all);
+        let (result, carry, overflow) = match kind {
+            0 => {
+                let r = a.wrapping_sub(b) & all;
+                (r, a >= b, ((a ^ b) & (a ^ r)) >> (bits - 1) & 1 == 1)
+            }
+            1 => {
+                let r = a.wrapping_add(b) & all;
+                let carry = u128::from(a) + u128::from(b) > u128::from(all);
+                let carry = if isa == Isa::X86_64 { !carry } else { carry };
+                (r, carry, ((a ^ r) & (b ^ r)) >> (bits - 1) & 1 == 1)
+            }
+            _ => (a, isa == Isa::X86_64, false),
+        };
+        let negative = sign_extend(result, bits) < 0;
+        u8::from(negative) << 3
+            | u8::from(result == 0) << 2
+            | u8::from(carry) << 1
+            | u8::from(overflow)
+    }
+
+    fn decided(test: &Test, registers: &[u64; 2]) -> Option<bool> {
+        let value =
+            |expr: &Expr| evaluate(expr, &|index| registers.get(usize::from(index)).copied());
+        match test {
+            Test::Always => Some(true),
+            Test::Never => Some(false),
+            Test::Compare(cond, lhs, rhs) => Some(holds(
+                *cond,
+                value(lhs)?,
+                value(rhs)?,
+                operand_width(lhs, rhs),
+            )),
+            Test::Unknown => None,
+        }
+    }
+
+    #[test]
+    fn every_condition_decides_as_the_flags_do() {
+        const EDGES: [u64; 7] = [0, 1, 0x7f, 0x80, 0x7fff_ffff, 0x8000_0000, 1 << 63];
+        for isa in [Isa::AArch64, Isa::X86_64] {
+            for bits in [8u32, 32, 64] {
+                for seed in 0..600u64 {
+                    let pick = |key: u64| match hash(seed, key) % 3 {
+                        0 => EDGES[(hash(seed, key + 9) % 7) as usize].wrapping_sub(hash(seed, 5) % 2),
+                        _ => hash(seed, key + 3),
+                    } & mask(bits);
+                    let (a, b) = (pick(1), pick(2));
+                    let lhs = Expr::reg(0, bits as u8);
+                    // The second operand both as a register and as a constant.
+                    for rhs in [Expr::reg(1, bits as u8), Expr::constant(b)] {
+                        for kind in 0..3u8 {
+                            let flags = match kind {
+                                0 => Flags::difference(lhs.clone(), rhs.clone()),
+                                1 => Flags::sum(lhs.clone(), rhs.clone()),
+                                _ => Flags::logic(lhs.clone()),
+                            };
+                            let nzcv = reference(kind, a, b, bits, isa);
+                            for cond in CONDITIONS {
+                                let test = flags.test(cond, isa);
+                                assert_eq!(
+                                    decided(&test, &[a, b]),
+                                    Some(fixed_holds(cond, nzcv)),
+                                    "{isa:?} {bits}-bit kind {kind} {cond:?} a={a:#x} b={b:#x} rhs={rhs:?}: {test:?}"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_conditional_compare_tests_both_conditions() {
+        // cmp x0, x1; ccmp x2, x3, #0, eq: `eq` holds when both pairs match.
+        let earlier = Flags::difference(Expr::reg(0, 64), Expr::reg(1, 64));
+        let flags = Flags::difference(Expr::reg(2, 64), Expr::reg(3, 64))
+            .chosen_by(earlier.test(Cond::Eq, Isa::AArch64), 0)
+            .expect("known");
+        let test = flags.test(Cond::Eq, Isa::AArch64);
+        let value = |registers: [u64; 4]| match &test {
+            Test::Compare(cond, lhs, rhs) => {
+                let read = |expr: &Expr| {
+                    evaluate(expr, &|index| registers.get(usize::from(index)).copied())
+                        .expect("registers")
+                };
+                holds(*cond, read(lhs), read(rhs), operand_width(lhs, rhs))
+            }
+            other => panic!("{other:?}"),
+        };
+        assert!(value([1, 1, 2, 2]));
+        assert!(!value([1, 0, 2, 2]));
+        assert!(!value([1, 1, 2, 3]));
+    }
+}

@@ -1,4 +1,4 @@
-# metrics/integers.aarch64.O2.stripped.elf: elf aarch64 no entry, 10 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/integers.aarch64.O2.stripped.elf: elf aarch64 no entry, 10 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x210204 8 - unwind,prologue
 0x21020c 16 - unwind,prologue
 0x21021c 12 - unwind,prologue
@@ -64,29 +64,26 @@ fn <unnamed> @ 0x21021c (size 12)
 == 0x210228 -
 -- decompile
 /* velk pseudo-C: sub_210228 @ 0x210228 */
-int32_t sub_210228(int32_t a0, int32_t a1) {
-    /* unsupported: CCMP at 0x21022c */
-    v1 = (a0 <= a1 ? 0x1 : 0x0);
-    return v1;
+int32_t sub_210228(int32_t a0, int32_t a1, int32_t a2) {
+    return (a0 >= a1 && a0 <= a2);
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210228 (size 16)
   blk0 @ 0x210228:
-    unsupported: CCMP at 0x21022c
-    v1 = select le w0, w1 ? #0x1, #0x0
-    ret v1
+    ret (select ge w0, w1 ? select le w0, w2 ? #0x1, #0x0, #0x0 & #0xffffffff)
 -- card
-{"addr":"0x210228","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":1}
+{"addr":"0x210228","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":0}
 
 == 0x210238 -
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 uint32_t sub_210238(uint32_t a0, int32_t a1) {
-    return ((a0 >> (-a1 & 0x1f) | a0 << (0x20 - (-a1 & 0x1f) & 0x1f)) & 0xffffffff);
+    t1 = -a1 & 0x1f;
+    return ((a0 >> t1 | a0 << (0x20 - t1 & 0x1f)) & 0xffffffff);
 }
 -- signature
 uint32_t (uint32_t a0, int32_t a1)
@@ -95,7 +92,8 @@ uint32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x210238 (size 12)
   blk0 @ 0x210238:
-    ret (((w0 >> ((#0x0 - w1) & #0x1f)) | (w0 << ((#0x20 - ((#0x0 - w1) & #0x1f)) & #0x1f))) & #0xffffffff)
+    t1 = ((#0x0 - w1) & #0x1f)
+    ret (((w0 >> t1) | (w0 << ((#0x20 - t1) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x210238","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":0}
 

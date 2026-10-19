@@ -76,7 +76,7 @@ int32_t sub_21028c(int32_t a0, int32_t a1, int32_t a2) {
         return local_2 & 0x1;
     }
     v2 = local_1;
-    local_2 = (local_0 - v2 + v2 <= v2 ? 0x1 : 0x0);
+    local_2 = (local_0 - v2 + v2 <= v2);
     return local_2 & 0x1;
 }
 -- signature

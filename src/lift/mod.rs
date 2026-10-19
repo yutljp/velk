@@ -1,4 +1,7 @@
 mod aarch64;
+mod flags;
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod hardware;
 mod x86_64;
 
 use std::collections::HashSet;
@@ -190,8 +193,8 @@ enum Write<'a> {
 /// afterwards, the operand of a written sum or difference is recovered from
 /// the register, and any other operand reading what is overwritten moves into
 /// a register of its own.
-fn preserve_compare(compare: &mut Option<(Expr, Expr)>, write: Write<'_>, stmts: &mut Vec<Stmt>) {
-    let Some((lhs, rhs)) = compare else {
+fn preserve_compare(compare: &mut Option<flags::Flags>, write: Write<'_>, stmts: &mut Vec<Stmt>) {
+    let Some(flags) = compare else {
         return;
     };
     let clobbered = |expr: &Expr| match write {
@@ -202,10 +205,7 @@ fn preserve_compare(compare: &mut Option<(Expr, Expr)>, write: Write<'_>, stmts:
         }
         Write::Memory => reads_memory(expr),
     };
-    if !clobbered(lhs) && !clobbered(rhs) {
-        return;
-    }
-    for (slot, operand) in FLAG_OPERANDS.into_iter().zip([lhs, rhs]) {
+    for (slot, operand) in FLAG_OPERANDS.into_iter().zip(flags.operands_mut()) {
         if !clobbered(operand) {
             continue;
         }
@@ -231,12 +231,20 @@ fn preserve_compare(compare: &mut Option<(Expr, Expr)>, write: Write<'_>, stmts:
     }
 }
 
-/// `a` from the register that receives `a - b` or `a + b`, when `b` does
-/// not read that register.
+/// `a` from the register that receives `a - b`, `a + b` or `0 - a`, when
+/// `b` does not read that register.
 fn recover_operand(operand: &Expr, value: &Expr, index: u16, width: u8) -> Option<Expr> {
     let Expr::Bin { op, lhs, rhs } = value else {
         return None;
     };
+    // A negation is undone by negating the register.
+    if *op == crate::ir::BinOp::Sub && matches!(lhs.as_ref(), Expr::Const(0)) && **rhs == *operand {
+        return Some(Expr::bin(
+            crate::ir::BinOp::Sub,
+            Expr::constant(0),
+            Expr::reg(index, width),
+        ));
+    }
     let inverse = match op {
         crate::ir::BinOp::Sub => crate::ir::BinOp::Add,
         crate::ir::BinOp::Add => crate::ir::BinOp::Sub,

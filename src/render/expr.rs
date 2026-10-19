@@ -344,6 +344,9 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
         Expr::SignExtend { value, width } => {
             format!("({})({})", type_of(*width, true), render_expr(value, ctx))
         }
+        Expr::Select { .. } if let Some((text, _)) = logic(value, false, ctx) => {
+            format!("({text})")
+        }
         Expr::Select {
             cond,
             lhs,
@@ -433,6 +436,12 @@ fn mask_matches_local(lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> bool {
 }
 
 pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> String {
+    // A truth value tested against zero reads as the truth value itself.
+    if let (Cond::Ne | Cond::Eq, Expr::Const(0)) = (cond, rhs)
+        && let Some((text, _)) = logic(lhs, cond == Cond::Eq, ctx)
+    {
+        return text;
+    }
     let strength = match cond {
         Cond::Eq | Cond::Ne => 7,
         _ => 8,
@@ -454,5 +463,67 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
         Cond::Pl => "flags_pl /* pl */".to_owned(),
         Cond::Vs => "flags_vs /* vs */".to_owned(),
         Cond::Vc => "flags_vc /* vc */".to_owned(),
+    }
+}
+
+/// How a logical expression joins its parts, for parenthesizing.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Joined {
+    Single,
+    And,
+    Or,
+}
+
+/// A choice between truth values (one or zero) as `&&` and `||` of its
+/// conditions, negated when `negate` is set; None for any other expression.
+fn logic(expr: &Expr, negate: bool, ctx: &Ctx<'_>) -> Option<(String, Joined)> {
+    let Expr::Select {
+        cond,
+        lhs,
+        rhs,
+        then,
+        els,
+    } = expr
+    else {
+        return None;
+    };
+    let truth = |value: &Expr| match value {
+        Expr::Const(value @ (0 | 1)) => Some((*value == 1) != negate),
+        _ => None,
+    };
+    // The select's own condition, itself perhaps a truth value against zero.
+    let test = |holds: bool| -> (String, Joined) {
+        let cond = if holds { *cond } else { cond.invert() };
+        if let (Cond::Ne | Cond::Eq, Expr::Const(0)) = (cond, rhs.as_ref())
+            && let Some(joined) = logic(lhs, cond == Cond::Eq, ctx)
+        {
+            return joined;
+        }
+        (condition(cond, lhs, rhs, ctx), Joined::Single)
+    };
+    let within = |(text, joined): (String, Joined), join: Joined| {
+        if joined == join || joined == Joined::Single {
+            text
+        } else {
+            format!("({text})")
+        }
+    };
+    let join = |first: (String, Joined), rest: &Expr, join: Joined| -> Option<(String, Joined)> {
+        let rest = logic(rest, negate, ctx)?;
+        let operator = if join == Joined::And { "&&" } else { "||" };
+        Some((
+            format!("{} {operator} {}", within(first, join), within(rest, join)),
+            join,
+        ))
+    };
+    match (truth(then), truth(els)) {
+        (Some(true), Some(false)) => Some(test(true)),
+        (Some(false), Some(true)) => Some(test(false)),
+        (Some(_), Some(_)) => None,
+        (None, Some(false)) => join(test(true), then, Joined::And),
+        (Some(true), None) => join(test(true), els, Joined::Or),
+        (Some(false), None) => join(test(false), els, Joined::And),
+        (None, Some(true)) => join(test(false), then, Joined::Or),
+        (None, None) => None,
     }
 }

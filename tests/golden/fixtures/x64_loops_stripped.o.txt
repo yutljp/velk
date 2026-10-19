@@ -52,7 +52,7 @@ int32_t sub_30(int32_t a0) {
     if (a0 <= 0x0) {
         return 0x0;
     }
-    return (((((a0 - 0x2) & 0xffffffff) * ((a0 - 0x1) & 0xffffffff) >> 0x1) + a0 * 0x2 - 0x1) & 0xffffffff);
+    return (((a0 - 0x2) & 0xffffffff) * ((a0 - 0x1) & 0xffffffff) >> 0x1) + a0 * 0x2 - 0x1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -63,7 +63,7 @@ fn <unnamed> @ 0x30 (size 32)
   blk0 @ 0x30:
     brif le (rdi & #0xffffffff), #0x0 -> 0x47
   blk1 @ 0x34:
-    ret (((((((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff)) >> #0x1) + (rdi * #0x2)) + #0xffffffffffffffff) & #0xffffffff)
+    ret (((((((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff)) >> #0x1) + (rdi * #0x2)) - #0x1) & #0xffffffff)
   blk2 @ 0x47:
     ret #0x0
 -- card

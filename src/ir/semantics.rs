@@ -40,7 +40,10 @@ pub(crate) fn width(expr: &Expr) -> u32 {
             lhs,
             rhs,
         } => match rhs.as_ref() {
-            Expr::Const(value) if value.wrapping_add(1).is_power_of_two() => value.count_ones(),
+            // A mask the width of a register reads that register's low part;
+            // any other mask leaves the operation as wide as its operand, so
+            // `x & 7` is not a 3-bit value whose top bit is a sign.
+            Expr::Const(value @ (0xff | 0xffff | 0xffff_ffff)) => value.count_ones(),
             _ => width(lhs).max(width(rhs)),
         },
         Expr::Bin { lhs, rhs, .. } => width(lhs).max(width(rhs)),

@@ -159,8 +159,7 @@ int compare_doubles(void) {
     return local_0;
 L_2102e8:
     v1 = 0x0;
-    /* unsupported: FCMP at 0x2102f4 */
-    v2 = 0x0;
+    /* unsupported (2 steps): FCMP at 0x2102f4, conditional select on flags not modelled here */
     local_0 = 0x0;
     return local_0;
 }
@@ -183,10 +182,10 @@ fn compare_doubles @ 0x2102bc (size 84)
   blk3 @ 0x2102e8:
     v1 = #0x0
     unsupported: FCMP at 0x2102f4
-    v2 = #0x0
+    unsupported: conditional select on flags not modelled here
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x210304
   blk4 @ 0x210304:
     ret load32((sp + #0xffffffffffffffec))
 -- card
-{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":4}
+{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":5}

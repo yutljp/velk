@@ -3,6 +3,7 @@ use iced_x86::{
     ConditionCode, Decoder, DecoderOptions, FlowControl, Instruction, Mnemonic, OpKind, Register,
 };
 
+use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
@@ -11,7 +12,9 @@ use crate::loader::Image;
 
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
-    last_compare: Option<(Expr, Expr)>,
+    last_compare: Option<Flags>,
+    /// Whether the instruction being lifted set `last_compare`.
+    flags_written: bool,
     extended_dividend: Option<u8>,
     /// The width of the high half of an unsigned dividend the previous
     /// instruction cleared (`xor edx, edx`).
@@ -26,12 +29,25 @@ impl<'a> Lifter<'a> {
         Self {
             stmts: Vec::new(),
             last_compare: None,
+            flags_written: false,
             extended_dividend: None,
             zeroed_dividend: None,
             image,
             summaries,
             function,
         }
+    }
+
+    fn set_flags(&mut self, flags: Flags) {
+        self.last_compare = Some(flags);
+        self.flags_written = true;
+    }
+
+    /// `cond` under the flags; flags set in another block are unknown.
+    fn test(&self, cond: Cond) -> Test {
+        self.last_compare.as_ref().map_or(Test::Unknown, |flags| {
+            flags.test(cond, crate::loader::Isa::X86_64)
+        })
     }
 
     fn read_reg(index: u16, width: u8) -> Expr {
@@ -429,14 +445,14 @@ fn lift_exchange(lifter: &mut Lifter, ins: &Instruction) {
             write_operand(lifter, ins, 1, old);
         }
         Mnemonic::Xadd if same_register => {
+            lifter.set_flags(Flags::sum(current.clone(), source.clone()));
             let sum = Expr::bin(BinOp::Add, current, source);
-            lifter.last_compare = Some((sum.clone(), Expr::constant(0)));
             write_destination(lifter, ins, sum);
         }
         Mnemonic::Xadd => {
             let old = hold(lifter, current);
+            lifter.set_flags(Flags::sum(old.clone(), source.clone()));
             let sum = Expr::bin(BinOp::Add, old.clone(), source);
-            lifter.last_compare = Some((sum.clone(), Expr::constant(0)));
             write_destination(lifter, ins, sum);
             write_operand(lifter, ins, 1, old);
         }
@@ -453,7 +469,8 @@ fn lift_exchange(lifter: &mut Lifter, ins: &Instruction) {
                 els: Box::new(els),
             };
             write_destination(lifter, ins, select(source, old.clone()));
-            lifter.last_compare = Some((old.clone(), expected.clone()));
+            // The flags compare the accumulator with the old value.
+            lifter.set_flags(Flags::difference(expected.clone(), old.clone()));
             let mismatch = if width >= 32 {
                 old.clone()
             } else {
@@ -507,7 +524,7 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
                 Expr::bin(BinOp::Shr, value, bit),
                 Expr::constant(1),
             );
-            lifter.last_compare = Some((Expr::constant(0), flag));
+            lifter.set_flags(Flags::difference(Expr::constant(0), flag));
         }
         _ => {
             let (Some(source), Some(count)) = (operand(lifter, ins, 1), operand(lifter, ins, 2))
@@ -592,33 +609,29 @@ fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
     } else {
         Expr::bin(op, lhs.clone(), rhs.clone())
     };
-    // `sub` sets the flags `cmp` would: carry and overflow compare its
-    // operands, which a test of the result against zero cannot show.
-    lifter.last_compare = Some(match op {
-        BinOp::Sub => (lhs, rhs),
-        _ => (value.clone(), Expr::constant(0)),
+    lifter.set_flags(match op {
+        BinOp::Sub => Flags::difference(lhs, rhs),
+        BinOp::Add => Flags::sum(lhs, rhs),
+        _ => Flags::logic(value.clone()),
     });
     write_destination(lifter, ins, value);
 }
 
 fn select(lifter: &mut Lifter, ins: &Instruction, then: Expr, els: Expr) -> Option<Expr> {
     let cond = condition(ins.condition_code())?;
-    let (lhs, rhs) = lifter.last_compare.clone()?;
-    Some(Expr::Select {
-        cond,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-        then: Box::new(then),
-        els: Box::new(els),
-    })
+    lifter.test(cond).select(then, els)
 }
 
 fn shift(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
     let (Some(value), Some(amount)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) else {
         return;
     };
+    // A shift by zero leaves the flags as they were.
+    let counted = matches!(amount, Expr::Const(count) if count & 0x3f != 0);
     let value = Expr::bin(op, value, amount);
-    lifter.last_compare = Some((value.clone(), Expr::constant(0)));
+    if counted {
+        lifter.set_flags(Flags::result(value.clone()));
+    }
     write_destination(lifter, ins, value);
 }
 
@@ -635,8 +648,10 @@ fn condition(code: ConditionCode) -> Option<Cond> {
         be => Cond::Ls,
         a => Cond::Hi,
         ae => Cond::Cs,
-        s => Cond::Lt,
-        ns => Cond::Ge,
+        s => Cond::Mi,
+        ns => Cond::Pl,
+        o => Cond::Vs,
+        no => Cond::Vc,
         _ => return Option::None,
     })
 }
@@ -752,20 +767,15 @@ fn lift_instruction(
         };
         let bits = width * 8;
         // Flags from another block are unknown here.
-        let (Some(cond), Some((lhs, rhs))) =
-            (condition(ins.condition_code()), lifter.last_compare.clone())
-        else {
+        let Some(value) = condition(ins.condition_code()).and_then(|cond| {
+            lifter
+                .test(cond)
+                .select(Expr::constant(1), Expr::constant(0))
+        }) else {
             lifter.stmts.push(Stmt::Unsupported {
                 text: format!("setcc without compare at 0x{:x}", ins.ip()),
             });
             return false;
-        };
-        let value = Expr::Select {
-            cond,
-            lhs: Box::new(lhs),
-            rhs: Box::new(rhs),
-            then: Box::new(Expr::constant(1)),
-            els: Box::new(Expr::constant(0)),
         };
         let value = Expr::bin(BinOp::And, value, Expr::constant((1u64 << bits) - 1));
         write_destination(lifter, ins, value);
@@ -825,13 +835,13 @@ fn lift_instruction(
         },
         Mnemonic::Cmp => {
             if let (Some(a), Some(b)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) {
-                lifter.last_compare = Some((a, b));
+                lifter.set_flags(Flags::difference(a, b));
             }
         }
         Mnemonic::Test => {
             if let (Some(a), Some(b)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) {
                 let masked = Expr::bin(BinOp::And, a, b);
-                lifter.last_compare = Some((masked, Expr::constant(0)));
+                lifter.set_flags(Flags::logic(masked));
             }
         }
         Mnemonic::Shl | Mnemonic::Sal => shift(lifter, ins, BinOp::Shl),
@@ -876,8 +886,8 @@ fn lift_instruction(
             let Some(value) = operand(lifter, ins, 0) else {
                 return false;
             };
+            lifter.set_flags(Flags::difference(Expr::constant(0), value.clone()));
             let negated = Expr::bin(BinOp::Sub, Expr::constant(0), value);
-            lifter.last_compare = Some((negated.clone(), Expr::constant(0)));
             write_destination(lifter, ins, negated);
         }
         Mnemonic::Not => {
@@ -895,20 +905,23 @@ fn lift_instruction(
                 (1u64 << (width * 8)) - 1
             };
             let inverted = Expr::bin(BinOp::Xor, value, Expr::constant(mask));
-            lifter.last_compare = Some((inverted.clone(), Expr::constant(0)));
             write_destination(lifter, ins, inverted);
         }
         Mnemonic::Inc | Mnemonic::Dec => {
             let Some(value) = operand(lifter, ins, 0) else {
                 return false;
             };
-            let delta = if ins.mnemonic() == Mnemonic::Inc {
-                1
+            // Both leave the carry as it was.
+            let (op, flags) = if ins.mnemonic() == Mnemonic::Inc {
+                (BinOp::Add, Flags::sum(value.clone(), Expr::constant(1)))
             } else {
-                u64::MAX
+                (
+                    BinOp::Sub,
+                    Flags::difference(value.clone(), Expr::constant(1)),
+                )
             };
-            let updated = Expr::bin(BinOp::Add, value, Expr::constant(delta));
-            lifter.last_compare = Some((updated.clone(), Expr::constant(0)));
+            lifter.set_flags(flags.keeping_carry());
+            let updated = Expr::bin(op, value, Expr::constant(1));
             write_destination(lifter, ins, updated);
         }
         Mnemonic::Cdq | Mnemonic::Cqo => {
@@ -1092,15 +1105,9 @@ fn lift_instruction(
                     return true;
                 };
                 let target = resolved_target(ins, relocation_target);
-                match lifter.last_compare.take() {
-                    Some((lhs, rhs)) => lifter.stmts.push(Stmt::Brif {
-                        cond,
-                        lhs,
-                        rhs,
-                        target,
-                    }),
-                    None => lifter.stmts.push(Stmt::BrifFlags { cond, target }),
-                }
+                let test = lifter.test(cond);
+                lifter.last_compare = None;
+                lifter.stmts.extend(test.branch(cond, target));
                 return true;
             }
             lifter.stmts.push(Stmt::Unsupported {
@@ -1155,7 +1162,13 @@ impl Machine for Lifter<'_> {
                 let target = resolved_target(instruction, relocation_target);
                 target != self.function && self.image.functions.contains_key(&target)
             };
-        lift_instruction(self, instruction, relocation_target, tail_call)
+        self.flags_written = false;
+        let ended = lift_instruction(self, instruction, relocation_target, tail_call);
+        // Flags the instruction sets in a way not modelled are unknown.
+        if instruction.rflags_modified() != 0 && !self.flags_written {
+            self.last_compare = None;
+        }
+        ended
     }
 
     fn take_statements(&mut self) -> Vec<Stmt> {

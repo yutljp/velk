@@ -204,7 +204,7 @@ fn factorial @ 0x78 (size 160)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x118 */
 int32_t is_odd(int32_t a0) {
-    v1 = a0 - (a0 != 0x0 ? 0x1 : 0x0) + 0x1;
+    v1 = a0 - (a0 != 0x0) + 0x1;
     if (v1 >= 0x2 /* unsigned */) {
         v3 = (v1 >> 0x1) + 0x1;
         v4 = v3 & 0xfffffffe;
@@ -261,7 +261,7 @@ int32_t is_even(int32_t a0) {
     if (a0 == 0x0) {
         return 0x1;
     }
-    return a0 - 0x1 - (a0 - (a0 != 0x1 ? 0x1 : 0x0) & 0xfffffffe);
+    return a0 - 0x1 - (a0 - (a0 != 0x1) & 0xfffffffe);
 }
 -- signature
 int32_t (int32_t a0)

@@ -352,7 +352,7 @@ fn is_neg @ 0x1a4 (size 8)
 -- decompile
 /* velk pseudo-C: is_zero @ 0x1ac */
 int32_t is_zero(int32_t a0) {
-    return (a0 == 0x0 ? 0x1 : 0x0);
+    return (a0 == 0x0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -369,7 +369,7 @@ fn is_zero @ 0x1ac (size 12)
 -- decompile
 /* velk pseudo-C: is_pos @ 0x1b8 */
 int32_t is_pos(int32_t a0) {
-    return (a0 > 0x0 ? 0x1 : 0x0);
+    return (a0 > 0x0);
 }
 -- signature
 int32_t (int32_t a0)

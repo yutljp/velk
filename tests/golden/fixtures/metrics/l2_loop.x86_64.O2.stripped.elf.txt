@@ -95,7 +95,7 @@ fn <unnamed> @ 0x2011d0 (size 239)
     v14 = (((v8 + v13) + #0xfffffffffffffffd) & #0xffffffff)
     store32((((v8 + v13) + #0xfffffffffffffffb) & #0xffffffff), #0x2023d4)
     store32((((v8 + v14) + #0xfffffffffffffffd) & #0xffffffff), #0x2023d4)
-    v3 = (((v8 + (((v8 + v14) + #0xfffffffffffffffe) & #0xffffffff)) + #0xffffffffffffffff) & #0xffffffff)
+    v3 = (((v8 + (((v8 + v14) + #0xfffffffffffffffe) & #0xffffffff)) - #0x1) & #0xffffffff)
     store32((v3 & #0xffffffff), #0x2023d4)
     v6 = (((v6 & #0xffffffff) + #0x8) & #0xffffffff)
     brif ne ((((v8 & #0xffffffff) + v5) + #0x8) & #0xffffffff), #0x7 -> 0x201210
@@ -106,7 +106,7 @@ fn <unnamed> @ 0x2011d0 (size 239)
     v3 = (((v3 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
     store32((v3 & #0xffffffff), #0x2023d4)
     v2 = (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
-    v1 = (v1 + #0xffffffffffffffff)
+    v1 = (v1 - #0x1)
     brif ne v1, #0x0 -> 0x2012b0
   blk9 @ 0x2012be:
     ret v3
@@ -184,7 +184,7 @@ fn <unnamed> @ 0x2012c0 (size 157)
   blk6 @ 0x201350:
     store32((v8 & #0xffffffff), #0x2023d4)
     v8 = (((v8 & #0xffffffff) + #0x1) & #0xffffffff)
-    v2 = (v2 + #0xffffffffffffffff)
+    v2 = (v2 - #0x1)
     brif ne v2, #0x0 -> 0x201350
   blk7 @ 0x20135c:
     ret v1

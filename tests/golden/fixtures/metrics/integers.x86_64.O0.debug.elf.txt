@@ -86,7 +86,7 @@ _Bool in_range(int x, int lo, int hi) {
         v4 = local_2;
         return v4 & 0x1;
     }
-    v3 = (local_0 <= local_1 ? 0x1 : 0x0) & 0xff;
+    v3 = (local_0 <= local_1) & 0xff;
     t66 = local_1;
     local_2 = v3 & 0xff;
     v4 = local_2;

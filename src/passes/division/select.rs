@@ -27,17 +27,26 @@ pub(crate) fn cs_neg_chain(
     else {
         return None;
     };
-    // The condition reads the dividend's negation (`subs xzr, x`).
-    if !matches!(cond, crate::ir::Cond::Mi | crate::ir::Cond::Pl) {
-        return None;
-    }
-    let Expr::Const(0) = cmp_lhs.as_ref() else {
-        return None;
+    // The condition tests the sign of the dividend's negation (`negs`),
+    // as `0 - x < 0` or as the flags of comparing 0 with `x`.
+    use crate::ir::Cond;
+    let (negative, negation) = match (cond, cmp_lhs.as_ref(), cmp_rhs.as_ref()) {
+        (Cond::Mi | Cond::Pl, Expr::Const(0), dividend) => (*cond == Cond::Mi, dividend),
+        (
+            Cond::Lt | Cond::Ge,
+            Expr::Bin {
+                op: crate::ir::BinOp::Sub,
+                lhs,
+                rhs,
+            },
+            Expr::Const(0),
+        ) if matches!(lhs.as_ref(), Expr::Const(0)) => (*cond == Cond::Lt, rhs.as_ref()),
+        _ => return None,
     };
     let Expr::Reg {
         index: dividend,
         width,
-    } = strip_and_mask(cmp_rhs)
+    } = strip_and_mask(negation)
     else {
         return None;
     };
@@ -52,10 +61,7 @@ pub(crate) fn cs_neg_chain(
             _ => None,
         }
     };
-    let (plain, negated) = match cond {
-        crate::ir::Cond::Mi => (then, els),
-        _ => (els, then),
-    };
+    let (plain, negated) = if negative { (then, els) } else { (els, then) };
     let Some(plain_leaf) = unwrap_leaf(strip_and_mask(plain)) else {
         return None;
     };

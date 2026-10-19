@@ -65,8 +65,8 @@ fn mixed_sign @ 0x201230 (size 9)
 -- decompile
 /* velk pseudo-C: in_range @ 0x201240 */
 _Bool in_range(int x, int lo, int hi) {
-    v1 = rax & 0xffffffffffffff00 | (x <= hi ? 0x1 : 0x0) & 0xff;
-    return v1 & 0xffffffffffffff00 | v1 & 0xff & ((x >= lo ? 0x1 : 0x0) & 0xff) & 0xff;
+    v1 = rax & 0xffffffffffffff00 | (x <= hi) & 0xff;
+    return v1 & 0xffffffffffffff00 | v1 & 0xff & ((x >= lo) & 0xff) & 0xff;
 }
 -- signature
 _Bool (int x, int lo, int hi)

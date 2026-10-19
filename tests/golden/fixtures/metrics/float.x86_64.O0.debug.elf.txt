@@ -199,8 +199,7 @@ L_20131f:
     xmm1_hi = 0x0;
     v1 = 0x0;
     v2 = 0x1;
-    /* unsupported: Ucomisd at 0x201330 */
-    v3 = 0x0;
+    /* unsupported (2 steps): Ucomisd at 0x201330, cmov without compare at 0x201334 */
     local_2 = 0x0;
     return local_2;
 }
@@ -230,9 +229,9 @@ fn compare_doubles @ 0x2012f0 (size 79)
     v1 = #0x0
     v2 = #0x1
     unsupported: Ucomisd at 0x201330
-    v3 = #0x0
+    unsupported: cmov without compare at 0x201334
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk3 @ 0x20133a:
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card
-{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":79,"unsupported":2}
+{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":79,"unsupported":3}

@@ -65,8 +65,8 @@ fn <unnamed> @ 0x201230 (size 9)
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
 int64_t sub_201240(int32_t a0, int32_t a1, int32_t a2) {
-    v1 = rax & 0xffffffffffffff00 | (a0 <= a2 ? 0x1 : 0x0) & 0xff;
-    return v1 & 0xffffffffffffff00 | v1 & 0xff & ((a0 >= a1 ? 0x1 : 0x0) & 0xff) & 0xff;
+    v1 = rax & 0xffffffffffffff00 | (a0 <= a2) & 0xff;
+    return v1 & 0xffffffffffffff00 | v1 & 0xff & ((a0 >= a1) & 0xff) & 0xff;
 }
 -- signature
 int64_t (int32_t a0, int32_t a1, int32_t a2)

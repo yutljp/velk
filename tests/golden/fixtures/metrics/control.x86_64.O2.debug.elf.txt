@@ -97,7 +97,7 @@ fn matrix_trace @ 0x201220 (size 242)
     br 0x20125f
   blk2 @ 0x201250:
     v6 = (v6 + #0x1)
-    v5 = (v5 + #0xffffffffffffffff)
+    v5 = (v5 - #0x1)
     brif eq v6, v1 -> 0x201307
   blk3 @ 0x20125f:
     v8 = (((v6 & #0xffffffff) * esi) & #0xffffffff)
@@ -143,7 +143,7 @@ fn matrix_trace @ 0x201220 (size 242)
     v17 = #0x0
     br 0x2012fc
   blk18 @ 0x2012f0:
-    v17 = (v17 + #0xffffffffffffffff)
+    v17 = (v17 - #0x1)
     brif eq v4, v17 -> 0x201250
   blk19 @ 0x2012fc:
     brif ne v16, v17 -> 0x2012f0
@@ -293,7 +293,7 @@ int short_circuit(int *p, int n) {
     if (*(uint32_t *)(p) == 0x1) {
         return v1;
     }
-    v1 = (*(uint32_t *)(p + n * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
+    v1 = (*(uint32_t *)(p + n * 0x4 - 0x4) == 0x1) & 0xff;
     return v1;
 }
 -- signature
@@ -487,7 +487,7 @@ fn find_pair @ 0x201490 (size 112)
   blk2 @ 0x2014c0:
     v6 = (v6 + v3)
     v4 = (v4 + #0x4)
-    v5 = (v5 + #0xffffffffffffffff)
+    v5 = (v5 - #0x1)
     brif eq v7, v2 -> 0x2014fb
   blk3 @ 0x2014cf:
     v8 = v7

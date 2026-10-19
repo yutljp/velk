@@ -154,7 +154,7 @@ iz=$("$BIN" decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$iz" | grep -q "a0 == 0x0"        || fail "cset eq compare"
 ip=$("$BIN" decompile $FIX/arm64_div.o is_pos 2>/dev/null)
 echo "$ip" | grep -q "a0 > 0x0"         || fail "cset gt compare"
-echo "$iz" | grep -q "? 0x1 : 0x0)"    || fail "cset boolean branches"
+echo "$iz" | grep -q "return (a0 == 0x0);" || fail "cset as a truth value"
 ok "pow2 mod and cset"
 locals=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$locals" | grep -q "local_0 = a0"     || fail "stack local naming"

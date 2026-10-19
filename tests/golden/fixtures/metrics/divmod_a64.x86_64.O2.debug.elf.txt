@@ -354,7 +354,7 @@ fn is_neg @ 0x201530 (size 6)
 -- decompile
 /* velk pseudo-C: is_zero @ 0x201540 */
 int is_zero(int x) {
-    return (x == 0x0 ? 0x1 : 0x0) & 0xff;
+    return (x == 0x0) & 0xff;
 }
 -- signature
 int (int x)
@@ -371,7 +371,7 @@ fn is_zero @ 0x201540 (size 8)
 -- decompile
 /* velk pseudo-C: is_pos @ 0x201550 */
 int is_pos(int x) {
-    return (x > 0x0 ? 0x1 : 0x0) & 0xff;
+    return (x > 0x0) & 0xff;
 }
 -- signature
 int (int x)

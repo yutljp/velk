@@ -143,6 +143,7 @@ cargo test                # ユニットテストと結合テスト
 
 | テスト | 確かめること | 正解 |
 |---|---|---|
+| `src/lift/hardware.rs` | lift した命令が実機と同じ結果になる（arm64 の macOS で実行） | 実機での実行 |
 | `src/analysis/semantics_tests.rs` | 最適化が関数の動作を変えていない（IR を実行して比べる） | 最適化前の IR |
 | `tests/invariants.rs` | 飛び先のない goto、代入されないレジスタの読み取り、疑似 C での文の欠落がない | 出力の性質 |
 | `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報（`*.debug.elf`） |

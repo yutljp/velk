@@ -1,8 +1,8 @@
-# 5616 functions, 59104 compared runs
+# 5616 functions, 59092 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 253
 #   step limit (Go): 1982
-#   step limit (Rust): 1122
-#   unsupported instruction (C and C++): 794
+#   step limit (Rust): 1158
+#   unsupported instruction (C and C++): 770
 #   unsupported instruction (Go): 2382
 #   unsupported instruction (Rust): 1755

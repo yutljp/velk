@@ -166,12 +166,10 @@ fn widen @ 0x201280 (size 9)
 /* velk pseudo-C: compare_doubles @ 0x201290 */
 int compare_doubles(void) {
     v1 = 0x0;
-    /* unsupported: Ucomisd at 0x201292 */
-    v2 = 0x0;
-    /* unsupported: Ucomisd at 0x201299 */
-    v3 = 0xffffffff;
-    v4 = 0x0;
-    return 0x0;
+    /* unsupported (3 steps): Ucomisd at 0x201292, setcc without compare at 0x201296, Ucomisd at 0x201299 */
+    v2 = 0xffffffff;
+    /* unsupported: cmov without compare at 0x2012a2 */
+    return 0xffffffff;
 }
 -- signature
 int ()
@@ -182,10 +180,10 @@ fn compare_doubles @ 0x201290 (size 22)
   blk0 @ 0x201290:
     v1 = #0x0
     unsupported: Ucomisd at 0x201292
-    v2 = #0x0
+    unsupported: setcc without compare at 0x201296
     unsupported: Ucomisd at 0x201299
-    v3 = #0xffffffff
-    v4 = #0x0
-    ret #0x0
+    v2 = #0xffffffff
+    unsupported: cmov without compare at 0x2012a2
+    ret #0xffffffff
 -- card
-{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":22,"unsupported":2}
+{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":22,"unsupported":4}

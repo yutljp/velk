@@ -52,7 +52,7 @@ int sum_until(int limit) {
     if (limit <= 0x0) {
         return 0x0;
     }
-    return (((((limit - 0x2) & 0xffffffff) * ((limit - 0x1) & 0xffffffff) >> 0x1) + limit * 0x2 - 0x1) & 0xffffffff);
+    return (((limit - 0x2) & 0xffffffff) * ((limit - 0x1) & 0xffffffff) >> 0x1) + limit * 0x2 - 0x1;
 }
 -- signature
 int (int limit)
@@ -63,7 +63,7 @@ fn sum_until @ 0x2011c0 (size 26)
   blk0 @ 0x2011c0:
     brif le (rdi & #0xffffffff), #0x0 -> 0x2011d7
   blk1 @ 0x2011c4:
-    ret (((((((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff)) >> #0x1) + (rdi * #0x2)) + #0xffffffffffffffff) & #0xffffffff)
+    ret (((((((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff)) >> #0x1) + (rdi * #0x2)) - #0x1) & #0xffffffff)
   blk2 @ 0x2011d7:
     ret #0x0
 -- card

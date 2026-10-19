@@ -68,26 +68,7 @@ struct Machine<'a> {
 }
 
 pub fn run(ir: &FunctionIr, setup: &Setup<'_>) -> Outcome {
-    let mut machine = Machine {
-        convention: &setup.convention,
-        seed: setup.seed,
-        registers: setup.registers.iter().copied().collect(),
-        memory: HashMap::new(),
-        calls: Vec::new(),
-        blocks: &ir.blocks,
-        starts: ir
-            .blocks
-            .iter()
-            .enumerate()
-            .map(|(index, block)| (block.start, index))
-            .collect(),
-    };
-    machine
-        .registers
-        .insert(crate::arch::stack_pointer(ir.isa), STACK_TOP);
-    for (addr, value) in setup.memory {
-        machine.store(*addr, *value, 8);
-    }
+    let mut machine = Machine::new(ir, setup);
     match machine.execute(setup.step_limit) {
         Ok(Some(value)) => Outcome::Return {
             value,
@@ -99,6 +80,43 @@ pub fn run(ir: &FunctionIr, setup: &Setup<'_>) -> Outcome {
             memory: visible(&machine.memory),
         },
         Err(reason) => Outcome::Unknown(reason),
+    }
+}
+
+/// The registers after running `ir` to a return or a trap, for comparing
+/// lifted code with the processor running it.
+pub fn registers_after(
+    ir: &FunctionIr,
+    setup: &Setup<'_>,
+) -> Result<HashMap<u16, u64>, &'static str> {
+    let mut machine = Machine::new(ir, setup);
+    machine.execute(setup.step_limit)?;
+    Ok(machine.registers)
+}
+
+impl<'a> Machine<'a> {
+    fn new(ir: &'a FunctionIr, setup: &'a Setup<'a>) -> Self {
+        let mut machine = Machine {
+            convention: &setup.convention,
+            seed: setup.seed,
+            registers: setup.registers.iter().copied().collect(),
+            memory: HashMap::new(),
+            calls: Vec::new(),
+            blocks: &ir.blocks,
+            starts: ir
+                .blocks
+                .iter()
+                .enumerate()
+                .map(|(index, block)| (block.start, index))
+                .collect(),
+        };
+        machine
+            .registers
+            .insert(crate::arch::stack_pointer(ir.isa), STACK_TOP);
+        for (addr, value) in setup.memory {
+            machine.store(*addr, *value, 8);
+        }
+        machine
     }
 }
 

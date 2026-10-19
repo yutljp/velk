@@ -300,7 +300,7 @@ int32_t sub_201410(int64_t a0, int32_t a1) {
         v4 = local_0;
         v5 = (int64_t)(int32_t)(local_1 - 0x1);
         t65 = *(uint32_t *)(v4 + v5 * 0x4);
-        v6 = (*(uint32_t *)(v4 + v5 * 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
+        v6 = (*(uint32_t *)(v4 + v5 * 0x4) == 0x1) & 0xff;
         local_3 = v6 & 0xff;
     }
     v7 = local_3;

@@ -45,7 +45,7 @@ fn helper @ 0x2011a0 (size 46)
     v1 = (((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff))
     v2 = ((((rdi + #0xfffffffffffffffd) & #0xffffffff) * v1) >> #0x1)
     v5 = (v1 >> #0x1)
-    ret ((((((v2 & #0xffffffff) * #0x55555556) + (rdi & #0xffffffff)) + (v5 + (v5 * #0x2))) + #0xffffffffffffffff) & #0xffffffff)
+    ret ((((((v2 & #0xffffffff) * #0x55555556) + (rdi & #0xffffffff)) + (v5 + (v5 * #0x2))) - #0x1) & #0xffffffff)
   blk2 @ 0x2011cb:
     ret #0x0
 -- card

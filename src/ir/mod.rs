@@ -362,9 +362,15 @@ const X86_NAMES64: [&str; 50] = [
 /// `t<n>`.
 pub const TEMP_BASE: u16 = 0x1000;
 
-/// The registers holding a compare's operands after the instruction that sets
-/// the flags, or a later one, overwrites what they read.
-pub const FLAG_OPERANDS: [u16; 2] = [TEMP_BASE + 0x40, TEMP_BASE + 0x41];
+/// The registers holding the operands the flags were set from, and those of
+/// the condition that chose a conditional compare, after the instruction that
+/// sets the flags, or a later one, overwrites what they read.
+pub const FLAG_OPERANDS: [u16; 4] = [
+    TEMP_BASE + 0x40,
+    TEMP_BASE + 0x41,
+    TEMP_BASE + 0x43,
+    TEMP_BASE + 0x44,
+];
 
 /// The register holding a value an exchange overwrites before it is written
 /// back.

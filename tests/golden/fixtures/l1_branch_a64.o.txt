@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x0 */
 int32_t classify(int32_t a0) {
-    return (a0 >= 0x0 ? (a0 != 0x0 ? 0x1 : 0x0) : 0xffffffff);
+    return (a0 >= 0x0 ? (a0 != 0x0) : 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)

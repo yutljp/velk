@@ -138,7 +138,7 @@ fn <unnamed> @ 0x201220 (size 236)
     v6 = (load8((rsi + v4)) & #0xff)
     store8((v6 & #0xff), (rdi + v4))
     v4 = (v4 + #0x1)
-    v5 = (v5 + #0xffffffffffffffff)
+    v5 = (v5 - #0x1)
     brif ne v5, #0x0 -> 0x2012c0
   blk15 @ 0x2012d1:
     rax = (rax - rdx)

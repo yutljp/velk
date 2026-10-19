@@ -268,7 +268,7 @@ int is_odd(int n) {
     if (n == 0x0) {
         return 0x0;
     }
-    return is_even(((n - 0x1) & 0xffffffff));
+    return is_even(n - 0x1);
 }
 -- signature
 int (int n)
@@ -279,7 +279,7 @@ fn is_odd @ 0x201460 (size 14)
   blk0 @ 0x201460:
     brif eq (rdi & #0xffffffff), #0x0 -> 0x20146b
   blk1 @ 0x201464:
-    v2 = call 0x201470((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
+    v2 = call 0x201470((((rdi & #0xffffffff) - #0x1) & #0xffffffff))
     ret v2
   blk2 @ 0x20146b:
     ret #0x0
@@ -293,7 +293,7 @@ int is_even(int n) {
     if (n == 0x0) {
         return 0x1;
     }
-    return is_odd(((n - 0x1) & 0xffffffff));
+    return is_odd(n - 0x1);
 }
 -- signature
 int (int n)
@@ -304,7 +304,7 @@ fn is_even @ 0x201470 (size 17)
   blk0 @ 0x201470:
     brif eq (rdi & #0xffffffff), #0x0 -> 0x20147b
   blk1 @ 0x201474:
-    v2 = call 0x201460((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
+    v2 = call 0x201460((((rdi & #0xffffffff) - #0x1) & #0xffffffff))
     ret v2
   blk2 @ 0x20147b:
     ret #0x1

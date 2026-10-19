@@ -156,22 +156,20 @@ fn <unnamed> @ 0x210240 (size 12)
 == 0x21024c -
 -- decompile
 /* velk pseudo-C: sub_21024c @ 0x21024c */
-int32_t sub_21024c(void) {
-    /* unsupported: FCMP at 0x21024c */
-    v1 = 0x0;
-    v2 = 0x0;
-    return 0x0;
+int64_t sub_21024c(int64_t a0) {
+    /* unsupported (3 steps): FCMP at 0x21024c, conditional select on flags not modelled here, conditional select on flags not modelled here */
+    return a0;
 }
 -- signature
-int32_t ()
+int64_t (int64_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x21024c (size 16)
   blk0 @ 0x21024c:
     unsupported: FCMP at 0x21024c
-    v1 = #0x0
-    v2 = #0x0
-    ret #0x0
+    unsupported: conditional select on flags not modelled here
+    unsupported: conditional select on flags not modelled here
+    ret x0
 -- card
-{"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":1}
+{"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":3}

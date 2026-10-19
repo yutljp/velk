@@ -1,6 +1,7 @@
 use yaxpeax_arch::{Decoder, ReaderBuilder};
 use yaxpeax_arm::armv8::a64::{self, Instruction, Operand, SizeCode};
 
+use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
@@ -8,7 +9,7 @@ use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
-    last_compare: Option<(Expr, Expr)>,
+    last_compare: Option<Flags>,
     image: &'a crate::loader::Image,
     summaries: super::Summaries<'a>,
     function: u64,
@@ -40,6 +41,31 @@ impl<'a> Lifter<'a> {
     /// A branch to another known function is a tail call.
     fn is_tail_call(&self, target: u64) -> bool {
         target != self.function && self.image.functions.contains_key(&target)
+    }
+
+    /// `cond` under the flags; flags set in another block are unknown.
+    fn test(&self, cond: Cond) -> Test {
+        self.last_compare.as_ref().map_or(Test::Unknown, |flags| {
+            flags.test(cond, crate::loader::Isa::AArch64)
+        })
+    }
+
+    /// The condition encoded as `code`; `al` and `nv` both always hold.
+    fn test_code(&self, code: u8) -> Test {
+        match Cond::from_code(code) {
+            Some(cond) => self.test(cond),
+            None => Test::Always,
+        }
+    }
+
+    /// Writes `then` or `els` to `dest` as `test` decides.
+    fn select(&mut self, dest: RegRef, test: Test, then: Expr, els: Expr) {
+        match test.select(then, els) {
+            Some(value) => self.assign(dest, value),
+            None => self.stmts.push(Stmt::Unsupported {
+                text: "conditional select on flags not modelled here".to_owned(),
+            }),
+        }
     }
 
     fn read_reg(index: u16, width: u8) -> Expr {
@@ -92,13 +118,26 @@ impl<'a> Lifter<'a> {
             Operand::Imm64(value) => Some(Expr::constant(value)),
             Operand::ImmShift(value, shift) => Some(Expr::constant((value as u64) << shift)),
             Operand::RegShift(style, amount, size, index) => {
-                let width = if size == SizeCode::X { 64 } else { 32 };
+                let source = if size == SizeCode::X { 64 } else { 32 };
                 let value = if index == 31 {
                     Expr::constant(0)
                 } else {
-                    Self::read_reg(index, width)
+                    Self::read_reg(index, source)
                 };
-                extend_shift(style, amount as u64, value, size)
+                let extended = extend_shift(style, amount as u64, value, size)?;
+                // A sign-extended source of a 32-bit operation keeps its low half.
+                let signed = matches!(
+                    style,
+                    a64::ShiftStyle::SXTB
+                        | a64::ShiftStyle::SXTH
+                        | a64::ShiftStyle::SXTW
+                        | a64::ShiftStyle::SXTX
+                );
+                Some(if width == 32 && signed {
+                    Expr::bin(BinOp::And, extended, Expr::constant(0xffff_ffff))
+                } else {
+                    extended
+                })
             }
             Operand::PCOffset(offset) => Some(Expr::constant(offset as u64)),
             _ => None,
@@ -179,6 +218,9 @@ fn destination(operand: Operand) -> Option<RegRef> {
 }
 
 fn lift_alu(lifter: &mut Lifter, ops: [Operand; 4], op: BinOp, flags: bool) {
+    if flags {
+        lifter.last_compare = None;
+    }
     let dest = destination(ops[0]);
     // The operand size decides the width even when the destination is the
     // zero register (`cmp w0, #0` is a 32-bit comparison).
@@ -197,14 +239,11 @@ fn lift_alu(lifter: &mut Lifter, ops: [Operand; 4], op: BinOp, flags: bool) {
         return;
     };
     let value = Expr::bin(op, lhs.clone(), rhs.clone());
-    // The flags read as a compare: `subs` compares its operands, `adds` its
-    // first operand with the negated second (as `cmn` does), and `ands`
-    // its result with zero.
     if flags {
         lifter.last_compare = Some(match op {
-            BinOp::Add => (lhs, Expr::bin(BinOp::Sub, Expr::constant(0), rhs)),
-            BinOp::And => (value.clone(), Expr::constant(0)),
-            _ => (lhs, rhs),
+            BinOp::Add => Flags::sum(lhs, rhs),
+            BinOp::And => Flags::logic(value.clone()),
+            _ => Flags::difference(lhs, rhs),
         });
     }
     if let Some(dest) = dest {
@@ -308,7 +347,10 @@ fn lift_reverse(lifter: &mut Lifter, ops: [Operand; 4], chunk: Option<u8>) {
     lifter.assign(dest, super::reverse_bytes(value, dest.width, chunk));
 }
 
-fn lift_bic(lifter: &mut Lifter, ops: [Operand; 4]) {
+fn lift_bic(lifter: &mut Lifter, ops: [Operand; 4], flags: bool) {
+    if flags {
+        lifter.last_compare = None;
+    }
     let width = match ops[0] {
         Operand::Register(size, _) | Operand::RegisterOrSP(size, _) => {
             if size == SizeCode::X {
@@ -319,18 +361,22 @@ fn lift_bic(lifter: &mut Lifter, ops: [Operand; 4]) {
         }
         _ => 64,
     };
-    let (Some(dest), Some(base), Some(mask)) = (
-        destination(ops[0]),
-        lifter.operand(ops[1], width),
-        lifter.operand(ops[2], width),
-    ) else {
+    let (Some(base), Some(mask)) = (lifter.operand(ops[1], width), lifter.operand(ops[2], width))
+    else {
         lifter.stmts.push(Stmt::Unsupported {
             text: "bic".to_owned(),
         });
         return;
     };
     let inverted = Expr::bin(BinOp::Xor, mask, Expr::constant(u64::MAX));
-    lifter.assign(dest, Expr::bin(BinOp::And, base, inverted));
+    let value = Expr::bin(BinOp::And, base, inverted);
+    if flags {
+        lifter.last_compare = Some(Flags::logic(value.clone()));
+    }
+    // `bics` into the zero register only sets the flags.
+    if let Some(dest) = destination(ops[0]) {
+        lifter.assign(dest, value);
+    }
 }
 
 /// `msub Rd, Rn, Rm, Ra` computes `Ra - Rn * Rm`.
@@ -356,7 +402,9 @@ fn lift_msub(lifter: &mut Lifter, ops: [Operand; 4]) {
     lifter.assign(dest, value);
 }
 
-fn lift_umaddl(lifter: &mut Lifter, ops: [Operand; 4], signed: bool) {
+/// `umaddl`, `smaddl`, `umsubl` and `smsubl`: a 64-bit product of 32-bit
+/// operands added to or subtracted from the fourth operand.
+fn lift_long_multiply(lifter: &mut Lifter, ops: [Operand; 4], signed: bool, subtract: bool) {
     let Some(dest) = destination(ops[0]) else {
         return;
     };
@@ -375,11 +423,117 @@ fn lift_umaddl(lifter: &mut Lifter, ops: [Operand; 4], signed: bool) {
         }
     };
     let product = Expr::bin(BinOp::Mul, widen(a), widen(b));
-    let value = match lifter.operand(ops[3], 64) {
-        Some(base) => Expr::bin(BinOp::Add, product, base),
-        None => product,
+    let value = match (lifter.operand(ops[3], 64), subtract) {
+        (Some(base), false) => Expr::bin(BinOp::Add, product, base),
+        (Some(base), true) => Expr::bin(BinOp::Sub, base, product),
+        (None, false) => product,
+        (None, true) => Expr::bin(BinOp::Sub, Expr::constant(0), product),
     };
     lifter.assign(dest, value);
+}
+
+/// `ccmp` and `ccmn`: compare (or add, for `ccmn`) when the condition holds,
+/// and otherwise set the flags to the immediate.
+fn lift_conditional_compare(lifter: &mut Lifter, ops: [Operand; 4], sum: bool) {
+    let earlier = match ops[3] {
+        Operand::ConditionCode(code) => lifter.test_code(code),
+        _ => Test::Unknown,
+    };
+    lifter.last_compare = None;
+    let Some(width) = register_width(ops[0]) else {
+        return;
+    };
+    let (Some(a), Some(b), Some(nzcv)) = (
+        lifter.operand(ops[0], width),
+        lifter.operand(ops[1], width),
+        immediates(ops[2]),
+    ) else {
+        return;
+    };
+    let compare = if sum {
+        Flags::sum(a, b)
+    } else {
+        Flags::difference(a, b)
+    };
+    lifter.last_compare = compare.chosen_by(earlier, nzcv as u8);
+}
+
+/// `adc`, `sbc` and their flag-setting forms: a sum with the carry, or a
+/// difference less its complement. The flags they set are not modelled.
+fn lift_with_carry(lifter: &mut Lifter, ops: [Operand; 4], subtract: bool) {
+    let carry = lifter
+        .test(Cond::Cs)
+        .select(Expr::constant(1), Expr::constant(0));
+    lifter.last_compare = None;
+    let Some(dest) = destination(ops[0]) else {
+        return;
+    };
+    let (Some(a), Some(b), Some(carry)) = (
+        lifter.operand(ops[1], dest.width),
+        lifter.operand(ops[2], dest.width),
+        carry,
+    ) else {
+        lifter.stmts.push(Stmt::Unsupported {
+            text: "carry not modelled here".to_owned(),
+        });
+        return;
+    };
+    let value = if subtract {
+        let borrow = Expr::bin(BinOp::Xor, carry, Expr::constant(1));
+        Expr::bin(BinOp::Sub, Expr::bin(BinOp::Sub, a, b), borrow)
+    } else {
+        Expr::bin(BinOp::Add, Expr::bin(BinOp::Add, a, b), carry)
+    };
+    lifter.assign(dest, value);
+}
+
+/// `bfm`: bits of the source replace a field of the destination, which
+/// keeps its other bits (`bfi`, `bfxil`).
+fn lift_bitfield_insert(lifter: &mut Lifter, ops: [Operand; 4]) {
+    let Some(dest) = destination(ops[0]) else {
+        return;
+    };
+    let (Some(old), Some(source), Some(immr), Some(imms)) = (
+        lifter.operand(ops[0], dest.width),
+        lifter.operand(ops[1], dest.width),
+        immediates(ops[2]),
+        immediates(ops[3]),
+    ) else {
+        return;
+    };
+    let width = u64::from(dest.width);
+    let (immr, imms) = (immr & (width - 1), imms & (width - 1));
+    // `imms >= immr` moves bits immr..=imms to the bottom; otherwise the low
+    // imms + 1 bits move up to width - immr.
+    let (field, from, to) = if imms >= immr {
+        (imms - immr + 1, immr, 0)
+    } else {
+        (imms + 1, 0, width - immr)
+    };
+    let ones = mask_bits(field);
+    let moved = Expr::bin(
+        BinOp::Shl,
+        Expr::bin(
+            BinOp::And,
+            Expr::bin(BinOp::Shr, source, Expr::constant(from)),
+            Expr::constant(ones),
+        ),
+        Expr::constant(to),
+    );
+    let kept = Expr::bin(
+        BinOp::And,
+        old,
+        Expr::constant(!(ones << to) & mask_bits(width)),
+    );
+    lifter.assign(dest, Expr::bin(BinOp::Or, kept, moved));
+}
+
+fn mask_bits(bits: u64) -> u64 {
+    if bits >= 64 {
+        u64::MAX
+    } else {
+        (1 << bits) - 1
+    }
 }
 
 fn immediates(operand: Operand) -> Option<u64> {
@@ -508,7 +662,11 @@ fn bitfield_move(source: Expr, immr: u64, imms: u64, width: u8, signed: bool) ->
                 value: Box::new(low),
                 width: (field / 8) as u8,
             },
-            _ => return None,
+            // Any other field moves to the top and back down with its sign.
+            _ => {
+                let up = Expr::constant(u64::from(width) - field);
+                Expr::bin(BinOp::Sar, Expr::bin(BinOp::Shl, low, up.clone()), up)
+            }
         }
     } else {
         Expr::bin(BinOp::And, low, mask)
@@ -534,6 +692,12 @@ fn lift_variable_shift(lifter: &mut Lifter, ops: [Operand; 4], shift: a64::Shift
     ) else {
         return;
     };
+    // The amount counts modulo the width.
+    let amount = Expr::bin(
+        BinOp::And,
+        amount,
+        Expr::constant(u64::from(dest.width) - 1),
+    );
     let op = match shift {
         a64::ShiftStyle::LSL => BinOp::Shl,
         a64::ShiftStyle::LSR => BinOp::Shr,
@@ -768,21 +932,11 @@ fn lift_cond_branch(lifter: &mut Lifter, ops: [Operand; 4], code: u8, pc: u64) -
         });
         return true;
     };
-    let Some(cond) = Cond::from_code(code) else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: format!("condition {code}"),
-        });
-        return true;
-    };
-    match lifter.last_compare.take() {
-        Some((lhs, rhs)) => lifter.stmts.push(Stmt::Brif {
-            cond,
-            lhs,
-            rhs,
-            target,
-        }),
-        None => lifter.stmts.push(Stmt::BrifFlags { cond, target }),
-    }
+    let test = lifter.test_code(code);
+    lifter.last_compare = None;
+    // Only a condition the flags here leave open names itself in the branch.
+    let cond = Cond::from_code(code).unwrap_or(Cond::Eq);
+    lifter.stmts.extend(test.branch(cond, target));
     true
 }
 
@@ -833,9 +987,6 @@ fn lift_cs_family(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
     let Operand::ConditionCode(code) = ops[3] else {
         return;
     };
-    let Some(cond) = Cond::from_code(code) else {
-        return;
-    };
     let (Some(a), Some(b)) = (
         lifter.operand(ops[1], dest.width),
         lifter.operand(ops[2], dest.width),
@@ -858,41 +1009,17 @@ fn lift_cs_family(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
             _ => Expr::bin(BinOp::Sub, Expr::constant(0), expr),
         }
     };
-    let (lhs, rhs) = lifter
-        .last_compare
-        .clone()
-        .unwrap_or_else(|| (a.clone(), Expr::constant(0)));
     let mut then_value = a.clone();
     let mut els_value = decorate(b.clone());
-    let mut cond = sign_condition(cond, &rhs);
+    let mut test = lifter.test_code(code);
     // `cset` encodes the inverted condition with zero as the true value;
     // swap back so the condition matches the comparison.
     if matches!(then_value, Expr::Const(0)) && !matches!(els_value, Expr::Const(0)) {
         std::mem::swap(&mut then_value, &mut els_value);
-        cond = cond.invert();
+        test = test.invert();
     }
-    let value = Expr::Select {
-        cond,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-        then: Box::new(then_value),
-        els: Box::new(els_value),
-    };
-    lifter.assign(dest, value);
     // `last_compare` is kept: a following conditional select reads the same flags.
-}
-
-/// After a compare with zero, `mi`/`pl` equal signed `<`/`>=`: subtracting
-/// zero cannot overflow, so N alone decides `lt`.
-fn sign_condition(cond: Cond, rhs: &Expr) -> Cond {
-    if !matches!(rhs, Expr::Const(0)) {
-        return cond;
-    }
-    match cond {
-        Cond::Mi => Cond::Lt,
-        Cond::Pl => Cond::Ge,
-        other => other,
-    }
+    lifter.select(dest, test, then_value, els_value);
 }
 
 fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
@@ -902,28 +1029,14 @@ fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
     let Operand::ConditionCode(code) = ops[3] else {
         return;
     };
-    let Some(cond) = Cond::from_code(code) else {
-        return;
-    };
     let Some(then_value) = lifter.operand(ops[1], dest.width) else {
         return;
     };
     let Some(els_value) = lifter.operand(ops[2], dest.width) else {
         return;
     };
-    let (lhs, rhs) = lifter
-        .last_compare
-        .clone()
-        .unwrap_or_else(|| (then_value.clone(), Expr::constant(0)));
-    let cond = sign_condition(cond, &rhs);
-    let value = Expr::Select {
-        cond,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-        then: Box::new(then_value),
-        els: Box::new(els_value),
-    };
-    lifter.assign(dest, value);
+    let test = lifter.test_code(code);
+    lifter.select(dest, test, then_value, els_value);
 }
 
 fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
@@ -939,7 +1052,8 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::ANDS => lift_alu(lifter, ops, BinOp::And, true),
         O::ORR => lift_alu(lifter, ops, BinOp::Or, false),
         O::EOR => lift_alu(lifter, ops, BinOp::Xor, false),
-        O::BIC | O::BICS => lift_bic(lifter, ops),
+        O::BIC => lift_bic(lifter, ops, false),
+        O::BICS => lift_bic(lifter, ops, true),
         O::MUL => lift_madd(lifter, ops, false),
         O::UMULH => lift_mul_high(lifter, ops, false),
         O::SMULH => lift_mul_high(lifter, ops, true),
@@ -947,8 +1061,15 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::CSEL => lift_csel(lifter, ops),
         O::CSINC | O::CSINV | O::CSNEG => lift_cs_family(lifter, ops, ins.opcode),
         O::MSUB => lift_msub(lifter, ops),
-        O::UMADDL => lift_umaddl(lifter, ops, false),
-        O::SMADDL => lift_umaddl(lifter, ops, true),
+        O::UMADDL => lift_long_multiply(lifter, ops, false, false),
+        O::SMADDL => lift_long_multiply(lifter, ops, true, false),
+        O::UMSUBL => lift_long_multiply(lifter, ops, false, true),
+        O::SMSUBL => lift_long_multiply(lifter, ops, true, true),
+        O::CCMP => lift_conditional_compare(lifter, ops, false),
+        O::CCMN => lift_conditional_compare(lifter, ops, true),
+        O::ADC | O::ADCS => lift_with_carry(lifter, ops, false),
+        O::SBC | O::SBCS => lift_with_carry(lifter, ops, true),
+        O::BFM => lift_bitfield_insert(lifter, ops),
         O::MOVZ => lift_mov(lifter, ops, false),
         O::MOVN => lift_mov(lifter, ops, true),
         O::MOVK => lift_movk(lifter, ops),

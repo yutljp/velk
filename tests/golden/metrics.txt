@@ -8,19 +8,19 @@ extra functions | aarch64.O2 | 0/148
 extra functions | x86_64.O0 | 0/148
 extra functions | x86_64.O2 | 0/148
 parameter count | aarch64.O0 | 144/147
-parameter count | aarch64.O2 | 142/147
+parameter count | aarch64.O2 | 143/147
 parameter count | x86_64.O0 | 140/147
 parameter count | x86_64.O2 | 140/147
 parameter pointer | aarch64.O0 | 144/173
-parameter pointer | aarch64.O2 | 160/168
+parameter pointer | aarch64.O2 | 163/171
 parameter pointer | x86_64.O0 | 143/172
 parameter pointer | x86_64.O2 | 161/172
 parameter width | aarch64.O0 | 138/144
-parameter width | aarch64.O2 | 134/141
+parameter width | aarch64.O2 | 137/144
 parameter width | x86_64.O0 | 138/143
 parameter width | x86_64.O2 | 138/143
 parameter sign | aarch64.O0 | 122/138
-parameter sign | aarch64.O2 | 123/134
+parameter sign | aarch64.O2 | 126/137
 parameter sign | x86_64.O0 | 126/138
 parameter sign | x86_64.O2 | 126/138
 return void | aarch64.O0 | 143/148
@@ -28,7 +28,7 @@ return void | aarch64.O2 | 143/148
 return void | x86_64.O0 | 126/148
 return void | x86_64.O2 | 143/148
 return width | aarch64.O0 | 114/120
-return width | aarch64.O2 | 111/120
+return width | aarch64.O2 | 110/120
 return width | x86_64.O0 | 114/120
 return width | x86_64.O2 | 114/120
 
@@ -309,7 +309,7 @@ float.aarch64.O2 0x21019c average: parameter 0 is a signed 8-byte integer, expec
 float.aarch64.O2 0x21022c lerp: 1 parameters, expected 3
 float.aarch64.O2 0x210238 truncate_to_int: returns 8 bytes, expected 4
 float.aarch64.O2 0x210240 widen: ok
-float.aarch64.O2 0x21024c compare_doubles: 0 parameters, expected 2
+float.aarch64.O2 0x21024c compare_doubles: 1 parameters, expected 2; returns 8 bytes, expected 4
 float.x86_64.O0 0x2011f0 average: parameter 0 is a signed 8-byte integer, expected a pointer
 float.x86_64.O0 0x201280 lerp: 0 parameters, expected 3
 float.x86_64.O0 0x2012c0 truncate_to_int: 0 parameters, expected 1; returns 8 bytes, expected 4
@@ -333,7 +333,7 @@ integers.aarch64.O0 0x210464 mul_high: parameter 0 signedness differs; parameter
 integers.aarch64.O2 0x210204 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.aarch64.O2 0x21020c widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.aarch64.O2 0x21021c mixed_sign: parameter 1 signedness differs
-integers.aarch64.O2 0x210228 in_range: 2 parameters, expected 3; returns 4 bytes, expected 1
+integers.aarch64.O2 0x210228 in_range: returns 4 bytes, expected 1
 integers.aarch64.O2 0x210238 rotate_left: parameter 1 signedness differs
 integers.aarch64.O2 0x210244 popcount: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
 integers.aarch64.O2 0x210258 byte_swap: ok
