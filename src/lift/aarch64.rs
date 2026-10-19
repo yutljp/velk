@@ -959,7 +959,13 @@ fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
         write_back(lifter, mem.writeback);
         return;
     }
+    // A load into the zero register discards the value but still writes
+    // back its base.
     let Some(dest) = destination(ops[0]) else {
+        let bytes = register_width(ops[0]).map_or(8, |bits| bits / 8);
+        if let Some(mem) = memory(lifter, ops[1], bytes) {
+            write_back(lifter, mem.writeback);
+        }
         return;
     };
     let (load_width, signed) = match opcode {
@@ -1029,7 +1035,7 @@ fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
     write_back(lifter, mem.writeback);
 }
 
-fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
+fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool, signed: bool) {
     if let (Some((first, bits)), Some((second, _))) = (simd(ops[0]), simd(ops[1])) {
         let Some(mem) = memory(lifter, ops[2], (bits / 8) as u8) else {
             return;
@@ -1064,7 +1070,8 @@ fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
     let Some(mem) = memory(lifter, ops[2], 8) else {
         return;
     };
-    let width = first_bits / 8;
+    // ldpsw's elements are 32 bits, sign-extended into 64-bit registers.
+    let width = if signed { 4 } else { first_bits / 8 };
     let second_addr = Expr::bin(
         BinOp::Add,
         mem.address.clone(),
@@ -1088,21 +1095,30 @@ fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
             width,
         });
     } else {
+        let load = |addr: Expr| Expr::Load {
+            addr: Box::new(addr),
+            width,
+            signed,
+        };
+        let (a, b) = (load(mem.address), load(second_addr));
+        // The second address may read the register the first load writes.
+        let b = match destination(ops[0]) {
+            Some(first)
+                if {
+                    let mut read = std::collections::HashSet::new();
+                    crate::ir::visit::collect_reads(&b, &mut read);
+                    read.contains(&first.index)
+                } =>
+            {
+                lifter.hold(b)
+            }
+            _ => b,
+        };
         // A load into the zero register is discarded.
         if let Some(first) = destination(ops[0]) {
-            let a = Expr::Load {
-                addr: Box::new(mem.address),
-                width,
-                signed: false,
-            };
             lifter.assign(first, a);
         }
         if let Some(second) = destination(ops[1]) {
-            let b = Expr::Load {
-                addr: Box::new(second_addr),
-                width,
-                signed: false,
-            };
             lifter.assign(second, b);
         }
     }
@@ -1918,7 +1934,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
     if vector_operand
         && !matches!(
             ins.opcode,
-            O::LDR | O::LDUR | O::STR | O::STUR | O::LDP | O::STP
+            O::LDR | O::LDUR | O::STR | O::STUR | O::LDP | O::STP | O::LDNP | O::STNP
         )
     {
         lifter
@@ -1993,8 +2009,9 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::STURH => lift_store(lifter, ops, O::STRH),
         O::SDIV => lift_alu(lifter, ops, BinOp::DivS, false),
         O::UDIV => lift_alu(lifter, ops, BinOp::DivU, false),
-        O::LDP => lift_pair(lifter, ops, false),
-        O::STP => lift_pair(lifter, ops, true),
+        O::LDP | O::LDNP => lift_pair(lifter, ops, false, false),
+        O::LDPSW => lift_pair(lifter, ops, false, true),
+        O::STP | O::STNP => lift_pair(lifter, ops, true, false),
         O::B => {
             let target = lifter.target_of(ops[0], pc);
             // A branch to itself is an unresolved reference to another

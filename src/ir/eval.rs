@@ -90,9 +90,18 @@ pub fn registers_after(
     ir: &FunctionIr,
     setup: &Setup<'_>,
 ) -> Result<HashMap<u16, u64>, &'static str> {
+    Ok(state_after(ir, setup)?.0)
+}
+
+/// Registers by index and memory by address.
+pub type State = (HashMap<u16, u64>, HashMap<u64, u8>);
+
+/// The registers and every byte of memory the run wrote, or that the setup
+/// gave, after running `ir`.
+pub fn state_after(ir: &FunctionIr, setup: &Setup<'_>) -> Result<State, &'static str> {
     let mut machine = Machine::new(ir, setup);
     machine.execute(setup.step_limit)?;
-    Ok(machine.registers)
+    Ok((machine.registers, machine.memory))
 }
 
 impl<'a> Machine<'a> {

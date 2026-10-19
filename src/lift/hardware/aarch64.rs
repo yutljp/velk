@@ -1,8 +1,8 @@
 //! AArch64 data-processing instructions, run natively from a code page.
 
+use std::cell::Cell;
 use std::ffi::c_void;
 use std::sync::Once;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use yaxpeax_arch::{Decoder, ReaderBuilder};
 use yaxpeax_arm::armv8::a64::{self, Operand};
@@ -12,7 +12,7 @@ use super::{
     register_differences, same_float_bits, unsupported, value,
 };
 use crate::ir::FunctionIr;
-use crate::ir::eval::hash;
+use crate::ir::eval::{self, hash};
 use crate::loader::Isa;
 
 /// The general registers a case may use: the harness keeps its state
@@ -117,32 +117,37 @@ struct SignalAction {
 }
 
 const SIGILL: i32 = 4;
+const SIGBUS: i32 = 10;
+const SIGSEGV: i32 = 11;
 
-/// The code page of the case running now, and whether its instruction
-/// turned out to be one the processor does not define.
-static RUNNING: AtomicUsize = AtomicUsize::new(0);
-static UNDEFINED: AtomicBool = AtomicBool::new(false);
+thread_local! {
+    /// The code page of the case this thread runs now, and whether its
+    /// instruction turned out to be one the processor does not define or
+    /// an access it faults on.
+    static RUNNING: Cell<usize> = const { Cell::new(0) };
+    static UNDEFINED: Cell<bool> = const { Cell::new(false) };
+}
 
-/// Steps over an undefined instruction in the case's code, so the case
-/// ends and reports it; a fault anywhere else stays fatal.
-extern "C" fn on_illegal(_: i32, _: *mut c_void, context: *mut c_void) {
+/// Steps over an undefined instruction or a faulting access in the case's
+/// code, so the case ends and reports it; a fault anywhere else stays fatal.
+extern "C" fn on_illegal(signal: i32, _: *mut c_void, context: *mut c_void) {
     // The Darwin arm64 layout: the machine context pointer sits 48 bytes
     // into the user context, and its program counter 272 bytes into that.
     // SAFETY: the kernel passes a valid user context to the handler.
     unsafe {
         let machine = *(context.cast::<u8>().add(48).cast::<*mut u8>());
         let pc = machine.add(272).cast::<u64>();
-        let base = RUNNING.load(Ordering::SeqCst) as u64;
+        let base = RUNNING.with(Cell::get) as u64;
         if base != 0 && (base..base + PAGE as u64).contains(&*pc) {
             *pc += 4;
-            UNDEFINED.store(true, Ordering::SeqCst);
+            UNDEFINED.with(|undefined| undefined.set(true));
         } else {
             let default = SignalAction {
                 handler: 0,
                 mask: 0,
                 flags: 0,
             };
-            sigaction(SIGILL, &default, std::ptr::null_mut());
+            sigaction(signal, &default, std::ptr::null_mut());
         }
     }
 }
@@ -169,7 +174,9 @@ impl Page {
                 flags: SA_SIGINFO,
             };
             // SAFETY: installs a handler that only touches the case's state.
-            unsafe { sigaction(SIGILL, &action, std::ptr::null_mut()) };
+            for signal in [SIGILL, SIGBUS, SIGSEGV] {
+                unsafe { sigaction(signal, &action, std::ptr::null_mut()) };
+            }
         });
         // SAFETY: an anonymous mapping, checked below.
         let base = unsafe {
@@ -208,12 +215,12 @@ impl Page {
             pthread_jit_write_protect_np(1);
             sys_icache_invalidate(self.base.cast(), code.len() * 4);
             let entry: extern "C" fn(*mut u64) = std::mem::transmute(self.base);
-            UNDEFINED.store(false, Ordering::SeqCst);
-            RUNNING.store(self.base as usize, Ordering::SeqCst);
+            UNDEFINED.with(|undefined| undefined.set(false));
+            RUNNING.with(|running| running.set(self.base as usize));
             entry(state.as_mut_ptr());
-            RUNNING.store(0, Ordering::SeqCst);
+            RUNNING.with(|running| running.set(0));
         }
-        !UNDEFINED.load(Ordering::SeqCst)
+        !UNDEFINED.with(Cell::get)
     }
 }
 
@@ -443,6 +450,201 @@ fn lifted_instructions_match_the_processor() {
     let mut findings = Findings::default();
     for seed in 0..200_000 {
         check(&page, seed, &mut findings);
+    }
+    findings.assert_agreement();
+}
+
+/// The pointer registers memory cases address through; they point into the
+/// middle of the buffer, and every other register holds a small value.
+const POINTERS: [u16; 4] = [1, 2, 3, 4];
+const BUFFER: usize = 8192;
+
+/// Whether a load or store addresses only through a pointer register, by
+/// an offset that stays within the buffer, and is not one whose result the
+/// architecture leaves unpredictable (a written-back base that is also
+/// loaded or stored).
+fn buffer_access(instruction: &a64::Instruction) -> bool {
+    use a64::Opcode as O;
+    let plain = matches!(
+        instruction.opcode,
+        O::LDR
+            | O::LDRB
+            | O::LDRH
+            | O::LDRSB
+            | O::LDRSH
+            | O::LDRSW
+            | O::STR
+            | O::STRB
+            | O::STRH
+            | O::LDUR
+            | O::LDURB
+            | O::LDURH
+            | O::LDURSB
+            | O::LDURSH
+            | O::LDURSW
+            | O::STUR
+            | O::STURB
+            | O::STURH
+            | O::LDP
+            | O::STP
+            | O::LDPSW
+            | O::LDNP
+            | O::STNP
+    );
+    let mut base = None;
+    let mut writeback = false;
+    let mut data = Vec::new();
+    let operands_fit = instruction.operands.iter().all(|operand| match *operand {
+        Operand::Nothing => true,
+        Operand::Register(_, index) | Operand::RegisterOrSP(_, index) => {
+            data.push(index);
+            index == 31 || usable(index) && !POINTERS.contains(&index)
+        }
+        Operand::SIMDRegister(_, number) => number < 8,
+        Operand::RegPreIndex(reg, offset, back) => {
+            base = Some(reg);
+            writeback = back;
+            offset.unsigned_abs() <= 2048
+        }
+        Operand::RegPostIndex(reg, offset) => {
+            base = Some(reg);
+            writeback = true;
+            offset.unsigned_abs() <= 2048
+        }
+        Operand::RegRegOffset(reg, index, ..) => {
+            base = Some(reg);
+            usable(index) && !POINTERS.contains(&index) && index != 31
+        }
+        _ => false,
+    });
+    let pair_loads_one = matches!(instruction.opcode, O::LDP | O::LDPSW | O::LDNP)
+        && data.len() == 2
+        && data[0] == data[1];
+    plain
+        && operands_fit
+        && !pair_loads_one
+        && base.is_some_and(|base| POINTERS.contains(&base))
+        && !(writeback && base.is_some_and(|base| data.contains(&base)))
+}
+
+fn memory_instruction(seed: u64) -> Option<(u32, a64::Instruction)> {
+    // Loads and stores: bit 27 set and bit 25 clear, with a pointer register
+    // as the base every form names in bits 5 to 9.
+    let base = POINTERS[(hash(seed, 2) % 4) as usize] as u32;
+    let word = ((hash(seed, 1) as u32 | 1 << 27) & !(1 << 25) & !(0x1f << 5)) | base << 5;
+    let decoded = decode(word)?;
+    buffer_access(&decoded).then_some((word, decoded))
+}
+
+#[test]
+fn lifted_memory_accesses_match_the_processor() {
+    let page = Page::new();
+    let mut findings = Findings::default();
+    let mut buffer = vec![0u8; BUFFER];
+    let middle = buffer.as_ptr() as u64 + (BUFFER / 2) as u64;
+    for seed in 0..60_000u64 {
+        let Some((word, decoded)) = memory_instruction(seed) else {
+            continue;
+        };
+        let Some(ir) = lift_words(&[word, RET]) else {
+            continue;
+        };
+        if let Some(name) = unsupported(&ir) {
+            *findings.unsupported.entry(name).or_default() += 1;
+            continue;
+        }
+        let mut state: State = [0; 46];
+        for (index, slot) in state.iter_mut().enumerate().take(28) {
+            if POINTERS.contains(&(index as u16)) {
+                *slot = middle + hash(seed, 0x300 + index as u64) % 256;
+            } else if usable(index as u16) {
+                *slot = hash(seed, 0x100 + index as u64) % 64;
+            }
+        }
+        for half in 0..16 {
+            state[VECTORS + half] = float_bits(seed, 0x200 + half as u64);
+        }
+        for (index, byte) in buffer.iter_mut().enumerate() {
+            *byte = hash(seed, 0x400 + index as u64) as u8;
+        }
+        let initial = state;
+        let before = buffer.clone();
+        if !page.run(&[word], &mut state) {
+            findings.undefined += 1;
+            continue;
+        }
+        findings.tried += 1;
+        let registers: Vec<(u16, u64)> = (0..28u16)
+            .filter(|index| usable(*index))
+            .map(|index| (index, initial[usize::from(index)]))
+            .chain((0..16).map(|half| {
+                (
+                    crate::arch::aarch64::V0 + half as u16,
+                    initial[VECTORS + half],
+                )
+            }))
+            .collect();
+        let words: Vec<(u64, u64)> = before
+            .chunks(8)
+            .enumerate()
+            .map(|(index, chunk)| {
+                (
+                    buffer.as_ptr() as u64 + index as u64 * 8,
+                    u64::from_le_bytes(chunk.try_into().expect("8 bytes")),
+                )
+            })
+            .collect();
+        let setup = eval::Setup {
+            seed: 0,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &registers,
+            memory: &words,
+            step_limit: 100,
+        };
+        let kind = format!("{:?}", decoded.opcode);
+        let describe = || format!("{decoded} ({word:#010x})\n{}", ir.render());
+        let (after, memory) = match eval::state_after(&ir, &setup) {
+            Ok(state) => state,
+            Err(reason) => {
+                Findings::note(&mut findings.registers, kind, || {
+                    format!("{}\n  {reason}", describe())
+                });
+                continue;
+            }
+        };
+        let processor = |index: u16| match index.checked_sub(crate::arch::aarch64::V0) {
+            Some(half) => state[VECTORS + usize::from(half)],
+            None => state[usize::from(index)],
+        };
+        let mut differ: Vec<String> = registers
+            .iter()
+            .filter_map(|(index, start)| {
+                let lifted = after.get(index).copied().unwrap_or(*start);
+                (lifted != processor(*index)).then(|| {
+                    format!(
+                        "register {index}: lifted {lifted:#x}, processor {:#x}",
+                        processor(*index)
+                    )
+                })
+            })
+            .collect();
+        for (offset, real) in buffer.iter().enumerate() {
+            let address = buffer.as_ptr() as u64 + offset as u64;
+            let lifted = memory.get(&address).copied().unwrap_or(before[offset]);
+            if lifted != *real {
+                differ.push(format!(
+                    "byte {offset:#x}: lifted {lifted:#x}, processor {real:#x}"
+                ));
+            }
+        }
+        if !differ.is_empty() {
+            Findings::note(&mut findings.registers, kind, || {
+                format!("{}\n  {}", describe(), differ.join("\n  "))
+            });
+        }
     }
     findings.assert_agreement();
 }
