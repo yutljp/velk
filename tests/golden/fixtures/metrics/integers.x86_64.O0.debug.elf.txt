@@ -14,10 +14,7 @@
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x201280 */
 signed char narrow_add(signed char a, signed char b) {
-    uint8_t local_0; /* [sp-a] */
-
-    local_0 = rax & 0xffffffffffffff00 | b & 0xff;
-    return (int8_t)((int8_t)(a) + (int8_t)(local_0));
+    return (int8_t)((int8_t)(a) + (int8_t)(b));
 }
 -- signature
 signed char (signed char a, signed char b)
@@ -26,8 +23,7 @@ signed char (signed char a, signed char b)
 -- ir
 fn narrow_add @ 0x201280 (size 31)
   blk0 @ 0x201280:
-    store8(((rax & #0xffffffffffffff00) | (rsi & #0xff)), (rsp + #0xfffffffffffffff6))
-    ret (sext8(((sext8(rdi) + sext8(load8((rsp + #0xfffffffffffffff6)))) & #0xffffffff)) & #0xffffffff)
+    ret (sext8(((sext8(rdi) + sext8(rsi)) & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x201280","approxTokens":168,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"unsupported":0}
 
@@ -35,10 +31,7 @@ fn narrow_add @ 0x201280 (size 31)
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x2012a0 */
 unsigned short widen_mul(unsigned char a, unsigned char b) {
-    uint8_t local_0; /* [sp-a] */
-
-    local_0 = rax & 0xffffffffffffff00 | b & 0xff;
-    return (a & 0xff) * local_0 & 0xffff;
+    return (a & 0xff) * (b & 0xff) & 0xffff;
 }
 -- signature
 unsigned short (unsigned char a, unsigned char b)
@@ -47,8 +40,7 @@ unsigned short (unsigned char a, unsigned char b)
 -- ir
 fn widen_mul @ 0x2012a0 (size 32)
   blk0 @ 0x2012a0:
-    store8(((rax & #0xffffffffffffff00) | (rsi & #0xff)), (rsp + #0xfffffffffffffff6))
-    ret (((rdi & #0xff) * load8((rsp + #0xfffffffffffffff6))) & #0xffff)
+    ret (((rdi & #0xff) * (rsi & #0xff)) & #0xffff)
 -- card
 {"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
 

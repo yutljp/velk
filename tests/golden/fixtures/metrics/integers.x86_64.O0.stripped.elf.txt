@@ -14,10 +14,7 @@
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 int32_t sub_201280(int32_t a0, int32_t a1) {
-    uint8_t local_0; /* [sp-a] */
-
-    local_0 = rax & 0xffffffffffffff00 | a1 & 0xff;
-    return (int8_t)((int8_t)(a0) + (int8_t)(local_0));
+    return (int8_t)((int8_t)(a0) + (int8_t)(a1));
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -26,8 +23,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201280 (size 31)
   blk0 @ 0x201280:
-    store8(((rax & #0xffffffffffffff00) | (rsi & #0xff)), (rsp + #0xfffffffffffffff6))
-    ret (sext8(((sext8(rdi) + sext8(load8((rsp + #0xfffffffffffffff6)))) & #0xffffffff)) & #0xffffffff)
+    ret (sext8(((sext8(rdi) + sext8(rsi)) & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x201280","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":31,"unsupported":0}
 
@@ -35,10 +31,7 @@ fn <unnamed> @ 0x201280 (size 31)
 -- decompile
 /* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
 int32_t sub_2012a0(int32_t a0, int32_t a1) {
-    uint8_t local_0; /* [sp-a] */
-
-    local_0 = rax & 0xffffffffffffff00 | a1 & 0xff;
-    return (a0 & 0xff) * local_0 & 0xffff;
+    return (a0 & 0xff) * (a1 & 0xff) & 0xffff;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -47,8 +40,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2012a0 (size 32)
   blk0 @ 0x2012a0:
-    store8(((rax & #0xffffffffffffff00) | (rsi & #0xff)), (rsp + #0xfffffffffffffff6))
-    ret (((rdi & #0xff) * load8((rsp + #0xfffffffffffffff6))) & #0xffff)
+    ret (((rdi & #0xff) * (rsi & #0xff)) & #0xffff)
 -- card
 {"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}
 

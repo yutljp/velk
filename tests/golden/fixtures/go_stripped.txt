@@ -1407,20 +1407,17 @@ fn main.twice @ 0x466cc0 (size 64)
 == 0x466d00 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d00 */
-int32_t main_main(void) {
+void main_main(void) {
     int64_t v1;
-    int64_t v2;
-    int64_t local_0; /* [sp-10] */
 
     v1 = main_twice(0x15);
-    local_0 = v1;
-    runtime_printlock(v1);
-    runtime_printint(local_0);
-    v2 = runtime_printnl();
-    return runtime_printunlock(v2);
+    runtime_printlock();
+    runtime_printint(v1);
+    runtime_printnl();
+    runtime_printunlock();
 }
 -- signature
-int32_t ()
+void ()
 -- references
 
 -- ir
@@ -1429,12 +1426,11 @@ fn main.main @ 0x466d00 (size 96)
     br 0x466d06
   blk1 @ 0x466d06:
     v1 = call 0x466cc0(#0x15)
-    store64(v1, (rsp + #0xfffffffffffffff0))
-    call 0x4305a0(v1)
-    call 0x430c40(load64((rsp + #0xfffffffffffffff0)))
-    v2 = call 0x4307e0()
-    v3 = call 0x430600(v2)
-    ret v3
+    call 0x4305a0()
+    call 0x430c40(v1)
+    call 0x4307e0()
+    call 0x430600()
+    ret #0x0
   blk2 @ 0x466d47:
     trap
   blk3 @ 0x466d48:

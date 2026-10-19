@@ -230,7 +230,7 @@ fn drop_stack_growth_check(blocks: &mut Vec<crate::ir::Block>, image: &Image) {
 }
 
 /// A function that only ever returns what the functions it calls return
-/// returns as wide a value as they do.
+/// returns as wide a value as they do, or nothing when they return nothing.
 fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
     use crate::ir::{CType, Expr};
     if ir.ret_type == CType::Void || crate::ir::cfg::own_return(&ir.blocks).is_some() {
@@ -253,23 +253,38 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
         let Some(target) = target else {
             return;
         };
-        let Some(bytes) = returned_bytes(image, *target) else {
+        let Some(returned_type) = returned_type(image, *target) else {
             return;
         };
-        if returned != carried || width.is_some_and(|width| width != bytes) {
+        if returned != carried || width.as_ref().is_some_and(|width| *width != returned_type) {
             return;
         }
-        width = Some(bytes);
+        width = Some(returned_type);
     }
-    if let (Some(bytes), CType::Int { signed, .. }) = (width, &ir.ret_type) {
-        ir.ret_type = CType::int(bytes, *signed);
+    match (width, &ir.ret_type) {
+        // The calls' results go nowhere.
+        (Some(CType::Void), _) => {
+            ir.ret_type = CType::Void;
+            for block in &mut ir.blocks {
+                if let [.., Stmt::Call { result, .. }, Stmt::Ret { value }] =
+                    block.stmts.as_mut_slice()
+                {
+                    *result = None;
+                    *value = Expr::constant(0);
+                }
+            }
+        }
+        (Some(CType::Int { bytes, .. }), CType::Int { signed, .. }) => {
+            ir.ret_type = CType::int(bytes, *signed);
+        }
+        _ => {}
     }
 }
 
-/// How many bytes of integer the function at `addr` returns, as its own
-/// analysis decides; `None` for a pointer, a float, nothing, or a function
-/// already being analysed further up, as mutual tail calls are.
-fn returned_bytes(image: &Image, addr: u64) -> Option<u8> {
+/// What the function at `addr` returns, as its own analysis decides: an
+/// integer, or nothing; `None` for anything else, or for a function already
+/// being analysed further up, as mutual tail calls are.
+fn returned_type(image: &Image, addr: u64) -> Option<crate::ir::CType> {
     thread_local! {
         static UNDER_WAY: std::cell::RefCell<HashSet<u64>> = Default::default();
     }
@@ -280,7 +295,8 @@ fn returned_bytes(image: &Image, addr: u64) -> Option<u8> {
     let analysis = analyze(image, function);
     UNDER_WAY.with(|under_way| under_way.borrow_mut().remove(&addr));
     match analysis.ok()?.ir.ret_type {
-        crate::ir::CType::Int { bytes, .. } => Some(bytes),
+        crate::ir::CType::Int { bytes, .. } => Some(crate::ir::CType::int(bytes, false)),
+        crate::ir::CType::Void => Some(crate::ir::CType::Void),
         _ => None,
     }
 }
@@ -594,8 +610,12 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // Bits no read looks at go first, so the variables they tied split apart.
     crate::ssa::narrow_partial_writes(&mut ir);
     crate::ssa::split_variables(&mut ir, &general);
-    // The new variables leave copies between them to fold away.
+    // The new variables leave copies between them to fold away, and values
+    // spilled across calls that now survive them in their variables.
     passes::copies::copy_propagate_guarded(&mut ir);
+    if !has_jump_tables {
+        passes::memory::forward_stored_values(&mut ir);
+    }
     passes::dce::dce(&mut ir);
     typing::apply_width_types(&mut ir, &uniform_32);
     typing::apply_void_return(&mut ir);

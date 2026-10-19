@@ -31,52 +31,52 @@ int dense(int x) {
         v1 = *(uint8_t *)(0x200158 + x8);
         switch (x) {
         case 10:
-            c0(x);
+            c0();
             return g_sink;
         case 11:
-            c1(x);
+            c1();
             return g_sink;
         case 12:
-            c2(x);
+            c2();
             return g_sink;
         case 13:
-            c3(x);
+            c3();
             return g_sink;
         case 14:
-            c4(x);
+            c4();
             return g_sink;
         case 15:
-            c5(x);
+            c5();
             return g_sink;
         case 16:
-            c6(x);
+            c6();
             return g_sink;
         case 17:
-            c7(x);
+            c7();
             return g_sink;
         case 18:
-            c8(x);
+            c8();
             return g_sink;
         case 19:
-            c9(x);
+            c9();
             return g_sink;
         case 20:
-            c10(x);
+            c10();
             return g_sink;
         case 21:
-            c11(x);
+            c11();
             return g_sink;
         case 22:
-            c12(x);
+            c12();
             return g_sink;
         case 23:
-            c13(x);
+            c13();
             return g_sink;
         case 24:
-            c14(x);
+            c14();
             return g_sink;
         case 25:
-            c15(x);
+            c15();
             return g_sink;
         default:
             break;
@@ -93,58 +93,58 @@ int (int x)
 -- ir
 fn dense @ 0x210304 (size 200)
   blk0 @ 0x210304:
-    x8 = (((x0 & #0xffffffff) - #0xa) & #0xffffffff)
+    x8 = ((w0 - #0xa) & #0xffffffff)
     brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
     v1 = (load8((#0x200158 + x8)) & #0xffffffff)
-    switch (x0 & #0xffffffff) [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
+    switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
   blk2 @ 0x210338:
-    call 0x2103cc(x0)
+    call 0x2103cc()
     br 0x2103bc
   blk3 @ 0x210340:
-    call 0x2104f8(x0)
+    call 0x2104f8()
     br 0x2103bc
   blk4 @ 0x210348:
-    call 0x2104b4(x0)
+    call 0x2104b4()
     br 0x2103bc
   blk5 @ 0x210350:
-    call 0x210420(x0)
+    call 0x210420()
     br 0x2103bc
   blk6 @ 0x210358:
-    call 0x2104cc(x0)
+    call 0x2104cc()
     br 0x2103bc
   blk7 @ 0x210360:
-    call 0x210488(x0)
+    call 0x210488()
     br 0x2103bc
   blk8 @ 0x210368:
-    call 0x2103f8(x0)
+    call 0x2103f8()
     br 0x2103bc
   blk9 @ 0x210370:
-    call 0x21050c(x0)
+    call 0x21050c()
     br 0x2103bc
   blk10 @ 0x210378:
-    call 0x21040c(x0)
+    call 0x21040c()
     br 0x2103bc
   blk11 @ 0x210380:
-    call 0x210460(x0)
+    call 0x210460()
     br 0x2103bc
   blk12 @ 0x210388:
-    call 0x2103e0(x0)
+    call 0x2103e0()
     br 0x2103bc
   blk13 @ 0x210390:
-    call 0x210434(x0)
+    call 0x210434()
     br 0x2103bc
   blk14 @ 0x210398:
-    call 0x2104e0(x0)
+    call 0x2104e0()
     br 0x2103bc
   blk15 @ 0x2103a0:
-    call 0x21044c(x0)
+    call 0x21044c()
     br 0x2103bc
   blk16 @ 0x2103a8:
-    call 0x2104a0(x0)
+    call 0x2104a0()
     br 0x2103bc
   blk17 @ 0x2103b0:
-    call 0x210474(x0)
+    call 0x210474()
     br 0x2103bc
   blk18 @ 0x2103b8:
     store32(#0x0, #0x220554)

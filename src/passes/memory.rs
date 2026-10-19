@@ -7,6 +7,11 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 /// block: `*(u32 *)&local_3 = w8; x8 = *(u32 *)&local_3;` leaves `x8 = w8;`.
 pub fn forward_stored_values(ir: &mut FunctionIr) {
     let sp = stack_pointer(ir.isa);
+    // A callee can reach the caller's frame only through an address the
+    // code hands out, and the outgoing arguments it may write: Go's callee
+    // spills its register arguments to the bottom of the caller's frame.
+    let private_frame = !frame_address_escapes(ir, sp);
+    let spills = ir.convention == crate::ir::Convention::GoAmd64;
     for block in &mut ir.blocks {
         let mut pending: Vec<(u8, Expr, Expr)> = Vec::new();
         for stmt in &mut block.stmts {
@@ -24,12 +29,41 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                         pending.push((*width, addr.clone(), value.clone()));
                     }
                 }
-                // A call reads its arguments before it may change memory.
-                Stmt::Call { through, args, .. } => {
+                // A call reads its arguments before it may change memory,
+                // which leaves a private frame alone past the arguments it
+                // passes on the stack.
+                Stmt::Call {
+                    through,
+                    args,
+                    convention,
+                    ..
+                } => {
+                    let clobbered = convention.clobbered();
+                    let mut passed = 0;
                     for value in through.iter_mut().chain(args.iter_mut().flatten()) {
                         forward_expr(value, &pending);
+                        if let Expr::Load { addr, width, .. } = value {
+                            let (base, offset) = split_offset(addr);
+                            if matches!(base, Expr::Reg { index, .. } if *index == sp) {
+                                passed = passed.max(offset + i64::from(*width));
+                            }
+                        }
                     }
-                    pending.clear();
+                    let spilled = match args {
+                        Some(args) if spills => 8 * args.len() as i64,
+                        None if spills => i64::MAX,
+                        _ => 0,
+                    };
+                    let reserved = passed.max(spilled);
+                    pending.retain(|(_, addr, stored)| {
+                        let (base, offset) = split_offset(addr);
+                        let mut reads = std::collections::HashSet::new();
+                        crate::ir::visit::collect_reads(stored, &mut reads);
+                        private_frame
+                            && matches!(base, Expr::Reg { index, .. } if *index == sp)
+                            && offset >= reserved
+                            && !reads.iter().any(|register| clobbered.contains(register))
+                    });
                 }
                 Stmt::Unsupported { .. } => pending.clear(),
                 Stmt::Assign { dest, value } => {
@@ -109,6 +143,40 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
             }
         }
     }
+}
+
+/// Whether an address in the frame is used as a value: stored, passed, or
+/// computed with, rather than only loaded and stored through.
+fn frame_address_escapes(ir: &FunctionIr, sp: u16) -> bool {
+    fn escapes(expr: &Expr, sp: u16) -> bool {
+        match expr {
+            Expr::Reg { index, .. } => *index == sp,
+            Expr::Load { addr, .. } => {
+                let (base, _) = split_offset(addr);
+                if matches!(base, Expr::Reg { index, .. } if *index == sp) {
+                    false
+                } else {
+                    escapes(addr, sp)
+                }
+            }
+            other => crate::ir::visit::children(other)
+                .into_iter()
+                .any(|child| escapes(child, sp)),
+        }
+    }
+    ir.blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| match stmt {
+            Stmt::Assign { dest, .. } if dest.index == sp => false,
+            Stmt::Store { addr, value, .. } => {
+                let (base, _) = split_offset(addr);
+                escapes(value, sp)
+                    || (!matches!(base, Expr::Reg { index, .. } if *index == sp)
+                        && escapes(addr, sp))
+            }
+            other => other.operands().into_iter().any(|value| escapes(value, sp)),
+        })
 }
 
 /// True when the two accesses provably touch different bytes: the same base

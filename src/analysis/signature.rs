@@ -247,6 +247,11 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         }
     }
 
+    let returns_argument = arguments.contains(&crate::arch::RETURN);
+    let effects = blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::Store { .. } | Stmt::Call { .. }));
     let mut inputs: HashSet<u16> = HashSet::new();
     // Inputs some read takes more than the low 32 bits of.
     let mut wide_inputs: HashSet<u16> = HashSet::new();
@@ -266,7 +271,12 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                     reads(lhs, &mut used);
                     reads(rhs, &mut used);
                 }
-                Stmt::Ret { value } => reads(value, &mut used),
+                // Where the return register also carries the first argument,
+                // returning it unwritten makes it one only in a function with
+                // no effect, as `return x;` is; one with effects returns
+                // nothing there.
+                Stmt::Ret { value } if !(returns_argument && effects) => reads(value, &mut used),
+                Stmt::Ret { .. } => {}
                 Stmt::BrIndirect { target } => reads(target, &mut used),
                 Stmt::Switch { index, .. } => reads(index, &mut used),
                 // What a call passes on is read here too.

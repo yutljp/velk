@@ -1577,13 +1577,11 @@ fn main.kindName @ 0x466d20 (size 96)
 /* velk pseudo-C: main.main @ 0x466d80 */
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* ref: 0x4967e8 -> 0x1 ".text" */
-int32_t main_main(void) {
+void main_main(void) {
     int64_t v1;
     int64_t v3;
     int64_t v4;
     int64_t v5;
-    int64_t v6;
-    int64_t v7;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
     int64_t local_2; /* [sp-28] */
@@ -1602,7 +1600,7 @@ int32_t main_main(void) {
     local_5 = v3;
     v4 = main_add(0x1, 0x2);
     local_6 = v4;
-    runtime_printlock(v4);
+    runtime_printlock();
     runtime_printint(local_5);
     runtime_printsp();
     runtime_printint(local_6);
@@ -1610,17 +1608,17 @@ int32_t main_main(void) {
     runtime_printint(local_0);
     runtime_printsp();
     runtime_printint(local_1);
-    v5 = runtime_printnl();
-    runtime_printunlock(v5);
-    v6 = main_kindName(0x46d400, 0x4967e8);
-    local_5 = v6;
-    runtime_printlock(v6);
+    runtime_printnl();
+    runtime_printunlock();
+    v5 = main_kindName(0x46d400, 0x4967e8);
+    local_5 = v5;
+    runtime_printlock();
     runtime_printint(local_5);
-    v7 = runtime_printnl();
-    return runtime_printunlock(v7);
+    runtime_printnl();
+    runtime_printunlock();
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x46d400 -> 0x8 "noptrdata"
 0x4967e8 -> 0x1 ".text"
@@ -1639,7 +1637,7 @@ fn main.main @ 0x466d80 (size 256)
     store64(v3, (rsp + #0xffffffffffffffd0))
     v4 = call 0x466ca0(#0x1, #0x2)
     store64(v4, (rsp + #0xfffffffffffffff0))
-    call 0x4305a0(v4)
+    call 0x4305a0()
     call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
     call 0x4307a0()
     call 0x430c40(load64((rsp + #0xfffffffffffffff0)))
@@ -1647,15 +1645,15 @@ fn main.main @ 0x466d80 (size 256)
     call 0x430c40(load64((rsp + #0xffffffffffffffc8)))
     call 0x4307a0()
     call 0x430c40(load64((rsp + #0xffffffffffffffc0)))
-    v5 = call 0x4307e0()
-    call 0x430600(v5)
-    v6 = call 0x466d20(#0x46d400, #0x4967e8)
-    store64(v6, (rsp + #0xffffffffffffffd0))
-    call 0x4305a0(v6)
+    call 0x4307e0()
+    call 0x430600()
+    v5 = call 0x466d20(#0x46d400, #0x4967e8)
+    store64(v5, (rsp + #0xffffffffffffffd0))
+    call 0x4305a0()
     call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
-    v7 = call 0x4307e0()
-    v8 = call 0x430600(v7)
-    ret v8
+    call 0x4307e0()
+    call 0x430600()
+    ret #0x0
   blk2 @ 0x466e7f:
     trap
 -- card
