@@ -23,11 +23,11 @@ pub fn recover(blocks: &[Block], image: &Image) -> Vec<Recovered> {
         let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
             continue;
         };
-        let bound = index
+        let checked = index
             .checked_sub(1)
-            .and_then(|previous| blocks.get(previous))
-            .and_then(bound);
-        if let Some(mut entry) = recognize(block, target, image, bound) {
+            .and_then(|previous| blocks.get(previous));
+        let bound = checked.and_then(bound);
+        if let Some(mut entry) = recognize(block, target, image, bound, checked) {
             entry.block_start = block.start;
             recovered.push(entry);
         }
@@ -159,8 +159,33 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
             continue;
         }
         block.stmts.pop();
+        // The index reads the registers as the block receives them; one the
+        // block writes first is read into a register of its own up front.
+        let mut read = std::collections::HashSet::new();
+        crate::ir::visit::collect_reads(&entry.index, &mut read);
+        let overwritten = block.stmts.iter().any(|stmt| {
+            crate::ir::visit::statement_registers(stmt)
+                .0
+                .iter()
+                .any(|written| read.contains(written))
+        });
+        let index = if overwritten {
+            block.stmts.insert(
+                0,
+                Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: crate::ir::SWITCH_INDEX,
+                        width: 64,
+                    },
+                    value: entry.index.clone(),
+                },
+            );
+            Expr::reg(crate::ir::SWITCH_INDEX, 64)
+        } else {
+            entry.index.clone()
+        };
         block.stmts.push(Stmt::Switch {
-            index: entry.index.clone(),
+            index,
             cases: entry.cases.clone(),
             default: entry.default,
         });
@@ -172,6 +197,7 @@ fn recognize(
     target: &Expr,
     image: &Image,
     bound: Option<(i64, Option<u64>, i64, Expr)>,
+    checked_block: Option<&Block>,
 ) -> Option<Recovered> {
     let mut environment: std::collections::HashMap<u16, Expr> = std::collections::HashMap::new();
     for stmt in &block.stmts {
@@ -187,6 +213,18 @@ fn recognize(
     if count <= 0 || count > 4096 {
         return None;
     }
+    let mut read = std::collections::HashSet::new();
+    crate::ir::visit::collect_reads(&switch_base, &mut read);
+    let base_still_held = !checked_block
+        .into_iter()
+        .chain(std::iter::once(block))
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| {
+            crate::ir::visit::statement_registers(stmt)
+                .0
+                .iter()
+                .any(|written| read.contains(written))
+        });
 
     let mut cases = Vec::new();
     for position in 0..count {
@@ -210,7 +248,17 @@ fn recognize(
         cases.push((minimum + position, case_target));
     }
 
-    let index = if minimum == 0 { index } else { switch_base };
+    // The value the bounds check tested before taking the cases' lowest
+    // off, while the registers it reads still hold it; otherwise the
+    // table's index as the switch block receives it, moved back to the
+    // values the cases name.
+    let index = if minimum == 0 {
+        index
+    } else if base_still_held {
+        switch_base
+    } else {
+        Expr::bin(BinOp::Add, index, Expr::Const(minimum as u64))
+    };
     Some(Recovered {
         block_start: block.start,
         index,

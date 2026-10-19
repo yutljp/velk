@@ -705,6 +705,10 @@ pub const FLAG_CARRIED: [u16; 4] = [
 /// back.
 pub const EXCHANGE: u16 = TEMP_BASE + 0x42;
 
+/// The register holding a jump table's index where the code computing the
+/// target overwrites the register it came in.
+pub const SWITCH_INDEX: u16 = TEMP_BASE + 0x49;
+
 /// Register indices from here up are the variables a parameter register
 /// holds once its parameter is dead, printed as `v<n>`.
 pub const VARIABLE_BASE: u16 = TEMP_BASE + 0x100;

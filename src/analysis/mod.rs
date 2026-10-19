@@ -605,7 +605,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     )
     .chain(crate::ir::FLAG_OPERANDS)
     .chain(crate::ir::FLAG_CARRIED)
-    .chain([crate::ir::EXCHANGE])
+    .chain([crate::ir::EXCHANGE, crate::ir::SWITCH_INDEX])
     .collect();
     // Bits no read looks at go first, so the variables they tied split apart.
     crate::ssa::narrow_partial_writes(&mut ir);

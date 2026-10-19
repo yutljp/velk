@@ -17,7 +17,7 @@ int dispatch(int x) {
     local_1 = v2;
     if (v2 <= 0x4 /* unsigned */) {
         v8 = (int64_t)(int32_t)(dword_200120[local_1]) + 0x200120;
-        switch (((*(uint32_t *)&local_1 - 0xe) & 0xffffffff)) {
+        switch (local_1 - 0x4) {
         case -4:
             local_2 = 0x1;
             return local_2;
@@ -53,7 +53,7 @@ fn dispatch @ 0x201180 (size 120)
     brif hi (v2 & #0xffffffff), #0x4 -> 0x2011ec
   blk1 @ 0x20119c:
     v8 = (sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4)))) + #0x200120)
-    switch ((load32((rsp + #0xffffffffffffffe8)) + #0xfffffffffffffff2) & #0xffffffff) [-4->0x2011b0, -3->0x2011bc, -2->0x2011c8, -1->0x2011d4, 0->0x2011e0] default 0x2011ec
+    switch (load64((rsp + #0xffffffffffffffe8)) + #0xfffffffffffffffc) [-4->0x2011b0, -3->0x2011bc, -2->0x2011c8, -1->0x2011d4, 0->0x2011e0] default 0x2011ec
   blk2 @ 0x2011b0:
     store32(#0x1, (rsp + #0xfffffffffffffff4))
     br 0x2011f3
