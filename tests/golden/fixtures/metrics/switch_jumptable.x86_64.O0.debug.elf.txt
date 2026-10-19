@@ -25,21 +25,29 @@ int d7(int x) {
     rax = (int32_t)(dword_200158[*(uint64_t *)(rbp - 0x38)]);
     rax = rax + 0x200158;
     goto *(rax);
-L_2011ec:
-    *(uint32_t *)(rbp - 0x8) = 0x0;
-L_2011f3:
-    while (*(uint32_t *)(rbp - 0x8) < 0x1) {
-    L_2011fd:
-        dword_202410 += *(uint32_t *)(rbp - 0x8);
-        *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x8) + 0x1;
+    for (;;) {
+        rsp = rsp + 0x8;
+        return dword_202410;
+    L_2011ec:
+        *(uint32_t *)(rbp - 0x8) = 0x0;
+        for (;;) {
+            if (*(uint32_t *)(rbp - 0x8) >= 0x1) {
+                rsp = rsp + 0x8;
+                return dword_202410;
+            }
+        L_2011fd:
+            dword_202410 += *(uint32_t *)(rbp - 0x8);
+            *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x8) + 0x1;
+        }
+    L_20121c:
     }
-L_20121c:
-    rsp = rsp + 0x8;
-    return dword_202410;
 L_201221:
     *(uint32_t *)(rbp - 0xc) = 0x0;
-L_201228:
-    while (*(uint32_t *)(rbp - 0xc) < 0x2) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0xc) >= 0x2) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_201232:
         dword_202410 += *(uint32_t *)(rbp - 0xc);
         *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0xc) + 0x1;
@@ -49,8 +57,11 @@ L_201251:
     return dword_202410;
 L_201256:
     *(uint32_t *)(rbp - 0x10) = 0x0;
-L_20125d:
-    while (*(uint32_t *)(rbp - 0x10) < 0x3) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x10) >= 0x3) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_201267:
         dword_202410 += *(uint32_t *)(rbp - 0x10);
         *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(rbp - 0x10) + 0x1;
@@ -60,8 +71,11 @@ L_201286:
     return dword_202410;
 L_20128b:
     *(uint32_t *)(rbp - 0x14) = 0x0;
-L_201292:
-    while (*(uint32_t *)(rbp - 0x14) < 0x4) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x14) >= 0x4) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_20129c:
         dword_202410 += *(uint32_t *)(rbp - 0x14);
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
@@ -71,8 +85,11 @@ L_2012bb:
     return dword_202410;
 L_2012c0:
     *(uint32_t *)(rbp - 0x18) = 0x0;
-L_2012c7:
-    while (*(uint32_t *)(rbp - 0x18) < 0x5) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x18) >= 0x5) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_2012d1:
         dword_202410 += *(uint32_t *)(rbp - 0x18);
         *(uint32_t *)(rbp - 0x18) = *(uint32_t *)(rbp - 0x18) + 0x1;
@@ -82,8 +99,11 @@ L_2012f0:
     return dword_202410;
 L_2012f5:
     *(uint32_t *)(rbp - 0x1c) = 0x0;
-L_2012fc:
-    while (*(uint32_t *)(rbp - 0x1c) < 0x6) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x1c) >= 0x6) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_201306:
         dword_202410 += *(uint32_t *)(rbp - 0x1c);
         *(uint32_t *)(rbp - 0x1c) = *(uint32_t *)(rbp - 0x1c) + 0x1;
@@ -93,8 +113,11 @@ L_201325:
     return dword_202410;
 L_20132a:
     *(uint32_t *)(rbp - 0x20) = 0x0;
-L_201331:
-    while (*(uint32_t *)(rbp - 0x20) < 0x7) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x20) >= 0x7) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_20133b:
         dword_202410 += *(uint32_t *)(rbp - 0x20);
         *(uint32_t *)(rbp - 0x20) = *(uint32_t *)(rbp - 0x20) + 0x1;
@@ -104,8 +127,11 @@ L_20135a:
     return dword_202410;
 L_20135f:
     *(uint32_t *)(rbp - 0x24) = 0x0;
-L_201366:
-    while (*(uint32_t *)(rbp - 0x24) < 0x8) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x24) >= 0x8) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_201370:
         dword_202410 += *(uint32_t *)(rbp - 0x24);
         *(uint32_t *)(rbp - 0x24) = *(uint32_t *)(rbp - 0x24) + 0x1;
@@ -115,8 +141,11 @@ L_20138f:
     return dword_202410;
 L_201394:
     *(uint32_t *)(rbp - 0x28) = 0x0;
-L_20139b:
-    while (*(uint32_t *)(rbp - 0x28) < 0x9) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x28) >= 0x9) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_2013a5:
         dword_202410 += *(uint32_t *)(rbp - 0x28);
         *(uint32_t *)(rbp - 0x28) = *(uint32_t *)(rbp - 0x28) + 0x1;
@@ -126,8 +155,11 @@ L_2013c4:
     return dword_202410;
 L_2013c9:
     *(uint32_t *)(rbp - 0x2c) = 0x0;
-L_2013d0:
-    while (*(uint32_t *)(rbp - 0x2c) < 0xa) {
+    for (;;) {
+        if (*(uint32_t *)(rbp - 0x2c) >= 0xa) {
+            rsp = rsp + 0x8;
+            return dword_202410;
+        }
     L_2013da:
         dword_202410 += *(uint32_t *)(rbp - 0x2c);
         *(uint32_t *)(rbp - 0x2c) = *(uint32_t *)(rbp - 0x2c) + 0x1;

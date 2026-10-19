@@ -162,11 +162,11 @@ int32_t sub_201320(int32_t a0, uint32_t a1, uint32_t *a2) {
     if (a0 < 0x0) {
         return rax;
     }
-    if (a1 == 0x0) {
-        return rax;
+    if (a1 != 0x0) {
+        a2->field_0x0 = a0 / a1;
+        rax = 0x0;
     }
-    a2->field_0x0 = a0 / a1;
-    rax = 0x0;
+    return rax;
 }
 -- signature
 int32_t (int32_t a0, uint32_t a1, uint32_t * a2)
@@ -276,10 +276,10 @@ int32_t sub_2013a0(uint64_t a0, int32_t a1) {
         return rax;
     }
     rax = 0x1;
-    if (*(uint32_t *)(a0) == 0x1) {
-        return rax;
+    if (*(uint32_t *)(a0) != 0x1) {
+        rax = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
     }
-    rax = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
+    return rax;
 }
 -- signature
 int32_t (uint64_t a0, int32_t a1)
@@ -412,10 +412,10 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, uint32_t a2) {
         if (r11 < rcx /* unsigned */) {
             ebp = *(uint32_t *)(a0 + rbx * 0x4);
             rbx = 0x0;
-        L_2014e0:
-            if (*(uint32_t *)(r9 + rbx * 0x4) + ebp == a2) { goto L_2014f6; }
-            rbx = rbx + 0x1;
-            if (r10 != rbx) { goto L_2014e0; }
+            do {
+                if (*(uint32_t *)(r9 + rbx * 0x4) + ebp == a2) { goto L_2014f6; }
+                rbx = rbx + 0x1;
+            } while (r10 != rbx);
         }
         r8 = r8 + a1;
         r9 = r9 + 0x4;
@@ -424,9 +424,11 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, uint32_t a2) {
             break;
         }
     }
+L_2014fb:
     return rax;
 L_2014f6:
     rax = ebx - r8d;
+    goto L_2014fb;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, uint32_t a2)

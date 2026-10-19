@@ -902,7 +902,8 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
 fn branch_target(ins: &Instruction, pc: u64) -> Option<u64> {
     use a64::Opcode as O;
     match ins.opcode {
-        O::B | O::Bcc(_) | O::BL | O::CBZ | O::CBNZ => relative_target(ins.operands[0], pc),
+        O::B | O::Bcc(_) | O::BL => relative_target(ins.operands[0], pc),
+        O::CBZ | O::CBNZ => relative_target(ins.operands[1], pc),
         O::TBZ | O::TBNZ => relative_target(ins.operands[2], pc),
         _ => None,
     }

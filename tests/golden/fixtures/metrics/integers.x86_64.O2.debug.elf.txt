@@ -116,6 +116,7 @@ int popcount(uint32_t x) {
         ecx = ((x - 0x1) & 0xffffffff) & x;
         x = ecx;
     } while (ecx != 0x0);
+    return rax;
 }
 -- signature
 int (uint32_t x)

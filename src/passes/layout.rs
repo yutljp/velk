@@ -83,8 +83,8 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
             Some(Stmt::Br { .. }) => {}
             Some(Stmt::Brif { .. }) | Some(Stmt::BrifFlags { .. }) | Some(Stmt::Switch { .. }) => {
                 let original = fallthrough.get(&ir.blocks[index].start).copied().flatten();
-                if let (Some(original), Some(next)) = (original, next)
-                    && original != next
+                if let Some(original) = original
+                    && Some(original) != next
                 {
                     ir.blocks[index].stmts.push(Stmt::Br {
                         target: Some(original),
@@ -92,11 +92,60 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
                 }
             }
             Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
+            // A block that fell through keeps going where it went before.
             _ => {
-                if let Some(next) = next {
-                    ir.blocks[index].stmts.push(Stmt::Br { target: Some(next) });
+                let original = fallthrough.get(&ir.blocks[index].start).copied().flatten();
+                if let Some(original) = original
+                    && Some(original) != next
+                {
+                    ir.blocks[index].stmts.push(Stmt::Br {
+                        target: Some(original),
+                    });
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_layout;
+    use crate::ir::{Block, Cond, Expr, FunctionIr, Stmt};
+    use crate::loader::Isa;
+
+    #[test]
+    fn a_block_moved_last_still_reaches_its_fall_through() {
+        // 0: if (x0 == 0) goto 0x30; 0x10: return; 0x20: if (x1 == 0) goto 0x10;
+        // (falls through to) 0x30: goto 0x20. Depth-first order puts 0x20 last.
+        let brif = |register, target| Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(register, 64),
+            rhs: Expr::Const(0),
+            target,
+        };
+        let mut ir = FunctionIr::single_block(Isa::AArch64, vec![brif(0, 0x30)]);
+        for (start, stmts) in [
+            (
+                0x10,
+                vec![Stmt::Ret {
+                    value: Expr::Const(0),
+                }],
+            ),
+            (0x20, vec![brif(1, 0x10)]),
+            (0x30, vec![Stmt::Br { target: Some(0x20) }]),
+        ] {
+            ir.blocks.push(Block { start, stmts });
+        }
+
+        normalize_layout(&mut ir);
+
+        for (index, block) in ir.blocks.iter().enumerate() {
+            let falls = !matches!(block.stmts.last(), Some(Stmt::Ret { .. } | Stmt::Br { .. }));
+            assert!(
+                !falls || index + 1 < ir.blocks.len(),
+                "the last block must not fall off the end:\n{}",
+                ir.render()
+            );
         }
     }
 }

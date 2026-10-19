@@ -56,6 +56,7 @@ L_2012b0:
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
+    return rax;
 }
 -- signature
 int (int n)
@@ -152,6 +153,7 @@ L_201347:
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
+    return rax;
 }
 -- signature
 int (int n)
@@ -221,12 +223,12 @@ int sum_skip_odd(int n) {
     if ((n & 0xff & 0x1) == 0x0) {
         return rax;
     }
-    if ((rcx & 0xff & 0x1) == 0x0) {
-        return rax;
+    if ((rcx & 0xff & 0x1) != 0x0) {
+        rcx = ecx + eax;
+        dword_2023d4 = ecx;
+        rax = ecx;
     }
-    rcx = ecx + eax;
-    dword_2023d4 = ecx;
-    rax = ecx;
+    return rax;
 }
 -- signature
 int (int n)

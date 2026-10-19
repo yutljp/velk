@@ -547,9 +547,9 @@ int sparse(int x) {
     }
     if (x != 0x32) {
         x = 0xffffffff;
-    } else {
-        return 0x7;
+        return x;
     }
+    return 0x7;
 }
 -- signature
 int (int x)

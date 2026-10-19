@@ -416,6 +416,7 @@ impl Structurer<'_> {
                             if destination + 1 == to
                                 && join_fallthrough.is_none()
                                 && join_target.is_none()
+                                && self.ends(destination - 1)
                             {
                                 out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
                                 let then = self.emit(destination, to);
@@ -529,19 +530,44 @@ impl Structurer<'_> {
                             .unwrap_or(to)
                     };
                     out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
-                    let mut rendered: Vec<(Vec<i64>, Vec<Node>)> = arms
-                        .iter()
-                        .map(|(values, target)| {
-                            (values.clone(), self.emit(*target, end_of(*target)))
-                        })
-                        .collect();
+                    // The cases print in value order, not in the order their
+                    // bodies fall into each other, so a body that runs into
+                    // the next one says so with a `goto`; only the last falls
+                    // out of the switch.
+                    let last = bounds.last().copied().unwrap_or(to);
+                    let after = end_of(last).max(last);
+                    let falls_into = |start: usize, structurer: &Self| {
+                        let end = end_of(start);
+                        (end < after && !structurer.ends(end - 1)).then_some(end)
+                    };
+                    for start in &bounds {
+                        if let Some(next) = falls_into(*start, self) {
+                            self.targeted.insert(self.blocks[next].start);
+                        }
+                    }
+                    let body_of = |start: usize, structurer: &mut Self| {
+                        let mut body = structurer.emit(start, end_of(start));
+                        if let Some(next) = falls_into(start, structurer) {
+                            match structurer.return_block(next) {
+                                Some(stmts) => body.extend(structurer.plain(&stmts)),
+                                None => body.push(Node::Stmt(Stmt::Br {
+                                    target: Some(structurer.blocks[next].start),
+                                })),
+                            }
+                        }
+                        body
+                    };
+                    let mut rendered: Vec<(Vec<i64>, Vec<Node>)> = Vec::new();
+                    for (values, target) in &arms {
+                        rendered.push((values.clone(), body_of(*target, self)));
+                    }
                     for (case_value, body) in jumps {
                         rendered.push((vec![case_value], body));
                     }
                     let default_body = match default {
                         Some(address) => match self.target(*address) {
                             Some(target) if target > index && target < to => {
-                                Some(self.emit(target, end_of(target)))
+                                Some(body_of(target, self))
                             }
                             _ => Some(
                                 match self.target(*address).and_then(|at| self.return_block(at)) {
@@ -555,7 +581,6 @@ impl Structurer<'_> {
                         None => None,
                     };
                     rendered.sort_by_key(|(values, _)| values.first().copied().unwrap_or(0));
-                    let last = bounds.last().copied().unwrap_or(to);
                     out.push(Node::Switch {
                         index: value.clone(),
                         arms: rendered,
@@ -571,6 +596,20 @@ impl Structurer<'_> {
         }
 
         out
+    }
+
+    /// A block that never falls through into the next one.
+    fn ends(&self, index: usize) -> bool {
+        matches!(
+            self.blocks[index].stmts.last(),
+            Some(
+                Stmt::Ret { .. }
+                    | Stmt::Trap
+                    | Stmt::Br { .. }
+                    | Stmt::BrIndirect { .. }
+                    | Stmt::Switch { .. }
+            )
+        )
     }
 
     /// A block that ends in a return and branches nowhere.

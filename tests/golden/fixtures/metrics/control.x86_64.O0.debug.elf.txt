@@ -346,6 +346,10 @@ int short_circuit(int *p, int n) {
     }
     rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xe) & 0xff;
     *(uint8_t *)(rbp - 0xd) = rax & 0xff;
+    rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xd) & 0xff;
+    rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff;
+    rsp = rsp + 0x8;
+    return rax & 0xff & 0xff;
 }
 -- signature
 int (int * p, int n)

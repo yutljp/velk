@@ -1,4 +1,4 @@
-# metrics/calls.x86_64.O2.debug.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 6 unsupported, 4 gotos
+# metrics/calls.x86_64.O2.debug.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 6 unsupported, 8 gotos
 0x2012f0 4 twice symtab,dwarf
 0x201300 6 square symtab,dwarf
 0x201310 21 pick_op symtab,dwarf
@@ -125,30 +125,30 @@ int factorial(int n) {
     if (n < 0x2) {
         return rax;
     }
-    if (n < 0x9 /* unsigned */) {
-        do {
-            rax = eax * n;
-            ecx = n - 0x1;
-            t65 = n;
-            n = ecx;
-        } while (t65 > 0x2 /* unsigned */);
-    } else {
-        ecx = n - 0x1;
-        edx = ecx & 0xfffffffffffffff8;
-        /* unsupported: Movd at 0x20138f */
-        n = n - edx;
-        /* unsupported (5 steps): Pshufd at 0x201395, Paddd at 0x20139a, Movdqa at 0x2013a2, Movdqa at 0x2013aa, Movdqa at 0x2013b2 */
-        rax = edx;
-        /* unsupported: Movdqa at 0x2013bc */
-        do {
-            /* unsupported (20 steps): Movdqa at 0x2013c0, Paddd at 0x2013c4, Movdqa at 0x2013c8, Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3, Movdqa at 0x2013e8, Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407, Movdqa at 0x20140c, Punpckldq at 0x201410, Paddd at 0x201414 */
-            rax = ((eax - 0x8) & 0xffffffff);
-        } while (eax != 0x0);
-        /* unsupported (10 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441, Movd at 0x201445 */
-        if (ecx == edx) {
-            return rax;
-        }
+    if (n < 0x9 /* unsigned */) { goto L_201450; }
+    ecx = n - 0x1;
+    edx = ecx & 0xfffffffffffffff8;
+    /* unsupported: Movd at 0x20138f */
+    n = n - edx;
+    /* unsupported (5 steps): Pshufd at 0x201395, Paddd at 0x20139a, Movdqa at 0x2013a2, Movdqa at 0x2013aa, Movdqa at 0x2013b2 */
+    rax = edx;
+    /* unsupported: Movdqa at 0x2013bc */
+    do {
+        /* unsupported (20 steps): Movdqa at 0x2013c0, Paddd at 0x2013c4, Movdqa at 0x2013c8, Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3, Movdqa at 0x2013e8, Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407, Movdqa at 0x20140c, Punpckldq at 0x201410, Paddd at 0x201414 */
+        rax = ((eax - 0x8) & 0xffffffff);
+    } while (eax != 0x0);
+    /* unsupported (10 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441, Movd at 0x201445 */
+    if (ecx == edx) {
+        return rax;
     }
+L_201450:
+    do {
+        rax = eax * n;
+        ecx = n - 0x1;
+        t65 = n;
+        n = ecx;
+    } while (t65 > 0x2 /* unsigned */);
+    return rax;
 }
 -- signature
 int (int n)
@@ -380,40 +380,39 @@ L_201574:
     rax = eax + *(uint32_t *)(a1);
     rsp = rsp + 0x58;
     return rax;
-L_2015fb:
-    local_6 = a1 + 0x8;
 L_20159b:
     a4 = count & 0x7ffffffe;
     rax = 0x0;
-    for (;;) {
-        if (a2 > 0x28 /* unsigned */) {
-            a5 = a1 + 0x8;
-            local_6 = a5;
-            rsp = rsp + 0x58;
-            return 0x0;
-        }
-        a5 = a1;
-        a1 = a2 + a3;
-        a2 = a2 + 0x8;
-        *(uint32_t *)&local_7 = a2;
-        rax = eax + *(uint32_t *)(a1);
-        if (a2 < 0x29 /* unsigned */) {
-            break;
-        }
-        a1 = a5 + 0x8;
-        local_6 = a1;
-        rax = eax + *(uint32_t *)(a5);
-        a4 = ((a4 - 0x2) & 0xffffffff);
-        if (a4 == 0x0) { goto L_201574; }
-    }
+    goto L_2015c9;
+L_2015b0:
     a1 = a5;
     a5 = a2 + a3;
     a2 = a2 + 0x8;
     *(uint32_t *)&local_7 = a2;
-    a5 = a1 + 0x8;
-    local_6 = a5;
+L_2015c0:
+    rax = eax + *(uint32_t *)(a5);
+    a4 = ((a4 - 0x2) & 0xffffffff);
+    if (a4 == 0x0) { goto L_201574; }
+L_2015c9:
+    if (a2 <= 0x28 /* unsigned */) {
+        a5 = a1;
+        a1 = a2 + a3;
+        a2 = a2 + 0x8;
+        *(uint32_t *)&local_7 = a2;
+    } else {
+        a5 = a1 + 0x8;
+        local_6 = a5;
+    }
+    rax = eax + *(uint32_t *)(a1);
+    if (a2 < 0x29 /* unsigned */) { goto L_2015b0; }
+    a1 = a5 + 0x8;
+    local_6 = a1;
+    goto L_2015c0;
+L_2015fb:
+    local_6 = a1 + 0x8;
+    rax = eax + *(uint32_t *)(a1);
     rsp = rsp + 0x58;
-    return 0x0;
+    return rax;
 }
 -- signature
 int (int count, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, uint64_t a5)

@@ -162,11 +162,11 @@ int cleanup_on_error(int a, int b, int *out) {
     if (a < 0x0) {
         return rax;
     }
-    if (b == 0x0) {
-        return rax;
+    if (b != 0x0) {
+        out->field_0x0 = a / b;
+        rax = 0x0;
     }
-    out->field_0x0 = a / b;
-    rax = 0x0;
+    return rax;
 }
 -- signature
 int (int a, int b, int * out)
@@ -276,10 +276,10 @@ int short_circuit(int *p, int n) {
         return rax;
     }
     rax = 0x1;
-    if (*(uint32_t *)(p) == 0x1) {
-        return rax;
+    if (*(uint32_t *)(p) != 0x1) {
+        rax = (*(uint32_t *)(p + n * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
     }
-    rax = (*(uint32_t *)(p + n * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
+    return rax;
 }
 -- signature
 int (int * p, int n)
@@ -412,10 +412,10 @@ int find_pair(int *p, int n, int target) {
         if (r11 < rcx /* unsigned */) {
             ebp = *(uint32_t *)(p + rbx * 0x4);
             rbx = 0x0;
-        L_2014e0:
-            if (*(uint32_t *)(r9 + rbx * 0x4) + ebp == target) { goto L_2014f6; }
-            rbx = rbx + 0x1;
-            if (r10 != rbx) { goto L_2014e0; }
+            do {
+                if (*(uint32_t *)(r9 + rbx * 0x4) + ebp == target) { goto L_2014f6; }
+                rbx = rbx + 0x1;
+            } while (r10 != rbx);
         }
         r8 = r8 + n;
         r9 = r9 + 0x4;
@@ -424,9 +424,11 @@ int find_pair(int *p, int n, int target) {
             break;
         }
     }
+L_2014fb:
     return rax;
 L_2014f6:
     rax = ebx - r8d;
+    goto L_2014fb;
 }
 -- signature
 int (int * p, int n, int target)

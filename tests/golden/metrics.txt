@@ -28,7 +28,7 @@ return void | aarch64.O2 | 139/145
 return void | x86_64.O0 | 123/148
 return void | x86_64.O2 | 141/145
 return width | aarch64.O0 | 103/120
-return width | aarch64.O2 | 106/117
+return width | aarch64.O2 | 107/117
 return width | x86_64.O0 | 108/117
 return width | x86_64.O2 | 110/117
 
@@ -548,7 +548,7 @@ memory.aarch64.O0 0x2103e4 read_volatile: parameter 0 is an unsigned 8-byte inte
 memory.aarch64.O0 0x210418 swap_ints: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer; returns uint64_t, expected void
 memory.aarch64.O2 0x210214 copy_bytes: returns uint64_t, expected void
 memory.aarch64.O2 0x2102c4 fill_bytes: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is 8 bytes, expected 1; returns uint64_t, expected void
-memory.aarch64.O2 0x2102d0 string_length: returns 4 bytes, expected 8
+memory.aarch64.O2 0x2102d0 string_length: ok
 memory.aarch64.O2 0x2102e8 grid_get: parameter 0 signedness differs; parameter 1 signedness differs
 memory.aarch64.O2 0x210304 grid_set: parameter 0 is 8 bytes, expected 4; parameter 1 signedness differs; parameter 2 signedness differs; returns uint64_t, expected void
 memory.aarch64.O2 0x210320 pointer_distance: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer

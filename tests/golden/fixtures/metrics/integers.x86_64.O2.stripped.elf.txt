@@ -116,6 +116,7 @@ uint32_t sub_201260(uint32_t a0) {
         ecx = ((a0 - 0x1) & 0xffffffff) & a0;
         a0 = ecx;
     } while (ecx != 0x0);
+    return rax;
 }
 -- signature
 uint32_t (uint32_t a0)

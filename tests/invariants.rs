@@ -78,6 +78,11 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
         for effect in dropped_effects(&analysis.ir) {
             found.push(format!("{label}: the pseudo-C drops `{effect}`"));
         }
+        if !ir_runs_off_the_end(&analysis.ir) && falls_through(&structure_best(&analysis.ir)) {
+            found.push(format!(
+                "{label}: the pseudo-C runs off the end without a return"
+            ));
+        }
         // Go's internal calling convention and runtime registers are not modeled.
         if fixture.to_string_lossy().starts_with("go_") {
             continue;
@@ -92,6 +97,65 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
         }
     }
     found
+}
+
+/// True when a reachable path leaves the last block without a return, jump
+/// or trap, as after a call that does not return.
+fn ir_runs_off_the_end(ir: &FunctionIr) -> bool {
+    let last = ir.blocks.len().saturating_sub(1);
+    reachable(ir).contains(&last)
+        && !matches!(
+            ir.blocks[last].stmts.last(),
+            Some(
+                Stmt::Ret { .. }
+                    | Stmt::Trap
+                    | Stmt::Br { .. }
+                    | Stmt::BrIndirect { .. }
+                    | Stmt::Switch { .. }
+            )
+        )
+}
+
+/// True when execution can reach the end of the nodes.
+fn falls_through(nodes: &[Node]) -> bool {
+    fn breaks(nodes: &[Node]) -> bool {
+        nodes.iter().any(|node| match node {
+            Node::Break => true,
+            Node::If { then, els, .. } => breaks(then) || breaks(els),
+            Node::Switch { arms, default, .. } => {
+                arms.iter().any(|(_, body)| breaks(body)) || default.as_deref().is_some_and(breaks)
+            }
+            _ => false,
+        })
+    }
+    match nodes.last() {
+        None | Some(Node::Break) => true,
+        Some(Node::Label(_)) => true,
+        Some(Node::Continue) => false,
+        // A body that ends in a call ends in one that does not return.
+        Some(Node::Stmt(stmt)) => !matches!(
+            stmt,
+            Stmt::Ret { .. }
+                | Stmt::Call { .. }
+                | Stmt::Trap
+                | Stmt::Br { .. }
+                | Stmt::BrIndirect { .. }
+                | Stmt::Switch { .. }
+        ),
+        Some(Node::If { then, els, .. }) => falls_through(then) || falls_through(els),
+        Some(Node::DoWhile { .. } | Node::While { .. }) => true,
+        Some(Node::Forever { body }) => breaks(body),
+        // A case that falls through runs into the next one, and the last into
+        // the default, which follows the cases.
+        Some(Node::Switch { arms, default, .. }) => match default {
+            Some(default) => {
+                falls_through(default)
+                    || breaks(default)
+                    || arms.iter().any(|(_, body)| breaks(body))
+            }
+            None => true,
+        },
+    }
 }
 
 /// The blocks reachable from the entry through direct branches.
@@ -121,9 +185,9 @@ fn reachable(ir: &FunctionIr) -> HashSet<usize> {
     seen
 }
 
-/// The stores, calls and unsupported instructions of the reachable IR that
-/// the structured body leaves out; folding may rewrite assignments and
-/// branches, but never drops an effect.
+/// The stores, calls, returns and unsupported instructions of the reachable
+/// IR that the structured body leaves out; folding may rewrite assignments
+/// and branches, but never drops an effect or an exit.
 fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
     fn collect(nodes: &[Node], kept: &mut HashSet<String>) {
         for node in nodes {
@@ -162,7 +226,11 @@ fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
         .filter(|stmt| {
             matches!(
                 stmt,
-                Stmt::Store { .. } | Stmt::Call { .. } | Stmt::Unsupported { .. } | Stmt::Trap
+                Stmt::Store { .. }
+                    | Stmt::Call { .. }
+                    | Stmt::Unsupported { .. }
+                    | Stmt::Trap
+                    | Stmt::Ret { .. }
             )
         })
         .map(|stmt| format!("{stmt:?}"))

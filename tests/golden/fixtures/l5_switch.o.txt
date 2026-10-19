@@ -233,9 +233,9 @@ uint32_t sparse(uint32_t a0) {
     }
     if (a0 != 0x32) {
         a0 = 0xffffffff;
-    } else {
-        return 0x7;
+        return a0;
     }
+    return 0x7;
 }
 -- signature
 uint32_t (uint32_t a0)

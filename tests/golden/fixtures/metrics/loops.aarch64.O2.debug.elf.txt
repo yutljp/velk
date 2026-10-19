@@ -20,6 +20,7 @@ int count_bits(uint32_t x) {
         t65 = w8;
         w8 = w9;
     } while (t65 > 0x1 /* unsigned */);
+    return x;
 }
 -- signature
 int (uint32_t x)

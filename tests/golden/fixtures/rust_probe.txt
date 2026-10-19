@@ -1,4 +1,4 @@
-# rust_probe: elf x86_64 0x14e70, 543 functions, 0 lift failures, 1192 unsupported, 5331 gotos
+# rust_probe: elf x86_64 0x14e70, 543 functions, 0 lift failures, 1208 unsupported, 5397 gotos
 0x14e70 38 _start symtab,entry
 0x14ea0 48 deregister_tm_clones symtab
 0x14ed0 64 register_tm_clones symtab

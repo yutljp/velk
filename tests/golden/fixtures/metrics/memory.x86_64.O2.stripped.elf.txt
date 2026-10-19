@@ -66,6 +66,7 @@ L_2012d1:
         *(uint8_t *)(a0 + rcx + 0x3) = rax & 0xff;
         rcx = rcx + 0x4;
     } while (a2 != rcx);
+    return rax;
 }
 -- signature
 uint32_t (uint64_t * a0, uint64_t * a1, uint64_t a2)

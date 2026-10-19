@@ -20,6 +20,7 @@ uint32_t count_bits(uint32_t a0) {
         t65 = a0;
         a0 = ecx;
     } while (t65 > 0x1 /* unsigned */);
+    return rax;
 }
 -- signature
 uint32_t (uint32_t a0)

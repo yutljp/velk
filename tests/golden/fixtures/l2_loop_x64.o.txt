@@ -55,6 +55,7 @@ L_e0:
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
+    return rax;
 }
 -- signature
 int32_t (int32_t a0)
@@ -150,6 +151,7 @@ L_177:
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
+    return rax;
 }
 -- signature
 int32_t (int32_t a0)
@@ -218,12 +220,12 @@ int32_t sum_skip_odd(int64_t a0) {
     if ((a0 & 0xff & 0x1) == 0x0) {
         return rax;
     }
-    if ((rcx & 0xff & 0x1) == 0x0) {
-        return rax;
+    if ((rcx & 0xff & 0x1) != 0x0) {
+        rcx = ecx + eax;
+        dword_204 = ecx;
+        rax = ecx;
     }
-    rcx = ecx + eax;
-    dword_204 = ecx;
-    rax = ecx;
+    return rax;
 }
 -- signature
 int32_t (int64_t a0)

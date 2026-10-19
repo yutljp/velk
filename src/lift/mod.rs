@@ -353,6 +353,15 @@ mod tests {
     }
 
     #[test]
+    fn a_cbnz_target_starts_a_block() {
+        // mov x8, xzr; loop: ldrb w9, [x0, x8]; add x8, x8, #1; cbnz w9, loop; ret
+        let code = words(&[0xaa1f03e8, 0x38686809, 0x91000508, 0x35ffffc9, 0xd65f03c0]);
+        let image = Image::from_code(Isa::AArch64, 0, code);
+        let blocks = lift(&image, 0, 20, &HashSet::new()).expect("lifts");
+        assert!(blocks.iter().any(|block| block.start == 4), "{blocks:?}");
+    }
+
+    #[test]
     fn cbz_on_a_w_register_tests_the_low_half() {
         // cbz w0, #8; ret; ret
         let code = words(&[0x34000040, 0xd65f03c0, 0xd65f03c0]);

@@ -20,6 +20,7 @@ uint32_t sub_21018c(uint32_t a0) {
         t65 = w8;
         w8 = w9;
     } while (t65 > 0x1 /* unsigned */);
+    return a0;
 }
 -- signature
 uint32_t (uint32_t a0)

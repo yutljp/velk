@@ -62,6 +62,7 @@ L_2102a4:
         *(uint8_t *)(x10) = w11;
         x10 = x10 + 0x1;
     } while (x9 != 0x0);
+    return dst;
 }
 -- signature
 uint64_t (void * dst, void * src, uint64_t n)
@@ -152,30 +153,28 @@ fn fill_bytes @ 0x2102c4 (size 12)
 == 0x2102d0 string_length
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102d0 */
-uint32_t string_length(char *s) {
-    w9 = s->field_0x0;
-    x8 = 0x1;
-    if (w9 != 0x0) {
-        sub_2102d4();
-        return s;
-    }
+uint64_t string_length(char *s) {
+    x8 = 0x0;
+    do {
+        w9 = *(uint8_t *)(s + x8);
+        x8 = x8 + 0x1;
+    } while (w9 != 0x0);
     return x8 - 0x1;
 }
 -- signature
-uint32_t (char * s)
+uint64_t (char * s)
 -- references
 
 -- ir
 fn string_length @ 0x2102d0 (size 24)
   blk0 @ 0x2102d0:
-    w9 = load8(x0)
-    x8 = #0x1
+    x8 = #0x0
+  blk1 @ 0x2102d4:
+    w9 = load8((x0 + x8))
+    x8 = (x8 + #0x1)
     brif ne w9, #0x0 -> 0x2102d4
-  blk1 @ 0x2102e0:
+  blk2 @ 0x2102e0:
     ret (x8 - #0x1)
-  blk2 @ 0x2102d4:
-    call 0x2102d4
-    ret x0
 -- card
 {"addr":"0x2102d0","approxTokens":132,"blocks":3,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
 

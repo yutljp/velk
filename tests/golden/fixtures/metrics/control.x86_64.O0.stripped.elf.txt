@@ -350,6 +350,10 @@ uint32_t sub_201410(uint64_t a0, uint32_t a1) {
     }
     rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xe) & 0xff;
     *(uint8_t *)(rbp - 0xd) = rax & 0xff;
+    rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xd) & 0xff;
+    rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff;
+    rsp = rsp + 0x8;
+    return rax & 0xff & 0xff;
 }
 -- signature
 uint32_t (uint64_t a0, uint32_t a1)

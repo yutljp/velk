@@ -150,6 +150,8 @@ int32_t sub_210184(int32_t a0) {
         *(uint32_t *)(x8 + 0x464) = w9;
         w9 = w9;
         w9 = w9 + 0x8;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        return w9;
     case 9:
         w9 = *(uint32_t *)(x8 + 0x464);
         *(uint32_t *)(x8 + 0x464) = w9;

@@ -83,12 +83,12 @@ int cleanup_on_error(int a, int b, int *out) {
     if ((x8 & 0x80000000) != 0x0) {
         return a;
     }
-    if (b == 0x0) {
-        return a;
+    if (b != 0x0) {
+        /* unsupported: SDIV at 0x210248 */
+        a = 0x0;
+        out->field_0x0 = w8;
     }
-    /* unsupported: SDIV at 0x210248 */
-    a = 0x0;
-    out->field_0x0 = w8;
+    return a;
 }
 -- signature
 int (int a, int b, int * out)
@@ -204,9 +204,9 @@ int short_circuit(int *p, int n) {
         x8 = x8 + (n << 0x2);
         /* unsupported: LDUR at 0x2102f8 */
         p = (w8 == 0x1 ? 0x1 : 0x0);
-    } else {
-        return 0x1;
+        return p;
     }
+    return 0x1;
 }
 -- signature
 int (int * p, int n)
@@ -344,15 +344,13 @@ int find_pair(int *p, int n, int target) {
             x16 = x9;
             x17 = x11;
             x8 = w12;
-        L_2103fc:
-            w18 = *(uint32_t *)(x17);
-            x17 = x17 + 0x4;
-            if (w18 + w15 == target) {
-                return w8;
-            }
-            x16 = x16 - 0x1;
-            x8 = w8 + 0x1;
-            if (x13 != x16) { goto L_2103fc; }
+            do {
+                w18 = *(uint32_t *)(x17);
+                x17 = x17 + 0x4;
+                if (w18 + w15 == target) { goto L_210424; }
+                x16 = x16 - 0x1;
+                x8 = w8 + 0x1;
+            } while (x13 != x16);
         }
         x13 = x13 + 0x1;
         w12 = w12 + w10;
@@ -363,6 +361,7 @@ int find_pair(int *p, int n, int target) {
         }
     }
     x8 = 0xffffffff;
+L_210424:
     return w8;
 }
 -- signature
