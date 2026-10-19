@@ -1,12 +1,12 @@
 # metrics/structs.aarch64.O0.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x2101fc 60 rect_area symtab,dwarf
-0x210238 136 record_total symtab,dwarf
-0x2102c0 56 point_add symtab,dwarf
-0x2102f8 68 big_make symtab,dwarf
-0x21033c 48 big_sum symtab,dwarf
-0x21036c 24 word_low_byte symtab,dwarf
-0x210384 76 flags_level symtab,dwarf
-0x2103d0 48 flags_set_mode symtab,dwarf
+0x2101fc 60 rect_area symtab,dwarf,unwind
+0x210238 136 record_total symtab,dwarf,unwind
+0x2102c0 56 point_add symtab,dwarf,unwind
+0x2102f8 68 big_make symtab,dwarf,unwind
+0x21033c 48 big_sum symtab,dwarf,unwind
+0x21036c 24 word_low_byte symtab,dwarf,unwind
+0x210384 76 flags_level symtab,dwarf,unwind
+0x2103d0 48 flags_set_mode symtab,dwarf,unwind
 
 == 0x2101fc rect_area
 -- decompile
@@ -23,7 +23,7 @@ fn rect_area @ 0x2101fc (size 60)
   blk0 @ 0x2101fc:
     ret (((load32((x0 + #0x8)) - load32(x0)) * (load32((x0 + #0xc)) - load32((x0 + #0x4)))) & #0xffffffff)
 -- card
-{"addr":"0x2101fc","approxTokens":186,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf"],"section":".text","size":60,"unsupported":0}
+{"addr":"0x2101fc","approxTokens":186,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf","unwind"],"section":".text","size":60,"unsupported":0}
 
 == 0x210238 record_total
 -- decompile
@@ -73,7 +73,7 @@ fn record_total @ 0x210238 (size 136)
   blk5 @ 0x2102b4:
     ret load64((sp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x210238","approxTokens":240,"blocks":6,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf"],"section":".text","size":136,"unsupported":0}
+{"addr":"0x210238","approxTokens":240,"blocks":6,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf","unwind"],"section":".text","size":136,"unsupported":0}
 
 == 0x2102c0 point_add
 -- decompile
@@ -103,7 +103,7 @@ fn point_add @ 0x2102c0 (size 56)
     store32(((load32((sp + #0xfffffffffffffff4)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff), (sp + #0xfffffffffffffffc))
     ret load64((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x2102c0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}
+{"addr":"0x2102c0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":56,"unsupported":0}
 
 == 0x2102f8 big_make
 -- decompile
@@ -136,7 +136,7 @@ fn big_make @ 0x2102f8 (size 68)
     store64((load64((sp + #0x8)) * #0x3), (x9 + #0x18))
     ret x0
 -- card
-{"addr":"0x2102f8","approxTokens":198,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
+{"addr":"0x2102f8","approxTokens":198,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}
 
 == 0x21033c big_sum
 -- decompile
@@ -154,7 +154,7 @@ fn big_sum @ 0x21033c (size 48)
   blk0 @ 0x21033c:
     ret (((load64(x0) + load64((x0 + #0x8))) + load64((x0 + #0x10))) + load64((x0 + #0x18)))
 -- card
-{"accesses":["value +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x21033c","approxTokens":168,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
+{"accesses":["value +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x21033c","approxTokens":168,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 
 == 0x21036c word_low_byte
 -- decompile
@@ -177,7 +177,7 @@ fn word_low_byte @ 0x21036c (size 24)
     v1 = load8((sp + #0xfffffffffffffffc))
     ret v1
 -- card
-{"addr":"0x21036c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x21036c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x210384 flags_level
 -- decompile
@@ -217,7 +217,7 @@ fn flags_level @ 0x210384 (size 76)
   blk4 @ 0x2103c4:
     ret (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
 -- card
-{"addr":"0x210384","approxTokens":210,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":0}
+{"addr":"0x210384","approxTokens":210,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 
 == 0x2103d0 flags_set_mode
 -- decompile
@@ -251,4 +251,4 @@ fn flags_set_mode @ 0x2103d0 (size 48)
     store8(((w8 | ((w1 & #0x7) << #0x1)) & #0xffffffff), x9)
     ret x0
 -- card
-{"addr":"0x2103d0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x2103d0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}

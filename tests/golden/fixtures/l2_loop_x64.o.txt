@@ -1,8 +1,8 @@
 # l2_loop_x64.o: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 4 gotos
-0x0 239 sum_while symtab
-0xf0 157 count_down symtab
-0x190 71 sum_skip_odd symtab
-0x1e0 33 find_first symtab
+0x0 239 sum_while symtab,unwind
+0xf0 157 count_down symtab,unwind
+0x190 71 sum_skip_odd symtab,unwind
+0x1e0 33 find_first symtab,unwind
 
 == 0x0 sum_while
 -- decompile
@@ -115,7 +115,7 @@ fn sum_while @ 0x0 (size 239)
   blk9 @ 0xee:
     ret rax
 -- card
-{"addr":"0x0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab"],"section":".text","size":239,"unsupported":0}
+{"addr":"0x0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab","unwind"],"section":".text","size":239,"unsupported":0}
 
 == 0xf0 count_down
 -- decompile
@@ -194,7 +194,7 @@ fn count_down @ 0xf0 (size 157)
   blk7 @ 0x18c:
     ret rax
 -- card
-{"addr":"0xf0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab"],"section":".text","size":157,"unsupported":0}
+{"addr":"0xf0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab","unwind"],"section":".text","size":157,"unsupported":0}
 
 == 0x190 sum_skip_odd
 -- decompile
@@ -264,7 +264,7 @@ fn sum_skip_odd @ 0x190 (size 71)
   blk9 @ 0x1d6:
     ret rax
 -- card
-{"addr":"0x190","approxTokens":138,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab"],"section":".text","size":71,"unsupported":0}
+{"addr":"0x190","approxTokens":138,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","unwind"],"section":".text","size":71,"unsupported":0}
 
 == 0x1e0 find_first
 -- decompile
@@ -304,4 +304,4 @@ fn find_first @ 0x1e0 (size 33)
   blk5 @ 0x1fe:
     ret (rcx & #0xffffffff)
 -- card
-{"addr":"0x1e0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab"],"section":".text","size":33,"unsupported":0}
+{"addr":"0x1e0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","unwind"],"section":".text","size":33,"unsupported":0}

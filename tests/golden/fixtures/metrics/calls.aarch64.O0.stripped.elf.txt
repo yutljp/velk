@@ -1,15 +1,15 @@
 # metrics/calls.aarch64.O0.stripped.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 1 unsupported, 1 gotos
-0x21031c 24 - prologue
-0x210334 28 - prologue
-0x210350 44 - prologue
-0x21037c 72 - prologue
-0x2103c4 48 - prologue
-0x2103f4 96 - prologue
-0x210454 76 - prologue
-0x2104a0 76 - prologue
-0x2104ec 120 - prologue
-0x210564 76 - prologue
-0x2105b0 316 - prologue
+0x21031c 24 - unwind,prologue
+0x210334 28 - unwind,prologue
+0x210350 44 - unwind,prologue
+0x21037c 72 - unwind,prologue
+0x2103c4 48 - unwind,prologue
+0x2103f4 96 - unwind,prologue
+0x210454 76 - unwind,prologue
+0x2104a0 76 - unwind,prologue
+0x2104ec 120 - unwind,prologue
+0x210564 76 - unwind,prologue
+0x2105b0 316 - unwind,prologue
 
 == 0x21031c -
 -- decompile
@@ -26,7 +26,7 @@ fn <unnamed> @ 0x21031c (size 24)
   blk0 @ 0x21031c:
     ret (((w0 & #0xffffffff) << #0x1) & #0xffffffff)
 -- card
-{"addr":"0x21031c","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x21031c","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
 == 0x210334 -
 -- decompile
@@ -43,7 +43,7 @@ fn <unnamed> @ 0x210334 (size 28)
   blk0 @ 0x210334:
     ret (((w0 & #0xffffffff) * (w0 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x210334","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210334","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
 
 == 0x210350 -
 -- decompile
@@ -60,7 +60,7 @@ fn <unnamed> @ 0x210350 (size 44)
   blk0 @ 0x210350:
     ret select ne (x0 & #0xffffffff), #0x0 ? #0x210334, #0x21031c
 -- card
-{"addr":"0x210350","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210350","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
 
 == 0x21037c -
 -- decompile
@@ -95,7 +95,7 @@ fn <unnamed> @ 0x21037c (size 72)
     call *x8
     ret w0
 -- card
-{"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":72,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}
 
 == 0x2103c4 -
 -- decompile
@@ -125,7 +125,7 @@ fn <unnamed> @ 0x2103c4 (size 48)
     call *x8
     ret (((x0 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
 
 == 0x2103f4 -
 -- decompile
@@ -171,7 +171,7 @@ fn <unnamed> @ 0x2103f4 (size 96)
   blk4 @ 0x210444:
     ret load32((sp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x2103f4","approxTokens":240,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2103f4","approxTokens":240,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"unsupported":0}
 
 == 0x210454 -
 -- decompile
@@ -214,7 +214,7 @@ fn <unnamed> @ 0x210454 (size 76)
   blk4 @ 0x210490:
     ret load32((sp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":76,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 
 == 0x2104a0 -
 -- decompile
@@ -257,7 +257,7 @@ fn <unnamed> @ 0x2104a0 (size 76)
   blk4 @ 0x2104dc:
     ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
-{"addr":"0x2104a0","approxTokens":210,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":76,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2104a0","approxTokens":210,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 
 == 0x2104ec -
 -- decompile
@@ -274,7 +274,7 @@ fn <unnamed> @ 0x2104ec (size 120)
   blk0 @ 0x2104ec:
     ret ((((((((x0 + x1) + x2) + x3) + x4) + x5) + x6) + x7) + load64(sp))
 -- card
-{"addr":"0x2104ec","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":120,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2104ec","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":120,"unsupported":0}
 
 == 0x210564 -
 -- decompile
@@ -318,7 +318,7 @@ fn <unnamed> @ 0x210564 (size 76)
     call 0x2104ec
     ret x0
 -- card
-{"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":76,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 
 == 0x2105b0 -
 -- decompile
@@ -465,4 +465,4 @@ fn <unnamed> @ 0x2105b0 (size 316)
     sp = (sp + #0x120)
     ret v1
 -- card
-{"addr":"0x2105b0","approxTokens":240,"blocks":12,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":316,"sizeEstimated":true,"unsupported":8}
+{"addr":"0x2105b0","approxTokens":240,"blocks":12,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":316,"unsupported":8}

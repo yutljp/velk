@@ -21,7 +21,7 @@ pub(super) fn layout(file: &ObjFile) -> HashMap<SectionIndex, u64> {
     }
     let mut cursor = 0u64;
     for section in file.sections() {
-        if !allocated(section.kind()) {
+        if !allocated(&section) {
             continue;
         }
         let align = section.align().max(1);
@@ -32,9 +32,14 @@ pub(super) fn layout(file: &ObjFile) -> HashMap<SectionIndex, u64> {
     bases
 }
 
-fn allocated(kind: SectionKind) -> bool {
+/// Whether the section occupies memory: an ELF section says so with its
+/// flags, which also covers kinds such as unwind tables.
+fn allocated<'data>(section: &impl ObjectSection<'data>) -> bool {
+    if let object::SectionFlags::Elf { sh_flags, .. } = section.flags() {
+        return sh_flags.contains(object::elf::SHF_ALLOC);
+    }
     matches!(
-        kind,
+        section.kind(),
         SectionKind::Text
             | SectionKind::Data
             | SectionKind::ReadOnlyData

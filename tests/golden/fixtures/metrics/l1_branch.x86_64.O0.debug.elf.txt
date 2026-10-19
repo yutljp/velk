@@ -1,7 +1,7 @@
 # metrics/l1_branch.x86_64.O0.debug.elf: elf x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x2011a0 63 classify symtab,dwarf
-0x2011e0 70 clamp symtab,dwarf
-0x201230 54 sign_of symtab,dwarf
+0x2011a0 63 classify symtab,dwarf,unwind
+0x2011e0 70 clamp symtab,dwarf,unwind
+0x201230 54 sign_of symtab,dwarf,unwind
 
 == 0x2011a0 classify
 -- decompile
@@ -44,7 +44,7 @@ fn classify @ 0x2011a0 (size 63)
   blk5 @ 0x2011da:
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x2011a0","approxTokens":138,"blocks":6,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":63,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":138,"blocks":6,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf","unwind"],"section":".text","size":63,"unsupported":0}
 
 == 0x2011e0 clamp
 -- decompile
@@ -93,7 +93,7 @@ fn clamp @ 0x2011e0 (size 70)
   blk5 @ 0x201221:
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x2011e0","approxTokens":162,"blocks":6,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":70,"unsupported":0}
+{"addr":"0x2011e0","approxTokens":162,"blocks":6,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":70,"unsupported":0}
 
 == 0x201230 sign_of
 -- decompile
@@ -127,4 +127,4 @@ fn sign_of @ 0x201230 (size 54)
   blk3 @ 0x201261:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x201230","approxTokens":144,"blocks":4,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":54,"unsupported":0}
+{"addr":"0x201230","approxTokens":144,"blocks":4,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf","unwind"],"section":".text","size":54,"unsupported":0}

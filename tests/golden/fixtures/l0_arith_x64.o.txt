@@ -1,8 +1,8 @@
 # l0_arith_x64.o: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x0 6 add3 symtab
-0x10 13 scale symtab
-0x20 8 pick symtab
-0x30 5 negate symtab
+0x0 6 add3 symtab,unwind
+0x10 13 scale symtab,unwind
+0x20 8 pick symtab,unwind
+0x30 5 negate symtab,unwind
 
 == 0x0 add3
 -- decompile
@@ -19,7 +19,7 @@ fn add3 @ 0x0 (size 6)
   blk0 @ 0x0:
     ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab"],"section":".text","size":6,"unsupported":0}
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","unwind"],"section":".text","size":6,"unsupported":0}
 
 == 0x10 scale
 -- decompile
@@ -36,7 +36,7 @@ fn scale @ 0x10 (size 13)
   blk0 @ 0x10:
     ret ((((rdi * #0x8) - (rdi & #0xffffffff)) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x10","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab"],"section":".text","size":13,"unsupported":0}
+{"addr":"0x10","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","unwind"],"section":".text","size":13,"unsupported":0}
 
 == 0x20 pick
 -- decompile
@@ -53,7 +53,7 @@ fn pick @ 0x20 (size 8)
   blk0 @ 0x20:
     ret (select gt edi, esi ? edi, esi & #0xffffffff)
 -- card
-{"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
 
 == 0x30 negate
 -- decompile
@@ -70,4 +70,4 @@ fn negate @ 0x30 (size 5)
   blk0 @ 0x30:
     ret ((#0x0 - edi) & #0xffffffff)
 -- card
-{"addr":"0x30","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab"],"section":".text","size":5,"unsupported":0}
+{"addr":"0x30","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","unwind"],"section":".text","size":5,"unsupported":0}

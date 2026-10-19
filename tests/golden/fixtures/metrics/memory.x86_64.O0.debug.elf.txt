@@ -1,12 +1,12 @@
 # metrics/memory.x86_64.O0.debug.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x201280 79 copy_bytes symtab,dwarf
-0x2012d0 73 fill_bytes symtab,dwarf
-0x201320 57 string_length symtab,dwarf
-0x201360 47 grid_get symtab,dwarf
-0x201390 53 grid_set symtab,dwarf
-0x2013d0 29 pointer_distance symtab,dwarf
-0x2013f0 34 read_volatile symtab,dwarf
-0x201420 44 swap_ints symtab,dwarf
+0x201280 79 copy_bytes symtab,dwarf,unwind
+0x2012d0 73 fill_bytes symtab,dwarf,unwind
+0x201320 57 string_length symtab,dwarf,unwind
+0x201360 47 grid_get symtab,dwarf,unwind
+0x201390 53 grid_set symtab,dwarf,unwind
+0x2013d0 29 pointer_distance symtab,dwarf,unwind
+0x2013f0 34 read_volatile symtab,dwarf,unwind
+0x201420 44 swap_ints symtab,dwarf,unwind
 
 == 0x201280 copy_bytes
 -- decompile
@@ -54,7 +54,7 @@ fn copy_bytes @ 0x201280 (size 79)
     rsp = (rsp + #0x8)
     ret rax
 -- card
-{"addr":"0x201280","approxTokens":210,"blocks":4,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","size":79,"unsupported":0}
+{"addr":"0x201280","approxTokens":210,"blocks":4,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":79,"unsupported":0}
 
 == 0x2012d0 fill_bytes
 -- decompile
@@ -102,7 +102,7 @@ fn fill_bytes @ 0x2012d0 (size 73)
     rsp = (rsp + #0x8)
     ret rax
 -- card
-{"addr":"0x2012d0","approxTokens":204,"blocks":4,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","size":73,"unsupported":0}
+{"addr":"0x2012d0","approxTokens":204,"blocks":4,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":73,"unsupported":0}
 
 == 0x201320 string_length
 -- decompile
@@ -135,7 +135,7 @@ fn string_length @ 0x201320 (size 57)
   blk3 @ 0x201353:
     ret load64((rsp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","size":57,"unsupported":0}
+{"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf","unwind"],"section":".text","size":57,"unsupported":0}
 
 == 0x201360 grid_get
 -- decompile
@@ -155,7 +155,7 @@ fn grid_get @ 0x201360 (size 47)
     rax = (#0x202450 + (sext32((edi & #0x3)) << #0x5))
     ret (load32((rax + (sext32((esi & #0x7)) * #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x201360","approxTokens":192,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":47,"unsupported":0}
+{"addr":"0x201360","approxTokens":192,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf","unwind"],"section":".text","size":47,"unsupported":0}
 
 == 0x201390 grid_set
 -- decompile
@@ -187,7 +187,7 @@ fn grid_set @ 0x201390 (size 53)
     store32((edx & #0xffffffff), (rax + (sext32((esi & #0x7)) * #0x4)))
     ret rax
 -- card
-{"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":53,"unsupported":0}
+{"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf","unwind"],"section":".text","size":53,"unsupported":0}
 
 == 0x2013d0 pointer_distance
 -- decompile
@@ -204,7 +204,7 @@ fn pointer_distance @ 0x2013d0 (size 29)
   blk0 @ 0x2013d0:
     ret ((rsi - rdi) >>> #0x2)
 -- card
-{"addr":"0x2013d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","size":29,"unsupported":0}
+{"addr":"0x2013d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf","unwind"],"section":".text","size":29,"unsupported":0}
 
 == 0x2013f0 read_volatile
 -- decompile
@@ -228,7 +228,7 @@ fn read_volatile @ 0x2013f0 (size 34)
     store32((load32(rdi) & #0xffffffff), (rsp + #0xffffffffffffffe8))
     ret ((load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff)
 -- card
-{"addr":"0x2013f0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","size":34,"unsupported":0}
+{"addr":"0x2013f0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf","unwind"],"section":".text","size":34,"unsupported":0}
 
 == 0x201420 swap_ints
 -- decompile
@@ -261,4 +261,4 @@ fn swap_ints @ 0x201420 (size 44)
     store32(load32((rsp + #0xffffffffffffffe4)), rax)
     ret rax
 -- card
-{"addr":"0x201420","approxTokens":192,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x201420","approxTokens":192,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf","unwind"],"section":".text","size":44,"unsupported":0}

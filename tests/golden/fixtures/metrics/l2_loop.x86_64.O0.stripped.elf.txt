@@ -1,8 +1,8 @@
 # metrics/l2_loop.x86_64.O0.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
-0x201200 80 - prologue
-0x201250 64 - prologue
-0x201290 96 - prologue
-0x2012f0 95 - prologue
+0x201200 70 - unwind,prologue
+0x201250 56 - unwind,prologue
+0x201290 90 - unwind,prologue
+0x2012f0 95 - unwind,prologue
 
 == 0x201200 -
 -- decompile
@@ -31,7 +31,7 @@ int32_t (int32_t a0)
 -- references
 0x202350 .bss
 -- ir
-fn <unnamed> @ 0x201200 (size 80)
+fn <unnamed> @ 0x201200 (size 70)
   blk0 @ 0x201200:
     rsp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rsp + #0xfffffffffffffffc))
@@ -49,7 +49,7 @@ fn <unnamed> @ 0x201200 (size 80)
     rsp = (rsp + #0x8)
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201200","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":80,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201200","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":70,"unsupported":0}
 
 == 0x201250 -
 -- decompile
@@ -75,7 +75,7 @@ int32_t (int32_t a0)
 -- references
 0x202350 .bss
 -- ir
-fn <unnamed> @ 0x201250 (size 64)
+fn <unnamed> @ 0x201250 (size 56)
   blk0 @ 0x201250:
     rsp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rsp + #0xfffffffffffffffc))
@@ -89,7 +89,7 @@ fn <unnamed> @ 0x201250 (size 64)
     rsp = (rsp + #0x8)
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201250","approxTokens":198,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201250","approxTokens":198,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":56,"unsupported":0}
 
 == 0x201290 -
 -- decompile
@@ -125,7 +125,7 @@ int32_t (int32_t a0)
 -- references
 0x202350 .bss
 -- ir
-fn <unnamed> @ 0x201290 (size 96)
+fn <unnamed> @ 0x201290 (size 90)
   blk0 @ 0x201290:
     rsp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rsp + #0xfffffffffffffffc))
@@ -148,7 +148,7 @@ fn <unnamed> @ 0x201290 (size 96)
     rsp = (rsp + #0x8)
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201290","approxTokens":174,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201290","approxTokens":174,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":90,"unsupported":0}
 
 == 0x2012f0 -
 -- decompile
@@ -208,4 +208,4 @@ fn <unnamed> @ 0x2012f0 (size 95)
   blk7 @ 0x20134a:
     ret (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
 -- card
-{"addr":"0x2012f0","approxTokens":198,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":95,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2012f0","approxTokens":198,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":95,"unsupported":0}

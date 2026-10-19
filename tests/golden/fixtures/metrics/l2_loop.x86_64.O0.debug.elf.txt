@@ -1,8 +1,8 @@
 # metrics/l2_loop.x86_64.O0.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
-0x201200 70 sum_while symtab,dwarf
-0x201250 56 count_down symtab,dwarf
-0x201290 90 sum_skip_odd symtab,dwarf
-0x2012f0 95 find_first symtab,dwarf
+0x201200 70 sum_while symtab,dwarf,unwind
+0x201250 56 count_down symtab,dwarf,unwind
+0x201290 90 sum_skip_odd symtab,dwarf,unwind
+0x2012f0 95 find_first symtab,dwarf,unwind
 
 == 0x201200 sum_while
 -- decompile
@@ -49,7 +49,7 @@ fn sum_while @ 0x201200 (size 70)
     rsp = (rsp + #0x8)
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201200","approxTokens":198,"blocks":4,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":70,"unsupported":0}
+{"addr":"0x201200","approxTokens":198,"blocks":4,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf","unwind"],"section":".text","size":70,"unsupported":0}
 
 == 0x201250 count_down
 -- decompile
@@ -89,7 +89,7 @@ fn count_down @ 0x201250 (size 56)
     rsp = (rsp + #0x8)
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201250","approxTokens":198,"blocks":3,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}
+{"addr":"0x201250","approxTokens":198,"blocks":3,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf","unwind"],"section":".text","size":56,"unsupported":0}
 
 == 0x201290 sum_skip_odd
 -- decompile
@@ -148,7 +148,7 @@ fn sum_skip_odd @ 0x201290 (size 90)
     rsp = (rsp + #0x8)
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201290","approxTokens":174,"blocks":7,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":90,"unsupported":0}
+{"addr":"0x201290","approxTokens":174,"blocks":7,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":90,"unsupported":0}
 
 == 0x2012f0 find_first
 -- decompile
@@ -208,4 +208,4 @@ fn find_first @ 0x2012f0 (size 95)
   blk7 @ 0x20134a:
     ret (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
 -- card
-{"addr":"0x2012f0","approxTokens":198,"blocks":8,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":95,"unsupported":0}
+{"addr":"0x2012f0","approxTokens":198,"blocks":8,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf","unwind"],"section":".text","size":95,"unsupported":0}

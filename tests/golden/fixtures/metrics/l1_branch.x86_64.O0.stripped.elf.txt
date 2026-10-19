@@ -1,7 +1,7 @@
 # metrics/l1_branch.x86_64.O0.stripped.elf: elf x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x2011a0 64 - prologue
-0x2011e0 80 - prologue
-0x201230 54 - prologue
+0x2011a0 63 - unwind,prologue
+0x2011e0 70 - unwind,prologue
+0x201230 54 - unwind,prologue
 
 == 0x2011a0 -
 -- decompile
@@ -27,7 +27,7 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2011a0 (size 64)
+fn <unnamed> @ 0x2011a0 (size 63)
   blk0 @ 0x2011a0:
     store32(edi, (rsp + #0xfffffffffffffff0))
     brif ge (edi & #0xffffffff), #0x0 -> 0x2011bd
@@ -44,7 +44,7 @@ fn <unnamed> @ 0x2011a0 (size 64)
   blk5 @ 0x2011da:
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x2011a0","approxTokens":138,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":138,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":63,"unsupported":0}
 
 == 0x2011e0 -
 -- decompile
@@ -74,7 +74,7 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2011e0 (size 80)
+fn <unnamed> @ 0x2011e0 (size 70)
   blk0 @ 0x2011e0:
     store32(edi, (rsp + #0xfffffffffffffff0))
     store32(esi, (rsp + #0xffffffffffffffec))
@@ -93,7 +93,7 @@ fn <unnamed> @ 0x2011e0 (size 80)
   blk5 @ 0x201221:
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x2011e0","approxTokens":162,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":80,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011e0","approxTokens":162,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":70,"unsupported":0}
 
 == 0x201230 -
 -- decompile
@@ -127,4 +127,4 @@ fn <unnamed> @ 0x201230 (size 54)
   blk3 @ 0x201261:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x201230","approxTokens":144,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":54,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201230","approxTokens":144,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":54,"unsupported":0}

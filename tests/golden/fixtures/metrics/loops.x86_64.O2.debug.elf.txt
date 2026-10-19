@@ -1,8 +1,8 @@
 # metrics/loops.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 1 unsupported, 0 gotos
-0x201190 33 count_bits symtab,dwarf
-0x2011c0 26 sum_until symtab,dwarf
-0x2011e0 40 sum_till_neg symtab,dwarf
-0x201210 44 sum_until_zero symtab,dwarf
+0x201190 33 count_bits symtab,dwarf,unwind
+0x2011c0 26 sum_until symtab,dwarf,unwind
+0x2011e0 40 sum_till_neg symtab,dwarf,unwind
+0x201210 44 sum_until_zero symtab,dwarf,unwind
 
 == 0x201190 count_bits
 -- decompile
@@ -43,7 +43,7 @@ fn count_bits @ 0x201190 (size 33)
   blk3 @ 0x2011b0:
     ret rax
 -- card
-{"addr":"0x201190","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":33,"unsupported":0}
+{"addr":"0x201190","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}
 
 == 0x2011c0 sum_until
 -- decompile
@@ -67,7 +67,7 @@ fn sum_until @ 0x2011c0 (size 26)
   blk2 @ 0x2011d7:
     ret #0x0
 -- card
-{"addr":"0x2011c0","approxTokens":150,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":150,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf","unwind"],"section":".text","size":26,"unsupported":0}
 
 == 0x2011e0 sum_till_neg
 -- decompile
@@ -108,7 +108,7 @@ fn sum_till_neg @ 0x2011e0 (size 40)
   blk3 @ 0x201207:
     ret eax
 -- card
-{"addr":"0x2011e0","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x2011e0","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x201210 sum_until_zero
 -- decompile
@@ -158,4 +158,4 @@ fn sum_until_zero @ 0x201210 (size 44)
   blk5 @ 0x201239:
     ret #0x0
 -- card
-{"addr":"0x201210","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":1}
+{"addr":"0x201210","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":44,"unsupported":1}

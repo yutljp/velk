@@ -1,7 +1,7 @@
 # l1_branch_a64.o: elf aarch64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x0 16 classify symtab
-0x10 20 clamp symtab
-0x24 20 sign_of symtab
+0x0 16 classify symtab,unwind
+0x10 20 clamp symtab,unwind
+0x24 20 sign_of symtab,unwind
 
 == 0x0 classify
 -- decompile
@@ -18,7 +18,7 @@ fn classify @ 0x0 (size 16)
   blk0 @ 0x0:
     ret (select ge w0, #0x0 ? (select ne w0, #0x0 ? #0x1, #0x0 & #0xffffffff), #0xffffffff & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","unwind"],"section":".text","size":16,"unsupported":0}
 
 == 0x10 clamp
 -- decompile
@@ -35,7 +35,7 @@ fn clamp @ 0x10 (size 20)
   blk0 @ 0x10:
     ret (select lt w0, w1 ? w1, (select lt w0, w2 ? w0, w2 & #0xffffffff) & #0xffffffff)
 -- card
-{"addr":"0x10","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x10","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x24 sign_of
 -- decompile
@@ -52,4 +52,4 @@ fn sign_of @ 0x24 (size 20)
   blk0 @ 0x24:
     ret (select lt w0, #0x1 ? (select ne w0, #0x0 ? #0xffffffff, #0x0 & #0xffffffff), #0x1 & #0xffffffff)
 -- card
-{"addr":"0x24","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x24","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}

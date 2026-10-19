@@ -1,8 +1,8 @@
 # metrics/loops.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x21018c 40 count_bits symtab,dwarf
-0x2101b4 40 sum_until symtab,dwarf
-0x2101dc 40 sum_till_neg symtab,dwarf
-0x210204 56 sum_until_zero symtab,dwarf
+0x21018c 40 count_bits symtab,dwarf,unwind
+0x2101b4 40 sum_until symtab,dwarf,unwind
+0x2101dc 40 sum_till_neg symtab,dwarf,unwind
+0x210204 56 sum_until_zero symtab,dwarf,unwind
 
 == 0x21018c count_bits
 -- decompile
@@ -43,7 +43,7 @@ fn count_bits @ 0x21018c (size 40)
   blk3 @ 0x2101b0:
     ret x0
 -- card
-{"addr":"0x21018c","approxTokens":156,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x21018c","approxTokens":156,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x2101b4 sum_until
 -- decompile
@@ -73,7 +73,7 @@ fn sum_until @ 0x2101b4 (size 40)
   blk2 @ 0x2101d4:
     ret #0x0
 -- card
-{"addr":"0x2101b4","approxTokens":144,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x2101b4","approxTokens":144,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x2101dc sum_till_neg
 -- decompile
@@ -115,7 +115,7 @@ fn sum_till_neg @ 0x2101dc (size 40)
   blk3 @ 0x2101fc:
     ret w8
 -- card
-{"accesses":["p +0x0:uint32_t"],"addr":"0x2101dc","approxTokens":156,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+{"accesses":["p +0x0:uint32_t"],"addr":"0x2101dc","approxTokens":156,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x210204 sum_until_zero
 -- decompile
@@ -164,4 +164,4 @@ fn sum_until_zero @ 0x210204 (size 56)
   blk5 @ 0x210234:
     ret #0x0
 -- card
-{"accesses":["p +0x0:uint32_t"],"addr":"0x210204","approxTokens":168,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}
+{"accesses":["p +0x0:uint32_t"],"addr":"0x210204","approxTokens":168,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":56,"unsupported":0}

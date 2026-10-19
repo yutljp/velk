@@ -1,11 +1,11 @@
 # metrics/control.x86_64.O2.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 4 unsupported, 7 gotos
-0x201220 256 - prologue
-0x201320 32 - prologue
-0x201340 32 - prologue
-0x201360 64 - prologue
-0x2013a0 48 - prologue
-0x2013d0 192 - prologue
-0x201490 112 - prologue
+0x201220 242 - unwind,prologue
+0x201320 26 - unwind,prologue
+0x201340 23 - unwind,prologue
+0x201360 61 - unwind,prologue
+0x2013a0 34 - unwind,prologue
+0x2013d0 183 - unwind,prologue
+0x201490 112 - unwind,prologue
 
 == 0x201220 -
 -- decompile
@@ -79,7 +79,7 @@ int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201220 (size 256)
+fn <unnamed> @ 0x201220 (size 242)
   blk0 @ 0x201220:
     brif le esi, #0x0 -> 0x20130f
   blk1 @ 0x201228:
@@ -151,7 +151,7 @@ fn <unnamed> @ 0x201220 (size 256)
   blk22 @ 0x20130f:
     ret #0x0
 -- card
-{"addr":"0x201220","approxTokens":198,"blocks":23,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":256,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201220","approxTokens":198,"blocks":23,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":242,"unsupported":0}
 
 == 0x201320 -
 -- decompile
@@ -173,7 +173,7 @@ int32_t (int32_t a0, int32_t a1, uint32_t * a2)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201320 (size 32)
+fn <unnamed> @ 0x201320 (size 26)
   blk0 @ 0x201320:
     rax = #0xffffffff
     brif lt edi, #0x0 -> 0x201339
@@ -185,7 +185,7 @@ fn <unnamed> @ 0x201320 (size 32)
   blk3 @ 0x201339:
     ret rax
 -- card
-{"accesses":["a2 +0x0:uint32_t"],"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"accesses":["a2 +0x0:uint32_t"],"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":26,"unsupported":0}
 
 == 0x201340 -
 -- decompile
@@ -203,7 +203,7 @@ int32_t (uint32_t a0)
 -- references
 0x200120 .rodata
 -- ir
-fn <unnamed> @ 0x201340 (size 32)
+fn <unnamed> @ 0x201340 (size 23)
   blk0 @ 0x201340:
     rax = #0xffffffff
     brif hi edi, #0x3 -> 0x201356
@@ -212,7 +212,7 @@ fn <unnamed> @ 0x201340 (size 32)
   blk2 @ 0x201356:
     ret rax
 -- card
-{"addr":"0x201340","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201340","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":23,"unsupported":0}
 
 == 0x201360 -
 -- decompile
@@ -240,7 +240,7 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201360 (size 64)
+fn <unnamed> @ 0x201360 (size 61)
   blk0 @ 0x201360:
     brif gt edi, #0x3e7 -> 0x201378
   blk1 @ 0x201368:
@@ -262,7 +262,7 @@ fn <unnamed> @ 0x201360 (size 64)
   blk9 @ 0x201397:
     ret #0x1e
 -- card
-{"addr":"0x201360","approxTokens":144,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201360","approxTokens":144,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":61,"unsupported":0}
 
 == 0x2013a0 -
 -- decompile
@@ -286,7 +286,7 @@ int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2013a0 (size 48)
+fn <unnamed> @ 0x2013a0 (size 34)
   blk0 @ 0x2013a0:
     rax = #0x0
     brif eq rdi, #0x0 -> 0x2013c1
@@ -300,7 +300,7 @@ fn <unnamed> @ 0x2013a0 (size 48)
   blk4 @ 0x2013c1:
     ret rax
 -- card
-{"addr":"0x2013a0","approxTokens":174,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2013a0","approxTokens":174,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":34,"unsupported":0}
 
 == 0x2013d0 -
 -- decompile
@@ -356,7 +356,7 @@ int32_t (uint64_t * a0, int32_t a1)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2013d0 (size 192)
+fn <unnamed> @ 0x2013d0 (size 183)
   blk0 @ 0x2013d0:
     brif le (rsi & #0xffffffff), #0x0 -> 0x2013e6
   blk1 @ 0x2013d4:
@@ -410,7 +410,7 @@ fn <unnamed> @ 0x2013d0 (size 192)
   blk8 @ 0x201486:
     ret rax
 -- card
-{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":192,"sizeEstimated":true,"unsupported":9}
+{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":183,"unsupported":9}
 
 == 0x201490 -
 -- decompile
@@ -492,4 +492,4 @@ fn <unnamed> @ 0x201490 (size 112)
   blk10 @ 0x2014ff:
     ret rax
 -- card
-{"addr":"0x201490","approxTokens":174,"blocks":11,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":112,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201490","approxTokens":174,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":112,"unsupported":0}

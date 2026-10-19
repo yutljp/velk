@@ -1,5 +1,5 @@
 # metrics/switch_jumptable.x86_64.O2.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x2011c0 527 d7 symtab,dwarf
+0x2011c0 527 d7 symtab,dwarf,unwind
 
 == 0x2011c0 d7
 -- decompile
@@ -247,4 +247,4 @@ fn d7 @ 0x2011c0 (size 527)
     rax = (load32(#0x2023d0) & #0xffffffff)
     ret rax
 -- card
-{"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":527,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":527,"unsupported":0}

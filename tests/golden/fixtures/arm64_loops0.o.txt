@@ -1,8 +1,8 @@
 # arm64_loops0.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 4 gotos
-0x0 76 count_bits symtab
-0x4c 92 sum_until symtab
-0xa8 120 sum_till_neg symtab
-0x120 148 sum_until_zero symtab
+0x0 76 count_bits symtab,unwind
+0x4c 92 sum_until symtab,unwind
+0xa8 120 sum_till_neg symtab,unwind
+0x120 148 sum_until_zero symtab,unwind
 
 == 0x0 count_bits
 -- decompile
@@ -40,7 +40,7 @@ fn count_bits @ 0x0 (size 76)
   blk4 @ 0x40:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab"],"section":".text","size":76,"unsupported":0}
+{"addr":"0x0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","unwind"],"section":".text","size":76,"unsupported":0}
 
 == 0x4c sum_until
 -- decompile
@@ -83,7 +83,7 @@ fn sum_until @ 0x4c (size 92)
   blk5 @ 0x9c:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x4c","approxTokens":234,"blocks":6,"hardReasons":[],"name":"sum_until","nameSources":["symtab"],"section":".text","size":92,"unsupported":0}
+{"addr":"0x4c","approxTokens":234,"blocks":6,"hardReasons":[],"name":"sum_until","nameSources":["symtab","unwind"],"section":".text","size":92,"unsupported":0}
 
 == 0xa8 sum_till_neg
 -- decompile
@@ -144,7 +144,7 @@ fn sum_till_neg @ 0xa8 (size 120)
   blk7 @ 0x114:
     ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0xa8","approxTokens":240,"blocks":8,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab"],"section":".text","size":120,"unsupported":0}
+{"addr":"0xa8","approxTokens":240,"blocks":8,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","unwind"],"section":".text","size":120,"unsupported":0}
 
 == 0x120 sum_until_zero
 -- decompile
@@ -212,4 +212,4 @@ fn sum_until_zero @ 0x120 (size 148)
   blk11 @ 0x1a8:
     ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x120","approxTokens":240,"blocks":12,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab"],"section":".text","size":148,"unsupported":0}
+{"addr":"0x120","approxTokens":240,"blocks":12,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","unwind"],"section":".text","size":148,"unsupported":0}

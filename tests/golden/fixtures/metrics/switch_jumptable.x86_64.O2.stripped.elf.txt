@@ -1,5 +1,5 @@
 # metrics/switch_jumptable.x86_64.O2.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x2011c0 527 - prologue
+0x2011c0 527 - unwind,prologue
 
 == 0x2011c0 -
 -- decompile
@@ -247,4 +247,4 @@ fn <unnamed> @ 0x2011c0 (size 527)
     rax = (load32(#0x2023d0) & #0xffffffff)
     ret rax
 -- card
-{"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":527,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":527,"unsupported":0}

@@ -1,8 +1,10 @@
 mod discover;
 pub mod dwarf;
 pub mod go;
+mod plt;
 mod relocate;
 mod symbols;
+mod unwind;
 
 use std::collections::BTreeMap;
 
@@ -82,6 +84,8 @@ pub enum NameSource {
     Entry,
     Pclntab,
     Dwarf,
+    Unwind,
+    Plt,
     Prologue,
 }
 
@@ -93,6 +97,8 @@ impl fmt::Display for NameSource {
             NameSource::Entry => "entry",
             NameSource::Pclntab => "pclntab",
             NameSource::Dwarf => "dwarf",
+            NameSource::Unwind => "unwind",
+            NameSource::Plt => "plt",
             NameSource::Prologue => "prologue",
         })
     }
@@ -144,6 +150,9 @@ pub struct Image {
     pub functions: BTreeMap<u64, Function>,
     /// The names of the data objects the symbol tables define.
     pub data_symbols: BTreeMap<u64, String>,
+    /// Code split off a function, such as its cold part, by start and size:
+    /// it belongs to the functions that branch into it.
+    pub fragments: BTreeMap<u64, u64>,
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
@@ -169,6 +178,7 @@ impl Image {
             bytes: code,
             functions: BTreeMap::new(),
             data_symbols: BTreeMap::new(),
+            fragments: BTreeMap::new(),
             relocations: BTreeMap::new(),
             go: false,
         }
@@ -197,7 +207,7 @@ impl Image {
     fn scan_prologues(&mut self) {
         let mut found: Vec<u64> = Vec::new();
         for section in &self.sections {
-            if !section.executable {
+            if !section.executable || plt::is_stub_section(&section.name) {
                 continue;
             }
             let Some(bytes) = self.read_vaddr(section.vaddr, section.size) else {
@@ -238,6 +248,7 @@ impl Image {
                         && size != 0
                         && address < start.saturating_add(size)
                 })
+                || self.fragment_at(address).is_some()
             {
                 continue;
             }
@@ -323,6 +334,47 @@ impl Image {
                 NameSource::Pclntab,
             );
         }
+    }
+
+    fn add_unwind_functions(&mut self) {
+        for frame in unwind::frames(self) {
+            // Linkage stubs are found from their slots, one by one.
+            if self
+                .section_at(frame.start)
+                .is_some_and(|section| plt::is_stub_section(&section.name))
+            {
+                continue;
+            }
+            if frame.kind == unwind::FrameKind::Entry {
+                if let Some(existing) = self.functions.get_mut(&frame.start)
+                    && existing.size_estimated
+                {
+                    existing.size = None;
+                    existing.size_estimated = false;
+                }
+                upsert(
+                    &mut self.functions,
+                    frame.start,
+                    None,
+                    Some(frame.size),
+                    NameSource::Unwind,
+                );
+            } else if frame.kind == unwind::FrameKind::Fragment {
+                // Code that starts inside a frame is no function, even when
+                // a symbol names it.
+                self.functions.remove(&frame.start);
+                self.fragments.insert(frame.start, frame.size);
+            }
+        }
+    }
+
+    /// The fragment holding `address`, as its start and size.
+    pub fn fragment_at(&self, address: u64) -> Option<(u64, u64)> {
+        self.fragments
+            .range(..=address)
+            .next_back()
+            .filter(|(start, size)| address < start.saturating_add(**size))
+            .map(|(start, size)| (*start, *size))
     }
 
     fn add_dwarf_functions(&mut self) {
@@ -505,6 +557,9 @@ pub fn load(path: &Path) -> Result<Image> {
             NameSource::Symtab,
         );
     }
+    for (address, name) in plt::stubs(&file) {
+        upsert(&mut functions, address, Some(name), None, NameSource::Plt);
+    }
     for sym in file.dynamic_symbols() {
         if sym.kind() != object::SymbolKind::Text || sym.is_undefined() {
             continue;
@@ -555,18 +610,22 @@ pub fn load(path: &Path) -> Result<Image> {
         sections,
         functions,
         data_symbols,
+        fragments: BTreeMap::new(),
         relocations,
         go: false,
     };
     image.add_go_functions();
     image.add_dwarf_functions();
-    // Only an image with nothing but an entry point needs the prologue scan;
-    // symbols, debug info or a Go pclntab already list the functions.
+    image.add_unwind_functions();
+    // Only an image without symbols, debug info or a Go pclntab needs the
+    // prologue scan, and only for the code no unwind entry covers.
     if image.functions.values().all(|function| {
-        function
-            .sources
-            .iter()
-            .all(|source| *source == NameSource::Entry)
+        function.sources.iter().all(|source| {
+            matches!(
+                source,
+                NameSource::Entry | NameSource::Unwind | NameSource::Plt
+            )
+        })
     }) {
         image.scan_prologues();
     }
@@ -581,7 +640,9 @@ pub fn load(path: &Path) -> Result<Image> {
         if let Some(next) = starts
             .iter()
             .copied()
-            .find(|start| *start > function.addr && *start < end)
+            .chain(image.fragments.keys().copied())
+            .filter(|start| *start > function.addr && *start < end)
+            .min()
         {
             function.size = Some(next - function.addr);
         }

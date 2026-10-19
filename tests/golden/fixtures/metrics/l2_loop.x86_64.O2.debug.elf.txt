@@ -1,8 +1,8 @@
 # metrics/l2_loop.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 4 gotos
-0x2011d0 239 sum_while symtab,dwarf
-0x2012c0 157 count_down symtab,dwarf
-0x201360 71 sum_skip_odd symtab,dwarf
-0x2013b0 33 find_first symtab,dwarf
+0x2011d0 239 sum_while symtab,dwarf,unwind
+0x2012c0 157 count_down symtab,dwarf,unwind
+0x201360 71 sum_skip_odd symtab,dwarf,unwind
+0x2013b0 33 find_first symtab,dwarf,unwind
 
 == 0x2011d0 sum_while
 -- decompile
@@ -116,7 +116,7 @@ fn sum_while @ 0x2011d0 (size 239)
   blk9 @ 0x2012be:
     ret rax
 -- card
-{"addr":"0x2011d0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":239,"unsupported":0}
+{"addr":"0x2011d0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf","unwind"],"section":".text","size":239,"unsupported":0}
 
 == 0x2012c0 count_down
 -- decompile
@@ -196,7 +196,7 @@ fn count_down @ 0x2012c0 (size 157)
   blk7 @ 0x20135c:
     ret rax
 -- card
-{"addr":"0x2012c0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":157,"unsupported":0}
+{"addr":"0x2012c0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf","unwind"],"section":".text","size":157,"unsupported":0}
 
 == 0x201360 sum_skip_odd
 -- decompile
@@ -267,7 +267,7 @@ fn sum_skip_odd @ 0x201360 (size 71)
   blk9 @ 0x2013a6:
     ret rax
 -- card
-{"addr":"0x201360","approxTokens":138,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":71,"unsupported":0}
+{"addr":"0x201360","approxTokens":138,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":71,"unsupported":0}
 
 == 0x2013b0 find_first
 -- decompile
@@ -307,4 +307,4 @@ fn find_first @ 0x2013b0 (size 33)
   blk5 @ 0x2013ce:
     ret (rcx & #0xffffffff)
 -- card
-{"addr":"0x2013b0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":33,"unsupported":0}
+{"addr":"0x2013b0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}

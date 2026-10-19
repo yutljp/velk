@@ -212,8 +212,13 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
                     || x86_is_padding(bytes, base, instruction.next_ip());
             }
             FlowControl::Return => closed = true,
-            // A trap ends a function, as after a call that does not return.
-            FlowControl::Interrupt if instruction.mnemonic() == iced_x86::Mnemonic::Int3 => {
+            // A trap or halt ends a function, as after a call that does not
+            // return.
+            _ if matches!(
+                instruction.mnemonic(),
+                iced_x86::Mnemonic::Int3 | iced_x86::Mnemonic::Ud2 | iced_x86::Mnemonic::Hlt
+            ) =>
+            {
                 closed = true
             }
             _ => {}
@@ -274,6 +279,12 @@ mod tests {
         // call 0; int3; (next function) ret
         let code = [0xe8, 0xfb, 0xff, 0xff, 0xff, 0xcc, 0xc3];
         assert_eq!(x86_prologues(&code, 0), vec![6]);
+    }
+
+    #[test]
+    fn a_function_after_a_halt_is_found() {
+        // hlt; (next function) ret
+        assert_eq!(x86_prologues(&[0xf4, 0xc3], 0), vec![1]);
     }
 
     #[test]

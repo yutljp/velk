@@ -1,7 +1,7 @@
 # tail_calls.o: elf aarch64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x0 28 tail_one symtab
-0x1c 8 tail_two symtab
-0x24 24 tail_three symtab
+0x0 28 tail_one symtab,unwind
+0x1c 8 tail_two symtab,unwind
+0x24 24 tail_three symtab,unwind
 
 == 0x0 tail_one
 -- decompile
@@ -18,7 +18,7 @@ fn tail_one @ 0x0 (size 28)
   blk0 @ 0x0:
     ret (((w0 + (w0 << #0x1)) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","unwind"],"section":".text","size":28,"unsupported":0}
 
 == 0x1c tail_two
 -- decompile
@@ -39,7 +39,7 @@ fn tail_two @ 0x1c (size 8)
     call 0x0
     ret w0
 -- card
-{"addr":"0x1c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x1c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
 
 == 0x24 tail_three
 -- decompile
@@ -56,4 +56,4 @@ fn tail_three @ 0x24 (size 24)
   blk0 @ 0x24:
     ret ((w0 - #0x7) & #0xffffffff)
 -- card
-{"addr":"0x24","approxTokens":132,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x24","approxTokens":132,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","unwind"],"section":".text","size":24,"unsupported":0}

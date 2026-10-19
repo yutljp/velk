@@ -1,6 +1,6 @@
 # metrics/alt_names.aarch64.O2.debug.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x210164 12 alt_sum3 symtab,dwarf
-0x210170 68 alt_helper symtab,dwarf
+0x210164 12 alt_sum3 symtab,dwarf,unwind
+0x210170 68 alt_helper symtab,dwarf,unwind
 
 == 0x210164 alt_sum3
 -- decompile
@@ -17,7 +17,7 @@ fn alt_sum3 @ 0x210164 (size 12)
   blk0 @ 0x210164:
     ret (((w1 + w0) + w2) & #0xffffffff)
 -- card
-{"addr":"0x210164","approxTokens":114,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x210164","approxTokens":114,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 
 == 0x210170 alt_helper
 -- decompile
@@ -51,4 +51,4 @@ fn alt_helper @ 0x210170 (size 68)
   blk2 @ 0x2101ac:
     ret #0x0
 -- card
-{"addr":"0x210170","approxTokens":186,"blocks":3,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
+{"addr":"0x210170","approxTokens":186,"blocks":3,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}

@@ -40,26 +40,16 @@ pub fn lift(
     let bytes = image.read_vaddr(addr, size).ok_or(LiftError::Unreadable)?;
     match image.isa {
         Isa::AArch64 => {
-            let (decoded, stop) = aarch64::decode(bytes, addr);
-            build(
-                image,
-                aarch64::Lifter::new(image, addr),
-                addr,
-                &decoded,
-                stop,
-                extra_targets,
-            )
+            let machine = aarch64::Lifter::new(image, addr);
+            let (decoded, stop) =
+                decode_with_fragments(image, &machine, addr, bytes, aarch64::decode);
+            build(image, machine, addr, &decoded, stop, extra_targets)
         }
         Isa::X86_64 => {
-            let (decoded, stop) = x86_64::decode(bytes, addr);
-            build(
-                image,
-                x86_64::Lifter::new(image, addr),
-                addr,
-                &decoded,
-                stop,
-                extra_targets,
-            )
+            let machine = x86_64::Lifter::new(image, addr);
+            let (decoded, stop) =
+                decode_with_fragments(image, &machine, addr, bytes, x86_64::decode);
+            build(image, machine, addr, &decoded, stop, extra_targets)
         }
         Isa::Unsupported => Err(LiftError::UnsupportedIsa),
     }
@@ -121,6 +111,38 @@ fn reverse_bytes(value: Expr, width: u8, chunk: u8) -> Expr {
         })
         .reduce(|all, field| Expr::bin(BinOp::Or, all, field))
         .unwrap_or(value)
+}
+
+type Decoder<I> = fn(&[u8], u64) -> (Vec<Decoded<I>>, Option<String>);
+
+/// The function's instructions, followed by those of every fragment split
+/// off it, such as a cold part, that its branches reach.
+fn decode_with_fragments<M: Machine>(
+    image: &Image,
+    machine: &M,
+    addr: u64,
+    bytes: &[u8],
+    decode: Decoder<M::Instruction>,
+) -> (Vec<Decoded<M::Instruction>>, Option<String>) {
+    let (mut decoded, stop) = decode(bytes, addr);
+    let mut included = HashSet::new();
+    let mut scanned = 0;
+    while scanned < decoded.len() {
+        let reached: Vec<(u64, u64)> = decoded[scanned..]
+            .iter()
+            .filter_map(|d| machine.branch_target(&d.instruction, d.pc))
+            .filter(|target| !image.functions.contains_key(target))
+            .filter_map(|target| image.fragment_at(target))
+            .filter(|(start, _)| included.insert(*start))
+            .collect();
+        scanned = decoded.len();
+        for (start, size) in reached {
+            if let Some(bytes) = image.read_vaddr(start, size) {
+                decoded.extend(decode(bytes, start).0);
+            }
+        }
+    }
+    (decoded, stop)
 }
 
 /// What an instruction is about to overwrite.
@@ -244,7 +266,25 @@ fn build<M: Machine>(
     let mut blocks = Vec::new();
     let mut block_start = start;
     let mut pending = Vec::new();
+    let mut expected = start;
     for d in decoded {
+        // A fragment follows the code before it in the list, not in memory:
+        // code running off the end goes on at the next address.
+        if d.pc != expected {
+            pending.extend(machine.take_statements());
+            if block_start != expected || !pending.is_empty() {
+                pending.push(Stmt::Br {
+                    target: Some(expected),
+                });
+                blocks.push(Block {
+                    start: block_start,
+                    stmts: std::mem::take(&mut pending),
+                });
+                machine.block_ended();
+            }
+            block_start = d.pc;
+        }
+        expected = d.next;
         if d.pc != block_start && targets.contains(&d.pc) {
             pending.extend(machine.take_statements());
             // Instructions without statements, such as padding, leave no block.

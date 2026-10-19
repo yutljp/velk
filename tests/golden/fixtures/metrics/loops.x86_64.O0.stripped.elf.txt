@@ -1,8 +1,8 @@
 # metrics/loops.x86_64.O0.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 2 gotos
-0x2011c0 64 - prologue
-0x201200 64 - prologue
-0x201240 96 - prologue
-0x2012a0 119 - prologue
+0x2011c0 54 - unwind,prologue
+0x201200 61 - unwind,prologue
+0x201240 94 - unwind,prologue
+0x2012a0 119 - unwind,prologue
 
 == 0x2011c0 -
 -- decompile
@@ -24,7 +24,7 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2011c0 (size 64)
+fn <unnamed> @ 0x2011c0 (size 54)
   blk0 @ 0x2011c0:
     store32(edi, (rsp + #0xfffffffffffffff4))
     store32(#0x0, (rsp + #0xfffffffffffffff0))
@@ -37,7 +37,7 @@ fn <unnamed> @ 0x2011c0 (size 64)
   blk3 @ 0x2011f1:
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x2011c0","approxTokens":180,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":180,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":54,"unsupported":0}
 
 == 0x201200 -
 -- decompile
@@ -61,7 +61,7 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201200 (size 64)
+fn <unnamed> @ 0x201200 (size 61)
   blk0 @ 0x201200:
     store32(edi, (rsp + #0xfffffffffffffff4))
     store32(#0x0, (rsp + #0xfffffffffffffff0))
@@ -75,7 +75,7 @@ fn <unnamed> @ 0x201200 (size 64)
   blk3 @ 0x201238:
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201200","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201200","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":61,"unsupported":0}
 
 == 0x201240 -
 -- decompile
@@ -111,7 +111,7 @@ int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201240 (size 96)
+fn <unnamed> @ 0x201240 (size 94)
   blk0 @ 0x201240:
     store64(rdi, (rsp + #0xfffffffffffffff0))
     store32(esi, (rsp + #0xffffffffffffffec))
@@ -133,7 +133,7 @@ fn <unnamed> @ 0x201240 (size 96)
   blk5 @ 0x201299:
     ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
-{"addr":"0x201240","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201240","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":94,"unsupported":0}
 
 == 0x2012a0 -
 -- decompile
@@ -198,4 +198,4 @@ fn <unnamed> @ 0x2012a0 (size 119)
   blk8 @ 0x201312:
     ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
-{"addr":"0x2012a0","approxTokens":180,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":119,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2012a0","approxTokens":180,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":119,"unsupported":0}

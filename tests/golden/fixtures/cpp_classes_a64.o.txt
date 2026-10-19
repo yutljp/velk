@@ -1,9 +1,9 @@
 # cpp_classes_a64.o: elf aarch64 no entry, 5 functions, 0 lift failures, 1 unsupported, 0 gotos
-0x0 92 total_area(Shape const* const*, int) symtab
-0x5c 20 clamp_int(int) symtab
-0x70 28 clamp_long(long) symtab
-0x8c 24 dot_sum(Vec2 const&, Vec2 const&) symtab
-0xa4 16 increment(int&) symtab
+0x0 92 total_area(Shape const* const*, int) symtab,unwind
+0x5c 20 clamp_int(int) symtab,unwind
+0x70 28 clamp_long(long) symtab,unwind
+0x8c 24 dot_sum(Vec2 const&, Vec2 const&) symtab,unwind
+0xa4 16 increment(int&) symtab,unwind
 
 == 0x0 total_area(Shape const* const*, int)
 -- decompile
@@ -54,7 +54,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
   blk5 @ 0x48:
     ret (x19 & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab"],"section":".text","size":92,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","size":92,"unsupported":0}
 
 == 0x5c clamp_int(int)
 -- decompile
@@ -71,7 +71,7 @@ fn clamp_int(int) @ 0x5c (size 20)
   blk0 @ 0x5c:
     ret ((select lt w0, #0xff ? w0, #0xff & #0xffffffff) & (((select lt w0, #0xff ? w0, #0xff & #0xffffffff) >>> #0x1f) ^ #0xffffffffffffffff))
 -- card
-{"addr":"0x5c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x5c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x70 clamp_long(long)
 -- decompile
@@ -88,7 +88,7 @@ fn clamp_long(long) @ 0x70 (size 28)
   blk0 @ 0x70:
     ret select gt select lt x0, #0x3e8 ? x0, #0x3e8, #0xfffffffffffffc18 ? select lt x0, #0x3e8 ? x0, #0x3e8, #0xfffffffffffffc18
 -- card
-{"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab","unwind"],"section":".text","size":28,"unsupported":0}
 
 == 0x8c dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
@@ -107,7 +107,7 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
     unsupported: FMOV at 0x9c
     ret x0
 -- card
-{"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab"],"section":".text","size":24,"unsupported":1}
+{"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","size":24,"unsupported":1}
 
 == 0xa4 increment(int&)
 -- decompile
@@ -127,4 +127,4 @@ fn increment(int&) @ 0xa4 (size 16)
     store32(((load32(x0) + #0x1) & #0xffffffff), x0)
     ret x0
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0xa4","approxTokens":120,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0xa4","approxTokens":120,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab","unwind"],"section":".text","size":16,"unsupported":0}

@@ -1,11 +1,11 @@
 # metrics/control.x86_64.O0.debug.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 3 gotos
-0x201230 137 matrix_trace symtab,dwarf
-0x2012c0 78 cleanup_on_error symtab,dwarf
-0x201310 107 fallthrough symtab,dwarf
-0x201380 142 sparse symtab,dwarf
-0x201410 99 short_circuit symtab,dwarf
-0x201480 96 skip_negatives symtab,dwarf
-0x2014e0 153 find_pair symtab,dwarf
+0x201230 137 matrix_trace symtab,dwarf,unwind
+0x2012c0 78 cleanup_on_error symtab,dwarf,unwind
+0x201310 107 fallthrough symtab,dwarf,unwind
+0x201380 142 sparse symtab,dwarf,unwind
+0x201410 99 short_circuit symtab,dwarf,unwind
+0x201480 96 skip_negatives symtab,dwarf,unwind
+0x2014e0 153 find_pair symtab,dwarf,unwind
 
 == 0x201230 matrix_trace
 -- decompile
@@ -75,7 +75,7 @@ fn matrix_trace @ 0x201230 (size 137)
   blk10 @ 0x2012b4:
     ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
-{"addr":"0x201230","approxTokens":240,"blocks":11,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","size":137,"unsupported":0}
+{"addr":"0x201230","approxTokens":240,"blocks":11,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf","unwind"],"section":".text","size":137,"unsupported":0}
 
 == 0x2012c0 cleanup_on_error
 -- decompile
@@ -134,7 +134,7 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
     rsp = (rsp + #0x8)
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card
-{"addr":"0x2012c0","approxTokens":150,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","size":78,"unsupported":0}
+{"addr":"0x2012c0","approxTokens":150,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf","unwind"],"section":".text","size":78,"unsupported":0}
 
 == 0x201310 fallthrough
 -- decompile
@@ -206,7 +206,7 @@ fn fallthrough @ 0x201310 (size 107)
   blk7 @ 0x201376:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x201310","approxTokens":234,"blocks":8,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":107,"unsupported":0}
+{"addr":"0x201310","approxTokens":234,"blocks":8,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf","unwind"],"section":".text","size":107,"unsupported":0}
 
 == 0x201380 sparse
 -- decompile
@@ -277,7 +277,7 @@ fn sparse @ 0x201380 (size 142)
   blk13 @ 0x201409:
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x201380","approxTokens":144,"blocks":14,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":142,"unsupported":0}
+{"addr":"0x201380","approxTokens":144,"blocks":14,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","size":142,"unsupported":0}
 
 == 0x201410 short_circuit
 -- decompile
@@ -353,7 +353,7 @@ fn short_circuit @ 0x201410 (size 99)
     rax = ((rax & #0xffffffffffffff00) | (load8((rsp + #0xffffffffffffffeb)) & #0xff))
     ret ((rax & #0x1) & #0xff)
 -- card
-{"addr":"0x201410","approxTokens":240,"blocks":6,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":99,"unsupported":0}
+{"addr":"0x201410","approxTokens":240,"blocks":6,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf","unwind"],"section":".text","size":99,"unsupported":0}
 
 == 0x201480 skip_negatives
 -- decompile
@@ -409,7 +409,7 @@ fn skip_negatives @ 0x201480 (size 96)
   blk6 @ 0x2014db:
     ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
-{"addr":"0x201480","approxTokens":180,"blocks":7,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x201480","approxTokens":180,"blocks":7,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf","unwind"],"section":".text","size":96,"unsupported":0}
 
 == 0x2014e0 find_pair
 -- decompile
@@ -485,4 +485,4 @@ fn find_pair @ 0x2014e0 (size 153)
   blk11 @ 0x201574:
     ret (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
 -- card
-{"addr":"0x2014e0","approxTokens":240,"blocks":12,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","size":153,"unsupported":0}
+{"addr":"0x2014e0","approxTokens":240,"blocks":12,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf","unwind"],"section":".text","size":153,"unsupported":0}

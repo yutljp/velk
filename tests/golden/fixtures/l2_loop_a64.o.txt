@@ -1,8 +1,8 @@
 # l2_loop_a64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
-0x0 60 sum_while symtab
-0x3c 36 count_down symtab
-0x60 64 sum_skip_odd symtab
-0xa0 52 find_first symtab
+0x0 60 sum_while symtab,unwind
+0x3c 36 count_down symtab,unwind
+0x60 64 sum_skip_odd symtab,unwind
+0xa0 52 find_first symtab,unwind
 
 == 0x0 sum_while
 -- decompile
@@ -41,7 +41,7 @@ fn sum_while @ 0x0 (size 60)
   blk4 @ 0x30:
     ret #0x0
 -- card
-{"addr":"0x0","approxTokens":168,"blocks":5,"hardReasons":[],"name":"sum_while","nameSources":["symtab"],"section":".text","size":60,"unsupported":0}
+{"addr":"0x0","approxTokens":168,"blocks":5,"hardReasons":[],"name":"sum_while","nameSources":["symtab","unwind"],"section":".text","size":60,"unsupported":0}
 
 == 0x3c count_down
 -- decompile
@@ -71,7 +71,7 @@ fn count_down @ 0x3c (size 36)
   blk2 @ 0x5c:
     ret v1
 -- card
-{"addr":"0x3c","approxTokens":150,"blocks":3,"hardReasons":[],"name":"count_down","nameSources":["symtab"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x3c","approxTokens":150,"blocks":3,"hardReasons":[],"name":"count_down","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
 
 == 0x60 sum_skip_odd
 -- decompile
@@ -121,7 +121,7 @@ fn sum_skip_odd @ 0x60 (size 64)
   blk6 @ 0x98:
     ret (x8 & #0xffffffff)
 -- card
-{"addr":"0x60","approxTokens":192,"blocks":7,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x60","approxTokens":192,"blocks":7,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","unwind"],"section":".text","size":64,"unsupported":0}
 
 == 0xa0 find_first
 -- decompile
@@ -164,4 +164,4 @@ fn find_first @ 0xa0 (size 52)
   blk5 @ 0xd0:
     ret v1
 -- card
-{"addr":"0xa0","approxTokens":174,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab"],"section":".text","size":52,"unsupported":0}
+{"addr":"0xa0","approxTokens":174,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","unwind"],"section":".text","size":52,"unsupported":0}

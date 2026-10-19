@@ -1,6 +1,6 @@
 # metrics/alt_names.aarch64.O0.debug.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x21016c 44 alt_sum3 symtab,dwarf
-0x210198 96 alt_helper symtab,dwarf
+0x21016c 44 alt_sum3 symtab,dwarf,unwind
+0x210198 96 alt_helper symtab,dwarf,unwind
 
 == 0x21016c alt_sum3
 -- decompile
@@ -17,7 +17,7 @@ fn alt_sum3 @ 0x21016c (size 44)
   blk0 @ 0x21016c:
     ret ((((w0 & #0xffffffff) + (w1 & #0xffffffff)) + (w2 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x21016c","approxTokens":162,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x21016c","approxTokens":162,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":44,"unsupported":0}
 
 == 0x210198 alt_helper
 -- decompile
@@ -60,4 +60,4 @@ fn alt_helper @ 0x210198 (size 96)
   blk5 @ 0x2101ec:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf","unwind"],"section":".text","size":96,"unsupported":0}

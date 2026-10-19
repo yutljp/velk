@@ -1,8 +1,8 @@
 # metrics/l4_memory.x86_64.O0.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x201210 48 - prologue
-0x201240 80 - prologue
-0x201290 32 - prologue
-0x2012b0 16 - prologue
+0x201210 44 - unwind,prologue
+0x201240 73 - unwind,prologue
+0x201290 21 - unwind,prologue
+0x2012b0 16 - unwind,prologue
 
 == 0x201210 -
 -- decompile
@@ -15,11 +15,11 @@ int32_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201210 (size 48)
+fn <unnamed> @ 0x201210 (size 44)
   blk0 @ 0x201210:
     ret (((load32(rdi) * load32(rsi)) + (load32((rdi + #0x4)) * load32((rsi + #0x4)))) & #0xffffffff)
 -- card
-{"addr":"0x201210","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201210","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
 
 == 0x201240 -
 -- decompile
@@ -46,7 +46,7 @@ int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201240 (size 80)
+fn <unnamed> @ 0x201240 (size 73)
   blk0 @ 0x201240:
     store64(rdi, (rsp + #0xfffffffffffffff0))
     store32(esi, (rsp + #0xffffffffffffffec))
@@ -62,7 +62,7 @@ fn <unnamed> @ 0x201240 (size 80)
   blk3 @ 0x201284:
     ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
-{"addr":"0x201240","approxTokens":204,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":80,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201240","approxTokens":204,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":73,"unsupported":0}
 
 == 0x201290 -
 -- decompile
@@ -78,13 +78,13 @@ int32_t ()
 -- references
 0x2022c8 .bss
 -- ir
-fn <unnamed> @ 0x201290 (size 32)
+fn <unnamed> @ 0x201290 (size 21)
   blk0 @ 0x201290:
     eax = (load32(#0x2022c8) + #0x1)
     store32(eax, #0x2022c8)
     ret eax
 -- card
-{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
 == 0x2012b0 -
 -- decompile
@@ -102,4 +102,4 @@ fn <unnamed> @ 0x2012b0 (size 16)
   blk0 @ 0x2012b0:
     ret (sext8(load8(load64(#0x2022c0))) & #0xffffffff)
 -- card
-{"addr":"0x2012b0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameHints":["velk_ladder"],"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"strings":["velk ladder"],"unsupported":0}
+{"addr":"0x2012b0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameHints":["velk_ladder"],"nameSources":["unwind","prologue"],"section":".text","size":16,"strings":["velk ladder"],"unsupported":0}

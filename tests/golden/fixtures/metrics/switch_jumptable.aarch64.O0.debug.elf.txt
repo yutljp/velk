@@ -1,5 +1,5 @@
 # metrics/switch_jumptable.aarch64.O0.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 10 gotos
-0x21018c 880 d7 symtab,dwarf
+0x21018c 880 d7 symtab,dwarf,unwind
 
 == 0x21018c d7
 -- decompile
@@ -324,4 +324,4 @@ fn d7 @ 0x21018c (size 880)
     sp = (sp + #0x30)
     ret load32(#0x2204fc)
 -- card
-{"addr":"0x21018c","approxTokens":240,"blocks":82,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":880,"unsupported":0}
+{"addr":"0x21018c","approxTokens":240,"blocks":82,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":880,"unsupported":0}

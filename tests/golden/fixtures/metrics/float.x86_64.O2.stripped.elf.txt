@@ -1,9 +1,9 @@
 # metrics/float.x86_64.O2.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 8 unsupported, 2 gotos
-0x2011b0 176 - prologue
-0x201260 16 - prologue
-0x201270 16 - prologue
-0x201280 16 - prologue
-0x201290 22 - prologue
+0x2011b0 161 - unwind,prologue
+0x201260 13 - unwind,prologue
+0x201270 5 - unwind,prologue
+0x201280 9 - unwind,prologue
+0x201290 22 - unwind,prologue
 
 == 0x2011b0 -
 -- decompile
@@ -48,7 +48,7 @@ int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2011b0 (size 176)
+fn <unnamed> @ 0x2011b0 (size 161)
   blk0 @ 0x2011b0:
     xmm0 = #0x0
     xmm0_hi = #0x0
@@ -97,7 +97,7 @@ fn <unnamed> @ 0x2011b0 (size 176)
   blk10 @ 0x201250:
     ret eax
 -- card
-{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":176,"sizeEstimated":true,"unsupported":11}
+{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":161,"unsupported":11}
 
 == 0x201260 -
 -- decompile
@@ -111,14 +111,14 @@ int64_t ()
 -- references
 
 -- ir
-fn <unnamed> @ 0x201260 (size 16)
+fn <unnamed> @ 0x201260 (size 13)
   blk0 @ 0x201260:
     unsupported: Subss at 0x201260
     unsupported: Mulss at 0x201264
     unsupported: Addss at 0x201268
     ret rax
 -- card
-{"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":3}
+{"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":3}
 
 == 0x201270 -
 -- decompile
@@ -132,12 +132,12 @@ int64_t ()
 -- references
 
 -- ir
-fn <unnamed> @ 0x201270 (size 16)
+fn <unnamed> @ 0x201270 (size 5)
   blk0 @ 0x201270:
     unsupported: Cvttsd2si at 0x201270
     ret rax
 -- card
-{"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":5,"unsupported":1}
 
 == 0x201280 -
 -- decompile
@@ -151,13 +151,13 @@ int64_t ()
 -- references
 
 -- ir
-fn <unnamed> @ 0x201280 (size 16)
+fn <unnamed> @ 0x201280 (size 9)
   blk0 @ 0x201280:
     unsupported: Cvtss2sd at 0x201280
     unsupported: Addsd at 0x201284
     ret rax
 -- card
-{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":9,"unsupported":2}
 
 == 0x201290 -
 -- decompile
@@ -186,4 +186,4 @@ fn <unnamed> @ 0x201290 (size 22)
     rax = (select ls #0x0, #0x0 ? (rcx & #0xffffffff), #0xffffffff & #0xffffffff)
     ret rax
 -- card
-{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":22,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":2}

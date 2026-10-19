@@ -1,0 +1,575 @@
+# cold_gcc_stripped: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 12 gotos
+0x1000 27 - prologue
+0x1080 16 __cxa_finalize plt
+0x1090 16 __snprintf_chk plt
+0x10a0 16 abort plt
+0x10b0 16 __stack_chk_fail plt
+0x10c0 16 fputs plt
+0x10d0 16 __fprintf_chk plt
+0x1120 124 - unwind
+0x11a0 38 - entry,unwind
+0x11d0 48 - prologue
+0x1200 64 - prologue
+0x1240 64 - prologue
+0x1280 16 - prologue
+0x1290 240 - unwind
+0x1380 13 - prologue
+
+== 0x1000 -
+-- decompile
+/* velk pseudo-C: sub_1000 @ 0x1000 */
+int64_t sub_1000(void) {
+    rax = qword_3fe8;
+    if (rax != 0x0) {
+        (*(rax))();
+    }
+    return rax;
+}
+-- signature
+int64_t ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x1000 (size 27)
+  blk0 @ 0x1000:
+    rax = load64(#0x3fe8)
+    brif eq rax, #0x0 -> 0x1016
+  blk1 @ 0x1014:
+    call *rax
+  blk2 @ 0x1016:
+    ret rax
+-- card
+{"addr":"0x1000","approxTokens":144,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".init","size":27,"sizeEstimated":true,"unsupported":0}
+
+== 0x1080 __cxa_finalize
+-- decompile
+/* velk pseudo-C: __cxa_finalize @ 0x1080 */
+int32_t __cxa_finalize(void) {
+    goto *(qword_3ff8);
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn __cxa_finalize @ 0x1080 (size 16)
+  blk0 @ 0x1080:
+    br load64(#0x3ff8)
+-- card
+{"addr":"0x1080","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt.got","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1090 __snprintf_chk
+-- decompile
+/* velk pseudo-C: __snprintf_chk @ 0x1090 */
+int32_t __snprintf_chk(void) {
+    goto *(qword_3fb0);
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn __snprintf_chk @ 0x1090 (size 16)
+  blk0 @ 0x1090:
+    br load64(#0x3fb0)
+-- card
+{"addr":"0x1090","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__snprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x10a0 abort
+-- decompile
+/* velk pseudo-C: abort @ 0x10a0 */
+int32_t abort(void) {
+    goto *(qword_3fb8);
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn abort @ 0x10a0 (size 16)
+  blk0 @ 0x10a0:
+    br load64(#0x3fb8)
+-- card
+{"addr":"0x10a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x10b0 __stack_chk_fail
+-- decompile
+/* velk pseudo-C: __stack_chk_fail @ 0x10b0 */
+int32_t __stack_chk_fail(void) {
+    goto *(qword_3fc0);
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn __stack_chk_fail @ 0x10b0 (size 16)
+  blk0 @ 0x10b0:
+    br load64(#0x3fc0)
+-- card
+{"addr":"0x10b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__stack_chk_fail","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x10c0 fputs
+-- decompile
+/* velk pseudo-C: fputs @ 0x10c0 */
+int32_t fputs(void) {
+    goto *(qword_3fc8);
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn fputs @ 0x10c0 (size 16)
+  blk0 @ 0x10c0:
+    br load64(#0x3fc8)
+-- card
+{"addr":"0x10c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x10d0 __fprintf_chk
+-- decompile
+/* velk pseudo-C: __fprintf_chk @ 0x10d0 */
+int32_t __fprintf_chk(void) {
+    goto *(qword_3fd0);
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn __fprintf_chk @ 0x10d0 (size 16)
+  blk0 @ 0x10d0:
+    br load64(#0x3fd0)
+-- card
+{"addr":"0x10d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__fprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1120 -
+-- decompile
+/* velk pseudo-C: sub_1120 @ 0x1120 */
+int64_t sub_1120(int64_t a0) {
+    uint64_t local_0; /* [sp-10] */
+    uint64_t local_1; /* [sp-40] */
+    uint64_t local_2; /* [sp-38] */
+    uint64_t local_3; /* [sp-48] */
+    uint64_t local_4; /* [sp-28] */
+    uint64_t local_5; /* [sp-30] */
+    uint64_t local_6; /* [sp-20] */
+
+    rsp = rsp - 0x48;
+    rdx = (a0 & 0xffffffff);
+    rsi = 0x2;
+    local_0 = *(uint64_t *)(fs_base + 0x28);
+    rax = qword_2028;
+    a0 = rsp;
+    local_1 = 0x656e6f;
+    local_2 = 0x0;
+    local_3 = rax;
+    rax = qword_2030;
+    local_4 = 0x6f7774;
+    local_5 = rax;
+    local_6 = 0x0;
+    sub_1290();
+    rdx = local_0 - *(uint64_t *)(fs_base + 0x28);
+    if (rdx + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
+        __stack_chk_fail();
+    } else {
+        rsp = rsp + 0x48;
+        return rax;
+    }
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1120 (size 124)
+  blk0 @ 0x1120:
+    rsp = (rsp - #0x48)
+    rdx = (rdi & #0xffffffff)
+    rsi = #0x2
+    store64(load64((fs_base + #0x28)), (rsp + #0x38))
+    rax = load64(#0x2028)
+    rdi = rsp
+    store64(#0x656e6f, (rsp + #0x8))
+    store64(#0x0, (rsp + #0x10))
+    store64(rax, rsp)
+    rax = load64(#0x2030)
+    store64(#0x6f7774, (rsp + #0x20))
+    store64(rax, (rsp + #0x18))
+    store64(#0x0, (rsp + #0x28))
+    call 0x1290
+    rdx = (load64((rsp + #0x38)) - load64((fs_base + #0x28)))
+    brif ne (rdx + load64((fs_base + #0x28))), load64((fs_base + #0x28)) -> 0x1197
+  blk1 @ 0x1192:
+    rsp = (rsp + #0x48)
+    ret rax
+  blk2 @ 0x1197:
+    call 0x10b0
+-- card
+{"addr":"0x1120","approxTokens":228,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":124,"unsupported":0}
+
+== 0x11a0 -
+-- decompile
+/* velk pseudo-C: sub_11a0 @ 0x11a0 */
+int32_t sub_11a0(int32_t a0, int64_t a1, int64_t a2) {
+    r9 = a2;
+    a1 = *(uint64_t *)(rsp);
+    rsp = rsp + 0x8;
+    a2 = rsp;
+    rsp = rsp & 0xfffffffffffffff0;
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = rax;
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = rsp + 0x8;
+    r8 = 0x0;
+    rcx = 0x0;
+    a0 = 0x1120;
+    (*(qword_3fd8))();
+    __builtin_trap();
+}
+-- signature
+int32_t (int32_t a0, int64_t a1, int64_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x11a0 (size 38)
+  blk0 @ 0x11a0:
+    r9 = rdx
+    rsi = load64(rsp)
+    rsp = (rsp + #0x8)
+    rdx = rsp
+    rsp = (rsp & #0xfffffffffffffff0)
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rax, rsp)
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64((rsp + #0x8), rsp)
+    r8 = #0x0
+    rcx = #0x0
+    rdi = #0x1120
+    call *load64(#0x3fd8)
+    trap
+-- card
+{"addr":"0x11a0","approxTokens":174,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind"],"section":".text","size":38,"unsupported":0}
+
+== 0x11d0 -
+-- decompile
+/* velk pseudo-C: sub_11d0 @ 0x11d0 */
+int64_t sub_11d0(void) {
+    rdi = 0x4010;
+    rax = 0x4010;
+    if (0x4010 == 0x4010) {
+        return rax;
+    }
+    rax = qword_3fe0;
+    if (rax == 0x0) {
+        return rax;
+    }
+    goto *(rax);
+}
+-- signature
+int64_t ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x11d0 (size 48)
+  blk0 @ 0x11d0:
+    rdi = #0x4010
+    rax = #0x4010
+    brif eq #0x4010, #0x4010 -> 0x11f8
+  blk1 @ 0x11e3:
+    rax = load64(#0x3fe0)
+    brif eq rax, #0x0 -> 0x11f8
+  blk2 @ 0x11ef:
+    br rax
+  blk3 @ 0x11f8:
+    ret rax
+-- card
+{"addr":"0x11d0","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+
+== 0x1200 -
+-- decompile
+/* velk pseudo-C: sub_1200 @ 0x1200 */
+int64_t sub_1200(void) {
+    rdi = 0x4010;
+    rax = 0x0;
+    rsi = 0x0;
+    if (0x0 == 0x0) {
+        return rax;
+    }
+    rax = qword_3ff0;
+    if (rax == 0x0) {
+        return rax;
+    }
+    goto *(rax);
+}
+-- signature
+int64_t ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x1200 (size 64)
+  blk0 @ 0x1200:
+    rdi = #0x4010
+    rax = #0x0
+    rsi = #0x0
+    brif eq #0x0, #0x0 -> 0x1238
+  blk1 @ 0x1224:
+    rax = load64(#0x3ff0)
+    brif eq rax, #0x0 -> 0x1238
+  blk2 @ 0x1230:
+    br rax
+  blk3 @ 0x1238:
+    ret rax
+-- card
+{"addr":"0x1200","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+
+== 0x1240 -
+-- decompile
+/* velk pseudo-C: sub_1240 @ 0x1240 */
+void sub_1240(void) {
+    if (byte_4028 != 0x0) {
+        return;
+    }
+    if (qword_3ff8 != 0x0) {
+        rdi = qword_4008;
+        __cxa_finalize();
+    }
+    sub_11d0();
+    byte_4028 = 0x1;
+    return;
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x1240 (size 64)
+  blk0 @ 0x1240:
+    brif ne load8(#0x4028), #0x0 -> 0x1278
+  blk1 @ 0x124d:
+    brif eq load64(#0x3ff8), #0x0 -> 0x1267
+  blk2 @ 0x125b:
+    rdi = load64(#0x4008)
+    call 0x1080
+  blk3 @ 0x1267:
+    call 0x11d0
+    store8(#0x1, #0x4028)
+    ret rax
+  blk4 @ 0x1278:
+    ret rax
+-- card
+{"addr":"0x1240","approxTokens":174,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+
+== 0x1280 -
+-- decompile
+/* velk pseudo-C: sub_1280 @ 0x1280 */
+void sub_1280(void) {
+    sub_1200();
+    return;
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x1280 (size 16)
+  blk0 @ 0x1280:
+    call 0x1200
+    ret rax
+-- card
+{"addr":"0x1280","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1290 -
+-- decompile
+/* velk pseudo-C: sub_1290 @ 0x1290 */
+/* struct: a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t */
+int32_t sub_1290(uint64_t *a0, int64_t a1, int64_t a2) {
+    uint64_t local_0; /* [sp-20] */
+    uint64_t local_1; /* [sp-78] */
+    uint64_t local_2; /* [sp-70] */
+
+    rsp = rsp - 0x8;
+    rsp = rsp - 0x8;
+    rsp = rsp - 0x8;
+    rsp = rsp - 0x50;
+    local_0 = *(uint64_t *)(fs_base + 0x28);
+    rax = 0x0;
+    if ((a1 & 0xffffffff) <= 0x0) { goto L_10e0; }
+    rbx = a0;
+    rax = a0;
+    rbp = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
+    rcx = a0 + rbp;
+    goto L_12d9;
+L_12d0:
+    rax = rax + 0x18;
+    if (rax == rcx) { goto L_12fd; }
+L_12d9:
+    if (*(uint32_t *)(rax) != (a2 & 0xffffffff)) { goto L_12d0; }
+    rax = *(uint32_t *)(rax + 0x4);
+    a2 = local_0 - *(uint64_t *)(fs_base + 0x28);
+    if (a2 + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
+        __stack_chk_fail();
+        sub_1380();
+        return rax;
+    }
+    rsp = rsp + 0x50;
+    rsp = rsp + 0x8;
+    rsp = rsp + 0x8;
+    rsp = rsp + 0x8;
+    return rax;
+L_12fd:
+    r12 = rsp;
+    rsp = rsp - 0x8;
+    r9d = a2;
+    rcx = 0x40;
+    local_1 = a1;
+    a0 = r12;
+    r8 = 0x2004;
+    a2 = 0x2;
+    a1 = 0x40;
+    rax = 0x0;
+    rbx = rbx + 0x8;
+    rbp = rbp + rbx;
+    __snprintf_chk();
+    a1 = stderr;
+    a0 = r12;
+    fputs();
+    do {
+        r8 = *(uint32_t *)(rbx - 0x4);
+        a0 = stderr;
+        rcx = rbx;
+        rax = 0x0;
+        a2 = 0x201c;
+        a1 = 0x2;
+        rbx = rbx + 0x18;
+        __fprintf_chk();
+    } while (rbx != rbp);
+    abort();
+    __builtin_trap();
+L_10e0:
+    rbx = rsp;
+    rsp = rsp - 0x8;
+    local_2 = 0x0;
+    r9d = a2;
+    r8 = 0x2004;
+    local_1 = a1;
+    rcx = 0x40;
+    a2 = 0x2;
+    a1 = 0x40;
+    a0 = rbx;
+    rax = 0x0;
+    __snprintf_chk();
+    a1 = stderr;
+    a0 = rbx;
+    fputs();
+    abort();
+    __builtin_trap();
+}
+-- signature
+int32_t (uint64_t * a0, int64_t a1, int64_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1290 (size 240)
+  blk0 @ 0x1290:
+    rsp = (rsp + #0xfffffffffffffff8)
+    rsp = (rsp + #0xfffffffffffffff8)
+    rsp = (rsp + #0xfffffffffffffff8)
+    rsp = (rsp - #0x50)
+    store64(load64((fs_base + #0x28)), (rsp + #0x48))
+    rax = #0x0
+    brif le (rsi & #0xffffffff), #0x0 -> 0x10e0
+  blk1 @ 0x12b4:
+    rbx = rdi
+    rax = rdi
+    rbp = ((sext32(rsi) + (sext32(rsi) * #0x2)) << #0x3)
+    rcx = (rdi + rbp)
+    br 0x12d9
+  blk2 @ 0x12d0:
+    rax = (rax + #0x18)
+    brif eq rax, rcx -> 0x12fd
+  blk3 @ 0x12d9:
+    brif ne load32(rax), (rdx & #0xffffffff) -> 0x12d0
+  blk4 @ 0x12dd:
+    rax = (load32((rax + #0x4)) & #0xffffffff)
+    rdx = (load64((rsp + #0x48)) - load64((fs_base + #0x28)))
+    brif ne (rdx + load64((fs_base + #0x28))), load64((fs_base + #0x28)) -> 0x137b
+  blk5 @ 0x12f4:
+    rsp = (rsp + #0x50)
+    rsp = (rsp + #0x8)
+    rsp = (rsp + #0x8)
+    rsp = (rsp + #0x8)
+    ret rax
+  blk6 @ 0x12fd:
+    r12 = rsp
+    rsp = (rsp - #0x8)
+    r9d = rdx
+    rcx = #0x40
+    store64(rsi, (rsp + #0xfffffffffffffff8))
+    rdi = r12
+    r8 = #0x2004
+    rdx = #0x2
+    rsi = #0x40
+    rax = #0x0
+    rbx = (rbx + #0x8)
+    rbp = (rbp + rbx)
+    call 0x1090
+    rsi = load64(#0x4020)
+    rdi = r12
+    call 0x10c0
+  blk7 @ 0x1350:
+    r8 = (load32((rbx + #0xfffffffffffffffc)) & #0xffffffff)
+    rdi = load64(#0x4020)
+    rcx = rbx
+    rax = #0x0
+    rdx = #0x201c
+    rsi = #0x2
+    rbx = (rbx + #0x18)
+    call 0x10d0
+    brif ne rbx, rbp -> 0x1350
+  blk8 @ 0x1376:
+    br 0x111a
+  blk9 @ 0x137b:
+    call 0x10b0
+    br 0x1380
+  blk10 @ 0x10e0:
+    rbx = rsp
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(#0x0, rsp)
+    r9d = rdx
+    r8 = #0x2004
+    store64(rsi, (rsp + #0xfffffffffffffff8))
+    rcx = #0x40
+    rdx = #0x2
+    rsi = #0x40
+    rdi = rbx
+    rax = #0x0
+    call 0x1090
+    rsi = load64(#0x4020)
+    rdi = rbx
+    call 0x10c0
+  blk11 @ 0x111a:
+    call 0x10a0
+    trap
+  blk12 @ 0x1380:
+    call 0x1380
+    ret rax
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t"],"addr":"0x1290","approxTokens":198,"blocks":13,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":240,"unsupported":0}
+
+== 0x1380 -
+-- decompile
+/* velk pseudo-C: sub_1380 @ 0x1380 */
+void sub_1380(void) {
+    return;
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x1380 (size 13)
+  blk0 @ 0x1380:
+    ret rax
+-- card
+{"addr":"0x1380","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".fini","size":13,"sizeEstimated":true,"unsupported":0}

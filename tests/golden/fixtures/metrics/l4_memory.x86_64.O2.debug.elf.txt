@@ -1,8 +1,8 @@
 # metrics/l4_memory.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
-0x2011e0 15 point_dot symtab,dwarf
-0x2011f0 140 array_sum symtab,dwarf
-0x201280 7 bump symtab,dwarf
-0x201290 11 banner_first symtab,dwarf
+0x2011e0 15 point_dot symtab,dwarf,unwind
+0x2011f0 140 array_sum symtab,dwarf,unwind
+0x201280 7 bump symtab,dwarf,unwind
+0x201290 11 banner_first symtab,dwarf,unwind
 
 == 0x2011e0 point_dot
 -- decompile
@@ -20,7 +20,7 @@ fn point_dot @ 0x2011e0 (size 15)
   blk0 @ 0x2011e0:
     ret (((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi))) & #0xffffffff)
 -- card
-{"accesses":["b +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":15,"unsupported":0}
+{"accesses":["b +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf","unwind"],"section":".text","size":15,"unsupported":0}
 
 == 0x2011f0 array_sum
 -- decompile
@@ -111,7 +111,7 @@ fn array_sum @ 0x2011f0 (size 140)
   blk8 @ 0x20127b:
     ret rax
 -- card
-{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":7}
+{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":7}
 
 == 0x201280 bump
 -- decompile
@@ -131,7 +131,7 @@ fn bump @ 0x201280 (size 7)
     store32((load32(#0x2022a8) + #0x1), #0x2022a8)
     ret rax
 -- card
-{"addr":"0x201280","approxTokens":108,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":7,"unsupported":0}
+{"addr":"0x201280","approxTokens":108,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf","unwind"],"section":".text","size":7,"unsupported":0}
 
 == 0x201290 banner_first
 -- decompile
@@ -149,4 +149,4 @@ fn banner_first @ 0x201290 (size 11)
   blk0 @ 0x201290:
     ret (sext8(load8(load64(#0x2022a0))) & #0xffffffff)
 -- card
-{"addr":"0x201290","approxTokens":114,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf"],"section":".text","size":11,"strings":["velk ladder"],"unsupported":0}
+{"addr":"0x201290","approxTokens":114,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf","unwind"],"section":".text","size":11,"strings":["velk ladder"],"unsupported":0}

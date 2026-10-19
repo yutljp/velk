@@ -1,6 +1,7 @@
-# metrics/tail_calls.x86_64.O2.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x201180 16 - prologue
-0x201190 28 - prologue
+# metrics/tail_calls.x86_64.O2.stripped.elf: elf x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201180 14 - unwind,prologue
+0x201190 8 - unwind,prologue
+0x2011a0 12 - unwind
 
 == 0x201180 -
 -- decompile
@@ -13,33 +14,46 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201180 (size 16)
+fn <unnamed> @ 0x201180 (size 14)
   blk0 @ 0x201180:
     ret (((rdi + (rdi * #0x2)) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":14,"unsupported":0}
 
 == 0x201190 -
 -- decompile
 /* velk pseudo-C: sub_201190 @ 0x201190 */
-int32_t sub_201190(int32_t a0) {
+void sub_201190(int32_t a0) {
     a0 = a0 + 0x2;
     sub_201180();
-    return eax;
+    return;
+}
+-- signature
+void (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201190 (size 8)
+  blk0 @ 0x201190:
+    edi = (edi + #0x2)
+    call 0x201180
+    ret rax
+-- card
+{"addr":"0x201190","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+
+== 0x2011a0 -
+-- decompile
+/* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
+int32_t sub_2011a0(int32_t a0) {
+    return ((a0 - 0x7) & 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x201190 (size 28)
-  blk0 @ 0x201190:
-    edi = (edi + #0x2)
-    call 0x201180
-    ret eax
-  blk1 @ 0x201198:
-    v1 = (edi + #0xfffffffffffffff9)
-    store32(v1, (rsp + #0xfffffffffffffffc))
-    ret (v1 & #0xffffffff)
+fn <unnamed> @ 0x2011a0 (size 12)
+  blk0 @ 0x2011a0:
+    ret ((edi + #0xfffffffffffffff9) & #0xffffffff)
 -- card
-{"addr":"0x201190","approxTokens":108,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":12,"unsupported":0}

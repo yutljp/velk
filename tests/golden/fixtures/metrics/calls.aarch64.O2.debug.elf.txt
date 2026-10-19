@@ -1,15 +1,15 @@
 # metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 6 unsupported, 4 gotos
-0x2102c4 8 twice symtab,dwarf
-0x2102cc 8 square symtab,dwarf
-0x2102d4 28 pick_op symtab,dwarf
-0x2102f0 44 apply_table symtab,dwarf
-0x21031c 32 apply_pointer symtab,dwarf
-0x21033c 160 factorial symtab,dwarf
-0x2103dc 16 is_odd symtab,dwarf
-0x2103ec 20 is_even symtab,dwarf
-0x210400 40 sum9 symtab,dwarf
-0x210428 64 call_sum9 symtab,dwarf
-0x210468 188 sum_varargs symtab,dwarf
+0x2102c4 8 twice symtab,dwarf,unwind
+0x2102cc 8 square symtab,dwarf,unwind
+0x2102d4 28 pick_op symtab,dwarf,unwind
+0x2102f0 44 apply_table symtab,dwarf,unwind
+0x21031c 32 apply_pointer symtab,dwarf,unwind
+0x21033c 160 factorial symtab,dwarf,unwind
+0x2103dc 16 is_odd symtab,dwarf,unwind
+0x2103ec 20 is_even symtab,dwarf,unwind
+0x210400 40 sum9 symtab,dwarf,unwind
+0x210428 64 call_sum9 symtab,dwarf,unwind
+0x210468 188 sum_varargs symtab,dwarf,unwind
 
 == 0x2102c4 twice
 -- decompile
@@ -26,7 +26,7 @@ fn twice @ 0x2102c4 (size 8)
   blk0 @ 0x2102c4:
     ret ((w0 << #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2102c4","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x2102c4","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
 == 0x2102cc square
 -- decompile
@@ -43,7 +43,7 @@ fn square @ 0x2102cc (size 8)
   blk0 @ 0x2102cc:
     ret ((w0 * w0) & #0xffffffff)
 -- card
-{"addr":"0x2102cc","approxTokens":108,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x2102cc","approxTokens":108,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
 == 0x2102d4 pick_op
 -- decompile
@@ -62,7 +62,7 @@ fn pick_op @ 0x2102d4 (size 28)
     v1 = select eq (x0 & #0xffffffff), #0x0 ? #0x2102c4, #0x2102cc
     ret v1
 -- card
-{"addr":"0x2102d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pick_op","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2102d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pick_op","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
 == 0x2102f0 apply_table
 -- decompile
@@ -96,7 +96,7 @@ fn apply_table @ 0x2102f0 (size 44)
     x2 = load64((#0x220528 + ((x8 & #0xffffffff) << #0x3)))
     br x2
 -- card
-{"addr":"0x2102f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x2102f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf","unwind"],"section":".text","size":44,"unsupported":0}
 
 == 0x21031c apply_pointer
 -- decompile
@@ -119,7 +119,7 @@ fn apply_pointer @ 0x21031c (size 32)
     call *x8
     ret (((x0 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
 
 == 0x21033c factorial
 -- decompile
@@ -199,7 +199,7 @@ fn factorial @ 0x21033c (size 160)
   blk8 @ 0x2103d8:
     ret v1
 -- card
-{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":160,"unsupported":8}
+{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":8}
 
 == 0x2103dc is_odd
 -- decompile
@@ -227,7 +227,7 @@ fn is_odd @ 0x2103dc (size 16)
   blk2 @ 0x2103e8:
     ret w0
 -- card
-{"addr":"0x2103dc","approxTokens":120,"blocks":3,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x2103dc","approxTokens":120,"blocks":3,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":0}
 
 == 0x2103ec is_even
 -- decompile
@@ -255,7 +255,7 @@ fn is_even @ 0x2103ec (size 20)
   blk2 @ 0x2103f8:
     ret #0x1
 -- card
-{"addr":"0x2103ec","approxTokens":126,"blocks":3,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x2103ec","approxTokens":126,"blocks":3,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x210400 sum9
 -- decompile
@@ -272,7 +272,7 @@ fn sum9 @ 0x210400 (size 40)
   blk0 @ 0x210400:
     ret ((((x1 + x0) + (x2 + x3)) + ((x4 + x5) + x6)) + (x7 + load64(sp)))
 -- card
-{"addr":"0x210400","approxTokens":156,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x210400","approxTokens":156,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x210428 call_sum9
 -- decompile
@@ -309,7 +309,7 @@ fn call_sum9 @ 0x210428 (size 64)
     call 0x210400
     ret x0
 -- card
-{"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":64,"unsupported":0}
 
 == 0x210468 sum_varargs
 -- decompile
@@ -445,4 +445,4 @@ fn sum_varargs @ 0x210468 (size 188)
     sp = (sp + #0xe0)
     ret (x8 & #0xffffffff)
 -- card
-{"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":188,"unsupported":4}
+{"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":188,"unsupported":4}

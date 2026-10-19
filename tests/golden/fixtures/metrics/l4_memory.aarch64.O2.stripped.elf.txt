@@ -1,8 +1,8 @@
 # metrics/l4_memory.aarch64.O2.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 4 unsupported, 0 gotos
-0x2101d4 28 - prologue
-0x2101f0 140 - prologue
-0x21027c 20 - prologue
-0x210290 16 - prologue
+0x2101d4 28 - unwind,prologue
+0x2101f0 140 - unwind,prologue
+0x21027c 20 - unwind,prologue
+0x210290 16 - unwind,prologue
 
 == 0x2101d4 -
 -- decompile
@@ -22,7 +22,7 @@ fn <unnamed> @ 0x2101d4 (size 28)
     unsupported: FMOV at 0x2101e8
     ret x0
 -- card
-{"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":2}
 
 == 0x2101f0 -
 -- decompile
@@ -105,7 +105,7 @@ fn <unnamed> @ 0x2101f0 (size 140)
   blk9 @ 0x210274:
     ret (x8 & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":140,"sizeEstimated":true,"unsupported":5}
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":140,"unsupported":5}
 
 == 0x21027c -
 -- decompile
@@ -125,7 +125,7 @@ fn <unnamed> @ 0x21027c (size 20)
     store32(((load32(#0x2202a8) + #0x1) & #0xffffffff), #0x2202a8)
     ret x0
 -- card
-{"addr":"0x21027c","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x21027c","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
 == 0x210290 -
 -- decompile
@@ -145,4 +145,4 @@ fn <unnamed> @ 0x210290 (size 16)
     w0 = load8(load64(#0x2202a0))
     ret w0
 -- card
-{"addr":"0x210290","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameHints":["velk_ladder"],"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"strings":["velk ladder"],"unsupported":0}
+{"addr":"0x210290","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameHints":["velk_ladder"],"nameSources":["unwind","prologue"],"section":".text","size":16,"strings":["velk ladder"],"unsupported":0}

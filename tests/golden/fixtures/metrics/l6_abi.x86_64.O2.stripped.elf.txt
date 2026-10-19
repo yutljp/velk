@@ -1,8 +1,9 @@
-# metrics/l6_abi.x86_64.O2.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
-0x2011b0 16 - prologue
-0x2011c0 32 - prologue
-0x2011e0 16 - prologue
-0x2011f0 5 - prologue
+# metrics/l6_abi.x86_64.O2.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x2011b0 14 - unwind,prologue
+0x2011c0 8 - unwind,prologue
+0x2011d0 8 - unwind
+0x2011e0 14 - unwind,prologue
+0x2011f0 5 - unwind,prologue
 
 == 0x2011b0 -
 -- decompile
@@ -15,40 +16,53 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2011b0 (size 16)
+fn <unnamed> @ 0x2011b0 (size 14)
   blk0 @ 0x2011b0:
     ret (((rdi + (rdi * #0x2)) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2011b0","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011b0","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":14,"unsupported":0}
 
 == 0x2011c0 -
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
-int32_t sub_2011c0(int32_t a0) {
+void sub_2011c0(int32_t a0) {
     a0 = a0 + 0x2;
     sub_2011b0();
-    return rax;
-L_2011c8:
-    rax = a0;
-    a0 = ((rsi + 0x1) & 0xffffffff);
-    goto *(rax);
+    return;
 }
 -- signature
-int32_t (int32_t a0)
+void (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2011c0 (size 32)
+fn <unnamed> @ 0x2011c0 (size 8)
   blk0 @ 0x2011c0:
-    rdi = (((rdi & #0xffffffff) + #0x2) & #0xffffffff)
+    edi = (edi + #0x2)
     call 0x2011b0
     ret rax
-  blk1 @ 0x2011c8:
+-- card
+{"addr":"0x2011c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+
+== 0x2011d0 -
+-- decompile
+/* velk pseudo-C: sub_2011d0 @ 0x2011d0 */
+int32_t sub_2011d0(int32_t a0, int32_t a1) {
+    rax = a0;
+    a0 = a1 + 0x1;
+    goto *(rax);
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2011d0 (size 8)
+  blk0 @ 0x2011d0:
     rax = rdi
     rdi = ((rsi + #0x1) & #0xffffffff)
     br rax
 -- card
-{"addr":"0x2011c0","approxTokens":108,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":8,"unsupported":0}
 
 == 0x2011e0 -
 -- decompile
@@ -61,11 +75,11 @@ int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2011e0 (size 16)
+fn <unnamed> @ 0x2011e0 (size 14)
   blk0 @ 0x2011e0:
     ret (((((rdx + rcx) + (esi + edi)) + r8d) + r9d) & #0xffffffff)
 -- card
-{"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":14,"unsupported":0}
 
 == 0x2011f0 -
 -- decompile
@@ -82,4 +96,4 @@ fn <unnamed> @ 0x2011f0 (size 5)
   blk0 @ 0x2011f0:
     ret (rdi + rsi)
 -- card
-{"addr":"0x2011f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":5,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":5,"unsupported":0}

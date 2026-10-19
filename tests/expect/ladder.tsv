@@ -80,7 +80,7 @@
 7	go_probe	-	has	main.sumSlice
 7	go_probe	main.add	has	int64_t main_add(int64_t a0, int64_t a1)
 7	rust_demo	-	has	rust_demo::
-7	rust_probe_stripped	-	count	515
+7	rust_probe_stripped	-	count	545
 7	rust_probe_stripped	-	has_any	_main|entry
 # Expectations the reference fixtures do not meet yet.
 2	arm64_loops.o	sum_till_neg	has	sum_till_neg(uint32_t *a0, int32_t a1)
@@ -88,3 +88,6 @@
 5	switch_jumptable_x64.o	d7	has	switch (a0)
 6	calls_a64.elf	pick_op	has	twice
 6	cpp_demo.o	use(int)	has	ns__add_int__int_()
+7	cold_gcc_stripped	-	count	15
+7	cold_gcc	lookup	has	fputs(
+7	cold_gcc	-	nothas	lookup.cold

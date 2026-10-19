@@ -1,9 +1,9 @@
 # metrics/float.x86_64.O0.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 9 unsupported, 1 gotos
-0x2011f0 129 average symtab,dwarf
-0x201280 49 lerp symtab,dwarf
-0x2012c0 16 truncate_to_int symtab,dwarf
-0x2012d0 32 widen symtab,dwarf
-0x2012f0 79 compare_doubles symtab,dwarf
+0x2011f0 129 average symtab,dwarf,unwind
+0x201280 49 lerp symtab,dwarf,unwind
+0x2012c0 16 truncate_to_int symtab,dwarf,unwind
+0x2012d0 32 widen symtab,dwarf,unwind
+0x2012f0 79 compare_doubles symtab,dwarf,unwind
 
 == 0x2011f0 average
 -- decompile
@@ -83,7 +83,7 @@ fn average @ 0x2011f0 (size 129)
   blk6 @ 0x20126a:
     ret load64((rsp + #0xffffffffffffffd0))
 -- card
-{"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":129,"unsupported":3}
+{"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf","unwind"],"section":".text","size":129,"unsupported":3}
 
 == 0x201280 lerp
 -- decompile
@@ -124,7 +124,7 @@ fn lerp @ 0x201280 (size 49)
     unsupported: Addss at 0x2012ab
     ret xmm0
 -- card
-{"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":49,"unsupported":3}
+{"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":49,"unsupported":3}
 
 == 0x2012c0 truncate_to_int
 -- decompile
@@ -143,7 +143,7 @@ fn truncate_to_int @ 0x2012c0 (size 16)
     unsupported: Cvttsd2si at 0x2012c9
     ret rax
 -- card
-{"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
+{"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":1}
 
 == 0x2012d0 widen
 -- decompile
@@ -173,7 +173,7 @@ fn widen @ 0x2012d0 (size 32)
     unsupported: Mulsd at 0x2012ea
     ret xmm0
 -- card
-{"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":2}
+{"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":2}
 
 == 0x2012f0 compare_doubles
 -- decompile
@@ -236,4 +236,4 @@ fn compare_doubles @ 0x2012f0 (size 79)
   blk3 @ 0x20133a:
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card
-{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":79,"unsupported":2}
+{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":79,"unsupported":2}

@@ -1,5 +1,5 @@
 # metrics/switch_value_table.aarch64.O0.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x210154 172 dispatch symtab,dwarf
+0x210154 172 dispatch symtab,dwarf,unwind
 
 == 0x210154 dispatch
 -- decompile
@@ -82,4 +82,4 @@ fn dispatch @ 0x210154 (size 172)
   blk16 @ 0x2101f4:
     ret load32((sp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x210154","approxTokens":240,"blocks":17,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":172,"unsupported":0}
+{"addr":"0x210154","approxTokens":240,"blocks":17,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","size":172,"unsupported":0}

@@ -1,5 +1,5 @@
 # metrics/switch_value_table.aarch64.O2.stripped.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x210164 36 - prologue
+0x210164 36 - unwind,prologue
 
 == 0x210164 -
 -- decompile
@@ -26,4 +26,4 @@ fn <unnamed> @ 0x210164 (size 36)
   blk2 @ 0x210180:
     ret #0x0
 -- card
-{"addr":"0x210164","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210164","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}

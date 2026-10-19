@@ -1,7 +1,7 @@
 # metrics/l1_branch.aarch64.O0.stripped.elf: elf aarch64 no entry, 3 functions, 0 lift failures, 0 unsupported, 2 gotos
-0x210184 76 - prologue
-0x2101d0 104 - prologue
-0x210238 72 - prologue
+0x210184 76 - unwind,prologue
+0x2101d0 104 - unwind,prologue
+0x210238 72 - unwind,prologue
 
 == 0x210184 -
 -- decompile
@@ -49,7 +49,7 @@ fn <unnamed> @ 0x210184 (size 76)
   blk7 @ 0x2101c4:
     ret load32((sp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x210184","approxTokens":210,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":76,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210184","approxTokens":210,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 
 == 0x2101d0 -
 -- decompile
@@ -103,7 +103,7 @@ fn <unnamed> @ 0x2101d0 (size 104)
   blk7 @ 0x21022c:
     ret load32((sp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x2101d0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":104,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2101d0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":104,"unsupported":0}
 
 == 0x210238 -
 -- decompile
@@ -140,4 +140,4 @@ fn <unnamed> @ 0x210238 (size 72)
   blk4 @ 0x210274:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x210238","approxTokens":204,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":72,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210238","approxTokens":204,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}

@@ -1,8 +1,8 @@
 # metrics/l2_loop.aarch64.O2.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
-0x2101c4 60 - prologue
-0x210200 36 - prologue
-0x210224 64 - prologue
-0x210264 52 - prologue
+0x2101c4 60 - unwind,prologue
+0x210200 36 - unwind,prologue
+0x210224 64 - unwind,prologue
+0x210264 52 - unwind,prologue
 
 == 0x2101c4 -
 -- decompile
@@ -42,7 +42,7 @@ fn <unnamed> @ 0x2101c4 (size 60)
   blk4 @ 0x2101f4:
     ret #0x0
 -- card
-{"addr":"0x2101c4","approxTokens":168,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":60,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2101c4","approxTokens":168,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":60,"unsupported":0}
 
 == 0x210200 -
 -- decompile
@@ -73,7 +73,7 @@ fn <unnamed> @ 0x210200 (size 36)
   blk2 @ 0x210220:
     ret v1
 -- card
-{"addr":"0x210200","approxTokens":150,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210200","approxTokens":150,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
 == 0x210224 -
 -- decompile
@@ -124,7 +124,7 @@ fn <unnamed> @ 0x210224 (size 64)
   blk6 @ 0x21025c:
     ret (x8 & #0xffffffff)
 -- card
-{"addr":"0x210224","approxTokens":192,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210224","approxTokens":192,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":64,"unsupported":0}
 
 == 0x210264 -
 -- decompile
@@ -167,4 +167,4 @@ fn <unnamed> @ 0x210264 (size 52)
   blk5 @ 0x210294:
     ret v1
 -- card
-{"addr":"0x210264","approxTokens":174,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":52,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210264","approxTokens":174,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":52,"unsupported":0}

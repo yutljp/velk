@@ -1,8 +1,8 @@
 # metrics/arith_mixed.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
-0x201190 6 sum3 symtab,dwarf
-0x2011a0 46 helper symtab,dwarf
-0x2011d0 6 pair_sum symtab,dwarf
-0x2011e0 140 sum_arr symtab,dwarf
+0x201190 6 sum3 symtab,dwarf,unwind
+0x2011a0 46 helper symtab,dwarf,unwind
+0x2011d0 6 pair_sum symtab,dwarf,unwind
+0x2011e0 140 sum_arr symtab,dwarf,unwind
 
 == 0x201190 sum3
 -- decompile
@@ -19,7 +19,7 @@ fn sum3 @ 0x201190 (size 6)
   blk0 @ 0x201190:
     ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
-{"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+{"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":6,"unsupported":0}
 
 == 0x2011a0 helper
 -- decompile
@@ -53,7 +53,7 @@ fn helper @ 0x2011a0 (size 46)
   blk2 @ 0x2011cb:
     ret #0x0
 -- card
-{"addr":"0x2011a0","approxTokens":186,"blocks":3,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","size":46,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":186,"blocks":3,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf","unwind"],"section":".text","size":46,"unsupported":0}
 
 == 0x2011d0 pair_sum
 -- decompile
@@ -71,7 +71,7 @@ fn pair_sum @ 0x2011d0 (size 6)
   blk0 @ 0x2011d0:
     ret ((load32((rdi + #0x4)) + load32(rdi)) & #0xffffffff)
 -- card
-{"accesses":["p +0x4:uint32_t"],"addr":"0x2011d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+{"accesses":["p +0x4:uint32_t"],"addr":"0x2011d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":6,"unsupported":0}
 
 == 0x2011e0 sum_arr
 -- decompile
@@ -162,4 +162,4 @@ fn sum_arr @ 0x2011e0 (size 140)
   blk8 @ 0x20126b:
     ret rax
 -- card
-{"addr":"0x2011e0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":7}
+{"addr":"0x2011e0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":7}

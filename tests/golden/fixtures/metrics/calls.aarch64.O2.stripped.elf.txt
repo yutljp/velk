@@ -1,13 +1,15 @@
-# metrics/calls.aarch64.O2.stripped.elf: elf aarch64 no entry, 9 functions, 0 lift failures, 6 unsupported, 5 gotos
-0x2102c4 8 - prologue
-0x2102cc 12 - prologue
-0x2102d8 24 - prologue
-0x2102f0 44 - prologue
-0x21031c 32 - prologue
-0x21033c 196 - prologue
-0x210400 40 - prologue
-0x210428 64 - prologue
-0x210468 188 - prologue
+# metrics/calls.aarch64.O2.stripped.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 6 unsupported, 4 gotos
+0x2102c4 8 - unwind,prologue
+0x2102cc 8 - unwind,prologue
+0x2102d4 28 - unwind
+0x2102f0 44 - unwind,prologue
+0x21031c 32 - unwind,prologue
+0x21033c 160 - unwind,prologue
+0x2103dc 16 - unwind
+0x2103ec 20 - unwind
+0x210400 40 - unwind,prologue
+0x210428 64 - unwind,prologue
+0x210468 188 - unwind,prologue
 
 == 0x2102c4 -
 -- decompile
@@ -24,7 +26,7 @@ fn <unnamed> @ 0x2102c4 (size 8)
   blk0 @ 0x2102c4:
     ret ((w0 << #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2102c4","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102c4","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
 == 0x2102cc -
 -- decompile
@@ -37,16 +39,16 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2102cc (size 12)
+fn <unnamed> @ 0x2102cc (size 8)
   blk0 @ 0x2102cc:
     ret ((w0 * w0) & #0xffffffff)
 -- card
-{"addr":"0x2102cc","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102cc","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 
-== 0x2102d8 -
+== 0x2102d4 -
 -- decompile
-/* velk pseudo-C: sub_2102d8 @ 0x2102d8 */
-int32_t sub_2102d8(int32_t a0) {
+/* velk pseudo-C: sub_2102d4 @ 0x2102d4 */
+int32_t sub_2102d4(int32_t a0) {
     v1 = (a0 == 0x0 ? 0x2102c4 : 0x2102cc);
     return v1;
 }
@@ -55,12 +57,12 @@ int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x2102d8 (size 24)
-  blk0 @ 0x2102d8:
+fn <unnamed> @ 0x2102d4 (size 28)
+  blk0 @ 0x2102d4:
     v1 = select eq (x0 & #0xffffffff), #0x0 ? #0x2102c4, #0x2102cc
     ret v1
 -- card
-{"addr":"0x2102d8","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":28,"unsupported":0}
 
 == 0x2102f0 -
 -- decompile
@@ -94,7 +96,7 @@ fn <unnamed> @ 0x2102f0 (size 44)
     x2 = load64((#0x220528 + ((x8 & #0xffffffff) << #0x3)))
     br x2
 -- card
-{"addr":"0x2102f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
 
 == 0x21031c -
 -- decompile
@@ -117,7 +119,7 @@ fn <unnamed> @ 0x21031c (size 32)
     call *x8
     ret (((x0 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}
 
 == 0x21033c -
 -- decompile
@@ -153,24 +155,13 @@ L_21034c:
         w8 = w8 - 0x1;
     } while (w8 + 0x1 > 0x2 /* unsigned */);
     return v1;
-L_2103dc:
-    if (v3 != 0x0) {
-        v2 = v3 - 0x1;
-    } else {
-        return v3;
-    }
-    if (v2 == 0x0) {
-        return 0x1;
-    }
-    v3 = v2 - 0x1;
-    goto L_2103dc;
 }
 -- signature
 int32_t (int32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x21033c (size 196)
+fn <unnamed> @ 0x21033c (size 160)
   blk0 @ 0x21033c:
     brif ge (x0 & #0xffffffff), #0x2 -> 0x21034c
   blk1 @ 0x210344:
@@ -207,22 +198,64 @@ fn <unnamed> @ 0x21033c (size 196)
     brif hi (w8 + #0x1), #0x2 -> 0x2103c8
   blk8 @ 0x2103d8:
     ret v1
-  blk9 @ 0x2103dc:
-    brif eq (v3 & #0xffffffff), #0x0 -> 0x2103e8
-  blk10 @ 0x2103e0:
-    v2 = (((v3 & #0xffffffff) - #0x1) & #0xffffffff)
-    br 0x2103ec
-  blk11 @ 0x2103e8:
-    ret v3
-  blk12 @ 0x2103ec:
-    brif eq (v2 & #0xffffffff), #0x0 -> 0x2103f8
-  blk13 @ 0x2103f0:
-    v3 = (((v2 & #0xffffffff) - #0x1) & #0xffffffff)
-    br 0x2103dc
-  blk14 @ 0x2103f8:
+-- card
+{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":160,"unsupported":8}
+
+== 0x2103dc -
+-- decompile
+/* velk pseudo-C: sub_2103dc @ 0x2103dc */
+int32_t sub_2103dc(int32_t a0) {
+    if (a0 == 0x0) {
+        return a0;
+    }
+    a0 = a0 - 0x1;
+    sub_2103ec();
+    return a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2103dc (size 16)
+  blk0 @ 0x2103dc:
+    brif eq w0, #0x0 -> 0x2103e8
+  blk1 @ 0x2103e0:
+    w0 = (w0 - #0x1)
+    call 0x2103ec
+    ret w0
+  blk2 @ 0x2103e8:
+    ret w0
+-- card
+{"addr":"0x2103dc","approxTokens":120,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":16,"unsupported":0}
+
+== 0x2103ec -
+-- decompile
+/* velk pseudo-C: sub_2103ec @ 0x2103ec */
+int32_t sub_2103ec(int32_t a0) {
+    if (a0 == 0x0) {
+        return 0x1;
+    }
+    a0 = a0 - 0x1;
+    sub_2103dc();
+    return a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2103ec (size 20)
+  blk0 @ 0x2103ec:
+    brif eq (x0 & #0xffffffff), #0x0 -> 0x2103f8
+  blk1 @ 0x2103f0:
+    x0 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
+    call 0x2103dc
+    ret x0
+  blk2 @ 0x2103f8:
     ret #0x1
 -- card
-{"addr":"0x21033c","approxTokens":120,"blocks":15,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":196,"sizeEstimated":true,"unsupported":8}
+{"addr":"0x2103ec","approxTokens":126,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x210400 -
 -- decompile
@@ -239,7 +272,7 @@ fn <unnamed> @ 0x210400 (size 40)
   blk0 @ 0x210400:
     ret ((((x1 + x0) + (x2 + x3)) + ((x4 + x5) + x6)) + (x7 + load64(sp)))
 -- card
-{"addr":"0x210400","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210400","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":40,"unsupported":0}
 
 == 0x210428 -
 -- decompile
@@ -276,7 +309,7 @@ fn <unnamed> @ 0x210428 (size 64)
     call 0x210400
     ret x0
 -- card
-{"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":64,"unsupported":0}
 
 == 0x210468 -
 -- decompile
@@ -412,4 +445,4 @@ fn <unnamed> @ 0x210468 (size 188)
     sp = (sp + #0xe0)
     ret (x8 & #0xffffffff)
 -- card
-{"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":188,"sizeEstimated":true,"unsupported":4}
+{"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":188,"unsupported":4}

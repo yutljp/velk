@@ -1,5 +1,5 @@
 # metrics/strings.aarch64.O2.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x21019c 16 pick symtab,dwarf
+0x21019c 16 pick symtab,dwarf,unwind
 
 == 0x21019c pick
 -- decompile
@@ -19,4 +19,4 @@ fn pick @ 0x21019c (size 16)
     w0 = load8((load64(#0x2201b0) + #0x2))
     ret w0
 -- card
-{"addr":"0x21019c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameHints":["velk_aarch64_string"],"nameSources":["symtab","dwarf"],"section":".text","size":16,"strings":["velk-aarch64-string"],"unsupported":0}
+{"addr":"0x21019c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameHints":["velk_aarch64_string"],"nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"strings":["velk-aarch64-string"],"unsupported":0}

@@ -1,22 +1,22 @@
 # metrics/l5_switch.aarch64.O0.debug.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x210334 228 dense symtab,dwarf
-0x210418 20 c0 symtab,dwarf
-0x21042c 24 c1 symtab,dwarf
-0x210444 20 c2 symtab,dwarf
-0x210458 20 c3 symtab,dwarf
-0x21046c 20 c4 symtab,dwarf
-0x210480 24 c5 symtab,dwarf
-0x210498 20 c6 symtab,dwarf
-0x2104ac 20 c7 symtab,dwarf
-0x2104c0 20 c8 symtab,dwarf
-0x2104d4 24 c9 symtab,dwarf
-0x2104ec 20 c10 symtab,dwarf
-0x210500 24 c11 symtab,dwarf
-0x210518 20 c12 symtab,dwarf
-0x21052c 24 c13 symtab,dwarf
-0x210544 20 c14 symtab,dwarf
-0x210558 24 c15 symtab,dwarf
-0x210570 120 sparse symtab,dwarf
+0x210334 228 dense symtab,dwarf,unwind
+0x210418 20 c0 symtab,dwarf,unwind
+0x21042c 24 c1 symtab,dwarf,unwind
+0x210444 20 c2 symtab,dwarf,unwind
+0x210458 20 c3 symtab,dwarf,unwind
+0x21046c 20 c4 symtab,dwarf,unwind
+0x210480 24 c5 symtab,dwarf,unwind
+0x210498 20 c6 symtab,dwarf,unwind
+0x2104ac 20 c7 symtab,dwarf,unwind
+0x2104c0 20 c8 symtab,dwarf,unwind
+0x2104d4 24 c9 symtab,dwarf,unwind
+0x2104ec 20 c10 symtab,dwarf,unwind
+0x210500 24 c11 symtab,dwarf,unwind
+0x210518 20 c12 symtab,dwarf,unwind
+0x21052c 24 c13 symtab,dwarf,unwind
+0x210544 20 c14 symtab,dwarf,unwind
+0x210558 24 c15 symtab,dwarf,unwind
+0x210570 120 sparse symtab,dwarf,unwind
 
 == 0x210334 dense
 -- decompile
@@ -230,7 +230,7 @@ fn dense @ 0x210334 (size 228)
     sp = (sp + #0x20)
     ret v1
 -- card
-{"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":228,"unsupported":0}
+{"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf","unwind"],"section":".text","size":228,"unsupported":0}
 
 == 0x210418 c0
 -- decompile
@@ -250,7 +250,7 @@ fn c0 @ 0x210418 (size 20)
     store32(((load32(#0x2205e8) + #0xb) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210418","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c0","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x210418","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c0","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x21042c c1
 -- decompile
@@ -270,7 +270,7 @@ fn c1 @ 0x21042c (size 24)
     store32(((load32(#0x2205e8) ^ #0x12) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x21042c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c1","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x21042c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c1","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x210444 c2
 -- decompile
@@ -290,7 +290,7 @@ fn c2 @ 0x210444 (size 20)
     store32(((load32(#0x2205e8) - #0x19) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210444","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c2","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x210444","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c2","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x210458 c3
 -- decompile
@@ -310,7 +310,7 @@ fn c3 @ 0x210458 (size 20)
     store32(((load32(#0x2205e8) | #0x20) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210458","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c3","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x210458","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x21046c c4
 -- decompile
@@ -330,7 +330,7 @@ fn c4 @ 0x21046c (size 20)
     store32(((load32(#0x2205e8) + #0x27) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x21046c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c4","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x21046c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c4","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x210480 c5
 -- decompile
@@ -350,7 +350,7 @@ fn c5 @ 0x210480 (size 24)
     store32(((load32(#0x2205e8) ^ #0x2e) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210480","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c5","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x210480","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c5","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x210498 c6
 -- decompile
@@ -370,7 +370,7 @@ fn c6 @ 0x210498 (size 20)
     store32(((load32(#0x2205e8) - #0x35) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210498","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c6","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x210498","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c6","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x2104ac c7
 -- decompile
@@ -390,7 +390,7 @@ fn c7 @ 0x2104ac (size 20)
     store32(((load32(#0x2205e8) | #0x3c) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x2104ac","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c7","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x2104ac","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x2104c0 c8
 -- decompile
@@ -410,7 +410,7 @@ fn c8 @ 0x2104c0 (size 20)
     store32(((load32(#0x2205e8) + #0x43) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x2104c0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c8","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x2104c0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c8","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x2104d4 c9
 -- decompile
@@ -430,7 +430,7 @@ fn c9 @ 0x2104d4 (size 24)
     store32(((load32(#0x2205e8) ^ #0x4a) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x2104d4","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c9","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x2104d4","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x2104ec c10
 -- decompile
@@ -450,7 +450,7 @@ fn c10 @ 0x2104ec (size 20)
     store32(((load32(#0x2205e8) - #0x51) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x2104ec","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c10","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x2104ec","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x210500 c11
 -- decompile
@@ -470,7 +470,7 @@ fn c11 @ 0x210500 (size 24)
     store32(((load32(#0x2205e8) | #0x58) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210500","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c11","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x210500","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c11","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x210518 c12
 -- decompile
@@ -490,7 +490,7 @@ fn c12 @ 0x210518 (size 20)
     store32(((load32(#0x2205e8) + #0x5f) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210518","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c12","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x210518","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c12","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x21052c c13
 -- decompile
@@ -510,7 +510,7 @@ fn c13 @ 0x21052c (size 24)
     store32(((load32(#0x2205e8) ^ #0x66) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x21052c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c13","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x21052c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c13","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x210544 c14
 -- decompile
@@ -530,7 +530,7 @@ fn c14 @ 0x210544 (size 20)
     store32(((load32(#0x2205e8) - #0x6d) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210544","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c14","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x210544","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c14","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x210558 c15
 -- decompile
@@ -550,7 +550,7 @@ fn c15 @ 0x210558 (size 24)
     store32(((load32(#0x2205e8) | #0x74) & #0xffffffff), #0x2205e8)
     ret x0
 -- card
-{"addr":"0x210558","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c15","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x210558","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c15","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0x210570 sparse
 -- decompile
@@ -611,4 +611,4 @@ fn sparse @ 0x210570 (size 120)
   blk10 @ 0x2105dc:
     ret load32((sp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x210570","approxTokens":240,"blocks":11,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":120,"unsupported":0}
+{"addr":"0x210570","approxTokens":240,"blocks":11,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","size":120,"unsupported":0}

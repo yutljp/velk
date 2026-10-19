@@ -1,9 +1,9 @@
 # metrics/float.aarch64.O2.stripped.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 11 unsupported, 1 gotos
-0x21019c 144 - prologue
-0x21022c 12 - prologue
-0x210238 8 - prologue
-0x210240 12 - prologue
-0x21024c 16 - prologue
+0x21019c 144 - unwind,prologue
+0x21022c 12 - unwind,prologue
+0x210238 8 - unwind,prologue
+0x210240 12 - unwind,prologue
+0x21024c 16 - unwind,prologue
 
 == 0x21019c -
 -- decompile
@@ -92,7 +92,7 @@ fn <unnamed> @ 0x21019c (size 144)
     unsupported: MOVI at 0x210224
     ret x0
 -- card
-{"addr":"0x21019c","approxTokens":240,"blocks":11,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":144,"sizeEstimated":true,"unsupported":12}
+{"addr":"0x21019c","approxTokens":240,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":144,"unsupported":12}
 
 == 0x21022c -
 -- decompile
@@ -112,7 +112,7 @@ fn <unnamed> @ 0x21022c (size 12)
     unsupported: FMADD at 0x210230
     ret x0
 -- card
-{"addr":"0x21022c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x21022c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":2}
 
 == 0x210238 -
 -- decompile
@@ -131,7 +131,7 @@ fn <unnamed> @ 0x210238 (size 8)
     unsupported: FCVTZS at 0x210238
     ret x0
 -- card
-{"addr":"0x210238","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210238","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":1}
 
 == 0x210240 -
 -- decompile
@@ -151,7 +151,7 @@ fn <unnamed> @ 0x210240 (size 12)
     unsupported: FADD at 0x210244
     ret x0
 -- card
-{"addr":"0x210240","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x210240","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":2}
 
 == 0x21024c -
 -- decompile
@@ -174,4 +174,4 @@ fn <unnamed> @ 0x21024c (size 16)
     w0 = select ge w8, #0x0 ? w8, #0xffffffff
     ret w0
 -- card
-{"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":1}

@@ -1,8 +1,8 @@
 # metrics/l4_memory.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 4 unsupported, 0 gotos
-0x2101d4 28 point_dot symtab,dwarf
-0x2101f0 140 array_sum symtab,dwarf
-0x21027c 20 bump symtab,dwarf
-0x210290 16 banner_first symtab,dwarf
+0x2101d4 28 point_dot symtab,dwarf,unwind
+0x2101f0 140 array_sum symtab,dwarf,unwind
+0x21027c 20 bump symtab,dwarf,unwind
+0x210290 16 banner_first symtab,dwarf,unwind
 
 == 0x2101d4 point_dot
 -- decompile
@@ -22,7 +22,7 @@ fn point_dot @ 0x2101d4 (size 28)
     unsupported: FMOV at 0x2101e8
     ret x0
 -- card
-{"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":2}
+{"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":2}
 
 == 0x2101f0 array_sum
 -- decompile
@@ -105,7 +105,7 @@ fn array_sum @ 0x2101f0 (size 140)
   blk9 @ 0x210274:
     ret (x8 & #0xffffffff)
 -- card
-{"accesses":["a +0x0:uint32_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":5}
+{"accesses":["a +0x0:uint32_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":5}
 
 == 0x21027c bump
 -- decompile
@@ -125,7 +125,7 @@ fn bump @ 0x21027c (size 20)
     store32(((load32(#0x2202a8) + #0x1) & #0xffffffff), #0x2202a8)
     ret x0
 -- card
-{"addr":"0x21027c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x21027c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x210290 banner_first
 -- decompile
@@ -145,4 +145,4 @@ fn banner_first @ 0x210290 (size 16)
     w0 = load8(load64(#0x2202a0))
     ret w0
 -- card
-{"addr":"0x210290","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf"],"section":".text","size":16,"strings":["velk ladder"],"unsupported":0}
+{"addr":"0x210290","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"strings":["velk ladder"],"unsupported":0}

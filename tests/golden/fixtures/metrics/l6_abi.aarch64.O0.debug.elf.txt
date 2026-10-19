@@ -1,9 +1,9 @@
 # metrics/l6_abi.aarch64.O0.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x2101d4 40 tail_target symtab,dwarf
-0x2101fc 40 tail_direct symtab,dwarf
-0x210224 48 tail_indirect symtab,dwarf
-0x210254 80 six_args symtab,dwarf
-0x2102a4 32 wide_add symtab,dwarf
+0x2101d4 40 tail_target symtab,dwarf,unwind
+0x2101fc 40 tail_direct symtab,dwarf,unwind
+0x210224 48 tail_indirect symtab,dwarf,unwind
+0x210254 80 six_args symtab,dwarf,unwind
+0x2102a4 32 wide_add symtab,dwarf,unwind
 
 == 0x2101d4 tail_target
 -- decompile
@@ -24,7 +24,7 @@ fn tail_target @ 0x2101d4 (size 40)
     store32(w0, (sp + #0xfffffffffffffffc))
     ret (((load32((sp + #0xfffffffffffffffc)) * #0x3) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2101d4","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x2101d4","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x2101fc tail_direct
 -- decompile
@@ -51,7 +51,7 @@ fn tail_direct @ 0x2101fc (size 40)
     call 0x2101d4
     ret w0
 -- card
-{"addr":"0x2101fc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x2101fc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
 == 0x210224 tail_indirect
 -- decompile
@@ -81,7 +81,7 @@ fn tail_indirect @ 0x210224 (size 48)
     call *x8
     ret w0
 -- card
-{"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 
 == 0x210254 six_args
 -- decompile
@@ -98,7 +98,7 @@ fn six_args @ 0x210254 (size 80)
   blk0 @ 0x210254:
     ret (((((((w0 & #0xffffffff) + (w1 & #0xffffffff)) + (w2 & #0xffffffff)) + (w3 & #0xffffffff)) + (w4 & #0xffffffff)) + (w5 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x210254","approxTokens":216,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","size":80,"unsupported":0}
+{"addr":"0x210254","approxTokens":216,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf","unwind"],"section":".text","size":80,"unsupported":0}
 
 == 0x2102a4 wide_add
 -- decompile
@@ -115,4 +115,4 @@ fn wide_add @ 0x2102a4 (size 32)
   blk0 @ 0x2102a4:
     ret (x0 + x1)
 -- card
-{"addr":"0x2102a4","approxTokens":144,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x2102a4","approxTokens":144,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}

@@ -1,8 +1,8 @@
 # metrics/l2_loop.x86_64.O2.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 4 gotos
-0x2011d0 240 - prologue
-0x2012c0 160 - prologue
-0x201360 80 - prologue
-0x2013b0 33 - prologue
+0x2011d0 239 - unwind,prologue
+0x2012c0 157 - unwind,prologue
+0x201360 71 - unwind,prologue
+0x2013b0 33 - unwind,prologue
 
 == 0x2011d0 -
 -- decompile
@@ -63,7 +63,7 @@ int32_t (int32_t a0)
 -- references
 0x2023d4 .bss
 -- ir
-fn <unnamed> @ 0x2011d0 (size 240)
+fn <unnamed> @ 0x2011d0 (size 239)
   blk0 @ 0x2011d0:
     brif le edi, #0x0 -> 0x2011ef
   blk1 @ 0x2011d4:
@@ -116,7 +116,7 @@ fn <unnamed> @ 0x2011d0 (size 240)
   blk9 @ 0x2012be:
     ret rax
 -- card
-{"addr":"0x2011d0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":240,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2011d0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":239,"unsupported":0}
 
 == 0x2012c0 -
 -- decompile
@@ -160,7 +160,7 @@ int32_t (int32_t a0)
 -- references
 0x2023d4 .bss
 -- ir
-fn <unnamed> @ 0x2012c0 (size 160)
+fn <unnamed> @ 0x2012c0 (size 157)
   blk0 @ 0x2012c0:
     rax = (select ge edi, #0x2 ? edi, #0x1 & #0xffffffff)
     ecx = (rax & #0x7)
@@ -196,7 +196,7 @@ fn <unnamed> @ 0x2012c0 (size 160)
   blk7 @ 0x20135c:
     ret rax
 -- card
-{"addr":"0x2012c0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":160,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2012c0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":157,"unsupported":0}
 
 == 0x201360 -
 -- decompile
@@ -235,7 +235,7 @@ int32_t (int32_t a0)
 -- references
 0x2023d4 .bss
 -- ir
-fn <unnamed> @ 0x201360 (size 80)
+fn <unnamed> @ 0x201360 (size 71)
   blk0 @ 0x201360:
     brif le (rdi & #0xffffffff), #0x0 -> 0x20136f
   blk1 @ 0x201364:
@@ -267,7 +267,7 @@ fn <unnamed> @ 0x201360 (size 80)
   blk9 @ 0x2013a6:
     ret rax
 -- card
-{"addr":"0x201360","approxTokens":138,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":80,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201360","approxTokens":138,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":71,"unsupported":0}
 
 == 0x2013b0 -
 -- decompile
@@ -307,4 +307,4 @@ fn <unnamed> @ 0x2013b0 (size 33)
   blk5 @ 0x2013ce:
     ret (rcx & #0xffffffff)
 -- card
-{"addr":"0x2013b0","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":33,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2013b0","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}

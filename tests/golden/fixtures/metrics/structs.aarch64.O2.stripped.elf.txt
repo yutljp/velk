@@ -1,12 +1,12 @@
 # metrics/structs.aarch64.O2.stripped.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 2 unsupported, 0 gotos
-0x2101dc 20 - prologue
-0x2101f0 160 - prologue
-0x210290 24 - prologue
-0x2102a8 24 - prologue
-0x2102c0 20 - prologue
-0x2102d4 4 - prologue
-0x2102d8 20 - prologue
-0x2102ec 24 - prologue
+0x2101dc 20 - unwind,prologue
+0x2101f0 160 - unwind,prologue
+0x210290 24 - unwind,prologue
+0x2102a8 24 - unwind,prologue
+0x2102c0 20 - unwind,prologue
+0x2102d4 4 - unwind,prologue
+0x2102d8 20 - unwind,prologue
+0x2102ec 24 - unwind,prologue
 
 == 0x2101dc -
 -- decompile
@@ -26,7 +26,7 @@ fn <unnamed> @ 0x2101dc (size 20)
     unsupported: FMOV at 0x2101e8
     ret x0
 -- card
-{"addr":"0x2101dc","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x2101dc","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":2}
 
 == 0x2101f0 -
 -- decompile
@@ -121,7 +121,7 @@ fn <unnamed> @ 0x2101f0 (size 160)
   blk9 @ 0x210288:
     ret x8
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint16_t, +0xffffffffffffffe8:uint64_t, +0xfffffffffffffff0:uint16_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":160,"sizeEstimated":true,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint16_t, +0xffffffffffffffe8:uint64_t, +0xfffffffffffffff0:uint16_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":160,"unsupported":0}
 
 == 0x210290 -
 -- decompile
@@ -138,7 +138,7 @@ fn <unnamed> @ 0x210290 (size 24)
   blk0 @ 0x210290:
     ret ((((x0 & #0xffffffff00000000) + x1) & #0xffffffff00000000) | (((x1 & #0xffffffff) + (x0 & #0xffffffff)) & #0xffffffff))
 -- card
-{"addr":"0x210290","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210290","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
 == 0x2102a8 -
 -- decompile
@@ -165,7 +165,7 @@ fn <unnamed> @ 0x2102a8 (size 24)
     store64((x10 + x0), (x8 + #0x18))
     ret x0
 -- card
-{"addr":"0x2102a8","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102a8","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
 == 0x2102c0 -
 -- decompile
@@ -186,7 +186,7 @@ fn <unnamed> @ 0x2102c0 (size 20)
     unsupported: FMOV at 0x2102cc
     ret x0
 -- card
-{"addr":"0x2102c0","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":3}
+{"addr":"0x2102c0","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":3}
 
 == 0x2102d4 -
 -- decompile
@@ -203,7 +203,7 @@ fn <unnamed> @ 0x2102d4 (size 4)
   blk0 @ 0x2102d4:
     ret x0
 -- card
-{"addr":"0x2102d4","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":4,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102d4","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":4,"unsupported":0}
 
 == 0x2102d8 -
 -- decompile
@@ -220,7 +220,7 @@ fn <unnamed> @ 0x2102d8 (size 20)
   blk0 @ 0x2102d8:
     ret (select eq (w0 & #0x1), #0x0 ? ((w0 >> #0x1) & #0x7), ((w0 >> #0x4) & #0xf) & #0xffffffff)
 -- card
-{"addr":"0x2102d8","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102d8","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
 == 0x2102ec -
 -- decompile
@@ -244,4 +244,4 @@ fn <unnamed> @ 0x2102ec (size 24)
     store8(((w8 | ((w1 & #0x7) << #0x1)) & #0xffffffff), x0)
     ret x0
 -- card
-{"accesses":["a0 +0x0:uint8_t"],"addr":"0x2102ec","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
+{"accesses":["a0 +0x0:uint8_t"],"addr":"0x2102ec","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}

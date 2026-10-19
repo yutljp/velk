@@ -1,11 +1,11 @@
 # metrics/control.aarch64.O0.stripped.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 5 gotos
-0x2101e4 188 - prologue
-0x2102a0 96 - prologue
-0x210300 160 - prologue
-0x2103a0 148 - prologue
-0x210434 144 - prologue
-0x2104c4 124 - prologue
-0x210540 216 - prologue
+0x2101e4 188 - unwind,prologue
+0x2102a0 96 - unwind,prologue
+0x210300 160 - unwind,prologue
+0x2103a0 148 - unwind,prologue
+0x210434 144 - unwind,prologue
+0x2104c4 124 - unwind,prologue
+0x210540 216 - unwind,prologue
 
 == 0x2101e4 -
 -- decompile
@@ -82,7 +82,7 @@ fn <unnamed> @ 0x2101e4 (size 188)
   blk13 @ 0x210294:
     ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x2101e4","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":188,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2101e4","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":188,"unsupported":0}
 
 == 0x2102a0 -
 -- decompile
@@ -146,7 +146,7 @@ fn <unnamed> @ 0x2102a0 (size 96)
     sp = (sp + #0x20)
     ret v1
 -- card
-{"addr":"0x2102a0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2102a0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"unsupported":0}
 
 == 0x210300 -
 -- decompile
@@ -222,7 +222,7 @@ fn <unnamed> @ 0x210300 (size 160)
   blk13 @ 0x210394:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x210300","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":160,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210300","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":160,"unsupported":0}
 
 == 0x2103a0 -
 -- decompile
@@ -294,7 +294,7 @@ fn <unnamed> @ 0x2103a0 (size 148)
   blk13 @ 0x210428:
     ret load32((sp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x2103a0","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":148,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2103a0","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":148,"unsupported":0}
 
 == 0x210434 -
 -- decompile
@@ -360,7 +360,7 @@ fn <unnamed> @ 0x210434 (size 144)
   blk8 @ 0x2104b4:
     ret (load32((sp + #0xfffffffffffffff0)) & #0x1)
 -- card
-{"addr":"0x210434","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":144,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210434","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":144,"unsupported":0}
 
 == 0x2104c4 -
 -- decompile
@@ -419,7 +419,7 @@ fn <unnamed> @ 0x2104c4 (size 124)
   blk8 @ 0x210534:
     ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x2104c4","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":124,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2104c4","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":124,"unsupported":0}
 
 == 0x210540 -
 -- decompile
@@ -502,4 +502,4 @@ fn <unnamed> @ 0x210540 (size 216)
   blk14 @ 0x21060c:
     ret (load32((sp + #0xfffffffffffffffc)) & #0xffffffff)
 -- card
-{"addr":"0x210540","approxTokens":240,"blocks":15,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":216,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210540","approxTokens":240,"blocks":15,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":216,"unsupported":0}

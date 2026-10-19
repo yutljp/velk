@@ -1,8 +1,8 @@
 # metrics/l2_loop.aarch64.O0.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 2 gotos
-0x2101d4 100 - prologue
-0x210238 84 - prologue
-0x21028c 116 - prologue
-0x210300 128 - prologue
+0x2101d4 100 - unwind,prologue
+0x210238 84 - unwind,prologue
+0x21028c 116 - unwind,prologue
+0x210300 128 - unwind,prologue
 
 == 0x2101d4 -
 -- decompile
@@ -57,7 +57,7 @@ fn <unnamed> @ 0x2101d4 (size 100)
     sp = (sp + #0x10)
     ret v1
 -- card
-{"addr":"0x2101d4","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":100,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x2101d4","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":100,"unsupported":0}
 
 == 0x210238 -
 -- decompile
@@ -104,7 +104,7 @@ fn <unnamed> @ 0x210238 (size 84)
     sp = (sp + #0x10)
     ret v1
 -- card
-{"addr":"0x210238","approxTokens":222,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":84,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210238","approxTokens":222,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":84,"unsupported":0}
 
 == 0x21028c -
 -- decompile
@@ -173,7 +173,7 @@ fn <unnamed> @ 0x21028c (size 116)
     sp = (sp + #0x10)
     ret v1
 -- card
-{"addr":"0x21028c","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":116,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x21028c","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":116,"unsupported":0}
 
 == 0x210300 -
 -- decompile
@@ -237,4 +237,4 @@ fn <unnamed> @ 0x210300 (size 128)
   blk9 @ 0x210374:
     ret (load32((sp + #0xfffffffffffffffc)) & #0xffffffff)
 -- card
-{"addr":"0x210300","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":128,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210300","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":128,"unsupported":0}

@@ -1,8 +1,8 @@
 # l4_memory_a64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
-0x0 20 point_dot symtab
-0x14 48 array_sum symtab
-0x44 20 bump symtab
-0x58 16 banner_first symtab
+0x0 20 point_dot symtab,unwind
+0x14 48 array_sum symtab,unwind
+0x44 20 bump symtab,unwind
+0x58 16 banner_first symtab,unwind
 
 == 0x0 point_dot
 -- decompile
@@ -21,7 +21,7 @@ fn point_dot @ 0x0 (size 20)
   blk0 @ 0x0:
     ret (((load32((x1 + #0x4)) * load32((x0 + #0x4))) + (load32(x1) * load32(x0))) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t","a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t","a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x14 array_sum
 -- decompile
@@ -65,7 +65,7 @@ fn array_sum @ 0x14 (size 48)
   blk4 @ 0x3c:
     ret #0x0
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0x14","approxTokens":156,"blocks":5,"hardReasons":[],"name":"array_sum","nameSources":["symtab"],"section":".text","size":48,"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x14","approxTokens":156,"blocks":5,"hardReasons":[],"name":"array_sum","nameSources":["symtab","unwind"],"section":".text","size":48,"unsupported":0}
 
 == 0x44 bump
 -- decompile
@@ -84,7 +84,7 @@ fn bump @ 0x44 (size 20)
     store32(((load32(#0x68) + #0x1) & #0xffffffff), #0x68)
     ret x0
 -- card
-{"addr":"0x44","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x44","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x58 banner_first
 -- decompile
@@ -103,4 +103,4 @@ fn banner_first @ 0x58 (size 16)
     w0 = load8(load64(#0x78))
     ret w0
 -- card
-{"addr":"0x58","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x58","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","unwind"],"section":".text","size":16,"unsupported":0}

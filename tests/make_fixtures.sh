@@ -15,7 +15,7 @@ CASES=tests/cases
 require() {
   command -v "$1" >/dev/null || { echo "error: $1 not found" >&2; exit 1; }
 }
-for tool in clang clang++ ld.lld lld-link llvm-strip llvm-objcopy rustc go strings; do
+for tool in clang clang++ gcc strip ld.lld lld-link llvm-strip llvm-objcopy rustc go strings; do
   require "$tool"
 done
 
@@ -98,6 +98,10 @@ done
 
 # Rust and C++ demangling.
 "${RUSTC[@]}" -O --crate-name rust_demo -o "$OUT/rust_demo" "$CASES/rust/add.rs"
+# GCC moves unlikely paths into cold fragments with frame descriptions of their own.
+gcc "-ffile-prefix-map=$ROOT=." -O2 -o "$OUT/cold_gcc" "$CASES/gcc/cold.c"
+strip -s "$OUT/cold_gcc" -o "$OUT/cold_gcc_stripped"
+
 "${RUSTC[@]}" -O --crate-name rust_probe -o "$OUT/rust_probe" "$CASES/rust/probe.rs"
 llvm-strip -s "$OUT/rust_probe" -o "$OUT/rust_probe_stripped"
 "${CXX[@]}" $A64 -O2 -c "$CASES/cpp/namespace.cpp" -o "$OUT/cpp_demo.o"
@@ -125,6 +129,7 @@ done
 {
   echo "uname: $(uname -srm)"
   clang --version | head -1
+  gcc --version | head -1
   ld.lld --version | head -1
   rustc --version
   go version

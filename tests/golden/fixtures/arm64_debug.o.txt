@@ -1,8 +1,8 @@
 # arm64_debug.o: elf aarch64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
-0x0 12 sum3 symtab
-0xc 68 helper symtab
-0x50 12 pair_sum symtab
-0x5c 140 sum_arr symtab
+0x0 12 sum3 symtab,unwind
+0xc 68 helper symtab,unwind
+0x50 12 pair_sum symtab,unwind
+0x5c 140 sum_arr symtab,unwind
 
 == 0x0 sum3
 -- decompile
@@ -19,7 +19,7 @@ fn sum3 @ 0x0 (size 12)
   blk0 @ 0x0:
     ret (((w1 + w0) + w2) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","unwind"],"section":".text","size":12,"unsupported":0}
 
 == 0xc helper
 -- decompile
@@ -53,7 +53,7 @@ fn helper @ 0xc (size 68)
   blk2 @ 0x48:
     ret #0x0
 -- card
-{"addr":"0xc","approxTokens":186,"blocks":3,"hardReasons":[],"name":"helper","nameSources":["symtab"],"section":".text","size":68,"unsupported":0}
+{"addr":"0xc","approxTokens":186,"blocks":3,"hardReasons":[],"name":"helper","nameSources":["symtab","unwind"],"section":".text","size":68,"unsupported":0}
 
 == 0x50 pair_sum
 -- decompile
@@ -71,7 +71,7 @@ fn pair_sum @ 0x50 (size 12)
   blk0 @ 0x50:
     ret ((load32((x0 + #0x4)) + load32(x0)) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x50","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x50","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","unwind"],"section":".text","size":12,"unsupported":0}
 
 == 0x5c sum_arr
 -- decompile
@@ -154,4 +154,4 @@ fn sum_arr @ 0x5c (size 140)
   blk9 @ 0xe0:
     ret (x8 & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0x5c","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_arr","nameSources":["symtab"],"section":".text","size":140,"unsupported":5}
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x5c","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","unwind"],"section":".text","size":140,"unsupported":5}
