@@ -1,4 +1,4 @@
-# metrics/arith_mixed.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/arith_mixed.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21018c 12 sum3 symtab,dwarf,unwind
 0x210198 68 helper symtab,dwarf,unwind
 0x2101dc 12 pair_sum symtab,dwarf,unwind
@@ -80,7 +80,7 @@ int sum_arr(int *p, int n) {
     }
     v1 = n;
     if (n >= 0x8 /* unsigned */) {
-        s0 = 0x0;
+        d0 = 0x0;
         v0_hi = 0x0;
         d1 = 0x0;
         v1_hi = 0x0;
@@ -94,10 +94,12 @@ int sum_arr(int *p, int n) {
             v3_hi = *(uint64_t *)(v4 + 0x8);
             v5 = v5 - 0x8;
             v4 = v4 + 0x20;
-            /* unsupported (2 steps): ADD operands at 0x210234, ADD operands at 0x210238 */
+            d0 = add_lanes32(d2, d0);
+            v0_hi = add_lanes32(v2_hi, v0_hi);
+            d1 = add_lanes32(d3, d1);
+            v1_hi = add_lanes32(v3_hi, v1_hi);
         } while (v5 != 0x0);
-        /* unsupported (2 steps): ADD operands at 0x210240, ADDV at 0x210248 */
-        v3 = s0;
+        v3 = sum_lanes32(add_lanes32(d1, d0), add_lanes32(v1_hi, v0_hi));
         if (v2 == v1) {
             return v3;
         }
@@ -147,13 +149,13 @@ fn sum_arr @ 0x2101e8 (size 140)
     v3_hi = load64((v4 + #0x8))
     v5 = (v5 - #0x8)
     v4 = (v4 + #0x20)
-    unsupported: ADD operands at 0x210234
-    unsupported: ADD operands at 0x210238
+    d0 = add_lanes32(d2, d0)
+    v0_hi = add_lanes32(v2_hi, v0_hi)
+    d1 = add_lanes32(d3, d1)
+    v1_hi = add_lanes32(v3_hi, v1_hi)
     brif ne v5, #0x0 -> 0x210228
   blk6 @ 0x210240:
-    unsupported: ADD operands at 0x210240
-    unsupported: ADDV at 0x210248
-    v3 = (d0 & #0xffffffff)
+    v3 = (sum_lanes32(add_lanes32(d1, d0), add_lanes32(v1_hi, v0_hi)) & #0xffffffff)
     brif eq v2, v1 -> 0x21026c
   blk7 @ 0x210254:
     v6 = (x0 + (v2 << #0x2))
@@ -167,4 +169,4 @@ fn sum_arr @ 0x2101e8 (size 140)
   blk9 @ 0x21026c:
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x2101e8","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":4}
+{"addr":"0x2101e8","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":0}

@@ -95,11 +95,12 @@ fn clamp_long(long) @ 0x70 (size 28)
 /* struct: a0 +0x0:uint64_t */
 /* struct: a1 +0x0:uint64_t */
 int32_t dot_sum_Vec2_const___Vec2_const__(double *a0, double *a1) {
-    s0 = a0->field_0x0;
     v0_hi = 0x0;
     d1 = a1->field_0x0;
     v1_hi = 0x0;
-    /* unsupported: ADD operands at 0x94 */
+    s0 = add_lanes32(d1, *(uint64_t *)(a0));
+    v0_hi = 0x0;
+    /* unsupported: MUL at 0x98 */
     v1 = s0;
     return v1;
 }
@@ -110,11 +111,12 @@ int32_t (double * a0, double * a1)
 -- ir
 fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
   blk0 @ 0x8c:
-    d0 = load64(x0)
     v0_hi = #0x0
     d1 = load64(x1)
     v1_hi = #0x0
-    unsupported: ADD operands at 0x94
+    d0 = add_lanes32(d1, load64(x0))
+    v0_hi = #0x0
+    unsupported: MUL at 0x98
     v1 = (d0 & #0xffffffff)
     ret v1
 -- card

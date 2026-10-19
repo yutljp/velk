@@ -1,4 +1,4 @@
-# metrics/calls.x86_64.O2.debug.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 6 unsupported, 1 gotos
+# metrics/calls.x86_64.O2.debug.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x2012f0 4 twice symtab,dwarf,unwind
 0x201300 6 square symtab,dwarf,unwind
 0x201310 21 pick_op symtab,dwarf,unwind
@@ -122,6 +122,8 @@ fn apply_pointer @ 0x201360 (size 12)
 == 0x201370 factorial
 -- decompile
 /* velk pseudo-C: factorial @ 0x201370 */
+/* ref: 0x200190 .rodata */
+/* ref: 0x200198 .rodata */
 /* ref: 0x2001a0 .rodata */
 /* ref: 0x2001a8 .rodata */
 /* ref: 0x2001b0 .rodata */
@@ -137,9 +139,11 @@ int factorial(int n) {
         v2 = n - 0x1;
         v3 = v2 & 0xfffffffffffffff8;
         xmm0 = n;
-        xmm0_hi = 0x0;
         n = n - v3;
-        /* unsupported (2 steps): Pshufd at 0x201395, Paddd at 0x20139a */
+        t67 = (uint32_t)xmm0 | (uint32_t)xmm0 << 0x20;
+        xmm0 = (uint32_t)xmm0 | (uint32_t)xmm0 << 0x20;
+        xmm0 = add_lanes32(xmm0, qword_200190);
+        xmm0_hi = add_lanes32(t67, qword_200198);
         xmm1 = qword_2001a0;
         xmm1_hi = qword_2001a8;
         xmm2 = qword_2001c0;
@@ -150,22 +154,44 @@ int factorial(int n) {
         xmm3 = xmm1;
         xmm3_hi = xmm1_hi;
         do {
-            xmm5 = xmm0;
-            xmm5_hi = xmm0_hi;
-            /* unsupported: Paddd at 0x2013c4 */
-            xmm6 = xmm0;
-            xmm6_hi = xmm0_hi;
-            /* unsupported (6 steps): Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3 */
-            xmm1 = xmm6;
-            xmm1_hi = xmm6_hi;
-            /* unsupported (7 steps): Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407 */
-            xmm3 = xmm5;
-            xmm3_hi = xmm5_hi;
-            /* unsupported (2 steps): Punpckldq at 0x201410, Paddd at 0x201414 */
+            xmm5 = add_lanes32(xmm0, xmm2);
+            xmm5_hi = add_lanes32(xmm0_hi, xmm2_hi);
+            xmm6 = (uint32_t)xmm0 * (uint32_t)xmm1;
+            xmm6_hi = (uint32_t)xmm0_hi * (uint32_t)xmm1_hi;
+            t67 = ((xmm1_hi >> 0x20) & 0xffffffff) | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20;
+            xmm1_hi = t67;
+            xmm7_hi = ((xmm0_hi >> 0x20 | ((xmm0_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * (uint32_t)xmm1_hi;
+            xmm7 = (((xmm0 >> 0x20 | ((xmm0 >> 0x20) & 0xffffffff) << 0x20) * (xmm1 >> 0x20 | ((xmm1 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) | (uint32_t)xmm7_hi << 0x20;
+            xmm1 = (uint32_t)xmm6 | (uint32_t)xmm6_hi << 0x20;
+            t67 = interleave_high32(xmm1, xmm7);
+            xmm1 = interleave_low32(xmm1, xmm7);
+            xmm1_hi = t67;
+            t67 = ((xmm5_hi >> 0x20) & 0xffffffff) | ((xmm5_hi >> 0x20) & 0xffffffff) << 0x20;
+            t1 = xmm5 >> 0x20;
+            xmm6 = t1 | t1 << 0x20;
+            xmm6_hi = t67;
+            xmm5 = (uint32_t)xmm5 * (uint32_t)xmm3;
+            xmm5_hi = (uint32_t)xmm5_hi * (uint32_t)xmm3_hi;
+            t67 = ((xmm3_hi >> 0x20) & 0xffffffff) | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20;
+            t1 = xmm3 >> 0x20;
+            xmm3 = ((t1 | t1 << 0x20) & 0xffffffff) * (uint32_t)xmm6;
+            xmm3_hi = t67 * (uint32_t)xmm6_hi;
+            xmm6 = (uint32_t)xmm3 | (uint32_t)xmm3_hi << 0x20;
+            xmm3 = (uint32_t)xmm5 | (uint32_t)xmm5_hi << 0x20;
+            t67 = interleave_high32(xmm3, xmm6);
+            xmm3 = interleave_low32(xmm3, xmm6);
+            xmm3_hi = t67;
+            t67 = add_lanes32(xmm0_hi, xmm4_hi);
+            xmm0 = add_lanes32(xmm0, xmm4);
+            xmm0_hi = t67;
             v4 = v4 - 0x8;
         } while (v4 != 0x0);
-        /* unsupported (9 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441 */
-        v1 = (uint32_t)xmm1;
+        t1 = xmm3 >> 0x20;
+        t67 = ((xmm3_hi >> 0x20 | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * ((xmm1_hi >> 0x20 | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff);
+        xmm2_hi = t67;
+        xmm3_hi = (uint32_t)xmm3_hi * (uint32_t)xmm1_hi;
+        t67 = ((((uint32_t)xmm2_hi | (uint32_t)xmm2_hi << 0x20) * (uint32_t)xmm2_hi) & 0xffffffff) * ((((uint32_t)xmm3_hi | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) * (uint32_t)xmm3_hi) & 0xffffffff);
+        v1 = ((((uint32_t)xmm2_hi | (uint32_t)xmm2_hi << 0x20) * (((t1 | t1 << 0x20) * (xmm1 >> 0x20 | ((xmm1 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) * (((uint32_t)xmm3_hi | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) * ((uint32_t)xmm3 * (uint32_t)xmm1))) & 0xffffffff);
         if (v2 == v3) {
             return v1;
         }
@@ -181,6 +207,8 @@ int factorial(int n) {
 -- signature
 int (int n)
 -- references
+0x200190 .rodata
+0x200198 .rodata
 0x2001a0 .rodata
 0x2001a8 .rodata
 0x2001b0 .rodata
@@ -198,10 +226,11 @@ fn factorial @ 0x201370 (size 238)
     v2 = (rdi + #0xffffffffffffffff)
     v3 = (v2 & #0xfffffffffffffff8)
     xmm0 = (rdi & #0xffffffff)
-    xmm0_hi = #0x0
     rdi = (((rdi & #0xffffffff) - v3) & #0xffffffff)
-    unsupported: Pshufd at 0x201395
-    unsupported: Paddd at 0x20139a
+    t67 = ((xmm0 & #0xffffffff) | ((xmm0 & #0xffffffff) << #0x20))
+    xmm0 = ((xmm0 & #0xffffffff) | ((xmm0 & #0xffffffff) << #0x20))
+    xmm0 = add_lanes32(xmm0, load64(#0x200190))
+    xmm0_hi = add_lanes32(t67, load64(#0x200198))
     xmm1 = load64(#0x2001a0)
     xmm1_hi = load64(#0x2001a8)
     xmm2 = load64(#0x2001c0)
@@ -212,43 +241,45 @@ fn factorial @ 0x201370 (size 238)
     xmm3 = xmm1
     xmm3_hi = xmm1_hi
   blk3 @ 0x2013c0:
-    xmm5 = xmm0
-    xmm5_hi = xmm0_hi
-    unsupported: Paddd at 0x2013c4
-    xmm6 = xmm0
-    xmm6_hi = xmm0_hi
-    unsupported: Pmuludq at 0x2013cc
-    unsupported: Pshufd at 0x2013d0
-    unsupported: Pshufd at 0x2013d5
-    unsupported: Pshufd at 0x2013da
-    unsupported: Pmuludq at 0x2013df
-    unsupported: Pshufd at 0x2013e3
-    xmm1 = xmm6
-    xmm1_hi = xmm6_hi
-    unsupported: Punpckldq at 0x2013ec
-    unsupported: Pshufd at 0x2013f0
-    unsupported: Pmuludq at 0x2013f5
-    unsupported: Pshufd at 0x2013f9
-    unsupported: Pshufd at 0x2013fe
-    unsupported: Pmuludq at 0x201403
-    unsupported: Pshufd at 0x201407
-    xmm3 = xmm5
-    xmm3_hi = xmm5_hi
-    unsupported: Punpckldq at 0x201410
-    unsupported: Paddd at 0x201414
+    xmm5 = add_lanes32(xmm0, xmm2)
+    xmm5_hi = add_lanes32(xmm0_hi, xmm2_hi)
+    xmm6 = ((xmm0 & #0xffffffff) * (xmm1 & #0xffffffff))
+    xmm6_hi = ((xmm0_hi & #0xffffffff) * (xmm1_hi & #0xffffffff))
+    t67 = (((xmm1_hi >> #0x20) & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20))
+    xmm1_hi = t67
+    xmm7_hi = ((((xmm0_hi >> #0x20) | (((xmm0_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (xmm1_hi & #0xffffffff))
+    xmm7 = (((((xmm0 >> #0x20) | (((xmm0 >> #0x20) & #0xffffffff) << #0x20)) * ((xmm1 >> #0x20) | (((xmm1 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff) | ((xmm7_hi & #0xffffffff) << #0x20))
+    xmm1 = ((xmm6 & #0xffffffff) | ((xmm6_hi & #0xffffffff) << #0x20))
+    t67 = interleave_high32(xmm1, xmm7)
+    xmm1 = interleave_low32(xmm1, xmm7)
+    xmm1_hi = t67
+    t67 = (((xmm5_hi >> #0x20) & #0xffffffff) | (((xmm5_hi >> #0x20) & #0xffffffff) << #0x20))
+    t1 = (xmm5 >> #0x20)
+    xmm6 = ((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20))
+    xmm6_hi = t67
+    xmm5 = ((xmm5 & #0xffffffff) * (xmm3 & #0xffffffff))
+    xmm5_hi = ((xmm5_hi & #0xffffffff) * (xmm3_hi & #0xffffffff))
+    t67 = (((xmm3_hi >> #0x20) & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20))
+    t1 = (xmm3 >> #0x20)
+    xmm3 = ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) & #0xffffffff) * (xmm6 & #0xffffffff))
+    xmm3_hi = ((t67 & #0xffffffff) * (xmm6_hi & #0xffffffff))
+    xmm6 = ((xmm3 & #0xffffffff) | ((xmm3_hi & #0xffffffff) << #0x20))
+    xmm3 = ((xmm5 & #0xffffffff) | ((xmm5_hi & #0xffffffff) << #0x20))
+    t67 = interleave_high32(xmm3, xmm6)
+    xmm3 = interleave_low32(xmm3, xmm6)
+    xmm3_hi = t67
+    t67 = add_lanes32(xmm0_hi, xmm4_hi)
+    xmm0 = add_lanes32(xmm0, xmm4)
+    xmm0_hi = t67
     v4 = (((v4 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
     brif ne v4, #0x0 -> 0x2013c0
   blk4 @ 0x20141d:
-    unsupported: Pshufd at 0x20141d
-    unsupported: Pshufd at 0x201422
-    unsupported: Pmuludq at 0x201427
-    unsupported: Pmuludq at 0x20142b
-    unsupported: Pshufd at 0x20142f
-    unsupported: Pmuludq at 0x201434
-    unsupported: Pshufd at 0x201438
-    unsupported: Pmuludq at 0x20143d
-    unsupported: Pmuludq at 0x201441
-    v1 = (xmm1 & #0xffffffff)
+    t1 = (xmm3 >> #0x20)
+    t67 = ((((xmm3_hi >> #0x20) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (((xmm1_hi >> #0x20) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff))
+    xmm2_hi = t67
+    xmm3_hi = ((xmm3_hi & #0xffffffff) * (xmm1_hi & #0xffffffff))
+    t67 = (((((xmm2_hi & #0xffffffff) | ((xmm2_hi & #0xffffffff) << #0x20)) * (xmm2_hi & #0xffffffff)) & #0xffffffff) * ((((xmm3_hi & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) * (xmm3_hi & #0xffffffff)) & #0xffffffff))
+    v1 = (((((xmm2_hi & #0xffffffff) | ((xmm2_hi & #0xffffffff) << #0x20)) * ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) * ((xmm1 >> #0x20) | (((xmm1 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff)) * (((xmm3_hi & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) * (((xmm3 & #0xffffffff) * (xmm1 & #0xffffffff)) & #0xffffffff))) & #0xffffffff)
     brif eq v2, v3 -> 0x20145d
   blk5 @ 0x201450:
     v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
@@ -259,7 +290,7 @@ fn factorial @ 0x201370 (size 238)
   blk6 @ 0x20145d:
     ret v1
 -- card
-{"addr":"0x201370","approxTokens":240,"blocks":7,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":238,"unsupported":27}
+{"addr":"0x201370","approxTokens":240,"blocks":7,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":238,"unsupported":0}
 
 == 0x201460 is_odd
 -- decompile

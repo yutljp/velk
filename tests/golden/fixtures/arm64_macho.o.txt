@@ -1,4 +1,4 @@
-# arm64_macho.o: macho aarch64 no entry, 4 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm64_macho.o: macho aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 12 _sum3 symtab,dynamic
 0xc 68 _helper symtab,dynamic
 0x50 12 _pair_sum symtab,dynamic
@@ -82,7 +82,7 @@ int32_t _sum_arr(uint32_t *a0, int32_t a1) {
     if (a1 >= 0x10 /* unsigned */) {
         v2 = v1 & 0x7ffffff0;
         v4 = a0 + 0x20;
-        s0 = 0x0;
+        d0 = 0x0;
         v0_hi = 0x0;
         v5 = v2;
         d1 = 0x0;
@@ -101,11 +101,20 @@ int32_t _sum_arr(uint32_t *a0, int32_t a1) {
             d7 = *(uint64_t *)(v4 + 0x10);
             v7_hi = *(uint64_t *)(v4 + 0x18);
             v4 = v4 + 0x40;
-            /* unsupported (4 steps): ADD operands at 0xac, ADD operands at 0xb0, ADD operands at 0xb4, ADD operands at 0xb8 */
+            d0 = add_lanes32(d4, d0);
+            v0_hi = add_lanes32(v4_hi, v0_hi);
+            d1 = add_lanes32(d5, d1);
+            v1_hi = add_lanes32(v5_hi, v1_hi);
+            d2 = add_lanes32(d6, d2);
+            v2_hi = add_lanes32(v6_hi, v2_hi);
+            d3 = add_lanes32(d7, d3);
+            v3_hi = add_lanes32(v7_hi, v3_hi);
             v5 = v5 - 0x10;
         } while (v5 != 0x0);
-        /* unsupported (4 steps): ADD operands at 0xc4, ADD operands at 0xc8, ADD operands at 0xcc, ADDV at 0xd0 */
-        v3 = s0;
+        d0 = add_lanes32(d1, d0);
+        v0_hi = add_lanes32(v1_hi, v0_hi);
+        d0 = add_lanes32(d2, d0);
+        v3 = sum_lanes32(add_lanes32(d3, d0), add_lanes32(v3_hi, add_lanes32(v2_hi, v0_hi)));
         if (v2 == v1) {
             return v3;
         }
@@ -162,18 +171,21 @@ fn _sum_arr @ 0x5c (size 164)
     d7 = load64((v4 + #0x10))
     v7_hi = load64((v4 + #0x18))
     v4 = (v4 + #0x40)
-    unsupported: ADD operands at 0xac
-    unsupported: ADD operands at 0xb0
-    unsupported: ADD operands at 0xb4
-    unsupported: ADD operands at 0xb8
+    d0 = add_lanes32(d4, d0)
+    v0_hi = add_lanes32(v4_hi, v0_hi)
+    d1 = add_lanes32(d5, d1)
+    v1_hi = add_lanes32(v5_hi, v1_hi)
+    d2 = add_lanes32(d6, d2)
+    v2_hi = add_lanes32(v6_hi, v2_hi)
+    d3 = add_lanes32(d7, d3)
+    v3_hi = add_lanes32(v7_hi, v3_hi)
     v5 = (v5 - #0x10)
     brif ne v5, #0x0 -> 0xa4
   blk6 @ 0xc4:
-    unsupported: ADD operands at 0xc4
-    unsupported: ADD operands at 0xc8
-    unsupported: ADD operands at 0xcc
-    unsupported: ADDV at 0xd0
-    v3 = (d0 & #0xffffffff)
+    d0 = add_lanes32(d1, d0)
+    v0_hi = add_lanes32(v1_hi, v0_hi)
+    d0 = add_lanes32(d2, d0)
+    v3 = (sum_lanes32(add_lanes32(d3, d0), add_lanes32(v3_hi, add_lanes32(v2_hi, v0_hi))) & #0xffffffff)
     brif eq v2, v1 -> 0xf8
   blk7 @ 0xe0:
     v6 = (x0 + (v2 << #0x2))
@@ -187,4 +199,4 @@ fn _sum_arr @ 0x5c (size 164)
   blk9 @ 0xf8:
     ret v3
 -- card
-{"addr":"0x5c","approxTokens":162,"blocks":10,"hardReasons":[],"name":"_sum_arr","nameSources":["symtab","dynamic"],"section":"__text","size":164,"sizeEstimated":true,"unsupported":8}
+{"addr":"0x5c","approxTokens":162,"blocks":10,"hardReasons":[],"name":"_sum_arr","nameSources":["symtab","dynamic"],"section":"__text","size":164,"sizeEstimated":true,"unsupported":0}

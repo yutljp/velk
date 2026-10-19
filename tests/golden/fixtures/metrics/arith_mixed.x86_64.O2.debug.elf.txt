@@ -1,4 +1,4 @@
-# metrics/arith_mixed.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
+# metrics/arith_mixed.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201190 6 sum3 symtab,dwarf,unwind
 0x2011a0 46 helper symtab,dwarf,unwind
 0x2011d0 6 pair_sum symtab,dwarf,unwind
@@ -86,16 +86,21 @@ int sum_arr(int *p, int n) {
         xmm1 = 0x0;
         xmm1_hi = 0x0;
         do {
-            xmm2 = *(uint64_t *)(p + v5);
-            xmm2_hi = *(uint64_t *)(p + v5 + 0x8);
-            /* unsupported: Paddd at 0x201225 */
+            t67 = add_lanes32(xmm0_hi, *(uint64_t *)(p + v5 + 0x8));
+            xmm0 = add_lanes32(xmm0, *(uint64_t *)(p + v5));
+            xmm0_hi = t67;
             xmm2 = *(uint64_t *)(p + v5 + 0x10);
             xmm2_hi = *(uint64_t *)(p + v5 + 0x18);
-            /* unsupported: Paddd at 0x20122f */
+            t67 = add_lanes32(xmm1_hi, xmm2_hi);
+            xmm1 = add_lanes32(xmm1, xmm2);
+            xmm1_hi = t67;
             v5 = v5 + 0x20;
         } while (v4 != v5);
-        /* unsupported (5 steps): Paddd at 0x20123c, Pshufd at 0x201240, Paddd at 0x201245, Pshufd at 0x201249, Paddd at 0x20124e */
-        v3 = (uint32_t)xmm1;
+        xmm1 = add_lanes32(xmm1, xmm0);
+        xmm1_hi = add_lanes32(xmm1_hi, xmm0_hi);
+        xmm0 = add_lanes32((uint32_t)xmm1_hi | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20, xmm1);
+        t67 = add_lanes32(((xmm0 >> 0x20) & 0xffffffff) | ((xmm0 >> 0x20) & 0xffffffff) << 0x20, add_lanes32((uint32_t)xmm1_hi | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20, xmm1_hi));
+        v3 = (add_lanes32(((xmm0 >> 0x20) & 0xffffffff) | ((xmm0 >> 0x20) & 0xffffffff) << 0x20, xmm0) & 0xffffffff);
         if (v2 == v1) {
             return v3;
         }
@@ -135,21 +140,22 @@ fn sum_arr @ 0x2011e0 (size 140)
     xmm1 = #0x0
     xmm1_hi = #0x0
   blk5 @ 0x201220:
-    xmm2 = load64((rdi + v5))
-    xmm2_hi = load64(((rdi + v5) + #0x8))
-    unsupported: Paddd at 0x201225
+    t67 = add_lanes32(xmm0_hi, load64(((rdi + v5) + #0x8)))
+    xmm0 = add_lanes32(xmm0, load64((rdi + v5)))
+    xmm0_hi = t67
     xmm2 = load64(((rdi + v5) + #0x10))
     xmm2_hi = load64(((rdi + v5) + #0x18))
-    unsupported: Paddd at 0x20122f
+    t67 = add_lanes32(xmm1_hi, xmm2_hi)
+    xmm1 = add_lanes32(xmm1, xmm2)
+    xmm1_hi = t67
     v5 = (v5 + #0x20)
     brif ne v4, v5 -> 0x201220
   blk6 @ 0x20123c:
-    unsupported: Paddd at 0x20123c
-    unsupported: Pshufd at 0x201240
-    unsupported: Paddd at 0x201245
-    unsupported: Pshufd at 0x201249
-    unsupported: Paddd at 0x20124e
-    v3 = (xmm1 & #0xffffffff)
+    xmm1 = add_lanes32(xmm1, xmm0)
+    xmm1_hi = add_lanes32(xmm1_hi, xmm0_hi)
+    xmm0 = add_lanes32(((xmm1_hi & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)), xmm1)
+    t67 = add_lanes32((((xmm0 >> #0x20) & #0xffffffff) | (((xmm0 >> #0x20) & #0xffffffff) << #0x20)), add_lanes32(((xmm1_hi & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)), xmm1_hi))
+    v3 = (add_lanes32((((xmm0 >> #0x20) & #0xffffffff) | (((xmm0 >> #0x20) & #0xffffffff) << #0x20)), xmm0) & #0xffffffff)
     brif eq v2, v1 -> 0x20126b
   blk7 @ 0x201260:
     v3 = (((v3 & #0xffffffff) + load32((rdi + (v2 * #0x4)))) & #0xffffffff)
@@ -158,4 +164,4 @@ fn sum_arr @ 0x2011e0 (size 140)
   blk8 @ 0x20126b:
     ret v3
 -- card
-{"addr":"0x2011e0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":7}
+{"addr":"0x2011e0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":0}

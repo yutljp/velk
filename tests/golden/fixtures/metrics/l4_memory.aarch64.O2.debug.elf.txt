@@ -1,4 +1,4 @@
-# metrics/l4_memory.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
+# metrics/l4_memory.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101d4 28 point_dot symtab,dwarf,unwind
 0x2101f0 140 array_sum symtab,dwarf,unwind
 0x21027c 20 bump symtab,dwarf,unwind
@@ -10,13 +10,8 @@
 /* struct: a +0x0:uint64_t */
 /* struct: b +0x0:uint64_t */
 int point_dot(struct point *a, struct point *b) {
-    s0 = a->x;
-    v0_hi = 0x0;
-    d1 = b->x;
-    v1_hi = 0x0;
-    /* unsupported: ADD operands at 0x2101e4 */
-    v1 = s0;
-    return v1;
+    d0 = mul_lanes32(*(uint64_t *)(b), *(uint64_t *)(a));
+    return (add_lanes32(((d0 >> 0x20) & 0xffffffff) * 0x100000001, d0) & 0xffffffff);
 }
 -- signature
 int (struct point * a, struct point * b)
@@ -25,15 +20,10 @@ int (struct point * a, struct point * b)
 -- ir
 fn point_dot @ 0x2101d4 (size 28)
   blk0 @ 0x2101d4:
-    d0 = load64(x0)
-    v0_hi = #0x0
-    d1 = load64(x1)
-    v1_hi = #0x0
-    unsupported: ADD operands at 0x2101e4
-    v1 = (d0 & #0xffffffff)
-    ret v1
+    d0 = mul_lanes32(load64(x1), load64(x0))
+    ret (add_lanes32((((d0 >> #0x20) & #0xffffffff) * #0x100000001), d0) & #0xffffffff)
 -- card
-{"accesses":["a +0x0:uint64_t","b +0x0:uint64_t"],"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":1}
+{"accesses":["a +0x0:uint64_t","b +0x0:uint64_t"],"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
 == 0x2101f0 array_sum
 -- decompile
@@ -44,7 +34,7 @@ int array_sum(int *a, int n) {
     }
     v1 = n;
     if (n >= 0x8 /* unsigned */) {
-        s0 = 0x0;
+        d0 = 0x0;
         v0_hi = 0x0;
         d1 = 0x0;
         v1_hi = 0x0;
@@ -58,10 +48,12 @@ int array_sum(int *a, int n) {
             v3_hi = *(uint64_t *)(v4 + 0x8);
             v5 = v5 - 0x8;
             v4 = v4 + 0x20;
-            /* unsupported (2 steps): ADD operands at 0x21023c, ADD operands at 0x210240 */
+            d0 = add_lanes32(d2, d0);
+            v0_hi = add_lanes32(v2_hi, v0_hi);
+            d1 = add_lanes32(d3, d1);
+            v1_hi = add_lanes32(v3_hi, v1_hi);
         } while (v5 != 0x0);
-        /* unsupported (2 steps): ADD operands at 0x210248, ADDV at 0x210250 */
-        v3 = s0;
+        v3 = sum_lanes32(add_lanes32(d1, d0), add_lanes32(v1_hi, v0_hi));
         if (v2 == v1) {
             return v3;
         }
@@ -111,13 +103,13 @@ fn array_sum @ 0x2101f0 (size 140)
     v3_hi = load64((v4 + #0x8))
     v5 = (v5 - #0x8)
     v4 = (v4 + #0x20)
-    unsupported: ADD operands at 0x21023c
-    unsupported: ADD operands at 0x210240
+    d0 = add_lanes32(d2, d0)
+    v0_hi = add_lanes32(v2_hi, v0_hi)
+    d1 = add_lanes32(d3, d1)
+    v1_hi = add_lanes32(v3_hi, v1_hi)
     brif ne v5, #0x0 -> 0x210230
   blk6 @ 0x210248:
-    unsupported: ADD operands at 0x210248
-    unsupported: ADDV at 0x210250
-    v3 = (d0 & #0xffffffff)
+    v3 = (sum_lanes32(add_lanes32(d1, d0), add_lanes32(v1_hi, v0_hi)) & #0xffffffff)
     brif eq v2, v1 -> 0x210274
   blk7 @ 0x21025c:
     v6 = (x0 + (v2 << #0x2))
@@ -131,7 +123,7 @@ fn array_sum @ 0x2101f0 (size 140)
   blk9 @ 0x210274:
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":4}
+{"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":140,"unsupported":0}
 
 == 0x21027c bump
 -- decompile

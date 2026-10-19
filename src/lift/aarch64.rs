@@ -5,7 +5,7 @@ use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
-use crate::ir::{BinOp, Cond, Expr, Operation, Precision, RegRef, Rounding, Stmt};
+use crate::ir::{BinOp, Cond, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt};
 
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
@@ -104,6 +104,23 @@ impl<'a> Lifter<'a> {
             },
             high,
         );
+    }
+
+    /// A write of a vector's halves; a 64-bit vector clears the high half.
+    /// The high half is held first when it reads the low one it replaces.
+    fn write_vector(&mut self, (slot, full, _): (u16, bool, u8), low: Expr, high: Expr) {
+        let high = if full {
+            let mut read = std::collections::HashSet::new();
+            crate::ir::visit::collect_reads(&high, &mut read);
+            if read.contains(&slot) {
+                self.hold(high)
+            } else {
+                high
+            }
+        } else {
+            Expr::constant(0)
+        };
+        self.write_simd(slot, 128, (low, high));
     }
 
     fn simd_store(&mut self, slot: u16, bits: u16, address: &Expr) {
@@ -1199,6 +1216,208 @@ fn lane_value((slot, shift, bits): (u16, u64, u64)) -> Expr {
     }
 }
 
+/// A vector register with an arrangement: its low slot, whether it fills
+/// all 128 bits, and its lane width.
+fn vector(operand: Operand) -> Option<(u16, bool, u8)> {
+    let Operand::SIMDRegisterElements(size, number, element) = operand else {
+        return None;
+    };
+    let bits = match element {
+        a64::SIMDSizeCode::B => 8,
+        a64::SIMDSizeCode::H => 16,
+        a64::SIMDSizeCode::S => 32,
+        a64::SIMDSizeCode::D => 64,
+        a64::SIMDSizeCode::Q => return None,
+    };
+    Some((
+        crate::arch::aarch64::V0 + 2 * number,
+        size == a64::SIMDSizeCode::Q,
+        bits,
+    ))
+}
+
+/// A vector's halves; a 64-bit one has no high half.
+fn halves((slot, full, _): (u16, bool, u8)) -> (Expr, Expr) {
+    let high = if full {
+        Expr::reg(slot + 1, 64)
+    } else {
+        Expr::constant(0)
+    };
+    (Expr::reg(slot, 64), high)
+}
+
+/// `value` in every lane of `bits` of a half.
+fn replicate(value: Expr, bits: u8) -> Expr {
+    if bits == 64 {
+        return value;
+    }
+    let lane = (1u64 << bits) - 1;
+    let ones =
+        (0..64 / u32::from(bits)).fold(0u64, |out, index| out | 1 << (index * u32::from(bits)));
+    Expr::bin(
+        BinOp::Mul,
+        Expr::bin(BinOp::And, value, Expr::constant(lane)),
+        Expr::constant(ones),
+    )
+}
+
+/// 64 bits of `parts` (halves, lowest first) starting at bit `start`.
+fn window(parts: &[Expr], start: u64) -> Expr {
+    let (index, offset) = ((start / 64) as usize, start % 64);
+    let low = Expr::bin(BinOp::Shr, parts[index].clone(), Expr::constant(offset));
+    match parts.get(index + 1) {
+        Some(next) if offset > 0 => Expr::bin(
+            BinOp::Or,
+            low,
+            Expr::bin(BinOp::Shl, next.clone(), Expr::constant(64 - offset)),
+        ),
+        _ => low,
+    }
+}
+
+/// The integer vector instructions, lane by lane on each half.
+fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+    use a64::Opcode as O;
+    let ops = ins.operands;
+    let lanes = |op, bits, a: Expr, b: Expr| Expr::apply(Operation::Lanes(op, bits), vec![a, b]);
+    match ins.opcode {
+        O::ADD
+        | O::SUB
+        | O::MUL
+        | O::CMEQ
+        | O::CMGT
+        | O::CMHI
+        | O::CMGE
+        | O::CMHS
+        | O::SMIN
+        | O::SMAX
+        | O::UMIN
+        | O::UMAX
+            if vector(ops[0]).is_some() =>
+        {
+            let dest = vector(ops[0])?;
+            let bits = dest.2;
+            let (a, b) = (
+                halves(vector(ops[1])?),
+                match ops[2] {
+                    // A compare with zero.
+                    Operand::Immediate(0) | Operand::Imm64(0) => {
+                        (Expr::constant(0), Expr::constant(0))
+                    }
+                    operand => halves(vector(operand)?),
+                },
+            );
+            let op = match ins.opcode {
+                O::ADD => LaneOp::Add,
+                O::SUB => LaneOp::Sub,
+                O::MUL => LaneOp::Mul,
+                O::CMEQ => LaneOp::Equal,
+                O::CMGT => LaneOp::GreaterSigned,
+                O::CMHI => LaneOp::GreaterUnsigned,
+                O::CMGE => LaneOp::GreaterEqualSigned,
+                O::CMHS => LaneOp::GreaterEqualUnsigned,
+                O::SMIN => LaneOp::MinSigned,
+                O::SMAX => LaneOp::MaxSigned,
+                O::UMIN => LaneOp::MinUnsigned,
+                _ => LaneOp::MaxUnsigned,
+            };
+            let low = lanes(op, bits, a.0, b.0);
+            let high = lanes(op, bits, a.1, b.1);
+            lifter.write_vector(dest, low, high);
+        }
+        O::AND | O::ORR | O::EOR | O::BIC | O::ORN if vector(ops[0]).is_some() => {
+            let dest = vector(ops[0])?;
+            let (a, b) = (halves(vector(ops[1])?), halves(vector(ops[2])?));
+            let combine = |x: Expr, y: Expr| match ins.opcode {
+                O::AND => Expr::bin(BinOp::And, x, y),
+                O::ORR => Expr::bin(BinOp::Or, x, y),
+                O::EOR => Expr::bin(BinOp::Xor, x, y),
+                O::BIC => Expr::bin(
+                    BinOp::And,
+                    x,
+                    Expr::bin(BinOp::Xor, y, Expr::constant(u64::MAX)),
+                ),
+                _ => Expr::bin(
+                    BinOp::Or,
+                    x,
+                    Expr::bin(BinOp::Xor, y, Expr::constant(u64::MAX)),
+                ),
+            };
+            let (low, high) = (combine(a.0, b.0), combine(a.1, b.1));
+            lifter.write_vector(dest, low, high);
+        }
+        // The sum of every lane, into a scalar.
+        O::ADDV => {
+            let (slot, bits) = simd(ops[0])?;
+            let source = vector(ops[1])?;
+            let (low, high) = halves(source);
+            let sum = Expr::apply(Operation::SumLanes(source.2), vec![low, high]);
+            lifter.write_simd(slot, bits, (sum, Expr::constant(0)));
+        }
+        // The two 64-bit lanes added, into a scalar.
+        O::ADDP if simd(ops[0]).is_some() => {
+            let (slot, bits) = simd(ops[0])?;
+            let (low, high) = halves(vector(ops[1])?);
+            lifter.write_simd(
+                slot,
+                bits,
+                (Expr::bin(BinOp::Add, low, high), Expr::constant(0)),
+            );
+        }
+        // A general register or one lane, in every lane.
+        O::DUP if vector(ops[0]).is_some() => {
+            let dest = vector(ops[0])?;
+            let value = match lane(ops[1]) {
+                Some(source) => lane_value(source),
+                None => lifter.operand(ops[1], dest.2.max(32))?,
+            };
+            let half = replicate(value, dest.2);
+            lifter.write_vector(dest, half.clone(), half);
+        }
+        O::SHL | O::USHR | O::SSHR if vector(ops[0]).is_some() => {
+            let dest = vector(ops[0])?;
+            let source = halves(vector(ops[1])?);
+            let Operand::Immediate(count) = ops[2] else {
+                return None;
+            };
+            let op = match ins.opcode {
+                O::SHL => LaneOp::ShiftLeft,
+                O::USHR => LaneOp::ShiftRight,
+                _ => LaneOp::ShiftRightSigned,
+            };
+            let count = Expr::constant(u64::from(count));
+            let (low, high) = (
+                lanes(op, dest.2, source.0, count.clone()),
+                lanes(op, dest.2, source.1, count),
+            );
+            lifter.write_vector(dest, low, high);
+        }
+        // Bytes from the pair of sources taken as one, the first lowest.
+        O::EXT => {
+            let dest = vector(ops[0])?;
+            let (n, m) = (halves(vector(ops[1])?), halves(vector(ops[2])?));
+            let Operand::Immediate(start) = ops[3] else {
+                return None;
+            };
+            let parts = if dest.1 {
+                vec![n.0, n.1, m.0, m.1]
+            } else {
+                vec![n.0, m.0]
+            };
+            let start = 8 * u64::from(start);
+            let low = window(&parts, start);
+            let high = if dest.1 {
+                window(&parts, start + 64)
+            } else {
+                Expr::constant(0)
+            };
+            lifter.write_vector(dest, low, high);
+        }
+        _ => return None,
+    }
+    Some(())
+}
+
 /// The scalar instructions on floating-point registers.
 fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     use a64::Opcode as O;
@@ -1425,8 +1644,8 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             }
             _ => return None,
         },
-        // A lane read out to a vector or general register.
-        O::DUP | O::UMOV | O::SMOV if lane(ops[1]).is_some() => {
+        // A lane read out to a scalar or general register.
+        O::DUP | O::UMOV | O::SMOV if lane(ops[1]).is_some() && vector(ops[0]).is_none() => {
             let source = lane(ops[1])?;
             let value = lane_value(source);
             match simd(ops[0]) {
@@ -1653,7 +1872,30 @@ fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
 fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
     use a64::Opcode as O;
     let ops = ins.operands;
-    if lift_float(lifter, ins).is_some() {
+    if lift_float(lifter, ins).is_some() || lift_vector(lifter, ins).is_some() {
+        return false;
+    }
+    // Only loads and stores handle vector operands past this point.
+    let vector_operand = ins.operands.iter().any(|operand| {
+        matches!(
+            operand,
+            Operand::SIMDRegister(..)
+                | Operand::SIMDRegisterElements(..)
+                | Operand::SIMDRegisterElementsLane(..)
+                | Operand::SIMDRegisterElementsMultipleLane(..)
+                | Operand::SIMDRegisterGroup(..)
+                | Operand::SIMDRegisterGroupLane(..)
+        )
+    });
+    if vector_operand
+        && !matches!(
+            ins.opcode,
+            O::LDR | O::LDUR | O::STR | O::STUR | O::LDP | O::STP
+        )
+    {
+        lifter
+            .stmts
+            .push(Stmt::unsupported(format!("{:?} at 0x{pc:x}", ins.opcode)));
         return false;
     }
 

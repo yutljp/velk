@@ -3,7 +3,7 @@
 //! comparisons act at the wider of their operands' widths, as the
 //! instruction they came from did.
 
-use super::{BinOp, Cond, Expr, Operation, Precision, Rounding};
+use super::{BinOp, Cond, Expr, LaneOp, Operation, Precision, Rounding};
 
 pub(crate) fn mask(bits: u32) -> u64 {
     if bits >= 64 {
@@ -51,6 +51,9 @@ pub(crate) fn width(expr: &Expr) -> u32 {
         Expr::Apply { op, args } => match op {
             _ if let Some(precision) = op.result_precision() => u32::from(precision.bits()),
             Operation::FloatToInt { bits, .. } => u32::from(*bits),
+            Operation::Lanes(..) | Operation::InterleaveLow(_) | Operation::InterleaveHigh(_) => 64,
+            Operation::SignBits(bits) => 64 / u32::from(*bits),
+            Operation::SumLanes(bits) => u32::from(*bits),
             Operation::ReverseBits(bits) => u32::from(*bits),
             // A truth value or a count is small and never negative.
             _ => args.first().map_or(64, width).max(1),
@@ -181,6 +184,49 @@ pub(crate) fn fold(op: Operation, args: &[u64]) -> Option<u64> {
     (!nan).then_some(value)
 }
 
+/// `op` on each pair of lanes of `bits` in `a` and `b`.
+fn lanes(op: LaneOp, bits: u32, a: u64, b: u64) -> u64 {
+    let ones = mask(bits);
+    (0..64 / bits).fold(0, |out, index| {
+        let shift = index * bits;
+        let (x, y) = ((a >> shift) & ones, (b >> shift) & ones);
+        let (sx, sy) = (sign_extend(x, bits), sign_extend(y, bits));
+        let truth = |holds: bool| if holds { ones } else { 0 };
+        let lane = match op {
+            LaneOp::Add => x.wrapping_add(y),
+            LaneOp::Sub => x.wrapping_sub(y),
+            LaneOp::Mul => x.wrapping_mul(y),
+            LaneOp::Equal => truth(x == y),
+            LaneOp::GreaterSigned => truth(sx > sy),
+            LaneOp::GreaterUnsigned => truth(x > y),
+            LaneOp::GreaterEqualSigned => truth(sx >= sy),
+            LaneOp::GreaterEqualUnsigned => truth(x >= y),
+            LaneOp::MinSigned => {
+                if sx <= sy {
+                    x
+                } else {
+                    y
+                }
+            }
+            LaneOp::MinUnsigned => x.min(y),
+            LaneOp::MaxSigned => {
+                if sx >= sy {
+                    x
+                } else {
+                    y
+                }
+            }
+            LaneOp::MaxUnsigned => x.max(y),
+            // The count is the second argument itself, not a lane of it.
+            LaneOp::ShiftLeft if b < u64::from(bits) => x << b,
+            LaneOp::ShiftRight if b < u64::from(bits) => x >> b,
+            LaneOp::ShiftLeft | LaneOp::ShiftRight => 0,
+            LaneOp::ShiftRightSigned => (sx >> b.min(u64::from(bits) - 1)) as u64,
+        };
+        out | (lane & ones) << shift
+    })
+}
+
 fn round(value: f64, rounding: Rounding) -> f64 {
     match rounding {
         Rounding::TowardZero => value.trunc(),
@@ -209,6 +255,11 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::FloatUnordered(p)
         | Operation::FloatToInt { from: p, .. }
         | Operation::FloatConvert { from: p, .. } => p.bits(),
+        Operation::Lanes(..)
+        | Operation::InterleaveLow(_)
+        | Operation::InterleaveHigh(_)
+        | Operation::SignBits(_)
+        | Operation::SumLanes(_) => 64,
         Operation::IntToFloat { bits, .. }
         | Operation::CountLeadingZeros(bits)
         | Operation::CountTrailingZeros(bits)
@@ -317,6 +368,36 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
                 Precision::Double => value.to_bits(),
                 Precision::Single => u64::from((value as f32).to_bits()),
             }
+        }
+        Operation::Lanes(op, bits) => lanes(op, u32::from(bits), args[0], args[1]),
+        Operation::InterleaveLow(bits) | Operation::InterleaveHigh(bits) => {
+            let bits = u32::from(bits);
+            let start = if matches!(op, Operation::InterleaveLow(_)) {
+                0
+            } else {
+                32
+            };
+            let lane = mask(bits);
+            (0..32 / bits).fold(0, |out, index| {
+                let take = |value: u64| (value >> (start + index * bits)) & lane;
+                out | take(args[0]) << (2 * index * bits)
+                    | take(args[1]) << ((2 * index + 1) * bits)
+            })
+        }
+        Operation::SignBits(bits) => {
+            let bits = u32::from(bits);
+            (0..64 / bits).fold(0, |out, index| {
+                out | ((args[0] >> ((index + 1) * bits - 1)) & 1) << index
+            })
+        }
+        Operation::SumLanes(bits) => {
+            let bits = u32::from(bits);
+            let sum = |value: u64| {
+                (0..64 / bits).fold(0u64, |sum, index| {
+                    sum.wrapping_add((value >> (index * bits)) & mask(bits))
+                })
+            };
+            sum(args[0]).wrapping_add(sum(args[1])) & mask(bits)
         }
         Operation::CountLeadingZeros(bits) => {
             let value = args[0] & mask(u32::from(bits));

@@ -7,7 +7,9 @@ use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
-use crate::ir::{BinOp, Cond, EXCHANGE, Expr, Operation, Precision, RegRef, Rounding, Stmt};
+use crate::ir::{
+    BinOp, Cond, EXCHANGE, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt,
+};
 use crate::loader::Image;
 
 pub(super) struct Lifter<'a> {
@@ -285,6 +287,286 @@ fn load_at(addr: Expr, width: u8) -> Expr {
         width,
         signed: false,
     }
+}
+
+/// 64 bits of `parts` (halves, lowest first) starting at bit `start`, with
+/// zeros past the end.
+fn window(parts: &[Expr], start: u64) -> Expr {
+    let (index, offset) = ((start / 64) as usize, start % 64);
+    let Some(first) = parts.get(index) else {
+        return Expr::constant(0);
+    };
+    let low = Expr::bin(BinOp::Shr, first.clone(), Expr::constant(offset));
+    match parts.get(index + 1) {
+        Some(next) if offset > 0 => Expr::bin(
+            BinOp::Or,
+            low,
+            Expr::bin(BinOp::Shl, next.clone(), Expr::constant(64 - offset)),
+        ),
+        _ => low,
+    }
+}
+
+/// Lane `index` of `bits` from a vector's halves, at the bottom.
+fn lane_of((low, high): &(Expr, Expr), index: u64, bits: u64) -> Expr {
+    let per_half = 64 / bits;
+    let half = if index < per_half { low } else { high };
+    let shifted = Expr::bin(
+        BinOp::Shr,
+        half.clone(),
+        Expr::constant((index % per_half) * bits),
+    );
+    Expr::bin(BinOp::And, shifted, Expr::constant((1 << bits) - 1))
+}
+
+/// Lanes placed from the bottom of a half.
+fn pack(lanes: Vec<Expr>, bits: u64) -> Expr {
+    lanes
+        .into_iter()
+        .enumerate()
+        .map(|(index, lane)| Expr::bin(BinOp::Shl, lane, Expr::constant(index as u64 * bits)))
+        .reduce(|out, lane| Expr::bin(BinOp::Or, out, lane))
+        .unwrap_or_else(|| Expr::constant(0))
+}
+
+/// The packed SSE instructions, on each 64-bit half: integer lanes, packed
+/// doubles and singles, shuffles, and sign masks.
+fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+    use Mnemonic::*;
+    let destination = xmm(ins.op0_register());
+    // The halves of an xmm operand or of the 16 bytes at a memory one.
+    let halves = |index: u32| -> Option<(Expr, Expr)> {
+        match ins.op_kind(index) {
+            OpKind::Register => {
+                let slot = xmm(ins.op_register(index))?;
+                Some((Expr::reg(slot, 64), Expr::reg(slot + 1, 64)))
+            }
+            OpKind::Memory => {
+                let addr = memory_address(ins)?;
+                let high = Expr::bin(BinOp::Add, addr.clone(), Expr::constant(8));
+                Some((load_at(addr, 8), load_at(high, 8)))
+            }
+            _ => None,
+        }
+    };
+    let lanes = |op, bits, a: Expr, b: Expr| Expr::apply(Operation::Lanes(op, bits), vec![a, b]);
+    let write = |lifter: &mut Lifter, (low, high): (Expr, Expr)| -> Option<()> {
+        let slot = destination?;
+        // The high half may read the low one it replaces.
+        let high = hold(lifter, high);
+        lifter.assign(slot, 64, low);
+        lifter.assign(slot + 1, 64, high);
+        Some(())
+    };
+    let lane_op = match ins.mnemonic() {
+        Paddb | Paddw | Paddd => Some(LaneOp::Add),
+        Psubb | Psubw | Psubd => Some(LaneOp::Sub),
+        Pmullw => Some(LaneOp::Mul),
+        Pcmpeqb | Pcmpeqw | Pcmpeqd | Pcmpeqq => Some(LaneOp::Equal),
+        Pcmpgtb | Pcmpgtw | Pcmpgtd => Some(LaneOp::GreaterSigned),
+        Pminub | Pminuw | Pminud => Some(LaneOp::MinUnsigned),
+        Pmaxub | Pmaxuw | Pmaxud => Some(LaneOp::MaxUnsigned),
+        Pminsb | Pminsw | Pminsd => Some(LaneOp::MinSigned),
+        Pmaxsb | Pmaxsw | Pmaxsd => Some(LaneOp::MaxSigned),
+        _ => None,
+    };
+    let lane_bits = |mnemonic: Mnemonic| -> u8 {
+        let name = format!("{mnemonic:?}");
+        match name.chars().last() {
+            Some('b') => 8,
+            Some('w') => 16,
+            Some('d') => 32,
+            _ => 64,
+        }
+    };
+    match ins.mnemonic() {
+        _ if lane_op.is_some() => {
+            let op = lane_op?;
+            let bits = lane_bits(ins.mnemonic());
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(
+                lifter,
+                (lanes(op, bits, a.0, b.0), lanes(op, bits, a.1, b.1)),
+            )?;
+        }
+        Paddq | Psubq | Pmuludq | Pandn => {
+            let (a, b) = (halves(0)?, halves(1)?);
+            let combine = |x: Expr, y: Expr| match ins.mnemonic() {
+                Paddq => Expr::bin(BinOp::Add, x, y),
+                Psubq => Expr::bin(BinOp::Sub, x, y),
+                // The low 32 bits of each 64-bit lane, multiplied whole.
+                Pmuludq => Expr::bin(
+                    BinOp::Mul,
+                    Expr::bin(BinOp::And, x, Expr::constant(0xffff_ffff)),
+                    Expr::bin(BinOp::And, y, Expr::constant(0xffff_ffff)),
+                ),
+                _ => Expr::bin(
+                    BinOp::And,
+                    Expr::bin(BinOp::Xor, x, Expr::constant(u64::MAX)),
+                    y,
+                ),
+            };
+            write(lifter, (combine(a.0, b.0), combine(a.1, b.1)))?;
+        }
+        // Shifts of each lane by an immediate or by the low 64 bits of a
+        // register.
+        Psllw | Pslld | Psllq | Psrlw | Psrld | Psrlq | Psraw | Psrad => {
+            let bits = lane_bits(ins.mnemonic());
+            let a = halves(0)?;
+            let count = match ins.op1_kind() {
+                OpKind::Immediate8 => Expr::constant(u64::from(ins.immediate8())),
+                _ => halves(1)?.0,
+            };
+            let op = match ins.mnemonic() {
+                Psllw | Pslld | Psllq => LaneOp::ShiftLeft,
+                Psrlw | Psrld | Psrlq => LaneOp::ShiftRight,
+                _ => LaneOp::ShiftRightSigned,
+            };
+            let shifted = |half: Expr| {
+                if bits == 64 && op != LaneOp::ShiftRightSigned {
+                    lanes(op, 64, half, count.clone())
+                } else {
+                    lanes(op, bits, half, count.clone())
+                }
+            };
+            write(lifter, (shifted(a.0), shifted(a.1)))?;
+        }
+        // Whole-register byte shifts.
+        Pslldq | Psrldq => {
+            let (low, high) = halves(0)?;
+            let bytes = u64::from(ins.immediate8()).min(16) * 8;
+            let result = if ins.mnemonic() == Psrldq {
+                let parts = [low, high];
+                (window(&parts, bytes), window(&parts, bytes + 64))
+            } else {
+                let parts = [Expr::constant(0), Expr::constant(0), low, high];
+                (window(&parts, 128 - bytes), window(&parts, 192 - bytes))
+            };
+            write(lifter, result)?;
+        }
+        Pshufd => {
+            let source = halves(1)?;
+            let order = u64::from(ins.immediate8());
+            let pick = |index: u64| lane_of(&source, (order >> (2 * index)) & 3, 32);
+            write(
+                lifter,
+                (
+                    pack(vec![pick(0), pick(1)], 32),
+                    pack(vec![pick(2), pick(3)], 32),
+                ),
+            )?;
+        }
+        Pshuflw | Pshufhw => {
+            let source = halves(1)?;
+            let order = u64::from(ins.immediate8());
+            let high_half = ins.mnemonic() == Pshufhw;
+            let words = if high_half { &source.1 } else { &source.0 };
+            let words = (words.clone(), Expr::constant(0));
+            let shuffled = pack(
+                (0..4)
+                    .map(|index| lane_of(&words, (order >> (2 * index)) & 3, 16))
+                    .collect(),
+                16,
+            );
+            let result = if high_half {
+                (source.0, shuffled)
+            } else {
+                (shuffled, source.1)
+            };
+            write(lifter, result)?;
+        }
+        Punpcklbw | Punpcklwd | Punpckldq | Punpckhbw | Punpckhwd | Punpckhdq => {
+            let (a, b) = (halves(0)?, halves(1)?);
+            let name = format!("{:?}", ins.mnemonic());
+            let bits = match &name[name.len() - 2..] {
+                "bw" => 8,
+                "wd" => 16,
+                _ => 32,
+            };
+            let (x, y) = if name.starts_with("Punpckh") {
+                (a.1, b.1)
+            } else {
+                (a.0, b.0)
+            };
+            let interleave = |op| Expr::apply(op, vec![x.clone(), y.clone()]);
+            write(
+                lifter,
+                (
+                    interleave(Operation::InterleaveLow(bits)),
+                    interleave(Operation::InterleaveHigh(bits)),
+                ),
+            )?;
+        }
+        Punpcklqdq | Unpcklpd | Movlhps => {
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(lifter, (a.0, b.0))?;
+        }
+        Punpckhqdq | Unpckhpd => {
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(lifter, (a.1, b.1))?;
+        }
+        Movhlps => {
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(lifter, (b.1, a.1))?;
+        }
+        Pmovmskb | Movmskpd | Movmskps => {
+            let source = halves(1)?;
+            let bits = match ins.mnemonic() {
+                Pmovmskb => 8,
+                Movmskps => 32,
+                _ => 64,
+            };
+            let signs = |half| Expr::apply(Operation::SignBits(bits), vec![half]);
+            let mask = Expr::bin(
+                BinOp::Or,
+                signs(source.0),
+                Expr::bin(
+                    BinOp::Shl,
+                    signs(source.1),
+                    Expr::constant(u64::from(64 / bits)),
+                ),
+            );
+            let (index, width) = gpr(ins.op0_register())?;
+            lifter.assign(index, width, mask);
+        }
+        Addpd | Subpd | Mulpd | Divpd | Addps | Subps | Mulps | Divps | Sqrtpd | Sqrtps => {
+            let single = matches!(ins.mnemonic(), Addps | Subps | Mulps | Divps | Sqrtps);
+            let precision = if single {
+                Precision::Single
+            } else {
+                Precision::Double
+            };
+            let op = match ins.mnemonic() {
+                Addpd | Addps => Operation::FloatAdd(precision),
+                Subpd | Subps => Operation::FloatSub(precision),
+                Mulpd | Mulps => Operation::FloatMul(precision),
+                Divpd | Divps => Operation::FloatDiv(precision),
+                _ => Operation::FloatSqrt(precision),
+            };
+            let unary = matches!(ins.mnemonic(), Sqrtpd | Sqrtps);
+            let b = halves(1)?;
+            let a = if unary { b.clone() } else { halves(0)? };
+            // A double fills a half; singles take its two 32-bit lanes.
+            let each = |x: &Expr, y: &Expr| {
+                let args = |x: Expr, y: Expr| if unary { vec![y] } else { vec![x, y] };
+                if single {
+                    let lane =
+                        |half: &Expr, index| lane_of(&(half.clone(), Expr::constant(0)), index, 32);
+                    pack(
+                        (0..2)
+                            .map(|index| Expr::apply(op, args(lane(x, index), lane(y, index))))
+                            .collect(),
+                        32,
+                    )
+                } else {
+                    Expr::apply(op, args(x.clone(), y.clone()))
+                }
+            };
+            write(lifter, (each(&a.0, &b.0), each(&a.1, &b.1)))?;
+        }
+        _ => return None,
+    }
+    Some(())
 }
 
 /// The scalar SSE floating-point instructions: arithmetic on the low double
@@ -1195,7 +1477,10 @@ fn lift_instruction(
         return false;
     }
 
-    if lift_vector(lifter, ins).is_some() || lift_float(lifter, ins).is_some() {
+    if lift_vector(lifter, ins).is_some()
+        || lift_float(lifter, ins).is_some()
+        || lift_packed(lifter, ins).is_some()
+    {
         return false;
     }
 

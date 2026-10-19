@@ -56,7 +56,7 @@ ok "ir helper"
 
 arr_ir=$("$BIN" ir $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$arr_ir" | grep -q 'load32'                      || fail "ir sum_arr load"
-echo "$arr_ir" | grep -q 'unsupported: ADD operands'   || fail "ir sum_arr unsupported marker"
+echo "$arr_ir" | grep -q 'add_lanes32'                 || fail "ir sum_arr vector add"
 ok "ir sum_arr"
 
 # 5) pseudo-C output
@@ -459,7 +459,7 @@ ok "decompile helper"
 
 ca=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$ca" | grep -q "uint32_t \*a0"         || fail "pointer parameter typing"
-echo "$ca" | grep -q "unsupported (2 steps): ADD operands" || fail "decompile sum_arr unsupported note"
+echo "$ca" | grep -q "sum_lanes32("            || fail "decompile sum_arr vector sum"
 echo "$ca" | grep -q "v2_hi = \*(uint64_t \*)" || fail "decompile sum_arr vector pair load"
 echo "$ca" | grep -q "return 0x0;"           || fail "decompile sum_arr early return"
 echo "$ca" | grep -q "do {"                  || fail "decompile sum_arr loop"

@@ -1,11 +1,11 @@
-# 5616 functions, 60928 compared runs
+# 5616 functions, 61230 compared runs
 # runs left unfinished:
-#   step limit (C and C++): 289
+#   step limit (C and C++): 325
 #   step limit (Go): 2098
-#   step limit (Rust): 1557
-#   unsupported instruction (C and C++): 222
-#   unsupported instruction (Go): 1386
-#   unsupported instruction (Rust): 843
+#   step limit (Rust): 1668
+#   unsupported instruction (C and C++): 96
+#   unsupported instruction (Go): 1324
+#   unsupported instruction (Rust): 582
 rust_demo 0x18a64 <std::backtrace_rs::symbolize::gimli::Cache>::with_global::<std::backtrace_rs::symbolize::gimli::resolve::{closure#1}>: trial 1: structuring: one run returns and the other traps
 rust_demo 0x3a230 std::rt::lang_start_internal: trial 0: structuring: one run returns and the other traps
 rust_probe 0x18a64 <std::backtrace_rs::symbolize::gimli::Cache>::with_global::<std::backtrace_rs::symbolize::gimli::resolve::{closure#1}>: trial 1: structuring: one run returns and the other traps

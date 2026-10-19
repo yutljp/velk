@@ -1,4 +1,4 @@
-# metrics/structs.aarch64.O2.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/structs.aarch64.O2.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x2101dc 20 rect_area symtab,dwarf,unwind
 0x2101f0 160 record_total symtab,dwarf,unwind
 0x210290 24 point_add symtab,dwarf,unwind
@@ -15,9 +15,10 @@
 int rect_area(struct rect *r) {
     d1 = r->min.x;
     v1_hi = 0x0;
-    s0 = r->max.x;
     v0_hi = 0x0;
-    /* unsupported: SUB operands at 0x2101e0 */
+    s0 = sub_lanes32(*(uint64_t *)(r + 0x8), d1);
+    v0_hi = 0x0;
+    /* unsupported: MUL at 0x2101e4 */
     v1 = s0;
     return v1;
 }
@@ -30,9 +31,10 @@ fn rect_area @ 0x2101dc (size 20)
   blk0 @ 0x2101dc:
     d1 = load64(x0)
     v1_hi = #0x0
-    d0 = load64((x0 + #0x8))
     v0_hi = #0x0
-    unsupported: SUB operands at 0x2101e0
+    d0 = sub_lanes32(load64((x0 + #0x8)), d1)
+    v0_hi = #0x0
+    unsupported: MUL at 0x2101e4
     v1 = (d0 & #0xffffffff)
     ret v1
 -- card
@@ -181,13 +183,7 @@ fn big_make @ 0x2102a8 (size 24)
 /* velk pseudo-C: big_sum @ 0x2102c0 */
 /* struct: value +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
 long big_sum(struct big value) {
-    d1 = *(uint64_t *)(value);
-    v1_hi = *(uint64_t *)(value + 0x8);
-    d0 = *(uint64_t *)(value + 0x10);
-    v0_hi = *(uint64_t *)(value + 0x18);
-    /* unsupported (2 steps): ADD operands at 0x2102c4, ADDP at 0x2102c8 */
-    v1 = d0;
-    return v1;
+    return add_lanes64(*(uint64_t *)(value), *(uint64_t *)(value + 0x10)) + add_lanes64(*(uint64_t *)(value + 0x8), *(uint64_t *)(value + 0x18));
 }
 -- signature
 long (struct big value)
@@ -196,16 +192,9 @@ long (struct big value)
 -- ir
 fn big_sum @ 0x2102c0 (size 20)
   blk0 @ 0x2102c0:
-    d1 = load64(x0)
-    v1_hi = load64((x0 + #0x8))
-    d0 = load64((x0 + #0x10))
-    v0_hi = load64((x0 + #0x18))
-    unsupported: ADD operands at 0x2102c4
-    unsupported: ADDP at 0x2102c8
-    v1 = d0
-    ret v1
+    ret (add_lanes64(load64(x0), load64((x0 + #0x10))) + add_lanes64(load64((x0 + #0x8)), load64((x0 + #0x18))))
 -- card
-{"accesses":["value +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x2102c0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":2}
+{"accesses":["value +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x2102c0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x2102d4 word_low_byte
 -- decompile

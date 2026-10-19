@@ -241,7 +241,9 @@ fn register_only(instruction: &a64::Instruction) -> bool {
         | Operand::Imm16(_)
         | Operand::ImmediateDouble(_)
         | Operand::ImmShift(..) => true,
-        Operand::SIMDRegister(_, number) => number < 8,
+        Operand::SIMDRegister(_, number)
+        | Operand::SIMDRegisterElements(_, number, _)
+        | Operand::SIMDRegisterElementsLane(_, number, ..) => number < 8,
         Operand::Register(_, index) | Operand::RegShift(_, _, _, index) => {
             index == 31 || usable(index)
         }
@@ -254,7 +256,9 @@ fn register_only(instruction: &a64::Instruction) -> bool {
 /// write only registers and flags.
 fn instruction(seed: u64) -> Option<(u32, a64::Instruction)> {
     let bits = hash(seed, 1) as u32;
-    let word = match hash(seed, 2) % 4 {
+    let word = match hash(seed, 2) % 5 {
+        // Advanced SIMD on vectors.
+        4 => (bits & !(0b1111 << 25 | 1 << 31)) | (0b0111 << 25),
         0 => (bits & !(0b111 << 26)) | (0b100 << 26),
         1 => (bits & !(0b111 << 25)) | (0b101 << 25),
         // Scalar floating point: data processing and conversions, and the

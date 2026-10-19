@@ -1,4 +1,4 @@
-# metrics/control.aarch64.O2.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 2 unsupported, 1 gotos
+# metrics/control.aarch64.O2.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x2101d4 100 matrix_trace symtab,dwarf,unwind
 0x210238 32 cleanup_on_error symtab,dwarf,unwind
 0x210258 32 fallthrough symtab,dwarf,unwind
@@ -243,8 +243,6 @@ int skip_negatives(int *p, int n) {
     }
     v1 = n;
     if (n >= 0x8 /* unsigned */) {
-        s0 = 0x0;
-        v0_hi = 0x0;
         d1 = 0x0;
         v1_hi = 0x0;
         v2 = v1 & 0x7ffffff8;
@@ -259,10 +257,12 @@ int skip_negatives(int *p, int n) {
             v4_hi = *(uint64_t *)(v4 + 0x8);
             v5 = v5 - 0x8;
             v4 = v4 + 0x20;
-            /* unsupported (4 steps): SMAX at 0x210358, SMAX at 0x21035c, ADD operands at 0x210360, ADD operands at 0x210364 */
+            d1 = add_lanes32(max_lanes32(d3, 0x0), d1);
+            v1_hi = add_lanes32(max_lanes32(v3_hi, 0x0), v1_hi);
+            d2 = add_lanes32(max_lanes32(d4, 0x0), d2);
+            v2_hi = add_lanes32(max_lanes32(v4_hi, 0x0), v2_hi);
         } while (v5 != 0x0);
-        /* unsupported (2 steps): ADD operands at 0x21036c, ADDV at 0x210374 */
-        v3 = s0;
+        v3 = sum_lanes32(add_lanes32(d2, d1), add_lanes32(v2_hi, v1_hi));
         if (v2 == v1) {
             return v3;
         }
@@ -298,8 +298,6 @@ fn skip_negatives @ 0x210308 (size 156)
   blk3 @ 0x210328:
     ret #0x0
   blk4 @ 0x210334:
-    d0 = #0x0
-    v0_hi = #0x0
     d1 = #0x0
     v1_hi = #0x0
     v2 = (v1 & #0x7ffffff8)
@@ -314,15 +312,13 @@ fn skip_negatives @ 0x210308 (size 156)
     v4_hi = load64((v4 + #0x8))
     v5 = (v5 - #0x8)
     v4 = (v4 + #0x20)
-    unsupported: SMAX at 0x210358
-    unsupported: SMAX at 0x21035c
-    unsupported: ADD operands at 0x210360
-    unsupported: ADD operands at 0x210364
+    d1 = add_lanes32(max_lanes32(d3, #0x0), d1)
+    v1_hi = add_lanes32(max_lanes32(v3_hi, #0x0), v1_hi)
+    d2 = add_lanes32(max_lanes32(d4, #0x0), d2)
+    v2_hi = add_lanes32(max_lanes32(v4_hi, #0x0), v2_hi)
     brif ne v5, #0x0 -> 0x21034c
   blk6 @ 0x21036c:
-    unsupported: ADD operands at 0x21036c
-    unsupported: ADDV at 0x210374
-    v3 = (d0 & #0xffffffff)
+    v3 = (sum_lanes32(add_lanes32(d2, d1), add_lanes32(v2_hi, v1_hi)) & #0xffffffff)
     brif eq v2, v1 -> 0x21039c
   blk7 @ 0x210380:
     v6 = (x0 + (v2 << #0x2))
@@ -336,7 +332,7 @@ fn skip_negatives @ 0x210308 (size 156)
   blk9 @ 0x21039c:
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x210308","approxTokens":162,"blocks":10,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf","unwind"],"section":".text","size":156,"unsupported":6}
+{"addr":"0x210308","approxTokens":162,"blocks":10,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf","unwind"],"section":".text","size":156,"unsupported":0}
 
 == 0x2103a4 find_pair
 -- decompile

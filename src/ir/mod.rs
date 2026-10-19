@@ -239,6 +239,31 @@ pub enum Rounding {
     Up,
 }
 
+/// An operation on each pair of lanes of two vectors' halves.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LaneOp {
+    Add,
+    Sub,
+    /// The low half of the product.
+    Mul,
+    /// All ones where the comparison holds, zero where it does not.
+    Equal,
+    GreaterSigned,
+    GreaterUnsigned,
+    GreaterEqualSigned,
+    GreaterEqualUnsigned,
+    MinSigned,
+    MinUnsigned,
+    MaxSigned,
+    MaxUnsigned,
+    /// Each lane of the first shifted by the second argument, the same count
+    /// for every lane; a count of the lane width or more clears the lane, or
+    /// fills it with its sign.
+    ShiftLeft,
+    ShiftRight,
+    ShiftRightSigned,
+}
+
 /// An operation `Expr::Apply` applies to its arguments, in order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Operation {
@@ -281,6 +306,16 @@ pub enum Operation {
         from: Precision,
         to: Precision,
     },
+    /// Lanes of `bits` in two 64-bit halves, combined pair by pair.
+    Lanes(LaneOp, u8),
+    /// The lanes of `bits` in the low (or high) 32 bits of two halves, taken
+    /// in turn, the first argument's first.
+    InterleaveLow(u8),
+    InterleaveHigh(u8),
+    /// The top bit of each lane of `bits` in a half, lowest lane first.
+    SignBits(u8),
+    /// The sum of the lanes of `bits` in two halves, wrapping at `bits`.
+    SumLanes(u8),
     /// Counts over the low `bits`; a zero value counts `bits`.
     CountLeadingZeros(u8),
     CountTrailingZeros(u8),
@@ -319,7 +354,8 @@ impl Operation {
             | Operation::CountLeadingZeros(_)
             | Operation::CountTrailingZeros(_)
             | Operation::PopCount(_)
-            | Operation::ReverseBits(_) => 1,
+            | Operation::ReverseBits(_)
+            | Operation::SignBits(_) => 1,
             Operation::FloatMulAdd(_) => 3,
             _ => 2,
         }
@@ -490,6 +526,27 @@ impl Expr {
     }
 }
 
+/// The name of a lane operation, followed by its lane width.
+pub(crate) fn lane_op_name(op: LaneOp) -> &'static str {
+    match op {
+        LaneOp::Add => "add_lanes",
+        LaneOp::Sub => "sub_lanes",
+        LaneOp::Mul => "mul_lanes",
+        LaneOp::Equal => "equal_lanes",
+        LaneOp::GreaterSigned => "greater_lanes",
+        LaneOp::GreaterUnsigned => "greater_lanes_u",
+        LaneOp::GreaterEqualSigned => "greater_equal_lanes",
+        LaneOp::GreaterEqualUnsigned => "greater_equal_lanes_u",
+        LaneOp::MinSigned => "min_lanes",
+        LaneOp::MinUnsigned => "min_lanes_u",
+        LaneOp::MaxSigned => "max_lanes",
+        LaneOp::MaxUnsigned => "max_lanes_u",
+        LaneOp::ShiftLeft => "shift_left_lanes",
+        LaneOp::ShiftRight => "shift_right_lanes",
+        LaneOp::ShiftRightSigned => "shift_right_lanes_s",
+    }
+}
+
 fn rounding_name(rounding: Rounding) -> &'static str {
     match rounding {
         Rounding::TowardZero => "",
@@ -537,6 +594,11 @@ pub(crate) fn operation_name(op: Operation) -> String {
         ),
         Operation::FloatRound(x, rounding) => format!("fround{}.{}", rounding_name(rounding), p(x)),
         Operation::FloatConvert { from, to } => format!("f.{}tof.{}", p(from), p(to)),
+        Operation::Lanes(op, bits) => format!("{}{bits}", lane_op_name(op)),
+        Operation::InterleaveLow(bits) => format!("interleave_low{bits}"),
+        Operation::InterleaveHigh(bits) => format!("interleave_high{bits}"),
+        Operation::SignBits(bits) => format!("sign_bits{bits}"),
+        Operation::SumLanes(bits) => format!("sum_lanes{bits}"),
         Operation::CountLeadingZeros(bits) => format!("clz{bits}"),
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),
         Operation::PopCount(bits) => format!("popcount{bits}"),

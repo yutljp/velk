@@ -201,7 +201,29 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
     let mut bytes: Vec<u8> = (0..15)
         .map(|index| hash(seed, 0x40 + index) as u8)
         .collect();
-    match hash(seed, 0x30) % 7 {
+    match hash(seed, 0x30) % 9 {
+        // Integer and packed SSE: 66 0F with an opcode of those groups, a
+        // register operand byte and an immediate for the ones that take one.
+        7 | 8 => {
+            let opcode = match hash(seed, 0x3a) % 3 {
+                0 => 0x60 + (hash(seed, 0x3b) % 0x20) as u8,
+                1 => 0xd0 + (hash(seed, 0x3b) % 0x30) as u8,
+                _ => 0x50 + (hash(seed, 0x3b) % 0x10) as u8,
+            };
+            let prefix = if hash(seed, 0x3c).is_multiple_of(4) {
+                0xf3
+            } else {
+                0x66
+            };
+            let code = [
+                prefix,
+                0x0f,
+                opcode,
+                0xc0 | (hash(seed, 0x34) as u8 & 0x3f),
+                hash(seed, 0x3d) as u8,
+            ];
+            bytes.splice(0..code.len(), code);
+        }
         // Bit scans and counts: bsf, bsr, and with F3 popcnt, tzcnt, lzcnt.
         6 => {
             let (prefix, opcode) = [

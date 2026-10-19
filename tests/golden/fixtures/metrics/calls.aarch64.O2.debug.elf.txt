@@ -1,4 +1,4 @@
-# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 7 unsupported, 2 gotos
+# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 4 unsupported, 2 gotos
 0x2102c4 8 twice symtab,dwarf,unwind
 0x2102cc 8 square symtab,dwarf,unwind
 0x2102d4 28 pick_op symtab,dwarf,unwind
@@ -127,27 +127,38 @@ fn apply_pointer @ 0x21031c (size 32)
 int factorial(int n) {
     if (n >= 0x2) {
         if (n >= 0x9 /* unsigned */) {
-            /* unsupported: DUP at 0x210360 */
-            v4 = 0x200000;
+            v3 = 0x200000;
             /* unsupported: MOVI at 0x210368 */
             d1 = qword_200190;
             v1_hi = qword_200198;
-            v5 = v3 - 0x1;
+            v4 = n - 0x1;
             /* unsupported (2 steps): MVNI at 0x210374, MVNI at 0x210378 */
-            v6 = v5 & 0xfffffff8;
-            /* unsupported (2 steps): ADD operands at 0x210380, MOVI at 0x210384 */
-            v1 = v3 - v6;
-            v7 = v6;
+            v5 = v4 & 0xfffffff8;
+            d1 = add_lanes32(n * 0x100000001, d1);
+            v1_hi = add_lanes32(n * 0x100000001, v1_hi);
+            /* unsupported: MOVI at 0x210384 */
+            v1 = n - v5;
+            v6 = v5;
             do {
-                /* unsupported: ADD operands at 0x210390 */
-                v7 = v7 - 0x8;
-                /* unsupported: ADD operands at 0x21039c */
-            } while (v7 != 0x0);
+                d5 = add_lanes32(d1, d3);
+                v5_hi = add_lanes32(v1_hi, v3_hi);
+                d0 = mul_lanes32(d1, d0);
+                v0_hi = mul_lanes32(v1_hi, v0_hi);
+                v6 = v6 - 0x8;
+                d1 = add_lanes32(d1, d4);
+                v1_hi = add_lanes32(v1_hi, v4_hi);
+                d2 = mul_lanes32(d5, d2);
+                v2_hi = mul_lanes32(v5_hi, v2_hi);
+            } while (v6 != 0x0);
+            d0 = mul_lanes32(d2, d0);
+            v0_hi = mul_lanes32(v2_hi, v0_hi);
             /* unsupported: EXT at 0x2103b0 */
-            v8 = d0 >> 0x20;
-            v9 = d0;
-            v2 = v9 * v8;
-            if (v5 == v6) {
+            d0 = mul_lanes32(d0, d1);
+            v0_hi = 0x0;
+            v7 = d0 >> 0x20;
+            v8 = d0;
+            v2 = v8 * v7;
+            if (v4 == v5) {
                 return v2;
             }
         } else {
@@ -180,30 +191,40 @@ fn factorial @ 0x21033c (size 160)
     v2 = #0x1
     br 0x2103c8
   blk4 @ 0x210360:
-    unsupported: DUP at 0x210360
-    v4 = #0x200000
+    v3 = #0x200000
     unsupported: MOVI at 0x210368
     d1 = load64(#0x200190)
     v1_hi = load64(#0x200198)
-    v5 = ((v3 & #0xffffffff) - #0x1)
+    v4 = ((x0 & #0xffffffff) - #0x1)
     unsupported: MVNI at 0x210374
     unsupported: MVNI at 0x210378
-    v6 = (v5 & #0xfffffff8)
-    unsupported: ADD operands at 0x210380
+    v5 = (v4 & #0xfffffff8)
+    d1 = add_lanes32(((x0 & #0xffffffff) * #0x100000001), d1)
+    v1_hi = add_lanes32(((x0 & #0xffffffff) * #0x100000001), v1_hi)
     unsupported: MOVI at 0x210384
-    v1 = (((v3 & #0xffffffff) - v6) & #0xffffffff)
-    v7 = v6
+    v1 = (((x0 & #0xffffffff) - v5) & #0xffffffff)
+    v6 = v5
   blk5 @ 0x210390:
-    unsupported: ADD operands at 0x210390
-    v7 = (v7 - #0x8)
-    unsupported: ADD operands at 0x21039c
-    brif ne v7, #0x0 -> 0x210390
+    d5 = add_lanes32(d1, d3)
+    v5_hi = add_lanes32(v1_hi, v3_hi)
+    d0 = mul_lanes32(d1, d0)
+    v0_hi = mul_lanes32(v1_hi, v0_hi)
+    v6 = (v6 - #0x8)
+    d1 = add_lanes32(d1, d4)
+    v1_hi = add_lanes32(v1_hi, v4_hi)
+    d2 = mul_lanes32(d5, d2)
+    v2_hi = mul_lanes32(v5_hi, v2_hi)
+    brif ne v6, #0x0 -> 0x210390
   blk6 @ 0x2103a8:
+    d0 = mul_lanes32(d2, d0)
+    v0_hi = mul_lanes32(v2_hi, v0_hi)
     unsupported: EXT at 0x2103b0
-    v8 = (d0 >> #0x20)
-    v9 = d0
-    v2 = ((v9 * v8) & #0xffffffff)
-    brif eq v5, v6 -> 0x2103d8
+    d0 = mul_lanes32(d0, d1)
+    v0_hi = #0x0
+    v7 = (d0 >> #0x20)
+    v8 = d0
+    v2 = ((v8 * v7) & #0xffffffff)
+    brif eq v4, v5 -> 0x2103d8
   blk7 @ 0x2103c8:
     v2 = (((v1 & #0xffffffff) * (v2 & #0xffffffff)) & #0xffffffff)
     v1 = (((v1 & #0xffffffff) - #0x1) & #0xffffffff)
@@ -211,7 +232,7 @@ fn factorial @ 0x21033c (size 160)
   blk8 @ 0x2103d8:
     ret v2
 -- card
-{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":9}
+{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":5}
 
 == 0x2103dc is_odd
 -- decompile
