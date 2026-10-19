@@ -396,14 +396,26 @@ impl<'a> Graph<'a> {
         None
     }
 
-    /// A block short enough to copy that only returns.
+    /// A block short enough to copy that only returns, or calls a function
+    /// that never returns, as a panic does.
     fn returns_only(&self, block: usize) -> bool {
         let stmts = &self.blocks[block].stmts;
-        stmts.len() <= 4
-            && matches!(stmts.last(), Some(Stmt::Ret { .. }))
-            && stmts[..stmts.len() - 1]
-                .iter()
-                .all(|stmt| matches!(stmt, Stmt::Assign { .. }))
+        match stmts.last() {
+            Some(Stmt::Ret { .. }) => {
+                stmts.len() <= 4
+                    && stmts[..stmts.len() - 1]
+                        .iter()
+                        .all(|stmt| matches!(stmt, Stmt::Assign { .. }))
+            }
+            Some(Stmt::Trap) => {
+                stmts.len() <= 6
+                    && matches!(stmts.iter().rev().nth(1), Some(Stmt::Call { .. }))
+                    && stmts[..stmts.len() - 2]
+                        .iter()
+                        .all(|stmt| matches!(stmt, Stmt::Assign { .. }))
+            }
+            _ => false,
+        }
     }
 
     /// Whether a branch from `from` brings in `target`'s code: it dominates

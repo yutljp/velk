@@ -384,40 +384,41 @@ int32_t sub_1290(uint32_t *a0, int64_t a1, int32_t a2) {
         __snprintf_chk(v21, 0x40, 0x2, 0x40, 0x2004, v22);
         v28 = stderr;
         fputs(v21, v28);
-    } else {
-        v2 = a0;
-        v3 = a0;
-        v4 = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
-        v5 = (uint8_t *)a0 + v4;
-        while (*v3 != a2) {
-            v3 = v3 + 0x6;
-            if (v3 == v5) {
-                goto L_12fd;
-            }
-        }
-        rax = v3[0x1];
-        if (local_0 != *(uint64_t *)(fs_base + 0x28)) {
-            __stack_chk_fail();
-            __builtin_trap();
-        }
-        return rax;
-    L_12fd:
-        v6 = rsp - 0x68;
-        v7 = a2;
-        local_1 = a1;
-        v13 = v2 + 0x8;
-        v14 = v4 + (uint8_t *)v13;
-        __snprintf_chk(v6, 0x40, 0x2, 0x40, 0x2004, v7);
-        v15 = stderr;
-        fputs(v6, v15);
-        do {
-            v16 = v13[-0x1];
-            v17 = stderr;
-            v18 = v13;
-            v13 = v13 + 0x6;
-            __fprintf_chk(v17, 0x2, 0x201c, v18, v16);
-        } while (v13 != v14);
+        abort();
+        __builtin_trap();
     }
+    v2 = a0;
+    v3 = a0;
+    v4 = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
+    v5 = (uint8_t *)a0 + v4;
+    while (*v3 != a2) {
+        v3 = v3 + 0x6;
+        if (v3 == v5) {
+            goto L_12fd;
+        }
+    }
+    rax = v3[0x1];
+    if (local_0 != *(uint64_t *)(fs_base + 0x28)) {
+        __stack_chk_fail();
+        __builtin_trap();
+    }
+    return rax;
+L_12fd:
+    v6 = rsp - 0x68;
+    v7 = a2;
+    local_1 = a1;
+    v13 = v2 + 0x8;
+    v14 = v4 + (uint8_t *)v13;
+    __snprintf_chk(v6, 0x40, 0x2, 0x40, 0x2004, v7);
+    v15 = stderr;
+    fputs(v6, v15);
+    do {
+        v16 = v13[-0x1];
+        v17 = stderr;
+        v18 = v13;
+        v13 = v13 + 0x6;
+        __fprintf_chk(v17, 0x2, 0x201c, v18, v16);
+    } while (v13 != v14);
     abort();
     __builtin_trap();
 }
