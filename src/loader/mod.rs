@@ -484,6 +484,7 @@ pub fn load(path: &Path) -> Result<Image> {
     let bases = relocate::layout(&file);
     let mut relocated = bytes.clone();
     relocate::apply(&file, &bases, &mut relocated);
+    relocate::apply_dynamic(&file, &mut relocated);
 
     let mut sections = Vec::new();
     for section in file.sections() {

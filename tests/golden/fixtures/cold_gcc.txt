@@ -1,4 +1,4 @@
-# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 9 gotos
+# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 7 gotos
 0x1000 27 _init symtab
 0x1080 16 __cxa_finalize plt
 0x1090 16 __snprintf_chk plt
@@ -113,7 +113,7 @@ fn __stack_chk_fail @ 0x10b0 (size 16)
 -- decompile
 /* velk pseudo-C: fputs @ 0x10c0 */
 int32_t fputs(void) {
-    goto *(qword_3fc8);
+    return deregister_tm_clones();
 }
 -- signature
 int32_t ()
@@ -122,24 +122,26 @@ int32_t ()
 -- ir
 fn fputs @ 0x10c0 (size 16)
   blk0 @ 0x10c0:
-    br load64(#0x3fc8)
+    v1 = call 0x11d0()
+    ret v1
 -- card
 {"addr":"0x10c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x10d0 __fprintf_chk
 -- decompile
 /* velk pseudo-C: __fprintf_chk @ 0x10d0 */
-int32_t __fprintf_chk(void) {
-    goto *(qword_3fd0);
+int64_t __fprintf_chk(void) {
+    return __do_global_dtors_aux();
 }
 -- signature
-int32_t ()
+int64_t ()
 -- references
 
 -- ir
 fn __fprintf_chk @ 0x10d0 (size 16)
   blk0 @ 0x10d0:
-    br load64(#0x3fd0)
+    v1 = call 0x1240()
+    ret v1
 -- card
 {"addr":"0x10d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__fprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 

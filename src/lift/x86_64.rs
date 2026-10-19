@@ -1940,7 +1940,18 @@ fn lift_instruction(
                     return true;
                 }
             } else if let Some(through) = operand(lifter, ins, 0) {
-                lifter.stmts.push(call_through(lifter.image, through));
+                // A pointer the image fills itself is a call to its function.
+                if let Some(target) = super::pointer_target(lifter.image, &through) {
+                    lifter
+                        .stmts
+                        .push(call(lifter.image, lifter.summaries, Some(target)));
+                    if (lifter.summaries)(target).noreturn {
+                        lifter.stmts.push(Stmt::Trap);
+                        return true;
+                    }
+                } else {
+                    lifter.stmts.push(call_through(lifter.image, through));
+                }
             } else {
                 let made = call(lifter.image, lifter.summaries, None);
                 lifter.stmts.push(made);
@@ -1961,7 +1972,14 @@ fn lift_instruction(
                     });
                 }
             } else if let Some(target) = operand(lifter, ins, 0) {
-                lifter.stmts.push(Stmt::BrIndirect { target });
+                match super::pointer_target(lifter.image, &target) {
+                    Some(target) => lifter.stmts.extend(self::tail_call(
+                        lifter.image,
+                        lifter.summaries,
+                        Some(target),
+                    )),
+                    None => lifter.stmts.push(Stmt::BrIndirect { target }),
+                }
             }
             return true;
         }

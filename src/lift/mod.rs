@@ -350,6 +350,23 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
     }
 }
 
+/// The function a pointer in data names, for a call or jump through it:
+/// `call [slot]`, where the slot holds a known function's address.
+pub(crate) fn pointer_target(image: &Image, through: &Expr) -> Option<u64> {
+    let Expr::Load { addr, width: 8, .. } = through else {
+        return None;
+    };
+    let Expr::Const(slot) = addr.as_ref() else {
+        return None;
+    };
+    if image.section_at(*slot)?.executable {
+        return None;
+    }
+    let bytes = image.read_vaddr(*slot, 8)?;
+    let target = u64::from_le_bytes(bytes.try_into().ok()?);
+    image.functions.contains_key(&target).then_some(target)
+}
+
 /// A call to the address `through` computes.
 fn call_through(image: &Image, through: Expr) -> Stmt {
     Stmt::Call {

@@ -96,6 +96,53 @@ pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &
     }
 }
 
+/// Fills the pointers a dynamic loader would, at a load address of zero: a
+/// relative relocation's addend, and the address of a symbol the image
+/// defines itself. Pointers to symbols of other modules stay as they are.
+pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut [u8]) {
+    let Some(relocations) = file.dynamic_relocations() else {
+        return;
+    };
+    let file_offset = |address: u64| {
+        file.sections().find_map(|section| {
+            let (offset, size) = section.file_range()?;
+            (address >= section.address() && address - section.address() < size)
+                .then(|| offset + (address - section.address()))
+        })
+    };
+    // The ELF types by machine: relative, then those holding a symbol's
+    // address (64-bit absolute, GOT entry, PLT slot).
+    let (relative, absolute): (u32, &[u32]) = match file.architecture() {
+        object::Architecture::X86_64 => (8, &[1, 6, 7]),
+        object::Architecture::Aarch64 => (1027, &[257, 1025, 1026]),
+        _ => return,
+    };
+    for (address, relocation) in relocations {
+        let RelocationFlags::Elf { r_type } = relocation.flags() else {
+            continue;
+        };
+        let r_type = r_type.0;
+        let value = match relocation.target() {
+            _ if r_type == relative => relocation.addend() as u64,
+            _ if !absolute.contains(&r_type) => continue,
+            RelocationTarget::Symbol(index) => match file.symbol_by_index(index) {
+                Ok(symbol) if !symbol.is_undefined() && symbol.address() != 0 => {
+                    symbol.address().wrapping_add(relocation.addend() as u64)
+                }
+                _ => continue,
+            },
+            _ => continue,
+        };
+        let Some(place) = file_offset(address).and_then(|offset| usize::try_from(offset).ok())
+        else {
+            continue;
+        };
+        if let Some(slot) = bytes.get_mut(place..place + 8) {
+            slot.copy_from_slice(&value.to_le_bytes());
+        }
+    }
+}
+
 fn patch(bytes: &mut [u8], place: usize, pc: u64, symbol: u64, relocation: &object::Relocation) {
     let implicit = if relocation.has_implicit_addend() {
         match relocation.size() {

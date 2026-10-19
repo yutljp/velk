@@ -515,6 +515,17 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         let Some(default) = walk.verified_default(block.start, lo, hi) else {
             continue;
         };
+        // One case beside the default is a plain test.
+        if walk
+            .cases
+            .values()
+            .filter(|target| **target != default)
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            < 2
+        {
+            continue;
+        }
         out.push(ChainSwitch {
             block_start: block.start,
             index: normalized(lhs),
