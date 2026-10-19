@@ -13,11 +13,11 @@
 == 0x21022c narrow_add
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x21022c */
-int32_t narrow_add(int32_t a, int32_t b) {
+signed char narrow_add(signed char a, signed char b) {
     return (int8_t)(a) + (int8_t)(b);
 }
 -- signature
-int32_t (int32_t a, int32_t b)
+signed char (signed char a, signed char b)
 -- references
 
 -- ir
@@ -30,11 +30,11 @@ fn narrow_add @ 0x21022c (size 32)
 == 0x21024c widen_mul
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x21024c */
-int32_t widen_mul(int32_t a, int32_t b) {
+unsigned short widen_mul(unsigned char a, unsigned char b) {
     return (a & 0xff) * (b & 0xff);
 }
 -- signature
-int32_t (int32_t a, int32_t b)
+unsigned short (unsigned char a, unsigned char b)
 -- references
 
 -- ir
@@ -47,11 +47,11 @@ fn widen_mul @ 0x21024c (size 32)
 == 0x21026c mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x21026c */
-int64_t mixed_sign(int a, int32_t b) {
+long long mixed_sign(int a, unsigned int b) {
     return (int64_t)(int32_t)(a) - b;
 }
 -- signature
-int64_t (int a, int32_t b)
+long long (int a, unsigned int b)
 -- references
 
 -- ir
@@ -104,11 +104,11 @@ fn in_range @ 0x21028c (size 84)
 == 0x2102e0 rotate_left
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x2102e0 */
-uint32_t rotate_left(uint32_t x, int32_t k) {
+unsigned int rotate_left(unsigned int x, unsigned int k) {
     return ((x << (k & 0x1f) | x >> (0x20 - k & 0x1f)) & 0xffffffff);
 }
 -- signature
-uint32_t (uint32_t x, int32_t k)
+unsigned int (unsigned int x, unsigned int k)
 -- references
 
 -- ir
@@ -121,7 +121,7 @@ fn rotate_left @ 0x2102e0 (size 64)
 == 0x210320 popcount
 -- decompile
 /* velk pseudo-C: popcount @ 0x210320 */
-int popcount(int32_t x) {
+int popcount(unsigned int x) {
     uint32_t local_0; /* [sp-4] */
     uint32_t local_1; /* [sp-8] */
 
@@ -134,7 +134,7 @@ int popcount(int32_t x) {
     return local_1;
 }
 -- signature
-int (int32_t x)
+int (unsigned int x)
 -- references
 
 -- ir
@@ -159,11 +159,11 @@ fn popcount @ 0x210320 (size 76)
 == 0x21036c byte_swap
 -- decompile
 /* velk pseudo-C: byte_swap @ 0x21036c */
-uint32_t byte_swap(uint32_t x) {
+unsigned int byte_swap(unsigned int x) {
     return x >> 0x8 & 0xff00 | x >> 0x18 | x << 0x8 & 0xff0000 | x << 0x18;
 }
 -- signature
-uint32_t (uint32_t x)
+unsigned int (unsigned int x)
 -- references
 
 -- ir
@@ -275,11 +275,11 @@ fn labs_value @ 0x210424 (size 64)
 == 0x210464 mul_high
 -- decompile
 /* velk pseudo-C: mul_high @ 0x210464 */
-int64_t mul_high(int64_t a, int64_t b) {
+unsigned long long mul_high(unsigned long long a, unsigned long long b) {
     return 0x0 * b + a * 0x0 + __umulh(a, b);
 }
 -- signature
-int64_t (int64_t a, int64_t b)
+unsigned long long (unsigned long long a, unsigned long long b)
 -- references
 
 -- ir

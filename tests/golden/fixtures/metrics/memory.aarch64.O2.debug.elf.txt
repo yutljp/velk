@@ -11,7 +11,7 @@
 == 0x210214 copy_bytes
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x210214 */
-void copy_bytes(void *dst, void *src, uint64_t n) {
+void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     if (n == 0x0) {
         return;
     }
@@ -75,7 +75,7 @@ L_2102a4:
     } while (v9 != 0x0);
 }
 -- signature
-void (void * dst, void * src, uint64_t n)
+void (unsigned char * dst, unsigned char * src, unsigned long n)
 -- references
 
 -- ir
@@ -148,13 +148,13 @@ fn copy_bytes @ 0x210214 (size 176)
 == 0x2102c4 fill_bytes
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x2102c4 */
-void fill_bytes(void *dst, int64_t value, int64_t n) {
+void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     if (n == 0x0) {
         return;
     }
 }
 -- signature
-void (void * dst, int64_t value, int64_t n)
+void (unsigned char * dst, unsigned char value, unsigned long n)
 -- references
 
 -- ir
@@ -171,7 +171,7 @@ fn fill_bytes @ 0x2102c4 (size 12)
 == 0x2102d0 string_length
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102d0 */
-int64_t string_length(char *s) {
+unsigned long string_length(char *s) {
     v1 = 0x0;
     do {
         v2 = *(uint8_t *)(s + v1);
@@ -180,7 +180,7 @@ int64_t string_length(char *s) {
     return v1 - 0x1;
 }
 -- signature
-int64_t (char * s)
+unsigned long (char * s)
 -- references
 
 -- ir

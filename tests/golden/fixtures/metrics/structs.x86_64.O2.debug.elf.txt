@@ -161,11 +161,11 @@ fn big_sum @ 0x2012a0 (size 27)
 == 0x2012c0 word_low_byte
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x2012c0 */
-int32_t word_low_byte(union word w) {
+unsigned char word_low_byte(union word w) {
     return w;
 }
 -- signature
-int32_t (union word w)
+unsigned char (union word w)
 -- references
 
 -- ir
@@ -178,11 +178,11 @@ fn word_low_byte @ 0x2012c0 (size 3)
 == 0x2012d0 flags_level
 -- decompile
 /* velk pseudo-C: flags_level @ 0x2012d0 */
-uint32_t flags_level(struct flags f) {
+unsigned int flags_level(struct flags f) {
     return ((f & 0x1) == 0x0 ? (f & 0xffffffff) >> 0x1 & 0x7 : (f & 0xffffffff) >> 0x4 & 0xf);
 }
 -- signature
-uint32_t (struct flags f)
+unsigned int (struct flags f)
 -- references
 
 -- ir
@@ -196,13 +196,13 @@ fn flags_level @ 0x2012d0 (size 23)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2012f0 */
 /* struct: f +0x0:uint8_t */
-void flags_set_mode(struct flags *f, int32_t mode) {
+void flags_set_mode(struct flags *f, unsigned int mode) {
     t1 = mode & 0xff;
     v3 = *(uint8_t *)(f) & 0xf1;
     *(uint8_t *)(f) = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe) & 0xff;
 }
 -- signature
-void (struct flags * f, int32_t mode)
+void (struct flags * f, unsigned int mode)
 -- references
 
 -- ir

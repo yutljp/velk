@@ -28,11 +28,11 @@
 == 0x21032c udiv3
 -- decompile
 /* velk pseudo-C: udiv3 @ 0x21032c */
-uint32_t udiv3(uint32_t x) {
+unsigned int udiv3(unsigned int x) {
     return x / 0x3;
 }
 -- signature
-uint32_t (uint32_t x)
+unsigned int (unsigned int x)
 -- references
 
 -- ir
@@ -45,11 +45,11 @@ fn udiv3 @ 0x21032c (size 20)
 == 0x210340 udiv10
 -- decompile
 /* velk pseudo-C: udiv10 @ 0x210340 */
-uint32_t udiv10(uint32_t x) {
+unsigned int udiv10(unsigned int x) {
     return x / 0xa;
 }
 -- signature
-uint32_t (uint32_t x)
+unsigned int (unsigned int x)
 -- references
 
 -- ir
@@ -62,11 +62,11 @@ fn udiv10 @ 0x210340 (size 20)
 == 0x210354 udiv64
 -- decompile
 /* velk pseudo-C: udiv64 @ 0x210354 */
-uint32_t udiv64(uint32_t x) {
+unsigned int udiv64(unsigned int x) {
     return x >> 0x6;
 }
 -- signature
-uint32_t (uint32_t x)
+unsigned int (unsigned int x)
 -- references
 
 -- ir
@@ -79,11 +79,11 @@ fn udiv64 @ 0x210354 (size 8)
 == 0x21035c hdiv3
 -- decompile
 /* velk pseudo-C: hdiv3 @ 0x21035c */
-uint64_t hdiv3(uint64_t x) {
+unsigned long long hdiv3(unsigned long long x) {
     return x / 0x3;
 }
 -- signature
-uint64_t (uint64_t x)
+unsigned long long (unsigned long long x)
 -- references
 
 -- ir
@@ -96,11 +96,11 @@ fn hdiv3 @ 0x21035c (size 20)
 == 0x210370 hdiv10
 -- decompile
 /* velk pseudo-C: hdiv10 @ 0x210370 */
-uint64_t hdiv10(uint64_t x) {
+unsigned long long hdiv10(unsigned long long x) {
     return x / 0xa;
 }
 -- signature
-uint64_t (uint64_t x)
+unsigned long long (unsigned long long x)
 -- references
 
 -- ir
@@ -164,11 +164,11 @@ fn sdiv16 @ 0x2103bc (size 20)
 == 0x2103d0 ldiv16
 -- decompile
 /* velk pseudo-C: ldiv16 @ 0x2103d0 */
-int64_t ldiv16(int64_t x) {
-    return x / 0x10;
+long long ldiv16(long long x) {
+    return (int64_t)(x) / 0x10;
 }
 -- signature
-int64_t (int64_t x)
+long long (long long x)
 -- references
 
 -- ir
@@ -198,11 +198,11 @@ fn smod3 @ 0x2103e4 (size 36)
 == 0x210408 umod3
 -- decompile
 /* velk pseudo-C: umod3 @ 0x210408 */
-uint32_t umod3(uint32_t x) {
+unsigned int umod3(unsigned int x) {
     return x % 0x3;
 }
 -- signature
-uint32_t (uint32_t x)
+unsigned int (unsigned int x)
 -- references
 
 -- ir
@@ -215,11 +215,11 @@ fn umod3 @ 0x210408 (size 28)
 == 0x210424 umod10
 -- decompile
 /* velk pseudo-C: umod10 @ 0x210424 */
-uint32_t umod10(uint32_t x) {
+unsigned int umod10(unsigned int x) {
     return x % 0xa;
 }
 -- signature
-uint32_t (uint32_t x)
+unsigned int (unsigned int x)
 -- references
 
 -- ir
@@ -249,11 +249,11 @@ fn smod10 @ 0x210440 (size 36)
 == 0x210464 lmod10
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x210464 */
-int64_t lmod10(int64_t x) {
-    return x % 0xa;
+long long lmod10(long long x) {
+    return (int64_t)(x) % 0xa;
 }
 -- signature
-int64_t (int64_t x)
+long long (long long x)
 -- references
 
 -- ir
@@ -266,11 +266,11 @@ fn lmod10 @ 0x210464 (size 32)
 == 0x210484 umod10b
 -- decompile
 /* velk pseudo-C: umod10b @ 0x210484 */
-uint64_t umod10b(uint64_t x) {
+unsigned long long umod10b(unsigned long long x) {
     return x % 0xa;
 }
 -- signature
-uint64_t (uint64_t x)
+unsigned long long (unsigned long long x)
 -- references
 
 -- ir
@@ -283,11 +283,11 @@ fn umod10b @ 0x210484 (size 28)
 == 0x2104a0 lmod16
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x2104a0 */
-int64_t lmod16(int64_t x) {
-    return x % 0x10;
+long long lmod16(long long x) {
+    return (int64_t)(x) % 0x10;
 }
 -- signature
-int64_t (int64_t x)
+long long (long long x)
 -- references
 
 -- ir
@@ -402,11 +402,11 @@ fn lnegate @ 0x2104f0 (size 8)
 == 0x2104f8 lmod3
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x2104f8 */
-int64_t lmod3(int64_t x) {
-    return x % 0x3;
+long long lmod3(long long x) {
+    return (int64_t)(x) % 0x3;
 }
 -- signature
-int64_t (int64_t x)
+long long (long long x)
 -- references
 
 -- ir
@@ -419,11 +419,11 @@ fn lmod3 @ 0x2104f8 (size 28)
 == 0x210514 ldiv3
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x210514 */
-int64_t ldiv3(int64_t x) {
-    return x / 0x3;
+long long ldiv3(long long x) {
+    return (int64_t)(x) / 0x3;
 }
 -- signature
-int64_t (int64_t x)
+long long (long long x)
 -- references
 
 -- ir
@@ -436,11 +436,11 @@ fn ldiv3 @ 0x210514 (size 20)
 == 0x210528 ldiv10
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x210528 */
-int64_t ldiv10(int64_t x) {
-    return x / 0xa;
+long long ldiv10(long long x) {
+    return (int64_t)(x) / 0xa;
 }
 -- signature
-int64_t (int64_t x)
+long long (long long x)
 -- references
 
 -- ir

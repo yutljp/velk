@@ -54,8 +54,15 @@ fn type_name(
         return None;
     }
     let entry = unit.entry(offset).ok()?;
-    let name =
-        attribute(&entry, gimli::DW_AT_name).and_then(|value| attribute_string(dwarf, unit, value));
+    // A base type's name may have several words (`unsigned char`).
+    let name = attribute(&entry, gimli::DW_AT_name).and_then(|value| {
+        let text = dwarf
+            .attr_string(unit, value)
+            .ok()?
+            .to_string_lossy()
+            .into_owned();
+        text.split(' ').all(plausible_name).then_some(text)
+    });
     let outer = attribute(&entry, gimli::DW_AT_type).and_then(|value| match value {
         AttributeValue::UnitRef(offset) => Some(offset),
         _ => None,
@@ -386,3 +393,5 @@ pub fn functions(image: &Image) -> Vec<DwarfFunction> {
     functions.dedup_by_key(|function| function.addr);
     functions
 }
+
+

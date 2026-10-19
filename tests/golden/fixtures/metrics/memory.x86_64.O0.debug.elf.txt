@@ -11,7 +11,7 @@
 == 0x201280 copy_bytes
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x201280 */
-void copy_bytes(void *dst, void *src, int64_t n) {
+void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
     uint64_t local_2; /* [sp-20] */
@@ -28,7 +28,7 @@ void copy_bytes(void *dst, void *src, int64_t n) {
     }
 }
 -- signature
-void (void * dst, void * src, int64_t n)
+void (unsigned char * dst, unsigned char * src, unsigned long n)
 -- references
 
 -- ir
@@ -53,7 +53,7 @@ fn copy_bytes @ 0x201280 (size 79)
 == 0x2012d0 fill_bytes
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x2012d0 */
-void fill_bytes(void *dst, int32_t value, int64_t n) {
+void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint64_t local_0; /* [sp-10] */
     uint8_t local_1; /* [sp-11] */
     uint64_t local_2; /* [sp-20] */
@@ -70,7 +70,7 @@ void fill_bytes(void *dst, int32_t value, int64_t n) {
     }
 }
 -- signature
-void (void * dst, int32_t value, int64_t n)
+void (unsigned char * dst, unsigned char value, unsigned long n)
 -- references
 
 -- ir
@@ -95,7 +95,7 @@ fn fill_bytes @ 0x2012d0 (size 73)
 == 0x201320 string_length
 -- decompile
 /* velk pseudo-C: string_length @ 0x201320 */
-int64_t string_length(char *s) {
+unsigned long string_length(char *s) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
 
@@ -107,7 +107,7 @@ int64_t string_length(char *s) {
     return local_1;
 }
 -- signature
-int64_t (char * s)
+unsigned long (char * s)
 -- references
 
 -- ir

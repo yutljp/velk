@@ -66,7 +66,7 @@ fn pick_op @ 0x201310 (size 21)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
-int apply_table(uint32_t index, int x) {
+int apply_table(unsigned int index, int x) {
     rdx = 0xaaaaaaab;
     rdx = 0xaaaaaaab * index >> 0x21;
     rcx = ((rdx + rdx * 0x2) & 0xffffffff);
@@ -76,7 +76,7 @@ int apply_table(uint32_t index, int x) {
     goto *(table[rax]);
 }
 -- signature
-int (uint32_t index, int x)
+int (unsigned int index, int x)
 -- references
 0x202610 .data.rel.ro
 -- ir
