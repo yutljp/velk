@@ -37,6 +37,11 @@ trait Machine {
     fn flags_touched(&self) -> bool;
     /// The flags a new block starts from.
     fn enter_block(&mut self, flags: Option<flags::Flags>);
+    /// Blocks an instruction that loops by itself adds after the one it ends
+    /// (an x86 `rep` string instruction's body).
+    fn take_extra_blocks(&mut self) -> Vec<Block> {
+        Vec::new()
+    }
 }
 
 /// How a block leaves the flags: as its own code set them, if it changed
@@ -611,6 +616,17 @@ fn build<M: Machine>(
                 carried,
                 &mut exits,
             ));
+            // A loop's body leaves the flags as they came in.
+            for extra in machine.take_extra_blocks() {
+                exits.insert(
+                    extra.start,
+                    Exit {
+                        flags: None,
+                        touched: false,
+                    },
+                );
+                blocks.push(extra);
+            }
             block_start = d.next;
             machine.block_ended();
             machine.enter_block(entry(block_start));
@@ -790,6 +806,67 @@ mod tests {
             assert_eq!(returns(Isa::X86_64, x86.clone(), &[(7, a), (6, b)]), less);
             assert_eq!(returns(Isa::AArch64, a64.clone(), &[(0, a), (1, b)]), less);
         }
+    }
+
+    /// The bytes a run of `code` leaves in memory.
+    fn memory_after(
+        code: Vec<u8>,
+        registers: &[(u16, u64)],
+        memory: &[(u64, u64)],
+    ) -> std::collections::BTreeMap<u64, u8> {
+        let len = code.len() as u64;
+        let image = Image::from_code(Isa::X86_64, 0, code);
+        let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());
+        ir.blocks = lift(&image, 0, len, &HashSet::new()).expect("lifts");
+        let setup = eval::Setup {
+            seed: 0,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers,
+            memory,
+            step_limit: 1000,
+        };
+        match eval::run(&ir, &setup) {
+            eval::Outcome::Return { memory, .. } => memory,
+            other => panic!("{other:?}\n{}", ir.render()),
+        }
+    }
+
+    #[test]
+    fn a_repeated_string_move_copies_as_many_elements_as_the_count() {
+        let source = [(0x1000, 0x0807_0605_0403_0201)];
+        // rep movsb; ret
+        let moved = memory_after(
+            vec![0xf3, 0xa4, 0xc3],
+            &[(6, 0x1000), (7, 0x2000), (1, 3)],
+            &source,
+        );
+        let copied: Vec<u8> = (0x2000..0x2004)
+            .filter_map(|addr| moved.get(&addr).copied())
+            .collect();
+        assert_eq!(copied, vec![1, 2, 3]);
+        let none = memory_after(
+            vec![0xf3, 0xa4, 0xc3],
+            &[(6, 0x1000), (7, 0x2000), (1, 0)],
+            &source,
+        );
+        assert!(!none.keys().any(|addr| (0x2000..0x2010).contains(addr)));
+        // rep stosq; ret: two quadwords of rax.
+        let stored = memory_after(
+            vec![0xf3, 0x48, 0xab, 0xc3],
+            &[(0, 0x1122_3344_5566_7788), (7, 0x3000), (1, 2)],
+            &[],
+        );
+        assert_eq!(
+            stored
+                .keys()
+                .filter(|addr| (0x3000..0x3018).contains(*addr))
+                .count(),
+            16
+        );
+        assert_eq!(stored.get(&0x3008), Some(&0x88));
     }
 
     #[test]

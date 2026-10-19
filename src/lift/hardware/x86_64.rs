@@ -232,7 +232,12 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
                 (Some(0xf3), 0xb8),
                 (Some(0xf3), 0xbc),
                 (Some(0xf3), 0xbd),
-            ][(hash(seed, 0x35) % 5) as usize];
+                // bt, bts, btr and btc with a register bit number.
+                (None, 0xa3),
+                (None, 0xab),
+                (None, 0xb3),
+                (None, 0xbb),
+            ][(hash(seed, 0x35) % 9) as usize];
             let mut code: Vec<u8> = prefix.into_iter().collect();
             if hash(seed, 0x36) & 1 == 1 {
                 code.push(0x48 | (hash(seed, 0x37) as u8 & 0x05));
