@@ -9,7 +9,7 @@ uint32_t dispatch(uint32_t a0) {
     if (w8 > 0x4 /* unsigned */) {
         return 0x0;
     }
-    return *(uint32_t *)(w8 << 0x2);
+    return dword_24[w8];
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -21,7 +21,7 @@ fn dispatch @ 0x0 (size 36)
     w8 = ((x0 & #0xffffffff) - #0xa)
     brif hi w8, #0x4 -> 0x1c
   blk1 @ 0xc:
-    ret (load32((w8 << #0x2)) & #0xffffffff)
+    ret (load32((#0x24 + (w8 << #0x2))) & #0xffffffff)
   blk2 @ 0x1c:
     ret #0x0
 -- card

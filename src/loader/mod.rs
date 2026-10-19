@@ -1,6 +1,7 @@
 mod discover;
 pub mod dwarf;
 pub mod go;
+mod relocate;
 mod symbols;
 
 use std::collections::BTreeMap;
@@ -375,12 +376,18 @@ pub fn load(path: &Path) -> Result<Image> {
     };
     let kind = object::FileKind::parse(&bytes[..]).map_err(object_error)?;
     let file = ObjFile::parse(&bytes[..]).map_err(object_error)?;
+    let bases = relocate::layout(&file);
+    let mut relocated = bytes.clone();
+    relocate::apply(&file, &bases, &mut relocated);
 
     let mut sections = Vec::new();
     for section in file.sections() {
         sections.push(Section {
             name: section.name().unwrap_or("<unnamed>").to_owned(),
-            vaddr: section.address(),
+            vaddr: bases
+                .get(&section.index())
+                .copied()
+                .unwrap_or(section.address()),
             size: section.size(),
             file_offset: section.file_range().map(|(offset, _)| offset),
             executable: is_executable(section.kind()),
@@ -397,7 +404,10 @@ pub fn load(path: &Path) -> Result<Image> {
         if !is_executable(section.kind()) {
             continue;
         }
-        let base = section.address();
+        let base = bases
+            .get(&section.index())
+            .copied()
+            .unwrap_or(section.address());
         for (offset, relocation) in section.relocations() {
             if !matches!(
                 relocation.kind(),
@@ -439,7 +449,7 @@ pub fn load(path: &Path) -> Result<Image> {
             } else {
                 base.wrapping_add(offset)
             };
-            relocations.insert(address, symbol.address());
+            relocations.insert(address, relocate::symbol_address(&symbol, &bases));
         }
     }
 
@@ -450,7 +460,7 @@ pub fn load(path: &Path) -> Result<Image> {
         }
         upsert(
             &mut functions,
-            sym.address(),
+            relocate::symbol_address(&sym, &bases),
             symbol_name(&sym),
             (sym.size() > 0).then_some(sym.size()),
             NameSource::Symtab,
@@ -502,7 +512,7 @@ pub fn load(path: &Path) -> Result<Image> {
         format: format_of(kind),
         isa: isa_of(file.architecture()),
         entry,
-        bytes,
+        bytes: relocated,
         sections,
         functions,
         relocations,

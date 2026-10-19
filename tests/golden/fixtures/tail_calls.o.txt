@@ -25,7 +25,7 @@ fn tail_one @ 0x0 (size 28)
 /* velk pseudo-C: tail_two @ 0x1c */
 uint32_t tail_two(uint32_t a0) {
     a0 = a0 + 0x2;
-    sub_<dynamic>();
+    tail_one();
     return a0;
 }
 -- signature
@@ -36,11 +36,10 @@ uint32_t (uint32_t a0)
 fn tail_two @ 0x1c (size 8)
   blk0 @ 0x1c:
     w0 = (w0 + #0x2)
-  blk1 @ 0x20:
-    call <dynamic>
+    call 0x0
     ret w0
 -- card
-{"addr":"0x1c","approxTokens":108,"blocks":2,"hardReasons":[],"name":"tail_two","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x1c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
 
 == 0x24 tail_three
 -- decompile

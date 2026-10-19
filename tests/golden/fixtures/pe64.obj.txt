@@ -116,7 +116,7 @@ fn reg_abs @ 0x50 (size 16)
 -- decompile
 /* velk pseudo-C: msg_first @ 0x60 */
 uint32_t msg_first(void) {
-    return (int8_t)(*(uint8_t *)(*(uint64_t *)(0x67) + 0x1));
+    return (int8_t)(*(uint8_t *)(qword_b0 + 0x1));
 }
 -- signature
 uint32_t ()
@@ -125,7 +125,7 @@ uint32_t ()
 -- ir
 fn msg_first @ 0x60 (size 16)
   blk0 @ 0x60:
-    ret (sext8(load8((load64(#0x67) + #0x1))) & #0xffffffff)
+    ret (sext8(load8((load64(#0xb0) + #0x1))) & #0xffffffff)
 -- card
 {"addr":"0x60","approxTokens":114,"blocks":1,"hardReasons":[],"name":"msg_first","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 

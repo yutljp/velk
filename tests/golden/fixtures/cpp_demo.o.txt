@@ -49,7 +49,7 @@ uint32_t use_int_(uint32_t a0) {
     ns__mul_int__int_();
     x1 = a0;
     a0 = x19;
-    sub_<dynamic>();
+    ns__add_int__int_();
     return a0;
 }
 -- signature
@@ -62,12 +62,10 @@ fn use(int) @ 0x10 (size 44)
     store64(x19, (sp + #0xfffffffffffffff0))
     x1 = #0x2
     x19 = w0
-  blk1 @ 0x24:
     call 0x8
     x1 = w0
     w0 = x19
-  blk2 @ 0x38:
-    call <dynamic>
+    call 0x0
     ret w0
 -- card
-{"addr":"0x10","approxTokens":162,"blocks":3,"hardReasons":[],"name":"use(int)","nameSources":["symtab"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x10","approxTokens":162,"blocks":1,"hardReasons":[],"name":"use(int)","nameSources":["symtab"],"section":".text","size":44,"unsupported":0}

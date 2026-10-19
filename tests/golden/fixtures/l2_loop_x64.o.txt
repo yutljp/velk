@@ -26,21 +26,21 @@ L_22:
         r8 = ((rdx + rax) & 0xffffffff);
         rsi = edx;
         rax = eax + esi;
-        dword_51 = ((eax - 0x7) & 0xffffffff);
+        dword_204 = ((eax - 0x7) & 0xffffffff);
         rax = rsi + r8 - 0x7;
-        dword_62 = ((rsi + r8 - 0xd) & 0xffffffff);
+        dword_204 = ((rsi + r8 - 0xd) & 0xffffffff);
         r8 = ((rsi + rax - 0x6) & 0xffffffff);
-        dword_71 = ((rsi + rax - 0xb) & 0xffffffff);
+        dword_204 = ((rsi + rax - 0xb) & 0xffffffff);
         rax = rsi + r8 - 0x5;
-        dword_82 = ((rsi + r8 - 0x9) & 0xffffffff);
+        dword_204 = ((rsi + r8 - 0x9) & 0xffffffff);
         r8 = ((rsi + rax - 0x4) & 0xffffffff);
-        dword_91 = ((rsi + rax - 0x7) & 0xffffffff);
+        dword_204 = ((rsi + rax - 0x7) & 0xffffffff);
         rax = rsi + r8 - 0x3;
-        dword_a2 = ((rsi + r8 - 0x5) & 0xffffffff);
+        dword_204 = ((rsi + r8 - 0x5) & 0xffffffff);
         r8 = ((rsi + rax - 0x2) & 0xffffffff);
-        dword_b1 = ((rsi + rax - 0x3) & 0xffffffff);
+        dword_204 = ((rsi + rax - 0x3) & 0xffffffff);
         rax = rsi + r8 - 0x1;
-        dword_bd = eax;
+        dword_204 = eax;
         rdx = edx + 0x8;
         rsi = esi + a0;
     } while (esi + 0x8 != 0x7);
@@ -51,7 +51,7 @@ L_22:
 L_e0:
     do {
         rax = eax + edx;
-        dword_e8 = eax;
+        dword_204 = eax;
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
@@ -84,21 +84,21 @@ fn sum_while @ 0x0 (size 239)
     r8 = ((rdx + rax) & #0xffffffff)
     rsi = (rdx & #0xffffffff)
     rax = (((rax & #0xffffffff) + (rsi & #0xffffffff)) & #0xffffffff)
-    store32((((rax & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff), #0x51)
+    store32((((rax & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
     rax = (((rsi + r8) + #0xfffffffffffffff9) & #0xffffffff)
-    store32((((rsi + r8) + #0xfffffffffffffff3) & #0xffffffff), #0x62)
+    store32((((rsi + r8) + #0xfffffffffffffff3) & #0xffffffff), #0x204)
     r8 = (((rsi + rax) + #0xfffffffffffffffa) & #0xffffffff)
-    store32((((rsi + rax) + #0xfffffffffffffff5) & #0xffffffff), #0x71)
+    store32((((rsi + rax) + #0xfffffffffffffff5) & #0xffffffff), #0x204)
     rax = (((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff)
-    store32((((rsi + r8) + #0xfffffffffffffff7) & #0xffffffff), #0x82)
+    store32((((rsi + r8) + #0xfffffffffffffff7) & #0xffffffff), #0x204)
     r8 = (((rsi + rax) + #0xfffffffffffffffc) & #0xffffffff)
-    store32((((rsi + rax) + #0xfffffffffffffff9) & #0xffffffff), #0x91)
+    store32((((rsi + rax) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
     rax = (((rsi + r8) + #0xfffffffffffffffd) & #0xffffffff)
-    store32((((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff), #0xa2)
+    store32((((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff), #0x204)
     r8 = (((rsi + rax) + #0xfffffffffffffffe) & #0xffffffff)
-    store32((((rsi + rax) + #0xfffffffffffffffd) & #0xffffffff), #0xb1)
+    store32((((rsi + rax) + #0xfffffffffffffffd) & #0xffffffff), #0x204)
     rax = (((rsi + r8) + #0xffffffffffffffff) & #0xffffffff)
-    store32((rax & #0xffffffff), #0xbd)
+    store32((rax & #0xffffffff), #0x204)
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
     rsi = (((rsi & #0xffffffff) + edi) & #0xffffffff)
     brif ne (((rsi & #0xffffffff) + #0x8) & #0xffffffff), #0x7 -> 0x40
@@ -107,7 +107,7 @@ fn sum_while @ 0x0 (size 239)
     brif eq ecx, #0x0 -> 0xee
   blk8 @ 0xe0:
     rax = (((rax & #0xffffffff) + (rdx & #0xffffffff)) & #0xffffffff)
-    store32((rax & #0xffffffff), #0xe8)
+    store32((rax & #0xffffffff), #0x204)
     rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
     ecx = (ecx + #0xffffffffffffffff)
     brif ne ecx, #0x0 -> 0xe0
@@ -127,14 +127,14 @@ int32_t count_down(int32_t a0) {
     esi = -(eax & 0xfffffffffffffff8);
     rdx = 0x4;
     do {
-        dword_129 = ((rdx - 0x3) & 0xffffffff);
-        dword_132 = ((rdx - 0x2) & 0xffffffff);
-        dword_13b = ((rdx - 0x1) & 0xffffffff);
-        dword_141 = edx;
-        dword_14a = ((rdx + 0x1) & 0xffffffff);
-        dword_153 = ((rdx + 0x2) & 0xffffffff);
-        dword_15c = ((rdx + 0x3) & 0xffffffff);
-        dword_165 = ((rdx + 0x4) & 0xffffffff);
+        dword_204 = ((rdx - 0x3) & 0xffffffff);
+        dword_204 = ((rdx - 0x2) & 0xffffffff);
+        dword_204 = ((rdx - 0x1) & 0xffffffff);
+        dword_204 = edx;
+        dword_204 = ((rdx + 0x1) & 0xffffffff);
+        dword_204 = ((rdx + 0x2) & 0xffffffff);
+        dword_204 = ((rdx + 0x3) & 0xffffffff);
+        dword_204 = ((rdx + 0x4) & 0xffffffff);
         a0 = rdx;
         rdx = edx + 0x8;
         a0 = a0 + esi;
@@ -146,7 +146,7 @@ L_177:
     }
     rdx = edx + 0x1;
     do {
-        dword_186 = edx;
+        dword_204 = edx;
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
@@ -166,14 +166,14 @@ fn count_down @ 0xf0 (size 157)
     esi = (#0x0 - ((rax & #0xffffffff) & #0xfffffffffffffff8))
     rdx = #0x4
   blk2 @ 0x120:
-    store32(((rdx + #0xfffffffffffffffd) & #0xffffffff), #0x129)
-    store32(((rdx + #0xfffffffffffffffe) & #0xffffffff), #0x132)
-    store32(((rdx + #0xffffffffffffffff) & #0xffffffff), #0x13b)
-    store32((rdx & #0xffffffff), #0x141)
-    store32(((rdx + #0x1) & #0xffffffff), #0x14a)
-    store32(((rdx + #0x2) & #0xffffffff), #0x153)
-    store32(((rdx + #0x3) & #0xffffffff), #0x15c)
-    store32(((rdx + #0x4) & #0xffffffff), #0x165)
+    store32(((rdx + #0xfffffffffffffffd) & #0xffffffff), #0x204)
+    store32(((rdx + #0xfffffffffffffffe) & #0xffffffff), #0x204)
+    store32(((rdx + #0xffffffffffffffff) & #0xffffffff), #0x204)
+    store32((rdx & #0xffffffff), #0x204)
+    store32(((rdx + #0x1) & #0xffffffff), #0x204)
+    store32(((rdx + #0x2) & #0xffffffff), #0x204)
+    store32(((rdx + #0x3) & #0xffffffff), #0x204)
+    store32(((rdx + #0x4) & #0xffffffff), #0x204)
     edi = rdx
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
     edi = (edi + esi)
@@ -185,7 +185,7 @@ fn count_down @ 0xf0 (size 157)
   blk5 @ 0x17b:
     rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
   blk6 @ 0x180:
-    store32((rdx & #0xffffffff), #0x186)
+    store32((rdx & #0xffffffff), #0x204)
     rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
     ecx = (ecx + #0xffffffffffffffff)
     brif ne ecx, #0x0 -> 0x180
@@ -211,7 +211,7 @@ int32_t sum_skip_odd(int64_t a0) {
         do {
             rax = eax + ecx;
             rax = eax + 0x1;
-            dword_1ba = eax;
+            dword_204 = eax;
             rcx = ecx + 0x2;
         } while (edx != ecx);
     }
@@ -222,7 +222,7 @@ int32_t sum_skip_odd(int64_t a0) {
         return rax;
     }
     rcx = ecx + eax;
-    dword_1d4 = ecx;
+    dword_204 = ecx;
     rax = ecx;
 }
 -- signature
@@ -248,7 +248,7 @@ fn sum_skip_odd @ 0x190 (size 71)
   blk5 @ 0x1b0:
     rax = (((rax & #0xffffffff) + (rcx & #0xffffffff)) & #0xffffffff)
     rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x1ba)
+    store32((rax & #0xffffffff), #0x204)
     rcx = (((rcx & #0xffffffff) + #0x2) & #0xffffffff)
     brif ne edx, (rcx & #0xffffffff) -> 0x1b0
   blk6 @ 0x1c1:
@@ -257,7 +257,7 @@ fn sum_skip_odd @ 0x190 (size 71)
     brif eq ((rcx & #0xff) & #0x1), #0x0 -> 0x1d6
   blk8 @ 0x1cc:
     rcx = (((rcx & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
-    store32((rcx & #0xffffffff), #0x1d4)
+    store32((rcx & #0xffffffff), #0x204)
     rax = (rcx & #0xffffffff)
   blk9 @ 0x1d6:
     ret rax

@@ -9,180 +9,180 @@ int32_t d7(int32_t a0) {
     x8 = 0x0;
     switch (a0) {
     case 0:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 1:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 2:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 3:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 4:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 5:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x5;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 6:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x5;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x6;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 7:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x5;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x6;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x7;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     case 8:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x5;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x6;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x7;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x8;
     case 9:
-        w9 = *(uint32_t *)(x8);
-        *(uint32_t *)(x8) = w9;
+        w9 = *(uint32_t *)(x8 + 0x2e0);
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x5;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x6;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x7;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x8;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         w9 = w9;
         w9 = w9 + 0x9;
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     default:
-        *(uint32_t *)(x8) = w9;
+        *(uint32_t *)(x8 + 0x2e0) = w9;
         return w9;
     }
 }
@@ -205,17 +205,17 @@ fn d7 @ 0x0 (size 736)
   blk4 @ 0x28:
     brif ne w0, #0x4 -> 0x2d4
   blk5 @ 0x30:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x4) & #0xffffffff)
     br 0x2d4
@@ -228,32 +228,32 @@ fn d7 @ 0x0 (size 736)
   blk9 @ 0x80:
     brif ne w0, #0x9 -> 0x2d4
   blk10 @ 0x88:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x6) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x7) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x9) & #0xffffffff)
     br 0x2d4
@@ -262,8 +262,8 @@ fn d7 @ 0x0 (size 736)
   blk12 @ 0x100:
     brif ne w0, #0x1 -> 0x2d4
   blk13 @ 0x108:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
     br 0x2d4
@@ -272,120 +272,120 @@ fn d7 @ 0x0 (size 736)
   blk15 @ 0x124:
     brif ne w0, #0x6 -> 0x2d4
   blk16 @ 0x12c:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x6) & #0xffffffff)
     br 0x2d4
   blk17 @ 0x17c:
-    x9 = (load32(x8) & #0xffffffff)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
     br 0x2d4
   blk18 @ 0x184:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x5) & #0xffffffff)
     br 0x2d4
   blk19 @ 0x1c8:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
     br 0x2d4
   blk20 @ 0x1e8:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x6) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x7) & #0xffffffff)
     br 0x2d4
   blk21 @ 0x244:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x3) & #0xffffffff)
     br 0x2d4
   blk22 @ 0x270:
-    x9 = (load32(x8) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    x9 = (load32((x8 + #0x2e0)) & #0xffffffff)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x6) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x7) & #0xffffffff)
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     x9 = (x9 & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x8) & #0xffffffff)
   blk23 @ 0x2d4:
-    store32((x9 & #0xffffffff), x8)
+    store32((x9 & #0xffffffff), (x8 + #0x2e0))
     ret (x9 & #0xffffffff)
 -- card
 {"addr":"0x0","approxTokens":240,"blocks":24,"hardReasons":[],"name":"d7","nameSources":["symtab"],"section":".text","size":736,"unsupported":0}

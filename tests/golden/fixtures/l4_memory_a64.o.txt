@@ -71,7 +71,7 @@ fn array_sum @ 0x14 (size 48)
 -- decompile
 /* velk pseudo-C: bump @ 0x44 */
 void bump(void) {
-    dword_0 += 0x1;
+    dword_68 += 0x1;
     return;
 }
 -- signature
@@ -81,7 +81,7 @@ void ()
 -- ir
 fn bump @ 0x44 (size 20)
   blk0 @ 0x44:
-    store32(((load32(#0x0) + #0x1) & #0xffffffff), #0x0)
+    store32(((load32(#0x68) + #0x1) & #0xffffffff), #0x68)
     ret x0
 -- card
 {"addr":"0x44","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
@@ -90,7 +90,7 @@ fn bump @ 0x44 (size 20)
 -- decompile
 /* velk pseudo-C: banner_first @ 0x58 */
 uint32_t banner_first(void) {
-    w0 = *(uint8_t *)(qword_0);
+    w0 = *(uint8_t *)(qword_78);
     return w0;
 }
 -- signature
@@ -100,7 +100,7 @@ uint32_t ()
 -- ir
 fn banner_first @ 0x58 (size 16)
   blk0 @ 0x58:
-    w0 = load8(load64(#0x0))
+    w0 = load8(load64(#0x78))
     ret w0
 -- card
 {"addr":"0x58","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}
