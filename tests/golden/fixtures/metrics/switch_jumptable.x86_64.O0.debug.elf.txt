@@ -23,88 +23,87 @@ int d7(int x) {
     local_0 = x;
     rax = local_0;
     local_1 = rax;
-    if (rax > 0x9 /* unsigned */) {
-        g = 0xffffffff;
-        return g;
+    if (rax <= 0x9 /* unsigned */) {
+        rcx = 0x200158;
+        rax = (int64_t)(int32_t)(dword_200158[local_1]);
+        rax = rax + 0x200158;
+        switch (local_1) {
+        case 0:
+            local_2 = 0x0;
+            while (local_2 < 0x1) {
+                g += local_2;
+                local_2 += 0x1;
+            }
+            return g;
+        case 1:
+            local_3 = 0x0;
+            while (local_3 < 0x2) {
+                g += local_3;
+                local_3 += 0x1;
+            }
+            return g;
+        case 2:
+            local_4 = 0x0;
+            while (local_4 < 0x3) {
+                g += local_4;
+                local_4 += 0x1;
+            }
+            return g;
+        case 3:
+            local_5 = 0x0;
+            while (local_5 < 0x4) {
+                g += local_5;
+                local_5 += 0x1;
+            }
+            return g;
+        case 4:
+            local_6 = 0x0;
+            while (local_6 < 0x5) {
+                g += local_6;
+                local_6 += 0x1;
+            }
+            return g;
+        case 5:
+            local_7 = 0x0;
+            while (local_7 < 0x6) {
+                g += local_7;
+                local_7 += 0x1;
+            }
+            return g;
+        case 6:
+            local_8 = 0x0;
+            while (local_8 < 0x7) {
+                g += local_8;
+                local_8 += 0x1;
+            }
+            return g;
+        case 7:
+            local_9 = 0x0;
+            while (local_9 < 0x8) {
+                g += local_9;
+                local_9 += 0x1;
+            }
+            return g;
+        case 8:
+            local_10 = 0x0;
+            while (local_10 < 0x9) {
+                g += local_10;
+                local_10 += 0x1;
+            }
+            return g;
+        case 9:
+            local_11 = 0x0;
+            while (local_11 < 0xa) {
+                g += local_11;
+                local_11 += 0x1;
+            }
+            return g;
+        default:
+            break;
+        }
     }
-    rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[local_1]);
-    rax = rax + 0x200158;
-    switch (local_1) {
-    case 0:
-        local_2 = 0x0;
-        while (local_2 < 0x1) {
-            g += local_2;
-            local_2 += 0x1;
-        }
-        return g;
-    case 1:
-        local_3 = 0x0;
-        while (local_3 < 0x2) {
-            g += local_3;
-            local_3 += 0x1;
-        }
-        return g;
-    case 2:
-        local_4 = 0x0;
-        while (local_4 < 0x3) {
-            g += local_4;
-            local_4 += 0x1;
-        }
-        return g;
-    case 3:
-        local_5 = 0x0;
-        while (local_5 < 0x4) {
-            g += local_5;
-            local_5 += 0x1;
-        }
-        return g;
-    case 4:
-        local_6 = 0x0;
-        while (local_6 < 0x5) {
-            g += local_6;
-            local_6 += 0x1;
-        }
-        return g;
-    case 5:
-        local_7 = 0x0;
-        while (local_7 < 0x6) {
-            g += local_7;
-            local_7 += 0x1;
-        }
-        return g;
-    case 6:
-        local_8 = 0x0;
-        while (local_8 < 0x7) {
-            g += local_8;
-            local_8 += 0x1;
-        }
-        return g;
-    case 7:
-        local_9 = 0x0;
-        while (local_9 < 0x8) {
-            g += local_9;
-            local_9 += 0x1;
-        }
-        return g;
-    case 8:
-        local_10 = 0x0;
-        while (local_10 < 0x9) {
-            g += local_10;
-            local_10 += 0x1;
-        }
-        return g;
-    case 9:
-        local_11 = 0x0;
-        while (local_11 < 0xa) {
-            g += local_11;
-            local_11 += 0x1;
-        }
-        return g;
-    default:
-        g = 0xffffffff;
-        return g;
-    }
+    g = 0xffffffff;
+    return g;
 }
 -- signature
 int (int x)

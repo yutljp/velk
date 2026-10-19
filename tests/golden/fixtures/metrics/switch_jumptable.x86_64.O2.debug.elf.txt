@@ -1,4 +1,4 @@
-# metrics/switch_jumptable.x86_64.O2.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+# metrics/switch_jumptable.x86_64.O2.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 10 gotos
 0x2011c0 527 d7 symtab,dwarf,unwind
 
 == 0x2011c0 d7
@@ -7,103 +7,92 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2023d0 .bss */
 int d7(int x) {
-    if (x > 0x9 /* unsigned */) {
-        rax = 0xffffffff;
-        g = eax;
-        return g;
+    if (x <= 0x9 /* unsigned */) {
+        rax = (int64_t)(int32_t)(dword_200158[x]) + 0x200158;
+        switch (x) {
+        case 0:
+            rax = g;
+            goto L_2013c2;
+        case 1:
+            g = g;
+            rax = g + 0x1;
+            goto L_2013c2;
+        case 2:
+            g = g;
+            g += 0x1;
+            rax = g + 0x2;
+            goto L_2013c2;
+        case 3:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            rax = g + 0x3;
+            goto L_2013c2;
+        case 4:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            rax = g + 0x4;
+            goto L_2013c2;
+        case 5:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            rax = g + 0x5;
+            goto L_2013c2;
+        case 6:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            rax = g + 0x6;
+            goto L_2013c2;
+        case 7:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            g += 0x6;
+            rax = g + 0x7;
+            goto L_2013c2;
+        case 8:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            g += 0x6;
+            g += 0x7;
+            rax = g + 0x8;
+            goto L_2013c2;
+        case 9:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            g += 0x6;
+            g += 0x7;
+            g += 0x8;
+            rax = g + 0x9;
+            goto L_2013c2;
+        default:
+            break;
+        }
     }
-    rax = (int64_t)(int32_t)(dword_200158[x]) + 0x200158;
-    switch (x) {
-    case 0:
-        rax = g;
-        g = eax;
-        return g;
-    case 1:
-        g = g;
-        rax = g + 0x1;
-        g = eax;
-        return g;
-    case 2:
-        g = g;
-        g += 0x1;
-        rax = g + 0x2;
-        g = eax;
-        return g;
-    case 3:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        rax = g + 0x3;
-        g = eax;
-        return g;
-    case 4:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        rax = g + 0x4;
-        g = eax;
-        return g;
-    case 5:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        rax = g + 0x5;
-        g = eax;
-        return g;
-    case 6:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        rax = g + 0x6;
-        g = eax;
-        return g;
-    case 7:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        g += 0x6;
-        rax = g + 0x7;
-        g = eax;
-        return g;
-    case 8:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        g += 0x6;
-        g += 0x7;
-        rax = g + 0x8;
-        g = eax;
-        return g;
-    case 9:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        g += 0x6;
-        g += 0x7;
-        g += 0x8;
-        rax = g + 0x9;
-        g = eax;
-        return g;
-    default:
-        rax = 0xffffffff;
-        g = eax;
-        return g;
-    }
+    rax = 0xffffffff;
+L_2013c2:
+    g = eax;
+    return g;
 }
 -- signature
 int (int x)

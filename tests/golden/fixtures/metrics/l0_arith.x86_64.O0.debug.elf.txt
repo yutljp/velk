@@ -48,11 +48,11 @@ int pick(int a, int b) {
 
     local_0 = a;
     local_1 = b;
-    if (a > b) {
-        local_2 = local_0;
-    } else {
+    if (a <= b) {
         local_2 = local_1;
+        return local_2;
     }
+    local_2 = local_0;
     return local_2;
 }
 -- signature

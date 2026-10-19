@@ -48,11 +48,11 @@ int32_t sub_2011f0(int32_t a0, int32_t a1) {
 
     local_0 = a0;
     local_1 = a1;
-    if (a0 > a1) {
-        local_2 = local_0;
-    } else {
+    if (a0 <= a1) {
         local_2 = local_1;
+        return local_2;
     }
+    local_2 = local_0;
     return local_2;
 }
 -- signature

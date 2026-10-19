@@ -21,7 +21,9 @@ int64_t sub_201280(int64_t a0, int64_t a1, int64_t a2) {
     local_1 = a1;
     local_2 = a2;
     local_3 = 0x0;
-    while (local_3 < local_2 /* unsigned */) {
+    while (true) {
+        rax = local_3;
+        if (rax >= local_2 /* unsigned */) break;
         a2 = a2 & 0xffffffffffffff00 | *(uint8_t *)(local_1 + local_3) & 0xff;
         *(uint8_t *)(local_0 + local_3) = a2 & 0xff;
         local_3 += 0x1;
@@ -65,7 +67,9 @@ int64_t sub_2012d0(int64_t a0, int32_t a1, int64_t a2) {
     local_1 = a1 & 0xff;
     local_2 = a2;
     local_3 = 0x0;
-    while (local_3 < local_2 /* unsigned */) {
+    while (true) {
+        rax = local_3;
+        if (rax >= local_2 /* unsigned */) break;
         a2 = a2 & 0xffffffffffffff00 | local_1;
         *(uint8_t *)(local_0 + local_3) = a2 & 0xff;
         local_3 += 0x1;

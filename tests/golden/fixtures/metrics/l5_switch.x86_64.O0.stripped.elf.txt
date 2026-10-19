@@ -31,66 +31,65 @@ int32_t sub_201400(int32_t a0) {
     rax = local_0 - 0xa;
     rcx = eax;
     local_1 = rcx;
-    if (eax > 0xf /* unsigned */) {
-        dword_202760 = 0x0;
-        return dword_202760;
+    if (eax <= 0xf /* unsigned */) {
+        rcx = 0x200158;
+        rax = (int64_t)(int32_t)(dword_200158[local_1]);
+        rax = rax + 0x200158;
+        switch (((*(uint32_t *)(rsp - 0x24) - 0x19) & 0xffffffff)) {
+        case -15:
+            sub_2014f0();
+            return dword_202760;
+        case -14:
+            sub_201510();
+            return dword_202760;
+        case -13:
+            sub_201530();
+            return dword_202760;
+        case -12:
+            sub_201550();
+            return dword_202760;
+        case -11:
+            sub_201570();
+            return dword_202760;
+        case -10:
+            sub_201590();
+            return dword_202760;
+        case -9:
+            sub_2015b0();
+            return dword_202760;
+        case -8:
+            sub_2015d0();
+            return dword_202760;
+        case -7:
+            sub_2015f0();
+            return dword_202760;
+        case -6:
+            sub_201610();
+            return dword_202760;
+        case -5:
+            sub_201630();
+            return dword_202760;
+        case -4:
+            sub_201650();
+            return dword_202760;
+        case -3:
+            sub_201670();
+            return dword_202760;
+        case -2:
+            sub_201690();
+            return dword_202760;
+        case -1:
+            sub_2016b0();
+            return dword_202760;
+        case 0:
+            sub_2016d0();
+            return dword_202760;
+        default:
+            break;
+        }
     }
-    rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[local_1]);
-    rax = rax + 0x200158;
-    switch (((*(uint32_t *)(rsp - 0x24) - 0x19) & 0xffffffff)) {
-    case -15:
-        sub_2014f0();
-        return dword_202760;
-    case -14:
-        sub_201510();
-        return dword_202760;
-    case -13:
-        sub_201530();
-        return dword_202760;
-    case -12:
-        sub_201550();
-        return dword_202760;
-    case -11:
-        sub_201570();
-        return dword_202760;
-    case -10:
-        sub_201590();
-        return dword_202760;
-    case -9:
-        sub_2015b0();
-        return dword_202760;
-    case -8:
-        sub_2015d0();
-        return dword_202760;
-    case -7:
-        sub_2015f0();
-        return dword_202760;
-    case -6:
-        sub_201610();
-        return dword_202760;
-    case -5:
-        sub_201630();
-        return dword_202760;
-    case -4:
-        sub_201650();
-        return dword_202760;
-    case -3:
-        sub_201670();
-        return dword_202760;
-    case -2:
-        sub_201690();
-        return dword_202760;
-    case -1:
-        sub_2016b0();
-        return dword_202760;
-    case 0:
-        sub_2016d0();
-        return dword_202760;
-    default:
-        dword_202760 = 0x0;
-        return dword_202760;
-    }
+    dword_202760 = 0x0;
+    return dword_202760;
 }
 -- signature
 int32_t (int32_t a0)

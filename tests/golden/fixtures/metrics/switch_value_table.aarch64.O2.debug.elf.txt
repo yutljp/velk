@@ -7,7 +7,14 @@
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
     w8 = x - 0xa;
-    if (w8 > 0x4 /* unsigned */) {
+    switch (x8) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+        return dword_200120[w8];
+    default:
         return 0x0;
     }
     return dword_200120[w8];

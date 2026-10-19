@@ -256,12 +256,13 @@ impl Machine<'_> {
     fn execute(&mut self, step_limit: usize) -> Result<Option<u64>, &'static str> {
         let mut block = 0;
         let mut visits: HashMap<u64, u64> = HashMap::new();
+        // How often each flag-only branch, by its target, has been decided:
+        // the decision depends on that, not on where the branch sits.
+        let mut decided: HashMap<u64, u64> = HashMap::new();
         let mut steps = 0;
         let mut last_was_call = false;
         while let Some(current) = self.blocks.get(block) {
-            let visit = visits.entry(current.start).or_insert(0);
-            *visit += 1;
-            let visit = *visit;
+            *visits.entry(current.start).or_insert(0) += 1;
             let mut next = block + 1;
             for stmt in &current.stmts {
                 last_was_call = matches!(stmt, Stmt::Call { .. });
@@ -294,7 +295,9 @@ impl Machine<'_> {
                         }
                     }
                     Stmt::BrifFlags { target, .. } => {
-                        if hash(self.seed, current.start ^ (visit << 48)) & 1 == 1 {
+                        let count = decided.entry(*target).or_insert(0);
+                        *count += 1;
+                        if hash(self.seed, *target ^ (*count << 48)) & 1 == 1 {
                             next = match self.jump(*target) {
                                 Flow::Block(index) => index,
                                 Flow::Return(value) => return Ok(Some(value)),
@@ -312,12 +315,12 @@ impl Machine<'_> {
                         break;
                     }
                     Stmt::Br { target: None } => return Err("dynamic branch"),
+                    // A jump through a register the analysis could not
+                    // resolve leaves the function, whatever address it holds.
                     Stmt::BrIndirect { target } => {
-                        next = match self.jump(self.eval(target)?) {
-                            Flow::Block(index) => index,
-                            Flow::Return(value) => return Ok(Some(value)),
-                        };
-                        break;
+                        let target = self.eval(target)?;
+                        self.call(Some(target));
+                        return Ok(Some(self.register(crate::arch::RETURN)));
                     }
                     Stmt::Switch {
                         index,

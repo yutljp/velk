@@ -1,6 +1,9 @@
 mod build;
 mod cleanup;
 pub mod compare_chain;
+mod dominance;
+#[cfg(test)]
+pub(crate) mod lower;
 
 use std::collections::HashMap;
 
@@ -49,13 +52,43 @@ pub enum Node {
     },
 }
 
-/// Structures the function in address order and, when labels remain, also
-/// with a reordered layout and with compare chains rebuilt as switches,
-/// keeping the result with the fewest labels.
-///
-/// Reordering folds loops whose latch precedes the header but can make other
-/// shapes worse; every variant describes the same graph.
+/// Structures the function by its dominator tree, also with compare chains
+/// rebuilt as switches, keeping the result with the fewest labels. A function
+/// that tree cannot cover, such as one with code only an indirect jump
+/// reaches, is structured in address order instead.
 pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
+    let Some(primary) = by_dominance(ir) else {
+        return by_layout(ir);
+    };
+    // A compare tree over one value reads as a switch, unless that leaves
+    // more labels.
+    let mut chained = ir.clone();
+    let chains = crate::render::structure::compare_chain::recover_chains(&chained);
+    if !chains.is_empty() {
+        crate::render::structure::compare_chain::apply_chains(&mut chained, &chains);
+        if let Some(candidate) = by_dominance(&chained)
+            && label_count(&candidate) <= label_count(&primary)
+            && labels_resolve(ir, &candidate)
+        {
+            return candidate;
+        }
+    }
+    primary
+}
+
+fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
+    let mut nodes = dominance::structure(ir)?;
+    let mut used = std::collections::HashSet::new();
+    collect_targets(&nodes, &mut used);
+    prune_labels(&mut nodes, &used);
+    prune_unreachable(&mut nodes);
+    flatten_early_returns(&mut nodes);
+    Some(nodes)
+}
+
+/// The address-order structuring and its variants, keeping the one with the
+/// fewest labels.
+fn by_layout(ir: &FunctionIr) -> Vec<Node> {
     let primary = structure(ir);
     if label_count(&primary) == 0 {
         return primary;
@@ -64,8 +97,6 @@ pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
     let mut alternative = ir.clone();
     crate::passes::layout::normalize_layout(&mut alternative);
     candidates.push(structure_with(&alternative, true));
-    // A compare tree over one value, rebuilt as a switch, lays out its case
-    // bodies without a label each.
     let mut chained = ir.clone();
     let chains = crate::render::structure::compare_chain::recover_chains(&chained);
     if !chains.is_empty() {

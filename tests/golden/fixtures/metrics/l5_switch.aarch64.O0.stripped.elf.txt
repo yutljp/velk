@@ -30,85 +30,82 @@ int32_t sub_210334(int32_t a0) {
     local_0 = a0;
     x8 = local_0 - 0xa;
     local_1 = x8;
-    if (x8 > 0xf /* unsigned */) {
-        x8 = 0x220000;
-        dword_2205e8 = 0x0;
-        x8 = 0x220000;
-        return dword_2205e8;
+    if (x8 <= 0xf /* unsigned */) {
+        x8 = 0x210368;
+        x8 = 0x210368 + dword_200158[local_1];
+        switch (*(uint32_t *)(sp - 0x34)) {
+        case 10:
+            sub_210418(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 11:
+            sub_21042c(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 12:
+            sub_210444(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 13:
+            sub_210458(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 14:
+            sub_21046c(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 15:
+            sub_210480(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 16:
+            sub_210498(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 17:
+            sub_2104ac(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 18:
+            sub_2104c0(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 19:
+            sub_2104d4(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 20:
+            sub_2104ec(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 21:
+            sub_210500(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 22:
+            sub_210518(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 23:
+            sub_21052c(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 24:
+            sub_210544(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        case 25:
+            sub_210558(a0);
+            x8 = 0x220000;
+            return dword_2205e8;
+        default:
+            break;
+        }
     }
-    x8 = 0x210368;
-    x8 = 0x210368 + dword_200158[local_1];
-    switch (*(uint32_t *)(sp - 0x34)) {
-    case 10:
-        sub_210418(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 11:
-        sub_21042c(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 12:
-        sub_210444(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 13:
-        sub_210458(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 14:
-        sub_21046c(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 15:
-        sub_210480(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 16:
-        sub_210498(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 17:
-        sub_2104ac(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 18:
-        sub_2104c0(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 19:
-        sub_2104d4(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 20:
-        sub_2104ec(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 21:
-        sub_210500(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 22:
-        sub_210518(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 23:
-        sub_21052c(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 24:
-        sub_210544(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    case 25:
-        sub_210558(a0);
-        x8 = 0x220000;
-        return dword_2205e8;
-    default:
-        x8 = 0x220000;
-        dword_2205e8 = 0x0;
-        x8 = 0x220000;
-        return dword_2205e8;
-    }
+    x8 = 0x220000;
+    dword_2205e8 = 0x0;
+    x8 = 0x220000;
+    return dword_2205e8;
 }
 -- signature
 int32_t (int32_t a0)

@@ -1,4 +1,4 @@
-# metrics/control.aarch64.O2.stripped.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 5 unsupported, 2 gotos
+# metrics/control.aarch64.O2.stripped.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 5 unsupported, 1 gotos
 0x2101d4 100 - unwind,prologue
 0x210238 32 - unwind,prologue
 0x210258 32 - unwind,prologue
@@ -83,10 +83,11 @@ int32_t sub_210238(int32_t a0, int32_t a1, uint32_t *a2) {
     if ((x8 & 0x80000000) != 0x0) {
         return v1;
     }
-    if (a1 != 0x0) {
-        v1 = 0x0;
-        a2->field_0x0 = (int32_t)(w8) / a1;
+    if (a1 == 0x0) {
+        return v1;
     }
+    v1 = 0x0;
+    a2->field_0x0 = (int32_t)(w8) / a1;
     return v1;
 }
 -- signature
@@ -114,7 +115,13 @@ fn <unnamed> @ 0x210238 (size 32)
 /* velk pseudo-C: sub_210258 @ 0x210258 */
 /* ref: 0x200120 .rodata */
 int32_t sub_210258(uint32_t a0) {
-    if (a0 > 0x3 /* unsigned */) {
+    switch (a0) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        return dword_200120[a0];
+    default:
         return 0xffffffff;
     }
     return dword_200120[a0];
@@ -138,22 +145,24 @@ fn <unnamed> @ 0x210258 (size 32)
 -- decompile
 /* velk pseudo-C: sub_210278 @ 0x210278 */
 int32_t sub_210278(int32_t a0) {
-    if (a0 > 0x3e7) { goto L_210298; }
-    if (a0 == 0x1) {
+    if (a0 > 0x3e7) {
+        if (a0 == 0x3e8) {
+            return 0x1e;
+        }
+        if (a0 != 0x2710) {
+            return 0x0;
+        }
+        return 0x28;
+    }
+    switch (a0) {
+    case 1:
         return 0xa;
-    }
-    if (a0 != 0x64) {
+    case 100:
+        return 0x14;
+    default:
         return 0x0;
     }
-    return 0x14;
-L_210298:
-    if (a0 == 0x3e8) {
-        return 0x1e;
-    }
-    if (a0 != 0x2710) {
-        return 0x0;
-    }
-    return 0x28;
+    return 0x0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -237,10 +246,7 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
         return 0x0;
     }
     x9 = a1;
-    if (a1 < 0x8 /* unsigned */) {
-        x10 = 0x0;
-        x8 = 0x0;
-    } else {
+    if (a1 >= 0x8 /* unsigned */) {
         /* unsupported (2 steps): MOVI at 0x210334, MOVI at 0x210338 */
         x10 = x9 & 0x7ffffff8;
         /* unsupported: MOVI at 0x210340 */
@@ -256,6 +262,9 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
         if (x10 == x9) {
             return w8;
         }
+    } else {
+        x10 = 0x0;
+        x8 = 0x0;
     }
     x11 = a0 + (x10 << 0x2);
     x9 = x9 - x10;
@@ -321,40 +330,41 @@ fn <unnamed> @ 0x210308 (size 156)
 /* velk pseudo-C: sub_2103a4 @ 0x2103a4 */
 /* struct: a0 +0x0:uint32_t */
 int32_t sub_2103a4(uint32_t *a0, int32_t a1, int32_t a2) {
-    if (a1 < 0x1) {
-        x8 = 0xffffffff;
-        return w8;
-    }
-    x8 = 0x0;
-    x9 = a1;
-    w10 = a1 + 0x1;
-    x11 = a0 + 0x4;
-    w12 = 0x1;
-    x13 = 0x1;
-    for (;;) {
-        x14 = x8 + 0x1;
-        if (x14 < x9 /* unsigned */) {
-            w15 = *(uint32_t *)(a0 + (x8 << 0x2));
-            x16 = x9;
-            x17 = x11;
-            x8 = w12;
-            do {
-                w18 = *(uint32_t *)(x17);
-                x17 = x17 + 0x4;
-                if (w18 + w15 == a2) { goto L_210424; }
-                x16 = x16 - 0x1;
-                x8 = w8 + 0x1;
-            } while (x13 != x16);
-        }
-        x13 = x13 + 0x1;
-        w12 = w12 + w10;
-        x11 = x11 + 0x4;
-        x8 = x14;
-        if (x14 == x9) {
-            break;
+    if (a1 >= 0x1) {
+        x8 = 0x0;
+        x9 = a1;
+        w10 = a1 + 0x1;
+        x11 = a0 + 0x4;
+        w12 = 0x1;
+        x13 = 0x1;
+        for (;;) {
+            x14 = x8 + 0x1;
+            if (x14 < x9 /* unsigned */) {
+                w15 = *(uint32_t *)(a0 + (x8 << 0x2));
+                x16 = x9;
+                x17 = x11;
+                x8 = w12;
+                do {
+                    w18 = *(uint32_t *)(x17);
+                    x17 = x17 + 0x4;
+                    if (w18 + w15 == a2) {
+                        goto L_210424;
+                    }
+                    x16 = x16 - 0x1;
+                    x8 = w8 + 0x1;
+                } while (x13 != x16);
+            }
+            x13 = x13 + 0x1;
+            w12 = w12 + w10;
+            x11 = x11 + 0x4;
+            x8 = x14;
+            if (x14 == x9) {
+                break;
+            }
         }
     }
     x8 = 0xffffffff;
+    return w8;
 L_210424:
     return w8;
 }

@@ -32,15 +32,14 @@ double average(double *values, int n) {
         rax = local_3 + 0x1;
         local_3 = eax;
     }
-    if (local_1 > 0x0) {
-        xmm0 = local_2;
-        xmm0_hi = 0x0;
-        /* unsupported (2 steps): Cvtsi2sd at 0x20124a, Divsd at 0x20124f */
-        local_4 = xmm0;
-    } else {
+    if (local_1 <= 0x0) {
         local_4 = 0x0;
         return local_4;
     }
+    xmm0 = local_2;
+    xmm0_hi = 0x0;
+    /* unsupported (2 steps): Cvtsi2sd at 0x20124a, Divsd at 0x20124f */
+    local_4 = xmm0;
     return local_4;
 }
 -- signature

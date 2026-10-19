@@ -1,4 +1,4 @@
-# metrics/control.x86_64.O2.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 4 unsupported, 7 gotos
+# metrics/control.x86_64.O2.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 4 unsupported, 4 gotos
 0x201220 242 - unwind,prologue
 0x201320 26 - unwind,prologue
 0x201340 23 - unwind,prologue
@@ -24,9 +24,51 @@ int32_t sub_201220(int64_t a0, int32_t a1) {
     for (;;) {
         rbx = r11d * a1;
         r14 = a0 + r11 * 0x4;
-        if (a1 >= 0x4 /* unsigned */) { goto L_201280; }
-        r15 = 0x0;
-        if (rdx != 0x0) { goto L_2012dd; }
+        if (a1 >= 0x4 /* unsigned */) {
+            r12 = 0x0;
+            for (;;) {
+                r15 = r12;
+                if (r11 == r12) {
+                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                }
+                r12 = r15 + 0x1;
+                if (r11 == r12) {
+                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                }
+                r12 = r12 + 0x1;
+                if (r11 == r12) {
+                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                }
+                r12 = r12 + 0x1;
+                if (r11 == r12) {
+                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                }
+                r12 = r12 + 0x1;
+                if (r12 == r8) {
+                    break;
+                }
+            }
+            r15 = r15 + 0x4;
+            if (rdx == 0x0) {
+                goto L_201250;
+            }
+        } else {
+            r15 = 0x0;
+            if (rdx == 0x0) {
+                goto L_201250;
+            }
+        }
+        r15 = r15 + r10;
+        r12 = 0x0;
+        for (;;) {
+            if (r15 == r12) {
+                rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+            }
+            r12 = r12 - 0x1;
+            if (r9 == r12) {
+                break;
+            }
+        }
     L_201250:
         r11 = r11 + 0x1;
         r10 = r10 - 0x1;
@@ -35,44 +77,6 @@ int32_t sub_201220(int64_t a0, int32_t a1) {
         }
     }
     return rax;
-    for (;;) {
-    L_2012dd:
-        r15 = r15 + r10;
-        r12 = 0x0;
-        for (;;) {
-            if (r15 == r12) {
-                rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
-            }
-            r12 = r12 - 0x1;
-            if (r9 == r12) { goto L_201250; }
-        }
-    L_201280:
-        r12 = 0x0;
-        for (;;) {
-            r15 = r12;
-            if (r11 == r12) {
-                rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
-            }
-            r12 = r15 + 0x1;
-            if (r11 == r12) {
-                rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
-            }
-            r12 = r12 + 0x1;
-            if (r11 == r12) {
-                rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
-            }
-            r12 = r12 + 0x1;
-            if (r11 == r12) {
-                rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
-            }
-            r12 = r12 + 0x1;
-            if (r12 == r8) {
-                break;
-            }
-        }
-        r15 = r15 + 0x4;
-        if (rdx == 0x0) { goto L_201250; }
-    }
 }
 -- signature
 int32_t (int64_t a0, int32_t a1)
@@ -162,10 +166,11 @@ int32_t sub_201320(int32_t a0, int32_t a1, uint32_t *a2) {
     if (a0 < 0x0) {
         return rax;
     }
-    if (a1 != 0x0) {
-        a2->field_0x0 = a0 / a1;
-        rax = 0x0;
+    if (a1 == 0x0) {
+        return rax;
     }
+    a2->field_0x0 = a0 / a1;
+    rax = 0x0;
     return rax;
 }
 -- signature
@@ -193,9 +198,16 @@ fn <unnamed> @ 0x201320 (size 26)
 /* ref: 0x200120 .rodata */
 int32_t sub_201340(uint32_t a0) {
     rax = 0xffffffff;
-    if (a0 <= 0x3 /* unsigned */) {
-        rax = dword_200120[a0];
+    switch (a0) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        break;
+    default:
+        return rax;
     }
+    rax = dword_200120[a0];
     return rax;
 }
 -- signature
@@ -218,22 +230,24 @@ fn <unnamed> @ 0x201340 (size 23)
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 int32_t sub_201360(int32_t a0) {
-    if (a0 > 0x3e7) { goto L_201378; }
-    if (a0 == 0x1) {
+    if (a0 > 0x3e7) {
+        if (a0 == 0x3e8) {
+            return 0x1e;
+        }
+        if (a0 != 0x2710) {
+            return 0x0;
+        }
+        return 0x28;
+    }
+    switch (a0) {
+    case 1:
         return 0xa;
-    }
-    if (a0 != 0x64) {
+    case 100:
+        return 0x14;
+    default:
         return 0x0;
     }
-    return 0x14;
-L_201378:
-    if (a0 == 0x3e8) {
-        return 0x1e;
-    }
-    if (a0 != 0x2710) {
-        return 0x0;
-    }
-    return 0x28;
+    return 0x0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -276,9 +290,10 @@ int32_t sub_2013a0(int64_t a0, int32_t a1) {
         return rax;
     }
     rax = 0x1;
-    if (*(uint32_t *)(a0) != 0x1) {
-        rax = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
+    if (*(uint32_t *)(a0) == 0x1) {
+        return rax;
     }
+    rax = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
     return rax;
 }
 -- signature
@@ -311,10 +326,7 @@ int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
     }
     rcx = a1;
     rdx = 0x0;
-    if (a1 < 0x8 /* unsigned */) {
-        v1 = 0x0;
-        rax = 0x0;
-    } else {
+    if (a1 >= 0x8 /* unsigned */) {
         v1 = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         xmm1 = 0x0;
@@ -343,6 +355,9 @@ int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
         if (v1 == rcx) {
             return rax;
         }
+    } else {
+        v1 = 0x0;
+        rax = 0x0;
     }
     do {
         r8 = *(uint32_t *)(a0 + v1 * 0x4);
@@ -433,7 +448,9 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
             ebp = *(uint32_t *)(a0 + rbx * 0x4);
             rbx = 0x0;
             do {
-                if (*(uint32_t *)(r9 + rbx * 0x4) + ebp == a2) { goto L_2014f6; }
+                if (*(uint32_t *)(r9 + rbx * 0x4) + ebp == a2) {
+                    goto L_2014f6;
+                }
                 rbx = rbx + 0x1;
             } while (r10 != rbx);
         }

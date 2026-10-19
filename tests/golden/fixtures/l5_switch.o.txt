@@ -1,4 +1,4 @@
-# l5_switch.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+# l5_switch.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 17 gotos
 0x0 268 dense symtab,unwind
 0x10c 48 sparse symtab,unwind
 
@@ -7,10 +7,26 @@
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
     x9 = a0 - 0xa;
-    if (w9 > 0xf /* unsigned */) {
-        x9 = 0x0;
-        g_sink = w9;
-        return g_sink;
+    switch (x9) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+        break;
+    default:
+        goto L_fc;
     }
     w10 = 0x0;
     w10 = 0x13c;
@@ -18,81 +34,68 @@ int32_t dense(int32_t a0) {
     switch (a0) {
     case 10:
         x9 = g_sink + 0xb;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 11:
         w10 = 0x12;
         x9 = g_sink ^ 0x12;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 12:
         x9 = g_sink - 0x19;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 13:
         x9 = g_sink | 0x20;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 14:
         x9 = g_sink + 0x27;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 15:
         w10 = 0x2e;
         x9 = g_sink ^ 0x2e;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 16:
         x9 = g_sink - 0x35;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 17:
         x9 = g_sink | 0x3c;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 18:
         x9 = g_sink + 0x43;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 19:
         w10 = 0x4a;
         x9 = g_sink ^ 0x4a;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 20:
         x9 = g_sink - 0x51;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 21:
         x9 = g_sink;
         w10 = 0x58;
-        x9 = w9 | w10;
-        g_sink = w9;
-        return g_sink;
+        break;
     case 22:
         x9 = g_sink + 0x5f;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 23:
         w10 = 0x66;
         x9 = g_sink ^ 0x66;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 24:
         x9 = g_sink - 0x6d;
-        g_sink = w9;
-        return g_sink;
+        goto L_100;
     case 25:
         x9 = g_sink;
         w10 = 0x74;
-        x9 = w9 | w10;
-        g_sink = w9;
-        return g_sink;
+        break;
     default:
-        x9 = 0x0;
-        g_sink = w9;
-        return g_sink;
+        goto L_fc;
     }
+    x9 = w9 | w10;
+    goto L_100;
+L_fc:
+    x9 = 0x0;
+L_100:
+    g_sink = w9;
+    return g_sink;
 }
 -- signature
 int32_t (int32_t a0)
@@ -179,14 +182,16 @@ int32_t sparse(int32_t a0) {
     if (a0 == 0x1) {
         return 0x64;
     }
-    if (a0 == 0x12c) {
+    switch (a0) {
+    case 50:
+        return 0x7;
+    case 300:
         return a0;
+    default:
+        break;
     }
-    if (a0 != 0x32) {
-        a0 = 0xffffffff;
-        return a0;
-    }
-    return 0x7;
+    a0 = 0xffffffff;
+    return a0;
 }
 -- signature
 int32_t (int32_t a0)

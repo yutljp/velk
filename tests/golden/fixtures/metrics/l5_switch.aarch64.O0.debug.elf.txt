@@ -30,85 +30,82 @@ int dense(int x) {
     local_0 = x;
     x8 = local_0 - 0xa;
     local_1 = x8;
-    if (x8 > 0xf /* unsigned */) {
-        x8 = 0x220000;
-        g_sink = 0x0;
-        x8 = 0x220000;
-        return g_sink;
+    if (x8 <= 0xf /* unsigned */) {
+        x8 = 0x210368;
+        x8 = 0x210368 + dword_200158[local_1];
+        switch (*(uint32_t *)(sp - 0x34)) {
+        case 10:
+            c0(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 11:
+            c1(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 12:
+            c2(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 13:
+            c3(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 14:
+            c4(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 15:
+            c5(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 16:
+            c6(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 17:
+            c7(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 18:
+            c8(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 19:
+            c9(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 20:
+            c10(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 21:
+            c11(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 22:
+            c12(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 23:
+            c13(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 24:
+            c14(x);
+            x8 = 0x220000;
+            return g_sink;
+        case 25:
+            c15(x);
+            x8 = 0x220000;
+            return g_sink;
+        default:
+            break;
+        }
     }
-    x8 = 0x210368;
-    x8 = 0x210368 + dword_200158[local_1];
-    switch (*(uint32_t *)(sp - 0x34)) {
-    case 10:
-        c0(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 11:
-        c1(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 12:
-        c2(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 13:
-        c3(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 14:
-        c4(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 15:
-        c5(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 16:
-        c6(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 17:
-        c7(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 18:
-        c8(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 19:
-        c9(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 20:
-        c10(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 21:
-        c11(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 22:
-        c12(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 23:
-        c13(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 24:
-        c14(x);
-        x8 = 0x220000;
-        return g_sink;
-    case 25:
-        c15(x);
-        x8 = 0x220000;
-        return g_sink;
-    default:
-        x8 = 0x220000;
-        g_sink = 0x0;
-        x8 = 0x220000;
-        return g_sink;
-    }
+    x8 = 0x220000;
+    g_sink = 0x0;
+    x8 = 0x220000;
+    return g_sink;
 }
 -- signature
 int (int x)

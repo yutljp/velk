@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O2.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 8 unsupported, 2 gotos
+# metrics/float.x86_64.O2.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 8 unsupported, 0 gotos
 0x2011b0 161 average symtab,dwarf,unwind
 0x201260 13 lerp symtab,dwarf,unwind
 0x201270 5 truncate_to_int symtab,dwarf,unwind
@@ -13,34 +13,36 @@ double average(double *values, int n) {
     xmm0_hi = 0x0;
     xmm1 = 0x0;
     xmm1_hi = 0x0;
-    if (n <= 0x0) { goto L_20123d; }
-    rdx = n;
-    rax = rdx & 0x7;
-    if (n < 0x8 /* unsigned */) {
-        rcx = 0x0;
-    } else {
-        rdx = rdx & 0x7ffffff8;
-        rcx = 0x0;
-        do {
-            /* unsupported (8 steps): Addsd at 0x2011e0, Addsd at 0x2011e5, Addsd at 0x2011eb, Addsd at 0x2011f1, Addsd at 0x2011f7, Addsd at 0x2011fd, Addsd at 0x201203, Addsd at 0x201209 */
-            rcx = rcx + 0x8;
-        } while (rdx != rcx);
-    }
-    if (rax == 0x0) { goto L_20123d; }
-    rcx = values + rcx * 0x8;
-    rdx = 0x0;
-    do {
-        /* unsupported: Addsd at 0x201230 */
-        rdx = rdx + 0x1;
-    } while (rax != rdx);
-L_20123d:
     if (n > 0x0) {
-        xmm0 = 0x0;
-        xmm0_hi = 0x0;
-        /* unsupported (2 steps): Cvtsi2sd at 0x201244, Divsd at 0x201248 */
-        xmm0 = 0x0;
-        xmm0_hi = 0x0;
+        rdx = n;
+        rax = rdx & 0x7;
+        if (n >= 0x8 /* unsigned */) {
+            rdx = rdx & 0x7ffffff8;
+            rcx = 0x0;
+            do {
+                /* unsupported (8 steps): Addsd at 0x2011e0, Addsd at 0x2011e5, Addsd at 0x2011eb, Addsd at 0x2011f1, Addsd at 0x2011f7, Addsd at 0x2011fd, Addsd at 0x201203, Addsd at 0x201209 */
+                rcx = rcx + 0x8;
+            } while (rdx != rcx);
+        } else {
+            rcx = 0x0;
+        }
+        if (rax != 0x0) {
+            rcx = values + rcx * 0x8;
+            rdx = 0x0;
+            do {
+                /* unsupported: Addsd at 0x201230 */
+                rdx = rdx + 0x1;
+            } while (rax != rdx);
+        }
     }
+    if (n <= 0x0) {
+        return 0x0;
+    }
+    xmm0 = 0x0;
+    xmm0_hi = 0x0;
+    /* unsupported (2 steps): Cvtsi2sd at 0x201244, Divsd at 0x201248 */
+    xmm0 = 0x0;
+    xmm0_hi = 0x0;
     return 0x0;
 }
 -- signature

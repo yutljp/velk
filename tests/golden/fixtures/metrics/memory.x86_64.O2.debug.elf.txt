@@ -1,4 +1,4 @@
-# metrics/memory.x86_64.O2.debug.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 4 gotos
+# metrics/memory.x86_64.O2.debug.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x201220 236 copy_bytes symtab,dwarf,unwind
 0x201310 15 fill_bytes symtab,dwarf,unwind
 0x201320 28 string_length symtab,dwarf,unwind
@@ -16,51 +16,55 @@ int32_t copy_bytes(void *dst, void *src, uint64_t n) {
         return rax;
     }
     rax = 0x0;
-    if (n < 0x8 /* unsigned */) { goto L_2012a6; }
-    if (dst - src < 0x20 /* unsigned */) { goto L_2012a6; }
-    if (n < 0x20 /* unsigned */) {
-        rax = 0x0;
-    } else {
-        rax = n & 0xffffffffffffffe0;
-        rcx = 0x0;
-        do {
-            xmm0 = *(uint64_t *)(src + rcx);
-            xmm0_hi = *(uint64_t *)(src + rcx + 0x8);
-            xmm1 = *(uint64_t *)(src + rcx + 0x10);
-            xmm1_hi = *(uint64_t *)(src + rcx + 0x18);
-            *(uint64_t *)(dst + rcx) = xmm0;
-            *(uint64_t *)(dst + rcx + 0x8) = xmm0_hi;
-            *(uint64_t *)(dst + rcx + 0x10) = xmm1;
-            *(uint64_t *)(dst + rcx + 0x18) = xmm1_hi;
-            rcx = rcx + 0x20;
-        } while (rax != rcx);
-        if (rax == n) {
-            return rax;
+    if (n >= 0x8 /* unsigned */) {
+        if (dst - src >= 0x20 /* unsigned */) {
+            if (n >= 0x20 /* unsigned */) {
+                rax = n & 0xffffffffffffffe0;
+                rcx = 0x0;
+                do {
+                    xmm0 = *(uint64_t *)(src + rcx);
+                    xmm0_hi = *(uint64_t *)(src + rcx + 0x8);
+                    xmm1 = *(uint64_t *)(src + rcx + 0x10);
+                    xmm1_hi = *(uint64_t *)(src + rcx + 0x18);
+                    *(uint64_t *)(dst + rcx) = xmm0;
+                    *(uint64_t *)(dst + rcx + 0x8) = xmm0_hi;
+                    *(uint64_t *)(dst + rcx + 0x10) = xmm1;
+                    *(uint64_t *)(dst + rcx + 0x18) = xmm1_hi;
+                    rcx = rcx + 0x20;
+                } while (rax != rcx);
+                if (rax == n) {
+                    return rax;
+                }
+                if ((n & 0x18) == 0x0) {
+                    goto L_2012a6;
+                }
+            } else {
+                rax = 0x0;
+            }
+            rcx = rax;
+            rax = n & 0xfffffffffffffff8;
+            do {
+                r8 = *(uint64_t *)(src + rcx);
+                *(uint64_t *)(dst + rcx) = r8;
+                rcx = rcx + 0x8;
+            } while (rax != rcx);
+            if (rax == n) {
+                return rax;
+            }
         }
-        if ((n & 0x18) == 0x0) { goto L_2012a6; }
-    }
-    rcx = rax;
-    rax = n & 0xfffffffffffffff8;
-    do {
-        r8 = *(uint64_t *)(src + rcx);
-        *(uint64_t *)(dst + rcx) = r8;
-        rcx = rcx + 0x8;
-    } while (rax != rcx);
-    if (rax == n) {
-        return rax;
     }
 L_2012a6:
     rcx = rax;
     r8 = n & 0x3;
-    if (r8 == 0x0) { goto L_2012d1; }
-    rcx = rax;
-    do {
-        r9 = *(uint8_t *)(src + rcx) & 0xff;
-        *(uint8_t *)(dst + rcx) = r9 & 0xff;
-        rcx = rcx + 0x1;
-        r8 = r8 - 0x1;
-    } while (r8 != 0x0);
-L_2012d1:
+    if (r8 != 0x0) {
+        rcx = rax;
+        do {
+            r9 = *(uint8_t *)(src + rcx) & 0xff;
+            *(uint8_t *)(dst + rcx) = r9 & 0xff;
+            rcx = rcx + 0x1;
+            r8 = r8 - 0x1;
+        } while (r8 != 0x0);
+    }
     rax = rax - n;
     if (rax > 0xfffffffffffffffc /* unsigned */) {
         return rax;
@@ -159,11 +163,10 @@ fn copy_bytes @ 0x201220 (size 236)
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x201310 */
 void fill_bytes(void *dst, int32_t value, int64_t n) {
-    if (n != 0x0) {
-        value = value & 0xff;
-    } else {
+    if (n == 0x0) {
         return;
     }
+    value = value & 0xff;
     sub_0();
     return;
 }

@@ -1,4 +1,4 @@
-# metrics/control.aarch64.O2.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 5 unsupported, 2 gotos
+# metrics/control.aarch64.O2.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 5 unsupported, 1 gotos
 0x2101d4 100 matrix_trace symtab,dwarf,unwind
 0x210238 32 cleanup_on_error symtab,dwarf,unwind
 0x210258 32 fallthrough symtab,dwarf,unwind
@@ -83,10 +83,11 @@ int cleanup_on_error(int a, int b, int *out) {
     if ((x8 & 0x80000000) != 0x0) {
         return v1;
     }
-    if (b != 0x0) {
-        v1 = 0x0;
-        out->field_0x0 = (int32_t)(w8) / (int32_t)(b);
+    if (b == 0x0) {
+        return v1;
     }
+    v1 = 0x0;
+    out->field_0x0 = (int32_t)(w8) / (int32_t)(b);
     return v1;
 }
 -- signature
@@ -114,7 +115,13 @@ fn cleanup_on_error @ 0x210238 (size 32)
 /* velk pseudo-C: fallthrough @ 0x210258 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
-    if (x > 0x3 /* unsigned */) {
+    switch (x) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        return dword_200120[x];
+    default:
         return 0xffffffff;
     }
     return dword_200120[x];
@@ -138,22 +145,24 @@ fn fallthrough @ 0x210258 (size 32)
 -- decompile
 /* velk pseudo-C: sparse @ 0x210278 */
 int sparse(int x) {
-    if (x > 0x3e7) { goto L_210298; }
-    if (x == 0x1) {
+    if (x > 0x3e7) {
+        if (x == 0x3e8) {
+            return 0x1e;
+        }
+        if (x != 0x2710) {
+            return 0x0;
+        }
+        return 0x28;
+    }
+    switch (x) {
+    case 1:
         return 0xa;
-    }
-    if (x != 0x64) {
+    case 100:
+        return 0x14;
+    default:
         return 0x0;
     }
-    return 0x14;
-L_210298:
-    if (x == 0x3e8) {
-        return 0x1e;
-    }
-    if (x != 0x2710) {
-        return 0x0;
-    }
-    return 0x28;
+    return 0x0;
 }
 -- signature
 int (int x)
@@ -237,10 +246,7 @@ int skip_negatives(int *p, int n) {
         return 0x0;
     }
     x9 = n;
-    if (n < 0x8 /* unsigned */) {
-        x10 = 0x0;
-        x8 = 0x0;
-    } else {
+    if (n >= 0x8 /* unsigned */) {
         /* unsupported (2 steps): MOVI at 0x210334, MOVI at 0x210338 */
         x10 = x9 & 0x7ffffff8;
         /* unsupported: MOVI at 0x210340 */
@@ -256,6 +262,9 @@ int skip_negatives(int *p, int n) {
         if (x10 == x9) {
             return w8;
         }
+    } else {
+        x10 = 0x0;
+        x8 = 0x0;
     }
     x11 = p + (x10 << 0x2);
     x9 = x9 - x10;
@@ -321,40 +330,41 @@ fn skip_negatives @ 0x210308 (size 156)
 /* velk pseudo-C: find_pair @ 0x2103a4 */
 /* struct: p +0x0:uint32_t */
 int find_pair(int *p, int n, int target) {
-    if (n < 0x1) {
-        x8 = 0xffffffff;
-        return w8;
-    }
-    x8 = 0x0;
-    x9 = n;
-    w10 = n + 0x1;
-    x11 = p + 0x4;
-    w12 = 0x1;
-    x13 = 0x1;
-    for (;;) {
-        x14 = x8 + 0x1;
-        if (x14 < x9 /* unsigned */) {
-            w15 = *(uint32_t *)(p + (x8 << 0x2));
-            x16 = x9;
-            x17 = x11;
-            x8 = w12;
-            do {
-                w18 = *(uint32_t *)(x17);
-                x17 = x17 + 0x4;
-                if (w18 + w15 == target) { goto L_210424; }
-                x16 = x16 - 0x1;
-                x8 = w8 + 0x1;
-            } while (x13 != x16);
-        }
-        x13 = x13 + 0x1;
-        w12 = w12 + w10;
-        x11 = x11 + 0x4;
-        x8 = x14;
-        if (x14 == x9) {
-            break;
+    if (n >= 0x1) {
+        x8 = 0x0;
+        x9 = n;
+        w10 = n + 0x1;
+        x11 = p + 0x4;
+        w12 = 0x1;
+        x13 = 0x1;
+        for (;;) {
+            x14 = x8 + 0x1;
+            if (x14 < x9 /* unsigned */) {
+                w15 = *(uint32_t *)(p + (x8 << 0x2));
+                x16 = x9;
+                x17 = x11;
+                x8 = w12;
+                do {
+                    w18 = *(uint32_t *)(x17);
+                    x17 = x17 + 0x4;
+                    if (w18 + w15 == target) {
+                        goto L_210424;
+                    }
+                    x16 = x16 - 0x1;
+                    x8 = w8 + 0x1;
+                } while (x13 != x16);
+            }
+            x13 = x13 + 0x1;
+            w12 = w12 + w10;
+            x11 = x11 + 0x4;
+            x8 = x14;
+            if (x14 == x9) {
+                break;
+            }
         }
     }
     x8 = 0xffffffff;
+    return w8;
 L_210424:
     return w8;
 }

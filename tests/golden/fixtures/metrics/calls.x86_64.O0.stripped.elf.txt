@@ -135,15 +135,15 @@ int32_t sub_2013d0(int32_t a0) {
     uint32_t local_2; /* [sp-14] */
 
     local_0 = a0;
-    if (a0 <= 0x1) {
-        local_1 = 0x1;
-    } else {
+    if (a0 > 0x1) {
         rax = local_0;
         local_2 = eax;
         v1 = local_0 - 0x1;
         sub_2013d0(v1);
         local_1 = local_2 * eax;
+        return local_1;
     }
+    local_1 = 0x1;
     return local_1;
 }
 -- signature
@@ -177,12 +177,12 @@ int32_t sub_201420(int32_t a0) {
     uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
-    if (a0 == 0x0) {
-        local_1 = 0x0;
-    } else {
+    if (a0 != 0x0) {
         v1 = local_0 - 0x1;
         local_1 = sub_201460(v1);
+        return local_1;
     }
+    local_1 = 0x0;
     return local_1;
 }
 -- signature
@@ -214,12 +214,12 @@ int32_t sub_201460(int32_t a0) {
     uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
-    if (a0 == 0x0) {
-        local_1 = 0x1;
-    } else {
+    if (a0 != 0x0) {
         v1 = local_0 - 0x1;
         local_1 = sub_201420(v1);
+        return local_1;
     }
+    local_1 = 0x1;
     return local_1;
 }
 -- signature
@@ -366,23 +366,20 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4,
     *(uint32_t *)(rax) = 0x8;
     local_22 = 0x0;
     local_23 = 0x0;
-    for (;;) {
-        if (local_23 >= local_21) {
-            return local_22;
-        }
+    while (local_23 < local_21) {
         local_24 = rsp - 0x28;
         rax = *(uint32_t *)(rsp - 0x28);
         local_25 = eax;
-        if (eax <= 0x28 /* unsigned */) {
+        if (eax > 0x28 /* unsigned */) {
+            v3 = local_24;
+            rax = *(uint64_t *)(v3 + 0x8);
+            *(uint64_t *)(v3 + 0x8) = rax + 0x8;
+            local_26 = rax;
+        } else {
             v1 = local_24;
             v2 = local_25;
             rax = (int64_t)(int32_t)(v2) + *(uint64_t *)(v1 + 0x10);
             *(uint32_t *)(v1) = v2 + 0x8;
-            local_26 = rax;
-        } else {
-            v3 = local_24;
-            rax = *(uint64_t *)(v3 + 0x8);
-            *(uint64_t *)(v3 + 0x8) = rax + 0x8;
             local_26 = rax;
         }
         local_22 += *(uint32_t *)(local_26);

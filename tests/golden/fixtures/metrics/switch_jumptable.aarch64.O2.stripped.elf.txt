@@ -10,15 +10,13 @@ int32_t sub_210184(int32_t a0) {
     switch (a0) {
     case 0:
         w9 = dword_220464;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 1:
         w9 = dword_220464;
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 2:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -27,8 +25,7 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 3:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -40,8 +37,7 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 4:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -56,8 +52,7 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 5:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -75,8 +70,7 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x5;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 6:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -97,8 +91,7 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x6;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 7:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -122,8 +115,7 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x7;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 8:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -150,8 +142,7 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x8;
-        dword_220464 = w9;
-        return w9;
+        break;
     case 9:
         w9 = dword_220464;
         dword_220464 = w9;
@@ -181,12 +172,12 @@ int32_t sub_210184(int32_t a0) {
         dword_220464 = w9;
         w9 = w9;
         w9 = w9 + 0x9;
-        dword_220464 = w9;
-        return w9;
+        break;
     default:
-        dword_220464 = w9;
-        return w9;
+        break;
     }
+    dword_220464 = w9;
+    return w9;
 }
 -- signature
 int32_t (int32_t a0)

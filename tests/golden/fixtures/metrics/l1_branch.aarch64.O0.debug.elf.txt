@@ -1,4 +1,4 @@
-# metrics/l1_branch.aarch64.O0.debug.elf: elf aarch64 no entry, 3 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/l1_branch.aarch64.O0.debug.elf: elf aarch64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x210184 76 classify symtab,dwarf,unwind
 0x2101d0 104 clamp symtab,dwarf,unwind
 0x210238 72 sign_of symtab,dwarf,unwind
@@ -11,15 +11,15 @@ int classify(int x) {
     uint32_t local_1; /* [sp-4] */
 
     local_0 = x;
-    if ((x & 0x80000000) == 0x0) { goto L_2101a4; }
-    local_1 = 0xffffffff;
-    return local_1;
-L_2101a4:
-    if (local_0 != 0x0) {
-        local_1 = 0x1;
+    if ((x & 0x80000000) == 0x0) {
+        if (local_0 != 0x0) {
+            local_1 = 0x1;
+            return local_1;
+        }
+        local_1 = 0x0;
         return local_1;
     }
-    local_1 = 0x0;
+    local_1 = 0xffffffff;
     return local_1;
 }
 -- signature
@@ -63,15 +63,15 @@ int clamp(int x, int lo, int hi) {
     local_0 = x;
     local_1 = lo;
     local_2 = hi;
-    if (x >= lo) { goto L_210200; }
-    local_3 = local_1;
-    return local_3;
-L_210200:
-    if (local_0 <= local_2) {
-        local_3 = local_0;
+    if (x >= lo) {
+        if (local_0 <= local_2) {
+            local_3 = local_0;
+            return local_3;
+        }
+        local_3 = local_2;
         return local_3;
     }
-    local_3 = local_2;
+    local_3 = local_1;
     return local_3;
 }
 -- signature

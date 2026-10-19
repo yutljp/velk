@@ -31,66 +31,65 @@ int dense(int x) {
     rax = ((local_0 - 0xa) & 0xffffffff);
     rcx = eax;
     local_1 = rcx;
-    if (eax > 0xf /* unsigned */) {
-        g_sink = 0x0;
-        return g_sink;
+    if (eax <= 0xf /* unsigned */) {
+        rcx = 0x200158;
+        rax = (int64_t)(int32_t)(dword_200158[local_1]);
+        rax = rax + 0x200158;
+        switch (((*(uint32_t *)(rsp - 0x24) - 0x19) & 0xffffffff)) {
+        case -15:
+            c0();
+            return g_sink;
+        case -14:
+            c1();
+            return g_sink;
+        case -13:
+            c2();
+            return g_sink;
+        case -12:
+            c3();
+            return g_sink;
+        case -11:
+            c4();
+            return g_sink;
+        case -10:
+            c5();
+            return g_sink;
+        case -9:
+            c6();
+            return g_sink;
+        case -8:
+            c7();
+            return g_sink;
+        case -7:
+            c8();
+            return g_sink;
+        case -6:
+            c9();
+            return g_sink;
+        case -5:
+            c10();
+            return g_sink;
+        case -4:
+            c11();
+            return g_sink;
+        case -3:
+            c12();
+            return g_sink;
+        case -2:
+            c13();
+            return g_sink;
+        case -1:
+            c14();
+            return g_sink;
+        case 0:
+            c15();
+            return g_sink;
+        default:
+            break;
+        }
     }
-    rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[local_1]);
-    rax = rax + 0x200158;
-    switch (((*(uint32_t *)(rsp - 0x24) - 0x19) & 0xffffffff)) {
-    case -15:
-        c0();
-        return g_sink;
-    case -14:
-        c1();
-        return g_sink;
-    case -13:
-        c2();
-        return g_sink;
-    case -12:
-        c3();
-        return g_sink;
-    case -11:
-        c4();
-        return g_sink;
-    case -10:
-        c5();
-        return g_sink;
-    case -9:
-        c6();
-        return g_sink;
-    case -8:
-        c7();
-        return g_sink;
-    case -7:
-        c8();
-        return g_sink;
-    case -6:
-        c9();
-        return g_sink;
-    case -5:
-        c10();
-        return g_sink;
-    case -4:
-        c11();
-        return g_sink;
-    case -3:
-        c12();
-        return g_sink;
-    case -2:
-        c13();
-        return g_sink;
-    case -1:
-        c14();
-        return g_sink;
-    case 0:
-        c15();
-        return g_sink;
-    default:
-        g_sink = 0x0;
-        return g_sink;
-    }
+    g_sink = 0x0;
+    return g_sink;
 }
 -- signature
 int (int x)

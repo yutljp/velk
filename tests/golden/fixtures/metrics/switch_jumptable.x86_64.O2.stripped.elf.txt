@@ -1,4 +1,4 @@
-# metrics/switch_jumptable.x86_64.O2.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+# metrics/switch_jumptable.x86_64.O2.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 10 gotos
 0x2011c0 527 - unwind,prologue
 
 == 0x2011c0 -
@@ -7,103 +7,92 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2023d0 .bss */
 int32_t sub_2011c0(int32_t a0) {
-    if (a0 > 0x9 /* unsigned */) {
-        rax = 0xffffffff;
-        dword_2023d0 = eax;
-        return dword_2023d0;
+    if (a0 <= 0x9 /* unsigned */) {
+        rax = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
+        switch (a0) {
+        case 0:
+            rax = dword_2023d0;
+            goto L_2013c2;
+        case 1:
+            dword_2023d0 = dword_2023d0;
+            rax = dword_2023d0 + 0x1;
+            goto L_2013c2;
+        case 2:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            rax = dword_2023d0 + 0x2;
+            goto L_2013c2;
+        case 3:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            dword_2023d0 += 0x2;
+            rax = dword_2023d0 + 0x3;
+            goto L_2013c2;
+        case 4:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            dword_2023d0 += 0x2;
+            dword_2023d0 += 0x3;
+            rax = dword_2023d0 + 0x4;
+            goto L_2013c2;
+        case 5:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            dword_2023d0 += 0x2;
+            dword_2023d0 += 0x3;
+            dword_2023d0 += 0x4;
+            rax = dword_2023d0 + 0x5;
+            goto L_2013c2;
+        case 6:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            dword_2023d0 += 0x2;
+            dword_2023d0 += 0x3;
+            dword_2023d0 += 0x4;
+            dword_2023d0 += 0x5;
+            rax = dword_2023d0 + 0x6;
+            goto L_2013c2;
+        case 7:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            dword_2023d0 += 0x2;
+            dword_2023d0 += 0x3;
+            dword_2023d0 += 0x4;
+            dword_2023d0 += 0x5;
+            dword_2023d0 += 0x6;
+            rax = dword_2023d0 + 0x7;
+            goto L_2013c2;
+        case 8:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            dword_2023d0 += 0x2;
+            dword_2023d0 += 0x3;
+            dword_2023d0 += 0x4;
+            dword_2023d0 += 0x5;
+            dword_2023d0 += 0x6;
+            dword_2023d0 += 0x7;
+            rax = dword_2023d0 + 0x8;
+            goto L_2013c2;
+        case 9:
+            dword_2023d0 = dword_2023d0;
+            dword_2023d0 += 0x1;
+            dword_2023d0 += 0x2;
+            dword_2023d0 += 0x3;
+            dword_2023d0 += 0x4;
+            dword_2023d0 += 0x5;
+            dword_2023d0 += 0x6;
+            dword_2023d0 += 0x7;
+            dword_2023d0 += 0x8;
+            rax = dword_2023d0 + 0x9;
+            goto L_2013c2;
+        default:
+            break;
+        }
     }
-    rax = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
-    switch (a0) {
-    case 0:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 1:
-        dword_2023d0 = dword_2023d0;
-        rax = dword_2023d0 + 0x1;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 2:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        rax = dword_2023d0 + 0x2;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 3:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        dword_2023d0 += 0x2;
-        rax = dword_2023d0 + 0x3;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 4:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        dword_2023d0 += 0x2;
-        dword_2023d0 += 0x3;
-        rax = dword_2023d0 + 0x4;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 5:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        dword_2023d0 += 0x2;
-        dword_2023d0 += 0x3;
-        dword_2023d0 += 0x4;
-        rax = dword_2023d0 + 0x5;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 6:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        dword_2023d0 += 0x2;
-        dword_2023d0 += 0x3;
-        dword_2023d0 += 0x4;
-        dword_2023d0 += 0x5;
-        rax = dword_2023d0 + 0x6;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 7:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        dword_2023d0 += 0x2;
-        dword_2023d0 += 0x3;
-        dword_2023d0 += 0x4;
-        dword_2023d0 += 0x5;
-        dword_2023d0 += 0x6;
-        rax = dword_2023d0 + 0x7;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 8:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        dword_2023d0 += 0x2;
-        dword_2023d0 += 0x3;
-        dword_2023d0 += 0x4;
-        dword_2023d0 += 0x5;
-        dword_2023d0 += 0x6;
-        dword_2023d0 += 0x7;
-        rax = dword_2023d0 + 0x8;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    case 9:
-        dword_2023d0 = dword_2023d0;
-        dword_2023d0 += 0x1;
-        dword_2023d0 += 0x2;
-        dword_2023d0 += 0x3;
-        dword_2023d0 += 0x4;
-        dword_2023d0 += 0x5;
-        dword_2023d0 += 0x6;
-        dword_2023d0 += 0x7;
-        dword_2023d0 += 0x8;
-        rax = dword_2023d0 + 0x9;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    default:
-        rax = 0xffffffff;
-        dword_2023d0 = eax;
-        return dword_2023d0;
-    }
+    rax = 0xffffffff;
+L_2013c2:
+    dword_2023d0 = eax;
+    return dword_2023d0;
 }
 -- signature
 int32_t (int32_t a0)

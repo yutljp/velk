@@ -14,33 +14,32 @@ int32_t sub_201180(int32_t a0) {
     rax = local_0 - 0xa;
     rcx = eax;
     local_1 = rcx;
-    if (eax > 0x4 /* unsigned */) {
-        local_2 = 0x0;
-        return local_2;
+    if (eax <= 0x4 /* unsigned */) {
+        rcx = 0x200120;
+        rax = (int64_t)(int32_t)(dword_200120[local_1]);
+        rax = rax + 0x200120;
+        switch (((*(uint32_t *)&local_1 - 0xe) & 0xffffffff)) {
+        case -4:
+            local_2 = 0x1;
+            return local_2;
+        case -3:
+            local_2 = 0x3;
+            return local_2;
+        case -2:
+            local_2 = 0x7;
+            return local_2;
+        case -1:
+            local_2 = 0x9;
+            return local_2;
+        case 0:
+            local_2 = 0xb;
+            return local_2;
+        default:
+            break;
+        }
     }
-    rcx = 0x200120;
-    rax = (int64_t)(int32_t)(dword_200120[local_1]);
-    rax = rax + 0x200120;
-    switch (((*(uint32_t *)&local_1 - 0xe) & 0xffffffff)) {
-    case -4:
-        local_2 = 0x1;
-        return local_2;
-    case -3:
-        local_2 = 0x3;
-        return local_2;
-    case -2:
-        local_2 = 0x7;
-        return local_2;
-    case -1:
-        local_2 = 0x9;
-        return local_2;
-    case 0:
-        local_2 = 0xb;
-        return local_2;
-    default:
-        local_2 = 0x0;
-        return local_2;
-    }
+    local_2 = 0x0;
+    return local_2;
 }
 -- signature
 int32_t (int32_t a0)

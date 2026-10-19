@@ -372,6 +372,12 @@ fn build<M: Machine>(
             stmts: pending,
         });
     }
+    // Code that ends in a call, with nothing after it, never returns from it.
+    if let Some(last) = blocks.last_mut()
+        && matches!(last.stmts.last(), Some(Stmt::Call { .. }))
+    {
+        last.stmts.push(Stmt::Trap);
+    }
     add_exits(image, summaries, start, &mut blocks);
     drop_unread_compare_operands(&mut blocks);
     Ok(blocks)

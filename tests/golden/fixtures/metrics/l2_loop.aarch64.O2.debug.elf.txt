@@ -130,18 +130,19 @@ fn sum_skip_odd @ 0x210224 (size 64)
 -- decompile
 /* velk pseudo-C: find_first @ 0x210264 */
 int find_first(int *p, int n, int v) {
-    if (n < 0x1) {
-        v1 = 0xffffffff;
-        return v1;
+    if (n >= 0x1) {
+        x8 = p;
+        v1 = 0x0;
+        x9 = n;
+        do {
+            if (*(uint32_t *)(x8 + (v1 << 0x2)) == v) {
+                goto L_210294;
+            }
+            v1 = v1 + 0x1;
+        } while (x9 != v1);
     }
-    x8 = p;
-    v1 = 0x0;
-    x9 = n;
-    do {
-        if (*(uint32_t *)(x8 + (v1 << 0x2)) == v) { goto L_210294; }
-        v1 = v1 + 0x1;
-    } while (x9 != v1);
     v1 = 0xffffffff;
+    return v1;
 L_210294:
     return v1;
 }

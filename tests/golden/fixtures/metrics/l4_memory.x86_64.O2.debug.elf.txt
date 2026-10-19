@@ -30,10 +30,7 @@ int array_sum(int *a, int n) {
         return 0x0;
     }
     rcx = n;
-    if (n < 0x8 /* unsigned */) {
-        rdx = 0x0;
-        rax = 0x0;
-    } else {
+    if (n >= 0x8 /* unsigned */) {
         rdx = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         xmm0 = 0x0;
@@ -55,6 +52,9 @@ int array_sum(int *a, int n) {
         if (rdx == rcx) {
             return rax;
         }
+    } else {
+        rdx = 0x0;
+        rax = 0x0;
     }
     do {
         rax = eax + *(uint32_t *)(a + rdx * 0x4);

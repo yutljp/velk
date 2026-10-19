@@ -6,7 +6,7 @@
 //! such as a call's arguments and the registers it clobbers, are kept beside
 //! the statements.
 
-mod dom;
+pub(crate) mod dom;
 pub mod sccp;
 
 use std::collections::{HashMap, HashSet};

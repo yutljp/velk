@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 627 unsupported, 5516 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 622 unsupported, 5183 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1363,6 +1363,7 @@ int64_t main_divmod(int64_t a0, int64_t a1) {
         v1 = a0 / a1;
         return v1;
     }
+    return v1;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -1443,13 +1444,11 @@ fn main.divmod @ 0x466cc0 (size 64)
 int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
     rcx = 0x0;
     rdx = 0x0;
-    goto L_466d15;
-L_466d0b:
-    rsi = *(uint64_t *)(a0 + rcx * 0x8);
-    rcx = rcx + 0x1;
-    rdx = rdx + rsi;
-L_466d15:
-    if (a1 > rcx) { goto L_466d0b; }
+    while (a1 > rcx) {
+        rsi = *(uint64_t *)(a0 + rcx * 0x8);
+        rcx = rcx + 0x1;
+        rdx = rdx + rsi;
+    }
     return rdx;
 }
 -- signature
@@ -1488,19 +1487,19 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
         return 0x0;
     }
     ecx = a0->field_0x10;
-    if (ecx != 0x778cdb8) { goto L_466d4c; }
+    if (ecx != 0x778cdb8) {
+        if (ecx != 0xcb735792) {
+            return 0x0;
+        }
+        if (a0 != 0x46d400) {
+            return 0x0;
+        }
+        return 0x1;
+    }
     if (a0 != 0x46d1c0) {
         return 0x0;
     }
     return 0x2;
-L_466d4c:
-    if (ecx != 0xcb735792) {
-        return 0x0;
-    }
-    if (a0 != 0x46d400) {
-        return 0x0;
-    }
-    return 0x1;
 }
 -- signature
 int32_t (uint32_t * a0, int64_t a1)

@@ -25,64 +25,63 @@
 /* ref: 0x220554 .bss */
 int dense(int x) {
     x8 = x - 0xa;
-    if (w8 > 0xf /* unsigned */) {
-        g_sink = 0x0;
-        return g_sink;
+    if (w8 <= 0xf /* unsigned */) {
+        x11 = *(uint8_t *)(0x200158 + x8);
+        switch (x) {
+        case 10:
+            c0(x);
+            return g_sink;
+        case 11:
+            c1(x);
+            return g_sink;
+        case 12:
+            c2(x);
+            return g_sink;
+        case 13:
+            c3(x);
+            return g_sink;
+        case 14:
+            c4(x);
+            return g_sink;
+        case 15:
+            c5(x);
+            return g_sink;
+        case 16:
+            c6(x);
+            return g_sink;
+        case 17:
+            c7(x);
+            return g_sink;
+        case 18:
+            c8(x);
+            return g_sink;
+        case 19:
+            c9(x);
+            return g_sink;
+        case 20:
+            c10(x);
+            return g_sink;
+        case 21:
+            c11(x);
+            return g_sink;
+        case 22:
+            c12(x);
+            return g_sink;
+        case 23:
+            c13(x);
+            return g_sink;
+        case 24:
+            c14(x);
+            return g_sink;
+        case 25:
+            c15(x);
+            return g_sink;
+        default:
+            break;
+        }
     }
-    x11 = *(uint8_t *)(0x200158 + x8);
-    switch (x) {
-    case 10:
-        c0(x);
-        return g_sink;
-    case 11:
-        c1(x);
-        return g_sink;
-    case 12:
-        c2(x);
-        return g_sink;
-    case 13:
-        c3(x);
-        return g_sink;
-    case 14:
-        c4(x);
-        return g_sink;
-    case 15:
-        c5(x);
-        return g_sink;
-    case 16:
-        c6(x);
-        return g_sink;
-    case 17:
-        c7(x);
-        return g_sink;
-    case 18:
-        c8(x);
-        return g_sink;
-    case 19:
-        c9(x);
-        return g_sink;
-    case 20:
-        c10(x);
-        return g_sink;
-    case 21:
-        c11(x);
-        return g_sink;
-    case 22:
-        c12(x);
-        return g_sink;
-    case 23:
-        c13(x);
-        return g_sink;
-    case 24:
-        c14(x);
-        return g_sink;
-    case 25:
-        c15(x);
-        return g_sink;
-    default:
-        g_sink = 0x0;
-        return g_sink;
-    }
+    g_sink = 0x0;
+    return g_sink;
 }
 -- signature
 int (int x)
@@ -479,14 +478,16 @@ int sparse(int x) {
     if (x == 0x1) {
         return 0x64;
     }
-    if (x == 0x12c) {
+    switch (x) {
+    case 50:
+        return 0x7;
+    case 300:
         return x;
+    default:
+        break;
     }
-    if (x != 0x32) {
-        x = 0xffffffff;
-        return x;
-    }
-    return 0x7;
+    x = 0xffffffff;
+    return x;
 }
 -- signature
 int (int x)

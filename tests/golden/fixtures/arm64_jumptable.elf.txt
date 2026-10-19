@@ -10,15 +10,13 @@ int32_t d7(int32_t a0) {
     switch (a0) {
     case 0:
         w9 = g;
-        g = w9;
-        return w9;
+        break;
     case 1:
         w9 = g;
         g = w9;
         w9 = w9;
         w9 = w9 + 0x1;
-        g = w9;
-        return w9;
+        break;
     case 2:
         w9 = g;
         g = w9;
@@ -27,8 +25,7 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x2;
-        g = w9;
-        return w9;
+        break;
     case 3:
         w9 = g;
         g = w9;
@@ -40,8 +37,7 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x3;
-        g = w9;
-        return w9;
+        break;
     case 4:
         w9 = g;
         g = w9;
@@ -56,8 +52,7 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x4;
-        g = w9;
-        return w9;
+        break;
     case 5:
         w9 = g;
         g = w9;
@@ -75,8 +70,7 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x5;
-        g = w9;
-        return w9;
+        break;
     case 6:
         w9 = g;
         g = w9;
@@ -97,8 +91,7 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x6;
-        g = w9;
-        return w9;
+        break;
     case 7:
         w9 = g;
         g = w9;
@@ -122,8 +115,7 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x7;
-        g = w9;
-        return w9;
+        break;
     case 8:
         w9 = g;
         g = w9;
@@ -150,8 +142,7 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x8;
-        g = w9;
-        return w9;
+        break;
     case 9:
         w9 = g;
         g = w9;
@@ -181,12 +172,12 @@ int32_t d7(int32_t a0) {
         g = w9;
         w9 = w9;
         w9 = w9 + 0x9;
-        g = w9;
-        return w9;
+        break;
     default:
-        g = w9;
-        return w9;
+        break;
     }
+    g = w9;
+    return w9;
 }
 -- signature
 int32_t (int32_t a0)

@@ -8,9 +8,17 @@
 int32_t sub_201170(int32_t a0) {
     v1 = a0 - 0xa;
     rax = 0x0;
-    if (v1 <= 0x4 /* unsigned */) {
-        rax = dword_200120[v1];
+    switch (v1) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+        break;
+    default:
+        return rax;
     }
+    rax = dword_200120[v1];
     return rax;
 }
 -- signature

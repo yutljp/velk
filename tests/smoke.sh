@@ -291,7 +291,8 @@ echo "$trap_ir" | grep -q "Int3" && fail "int3 note kept"
 echo "$trap_ir" | grep -q "local_0;" && fail "unused local declared"
 ok "trap padding and unused locals"
 back_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
-echo "$back_ir" | grep -q "for (;;) {"      || fail "unconditional back edge structured"
+echo "$back_ir" | grep -q "while (local_3 < local_1) {" || fail "unconditional back edge structured"
+echo "$back_ir" | grep -q "goto " && fail "early exit as a return"
 echo "$back_ir" | grep -q "^L_c0:"         && fail "loop header kept as a label"
 uv run python - "$back_ir" <<'PY'
 import re, sys

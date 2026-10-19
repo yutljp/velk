@@ -87,13 +87,15 @@ fn terminates(nodes: &[Node]) -> bool {
 
 /// Folds a loop header's temporary reads into the exit test, so
 /// `x8 = local_0; if (x8 == 0) break;` reads as `while (local_0 != 0)`.
-/// Only values that merely move a register or read memory fold, and only
-/// when the body cannot observe the temporary first.
+/// Only values that merely move a register or read memory fold, only when
+/// the body cannot observe the temporary first, and only when no other block,
+/// such as the code after the loop, in `elsewhere` reads it.
 pub(crate) fn fold_header(
     prefix: Vec<Node>,
     lhs: &Expr,
     rhs: &Expr,
     body: &[Node],
+    elsewhere: &std::collections::HashSet<u16>,
 ) -> (Vec<Node>, Expr, Expr) {
     if prefix.is_empty() {
         return (prefix, lhs.clone(), rhs.clone());
@@ -126,10 +128,9 @@ pub(crate) fn fold_header(
         }
         _ => None,
     });
-    if values
-        .iter()
-        .any(|(register, _)| reads.contains(register) && killed != Some(*register))
-    {
+    if values.iter().any(|(register, _)| {
+        (reads.contains(register) && killed != Some(*register)) || elsewhere.contains(register)
+    }) {
         return (prefix, lhs.clone(), rhs.clone());
     }
     let lhs = crate::ir::visit::substitute_values(lhs.clone(), &values);

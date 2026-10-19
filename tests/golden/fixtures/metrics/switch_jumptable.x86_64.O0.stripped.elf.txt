@@ -23,88 +23,87 @@ int32_t sub_2011c0(int32_t a0) {
     local_0 = a0;
     rax = local_0;
     local_1 = rax;
-    if (rax > 0x9 /* unsigned */) {
-        dword_202410 = 0xffffffff;
-        return dword_202410;
+    if (rax <= 0x9 /* unsigned */) {
+        rcx = 0x200158;
+        rax = (int64_t)(int32_t)(dword_200158[local_1]);
+        rax = rax + 0x200158;
+        switch (local_1) {
+        case 0:
+            local_2 = 0x0;
+            while (local_2 < 0x1) {
+                dword_202410 += local_2;
+                local_2 += 0x1;
+            }
+            return dword_202410;
+        case 1:
+            local_3 = 0x0;
+            while (local_3 < 0x2) {
+                dword_202410 += local_3;
+                local_3 += 0x1;
+            }
+            return dword_202410;
+        case 2:
+            local_4 = 0x0;
+            while (local_4 < 0x3) {
+                dword_202410 += local_4;
+                local_4 += 0x1;
+            }
+            return dword_202410;
+        case 3:
+            local_5 = 0x0;
+            while (local_5 < 0x4) {
+                dword_202410 += local_5;
+                local_5 += 0x1;
+            }
+            return dword_202410;
+        case 4:
+            local_6 = 0x0;
+            while (local_6 < 0x5) {
+                dword_202410 += local_6;
+                local_6 += 0x1;
+            }
+            return dword_202410;
+        case 5:
+            local_7 = 0x0;
+            while (local_7 < 0x6) {
+                dword_202410 += local_7;
+                local_7 += 0x1;
+            }
+            return dword_202410;
+        case 6:
+            local_8 = 0x0;
+            while (local_8 < 0x7) {
+                dword_202410 += local_8;
+                local_8 += 0x1;
+            }
+            return dword_202410;
+        case 7:
+            local_9 = 0x0;
+            while (local_9 < 0x8) {
+                dword_202410 += local_9;
+                local_9 += 0x1;
+            }
+            return dword_202410;
+        case 8:
+            local_10 = 0x0;
+            while (local_10 < 0x9) {
+                dword_202410 += local_10;
+                local_10 += 0x1;
+            }
+            return dword_202410;
+        case 9:
+            local_11 = 0x0;
+            while (local_11 < 0xa) {
+                dword_202410 += local_11;
+                local_11 += 0x1;
+            }
+            return dword_202410;
+        default:
+            break;
+        }
     }
-    rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[local_1]);
-    rax = rax + 0x200158;
-    switch (local_1) {
-    case 0:
-        local_2 = 0x0;
-        while (local_2 < 0x1) {
-            dword_202410 += local_2;
-            local_2 += 0x1;
-        }
-        return dword_202410;
-    case 1:
-        local_3 = 0x0;
-        while (local_3 < 0x2) {
-            dword_202410 += local_3;
-            local_3 += 0x1;
-        }
-        return dword_202410;
-    case 2:
-        local_4 = 0x0;
-        while (local_4 < 0x3) {
-            dword_202410 += local_4;
-            local_4 += 0x1;
-        }
-        return dword_202410;
-    case 3:
-        local_5 = 0x0;
-        while (local_5 < 0x4) {
-            dword_202410 += local_5;
-            local_5 += 0x1;
-        }
-        return dword_202410;
-    case 4:
-        local_6 = 0x0;
-        while (local_6 < 0x5) {
-            dword_202410 += local_6;
-            local_6 += 0x1;
-        }
-        return dword_202410;
-    case 5:
-        local_7 = 0x0;
-        while (local_7 < 0x6) {
-            dword_202410 += local_7;
-            local_7 += 0x1;
-        }
-        return dword_202410;
-    case 6:
-        local_8 = 0x0;
-        while (local_8 < 0x7) {
-            dword_202410 += local_8;
-            local_8 += 0x1;
-        }
-        return dword_202410;
-    case 7:
-        local_9 = 0x0;
-        while (local_9 < 0x8) {
-            dword_202410 += local_9;
-            local_9 += 0x1;
-        }
-        return dword_202410;
-    case 8:
-        local_10 = 0x0;
-        while (local_10 < 0x9) {
-            dword_202410 += local_10;
-            local_10 += 0x1;
-        }
-        return dword_202410;
-    case 9:
-        local_11 = 0x0;
-        while (local_11 < 0xa) {
-            dword_202410 += local_11;
-            local_11 += 0x1;
-        }
-        return dword_202410;
-    default:
-        dword_202410 = 0xffffffff;
-        return dword_202410;
-    }
+    dword_202410 = 0xffffffff;
+    return dword_202410;
 }
 -- signature
 int32_t (int32_t a0)

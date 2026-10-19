@@ -21,7 +21,9 @@ int64_t copy_bytes(void *dst, void *src, int64_t n) {
     local_1 = src;
     local_2 = n;
     local_3 = 0x0;
-    while (local_3 < local_2 /* unsigned */) {
+    while (true) {
+        rax = local_3;
+        if (rax >= local_2 /* unsigned */) break;
         n = n & 0xffffffffffffff00 | *(uint8_t *)(local_1 + local_3) & 0xff;
         *(uint8_t *)(local_0 + local_3) = n & 0xff;
         local_3 += 0x1;
@@ -65,7 +67,9 @@ int64_t fill_bytes(void *dst, int32_t value, int64_t n) {
     local_1 = value & 0xff;
     local_2 = n;
     local_3 = 0x0;
-    while (local_3 < local_2 /* unsigned */) {
+    while (true) {
+        rax = local_3;
+        if (rax >= local_2 /* unsigned */) break;
         n = n & 0xffffffffffffff00 | local_1;
         *(uint8_t *)(local_0 + local_3) = n & 0xff;
         local_3 += 0x1;

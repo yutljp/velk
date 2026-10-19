@@ -25,64 +25,63 @@
 /* ref: 0x220554 .bss */
 int32_t sub_210304(int32_t a0) {
     x8 = a0 - 0xa;
-    if (w8 > 0xf /* unsigned */) {
-        dword_220554 = 0x0;
-        return dword_220554;
+    if (w8 <= 0xf /* unsigned */) {
+        x11 = *(uint8_t *)(0x200158 + x8);
+        switch (a0) {
+        case 10:
+            sub_2103cc(a0);
+            return dword_220554;
+        case 11:
+            sub_2103e0(a0);
+            return dword_220554;
+        case 12:
+            sub_2103f8(a0);
+            return dword_220554;
+        case 13:
+            sub_21040c(a0);
+            return dword_220554;
+        case 14:
+            sub_210420(a0);
+            return dword_220554;
+        case 15:
+            sub_210434(a0);
+            return dword_220554;
+        case 16:
+            sub_21044c(a0);
+            return dword_220554;
+        case 17:
+            sub_210460(a0);
+            return dword_220554;
+        case 18:
+            sub_210474(a0);
+            return dword_220554;
+        case 19:
+            sub_210488(a0);
+            return dword_220554;
+        case 20:
+            sub_2104a0(a0);
+            return dword_220554;
+        case 21:
+            sub_2104b4(a0);
+            return dword_220554;
+        case 22:
+            sub_2104cc(a0);
+            return dword_220554;
+        case 23:
+            sub_2104e0(a0);
+            return dword_220554;
+        case 24:
+            sub_2104f8(a0);
+            return dword_220554;
+        case 25:
+            sub_21050c(a0);
+            return dword_220554;
+        default:
+            break;
+        }
     }
-    x11 = *(uint8_t *)(0x200158 + x8);
-    switch (a0) {
-    case 10:
-        sub_2103cc(a0);
-        return dword_220554;
-    case 11:
-        sub_2103e0(a0);
-        return dword_220554;
-    case 12:
-        sub_2103f8(a0);
-        return dword_220554;
-    case 13:
-        sub_21040c(a0);
-        return dword_220554;
-    case 14:
-        sub_210420(a0);
-        return dword_220554;
-    case 15:
-        sub_210434(a0);
-        return dword_220554;
-    case 16:
-        sub_21044c(a0);
-        return dword_220554;
-    case 17:
-        sub_210460(a0);
-        return dword_220554;
-    case 18:
-        sub_210474(a0);
-        return dword_220554;
-    case 19:
-        sub_210488(a0);
-        return dword_220554;
-    case 20:
-        sub_2104a0(a0);
-        return dword_220554;
-    case 21:
-        sub_2104b4(a0);
-        return dword_220554;
-    case 22:
-        sub_2104cc(a0);
-        return dword_220554;
-    case 23:
-        sub_2104e0(a0);
-        return dword_220554;
-    case 24:
-        sub_2104f8(a0);
-        return dword_220554;
-    case 25:
-        sub_21050c(a0);
-        return dword_220554;
-    default:
-        dword_220554 = 0x0;
-        return dword_220554;
-    }
+    dword_220554 = 0x0;
+    return dword_220554;
 }
 -- signature
 int32_t (int32_t a0)
@@ -479,14 +478,16 @@ int32_t sub_210524(int32_t a0) {
     if (a0 == 0x1) {
         return 0x64;
     }
-    if (a0 == 0x12c) {
+    switch (a0) {
+    case 50:
+        return 0x7;
+    case 300:
         return a0;
+    default:
+        break;
     }
-    if (a0 != 0x32) {
-        a0 = 0xffffffff;
-        return a0;
-    }
-    return 0x7;
+    a0 = 0xffffffff;
+    return a0;
 }
 -- signature
 int32_t (int32_t a0)

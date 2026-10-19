@@ -1,4 +1,4 @@
-# metrics/calls.x86_64.O2.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 6 unsupported, 8 gotos
+# metrics/calls.x86_64.O2.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 6 unsupported, 1 gotos
 0x2012f0 4 - unwind,prologue
 0x201300 6 - unwind,prologue
 0x201310 21 - unwind,prologue
@@ -133,43 +133,43 @@ int32_t sub_201370(int32_t a0) {
     if (a0 < 0x2) {
         return rax;
     }
-    if (a0 < 0x9 /* unsigned */) { goto L_201450; }
-    ecx = a0 - 0x1;
-    edx = ecx & 0xfffffffffffffff8;
-    xmm0 = a0;
-    xmm0_hi = 0x0;
-    a0 = a0 - edx;
-    /* unsupported (2 steps): Pshufd at 0x201395, Paddd at 0x20139a */
-    xmm1 = qword_2001a0;
-    xmm1_hi = qword_2001a8;
-    xmm2 = qword_2001c0;
-    xmm2_hi = qword_2001c8;
-    xmm4 = qword_2001b0;
-    xmm4_hi = qword_2001b8;
-    rax = edx;
-    xmm3 = xmm1;
-    xmm3_hi = xmm1_hi;
-    do {
-        xmm5 = xmm0;
-        xmm5_hi = 0x0;
-        /* unsupported: Paddd at 0x2013c4 */
-        xmm6 = xmm0;
-        xmm6_hi = 0x0;
-        /* unsupported (6 steps): Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3 */
-        xmm1 = xmm6;
-        xmm1_hi = 0x0;
-        /* unsupported (7 steps): Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407 */
-        xmm3 = xmm5;
-        xmm3_hi = 0x0;
-        /* unsupported (2 steps): Punpckldq at 0x201410, Paddd at 0x201414 */
-        rax = eax - 0x8;
-    } while (eax != 0x0);
-    /* unsupported (9 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441 */
-    rax = (uint32_t)xmm1;
-    if (ecx == edx) {
-        return rax;
+    if (a0 >= 0x9 /* unsigned */) {
+        ecx = a0 - 0x1;
+        edx = ecx & 0xfffffffffffffff8;
+        xmm0 = a0;
+        xmm0_hi = 0x0;
+        a0 = a0 - edx;
+        /* unsupported (2 steps): Pshufd at 0x201395, Paddd at 0x20139a */
+        xmm1 = qword_2001a0;
+        xmm1_hi = qword_2001a8;
+        xmm2 = qword_2001c0;
+        xmm2_hi = qword_2001c8;
+        xmm4 = qword_2001b0;
+        xmm4_hi = qword_2001b8;
+        rax = edx;
+        xmm3 = xmm1;
+        xmm3_hi = xmm1_hi;
+        do {
+            xmm5 = xmm0;
+            xmm5_hi = 0x0;
+            /* unsupported: Paddd at 0x2013c4 */
+            xmm6 = xmm0;
+            xmm6_hi = 0x0;
+            /* unsupported (6 steps): Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3 */
+            xmm1 = xmm6;
+            xmm1_hi = 0x0;
+            /* unsupported (7 steps): Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407 */
+            xmm3 = xmm5;
+            xmm3_hi = 0x0;
+            /* unsupported (2 steps): Punpckldq at 0x201410, Paddd at 0x201414 */
+            rax = eax - 0x8;
+        } while (eax != 0x0);
+        /* unsupported (9 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441 */
+        rax = (uint32_t)xmm1;
+        if (ecx == edx) {
+            return rax;
+        }
     }
-L_201450:
     do {
         rax = eax * a0;
         ecx = a0 - 0x1;
@@ -420,47 +420,47 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     v1 = *(uint32_t *)&local_23;
     v2 = local_21;
     v3 = local_22;
-    if (a0 != 0x1) { goto L_20159b; }
-    rax = 0x0;
-L_201574:
+    if (a0 != 0x1) {
+        v5 = a0 & 0x7ffffffe;
+        rax = 0x0;
+        for (;;) {
+            if (v1 > 0x28 /* unsigned */) {
+                v6 = v3 + 0x8;
+                local_22 = v6;
+            } else {
+                v6 = v3;
+                v3 = v1 + v2;
+                v1 = v1 + 0x8;
+                *(uint32_t *)&local_23 = v1;
+            }
+            rax = eax + *(uint32_t *)(v3);
+            if (v1 < 0x29 /* unsigned */) {
+                v3 = v6;
+                v6 = v1 + v2;
+                v1 = v1 + 0x8;
+                *(uint32_t *)&local_23 = v1;
+            } else {
+                v3 = v6 + 0x8;
+                local_22 = v3;
+            }
+            rax = eax + *(uint32_t *)(v6);
+            v5 = v5 - 0x2;
+            if (v5 == 0x0) {
+                break;
+            }
+        }
+    } else {
+        rax = 0x0;
+    }
     if ((a0 & 0x1) == 0x0) {
         return rax;
     }
-    if (v1 >= 0x29 /* unsigned */) { goto L_2015fb; }
-    *(uint32_t *)&local_23 = v1 + 0x8;
-    v3 = v2 + v1;
-    rax = eax + *(uint32_t *)(v3);
-    return rax;
-L_20159b:
-    v5 = a0 & 0x7ffffffe;
-    rax = 0x0;
-    goto L_2015c9;
-L_2015b0:
-    v3 = v6;
-    v6 = v1 + v2;
-    v1 = v1 + 0x8;
-    *(uint32_t *)&local_23 = v1;
-L_2015c0:
-    rax = eax + *(uint32_t *)(v6);
-    v5 = v5 - 0x2;
-    if (v5 == 0x0) { goto L_201574; }
-L_2015c9:
-    if (v1 <= 0x28 /* unsigned */) {
-        v6 = v3;
-        v3 = v1 + v2;
-        v1 = v1 + 0x8;
-        *(uint32_t *)&local_23 = v1;
+    if (v1 >= 0x29 /* unsigned */) {
+        local_22 = v3 + 0x8;
     } else {
-        v6 = v3 + 0x8;
-        local_22 = v6;
+        *(uint32_t *)&local_23 = v1 + 0x8;
+        v3 = v2 + v1;
     }
-    rax = eax + *(uint32_t *)(v3);
-    if (v1 < 0x29 /* unsigned */) { goto L_2015b0; }
-    v3 = v6 + 0x8;
-    local_22 = v3;
-    goto L_2015c0;
-L_2015fb:
-    local_22 = v3 + 0x8;
     rax = eax + *(uint32_t *)(v3);
     return rax;
 }

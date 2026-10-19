@@ -338,33 +338,30 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
     x8 = 0x0;
     local_13 = 0x0;
     local_14 = 0x0;
-    for (;;) {
+    while (true) {
         x9 = local_7;
-        if (local_14 >= w9) {
-            v1 = local_13;
-            return v1;
-        }
+        if (local_14 >= w9) break;
         local_15 = &local_9;
         x8 = local_9;
         local_16 = w8;
-        if ((x8 & 0x80000000) == 0x0) {
-            break;
+        if ((x8 & 0x80000000) != 0x0) {
+            x8 = local_16 + 0x8;
+            *(uint32_t *)(local_15) = w8;
+            if (w8 <= 0x0) {
+                local_17 = local_11 + (int64_t)(int32_t)(local_16);
+                goto L_2106b4;
+            }
         }
-        x8 = local_16 + 0x8;
-        *(uint32_t *)(local_15) = w8;
-        if (w8 > 0x0) {
-            break;
-        }
-        local_17 = local_11 + (int64_t)(int32_t)(local_16);
+        x9 = local_12;
+        x8 = x9;
+        local_12 = x9 + 0x8;
+        local_17 = x8;
     L_2106b4:
         local_13 += *(uint32_t *)(local_17);
         local_14 += 0x1;
     }
-    x9 = local_12;
-    x8 = x9;
-    local_12 = x9 + 0x8;
-    local_17 = x8;
-    goto L_2106b4;
+    v1 = local_13;
+    return v1;
 }
 -- signature
 int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)

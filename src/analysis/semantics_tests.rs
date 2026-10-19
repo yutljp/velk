@@ -194,11 +194,30 @@ fn check(fixture: &Path, image: &Image, function: &Function) -> Check {
         }
     }
     let memory = initial_memory(image);
+    // The structured code, as blocks again, behaves as the optimized IR does.
+    let structured = crate::render::structure::lower::lower(
+        &after,
+        &crate::render::structure::structure_best(&after),
+    );
     for trial in 0..TRIALS {
         let registers = registers(image, trial);
         let setup = setup(image, trial, &registers, &memory);
         let old = eval::run(&before, &setup);
         let new = eval::run(&after, &setup);
+        let shaped = eval::run(&structured, &setup);
+        if !matches!(new, Outcome::Unknown(_))
+            && !matches!(shaped, Outcome::Unknown(_))
+            && !same(&new, &shaped, &after.ret_type)
+        {
+            result.mismatch = Some(format!(
+                "{} {} {}: trial {trial}: structuring: {}",
+                fixture.display(),
+                crate::addr::format(function.addr),
+                function.name.as_deref().unwrap_or("-"),
+                describe(&new, &shaped, &after.ret_type)
+            ));
+            break;
+        }
         if let (Outcome::Unknown(reason), _) | (_, Outcome::Unknown(reason)) = (&old, &new) {
             result
                 .unknown
@@ -361,10 +380,15 @@ fn explain_function() {
     let lifted = lift_function(&image, function).unwrap_or_else(|error| panic!("{error}"));
     let before = lifted.ir.clone();
     let after = optimize(&image, lifted).ir;
+    let structured = crate::render::structure::lower::lower(
+        &after,
+        &crate::render::structure::structure_best(&after),
+    );
     println!(
-        "== before\n{}\n== after\n{}",
+        "== before\n{}\n== after\n{}\n== structured\n{}",
         before.render(),
-        after.render()
+        after.render(),
+        structured.render()
     );
     let memory = initial_memory(&image);
     for trial in 0..TRIALS {
@@ -372,6 +396,7 @@ fn explain_function() {
         let setup = setup(&image, trial, &registers, &memory);
         let old = eval::run(&before, &setup);
         let new = eval::run(&after, &setup);
+        println!("  structured {:x?}", eval::run(&structured, &setup));
         let verdict = if matches!(old, Outcome::Unknown(_)) || matches!(new, Outcome::Unknown(_)) {
             "skipped"
         } else if same(&old, &new, &after.ret_type) {

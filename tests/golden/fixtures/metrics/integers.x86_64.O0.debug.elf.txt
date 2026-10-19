@@ -85,12 +85,14 @@ _Bool in_range(int x, int lo, int hi) {
     local_1 = hi;
     rax = 0x0;
     local_2 = 0x0;
-    if (x >= lo) {
-        rax = local_0;
-        rax = rax & 0xffffffffffffff00 | (eax <= local_1 ? 0x1 : 0x0) & 0xff;
-        t66 = local_1;
-        local_2 = rax & 0xff;
+    if (x < lo) {
+        rax = rax & 0xffffffffffffff00 | local_2;
+        return rax & 0x1 & 0xff;
     }
+    rax = local_0;
+    rax = rax & 0xffffffffffffff00 | (eax <= local_1 ? 0x1 : 0x0) & 0xff;
+    t66 = local_1;
+    local_2 = rax & 0xff;
     rax = rax & 0xffffffffffffff00 | local_2;
     return rax & 0x1 & 0xff;
 }
@@ -200,18 +202,18 @@ int min3(int a, int b, int c) {
     local_0 = a;
     local_1 = b;
     local_2 = c;
-    if (a < b) {
-        local_3 = local_0;
-    } else {
+    if (a >= b) {
         local_3 = local_1;
+    } else {
+        local_3 = local_0;
     }
     eax = local_3;
     local_4 = eax;
-    if (eax < local_2) {
-        local_5 = local_4;
-    } else {
+    if (eax >= local_2) {
         local_5 = local_2;
+        return local_5;
     }
+    local_5 = local_4;
     return local_5;
 }
 -- signature
@@ -252,11 +254,11 @@ long labs_value(long x) {
     uint64_t local_1; /* [sp-18] */
 
     local_0 = x;
-    if (x < 0x0) {
-        local_1 = -local_0;
-    } else {
+    if (x >= 0x0) {
         local_1 = local_0;
+        return local_1;
     }
+    local_1 = -local_0;
     return local_1;
 }
 -- signature

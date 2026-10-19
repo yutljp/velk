@@ -187,14 +187,14 @@ int32_t flags_level(struct flags f) {
     rax = rax & 0xffffffffffffff00 | *(uint8_t *)&local_0 & 0xff;
     rax = rax & 0xffffffffffffff00 | rax & 0x1;
     rax = rax & 0xff;
-    if (eax != 0x0) {
-        rax = rax & 0xffffffffffffff00 | *(uint8_t *)&local_0 & 0xff;
-        local_1 = (rax & 0xff) >> 0x4 & 0xff & 0xff;
-    } else {
+    if (eax == 0x0) {
         rax = rax & 0xffffffffffffff00 | *(uint8_t *)&local_0 & 0xff;
         rax = rax & 0xffffffffffffff00 | (rax & 0xff) >> 0x1 & 0xff;
         local_1 = rax & 0x7 & 0xff;
+        return local_1;
     }
+    rax = rax & 0xffffffffffffff00 | *(uint8_t *)&local_0 & 0xff;
+    local_1 = (rax & 0xff) >> 0x4 & 0xff & 0xff;
     return local_1;
 }
 -- signature

@@ -1,107 +1,96 @@
-# switch_jumptable_x64.o: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+# switch_jumptable_x64.o: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 10 gotos
 0x0 527 d7 symtab,unwind
 
 == 0x0 d7
 -- decompile
 /* velk pseudo-C: d7 @ 0x0 */
 int32_t d7(int32_t a0) {
-    if (a0 > 0x9 /* unsigned */) {
-        rax = 0xffffffff;
-        g = eax;
-        return g;
+    if (a0 <= 0x9 /* unsigned */) {
+        rax = (int64_t)(int32_t)(dword_210[a0]) + 0x210;
+        switch (a0) {
+        case 0:
+            rax = g;
+            goto L_202;
+        case 1:
+            g = g;
+            rax = g + 0x1;
+            goto L_202;
+        case 2:
+            g = g;
+            g += 0x1;
+            rax = g + 0x2;
+            goto L_202;
+        case 3:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            rax = g + 0x3;
+            goto L_202;
+        case 4:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            rax = g + 0x4;
+            goto L_202;
+        case 5:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            rax = g + 0x5;
+            goto L_202;
+        case 6:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            rax = g + 0x6;
+            goto L_202;
+        case 7:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            g += 0x6;
+            rax = g + 0x7;
+            goto L_202;
+        case 8:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            g += 0x6;
+            g += 0x7;
+            rax = g + 0x8;
+            goto L_202;
+        case 9:
+            g = g;
+            g += 0x1;
+            g += 0x2;
+            g += 0x3;
+            g += 0x4;
+            g += 0x5;
+            g += 0x6;
+            g += 0x7;
+            g += 0x8;
+            rax = g + 0x9;
+            goto L_202;
+        default:
+            break;
+        }
     }
-    rax = (int64_t)(int32_t)(dword_210[a0]) + 0x210;
-    switch (a0) {
-    case 0:
-        rax = g;
-        g = eax;
-        return g;
-    case 1:
-        g = g;
-        rax = g + 0x1;
-        g = eax;
-        return g;
-    case 2:
-        g = g;
-        g += 0x1;
-        rax = g + 0x2;
-        g = eax;
-        return g;
-    case 3:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        rax = g + 0x3;
-        g = eax;
-        return g;
-    case 4:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        rax = g + 0x4;
-        g = eax;
-        return g;
-    case 5:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        rax = g + 0x5;
-        g = eax;
-        return g;
-    case 6:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        rax = g + 0x6;
-        g = eax;
-        return g;
-    case 7:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        g += 0x6;
-        rax = g + 0x7;
-        g = eax;
-        return g;
-    case 8:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        g += 0x6;
-        g += 0x7;
-        rax = g + 0x8;
-        g = eax;
-        return g;
-    case 9:
-        g = g;
-        g += 0x1;
-        g += 0x2;
-        g += 0x3;
-        g += 0x4;
-        g += 0x5;
-        g += 0x6;
-        g += 0x7;
-        g += 0x8;
-        rax = g + 0x9;
-        g = eax;
-        return g;
-    default:
-        rax = 0xffffffff;
-        g = eax;
-        return g;
-    }
+    rax = 0xffffffff;
+L_202:
+    g = eax;
+    return g;
 }
 -- signature
 int32_t (int32_t a0)

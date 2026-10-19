@@ -319,7 +319,17 @@ impl Structurer<'_> {
                                 let prefix = self.plain(&block.stmts[..block.stmts.len() - 1]);
                                 // `Node::While` carries the continue predicate,
                                 // the inverse of the header's exit test.
-                                let (prefix, lhs, rhs) = fold_header(prefix, lhs, rhs, &body);
+                                // What the code after the loop reads must stay assigned.
+                                let after: std::collections::HashSet<u16> = self
+                                    .blocks
+                                    .iter()
+                                    .enumerate()
+                                    .filter(|(other, _)| *other != index)
+                                    .flat_map(|(_, other)| other.stmts.iter())
+                                    .flat_map(crate::ir::visit::statement_reads)
+                                    .collect();
+                                let (prefix, lhs, rhs) =
+                                    fold_header(prefix, lhs, rhs, &body, &after);
                                 rewrite_loop_exits(
                                     &mut body,
                                     self.blocks.get(destination).map(|block| block.start),

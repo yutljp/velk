@@ -1,4 +1,4 @@
-# metrics/loops.x86_64.O0.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/loops.x86_64.O0.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011c0 54 - unwind,prologue
 0x201200 61 - unwind,prologue
 0x201240 94 - unwind,prologue
@@ -91,16 +91,13 @@ int32_t sub_201240(int64_t a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
-            return local_2;
-        }
+    while (local_3 < local_1) {
         rcx = (int64_t)(int32_t)(local_3);
         rax = *(uint32_t *)(local_0 + rcx * 0x4);
         local_4 = eax;
-        if (eax >= 0x0) { goto L_201282; }
-        return local_2;
-    L_201282:
+        if (eax < 0x0) {
+            return local_2;
+        }
         local_2 += local_4;
         local_3 += 0x1;
     }
@@ -148,17 +145,13 @@ int32_t sub_2012a0(int64_t a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
+    while (local_3 < local_1) {
+        rcx = (int64_t)(int32_t)(local_3);
+        if (*(uint32_t *)(local_0 + rcx * 0x4) == 0x0) {
             return local_2;
         }
         rcx = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + rcx * 0x4) != 0x0) { goto L_2012dc; }
-        return local_2;
-    L_2012dc:
-        rcx = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + rcx * 0x4) < 0x0) {
-        } else {
+        if (*(uint32_t *)(local_0 + rcx * 0x4) >= 0x0) {
             rcx = (int64_t)(int32_t)(local_3);
             local_2 += *(uint32_t *)(local_0 + rcx * 0x4);
         }

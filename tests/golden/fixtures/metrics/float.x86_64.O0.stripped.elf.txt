@@ -32,16 +32,15 @@ int32_t sub_2011f0(int64_t a0, int32_t a1) {
         rax = local_3 + 0x1;
         local_3 = eax;
     }
-    if (local_1 > 0x0) {
-        xmm0 = local_2;
-        xmm0_hi = 0x0;
-        /* unsupported (2 steps): Cvtsi2sd at 0x20124a, Divsd at 0x20124f */
-        local_4 = xmm0;
-    } else {
+    if (local_1 <= 0x0) {
         local_4 = 0x0;
         xmm0 = local_4;
         return rax;
     }
+    xmm0 = local_2;
+    xmm0_hi = 0x0;
+    /* unsupported (2 steps): Cvtsi2sd at 0x20124a, Divsd at 0x20124f */
+    local_4 = xmm0;
     xmm0 = local_4;
     return rax;
 }

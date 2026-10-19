@@ -35,10 +35,7 @@ int64_t sub_2011f0(uint16_t *a0, int32_t a1) {
         return 0x0;
     }
     rcx = a1;
-    if (a1 == 0x1) {
-        rdx = 0x0;
-        rax = 0x0;
-    } else {
+    if (a1 != 0x1) {
         v1 = rcx & 0x7ffffffe;
         r8 = a0 + 0x28;
         rdx = 0x0;
@@ -49,11 +46,15 @@ int64_t sub_2011f0(uint16_t *a0, int32_t a1) {
             rdx = rdx + 0x2;
             r8 = r8 + 0x30;
         } while (v1 != rdx);
+    } else {
+        rdx = 0x0;
+        rax = 0x0;
     }
-    if ((rcx & 0x1) != 0x0) {
-        rcx = rdx + rdx * 0x2;
-        rax = rax + (int16_t)(*(uint16_t *)(a0 + rcx * 0x8 + 0x10)) * *(uint64_t *)(a0 + rcx * 0x8 + 0x8);
+    if ((rcx & 0x1) == 0x0) {
+        return rax;
     }
+    rcx = rdx + rdx * 0x2;
+    rax = rax + (int16_t)(*(uint16_t *)(a0 + rcx * 0x8 + 0x10)) * *(uint64_t *)(a0 + rcx * 0x8 + 0x8);
     return rax;
 }
 -- signature

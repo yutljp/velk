@@ -82,10 +82,7 @@ int sum_arr(int *p, int n) {
         return 0x0;
     }
     x9 = n;
-    if (n < 0x8 /* unsigned */) {
-        x10 = 0x0;
-        x8 = 0x0;
-    } else {
+    if (n >= 0x8 /* unsigned */) {
         /* unsupported (2 steps): MOVI at 0x210214, MOVI at 0x210218 */
         x10 = x9 & 0x7ffffff8;
         x8 = p + 0x10;
@@ -99,6 +96,9 @@ int sum_arr(int *p, int n) {
         if (x10 == x9) {
             return w8;
         }
+    } else {
+        x10 = 0x0;
+        x8 = 0x0;
     }
     x11 = p + (x10 << 0x2);
     x9 = x9 - x10;

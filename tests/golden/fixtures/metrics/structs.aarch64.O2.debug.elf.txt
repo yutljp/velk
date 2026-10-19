@@ -37,10 +37,7 @@ long record_total(struct record *items, int n) {
         return 0x0;
     }
     x9 = n;
-    if (n == 0x1) {
-        x10 = 0x0;
-        x8 = 0x0;
-    } else {
+    if (n != 0x1) {
         x10 = x9 & 0x7ffffffe;
         x8 = 0x0;
         x11 = 0x0;
@@ -60,6 +57,9 @@ long record_total(struct record *items, int n) {
         if (x10 == x9) {
             return x8;
         }
+    } else {
+        x10 = 0x0;
+        x8 = 0x0;
     }
     x9 = x9 - x10;
     x11 = w10 * 0x18 + items + 0x10;

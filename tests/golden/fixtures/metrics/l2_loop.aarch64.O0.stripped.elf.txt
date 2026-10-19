@@ -1,4 +1,4 @@
-# metrics/l2_loop.aarch64.O0.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/l2_loop.aarch64.O0.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x2101d4 100 - unwind,prologue
 0x210238 84 - unwind,prologue
 0x21028c 116 - unwind,prologue
@@ -105,20 +105,15 @@ int32_t sub_21028c(int32_t a0) {
     local_0 = a0;
     local_1 = 0x0;
     local_2 = 0x0;
-    for (;;) {
-        if (local_2 >= local_0) {
-            return local_1;
-        }
+    while (local_2 < local_0) {
         if ((local_2 & 0x1) != 0x0) {
-            break;
+            w8 = local_1 + local_2;
+            local_1 = w8;
+            dword_220380 = w8;
         }
-    L_2102e4:
         local_2 += 0x1;
     }
-    w8 = local_1 + local_2;
-    local_1 = w8;
-    dword_220380 = w8;
-    goto L_2102e4;
+    return local_1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -168,18 +163,16 @@ int32_t sub_210300(int64_t a0, int32_t a1, int32_t a2) {
     local_1 = a1;
     local_2 = a2;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
-            local_4 = 0xffffffff;
-            return local_4;
+    while (local_3 < local_1) {
+        if (*(uint32_t *)(local_0 + (local_3 << 0x2)) == local_2) {
+            goto L_210344;
         }
-        if (*(uint32_t *)(local_0 + (local_3 << 0x2)) != local_2) { goto L_210354; }
-        local_4 = local_3;
-        return local_4;
-    L_210354:
         local_3 += 0x1;
     }
     local_4 = 0xffffffff;
+    return local_4;
+L_210344:
+    local_4 = local_3;
     return local_4;
 }
 -- signature

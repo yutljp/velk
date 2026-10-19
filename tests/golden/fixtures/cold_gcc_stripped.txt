@@ -1,4 +1,4 @@
-# cold_gcc_stripped: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 13 gotos
+# cold_gcc_stripped: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 9 gotos
 0x1000 27 - prologue
 0x1080 16 __cxa_finalize plt
 0x1090 16 __snprintf_chk plt
@@ -20,10 +20,10 @@
 /* velk pseudo-C: sub_1000 @ 0x1000 */
 int64_t sub_1000(void) {
     rax = qword_3fe8;
-    if (rax != 0x0) {
-        (*(rax))();
+    if (rax == 0x0) {
+        return rax;
     }
-    return rax;
+    return (*(rax))();
 }
 -- signature
 int64_t ()
@@ -169,9 +169,8 @@ int64_t sub_1120(int32_t a0) {
     if (rdx + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
         __stack_chk_fail();
         __builtin_trap();
-    } else {
-        return rax;
     }
+    return rax;
 }
 -- signature
 int64_t (int32_t a0)
@@ -386,52 +385,51 @@ int32_t sub_1290(uint64_t *a0, int64_t a1, int64_t a2) {
         a1 = stderr;
         a0 = rbx;
         fputs();
-        goto L_111a;
-    }
-    rbx = a0;
-    rax = a0;
-    rbp = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
-    rcx = a0 + rbp;
-L_12d9:
-    if (*(uint32_t *)(rax) != (a2 & 0xffffffff)) { goto L_12d0; }
-    rax = *(uint32_t *)(rax + 0x4);
-    a2 = local_0 - *(uint64_t *)(fs_base + 0x28);
-    if (a2 + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) { goto L_137b; }
-    return rax;
-L_137b:
-    __stack_chk_fail();
-    __builtin_trap();
-L_12d0:
-    rax = rax + 0x18;
-    if (rax == rcx) { goto L_12fd; }
-    goto L_12d9;
-L_12fd:
-    r12 = rsp - 0x68;
-    r9d = a2;
-    rcx = 0x40;
-    local_1 = a1;
-    a0 = r12;
-    r8 = 0x2004;
-    a2 = 0x2;
-    a1 = 0x40;
-    rax = 0x0;
-    rbx = rbx + 0x8;
-    rbp = rbp + rbx;
-    __snprintf_chk();
-    a1 = stderr;
-    a0 = r12;
-    fputs();
-    do {
-        r8 = *(uint32_t *)(rbx - 0x4);
-        a0 = stderr;
-        rcx = rbx;
+    } else {
+        rbx = a0;
+        rax = a0;
+        rbp = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
+        rcx = a0 + rbp;
+        while (*(uint32_t *)(rax) != (a2 & 0xffffffff)) {
+            rax = rax + 0x18;
+            if (rax == rcx) {
+                goto L_12fd;
+            }
+        }
+        rax = *(uint32_t *)(rax + 0x4);
+        a2 = local_0 - *(uint64_t *)(fs_base + 0x28);
+        if (a2 + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
+            __stack_chk_fail();
+            __builtin_trap();
+        }
+        return rax;
+    L_12fd:
+        r12 = rsp - 0x68;
+        r9d = a2;
+        rcx = 0x40;
+        local_1 = a1;
+        a0 = r12;
+        r8 = 0x2004;
+        a2 = 0x2;
+        a1 = 0x40;
         rax = 0x0;
-        a2 = 0x201c;
-        a1 = 0x2;
-        rbx = rbx + 0x18;
-        __fprintf_chk();
-    } while (rbx != rbp);
-L_111a:
+        rbx = rbx + 0x8;
+        rbp = rbp + rbx;
+        __snprintf_chk();
+        a1 = stderr;
+        a0 = r12;
+        fputs();
+        do {
+            r8 = *(uint32_t *)(rbx - 0x4);
+            a0 = stderr;
+            rcx = rbx;
+            rax = 0x0;
+            a2 = 0x201c;
+            a1 = 0x2;
+            rbx = rbx + 0x18;
+            __fprintf_chk();
+        } while (rbx != rbp);
+    }
     abort();
     __builtin_trap();
 }

@@ -11,15 +11,15 @@ int32_t sub_2011a0(int32_t a0) {
     uint32_t local_1; /* [sp-c] */
 
     local_0 = a0;
-    if (a0 < 0x0) {
-        local_1 = 0xffffffff;
-    } else {
-        if (local_0 == 0x0) {
-            local_1 = 0x0;
-        } else {
+    if (a0 >= 0x0) {
+        if (local_0 != 0x0) {
             local_1 = 0x1;
+            return local_1;
         }
+        local_1 = 0x0;
+        return local_1;
     }
+    local_1 = 0xffffffff;
     return local_1;
 }
 -- signature
@@ -58,15 +58,15 @@ int32_t sub_2011e0(int32_t a0, int32_t a1, int32_t a2) {
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
-    if (a0 < a1) {
-        local_3 = local_1;
-    } else {
-        if (local_0 > local_2) {
-            local_3 = local_2;
-        } else {
+    if (a0 >= a1) {
+        if (local_0 <= local_2) {
             local_3 = local_0;
+            return local_3;
         }
+        local_3 = local_2;
+        return local_3;
     }
+    local_3 = local_1;
     return local_3;
 }
 -- signature
@@ -103,11 +103,11 @@ int32_t sub_201230(int32_t a0) {
     uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
-    if (a0 > 0x0) {
-        local_1 = 0x1;
-    } else {
+    if (a0 <= 0x0) {
         local_1 = (local_0 < 0x0 ? 0xffffffff : 0x0);
+        return local_1;
     }
+    local_1 = 0x1;
     return local_1;
 }
 -- signature

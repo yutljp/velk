@@ -35,10 +35,7 @@ long record_total(struct record *items, int n) {
         return 0x0;
     }
     rcx = n;
-    if (n == 0x1) {
-        rdx = 0x0;
-        rax = 0x0;
-    } else {
+    if (n != 0x1) {
         v1 = rcx & 0x7ffffffe;
         r8 = items + 0x28;
         rdx = 0x0;
@@ -49,11 +46,15 @@ long record_total(struct record *items, int n) {
             rdx = rdx + 0x2;
             r8 = r8 + 0x30;
         } while (v1 != rdx);
+    } else {
+        rdx = 0x0;
+        rax = 0x0;
     }
-    if ((rcx & 0x1) != 0x0) {
-        rcx = rdx + rdx * 0x2;
-        rax = rax + (int16_t)(*(uint16_t *)(items + rcx * 0x8 + 0x10)) * *(uint64_t *)(items + rcx * 0x8 + 0x8);
+    if ((rcx & 0x1) == 0x0) {
+        return rax;
     }
+    rcx = rdx + rdx * 0x2;
+    rax = rax + (int16_t)(*(uint16_t *)(items + rcx * 0x8 + 0x10)) * *(uint64_t *)(items + rcx * 0x8 + 0x8);
     return rax;
 }
 -- signature

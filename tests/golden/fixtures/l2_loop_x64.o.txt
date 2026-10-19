@@ -1,4 +1,4 @@
-# l2_loop_x64.o: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 4 gotos
+# l2_loop_x64.o: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x0 239 sum_while symtab,unwind
 0xf0 157 count_down symtab,unwind
 0x190 71 sum_skip_odd symtab,unwind
@@ -12,40 +12,41 @@ int32_t sum_while(int32_t a0) {
         return 0x0;
     }
     ecx = a0 & 0x7;
-    if (a0 >= 0x8 /* unsigned */) { goto L_22; }
-    rdx = 0x0;
-    rax = 0x0;
-    if (ecx != 0x0) { goto L_e0; }
-    return rax;
-L_22:
-    v2 = -(a0 & 0x7ffffff8);
-    rax = 0x0;
-    rdx = 0x7;
-    do {
-        r8 = ((rdx + rax) & 0xffffffff);
-        rsi = edx;
-        sink = ((eax + esi - 0x7) & 0xffffffff);
-        rax = rsi + r8 - 0x7;
-        sink = ((rsi + r8 - 0xd) & 0xffffffff);
-        r8 = ((rsi + rax - 0x6) & 0xffffffff);
-        sink = ((rsi + rax - 0xb) & 0xffffffff);
-        rax = rsi + r8 - 0x5;
-        sink = ((rsi + r8 - 0x9) & 0xffffffff);
-        r8 = ((rsi + rax - 0x4) & 0xffffffff);
-        sink = ((rsi + rax - 0x7) & 0xffffffff);
-        rax = rsi + r8 - 0x3;
-        sink = ((rsi + r8 - 0x5) & 0xffffffff);
-        r8 = ((rsi + rax - 0x2) & 0xffffffff);
-        sink = ((rsi + rax - 0x3) & 0xffffffff);
-        rax = rsi + r8 - 0x1;
-        sink = eax;
-        rdx = edx + 0x8;
-    } while (esi + v2 + 0x8 != 0x7);
-    rdx = ((edx - 0x7) & 0xffffffff);
-    if (ecx == 0x0) {
-        return rax;
+    if (a0 >= 0x8 /* unsigned */) {
+        v2 = -(a0 & 0x7ffffff8);
+        rax = 0x0;
+        rdx = 0x7;
+        do {
+            r8 = ((rdx + rax) & 0xffffffff);
+            rsi = edx;
+            sink = ((eax + esi - 0x7) & 0xffffffff);
+            rax = rsi + r8 - 0x7;
+            sink = ((rsi + r8 - 0xd) & 0xffffffff);
+            r8 = ((rsi + rax - 0x6) & 0xffffffff);
+            sink = ((rsi + rax - 0xb) & 0xffffffff);
+            rax = rsi + r8 - 0x5;
+            sink = ((rsi + r8 - 0x9) & 0xffffffff);
+            r8 = ((rsi + rax - 0x4) & 0xffffffff);
+            sink = ((rsi + rax - 0x7) & 0xffffffff);
+            rax = rsi + r8 - 0x3;
+            sink = ((rsi + r8 - 0x5) & 0xffffffff);
+            r8 = ((rsi + rax - 0x2) & 0xffffffff);
+            sink = ((rsi + rax - 0x3) & 0xffffffff);
+            rax = rsi + r8 - 0x1;
+            sink = eax;
+            rdx = edx + 0x8;
+        } while (esi + v2 + 0x8 != 0x7);
+        rdx = ((edx - 0x7) & 0xffffffff);
+        if (ecx == 0x0) {
+            return rax;
+        }
+    } else {
+        rdx = 0x0;
+        rax = 0x0;
+        if (ecx == 0x0) {
+            return rax;
+        }
     }
-L_e0:
     do {
         rax = eax + edx;
         sink = eax;
@@ -118,23 +119,23 @@ int32_t count_down(int32_t a0) {
     rax = (a0 >= 0x2 ? a0 : 0x1);
     ecx = rax & 0x7;
     rdx = 0x0;
-    if (a0 < 0x8) { goto L_177; }
-    esi = -(rax & 0xfffffff8);
-    rdx = 0x4;
-    do {
-        sink = ((rdx - 0x3) & 0xffffffff);
-        sink = ((rdx - 0x2) & 0xffffffff);
-        sink = ((rdx - 0x1) & 0xffffffff);
-        sink = edx;
-        sink = ((rdx + 0x1) & 0xffffffff);
-        sink = ((rdx + 0x2) & 0xffffffff);
-        sink = ((rdx + 0x3) & 0xffffffff);
-        sink = ((rdx + 0x4) & 0xffffffff);
-        v1 = rdx;
-        rdx = edx + 0x8;
-    } while (v1 + esi + 0x8 != 0x4);
-    rdx = ((edx - 0x4) & 0xffffffff);
-L_177:
+    if (a0 >= 0x8) {
+        esi = -(rax & 0xfffffff8);
+        rdx = 0x4;
+        do {
+            sink = ((rdx - 0x3) & 0xffffffff);
+            sink = ((rdx - 0x2) & 0xffffffff);
+            sink = ((rdx - 0x1) & 0xffffffff);
+            sink = edx;
+            sink = ((rdx + 0x1) & 0xffffffff);
+            sink = ((rdx + 0x2) & 0xffffffff);
+            sink = ((rdx + 0x3) & 0xffffffff);
+            sink = ((rdx + 0x4) & 0xffffffff);
+            v1 = rdx;
+            rdx = edx + 0x8;
+        } while (v1 + esi + 0x8 != 0x4);
+        rdx = ((edx - 0x4) & 0xffffffff);
+    }
     if (ecx == 0x0) {
         return rax;
     }
@@ -195,10 +196,7 @@ int32_t sum_skip_odd(int32_t a0) {
     if (a0 <= 0x0) {
         return 0x0;
     }
-    if (a0 == 0x1) {
-        rcx = 0x0;
-        rax = 0x0;
-    } else {
+    if (a0 != 0x1) {
         edx = a0 & 0x7ffffffe;
         rcx = 0x0;
         rax = 0x0;
@@ -208,15 +206,19 @@ int32_t sum_skip_odd(int32_t a0) {
             sink = eax;
             rcx = ecx + 0x2;
         } while (edx != ecx);
+    } else {
+        rcx = 0x0;
+        rax = 0x0;
     }
     if ((a0 & 0x1) == 0x0) {
         return rax;
     }
-    if ((rcx & 0x1) != 0x0) {
-        rcx = ecx + eax;
-        sink = ecx;
-        rax = ecx;
+    if ((rcx & 0x1) == 0x0) {
+        return rax;
     }
+    rcx = ecx + eax;
+    sink = ecx;
+    rax = ecx;
     return rax;
 }
 -- signature
@@ -267,13 +269,16 @@ int32_t find_first(int64_t a0, int32_t a1, int32_t a2) {
     }
     v1 = a1;
     rcx = 0x0;
-    do {
-        if (*(uint32_t *)(a0 + rcx * 0x4) == a2) { goto L_1fe; }
+    while (*(uint32_t *)(a0 + rcx * 0x4) != a2) {
         rcx = rcx + 0x1;
-    } while (v1 != rcx);
-    return 0xffffffff;
-L_1fe:
+        if (v1 != rcx) {
+            continue;
+        }
+        goto L_1fd;
+    }
     return ecx;
+L_1fd:
+    return 0xffffffff;
 }
 -- signature
 int32_t (int64_t a0, int32_t a1, int32_t a2)

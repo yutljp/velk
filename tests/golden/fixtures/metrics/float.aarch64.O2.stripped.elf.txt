@@ -1,4 +1,4 @@
-# metrics/float.aarch64.O2.stripped.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 11 unsupported, 1 gotos
+# metrics/float.aarch64.O2.stripped.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 10 unsupported, 1 gotos
 0x21019c 144 - unwind,prologue
 0x21022c 12 - unwind,prologue
 0x210238 8 - unwind,prologue
@@ -9,38 +9,38 @@
 -- decompile
 /* velk pseudo-C: sub_21019c @ 0x21019c */
 int64_t sub_21019c(int64_t a0, int32_t a1) {
-    if (a1 < 0x1) {
-        /* unsupported: MOVI at 0x210224 */
-        return a0;
-    }
-    /* unsupported: MOVI at 0x2101a4 */
-    x8 = a1;
-    if (a1 < 0x4 /* unsigned */) {
-        x9 = 0x0;
-    } else {
-        x9 = x8 & 0x7ffffffc;
-        x10 = a0 + 0x10;
-        x11 = x9;
+    if (a1 >= 0x1) {
+        /* unsupported: MOVI at 0x2101a4 */
+        x8 = a1;
+        if (a1 >= 0x4 /* unsigned */) {
+            x9 = x8 & 0x7ffffffc;
+            x10 = a0 + 0x10;
+            x11 = x9;
+            do {
+                /* unsupported: SIMD vector pair load */
+                x11 = x11 - 0x4;
+                x10 = x10 + 0x20;
+                /* unsupported (6 steps): DUP at 0x2101d4, FADD at 0x2101d8, DUP at 0x2101dc, FADD at 0x2101e0, FADD at 0x2101e4, FADD at 0x2101e8 */
+            } while (x11 != 0x0);
+            if (x9 == x8) {
+                goto L_210210;
+            }
+        } else {
+            x9 = 0x0;
+        }
+        x10 = a0 + (x9 << 0x3);
+        x8 = x8 - x9;
         do {
-            /* unsupported: SIMD vector pair load */
-            x11 = x11 - 0x4;
-            x10 = x10 + 0x20;
-            /* unsupported (6 steps): DUP at 0x2101d4, FADD at 0x2101d8, DUP at 0x2101dc, FADD at 0x2101e0, FADD at 0x2101e4, FADD at 0x2101e8 */
-        } while (x11 != 0x0);
-        if (x9 == x8) { goto L_210210; }
+            x8 = x8 - 0x1;
+            /* unsupported: FADD at 0x210208 */
+        } while (x8 != 0x0);
+    L_210210:
+        if (a1 > 0x0) {
+            /* unsupported (2 steps): SCVTF at 0x210218, FDIV at 0x21021c */
+            return a0;
+        }
     }
-    x10 = a0 + (x9 << 0x3);
-    x8 = x8 - x9;
-    do {
-        x8 = x8 - 0x1;
-        /* unsupported: FADD at 0x210208 */
-    } while (x8 != 0x0);
-L_210210:
-    if (a1 <= 0x0) {
-        /* unsupported: MOVI at 0x210224 */
-        return a0;
-    }
-    /* unsupported (2 steps): SCVTF at 0x210218, FDIV at 0x21021c */
+    /* unsupported: MOVI at 0x210224 */
     return a0;
 }
 -- signature

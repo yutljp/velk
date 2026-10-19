@@ -85,12 +85,14 @@ int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
     local_1 = a2;
     rax = 0x0;
     local_2 = 0x0;
-    if (a0 >= a1) {
-        rax = local_0;
-        rax = rax & 0xffffffffffffff00 | (eax <= local_1 ? 0x1 : 0x0) & 0xff;
-        t66 = local_1;
-        local_2 = rax & 0xff;
+    if (a0 < a1) {
+        rax = rax & 0xffffffffffffff00 | local_2;
+        return rax & 0x1 & 0xff;
     }
+    rax = local_0;
+    rax = rax & 0xffffffffffffff00 | (eax <= local_1 ? 0x1 : 0x0) & 0xff;
+    t66 = local_1;
+    local_2 = rax & 0xff;
     rax = rax & 0xffffffffffffff00 | local_2;
     return rax & 0x1 & 0xff;
 }
@@ -200,18 +202,18 @@ int32_t sub_2013d0(int32_t a0, int32_t a1, int32_t a2) {
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
-    if (a0 < a1) {
-        local_3 = local_0;
-    } else {
+    if (a0 >= a1) {
         local_3 = local_1;
+    } else {
+        local_3 = local_0;
     }
     eax = local_3;
     local_4 = eax;
-    if (eax < local_2) {
-        local_5 = local_4;
-    } else {
+    if (eax >= local_2) {
         local_5 = local_2;
+        return local_5;
     }
+    local_5 = local_4;
     return local_5;
 }
 -- signature
@@ -252,11 +254,11 @@ int64_t sub_201430(int64_t a0) {
     uint64_t local_1; /* [sp-18] */
 
     local_0 = a0;
-    if (a0 < 0x0) {
-        local_1 = -local_0;
-    } else {
+    if (a0 >= 0x0) {
         local_1 = local_0;
+        return local_1;
     }
+    local_1 = -local_0;
     return local_1;
 }
 -- signature

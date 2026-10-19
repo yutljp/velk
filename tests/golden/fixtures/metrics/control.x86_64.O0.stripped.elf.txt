@@ -1,4 +1,4 @@
-# metrics/control.x86_64.O0.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 3 gotos
+# metrics/control.x86_64.O0.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 4 gotos
 0x201230 137 - unwind,prologue
 0x2012c0 78 - unwind,prologue
 0x201310 107 - unwind,prologue
@@ -21,15 +21,9 @@ int32_t sub_201230(int64_t a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
-            return local_2;
-        }
+    while (local_3 < local_1) {
         local_4 = 0x0;
-        for (;;) {
-            if (local_4 >= local_1) {
-                break;
-            }
+        while (local_4 < local_1) {
             if (local_3 == local_4) {
                 rcx = (int64_t)(int32_t)(local_3 * local_1 + local_4);
                 local_2 += *(uint32_t *)(local_0 + rcx * 0x4);
@@ -90,15 +84,15 @@ int32_t sub_2012c0(int32_t a0, int32_t a1, int64_t a2) {
     local_1 = a1;
     local_2 = a2;
     local_3 = 0xffffffff;
-    if (a0 < 0x0) {
-    } else {
-        if (local_1 == 0x0) {
-        } else {
+    if (a0 >= 0x0) {
+        if (local_1 != 0x0) {
             rax = local_0;
             v1 = (int32_t)(eax) % (int32_t)(local_1);
             *(uint32_t *)(local_2) = (int32_t)(eax) / (int32_t)(local_1);
             local_3 = 0x0;
+            return local_3;
         }
+        return local_3;
     }
     return local_3;
 }
@@ -143,31 +137,38 @@ int32_t sub_201310(int32_t a0) {
     local_1 = 0x0;
     rax = local_0;
     local_2 = rax;
-    if (rax > 0x3 /* unsigned */) {
-        local_1 = 0xffffffff;
-        return local_1;
+    switch (rax) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        break;
+    default:
+        goto L_20136f;
     }
     rax = (int64_t)(int32_t)(dword_200120[local_2]);
     rax = rax + 0x200120;
     switch (local_2) {
     case 0:
         local_1 += 0x1;
-        goto L_20134c;
+        break;
     case 1:
-    L_20134c:
-        local_1 += 0x2;
-        local_1 += 0x4;
-        return local_1;
+        break;
     case 2:
-        local_1 += 0x4;
-        return local_1;
+        goto L_201355;
     case 3:
         local_1 = 0x8;
         return local_1;
     default:
-        local_1 = 0xffffffff;
-        return local_1;
+        goto L_20136f;
     }
+    local_1 += 0x2;
+L_201355:
+    local_1 += 0x4;
+    return local_1;
+L_20136f:
+    local_1 = 0xffffffff;
+    return local_1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -362,13 +363,9 @@ int32_t sub_201480(int64_t a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
-            return local_2;
-        }
+    while (local_3 < local_1) {
         rcx = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + rcx * 0x4) < 0x0) {
-        } else {
+        if (*(uint32_t *)(local_0 + rcx * 0x4) >= 0x0) {
             rcx = (int64_t)(int32_t)(local_3);
             local_2 += *(uint32_t *)(local_0 + rcx * 0x4);
         }
@@ -420,25 +417,21 @@ int32_t sub_2014e0(int64_t a0, int32_t a1, int32_t a2) {
     local_1 = a1;
     local_2 = a2;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
-            local_5 = 0xffffffff;
-            return local_5;
-        }
+    while (local_3 < local_1) {
         local_4 = local_3 + 0x1;
-        for (;;) {
-            if (local_4 >= local_1) { goto L_20155a; }
+        while (local_4 < local_1) {
             v1 = (int64_t)(int32_t)(local_4);
-            if (*(uint32_t *)(local_0 + (int64_t)(int32_t)(local_3) * 0x4) + *(uint32_t *)(local_0 + v1 * 0x4) != local_2) { goto L_201547; }
-            local_5 = local_3 * local_1 + local_4;
-            return local_5;
-        L_201547:
+            if (*(uint32_t *)(local_0 + (int64_t)(int32_t)(local_3) * 0x4) + *(uint32_t *)(local_0 + v1 * 0x4) == local_2) {
+                goto L_201535;
+            }
             local_4 += 0x1;
         }
-    L_20155a:
         local_3 += 0x1;
     }
     local_5 = 0xffffffff;
+    return local_5;
+L_201535:
+    local_5 = local_3 * local_1 + local_4;
     return local_5;
 }
 -- signature

@@ -1,4 +1,4 @@
-# metrics/loops.aarch64.O0.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 4 gotos
+# metrics/loops.aarch64.O0.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21019c 76 count_bits symtab,dwarf,unwind
 0x2101e8 92 sum_until symtab,dwarf,unwind
 0x210244 120 sum_till_neg symtab,dwarf,unwind
@@ -99,15 +99,12 @@ int sum_till_neg(int *p, int n) {
     local_1 = n;
     local_2 = 0x0;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
-            return local_2;
-        }
+    while (local_3 < local_1) {
         x8 = *(uint32_t *)(local_0 + (local_3 << 0x2));
         local_4 = w8;
-        if ((x8 & 0x80000000) == 0x0) { goto L_210290; }
-        return local_2;
-    L_210290:
+        if ((x8 & 0x80000000) != 0x0) {
+            return local_2;
+        }
         local_2 += local_4;
         local_3 += 0x1;
     }
@@ -159,18 +156,13 @@ int sum_until_zero(int *p, int n) {
     local_1 = n;
     local_2 = 0x0;
     local_3 = 0x0;
-    for (;;) {
-        if (local_3 >= local_1) {
+    while (local_3 < local_1) {
+        if (*(uint32_t *)(local_0 + (local_3 << 0x2)) == 0x0) {
             return local_2;
         }
-        if (*(uint32_t *)(local_0 + (local_3 << 0x2)) != 0x0) { goto L_210300; }
-        return local_2;
-    L_210300:
-        if ((*(uint32_t *)(local_0 + (local_3 << 0x2)) & 0x80000000) == 0x0) { goto L_210318; }
-        goto L_210334;
-    L_210318:
-        local_2 += *(uint32_t *)(local_0 + (local_3 << 0x2));
-    L_210334:
+        if ((*(uint32_t *)(local_0 + (local_3 << 0x2)) & 0x80000000) == 0x0) {
+            local_2 += *(uint32_t *)(local_0 + (local_3 << 0x2));
+        }
         local_3 += 0x1;
     }
     return local_2;

@@ -11,15 +11,15 @@ int classify(int x) {
     uint32_t local_1; /* [sp-c] */
 
     local_0 = x;
-    if (x < 0x0) {
-        local_1 = 0xffffffff;
-    } else {
-        if (local_0 == 0x0) {
-            local_1 = 0x0;
-        } else {
+    if (x >= 0x0) {
+        if (local_0 != 0x0) {
             local_1 = 0x1;
+            return local_1;
         }
+        local_1 = 0x0;
+        return local_1;
     }
+    local_1 = 0xffffffff;
     return local_1;
 }
 -- signature
@@ -58,15 +58,15 @@ int clamp(int x, int lo, int hi) {
     local_0 = x;
     local_1 = lo;
     local_2 = hi;
-    if (x < lo) {
-        local_3 = local_1;
-    } else {
-        if (local_0 > local_2) {
-            local_3 = local_2;
-        } else {
+    if (x >= lo) {
+        if (local_0 <= local_2) {
             local_3 = local_0;
+            return local_3;
         }
+        local_3 = local_2;
+        return local_3;
     }
+    local_3 = local_1;
     return local_3;
 }
 -- signature
@@ -103,11 +103,11 @@ int sign_of(int x) {
     uint32_t local_1; /* [sp-10] */
 
     local_0 = x;
-    if (x > 0x0) {
-        local_1 = 0x1;
-    } else {
+    if (x <= 0x0) {
         local_1 = (local_0 < 0x0 ? 0xffffffff : 0x0);
+        return local_1;
     }
+    local_1 = 0x1;
     return local_1;
 }
 -- signature
