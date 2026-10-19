@@ -2,6 +2,8 @@ use crate::ir::{Expr, Stmt};
 use crate::render::structure::Node;
 
 /// A conditional branch to the block right after the loop reads as `break`.
+/// Inside a nested loop or a switch a `break` would leave that instead, so
+/// branches there stay.
 pub(crate) fn fold_exit_branches(nodes: &mut [Node], exit: Option<u64>) {
     let Some(exit) = exit else {
         return;
@@ -25,17 +27,6 @@ pub(crate) fn fold_exit_branches(nodes: &mut [Node], exit: Option<u64>) {
             Node::If { then, els, .. } => {
                 fold_exit_branches(then, Some(exit));
                 fold_exit_branches(els, Some(exit));
-            }
-            Node::DoWhile { body, .. } | Node::Forever { body } | Node::While { body, .. } => {
-                fold_exit_branches(body, Some(exit));
-            }
-            Node::Switch { arms, default, .. } => {
-                for (_, body) in arms.iter_mut() {
-                    fold_exit_branches(body, Some(exit));
-                }
-                if let Some(body) = default {
-                    fold_exit_branches(body, Some(exit));
-                }
             }
             _ => {}
         }
@@ -431,5 +422,48 @@ pub(crate) fn prune_labels(nodes: &mut Vec<Node>, used: &std::collections::HashS
             }
             _ => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::fold_exit_branches;
+    use crate::ir::{Cond, Expr, Stmt};
+    use crate::render::structure::Node;
+
+    fn branch(target: u64) -> Node {
+        Node::Stmt(Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(0, 64),
+            rhs: Expr::constant(0),
+            target,
+        })
+    }
+
+    #[test]
+    fn an_exit_from_a_nested_loop_stays_a_branch() {
+        // A `break` inside the inner loop or the switch would leave that
+        // instead of the loop whose exit is 0x40.
+        let mut nodes = vec![
+            branch(0x40),
+            Node::Forever {
+                body: vec![branch(0x40)],
+            },
+            Node::Switch {
+                index: Expr::reg(1, 64),
+                arms: vec![(vec![0], vec![branch(0x40)])],
+                default: None,
+            },
+        ];
+        fold_exit_branches(&mut nodes, Some(0x40));
+        assert!(
+            matches!(&nodes[0], Node::If { then, .. } if matches!(then.as_slice(), [Node::Break]))
+        );
+        assert!(
+            matches!(&nodes[1], Node::Forever { body } if matches!(body.as_slice(), [Node::Stmt(Stmt::Brif { .. })]))
+        );
+        assert!(
+            matches!(&nodes[2], Node::Switch { arms, .. } if matches!(arms[0].1.as_slice(), [Node::Stmt(Stmt::Brif { .. })]))
+        );
     }
 }
