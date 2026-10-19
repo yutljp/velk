@@ -205,10 +205,12 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
         // Integer and packed SSE: 66 0F with an opcode of those groups, a
         // register operand byte and an immediate for the ones that take one.
         7 | 8 => {
-            let opcode = match hash(seed, 0x3a) % 3 {
+            let opcode = match hash(seed, 0x3a) % 4 {
                 0 => 0x60 + (hash(seed, 0x3b) % 0x20) as u8,
                 1 => 0xd0 + (hash(seed, 0x3b) % 0x30) as u8,
-                _ => 0x50 + (hash(seed, 0x3b) % 0x10) as u8,
+                2 => 0x50 + (hash(seed, 0x3b) % 0x10) as u8,
+                // pinsrw and pextrw.
+                _ => 0xc4 + (hash(seed, 0x3b) % 2) as u8,
             };
             let prefix = if hash(seed, 0x3c).is_multiple_of(4) {
                 0xf3

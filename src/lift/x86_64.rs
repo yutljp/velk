@@ -741,7 +741,104 @@ fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
         lifter.stmts.push(Stmt::Store { addr, value, width });
     };
-    match (ins.mnemonic(), ins.op0_kind(), ins.op1_kind()) {
+    // A VEX move of a 128-bit register, or a non-temporal one, moves as the
+    // plain one does; the IR keeps no bits above 128.
+    let narrow = (0..ins.op_count()).all(|index| {
+        ins.op_kind(index) != OpKind::Register
+            || !ins.op_register(index).is_ymm() && !ins.op_register(index).is_zmm()
+    });
+    let mnemonic = match ins.mnemonic() {
+        Vmovdqu | Vmovdqu8 | Vmovdqu16 | Vmovdqu32 | Vmovdqu64 if narrow => Movdqu,
+        Vmovdqa | Vmovdqa32 | Vmovdqa64 | Vmovntdq | Movntdq if narrow => Movdqa,
+        Vmovups if narrow => Movups,
+        Vmovaps | Vmovntps | Movntps if narrow => Movaps,
+        Vmovupd if narrow => Movupd,
+        Vmovapd | Vmovntpd | Movntpd if narrow => Movapd,
+        other => other,
+    };
+    match (mnemonic, ins.op0_kind(), ins.op1_kind()) {
+        // A VEX bitwise operation names two sources apart from its destination.
+        (
+            Vpxor | Vpand | Vpor | Vpandn | Vxorps | Vxorpd | Vandps | Vandpd | Vorps | Vorpd,
+            OpKind::Register,
+            OpKind::Register,
+        ) if narrow && ins.op_count() == 3 => {
+            let (to, first) = (destination?, source?);
+            let (second_low, second_high) = match ins.op2_kind() {
+                OpKind::Register => {
+                    let slot = xmm(ins.op2_register())?;
+                    (low(slot), low(slot + 1))
+                }
+                OpKind::Memory => {
+                    let addr = address()?;
+                    (load_at(addr.clone(), 8), load_at(offset(addr), 8))
+                }
+                _ => return None,
+            };
+            let combine = |a: Expr, b: Expr| match mnemonic {
+                Vpxor | Vxorps | Vxorpd => Expr::bin(BinOp::Xor, a, b),
+                Vpand | Vandps | Vandpd => Expr::bin(BinOp::And, a, b),
+                Vpandn => Expr::bin(
+                    BinOp::And,
+                    Expr::bin(BinOp::Xor, a, Expr::constant(u64::MAX)),
+                    b,
+                ),
+                _ => Expr::bin(BinOp::Or, a, b),
+            };
+            let low_half = combine(low(first), second_low);
+            let high_half = hold(lifter, combine(low(first + 1), second_high));
+            lifter.assign(to, 64, low_half);
+            lifter.assign(to + 1, 64, high_half);
+        }
+        // One 16-bit lane written from a general register or memory, or read
+        // out to a general register.
+        (Pinsrw | Vpinsrw, OpKind::Register, _) if narrow => {
+            let to = destination?;
+            let value_index = if mnemonic == Vpinsrw { 2 } else { 1 };
+            let value = match ins.op_kind(value_index) {
+                OpKind::Memory => load_at(address()?, 2),
+                _ => operand(lifter, ins, value_index)?,
+            };
+            let lane = u64::from(ins.immediate8()) & 7;
+            let (slot, shift) = (to + (lane / 4) as u16, (lane % 4) * 16);
+            let base = if mnemonic == Vpinsrw {
+                low(source? + (lane / 4) as u16)
+            } else {
+                low(slot)
+            };
+            let merged = Expr::bin(
+                BinOp::Or,
+                Expr::bin(BinOp::And, base, Expr::constant(!(0xffff << shift))),
+                Expr::bin(
+                    BinOp::Shl,
+                    Expr::bin(BinOp::And, value, Expr::constant(0xffff)),
+                    Expr::constant(shift),
+                ),
+            );
+            if mnemonic == Vpinsrw {
+                let from = source?;
+                let other = hold(lifter, low(from + 1 - (lane / 4) as u16));
+                lifter.assign(slot, 64, merged);
+                lifter.assign(to + 1 - (lane / 4) as u16, 64, other);
+            } else {
+                lifter.assign(slot, 64, merged);
+            }
+        }
+        (Pextrw | Vpextrw, OpKind::Register, OpKind::Register) if narrow && source.is_some() => {
+            let from = source?;
+            let lane = u64::from(ins.immediate8()) & 7;
+            let value = Expr::bin(
+                BinOp::And,
+                Expr::bin(
+                    BinOp::Shr,
+                    low(from + (lane / 4) as u16),
+                    Expr::constant((lane % 4) * 16),
+                ),
+                Expr::constant(0xffff),
+            );
+            let (index, width) = gpr(ins.op0_register())?;
+            lifter.assign(index, width, value);
+        }
         (
             Movups | Movaps | Movupd | Movapd | Movdqu | Movdqa,
             OpKind::Register,
@@ -1937,12 +2034,21 @@ fn lift_instruction(
         Mnemonic::Tzcnt | Mnemonic::Lzcnt | Mnemonic::Popcnt | Mnemonic::Bsf | Mnemonic::Bsr => {
             lift_count(lifter, ins)
         }
+        // Hints and fences change nothing a single thread sees.
         Mnemonic::Nop
         | Mnemonic::Endbr64
         | Mnemonic::Reservednop
         | Mnemonic::Pause
         | Mnemonic::Wait
-        | Mnemonic::Cld => {}
+        | Mnemonic::Cld
+        | Mnemonic::Prefetchnta
+        | Mnemonic::Prefetcht0
+        | Mnemonic::Prefetcht1
+        | Mnemonic::Prefetcht2
+        | Mnemonic::Prefetchw
+        | Mnemonic::Sfence
+        | Mnemonic::Lfence
+        | Mnemonic::Mfence => {}
         Mnemonic::Adc => with_carry(lifter, ins, false),
         Mnemonic::Sbb => with_carry(lifter, ins, true),
         Mnemonic::Clc => lifter.set_flags(Flags::carry(Expr::constant(0))),
