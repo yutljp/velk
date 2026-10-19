@@ -5,7 +5,11 @@
  * sixteen 64-bit halves, low first. For each record the code runs from
  * those registers and flags (rsp and r15 excepted, which the harness
  * keeps), and standard output receives the same state after it, then a
- * byte: zero, or the signal the code raised. */
+ * byte: zero, or the signal the code raised.
+ *
+ * A length with its top bit set adds the contents of the buffer at
+ * BUFFER after the state, which the code may read and write, and the
+ * output gives them back after the state too. */
 
 #include <setjmp.h>
 #include <signal.h>
@@ -59,6 +63,10 @@ __asm__(".intel_syntax noprefix\n"
         "ret\n"
         ".att_syntax\n");
 
+#define BUFFER ((unsigned char *)0x600000000000)
+#define BUFFER_SIZE 8192
+#define WITH_MEMORY 0x80000000u
+
 static sigjmp_buf recovery;
 
 static void on_fault(int signal) { siglongjmp(recovery, signal); }
@@ -71,6 +79,11 @@ int main(void) {
         perror("mmap");
         return 1;
     }
+    if (mmap(BUFFER, BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_FIXED,
+             -1, 0) == MAP_FAILED) {
+        perror("mmap buffer");
+        return 1;
+    }
     int faults[] = {SIGILL, SIGFPE, SIGSEGV, SIGBUS, SIGTRAP};
     for (size_t i = 0; i < sizeof faults / sizeof *faults; i++) {
         struct sigaction action;
@@ -81,9 +94,12 @@ int main(void) {
     }
     uint32_t length;
     while (fread(&length, sizeof length, 1, stdin) == 1) {
+        int memory = (length & WITH_MEMORY) != 0;
+        length &= ~WITH_MEMORY;
         State state;
         if (length + 1 > size || fread(page, 1, length, stdin) != length ||
-            fread(&state, sizeof state, 1, stdin) != 1) {
+            fread(&state, sizeof state, 1, stdin) != 1 ||
+            (memory && fread(BUFFER, 1, BUFFER_SIZE, stdin) != BUFFER_SIZE)) {
             return 1;
         }
         page[length] = 0xc3;
@@ -96,6 +112,9 @@ int main(void) {
         }
         State out = result;
         fwrite(&out, sizeof out, 1, stdout);
+        if (memory) {
+            fwrite(BUFFER, 1, BUFFER_SIZE, stdout);
+        }
         fwrite(&status, 1, 1, stdout);
     }
     return 0;

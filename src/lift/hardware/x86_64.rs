@@ -15,7 +15,7 @@ use super::{
     Findings, branches_on_unknown_flags, condition_differs, float_bits, lifted,
     register_differences, same_float_bits, unsupported, value,
 };
-use crate::ir::eval::hash;
+use crate::ir::eval::{self, hash};
 use crate::loader::Isa;
 
 const RSP: u16 = 4;
@@ -40,6 +40,12 @@ const NAMES: [&str; 16] = [
     "r14", "r15",
 ];
 
+/// The buffer the runner maps for cases that address memory, and the flag
+/// on a case's length that sends its contents.
+const BUFFER: u64 = 0x6000_0000_0000;
+const BUFFER_SIZE: usize = 8192;
+const WITH_MEMORY: u32 = 0x8000_0000;
+
 /// The flags a case starts from: carry, parity, adjust, zero, sign and
 /// overflow, with the bit that is always set.
 const ARITHMETIC_FLAGS: u64 = 0x1 | 0x4 | 0x10 | 0x40 | 0x80 | 0x800;
@@ -50,38 +56,46 @@ struct Case {
     flags: u64,
     /// xmm0 to xmm7, as halves, low first.
     vectors: [u64; 16],
+    /// The buffer's contents, for a case that reads or writes memory.
+    memory: Option<Vec<u8>>,
 }
 
 struct Outcome {
     registers: [u64; 16],
     flags: u64,
     vectors: [u64; 16],
+    memory: Option<Vec<u8>>,
     /// The signal the code raised, or zero.
     signal: u8,
 }
 
-/// Builds the runner, or None when this machine has no compiler for it.
+/// Builds the runner once for every test, or None when this machine has
+/// no compiler for it.
 fn runner() -> Option<Command> {
-    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/hardware");
-    std::fs::create_dir_all(&dir).ok()?;
-    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lift/hardware/x86_64.c");
-    let binary = dir.join("x86_64_runner");
+    static BUILT: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
     let translated = cfg!(target_arch = "aarch64");
-    let mut compile = Command::new(if translated { "clang" } else { "cc" });
-    if translated {
-        compile.args(["-arch", "x86_64"]);
-    }
-    let built = compile
-        .arg("-O1")
-        .arg("-o")
-        .arg(&binary)
-        .arg(&source)
-        .status()
-        .ok()?
-        .success();
-    if !built {
-        return None;
-    }
+    let binary = BUILT
+        .get_or_init(|| {
+            let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/hardware");
+            std::fs::create_dir_all(&dir).ok()?;
+            let source =
+                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lift/hardware/x86_64.c");
+            let binary = dir.join("x86_64_runner");
+            let mut compile = Command::new(if translated { "clang" } else { "cc" });
+            if translated {
+                compile.args(["-arch", "x86_64"]);
+            }
+            let built = compile
+                .arg("-O1")
+                .arg("-o")
+                .arg(&binary)
+                .arg(&source)
+                .status()
+                .ok()?
+                .success();
+            built.then_some(binary)
+        })
+        .clone()?;
     Some(if translated {
         let mut command = Command::new("arch");
         command.arg("-x86_64").arg(binary);
@@ -94,7 +108,12 @@ fn runner() -> Option<Command> {
 fn run(mut runner: Command, cases: &[Case]) -> Vec<Outcome> {
     let mut input = Vec::new();
     for case in cases {
-        input.extend((case.code.len() as u32).to_le_bytes());
+        let flag = if case.memory.is_some() {
+            WITH_MEMORY
+        } else {
+            0
+        };
+        input.extend((case.code.len() as u32 | flag).to_le_bytes());
         input.extend(&case.code);
         for register in case.registers {
             input.extend(register.to_le_bytes());
@@ -102,6 +121,9 @@ fn run(mut runner: Command, cases: &[Case]) -> Vec<Outcome> {
         input.extend(case.flags.to_le_bytes());
         for half in case.vectors {
             input.extend(half.to_le_bytes());
+        }
+        if let Some(memory) = &case.memory {
+            input.extend(memory);
         }
     }
     let mut child = runner
@@ -114,23 +136,29 @@ fn run(mut runner: Command, cases: &[Case]) -> Vec<Outcome> {
     let output = child.wait_with_output().expect("running the x86-64 runner");
     writer.join().expect("writer").expect("writing cases");
     assert!(output.status.success(), "the x86-64 runner failed");
-    let record = 33 * 8 + 1;
-    assert_eq!(output.stdout.len(), cases.len() * record);
-    output
-        .stdout
-        .chunks(record)
-        .map(|chunk| {
-            let word = |index: usize| {
-                u64::from_le_bytes(chunk[index * 8..index * 8 + 8].try_into().expect("8 bytes"))
-            };
-            Outcome {
-                registers: std::array::from_fn(word),
-                flags: word(16),
-                vectors: std::array::from_fn(|half| word(17 + half)),
-                signal: chunk[record - 1],
-            }
-        })
-        .collect()
+    let mut outcomes = Vec::new();
+    let mut rest = output.stdout.as_slice();
+    for case in cases {
+        let state = 33 * 8;
+        let size = state + case.memory.as_ref().map_or(0, Vec::len) + 1;
+        let (chunk, tail) = rest.split_at(size);
+        rest = tail;
+        let word = |index: usize| {
+            u64::from_le_bytes(chunk[index * 8..index * 8 + 8].try_into().expect("8 bytes"))
+        };
+        outcomes.push(Outcome {
+            registers: std::array::from_fn(word),
+            flags: word(16),
+            vectors: std::array::from_fn(|half| word(17 + half)),
+            memory: case
+                .memory
+                .as_ref()
+                .map(|memory| chunk[state..state + memory.len()].to_vec()),
+            signal: chunk[size - 1],
+        });
+    }
+    assert!(rest.is_empty(), "the x86-64 runner wrote too much");
+    outcomes
 }
 
 fn decode(code: &[u8]) -> Option<Instruction> {
@@ -397,6 +425,7 @@ fn lifted_instructions_match_the_processor() {
                 registers,
                 flags: 0x2 | (hash(case.seed, 6) & ARITHMETIC_FLAGS),
                 vectors,
+                memory: None,
             }
         })
         .collect();
@@ -484,6 +513,301 @@ fn lifted_instructions_match_the_processor() {
                     },
                 );
             }
+        }
+    }
+    findings.assert_agreement();
+}
+
+/// The registers memory cases address through, pointing into the middle
+/// of the buffer; every other register holds a small value.
+const POINTERS: [u16; 4] = [3, 6, 7, 12];
+
+/// One of the instructions that take a memory operand, addressed through
+/// a pointer register with a small index and displacement: the opcode
+/// bytes, then `modrm` with a SIB byte, a byte displacement and room for
+/// an immediate.
+fn memory_instruction(
+    seed: u64,
+    info: &mut InstructionInfoFactory,
+) -> Option<(Vec<u8>, Instruction)> {
+    const OPCODES: &[&[u8]] = &[
+        &[0x00],
+        &[0x01],
+        &[0x02],
+        &[0x03],
+        &[0x08],
+        &[0x09],
+        &[0x0a],
+        &[0x0b],
+        &[0x10],
+        &[0x11],
+        &[0x13],
+        &[0x19],
+        &[0x1b],
+        &[0x20],
+        &[0x21],
+        &[0x23],
+        &[0x28],
+        &[0x29],
+        &[0x2b],
+        &[0x30],
+        &[0x31],
+        &[0x33],
+        &[0x38],
+        &[0x39],
+        &[0x3b],
+        &[0x80],
+        &[0x81],
+        &[0x83],
+        &[0x84],
+        &[0x85],
+        &[0x86],
+        &[0x87],
+        &[0x88],
+        &[0x89],
+        &[0x8a],
+        &[0x8b],
+        &[0x8d],
+        &[0xc0],
+        &[0xc1],
+        &[0xc6],
+        &[0xc7],
+        &[0xd0],
+        &[0xd1],
+        &[0xd3],
+        &[0xf6],
+        &[0xf7],
+        &[0xfe],
+        &[0xff],
+        &[0x0f, 0xaf],
+        &[0x0f, 0xb6],
+        &[0x0f, 0xb7],
+        &[0x0f, 0xbe],
+        &[0x0f, 0xbf],
+        &[0x0f, 0x44],
+        &[0x0f, 0x4c],
+        &[0x0f, 0x94],
+        &[0x0f, 0x9f],
+        &[0x0f, 0xb1],
+        &[0x0f, 0xc1],
+        &[0x63],
+        &[0xf2, 0x0f, 0x10],
+        &[0xf2, 0x0f, 0x11],
+        &[0xf3, 0x0f, 0x10],
+        &[0xf3, 0x0f, 0x11],
+        &[0x66, 0x0f, 0x6f],
+        &[0x66, 0x0f, 0x7f],
+        &[0xf3, 0x0f, 0x6f],
+        &[0xf3, 0x0f, 0x7f],
+        &[0x0f, 0x10],
+        &[0x0f, 0x11],
+        &[0x66, 0x0f, 0xd6],
+        &[0x66, 0x0f, 0x6e],
+        &[0x66, 0x0f, 0x7e],
+        &[0xf2, 0x0f, 0x58],
+        &[0xf2, 0x0f, 0x59],
+        &[0xf3, 0x0f, 0x5c],
+        &[0x66, 0x0f, 0xfe],
+        &[0x66, 0x0f, 0xef],
+        &[0x66, 0x0f, 0x74],
+    ];
+    let pick = |key: u64, count: u64| hash(seed, key) % count;
+    let opcode = OPCODES[pick(0x50, OPCODES.len() as u64) as usize];
+    let base = POINTERS[pick(0x51, 4) as usize] as u8;
+    let index = pick(0x52, 16) as u8;
+    let (wide, operand_high) = (pick(0x53, 2) == 1, pick(0x54, 2) as u8);
+    let rex = 0x40 | u8::from(wide) << 3 | operand_high << 2 | (index >> 3) << 1 | base >> 3;
+    // A mandatory prefix comes before REX, the escape after it.
+    let (prefix, rest) = match opcode {
+        [first @ (0xf2 | 0xf3 | 0x66), rest @ ..] => (Some(*first), rest),
+        rest => (None, rest),
+    };
+    let mut bytes: Vec<u8> = prefix.into_iter().collect();
+    if pick(0x55, 8) == 0 && prefix.is_none() {
+        bytes.push(0x66);
+    }
+    bytes.push(rex);
+    bytes.extend(rest);
+    let modrm = 0x40 | (pick(0x56, 8) as u8) << 3 | 0b100;
+    let sib = (pick(0x57, 4) as u8) << 6 | (index & 7) << 3 | (base & 7);
+    bytes.extend([modrm, sib, hash(seed, 0x58) as u8]);
+    bytes.extend((0..4).map(|key| hash(seed, 0x59 + key) as u8));
+    let decoded = decode(&bytes)?;
+    bytes.truncate(decoded.len());
+    // movsxd without REX.W runs differently under translation (see
+    // `register_only`).
+    if decoded.flow_control() != FlowControl::Next
+        || decoded.is_privileged()
+        || matches!(
+            decoded.mnemonic(),
+            Mnemonic::Bt | Mnemonic::Bts | Mnemonic::Btr | Mnemonic::Btc
+        )
+        || decoded.mnemonic() == Mnemonic::Movsxd && decoded.op0_register().size() != 8
+    {
+        return None;
+    }
+    let details = info.info(&decoded);
+    let addressed = details.used_memory().iter().all(|memory| {
+        POINTERS.contains(&gpr(memory.base()).map_or(u16::MAX, |(index, _)| index))
+            && (memory.index() == Register::None
+                || gpr(memory.index())
+                    .is_some_and(|(index, _)| !POINTERS.contains(&index) && usable(index)))
+            && (memory.displacement() as i64).unsigned_abs() <= 1024
+            && memory.segment() == Register::DS
+    });
+    let registers = details.used_registers().iter().all(|used| {
+        let register = used.register();
+        (register.is_gpr() && !matches!(register.full_register(), Register::RSP | Register::R15))
+            || (register.is_xmm() && register.number() < 8)
+    });
+    (addressed && registers && !details.used_memory().is_empty()).then_some((bytes, decoded))
+}
+
+fn gpr(register: Register) -> Option<(u16, u8)> {
+    (register.is_gpr()).then(|| {
+        (
+            register.full_register().number() as u16,
+            (register.size() * 8) as u8,
+        )
+    })
+}
+
+#[test]
+fn lifted_memory_operands_match_the_processor() {
+    let Some(runner) = runner() else {
+        eprintln!("no compiler for x86-64 here; the comparison did not run");
+        return;
+    };
+    let mut info = InstructionInfoFactory::new();
+    let mut findings = Findings::default();
+    let mut cases = Vec::new();
+    let mut prepared = Vec::new();
+    for seed in 0..40_000u64 {
+        let Some((instruction, decoded)) = memory_instruction(seed, &mut info) else {
+            continue;
+        };
+        // After a compare, so an instruction that reads the flags reads
+        // known ones.
+        let code = [compare(seed), instruction].concat();
+        let Some(ir) = lifted(Isa::X86_64, [code.as_slice(), &[0xc3]].concat()) else {
+            continue;
+        };
+        if let Some(name) = unsupported(&ir) {
+            *findings.unsupported.entry(name).or_default() += 1;
+            continue;
+        }
+        let mut registers = [0u64; 16];
+        for (index, slot) in registers.iter_mut().enumerate() {
+            *slot = if POINTERS.contains(&(index as u16)) {
+                BUFFER + (BUFFER_SIZE / 2) as u64 + hash(seed, 0x300 + index as u64) % 256
+            } else {
+                hash(seed, 0x100 + index as u64) % 64
+            };
+        }
+        let vectors: [u64; 16] = std::array::from_fn(|half| float_bits(seed, 0x200 + half as u64));
+        let memory: Vec<u8> = (0..BUFFER_SIZE)
+            .map(|index| hash(seed, 0x400 + index as u64) as u8)
+            .collect();
+        cases.push(Case {
+            code: code.clone(),
+            registers,
+            flags: 0x2 | (hash(seed, 6) & ARITHMETIC_FLAGS),
+            vectors,
+            memory: Some(memory),
+        });
+        prepared.push((code, decoded, ir));
+    }
+    let outcomes = run(runner, &cases);
+    for ((code, decoded, ir), (case, outcome)) in prepared.iter().zip(cases.iter().zip(outcomes)) {
+        if outcome.signal != 0 {
+            findings.undefined += 1;
+            continue;
+        }
+        findings.tried += 1;
+        let registers: Vec<(u16, u64)> = (0..16u16)
+            .filter(|index| usable(*index))
+            .map(|index| (index, case.registers[usize::from(index)]))
+            .chain((0..16u16).map(|half| {
+                (
+                    crate::arch::x86::XMM0 + half,
+                    case.vectors[usize::from(half)],
+                )
+            }))
+            .collect();
+        let before = case.memory.as_ref().expect("memory");
+        let words: Vec<(u64, u64)> = before
+            .chunks(8)
+            .enumerate()
+            .map(|(index, chunk)| {
+                (
+                    BUFFER + index as u64 * 8,
+                    u64::from_le_bytes(chunk.try_into().expect("8 bytes")),
+                )
+            })
+            .collect();
+        let setup = eval::Setup {
+            seed: 0,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &registers,
+            memory: &words,
+            step_limit: 100,
+        };
+        let kind = format!("{:?}", decoded.mnemonic());
+        let describe = || format!("{decoded} ({code:02x?})\n{}", ir.render());
+        let (after, memory) = match eval::state_after(ir, &setup) {
+            Ok(state) => state,
+            Err("division by zero") => {
+                findings.undefined += 1;
+                continue;
+            }
+            Err(reason) => {
+                Findings::note(&mut findings.registers, kind, || {
+                    format!("{}\n  {reason}", describe())
+                });
+                continue;
+            }
+        };
+        let real = |index: u16| match index.checked_sub(crate::arch::x86::XMM0) {
+            Some(half) => outcome.vectors[usize::from(half)],
+            None => outcome.registers[usize::from(index)],
+        };
+        let mut differ: Vec<String> = registers
+            .iter()
+            .filter_map(|(index, start)| {
+                let lifted = after.get(index).copied().unwrap_or(*start);
+                let same = if *index >= crate::arch::x86::XMM0 {
+                    same_float_bits(lifted, real(*index))
+                } else {
+                    lifted == real(*index)
+                };
+                (!same).then(|| {
+                    format!(
+                        "{}: lifted {lifted:#x}, processor {:#x}",
+                        name(*index),
+                        real(*index)
+                    )
+                })
+            })
+            .collect();
+        let after_memory = outcome.memory.as_ref().expect("memory back");
+        for (offset, real) in after_memory.iter().enumerate() {
+            let lifted = memory
+                .get(&(BUFFER + offset as u64))
+                .copied()
+                .unwrap_or(before[offset]);
+            if lifted != *real {
+                differ.push(format!(
+                    "byte {offset:#x}: lifted {lifted:#x}, processor {real:#x}"
+                ));
+            }
+        }
+        if !differ.is_empty() {
+            Findings::note(&mut findings.registers, kind, || {
+                format!("{}\n  {}", describe(), differ.join("\n  "))
+            });
         }
     }
     findings.assert_agreement();
