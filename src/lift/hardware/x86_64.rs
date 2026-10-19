@@ -201,7 +201,23 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
     let mut bytes: Vec<u8> = (0..15)
         .map(|index| hash(seed, 0x40 + index) as u8)
         .collect();
-    match hash(seed, 0x30) % 6 {
+    match hash(seed, 0x30) % 7 {
+        // Bit scans and counts: bsf, bsr, and with F3 popcnt, tzcnt, lzcnt.
+        6 => {
+            let (prefix, opcode) = [
+                (None, 0xbc),
+                (None, 0xbd),
+                (Some(0xf3), 0xb8),
+                (Some(0xf3), 0xbc),
+                (Some(0xf3), 0xbd),
+            ][(hash(seed, 0x35) % 5) as usize];
+            let mut code: Vec<u8> = prefix.into_iter().collect();
+            if hash(seed, 0x36) & 1 == 1 {
+                code.push(0x48 | (hash(seed, 0x37) as u8 & 0x05));
+            }
+            code.extend([0x0f, opcode, 0xc0 | (hash(seed, 0x34) as u8 & 0x3f)]);
+            bytes.splice(0..code.len(), code);
+        }
         0 => bytes[0] = 0x48 | (bytes[0] & 0x07),
         1 => bytes[0] = 0x66,
         2 | 3 => {

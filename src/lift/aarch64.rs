@@ -429,6 +429,36 @@ fn lift_reverse(lifter: &mut Lifter, ops: [Operand; 4], chunk: Option<u8>) {
     lifter.assign(dest, super::reverse_bytes(value, dest.width, chunk));
 }
 
+/// `clz`, `cls` and `rbit`. Leading sign bits are the leading zeros of the
+/// value with each bit compared to the one above it, less the sign itself.
+fn lift_count(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
+    let Some(dest) = destination(ops[0]) else {
+        return;
+    };
+    let Some(value) = lifter.operand(ops[1], dest.width) else {
+        return;
+    };
+    let bits = dest.width;
+    let count = |op, value| Expr::apply(op, vec![value]);
+    let result = match opcode {
+        a64::Opcode::CLZ => count(Operation::CountLeadingZeros(bits), value),
+        a64::Opcode::RBIT => count(Operation::ReverseBits(bits), value),
+        _ => {
+            let neighbours = Expr::bin(
+                BinOp::Xor,
+                value.clone(),
+                Expr::bin(BinOp::Sar, value, Expr::constant(1)),
+            );
+            Expr::bin(
+                BinOp::Sub,
+                count(Operation::CountLeadingZeros(bits), neighbours),
+                Expr::constant(1),
+            )
+        }
+    };
+    lifter.assign(dest, result);
+}
+
 fn lift_bic(lifter: &mut Lifter, ops: [Operand; 4], flags: bool) {
     if flags {
         lifter.last_compare = None;
@@ -1632,6 +1662,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::ORN => lift_inverted(lifter, ops, BinOp::Or),
         O::EON => lift_inverted(lifter, ops, BinOp::Xor),
         O::REV => lift_reverse(lifter, ops, None),
+        O::CLZ | O::CLS | O::RBIT => lift_count(lifter, ops, ins.opcode),
         O::REV16 => lift_reverse(lifter, ops, Some(2)),
         O::REV32 => lift_reverse(lifter, ops, Some(4)),
         O::LDR => lift_load(lifter, ops, O::LDR),

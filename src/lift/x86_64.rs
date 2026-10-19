@@ -909,6 +909,77 @@ fn shift(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
     write_destination(lifter, ins, value);
 }
 
+/// `tzcnt`, `lzcnt`, `popcnt`, and `bsf` and `bsr`, which leave the
+/// destination as it was for a zero source (as processors do, though Intel
+/// leaves it undefined), all 64 bits of it even for a 32-bit operand, and
+/// set the zero flag for it.
+fn lift_count(lifter: &mut Lifter, ins: &Instruction) {
+    let (Some(source), Some(width)) = (operand(lifter, ins, 1), operand_width(ins, 1)) else {
+        return;
+    };
+    let count = |op| Expr::apply(op, vec![source.clone()]);
+    let zero = || Expr::constant(0);
+    // One when the source is zero.
+    let empty = Expr::Select {
+        cond: Cond::Eq,
+        lhs: Box::new(source.clone()),
+        rhs: Box::new(zero()),
+        then: Box::new(Expr::constant(1)),
+        els: Box::new(zero()),
+    };
+    let (value, flags) = match ins.mnemonic() {
+        Mnemonic::Tzcnt => (
+            count(Operation::CountTrailingZeros(width)),
+            Flags::carry(empty),
+        ),
+        Mnemonic::Lzcnt => (
+            count(Operation::CountLeadingZeros(width)),
+            Flags::carry(empty),
+        ),
+        // Zero follows the source; carry, sign and overflow are clear, as
+        // after comparing the small count with zero.
+        Mnemonic::Popcnt => {
+            let value = count(Operation::PopCount(width));
+            (value.clone(), Flags::difference(value, zero()))
+        }
+        _ => {
+            let Some(old) = operand(lifter, ins, 0) else {
+                return;
+            };
+            // A 32-bit destination left as it was keeps its high half too.
+            let whole = match (width, gpr(ins.op0_register())) {
+                (32, Some((index, _))) if ins.op0_kind() == OpKind::Register => Some(index),
+                _ => None,
+            };
+            let old = whole.map_or(old, |index| Lifter::read_reg(index, 64));
+            let found = if ins.mnemonic() == Mnemonic::Bsf {
+                count(Operation::CountTrailingZeros(width))
+            } else {
+                Expr::bin(
+                    BinOp::Sub,
+                    Expr::constant(u64::from(width) - 1),
+                    count(Operation::CountLeadingZeros(width)),
+                )
+            };
+            let value = Expr::Select {
+                cond: Cond::Eq,
+                lhs: Box::new(source.clone()),
+                rhs: Box::new(zero()),
+                then: Box::new(old),
+                els: Box::new(found),
+            };
+            lifter.set_flags(Flags::result(source.clone()));
+            match whole {
+                Some(index) => lifter.assign(index, 64, value),
+                None => write_destination(lifter, ins, value),
+            }
+            return;
+        }
+    };
+    lifter.set_flags(flags);
+    write_destination(lifter, ins, value);
+}
+
 /// `adc` and `sbb`: a sum with the carry, or a difference less it. The
 /// flags keep only the carry out.
 fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool) {
@@ -1419,6 +1490,9 @@ fn lift_instruction(
         | Mnemonic::Shrd
         | Mnemonic::Bswap
         | Mnemonic::Bt => lift_bits(lifter, ins),
+        Mnemonic::Tzcnt | Mnemonic::Lzcnt | Mnemonic::Popcnt | Mnemonic::Bsf | Mnemonic::Bsr => {
+            lift_count(lifter, ins)
+        }
         Mnemonic::Nop
         | Mnemonic::Endbr64
         | Mnemonic::Reservednop
