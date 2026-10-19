@@ -317,14 +317,29 @@ int skip_negatives(int *p, int n) {
     } else {
         n = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
-        /* unsupported: Pxor at 0x2013ff */
+        xmm1 = 0x0;
+        xmm1_hi = 0x0;
         r8 = 0x0;
-        /* unsupported (2 steps): Pxor at 0x201406, Pxor at 0x20140a */
+        xmm2 = 0x0;
+        xmm2_hi = 0x0;
+        xmm0d = 0x0;
+        xmm0_hi = 0x0;
         do {
-            /* unsupported (10 steps): Movdqu at 0x201410, Movdqu at 0x201416, Movdqa at 0x20141d, Pcmpgtd at 0x201421, Pand at 0x201425, Paddd at 0x201429, Movdqa at 0x20142d, Pcmpgtd at 0x201431, Pand at 0x201435, Paddd at 0x201439 */
+            xmm3 = *(uint64_t *)(p + r8);
+            xmm3_hi = *(uint64_t *)(p + r8 + 0x8);
+            xmm4 = *(uint64_t *)(p + r8 + 0x10);
+            xmm4_hi = *(uint64_t *)(p + r8 + 0x18);
+            /* unsupported: Pcmpgtd at 0x201421 */
+            xmm5 = xmm3;
+            xmm5_hi = xmm3_hi;
+            /* unsupported (2 steps): Paddd at 0x201429, Pcmpgtd at 0x201431 */
+            xmm3 = xmm4;
+            xmm3_hi = xmm4_hi;
+            /* unsupported: Paddd at 0x201439 */
             r8 = r8 + 0x20;
         } while (rax != r8);
-        /* unsupported (6 steps): Paddd at 0x201446, Pshufd at 0x20144a, Paddd at 0x20144f, Pshufd at 0x201453, Paddd at 0x201458, Movd at 0x20145c */
+        /* unsupported (5 steps): Paddd at 0x201446, Pshufd at 0x20144a, Paddd at 0x20144f, Pshufd at 0x201453, Paddd at 0x201458 */
+        rax = xmm0d;
         if (n == rcx) {
             return rax;
         }
@@ -357,20 +372,25 @@ fn skip_negatives @ 0x2013d0 (size 183)
   blk4 @ 0x2013e9:
     rsi = (rcx & #0x7ffffff8)
     rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
-    unsupported: Pxor at 0x2013ff
+    xmm1 = #0x0
+    xmm1_hi = #0x0
     r8 = #0x0
-    unsupported: Pxor at 0x201406
-    unsupported: Pxor at 0x20140a
+    xmm2 = #0x0
+    xmm2_hi = #0x0
+    xmm0 = #0x0
+    xmm0_hi = #0x0
   blk5 @ 0x201410:
-    unsupported: Movdqu at 0x201410
-    unsupported: Movdqu at 0x201416
-    unsupported: Movdqa at 0x20141d
+    xmm3 = load64((rdi + r8))
+    xmm3_hi = load64(((rdi + r8) + #0x8))
+    xmm4 = load64(((rdi + r8) + #0x10))
+    xmm4_hi = load64(((rdi + r8) + #0x18))
     unsupported: Pcmpgtd at 0x201421
-    unsupported: Pand at 0x201425
+    xmm5 = xmm3
+    xmm5_hi = xmm3_hi
     unsupported: Paddd at 0x201429
-    unsupported: Movdqa at 0x20142d
     unsupported: Pcmpgtd at 0x201431
-    unsupported: Pand at 0x201435
+    xmm3 = xmm4
+    xmm3_hi = xmm4_hi
     unsupported: Paddd at 0x201439
     r8 = (r8 + #0x20)
     brif ne rax, r8 -> 0x201410
@@ -380,7 +400,7 @@ fn skip_negatives @ 0x2013d0 (size 183)
     unsupported: Paddd at 0x20144f
     unsupported: Pshufd at 0x201453
     unsupported: Paddd at 0x201458
-    unsupported: Movd at 0x20145c
+    rax = (xmm0 & #0xffffffff)
     brif eq rsi, rcx -> 0x201486
   blk7 @ 0x201470:
     r8 = (load32((rdi + (rsi * #0x4))) & #0xffffffff)
@@ -390,7 +410,7 @@ fn skip_negatives @ 0x2013d0 (size 183)
   blk8 @ 0x201486:
     ret rax
 -- card
-{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":183,"unsupported":19}
+{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":183,"unsupported":9}
 
 == 0x201490 find_pair
 -- decompile

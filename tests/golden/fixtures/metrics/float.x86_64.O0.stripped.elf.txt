@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O0.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 11 unsupported, 1 gotos
+# metrics/float.x86_64.O0.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 9 unsupported, 1 gotos
 0x2011f0 144 - prologue
 0x201280 64 - prologue
 0x2012c0 16 - prologue
@@ -11,26 +11,38 @@
 uint32_t sub_2011f0(uint64_t a0, uint32_t a1) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-24] */
+    uint64_t local_2; /* [sp-20] */
+    uint32_t local_3; /* [sp-24] */
+    uint64_t local_4; /* [sp-30] */
 
     local_0 = a0;
     local_1 = a1;
-    /* unsupported (2 steps): Xorps at 0x2011fb, Movsd at 0x2011fe */
+    xmm0 = 0x0;
+    xmm0_hi = 0x0;
     local_2 = 0x0;
-    while (local_2 < local_1) {
-        rax = local_0;
-        rcx = (int64_t)(int32_t)(local_2);
-        /* unsupported (3 steps): Movsd at 0x20121e, Addsd at 0x201223, Movsd at 0x201228 */
-        rax = local_2 + 0x1;
-        local_2 = eax;
+    local_3 = 0x0;
+    while (true) {
+        rax = local_3;
+        if (eax >= local_1) break;
+        rcx = (int64_t)(int32_t)(local_3);
+        xmm0 = *(uint64_t *)(local_0 + rcx * 0x8);
+        xmm0_hi = 0x0;
+        /* unsupported: Addsd at 0x201223 */
+        local_2 = xmm0;
+        rax = local_3 + 0x1;
+        local_3 = eax;
     }
     if (local_1 > 0x0) {
-        /* unsupported (4 steps): Movsd at 0x201245, Cvtsi2sd at 0x20124a, Divsd at 0x20124f, Movsd at 0x201253 */
+        xmm0 = local_2;
+        xmm0_hi = 0x0;
+        /* unsupported (2 steps): Cvtsi2sd at 0x20124a, Divsd at 0x20124f */
+        local_4 = xmm0;
     } else {
-        /* unsupported (3 steps): Xorps at 0x20125d, Movsd at 0x201260, Movsd at 0x20126a */
+        local_4 = 0x0;
+        xmm0 = local_4;
         return rax;
     }
-    /* unsupported: Movsd at 0x20126a */
+    xmm0 = local_4;
     return rax;
 }
 -- signature
@@ -42,44 +54,57 @@ fn <unnamed> @ 0x2011f0 (size 144)
   blk0 @ 0x2011f0:
     store64(rdi, (rsp + #0xfffffffffffffff0))
     store32(esi, (rsp + #0xffffffffffffffec))
-    unsupported: Xorps at 0x2011fb
-    unsupported: Movsd at 0x2011fe
+    xmm0 = #0x0
+    xmm0_hi = #0x0
+    store64(#0x0, (rsp + #0xffffffffffffffe0))
     store32(#0x0, (rsp + #0xffffffffffffffdc))
   blk1 @ 0x20120a:
     rax = (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)
     brif ge (rax & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x20123b
   blk2 @ 0x201216:
-    rax = load64((rsp + #0xfffffffffffffff0))
     rcx = sext32(load32((rsp + #0xffffffffffffffdc)))
-    unsupported: Movsd at 0x20121e
+    xmm0 = load64((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x8)))
+    xmm0_hi = #0x0
     unsupported: Addsd at 0x201223
-    unsupported: Movsd at 0x201228
+    store64(xmm0, (rsp + #0xffffffffffffffe0))
     rax = ((load32((rsp + #0xffffffffffffffdc)) + #0x1) & #0xffffffff)
     store32((rax & #0xffffffff), (rsp + #0xffffffffffffffdc))
     br 0x20120a
   blk3 @ 0x20123b:
     brif le load32((rsp + #0xffffffffffffffec)), #0x0 -> 0x20125d
   blk4 @ 0x201245:
-    unsupported: Movsd at 0x201245
+    xmm0 = load64((rsp + #0xffffffffffffffe0))
+    xmm0_hi = #0x0
     unsupported: Cvtsi2sd at 0x20124a
     unsupported: Divsd at 0x20124f
-    unsupported: Movsd at 0x201253
+    store64(xmm0, (rsp + #0xffffffffffffffd0))
     br 0x20126a
   blk5 @ 0x20125d:
-    unsupported: Xorps at 0x20125d
-    unsupported: Movsd at 0x201260
+    store64(#0x0, (rsp + #0xffffffffffffffd0))
     br 0x20126a
   blk6 @ 0x20126a:
-    unsupported: Movsd at 0x20126a
+    xmm0 = load64((rsp + #0xffffffffffffffd0))
     ret rax
 -- card
-{"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":144,"sizeEstimated":true,"unsupported":12}
+{"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":144,"sizeEstimated":true,"unsupported":3}
 
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 uint64_t sub_201280(void) {
-    /* unsupported (9 steps): Movss at 0x201284, Movss at 0x201289, Movss at 0x20128e, Movss at 0x201293, Movss at 0x201298, Subss at 0x20129d, Movss at 0x2012a2, Mulss at 0x2012a7, Addss at 0x2012ab */
+    uint32_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-14] */
+
+    local_0 = xmm1d;
+    local_1 = xmm2d;
+    xmm1d = xmm0d;
+    xmm1_hi = 0x0;
+    xmm0d = local_0;
+    xmm0_hi = 0x0;
+    /* unsupported: Subss at 0x20129d */
+    xmm2d = local_1;
+    xmm2_hi = 0x0;
+    /* unsupported (2 steps): Mulss at 0x2012a7, Addss at 0x2012ab */
     return rax;
 }
 -- signature
@@ -89,24 +114,26 @@ uint64_t ()
 -- ir
 fn <unnamed> @ 0x201280 (size 64)
   blk0 @ 0x201280:
-    unsupported: Movss at 0x201284
-    unsupported: Movss at 0x201289
-    unsupported: Movss at 0x20128e
-    unsupported: Movss at 0x201293
-    unsupported: Movss at 0x201298
+    store32((xmm1 & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32((xmm2 & #0xffffffff), (rsp + #0xffffffffffffffec))
+    xmm1 = (xmm0 & #0xffffffff)
+    xmm1_hi = #0x0
+    xmm0 = load32((rsp + #0xfffffffffffffff0))
+    xmm0_hi = #0x0
     unsupported: Subss at 0x20129d
-    unsupported: Movss at 0x2012a2
+    xmm2 = load32((rsp + #0xffffffffffffffec))
+    xmm2_hi = #0x0
     unsupported: Mulss at 0x2012a7
     unsupported: Addss at 0x2012ab
     ret rax
 -- card
-{"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":9}
+{"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":3}
 
 == 0x2012c0 -
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
 uint64_t sub_2012c0(void) {
-    /* unsupported (2 steps): Movsd at 0x2012c4, Cvttsd2si at 0x2012c9 */
+    /* unsupported: Cvttsd2si at 0x2012c9 */
     return rax;
 }
 -- signature
@@ -116,53 +143,70 @@ uint64_t ()
 -- ir
 fn <unnamed> @ 0x2012c0 (size 16)
   blk0 @ 0x2012c0:
-    unsupported: Movsd at 0x2012c4
     unsupported: Cvttsd2si at 0x2012c9
     ret rax
 -- card
-{"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":1}
 
 == 0x2012d0 -
 -- decompile
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
+/* ref: 0x200120 .rodata */
 uint64_t sub_2012d0(void) {
-    /* unsupported (5 steps): Movss at 0x2012d4, Movss at 0x2012d9, Cvtss2sd at 0x2012de, Movsd at 0x2012e2, Mulsd at 0x2012ea */
+    xmm0d = xmm0d;
+    xmm0_hi = 0x0;
+    /* unsupported: Cvtss2sd at 0x2012de */
+    xmm1 = qword_200120;
+    xmm1_hi = 0x0;
+    /* unsupported: Mulsd at 0x2012ea */
     return rax;
 }
 -- signature
 uint64_t ()
 -- references
-
+0x200120 .rodata
 -- ir
 fn <unnamed> @ 0x2012d0 (size 32)
   blk0 @ 0x2012d0:
-    unsupported: Movss at 0x2012d4
-    unsupported: Movss at 0x2012d9
+    xmm0 = (xmm0 & #0xffffffff)
+    xmm0_hi = #0x0
     unsupported: Cvtss2sd at 0x2012de
-    unsupported: Movsd at 0x2012e2
+    xmm1 = load64(#0x200120)
+    xmm1_hi = #0x0
     unsupported: Mulsd at 0x2012ea
     ret rax
 -- card
-{"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":5}
+{"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":2}
 
 == 0x2012f0 -
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 uint32_t sub_2012f0(void) {
-    uint32_t local_0; /* [sp-1c] */
+    uint64_t local_0; /* [sp-10] */
+    uint64_t local_1; /* [sp-18] */
+    uint32_t local_2; /* [sp-1c] */
 
-    /* unsupported (5 steps): Movsd at 0x2012f4, Movsd at 0x2012f9, Movsd at 0x2012fe, Movsd at 0x201303, Ucomisd at 0x201308 */
+    local_0 = xmm0;
+    local_1 = xmm1;
+    xmm1 = xmm0;
+    xmm1_hi = 0x0;
+    xmm0 = local_1;
+    xmm0_hi = 0x0;
+    /* unsupported: Ucomisd at 0x201308 */
     if (/* ls */ true) { goto L_20131f; }
-    local_0 = 0xffffffff;
-    return local_0;
+    local_2 = 0xffffffff;
+    return local_2;
 L_20131f:
-    /* unsupported (2 steps): Movsd at 0x20131f, Movsd at 0x201324 */
+    xmm0 = local_0;
+    xmm0_hi = 0x0;
+    xmm1 = local_1;
+    xmm1_hi = 0x0;
     rax = 0x0;
     ecx = 0x1;
     /* unsupported: Ucomisd at 0x201330 */
     rax = (0x0 > 0x0 /* unsigned */ ? ecx : eax);
-    local_0 = eax;
-    return local_0;
+    local_2 = eax;
+    return local_2;
 }
 -- signature
 uint32_t ()
@@ -171,18 +215,22 @@ uint32_t ()
 -- ir
 fn <unnamed> @ 0x2012f0 (size 79)
   blk0 @ 0x2012f0:
-    unsupported: Movsd at 0x2012f4
-    unsupported: Movsd at 0x2012f9
-    unsupported: Movsd at 0x2012fe
-    unsupported: Movsd at 0x201303
+    store64(xmm0, (rsp + #0xfffffffffffffff0))
+    store64(xmm1, (rsp + #0xffffffffffffffe8))
+    xmm1 = xmm0
+    xmm1_hi = #0x0
+    xmm0 = load64((rsp + #0xffffffffffffffe8))
+    xmm0_hi = #0x0
     unsupported: Ucomisd at 0x201308
     brif ls -> 0x20131f
   blk1 @ 0x201312:
     store32(#0xffffffff, (rsp + #0xffffffffffffffe4))
     br 0x20133a
   blk2 @ 0x20131f:
-    unsupported: Movsd at 0x20131f
-    unsupported: Movsd at 0x201324
+    xmm0 = load64((rsp + #0xfffffffffffffff0))
+    xmm0_hi = #0x0
+    xmm1 = load64((rsp + #0xffffffffffffffe8))
+    xmm1_hi = #0x0
     rax = #0x0
     rcx = #0x1
     unsupported: Ucomisd at 0x201330
@@ -191,4 +239,4 @@ fn <unnamed> @ 0x2012f0 (size 79)
   blk3 @ 0x20133a:
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card
-{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":79,"sizeEstimated":true,"unsupported":8}
+{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":79,"sizeEstimated":true,"unsupported":2}

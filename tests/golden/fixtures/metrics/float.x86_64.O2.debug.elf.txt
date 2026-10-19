@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O2.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 9 unsupported, 2 gotos
+# metrics/float.x86_64.O2.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 8 unsupported, 2 gotos
 0x2011b0 161 average symtab,dwarf
 0x201260 13 lerp symtab,dwarf
 0x201270 5 truncate_to_int symtab,dwarf
@@ -9,7 +9,10 @@
 -- decompile
 /* velk pseudo-C: average @ 0x2011b0 */
 double average(double *values, int n) {
-    /* unsupported (2 steps): Xorpd at 0x2011b0, Xorpd at 0x2011b4 */
+    xmm0 = 0x0;
+    xmm0_hi = 0x0;
+    xmm1 = 0x0;
+    xmm1_hi = 0x0;
     if (n <= 0x0) { goto L_20123d; }
     rdx = n;
     rax = rdx & 0x7;
@@ -32,9 +35,13 @@ double average(double *values, int n) {
     } while (rax != rdx);
 L_20123d:
     if (n > 0x0) {
-        /* unsupported (4 steps): Xorps at 0x201241, Cvtsi2sd at 0x201244, Divsd at 0x201248, Movapd at 0x20124c */
+        xmm0 = 0x0;
+        xmm0_hi = 0x0;
+        /* unsupported (2 steps): Cvtsi2sd at 0x201244, Divsd at 0x201248 */
+        xmm0 = xmm1;
+        xmm0_hi = xmm1_hi;
     }
-    return eax;
+    return xmm0;
 }
 -- signature
 double (double * values, int n)
@@ -43,8 +50,10 @@ double (double * values, int n)
 -- ir
 fn average @ 0x2011b0 (size 161)
   blk0 @ 0x2011b0:
-    unsupported: Xorpd at 0x2011b0
-    unsupported: Xorpd at 0x2011b4
+    xmm0 = #0x0
+    xmm0_hi = #0x0
+    xmm1 = #0x0
+    xmm1_hi = #0x0
     brif le esi, #0x0 -> 0x20123d
   blk1 @ 0x2011c0:
     rdx = esi
@@ -79,21 +88,23 @@ fn average @ 0x2011b0 (size 161)
   blk8 @ 0x20123d:
     brif le esi, #0x0 -> 0x201250
   blk9 @ 0x201241:
-    unsupported: Xorps at 0x201241
+    xmm0 = #0x0
+    xmm0_hi = #0x0
     unsupported: Cvtsi2sd at 0x201244
     unsupported: Divsd at 0x201248
-    unsupported: Movapd at 0x20124c
+    xmm0 = xmm1
+    xmm0_hi = xmm1_hi
   blk10 @ 0x201250:
-    ret eax
+    ret xmm0
 -- card
-{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":161,"unsupported":15}
+{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":161,"unsupported":11}
 
 == 0x201260 lerp
 -- decompile
 /* velk pseudo-C: lerp @ 0x201260 */
 float lerp(void) {
     /* unsupported (3 steps): Subss at 0x201260, Mulss at 0x201264, Addss at 0x201268 */
-    return rax;
+    return xmm0;
 }
 -- signature
 float ()
@@ -105,7 +116,7 @@ fn lerp @ 0x201260 (size 13)
     unsupported: Subss at 0x201260
     unsupported: Mulss at 0x201264
     unsupported: Addss at 0x201268
-    ret rax
+    ret xmm0
 -- card
 {"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":3}
 
@@ -133,7 +144,7 @@ fn truncate_to_int @ 0x201270 (size 5)
 /* velk pseudo-C: widen @ 0x201280 */
 double widen(void) {
     /* unsupported (2 steps): Cvtss2sd at 0x201280, Addsd at 0x201284 */
-    return rax;
+    return xmm0;
 }
 -- signature
 double ()
@@ -144,7 +155,7 @@ fn widen @ 0x201280 (size 9)
   blk0 @ 0x201280:
     unsupported: Cvtss2sd at 0x201280
     unsupported: Addsd at 0x201284
-    ret rax
+    ret xmm0
 -- card
 {"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":9,"unsupported":2}
 

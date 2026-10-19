@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O2.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 9 unsupported, 2 gotos
+# metrics/float.x86_64.O2.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 8 unsupported, 2 gotos
 0x2011b0 176 - prologue
 0x201260 16 - prologue
 0x201270 16 - prologue
@@ -9,7 +9,10 @@
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
 int32_t sub_2011b0(uint64_t a0, int32_t a1) {
-    /* unsupported (2 steps): Xorpd at 0x2011b0, Xorpd at 0x2011b4 */
+    xmm0 = 0x0;
+    xmm0_hi = 0x0;
+    xmm1 = 0x0;
+    xmm1_hi = 0x0;
     if (a1 <= 0x0) { goto L_20123d; }
     rdx = a1;
     rax = rdx & 0x7;
@@ -32,7 +35,11 @@ int32_t sub_2011b0(uint64_t a0, int32_t a1) {
     } while (rax != rdx);
 L_20123d:
     if (a1 > 0x0) {
-        /* unsupported (4 steps): Xorps at 0x201241, Cvtsi2sd at 0x201244, Divsd at 0x201248, Movapd at 0x20124c */
+        xmm0 = 0x0;
+        xmm0_hi = 0x0;
+        /* unsupported (2 steps): Cvtsi2sd at 0x201244, Divsd at 0x201248 */
+        xmm0 = xmm1;
+        xmm0_hi = xmm1_hi;
     }
     return eax;
 }
@@ -43,8 +50,10 @@ int32_t (uint64_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2011b0 (size 176)
   blk0 @ 0x2011b0:
-    unsupported: Xorpd at 0x2011b0
-    unsupported: Xorpd at 0x2011b4
+    xmm0 = #0x0
+    xmm0_hi = #0x0
+    xmm1 = #0x0
+    xmm1_hi = #0x0
     brif le esi, #0x0 -> 0x20123d
   blk1 @ 0x2011c0:
     rdx = esi
@@ -79,14 +88,16 @@ fn <unnamed> @ 0x2011b0 (size 176)
   blk8 @ 0x20123d:
     brif le esi, #0x0 -> 0x201250
   blk9 @ 0x201241:
-    unsupported: Xorps at 0x201241
+    xmm0 = #0x0
+    xmm0_hi = #0x0
     unsupported: Cvtsi2sd at 0x201244
     unsupported: Divsd at 0x201248
-    unsupported: Movapd at 0x20124c
+    xmm0 = xmm1
+    xmm0_hi = xmm1_hi
   blk10 @ 0x201250:
     ret eax
 -- card
-{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":176,"sizeEstimated":true,"unsupported":15}
+{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":176,"sizeEstimated":true,"unsupported":11}
 
 == 0x201260 -
 -- decompile

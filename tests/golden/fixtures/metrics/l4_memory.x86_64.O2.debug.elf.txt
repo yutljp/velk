@@ -1,4 +1,4 @@
-# metrics/l4_memory.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 0 gotos
+# metrics/l4_memory.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
 0x2011e0 15 point_dot symtab,dwarf
 0x2011f0 140 array_sum symtab,dwarf
 0x201280 7 bump symtab,dwarf
@@ -36,14 +36,22 @@ int array_sum(int *a, int n) {
     } else {
         rdx = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
-        /* unsupported: Pxor at 0x20121a */
+        xmm0 = 0x0;
+        xmm0_hi = 0x0;
         n = 0x0;
-        /* unsupported: Pxor at 0x201220 */
+        xmm1d = 0x0;
+        xmm1_hi = 0x0;
         do {
-            /* unsupported (4 steps): Movdqu at 0x201230, Paddd at 0x201235, Movdqu at 0x201239, Paddd at 0x20123f */
+            xmm2 = *(uint64_t *)(a + n);
+            xmm2_hi = *(uint64_t *)(a + n + 0x8);
+            /* unsupported: Paddd at 0x201235 */
+            xmm2 = *(uint64_t *)(a + n + 0x10);
+            xmm2_hi = *(uint64_t *)(a + n + 0x18);
+            /* unsupported: Paddd at 0x20123f */
             n = n + 0x20;
         } while (rax != n);
-        /* unsupported (6 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e, Movd at 0x201262 */
+        /* unsupported (5 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e */
+        rax = xmm1d;
         if (rdx == rcx) {
             return rax;
         }
@@ -74,13 +82,17 @@ fn array_sum @ 0x2011f0 (size 140)
   blk4 @ 0x201204:
     rdx = (rcx & #0x7ffffff8)
     rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
-    unsupported: Pxor at 0x20121a
+    xmm0 = #0x0
+    xmm0_hi = #0x0
     rsi = #0x0
-    unsupported: Pxor at 0x201220
+    xmm1 = #0x0
+    xmm1_hi = #0x0
   blk5 @ 0x201230:
-    unsupported: Movdqu at 0x201230
+    xmm2 = load64((rdi + rsi))
+    xmm2_hi = load64(((rdi + rsi) + #0x8))
     unsupported: Paddd at 0x201235
-    unsupported: Movdqu at 0x201239
+    xmm2 = load64(((rdi + rsi) + #0x10))
+    xmm2_hi = load64(((rdi + rsi) + #0x18))
     unsupported: Paddd at 0x20123f
     rsi = (rsi + #0x20)
     brif ne rax, rsi -> 0x201230
@@ -90,7 +102,7 @@ fn array_sum @ 0x2011f0 (size 140)
     unsupported: Paddd at 0x201255
     unsupported: Pshufd at 0x201259
     unsupported: Paddd at 0x20125e
-    unsupported: Movd at 0x201262
+    rax = (xmm1 & #0xffffffff)
     brif eq rdx, rcx -> 0x20127b
   blk7 @ 0x201270:
     rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)
@@ -99,7 +111,7 @@ fn array_sum @ 0x2011f0 (size 140)
   blk8 @ 0x20127b:
     ret rax
 -- card
-{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":12}
+{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":7}
 
 == 0x201280 bump
 -- decompile

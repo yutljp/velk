@@ -56,10 +56,20 @@ impl Convention {
             Self::Aapcs64 => &[
                 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
             ],
-            Self::SysV => &[0, 1, 2, 6, 7, 8, 9, 10, 11],
-            Self::Win64 => &[0, 1, 2, 8, 9, 10, 11],
+            // And every xmm register.
+            Self::SysV => &[
+                0, 1, 2, 6, 7, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+                31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+            ],
+            // And xmm0 to xmm5.
+            Self::Win64 => &[
+                0, 1, 2, 8, 9, 10, 11, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+            ],
             // Everything but rsp, rbp, r14 (the goroutine) and r15.
-            Self::GoAmd64 => &[0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13],
+            Self::GoAmd64 => &[
+                0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+                29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+            ],
         }
     }
 }
@@ -335,9 +345,12 @@ fn operator(op: BinOp) -> &'static str {
 
 use crate::loader::Isa;
 
-const X86_NAMES64: [&str; 18] = [
+const X86_NAMES64: [&str; 50] = [
     "rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13",
-    "r14", "r15", "fs_base", "gs_base",
+    "r14", "r15", "fs_base", "gs_base", "xmm0", "xmm0_hi", "xmm1", "xmm1_hi", "xmm2", "xmm2_hi",
+    "xmm3", "xmm3_hi", "xmm4", "xmm4_hi", "xmm5", "xmm5_hi", "xmm6", "xmm6_hi", "xmm7", "xmm7_hi",
+    "xmm8", "xmm8_hi", "xmm9", "xmm9_hi", "xmm10", "xmm10_hi", "xmm11", "xmm11_hi", "xmm12",
+    "xmm12_hi", "xmm13", "xmm13_hi", "xmm14", "xmm14_hi", "xmm15", "xmm15_hi",
 ];
 
 /// Register indices from here up are per-function CSE temporaries, printed as

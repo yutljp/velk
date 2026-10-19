@@ -45,6 +45,15 @@ impl CType {
         matches!(self, CType::Pointer(_))
     }
 
+    /// True for `float` and `double`, which SSE registers carry.
+    pub fn is_sse_float(&self) -> bool {
+        let CType::Named(name) = self else {
+            return false;
+        };
+        let words: Vec<&str> = name.split_whitespace().collect();
+        (words.contains(&"float") || words.contains(&"double")) && !words.contains(&"long")
+    }
+
     pub fn is_32_bit_int(&self) -> bool {
         matches!(self, CType::Int { bytes: 4, .. })
     }

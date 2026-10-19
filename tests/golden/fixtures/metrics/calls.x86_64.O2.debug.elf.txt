@@ -122,6 +122,12 @@ fn apply_pointer @ 0x201360 (size 12)
 == 0x201370 factorial
 -- decompile
 /* velk pseudo-C: factorial @ 0x201370 */
+/* ref: 0x2001a0 .rodata */
+/* ref: 0x2001a8 .rodata */
+/* ref: 0x2001b0 .rodata */
+/* ref: 0x2001b8 .rodata */
+/* ref: 0x2001c0 .rodata */
+/* ref: 0x2001c8 .rodata */
 int factorial(int n) {
     rax = 0x1;
     if (n < 0x2) {
@@ -130,16 +136,36 @@ int factorial(int n) {
     if (n < 0x9 /* unsigned */) { goto L_201450; }
     ecx = n - 0x1;
     edx = ecx & 0xfffffffffffffff8;
-    /* unsupported: Movd at 0x20138f */
+    xmm0 = n;
+    xmm0_hi = 0x0;
     n = n - edx;
-    /* unsupported (5 steps): Pshufd at 0x201395, Paddd at 0x20139a, Movdqa at 0x2013a2, Movdqa at 0x2013aa, Movdqa at 0x2013b2 */
+    /* unsupported (2 steps): Pshufd at 0x201395, Paddd at 0x20139a */
+    xmm1 = qword_2001a0;
+    xmm1_hi = qword_2001a8;
+    xmm2 = qword_2001c0;
+    xmm2_hi = qword_2001c8;
+    xmm4 = qword_2001b0;
+    xmm4_hi = qword_2001b8;
     rax = edx;
-    /* unsupported: Movdqa at 0x2013bc */
+    xmm3 = xmm1;
+    xmm3_hi = xmm1_hi;
     do {
-        /* unsupported (20 steps): Movdqa at 0x2013c0, Paddd at 0x2013c4, Movdqa at 0x2013c8, Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3, Movdqa at 0x2013e8, Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407, Movdqa at 0x20140c, Punpckldq at 0x201410, Paddd at 0x201414 */
+        xmm5 = xmm0;
+        xmm5_hi = xmm0_hi;
+        /* unsupported: Paddd at 0x2013c4 */
+        xmm6 = xmm0;
+        xmm6_hi = xmm0_hi;
+        /* unsupported (6 steps): Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3 */
+        xmm1 = xmm6;
+        xmm1_hi = xmm6_hi;
+        /* unsupported (7 steps): Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407 */
+        xmm3 = xmm5;
+        xmm3_hi = xmm5_hi;
+        /* unsupported (2 steps): Punpckldq at 0x201410, Paddd at 0x201414 */
         rax = ((eax - 0x8) & 0xffffffff);
     } while (eax != 0x0);
-    /* unsupported (10 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441, Movd at 0x201445 */
+    /* unsupported (9 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441 */
+    rax = xmm1d;
     if (ecx == edx) {
         return rax;
     }
@@ -155,7 +181,12 @@ L_201450:
 -- signature
 int (int n)
 -- references
-
+0x2001a0 .rodata
+0x2001a8 .rodata
+0x2001b0 .rodata
+0x2001b8 .rodata
+0x2001c0 .rodata
+0x2001c8 .rodata
 -- ir
 fn factorial @ 0x201370 (size 238)
   blk0 @ 0x201370:
@@ -166,26 +197,34 @@ fn factorial @ 0x201370 (size 238)
   blk2 @ 0x201387:
     ecx = (rdi + #0xffffffffffffffff)
     edx = (ecx & #0xfffffffffffffff8)
-    unsupported: Movd at 0x20138f
+    xmm0 = (rdi & #0xffffffff)
+    xmm0_hi = #0x0
     rdi = (((rdi & #0xffffffff) - edx) & #0xffffffff)
     unsupported: Pshufd at 0x201395
     unsupported: Paddd at 0x20139a
-    unsupported: Movdqa at 0x2013a2
-    unsupported: Movdqa at 0x2013aa
-    unsupported: Movdqa at 0x2013b2
+    xmm1 = load64(#0x2001a0)
+    xmm1_hi = load64(#0x2001a8)
+    xmm2 = load64(#0x2001c0)
+    xmm2_hi = load64(#0x2001c8)
+    xmm4 = load64(#0x2001b0)
+    xmm4_hi = load64(#0x2001b8)
     rax = edx
-    unsupported: Movdqa at 0x2013bc
+    xmm3 = xmm1
+    xmm3_hi = xmm1_hi
   blk3 @ 0x2013c0:
-    unsupported: Movdqa at 0x2013c0
+    xmm5 = xmm0
+    xmm5_hi = xmm0_hi
     unsupported: Paddd at 0x2013c4
-    unsupported: Movdqa at 0x2013c8
+    xmm6 = xmm0
+    xmm6_hi = xmm0_hi
     unsupported: Pmuludq at 0x2013cc
     unsupported: Pshufd at 0x2013d0
     unsupported: Pshufd at 0x2013d5
     unsupported: Pshufd at 0x2013da
     unsupported: Pmuludq at 0x2013df
     unsupported: Pshufd at 0x2013e3
-    unsupported: Movdqa at 0x2013e8
+    xmm1 = xmm6
+    xmm1_hi = xmm6_hi
     unsupported: Punpckldq at 0x2013ec
     unsupported: Pshufd at 0x2013f0
     unsupported: Pmuludq at 0x2013f5
@@ -193,7 +232,8 @@ fn factorial @ 0x201370 (size 238)
     unsupported: Pshufd at 0x2013fe
     unsupported: Pmuludq at 0x201403
     unsupported: Pshufd at 0x201407
-    unsupported: Movdqa at 0x20140c
+    xmm3 = xmm5
+    xmm3_hi = xmm5_hi
     unsupported: Punpckldq at 0x201410
     unsupported: Paddd at 0x201414
     rax = (((rax & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
@@ -208,7 +248,7 @@ fn factorial @ 0x201370 (size 238)
     unsupported: Pshufd at 0x201438
     unsupported: Pmuludq at 0x20143d
     unsupported: Pmuludq at 0x201441
-    unsupported: Movd at 0x201445
+    rax = (xmm1 & #0xffffffff)
     brif eq ecx, edx -> 0x20145d
   blk5 @ 0x201450:
     rax = (((rax & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
@@ -219,7 +259,7 @@ fn factorial @ 0x201370 (size 238)
   blk6 @ 0x20145d:
     ret rax
 -- card
-{"addr":"0x201370","approxTokens":240,"blocks":7,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":238,"unsupported":37}
+{"addr":"0x201370","approxTokens":240,"blocks":7,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":238,"unsupported":27}
 
 == 0x201460 is_odd
 -- decompile
@@ -345,9 +385,25 @@ int sum_varargs(int count, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, u
     uint64_t local_2; /* [sp-a0] */
     uint64_t local_3; /* [sp-98] */
     uint64_t local_4; /* [sp-90] */
-    uint64_t local_5; /* [sp-c8] */
-    uint64_t local_6; /* [sp-d0] */
-    uint64_t local_7; /* [sp-d8] */
+    uint64_t local_5; /* [sp-88] */
+    uint64_t local_6; /* [sp-80] */
+    uint64_t local_7; /* [sp-78] */
+    uint64_t local_8; /* [sp-70] */
+    uint64_t local_9; /* [sp-68] */
+    uint64_t local_10; /* [sp-60] */
+    uint64_t local_11; /* [sp-58] */
+    uint64_t local_12; /* [sp-50] */
+    uint64_t local_13; /* [sp-48] */
+    uint64_t local_14; /* [sp-40] */
+    uint64_t local_15; /* [sp-38] */
+    uint64_t local_16; /* [sp-30] */
+    uint64_t local_17; /* [sp-28] */
+    uint64_t local_18; /* [sp-20] */
+    uint64_t local_19; /* [sp-18] */
+    uint64_t local_20; /* [sp-10] */
+    uint64_t local_21; /* [sp-c8] */
+    uint64_t local_22; /* [sp-d0] */
+    uint64_t local_23; /* [sp-d8] */
 
     rsp = rsp - 0x58;
     local_0 = a1;
@@ -356,18 +412,33 @@ int sum_varargs(int count, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, u
     local_3 = a4;
     local_4 = a5;
     if ((rax & 0xff) != 0x0) {
-        /* unsupported (8 steps): Movaps at 0x201511, Movaps at 0x201516, Movaps at 0x20151b, Movaps at 0x201520, Movaps at 0x201524, Movaps at 0x201529, Movaps at 0x20152e, Movaps at 0x201533 */
+        local_5 = xmm0;
+        local_6 = xmm0_hi;
+        local_7 = xmm1;
+        local_8 = xmm1_hi;
+        local_9 = xmm2;
+        local_10 = xmm2_hi;
+        local_11 = xmm3;
+        local_12 = xmm3_hi;
+        local_13 = xmm4;
+        local_14 = xmm4_hi;
+        local_15 = xmm5;
+        local_16 = xmm5_hi;
+        local_17 = xmm6;
+        local_18 = xmm6_hi;
+        local_19 = xmm7;
+        local_20 = xmm7_hi;
     }
-    local_5 = rsp - 0x60;
-    local_6 = rsp + 0x60;
-    local_7 = 0x3000000008;
+    local_21 = rsp - 0x60;
+    local_22 = rsp + 0x60;
+    local_23 = 0x3000000008;
     if (count <= 0x0) {
         rsp = rsp + 0x58;
         return 0x0;
     }
-    a2 = *(uint32_t *)&local_7;
-    a3 = local_5;
-    a1 = local_6;
+    a2 = *(uint32_t *)&local_23;
+    a3 = local_21;
+    a1 = local_22;
     if (count != 0x1) { goto L_20159b; }
     rax = 0x0;
 L_201574:
@@ -377,7 +448,7 @@ L_201574:
     }
     if (a2 >= 0x29 /* unsigned */) { goto L_2015fb; }
     a3 = a3 + a2;
-    *(uint32_t *)&local_7 = a2 + 0x8;
+    *(uint32_t *)&local_23 = a2 + 0x8;
     a1 = a3;
     rax = eax + *(uint32_t *)(a1);
     rsp = rsp + 0x58;
@@ -390,7 +461,7 @@ L_2015b0:
     a1 = a5;
     a5 = a2 + a3;
     a2 = a2 + 0x8;
-    *(uint32_t *)&local_7 = a2;
+    *(uint32_t *)&local_23 = a2;
 L_2015c0:
     rax = eax + *(uint32_t *)(a5);
     a4 = ((a4 - 0x2) & 0xffffffff);
@@ -400,18 +471,18 @@ L_2015c9:
         a5 = a1;
         a1 = a2 + a3;
         a2 = a2 + 0x8;
-        *(uint32_t *)&local_7 = a2;
+        *(uint32_t *)&local_23 = a2;
     } else {
         a5 = a1 + 0x8;
-        local_6 = a5;
+        local_22 = a5;
     }
     rax = eax + *(uint32_t *)(a1);
     if (a2 < 0x29 /* unsigned */) { goto L_2015b0; }
     a1 = a5 + 0x8;
-    local_6 = a1;
+    local_22 = a1;
     goto L_2015c0;
 L_2015fb:
-    local_6 = a1 + 0x8;
+    local_22 = a1 + 0x8;
     rax = eax + *(uint32_t *)(a1);
     rsp = rsp + 0x58;
     return rax;
@@ -431,14 +502,22 @@ fn sum_varargs @ 0x2014f0 (size 283)
     store64(r9, (rsp + #0xffffffffffffffc8))
     brif eq (rax & #0xff), #0x0 -> 0x201538
   blk1 @ 0x201511:
-    unsupported: Movaps at 0x201511
-    unsupported: Movaps at 0x201516
-    unsupported: Movaps at 0x20151b
-    unsupported: Movaps at 0x201520
-    unsupported: Movaps at 0x201524
-    unsupported: Movaps at 0x201529
-    unsupported: Movaps at 0x20152e
-    unsupported: Movaps at 0x201533
+    store64(xmm0, (rsp + #0xffffffffffffffd0))
+    store64(xmm0_hi, (rsp + #0xffffffffffffffd8))
+    store64(xmm1, (rsp + #0xffffffffffffffe0))
+    store64(xmm1_hi, (rsp + #0xffffffffffffffe8))
+    store64(xmm2, (rsp + #0xfffffffffffffff0))
+    store64(xmm2_hi, (rsp + #0xfffffffffffffff8))
+    store64(xmm3, rsp)
+    store64(xmm3_hi, (rsp + #0x8))
+    store64(xmm4, (rsp + #0x10))
+    store64(xmm4_hi, (rsp + #0x18))
+    store64(xmm5, (rsp + #0x20))
+    store64(xmm5_hi, (rsp + #0x28))
+    store64(xmm6, (rsp + #0x30))
+    store64(xmm6_hi, (rsp + #0x38))
+    store64(xmm7, (rsp + #0x40))
+    store64(xmm7_hi, (rsp + #0x48))
   blk2 @ 0x201538:
     store64((rsp + #0xffffffffffffffa0), (rsp + #0xffffffffffffff90))
     store64((rsp + #0x60), (rsp + #0xffffffffffffff88))
@@ -502,4 +581,4 @@ fn sum_varargs @ 0x2014f0 (size 283)
     rsp = (rsp + #0x58)
     ret rax
 -- card
-{"addr":"0x2014f0","approxTokens":240,"blocks":20,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":283,"unsupported":8}
+{"addr":"0x2014f0","approxTokens":240,"blocks":20,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":283,"unsupported":0}

@@ -1,6 +1,5 @@
 use crate::arch;
 use crate::ir::{CType, FunctionIr};
-use crate::loader::Image;
 
 pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collections::HashSet<u16>) {
     // A register only ever written, or only ever read, at 32 bits holds a 32-bit value.
@@ -469,8 +468,11 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
     ir.ret_type = CType::int(bytes, false);
 }
 
-pub(crate) fn apply_dwarf_types(image: &Image, addr: u64, ir: &mut FunctionIr) {
-    let Some(types) = crate::loader::dwarf::function_types(image, addr) else {
+pub(crate) fn apply_dwarf_types(
+    types: Option<crate::loader::dwarf::FunctionTypes>,
+    ir: &mut FunctionIr,
+) {
+    let Some(types) = types else {
         return;
     };
     ir.members = types.members;

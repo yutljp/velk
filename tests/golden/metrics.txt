@@ -14,7 +14,7 @@ parameter count | x86_64.O2 | 136/144
 parameter pointer | aarch64.O0 | 144/173
 parameter pointer | aarch64.O2 | 156/164
 parameter pointer | x86_64.O0 | 143/172
-parameter pointer | x86_64.O2 | 155/167
+parameter pointer | x86_64.O2 | 157/167
 parameter width | aarch64.O0 | 138/144
 parameter width | aarch64.O2 | 128/137
 parameter width | x86_64.O0 | 137/143
@@ -55,7 +55,7 @@ arith_mixed.x86_64.O0 0x201250 sum_arr: parameter 0 is an unsigned 8-byte intege
 arith_mixed.x86_64.O2 0x201190 sum3: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
 arith_mixed.x86_64.O2 0x2011a0 helper: ok
 arith_mixed.x86_64.O2 0x2011d0 pair_sum: ok
-arith_mixed.x86_64.O2 0x2011e0 sum_arr: parameter 0 is an unsigned 4-byte integer, expected a pointer; parameter 1 is 8 bytes, expected 4
+arith_mixed.x86_64.O2 0x2011e0 sum_arr: parameter 1 is 8 bytes, expected 4
 calls.aarch64.O0 0x21031c twice: parameter 0 signedness differs
 calls.aarch64.O0 0x210334 square: parameter 0 signedness differs
 calls.aarch64.O0 0x210350 pick_op: parameter 0 signedness differs
@@ -418,7 +418,7 @@ l4_memory.x86_64.O0 0x201240 array_sum: parameter 0 is an unsigned 8-byte intege
 l4_memory.x86_64.O0 0x201290 bump: returns uint32_t, expected void
 l4_memory.x86_64.O0 0x2012b0 banner_first: ok
 l4_memory.x86_64.O2 0x2011e0 point_dot: parameter 0 is an unsigned 4-byte integer, expected a pointer
-l4_memory.x86_64.O2 0x2011f0 array_sum: parameter 0 is an unsigned 4-byte integer, expected a pointer; parameter 1 is 8 bytes, expected 4
+l4_memory.x86_64.O2 0x2011f0 array_sum: parameter 1 is 8 bytes, expected 4
 l4_memory.x86_64.O2 0x201280 bump: ok
 l4_memory.x86_64.O2 0x201290 banner_first: ok
 l5_switch.aarch64.O0 0x210334 dense: parameter 0 signedness differs

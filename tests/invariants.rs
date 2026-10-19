@@ -299,8 +299,12 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
         // x8 the indirect result address, x19-x28 callee-saved, x29 frame,
         // x30 link, 31 stack.
         Isa::AArch64 => &[8, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
-        // rbx, rsp, rbp, r12-r15, and the fs and gs segment bases.
-        Isa::X86_64 => &[3, 4, 5, 12, 13, 14, 15, 16, 17],
+        // rbx, rsp, rbp, r12-r15, the fs and gs segment bases, and xmm0-xmm7,
+        // which carry floating-point arguments.
+        Isa::X86_64 => &[
+            3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33,
+        ],
         Isa::Unsupported => &[],
     };
     read.retain(|register| !written.contains(register) && !exempt.contains(register));

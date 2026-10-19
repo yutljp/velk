@@ -191,6 +191,135 @@ fn memory_address(ins: &Instruction) -> Option<Expr> {
     }
 }
 
+/// The slot holding the low half of an xmm register.
+fn xmm(reg: Register) -> Option<u16> {
+    (reg.is_xmm() && reg.number() < 16).then(|| crate::arch::x86::XMM0 + 2 * reg.number() as u16)
+}
+
+fn load_at(addr: Expr, width: u8) -> Expr {
+    Expr::Load {
+        addr: Box::new(addr),
+        width,
+        signed: false,
+    }
+}
+
+/// The SSE moves and bitwise operations, on the 64-bit halves of each xmm
+/// register. None, with nothing lifted, for any other instruction.
+fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+    use Mnemonic::*;
+    let destination = xmm(ins.op0_register());
+    let source = xmm(ins.op1_register());
+    let address = || memory_address(ins);
+    let offset = |addr: Expr| Expr::bin(BinOp::Add, addr, Expr::constant(8));
+    let low = |slot: u16| Lifter::read_reg(slot, 64);
+    let store = |lifter: &mut Lifter, addr: Expr, value: Expr, width: u8| {
+        preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
+        lifter.stmts.push(Stmt::Store { addr, value, width });
+    };
+    match (ins.mnemonic(), ins.op0_kind(), ins.op1_kind()) {
+        (
+            Movups | Movaps | Movupd | Movapd | Movdqu | Movdqa,
+            OpKind::Register,
+            OpKind::Register,
+        ) => {
+            let (to, from) = (destination?, source?);
+            lifter.assign(to, 64, low(from));
+            lifter.assign(to + 1, 64, low(from + 1));
+        }
+        (Movups | Movaps | Movupd | Movapd | Movdqu | Movdqa, OpKind::Register, OpKind::Memory) => {
+            let (to, addr) = (destination?, address()?);
+            lifter.assign(to, 64, load_at(addr.clone(), 8));
+            lifter.assign(to + 1, 64, load_at(offset(addr), 8));
+        }
+        (Movups | Movaps | Movupd | Movapd | Movdqu | Movdqa, OpKind::Memory, OpKind::Register) => {
+            let (from, addr) = (source?, address()?);
+            store(lifter, addr.clone(), low(from), 8);
+            store(lifter, offset(addr), low(from + 1), 8);
+        }
+        (Xorps | Xorpd | Pxor | Andps | Andpd | Pand | Orps | Orpd | Por, OpKind::Register, _) => {
+            let to = destination?;
+            let op = match ins.mnemonic() {
+                Xorps | Xorpd | Pxor => BinOp::Xor,
+                Andps | Andpd | Pand => BinOp::And,
+                _ => BinOp::Or,
+            };
+            let (first, second) = match ins.op1_kind() {
+                OpKind::Register => {
+                    let from = source?;
+                    (low(from), low(from + 1))
+                }
+                OpKind::Memory => {
+                    let addr = address()?;
+                    (load_at(addr.clone(), 8), load_at(offset(addr), 8))
+                }
+                _ => return None,
+            };
+            let cleared =
+                op == BinOp::Xor && ins.op1_kind() == OpKind::Register && source == destination;
+            let combine = |slot: u16, value: Expr| {
+                if cleared {
+                    Expr::constant(0)
+                } else {
+                    Expr::bin(op, low(slot), value)
+                }
+            };
+            let (first, second) = (combine(to, first), combine(to + 1, second));
+            lifter.assign(to, 64, first);
+            lifter.assign(to + 1, 64, second);
+        }
+        // A scalar load clears the rest of the register; a move between
+        // registers keeps it.
+        (Movq | Movd | Movsd | Movss, OpKind::Register, OpKind::Register | OpKind::Memory)
+            if destination.is_some() =>
+        {
+            let to = destination?;
+            let width = match ins.mnemonic() {
+                Movd | Movss => 4,
+                _ => 8,
+            };
+            let value = match (ins.op1_kind(), source) {
+                (OpKind::Memory, _) => load_at(address()?, width),
+                (_, Some(from)) => Lifter::read_reg(from, width * 8),
+                (_, None) => operand(lifter, ins, 1)?,
+            };
+            let keeps = source.is_some() && matches!(ins.mnemonic(), Movsd | Movss);
+            let value = if keeps && width == 4 {
+                Expr::bin(
+                    BinOp::Or,
+                    Expr::bin(BinOp::And, low(to), Expr::constant(!0xffff_ffff)),
+                    value,
+                )
+            } else {
+                value
+            };
+            lifter.assign(to, 64, value);
+            if !keeps {
+                lifter.assign(to + 1, 64, Expr::constant(0));
+            }
+        }
+        (Movq | Movd | Movsd | Movss, OpKind::Register | OpKind::Memory, OpKind::Register)
+            if source.is_some() =>
+        {
+            let from = source?;
+            let width = match ins.mnemonic() {
+                Movd | Movss => 4,
+                _ => 8,
+            };
+            let value = Lifter::read_reg(from, width * 8);
+            match ins.op0_kind() {
+                OpKind::Memory => store(lifter, address()?, value, width),
+                _ => {
+                    let (index, register_width) = gpr(ins.op0_register())?;
+                    lifter.assign(index, register_width, value);
+                }
+            }
+        }
+        _ => return None,
+    }
+    Some(())
+}
+
 fn load(ins: &Instruction) -> Option<Expr> {
     Some(Expr::Load {
         addr: Box::new(memory_address(ins)?),
@@ -289,7 +418,7 @@ fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
 
 fn select(lifter: &mut Lifter, ins: &Instruction, then: Expr, els: Expr) -> Option<Expr> {
     let cond = condition(ins.condition_code())?;
-    let (lhs, rhs) = lifter.last_compare.take()?;
+    let (lhs, rhs) = lifter.last_compare.clone()?;
     Some(Expr::Select {
         cond,
         lhs: Box::new(lhs),
@@ -455,6 +584,10 @@ fn lift_instruction(
         };
         let value = Expr::bin(BinOp::And, value, Expr::constant((1u64 << bits) - 1));
         write_destination(lifter, ins, value);
+        return false;
+    }
+
+    if lift_vector(lifter, ins).is_some() {
         return false;
     }
 

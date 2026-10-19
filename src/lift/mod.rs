@@ -443,6 +443,31 @@ mod tests {
     }
 
     #[test]
+    fn moves_after_one_compare_all_test_it() {
+        // mov ecx, 9; cmp edi, esi; cmovl eax, ecx; cmovl eax, edx; ret
+        let code = vec![
+            0xb9, 0x09, 0x00, 0x00, 0x00, 0x39, 0xf7, 0x0f, 0x4c, 0xc1, 0x0f, 0x4c, 0xc2, 0xc3,
+        ];
+        assert_eq!(returns(Isa::X86_64, code, &[(7, 1), (6, 2), (2, 4)]), 4);
+    }
+
+    #[test]
+    fn vector_moves_copy_both_halves() {
+        // movups xmm0, [rdi]; movups [rsi], xmm0; mov rax, [rsi + 8]; ret
+        let code = vec![
+            0x0f, 0x10, 0x07, 0x0f, 0x11, 0x06, 0x48, 0x8b, 0x46, 0x08, 0xc3,
+        ];
+        let registers = [(7, 0x100), (6, 0x200)];
+        assert_eq!(
+            returns_with(Isa::X86_64, code, &registers, &[(0x108, 0x55)]),
+            0x55
+        );
+        // xorps xmm0, xmm0; movq rax, xmm0; ret
+        let code = vec![0x0f, 0x57, 0xc0, 0x66, 0x48, 0x0f, 0x7e, 0xc0, 0xc3];
+        assert_eq!(returns(Isa::X86_64, code, &[(18, 5)]), 0);
+    }
+
+    #[test]
     fn pop_reads_the_slot_push_wrote() {
         // push rbx; pop rax; ret
         assert_eq!(returns(Isa::X86_64, vec![0x53, 0x58, 0xc3], &[(3, 7)]), 7);

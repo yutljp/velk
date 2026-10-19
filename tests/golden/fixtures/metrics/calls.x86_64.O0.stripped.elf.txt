@@ -1,4 +1,4 @@
-# metrics/calls.x86_64.O0.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 1 unsupported, 0 gotos
+# metrics/calls.x86_64.O0.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201310 16 - prologue
 0x201320 16 - prologue
 0x201330 48 - prologue
@@ -322,63 +322,94 @@ fn <unnamed> @ 0x2014f0 (size 80)
 /* velk pseudo-C: sub_201540 @ 0x201540 */
 /* struct: a3 +0x0:uint32_t, +0x8:uint64_t */
 uint32_t sub_201540(uint32_t a0, uint64_t a1, uint32_t a2, uint32_t *a3, uint64_t a4, uint64_t a5) {
-    uint64_t local_0; /* [sp-c0] */
-    uint64_t local_1; /* [sp-c8] */
-    uint64_t local_2; /* [sp-d0] */
-    uint64_t local_3; /* [sp-d8] */
-    uint64_t local_4; /* [sp-e0] */
-    uint32_t local_5; /* [sp-c] */
-    uint32_t local_6; /* [sp-2c] */
-    uint32_t local_7; /* [sp-30] */
-    uint64_t local_8; /* [sp-f8] */
-    uint32_t local_9; /* [sp-ec] */
-    uint64_t local_10; /* [sp-100] */
+    uint64_t local_0; /* [sp-b8] */
+    uint64_t local_1; /* [sp-b0] */
+    uint64_t local_2; /* [sp-a8] */
+    uint64_t local_3; /* [sp-a0] */
+    uint64_t local_4; /* [sp-98] */
+    uint64_t local_5; /* [sp-90] */
+    uint64_t local_6; /* [sp-88] */
+    uint64_t local_7; /* [sp-80] */
+    uint64_t local_8; /* [sp-78] */
+    uint64_t local_9; /* [sp-70] */
+    uint64_t local_10; /* [sp-68] */
+    uint64_t local_11; /* [sp-60] */
+    uint64_t local_12; /* [sp-58] */
+    uint64_t local_13; /* [sp-50] */
+    uint64_t local_14; /* [sp-48] */
+    uint64_t local_15; /* [sp-40] */
+    uint64_t local_16; /* [sp-c0] */
+    uint64_t local_17; /* [sp-c8] */
+    uint64_t local_18; /* [sp-d0] */
+    uint64_t local_19; /* [sp-d8] */
+    uint64_t local_20; /* [sp-e0] */
+    uint32_t local_21; /* [sp-c] */
+    uint32_t local_22; /* [sp-2c] */
+    uint32_t local_23; /* [sp-30] */
+    uint64_t local_24; /* [sp-f8] */
+    uint32_t local_25; /* [sp-ec] */
+    uint64_t local_26; /* [sp-100] */
 
     rsp = rsp - 0x8;
     rsp = rsp - 0x80;
     if ((rax & 0xff) != 0x0) {
-        /* unsupported (8 steps): Movaps at 0x201553, Movaps at 0x20155a, Movaps at 0x201561, Movaps at 0x201568, Movaps at 0x20156c, Movaps at 0x201570, Movaps at 0x201574, Movaps at 0x201578 */
+        local_0 = xmm0;
+        local_1 = xmm0_hi;
+        local_2 = xmm1;
+        local_3 = xmm1_hi;
+        local_4 = xmm2;
+        local_5 = xmm2_hi;
+        local_6 = xmm3;
+        local_7 = xmm3_hi;
+        local_8 = xmm4;
+        local_9 = xmm4_hi;
+        local_10 = xmm5;
+        local_11 = xmm5_hi;
+        local_12 = xmm6;
+        local_13 = xmm6_hi;
+        local_14 = xmm7;
+        local_15 = xmm7_hi;
     }
-    local_0 = a5;
-    local_1 = a4;
-    local_2 = a3;
-    local_3 = a2;
-    local_4 = a1;
-    local_5 = a0;
+    local_16 = a5;
+    local_17 = a4;
+    local_18 = a3;
+    local_19 = a2;
+    local_20 = a1;
+    local_21 = a0;
     rax = rsp + 0x60;
     *(uint64_t *)(rax + 0x10) = rsp - 0x60;
     *(uint64_t *)(rax + 0x8) = rsp + 0x90;
     *(uint32_t *)(rax + 0x4) = 0x30;
     *(uint32_t *)(rax) = 0x8;
-    local_6 = 0x0;
-    local_7 = 0x0;
+    local_22 = 0x0;
+    local_23 = 0x0;
     for (;;) {
-        if (local_7 >= local_5) {
+        if (local_23 >= local_21) {
             rsp = rsp + 0x80;
             rsp = rsp + 0x8;
-            return local_6;
+            return local_22;
         }
-        local_8 = rsp + 0x60;
+        local_24 = rsp + 0x60;
         rax = *(uint32_t *)(rsp + 0x60);
-        local_9 = eax;
+        local_25 = eax;
         if (eax <= 0x28 /* unsigned */) {
-            a3 = local_8;
-            a2 = local_9;
+            a3 = local_24;
+            a2 = local_25;
             rax = (int64_t)(int32_t)(a2) + *(uint64_t *)(a3 + 0x10);
             a3->field_0x0 = a2 + 0x8;
-            local_10 = rax;
+            local_26 = rax;
         } else {
-            a3 = local_8;
+            a3 = local_24;
             rax = a3->field_0x8;
             a3->field_0x8 = rax + 0x8;
-            local_10 = rax;
+            local_26 = rax;
         }
-        local_6 += *(uint32_t *)(local_10);
-        local_7 += 0x1;
+        local_22 += *(uint32_t *)(local_26);
+        local_23 += 0x1;
     }
     rsp = rsp + 0x80;
     rsp = rsp + 0x8;
-    return local_6;
+    return local_22;
 }
 -- signature
 uint32_t (uint32_t a0, uint64_t a1, uint32_t a2, uint32_t * a3, uint64_t a4, uint64_t a5)
@@ -391,14 +422,22 @@ fn <unnamed> @ 0x201540 (size 296)
     rsp = (rsp - #0x80)
     brif eq (rax & #0xff), #0x0 -> 0x20157c
   blk1 @ 0x201553:
-    unsupported: Movaps at 0x201553
-    unsupported: Movaps at 0x20155a
-    unsupported: Movaps at 0x201561
-    unsupported: Movaps at 0x201568
-    unsupported: Movaps at 0x20156c
-    unsupported: Movaps at 0x201570
-    unsupported: Movaps at 0x201574
-    unsupported: Movaps at 0x201578
+    store64(xmm0, (rsp + #0xffffffffffffffd0))
+    store64(xmm0_hi, (rsp + #0xffffffffffffffd8))
+    store64(xmm1, (rsp + #0xffffffffffffffe0))
+    store64(xmm1_hi, (rsp + #0xffffffffffffffe8))
+    store64(xmm2, (rsp + #0xfffffffffffffff0))
+    store64(xmm2_hi, (rsp + #0xfffffffffffffff8))
+    store64(xmm3, rsp)
+    store64(xmm3_hi, (rsp + #0x8))
+    store64(xmm4, (rsp + #0x10))
+    store64(xmm4_hi, (rsp + #0x18))
+    store64(xmm5, (rsp + #0x20))
+    store64(xmm5_hi, (rsp + #0x28))
+    store64(xmm6, (rsp + #0x30))
+    store64(xmm6_hi, (rsp + #0x38))
+    store64(xmm7, (rsp + #0x40))
+    store64(xmm7_hi, (rsp + #0x48))
   blk2 @ 0x20157c:
     store64(r9, (rsp + #0xffffffffffffffc8))
     store64(r8, (rsp + #0xffffffffffffffc0))
@@ -441,4 +480,4 @@ fn <unnamed> @ 0x201540 (size 296)
     rsp = (rsp + #0x8)
     ret (load32((rsp + #0xffffffffffffffd4)) & #0xffffffff)
 -- card
-{"accesses":["a3 +0x0:uint32_t, +0x8:uint64_t"],"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":296,"sizeEstimated":true,"unsupported":8}
+{"accesses":["a3 +0x0:uint32_t, +0x8:uint64_t"],"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":296,"sizeEstimated":true,"unsupported":0}

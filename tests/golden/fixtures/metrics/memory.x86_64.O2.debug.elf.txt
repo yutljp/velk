@@ -1,4 +1,4 @@
-# metrics/memory.x86_64.O2.debug.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 1 unsupported, 4 gotos
+# metrics/memory.x86_64.O2.debug.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 4 gotos
 0x201220 236 copy_bytes symtab,dwarf
 0x201310 15 fill_bytes symtab,dwarf
 0x201320 28 string_length symtab,dwarf
@@ -24,7 +24,14 @@ uint32_t copy_bytes(void *dst, void *src, uint64_t n) {
         rax = n & 0xffffffffffffffe0;
         rcx = 0x0;
         do {
-            /* unsupported (4 steps): Movups at 0x201250, Movups at 0x201254, Movups at 0x201259, Movups at 0x20125d */
+            xmm0 = *(uint64_t *)(src + rcx);
+            xmm0_hi = *(uint64_t *)(src + rcx + 0x8);
+            xmm1 = *(uint64_t *)(src + rcx + 0x10);
+            xmm1_hi = *(uint64_t *)(src + rcx + 0x18);
+            *(uint64_t *)(dst + rcx) = xmm0;
+            *(uint64_t *)(dst + rcx + 0x8) = xmm0_hi;
+            *(uint64_t *)(dst + rcx + 0x10) = xmm1;
+            *(uint64_t *)(dst + rcx + 0x18) = xmm1_hi;
             rcx = rcx + 0x20;
         } while (rax != rcx);
         if (rax == n) {
@@ -93,10 +100,14 @@ fn copy_bytes @ 0x201220 (size 236)
     rax = (rdx & #0xffffffffffffffe0)
     rcx = #0x0
   blk6 @ 0x201250:
-    unsupported: Movups at 0x201250
-    unsupported: Movups at 0x201254
-    unsupported: Movups at 0x201259
-    unsupported: Movups at 0x20125d
+    xmm0 = load64((rsi + rcx))
+    xmm0_hi = load64(((rsi + rcx) + #0x8))
+    xmm1 = load64(((rsi + rcx) + #0x10))
+    xmm1_hi = load64(((rsi + rcx) + #0x18))
+    store64(xmm0, (rdi + rcx))
+    store64(xmm0_hi, ((rdi + rcx) + #0x8))
+    store64(xmm1, ((rdi + rcx) + #0x10))
+    store64(xmm1_hi, ((rdi + rcx) + #0x18))
     rcx = (rcx + #0x20)
     brif ne rax, rcx -> 0x201250
   blk7 @ 0x20126b:
@@ -142,7 +153,7 @@ fn copy_bytes @ 0x201220 (size 236)
   blk17 @ 0x20130b:
     ret rax
 -- card
-{"addr":"0x201220","approxTokens":174,"blocks":18,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","size":236,"unsupported":4}
+{"addr":"0x201220","approxTokens":174,"blocks":18,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","size":236,"unsupported":0}
 
 == 0x201310 fill_bytes
 -- decompile

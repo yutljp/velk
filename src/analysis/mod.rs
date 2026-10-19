@@ -40,6 +40,7 @@ pub fn analyze(image: &Image, function: &Function) -> Result<Analysis, LiftError
 struct Lifted {
     ir: FunctionIr,
     has_jump_tables: bool,
+    types: Option<crate::loader::dwarf::FunctionTypes>,
 }
 
 /// Folds the cases of jump tables back into their functions where the
@@ -94,6 +95,20 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     }
     let signature = signature::recover(&blocks, image.isa, image.format, image.go);
     jump_table::apply(&mut blocks, &tables);
+    let types = crate::loader::dwarf::function_types(image, function.addr);
+    // An x86-64 function returning a float returns it in xmm0.
+    if image.isa == crate::loader::Isa::X86_64
+        && types
+            .as_ref()
+            .and_then(|types| types.ret.as_ref())
+            .is_some_and(crate::ir::CType::is_sse_float)
+    {
+        for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let crate::ir::Stmt::Ret { value } = stmt {
+                *value = crate::ir::Expr::reg(crate::arch::x86::XMM0, 64);
+            }
+        }
+    }
     let ir = FunctionIr {
         isa: image.isa,
         convention: crate::ir::Convention::of(image.isa, image.format, image.go),
@@ -110,6 +125,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     Ok(Lifted {
         ir,
         has_jump_tables: !tables.is_empty(),
+        types,
     })
 }
 
@@ -117,13 +133,14 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     let Lifted {
         mut ir,
         has_jump_tables,
+        types,
     } = lifted;
     let uniform_32 = passes::widths::specialize_widths(&mut ir);
     passes::optimize(&mut ir, has_jump_tables);
     typing::apply_width_types(&mut ir, &uniform_32);
     typing::apply_void_return(&mut ir);
     typing::apply_partial_return(&mut ir);
-    typing::apply_dwarf_types(image, ir.addr, &mut ir);
+    typing::apply_dwarf_types(types, &mut ir);
     passes::simplify::simplify(&mut ir);
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);

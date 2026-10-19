@@ -1,4 +1,4 @@
-# metrics/arith_mixed.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 0 gotos
+# metrics/arith_mixed.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
 0x201190 6 sum3 symtab,dwarf
 0x2011a0 46 helper symtab,dwarf
 0x2011d0 6 pair_sum symtab,dwarf
@@ -87,14 +87,22 @@ int sum_arr(int *p, int n) {
     } else {
         rdx = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
-        /* unsupported: Pxor at 0x20120a */
+        xmm0 = 0x0;
+        xmm0_hi = 0x0;
         n = 0x0;
-        /* unsupported: Pxor at 0x201210 */
+        xmm1d = 0x0;
+        xmm1_hi = 0x0;
         do {
-            /* unsupported (4 steps): Movdqu at 0x201220, Paddd at 0x201225, Movdqu at 0x201229, Paddd at 0x20122f */
+            xmm2 = *(uint64_t *)(p + n);
+            xmm2_hi = *(uint64_t *)(p + n + 0x8);
+            /* unsupported: Paddd at 0x201225 */
+            xmm2 = *(uint64_t *)(p + n + 0x10);
+            xmm2_hi = *(uint64_t *)(p + n + 0x18);
+            /* unsupported: Paddd at 0x20122f */
             n = n + 0x20;
         } while (rax != n);
-        /* unsupported (6 steps): Paddd at 0x20123c, Pshufd at 0x201240, Paddd at 0x201245, Pshufd at 0x201249, Paddd at 0x20124e, Movd at 0x201252 */
+        /* unsupported (5 steps): Paddd at 0x20123c, Pshufd at 0x201240, Paddd at 0x201245, Pshufd at 0x201249, Paddd at 0x20124e */
+        rax = xmm1d;
         if (rdx == rcx) {
             return rax;
         }
@@ -125,13 +133,17 @@ fn sum_arr @ 0x2011e0 (size 140)
   blk4 @ 0x2011f4:
     rdx = (rcx & #0x7ffffff8)
     rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
-    unsupported: Pxor at 0x20120a
+    xmm0 = #0x0
+    xmm0_hi = #0x0
     rsi = #0x0
-    unsupported: Pxor at 0x201210
+    xmm1 = #0x0
+    xmm1_hi = #0x0
   blk5 @ 0x201220:
-    unsupported: Movdqu at 0x201220
+    xmm2 = load64((rdi + rsi))
+    xmm2_hi = load64(((rdi + rsi) + #0x8))
     unsupported: Paddd at 0x201225
-    unsupported: Movdqu at 0x201229
+    xmm2 = load64(((rdi + rsi) + #0x10))
+    xmm2_hi = load64(((rdi + rsi) + #0x18))
     unsupported: Paddd at 0x20122f
     rsi = (rsi + #0x20)
     brif ne rax, rsi -> 0x201220
@@ -141,7 +153,7 @@ fn sum_arr @ 0x2011e0 (size 140)
     unsupported: Paddd at 0x201245
     unsupported: Pshufd at 0x201249
     unsupported: Paddd at 0x20124e
-    unsupported: Movd at 0x201252
+    rax = (xmm1 & #0xffffffff)
     brif eq rdx, rcx -> 0x20126b
   blk7 @ 0x201260:
     rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)
@@ -150,4 +162,4 @@ fn sum_arr @ 0x2011e0 (size 140)
   blk8 @ 0x20126b:
     ret rax
 -- card
-{"addr":"0x2011e0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":12}
+{"addr":"0x2011e0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":7}

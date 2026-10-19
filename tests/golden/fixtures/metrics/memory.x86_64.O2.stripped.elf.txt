@@ -1,4 +1,4 @@
-# metrics/memory.x86_64.O2.stripped.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 1 unsupported, 5 gotos
+# metrics/memory.x86_64.O2.stripped.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 5 gotos
 0x201220 240 - prologue
 0x201310 16 - prologue
 0x201320 32 - prologue
@@ -24,7 +24,14 @@ uint32_t sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
         rax = a2 & 0xffffffffffffffe0;
         rcx = 0x0;
         do {
-            /* unsupported (4 steps): Movups at 0x201250, Movups at 0x201254, Movups at 0x201259, Movups at 0x20125d */
+            xmm0 = *(uint64_t *)(a1 + rcx);
+            xmm0_hi = *(uint64_t *)(a1 + rcx + 0x8);
+            xmm1 = *(uint64_t *)(a1 + rcx + 0x10);
+            xmm1_hi = *(uint64_t *)(a1 + rcx + 0x18);
+            *(uint64_t *)(a0 + rcx) = xmm0;
+            *(uint64_t *)(a0 + rcx + 0x8) = xmm0_hi;
+            *(uint64_t *)(a0 + rcx + 0x10) = xmm1;
+            *(uint64_t *)(a0 + rcx + 0x18) = xmm1_hi;
             rcx = rcx + 0x20;
         } while (rax != rcx);
         if (rax == a2) {
@@ -93,10 +100,14 @@ fn <unnamed> @ 0x201220 (size 240)
     rax = (rdx & #0xffffffffffffffe0)
     rcx = #0x0
   blk6 @ 0x201250:
-    unsupported: Movups at 0x201250
-    unsupported: Movups at 0x201254
-    unsupported: Movups at 0x201259
-    unsupported: Movups at 0x20125d
+    xmm0 = load64((rsi + rcx))
+    xmm0_hi = load64(((rsi + rcx) + #0x8))
+    xmm1 = load64(((rsi + rcx) + #0x10))
+    xmm1_hi = load64(((rsi + rcx) + #0x18))
+    store64(xmm0, (rdi + rcx))
+    store64(xmm0_hi, ((rdi + rcx) + #0x8))
+    store64(xmm1, ((rdi + rcx) + #0x10))
+    store64(xmm1_hi, ((rdi + rcx) + #0x18))
     rcx = (rcx + #0x20)
     brif ne rax, rcx -> 0x201250
   blk7 @ 0x20126b:
@@ -142,7 +153,7 @@ fn <unnamed> @ 0x201220 (size 240)
   blk17 @ 0x20130b:
     ret rax
 -- card
-{"addr":"0x201220","approxTokens":174,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":240,"sizeEstimated":true,"unsupported":4}
+{"addr":"0x201220","approxTokens":174,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":240,"sizeEstimated":true,"unsupported":0}
 
 == 0x201310 -
 -- decompile

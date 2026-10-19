@@ -9,6 +9,9 @@ pub mod x86 {
     /// The segment bases thread-local storage is addressed through.
     pub const FS_BASE: u16 = 16;
     pub const GS_BASE: u16 = 17;
+    /// The low 64 bits of xmm0; each xmm register is a pair of slots, low
+    /// half first.
+    pub const XMM0: u16 = 18;
 }
 
 pub mod aarch64 {

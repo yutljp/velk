@@ -153,7 +153,8 @@ pub(crate) fn live_out(ir: &FunctionIr, live_in: &[HashSet<u16>], index: usize) 
 
 /// Every register any statement could name.
 fn universe() -> impl Iterator<Item = u16> {
-    (0..=31u16)
+    // The general registers of either architecture, then the xmm halves.
+    (0..crate::arch::x86::XMM0 + 32)
         .chain(crate::ir::TEMP_BASE..crate::ir::TEMP_BASE + 64)
         .chain(crate::ir::FLAG_OPERANDS)
 }
