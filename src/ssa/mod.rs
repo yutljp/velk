@@ -108,6 +108,11 @@ fn rename_expr(expr: &mut Expr, rename: &mut dyn FnMut(u16) -> u16) {
                 rename_expr(expr, rename);
             }
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                rename_expr(arg, rename);
+            }
+        }
     }
 }
 
@@ -268,7 +273,7 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                         convention,
                         args: Some(_),
                         ..
-                    } => convention.call_extra().to_vec(),
+                    } => convention.unnamed_reads().collect(),
                     Stmt::Call { convention, .. } => convention.call_reads().collect(),
                     _ => reads.difference(&explicit_reads(stmt)).copied().collect(),
                 };
@@ -419,7 +424,9 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
                 ..
             } = &ssa.ir.blocks[*block].stmts[*position]
             {
-                reads.retain(|(register, _)| convention.call_extra().contains(register));
+                reads.retain(|(register, _)| {
+                    convention.unnamed_reads().any(|read| read == *register)
+                });
             }
         }
         *ir = lower(&ssa);

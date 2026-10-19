@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O0.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 9 unsupported, 1 gotos
+# metrics/float.x86_64.O0.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011f0 129 - unwind,prologue
 0x201280 49 - unwind,prologue
 0x2012c0 16 - unwind,prologue
@@ -17,30 +17,21 @@ int32_t sub_2011f0(int64_t a0, int32_t a1) {
 
     local_0 = a0;
     local_1 = a1;
-    xmm0 = 0x0;
-    xmm0_hi = 0x0;
     local_2 = 0x0;
     local_3 = 0x0;
     while (true) {
         v1 = local_3;
         if (v1 >= local_1) break;
-        rcx = (int64_t)(int32_t)(local_3);
-        xmm0 = *(uint64_t *)(local_0 + rcx * 0x8);
-        xmm0_hi = 0x0;
-        /* unsupported: Addsd at 0x201223 */
-        local_2 = xmm0;
-        v2 = local_3 + 0x1;
-        local_3 = v2;
+        v2 = (int64_t)(int32_t)(local_3);
+        local_2 = *(double *)(local_0 + v2 * 0x8) + local_2;
+        local_3 += 0x1;
     }
     if (local_1 <= 0x0) {
         local_4 = 0x0;
         xmm0 = local_4;
         return v1;
     }
-    xmm0 = local_2;
-    xmm0_hi = 0x0;
-    /* unsupported (2 steps): Cvtsi2sd at 0x20124a, Divsd at 0x20124f */
-    local_4 = xmm0;
+    local_4 = local_2 / (double)(int32_t)local_1;
     xmm0 = local_4;
     return v1;
 }
@@ -53,30 +44,20 @@ fn <unnamed> @ 0x2011f0 (size 129)
   blk0 @ 0x2011f0:
     store64(rdi, (rsp + #0xfffffffffffffff0))
     store32(esi, (rsp + #0xffffffffffffffec))
-    xmm0 = #0x0
-    xmm0_hi = #0x0
     store64(#0x0, (rsp + #0xffffffffffffffe0))
     store32(#0x0, (rsp + #0xffffffffffffffdc))
   blk1 @ 0x20120a:
     v1 = (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)
     brif ge (v1 & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x20123b
   blk2 @ 0x201216:
-    rcx = sext32(load32((rsp + #0xffffffffffffffdc)))
-    xmm0 = load64((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x8)))
-    xmm0_hi = #0x0
-    unsupported: Addsd at 0x201223
-    store64(xmm0, (rsp + #0xffffffffffffffe0))
-    v2 = ((load32((rsp + #0xffffffffffffffdc)) + #0x1) & #0xffffffff)
-    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffffdc))
+    v2 = sext32(load32((rsp + #0xffffffffffffffdc)))
+    store64(fadd.d(load64((load64((rsp + #0xfffffffffffffff0)) + (v2 * #0x8))), load64((rsp + #0xffffffffffffffe0))), (rsp + #0xffffffffffffffe0))
+    store32(((load32((rsp + #0xffffffffffffffdc)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffdc))
     br 0x20120a
   blk3 @ 0x20123b:
     brif le load32((rsp + #0xffffffffffffffec)), #0x0 -> 0x20125d
   blk4 @ 0x201245:
-    xmm0 = load64((rsp + #0xffffffffffffffe0))
-    xmm0_hi = #0x0
-    unsupported: Cvtsi2sd at 0x20124a
-    unsupported: Divsd at 0x20124f
-    store64(xmm0, (rsp + #0xffffffffffffffd0))
+    store64(fdiv.d(load64((rsp + #0xffffffffffffffe0)), s32tof.d(load32((rsp + #0xffffffffffffffec)))), (rsp + #0xffffffffffffffd0))
     br 0x20126a
   blk5 @ 0x20125d:
     store64(#0x0, (rsp + #0xffffffffffffffd0))
@@ -85,129 +66,98 @@ fn <unnamed> @ 0x2011f0 (size 129)
     xmm0 = load64((rsp + #0xffffffffffffffd0))
     ret v1
 -- card
-{"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":129,"unsupported":3}
+{"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":129,"unsupported":0}
 
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
-int64_t sub_201280(void) {
-    uint32_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
+double sub_201280(float a0, float a1, float a2) {
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
 
-    local_0 = (uint32_t)xmm1;
-    local_1 = (uint32_t)xmm2;
-    xmm1 = (uint32_t)xmm0;
-    xmm1_hi = 0x0;
-    xmm0 = local_0;
-    xmm0_hi = 0x0;
-    /* unsupported: Subss at 0x20129d */
-    xmm2 = local_1;
-    xmm2_hi = 0x0;
-    /* unsupported (2 steps): Mulss at 0x2012a7, Addss at 0x2012ab */
-    return rax;
+    local_0 = a0;
+    local_1 = a1;
+    a1 = a0;
+    a0 = local_1;
+    a0 = a0 & 0xffffffff00000000 | a0 - local_0;
+    a0 = a0 & 0xffffffff00000000 | a0 * a2;
+    a0 = a0 & 0xffffffff00000000 | a0 + a1;
+    return a0;
 }
 -- signature
-int64_t ()
+double (float a0, float a1, float a2)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201280 (size 49)
   blk0 @ 0x201280:
+    store32((xmm0 & #0xffffffff), (rsp + #0xfffffffffffffff4))
     store32((xmm1 & #0xffffffff), (rsp + #0xfffffffffffffff0))
-    store32((xmm2 & #0xffffffff), (rsp + #0xffffffffffffffec))
     xmm1 = (xmm0 & #0xffffffff)
-    xmm1_hi = #0x0
     xmm0 = load32((rsp + #0xfffffffffffffff0))
-    xmm0_hi = #0x0
-    unsupported: Subss at 0x20129d
-    xmm2 = load32((rsp + #0xffffffffffffffec))
-    xmm2_hi = #0x0
-    unsupported: Mulss at 0x2012a7
-    unsupported: Addss at 0x2012ab
-    ret rax
+    xmm0 = ((xmm0 & #0xffffffff00000000) | fsub.s((xmm0 & #0xffffffff), load32((rsp + #0xfffffffffffffff4))))
+    xmm0 = ((xmm0 & #0xffffffff00000000) | fmul.s((xmm0 & #0xffffffff), (xmm2 & #0xffffffff)))
+    xmm0 = ((xmm0 & #0xffffffff00000000) | fadd.s((xmm0 & #0xffffffff), (xmm1 & #0xffffffff)))
+    ret xmm0
 -- card
-{"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":49,"unsupported":3}
+{"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":49,"unsupported":0}
 
 == 0x2012c0 -
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
-int64_t sub_2012c0(void) {
-    /* unsupported: Cvttsd2si at 0x2012c9 */
-    return rax;
+int32_t sub_2012c0(double a0) {
+    return (int32_t)a0;
 }
 -- signature
-int64_t ()
+int32_t (double a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2012c0 (size 16)
   blk0 @ 0x2012c0:
-    unsupported: Cvttsd2si at 0x2012c9
-    ret rax
+    ret (f.dtos32(xmm0) & #0xffffffff)
 -- card
-{"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":1}
+{"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":0}
 
 == 0x2012d0 -
 -- decompile
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
 /* ref: 0x200120 .rodata */
-int64_t sub_2012d0(void) {
-    xmm0 = (uint32_t)xmm0;
-    xmm0_hi = 0x0;
-    /* unsupported: Cvtss2sd at 0x2012de */
-    xmm1 = qword_200120;
-    xmm1_hi = 0x0;
-    /* unsupported: Mulsd at 0x2012ea */
-    return rax;
+double sub_2012d0(float a0) {
+    a0 = a0;
+    return (double)a0 * qword_200120;
 }
 -- signature
-int64_t ()
+double (float a0)
 -- references
 0x200120 .rodata
 -- ir
 fn <unnamed> @ 0x2012d0 (size 32)
   blk0 @ 0x2012d0:
     xmm0 = (xmm0 & #0xffffffff)
-    xmm0_hi = #0x0
-    unsupported: Cvtss2sd at 0x2012de
-    xmm1 = load64(#0x200120)
-    xmm1_hi = #0x0
-    unsupported: Mulsd at 0x2012ea
-    ret rax
+    ret fmul.d(f.stof.d((xmm0 & #0xffffffff)), load64(#0x200120))
 -- card
-{"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":2}
+{"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}
 
 == 0x2012f0 -
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
-int32_t sub_2012f0(void) {
+int32_t sub_2012f0(double a0, double a1) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
     uint32_t local_2; /* [sp-1c] */
 
-    local_0 = xmm0;
-    local_1 = xmm1;
-    xmm1 = xmm0;
-    xmm1_hi = 0x0;
-    xmm0 = local_1;
-    xmm0_hi = 0x0;
-    /* unsupported: Ucomisd at 0x201308 */
-    if (/* ls */ true) { goto L_20131f; }
+    local_0 = a0;
+    local_1 = a1;
+    if (!(a0 < local_1)) {
+        local_2 = (local_1 < local_0);
+        return local_2;
+    }
     local_2 = 0xffffffff;
-    return local_2;
-L_20131f:
-    xmm0 = local_0;
-    xmm0_hi = 0x0;
-    xmm1 = local_1;
-    xmm1_hi = 0x0;
-    v1 = 0x0;
-    v2 = 0x1;
-    /* unsupported (2 steps): Ucomisd at 0x201330, cmov without compare at 0x201334 */
-    local_2 = 0x0;
     return local_2;
 }
 -- signature
-int32_t ()
+int32_t (double a0, double a1)
 -- references
 
 -- ir
@@ -215,26 +165,13 @@ fn <unnamed> @ 0x2012f0 (size 79)
   blk0 @ 0x2012f0:
     store64(xmm0, (rsp + #0xfffffffffffffff0))
     store64(xmm1, (rsp + #0xffffffffffffffe8))
-    xmm1 = xmm0
-    xmm1_hi = #0x0
-    xmm0 = load64((rsp + #0xffffffffffffffe8))
-    xmm0_hi = #0x0
-    unsupported: Ucomisd at 0x201308
-    brif ls -> 0x20131f
+    brif eq flt.d(xmm0, load64((rsp + #0xffffffffffffffe8))), #0x0 -> 0x20131f
   blk1 @ 0x201312:
     store32(#0xffffffff, (rsp + #0xffffffffffffffe4))
     br 0x20133a
   blk2 @ 0x20131f:
-    xmm0 = load64((rsp + #0xfffffffffffffff0))
-    xmm0_hi = #0x0
-    xmm1 = load64((rsp + #0xffffffffffffffe8))
-    xmm1_hi = #0x0
-    v1 = #0x0
-    v2 = #0x1
-    unsupported: Ucomisd at 0x201330
-    unsupported: cmov without compare at 0x201334
-    store32(#0x0, (rsp + #0xffffffffffffffe4))
+    store32((select ne flt.d(load64((rsp + #0xffffffffffffffe8)), load64((rsp + #0xfffffffffffffff0))), #0x0 ? #0x1, #0x0 & #0xffffffff), (rsp + #0xffffffffffffffe4))
   blk3 @ 0x20133a:
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card
-{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":79,"unsupported":3}
+{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":79,"unsupported":0}

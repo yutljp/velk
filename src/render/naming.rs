@@ -85,6 +85,11 @@ pub(crate) fn scan_reads(
             scan_reads(then, seen, wide);
             scan_reads(els, seen, wide);
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                scan_reads(arg, seen, wide);
+            }
+        }
     }
 }
 
@@ -177,6 +182,11 @@ fn field_loads(expr: &Expr, out: &mut Vec<(u16, i64)>) {
             field_loads(rhs, out);
             field_loads(then, out);
             field_loads(els, out);
+        }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                field_loads(arg, out);
+            }
         }
         Expr::Reg { .. } | Expr::Const(_) => {}
     }

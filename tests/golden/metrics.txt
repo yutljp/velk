@@ -9,8 +9,8 @@ extra functions | x86_64.O0 | 0/148
 extra functions | x86_64.O2 | 0/148
 parameter count | aarch64.O0 | 144/147
 parameter count | aarch64.O2 | 143/147
-parameter count | x86_64.O0 | 140/147
-parameter count | x86_64.O2 | 140/147
+parameter count | x86_64.O0 | 144/147
+parameter count | x86_64.O2 | 144/147
 parameter pointer | aarch64.O0 | 144/173
 parameter pointer | aarch64.O2 | 163/171
 parameter pointer | x86_64.O0 | 143/172
@@ -29,8 +29,8 @@ return void | x86_64.O0 | 126/148
 return void | x86_64.O2 | 143/148
 return width | aarch64.O0 | 114/120
 return width | aarch64.O2 | 110/120
-return width | x86_64.O0 | 114/120
-return width | x86_64.O2 | 114/120
+return width | x86_64.O0 | 115/120
+return width | x86_64.O2 | 115/120
 
 alt_names.aarch64.O0 0x21016c alt_sum3: ok
 alt_names.aarch64.O0 0x210198 alt_helper: ok
@@ -311,15 +311,15 @@ float.aarch64.O2 0x210238 truncate_to_int: returns 8 bytes, expected 4
 float.aarch64.O2 0x210240 widen: ok
 float.aarch64.O2 0x21024c compare_doubles: 1 parameters, expected 2; returns 8 bytes, expected 4
 float.x86_64.O0 0x2011f0 average: parameter 0 is a signed 8-byte integer, expected a pointer
-float.x86_64.O0 0x201280 lerp: 0 parameters, expected 3
-float.x86_64.O0 0x2012c0 truncate_to_int: 0 parameters, expected 1; returns 8 bytes, expected 4
-float.x86_64.O0 0x2012d0 widen: 0 parameters, expected 1
-float.x86_64.O0 0x2012f0 compare_doubles: 0 parameters, expected 2
+float.x86_64.O0 0x201280 lerp: ok
+float.x86_64.O0 0x2012c0 truncate_to_int: ok
+float.x86_64.O0 0x2012d0 widen: ok
+float.x86_64.O0 0x2012f0 compare_doubles: ok
 float.x86_64.O2 0x2011b0 average: parameter 0 is a signed 8-byte integer, expected a pointer
-float.x86_64.O2 0x201260 lerp: 0 parameters, expected 3
-float.x86_64.O2 0x201270 truncate_to_int: 0 parameters, expected 1; returns 8 bytes, expected 4
-float.x86_64.O2 0x201280 widen: 0 parameters, expected 1
-float.x86_64.O2 0x201290 compare_doubles: 0 parameters, expected 2
+float.x86_64.O2 0x201260 lerp: ok
+float.x86_64.O2 0x201270 truncate_to_int: ok
+float.x86_64.O2 0x201280 widen: ok
+float.x86_64.O2 0x201290 compare_doubles: ok
 integers.aarch64.O0 0x21022c narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.aarch64.O0 0x21024c widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.aarch64.O0 0x21026c mixed_sign: parameter 1 signedness differs

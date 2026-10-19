@@ -213,6 +213,12 @@ fn substitute(expr: &mut Expr, constants: &HashMap<u16, u64>, sensitive: bool) {
             substitute(then, constants, sensitive);
             substitute(els, constants, sensitive);
         }
+        // An operation reads the low bits it names, whatever the width.
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                substitute(arg, constants, false);
+            }
+        }
     }
 }
 

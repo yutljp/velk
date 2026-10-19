@@ -257,6 +257,7 @@ fn frame_only(expr: &Expr, frame: i64, sp: u16) -> bool {
                 && frame_only(then, frame, sp)
                 && frame_only(els, frame, sp)
         }
+        Expr::Apply { args, .. } => args.iter().all(|arg| frame_only(arg, frame, sp)),
     }
 }
 
@@ -350,6 +351,11 @@ fn rewrite_expr_frame(expr: &mut Expr, frame: i64, sp: u16) {
             rewrite_expr_frame(rhs, frame, sp);
             rewrite_expr_frame(then, frame, sp);
             rewrite_expr_frame(els, frame, sp);
+        }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                rewrite_expr_frame(arg, frame, sp);
+            }
         }
         _ => {}
     }

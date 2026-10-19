@@ -127,6 +127,11 @@ fn frame_loads(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, u8, b
             frame_loads(then, frame, sp, out);
             frame_loads(els, frame, sp, out);
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                frame_loads(arg, frame, sp, out);
+            }
+        }
         _ => {}
     }
 }

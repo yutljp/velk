@@ -199,7 +199,7 @@ pub(crate) fn live_out(ir: &FunctionIr, live_in: &[HashSet<u16>], index: usize) 
 /// Every register the function's statements name, and the machine registers
 /// of either architecture, which an unmodeled effect may read.
 fn universe(ir: &FunctionIr) -> Vec<u16> {
-    let mut registers: std::collections::BTreeSet<u16> = (0..crate::arch::x86::XMM0 + 32)
+    let mut registers: std::collections::BTreeSet<u16> = (0..crate::arch::aarch64::V0 + 64)
         .chain(crate::ir::FLAG_OPERANDS)
         .chain([crate::ir::EXCHANGE])
         .collect();

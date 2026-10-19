@@ -407,7 +407,7 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
             args: Some(args),
             convention,
             ..
-        } if !convention.call_extra().contains(&dest) => {
+        } if !convention.unnamed_reads().any(|read| read == dest) => {
             for expr in through.iter_mut().chain(args.iter_mut()) {
                 substitute_reg_inner(expr, dest, width, template, &mut ok);
             }
@@ -479,6 +479,11 @@ fn substitute_reg_inner(expr: &mut Expr, dest: u16, width: u8, template: &Expr, 
         }
         Expr::Load { addr, .. } => substitute_reg_inner(addr, dest, width, template, ok),
         Expr::SignExtend { value, .. } => substitute_reg_inner(value, dest, width, template, ok),
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                substitute_reg_inner(arg, dest, width, template, ok);
+            }
+        }
         _ => {}
     }
 }

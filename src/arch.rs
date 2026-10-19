@@ -16,6 +16,9 @@ pub mod x86 {
 
 pub mod aarch64 {
     pub const SP: u16 = 31;
+    /// The low 64 bits of v0; each vector register is a pair of slots, low
+    /// half first.
+    pub const V0: u16 = 32;
 }
 
 pub fn frame_pointer(isa: Isa) -> u16 {

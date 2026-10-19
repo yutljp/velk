@@ -232,6 +232,23 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
             then: Box::new(simplify_expr(*then, constants)),
             els: Box::new(simplify_expr(*els, constants)),
         },
+        Expr::Apply { op, args } => {
+            let args: Vec<Expr> = args
+                .into_iter()
+                .map(|arg| simplify_expr(arg, constants))
+                .collect();
+            let values: Option<Vec<u64>> = args
+                .iter()
+                .map(|arg| match arg {
+                    Expr::Const(value) => Some(*value),
+                    _ => None,
+                })
+                .collect();
+            match values.and_then(|values| crate::ir::semantics::fold(op, &values)) {
+                Some(value) => Expr::constant(value),
+                None => Expr::Apply { op, args },
+            }
+        }
     }
 }
 

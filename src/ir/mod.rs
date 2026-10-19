@@ -40,9 +40,34 @@ impl Convention {
         }
     }
 
-    /// Registers a call may read: its arguments, plus the ones in `call_extra`.
+    /// Floating-point argument registers, in order: the low halves of xmm0
+    /// to xmm7 (xmm3 on Windows, xmm14 in Go's ABI), or of v0 to v7.
+    pub fn float_arguments(self) -> &'static [u16] {
+        match self {
+            Self::Aapcs64 => &[32, 34, 36, 38, 40, 42, 44, 46],
+            Self::SysV => &[18, 20, 22, 24, 26, 28, 30, 32],
+            Self::Win64 => &[18, 20, 22, 24],
+            Self::GoAmd64 => &[18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46],
+        }
+    }
+
+    /// Registers a call may read: its arguments, the floating-point ones,
+    /// and the ones in `call_extra`.
     pub fn call_reads(self) -> impl Iterator<Item = u16> {
-        self.arguments().iter().chain(self.call_extra()).copied()
+        self.arguments()
+            .iter()
+            .chain(self.float_arguments())
+            .chain(self.call_extra())
+            .copied()
+    }
+
+    /// Registers a call whose integer arguments are named still reads: the
+    /// floating-point arguments and those in `call_extra`.
+    pub fn unnamed_reads(self) -> impl Iterator<Item = u16> {
+        self.float_arguments()
+            .iter()
+            .chain(self.call_extra())
+            .copied()
     }
 
     /// Registers a call may read besides its arguments: AArch64's indirect
@@ -58,8 +83,12 @@ impl Convention {
     /// Registers a call may leave changed.
     pub fn clobbered(self) -> &'static [u16] {
         match self {
+            // And v0 to v7 and v16 to v31, and the high halves of v8 to v15.
             Self::Aapcs64 => &[
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 32, 33, 34, 35,
+                36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 49, 51, 53, 55, 57, 59, 61, 63, 64,
+                65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
             ],
             // And every xmm register.
             Self::SysV => &[
@@ -181,6 +210,98 @@ impl Cond {
     }
 }
 
+/// The width of a floating-point value, held as its bit pattern in the low
+/// 32 or 64 bits of a value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Precision {
+    Single,
+    Double,
+}
+
+impl Precision {
+    pub fn bits(self) -> u8 {
+        match self {
+            Precision::Single => 32,
+            Precision::Double => 64,
+        }
+    }
+}
+
+/// An operation `Expr::Apply` applies to its arguments, in order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Operation {
+    /// IEEE arithmetic, rounding to nearest.
+    FloatAdd(Precision),
+    FloatSub(Precision),
+    FloatMul(Precision),
+    FloatDiv(Precision),
+    FloatSqrt(Precision),
+    /// `a * b + c`, rounded once.
+    FloatMulAdd(Precision),
+    /// One when the comparison holds and zero otherwise; a NaN makes the
+    /// ordered comparisons false and `FloatUnordered` true.
+    FloatEqual(Precision),
+    FloatLess(Precision),
+    FloatLessEqual(Precision),
+    FloatUnordered(Precision),
+    /// An integer of `bits` as a float.
+    IntToFloat {
+        signed: bool,
+        bits: u8,
+        to: Precision,
+    },
+    /// A float rounded toward zero to an integer of `bits`. Out of range, or
+    /// for a NaN, it saturates (NaN to zero) when `saturating` is set, as
+    /// AArch64 does, and otherwise gives the lowest signed value, as x86 does.
+    FloatToInt {
+        signed: bool,
+        bits: u8,
+        from: Precision,
+        saturating: bool,
+    },
+    FloatConvert {
+        from: Precision,
+        to: Precision,
+    },
+    /// Counts over the low `bits`; a zero value counts `bits`.
+    CountLeadingZeros(u8),
+    CountTrailingZeros(u8),
+    PopCount(u8),
+    ReverseBits(u8),
+}
+
+impl Operation {
+    /// The precision of the float the operation computes, if it computes one.
+    pub fn result_precision(self) -> Option<Precision> {
+        match self {
+            Operation::FloatAdd(p)
+            | Operation::FloatSub(p)
+            | Operation::FloatMul(p)
+            | Operation::FloatDiv(p)
+            | Operation::FloatSqrt(p)
+            | Operation::FloatMulAdd(p)
+            | Operation::IntToFloat { to: p, .. }
+            | Operation::FloatConvert { to: p, .. } => Some(p),
+            _ => None,
+        }
+    }
+
+    pub fn arity(self) -> usize {
+        match self {
+            Operation::FloatSqrt(_)
+            | Operation::IntToFloat { .. }
+            | Operation::FloatToInt { .. }
+            | Operation::FloatConvert { .. }
+            | Operation::CountLeadingZeros(_)
+            | Operation::CountTrailingZeros(_)
+            | Operation::PopCount(_)
+            | Operation::ReverseBits(_) => 1,
+            Operation::FloatMulAdd(_) => 3,
+            _ => 2,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
     Reg {
@@ -209,9 +330,18 @@ pub enum Expr {
         then: Box<Expr>,
         els: Box<Expr>,
     },
+    Apply {
+        op: Operation,
+        args: Vec<Expr>,
+    },
 }
 
 impl Expr {
+    pub fn apply(op: Operation, args: Vec<Expr>) -> Self {
+        debug_assert_eq!(args.len(), op.arity());
+        Expr::Apply { op, args }
+    }
+
     pub fn constant(value: u64) -> Self {
         Expr::Const(value)
     }
@@ -324,7 +454,54 @@ impl Expr {
                 then.render(isa),
                 els.render(isa)
             ),
+            Expr::Apply { op, args } => format!(
+                "{}({})",
+                operation_name(*op),
+                args.iter()
+                    .map(|arg| arg.render(isa))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
         }
+    }
+}
+
+/// The IR's name for an operation, with its precision or width.
+pub(crate) fn operation_name(op: Operation) -> String {
+    let p = |precision: Precision| match precision {
+        Precision::Single => "s",
+        Precision::Double => "d",
+    };
+    match op {
+        Operation::FloatAdd(x) => format!("fadd.{}", p(x)),
+        Operation::FloatSub(x) => format!("fsub.{}", p(x)),
+        Operation::FloatMul(x) => format!("fmul.{}", p(x)),
+        Operation::FloatDiv(x) => format!("fdiv.{}", p(x)),
+        Operation::FloatSqrt(x) => format!("fsqrt.{}", p(x)),
+        Operation::FloatMulAdd(x) => format!("fma.{}", p(x)),
+        Operation::FloatEqual(x) => format!("feq.{}", p(x)),
+        Operation::FloatLess(x) => format!("flt.{}", p(x)),
+        Operation::FloatLessEqual(x) => format!("fle.{}", p(x)),
+        Operation::FloatUnordered(x) => format!("funord.{}", p(x)),
+        Operation::IntToFloat { signed, bits, to } => {
+            format!("{}{bits}tof.{}", if signed { "s" } else { "u" }, p(to))
+        }
+        Operation::FloatToInt {
+            signed,
+            bits,
+            from,
+            saturating,
+        } => format!(
+            "f.{}to{}{bits}{}",
+            p(from),
+            if signed { "s" } else { "u" },
+            if saturating { ".sat" } else { "" }
+        ),
+        Operation::FloatConvert { from, to } => format!("f.{}tof.{}", p(from), p(to)),
+        Operation::CountLeadingZeros(bits) => format!("clz{bits}"),
+        Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),
+        Operation::PopCount(bits) => format!("popcount{bits}"),
+        Operation::ReverseBits(bits) => format!("bitreverse{bits}"),
     }
 }
 

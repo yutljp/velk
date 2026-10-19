@@ -7,7 +7,7 @@ use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
-use crate::ir::{BinOp, Cond, EXCHANGE, Expr, RegRef, Stmt};
+use crate::ir::{BinOp, Cond, EXCHANGE, Expr, Operation, Precision, RegRef, Stmt};
 use crate::loader::Image;
 
 pub(super) struct Lifter<'a> {
@@ -52,6 +52,20 @@ impl<'a> Lifter<'a> {
         self.last_compare.as_ref().map_or(Test::Unknown, |flags| {
             flags.test(cond, crate::loader::Isa::X86_64)
         })
+    }
+
+    /// The condition code `code` under the flags.
+    fn condition_test(&self, code: ConditionCode) -> Test {
+        let parity = |even| {
+            self.last_compare
+                .as_ref()
+                .map_or(Test::Unknown, |flags| flags.parity(even))
+        };
+        match code {
+            ConditionCode::p => parity(true),
+            ConditionCode::np => parity(false),
+            code => condition(code).map_or(Test::Unknown, |cond| self.test(cond)),
+        }
     }
 
     /// The carry flag as one or zero, when the flags here decide it.
@@ -241,6 +255,138 @@ fn load_at(addr: Expr, width: u8) -> Expr {
         width,
         signed: false,
     }
+}
+
+/// The scalar SSE floating-point instructions: arithmetic on the low double
+/// or single of an xmm register, which keeps the register's other bits,
+/// conversions, and the compares that set the flags.
+fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+    use Mnemonic::*;
+    let precision = match ins.mnemonic() {
+        Addsd | Subsd | Mulsd | Divsd | Sqrtsd | Minsd | Maxsd | Ucomisd | Comisd | Cvtsi2sd
+        | Cvttsd2si | Cvtsd2ss => Precision::Double,
+        Addss | Subss | Mulss | Divss | Sqrtss | Minss | Maxss | Ucomiss | Comiss | Cvtsi2ss
+        | Cvttss2si | Cvtss2sd => Precision::Single,
+        _ => return None,
+    };
+    // An xmm operand's low bits, or a value loaded from memory.
+    let float_operand = |index: u32, precision: Precision| -> Option<Expr> {
+        match ins.op_kind(index) {
+            OpKind::Register => {
+                let slot = xmm(ins.op_register(index))?;
+                Some(Lifter::read_reg(slot, precision.bits()))
+            }
+            OpKind::Memory => Some(load_at(memory_address(ins)?, precision.bits() / 8)),
+            _ => None,
+        }
+    };
+    // The low bits of the destination receive `value`; the rest stay.
+    let write_low = |lifter: &mut Lifter, value: Expr, precision: Precision| -> Option<()> {
+        let slot = xmm(ins.op0_register())?;
+        let merged = match precision {
+            Precision::Double => value,
+            Precision::Single => Expr::bin(
+                BinOp::Or,
+                Expr::bin(
+                    BinOp::And,
+                    Lifter::read_reg(slot, 64),
+                    Expr::constant(!0xffff_ffff),
+                ),
+                value,
+            ),
+        };
+        lifter.assign(slot, 64, merged);
+        Some(())
+    };
+    match ins.mnemonic() {
+        Addsd | Addss | Subsd | Subss | Mulsd | Mulss | Divsd | Divss => {
+            let op = match ins.mnemonic() {
+                Addsd | Addss => Operation::FloatAdd(precision),
+                Subsd | Subss => Operation::FloatSub(precision),
+                Mulsd | Mulss => Operation::FloatMul(precision),
+                _ => Operation::FloatDiv(precision),
+            };
+            let (a, b) = (float_operand(0, precision)?, float_operand(1, precision)?);
+            write_low(lifter, Expr::apply(op, vec![a, b]), precision)?;
+        }
+        Sqrtsd | Sqrtss => {
+            let a = float_operand(1, precision)?;
+            write_low(
+                lifter,
+                Expr::apply(Operation::FloatSqrt(precision), vec![a]),
+                precision,
+            )?;
+        }
+        // The second operand unless the first is strictly smaller (larger),
+        // which a NaN or two zeros never are.
+        Minsd | Minss | Maxsd | Maxss => {
+            let (a, b) = (float_operand(0, precision)?, float_operand(1, precision)?);
+            let (smaller, larger) = if matches!(ins.mnemonic(), Minsd | Minss) {
+                (a.clone(), b.clone())
+            } else {
+                (b.clone(), a.clone())
+            };
+            let first = Expr::Select {
+                cond: Cond::Ne,
+                lhs: Box::new(Expr::apply(
+                    Operation::FloatLess(precision),
+                    vec![smaller, larger],
+                )),
+                rhs: Box::new(Expr::constant(0)),
+                then: Box::new(a),
+                els: Box::new(b),
+            };
+            write_low(lifter, first, precision)?;
+        }
+        Ucomisd | Comisd | Ucomiss | Comiss => {
+            let (a, b) = (float_operand(0, precision)?, float_operand(1, precision)?);
+            lifter.set_flags(Flags::float_compare(a, b, precision));
+        }
+        Cvtsi2sd | Cvtsi2ss => {
+            let bits = operand_width(ins, 1)?;
+            let value = operand(lifter, ins, 1)?;
+            let converted = Expr::apply(
+                Operation::IntToFloat {
+                    signed: true,
+                    bits,
+                    to: precision,
+                },
+                vec![value],
+            );
+            write_low(lifter, converted, precision)?;
+        }
+        Cvttsd2si | Cvttss2si => {
+            let (index, bits) = gpr(ins.op0_register())?;
+            let value = float_operand(1, precision)?;
+            let converted = Expr::apply(
+                Operation::FloatToInt {
+                    signed: true,
+                    bits,
+                    from: precision,
+                    saturating: false,
+                },
+                vec![value],
+            );
+            lifter.assign(index, bits, converted);
+        }
+        Cvtsd2ss | Cvtss2sd => {
+            let to = match precision {
+                Precision::Double => Precision::Single,
+                Precision::Single => Precision::Double,
+            };
+            let value = float_operand(1, precision)?;
+            let converted = Expr::apply(
+                Operation::FloatConvert {
+                    from: precision,
+                    to,
+                },
+                vec![value],
+            );
+            write_low(lifter, converted, to)?;
+        }
+        _ => return None,
+    }
+    Some(())
 }
 
 /// The SSE moves and bitwise operations, on the 64-bit halves of each xmm
@@ -703,8 +849,9 @@ fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
 }
 
 fn select(lifter: &mut Lifter, ins: &Instruction, then: Expr, els: Expr) -> Option<Expr> {
-    let cond = condition(ins.condition_code())?;
-    lifter.test(cond).select(then, els)
+    lifter
+        .condition_test(ins.condition_code())
+        .select(then, els)
 }
 
 fn shift(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
@@ -905,11 +1052,10 @@ fn lift_instruction(
         };
         let bits = width * 8;
         // Flags from another block are unknown here.
-        let Some(value) = condition(ins.condition_code()).and_then(|cond| {
-            lifter
-                .test(cond)
-                .select(Expr::constant(1), Expr::constant(0))
-        }) else {
+        let Some(value) = lifter
+            .condition_test(ins.condition_code())
+            .select(Expr::constant(1), Expr::constant(0))
+        else {
             lifter.stmts.push(Stmt::Unsupported {
                 text: format!("setcc without compare at 0x{:x}", ins.ip()),
             });
@@ -920,7 +1066,7 @@ fn lift_instruction(
         return false;
     }
 
-    if lift_vector(lifter, ins).is_some() {
+    if lift_vector(lifter, ins).is_some() || lift_float(lifter, ins).is_some() {
         return false;
     }
 
@@ -1257,15 +1403,10 @@ fn lift_instruction(
         }
         other => {
             if ins.flow_control() == FlowControl::ConditionalBranch {
-                let Some(cond) = condition(ins.condition_code()) else {
-                    lifter.stmts.push(Stmt::BrifFlags {
-                        cond: Cond::Eq,
-                        target: resolved_target(ins, relocation_target),
-                    });
-                    return true;
-                };
+                // Only a condition the flags here leave open names itself in the branch.
+                let cond = condition(ins.condition_code()).unwrap_or(Cond::Eq);
                 let target = resolved_target(ins, relocation_target);
-                let test = lifter.test(cond);
+                let test = lifter.condition_test(ins.condition_code());
                 lifter.last_compare = None;
                 lifter.stmts.extend(test.branch(cond, target));
                 return true;

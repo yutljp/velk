@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O2.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 8 unsupported, 0 gotos
+# metrics/float.x86_64.O2.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011b0 161 - unwind,prologue
 0x201260 13 - unwind,prologue
 0x201270 5 - unwind,prologue
@@ -8,182 +8,163 @@
 == 0x2011b0 -
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
-int32_t sub_2011b0(int64_t a0, int32_t a1) {
+double sub_2011b0(int64_t a0, int32_t a1) {
     xmm0 = 0x0;
-    xmm0_hi = 0x0;
     xmm1 = 0x0;
-    xmm1_hi = 0x0;
     if (a1 > 0x0) {
-        rdx = a1;
-        rax = rdx & 0x7;
+        v1 = a1;
+        v2 = v1 & 0x7;
         if (a1 >= 0x8 /* unsigned */) {
-            rdx = rdx & 0x7ffffff8;
-            rcx = 0x0;
+            v4 = v1 & 0x7ffffff8;
+            v3 = 0x0;
             do {
-                /* unsupported (8 steps): Addsd at 0x2011e0, Addsd at 0x2011e5, Addsd at 0x2011eb, Addsd at 0x2011f1, Addsd at 0x2011f7, Addsd at 0x2011fd, Addsd at 0x201203, Addsd at 0x201209 */
-                rcx = rcx + 0x8;
-            } while (rdx != rcx);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x8);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x10);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x18);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x20);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x28);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x30);
+                xmm1 = xmm1 + *(double *)(a0 + v3 * 0x8 + 0x38);
+                v3 = v3 + 0x8;
+            } while (v4 != v3);
         } else {
-            rcx = 0x0;
+            v3 = 0x0;
         }
-        if (rax != 0x0) {
-            rcx = a0 + rcx * 0x8;
-            rdx = 0x0;
+        if (v2 != 0x0) {
+            v5 = a0 + v3 * 0x8;
+            v6 = 0x0;
             do {
-                /* unsupported: Addsd at 0x201230 */
-                rdx = rdx + 0x1;
-            } while (rax != rdx);
+                xmm1 = xmm1 + *(double *)(v5 + v6 * 0x8);
+                v6 = v6 + 0x1;
+            } while (v2 != v6);
         }
     }
     if (a1 <= 0x0) {
-        return eax;
+        return xmm0;
     }
-    xmm0 = 0x0;
-    xmm0_hi = 0x0;
-    /* unsupported (2 steps): Cvtsi2sd at 0x201244, Divsd at 0x201248 */
-    xmm0 = 0x0;
-    xmm0_hi = 0x0;
-    return eax;
+    xmm0 = xmm1 / (double)(int32_t)a1;
+    return xmm0;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+double (int64_t a0, int32_t a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2011b0 (size 161)
   blk0 @ 0x2011b0:
     xmm0 = #0x0
-    xmm0_hi = #0x0
     xmm1 = #0x0
-    xmm1_hi = #0x0
     brif le esi, #0x0 -> 0x20123d
   blk1 @ 0x2011c0:
-    rdx = esi
-    rax = (rdx & #0x7)
+    v1 = esi
+    v2 = (v1 & #0x7)
     brif cs esi, #0x8 -> 0x2011d0
   blk2 @ 0x2011cc:
-    rcx = #0x0
+    v3 = #0x0
     br 0x201218
   blk3 @ 0x2011d0:
-    rdx = (rdx & #0x7ffffff8)
-    rcx = #0x0
+    v4 = (v1 & #0x7ffffff8)
+    v3 = #0x0
   blk4 @ 0x2011e0:
-    unsupported: Addsd at 0x2011e0
-    unsupported: Addsd at 0x2011e5
-    unsupported: Addsd at 0x2011eb
-    unsupported: Addsd at 0x2011f1
-    unsupported: Addsd at 0x2011f7
-    unsupported: Addsd at 0x2011fd
-    unsupported: Addsd at 0x201203
-    unsupported: Addsd at 0x201209
-    rcx = (rcx + #0x8)
-    brif ne rdx, rcx -> 0x2011e0
+    xmm1 = fadd.d(xmm1, load64((rdi + (v3 * #0x8))))
+    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x8)))
+    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x10)))
+    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x18)))
+    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x20)))
+    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x28)))
+    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x30)))
+    xmm1 = fadd.d(xmm1, load64(((rdi + (v3 * #0x8)) + #0x38)))
+    v3 = (v3 + #0x8)
+    brif ne v4, v3 -> 0x2011e0
   blk5 @ 0x201218:
-    brif eq rax, #0x0 -> 0x20123d
+    brif eq v2, #0x0 -> 0x20123d
   blk6 @ 0x20121d:
-    rcx = (rdi + (rcx * #0x8))
-    rdx = #0x0
+    v5 = (rdi + (v3 * #0x8))
+    v6 = #0x0
   blk7 @ 0x201230:
-    unsupported: Addsd at 0x201230
-    rdx = (rdx + #0x1)
-    brif ne rax, rdx -> 0x201230
+    xmm1 = fadd.d(xmm1, load64((v5 + (v6 * #0x8))))
+    v6 = (v6 + #0x1)
+    brif ne v2, v6 -> 0x201230
   blk8 @ 0x20123d:
     brif le esi, #0x0 -> 0x201250
   blk9 @ 0x201241:
-    xmm0 = #0x0
-    xmm0_hi = #0x0
-    unsupported: Cvtsi2sd at 0x201244
-    unsupported: Divsd at 0x201248
-    xmm0 = #0x0
-    xmm0_hi = #0x0
+    xmm0 = fdiv.d(xmm1, s32tof.d(esi))
   blk10 @ 0x201250:
-    ret eax
+    ret xmm0
 -- card
-{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":161,"unsupported":11}
+{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":161,"unsupported":0}
 
 == 0x201260 -
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
-int64_t sub_201260(void) {
-    /* unsupported (3 steps): Subss at 0x201260, Mulss at 0x201264, Addss at 0x201268 */
-    return rax;
+float sub_201260(float a0, float a1, float a2) {
+    a1 = a1 - a0;
+    return a0 + a1 * a2;
 }
 -- signature
-int64_t ()
+float (float a0, float a1, float a2)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201260 (size 13)
   blk0 @ 0x201260:
-    unsupported: Subss at 0x201260
-    unsupported: Mulss at 0x201264
-    unsupported: Addss at 0x201268
-    ret rax
+    xmm1 = fsub.s((xmm1 & #0xffffffff), (xmm0 & #0xffffffff))
+    ret fadd.s((xmm0 & #0xffffffff), (fmul.s((xmm1 & #0xffffffff), (uint32_t)xmm2) & #0xffffffff))
 -- card
-{"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":3}
+{"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
 
 == 0x201270 -
 -- decompile
 /* velk pseudo-C: sub_201270 @ 0x201270 */
-int64_t sub_201270(void) {
-    /* unsupported: Cvttsd2si at 0x201270 */
-    return rax;
+int32_t sub_201270(double a0) {
+    return (int32_t)a0;
 }
 -- signature
-int64_t ()
+int32_t (double a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201270 (size 5)
   blk0 @ 0x201270:
-    unsupported: Cvttsd2si at 0x201270
-    ret rax
+    ret (f.dtos32(xmm0) & #0xffffffff)
 -- card
-{"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":5,"unsupported":1}
+{"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":5,"unsupported":0}
 
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
-int64_t sub_201280(void) {
-    /* unsupported (2 steps): Cvtss2sd at 0x201280, Addsd at 0x201284 */
-    return rax;
+double sub_201280(float a0) {
+    a0 = (double)a0;
+    return a0 + a0;
 }
 -- signature
-int64_t ()
+double (float a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201280 (size 9)
   blk0 @ 0x201280:
-    unsupported: Cvtss2sd at 0x201280
-    unsupported: Addsd at 0x201284
-    ret rax
+    xmm0 = f.stof.d((xmm0 & #0xffffffff))
+    ret fadd.d(xmm0, xmm0)
 -- card
-{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":9,"unsupported":2}
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":9,"unsupported":0}
 
 == 0x201290 -
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
-int32_t sub_201290(void) {
-    v1 = 0x0;
-    /* unsupported (3 steps): Ucomisd at 0x201292, setcc without compare at 0x201296, Ucomisd at 0x201299 */
-    v2 = 0xffffffff;
-    /* unsupported: cmov without compare at 0x2012a2 */
-    return 0xffffffff;
+int32_t sub_201290(double a0, double a1) {
+    v1 = (a1 < a0) & 0xff;
+    return (!(a0 < a1) ? v1 : 0xffffffff);
 }
 -- signature
-int32_t ()
+int32_t (double a0, double a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201290 (size 22)
   blk0 @ 0x201290:
-    v1 = #0x0
-    unsupported: Ucomisd at 0x201292
-    unsupported: setcc without compare at 0x201296
-    unsupported: Ucomisd at 0x201299
-    v2 = #0xffffffff
-    unsupported: cmov without compare at 0x2012a2
-    ret #0xffffffff
+    v1 = (select ne flt.d(xmm1, xmm0), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (select eq flt.d(xmm0, xmm1), #0x0 ? (v1 & #0xffffffff), #0xffffffff & #0xffffffff)
 -- card
-{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":4}
+{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}

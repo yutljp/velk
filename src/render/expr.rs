@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::{BinOp, Cond, Expr, reg_name};
+use crate::ir::{BinOp, Cond, Expr, Operation, Precision, reg_name};
 use crate::loader::Isa;
 use crate::render::naming::array_access;
 use crate::render::naming::global_name;
@@ -98,6 +98,16 @@ fn precedence(expr: &Expr) -> u8 {
             | BinOp::MulHighS => 11,
         },
         Expr::SignExtend { .. } => 12,
+        Expr::Apply { op, .. } => match op {
+            Operation::FloatAdd(_) | Operation::FloatSub(_) => 10,
+            Operation::FloatMul(_) | Operation::FloatDiv(_) => 11,
+            Operation::FloatLess(_) | Operation::FloatLessEqual(_) => 8,
+            Operation::FloatEqual(_) => 7,
+            Operation::IntToFloat { .. }
+            | Operation::FloatToInt { .. }
+            | Operation::FloatConvert { .. } => 12,
+            _ => 13,
+        },
         _ => 13,
     }
 }
@@ -198,8 +208,143 @@ fn in_data(address: u64, ctx: &Ctx<'_>) -> bool {
         .any(|(start, size)| address >= *start && address < start.saturating_add(*size))
 }
 
+/// An argument of a floating-point operation: a constant reads as the
+/// number its bits hold.
+fn float_operand(
+    expr: &Expr,
+    precision: Precision,
+    ctx: &Ctx<'_>,
+    parent: u8,
+    right: bool,
+) -> String {
+    match expr {
+        Expr::Const(bits) => {
+            let value = match precision {
+                Precision::Double => f64::from_bits(*bits),
+                Precision::Single => f64::from(f32::from_bits(*bits as u32)),
+            };
+            let text = if value.is_finite() && value == value.trunc() && value.abs() < 1e15 {
+                format!("{value:.1}")
+            } else {
+                format!("{value:e}")
+            };
+            if precision == Precision::Single {
+                format!("{text}f")
+            } else {
+                text
+            }
+        }
+        // A register, or its low half, holds the float itself.
+        Expr::Reg { index, .. } => ctx.register(*index, 64),
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(lhs.as_ref(), Expr::Reg { .. })
+            && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) =>
+        {
+            float_operand(lhs, precision, ctx, parent, right)
+        }
+        // Memory read as a float names the float type.
+        Expr::Load { addr, width, .. } if u32::from(*width) * 8 == u32::from(precision.bits()) => {
+            let float_type = match precision {
+                Precision::Single => "float",
+                Precision::Double => "double",
+            };
+            if let Some(member) = member_access(addr, *width, ctx) {
+                return member;
+            }
+            if let Some(indexed) = array_access(addr, *width, ctx) {
+                return indexed;
+            }
+            let address = render_expr(addr, ctx);
+            match ctx.slots.get(&address) {
+                Some(name) => name.clone(),
+                None => match global_name(addr, *width, ctx) {
+                    Some(name) => name,
+                    None => format!("*({float_type} *)({address})"),
+                },
+            }
+        }
+        _ => operand(expr, ctx, parent, right),
+    }
+}
+
+/// `op` applied to `args`, as C.
+fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
+    let infix = |precision, symbol: &str, strength| {
+        format!(
+            "{} {symbol} {}",
+            float_operand(&args[0], precision, ctx, strength, false),
+            float_operand(&args[1], precision, ctx, strength, true)
+        )
+    };
+    let call = |name: &str, precision: Option<Precision>| {
+        let parts: Vec<String> = args
+            .iter()
+            .map(|arg| match precision {
+                Some(precision) => float_operand(arg, precision, ctx, 1, false),
+                None => render_expr(arg, ctx),
+            })
+            .collect();
+        format!("{name}({})", parts.join(", "))
+    };
+    let suffix = |precision| {
+        if precision == Precision::Single {
+            "f"
+        } else {
+            ""
+        }
+    };
+    let float_type = |precision| match precision {
+        Precision::Single => "float",
+        Precision::Double => "double",
+    };
+    let builtin = |name: &str, bits: u8| {
+        let width = if bits == 64 { "ll" } else { "" };
+        format!("__builtin_{name}{width}({})", render_expr(&args[0], ctx))
+    };
+    match op {
+        Operation::FloatAdd(p) => infix(p, "+", 10),
+        Operation::FloatSub(p) => infix(p, "-", 10),
+        Operation::FloatMul(p) => infix(p, "*", 11),
+        Operation::FloatDiv(p) => infix(p, "/", 11),
+        Operation::FloatEqual(p) => infix(p, "==", 7),
+        Operation::FloatLess(p) => infix(p, "<", 8),
+        Operation::FloatLessEqual(p) => infix(p, "<=", 8),
+        Operation::FloatUnordered(p) => call("isunordered", Some(p)),
+        Operation::FloatSqrt(p) => call(&format!("sqrt{}", suffix(p)), Some(p)),
+        Operation::FloatMulAdd(p) => call(&format!("fma{}", suffix(p)), Some(p)),
+        Operation::IntToFloat { signed, bits, to } => format!(
+            "({})({}){}",
+            float_type(to),
+            type_of(bits / 8, signed),
+            operand(&args[0], ctx, 12, false)
+        ),
+        Operation::FloatToInt {
+            signed, bits, from, ..
+        } => format!(
+            "({}){}",
+            type_of(bits / 8, signed),
+            float_operand(&args[0], from, ctx, 12, false)
+        ),
+        Operation::FloatConvert { from, to } => format!(
+            "({}){}",
+            float_type(to),
+            float_operand(&args[0], from, ctx, 12, false)
+        ),
+        Operation::CountLeadingZeros(bits) => builtin("clz", bits),
+        Operation::CountTrailingZeros(bits) => builtin("ctz", bits),
+        Operation::PopCount(bits) => builtin("popcount", bits),
+        Operation::ReverseBits(bits) => {
+            format!("__builtin_bitreverse{bits}({})", render_expr(&args[0], ctx))
+        }
+    }
+}
+
 pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
     match value {
+        Expr::Apply { op, args } => render_operation(*op, args, ctx),
         Expr::Reg { index, width } => ctx.register(*index, *width),
         Expr::Const(value) => format!("0x{value:x}"),
         Expr::Bin {
@@ -416,6 +561,7 @@ pub(crate) fn fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
             _ => false,
         },
         Expr::Select { then, els, .. } => fits(then, bits, ctx) && fits(els, bits, ctx),
+        Expr::Apply { .. } => crate::ir::semantics::width(expr) <= bits,
     }
 }
 
@@ -442,6 +588,16 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
     {
         return text;
     }
+    if let (Cond::Ne | Cond::Eq, Expr::Const(0), Expr::Apply { op, args }) = (cond, rhs, lhs)
+        && is_comparison(*op)
+    {
+        let text = render_operation(*op, args, ctx);
+        return if cond == Cond::Eq {
+            format!("!({text})")
+        } else {
+            text
+        };
+    }
     let strength = match cond {
         Cond::Eq | Cond::Ne => 7,
         _ => 8,
@@ -464,6 +620,16 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
         Cond::Vs => "flags_vs /* vs */".to_owned(),
         Cond::Vc => "flags_vc /* vc */".to_owned(),
     }
+}
+
+fn is_comparison(op: Operation) -> bool {
+    matches!(
+        op,
+        Operation::FloatEqual(_)
+            | Operation::FloatLess(_)
+            | Operation::FloatLessEqual(_)
+            | Operation::FloatUnordered(_)
+    )
 }
 
 /// How a logical expression joins its parts, for parenthesizing.

@@ -158,5 +158,10 @@ fn expr_constants(expr: &Expr, out: &mut Vec<u64>) {
             expr_constants(then, out);
             expr_constants(els, out);
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                expr_constants(arg, out);
+            }
+        }
     }
 }

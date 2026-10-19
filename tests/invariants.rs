@@ -349,5 +349,10 @@ fn reads(expr: &Expr, into: &mut HashSet<u16>) {
             reads(then, into);
             reads(els, into);
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                reads(arg, into);
+            }
+        }
     }
 }

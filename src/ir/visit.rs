@@ -12,6 +12,7 @@ pub(crate) fn children(expr: &Expr) -> Vec<&Expr> {
         } => vec![lhs.as_ref(), rhs.as_ref(), then.as_ref(), els.as_ref()],
         Expr::Load { addr, .. } => vec![addr.as_ref()],
         Expr::SignExtend { value, .. } => vec![value.as_ref()],
+        Expr::Apply { args, .. } => args.iter().collect(),
         _ => Vec::new(),
     }
 }
@@ -39,6 +40,7 @@ pub(crate) fn expr_width(expr: &Expr) -> Option<u8> {
             (Some(width), None) | (None, Some(width)) => Some(width),
             _ => None,
         },
+        Expr::Apply { .. } => Some(crate::ir::semantics::width(expr) as u8),
     }
 }
 
@@ -65,6 +67,11 @@ pub fn collect_reads(expr: &Expr, out: &mut std::collections::HashSet<u16>) {
             collect_reads(rhs, out);
             collect_reads(then, out);
             collect_reads(els, out);
+        }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                collect_reads(arg, out);
+            }
         }
     }
 }
@@ -136,6 +143,13 @@ pub fn substitute_values(expr: Expr, values: &[(u16, Expr)]) -> Expr {
             then: Box::new(substitute_values(*then, values)),
             els: Box::new(substitute_values(*els, values)),
         },
+        Expr::Apply { op, args } => Expr::Apply {
+            op,
+            args: args
+                .into_iter()
+                .map(|arg| substitute_values(arg, values))
+                .collect(),
+        },
     }
 }
 
@@ -185,7 +199,7 @@ pub(crate) fn statement_registers(
                     for arg in args {
                         expr_reads(arg, &mut reads);
                     }
-                    reads.extend(convention.call_extra());
+                    reads.extend(convention.unnamed_reads());
                 }
                 None => reads.extend(convention.call_reads()),
             }

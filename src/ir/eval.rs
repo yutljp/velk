@@ -166,6 +166,13 @@ impl Machine<'_> {
 
     fn eval(&self, expr: &Expr) -> Result<u64, &'static str> {
         Ok(match expr {
+            Expr::Apply { op, args } => {
+                let values = args
+                    .iter()
+                    .map(|arg| self.eval(arg))
+                    .collect::<Result<Vec<u64>, _>>()?;
+                super::semantics::apply(*op, &values)
+            }
             Expr::Reg { index, width } => self.register(*index) & mask(u32::from(*width)),
             Expr::Const(value) => *value,
             Expr::Load {

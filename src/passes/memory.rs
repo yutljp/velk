@@ -147,6 +147,11 @@ fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
             forward_expr(then, pending);
             forward_expr(els, pending);
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                forward_expr(arg, pending);
+            }
+        }
         _ => {}
     }
 }

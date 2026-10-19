@@ -1,5 +1,5 @@
 use crate::arch;
-use crate::ir::{CType, FunctionIr};
+use crate::ir::{CType, FunctionIr, Param};
 
 pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collections::HashSet<u16>) {
     // A register only ever written, or only ever read, at 32 bits holds a 32-bit value.
@@ -261,6 +261,12 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
             collect_wide_regs(then, narrow, wide);
             collect_wide_regs(els, narrow, wide);
         }
+        // An operation's result is as wide as it says, whatever it reads.
+        Expr::Apply { .. } => {
+            if !narrow && crate::ir::semantics::width(expr) > 32 {
+                wide.push(WIDE_VALUE);
+            }
+        }
     }
 }
 
@@ -388,6 +394,13 @@ pub(crate) fn scan_reads(
             scan_reads(then, register, narrow, reads_narrow, seen);
             scan_reads(els, register, narrow, reads_narrow, seen);
         }
+        // An operation reads the bits it names, whatever masks its result.
+        Expr::Apply { op, args } => {
+            let narrow = crate::ir::semantics::argument_bits(*op) <= 32;
+            for arg in args {
+                scan_reads(arg, register, narrow, reads_narrow, seen);
+            }
+        }
     }
 }
 
@@ -426,6 +439,7 @@ fn fits32(value: &crate::ir::Expr) -> bool {
         },
         Expr::Select { then, els, .. } => fits32(then) && fits32(els),
         Expr::SignExtend { .. } => false,
+        Expr::Apply { .. } => crate::ir::semantics::width(value) <= 32,
     }
 }
 
@@ -451,6 +465,7 @@ fn reads_register(expr: &crate::ir::Expr, register: u16) -> bool {
                 || reads_register(then, register)
                 || reads_register(els, register)
         }
+        Expr::Apply { args, .. } => args.iter().any(|arg| reads_register(arg, register)),
     }
 }
 
@@ -591,12 +606,26 @@ pub(crate) fn apply_dwarf_types(
     };
     ir.members = types.members;
     if !types.params.is_empty() {
-        // Debug info only renames and retypes the recovered parameters; it
-        // never adds or drops any.
-        let mut params = ir.params.clone();
-        for (index, (name, ty)) in types.params.iter().enumerate() {
-            let Some(param) = params.get_mut(index) else {
-                break;
+        // Debug info only renames, retypes and orders the recovered
+        // parameters; it never adds or drops any. A float parameter takes
+        // the next floating-point register, any other the next integer one.
+        let floats: Vec<u16> = ir.convention.float_arguments().to_vec();
+        let (mut float_params, mut int_params): (Vec<Param>, Vec<Param>) = ir
+            .params
+            .iter()
+            .cloned()
+            .partition(|param| floats.contains(&param.index));
+        float_params.reverse();
+        int_params.reverse();
+        let mut params = Vec::new();
+        for (name, ty) in &types.params {
+            let float = ty.as_ref().is_some_and(CType::is_sse_float);
+            let Some(mut param) = (if float {
+                float_params.pop()
+            } else {
+                int_params.pop()
+            }) else {
+                continue;
             };
             if let Some(name) = name {
                 param.name = name.clone();
@@ -604,7 +633,10 @@ pub(crate) fn apply_dwarf_types(
             if let Some(ty) = ty {
                 param.ty = ty.clone();
             }
+            params.push(param);
         }
+        params.extend(int_params.into_iter().rev());
+        params.extend(float_params.into_iter().rev());
         ir.params = params;
     }
     if let Some(ret) = types.ret {

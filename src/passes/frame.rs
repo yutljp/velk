@@ -185,6 +185,11 @@ fn collect_frame_reads(expr: &Expr, sp: u16, read: &mut Vec<(u64, u8)>) {
             collect_frame_reads(then, sp, read);
             collect_frame_reads(els, sp, read);
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                collect_frame_reads(arg, sp, read);
+            }
+        }
         Expr::Reg { .. } | Expr::Const(_) => {}
     }
 }
@@ -213,6 +218,7 @@ fn address_uses_frame(expr: &Expr, sp: u16) -> bool {
                 || address_uses_frame(then, sp)
                 || address_uses_frame(els, sp)
         }
+        Expr::Apply { args, .. } => args.iter().any(|arg| address_uses_frame(arg, sp)),
         Expr::Const(_) => false,
     }
 }
@@ -609,6 +615,7 @@ pub(crate) fn reads_outside_frame(expr: &Expr) -> bool {
                 || reads_outside_frame(then)
                 || reads_outside_frame(els)
         }
+        Expr::Apply { args, .. } => args.iter().any(reads_outside_frame),
         _ => false,
     }
 }

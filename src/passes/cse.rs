@@ -111,12 +111,19 @@ fn bind(
             then: Box::new(bind(*then, counts, bound, pending, next_id)),
             els: Box::new(bind(*els, counts, bound, pending, next_id)),
         },
+        Expr::Apply { op, args } => Expr::Apply {
+            op,
+            args: args
+                .into_iter()
+                .map(|arg| bind(arg, counts, bound, pending, next_id))
+                .collect(),
+        },
         other => other,
     };
 
     let operator = matches!(
         rewritten,
-        Expr::Bin { .. } | Expr::Select { .. } | Expr::SignExtend { .. }
+        Expr::Bin { .. } | Expr::Select { .. } | Expr::SignExtend { .. } | Expr::Apply { .. }
     );
     // A 32-bit read of a register is as cheap as the register.
     let narrow_read = matches!(

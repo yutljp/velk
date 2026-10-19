@@ -90,6 +90,11 @@ pub fn specialize_widths(ir: &mut FunctionIr) -> std::collections::HashSet<u16> 
                             visit(then, reads);
                             visit(els, reads);
                         }
+                        Expr::Apply { args, .. } => {
+                            for arg in args {
+                                visit(arg, reads);
+                            }
+                        }
                     }
                 }
                 visit(&expr, &mut reads);
@@ -181,6 +186,13 @@ fn rewrite_read_masks(expr: &Expr, uniform: &std::collections::HashSet<u16>) -> 
             rhs: Box::new(rewrite_read_masks(rhs, uniform)),
             then: Box::new(rewrite_read_masks(then, uniform)),
             els: Box::new(rewrite_read_masks(els, uniform)),
+        },
+        Expr::Apply { op, args } => Expr::Apply {
+            op: *op,
+            args: args
+                .iter()
+                .map(|arg| rewrite_read_masks(arg, uniform))
+                .collect(),
         },
         other => other.clone(),
     }

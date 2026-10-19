@@ -160,6 +160,12 @@ fn expr_tokens(expr: &Expr, out: &mut Vec<String>) {
             expr_tokens(els, out);
             out.push(format!("select:{}", cond.text()));
         }
+        Expr::Apply { op, args } => {
+            for arg in args {
+                expr_tokens(arg, out);
+            }
+            out.push(crate::ir::operation_name(*op));
+        }
     }
 }
 

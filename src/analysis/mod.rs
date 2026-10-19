@@ -39,6 +39,74 @@ pub fn analyze(image: &Image, function: &Function) -> Result<Analysis, LiftError
     Ok(optimize(image, lifted))
 }
 
+fn float_return_slot(isa: crate::loader::Isa) -> Option<u16> {
+    match isa {
+        crate::loader::Isa::X86_64 => Some(crate::arch::x86::XMM0),
+        crate::loader::Isa::AArch64 => Some(crate::arch::aarch64::V0),
+        crate::loader::Isa::Unsupported => None,
+    }
+}
+
+/// Whether, without debug info, the function returns a float, and which:
+/// every path to a return writes the float return register, and some path
+/// leaves the integer one as it came in. On x86-64 that value means nothing,
+/// and on AArch64 it is the first argument, which a function returning a
+/// float does not return. A float is a single when every write computes one.
+fn float_result(
+    blocks: &[crate::ir::Block],
+    isa: crate::loader::Isa,
+) -> Option<crate::ir::Precision> {
+    use crate::ir::{Expr, Precision, Stmt};
+    let slot = float_return_slot(isa)?;
+    if blocks.is_empty() {
+        return None;
+    }
+    // Per block on entry: whether every path wrote the float register, and
+    // whether every path wrote the integer one; a call writes both.
+    let mut entry: Vec<Option<(bool, bool)>> = vec![None; blocks.len()];
+    entry[0] = Some((false, false));
+    let mut work = vec![0];
+    let mut returns = Vec::new();
+    let mut precision = None;
+    while let Some(index) = work.pop() {
+        let (mut float, mut int) = entry[index].expect("visited");
+        for stmt in &blocks[index].stmts {
+            match stmt {
+                Stmt::Assign { dest, .. } if dest.index == crate::arch::RETURN => int = true,
+                Stmt::Assign { dest, value } if dest.index == slot => {
+                    float = true;
+                    let single = |expr: &Expr| matches!(expr, Expr::Apply { op, .. } if op.result_precision() == Some(Precision::Single));
+                    let this = match value {
+                        Expr::Bin { rhs, .. } if single(rhs) => Precision::Single,
+                        expr if single(expr) => Precision::Single,
+                        _ => Precision::Double,
+                    };
+                    precision = Some(match precision {
+                        Some(Precision::Double) => Precision::Double,
+                        _ => this,
+                    });
+                }
+                Stmt::Call { .. } => (float, int) = (true, true),
+                Stmt::Ret { .. } => returns.push((float, int)),
+                _ => {}
+            }
+        }
+        for next in crate::ir::cfg::block_successors(blocks, index) {
+            let merged = match entry[next] {
+                Some((f, i)) => (f && float, i && int),
+                None => (float, int),
+            };
+            if entry[next] != Some(merged) {
+                entry[next] = Some(merged);
+                work.push(next);
+            }
+        }
+    }
+    let floats = !returns.is_empty() && returns.iter().all(|(float, _)| *float);
+    let int_everywhere = returns.iter().all(|(_, int)| *int);
+    (floats && !int_everywhere).then_some(precision?)
+}
+
 /// The function's IR before any optimization pass, with its recovered signature.
 struct Lifted {
     ir: FunctionIr,
@@ -102,16 +170,21 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     let signature = signature::recover(&blocks, image.isa, image.format, image.go);
     jump_table::apply(&mut blocks, &tables);
     let types = crate::loader::dwarf::function_types(image, function.addr);
-    // An x86-64 function returning a float returns it in xmm0.
-    if image.isa == crate::loader::Isa::X86_64
-        && types
-            .as_ref()
-            .and_then(|types| types.ret.as_ref())
-            .is_some_and(crate::ir::CType::is_sse_float)
-    {
+    // A function returning a float returns it in xmm0 or v0.
+    let declared = types.as_ref().and_then(|types| types.ret.as_ref());
+    let float_return = match declared {
+        Some(ret) if ret.is_sse_float() => Some(if ret.to_string().contains("double") {
+            crate::ir::Precision::Double
+        } else {
+            crate::ir::Precision::Single
+        }),
+        Some(_) => None,
+        None => float_result(&blocks, image.isa),
+    };
+    if let (Some(precision), Some(slot)) = (float_return, float_return_slot(image.isa)) {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
             if let crate::ir::Stmt::Ret { value } = stmt {
-                *value = crate::ir::Expr::reg(crate::arch::x86::XMM0, 64);
+                *value = crate::ir::Expr::reg(slot, precision.bits());
             }
         }
     }
@@ -119,7 +192,16 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         isa: image.isa,
         convention: crate::ir::Convention::of(image.isa, image.format, image.go),
         params: signature.params,
-        ret_type: signature.ret,
+        ret_type: match float_return {
+            Some(precision) => crate::ir::CType::Named(
+                match precision {
+                    crate::ir::Precision::Single => "float",
+                    crate::ir::Precision::Double => "double",
+                }
+                .to_owned(),
+            ),
+            None => signature.ret,
+        },
         accesses: signature.accesses,
         members: Vec::new(),
         signed_params: signature.signed,

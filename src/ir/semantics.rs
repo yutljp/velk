@@ -3,7 +3,7 @@
 //! comparisons act at the wider of their operands' widths, as the
 //! instruction they came from did.
 
-use super::{BinOp, Cond, Expr};
+use super::{BinOp, Cond, Expr, Operation, Precision};
 
 pub(crate) fn mask(bits: u32) -> u64 {
     if bits >= 64 {
@@ -48,6 +48,13 @@ pub(crate) fn width(expr: &Expr) -> u32 {
         },
         Expr::Bin { lhs, rhs, .. } => width(lhs).max(width(rhs)),
         Expr::Select { then, els, .. } => width(then).max(width(els)),
+        Expr::Apply { op, args } => match op {
+            _ if let Some(precision) = op.result_precision() => u32::from(precision.bits()),
+            Operation::FloatToInt { bits, .. } => u32::from(*bits),
+            Operation::ReverseBits(bits) => u32::from(*bits),
+            // A truth value or a count is small and never negative.
+            _ => args.first().map_or(64, width).max(1),
+        },
     }
 }
 
@@ -111,6 +118,13 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
                 evaluate(els, register)?
             }
         }
+        Expr::Apply { op, args } => {
+            let values = args
+                .iter()
+                .map(|arg| evaluate(arg, register))
+                .collect::<Option<Vec<u64>>>()?;
+            apply(*op, &values)
+        }
         Expr::Bin { op, lhs, rhs } => {
             let (a, b) = (evaluate(lhs, register)?, evaluate(rhs, register)?);
             let bits = operand_width(lhs, rhs);
@@ -144,4 +158,151 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
             }
         }
     })
+}
+
+/// `op` on constant arguments, unless the result is a NaN, whose bit pattern
+/// the processor running velk would choose.
+pub(crate) fn fold(op: Operation, args: &[u64]) -> Option<u64> {
+    let value = apply(op, args);
+    let nan = match op {
+        Operation::FloatAdd(p)
+        | Operation::FloatSub(p)
+        | Operation::FloatMul(p)
+        | Operation::FloatDiv(p)
+        | Operation::FloatSqrt(p)
+        | Operation::FloatMulAdd(p)
+        | Operation::FloatConvert { to: p, .. } => match p {
+            Precision::Double => f64::from_bits(value).is_nan(),
+            Precision::Single => f32::from_bits(value as u32).is_nan(),
+        },
+        _ => false,
+    };
+    (!nan).then_some(value)
+}
+
+/// How many low bits of each argument `op` reads.
+pub(crate) fn argument_bits(op: Operation) -> u32 {
+    u32::from(match op {
+        Operation::FloatAdd(p)
+        | Operation::FloatSub(p)
+        | Operation::FloatMul(p)
+        | Operation::FloatDiv(p)
+        | Operation::FloatSqrt(p)
+        | Operation::FloatMulAdd(p)
+        | Operation::FloatEqual(p)
+        | Operation::FloatLess(p)
+        | Operation::FloatLessEqual(p)
+        | Operation::FloatUnordered(p)
+        | Operation::FloatToInt { from: p, .. }
+        | Operation::FloatConvert { from: p, .. } => p.bits(),
+        Operation::IntToFloat { bits, .. }
+        | Operation::CountLeadingZeros(bits)
+        | Operation::CountTrailingZeros(bits)
+        | Operation::PopCount(bits)
+        | Operation::ReverseBits(bits) => bits,
+    })
+}
+
+/// The value of `op` on `args`, which hold floats as bit patterns.
+pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
+    let single = |bits: u64| f32::from_bits(bits as u32);
+    let double = f64::from_bits;
+    let arithmetic =
+        |precision: Precision, f: fn(f64, f64) -> f64, g: fn(f32, f32) -> f32| match precision {
+            Precision::Double => f(double(args[0]), double(args[1])).to_bits(),
+            Precision::Single => u64::from(g(single(args[0]), single(args[1])).to_bits()),
+        };
+    let compare = |precision: Precision, f: fn(f64, f64) -> bool| {
+        // Widening a single is exact, so comparing as doubles decides the same.
+        let (a, b) = match precision {
+            Precision::Double => (double(args[0]), double(args[1])),
+            Precision::Single => (f64::from(single(args[0])), f64::from(single(args[1]))),
+        };
+        u64::from(f(a, b))
+    };
+    let float = |precision: Precision, value: u64| match precision {
+        Precision::Double => double(value),
+        Precision::Single => f64::from(single(value)),
+    };
+    match op {
+        Operation::FloatAdd(p) => arithmetic(p, |a, b| a + b, |a, b| a + b),
+        Operation::FloatSub(p) => arithmetic(p, |a, b| a - b, |a, b| a - b),
+        Operation::FloatMul(p) => arithmetic(p, |a, b| a * b, |a, b| a * b),
+        Operation::FloatDiv(p) => arithmetic(p, |a, b| a / b, |a, b| a / b),
+        Operation::FloatSqrt(Precision::Double) => double(args[0]).sqrt().to_bits(),
+        Operation::FloatSqrt(Precision::Single) => u64::from(single(args[0]).sqrt().to_bits()),
+        Operation::FloatMulAdd(Precision::Double) => double(args[0])
+            .mul_add(double(args[1]), double(args[2]))
+            .to_bits(),
+        Operation::FloatMulAdd(Precision::Single) => u64::from(
+            single(args[0])
+                .mul_add(single(args[1]), single(args[2]))
+                .to_bits(),
+        ),
+        Operation::FloatEqual(p) => compare(p, |a, b| a == b),
+        Operation::FloatLess(p) => compare(p, |a, b| a < b),
+        Operation::FloatLessEqual(p) => compare(p, |a, b| a <= b),
+        Operation::FloatUnordered(p) => compare(p, |a, b| a.is_nan() || b.is_nan()),
+        Operation::IntToFloat { signed, bits, to } => {
+            let value = args[0] & mask(u32::from(bits));
+            match (signed, to) {
+                (true, Precision::Double) => (sign_extend(value, u32::from(bits)) as f64).to_bits(),
+                (false, Precision::Double) => (value as f64).to_bits(),
+                (true, Precision::Single) => {
+                    u64::from((sign_extend(value, u32::from(bits)) as f32).to_bits())
+                }
+                (false, Precision::Single) => u64::from((value as f32).to_bits()),
+            }
+        }
+        Operation::FloatToInt {
+            signed,
+            bits,
+            from,
+            saturating,
+        } => {
+            let value = float(from, args[0]);
+            let bits = u32::from(bits);
+            let (low, high) = if signed {
+                (-(2f64.powi(bits as i32 - 1)), 2f64.powi(bits as i32 - 1))
+            } else {
+                (0.0, 2f64.powi(bits as i32))
+            };
+            let truncated = value.trunc();
+            let result = if value.is_nan() {
+                if saturating { 0 } else { 1u64 << (bits - 1) }
+            } else if truncated < low || truncated >= high {
+                match (saturating, truncated < low) {
+                    (false, _) => 1u64 << (bits - 1),
+                    (true, true) if signed => 1u64 << (bits - 1),
+                    (true, true) => 0,
+                    (true, false) if signed => mask(bits - 1),
+                    (true, false) => mask(bits),
+                }
+            } else if signed {
+                truncated as i64 as u64
+            } else {
+                truncated as u64
+            };
+            result & mask(bits)
+        }
+        Operation::FloatConvert { from, to } => {
+            let value = float(from, args[0]);
+            match to {
+                Precision::Double => value.to_bits(),
+                Precision::Single => u64::from((value as f32).to_bits()),
+            }
+        }
+        Operation::CountLeadingZeros(bits) => {
+            let value = args[0] & mask(u32::from(bits));
+            u64::from(value.leading_zeros()) - (64 - u64::from(bits))
+        }
+        Operation::CountTrailingZeros(bits) => {
+            let value = args[0] & mask(u32::from(bits));
+            u64::from(value.trailing_zeros().min(u32::from(bits)))
+        }
+        Operation::PopCount(bits) => u64::from((args[0] & mask(u32::from(bits))).count_ones()),
+        Operation::ReverseBits(bits) => {
+            (args[0] & mask(u32::from(bits))).reverse_bits() >> (64 - u32::from(bits))
+        }
+    }
 }

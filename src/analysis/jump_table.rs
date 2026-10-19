@@ -284,6 +284,10 @@ pub(crate) fn resolve(expr: &Expr, environment: &std::collections::HashMap<u16, 
             then: Box::new(resolve(then, environment)),
             els: Box::new(resolve(els, environment)),
         },
+        Expr::Apply { op, args } => Expr::Apply {
+            op: *op,
+            args: args.iter().map(|arg| resolve(arg, environment)).collect(),
+        },
         Expr::Const(_) => expr.clone(),
     }
 }

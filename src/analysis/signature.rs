@@ -37,6 +37,11 @@ fn reads(expr: &Expr, into: &mut HashSet<u16>) {
             reads(then, into);
             reads(els, into);
         }
+        Expr::Apply { args, .. } => {
+            for arg in args {
+                reads(arg, into);
+            }
+        }
         Expr::Const(_) => {}
     }
 }
@@ -110,16 +115,30 @@ fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
             signed_in_expr(then, signed);
             signed_in_expr(els, signed);
         }
+        Expr::Apply { op, args } => {
+            // Converting a signed integer to a float reads it as signed.
+            if let crate::ir::Operation::IntToFloat { signed: true, .. } = op {
+                for arg in args {
+                    reads(arg, signed);
+                }
+            }
+            for arg in args {
+                signed_in_expr(arg, signed);
+            }
+        }
         Expr::Reg { .. } | Expr::Const(_) => {}
     }
 }
 
 pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signature {
-    let arguments = match isa {
-        Isa::Unsupported => &[],
-        _ => Convention::of(isa, format, go).arguments(),
+    let (arguments, float_arguments) = match isa {
+        Isa::Unsupported => (&[][..], &[][..]),
+        _ => {
+            let convention = Convention::of(isa, format, go);
+            (convention.arguments(), convention.float_arguments())
+        }
     };
-    let universe: HashSet<u16> = arguments.iter().copied().collect();
+    let universe: HashSet<u16> = arguments.iter().chain(float_arguments).copied().collect();
 
     // Registers written on every path to each block; a register read before
     // it is written is an argument.
@@ -171,6 +190,9 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                 .flat_map(|stmt| match stmt {
                     Stmt::Assign { dest, .. } => vec![dest.index],
                     Stmt::Call { convention, .. } => convention.clobbered().to_vec(),
+                    // Unsupported instructions are mostly vector ones, which
+                    // may write any floating-point register.
+                    Stmt::Unsupported { .. } => float_arguments.to_vec(),
                     _ => Vec::new(),
                 })
                 .collect()
@@ -210,6 +232,8 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
     }
 
     let mut inputs: HashSet<u16> = HashSet::new();
+    // Inputs some read takes more than the low 32 bits of.
+    let mut wide_inputs: HashSet<u16> = HashSet::new();
     for (index, block) in blocks.iter().enumerate() {
         let mut written = entry[index].clone();
         for stmt in &block.stmts {
@@ -240,6 +264,26 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             for register in used {
                 if !written.contains(&register) {
                     inputs.insert(register);
+                    // A write of the low bits keeps the rest without reading it.
+                    let operands = match stmt {
+                        Stmt::Assign { dest, value } => {
+                            vec![partial_write_source(value, dest.index)]
+                        }
+                        _ => stmt.operands(),
+                    };
+                    let (mut narrow, mut seen) = (true, false);
+                    for value in operands {
+                        crate::analysis::typing::scan_reads(
+                            value,
+                            register,
+                            false,
+                            &mut narrow,
+                            &mut seen,
+                        );
+                    }
+                    if !narrow {
+                        wide_inputs.insert(register);
+                    }
                 }
             }
             match stmt {
@@ -247,6 +291,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                     written.insert(dest.index);
                 }
                 Stmt::Call { convention, .. } => written.extend(convention.clobbered()),
+                Stmt::Unsupported { .. } => written.extend(float_arguments),
                 _ => {}
             }
         }
@@ -267,6 +312,46 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             ty: CType::U64,
         })
         .collect();
+    // The floating-point arguments follow, a float where only the low 32
+    // bits are read.
+    let float_count = float_arguments
+        .iter()
+        .rposition(|register| inputs.contains(register))
+        .map_or(0, |last| last + 1);
+    // A variadic function saves every floating-point argument register to
+    // its register save area and reads them nowhere else.
+    let saved_only = |register: u16| {
+        blocks.iter().flat_map(|block| &block.stmts).all(|stmt| {
+            let operands = match stmt {
+                Stmt::Store {
+                    addr,
+                    value: Expr::Reg { index, .. },
+                    ..
+                } if *index == register => vec![addr],
+                _ => stmt.operands(),
+            };
+            operands.into_iter().all(|value| {
+                let mut read = HashSet::new();
+                reads(value, &mut read);
+                !read.contains(&register)
+            })
+        })
+    };
+    let float_count = if float_count == float_arguments.len()
+        && float_arguments.iter().all(|register| saved_only(*register))
+    {
+        0
+    } else {
+        float_count
+    };
+    for register in &float_arguments[..float_count] {
+        let narrow = !wide_inputs.contains(register);
+        params.push(Param {
+            index: *register,
+            name: format!("a{}", params.len()),
+            ty: CType::Named(if narrow { "float" } else { "double" }.to_owned()),
+        });
+    }
 
     // Which argument each register is derived from through copies and
     // base-preserving arithmetic, so loads through it type that argument.

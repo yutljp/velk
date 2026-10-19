@@ -7,7 +7,7 @@
 //! decides it exactly, preferring one that reads as the source would.
 
 use crate::ir::semantics::{mask, operand_width};
-use crate::ir::{BinOp, Cond, Expr, Stmt};
+use crate::ir::{BinOp, Cond, Expr, Operation, Precision, Stmt};
 use crate::loader::Isa;
 
 /// The operation whose result set the flags.
@@ -26,6 +26,9 @@ pub(super) enum Source {
     Fixed(u8),
     /// Only the carry is known, equal to the bit `lhs` (x86 `bt`).
     Carry,
+    /// A floating-point comparison of `lhs` with `rhs`: x86 `ucomisd`,
+    /// AArch64 `fcmp`.
+    FloatCompare(Precision),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,6 +76,22 @@ impl Flags {
 
     pub fn result(result: Expr) -> Self {
         Self::new(Source::Result, result, Expr::constant(0))
+    }
+
+    pub fn float_compare(lhs: Expr, rhs: Expr, precision: Precision) -> Self {
+        Self::new(Source::FloatCompare(precision), lhs, rhs)
+    }
+
+    /// Whether the x86 parity flag is set (`even`) or clear: after a
+    /// floating-point comparison it is set by a NaN.
+    pub fn parity(&self, even: bool) -> Test {
+        match self.source {
+            Source::FloatCompare(precision) if self.chosen.is_none() => {
+                let unordered = holds(Operation::FloatUnordered(precision), &self.lhs, &self.rhs);
+                if even { unordered } else { not(unordered) }
+            }
+            _ => Test::Unknown,
+        }
     }
 
     pub fn carry(bit: Expr) -> Self {
@@ -170,6 +189,7 @@ impl Flags {
                     Test::Unknown
                 }
             }
+            Source::FloatCompare(precision) => float_test(a, b, precision, cond, isa),
             Source::Fixed(nzcv) => {
                 if fixed_holds(cond, nzcv) {
                     Test::Always
@@ -226,6 +246,54 @@ impl Flags {
             }
             Source::Sum => sum(a, b, bits, cond, isa),
         }
+    }
+}
+
+/// The test that a floating-point comparison holds.
+fn holds(op: Operation, a: &Expr, b: &Expr) -> Test {
+    Test::Compare(
+        Cond::Ne,
+        Expr::apply(op, vec![a.clone(), b.clone()]),
+        Expr::constant(0),
+    )
+}
+
+/// `cond` after comparing the floats `a` and `b`. On x86 a NaN sets zero,
+/// parity and carry, and a smaller `a` the carry, while sign and overflow
+/// are clear; on AArch64 a smaller `a` sets N, an equal one Z and C, a
+/// larger one C, and a NaN C and V.
+fn float_test(a: &Expr, b: &Expr, precision: Precision, cond: Cond, isa: Isa) -> Test {
+    let less = |x, y| holds(Operation::FloatLess(precision), x, y);
+    let less_equal = |x, y| holds(Operation::FloatLessEqual(precision), x, y);
+    let equal = holds(Operation::FloatEqual(precision), a, b);
+    let unordered = holds(Operation::FloatUnordered(precision), a, b);
+    // Equal, or not comparable.
+    let equal_or_unordered = || not(both(not(equal.clone()), not(unordered.clone())));
+    match isa {
+        Isa::X86_64 => match cond {
+            Cond::Eq | Cond::Le => equal_or_unordered(),
+            Cond::Ne | Cond::Gt => not(equal_or_unordered()),
+            Cond::Cc => not(less_equal(b, a)),
+            Cond::Cs => less_equal(b, a),
+            Cond::Hi => less(b, a),
+            Cond::Ls => not(less(b, a)),
+            Cond::Mi | Cond::Vs | Cond::Lt => Test::Never,
+            Cond::Pl | Cond::Vc | Cond::Ge => Test::Always,
+        },
+        _ => match cond {
+            Cond::Eq => equal,
+            Cond::Ne => not(equal),
+            Cond::Cc | Cond::Mi => less(a, b),
+            Cond::Cs | Cond::Pl => not(less(a, b)),
+            Cond::Vs => unordered,
+            Cond::Vc => not(unordered),
+            Cond::Hi => not(less_equal(a, b)),
+            Cond::Ls => less_equal(a, b),
+            Cond::Ge => less_equal(b, a),
+            Cond::Lt => not(less_equal(b, a)),
+            Cond::Gt => less(b, a),
+            Cond::Le => not(less(b, a)),
+        },
     }
 }
 
