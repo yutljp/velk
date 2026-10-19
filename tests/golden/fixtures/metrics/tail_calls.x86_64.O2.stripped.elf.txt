@@ -24,13 +24,13 @@ fn <unnamed> @ 0x201180 (size 16)
 == 0x201190 -
 -- decompile
 /* velk pseudo-C: sub_201190 @ 0x201190 */
-void sub_201190(uint32_t a0) {
+uint32_t sub_201190(uint32_t a0) {
     a0 = a0 + 0x2;
     sub_201180();
-    return;
+    return eax;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -38,7 +38,10 @@ fn <unnamed> @ 0x201190 (size 28)
   blk0 @ 0x201190:
     edi = (edi + #0x2)
     call 0x201180
+    ret eax
   blk1 @ 0x201198:
-    ret (edi + #0xfffffffffffffff9)
+    edi = (edi + #0xfffffffffffffff9)
+    store32(edi, (rsp + #0xfffffffffffffffc))
+    ret edi
 -- card
 {"addr":"0x201190","approxTokens":108,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}

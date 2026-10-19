@@ -1,7 +1,7 @@
 use yaxpeax_arch::{Decoder, ReaderBuilder};
 use yaxpeax_arm::armv8::a64::{self, Instruction, Operand, SizeCode};
 
-use super::{Decoded, MAX_INSTRUCTIONS, Machine};
+use super::{Decoded, MAX_INSTRUCTIONS, Machine, Write, call, preserve_compare, tail_call};
 use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 
 pub(super) struct Lifter<'a> {
@@ -47,6 +47,11 @@ impl<'a> Lifter<'a> {
     }
 
     fn assign(&mut self, dest: RegRef, value: Expr) {
+        preserve_compare(
+            &mut self.last_compare,
+            Write::Register(dest.index, Some(&value)),
+            &mut self.stmts,
+        );
         let value = if dest.width == 32 {
             Expr::bin(BinOp::And, value, Expr::constant(0xffff_ffff))
         } else {
@@ -130,6 +135,16 @@ fn extend_shift(style: a64::ShiftStyle, amount: u64, value: Expr, size: SizeCode
         return Some(Expr::bin(BinOp::Shl, widened, Expr::constant(amount)));
     }
     shift_expr(style, amount, value)
+}
+
+/// The width in bits of a general register operand, the zero register included.
+fn register_width(operand: Operand) -> Option<u8> {
+    match operand {
+        Operand::Register(size, _) | Operand::RegisterOrSP(size, _) => {
+            Some(if size == SizeCode::X { 64 } else { 32 })
+        }
+        _ => None,
+    }
 }
 
 fn destination(operand: Operand) -> Option<RegRef> {
@@ -520,9 +535,14 @@ fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
     let width = match opcode {
         a64::Opcode::STRB => 1,
         a64::Opcode::STRH => 2,
-        _ => match destination(ops[0]) {
-            Some(dest) => dest.width / 8,
-            None => return,
+        _ => match register_width(ops[0]) {
+            Some(bits) => bits / 8,
+            None => {
+                lifter.stmts.push(Stmt::Unsupported {
+                    text: "SIMD store".to_owned(),
+                });
+                return;
+            }
         },
     };
     let value_width = if width == 8 { 64 } else { 32 };
@@ -544,7 +564,8 @@ fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
 }
 
 fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
-    let (Some(first), Some(second)) = (destination(ops[0]), destination(ops[1])) else {
+    let (Some(first_bits), Some(second_bits)) = (register_width(ops[0]), register_width(ops[1]))
+    else {
         // A vector pair touches registers the scalar IR does not model.
         lifter.stmts.push(Stmt::Unsupported {
             text: if store {
@@ -558,7 +579,7 @@ fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
     let Some(mem) = memory(lifter, ops[2], 8) else {
         return;
     };
-    let width = first.width / 8;
+    let width = first_bits / 8;
     let second_addr = Expr::bin(
         BinOp::Add,
         mem.address.clone(),
@@ -566,8 +587,8 @@ fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
     );
     if store {
         let (Some(a), Some(b)) = (
-            lifter.operand(ops[0], first.width),
-            lifter.operand(ops[1], second.width),
+            lifter.operand(ops[0], first_bits),
+            lifter.operand(ops[1], second_bits),
         ) else {
             return;
         };
@@ -582,18 +603,23 @@ fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
             width,
         });
     } else {
-        let a = Expr::Load {
-            addr: Box::new(mem.address),
-            width,
-            signed: false,
-        };
-        lifter.assign(first, a);
-        let b = Expr::Load {
-            addr: Box::new(second_addr),
-            width,
-            signed: false,
-        };
-        lifter.assign(second, b);
+        // A load into the zero register is discarded.
+        if let Some(first) = destination(ops[0]) {
+            let a = Expr::Load {
+                addr: Box::new(mem.address),
+                width,
+                signed: false,
+            };
+            lifter.assign(first, a);
+        }
+        if let Some(second) = destination(ops[1]) {
+            let b = Expr::Load {
+                addr: Box::new(second_addr),
+                width,
+                signed: false,
+            };
+            lifter.assign(second, b);
+        }
     }
     write_back(lifter, mem.writeback);
 }
@@ -631,7 +657,9 @@ fn lift_cond_branch(lifter: &mut Lifter, ops: [Operand; 4], code: u8, pc: u64) -
 }
 
 fn lift_compare_branch(lifter: &mut Lifter, ops: [Operand; 4], pc: u64, non_zero: bool) -> bool {
-    let Some(value) = lifter.operand(ops[0], 64) else {
+    // `cbz w0` tests only the low half.
+    let width = destination(ops[0]).map_or(64, |register| register.width);
+    let Some(value) = lifter.operand(ops[0], width) else {
         return true;
     };
     let Some(target) = relative_target(ops[1], pc) else {
@@ -815,15 +843,13 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             // A branch to itself is an unresolved reference to another
             // function; lift it as a tail call.
             if target == Some(pc) {
-                lifter.stmts.push(Stmt::Call { target: None });
+                lifter.stmts.extend(tail_call(lifter.image, None));
                 return true;
             }
             if let Some(target) = target
                 && lifter.is_tail_call(target)
             {
-                lifter.stmts.push(Stmt::Call {
-                    target: Some(target),
-                });
+                lifter.stmts.extend(tail_call(lifter.image, Some(target)));
                 return true;
             }
             lifter.stmts.push(Stmt::Br { target });
@@ -841,9 +867,9 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             return true;
         }
         O::BL => {
-            lifter.stmts.push(Stmt::Call {
-                target: lifter.target_of(ops[0], pc),
-            });
+            lifter
+                .stmts
+                .push(call(lifter.image, lifter.target_of(ops[0], pc)));
         }
         O::RET => {
             let value = Lifter::read_reg(0, 64);

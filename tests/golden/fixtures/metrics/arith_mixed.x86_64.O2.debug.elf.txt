@@ -1,4 +1,4 @@
-# metrics/arith_mixed.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 2 gotos
+# metrics/arith_mixed.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 0 gotos
 0x201190 6 sum3 symtab,dwarf
 0x2011a0 46 helper symtab,dwarf
 0x2011d0 6 pair_sum symtab,dwarf
@@ -27,7 +27,7 @@ fn sum3 @ 0x201190 (size 6)
 -- decompile
 /* velk pseudo-C: helper @ 0x2011a0 */
 int helper(int x) {
-    if (x & x <= 0x0) {
+    if (x <= 0x0) {
         return 0x0;
     }
     rcx = ((x - 0x2) & 0xffffffff) * ((x - 0x1) & 0xffffffff);
@@ -44,7 +44,7 @@ int (int x)
 -- ir
 fn helper @ 0x2011a0 (size 46)
   blk0 @ 0x2011a0:
-    brif le ((rdi & #0xffffffff) & (rdi & #0xffffffff)), #0x0 -> 0x2011cb
+    brif le (rdi & #0xffffffff), #0x0 -> 0x2011cb
   blk1 @ 0x2011a4:
     rcx = (((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff))
     rax = ((((rdi + #0xfffffffffffffffd) & #0xffffffff) * rcx) >> #0x1)
@@ -79,21 +79,14 @@ fn pair_sum @ 0x2011d0 (size 6)
 -- decompile
 /* velk pseudo-C: sum_arr @ 0x2011e0 */
 int sum_arr(int *p, int n) {
-    if (n & n <= 0x0) {
+    if (n <= 0x0) {
         return 0x0;
     }
     rcx = n;
-    switch (n) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-        goto L_201260;
-    case 8:
+    if (n < 0x8 /* unsigned */) {
+        rdx = 0x0;
+        rax = 0x0;
+    } else {
         rdx = ecx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         /* unsupported: Pxor at 0x20120a */
@@ -107,9 +100,12 @@ int sum_arr(int *p, int n) {
         if (rdx == rcx) {
             return rax;
         }
-        rax = eax + *(uint32_t *)(p + rdx * 0x4);
-        if (rcx != rdx + 0x1) { goto L_201260; }
     }
+    do {
+        rax = eax + *(uint32_t *)(p + rdx * 0x4);
+        rdx = rdx + 0x1;
+    } while (rcx != rdx);
+    return rax;
 }
 -- signature
 int (int * p, int n)
@@ -118,11 +114,13 @@ int (int * p, int n)
 -- ir
 fn sum_arr @ 0x2011e0 (size 140)
   blk0 @ 0x2011e0:
-    brif le ((rsi & #0xffffffff) & (rsi & #0xffffffff)), #0x0 -> 0x2011f1
+    brif le (rsi & #0xffffffff), #0x0 -> 0x2011f1
   blk1 @ 0x2011e4:
     rcx = (rsi & #0xffffffff)
     brif cs (rsi & #0xffffffff), #0x8 -> 0x2011f4
   blk2 @ 0x2011eb:
+    rdx = #0x0
+    rax = #0x0
     br 0x201260
   blk3 @ 0x2011f1:
     ret #0x0
@@ -147,9 +145,10 @@ fn sum_arr @ 0x2011e0 (size 140)
     unsupported: Paddd at 0x20124e
     unsupported: Movd at 0x201252
     brif eq rdx, rcx -> 0x20126b
-  blk7 @ 0x20125b:
+  blk7 @ 0x201260:
     rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)
-    brif ne rcx, (rdx + #0x1) -> 0x201260
+    rdx = (rdx + #0x1)
+    brif ne rcx, rdx -> 0x201260
   blk8 @ 0x20126b:
     ret rax
 -- card

@@ -49,7 +49,8 @@ fn widen_mul @ 0x21020c (size 16)
 /* velk pseudo-C: mixed_sign @ 0x21021c */
 uint64_t mixed_sign(void) {
     /* unsupported: bitfield immr=0 imms=31 */
-    return x8 - w1;
+    x0 = x8 - w1;
+    return x0;
 }
 -- signature
 uint64_t ()
@@ -59,7 +60,8 @@ uint64_t ()
 fn mixed_sign @ 0x21021c (size 12)
   blk0 @ 0x21021c:
     unsupported: bitfield immr=0 imms=31
-    ret (x8 - w1)
+    x0 = (x8 - w1)
+    ret x0
 -- card
 {"addr":"0x21021c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
 
@@ -68,6 +70,7 @@ fn mixed_sign @ 0x21021c (size 12)
 /* velk pseudo-C: in_range @ 0x210228 */
 _Bool in_range(int x, int lo) {
     /* unsupported: CCMP at 0x21022c */
+    t65 = x;
     x = (x <= lo ? 0x1 : 0x0);
     return x;
 }
@@ -79,6 +82,7 @@ _Bool (int x, int lo)
 fn in_range @ 0x210228 (size 16)
   blk0 @ 0x210228:
     unsupported: CCMP at 0x21022c
+    t65 = w0
     w0 = select le w0, w1 ? #0x1, #0x0
     ret w0
 -- card
@@ -88,6 +92,7 @@ fn in_range @ 0x210228 (size 16)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x210238 */
 uint64_t rotate_left(uint64_t x, uint32_t k) {
+    w8 = -k;
     /* unsupported: RORV at 0x21023c */
     return x;
 }
@@ -98,6 +103,7 @@ uint64_t (uint64_t x, uint32_t k)
 -- ir
 fn rotate_left @ 0x210238 (size 12)
   blk0 @ 0x210238:
+    w8 = (#0x0 - w1)
     unsupported: RORV at 0x21023c
     ret x0
 -- card

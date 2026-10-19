@@ -6,6 +6,53 @@ pub mod visit;
 
 pub use types::{Access, CType, Member, Param};
 
+/// The integer calling convention a call follows: which registers carry
+/// its arguments and which it may overwrite.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Convention {
+    Aapcs64,
+    SysV,
+    Win64,
+    /// Go's internal register ABI on x86-64.
+    GoAmd64,
+}
+
+impl Convention {
+    pub fn of(isa: crate::loader::Isa, format: crate::loader::Format, go: bool) -> Self {
+        use crate::loader::{Format, Isa};
+        match isa {
+            Isa::AArch64 => Self::Aapcs64,
+            _ if go => Self::GoAmd64,
+            _ if matches!(format, Format::Pe | Format::Coff) => Self::Win64,
+            _ => Self::SysV,
+        }
+    }
+
+    /// Integer argument registers, in order.
+    pub fn arguments(self) -> &'static [u16] {
+        match self {
+            Self::Aapcs64 => &[0, 1, 2, 3, 4, 5, 6, 7],
+            Self::SysV => &[7, 6, 2, 1, 8, 9],
+            Self::Win64 => &[1, 2, 8, 9],
+            // rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11.
+            Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
+        }
+    }
+
+    /// Registers a call may leave changed.
+    pub fn clobbered(self) -> &'static [u16] {
+        match self {
+            Self::Aapcs64 => &[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+            ],
+            Self::SysV => &[0, 1, 2, 6, 7, 8, 9, 10, 11],
+            Self::Win64 => &[0, 1, 2, 8, 9, 10, 11],
+            // Everything but rsp, rbp, r14 (the goroutine) and r15.
+            Self::GoAmd64 => &[0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13],
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BinOp {
     Add,
@@ -186,6 +233,9 @@ impl Expr {
         if matches!(op, BinOp::Add | BinOp::Or | BinOp::Xor) && matches!(lhs, Expr::Const(0)) {
             return rhs;
         }
+        if matches!(op, BinOp::And | BinOp::Or) && lhs == rhs {
+            return lhs;
+        }
         if op == BinOp::Mul && matches!(rhs, Expr::Const(1)) {
             return lhs;
         }
@@ -283,6 +333,10 @@ const X86_NAMES64: [&str; 16] = [
 /// `t<n>`.
 pub const TEMP_BASE: u16 = 0x1000;
 
+/// The registers holding a compare's operands after the instruction that sets
+/// the flags, or a later one, overwrites what they read.
+pub const FLAG_OPERANDS: [u16; 2] = [TEMP_BASE + 0x40, TEMP_BASE + 0x41];
+
 pub fn is_temp(index: u16) -> bool {
     index >= TEMP_BASE
 }
@@ -363,6 +417,7 @@ pub enum Stmt {
     },
     Call {
         target: Option<u64>,
+        convention: Convention,
     },
     Ret {
         value: Expr,
@@ -507,7 +562,7 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
                     .unwrap_or_else(|| "<none>".to_owned())
             )
         }
-        Stmt::Call { target } => match target {
+        Stmt::Call { target, .. } => match target {
             Some(target) => format!("call 0x{target:x}"),
             None => "call <dynamic>".to_owned(),
         },
@@ -533,5 +588,15 @@ mod tests {
             fold(BinOp::MulHigh, u64::MAX, u64::MAX),
             Expr::Const(u64::MAX - 1)
         );
+    }
+
+    #[test]
+    fn a_value_combined_with_itself_is_the_value() {
+        let reg = Expr::Reg {
+            index: 1,
+            width: 64,
+        };
+        assert_eq!(Expr::bin(BinOp::And, reg.clone(), reg.clone()), reg);
+        assert_eq!(Expr::bin(BinOp::Or, reg.clone(), reg.clone()), reg);
     }
 }

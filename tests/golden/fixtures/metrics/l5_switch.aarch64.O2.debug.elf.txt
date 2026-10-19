@@ -1,4 +1,4 @@
-# metrics/l5_switch.aarch64.O2.debug.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 16 gotos
+# metrics/l5_switch.aarch64.O2.debug.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x210304 200 dense symtab,dwarf
 0x2103cc 20 c0 symtab,dwarf
 0x2103e0 24 c1 symtab,dwarf
@@ -23,76 +23,122 @@
 /* velk pseudo-C: dense @ 0x210304 */
 /* ref: 0x200158 .rodata */
 int dense(int x) {
-    uint64_t local_0; /* [sp-20] */
-    uint64_t local_1; /* [sp-18] */
-    uint64_t local_2; /* [sp-10] */
+    uint64_t local_0; /* [sp-10] */
 
-    local_0 = x29;
-    local_1 = x30;
-    local_2 = x19;
+    sp = sp - 0x20;
+    local_0 = x19;
+    x8 = x - 0xa;
     x19 = 0x220000;
-    if (x - 0xa > 0xf /* unsigned */) {
+    if (w8 > 0xf /* unsigned */) {
+        *(uint32_t *)(x19 + 0x554) = 0x0;
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_2;
-        x29 = local_0;
-        x30 = local_1;
+        x19 = local_0;
+        sp = sp + 0x20;
         return x;
     }
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (x) {
     case 10:
         c0();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 11:
         c1();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 12:
         c2();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 13:
         c3();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 14:
         c4();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 15:
         c5();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 16:
         c6();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 17:
         c7();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 18:
         c8();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 19:
         c9();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 20:
         c10();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 21:
         c11();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 22:
         c12();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 23:
         c13();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 24:
         c14();
-        goto L_2103bc;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
     case 25:
         c15();
-        goto L_2103bc;
-    default:
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_2;
-        x29 = local_0;
-        x30 = local_1;
+        x19 = local_0;
+        sp = sp + 0x20;
+        return x;
+    default:
+        *(uint32_t *)(x19 + 0x554) = 0x0;
+        x = *(uint32_t *)(x19 + 0x554);
+        x19 = local_0;
+        sp = sp + 0x20;
         return x;
     }
 }
@@ -103,11 +149,11 @@ int (int x)
 -- ir
 fn dense @ 0x210304 (size 200)
   blk0 @ 0x210304:
-    store64(x29, (sp + #0xffffffffffffffe0))
-    store64(x30, (sp + #0xffffffffffffffe8))
-    store64(x19, (sp + #0xfffffffffffffff0))
+    sp = (sp + #0xffffffffffffffe0)
+    store64(x19, (sp + #0x10))
+    x8 = ((w0 - #0xa) & #0xffffffff)
     x19 = #0x220000
-    brif hi ((w0 - #0xa) & #0xffffffff), #0xf -> 0x2103b8
+    brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
     x11 = (load8((#0x200158 + x8)) & #0xffffffff)
     switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
@@ -160,13 +206,14 @@ fn dense @ 0x210304 (size 200)
     call 0x210474
     br 0x2103bc
   blk18 @ 0x2103b8:
+    store32(#0x0, (x19 + #0x554))
+  blk19 @ 0x2103bc:
     w0 = load32((x19 + #0x554))
-    x19 = load64((sp + #0xfffffffffffffff0))
-    x29 = load64((sp + #0xffffffffffffffe0))
-    x30 = load64((sp + #0xffffffffffffffe8))
+    x19 = load64((sp + #0x10))
+    sp = (sp + #0x20)
     ret w0
 -- card
-{"addr":"0x210304","approxTokens":240,"blocks":19,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":200,"unsupported":0}
+{"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":200,"unsupported":0}
 
 == 0x2103cc c0
 -- decompile

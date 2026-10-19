@@ -7,7 +7,7 @@
 == 0x2011c0 -
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
-void sub_2011c0(uint32_t a0, uint32_t a1, uint32_t a2) {
+uint32_t sub_2011c0(uint32_t a0, uint32_t a1, uint32_t a2) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -16,10 +16,10 @@ void sub_2011c0(uint32_t a0, uint32_t a1, uint32_t a2) {
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
     *(uint32_t *)(rbp - 0xc) = a2;
-    return;
+    return a0 + a1 + a2;
 }
 -- signature
-void (uint32_t a0, uint32_t a1, uint32_t a2)
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir
@@ -38,11 +38,11 @@ fn <unnamed> @ 0x2011c0 (size 32)
 == 0x2011e0 -
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
-void sub_2011e0(uint32_t a0) {
-    return;
+uint32_t sub_2011e0(uint32_t a0) {
+    return a0 * 0x7 + 0x3;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -55,7 +55,7 @@ fn <unnamed> @ 0x2011e0 (size 16)
 == 0x2011f0 -
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
-void sub_2011f0(uint32_t a0, uint32_t a1) {
+uint32_t sub_2011f0(uint32_t a0, uint32_t a1) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -69,10 +69,10 @@ void sub_2011f0(uint32_t a0, uint32_t a1) {
         *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0x8);
     }
     rsp = rsp + 0x8;
-    return;
+    return *(uint32_t *)(rbp - 0xc);
 }
 -- signature
-void (uint32_t a0, uint32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -98,11 +98,11 @@ fn <unnamed> @ 0x2011f0 (size 48)
 == 0x201220 -
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
-void sub_201220(uint32_t a0) {
-    return;
+uint32_t sub_201220(uint32_t a0) {
+    return -a0;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir

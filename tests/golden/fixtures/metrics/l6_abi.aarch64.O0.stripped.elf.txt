@@ -25,13 +25,14 @@ fn <unnamed> @ 0x2101d4 (size 40)
 == 0x2101fc -
 -- decompile
 /* velk pseudo-C: sub_2101fc @ 0x2101fc */
-void sub_2101fc(void) {
+uint32_t sub_2101fc(void) {
     /* unsupported (2 steps): STUR at 0x210208, LDUR at 0x21020c */
+    w0 = w8 + 0x2;
     sub_2101d4();
-    return;
+    return w0;
 }
 -- signature
-void ()
+uint32_t ()
 -- references
 
 -- ir
@@ -39,31 +40,34 @@ fn <unnamed> @ 0x2101fc (size 40)
   blk0 @ 0x2101fc:
     unsupported: STUR at 0x210208
     unsupported: LDUR at 0x21020c
+    w0 = (w8 + #0x2)
     call 0x2101d4
-    ret (w8 + #0x2)
+    ret w0
 -- card
 {"addr":"0x2101fc","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":2}
 
 == 0x210224 -
 -- decompile
 /* velk pseudo-C: sub_210224 @ 0x210224 */
-uint32_t sub_210224(uint64_t a0, uint32_t a1) {
-    uint32_t local_0; /* [sp-1c] */
-
-    local_0 = a1;
+uint32_t sub_210224(uint32_t a0, uint32_t a1) {
+    x8 = a0;
+    w9 = a1;
+    a0 = w9 + 0x1;
     /* unsupported: BLR at 0x210244 */
-    return local_0 + 0x1;
+    return a0;
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210224 (size 48)
   blk0 @ 0x210224:
-    store32(w1, (sp + #0xffffffffffffffe4))
+    x8 = x0
+    w9 = w1
+    x0 = ((w9 + #0x1) & #0xffffffff)
     unsupported: BLR at 0x210244
-    ret ((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff)
+    ret w0
 -- card
 {"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":1}
 

@@ -5,30 +5,33 @@
 -- decompile
 /* velk pseudo-C: dispatch @ 0x210154 */
 int dispatch(int x) {
-    uint32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-4] */
 
-    if (x - 0xa == 0xa) {
-        local_0 = 0x1;
-        return local_0;
+    w8 = x;
+    local_0 = w8;
+    if (w8 - 0xa == 0x0) {
+        local_1 = 0x1;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0xb == 0xb) {
-        local_0 = 0x3;
-        return local_0;
+    if (local_0 - 0xb == 0x0) {
+        local_1 = 0x3;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0xc == 0xc) {
-        local_0 = 0x7;
-        return local_0;
+    if (local_0 - 0xc == 0x0) {
+        local_1 = 0x7;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0xd == 0xd) {
-        local_0 = 0x9;
-        return local_0;
+    if (local_0 - 0xd == 0x0) {
+        local_1 = 0x9;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0xe != 0xe) {
-    } else {
-        local_0 = 0xb;
-        return local_0;
+    if (local_0 - 0xe == 0x0) {
+        local_1 = 0xb;
+        return local_1;
     }
-    return local_0;
+    local_1 = 0x0;
+    return local_1;
 }
 -- signature
 int (int x)
@@ -37,23 +40,25 @@ int (int x)
 -- ir
 fn dispatch @ 0x210154 (size 172)
   blk0 @ 0x210154:
-    brif eq (((w0 & #0xffffffff) - #0xa) & #0xffffffff), #0xa -> 0x2101b0
+    x8 = (w0 & #0xffffffff)
+    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff4))
+    brif eq (((x8 & #0xffffffff) - #0xa) & #0xffffffff), #0x0 -> 0x2101b0
   blk1 @ 0x21016c:
     br 0x210170
   blk2 @ 0x210170:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0xb) & #0xffffffff), #0xb -> 0x2101bc
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0xb) & #0xffffffff), #0x0 -> 0x2101bc
   blk3 @ 0x21017c:
     br 0x210180
   blk4 @ 0x210180:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0xc) & #0xffffffff), #0xc -> 0x2101c8
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0xc) & #0xffffffff), #0x0 -> 0x2101c8
   blk5 @ 0x21018c:
     br 0x210190
   blk6 @ 0x210190:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0xd) & #0xffffffff), #0xd -> 0x2101d4
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0xd) & #0xffffffff), #0x0 -> 0x2101d4
   blk7 @ 0x21019c:
     br 0x2101a0
   blk8 @ 0x2101a0:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0xe) & #0xffffffff), #0xe -> 0x2101e0
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0xe) & #0xffffffff), #0x0 -> 0x2101e0
   blk9 @ 0x2101ac:
     br 0x2101ec
   blk10 @ 0x2101b0:
@@ -72,6 +77,7 @@ fn dispatch @ 0x210154 (size 172)
     store32(#0xb, (sp + #0xfffffffffffffffc))
     br 0x2101f4
   blk15 @ 0x2101ec:
+    store32(#0x0, (sp + #0xfffffffffffffffc))
     br 0x2101f4
   blk16 @ 0x2101f4:
     ret load32((sp + #0xfffffffffffffffc))

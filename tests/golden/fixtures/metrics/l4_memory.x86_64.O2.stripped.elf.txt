@@ -1,4 +1,4 @@
-# metrics/l4_memory.x86_64.O2.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 2 gotos
+# metrics/l4_memory.x86_64.O2.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 0 gotos
 0x2011e0 16 - prologue
 0x2011f0 144 - prologue
 0x201280 16 - prologue
@@ -26,21 +26,14 @@ fn <unnamed> @ 0x2011e0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 int32_t sub_2011f0(uint32_t a0, int64_t a1) {
-    if ((a1 & 0xffffffff) & (a1 & 0xffffffff) <= 0x0) {
+    if ((a1 & 0xffffffff) <= 0x0) {
         return 0x0;
     }
     rcx = (a1 & 0xffffffff);
-    switch (a1) {
-    case 0:
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-        goto L_201270;
-    case 8:
+    if ((a1 & 0xffffffff) < 0x8 /* unsigned */) {
+        rdx = 0x0;
+        rax = 0x0;
+    } else {
         rdx = ecx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         /* unsupported: Pxor at 0x20121a */
@@ -54,9 +47,12 @@ int32_t sub_2011f0(uint32_t a0, int64_t a1) {
         if (rdx == rcx) {
             return rax;
         }
-        rax = eax + *(uint32_t *)(a0 + rdx * 0x4);
-        if (rcx != rdx + 0x1) { goto L_201270; }
     }
+    do {
+        rax = eax + *(uint32_t *)(a0 + rdx * 0x4);
+        rdx = rdx + 0x1;
+    } while (rcx != rdx);
+    return rax;
 }
 -- signature
 int32_t (uint32_t a0, int64_t a1)
@@ -65,11 +61,13 @@ int32_t (uint32_t a0, int64_t a1)
 -- ir
 fn <unnamed> @ 0x2011f0 (size 144)
   blk0 @ 0x2011f0:
-    brif le ((rsi & #0xffffffff) & (rsi & #0xffffffff)), #0x0 -> 0x201201
+    brif le (rsi & #0xffffffff), #0x0 -> 0x201201
   blk1 @ 0x2011f4:
     rcx = (rsi & #0xffffffff)
     brif cs (rsi & #0xffffffff), #0x8 -> 0x201204
   blk2 @ 0x2011fb:
+    rdx = #0x0
+    rax = #0x0
     br 0x201270
   blk3 @ 0x201201:
     ret #0x0
@@ -94,9 +92,10 @@ fn <unnamed> @ 0x2011f0 (size 144)
     unsupported: Paddd at 0x20125e
     unsupported: Movd at 0x201262
     brif eq rdx, rcx -> 0x20127b
-  blk7 @ 0x20126b:
+  blk7 @ 0x201270:
     rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)
-    brif ne rcx, (rdx + #0x1) -> 0x201270
+    rdx = (rdx + #0x1)
+    brif ne rcx, rdx -> 0x201270
   blk8 @ 0x20127b:
     ret rax
 -- card
@@ -107,6 +106,7 @@ fn <unnamed> @ 0x2011f0 (size 144)
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 /* ref: 0x2022a8 .bss */
 void sub_201280(void) {
+    t65 = dword_2022a8 + 0x1;
     dword_2022a8 += 0x1;
     return;
 }
@@ -117,6 +117,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201280 (size 16)
   blk0 @ 0x201280:
+    t65 = (load32(#0x2022a8) + #0x1)
     store32((load32(#0x2022a8) + #0x1), #0x2022a8)
     ret rax
 -- card

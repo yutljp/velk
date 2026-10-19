@@ -42,6 +42,13 @@ fn tail_target @ 0x2011e0 (size 22)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x201200 */
 int tail_direct(int x) {
+    uint64_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-c] */
+
+    local_0 = rbp;
+    local_1 = x;
+    x = x;
+    x = x + 0x2;
     tail_target();
     return rax;
 }
@@ -52,6 +59,10 @@ int (int x)
 -- ir
 fn tail_direct @ 0x201200 (size 28)
   blk0 @ 0x201200:
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    edi = edi
+    edi = (edi + #0x2)
     call 0x2011e0
     ret rax
 -- card
@@ -68,7 +79,7 @@ int tail_indirect(void *f, int x) {
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = f;
     *(uint32_t *)(rbp - 0xc) = x;
-    rax = f;
+    f = x + 0x1;
     sub_0();
     return rax;
 }
@@ -84,7 +95,7 @@ fn tail_indirect @ 0x201220 (size 33)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
-    rax = rdi
+    rdi = (((esi & #0xffffffff) + #0x1) & #0xffffffff)
     call 0x0
     ret rax
 -- card
@@ -130,7 +141,7 @@ fn six_args @ 0x201250 (size 44)
 == 0x201280 wide_add
 -- decompile
 /* velk pseudo-C: wide_add @ 0x201280 */
-void wide_add(uint64_t a, uint64_t b) {
+uint64_t wide_add(uint64_t a, uint64_t b) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -138,10 +149,10 @@ void wide_add(uint64_t a, uint64_t b) {
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a;
     *(uint64_t *)(rbp - 0x10) = b;
-    return;
+    return a + b;
 }
 -- signature
-void (uint64_t a, uint64_t b)
+uint64_t (uint64_t a, uint64_t b)
 -- references
 
 -- ir

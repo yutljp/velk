@@ -13,6 +13,7 @@ use crate::passes::frame_slots::block_frames;
 use crate::render::expr::Ctx;
 use crate::render::expr::render_expr;
 use crate::render::expr::render_value;
+use crate::render::expr::slot_access;
 use crate::render::expr::type_of;
 use crate::render::locals::Locals;
 use crate::render::locals::stack_locals;
@@ -163,8 +164,22 @@ fn render_with(
 }
 
 /// A store of `op(load(same address), rhs)` is a compound assignment.
-fn update_of_same_location<'e>(addr: &Expr, value: &'e Expr) -> Option<(&'static str, &'e Expr)> {
-    let Expr::Bin { op, lhs, rhs } = value else {
+fn update_of_same_location<'e>(
+    addr: &Expr,
+    value: &'e Expr,
+    width: u8,
+) -> Option<(&'static str, &'e Expr)> {
+    // A mask to the stored width is the store's own truncation.
+    let fits = |mask: &Expr| matches!(mask, Expr::Const(mask) if width < 8 && *mask == (1u64 << (u32::from(width) * 8)) - 1);
+    let unmasked = |expr: &'e Expr| match expr {
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if fits(rhs) => lhs.as_ref(),
+        other => other,
+    };
+    let Expr::Bin { op, lhs, rhs } = unmasked(value) else {
         return None;
     };
     let symbol = match op {
@@ -179,7 +194,7 @@ fn update_of_same_location<'e>(addr: &Expr, value: &'e Expr) -> Option<(&'static
         BinOp::Mul => "*",
         _ => return None,
     };
-    let Expr::Load { addr: read, .. } = lhs.as_ref() else {
+    let Expr::Load { addr: read, .. } = unmasked(lhs) else {
         return None;
     };
     if read.as_ref() != addr {
@@ -410,21 +425,24 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         }
         Stmt::Store { addr, value, width } => {
             if let Some(member) = member_access(addr, *width, ctx) {
-                return match update_of_same_location(addr, value) {
+                return match update_of_same_location(addr, value, *width) {
                     Some((op, rhs)) => format!("{} {}= {};", member, op, render_expr(rhs, ctx)),
                     None => format!("{} = {};", member, render_value(value, ctx)),
                 };
             }
             let address = render_expr(addr, ctx);
             match ctx.slots.get(&address) {
-                Some(name) => match update_of_same_location(addr, value) {
-                    Some((op, rhs)) => {
-                        format!("{} {}= {};", name, op, render_expr(rhs, ctx))
+                Some(name) => {
+                    let target = slot_access(name, *width, false, ctx);
+                    match update_of_same_location(addr, value, *width) {
+                        Some((op, rhs)) => {
+                            format!("{} {}= {};", target, op, render_expr(rhs, ctx))
+                        }
+                        None => format!("{} = {};", target, render_value(value, ctx)),
                     }
-                    None => format!("{} = {};", name, render_value(value, ctx)),
-                },
+                }
                 None => match global_name(addr, *width, ctx) {
-                    Some(name) => match update_of_same_location(addr, value) {
+                    Some(name) => match update_of_same_location(addr, value, *width) {
                         Some((op, rhs)) => {
                             format!("{} {}= {};", name, op, render_expr(rhs, ctx))
                         }
@@ -475,7 +493,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             text.push('}');
             text
         }
-        Stmt::Call { target } => match target {
+        Stmt::Call { target, .. } => match target {
             Some(target) => match ctx.callees.get(target) {
                 Some(name) => format!("{}();", sanitize(name)),
                 None => format!("sub_{target:x}();"),

@@ -1,4 +1,4 @@
-use crate::ir::cfg::cyclic_blocks;
+use crate::ir::cfg::{cyclic_blocks, live_in, live_out, opaque};
 use crate::ir::visit::assign_of;
 use crate::ir::visit::children;
 use crate::ir::visit::expr_reads;
@@ -10,14 +10,13 @@ use crate::passes::frame::reads_outside_frame;
 
 /// Folds a definition read exactly once before its register is written again
 /// into that reader, so `x8 = w8; if (x8 & 0x80000000) ...` keeps no temporary.
+/// A definition a later block, or the next pass of a loop, may read stays.
 pub fn inline_local_copies(ir: &mut FunctionIr) {
-    // In a loop the definition also feeds the next iteration, so folding it
-    // would drop the update; only blocks outside every cycle are rewritten.
-    let cyclic = cyclic_blocks(ir);
+    let live_in = live_in(ir);
+    let live_out: Vec<_> = (0..ir.blocks.len())
+        .map(|index| live_out(ir, &live_in, index))
+        .collect();
     for (position, block) in ir.blocks.iter_mut().enumerate() {
-        if cyclic.contains(&position) {
-            continue;
-        }
         let mut index = 0;
         while index < block.stmts.len() {
             let Some((dest, value)) = (match &block.stmts[index] {
@@ -38,6 +37,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
             let mut reads = 0usize;
             let mut use_at = None;
             let mut clobbered = false;
+            let mut redefined = false;
             for position in index + 1..block.stmts.len() {
                 let stmt = &block.stmts[position];
                 let used = statement_reads(stmt);
@@ -48,12 +48,18 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                 }
                 let written = statement_registers(stmt).0;
                 if written.contains(&dest) {
+                    redefined = true;
                     break;
                 }
                 if written.intersection(&sources).next().is_some() {
                     clobbered = true;
                     break;
                 }
+            }
+            // A later block may read the definition this block leaves behind.
+            if !redefined && live_out[position].contains(&dest) {
+                index += 1;
+                continue;
             }
             let Some(use_at) = use_at else {
                 index += 1;
@@ -104,7 +110,7 @@ fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bo
         Stmt::Ret { value: returned } => substitute_reg_inner(returned, dest, width, value, ok),
         Stmt::Switch { index, .. } => substitute_reg_inner(index, dest, width, value, ok),
         Stmt::BrIndirect { target } => substitute_reg_inner(target, dest, width, value, ok),
-        _ => {}
+        _ => *ok = false,
     }
 }
 
@@ -121,9 +127,9 @@ pub fn copy_propagate_guarded(ir: &mut FunctionIr) {
     copy_propagate_with(ir, true);
 }
 
-fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
-    let reads: Vec<std::collections::HashSet<u16>> = ir
-        .blocks
+/// The registers each block reads.
+fn block_reads(ir: &FunctionIr) -> Vec<std::collections::HashSet<u16>> {
+    ir.blocks
         .iter()
         .map(|block| {
             block
@@ -132,17 +138,32 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
                 .flat_map(|stmt| statement_registers(stmt).1)
                 .collect()
         })
-        .collect();
+        .collect()
+}
+
+/// The registers some block other than `index` reads.
+fn reads_elsewhere(
+    reads: &[std::collections::HashSet<u16>],
+    index: usize,
+) -> std::collections::HashSet<u16> {
+    reads
+        .iter()
+        .enumerate()
+        .filter(|(other, _)| *other != index)
+        .flat_map(|(_, set)| set.iter().copied())
+        .collect()
+}
+
+fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
+    let reads = block_reads(ir);
     // A block inside a cycle reads its own live-outs again on the next
     // iteration, so its own reads are live at its boundary too.
     let cyclic = cyclic_blocks(ir);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
-        let mut outer: std::collections::HashSet<u16> = reads
-            .iter()
-            .enumerate()
-            .filter(|(other, _)| *other != index)
-            .flat_map(|(_, set)| set.iter().copied())
-            .collect();
+        if opaque(block) {
+            continue;
+        }
+        let mut outer = reads_elsewhere(&reads, index);
         if cyclic.contains(&index) {
             outer.extend(reads[index].iter().copied());
         }
@@ -287,6 +308,9 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
         Stmt::Brif { lhs, rhs, .. } => total += count(lhs, reg) + count(rhs, reg),
         Stmt::Ret { value } => total += count(value, reg),
         Stmt::BrIndirect { target } => total += count(target, reg),
+        Stmt::Call { convention, .. } => {
+            total += usize::from(convention.arguments().contains(&reg))
+        }
         _ => {}
     }
     total
@@ -384,9 +408,56 @@ fn substitute_reg_inner(expr: &mut Expr, dest: u16, width: u8, template: &Expr, 
 
 #[cfg(test)]
 mod tests {
-    use super::copy_propagate;
-    use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
+    use super::{copy_propagate, inline_local_copies};
+    use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn keeps_a_definition_a_later_block_reads() {
+        let load = Expr::Load {
+            addr: Box::new(Expr::reg(1, 64)),
+            width: 8,
+            signed: false,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 8,
+                        width: 64,
+                    },
+                    value: load,
+                },
+                Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(8, 64),
+                    rhs: Expr::Const(0),
+                    target: 0x10,
+                },
+            ],
+        );
+        ir.blocks.push(Block {
+            start: 0x8,
+            stmts: vec![Stmt::Ret {
+                value: Expr::reg(8, 64),
+            }],
+        });
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: vec![Stmt::Ret {
+                value: Expr::Const(0),
+            }],
+        });
+
+        inline_local_copies(&mut ir);
+
+        assert!(
+            matches!(ir.blocks[0].stmts[0], Stmt::Assign { dest, .. } if dest.index == 8),
+            "{}",
+            ir.render()
+        );
+    }
 
     #[test]
     fn inlines_a_masked_temporary() {

@@ -46,7 +46,9 @@ int pick(int a, int b) {
     uint32_t local_1; /* [sp-8] */
     uint32_t local_2; /* [sp-c] */
 
-    if (a - b <= b) {
+    local_0 = a;
+    local_1 = b;
+    if (a <= b) {
         local_2 = local_1;
         return local_2;
     }
@@ -62,7 +64,7 @@ fn pick @ 0x2101e8 (size 68)
   blk0 @ 0x2101e8:
     store32(w0, (sp + #0xfffffffffffffffc))
     store32(w1, (sp + #0xfffffffffffffff8))
-    brif le (w0 - w1), w1 -> 0x210214
+    brif le w0, w1 -> 0x210214
   blk1 @ 0x210204:
     br 0x210208
   blk2 @ 0x210208:

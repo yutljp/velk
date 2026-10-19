@@ -25,8 +25,9 @@ fn tail_one @ 0x210194 (size 40)
 /* velk pseudo-C: tail_two @ 0x2101bc */
 int tail_two(void) {
     /* unsupported (2 steps): STUR at 0x2101c8, LDUR at 0x2101cc */
+    w0 = w8 + 0x2;
     tail_one();
-    return w8 + 0x2;
+    return w0;
 }
 -- signature
 int ()
@@ -37,8 +38,9 @@ fn tail_two @ 0x2101bc (size 40)
   blk0 @ 0x2101bc:
     unsupported: STUR at 0x2101c8
     unsupported: LDUR at 0x2101cc
+    w0 = (w8 + #0x2)
     call 0x210194
-    ret (w8 + #0x2)
+    ret w0
 -- card
 {"addr":"0x2101bc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":2}
 

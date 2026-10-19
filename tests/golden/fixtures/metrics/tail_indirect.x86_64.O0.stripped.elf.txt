@@ -5,7 +5,7 @@
 == 0x201180 -
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
-uint64_t sub_201180(uint64_t a0, uint32_t a1) {
+void sub_201180(uint32_t a0, uint32_t a1) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -13,12 +13,12 @@ uint64_t sub_201180(uint64_t a0, uint32_t a1) {
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a0;
     *(uint32_t *)(rbp - 0xc) = a1;
-    rax = a0;
+    a0 = a1 + 0x1;
     sub_0();
-    return rax;
+    return;
 }
 -- signature
-uint64_t (uint64_t a0, uint32_t a1)
+void (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -29,7 +29,7 @@ fn <unnamed> @ 0x201180 (size 48)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
-    rax = rdi
+    rdi = (((esi & #0xffffffff) + #0x1) & #0xffffffff)
     call 0x0
     ret rax
 -- card

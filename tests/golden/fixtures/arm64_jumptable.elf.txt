@@ -4,7 +4,7 @@
 == 0x210184 d7
 -- decompile
 /* velk pseudo-C: d7 @ 0x210184 */
-int32_t d7(int64_t a0) {
+int32_t d7(int32_t a0) {
     w9 = 0xffffffff;
     x8 = 0x220000;
     switch (a0) {
@@ -58,141 +58,136 @@ int32_t d7(int64_t a0) {
         w9 = w9 + 0x4;
         *(uint32_t *)(x8 + 0x464) = w9;
         return w9;
+    case 5:
+        w9 = *(uint32_t *)(x8 + 0x464);
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x1;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x2;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x3;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x4;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x5;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        return w9;
+    case 6:
+        w9 = *(uint32_t *)(x8 + 0x464);
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x1;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x2;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x3;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x4;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x5;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x6;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        return w9;
+    case 7:
+        w9 = *(uint32_t *)(x8 + 0x464);
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x1;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x2;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x3;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x4;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x5;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x6;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x7;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        return w9;
+    case 8:
+        w9 = *(uint32_t *)(x8 + 0x464);
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x1;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x2;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x3;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x4;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x5;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x6;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x7;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x8;
+    case 9:
+        w9 = *(uint32_t *)(x8 + 0x464);
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x1;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x2;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x3;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x4;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x5;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x6;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x7;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x8;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        w9 = w9;
+        w9 = w9 + 0x9;
+        *(uint32_t *)(x8 + 0x464) = w9;
+        return w9;
     default:
-        switch (a0) {
-        case 5:
-            w9 = *(uint32_t *)(x8 + 0x464);
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x1;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x2;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x3;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x4;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x5;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            return w9;
-        case 6:
-            w9 = *(uint32_t *)(x8 + 0x464);
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x1;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x2;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x3;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x4;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x5;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x6;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            return w9;
-        case 7:
-            w9 = *(uint32_t *)(x8 + 0x464);
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x1;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x2;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x3;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x4;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x5;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x6;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x7;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            return w9;
-        case 8:
-            w9 = *(uint32_t *)(x8 + 0x464);
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x1;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x2;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x3;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x4;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x5;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x6;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x7;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x8;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            return w9;
-        case 9:
-            w9 = *(uint32_t *)(x8 + 0x464);
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x1;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x2;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x3;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x4;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x5;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x6;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x7;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x8;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            w9 = w9;
-            w9 = w9 + 0x9;
-            *(uint32_t *)(x8 + 0x464) = w9;
-            return w9;
-        default:
-            *(uint32_t *)(x8 + 0x464) = w9;
-            return w9;
-        }
+        *(uint32_t *)(x8 + 0x464) = w9;
+        return w9;
     }
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -200,15 +195,15 @@ fn d7 @ 0x210184 (size 736)
   blk0 @ 0x210184:
     x9 = #0xffffffff
     x8 = #0x220000
-    brif gt (x0 & #0xffffffff), #0x4 -> 0x2101ec
+    brif gt w0, #0x4 -> 0x2101ec
   blk1 @ 0x210194:
-    brif le (x0 & #0xffffffff), #0x1 -> 0x210280
+    brif le w0, #0x1 -> 0x210280
   blk2 @ 0x21019c:
-    brif eq (x0 & #0xffffffff), #0x2 -> 0x21034c
+    brif eq w0, #0x2 -> 0x21034c
   blk3 @ 0x2101a4:
-    brif eq (x0 & #0xffffffff), #0x3 -> 0x2103c8
+    brif eq w0, #0x3 -> 0x2103c8
   blk4 @ 0x2101ac:
-    brif ne (x0 & #0xffffffff), #0x4 -> 0x210458
+    brif ne w0, #0x4 -> 0x210458
   blk5 @ 0x2101b4:
     x9 = (load32((x8 + #0x464)) & #0xffffffff)
     store32((x9 & #0xffffffff), (x8 + #0x464))
@@ -225,13 +220,13 @@ fn d7 @ 0x210184 (size 736)
     x9 = (((x9 & #0xffffffff) + #0x4) & #0xffffffff)
     br 0x210458
   blk6 @ 0x2101ec:
-    brif le (x0 & #0xffffffff), #0x6 -> 0x2102a0
+    brif le w0, #0x6 -> 0x2102a0
   blk7 @ 0x2101f4:
-    brif eq (x0 & #0xffffffff), #0x7 -> 0x21036c
+    brif eq w0, #0x7 -> 0x21036c
   blk8 @ 0x2101fc:
-    brif eq (x0 & #0xffffffff), #0x8 -> 0x2103f4
+    brif eq w0, #0x8 -> 0x2103f4
   blk9 @ 0x210204:
-    brif ne (x0 & #0xffffffff), #0x9 -> 0x210458
+    brif ne w0, #0x9 -> 0x210458
   blk10 @ 0x21020c:
     x9 = (load32((x8 + #0x464)) & #0xffffffff)
     store32((x9 & #0xffffffff), (x8 + #0x464))
@@ -263,9 +258,9 @@ fn d7 @ 0x210184 (size 736)
     x9 = (((x9 & #0xffffffff) + #0x9) & #0xffffffff)
     br 0x210458
   blk11 @ 0x210280:
-    brif eq x0, #0x0 -> 0x210300
+    brif eq w0, #0x0 -> 0x210300
   blk12 @ 0x210284:
-    brif ne (x0 & #0xffffffff), #0x1 -> 0x210458
+    brif ne w0, #0x1 -> 0x210458
   blk13 @ 0x21028c:
     x9 = (load32((x8 + #0x464)) & #0xffffffff)
     store32((x9 & #0xffffffff), (x8 + #0x464))
@@ -273,9 +268,9 @@ fn d7 @ 0x210184 (size 736)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
     br 0x210458
   blk14 @ 0x2102a0:
-    brif eq (x0 & #0xffffffff), #0x5 -> 0x210308
+    brif eq w0, #0x5 -> 0x210308
   blk15 @ 0x2102a8:
-    brif ne (x0 & #0xffffffff), #0x6 -> 0x210458
+    brif ne w0, #0x6 -> 0x210458
   blk16 @ 0x2102b0:
     x9 = (load32((x8 + #0x464)) & #0xffffffff)
     store32((x9 & #0xffffffff), (x8 + #0x464))

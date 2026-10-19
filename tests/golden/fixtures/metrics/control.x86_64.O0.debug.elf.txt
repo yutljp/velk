@@ -21,26 +21,18 @@ int matrix_trace(int *m, int n) {
     *(uint32_t *)(rbp - 0x10) = 0x0;
     *(uint32_t *)(rbp - 0x14) = 0x0;
     for (;;) {
-        if (eax >= *(uint32_t *)(rbp - 0xc)) {
+        if (*(uint32_t *)(rbp - 0x14) >= *(uint32_t *)(rbp - 0xc)) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x10);
         }
         *(uint32_t *)(rbp - 0x18) = 0x0;
         for (;;) {
-            rax = *(uint32_t *)(rbp - 0x18);
-            if (eax >= *(uint32_t *)(rbp - 0xc)) {
+            if (*(uint32_t *)(rbp - 0x18) >= *(uint32_t *)(rbp - 0xc)) {
                 break;
             }
-            rax = *(uint32_t *)(rbp - 0x14);
-            if (eax == *(uint32_t *)(rbp - 0x18)) {
-                rax = *(uint64_t *)(rbp - 0x8);
-                rcx = *(uint32_t *)(rbp - 0x14);
-                rcx = ecx * *(uint32_t *)(rbp - 0xc);
-                rcx = ecx + *(uint32_t *)(rbp - 0x18);
-                rcx = (int32_t)(rcx);
-                rax = *(uint32_t *)(rax + rcx * 0x4);
-                rax = eax + *(uint32_t *)(rbp - 0x10);
-                *(uint32_t *)(rbp - 0x10) = eax;
+            if (*(uint32_t *)(rbp - 0x14) == *(uint32_t *)(rbp - 0x18)) {
+                rcx = (int32_t)(*(uint32_t *)(rbp - 0x14) * *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x18));
+                *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
             }
             *(uint32_t *)(rbp - 0x18) = *(uint32_t *)(rbp - 0x18) + 0x1;
         }
@@ -64,34 +56,25 @@ fn matrix_trace @ 0x201230 (size 137)
     store32(#0x0, (rbp + #0xfffffffffffffff0))
     store32(#0x0, (rbp + #0xffffffffffffffec))
   blk1 @ 0x201249:
-    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2012b4
+    brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2012b4
   blk2 @ 0x201255:
     store32(#0x0, (rbp + #0xffffffffffffffe8))
   blk3 @ 0x20125c:
-    rax = (load32((rbp + #0xffffffffffffffe8)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2012a1
+    brif ge (load32((rbp + #0xffffffffffffffe8)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2012a1
   blk4 @ 0x201268:
-    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
-    brif ne (rax & #0xffffffff), load32((rbp + #0xffffffffffffffe8)) -> 0x20128e
+    brif ne (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xffffffffffffffe8)) -> 0x20128e
   blk5 @ 0x201274:
-    rax = load64((rbp + #0xfffffffffffffff8))
-    rcx = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
-    rcx = (((rcx & #0xffffffff) * load32((rbp + #0xfffffffffffffff4))) & #0xffffffff)
-    rcx = (((rcx & #0xffffffff) + load32((rbp + #0xffffffffffffffe8))) & #0xffffffff)
-    rcx = sext32(rcx)
-    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    rcx = sext32(((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) * load32((rbp + #0xfffffffffffffff4))) & #0xffffffff) + load32((rbp + #0xffffffffffffffe8))))
+    store32((((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
   blk6 @ 0x20128e:
     br 0x201293
   blk7 @ 0x201293:
-    store32((load32((rbp + #0xffffffffffffffe8)) + #0x1), (rbp + #0xffffffffffffffe8))
+    store32((((load32((rbp + #0xffffffffffffffe8)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffe8))
     br 0x20125c
   blk8 @ 0x2012a1:
     br 0x2012a6
   blk9 @ 0x2012a6:
-    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x201249
   blk10 @ 0x2012b4:
     rsp = (rsp + #0x8)
@@ -164,13 +147,38 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
 /* velk pseudo-C: fallthrough @ 0x201310 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
-    if (rax - 0x6 > 0x0 /* unsigned */) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
+    *(uint32_t *)(rbp - 0x8) = 0x0;
+    rax = x;
+    *(uint64_t *)(rbp - 0x10) = rax;
+    rax = rax - 0x3;
+    if (rax > 0x0 /* unsigned */) {
         *(uint32_t *)(rbp - 0x8) = 0xffffffff;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x8);
     }
+    rcx = 0x200120;
     rax = (int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
-    goto *(rax + 0x200120);
+    rax = rax + 0x200120;
+    goto *(rax);
+L_201343:
+    *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x8) + 0x1;
+    rax = eax;
+    rax = eax + 0x2;
+    *(uint32_t *)(rbp - 0x8) = eax;
+    rax = eax;
+    *(uint32_t *)(rbp - 0x8) = eax + 0x4;
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x8);
+L_201363:
+    *(uint32_t *)(rbp - 0x8) = 0x8;
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x8);
 }
 -- signature
 int (int x)
@@ -186,10 +194,13 @@ fn fallthrough @ 0x201310 (size 107)
     store32(#0x0, (rbp + #0xfffffffffffffff8))
     rax = (edi & #0xffffffff)
     store64(rax, (rbp + #0xfffffffffffffff0))
-    brif hi (rax + #0xfffffffffffffffa), #0x0 -> 0x20136f
+    rax = (rax - #0x3)
+    brif hi rax, #0x0 -> 0x20136f
   blk1 @ 0x20132f:
+    rcx = #0x200120
     rax = sext32(load32((#0x200120 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
-    br (rax + #0x200120)
+    rax = (rax + #0x200120)
+    br rax
   blk2 @ 0x201343:
     store32((load32((rbp + #0xfffffffffffffff8)) + #0x1), (rbp + #0xfffffffffffffff8))
     rax = (rax & #0xffffffff)
@@ -213,23 +224,30 @@ fn fallthrough @ 0x201310 (size 107)
 -- decompile
 /* velk pseudo-C: sparse @ 0x201380 */
 int sparse(int x) {
-    if (eax - 0x2 == 0x0) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x8) = x;
+    eax = x;
+    *(uint32_t *)(rbp - 0xc) = eax;
+    if (eax == 0x1) {
         *(uint32_t *)(rbp - 0x4) = 0xa;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
     }
-    if (*(uint32_t *)(rbp - 0xc) - 0xc8 == 0x0) {
+    if (*(uint32_t *)(rbp - 0xc) == 0x64) {
         *(uint32_t *)(rbp - 0x4) = 0x14;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
     }
-    if (*(uint32_t *)(rbp - 0xc) - 0x7d0 == 0x0) {
+    if (*(uint32_t *)(rbp - 0xc) == 0x3e8) {
         *(uint32_t *)(rbp - 0x4) = 0x1e;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
     }
-    if (*(uint32_t *)(rbp - 0xc) - 0x4e20 != 0x0) {
-    } else {
+    if (*(uint32_t *)(rbp - 0xc) == 0x2710) {
         *(uint32_t *)(rbp - 0x4) = 0x28;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
@@ -251,19 +269,19 @@ fn sparse @ 0x201380 (size 142)
     store32(edi, (rbp + #0xfffffffffffffff8))
     eax = edi
     store32(eax, (rbp + #0xfffffffffffffff4))
-    brif eq (eax + #0xfffffffffffffffe), #0x0 -> 0x2013d2
+    brif eq eax, #0x1 -> 0x2013d2
   blk1 @ 0x201396:
     br 0x20139b
   blk2 @ 0x20139b:
-    brif eq (load32((rbp + #0xfffffffffffffff4)) + #0xffffffffffffff38), #0x0 -> 0x2013de
+    brif eq load32((rbp + #0xfffffffffffffff4)), #0x64 -> 0x2013de
   blk3 @ 0x2013a7:
     br 0x2013ac
   blk4 @ 0x2013ac:
-    brif eq (load32((rbp + #0xfffffffffffffff4)) + #0xfffffffffffff830), #0x0 -> 0x2013ea
+    brif eq load32((rbp + #0xfffffffffffffff4)), #0x3e8 -> 0x2013ea
   blk5 @ 0x2013ba:
     br 0x2013bf
   blk6 @ 0x2013bf:
-    brif eq (load32((rbp + #0xfffffffffffffff4)) + #0xffffffffffffb1e0), #0x0 -> 0x2013f6
+    brif eq load32((rbp + #0xfffffffffffffff4)), #0x2710 -> 0x2013f6
   blk7 @ 0x2013cd:
     br 0x201402
   blk8 @ 0x2013d2:
@@ -305,16 +323,22 @@ int short_circuit(int *p, int n) {
         rsp = rsp + 0x8;
         return rax & 0xff & 0xff;
     }
+    rax = 0x0;
+    *(uint8_t *)(rbp - 0xd) = 0x0;
     if (*(uint32_t *)(rbp - 0xc) <= 0x0) {
         rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xd) & 0xff;
         rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff;
         rsp = rsp + 0x8;
         return rax & 0xff & 0xff;
     }
-    *(uint8_t *)(rbp - 0xe) = (rax & 0xffffffffffffff00 | 0x1) & 0xff;
+    rax = rax & 0xffffffffffffff00 | 0x1;
+    *(uint8_t *)(rbp - 0xe) = rax & 0xff;
     if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8)) != 0x1) {
         rax = *(uint64_t *)(rbp - 0x8);
-        *(uint8_t *)(rbp - 0xe) = (rax & 0xffffffffffffff00 | ((*(uint32_t *)(rax + (int32_t)(*(uint32_t *)(rbp - 0xc) - 0x1) * 0x4) == 0x1 ? 0x1 : 0x0)) & 0xff & 0xff) & 0xff;
+        rcx = (int32_t)(*(uint32_t *)(rbp - 0xc) - 0x1);
+        t65 = *(uint32_t *)(rax + rcx * 0x4);
+        rax = rax & 0xffffffffffffff00 | (*(uint32_t *)(rax + rcx * 0x4) == 0x1 ? 0x1 : 0x0) & 0xff & 0xff;
+        *(uint8_t *)(rbp - 0xe) = rax & 0xff;
     }
     rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xe) & 0xff;
     *(uint8_t *)(rbp - 0xd) = rax & 0xff;
@@ -339,11 +363,15 @@ fn short_circuit @ 0x201410 (size 99)
     store8(#0x0, (rbp + #0xfffffffffffffff3))
     brif le load32((rbp + #0xfffffffffffffff4)), #0x0 -> 0x201469
   blk2 @ 0x20143a:
-    store8((((rax & #0xffffffffffffff00) | #0x1) & #0xff), (rbp + #0xfffffffffffffff2))
+    rax = ((rax & #0xffffffffffffff00) | #0x1)
+    store8((rax & #0xff), (rbp + #0xfffffffffffffff2))
     brif eq load32(load64((rbp + #0xfffffffffffffff8))), #0x1 -> 0x201463
   blk3 @ 0x20144c:
     rax = load64((rbp + #0xfffffffffffffff8))
-    store8((((rax & #0xffffffffffffff00) | ((select eq load32((rax + (sext32(((load32((rbp + #0xfffffffffffffff4)) & #0xffffffff) - #0x1)) * #0x4))), #0x1 ? #0x1, #0x0 & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffff2))
+    rcx = sext32(((load32((rbp + #0xfffffffffffffff4)) & #0xffffffff) - #0x1))
+    t65 = load32((rax + (rcx * #0x4)))
+    rax = ((rax & #0xffffffffffffff00) | ((select eq load32((rax + (rcx * #0x4))), #0x1 ? #0x1, #0x0 & #0xff) & #0xff))
+    store8((rax & #0xff), (rbp + #0xfffffffffffffff2))
   blk4 @ 0x201463:
     rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffff2)) & #0xff))
     store8((rax & #0xff), (rbp + #0xfffffffffffffff3))
@@ -369,19 +397,15 @@ int skip_negatives(int *p, int n) {
     *(uint32_t *)(rbp - 0x10) = 0x0;
     *(uint32_t *)(rbp - 0x14) = 0x0;
     for (;;) {
-        if (eax >= *(uint32_t *)(rbp - 0xc)) {
+        if (*(uint32_t *)(rbp - 0x14) >= *(uint32_t *)(rbp - 0xc)) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x10);
         }
-        rax = *(uint64_t *)(rbp - 0x8);
         rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
-        if (*(uint32_t *)(rax + rcx * 0x4) < 0x0) {
+        if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) < 0x0) {
         } else {
-            rax = *(uint64_t *)(rbp - 0x8);
             rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
-            rax = *(uint32_t *)(rax + rcx * 0x4);
-            rax = eax + *(uint32_t *)(rbp - 0x10);
-            *(uint32_t *)(rbp - 0x10) = eax;
+            *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
         }
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
     }
@@ -403,22 +427,17 @@ fn skip_negatives @ 0x201480 (size 96)
     store32(#0x0, (rbp + #0xfffffffffffffff0))
     store32(#0x0, (rbp + #0xffffffffffffffec))
   blk1 @ 0x201499:
-    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2014db
+    brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2014db
   blk2 @ 0x2014a5:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    brif ge load32((rax + (rcx * #0x4))), #0x0 -> 0x2014bc
+    brif ge load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))), #0x0 -> 0x2014bc
   blk3 @ 0x2014b7:
     br 0x2014cd
   blk4 @ 0x2014bc:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32((((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
   blk5 @ 0x2014cd:
-    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x201499
   blk6 @ 0x2014db:
     rsp = (rsp + #0x8)
@@ -440,23 +459,16 @@ int find_pair(int *p, int n, int target) {
     *(uint32_t *)(rbp - 0x18) = target;
     *(uint32_t *)(rbp - 0x1c) = 0x0;
     for (;;) {
-        if (eax >= *(uint32_t *)(rbp - 0x14)) {
+        if (*(uint32_t *)(rbp - 0x1c) >= *(uint32_t *)(rbp - 0x14)) {
             *(uint32_t *)(rbp - 0x4) = 0xffffffff;
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x4);
         }
-        rax = *(uint32_t *)(rbp - 0x1c);
-        rax = eax + 0x1;
-        *(uint32_t *)(rbp - 0x20) = eax;
+        *(uint32_t *)(rbp - 0x20) = *(uint32_t *)(rbp - 0x1c) + 0x1;
         for (;;) {
-            rax = *(uint32_t *)(rbp - 0x20);
-            if (eax >= *(uint32_t *)(rbp - 0x14)) { goto L_20155a; }
-            rax = *(uint64_t *)(rbp - 0x10);
-            rax = *(uint32_t *)(rax + (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x4);
-            rcx = *(uint64_t *)(rbp - 0x10);
+            if (*(uint32_t *)(rbp - 0x20) >= *(uint32_t *)(rbp - 0x14)) { goto L_20155a; }
             target = (int32_t)(*(uint32_t *)(rbp - 0x20));
-            rax = eax + *(uint32_t *)(rcx + target * 0x4);
-            if (eax != *(uint32_t *)(rbp - 0x18)) { goto L_201547; }
+            if (*(uint32_t *)(*(uint64_t *)(rbp - 0x10) + (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x4) + *(uint32_t *)(*(uint64_t *)(rbp - 0x10) + target * 0x4) != *(uint32_t *)(rbp - 0x18)) { goto L_201547; }
             *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x1c) * *(uint32_t *)(rbp - 0x14) + *(uint32_t *)(rbp - 0x20);
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x4);
@@ -485,34 +497,26 @@ fn find_pair @ 0x2014e0 (size 153)
     store32((rdx & #0xffffffff), (rbp + #0xffffffffffffffe8))
     store32(#0x0, (rbp + #0xffffffffffffffe4))
   blk1 @ 0x2014f5:
-    rax = (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xffffffffffffffec)) -> 0x20156d
+    brif ge (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff), load32((rbp + #0xffffffffffffffec)) -> 0x20156d
   blk2 @ 0x201501:
-    rax = (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffe0))
+    store32((((load32((rbp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffe0))
   blk3 @ 0x20150a:
-    rax = (load32((rbp + #0xffffffffffffffe0)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xffffffffffffffec)) -> 0x20155a
+    brif ge (load32((rbp + #0xffffffffffffffe0)) & #0xffffffff), load32((rbp + #0xffffffffffffffec)) -> 0x20155a
   blk4 @ 0x201516:
-    rax = load64((rbp + #0xfffffffffffffff0))
-    rax = (load32((rax + (sext32(load32((rbp + #0xffffffffffffffe4))) * #0x4))) & #0xffffffff)
-    rcx = load64((rbp + #0xfffffffffffffff0))
     rdx = sext32(load32((rbp + #0xffffffffffffffe0)))
-    rax = (((rax & #0xffffffff) + load32((rcx + (rdx * #0x4)))) & #0xffffffff)
-    brif ne (rax & #0xffffffff), load32((rbp + #0xffffffffffffffe8)) -> 0x201547
+    brif ne (((load32((load64((rbp + #0xfffffffffffffff0)) + (sext32(load32((rbp + #0xffffffffffffffe4))) * #0x4))) & #0xffffffff) + load32((load64((rbp + #0xfffffffffffffff0)) + (rdx * #0x4)))) & #0xffffffff), load32((rbp + #0xffffffffffffffe8)) -> 0x201547
   blk5 @ 0x201535:
     store32((((((load32((rbp + #0xffffffffffffffe4)) & #0xffffffff) * load32((rbp + #0xffffffffffffffec))) & #0xffffffff) + load32((rbp + #0xffffffffffffffe0))) & #0xffffffff), (rbp + #0xfffffffffffffffc))
     br 0x201574
   blk6 @ 0x201547:
     br 0x20154c
   blk7 @ 0x20154c:
-    store32((load32((rbp + #0xffffffffffffffe0)) + #0x1), (rbp + #0xffffffffffffffe0))
+    store32((((load32((rbp + #0xffffffffffffffe0)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffe0))
     br 0x20150a
   blk8 @ 0x20155a:
     br 0x20155f
   blk9 @ 0x20155f:
-    store32((load32((rbp + #0xffffffffffffffe4)) + #0x1), (rbp + #0xffffffffffffffe4))
+    store32((((load32((rbp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffe4))
     br 0x2014f5
   blk10 @ 0x20156d:
     store32(#0xffffffff, (rbp + #0xfffffffffffffffc))

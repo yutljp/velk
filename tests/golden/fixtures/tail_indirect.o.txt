@@ -5,17 +5,21 @@
 == 0x0 via_ptr
 -- decompile
 /* velk pseudo-C: via_ptr @ 0x0 */
-uint32_t via_ptr(uint64_t a0, uint32_t a1) {
-    goto *(a0);
+uint32_t via_ptr(uint32_t a0, uint32_t a1) {
+    x2 = a0;
+    a0 = a1 + 0x1;
+    goto *(x2);
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
 fn via_ptr @ 0x0 (size 12)
   blk0 @ 0x0:
-    br x0
+    x2 = x0
+    x0 = ((w1 + #0x1) & #0xffffffff)
+    br x2
 -- card
 {"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
 

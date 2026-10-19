@@ -32,12 +32,10 @@ int array_sum(int *a, int n) {
 
     local_0 = a;
     local_1 = n;
-    while (true) {
-        w9 = local_1;
-        w8 = local_3 - w9;
-        if (w8 >= w9) break;
-        w9 = *(uint32_t *)(local_0 + (local_3 << 0x2));
-        local_2 += w9;
+    local_2 = 0x0;
+    local_3 = 0x0;
+    while (local_3 < local_1) {
+        local_2 += *(uint32_t *)(local_0 + (local_3 << 0x2));
         local_3 += 0x1;
     }
     return local_2;
@@ -51,19 +49,18 @@ fn array_sum @ 0x21021c (size 100)
   blk0 @ 0x21021c:
     store64(x0, (sp + #0xfffffffffffffff8))
     store32(w1, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x210234
   blk1 @ 0x210234:
-    x9 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    x8 = (((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), (x9 & #0xffffffff) -> 0x210274
+    brif ge (load32((sp + #0xffffffffffffffec)) & #0xffffffff), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x210274
   blk2 @ 0x210244:
     br 0x210248
   blk3 @ 0x210248:
-    x9 = (load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0xffffffff)
-    store32((load32((sp + #0xfffffffffffffff0)) + (x9 & #0xffffffff)), (sp + #0xfffffffffffffff0))
+    store32((((load32((sp + #0xfffffffffffffff0)) & #0xffffffff) + (load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0xffffffff)) & #0xffffffff), (sp + #0xfffffffffffffff0))
     br 0x210264
   blk4 @ 0x210264:
-    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
+    store32((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffec))
     br 0x210234
   blk5 @ 0x210274:
     ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)

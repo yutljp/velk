@@ -31,7 +31,7 @@ fn <unnamed> @ 0x2011e0 (size 16)
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 /* struct: a0 +0x0:uint16_t, +0xffffffffffffffe8:uint16_t */
 uint64_t sub_2011f0(uint16_t *a0, int32_t a1) {
-    if (a1 & a1 <= 0x0) {
+    if (a1 <= 0x0) {
         return 0x0;
     }
     rcx = a1;
@@ -44,15 +44,13 @@ uint64_t sub_2011f0(uint16_t *a0, int32_t a1) {
         rdx = 0x0;
         rax = 0x0;
         do {
-            r9 = (int16_t)(*(uint16_t *)(r8 - 0x18)) * *(uint64_t *)(r8 - 0x20);
-            r9 = r9 + rax;
-            rax = (int16_t)(*(uint16_t *)(r8)) * *(uint64_t *)(r8 - 0x8);
-            rax = rax + r9;
+            r9 = (int16_t)(*(uint16_t *)(r8 - 0x18)) * *(uint64_t *)(r8 - 0x20) + rax;
+            rax = (int16_t)(*(uint16_t *)(r8)) * *(uint64_t *)(r8 - 0x8) + r9;
             rdx = rdx + 0x2;
             r8 = r8 + 0x30;
         } while (a1 != rdx);
     }
-    if (rcx & 0xff & 0x1 != 0x0) {
+    if ((rcx & 0xff & 0x1) != 0x0) {
         rcx = rdx + rdx * 0x2;
         rax = rax + (int16_t)(*(uint16_t *)(a0 + rcx * 0x8 + 0x10)) * *(uint64_t *)(a0 + rcx * 0x8 + 0x8);
     }
@@ -65,7 +63,7 @@ uint64_t (uint16_t * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2011f0 (size 112)
   blk0 @ 0x2011f0:
-    brif le ((rsi & #0xffffffff) & (rsi & #0xffffffff)), #0x0 -> 0x201201
+    brif le (rsi & #0xffffffff), #0x0 -> 0x201201
   blk1 @ 0x2011f4:
     rcx = (rsi & #0xffffffff)
     brif ne (rsi & #0xffffffff), #0x1 -> 0x201204
@@ -81,10 +79,8 @@ fn <unnamed> @ 0x2011f0 (size 112)
     rdx = #0x0
     rax = #0x0
   blk5 @ 0x201220:
-    r9 = (sext16(load16((r8 + #0xffffffffffffffe8))) * load64((r8 + #0xffffffffffffffe0)))
-    r9 = (r9 + rax)
-    rax = (sext16(load16(r8)) * load64((r8 + #0xfffffffffffffff8)))
-    rax = (rax + r9)
+    r9 = ((sext16(load16((r8 + #0xffffffffffffffe8))) * load64((r8 + #0xffffffffffffffe0))) + rax)
+    rax = ((sext16(load16(r8)) * load64((r8 + #0xfffffffffffffff8))) + r9)
     rdx = (rdx + #0x2)
     r8 = (r8 + #0x30)
     brif ne rsi, rdx -> 0x201220
@@ -123,15 +119,15 @@ fn <unnamed> @ 0x201260 (size 32)
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 /* struct: a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
-void sub_201280(uint64_t *a0, uint64_t a1) {
+uint64_t sub_201280(uint64_t *a0, uint64_t a1) {
     a0->field_0x0 = a1;
     a0->field_0x8 = a1 + 0x1;
     a0->field_0x10 = a1 + a1;
     a0->field_0x18 = a1 + a1 * 0x2;
-    return;
+    return a0;
 }
 -- signature
-void (uint64_t * a0, uint64_t a1)
+uint64_t (uint64_t * a0, uint64_t a1)
 -- references
 
 -- ir
@@ -192,7 +188,7 @@ uint64_t sub_2012d0(uint64_t a0) {
     eax = a0;
     eax = eax >> 0x4;
     ecx = a0;
-    return (a0 & 0xff & 0x1 == 0x0 ? ecx >> 0x1 & 0x7 : eax & 0xf);
+    return ((a0 & 0xff & 0x1) == 0x0 ? ecx >> 0x1 & 0x7 : eax & 0xf);
 }
 -- signature
 uint64_t (uint64_t a0)

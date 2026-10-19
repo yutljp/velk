@@ -24,7 +24,6 @@ impl Structurer<'_> {
     /// A bottom-tested loop from this block to the first later block that
     /// branches back to it conditionally; nothing outside may jump inside.
     fn bottom_latch(&self, index: usize, to: usize) -> Option<(usize, Cond, Expr, Expr)> {
-        let header = self.blocks.get(index)?.start;
         let mut latch: Option<(usize, Cond, Expr, Expr)> = None;
         for position in index + 1..to {
             let block = self.blocks.get(position)?;
@@ -45,26 +44,15 @@ impl Structurer<'_> {
             }
         }
         let (position, cond, lhs, rhs) = latch?;
-        let region_end = match self.blocks.get(position + 1) {
-            Some(next) => next.start.saturating_sub(1),
-            None => u64::MAX,
-        };
-        let region = header..=region_end;
+        let region = index..=position;
         for (other, block) in self.blocks.iter().enumerate() {
-            if other >= index && other <= position {
+            if region.contains(&other) {
                 continue;
             }
-            for stmt in &block.stmts {
-                let target = match stmt {
-                    Stmt::Br {
-                        target: Some(target),
-                    } => *target,
-                    Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. } => *target,
-                    _ => continue,
-                };
-                if region.contains(&target) {
-                    return None;
-                }
+            if branch_targets(block)
+                .any(|target| self.target(target).is_some_and(|at| region.contains(&at)))
+            {
+                return None;
             }
         }
         Some((position, cond, lhs, rhs))
@@ -237,6 +225,9 @@ impl Structurer<'_> {
         while index < to {
             let block = &self.blocks[index];
             let Some(last) = block.stmts.last() else {
+                if self.targeted.contains(&block.start) {
+                    out.push(Node::Label(block.start));
+                }
                 index += 1;
                 continue;
             };
@@ -247,17 +238,19 @@ impl Structurer<'_> {
             {
                 let exit = self.blocks.get(latch + 1).map(|next| next.start);
                 let mut body = self.emit(index, latch);
-                // The back edge was the header label's jumper; the loop
-                // replaces it.
-                if matches!(body.first(), Some(Node::Label(label)) if *label == block.start) {
+                // When the back edge is the header label's only jumper, the
+                // loop replaces it.
+                let jumpers = self
+                    .blocks
+                    .iter()
+                    .filter(|other| branch_targets(other).any(|target| target == block.start))
+                    .count();
+                if jumpers == 1
+                    && matches!(body.first(), Some(Node::Label(label)) if *label == block.start)
+                {
                     body.remove(0);
                 }
-                if self.targeted.contains(&self.blocks[latch].start) {
-                    body.push(Node::Label(self.blocks[latch].start));
-                }
-                body.extend(
-                    self.plain(&self.blocks[latch].stmts[..self.blocks[latch].stmts.len() - 1]),
-                );
+                body.extend(self.inlined(latch));
                 rewrite_loop_exits(&mut body, exit, Some(block.start));
                 fold_exit_branches(&mut body, exit);
                 fold_label_branches(&mut body);
@@ -271,9 +264,7 @@ impl Structurer<'_> {
                 let mut body = self.plain(&block.stmts);
                 body.extend(self.emit(index + 1, latch));
                 // The latch's own statements run at the end of each pass.
-                body.extend(
-                    self.plain(&self.blocks[latch].stmts[..self.blocks[latch].stmts.len() - 1]),
-                );
+                body.extend(self.inlined(latch));
                 let exit = self.blocks.get(latch + 1).map(|next| next.start);
                 rewrite_loop_exits(&mut body, exit, Some(block.start));
                 out.push(Node::DoWhile {
@@ -318,12 +309,13 @@ impl Structurer<'_> {
                         }
 
                         if destination > index && destination < to && fallthrough < to {
-                            // while: header branch exits forward, body loops back.
-                            if let Some(latch) = self.latch(fallthrough, destination, block.start) {
+                            // while: header branch exits forward, body loops back
+                            // from the block just before the exit.
+                            if let Some(latch) = self.latch(fallthrough, destination, block.start)
+                                && latch + 1 == destination
+                            {
                                 let mut body = self.emit(fallthrough, latch);
-                                body.extend(self.plain(
-                                    &self.blocks[latch].stmts[..self.blocks[latch].stmts.len() - 1],
-                                ));
+                                body.extend(self.inlined(latch));
                                 let prefix = self.plain(&block.stmts[..block.stmts.len() - 1]);
                                 // `Node::While` carries the continue predicate,
                                 // the inverse of the header's exit test.
@@ -363,17 +355,18 @@ impl Structurer<'_> {
                             }
 
                             // if/else: the fallthrough block jumps past the
-                            // target region to the join.
+                            // target region to the join. Only blocks that just
+                            // return, inlined where they are reached, may lie
+                            // between.
                             if let Some(join) = self.terminal_edge(fallthrough, to)
                                 && join > destination
                                 && destination > fallthrough
+                                && (fallthrough + 1..destination)
+                                    .all(|between| self.only_returns(between))
                             {
                                 let cond = cond.invert();
                                 out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
-                                let then = self.plain(
-                                    &self.blocks[fallthrough].stmts
-                                        [..self.blocks[fallthrough].stmts.len() - 1],
-                                );
+                                let then = self.inlined(fallthrough);
                                 let els = self.emit(destination, join);
                                 out.push(Node::If {
                                     cond,
@@ -391,11 +384,12 @@ impl Structurer<'_> {
                             let join_target = self.terminal_edge(destination, to);
                             if let (Some(a), Some(b)) = (join_fallthrough, join_target)
                                 && a == b
-                                && a > destination
+                                && a == destination + 1
+                                && destination == fallthrough + 1
                             {
                                 out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
                                 let then = self.emit(destination, a);
-                                let els = self.emit(fallthrough, a);
+                                let els = self.emit(fallthrough, destination);
                                 out.push(Node::If {
                                     cond: *cond,
                                     lhs: lhs.clone(),
@@ -412,12 +406,7 @@ impl Structurer<'_> {
                             // so the remaining `goto`s still resolve.
                             if let Some(latch) = self.back_edge_latch(index, to) {
                                 let mut body = self.emit(index, latch);
-                                if self.targeted.contains(&self.blocks[latch].start) {
-                                    body.push(Node::Label(self.blocks[latch].start));
-                                }
-                                body.extend(self.plain(
-                                    &self.blocks[latch].stmts[..self.blocks[latch].stmts.len() - 1],
-                                ));
+                                body.extend(self.inlined(latch));
                                 out.push(Node::Forever { body });
                                 index = latch + 1;
                                 continue;
@@ -447,6 +436,7 @@ impl Structurer<'_> {
                         if let Some(stmts) = self.return_block(destination)
                             && destination != index
                         {
+                            out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
                             out.push(Node::If {
                                 cond: *cond,
                                 lhs: lhs.clone(),
@@ -583,7 +573,51 @@ impl Structurer<'_> {
         out
     }
 
+    /// A block that ends in a return and branches nowhere.
+    fn only_returns(&self, index: usize) -> bool {
+        let stmts = &self.blocks[index].stmts;
+        matches!(stmts.last(), Some(Stmt::Ret { .. }))
+            && !stmts.iter().any(|stmt| {
+                matches!(
+                    stmt,
+                    Stmt::Br { .. }
+                        | Stmt::Brif { .. }
+                        | Stmt::BrifFlags { .. }
+                        | Stmt::Switch { .. }
+                )
+            })
+    }
+
+    /// A block folded into an enclosing shape, without its closing branch;
+    /// its label stays when something else jumps to it.
+    fn inlined(&self, index: usize) -> Vec<Node> {
+        let block = &self.blocks[index];
+        let mut nodes = Vec::new();
+        if self.targeted.contains(&block.start) {
+            nodes.push(Node::Label(block.start));
+        }
+        nodes.extend(self.plain(&block.stmts[..block.stmts.len().saturating_sub(1)]));
+        nodes
+    }
+
     fn plain(&self, stmts: &[Stmt]) -> Vec<Node> {
         stmts.iter().cloned().map(Node::Stmt).collect()
     }
+}
+
+/// The direct branch targets of a block's statements.
+pub(super) fn branch_targets(block: &crate::ir::Block) -> impl Iterator<Item = u64> + '_ {
+    block.stmts.iter().flat_map(|stmt| match stmt {
+        Stmt::Br {
+            target: Some(target),
+        }
+        | Stmt::Brif { target, .. }
+        | Stmt::BrifFlags { target, .. } => vec![*target],
+        Stmt::Switch { cases, default, .. } => cases
+            .iter()
+            .map(|(_, target)| *target)
+            .chain(*default)
+            .collect(),
+        _ => Vec::new(),
+    })
 }

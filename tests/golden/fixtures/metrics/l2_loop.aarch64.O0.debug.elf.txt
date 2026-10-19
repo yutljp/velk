@@ -10,16 +10,16 @@
 /* ref: 0x220380 .bss */
 int sum_while(int n) {
     uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp+8] */
-    uint32_t local_2; /* [sp+4] */
+    uint32_t local_1; /* [sp-8] */
+    uint32_t local_2; /* [sp-c] */
 
+    sp = sp - 0x10;
     local_0 = n;
-    while (true) {
-        w9 = *(uint32_t *)(sp + 0xc);
-        w8 = local_2 - w9;
-        if (w8 >= w9) break;
-        local_1 += local_2;
-        w8 = w8;
+    local_1 = 0x0;
+    local_2 = 0x0;
+    while (local_2 < local_0) {
+        w8 = local_1 + local_2;
+        local_1 = w8;
         dword_220380 = w8;
         local_2 += 0x1;
     }
@@ -34,17 +34,19 @@ int (int n)
 -- ir
 fn sum_while @ 0x2101d4 (size 100)
   blk0 @ 0x2101d4:
-    store32(w0, (sp + #0xfffffffffffffffc))
+    sp = (sp - #0x10)
+    store32(w0, (sp + #0xc))
+    store32(#0x0, (sp + #0x8))
+    store32(#0x0, (sp + #0x4))
     br 0x2101e8
   blk1 @ 0x2101e8:
     x9 = (load32((sp + #0xc)) & #0xffffffff)
-    w8 = (load32((sp + #0x4)) - (x9 & #0xffffffff))
-    brif ge w8, (x9 & #0xffffffff) -> 0x21022c
+    brif ge load32((sp + #0x4)), (x9 & #0xffffffff) -> 0x21022c
   blk2 @ 0x2101f8:
     br 0x2101fc
   blk3 @ 0x2101fc:
-    store32((load32((sp + #0x8)) + (load32((sp + #0x4)) & #0xffffffff)), (sp + #0x8))
-    w8 = w8
+    w8 = (load32((sp + #0x8)) + (load32((sp + #0x4)) & #0xffffffff))
+    store32(w8, (sp + #0x8))
     store32(w8, #0x220380)
     br 0x21021c
   blk4 @ 0x21021c:
@@ -63,17 +65,16 @@ fn sum_while @ 0x2101d4 (size 100)
 /* ref: 0x220380 .bss */
 int count_down(int n) {
     uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp+8] */
-    uint32_t local_2; /* [sp+c] */
+    uint32_t local_1; /* [sp-8] */
 
+    sp = sp - 0x10;
     local_0 = n;
+    local_1 = 0x0;
     do {
         local_1 += 0x1;
-        local_2 -= 0x1;
-        w8 = local_1 + 0x1;
-        dword_220380 = w8;
-        w8 = local_2;
-    } while (w8 > 0x0);
+        local_0 -= 0x1;
+        dword_220380 = local_1 + 0x1;
+    } while (local_0 > 0x0);
     n = local_1;
     sp = sp + 0x10;
     return n;
@@ -85,17 +86,17 @@ int (int n)
 -- ir
 fn count_down @ 0x210238 (size 84)
   blk0 @ 0x210238:
-    store32(w0, (sp + #0xfffffffffffffffc))
+    sp = (sp - #0x10)
+    store32(w0, (sp + #0xc))
+    store32(#0x0, (sp + #0x8))
     br 0x210248
   blk1 @ 0x210248:
     store32((load32((sp + #0x8)) + #0x1), (sp + #0x8))
     store32((load32((sp + #0xc)) - #0x1), (sp + #0xc))
-    w8 = (load32((sp + #0x8)) + #0x1)
-    store32(w8, #0x220380)
+    store32((load32((sp + #0x8)) + #0x1), #0x220380)
     br 0x210270
   blk2 @ 0x210270:
-    w8 = load32((sp + #0xc))
-    brif gt w8, #0x0 -> 0x210248
+    brif gt load32((sp + #0xc)), #0x0 -> 0x210248
   blk3 @ 0x21027c:
     br 0x210280
   blk4 @ 0x210280:
@@ -111,25 +112,28 @@ fn count_down @ 0x210238 (size 84)
 /* ref: 0x220380 .bss */
 int sum_skip_odd(int n) {
     uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp+8] */
-    uint32_t local_2; /* [sp+4] */
+    uint32_t local_1; /* [sp-8] */
+    uint32_t local_2; /* [sp-c] */
 
+    sp = sp - 0x10;
     local_0 = n;
+    local_1 = 0x0;
+    local_2 = 0x0;
     for (;;) {
-        if (w8 >= w9) {
+        w9 = local_0;
+        if (local_2 >= w9) {
             n = local_1;
             sp = sp + 0x10;
             return n;
         }
-        x8 = local_2;
-        if (x8 & 0x1 != 0x0) {
+        if ((local_2 & 0x1) != 0x0) {
             break;
         }
     L_2102e4:
         local_2 += 0x1;
     }
-    local_1 += local_2;
-    x8 = w8;
+    w8 = local_1 + local_2;
+    local_1 = w8;
     dword_220380 = w8;
     goto L_2102e4;
 }
@@ -140,28 +144,29 @@ int (int n)
 -- ir
 fn sum_skip_odd @ 0x21028c (size 116)
   blk0 @ 0x21028c:
-    store32(w0, (sp + #0xfffffffffffffffc))
+    sp = (sp - #0x10)
+    store32(w0, (sp + #0xc))
+    store32(#0x0, (sp + #0x8))
+    store32(#0x0, (sp + #0x4))
     br 0x2102a0
   blk1 @ 0x2102a0:
     x9 = (load32((sp + #0xc)) & #0xffffffff)
-    x8 = (((load32((sp + #0x4)) & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), (x9 & #0xffffffff) -> 0x2102f4
+    brif ge (load32((sp + #0x4)) & #0xffffffff), (x9 & #0xffffffff) -> 0x2102f4
   blk2 @ 0x2102b0:
     br 0x2102b4
   blk3 @ 0x2102b4:
-    x8 = (load32((sp + #0x4)) & #0xffffffff)
-    brif ne (x8 & #0x1), #0x0 -> 0x2102c4
+    brif ne ((load32((sp + #0x4)) & #0xffffffff) & #0x1), #0x0 -> 0x2102c4
   blk4 @ 0x2102bc:
     br 0x2102c0
   blk5 @ 0x2102c0:
     br 0x2102e4
   blk6 @ 0x2102c4:
-    store32((load32((sp + #0x8)) + (load32((sp + #0x4)) & #0xffffffff)), (sp + #0x8))
-    x8 = (x8 & #0xffffffff)
+    x8 = (((load32((sp + #0x8)) & #0xffffffff) + (load32((sp + #0x4)) & #0xffffffff)) & #0xffffffff)
+    store32((x8 & #0xffffffff), (sp + #0x8))
     store32((x8 & #0xffffffff), #0x220380)
     br 0x2102e4
   blk7 @ 0x2102e4:
-    store32((load32((sp + #0x4)) + #0x1), (sp + #0x4))
+    store32((((load32((sp + #0x4)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x4))
     br 0x2102a0
   blk8 @ 0x2102f4:
     w0 = load32((sp + #0x8))
@@ -177,28 +182,26 @@ int find_first(int *p, int n, int v) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-4] */
-    uint32_t local_4; /* [sp-1c] */
+    uint32_t local_3; /* [sp-1c] */
+    uint32_t local_4; /* [sp-4] */
 
     local_0 = p;
     local_1 = n;
     local_2 = v;
+    local_3 = 0x0;
     for (;;) {
-        if (w8 >= w9) {
-            local_3 = 0xffffffff;
-            return local_3;
+        if (local_3 >= local_1) {
+            local_4 = 0xffffffff;
+            return local_4;
         }
-        w8 = *(uint32_t *)(local_0 + (local_4 << 0x2));
-        w9 = local_2;
-        w8 = w8 - w9;
-        if (w8 != w9) { goto L_210354; }
-        local_3 = local_4;
-        return local_3;
+        if (*(uint32_t *)(local_0 + (local_3 << 0x2)) != local_2) { goto L_210354; }
+        local_4 = local_3;
+        return local_4;
     L_210354:
-        local_4 += 0x1;
+        local_3 += 0x1;
     }
-    local_3 = 0xffffffff;
-    return local_3;
+    local_4 = 0xffffffff;
+    return local_4;
 }
 -- signature
 int (int * p, int n, int v)
@@ -210,18 +213,14 @@ fn find_first @ 0x210300 (size 128)
     store64(x0, (sp + #0xfffffffffffffff0))
     store32(w1, (sp + #0xffffffffffffffec))
     store32(w2, (sp + #0xffffffffffffffe8))
+    store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210318
   blk1 @ 0x210318:
-    x9 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
-    x8 = (((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), (x9 & #0xffffffff) -> 0x210368
+    brif ge (load32((sp + #0xffffffffffffffe4)) & #0xffffffff), (load32((sp + #0xffffffffffffffec)) & #0xffffffff) -> 0x210368
   blk2 @ 0x210328:
     br 0x21032c
   blk3 @ 0x21032c:
-    x8 = (load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4))s << #0x2))) & #0xffffffff)
-    x9 = (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
-    x8 = (((x8 & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
-    brif ne (x8 & #0xffffffff), (x9 & #0xffffffff) -> 0x210354
+    brif ne (load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4))s << #0x2))) & #0xffffffff), (load32((sp + #0xffffffffffffffe8)) & #0xffffffff) -> 0x210354
   blk4 @ 0x210344:
     br 0x210348
   blk5 @ 0x210348:
@@ -230,7 +229,7 @@ fn find_first @ 0x210300 (size 128)
   blk6 @ 0x210354:
     br 0x210358
   blk7 @ 0x210358:
-    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
+    store32((((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
     br 0x210318
   blk8 @ 0x210368:
     store32(#0xffffffff, (sp + #0xfffffffffffffffc))

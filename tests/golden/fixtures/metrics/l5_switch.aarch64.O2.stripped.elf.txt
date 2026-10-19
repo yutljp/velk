@@ -1,4 +1,4 @@
-# metrics/l5_switch.aarch64.O2.stripped.elf: elf aarch64 no entry, 19 functions, 0 lift failures, 0 unsupported, 19 gotos
+# metrics/l5_switch.aarch64.O2.stripped.elf: elf aarch64 no entry, 19 functions, 0 lift failures, 0 unsupported, 18 gotos
 0x210304 52 - prologue
 0x210338 148 - prologue
 0x2103cc 20 - prologue
@@ -24,7 +24,8 @@
 /* velk pseudo-C: sub_210304 @ 0x210304 */
 /* ref: 0x200158 .rodata */
 uint32_t sub_210304(uint32_t a0) {
-    if (a0 - 0xa > 0xf /* unsigned */) { goto L_2103b8; }
+    x8 = a0 - 0xa;
+    if (w8 > 0xf /* unsigned */) { goto L_2103b8; }
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (a0) {
         case 10: goto L_210338;
@@ -53,7 +54,8 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x210304 (size 52)
   blk0 @ 0x210304:
-    brif hi ((w0 - #0xa) & #0xffffffff), #0xf -> 0x2103b8
+    x8 = ((w0 - #0xa) & #0xffffffff)
+    brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
     x11 = (load8((#0x200158 + x8)) & #0xffffffff)
     switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
@@ -63,12 +65,12 @@ fn <unnamed> @ 0x210304 (size 52)
 == 0x210338 -
 -- decompile
 /* velk pseudo-C: sub_210338 @ 0x210338 */
-void sub_210338(void) {
+uint32_t sub_210338(void) {
     sub_2103cc();
-    goto L_2103bc;
+    return *(uint32_t *)(x19 + 0x554);
 }
 -- signature
-void ()
+uint32_t ()
 -- references
 
 -- ir
@@ -122,9 +124,11 @@ fn <unnamed> @ 0x210338 (size 148)
     call 0x210474
     br 0x2103bc
   blk16 @ 0x2103b8:
+    store32(#0x0, (x19 + #0x554))
+  blk17 @ 0x2103bc:
     ret load32((x19 + #0x554))
 -- card
-{"addr":"0x210338","approxTokens":240,"blocks":17,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":148,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210338","approxTokens":240,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":148,"sizeEstimated":true,"unsupported":0}
 
 == 0x2103cc -
 -- decompile

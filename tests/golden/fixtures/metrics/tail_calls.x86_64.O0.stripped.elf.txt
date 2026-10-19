@@ -40,6 +40,13 @@ fn <unnamed> @ 0x2011a0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 void sub_2011c0(uint32_t a0) {
+    uint64_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-c] */
+
+    local_0 = rbp;
+    local_1 = a0;
+    a0 = a0;
+    a0 = a0 + 0x2;
     sub_2011a0();
     return;
 }
@@ -50,6 +57,10 @@ void (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011c0 (size 32)
   blk0 @ 0x2011c0:
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    edi = edi
+    edi = (edi + #0x2)
     call 0x2011a0
     ret rax
 -- card

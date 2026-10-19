@@ -26,7 +26,9 @@ fn tail_target @ 0x2101a4 (size 28)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x2101c0 */
 int tail_direct(int x) {
+    x = x + 0x2;
     tail_target();
+    return x;
 }
 -- signature
 int (int x)
@@ -35,7 +37,9 @@ int (int x)
 -- ir
 fn tail_direct @ 0x2101c0 (size 8)
   blk0 @ 0x2101c0:
+    w0 = (w0 + #0x2)
     call 0x2101a4
+    ret w0
 -- card
 {"addr":"0x2101c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 
@@ -43,7 +47,9 @@ fn tail_direct @ 0x2101c0 (size 8)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x2101c8 */
 int tail_indirect(void *f, int x) {
-    goto *(f);
+    x2 = f;
+    f = x + 0x1;
+    goto *(x2);
 }
 -- signature
 int (void * f, int x)
@@ -52,7 +58,9 @@ int (void * f, int x)
 -- ir
 fn tail_indirect @ 0x2101c8 (size 12)
   blk0 @ 0x2101c8:
-    br x0
+    x2 = x0
+    x0 = ((w1 + #0x1) & #0xffffffff)
+    br x2
 -- card
 {"addr":"0x2101c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
 

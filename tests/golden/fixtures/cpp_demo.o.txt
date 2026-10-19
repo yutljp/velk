@@ -41,13 +41,16 @@ fn ns::mul(int, int) @ 0x8 (size 8)
 -- decompile
 /* velk pseudo-C: use(int) @ 0x10 */
 uint32_t use_int_(uint32_t a0) {
-    uint64_t local_0; /* [sp+10] */
+    uint64_t local_0; /* [sp-10] */
 
+    local_0 = x19;
+    x1 = 0x2;
     x19 = a0;
     ns__mul_int__int_();
+    x1 = a0;
     a0 = x19;
-    x19 = local_0;
     sub_<dynamic>();
+    return a0;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -56,12 +59,15 @@ uint32_t (uint32_t a0)
 -- ir
 fn use(int) @ 0x10 (size 44)
   blk0 @ 0x10:
+    store64(x19, (sp + #0xfffffffffffffff0))
+    x1 = #0x2
     x19 = w0
   blk1 @ 0x24:
     call 0x8
+    x1 = w0
     w0 = x19
-    x19 = load64((sp + #0x10))
   blk2 @ 0x38:
     call <dynamic>
+    ret w0
 -- card
 {"addr":"0x10","approxTokens":162,"blocks":3,"hardReasons":[],"name":"use(int)","nameSources":["symtab"],"section":".text","size":44,"unsupported":0}

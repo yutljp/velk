@@ -24,32 +24,41 @@
 /* velk pseudo-C: sub_210334 @ 0x210334 */
 /* ref: 0x200158 .rodata */
 uint32_t sub_210334(void) {
-    uint64_t local_0; /* [sp-20] */
+    uint64_t local_0; /* [sp-10] */
+    uint64_t local_1; /* [sp-8] */
+    uint64_t local_2; /* [sp-20] */
 
+    sp = sp - 0x20;
+    local_0 = x29;
+    local_1 = x30;
+    x29 = sp + 0x10;
     /* unsupported (2 steps): STUR at 0x210340, LDUR at 0x210344 */
     x8 = w8 - 0xa;
+    t65 = w8 + 0xa;
     x8 = w8;
-    local_0 = x8;
-    if (x8 - 0xf > 0xf /* unsigned */) { goto L_2103f8; }
+    local_2 = x8;
+    x8 = x8 - 0xf;
+    if (x8 + 0xf > 0xf /* unsigned */) { goto L_2103f8; }
     x8 = 0x210368;
-    x8 = 0x210368 + dword_200158[local_0];
-    switch (w8 - 0xa) {
-        case 15: goto L_210378;
-        case 16: goto L_210380;
-        case 17: goto L_210388;
-        case 18: goto L_210390;
-        case 19: goto L_210398;
-        case 20: goto L_2103a0;
-        case 21: goto L_2103a8;
-        case 22: goto L_2103b0;
-        case 23: goto L_2103b8;
-        case 24: goto L_2103c0;
-        case 25: goto L_2103c8;
-        case 26: goto L_2103d0;
-        case 27: goto L_2103d8;
-        case 28: goto L_2103e0;
-        case 29: goto L_2103e8;
-        case 30: goto L_2103f0;
+    x9 = dword_200158[local_2];
+    x8 = 0x210368 + x9;
+    switch (w8 - 0xa - 0xf) {
+        case -15: goto L_210378;
+        case -14: goto L_210380;
+        case -13: goto L_210388;
+        case -12: goto L_210390;
+        case -11: goto L_210398;
+        case -10: goto L_2103a0;
+        case -9: goto L_2103a8;
+        case -8: goto L_2103b0;
+        case -7: goto L_2103b8;
+        case -6: goto L_2103c0;
+        case -5: goto L_2103c8;
+        case -4: goto L_2103d0;
+        case -3: goto L_2103d8;
+        case -2: goto L_2103e0;
+        case -1: goto L_2103e8;
+        case 0: goto L_2103f0;
         default: goto L_2103f8;
     }
 }
@@ -60,16 +69,23 @@ uint32_t ()
 -- ir
 fn <unnamed> @ 0x210334 (size 68)
   blk0 @ 0x210334:
+    sp = (sp - #0x20)
+    store64(x29, (sp + #0x10))
+    store64(x30, (sp + #0x18))
+    x29 = (sp + #0x10)
     unsupported: STUR at 0x210340
     unsupported: LDUR at 0x210344
     x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
+    t65 = (w8 + #0xa)
     x8 = (x8 & #0xffffffff)
-    store64(x8, (sp + #0xffffffffffffffe0))
-    brif hi (x8 - #0xf), #0xf -> 0x2103f8
+    store64(x8, sp)
+    x8 = (x8 - #0xf)
+    brif hi (x8 + #0xf), #0xf -> 0x2103f8
   blk1 @ 0x21035c:
     x8 = #0x210368
-    x8 = (#0x210368 + load32((#0x200158 + (load64((sp + #0xffffffffffffffe0)) << #0x2)))s)
-    switch (((x8 & #0xffffffff) - #0xa) & #0xffffffff) [15->0x210378, 16->0x210380, 17->0x210388, 18->0x210390, 19->0x210398, 20->0x2103a0, 21->0x2103a8, 22->0x2103b0, 23->0x2103b8, 24->0x2103c0, 25->0x2103c8, 26->0x2103d0, 27->0x2103d8, 28->0x2103e0, 29->0x2103e8, 30->0x2103f0] default 0x2103f8
+    x9 = load32((#0x200158 + (load64(sp) << #0x2)))s
+    x8 = (#0x210368 + x9)
+    switch ((((x8 & #0xffffffff) - #0xa) & #0xffffffff) - #0xf) [-15->0x210378, -14->0x210380, -13->0x210388, -12->0x210390, -11->0x210398, -10->0x2103a0, -9->0x2103a8, -8->0x2103b0, -7->0x2103b8, -6->0x2103c0, -5->0x2103c8, -4->0x2103d0, -3->0x2103d8, -2->0x2103e0, -1->0x2103e8, 0->0x2103f0] default 0x2103f8
 -- card
 {"addr":"0x210334","approxTokens":198,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":68,"sizeEstimated":true,"unsupported":2}
 
@@ -77,12 +93,12 @@ fn <unnamed> @ 0x210334 (size 68)
 -- decompile
 /* velk pseudo-C: sub_210378 @ 0x210378 */
 /* ref: 0x2205e8 .bss */
-void sub_210378(void) {
+uint32_t sub_210378(void) {
     sub_210418();
-    return;
+    return dword_2205e8;
 }
 -- signature
-void ()
+uint32_t ()
 -- references
 0x2205e8 .bss
 -- ir
@@ -136,6 +152,7 @@ fn <unnamed> @ 0x210378 (size 160)
     call 0x210558
     br 0x210404
   blk16 @ 0x2103f8:
+    store32(#0x0, #0x2205e8)
     br 0x210404
   blk17 @ 0x210404:
     ret load32(#0x2205e8)
@@ -466,23 +483,25 @@ fn <unnamed> @ 0x210558 (size 24)
 -- decompile
 /* velk pseudo-C: sub_210570 @ 0x210570 */
 uint32_t sub_210570(uint32_t a0) {
-    uint32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-4] */
 
-    if (a0 - 0x1 == 0x1) {
-        local_0 = 0x64;
-        return local_0;
+    w8 = a0;
+    local_0 = w8;
+    if (w8 - 0x1 == 0x0) {
+        local_1 = 0x64;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0x32 == 0x32) {
-        local_0 = 0x7;
-        return local_0;
+    if (local_0 - 0x32 == 0x0) {
+        local_1 = 0x7;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0x12c != 0x12c) {
-    } else {
-        local_0 = 0x12c;
-        return local_0;
+    if (local_0 - 0x12c == 0x0) {
+        local_1 = 0x12c;
+        return local_1;
     }
-    local_0 = 0xffffffff;
-    return local_0;
+    local_1 = 0xffffffff;
+    return local_1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -491,15 +510,17 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x210570 (size 120)
   blk0 @ 0x210570:
-    brif eq (((w0 & #0xffffffff) - #0x1) & #0xffffffff), #0x1 -> 0x2105ac
+    x8 = (w0 & #0xffffffff)
+    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff4))
+    brif eq (((x8 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2105ac
   blk1 @ 0x210588:
     br 0x21058c
   blk2 @ 0x21058c:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0x32) & #0xffffffff), #0x32 -> 0x2105b8
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0x32) & #0xffffffff), #0x0 -> 0x2105b8
   blk3 @ 0x210598:
     br 0x21059c
   blk4 @ 0x21059c:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0x12c) & #0xffffffff), #0x12c -> 0x2105c4
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0x12c) & #0xffffffff), #0x0 -> 0x2105c4
   blk5 @ 0x2105a8:
     br 0x2105d0
   blk6 @ 0x2105ac:

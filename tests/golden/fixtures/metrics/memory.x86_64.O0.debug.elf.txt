@@ -22,12 +22,8 @@ uint64_t copy_bytes(void *dst, void *src, uint64_t n) {
     *(uint64_t *)(rbp - 0x18) = n;
     *(uint64_t *)(rbp - 0x20) = 0x0;
     while (*(uint64_t *)(rbp - 0x20) < *(uint64_t *)(rbp - 0x18) /* unsigned */) {
-        rax = *(uint64_t *)(rbp - 0x10);
-        rcx = *(uint64_t *)(rbp - 0x20);
-        n = n & 0xffffffffffffff00 | *(uint8_t *)(rax + rcx) & 0xff;
-        rax = *(uint64_t *)(rbp - 0x8);
-        rcx = *(uint64_t *)(rbp - 0x20);
-        *(uint8_t *)(rax + rcx) = n & 0xff;
+        n = n & 0xffffffffffffff00 | *(uint8_t *)(*(uint64_t *)(rbp - 0x10) + *(uint64_t *)(rbp - 0x20)) & 0xff;
+        *(uint8_t *)(*(uint64_t *)(rbp - 0x8) + *(uint64_t *)(rbp - 0x20)) = n & 0xff;
         *(uint64_t *)(rbp - 0x20) = *(uint64_t *)(rbp - 0x20) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -51,12 +47,8 @@ fn copy_bytes @ 0x201280 (size 79)
     rax = load64((rbp + #0xffffffffffffffe0))
     brif cs rax, load64((rbp + #0xffffffffffffffe8)) -> 0x2012cd
   blk2 @ 0x2012a6:
-    rax = load64((rbp + #0xfffffffffffffff0))
-    rcx = load64((rbp + #0xffffffffffffffe0))
-    rdx = ((rdx & #0xffffffffffffff00) | (load8((rax + rcx)) & #0xff))
-    rax = load64((rbp + #0xfffffffffffffff8))
-    rcx = load64((rbp + #0xffffffffffffffe0))
-    store8((rdx & #0xff), (rax + rcx))
+    rdx = ((rdx & #0xffffffffffffff00) | (load8((load64((rbp + #0xfffffffffffffff0)) + load64((rbp + #0xffffffffffffffe0)))) & #0xff))
+    store8((rdx & #0xff), (load64((rbp + #0xfffffffffffffff8)) + load64((rbp + #0xffffffffffffffe0))))
     store64((load64((rbp + #0xffffffffffffffe0)) + #0x1), (rbp + #0xffffffffffffffe0))
     br 0x201298
   blk3 @ 0x2012cd:
@@ -78,13 +70,9 @@ uint64_t fill_bytes(void *dst, uint32_t value, uint64_t n) {
     *(uint8_t *)(rbp - 0x9) = (rax & 0xffffffffffffff00 | value & 0xff & 0xff) & 0xff;
     *(uint64_t *)(rbp - 0x18) = n;
     *(uint64_t *)(rbp - 0x20) = 0x0;
-    while (true) {
-        rax = *(uint64_t *)(rbp - 0x20);
-        if (rax >= *(uint64_t *)(rbp - 0x18) /* unsigned */) break;
+    while (*(uint64_t *)(rbp - 0x20) < *(uint64_t *)(rbp - 0x18) /* unsigned */) {
         n = n & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0x9) & 0xff;
-        rax = *(uint64_t *)(rbp - 0x8);
-        rcx = *(uint64_t *)(rbp - 0x20);
-        *(uint8_t *)(rax + rcx) = n & 0xff;
+        *(uint8_t *)(*(uint64_t *)(rbp - 0x8) + *(uint64_t *)(rbp - 0x20)) = n & 0xff;
         *(uint64_t *)(rbp - 0x20) = *(uint64_t *)(rbp - 0x20) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -109,9 +97,7 @@ fn fill_bytes @ 0x2012d0 (size 73)
     brif cs rax, load64((rbp + #0xffffffffffffffe8)) -> 0x201317
   blk2 @ 0x2012f8:
     rdx = ((rdx & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffff7)) & #0xff))
-    rax = load64((rbp + #0xfffffffffffffff8))
-    rcx = load64((rbp + #0xffffffffffffffe0))
-    store8((rdx & #0xff), (rax + rcx))
+    store8((rdx & #0xff), (load64((rbp + #0xfffffffffffffff8)) + load64((rbp + #0xffffffffffffffe0))))
     store64((load64((rbp + #0xffffffffffffffe0)) + #0x1), (rbp + #0xffffffffffffffe0))
     br 0x2012ea
   blk3 @ 0x201317:
@@ -150,9 +136,7 @@ fn string_length @ 0x201320 (size 57)
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store64(#0x0, (rbp + #0xfffffffffffffff0))
   blk1 @ 0x201330:
-    rax = load64((rbp + #0xfffffffffffffff8))
-    rcx = load64((rbp + #0xfffffffffffffff0))
-    brif eq load8((rax + rcx)), #0x0 -> 0x201353
+    brif eq load8((load64((rbp + #0xfffffffffffffff8)) + load64((rbp + #0xfffffffffffffff0)))), #0x0 -> 0x201353
   blk2 @ 0x201342:
     store64((load64((rbp + #0xfffffffffffffff0)) + #0x1), (rbp + #0xfffffffffffffff0))
     br 0x201330
@@ -305,12 +289,10 @@ uint64_t swap_ints(int *a, int *b) {
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a;
     *(uint64_t *)(rbp - 0x10) = b;
-    *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(a);
-    rax = a;
-    *(uint32_t *)(rax) = *(uint32_t *)(b);
-    ecx = eax;
-    rax = b;
-    *(uint32_t *)(rax) = ecx;
+    *(uint32_t *)(rbp - 0x14) = a->field_0x0;
+    a->field_0x0 = *(uint32_t *)(b);
+    rax = *(uint64_t *)(rbp - 0x10);
+    *(uint32_t *)(rax) = *(uint32_t *)(rbp - 0x14);
     return rax;
 }
 -- signature
@@ -326,11 +308,9 @@ fn swap_ints @ 0x201420 (size 44)
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store64(rsi, (rbp + #0xfffffffffffffff0))
     store32((load32(rdi) & #0xffffffff), (rbp + #0xffffffffffffffec))
-    rax = rdi
-    store32(load32(rsi), rax)
-    ecx = (rax & #0xffffffff)
-    rax = rsi
-    store32(ecx, rax)
+    store32(load32(rsi), rdi)
+    rax = load64((rbp + #0xfffffffffffffff0))
+    store32(load32((rbp + #0xffffffffffffffec)), rax)
     ret rax
 -- card
 {"addr":"0x201420","approxTokens":192,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}

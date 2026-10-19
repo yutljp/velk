@@ -26,7 +26,9 @@ fn <unnamed> @ 0x2101a4 (size 28)
 -- decompile
 /* velk pseudo-C: sub_2101c0 @ 0x2101c0 */
 uint32_t sub_2101c0(uint32_t a0) {
+    a0 = a0 + 0x2;
     sub_2101a4();
+    return a0;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -35,24 +37,30 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2101c0 (size 8)
   blk0 @ 0x2101c0:
+    w0 = (w0 + #0x2)
     call 0x2101a4
+    ret w0
 -- card
 {"addr":"0x2101c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x2101c8 -
 -- decompile
 /* velk pseudo-C: sub_2101c8 @ 0x2101c8 */
-uint32_t sub_2101c8(uint64_t a0, uint32_t a1) {
-    goto *(a0);
+uint32_t sub_2101c8(uint32_t a0, uint32_t a1) {
+    x2 = a0;
+    a0 = a1 + 0x1;
+    goto *(x2);
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2101c8 (size 12)
   blk0 @ 0x2101c8:
-    br x0
+    x2 = x0
+    x0 = ((w1 + #0x1) & #0xffffffff)
+    br x2
 -- card
 {"addr":"0x2101c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
 

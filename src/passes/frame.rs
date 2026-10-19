@@ -8,16 +8,16 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 /// frame address escapes.
 pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
     let sp = stack_pointer(ir.isa);
-    // Every frame-slot address the body names, and whether one escapes.
-    let mut read: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    // Every frame-slot range the body reads, and whether a frame address escapes.
+    let mut read: Vec<(u64, u8)> = Vec::new();
     let mut escaped = false;
-    let mut stores: Vec<(usize, usize, u64)> = Vec::new();
+    let mut stores: Vec<(usize, usize, u64, u8)> = Vec::new();
     for (position, block) in ir.blocks.iter().enumerate() {
         for (index, stmt) in block.stmts.iter().enumerate() {
             match stmt {
-                Stmt::Store { addr, value, .. } => {
+                Stmt::Store { addr, value, width } => {
                     if let Some(slot) = frame_slot_of(addr, sp) {
-                        stores.push((position, index, slot));
+                        stores.push((position, index, slot, *width));
                     } else if address_uses_frame(addr, sp) {
                         escaped = true;
                     }
@@ -40,9 +40,13 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                         escaped = true;
                     }
                 }
-                Stmt::Ret { value } => {
-                    collect_frame_reads(value, sp, &mut read);
-                    if address_uses_frame(value, sp) {
+                Stmt::Ret { value: read_value }
+                | Stmt::Switch {
+                    index: read_value, ..
+                }
+                | Stmt::BrIndirect { target: read_value } => {
+                    collect_frame_reads(read_value, sp, &mut read);
+                    if address_uses_frame(read_value, sp) {
                         escaped = true;
                     }
                 }
@@ -53,6 +57,8 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                         escaped = true;
                     }
                 }
+                // A callee may read its stack arguments from the frame.
+                Stmt::Call { .. } => escaped = true,
                 _ => {}
             }
         }
@@ -61,10 +67,17 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
     if escaped {
         return;
     }
+    let overlaps = |slot: u64, width: u8| {
+        let (start, end) = (slot as i64, slot as i64 + i64::from(width));
+        read.iter().any(|(other, other_width)| {
+            let (other_start, other_end) = (*other as i64, *other as i64 + i64::from(*other_width));
+            start < other_end && other_start < end
+        })
+    };
     let dead: std::collections::HashSet<(usize, usize)> = stores
         .into_iter()
-        .filter(|(_, _, slot)| !read.contains(slot))
-        .map(|(position, index, _)| (position, index))
+        .filter(|(_, _, slot, width)| !overlaps(*slot, *width))
+        .map(|(position, index, _, _)| (position, index))
         .collect();
     if dead.is_empty() {
         return;
@@ -96,12 +109,10 @@ fn frame_slot_of(addr: &Expr, sp: u16) -> Option<u64> {
     }
 }
 
-fn collect_frame_reads(expr: &Expr, sp: u16, read: &mut std::collections::HashSet<u64>) {
+fn collect_frame_reads(expr: &Expr, sp: u16, read: &mut Vec<(u64, u8)>) {
     match expr {
-        Expr::Load { addr, .. } => match frame_slot_of(addr, sp) {
-            Some(slot) => {
-                read.insert(slot);
-            }
+        Expr::Load { addr, width, .. } => match frame_slot_of(addr, sp) {
+            Some(slot) => read.push((slot, *width)),
             None => collect_frame_reads(addr, sp, read),
         },
         Expr::Bin { lhs, rhs, .. } => {
@@ -157,8 +168,9 @@ fn address_uses_frame(expr: &Expr, sp: u16) -> bool {
 /// reloaded from it, untouched in between), plus the stack adjustments when
 /// the stack has no other use.
 ///
-/// The frame displacement is tracked in layout order so the save and the
-/// restore resolve to the same slot across blocks and stack adjustments.
+/// The frame displacement on entry to each block follows the control flow,
+/// so the save and the restores resolve to the same slot across blocks and
+/// stack adjustments.
 pub fn elide_callee_saves(ir: &mut FunctionIr) {
     let sp = stack_pointer(ir.isa);
     struct Access {
@@ -169,8 +181,12 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
         reg: u16,
     }
     let mut accesses: Vec<Access> = Vec::new();
-    let mut frame: i64 = 0;
+    let frames = crate::passes::frame_slots::block_frames(ir, sp);
     for (block_index, block) in ir.blocks.iter().enumerate() {
+        // A block whose frame the paths into it disagree on names no slot.
+        let Some(mut frame) = frames[block_index] else {
+            continue;
+        };
         for (position, stmt) in block.stmts.iter().enumerate() {
             match stmt {
                 Stmt::Store { addr, value, .. } => {
@@ -206,63 +222,98 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
                 _ => {}
             }
         }
-        // A conditional exit may reach a block whose frame differs.
-        if matches!(block.stmts.last(), Some(Stmt::Brif { .. })) {
-            frame = 0;
-        }
     }
-    // Each slot must be written once and read once, round-tripping the same
-    // register, with that register untouched in between.
+    // Each slot must be written once and only read back into the same
+    // register, once per return path, with that register untouched between
+    // the save and each restore.
     let mut by_slot: HashMap<i64, Vec<usize>> = HashMap::new();
     for (index, access) in accesses.iter().enumerate() {
         by_slot.entry(access.slot).or_default().push(index);
     }
     let mut drop: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
     for list in by_slot.values() {
-        if list.len() != 2 {
+        let [save, restores @ ..] = list.as_slice() else {
             continue;
-        }
-        let (first, second) = (&accesses[list[0]], &accesses[list[1]]);
-        if !first.store || second.store || first.reg != second.reg || first.reg == sp {
+        };
+        let first = &accesses[*save];
+        if restores.is_empty()
+            || !first.store
+            || first.reg == sp
+            || restores.iter().any(|index| {
+                let restore = &accesses[*index];
+                restore.store || restore.reg != first.reg
+            })
+        {
             continue;
         }
         let mut borrowed = false;
         let mut frame_setup: Option<(usize, usize)> = None;
-        'scan: for block_index in first.block..=second.block {
-            let block = &ir.blocks[block_index];
-            let start = if block_index == first.block {
-                first.position + 1
-            } else {
-                0
-            };
-            let end = if block_index == second.block {
-                second.position
-            } else {
-                block.stmts.len()
-            };
-            for position in start..end {
-                let (writes, reads) = statement_registers(&block.stmts[position]);
-                if reads.contains(&first.reg) {
-                    borrowed = true;
-                    break 'scan;
-                }
-                if writes.contains(&first.reg) {
-                    // `mov fp, sp` is the frame setup, not a use of the
-                    // register the prologue saved.
-                    if is_frame_setup(&block.stmts[position], sp) {
-                        frame_setup = Some((block_index, position));
+        'restores: for second in restores.iter().map(|index| &accesses[*index]) {
+            for block_index in first.block..=second.block {
+                let block = &ir.blocks[block_index];
+                let start = if block_index == first.block {
+                    first.position + 1
+                } else {
+                    0
+                };
+                let end = if block_index == second.block {
+                    second.position
+                } else {
+                    block.stmts.len()
+                };
+                for position in start..end {
+                    // Another path's restore writes the register back too.
+                    if restores.iter().any(|index| {
+                        let other = &accesses[*index];
+                        (other.block, other.position) == (block_index, position)
+                    }) {
                         continue;
                     }
-                    borrowed = true;
-                    break 'scan;
+                    let (writes, reads) = statement_registers(&block.stmts[position]);
+                    // A call preserves the callee-saved register it would read.
+                    if matches!(block.stmts[position], Stmt::Call { .. })
+                        && !writes.contains(&first.reg)
+                    {
+                        continue;
+                    }
+                    if reads.contains(&first.reg) {
+                        borrowed = true;
+                        break 'restores;
+                    }
+                    if writes.contains(&first.reg) {
+                        // `mov fp, sp` is the frame setup, not a use of the
+                        // register the prologue saved.
+                        if is_frame_setup(&block.stmts[position], sp) {
+                            frame_setup = Some((block_index, position));
+                            continue;
+                        }
+                        borrowed = true;
+                        break 'restores;
+                    }
                 }
             }
+        }
+        // A frame pointer that some path reads as a base must stay set up.
+        if frame_setup.is_some() {
+            let round_trip: Vec<(usize, usize)> = list
+                .iter()
+                .map(|index| (accesses[*index].block, accesses[*index].position))
+                .collect();
+            borrowed |= ir.blocks.iter().enumerate().any(|(block_index, block)| {
+                block.stmts.iter().enumerate().any(|(position, stmt)| {
+                    !round_trip.contains(&(block_index, position))
+                        && !matches!(stmt, Stmt::Call { .. })
+                        && statement_registers(stmt).1.contains(&first.reg)
+                })
+            });
         }
         if borrowed {
             continue;
         }
         drop.insert((first.block, first.position));
-        drop.insert((second.block, second.position));
+        for restore in restores.iter().map(|index| &accesses[*index]) {
+            drop.insert((restore.block, restore.position));
+        }
         if let Some(position) = frame_setup {
             drop.insert(position);
         }
@@ -439,7 +490,7 @@ fn frame_prologue(stmts: &[Stmt]) -> Option<(std::ops::Range<usize>, u16)> {
     Some((0..3, *frame))
 }
 
-/// Matches `rsp += 8; rbp = *(u64 *)rsp` at the block's tail, restoring the
+/// Matches `rbp = *(u64 *)rsp; rsp += 8` at the block's tail, restoring the
 /// same frame pointer register, and returns its range.
 fn frame_epilogue(stmts: &[Stmt], frame: u16) -> Option<std::ops::Range<usize>> {
     // The pair may sit just before a trailing `Ret`.
@@ -450,7 +501,7 @@ fn frame_epilogue(stmts: &[Stmt], frame: u16) -> Option<std::ops::Range<usize>> 
     if len < 2 {
         return None;
     }
-    let Stmt::Assign { dest: sp, value } = &stmts[len - 2] else {
+    let Stmt::Assign { dest: sp, value } = &stmts[len - 1] else {
         return None;
     };
     if sp.index != x86::RSP {
@@ -462,7 +513,7 @@ fn frame_epilogue(stmts: &[Stmt], frame: u16) -> Option<std::ops::Range<usize>> 
     let Stmt::Assign {
         dest: restored,
         value,
-    } = &stmts[len - 1]
+    } = &stmts[len - 2]
     else {
         return None;
     };
@@ -507,5 +558,165 @@ fn address_uses_stack(expr: &Expr) -> bool {
         Expr::Bin { lhs, rhs, .. } => address_uses_stack(lhs) || address_uses_stack(rhs),
         Expr::SignExtend { value, .. } => address_uses_stack(value),
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{drop_dead_frame_stores, elide_callee_saves};
+    use crate::ir::{BinOp, Block, Cond, Convention, Expr, FunctionIr, RegRef, Stmt};
+    use crate::loader::Isa;
+
+    const RSP: u16 = 4;
+    const RBP: u16 = 5;
+
+    fn assign(index: u16, value: Expr) -> Stmt {
+        Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        }
+    }
+
+    fn adjust(delta: i64) -> Stmt {
+        assign(
+            RSP,
+            Expr::bin(BinOp::Add, Expr::reg(RSP, 64), Expr::Const(delta as u64)),
+        )
+    }
+
+    fn restore() -> Vec<Stmt> {
+        vec![
+            assign(
+                RBP,
+                Expr::Load {
+                    addr: Box::new(Expr::reg(RSP, 64)),
+                    width: 8,
+                    signed: false,
+                },
+            ),
+            adjust(8),
+            Stmt::Ret {
+                value: Expr::reg(0, 64),
+            },
+        ]
+    }
+
+    /// `push rbp; mov rbp, rsp; if (rdi == 0) goto other;` returning through
+    /// a restore, with `other` at 0x20.
+    fn frame_pointer_function(other: Vec<Stmt>) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                adjust(-8),
+                Stmt::Store {
+                    addr: Expr::reg(RSP, 64),
+                    value: Expr::reg(RBP, 64),
+                    width: 8,
+                },
+                assign(RBP, Expr::reg(RSP, 64)),
+                Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(7, 64),
+                    rhs: Expr::Const(0),
+                    target: 0x20,
+                },
+            ],
+        );
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: restore(),
+        });
+        ir.blocks.push(Block {
+            start: 0x20,
+            stmts: other,
+        });
+        ir
+    }
+
+    #[test]
+    fn elides_a_save_restored_on_every_return_path() {
+        let mut ir = frame_pointer_function(restore());
+        elide_callee_saves(&mut ir);
+        let left = ir.blocks.iter().flat_map(|block| &block.stmts).count();
+        assert_eq!(
+            left,
+            3,
+            "only the branch and the returns stay:\n{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn keeps_a_frame_pointer_another_path_reads() {
+        // The other path passes a frame address to a call that never returns.
+        let mut ir = frame_pointer_function(vec![
+            assign(7, Expr::reg(RBP, 64)),
+            Stmt::Call {
+                target: Some(0x100),
+                convention: Convention::SysV,
+            },
+            Stmt::Trap,
+        ]);
+        elide_callee_saves(&mut ir);
+        assert!(
+            ir.blocks[0]
+                .stmts
+                .iter()
+                .any(|stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == RBP)),
+            "{}",
+            ir.render()
+        );
+    }
+
+    fn slot(offset: i64) -> Expr {
+        Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(offset as u64))
+    }
+
+    fn store(offset: i64, value: Expr, width: u8) -> Stmt {
+        Stmt::Store {
+            addr: slot(offset),
+            value,
+            width,
+        }
+    }
+
+    fn load(offset: i64, width: u8) -> Expr {
+        Expr::Load {
+            addr: Box::new(slot(offset)),
+            width,
+            signed: false,
+        }
+    }
+
+    #[test]
+    fn keeps_a_store_a_wider_load_reads() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(-4, Expr::Const(5), 4),
+                Stmt::Ret { value: load(-8, 8) },
+            ],
+        );
+        drop_dead_frame_stores(&mut ir);
+        assert_eq!(ir.blocks[0].stmts.len(), 2, "{}", ir.render());
+    }
+
+    #[test]
+    fn keeps_a_store_a_callee_may_read() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(0, Expr::Const(9), 8),
+                Stmt::Call {
+                    target: Some(0x100),
+                    convention: Convention::Aapcs64,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        drop_dead_frame_stores(&mut ir);
+        assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
     }
 }

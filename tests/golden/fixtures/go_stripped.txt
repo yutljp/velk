@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 1778 unsupported, 6122 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 2124 unsupported, 5409 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1349,24 +1349,26 @@ fn main.add @ 0x466ca0 (size 32)
 == 0x466cc0 main.twice
 -- decompile
 /* velk pseudo-C: main.twice @ 0x466cc0 */
-void main_twice(void) {
-    uint64_t local_0; /* [sp-8] */
+uint64_t main_twice(uint64_t a0) {
+    uint64_t local_0; /* [sp+8] */
 
 L_466cc0:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466cdc; }
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rsp = rsp - 0x10;
+    rbx = a0;
     main_add();
     rsp = rsp + 0x10;
     rsp = rsp + 0x8;
-    return;
+    return a0;
 L_466cdc:
+    local_0 = a0;
     runtime_morestack_noctxt();
+    a0 = local_0;
     goto L_466cc0;
 }
 -- signature
-void ()
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -1375,14 +1377,16 @@ fn main.twice @ 0x466cc0 (size 64)
     brif ls rsp, load64((r14 + #0x10)) -> 0x466cdc
   blk1 @ 0x466cc6:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rsp = (rsp - #0x10)
+    rbx = rax
     call 0x466ca0
     rsp = (rsp + #0x10)
     rsp = (rsp + #0x8)
     ret rax
   blk2 @ 0x466cdc:
+    store64(rax, (rsp + #0x8))
     call 0x461de0
+    rax = load64((rsp + #0x8))
     br 0x466cc0
   blk3 @ 0x466ced:
     trap
@@ -1428,28 +1432,30 @@ fn main.twice @ 0x466cc0 (size 64)
 == 0x466d00 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d00 */
-void main_main(void) {
-    uint64_t local_0; /* [sp-8] */
+uint64_t main_main(void) {
+    uint64_t local_0; /* [sp-10] */
 
 L_466d00:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466d3f; }
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rsp = rsp - 0x10;
+    rax = 0x15;
     main_twice();
+    local_0 = rax;
     runtime_printlock();
+    rax = local_0;
     runtime_printint();
     runtime_printnl();
     runtime_printunlock();
     rsp = rsp + 0x10;
     rsp = rsp + 0x8;
-    return;
+    return rax;
 L_466d3f:
     runtime_morestack_noctxt();
     goto L_466d00;
 }
 -- signature
-void ()
+uint64_t ()
 -- references
 
 -- ir
@@ -1458,16 +1464,18 @@ fn main.main @ 0x466d00 (size 96)
     brif ls rsp, load64((r14 + #0x10)) -> 0x466d3f
   blk1 @ 0x466d06:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rsp = (rsp - #0x10)
+    rax = #0x15
     call 0x466cc0
+    store64(rax, (rsp + #0x8))
     call 0x4305a0
+    rax = load64((rsp + #0x8))
     call 0x430c40
     call 0x4307e0
     call 0x430600
     rsp = (rsp + #0x10)
     rsp = (rsp + #0x8)
-    ret #0x15
+    ret rax
   blk2 @ 0x466d3f:
     call 0x461de0
     br 0x466d00

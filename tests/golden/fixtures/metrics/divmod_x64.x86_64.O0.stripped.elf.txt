@@ -21,11 +21,11 @@
 == 0x201380 -
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
-void sub_201380(uint64_t a0) {
-    return;
+uint64_t sub_201380(uint64_t a0) {
+    return a0 / 0x3;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -38,11 +38,11 @@ fn <unnamed> @ 0x201380 (size 32)
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-void sub_2013a0(uint64_t a0) {
-    return;
+uint64_t sub_2013a0(uint64_t a0) {
+    return a0 / 0xa;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -55,68 +55,104 @@ fn <unnamed> @ 0x2013a0 (size 32)
 == 0x2013c0 -
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
-void sub_2013c0(uint64_t a0) {
+uint64_t sub_2013c0(uint64_t a0) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = rbp;
+    rax = a0;
+    rcx = 0x3;
+    rdx = 0x0;
     /* unsupported: div at 0x2013d3 */
-    return;
+    rbp = local_0;
+    return rax;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2013c0 (size 32)
   blk0 @ 0x2013c0:
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rax = rdi
+    rcx = #0x3
+    rdx = #0x0
     unsupported: div at 0x2013d3
-    ret rdi
+    rbp = load64((rsp + #0xfffffffffffffff8))
+    ret rax
 -- card
 {"addr":"0x2013c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
 
 == 0x2013e0 -
 -- decompile
 /* velk pseudo-C: sub_2013e0 @ 0x2013e0 */
-void sub_2013e0(uint64_t a0) {
+uint64_t sub_2013e0(uint64_t a0) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = rbp;
+    rax = a0;
+    rcx = 0xa;
+    rdx = 0x0;
     /* unsupported: div at 0x2013f3 */
-    return;
+    rbp = local_0;
+    return rax;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2013e0 (size 32)
   blk0 @ 0x2013e0:
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rax = rdi
+    rcx = #0xa
+    rdx = #0x0
     unsupported: div at 0x2013f3
-    ret rdi
+    rbp = load64((rsp + #0xfffffffffffffff8))
+    ret rax
 -- card
 {"addr":"0x2013e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
 
 == 0x201400 -
 -- decompile
 /* velk pseudo-C: sub_201400 @ 0x201400 */
-void sub_201400(uint32_t a0) {
+uint32_t sub_201400(uint32_t a0) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = rbp;
+    eax = a0;
+    rcx = 0x3;
+    rdx = 0x0;
     /* unsupported: div at 0x201411 */
-    return;
+    rbp = local_0;
+    return eax;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201400 (size 32)
   blk0 @ 0x201400:
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    eax = edi
+    rcx = #0x3
+    rdx = #0x0
     unsupported: div at 0x201411
-    ret edi
+    rbp = load64((rsp + #0xfffffffffffffff8))
+    ret eax
 -- card
 {"addr":"0x201400","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
 
 == 0x201420 -
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
-void sub_201420(uint32_t a0) {
-    return;
+uint32_t sub_201420(uint32_t a0) {
+    return a0 / 0x10;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -129,11 +165,11 @@ fn <unnamed> @ 0x201420 (size 32)
 == 0x201440 -
 -- decompile
 /* velk pseudo-C: sub_201440 @ 0x201440 */
-void sub_201440(uint64_t a0) {
-    return;
+uint64_t sub_201440(uint64_t a0) {
+    return a0 / 0x10;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -146,30 +182,44 @@ fn <unnamed> @ 0x201440 (size 32)
 == 0x201460 -
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
-void sub_201460(uint32_t a0) {
+uint32_t sub_201460(uint32_t a0) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = rbp;
+    eax = a0;
+    rcx = 0x3;
+    rdx = 0x0;
     /* unsupported: div at 0x201471 */
-    return;
+    eax = rdx;
+    rbp = local_0;
+    return eax;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201460 (size 32)
   blk0 @ 0x201460:
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    eax = edi
+    rcx = #0x3
+    rdx = #0x0
     unsupported: div at 0x201471
-    ret #0x0
+    eax = rdx
+    rbp = load64((rsp + #0xfffffffffffffff8))
+    ret eax
 -- card
 {"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
 
 == 0x201480 -
 -- decompile
 /* velk pseudo-C: sub_201480 @ 0x201480 */
-void sub_201480(uint32_t a0) {
-    return;
+uint32_t sub_201480(uint32_t a0) {
+    return a0 % 0x3;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -182,11 +232,11 @@ fn <unnamed> @ 0x201480 (size 32)
 == 0x2014a0 -
 -- decompile
 /* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
-void sub_2014a0(uint32_t a0) {
-    return;
+uint32_t sub_2014a0(uint32_t a0) {
+    return a0 & 0x7;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -199,11 +249,11 @@ fn <unnamed> @ 0x2014a0 (size 16)
 == 0x2014b0 -
 -- decompile
 /* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
-void sub_2014b0(uint32_t a0) {
-    return;
+uint32_t sub_2014b0(uint32_t a0) {
+    return a0 % 0x8;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -216,11 +266,11 @@ fn <unnamed> @ 0x2014b0 (size 32)
 == 0x2014d0 -
 -- decompile
 /* velk pseudo-C: sub_2014d0 @ 0x2014d0 */
-void sub_2014d0(uint64_t a0) {
-    return;
+uint64_t sub_2014d0(uint64_t a0) {
+    return a0 % 0x10;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -233,11 +283,11 @@ fn <unnamed> @ 0x2014d0 (size 32)
 == 0x2014f0 -
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
-void sub_2014f0(uint64_t a0) {
-    return;
+uint64_t sub_2014f0(uint64_t a0) {
+    return a0 / 0x10;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -250,11 +300,11 @@ fn <unnamed> @ 0x2014f0 (size 32)
 == 0x201510 -
 -- decompile
 /* velk pseudo-C: sub_201510 @ 0x201510 */
-void sub_201510(uint64_t a0) {
-    return;
+uint64_t sub_201510(uint64_t a0) {
+    return a0 % 0xa;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -267,30 +317,44 @@ fn <unnamed> @ 0x201510 (size 32)
 == 0x201530 -
 -- decompile
 /* velk pseudo-C: sub_201530 @ 0x201530 */
-void sub_201530(uint64_t a0) {
+uint32_t sub_201530(uint64_t a0) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = rbp;
+    rax = a0;
+    rcx = 0xa;
+    rdx = 0x0;
     /* unsupported: div at 0x201543 */
-    return;
+    rax = rdx;
+    rbp = local_0;
+    return rax;
 }
 -- signature
-void (uint64_t a0)
+uint32_t (uint64_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201530 (size 32)
   blk0 @ 0x201530:
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rax = rdi
+    rcx = #0xa
+    rdx = #0x0
     unsupported: div at 0x201543
-    ret #0x0
+    rax = rdx
+    rbp = load64((rsp + #0xfffffffffffffff8))
+    ret rax
 -- card
 {"addr":"0x201530","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
 
 == 0x201550 -
 -- decompile
 /* velk pseudo-C: sub_201550 @ 0x201550 */
-void sub_201550(uint32_t a0) {
-    return;
+uint32_t sub_201550(uint32_t a0) {
+    return a0 / 0x40;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -303,11 +367,11 @@ fn <unnamed> @ 0x201550 (size 32)
 == 0x201570 -
 -- decompile
 /* velk pseudo-C: sub_201570 @ 0x201570 */
-void sub_201570(uint64_t a0) {
-    return;
+uint64_t sub_201570(uint64_t a0) {
+    return a0 / 0x40;
 }
 -- signature
-void (uint64_t a0)
+uint64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -320,11 +384,11 @@ fn <unnamed> @ 0x201570 (size 32)
 == 0x201590 -
 -- decompile
 /* velk pseudo-C: sub_201590 @ 0x201590 */
-void sub_201590(uint32_t a0) {
-    return;
+uint32_t sub_201590(uint32_t a0) {
+    return a0 / 0xa;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir

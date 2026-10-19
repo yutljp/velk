@@ -39,7 +39,7 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
         x8 = x8 + 0x4;
         x9 = x9 - 0x1;
         a0 = w10 + (a0 & 0xffffffff);
-    } while (x9 != 0x1);
+    } while (x9 != 0x0);
     return a0;
 }
 -- signature
@@ -59,7 +59,7 @@ fn array_sum @ 0x14 (size 48)
     x8 = (x8 + #0x4)
     x9 = (x9 - #0x1)
     x0 = ((w10 + (x0 & #0xffffffff)) & #0xffffffff)
-    brif ne x9, #0x1 -> 0x28
+    brif ne x9, #0x0 -> 0x28
   blk3 @ 0x38:
     ret x0
   blk4 @ 0x3c:

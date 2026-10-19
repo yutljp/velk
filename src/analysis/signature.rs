@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::ir::{Access, Block, CType, Expr, Param, Stmt};
+use crate::ir::{Access, Block, CType, Convention, Expr, Param, Stmt};
 use crate::loader::{Format, Isa};
 
 #[derive(Debug, Clone)]
@@ -12,20 +12,6 @@ pub struct Signature {
     pub accesses: Vec<Access>,
     /// Argument registers a signed comparison reads: the parameter is signed.
     pub signed: HashSet<u16>,
-}
-
-fn argument_registers(isa: Isa, format: Format, go: bool) -> &'static [u16] {
-    match isa {
-        Isa::AArch64 => &[0, 1, 2, 3, 4, 5, 6, 7],
-        // Go's register ABI passes integer arguments in rax, rbx, rcx, rdi,
-        // rsi, r8, r9, r10, r11.
-        Isa::X86_64 if go => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
-        Isa::X86_64 => match format {
-            Format::Pe | Format::Coff => &[1, 2, 8, 9],
-            _ => &[7, 6, 2, 1, 8, 9],
-        },
-        Isa::Unsupported => &[],
-    }
 }
 
 fn reads(expr: &Expr, into: &mut HashSet<u16>) {
@@ -99,7 +85,10 @@ fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
 }
 
 pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signature {
-    let arguments = argument_registers(isa, format, go);
+    let arguments = match isa {
+        Isa::Unsupported => &[],
+        _ => Convention::of(isa, format, go).arguments(),
+    };
     let universe: HashSet<u16> = arguments.iter().copied().collect();
 
     // Registers written on every path to each block; a register read before
@@ -149,9 +138,10 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             block
                 .stmts
                 .iter()
-                .filter_map(|stmt| match stmt {
-                    Stmt::Assign { dest, .. } => Some(dest.index),
-                    _ => None,
+                .flat_map(|stmt| match stmt {
+                    Stmt::Assign { dest, .. } => vec![dest.index],
+                    Stmt::Call { convention, .. } => convention.clobbered().to_vec(),
+                    _ => Vec::new(),
                 })
                 .collect()
         })
@@ -214,8 +204,12 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                     inputs.insert(register);
                 }
             }
-            if let Stmt::Assign { dest, .. } = stmt {
-                written.insert(dest.index);
+            match stmt {
+                Stmt::Assign { dest, .. } => {
+                    written.insert(dest.index);
+                }
+                Stmt::Call { convention, .. } => written.extend(convention.clobbered()),
+                _ => {}
             }
         }
     }
@@ -313,13 +307,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         .filter_map(|register| origin.get(register).copied())
         .collect();
 
-    let mut ret = CType::U64;
-    for block in blocks.iter().rev() {
-        if let Some(Stmt::Ret { value }) = block.stmts.last() {
-            ret = expression_type(value);
-            break;
-        }
-    }
+    let ret = crate::ir::cfg::own_return(blocks).map_or(CType::U64, expression_type);
 
     let mut offsets: HashMap<u16, std::collections::BTreeMap<u64, u8>> = HashMap::new();
     for block in blocks {

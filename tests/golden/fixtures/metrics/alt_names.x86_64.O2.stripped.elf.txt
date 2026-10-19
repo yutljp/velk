@@ -25,7 +25,7 @@ fn <unnamed> @ 0x201170 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
 int32_t sub_201180(int32_t a0) {
-    if (a0 & a0 <= 0x0) {
+    if (a0 <= 0x0) {
         return 0x0;
     }
     rcx = ((a0 - 0x2) & 0xffffffff) * ((a0 - 0x1) & 0xffffffff);
@@ -42,7 +42,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201180 (size 46)
   blk0 @ 0x201180:
-    brif le ((rdi & #0xffffffff) & (rdi & #0xffffffff)), #0x0 -> 0x2011ab
+    brif le (rdi & #0xffffffff), #0x0 -> 0x2011ab
   blk1 @ 0x201184:
     rcx = (((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff))
     rax = ((((rdi + #0xfffffffffffffffd) & #0xffffffff) * rcx) >> #0x1)

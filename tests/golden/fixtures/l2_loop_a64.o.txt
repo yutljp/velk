@@ -90,7 +90,7 @@ int32_t sum_skip_odd(int32_t a0) {
         x8 = 0x0;
         x10 = 0x0;
         for (;;) {
-            if (x9 & 0x1 != 0x0) {
+            if ((x9 & 0x1) != 0x0) {
                 x8 = w8 + w9;
                 *(uint32_t *)(x10) = w8;
             }
@@ -145,8 +145,7 @@ int32_t find_first(uint32_t *a0, int32_t a1, uint32_t a2) {
     a0 = 0x0;
     x9 = a1;
     do {
-        w10 = *(uint32_t *)(x8 + (a0 << 0x2));
-        if (w10 == a2) { goto L_d0; }
+        if (*(uint32_t *)(x8 + (a0 << 0x2)) == a2) { goto L_d0; }
         a0 = a0 + 0x1;
     } while (x9 != a0);
     a0 = 0xffffffff;
@@ -166,8 +165,7 @@ fn find_first @ 0xa0 (size 52)
     x0 = #0x0
     x9 = w1
   blk2 @ 0xb4:
-    w10 = load32((x8 + (x0 << #0x2)))
-    brif eq w10, w2 -> 0xd0
+    brif eq load32((x8 + (x0 << #0x2))), w2 -> 0xd0
   blk3 @ 0xc0:
     x0 = (x0 + #0x1)
     brif ne x9, x0 -> 0xb4

@@ -5,7 +5,7 @@
 == 0x201180 -
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
-void sub_201180(uint32_t a0, uint32_t a1, uint32_t a2) {
+uint32_t sub_201180(uint32_t a0, uint32_t a1, uint32_t a2) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -14,10 +14,10 @@ void sub_201180(uint32_t a0, uint32_t a1, uint32_t a2) {
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
     *(uint32_t *)(rbp - 0xc) = a2;
-    return;
+    return a0 + a1 + a2;
 }
 -- signature
-void (uint32_t a0, uint32_t a1, uint32_t a2)
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir
@@ -46,10 +46,7 @@ uint32_t sub_2011a0(uint32_t a0) {
     *(uint32_t *)(rbp - 0x8) = 0x0;
     *(uint32_t *)(rbp - 0xc) = 0x0;
     while (*(uint32_t *)(rbp - 0xc) < *(uint32_t *)(rbp - 0x4)) {
-        eax = *(uint32_t *)(rbp - 0xc);
-        eax = eax * *(uint32_t *)(rbp - 0xc);
-        eax = eax + *(uint32_t *)(rbp - 0x8);
-        *(uint32_t *)(rbp - 0x8) = eax;
+        *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0xc) * *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x8);
         *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0xc) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -69,13 +66,9 @@ fn <unnamed> @ 0x2011a0 (size 65)
     store32(#0x0, (rbp + #0xfffffffffffffff8))
     store32(#0x0, (rbp + #0xfffffffffffffff4))
   blk1 @ 0x2011b5:
-    eax = load32((rbp + #0xfffffffffffffff4))
-    brif ge eax, load32((rbp + #0xfffffffffffffffc)) -> 0x2011dc
+    brif ge load32((rbp + #0xfffffffffffffff4)), load32((rbp + #0xfffffffffffffffc)) -> 0x2011dc
   blk2 @ 0x2011c1:
-    eax = load32((rbp + #0xfffffffffffffff4))
-    eax = (eax * load32((rbp + #0xfffffffffffffff4)))
-    eax = (eax + load32((rbp + #0xfffffffffffffff8)))
-    store32(eax, (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffff4)) * load32((rbp + #0xfffffffffffffff4))) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
     store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
     br 0x2011b5
   blk3 @ 0x2011dc:

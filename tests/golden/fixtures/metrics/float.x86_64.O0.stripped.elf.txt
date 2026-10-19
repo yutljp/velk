@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O0.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 10 unsupported, 1 gotos
+# metrics/float.x86_64.O0.stripped.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 11 unsupported, 1 gotos
 0x2011f0 144 - prologue
 0x201280 64 - prologue
 0x2012c0 16 - prologue
@@ -10,7 +10,6 @@
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 uint64_t sub_2011f0(uint64_t a0, uint32_t a1) {
     uint64_t local_0; /* [sp-8] */
-    uint64_t local_1; /* [sp+0] */
 
     rsp = rsp - 0x8;
     local_0 = rbp;
@@ -29,11 +28,13 @@ uint64_t sub_2011f0(uint64_t a0, uint32_t a1) {
         /* unsupported (4 steps): Movsd at 0x201245, Cvtsi2sd at 0x20124a, Divsd at 0x20124f, Movsd at 0x201253 */
     } else {
         /* unsupported (3 steps): Xorps at 0x20125d, Movsd at 0x201260, Movsd at 0x20126a */
-        rbp = local_1;
+        rbp = local_0;
+        rsp = rsp + 0x8;
         return rax;
     }
     /* unsupported: Movsd at 0x20126a */
-    rbp = local_1;
+    rbp = local_0;
+    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -76,7 +77,8 @@ fn <unnamed> @ 0x2011f0 (size 144)
     br 0x20126a
   blk6 @ 0x20126a:
     unsupported: Movsd at 0x20126a
-    rbp = load64((rsp + #0x8))
+    rbp = load64(rsp)
+    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":144,"sizeEstimated":true,"unsupported":12}
@@ -154,7 +156,7 @@ fn <unnamed> @ 0x2012d0 (size 32)
 == 0x2012f0 -
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
-void sub_2012f0(void) {
+uint32_t sub_2012f0(void) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -164,15 +166,19 @@ void sub_2012f0(void) {
     if (/* ls */ true) { goto L_20131f; }
     *(uint32_t *)(rbp - 0x14) = 0xffffffff;
     rsp = rsp + 0x8;
-    return;
+    return *(uint32_t *)(rbp - 0x14);
 L_20131f:
-    /* unsupported (3 steps): Movsd at 0x20131f, Movsd at 0x201324, Ucomisd at 0x201330 */
-    *(uint32_t *)(rbp - 0x14) = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0);
+    /* unsupported (2 steps): Movsd at 0x20131f, Movsd at 0x201324 */
+    rax = 0x0;
+    ecx = 0x1;
+    /* unsupported: Ucomisd at 0x201330 */
+    rax = (0x0 > 0x0 /* unsigned */ ? ecx : eax);
+    *(uint32_t *)(rbp - 0x14) = eax;
     rsp = rsp + 0x8;
-    return;
+    return *(uint32_t *)(rbp - 0x14);
 }
 -- signature
-void ()
+uint32_t ()
 -- references
 
 -- ir
@@ -193,8 +199,11 @@ fn <unnamed> @ 0x2012f0 (size 79)
   blk2 @ 0x20131f:
     unsupported: Movsd at 0x20131f
     unsupported: Movsd at 0x201324
+    rax = #0x0
+    rcx = #0x1
     unsupported: Ucomisd at 0x201330
-    store32((select hi #0x0, #0x0 ? #0x1, #0x0 & #0xffffffff), (rbp + #0xffffffffffffffec))
+    rax = (select hi #0x0, #0x0 ? (rcx & #0xffffffff), (rax & #0xffffffff) & #0xffffffff)
+    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffec))
   blk3 @ 0x20133a:
     rsp = (rsp + #0x8)
     ret (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)

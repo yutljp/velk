@@ -1,3 +1,4 @@
+use crate::ir::visit::expr_width;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 
 /// An inclusive interval of case values.
@@ -30,7 +31,10 @@ fn normalized(expr: &Expr) -> Expr {
     {
         return normalized(lhs);
     }
-    expr.clone()
+    match expr {
+        Expr::Reg { index, width: 32 } => Expr::reg(*index, 64),
+        _ => expr.clone(),
+    }
 }
 
 fn same_value(left: &Expr, right: &Expr) -> bool {
@@ -214,6 +218,72 @@ impl ChainWalk<'_> {
         Some((*cond, *k as i64, *target))
     }
 
+    /// The width of the value a chain block compares.
+    fn width(&self, at: u64) -> Option<u32> {
+        let index = *self.position.get(&at)?;
+        match self.ir.blocks[index].stmts.last()? {
+            Stmt::Brif { lhs, .. } => Some(expr_width(lhs).map_or(64, u32::from)),
+            _ => None,
+        }
+    }
+
+    /// Where the chain's compares send `value`.
+    fn route(&self, head: u64, value: i64, bits: u32) -> Option<u64> {
+        let mut at = head;
+        for _ in 0..=self.blocks.len() {
+            if !self.blocks.contains(&at) {
+                return Some(at);
+            }
+            let (cond, k, target) = self.compare_at(at)?;
+            at = if holds(cond, value, k, bits)? {
+                target
+            } else {
+                self.next_start(at)?
+            };
+        }
+        None
+    }
+
+    /// The switch's default when it sends every value where the chain does:
+    /// each value in `lo..=hi` to its case or the default, and the values
+    /// outside the range, whose compares all agree with one representative
+    /// on each side or at the extremes, to the default. Without a default from
+    /// the walk, it is where the values outside the range go.
+    fn verified_default(&self, head: u64, lo: i64, hi: i64) -> Option<u64> {
+        let bits = self.width(head)?;
+        if self.blocks.iter().any(|at| self.width(*at) != Some(bits)) {
+            return None;
+        }
+        let (min, max) = if bits >= 64 {
+            (i64::MIN, i64::MAX)
+        } else {
+            (-(1i64 << (bits - 1)), (1i64 << (bits - 1)) - 1)
+        };
+        let outside: Vec<i64> = [
+            lo.checked_sub(1),
+            hi.checked_add(1),
+            Some(min),
+            Some(max),
+            Some(-1),
+        ]
+        .into_iter()
+        .flatten()
+        .filter(|value| !(lo..=hi).contains(value))
+        .collect();
+        let default = match self.default {
+            Some(default) => default,
+            None => self.route(head, *outside.first()?, bits)?,
+        };
+        let in_range = (lo..=hi).all(|value| {
+            self.route(head, value, bits)
+                == Some(self.cases.get(&value).copied().unwrap_or(default))
+        });
+        let beyond = outside
+            .iter()
+            .all(|value| self.route(head, *value, bits) == Some(default));
+        (in_range && beyond).then_some(default)
+    }
+
     fn assign(&mut self, at: u64, lo: i64, hi: i64) {
         if hi < lo {
             return;
@@ -316,6 +386,33 @@ impl ChainWalk<'_> {
     }
 }
 
+/// Whether `cond` holds between `value` and `k`, both taken at `bits` bits.
+fn holds(cond: crate::ir::Cond, value: i64, k: i64, bits: u32) -> Option<bool> {
+    use crate::ir::Cond;
+    let shift = 64 - bits;
+    let (a, b) = (
+        (value as u64) << shift >> shift,
+        (k as u64) << shift >> shift,
+    );
+    let (sa, sb) = (
+        ((a << shift) as i64) >> shift,
+        ((b << shift) as i64) >> shift,
+    );
+    Some(match cond {
+        Cond::Eq => a == b,
+        Cond::Ne => a != b,
+        Cond::Lt => sa < sb,
+        Cond::Ge => sa >= sb,
+        Cond::Gt => sa > sb,
+        Cond::Le => sa <= sb,
+        Cond::Cc => a < b,
+        Cond::Cs => a >= b,
+        Cond::Hi => a > b,
+        Cond::Ls => a <= b,
+        Cond::Mi | Cond::Pl | Cond::Vs | Cond::Vc => return None,
+    })
+}
+
 /// Rebuilds every compare tree that is a complete switch over one value.
 pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
     let position: std::collections::HashMap<u64, usize> = ir
@@ -345,20 +442,26 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
             blocks: Vec::new(),
             failed: false,
         };
+        // The constants of every compare in the tree, along both edges.
         let mut lo = i64::MAX;
         let mut hi = i64::MIN;
         let mut range_compare = false;
-        let mut cursor = Some(block.start);
-        while let Some(at) = cursor {
-            let Some((cond, k, _)) = walk.compare_at(at) else {
-                break;
+        let mut pending = vec![block.start];
+        let mut visited = std::collections::HashSet::new();
+        while let Some(at) = pending.pop() {
+            if !visited.insert(at) {
+                continue;
+            }
+            let Some((cond, k, target)) = walk.compare_at(at) else {
+                continue;
             };
             if !matches!(cond, crate::ir::Cond::Eq | crate::ir::Cond::Ne) {
                 range_compare = true;
             }
             lo = lo.min(k);
             hi = hi.max(k);
-            cursor = walk.next_start(at);
+            pending.push(target);
+            pending.extend(walk.next_start(at));
         }
         if lo == i64::MAX || hi == i64::MIN {
             continue;
@@ -389,8 +492,8 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
             continue;
         }
         // Case bodies must lie outside the chain, and every chain block but
-        // the head must have a single predecessor, so dropping them cannot
-        // strand another path.
+        // the head must hold only its compare and have a single predecessor,
+        // so dropping them cannot lose an effect or strand another path.
         if walk
             .cases
             .values()
@@ -398,19 +501,20 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         {
             continue;
         }
-        if walk
-            .blocks
-            .iter()
-            .skip(1)
-            .any(|start| preds.get(start).copied().unwrap_or(0) != 1)
-        {
+        if walk.blocks.iter().skip(1).any(|start| {
+            preds.get(start).copied().unwrap_or(0) != 1
+                || ir.blocks[position[start]].stmts.len() != 1
+        }) {
             continue;
         }
+        let Some(default) = walk.verified_default(block.start, lo, hi) else {
+            continue;
+        };
         out.push(ChainSwitch {
             block_start: block.start,
             index: normalized(lhs),
             cases: walk.cases.iter().map(|(k, v)| (*k, *v)).collect(),
-            default: walk.default,
+            default: Some(default),
             blocks: walk.blocks,
         });
     }
@@ -437,5 +541,56 @@ pub fn apply_chains(ir: &mut FunctionIr, chains: &[ChainSwitch]) {
         ir.blocks.retain(|block| {
             block.start == chain.block_start || !chain.blocks.contains(&block.start)
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::recover_chains;
+    use crate::ir::{Block, Cond, Expr, FunctionIr, Stmt};
+    use crate::loader::Isa;
+
+    /// `if (n <op> k) goto target; ...` over one 32-bit value, falling
+    /// through to a return of 1.
+    fn chain(compares: &[(Cond, u64, u64)]) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks.clear();
+        for (position, (cond, k, target)) in compares.iter().enumerate() {
+            ir.blocks.push(Block {
+                start: position as u64 * 4,
+                stmts: vec![Stmt::Brif {
+                    cond: *cond,
+                    lhs: Expr::reg(0, 32),
+                    rhs: Expr::Const(*k),
+                    target: *target,
+                }],
+            });
+        }
+        for start in [compares.len() as u64 * 4, 0x100, 0x200] {
+            ir.blocks.push(Block {
+                start,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(start),
+                }],
+            });
+        }
+        ir
+    }
+
+    #[test]
+    fn rebuilds_equality_tests_as_a_switch() {
+        let chains = recover_chains(&chain(&[(Cond::Eq, 0, 0x100), (Cond::Eq, 1, 0x200)]));
+        let [switch] = chains.as_slice() else {
+            panic!("one switch");
+        };
+        assert_eq!(switch.cases, vec![(0, 0x100), (1, 0x200)]);
+        assert_eq!(switch.default, Some(8));
+    }
+
+    #[test]
+    fn a_range_test_wider_than_its_cases_is_no_switch() {
+        // `n <= 0` also takes every negative value, which no case covers.
+        let ir = chain(&[(Cond::Le, 0, 0x100), (Cond::Ne, 1, 0x200)]);
+        assert!(recover_chains(&ir).is_empty());
     }
 }

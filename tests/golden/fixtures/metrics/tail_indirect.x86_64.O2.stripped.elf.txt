@@ -5,28 +5,32 @@
 == 0x201170 -
 -- decompile
 /* velk pseudo-C: sub_201170 @ 0x201170 */
-uint32_t sub_201170(uint64_t a0, uint64_t a1) {
-    goto *(a0);
+uint32_t sub_201170(uint32_t a0, uint32_t a1) {
+    rax = a0;
+    a0 = a1 + 0x1;
+    goto *(rax);
 }
 -- signature
-uint32_t (uint64_t a0, uint64_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201170 (size 16)
   blk0 @ 0x201170:
-    br rdi
+    rax = rdi
+    rdi = ((rsi + #0x1) & #0xffffffff)
+    br rax
 -- card
 {"addr":"0x201170","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x201180 -
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
-void sub_201180(uint32_t a0) {
-    return;
+uint32_t sub_201180(uint32_t a0) {
+    return a0 + 0x5;
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir

@@ -14,10 +14,9 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                 Stmt::Store {
                     addr, value, width, ..
                 } => {
-                    // A newer store to the same address and width supersedes
-                    // the older one.
+                    // A newer store replaces every older one it may overlap.
                     pending.retain(|(stored_width, stored, _)| {
-                        (*stored_width, stored) != (*width, &*addr)
+                        disjoint(stored, *stored_width, addr, *width)
                     });
                     pending.push((*width, addr.clone(), value.clone()));
                 }
@@ -39,6 +38,34 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                 _ => {}
             }
         }
+    }
+}
+
+/// True when the two accesses provably touch different bytes: the same base
+/// at constant offsets whose ranges do not meet.
+fn disjoint(a: &Expr, a_width: u8, b: &Expr, b_width: u8) -> bool {
+    let (a_base, a_offset) = split_offset(a);
+    let (b_base, b_offset) = split_offset(b);
+    if a_base != b_base {
+        return false;
+    }
+    let a_end = a_offset.wrapping_add(i64::from(a_width));
+    let b_end = b_offset.wrapping_add(i64::from(b_width));
+    a_end <= b_offset || b_end <= a_offset
+}
+
+/// An address as a base and a constant byte offset.
+fn split_offset(addr: &Expr) -> (&Expr, i64) {
+    match addr {
+        Expr::Bin {
+            op: crate::ir::BinOp::Add,
+            lhs,
+            rhs,
+        } => match rhs.as_ref() {
+            Expr::Const(offset) => (lhs, *offset as i64),
+            _ => (addr, 0),
+        },
+        _ => (addr, 0),
     }
 }
 
@@ -310,5 +337,52 @@ pub(crate) fn strip_mask(expr: &Expr) -> &Expr {
             _ => expr,
         },
         _ => expr,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::forward_stored_values;
+    use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
+    use crate::loader::Isa;
+
+    fn slot(offset: i64) -> Expr {
+        Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(offset as u64))
+    }
+
+    fn store(offset: i64, value: Expr, width: u8) -> Stmt {
+        Stmt::Store {
+            addr: slot(offset),
+            value,
+            width,
+        }
+    }
+
+    fn load(offset: i64, width: u8) -> Expr {
+        Expr::Load {
+            addr: Box::new(slot(offset)),
+            width,
+            signed: false,
+        }
+    }
+
+    #[test]
+    fn a_store_over_part_of_a_slot_stops_forwarding_it() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(-8, Expr::reg(0, 64), 8),
+                store(-4, Expr::Const(5), 4),
+                Stmt::Ret { value: load(-8, 8) },
+            ],
+        );
+
+        forward_stored_values(&mut ir);
+
+        assert!(
+            matches!(&ir.blocks[0].stmts[2], Stmt::Ret { value } if *value == load(-8, 8)),
+            "{}",
+            ir.render()
+        );
     }
 }

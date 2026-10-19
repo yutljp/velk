@@ -23,21 +23,27 @@
 -- decompile
 /* velk pseudo-C: sub_201330 @ 0x201330 */
 /* ref: 0x200158 .rodata */
-uint32_t sub_201330(uint64_t a0) {
-    if ((((a0 & 0xffffffff) - 0xa) & 0xffffffff) > 0xf /* unsigned */) { goto L_2013c6; }
-    rcx = (int32_t)(dword_200158[a0]) + 0x200158;
+uint32_t sub_201330(uint32_t a0) {
+    a0 = ((a0 - 0xa) & 0xffffffff);
+    if (a0 > 0xf /* unsigned */) { goto L_2013c6; }
+    rax = 0x200158;
+    rcx = (int32_t)(dword_200158[a0]);
+    rcx = rcx + 0x200158;
     goto *(rcx);
 }
 -- signature
-uint32_t (uint64_t a0)
+uint32_t (uint32_t a0)
 -- references
 0x200158 .rodata
 -- ir
 fn <unnamed> @ 0x201330 (size 29)
   blk0 @ 0x201330:
-    brif hi (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff), #0xf -> 0x2013c6
+    rdi = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
+    brif hi (rdi & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
-    rcx = (sext32(load32((#0x200158 + (rdi * #0x4)))) + #0x200158)
+    rax = #0x200158
+    rcx = sext32(load32((#0x200158 + (rdi * #0x4))))
+    rcx = (rcx + #0x200158)
     br rcx
 -- card
 {"addr":"0x201330","approxTokens":144,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":29,"sizeEstimated":true,"unsupported":0}
@@ -46,12 +52,12 @@ fn <unnamed> @ 0x201330 (size 29)
 -- decompile
 /* velk pseudo-C: sub_20134d @ 0x20134d */
 /* ref: 0x20250c .bss */
-void sub_20134d(void) {
+uint32_t sub_20134d(void) {
     sub_2013e0();
-    return;
+    return dword_20250c;
 }
 -- signature
-void ()
+uint32_t ()
 -- references
 0x20250c .bss
 -- ir
@@ -116,6 +122,7 @@ fn <unnamed> @ 0x20134d (size 147)
 /* velk pseudo-C: sub_2013e0 @ 0x2013e0 */
 /* ref: 0x20250c .bss */
 void sub_2013e0(void) {
+    t65 = dword_20250c + 0xb;
     dword_20250c += 0xb;
     return;
 }
@@ -126,6 +133,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x2013e0 (size 16)
   blk0 @ 0x2013e0:
+    t65 = (load32(#0x20250c) + #0xb)
     store32((load32(#0x20250c) + #0xb), #0x20250c)
     ret rax
 -- card
@@ -136,6 +144,7 @@ fn <unnamed> @ 0x2013e0 (size 16)
 /* velk pseudo-C: sub_2013f0 @ 0x2013f0 */
 /* ref: 0x20250c .bss */
 void sub_2013f0(void) {
+    t65 = dword_20250c ^ 0x12;
     dword_20250c ^= 0x12;
     return;
 }
@@ -146,6 +155,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x2013f0 (size 16)
   blk0 @ 0x2013f0:
+    t65 = (load32(#0x20250c) ^ #0x12)
     store32((load32(#0x20250c) ^ #0x12), #0x20250c)
     ret rax
 -- card
@@ -156,6 +166,7 @@ fn <unnamed> @ 0x2013f0 (size 16)
 /* velk pseudo-C: sub_201400 @ 0x201400 */
 /* ref: 0x20250c .bss */
 void sub_201400(void) {
+    t65 = dword_20250c - 0x19;
     dword_20250c += 0xffffffffffffffe7;
     return;
 }
@@ -166,6 +177,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201400 (size 16)
   blk0 @ 0x201400:
+    t65 = (load32(#0x20250c) + #0xffffffffffffffe7)
     store32((load32(#0x20250c) + #0xffffffffffffffe7), #0x20250c)
     ret rax
 -- card
@@ -176,6 +188,7 @@ fn <unnamed> @ 0x201400 (size 16)
 /* velk pseudo-C: sub_201410 @ 0x201410 */
 /* ref: 0x20250c .bss */
 void sub_201410(void) {
+    t65 = dword_20250c | 0x20;
     dword_20250c |= 0x20;
     return;
 }
@@ -186,6 +199,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201410 (size 16)
   blk0 @ 0x201410:
+    t65 = (load32(#0x20250c) | #0x20)
     store32((load32(#0x20250c) | #0x20), #0x20250c)
     ret rax
 -- card
@@ -196,6 +210,7 @@ fn <unnamed> @ 0x201410 (size 16)
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 /* ref: 0x20250c .bss */
 void sub_201420(void) {
+    t65 = dword_20250c + 0x27;
     dword_20250c += 0x27;
     return;
 }
@@ -206,6 +221,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201420 (size 16)
   blk0 @ 0x201420:
+    t65 = (load32(#0x20250c) + #0x27)
     store32((load32(#0x20250c) + #0x27), #0x20250c)
     ret rax
 -- card
@@ -216,6 +232,7 @@ fn <unnamed> @ 0x201420 (size 16)
 /* velk pseudo-C: sub_201430 @ 0x201430 */
 /* ref: 0x20250c .bss */
 void sub_201430(void) {
+    t65 = dword_20250c ^ 0x2e;
     dword_20250c ^= 0x2e;
     return;
 }
@@ -226,6 +243,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201430 (size 16)
   blk0 @ 0x201430:
+    t65 = (load32(#0x20250c) ^ #0x2e)
     store32((load32(#0x20250c) ^ #0x2e), #0x20250c)
     ret rax
 -- card
@@ -236,6 +254,7 @@ fn <unnamed> @ 0x201430 (size 16)
 /* velk pseudo-C: sub_201440 @ 0x201440 */
 /* ref: 0x20250c .bss */
 void sub_201440(void) {
+    t65 = dword_20250c - 0x35;
     dword_20250c += 0xffffffffffffffcb;
     return;
 }
@@ -246,6 +265,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201440 (size 16)
   blk0 @ 0x201440:
+    t65 = (load32(#0x20250c) + #0xffffffffffffffcb)
     store32((load32(#0x20250c) + #0xffffffffffffffcb), #0x20250c)
     ret rax
 -- card
@@ -256,6 +276,7 @@ fn <unnamed> @ 0x201440 (size 16)
 /* velk pseudo-C: sub_201450 @ 0x201450 */
 /* ref: 0x20250c .bss */
 void sub_201450(void) {
+    t65 = dword_20250c | 0x3c;
     dword_20250c |= 0x3c;
     return;
 }
@@ -266,6 +287,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201450 (size 16)
   blk0 @ 0x201450:
+    t65 = (load32(#0x20250c) | #0x3c)
     store32((load32(#0x20250c) | #0x3c), #0x20250c)
     ret rax
 -- card
@@ -276,6 +298,7 @@ fn <unnamed> @ 0x201450 (size 16)
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 /* ref: 0x20250c .bss */
 void sub_201460(void) {
+    t65 = dword_20250c + 0x43;
     dword_20250c += 0x43;
     return;
 }
@@ -286,6 +309,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201460 (size 16)
   blk0 @ 0x201460:
+    t65 = (load32(#0x20250c) + #0x43)
     store32((load32(#0x20250c) + #0x43), #0x20250c)
     ret rax
 -- card
@@ -296,6 +320,7 @@ fn <unnamed> @ 0x201460 (size 16)
 /* velk pseudo-C: sub_201470 @ 0x201470 */
 /* ref: 0x20250c .bss */
 void sub_201470(void) {
+    t65 = dword_20250c ^ 0x4a;
     dword_20250c ^= 0x4a;
     return;
 }
@@ -306,6 +331,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201470 (size 16)
   blk0 @ 0x201470:
+    t65 = (load32(#0x20250c) ^ #0x4a)
     store32((load32(#0x20250c) ^ #0x4a), #0x20250c)
     ret rax
 -- card
@@ -316,6 +342,7 @@ fn <unnamed> @ 0x201470 (size 16)
 /* velk pseudo-C: sub_201480 @ 0x201480 */
 /* ref: 0x20250c .bss */
 void sub_201480(void) {
+    t65 = dword_20250c - 0x51;
     dword_20250c += 0xffffffffffffffaf;
     return;
 }
@@ -326,6 +353,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201480 (size 16)
   blk0 @ 0x201480:
+    t65 = (load32(#0x20250c) + #0xffffffffffffffaf)
     store32((load32(#0x20250c) + #0xffffffffffffffaf), #0x20250c)
     ret rax
 -- card
@@ -336,6 +364,7 @@ fn <unnamed> @ 0x201480 (size 16)
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 /* ref: 0x20250c .bss */
 void sub_201490(void) {
+    t65 = dword_20250c | 0x58;
     dword_20250c |= 0x58;
     return;
 }
@@ -346,6 +375,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x201490 (size 16)
   blk0 @ 0x201490:
+    t65 = (load32(#0x20250c) | #0x58)
     store32((load32(#0x20250c) | #0x58), #0x20250c)
     ret rax
 -- card
@@ -356,6 +386,7 @@ fn <unnamed> @ 0x201490 (size 16)
 /* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
 /* ref: 0x20250c .bss */
 void sub_2014a0(void) {
+    t65 = dword_20250c + 0x5f;
     dword_20250c += 0x5f;
     return;
 }
@@ -366,6 +397,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x2014a0 (size 16)
   blk0 @ 0x2014a0:
+    t65 = (load32(#0x20250c) + #0x5f)
     store32((load32(#0x20250c) + #0x5f), #0x20250c)
     ret rax
 -- card
@@ -376,6 +408,7 @@ fn <unnamed> @ 0x2014a0 (size 16)
 /* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
 /* ref: 0x20250c .bss */
 void sub_2014b0(void) {
+    t65 = dword_20250c ^ 0x66;
     dword_20250c ^= 0x66;
     return;
 }
@@ -386,6 +419,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x2014b0 (size 16)
   blk0 @ 0x2014b0:
+    t65 = (load32(#0x20250c) ^ #0x66)
     store32((load32(#0x20250c) ^ #0x66), #0x20250c)
     ret rax
 -- card
@@ -396,6 +430,7 @@ fn <unnamed> @ 0x2014b0 (size 16)
 /* velk pseudo-C: sub_2014c0 @ 0x2014c0 */
 /* ref: 0x20250c .bss */
 void sub_2014c0(void) {
+    t65 = dword_20250c - 0x6d;
     dword_20250c += 0xffffffffffffff93;
     return;
 }
@@ -406,6 +441,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x2014c0 (size 16)
   blk0 @ 0x2014c0:
+    t65 = (load32(#0x20250c) + #0xffffffffffffff93)
     store32((load32(#0x20250c) + #0xffffffffffffff93), #0x20250c)
     ret rax
 -- card
@@ -416,6 +452,7 @@ fn <unnamed> @ 0x2014c0 (size 16)
 /* velk pseudo-C: sub_2014d0 @ 0x2014d0 */
 /* ref: 0x20250c .bss */
 void sub_2014d0(void) {
+    t65 = dword_20250c | 0x74;
     dword_20250c |= 0x74;
     return;
 }
@@ -426,6 +463,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x2014d0 (size 16)
   blk0 @ 0x2014d0:
+    t65 = (load32(#0x20250c) | #0x74)
     store32((load32(#0x20250c) | #0x74), #0x20250c)
     ret rax
 -- card

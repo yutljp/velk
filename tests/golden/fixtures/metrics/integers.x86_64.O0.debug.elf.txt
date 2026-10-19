@@ -83,7 +83,7 @@ fn widen_mul @ 0x2012a0 (size 32)
 == 0x2012c0 mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x2012c0 */
-void mixed_sign(int a, uint32_t b) {
+uint32_t mixed_sign(int a, uint32_t b) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -91,10 +91,10 @@ void mixed_sign(int a, uint32_t b) {
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = a;
     *(uint32_t *)(rbp - 0x8) = b;
-    return;
+    return (int32_t)(a) - b;
 }
 -- signature
-void (int a, uint32_t b)
+uint32_t (int a, uint32_t b)
 -- references
 
 -- ir
@@ -125,7 +125,9 @@ _Bool in_range(int x, int lo, int hi) {
     *(uint8_t *)(rbp - 0xd) = 0x0;
     if (x >= lo) {
         rax = *(uint32_t *)(rbp - 0x4);
-        *(uint8_t *)(rbp - 0xd) = (rax & 0xffffffffffffff00 | ((eax <= *(uint32_t *)(rbp - 0xc) ? 0x1 : 0x0)) & 0xff & 0xff) & 0xff;
+        rax = rax & 0xffffffffffffff00 | (eax <= *(uint32_t *)(rbp - 0xc) ? 0x1 : 0x0) & 0xff & 0xff;
+        t66 = *(uint32_t *)(rbp - 0xc);
+        *(uint8_t *)(rbp - 0xd) = rax & 0xff;
     }
     rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xd) & 0xff;
     rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff;
@@ -150,7 +152,9 @@ fn in_range @ 0x2012e0 (size 52)
     brif lt edi, esi -> 0x20130a
   blk1 @ 0x2012fe:
     rax = (load32((rbp + #0xfffffffffffffffc)) & #0xffffffff)
-    store8((((rax & #0xffffffffffffff00) | ((select le (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) ? #0x1, #0x0 & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffff3))
+    rax = ((rax & #0xffffffffffffff00) | ((select le (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) ? #0x1, #0x0 & #0xff) & #0xff))
+    t66 = load32((rbp + #0xfffffffffffffff4))
+    store8((rax & #0xff), (rbp + #0xfffffffffffffff3))
   blk2 @ 0x20130a:
     rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffff3)) & #0xff))
     rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff))
@@ -162,7 +166,7 @@ fn in_range @ 0x2012e0 (size 52)
 == 0x201320 rotate_left
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x201320 */
-void rotate_left(uint32_t x, uint32_t k) {
+uint32_t rotate_left(uint32_t x, uint32_t k) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -170,10 +174,10 @@ void rotate_left(uint32_t x, uint32_t k) {
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = k;
-    return;
+    return x << (k & 0x1f & 0xff) | x >> (0x20 - k & 0x1f & 0xff);
 }
 -- signature
-void (uint32_t x, uint32_t k)
+uint32_t (uint32_t x, uint32_t k)
 -- references
 
 -- ir
@@ -200,10 +204,7 @@ int popcount(uint32_t x) {
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = 0x0;
     while (*(uint32_t *)(rbp - 0x4) != 0x0) {
-        eax = *(uint32_t *)(rbp - 0x4);
-        eax = eax - 0x1;
-        eax = eax & *(uint32_t *)(rbp - 0x4);
-        *(uint32_t *)(rbp - 0x4) = eax;
+        *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x4) - 0x1 & *(uint32_t *)(rbp - 0x4);
         *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x8) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -224,10 +225,7 @@ fn popcount @ 0x201350 (size 55)
   blk1 @ 0x20135e:
     brif eq load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x201382
   blk2 @ 0x201368:
-    eax = load32((rbp + #0xfffffffffffffffc))
-    eax = (eax - #0x1)
-    eax = (eax & load32((rbp + #0xfffffffffffffffc)))
-    store32(eax, (rbp + #0xfffffffffffffffc))
+    store32(((load32((rbp + #0xfffffffffffffffc)) - #0x1) & load32((rbp + #0xfffffffffffffffc))), (rbp + #0xfffffffffffffffc))
     store32((load32((rbp + #0xfffffffffffffff8)) + #0x1), (rbp + #0xfffffffffffffff8))
     br 0x20135e
   blk3 @ 0x201382:
@@ -239,11 +237,11 @@ fn popcount @ 0x201350 (size 55)
 == 0x201390 byte_swap
 -- decompile
 /* velk pseudo-C: byte_swap @ 0x201390 */
-void byte_swap(uint32_t x) {
-    return;
+uint32_t byte_swap(uint32_t x) {
+    return x >> 0x18 | x >> 0x8 & 0xff00 | x << 0x8 & 0xff0000 | x << 0x18;
 }
 -- signature
-void (uint32_t x)
+uint32_t (uint32_t x)
 -- references
 
 -- ir
@@ -319,11 +317,11 @@ fn min3 @ 0x2013d0 (size 82)
 /* velk pseudo-C: labs_value @ 0x201430 */
 long labs_value(long x) {
     uint64_t local_0; /* [sp-8] */
-    uint64_t local_1; /* [sp-10] */
 
     rsp = rsp - 0x8;
     local_0 = rbp;
-    local_1 = x;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = x;
     if (x < 0x0) {
         *(uint64_t *)(rbp - 0x10) = -*(uint64_t *)(rbp - 0x8);
     } else {
@@ -341,7 +339,8 @@ fn labs_value @ 0x201430 (size 48)
   blk0 @ 0x201430:
     rsp = (rsp + #0xfffffffffffffff8)
     store64(rbp, rsp)
-    store64(rdi, (rsp + #0xfffffffffffffff8))
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
     brif ge rdi, #0x0 -> 0x201452
   blk1 @ 0x201443:
     store64((#0x0 - load64((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff0))
@@ -357,7 +356,7 @@ fn labs_value @ 0x201430 (size 48)
 == 0x201460 mul_high
 -- decompile
 /* velk pseudo-C: mul_high @ 0x201460 */
-void mul_high(uint64_t a, uint64_t b) {
+uint64_t mul_high(uint64_t a, uint64_t b) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -365,10 +364,10 @@ void mul_high(uint64_t a, uint64_t b) {
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a;
     *(uint64_t *)(rbp - 0x10) = b;
-    return;
+    return __umulh(a, b);
 }
 -- signature
-void (uint64_t a, uint64_t b)
+uint64_t (uint64_t a, uint64_t b)
 -- references
 
 -- ir

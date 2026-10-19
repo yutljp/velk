@@ -26,7 +26,9 @@ fn tail_one @ 0x201180 (size 14)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x201190 */
 int tail_two(int x) {
+    x = x + 0x2;
     tail_one();
+    return rax;
 }
 -- signature
 int (int x)
@@ -35,7 +37,9 @@ int (int x)
 -- ir
 fn tail_two @ 0x201190 (size 8)
   blk0 @ 0x201190:
+    edi = (edi + #0x2)
     call 0x201180
+    ret rax
 -- card
 {"addr":"0x201190","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 

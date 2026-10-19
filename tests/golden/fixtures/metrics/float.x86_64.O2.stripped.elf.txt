@@ -10,8 +10,9 @@
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
 int32_t sub_2011b0(uint64_t a0, int32_t a1) {
     /* unsupported (2 steps): Xorpd at 0x2011b0, Xorpd at 0x2011b4 */
-    if (a1 & a1 <= 0x0) { goto L_20123d; }
-    rax = a1 & 0x7;
+    if (a1 <= 0x0) { goto L_20123d; }
+    rdx = a1;
+    rax = edx & 0x7;
     if (a1 < 0x8 /* unsigned */) {
         rcx = 0x0;
     } else {
@@ -22,7 +23,7 @@ int32_t sub_2011b0(uint64_t a0, int32_t a1) {
             rcx = rcx + 0x8;
         } while (rdx != rcx);
     }
-    if (rax & rax == 0x0) { goto L_20123d; }
+    if (rax == 0x0) { goto L_20123d; }
     rcx = a0 + rcx * 0x8;
     rdx = 0x0;
     do {
@@ -30,7 +31,7 @@ int32_t sub_2011b0(uint64_t a0, int32_t a1) {
         rdx = rdx + 0x1;
     } while (rax != rdx);
 L_20123d:
-    if (a1 & a1 > 0x0) {
+    if (a1 > 0x0) {
         /* unsupported (4 steps): Xorps at 0x201241, Cvtsi2sd at 0x201244, Divsd at 0x201248, Movapd at 0x20124c */
     }
     return eax;
@@ -44,9 +45,10 @@ fn <unnamed> @ 0x2011b0 (size 176)
   blk0 @ 0x2011b0:
     unsupported: Xorpd at 0x2011b0
     unsupported: Xorpd at 0x2011b4
-    brif le (esi & esi), #0x0 -> 0x20123d
+    brif le esi, #0x0 -> 0x20123d
   blk1 @ 0x2011c0:
-    rax = (((esi & #0xffffffff) & #0x7) & #0xffffffff)
+    rdx = esi
+    rax = (((rdx & #0xffffffff) & #0x7) & #0xffffffff)
     brif cs esi, #0x8 -> 0x2011d0
   blk2 @ 0x2011cc:
     rcx = #0x0
@@ -66,7 +68,7 @@ fn <unnamed> @ 0x2011b0 (size 176)
     rcx = (rcx + #0x8)
     brif ne rdx, rcx -> 0x2011e0
   blk5 @ 0x201218:
-    brif eq (rax & rax), #0x0 -> 0x20123d
+    brif eq rax, #0x0 -> 0x20123d
   blk6 @ 0x20121d:
     rcx = (rdi + (rcx * #0x8))
     rdx = #0x0
@@ -75,7 +77,7 @@ fn <unnamed> @ 0x2011b0 (size 176)
     rdx = (rdx + #0x1)
     brif ne rax, rdx -> 0x201230
   blk8 @ 0x20123d:
-    brif le (esi & esi), #0x0 -> 0x201250
+    brif le esi, #0x0 -> 0x201250
   blk9 @ 0x201241:
     unsupported: Xorps at 0x201241
     unsupported: Cvtsi2sd at 0x201244
@@ -150,10 +152,13 @@ fn <unnamed> @ 0x201280 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 uint32_t sub_201290(void) {
+    rcx = 0x0;
     /* unsupported: Ucomisd at 0x201292 */
-    ecx = ((0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0)) & 0xff & 0xff;
+    rcx = rcx & 0xffffffffffffff00 | (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0) & 0xff & 0xff;
     /* unsupported: Ucomisd at 0x201299 */
-    return (0x0 <= 0x0 /* unsigned */ ? ecx : 0xffffffff);
+    rax = 0xffffffff;
+    rax = (0x0 <= 0x0 /* unsigned */ ? ecx : 0xffffffff);
+    return rax;
 }
 -- signature
 uint32_t ()
@@ -162,9 +167,12 @@ uint32_t ()
 -- ir
 fn <unnamed> @ 0x201290 (size 22)
   blk0 @ 0x201290:
+    rcx = #0x0
     unsupported: Ucomisd at 0x201292
-    rcx = ((select hi #0x0, #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
+    rcx = ((rcx & #0xffffffffffffff00) | ((select hi #0x0, #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
     unsupported: Ucomisd at 0x201299
-    ret (select ls #0x0, #0x0 ? (rcx & #0xffffffff), #0xffffffff & #0xffffffff)
+    rax = #0xffffffff
+    rax = (select ls #0x0, #0x0 ? (rcx & #0xffffffff), #0xffffffff & #0xffffffff)
+    ret rax
 -- card
 {"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":22,"sizeEstimated":true,"unsupported":2}

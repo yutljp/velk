@@ -49,7 +49,8 @@ fn <unnamed> @ 0x21020c (size 16)
 /* velk pseudo-C: sub_21021c @ 0x21021c */
 uint64_t sub_21021c(void) {
     /* unsupported: bitfield immr=0 imms=31 */
-    return x8 - w1;
+    x0 = x8 - w1;
+    return x0;
 }
 -- signature
 uint64_t ()
@@ -59,7 +60,8 @@ uint64_t ()
 fn <unnamed> @ 0x21021c (size 12)
   blk0 @ 0x21021c:
     unsupported: bitfield immr=0 imms=31
-    ret (x8 - w1)
+    x0 = (x8 - w1)
+    ret x0
 -- card
 {"addr":"0x21021c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":1}
 
@@ -68,6 +70,7 @@ fn <unnamed> @ 0x21021c (size 12)
 /* velk pseudo-C: sub_210228 @ 0x210228 */
 int32_t sub_210228(int32_t a0, int32_t a1) {
     /* unsupported: CCMP at 0x21022c */
+    t65 = a0;
     a0 = (a0 <= a1 ? 0x1 : 0x0);
     return a0;
 }
@@ -79,6 +82,7 @@ int32_t (int32_t a0, int32_t a1)
 fn <unnamed> @ 0x210228 (size 16)
   blk0 @ 0x210228:
     unsupported: CCMP at 0x21022c
+    t65 = w0
     w0 = select le w0, w1 ? #0x1, #0x0
     ret w0
 -- card
@@ -88,6 +92,7 @@ fn <unnamed> @ 0x210228 (size 16)
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 uint64_t sub_210238(uint64_t a0, uint32_t a1) {
+    w8 = -a1;
     /* unsupported: RORV at 0x21023c */
     return a0;
 }
@@ -98,6 +103,7 @@ uint64_t (uint64_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x210238 (size 12)
   blk0 @ 0x210238:
+    w8 = (#0x0 - w1)
     unsupported: RORV at 0x21023c
     ret x0
 -- card

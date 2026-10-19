@@ -1,4 +1,4 @@
-# metrics/switch_jumptable.aarch64.O0.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 9 gotos
+# metrics/switch_jumptable.aarch64.O0.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 10 gotos
 0x21018c 880 d7 symtab,dwarf
 
 == 0x21018c d7
@@ -8,34 +8,112 @@
 int d7(int x) {
     uint32_t local_0; /* [sp-4] */
     uint32_t local_1; /* [sp-30] */
+    uint32_t local_2; /* [sp-8] */
+    uint32_t local_3; /* [sp-c] */
+    uint32_t local_4; /* [sp-10] */
+    uint32_t local_5; /* [sp-14] */
+    uint32_t local_6; /* [sp-18] */
+    uint32_t local_7; /* [sp-1c] */
+    uint32_t local_8; /* [sp-20] */
+    uint32_t local_9; /* [sp-24] */
+    uint32_t local_10; /* [sp-28] */
     uint32_t local_11; /* [sp-2c] */
 
     sp = sp - 0x30;
     local_0 = x;
-    x8 = x;
+    w8 = x;
     local_1 = w8;
-    if (x8 == 0x0) { goto L_210234; }
-    if (local_1 - 0x1 == 0x1) { goto L_210278; }
-    if (local_1 - 0x2 == 0x2) { goto L_2102bc; }
-    if (local_1 - 0x3 == 0x3) { goto L_210300; }
-    if (local_1 - 0x4 == 0x4) { goto L_210344; }
-    if (local_1 - 0x5 == 0x5) { goto L_210388; }
-    if (local_1 - 0x6 == 0x6) { goto L_2103cc; }
-    if (local_1 - 0x7 == 0x7) { goto L_210410; }
-    if (local_1 - 0x8 == 0x8) { goto L_210454; }
-    if (local_1 - 0x9 != 0x9) {
-    } else {
-        while (true) {
-            x8 = local_11 - 0xa;
-            if (w8 >= 0xa) break;
-            w10 = local_11;
-            dword_2204fc += w10;
-            local_11 += 0x1;
-        }
-        sp = sp + 0x30;
-        return dword_2204fc;
-    }
+    if (w8 == 0x0) { goto L_210234; }
+    if (local_1 - 0x1 == 0x0) { goto L_210278; }
+    if (local_1 - 0x2 == 0x0) { goto L_2102bc; }
+    if (local_1 - 0x3 == 0x0) { goto L_210300; }
+    if (local_1 - 0x4 == 0x0) { goto L_210344; }
+    if (local_1 - 0x5 == 0x0) { goto L_210388; }
+    if (local_1 - 0x6 == 0x0) { goto L_2103cc; }
+    if (local_1 - 0x7 == 0x0) { goto L_210410; }
+    if (local_1 - 0x8 == 0x0) { goto L_210454; }
+    if (local_1 - 0x9 == 0x0) { goto L_210498; }
     dword_2204fc = 0xffffffff;
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210234:
+    local_2 = 0x0;
+    while (local_2 < 0x1) {
+        dword_2204fc += local_2;
+        local_2 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210278:
+    local_3 = 0x0;
+    while (local_3 < 0x2) {
+        dword_2204fc += local_3;
+        local_3 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_2102bc:
+    local_4 = 0x0;
+    while (local_4 < 0x3) {
+        dword_2204fc += local_4;
+        local_4 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210300:
+    local_5 = 0x0;
+    while (local_5 < 0x4) {
+        dword_2204fc += local_5;
+        local_5 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210344:
+    local_6 = 0x0;
+    while (local_6 < 0x5) {
+        dword_2204fc += local_6;
+        local_6 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210388:
+    local_7 = 0x0;
+    while (local_7 < 0x6) {
+        dword_2204fc += local_7;
+        local_7 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_2103cc:
+    local_8 = 0x0;
+    while (local_8 < 0x7) {
+        dword_2204fc += local_8;
+        local_8 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210410:
+    local_9 = 0x0;
+    while (local_9 < 0x8) {
+        dword_2204fc += local_9;
+        local_9 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210454:
+    local_10 = 0x0;
+    while (local_10 < 0x9) {
+        dword_2204fc += local_10;
+        local_10 += 0x1;
+    }
+    sp = sp + 0x30;
+    return dword_2204fc;
+L_210498:
+    local_11 = 0x0;
+    while (local_11 < 0xa) {
+        dword_2204fc += local_11;
+        local_11 += 0x1;
+    }
     sp = sp + 0x30;
     return dword_2204fc;
 }
@@ -50,202 +128,192 @@ fn d7 @ 0x21018c (size 880)
     store32(w0, (sp + #0x2c))
     x8 = (w0 & #0xffffffff)
     store32((x8 & #0xffffffff), sp)
-    brif eq x8, #0x0 -> 0x210234
+    brif eq (x8 & #0xffffffff), #0x0 -> 0x210234
   blk1 @ 0x2101a0:
     br 0x2101a4
   blk2 @ 0x2101a4:
-    brif eq (((load32(sp) & #0xffffffff) - #0x1) & #0xffffffff), #0x1 -> 0x210278
+    brif eq (((load32(sp) & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x210278
   blk3 @ 0x2101b0:
     br 0x2101b4
   blk4 @ 0x2101b4:
-    brif eq (((load32(sp) & #0xffffffff) - #0x2) & #0xffffffff), #0x2 -> 0x2102bc
+    brif eq (((load32(sp) & #0xffffffff) - #0x2) & #0xffffffff), #0x0 -> 0x2102bc
   blk5 @ 0x2101c0:
     br 0x2101c4
   blk6 @ 0x2101c4:
-    brif eq (((load32(sp) & #0xffffffff) - #0x3) & #0xffffffff), #0x3 -> 0x210300
+    brif eq (((load32(sp) & #0xffffffff) - #0x3) & #0xffffffff), #0x0 -> 0x210300
   blk7 @ 0x2101d0:
     br 0x2101d4
   blk8 @ 0x2101d4:
-    brif eq (((load32(sp) & #0xffffffff) - #0x4) & #0xffffffff), #0x4 -> 0x210344
+    brif eq (((load32(sp) & #0xffffffff) - #0x4) & #0xffffffff), #0x0 -> 0x210344
   blk9 @ 0x2101e0:
     br 0x2101e4
   blk10 @ 0x2101e4:
-    brif eq (((load32(sp) & #0xffffffff) - #0x5) & #0xffffffff), #0x5 -> 0x210388
+    brif eq (((load32(sp) & #0xffffffff) - #0x5) & #0xffffffff), #0x0 -> 0x210388
   blk11 @ 0x2101f0:
     br 0x2101f4
   blk12 @ 0x2101f4:
-    brif eq (((load32(sp) & #0xffffffff) - #0x6) & #0xffffffff), #0x6 -> 0x2103cc
+    brif eq (((load32(sp) & #0xffffffff) - #0x6) & #0xffffffff), #0x0 -> 0x2103cc
   blk13 @ 0x210200:
     br 0x210204
   blk14 @ 0x210204:
-    brif eq (((load32(sp) & #0xffffffff) - #0x7) & #0xffffffff), #0x7 -> 0x210410
+    brif eq (((load32(sp) & #0xffffffff) - #0x7) & #0xffffffff), #0x0 -> 0x210410
   blk15 @ 0x210210:
     br 0x210214
   blk16 @ 0x210214:
-    brif eq (((load32(sp) & #0xffffffff) - #0x8) & #0xffffffff), #0x8 -> 0x210454
+    brif eq (((load32(sp) & #0xffffffff) - #0x8) & #0xffffffff), #0x0 -> 0x210454
   blk17 @ 0x210220:
     br 0x210224
   blk18 @ 0x210224:
-    brif eq (((load32(sp) & #0xffffffff) - #0x9) & #0xffffffff), #0x9 -> 0x210498
+    brif eq (((load32(sp) & #0xffffffff) - #0x9) & #0xffffffff), #0x0 -> 0x210498
   blk19 @ 0x210230:
     br 0x2104dc
   blk20 @ 0x210234:
+    store32(#0x0, (sp + #0x28))
     br 0x21023c
   blk21 @ 0x21023c:
-    x8 = (((load32((sp + #0x28)) & #0xffffffff) - #0x1) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x1 -> 0x210274
+    brif ge (load32((sp + #0x28)) & #0xffffffff), #0x1 -> 0x210274
   blk22 @ 0x210248:
     br 0x21024c
   blk23 @ 0x21024c:
-    w10 = load32((sp + #0x28))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x28))) & #0xffffffff), #0x2204fc)
     br 0x210264
   blk24 @ 0x210264:
-    store32((load32((sp + #0x28)) + #0x1), (sp + #0x28))
+    store32((((load32((sp + #0x28)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x28))
     br 0x21023c
   blk25 @ 0x210274:
     br 0x2104ec
   blk26 @ 0x210278:
+    store32(#0x0, (sp + #0x24))
     br 0x210280
   blk27 @ 0x210280:
-    x8 = (((load32((sp + #0x24)) & #0xffffffff) - #0x2) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x2 -> 0x2102b8
+    brif ge (load32((sp + #0x24)) & #0xffffffff), #0x2 -> 0x2102b8
   blk28 @ 0x21028c:
     br 0x210290
   blk29 @ 0x210290:
-    w10 = load32((sp + #0x24))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x24))) & #0xffffffff), #0x2204fc)
     br 0x2102a8
   blk30 @ 0x2102a8:
-    store32((load32((sp + #0x24)) + #0x1), (sp + #0x24))
+    store32((((load32((sp + #0x24)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x24))
     br 0x210280
   blk31 @ 0x2102b8:
     br 0x2104ec
   blk32 @ 0x2102bc:
+    store32(#0x0, (sp + #0x20))
     br 0x2102c4
   blk33 @ 0x2102c4:
-    x8 = (((load32((sp + #0x20)) & #0xffffffff) - #0x3) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x3 -> 0x2102fc
+    brif ge (load32((sp + #0x20)) & #0xffffffff), #0x3 -> 0x2102fc
   blk34 @ 0x2102d0:
     br 0x2102d4
   blk35 @ 0x2102d4:
-    w10 = load32((sp + #0x20))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x20))) & #0xffffffff), #0x2204fc)
     br 0x2102ec
   blk36 @ 0x2102ec:
-    store32((load32((sp + #0x20)) + #0x1), (sp + #0x20))
+    store32((((load32((sp + #0x20)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x20))
     br 0x2102c4
   blk37 @ 0x2102fc:
     br 0x2104ec
   blk38 @ 0x210300:
+    store32(#0x0, (sp + #0x1c))
     br 0x210308
   blk39 @ 0x210308:
-    x8 = (((load32((sp + #0x1c)) & #0xffffffff) - #0x4) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x4 -> 0x210340
+    brif ge (load32((sp + #0x1c)) & #0xffffffff), #0x4 -> 0x210340
   blk40 @ 0x210314:
     br 0x210318
   blk41 @ 0x210318:
-    w10 = load32((sp + #0x1c))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x1c))) & #0xffffffff), #0x2204fc)
     br 0x210330
   blk42 @ 0x210330:
-    store32((load32((sp + #0x1c)) + #0x1), (sp + #0x1c))
+    store32((((load32((sp + #0x1c)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x1c))
     br 0x210308
   blk43 @ 0x210340:
     br 0x2104ec
   blk44 @ 0x210344:
+    store32(#0x0, (sp + #0x18))
     br 0x21034c
   blk45 @ 0x21034c:
-    x8 = (((load32((sp + #0x18)) & #0xffffffff) - #0x5) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x5 -> 0x210384
+    brif ge (load32((sp + #0x18)) & #0xffffffff), #0x5 -> 0x210384
   blk46 @ 0x210358:
     br 0x21035c
   blk47 @ 0x21035c:
-    w10 = load32((sp + #0x18))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x18))) & #0xffffffff), #0x2204fc)
     br 0x210374
   blk48 @ 0x210374:
-    store32((load32((sp + #0x18)) + #0x1), (sp + #0x18))
+    store32((((load32((sp + #0x18)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x18))
     br 0x21034c
   blk49 @ 0x210384:
     br 0x2104ec
   blk50 @ 0x210388:
+    store32(#0x0, (sp + #0x14))
     br 0x210390
   blk51 @ 0x210390:
-    x8 = (((load32((sp + #0x14)) & #0xffffffff) - #0x6) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x6 -> 0x2103c8
+    brif ge (load32((sp + #0x14)) & #0xffffffff), #0x6 -> 0x2103c8
   blk52 @ 0x21039c:
     br 0x2103a0
   blk53 @ 0x2103a0:
-    w10 = load32((sp + #0x14))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x14))) & #0xffffffff), #0x2204fc)
     br 0x2103b8
   blk54 @ 0x2103b8:
-    store32((load32((sp + #0x14)) + #0x1), (sp + #0x14))
+    store32((((load32((sp + #0x14)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x14))
     br 0x210390
   blk55 @ 0x2103c8:
     br 0x2104ec
   blk56 @ 0x2103cc:
+    store32(#0x0, (sp + #0x10))
     br 0x2103d4
   blk57 @ 0x2103d4:
-    x8 = (((load32((sp + #0x10)) & #0xffffffff) - #0x7) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x7 -> 0x21040c
+    brif ge (load32((sp + #0x10)) & #0xffffffff), #0x7 -> 0x21040c
   blk58 @ 0x2103e0:
     br 0x2103e4
   blk59 @ 0x2103e4:
-    w10 = load32((sp + #0x10))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x10))) & #0xffffffff), #0x2204fc)
     br 0x2103fc
   blk60 @ 0x2103fc:
-    store32((load32((sp + #0x10)) + #0x1), (sp + #0x10))
+    store32((((load32((sp + #0x10)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x10))
     br 0x2103d4
   blk61 @ 0x21040c:
     br 0x2104ec
   blk62 @ 0x210410:
+    store32(#0x0, (sp + #0xc))
     br 0x210418
   blk63 @ 0x210418:
-    x8 = (((load32((sp + #0xc)) & #0xffffffff) - #0x8) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x8 -> 0x210450
+    brif ge (load32((sp + #0xc)) & #0xffffffff), #0x8 -> 0x210450
   blk64 @ 0x210424:
     br 0x210428
   blk65 @ 0x210428:
-    w10 = load32((sp + #0xc))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0xc))) & #0xffffffff), #0x2204fc)
     br 0x210440
   blk66 @ 0x210440:
-    store32((load32((sp + #0xc)) + #0x1), (sp + #0xc))
+    store32((((load32((sp + #0xc)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xc))
     br 0x210418
   blk67 @ 0x210450:
     br 0x2104ec
   blk68 @ 0x210454:
+    store32(#0x0, (sp + #0x8))
     br 0x21045c
   blk69 @ 0x21045c:
-    x8 = (((load32((sp + #0x8)) & #0xffffffff) - #0x9) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0x9 -> 0x210494
+    brif ge (load32((sp + #0x8)) & #0xffffffff), #0x9 -> 0x210494
   blk70 @ 0x210468:
     br 0x21046c
   blk71 @ 0x21046c:
-    w10 = load32((sp + #0x8))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x8))) & #0xffffffff), #0x2204fc)
     br 0x210484
   blk72 @ 0x210484:
-    store32((load32((sp + #0x8)) + #0x1), (sp + #0x8))
+    store32((((load32((sp + #0x8)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x8))
     br 0x21045c
   blk73 @ 0x210494:
     br 0x2104ec
   blk74 @ 0x210498:
+    store32(#0x0, (sp + #0x4))
     br 0x2104a0
   blk75 @ 0x2104a0:
-    x8 = (((load32((sp + #0x4)) & #0xffffffff) - #0xa) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), #0xa -> 0x2104d8
+    brif ge (load32((sp + #0x4)) & #0xffffffff), #0xa -> 0x2104d8
   blk76 @ 0x2104ac:
     br 0x2104b0
   blk77 @ 0x2104b0:
-    w10 = load32((sp + #0x4))
-    store32((load32(#0x2204fc) + w10), #0x2204fc)
+    store32((((load32(#0x2204fc) & #0xffffffff) + load32((sp + #0x4))) & #0xffffffff), #0x2204fc)
     br 0x2104c8
   blk78 @ 0x2104c8:
-    store32((load32((sp + #0x4)) + #0x1), (sp + #0x4))
+    store32((((load32((sp + #0x4)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0x4))
     br 0x2104a0
   blk79 @ 0x2104d8:
     br 0x2104ec

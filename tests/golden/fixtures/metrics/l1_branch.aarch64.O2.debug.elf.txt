@@ -26,7 +26,7 @@ fn classify @ 0x210174 (size 16)
 -- decompile
 /* velk pseudo-C: clamp @ 0x210184 */
 int clamp(int x, int lo, int hi) {
-    return (x < lo ? lo : ((x < hi ? x : hi)));
+    return (x < lo ? lo : (x < hi ? x : hi));
 }
 -- signature
 int (int x, int lo, int hi)

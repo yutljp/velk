@@ -27,9 +27,18 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             *addr = simplify_expr(addr.clone(), constants);
             *value = simplify_expr(value.clone(), constants);
         }
-        Stmt::Brif { lhs, rhs, .. } => {
+        Stmt::Brif { cond, lhs, rhs, .. } => {
             *lhs = simplify_expr(lhs.clone(), constants);
             *rhs = simplify_expr(rhs.clone(), constants);
+            if let Some(width) =
+                crate::ir::visit::expr_width(lhs).or_else(|| crate::ir::visit::expr_width(rhs))
+            {
+                cancel_round_trip(lhs, width);
+                cancel_round_trip(rhs, width);
+            }
+            if matches!(cond, crate::ir::Cond::Eq | crate::ir::Cond::Ne) {
+                move_offset_across(lhs, rhs);
+            }
         }
         Stmt::BrIndirect { target } => {
             *target = simplify_expr(target.clone(), constants);
@@ -46,6 +55,75 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
         }
         Stmt::Br { .. } | Stmt::BrifFlags { .. } | Stmt::Trap => {}
     }
+}
+
+/// In a compare at `width` bits, `(a - b) + b` and `(a + b) - b` are `a`; a
+/// 32-bit mask on the inner result changes nothing at 32 bits.
+fn cancel_round_trip(expr: &mut Expr, width: u8) {
+    use crate::ir::BinOp;
+    let Expr::Bin { op, lhs, rhs } = &*expr else {
+        return;
+    };
+    let inverse = match op {
+        BinOp::Add => BinOp::Sub,
+        BinOp::Sub => BinOp::Add,
+        _ => return,
+    };
+    let mut inner = lhs.as_ref();
+    if width <= 32
+        && let Expr::Bin {
+            op: BinOp::And,
+            lhs: masked,
+            rhs: mask,
+        } = inner
+        && matches!(mask.as_ref(), Expr::Const(0xffff_ffff))
+    {
+        inner = masked;
+    }
+    if let Expr::Bin {
+        op: inner_op,
+        lhs: original,
+        rhs: offset,
+    } = inner
+        && *inner_op == inverse
+        && offset == rhs
+    {
+        *expr = original.as_ref().clone();
+    }
+}
+
+/// `x + c == k` is `x == k - c` at the width of `x`, as is `x - c == k`
+/// with `k + c`.
+fn move_offset_across(lhs: &mut Expr, rhs: &mut Expr) {
+    let (
+        Expr::Bin {
+            op,
+            lhs: inner,
+            rhs: offset,
+        },
+        Expr::Const(k),
+    ) = (&*lhs, &*rhs)
+    else {
+        return;
+    };
+    let Expr::Const(c) = offset.as_ref() else {
+        return;
+    };
+    let moved = match op {
+        crate::ir::BinOp::Add => k.wrapping_sub(*c),
+        crate::ir::BinOp::Sub => k.wrapping_add(*c),
+        _ => return,
+    };
+    let Some(width) = crate::ir::visit::expr_width(inner) else {
+        return;
+    };
+    let mask = if width >= 64 {
+        u64::MAX
+    } else {
+        (1u64 << width) - 1
+    };
+    *rhs = Expr::Const(moved & mask);
+    *lhs = inner.as_ref().clone();
 }
 
 fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {

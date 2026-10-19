@@ -118,7 +118,13 @@ fn bind(
         rewritten,
         Expr::Bin { .. } | Expr::Select { .. } | Expr::SignExtend { .. }
     );
-    if !operator {
+    // A 32-bit read of a register is as cheap as the register.
+    let narrow_read = matches!(
+        &rewritten,
+        Expr::Bin { op: crate::ir::BinOp::And, lhs, rhs }
+            if matches!(lhs.as_ref(), Expr::Reg { .. }) && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+    );
+    if !operator || narrow_read {
         return rewritten;
     }
     if !load_free(&rewritten) || counts.get(&rewritten).copied().unwrap_or(0) <= 1 {

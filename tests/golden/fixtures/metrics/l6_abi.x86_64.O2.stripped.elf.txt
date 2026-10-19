@@ -26,15 +26,17 @@ fn <unnamed> @ 0x2011b0 (size 16)
 == 0x2011c0 -
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
-uint32_t sub_2011c0(uint32_t a0, uint32_t a1) {
+uint32_t sub_2011c0(uint32_t a0) {
     a0 = a0 + 0x2;
     sub_2011b0();
+    return rax;
+L_2011c8:
     rax = a0;
-    a0 = a1 + 0x1;
+    a0 = ((rsi + 0x1) & 0xffffffff);
     goto *(rax);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -42,6 +44,7 @@ fn <unnamed> @ 0x2011c0 (size 32)
   blk0 @ 0x2011c0:
     rdi = (((rdi & #0xffffffff) + #0x2) & #0xffffffff)
     call 0x2011b0
+    ret rax
   blk1 @ 0x2011c8:
     rax = rdi
     rdi = ((rsi + #0x1) & #0xffffffff)

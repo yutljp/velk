@@ -101,7 +101,7 @@ fn reg_negative @ 0x40 (size 16)
 -- decompile
 /* velk pseudo-C: reg_abs @ 0x50 */
 uint32_t reg_abs(uint32_t a0) {
-    return (a0 < 0x0 ? a0 : -a0);
+    return (-a0 < 0x0 ? a0 : -a0);
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -110,7 +110,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn reg_abs @ 0x50 (size 16)
   blk0 @ 0x50:
-    ret select lt ecx, #0x0 ? ecx, (#0x0 - ecx)
+    ret select lt (#0x0 - ecx), #0x0 ? ecx, (#0x0 - ecx)
 -- card
 {"addr":"0x50","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -169,7 +169,13 @@ fn reg_mod @ 0x80 (size 16)
 -- decompile
 /* velk pseudo-C: entry @ 0x90 */
 uint64_t entry(void) {
-    return *(uint64_t *)(rsp + 0x8);
+    uint64_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-4] */
+
+    local_0 = rax;
+    local_1 = 0x5;
+    *(uint32_t *)&local_0 = 0x23;
+    return local_0;
 }
 -- signature
 uint64_t ()
@@ -178,6 +184,9 @@ uint64_t ()
 -- ir
 fn entry @ 0x90 (size 30)
   blk0 @ 0x90:
-    ret load64((rsp + #0x8))
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    store32(#0x5, (rsp + #0xfffffffffffffffc))
+    store32(#0x23, (rsp + #0xfffffffffffffff8))
+    ret load64((rsp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x90","approxTokens":150,"blocks":1,"hardReasons":[],"name":"entry","nameSources":["symtab"],"section":".text","size":30,"sizeEstimated":true,"unsupported":0}

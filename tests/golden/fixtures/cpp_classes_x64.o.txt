@@ -10,19 +10,30 @@
 /* velk pseudo-C: total_area(Shape const* const*, int) @ 0x0 */
 /* struct: a0 +0x0:uint64_t */
 int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
-    if (a1 & a1 <= 0x0) {
-        ebp = 0x0;
+    uint64_t local_0; /* [sp-8] */
+    uint64_t local_1; /* [sp-10] */
+    uint64_t local_2; /* [sp-18] */
+    uint64_t local_3; /* [sp-20] */
+    uint64_t local_4; /* [sp-28] */
+
+    local_0 = rbp;
+    local_1 = r15;
+    local_2 = r14;
+    local_3 = rbx;
+    local_4 = rax;
+    if (a1 <= 0x0) {
+        rbp = 0x0;
         return ebp;
     }
     rbx = a0;
     r14 = a1;
     r15 = 0x0;
-    ebp = 0x0;
+    rbp = 0x0;
     do {
         a0 = *(uint64_t *)(rbx + r15 * 0x8);
         rax = a0->field_0x0;
         total_area_Shape_const__const___int_();
-        ebp = ebp + eax;
+        rbp = ebp + eax;
         r15 = r15 + 0x1;
     } while (r14 != r15);
     return ebp;
@@ -34,7 +45,12 @@ int32_t (uint64_t * a0, int32_t a1)
 -- ir
 fn total_area(Shape const* const*, int) @ 0x0 (size 69)
   blk0 @ 0x0:
-    brif le (esi & esi), #0x0 -> 0x36
+    store64(rbp, (rsp + #0xfffffffffffffff8))
+    store64(r15, (rsp + #0xfffffffffffffff0))
+    store64(r14, (rsp + #0xffffffffffffffe8))
+    store64(rbx, (rsp + #0xffffffffffffffe0))
+    store64(rax, (rsp + #0xffffffffffffffd8))
+    brif le esi, #0x0 -> 0x36
   blk1 @ 0xb:
     rbx = rdi
     r14 = esi
@@ -60,7 +76,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
 -- decompile
 /* velk pseudo-C: clamp_int(int) @ 0x50 */
 int32_t clamp_int_int_(int32_t a0) {
-    return (((a0 < 0xff ? a0 : 0xff)) & ((a0 < 0xff ? a0 : 0xff)) > 0x0 ? (a0 < 0xff ? a0 : 0xff) : 0x0);
+    return ((a0 < 0xff ? a0 : 0xff) > 0x0 ? (a0 < 0xff ? a0 : 0xff) : 0x0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -69,7 +85,7 @@ int32_t (int32_t a0)
 -- ir
 fn clamp_int(int) @ 0x50 (size 22)
   blk0 @ 0x50:
-    ret (select gt ((select lt edi, #0xff ? edi, #0xff & #0xffffffff) & (select lt edi, #0xff ? edi, #0xff & #0xffffffff)), #0x0 ? (select lt edi, #0xff ? edi, #0xff & #0xffffffff), #0x0 & #0xffffffff)
+    ret (select gt (select lt edi, #0xff ? edi, #0xff & #0xffffffff), #0x0 ? (select lt edi, #0xff ? edi, #0xff & #0xffffffff), #0x0 & #0xffffffff)
 -- card
 {"addr":"0x50","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab"],"section":".text","size":22,"unsupported":0}
 
@@ -113,6 +129,7 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 (size 14)
 /* velk pseudo-C: increment(int&) @ 0xb0 */
 /* struct: a0 +0x0:uint32_t */
 void increment_int__(uint32_t *a0) {
+    t65 = a0->field_0x0 + 0x1;
     a0->field_0x0 += 0x1;
     return;
 }
@@ -123,6 +140,7 @@ void (uint32_t * a0)
 -- ir
 fn increment(int&) @ 0xb0 (size 3)
   blk0 @ 0xb0:
+    t65 = (load32(rdi) + #0x1)
     store32((load32(rdi) + #0x1), rdi)
     ret rax
 -- card

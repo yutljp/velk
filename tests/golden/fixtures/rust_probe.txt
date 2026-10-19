@@ -1,4 +1,4 @@
-# rust_probe: elf x86_64 0x14e70, 543 functions, 0 lift failures, 952 unsupported, 4148 gotos
+# rust_probe: elf x86_64 0x14e70, 543 functions, 0 lift failures, 1181 unsupported, 5331 gotos
 0x14e70 38 _start symtab,entry
 0x14ea0 48 deregister_tm_clones symtab
 0x14ed0 64 register_tm_clones symtab
@@ -547,7 +547,7 @@
 -- decompile
 /* velk pseudo-C: rust_probe::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
-uint64_t rust_probe__main(void) {
+void rust_probe__main(void) {
     uint32_t local_0; /* [sp-14] */
     uint64_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-8] */
@@ -555,13 +555,14 @@ uint64_t rust_probe__main(void) {
     rsp = rsp - 0x18;
     local_0 = 0x3;
     local_1 = rsp + 0x4;
-    rax = qword_55aa8;
-    local_2 = rax;
+    local_2 = qword_55aa8;
+    rdi = 0x5091;
+    rsi = rsp + 0x8;
     sub_0();
-    return rax;
+    return;
 }
 -- signature
-uint64_t ()
+void ()
 -- references
 0x55aa8 .got
 -- ir
@@ -570,8 +571,9 @@ fn rust_probe::main @ 0x14f90 (size 57)
     rsp = (rsp - #0x18)
     store32(#0x3, (rsp + #0x4))
     store64((rsp + #0x4), (rsp + #0x8))
-    rax = load64(#0x55aa8)
-    store64(rax, (rsp + #0x10))
+    store64(load64(#0x55aa8), (rsp + #0x10))
+    rdi = #0x5091
+    rsi = (rsp + #0x8)
     call 0x0
     ret rax
 -- card

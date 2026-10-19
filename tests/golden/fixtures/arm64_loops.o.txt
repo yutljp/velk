@@ -17,8 +17,9 @@ uint32_t count_bits(uint32_t a0) {
         w9 = w8 >> 0x1;
         w10 = w8 & 0x1;
         a0 = a0 + w10;
+        t65 = w8;
         w8 = w9;
-    } while (w8 > 0x1 /* unsigned */);
+    } while (t65 > 0x1 /* unsigned */);
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -27,7 +28,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn count_bits @ 0x0 (size 40)
   blk0 @ 0x0:
-    brif eq x0, #0x0 -> 0x24
+    brif eq (x0 & #0xffffffff), #0x0 -> 0x24
   blk1 @ 0x4:
     w8 = x0
     x0 = #0x0
@@ -35,8 +36,9 @@ fn count_bits @ 0x0 (size 40)
     w9 = (w8 >> #0x1)
     w10 = (w8 & #0x1)
     x0 = (((x0 & #0xffffffff) + w10) & #0xffffffff)
+    t65 = w8
     w8 = w9
-    brif hi w8, #0x1 -> 0xc
+    brif hi t65, #0x1 -> 0xc
   blk3 @ 0x24:
     ret x0
 -- card
@@ -77,7 +79,7 @@ fn sum_until @ 0x28 (size 40)
 /* velk pseudo-C: sum_till_neg @ 0x50 */
 /* struct: a0 +0x0:uint32_t */
 uint32_t sum_till_neg(uint32_t *a0, uint32_t a1) {
-    x9 = (a1 & (~(a1 >>> 0x1f)) & 0xffffffff);
+    x9 = (a1 & ~(a1 >>> 0x1f) & 0xffffffff);
     x10 = 0x0;
     do {
         w8 = x10;
@@ -88,7 +90,7 @@ uint32_t sum_till_neg(uint32_t *a0, uint32_t a1) {
         a0 = a0 + 0x4;
         x9 = x9 - 0x1;
         x10 = w11 + w8;
-    } while (x11 & 0x80000000 == 0x0);
+    } while ((x11 & 0x80000000) == 0x0);
     return w8;
 }
 -- signature
@@ -126,16 +128,14 @@ int32_t sum_until_zero(uint32_t *a0, int32_t a1) {
     a0 = 0x0;
     x9 = a1;
     do {
-        x10 = *(uint32_t *)(x8);
+        w10 = *(uint32_t *)(x8);
         x8 = x8 + 0x4;
-        if (x10 == 0x0) {
+        if (w10 == 0x0) {
             break;
         }
-        t1 = w10;
-        x10 = (t1 & (~(t1 >>> 0x1f)) & 0xffffffff);
         x9 = x9 - 0x1;
-        a0 = w10 + (a0 & 0xffffffff);
-    } while (x9 != 0x1);
+        a0 = (w10 & ~(w10 >>> 0x1f)) + (a0 & 0xffffffff);
+    } while (x9 != 0x0);
     return a0;
 }
 -- signature
@@ -151,15 +151,13 @@ fn sum_until_zero @ 0x78 (size 56)
     x0 = #0x0
     x9 = w1
   blk2 @ 0x8c:
-    x10 = (load32(x8) & #0xffffffff)
+    w10 = load32(x8)
     x8 = (x8 + #0x4)
-    brif eq x10, #0x0 -> 0xa4
+    brif eq w10, #0x0 -> 0xa4
   blk3 @ 0x94:
-    t1 = (x10 & #0xffffffff)
-    x10 = ((t1 & ((t1 >>> #0x1f) ^ #0xffffffffffffffff)) & #0xffffffff)
     x9 = (x9 - #0x1)
-    x0 = (((x10 & #0xffffffff) + (x0 & #0xffffffff)) & #0xffffffff)
-    brif ne x9, #0x1 -> 0x8c
+    x0 = (((w10 & ((w10 >>> #0x1f) ^ #0xffffffffffffffff)) + (x0 & #0xffffffff)) & #0xffffffff)
+    brif ne x9, #0x0 -> 0x8c
   blk4 @ 0xa4:
     ret x0
   blk5 @ 0xa8:

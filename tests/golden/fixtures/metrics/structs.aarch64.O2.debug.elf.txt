@@ -41,10 +41,11 @@ long record_total(struct record *items, int n) {
         x10 = 0x0;
         x8 = 0x0;
     } else {
+        x10 = x9 & 0x7ffffffe;
         x8 = 0x0;
         x11 = 0x0;
         x12 = items + 0x20;
-        x13 = x9 & 0x7ffffffe;
+        x13 = x10;
         do {
             /* unsupported (2 steps): LDUR at 0x210230, LDURSH at 0x210234 */
             x13 = x13 - 0x2;
@@ -53,7 +54,8 @@ long record_total(struct record *items, int n) {
             x12 = x12 + 0x30;
             x8 = x14 * x15 + x8;
             x11 = x16 * x17 + x11;
-        } while (x13 != 0x2);
+        } while (x13 != 0x0);
+        x8 = x11 + x8;
         if (x10 == x9) {
             return x8;
         }
@@ -66,7 +68,7 @@ long record_total(struct record *items, int n) {
         x9 = x9 - 0x1;
         x11 = x11 + 0x18;
         x8 = x10 * x12 + x8;
-    } while (x9 != 0x1);
+    } while (x9 != 0x0);
     return x8;
 }
 -- signature
@@ -87,10 +89,11 @@ fn record_total @ 0x2101f0 (size 160)
   blk3 @ 0x210210:
     ret #0x0
   blk4 @ 0x21021c:
+    x10 = (x9 & #0x7ffffffe)
     x8 = #0x0
     x11 = #0x0
     x12 = (x0 + #0x20)
-    x13 = (x9 & #0x7ffffffe)
+    x13 = x10
   blk5 @ 0x210230:
     unsupported: LDUR at 0x210230
     unsupported: LDURSH at 0x210234
@@ -100,7 +103,7 @@ fn record_total @ 0x2101f0 (size 160)
     x12 = (x12 + #0x30)
     x8 = ((x14 * x15) + x8)
     x11 = ((x16 * x17) + x11)
-    brif ne x13, #0x2 -> 0x210230
+    brif ne x13, #0x0 -> 0x210230
   blk6 @ 0x210254:
     x8 = (x11 + x8)
     brif eq x10, x9 -> 0x210288
@@ -113,7 +116,7 @@ fn record_total @ 0x2101f0 (size 160)
     x9 = (x9 - #0x1)
     x11 = (x11 + #0x18)
     x8 = ((x10 * x12) + x8)
-    brif ne x9, #0x1 -> 0x210270
+    brif ne x9, #0x0 -> 0x210270
   blk9 @ 0x210288:
     ret x8
 -- card
@@ -206,7 +209,9 @@ fn word_low_byte @ 0x2102d4 (size 4)
 /* velk pseudo-C: flags_level @ 0x2102d8 */
 uint32_t flags_level(struct flags f) {
     /* unsupported (2 steps): bitfield immr=4 imms=7, bitfield immr=1 imms=3 */
-    return (f == 0x1 ? w9 : w8);
+    t65 = f;
+    f = (f == 0x1 ? w9 : w8);
+    return f;
 }
 -- signature
 uint32_t (struct flags f)
@@ -217,7 +222,9 @@ fn flags_level @ 0x2102d8 (size 20)
   blk0 @ 0x2102d8:
     unsupported: bitfield immr=4 imms=7
     unsupported: bitfield immr=1 imms=3
-    ret select eq w0, #0x1 ? w9, w8
+    t65 = w0
+    w0 = select eq w0, #0x1 ? w9, w8
+    ret w0
 -- card
 {"addr":"0x2102d8","approxTokens":126,"blocks":1,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":2}
 
@@ -229,7 +236,8 @@ uint64_t flags_set_mode(struct flags *f) {
     w8 = f->field_0x0;
     /* unsupported: bitfield immr=31 imms=2 */
     w8 = w8 & 0xfffffff1;
-    f->field_0x0 = w8 | w9;
+    w8 = w8 | w9;
+    f->field_0x0 = w8;
     return f;
 }
 -- signature
@@ -242,7 +250,8 @@ fn flags_set_mode @ 0x2102ec (size 24)
     w8 = load8(x0)
     unsupported: bitfield immr=31 imms=2
     w8 = (w8 & #0xfffffff1)
-    store8((w8 | w9), x0)
+    w8 = (w8 | w9)
+    store8(w8, x0)
     ret x0
 -- card
 {"accesses":["f +0x0:uint8_t"],"addr":"0x2102ec","approxTokens":132,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}

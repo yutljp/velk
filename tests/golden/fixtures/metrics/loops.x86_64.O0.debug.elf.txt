@@ -16,10 +16,7 @@ int count_bits(uint32_t x) {
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = 0x0;
     while (*(uint32_t *)(rbp - 0x4) != 0x0) {
-        eax = *(uint32_t *)(rbp - 0x4);
-        eax = eax & 0x1;
-        eax = eax + *(uint32_t *)(rbp - 0x8);
-        *(uint32_t *)(rbp - 0x8) = eax;
+        *(uint32_t *)(rbp - 0x8) = (*(uint32_t *)(rbp - 0x4) & 0x1) + *(uint32_t *)(rbp - 0x8);
         *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x4) >> 0x1;
     }
     rsp = rsp + 0x8;
@@ -40,10 +37,7 @@ fn count_bits @ 0x2011c0 (size 54)
   blk1 @ 0x2011ce:
     brif eq load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x2011f1
   blk2 @ 0x2011d8:
-    eax = load32((rbp + #0xfffffffffffffffc))
-    eax = (eax & #0x1)
-    eax = (eax + load32((rbp + #0xfffffffffffffff8)))
-    store32(eax, (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffffc)) & #0x1) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
     store32((load32((rbp + #0xfffffffffffffffc)) >> #0x1), (rbp + #0xfffffffffffffffc))
     br 0x2011ce
   blk3 @ 0x2011f1:
@@ -65,9 +59,7 @@ int sum_until(int limit) {
     *(uint32_t *)(rbp - 0x8) = 0x0;
     *(uint32_t *)(rbp - 0xc) = 0x1;
     while (*(uint32_t *)(rbp - 0xc) <= *(uint32_t *)(rbp - 0x4)) {
-        eax = *(uint32_t *)(rbp - 0xc);
-        eax = eax + *(uint32_t *)(rbp - 0x8);
-        *(uint32_t *)(rbp - 0x8) = eax;
+        *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x8);
         *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0xc) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -87,12 +79,9 @@ fn sum_until @ 0x201200 (size 61)
     store32(#0x0, (rbp + #0xfffffffffffffff8))
     store32(#0x1, (rbp + #0xfffffffffffffff4))
   blk1 @ 0x201215:
-    eax = load32((rbp + #0xfffffffffffffff4))
-    brif gt eax, load32((rbp + #0xfffffffffffffffc)) -> 0x201238
+    brif gt load32((rbp + #0xfffffffffffffff4)), load32((rbp + #0xfffffffffffffffc)) -> 0x201238
   blk2 @ 0x201221:
-    eax = load32((rbp + #0xfffffffffffffff4))
-    eax = (eax + load32((rbp + #0xfffffffffffffff8)))
-    store32(eax, (rbp + #0xfffffffffffffff8))
+    store32((load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
     store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
     br 0x201215
   blk3 @ 0x201238:
@@ -115,21 +104,18 @@ int sum_till_neg(int *p, int n) {
     *(uint32_t *)(rbp - 0x10) = 0x0;
     *(uint32_t *)(rbp - 0x14) = 0x0;
     for (;;) {
-        if (eax >= *(uint32_t *)(rbp - 0xc)) {
+        if (*(uint32_t *)(rbp - 0x14) >= *(uint32_t *)(rbp - 0xc)) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x10);
         }
-        rax = *(uint64_t *)(rbp - 0x8);
         rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
-        rax = *(uint32_t *)(rax + rcx * 0x4);
+        rax = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4);
         *(uint32_t *)(rbp - 0x18) = eax;
         if (eax >= 0x0) { goto L_201282; }
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x10);
     L_201282:
-        rax = *(uint32_t *)(rbp - 0x18);
-        rax = eax + *(uint32_t *)(rbp - 0x10);
-        *(uint32_t *)(rbp - 0x10) = eax;
+        *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(rbp - 0x18) + *(uint32_t *)(rbp - 0x10);
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -150,21 +136,17 @@ fn sum_till_neg @ 0x201240 (size 94)
     store32(#0x0, (rbp + #0xfffffffffffffff0))
     store32(#0x0, (rbp + #0xffffffffffffffec))
   blk1 @ 0x201259:
-    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201299
+    brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201299
   blk2 @ 0x201265:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
+    rax = (load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff)
     store32((rax & #0xffffffff), (rbp + #0xffffffffffffffe8))
     brif ge (rax & #0xffffffff), #0x0 -> 0x201282
   blk3 @ 0x20127d:
     br 0x201299
   blk4 @ 0x201282:
-    rax = (load32((rbp + #0xffffffffffffffe8)) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    store32((((load32((rbp + #0xffffffffffffffe8)) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x201259
   blk5 @ 0x201299:
     rsp = (rsp + #0x8)
@@ -186,25 +168,20 @@ int sum_until_zero(int *p, int n) {
     *(uint32_t *)(rbp - 0x10) = 0x0;
     *(uint32_t *)(rbp - 0x14) = 0x0;
     for (;;) {
-        if (eax >= *(uint32_t *)(rbp - 0xc)) {
+        if (*(uint32_t *)(rbp - 0x14) >= *(uint32_t *)(rbp - 0xc)) {
             rsp = rsp + 0x8;
             return *(uint32_t *)(rbp - 0x10);
         }
-        rax = *(uint64_t *)(rbp - 0x8);
         rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
-        if (*(uint32_t *)(rax + rcx * 0x4) != 0x0) { goto L_2012dc; }
+        if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) != 0x0) { goto L_2012dc; }
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x10);
     L_2012dc:
-        rax = *(uint64_t *)(rbp - 0x8);
         rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
-        if (*(uint32_t *)(rax + rcx * 0x4) < 0x0) {
+        if (*(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) < 0x0) {
         } else {
-            rax = *(uint64_t *)(rbp - 0x8);
             rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
-            rax = *(uint32_t *)(rax + rcx * 0x4);
-            rax = eax + *(uint32_t *)(rbp - 0x10);
-            *(uint32_t *)(rbp - 0x10) = eax;
+            *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
         }
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
     }
@@ -226,28 +203,22 @@ fn sum_until_zero @ 0x2012a0 (size 119)
     store32(#0x0, (rbp + #0xfffffffffffffff0))
     store32(#0x0, (rbp + #0xffffffffffffffec))
   blk1 @ 0x2012b9:
-    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201312
+    brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201312
   blk2 @ 0x2012c5:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    brif ne load32((rax + (rcx * #0x4))), #0x0 -> 0x2012dc
+    brif ne load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))), #0x0 -> 0x2012dc
   blk3 @ 0x2012d7:
     br 0x201312
   blk4 @ 0x2012dc:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    brif ge load32((rax + (rcx * #0x4))), #0x0 -> 0x2012f3
+    brif ge load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))), #0x0 -> 0x2012f3
   blk5 @ 0x2012ee:
     br 0x201304
   blk6 @ 0x2012f3:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32((((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
   blk7 @ 0x201304:
-    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x2012b9
   blk8 @ 0x201312:
     rsp = (rsp + #0x8)

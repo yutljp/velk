@@ -1,6 +1,4 @@
-use crate::ir::cfg::successors;
-
-use crate::ir::cfg::cyclic_blocks;
+use crate::ir::cfg::{cyclic_blocks, live_in, live_out, opaque};
 use crate::ir::visit::statement_registers;
 use crate::ir::{FunctionIr, Stmt};
 use crate::passes::frame::reads_outside_frame;
@@ -8,81 +6,14 @@ use crate::passes::frame::reads_outside_frame;
 /// Dead-store elimination over the control flow graph: removes a definition
 /// that no path reads before overwriting it.
 pub fn dce_flow(ir: &mut FunctionIr) {
-    let count = ir.blocks.len();
-    if count == 0 {
-        return;
-    }
-    // An unmodeled instruction or an indirect jump may read anything, so
-    // the blocks holding one keep every definition and read everything.
-    let opaque: Vec<bool> = ir
-        .blocks
-        .iter()
-        .map(|block| {
-            block.stmts.iter().any(|stmt| {
-                matches!(
-                    stmt,
-                    Stmt::Unsupported { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None }
-                )
-            })
-        })
-        .collect();
-    // Every register any statement could name, for the opaque blocks.
-    let universe: std::collections::HashSet<u16> = (0..=31u16)
-        .chain(crate::ir::TEMP_BASE..crate::ir::TEMP_BASE + 64)
-        .collect();
-    // A call may read any register this function writes, so those stay live
-    // across it.
-    let mut clobbered: std::collections::HashSet<u16> = std::collections::HashSet::new();
-    for block in &ir.blocks {
-        for stmt in &block.stmts {
-            clobbered.extend(statement_registers(stmt).0);
-        }
-    }
-    let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();
-    let mut live_in: Vec<std::collections::HashSet<u16>> = vec![Default::default(); count];
-    // Backward liveness to a fixpoint, with an iteration cap.
-    for _ in 0..count.max(4) * 2 {
-        let mut changed = false;
-        for index in (0..count).rev() {
-            let mut live: std::collections::HashSet<u16> = successors[index]
-                .iter()
-                .flat_map(|next| live_in[*next].iter().copied())
-                .collect();
-            for stmt in ir.blocks[index].stmts.iter().rev() {
-                if matches!(stmt, Stmt::Call { .. }) {
-                    live.extend(clobbered.iter().copied());
-                }
-                let (writes, reads) = statement_registers(stmt);
-                for written in &writes {
-                    live.remove(written);
-                }
-                live.extend(reads);
-            }
-            if opaque[index] {
-                live.extend(universe.iter().copied());
-            }
-            if live != live_in[index] {
-                live_in[index] = live;
-                changed = true;
-            }
-        }
-        if !changed {
-            break;
-        }
-    }
-    for index in 0..count {
-        if opaque[index] {
+    let live_in = live_in(ir);
+    for index in 0..ir.blocks.len() {
+        if opaque(&ir.blocks[index]) {
             continue;
         }
-        let mut live: std::collections::HashSet<u16> = successors[index]
-            .iter()
-            .flat_map(|next| live_in[*next].iter().copied())
-            .collect();
+        let mut live = live_out(ir, &live_in, index);
         let mut keep: Vec<bool> = vec![true; ir.blocks[index].stmts.len()];
         for (position, stmt) in ir.blocks[index].stmts.iter().enumerate().rev() {
-            if matches!(stmt, Stmt::Call { .. }) {
-                live.extend(clobbered.iter().copied());
-            }
             let (writes, reads) = statement_registers(stmt);
             let pure = match stmt {
                 Stmt::Assign { value, .. } => !reads_outside_frame(value),
@@ -130,6 +61,9 @@ pub fn dce(ir: &mut FunctionIr) {
     // iteration, so its own reads are live at its boundary too.
     let cyclic = cyclic_blocks(ir);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
+        if opaque(block) {
+            continue;
+        }
         let mut outer: std::collections::HashSet<u16> = reads
             .iter()
             .enumerate()
@@ -185,4 +119,36 @@ fn drop_dead_constants(block: &mut crate::ir::Block, outer_reads: &std::collecti
         .filter_map(|(stmt, keep)| keep.then_some(stmt))
         .collect();
     block.stmts = kept;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{dce, dce_flow};
+    use crate::ir::{Convention, Expr, FunctionIr, RegRef, Stmt};
+    use crate::loader::Isa;
+
+    #[test]
+    fn keeps_the_arguments_a_call_reads() {
+        let stmts = vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: 0,
+                    width: 64,
+                },
+                value: Expr::Const(5),
+            },
+            Stmt::Call {
+                target: Some(0x100),
+                convention: Convention::Aapcs64,
+            },
+            Stmt::Ret {
+                value: Expr::reg(0, 64),
+            },
+        ];
+        for pass in [dce, dce_flow] {
+            let mut ir = FunctionIr::single_block(Isa::AArch64, stmts.clone());
+            pass(&mut ir);
+            assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
+        }
+    }
 }

@@ -3,7 +3,7 @@ use iced_x86::{
     ConditionCode, Decoder, DecoderOptions, FlowControl, Instruction, Mnemonic, OpKind, Register,
 };
 
-use super::{Decoded, MAX_INSTRUCTIONS, Machine};
+use super::{Decoded, MAX_INSTRUCTIONS, Machine, Write, call, preserve_compare, tail_call};
 use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 use crate::loader::Image;
 
@@ -37,6 +37,12 @@ impl<'a> Lifter<'a> {
     }
 
     fn assign(&mut self, index: u16, width: u8, value: Expr) {
+        preserve_compare(
+            &mut self.last_compare,
+            // A partial write keeps the register's other bits.
+            Write::Register(index, matches!(width, 32 | 64).then_some(&value)),
+            &mut self.stmts,
+        );
         let value = match width {
             32 => Expr::bin(BinOp::And, value, Expr::constant(0xffff_ffff)),
             16 | 8 => {
@@ -209,6 +215,7 @@ fn write_destination(lifter: &mut Lifter, ins: &Instruction, value: Expr) {
         }
         OpKind::Memory => {
             if let (Some(addr), Some(width)) = (memory_address(ins), memory_width(ins)) {
+                preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
                 lifter.stmts.push(Stmt::Store { addr, value, width });
             }
         }
@@ -294,6 +301,32 @@ fn condition(code: ConditionCode) -> Option<Cond> {
         ns => Cond::Ge,
         _ => return Option::None,
     })
+}
+
+/// The value with each read of the stack pointer offset by `delta`, for a
+/// value read before the stack pointer moves down by `delta`.
+fn stack_reads_before(value: Expr, delta: u64) -> Expr {
+    match value {
+        Expr::Reg {
+            index: RSP,
+            width: 64,
+        } => Expr::bin(BinOp::Add, Lifter::read_reg(RSP, 64), Expr::constant(delta)),
+        Expr::Bin { op, lhs, rhs } => Expr::bin(
+            op,
+            stack_reads_before(*lhs, delta),
+            stack_reads_before(*rhs, delta),
+        ),
+        Expr::Load {
+            addr,
+            width,
+            signed,
+        } => Expr::Load {
+            addr: Box::new(stack_reads_before(*addr, delta)),
+            width,
+            signed,
+        },
+        other => other,
+    }
 }
 
 fn stack_adjust(lifter: &mut Lifter, delta: i64) {
@@ -585,17 +618,18 @@ fn lift_instruction(
             }
         }
         Mnemonic::Call => {
-            lifter.stmts.push(Stmt::Call {
-                target: Some(resolved_target(ins, relocation_target)),
-            });
+            lifter.stmts.push(call(
+                lifter.image,
+                Some(resolved_target(ins, relocation_target)),
+            ));
         }
         Mnemonic::Jmp => {
             if ins.op0_kind() == OpKind::NearBranch64 {
                 let target = resolved_target(ins, relocation_target);
                 if tail_call {
-                    lifter.stmts.push(Stmt::Call {
-                        target: Some(target),
-                    });
+                    lifter
+                        .stmts
+                        .extend(self::tail_call(lifter.image, Some(target)));
                 } else {
                     lifter.stmts.push(Stmt::Br {
                         target: Some(target),
@@ -616,8 +650,11 @@ fn lift_instruction(
             let Some(value) = operand(lifter, ins, 0) else {
                 return false;
             };
+            // The value is read before the stack pointer moves.
+            let value = stack_reads_before(value, 8);
             stack_adjust(lifter, -8);
             let address = Lifter::read_reg(RSP, 64);
+            preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
             lifter.stmts.push(Stmt::Store {
                 addr: address,
                 value,
@@ -631,11 +668,16 @@ fn lift_instruction(
                 width: 8,
                 signed: false,
             };
-            stack_adjust(lifter, 8);
-            if let OpKind::Register = ins.op0_kind()
-                && let Some((index, width)) = gpr(ins.op0_register())
-            {
-                lifter.assign(index, width, value);
+            match gpr(ins.op0_register()) {
+                // `pop rsp` leaves the loaded value in place of the increment.
+                Some((RSP, width)) if ins.op0_kind() == OpKind::Register => {
+                    lifter.assign(RSP, width, value)
+                }
+                Some((index, width)) if ins.op0_kind() == OpKind::Register => {
+                    lifter.assign(index, width, value);
+                    stack_adjust(lifter, 8);
+                }
+                _ => stack_adjust(lifter, 8),
             }
         }
         Mnemonic::Nop | Mnemonic::Endbr64 => {}

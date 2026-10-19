@@ -107,7 +107,8 @@ fn u64 @ 0x80 (size 16)
 -- decompile
 /* velk pseudo-C: sdiv16x @ 0x90 */
 int32_t sdiv16x(int32_t a0) {
-    return a0 / 0x10;
+    eax = a0 / 0x10;
+    return eax;
 }
 -- signature
 int32_t (int32_t a0)
@@ -116,7 +117,8 @@ int32_t (int32_t a0)
 -- ir
 fn sdiv16x @ 0x90 (size 12)
   blk0 @ 0x90:
-    ret ((rdi & #0xffffffff) / #0x10)
+    eax = (rdi / #0x10)
+    ret eax
 -- card
 {"addr":"0x90","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sdiv16x","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
 
@@ -279,7 +281,8 @@ fn umod10x @ 0x170 (size 35)
 -- decompile
 /* velk pseudo-C: pdiv64 @ 0x1a0 */
 int32_t pdiv64(int32_t a0) {
-    return a0 / 0x40;
+    eax = a0 / 0x40;
+    return eax;
 }
 -- signature
 int32_t (int32_t a0)
@@ -288,7 +291,8 @@ int32_t (int32_t a0)
 -- ir
 fn pdiv64 @ 0x1a0 (size 12)
   blk0 @ 0x1a0:
-    ret ((rdi & #0xffffffff) / #0x40)
+    eax = (rdi / #0x40)
+    ret eax
 -- card
 {"addr":"0x1a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"pdiv64","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
 

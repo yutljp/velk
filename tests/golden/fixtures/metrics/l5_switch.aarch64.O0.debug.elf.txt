@@ -1,4 +1,4 @@
-# metrics/l5_switch.aarch64.O0.debug.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
+# metrics/l5_switch.aarch64.O0.debug.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x210334 228 dense symtab,dwarf
 0x210418 20 c0 symtab,dwarf
 0x21042c 24 c1 symtab,dwarf
@@ -24,122 +24,130 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2205e8 .bss */
 int dense(void) {
-    uint64_t local_0; /* [sp-10] */
-    uint64_t local_1; /* [sp-8] */
-    uint64_t local_2; /* [sp-20] */
+    uint64_t local_0; /* [sp-20] */
 
-    if (x8 - 0xf > 0xf /* unsigned */) {
+    sp = sp - 0x20;
+    /* unsupported (2 steps): STUR at 0x210340, LDUR at 0x210344 */
+    x8 = w8 - 0xa;
+    t65 = w8 + 0xa;
+    x8 = w8;
+    local_0 = x8;
+    x8 = x8 - 0xf;
+    if (x8 + 0xf > 0xf /* unsigned */) {
         x8 = 0x220000;
+        dword_2205e8 = 0x0;
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
     }
     x8 = 0x210368;
-    x8 = 0x210368 + dword_200158[local_2];
-    switch (w8 - 0xa) {
-    case 15:
+    x9 = dword_200158[local_0];
+    x8 = 0x210368 + x9;
+    switch (w8 - 0xa - 0xf) {
+    case -15:
         c0();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 16:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -14:
         c1();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 17:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -13:
         c2();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 18:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -12:
         c3();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 19:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -11:
         c4();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 20:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -10:
         c5();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 21:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -9:
         c6();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 22:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -8:
         c7();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 23:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -7:
         c8();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 24:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -6:
         c9();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 25:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -5:
         c10();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 26:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -4:
         c11();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 27:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -3:
         c12();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 28:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -2:
         c13();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 29:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case -1:
         c14();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
-    case 30:
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
+    case 0:
         c15();
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
     default:
         x8 = 0x220000;
+        dword_2205e8 = 0x0;
         x8 = 0x220000;
-        x29 = local_0;
-        x30 = local_1;
-        return dword_2205e8;
+        w0 = dword_2205e8;
+        sp = sp + 0x20;
+        return w0;
     }
 }
 -- signature
@@ -150,18 +158,20 @@ int ()
 -- ir
 fn dense @ 0x210334 (size 228)
   blk0 @ 0x210334:
-    store64(x29, (sp + #0xfffffffffffffff0))
-    store64(x30, (sp + #0xfffffffffffffff8))
+    sp = (sp - #0x20)
     unsupported: STUR at 0x210340
     unsupported: LDUR at 0x210344
     x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
+    t65 = (w8 + #0xa)
     x8 = (x8 & #0xffffffff)
-    store64(x8, (sp + #0xffffffffffffffe0))
-    brif hi (x8 - #0xf), #0xf -> 0x2103f8
+    store64(x8, sp)
+    x8 = (x8 - #0xf)
+    brif hi (x8 + #0xf), #0xf -> 0x2103f8
   blk1 @ 0x21035c:
     x8 = #0x210368
-    x8 = (#0x210368 + load32((#0x200158 + (load64((sp + #0xffffffffffffffe0)) << #0x2)))s)
-    switch (((x8 & #0xffffffff) - #0xa) & #0xffffffff) [15->0x210378, 16->0x210380, 17->0x210388, 18->0x210390, 19->0x210398, 20->0x2103a0, 21->0x2103a8, 22->0x2103b0, 23->0x2103b8, 24->0x2103c0, 25->0x2103c8, 26->0x2103d0, 27->0x2103d8, 28->0x2103e0, 29->0x2103e8, 30->0x2103f0] default 0x2103f8
+    x9 = load32((#0x200158 + (load64(sp) << #0x2)))s
+    x8 = (#0x210368 + x9)
+    switch ((((x8 & #0xffffffff) - #0xa) & #0xffffffff) - #0xf) [-15->0x210378, -14->0x210380, -13->0x210388, -12->0x210390, -11->0x210398, -10->0x2103a0, -9->0x2103a8, -8->0x2103b0, -7->0x2103b8, -6->0x2103c0, -5->0x2103c8, -4->0x2103d0, -3->0x2103d8, -2->0x2103e0, -1->0x2103e8, 0->0x2103f0] default 0x2103f8
   blk2 @ 0x210378:
     call 0x210418
     br 0x210404
@@ -212,12 +222,13 @@ fn dense @ 0x210334 (size 228)
     br 0x210404
   blk18 @ 0x2103f8:
     x8 = #0x220000
+    store32(#0x0, #0x2205e8)
     br 0x210404
   blk19 @ 0x210404:
     x8 = #0x220000
-    x29 = load64((sp + #0xfffffffffffffff0))
-    x30 = load64((sp + #0xfffffffffffffff8))
-    ret load32(#0x2205e8)
+    w0 = load32(#0x2205e8)
+    sp = (sp + #0x20)
+    ret w0
 -- card
 {"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":228,"unsupported":2}
 
@@ -545,23 +556,25 @@ fn c15 @ 0x210558 (size 24)
 -- decompile
 /* velk pseudo-C: sparse @ 0x210570 */
 int sparse(int x) {
-    uint32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-4] */
 
-    if (x - 0x1 == 0x1) {
-        local_0 = 0x64;
-        return local_0;
+    w8 = x;
+    local_0 = w8;
+    if (w8 - 0x1 == 0x0) {
+        local_1 = 0x64;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0x32 == 0x32) {
-        local_0 = 0x7;
-        return local_0;
+    if (local_0 - 0x32 == 0x0) {
+        local_1 = 0x7;
+        return local_1;
     }
-    if (*(uint32_t *)(sp + 0x4) - 0x12c != 0x12c) {
-    } else {
-        local_0 = 0x12c;
-        return local_0;
+    if (local_0 - 0x12c == 0x0) {
+        local_1 = 0x12c;
+        return local_1;
     }
-    local_0 = 0xffffffff;
-    return local_0;
+    local_1 = 0xffffffff;
+    return local_1;
 }
 -- signature
 int (int x)
@@ -570,15 +583,17 @@ int (int x)
 -- ir
 fn sparse @ 0x210570 (size 120)
   blk0 @ 0x210570:
-    brif eq (((w0 & #0xffffffff) - #0x1) & #0xffffffff), #0x1 -> 0x2105ac
+    x8 = (w0 & #0xffffffff)
+    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff4))
+    brif eq (((x8 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2105ac
   blk1 @ 0x210588:
     br 0x21058c
   blk2 @ 0x21058c:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0x32) & #0xffffffff), #0x32 -> 0x2105b8
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0x32) & #0xffffffff), #0x0 -> 0x2105b8
   blk3 @ 0x210598:
     br 0x21059c
   blk4 @ 0x21059c:
-    brif eq (((load32((sp + #0x4)) & #0xffffffff) - #0x12c) & #0xffffffff), #0x12c -> 0x2105c4
+    brif eq (((load32((sp + #0xfffffffffffffff4)) & #0xffffffff) - #0x12c) & #0xffffffff), #0x0 -> 0x2105c4
   blk5 @ 0x2105a8:
     br 0x2105d0
   blk6 @ 0x2105ac:

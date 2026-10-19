@@ -101,8 +101,27 @@ fn precedence(expr: &Expr) -> u8 {
 }
 
 /// Binding strength of the printed text, which differs from the node's own
-/// when a 32-bit mask is elided or printed with its own parentheses.
+/// when it prints as a unary operator, a call, or with its own parentheses,
+/// or when a 32-bit mask is elided.
 fn printed_precedence(expr: &Expr, ctx: &Ctx<'_>) -> u8 {
+    match expr {
+        Expr::Select { .. }
+        | Expr::Bin {
+            op: BinOp::MulHigh | BinOp::MulHighS,
+            ..
+        } => return 13,
+        Expr::Bin {
+            op: BinOp::Sub,
+            lhs,
+            ..
+        } if matches!(lhs.as_ref(), Expr::Const(0)) => return 12,
+        Expr::Bin {
+            op: BinOp::Xor,
+            rhs,
+            ..
+        } if matches!(rhs.as_ref(), Expr::Const(u64::MAX)) => return 12,
+        _ => {}
+    }
     if let Expr::Bin {
         op: BinOp::And,
         lhs,
@@ -258,7 +277,7 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
             }
             let address = render_expr(addr, ctx);
             match ctx.slots.get(&address) {
-                Some(name) => name.clone(),
+                Some(name) => slot_access(name, *width, *signed, ctx),
                 None => match global_name(addr, *width, ctx) {
                     Some(name) => name,
                     None => format!("*({} *)({})", type_of(*width, *signed), address),
@@ -280,6 +299,17 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
             operand(then, ctx, 1, false),
             operand(els, ctx, 1, true)
         ),
+    }
+}
+
+/// A local read or written whole by name, and through a cast when the access
+/// covers only part of it.
+pub(crate) fn slot_access(name: &str, width: u8, signed: bool, ctx: &Ctx<'_>) -> String {
+    match ctx.local_widths.get(name) {
+        Some(declared) if *declared != width => {
+            format!("*({} *)&{name}", type_of(width, signed))
+        }
+        _ => name.to_owned(),
     }
 }
 
@@ -333,8 +363,12 @@ fn mask_matches_local(lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> bool {
 }
 
 pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> String {
-    let a = render_expr(lhs, ctx);
-    let b = render_expr(rhs, ctx);
+    let strength = match cond {
+        Cond::Eq | Cond::Ne => 7,
+        _ => 8,
+    };
+    let a = operand(lhs, ctx, strength, false);
+    let b = operand(rhs, ctx, strength, true);
     match cond {
         Cond::Eq => format!("{a} == {b}"),
         Cond::Ne => format!("{a} != {b}"),

@@ -24,14 +24,107 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202760 .bss */
 int dense(int x) {
-    if (eax - 0xf - 0xf > 0x0 /* unsigned */) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    rsp = rsp - 0x10;
+    *(uint32_t *)(rbp - 0x4) = x;
+    rax = ((x - 0xa) & 0xffffffff);
+    rcx = eax;
+    *(uint64_t *)(rbp - 0x10) = rcx;
+    rax = eax - 0xf;
+    if (eax > 0x0 /* unsigned */) {
         dword_202760 = 0x0;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return dword_202760;
     }
+    rcx = 0x200158;
     rax = (int32_t)(dword_200158[*(uint64_t *)(rbp - 0x10)]);
-    goto *(rax + 0x200158);
+    rax = rax + 0x200158;
+    goto *(rax);
+L_201434:
+    c0();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_20143e:
+    c1();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_201448:
+    c2();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_201452:
+    c3();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_20145c:
+    c4();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_201466:
+    c5();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_201470:
+    c6();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_20147a:
+    c7();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_201484:
+    c8();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_20148e:
+    c9();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_201498:
+    c10();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_2014a2:
+    c11();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_2014ac:
+    c12();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_2014b6:
+    c13();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_2014c0:
+    c14();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
+L_2014ca:
+    c15();
+    rsp = rsp + 0x10;
+    rsp = rsp + 0x8;
+    return dword_202760;
 }
 -- signature
 int (int x)
@@ -47,11 +140,15 @@ fn dense @ 0x201400 (size 234)
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
     rax = (((edi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
-    store64((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    brif hi ((((rax & #0xffffffff) - #0xf) & #0xffffffff) - #0xf), #0x0 -> 0x2014d4
+    rcx = (rax & #0xffffffff)
+    store64(rcx, (rbp + #0xfffffffffffffff0))
+    rax = (((rax & #0xffffffff) - #0xf) & #0xffffffff)
+    brif hi eax, #0x0 -> 0x2014d4
   blk1 @ 0x201420:
+    rcx = #0x200158
     rax = sext32(load32((#0x200158 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
-    br (rax + #0x200158)
+    rax = (rax + #0x200158)
+    br rax
   blk2 @ 0x201434:
     call 0x2014f0
     br 0x2014de
@@ -465,18 +562,25 @@ fn c15 @ 0x2016d0 (size 21)
 -- decompile
 /* velk pseudo-C: sparse @ 0x2016f0 */
 int sparse(int x) {
-    if (eax - 0x2 == 0x0) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x8) = x;
+    eax = x;
+    *(uint32_t *)(rbp - 0xc) = eax;
+    if (eax == 0x1) {
         *(uint32_t *)(rbp - 0x4) = 0x64;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
     }
-    if (*(uint32_t *)(rbp - 0xc) - 0x64 == 0x0) {
+    if (*(uint32_t *)(rbp - 0xc) == 0x32) {
         *(uint32_t *)(rbp - 0x4) = 0x7;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
     }
-    if (*(uint32_t *)(rbp - 0xc) - 0x258 != 0x0) {
-    } else {
+    if (*(uint32_t *)(rbp - 0xc) == 0x12c) {
         *(uint32_t *)(rbp - 0x4) = 0x12c;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
@@ -498,15 +602,15 @@ fn sparse @ 0x2016f0 (size 111)
     store32(edi, (rbp + #0xfffffffffffffff8))
     eax = edi
     store32(eax, (rbp + #0xfffffffffffffff4))
-    brif eq (eax + #0xfffffffffffffffe), #0x0 -> 0x20172f
+    brif eq eax, #0x1 -> 0x20172f
   blk1 @ 0x201706:
     br 0x20170b
   blk2 @ 0x20170b:
-    brif eq (load32((rbp + #0xfffffffffffffff4)) + #0xffffffffffffff9c), #0x0 -> 0x20173b
+    brif eq load32((rbp + #0xfffffffffffffff4)), #0x32 -> 0x20173b
   blk3 @ 0x201717:
     br 0x20171c
   blk4 @ 0x20171c:
-    brif eq (load32((rbp + #0xfffffffffffffff4)) + #0xfffffffffffffda8), #0x0 -> 0x201747
+    brif eq load32((rbp + #0xfffffffffffffff4)), #0x12c -> 0x201747
   blk5 @ 0x20172a:
     br 0x201753
   blk6 @ 0x20172f:

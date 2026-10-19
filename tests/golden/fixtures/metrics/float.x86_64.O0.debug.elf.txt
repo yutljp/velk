@@ -1,4 +1,4 @@
-# metrics/float.x86_64.O0.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 10 unsupported, 1 gotos
+# metrics/float.x86_64.O0.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 11 unsupported, 1 gotos
 0x2011f0 129 average symtab,dwarf
 0x201280 49 lerp symtab,dwarf
 0x2012c0 16 truncate_to_int symtab,dwarf
@@ -10,7 +10,6 @@
 /* velk pseudo-C: average @ 0x2011f0 */
 double average(double *values, int n) {
     uint64_t local_0; /* [sp-8] */
-    uint64_t local_1; /* [sp+0] */
 
     rsp = rsp - 0x8;
     local_0 = rbp;
@@ -29,11 +28,13 @@ double average(double *values, int n) {
         /* unsupported (4 steps): Movsd at 0x201245, Cvtsi2sd at 0x20124a, Divsd at 0x20124f, Movsd at 0x201253 */
     } else {
         /* unsupported (3 steps): Xorps at 0x20125d, Movsd at 0x201260, Movsd at 0x20126a */
-        rbp = local_1;
+        rbp = local_0;
+        rsp = rsp + 0x8;
         return rax;
     }
     /* unsupported: Movsd at 0x20126a */
-    rbp = local_1;
+    rbp = local_0;
+    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -76,7 +77,8 @@ fn average @ 0x2011f0 (size 129)
     br 0x20126a
   blk6 @ 0x20126a:
     unsupported: Movsd at 0x20126a
-    rbp = load64((rsp + #0x8))
+    rbp = load64(rsp)
+    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":129,"unsupported":12}
@@ -166,8 +168,12 @@ int compare_doubles(void) {
     rsp = rsp + 0x8;
     return *(uint32_t *)(rbp - 0x14);
 L_20131f:
-    /* unsupported (3 steps): Movsd at 0x20131f, Movsd at 0x201324, Ucomisd at 0x201330 */
-    *(uint32_t *)(rbp - 0x14) = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0);
+    /* unsupported (2 steps): Movsd at 0x20131f, Movsd at 0x201324 */
+    rax = 0x0;
+    ecx = 0x1;
+    /* unsupported: Ucomisd at 0x201330 */
+    rax = (0x0 > 0x0 /* unsigned */ ? ecx : eax);
+    *(uint32_t *)(rbp - 0x14) = eax;
     rsp = rsp + 0x8;
     return *(uint32_t *)(rbp - 0x14);
 }
@@ -193,8 +199,11 @@ fn compare_doubles @ 0x2012f0 (size 79)
   blk2 @ 0x20131f:
     unsupported: Movsd at 0x20131f
     unsupported: Movsd at 0x201324
+    rax = #0x0
+    rcx = #0x1
     unsupported: Ucomisd at 0x201330
-    store32((select hi #0x0, #0x0 ? #0x1, #0x0 & #0xffffffff), (rbp + #0xffffffffffffffec))
+    rax = (select hi #0x0, #0x0 ? (rcx & #0xffffffff), (rax & #0xffffffff) & #0xffffffff)
+    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffec))
   blk3 @ 0x20133a:
     rsp = (rsp + #0x8)
     ret (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)

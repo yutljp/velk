@@ -18,14 +18,15 @@ double average(double *values, int n) {
     if (n < 0x4 /* unsigned */) {
         x9 = 0x0;
     } else {
+        x9 = x8 & 0x7ffffffc;
         x10 = values + 0x10;
-        x11 = x8 & 0x7ffffffc;
+        x11 = x9;
         do {
             /* unsupported: SIMD vector pair load */
             x11 = x11 - 0x4;
             x10 = x10 + 0x20;
             /* unsupported (6 steps): DUP at 0x2101d4, FADD at 0x2101d8, DUP at 0x2101dc, FADD at 0x2101e0, FADD at 0x2101e4, FADD at 0x2101e8 */
-        } while (x11 != 0x4);
+        } while (x11 != 0x0);
         if (x9 == x8) { goto L_210210; }
     }
     x10 = values + (x9 << 0x3);
@@ -33,7 +34,7 @@ double average(double *values, int n) {
     do {
         x8 = x8 - 0x1;
         /* unsupported: FADD at 0x210208 */
-    } while (x8 != 0x1);
+    } while (x8 != 0x0);
 L_210210:
     if (n <= 0x0) {
         /* unsupported: MOVI at 0x210224 */
@@ -58,8 +59,9 @@ fn average @ 0x21019c (size 144)
     x9 = #0x0
     br 0x2101f8
   blk3 @ 0x2101bc:
+    x9 = (x8 & #0x7ffffffc)
     x10 = (x0 + #0x10)
-    x11 = (x8 & #0x7ffffffc)
+    x11 = x9
   blk4 @ 0x2101c8:
     unsupported: SIMD vector pair load
     x11 = (x11 - #0x4)
@@ -70,7 +72,7 @@ fn average @ 0x21019c (size 144)
     unsupported: FADD at 0x2101e0
     unsupported: FADD at 0x2101e4
     unsupported: FADD at 0x2101e8
-    brif ne x11, #0x4 -> 0x2101c8
+    brif ne x11, #0x0 -> 0x2101c8
   blk5 @ 0x2101f0:
     brif eq x9, x8 -> 0x210210
   blk6 @ 0x2101f8:
@@ -79,7 +81,7 @@ fn average @ 0x21019c (size 144)
   blk7 @ 0x210200:
     x8 = (x8 - #0x1)
     unsupported: FADD at 0x210208
-    brif ne x8, #0x1 -> 0x210200
+    brif ne x8, #0x0 -> 0x210200
   blk8 @ 0x210210:
     brif le w1, #0x0 -> 0x210224
   blk9 @ 0x210218:
@@ -156,7 +158,8 @@ fn widen @ 0x210240 (size 12)
 /* velk pseudo-C: compare_doubles @ 0x21024c */
 int compare_doubles(void) {
     /* unsupported: FCMP at 0x21024c */
-    w0 = ((0x0 > 0x0 ? 0x1 : 0x0) >= 0x0 ? (0x0 > 0x0 ? 0x1 : 0x0) : 0xffffffff);
+    w8 = (0x0 > 0x0 ? 0x1 : 0x0);
+    w0 = (w8 >= 0x0 ? w8 : 0xffffffff);
     return w0;
 }
 -- signature
@@ -167,7 +170,8 @@ int ()
 fn compare_doubles @ 0x21024c (size 16)
   blk0 @ 0x21024c:
     unsupported: FCMP at 0x21024c
-    w0 = select ge select gt #0x0, #0x0 ? #0x1, #0x0, #0x0 ? select gt #0x0, #0x0 ? #0x1, #0x0, #0xffffffff
+    w8 = select gt #0x0, #0x0 ? #0x1, #0x0
+    w0 = select ge w8, #0x0 ? w8, #0xffffffff
     ret w0
 -- card
 {"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}

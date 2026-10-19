@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 1778 unsupported, 6123 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 2124 unsupported, 5409 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1352,16 +1352,17 @@ fn main.add @ 0x466ca0 (size 32)
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
 uint64_t main_divmod(uint64_t a0, uint64_t a1) {
-    if (a1 & a1 == 0x0) { goto L_466ce1; }
-    if (a1 == 0xffffffffffffffff) {
+    switch (a1) {
+    case -1:
         a0 = -a0;
-    } else {
+        return a0;
+    case 0:
+        runtime_panicdivide();
+        __builtin_trap();
+    default:
         a0 = a0 / a1;
+        return a0;
     }
-    return a0;
-L_466ce1:
-    runtime_panicdivide();
-    __builtin_trap();
 }
 -- signature
 uint64_t (uint64_t a0, uint64_t a1)
@@ -1370,7 +1371,7 @@ uint64_t (uint64_t a0, uint64_t a1)
 -- ir
 fn main.divmod @ 0x466cc0 (size 64)
   blk0 @ 0x466cc0:
-    brif eq (rbx & rbx), #0x0 -> 0x466ce1
+    brif eq rbx, #0x0 -> 0x466ce1
   blk1 @ 0x466cc9:
     brif ne rbx, #0xffffffffffffffff -> 0x466cd6
   blk2 @ 0x466ccf:
@@ -1484,17 +1485,24 @@ fn main.sumSlice @ 0x466d00 (size 32)
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* struct: a0 +0x10:uint32_t */
 uint32_t main_kindName(uint32_t *a0, uint64_t a1) {
-    if (a0 & a0 == 0x0) {
+    uint64_t local_0; /* [sp+8] */
+    uint64_t local_1; /* [sp+10] */
+
+    local_0 = a0;
+    local_1 = a1;
+    if (a0 == 0x0) {
         return 0x0;
     }
-    if (*(uint32_t *)(a0 + 0x10) != 0x778cdb8) { goto L_466d4c; }
+    ecx = a0->field_0x10;
+    if (ecx != 0x778cdb8) { goto L_466d4c; }
     if (a0 != 0x46d1c0) {
         return 0x0;
     }
     return 0x2;
-    do {
+L_466d4c:
+    if (ecx != 0xcb735792) {
         return 0x0;
-    } while (ecx != 0xcb735792);
+    }
     if (a0 != 0x46d400) {
         return 0x0;
     }
@@ -1510,9 +1518,10 @@ fn main.kindName @ 0x466d20 (size 96)
   blk0 @ 0x466d20:
     store64(rax, (rsp + #0x8))
     store64(rbx, (rsp + #0x10))
-    brif eq (rax & rax), #0x0 -> 0x466d6b
+    brif eq rax, #0x0 -> 0x466d6b
   blk1 @ 0x466d2f:
-    brif ne (load32((rax + #0x10)) & #0xffffffff), #0x778cdb8 -> 0x466d4c
+    rcx = (load32((rax + #0x10)) & #0xffffffff)
+    brif ne (rcx & #0xffffffff), #0x778cdb8 -> 0x466d4c
   blk2 @ 0x466d3a:
     brif ne rax, #0x46d1c0 -> 0x466d6b
   blk3 @ 0x466d46:
@@ -1568,45 +1577,57 @@ fn main.kindName @ 0x466d20 (size 96)
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d80 */
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
+/* ref: 0x4967e8 -> 0x1 ".text" */
 uint64_t main_main(void) {
-    uint64_t local_0; /* [sp-8] */
-    uint64_t local_1; /* [sp-38] */
-    uint64_t local_2; /* [sp-40] */
-    uint64_t local_3; /* [sp-28] */
-    uint64_t local_4; /* [sp-20] */
-    uint64_t local_5; /* [sp-18] */
-    uint64_t local_6; /* [sp-30] */
-    uint64_t local_7; /* [sp-10] */
+    uint64_t local_0; /* [sp-38] */
+    uint64_t local_1; /* [sp-40] */
+    uint64_t local_2; /* [sp-28] */
+    uint64_t local_3; /* [sp-20] */
+    uint64_t local_4; /* [sp-18] */
+    uint64_t local_5; /* [sp-30] */
+    uint64_t local_6; /* [sp-10] */
 
 L_466d80:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466e75; }
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rsp = rsp - 0x50;
+    rax = 0x7;
+    rbx = 0x3;
     main_divmod();
-    local_1 = 0x7;
-    local_2 = 0x3;
-    local_3 = 0x1;
-    local_4 = 0x2;
-    local_5 = 0x3;
+    local_0 = rax;
+    local_1 = rbx;
+    local_2 = 0x1;
+    local_3 = 0x2;
+    local_4 = 0x3;
+    rcx = 0x3;
+    rax = rsp + 0x30;
+    rbx = 0x3;
     main_sumSlice();
-    local_6 = rsp + 0x30;
+    local_5 = rax;
+    rbx = 0x2;
+    rax = 0x1;
     main_add();
-    local_7 = 0x1;
+    local_6 = rax;
     runtime_printlock();
+    rax = local_5;
     runtime_printint();
     runtime_printsp();
+    rax = local_6;
     runtime_printint();
     runtime_printsp();
+    rax = local_0;
     runtime_printint();
     runtime_printsp();
+    rax = local_1;
     runtime_printint();
     runtime_printnl();
     runtime_printunlock();
+    rax = 0x46d400;
+    rbx = 0x4967e8;
     main_kindName();
-    local_6 = 0x46d400;
+    local_5 = rax;
     runtime_printlock();
-    rax = local_6;
+    rax = local_5;
     runtime_printint();
     runtime_printnl();
     runtime_printunlock();
@@ -1621,36 +1642,49 @@ L_466e75:
 uint64_t ()
 -- references
 0x46d400 -> 0x8 "noptrdata"
+0x4967e8 -> 0x1 ".text"
 -- ir
 fn main.main @ 0x466d80 (size 256)
   blk0 @ 0x466d80:
     brif ls rsp, load64((r14 + #0x10)) -> 0x466e75
   blk1 @ 0x466d8a:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rsp = (rsp - #0x50)
+    rax = #0x7
+    rbx = #0x3
     call 0x466cc0
-    store64(#0x7, (rsp + #0x20))
-    store64(#0x3, (rsp + #0x18))
+    store64(rax, (rsp + #0x20))
+    store64(rbx, (rsp + #0x18))
     store64(#0x1, (rsp + #0x30))
     store64(#0x2, (rsp + #0x38))
     store64(#0x3, (rsp + #0x40))
+    rcx = #0x3
+    rax = (rsp + #0x30)
+    rbx = #0x3
     call 0x466d00
-    store64((rsp + #0x30), (rsp + #0x28))
+    store64(rax, (rsp + #0x28))
+    rbx = #0x2
+    rax = #0x1
     call 0x466ca0
-    store64(#0x1, (rsp + #0x48))
+    store64(rax, (rsp + #0x48))
     call 0x4305a0
+    rax = load64((rsp + #0x28))
     call 0x430c40
     call 0x4307a0
+    rax = load64((rsp + #0x48))
     call 0x430c40
     call 0x4307a0
+    rax = load64((rsp + #0x20))
     call 0x430c40
     call 0x4307a0
+    rax = load64((rsp + #0x18))
     call 0x430c40
     call 0x4307e0
     call 0x430600
+    rax = #0x46d400
+    rbx = #0x4967e8
     call 0x466d20
-    store64(#0x46d400, (rsp + #0x28))
+    store64(rax, (rsp + #0x28))
     call 0x4305a0
     rax = load64((rsp + #0x28))
     call 0x430c40
@@ -1665,4 +1699,4 @@ fn main.main @ 0x466d80 (size 256)
   blk3 @ 0x466e7f:
     trap
 -- card
-{"addr":"0x466d80","approxTokens":240,"blocks":4,"hardReasons":[],"name":"main.main","nameHints":["noptrdata"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata"],"unsupported":0}
+{"addr":"0x466d80","approxTokens":240,"blocks":4,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata",".text"],"unsupported":0}

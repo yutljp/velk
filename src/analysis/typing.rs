@@ -71,15 +71,7 @@ fn last_definition(ir: &FunctionIr, index: u16) -> Option<crate::ir::Expr> {
 /// True when the function's last return moves a value whose 64-bit inputs
 /// are not explained by any narrow use.
 fn returns_wide(ir: &FunctionIr) -> bool {
-    let Some(value) = ir
-        .blocks
-        .iter()
-        .rev()
-        .find_map(|block| match block.stmts.last() {
-            Some(crate::ir::Stmt::Ret { value }) => Some(value),
-            _ => None,
-        })
-    else {
+    let Some(value) = crate::ir::cfg::own_return(&ir.blocks) else {
         return false;
     };
     // Look through a wide register read to its last definition: a 32-bit
@@ -174,7 +166,17 @@ fn narrow_only(ir: &FunctionIr, register: u16) -> bool {
     let mut reads_narrow = true;
     let mut seen = false;
     for block in &ir.blocks {
-        for stmt in &block.stmts {
+        // A tail call's return reads the callee's result, not this register's value.
+        let tail_call = matches!(
+            block.stmts.as_slice(),
+            [
+                ..,
+                crate::ir::Stmt::Call { .. },
+                crate::ir::Stmt::Ret { .. }
+            ]
+        );
+        let own = block.stmts.len() - usize::from(tail_call);
+        for stmt in &block.stmts[..own] {
             collect_uses(
                 stmt,
                 register,
@@ -363,11 +365,11 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
                 Stmt::Call { .. } => side_effect = true,
                 Stmt::Ret { value } => {
                     saw_ret = true;
-                    // Only a bare return of the register is allowed; any
-                    // computation on it means the function produces a value.
-                    if !matches!(value, Expr::Reg { index, .. } if *index == arch::RETURN) {
-                        used_elsewhere |= reads_register(value, arch::RETURN);
-                    }
+                    // Only a bare return of the register is allowed; returning
+                    // anything else, a value folded into the return included,
+                    // means the function produces a value.
+                    used_elsewhere |=
+                        !matches!(value, Expr::Reg { index, .. } if *index == arch::RETURN);
                 }
                 Stmt::Brif { lhs, rhs, .. } => {
                     used_elsewhere |= reads_register(lhs, arch::RETURN);

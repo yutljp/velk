@@ -39,17 +39,12 @@ long record_total(struct record *items, int n) {
     *(uint64_t *)(rbp - 0x18) = 0x0;
     *(uint32_t *)(rbp - 0x1c) = 0x0;
     while (*(uint32_t *)(rbp - 0x1c) < *(uint32_t *)(rbp - 0xc)) {
-        rax = *(uint64_t *)(rbp - 0x8);
         rcx = (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
-        rax = rax + rcx;
-        rax = *(uint64_t *)(rax + 0x8);
-        rcx = *(uint64_t *)(rbp - 0x8);
+        rax = *(uint64_t *)(*(uint64_t *)(rbp - 0x8) + rcx + 0x8);
         rdx = (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
-        rcx = rcx + rdx;
-        rcx = (int16_t)(*(uint16_t *)(rcx + 0x10));
+        rcx = (int16_t)(*(uint16_t *)(*(uint64_t *)(rbp - 0x8) + rdx + 0x10));
         rax = rax * rcx;
-        rax = rax + *(uint64_t *)(rbp - 0x18);
-        *(uint64_t *)(rbp - 0x18) = rax;
+        *(uint64_t *)(rbp - 0x18) = rax + *(uint64_t *)(rbp - 0x18);
         *(uint32_t *)(rbp - 0x1c) = *(uint32_t *)(rbp - 0x1c) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -70,21 +65,15 @@ fn record_total @ 0x201270 (size 109)
     store64(#0x0, (rbp + #0xffffffffffffffe8))
     store32(#0x0, (rbp + #0xffffffffffffffe4))
   blk1 @ 0x20128a:
-    rax = (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2012d7
+    brif ge (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2012d7
   blk2 @ 0x201296:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = (sext32(load32((rbp + #0xffffffffffffffe4))) * #0x18)
-    rax = (rax + rcx)
-    rax = load64((rax + #0x8))
-    rcx = load64((rbp + #0xfffffffffffffff8))
+    rax = load64(((load64((rbp + #0xfffffffffffffff8)) + rcx) + #0x8))
     rdx = (sext32(load32((rbp + #0xffffffffffffffe4))) * #0x18)
-    rcx = (rcx + rdx)
-    rcx = sext16(load16((rcx + #0x10)))
+    rcx = sext16(load16(((load64((rbp + #0xfffffffffffffff8)) + rdx) + #0x10)))
     rax = (rax * rcx)
-    rax = (rax + load64((rbp + #0xffffffffffffffe8)))
-    store64(rax, (rbp + #0xffffffffffffffe8))
-    store32((load32((rbp + #0xffffffffffffffe4)) + #0x1), (rbp + #0xffffffffffffffe4))
+    store64((rax + load64((rbp + #0xffffffffffffffe8))), (rbp + #0xffffffffffffffe8))
+    store32((((load32((rbp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffe4))
     br 0x20128a
   blk3 @ 0x2012d7:
     rsp = (rsp + #0x8)
@@ -131,15 +120,15 @@ fn point_add @ 0x2012e0 (size 36)
 /* struct: seed +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
 struct big big_make(long seed, uint64_t a1) {
     uint64_t local_0; /* [sp-8] */
-    uint64_t local_1; /* [sp-10] */
 
     rsp = rsp - 0x8;
     local_0 = rbp;
-    local_1 = a1;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = a1;
     *(uint64_t *)(seed) = a1;
-    *(uint64_t *)(seed + 0x8) = a1 + 0x1;
-    *(uint64_t *)(seed + 0x10) = a1 << 0x1;
-    *(uint64_t *)(seed + 0x18) = a1 * 0x3;
+    *(uint64_t *)(seed + 0x8) = *(uint64_t *)(rbp - 0x8) + 0x1;
+    *(uint64_t *)(seed + 0x10) = *(uint64_t *)(rbp - 0x8) << 0x1;
+    *(uint64_t *)(seed + 0x18) = *(uint64_t *)(rbp - 0x8) * 0x3;
     return seed;
 }
 -- signature
@@ -151,11 +140,12 @@ fn big_make @ 0x201310 (size 52)
   blk0 @ 0x201310:
     rsp = (rsp + #0xfffffffffffffff8)
     store64(rbp, rsp)
-    store64(rsi, (rsp + #0xfffffffffffffff8))
+    rbp = rsp
+    store64(rsi, (rbp + #0xfffffffffffffff8))
     store64(rsi, rdi)
-    store64((rsi + #0x1), (rdi + #0x8))
-    store64((rsi << #0x1), (rdi + #0x10))
-    store64((rsi * #0x3), (rdi + #0x18))
+    store64((load64((rbp + #0xfffffffffffffff8)) + #0x1), (rdi + #0x8))
+    store64((load64((rbp + #0xfffffffffffffff8)) << #0x1), (rdi + #0x10))
+    store64((load64((rbp + #0xfffffffffffffff8)) * #0x3), (rdi + #0x18))
     ret rdi
 -- card
 {"accesses":["seed +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201310","approxTokens":192,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
@@ -226,7 +216,8 @@ uint32_t flags_level(struct flags f) {
     *(uint32_t *)(rbp - 0x4) = f;
     rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0x4) & 0xff;
     rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff;
-    if (rax & 0xff & 0xff != 0x0) {
+    rax = rax & 0xff & 0xff;
+    if (eax != 0x0) {
         rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0x4) & 0xff;
         rax = rax & 0xffffffffffffff00 | (rax & 0xff) >> 0x4 & 0xff;
         *(uint32_t *)(rbp - 0x8) = rax & 0xff & 0xff;
@@ -252,7 +243,8 @@ fn flags_level @ 0x201380 (size 59)
     store32(edi, (rbp + #0xfffffffffffffffc))
     rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffffc)) & #0xff))
     rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff))
-    brif eq (((rax & #0xff) & #0xff) & #0xffffffff), #0x0 -> 0x2013a9
+    rax = (((rax & #0xff) & #0xff) & #0xffffffff)
+    brif eq (rax & #0xffffffff), #0x0 -> 0x2013a9
   blk1 @ 0x201398:
     rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffffc)) & #0xff))
     rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) >> #0x4) & #0xff))

@@ -14,10 +14,14 @@ uint32_t sub_201180(uint32_t a0) {
     rbp = rsp;
     *(uint32_t *)(rbp - 0x8) = a0;
     rax = a0 - 0xa;
-    *(uint64_t *)(rbp - 0x10) = eax;
-    if (eax - 0x4 - 0x4 > 0x0 /* unsigned */) { goto L_2011ec; }
+    rcx = eax;
+    *(uint64_t *)(rbp - 0x10) = rcx;
+    rax = eax - 0x4;
+    if (eax > 0x0 /* unsigned */) { goto L_2011ec; }
+    rcx = 0x200120;
     rax = (int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
-    goto *(rax + 0x200120);
+    rax = rax + 0x200120;
+    goto *(rax);
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -31,23 +35,27 @@ fn <unnamed> @ 0x201180 (size 48)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffff8))
     rax = (((edi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
-    store64((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    brif hi ((((rax & #0xffffffff) - #0x4) & #0xffffffff) - #0x4), #0x0 -> 0x2011ec
+    rcx = (rax & #0xffffffff)
+    store64(rcx, (rbp + #0xfffffffffffffff0))
+    rax = (((rax & #0xffffffff) - #0x4) & #0xffffffff)
+    brif hi eax, #0x0 -> 0x2011ec
   blk1 @ 0x20119c:
+    rcx = #0x200120
     rax = sext32(load32((#0x200120 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
-    br (rax + #0x200120)
+    rax = (rax + #0x200120)
+    br rax
 -- card
 {"addr":"0x201180","approxTokens":180,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x2011b0 -
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
-void sub_2011b0(void) {
+uint32_t sub_2011b0(void) {
     *(uint32_t *)(rbp - 0x4) = 0x1;
-    return;
+    return *(uint32_t *)(rbp - 0x4);
 }
 -- signature
-void ()
+uint32_t ()
 -- references
 
 -- ir

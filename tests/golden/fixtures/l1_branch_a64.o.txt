@@ -26,7 +26,7 @@ fn classify @ 0x0 (size 16)
 -- decompile
 /* velk pseudo-C: clamp @ 0x10 */
 int32_t clamp(int32_t a0, int32_t a1, int32_t a2) {
-    return (a0 < a1 ? a1 : ((a0 < a2 ? a0 : a2)));
+    return (a0 < a1 ? a1 : (a0 < a2 ? a0 : a2));
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

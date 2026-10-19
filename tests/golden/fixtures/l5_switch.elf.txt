@@ -7,6 +7,8 @@
 /* velk pseudo-C: dense @ 0x2101ac */
 /* ref: 0x200158 .rodata */
 uint32_t dense(uint32_t a0) {
+    x9 = a0 - 0xa;
+    x8 = 0x220000;
     if (w9 > 0xf /* unsigned */) {
         x9 = 0x0;
         *(uint32_t *)(x8 + 0x2e8) = w9;

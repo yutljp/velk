@@ -405,7 +405,7 @@ impl Machine<'_> {
                         };
                         break;
                     }
-                    Stmt::Call { target } => self.call(*target),
+                    Stmt::Call { target, .. } => self.call(*target),
                     Stmt::Ret { value } => return Ok(Some(self.eval(value)?)),
                     Stmt::Trap => return Ok(None),
                     Stmt::Unsupported { .. } => return Err("unsupported instruction"),

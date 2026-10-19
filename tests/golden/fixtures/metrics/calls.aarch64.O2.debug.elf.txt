@@ -1,4 +1,4 @@
-# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 4 unsupported, 4 gotos
+# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 7 unsupported, 4 gotos
 0x2102c4 8 twice symtab,dwarf
 0x2102cc 8 square symtab,dwarf
 0x2102d4 28 pick_op symtab,dwarf
@@ -69,8 +69,15 @@ fn pick_op @ 0x2102d4 (size 28)
 /* velk pseudo-C: apply_table @ 0x2102f0 */
 /* ref: 0x220528 .data.rel.ro */
 int apply_table(uint32_t index, int x) {
-    t1 = index * 0xaaaaaaab >> 0x21;
-    goto *(qword_220528[index - (t1 + (t1 << 0x1))]);
+    w8 = 0xaaab;
+    x9 = 0x220528;
+    w8 = 0xaaaaaaab;
+    w8 = index * 0xaaaaaaab >> 0x21;
+    w8 = w8 + (w8 << 0x1);
+    w8 = index - w8;
+    index = x;
+    x2 = qword_220528[w8];
+    goto *(x2);
 }
 -- signature
 int (uint32_t index, int x)
@@ -79,8 +86,15 @@ int (uint32_t index, int x)
 -- ir
 fn apply_table @ 0x2102f0 (size 44)
   blk0 @ 0x2102f0:
-    t1 = (((w0 * #0xaaaaaaab) >> #0x21) & #0xffffffff)
-    br load64((#0x220528 + (((w0 - ((t1 + (t1 << #0x1)) & #0xffffffff)) & #0xffffffff) << #0x3)))
+    x8 = #0xaaab
+    x9 = #0x220528
+    x8 = #0xaaaaaaab
+    x8 = ((w0 * #0xaaaaaaab) >> #0x21)
+    x8 = (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)
+    x8 = ((w0 - (x8 & #0xffffffff)) & #0xffffffff)
+    w0 = w1
+    x2 = load64((#0x220528 + ((x8 & #0xffffffff) << #0x3)))
+    br x2
 -- card
 {"addr":"0x2102f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
 
@@ -88,8 +102,10 @@ fn apply_table @ 0x2102f0 (size 44)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x21031c */
 int apply_pointer(void *f, int x) {
+    x8 = f;
     /* unsupported: BLR at 0x21032c */
-    return x + 0x1;
+    f = x + 0x1;
+    return f;
 }
 -- signature
 int (void * f, int x)
@@ -98,8 +114,10 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x21031c (size 32)
   blk0 @ 0x21031c:
+    x8 = x0
     unsupported: BLR at 0x21032c
-    ret (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
+    x0 = (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
+    ret w0
 -- card
 {"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":1}
 
@@ -116,14 +134,18 @@ L_21034c:
     } else {
         /* unsupported: DUP at 0x210360 */
         w8 = 0x200000;
-        /* unsupported (3 steps): MOVI at 0x210368, MVNI at 0x210374, MVNI at 0x210378 */
-        w10 = n - 0x1 & 0xfffffff8;
+        /* unsupported: MOVI at 0x210368 */
+        w9 = n - 0x1;
+        /* unsupported (2 steps): MVNI at 0x210374, MVNI at 0x210378 */
+        w10 = w9 & 0xfffffff8;
         /* unsupported: MOVI at 0x210384 */
         w8 = n - w10;
         w11 = w10;
         do {
             w11 = w11 - 0x8;
-        } while (w11 != 0x8);
+        } while (w11 != 0x0);
+        /* unsupported (3 steps): EXT at 0x2103b0, UMOV at 0x2103b8, FMOV at 0x2103bc */
+        n = w12 * w11;
         if (w9 == w10) {
             return n;
         }
@@ -131,7 +153,7 @@ L_21034c:
     do {
         n = w8 * n;
         w8 = w8 - 0x1;
-    } while (w8 > 0x2 /* unsigned */);
+    } while (w8 + 0x1 > 0x2 /* unsigned */);
     return n;
 }
 -- signature
@@ -154,15 +176,16 @@ fn factorial @ 0x21033c (size 160)
     unsupported: DUP at 0x210360
     x8 = #0x200000
     unsupported: MOVI at 0x210368
+    w9 = ((x0 & #0xffffffff) - #0x1)
     unsupported: MVNI at 0x210374
     unsupported: MVNI at 0x210378
-    w10 = (((x0 & #0xffffffff) - #0x1) & #0xfffffff8)
+    w10 = (w9 & #0xfffffff8)
     unsupported: MOVI at 0x210384
     x8 = (((x0 & #0xffffffff) - w10) & #0xffffffff)
     w11 = w10
   blk5 @ 0x210390:
     w11 = (w11 - #0x8)
-    brif ne w11, #0x8 -> 0x210390
+    brif ne w11, #0x0 -> 0x210390
   blk6 @ 0x2103a8:
     unsupported: EXT at 0x2103b0
     unsupported: UMOV at 0x2103b8
@@ -172,7 +195,7 @@ fn factorial @ 0x21033c (size 160)
   blk7 @ 0x2103c8:
     x0 = (((x8 & #0xffffffff) * (x0 & #0xffffffff)) & #0xffffffff)
     x8 = (((x8 & #0xffffffff) - #0x1) & #0xffffffff)
-    brif hi (x8 & #0xffffffff), #0x2 -> 0x2103c8
+    brif hi (w8 + #0x1), #0x2 -> 0x2103c8
   blk8 @ 0x2103d8:
     ret x0
 -- card
@@ -182,10 +205,11 @@ fn factorial @ 0x21033c (size 160)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x2103dc */
 int is_odd(int n) {
-    if (n != 0x0) {
-        n = n - 0x1;
-        is_even();
+    if (n == 0x0) {
+        return n;
     }
+    n = n - 0x1;
+    is_even();
     return n;
 }
 -- signature
@@ -195,10 +219,11 @@ int (int n)
 -- ir
 fn is_odd @ 0x2103dc (size 16)
   blk0 @ 0x2103dc:
-    brif eq x0, #0x0 -> 0x2103e8
+    brif eq w0, #0x0 -> 0x2103e8
   blk1 @ 0x2103e0:
-    x0 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
+    w0 = (w0 - #0x1)
     call 0x2103ec
+    ret w0
   blk2 @ 0x2103e8:
     ret w0
 -- card
@@ -208,11 +233,12 @@ fn is_odd @ 0x2103dc (size 16)
 -- decompile
 /* velk pseudo-C: is_even @ 0x2103ec */
 int is_even(int n) {
-    if (n != 0x0) {
-        n = n - 0x1;
-        is_odd();
+    if (n == 0x0) {
+        return 0x1;
     }
-    return 0x1;
+    n = n - 0x1;
+    is_odd();
+    return n;
 }
 -- signature
 int (int n)
@@ -221,10 +247,11 @@ int (int n)
 -- ir
 fn is_even @ 0x2103ec (size 20)
   blk0 @ 0x2103ec:
-    brif eq x0, #0x0 -> 0x2103f8
+    brif eq (x0 & #0xffffffff), #0x0 -> 0x2103f8
   blk1 @ 0x2103f0:
     x0 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
     call 0x2103dc
+    ret x0
   blk2 @ 0x2103f8:
     ret #0x1
 -- card
@@ -251,6 +278,13 @@ fn sum9 @ 0x210400 (size 40)
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x210428 */
 long call_sum9(void) {
+    x1 = 0x1;
+    x2 = 0x2;
+    x3 = 0x3;
+    x4 = 0x4;
+    x5 = 0x5;
+    x6 = 0x6;
+    x7 = 0x7;
     *(uint64_t *)(sp - 0x20) = 0x8;
     sum9();
     return x0;
@@ -262,6 +296,13 @@ long ()
 -- ir
 fn call_sum9 @ 0x210428 (size 64)
   blk0 @ 0x210428:
+    x1 = #0x1
+    x2 = #0x2
+    x3 = #0x3
+    x4 = #0x4
+    x5 = #0x5
+    x6 = #0x6
+    x7 = #0x7
     store64(#0x8, (sp - #0x20))
     call 0x210400
     ret x0
@@ -272,10 +313,36 @@ fn call_sum9 @ 0x210428 (size 64)
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x210468 */
 int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+    uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-8] */
+    uint64_t local_2; /* [sp-58] */
+    uint64_t local_3; /* [sp-50] */
+    uint64_t local_4; /* [sp-48] */
+    uint64_t local_5; /* [sp-40] */
+    uint64_t local_6; /* [sp-38] */
+    uint64_t local_7; /* [sp-30] */
     uint64_t local_8; /* [sp-18] */
+    uint64_t local_9; /* [sp-28] */
     uint64_t local_10; /* [sp-20] */
 
+    sp = sp - 0xe0;
+    x8 = 0xffffffffffffffc8;
+    x10 = sp + 0x88;
+    x8 = 0xffffff80ffffffc8;
+    local_0 = sp + 0x80;
+    local_1 = 0xffffff80ffffffc8;
+    x8 = x10 + 0x38;
+    x9 = sp + 0xe0;
+    local_2 = a1;
+    local_3 = a2;
+    local_4 = a3;
+    local_5 = a4;
+    local_6 = a5;
+    local_7 = a6;
+    /* unsupported (4 steps): SIMD vector pair store, SIMD vector pair store, SIMD vector pair store, SIMD vector pair store */
+    local_8 = x8;
+    local_9 = a7;
+    local_10 = x9;
     if (count < 0x1) {
         x8 = 0x0;
         count = x8;
@@ -285,24 +352,27 @@ int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, u
     x10 = local_10;
     x9 = local_8;
     x8 = 0x0;
-    x12 = local_1;
+    x12 = *(uint32_t *)&local_1;
     goto L_2104ec;
 L_2104c8:
-    x12 = x9 + (int32_t)(x12);
     x13 = x10;
-    x10 = x12;
+    x10 = x9 + (int32_t)(x12);
     for (;;) {
-        if (count == 0x1) {
+        count = count - 0x1;
+        x12 = w11;
+        x8 = *(uint32_t *)(x10) + w8;
+        x10 = x13;
+        if (count == 0x0) {
             count = x8;
             sp = sp + 0xe0;
             return count;
         }
     L_2104ec:
-        if (x12 & 0x80000000 == 0x0) {
+        if ((x12 & 0x80000000) == 0x0) {
             w11 = x12;
         } else {
             w11 = w12 + 0x8;
-            local_1 = w11;
+            *(uint32_t *)&local_1 = w11;
             if (w12 <= 0x8 /* unsigned */) { goto L_2104c8; }
         }
         x13 = x10 + 0x8;
@@ -322,9 +392,12 @@ fn sum_varargs @ 0x210468 (size 188)
   blk0 @ 0x210468:
     sp = (sp - #0xe0)
     x8 = #0xffffffffffffffc8
+    x10 = (sp + #0x88)
     x8 = #0xffffff80ffffffc8
     store64((sp + #0x80), (sp + #0xd0))
     store64(#0xffffff80ffffffc8, (sp + #0xd8))
+    x8 = (x10 + #0x38)
+    x9 = (sp + #0xe0)
     store64(x1, (sp + #0x88))
     store64(x2, (sp + #0x90))
     store64(x3, (sp + #0x98))
@@ -335,9 +408,9 @@ fn sum_varargs @ 0x210468 (size 188)
     unsupported: SIMD vector pair store
     unsupported: SIMD vector pair store
     unsupported: SIMD vector pair store
-    store64((sp + #0xc0), (sp + #0xc8))
+    store64(x8, (sp + #0xc8))
     store64(x7, (sp + #0xb8))
-    store64((sp + #0xe0), (sp + #0xc0))
+    store64(x9, (sp + #0xc0))
     brif lt w0, #0x1 -> 0x210514
   blk1 @ 0x2104b8:
     x10 = load64((sp + #0xc0))
@@ -346,16 +419,14 @@ fn sum_varargs @ 0x210468 (size 188)
     x12 = (load32((sp + #0xd8)) & #0xffffffff)
     br 0x2104ec
   blk2 @ 0x2104c8:
-    x12 = (x9 + sext32(x12))
     x13 = x10
-    x10 = x12
+    x10 = (x9 + sext32(x12))
   blk3 @ 0x2104d4:
-    x10 = (load32(x10) & #0xffffffff)
     w0 = (w0 - #0x1)
     x12 = w11
-    x8 = (((x10 & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
+    x8 = (((load32(x10) & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
     x10 = x13
-    brif eq w0, #0x1 -> 0x210518
+    brif eq w0, #0x0 -> 0x210518
   blk4 @ 0x2104ec:
     brif ne (x12 & #0x80000000), #0x0 -> 0x2104f8
   blk5 @ 0x2104f0:

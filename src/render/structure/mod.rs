@@ -5,7 +5,7 @@ pub mod compare_chain;
 use std::collections::HashMap;
 
 use crate::ir::{Cond, Expr, FunctionIr, Stmt};
-use crate::render::structure::build::Structurer;
+use crate::render::structure::build::{Structurer, branch_targets};
 use crate::render::structure::cleanup::collect_targets;
 use crate::render::structure::cleanup::flatten_early_returns;
 use crate::render::structure::cleanup::prune_labels;
@@ -112,6 +112,34 @@ pub fn structure(ir: &FunctionIr) -> Vec<Node> {
     structure_with(ir, false)
 }
 
+/// The blocks only an indirect jump can enter: nothing branches or falls
+/// through into them, so they keep a label instead of being pruned. Padding
+/// that only traps is left out.
+fn indirect_entries(ir: &FunctionIr) -> std::collections::HashSet<u64> {
+    let indirect = ir
+        .blocks
+        .iter()
+        .any(|block| matches!(block.stmts.last(), Some(Stmt::BrIndirect { .. })));
+    if !indirect {
+        return std::collections::HashSet::new();
+    }
+    let mut seen = vec![false; ir.blocks.len()];
+    let mut pending = vec![0];
+    while let Some(index) = pending.pop() {
+        if index >= seen.len() || seen[index] {
+            continue;
+        }
+        seen[index] = true;
+        pending.extend(compare_chain::successors(ir, index));
+    }
+    ir.blocks
+        .iter()
+        .zip(seen)
+        .filter(|(block, seen)| !seen && !block.stmts.iter().all(|stmt| matches!(stmt, Stmt::Trap)))
+        .map(|(block, _)| block.start)
+        .collect()
+}
+
 fn structure_with(ir: &FunctionIr, reordered: bool) -> Vec<Node> {
     let index: HashMap<u64, usize> = ir
         .blocks
@@ -119,36 +147,20 @@ fn structure_with(ir: &FunctionIr, reordered: bool) -> Vec<Node> {
         .enumerate()
         .map(|(position, block)| (block.start, position))
         .collect();
-    let mut targeted = std::collections::HashSet::new();
-    for block in &ir.blocks {
-        if let Some(Stmt::Brif { target, .. }) | Some(Stmt::BrifFlags { target, .. }) =
-            block.stmts.last()
-        {
-            targeted.insert(*target);
-        }
-        if let Some(Stmt::Br {
-            target: Some(target),
-        }) = block.stmts.last()
-        {
-            targeted.insert(*target);
-        }
-        if let Some(Stmt::Switch { cases, default, .. }) = block.stmts.last() {
-            for (_, target) in cases {
-                targeted.insert(*target);
-            }
-            if let Some(target) = default {
-                targeted.insert(*target);
-            }
-        }
-    }
+    let entries = indirect_entries(ir);
     let mut structurer = Structurer {
         blocks: &ir.blocks,
         index,
-        targeted,
+        targeted: ir
+            .blocks
+            .iter()
+            .flat_map(branch_targets)
+            .chain(entries.iter().copied())
+            .collect(),
         reordered,
     };
     let mut nodes = structurer.emit(0, ir.blocks.len());
-    let mut used = std::collections::HashSet::new();
+    let mut used = entries;
     collect_targets(&nodes, &mut used);
     prune_labels(&mut nodes, &used);
     prune_unreachable(&mut nodes);

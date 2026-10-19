@@ -6,14 +6,88 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 uint32_t dense(uint32_t a0) {
-    if (a0 - 0xa > 0xf /* unsigned */) {
+    x9 = a0 - 0xa;
+    x8 = 0x0;
+    if (w9 > 0xf /* unsigned */) {
         x9 = 0x0;
         *(uint32_t *)(x8) = w9;
         return w9;
     }
     w10 = 0x0;
     w10 = 0x0;
-    goto *(0x28 + (*(uint8_t *)(x9) << 0x2));
+    x11 = 0x28;
+    x12 = *(uint8_t *)(x9);
+    x11 = 0x28 + (x12 << 0x2);
+    goto *(x11);
+L_28:
+    x9 = *(uint32_t *)(x8) + 0xb;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_34:
+    x9 = *(uint32_t *)(x8) - 0x6d;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_40:
+    x9 = *(uint32_t *)(x8);
+    w10 = 0x58;
+    x9 = w9 | w10;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_4c:
+    x9 = *(uint32_t *)(x8) + 0x27;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_58:
+    x9 = *(uint32_t *)(x8) + 0x5f;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_64:
+    x9 = *(uint32_t *)(x8) ^ 0x4a;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_74:
+    x9 = *(uint32_t *)(x8) - 0x19;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_80:
+    x9 = *(uint32_t *)(x8);
+    w10 = 0x74;
+L_88:
+    x9 = w9 | w10;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_90:
+    x9 = *(uint32_t *)(x8) | 0x20;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_9c:
+    x9 = *(uint32_t *)(x8) | 0x3c;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_a8:
+    x9 = *(uint32_t *)(x8) ^ 0x12;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_b8:
+    x9 = *(uint32_t *)(x8) ^ 0x2e;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_c8:
+    x9 = *(uint32_t *)(x8) ^ 0x66;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_d8:
+    x9 = *(uint32_t *)(x8) - 0x35;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_e4:
+    x9 = *(uint32_t *)(x8) - 0x51;
+    *(uint32_t *)(x8) = w9;
+    return w9;
+L_f0:
+    x9 = *(uint32_t *)(x8) + 0x43;
+    *(uint32_t *)(x8) = w9;
+    return w9;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -22,12 +96,16 @@ uint32_t (uint32_t a0)
 -- ir
 fn dense @ 0x0 (size 268)
   blk0 @ 0x0:
+    x9 = ((w0 - #0xa) & #0xffffffff)
     x8 = #0x0
-    brif hi ((w0 - #0xa) & #0xffffffff), #0xf -> 0xfc
+    brif hi (x9 & #0xffffffff), #0xf -> 0xfc
   blk1 @ 0x10:
     x10 = #0x0
     x10 = #0x0
-    br (#0x28 + ((load8(x9) & #0xffffffff) << #0x2))
+    x11 = #0x28
+    x12 = (load8(x9) & #0xffffffff)
+    x11 = (#0x28 + (x12 << #0x2))
+    br x11
   blk2 @ 0x28:
     x9 = (((load32(x8) & #0xffffffff) + #0xb) & #0xffffffff)
     br 0x100

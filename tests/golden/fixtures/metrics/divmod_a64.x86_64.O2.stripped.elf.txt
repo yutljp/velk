@@ -148,7 +148,8 @@ fn <unnamed> @ 0x2013d0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2013f0 @ 0x2013f0 */
 int32_t sub_2013f0(int32_t a0) {
-    return a0 / 0x10;
+    eax = a0 / 0x10;
+    return eax;
 }
 -- signature
 int32_t (int32_t a0)
@@ -157,7 +158,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2013f0 (size 16)
   blk0 @ 0x2013f0:
-    ret ((rdi & #0xffffffff) / #0x10)
+    eax = (rdi / #0x10)
+    ret eax
 -- card
 {"addr":"0x2013f0","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -354,7 +356,7 @@ fn <unnamed> @ 0x201530 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
 uint32_t sub_201540(uint32_t a0) {
-    rax = ((a0 & a0 == 0x0 ? 0x1 : 0x0)) & 0xff & 0xff;
+    rax = (a0 == 0x0 ? 0x1 : 0x0) & 0xff & 0xff;
     return rax;
 }
 -- signature
@@ -364,7 +366,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201540 (size 16)
   blk0 @ 0x201540:
-    rax = ((select eq (edi & edi), #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
+    rax = ((select eq edi, #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
     ret rax
 -- card
 {"addr":"0x201540","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
@@ -373,7 +375,7 @@ fn <unnamed> @ 0x201540 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201550 @ 0x201550 */
 int32_t sub_201550(int32_t a0) {
-    rax = ((a0 & a0 > 0x0 ? 0x1 : 0x0)) & 0xff & 0xff;
+    rax = (a0 > 0x0 ? 0x1 : 0x0) & 0xff & 0xff;
     return rax;
 }
 -- signature
@@ -383,7 +385,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201550 (size 16)
   blk0 @ 0x201550:
-    rax = ((select gt (edi & edi), #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
+    rax = ((select gt edi, #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
     ret rax
 -- card
 {"addr":"0x201550","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}

@@ -23,16 +23,15 @@ fn alt_sum3 @ 0x21016c (size 44)
 -- decompile
 /* velk pseudo-C: alt_helper @ 0x210198 */
 int alt_helper(int x) {
-    uint32_t local_0; /* [sp+c] */
-    uint32_t local_1; /* [sp+8] */
-    uint32_t local_2; /* [sp+4] */
+    uint32_t local_0; /* [sp-4] */
+    uint32_t local_1; /* [sp-8] */
+    uint32_t local_2; /* [sp-c] */
 
-    while (true) {
-        w9 = local_0;
-        w8 = local_2 - w9;
-        if (w8 >= w9) break;
-        w9 = local_2 * local_2;
-        local_1 += w9;
+    local_0 = x;
+    local_1 = 0x0;
+    local_2 = 0x0;
+    while (local_2 < local_0) {
+        local_1 += local_2 * local_2;
         local_2 += 0x1;
     }
     return local_1;
@@ -44,21 +43,21 @@ int (int x)
 -- ir
 fn alt_helper @ 0x210198 (size 96)
   blk0 @ 0x210198:
+    store32(w0, (sp + #0xfffffffffffffffc))
+    store32(#0x0, (sp + #0xfffffffffffffff8))
+    store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2101ac
   blk1 @ 0x2101ac:
-    w9 = load32((sp + #0xc))
-    w8 = (load32((sp + #0x4)) - w9)
-    brif ge w8, w9 -> 0x2101ec
+    brif ge load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffffc)) -> 0x2101ec
   blk2 @ 0x2101bc:
     br 0x2101c0
   blk3 @ 0x2101c0:
-    w9 = (load32((sp + #0x4)) * load32((sp + #0x4)))
-    store32((load32((sp + #0x8)) + w9), (sp + #0x8))
+    store32((load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) * load32((sp + #0xfffffffffffffff4)))), (sp + #0xfffffffffffffff8))
     br 0x2101dc
   blk4 @ 0x2101dc:
-    store32((load32((sp + #0x4)) + #0x1), (sp + #0x4))
+    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
     br 0x2101ac
   blk5 @ 0x2101ec:
-    ret load32((sp + #0x8))
+    ret load32((sp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":0}

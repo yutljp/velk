@@ -15,21 +15,23 @@ uint64_t sub_2101b4(uint64_t a0, uint32_t a1) {
 
     local_0 = a0;
     local_1 = a1;
-    /* unsupported: MOVI at 0x2101c0 */
+    /* unsupported (2 steps): MOVI at 0x2101c0, SIMD store */
+    local_2 = 0x0;
     while (true) {
         w9 = local_1;
         w8 = local_2 - w9;
-        if (w8 >= w9) break;
+        if (w8 + w9 >= w9) break;
         w8 = local_0;
         w9 = local_2;
-        /* unsupported: FADD at 0x2101f4 */
+        /* unsupported (2 steps): FADD at 0x2101f4, SIMD store */
         local_2 += 0x1;
     }
-    if (*(uint32_t *)(sp + 0x24) <= 0x0) {
-        /* unsupported: MOVI at 0x21023c */
+    w8 = local_1;
+    if (w8 <= 0x0) {
+        /* unsupported (2 steps): MOVI at 0x21023c, SIMD store */
         return a0;
     }
-    /* unsupported (3 steps): FMOV at 0x210228, SCVTF at 0x21022c, FDIV at 0x210230 */
+    /* unsupported (4 steps): FMOV at 0x210228, SCVTF at 0x21022c, FDIV at 0x210230, SIMD store */
     return a0;
 }
 -- signature
@@ -42,43 +44,49 @@ fn <unnamed> @ 0x2101b4 (size 160)
     store64(x0, (sp + #0xfffffffffffffff8))
     store32(w1, (sp + #0xfffffffffffffff4))
     unsupported: MOVI at 0x2101c0
+    unsupported: SIMD store
+    store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk1 @ 0x2101d0:
     x9 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
     x8 = (((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), (x9 & #0xffffffff) -> 0x210210
+    brif ge (w8 + (x9 & #0xffffffff)), (x9 & #0xffffffff) -> 0x210210
   blk2 @ 0x2101e0:
     br 0x2101e4
   blk3 @ 0x2101e4:
     x8 = load64((sp + #0xfffffffffffffff8))
     x9 = load32((sp + #0xffffffffffffffe4))s
     unsupported: FADD at 0x2101f4
+    unsupported: SIMD store
     br 0x210200
   blk4 @ 0x210200:
-    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
+    store32((((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk5 @ 0x210210:
-    brif le (load32((sp + #0x24)) & #0xffffffff), #0x0 -> 0x21023c
+    x8 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
+    brif le w8, #0x0 -> 0x21023c
   blk6 @ 0x21021c:
     br 0x210220
   blk7 @ 0x210220:
     unsupported: FMOV at 0x210228
     unsupported: SCVTF at 0x21022c
     unsupported: FDIV at 0x210230
+    unsupported: SIMD store
     br 0x210248
   blk8 @ 0x21023c:
     unsupported: MOVI at 0x21023c
+    unsupported: SIMD store
     br 0x210248
   blk9 @ 0x210248:
     ret x0
 -- card
-{"addr":"0x2101b4","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":160,"sizeEstimated":true,"unsupported":6}
+{"addr":"0x2101b4","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":160,"sizeEstimated":true,"unsupported":10}
 
 == 0x210254 -
 -- decompile
 /* velk pseudo-C: sub_210254 @ 0x210254 */
 uint64_t sub_210254(uint64_t a0) {
-    /* unsupported (2 steps): FSUB at 0x210270, FMADD at 0x210278 */
+    /* unsupported (5 steps): SIMD store, SIMD store, SIMD store, FSUB at 0x210270, FMADD at 0x210278 */
     return a0;
 }
 -- signature
@@ -88,17 +96,20 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210254 (size 48)
   blk0 @ 0x210254:
+    unsupported: SIMD store
+    unsupported: SIMD store
+    unsupported: SIMD store
     unsupported: FSUB at 0x210270
     unsupported: FMADD at 0x210278
     ret x0
 -- card
-{"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":5}
 
 == 0x210284 -
 -- decompile
 /* velk pseudo-C: sub_210284 @ 0x210284 */
 uint64_t sub_210284(uint64_t a0) {
-    /* unsupported: FCVTZS at 0x210290 */
+    /* unsupported (2 steps): SIMD store, FCVTZS at 0x210290 */
     return a0;
 }
 -- signature
@@ -108,16 +119,17 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210284 (size 24)
   blk0 @ 0x210284:
+    unsupported: SIMD store
     unsupported: FCVTZS at 0x210290
     ret x0
 -- card
-{"addr":"0x210284","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210284","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":2}
 
 == 0x21029c -
 -- decompile
 /* velk pseudo-C: sub_21029c @ 0x21029c */
 uint64_t sub_21029c(uint64_t a0) {
-    /* unsupported (3 steps): FCVT at 0x2102a8, FMOV at 0x2102ac, FMUL at 0x2102b0 */
+    /* unsupported (4 steps): SIMD store, FCVT at 0x2102a8, FMOV at 0x2102ac, FMUL at 0x2102b0 */
     return a0;
 }
 -- signature
@@ -127,12 +139,13 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x21029c (size 32)
   blk0 @ 0x21029c:
+    unsupported: SIMD store
     unsupported: FCVT at 0x2102a8
     unsupported: FMOV at 0x2102ac
     unsupported: FMUL at 0x2102b0
     ret x0
 -- card
-{"addr":"0x21029c","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":3}
+{"addr":"0x21029c","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":4}
 
 == 0x2102bc -
 -- decompile
@@ -140,13 +153,15 @@ fn <unnamed> @ 0x21029c (size 32)
 uint32_t sub_2102bc(void) {
     uint32_t local_0; /* [sp-14] */
 
-    /* unsupported: FCMP at 0x2102d0 */
+    /* unsupported (3 steps): SIMD store, SIMD store, FCMP at 0x2102d0 */
     if (/* pl */ true) { goto L_2102e8; }
     local_0 = 0xffffffff;
     return local_0;
 L_2102e8:
+    w8 = 0x0;
     /* unsupported: FCMP at 0x2102f4 */
-    local_0 = (0x0 <= 0x0 ? 0x0 : 0x1);
+    w8 = (w8 <= 0x0 ? w8 : 0x1);
+    local_0 = w8;
     return local_0;
 }
 -- signature
@@ -156,6 +171,8 @@ uint32_t ()
 -- ir
 fn <unnamed> @ 0x2102bc (size 84)
   blk0 @ 0x2102bc:
+    unsupported: SIMD store
+    unsupported: SIMD store
     unsupported: FCMP at 0x2102d0
     brif pl -> 0x2102e8
   blk1 @ 0x2102d8:
@@ -164,10 +181,12 @@ fn <unnamed> @ 0x2102bc (size 84)
     store32(#0xffffffff, (sp + #0xffffffffffffffec))
     br 0x210304
   blk3 @ 0x2102e8:
+    x8 = #0x0
     unsupported: FCMP at 0x2102f4
-    store32((select le #0x0, #0x0 ? #0x0, #0x1 & #0xffffffff), (sp + #0xffffffffffffffec))
+    x8 = (select le (x8 & #0xffffffff), #0x0 ? (x8 & #0xffffffff), #0x1 & #0xffffffff)
+    store32((x8 & #0xffffffff), (sp + #0xffffffffffffffec))
     br 0x210304
   blk4 @ 0x210304:
     ret load32((sp + #0xffffffffffffffec))
 -- card
-{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":84,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":84,"sizeEstimated":true,"unsupported":4}

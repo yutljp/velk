@@ -48,10 +48,7 @@ int helper(int x) {
     *(uint32_t *)(rbp - 0x8) = 0x0;
     *(uint32_t *)(rbp - 0xc) = 0x0;
     while (*(uint32_t *)(rbp - 0xc) < *(uint32_t *)(rbp - 0x4)) {
-        eax = *(uint32_t *)(rbp - 0xc);
-        eax = eax * *(uint32_t *)(rbp - 0xc);
-        eax = eax + *(uint32_t *)(rbp - 0x8);
-        *(uint32_t *)(rbp - 0x8) = eax;
+        *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0xc) * *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x8);
         *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0xc) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -71,13 +68,9 @@ fn helper @ 0x2011e0 (size 65)
     store32(#0x0, (rbp + #0xfffffffffffffff8))
     store32(#0x0, (rbp + #0xfffffffffffffff4))
   blk1 @ 0x2011f5:
-    eax = load32((rbp + #0xfffffffffffffff4))
-    brif ge eax, load32((rbp + #0xfffffffffffffffc)) -> 0x20121c
+    brif ge load32((rbp + #0xfffffffffffffff4)), load32((rbp + #0xfffffffffffffffc)) -> 0x20121c
   blk2 @ 0x201201:
-    eax = load32((rbp + #0xfffffffffffffff4))
-    eax = (eax * load32((rbp + #0xfffffffffffffff4)))
-    eax = (eax + load32((rbp + #0xfffffffffffffff8)))
-    store32(eax, (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffff4)) * load32((rbp + #0xfffffffffffffff4))) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
     store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
     br 0x2011f5
   blk3 @ 0x20121c:
@@ -117,11 +110,8 @@ int sum_arr(int *p, int n) {
     *(uint32_t *)(rbp - 0x10) = 0x0;
     *(uint32_t *)(rbp - 0x14) = 0x0;
     while (*(uint32_t *)(rbp - 0x14) < *(uint32_t *)(rbp - 0xc)) {
-        rax = *(uint64_t *)(rbp - 0x8);
         rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
-        rax = *(uint32_t *)(rax + rcx * 0x4);
-        rax = eax + *(uint32_t *)(rbp - 0x10);
-        *(uint32_t *)(rbp - 0x10) = eax;
+        *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(*(uint64_t *)(rbp - 0x8) + rcx * 0x4) + *(uint32_t *)(rbp - 0x10);
         *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
     }
     rsp = rsp + 0x8;
@@ -142,15 +132,11 @@ fn sum_arr @ 0x201250 (size 73)
     store32(#0x0, (rbp + #0xfffffffffffffff0))
     store32(#0x0, (rbp + #0xffffffffffffffec))
   blk1 @ 0x201269:
-    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201294
+    brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201294
   blk2 @ 0x201275:
-    rax = load64((rbp + #0xfffffffffffffff8))
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    store32((((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x201269
   blk3 @ 0x201294:
     rsp = (rsp + #0x8)

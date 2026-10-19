@@ -26,7 +26,9 @@ fn tail_target @ 0x0 (size 28)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x1c */
 uint32_t tail_direct(uint32_t a0) {
+    a0 = a0 + 0x2;
     sub_<dynamic>();
+    return a0;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -35,25 +37,31 @@ uint32_t (uint32_t a0)
 -- ir
 fn tail_direct @ 0x1c (size 8)
   blk0 @ 0x1c:
+    w0 = (w0 + #0x2)
   blk1 @ 0x20:
     call <dynamic>
+    ret w0
 -- card
 {"addr":"0x1c","approxTokens":108,"blocks":2,"hardReasons":[],"name":"tail_direct","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
 
 == 0x24 tail_indirect
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x24 */
-uint32_t tail_indirect(uint64_t a0, uint32_t a1) {
-    goto *(a0);
+uint32_t tail_indirect(uint32_t a0, uint32_t a1) {
+    x2 = a0;
+    a0 = a1 + 0x1;
+    goto *(x2);
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
 fn tail_indirect @ 0x24 (size 12)
   blk0 @ 0x24:
-    br x0
+    x2 = x0
+    x0 = ((w1 + #0x1) & #0xffffffff)
+    br x2
 -- card
 {"addr":"0x24","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
 

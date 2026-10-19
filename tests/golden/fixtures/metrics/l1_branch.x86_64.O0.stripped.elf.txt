@@ -6,13 +6,13 @@
 == 0x2011a0 -
 -- decompile
 /* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
-void sub_2011a0(uint32_t a0) {
+uint32_t sub_2011a0(uint32_t a0) {
     uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-10] */
 
     rsp = rsp - 0x8;
     local_0 = rbp;
-    local_1 = a0;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x8) = a0;
     if (a0 < 0x0) {
         *(uint32_t *)(rbp - 0x4) = 0xffffffff;
     } else {
@@ -23,10 +23,10 @@ void sub_2011a0(uint32_t a0) {
         }
     }
     rsp = rsp + 0x8;
-    return;
+    return *(uint32_t *)(rbp - 0x4);
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -34,7 +34,8 @@ fn <unnamed> @ 0x2011a0 (size 64)
   blk0 @ 0x2011a0:
     rsp = (rsp + #0xfffffffffffffff8)
     store64(rbp, rsp)
-    store32(edi, (rsp + #0xfffffffffffffff8))
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffff8))
     brif ge edi, #0x0 -> 0x2011bd
   blk1 @ 0x2011b1:
     store32(#0xffffffff, (rbp + #0xfffffffffffffffc))
@@ -55,7 +56,7 @@ fn <unnamed> @ 0x2011a0 (size 64)
 == 0x2011e0 -
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
-void sub_2011e0(uint32_t a0, uint32_t a1, uint32_t a2) {
+uint32_t sub_2011e0(uint32_t a0, uint32_t a1, uint32_t a2) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -74,10 +75,10 @@ void sub_2011e0(uint32_t a0, uint32_t a1, uint32_t a2) {
         }
     }
     rsp = rsp + 0x8;
-    return;
+    return *(uint32_t *)(rbp - 0x4);
 }
 -- signature
-void (uint32_t a0, uint32_t a1, uint32_t a2)
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir
@@ -109,23 +110,23 @@ fn <unnamed> @ 0x2011e0 (size 80)
 == 0x201230 -
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
-void sub_201230(uint32_t a0) {
+uint32_t sub_201230(uint32_t a0) {
     uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
 
     rsp = rsp - 0x8;
     local_0 = rbp;
-    local_1 = a0;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = a0;
     if (a0 > 0x0) {
         *(uint32_t *)(rbp - 0x8) = 0x1;
     } else {
         *(uint32_t *)(rbp - 0x8) = (*(uint32_t *)(rbp - 0x4) < 0x0 ? 0xffffffff : 0x0);
     }
     rsp = rsp + 0x8;
-    return;
+    return *(uint32_t *)(rbp - 0x8);
 }
 -- signature
-void (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -133,7 +134,8 @@ fn <unnamed> @ 0x201230 (size 54)
   blk0 @ 0x201230:
     rsp = (rsp + #0xfffffffffffffff8)
     store64(rbp, rsp)
-    store32(edi, (rsp + #0xfffffffffffffffc))
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
     brif le edi, #0x0 -> 0x20124e
   blk1 @ 0x201241:
     store32(#0x1, (rbp + #0xfffffffffffffff8))

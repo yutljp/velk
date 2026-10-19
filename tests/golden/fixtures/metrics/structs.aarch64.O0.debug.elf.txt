@@ -36,16 +36,12 @@ long record_total(struct record *items, int n) {
 
     local_0 = items;
     local_1 = n;
-    while (true) {
-        x9 = local_1;
-        x8 = local_3 - w9;
-        if (w8 >= w9) break;
+    local_2 = 0x0;
+    local_3 = 0x0;
+    while (local_3 < local_1) {
         x8 = local_0 + local_3 * 0x18;
-        x8 = *(uint64_t *)(x8 + 0x8);
-        x10 = local_3 * 0x18;
-        x9 = *(int16_t *)(local_0 + x10 + 0x10);
-        x9 = x8 * x9;
-        local_2 += x9;
+        x9 = *(int16_t *)(local_0 + local_3 * 0x18 + 0x10);
+        local_2 += *(uint64_t *)(x8 + 0x8) * x9;
         local_3 += 0x1;
     }
     return local_2;
@@ -59,23 +55,20 @@ fn record_total @ 0x210238 (size 136)
   blk0 @ 0x210238:
     store64(x0, (sp + #0xfffffffffffffff8))
     store32(w1, (sp + #0xfffffffffffffff4))
+    store64(#0x0, (sp + #0xffffffffffffffe8))
+    store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210250
   blk1 @ 0x210250:
-    x9 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    x8 = (((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
-    brif ge (x8 & #0xffffffff), (x9 & #0xffffffff) -> 0x2102b4
+    brif ge (load32((sp + #0xffffffffffffffe4)) & #0xffffffff), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x2102b4
   blk2 @ 0x210260:
     br 0x210264
   blk3 @ 0x210264:
     x8 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
-    x8 = load64((x8 + #0x8))
-    x10 = (load32((sp + #0xffffffffffffffe4))s * #0x18)
-    x9 = load16(((load64((sp + #0xfffffffffffffff8)) + x10) + #0x10))s
-    x9 = (x8 * x9)
-    store64((load64((sp + #0xffffffffffffffe8)) + x9), (sp + #0xffffffffffffffe8))
+    x9 = load16(((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18)) + #0x10))s
+    store64((load64((sp + #0xffffffffffffffe8)) + (load64((x8 + #0x8)) * x9)), (sp + #0xffffffffffffffe8))
     br 0x2102a4
   blk4 @ 0x2102a4:
-    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
+    store32((((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
     br 0x210250
   blk5 @ 0x2102b4:
     ret load64((sp + #0xffffffffffffffe8))
@@ -89,10 +82,12 @@ struct point point_add(struct point a, struct point b) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
     uint64_t local_2; /* [sp-8] */
+    uint32_t local_3; /* [sp-4] */
 
     local_0 = a;
     local_1 = b;
-    local_2 = local_0 + local_1;
+    *(uint32_t *)&local_2 = *(uint32_t *)&local_0 + *(uint32_t *)&local_1;
+    local_3 = *(uint32_t *)(sp - 0xc) + *(uint32_t *)(sp - 0x14);
     return local_2;
 }
 -- signature
@@ -105,6 +100,7 @@ fn point_add @ 0x2102c0 (size 56)
     store64(x0, (sp + #0xfffffffffffffff0))
     store64(x1, (sp + #0xffffffffffffffe8))
     store32((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffe8))), (sp + #0xfffffffffffffff8))
+    store32((load32((sp + #0xfffffffffffffff4)) + load32((sp + #0xffffffffffffffec))), (sp + #0xfffffffffffffffc))
     ret load64((sp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x2102c0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}
@@ -168,7 +164,7 @@ uint32_t word_low_byte(union word w) {
 
     w8 = w;
     local_0 = w8;
-    w = local_0;
+    w = *(uint8_t *)&local_0;
     return w;
 }
 -- signature
@@ -189,14 +185,17 @@ fn word_low_byte @ 0x21036c (size 24)
 -- decompile
 /* velk pseudo-C: flags_level @ 0x210384 */
 uint32_t flags_level(struct flags f) {
+    uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-4] */
     uint32_t local_2; /* [sp-14] */
 
-    if (*(uint8_t *)(sp + 0x1c) & 0x1 == 0x0) {
-        local_2 = local_1 >> 0x1 & 0x7;
+    local_0 = f;
+    local_1 = *(uint32_t *)&local_0;
+    if ((*(uint8_t *)&local_1 & 0x1) == 0x0) {
+        local_2 = *(uint8_t *)&local_1 >> 0x1 & 0x7;
         return local_2;
     }
-    local_2 = local_1 >> 0x4;
+    local_2 = *(uint8_t *)&local_1 >> 0x4;
     return local_2;
 }
 -- signature
@@ -208,7 +207,7 @@ fn flags_level @ 0x210384 (size 76)
   blk0 @ 0x210384:
     store64(x0, (sp + #0xfffffffffffffff0))
     store32((load32((sp + #0xfffffffffffffff0)) & #0xffffffff), (sp + #0xfffffffffffffffc))
-    brif eq ((load8((sp + #0x1c)) & #0xffffffff) & #0x1), #0x0 -> 0x2103b0
+    brif eq ((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) & #0x1), #0x0 -> 0x2103b0
   blk1 @ 0x21039c:
     br 0x2103a0
   blk2 @ 0x2103a0:

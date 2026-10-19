@@ -27,8 +27,9 @@ fn tail_target @ 0x2101d4 (size 40)
 /* velk pseudo-C: tail_direct @ 0x2101fc */
 int tail_direct(void) {
     /* unsupported (2 steps): STUR at 0x210208, LDUR at 0x21020c */
+    w0 = w8 + 0x2;
     tail_target();
-    return w8 + 0x2;
+    return w0;
 }
 -- signature
 int ()
@@ -39,8 +40,9 @@ fn tail_direct @ 0x2101fc (size 40)
   blk0 @ 0x2101fc:
     unsupported: STUR at 0x210208
     unsupported: LDUR at 0x21020c
+    w0 = (w8 + #0x2)
     call 0x2101d4
-    ret (w8 + #0x2)
+    ret w0
 -- card
 {"addr":"0x2101fc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":2}
 
@@ -48,11 +50,11 @@ fn tail_direct @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x210224 */
 int tail_indirect(void *f, int x) {
-    uint32_t local_0; /* [sp-1c] */
-
-    local_0 = x;
+    x8 = f;
+    w9 = x;
+    f = w9 + 0x1;
     /* unsupported: BLR at 0x210244 */
-    return local_0 + 0x1;
+    return f;
 }
 -- signature
 int (void * f, int x)
@@ -61,9 +63,11 @@ int (void * f, int x)
 -- ir
 fn tail_indirect @ 0x210224 (size 48)
   blk0 @ 0x210224:
-    store32(w1, (sp + #0xffffffffffffffe4))
+    x8 = x0
+    w9 = w1
+    x0 = ((w9 + #0x1) & #0xffffffff)
     unsupported: BLR at 0x210244
-    ret ((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff)
+    ret w0
 -- card
 {"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":1}
 

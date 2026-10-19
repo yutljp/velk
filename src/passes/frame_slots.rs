@@ -132,7 +132,13 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
                     }
                     rewrite_expr_frame(value, frame, sp);
                 }
-                Stmt::Ret { value } => rewrite_local_loads(value, frame, sp),
+                Stmt::Brif { lhs, rhs, .. } => {
+                    rewrite_expr_frame(lhs, frame, sp);
+                    rewrite_expr_frame(rhs, frame, sp);
+                }
+                Stmt::Switch { index: value, .. }
+                | Stmt::BrIndirect { target: value }
+                | Stmt::Ret { value } => rewrite_expr_frame(value, frame, sp),
                 _ => {}
             }
         }
@@ -140,35 +146,6 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
         block
             .stmts
             .retain(|stmt| !matches!(stmt, Stmt::Assign { dest, value } if dest.index == sp && is_adjustment(value, sp)));
-    }
-}
-
-/// Rewrites loads from local (negative-offset) slots against the entry frame.
-fn rewrite_local_loads(expr: &mut Expr, frame: i64, sp: u16) {
-    match expr {
-        Expr::Load { addr, .. } => match frame_slot(addr, frame, sp) {
-            Some(slot) if slot < 0 => **addr = frame_address(sp, slot),
-            Some(_) => {}
-            None => rewrite_local_loads(addr, frame, sp),
-        },
-        Expr::Bin { lhs, rhs, .. } => {
-            rewrite_local_loads(lhs, frame, sp);
-            rewrite_local_loads(rhs, frame, sp);
-        }
-        Expr::SignExtend { value, .. } => rewrite_local_loads(value, frame, sp),
-        Expr::Select {
-            lhs,
-            rhs,
-            then,
-            els,
-            ..
-        } => {
-            rewrite_local_loads(lhs, frame, sp);
-            rewrite_local_loads(rhs, frame, sp);
-            rewrite_local_loads(then, frame, sp);
-            rewrite_local_loads(els, frame, sp);
-        }
-        _ => {}
     }
 }
 

@@ -10,8 +10,131 @@ uint32_t d7(uint32_t a0) {
         dword_208 = eax;
         return dword_20e;
     }
-    rax = (int32_t)(dword_12[a0]) + 0x12;
+    rcx = 0x12;
+    rax = (int32_t)(dword_12[a0]);
+    rax = rax + 0x12;
     goto *(rax);
+L_1b:
+    rax = dword_21;
+    dword_208 = eax;
+    return dword_20e;
+L_26:
+    dword_32 = dword_2c;
+    t65 = dword_38 + 0x1;
+    dword_38 += 0x1;
+    t65 = dword_3f + 0x2;
+    dword_3f += 0x2;
+    t65 = dword_46 + 0x3;
+    dword_46 += 0x3;
+    rax = dword_4c + 0x4;
+    dword_208 = eax;
+    return dword_20e;
+L_54:
+    dword_60 = dword_5a;
+    t65 = dword_66 + 0x1;
+    dword_66 += 0x1;
+    t65 = dword_6d + 0x2;
+    dword_6d += 0x2;
+    t65 = dword_74 + 0x3;
+    dword_74 += 0x3;
+    t65 = dword_7b + 0x4;
+    dword_7b += 0x4;
+    t65 = dword_82 + 0x5;
+    dword_82 += 0x5;
+    t65 = dword_89 + 0x6;
+    dword_89 += 0x6;
+    t65 = dword_90 + 0x7;
+    dword_90 += 0x7;
+    t65 = dword_97 + 0x8;
+    dword_97 += 0x8;
+    rax = dword_9d + 0x9;
+    dword_208 = eax;
+    return dword_20e;
+L_a5:
+    dword_b1 = dword_ab;
+    t65 = dword_b7 + 0x1;
+    dword_b7 += 0x1;
+    rax = dword_bd + 0x2;
+    dword_208 = eax;
+    return dword_20e;
+L_c5:
+    dword_d1 = dword_cb;
+    t65 = dword_d7 + 0x1;
+    dword_d7 += 0x1;
+    t65 = dword_de + 0x2;
+    dword_de += 0x2;
+    rax = dword_e4 + 0x3;
+    dword_208 = eax;
+    return dword_20e;
+L_ec:
+    dword_f8 = dword_f2;
+    t65 = dword_fe + 0x1;
+    dword_fe += 0x1;
+    t65 = dword_105 + 0x2;
+    dword_105 += 0x2;
+    t65 = dword_10c + 0x3;
+    dword_10c += 0x3;
+    t65 = dword_113 + 0x4;
+    dword_113 += 0x4;
+    t65 = dword_11a + 0x5;
+    dword_11a += 0x5;
+    t65 = dword_121 + 0x6;
+    dword_121 += 0x6;
+    rax = dword_127 + 0x7;
+    dword_208 = eax;
+    return dword_20e;
+L_12f:
+    dword_13b = dword_135;
+    rax = dword_141 + 0x1;
+    dword_208 = eax;
+    return dword_20e;
+L_148:
+    dword_154 = dword_14e;
+    t65 = dword_15a + 0x1;
+    dword_15a += 0x1;
+    t65 = dword_161 + 0x2;
+    dword_161 += 0x2;
+    t65 = dword_168 + 0x3;
+    dword_168 += 0x3;
+    t65 = dword_16f + 0x4;
+    dword_16f += 0x4;
+    rax = dword_175 + 0x5;
+    dword_208 = eax;
+    return dword_20e;
+L_17d:
+    dword_189 = dword_183;
+    t65 = dword_18f + 0x1;
+    dword_18f += 0x1;
+    t65 = dword_196 + 0x2;
+    dword_196 += 0x2;
+    t65 = dword_19d + 0x3;
+    dword_19d += 0x3;
+    t65 = dword_1a4 + 0x4;
+    dword_1a4 += 0x4;
+    t65 = dword_1ab + 0x5;
+    dword_1ab += 0x5;
+    rax = dword_1b1 + 0x6;
+    dword_208 = eax;
+    return dword_20e;
+L_1bd:
+    dword_1c9 = dword_1c3;
+    t65 = dword_1cf + 0x1;
+    dword_1cf += 0x1;
+    t65 = dword_1d6 + 0x2;
+    dword_1d6 += 0x2;
+    t65 = dword_1dd + 0x3;
+    dword_1dd += 0x3;
+    t65 = dword_1e4 + 0x4;
+    dword_1e4 += 0x4;
+    t65 = dword_1eb + 0x5;
+    dword_1eb += 0x5;
+    t65 = dword_1f2 + 0x6;
+    dword_1f2 += 0x6;
+    t65 = dword_1f9 + 0x7;
+    dword_1f9 += 0x7;
+    rax = dword_1ff + 0x8;
+    dword_208 = eax;
+    return dword_20e;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -22,48 +145,70 @@ fn d7 @ 0x0 (size 527)
   blk0 @ 0x0:
     brif hi edi, #0x9 -> 0x1b6
   blk1 @ 0x9:
-    rax = (sext32(load32((#0x12 + (edi * #0x4)))) + #0x12)
+    rcx = #0x12
+    rax = sext32(load32((#0x12 + (edi * #0x4))))
+    rax = (rax + #0x12)
     br rax
   blk2 @ 0x1b:
     rax = (load32(#0x21) & #0xffffffff)
     br 0x202
   blk3 @ 0x26:
     store32((load32(#0x2c) & #0xffffffff), #0x32)
+    t65 = (load32(#0x38) + #0x1)
     store32((load32(#0x38) + #0x1), #0x38)
+    t65 = (load32(#0x3f) + #0x2)
     store32((load32(#0x3f) + #0x2), #0x3f)
+    t65 = (load32(#0x46) + #0x3)
     store32((load32(#0x46) + #0x3), #0x46)
     rax = (((load32(#0x4c) & #0xffffffff) + #0x4) & #0xffffffff)
     br 0x202
   blk4 @ 0x54:
     store32((load32(#0x5a) & #0xffffffff), #0x60)
+    t65 = (load32(#0x66) + #0x1)
     store32((load32(#0x66) + #0x1), #0x66)
+    t65 = (load32(#0x6d) + #0x2)
     store32((load32(#0x6d) + #0x2), #0x6d)
+    t65 = (load32(#0x74) + #0x3)
     store32((load32(#0x74) + #0x3), #0x74)
+    t65 = (load32(#0x7b) + #0x4)
     store32((load32(#0x7b) + #0x4), #0x7b)
+    t65 = (load32(#0x82) + #0x5)
     store32((load32(#0x82) + #0x5), #0x82)
+    t65 = (load32(#0x89) + #0x6)
     store32((load32(#0x89) + #0x6), #0x89)
+    t65 = (load32(#0x90) + #0x7)
     store32((load32(#0x90) + #0x7), #0x90)
+    t65 = (load32(#0x97) + #0x8)
     store32((load32(#0x97) + #0x8), #0x97)
     rax = (((load32(#0x9d) & #0xffffffff) + #0x9) & #0xffffffff)
     br 0x202
   blk5 @ 0xa5:
     store32((load32(#0xab) & #0xffffffff), #0xb1)
+    t65 = (load32(#0xb7) + #0x1)
     store32((load32(#0xb7) + #0x1), #0xb7)
     rax = (((load32(#0xbd) & #0xffffffff) + #0x2) & #0xffffffff)
     br 0x202
   blk6 @ 0xc5:
     store32((load32(#0xcb) & #0xffffffff), #0xd1)
+    t65 = (load32(#0xd7) + #0x1)
     store32((load32(#0xd7) + #0x1), #0xd7)
+    t65 = (load32(#0xde) + #0x2)
     store32((load32(#0xde) + #0x2), #0xde)
     rax = (((load32(#0xe4) & #0xffffffff) + #0x3) & #0xffffffff)
     br 0x202
   blk7 @ 0xec:
     store32((load32(#0xf2) & #0xffffffff), #0xf8)
+    t65 = (load32(#0xfe) + #0x1)
     store32((load32(#0xfe) + #0x1), #0xfe)
+    t65 = (load32(#0x105) + #0x2)
     store32((load32(#0x105) + #0x2), #0x105)
+    t65 = (load32(#0x10c) + #0x3)
     store32((load32(#0x10c) + #0x3), #0x10c)
+    t65 = (load32(#0x113) + #0x4)
     store32((load32(#0x113) + #0x4), #0x113)
+    t65 = (load32(#0x11a) + #0x5)
     store32((load32(#0x11a) + #0x5), #0x11a)
+    t65 = (load32(#0x121) + #0x6)
     store32((load32(#0x121) + #0x6), #0x121)
     rax = (((load32(#0x127) & #0xffffffff) + #0x7) & #0xffffffff)
     br 0x202
@@ -73,18 +218,27 @@ fn d7 @ 0x0 (size 527)
     br 0x202
   blk9 @ 0x148:
     store32((load32(#0x14e) & #0xffffffff), #0x154)
+    t65 = (load32(#0x15a) + #0x1)
     store32((load32(#0x15a) + #0x1), #0x15a)
+    t65 = (load32(#0x161) + #0x2)
     store32((load32(#0x161) + #0x2), #0x161)
+    t65 = (load32(#0x168) + #0x3)
     store32((load32(#0x168) + #0x3), #0x168)
+    t65 = (load32(#0x16f) + #0x4)
     store32((load32(#0x16f) + #0x4), #0x16f)
     rax = (((load32(#0x175) & #0xffffffff) + #0x5) & #0xffffffff)
     br 0x202
   blk10 @ 0x17d:
     store32((load32(#0x183) & #0xffffffff), #0x189)
+    t65 = (load32(#0x18f) + #0x1)
     store32((load32(#0x18f) + #0x1), #0x18f)
+    t65 = (load32(#0x196) + #0x2)
     store32((load32(#0x196) + #0x2), #0x196)
+    t65 = (load32(#0x19d) + #0x3)
     store32((load32(#0x19d) + #0x3), #0x19d)
+    t65 = (load32(#0x1a4) + #0x4)
     store32((load32(#0x1a4) + #0x4), #0x1a4)
+    t65 = (load32(#0x1ab) + #0x5)
     store32((load32(#0x1ab) + #0x5), #0x1ab)
     rax = (((load32(#0x1b1) & #0xffffffff) + #0x6) & #0xffffffff)
     br 0x202
@@ -93,12 +247,19 @@ fn d7 @ 0x0 (size 527)
     br 0x202
   blk12 @ 0x1bd:
     store32((load32(#0x1c3) & #0xffffffff), #0x1c9)
+    t65 = (load32(#0x1cf) + #0x1)
     store32((load32(#0x1cf) + #0x1), #0x1cf)
+    t65 = (load32(#0x1d6) + #0x2)
     store32((load32(#0x1d6) + #0x2), #0x1d6)
+    t65 = (load32(#0x1dd) + #0x3)
     store32((load32(#0x1dd) + #0x3), #0x1dd)
+    t65 = (load32(#0x1e4) + #0x4)
     store32((load32(#0x1e4) + #0x4), #0x1e4)
+    t65 = (load32(#0x1eb) + #0x5)
     store32((load32(#0x1eb) + #0x5), #0x1eb)
+    t65 = (load32(#0x1f2) + #0x6)
     store32((load32(#0x1f2) + #0x6), #0x1f2)
+    t65 = (load32(#0x1f9) + #0x7)
     store32((load32(#0x1f9) + #0x7), #0x1f9)
     rax = (((load32(#0x1ff) & #0xffffffff) + #0x8) & #0xffffffff)
   blk13 @ 0x202:

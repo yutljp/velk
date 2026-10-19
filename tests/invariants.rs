@@ -9,6 +9,7 @@ use std::path::Path;
 
 use velk::ir::{CType, Expr, FunctionIr, Stmt};
 use velk::loader::{Function, Isa};
+use velk::render::structure::{Node, structure_best};
 use velk::service::Binary;
 
 const BUDGETS: [usize; 4] = [0, 96, 240, 2000];
@@ -56,21 +57,31 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
         let Ok(text) = binary.decompile(function.addr, None) else {
             continue;
         };
+        // A jump out of the function has no label to find; it is a tail call
+        // or a sign that the function's extent is wrong.
+        let end = function.addr.saturating_add(function.size.unwrap_or(0));
         found.extend(
             missing_labels(&text)
                 .into_iter()
+                .filter(|target| {
+                    u64::from_str_radix(target.trim_start_matches("L_"), 16)
+                        .is_ok_and(|address| (function.addr..end).contains(&address))
+                })
                 .map(|target| format!("{label}: goto {target} has no label")),
         );
         if text.matches('{').count() != text.matches('}').count() {
             found.push(format!("{label}: unbalanced braces"));
         }
+        let analysis = binary
+            .analysis(function.addr)
+            .unwrap_or_else(|error| panic!("{label}: {error}"));
+        for effect in dropped_effects(&analysis.ir) {
+            found.push(format!("{label}: the pseudo-C drops `{effect}`"));
+        }
         // Go's internal calling convention and runtime registers are not modeled.
         if fixture.to_string_lossy().starts_with("go_") {
             continue;
         }
-        let analysis = binary
-            .analysis(function.addr)
-            .unwrap_or_else(|error| panic!("{label}: {error}"));
         let mut unassigned: Vec<u16> = unassigned_reads(&analysis.ir, isa).into_iter().collect();
         unassigned.sort_unstable();
         for register in unassigned {
@@ -81,6 +92,85 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
         }
     }
     found
+}
+
+/// The blocks reachable from the entry through direct branches.
+fn reachable(ir: &FunctionIr) -> HashSet<usize> {
+    let position = |target: &u64| ir.blocks.iter().position(|block| block.start == *target);
+    let mut seen = HashSet::new();
+    let mut pending = vec![0];
+    while let Some(index) = pending.pop() {
+        if index >= ir.blocks.len() || !seen.insert(index) {
+            continue;
+        }
+        let next = index + 1;
+        match ir.blocks[index].stmts.last() {
+            Some(Stmt::Br { target }) => pending.extend(target.as_ref().and_then(position)),
+            Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => {
+                pending.extend(position(target));
+                pending.push(next);
+            }
+            Some(Stmt::Switch { cases, default, .. }) => {
+                pending.extend(cases.iter().filter_map(|(_, target)| position(target)));
+                pending.extend(default.as_ref().and_then(position));
+            }
+            Some(Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Trap) => {}
+            _ => pending.push(next),
+        }
+    }
+    seen
+}
+
+/// The stores, calls and unsupported instructions of the reachable IR that
+/// the structured body leaves out; folding may rewrite assignments and
+/// branches, but never drops an effect.
+fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
+    fn collect(nodes: &[Node], kept: &mut HashSet<String>) {
+        for node in nodes {
+            match node {
+                Node::Stmt(stmt) => {
+                    kept.insert(format!("{stmt:?}"));
+                }
+                Node::If { then, els, .. } => {
+                    collect(then, kept);
+                    collect(els, kept);
+                }
+                Node::DoWhile { body, .. } | Node::Forever { body } => collect(body, kept),
+                Node::While { prefix, body, .. } => {
+                    collect(prefix, kept);
+                    collect(body, kept);
+                }
+                Node::Switch { arms, default, .. } => {
+                    for (_, body) in arms {
+                        collect(body, kept);
+                    }
+                    collect(default.as_deref().unwrap_or_default(), kept);
+                }
+                Node::Label(_) | Node::Break | Node::Continue => {}
+            }
+        }
+    }
+    let mut kept = HashSet::new();
+    collect(&structure_best(ir), &mut kept);
+    let reachable = reachable(ir);
+    let mut dropped: Vec<String> = ir
+        .blocks
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| reachable.contains(index))
+        .flat_map(|(_, block)| &block.stmts)
+        .filter(|stmt| {
+            matches!(
+                stmt,
+                Stmt::Store { .. } | Stmt::Call { .. } | Stmt::Unsupported { .. } | Stmt::Trap
+            )
+        })
+        .map(|stmt| format!("{stmt:?}"))
+        .filter(|effect| !kept.contains(effect))
+        .collect();
+    dropped.sort();
+    dropped.dedup();
+    dropped
 }
 
 fn missing_labels(text: &str) -> Vec<String> {
@@ -101,11 +191,17 @@ fn missing_labels(text: &str) -> Vec<String> {
 
 /// Registers the body reads that are neither parameters nor assigned
 /// anywhere, apart from the stack, frame and link registers and the
-/// callee-saved registers a prologue spills. A void function's return reads nothing.
+/// callee-saved registers a prologue spills. A void function's return reads
+/// nothing. An unsupported instruction may write any register, so a body with
+/// one is not checked.
 fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
+    let stmts = || ir.blocks.iter().flat_map(|block| &block.stmts);
+    if stmts().any(|stmt| matches!(stmt, Stmt::Unsupported { .. })) {
+        return HashSet::new();
+    }
     let mut written: HashSet<u16> = ir.params.iter().map(|param| param.index).collect();
     let mut read = HashSet::new();
-    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+    for stmt in stmts() {
         match stmt {
             Stmt::Assign { dest, value } => {
                 written.insert(dest.index);
@@ -122,10 +218,11 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
             Stmt::BrIndirect { target } => reads(target, &mut read),
             Stmt::Switch { index, .. } => reads(index, &mut read),
             Stmt::Ret { value } if ir.ret_type != CType::Void => reads(value, &mut read),
+            // A call leaves its results in the registers it may overwrite.
+            Stmt::Call { convention, .. } => written.extend(convention.clobbered()),
             Stmt::Ret { .. }
             | Stmt::BrifFlags { .. }
             | Stmt::Br { .. }
-            | Stmt::Call { .. }
             | Stmt::Unsupported { .. }
             | Stmt::Trap => {}
         }

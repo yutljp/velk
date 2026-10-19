@@ -42,14 +42,14 @@ pub(crate) fn fold_exit_branches(nodes: &mut [Node], exit: Option<u64>) {
     }
 }
 
-/// `if (c) goto L; ...; L:` inside one body is `if (!c) { ... }`.
+/// `if (c) goto L; ...; L:` inside one body is `if (!c) { ... } L:`. The label
+/// stays for other jumps to it; unused labels are pruned later.
 pub(crate) fn fold_label_branches(nodes: &mut Vec<Node>) {
-    loop {
-        let Some(label_at) = nodes.iter().position(|node| matches!(node, Node::Label(_))) else {
-            return;
-        };
+    let mut label_at = 0;
+    while label_at < nodes.len() {
         let Node::Label(target) = nodes[label_at] else {
-            return;
+            label_at += 1;
+            continue;
         };
         let branch_at = (0..label_at).rev().find(|position| {
             matches!(
@@ -57,23 +57,22 @@ pub(crate) fn fold_label_branches(nodes: &mut Vec<Node>) {
                 Node::Stmt(Stmt::Brif { target: inner, .. }) if *inner == target
             )
         });
-        let Some(branch_at) = branch_at else {
-            return;
-        };
-        let Node::Stmt(Stmt::Brif { cond, lhs, rhs, .. }) = nodes[branch_at].clone() else {
-            return;
-        };
-        let body: Vec<Node> = nodes
-            .splice(branch_at + 1..label_at, std::iter::empty())
-            .collect();
-        nodes[branch_at] = Node::If {
-            cond: cond.invert(),
-            lhs,
-            rhs,
-            then: body,
-            els: Vec::new(),
-        };
-        nodes.remove(branch_at + 1);
+        if let Some(branch_at) = branch_at
+            && let Node::Stmt(Stmt::Brif { cond, lhs, rhs, .. }) = nodes[branch_at].clone()
+        {
+            let body: Vec<Node> = nodes
+                .splice(branch_at + 1..label_at, std::iter::empty())
+                .collect();
+            nodes[branch_at] = Node::If {
+                cond: cond.invert(),
+                lhs,
+                rhs,
+                then: body,
+                els: Vec::new(),
+            };
+            label_at = branch_at + 1;
+        }
+        label_at += 1;
     }
 }
 
