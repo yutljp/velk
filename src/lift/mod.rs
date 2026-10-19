@@ -412,6 +412,20 @@ mod tests {
     }
 
     #[test]
+    fn bitfield_moves_extract_and_insert() {
+        let ret = 0xd65f_03c0;
+        // ubfx w0, w1, #4, #4
+        let ubfx = words(&[0x5304_1c20, ret]);
+        assert_eq!(returns(Isa::AArch64, ubfx, &[(1, 0xab)]), 0xa);
+        // sxtw x0, w1
+        let sxtw = words(&[0x9340_7c20, ret]);
+        assert_eq!(returns(Isa::AArch64, sxtw, &[(1, 0xffff_ffff)]), u64::MAX);
+        // ubfiz w0, w1, #1, #3
+        let ubfiz = words(&[0x531f_0820, ret]);
+        assert_eq!(returns(Isa::AArch64, ubfiz, &[(1, 0xff)]), 0xe);
+    }
+
+    #[test]
     fn integer_division_and_unscaled_loads_lift() {
         // sdiv w0, w0, w1; ret: -7 / 2 is -3.
         let sdiv = words(&[0x1ac1_0c00, 0xd65f_03c0]);

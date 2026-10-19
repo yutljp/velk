@@ -8,19 +8,19 @@ extra functions | aarch64.O2 | 3/148
 extra functions | x86_64.O0 | 4/152
 extra functions | x86_64.O2 | 2/147
 parameter count | aarch64.O0 | 144/147
-parameter count | aarch64.O2 | 137/144
+parameter count | aarch64.O2 | 138/144
 parameter count | x86_64.O0 | 140/147
 parameter count | x86_64.O2 | 136/144
 parameter pointer | aarch64.O0 | 144/173
-parameter pointer | aarch64.O2 | 154/162
+parameter pointer | aarch64.O2 | 156/164
 parameter pointer | x86_64.O0 | 143/172
 parameter pointer | x86_64.O2 | 155/167
 parameter width | aarch64.O0 | 138/144
-parameter width | aarch64.O2 | 126/136
+parameter width | aarch64.O2 | 128/137
 parameter width | x86_64.O0 | 137/143
 parameter width | x86_64.O2 | 129/139
 parameter sign | aarch64.O0 | 28/138
-parameter sign | aarch64.O2 | 81/126
+parameter sign | aarch64.O2 | 82/128
 parameter sign | x86_64.O0 | 28/137
 parameter sign | x86_64.O2 | 82/129
 return void | aarch64.O0 | 143/148
@@ -336,7 +336,7 @@ integers.aarch64.O0 0x210424 labs_value: parameter 0 signedness differs
 integers.aarch64.O0 0x210464 mul_high: ok
 integers.aarch64.O2 0x210204 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.aarch64.O2 0x21020c widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
-integers.aarch64.O2 0x21021c mixed_sign: parameter 0 is 8 bytes, expected 4
+integers.aarch64.O2 0x21021c mixed_sign: parameter 0 signedness differs
 integers.aarch64.O2 0x210228 in_range: 2 parameters, expected 3; returns 4 bytes, expected 1
 integers.aarch64.O2 0x210238 rotate_left: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
 integers.aarch64.O2 0x210244 popcount: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
@@ -589,7 +589,7 @@ structs.aarch64.O2 0x2102a8 big_make: parameter 0 signedness differs
 structs.aarch64.O2 0x2102c0 big_sum: ok
 structs.aarch64.O2 0x2102d4 word_low_byte: returns 8 bytes, expected 1
 structs.aarch64.O2 0x2102d8 flags_level: ok
-structs.aarch64.O2 0x2102ec flags_set_mode: 1 parameters, expected 2; returns uint64_t, expected void
+structs.aarch64.O2 0x2102ec flags_set_mode: returns uint64_t, expected void
 structs.x86_64.O0 0x201240 rect_area: parameter 0 is an unsigned 8-byte integer, expected a pointer
 structs.x86_64.O0 0x201270 record_total: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 signedness differs
 structs.x86_64.O0 0x2012e0 point_add: ok

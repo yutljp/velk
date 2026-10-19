@@ -401,10 +401,55 @@ fn lift_bitfield(lifter: &mut Lifter, ops: [Operand; 4], signed: bool) {
             }),
         }
     } else {
-        lifter.stmts.push(Stmt::Unsupported {
-            text: format!("bitfield immr={immr} imms={imms}"),
-        });
+        match bitfield_move(source, immr, imms, dest.width, signed) {
+            Some(value) => lifter.assign(dest, value),
+            None => lifter.stmts.push(Stmt::Unsupported {
+                text: format!("bitfield immr={immr} imms={imms}"),
+            }),
+        }
     }
+}
+
+/// The general bitfield move: with `imms >= immr` it extracts bits
+/// `immr..=imms` to the bottom (ubfx, sbfx, sxtw), otherwise it places the low
+/// `imms + 1` bits at `width - immr` (ubfiz, sbfiz). A signed field extends
+/// only when it is 8, 16 or 32 bits wide.
+fn bitfield_move(source: Expr, immr: u64, imms: u64, width: u8, signed: bool) -> Option<Expr> {
+    let (field, shifted_left) = if imms >= immr {
+        (imms - immr + 1, false)
+    } else {
+        (imms + 1, true)
+    };
+    let mask = Expr::constant(if field >= 64 {
+        u64::MAX
+    } else {
+        (1u64 << field) - 1
+    });
+    let low = if shifted_left {
+        source
+    } else {
+        Expr::bin(BinOp::Shr, source, Expr::constant(immr))
+    };
+    let extracted = if signed {
+        match field {
+            8 | 16 | 32 => Expr::SignExtend {
+                value: Box::new(low),
+                width: (field / 8) as u8,
+            },
+            _ => return None,
+        }
+    } else {
+        Expr::bin(BinOp::And, low, mask)
+    };
+    Some(if shifted_left {
+        Expr::bin(
+            BinOp::Shl,
+            extracted,
+            Expr::constant(u64::from(width) - immr),
+        )
+    } else {
+        extracted
+    })
 }
 
 fn lift_variable_shift(lifter: &mut Lifter, ops: [Operand; 4], shift: a64::ShiftStyle) {
