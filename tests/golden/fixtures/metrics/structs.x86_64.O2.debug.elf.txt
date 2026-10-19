@@ -13,7 +13,7 @@
 /* velk pseudo-C: rect_area @ 0x2011e0 */
 /* struct: r +0x8:uint32_t, +0xc:uint32_t */
 int rect_area(struct rect *r) {
-    return (r->field_0xc - r->field_0x4) * (r->max - r->min);
+    return (r->max.y - r->min.y) * (r->max.x - r->min.x);
 }
 -- signature
 int (struct rect * r)
