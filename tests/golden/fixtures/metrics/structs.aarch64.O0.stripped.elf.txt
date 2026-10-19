@@ -111,7 +111,6 @@ fn <unnamed> @ 0x2102c0 (size 56)
 int64_t sub_2102f8(int64_t a0) {
     uint64_t local_0; /* [sp-8] */
 
-    sp = sp - 0x10;
     x9 = x8;
     local_0 = a0;
     *(uint64_t *)(x9) = local_0;
@@ -127,13 +126,12 @@ int64_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x2102f8 (size 68)
   blk0 @ 0x2102f8:
-    sp = (sp - #0x10)
     x9 = x8
-    store64(x0, (sp + #0x8))
-    store64(load64((sp + #0x8)), x9)
-    store64((load64((sp + #0x8)) + #0x1), (x9 + #0x8))
-    store64((load64((sp + #0x8)) << #0x1), (x9 + #0x10))
-    store64((load64((sp + #0x8)) * #0x3), (x9 + #0x18))
+    store64(x0, (sp + #0xfffffffffffffff8))
+    store64(load64((sp + #0xfffffffffffffff8)), x9)
+    store64((load64((sp + #0xfffffffffffffff8)) + #0x1), (x9 + #0x8))
+    store64((load64((sp + #0xfffffffffffffff8)) << #0x1), (x9 + #0x10))
+    store64((load64((sp + #0xfffffffffffffff8)) * #0x3), (x9 + #0x18))
     ret x0
 -- card
 {"addr":"0x2102f8","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":68,"unsupported":0}
@@ -223,16 +221,9 @@ fn <unnamed> @ 0x210384 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2103d0 @ 0x2103d0 */
 int64_t sub_2103d0(int64_t a0, int32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
-
-    sp = sp - 0x10;
-    local_0 = a0;
-    local_1 = a1;
     x9 = a0;
     w8 = *(uint8_t *)(x9);
-    w8 = w8 & 0xfffffff1;
-    *(uint8_t *)(x9) = w8 | (a1 & 0x7) << 0x1;
+    *(uint8_t *)(x9) = w8 & 0xfffffff1 | (a1 & 0x7) << 0x1;
     return a0;
 }
 -- signature
@@ -242,13 +233,9 @@ int64_t (int64_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2103d0 (size 48)
   blk0 @ 0x2103d0:
-    sp = (sp - #0x10)
-    store64(x0, (sp + #0x8))
-    store32(w1, (sp + #0x4))
     x9 = x0
     w8 = load8(x9)
-    w8 = (w8 & #0xfffffff1)
-    store8(((w8 | ((w1 & #0x7) << #0x1)) & #0xffffffff), x9)
+    store8((((w8 & #0xfffffff1) | ((w1 & #0x7) << #0x1)) & #0xffffffff), x9)
     ret x0
 -- card
 {"addr":"0x2103d0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}

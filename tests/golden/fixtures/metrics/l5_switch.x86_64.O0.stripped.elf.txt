@@ -27,128 +27,69 @@ int32_t sub_201400(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint64_t local_1; /* [sp-18] */
 
-    rsp = rsp - 0x8;
-    rsp = rsp - 0x10;
     local_0 = a0;
-    rax = local_0;
-    rax = eax - 0xa;
+    rax = local_0 - 0xa;
     rcx = eax;
     local_1 = rcx;
-    rax = eax - 0xf;
-    if (eax + 0xf > 0xf /* unsigned */) {
+    if (eax > 0xf /* unsigned */) {
         dword_202760 = 0x0;
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     }
-    rax = local_1;
     rcx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[rax]);
+    rax = (int64_t)(int32_t)(dword_200158[local_1]);
     rax = rax + 0x200158;
-    switch (((*(uint32_t *)(rsp - 0xc) - 0x19) & 0xffffffff)) {
+    switch (((*(uint32_t *)(rsp - 0x24) - 0x19) & 0xffffffff)) {
     case -15:
         sub_2014f0();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -14:
         sub_201510();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -13:
         sub_201530();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -12:
         sub_201550();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -11:
         sub_201570();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -10:
         sub_201590();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -9:
         sub_2015b0();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -8:
         sub_2015d0();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -7:
         sub_2015f0();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -6:
         sub_201610();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -5:
         sub_201630();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -4:
         sub_201650();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -3:
         sub_201670();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -2:
         sub_201690();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case -1:
         sub_2016b0();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     case 0:
         sub_2016d0();
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     default:
         dword_202760 = 0x0;
-        rax = dword_202760;
-        rsp = rsp + 0x10;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202760;
     }
 }
 -- signature
@@ -159,21 +100,16 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201400 (size 234)
   blk0 @ 0x201400:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rsp = (rsp - #0x10)
-    store32(edi, (rsp + #0xc))
-    rax = (load32((rsp + #0xc)) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    rax = ((load32((rsp + #0xfffffffffffffff4)) + #0xfffffffffffffff6) & #0xffffffff)
     rcx = (rax & #0xffffffff)
-    store64(rcx, rsp)
-    rax = (((rax & #0xffffffff) - #0xf) & #0xffffffff)
-    brif hi (eax + #0xf), #0xf -> 0x2014d4
+    store64(rcx, (rsp + #0xffffffffffffffe8))
+    brif hi (rax & #0xffffffff), #0xf -> 0x2014d4
   blk1 @ 0x201420:
-    rax = load64(rsp)
     rcx = #0x200158
-    rax = sext32(load32((#0x200158 + (rax * #0x4))))
+    rax = sext32(load32((#0x200158 + (load64((rsp + #0xffffffffffffffe8)) * #0x4))))
     rax = (rax + #0x200158)
-    switch ((load32((rsp + #0xfffffffffffffff4)) + #0xffffffffffffffe7) & #0xffffffff) [-15->0x201434, -14->0x20143e, -13->0x201448, -12->0x201452, -11->0x20145c, -10->0x201466, -9->0x201470, -8->0x20147a, -7->0x201484, -6->0x20148e, -5->0x201498, -4->0x2014a2, -3->0x2014ac, -2->0x2014b6, -1->0x2014c0, 0->0x2014ca] default 0x2014d4
+    switch ((load32((rsp + #0xffffffffffffffdc)) + #0xffffffffffffffe7) & #0xffffffff) [-15->0x201434, -14->0x20143e, -13->0x201448, -12->0x201452, -11->0x20145c, -10->0x201466, -9->0x201470, -8->0x20147a, -7->0x201484, -6->0x20148e, -5->0x201498, -4->0x2014a2, -3->0x2014ac, -2->0x2014b6, -1->0x2014c0, 0->0x2014ca] default 0x2014d4
   blk2 @ 0x201434:
     call 0x2014f0()
     br 0x2014de
@@ -225,10 +161,7 @@ fn <unnamed> @ 0x201400 (size 234)
   blk18 @ 0x2014d4:
     store32(#0x0, #0x202760)
   blk19 @ 0x2014de:
-    rax = (load32(#0x202760) & #0xffffffff)
-    rsp = (rsp + #0x10)
-    rsp = (rsp + #0x8)
-    ret rax
+    ret (load32(#0x202760) & #0xffffffff)
 -- card
 {"addr":"0x201400","approxTokens":198,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":234,"unsupported":0}
 

@@ -179,8 +179,9 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
         };
         for stmt in &block.stmts {
             match stmt {
+                // A store through any other pointer leaves the frame alone.
                 Stmt::Store { addr, value, .. } => {
-                    if frame_slot(addr, frame, sp).is_none() || !frame_only(value, frame, sp) {
+                    if !frame_only(addr, frame, sp) || !frame_only(value, frame, sp) {
                         return false;
                     }
                 }
@@ -277,9 +278,8 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
         for stmt in &mut block.stmts {
             match stmt {
                 Stmt::Store { addr, value, .. } => {
-                    if let Some(slot) = frame_slot(addr, frame, sp) {
-                        *addr = frame_address(sp, slot);
-                    }
+                    // Either a slot, or an address whose parts read slots.
+                    rewrite_expr_frame(addr, frame, sp);
                     rewrite_expr_frame(value, frame, sp);
                 }
                 Stmt::Assign { dest, value } => {
@@ -488,6 +488,69 @@ mod tests {
     use super::settle;
     use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn a_frame_with_stores_through_pointers_settles() {
+        const RSP: u16 = 4;
+        let at =
+            |offset: i64| Expr::bin(BinOp::Add, Expr::reg(RSP, 64), Expr::Const(offset as u64));
+        let load = |offset: i64| Expr::Load {
+            addr: Box::new(at(offset)),
+            width: 8,
+            signed: false,
+        };
+        // rsp -= 0x10; [rsp] = rdi; *(uint8_t *)[rsp] = 1; rsp += 0x10; ret
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: RSP,
+                        width: 64,
+                    },
+                    value: at(-0x10),
+                },
+                Stmt::Store {
+                    addr: at(0),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: load(0),
+                    value: Expr::Const(1),
+                    width: 1,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: RSP,
+                        width: 64,
+                    },
+                    value: at(0x10),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        settle(&mut ir);
+        let stmts = &ir.blocks[0].stmts;
+        assert!(
+            !stmts
+                .iter()
+                .any(|stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == RSP)),
+            "the adjustments go:\n{}",
+            ir.render()
+        );
+        // The pointer's slot reads at its entry-frame offset, where it was stored.
+        assert!(
+            stmts.iter().any(
+                |stmt| matches!(stmt, Stmt::Store { addr: Expr::Load { addr, .. }, .. }
+                if **addr == at(-0x10))
+            ),
+            "{}",
+            ir.render()
+        );
+    }
 
     #[test]
     fn locals_addressed_through_the_frame_pointer_settle() {

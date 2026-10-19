@@ -17,7 +17,6 @@ int64_t copy_bytes(void *dst, void *src, int64_t n) {
     uint64_t local_2; /* [sp-20] */
     uint64_t local_3; /* [sp-28] */
 
-    rsp = &local_0;
     local_0 = dst;
     local_1 = src;
     local_2 = n;
@@ -27,7 +26,6 @@ int64_t copy_bytes(void *dst, void *src, int64_t n) {
         *(uint8_t *)(local_0 + local_3) = n & 0xff;
         local_3 += 0x1;
     }
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -37,21 +35,19 @@ int64_t (void * dst, void * src, int64_t n)
 -- ir
 fn copy_bytes @ 0x201280 (size 79)
   blk0 @ 0x201280:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rdi, (rsp + #0xfffffffffffffff8))
-    store64(rsi, (rsp + #0xfffffffffffffff0))
-    store64(rdx, (rsp + #0xffffffffffffffe8))
-    store64(#0x0, (rsp + #0xffffffffffffffe0))
+    store64(rdi, (rsp + #0xfffffffffffffff0))
+    store64(rsi, (rsp + #0xffffffffffffffe8))
+    store64(rdx, (rsp + #0xffffffffffffffe0))
+    store64(#0x0, (rsp + #0xffffffffffffffd8))
   blk1 @ 0x201298:
-    rax = load64((rsp + #0xffffffffffffffe0))
-    brif cs rax, load64((rsp + #0xffffffffffffffe8)) -> 0x2012cd
+    rax = load64((rsp + #0xffffffffffffffd8))
+    brif cs rax, load64((rsp + #0xffffffffffffffe0)) -> 0x2012cd
   blk2 @ 0x2012a6:
-    rdx = ((rdx & #0xffffffffffffff00) | (load8((load64((rsp + #0xfffffffffffffff0)) + load64((rsp + #0xffffffffffffffe0)))) & #0xff))
-    store8((rdx & #0xff), (load64((rsp + #0xfffffffffffffff8)) + load64((rsp + #0xffffffffffffffe0))))
-    store64((load64((rsp + #0xffffffffffffffe0)) + #0x1), (rsp + #0xffffffffffffffe0))
+    rdx = ((rdx & #0xffffffffffffff00) | (load8((load64((rsp + #0xffffffffffffffe8)) + load64((rsp + #0xffffffffffffffd8)))) & #0xff))
+    store8((rdx & #0xff), (load64((rsp + #0xfffffffffffffff0)) + load64((rsp + #0xffffffffffffffd8))))
+    store64((load64((rsp + #0xffffffffffffffd8)) + #0x1), (rsp + #0xffffffffffffffd8))
     br 0x201298
   blk3 @ 0x2012cd:
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x201280","approxTokens":210,"blocks":4,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":79,"unsupported":0}
@@ -65,7 +61,6 @@ int64_t fill_bytes(void *dst, int32_t value, int64_t n) {
     uint64_t local_2; /* [sp-20] */
     uint64_t local_3; /* [sp-28] */
 
-    rsp = &local_0;
     local_0 = dst;
     local_1 = value & 0xff;
     local_2 = n;
@@ -75,7 +70,6 @@ int64_t fill_bytes(void *dst, int32_t value, int64_t n) {
         *(uint8_t *)(local_0 + local_3) = n & 0xff;
         local_3 += 0x1;
     }
-    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -85,21 +79,19 @@ int64_t (void * dst, int32_t value, int64_t n)
 -- ir
 fn fill_bytes @ 0x2012d0 (size 73)
   blk0 @ 0x2012d0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rdi, (rsp + #0xfffffffffffffff8))
-    store8((rsi & #0xff), (rsp + #0xfffffffffffffff7))
-    store64(rdx, (rsp + #0xffffffffffffffe8))
-    store64(#0x0, (rsp + #0xffffffffffffffe0))
+    store64(rdi, (rsp + #0xfffffffffffffff0))
+    store8((rsi & #0xff), (rsp + #0xffffffffffffffef))
+    store64(rdx, (rsp + #0xffffffffffffffe0))
+    store64(#0x0, (rsp + #0xffffffffffffffd8))
   blk1 @ 0x2012ea:
-    rax = load64((rsp + #0xffffffffffffffe0))
-    brif cs rax, load64((rsp + #0xffffffffffffffe8)) -> 0x201317
+    rax = load64((rsp + #0xffffffffffffffd8))
+    brif cs rax, load64((rsp + #0xffffffffffffffe0)) -> 0x201317
   blk2 @ 0x2012f8:
-    rdx = ((rdx & #0xffffffffffffff00) | (load8((rsp + #0xfffffffffffffff7)) & #0xff))
-    store8((rdx & #0xff), (load64((rsp + #0xfffffffffffffff8)) + load64((rsp + #0xffffffffffffffe0))))
-    store64((load64((rsp + #0xffffffffffffffe0)) + #0x1), (rsp + #0xffffffffffffffe0))
+    rdx = ((rdx & #0xffffffffffffff00) | (load8((rsp + #0xffffffffffffffef)) & #0xff))
+    store8((rdx & #0xff), (load64((rsp + #0xfffffffffffffff0)) + load64((rsp + #0xffffffffffffffd8))))
+    store64((load64((rsp + #0xffffffffffffffd8)) + #0x1), (rsp + #0xffffffffffffffd8))
     br 0x2012ea
   blk3 @ 0x201317:
-    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2012d0","approxTokens":204,"blocks":4,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":73,"unsupported":0}
@@ -160,13 +152,6 @@ fn grid_get @ 0x201360 (size 47)
 /* velk pseudo-C: grid_set @ 0x201390 */
 /* ref: 0x202450 .bss */
 int64_t grid_set(int row, int col, int value) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
-
-    local_0 = row;
-    local_1 = col;
-    local_2 = value;
     rax = 0x202450 + ((int64_t)(int32_t)(row & 0x3) << 0x5);
     *(uint32_t *)(rax + (int64_t)(int32_t)(col & 0x7) * 0x4) = value;
     return rax;
@@ -178,9 +163,6 @@ int64_t (int row, int col, int value)
 -- ir
 fn grid_set @ 0x201390 (size 53)
   blk0 @ 0x201390:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    store32(esi, (rsp + #0xfffffffffffffff0))
-    store32(edx, (rsp + #0xffffffffffffffec))
     rax = (#0x202450 + (sext32((edi & #0x3)) << #0x5))
     store32((edx & #0xffffffff), (rax + (sext32((esi & #0x7)) * #0x4)))
     ret rax
@@ -232,16 +214,14 @@ fn read_volatile @ 0x2013f0 (size 34)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x201420 */
 int64_t swap_ints(int *a, int *b) {
-    uint64_t local_0; /* [sp-10] */
-    uint64_t local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-1c] */
+    uint64_t local_0; /* [sp-18] */
+    uint32_t local_1; /* [sp-1c] */
 
-    local_0 = a;
-    local_1 = b;
-    local_2 = a->field_0x0;
+    local_0 = b;
+    local_1 = a->field_0x0;
     a->field_0x0 = *(uint32_t *)(b);
-    rax = local_1;
-    *(uint32_t *)(rax) = local_2;
+    rax = local_0;
+    *(uint32_t *)(rax) = local_1;
     return rax;
 }
 -- signature
@@ -251,7 +231,6 @@ int64_t (int * a, int * b)
 -- ir
 fn swap_ints @ 0x201420 (size 44)
   blk0 @ 0x201420:
-    store64(rdi, (rsp + #0xfffffffffffffff0))
     store64(rsi, (rsp + #0xffffffffffffffe8))
     store32((load32(rdi) & #0xffffffff), (rsp + #0xffffffffffffffe4))
     store32(load32(rsi), rdi)

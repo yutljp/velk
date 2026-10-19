@@ -27,79 +27,61 @@ int dense(int x) {
     x8 = x - 0xa;
     if (w8 > 0xf /* unsigned */) {
         g_sink = 0x0;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     }
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (x) {
     case 10:
         c0(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 11:
         c1(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 12:
         c2(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 13:
         c3(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 14:
         c4(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 15:
         c5(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 16:
         c6(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 17:
         c7(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 18:
         c8(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 19:
         c9(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 20:
         c10(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 21:
         c11(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 22:
         c12(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 23:
         c13(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 24:
         c14(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 25:
         c15(x);
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     default:
         g_sink = 0x0;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     }
 }
 -- signature
@@ -166,8 +148,7 @@ fn dense @ 0x210304 (size 200)
   blk18 @ 0x2103b8:
     store32(#0x0, #0x220554)
   blk19 @ 0x2103bc:
-    v1 = (load32(#0x220554) & #0xffffffff)
-    ret v1
+    ret (load32(#0x220554) & #0xffffffff)
 -- card
 {"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf","unwind"],"section":".text","size":200,"unsupported":0}
 

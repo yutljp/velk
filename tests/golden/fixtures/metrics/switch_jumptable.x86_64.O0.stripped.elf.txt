@@ -20,127 +20,90 @@ int32_t sub_2011c0(int32_t a0) {
     uint32_t local_10; /* [sp-30] */
     uint32_t local_11; /* [sp-34] */
 
-    rsp = &local_2;
     local_0 = a0;
     rax = local_0;
     local_1 = rax;
-    rax = rax - 0x9;
-    if (rax + 0x9 > 0x9 /* unsigned */) {
+    if (rax > 0x9 /* unsigned */) {
         dword_202410 = 0xffffffff;
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     }
-    rax = local_1;
-    ecx = 0x200158;
-    rax = (int64_t)(int32_t)(dword_200158[rax]);
+    rcx = 0x200158;
+    rax = (int64_t)(int32_t)(dword_200158[local_1]);
     rax = rax + 0x200158;
     switch (local_1) {
     case 0:
         local_2 = 0x0;
         while (local_2 < 0x1) {
-            ecx = local_2;
-            dword_202410 += ecx;
+            dword_202410 += local_2;
             local_2 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 1:
         local_3 = 0x0;
         while (local_3 < 0x2) {
-            ecx = local_3;
-            dword_202410 += ecx;
+            dword_202410 += local_3;
             local_3 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 2:
         local_4 = 0x0;
         while (local_4 < 0x3) {
-            ecx = local_4;
-            dword_202410 += ecx;
+            dword_202410 += local_4;
             local_4 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 3:
         local_5 = 0x0;
         while (local_5 < 0x4) {
-            ecx = local_5;
-            dword_202410 += ecx;
+            dword_202410 += local_5;
             local_5 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 4:
         local_6 = 0x0;
         while (local_6 < 0x5) {
-            ecx = local_6;
-            dword_202410 += ecx;
+            dword_202410 += local_6;
             local_6 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 5:
         local_7 = 0x0;
         while (local_7 < 0x6) {
-            ecx = local_7;
-            dword_202410 += ecx;
+            dword_202410 += local_7;
             local_7 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 6:
         local_8 = 0x0;
         while (local_8 < 0x7) {
-            ecx = local_8;
-            dword_202410 += ecx;
+            dword_202410 += local_8;
             local_8 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 7:
         local_9 = 0x0;
         while (local_9 < 0x8) {
-            ecx = local_9;
-            dword_202410 += ecx;
+            dword_202410 += local_9;
             local_9 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 8:
         local_10 = 0x0;
         while (local_10 < 0x9) {
-            ecx = local_10;
-            dword_202410 += ecx;
+            dword_202410 += local_10;
             local_10 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     case 9:
         local_11 = 0x0;
         while (local_11 < 0xa) {
-            ecx = local_11;
-            dword_202410 += ecx;
+            dword_202410 += local_11;
             local_11 += 0x1;
         }
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     default:
         dword_202410 = 0xffffffff;
-        rax = dword_202410;
-        rsp = rsp + 0x8;
-        return rax;
+        return dword_202410;
     }
 }
 -- signature
@@ -151,133 +114,118 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2011c0 (size 592)
   blk0 @ 0x2011c0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store32(edi, (rsp + #0xfffffffffffffffc))
-    rax = (load32((rsp + #0xfffffffffffffffc)) & #0xffffffff)
-    store64(rax, (rsp + #0xffffffffffffffc8))
-    rax = (rax - #0x9)
-    brif hi (rax + #0x9), #0x9 -> 0x2013fe
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
+    store64(rax, (rsp + #0xffffffffffffffc0))
+    brif hi rax, #0x9 -> 0x2013fe
   blk1 @ 0x2011d8:
-    rax = load64((rsp + #0xffffffffffffffc8))
     rcx = #0x200158
-    rax = sext32(load32((#0x200158 + (rax * #0x4))))
+    rax = sext32(load32((#0x200158 + (load64((rsp + #0xffffffffffffffc0)) * #0x4))))
     rax = (rax + #0x200158)
-    switch load64((rsp + #0xffffffffffffffc8)) [0->0x2011ec, 1->0x201221, 2->0x201256, 3->0x20128b, 4->0x2012c0, 5->0x2012f5, 6->0x20132a, 7->0x20135f, 8->0x201394, 9->0x2013c9] default 0x2013fe
+    switch load64((rsp + #0xffffffffffffffc0)) [0->0x2011ec, 1->0x201221, 2->0x201256, 3->0x20128b, 4->0x2012c0, 5->0x2012f5, 6->0x20132a, 7->0x20135f, 8->0x201394, 9->0x2013c9] default 0x2013fe
   blk2 @ 0x2011ec:
-    store32(#0x0, (rsp + #0xfffffffffffffff8))
+    store32(#0x0, (rsp + #0xfffffffffffffff0))
   blk3 @ 0x2011f3:
-    brif ge load32((rsp + #0xfffffffffffffff8)), #0x1 -> 0x20121c
+    brif ge load32((rsp + #0xfffffffffffffff0)), #0x1 -> 0x20121c
   blk4 @ 0x2011fd:
-    rcx = (load32((rsp + #0xfffffffffffffff8)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xfffffffffffffff8)) + #0x1), (rsp + #0xfffffffffffffff8))
+    store32((load32(#0x202410) + (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
     br 0x2011f3
   blk5 @ 0x20121c:
     br 0x201408
   blk6 @ 0x201221:
-    store32(#0x0, (rsp + #0xfffffffffffffff4))
+    store32(#0x0, (rsp + #0xffffffffffffffec))
   blk7 @ 0x201228:
-    brif ge load32((rsp + #0xfffffffffffffff4)), #0x2 -> 0x201251
+    brif ge load32((rsp + #0xffffffffffffffec)), #0x2 -> 0x201251
   blk8 @ 0x201232:
-    rcx = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xfffffffffffffff4)) + #0x1), (rsp + #0xfffffffffffffff4))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffec)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffec)) + #0x1), (rsp + #0xffffffffffffffec))
     br 0x201228
   blk9 @ 0x201251:
     br 0x201408
   blk10 @ 0x201256:
-    store32(#0x0, (rsp + #0xfffffffffffffff0))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
   blk11 @ 0x20125d:
-    brif ge load32((rsp + #0xfffffffffffffff0)), #0x3 -> 0x201286
+    brif ge load32((rsp + #0xffffffffffffffe8)), #0x3 -> 0x201286
   blk12 @ 0x201267:
-    rcx = (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
     br 0x20125d
   blk13 @ 0x201286:
     br 0x201408
   blk14 @ 0x20128b:
-    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk15 @ 0x201292:
-    brif ge load32((rsp + #0xffffffffffffffec)), #0x4 -> 0x2012bb
+    brif ge load32((rsp + #0xffffffffffffffe4)), #0x4 -> 0x2012bb
   blk16 @ 0x20129c:
-    rcx = (load32((rsp + #0xffffffffffffffec)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xffffffffffffffec)) + #0x1), (rsp + #0xffffffffffffffec))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x201292
   blk17 @ 0x2012bb:
     br 0x201408
   blk18 @ 0x2012c0:
-    store32(#0x0, (rsp + #0xffffffffffffffe8))
+    store32(#0x0, (rsp + #0xffffffffffffffe0))
   blk19 @ 0x2012c7:
-    brif ge load32((rsp + #0xffffffffffffffe8)), #0x5 -> 0x2012f0
+    brif ge load32((rsp + #0xffffffffffffffe0)), #0x5 -> 0x2012f0
   blk20 @ 0x2012d1:
-    rcx = (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffe0)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffe0)) + #0x1), (rsp + #0xffffffffffffffe0))
     br 0x2012c7
   blk21 @ 0x2012f0:
     br 0x201408
   blk22 @ 0x2012f5:
-    store32(#0x0, (rsp + #0xffffffffffffffe4))
+    store32(#0x0, (rsp + #0xffffffffffffffdc))
   blk23 @ 0x2012fc:
-    brif ge load32((rsp + #0xffffffffffffffe4)), #0x6 -> 0x201325
+    brif ge load32((rsp + #0xffffffffffffffdc)), #0x6 -> 0x201325
   blk24 @ 0x201306:
-    rcx = (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffdc)) + #0x1), (rsp + #0xffffffffffffffdc))
     br 0x2012fc
   blk25 @ 0x201325:
     br 0x201408
   blk26 @ 0x20132a:
-    store32(#0x0, (rsp + #0xffffffffffffffe0))
+    store32(#0x0, (rsp + #0xffffffffffffffd8))
   blk27 @ 0x201331:
-    brif ge load32((rsp + #0xffffffffffffffe0)), #0x7 -> 0x20135a
+    brif ge load32((rsp + #0xffffffffffffffd8)), #0x7 -> 0x20135a
   blk28 @ 0x20133b:
-    rcx = (load32((rsp + #0xffffffffffffffe0)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xffffffffffffffe0)) + #0x1), (rsp + #0xffffffffffffffe0))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffd8)) + #0x1), (rsp + #0xffffffffffffffd8))
     br 0x201331
   blk29 @ 0x20135a:
     br 0x201408
   blk30 @ 0x20135f:
-    store32(#0x0, (rsp + #0xffffffffffffffdc))
+    store32(#0x0, (rsp + #0xffffffffffffffd4))
   blk31 @ 0x201366:
-    brif ge load32((rsp + #0xffffffffffffffdc)), #0x8 -> 0x20138f
+    brif ge load32((rsp + #0xffffffffffffffd4)), #0x8 -> 0x20138f
   blk32 @ 0x201370:
-    rcx = (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xffffffffffffffdc)) + #0x1), (rsp + #0xffffffffffffffdc))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffd4)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffd4)) + #0x1), (rsp + #0xffffffffffffffd4))
     br 0x201366
   blk33 @ 0x20138f:
     br 0x201408
   blk34 @ 0x201394:
-    store32(#0x0, (rsp + #0xffffffffffffffd8))
+    store32(#0x0, (rsp + #0xffffffffffffffd0))
   blk35 @ 0x20139b:
-    brif ge load32((rsp + #0xffffffffffffffd8)), #0x9 -> 0x2013c4
+    brif ge load32((rsp + #0xffffffffffffffd0)), #0x9 -> 0x2013c4
   blk36 @ 0x2013a5:
-    rcx = (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xffffffffffffffd8)) + #0x1), (rsp + #0xffffffffffffffd8))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffd0)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffd0)) + #0x1), (rsp + #0xffffffffffffffd0))
     br 0x20139b
   blk37 @ 0x2013c4:
     br 0x201408
   blk38 @ 0x2013c9:
-    store32(#0x0, (rsp + #0xffffffffffffffd4))
+    store32(#0x0, (rsp + #0xffffffffffffffcc))
   blk39 @ 0x2013d0:
-    brif ge load32((rsp + #0xffffffffffffffd4)), #0xa -> 0x2013f9
+    brif ge load32((rsp + #0xffffffffffffffcc)), #0xa -> 0x2013f9
   blk40 @ 0x2013da:
-    rcx = (load32((rsp + #0xffffffffffffffd4)) & #0xffffffff)
-    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
-    store32((load32((rsp + #0xffffffffffffffd4)) + #0x1), (rsp + #0xffffffffffffffd4))
+    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffcc)) & #0xffffffff)), #0x202410)
+    store32((load32((rsp + #0xffffffffffffffcc)) + #0x1), (rsp + #0xffffffffffffffcc))
     br 0x2013d0
   blk41 @ 0x2013f9:
     br 0x201408
   blk42 @ 0x2013fe:
     store32(#0xffffffff, #0x202410)
   blk43 @ 0x201408:
-    rax = (load32(#0x202410) & #0xffffffff)
-    rsp = (rsp + #0x8)
-    ret rax
+    ret (load32(#0x202410) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":234,"blocks":44,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":592,"unsupported":0}

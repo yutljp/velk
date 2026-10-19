@@ -228,8 +228,7 @@ fn <unnamed> @ 0x2102d8 (size 20)
 /* struct: a0 +0x0:uint8_t */
 int64_t sub_2102ec(uint8_t *a0, int32_t a1) {
     w8 = a0->field_0x0;
-    w8 = w8 & 0xfffffff1;
-    a0->field_0x0 = w8 | (a1 & 0x7) << 0x1;
+    a0->field_0x0 = w8 & 0xfffffff1 | (a1 & 0x7) << 0x1;
     return a0;
 }
 -- signature
@@ -240,8 +239,7 @@ int64_t (uint8_t * a0, int32_t a1)
 fn <unnamed> @ 0x2102ec (size 24)
   blk0 @ 0x2102ec:
     w8 = load8(x0)
-    w8 = (w8 & #0xfffffff1)
-    store8(((w8 | ((w1 & #0x7) << #0x1)) & #0xffffffff), x0)
+    store8((((w8 & #0xfffffff1) | ((w1 & #0x7) << #0x1)) & #0xffffffff), x0)
     ret x0
 -- card
 {"accesses":["a0 +0x0:uint8_t"],"addr":"0x2102ec","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}

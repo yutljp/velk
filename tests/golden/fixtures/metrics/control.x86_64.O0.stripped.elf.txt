@@ -86,7 +86,6 @@ int32_t sub_2012c0(int32_t a0, int32_t a1, int64_t a2) {
     uint64_t local_2; /* [sp-18] */
     uint32_t local_3; /* [sp-1c] */
 
-    rsp = &local_1;
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
@@ -97,12 +96,10 @@ int32_t sub_2012c0(int32_t a0, int32_t a1, int64_t a2) {
         } else {
             rax = local_0;
             v1 = (int32_t)(eax) % (int32_t)(local_1);
-            ecx = (int32_t)(eax) / (int32_t)(local_1);
-            *(uint32_t *)(local_2) = ecx;
+            *(uint32_t *)(local_2) = (int32_t)(eax) / (int32_t)(local_1);
             local_3 = 0x0;
         }
     }
-    rsp = rsp + 0x8;
     return local_3;
 }
 -- signature
@@ -112,26 +109,23 @@ int32_t (int32_t a0, int32_t a1, int64_t a2)
 -- ir
 fn <unnamed> @ 0x2012c0 (size 78)
   blk0 @ 0x2012c0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store32(edi, (rsp + #0xfffffffffffffffc))
-    store32(esi, (rsp + #0xfffffffffffffff8))
-    store64(rdx, (rsp + #0xfffffffffffffff0))
-    store32(#0xffffffff, (rsp + #0xffffffffffffffec))
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    store32(esi, (rsp + #0xfffffffffffffff0))
+    store64(rdx, (rsp + #0xffffffffffffffe8))
+    store32(#0xffffffff, (rsp + #0xffffffffffffffe4))
     brif ge (edi & #0xffffffff), #0x0 -> 0x2012e4
   blk1 @ 0x2012df:
     br 0x201309
   blk2 @ 0x2012e4:
-    brif ne load32((rsp + #0xfffffffffffffff8)), #0x0 -> 0x2012f3
+    brif ne load32((rsp + #0xfffffffffffffff0)), #0x0 -> 0x2012f3
   blk3 @ 0x2012ee:
     br 0x201309
   blk4 @ 0x2012f3:
-    rax = (load32((rsp + #0xfffffffffffffffc)) & #0xffffffff)
-    v1 = (((rax & #0xffffffff) % load32((rsp + #0xfffffffffffffff8))) & #0xffffffff)
-    ecx = (((rax & #0xffffffff) / load32((rsp + #0xfffffffffffffff8))) & #0xffffffff)
-    store32(ecx, load64((rsp + #0xfffffffffffffff0)))
-    store32(#0x0, (rsp + #0xffffffffffffffec))
+    rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
+    v1 = (((rax & #0xffffffff) % load32((rsp + #0xfffffffffffffff0))) & #0xffffffff)
+    store32((((rax & #0xffffffff) / load32((rsp + #0xfffffffffffffff0))) & #0xffffffff), load64((rsp + #0xffffffffffffffe8)))
+    store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk5 @ 0x201309:
-    rsp = (rsp + #0x8)
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
 -- card
 {"addr":"0x2012c0","approxTokens":150,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":78,"unsupported":0}

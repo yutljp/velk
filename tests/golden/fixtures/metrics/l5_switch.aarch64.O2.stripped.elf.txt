@@ -27,79 +27,61 @@ int32_t sub_210304(int32_t a0) {
     x8 = a0 - 0xa;
     if (w8 > 0xf /* unsigned */) {
         dword_220554 = 0x0;
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     }
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (a0) {
     case 10:
         sub_2103cc(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 11:
         sub_2103e0(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 12:
         sub_2103f8(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 13:
         sub_21040c(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 14:
         sub_210420(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 15:
         sub_210434(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 16:
         sub_21044c(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 17:
         sub_210460(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 18:
         sub_210474(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 19:
         sub_210488(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 20:
         sub_2104a0(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 21:
         sub_2104b4(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 22:
         sub_2104cc(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 23:
         sub_2104e0(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 24:
         sub_2104f8(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     case 25:
         sub_21050c(a0);
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     default:
         dword_220554 = 0x0;
-        v1 = dword_220554;
-        return v1;
+        return dword_220554;
     }
 }
 -- signature
@@ -166,8 +148,7 @@ fn <unnamed> @ 0x210304 (size 200)
   blk18 @ 0x2103b8:
     store32(#0x0, #0x220554)
   blk19 @ 0x2103bc:
-    v1 = (load32(#0x220554) & #0xffffffff)
-    ret v1
+    ret (load32(#0x220554) & #0xffffffff)
 -- card
 {"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":200,"unsupported":0}
 

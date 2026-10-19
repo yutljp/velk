@@ -18,8 +18,12 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                 Stmt::Store { addr, value, width } => {
                     if let Some(slot) = frame_slot_of(addr, sp) {
                         stores.push((position, index, slot, *width));
-                    } else if address_uses_frame(addr, sp) {
-                        escaped = true;
+                    } else {
+                        // The address may be computed from slots it loads.
+                        collect_frame_reads(addr, sp, &mut read);
+                        if address_uses_frame(addr, sp) {
+                            escaped = true;
+                        }
                     }
                     collect_frame_reads(value, sp, &mut read);
                     if address_uses_frame(value, sp) {
@@ -947,6 +951,27 @@ mod tests {
                 store(-8, Expr::Const(1), 4),
                 store(-4, Expr::Const(2), 4),
                 Stmt::Ret { value: load(-8, 8) },
+            ],
+        );
+        drop_dead_frame_stores(&mut ir);
+        assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
+    }
+
+    #[test]
+    fn keeps_a_store_an_address_reads_back() {
+        // [sp-8] = rdi; *(uint8_t *)[sp-8] = 1: the pointer comes from the slot.
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(-8, Expr::reg(0, 64), 8),
+                Stmt::Store {
+                    addr: load(-8, 8),
+                    value: Expr::Const(1),
+                    width: 1,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
             ],
         );
         drop_dead_frame_stores(&mut ir);

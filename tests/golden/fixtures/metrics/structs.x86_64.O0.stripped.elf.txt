@@ -226,18 +226,11 @@ fn <unnamed> @ 0x201380 (size 59)
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
 int64_t sub_2013c0(int64_t a0, int32_t a1) {
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-
-    local_0 = a0;
-    local_1 = a1;
     rcx = a1;
     rax = a0;
     rdx = rdx & 0xffffffffffffff00 | rcx & 0xff;
     rcx = rcx & 0xffffffffffffff00 | *(uint8_t *)(rax) & 0xff;
-    rdx = rdx & 0xffffffffffffff00 | rdx & 0x7;
-    rcx = rcx & 0xffffffffffffff00 | rcx & 0xf1;
-    *(uint8_t *)(rax) = (rcx & 0xff | (rdx & 0xff) << 0x1 & 0xff) & 0xff;
+    *(uint8_t *)(rax) = (rcx & 0xf1 & 0xff | (rdx & 0x7 & 0xff) << 0x1 & 0xff) & 0xff;
     return rax;
 }
 -- signature
@@ -247,15 +240,11 @@ int64_t (int64_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2013c0 (size 36)
   blk0 @ 0x2013c0:
-    store64(rdi, (rsp + #0xfffffffffffffff0))
-    store32(esi, (rsp + #0xffffffffffffffec))
     rcx = (esi & #0xffffffff)
     rax = rdi
     rdx = ((rdx & #0xffffffffffffff00) | (rcx & #0xff))
     rcx = ((rcx & #0xffffffffffffff00) | (load8(rax) & #0xff))
-    rdx = ((rdx & #0xffffffffffffff00) | (rdx & #0x7))
-    rcx = ((rcx & #0xffffffffffffff00) | (rcx & #0xf1))
-    store8((((rcx & #0xff) | (((rdx & #0xff) << #0x1) & #0xff)) & #0xff), rax)
+    store8(((((rcx & #0xf1) & #0xff) | ((((rdx & #0x7) & #0xff) << #0x1) & #0xff)) & #0xff), rax)
     ret rax
 -- card
 {"addr":"0x2013c0","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}

@@ -17,7 +17,6 @@ int64_t copy_bytes(void *dst, void *src, int64_t n) {
     uint64_t local_2; /* [sp-18] */
     uint64_t local_3; /* [sp-20] */
 
-    sp = sp - 0x20;
     local_0 = dst;
     local_1 = src;
     local_2 = n;
@@ -26,7 +25,6 @@ int64_t copy_bytes(void *dst, void *src, int64_t n) {
         *(uint8_t *)(local_0 + local_3) = *(uint8_t *)(local_1 + local_3);
         local_3 += 0x1;
     }
-    sp = sp + 0x20;
     return dst;
 }
 -- signature
@@ -36,25 +34,22 @@ int64_t (void * dst, void * src, int64_t n)
 -- ir
 fn copy_bytes @ 0x210234 (size 104)
   blk0 @ 0x210234:
-    sp = (sp - #0x20)
-    store64(x0, (sp + #0x18))
-    store64(x1, (sp + #0x10))
-    store64(x2, (sp + #0x8))
-    store64(#0x0, sp)
+    store64(x0, (sp + #0xfffffffffffffff8))
+    store64(x1, (sp + #0xfffffffffffffff0))
+    store64(x2, (sp + #0xffffffffffffffe8))
+    store64(#0x0, (sp + #0xffffffffffffffe0))
     br 0x21024c
   blk1 @ 0x21024c:
-    x9 = load64((sp + #0x8))
-    brif cs load64(sp), x9 -> 0x210294
+    brif cs load64((sp + #0xffffffffffffffe0)), load64((sp + #0xffffffffffffffe8)) -> 0x210294
   blk2 @ 0x21025c:
     br 0x210260
   blk3 @ 0x210260:
-    store8((load8((load64((sp + #0x10)) + load64(sp))) & #0xffffffff), (load64((sp + #0x18)) + load64(sp)))
+    store8((load8((load64((sp + #0xfffffffffffffff0)) + load64((sp + #0xffffffffffffffe0)))) & #0xffffffff), (load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xffffffffffffffe0))))
     br 0x210284
   blk4 @ 0x210284:
-    store64((load64(sp) + #0x1), sp)
+    store64((load64((sp + #0xffffffffffffffe0)) + #0x1), (sp + #0xffffffffffffffe0))
     br 0x21024c
   blk5 @ 0x210294:
-    sp = (sp + #0x20)
     ret x0
 -- card
 {"addr":"0x210234","approxTokens":240,"blocks":6,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":104,"unsupported":0}
@@ -68,7 +63,6 @@ int64_t fill_bytes(void *dst, int32_t value, int64_t n) {
     uint64_t local_2; /* [sp-18] */
     uint64_t local_3; /* [sp-20] */
 
-    sp = sp - 0x20;
     local_0 = dst;
     local_1 = value;
     local_2 = n;
@@ -77,7 +71,6 @@ int64_t fill_bytes(void *dst, int32_t value, int64_t n) {
         *(uint8_t *)(local_0 + local_3) = local_1;
         local_3 += 0x1;
     }
-    sp = sp + 0x20;
     return dst;
 }
 -- signature
@@ -87,25 +80,22 @@ int64_t (void * dst, int32_t value, int64_t n)
 -- ir
 fn fill_bytes @ 0x21029c (size 92)
   blk0 @ 0x21029c:
-    sp = (sp - #0x20)
-    store64(x0, (sp + #0x18))
-    store8(w1, (sp + #0x17))
-    store64(x2, (sp + #0x8))
-    store64(#0x0, sp)
+    store64(x0, (sp + #0xfffffffffffffff8))
+    store8(w1, (sp + #0xfffffffffffffff7))
+    store64(x2, (sp + #0xffffffffffffffe8))
+    store64(#0x0, (sp + #0xffffffffffffffe0))
     br 0x2102b4
   blk1 @ 0x2102b4:
-    x9 = load64((sp + #0x8))
-    brif cs load64(sp), x9 -> 0x2102f0
+    brif cs load64((sp + #0xffffffffffffffe0)), load64((sp + #0xffffffffffffffe8)) -> 0x2102f0
   blk2 @ 0x2102c4:
     br 0x2102c8
   blk3 @ 0x2102c8:
-    store8((load8((sp + #0x17)) & #0xffffffff), (load64((sp + #0x18)) + load64(sp)))
+    store8((load8((sp + #0xfffffffffffffff7)) & #0xffffffff), (load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xffffffffffffffe0))))
     br 0x2102e0
   blk4 @ 0x2102e0:
-    store64((load64(sp) + #0x1), sp)
+    store64((load64((sp + #0xffffffffffffffe0)) + #0x1), (sp + #0xffffffffffffffe0))
     br 0x2102b4
   blk5 @ 0x2102f0:
-    sp = (sp + #0x20)
     ret x0
 -- card
 {"addr":"0x21029c","approxTokens":234,"blocks":6,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":92,"unsupported":0}
@@ -173,7 +163,6 @@ int64_t grid_set(int row, int col, int value) {
     uint32_t local_1; /* [sp-8] */
     uint32_t local_2; /* [sp-c] */
 
-    sp = sp - 0x10;
     local_0 = row;
     local_1 = col;
     local_2 = value;
@@ -187,11 +176,10 @@ int64_t (int row, int col, int value)
 -- ir
 fn grid_set @ 0x210378 (size 68)
   blk0 @ 0x210378:
-    sp = (sp - #0x10)
-    store32((x0 & #0xffffffff), (sp + #0xc))
-    store32(w1, (sp + #0x8))
-    store32(w2, (sp + #0x4))
-    store32(load32((sp + #0x4)), ((#0x220454 + (sext32((load32((sp + #0xc)) & #0x3)) << #0x5)) + (sext32((load32((sp + #0x8)) & #0x7)) << #0x2)))
+    store32((x0 & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32(w1, (sp + #0xfffffffffffffff8))
+    store32(w2, (sp + #0xfffffffffffffff4))
+    store32(load32((sp + #0xfffffffffffffff4)), ((#0x220454 + (sext32((load32((sp + #0xfffffffffffffffc)) & #0x3)) << #0x5)) + (sext32((load32((sp + #0xfffffffffffffff8)) & #0x7)) << #0x2)))
     ret x0
 -- card
 {"addr":"0x210378","approxTokens":198,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}
@@ -242,7 +230,6 @@ int64_t swap_ints(int *a, int *b) {
     uint64_t local_1; /* [sp-10] */
     uint32_t local_2; /* [sp-14] */
 
-    sp = sp - 0x20;
     local_0 = a;
     local_1 = b;
     local_2 = *(uint32_t *)(a);
@@ -257,12 +244,11 @@ int64_t (int * a, int * b)
 -- ir
 fn swap_ints @ 0x210418 (size 60)
   blk0 @ 0x210418:
-    sp = (sp - #0x20)
-    store64(x0, (sp + #0x18))
-    store64(x1, (sp + #0x10))
-    store32((load32(x0) & #0xffffffff), (sp + #0xc))
-    store32((load32(x1) & #0xffffffff), load64((sp + #0x18)))
-    store32((load32((sp + #0xc)) & #0xffffffff), load64((sp + #0x10)))
+    store64(x0, (sp + #0xfffffffffffffff8))
+    store64(x1, (sp + #0xfffffffffffffff0))
+    store32((load32(x0) & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32((load32(x1) & #0xffffffff), load64((sp + #0xfffffffffffffff8)))
+    store32((load32((sp + #0xffffffffffffffec)) & #0xffffffff), load64((sp + #0xfffffffffffffff0)))
     ret x0
 -- card
 {"addr":"0x210418","approxTokens":186,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf","unwind"],"section":".text","size":60,"unsupported":0}

@@ -208,9 +208,8 @@ fn <unnamed> @ 0x2012d0 (size 23)
 int64_t sub_2012f0(uint8_t *a0, int64_t a1) {
     rax = *(uint8_t *)(a0) & 0xff;
     t1 = a1 & 0xff;
-    v1 = a1 & 0xffffffffffffff00 | t1 + t1 & 0xff;
     rax = rax & 0xffffffffffffff00 | rax & 0xf1;
-    rax = rax & 0xffffffffffffff00 | (rax & 0xff | v1 & 0xe) & 0xff;
+    rax = rax & 0xffffffffffffff00 | (rax & 0xff | t1 + t1 & 0xff & 0xe) & 0xff;
     *(uint8_t *)(a0) = rax & 0xff;
     return rax;
 }
@@ -223,9 +222,8 @@ fn <unnamed> @ 0x2012f0 (size 18)
   blk0 @ 0x2012f0:
     rax = (load8(rdi) & #0xff)
     t1 = (rsi & #0xff)
-    v1 = ((rsi & #0xffffffffffffff00) | ((t1 + t1) & #0xff))
     rax = ((rax & #0xffffffffffffff00) | (rax & #0xf1))
-    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | (v1 & #0xe)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | (((t1 + t1) & #0xff) & #0xe)) & #0xff))
     store8((rax & #0xff), rdi)
     ret rax
 -- card

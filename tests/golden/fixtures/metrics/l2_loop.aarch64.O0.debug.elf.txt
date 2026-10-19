@@ -13,7 +13,6 @@ int sum_while(int n) {
     uint32_t local_1; /* [sp-8] */
     uint32_t local_2; /* [sp-c] */
 
-    sp = sp - 0x10;
     local_0 = n;
     local_1 = 0x0;
     local_2 = 0x0;
@@ -23,9 +22,7 @@ int sum_while(int n) {
         sink = w8;
         local_2 += 0x1;
     }
-    v1 = local_1;
-    sp = sp + 0x10;
-    return v1;
+    return local_1;
 }
 -- signature
 int (int n)
@@ -34,28 +31,24 @@ int (int n)
 -- ir
 fn sum_while @ 0x2101d4 (size 100)
   blk0 @ 0x2101d4:
-    sp = (sp - #0x10)
-    store32(w0, (sp + #0xc))
-    store32(#0x0, (sp + #0x8))
-    store32(#0x0, (sp + #0x4))
+    store32(w0, (sp + #0xfffffffffffffffc))
+    store32(#0x0, (sp + #0xfffffffffffffff8))
+    store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2101e8
   blk1 @ 0x2101e8:
-    x9 = (load32((sp + #0xc)) & #0xffffffff)
-    brif ge load32((sp + #0x4)), (x9 & #0xffffffff) -> 0x21022c
+    brif ge load32((sp + #0xfffffffffffffff4)), (load32((sp + #0xfffffffffffffffc)) & #0xffffffff) -> 0x21022c
   blk2 @ 0x2101f8:
     br 0x2101fc
   blk3 @ 0x2101fc:
-    w8 = (load32((sp + #0x8)) + (load32((sp + #0x4)) & #0xffffffff))
-    store32(w8, (sp + #0x8))
+    w8 = (load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) & #0xffffffff))
+    store32(w8, (sp + #0xfffffffffffffff8))
     store32((w8 & #0xffffffff), #0x220380)
     br 0x21021c
   blk4 @ 0x21021c:
-    store32(((load32((sp + #0x4)) + #0x1) & #0xffffffff), (sp + #0x4))
+    store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))
     br 0x2101e8
   blk5 @ 0x21022c:
-    v1 = load32((sp + #0x8))
-    sp = (sp + #0x10)
-    ret v1
+    ret load32((sp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x2101d4","approxTokens":240,"blocks":6,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf","unwind"],"section":".text","size":100,"unsupported":0}
 
@@ -67,7 +60,6 @@ int count_down(int n) {
     uint32_t local_0; /* [sp-4] */
     uint32_t local_1; /* [sp-8] */
 
-    sp = sp - 0x10;
     local_0 = n;
     local_1 = 0x0;
     do {
@@ -75,9 +67,7 @@ int count_down(int n) {
         local_0 -= 0x1;
         sink = local_1;
     } while (local_0 > 0x0);
-    v1 = local_1;
-    sp = sp + 0x10;
-    return v1;
+    return local_1;
 }
 -- signature
 int (int n)
@@ -86,23 +76,20 @@ int (int n)
 -- ir
 fn count_down @ 0x210238 (size 84)
   blk0 @ 0x210238:
-    sp = (sp - #0x10)
-    store32(w0, (sp + #0xc))
-    store32(#0x0, (sp + #0x8))
+    store32(w0, (sp + #0xfffffffffffffffc))
+    store32(#0x0, (sp + #0xfffffffffffffff8))
     br 0x210248
   blk1 @ 0x210248:
-    store32(((load32((sp + #0x8)) + #0x1) & #0xffffffff), (sp + #0x8))
-    store32(((load32((sp + #0xc)) - #0x1) & #0xffffffff), (sp + #0xc))
-    store32(load32((sp + #0x8)), #0x220380)
+    store32(((load32((sp + #0xfffffffffffffff8)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff8))
+    store32(((load32((sp + #0xfffffffffffffffc)) - #0x1) & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32(load32((sp + #0xfffffffffffffff8)), #0x220380)
     br 0x210270
   blk2 @ 0x210270:
-    brif gt load32((sp + #0xc)), #0x0 -> 0x210248
+    brif gt load32((sp + #0xfffffffffffffffc)), #0x0 -> 0x210248
   blk3 @ 0x21027c:
     br 0x210280
   blk4 @ 0x210280:
-    v1 = load32((sp + #0x8))
-    sp = (sp + #0x10)
-    ret v1
+    ret load32((sp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x210238","approxTokens":222,"blocks":5,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":0}
 
@@ -115,16 +102,12 @@ int sum_skip_odd(int n) {
     uint32_t local_1; /* [sp-8] */
     uint32_t local_2; /* [sp-c] */
 
-    sp = sp - 0x10;
     local_0 = n;
     local_1 = 0x0;
     local_2 = 0x0;
     for (;;) {
-        w9 = local_0;
-        if (local_2 >= w9) {
-            v1 = local_1;
-            sp = sp + 0x10;
-            return v1;
+        if (local_2 >= local_0) {
+            return local_1;
         }
         if ((local_2 & 0x1) != 0x0) {
             break;
@@ -144,34 +127,30 @@ int (int n)
 -- ir
 fn sum_skip_odd @ 0x21028c (size 116)
   blk0 @ 0x21028c:
-    sp = (sp - #0x10)
-    store32(w0, (sp + #0xc))
-    store32(#0x0, (sp + #0x8))
-    store32(#0x0, (sp + #0x4))
+    store32(w0, (sp + #0xfffffffffffffffc))
+    store32(#0x0, (sp + #0xfffffffffffffff8))
+    store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2102a0
   blk1 @ 0x2102a0:
-    x9 = (load32((sp + #0xc)) & #0xffffffff)
-    brif ge load32((sp + #0x4)), (x9 & #0xffffffff) -> 0x2102f4
+    brif ge load32((sp + #0xfffffffffffffff4)), (load32((sp + #0xfffffffffffffffc)) & #0xffffffff) -> 0x2102f4
   blk2 @ 0x2102b0:
     br 0x2102b4
   blk3 @ 0x2102b4:
-    brif ne (load32((sp + #0x4)) & #0x1), #0x0 -> 0x2102c4
+    brif ne (load32((sp + #0xfffffffffffffff4)) & #0x1), #0x0 -> 0x2102c4
   blk4 @ 0x2102bc:
     br 0x2102c0
   blk5 @ 0x2102c0:
     br 0x2102e4
   blk6 @ 0x2102c4:
-    x8 = ((load32((sp + #0x8)) + load32((sp + #0x4))) & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0x8))
+    x8 = ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
+    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff8))
     store32((x8 & #0xffffffff), #0x220380)
     br 0x2102e4
   blk7 @ 0x2102e4:
-    store32(((load32((sp + #0x4)) + #0x1) & #0xffffffff), (sp + #0x4))
+    store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))
     br 0x2102a0
   blk8 @ 0x2102f4:
-    v1 = load32((sp + #0x8))
-    sp = (sp + #0x10)
-    ret v1
+    ret load32((sp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x21028c","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":116,"unsupported":0}
 

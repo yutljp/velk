@@ -319,7 +319,6 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
     uint32_t local_16; /* [sp-104] */
     uint64_t local_17; /* [sp-118] */
 
-    sp = sp - 0x120;
     /* unsupported (8 steps): SIMD store, SIMD store, SIMD store, SIMD store, SIMD store, SIMD store, SIMD store, SIMD store */
     local_0 = a7;
     local_1 = a6;
@@ -333,9 +332,9 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
     local_8 = 0xffffff80;
     x8 = 0xffffffc8;
     local_9 = 0xffffffc8;
-    local_10 = sp + 0xa0;
+    local_10 = sp - 0x80;
     local_11 = &local_14;
-    local_12 = sp + 0x120;
+    local_12 = sp;
     x8 = 0x0;
     local_13 = 0x0;
     local_14 = 0x0;
@@ -343,7 +342,6 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
         x9 = local_7;
         if (local_14 >= w9) {
             v1 = local_13;
-            sp = sp + 0x120;
             return v1;
         }
         local_15 = &local_9;
@@ -375,7 +373,6 @@ int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int6
 -- ir
 fn sum_varargs @ 0x2105b0 (size 316)
   blk0 @ 0x2105b0:
-    sp = (sp - #0x120)
     unsupported: SIMD store
     unsupported: SIMD store
     unsupported: SIMD store
@@ -384,61 +381,60 @@ fn sum_varargs @ 0x2105b0 (size 316)
     unsupported: SIMD store
     unsupported: SIMD store
     unsupported: SIMD store
-    store64(x7, (sp + #0xd8))
-    store64(x6, (sp + #0xd0))
-    store64(x5, (sp + #0xc8))
-    store64(x4, (sp + #0xc0))
-    store64(x3, (sp + #0xb8))
-    store64(x2, (sp + #0xb0))
-    store64(x1, (sp + #0xa8))
-    store32(w0, (sp + #0x10c))
+    store64(x7, (sp + #0xffffffffffffffb8))
+    store64(x6, (sp + #0xffffffffffffffb0))
+    store64(x5, (sp + #0xffffffffffffffa8))
+    store64(x4, (sp + #0xffffffffffffffa0))
+    store64(x3, (sp + #0xffffffffffffff98))
+    store64(x2, (sp + #0xffffffffffffff90))
+    store64(x1, (sp + #0xffffffffffffff88))
+    store32(w0, (sp + #0xffffffffffffffec))
     x8 = #0xffffff80
-    store32(#0xffffff80, (sp + #0x104))
+    store32(#0xffffff80, (sp + #0xffffffffffffffe4))
     x8 = #0xffffffc8
-    store32(#0xffffffc8, (sp + #0x100))
-    store64((sp + #0xa0), (sp + #0xf8))
-    store64((sp + #0xe0), (sp + #0xf0))
-    store64((sp + #0x120), (sp + #0xe8))
+    store32(#0xffffffc8, (sp + #0xffffffffffffffe0))
+    store64((sp + #0xffffffffffffff80), (sp + #0xffffffffffffffd8))
+    store64((sp + #0xffffffffffffffc0), (sp + #0xffffffffffffffd0))
+    store64(sp, (sp + #0xffffffffffffffc8))
     x8 = #0x0
-    store32(#0x0, (sp + #0xe4))
-    store32(#0x0, (sp + #0xe0))
+    store32(#0x0, (sp + #0xffffffffffffffc4))
+    store32(#0x0, (sp + #0xffffffffffffffc0))
     br 0x210638
   blk1 @ 0x210638:
-    x9 = (load32((sp + #0x10c)) & #0xffffffff)
-    brif ge load32((sp + #0xe0)), (x9 & #0xffffffff) -> 0x2106dc
+    x9 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
+    brif ge load32((sp + #0xffffffffffffffc0)), (x9 & #0xffffffff) -> 0x2106dc
   blk2 @ 0x210648:
     br 0x21064c
   blk3 @ 0x21064c:
-    store64((sp + #0x100), (sp + #0x10))
-    x8 = (load32((sp + #0x100)) & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0x1c))
+    store64((sp + #0xffffffffffffffe0), (sp + #0xfffffffffffffef0))
+    x8 = (load32((sp + #0xffffffffffffffe0)) & #0xffffffff)
+    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffefc))
     brif eq (x8 & #0x80000000), #0x0 -> 0x21069c
   blk4 @ 0x210668:
     br 0x21066c
   blk5 @ 0x21066c:
-    x8 = ((load32((sp + #0x1c)) + #0x8) & #0xffffffff)
-    store32((x8 & #0xffffffff), load64((sp + #0x10)))
+    x8 = ((load32((sp + #0xfffffffffffffefc)) + #0x8) & #0xffffffff)
+    store32((x8 & #0xffffffff), load64((sp + #0xfffffffffffffef0)))
     brif gt (x8 & #0xffffffff), #0x0 -> 0x21069c
   blk6 @ 0x210684:
     br 0x210688
   blk7 @ 0x210688:
-    store64((load64((sp + #0xf0)) + sext32(load32((sp + #0x1c)))), (sp + #0x8))
+    store64((load64((sp + #0xffffffffffffffd0)) + sext32(load32((sp + #0xfffffffffffffefc)))), (sp + #0xfffffffffffffee8))
     br 0x2106b4
   blk8 @ 0x21069c:
-    x9 = load64((sp + #0xe8))
+    x9 = load64((sp + #0xffffffffffffffc8))
     x8 = x9
-    store64((x9 + #0x8), (sp + #0xe8))
-    store64(x8, (sp + #0x8))
+    store64((x9 + #0x8), (sp + #0xffffffffffffffc8))
+    store64(x8, (sp + #0xfffffffffffffee8))
     br 0x2106b4
   blk9 @ 0x2106b4:
-    store32(((load32((sp + #0xe4)) + load32(load64((sp + #0x8)))) & #0xffffffff), (sp + #0xe4))
+    store32(((load32((sp + #0xffffffffffffffc4)) + load32(load64((sp + #0xfffffffffffffee8)))) & #0xffffffff), (sp + #0xffffffffffffffc4))
     br 0x2106cc
   blk10 @ 0x2106cc:
-    store32(((load32((sp + #0xe0)) + #0x1) & #0xffffffff), (sp + #0xe0))
+    store32(((load32((sp + #0xffffffffffffffc0)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffc0))
     br 0x210638
   blk11 @ 0x2106dc:
-    v1 = load32((sp + #0xe4))
-    sp = (sp + #0x120)
+    v1 = load32((sp + #0xffffffffffffffc4))
     ret v1
 -- card
 {"addr":"0x2105b0","approxTokens":240,"blocks":12,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":316,"unsupported":8}

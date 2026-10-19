@@ -25,8 +25,7 @@ L_2011f2:
     do {
         r8 = ((rdx + rax) & 0xffffffff);
         rsi = edx;
-        rax = eax + esi;
-        sink = ((eax - 0x7) & 0xffffffff);
+        sink = ((eax + esi - 0x7) & 0xffffffff);
         rax = ((rsi + r8 - 0x7) & 0xffffffff);
         sink = ((rsi + r8 - 0xd) & 0xffffffff);
         r8 = ((rsi + rax - 0x6) & 0xffffffff);
@@ -42,8 +41,7 @@ L_2011f2:
         rax = ((rsi + r8 - 0x1) & 0xffffffff);
         sink = eax;
         rdx = edx + 0x8;
-        rsi = esi + v2;
-    } while (esi + 0x8 != 0x7);
+    } while (esi + v2 + 0x8 != 0x7);
     rdx = ((edx - 0x7) & 0xffffffff);
     if (ecx == 0x0) {
         return rax;
@@ -83,8 +81,7 @@ fn sum_while @ 0x2011d0 (size 239)
   blk6 @ 0x201210:
     r8 = ((rdx + rax) & #0xffffffff)
     rsi = (rdx & #0xffffffff)
-    rax = (((rax & #0xffffffff) + (rsi & #0xffffffff)) & #0xffffffff)
-    store32((((rax & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff), #0x2023d4)
+    store32(((((rax & #0xffffffff) + (rsi & #0xffffffff)) + #0xfffffffffffffff9) & #0xffffffff), #0x2023d4)
     rax = (((rsi + r8) + #0xfffffffffffffff9) & #0xffffffff)
     store32((((rsi + r8) + #0xfffffffffffffff3) & #0xffffffff), #0x2023d4)
     r8 = (((rsi + rax) + #0xfffffffffffffffa) & #0xffffffff)
@@ -100,8 +97,7 @@ fn sum_while @ 0x2011d0 (size 239)
     rax = (((rsi + r8) + #0xffffffffffffffff) & #0xffffffff)
     store32((rax & #0xffffffff), #0x2023d4)
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    rsi = (((rsi & #0xffffffff) + v2) & #0xffffffff)
-    brif ne (((rsi & #0xffffffff) + #0x8) & #0xffffffff), #0x7 -> 0x201210
+    brif ne ((((rsi & #0xffffffff) + v2) + #0x8) & #0xffffffff), #0x7 -> 0x201210
   blk7 @ 0x20129e:
     rdx = (((rdx & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff)
     brif eq ecx, #0x0 -> 0x2012be
@@ -138,8 +134,7 @@ int count_down(int n) {
         sink = ((rdx + 0x4) & 0xffffffff);
         v1 = rdx;
         rdx = edx + 0x8;
-        v2 = v1 + esi;
-    } while (v2 + 0x8 != 0x4);
+    } while (v1 + esi + 0x8 != 0x4);
     rdx = ((edx - 0x4) & 0xffffffff);
 L_201347:
     if (ecx == 0x0) {
@@ -178,8 +173,7 @@ fn count_down @ 0x2012c0 (size 157)
     store32(((rdx + #0x4) & #0xffffffff), #0x2023d4)
     v1 = rdx
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    v2 = (v1 + esi)
-    brif ne ((v2 + #0x8) & #0xffffffff), #0x4 -> 0x2012f0
+    brif ne (((v1 + esi) + #0x8) & #0xffffffff), #0x4 -> 0x2012f0
   blk3 @ 0x201344:
     rdx = (((rdx & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
   blk4 @ 0x201347:

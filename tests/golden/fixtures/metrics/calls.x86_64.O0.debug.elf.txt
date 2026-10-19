@@ -334,8 +334,6 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     uint32_t local_25; /* [sp-ec] */
     uint64_t local_26; /* [sp-100] */
 
-    rsp = &local_5;
-    rsp = rsp - 0x80;
     if ((rax & 0xff) != 0x0) {
         local_0 = xmm0;
         local_1 = xmm0_hi;
@@ -360,21 +358,19 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     local_19 = a2;
     local_20 = a1;
     local_21 = count;
-    rax = rsp + 0x60;
-    *(uint64_t *)(rax + 0x10) = rsp - 0x60;
-    *(uint64_t *)(rax + 0x8) = rsp + 0x90;
+    rax = rsp - 0x28;
+    *(uint64_t *)(rax + 0x10) = rsp - 0xe8;
+    *(uint64_t *)(rax + 0x8) = rsp + 0x8;
     *(uint32_t *)(rax + 0x4) = 0x30;
     *(uint32_t *)(rax) = 0x8;
     local_22 = 0x0;
     local_23 = 0x0;
     for (;;) {
         if (local_23 >= local_21) {
-            rsp = rsp + 0x80;
-            rsp = &local_7;
             return local_22;
         }
-        local_24 = rsp + 0x60;
-        rax = *(uint32_t *)(rsp + 0x60);
+        local_24 = rsp - 0x28;
+        rax = *(uint32_t *)(rsp - 0x28);
         local_25 = eax;
         if (eax <= 0x28 /* unsigned */) {
             v1 = local_24;
@@ -391,8 +387,6 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
         local_22 += *(uint32_t *)(local_26);
         local_23 += 0x1;
     }
-    rsp = rsp + 0x80;
-    rsp = &local_7;
     return local_22;
 }
 -- signature
@@ -402,66 +396,62 @@ int (int count, int64_t a1, int64_t a2, uint32_t * a3, int64_t a4, int64_t a5)
 -- ir
 fn sum_varargs @ 0x201540 (size 296)
   blk0 @ 0x201540:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rsp = (rsp - #0x80)
     brif eq (rax & #0xff), #0x0 -> 0x20157c
   blk1 @ 0x201553:
-    store64(xmm0, (rsp + #0xffffffffffffffd0))
-    store64(xmm0_hi, (rsp + #0xffffffffffffffd8))
-    store64(xmm1, (rsp + #0xffffffffffffffe0))
-    store64(xmm1_hi, (rsp + #0xffffffffffffffe8))
-    store64(xmm2, (rsp + #0xfffffffffffffff0))
-    store64(xmm2_hi, (rsp + #0xfffffffffffffff8))
-    store64(xmm3, rsp)
-    store64(xmm3_hi, (rsp + #0x8))
-    store64(xmm4, (rsp + #0x10))
-    store64(xmm4_hi, (rsp + #0x18))
-    store64(xmm5, (rsp + #0x20))
-    store64(xmm5_hi, (rsp + #0x28))
-    store64(xmm6, (rsp + #0x30))
-    store64(xmm6_hi, (rsp + #0x38))
-    store64(xmm7, (rsp + #0x40))
-    store64(xmm7_hi, (rsp + #0x48))
+    store64(xmm0, (rsp + #0xffffffffffffff48))
+    store64(xmm0_hi, (rsp + #0xffffffffffffff50))
+    store64(xmm1, (rsp + #0xffffffffffffff58))
+    store64(xmm1_hi, (rsp + #0xffffffffffffff60))
+    store64(xmm2, (rsp + #0xffffffffffffff68))
+    store64(xmm2_hi, (rsp + #0xffffffffffffff70))
+    store64(xmm3, (rsp + #0xffffffffffffff78))
+    store64(xmm3_hi, (rsp + #0xffffffffffffff80))
+    store64(xmm4, (rsp + #0xffffffffffffff88))
+    store64(xmm4_hi, (rsp + #0xffffffffffffff90))
+    store64(xmm5, (rsp + #0xffffffffffffff98))
+    store64(xmm5_hi, (rsp + #0xffffffffffffffa0))
+    store64(xmm6, (rsp + #0xffffffffffffffa8))
+    store64(xmm6_hi, (rsp + #0xffffffffffffffb0))
+    store64(xmm7, (rsp + #0xffffffffffffffb8))
+    store64(xmm7_hi, (rsp + #0xffffffffffffffc0))
   blk2 @ 0x20157c:
-    store64(r9, (rsp + #0xffffffffffffffc8))
-    store64(r8, (rsp + #0xffffffffffffffc0))
-    store64(rcx, (rsp + #0xffffffffffffffb8))
-    store64(rdx, (rsp + #0xffffffffffffffb0))
-    store64(rsi, (rsp + #0xffffffffffffffa8))
-    store32(edi, (rsp + #0x7c))
-    rax = (rsp + #0x60)
-    store64((rsp + #0xffffffffffffffa0), (rax + #0x10))
-    store64((rsp + #0x90), (rax + #0x8))
+    store64(r9, (rsp + #0xffffffffffffff40))
+    store64(r8, (rsp + #0xffffffffffffff38))
+    store64(rcx, (rsp + #0xffffffffffffff30))
+    store64(rdx, (rsp + #0xffffffffffffff28))
+    store64(rsi, (rsp + #0xffffffffffffff20))
+    store32(edi, (rsp + #0xfffffffffffffff4))
+    rax = (rsp + #0xffffffffffffffd8)
+    store64((rsp + #0xffffffffffffff18), (rax + #0x10))
+    store64((rsp + #0x8), (rax + #0x8))
     store32(#0x30, (rax + #0x4))
     store32(#0x8, rax)
-    store32(#0x0, (rsp + #0x5c))
-    store32(#0x0, (rsp + #0x58))
+    store32(#0x0, (rsp + #0xffffffffffffffd4))
+    store32(#0x0, (rsp + #0xffffffffffffffd0))
   blk3 @ 0x2015d4:
-    brif ge (load32((rsp + #0x58)) & #0xffffffff), load32((rsp + #0x7c)) -> 0x20165c
+    brif ge (load32((rsp + #0xffffffffffffffd0)) & #0xffffffff), load32((rsp + #0xfffffffffffffff4)) -> 0x20165c
   blk4 @ 0x2015e0:
-    store64((rsp + #0x60), (rsp + #0xffffffffffffff90))
-    rax = (load32((rsp + #0x60)) & #0xffffffff)
-    store32((rax & #0xffffffff), (rsp + #0xffffffffffffff9c))
+    store64((rsp + #0xffffffffffffffd8), (rsp + #0xffffffffffffff08))
+    rax = (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff)
+    store32((rax & #0xffffffff), (rsp + #0xffffffffffffff14))
     brif hi (rax & #0xffffffff), #0x28 -> 0x201622
   blk5 @ 0x2015fd:
-    v1 = load64((rsp + #0xffffffffffffff90))
-    v2 = (load32((rsp + #0xffffffffffffff9c)) & #0xffffffff)
+    v1 = load64((rsp + #0xffffffffffffff08))
+    v2 = (load32((rsp + #0xffffffffffffff14)) & #0xffffffff)
     rax = (sext32(v2) + load64((v1 + #0x10)))
     store32((((v2 & #0xffffffff) + #0x8) & #0xffffffff), v1)
-    store64(rax, (rsp + #0xffffffffffffff88))
+    store64(rax, (rsp + #0xffffffffffffff00))
     br 0x20163f
   blk6 @ 0x201622:
-    v3 = load64((rsp + #0xffffffffffffff90))
+    v3 = load64((rsp + #0xffffffffffffff08))
     rax = load64((v3 + #0x8))
     store64((rax + #0x8), (v3 + #0x8))
-    store64(rax, (rsp + #0xffffffffffffff88))
+    store64(rax, (rsp + #0xffffffffffffff00))
   blk7 @ 0x20163f:
-    store32(((load32(load64((rsp + #0xffffffffffffff88))) + load32((rsp + #0x5c))) & #0xffffffff), (rsp + #0x5c))
-    store32(((load32((rsp + #0x58)) + #0x1) & #0xffffffff), (rsp + #0x58))
+    store32(((load32(load64((rsp + #0xffffffffffffff00))) + load32((rsp + #0xffffffffffffffd4))) & #0xffffffff), (rsp + #0xffffffffffffffd4))
+    store32(((load32((rsp + #0xffffffffffffffd0)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffd0))
     br 0x2015d4
   blk8 @ 0x20165c:
-    rsp = (rsp + #0x80)
-    rsp = (rsp + #0x8)
     ret (load32((rsp + #0xffffffffffffffd4)) & #0xffffffff)
 -- card
 {"accesses":["a3 +0x0:uint32_t, +0x8:uint64_t"],"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":296,"unsupported":0}

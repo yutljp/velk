@@ -499,6 +499,10 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     return format!("{target} = {value};");
                 }
             }
+            // The stack pointer moving reads as arithmetic, not a local's address.
+            if dest.index == crate::arch::stack_pointer(ctx.isa) {
+                return format!("{target} = {};", render_expr(value, ctx));
+            }
             format!("{target} = {};", render_value(value, ctx))
         }
         Stmt::Store { addr, value, width } => {

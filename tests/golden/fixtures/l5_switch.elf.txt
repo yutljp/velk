@@ -12,119 +12,87 @@ int32_t dense(int32_t a0) {
     if (w9 > 0xf /* unsigned */) {
         x9 = 0x0;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     }
     w10 = 0x200158;
     x12 = *(uint8_t *)(0x200158 + x9);
     switch (a0) {
     case 10:
-        x9 = g_sink;
-        x9 = w9 + 0xb;
+        x9 = g_sink + 0xb;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 11:
-        x9 = g_sink;
         w10 = 0x12;
-        x9 = w9 ^ 0x12;
+        x9 = g_sink ^ 0x12;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 12:
-        x9 = g_sink;
-        x9 = w9 - 0x19;
+        x9 = g_sink - 0x19;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 13:
-        x9 = g_sink;
-        x9 = w9 | 0x20;
+        x9 = g_sink | 0x20;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 14:
-        x9 = g_sink;
-        x9 = w9 + 0x27;
+        x9 = g_sink + 0x27;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 15:
-        x9 = g_sink;
         w10 = 0x2e;
-        x9 = w9 ^ 0x2e;
+        x9 = g_sink ^ 0x2e;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 16:
-        x9 = g_sink;
-        x9 = w9 - 0x35;
+        x9 = g_sink - 0x35;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 17:
-        x9 = g_sink;
-        x9 = w9 | 0x3c;
+        x9 = g_sink | 0x3c;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 18:
-        x9 = g_sink;
-        x9 = w9 + 0x43;
+        x9 = g_sink + 0x43;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 19:
-        x9 = g_sink;
         w10 = 0x4a;
-        x9 = w9 ^ 0x4a;
+        x9 = g_sink ^ 0x4a;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 20:
-        x9 = g_sink;
-        x9 = w9 - 0x51;
+        x9 = g_sink - 0x51;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 21:
         x9 = g_sink;
         w10 = 0x58;
         x9 = w9 | w10;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 22:
-        x9 = g_sink;
-        x9 = w9 + 0x5f;
+        x9 = g_sink + 0x5f;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 23:
-        x9 = g_sink;
         w10 = 0x66;
-        x9 = w9 ^ 0x66;
+        x9 = g_sink ^ 0x66;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 24:
-        x9 = g_sink;
-        x9 = w9 - 0x6d;
+        x9 = g_sink - 0x6d;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     case 25:
         x9 = g_sink;
         w10 = 0x74;
         x9 = w9 | w10;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     default:
         x9 = 0x0;
         g_sink = w9;
-        v1 = g_sink;
-        return v1;
+        return g_sink;
     }
 }
 -- signature
@@ -142,33 +110,27 @@ fn dense @ 0x2101ac (size 268)
     x12 = (load8((#0x200158 + x9)) & #0xffffffff)
     switch w0 [10->0x2101d4, 11->0x210254, 12->0x210220, 13->0x21023c, 14->0x2101f8, 15->0x210264, 16->0x210284, 17->0x210248, 18->0x21029c, 19->0x210210, 20->0x210290, 21->0x2101ec, 22->0x210204, 23->0x210274, 24->0x2101e0, 25->0x21022c] default 0x2102a8
   blk2 @ 0x2101d4:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) + #0xb) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) + #0xb) & #0xffffffff)
     br 0x2102ac
   blk3 @ 0x2101e0:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) - #0x6d) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) - #0x6d) & #0xffffffff)
     br 0x2102ac
   blk4 @ 0x2101ec:
     x9 = (load32(#0x2202e8) & #0xffffffff)
     x10 = #0x58
     br 0x210234
   blk5 @ 0x2101f8:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) + #0x27) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) + #0x27) & #0xffffffff)
     br 0x2102ac
   blk6 @ 0x210204:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) + #0x5f) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) + #0x5f) & #0xffffffff)
     br 0x2102ac
   blk7 @ 0x210210:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
     x10 = #0x4a
-    x9 = (((x9 & #0xffffffff) ^ #0x4a) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) ^ #0x4a) & #0xffffffff)
     br 0x2102ac
   blk8 @ 0x210220:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) - #0x19) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) - #0x19) & #0xffffffff)
     br 0x2102ac
   blk9 @ 0x21022c:
     x9 = (load32(#0x2202e8) & #0xffffffff)
@@ -177,46 +139,37 @@ fn dense @ 0x2101ac (size 268)
     x9 = (((x9 & #0xffffffff) | (x10 & #0xffffffff)) & #0xffffffff)
     br 0x2102ac
   blk11 @ 0x21023c:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) | #0x20) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) | #0x20) & #0xffffffff)
     br 0x2102ac
   blk12 @ 0x210248:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) | #0x3c) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) | #0x3c) & #0xffffffff)
     br 0x2102ac
   blk13 @ 0x210254:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
     x10 = #0x12
-    x9 = (((x9 & #0xffffffff) ^ #0x12) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) ^ #0x12) & #0xffffffff)
     br 0x2102ac
   blk14 @ 0x210264:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
     x10 = #0x2e
-    x9 = (((x9 & #0xffffffff) ^ #0x2e) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) ^ #0x2e) & #0xffffffff)
     br 0x2102ac
   blk15 @ 0x210274:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
     x10 = #0x66
-    x9 = (((x9 & #0xffffffff) ^ #0x66) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) ^ #0x66) & #0xffffffff)
     br 0x2102ac
   blk16 @ 0x210284:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) - #0x35) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) - #0x35) & #0xffffffff)
     br 0x2102ac
   blk17 @ 0x210290:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) - #0x51) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) - #0x51) & #0xffffffff)
     br 0x2102ac
   blk18 @ 0x21029c:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x9 = (((x9 & #0xffffffff) + #0x43) & #0xffffffff)
+    x9 = ((load32(#0x2202e8) + #0x43) & #0xffffffff)
     br 0x2102ac
   blk19 @ 0x2102a8:
     x9 = #0x0
   blk20 @ 0x2102ac:
     store32((x9 & #0xffffffff), #0x2202e8)
-    v1 = load32(#0x2202e8)
-    ret v1
+    ret load32(#0x2202e8)
 -- card
 {"addr":"0x2101ac","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","entry","unwind"],"section":".text","size":268,"unsupported":0}
 

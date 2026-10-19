@@ -226,18 +226,11 @@ fn flags_level @ 0x201380 (size 59)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2013c0 */
 int64_t flags_set_mode(struct flags *f, int32_t mode) {
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-
-    local_0 = f;
-    local_1 = mode;
     rcx = mode;
     rax = f;
     rdx = rdx & 0xffffffffffffff00 | rcx & 0xff;
     rcx = rcx & 0xffffffffffffff00 | *(uint8_t *)(rax) & 0xff;
-    rdx = rdx & 0xffffffffffffff00 | rdx & 0x7;
-    rcx = rcx & 0xffffffffffffff00 | rcx & 0xf1;
-    *(uint8_t *)(rax) = (rcx & 0xff | (rdx & 0xff) << 0x1 & 0xff) & 0xff;
+    *(uint8_t *)(rax) = (rcx & 0xf1 & 0xff | (rdx & 0x7 & 0xff) << 0x1 & 0xff) & 0xff;
     return rax;
 }
 -- signature
@@ -247,15 +240,11 @@ int64_t (struct flags * f, int32_t mode)
 -- ir
 fn flags_set_mode @ 0x2013c0 (size 36)
   blk0 @ 0x2013c0:
-    store64(rdi, (rsp + #0xfffffffffffffff0))
-    store32(esi, (rsp + #0xffffffffffffffec))
     rcx = (esi & #0xffffffff)
     rax = rdi
     rdx = ((rdx & #0xffffffffffffff00) | (rcx & #0xff))
     rcx = ((rcx & #0xffffffffffffff00) | (load8(rax) & #0xff))
-    rdx = ((rdx & #0xffffffffffffff00) | (rdx & #0x7))
-    rcx = ((rcx & #0xffffffffffffff00) | (rcx & #0xf1))
-    store8((((rcx & #0xff) | (((rdx & #0xff) << #0x1) & #0xff)) & #0xff), rax)
+    store8(((((rcx & #0xf1) & #0xff) | ((((rdx & #0x7) & #0xff) << #0x1) & #0xff)) & #0xff), rax)
     ret rax
 -- card
 {"addr":"0x2013c0","approxTokens":186,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}

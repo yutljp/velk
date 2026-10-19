@@ -10,96 +10,72 @@ int32_t sub_2011c0(int32_t a0) {
     if (a0 > 0x9 /* unsigned */) {
         rax = 0xffffffff;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     }
     rax = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
     switch (a0) {
     case 0:
         rax = dword_2023d0;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 1:
-        rax = dword_2023d0;
+        dword_2023d0 = dword_2023d0;
+        rax = dword_2023d0 + 0x1;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        rax = eax + 0x1;
-        dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 2:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
-        rax = dword_2023d0;
-        rax = eax + 0x2;
+        rax = dword_2023d0 + 0x2;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 3:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
         dword_2023d0 += 0x2;
-        rax = dword_2023d0;
-        rax = eax + 0x3;
+        rax = dword_2023d0 + 0x3;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 4:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
         dword_2023d0 += 0x2;
         dword_2023d0 += 0x3;
-        rax = dword_2023d0;
-        rax = eax + 0x4;
+        rax = dword_2023d0 + 0x4;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 5:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
         dword_2023d0 += 0x2;
         dword_2023d0 += 0x3;
         dword_2023d0 += 0x4;
-        rax = dword_2023d0;
-        rax = eax + 0x5;
+        rax = dword_2023d0 + 0x5;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 6:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
         dword_2023d0 += 0x2;
         dword_2023d0 += 0x3;
         dword_2023d0 += 0x4;
         dword_2023d0 += 0x5;
-        rax = dword_2023d0;
-        rax = eax + 0x6;
+        rax = dword_2023d0 + 0x6;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 7:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
         dword_2023d0 += 0x2;
         dword_2023d0 += 0x3;
         dword_2023d0 += 0x4;
         dword_2023d0 += 0x5;
         dword_2023d0 += 0x6;
-        rax = dword_2023d0;
-        rax = eax + 0x7;
+        rax = dword_2023d0 + 0x7;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 8:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
         dword_2023d0 += 0x2;
         dword_2023d0 += 0x3;
@@ -107,14 +83,11 @@ int32_t sub_2011c0(int32_t a0) {
         dword_2023d0 += 0x5;
         dword_2023d0 += 0x6;
         dword_2023d0 += 0x7;
-        rax = dword_2023d0;
-        rax = eax + 0x8;
+        rax = dword_2023d0 + 0x8;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     case 9:
-        rax = dword_2023d0;
-        dword_2023d0 = eax;
+        dword_2023d0 = dword_2023d0;
         dword_2023d0 += 0x1;
         dword_2023d0 += 0x2;
         dword_2023d0 += 0x3;
@@ -123,16 +96,13 @@ int32_t sub_2011c0(int32_t a0) {
         dword_2023d0 += 0x6;
         dword_2023d0 += 0x7;
         dword_2023d0 += 0x8;
-        rax = dword_2023d0;
-        rax = eax + 0x9;
+        rax = dword_2023d0 + 0x9;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     default:
         rax = 0xffffffff;
         dword_2023d0 = eax;
-        rax = dword_2023d0;
-        return rax;
+        return dword_2023d0;
     }
 }
 -- signature
@@ -151,17 +121,14 @@ fn <unnamed> @ 0x2011c0 (size 527)
     rax = (load32(#0x2023d0) & #0xffffffff)
     br 0x2013c2
   blk3 @ 0x2011e6:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x4) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x4) & #0xffffffff)
     br 0x2013c2
   blk4 @ 0x201214:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
@@ -170,69 +137,55 @@ fn <unnamed> @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x6), #0x2023d0)
     store32((load32(#0x2023d0) + #0x7), #0x2023d0)
     store32((load32(#0x2023d0) + #0x8), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x9) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x9) & #0xffffffff)
     br 0x2013c2
   blk5 @ 0x201265:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x2) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x2) & #0xffffffff)
     br 0x2013c2
   blk6 @ 0x201285:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x3) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x3) & #0xffffffff)
     br 0x2013c2
   blk7 @ 0x2012ac:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
     store32((load32(#0x2023d0) + #0x4), #0x2023d0)
     store32((load32(#0x2023d0) + #0x5), #0x2023d0)
     store32((load32(#0x2023d0) + #0x6), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x7) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x7) & #0xffffffff)
     br 0x2013c2
   blk8 @ 0x2012ef:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    rax = ((load32(#0x2023d0) + #0x1) & #0xffffffff)
     br 0x2013c2
   blk9 @ 0x201308:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
     store32((load32(#0x2023d0) + #0x4), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x5) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x5) & #0xffffffff)
     br 0x2013c2
   blk10 @ 0x20133d:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
     store32((load32(#0x2023d0) + #0x4), #0x2023d0)
     store32((load32(#0x2023d0) + #0x5), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x6) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x6) & #0xffffffff)
     br 0x2013c2
   blk11 @ 0x201376:
     rax = #0xffffffff
     br 0x2013c2
   blk12 @ 0x20137d:
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
@@ -240,11 +193,9 @@ fn <unnamed> @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x5), #0x2023d0)
     store32((load32(#0x2023d0) + #0x6), #0x2023d0)
     store32((load32(#0x2023d0) + #0x7), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x8) & #0xffffffff)
+    rax = ((load32(#0x2023d0) + #0x8) & #0xffffffff)
   blk13 @ 0x2013c2:
     store32((rax & #0xffffffff), #0x2023d0)
-    rax = (load32(#0x2023d0) & #0xffffffff)
-    ret rax
+    ret (load32(#0x2023d0) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":527,"unsupported":0}
