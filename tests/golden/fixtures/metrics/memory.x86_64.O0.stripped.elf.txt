@@ -209,7 +209,7 @@ fn <unnamed> @ 0x201390 (size 64)
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
     rax = (#0x202450 + (sext32(((edi & #0xffffffff) & #0x3)) << #0x5))
-    store32(edx, (rax + (sext32(((esi & #0xffffffff) & #0x7)) * #0x4)))
+    store32((edx & #0xffffffff), (rax + (sext32(((esi & #0xffffffff) & #0x7)) * #0x4)))
     ret rax
 -- card
 {"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
@@ -254,10 +254,8 @@ uint32_t sub_2013f0(uint64_t a0) {
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a0;
     *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(a0);
-    rax = *(uint32_t *)(a0);
-    *(uint32_t *)(rbp - 0x10) = eax;
-    rax = eax;
-    return eax + eax;
+    *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(a0);
+    return *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x10);
 }
 -- signature
 uint32_t (uint64_t a0)
@@ -271,10 +269,8 @@ fn <unnamed> @ 0x2013f0 (size 48)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32((load32(rdi) & #0xffffffff), (rbp + #0xfffffffffffffff4))
-    rax = (load32(rdi) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    rax = (rax & #0xffffffff)
-    ret (((rax & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
+    store32((load32(rdi) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    ret ((load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
 -- card
 {"addr":"0x2013f0","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
 

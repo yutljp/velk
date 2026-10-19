@@ -44,8 +44,8 @@ fn <unnamed> @ 0x201200 (size 80)
   blk2 @ 0x201221:
     eax = (load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff8)))
     store32(eax, (rbp + #0xfffffffffffffff8))
-    store32(eax, #0x202350)
-    store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
+    store32((eax & #0xffffffff), #0x202350)
+    store32(((load32((rbp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff4))
     br 0x201215
   blk3 @ 0x201241:
     rsp = (rsp + #0x8)
@@ -67,9 +67,8 @@ uint32_t sub_201250(uint32_t a0) {
     *(uint32_t *)(rbp - 0x8) = 0x0;
     do {
         *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x8) + 0x1;
-        eax = *(uint32_t *)(rbp - 0x4) - 0x1;
-        *(uint32_t *)(rbp - 0x4) = eax;
-        dword_202350 = eax;
+        *(uint32_t *)(rbp - 0x4) = ((*(uint32_t *)(rbp - 0x4) - 0x1) & 0xffffffff);
+        dword_202350 = *(uint32_t *)(rbp - 0x8);
     } while (*(uint32_t *)(rbp - 0x4) > 0x0);
     rsp = rsp + 0x8;
     return *(uint32_t *)(rbp - 0x8);
@@ -87,10 +86,9 @@ fn <unnamed> @ 0x201250 (size 64)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(#0x0, (rbp + #0xfffffffffffffff8))
   blk1 @ 0x20125e:
-    store32((load32((rbp + #0xfffffffffffffff8)) + #0x1), (rbp + #0xfffffffffffffff8))
-    eax = (load32((rbp + #0xfffffffffffffffc)) + #0xffffffffffffffff)
-    store32(eax, (rbp + #0xfffffffffffffffc))
-    store32(eax, #0x202350)
+    store32(((load32((rbp + #0xfffffffffffffff8)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffffc)) + #0xffffffffffffffff) & #0xffffffff), (rbp + #0xfffffffffffffffc))
+    store32(load32((rbp + #0xfffffffffffffff8)), #0x202350)
     brif gt load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x20125e
   blk2 @ 0x201283:
     rsp = (rsp + #0x8)
@@ -149,9 +147,9 @@ fn <unnamed> @ 0x201290 (size 96)
   blk4 @ 0x2012c5:
     eax = (load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff8)))
     store32(eax, (rbp + #0xfffffffffffffff8))
-    store32(eax, #0x202350)
+    store32((eax & #0xffffffff), #0x202350)
   blk5 @ 0x2012d7:
-    store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
+    store32(((load32((rbp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff4))
     br 0x2012a5
   blk6 @ 0x2012e5:
     rsp = (rsp + #0x8)
@@ -215,7 +213,7 @@ fn <unnamed> @ 0x2012f0 (size 95)
   blk4 @ 0x201330:
     br 0x201335
   blk5 @ 0x201335:
-    store32((((load32((rbp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffe4))
+    store32(((load32((rbp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffe4))
     br 0x201305
   blk6 @ 0x201343:
     store32(#0xffffffff, (rbp + #0xfffffffffffffffc))

@@ -8,17 +8,17 @@
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 /* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
-uint32_t sub_2011e0(uint64_t a0, uint32_t *a1) {
+uint32_t sub_2011e0(uint32_t a0, uint32_t *a1) {
     return a1->field_0x4 * *(uint32_t *)(a0 + 0x4) + a1->field_0x0 * *(uint32_t *)(a0);
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t * a1)
+uint32_t (uint32_t a0, uint32_t * a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2011e0 (size 16)
   blk0 @ 0x2011e0:
-    ret ((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi)))
+    ret (((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi))) & #0xffffffff)
 -- card
 {"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -73,7 +73,7 @@ fn <unnamed> @ 0x2011f0 (size 144)
     ret #0x0
   blk4 @ 0x201204:
     rdx = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
-    rax = ((((((rcx & #0xffffffff) >> #0x3) & #0xffffffff) & #0xfffffff) & #0xffffffff) << #0x5)
+    rax = (((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) & #0xffffffff) << #0x5)
     unsupported: Pxor at 0x20121a
     rsi = #0x0
     unsupported: Pxor at 0x201220

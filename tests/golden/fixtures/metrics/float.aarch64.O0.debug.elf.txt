@@ -49,7 +49,7 @@ fn average @ 0x2101b4 (size 160)
     br 0x2101d0
   blk1 @ 0x2101d0:
     x9 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    x8 = (((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
+    x8 = ((load32((sp + #0xffffffffffffffe4)) - (x9 & #0xffffffff)) & #0xffffffff)
     brif ge (w8 + (x9 & #0xffffffff)), (x9 & #0xffffffff) -> 0x210210
   blk2 @ 0x2101e0:
     br 0x2101e4
@@ -60,7 +60,7 @@ fn average @ 0x2101b4 (size 160)
     unsupported: SIMD store
     br 0x210200
   blk4 @ 0x210200:
-    store32((((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
+    store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk5 @ 0x210210:
     x8 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)

@@ -1,47 +1,14 @@
-# 5497 functions, 41626 compared runs
+# 5497 functions, 42039 compared runs
 # runs left unfinished:
-#   step limit (C and C++): 228
-#   step limit (Go): 6388
+#   step limit (C and C++): 232
+#   step limit (Go): 6396
 #   step limit (Rust): 768
 #   unsupported instruction (C and C++): 2683
 #   unsupported instruction (Go): 10016
-#   unsupported instruction (Rust): 3448
-go_probe 0x42a660 runtime.(*cpuStats).accumulate: trial 0: memory differs
-go_probe 0x44e900 runtime.(*unwinder).next: trial 0: calls differ (2 before, 2 after)
-go_probe 0x450ae0 runtime.printAncestorTraceback: trial 0: calls differ (53 before, 11 after)
-go_probe 0x452960 runtime.traceReadCPU: trial 4: calls differ (23 before, 23 after)
-go_stripped 0x42a660 runtime.(*cpuStats).accumulate: trial 0: memory differs
-go_stripped 0x44e900 runtime.(*unwinder).next: trial 0: calls differ (2 before, 2 after)
-go_stripped 0x450ae0 runtime.printAncestorTraceback: trial 0: calls differ (53 before, 11 after)
-go_stripped 0x452960 runtime.traceReadCPU: trial 4: calls differ (23 before, 23 after)
+#   unsupported instruction (Rust): 3450
 metrics/calls.x86_64.O2.debug.elf 0x201330 apply_table: trial 0: calls differ (1 before, 1 after)
 metrics/calls.x86_64.O2.stripped.elf 0x201330 -: trial 0: calls differ (1 before, 1 after)
-metrics/control.x86_64.O0.stripped.elf 0x201343 -: trial 0: memory differs
-metrics/divmod_a64.x86_64.O2.debug.elf 0x2013f0 sdiv16: trial 1: returns 0xffffffff instead of 0x0 (int)
-metrics/divmod_a64.x86_64.O2.stripped.elf 0x2013f0 -: trial 1: returns 0xffffffff instead of 0x0 (int32_t)
-metrics/divmod_x64.x86_64.O2.debug.elf 0x201340 sdiv16x: trial 1: returns 0xffffffff instead of 0x0 (int)
-metrics/divmod_x64.x86_64.O2.debug.elf 0x201450 pdiv64: trial 1: returns 0xffffffff instead of 0x0 (int)
-metrics/divmod_x64.x86_64.O2.stripped.elf 0x201340 -: trial 1: returns 0xffffffff instead of 0x0 (int32_t)
-metrics/divmod_x64.x86_64.O2.stripped.elf 0x201450 -: trial 1: returns 0xffffffff instead of 0x0 (int32_t)
-metrics/integers.aarch64.O0.debug.elf 0x21022c narrow_add: trial 1: returns 0x17fffffff instead of 0xffffffff (uint32_t)
-metrics/integers.aarch64.O0.debug.elf 0x21024c widen_mul: trial 1: returns 0x7fffffff80000000 instead of 0x0 (uint32_t)
-metrics/integers.aarch64.O0.stripped.elf 0x21022c -: trial 1: returns 0x17fffffff instead of 0xffffffff (uint32_t)
-metrics/integers.aarch64.O0.stripped.elf 0x21024c -: trial 1: returns 0x7fffffff80000000 instead of 0x0 (uint32_t)
-metrics/integers.x86_64.O0.debug.elf 0x201280 narrow_add: trial 0: returns 0x0 instead of 0xf (uint32_t)
-metrics/integers.x86_64.O0.debug.elf 0x2012a0 widen_mul: trial 1: returns 0xfe01 instead of 0x0 (uint32_t)
-metrics/integers.x86_64.O0.stripped.elf 0x201280 -: trial 0: returns 0x0 instead of 0xf (uint32_t)
-metrics/integers.x86_64.O0.stripped.elf 0x2012a0 -: trial 1: returns 0xfe01 instead of 0x0 (uint32_t)
-metrics/l2_loop.aarch64.O0.debug.elf 0x210238 count_down: trial 0: memory differs
-metrics/l2_loop.aarch64.O0.stripped.elf 0x210238 -: trial 0: memory differs
-metrics/l2_loop.x86_64.O0.debug.elf 0x201250 count_down: trial 0: memory differs
-metrics/l2_loop.x86_64.O0.stripped.elf 0x201250 -: trial 0: memory differs
-metrics/memory.aarch64.O2.debug.elf 0x21033c swap_ints: trial 0: memory differs
-metrics/memory.aarch64.O2.stripped.elf 0x21033c -: trial 0: memory differs
 metrics/memory.x86_64.O2.stripped.elf 0x201310 -: trial 1: calls differ (1 before, 1 after)
-pe64.exe 0x140001020 reg_sign: trial 2: returns 0x100005658 instead of 0x5658 (uint64_t)
-pe64.obj 0x20 reg_sign: trial 2: returns 0x100005658 instead of 0x5658 (uint64_t)
-rust_demo 0x49cdb <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_str: trial 0: calls differ (1 before, 1 after)
-rust_probe 0x49cdb <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_str: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x16bbd -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x17099 -: trial 3: calls differ (1 before, 1 after)
 rust_probe_stripped 0x177df -: trial 0: calls differ (1 before, 1 after)
@@ -50,13 +17,10 @@ rust_probe_stripped 0x1e900 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x1f2d9 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x1f30b -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x1fe74 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x2093e -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x20a3e -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x210d2 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x21189 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x21d30 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x21df2 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x21fc3 -: trial 6: calls differ (1 before, 0 after)
 rust_probe_stripped 0x301ec -: trial 0: calls differ (2 before, 2 after)
 rust_probe_stripped 0x37733 -: trial 0: calls differ (2 before, 2 after)
 rust_probe_stripped 0x3777b -: trial 0: calls differ (2 before, 2 after)
@@ -77,9 +41,3 @@ rust_probe_stripped 0x38141 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x381b2 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x3892b -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x3ef7d -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x41c20 -: trial 1: calls differ (1 before, 1 after)
-rust_probe_stripped 0x42ad4 -: trial 0: calls differ (2 before, 2 after)
-x64_div.o 0x1a0 pdiv64: trial 1: returns 0xffffffff instead of 0x0 (int32_t)
-x64_div.o 0x90 sdiv16x: trial 1: returns 0xffffffff instead of 0x0 (int32_t)
-x64_div_macho.o 0x220 _pdiv64: trial 1: returns 0xffffffff instead of 0x0 (int32_t)
-x64_div_macho.o 0xb0 _sdiv16x: trial 1: returns 0xffffffff instead of 0x0 (int32_t)

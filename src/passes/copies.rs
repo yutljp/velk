@@ -20,7 +20,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
         let mut index = 0;
         while index < block.stmts.len() {
             let Some((dest, value)) = (match &block.stmts[index] {
-                Stmt::Assign { dest, value } => Some((dest.index, value.clone())),
+                Stmt::Assign { dest, value } => Some((dest.index, truncated(value, dest.width))),
                 _ => None,
             }) else {
                 index += 1;
@@ -31,15 +31,28 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                 index += 1;
                 continue;
             }
-            // The registers the value reads must not change before the use.
+            // The registers the value reads must not change before the use,
+            // nor the memory it loads.
             let mut sources = std::collections::HashSet::new();
             crate::ir::visit::collect_reads(&value, &mut sources);
+            let loads = reads_memory(&value);
             let mut reads = 0usize;
             let mut use_at = None;
             let mut clobbered = false;
             let mut redefined = false;
             for position in index + 1..block.stmts.len() {
                 let stmt = &block.stmts[position];
+                if use_at.is_none()
+                    && loads
+                    && matches!(
+                        stmt,
+                        Stmt::Store { .. } | Stmt::Call { .. } | Stmt::Unsupported { .. }
+                    )
+                    && !statement_reads(stmt).contains(&dest)
+                {
+                    clobbered = true;
+                    break;
+                }
                 let used = statement_reads(stmt);
                 if used.contains(&dest) {
                     // Folding into two reads would duplicate the value.
@@ -87,6 +100,43 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
             block.stmts.remove(index);
         }
     }
+}
+
+/// The value a register of `width` bits holds once it is assigned `value`:
+/// a narrow destination drops the high bits a sum or product may carry.
+fn truncated(value: &Expr, width: u8) -> Expr {
+    if width >= 64 || fits(value, width) {
+        return value.clone();
+    }
+    Expr::bin(
+        crate::ir::BinOp::And,
+        value.clone(),
+        Expr::Const((1u64 << width) - 1),
+    )
+}
+
+/// True when the value provably has no bits at or above `width`.
+fn fits(value: &Expr, width: u8) -> bool {
+    match value {
+        Expr::Reg { width: read, .. } => *read <= width,
+        Expr::Const(constant) => constant >> width == 0,
+        Expr::Load { width: bytes, .. } => u32::from(*bytes) * 8 <= u32::from(width),
+        Expr::Bin {
+            op: crate::ir::BinOp::And,
+            lhs,
+            rhs,
+        } => fits(lhs, width) || fits(rhs, width),
+        Expr::Bin {
+            op: crate::ir::BinOp::Shr,
+            lhs,
+            ..
+        } => fits(lhs, width),
+        _ => false,
+    }
+}
+
+fn reads_memory(expr: &Expr) -> bool {
+    matches!(expr, Expr::Load { .. }) || children(expr).into_iter().any(reads_memory)
 }
 
 /// Replaces every read of `dest` in one statement with the value; clears `ok`
@@ -159,6 +209,12 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
     // A block inside a cycle reads its own live-outs again on the next
     // iteration, so its own reads are live at its boundary too.
     let cyclic = cyclic_blocks(ir);
+    // A register live on leaving the block, such as one a tail call through
+    // an indirect jump reads, is kept too.
+    let live_in = live_in(ir);
+    let live_out: Vec<_> = (0..ir.blocks.len())
+        .map(|index| live_out(ir, &live_in, index))
+        .collect();
     for (index, block) in ir.blocks.iter_mut().enumerate() {
         if opaque(block) {
             continue;
@@ -167,6 +223,7 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
         if cyclic.contains(&index) {
             outer.extend(reads[index].iter().copied());
         }
+        outer.extend(live_out[index].iter().copied());
         copy_propagate_block(block, &outer, avoid_duplication);
     }
 }
@@ -190,7 +247,7 @@ fn copy_propagate_block(
                     // expression hurts readability once inlined.
                     _ => !reads_outside_frame(value) && expr_size(value) <= 8,
                 };
-                foldable.then(|| (dest.index, fold_width, value.clone()))
+                foldable.then(|| (dest.index, fold_width, truncated(value, dest.width)))
             }
             _ => None,
         };
@@ -411,6 +468,82 @@ mod tests {
     use super::{copy_propagate, inline_local_copies};
     use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn a_folded_narrow_sum_keeps_its_truncation() {
+        // eax = ecx + edx; return eax;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 0,
+                        width: 32,
+                    },
+                    value: Expr::bin(BinOp::Add, Expr::reg(1, 32), Expr::reg(2, 32)),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 32),
+                },
+            ],
+        );
+
+        copy_propagate(&mut ir);
+
+        let sum = Expr::bin(BinOp::Add, Expr::reg(1, 32), Expr::reg(2, 32));
+        let truncated = Expr::bin(BinOp::And, sum, Expr::Const(0xffff_ffff));
+        assert!(
+            matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value }] if *value == truncated),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_load_does_not_move_past_a_store() {
+        let load = |index| Expr::Load {
+            addr: Box::new(Expr::reg(index, 64)),
+            width: 4,
+            signed: false,
+        };
+        let assign = |index, value| Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        };
+        let store = |value, addr| Stmt::Store {
+            addr: Expr::reg(addr, 64),
+            value: Expr::reg(value, 64),
+            width: 4,
+        };
+        // t = *a; *a = *b; *b = t;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(8, load(1)),
+                assign(9, load(0)),
+                store(8, 0),
+                store(9, 1),
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+
+        inline_local_copies(&mut ir);
+
+        let stmts = &ir.blocks[0].stmts;
+        let saved = stmts
+            .iter()
+            .position(|stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == 9));
+        let overwritten = stmts
+            .iter()
+            .position(|stmt| matches!(stmt, Stmt::Store { addr, .. } if *addr == Expr::reg(0, 64)));
+        assert!(
+            saved.is_some_and(|saved| Some(saved) < overwritten),
+            "the load of *a stays before the store to *a:\n{}",
+            ir.render()
+        );
+    }
 
     #[test]
     fn keeps_a_definition_a_later_block_reads() {

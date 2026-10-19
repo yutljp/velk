@@ -230,7 +230,7 @@ void ()
 -- ir
 fn c0 @ 0x2103cc (size 20)
   blk0 @ 0x2103cc:
-    store32((load32(#0x220554) + #0xb), #0x220554)
+    store32(((load32(#0x220554) + #0xb) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2103cc","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c0","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -250,7 +250,7 @@ void ()
 -- ir
 fn c1 @ 0x2103e0 (size 24)
   blk0 @ 0x2103e0:
-    store32((load32(#0x220554) ^ #0x12), #0x220554)
+    store32(((load32(#0x220554) ^ #0x12) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2103e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c1","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
@@ -270,7 +270,7 @@ void ()
 -- ir
 fn c2 @ 0x2103f8 (size 20)
   blk0 @ 0x2103f8:
-    store32((load32(#0x220554) - #0x19), #0x220554)
+    store32(((load32(#0x220554) - #0x19) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2103f8","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c2","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -290,7 +290,7 @@ void ()
 -- ir
 fn c3 @ 0x21040c (size 20)
   blk0 @ 0x21040c:
-    store32((load32(#0x220554) | #0x20), #0x220554)
+    store32(((load32(#0x220554) | #0x20) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x21040c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c3","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -310,7 +310,7 @@ void ()
 -- ir
 fn c4 @ 0x210420 (size 20)
   blk0 @ 0x210420:
-    store32((load32(#0x220554) + #0x27), #0x220554)
+    store32(((load32(#0x220554) + #0x27) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x210420","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c4","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -330,7 +330,7 @@ void ()
 -- ir
 fn c5 @ 0x210434 (size 24)
   blk0 @ 0x210434:
-    store32((load32(#0x220554) ^ #0x2e), #0x220554)
+    store32(((load32(#0x220554) ^ #0x2e) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x210434","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c5","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
@@ -350,7 +350,7 @@ void ()
 -- ir
 fn c6 @ 0x21044c (size 20)
   blk0 @ 0x21044c:
-    store32((load32(#0x220554) - #0x35), #0x220554)
+    store32(((load32(#0x220554) - #0x35) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x21044c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c6","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -370,7 +370,7 @@ void ()
 -- ir
 fn c7 @ 0x210460 (size 20)
   blk0 @ 0x210460:
-    store32((load32(#0x220554) | #0x3c), #0x220554)
+    store32(((load32(#0x220554) | #0x3c) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x210460","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c7","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -390,7 +390,7 @@ void ()
 -- ir
 fn c8 @ 0x210474 (size 20)
   blk0 @ 0x210474:
-    store32((load32(#0x220554) + #0x43), #0x220554)
+    store32(((load32(#0x220554) + #0x43) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x210474","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c8","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -410,7 +410,7 @@ void ()
 -- ir
 fn c9 @ 0x210488 (size 24)
   blk0 @ 0x210488:
-    store32((load32(#0x220554) ^ #0x4a), #0x220554)
+    store32(((load32(#0x220554) ^ #0x4a) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x210488","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c9","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
@@ -430,7 +430,7 @@ void ()
 -- ir
 fn c10 @ 0x2104a0 (size 20)
   blk0 @ 0x2104a0:
-    store32((load32(#0x220554) - #0x51), #0x220554)
+    store32(((load32(#0x220554) - #0x51) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2104a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c10","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -450,7 +450,7 @@ void ()
 -- ir
 fn c11 @ 0x2104b4 (size 24)
   blk0 @ 0x2104b4:
-    store32((load32(#0x220554) | #0x58), #0x220554)
+    store32(((load32(#0x220554) | #0x58) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2104b4","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c11","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
@@ -470,7 +470,7 @@ void ()
 -- ir
 fn c12 @ 0x2104cc (size 20)
   blk0 @ 0x2104cc:
-    store32((load32(#0x220554) + #0x5f), #0x220554)
+    store32(((load32(#0x220554) + #0x5f) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2104cc","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c12","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -490,7 +490,7 @@ void ()
 -- ir
 fn c13 @ 0x2104e0 (size 24)
   blk0 @ 0x2104e0:
-    store32((load32(#0x220554) ^ #0x66), #0x220554)
+    store32(((load32(#0x220554) ^ #0x66) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2104e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c13","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
@@ -510,7 +510,7 @@ void ()
 -- ir
 fn c14 @ 0x2104f8 (size 20)
   blk0 @ 0x2104f8:
-    store32((load32(#0x220554) - #0x6d), #0x220554)
+    store32(((load32(#0x220554) - #0x6d) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x2104f8","approxTokens":126,"blocks":1,"hardReasons":[],"name":"c14","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
@@ -530,7 +530,7 @@ void ()
 -- ir
 fn c15 @ 0x21050c (size 24)
   blk0 @ 0x21050c:
-    store32((load32(#0x220554) | #0x74), #0x220554)
+    store32(((load32(#0x220554) | #0x74) & #0xffffffff), #0x220554)
     ret x0
 -- card
 {"addr":"0x21050c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"c15","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}

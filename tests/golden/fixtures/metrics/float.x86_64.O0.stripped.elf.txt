@@ -8,7 +8,7 @@
 == 0x2011f0 -
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
-uint64_t sub_2011f0(uint64_t a0, uint32_t a1) {
+uint32_t sub_2011f0(uint64_t a0, uint32_t a1) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -22,7 +22,8 @@ uint64_t sub_2011f0(uint64_t a0, uint32_t a1) {
         rax = *(uint64_t *)(rbp - 0x8);
         rcx = (int32_t)(*(uint32_t *)(rbp - 0x1c));
         /* unsupported (3 steps): Movsd at 0x20121e, Addsd at 0x201223, Movsd at 0x201228 */
-        *(uint32_t *)(rbp - 0x1c) = *(uint32_t *)(rbp - 0x1c) + 0x1;
+        rax = *(uint32_t *)(rbp - 0x1c) + 0x1;
+        *(uint32_t *)(rbp - 0x1c) = eax;
     }
     if (*(uint32_t *)(rbp - 0xc) > 0x0) {
         /* unsupported (4 steps): Movsd at 0x201245, Cvtsi2sd at 0x20124a, Divsd at 0x20124f, Movsd at 0x201253 */
@@ -38,7 +39,7 @@ uint64_t sub_2011f0(uint64_t a0, uint32_t a1) {
     return rax;
 }
 -- signature
-uint64_t (uint64_t a0, uint32_t a1)
+uint32_t (uint64_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -61,7 +62,8 @@ fn <unnamed> @ 0x2011f0 (size 144)
     unsupported: Movsd at 0x20121e
     unsupported: Addsd at 0x201223
     unsupported: Movsd at 0x201228
-    store32((load32((rbp + #0xffffffffffffffe4)) + #0x1), (rbp + #0xffffffffffffffe4))
+    rax = ((load32((rbp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff)
+    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffe4))
     br 0x20120a
   blk3 @ 0x20123b:
     brif le load32((rbp + #0xfffffffffffffff4)), #0x0 -> 0x20125d

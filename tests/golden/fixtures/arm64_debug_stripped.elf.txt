@@ -17,7 +17,7 @@ int (int a, int b, int c)
 -- ir
 fn sum3 @ 0x21018c (size 12)
   blk0 @ 0x21018c:
-    ret ((w1 + w0) + w2)
+    ret (((w1 + w0) + w2) & #0xffffffff)
 -- card
 {"addr":"0x21018c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["entry","dwarf"],"section":".text","size":12,"unsupported":0}
 
@@ -49,7 +49,7 @@ fn helper @ 0x210198 (size 68)
     x9 = (x8 * (((x0 & #0xffffffff) - #0x3) & #0xffffffff))
     x8 = (x8 >> #0x1)
     x9 = (x9 >> #0x1)
-    ret ((((((((x9 & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)) & #0xffffffff) - #0x1) & #0xffffffff)
+    ret (((((((x9 & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)) - #0x1) & #0xffffffff)
   blk2 @ 0x2101d4:
     ret #0x0
 -- card

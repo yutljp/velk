@@ -14,8 +14,7 @@
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 uint32_t sub_2012f0(uint32_t a0) {
-    eax = a0 + a0;
-    return eax;
+    return a0 + a0;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -24,8 +23,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2012f0 (size 16)
   blk0 @ 0x2012f0:
-    eax = (rdi + rdi)
-    ret eax
+    ret ((rdi + rdi) & #0xffffffff)
 -- card
 {"addr":"0x2012f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -42,7 +40,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201300 (size 16)
   blk0 @ 0x201300:
-    ret (edi * edi)
+    ret ((edi * edi) & #0xffffffff)
 -- card
 {"addr":"0x201300","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 

@@ -37,7 +37,7 @@ fn <unnamed> @ 0x2011c0 (size 64)
   blk1 @ 0x2011ce:
     brif eq load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x2011f1
   blk2 @ 0x2011d8:
-    store32(((load32((rbp + #0xfffffffffffffffc)) & #0x1) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
+    store32((((load32((rbp + #0xfffffffffffffffc)) & #0x1) + load32((rbp + #0xfffffffffffffff8))) & #0xffffffff), (rbp + #0xfffffffffffffff8))
     store32((load32((rbp + #0xfffffffffffffffc)) >> #0x1), (rbp + #0xfffffffffffffffc))
     br 0x2011ce
   blk3 @ 0x2011f1:
@@ -81,8 +81,8 @@ fn <unnamed> @ 0x201200 (size 64)
   blk1 @ 0x201215:
     brif gt load32((rbp + #0xfffffffffffffff4)), load32((rbp + #0xfffffffffffffffc)) -> 0x201238
   blk2 @ 0x201221:
-    store32((load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
-    store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
+    store32(((load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff8))) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff4))
     br 0x201215
   blk3 @ 0x201238:
     rsp = (rsp + #0x8)
@@ -145,8 +145,8 @@ fn <unnamed> @ 0x201240 (size 96)
   blk3 @ 0x20127d:
     br 0x201299
   blk4 @ 0x201282:
-    store32((((load32((rbp + #0xffffffffffffffe8)) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
+    store32(((load32((rbp + #0xffffffffffffffe8)) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32(((load32((rbp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x201259
   blk5 @ 0x201299:
     rsp = (rsp + #0x8)
@@ -216,9 +216,9 @@ fn <unnamed> @ 0x2012a0 (size 119)
     br 0x201304
   blk6 @ 0x2012f3:
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    store32((((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32(((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
   blk7 @ 0x201304:
-    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
+    store32(((load32((rbp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x2012b9
   blk8 @ 0x201312:
     rsp = (rsp + #0x8)

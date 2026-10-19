@@ -107,26 +107,26 @@ fn dense @ 0x0 (size 268)
     x11 = (#0x28 + (x12 << #0x2))
     br x11
   blk2 @ 0x28:
-    x9 = (((load32(x8) & #0xffffffff) + #0xb) & #0xffffffff)
+    x9 = ((load32(x8) + #0xb) & #0xffffffff)
     br 0x100
   blk3 @ 0x34:
-    x9 = (((load32(x8) & #0xffffffff) - #0x6d) & #0xffffffff)
+    x9 = ((load32(x8) - #0x6d) & #0xffffffff)
     br 0x100
   blk4 @ 0x40:
     x9 = (load32(x8) & #0xffffffff)
     x10 = #0x58
     br 0x88
   blk5 @ 0x4c:
-    x9 = (((load32(x8) & #0xffffffff) + #0x27) & #0xffffffff)
+    x9 = ((load32(x8) + #0x27) & #0xffffffff)
     br 0x100
   blk6 @ 0x58:
-    x9 = (((load32(x8) & #0xffffffff) + #0x5f) & #0xffffffff)
+    x9 = ((load32(x8) + #0x5f) & #0xffffffff)
     br 0x100
   blk7 @ 0x64:
-    x9 = (((load32(x8) & #0xffffffff) ^ #0x4a) & #0xffffffff)
+    x9 = ((load32(x8) ^ #0x4a) & #0xffffffff)
     br 0x100
   blk8 @ 0x74:
-    x9 = (((load32(x8) & #0xffffffff) - #0x19) & #0xffffffff)
+    x9 = ((load32(x8) - #0x19) & #0xffffffff)
     br 0x100
   blk9 @ 0x80:
     x9 = (load32(x8) & #0xffffffff)
@@ -135,28 +135,28 @@ fn dense @ 0x0 (size 268)
     x9 = (((x9 & #0xffffffff) | (x10 & #0xffffffff)) & #0xffffffff)
     br 0x100
   blk11 @ 0x90:
-    x9 = (((load32(x8) & #0xffffffff) | #0x20) & #0xffffffff)
+    x9 = ((load32(x8) | #0x20) & #0xffffffff)
     br 0x100
   blk12 @ 0x9c:
-    x9 = (((load32(x8) & #0xffffffff) | #0x3c) & #0xffffffff)
+    x9 = ((load32(x8) | #0x3c) & #0xffffffff)
     br 0x100
   blk13 @ 0xa8:
-    x9 = (((load32(x8) & #0xffffffff) ^ #0x12) & #0xffffffff)
+    x9 = ((load32(x8) ^ #0x12) & #0xffffffff)
     br 0x100
   blk14 @ 0xb8:
-    x9 = (((load32(x8) & #0xffffffff) ^ #0x2e) & #0xffffffff)
+    x9 = ((load32(x8) ^ #0x2e) & #0xffffffff)
     br 0x100
   blk15 @ 0xc8:
-    x9 = (((load32(x8) & #0xffffffff) ^ #0x66) & #0xffffffff)
+    x9 = ((load32(x8) ^ #0x66) & #0xffffffff)
     br 0x100
   blk16 @ 0xd8:
-    x9 = (((load32(x8) & #0xffffffff) - #0x35) & #0xffffffff)
+    x9 = ((load32(x8) - #0x35) & #0xffffffff)
     br 0x100
   blk17 @ 0xe4:
-    x9 = (((load32(x8) & #0xffffffff) - #0x51) & #0xffffffff)
+    x9 = ((load32(x8) - #0x51) & #0xffffffff)
     br 0x100
   blk18 @ 0xf0:
-    x9 = (((load32(x8) & #0xffffffff) + #0x43) & #0xffffffff)
+    x9 = ((load32(x8) + #0x43) & #0xffffffff)
     br 0x100
   blk19 @ 0xfc:
     x9 = #0x0

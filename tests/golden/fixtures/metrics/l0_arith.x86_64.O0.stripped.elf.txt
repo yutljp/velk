@@ -31,7 +31,7 @@ fn <unnamed> @ 0x2011c0 (size 32)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
-    ret ((edi + esi) + edx)
+    ret ((((edi & #0xffffffff) + (esi & #0xffffffff)) + (edx & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -48,7 +48,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011e0 (size 16)
   blk0 @ 0x2011e0:
-    ret ((edi * #0x7) + #0x3)
+    ret ((((edi & #0xffffffff) * #0x7) + #0x3) & #0xffffffff)
 -- card
 {"addr":"0x2011e0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -83,7 +83,7 @@ fn <unnamed> @ 0x2011f0 (size 48)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
-    brif le edi, esi -> 0x201211
+    brif le (edi & #0xffffffff), (esi & #0xffffffff) -> 0x201211
   blk1 @ 0x201206:
     store32(load32((rbp + #0xfffffffffffffffc)), (rbp + #0xfffffffffffffff4))
     br 0x201217
@@ -108,6 +108,6 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201220 (size 14)
   blk0 @ 0x201220:
-    ret ((#0x0 - edi) & #0xffffffff)
+    ret ((#0x0 - (edi & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x201220","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":14,"sizeEstimated":true,"unsupported":0}

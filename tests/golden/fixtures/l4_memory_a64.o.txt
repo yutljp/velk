@@ -81,7 +81,7 @@ void ()
 -- ir
 fn bump @ 0x44 (size 20)
   blk0 @ 0x44:
-    store32((load32(#0x0) + #0x1), #0x0)
+    store32(((load32(#0x0) + #0x1) & #0xffffffff), #0x0)
     ret x0
 -- card
 {"addr":"0x44","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}

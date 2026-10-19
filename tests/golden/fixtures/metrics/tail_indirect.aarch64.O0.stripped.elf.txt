@@ -20,7 +20,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 fn <unnamed> @ 0x21017c (size 48)
   blk0 @ 0x21017c:
     x8 = x0
-    w9 = w1
+    w9 = (w1 & #0xffffffff)
     x0 = ((w9 + #0x1) & #0xffffffff)
     unsupported: BLR at 0x21019c
     ret w0
@@ -44,6 +44,6 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x2101ac (size 32)
   blk0 @ 0x2101ac:
     store32(w0, (sp + #0xfffffffffffffffc))
-    ret (load32((sp + #0xfffffffffffffffc)) + #0x5)
+    ret ((load32((sp + #0xfffffffffffffffc)) + #0x5) & #0xffffffff)
 -- card
 {"addr":"0x2101ac","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}

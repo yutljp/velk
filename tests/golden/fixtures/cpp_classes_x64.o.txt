@@ -110,17 +110,17 @@ fn clamp_long(long) @ 0x70 (size 35)
 -- decompile
 /* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 */
 /* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
-uint32_t dot_sum_Vec2_const___Vec2_const__(uint64_t a0, uint32_t *a1) {
+uint32_t dot_sum_Vec2_const___Vec2_const__(uint32_t a0, uint32_t *a1) {
     return (a1->field_0x4 + *(uint32_t *)(a0 + 0x4)) * (a1->field_0x0 + *(uint32_t *)(a0));
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t * a1)
+uint32_t (uint32_t a0, uint32_t * a1)
 -- references
 
 -- ir
 fn dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 (size 14)
   blk0 @ 0xa0:
-    ret ((load32((rsi + #0x4)) + load32((rdi + #0x4))) * (load32(rsi) + load32(rdi)))
+    ret (((load32((rsi + #0x4)) + load32((rdi + #0x4))) * (load32(rsi) + load32(rdi))) & #0xffffffff)
 -- card
 {"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0xa0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab"],"section":".text","size":14,"unsupported":0}
 

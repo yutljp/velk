@@ -570,17 +570,17 @@ int sparse(int x) {
     *(uint32_t *)(rbp - 0x8) = x;
     eax = x;
     *(uint32_t *)(rbp - 0xc) = eax;
-    if (eax == 0x1) {
+    if (eax - 0x1 == 0x0) {
         *(uint32_t *)(rbp - 0x4) = 0x64;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
     }
-    if (*(uint32_t *)(rbp - 0xc) == 0x32) {
+    if (*(uint32_t *)(rbp - 0xc) - 0x32 == 0x0) {
         *(uint32_t *)(rbp - 0x4) = 0x7;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
     }
-    if (*(uint32_t *)(rbp - 0xc) == 0x12c) {
+    if (*(uint32_t *)(rbp - 0xc) - 0x12c == 0x0) {
         *(uint32_t *)(rbp - 0x4) = 0x12c;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x4);
@@ -600,17 +600,17 @@ fn sparse @ 0x2016f0 (size 111)
     store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffff8))
-    eax = edi
+    eax = (edi & #0xffffffff)
     store32(eax, (rbp + #0xfffffffffffffff4))
-    brif eq eax, #0x1 -> 0x20172f
+    brif eq ((eax - #0x1) & #0xffffffff), #0x0 -> 0x20172f
   blk1 @ 0x201706:
     br 0x20170b
   blk2 @ 0x20170b:
-    brif eq load32((rbp + #0xfffffffffffffff4)), #0x32 -> 0x20173b
+    brif eq ((load32((rbp + #0xfffffffffffffff4)) - #0x32) & #0xffffffff), #0x0 -> 0x20173b
   blk3 @ 0x201717:
     br 0x20171c
   blk4 @ 0x20171c:
-    brif eq load32((rbp + #0xfffffffffffffff4)), #0x12c -> 0x201747
+    brif eq ((load32((rbp + #0xfffffffffffffff4)) - #0x12c) & #0xffffffff), #0x0 -> 0x201747
   blk5 @ 0x20172a:
     br 0x201753
   blk6 @ 0x20172f:

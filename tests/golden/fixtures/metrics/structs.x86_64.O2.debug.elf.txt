@@ -22,7 +22,7 @@ int (struct rect * r)
 -- ir
 fn rect_area @ 0x2011e0 (size 15)
   blk0 @ 0x2011e0:
-    ret ((load32((rdi + #0xc)) - load32((rdi + #0x4))) * (load32((rdi + #0x8)) - load32(rdi)))
+    ret (((load32((rdi + #0xc)) - load32((rdi + #0x4))) * (load32((rdi + #0x8)) - load32(rdi))) & #0xffffffff)
 -- card
 {"accesses":["r +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf"],"section":".text","size":15,"unsupported":0}
 
@@ -184,23 +184,17 @@ fn word_low_byte @ 0x2012c0 (size 3)
 == 0x2012d0 flags_level
 -- decompile
 /* velk pseudo-C: flags_level @ 0x2012d0 */
-uint64_t flags_level(struct flags f) {
-    eax = f;
-    eax = eax >> 0x4;
-    ecx = f;
-    return ((f & 0xff & 0x1) == 0x0 ? ecx >> 0x1 & 0x7 : eax & 0xf);
+uint32_t flags_level(struct flags f) {
+    return ((f & 0xff & 0x1) == 0x0 ? (f & 0xffffffff) >> 0x1 & 0x7 : (f & 0xffffffff) >> 0x4 & 0xf);
 }
 -- signature
-uint64_t (struct flags f)
+uint32_t (struct flags f)
 -- references
 
 -- ir
 fn flags_level @ 0x2012d0 (size 23)
   blk0 @ 0x2012d0:
-    eax = rdi
-    eax = (eax >> #0x4)
-    ecx = rdi
-    ret select eq ((rdi & #0xff) & #0x1), #0x0 ? ((ecx >> #0x1) & #0x7), (eax & #0xf)
+    ret (select eq ((rdi & #0xff) & #0x1), #0x0 ? (((rdi & #0xffffffff) >> #0x1) & #0x7), (((rdi & #0xffffffff) >> #0x4) & #0xf) & #0xffffffff)
 -- card
 {"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":0}
 

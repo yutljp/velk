@@ -84,7 +84,7 @@ fn clamp @ 0x2101d0 (size 104)
     store32(w0, (sp + #0xfffffffffffffff8))
     store32(w1, (sp + #0xfffffffffffffff4))
     store32(w2, (sp + #0xfffffffffffffff0))
-    brif ge w0, w1 -> 0x210200
+    brif ge (w0 & #0xffffffff), (w1 & #0xffffffff) -> 0x210200
   blk1 @ 0x2101f0:
     br 0x2101f4
   blk2 @ 0x2101f4:

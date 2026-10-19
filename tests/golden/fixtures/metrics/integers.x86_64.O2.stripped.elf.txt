@@ -14,8 +14,7 @@
 -- decompile
 /* velk pseudo-C: sub_201210 @ 0x201210 */
 uint32_t sub_201210(uint32_t a0, uint32_t a1) {
-    eax = a1 + a0;
-    return eax;
+    return a1 + a0;
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1)
@@ -24,8 +23,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x201210 (size 16)
   blk0 @ 0x201210:
-    eax = (rsi + rdi)
-    ret eax
+    ret ((rsi + rdi) & #0xffffffff)
 -- card
 {"addr":"0x201210","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -42,7 +40,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x201220 (size 16)
   blk0 @ 0x201220:
-    ret (edi * esi)
+    ret ((edi * esi) & #0xffffffff)
 -- card
 {"addr":"0x201220","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -114,9 +112,8 @@ uint32_t sub_201260(uint32_t a0) {
         return rax;
     }
     do {
-        ecx = a0 - 0x1;
         rax = eax + 0x1;
-        ecx = ecx & a0;
+        ecx = ((a0 - 0x1) & 0xffffffff) & a0;
         a0 = ecx;
     } while (ecx != 0x0);
 }
@@ -130,9 +127,8 @@ fn <unnamed> @ 0x201260 (size 32)
     rax = #0x0
     brif eq (rdi & #0xffffffff), #0x0 -> 0x20127b
   blk1 @ 0x201270:
-    ecx = (rdi + #0xffffffffffffffff)
     rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
-    ecx = (ecx & (rdi & #0xffffffff))
+    ecx = (((rdi + #0xffffffffffffffff) & #0xffffffff) & (rdi & #0xffffffff))
     rdi = ecx
     brif ne ecx, #0x0 -> 0x201270
   blk2 @ 0x20127b:
@@ -174,7 +170,7 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x201290 (size 16)
   blk0 @ 0x201290:
-    ret select ge select lt edi, esi ? edi, esi, edx ? edx, select lt edi, esi ? edi, esi
+    ret (select ge (select lt edi, esi ? edi, esi & #0xffffffff), edx ? edx, (select lt edi, esi ? edi, esi & #0xffffffff) & #0xffffffff)
 -- card
 {"addr":"0x201290","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 

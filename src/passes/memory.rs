@@ -14,11 +14,15 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                 Stmt::Store {
                     addr, value, width, ..
                 } => {
-                    // A newer store replaces every older one it may overlap.
-                    pending.retain(|(stored_width, stored, _)| {
+                    // A newer store replaces every older one it may overlap,
+                    // and every remembered value that loads what it overwrites.
+                    pending.retain(|(stored_width, stored, remembered)| {
                         disjoint(stored, *stored_width, addr, *width)
+                            && loads_avoid(remembered, addr, *width)
                     });
-                    pending.push((*width, addr.clone(), value.clone()));
+                    if loads_avoid(value, addr, *width) {
+                        pending.push((*width, addr.clone(), value.clone()));
+                    }
                 }
                 Stmt::Call { .. } | Stmt::Unsupported { .. } => pending.clear(),
                 Stmt::Assign { dest, value } => {
@@ -29,6 +33,14 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                         continue;
                     }
                     forward_expr(value, &pending);
+                    // A remembered store that reads the register now describes
+                    // its old value.
+                    pending.retain(|(_, addr, stored)| {
+                        let mut reads = std::collections::HashSet::new();
+                        crate::ir::visit::collect_reads(addr, &mut reads);
+                        crate::ir::visit::collect_reads(stored, &mut reads);
+                        !reads.contains(&dest.index)
+                    });
                 }
                 Stmt::Brif { lhs, rhs, .. } => {
                     forward_expr(lhs, &pending);
@@ -54,6 +66,21 @@ fn disjoint(a: &Expr, a_width: u8, b: &Expr, b_width: u8) -> bool {
     a_end <= b_offset || b_end <= a_offset
 }
 
+/// True when every load in the value provably reads other bytes than the
+/// `width` bytes at `addr`.
+fn loads_avoid(value: &Expr, addr: &Expr, width: u8) -> bool {
+    match value {
+        Expr::Load {
+            addr: read,
+            width: read_width,
+            ..
+        } => disjoint(read, *read_width, addr, width) && loads_avoid(read, addr, width),
+        _ => crate::ir::visit::children(value)
+            .into_iter()
+            .all(|child| loads_avoid(child, addr, width)),
+    }
+}
+
 /// An address as a base and a constant byte offset.
 fn split_offset(addr: &Expr) -> (&Expr, i64) {
     match addr {
@@ -71,11 +98,27 @@ fn split_offset(addr: &Expr) -> (&Expr, i64) {
 
 fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
     match expr {
-        Expr::Load { addr, width, .. } => {
+        Expr::Load {
+            addr,
+            width,
+            signed,
+        } => {
             if let Some((_, _, value)) = pending.iter().find(|(stored_width, stored, _)| {
                 *stored_width == *width && stored == addr.as_ref()
             }) {
-                *expr = value.clone();
+                // The load reads back only the stored bytes, extended its own way.
+                *expr = match (*width, *signed) {
+                    (8, _) => value.clone(),
+                    (width, true) => Expr::SignExtend {
+                        value: Box::new(value.clone()),
+                        width,
+                    },
+                    (width, false) => Expr::bin(
+                        crate::ir::BinOp::And,
+                        value.clone(),
+                        Expr::Const((1u64 << (u32::from(width) * 8)) - 1),
+                    ),
+                };
                 return;
             }
             forward_expr(addr, pending);
@@ -104,12 +147,36 @@ fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
 /// Fuses `t = *p; t = op(t, x); *p = t` into `*p = op(*p, x)` when the
 /// temporary is read nowhere else in the block.
 pub fn fuse_load_op_store(ir: &mut FunctionIr) {
-    for block in &mut ir.blocks {
-        fuse_block(block);
+    let live_in = crate::ir::cfg::live_in(ir);
+    let live_out: Vec<_> = (0..ir.blocks.len())
+        .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
+        .collect();
+    for (block, live_out) in ir.blocks.iter_mut().zip(&live_out) {
+        fuse_block(block, live_out);
     }
 }
 
-fn fuse_block(block: &mut crate::ir::Block) {
+/// True when something after `from` reads the temporary before redefining
+/// it, in this block or, through the block's exit, in a later one.
+fn read_later(
+    stmts: &[Stmt],
+    from: usize,
+    dest: u16,
+    live_out: &std::collections::HashSet<u16>,
+) -> bool {
+    for stmt in &stmts[from..] {
+        let (writes, reads) = statement_registers(stmt);
+        if reads.contains(&dest) {
+            return true;
+        }
+        if writes.contains(&dest) {
+            return false;
+        }
+    }
+    live_out.contains(&dest)
+}
+
+fn fuse_block(block: &mut crate::ir::Block, live_out: &std::collections::HashSet<u16>) {
     let mut fused: Vec<usize> = Vec::new();
     let mut index = 0;
     while index < block.stmts.len() {
@@ -119,7 +186,7 @@ fn fuse_block(block: &mut crate::ir::Block) {
         }
         // The update may already carry its load: `t = op(*p, x); *p = t`.
         if let Some((dest, address, update)) = inline_update(&block.stmts[index])
-            && let Some(store_at) = store_back(&block.stmts, index, dest, &address)
+            && let Some(store_at) = store_back(&block.stmts, index, dest, &address, live_out)
         {
             if let Stmt::Store { value, .. } = &mut block.stmts[store_at] {
                 *value = update;
@@ -185,18 +252,7 @@ fn fuse_block(block: &mut crate::ir::Block) {
             continue;
         }
         // Nothing may read the temporary after the store either.
-        let mut escapes = false;
-        for later in store_at + 1..block.stmts.len() {
-            let (writes, reads) = statement_registers(&block.stmts[later]);
-            if writes.contains(&dest) {
-                break;
-            }
-            if reads.contains(&dest) {
-                escapes = true;
-                break;
-            }
-        }
-        if escapes {
+        if read_later(&block.stmts, store_at + 1, dest, live_out) {
             index += 1;
             continue;
         }
@@ -279,7 +335,13 @@ fn inline_update(stmt: &Stmt) -> Option<(u16, Expr, Expr)> {
 
 /// The statement storing the temporary back to the address it read,
 /// provided nothing observes the temporary in between or after.
-fn store_back(stmts: &[Stmt], index: usize, dest: u16, address: &Expr) -> Option<usize> {
+fn store_back(
+    stmts: &[Stmt],
+    index: usize,
+    dest: u16,
+    address: &Expr,
+    live_out: &std::collections::HashSet<u16>,
+) -> Option<usize> {
     let mut store_at = None;
     for (probe, stmt) in stmts.iter().enumerate().take(index + 8).skip(index + 1) {
         let (writes, reads) = statement_registers(stmt);
@@ -295,16 +357,7 @@ fn store_back(stmts: &[Stmt], index: usize, dest: u16, address: &Expr) -> Option
         }
     }
     let store_at = store_at?;
-    for stmt in &stmts[store_at + 1..] {
-        let (writes, reads) = statement_registers(stmt);
-        if writes.contains(&dest) {
-            break;
-        }
-        if reads.contains(&dest) {
-            return None;
-        }
-    }
-    Some(store_at)
+    (!read_later(stmts, store_at + 1, dest, live_out)).then_some(store_at)
 }
 
 fn store_pair(stmt: &Stmt) -> Option<(&Expr, &Expr)> {
@@ -342,8 +395,8 @@ pub(crate) fn strip_mask(expr: &Expr) -> &Expr {
 
 #[cfg(test)]
 mod tests {
-    use super::forward_stored_values;
-    use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
+    use super::{forward_stored_values, fuse_load_op_store};
+    use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
 
     fn slot(offset: i64) -> Expr {
@@ -364,6 +417,112 @@ mod tests {
             width,
             signed: false,
         }
+    }
+
+    #[test]
+    fn an_update_read_again_after_its_store_is_not_fused() {
+        let assign = |value| Stmt::Assign {
+            dest: RegRef {
+                index: 0,
+                width: 64,
+            },
+            value,
+        };
+        // t = *p; t = t + 1; *p = t; t = t & 0xff; return t;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(load(-8, 8)),
+                assign(Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1))),
+                store(-8, Expr::reg(0, 64), 8),
+                assign(Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xff))),
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+
+        fuse_load_op_store(&mut ir);
+
+        assert_eq!(ir.blocks[0].stmts.len(), 5, "{}", ir.render());
+    }
+
+    #[test]
+    fn a_value_that_loads_its_own_slot_is_not_forwarded() {
+        // c = c + 1; return c;
+        let increment = Expr::bin(BinOp::Add, load(-8, 8), Expr::Const(1));
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![store(-8, increment, 8), Stmt::Ret { value: load(-8, 8) }],
+        );
+
+        forward_stored_values(&mut ir);
+
+        assert!(
+            matches!(&ir.blocks[0].stmts[1], Stmt::Ret { value } if *value == load(-8, 8)),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_forwarded_byte_is_extended_like_the_load() {
+        let byte = |signed| Expr::Load {
+            addr: Box::new(slot(-1)),
+            width: 1,
+            signed,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(-1, Expr::reg(0, 64), 1),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, byte(true), byte(false)),
+                },
+            ],
+        );
+
+        forward_stored_values(&mut ir);
+
+        let expected = Expr::bin(
+            BinOp::Add,
+            Expr::SignExtend {
+                value: Box::new(Expr::reg(0, 64)),
+                width: 1,
+            },
+            Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xff)),
+        );
+        assert!(
+            matches!(&ir.blocks[0].stmts[1], Stmt::Ret { value } if *value == expected),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_value_whose_register_changes_is_not_forwarded() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(-8, Expr::reg(0, 64), 8),
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 0,
+                        width: 64,
+                    },
+                    value: Expr::Const(1),
+                },
+                Stmt::Ret { value: load(-8, 8) },
+            ],
+        );
+
+        forward_stored_values(&mut ir);
+
+        assert!(
+            matches!(&ir.blocks[0].stmts[2], Stmt::Ret { value } if *value == load(-8, 8)),
+            "{}",
+            ir.render()
+        );
     }
 
     #[test]

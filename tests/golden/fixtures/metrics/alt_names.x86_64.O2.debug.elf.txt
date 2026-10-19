@@ -6,8 +6,7 @@
 -- decompile
 /* velk pseudo-C: alt_sum3 @ 0x201170 */
 int alt_sum3(int a, int b, int c) {
-    eax = a + b;
-    return eax + c;
+    return a + b + c;
 }
 -- signature
 int (int a, int b, int c)
@@ -16,8 +15,7 @@ int (int a, int b, int c)
 -- ir
 fn alt_sum3 @ 0x201170 (size 6)
   blk0 @ 0x201170:
-    eax = (rdi + rsi)
-    ret (eax + edx)
+    ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
 {"addr":"0x201170","approxTokens":114,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
 
@@ -33,7 +31,7 @@ int alt_helper(int x) {
     rax = eax * 0x55555556;
     rax = eax + x;
     rcx = rcx >> 0x1;
-    return ((eax + ((rcx + rcx * 0x2) & 0xffffffff) - 0x1) & 0xffffffff);
+    return ((((eax + (rcx + rcx * 0x2)) & 0xffffffff) - 0x1) & 0xffffffff);
 }
 -- signature
 int (int x)
@@ -49,7 +47,7 @@ fn alt_helper @ 0x201180 (size 46)
     rax = (((rax & #0xffffffff) * #0x55555556) & #0xffffffff)
     rax = (((rax & #0xffffffff) + (rdi & #0xffffffff)) & #0xffffffff)
     rcx = (rcx >> #0x1)
-    ret (((((rax & #0xffffffff) + ((rcx + (rcx * #0x2)) & #0xffffffff)) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+    ret (((((rax & #0xffffffff) + (rcx + (rcx * #0x2))) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
   blk2 @ 0x2011ab:
     ret #0x0
 -- card

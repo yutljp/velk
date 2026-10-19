@@ -6,8 +6,7 @@
 -- decompile
 /* velk pseudo-C: sub_201170 @ 0x201170 */
 uint32_t sub_201170(uint32_t a0, uint32_t a1, uint32_t a2) {
-    eax = a0 + a1;
-    return eax + a2;
+    return a0 + a1 + a2;
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
@@ -16,8 +15,7 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- ir
 fn <unnamed> @ 0x201170 (size 16)
   blk0 @ 0x201170:
-    eax = (rdi + rsi)
-    ret (eax + edx)
+    ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
 {"addr":"0x201170","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -33,7 +31,7 @@ int32_t sub_201180(int32_t a0) {
     rax = eax * 0x55555556;
     rax = eax + a0;
     rcx = rcx >> 0x1;
-    return ((eax + ((rcx + rcx * 0x2) & 0xffffffff) - 0x1) & 0xffffffff);
+    return ((((eax + (rcx + rcx * 0x2)) & 0xffffffff) - 0x1) & 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)
@@ -49,7 +47,7 @@ fn <unnamed> @ 0x201180 (size 46)
     rax = (((rax & #0xffffffff) * #0x55555556) & #0xffffffff)
     rax = (((rax & #0xffffffff) + (rdi & #0xffffffff)) & #0xffffffff)
     rcx = (rcx >> #0x1)
-    ret (((((rax & #0xffffffff) + ((rcx + (rcx * #0x2)) & #0xffffffff)) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+    ret (((((rax & #0xffffffff) + (rcx + (rcx * #0x2))) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
   blk2 @ 0x2011ab:
     ret #0x0
 -- card

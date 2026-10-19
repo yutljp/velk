@@ -250,7 +250,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x210490 (size 36)
   blk0 @ 0x210490:
-    w8 = w0
+    w8 = (w0 & #0xffffffff)
     x10 = #0x3
     unsupported: SDIV at 0x2104a0
     w9 = (w9 * (x10 & #0xffffffff))
@@ -277,7 +277,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2104b4 (size 36)
   blk0 @ 0x2104b4:
-    w8 = w0
+    w8 = (w0 & #0xffffffff)
     x10 = #0x3
     unsupported: UDIV at 0x2104c4
     w9 = (w9 * (x10 & #0xffffffff))
@@ -304,7 +304,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2104d8 (size 36)
   blk0 @ 0x2104d8:
-    w8 = w0
+    w8 = (w0 & #0xffffffff)
     x10 = #0xa
     unsupported: UDIV at 0x2104e8
     w9 = (w9 * (x10 & #0xffffffff))
@@ -331,7 +331,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2104fc (size 36)
   blk0 @ 0x2104fc:
-    w8 = w0
+    w8 = (w0 & #0xffffffff)
     x10 = #0xa
     unsupported: SDIV at 0x21050c
     w9 = (w9 * (x10 & #0xffffffff))
@@ -439,7 +439,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x21058c (size 36)
   blk0 @ 0x21058c:
-    w8 = w0
+    w8 = (w0 & #0xffffffff)
     x10 = #0x4
     unsupported: SDIV at 0x21059c
     w9 = (w9 * (x10 & #0xffffffff))
@@ -461,7 +461,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2105b0 (size 28)
   blk0 @ 0x2105b0:
-    ret (#0x0 - w0)
+    ret ((#0x0 - (w0 & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x2105b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
@@ -478,7 +478,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2105cc (size 28)
   blk0 @ 0x2105cc:
-    ret select lt w0, #0x0 ? #0x1, #0x0
+    ret (select lt (w0 & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xffffffff)
 -- card
 {"addr":"0x2105cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
@@ -495,7 +495,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2105e8 (size 28)
   blk0 @ 0x2105e8:
-    ret select eq w0, #0x0 ? #0x1, #0x0
+    ret (select eq (w0 & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xffffffff)
 -- card
 {"addr":"0x2105e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
@@ -512,7 +512,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x210604 (size 28)
   blk0 @ 0x210604:
-    ret select gt w0, #0x0 ? #0x1, #0x0
+    ret (select gt (w0 & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xffffffff)
 -- card
 {"addr":"0x210604","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 

@@ -116,7 +116,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x21030c (size 20)
   blk0 @ 0x21030c:
-    ret (w0 / #0x10)
+    ret (((x0 & #0xffffffff) / #0x10) & #0xffffffff)
 -- card
 {"addr":"0x21030c","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
 
@@ -150,7 +150,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x210334 (size 28)
   blk0 @ 0x210334:
-    ret (w0 % #0x3)
+    ret ((w0 % #0x3) & #0xffffffff)
 -- card
 {"addr":"0x210334","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
@@ -167,7 +167,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210350 (size 36)
   blk0 @ 0x210350:
-    ret (w0 % #0x3)
+    ret ((w0 % #0x3) & #0xffffffff)
 -- card
 {"addr":"0x210350","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
@@ -201,7 +201,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x21037c (size 20)
   blk0 @ 0x21037c:
-    ret (w0 % #0x8)
+    ret ((w0 % #0x8) & #0xffffffff)
 -- card
 {"addr":"0x21037c","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
 
@@ -286,7 +286,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2103f4 (size 20)
   blk0 @ 0x2103f4:
-    ret (w0 / #0x40)
+    ret (((x0 & #0xffffffff) / #0x40) & #0xffffffff)
 -- card
 {"addr":"0x2103f4","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
 
@@ -320,6 +320,6 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x21041c (size 28)
   blk0 @ 0x21041c:
-    ret (w0 / #0xa)
+    ret ((w0 / #0xa) & #0xffffffff)
 -- card
 {"addr":"0x21041c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}

@@ -21,7 +21,7 @@ uint32_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x2101fc (size 60)
   blk0 @ 0x2101fc:
-    ret (((((load32((x0 + #0x8)) & #0xffffffff) - (load32(x0) & #0xffffffff)) & #0xffffffff) * (((load32((x0 + #0xc)) & #0xffffffff) - (load32((x0 + #0x4)) & #0xffffffff)) & #0xffffffff)) & #0xffffffff)
+    ret ((((load32((x0 + #0x8)) - load32(x0)) & #0xffffffff) * ((load32((x0 + #0xc)) - (load32((x0 + #0x4)) & #0xffffffff)) & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x2101fc","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":60,"sizeEstimated":true,"unsupported":0}
 
@@ -59,7 +59,7 @@ fn <unnamed> @ 0x210238 (size 136)
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210250
   blk1 @ 0x210250:
-    brif ge (load32((sp + #0xffffffffffffffe4)) & #0xffffffff), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x2102b4
+    brif ge load32((sp + #0xffffffffffffffe4)), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x2102b4
   blk2 @ 0x210260:
     br 0x210264
   blk3 @ 0x210264:
@@ -68,7 +68,7 @@ fn <unnamed> @ 0x210238 (size 136)
     store64((load64((sp + #0xffffffffffffffe8)) + (load64((x8 + #0x8)) * x9)), (sp + #0xffffffffffffffe8))
     br 0x2102a4
   blk4 @ 0x2102a4:
-    store32((((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
+    store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
     br 0x210250
   blk5 @ 0x2102b4:
     ret load64((sp + #0xffffffffffffffe8))
@@ -99,8 +99,8 @@ fn <unnamed> @ 0x2102c0 (size 56)
   blk0 @ 0x2102c0:
     store64(x0, (sp + #0xfffffffffffffff0))
     store64(x1, (sp + #0xffffffffffffffe8))
-    store32((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffe8))), (sp + #0xfffffffffffffff8))
-    store32((load32((sp + #0xfffffffffffffff4)) + load32((sp + #0xffffffffffffffec))), (sp + #0xfffffffffffffffc))
+    store32(((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffe8))) & #0xffffffff), (sp + #0xfffffffffffffff8))
+    store32(((load32((sp + #0xfffffffffffffff4)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff), (sp + #0xfffffffffffffffc))
     ret load64((sp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x2102c0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":56,"sizeEstimated":true,"unsupported":0}
@@ -214,7 +214,7 @@ fn <unnamed> @ 0x210384 (size 76)
     store32((((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x4) & #0xffffffff), (sp + #0xffffffffffffffec))
     br 0x2103c4
   blk3 @ 0x2103b0:
-    store32((((((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x1) & #0xffffffff) & #0x7) & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(((((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x1) & #0x7) & #0xffffffff), (sp + #0xffffffffffffffec))
     br 0x2103c4
   blk4 @ 0x2103c4:
     ret (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
@@ -250,7 +250,7 @@ fn <unnamed> @ 0x2103d0 (size 48)
     x9 = x0
     w8 = load8(x9)
     w8 = (w8 & #0xfffffff1)
-    store8((w8 | ((w1 & #0x7) << #0x1)), x9)
+    store8(((w8 | (((w1 & #0xffffffff) & #0x7) << #0x1)) & #0xffffffff), x9)
     ret x0
 -- card
 {"addr":"0x2103d0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}

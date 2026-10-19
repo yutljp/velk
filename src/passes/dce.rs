@@ -60,6 +60,12 @@ pub fn dce(ir: &mut FunctionIr) {
     // A block inside a cycle reads its own live-outs again on the next
     // iteration, so its own reads are live at its boundary too.
     let cyclic = cyclic_blocks(ir);
+    // A register live on leaving the block, such as one a tail call through
+    // an indirect jump reads, is kept too.
+    let live_in = live_in(ir);
+    let live_out: Vec<_> = (0..ir.blocks.len())
+        .map(|index| live_out(ir, &live_in, index))
+        .collect();
     for (index, block) in ir.blocks.iter_mut().enumerate() {
         if opaque(block) {
             continue;
@@ -73,6 +79,7 @@ pub fn dce(ir: &mut FunctionIr) {
         if cyclic.contains(&index) {
             outer.extend(reads[index].iter().copied());
         }
+        outer.extend(live_out[index].iter().copied());
         // A removed statement can strand the one feeding it, so sweep until
         // nothing changes.
         loop {

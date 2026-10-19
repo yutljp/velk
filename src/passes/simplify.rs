@@ -213,6 +213,43 @@ pub(crate) fn algebraic(expr: Expr) -> Expr {
         }
         crate::ir::BinOp::Sub if zero(rhs) => lhs.as_ref().clone(),
         crate::ir::BinOp::Add if zero(rhs) => lhs.as_ref().clone(),
+        // The low 32 bits of a sum, difference, product or bitwise operation
+        // depend only on the low 32 bits of its operands.
+        crate::ir::BinOp::And if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => {
+            let Expr::Bin {
+                op: inner,
+                lhs: a,
+                rhs: b,
+            } = lhs.as_ref()
+            else {
+                return expr;
+            };
+            use crate::ir::BinOp;
+            if !matches!(
+                inner,
+                BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::And | BinOp::Or | BinOp::Xor
+            ) {
+                return expr;
+            }
+            // A masked register stays: it reads as the 32-bit register.
+            let low = |operand: &Expr| match operand {
+                Expr::Bin {
+                    op: BinOp::And,
+                    lhs,
+                    rhs,
+                } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+                    && !matches!(lhs.as_ref(), Expr::Reg { .. }) =>
+                {
+                    lhs.as_ref().clone()
+                }
+                other => other.clone(),
+            };
+            Expr::bin(
+                BinOp::And,
+                Expr::bin(*inner, low(a), low(b)),
+                Expr::Const(0xffff_ffff),
+            )
+        }
         _ => expr,
     }
 }

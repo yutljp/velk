@@ -24,7 +24,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201310 (size 16)
   blk0 @ 0x201310:
-    ret (edi << #0x1)
+    ret (((edi & #0xffffffff) << #0x1) & #0xffffffff)
 -- card
 {"addr":"0x201310","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -41,7 +41,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201320 (size 16)
   blk0 @ 0x201320:
-    ret (edi * edi)
+    ret (((edi & #0xffffffff) * (edi & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x201320","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -58,7 +58,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201330 (size 48)
   blk0 @ 0x201330:
-    ret select ne edi, #0x0 ? #0x201320, #0x201310
+    ret select ne (edi & #0xffffffff), #0x0 ? #0x201320, #0x201310
 -- card
 {"addr":"0x201330","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
 
@@ -187,7 +187,7 @@ fn <unnamed> @ 0x2013d0 (size 80)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
-    brif gt edi, #0x1 -> 0x2013f2
+    brif gt (edi & #0xffffffff), #0x1 -> 0x2013f2
   blk1 @ 0x2013e5:
     store32(#0x1, (rbp + #0xfffffffffffffff8))
     br 0x20140e
@@ -196,7 +196,7 @@ fn <unnamed> @ 0x2013d0 (size 80)
     edi = (load32((rbp + #0xfffffffffffffffc)) - #0x1)
     call 0x2013d0
     ecx = rax
-    store32((((load32((rbp + #0xfffffffffffffff4)) & #0xffffffff) * ecx) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffff4)) * ecx) & #0xffffffff), (rbp + #0xfffffffffffffff8))
   blk3 @ 0x20140e:
     rsp = (rsp + #0x10)
     rsp = (rsp + #0x8)
@@ -238,7 +238,7 @@ fn <unnamed> @ 0x201420 (size 64)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
-    brif ne edi, #0x0 -> 0x20143f
+    brif ne (edi & #0xffffffff), #0x0 -> 0x20143f
   blk1 @ 0x201435:
     store32(#0x0, (rbp + #0xfffffffffffffff8))
     br 0x20144d
@@ -287,7 +287,7 @@ fn <unnamed> @ 0x201460 (size 64)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
-    brif ne edi, #0x0 -> 0x201482
+    brif ne (edi & #0xffffffff), #0x0 -> 0x201482
   blk1 @ 0x201475:
     store32(#0x1, (rbp + #0xfffffffffffffff8))
     br 0x201490
@@ -505,8 +505,8 @@ fn <unnamed> @ 0x201540 (size 296)
     store64((rax + #0x8), (rcx + #0x8))
     store64(rax, (rbp + #0xffffffffffffff08))
   blk7 @ 0x20163f:
-    store32((((load32(load64((rbp + #0xffffffffffffff08))) & #0xffffffff) + load32((rbp + #0xffffffffffffffdc))) & #0xffffffff), (rbp + #0xffffffffffffffdc))
-    store32((((load32((rbp + #0xffffffffffffffd8)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffd8))
+    store32(((load32(load64((rbp + #0xffffffffffffff08))) + load32((rbp + #0xffffffffffffffdc))) & #0xffffffff), (rbp + #0xffffffffffffffdc))
+    store32(((load32((rbp + #0xffffffffffffffd8)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffd8))
     br 0x2015d4
   blk8 @ 0x20165c:
     rsp = (rsp + #0x80)

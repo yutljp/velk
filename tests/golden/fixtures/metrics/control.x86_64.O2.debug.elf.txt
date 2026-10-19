@@ -356,7 +356,7 @@ fn skip_negatives @ 0x2013d0 (size 183)
     ret #0x0
   blk4 @ 0x2013e9:
     rsi = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
-    rax = ((((((rcx & #0xffffffff) >> #0x3) & #0xffffffff) & #0xfffffff) & #0xffffffff) << #0x5)
+    rax = (((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) & #0xffffffff) << #0x5)
     unsupported: Pxor at 0x2013ff
     r8 = #0x0
     unsupported: Pxor at 0x201406
@@ -384,7 +384,7 @@ fn skip_negatives @ 0x2013d0 (size 183)
     brif eq rsi, rcx -> 0x201486
   blk7 @ 0x201470:
     r8 = (load32((rdi + (rsi * #0x4))) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + (select le (r8 & #0xffffffff), #0x0 ? (rdx & #0xffffffff), (r8 & #0xffffffff) & #0xffffffff)) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + select le (r8 & #0xffffffff), #0x0 ? (rdx & #0xffffffff), (r8 & #0xffffffff)) & #0xffffffff)
     rsi = (rsi + #0x1)
     brif ne rcx, rsi -> 0x201470
   blk8 @ 0x201486:
@@ -458,7 +458,7 @@ fn find_pair @ 0x201490 (size 112)
     rbp = (load32((rdi + (rbx * #0x4))) & #0xffffffff)
     rbx = #0x0
   blk5 @ 0x2014e0:
-    brif eq (((load32((r9 + (rbx * #0x4))) & #0xffffffff) + (rbp & #0xffffffff)) & #0xffffffff), edx -> 0x2014f6
+    brif eq ((load32((r9 + (rbx * #0x4))) + (rbp & #0xffffffff)) & #0xffffffff), edx -> 0x2014f6
   blk6 @ 0x2014ec:
     rbx = (rbx + #0x1)
     brif ne r10, rbx -> 0x2014e0

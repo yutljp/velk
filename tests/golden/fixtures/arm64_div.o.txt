@@ -123,7 +123,7 @@ int32_t (int32_t a0)
 -- ir
 fn sdiv3 @ 0x58 (size 28)
   blk0 @ 0x58:
-    ret (w0 / #0x3)
+    ret ((w0 / #0x3) & #0xffffffff)
 -- card
 {"addr":"0x58","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
 
@@ -140,7 +140,7 @@ int32_t (int32_t a0)
 -- ir
 fn sdiv10 @ 0x74 (size 28)
   blk0 @ 0x74:
-    ret (w0 / #0xa)
+    ret ((w0 / #0xa) & #0xffffffff)
 -- card
 {"addr":"0x74","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
 
@@ -157,7 +157,7 @@ int32_t (int32_t a0)
 -- ir
 fn sdiv16 @ 0x90 (size 20)
   blk0 @ 0x90:
-    ret (w0 / #0x10)
+    ret (((x0 & #0xffffffff) / #0x10) & #0xffffffff)
 -- card
 {"addr":"0x90","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
 
@@ -191,7 +191,7 @@ int32_t (int32_t a0)
 -- ir
 fn smod3 @ 0xb8 (size 36)
   blk0 @ 0xb8:
-    ret (w0 % #0x3)
+    ret ((w0 % #0x3) & #0xffffffff)
 -- card
 {"addr":"0xb8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab"],"section":".text","size":36,"unsupported":0}
 
@@ -208,7 +208,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn umod3 @ 0xdc (size 28)
   blk0 @ 0xdc:
-    ret (w0 % #0x3)
+    ret ((w0 % #0x3) & #0xffffffff)
 -- card
 {"addr":"0xdc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
 
@@ -225,7 +225,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn umod10 @ 0xf8 (size 28)
   blk0 @ 0xf8:
-    ret (w0 % #0xa)
+    ret ((w0 % #0xa) & #0xffffffff)
 -- card
 {"addr":"0xf8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
 
@@ -242,7 +242,7 @@ int32_t (int32_t a0)
 -- ir
 fn smod10 @ 0x114 (size 36)
   blk0 @ 0x114:
-    ret (w0 % #0xa)
+    ret ((w0 % #0xa) & #0xffffffff)
 -- card
 {"addr":"0x114","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab"],"section":".text","size":36,"unsupported":0}
 
@@ -310,7 +310,7 @@ int32_t (int32_t a0)
 -- ir
 fn smod4 @ 0x188 (size 20)
   blk0 @ 0x188:
-    ret (w0 % #0x4)
+    ret ((w0 % #0x4) & #0xffffffff)
 -- card
 {"addr":"0x188","approxTokens":126,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
 
@@ -327,7 +327,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn negate @ 0x19c (size 8)
   blk0 @ 0x19c:
-    ret (#0x0 - w0)
+    ret ((#0x0 - w0) & #0xffffffff)
 -- card
 {"addr":"0x19c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
 
@@ -352,8 +352,7 @@ fn is_neg @ 0x1a4 (size 8)
 -- decompile
 /* velk pseudo-C: is_zero @ 0x1ac */
 uint32_t is_zero(uint32_t a0) {
-    a0 = (a0 == 0x0 ? 0x1 : 0x0);
-    return a0;
+    return (a0 == 0x0 ? 0x1 : 0x0);
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -362,8 +361,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn is_zero @ 0x1ac (size 12)
   blk0 @ 0x1ac:
-    w0 = select eq w0, #0x0 ? #0x1, #0x0
-    ret w0
+    ret (select eq w0, #0x0 ? #0x1, #0x0 & #0xffffffff)
 -- card
 {"addr":"0x1ac","approxTokens":114,"blocks":1,"hardReasons":[],"name":"is_zero","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
 
@@ -371,8 +369,7 @@ fn is_zero @ 0x1ac (size 12)
 -- decompile
 /* velk pseudo-C: is_pos @ 0x1b8 */
 int32_t is_pos(int32_t a0) {
-    a0 = (a0 > 0x0 ? 0x1 : 0x0);
-    return a0;
+    return (a0 > 0x0 ? 0x1 : 0x0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -381,8 +378,7 @@ int32_t (int32_t a0)
 -- ir
 fn is_pos @ 0x1b8 (size 12)
   blk0 @ 0x1b8:
-    w0 = select gt w0, #0x0 ? #0x1, #0x0
-    ret w0
+    ret (select gt w0, #0x0 ? #0x1, #0x0 & #0xffffffff)
 -- card
 {"addr":"0x1b8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"is_pos","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
 

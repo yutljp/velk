@@ -269,7 +269,7 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
         x10 = *(uint32_t *)(x11);
         x11 = x11 + 0x4;
         x9 = x9 - 0x1;
-        x8 = (w10 & ~(w10 >>> 0x1f) & 0xffffffff) + w8;
+        x8 = (((w10 & ~(w10 >>> 0x1f)) + w8) & 0xffffffff);
     } while (x9 != 0x0);
     return w8;
 }
@@ -315,7 +315,7 @@ fn <unnamed> @ 0x210308 (size 156)
     x10 = (load32(x11) & #0xffffffff)
     x11 = (x11 + #0x4)
     x9 = (x9 - #0x1)
-    x8 = (((((x10 & #0xffffffff) & (((x10 & #0xffffffff) >>> #0x1f) ^ #0xffffffffffffffff)) & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
+    x8 = ((((x10 & #0xffffffff) & (((x10 & #0xffffffff) >>> #0x1f) ^ #0xffffffffffffffff)) + (x8 & #0xffffffff)) & #0xffffffff)
     brif ne x9, #0x0 -> 0x210388
   blk9 @ 0x21039c:
     ret (x8 & #0xffffffff)
@@ -398,7 +398,7 @@ fn <unnamed> @ 0x2103a4 (size 136)
   blk5 @ 0x2103fc:
     w18 = load32(x17)
     x17 = (x17 + #0x4)
-    brif eq (w18 + w15), w2 -> 0x210424
+    brif eq ((w18 + w15) & #0xffffffff), w2 -> 0x210424
   blk6 @ 0x21040c:
     x16 = (x16 - #0x1)
     x8 = (((x8 & #0xffffffff) + #0x1) & #0xffffffff)

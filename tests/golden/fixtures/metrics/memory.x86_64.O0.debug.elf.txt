@@ -209,7 +209,7 @@ fn grid_set @ 0x201390 (size 53)
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
     rax = (#0x202450 + (sext32(((edi & #0xffffffff) & #0x3)) << #0x5))
-    store32(edx, (rax + (sext32(((esi & #0xffffffff) & #0x7)) * #0x4)))
+    store32((edx & #0xffffffff), (rax + (sext32(((esi & #0xffffffff) & #0x7)) * #0x4)))
     ret rax
 -- card
 {"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":53,"unsupported":0}
@@ -253,11 +253,9 @@ int read_volatile(int *p) {
     local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = p;
-    *(uint32_t *)(rbp - 0xc) = p->field_0x0;
-    rax = p->field_0x0;
-    *(uint32_t *)(rbp - 0x10) = eax;
-    rax = eax;
-    return eax + eax;
+    *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(p);
+    *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(p);
+    return *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x10);
 }
 -- signature
 int (int * p)
@@ -271,10 +269,8 @@ fn read_volatile @ 0x2013f0 (size 34)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32((load32(rdi) & #0xffffffff), (rbp + #0xfffffffffffffff4))
-    rax = (load32(rdi) & #0xffffffff)
-    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    rax = (rax & #0xffffffff)
-    ret (((rax & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
+    store32((load32(rdi) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    ret ((load32((rbp + #0xfffffffffffffff4)) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
 -- card
 {"addr":"0x2013f0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","size":34,"unsupported":0}
 

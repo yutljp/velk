@@ -23,7 +23,7 @@ uint32_t (uint32_t a, uint32_t b)
 -- ir
 fn narrow_add @ 0x210204 (size 8)
   blk0 @ 0x210204:
-    ret (w1 + w0)
+    ret ((w1 + w0) & #0xffffffff)
 -- card
 {"addr":"0x210204","approxTokens":108,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 
@@ -40,7 +40,7 @@ uint32_t (uint32_t a, uint32_t b)
 -- ir
 fn widen_mul @ 0x21020c (size 16)
   blk0 @ 0x21020c:
-    ret ((w1 & #0xff) * (w0 & #0xff))
+    ret (((w1 & #0xff) * (w0 & #0xff)) & #0xffffffff)
 -- card
 {"addr":"0x21020c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
 
@@ -163,7 +163,7 @@ int (int a, int b, int c)
 -- ir
 fn min3 @ 0x210260 (size 20)
   blk0 @ 0x210260:
-    ret select lt select lt w0, w1 ? w0, w1, w2 ? select lt w0, w1 ? w0, w1, w2
+    ret (select lt (select lt w0, w1 ? w0, w1 & #0xffffffff), w2 ? (select lt w0, w1 ? w0, w1 & #0xffffffff), w2 & #0xffffffff)
 -- card
 {"addr":"0x210260","approxTokens":126,"blocks":1,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
 

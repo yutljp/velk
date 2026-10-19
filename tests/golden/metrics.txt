@@ -7,15 +7,15 @@ extra functions | aarch64.O0 | 4/152
 extra functions | aarch64.O2 | 3/148
 extra functions | x86_64.O0 | 4/152
 extra functions | x86_64.O2 | 2/147
-parameter count | aarch64.O0 | 136/147
+parameter count | aarch64.O0 | 137/147
 parameter count | aarch64.O2 | 135/144
 parameter count | x86_64.O0 | 139/147
 parameter count | x86_64.O2 | 134/144
-parameter pointer | aarch64.O0 | 135/164
+parameter pointer | aarch64.O0 | 136/165
 parameter pointer | aarch64.O2 | 150/157
 parameter pointer | x86_64.O0 | 142/170
 parameter pointer | x86_64.O2 | 150/161
-parameter width | aarch64.O0 | 119/135
+parameter width | aarch64.O0 | 119/136
 parameter width | aarch64.O2 | 124/132
 parameter width | x86_64.O0 | 136/142
 parameter width | x86_64.O2 | 124/134
@@ -23,14 +23,14 @@ parameter sign | aarch64.O0 | 23/119
 parameter sign | aarch64.O2 | 77/124
 parameter sign | x86_64.O0 | 27/136
 parameter sign | x86_64.O2 | 76/124
-return void | aarch64.O0 | 142/148
+return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 139/145
 return void | x86_64.O0 | 121/148
 return void | x86_64.O2 | 140/145
-return width | aarch64.O0 | 102/119
+return width | aarch64.O0 | 103/120
 return width | aarch64.O2 | 106/117
 return width | x86_64.O0 | 106/115
-return width | x86_64.O2 | 109/117
+return width | x86_64.O2 | 110/117
 
 alt_names.aarch64.O0 0x21016c alt_sum3: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
 alt_names.aarch64.O0 0x210198 alt_helper: parameter 0 signedness differs
@@ -65,7 +65,7 @@ calls.aarch64.O0 0x2103f4 factorial: 0 parameters, expected 1
 calls.aarch64.O0 0x210454 is_odd: 0 parameters, expected 1
 calls.aarch64.O0 0x2104a0 is_even: 0 parameters, expected 1
 calls.aarch64.O0 0x2104ec sum9: 8 parameters, expected 9
-calls.aarch64.O0 0x210564 call_sum9: 0 parameters, expected 1; returns void, expected a signed 8-byte integer
+calls.aarch64.O0 0x210564 call_sum9: parameter 0 signedness differs; returns 4 bytes, expected 8
 calls.aarch64.O0 0x2105b0 sum_varargs: ok
 calls.aarch64.O2 0x2102d8 extra function
 calls.aarch64.O2 0x2103f8 extra function
@@ -326,7 +326,7 @@ float.x86_64.O2 0x201290 compare_doubles: 0 parameters, expected 2
 integers.aarch64.O0 0x210360 extra function
 integers.aarch64.O0 0x21022c narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.aarch64.O0 0x21024c widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
-integers.aarch64.O0 0x21026c mixed_sign: parameter 0 signedness differs; returns 4 bytes, expected 8
+integers.aarch64.O0 0x21026c mixed_sign: parameter 0 is 8 bytes, expected 4
 integers.aarch64.O0 0x21028c in_range: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; returns 4 bytes, expected 1
 integers.aarch64.O0 0x2102e0 rotate_left: ok
 integers.aarch64.O0 0x210320 popcount: ok
@@ -420,7 +420,7 @@ l4_memory.x86_64.O0 0x201210 point_dot: parameter 0 is an unsigned 8-byte intege
 l4_memory.x86_64.O0 0x201240 array_sum: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 signedness differs
 l4_memory.x86_64.O0 0x201290 bump: returns uint32_t, expected void
 l4_memory.x86_64.O0 0x2012b0 banner_first: ok
-l4_memory.x86_64.O2 0x2011e0 point_dot: parameter 0 is an unsigned 8-byte integer, expected a pointer
+l4_memory.x86_64.O2 0x2011e0 point_dot: parameter 0 is an unsigned 4-byte integer, expected a pointer
 l4_memory.x86_64.O2 0x2011f0 array_sum: parameter 0 is an unsigned 4-byte integer, expected a pointer; parameter 1 is 8 bytes, expected 4
 l4_memory.x86_64.O2 0x201280 bump: ok
 l4_memory.x86_64.O2 0x201290 banner_first: ok
@@ -604,7 +604,7 @@ structs.x86_64.O2 0x201260 point_add: ok
 structs.x86_64.O2 0x201280 big_make: 2 parameters, expected 1
 structs.x86_64.O2 0x2012a0 big_sum: 0 parameters, expected 1
 structs.x86_64.O2 0x2012c0 word_low_byte: returns 4 bytes, expected 1
-structs.x86_64.O2 0x2012d0 flags_level: returns 8 bytes, expected 4
+structs.x86_64.O2 0x2012d0 flags_level: ok
 structs.x86_64.O2 0x2012f0 flags_set_mode: parameter 1 is 8 bytes, expected 4; returns uint64_t, expected void
 switch_jumptable.aarch64.O0 0x21018c d7: parameter 0 signedness differs
 switch_jumptable.aarch64.O2 0x210184 d7: ok

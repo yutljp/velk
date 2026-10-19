@@ -258,8 +258,9 @@ fn read_volatile @ 0x21032c (size 16)
 /* struct: a +0x0:uint32_t */
 /* struct: b +0x0:uint32_t */
 uint64_t swap_ints(int *a, int *b) {
+    w9 = a->field_0x0;
     a->field_0x0 = b->field_0x0;
-    b->field_0x0 = a->field_0x0;
+    b->field_0x0 = w9;
     return a;
 }
 -- signature
@@ -269,8 +270,9 @@ uint64_t (int * a, int * b)
 -- ir
 fn swap_ints @ 0x21033c (size 20)
   blk0 @ 0x21033c:
+    w9 = load32(x0)
     store32(load32(x1), x0)
-    store32(load32(x0), x1)
+    store32(w9, x1)
     ret x0
 -- card
 {"accesses":["a +0x0:uint32_t","b +0x0:uint32_t"],"addr":"0x21033c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}

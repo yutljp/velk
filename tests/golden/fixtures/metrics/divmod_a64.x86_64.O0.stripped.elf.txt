@@ -47,7 +47,7 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x201460 (size 32)
   blk0 @ 0x201460:
     store64(rbp, (rsp + #0xfffffffffffffff8))
-    eax = edi
+    eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x201471
@@ -78,7 +78,7 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x201480 (size 32)
   blk0 @ 0x201480:
     store64(rbp, (rsp + #0xfffffffffffffff8))
-    eax = edi
+    eax = (edi & #0xffffffff)
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x201491
@@ -100,7 +100,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2014a0 (size 16)
   blk0 @ 0x2014a0:
-    ret (edi >> #0x6)
+    ret ((edi & #0xffffffff) >> #0x6)
 -- card
 {"addr":"0x2014a0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -179,7 +179,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2014f0 (size 32)
   blk0 @ 0x2014f0:
-    ret (edi / #0x3)
+    ret (((edi & #0xffffffff) / #0x3) & #0xffffffff)
 -- card
 {"addr":"0x2014f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -196,7 +196,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201510 (size 32)
   blk0 @ 0x201510:
-    ret (edi / #0xa)
+    ret (((edi & #0xffffffff) / #0xa) & #0xffffffff)
 -- card
 {"addr":"0x201510","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -213,7 +213,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201530 (size 32)
   blk0 @ 0x201530:
-    ret (edi / #0x10)
+    ret (((edi & #0xffffffff) / #0x10) & #0xffffffff)
 -- card
 {"addr":"0x201530","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -247,7 +247,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201570 (size 32)
   blk0 @ 0x201570:
-    ret (edi % #0x3)
+    ret (((edi & #0xffffffff) % #0x3) & #0xffffffff)
 -- card
 {"addr":"0x201570","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -274,7 +274,7 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x201590 (size 32)
   blk0 @ 0x201590:
     store64(rbp, (rsp + #0xfffffffffffffff8))
-    eax = edi
+    eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x2015a1
@@ -307,7 +307,7 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x2015b0 (size 32)
   blk0 @ 0x2015b0:
     store64(rbp, (rsp + #0xfffffffffffffff8))
-    eax = edi
+    eax = (edi & #0xffffffff)
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x2015c1
@@ -330,7 +330,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2015d0 (size 32)
   blk0 @ 0x2015d0:
-    ret (edi % #0xa)
+    ret (((edi & #0xffffffff) % #0xa) & #0xffffffff)
 -- card
 {"addr":"0x2015d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -414,7 +414,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201650 (size 32)
   blk0 @ 0x201650:
-    ret (edi % #0x4)
+    ret (((edi & #0xffffffff) % #0x4) & #0xffffffff)
 -- card
 {"addr":"0x201650","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -431,7 +431,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201670 (size 16)
   blk0 @ 0x201670:
-    ret ((#0x0 - edi) & #0xffffffff)
+    ret ((#0x0 - (edi & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x201670","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -449,7 +449,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201680 (size 32)
   blk0 @ 0x201680:
-    rax = ((rax & #0xffffffffffffff00) | ((select lt edi, #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | ((select lt (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
     ret (((((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff)) & #0xff) & #0xff) & #0xffffffff)
 -- card
 {"addr":"0x201680","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
@@ -468,7 +468,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2016a0 (size 32)
   blk0 @ 0x2016a0:
-    rax = ((rax & #0xffffffffffffff00) | ((select eq edi, #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | ((select eq (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
     ret (((((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff)) & #0xff) & #0xff) & #0xffffffff)
 -- card
 {"addr":"0x2016a0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
@@ -487,7 +487,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2016c0 (size 32)
   blk0 @ 0x2016c0:
-    rax = ((rax & #0xffffffffffffff00) | ((select gt edi, #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | ((select gt (edi & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff) & #0xff))
     ret (((((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff)) & #0xff) & #0xff) & #0xffffffff)
 -- card
 {"addr":"0x2016c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}

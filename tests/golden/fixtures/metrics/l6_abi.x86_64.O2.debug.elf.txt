@@ -9,8 +9,7 @@
 -- decompile
 /* velk pseudo-C: tail_target @ 0x2011b0 */
 int tail_target(int x) {
-    eax = x + x * 0x2;
-    return eax + 0x1;
+    return x + x * 0x2 + 0x1;
 }
 -- signature
 int (int x)
@@ -19,8 +18,7 @@ int (int x)
 -- ir
 fn tail_target @ 0x2011b0 (size 14)
   blk0 @ 0x2011b0:
-    eax = (rdi + (rdi * #0x2))
-    ret (eax + #0x1)
+    ret ((((rdi + (rdi * #0x2)) & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2011b0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
 
@@ -70,9 +68,7 @@ fn tail_indirect @ 0x2011d0 (size 8)
 -- decompile
 /* velk pseudo-C: six_args @ 0x2011e0 */
 int six_args(int a, int b, int c, int d, int e, int f) {
-    eax = c + d;
-    eax = eax + (b + a);
-    return eax + e + f;
+    return c + d + (b + a) + e + f;
 }
 -- signature
 int (int a, int b, int c, int d, int e, int f)
@@ -81,9 +77,7 @@ int (int a, int b, int c, int d, int e, int f)
 -- ir
 fn six_args @ 0x2011e0 (size 14)
   blk0 @ 0x2011e0:
-    eax = (rdx + rcx)
-    eax = (eax + (esi + edi))
-    ret ((eax + r8d) + r9d)
+    ret (((((rdx + rcx) + (esi + edi)) + r8d) + r9d) & #0xffffffff)
 -- card
 {"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
 

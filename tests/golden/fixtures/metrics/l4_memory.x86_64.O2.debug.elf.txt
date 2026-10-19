@@ -18,7 +18,7 @@ int (struct point * a, struct point * b)
 -- ir
 fn point_dot @ 0x2011e0 (size 15)
   blk0 @ 0x2011e0:
-    ret ((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi)))
+    ret (((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi))) & #0xffffffff)
 -- card
 {"accesses":["b +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":15,"unsupported":0}
 
@@ -73,7 +73,7 @@ fn array_sum @ 0x2011f0 (size 140)
     ret #0x0
   blk4 @ 0x201204:
     rdx = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
-    rax = ((((((rcx & #0xffffffff) >> #0x3) & #0xffffffff) & #0xfffffff) & #0xffffffff) << #0x5)
+    rax = (((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) & #0xffffffff) << #0x5)
     unsupported: Pxor at 0x20121a
     rsi = #0x0
     unsupported: Pxor at 0x201220

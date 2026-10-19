@@ -40,7 +40,7 @@ L_2011f2:
         dword_2023d4 = ((rsi + r8 - 0x5) & 0xffffffff);
         r8 = ((rsi + rax - 0x2) & 0xffffffff);
         dword_2023d4 = ((rsi + rax - 0x3) & 0xffffffff);
-        rax = ((rsi + r8) & 0xffffffff) - 0x1;
+        rax = rsi + r8 - 0x1;
         dword_2023d4 = eax;
         rdx = edx + 0x8;
         rsi = esi + a0;
@@ -98,7 +98,7 @@ fn <unnamed> @ 0x2011d0 (size 240)
     store32((((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff), #0x2023d4)
     r8 = (((rsi + rax) + #0xfffffffffffffffe) & #0xffffffff)
     store32((((rsi + rax) + #0xfffffffffffffffd) & #0xffffffff), #0x2023d4)
-    rax = ((((rsi + r8) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+    rax = (((rsi + r8) + #0xffffffffffffffff) & #0xffffffff)
     store32((rax & #0xffffffff), #0x2023d4)
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
     rsi = (((rsi & #0xffffffff) + edi) & #0xffffffff)
@@ -123,34 +123,24 @@ fn <unnamed> @ 0x2011d0 (size 240)
 /* ref: 0x2023d4 .bss */
 int32_t sub_2012c0(int32_t a0) {
     rax = (a0 >= 0x2 ? a0 : 0x1);
-    ecx = rax;
-    ecx = ecx & 0x7;
+    ecx = eax & 0x7;
     rdx = 0x0;
     if (a0 < 0x8) { goto L_201347; }
-    esi = rax;
-    esi = esi & 0xfffffffffffffff8;
-    esi = -esi;
+    esi = -(eax & 0xfffffffffffffff8);
     rdx = 0x4;
     do {
-        a0 = rdx - 0x3;
-        dword_2023d4 = a0;
-        a0 = rdx - 0x2;
-        dword_2023d4 = a0;
-        a0 = rdx - 0x1;
-        dword_2023d4 = a0;
+        dword_2023d4 = ((rdx - 0x3) & 0xffffffff);
+        dword_2023d4 = ((rdx - 0x2) & 0xffffffff);
+        dword_2023d4 = ((rdx - 0x1) & 0xffffffff);
         dword_2023d4 = edx;
-        a0 = rdx + 0x1;
-        dword_2023d4 = a0;
-        a0 = rdx + 0x2;
-        dword_2023d4 = a0;
-        a0 = rdx + 0x3;
-        dword_2023d4 = a0;
-        a0 = rdx + 0x4;
-        dword_2023d4 = a0;
+        dword_2023d4 = ((rdx + 0x1) & 0xffffffff);
+        dword_2023d4 = ((rdx + 0x2) & 0xffffffff);
+        dword_2023d4 = ((rdx + 0x3) & 0xffffffff);
+        dword_2023d4 = ((rdx + 0x4) & 0xffffffff);
         a0 = rdx;
         rdx = edx + 0x8;
         a0 = a0 + esi;
-    } while (a0 != 0xfffffffc);
+    } while (a0 + 0x8 != 0x4);
     rdx = ((edx - 0x4) & 0xffffffff);
 L_201347:
     if (ecx == 0x0) {
@@ -171,35 +161,25 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x2012c0 (size 160)
   blk0 @ 0x2012c0:
     rax = (select ge edi, #0x2 ? edi, #0x1 & #0xffffffff)
-    ecx = rax
-    ecx = (ecx & #0x7)
+    ecx = ((rax & #0xffffffff) & #0x7)
     rdx = #0x0
     brif lt edi, #0x8 -> 0x201347
   blk1 @ 0x2012d7:
-    esi = rax
-    esi = (esi & #0xfffffffffffffff8)
-    esi = (#0x0 - esi)
+    esi = (#0x0 - ((rax & #0xffffffff) & #0xfffffffffffffff8))
     rdx = #0x4
   blk2 @ 0x2012f0:
-    edi = (rdx + #0xfffffffffffffffd)
-    store32(edi, #0x2023d4)
-    edi = (rdx + #0xfffffffffffffffe)
-    store32(edi, #0x2023d4)
-    edi = (rdx + #0xffffffffffffffff)
-    store32(edi, #0x2023d4)
+    store32(((rdx + #0xfffffffffffffffd) & #0xffffffff), #0x2023d4)
+    store32(((rdx + #0xfffffffffffffffe) & #0xffffffff), #0x2023d4)
+    store32(((rdx + #0xffffffffffffffff) & #0xffffffff), #0x2023d4)
     store32((rdx & #0xffffffff), #0x2023d4)
-    edi = (rdx + #0x1)
-    store32(edi, #0x2023d4)
-    edi = (rdx + #0x2)
-    store32(edi, #0x2023d4)
-    edi = (rdx + #0x3)
-    store32(edi, #0x2023d4)
-    edi = (rdx + #0x4)
-    store32(edi, #0x2023d4)
+    store32(((rdx + #0x1) & #0xffffffff), #0x2023d4)
+    store32(((rdx + #0x2) & #0xffffffff), #0x2023d4)
+    store32(((rdx + #0x3) & #0xffffffff), #0x2023d4)
+    store32(((rdx + #0x4) & #0xffffffff), #0x2023d4)
     edi = rdx
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
     edi = (edi + esi)
-    brif ne edi, #0xfffffffc -> 0x2012f0
+    brif ne ((edi + #0x8) & #0xffffffff), #0x4 -> 0x2012f0
   blk3 @ 0x201344:
     rdx = (((rdx & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
   blk4 @ 0x201347:
@@ -228,8 +208,7 @@ int32_t sub_201360(int64_t a0) {
         rcx = 0x0;
         rax = 0x0;
     } else {
-        edx = a0;
-        edx = edx & 0x7ffffffe;
+        edx = (a0 & 0xffffffff) & 0x7ffffffe;
         rcx = 0x0;
         rax = 0x0;
         do {
@@ -266,8 +245,7 @@ fn <unnamed> @ 0x201360 (size 80)
   blk3 @ 0x20136f:
     ret #0x0
   blk4 @ 0x201372:
-    edx = rdi
-    edx = (edx & #0x7ffffffe)
+    edx = ((rdi & #0xffffffff) & #0x7ffffffe)
     rcx = #0x0
     rax = #0x0
   blk5 @ 0x201380:

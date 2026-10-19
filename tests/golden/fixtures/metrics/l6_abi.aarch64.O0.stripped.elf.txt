@@ -9,7 +9,10 @@
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
 uint32_t sub_2101d4(uint32_t a0) {
-    return a0 * 0x3 + 0x1;
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = a0;
+    return local_0 * 0x3 + 0x1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -18,7 +21,8 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2101d4 (size 40)
   blk0 @ 0x2101d4:
-    ret ((w0 * #0x3) + #0x1)
+    store32(w0, (sp + #0xfffffffffffffffc))
+    ret (((load32((sp + #0xfffffffffffffffc)) * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2101d4","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":0}
 
@@ -64,7 +68,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 fn <unnamed> @ 0x210224 (size 48)
   blk0 @ 0x210224:
     x8 = x0
-    w9 = w1
+    w9 = (w1 & #0xffffffff)
     x0 = ((w9 + #0x1) & #0xffffffff)
     unsupported: BLR at 0x210244
     ret w0
@@ -84,7 +88,7 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint3
 -- ir
 fn <unnamed> @ 0x210254 (size 80)
   blk0 @ 0x210254:
-    ret (((((w0 + w1) + w2) + w3) + w4) + w5)
+    ret (((((((w0 & #0xffffffff) + (w1 & #0xffffffff)) + (w2 & #0xffffffff)) + (w3 & #0xffffffff)) + (w4 & #0xffffffff)) + (w5 & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x210254","approxTokens":216,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":80,"sizeEstimated":true,"unsupported":0}
 

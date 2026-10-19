@@ -153,7 +153,17 @@ fn magic_block(
             if let Some(def) = adjusted_def {
                 consumed.insert(def);
             }
-            replacements.push((sar_index, division(leaf.clone(), divisor)));
+            // A 32-bit dividend divides as a 32-bit value, whatever the
+            // register's upper half holds.
+            let dividend = match (domain_bits, &leaf) {
+                (32, Expr::Reg { index, .. }) => Expr::bin(
+                    crate::ir::BinOp::And,
+                    Expr::reg(*index, 64),
+                    Expr::Const(0xffff_ffff),
+                ),
+                _ => leaf.clone(),
+            };
+            replacements.push((sar_index, division(dividend, divisor)));
         }
     }
 

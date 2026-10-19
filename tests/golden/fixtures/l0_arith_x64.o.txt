@@ -8,8 +8,7 @@
 -- decompile
 /* velk pseudo-C: add3 @ 0x0 */
 uint32_t add3(uint32_t a0, uint32_t a1, uint32_t a2) {
-    eax = a0 + a1;
-    return eax + a2;
+    return a0 + a1 + a2;
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
@@ -18,8 +17,7 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- ir
 fn add3 @ 0x0 (size 6)
   blk0 @ 0x0:
-    eax = (rdi + rsi)
-    ret (eax + edx)
+    ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
 {"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab"],"section":".text","size":6,"unsupported":0}
 
@@ -27,8 +25,7 @@ fn add3 @ 0x0 (size 6)
 -- decompile
 /* velk pseudo-C: scale @ 0x10 */
 uint32_t scale(uint32_t a0) {
-    eax = a0 * 0x8;
-    return eax - a0 + 0x3;
+    return a0 * 0x8 - a0 + 0x3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -37,8 +34,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn scale @ 0x10 (size 13)
   blk0 @ 0x10:
-    eax = (rdi * #0x8)
-    ret ((eax - (rdi & #0xffffffff)) + #0x3)
+    ret ((((rdi * #0x8) - (rdi & #0xffffffff)) + #0x3) & #0xffffffff)
 -- card
 {"addr":"0x10","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab"],"section":".text","size":13,"unsupported":0}
 
@@ -55,7 +51,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn pick @ 0x20 (size 8)
   blk0 @ 0x20:
-    ret select gt edi, esi ? edi, esi
+    ret (select gt edi, esi ? edi, esi & #0xffffffff)
 -- card
 {"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
 
@@ -72,6 +68,6 @@ uint32_t (uint32_t a0)
 -- ir
 fn negate @ 0x30 (size 5)
   blk0 @ 0x30:
-    ret (#0x0 - edi)
+    ret ((#0x0 - edi) & #0xffffffff)
 -- card
 {"addr":"0x30","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab"],"section":".text","size":5,"unsupported":0}

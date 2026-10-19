@@ -124,7 +124,7 @@ uint64_t (uint32_t * a0)
 -- ir
 fn increment(int&) @ 0xa4 (size 16)
   blk0 @ 0xa4:
-    store32((load32(x0) + #0x1), x0)
+    store32(((load32(x0) + #0x1) & #0xffffffff), x0)
     ret x0
 -- card
 {"accesses":["a0 +0x0:uint32_t"],"addr":"0xa4","approxTokens":120,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}

@@ -14,8 +14,7 @@
 -- decompile
 /* velk pseudo-C: reg_add @ 0x0 */
 uint32_t reg_add(uint32_t a0, uint32_t a1) {
-    eax = a0 + a1;
-    return eax;
+    return a0 + a1;
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1)
@@ -24,8 +23,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn reg_add @ 0x0 (size 16)
   blk0 @ 0x0:
-    eax = (rcx + rdx)
-    ret eax
+    ret ((rcx + rdx) & #0xffffffff)
 -- card
 {"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"reg_add","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -42,24 +40,24 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn reg_mul @ 0x10 (size 16)
   blk0 @ 0x10:
-    ret (ecx * edx)
+    ret ((ecx * edx) & #0xffffffff)
 -- card
 {"addr":"0x10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_mul","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x20 reg_sign
 -- decompile
 /* velk pseudo-C: reg_sign @ 0x20 */
-uint64_t reg_sign(uint32_t a0, uint64_t a1) {
+uint32_t reg_sign(uint32_t a0, uint32_t a1) {
     return (int16_t)(a1) + (int8_t)(a0);
 }
 -- signature
-uint64_t (uint32_t a0, uint64_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
 fn reg_sign @ 0x20 (size 16)
   blk0 @ 0x20:
-    ret (sext16(rdx) + (sext8(rcx) & #0xffffffff))
+    ret ((sext16(rdx) + sext8(rcx)) & #0xffffffff)
 -- card
 {"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_sign","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -76,7 +74,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn reg_max @ 0x30 (size 16)
   blk0 @ 0x30:
-    ret select gt ecx, edx ? ecx, edx
+    ret (select gt ecx, edx ? ecx, edx & #0xffffffff)
 -- card
 {"addr":"0x30","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_max","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -110,7 +108,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn reg_abs @ 0x50 (size 16)
   blk0 @ 0x50:
-    ret select lt (#0x0 - ecx), #0x0 ? ecx, (#0x0 - ecx)
+    ret (select lt ((#0x0 - ecx) & #0xffffffff), #0x0 ? ecx, ((#0x0 - ecx) & #0xffffffff) & #0xffffffff)
 -- card
 {"addr":"0x50","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -144,7 +142,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn reg_div @ 0x70 (size 16)
   blk0 @ 0x70:
-    ret (ecx / edx)
+    ret ((ecx / edx) & #0xffffffff)
 -- card
 {"addr":"0x70","approxTokens":126,"blocks":1,"hardReasons":[],"name":"reg_div","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -161,7 +159,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn reg_mod @ 0x80 (size 16)
   blk0 @ 0x80:
-    ret (ecx % edx)
+    ret ((ecx % edx) & #0xffffffff)
 -- card
 {"addr":"0x80","approxTokens":132,"blocks":1,"hardReasons":[],"name":"reg_mod","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 

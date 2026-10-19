@@ -60,8 +60,8 @@ fn <unnamed> @ 0x2011b0 (size 21)
     store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
-    eax = (edi + #0x5)
+    eax = ((edi & #0xffffffff) + #0x5)
     store32(eax, (rbp + #0xfffffffffffffff8))
-    ret eax
+    ret (eax & #0xffffffff)
 -- card
 {"addr":"0x2011b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":21,"sizeEstimated":true,"unsupported":0}

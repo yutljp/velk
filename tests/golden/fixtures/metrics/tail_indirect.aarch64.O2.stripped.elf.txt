@@ -36,6 +36,6 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x210170 (size 24)
   blk0 @ 0x210170:
-    ret (w0 + #0x5)
+    ret ((w0 + #0x5) & #0xffffffff)
 -- card
 {"addr":"0x210170","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}

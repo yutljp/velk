@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 2124 unsupported, 5409 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 2126 unsupported, 5409 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab

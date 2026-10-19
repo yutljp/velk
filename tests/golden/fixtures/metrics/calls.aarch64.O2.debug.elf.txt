@@ -24,7 +24,7 @@ int (int x)
 -- ir
 fn twice @ 0x2102c4 (size 8)
   blk0 @ 0x2102c4:
-    ret (w0 << #0x1)
+    ret ((w0 << #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2102c4","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 
@@ -41,7 +41,7 @@ int (int x)
 -- ir
 fn square @ 0x2102cc (size 8)
   blk0 @ 0x2102cc:
-    ret (w0 * w0)
+    ret ((w0 * w0) & #0xffffffff)
 -- card
 {"addr":"0x2102cc","approxTokens":108,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 
@@ -345,9 +345,8 @@ int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, u
     local_10 = x9;
     if (count < 0x1) {
         x8 = 0x0;
-        count = x8;
         sp = sp + 0xe0;
-        return count;
+        return w8;
     }
     x10 = local_10;
     x9 = local_8;
@@ -363,9 +362,8 @@ L_2104c8:
         x8 = *(uint32_t *)(x10) + w8;
         x10 = x13;
         if (count == 0x0) {
-            count = x8;
             sp = sp + 0xe0;
-            return count;
+            return w8;
         }
     L_2104ec:
         if ((x12 & 0x80000000) == 0x0) {
@@ -379,9 +377,8 @@ L_2104c8:
         local_10 = x13;
     }
     x8 = 0x0;
-    count = x8;
     sp = sp + 0xe0;
-    return count;
+    return w8;
 }
 -- signature
 int (int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
@@ -424,7 +421,7 @@ fn sum_varargs @ 0x210468 (size 188)
   blk3 @ 0x2104d4:
     w0 = (w0 - #0x1)
     x12 = w11
-    x8 = (((load32(x10) & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
+    x8 = ((load32(x10) + (x8 & #0xffffffff)) & #0xffffffff)
     x10 = x13
     brif eq w0, #0x0 -> 0x210518
   blk4 @ 0x2104ec:
@@ -443,8 +440,7 @@ fn sum_varargs @ 0x210468 (size 188)
   blk8 @ 0x210514:
     x8 = #0x0
   blk9 @ 0x210518:
-    w0 = x8
     sp = (sp + #0xe0)
-    ret w0
+    ret (x8 & #0xffffffff)
 -- card
 {"addr":"0x210468","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":188,"unsupported":4}

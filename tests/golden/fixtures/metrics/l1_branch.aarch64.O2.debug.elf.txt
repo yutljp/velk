@@ -7,8 +7,7 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x210174 */
 int classify(int x) {
-    x = (x >= 0x0 ? (x != 0x0 ? 0x1 : 0x0) : 0xffffffff);
-    return x;
+    return (x >= 0x0 ? (x != 0x0 ? 0x1 : 0x0) : 0xffffffff);
 }
 -- signature
 int (int x)
@@ -17,8 +16,7 @@ int (int x)
 -- ir
 fn classify @ 0x210174 (size 16)
   blk0 @ 0x210174:
-    w0 = select ge w0, #0x0 ? select ne w0, #0x0 ? #0x1, #0x0, #0xffffffff
-    ret w0
+    ret (select ge w0, #0x0 ? (select ne w0, #0x0 ? #0x1, #0x0 & #0xffffffff), #0xffffffff & #0xffffffff)
 -- card
 {"addr":"0x210174","approxTokens":120,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
 
@@ -35,7 +33,7 @@ int (int x, int lo, int hi)
 -- ir
 fn clamp @ 0x210184 (size 20)
   blk0 @ 0x210184:
-    ret select lt w0, w1 ? w1, select lt w0, w2 ? w0, w2
+    ret (select lt w0, w1 ? w1, (select lt w0, w2 ? w0, w2 & #0xffffffff) & #0xffffffff)
 -- card
 {"addr":"0x210184","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
 
@@ -43,8 +41,7 @@ fn clamp @ 0x210184 (size 20)
 -- decompile
 /* velk pseudo-C: sign_of @ 0x210198 */
 int sign_of(int x) {
-    x = (x < 0x1 ? (x != 0x0 ? 0xffffffff : 0x0) : 0x1);
-    return x;
+    return (x < 0x1 ? (x != 0x0 ? 0xffffffff : 0x0) : 0x1);
 }
 -- signature
 int (int x)
@@ -53,7 +50,6 @@ int (int x)
 -- ir
 fn sign_of @ 0x210198 (size 20)
   blk0 @ 0x210198:
-    w0 = select lt w0, #0x1 ? select ne w0, #0x0 ? #0xffffffff, #0x0, #0x1
-    ret w0
+    ret (select lt w0, #0x1 ? (select ne w0, #0x0 ? #0xffffffff, #0x0 & #0xffffffff), #0x1 & #0xffffffff)
 -- card
 {"addr":"0x210198","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}

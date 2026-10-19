@@ -246,66 +246,34 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
         {
             continue;
         }
+        // Nothing else in the function may touch the register, whatever the
+        // path: the save and its restores are the register's only uses, apart
+        // from a frame pointer setup that nothing reads through.
+        let round_trip: Vec<(usize, usize)> = list
+            .iter()
+            .map(|index| (accesses[*index].block, accesses[*index].position))
+            .collect();
         let mut borrowed = false;
         let mut frame_setup: Option<(usize, usize)> = None;
-        'restores: for second in restores.iter().map(|index| &accesses[*index]) {
-            for block_index in first.block..=second.block {
-                let block = &ir.blocks[block_index];
-                let start = if block_index == first.block {
-                    first.position + 1
-                } else {
-                    0
-                };
-                let end = if block_index == second.block {
-                    second.position
-                } else {
-                    block.stmts.len()
-                };
-                for position in start..end {
-                    // Another path's restore writes the register back too.
-                    if restores.iter().any(|index| {
-                        let other = &accesses[*index];
-                        (other.block, other.position) == (block_index, position)
-                    }) {
+        'scan: for (block_index, block) in ir.blocks.iter().enumerate() {
+            for (position, stmt) in block.stmts.iter().enumerate() {
+                if round_trip.contains(&(block_index, position)) {
+                    continue;
+                }
+                let (writes, reads) = statement_registers(stmt);
+                if reads.contains(&first.reg) {
+                    borrowed = true;
+                    break 'scan;
+                }
+                if writes.contains(&first.reg) {
+                    if frame_setup.is_none() && is_frame_setup(stmt, sp) {
+                        frame_setup = Some((block_index, position));
                         continue;
                     }
-                    let (writes, reads) = statement_registers(&block.stmts[position]);
-                    // A call preserves the callee-saved register it would read.
-                    if matches!(block.stmts[position], Stmt::Call { .. })
-                        && !writes.contains(&first.reg)
-                    {
-                        continue;
-                    }
-                    if reads.contains(&first.reg) {
-                        borrowed = true;
-                        break 'restores;
-                    }
-                    if writes.contains(&first.reg) {
-                        // `mov fp, sp` is the frame setup, not a use of the
-                        // register the prologue saved.
-                        if is_frame_setup(&block.stmts[position], sp) {
-                            frame_setup = Some((block_index, position));
-                            continue;
-                        }
-                        borrowed = true;
-                        break 'restores;
-                    }
+                    borrowed = true;
+                    break 'scan;
                 }
             }
-        }
-        // A frame pointer that some path reads as a base must stay set up.
-        if frame_setup.is_some() {
-            let round_trip: Vec<(usize, usize)> = list
-                .iter()
-                .map(|index| (accesses[*index].block, accesses[*index].position))
-                .collect();
-            borrowed |= ir.blocks.iter().enumerate().any(|(block_index, block)| {
-                block.stmts.iter().enumerate().any(|(position, stmt)| {
-                    !round_trip.contains(&(block_index, position))
-                        && !matches!(stmt, Stmt::Call { .. })
-                        && statement_registers(stmt).1.contains(&first.reg)
-                })
-            });
         }
         if borrowed {
             continue;
@@ -642,6 +610,65 @@ mod tests {
             left,
             3,
             "only the branch and the returns stay:\n{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn keeps_a_spill_a_later_path_clobbers() {
+        // *slot = rax; loop: rax = *slot; if (rdi == 0) return; call; goto loop;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: Expr::reg(RSP, 64),
+                    value: Expr::reg(0, 64),
+                    width: 8,
+                },
+                Stmt::Br { target: Some(0x10) },
+            ],
+        );
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: vec![
+                assign(
+                    0,
+                    Expr::Load {
+                        addr: Box::new(Expr::reg(RSP, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                ),
+                Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(7, 64),
+                    rhs: Expr::Const(0),
+                    target: 0x30,
+                },
+            ],
+        });
+        ir.blocks.push(Block {
+            start: 0x18,
+            stmts: vec![
+                Stmt::Call {
+                    target: Some(0x100),
+                    convention: Convention::SysV,
+                },
+                Stmt::Br { target: Some(0x10) },
+            ],
+        });
+        ir.blocks.push(Block {
+            start: 0x30,
+            stmts: vec![Stmt::Ret {
+                value: Expr::reg(0, 64),
+            }],
+        });
+
+        elide_callee_saves(&mut ir);
+
+        assert!(
+            matches!(ir.blocks[1].stmts.first(), Some(Stmt::Assign { dest, .. }) if dest.index == 0),
+            "the reload after the call stays:\n{}",
             ir.render()
         );
     }

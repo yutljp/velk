@@ -8,17 +8,17 @@
 -- decompile
 /* velk pseudo-C: point_dot @ 0x0 */
 /* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
-uint32_t point_dot(uint64_t a0, uint32_t *a1) {
+uint32_t point_dot(uint32_t a0, uint32_t *a1) {
     return a1->field_0x4 * *(uint32_t *)(a0 + 0x4) + a1->field_0x0 * *(uint32_t *)(a0);
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t * a1)
+uint32_t (uint32_t a0, uint32_t * a1)
 -- references
 
 -- ir
 fn point_dot @ 0x0 (size 15)
   blk0 @ 0x0:
-    ret ((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi)))
+    ret (((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi))) & #0xffffffff)
 -- card
 {"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab"],"section":".text","size":15,"unsupported":0}
 

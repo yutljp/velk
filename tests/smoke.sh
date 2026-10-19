@@ -65,7 +65,7 @@ echo "$c3" | grep -q "uint32_t sum3(uint32_t a0, uint32_t a1, uint32_t a2)" || f
 echo "$c3" | grep -q "return a1 + a0 + a2;"   || fail "decompile sum3 fold"
 [ "$(echo "$c3" | grep -c '0xffffffff')" -eq 0 ] || fail "decompile sum3 masks"
 echo "$c3" | grep -q "return "               || fail "decompile sum3 return"
-echo "$sum3_ir" | grep -q "ret ((w1 + w0) + w2)"  || fail "ir sum3 width"
+echo "$sum3_ir" | grep -qF "ret (((w1 + w0) + w2) & #0xffffffff)" || fail "ir sum3 width"
 div_ir=$("$BIN" decompile $FIX/arm64_div.o udiv3 2>/dev/null)
 echo "$div_ir" | grep -q "a0 / 0x3"       || fail "magic unsigned div"
 sd_ir=$("$BIN" decompile $FIX/arm64_div.o sdiv3 2>/dev/null)
@@ -465,8 +465,7 @@ ok "decompile sum_arr"
 
 # 6) x86-64 IR and pseudo-C
 x86_ir=$("$BIN" ir $FIX/pe64.exe reg_add 2>/dev/null)
-echo "$x86_ir" | grep -q "eax = "                 || fail "x86 ir reg_add"
-echo "$x86_ir" | grep -q "ret eax"                || fail "x86 ir ret"
+echo "$x86_ir" | grep -qF "ret ((rcx + rdx) & #0xffffffff)" || fail "x86 ir reg_add"
 ok "x86 ir reg_add"
 
 x86_mul=$("$BIN" ir $FIX/pe64.exe reg_mul 2>/dev/null)
@@ -499,7 +498,7 @@ ok "x86 idiv"
 
 x86_c=$("$BIN" decompile $FIX/pe64.exe reg_add 2>/dev/null)
 echo "$x86_c" | grep -q "uint32_t reg_add(uint32_t a0, uint32_t a1)" || fail "x86 decompile signature"
-echo "$x86_c" | grep -q "return eax;"             || fail "x86 decompile return"
+echo "$x86_c" | grep -q "return a0 + a1;"         || fail "x86 decompile return"
 ok "x86 decompile"
 
 # 7) build-signatures and identify (match same-shape functions under other names)

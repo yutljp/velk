@@ -22,8 +22,7 @@ uint32_t narrow_add(uint64_t a, uint32_t b) {
     rcx = rcx & 0xffffffffffffff00 | a & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
     *(uint8_t *)(rbp - 0x2) = (rax & 0xffffffffffffff00 | b & 0xff & 0xff) & 0xff;
-    rax = (int8_t)(rcx);
-    rax = eax + (int8_t)(rax);
+    rax = (int8_t)(rcx) + (int8_t)(*(uint8_t *)(rbp - 0x2));
     return (int8_t)(rax);
 }
 -- signature
@@ -39,8 +38,7 @@ fn narrow_add @ 0x201280 (size 31)
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
     store8((((rax & #0xffffffffffffff00) | ((rsi & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffffe))
-    rax = (sext8(rcx) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + (sext8(rax) & #0xffffffff)) & #0xffffffff)
+    rax = ((sext8(rcx) + sext8(load8((rbp + #0xfffffffffffffffe)))) & #0xffffffff)
     ret (sext8(rax) & #0xffffffff)
 -- card
 {"addr":"0x201280","approxTokens":168,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":31,"unsupported":0}
@@ -57,8 +55,8 @@ uint32_t widen_mul(uint64_t a, uint32_t b) {
     rcx = rcx & 0xffffffffffffff00 | a & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
     *(uint8_t *)(rbp - 0x2) = (rax & 0xffffffffffffff00 | b & 0xff & 0xff) & 0xff;
-    rax = rcx & 0xff & 0xff;
-    rax = eax * (rax & 0xff & 0xff);
+    rax = rcx & 0xff & 0xff & 0xff;
+    rax = eax * (*(uint8_t *)(rbp - 0x2) & 0xff);
     return rax & 0xffff & 0xffff;
 }
 -- signature
@@ -74,8 +72,8 @@ fn widen_mul @ 0x2012a0 (size 32)
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
     store8((((rax & #0xffffffffffffff00) | ((rsi & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffffe))
-    rax = (((rcx & #0xff) & #0xff) & #0xffffffff)
-    rax = (((rax & #0xffffffff) * (((rax & #0xff) & #0xff) & #0xffffffff)) & #0xffffffff)
+    rax = ((((rcx & #0xff) & #0xff) & #0xff) & #0xffffffff)
+    rax = (((rax & #0xffffffff) * (load8((rbp + #0xfffffffffffffffe)) & #0xff)) & #0xffffffff)
     ret (((rax & #0xffff) & #0xffff) & #0xffffffff)
 -- card
 {"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
@@ -149,7 +147,7 @@ fn in_range @ 0x2012e0 (size 52)
     store32(edx, (rbp + #0xfffffffffffffff4))
     rax = #0x0
     store8(#0x0, (rbp + #0xfffffffffffffff3))
-    brif lt edi, esi -> 0x20130a
+    brif lt (edi & #0xffffffff), (esi & #0xffffffff) -> 0x20130a
   blk1 @ 0x2012fe:
     rax = (load32((rbp + #0xfffffffffffffffc)) & #0xffffffff)
     rax = ((rax & #0xffffffffffffff00) | ((select le (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) ? #0x1, #0x0 & #0xff) & #0xff))
@@ -174,7 +172,7 @@ uint32_t rotate_left(uint32_t x, uint32_t k) {
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = k;
-    return x << (k & 0x1f & 0xff) | x >> (0x20 - k & 0x1f & 0xff);
+    return ((x << (k & 0x1f & 0xff) | x >> (0x20 - k & 0x1f & 0xff)) & 0xffffffff);
 }
 -- signature
 uint32_t (uint32_t x, uint32_t k)
@@ -188,7 +186,7 @@ fn rotate_left @ 0x201320 (size 43)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
-    ret ((edi << ((((esi & #0xffffffff) & #0x1f) & #0xffffffff) & #0xff)) | ((edi >> (((((#0x20 - esi) & #0xffffffff) & #0x1f) & #0xffffffff) & #0xff)) & #0xffffffff))
+    ret ((((edi & #0xffffffff) << ((((esi & #0xffffffff) & #0x1f) & #0xffffffff) & #0xff)) | ((edi & #0xffffffff) >> ((((#0x20 - (esi & #0xffffffff)) & #0x1f) & #0xffffffff) & #0xff))) & #0xffffffff)
 -- card
 {"addr":"0x201320","approxTokens":198,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":43,"unsupported":0}
 
@@ -225,8 +223,8 @@ fn popcount @ 0x201350 (size 55)
   blk1 @ 0x20135e:
     brif eq load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x201382
   blk2 @ 0x201368:
-    store32(((load32((rbp + #0xfffffffffffffffc)) - #0x1) & load32((rbp + #0xfffffffffffffffc))), (rbp + #0xfffffffffffffffc))
-    store32((load32((rbp + #0xfffffffffffffff8)) + #0x1), (rbp + #0xfffffffffffffff8))
+    store32((((load32((rbp + #0xfffffffffffffffc)) - #0x1) & #0xffffffff) & load32((rbp + #0xfffffffffffffffc))), (rbp + #0xfffffffffffffffc))
+    store32(((load32((rbp + #0xfffffffffffffff8)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff8))
     br 0x20135e
   blk3 @ 0x201382:
     rsp = (rsp + #0x8)
@@ -247,7 +245,7 @@ uint32_t (uint32_t x)
 -- ir
 fn byte_swap @ 0x201390 (size 51)
   blk0 @ 0x201390:
-    ret ((((edi >> #0x18) | ((edi >> #0x8) & #0xff00)) | ((edi << #0x8) & #0xff0000)) | (edi << #0x18))
+    ret ((((((edi & #0xffffffff) >> #0x18) | (((edi & #0xffffffff) >> #0x8) & #0xff00)) | ((((edi & #0xffffffff) << #0x8) & #0xffffffff) & #0xff0000)) | ((edi & #0xffffffff) << #0x18)) & #0xffffffff)
 -- card
 {"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":51,"unsupported":0}
 
@@ -291,7 +289,7 @@ fn min3 @ 0x2013d0 (size 82)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
-    brif ge edi, esi -> 0x2013f4
+    brif ge (edi & #0xffffffff), (esi & #0xffffffff) -> 0x2013f4
   blk1 @ 0x2013e9:
     store32(load32((rbp + #0xfffffffffffffffc)), (rbp + #0xffffffffffffffec))
     br 0x2013fa
@@ -300,7 +298,7 @@ fn min3 @ 0x2013d0 (size 82)
   blk3 @ 0x2013fa:
     eax = load32((rbp + #0xffffffffffffffec))
     store32(eax, (rbp + #0xfffffffffffffff0))
-    brif ge eax, load32((rbp + #0xfffffffffffffff4)) -> 0x201417
+    brif ge (eax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201417
   blk4 @ 0x20140c:
     store32(load32((rbp + #0xfffffffffffffff0)), (rbp + #0xffffffffffffffe8))
     br 0x20141d

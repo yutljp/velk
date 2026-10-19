@@ -29,7 +29,7 @@ fn <unnamed> @ 0x201180 (size 32)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
-    ret ((edi + esi) + edx)
+    ret ((((edi & #0xffffffff) + (esi & #0xffffffff)) + (edx & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x201180","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -68,8 +68,8 @@ fn <unnamed> @ 0x2011a0 (size 65)
   blk1 @ 0x2011b5:
     brif ge load32((rbp + #0xfffffffffffffff4)), load32((rbp + #0xfffffffffffffffc)) -> 0x2011dc
   blk2 @ 0x2011c1:
-    store32(((load32((rbp + #0xfffffffffffffff4)) * load32((rbp + #0xfffffffffffffff4))) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
-    store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
+    store32((((load32((rbp + #0xfffffffffffffff4)) * load32((rbp + #0xfffffffffffffff4))) + load32((rbp + #0xfffffffffffffff8))) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff4))
     br 0x2011b5
   blk3 @ 0x2011dc:
     rsp = (rsp + #0x8)

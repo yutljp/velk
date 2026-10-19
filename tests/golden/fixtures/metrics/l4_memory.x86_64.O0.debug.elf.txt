@@ -29,7 +29,7 @@ fn point_dot @ 0x201210 (size 44)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store64(rsi, (rbp + #0xfffffffffffffff0))
-    ret (((((load32(rdi) & #0xffffffff) * load32(rsi)) & #0xffffffff) + (((load32((rdi + #0x4)) & #0xffffffff) * load32((rsi + #0x4))) & #0xffffffff)) & #0xffffffff)
+    ret (((load32(rdi) * load32(rsi)) + (load32((rdi + #0x4)) * load32((rsi + #0x4)))) & #0xffffffff)
 -- card
 {"addr":"0x201210","approxTokens":186,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
 
@@ -72,8 +72,8 @@ fn array_sum @ 0x201240 (size 73)
     brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201284
   blk2 @ 0x201265:
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    store32((((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
+    store32(((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32(((load32((rbp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x201259
   blk3 @ 0x201284:
     rsp = (rsp + #0x8)

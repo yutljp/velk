@@ -8,8 +8,7 @@
 -- decompile
 /* velk pseudo-C: sub_201190 @ 0x201190 */
 uint32_t sub_201190(uint32_t a0, uint32_t a1, uint32_t a2) {
-    eax = a0 + a1;
-    return eax + a2;
+    return a0 + a1 + a2;
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
@@ -18,8 +17,7 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- ir
 fn <unnamed> @ 0x201190 (size 16)
   blk0 @ 0x201190:
-    eax = (rdi + rsi)
-    ret (eax + edx)
+    ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
 {"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -27,8 +25,7 @@ fn <unnamed> @ 0x201190 (size 16)
 -- decompile
 /* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
 uint32_t sub_2011a0(uint32_t a0) {
-    eax = a0 * 0x8;
-    return eax - a0 + 0x3;
+    return a0 * 0x8 - a0 + 0x3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -37,8 +34,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011a0 (size 16)
   blk0 @ 0x2011a0:
-    eax = (rdi * #0x8)
-    ret ((eax - (rdi & #0xffffffff)) + #0x3)
+    ret ((((rdi * #0x8) - (rdi & #0xffffffff)) + #0x3) & #0xffffffff)
 -- card
 {"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -55,7 +51,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2011b0 (size 16)
   blk0 @ 0x2011b0:
-    ret select gt edi, esi ? edi, esi
+    ret (select gt edi, esi ? edi, esi & #0xffffffff)
 -- card
 {"addr":"0x2011b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -72,6 +68,6 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2011c0 (size 5)
   blk0 @ 0x2011c0:
-    ret (#0x0 - edi)
+    ret ((#0x0 - edi) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":5,"sizeEstimated":true,"unsupported":0}

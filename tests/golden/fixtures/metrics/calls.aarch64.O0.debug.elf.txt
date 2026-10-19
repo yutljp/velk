@@ -24,7 +24,7 @@ int (int x)
 -- ir
 fn twice @ 0x21031c (size 24)
   blk0 @ 0x21031c:
-    ret (w0 << #0x1)
+    ret (((w0 & #0xffffffff) << #0x1) & #0xffffffff)
 -- card
 {"addr":"0x21031c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
 
@@ -41,7 +41,7 @@ int (int x)
 -- ir
 fn square @ 0x210334 (size 28)
   blk0 @ 0x210334:
-    ret (w0 * w0)
+    ret (((w0 & #0xffffffff) * (w0 & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x210334","approxTokens":138,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
@@ -177,7 +177,7 @@ fn factorial @ 0x2103f4 (size 96)
     w0 = ((x8 & #0xffffffff) - #0x1)
     call 0x2103f4
     t65 = x8
-    x8 = (((load32((sp + #0xffffffffffffffe4)) & #0xffffffff) * w0) & #0xffffffff)
+    x8 = ((load32((sp + #0xffffffffffffffe4)) * w0) & #0xffffffff)
     store32((x8 & #0xffffffff), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
@@ -196,10 +196,11 @@ int is_odd(void) {
         /* unsupported: LDUR at 0x21047c */
         w0 = w8 - 0x1;
         is_even();
-        return w0;
+        local_0 = w0;
+        return local_0;
     }
     local_0 = 0x0;
-    return w0;
+    return local_0;
 }
 -- signature
 int ()
@@ -220,9 +221,10 @@ fn is_odd @ 0x210454 (size 76)
     unsupported: LDUR at 0x21047c
     w0 = ((x8 & #0xffffffff) - #0x1)
     call 0x2104a0
+    store32(w0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
-    ret w0
+    ret load32((sp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":3}
 
@@ -289,8 +291,13 @@ fn sum9 @ 0x2104ec (size 120)
 == 0x210564 call_sum9
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x210564 */
-long call_sum9(void) {
-    *(uint64_t *)(sp - 0x20) = 0x8;
+long call_sum9(long x) {
+    uint64_t local_0; /* [sp-18] */
+    uint64_t local_1; /* [sp-20] */
+
+    local_0 = x;
+    x = x;
+    local_1 = 0x8;
     x1 = 0x1;
     x2 = 0x2;
     x3 = 0x3;
@@ -299,16 +306,18 @@ long call_sum9(void) {
     x6 = 0x6;
     x7 = 0x7;
     sum9();
-    return x0;
+    return x;
 }
 -- signature
-long ()
+long (long x)
 -- references
 
 -- ir
 fn call_sum9 @ 0x210564 (size 76)
   blk0 @ 0x210564:
-    store64(#0x8, (sp - #0x20))
+    store64(x0, (sp + #0xffffffffffffffe8))
+    x0 = x0
+    store64(#0x8, (sp + #0xffffffffffffffe0))
     x1 = #0x1
     x2 = #0x2
     x3 = #0x3
@@ -430,7 +439,7 @@ fn sum_varargs @ 0x2105b0 (size 316)
     br 0x210638
   blk1 @ 0x210638:
     x9 = (load32((sp + #0x10c)) & #0xffffffff)
-    brif ge (load32((sp + #0xe0)) & #0xffffffff), (x9 & #0xffffffff) -> 0x2106dc
+    brif ge load32((sp + #0xe0)), (x9 & #0xffffffff) -> 0x2106dc
   blk2 @ 0x210648:
     br 0x21064c
   blk3 @ 0x21064c:
@@ -441,7 +450,7 @@ fn sum_varargs @ 0x2105b0 (size 316)
   blk4 @ 0x210668:
     br 0x21066c
   blk5 @ 0x21066c:
-    x8 = (((load32((sp + #0x1c)) & #0xffffffff) + #0x8) & #0xffffffff)
+    x8 = ((load32((sp + #0x1c)) + #0x8) & #0xffffffff)
     store32((x8 & #0xffffffff), load64((sp + #0x10)))
     brif gt (x8 & #0xffffffff), #0x0 -> 0x21069c
   blk6 @ 0x210684:
@@ -456,10 +465,10 @@ fn sum_varargs @ 0x2105b0 (size 316)
     store64(x8, (sp + #0x8))
     br 0x2106b4
   blk9 @ 0x2106b4:
-    store32((((load32((sp + #0xe4)) & #0xffffffff) + (load32(load64((sp + #0x8))) & #0xffffffff)) & #0xffffffff), (sp + #0xe4))
+    store32(((load32((sp + #0xe4)) + load32(load64((sp + #0x8)))) & #0xffffffff), (sp + #0xe4))
     br 0x2106cc
   blk10 @ 0x2106cc:
-    store32((((load32((sp + #0xe0)) & #0xffffffff) + #0x1) & #0xffffffff), (sp + #0xe0))
+    store32(((load32((sp + #0xe0)) + #0x1) & #0xffffffff), (sp + #0xe0))
     br 0x210638
   blk11 @ 0x2106dc:
     w0 = load32((sp + #0xe4))

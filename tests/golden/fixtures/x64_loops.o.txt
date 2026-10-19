@@ -62,7 +62,7 @@ fn sum_until @ 0x30 (size 26)
   blk0 @ 0x30:
     brif le (rdi & #0xffffffff), #0x0 -> 0x47
   blk1 @ 0x34:
-    ret ((((((((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff)) >> #0x1) + (rdi * #0x2)) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+    ret (((((((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff)) >> #0x1) + (rdi * #0x2)) + #0xffffffffffffffff) & #0xffffffff)
   blk2 @ 0x47:
     ret #0x0
 -- card
@@ -117,6 +117,7 @@ int32_t sum_until_zero(uint32_t *a0, int64_t a1) {
         return 0x0;
     }
     rcx = (a1 & 0xffffffff);
+    rdx = 0x0;
     a1 = 0x0;
     rax = 0x0;
     do {
@@ -140,6 +141,7 @@ fn sum_until_zero @ 0x80 (size 44)
     brif le (rsi & #0xffffffff), #0x0 -> 0xa9
   blk1 @ 0x84:
     rcx = (rsi & #0xffffffff)
+    rdx = #0x0
     rsi = #0x0
     rax = #0x0
   blk2 @ 0x90:

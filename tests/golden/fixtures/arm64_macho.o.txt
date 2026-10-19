@@ -17,7 +17,7 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- ir
 fn _sum3 @ 0x0 (size 12)
   blk0 @ 0x0:
-    ret ((w1 + w0) + w2)
+    ret (((w1 + w0) + w2) & #0xffffffff)
 -- card
 {"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_sum3","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
 
@@ -49,7 +49,7 @@ fn _helper @ 0xc (size 68)
     x9 = (x8 * (((x0 & #0xffffffff) - #0x3) & #0xffffffff))
     x9 = (x9 >> #0x1)
     x8 = (x8 >> #0x1)
-    ret ((((((((x9 & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)) & #0xffffffff) - #0x1) & #0xffffffff)
+    ret (((((((x9 & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)) - #0x1) & #0xffffffff)
   blk2 @ 0x48:
     ret #0x0
 -- card

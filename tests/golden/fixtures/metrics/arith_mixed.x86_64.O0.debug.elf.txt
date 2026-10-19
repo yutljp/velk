@@ -31,7 +31,7 @@ fn sum3 @ 0x2011c0 (size 24)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
-    ret ((edi + esi) + edx)
+    ret ((((edi & #0xffffffff) + (esi & #0xffffffff)) + (edx & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
 
@@ -70,8 +70,8 @@ fn helper @ 0x2011e0 (size 65)
   blk1 @ 0x2011f5:
     brif ge load32((rbp + #0xfffffffffffffff4)), load32((rbp + #0xfffffffffffffffc)) -> 0x20121c
   blk2 @ 0x201201:
-    store32(((load32((rbp + #0xfffffffffffffff4)) * load32((rbp + #0xfffffffffffffff4))) + load32((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff8))
-    store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
+    store32((((load32((rbp + #0xfffffffffffffff4)) * load32((rbp + #0xfffffffffffffff4))) + load32((rbp + #0xfffffffffffffff8))) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    store32(((load32((rbp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (rbp + #0xfffffffffffffff4))
     br 0x2011f5
   blk3 @ 0x20121c:
     rsp = (rsp + #0x8)
@@ -92,7 +92,7 @@ int (struct pair * p)
 -- ir
 fn pair_sum @ 0x201230 (size 23)
   blk0 @ 0x201230:
-    ret (((load32(rdi) & #0xffffffff) + load32((rdi + #0x4))) & #0xffffffff)
+    ret ((load32(rdi) + load32((rdi + #0x4))) & #0xffffffff)
 -- card
 {"addr":"0x201230","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":0}
 
@@ -135,8 +135,8 @@ fn sum_arr @ 0x201250 (size 73)
     brif ge (load32((rbp + #0xffffffffffffffec)) & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201294
   blk2 @ 0x201275:
     rcx = sext32(load32((rbp + #0xffffffffffffffec)))
-    store32((((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
-    store32((((load32((rbp + #0xffffffffffffffec)) & #0xffffffff) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
+    store32(((load32((load64((rbp + #0xfffffffffffffff8)) + (rcx * #0x4))) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32(((load32((rbp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rbp + #0xffffffffffffffec))
     br 0x201269
   blk3 @ 0x201294:
     rsp = (rsp + #0x8)

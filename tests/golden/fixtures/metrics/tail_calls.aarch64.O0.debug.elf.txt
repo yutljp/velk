@@ -7,7 +7,10 @@
 -- decompile
 /* velk pseudo-C: tail_one @ 0x210194 */
 int tail_one(int x) {
-    return x * 0x3 + 0x1;
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = x;
+    return local_0 * 0x3 + 0x1;
 }
 -- signature
 int (int x)
@@ -16,7 +19,8 @@ int (int x)
 -- ir
 fn tail_one @ 0x210194 (size 40)
   blk0 @ 0x210194:
-    ret ((w0 * #0x3) + #0x1)
+    store32(w0, (sp + #0xfffffffffffffffc))
+    ret (((load32((sp + #0xfffffffffffffffc)) * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x210194","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
 
@@ -61,6 +65,6 @@ int (int x)
 fn tail_three @ 0x2101e4 (size 32)
   blk0 @ 0x2101e4:
     store32(w0, (sp + #0xfffffffffffffffc))
-    ret (load32((sp + #0xfffffffffffffffc)) - #0x7)
+    ret ((load32((sp + #0xfffffffffffffffc)) - #0x7) & #0xffffffff)
 -- card
 {"addr":"0x2101e4","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}

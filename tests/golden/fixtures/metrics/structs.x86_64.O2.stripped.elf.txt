@@ -22,7 +22,7 @@ uint32_t (uint32_t * a0)
 -- ir
 fn <unnamed> @ 0x2011e0 (size 16)
   blk0 @ 0x2011e0:
-    ret ((load32((rdi + #0xc)) - load32((rdi + #0x4))) * (load32((rdi + #0x8)) - load32(rdi)))
+    ret (((load32((rdi + #0xc)) - load32((rdi + #0x4))) * (load32((rdi + #0x8)) - load32(rdi))) & #0xffffffff)
 -- card
 {"accesses":["a0 +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -184,23 +184,17 @@ fn <unnamed> @ 0x2012c0 (size 16)
 == 0x2012d0 -
 -- decompile
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
-uint64_t sub_2012d0(uint64_t a0) {
-    eax = a0;
-    eax = eax >> 0x4;
-    ecx = a0;
-    return ((a0 & 0xff & 0x1) == 0x0 ? ecx >> 0x1 & 0x7 : eax & 0xf);
+uint32_t sub_2012d0(uint32_t a0) {
+    return ((a0 & 0xff & 0x1) == 0x0 ? a0 >> 0x1 & 0x7 : a0 >> 0x4 & 0xf);
 }
 -- signature
-uint64_t (uint64_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2012d0 (size 32)
   blk0 @ 0x2012d0:
-    eax = rdi
-    eax = (eax >> #0x4)
-    ecx = rdi
-    ret select eq ((rdi & #0xff) & #0x1), #0x0 ? ((ecx >> #0x1) & #0x7), (eax & #0xf)
+    ret (select eq ((rdi & #0xff) & #0x1), #0x0 ? (((rdi & #0xffffffff) >> #0x1) & #0x7), (((rdi & #0xffffffff) >> #0x4) & #0xf) & #0xffffffff)
 -- card
 {"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 

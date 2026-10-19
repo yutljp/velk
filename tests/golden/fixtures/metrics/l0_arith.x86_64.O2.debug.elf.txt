@@ -8,8 +8,7 @@
 -- decompile
 /* velk pseudo-C: add3 @ 0x201190 */
 int add3(int a, int b, int c) {
-    eax = a + b;
-    return eax + c;
+    return a + b + c;
 }
 -- signature
 int (int a, int b, int c)
@@ -18,8 +17,7 @@ int (int a, int b, int c)
 -- ir
 fn add3 @ 0x201190 (size 6)
   blk0 @ 0x201190:
-    eax = (rdi + rsi)
-    ret (eax + edx)
+    ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
 {"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
 
@@ -27,8 +25,7 @@ fn add3 @ 0x201190 (size 6)
 -- decompile
 /* velk pseudo-C: scale @ 0x2011a0 */
 int scale(int x) {
-    eax = x * 0x8;
-    return eax - x + 0x3;
+    return x * 0x8 - x + 0x3;
 }
 -- signature
 int (int x)
@@ -37,8 +34,7 @@ int (int x)
 -- ir
 fn scale @ 0x2011a0 (size 13)
   blk0 @ 0x2011a0:
-    eax = (rdi * #0x8)
-    ret ((eax - (rdi & #0xffffffff)) + #0x3)
+    ret ((((rdi * #0x8) - (rdi & #0xffffffff)) + #0x3) & #0xffffffff)
 -- card
 {"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":0}
 
@@ -55,7 +51,7 @@ int (int a, int b)
 -- ir
 fn pick @ 0x2011b0 (size 8)
   blk0 @ 0x2011b0:
-    ret select gt edi, esi ? edi, esi
+    ret (select gt edi, esi ? edi, esi & #0xffffffff)
 -- card
 {"addr":"0x2011b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 
@@ -72,6 +68,6 @@ int (int x)
 -- ir
 fn negate @ 0x2011c0 (size 5)
   blk0 @ 0x2011c0:
-    ret (#0x0 - edi)
+    ret ((#0x0 - edi) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":0}

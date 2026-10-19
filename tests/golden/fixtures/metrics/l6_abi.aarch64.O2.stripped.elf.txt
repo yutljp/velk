@@ -18,7 +18,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2101a4 (size 28)
   blk0 @ 0x2101a4:
-    ret ((w0 + (w0 << #0x1)) + #0x1)
+    ret (((w0 + (w0 << #0x1)) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2101a4","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
@@ -77,7 +77,7 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint3
 -- ir
 fn <unnamed> @ 0x2101d4 (size 24)
   blk0 @ 0x2101d4:
-    ret (((w1 + w0) + (w2 + w3)) + (w4 + w5))
+    ret ((((w1 + w0) + (w2 + w3)) + (w4 + w5)) & #0xffffffff)
 -- card
 {"addr":"0x2101d4","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
 
