@@ -148,11 +148,19 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
     // Every conditional branch target, wherever the branch: a later loop
     // may jump back into code an earlier return seemed to end.
     let mut targets = std::collections::HashSet::new();
+    // Call targets are function starts, so a jump to one is a tail call.
+    let mut called = std::collections::HashSet::new();
     let mut decoder = Decoder::with_ip(64, bytes, base, DecoderOptions::NONE);
     while decoder.can_decode() {
         let instruction = decoder.decode();
-        if instruction.flow_control() == FlowControl::ConditionalBranch {
-            targets.insert(instruction.near_branch_target());
+        match instruction.flow_control() {
+            FlowControl::ConditionalBranch => {
+                targets.insert(instruction.near_branch_target());
+            }
+            FlowControl::Call => {
+                called.insert(instruction.near_branch_target());
+            }
+            _ => {}
         }
     }
     let mut decoder = Decoder::with_ip(64, bytes, base, DecoderOptions::NONE);
@@ -162,10 +170,11 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
     while decoder.can_decode() {
         let instruction = decoder.decode();
         let ip = instruction.ip();
-        if closed && !targets.contains(&ip) && ip != base && !x86_is_padding(bytes, base, ip) {
+        let continued = targets.contains(&ip) && !called.contains(&ip);
+        if closed && !continued && ip != base && !x86_is_padding(bytes, base, ip) {
             starts.push(ip);
             closed = false;
-        } else if closed && targets.contains(&ip) && !x86_is_padding(bytes, base, ip) {
+        } else if closed && continued && !x86_is_padding(bytes, base, ip) {
             // A branch target of the previous function: it continues here.
             closed = false;
         }
@@ -176,10 +185,12 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
                     targets.insert(target);
                 }
                 // A jump to itself or to padding is unresolved; one leaving
-                // the section is a tail call. All end the function.
+                // the section or to a called function is a tail call. All
+                // end the function.
                 if target == ip
                     || !(base..base + bytes.len() as u64).contains(&target)
                     || x86_is_padding(bytes, base, target)
+                    || called.contains(&target)
                 {
                     closed = true;
                 }
@@ -201,6 +212,10 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
                     || x86_is_padding(bytes, base, instruction.next_ip());
             }
             FlowControl::Return => closed = true,
+            // A trap ends a function, as after a call that does not return.
+            FlowControl::Interrupt if instruction.mnemonic() == iced_x86::Mnemonic::Int3 => {
+                closed = true
+            }
             _ => {}
         }
         previous = Some(instruction);
@@ -252,6 +267,20 @@ mod tests {
         // add rax, rcx; jmp rax; (case) ret; int3
         let code = [0x48, 0x01, 0xc8, 0xff, 0xe0, 0xc3, 0xcc];
         assert!(x86_prologues(&code, 0).is_empty());
+    }
+
+    #[test]
+    fn a_function_after_a_call_that_does_not_return_is_found() {
+        // call 0; int3; (next function) ret
+        let code = [0xe8, 0xfb, 0xff, 0xff, 0xff, 0xcc, 0xc3];
+        assert_eq!(x86_prologues(&code, 0), vec![6]);
+    }
+
+    #[test]
+    fn a_called_function_is_found_though_a_tail_jump_targets_it() {
+        // jmp 3; int3; (3) ret; (4) call 3; ret
+        let code = [0xeb, 0x01, 0xcc, 0xc3, 0xe8, 0xfa, 0xff, 0xff, 0xff, 0xc3];
+        assert_eq!(x86_prologues(&code, 0), vec![3, 4]);
     }
 
     #[test]
