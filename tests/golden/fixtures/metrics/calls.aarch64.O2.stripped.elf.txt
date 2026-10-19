@@ -323,11 +323,11 @@ fn <unnamed> @ 0x210400 (size 40)
 == 0x210428 -
 -- decompile
 /* velk pseudo-C: sub_210428 @ 0x210428 */
-int32_t sub_210428(int64_t a0) {
+int64_t sub_210428(int64_t a0) {
     return sub_210400(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
-int32_t (int64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir

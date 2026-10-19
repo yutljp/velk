@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 98 unsupported, 2349 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 98 unsupported, 1364 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1577,9 +1577,8 @@ fn main.kindName @ 0x466d20 (size 96)
 /* velk pseudo-C: main.main @ 0x466d80 */
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* ref: 0x4967e8 -> 0x1 ".text" */
-int64_t main_main(void) {
+int32_t main_main(void) {
     int64_t v1;
-    int64_t v2;
     int64_t v3;
     int64_t v4;
     int64_t v5;
@@ -1593,19 +1592,13 @@ int64_t main_main(void) {
     int64_t local_5; /* [sp-30] */
     int64_t local_6; /* [sp-10] */
 
-L_466d80:
-    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) {
-        runtime_morestack_noctxt();
-        __builtin_trap();
-    }
     v1 = main_divmod(0x7, 0x3);
     local_0 = v1;
     local_1 = rbx;
     local_2 = 0x1;
     local_3 = 0x2;
     local_4 = 0x3;
-    v2 = &local_2;
-    v3 = main_sumSlice(v2, 0x3);
+    v3 = main_sumSlice(&local_2, 0x3);
     local_5 = v3;
     v4 = main_add(0x1, 0x2);
     local_6 = v4;
@@ -1625,18 +1618,16 @@ L_466d80:
     runtime_printint(local_5);
     v7 = runtime_printnl();
     return runtime_printunlock(v7);
-L_466e7a:
-    goto L_466d80;
 }
 -- signature
-int64_t ()
+int32_t ()
 -- references
 0x46d400 -> 0x8 "noptrdata"
 0x4967e8 -> 0x1 ".text"
 -- ir
 fn main.main @ 0x466d80 (size 256)
   blk0 @ 0x466d80:
-    brif ls rsp, load64((r14 + #0x10)) -> 0x466e75
+    br 0x466d8a
   blk1 @ 0x466d8a:
     v1 = call 0x466cc0(#0x7, #0x3)
     store64(v1, (rsp + #0xffffffffffffffc8))
@@ -1644,8 +1635,7 @@ fn main.main @ 0x466d80 (size 256)
     store64(#0x1, (rsp + #0xffffffffffffffd8))
     store64(#0x2, (rsp + #0xffffffffffffffe0))
     store64(#0x3, (rsp + #0xffffffffffffffe8))
-    v2 = (rsp + #0xffffffffffffffd8)
-    v3 = call 0x466d00(v2, #0x3)
+    v3 = call 0x466d00((rsp + #0xffffffffffffffd8), #0x3)
     store64(v3, (rsp + #0xffffffffffffffd0))
     v4 = call 0x466ca0(#0x1, #0x2)
     store64(v4, (rsp + #0xfffffffffffffff0))
@@ -1666,12 +1656,7 @@ fn main.main @ 0x466d80 (size 256)
     v7 = call 0x4307e0()
     v8 = call 0x430600(v7)
     ret v8
-  blk2 @ 0x466e75:
-    call 0x461de0()
-    trap
-  blk3 @ 0x466e7a:
-    br 0x466d80
-  blk4 @ 0x466e7f:
+  blk2 @ 0x466e7f:
     trap
 -- card
-{"addr":"0x466d80","approxTokens":240,"blocks":5,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata",".text"],"unsupported":0}
+{"addr":"0x466d80","approxTokens":240,"blocks":3,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata",".text"],"unsupported":0}

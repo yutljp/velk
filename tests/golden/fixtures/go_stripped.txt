@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 98 unsupported, 2350 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 98 unsupported, 1364 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1350,24 +1350,7 @@ fn main.add @ 0x466ca0 (size 32)
 -- decompile
 /* velk pseudo-C: main.twice @ 0x466cc0 */
 int64_t main_twice(int64_t a0) {
-    int64_t v1;
-    int64_t local_0; /* [sp+8] */
-
-L_466cc0:
-    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) {
-        local_0 = a0;
-        runtime_morestack_noctxt();
-        __builtin_trap();
-    }
-    rsp = rsp - 0x8;
-    rsp = rsp - 0x10;
-    v1 = main_add(a0, a0);
-    rsp = rsp + 0x10;
-    rsp = rsp + 0x8;
-    return v1;
-L_466ce6:
-    a0 = local_0;
-    goto L_466cc0;
+    return main_add(a0, a0);
 }
 -- signature
 int64_t (int64_t a0)
@@ -1376,92 +1359,74 @@ int64_t (int64_t a0)
 -- ir
 fn main.twice @ 0x466cc0 (size 64)
   blk0 @ 0x466cc0:
-    brif ls rsp, load64((r14 + #0x10)) -> 0x466cdc
+    br 0x466cc6
   blk1 @ 0x466cc6:
-    rsp = (rsp + #0xfffffffffffffff8)
-    rsp = (rsp - #0x10)
     v1 = call 0x466ca0(rax, rax)
-    rsp = (rsp + #0x10)
-    rsp = (rsp + #0x8)
     ret v1
-  blk2 @ 0x466cdc:
-    store64(rax, (rsp + #0x8))
-    call 0x461de0()
+  blk2 @ 0x466ced:
     trap
-  blk3 @ 0x466ce6:
-    rax = load64((rsp + #0x8))
-    br 0x466cc0
-  blk4 @ 0x466ced:
+  blk3 @ 0x466cee:
     trap
-  blk5 @ 0x466cee:
+  blk4 @ 0x466cef:
     trap
-  blk6 @ 0x466cef:
+  blk5 @ 0x466cf0:
     trap
-  blk7 @ 0x466cf0:
+  blk6 @ 0x466cf1:
     trap
-  blk8 @ 0x466cf1:
+  blk7 @ 0x466cf2:
     trap
-  blk9 @ 0x466cf2:
+  blk8 @ 0x466cf3:
     trap
-  blk10 @ 0x466cf3:
+  blk9 @ 0x466cf4:
     trap
-  blk11 @ 0x466cf4:
+  blk10 @ 0x466cf5:
     trap
-  blk12 @ 0x466cf5:
+  blk11 @ 0x466cf6:
     trap
-  blk13 @ 0x466cf6:
+  blk12 @ 0x466cf7:
     trap
-  blk14 @ 0x466cf7:
+  blk13 @ 0x466cf8:
     trap
-  blk15 @ 0x466cf8:
+  blk14 @ 0x466cf9:
     trap
-  blk16 @ 0x466cf9:
+  blk15 @ 0x466cfa:
     trap
-  blk17 @ 0x466cfa:
+  blk16 @ 0x466cfb:
     trap
-  blk18 @ 0x466cfb:
+  blk17 @ 0x466cfc:
     trap
-  blk19 @ 0x466cfc:
+  blk18 @ 0x466cfd:
     trap
-  blk20 @ 0x466cfd:
+  blk19 @ 0x466cfe:
     trap
-  blk21 @ 0x466cfe:
-    trap
-  blk22 @ 0x466cff:
+  blk20 @ 0x466cff:
     trap
 -- card
-{"addr":"0x466cc0","approxTokens":156,"blocks":23,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x466cc0","approxTokens":156,"blocks":21,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
 
 == 0x466d00 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d00 */
-int64_t main_main(void) {
+int32_t main_main(void) {
     int64_t v1;
     int64_t v2;
     int64_t local_0; /* [sp-10] */
 
-L_466d00:
-    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) {
-        runtime_morestack_noctxt();
-        __builtin_trap();
-    }
     v1 = main_twice(0x15);
     local_0 = v1;
     runtime_printlock(v1);
     runtime_printint(local_0);
     v2 = runtime_printnl();
     return runtime_printunlock(v2);
-L_466d45:
-    goto L_466d00;
 }
 -- signature
-int64_t ()
+int32_t ()
 -- references
 
 -- ir
 fn main.main @ 0x466d00 (size 96)
   blk0 @ 0x466d00:
-    brif ls rsp, load64((r14 + #0x10)) -> 0x466d3f
+    br 0x466d06
   blk1 @ 0x466d06:
     v1 = call 0x466cc0(#0x15)
     store64(v1, (rsp + #0xfffffffffffffff0))
@@ -1470,60 +1435,55 @@ fn main.main @ 0x466d00 (size 96)
     v2 = call 0x4307e0()
     v3 = call 0x430600(v2)
     ret v3
-  blk2 @ 0x466d3f:
-    call 0x461de0()
+  blk2 @ 0x466d47:
     trap
-  blk3 @ 0x466d45:
-    br 0x466d00
-  blk4 @ 0x466d47:
+  blk3 @ 0x466d48:
     trap
-  blk5 @ 0x466d48:
+  blk4 @ 0x466d49:
     trap
-  blk6 @ 0x466d49:
+  blk5 @ 0x466d4a:
     trap
-  blk7 @ 0x466d4a:
+  blk6 @ 0x466d4b:
     trap
-  blk8 @ 0x466d4b:
+  blk7 @ 0x466d4c:
     trap
-  blk9 @ 0x466d4c:
+  blk8 @ 0x466d4d:
     trap
-  blk10 @ 0x466d4d:
+  blk9 @ 0x466d4e:
     trap
-  blk11 @ 0x466d4e:
+  blk10 @ 0x466d4f:
     trap
-  blk12 @ 0x466d4f:
+  blk11 @ 0x466d50:
     trap
-  blk13 @ 0x466d50:
+  blk12 @ 0x466d51:
     trap
-  blk14 @ 0x466d51:
+  blk13 @ 0x466d52:
     trap
-  blk15 @ 0x466d52:
+  blk14 @ 0x466d53:
     trap
-  blk16 @ 0x466d53:
+  blk15 @ 0x466d54:
     trap
-  blk17 @ 0x466d54:
+  blk16 @ 0x466d55:
     trap
-  blk18 @ 0x466d55:
+  blk17 @ 0x466d56:
     trap
-  blk19 @ 0x466d56:
+  blk18 @ 0x466d57:
     trap
-  blk20 @ 0x466d57:
+  blk19 @ 0x466d58:
     trap
-  blk21 @ 0x466d58:
+  blk20 @ 0x466d59:
     trap
-  blk22 @ 0x466d59:
+  blk21 @ 0x466d5a:
     trap
-  blk23 @ 0x466d5a:
+  blk22 @ 0x466d5b:
     trap
-  blk24 @ 0x466d5b:
+  blk23 @ 0x466d5c:
     trap
-  blk25 @ 0x466d5c:
+  blk24 @ 0x466d5d:
     trap
-  blk26 @ 0x466d5d:
+  blk25 @ 0x466d5e:
     trap
-  blk27 @ 0x466d5e:
-    trap
-  blk28 @ 0x466d5f:
+  blk26 @ 0x466d5f:
     trap
 -- card
-{"addr":"0x466d00","approxTokens":198,"blocks":29,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x466d00","approxTokens":198,"blocks":27,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}

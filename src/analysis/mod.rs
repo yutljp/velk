@@ -177,6 +177,114 @@ fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Pr
     }
 }
 
+/// Drops the check a Go function starts with, which compares the stack
+/// pointer with the goroutine's stack limit and, when it runs low, calls the
+/// runtime to grow the stack and starts the function again. It is no part
+/// of what the function does. The blocks that grow the stack and restart
+/// go too.
+fn drop_stack_growth_check(blocks: &mut Vec<crate::ir::Block>, image: &Image) {
+    let grows = |target: u64| {
+        image
+            .functions
+            .get(&target)
+            .and_then(|function| function.name.as_deref())
+            .is_some_and(|name| name.starts_with("runtime.morestack"))
+    };
+    let Some(entry) = blocks.first().map(|block| block.start) else {
+        return;
+    };
+    let mut dropped = HashSet::new();
+    for index in 0..blocks.len() {
+        let Some(Stmt::Brif { target, .. }) = blocks[index].stmts.last() else {
+            continue;
+        };
+        let target = *target;
+        let Some(growth) = blocks.iter().position(|block| block.start == target) else {
+            continue;
+        };
+        let calls_growth = blocks[growth]
+            .stmts
+            .iter()
+            .any(|stmt| matches!(stmt, Stmt::Call { target: Some(callee), .. } if grows(*callee)));
+        let Some(next) = blocks.get(index + 1).map(|block| block.start) else {
+            continue;
+        };
+        if !calls_growth {
+            continue;
+        }
+        // The check falls through into the body.
+        *blocks[index].stmts.last_mut().expect("a branch") = Stmt::Br { target: Some(next) };
+        dropped.insert(growth);
+        // The restart: arguments reloaded, then back to the entry.
+        if let Some(next) = blocks.get(growth + 1)
+            && matches!(next.stmts.last(), Some(Stmt::Br { target: Some(start) }) if *start == entry)
+        {
+            dropped.insert(growth + 1);
+        }
+    }
+    let mut index = 0;
+    blocks.retain(|_| {
+        index += 1;
+        !dropped.contains(&(index - 1))
+    });
+}
+
+/// A function that only ever returns what the functions it calls return
+/// returns as wide a value as they do.
+fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
+    use crate::ir::{CType, Expr};
+    if ir.ret_type == CType::Void || crate::ir::cfg::own_return(&ir.blocks).is_some() {
+        return;
+    }
+    let mut width = None;
+    for block in &ir.blocks {
+        let [.., Stmt::Call { target, result, .. }, Stmt::Ret { value }] = block.stmts.as_slice()
+        else {
+            if matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
+                return;
+            }
+            continue;
+        };
+        let returned = match value {
+            Expr::Reg { index, .. } => *index,
+            _ => return,
+        };
+        let carried = result.map_or(crate::arch::RETURN, |result| result.index);
+        let Some(target) = target else {
+            return;
+        };
+        let Some(bytes) = returned_bytes(image, *target) else {
+            return;
+        };
+        if returned != carried || width.is_some_and(|width| width != bytes) {
+            return;
+        }
+        width = Some(bytes);
+    }
+    if let (Some(bytes), CType::Int { signed, .. }) = (width, &ir.ret_type) {
+        ir.ret_type = CType::int(bytes, *signed);
+    }
+}
+
+/// How many bytes of integer the function at `addr` returns, as its own
+/// analysis decides; `None` for a pointer, a float, nothing, or a function
+/// already being analysed further up, as mutual tail calls are.
+fn returned_bytes(image: &Image, addr: u64) -> Option<u8> {
+    thread_local! {
+        static UNDER_WAY: std::cell::RefCell<HashSet<u64>> = Default::default();
+    }
+    let function = image.functions.get(&addr)?;
+    if !UNDER_WAY.with(|under_way| under_way.borrow_mut().insert(addr)) {
+        return None;
+    }
+    let analysis = analyze(image, function);
+    UNDER_WAY.with(|under_way| under_way.borrow_mut().remove(&addr));
+    match analysis.ok()?.ir.ret_type {
+        crate::ir::CType::Int { bytes, .. } => Some(bytes),
+        _ => None,
+    }
+}
+
 /// Gives a call whose callee's arguments are unknown, such as one through a
 /// pointer, the argument registers the code sets up for it: up to the last
 /// one written since the block's previous call and not used again before
@@ -351,6 +459,9 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         blocks = lift::lift(image, function.addr, size, &targets)?;
         tables = jump_table::recover(&blocks, image);
     }
+    if image.go {
+        drop_stack_growth_check(&mut blocks, image);
+    }
     let types = crate::loader::dwarf::function_types(image, function.addr);
     // A function returning a float returns it in xmm0 or v0.
     let declared = types.as_ref().and_then(|types| types.ret.as_ref());
@@ -489,6 +600,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     typing::apply_width_types(&mut ir, &uniform_32);
     typing::apply_void_return(&mut ir);
     typing::apply_partial_return(&mut ir);
+    apply_call_return(&mut ir, image);
     typing::apply_dwarf_types(types, &mut ir);
     passes::simplify::simplify(&mut ir);
     // Simplifying can fold a variable's value into its readers.
