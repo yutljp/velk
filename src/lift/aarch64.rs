@@ -12,6 +12,8 @@ pub(super) struct Lifter<'a> {
     /// Whether an operand of the instruction being lifted was one the
     /// lifter cannot express, so that its effect would be lost.
     incomplete: std::cell::Cell<bool>,
+    /// Whether an instruction of the current block may have changed the flags.
+    flags_touched: bool,
     last_compare: Option<Flags>,
     image: &'a crate::loader::Image,
     summaries: super::Summaries<'a>,
@@ -27,6 +29,7 @@ impl<'a> Lifter<'a> {
         Self {
             stmts: Vec::new(),
             incomplete: Default::default(),
+            flags_touched: false,
             last_compare: None,
             image,
             summaries,
@@ -1106,6 +1109,32 @@ fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool) {
     write_back(lifter, mem.writeback);
 }
 
+/// Whether an instruction writes NZCV; `msr` stands for the writes to PSTATE
+/// (`cfinv`, `axflag`) the decoder shows as one.
+fn sets_flags(opcode: a64::Opcode) -> bool {
+    use a64::Opcode as O;
+    matches!(
+        opcode,
+        O::ADDS
+            | O::SUBS
+            | O::ANDS
+            | O::BICS
+            | O::ADCS
+            | O::SBCS
+            | O::CCMP
+            | O::CCMN
+            | O::FCMP
+            | O::FCMPE
+            | O::FCCMP
+            | O::FCCMPE
+            | O::MSR
+            | O::RMIF
+            | O::SETF8
+            | O::SETF16
+            | O::SUBPS
+    )
+}
+
 /// The registers, as the IR numbers them, an instruction may write: every
 /// register it names, and a base it writes back.
 fn written_registers(ins: &Instruction) -> Vec<u16> {
@@ -1763,7 +1792,6 @@ fn lift_cond_branch(lifter: &mut Lifter, ops: [Operand; 4], code: u8, pc: u64) -
         return true;
     };
     let test = lifter.test_code(code);
-    lifter.last_compare = None;
     // Only a condition the flags here leave open names itself in the branch.
     let cond = Cond::from_code(code).unwrap_or(Cond::Eq);
     lifter.stmts.extend(test.branch(cond, target));
@@ -2095,13 +2123,16 @@ impl Machine for Lifter<'_> {
             )));
         }
         let changed = written_registers(instruction);
+        let mut unsupported = false;
         for stmt in &mut self.stmts[first..] {
-            if let Stmt::Unsupported { writes, .. } = stmt
-                && writes.is_none()
-            {
-                *writes = Some(changed.clone());
+            if let Stmt::Unsupported { writes, .. } = stmt {
+                unsupported = true;
+                if writes.is_none() {
+                    *writes = Some(changed.clone());
+                }
             }
         }
+        self.flags_touched |= unsupported || sets_flags(instruction.opcode);
         ended
     }
 
@@ -2113,7 +2144,22 @@ impl Machine for Lifter<'_> {
         self.last_compare = None;
     }
 
-    /// Keeps the compare: the flags a conditional select reads after the
-    /// split come from it on the fall-through path.
-    fn block_split(&mut self) {}
+    /// Other paths may enter a branch target with other flags; flags carry
+    /// into it only where every block before it leaves the same kind.
+    fn block_split(&mut self) {
+        self.last_compare = None;
+    }
+
+    fn exit_flags(&self) -> Option<Flags> {
+        self.last_compare.clone()
+    }
+
+    fn enter_block(&mut self, flags: Option<Flags>) {
+        self.last_compare = flags;
+        self.flags_touched = false;
+    }
+
+    fn flags_touched(&self) -> bool {
+        self.flags_touched
+    }
 }

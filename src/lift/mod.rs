@@ -4,7 +4,7 @@ mod flags;
 mod hardware;
 mod x86_64;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::error::LiftError;
 use crate::ir::visit::{children, expr_reads};
@@ -30,6 +30,29 @@ trait Machine {
     fn block_ended(&mut self);
     /// A branch target splits the block; the fall-through path continues into it.
     fn block_split(&mut self);
+    /// The flags as the code so far leaves them.
+    fn exit_flags(&self) -> Option<flags::Flags>;
+    /// Whether an instruction since the block began may have changed the
+    /// flags.
+    fn flags_touched(&self) -> bool;
+    /// The flags a new block starts from.
+    fn enter_block(&mut self, flags: Option<flags::Flags>);
+}
+
+/// How a block leaves the flags: as its own code set them, if it changed
+/// them, or else as they came in.
+#[derive(Clone)]
+struct Exit {
+    flags: Option<flags::Flags>,
+    touched: bool,
+}
+
+/// The flags each block that reads them unknown should start from, and the
+/// blocks before them that pass their flags on.
+#[derive(Default)]
+struct CarriedFlags {
+    entry: HashMap<u64, flags::Flags>,
+    exporters: HashSet<u64>,
 }
 
 /// What lifting needs to know of the functions a body calls.
@@ -60,10 +83,10 @@ pub fn lift_with(
     let bytes = image.read_vaddr(addr, size).ok_or(LiftError::Unreadable)?;
     match image.isa {
         Isa::AArch64 => {
-            let machine = aarch64::Lifter::new(image, addr, summaries);
+            let machine = || aarch64::Lifter::new(image, addr, summaries);
             let (decoded, stop) =
-                decode_with_fragments(image, &machine, addr, bytes, aarch64::decode);
-            build(
+                decode_with_fragments(image, &machine(), addr, bytes, aarch64::decode);
+            build_carrying(
                 image,
                 summaries,
                 machine,
@@ -74,10 +97,10 @@ pub fn lift_with(
             )
         }
         Isa::X86_64 => {
-            let machine = x86_64::Lifter::new(image, addr, summaries);
+            let machine = || x86_64::Lifter::new(image, addr, summaries);
             let (decoded, stop) =
-                decode_with_fragments(image, &machine, addr, bytes, x86_64::decode);
-            build(
+                decode_with_fragments(image, &machine(), addr, bytes, x86_64::decode);
+            build_carrying(
                 image,
                 summaries,
                 machine,
@@ -326,6 +349,191 @@ fn tail_call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> [S
     ]
 }
 
+/// The blocks, lifted once to find the blocks that read flags they do not
+/// know and the flags each block ends with, and again where every block
+/// before such a block ends with flags of one shape, which then carry over.
+fn build_carrying<M: Machine>(
+    image: &Image,
+    summaries: Summaries<'_>,
+    machine: impl Fn() -> M,
+    start: u64,
+    decoded: &[Decoded<M::Instruction>],
+    stop: Option<String>,
+    extra_targets: &HashSet<u64>,
+) -> Result<Vec<Block>, LiftError> {
+    let none = CarriedFlags::default();
+    let (blocks, exits) = build(
+        image,
+        summaries,
+        machine(),
+        start,
+        decoded,
+        stop.clone(),
+        extra_targets,
+        &none,
+    )?;
+    let carried = carry_flags(&blocks, &exits, extra_targets);
+    if carried.entry.is_empty() {
+        return Ok(blocks);
+    }
+    Ok(build(
+        image,
+        summaries,
+        machine(),
+        start,
+        decoded,
+        stop,
+        extra_targets,
+        &carried,
+    )?
+    .0)
+}
+
+/// Whether a block reads flags its own code did not set: a branch on them,
+/// or a select, setcc or carry left unsupported for want of them.
+fn reads_unknown_flags(block: &Block) -> bool {
+    block.stmts.iter().any(|stmt| match stmt {
+        Stmt::BrifFlags { .. } => true,
+        Stmt::Unsupported { text, .. } => {
+            text.contains("without compare") || text.contains("not modelled")
+        }
+        _ => false,
+    })
+}
+
+/// The flags each block starts from, by a forward pass over the blocks: a
+/// block that leaves the flags alone passes on what came in, one that sets
+/// them passes on its own, and a join keeps flags only of one shape from
+/// every block before it. Blocks that read flags they do not know start
+/// from those; the blocks that set them pass their operands on. A
+/// jump-table case may be entered by a jump the blocks do not show, so it
+/// never takes flags.
+fn carry_flags(
+    blocks: &[Block],
+    exits: &HashMap<u64, Exit>,
+    extra_targets: &HashSet<u64>,
+) -> CarriedFlags {
+    let mut carried = CarriedFlags::default();
+    let count = blocks.len();
+    let mut predecessors: Vec<Vec<usize>> = vec![Vec::new(); count];
+    for index in 0..count {
+        for next in crate::ir::cfg::block_successors(blocks, index) {
+            predecessors[next].push(index);
+        }
+    }
+    let exit = |index: usize| exits.get(&blocks[index].start);
+    // The shape of the flags on entry to each block: None for unknown.
+    let mut entry: Vec<Option<flags::Flags>> = vec![None; count];
+    let opaque = |index: usize| index == 0 || extra_targets.contains(&blocks[index].start);
+    let out = |index: usize, entry: &[Option<flags::Flags>]| match exit(index) {
+        Some(Exit {
+            touched: true,
+            flags,
+        }) => flags.as_ref().map(|flags| flags.carried().0),
+        Some(Exit { touched: false, .. }) => entry[index].clone(),
+        None => None,
+    };
+    loop {
+        let mut changed = false;
+        for index in 0..count {
+            if opaque(index) || predecessors[index].is_empty() {
+                continue;
+            }
+            let shapes: Vec<Option<flags::Flags>> = predecessors[index]
+                .iter()
+                .map(|pred| out(*pred, &entry))
+                .collect();
+            let merged = match shapes.first() {
+                Some(Some(first)) if shapes.iter().all(|shape| shape.as_ref() == Some(first)) => {
+                    Some(first.clone())
+                }
+                _ => None,
+            };
+            if merged != entry[index] {
+                entry[index] = merged;
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    // The blocks that set the flags a reading block takes, through blocks
+    // that pass them along.
+    let exporters = |index: usize, exporters: &mut HashSet<u64>| {
+        let mut work = predecessors[index].clone();
+        let mut seen = HashSet::new();
+        while let Some(pred) = work.pop() {
+            if !seen.insert(pred) {
+                continue;
+            }
+            match exit(pred) {
+                Some(Exit { touched: true, .. }) => {
+                    exporters.insert(blocks[pred].start);
+                }
+                _ => work.extend(predecessors[pred].iter().copied()),
+            }
+        }
+    };
+    for (index, block) in blocks.iter().enumerate() {
+        if let Some(shape) = &entry[index]
+            && reads_unknown_flags(block)
+        {
+            carried.entry.insert(block.start, shape.clone());
+            exporters(index, &mut carried.exporters);
+        }
+    }
+    carried
+}
+
+/// Ends a block: a block whose flags carry on passes their operands, before
+/// the branch that leaves it.
+fn finish_block<M: Machine>(
+    machine: &M,
+    start: u64,
+    mut stmts: Vec<Stmt>,
+    carried: &CarriedFlags,
+    exits: &mut HashMap<u64, Exit>,
+) -> Block {
+    let exit = machine.exit_flags();
+    if carried.exporters.contains(&start)
+        && machine.flags_touched()
+        && let Some(flags) = &exit
+    {
+        let (_, values) = flags.carried();
+        let at = match stmts.last() {
+            Some(
+                Stmt::Br { .. }
+                | Stmt::Brif { .. }
+                | Stmt::BrifFlags { .. }
+                | Stmt::Switch { .. }
+                | Stmt::BrIndirect { .. },
+            ) => stmts.len() - 1,
+            _ => stmts.len(),
+        };
+        let passes = crate::ir::FLAG_CARRIED
+            .into_iter()
+            .zip(values)
+            .map(|(slot, value)| Stmt::Assign {
+                dest: RegRef {
+                    index: slot,
+                    width: 64,
+                },
+                value,
+            });
+        stmts.splice(at..at, passes);
+    }
+    exits.insert(
+        start,
+        Exit {
+            flags: exit,
+            touched: machine.flags_touched(),
+        },
+    );
+    Block { start, stmts }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn build<M: Machine>(
     image: &Image,
     summaries: Summaries<'_>,
@@ -334,7 +542,9 @@ fn build<M: Machine>(
     decoded: &[Decoded<M::Instruction>],
     stop: Option<String>,
     extra_targets: &HashSet<u64>,
-) -> Result<Vec<Block>, LiftError> {
+    carried: &CarriedFlags,
+) -> Result<(Vec<Block>, HashMap<u64, Exit>), LiftError> {
+    let mut exits = HashMap::new();
     if decoded.is_empty() {
         return Err(LiftError::NoInstructions);
     }
@@ -348,6 +558,8 @@ fn build<M: Machine>(
     let mut block_start = start;
     let mut pending = Vec::new();
     let mut expected = start;
+    let entry = |address: u64| carried.entry.get(&address).cloned();
+    machine.enter_block(entry(start));
     for d in decoded {
         // A fragment follows the code before it in the list, not in memory:
         // code running off the end goes on at the next address.
@@ -357,35 +569,51 @@ fn build<M: Machine>(
                 pending.push(Stmt::Br {
                     target: Some(expected),
                 });
-                blocks.push(Block {
-                    start: block_start,
-                    stmts: std::mem::take(&mut pending),
-                });
+                let stmts = std::mem::take(&mut pending);
+                blocks.push(finish_block(
+                    &machine,
+                    block_start,
+                    stmts,
+                    carried,
+                    &mut exits,
+                ));
                 machine.block_ended();
             }
             block_start = d.pc;
+            machine.enter_block(entry(block_start));
         }
         expected = d.next;
         if d.pc != block_start && targets.contains(&d.pc) {
             pending.extend(machine.take_statements());
-            // Instructions without statements, such as padding, leave no block.
-            if !pending.is_empty() {
-                blocks.push(Block {
-                    start: block_start,
-                    stmts: std::mem::take(&mut pending),
-                });
+            // Instructions without statements, such as padding, leave no
+            // block, unless they set flags a later block may read.
+            if !pending.is_empty() || machine.flags_touched() {
+                let stmts = std::mem::take(&mut pending);
+                blocks.push(finish_block(
+                    &machine,
+                    block_start,
+                    stmts,
+                    carried,
+                    &mut exits,
+                ));
             }
             block_start = d.pc;
             machine.block_split();
+            machine.enter_block(entry(block_start));
         }
         if machine.step(&d.instruction, d.pc) {
             pending.extend(machine.take_statements());
-            blocks.push(Block {
-                start: block_start,
-                stmts: std::mem::take(&mut pending),
-            });
+            let stmts = std::mem::take(&mut pending);
+            blocks.push(finish_block(
+                &machine,
+                block_start,
+                stmts,
+                carried,
+                &mut exits,
+            ));
             block_start = d.next;
             machine.block_ended();
+            machine.enter_block(entry(block_start));
         }
     }
     pending.extend(machine.take_statements());
@@ -406,7 +634,7 @@ fn build<M: Machine>(
     }
     add_exits(image, summaries, start, &mut blocks);
     drop_unread_compare_operands(&mut blocks);
-    Ok(blocks)
+    Ok((blocks, exits))
 }
 
 /// Removes the copies of compare operands no branch went on to read: most
@@ -541,6 +769,43 @@ mod tests {
             0xff, 0xc9, 0x75, 0x06, 0xb8, 0, 0, 0, 0, 0xc3, 0xb8, 1, 0, 0, 0, 0xc3,
         ];
         assert_eq!(returns(Isa::X86_64, code, &[(1, 1)]), 0);
+    }
+
+    #[test]
+    fn flags_carry_into_a_block_every_path_reaches_with_them() {
+        // cmp edi, esi; jne +5; mov eax, 5; setl al; movzx eax, al; ret
+        let x86 = vec![
+            0x39, 0xf7, 0x75, 0x05, 0xb8, 5, 0, 0, 0, 0x0f, 0x9c, 0xc0, 0x0f, 0xb6, 0xc0, 0xc3,
+        ];
+        // cmp w0, w1; b.ne +8; mov w2, #1; cset w0, lt; ret
+        let a64 = words(&[
+            0x6b01_001f,
+            0x5400_0041,
+            0x5280_0022,
+            0x1a9f_a7e0,
+            0xd65f_03c0,
+        ]);
+        for (a, b) in [(1u64, 2u64), (2, 1), (0xffff_ffff, 1), (3, 3)] {
+            let less = u64::from((a as u32 as i32) < (b as u32 as i32));
+            assert_eq!(returns(Isa::X86_64, x86.clone(), &[(7, a), (6, b)]), less);
+            assert_eq!(returns(Isa::AArch64, a64.clone(), &[(0, a), (1, b)]), less);
+        }
+    }
+
+    #[test]
+    fn flags_of_different_kinds_do_not_carry_into_a_join() {
+        // test edi, edi; je +2; cmp edi, esi; setl al; ret
+        let code = vec![0x85, 0xff, 0x74, 0x02, 0x39, 0xf7, 0x0f, 0x9c, 0xc0, 0xc3];
+        let len = code.len() as u64;
+        let image = Image::from_code(Isa::X86_64, 0, code);
+        let blocks = lift(&image, 0, len, &HashSet::new()).expect("lifts");
+        assert!(
+            blocks
+                .iter()
+                .flat_map(|block| &block.stmts)
+                .any(|stmt| matches!(stmt, Stmt::Unsupported { .. })),
+            "{blocks:?}"
+        );
     }
 
     #[test]

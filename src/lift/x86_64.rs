@@ -23,6 +23,8 @@ pub(super) struct Lifter<'a> {
     /// What each instruction reads and writes, for the registers an
     /// unsupported one may change.
     info: iced_x86::InstructionInfoFactory,
+    /// Whether an instruction of the current block may have changed the flags.
+    flags_touched: bool,
     extended_dividend: Option<u8>,
     /// The width of the high half of an unsigned dividend the previous
     /// instruction cleared (`xor edx, edx`).
@@ -40,6 +42,7 @@ impl<'a> Lifter<'a> {
             flags_written: false,
             incomplete: false,
             info: iced_x86::InstructionInfoFactory::new(),
+            flags_touched: false,
             extended_dividend: None,
             zeroed_dividend: None,
             image,
@@ -1825,7 +1828,6 @@ fn lift_instruction(
                 let cond = condition(ins.condition_code()).unwrap_or(Cond::Eq);
                 let target = resolved_target(ins, relocation_target);
                 let test = lifter.condition_test(ins.condition_code());
-                lifter.last_compare = None;
                 lifter.stmts.extend(test.branch(cond, target));
                 return true;
             }
@@ -1909,6 +1911,11 @@ impl Machine for Lifter<'_> {
         if instruction.rflags_modified() != 0 && !self.flags_written {
             self.last_compare = None;
         }
+        self.flags_touched |= instruction.rflags_modified() != 0
+            || self.flags_written
+            || self.stmts[first..]
+                .iter()
+                .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }));
         ended
     }
 
@@ -1922,5 +1929,18 @@ impl Machine for Lifter<'_> {
 
     fn block_split(&mut self) {
         self.last_compare = None;
+    }
+
+    fn exit_flags(&self) -> Option<Flags> {
+        self.last_compare.clone()
+    }
+
+    fn enter_block(&mut self, flags: Option<Flags>) {
+        self.last_compare = flags;
+        self.flags_touched = false;
+    }
+
+    fn flags_touched(&self) -> bool {
+        self.flags_touched
     }
 }

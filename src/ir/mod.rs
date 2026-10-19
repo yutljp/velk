@@ -650,6 +650,15 @@ pub const FLAG_OPERANDS: [u16; 4] = [
     TEMP_BASE + 0x44,
 ];
 
+/// The registers that carry the operands the flags were set from into a
+/// block that reads them, from the end of each block before it.
+pub const FLAG_CARRIED: [u16; 4] = [
+    TEMP_BASE + 0x45,
+    TEMP_BASE + 0x46,
+    TEMP_BASE + 0x47,
+    TEMP_BASE + 0x48,
+];
+
 /// The register holding a value an exchange overwrites before it is written
 /// back.
 pub const EXCHANGE: u16 = TEMP_BASE + 0x42;

@@ -131,6 +131,24 @@ impl Flags {
         }
     }
 
+    /// The same flags with each operand read from a `FLAG_CARRIED` register
+    /// of its width, and the operands those registers receive.
+    pub fn carried(&self) -> (Flags, Vec<Expr>) {
+        let mut template = self.clone();
+        let mut values = Vec::new();
+        for (slot, operand) in crate::ir::FLAG_CARRIED
+            .into_iter()
+            .zip(template.operands_mut())
+        {
+            let width = match crate::ir::semantics::width(operand) {
+                0 => 64,
+                bits => bits as u8,
+            };
+            values.push(std::mem::replace(operand, Expr::reg(slot, width)));
+        }
+        (template, values)
+    }
+
     /// Every expression the flags read, in the order of `FLAG_OPERANDS`.
     pub fn operands_mut(&mut self) -> Vec<&mut Expr> {
         let mut operands = vec![&mut self.lhs, &mut self.rhs];
