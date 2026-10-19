@@ -49,53 +49,79 @@ fn float_return_slot(isa: crate::loader::Isa) -> Option<u16> {
 }
 
 /// Whether, without debug info, the function returns a float, and which:
-/// every path to a return writes the float return register, and some path
-/// leaves the integer one as it came in. On x86-64 that value means nothing,
-/// and on AArch64 it is the first argument, which a function returning a
-/// float does not return. A float is a single when every write computes one.
+/// every path to a return writes the float return register, and either
+/// some path leaves the integer one as it came in, or every path writes it
+/// before the float one. On x86-64 an untouched integer register means
+/// nothing, and on AArch64 it is the first argument, which a function
+/// returning a float does not return. A float is a single when the last
+/// write on every path that says computes or loads one.
 fn float_result(
     blocks: &[crate::ir::Block],
     isa: crate::loader::Isa,
 ) -> Option<crate::ir::Precision> {
-    use crate::ir::{Expr, Precision, Stmt};
+    use crate::ir::{Precision, Stmt};
     let slot = float_return_slot(isa)?;
     if blocks.is_empty() {
         return None;
     }
-    // Per block on entry: whether every path wrote the float register, and
-    // whether every path wrote the integer one; a call writes both.
-    let mut entry: Vec<Option<(bool, bool)>> = vec![None; blocks.len()];
-    entry[0] = Some((false, false));
+    // Per block on entry: whether every path wrote the float register and
+    // the integer one (a call writes both), whether every path wrote the
+    // float one last, and the precision the last write to the float
+    // register shows, when the paths agree.
+    #[derive(Clone, Copy, PartialEq)]
+    struct State {
+        float: bool,
+        int: bool,
+        float_last: bool,
+        precision: Option<Precision>,
+    }
+    let mut entry: Vec<Option<State>> = vec![None; blocks.len()];
+    entry[0] = Some(State {
+        float: false,
+        int: false,
+        float_last: false,
+        precision: None,
+    });
     let mut work = vec![0];
     let mut returns = Vec::new();
-    let mut precision = None;
     while let Some(index) = work.pop() {
-        let (mut float, mut int) = entry[index].expect("visited");
+        let mut state = entry[index].expect("visited");
         for stmt in &blocks[index].stmts {
             match stmt {
-                Stmt::Assign { dest, .. } if dest.index == crate::arch::RETURN => int = true,
-                Stmt::Assign { dest, value } if dest.index == slot => {
-                    float = true;
-                    let single = |expr: &Expr| matches!(expr, Expr::Apply { op, .. } if op.result_precision() == Some(Precision::Single));
-                    let this = match value {
-                        Expr::Bin { rhs, .. } if single(rhs) => Precision::Single,
-                        expr if single(expr) => Precision::Single,
-                        _ => Precision::Double,
-                    };
-                    precision = Some(match precision {
-                        Some(Precision::Double) => Precision::Double,
-                        _ => this,
-                    });
+                Stmt::Assign { dest, .. } if dest.index == crate::arch::RETURN => {
+                    state.int = true;
+                    state.float_last = false;
                 }
-                Stmt::Call { .. } => (float, int) = (true, true),
-                Stmt::Ret { .. } => returns.push((float, int)),
+                Stmt::Assign { dest, value } if dest.index == slot => {
+                    state.float = true;
+                    state.float_last = true;
+                    state.precision = written_precision(value, slot);
+                }
+                Stmt::Call { .. } => {
+                    state = State {
+                        float: true,
+                        int: true,
+                        float_last: false,
+                        precision: None,
+                    }
+                }
+                Stmt::Ret { .. } => returns.push(state),
                 _ => {}
             }
         }
         for next in crate::ir::cfg::block_successors(blocks, index) {
             let merged = match entry[next] {
-                Some((f, i)) => (f && float, i && int),
-                None => (float, int),
+                Some(old) => State {
+                    float: old.float && state.float,
+                    int: old.int && state.int,
+                    float_last: old.float_last && state.float_last,
+                    precision: if old.precision == state.precision {
+                        old.precision
+                    } else {
+                        None
+                    },
+                },
+                None => state,
             };
             if entry[next] != Some(merged) {
                 entry[next] = Some(merged);
@@ -103,9 +129,51 @@ fn float_result(
             }
         }
     }
-    let floats = !returns.is_empty() && returns.iter().all(|(float, _)| *float);
-    let int_everywhere = returns.iter().all(|(_, int)| *int);
-    (floats && !int_everywhere).then_some(precision?)
+    let floats = !returns.is_empty() && returns.iter().all(|state| state.float);
+    let int_first = returns.iter().all(|state| !state.int || state.float_last);
+    let single = returns
+        .iter()
+        .any(|state| state.precision == Some(Precision::Single))
+        && returns
+            .iter()
+            .all(|state| state.precision != Some(Precision::Double));
+    (floats && int_first).then_some(if single {
+        Precision::Single
+    } else {
+        Precision::Double
+    })
+}
+
+/// The precision of the float a write to the vector register `slot` puts
+/// in its low half: what an operation computes or a load reads. x86 merges
+/// a single into the register's other bits, and AArch64 clears them.
+fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Precision> {
+    use crate::ir::{BinOp, Expr, Precision};
+    match value {
+        Expr::Apply { op, .. } => op.result_precision(),
+        Expr::Load { width: 4, .. } => Some(Precision::Single),
+        Expr::Load { width: 8, .. } => Some(Precision::Double),
+        Expr::Bin {
+            op: BinOp::And | BinOp::Or,
+            lhs,
+            rhs,
+        } => {
+            let kept = |side: &Expr| match side {
+                Expr::Const(_) => true,
+                Expr::Bin { lhs, rhs, .. } => {
+                    matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == slot)
+                        && matches!(rhs.as_ref(), Expr::Const(_))
+                }
+                _ => false,
+            };
+            match (kept(lhs), kept(rhs)) {
+                (true, false) => written_precision(rhs, slot),
+                (false, true) => written_precision(lhs, slot),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
 }
 
 /// The function's IR before any optimization pass, with its recovered signature.

@@ -103,6 +103,8 @@ fn <unnamed> @ 0x210238 (size 12)
 -- decompile
 /* velk pseudo-C: sub_210244 @ 0x210244 */
 int32_t sub_210244(int32_t a0) {
+    int64_t v1;
+    int64_t v2;
     int32_t v3;
 
     v1 = a0;

@@ -129,6 +129,7 @@ fn apply_pointer @ 0x21031c (size 32)
 int factorial(int n) {
     uint32_t v1;
     int64_t v2;
+    int64_t v3;
     uint64_t v4;
     uint64_t v5;
     int32_t v6;
@@ -138,7 +139,10 @@ int factorial(int n) {
     int32_t v10;
     uint64_t v11;
     uint64_t v12;
+    uint64_t v13;
+    uint64_t v14;
     uint64_t v15;
+    int64_t v16;
     int32_t v17;
     int32_t v18;
 

@@ -74,6 +74,7 @@ fn <unnamed> @ 0x2012c0 (size 22)
 /* velk pseudo-C: sub_2012e0 @ 0x2012e0 */
 int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
     int64_t v3;
+    int64_t v4;
     int64_t v5;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-14] */

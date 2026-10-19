@@ -256,6 +256,10 @@ fn is_even @ 0x201460 (size 57)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x2014a0 */
 long sum9(long a, long b, long c, long d, long e, long f, long g, long h, long i) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+
     v1 = i;
     v2 = h;
     v3 = g;

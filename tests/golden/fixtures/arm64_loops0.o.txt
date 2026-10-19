@@ -88,7 +88,7 @@ fn sum_until @ 0x4c (size 92)
 == 0xa8 sum_till_neg
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0xa8 */
-int32_t sum_till_neg(int64_t a0, int32_t a1) {
+int32_t sum_till_neg(uint32_t *a0, int32_t a1) {
     int64_t v2;
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
@@ -112,7 +112,7 @@ int32_t sum_till_neg(int64_t a0, int32_t a1) {
     return local_2;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -147,7 +147,7 @@ fn sum_till_neg @ 0xa8 (size 120)
 == 0x120 sum_until_zero
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x120 */
-int32_t sum_until_zero(int64_t a0, int32_t a1) {
+int32_t sum_until_zero(uint32_t *a0, int32_t a1) {
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
     uint32_t local_2; /* [sp-10] */
@@ -169,7 +169,7 @@ int32_t sum_until_zero(int64_t a0, int32_t a1) {
     return local_2;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir

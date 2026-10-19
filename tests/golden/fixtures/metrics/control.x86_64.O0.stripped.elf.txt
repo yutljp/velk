@@ -10,7 +10,7 @@
 == 0x201230 -
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
-int32_t sub_201230(int64_t a0, int32_t a1) {
+int32_t sub_201230(uint32_t *a0, int32_t a1) {
     int64_t v1;
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
@@ -36,7 +36,7 @@ int32_t sub_201230(int64_t a0, int32_t a1) {
     return local_2;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -75,8 +75,9 @@ fn <unnamed> @ 0x201230 (size 137)
 == 0x2012c0 -
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
-int32_t sub_2012c0(int32_t a0, int32_t a1, int64_t a2) {
+int32_t sub_2012c0(int32_t a0, int32_t a1, uint32_t *a2) {
     int32_t v1;
+    int64_t v2;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-18] */
@@ -99,7 +100,7 @@ int32_t sub_2012c0(int32_t a0, int32_t a1, int64_t a2) {
     return local_3;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int64_t a2)
+int32_t (int32_t a0, int32_t a1, uint32_t * a2)
 -- references
 
 -- ir
@@ -132,6 +133,7 @@ fn <unnamed> @ 0x2012c0 (size 78)
 /* ref: 0x200120 .rodata */
 int32_t sub_201310(int32_t a0) {
     uint64_t v1;
+    int64_t v5;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-18] */
@@ -279,11 +281,12 @@ fn <unnamed> @ 0x201380 (size 142)
 == 0x201410 -
 -- decompile
 /* velk pseudo-C: sub_201410 @ 0x201410 */
-int32_t sub_201410(int64_t a0, int32_t a1) {
+int32_t sub_201410(uint32_t *a0, int32_t a1) {
     int32_t v3;
     int32_t v5;
     uint32_t *v6;
     int64_t v7;
+    int64_t v8;
     int64_t v9;
     int64_t v10;
     int64_t v11;
@@ -320,7 +323,7 @@ int32_t sub_201410(int64_t a0, int32_t a1) {
     return v11 & 0x1;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -356,7 +359,7 @@ fn <unnamed> @ 0x201410 (size 99)
 == 0x201480 -
 -- decompile
 /* velk pseudo-C: sub_201480 @ 0x201480 */
-int32_t sub_201480(int64_t a0, int32_t a1) {
+int32_t sub_201480(uint32_t *a0, int32_t a1) {
     int64_t v1;
     int64_t v2;
     uint64_t local_0; /* [sp-10] */
@@ -379,7 +382,7 @@ int32_t sub_201480(int64_t a0, int32_t a1) {
     return local_2;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -410,7 +413,7 @@ fn <unnamed> @ 0x201480 (size 96)
 == 0x2014e0 -
 -- decompile
 /* velk pseudo-C: sub_2014e0 @ 0x2014e0 */
-int32_t sub_2014e0(int64_t a0, int32_t a1, int32_t a2) {
+int32_t sub_2014e0(uint32_t *a0, int32_t a1, int32_t a2) {
     int64_t v1;
     uint64_t local_0; /* [sp-18] */
     uint32_t local_1; /* [sp-1c] */
@@ -441,7 +444,7 @@ L_201535:
     return local_5;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1, int32_t a2)
+int32_t (uint32_t * a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir

@@ -114,11 +114,11 @@ fn <unnamed> @ 0x21019c (size 144)
 == 0x21022c -
 -- decompile
 /* velk pseudo-C: sub_21022c @ 0x21022c */
-double sub_21022c(float a0, float a1, float a2) {
+float sub_21022c(float a0, float a1, float a2) {
     return fmaf(a1 - a0, a2, a0);
 }
 -- signature
-double (float a0, float a1, float a2)
+float (float a0, float a1, float a2)
 -- references
 
 -- ir

@@ -98,7 +98,11 @@ fn clamp_long(long) @ 0x70 (size 28)
 -- decompile
 /* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0x8c */
 int32_t dot_sum_Vec2_const___Vec2_const__(uint32_t *a0, uint32_t *a1) {
+    int64_t v1;
     uint64_t v2;
+    int64_t v3;
+    uint64_t v4;
+    int64_t v5;
     int32_t v6;
 
     v1 = 0x0;

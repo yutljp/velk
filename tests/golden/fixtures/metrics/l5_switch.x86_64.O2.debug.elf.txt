@@ -25,6 +25,7 @@
 /* ref: 0x20250c .bss */
 int dense(int x) {
     int64_t v1;
+    int64_t v2;
     uint64_t local_0; /* [sp-8] */
 
     v1 = ((x - 0xa) & 0xffffffff);

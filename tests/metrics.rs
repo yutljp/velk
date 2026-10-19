@@ -22,7 +22,10 @@ enum Kind {
         bytes: u64,
         signed: bool,
     },
-    /// Structures, unions, arrays and floating point, which the ABI passes differently.
+    Float {
+        bytes: u64,
+    },
+    /// Structures, unions and arrays, which the ABI passes differently.
     Other,
 }
 
@@ -46,7 +49,7 @@ impl Score {
     }
 }
 
-const METRICS: [&str; 8] = [
+const METRICS: [&str; 9] = [
     "functions found",
     "extra functions",
     "parameter count",
@@ -55,6 +58,7 @@ const METRICS: [&str; 8] = [
     "parameter sign",
     "return void",
     "return width",
+    "float type",
 ];
 
 #[test]
@@ -236,6 +240,20 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
                 describe(&expected.ret)
             ));
         }
+        if matches!(expected.ret, Kind::Float { .. }) || matches!(got_ret, Kind::Float { .. }) {
+            let float_ok = expected.ret == got_ret;
+            scores
+                .get_mut("float type")
+                .expect("known metric")
+                .add(float_ok);
+            if !float_ok {
+                mismatches.push(format!(
+                    "returns {}, expected {}",
+                    ir.ret_type,
+                    describe(&expected.ret)
+                ));
+            }
+        }
         if let (Kind::Scalar { bytes: want, .. }, Kind::Scalar { bytes: got, .. }) =
             (&expected.ret, &got_ret)
         {
@@ -265,6 +283,20 @@ fn compare_kind(
     mismatches: &mut Vec<String>,
 ) {
     if *want == Kind::Other {
+        return;
+    }
+    if matches!(want, Kind::Float { .. }) || matches!(got, Kind::Float { .. }) {
+        scores
+            .get_mut("float type")
+            .expect("known metric")
+            .add(want == got);
+        if want != got {
+            mismatches.push(format!(
+                "{what} {index} is {}, expected {}",
+                describe(got),
+                describe(want)
+            ));
+        }
         return;
     }
     let pointer_ok = (*want == Kind::Pointer) == (*got == Kind::Pointer);
@@ -316,7 +348,8 @@ fn describe(kind: &Kind) -> String {
             "{} {bytes}-byte integer",
             if *signed { "a signed" } else { "an unsigned" }
         ),
-        Kind::Other => "an aggregate or floating-point value".to_owned(),
+        Kind::Float { bytes } => format!("a {bytes}-byte float"),
+        Kind::Other => "an aggregate".to_owned(),
     }
 }
 
@@ -328,6 +361,8 @@ fn kind_of(ty: &CType) -> Kind {
             bytes: u64::from(*bytes),
             signed: *signed,
         },
+        CType::Named(name) if name == "double" => Kind::Float { bytes: 8 },
+        CType::Named(name) if name == "float" => Kind::Float { bytes: 4 },
         CType::Array(_) | CType::Named(_) => Kind::Other,
     }
 }
@@ -429,6 +464,9 @@ fn type_kind(unit: &gimli::Unit<Slice<'_>>, value: Option<AttributeValue<Slice<'
                     .unwrap_or(0);
                 let encoding = entry.attr_value(gimli::DW_AT_encoding);
                 return match encoding {
+                    Some(AttributeValue::Encoding(gimli::DW_ATE_float)) if bytes <= 8 => {
+                        Kind::Float { bytes }
+                    }
                     Some(AttributeValue::Encoding(gimli::DW_ATE_float)) => Kind::Other,
                     Some(AttributeValue::Encoding(
                         gimli::DW_ATE_signed | gimli::DW_ATE_signed_char,

@@ -17,6 +17,10 @@ struct sub_2101dc_a0 {
 };
 int32_t sub_2101dc(struct sub_2101dc_a0 *a0) {
     uint64_t v1;
+    int64_t v2;
+    int64_t v3;
+    uint64_t v4;
+    int64_t v5;
     int32_t v6;
 
     v1 = a0->field_0x0;

@@ -80,7 +80,7 @@ fn <unnamed> @ 0x201200 (size 61)
 == 0x201240 -
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
-int32_t sub_201240(int64_t a0, int32_t a1) {
+int32_t sub_201240(uint32_t *a0, int32_t a1) {
     int64_t v1;
     int64_t v2;
     uint64_t local_0; /* [sp-10] */
@@ -106,7 +106,7 @@ int32_t sub_201240(int64_t a0, int32_t a1) {
     return local_2;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -137,7 +137,7 @@ fn <unnamed> @ 0x201240 (size 94)
 == 0x2012a0 -
 -- decompile
 /* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
-int32_t sub_2012a0(int64_t a0, int32_t a1) {
+int32_t sub_2012a0(uint32_t *a0, int32_t a1) {
     int64_t v1;
     int64_t v2;
     int64_t v3;
@@ -165,7 +165,7 @@ int32_t sub_2012a0(int64_t a0, int32_t a1) {
     return local_2;
 }
 -- signature
-int32_t (int64_t a0, int32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir

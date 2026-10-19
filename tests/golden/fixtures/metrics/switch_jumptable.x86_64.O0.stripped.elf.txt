@@ -8,6 +8,7 @@
 /* ref: 0x202410 .bss */
 int32_t sub_2011c0(int32_t a0) {
     uint64_t v1;
+    int64_t v6;
     uint32_t local_0; /* [sp-c] */
     uint64_t local_1; /* [sp-40] */
     uint32_t local_2; /* [sp-10] */

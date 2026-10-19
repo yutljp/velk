@@ -355,29 +355,42 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
 
     // Which argument each register is derived from through copies and
     // base-preserving arithmetic, so loads through it type that argument.
-    let mut origin: HashMap<u16, u16> = HashMap::new();
-    for param in &params {
-        origin.insert(param.index, param.index);
-    }
-    loop {
-        let mut changed = false;
-        for block in blocks {
-            for stmt in &block.stmts {
-                let Stmt::Assign { dest, value } = stmt else {
-                    continue;
-                };
-                if origin.contains_key(&dest.index) {
-                    continue;
-                }
-                if let Some(source) = base_origin(value, &origin) {
-                    origin.insert(dest.index, source);
-                    changed = true;
+    // A stack slot every store fills from one argument passes it on too, as
+    // unoptimized code keeps each argument in its slot. A register written
+    // once has one origin everywhere; one written more often, only from its
+    // write to the end of the block.
+    let mut definitions: HashMap<u16, usize> = HashMap::new();
+    for stmt in blocks.iter().flat_map(|block| &block.stmts) {
+        match stmt {
+            Stmt::Assign { dest, .. } => *definitions.entry(dest.index).or_default() += 1,
+            Stmt::Call { convention, .. } => {
+                for register in convention.clobbered() {
+                    *definitions.entry(*register).or_default() += 2;
                 }
             }
+            _ => {}
         }
-        if !changed {
+    }
+    let entry_origins: HashMap<u16, u16> = params
+        .iter()
+        .map(|param| (param.index, param.index))
+        .collect();
+    let mut origins = Origins {
+        entry: entry_origins.clone(),
+        global: entry_origins
+            .into_iter()
+            .filter(|(register, _)| !definitions.contains_key(register))
+            .collect(),
+        slots: HashMap::new(),
+        definitions,
+    };
+    loop {
+        let (global, slots) = origins.walk(blocks, &mut |_, _| {});
+        if global == origins.global && slots == origins.slots {
             break;
         }
+        origins.global = global;
+        origins.slots = slots;
     }
 
     // What a vector register holds, from the operations that read it: the
@@ -397,6 +410,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                 width: u8,
                 register: Option<u16>,
                 read_as: Option<Option<u8>>,
+                origin: &HashMap<u16, u16>,
                 elements: &mut HashMap<u16, (bool, CType)>| {
         let Some(param) = base_register(addr).and_then(|base| origin.get(&base)) else {
             return;
@@ -423,49 +437,60 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             }
         }
     };
-    for block in blocks {
-        for stmt in &block.stmts {
-            match stmt {
-                Stmt::Assign { dest, value } => {
-                    if let Some((addr, width)) = load_of(value) {
-                        note(addr, width, Some(dest.index), None, &mut pointer_elements);
-                    }
-                    // A float operation reading memory reads a float there,
-                    // and a lane operation lanes.
-                    if let Expr::Apply { op, args } = partial_write_source(value, dest.index) {
-                        let read_as = vector_reading(*op);
-                        for arg in args {
-                            if let Expr::Load { addr, width, .. } = arg
-                                && (read_as != Some(None)
-                                    || op.argument_precision().map(|p| u32::from(p.bits()))
-                                        == Some(u32::from(*width) * 8))
-                            {
-                                note(
-                                    addr,
-                                    *width,
-                                    Some(dest.index),
-                                    read_as,
-                                    &mut pointer_elements,
-                                );
-                            }
-                        }
+    origins.walk(blocks, &mut |stmt, origin| match stmt {
+        Stmt::Assign { dest, value } => {
+            if let Some((addr, width)) = load_of(value) {
+                note(
+                    addr,
+                    width,
+                    Some(dest.index),
+                    None,
+                    origin,
+                    &mut pointer_elements,
+                );
+            } else {
+                // Memory an integer operation reads holds integers.
+                let mut nested = Vec::new();
+                integer_loads(value, &mut nested);
+                for (addr, width) in nested {
+                    note(addr, width, None, None, origin, &mut pointer_elements);
+                }
+            }
+            // A float operation reading memory reads a float there, and a
+            // lane operation lanes.
+            if let Expr::Apply { op, args } = partial_write_source(value, dest.index) {
+                let read_as = vector_reading(*op);
+                for arg in args {
+                    if let Expr::Load { addr, width, .. } = arg
+                        && (read_as != Some(None)
+                            || op.argument_precision().map(|p| u32::from(p.bits()))
+                                == Some(u32::from(*width) * 8))
+                    {
+                        note(
+                            addr,
+                            *width,
+                            Some(dest.index),
+                            read_as,
+                            origin,
+                            &mut pointer_elements,
+                        );
                     }
                 }
-                Stmt::Store { addr, width, value } => {
-                    let register = match value {
-                        Expr::Reg { index, .. } => Some(*index),
-                        Expr::Bin { lhs, .. } => match lhs.as_ref() {
-                            Expr::Reg { index, .. } => Some(*index),
-                            _ => None,
-                        },
-                        _ => None,
-                    };
-                    note(addr, *width, register, None, &mut pointer_elements);
-                }
-                _ => {}
             }
         }
-    }
+        Stmt::Store { addr, width, value } => {
+            let register = match value {
+                Expr::Reg { index, .. } => Some(*index),
+                Expr::Bin { lhs, .. } => match lhs.as_ref() {
+                    Expr::Reg { index, .. } => Some(*index),
+                    _ => None,
+                },
+                _ => None,
+            };
+            note(addr, *width, register, None, origin, &mut pointer_elements);
+        }
+        _ => {}
+    });
     for param in &mut params {
         if let Some((_, element)) = pointer_elements.get(&param.index) {
             param.ty = CType::pointer_to(element.clone());
@@ -473,33 +498,33 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
     }
 
     // Signedness is visible only in comparison conditions.
-    let mut signed: HashSet<u16> = HashSet::new();
-    for block in blocks {
-        for stmt in &block.stmts {
-            match stmt {
-                Stmt::Brif { cond, lhs, rhs, .. } => {
-                    note_signed_cond(*cond, &[lhs, rhs], &mut signed);
-                }
-                Stmt::Assign { value, .. } => signed_in_expr(value, &mut signed),
-                Stmt::Store { addr, value, .. } => {
-                    signed_in_expr(addr, &mut signed);
+    let mut signed_args: HashSet<u16> = HashSet::new();
+    origins.walk(blocks, &mut |stmt, origin| {
+        let mut signed: HashSet<u16> = HashSet::new();
+        match stmt {
+            Stmt::Brif { cond, lhs, rhs, .. } => {
+                note_signed_cond(*cond, &[lhs, rhs], &mut signed);
+            }
+            Stmt::Assign { value, .. } => signed_in_expr(value, &mut signed),
+            Stmt::Store { addr, value, .. } => {
+                signed_in_expr(addr, &mut signed);
+                signed_in_expr(value, &mut signed);
+            }
+            Stmt::Ret { value } => signed_in_expr(value, &mut signed),
+            Stmt::Switch { index, .. } => signed_in_expr(index, &mut signed),
+            Stmt::Call { .. } => {
+                for value in stmt.operands() {
                     signed_in_expr(value, &mut signed);
                 }
-                Stmt::Ret { value } => signed_in_expr(value, &mut signed),
-                Stmt::Switch { index, .. } => signed_in_expr(index, &mut signed),
-                Stmt::Call { .. } => {
-                    for value in stmt.operands() {
-                        signed_in_expr(value, &mut signed);
-                    }
-                }
-                _ => {}
             }
+            _ => {}
         }
-    }
-    let signed_args: HashSet<u16> = signed
-        .iter()
-        .filter_map(|register| origin.get(register).copied())
-        .collect();
+        signed_args.extend(
+            signed
+                .iter()
+                .filter_map(|register| origin.get(register).copied()),
+        );
+    });
 
     let ret = crate::ir::cfg::own_return(blocks).map_or(CType::U64, expression_type);
 
@@ -632,6 +657,135 @@ fn split_address(expr: &Expr) -> Option<(u16, u64)> {
     }
 }
 
+/// The origins of registers written once, and of stack slots by address.
+type Found = (HashMap<u16, u16>, HashMap<String, Option<u16>>);
+
+/// The arguments registers and stack slots hold, as `recover` follows them.
+struct Origins {
+    /// The argument registers on entry.
+    entry: HashMap<u16, u16>,
+    /// Registers written at most once, with the argument they hold.
+    global: HashMap<u16, u16>,
+    /// Stack slots, by address, that every store fills from one argument.
+    slots: HashMap<String, Option<u16>>,
+    /// How often each register is written; a call counts twice.
+    definitions: HashMap<u16, usize>,
+}
+
+impl Origins {
+    /// Walks every statement with the arguments the registers hold just
+    /// before it, on every path that reaches it, and returns the origins
+    /// this walk finds for registers written once and for stack slots.
+    fn walk(&self, blocks: &[Block], visit: &mut dyn FnMut(&Stmt, &HashMap<u16, u16>)) -> Found {
+        let mut entry: Vec<Option<HashMap<u16, u16>>> = vec![None; blocks.len()];
+        if blocks.is_empty() {
+            return (self.global.clone(), HashMap::new());
+        }
+        let mut start = self.global.clone();
+        start.extend(
+            self.entry
+                .iter()
+                .map(|(register, param)| (*register, *param)),
+        );
+        entry[0] = Some(start);
+        let mut work = vec![0];
+        while let Some(index) = work.pop() {
+            let mut origin = entry[index].clone().expect("visited");
+            for stmt in &blocks[index].stmts {
+                self.step(stmt, &mut origin, None);
+            }
+            for next in crate::ir::cfg::block_successors(blocks, index) {
+                let merged = match &entry[next] {
+                    None => origin.clone(),
+                    Some(old) => old
+                        .iter()
+                        .filter(|(register, param)| origin.get(register) == Some(param))
+                        .map(|(register, param)| (*register, *param))
+                        .collect(),
+                };
+                if entry[next].as_ref() != Some(&merged) {
+                    entry[next] = Some(merged);
+                    work.push(next);
+                }
+            }
+        }
+        let mut found = (self.global.clone(), HashMap::new());
+        for (index, block) in blocks.iter().enumerate() {
+            let Some(mut origin) = entry[index].clone() else {
+                continue;
+            };
+            for stmt in &block.stmts {
+                visit(stmt, &origin);
+                self.step(stmt, &mut origin, Some(&mut found));
+            }
+        }
+        found
+    }
+
+    /// What `stmt` does to the arguments the registers hold, noting in
+    /// `found` the slots it fills and the registers written once it sets.
+    fn step(&self, stmt: &Stmt, origin: &mut HashMap<u16, u16>, found: Option<&mut Found>) {
+        match stmt {
+            Stmt::Store {
+                addr,
+                value,
+                width: 8,
+            } => {
+                if let Some((_, slots)) = found {
+                    let from = match value {
+                        Expr::Reg { index, .. } => origin.get(index).copied(),
+                        _ => None,
+                    };
+                    let slot = slots.entry(format!("{addr:?}")).or_insert(from);
+                    if *slot != from {
+                        *slot = None;
+                    }
+                }
+            }
+            Stmt::Assign { dest, value } => {
+                let source = match value {
+                    Expr::Load { addr, width: 8, .. } => {
+                        self.slots.get(&format!("{addr:?}")).copied().flatten()
+                    }
+                    _ => base_origin(value, origin),
+                };
+                match source {
+                    Some(source) => {
+                        origin.insert(dest.index, source);
+                        if let Some((global, _)) = found
+                            && self.definitions.get(&dest.index) == Some(&1)
+                        {
+                            global.insert(dest.index, source);
+                        }
+                    }
+                    None => {
+                        origin.remove(&dest.index);
+                    }
+                }
+            }
+            Stmt::Call { convention, .. } => {
+                for register in convention.clobbered() {
+                    origin.remove(register);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// The loads integer arithmetic reads, outside any float or vector operation.
+fn integer_loads<'e>(expr: &'e Expr, out: &mut Vec<(&'e Expr, u8)>) {
+    match expr {
+        Expr::Load { addr, width, .. } => out.push((addr.as_ref(), *width)),
+        Expr::Apply { .. } => {}
+        other => {
+            for child in crate::ir::visit::children(other) {
+                integer_loads(child, out);
+            }
+        }
+    }
+}
+
 fn base_origin(expr: &Expr, origin: &HashMap<u16, u16>) -> Option<u16> {
     match expr {
         Expr::Reg { index, .. } => origin.get(index).copied(),
@@ -743,6 +897,49 @@ mod tests {
 
         let params: Vec<u16> = signature.params.iter().map(|param| param.index).collect();
         assert_eq!(params, vec![0]);
+    }
+
+    #[test]
+    fn an_argument_kept_in_a_stack_slot_is_typed_by_its_loads() {
+        // `str x0, [sp, #8]`, then x8 holds a count before it holds the
+        // argument again and a load goes through it.
+        let slot = Expr::bin(crate::ir::BinOp::Add, Expr::reg(31, 64), Expr::Const(8));
+        let assign = |index, value| Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        };
+        let load = |addr: Expr, width| Expr::Load {
+            addr: Box::new(addr),
+            width,
+            signed: false,
+        };
+        let blocks = vec![Block {
+            start: 0,
+            stmts: vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::reg(0, 64),
+                    width: 8,
+                },
+                assign(8, Expr::reg(1, 64)),
+                assign(
+                    9,
+                    Expr::bin(crate::ir::BinOp::Add, Expr::reg(8, 64), Expr::Const(1)),
+                ),
+                assign(8, load(slot, 8)),
+                assign(10, load(Expr::reg(8, 64), 4)),
+                Stmt::Ret {
+                    value: Expr::bin(crate::ir::BinOp::Add, Expr::reg(9, 64), Expr::reg(10, 64)),
+                },
+            ],
+        }];
+        let signature = recover(&blocks, Isa::AArch64, Format::Elf, false);
+        let types: Vec<String> = signature
+            .params
+            .iter()
+            .map(|param| param.ty.to_string())
+            .collect();
+        assert_eq!(types, vec!["uint32_t *", "uint64_t"]);
     }
 
     fn params_of(stmts: Vec<Stmt>, isa: Isa) -> Vec<u16> {

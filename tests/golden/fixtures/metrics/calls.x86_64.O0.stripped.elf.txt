@@ -256,6 +256,9 @@ fn <unnamed> @ 0x201460 (size 57)
 -- decompile
 /* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
 int64_t sub_2014a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
     uint64_t local_0; /* [sp+18] */
     uint64_t local_1; /* [sp+10] */
     uint64_t local_2; /* [sp+8] */
@@ -313,7 +316,8 @@ fn <unnamed> @ 0x2014f0 (size 80)
 == 0x201540 -
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
-int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int64_t a5) {
+/* struct: a3 +0x0:uint32_t, +0x8:uint64_t */
+int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
     void *v1;
     uint64_t v2;
     void *v3;
@@ -403,7 +407,7 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4,
     return local_22;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int64_t a2, uint32_t * a3, int64_t a4, int64_t a5)
+int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- references
 
 -- ir

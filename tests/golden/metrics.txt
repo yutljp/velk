@@ -11,10 +11,10 @@ parameter count | aarch64.O0 | 146/147
 parameter count | aarch64.O2 | 146/147
 parameter count | x86_64.O0 | 144/147
 parameter count | x86_64.O2 | 144/147
-parameter pointer | aarch64.O0 | 144/173
+parameter pointer | aarch64.O0 | 168/173
 parameter pointer | aarch64.O2 | 167/173
-parameter pointer | x86_64.O0 | 143/172
-parameter pointer | x86_64.O2 | 162/172
+parameter pointer | x86_64.O0 | 166/172
+parameter pointer | x86_64.O2 | 165/172
 parameter width | aarch64.O0 | 138/144
 parameter width | aarch64.O2 | 138/144
 parameter width | x86_64.O0 | 138/143
@@ -31,6 +31,10 @@ return width | aarch64.O0 | 115/120
 return width | aarch64.O2 | 115/120
 return width | x86_64.O0 | 115/120
 return width | x86_64.O2 | 115/120
+float type | aarch64.O0 | 10/10
+float type | aarch64.O2 | 10/10
+float type | x86_64.O0 | 10/10
+float type | x86_64.O2 | 10/10
 
 alt_names.aarch64.O0 0x21016c alt_sum3: ok
 alt_names.aarch64.O0 0x210198 alt_helper: ok
@@ -42,16 +46,16 @@ alt_names.x86_64.O2 0x201170 alt_sum3: ok
 alt_names.x86_64.O2 0x201180 alt_helper: ok
 arith_mixed.aarch64.O0 0x21019c sum3: ok
 arith_mixed.aarch64.O0 0x2101c8 helper: ok
-arith_mixed.aarch64.O0 0x210228 pair_sum: parameter 0 is a signed 8-byte integer, expected a pointer
-arith_mixed.aarch64.O0 0x21024c sum_arr: parameter 0 is a signed 8-byte integer, expected a pointer
+arith_mixed.aarch64.O0 0x210228 pair_sum: ok
+arith_mixed.aarch64.O0 0x21024c sum_arr: ok
 arith_mixed.aarch64.O2 0x21018c sum3: ok
 arith_mixed.aarch64.O2 0x210198 helper: ok
 arith_mixed.aarch64.O2 0x2101dc pair_sum: ok
 arith_mixed.aarch64.O2 0x2101e8 sum_arr: ok
 arith_mixed.x86_64.O0 0x2011c0 sum3: ok
 arith_mixed.x86_64.O0 0x2011e0 helper: ok
-arith_mixed.x86_64.O0 0x201230 pair_sum: parameter 0 is a signed 8-byte integer, expected a pointer
-arith_mixed.x86_64.O0 0x201250 sum_arr: parameter 0 is a signed 8-byte integer, expected a pointer
+arith_mixed.x86_64.O0 0x201230 pair_sum: ok
+arith_mixed.x86_64.O0 0x201250 sum_arr: ok
 arith_mixed.x86_64.O2 0x201190 sum3: ok
 arith_mixed.x86_64.O2 0x2011a0 helper: ok
 arith_mixed.x86_64.O2 0x2011d0 pair_sum: ok
@@ -100,13 +104,13 @@ calls.x86_64.O2 0x201470 is_even: ok
 calls.x86_64.O2 0x201490 sum9: 6 parameters, expected 9
 calls.x86_64.O2 0x2014b0 call_sum9: returns 4 bytes, expected 8
 calls.x86_64.O2 0x2014f0 sum_varargs: ok
-control.aarch64.O0 0x2101e4 matrix_trace: parameter 0 is a signed 8-byte integer, expected a pointer
-control.aarch64.O0 0x2102a0 cleanup_on_error: parameter 2 is a signed 8-byte integer, expected a pointer
+control.aarch64.O0 0x2101e4 matrix_trace: ok
+control.aarch64.O0 0x2102a0 cleanup_on_error: ok
 control.aarch64.O0 0x210300 fallthrough: ok
 control.aarch64.O0 0x2103a0 sparse: ok
-control.aarch64.O0 0x210434 short_circuit: parameter 0 is a signed 8-byte integer, expected a pointer
-control.aarch64.O0 0x2104c4 skip_negatives: parameter 0 is a signed 8-byte integer, expected a pointer
-control.aarch64.O0 0x210540 find_pair: parameter 0 is a signed 8-byte integer, expected a pointer
+control.aarch64.O0 0x210434 short_circuit: ok
+control.aarch64.O0 0x2104c4 skip_negatives: ok
+control.aarch64.O0 0x210540 find_pair: ok
 control.aarch64.O2 0x2101d4 matrix_trace: ok
 control.aarch64.O2 0x210238 cleanup_on_error: ok
 control.aarch64.O2 0x210258 fallthrough: parameter 0 signedness differs
@@ -114,18 +118,18 @@ control.aarch64.O2 0x210278 sparse: ok
 control.aarch64.O2 0x2102cc short_circuit: ok
 control.aarch64.O2 0x210308 skip_negatives: ok
 control.aarch64.O2 0x2103a4 find_pair: ok
-control.x86_64.O0 0x201230 matrix_trace: parameter 0 is a signed 8-byte integer, expected a pointer
-control.x86_64.O0 0x2012c0 cleanup_on_error: parameter 2 is a signed 8-byte integer, expected a pointer
+control.x86_64.O0 0x201230 matrix_trace: ok
+control.x86_64.O0 0x2012c0 cleanup_on_error: ok
 control.x86_64.O0 0x201310 fallthrough: ok
 control.x86_64.O0 0x201380 sparse: ok
-control.x86_64.O0 0x201410 short_circuit: parameter 0 is a signed 8-byte integer, expected a pointer
-control.x86_64.O0 0x201480 skip_negatives: parameter 0 is a signed 8-byte integer, expected a pointer
-control.x86_64.O0 0x2014e0 find_pair: parameter 0 is a signed 8-byte integer, expected a pointer
-control.x86_64.O2 0x201220 matrix_trace: parameter 0 is a signed 8-byte integer, expected a pointer
+control.x86_64.O0 0x201410 short_circuit: ok
+control.x86_64.O0 0x201480 skip_negatives: ok
+control.x86_64.O0 0x2014e0 find_pair: ok
+control.x86_64.O2 0x201220 matrix_trace: ok
 control.x86_64.O2 0x201320 cleanup_on_error: ok
 control.x86_64.O2 0x201340 fallthrough: parameter 0 signedness differs
 control.x86_64.O2 0x201360 sparse: ok
-control.x86_64.O2 0x2013a0 short_circuit: parameter 0 is a signed 8-byte integer, expected a pointer
+control.x86_64.O2 0x2013a0 short_circuit: ok
 control.x86_64.O2 0x2013d0 skip_negatives: ok
 control.x86_64.O2 0x201490 find_pair: ok
 divmod_a64.aarch64.O0 0x210394 udiv3: ok
@@ -300,7 +304,7 @@ divmod_x64.x86_64.O2 0x201420 umod10x: ok
 divmod_x64.x86_64.O2 0x201450 pdiv64: ok
 divmod_x64.x86_64.O2 0x201460 qdiv64: ok
 divmod_x64.x86_64.O2 0x201470 pdiv10: ok
-float.aarch64.O0 0x2101b4 average: parameter 0 is a signed 8-byte integer, expected a pointer
+float.aarch64.O0 0x2101b4 average: ok
 float.aarch64.O0 0x210254 lerp: ok
 float.aarch64.O0 0x210284 truncate_to_int: ok
 float.aarch64.O0 0x21029c widen: ok
@@ -310,7 +314,7 @@ float.aarch64.O2 0x21022c lerp: ok
 float.aarch64.O2 0x210238 truncate_to_int: ok
 float.aarch64.O2 0x210240 widen: ok
 float.aarch64.O2 0x21024c compare_doubles: ok
-float.x86_64.O0 0x2011f0 average: parameter 0 is a signed 8-byte integer, expected a pointer
+float.x86_64.O0 0x2011f0 average: ok
 float.x86_64.O0 0x201280 lerp: ok
 float.x86_64.O0 0x2012c0 truncate_to_int: ok
 float.x86_64.O0 0x2012d0 widen: ok
@@ -391,7 +395,7 @@ l1_branch.x86_64.O2 0x2011a0 sign_of: ok
 l2_loop.aarch64.O0 0x2101d4 sum_while: ok
 l2_loop.aarch64.O0 0x210238 count_down: ok
 l2_loop.aarch64.O0 0x21028c sum_skip_odd: ok
-l2_loop.aarch64.O0 0x210300 find_first: parameter 0 is a signed 8-byte integer, expected a pointer
+l2_loop.aarch64.O0 0x210300 find_first: ok
 l2_loop.aarch64.O2 0x2101c4 sum_while: ok
 l2_loop.aarch64.O2 0x210200 count_down: ok
 l2_loop.aarch64.O2 0x210224 sum_skip_odd: ok
@@ -399,24 +403,24 @@ l2_loop.aarch64.O2 0x210264 find_first: ok
 l2_loop.x86_64.O0 0x201200 sum_while: ok
 l2_loop.x86_64.O0 0x201250 count_down: ok
 l2_loop.x86_64.O0 0x201290 sum_skip_odd: ok
-l2_loop.x86_64.O0 0x2012f0 find_first: parameter 0 is a signed 8-byte integer, expected a pointer
+l2_loop.x86_64.O0 0x2012f0 find_first: ok
 l2_loop.x86_64.O2 0x2011d0 sum_while: ok
 l2_loop.x86_64.O2 0x2012c0 count_down: ok
 l2_loop.x86_64.O2 0x201360 sum_skip_odd: ok
 l2_loop.x86_64.O2 0x2013b0 find_first: parameter 0 is a signed 8-byte integer, expected a pointer
-l4_memory.aarch64.O0 0x2101dc point_dot: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
-l4_memory.aarch64.O0 0x21021c array_sum: parameter 0 is a signed 8-byte integer, expected a pointer
+l4_memory.aarch64.O0 0x2101dc point_dot: ok
+l4_memory.aarch64.O0 0x21021c array_sum: ok
 l4_memory.aarch64.O0 0x210280 bump: ok
 l4_memory.aarch64.O0 0x210294 banner_first: ok
 l4_memory.aarch64.O2 0x2101d4 point_dot: ok
 l4_memory.aarch64.O2 0x2101f0 array_sum: ok
 l4_memory.aarch64.O2 0x21027c bump: ok
 l4_memory.aarch64.O2 0x210290 banner_first: ok
-l4_memory.x86_64.O0 0x201210 point_dot: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
-l4_memory.x86_64.O0 0x201240 array_sum: parameter 0 is a signed 8-byte integer, expected a pointer
+l4_memory.x86_64.O0 0x201210 point_dot: ok
+l4_memory.x86_64.O0 0x201240 array_sum: ok
 l4_memory.x86_64.O0 0x201290 bump: returns int32_t, expected void
 l4_memory.x86_64.O0 0x2012b0 banner_first: ok
-l4_memory.x86_64.O2 0x2011e0 point_dot: parameter 0 is a signed 4-byte integer, expected a pointer
+l4_memory.x86_64.O2 0x2011e0 point_dot: ok
 l4_memory.x86_64.O2 0x2011f0 array_sum: ok
 l4_memory.x86_64.O2 0x201280 bump: ok
 l4_memory.x86_64.O2 0x201290 banner_first: ok
@@ -514,28 +518,28 @@ l6_abi.x86_64.O2 0x2011e0 six_args: ok
 l6_abi.x86_64.O2 0x2011f0 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 loops.aarch64.O0 0x21019c count_bits: parameter 0 signedness differs
 loops.aarch64.O0 0x2101e8 sum_until: ok
-loops.aarch64.O0 0x210244 sum_till_neg: parameter 0 is a signed 8-byte integer, expected a pointer
-loops.aarch64.O0 0x2102bc sum_until_zero: parameter 0 is a signed 8-byte integer, expected a pointer
+loops.aarch64.O0 0x210244 sum_till_neg: ok
+loops.aarch64.O0 0x2102bc sum_until_zero: ok
 loops.aarch64.O2 0x21018c count_bits: parameter 0 signedness differs
 loops.aarch64.O2 0x2101b4 sum_until: ok
 loops.aarch64.O2 0x2101dc sum_till_neg: ok
 loops.aarch64.O2 0x210204 sum_until_zero: ok
 loops.x86_64.O0 0x2011c0 count_bits: parameter 0 signedness differs
 loops.x86_64.O0 0x201200 sum_until: ok
-loops.x86_64.O0 0x201240 sum_till_neg: parameter 0 is a signed 8-byte integer, expected a pointer
-loops.x86_64.O0 0x2012a0 sum_until_zero: parameter 0 is a signed 8-byte integer, expected a pointer
+loops.x86_64.O0 0x201240 sum_till_neg: ok
+loops.x86_64.O0 0x2012a0 sum_until_zero: ok
 loops.x86_64.O2 0x201190 count_bits: parameter 0 signedness differs
 loops.x86_64.O2 0x2011c0 sum_until: ok
 loops.x86_64.O2 0x2011e0 sum_till_neg: ok
 loops.x86_64.O2 0x201210 sum_until_zero: ok
-memory.aarch64.O0 0x210234 copy_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer; parameter 2 signedness differs; returns int64_t, expected void
-memory.aarch64.O0 0x21029c fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
-memory.aarch64.O0 0x2102f8 string_length: parameter 0 is a signed 8-byte integer, expected a pointer
+memory.aarch64.O0 0x210234 copy_bytes: parameter 2 signedness differs; returns int64_t, expected void
+memory.aarch64.O0 0x21029c fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
+memory.aarch64.O0 0x2102f8 string_length: ok
 memory.aarch64.O0 0x21033c grid_get: ok
 memory.aarch64.O0 0x210378 grid_set: parameter 0 is 8 bytes, expected 4; returns int64_t, expected void
 memory.aarch64.O0 0x2103bc pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
-memory.aarch64.O0 0x2103e4 read_volatile: parameter 0 is a signed 8-byte integer, expected a pointer
-memory.aarch64.O0 0x210418 swap_ints: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer; returns int64_t, expected void
+memory.aarch64.O0 0x2103e4 read_volatile: ok
+memory.aarch64.O0 0x210418 swap_ints: returns int64_t, expected void
 memory.aarch64.O2 0x210214 copy_bytes: returns int64_t, expected void
 memory.aarch64.O2 0x2102c4 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 8 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
 memory.aarch64.O2 0x2102d0 string_length: ok
@@ -544,14 +548,14 @@ memory.aarch64.O2 0x210304 grid_set: parameter 0 is 8 bytes, expected 4; returns
 memory.aarch64.O2 0x210320 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
 memory.aarch64.O2 0x21032c read_volatile: ok
 memory.aarch64.O2 0x21033c swap_ints: returns int64_t, expected void
-memory.x86_64.O0 0x201280 copy_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer; parameter 2 signedness differs; returns int64_t, expected void
-memory.x86_64.O0 0x2012d0 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
+memory.x86_64.O0 0x201280 copy_bytes: parameter 2 signedness differs; returns int64_t, expected void
+memory.x86_64.O0 0x2012d0 fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
 memory.x86_64.O0 0x201320 string_length: parameter 0 is a signed 8-byte integer, expected a pointer
 memory.x86_64.O0 0x201360 grid_get: ok
 memory.x86_64.O0 0x201390 grid_set: returns int64_t, expected void
 memory.x86_64.O0 0x2013d0 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
-memory.x86_64.O0 0x2013f0 read_volatile: parameter 0 is a signed 8-byte integer, expected a pointer
-memory.x86_64.O0 0x201420 swap_ints: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer; returns int64_t, expected void
+memory.x86_64.O0 0x2013f0 read_volatile: ok
+memory.x86_64.O0 0x201420 swap_ints: returns int64_t, expected void
 memory.x86_64.O2 0x201220 copy_bytes: returns int32_t, expected void
 memory.x86_64.O2 0x201310 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
 memory.x86_64.O2 0x201320 string_length: ok
@@ -564,14 +568,14 @@ strings.aarch64.O0 0x21019c pick: ok
 strings.aarch64.O2 0x21019c pick: ok
 strings.x86_64.O0 0x2011b0 pick: ok
 strings.x86_64.O2 0x2011b0 pick: ok
-structs.aarch64.O0 0x2101fc rect_area: parameter 0 is a signed 8-byte integer, expected a pointer
-structs.aarch64.O0 0x210238 record_total: parameter 0 is a signed 8-byte integer, expected a pointer
+structs.aarch64.O0 0x2101fc rect_area: ok
+structs.aarch64.O0 0x210238 record_total: ok
 structs.aarch64.O0 0x2102c0 point_add: ok
 structs.aarch64.O0 0x2102f8 big_make: ok
 structs.aarch64.O0 0x21033c big_sum: ok
 structs.aarch64.O0 0x21036c word_low_byte: returns 4 bytes, expected 1
 structs.aarch64.O0 0x210384 flags_level: ok
-structs.aarch64.O0 0x2103d0 flags_set_mode: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 signedness differs; returns int64_t, expected void
+structs.aarch64.O0 0x2103d0 flags_set_mode: parameter 1 signedness differs; returns int64_t, expected void
 structs.aarch64.O2 0x2101dc rect_area: ok
 structs.aarch64.O2 0x2101f0 record_total: ok
 structs.aarch64.O2 0x210290 point_add: ok
@@ -580,14 +584,14 @@ structs.aarch64.O2 0x2102c0 big_sum: ok
 structs.aarch64.O2 0x2102d4 word_low_byte: returns 8 bytes, expected 1
 structs.aarch64.O2 0x2102d8 flags_level: ok
 structs.aarch64.O2 0x2102ec flags_set_mode: parameter 1 signedness differs; returns int64_t, expected void
-structs.x86_64.O0 0x201240 rect_area: parameter 0 is a signed 8-byte integer, expected a pointer
-structs.x86_64.O0 0x201270 record_total: parameter 0 is a signed 8-byte integer, expected a pointer
+structs.x86_64.O0 0x201240 rect_area: ok
+structs.x86_64.O0 0x201270 record_total: ok
 structs.x86_64.O0 0x2012e0 point_add: ok
 structs.x86_64.O0 0x201310 big_make: 2 parameters, expected 1
 structs.x86_64.O0 0x201350 big_sum: 0 parameters, expected 1
 structs.x86_64.O0 0x201370 word_low_byte: returns 4 bytes, expected 1
 structs.x86_64.O0 0x201380 flags_level: ok
-structs.x86_64.O0 0x2013c0 flags_set_mode: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 signedness differs; returns int64_t, expected void
+structs.x86_64.O0 0x2013c0 flags_set_mode: parameter 1 signedness differs; returns int64_t, expected void
 structs.x86_64.O2 0x2011e0 rect_area: ok
 structs.x86_64.O2 0x2011f0 record_total: ok
 structs.x86_64.O2 0x201260 point_add: ok

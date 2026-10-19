@@ -24,6 +24,8 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
 int dense(int x) {
+    int64_t v1;
+
     x8 = x - 0xa;
     if (w8 <= 0xf /* unsigned */) {
         v1 = *(uint8_t *)(0x200158 + x8);

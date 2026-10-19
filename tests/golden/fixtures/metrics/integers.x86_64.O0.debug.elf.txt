@@ -74,6 +74,7 @@ fn mixed_sign @ 0x2012c0 (size 22)
 /* velk pseudo-C: in_range @ 0x2012e0 */
 _Bool in_range(int x, int lo, int hi) {
     int64_t v3;
+    int64_t v4;
     int64_t v5;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-14] */

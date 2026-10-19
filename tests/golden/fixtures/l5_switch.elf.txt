@@ -9,6 +9,7 @@
 /* ref: 0x2202e8 .bss */
 int32_t dense(int32_t a0) {
     uint64_t v1;
+    int64_t v3;
     int64_t v5;
     int32_t v7;
     int32_t v8;

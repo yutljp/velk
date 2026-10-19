@@ -101,15 +101,19 @@ fn clamp_long(long) @ 0x70 (size 35)
 == 0xa0 dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
 /* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 */
+struct dot_sum_Vec2_const___Vec2_const___a0 {
+    int32_t field_0x0;
+    int32_t field_0x4;
+};
 struct dot_sum_Vec2_const___Vec2_const___a1 {
     int32_t field_0x0;
     int32_t field_0x4;
 };
-int32_t dot_sum_Vec2_const___Vec2_const__(int32_t a0, struct dot_sum_Vec2_const___Vec2_const___a1 *a1) {
-    return (a1->field_0x4 + *(uint32_t *)(a0 + 0x4)) * (a1->field_0x0 + *(uint32_t *)(a0));
+int32_t dot_sum_Vec2_const___Vec2_const__(struct dot_sum_Vec2_const___Vec2_const___a0 *a0, struct dot_sum_Vec2_const___Vec2_const___a1 *a1) {
+    return (a1->field_0x4 + a0->field_0x4) * (a1->field_0x0 + a0->field_0x0);
 }
 -- signature
-int32_t (int32_t a0, struct dot_sum_Vec2_const___Vec2_const___a1 * a1)
+int32_t (struct dot_sum_Vec2_const___Vec2_const___a0 * a0, struct dot_sum_Vec2_const___Vec2_const___a1 * a1)
 -- references
 
 -- ir

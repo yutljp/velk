@@ -11,11 +11,17 @@
 == 0x201240 -
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
-int32_t sub_201240(int64_t a0) {
-    return (*(uint32_t *)(a0 + 0x8) - *(uint32_t *)(a0)) * (*(uint32_t *)(a0 + 0xc) - *(uint32_t *)(a0 + 0x4));
+struct sub_201240_a0 {
+    int32_t field_0x0;
+    int32_t field_0x4;
+    int32_t field_0x8;
+    int32_t field_0xc;
+};
+int32_t sub_201240(struct sub_201240_a0 *a0) {
+    return (a0->field_0x8 - a0->field_0x0) * (a0->field_0xc - a0->field_0x4);
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (struct sub_201240_a0 * a0)
 -- references
 
 -- ir
@@ -28,7 +34,7 @@ fn <unnamed> @ 0x201240 (size 40)
 == 0x201270 -
 -- decompile
 /* velk pseudo-C: sub_201270 @ 0x201270 */
-int64_t sub_201270(int64_t a0, int32_t a1) {
+int64_t sub_201270(uint64_t *a0, int32_t a1) {
     int64_t v1;
     int64_t v3;
     int64_t v4;
@@ -51,7 +57,7 @@ int64_t sub_201270(int64_t a0, int32_t a1) {
     return local_2;
 }
 -- signature
-int64_t (int64_t a0, int32_t a1)
+int64_t (uint64_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -231,7 +237,7 @@ fn <unnamed> @ 0x201380 (size 59)
 == 0x2013c0 -
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
-int64_t sub_2013c0(int64_t a0, int32_t a1) {
+int64_t sub_2013c0(uint8_t *a0, int32_t a1) {
     uint8_t *v2;
     int64_t v4;
     int64_t v6;
@@ -243,7 +249,7 @@ int64_t sub_2013c0(int64_t a0, int32_t a1) {
     return v2;
 }
 -- signature
-int64_t (int64_t a0, int32_t a1)
+int64_t (uint8_t * a0, int32_t a1)
 -- references
 
 -- ir

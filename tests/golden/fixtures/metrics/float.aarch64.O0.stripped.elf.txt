@@ -8,7 +8,7 @@
 == 0x2101b4 -
 -- decompile
 /* velk pseudo-C: sub_2101b4 @ 0x2101b4 */
-double sub_2101b4(int64_t a0, int32_t a1) {
+double sub_2101b4(double *a0, int32_t a1) {
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
     uint64_t local_2; /* [sp-18] */
@@ -31,7 +31,7 @@ double sub_2101b4(int64_t a0, int32_t a1) {
     return local_4;
 }
 -- signature
-double (int64_t a0, int32_t a1)
+double (double * a0, int32_t a1)
 -- references
 
 -- ir
@@ -70,14 +70,14 @@ fn <unnamed> @ 0x2101b4 (size 160)
 == 0x210254 -
 -- decompile
 /* velk pseudo-C: sub_210254 @ 0x210254 */
-double sub_210254(float a0, float a1, float a2) {
+float sub_210254(float a0, float a1, float a2) {
     uint32_t local_0; /* [sp-4] */
 
     local_0 = a0;
     return fmaf(a1 - a0, a2, local_0);
 }
 -- signature
-double (float a0, float a1, float a2)
+float (float a0, float a1, float a2)
 -- references
 
 -- ir

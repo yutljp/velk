@@ -25,6 +25,7 @@
 /* ref: 0x20250c .bss */
 int32_t sub_201330(int32_t a0) {
     int64_t v1;
+    int64_t v2;
     uint64_t local_0; /* [sp-8] */
 
     v1 = ((a0 - 0xa) & 0xffffffff);

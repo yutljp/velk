@@ -11,7 +11,7 @@
 == 0x210234 -
 -- decompile
 /* velk pseudo-C: sub_210234 @ 0x210234 */
-int64_t sub_210234(int64_t a0, int64_t a1, int64_t a2) {
+int64_t sub_210234(uint8_t *a0, uint8_t *a1, int64_t a2) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-18] */
@@ -28,7 +28,7 @@ int64_t sub_210234(int64_t a0, int64_t a1, int64_t a2) {
     return a0;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+int64_t (uint8_t * a0, uint8_t * a1, int64_t a2)
 -- references
 
 -- ir
@@ -57,7 +57,7 @@ fn <unnamed> @ 0x210234 (size 104)
 == 0x21029c -
 -- decompile
 /* velk pseudo-C: sub_21029c @ 0x21029c */
-int64_t sub_21029c(int64_t a0, int32_t a1, int64_t a2) {
+int64_t sub_21029c(uint8_t *a0, int32_t a1, int64_t a2) {
     uint64_t local_0; /* [sp-8] */
     uint8_t local_1; /* [sp-9] */
     uint64_t local_2; /* [sp-18] */
@@ -74,7 +74,7 @@ int64_t sub_21029c(int64_t a0, int32_t a1, int64_t a2) {
     return a0;
 }
 -- signature
-int64_t (int64_t a0, int32_t a1, int64_t a2)
+int64_t (uint8_t * a0, int32_t a1, int64_t a2)
 -- references
 
 -- ir
@@ -103,7 +103,7 @@ fn <unnamed> @ 0x21029c (size 92)
 == 0x2102f8 -
 -- decompile
 /* velk pseudo-C: sub_2102f8 @ 0x2102f8 */
-int64_t sub_2102f8(int64_t a0) {
+int64_t sub_2102f8(uint8_t *a0) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-10] */
 
@@ -115,7 +115,7 @@ int64_t sub_2102f8(int64_t a0) {
     return local_1;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint8_t * a0)
 -- references
 
 -- ir
@@ -204,14 +204,14 @@ fn <unnamed> @ 0x2103bc (size 40)
 == 0x2103e4 -
 -- decompile
 /* velk pseudo-C: sub_2103e4 @ 0x2103e4 */
-int32_t sub_2103e4(int64_t a0) {
+int32_t sub_2103e4(uint32_t *a0) {
     uint32_t local_0; /* [sp-c] */
 
-    local_0 = *(uint32_t *)(a0);
-    return local_0 + *(uint32_t *)(a0);
+    local_0 = *a0;
+    return local_0 + *a0;
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (uint32_t * a0)
 -- references
 
 -- ir
@@ -225,20 +225,20 @@ fn <unnamed> @ 0x2103e4 (size 52)
 == 0x210418 -
 -- decompile
 /* velk pseudo-C: sub_210418 @ 0x210418 */
-int64_t sub_210418(int64_t a0, int64_t a1) {
+int64_t sub_210418(uint32_t *a0, uint32_t *a1) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-10] */
     uint32_t local_2; /* [sp-14] */
 
     local_0 = a0;
     local_1 = a1;
-    local_2 = *(uint32_t *)(a0);
-    *(uint32_t *)(local_0) = *(uint32_t *)(a1);
+    local_2 = *a0;
+    *(uint32_t *)(local_0) = *a1;
     *(uint32_t *)(local_1) = local_2;
     return a0;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (uint32_t * a0, uint32_t * a1)
 -- references
 
 -- ir

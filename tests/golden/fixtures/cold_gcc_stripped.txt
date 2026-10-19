@@ -365,7 +365,7 @@ fn <unnamed> @ 0x1280 (size 16)
 == 0x1290 -
 -- decompile
 /* velk pseudo-C: sub_1290 @ 0x1290 */
-int32_t sub_1290(uint64_t *a0, int64_t a1, int32_t a2) {
+int32_t sub_1290(uint32_t *a0, int64_t a1, int32_t a2) {
     int64_t v2;
     uint32_t *v3;
     int64_t v4;
@@ -378,6 +378,8 @@ int32_t sub_1290(uint64_t *a0, int64_t a1, int32_t a2) {
     int64_t v16;
     int64_t v17;
     int64_t v18;
+    int64_t v19;
+    int64_t v20;
     int64_t v21;
     int64_t v22;
     int64_t v28;
@@ -437,7 +439,7 @@ int32_t sub_1290(uint64_t *a0, int64_t a1, int32_t a2) {
     __builtin_trap();
 }
 -- signature
-int32_t (uint64_t * a0, int64_t a1, int32_t a2)
+int32_t (uint32_t * a0, int64_t a1, int32_t a2)
 -- references
 
 -- ir

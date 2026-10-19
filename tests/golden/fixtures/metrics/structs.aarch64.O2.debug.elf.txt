@@ -13,6 +13,10 @@
 /* velk pseudo-C: rect_area @ 0x2101dc */
 int rect_area(struct rect *r) {
     uint64_t v1;
+    int64_t v2;
+    int64_t v3;
+    uint64_t v4;
+    int64_t v5;
     int32_t v6;
 
     v1 = r->min.x;

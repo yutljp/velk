@@ -7,6 +7,7 @@
 /* ref: 0x200120 .rodata */
 int32_t sub_201180(int32_t a0) {
     uint32_t v2;
+    int64_t v8;
     uint32_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
     uint32_t local_2; /* [sp-c] */

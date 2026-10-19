@@ -16,6 +16,7 @@ pub(crate) fn variable_types(
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
             Stmt::Assign { dest, value } => {
+                uses.seen.insert(dest.index);
                 if let Expr::Load { addr, .. } = value
                     && let Some(base) = base(addr)
                 {
