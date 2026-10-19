@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::{BinOp, Cond, Expr, Operation, Precision, reg_name};
+use crate::ir::{BinOp, Cond, Expr, Operation, Precision, Rounding, reg_name};
 use crate::loader::Isa;
 use crate::render::naming::array_access;
 use crate::render::naming::global_name;
@@ -273,6 +273,17 @@ pub(crate) fn float_operand(
     }
 }
 
+/// The C function that rounds a float to an integral value this way.
+fn rounding_function(rounding: Rounding) -> &'static str {
+    match rounding {
+        Rounding::TowardZero => "trunc",
+        Rounding::NearestEven => "rint",
+        Rounding::NearestAway => "round",
+        Rounding::Down => "floor",
+        Rounding::Up => "ceil",
+    }
+}
+
 /// `op` applied to `args`, as C.
 fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
     let infix = |precision, symbol: &str, strength| {
@@ -327,11 +338,32 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
             operand(&args[0], ctx, 12, false)
         ),
         Operation::FloatToInt {
-            signed, bits, from, ..
+            signed,
+            bits,
+            from,
+            rounding: Rounding::TowardZero,
+            ..
         } => format!(
             "({}){}",
             type_of(bits / 8, signed),
             float_operand(&args[0], from, ctx, 12, false)
+        ),
+        Operation::FloatToInt {
+            signed,
+            bits,
+            from,
+            rounding,
+            ..
+        } => format!(
+            "({}){}{}({})",
+            type_of(bits / 8, signed),
+            rounding_function(rounding),
+            suffix(from),
+            float_operand(&args[0], from, ctx, 1, false)
+        ),
+        Operation::FloatRound(p, rounding) => call(
+            &format!("{}{}", rounding_function(rounding), suffix(p)),
+            Some(p),
         ),
         Operation::FloatConvert { from, to } => format!(
             "({}){}",

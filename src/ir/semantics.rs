@@ -3,7 +3,7 @@
 //! comparisons act at the wider of their operands' widths, as the
 //! instruction they came from did.
 
-use super::{BinOp, Cond, Expr, Operation, Precision};
+use super::{BinOp, Cond, Expr, Operation, Precision, Rounding};
 
 pub(crate) fn mask(bits: u32) -> u64 {
     if bits >= 64 {
@@ -170,6 +170,7 @@ pub(crate) fn fold(op: Operation, args: &[u64]) -> Option<u64> {
         | Operation::FloatMul(p)
         | Operation::FloatDiv(p)
         | Operation::FloatSqrt(p)
+        | Operation::FloatRound(p, _)
         | Operation::FloatMulAdd(p)
         | Operation::FloatConvert { to: p, .. } => match p {
             Precision::Double => f64::from_bits(value).is_nan(),
@@ -178,6 +179,16 @@ pub(crate) fn fold(op: Operation, args: &[u64]) -> Option<u64> {
         _ => false,
     };
     (!nan).then_some(value)
+}
+
+fn round(value: f64, rounding: Rounding) -> f64 {
+    match rounding {
+        Rounding::TowardZero => value.trunc(),
+        Rounding::NearestEven => value.round_ties_even(),
+        Rounding::NearestAway => value.round(),
+        Rounding::Down => value.floor(),
+        Rounding::Up => value.ceil(),
+    }
 }
 
 /// How many low bits of each argument `op` reads.
@@ -190,6 +201,7 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::FloatSqrt(p)
         | Operation::FloatNegate(p)
         | Operation::FloatAbs(p)
+        | Operation::FloatRound(p, _)
         | Operation::FloatMulAdd(p)
         | Operation::FloatEqual(p)
         | Operation::FloatLess(p)
@@ -260,11 +272,19 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
                 (false, Precision::Single) => u64::from((value as f32).to_bits()),
             }
         }
+        Operation::FloatRound(precision, rounding) => match precision {
+            Precision::Double => round(double(args[0]), rounding).to_bits(),
+            // Rounding a single as a double gives the same integral value.
+            Precision::Single => {
+                u64::from((round(f64::from(single(args[0])), rounding) as f32).to_bits())
+            }
+        },
         Operation::FloatToInt {
             signed,
             bits,
             from,
             saturating,
+            rounding,
         } => {
             let value = float(from, args[0]);
             let bits = u32::from(bits);
@@ -273,7 +293,7 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
             } else {
                 (0.0, 2f64.powi(bits as i32))
             };
-            let truncated = value.trunc();
+            let truncated = round(value, rounding);
             let result = if value.is_nan() {
                 if saturating { 0 } else { 1u64 << (bits - 1) }
             } else if truncated < low || truncated >= high {

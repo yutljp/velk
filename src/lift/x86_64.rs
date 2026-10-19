@@ -7,7 +7,7 @@ use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
-use crate::ir::{BinOp, Cond, EXCHANGE, Expr, Operation, Precision, RegRef, Stmt};
+use crate::ir::{BinOp, Cond, EXCHANGE, Expr, Operation, Precision, RegRef, Rounding, Stmt};
 use crate::loader::Image;
 
 pub(super) struct Lifter<'a> {
@@ -294,9 +294,9 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     use Mnemonic::*;
     let precision = match ins.mnemonic() {
         Addsd | Subsd | Mulsd | Divsd | Sqrtsd | Minsd | Maxsd | Ucomisd | Comisd | Cvtsi2sd
-        | Cvttsd2si | Cvtsd2ss => Precision::Double,
+        | Cvttsd2si | Cvtsd2si | Cvtsd2ss | Roundsd => Precision::Double,
         Addss | Subss | Mulss | Divss | Sqrtss | Minss | Maxss | Ucomiss | Comiss | Cvtsi2ss
-        | Cvttss2si | Cvtss2sd => Precision::Single,
+        | Cvttss2si | Cvtss2si | Cvtss2sd | Roundss => Precision::Single,
         _ => return None,
     };
     // An xmm operand's low bits, or a value loaded from memory.
@@ -385,19 +385,40 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             );
             write_low(lifter, converted, precision)?;
         }
-        Cvttsd2si | Cvttss2si => {
+        // The rounding ones round as the default mode does.
+        Cvttsd2si | Cvttss2si | Cvtsd2si | Cvtss2si => {
             let (index, bits) = gpr(ins.op0_register())?;
             let value = float_operand(1, precision)?;
+            let rounding = match ins.mnemonic() {
+                Cvttsd2si | Cvttss2si => Rounding::TowardZero,
+                _ => Rounding::NearestEven,
+            };
             let converted = Expr::apply(
                 Operation::FloatToInt {
                     signed: true,
                     bits,
                     from: precision,
                     saturating: false,
+                    rounding,
                 },
                 vec![value],
             );
             lifter.assign(index, bits, converted);
+        }
+        // The immediate names the rounding, or with bit 2 the current mode.
+        Roundsd | Roundss => {
+            let value = float_operand(1, precision)?;
+            let rounding = match ins.immediate8() {
+                mode if mode & 4 != 0 => Rounding::NearestEven,
+                mode => match mode & 3 {
+                    0 => Rounding::NearestEven,
+                    1 => Rounding::Down,
+                    2 => Rounding::Up,
+                    _ => Rounding::TowardZero,
+                },
+            };
+            let rounded = Expr::apply(Operation::FloatRound(precision, rounding), vec![value]);
+            write_low(lifter, rounded, precision)?;
         }
         Cvtsd2ss | Cvtss2sd => {
             let to = match precision {

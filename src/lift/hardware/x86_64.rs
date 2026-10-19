@@ -220,6 +220,19 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
         }
         0 => bytes[0] = 0x48 | (bytes[0] & 0x07),
         1 => bytes[0] = 0x66,
+        // roundsd and roundss, with an immediate rounding.
+        5 => {
+            let opcode = [0x0a, 0x0b][(hash(seed, 0x38) & 1) as usize];
+            let code = [
+                0x66,
+                0x0f,
+                0x3a,
+                opcode,
+                0xc0 | (hash(seed, 0x34) as u8 & 0x3f),
+                hash(seed, 0x39) as u8 & 0x07,
+            ];
+            bytes.splice(0..code.len(), code);
+        }
         2 | 3 => {
             let prefix = [0xf2, 0xf3, 0x66, 0xf2][(hash(seed, 0x31) % 4) as usize];
             let opcode = SSE[(hash(seed, 0x32) % SSE.len() as u64) as usize];

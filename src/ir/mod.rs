@@ -227,6 +227,18 @@ impl Precision {
     }
 }
 
+/// How a float rounds to an integral value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Rounding {
+    TowardZero,
+    /// To the nearest, ties to even, as the default rounding mode does.
+    NearestEven,
+    /// To the nearest, ties away from zero.
+    NearestAway,
+    Down,
+    Up,
+}
+
 /// An operation `Expr::Apply` applies to its arguments, in order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Operation {
@@ -253,15 +265,18 @@ pub enum Operation {
         bits: u8,
         to: Precision,
     },
-    /// A float rounded toward zero to an integer of `bits`. Out of range, or
-    /// for a NaN, it saturates (NaN to zero) when `saturating` is set, as
-    /// AArch64 does, and otherwise gives the lowest signed value, as x86 does.
+    /// A float rounded to an integer of `bits`. Out of range, or for a NaN,
+    /// it saturates (NaN to zero) when `saturating` is set, as AArch64 does,
+    /// and otherwise gives the lowest signed value, as x86 does.
     FloatToInt {
         signed: bool,
         bits: u8,
         from: Precision,
         saturating: bool,
+        rounding: Rounding,
     },
+    /// A float rounded to an integral float.
+    FloatRound(Precision, Rounding),
     FloatConvert {
         from: Precision,
         to: Precision,
@@ -284,6 +299,7 @@ impl Operation {
             | Operation::FloatSqrt(p)
             | Operation::FloatNegate(p)
             | Operation::FloatAbs(p)
+            | Operation::FloatRound(p, _)
             | Operation::FloatMulAdd(p)
             | Operation::IntToFloat { to: p, .. }
             | Operation::FloatConvert { to: p, .. } => Some(p),
@@ -296,6 +312,7 @@ impl Operation {
             Operation::FloatSqrt(_)
             | Operation::FloatNegate(_)
             | Operation::FloatAbs(_)
+            | Operation::FloatRound(..)
             | Operation::IntToFloat { .. }
             | Operation::FloatToInt { .. }
             | Operation::FloatConvert { .. }
@@ -473,6 +490,16 @@ impl Expr {
     }
 }
 
+fn rounding_name(rounding: Rounding) -> &'static str {
+    match rounding {
+        Rounding::TowardZero => "",
+        Rounding::NearestEven => ".even",
+        Rounding::NearestAway => ".away",
+        Rounding::Down => ".down",
+        Rounding::Up => ".up",
+    }
+}
+
 /// The IR's name for an operation, with its precision or width.
 pub(crate) fn operation_name(op: Operation) -> String {
     let p = |precision: Precision| match precision {
@@ -500,12 +527,15 @@ pub(crate) fn operation_name(op: Operation) -> String {
             bits,
             from,
             saturating,
+            rounding,
         } => format!(
-            "f.{}to{}{bits}{}",
+            "f.{}to{}{bits}{}{}",
             p(from),
             if signed { "s" } else { "u" },
+            rounding_name(rounding),
             if saturating { ".sat" } else { "" }
         ),
+        Operation::FloatRound(x, rounding) => format!("fround{}.{}", rounding_name(rounding), p(x)),
         Operation::FloatConvert { from, to } => format!("f.{}tof.{}", p(from), p(to)),
         Operation::CountLeadingZeros(bits) => format!("clz{bits}"),
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),

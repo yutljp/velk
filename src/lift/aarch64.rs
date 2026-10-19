@@ -5,7 +5,7 @@ use super::flags::{Flags, Test};
 use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
 };
-use crate::ir::{BinOp, Cond, Expr, Operation, Precision, RegRef, Stmt};
+use crate::ir::{BinOp, Cond, Expr, Operation, Precision, RegRef, Rounding, Stmt};
 
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
@@ -1224,13 +1224,28 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             };
             lifter.write_simd(slot, bits, (value, Expr::constant(0)));
         }
-        O::FSQRT | O::FNEG | O::FABS => {
+        O::FSQRT
+        | O::FNEG
+        | O::FABS
+        | O::FRINTN
+        | O::FRINTA
+        | O::FRINTM
+        | O::FRINTP
+        | O::FRINTZ
+        | O::FRINTX
+        | O::FRINTI => {
             let (slot, bits) = simd(ops[0])?;
             let (a, p) = read(lifter, ops[1])?;
             let op = match ins.opcode {
                 O::FSQRT => Operation::FloatSqrt(p),
                 O::FNEG => Operation::FloatNegate(p),
-                _ => Operation::FloatAbs(p),
+                O::FABS => Operation::FloatAbs(p),
+                O::FRINTA => Operation::FloatRound(p, Rounding::NearestAway),
+                O::FRINTM => Operation::FloatRound(p, Rounding::Down),
+                O::FRINTP => Operation::FloatRound(p, Rounding::Up),
+                O::FRINTZ => Operation::FloatRound(p, Rounding::TowardZero),
+                // frintx and frinti round as the current mode does.
+                _ => Operation::FloatRound(p, Rounding::NearestEven),
             };
             lifter.write_simd(slot, bits, (float(op, vec![a]), Expr::constant(0)));
         }
@@ -1319,8 +1334,29 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             };
             lifter.write_simd(slot, bits, (converted, Expr::constant(0)));
         }
-        O::FCVTZS | O::FCVTZU => {
+        O::FCVTZS
+        | O::FCVTZU
+        | O::FCVTNS
+        | O::FCVTNU
+        | O::FCVTAS
+        | O::FCVTAU
+        | O::FCVTMS
+        | O::FCVTMU
+        | O::FCVTPS
+        | O::FCVTPU => {
             let (a, from) = read(lifter, ops[1])?;
+            let (signed, rounding) = match ins.opcode {
+                O::FCVTZS => (true, Rounding::TowardZero),
+                O::FCVTZU => (false, Rounding::TowardZero),
+                O::FCVTNS => (true, Rounding::NearestEven),
+                O::FCVTNU => (false, Rounding::NearestEven),
+                O::FCVTAS => (true, Rounding::NearestAway),
+                O::FCVTAU => (false, Rounding::NearestAway),
+                O::FCVTMS => (true, Rounding::Down),
+                O::FCVTMU => (false, Rounding::Down),
+                O::FCVTPS => (true, Rounding::Up),
+                _ => (false, Rounding::Up),
+            };
             // A fixed-point result keeps that many fraction bits.
             let a = match ops[2] {
                 Operand::Immediate(fraction) if fraction > 0 => float(
@@ -1331,10 +1367,11 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             };
             let converted = float(
                 Operation::FloatToInt {
-                    signed: ins.opcode == O::FCVTZS,
+                    signed,
                     bits: register_width(ops[0])?,
                     from,
                     saturating: true,
+                    rounding,
                 },
                 vec![a],
             );
