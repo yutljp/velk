@@ -1,4 +1,4 @@
-# rust_probe: elf x86_64 0x14e70, 545 functions, 0 lift failures, 8 unsupported, 4028 gotos
+# rust_probe: elf x86_64 0x14e70, 545 functions, 0 lift failures, 8 unsupported, 4027 gotos
 0x14e70 38 _start symtab,entry,unwind
 0x14ea0 48 deregister_tm_clones symtab
 0x14ed0 64 register_tm_clones symtab
@@ -559,9 +559,7 @@ int32_t rust_probe__main(void) {
     local_1 = &local_0;
     rax = qword_55aa8;
     local_2 = rax;
-    rdi = 0x5091;
-    rsi = &local_1;
-    return (*(qword_55ab0))();
+    return (*(qword_55ab0))(0x5091, &local_1);
 }
 -- signature
 int32_t ()
@@ -575,9 +573,7 @@ fn rust_probe::main @ 0x14f90 (size 57)
     store64((rsp + #0xffffffffffffffec), (rsp + #0xfffffffffffffff0))
     rax = load64(#0x55aa8)
     store64(rax, (rsp + #0xfffffffffffffff8))
-    rdi = #0x5091
-    rsi = (rsp + #0xfffffffffffffff0)
-    call *load64(#0x55ab0)
-    ret v1
+    v3 = call *load64(#0x55ab0)(#0x5091, (rsp + #0xfffffffffffffff0))
+    ret v3
 -- card
 {"addr":"0x14f90","approxTokens":162,"blocks":1,"hardReasons":[],"name":"rust_probe::main","nameSources":["symtab","unwind"],"section":".text","size":57,"unsupported":0}

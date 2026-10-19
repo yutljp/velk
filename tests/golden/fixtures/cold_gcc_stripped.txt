@@ -201,37 +201,31 @@ fn <unnamed> @ 0x1120 (size 124)
 == 0x11a0 -
 -- decompile
 /* velk pseudo-C: sub_11a0 @ 0x11a0 */
-int32_t sub_11a0(int32_t a0, int64_t a1, int64_t a2) {
+int32_t sub_11a0(int64_t a0, int64_t a1, int64_t a2) {
+    int64_t v2;
+    int64_t v3;
     int64_t local_0; /* [sp+0] */
     int64_t local_1; /* [sp-8] */
 
-    r9 = a2;
-    a1 = local_0;
-    a2 = rsp + 0x8;
+    v2 = local_0;
+    v3 = rsp + 0x8;
     local_0 = rax;
     local_1 = rsp;
-    r8 = 0x0;
-    rcx = 0x0;
-    a0 = 0x1120;
-    (*(qword_3fd8))();
+    (*(qword_3fd8))(0x1120, v2, v3, 0x0, 0x0, a2);
     __builtin_trap();
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int64_t a2)
+int32_t (int64_t a0, int64_t a1, int64_t a2)
 -- references
 
 -- ir
 fn <unnamed> @ 0x11a0 (size 38)
   blk0 @ 0x11a0:
-    r9 = rdx
-    rsi = load64(rsp)
-    rdx = (rsp + #0x8)
+    v2 = load64(rsp)
+    v3 = (rsp + #0x8)
     store64(rax, rsp)
     store64(rsp, (rsp + #0xfffffffffffffff8))
-    r8 = #0x0
-    rcx = #0x0
-    rdi = #0x1120
-    call *load64(#0x3fd8)
+    call *load64(#0x3fd8)(#0x1120, v2, v3, #0x0, #0x0, rdx)
     trap
 -- card
 {"addr":"0x11a0","approxTokens":174,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind"],"section":".text","size":38,"unsupported":0}

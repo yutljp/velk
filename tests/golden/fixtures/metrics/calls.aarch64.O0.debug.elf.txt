@@ -69,14 +69,11 @@ fn pick_op @ 0x210350 (size 44)
 int apply_table(unsigned int index, int x) {
     uint32_t v1;
     int32_t local_0; /* [sp-14] */
-    int32_t local_1; /* [sp-18] */
 
     local_0 = index;
-    local_1 = x;
     v1 = local_0;
     x8 = table[v1 - v1 / 0x3 * 0x3];
-    index = x;
-    return (*(x8))();
+    return (*(x8))(x);
 }
 -- signature
 int (unsigned int index, int x)
@@ -86,12 +83,10 @@ int (unsigned int index, int x)
 fn apply_table @ 0x21037c (size 72)
   blk0 @ 0x21037c:
     store32(w0, (sp + #0xffffffffffffffec))
-    store32(w1, (sp + #0xffffffffffffffe8))
     v1 = load32((sp + #0xffffffffffffffec))
     x8 = load64((#0x2206f0 + ((((v1 & #0xffffffff) - (((v1 & #0xffffffff) / #0x3) * #0x3)) & #0xffffffff) << #0x3)))
-    w0 = (w1 & #0xffffffff)
-    call *x8
-    ret v3
+    v4 = call *x8((w1 & #0xffffffff))
+    ret v4
 -- card
 {"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf","unwind"],"section":".text","size":72,"unsupported":0}
 
@@ -99,16 +94,11 @@ fn apply_table @ 0x21037c (size 72)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2103c4 */
 int apply_pointer(void *f, int x) {
-    int32_t v1;
-    void *local_0; /* [sp-18] */
-    int32_t local_1; /* [sp-1c] */
+    int32_t v2;
 
-    local_0 = f;
-    local_1 = x;
     x8 = f;
-    f = x;
-    v1 = (*(x8))();
-    return v1 + 0x1;
+    v2 = (*(x8))(x);
+    return v2 + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -117,12 +107,9 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x2103c4 (size 48)
   blk0 @ 0x2103c4:
-    store64(x0, (sp + #0xffffffffffffffe8))
-    store32(w1, (sp + #0xffffffffffffffe4))
     x8 = x0
-    x0 = (w1 & #0xffffffff)
-    call *x8
-    ret (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    v2 = call *x8((w1 & #0xffffffff))
+    ret (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 

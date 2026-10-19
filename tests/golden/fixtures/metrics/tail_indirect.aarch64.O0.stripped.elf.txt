@@ -5,29 +5,20 @@
 == 0x21017c -
 -- decompile
 /* velk pseudo-C: sub_21017c @ 0x21017c */
-int32_t sub_21017c(int32_t a0, int32_t a1) {
-    int64_t local_0; /* [sp-18] */
-    int32_t local_1; /* [sp-1c] */
-
-    local_0 = a0;
-    local_1 = a1;
+int32_t sub_21017c(void *a0, int32_t a1) {
     x8 = a0;
-    a0 = a1 + 0x1;
-    return (*(x8))();
+    return (*(x8))(a1 + 0x1);
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (void * a0, int32_t a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x21017c (size 48)
   blk0 @ 0x21017c:
-    store64(x0, (sp + #0xffffffffffffffe8))
-    store32(w1, (sp + #0xffffffffffffffe4))
     x8 = x0
-    x0 = (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
-    call *x8
-    ret v1
+    v2 = call *x8((((w1 & #0xffffffff) + #0x1) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x21017c","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
 

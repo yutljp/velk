@@ -11,10 +11,10 @@ parameter count | aarch64.O0 | 147/147
 parameter count | aarch64.O2 | 147/147
 parameter count | x86_64.O0 | 145/147
 parameter count | x86_64.O2 | 145/147
-parameter pointer | aarch64.O0 | 177/182
-parameter pointer | aarch64.O2 | 176/182
-parameter pointer | x86_64.O0 | 175/181
-parameter pointer | x86_64.O2 | 174/181
+parameter pointer | aarch64.O0 | 180/182
+parameter pointer | aarch64.O2 | 179/182
+parameter pointer | x86_64.O0 | 178/181
+parameter pointer | x86_64.O2 | 177/181
 parameter width | aarch64.O0 | 147/153
 parameter width | aarch64.O2 | 147/153
 parameter width | x86_64.O0 | 147/152
@@ -64,7 +64,7 @@ calls.aarch64.O0 0x21031c twice: ok
 calls.aarch64.O0 0x210334 square: ok
 calls.aarch64.O0 0x210350 pick_op: ok
 calls.aarch64.O0 0x21037c apply_table: parameter 0 signedness differs
-calls.aarch64.O0 0x2103c4 apply_pointer: parameter 0 is a signed 4-byte integer, expected a pointer
+calls.aarch64.O0 0x2103c4 apply_pointer: ok
 calls.aarch64.O0 0x2103f4 factorial: ok
 calls.aarch64.O0 0x210454 is_odd: ok
 calls.aarch64.O0 0x2104a0 is_even: ok
@@ -75,7 +75,7 @@ calls.aarch64.O2 0x2102c4 twice: ok
 calls.aarch64.O2 0x2102cc square: ok
 calls.aarch64.O2 0x2102d4 pick_op: ok
 calls.aarch64.O2 0x2102f0 apply_table: ok
-calls.aarch64.O2 0x21031c apply_pointer: parameter 0 is a signed 4-byte integer, expected a pointer
+calls.aarch64.O2 0x21031c apply_pointer: ok
 calls.aarch64.O2 0x21033c factorial: ok
 calls.aarch64.O2 0x2103dc is_odd: ok
 calls.aarch64.O2 0x2103ec is_even: ok
@@ -86,7 +86,7 @@ calls.x86_64.O0 0x201310 twice: ok
 calls.x86_64.O0 0x201320 square: ok
 calls.x86_64.O0 0x201330 pick_op: ok
 calls.x86_64.O0 0x201360 apply_table: ok
-calls.x86_64.O0 0x2013a0 apply_pointer: parameter 0 is a signed 4-byte integer, expected a pointer
+calls.x86_64.O0 0x2013a0 apply_pointer: ok
 calls.x86_64.O0 0x2013d0 factorial: ok
 calls.x86_64.O0 0x201420 is_odd: ok
 calls.x86_64.O0 0x201460 is_even: ok
@@ -97,7 +97,7 @@ calls.x86_64.O2 0x2012f0 twice: ok
 calls.x86_64.O2 0x201300 square: ok
 calls.x86_64.O2 0x201310 pick_op: ok
 calls.x86_64.O2 0x201330 apply_table: ok
-calls.x86_64.O2 0x201360 apply_pointer: parameter 0 is a signed 4-byte integer, expected a pointer
+calls.x86_64.O2 0x201360 apply_pointer: ok
 calls.x86_64.O2 0x201370 factorial: ok
 calls.x86_64.O2 0x201460 is_odd: ok
 calls.x86_64.O2 0x201470 is_even: ok
@@ -498,22 +498,22 @@ l5_switch.x86_64.O2 0x2014d0 c15: ok
 l5_switch.x86_64.O2 0x2014e0 sparse: ok
 l6_abi.aarch64.O0 0x2101d4 tail_target: ok
 l6_abi.aarch64.O0 0x2101fc tail_direct: ok
-l6_abi.aarch64.O0 0x210224 tail_indirect: parameter 0 is a signed 4-byte integer, expected a pointer
+l6_abi.aarch64.O0 0x210224 tail_indirect: ok
 l6_abi.aarch64.O0 0x210254 six_args: ok
 l6_abi.aarch64.O0 0x2102a4 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 l6_abi.aarch64.O2 0x2101a4 tail_target: ok
 l6_abi.aarch64.O2 0x2101c0 tail_direct: ok
-l6_abi.aarch64.O2 0x2101c8 tail_indirect: parameter 0 is a signed 4-byte integer, expected a pointer
+l6_abi.aarch64.O2 0x2101c8 tail_indirect: ok
 l6_abi.aarch64.O2 0x2101d4 six_args: ok
 l6_abi.aarch64.O2 0x2101ec wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 l6_abi.x86_64.O0 0x2011e0 tail_target: ok
 l6_abi.x86_64.O0 0x201200 tail_direct: ok
-l6_abi.x86_64.O0 0x201220 tail_indirect: parameter 0 is a signed 4-byte integer, expected a pointer
+l6_abi.x86_64.O0 0x201220 tail_indirect: ok
 l6_abi.x86_64.O0 0x201250 six_args: ok
 l6_abi.x86_64.O0 0x201280 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 l6_abi.x86_64.O2 0x2011b0 tail_target: ok
 l6_abi.x86_64.O2 0x2011c0 tail_direct: ok
-l6_abi.x86_64.O2 0x2011d0 tail_indirect: parameter 0 is a signed 4-byte integer, expected a pointer
+l6_abi.x86_64.O2 0x2011d0 tail_indirect: ok
 l6_abi.x86_64.O2 0x2011e0 six_args: ok
 l6_abi.x86_64.O2 0x2011f0 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 loops.aarch64.O0 0x21019c count_bits: parameter 0 signedness differs
@@ -620,11 +620,11 @@ tail_calls.x86_64.O0 0x2011e0 tail_three: ok
 tail_calls.x86_64.O2 0x201180 tail_one: ok
 tail_calls.x86_64.O2 0x201190 tail_two: ok
 tail_calls.x86_64.O2 0x2011a0 tail_three: ok
-tail_indirect.aarch64.O0 0x21017c via_ptr: parameter 0 is a signed 4-byte integer, expected a pointer
+tail_indirect.aarch64.O0 0x21017c via_ptr: ok
 tail_indirect.aarch64.O0 0x2101ac after_ptr: ok
-tail_indirect.aarch64.O2 0x210164 via_ptr: parameter 0 is a signed 4-byte integer, expected a pointer
+tail_indirect.aarch64.O2 0x210164 via_ptr: ok
 tail_indirect.aarch64.O2 0x210170 after_ptr: ok
-tail_indirect.x86_64.O0 0x201180 via_ptr: parameter 0 is a signed 4-byte integer, expected a pointer
+tail_indirect.x86_64.O0 0x201180 via_ptr: ok
 tail_indirect.x86_64.O0 0x2011b0 after_ptr: ok
-tail_indirect.x86_64.O2 0x201170 via_ptr: parameter 0 is a signed 4-byte integer, expected a pointer
+tail_indirect.x86_64.O2 0x201170 via_ptr: ok
 tail_indirect.x86_64.O2 0x201180 after_ptr: ok

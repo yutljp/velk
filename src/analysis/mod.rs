@@ -177,6 +177,43 @@ fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Pr
     }
 }
 
+/// Gives a call whose callee's arguments are unknown, such as one through a
+/// pointer, the argument registers the code sets up for it: up to the last
+/// one written since the block's previous call and not read again before
+/// the call, which a register used as scratch is.
+fn set_up_arguments(ir: &mut FunctionIr) {
+    for block in &mut ir.blocks {
+        let mut written: HashSet<u16> = HashSet::new();
+        for stmt in &mut block.stmts {
+            let Stmt::Call {
+                convention, args, ..
+            } = stmt
+            else {
+                let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+                for read in reads {
+                    written.remove(&read);
+                }
+                written.extend(writes);
+                continue;
+            };
+            let registers = convention.arguments();
+            if args.is_none()
+                && let Some(last) = registers
+                    .iter()
+                    .rposition(|register| written.contains(register))
+            {
+                *args = Some(
+                    registers[..=last]
+                        .iter()
+                        .map(|register| crate::ir::Expr::reg(*register, 64))
+                        .collect(),
+                );
+            }
+            written.clear();
+        }
+    }
+}
+
 /// Drops a write of AArch64's indirect result register that only a call
 /// reads, implicitly, when the callee does not return through memory: the
 /// compiler used it as a scratch register for the call's arguments.
@@ -381,6 +418,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     let uniform_32 = passes::widths::specialize_widths(&mut ir);
     passes::optimize(&mut ir, has_jump_tables);
     crate::ssa::count_variadic_arguments(&mut ir, image);
+    set_up_arguments(&mut ir);
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the
     // stack pointer, and the frame pointer while it addresses the frame.

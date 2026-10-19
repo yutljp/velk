@@ -6,14 +6,8 @@
 -- decompile
 /* velk pseudo-C: via_ptr @ 0x21017c */
 int via_ptr(void *f, int x) {
-    void *local_0; /* [sp-18] */
-    int32_t local_1; /* [sp-1c] */
-
-    local_0 = f;
-    local_1 = x;
     x8 = f;
-    f = x + 0x1;
-    return (*(x8))();
+    return (*(x8))(x + 0x1);
 }
 -- signature
 int (void * f, int x)
@@ -22,12 +16,9 @@ int (void * f, int x)
 -- ir
 fn via_ptr @ 0x21017c (size 48)
   blk0 @ 0x21017c:
-    store64(x0, (sp + #0xffffffffffffffe8))
-    store32(w1, (sp + #0xffffffffffffffe4))
     x8 = x0
-    x0 = (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
-    call *x8
-    ret v1
+    v2 = call *x8((((w1 & #0xffffffff) + #0x1) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x21017c","approxTokens":168,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 

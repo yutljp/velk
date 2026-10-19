@@ -453,6 +453,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             }
         }
     };
+    let mut code_pointers: HashSet<u16> = HashSet::new();
     origins.walk(blocks, &mut |stmt, origin| match stmt {
         Stmt::Assign { dest, value } => {
             if let Some((addr, width)) = load_of(value) {
@@ -505,11 +506,25 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             };
             note(addr, *width, register, None, origin, &mut pointer_elements);
         }
+        // An argument the code calls or jumps through points at code.
+        Stmt::Call {
+            through: Some(Expr::Reg { index, .. }),
+            ..
+        }
+        | Stmt::BrIndirect {
+            target: Expr::Reg { index, .. },
+        } => {
+            if let Some(param) = origin.get(index) {
+                code_pointers.insert(*param);
+            }
+        }
         _ => {}
     });
     for param in &mut params {
         if let Some((_, element)) = pointer_elements.get(&param.index) {
             param.ty = CType::pointer_to(element.clone());
+        } else if code_pointers.contains(&param.index) {
+            param.ty = CType::pointer_to(CType::Void);
         }
     }
 

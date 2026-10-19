@@ -67,16 +67,11 @@ fn <unnamed> @ 0x201330 (size 33)
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x202670 .data.rel.ro */
 int32_t sub_201360(uint32_t a0, int32_t a1) {
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    int32_t v1;
 
-    local_0 = a0;
-    local_1 = a1;
-    edx = a0 % 0x3;
-    rcx = edx;
-    rax = qword_202670[rcx];
-    a0 = a1;
-    return (*(rax))();
+    v1 = a0 % 0x3;
+    rax = qword_202670[v1];
+    return (*(rax))(a1);
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -85,45 +80,33 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201360 (size 52)
   blk0 @ 0x201360:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    store32(esi, (rsp + #0xfffffffffffffff0))
-    rdx = (((edi & #0xffffffff) % #0x3) & #0xffffffff)
-    rcx = (rdx & #0xffffffff)
-    rax = load64((#0x202670 + (rcx * #0x8)))
-    edi = (esi & #0xffffffff)
-    call *rax
-    ret v1
+    v1 = (((edi & #0xffffffff) % #0x3) & #0xffffffff)
+    rax = load64((#0x202670 + ((v1 & #0xffffffff) * #0x8)))
+    v4 = call *rax((esi & #0xffffffff))
+    ret v4
 -- card
 {"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":52,"unsupported":0}
 
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-int32_t sub_2013a0(int32_t a0, int32_t a1) {
-    int32_t v1;
-    int64_t local_0; /* [sp-10] */
-    int32_t local_1; /* [sp-14] */
+int32_t sub_2013a0(void *a0, int32_t a1) {
+    int32_t v2;
 
-    local_0 = a0;
-    local_1 = a1;
     rax = a0;
-    a0 = a1;
-    v1 = (*(rax))();
-    return v1 + 0x1;
+    v2 = (*(rax))(a1);
+    return v2 + 0x1;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (void * a0, int32_t a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2013a0 (size 33)
   blk0 @ 0x2013a0:
-    store64(rdi, (rsp + #0xfffffffffffffff0))
-    store32(esi, (rsp + #0xffffffffffffffec))
     rax = rdi
-    rdi = (esi & #0xffffffff)
-    call *rax
-    ret (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    v2 = call *rax((esi & #0xffffffff))
+    ret (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2013a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}
 

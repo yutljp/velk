@@ -43,13 +43,13 @@ fn tail_direct @ 0x1c (size 8)
 == 0x24 tail_indirect
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x24 */
-int32_t tail_indirect(int32_t a0, int32_t a1) {
+int32_t tail_indirect(void *a0, int32_t a1) {
     x2 = a0;
     a0 = a1 + 0x1;
     goto *(x2);
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (void * a0, int32_t a1)
 -- references
 
 -- ir
