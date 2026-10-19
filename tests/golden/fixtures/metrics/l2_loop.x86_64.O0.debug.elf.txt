@@ -20,7 +20,7 @@ int sum_while(int n) {
     while (local_2 < local_0) {
         eax = local_2 + local_1;
         local_1 = eax;
-        dword_202350 = eax;
+        sink = eax;
         local_2 += 0x1;
     }
     rsp = rsp + 0x8;
@@ -65,7 +65,7 @@ int count_down(int n) {
     do {
         local_1 += 0x1;
         local_0 += 0xffffffffffffffff;
-        dword_202350 = local_1;
+        sink = local_1;
     } while (local_0 > 0x0);
     rsp = rsp + 0x8;
     return local_1;
@@ -113,7 +113,7 @@ int sum_skip_odd(int n) {
         } else {
             eax = local_2 + local_1;
             local_1 = eax;
-            dword_202350 = eax;
+            sink = eax;
         }
         local_2 += 0x1;
     }

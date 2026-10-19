@@ -36,8 +36,8 @@ int dense(int x) {
     local_1 = rcx;
     rax = eax - 0xf;
     if (eax + 0xf > 0xf /* unsigned */) {
-        dword_202760 = 0x0;
-        rax = dword_202760;
+        g_sink = 0x0;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
@@ -49,103 +49,103 @@ int dense(int x) {
     switch (((*(uint32_t *)(rsp - 0xc) - 0x19) & 0xffffffff)) {
     case -15:
         c0();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -14:
         c1();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -13:
         c2();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -12:
         c3();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -11:
         c4();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -10:
         c5();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -9:
         c6();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -8:
         c7();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -7:
         c8();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -6:
         c9();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -5:
         c10();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -4:
         c11();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -3:
         c12();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -2:
         c13();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case -1:
         c14();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     case 0:
         c15();
-        rax = dword_202760;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
     default:
-        dword_202760 = 0x0;
-        rax = dword_202760;
+        g_sink = 0x0;
+        rax = g_sink;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
         return rax;
@@ -237,8 +237,8 @@ fn dense @ 0x201400 (size 234)
 /* velk pseudo-C: c0 @ 0x2014f0 */
 /* ref: 0x202760 .bss */
 uint32_t c0(void) {
-    eax = dword_202760 + 0xb;
-    dword_202760 = eax;
+    eax = g_sink + 0xb;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -259,8 +259,8 @@ fn c0 @ 0x2014f0 (size 21)
 /* velk pseudo-C: c1 @ 0x201510 */
 /* ref: 0x202760 .bss */
 uint32_t c1(void) {
-    eax = dword_202760 ^ 0x12;
-    dword_202760 = eax;
+    eax = g_sink ^ 0x12;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -281,8 +281,8 @@ fn c1 @ 0x201510 (size 21)
 /* velk pseudo-C: c2 @ 0x201530 */
 /* ref: 0x202760 .bss */
 uint32_t c2(void) {
-    eax = dword_202760 - 0x19;
-    dword_202760 = eax;
+    eax = g_sink - 0x19;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -303,8 +303,8 @@ fn c2 @ 0x201530 (size 21)
 /* velk pseudo-C: c3 @ 0x201550 */
 /* ref: 0x202760 .bss */
 uint32_t c3(void) {
-    eax = dword_202760 | 0x20;
-    dword_202760 = eax;
+    eax = g_sink | 0x20;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -325,8 +325,8 @@ fn c3 @ 0x201550 (size 21)
 /* velk pseudo-C: c4 @ 0x201570 */
 /* ref: 0x202760 .bss */
 uint32_t c4(void) {
-    eax = dword_202760 + 0x27;
-    dword_202760 = eax;
+    eax = g_sink + 0x27;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -347,8 +347,8 @@ fn c4 @ 0x201570 (size 21)
 /* velk pseudo-C: c5 @ 0x201590 */
 /* ref: 0x202760 .bss */
 uint32_t c5(void) {
-    eax = dword_202760 ^ 0x2e;
-    dword_202760 = eax;
+    eax = g_sink ^ 0x2e;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -369,8 +369,8 @@ fn c5 @ 0x201590 (size 21)
 /* velk pseudo-C: c6 @ 0x2015b0 */
 /* ref: 0x202760 .bss */
 uint32_t c6(void) {
-    eax = dword_202760 - 0x35;
-    dword_202760 = eax;
+    eax = g_sink - 0x35;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -391,8 +391,8 @@ fn c6 @ 0x2015b0 (size 21)
 /* velk pseudo-C: c7 @ 0x2015d0 */
 /* ref: 0x202760 .bss */
 uint32_t c7(void) {
-    eax = dword_202760 | 0x3c;
-    dword_202760 = eax;
+    eax = g_sink | 0x3c;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -413,8 +413,8 @@ fn c7 @ 0x2015d0 (size 21)
 /* velk pseudo-C: c8 @ 0x2015f0 */
 /* ref: 0x202760 .bss */
 uint32_t c8(void) {
-    eax = dword_202760 + 0x43;
-    dword_202760 = eax;
+    eax = g_sink + 0x43;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -435,8 +435,8 @@ fn c8 @ 0x2015f0 (size 21)
 /* velk pseudo-C: c9 @ 0x201610 */
 /* ref: 0x202760 .bss */
 uint32_t c9(void) {
-    eax = dword_202760 ^ 0x4a;
-    dword_202760 = eax;
+    eax = g_sink ^ 0x4a;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -457,8 +457,8 @@ fn c9 @ 0x201610 (size 21)
 /* velk pseudo-C: c10 @ 0x201630 */
 /* ref: 0x202760 .bss */
 uint32_t c10(void) {
-    eax = dword_202760 - 0x51;
-    dword_202760 = eax;
+    eax = g_sink - 0x51;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -479,8 +479,8 @@ fn c10 @ 0x201630 (size 21)
 /* velk pseudo-C: c11 @ 0x201650 */
 /* ref: 0x202760 .bss */
 uint32_t c11(void) {
-    eax = dword_202760 | 0x58;
-    dword_202760 = eax;
+    eax = g_sink | 0x58;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -501,8 +501,8 @@ fn c11 @ 0x201650 (size 21)
 /* velk pseudo-C: c12 @ 0x201670 */
 /* ref: 0x202760 .bss */
 uint32_t c12(void) {
-    eax = dword_202760 + 0x5f;
-    dword_202760 = eax;
+    eax = g_sink + 0x5f;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -523,8 +523,8 @@ fn c12 @ 0x201670 (size 21)
 /* velk pseudo-C: c13 @ 0x201690 */
 /* ref: 0x202760 .bss */
 uint32_t c13(void) {
-    eax = dword_202760 ^ 0x66;
-    dword_202760 = eax;
+    eax = g_sink ^ 0x66;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -545,8 +545,8 @@ fn c13 @ 0x201690 (size 21)
 /* velk pseudo-C: c14 @ 0x2016b0 */
 /* ref: 0x202760 .bss */
 uint32_t c14(void) {
-    eax = dword_202760 - 0x6d;
-    dword_202760 = eax;
+    eax = g_sink - 0x6d;
+    g_sink = eax;
     return eax;
 }
 -- signature
@@ -567,8 +567,8 @@ fn c14 @ 0x2016b0 (size 21)
 /* velk pseudo-C: c15 @ 0x2016d0 */
 /* ref: 0x202760 .bss */
 uint32_t c15(void) {
-    eax = dword_202760 | 0x74;
-    dword_202760 = eax;
+    eax = g_sink | 0x74;
+    g_sink = eax;
     return eax;
 }
 -- signature

@@ -112,7 +112,7 @@ fn array_sum @ 0x2101f0 (size 140)
 /* velk pseudo-C: bump @ 0x21027c */
 /* ref: 0x2202a8 .bss */
 void bump(void) {
-    dword_2202a8 += 0x1;
+    g_counter += 0x1;
     return;
 }
 -- signature
@@ -132,7 +132,7 @@ fn bump @ 0x21027c (size 20)
 /* velk pseudo-C: banner_first @ 0x210290 */
 /* ref: 0x2202a0 -> 0x200158 "velk ladder" */
 int banner_first(void) {
-    w0 = *(uint8_t *)(qword_2202a0);
+    w0 = *(uint8_t *)(banner);
     return w0;
 }
 -- signature

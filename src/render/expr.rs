@@ -162,13 +162,34 @@ pub(crate) fn render_value(value: &Expr, ctx: &Ctx<'_>) -> String {
     match value {
         // Only a top-level constant becomes a function name: an immediate
         // inside arithmetic can coincidentally equal a function address.
-        Expr::Const(address) if *address != 0 => ctx
-            .callees
-            .get(address)
-            .map(|name| sanitize(name))
-            .unwrap_or_else(|| render_expr(value, ctx)),
+        Expr::Const(address) if *address != 0 => match ctx.callees.get(address) {
+            Some(name) if in_data(*address, ctx) => format!("&{}", sanitize(name)),
+            Some(name) => sanitize(name),
+            None => render_expr(value, ctx),
+        },
+        // Each arm of a choice between addresses is a value of its own.
+        Expr::Select {
+            cond,
+            lhs,
+            rhs,
+            then,
+            els,
+        } if matches!(then.as_ref(), Expr::Const(_)) && matches!(els.as_ref(), Expr::Const(_)) => {
+            format!(
+                "({} ? {} : {})",
+                condition(*cond, lhs, rhs, ctx),
+                render_value(then, ctx),
+                render_value(els, ctx)
+            )
+        }
         _ => render_expr(value, ctx),
     }
+}
+
+fn in_data(address: u64, ctx: &Ctx<'_>) -> bool {
+    ctx.data_ranges
+        .iter()
+        .any(|(start, size)| address >= *start && address < start.saturating_add(*size))
 }
 
 pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {

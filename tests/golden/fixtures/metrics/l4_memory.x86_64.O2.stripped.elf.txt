@@ -51,7 +51,7 @@ int32_t sub_2011f0(uint64_t *a0, int32_t a1) {
             v1 = v1 + 0x20;
         } while (rax != v1);
         /* unsupported (5 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e */
-        rax = (uint32_t)xmm1;
+        rax = 0x0;
         if (rdx == rcx) {
             return rax;
         }
@@ -102,7 +102,7 @@ fn <unnamed> @ 0x2011f0 (size 144)
     unsupported: Paddd at 0x201255
     unsupported: Pshufd at 0x201259
     unsupported: Paddd at 0x20125e
-    rax = (xmm1 & #0xffffffff)
+    rax = #0x0
     brif eq rdx, rcx -> 0x20127b
   blk7 @ 0x201270:
     rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)

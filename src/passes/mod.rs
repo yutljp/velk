@@ -1,3 +1,4 @@
+pub mod constants;
 pub mod copies;
 pub mod cse;
 pub mod dce;
@@ -37,6 +38,7 @@ pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) {
         dce::dce(ir);
     }
     memory::fuse_load_op_store(ir);
+    constants::propagate_constants(ir);
     simplify::simplify(ir);
     dce::dce(ir);
 }

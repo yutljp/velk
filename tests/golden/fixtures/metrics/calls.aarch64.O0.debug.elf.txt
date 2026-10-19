@@ -49,7 +49,7 @@ fn square @ 0x210334 (size 28)
 -- decompile
 /* velk pseudo-C: pick_op @ 0x210350 */
 void * pick_op(int which) {
-    return (which != 0x0 ? 0x210334 : 0x21031c);
+    return (which != 0x0 ? square : twice);
 }
 -- signature
 void * (int which)
@@ -74,7 +74,7 @@ int apply_table(uint32_t index, int x) {
     local_1 = x;
     w8 = local_0;
     w9 = w8 - w8 / 0x3 * 0x3;
-    w8 = qword_2206f0[w9];
+    w8 = table[w9];
     index = x;
     (*(x8))();
     return index;

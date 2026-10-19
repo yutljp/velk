@@ -20,7 +20,7 @@ int sum_while(int n) {
     while (local_2 < local_0) {
         w8 = local_1 + local_2;
         local_1 = w8;
-        dword_220380 = w8;
+        sink = w8;
         local_2 += 0x1;
     }
     v1 = local_1;
@@ -73,7 +73,7 @@ int count_down(int n) {
     do {
         local_1 += 0x1;
         local_0 -= 0x1;
-        dword_220380 = local_1;
+        sink = local_1;
     } while (local_0 > 0x0);
     v1 = local_1;
     sp = sp + 0x10;
@@ -134,7 +134,7 @@ int sum_skip_odd(int n) {
     }
     w8 = local_1 + local_2;
     local_1 = w8;
-    dword_220380 = w8;
+    sink = w8;
     goto L_2102e4;
 }
 -- signature

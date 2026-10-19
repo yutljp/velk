@@ -202,9 +202,9 @@ L_20131f:
     xmm1 = local_1;
     xmm1_hi = 0x0;
     rax = 0x0;
-    ecx = 0x1;
+    rcx = 0x1;
     /* unsupported: Ucomisd at 0x201330 */
-    rax = (0x0 > 0x0 /* unsigned */ ? ecx : eax);
+    rax = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0);
     local_2 = eax;
     return local_2;
 }
@@ -234,7 +234,7 @@ fn <unnamed> @ 0x2012f0 (size 79)
     rax = #0x0
     rcx = #0x1
     unsupported: Ucomisd at 0x201330
-    rax = (select hi #0x0, #0x0 ? (rcx & #0xffffffff), (rax & #0xffffffff) & #0xffffffff)
+    rax = (select hi #0x0, #0x0 ? #0x1, #0x0 & #0xffffffff)
     store32((rax & #0xffffffff), (rsp + #0xffffffffffffffe4))
   blk3 @ 0x20133a:
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)

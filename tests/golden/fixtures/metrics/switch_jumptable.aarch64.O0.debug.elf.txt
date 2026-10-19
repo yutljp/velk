@@ -33,89 +33,89 @@ int d7(int x) {
     if (local_1 - 0x7 == 0x0) { goto L_210410; }
     if (local_1 - 0x8 == 0x0) { goto L_210454; }
     if (local_1 - 0x9 == 0x0) { goto L_210498; }
-    dword_2204fc = 0xffffffff;
+    g = 0xffffffff;
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210234:
     local_2 = 0x0;
     while (local_2 < 0x1) {
-        dword_2204fc += local_2;
+        g += local_2;
         local_2 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210278:
     local_3 = 0x0;
     while (local_3 < 0x2) {
-        dword_2204fc += local_3;
+        g += local_3;
         local_3 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_2102bc:
     local_4 = 0x0;
     while (local_4 < 0x3) {
-        dword_2204fc += local_4;
+        g += local_4;
         local_4 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210300:
     local_5 = 0x0;
     while (local_5 < 0x4) {
-        dword_2204fc += local_5;
+        g += local_5;
         local_5 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210344:
     local_6 = 0x0;
     while (local_6 < 0x5) {
-        dword_2204fc += local_6;
+        g += local_6;
         local_6 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210388:
     local_7 = 0x0;
     while (local_7 < 0x6) {
-        dword_2204fc += local_7;
+        g += local_7;
         local_7 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_2103cc:
     local_8 = 0x0;
     while (local_8 < 0x7) {
-        dword_2204fc += local_8;
+        g += local_8;
         local_8 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210410:
     local_9 = 0x0;
     while (local_9 < 0x8) {
-        dword_2204fc += local_9;
+        g += local_9;
         local_9 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210454:
     local_10 = 0x0;
     while (local_10 < 0x9) {
-        dword_2204fc += local_10;
+        g += local_10;
         local_10 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 L_210498:
     local_11 = 0x0;
     while (local_11 < 0xa) {
-        dword_2204fc += local_11;
+        g += local_11;
         local_11 += 0x1;
     }
     sp = sp + 0x30;
-    return dword_2204fc;
+    return g;
 }
 -- signature
 int (int x)

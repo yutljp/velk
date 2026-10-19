@@ -132,6 +132,9 @@ pub(crate) fn global_name(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Strin
     {
         return None;
     }
+    if let Some(name) = ctx.callees.get(address) {
+        return Some(super::sanitize(name));
+    }
     let kind = match width {
         1 => "byte",
         2 => "word",

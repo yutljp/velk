@@ -13,11 +13,10 @@ int32_t sum_while(int32_t a0) {
     }
     w9 = 0x0;
     w8 = 0x0;
-    x10 = 0x0;
     do {
         w8 = w9 + w8;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x10 + 0xd4) = w8;
+        sink = w8;
     } while (a0 != w9);
     return w8;
 }
@@ -32,11 +31,10 @@ fn sum_while @ 0x0 (size 60)
   blk1 @ 0x8:
     x9 = #0x0
     x8 = #0x0
-    x10 = #0x0
   blk2 @ 0x14:
     x8 = (((x9 & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x8 & #0xffffffff), (x10 + #0xd4))
+    store32((x8 & #0xffffffff), #0xd4)
     brif ne w0, (x9 & #0xffffffff) -> 0x14
   blk3 @ 0x28:
     ret (x8 & #0xffffffff)
@@ -50,11 +48,10 @@ fn sum_while @ 0x0 (size 60)
 /* velk pseudo-C: count_down @ 0x3c */
 int32_t count_down(int32_t a0) {
     w8 = 0x0;
-    x9 = 0x0;
     v1 = (a0 > 0x1 ? a0 : 0x1);
     do {
         w8 = w8 + 0x1;
-        *(uint32_t *)(x9 + 0xd4) = w8;
+        sink = w8;
     } while (v1 != w8);
     return v1;
 }
@@ -66,11 +63,10 @@ int32_t (int32_t a0)
 fn count_down @ 0x3c (size 36)
   blk0 @ 0x3c:
     x8 = #0x0
-    x9 = #0x0
     v1 = select gt w0, #0x1 ? w0, #0x1
   blk1 @ 0x4c:
     x8 = (((x8 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x8 & #0xffffffff), (x9 + #0xd4))
+    store32((x8 & #0xffffffff), #0xd4)
     brif ne v1, (x8 & #0xffffffff) -> 0x4c
   blk2 @ 0x5c:
     ret v1
@@ -87,11 +83,10 @@ int32_t sum_skip_odd(int32_t a0) {
     }
     x9 = 0x0;
     w8 = 0x0;
-    x10 = 0x0;
     for (;;) {
         if ((x9 & 0x1) != 0x0) {
             w8 = w8 + w9;
-            *(uint32_t *)(x10 + 0xd4) = w8;
+            sink = w8;
         }
         x9 = w9 + 0x1;
         if (a0 == w9) {
@@ -111,7 +106,6 @@ fn sum_skip_odd @ 0x60 (size 64)
   blk1 @ 0x68:
     x9 = #0x0
     x8 = #0x0
-    x10 = #0x0
     br 0x84
   blk2 @ 0x78:
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
@@ -120,7 +114,7 @@ fn sum_skip_odd @ 0x60 (size 64)
     brif eq (x9 & #0x1), #0x0 -> 0x78
   blk4 @ 0x88:
     x8 = (((x8 & #0xffffffff) + (x9 & #0xffffffff)) & #0xffffffff)
-    store32((x8 & #0xffffffff), (x10 + #0xd4))
+    store32((x8 & #0xffffffff), #0xd4)
     br 0x78
   blk5 @ 0x94:
     x8 = #0x0

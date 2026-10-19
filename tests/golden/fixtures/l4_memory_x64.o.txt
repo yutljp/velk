@@ -65,7 +65,7 @@ fn array_sum @ 0x10 (size 31)
 -- decompile
 /* velk pseudo-C: bump @ 0x30 */
 void bump(void) {
-    dword_4c += 0x1;
+    g_counter += 0x1;
     return;
 }
 -- signature
@@ -84,7 +84,7 @@ fn bump @ 0x30 (size 7)
 -- decompile
 /* velk pseudo-C: banner_first @ 0x40 */
 uint32_t banner_first(void) {
-    return (int8_t)(*(uint8_t *)(qword_60));
+    return (int8_t)(*(uint8_t *)(banner));
 }
 -- signature
 uint32_t ()

@@ -7,24 +7,24 @@
 == 0x2101c4 -
 -- decompile
 /* velk pseudo-C: sub_2101c4 @ 0x2101c4 */
+/* ref: 0x220298 .bss */
 int32_t sub_2101c4(int32_t a0) {
     if (a0 < 0x1) {
         return 0x0;
     }
     w9 = 0x0;
     w8 = 0x0;
-    x10 = 0x220000;
     do {
         w8 = w9 + w8;
         w9 = w9 + 0x1;
-        *(uint32_t *)(x10 + 0x298) = w8;
+        dword_220298 = w8;
     } while (a0 != w9);
     return w8;
 }
 -- signature
 int32_t (int32_t a0)
 -- references
-
+0x220298 .bss
 -- ir
 fn <unnamed> @ 0x2101c4 (size 60)
   blk0 @ 0x2101c4:
@@ -32,11 +32,10 @@ fn <unnamed> @ 0x2101c4 (size 60)
   blk1 @ 0x2101cc:
     x9 = #0x0
     x8 = #0x0
-    x10 = #0x220000
   blk2 @ 0x2101d8:
     x8 = (((x9 & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x8 & #0xffffffff), (x10 + #0x298))
+    store32((x8 & #0xffffffff), #0x220298)
     brif ne w0, (x9 & #0xffffffff) -> 0x2101d8
   blk3 @ 0x2101ec:
     ret (x8 & #0xffffffff)
@@ -48,29 +47,28 @@ fn <unnamed> @ 0x2101c4 (size 60)
 == 0x210200 -
 -- decompile
 /* velk pseudo-C: sub_210200 @ 0x210200 */
+/* ref: 0x220298 .bss */
 int32_t sub_210200(int32_t a0) {
     w8 = 0x0;
-    x9 = 0x220000;
     v1 = (a0 > 0x1 ? a0 : 0x1);
     do {
         w8 = w8 + 0x1;
-        *(uint32_t *)(x9 + 0x298) = w8;
+        dword_220298 = w8;
     } while (v1 != w8);
     return v1;
 }
 -- signature
 int32_t (int32_t a0)
 -- references
-
+0x220298 .bss
 -- ir
 fn <unnamed> @ 0x210200 (size 36)
   blk0 @ 0x210200:
     x8 = #0x0
-    x9 = #0x220000
     v1 = select gt w0, #0x1 ? w0, #0x1
   blk1 @ 0x210210:
     x8 = (((x8 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((x8 & #0xffffffff), (x9 + #0x298))
+    store32((x8 & #0xffffffff), #0x220298)
     brif ne v1, (x8 & #0xffffffff) -> 0x210210
   blk2 @ 0x210220:
     ret v1
@@ -80,6 +78,7 @@ fn <unnamed> @ 0x210200 (size 36)
 == 0x210224 -
 -- decompile
 /* velk pseudo-C: sub_210224 @ 0x210224 */
+/* ref: 0x220298 .bss */
 int32_t sub_210224(int32_t a0) {
     if (a0 < 0x1) {
         w8 = 0x0;
@@ -87,11 +86,10 @@ int32_t sub_210224(int32_t a0) {
     }
     x9 = 0x0;
     w8 = 0x0;
-    x10 = 0x220000;
     for (;;) {
         if ((x9 & 0x1) != 0x0) {
             w8 = w8 + w9;
-            *(uint32_t *)(x10 + 0x298) = w8;
+            dword_220298 = w8;
         }
         x9 = w9 + 0x1;
         if (a0 == w9) {
@@ -103,7 +101,7 @@ int32_t sub_210224(int32_t a0) {
 -- signature
 int32_t (int32_t a0)
 -- references
-
+0x220298 .bss
 -- ir
 fn <unnamed> @ 0x210224 (size 64)
   blk0 @ 0x210224:
@@ -111,7 +109,6 @@ fn <unnamed> @ 0x210224 (size 64)
   blk1 @ 0x21022c:
     x9 = #0x0
     x8 = #0x0
-    x10 = #0x220000
     br 0x210248
   blk2 @ 0x21023c:
     x9 = (((x9 & #0xffffffff) + #0x1) & #0xffffffff)
@@ -120,7 +117,7 @@ fn <unnamed> @ 0x210224 (size 64)
     brif eq (x9 & #0x1), #0x0 -> 0x21023c
   blk4 @ 0x21024c:
     x8 = (((x8 & #0xffffffff) + (x9 & #0xffffffff)) & #0xffffffff)
-    store32((x8 & #0xffffffff), (x10 + #0x298))
+    store32((x8 & #0xffffffff), #0x220298)
     br 0x21023c
   blk5 @ 0x210258:
     x8 = #0x0

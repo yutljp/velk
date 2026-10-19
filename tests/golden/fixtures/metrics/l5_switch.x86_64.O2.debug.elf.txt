@@ -28,8 +28,8 @@ int dense(int x) {
 
     x = ((x - 0xa) & 0xffffffff);
     if (x > 0xf /* unsigned */) {
-        dword_20250c = 0x0;
-        rax = dword_20250c;
+        g_sink = 0x0;
+        rax = g_sink;
         return rax;
     }
     rsp = rsp - 0x8;
@@ -40,86 +40,86 @@ int dense(int x) {
     case 10:
         c0();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 11:
         c1();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 12:
         c2();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 13:
         c3();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 14:
         c4();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 15:
         c5();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 16:
         c6();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 17:
         c7();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 18:
         c8();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 19:
         c9();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 20:
         c10();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 21:
         c11();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 22:
         c12();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 23:
         c13();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 24:
         c14();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     case 25:
         c15();
         rsp = rsp + 0x8;
-        rax = dword_20250c;
+        rax = g_sink;
         return rax;
     default:
-        dword_20250c = 0x0;
-        rax = dword_20250c;
+        g_sink = 0x0;
+        rax = g_sink;
         return rax;
     }
 }
@@ -202,7 +202,7 @@ fn dense @ 0x201330 (size 167)
 /* velk pseudo-C: c0 @ 0x2013e0 */
 /* ref: 0x20250c .bss */
 void c0(void) {
-    dword_20250c += 0xb;
+    g_sink += 0xb;
     return;
 }
 -- signature
@@ -222,7 +222,7 @@ fn c0 @ 0x2013e0 (size 8)
 /* velk pseudo-C: c1 @ 0x2013f0 */
 /* ref: 0x20250c .bss */
 void c1(void) {
-    dword_20250c ^= 0x12;
+    g_sink ^= 0x12;
     return;
 }
 -- signature
@@ -242,7 +242,7 @@ fn c1 @ 0x2013f0 (size 8)
 /* velk pseudo-C: c2 @ 0x201400 */
 /* ref: 0x20250c .bss */
 void c2(void) {
-    dword_20250c += 0xffffffffffffffe7;
+    g_sink += 0xffffffffffffffe7;
     return;
 }
 -- signature
@@ -262,7 +262,7 @@ fn c2 @ 0x201400 (size 8)
 /* velk pseudo-C: c3 @ 0x201410 */
 /* ref: 0x20250c .bss */
 void c3(void) {
-    dword_20250c |= 0x20;
+    g_sink |= 0x20;
     return;
 }
 -- signature
@@ -282,7 +282,7 @@ fn c3 @ 0x201410 (size 8)
 /* velk pseudo-C: c4 @ 0x201420 */
 /* ref: 0x20250c .bss */
 void c4(void) {
-    dword_20250c += 0x27;
+    g_sink += 0x27;
     return;
 }
 -- signature
@@ -302,7 +302,7 @@ fn c4 @ 0x201420 (size 8)
 /* velk pseudo-C: c5 @ 0x201430 */
 /* ref: 0x20250c .bss */
 void c5(void) {
-    dword_20250c ^= 0x2e;
+    g_sink ^= 0x2e;
     return;
 }
 -- signature
@@ -322,7 +322,7 @@ fn c5 @ 0x201430 (size 8)
 /* velk pseudo-C: c6 @ 0x201440 */
 /* ref: 0x20250c .bss */
 void c6(void) {
-    dword_20250c += 0xffffffffffffffcb;
+    g_sink += 0xffffffffffffffcb;
     return;
 }
 -- signature
@@ -342,7 +342,7 @@ fn c6 @ 0x201440 (size 8)
 /* velk pseudo-C: c7 @ 0x201450 */
 /* ref: 0x20250c .bss */
 void c7(void) {
-    dword_20250c |= 0x3c;
+    g_sink |= 0x3c;
     return;
 }
 -- signature
@@ -362,7 +362,7 @@ fn c7 @ 0x201450 (size 8)
 /* velk pseudo-C: c8 @ 0x201460 */
 /* ref: 0x20250c .bss */
 void c8(void) {
-    dword_20250c += 0x43;
+    g_sink += 0x43;
     return;
 }
 -- signature
@@ -382,7 +382,7 @@ fn c8 @ 0x201460 (size 8)
 /* velk pseudo-C: c9 @ 0x201470 */
 /* ref: 0x20250c .bss */
 void c9(void) {
-    dword_20250c ^= 0x4a;
+    g_sink ^= 0x4a;
     return;
 }
 -- signature
@@ -402,7 +402,7 @@ fn c9 @ 0x201470 (size 8)
 /* velk pseudo-C: c10 @ 0x201480 */
 /* ref: 0x20250c .bss */
 void c10(void) {
-    dword_20250c += 0xffffffffffffffaf;
+    g_sink += 0xffffffffffffffaf;
     return;
 }
 -- signature
@@ -422,7 +422,7 @@ fn c10 @ 0x201480 (size 8)
 /* velk pseudo-C: c11 @ 0x201490 */
 /* ref: 0x20250c .bss */
 void c11(void) {
-    dword_20250c |= 0x58;
+    g_sink |= 0x58;
     return;
 }
 -- signature
@@ -442,7 +442,7 @@ fn c11 @ 0x201490 (size 8)
 /* velk pseudo-C: c12 @ 0x2014a0 */
 /* ref: 0x20250c .bss */
 void c12(void) {
-    dword_20250c += 0x5f;
+    g_sink += 0x5f;
     return;
 }
 -- signature
@@ -462,7 +462,7 @@ fn c12 @ 0x2014a0 (size 8)
 /* velk pseudo-C: c13 @ 0x2014b0 */
 /* ref: 0x20250c .bss */
 void c13(void) {
-    dword_20250c ^= 0x66;
+    g_sink ^= 0x66;
     return;
 }
 -- signature
@@ -482,7 +482,7 @@ fn c13 @ 0x2014b0 (size 8)
 /* velk pseudo-C: c14 @ 0x2014c0 */
 /* ref: 0x20250c .bss */
 void c14(void) {
-    dword_20250c += 0xffffffffffffff93;
+    g_sink += 0xffffffffffffff93;
     return;
 }
 -- signature
@@ -502,7 +502,7 @@ fn c14 @ 0x2014c0 (size 8)
 /* velk pseudo-C: c15 @ 0x2014d0 */
 /* ref: 0x20250c .bss */
 void c15(void) {
-    dword_20250c |= 0x74;
+    g_sink |= 0x74;
     return;
 }
 -- signature

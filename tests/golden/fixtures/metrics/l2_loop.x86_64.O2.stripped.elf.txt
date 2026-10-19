@@ -273,9 +273,8 @@ fn <unnamed> @ 0x201360 (size 80)
 -- decompile
 /* velk pseudo-C: sub_2013b0 @ 0x2013b0 */
 int32_t sub_2013b0(uint64_t a0, int32_t a1, uint32_t a2) {
-    rax = 0xffffffff;
     if (a1 <= 0x0) {
-        return rax;
+        return 0xffffffff;
     }
     v1 = a1;
     rcx = 0x0;
@@ -283,7 +282,7 @@ int32_t sub_2013b0(uint64_t a0, int32_t a1, uint32_t a2) {
         if (*(uint32_t *)(a0 + rcx * 0x4) == a2) { goto L_2013ce; }
         rcx = rcx + 0x1;
     } while (v1 != rcx);
-    return rax;
+    return 0xffffffff;
 L_2013ce:
     return ecx;
 }
@@ -294,7 +293,6 @@ int32_t (uint64_t a0, int32_t a1, uint32_t a2)
 -- ir
 fn <unnamed> @ 0x2013b0 (size 33)
   blk0 @ 0x2013b0:
-    rax = #0xffffffff
     brif le (rsi & #0xffffffff), #0x0 -> 0x2013cd
   blk1 @ 0x2013b9:
     v1 = (rsi & #0xffffffff)
@@ -305,7 +303,7 @@ fn <unnamed> @ 0x2013b0 (size 33)
     rcx = (rcx + #0x1)
     brif ne v1, rcx -> 0x2013c0
   blk4 @ 0x2013cd:
-    ret rax
+    ret #0xffffffff
   blk5 @ 0x2013ce:
     ret (rcx & #0xffffffff)
 -- card

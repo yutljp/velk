@@ -22,83 +22,83 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x210304 */
 /* ref: 0x200158 .rodata */
+/* ref: 0x220554 .bss */
 int dense(int x) {
     x8 = x - 0xa;
-    x19 = 0x220000;
     if (w8 > 0xf /* unsigned */) {
-        *(uint32_t *)(x19 + 0x554) = 0x0;
-        v1 = *(uint32_t *)(x19 + 0x554);
+        g_sink = 0x0;
+        v1 = g_sink;
         return v1;
     }
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (x) {
     case 10:
         c0();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 11:
         c1();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 12:
         c2();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 13:
         c3();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 14:
         c4();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 15:
         c5();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 16:
         c6();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 17:
         c7();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 18:
         c8();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 19:
         c9();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 20:
         c10();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 21:
         c11();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 22:
         c12();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 23:
         c13();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 24:
         c14();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     case 25:
         c15();
-        v1 = *(uint32_t *)(x19 + 0x554);
+        v1 = g_sink;
         return v1;
     default:
-        *(uint32_t *)(x19 + 0x554) = 0x0;
-        v1 = *(uint32_t *)(x19 + 0x554);
+        g_sink = 0x0;
+        v1 = g_sink;
         return v1;
     }
 }
@@ -106,11 +106,11 @@ int dense(int x) {
 int (int x)
 -- references
 0x200158 .rodata
+0x220554 .bss
 -- ir
 fn dense @ 0x210304 (size 200)
   blk0 @ 0x210304:
     x8 = ((w0 - #0xa) & #0xffffffff)
-    x19 = #0x220000
     brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
     x11 = (load8((#0x200158 + x8)) & #0xffffffff)
@@ -164,9 +164,9 @@ fn dense @ 0x210304 (size 200)
     call 0x210474
     br 0x2103bc
   blk18 @ 0x2103b8:
-    store32(#0x0, (x19 + #0x554))
+    store32(#0x0, #0x220554)
   blk19 @ 0x2103bc:
-    v1 = load32((x19 + #0x554))
+    v1 = load32(#0x220554)
     ret v1
 -- card
 {"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":200,"unsupported":0}
@@ -176,7 +176,7 @@ fn dense @ 0x210304 (size 200)
 /* velk pseudo-C: c0 @ 0x2103cc */
 /* ref: 0x220554 .bss */
 void c0(void) {
-    dword_220554 += 0xb;
+    g_sink += 0xb;
     return;
 }
 -- signature
@@ -196,7 +196,7 @@ fn c0 @ 0x2103cc (size 20)
 /* velk pseudo-C: c1 @ 0x2103e0 */
 /* ref: 0x220554 .bss */
 void c1(void) {
-    dword_220554 ^= 0x12;
+    g_sink ^= 0x12;
     return;
 }
 -- signature
@@ -216,7 +216,7 @@ fn c1 @ 0x2103e0 (size 24)
 /* velk pseudo-C: c2 @ 0x2103f8 */
 /* ref: 0x220554 .bss */
 void c2(void) {
-    dword_220554 -= 0x19;
+    g_sink -= 0x19;
     return;
 }
 -- signature
@@ -236,7 +236,7 @@ fn c2 @ 0x2103f8 (size 20)
 /* velk pseudo-C: c3 @ 0x21040c */
 /* ref: 0x220554 .bss */
 void c3(void) {
-    dword_220554 |= 0x20;
+    g_sink |= 0x20;
     return;
 }
 -- signature
@@ -256,7 +256,7 @@ fn c3 @ 0x21040c (size 20)
 /* velk pseudo-C: c4 @ 0x210420 */
 /* ref: 0x220554 .bss */
 void c4(void) {
-    dword_220554 += 0x27;
+    g_sink += 0x27;
     return;
 }
 -- signature
@@ -276,7 +276,7 @@ fn c4 @ 0x210420 (size 20)
 /* velk pseudo-C: c5 @ 0x210434 */
 /* ref: 0x220554 .bss */
 void c5(void) {
-    dword_220554 ^= 0x2e;
+    g_sink ^= 0x2e;
     return;
 }
 -- signature
@@ -296,7 +296,7 @@ fn c5 @ 0x210434 (size 24)
 /* velk pseudo-C: c6 @ 0x21044c */
 /* ref: 0x220554 .bss */
 void c6(void) {
-    dword_220554 -= 0x35;
+    g_sink -= 0x35;
     return;
 }
 -- signature
@@ -316,7 +316,7 @@ fn c6 @ 0x21044c (size 20)
 /* velk pseudo-C: c7 @ 0x210460 */
 /* ref: 0x220554 .bss */
 void c7(void) {
-    dword_220554 |= 0x3c;
+    g_sink |= 0x3c;
     return;
 }
 -- signature
@@ -336,7 +336,7 @@ fn c7 @ 0x210460 (size 20)
 /* velk pseudo-C: c8 @ 0x210474 */
 /* ref: 0x220554 .bss */
 void c8(void) {
-    dword_220554 += 0x43;
+    g_sink += 0x43;
     return;
 }
 -- signature
@@ -356,7 +356,7 @@ fn c8 @ 0x210474 (size 20)
 /* velk pseudo-C: c9 @ 0x210488 */
 /* ref: 0x220554 .bss */
 void c9(void) {
-    dword_220554 ^= 0x4a;
+    g_sink ^= 0x4a;
     return;
 }
 -- signature
@@ -376,7 +376,7 @@ fn c9 @ 0x210488 (size 24)
 /* velk pseudo-C: c10 @ 0x2104a0 */
 /* ref: 0x220554 .bss */
 void c10(void) {
-    dword_220554 -= 0x51;
+    g_sink -= 0x51;
     return;
 }
 -- signature
@@ -396,7 +396,7 @@ fn c10 @ 0x2104a0 (size 20)
 /* velk pseudo-C: c11 @ 0x2104b4 */
 /* ref: 0x220554 .bss */
 void c11(void) {
-    dword_220554 |= 0x58;
+    g_sink |= 0x58;
     return;
 }
 -- signature
@@ -416,7 +416,7 @@ fn c11 @ 0x2104b4 (size 24)
 /* velk pseudo-C: c12 @ 0x2104cc */
 /* ref: 0x220554 .bss */
 void c12(void) {
-    dword_220554 += 0x5f;
+    g_sink += 0x5f;
     return;
 }
 -- signature
@@ -436,7 +436,7 @@ fn c12 @ 0x2104cc (size 20)
 /* velk pseudo-C: c13 @ 0x2104e0 */
 /* ref: 0x220554 .bss */
 void c13(void) {
-    dword_220554 ^= 0x66;
+    g_sink ^= 0x66;
     return;
 }
 -- signature
@@ -456,7 +456,7 @@ fn c13 @ 0x2104e0 (size 24)
 /* velk pseudo-C: c14 @ 0x2104f8 */
 /* ref: 0x220554 .bss */
 void c14(void) {
-    dword_220554 -= 0x6d;
+    g_sink -= 0x6d;
     return;
 }
 -- signature
@@ -476,7 +476,7 @@ fn c14 @ 0x2104f8 (size 20)
 /* velk pseudo-C: c15 @ 0x21050c */
 /* ref: 0x220554 .bss */
 void c15(void) {
-    dword_220554 |= 0x74;
+    g_sink |= 0x74;
     return;
 }
 -- signature

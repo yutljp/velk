@@ -310,7 +310,7 @@ int skip_negatives(int *p, int n) {
         return 0x0;
     }
     rcx = n;
-    edx = 0x0;
+    rdx = 0x0;
     if (n < 0x8 /* unsigned */) {
         v1 = 0x0;
         rax = 0x0;
@@ -339,14 +339,14 @@ int skip_negatives(int *p, int n) {
             r8 = r8 + 0x20;
         } while (rax != r8);
         /* unsupported (5 steps): Paddd at 0x201446, Pshufd at 0x20144a, Paddd at 0x20144f, Pshufd at 0x201453, Paddd at 0x201458 */
-        rax = (uint32_t)xmm0;
+        rax = 0x0;
         if (v1 == rcx) {
             return rax;
         }
     }
     do {
         r8 = *(uint32_t *)(p + v1 * 0x4);
-        rax = eax + (r8d <= 0x0 ? edx : r8d);
+        rax = eax + (r8d <= 0x0 ? 0x0 : r8d);
         v1 = v1 + 0x1;
     } while (rcx != v1);
     return rax;
@@ -400,11 +400,11 @@ fn skip_negatives @ 0x2013d0 (size 183)
     unsupported: Paddd at 0x20144f
     unsupported: Pshufd at 0x201453
     unsupported: Paddd at 0x201458
-    rax = (xmm0 & #0xffffffff)
+    rax = #0x0
     brif eq v1, rcx -> 0x201486
   blk7 @ 0x201470:
     r8 = (load32((rdi + (v1 * #0x4))) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + select le (r8 & #0xffffffff), #0x0 ? (rdx & #0xffffffff), (r8 & #0xffffffff)) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + select le (r8 & #0xffffffff), #0x0 ? #0x0, (r8 & #0xffffffff)) & #0xffffffff)
     v1 = (v1 + #0x1)
     brif ne rcx, v1 -> 0x201470
   blk8 @ 0x201486:

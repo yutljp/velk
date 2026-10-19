@@ -10,19 +10,14 @@ use crate::ir::{Expr, FunctionIr, Stmt, VARIABLE_BASE};
 
 /// A definition of the register: the function's entry, or a statement.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum Def {
+pub(crate) enum Def {
     Entry,
     At(usize, usize),
 }
 
 pub fn split_parameter_webs(ir: &mut FunctionIr) {
     // An unknown successor could read any register.
-    if ir
-        .blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }))
-    {
+    if has_unknown_successors(ir) {
         return;
     }
     let mut next = VARIABLE_BASE;
@@ -35,16 +30,9 @@ pub fn split_parameter_webs(ir: &mut FunctionIr) {
     }
 }
 
-/// The statements defining one variable a register holds, and those reading it.
-#[derive(Default)]
-struct Web {
-    defs: HashSet<(usize, usize)>,
-    reads: HashSet<(usize, usize)>,
-}
-
-/// The webs of `register` the entry value does not reach, when every
-/// statement in them names the register.
-fn renamable_webs(ir: &FunctionIr, register: u16) -> Vec<Web> {
+/// The definitions of `register` reaching the start of each block, or None
+/// when no statement defines it.
+pub(crate) fn reaching_definitions(ir: &FunctionIr, register: u16) -> Option<Vec<HashSet<Def>>> {
     let count = ir.blocks.len();
     let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();
     let last_def: Vec<Option<Def>> = ir
@@ -60,7 +48,7 @@ fn renamable_webs(ir: &FunctionIr, register: u16) -> Vec<Web> {
         })
         .collect();
     if last_def.iter().all(Option::is_none) {
-        return Vec::new();
+        return None;
     }
     // The definitions reaching the start of each block; the sets only grow.
     let mut reaching: Vec<HashSet<Def>> = vec![HashSet::new(); count];
@@ -82,6 +70,32 @@ fn renamable_webs(ir: &FunctionIr, register: u16) -> Vec<Web> {
             break;
         }
     }
+
+    Some(reaching)
+}
+
+/// Whether some successor of a block is unknown, so any register could be
+/// read after it.
+pub(crate) fn has_unknown_successors(ir: &FunctionIr) -> bool {
+    ir.blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }))
+}
+
+/// The statements defining one variable a register holds, and those reading it.
+#[derive(Default)]
+struct Web {
+    defs: HashSet<(usize, usize)>,
+    reads: HashSet<(usize, usize)>,
+}
+
+/// The webs of `register` the entry value does not reach, when every
+/// statement in them names the register.
+fn renamable_webs(ir: &FunctionIr, register: u16) -> Vec<Web> {
+    let Some(reaching) = reaching_definitions(ir, register) else {
+        return Vec::new();
+    };
 
     // Each read joins the definitions reaching it into one web.
     let mut parent: HashMap<Def, Def> = HashMap::new();

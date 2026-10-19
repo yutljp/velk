@@ -26,8 +26,8 @@ int d7(int x) {
     local_1 = rax;
     rax = rax - 0x9;
     if (rax + 0x9 > 0x9 /* unsigned */) {
-        dword_202410 = 0xffffffff;
-        rax = dword_202410;
+        g = 0xffffffff;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     }
@@ -40,105 +40,105 @@ int d7(int x) {
         local_2 = 0x0;
         while (local_2 < 0x1) {
             ecx = local_2;
-            dword_202410 += ecx;
+            g += ecx;
             local_2 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 1:
         local_3 = 0x0;
         while (local_3 < 0x2) {
             ecx = local_3;
-            dword_202410 += ecx;
+            g += ecx;
             local_3 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 2:
         local_4 = 0x0;
         while (local_4 < 0x3) {
             ecx = local_4;
-            dword_202410 += ecx;
+            g += ecx;
             local_4 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 3:
         local_5 = 0x0;
         while (local_5 < 0x4) {
             ecx = local_5;
-            dword_202410 += ecx;
+            g += ecx;
             local_5 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 4:
         local_6 = 0x0;
         while (local_6 < 0x5) {
             ecx = local_6;
-            dword_202410 += ecx;
+            g += ecx;
             local_6 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 5:
         local_7 = 0x0;
         while (local_7 < 0x6) {
             ecx = local_7;
-            dword_202410 += ecx;
+            g += ecx;
             local_7 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 6:
         local_8 = 0x0;
         while (local_8 < 0x7) {
             ecx = local_8;
-            dword_202410 += ecx;
+            g += ecx;
             local_8 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 7:
         local_9 = 0x0;
         while (local_9 < 0x8) {
             ecx = local_9;
-            dword_202410 += ecx;
+            g += ecx;
             local_9 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 8:
         local_10 = 0x0;
         while (local_10 < 0x9) {
             ecx = local_10;
-            dword_202410 += ecx;
+            g += ecx;
             local_10 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     case 9:
         local_11 = 0x0;
         while (local_11 < 0xa) {
             ecx = local_11;
-            dword_202410 += ecx;
+            g += ecx;
             local_11 += 0x1;
         }
-        rax = dword_202410;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     default:
-        dword_202410 = 0xffffffff;
-        rax = dword_202410;
+        g = 0xffffffff;
+        rax = g;
         rsp = rsp + 0x8;
         return rax;
     }

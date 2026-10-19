@@ -49,7 +49,7 @@ fn square @ 0x201300 (size 6)
 -- decompile
 /* velk pseudo-C: pick_op @ 0x201310 */
 void * pick_op(int which) {
-    return (which == 0x0 ? 0x2012f0 : 0x201300);
+    return (which == 0x0 ? twice : square);
 }
 -- signature
 void * (int which)
@@ -71,9 +71,9 @@ int apply_table(uint32_t index, int x) {
     rdx = 0xaaaaaaab * index >> 0x21;
     rcx = ((rdx + rdx * 0x2) & 0xffffffff);
     rax = index % 0x3;
-    rcx = 0x202610;
+    rcx = &table;
     index = x;
-    goto *(qword_202610[rax]);
+    goto *(table[rax]);
 }
 -- signature
 int (uint32_t index, int x)
@@ -151,10 +151,10 @@ int factorial(int n) {
     xmm3_hi = xmm1_hi;
     do {
         xmm5 = xmm0;
-        xmm5_hi = xmm0_hi;
+        xmm5_hi = 0x0;
         /* unsupported: Paddd at 0x2013c4 */
         xmm6 = xmm0;
-        xmm6_hi = xmm0_hi;
+        xmm6_hi = 0x0;
         /* unsupported (6 steps): Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3 */
         xmm1 = xmm6;
         xmm1_hi = xmm6_hi;
@@ -213,10 +213,10 @@ fn factorial @ 0x201370 (size 238)
     xmm3_hi = xmm1_hi
   blk3 @ 0x2013c0:
     xmm5 = xmm0
-    xmm5_hi = xmm0_hi
+    xmm5_hi = #0x0
     unsupported: Paddd at 0x2013c4
     xmm6 = xmm0
-    xmm6_hi = xmm0_hi
+    xmm6_hi = #0x0
     unsupported: Pmuludq at 0x2013cc
     unsupported: Pshufd at 0x2013d0
     unsupported: Pshufd at 0x2013d5

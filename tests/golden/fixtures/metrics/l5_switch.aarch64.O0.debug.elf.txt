@@ -36,9 +36,9 @@ int dense(int x) {
     x8 = x8 - 0xf;
     if (x8 + 0xf > 0xf /* unsigned */) {
         x8 = 0x220000;
-        dword_2205e8 = 0x0;
+        g_sink = 0x0;
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     }
@@ -49,104 +49,104 @@ int dense(int x) {
     case 10:
         c0();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 11:
         c1();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 12:
         c2();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 13:
         c3();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 14:
         c4();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 15:
         c5();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 16:
         c6();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 17:
         c7();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 18:
         c8();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 19:
         c9();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 20:
         c10();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 21:
         c11();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 22:
         c12();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 23:
         c13();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 24:
         c14();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 25:
         c15();
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     default:
         x8 = 0x220000;
-        dword_2205e8 = 0x0;
+        g_sink = 0x0;
         x8 = 0x220000;
-        v1 = dword_2205e8;
+        v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     }
@@ -237,7 +237,7 @@ fn dense @ 0x210334 (size 228)
 /* velk pseudo-C: c0 @ 0x210418 */
 /* ref: 0x2205e8 .bss */
 void c0(void) {
-    dword_2205e8 += 0xb;
+    g_sink += 0xb;
     return;
 }
 -- signature
@@ -257,7 +257,7 @@ fn c0 @ 0x210418 (size 20)
 /* velk pseudo-C: c1 @ 0x21042c */
 /* ref: 0x2205e8 .bss */
 void c1(void) {
-    dword_2205e8 ^= 0x12;
+    g_sink ^= 0x12;
     return;
 }
 -- signature
@@ -277,7 +277,7 @@ fn c1 @ 0x21042c (size 24)
 /* velk pseudo-C: c2 @ 0x210444 */
 /* ref: 0x2205e8 .bss */
 void c2(void) {
-    dword_2205e8 -= 0x19;
+    g_sink -= 0x19;
     return;
 }
 -- signature
@@ -297,7 +297,7 @@ fn c2 @ 0x210444 (size 20)
 /* velk pseudo-C: c3 @ 0x210458 */
 /* ref: 0x2205e8 .bss */
 void c3(void) {
-    dword_2205e8 |= 0x20;
+    g_sink |= 0x20;
     return;
 }
 -- signature
@@ -317,7 +317,7 @@ fn c3 @ 0x210458 (size 20)
 /* velk pseudo-C: c4 @ 0x21046c */
 /* ref: 0x2205e8 .bss */
 void c4(void) {
-    dword_2205e8 += 0x27;
+    g_sink += 0x27;
     return;
 }
 -- signature
@@ -337,7 +337,7 @@ fn c4 @ 0x21046c (size 20)
 /* velk pseudo-C: c5 @ 0x210480 */
 /* ref: 0x2205e8 .bss */
 void c5(void) {
-    dword_2205e8 ^= 0x2e;
+    g_sink ^= 0x2e;
     return;
 }
 -- signature
@@ -357,7 +357,7 @@ fn c5 @ 0x210480 (size 24)
 /* velk pseudo-C: c6 @ 0x210498 */
 /* ref: 0x2205e8 .bss */
 void c6(void) {
-    dword_2205e8 -= 0x35;
+    g_sink -= 0x35;
     return;
 }
 -- signature
@@ -377,7 +377,7 @@ fn c6 @ 0x210498 (size 20)
 /* velk pseudo-C: c7 @ 0x2104ac */
 /* ref: 0x2205e8 .bss */
 void c7(void) {
-    dword_2205e8 |= 0x3c;
+    g_sink |= 0x3c;
     return;
 }
 -- signature
@@ -397,7 +397,7 @@ fn c7 @ 0x2104ac (size 20)
 /* velk pseudo-C: c8 @ 0x2104c0 */
 /* ref: 0x2205e8 .bss */
 void c8(void) {
-    dword_2205e8 += 0x43;
+    g_sink += 0x43;
     return;
 }
 -- signature
@@ -417,7 +417,7 @@ fn c8 @ 0x2104c0 (size 20)
 /* velk pseudo-C: c9 @ 0x2104d4 */
 /* ref: 0x2205e8 .bss */
 void c9(void) {
-    dword_2205e8 ^= 0x4a;
+    g_sink ^= 0x4a;
     return;
 }
 -- signature
@@ -437,7 +437,7 @@ fn c9 @ 0x2104d4 (size 24)
 /* velk pseudo-C: c10 @ 0x2104ec */
 /* ref: 0x2205e8 .bss */
 void c10(void) {
-    dword_2205e8 -= 0x51;
+    g_sink -= 0x51;
     return;
 }
 -- signature
@@ -457,7 +457,7 @@ fn c10 @ 0x2104ec (size 20)
 /* velk pseudo-C: c11 @ 0x210500 */
 /* ref: 0x2205e8 .bss */
 void c11(void) {
-    dword_2205e8 |= 0x58;
+    g_sink |= 0x58;
     return;
 }
 -- signature
@@ -477,7 +477,7 @@ fn c11 @ 0x210500 (size 24)
 /* velk pseudo-C: c12 @ 0x210518 */
 /* ref: 0x2205e8 .bss */
 void c12(void) {
-    dword_2205e8 += 0x5f;
+    g_sink += 0x5f;
     return;
 }
 -- signature
@@ -497,7 +497,7 @@ fn c12 @ 0x210518 (size 20)
 /* velk pseudo-C: c13 @ 0x21052c */
 /* ref: 0x2205e8 .bss */
 void c13(void) {
-    dword_2205e8 ^= 0x66;
+    g_sink ^= 0x66;
     return;
 }
 -- signature
@@ -517,7 +517,7 @@ fn c13 @ 0x21052c (size 24)
 /* velk pseudo-C: c14 @ 0x210544 */
 /* ref: 0x2205e8 .bss */
 void c14(void) {
-    dword_2205e8 -= 0x6d;
+    g_sink -= 0x6d;
     return;
 }
 -- signature
@@ -537,7 +537,7 @@ fn c14 @ 0x210544 (size 20)
 /* velk pseudo-C: c15 @ 0x210558 */
 /* ref: 0x2205e8 .bss */
 void c15(void) {
-    dword_2205e8 |= 0x74;
+    g_sink |= 0x74;
     return;
 }
 -- signature

@@ -303,9 +303,9 @@ int short_circuit(int *p, int n) {
         rax = rax & 0xffffffffffffff00 | local_2;
         return rax & 0x1 & 0xff;
     }
-    rax = rax & 0xffffffffffffff00 | 0x1;
+    rax = 0x1;
     t65 = *(uint32_t *)(local_0);
-    local_3 = rax & 0xff;
+    local_3 = 0x1;
     if (t65 != 0x1) {
         rax = local_0;
         rcx = (int64_t)(int32_t)(local_1 - 0x1);
@@ -336,9 +336,9 @@ fn short_circuit @ 0x201410 (size 99)
     store8(#0x0, (rsp + #0xffffffffffffffeb))
     brif le t65, #0x0 -> 0x201469
   blk2 @ 0x20143a:
-    rax = ((rax & #0xffffffffffffff00) | #0x1)
+    rax = #0x1
     t65 = load32(load64((rsp + #0xfffffffffffffff0)))
-    store8((rax & #0xff), (rsp + #0xffffffffffffffea))
+    store8(#0x1, (rsp + #0xffffffffffffffea))
     brif eq t65, #0x1 -> 0x201463
   blk3 @ 0x20144c:
     rax = load64((rsp + #0xfffffffffffffff0))

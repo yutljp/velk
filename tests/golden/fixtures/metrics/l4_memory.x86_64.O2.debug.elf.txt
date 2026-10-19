@@ -51,7 +51,7 @@ int array_sum(int *a, int n) {
             v1 = v1 + 0x20;
         } while (rax != v1);
         /* unsupported (5 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e */
-        rax = (uint32_t)xmm1;
+        rax = 0x0;
         if (rdx == rcx) {
             return rax;
         }
@@ -102,7 +102,7 @@ fn array_sum @ 0x2011f0 (size 140)
     unsupported: Paddd at 0x201255
     unsupported: Pshufd at 0x201259
     unsupported: Paddd at 0x20125e
-    rax = (xmm1 & #0xffffffff)
+    rax = #0x0
     brif eq rdx, rcx -> 0x20127b
   blk7 @ 0x201270:
     rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)
@@ -118,7 +118,7 @@ fn array_sum @ 0x2011f0 (size 140)
 /* velk pseudo-C: bump @ 0x201280 */
 /* ref: 0x2022a8 .bss */
 void bump(void) {
-    dword_2022a8 += 0x1;
+    g_counter += 0x1;
     return;
 }
 -- signature
@@ -138,7 +138,7 @@ fn bump @ 0x201280 (size 7)
 /* velk pseudo-C: banner_first @ 0x201290 */
 /* ref: 0x2022a0 -> 0x200158 "velk ladder" */
 int banner_first(void) {
-    return (int8_t)(*(uint8_t *)(qword_2022a0));
+    return (int8_t)(*(uint8_t *)(banner));
 }
 -- signature
 int ()

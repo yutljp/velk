@@ -142,6 +142,8 @@ pub struct Image {
     bytes: Vec<u8>,
     pub sections: Vec<Section>,
     pub functions: BTreeMap<u64, Function>,
+    /// The names of the data objects the symbol tables define.
+    pub data_symbols: BTreeMap<u64, String>,
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
@@ -166,6 +168,7 @@ impl Image {
             }],
             bytes: code,
             functions: BTreeMap::new(),
+            data_symbols: BTreeMap::new(),
             relocations: BTreeMap::new(),
             go: false,
         }
@@ -477,6 +480,18 @@ pub fn load(path: &Path) -> Result<Image> {
         }
     }
 
+    let mut data_symbols = BTreeMap::new();
+    for sym in file.symbols().chain(file.dynamic_symbols()) {
+        if sym.kind() == object::SymbolKind::Data
+            && !sym.is_undefined()
+            && let Some(name) = symbol_name(&sym)
+        {
+            data_symbols
+                .entry(relocate::symbol_address(&sym, &bases))
+                .or_insert(name);
+        }
+    }
+
     let mut functions = BTreeMap::new();
     for sym in file.symbols() {
         if sym.kind() != object::SymbolKind::Text || sym.is_undefined() {
@@ -539,6 +554,7 @@ pub fn load(path: &Path) -> Result<Image> {
         bytes: relocated,
         sections,
         functions,
+        data_symbols,
         relocations,
         go: false,
     };

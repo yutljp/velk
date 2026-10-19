@@ -160,7 +160,7 @@ uint32_t sub_2102bc(void) {
 L_2102e8:
     w8 = 0x0;
     /* unsupported: FCMP at 0x2102f4 */
-    w8 = (w8 <= 0x0 ? w8 : 0x1);
+    w8 = (0x0 <= 0x0 ? 0x0 : 0x1);
     local_0 = w8;
     return local_0;
 }
@@ -183,7 +183,7 @@ fn <unnamed> @ 0x2102bc (size 84)
   blk3 @ 0x2102e8:
     x8 = #0x0
     unsupported: FCMP at 0x2102f4
-    x8 = (select le (x8 & #0xffffffff), #0x0 ? (x8 & #0xffffffff), #0x1 & #0xffffffff)
+    x8 = (select le #0x0, #0x0 ? #0x0, #0x1 & #0xffffffff)
     store32((x8 & #0xffffffff), (sp + #0xffffffffffffffec))
     br 0x210304
   blk4 @ 0x210304:

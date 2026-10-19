@@ -150,10 +150,10 @@ int32_t sub_201370(int32_t a0) {
     xmm3_hi = xmm1_hi;
     do {
         xmm5 = xmm0;
-        xmm5_hi = xmm0_hi;
+        xmm5_hi = 0x0;
         /* unsupported: Paddd at 0x2013c4 */
         xmm6 = xmm0;
-        xmm6_hi = xmm0_hi;
+        xmm6_hi = 0x0;
         /* unsupported (6 steps): Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3 */
         xmm1 = xmm6;
         xmm1_hi = xmm6_hi;
@@ -212,10 +212,10 @@ fn <unnamed> @ 0x201370 (size 240)
     xmm3_hi = xmm1_hi
   blk3 @ 0x2013c0:
     xmm5 = xmm0
-    xmm5_hi = xmm0_hi
+    xmm5_hi = #0x0
     unsupported: Paddd at 0x2013c4
     xmm6 = xmm0
-    xmm6_hi = xmm0_hi
+    xmm6_hi = #0x0
     unsupported: Pmuludq at 0x2013cc
     unsupported: Pshufd at 0x2013d0
     unsupported: Pshufd at 0x2013d5

@@ -27,21 +27,21 @@ L_2011f2:
         r8 = ((rdx + rax) & 0xffffffff);
         rsi = edx;
         rax = eax + esi;
-        dword_2023d4 = ((eax - 0x7) & 0xffffffff);
+        sink = ((eax - 0x7) & 0xffffffff);
         rax = ((rsi + r8 - 0x7) & 0xffffffff);
-        dword_2023d4 = ((rsi + r8 - 0xd) & 0xffffffff);
+        sink = ((rsi + r8 - 0xd) & 0xffffffff);
         r8 = ((rsi + rax - 0x6) & 0xffffffff);
-        dword_2023d4 = ((rsi + rax - 0xb) & 0xffffffff);
+        sink = ((rsi + rax - 0xb) & 0xffffffff);
         rax = ((rsi + r8 - 0x5) & 0xffffffff);
-        dword_2023d4 = ((rsi + r8 - 0x9) & 0xffffffff);
+        sink = ((rsi + r8 - 0x9) & 0xffffffff);
         r8 = ((rsi + rax - 0x4) & 0xffffffff);
-        dword_2023d4 = ((rsi + rax - 0x7) & 0xffffffff);
+        sink = ((rsi + rax - 0x7) & 0xffffffff);
         rax = ((rsi + r8 - 0x3) & 0xffffffff);
-        dword_2023d4 = ((rsi + r8 - 0x5) & 0xffffffff);
+        sink = ((rsi + r8 - 0x5) & 0xffffffff);
         r8 = ((rsi + rax - 0x2) & 0xffffffff);
-        dword_2023d4 = ((rsi + rax - 0x3) & 0xffffffff);
+        sink = ((rsi + rax - 0x3) & 0xffffffff);
         rax = ((rsi + r8 - 0x1) & 0xffffffff);
-        dword_2023d4 = eax;
+        sink = eax;
         rdx = edx + 0x8;
         rsi = esi + v2;
     } while (esi + 0x8 != 0x7);
@@ -52,7 +52,7 @@ L_2011f2:
 L_2012b0:
     do {
         rax = eax + edx;
-        dword_2023d4 = eax;
+        sink = eax;
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
@@ -130,14 +130,14 @@ int count_down(int n) {
     esi = -(rax & 0xfffffff8);
     rdx = 0x4;
     do {
-        dword_2023d4 = ((rdx - 0x3) & 0xffffffff);
-        dword_2023d4 = ((rdx - 0x2) & 0xffffffff);
-        dword_2023d4 = ((rdx - 0x1) & 0xffffffff);
-        dword_2023d4 = edx;
-        dword_2023d4 = ((rdx + 0x1) & 0xffffffff);
-        dword_2023d4 = ((rdx + 0x2) & 0xffffffff);
-        dword_2023d4 = ((rdx + 0x3) & 0xffffffff);
-        dword_2023d4 = ((rdx + 0x4) & 0xffffffff);
+        sink = ((rdx - 0x3) & 0xffffffff);
+        sink = ((rdx - 0x2) & 0xffffffff);
+        sink = ((rdx - 0x1) & 0xffffffff);
+        sink = edx;
+        sink = ((rdx + 0x1) & 0xffffffff);
+        sink = ((rdx + 0x2) & 0xffffffff);
+        sink = ((rdx + 0x3) & 0xffffffff);
+        sink = ((rdx + 0x4) & 0xffffffff);
         v1 = rdx;
         rdx = edx + 0x8;
         v2 = v1 + esi;
@@ -149,7 +149,7 @@ L_201347:
     }
     rdx = edx + 0x1;
     do {
-        dword_2023d4 = edx;
+        sink = edx;
         rdx = edx + 0x1;
         ecx = ecx - 0x1;
     } while (ecx != 0x0);
@@ -216,7 +216,7 @@ int sum_skip_odd(int n) {
         do {
             rax = eax + ecx;
             rax = eax + 0x1;
-            dword_2023d4 = eax;
+            sink = eax;
             rcx = ecx + 0x2;
         } while (edx != ecx);
     }
@@ -225,7 +225,7 @@ int sum_skip_odd(int n) {
     }
     if ((rcx & 0x1) != 0x0) {
         rcx = ecx + eax;
-        dword_2023d4 = ecx;
+        sink = ecx;
         rax = ecx;
     }
     return rax;
@@ -273,9 +273,8 @@ fn sum_skip_odd @ 0x201360 (size 71)
 -- decompile
 /* velk pseudo-C: find_first @ 0x2013b0 */
 int find_first(int *p, int n, int v) {
-    rax = 0xffffffff;
     if (n <= 0x0) {
-        return rax;
+        return 0xffffffff;
     }
     v1 = n;
     rcx = 0x0;
@@ -283,7 +282,7 @@ int find_first(int *p, int n, int v) {
         if (*(uint32_t *)(p + rcx * 0x4) == v) { goto L_2013ce; }
         rcx = rcx + 0x1;
     } while (v1 != rcx);
-    return rax;
+    return 0xffffffff;
 L_2013ce:
     return ecx;
 }
@@ -294,7 +293,6 @@ int (int * p, int n, int v)
 -- ir
 fn find_first @ 0x2013b0 (size 33)
   blk0 @ 0x2013b0:
-    rax = #0xffffffff
     brif le (rsi & #0xffffffff), #0x0 -> 0x2013cd
   blk1 @ 0x2013b9:
     v1 = (rsi & #0xffffffff)
@@ -305,7 +303,7 @@ fn find_first @ 0x2013b0 (size 33)
     rcx = (rcx + #0x1)
     brif ne v1, rcx -> 0x2013c0
   blk4 @ 0x2013cd:
-    ret rax
+    ret #0xffffffff
   blk5 @ 0x2013ce:
     ret (rcx & #0xffffffff)
 -- card

@@ -34,13 +34,15 @@ pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
         .collect()
 }
 
+/// The names of the functions and data objects, by address.
 pub fn callee_names(image: &crate::loader::Image) -> HashMap<u64, String> {
     image
-        .functions
+        .data_symbols
         .iter()
-        .filter_map(|(address, function)| {
+        .map(|(address, name)| (*address, name.clone()))
+        .chain(image.functions.iter().filter_map(|(address, function)| {
             function.name.as_ref().map(|name| (*address, name.clone()))
-        })
+        }))
         .collect()
 }
 

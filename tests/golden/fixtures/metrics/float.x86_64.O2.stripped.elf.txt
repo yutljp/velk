@@ -38,8 +38,8 @@ L_20123d:
         xmm0 = 0x0;
         xmm0_hi = 0x0;
         /* unsupported (2 steps): Cvtsi2sd at 0x201244, Divsd at 0x201248 */
-        xmm0 = xmm1;
-        xmm0_hi = xmm1_hi;
+        xmm0 = 0x0;
+        xmm0_hi = 0x0;
     }
     return eax;
 }
@@ -92,8 +92,8 @@ fn <unnamed> @ 0x2011b0 (size 176)
     xmm0_hi = #0x0
     unsupported: Cvtsi2sd at 0x201244
     unsupported: Divsd at 0x201248
-    xmm0 = xmm1
-    xmm0_hi = xmm1_hi
+    xmm0 = #0x0
+    xmm0_hi = #0x0
   blk10 @ 0x201250:
     ret eax
 -- card
@@ -163,9 +163,9 @@ fn <unnamed> @ 0x201280 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 uint32_t sub_201290(void) {
-    rcx = 0x0;
+    ecx = 0x0;
     /* unsupported: Ucomisd at 0x201292 */
-    rcx = rcx & 0xffffffffffffff00 | (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0) & 0xff;
+    ecx = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0) & 0xff;
     /* unsupported: Ucomisd at 0x201299 */
     rax = 0xffffffff;
     rax = (0x0 <= 0x0 /* unsigned */ ? ecx : 0xffffffff);
@@ -180,7 +180,7 @@ fn <unnamed> @ 0x201290 (size 22)
   blk0 @ 0x201290:
     rcx = #0x0
     unsupported: Ucomisd at 0x201292
-    rcx = ((rcx & #0xffffffffffffff00) | (select hi #0x0, #0x0 ? #0x1, #0x0 & #0xff))
+    rcx = (select hi #0x0, #0x0 ? #0x1, #0x0 & #0xff)
     unsupported: Ucomisd at 0x201299
     rax = #0xffffffff
     rax = (select ls #0x0, #0x0 ? (rcx & #0xffffffff), #0xffffffff & #0xffffffff)

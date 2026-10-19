@@ -6,7 +6,7 @@
 /* velk pseudo-C: pick @ 0x2011b0 */
 /* ref: 0x2021c0 -> 0x200158 "velk-aarch64-string" */
 int pick(void) {
-    return (int8_t)(*(uint8_t *)(qword_2021c0 + 0x2));
+    return (int8_t)(*(uint8_t *)(kName + 0x2));
 }
 -- signature
 int ()
