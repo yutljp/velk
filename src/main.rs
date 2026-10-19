@@ -86,7 +86,22 @@ enum Command {
     Mcp,
 }
 
+/// Lets a closed pipe end the process quietly, as for other command-line
+/// tools, instead of failing the next write.
+#[cfg(unix)]
+fn exit_on_closed_pipe() {
+    unsafe extern "C" {
+        fn signal(signum: i32, handler: usize) -> usize;
+    }
+    // SIGPIPE is 13 and the default action 0 on Linux and macOS.
+    unsafe {
+        signal(13, 0);
+    }
+}
+
 fn main() -> ExitCode {
+    #[cfg(unix)]
+    exit_on_closed_pipe();
     match run(Cli::parse().command) {
         Ok(code) => code,
         Err(error) => {
