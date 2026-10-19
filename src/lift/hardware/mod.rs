@@ -43,6 +43,57 @@ fn value(seed: u64, key: u64) -> u64 {
     }
 }
 
+/// Bits of a float that reach the edges of the arithmetic often: zeros,
+/// infinities, NaNs, subnormals, integers and ordinary values, as a double
+/// or as a single in the low half.
+fn float_bits(seed: u64, key: u64) -> u64 {
+    const DOUBLES: [u64; 10] = [
+        0,
+        1 << 63,
+        0x3ff0_0000_0000_0000,
+        0xbff8_0000_0000_0000,
+        0x7ff0_0000_0000_0000,
+        0xfff0_0000_0000_0000,
+        0x7ff8_0000_0000_0000,
+        0x0000_0000_0000_0001,
+        0x4340_0000_0000_0000,
+        0x41e0_0000_0000_0000,
+    ];
+    const SINGLES: [u32; 9] = [
+        0,
+        0x8000_0000,
+        0x3f80_0000,
+        0xbfc0_0000,
+        0x7f80_0000,
+        0xff80_0000,
+        0x7fc0_0000,
+        1,
+        0x4f00_0000,
+    ];
+    let pick = hash(seed, key);
+    let random = hash(seed, key ^ 0xf1);
+    let ordinary = |value: f64| value.to_bits();
+    match pick % 6 {
+        0 => DOUBLES[(pick >> 8) as usize % DOUBLES.len()],
+        1 => (random & !0xffff_ffff) | u64::from(SINGLES[(pick >> 8) as usize % SINGLES.len()]),
+        2 => ordinary(((pick >> 8) % 2000) as f64 / 8.0 - 125.0),
+        3 => {
+            (random & !0xffff_ffff)
+                | u64::from((((pick >> 8) % 2000) as f32 / 8.0 - 125.0).to_bits())
+        }
+        _ => random,
+    }
+}
+
+/// Whether two values of a vector register's half are the same, counting
+/// any two NaNs, as a double or as a single in the low half, alike: their
+/// bits come from the processor either way.
+fn same_float_bits(a: u64, b: u64) -> bool {
+    let nan = |value: u64| f64::from_bits(value).is_nan();
+    let single_nan = |value: u64| f32::from_bits(value as u32).is_nan();
+    a == b || (nan(a) && nan(b)) || (single_nan(a) && single_nan(b) && a >> 32 == b >> 32)
+}
+
 fn lifted(isa: Isa, code: Vec<u8>) -> Option<FunctionIr> {
     let len = code.len() as u64;
     let image = Image::from_code(isa, 0, code);
@@ -93,6 +144,7 @@ fn register_differences(
     registers: &[(u16, u64)],
     processor: impl Fn(u16) -> u64,
     name: impl Fn(u16) -> String,
+    same: impl Fn(u16, u64, u64) -> bool,
 ) -> Option<String> {
     match eval::registers_after(ir, &setup(registers)) {
         Ok(after) => {
@@ -101,7 +153,7 @@ fn register_differences(
                 .filter_map(|(index, start)| {
                     let lifted = after.get(index).copied().unwrap_or(*start);
                     let real = processor(*index);
-                    (lifted != real).then(|| {
+                    (!same(*index, lifted, real)).then(|| {
                         format!("{}: lifted {lifted:#x}, processor {real:#x}", name(*index))
                     })
                 })

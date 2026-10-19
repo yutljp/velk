@@ -8,8 +8,8 @@ use yaxpeax_arch::{Decoder, ReaderBuilder};
 use yaxpeax_arm::armv8::a64::{self, Operand};
 
 use super::{
-    Findings, branches_on_unknown_flags, condition_differs, lifted, register_differences,
-    unsupported, value,
+    Findings, branches_on_unknown_flags, condition_differs, float_bits, lifted,
+    register_differences, same_float_bits, unsupported, value,
 };
 use crate::ir::FunctionIr;
 use crate::ir::eval::hash;
@@ -23,8 +23,8 @@ fn usable(index: u16) -> bool {
 }
 
 /// Saves the callee-saved registers, keeps the state pointer in x28, and
-/// loads NZCV and x0–x27 (but x18) from it.
-const PROLOGUE: [u32; 23] = [
+/// loads v0–v7, NZCV and x0–x27 (but x18) from it.
+const PROLOGUE: [u32; 27] = [
     0xa9ba_7bfd,
     0xa901_53f3,
     0xa902_5bf5,
@@ -32,6 +32,10 @@ const PROLOGUE: [u32; 23] = [
     0xa904_6bf9,
     0xa905_73fb,
     0xaa00_03fc,
+    0xad47_8780,
+    0xad48_8f82,
+    0xad49_9784,
+    0xad4a_9f86,
     0xf940_7380,
     0xd51b_4200,
     0xa940_0780,
@@ -50,8 +54,12 @@ const PROLOGUE: [u32; 23] = [
     0xf940_6f9b,
 ];
 
-/// Stores x0–x27 (but x18) and NZCV back and returns.
-const EPILOGUE: [u32; 23] = [
+/// Stores v0–v7, x0–x27 (but x18) and NZCV back and returns.
+const EPILOGUE: [u32; 27] = [
+    0xad07_8780,
+    0xad08_8f82,
+    0xad09_9784,
+    0xad0a_9f86,
     0xa900_0780,
     0xa901_0f82,
     0xa902_1784,
@@ -80,8 +88,11 @@ const EPILOGUE: [u32; 23] = [
 const RET: u32 = 0xd65f_03c0;
 const NZCV: usize = 28;
 
-/// x0–x27 by index, then NZCV, as the prologue and epilogue lay them out.
-type State = [u64; 29];
+/// x0–x27 by index, then NZCV, a word of padding, and the halves of v0–v7
+/// from word 30, as the prologue and epilogue lay them out.
+type State = [u64; 46];
+
+const VECTORS: usize = 30;
 
 unsafe extern "C" {
     fn mmap(
@@ -219,7 +230,8 @@ fn decode(word: u32) -> Option<a64::Instruction> {
     a64::InstDecoder::default().decode(&mut reader).ok()
 }
 
-/// Whether every operand is a usable register, a condition or an immediate.
+/// Whether every operand is a usable register, a condition or an immediate;
+/// vector registers only from v0 to v7, which the harness loads.
 fn register_only(instruction: &a64::Instruction) -> bool {
     instruction.operands.iter().all(|operand| match *operand {
         Operand::Nothing
@@ -227,7 +239,9 @@ fn register_only(instruction: &a64::Instruction) -> bool {
         | Operand::Immediate(_)
         | Operand::Imm64(_)
         | Operand::Imm16(_)
+        | Operand::ImmediateDouble(_)
         | Operand::ImmShift(..) => true,
+        Operand::SIMDRegister(_, number) => number < 8,
         Operand::Register(_, index) | Operand::RegShift(_, _, _, index) => {
             index == 31 || usable(index)
         }
@@ -240,10 +254,13 @@ fn register_only(instruction: &a64::Instruction) -> bool {
 /// write only registers and flags.
 fn instruction(seed: u64) -> Option<(u32, a64::Instruction)> {
     let bits = hash(seed, 1) as u32;
-    let word = if hash(seed, 2) & 1 == 0 {
-        (bits & !(0b111 << 26)) | (0b100 << 26)
-    } else {
-        (bits & !(0b111 << 25)) | (0b101 << 25)
+    let word = match hash(seed, 2) % 4 {
+        0 => (bits & !(0b111 << 26)) | (0b100 << 26),
+        1 => (bits & !(0b111 << 25)) | (0b101 << 25),
+        // Scalar floating point: data processing and conversions, and the
+        // fused multiply-adds.
+        2 => (bits & !(0b1_1111 << 24 | 1 << 30)) | (0b1_1110 << 24),
+        _ => (bits & !(0b1_1111 << 24 | 1 << 30)) | (0b1_1111 << 24),
     };
     let decoded = decode(word)?;
     register_only(&decoded).then_some((word, decoded))
@@ -324,11 +341,14 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
         *findings.unsupported.entry(name).or_default() += 1;
         return;
     }
-    let mut state: State = [0; 29];
+    let mut state: State = [0; 46];
     for (index, slot) in state.iter_mut().enumerate().take(28) {
         if usable(index as u16) {
             *slot = value(seed, 0x100 + index as u64);
         }
+    }
+    for half in 0..16 {
+        state[VECTORS + half] = float_bits(seed, 0x200 + half as u64);
     }
     state[NZCV] = (hash(seed, 6) & 0xf) << 28;
     let initial = state;
@@ -338,14 +358,25 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
     }
     findings.tried += 1;
 
+    let vector_slot = |half: usize| crate::arch::aarch64::V0 + half as u16;
     let registers: Vec<(u16, u64)> = (0..28u16)
         .filter(|index| usable(*index))
         .map(|index| (index, initial[usize::from(index)]))
+        .chain((0..16).map(|half| (vector_slot(half), initial[VECTORS + half])))
         .collect();
+    let processor = |index: u16| match index.checked_sub(crate::arch::aarch64::V0) {
+        Some(half) => state[VECTORS + usize::from(half)],
+        None => state[usize::from(index)],
+    };
+    let name = |index: u16| match index.checked_sub(crate::arch::aarch64::V0) {
+        Some(half) if half % 2 == 1 => format!("v{}_hi", half / 2),
+        Some(half) => format!("d{}", half / 2),
+        None => format!("x{index}"),
+    };
     let describe = || {
         let inputs: Vec<String> = registers
             .iter()
-            .map(|(index, value)| format!("x{index}={value:#x}"))
+            .map(|(index, value)| format!("{}={value:#x}", name(*index)))
             .collect();
         let code: Vec<String> = body
             .iter()
@@ -361,12 +392,13 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
             ir.render()
         )
     };
-    if let Some(differ) = register_differences(
-        &ir,
-        &registers,
-        |index| state[usize::from(index)],
-        |index| format!("x{index}"),
-    ) {
+    if let Some(differ) = register_differences(&ir, &registers, processor, name, |index, a, b| {
+        if index >= crate::arch::aarch64::V0 {
+            same_float_bits(a, b)
+        } else {
+            a == b
+        }
+    }) {
         Findings::note(&mut findings.registers, kind, || {
             format!("{}\n  {differ}", describe())
         });
@@ -405,7 +437,7 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
 fn lifted_instructions_match_the_processor() {
     let page = Page::new();
     let mut findings = Findings::default();
-    for seed in 0..100_000 {
+    for seed in 0..200_000 {
         check(&page, seed, &mut findings);
     }
     findings.assert_agreement();

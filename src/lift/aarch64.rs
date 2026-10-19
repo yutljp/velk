@@ -1110,6 +1110,15 @@ fn simd(operand: Operand) -> Option<(u16, u16)> {
     Some((crate::arch::aarch64::V0 + 2 * number, bits))
 }
 
+/// `2^exponent` as a float of `precision`.
+fn power_of_two(exponent: u32, precision: Precision) -> Expr {
+    let value = 2f64.powi(exponent as i32);
+    Expr::constant(match precision {
+        Precision::Double => value.to_bits(),
+        Precision::Single => u64::from((value as f32).to_bits()),
+    })
+}
+
 fn precision(bits: u16) -> Option<Precision> {
     match bits {
         32 => Some(Precision::Single),
@@ -1196,7 +1205,7 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             lifter.write_simd(slot, bits, (float(op, vec![a]), Expr::constant(0)));
         }
         // fmadd d, n, m, a is a + n * m; fmsub negates the product, fnmadd
-        // the whole, and fnmsub the addend.
+        // both the product and the addend, and fnmsub the addend.
         O::FMADD | O::FMSUB | O::FNMADD | O::FNMSUB => {
             let (slot, bits) = simd(ops[0])?;
             let ((n, p), (m, _), (a, _)) = (
@@ -1209,7 +1218,7 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             let value = match ins.opcode {
                 O::FMADD => fused(n, a),
                 O::FMSUB => fused(negate(n), a),
-                O::FNMADD => negate(fused(n, a)),
+                O::FNMADD => fused(negate(n), negate(a)),
                 _ => fused(n, negate(a)),
             };
             lifter.write_simd(slot, bits, (value, Expr::constant(0)));
@@ -1221,6 +1230,20 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 operand => read(lifter, operand)?.0,
             };
             lifter.last_compare = Some(Flags::float_compare(a, b, p));
+        }
+        // Compare when the condition holds, and otherwise set the flags to the
+        // immediate, as ccmp does.
+        O::FCCMP | O::FCCMPE => {
+            let earlier = match ops[3] {
+                Operand::ConditionCode(code) => lifter.test_code(code),
+                _ => return None,
+            };
+            let ((a, p), (b, _), Operand::Immediate(nzcv)) =
+                (read(lifter, ops[0])?, read(lifter, ops[1])?, ops[2])
+            else {
+                return None;
+            };
+            lifter.last_compare = Flags::float_compare(a, b, p).chosen_by(earlier, nzcv as u8);
         }
         O::FCSEL => {
             let (slot, bits) = simd(ops[0])?;
@@ -1244,20 +1267,38 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         }
         O::SCVTF | O::UCVTF => {
             let (slot, bits) = simd(ops[0])?;
+            let to = precision(bits)?;
             let source = register_width(ops[1])?;
             let value = lifter.operand(ops[1], source)?;
             let converted = float(
                 Operation::IntToFloat {
                     signed: ins.opcode == O::SCVTF,
                     bits: source,
-                    to: precision(bits)?,
+                    to,
                 },
                 vec![value],
             );
+            // A fixed-point source has that many fraction bits; dividing by
+            // a power of two adds no rounding.
+            let converted = match ops[2] {
+                Operand::Immediate(fraction) if fraction > 0 => float(
+                    Operation::FloatDiv(to),
+                    vec![converted, power_of_two(fraction, to)],
+                ),
+                _ => converted,
+            };
             lifter.write_simd(slot, bits, (converted, Expr::constant(0)));
         }
         O::FCVTZS | O::FCVTZU => {
             let (a, from) = read(lifter, ops[1])?;
+            // A fixed-point result keeps that many fraction bits.
+            let a = match ops[2] {
+                Operand::Immediate(fraction) if fraction > 0 => float(
+                    Operation::FloatMul(from),
+                    vec![a, power_of_two(fraction, from)],
+                ),
+                _ => a,
+            };
             let converted = float(
                 Operation::FloatToInt {
                     signed: ins.opcode == O::FCVTZS,

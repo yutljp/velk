@@ -58,6 +58,7 @@ enum Flow {
 }
 
 struct Machine<'a> {
+    isa: crate::loader::Isa,
     convention: &'a Convention<'a>,
     seed: u64,
     registers: HashMap<u16, u64>,
@@ -97,6 +98,7 @@ pub fn registers_after(
 impl<'a> Machine<'a> {
     fn new(ir: &'a FunctionIr, setup: &'a Setup<'a>) -> Self {
         let mut machine = Machine {
+            isa: ir.isa,
             convention: &setup.convention,
             seed: setup.seed,
             registers: setup.registers.iter().copied().collect(),
@@ -126,6 +128,45 @@ fn visible(memory: &HashMap<u64, u8>) -> BTreeMap<u64, u8> {
         .filter(|(addr, _)| !(STACK_TOP - STACK_SPAN..STACK_TOP + STACK_SPAN).contains(*addr))
         .map(|(addr, byte)| (*addr, *byte))
         .collect()
+}
+
+/// The NaN an x86 SSE operation gives, where the processor running the
+/// tests would give its own: the first NaN operand made quiet, or with none
+/// the negative quiet NaN x86 calls indefinite.
+fn x86_nan(op: super::Operation, args: &[u64], result: u64) -> u64 {
+    use super::{Operation, Precision};
+    let precision = match op {
+        Operation::FloatAdd(p)
+        | Operation::FloatSub(p)
+        | Operation::FloatMul(p)
+        | Operation::FloatDiv(p)
+        | Operation::FloatSqrt(p)
+        | Operation::FloatMulAdd(p) => p,
+        _ => return result,
+    };
+    let (nan, quiet, indefinite) = match precision {
+        Precision::Double => (
+            (|bits: u64| f64::from_bits(bits).is_nan()) as fn(u64) -> bool,
+            1u64 << 51,
+            0xfff8_0000_0000_0000,
+        ),
+        Precision::Single => (
+            (|bits: u64| f32::from_bits(bits as u32).is_nan()) as fn(u64) -> bool,
+            1 << 22,
+            0xffc0_0000,
+        ),
+    };
+    if !nan(result) {
+        return result;
+    }
+    let low = |bits: u64| match precision {
+        Precision::Double => bits,
+        Precision::Single => bits & 0xffff_ffff,
+    };
+    match args.iter().find(|arg| nan(**arg)) {
+        Some(first) => low(*first) | quiet,
+        None => indefinite,
+    }
 }
 
 /// A well-mixed 64-bit value derived from the seed and `key`.
@@ -171,7 +212,12 @@ impl Machine<'_> {
                     .iter()
                     .map(|arg| self.eval(arg))
                     .collect::<Result<Vec<u64>, _>>()?;
-                super::semantics::apply(*op, &values)
+                let result = super::semantics::apply(*op, &values);
+                if self.isa == crate::loader::Isa::X86_64 {
+                    x86_nan(*op, &values, result)
+                } else {
+                    result
+                }
             }
             Expr::Reg { index, width } => self.register(*index) & mask(u32::from(*width)),
             Expr::Const(value) => *value,
