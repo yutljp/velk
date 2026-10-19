@@ -3,7 +3,7 @@
 **LLM エージェントのためのバイナリ解析エンジン。**
 
 velk は ELF / PE / Mach-O の実行ファイルとオブジェクトを読み、関数ごとに疑似 C・中間表現・
-逆アセンブル・関数カード（トークン予算つきの JSON 要約）を返します。エージェントは MCP 経由で
+逆アセンブル・関数の要約（指定したトークン数に収まる JSON）を返します。エージェントは MCP 経由で
 JavaScript を実行して必要な結果だけを受け取り、人は CLI から使います。単一のバイナリで動き、
 起動から 1 関数の疑似 C を出すまで数ミリ秒です（`tests/bench.sh`）。
 
@@ -22,15 +22,16 @@ int32_t count_down(int32_t a0) {
 
 ## 特長
 
-- **意味で検証された出力**: すべての fixture のすべての関数について、最適化の前後の中間表現を
+- **意味で検証された出力**: テスト用のすべてのバイナリのすべての関数について、最適化の前後の中間表現を
   ランダムな入力で実行し、戻り値・呼び出し・メモリが一致することを確かめています。
   見た目のきれいさのために意味を変える変換は入りません。
-- **シンボルのないバイナリに強い**: unwind 表から関数の正確な範囲を求め、コンパイラが切り出した
-  コールド部分を親の関数に戻します。PLT スタブには取り込んだ関数の名前を付けます。
-- **LLM 向けの出力**: 関数カードは、トークン予算に収まる要約と、解析が難しい理由を返します。
+- **シンボルのないバイナリに強い**: unwind 表から関数の正確な範囲を求め、コンパイラが関数から
+  分離したコールド部分（めったに通らない経路）を元の関数に戻します。共有ライブラリの関数を呼ぶ
+  PLT のスタブには、呼び先の関数名を付けます。
+- **LLM 向けの出力**: 関数の要約は、指定したトークン数に収まる内容と、解析が難しい理由を返します。
   スクリプトの中で絞り込みや集計をすれば、結果だけがモデルに返ります。
-- **言語ランタイムの知識**: Go の pclntab、Rust と C++ のデマングル、DWARF の名前・型・構造体メンバ。
-- **シグネチャ DB**: 関数の形を正規化したハッシュで、別のバイナリの同じ関数を見つけます。
+- **言語ごとのメタデータ**: Go の関数表（pclntab）、Rust と C++ のマングルされた名前の復元、DWARF の名前・型・構造体メンバ。
+- **関数の照合**: 関数の形を正規化したハッシュを集めたデータベースで、別のバイナリの同じ関数を見つけます。
 
 ## 精度
 
@@ -65,7 +66,7 @@ cargo build --release
 |---|---|
 | `velk functions <file> [--limit N] [--json]` | 関数の一覧と、それぞれを見つけた情報源 |
 | `velk sections <file>` | セクションの一覧 |
-| `velk card <file> <function> [--budget N] [--signatures db.json]` | 関数カード（JSON） |
+| `velk card <file> <function> [--budget N] [--signatures db.json]` | 関数の要約（JSON） |
 | `velk decompile <file> <function> [--signatures db.json]` | 疑似 C |
 | `velk disasm <file> <function> [--limit N]` | 逆アセンブル |
 | `velk ir <file> <function>` | 最適化後の中間表現 |
@@ -129,8 +130,8 @@ MCP クライアントには、実行ファイルを `mcp` 引数付きで登録
 
 ## テスト
 
-テストの入力は `tests/fixtures/` のバイナリです。`tests/cases/` のソースから、ツールチェーンの版を
-固定した基準環境（`tests/fixtures/toolchain.txt`）で生成してリポジトリに含めているので、
+テストの入力は `tests/fixtures/` のバイナリです。`tests/cases/` のソースから、コンパイラの版を
+固定したコンテナ（版は `tests/fixtures/toolchain.txt`）で生成してリポジトリに含めているので、
 どのマシンでも同じバイト列をテストします。生成物にビルド環境のパスが残らないことは、生成時に確かめています。
 
 ```bash
@@ -144,21 +145,21 @@ cargo test                # ユニットテストと結合テスト
 | `src/analysis/semantics_tests.rs` | 最適化が関数の動作を変えていない（IR を実行して比べる） | 最適化前の IR |
 | `tests/invariants.rs` | 飛び先のない goto、代入されないレジスタの読み取り、疑似 C での文の欠落がない | 出力の性質 |
 | `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報（`*.debug.elf`） |
-| `tests/golden.rs` | 全 fixture の関数一覧、疑似 C、IR、シグネチャ、カードが変わっていない | `tests/golden/fixtures/` |
+| `tests/golden.rs` | 全テスト用バイナリの関数一覧、疑似 C、IR、シグネチャ、要約が変わっていない | `tests/golden/fixtures/` に記録した出力 |
 | `tests/api.rs` | スクリプト API の戻り値が `.d.ts` の宣言と一致する | `src/script/api/` |
 | `tests/robustness.rs` など | 壊れたファイルやランダムな命令列で panic しない | なし |
 | `tests/smoke.sh` | CLI と MCP の出力の要所、性能 | 文字列の照合 |
-| `tests/ladder.sh` | 難易度 L0〜L7 の期待値（`known_*` は未達の目標） | `tests/expect/ladder.tsv` |
+| `tests/ladder.sh` | 難易度 L0〜L7 の期待値（種別が `known_*` の行は、まだ満たせていない目標） | `tests/expect/ladder.tsv` |
 
 正解率、不変条件の違反、動作の違いは、今の値を `tests/golden/` に記録しています。値が変わると
-テストは失敗し、どの関数がどう変わったかを示します。意図した変更なら `VELK_BLESS=1 cargo test` で
-記録を更新し、差分を確かめてからコミットします。
+テストは失敗し、どの関数がどう変わったかを示します。意図した変更なら、環境変数 `VELK_BLESS=1` を付けて
+`cargo test` を実行すると記録が更新されるので、差分を確かめてからコミットします。
 
-### fixture の再生成
+### テスト用バイナリの再生成
 
 ```bash
 docker compose run --rm fixtures   # tests/cases/ から tests/fixtures/ を作り直す
-docker compose run --rm check      # 基準環境でテストを回す
+docker compose run --rm check      # 同じコンテナでテストを回す
 ```
 
 ### LLM による意味の確認
