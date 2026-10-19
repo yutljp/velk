@@ -137,6 +137,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     } = lifted;
     let uniform_32 = passes::widths::specialize_widths(&mut ir);
     passes::optimize(&mut ir, has_jump_tables);
+    passes::webs::split_parameter_webs(&mut ir);
     typing::apply_width_types(&mut ir, &uniform_32);
     typing::apply_void_return(&mut ir);
     typing::apply_partial_return(&mut ir);

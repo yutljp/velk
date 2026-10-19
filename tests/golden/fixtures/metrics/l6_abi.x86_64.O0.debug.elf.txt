@@ -29,8 +29,8 @@ int tail_direct(int x) {
     uint32_t local_0; /* [sp-c] */
 
     local_0 = x;
-    x = x;
-    x = x + 0x2;
+    v1 = x;
+    x = v1 + 0x2;
     tail_target();
     return rax;
 }
@@ -42,8 +42,8 @@ int (int x)
 fn tail_direct @ 0x201200 (size 28)
   blk0 @ 0x201200:
     store32(edi, (rsp + #0xfffffffffffffff4))
-    edi = (edi & #0xffffffff)
-    edi = (edi + #0x2)
+    v1 = (edi & #0xffffffff)
+    edi = (v1 + #0x2)
     call 0x2011e0
     ret rax
 -- card

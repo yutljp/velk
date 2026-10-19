@@ -79,15 +79,15 @@ fn matrix_trace @ 0x2101d4 (size 100)
 /* struct: out +0x0:uint32_t */
 int cleanup_on_error(int a, int b, int *out) {
     x8 = a;
-    a = 0xffffffff;
+    v1 = 0xffffffff;
     if ((x8 & 0x80000000) != 0x0) {
-        return a;
+        return v1;
     }
     if (b != 0x0) {
-        a = 0x0;
+        v1 = 0x0;
         out->field_0x0 = (int32_t)(w8) / (int32_t)(b);
     }
-    return a;
+    return v1;
 }
 -- signature
 int (int a, int b, int * out)
@@ -97,15 +97,15 @@ int (int a, int b, int * out)
 fn cleanup_on_error @ 0x210238 (size 32)
   blk0 @ 0x210238:
     x8 = (x0 & #0xffffffff)
-    x0 = #0xffffffff
+    v1 = #0xffffffff
     brif ne (x8 & #0x80000000), #0x0 -> 0x210254
   blk1 @ 0x210244:
     brif eq w1, #0x0 -> 0x210254
   blk2 @ 0x210248:
-    x0 = #0x0
+    v1 = #0x0
     store32((((x8 & #0xffffffff) / w1) & #0xffffffff), x2)
   blk3 @ 0x210254:
-    ret x0
+    ret v1
 -- card
 {"accesses":["out +0x0:uint32_t"],"addr":"0x210238","approxTokens":144,"blocks":4,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
 
@@ -190,17 +190,17 @@ fn sparse @ 0x210278 (size 84)
 /* struct: p +0x0:uint32_t, +0xfffffffffffffffc:uint32_t */
 int short_circuit(int *p, int n) {
     x8 = p;
-    p = 0x0;
+    v1 = 0x0;
     if (x8 == 0x0) {
-        return p;
+        return v1;
     }
     if (n < 0x1) {
-        return p;
+        return v1;
     }
     if (*(uint32_t *)(x8) != 0x1) {
         x8 = x8 + (n << 0x2);
-        p = (*(uint32_t *)(x8 - 0x4) == 0x1 ? 0x1 : 0x0);
-        return p;
+        v1 = (*(uint32_t *)(x8 - 0x4) == 0x1 ? 0x1 : 0x0);
+        return v1;
     }
     return 0x1;
 }
@@ -212,7 +212,7 @@ int (int * p, int n)
 fn short_circuit @ 0x2102cc (size 60)
   blk0 @ 0x2102cc:
     x8 = x0
-    x0 = #0x0
+    v1 = #0x0
     brif eq x8, #0x0 -> 0x210304
   blk1 @ 0x2102d8:
     brif lt w1, #0x1 -> 0x210304
@@ -222,9 +222,9 @@ fn short_circuit @ 0x2102cc (size 60)
     ret #0x1
   blk4 @ 0x2102f4:
     x8 = (x8 + (w1 << #0x2))
-    x0 = (select eq (load32((x8 + #0xfffffffffffffffc)) & #0xffffffff), #0x1 ? #0x1, #0x0 & #0xffffffff)
+    v1 = (select eq (load32((x8 + #0xfffffffffffffffc)) & #0xffffffff), #0x1 ? #0x1, #0x0 & #0xffffffff)
   blk5 @ 0x210304:
-    ret x0
+    ret v1
 -- card
 {"accesses":["p +0x0:uint32_t, +0xfffffffffffffffc:uint32_t"],"addr":"0x2102cc","approxTokens":156,"blocks":6,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":60,"unsupported":0}
 

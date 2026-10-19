@@ -76,12 +76,12 @@ fn <unnamed> @ 0x2011d0 (size 16)
 == 0x2011e0 -
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
-int32_t sub_2011e0(uint64_t *a0, int64_t a1) {
-    if ((a1 & 0xffffffff) <= 0x0) {
+int32_t sub_2011e0(uint64_t *a0, int32_t a1) {
+    if (a1 <= 0x0) {
         return 0x0;
     }
-    rcx = (a1 & 0xffffffff);
-    if ((a1 & 0xffffffff) < 0x8 /* unsigned */) {
+    rcx = a1;
+    if (a1 < 0x8 /* unsigned */) {
         rdx = 0x0;
         rax = 0x0;
     } else {
@@ -89,18 +89,18 @@ int32_t sub_2011e0(uint64_t *a0, int64_t a1) {
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         xmm0 = 0x0;
         xmm0_hi = 0x0;
-        a1 = 0x0;
+        v1 = 0x0;
         xmm1 = 0x0;
         xmm1_hi = 0x0;
         do {
-            xmm2 = *(uint64_t *)(a0 + a1);
-            xmm2_hi = *(uint64_t *)(a0 + a1 + 0x8);
+            xmm2 = *(uint64_t *)(a0 + v1);
+            xmm2_hi = *(uint64_t *)(a0 + v1 + 0x8);
             /* unsupported: Paddd at 0x201225 */
-            xmm2 = *(uint64_t *)(a0 + a1 + 0x10);
-            xmm2_hi = *(uint64_t *)(a0 + a1 + 0x18);
+            xmm2 = *(uint64_t *)(a0 + v1 + 0x10);
+            xmm2_hi = *(uint64_t *)(a0 + v1 + 0x18);
             /* unsupported: Paddd at 0x20122f */
-            a1 = a1 + 0x20;
-        } while (rax != a1);
+            v1 = v1 + 0x20;
+        } while (rax != v1);
         /* unsupported (5 steps): Paddd at 0x20123c, Pshufd at 0x201240, Paddd at 0x201245, Pshufd at 0x201249, Paddd at 0x20124e */
         rax = (uint32_t)xmm1;
         if (rdx == rcx) {
@@ -114,7 +114,7 @@ int32_t sub_2011e0(uint64_t *a0, int64_t a1) {
     return rax;
 }
 -- signature
-int32_t (uint64_t * a0, int64_t a1)
+int32_t (uint64_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -135,18 +135,18 @@ fn <unnamed> @ 0x2011e0 (size 140)
     rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     xmm0 = #0x0
     xmm0_hi = #0x0
-    rsi = #0x0
+    v1 = #0x0
     xmm1 = #0x0
     xmm1_hi = #0x0
   blk5 @ 0x201220:
-    xmm2 = load64((rdi + rsi))
-    xmm2_hi = load64(((rdi + rsi) + #0x8))
+    xmm2 = load64((rdi + v1))
+    xmm2_hi = load64(((rdi + v1) + #0x8))
     unsupported: Paddd at 0x201225
-    xmm2 = load64(((rdi + rsi) + #0x10))
-    xmm2_hi = load64(((rdi + rsi) + #0x18))
+    xmm2 = load64(((rdi + v1) + #0x10))
+    xmm2_hi = load64(((rdi + v1) + #0x18))
     unsupported: Paddd at 0x20122f
-    rsi = (rsi + #0x20)
-    brif ne rax, rsi -> 0x201220
+    v1 = (v1 + #0x20)
+    brif ne rax, v1 -> 0x201220
   blk6 @ 0x20123c:
     unsupported: Paddd at 0x20123c
     unsupported: Pshufd at 0x201240

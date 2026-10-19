@@ -162,10 +162,9 @@ fn big_sum @ 0x21033c (size 48)
 uint32_t word_low_byte(union word w) {
     uint32_t local_0; /* [sp-4] */
 
-    w8 = w;
-    local_0 = w8;
-    w = *(uint8_t *)&local_0;
-    return w;
+    local_0 = w;
+    v1 = *(uint8_t *)&local_0;
+    return v1;
 }
 -- signature
 uint32_t (union word w)
@@ -174,10 +173,9 @@ uint32_t (union word w)
 -- ir
 fn word_low_byte @ 0x21036c (size 24)
   blk0 @ 0x21036c:
-    w8 = w0
-    store32(w8, (sp + #0xfffffffffffffffc))
-    w0 = load8((sp + #0xfffffffffffffffc))
-    ret w0
+    store32(w0, (sp + #0xfffffffffffffffc))
+    v1 = load8((sp + #0xfffffffffffffffc))
+    ret v1
 -- card
 {"addr":"0x21036c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
 

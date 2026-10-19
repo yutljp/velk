@@ -11,8 +11,8 @@ uint32_t dense(uint32_t a0) {
     if (w9 > 0xf /* unsigned */) {
         x9 = 0x0;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     }
     w10 = 0x0;
     w10 = 0x13c;
@@ -22,109 +22,109 @@ uint32_t dense(uint32_t a0) {
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 + 0xb;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 11:
         x9 = *(uint32_t *)(x8 + 0x14c);
         w10 = 0x12;
         x9 = w9 ^ 0x12;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 12:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 - 0x19;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 13:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 | 0x20;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 14:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 + 0x27;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 15:
         x9 = *(uint32_t *)(x8 + 0x14c);
         w10 = 0x2e;
         x9 = w9 ^ 0x2e;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 16:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 - 0x35;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 17:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 | 0x3c;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 18:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 + 0x43;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 19:
         x9 = *(uint32_t *)(x8 + 0x14c);
         w10 = 0x4a;
         x9 = w9 ^ 0x4a;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 20:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 - 0x51;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 21:
         x9 = *(uint32_t *)(x8 + 0x14c);
         w10 = 0x58;
         x9 = w9 | w10;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 22:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 + 0x5f;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 23:
         x9 = *(uint32_t *)(x8 + 0x14c);
         w10 = 0x66;
         x9 = w9 ^ 0x66;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 24:
         x9 = *(uint32_t *)(x8 + 0x14c);
         x9 = w9 - 0x6d;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     case 25:
         x9 = *(uint32_t *)(x8 + 0x14c);
         w10 = 0x74;
         x9 = w9 | w10;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     default:
         x9 = 0x0;
         *(uint32_t *)(x8 + 0x14c) = w9;
-        a0 = *(uint32_t *)(x8 + 0x14c);
-        return a0;
+        v1 = *(uint32_t *)(x8 + 0x14c);
+        return v1;
     }
 }
 -- signature
@@ -216,8 +216,8 @@ fn dense @ 0x0 (size 268)
     x9 = #0x0
   blk20 @ 0x100:
     store32((x9 & #0xffffffff), (x8 + #0x14c))
-    w0 = load32((x8 + #0x14c))
-    ret w0
+    v1 = load32((x8 + #0x14c))
+    ret v1
 -- card
 {"addr":"0x0","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab"],"section":".text","size":268,"unsupported":0}
 

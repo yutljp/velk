@@ -49,8 +49,8 @@ fn square @ 0x2102cc (size 8)
 -- decompile
 /* velk pseudo-C: pick_op @ 0x2102d4 */
 void * pick_op(int which) {
-    which = (which == 0x0 ? 0x2102c4 : 0x2102cc);
-    return which;
+    v1 = (which == 0x0 ? 0x2102c4 : 0x2102cc);
+    return v1;
 }
 -- signature
 void * (int which)
@@ -59,8 +59,8 @@ void * (int which)
 -- ir
 fn pick_op @ 0x2102d4 (size 28)
   blk0 @ 0x2102d4:
-    x0 = select eq (x0 & #0xffffffff), #0x0 ? #0x2102c4, #0x2102cc
-    ret x0
+    v1 = select eq (x0 & #0xffffffff), #0x0 ? #0x2102c4, #0x2102cc
+    ret v1
 -- card
 {"addr":"0x2102d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pick_op","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
@@ -130,7 +130,7 @@ int factorial(int n) {
 L_21034c:
     if (n < 0x9 /* unsigned */) {
         w8 = n;
-        n = 0x1;
+        v1 = 0x1;
     } else {
         /* unsupported: DUP at 0x210360 */
         w8 = 0x200000;
@@ -145,16 +145,16 @@ L_21034c:
             w11 = w11 - 0x8;
         } while (w11 != 0x0);
         /* unsupported (3 steps): EXT at 0x2103b0, UMOV at 0x2103b8, FMOV at 0x2103bc */
-        n = w12 * w11;
+        v1 = w12 * w11;
         if (w9 == w10) {
-            return n;
+            return v1;
         }
     }
     do {
-        n = w8 * n;
+        v1 = w8 * v1;
         w8 = w8 - 0x1;
     } while (w8 + 0x1 > 0x2 /* unsigned */);
-    return n;
+    return v1;
 }
 -- signature
 int (int n)
@@ -170,7 +170,7 @@ fn factorial @ 0x21033c (size 160)
     brif cs (x0 & #0xffffffff), #0x9 -> 0x210360
   blk3 @ 0x210354:
     x8 = (x0 & #0xffffffff)
-    x0 = #0x1
+    v1 = #0x1
     br 0x2103c8
   blk4 @ 0x210360:
     unsupported: DUP at 0x210360
@@ -190,14 +190,14 @@ fn factorial @ 0x21033c (size 160)
     unsupported: EXT at 0x2103b0
     unsupported: UMOV at 0x2103b8
     unsupported: FMOV at 0x2103bc
-    x0 = ((w12 * w11) & #0xffffffff)
+    v1 = ((w12 * w11) & #0xffffffff)
     brif eq w9, w10 -> 0x2103d8
   blk7 @ 0x2103c8:
-    x0 = (((x8 & #0xffffffff) * (x0 & #0xffffffff)) & #0xffffffff)
+    v1 = (((x8 & #0xffffffff) * (v1 & #0xffffffff)) & #0xffffffff)
     x8 = (((x8 & #0xffffffff) - #0x1) & #0xffffffff)
     brif hi (w8 + #0x1), #0x2 -> 0x2103c8
   blk8 @ 0x2103d8:
-    ret x0
+    ret v1
 -- card
 {"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":160,"unsupported":8}
 

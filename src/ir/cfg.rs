@@ -158,6 +158,7 @@ fn universe() -> impl Iterator<Item = u16> {
         .chain(crate::ir::TEMP_BASE..crate::ir::TEMP_BASE + 64)
         .chain(crate::ir::FLAG_OPERANDS)
         .chain([crate::ir::EXCHANGE])
+        .chain(crate::ir::VARIABLE_BASE..crate::ir::VARIABLE_BASE + 64)
 }
 
 fn live_out_of(live_in: &[HashSet<u16>], successors: &[usize]) -> HashSet<u16> {

@@ -237,8 +237,8 @@ fn grid_get @ 0x201340 (size 23)
 /* velk pseudo-C: grid_set @ 0x201360 */
 /* ref: 0x2023b0 .bss */
 uint32_t grid_set(int row, int col, int value) {
-    row = row & 0x3;
-    rax = 0x2023b0 + (row << 0x5);
+    v1 = row & 0x3;
+    rax = 0x2023b0 + (v1 << 0x5);
     *(uint32_t *)(rax + (col & 0x7) * 0x4) = value;
     return rax;
 }
@@ -249,8 +249,8 @@ uint32_t (int row, int col, int value)
 -- ir
 fn grid_set @ 0x201360 (size 23)
   blk0 @ 0x201360:
-    rdi = (rdi & #0x3)
-    rax = (#0x2023b0 + (((rdi & #0xffffffff) << #0x5) & #0xffffffff))
+    v1 = (rdi & #0x3)
+    rax = (#0x2023b0 + (((v1 & #0xffffffff) << #0x5) & #0xffffffff))
     store32(edx, (rax + ((rsi & #0x7) * #0x4)))
     ret rax
 -- card

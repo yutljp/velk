@@ -23,9 +23,9 @@ int sum_while(int n) {
         dword_220380 = w8;
         local_2 += 0x1;
     }
-    n = local_1;
+    v1 = local_1;
     sp = sp + 0x10;
-    return n;
+    return v1;
 }
 -- signature
 int (int n)
@@ -53,9 +53,9 @@ fn sum_while @ 0x2101d4 (size 100)
     store32(((load32((sp + #0x4)) + #0x1) & #0xffffffff), (sp + #0x4))
     br 0x2101e8
   blk5 @ 0x21022c:
-    w0 = load32((sp + #0x8))
+    v1 = load32((sp + #0x8))
     sp = (sp + #0x10)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x2101d4","approxTokens":240,"blocks":6,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}
 
@@ -75,9 +75,9 @@ int count_down(int n) {
         local_0 -= 0x1;
         dword_220380 = local_1;
     } while (local_0 > 0x0);
-    n = local_1;
+    v1 = local_1;
     sp = sp + 0x10;
-    return n;
+    return v1;
 }
 -- signature
 int (int n)
@@ -100,9 +100,9 @@ fn count_down @ 0x210238 (size 84)
   blk3 @ 0x21027c:
     br 0x210280
   blk4 @ 0x210280:
-    w0 = load32((sp + #0x8))
+    v1 = load32((sp + #0x8))
     sp = (sp + #0x10)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x210238","approxTokens":222,"blocks":5,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}
 
@@ -122,9 +122,9 @@ int sum_skip_odd(int n) {
     for (;;) {
         w9 = local_0;
         if (local_2 >= w9) {
-            n = local_1;
+            v1 = local_1;
             sp = sp + 0x10;
-            return n;
+            return v1;
         }
         if ((local_2 & 0x1) != 0x0) {
             break;
@@ -169,9 +169,9 @@ fn sum_skip_odd @ 0x21028c (size 116)
     store32(((load32((sp + #0x4)) + #0x1) & #0xffffffff), (sp + #0x4))
     br 0x2102a0
   blk8 @ 0x2102f4:
-    w0 = load32((sp + #0x8))
+    v1 = load32((sp + #0x8))
     sp = (sp + #0x10)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x21028c","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":116,"unsupported":0}
 

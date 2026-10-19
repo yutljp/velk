@@ -126,7 +126,7 @@ int32_t sub_210204(uint32_t *a0, int32_t a1) {
         return 0x0;
     }
     x8 = a0;
-    a0 = 0x0;
+    v1 = 0x0;
     x9 = a1;
     do {
         w10 = *(uint32_t *)(x8);
@@ -135,9 +135,9 @@ int32_t sub_210204(uint32_t *a0, int32_t a1) {
             break;
         }
         x9 = x9 - 0x1;
-        a0 = (w10 & ~(w10 >>> 0x1f)) + (a0 & 0xffffffff);
+        v1 = (((w10 & ~(w10 >>> 0x1f)) + v1) & 0xffffffff);
     } while (x9 != 0x0);
-    return a0;
+    return v1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -149,7 +149,7 @@ fn <unnamed> @ 0x210204 (size 56)
     brif lt w1, #0x1 -> 0x210234
   blk1 @ 0x21020c:
     x8 = x0
-    x0 = #0x0
+    v1 = #0x0
     x9 = w1
   blk2 @ 0x210218:
     w10 = load32(x8)
@@ -157,10 +157,10 @@ fn <unnamed> @ 0x210204 (size 56)
     brif eq w10, #0x0 -> 0x210230
   blk3 @ 0x210220:
     x9 = (x9 - #0x1)
-    x0 = (((w10 & ((w10 >>> #0x1f) ^ #0xffffffffffffffff)) + (x0 & #0xffffffff)) & #0xffffffff)
+    v1 = (((w10 & ((w10 >>> #0x1f) ^ #0xffffffffffffffff)) + (v1 & #0xffffffff)) & #0xffffffff)
     brif ne x9, #0x0 -> 0x210218
   blk4 @ 0x210230:
-    ret x0
+    ret v1
   blk5 @ 0x210234:
     ret #0x0
 -- card

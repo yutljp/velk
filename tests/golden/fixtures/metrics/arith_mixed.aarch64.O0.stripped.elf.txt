@@ -84,7 +84,7 @@ fn <unnamed> @ 0x210228 (size 36)
 == 0x21024c -
 -- decompile
 /* velk pseudo-C: sub_21024c @ 0x21024c */
-uint32_t sub_21024c(uint32_t a0, uint32_t a1) {
+uint32_t sub_21024c(uint64_t a0, uint32_t a1) {
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
     uint32_t local_2; /* [sp-10] */
@@ -101,7 +101,7 @@ uint32_t sub_21024c(uint32_t a0, uint32_t a1) {
     return local_2;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+uint32_t (uint64_t a0, uint32_t a1)
 -- references
 
 -- ir

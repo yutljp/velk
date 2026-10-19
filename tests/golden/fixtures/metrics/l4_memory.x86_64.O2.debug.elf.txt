@@ -38,18 +38,18 @@ int array_sum(int *a, int n) {
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         xmm0 = 0x0;
         xmm0_hi = 0x0;
-        n = 0x0;
+        v1 = 0x0;
         xmm1 = 0x0;
         xmm1_hi = 0x0;
         do {
-            xmm2 = *(uint64_t *)(a + n);
-            xmm2_hi = *(uint64_t *)(a + n + 0x8);
+            xmm2 = *(uint64_t *)(a + v1);
+            xmm2_hi = *(uint64_t *)(a + v1 + 0x8);
             /* unsupported: Paddd at 0x201235 */
-            xmm2 = *(uint64_t *)(a + n + 0x10);
-            xmm2_hi = *(uint64_t *)(a + n + 0x18);
+            xmm2 = *(uint64_t *)(a + v1 + 0x10);
+            xmm2_hi = *(uint64_t *)(a + v1 + 0x18);
             /* unsupported: Paddd at 0x20123f */
-            n = n + 0x20;
-        } while (rax != n);
+            v1 = v1 + 0x20;
+        } while (rax != v1);
         /* unsupported (5 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e */
         rax = (uint32_t)xmm1;
         if (rdx == rcx) {
@@ -84,18 +84,18 @@ fn array_sum @ 0x2011f0 (size 140)
     rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     xmm0 = #0x0
     xmm0_hi = #0x0
-    rsi = #0x0
+    v1 = #0x0
     xmm1 = #0x0
     xmm1_hi = #0x0
   blk5 @ 0x201230:
-    xmm2 = load64((rdi + rsi))
-    xmm2_hi = load64(((rdi + rsi) + #0x8))
+    xmm2 = load64((rdi + v1))
+    xmm2_hi = load64(((rdi + v1) + #0x8))
     unsupported: Paddd at 0x201235
-    xmm2 = load64(((rdi + rsi) + #0x10))
-    xmm2_hi = load64(((rdi + rsi) + #0x18))
+    xmm2 = load64(((rdi + v1) + #0x10))
+    xmm2_hi = load64(((rdi + v1) + #0x18))
     unsupported: Paddd at 0x20123f
-    rsi = (rsi + #0x20)
-    brif ne rax, rsi -> 0x201230
+    v1 = (v1 + #0x20)
+    brif ne rax, v1 -> 0x201230
   blk6 @ 0x20124c:
     unsupported: Paddd at 0x20124c
     unsupported: Pshufd at 0x201250

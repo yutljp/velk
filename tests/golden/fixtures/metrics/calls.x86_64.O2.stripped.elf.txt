@@ -268,11 +268,11 @@ uint32_t sub_201460(uint32_t a0) {
         if (a0 == 0x0) {
             return 0x0;
         }
-        a0 = a0 - 0x1;
-        if (a0 == 0x0) {
+        v1 = a0 - 0x1;
+        if (v1 == 0x0) {
             return 0x1;
         }
-        a0 = a0 - 0x1;
+        a0 = v1 - 0x1;
     }
     return 0x1;
 }
@@ -285,14 +285,14 @@ fn <unnamed> @ 0x201460 (size 48)
   blk0 @ 0x201460:
     brif eq edi, #0x0 -> 0x20146b
   blk1 @ 0x201464:
-    edi = (edi + #0xffffffffffffffff)
+    v1 = (edi + #0xffffffffffffffff)
     br 0x201470
   blk2 @ 0x20146b:
     ret #0x0
   blk3 @ 0x201470:
-    brif eq edi, #0x0 -> 0x20147b
+    brif eq v1, #0x0 -> 0x20147b
   blk4 @ 0x201474:
-    edi = (edi + #0xffffffffffffffff)
+    edi = (v1 + #0xffffffffffffffff)
     br 0x201460
   blk5 @ 0x20147b:
     ret #0x1
@@ -361,7 +361,7 @@ fn <unnamed> @ 0x2014b0 (size 64)
 == 0x2014f0 -
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
-int32_t sub_2014f0(int32_t a0, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, uint64_t a5) {
+int32_t sub_2014f0(int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5) {
     uint64_t local_0; /* [sp-b0] */
     uint64_t local_1; /* [sp-a8] */
     uint64_t local_2; /* [sp-a0] */
@@ -418,9 +418,9 @@ int32_t sub_2014f0(int32_t a0, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a
         rsp = rsp + 0x58;
         return 0x0;
     }
-    a2 = *(uint32_t *)&local_23;
-    a3 = local_21;
-    a1 = local_22;
+    v2 = *(uint32_t *)&local_23;
+    v3 = local_21;
+    v1 = local_22;
     if (a0 != 0x1) { goto L_20159b; }
     rax = 0x0;
 L_201574:
@@ -428,49 +428,49 @@ L_201574:
         rsp = rsp + 0x58;
         return rax;
     }
-    if (a2 >= 0x29 /* unsigned */) { goto L_2015fb; }
-    a3 = a3 + a2;
-    *(uint32_t *)&local_23 = a2 + 0x8;
-    a1 = a3;
-    rax = eax + *(uint32_t *)(a1);
+    if (v2 >= 0x29 /* unsigned */) { goto L_2015fb; }
+    v4 = v3 + v2;
+    *(uint32_t *)&local_23 = v2 + 0x8;
+    v1 = v4;
+    rax = eax + *(uint32_t *)(v1);
     rsp = rsp + 0x58;
     return rax;
 L_20159b:
-    a4 = a0 & 0x7ffffffe;
+    v5 = a0 & 0x7ffffffe;
     rax = 0x0;
     goto L_2015c9;
 L_2015b0:
-    a1 = a5;
-    a5 = a2 + a3;
-    a2 = a2 + 0x8;
-    *(uint32_t *)&local_23 = a2;
+    v1 = v6;
+    v6 = v2 + v3;
+    v2 = v2 + 0x8;
+    *(uint32_t *)&local_23 = v2;
 L_2015c0:
-    rax = eax + *(uint32_t *)(a5);
-    a4 = ((a4 - 0x2) & 0xffffffff);
-    if (a4 == 0x0) { goto L_201574; }
+    rax = eax + *(uint32_t *)(v6);
+    v5 = v5 - 0x2;
+    if (v5 == 0x0) { goto L_201574; }
 L_2015c9:
-    if (a2 <= 0x28 /* unsigned */) {
-        a5 = a1;
-        a1 = a2 + a3;
-        a2 = a2 + 0x8;
-        *(uint32_t *)&local_23 = a2;
+    if (v2 <= 0x28 /* unsigned */) {
+        v6 = v1;
+        v1 = v2 + v3;
+        v2 = v2 + 0x8;
+        *(uint32_t *)&local_23 = v2;
     } else {
-        a5 = a1 + 0x8;
-        local_22 = a5;
+        v6 = v1 + 0x8;
+        local_22 = v6;
     }
-    rax = eax + *(uint32_t *)(a1);
-    if (a2 < 0x29 /* unsigned */) { goto L_2015b0; }
-    a1 = a5 + 0x8;
-    local_22 = a1;
+    rax = eax + *(uint32_t *)(v1);
+    if (v2 < 0x29 /* unsigned */) { goto L_2015b0; }
+    v1 = v6 + 0x8;
+    local_22 = v1;
     goto L_2015c0;
 L_2015fb:
-    local_22 = a1 + 0x8;
-    rax = eax + *(uint32_t *)(a1);
+    local_22 = v1 + 0x8;
+    rax = eax + *(uint32_t *)(v1);
     rsp = rsp + 0x58;
     return rax;
 }
 -- signature
-int32_t (int32_t a0, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, uint64_t a5)
+int32_t (int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 -- references
 
 -- ir
@@ -506,59 +506,59 @@ fn <unnamed> @ 0x2014f0 (size 283)
     store64(#0x3000000008, (rsp + #0xffffffffffffff80))
     brif le (rdi & #0xffffffff), #0x0 -> 0x201594
   blk3 @ 0x20155f:
-    rdx = (load32((rsp + #0xffffffffffffff80)) & #0xffffffff)
-    rcx = load64((rsp + #0xffffffffffffff90))
-    rsi = load64((rsp + #0xffffffffffffff88))
+    v2 = (load32((rsp + #0xffffffffffffff80)) & #0xffffffff)
+    v3 = load64((rsp + #0xffffffffffffff90))
+    v1 = load64((rsp + #0xffffffffffffff88))
     brif ne (rdi & #0xffffffff), #0x1 -> 0x20159b
   blk4 @ 0x201572:
     rax = #0x0
   blk5 @ 0x201574:
     brif eq (rdi & #0x1), #0x0 -> 0x201606
   blk6 @ 0x20157e:
-    brif cs (rdx & #0xffffffff), #0x29 -> 0x2015fb
+    brif cs (v2 & #0xffffffff), #0x29 -> 0x2015fb
   blk7 @ 0x201583:
-    rcx = (rcx + (rdx & #0xffffffff))
-    store32((((rdx & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff80))
-    rsi = rcx
+    v4 = (v3 + (v2 & #0xffffffff))
+    store32((((v2 & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff80))
+    v1 = v4
     br 0x201604
   blk8 @ 0x201594:
     rsp = (rsp + #0x58)
     ret #0x0
   blk9 @ 0x20159b:
-    r8 = (rdi & #0x7ffffffe)
+    v5 = (rdi & #0x7ffffffe)
     rax = #0x0
     br 0x2015c9
   blk10 @ 0x2015b0:
-    rsi = r9
-    r9 = ((rdx & #0xffffffff) + rcx)
-    rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    store32((rdx & #0xffffffff), (rsp + #0xffffffffffffff80))
+    v1 = v6
+    v6 = ((v2 & #0xffffffff) + v3)
+    v2 = (((v2 & #0xffffffff) + #0x8) & #0xffffffff)
+    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffff80))
   blk11 @ 0x2015c0:
-    rax = (((rax & #0xffffffff) + load32(r9)) & #0xffffffff)
-    r8 = (((r8 & #0xffffffff) + #0xfffffffffffffffe) & #0xffffffff)
-    brif eq r8d, #0x0 -> 0x201574
+    rax = (((rax & #0xffffffff) + load32(v6)) & #0xffffffff)
+    v5 = (((v5 & #0xffffffff) + #0xfffffffffffffffe) & #0xffffffff)
+    brif eq v5, #0x0 -> 0x201574
   blk12 @ 0x2015c9:
-    brif hi (rdx & #0xffffffff), #0x28 -> 0x2015e0
+    brif hi (v2 & #0xffffffff), #0x28 -> 0x2015e0
   blk13 @ 0x2015ce:
-    r9 = rsi
-    rsi = ((rdx & #0xffffffff) + rcx)
-    rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    store32((rdx & #0xffffffff), (rsp + #0xffffffffffffff80))
+    v6 = v1
+    v1 = ((v2 & #0xffffffff) + v3)
+    v2 = (((v2 & #0xffffffff) + #0x8) & #0xffffffff)
+    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffff80))
     br 0x2015e9
   blk14 @ 0x2015e0:
-    r9 = (rsi + #0x8)
-    store64(r9, (rsp + #0xffffffffffffff88))
+    v6 = (v1 + #0x8)
+    store64(v6, (rsp + #0xffffffffffffff88))
   blk15 @ 0x2015e9:
-    rax = (((rax & #0xffffffff) + load32(rsi)) & #0xffffffff)
-    brif cc (rdx & #0xffffffff), #0x29 -> 0x2015b0
+    rax = (((rax & #0xffffffff) + load32(v1)) & #0xffffffff)
+    brif cc (v2 & #0xffffffff), #0x29 -> 0x2015b0
   blk16 @ 0x2015f0:
-    rsi = (r9 + #0x8)
-    store64(rsi, (rsp + #0xffffffffffffff88))
+    v1 = (v6 + #0x8)
+    store64(v1, (rsp + #0xffffffffffffff88))
     br 0x2015c0
   blk17 @ 0x2015fb:
-    store64((rsi + #0x8), (rsp + #0xffffffffffffff88))
+    store64((v1 + #0x8), (rsp + #0xffffffffffffff88))
   blk18 @ 0x201604:
-    rax = (((rax & #0xffffffff) + load32(rsi)) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + load32(v1)) & #0xffffffff)
   blk19 @ 0x201606:
     rsp = (rsp + #0x58)
     ret rax

@@ -96,7 +96,7 @@ int cleanup_on_error(int a, int b, int *out) {
         if (local_1 == 0x0) {
         } else {
             rax = local_0;
-            out = (int32_t)(eax) % (int32_t)(local_1);
+            v1 = (int32_t)(eax) % (int32_t)(local_1);
             ecx = (int32_t)(eax) / (int32_t)(local_1);
             *(uint32_t *)(local_2) = ecx;
             local_3 = 0x0;
@@ -126,7 +126,7 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
     br 0x201309
   blk4 @ 0x2012f3:
     rax = (load32((rsp + #0xfffffffffffffffc)) & #0xffffffff)
-    rdx = (((rax & #0xffffffff) % load32((rsp + #0xfffffffffffffff8))) & #0xffffffff)
+    v1 = (((rax & #0xffffffff) % load32((rsp + #0xfffffffffffffff8))) & #0xffffffff)
     ecx = (((rax & #0xffffffff) / load32((rsp + #0xfffffffffffffff8))) & #0xffffffff)
     store32(ecx, load64((rsp + #0xfffffffffffffff0)))
     store32(#0x0, (rsp + #0xffffffffffffffec))
@@ -434,8 +434,8 @@ int find_pair(int *p, int n, int target) {
         local_4 = local_3 + 0x1;
         for (;;) {
             if (local_4 >= local_1) { goto L_20155a; }
-            target = (int64_t)(int32_t)(local_4);
-            if (*(uint32_t *)(local_0 + (int64_t)(int32_t)(local_3) * 0x4) + *(uint32_t *)(local_0 + target * 0x4) != local_2) { goto L_201547; }
+            v1 = (int64_t)(int32_t)(local_4);
+            if (*(uint32_t *)(local_0 + (int64_t)(int32_t)(local_3) * 0x4) + *(uint32_t *)(local_0 + v1 * 0x4) != local_2) { goto L_201547; }
             local_5 = local_3 * local_1 + local_4;
             return local_5;
         L_201547:
@@ -465,8 +465,8 @@ fn find_pair @ 0x2014e0 (size 153)
   blk3 @ 0x20150a:
     brif ge (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff), load32((rsp + #0xffffffffffffffe4)) -> 0x20155a
   blk4 @ 0x201516:
-    rdx = sext32(load32((rsp + #0xffffffffffffffd8)))
-    brif ne ((load32((load64((rsp + #0xffffffffffffffe8)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x4))) + load32((load64((rsp + #0xffffffffffffffe8)) + (rdx * #0x4)))) & #0xffffffff), load32((rsp + #0xffffffffffffffe0)) -> 0x201547
+    v1 = sext32(load32((rsp + #0xffffffffffffffd8)))
+    brif ne ((load32((load64((rsp + #0xffffffffffffffe8)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x4))) + load32((load64((rsp + #0xffffffffffffffe8)) + (v1 * #0x4)))) & #0xffffffff), load32((rsp + #0xffffffffffffffe0)) -> 0x201547
   blk5 @ 0x201535:
     store32((((load32((rsp + #0xffffffffffffffdc)) * load32((rsp + #0xffffffffffffffe4))) + load32((rsp + #0xffffffffffffffd8))) & #0xffffffff), (rsp + #0xfffffffffffffff4))
     br 0x201574

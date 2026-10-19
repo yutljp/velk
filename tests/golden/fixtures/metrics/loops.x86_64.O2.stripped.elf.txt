@@ -74,11 +74,11 @@ fn <unnamed> @ 0x2011c0 (size 32)
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 int32_t sub_2011e0(uint32_t *a0, int32_t a1) {
     rcx = 0x0;
-    a1 = (a1 <= 0x0 ? 0x0 : a1);
+    v1 = (a1 <= 0x0 ? 0x0 : a1);
     edx = 0x0;
     do {
         rax = edx;
-        if (a1 == rcx) {
+        if (v1 == rcx) {
             break;
         }
         r8 = *(uint32_t *)(a0 + rcx * 0x4);
@@ -95,11 +95,11 @@ int32_t (uint32_t * a0, int32_t a1)
 fn <unnamed> @ 0x2011e0 (size 48)
   blk0 @ 0x2011e0:
     rcx = #0x0
-    rsi = (select le (rsi & #0xffffffff), #0x0 ? #0x0, (rsi & #0xffffffff) & #0xffffffff)
+    v1 = (select le (rsi & #0xffffffff), #0x0 ? #0x0, (rsi & #0xffffffff) & #0xffffffff)
     rdx = #0x0
   blk1 @ 0x2011f0:
     rax = (rdx & #0xffffffff)
-    brif eq rsi, rcx -> 0x201207
+    brif eq v1, rcx -> 0x201207
   blk2 @ 0x2011f7:
     r8 = (load32((rdi + (rcx * #0x4))) & #0xffffffff)
     rdx = ((r8 + rax) & #0xffffffff)
@@ -113,27 +113,27 @@ fn <unnamed> @ 0x2011e0 (size 48)
 == 0x201210 -
 -- decompile
 /* velk pseudo-C: sub_201210 @ 0x201210 */
-int32_t sub_201210(uint32_t *a0, int64_t a1) {
-    if ((a1 & 0xffffffff) <= 0x0) {
+int32_t sub_201210(uint32_t *a0, int32_t a1) {
+    if (a1 <= 0x0) {
         return 0x0;
     }
-    rcx = (a1 & 0xffffffff);
+    rcx = a1;
     rdx = 0x0;
-    a1 = 0x0;
+    v1 = 0x0;
     rax = 0x0;
     do {
-        r8d = *(uint32_t *)(a0 + a1 * 0x4);
+        r8d = *(uint32_t *)(a0 + v1 * 0x4);
         if (r8d == 0x0) {
             break;
         }
         /* unsupported: cmov without compare at 0x201229 */
         rax = eax + r8d;
-        a1 = a1 + 0x1;
-    } while (rcx != a1);
+        v1 = v1 + 0x1;
+    } while (rcx != v1);
     return rax;
 }
 -- signature
-int32_t (uint32_t * a0, int64_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -143,16 +143,16 @@ fn <unnamed> @ 0x201210 (size 44)
   blk1 @ 0x201214:
     rcx = (rsi & #0xffffffff)
     rdx = #0x0
-    rsi = #0x0
+    v1 = #0x0
     rax = #0x0
   blk2 @ 0x201220:
-    r8d = load32((rdi + (rsi * #0x4)))
+    r8d = load32((rdi + (v1 * #0x4)))
     brif eq r8d, #0x0 -> 0x201238
   blk3 @ 0x201229:
     unsupported: cmov without compare at 0x201229
     rax = (((rax & #0xffffffff) + r8d) & #0xffffffff)
-    rsi = (rsi + #0x1)
-    brif ne rcx, rsi -> 0x201220
+    v1 = (v1 + #0x1)
+    brif ne rcx, v1 -> 0x201220
   blk4 @ 0x201238:
     ret rax
   blk5 @ 0x201239:

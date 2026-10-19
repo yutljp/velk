@@ -27,79 +27,79 @@ int dense(int x) {
     x19 = 0x220000;
     if (w8 > 0xf /* unsigned */) {
         *(uint32_t *)(x19 + 0x554) = 0x0;
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     }
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (x) {
     case 10:
         c0();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 11:
         c1();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 12:
         c2();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 13:
         c3();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 14:
         c4();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 15:
         c5();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 16:
         c6();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 17:
         c7();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 18:
         c8();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 19:
         c9();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 20:
         c10();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 21:
         c11();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 22:
         c12();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 23:
         c13();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 24:
         c14();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     case 25:
         c15();
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     default:
         *(uint32_t *)(x19 + 0x554) = 0x0;
-        x = *(uint32_t *)(x19 + 0x554);
-        return x;
+        v1 = *(uint32_t *)(x19 + 0x554);
+        return v1;
     }
 }
 -- signature
@@ -166,8 +166,8 @@ fn dense @ 0x210304 (size 200)
   blk18 @ 0x2103b8:
     store32(#0x0, (x19 + #0x554))
   blk19 @ 0x2103bc:
-    w0 = load32((x19 + #0x554))
-    ret w0
+    v1 = load32((x19 + #0x554))
+    ret v1
 -- card
 {"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":200,"unsupported":0}
 

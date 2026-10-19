@@ -38,9 +38,9 @@ int dense(int x) {
         x8 = 0x220000;
         dword_2205e8 = 0x0;
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     }
     x8 = 0x210368;
     x9 = dword_200158[local_1];
@@ -49,106 +49,106 @@ int dense(int x) {
     case 10:
         c0();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 11:
         c1();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 12:
         c2();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 13:
         c3();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 14:
         c4();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 15:
         c5();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 16:
         c6();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 17:
         c7();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 18:
         c8();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 19:
         c9();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 20:
         c10();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 21:
         c11();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 22:
         c12();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 23:
         c13();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 24:
         c14();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     case 25:
         c15();
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     default:
         x8 = 0x220000;
         dword_2205e8 = 0x0;
         x8 = 0x220000;
-        x = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return x;
+        return v1;
     }
 }
 -- signature
@@ -226,9 +226,9 @@ fn dense @ 0x210334 (size 228)
     br 0x210404
   blk19 @ 0x210404:
     x8 = #0x220000
-    w0 = load32(#0x2205e8)
+    v1 = load32(#0x2205e8)
     sp = (sp + #0x20)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":228,"unsupported":0}
 

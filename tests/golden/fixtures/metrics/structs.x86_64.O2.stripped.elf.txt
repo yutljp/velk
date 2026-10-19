@@ -39,7 +39,7 @@ uint64_t sub_2011f0(uint16_t *a0, int32_t a1) {
         rdx = 0x0;
         rax = 0x0;
     } else {
-        a1 = rcx & 0x7ffffffe;
+        v1 = rcx & 0x7ffffffe;
         r8 = a0 + 0x28;
         rdx = 0x0;
         rax = 0x0;
@@ -48,7 +48,7 @@ uint64_t sub_2011f0(uint16_t *a0, int32_t a1) {
             rax = (int16_t)(*(uint16_t *)(r8)) * *(uint64_t *)(r8 - 0x8) + r9;
             rdx = rdx + 0x2;
             r8 = r8 + 0x30;
-        } while (a1 != rdx);
+        } while (v1 != rdx);
     }
     if ((rcx & 0x1) != 0x0) {
         rcx = rdx + rdx * 0x2;
@@ -74,7 +74,7 @@ fn <unnamed> @ 0x2011f0 (size 112)
   blk3 @ 0x201201:
     ret #0x0
   blk4 @ 0x201204:
-    rsi = (rcx & #0x7ffffffe)
+    v1 = (rcx & #0x7ffffffe)
     r8 = (rdi + #0x28)
     rdx = #0x0
     rax = #0x0
@@ -83,7 +83,7 @@ fn <unnamed> @ 0x2011f0 (size 112)
     rax = ((sext16(load16(r8)) * load64((r8 + #0xfffffffffffffff8))) + r9)
     rdx = (rdx + #0x2)
     r8 = (r8 + #0x30)
-    brif ne rsi, rdx -> 0x201220
+    brif ne v1, rdx -> 0x201220
   blk6 @ 0x201246:
     brif eq (rcx & #0x1), #0x0 -> 0x20125e
   blk7 @ 0x20124b:
@@ -98,9 +98,7 @@ fn <unnamed> @ 0x2011f0 (size 112)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 uint64_t sub_201260(uint64_t a0, uint64_t a1) {
-    rax = ((a0 + a1) & 0xffffffff);
-    a0 = a0 & 0xffffffff00000000;
-    return rax | a0 + a1 & 0xffffffff00000000;
+    return ((a0 + a1) & 0xffffffff) | (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000;
 }
 -- signature
 uint64_t (uint64_t a0, uint64_t a1)
@@ -109,9 +107,7 @@ uint64_t (uint64_t a0, uint64_t a1)
 -- ir
 fn <unnamed> @ 0x201260 (size 32)
   blk0 @ 0x201260:
-    rax = ((rdi + rsi) & #0xffffffff)
-    rdi = (rdi & #0xffffffff00000000)
-    ret (rax | ((rdi + rsi) & #0xffffffff00000000))
+    ret (((rdi + rsi) & #0xffffffff) | (((rdi & #0xffffffff00000000) + rsi) & #0xffffffff00000000))
 -- card
 {"addr":"0x201260","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
@@ -212,9 +208,9 @@ fn <unnamed> @ 0x2012d0 (size 32)
 uint64_t sub_2012f0(uint8_t *a0, uint64_t a1) {
     rax = *(uint8_t *)(a0) & 0xff;
     t1 = a1 & 0xff;
-    a1 = a1 & 0xffffffffffffff00 | t1 + t1 & 0xff;
+    v1 = a1 & 0xffffffffffffff00 | t1 + t1 & 0xff;
     rax = rax & 0xffffffffffffff00 | rax & 0xf1;
-    rax = rax & 0xffffffffffffff00 | (rax & 0xff | a1 & 0xe) & 0xff;
+    rax = rax & 0xffffffffffffff00 | (rax & 0xff | v1 & 0xe) & 0xff;
     *(uint8_t *)(a0) = rax & 0xff;
     return rax;
 }
@@ -227,9 +223,9 @@ fn <unnamed> @ 0x2012f0 (size 18)
   blk0 @ 0x2012f0:
     rax = (load8(rdi) & #0xff)
     t1 = (rsi & #0xff)
-    rsi = ((rsi & #0xffffffffffffff00) | ((t1 + t1) & #0xff))
+    v1 = ((rsi & #0xffffffffffffff00) | ((t1 + t1) & #0xff))
     rax = ((rax & #0xffffffffffffff00) | (rax & #0xf1))
-    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | (rsi & #0xe)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | (v1 & #0xe)) & #0xff))
     store8((rax & #0xff), rdi)
     ret rax
 -- card

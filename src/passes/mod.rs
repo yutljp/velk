@@ -7,6 +7,7 @@ pub mod frame_slots;
 pub mod layout;
 pub mod memory;
 pub mod simplify;
+pub mod webs;
 pub mod widths;
 
 use crate::ir::FunctionIr;

@@ -230,8 +230,8 @@ fn <unnamed> @ 0x201340 (size 32)
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x2023b0 .bss */
 uint32_t sub_201360(uint32_t a0, uint32_t a1, uint32_t a2) {
-    a0 = a0 & 0x3;
-    rax = 0x2023b0 + (a0 << 0x5);
+    v1 = a0 & 0x3;
+    rax = 0x2023b0 + (v1 << 0x5);
     *(uint32_t *)(rax + (a1 & 0x7) * 0x4) = a2;
     return rax;
 }
@@ -242,8 +242,8 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- ir
 fn <unnamed> @ 0x201360 (size 32)
   blk0 @ 0x201360:
-    rdi = (rdi & #0x3)
-    rax = (#0x2023b0 + (((rdi & #0xffffffff) << #0x5) & #0xffffffff))
+    v1 = (rdi & #0x3)
+    rax = (#0x2023b0 + (((v1 & #0xffffffff) << #0x5) & #0xffffffff))
     store32(edx, (rax + ((rsi & #0x7) * #0x4)))
     ret rax
 -- card

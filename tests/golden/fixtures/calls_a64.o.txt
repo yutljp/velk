@@ -49,8 +49,8 @@ fn square @ 0x8 (size 8)
 -- decompile
 /* velk pseudo-C: pick_op @ 0x10 */
 uint32_t pick_op(uint32_t a0) {
-    a0 = (a0 == 0x0 ? 0x0 : 0x8);
-    return a0;
+    v1 = (a0 == 0x0 ? 0x0 : 0x8);
+    return v1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -59,8 +59,8 @@ uint32_t (uint32_t a0)
 -- ir
 fn pick_op @ 0x10 (size 28)
   blk0 @ 0x10:
-    x0 = select eq (x0 & #0xffffffff), #0x0 ? #0x0, #0x8
-    ret x0
+    v1 = select eq (x0 & #0xffffffff), #0x0 ? #0x0, #0x8
+    ret v1
 -- card
 {"addr":"0x10","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pick_op","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
 
@@ -131,7 +131,7 @@ int32_t factorial(int32_t a0) {
 L_88:
     if (a0 < 0x9 /* unsigned */) {
         w8 = a0;
-        a0 = 0x1;
+        v1 = 0x1;
     } else {
         /* unsupported: DUP at 0x9c */
         w8 = 0x0;
@@ -146,16 +146,16 @@ L_88:
             w11 = w11 - 0x8;
         } while (w11 != 0x0);
         /* unsupported (3 steps): EXT at 0xec, UMOV at 0xf4, FMOV at 0xf8 */
-        a0 = w12 * w11;
+        v1 = w12 * w11;
         if (w9 == w10) {
-            return a0;
+            return v1;
         }
     }
     do {
-        a0 = w8 * a0;
+        v1 = w8 * v1;
         w8 = w8 - 0x1;
     } while (w8 + 0x1 > 0x2 /* unsigned */);
-    return a0;
+    return v1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -171,7 +171,7 @@ fn factorial @ 0x78 (size 160)
     brif cs (x0 & #0xffffffff), #0x9 -> 0x9c
   blk3 @ 0x90:
     x8 = (x0 & #0xffffffff)
-    x0 = #0x1
+    v1 = #0x1
     br 0x104
   blk4 @ 0x9c:
     unsupported: DUP at 0x9c
@@ -191,14 +191,14 @@ fn factorial @ 0x78 (size 160)
     unsupported: EXT at 0xec
     unsupported: UMOV at 0xf4
     unsupported: FMOV at 0xf8
-    x0 = ((w12 * w11) & #0xffffffff)
+    v1 = ((w12 * w11) & #0xffffffff)
     brif eq w9, w10 -> 0x114
   blk7 @ 0x104:
-    x0 = (((x8 & #0xffffffff) * (x0 & #0xffffffff)) & #0xffffffff)
+    v1 = (((x8 & #0xffffffff) * (v1 & #0xffffffff)) & #0xffffffff)
     x8 = (((x8 & #0xffffffff) - #0x1) & #0xffffffff)
     brif hi (w8 + #0x1), #0x2 -> 0x104
   blk8 @ 0x114:
-    ret x0
+    ret v1
 -- card
 {"addr":"0x78","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab"],"section":".text","size":160,"unsupported":8}
 
@@ -219,11 +219,11 @@ uint32_t is_odd(uint32_t a0) {
     if (w8 != w9) { goto L_15c; }
     return a0 + 0x2;
 L_15c:
-    a0 = a0 + 0x2;
+    v1 = a0 + 0x2;
     do {
-        a0 = a0 - 0x2;
-    } while (a0 > 0x1 /* unsigned */);
-    return a0;
+        v1 = v1 - 0x2;
+    } while (v1 > 0x1 /* unsigned */);
+    return v1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -248,12 +248,12 @@ fn is_odd @ 0x118 (size 88)
   blk4 @ 0x154:
     ret ((w0 + #0x2) & #0xffffffff)
   blk5 @ 0x15c:
-    w0 = (w0 + #0x2)
+    v1 = (w0 + #0x2)
   blk6 @ 0x160:
-    w0 = (w0 - #0x2)
-    brif hi w0, #0x1 -> 0x160
+    v1 = (v1 - #0x2)
+    brif hi v1, #0x1 -> 0x160
   blk7 @ 0x16c:
-    ret w0
+    ret v1
 -- card
 {"addr":"0x118","approxTokens":198,"blocks":8,"hardReasons":[],"name":"is_odd","nameSources":["symtab"],"section":".text","size":88,"unsupported":0}
 

@@ -18,8 +18,8 @@ int32_t sum_while(int32_t a0) {
     if (ecx != 0x0) { goto L_e0; }
     return rax;
 L_22:
-    a0 = a0 & 0x7ffffff8;
-    a0 = -a0;
+    v1 = a0 & 0x7ffffff8;
+    v2 = -v1;
     rax = 0x0;
     rdx = 0x7;
     do {
@@ -42,7 +42,7 @@ L_22:
         rax = rsi + r8 - 0x1;
         dword_204 = eax;
         rdx = edx + 0x8;
-        rsi = esi + a0;
+        rsi = esi + v2;
     } while (esi + 0x8 != 0x7);
     rdx = ((edx - 0x7) & 0xffffffff);
     if (ecx == 0x0) {
@@ -77,8 +77,8 @@ fn sum_while @ 0x0 (size 239)
   blk4 @ 0x1f:
     ret #0x0
   blk5 @ 0x22:
-    edi = (edi & #0x7ffffff8)
-    edi = (#0x0 - edi)
+    v1 = (edi & #0x7ffffff8)
+    v2 = (#0x0 - v1)
     rax = #0x0
     rdx = #0x7
   blk6 @ 0x40:
@@ -101,7 +101,7 @@ fn sum_while @ 0x0 (size 239)
     rax = (((rsi + r8) + #0xffffffffffffffff) & #0xffffffff)
     store32((rax & #0xffffffff), #0x204)
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    rsi = (((rsi & #0xffffffff) + edi) & #0xffffffff)
+    rsi = (((rsi & #0xffffffff) + v2) & #0xffffffff)
     brif ne (((rsi & #0xffffffff) + #0x8) & #0xffffffff), #0x7 -> 0x40
   blk7 @ 0xce:
     rdx = (((rdx & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff)
@@ -136,10 +136,10 @@ int32_t count_down(int32_t a0) {
         dword_204 = ((rdx + 0x2) & 0xffffffff);
         dword_204 = ((rdx + 0x3) & 0xffffffff);
         dword_204 = ((rdx + 0x4) & 0xffffffff);
-        a0 = rdx;
+        v1 = rdx;
         rdx = edx + 0x8;
-        a0 = a0 + esi;
-    } while (a0 + 0x8 != 0x4);
+        v2 = v1 + esi;
+    } while (v2 + 0x8 != 0x4);
     rdx = ((edx - 0x4) & 0xffffffff);
 L_177:
     if (ecx == 0x0) {
@@ -176,10 +176,10 @@ fn count_down @ 0xf0 (size 157)
     store32(((rdx + #0x2) & #0xffffffff), #0x204)
     store32(((rdx + #0x3) & #0xffffffff), #0x204)
     store32(((rdx + #0x4) & #0xffffffff), #0x204)
-    edi = rdx
+    v1 = rdx
     rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    edi = (edi + esi)
-    brif ne ((edi + #0x8) & #0xffffffff), #0x4 -> 0x120
+    v2 = (v1 + esi)
+    brif ne ((v2 + #0x8) & #0xffffffff), #0x4 -> 0x120
   blk3 @ 0x174:
     rdx = (((rdx & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
   blk4 @ 0x177:
@@ -274,12 +274,12 @@ int32_t find_first(uint64_t a0, int32_t a1, uint32_t a2) {
     if (a1 <= 0x0) {
         return rax;
     }
-    a1 = a1;
+    v1 = a1;
     rcx = 0x0;
     do {
         if (*(uint32_t *)(a0 + rcx * 0x4) == a2) { goto L_1fe; }
         rcx = rcx + 0x1;
-    } while (a1 != rcx);
+    } while (v1 != rcx);
     return rax;
 L_1fe:
     return ecx;
@@ -294,13 +294,13 @@ fn find_first @ 0x1e0 (size 33)
     rax = #0xffffffff
     brif le (rsi & #0xffffffff), #0x0 -> 0x1fd
   blk1 @ 0x1e9:
-    rsi = (rsi & #0xffffffff)
+    v1 = (rsi & #0xffffffff)
     rcx = #0x0
   blk2 @ 0x1f0:
     brif eq load32((rdi + (rcx * #0x4))), edx -> 0x1fe
   blk3 @ 0x1f5:
     rcx = (rcx + #0x1)
-    brif ne rsi, rcx -> 0x1f0
+    brif ne v1, rcx -> 0x1f0
   blk4 @ 0x1fd:
     ret rax
   blk5 @ 0x1fe:

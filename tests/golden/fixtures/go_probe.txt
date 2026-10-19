@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 628 unsupported, 6071 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 628 unsupported, 6070 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1354,14 +1354,14 @@ fn main.add @ 0x466ca0 (size 32)
 uint64_t main_divmod(int64_t a0, int64_t a1) {
     switch (a1) {
     case -1:
-        a0 = -a0;
-        return a0;
+        v1 = -a0;
+        return v1;
     case 0:
         runtime_panicdivide();
         __builtin_trap();
     default:
-        a0 = a0 / a1;
-        return a0;
+        v1 = a0 / a1;
+        return v1;
     }
 }
 -- signature
@@ -1375,12 +1375,12 @@ fn main.divmod @ 0x466cc0 (size 64)
   blk1 @ 0x466cc9:
     brif ne rbx, #0xffffffffffffffff -> 0x466cd6
   blk2 @ 0x466ccf:
-    rax = (#0x0 - rax)
+    v1 = (#0x0 - rax)
     br 0x466cdb
   blk3 @ 0x466cd6:
-    rax = (rax / rbx)
+    v1 = (rax / rbx)
   blk4 @ 0x466cdb:
-    ret rax
+    ret v1
   blk5 @ 0x466ce1:
     call 0x42cf20
     trap

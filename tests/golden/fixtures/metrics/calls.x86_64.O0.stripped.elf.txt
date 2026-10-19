@@ -321,7 +321,7 @@ fn <unnamed> @ 0x2014f0 (size 80)
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
 /* struct: a3 +0x0:uint32_t, +0x8:uint64_t */
-uint32_t sub_201540(uint32_t a0, uint64_t a1, uint32_t a2, uint32_t *a3, uint64_t a4, uint64_t a5) {
+uint32_t sub_201540(uint32_t a0, uint64_t a1, uint64_t a2, uint32_t *a3, uint64_t a4, uint64_t a5) {
     uint64_t local_0; /* [sp-b8] */
     uint64_t local_1; /* [sp-b0] */
     uint64_t local_2; /* [sp-a8] */
@@ -393,15 +393,15 @@ uint32_t sub_201540(uint32_t a0, uint64_t a1, uint32_t a2, uint32_t *a3, uint64_
         rax = *(uint32_t *)(rsp + 0x60);
         local_25 = eax;
         if (eax <= 0x28 /* unsigned */) {
-            a3 = local_24;
-            a2 = local_25;
-            rax = (int64_t)(int32_t)(a2) + *(uint64_t *)(a3 + 0x10);
-            a3->field_0x0 = a2 + 0x8;
+            v2 = local_24;
+            v1 = local_25;
+            rax = (int64_t)(int32_t)(v1) + *(uint64_t *)(v2 + 0x10);
+            *(uint32_t *)(v2) = v1 + 0x8;
             local_26 = rax;
         } else {
-            a3 = local_24;
-            rax = a3->field_0x8;
-            a3->field_0x8 = rax + 0x8;
+            v3 = local_24;
+            rax = *(uint64_t *)(v3 + 0x8);
+            *(uint64_t *)(v3 + 0x8) = rax + 0x8;
             local_26 = rax;
         }
         local_22 += *(uint32_t *)(local_26);
@@ -412,7 +412,7 @@ uint32_t sub_201540(uint32_t a0, uint64_t a1, uint32_t a2, uint32_t *a3, uint64_
     return local_22;
 }
 -- signature
-uint32_t (uint32_t a0, uint64_t a1, uint32_t a2, uint32_t * a3, uint64_t a4, uint64_t a5)
+uint32_t (uint32_t a0, uint64_t a1, uint64_t a2, uint32_t * a3, uint64_t a4, uint64_t a5)
 -- references
 
 -- ir
@@ -460,16 +460,16 @@ fn <unnamed> @ 0x201540 (size 296)
     store32((rax & #0xffffffff), (rsp + #0xffffffffffffff9c))
     brif hi (rax & #0xffffffff), #0x28 -> 0x201622
   blk5 @ 0x2015fd:
-    rcx = load64((rsp + #0xffffffffffffff90))
-    rdx = (load32((rsp + #0xffffffffffffff9c)) & #0xffffffff)
-    rax = (sext32(rdx) + load64((rcx + #0x10)))
-    store32((((rdx & #0xffffffff) + #0x8) & #0xffffffff), rcx)
+    v2 = load64((rsp + #0xffffffffffffff90))
+    v1 = (load32((rsp + #0xffffffffffffff9c)) & #0xffffffff)
+    rax = (sext32(v1) + load64((v2 + #0x10)))
+    store32((((v1 & #0xffffffff) + #0x8) & #0xffffffff), v2)
     store64(rax, (rsp + #0xffffffffffffff88))
     br 0x20163f
   blk6 @ 0x201622:
-    rcx = load64((rsp + #0xffffffffffffff90))
-    rax = load64((rcx + #0x8))
-    store64((rax + #0x8), (rcx + #0x8))
+    v3 = load64((rsp + #0xffffffffffffff90))
+    rax = load64((v3 + #0x8))
+    store64((rax + #0x8), (v3 + #0x8))
     store64(rax, (rsp + #0xffffffffffffff88))
   blk7 @ 0x20163f:
     store32(((load32(load64((rsp + #0xffffffffffffff88))) + load32((rsp + #0x5c))) & #0xffffffff), (rsp + #0x5c))

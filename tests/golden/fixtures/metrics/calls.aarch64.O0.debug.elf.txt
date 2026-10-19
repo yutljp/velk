@@ -366,9 +366,9 @@ int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, u
     for (;;) {
         x9 = local_7;
         if (local_14 >= w9) {
-            count = local_13;
+            v1 = local_13;
             sp = sp + 0x120;
-            return count;
+            return v1;
         }
         local_15 = sp + 0x100;
         x8 = local_9;
@@ -461,8 +461,8 @@ fn sum_varargs @ 0x2105b0 (size 316)
     store32(((load32((sp + #0xe0)) + #0x1) & #0xffffffff), (sp + #0xe0))
     br 0x210638
   blk11 @ 0x2106dc:
-    w0 = load32((sp + #0xe4))
+    v1 = load32((sp + #0xe4))
     sp = (sp + #0x120)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x2105b0","approxTokens":240,"blocks":12,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":316,"unsupported":8}

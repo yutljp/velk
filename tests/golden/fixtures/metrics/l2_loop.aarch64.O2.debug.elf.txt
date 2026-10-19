@@ -51,12 +51,12 @@ fn sum_while @ 0x2101c4 (size 60)
 int count_down(int n) {
     w8 = 0x0;
     x9 = 0x220000;
-    n = (n > 0x1 ? n : 0x1);
+    v1 = (n > 0x1 ? n : 0x1);
     do {
         w8 = w8 + 0x1;
         *(uint32_t *)(x9 + 0x298) = w8;
-    } while (n != w8);
-    return n;
+    } while (v1 != w8);
+    return v1;
 }
 -- signature
 int (int n)
@@ -67,13 +67,13 @@ fn count_down @ 0x210200 (size 36)
   blk0 @ 0x210200:
     x8 = #0x0
     x9 = #0x220000
-    w0 = select gt w0, #0x1 ? w0, #0x1
+    v1 = select gt w0, #0x1 ? w0, #0x1
   blk1 @ 0x210210:
     x8 = (((x8 & #0xffffffff) + #0x1) & #0xffffffff)
     store32((x8 & #0xffffffff), (x9 + #0x298))
-    brif ne w0, (x8 & #0xffffffff) -> 0x210210
+    brif ne v1, (x8 & #0xffffffff) -> 0x210210
   blk2 @ 0x210220:
-    ret w0
+    ret v1
 -- card
 {"addr":"0x210200","approxTokens":150,"blocks":3,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
@@ -134,19 +134,19 @@ fn sum_skip_odd @ 0x210224 (size 64)
 /* velk pseudo-C: find_first @ 0x210264 */
 int find_first(int *p, int n, int v) {
     if (n < 0x1) {
-        p = 0xffffffff;
-        return p;
+        v1 = 0xffffffff;
+        return v1;
     }
     x8 = p;
-    p = 0x0;
+    v1 = 0x0;
     x9 = n;
     do {
-        if (*(uint32_t *)(x8 + (p << 0x2)) == v) { goto L_210294; }
-        p = p + 0x1;
-    } while (x9 != p);
-    p = 0xffffffff;
+        if (*(uint32_t *)(x8 + (v1 << 0x2)) == v) { goto L_210294; }
+        v1 = v1 + 0x1;
+    } while (x9 != v1);
+    v1 = 0xffffffff;
 L_210294:
-    return p;
+    return v1;
 }
 -- signature
 int (int * p, int n, int v)
@@ -158,16 +158,16 @@ fn find_first @ 0x210264 (size 52)
     brif lt w1, #0x1 -> 0x210290
   blk1 @ 0x21026c:
     x8 = x0
-    x0 = #0x0
+    v1 = #0x0
     x9 = w1
   blk2 @ 0x210278:
-    brif eq load32((x8 + (x0 << #0x2))), w2 -> 0x210294
+    brif eq load32((x8 + (v1 << #0x2))), w2 -> 0x210294
   blk3 @ 0x210284:
-    x0 = (x0 + #0x1)
-    brif ne x9, x0 -> 0x210278
+    v1 = (v1 + #0x1)
+    brif ne x9, v1 -> 0x210278
   blk4 @ 0x210290:
-    x0 = #0xffffffff
+    v1 = #0xffffffff
   blk5 @ 0x210294:
-    ret x0
+    ret v1
 -- card
 {"addr":"0x210264","approxTokens":174,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}

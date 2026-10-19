@@ -38,9 +38,9 @@ uint32_t sub_210334(uint32_t a0) {
         x8 = 0x220000;
         dword_2205e8 = 0x0;
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     }
     x8 = 0x210368;
     x9 = dword_200158[local_1];
@@ -49,106 +49,106 @@ uint32_t sub_210334(uint32_t a0) {
     case 10:
         sub_210418();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 11:
         sub_21042c();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 12:
         sub_210444();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 13:
         sub_210458();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 14:
         sub_21046c();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 15:
         sub_210480();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 16:
         sub_210498();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 17:
         sub_2104ac();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 18:
         sub_2104c0();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 19:
         sub_2104d4();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 20:
         sub_2104ec();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 21:
         sub_210500();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 22:
         sub_210518();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 23:
         sub_21052c();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 24:
         sub_210544();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     case 25:
         sub_210558();
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     default:
         x8 = 0x220000;
         dword_2205e8 = 0x0;
         x8 = 0x220000;
-        a0 = dword_2205e8;
+        v1 = dword_2205e8;
         sp = sp + 0x20;
-        return a0;
+        return v1;
     }
 }
 -- signature
@@ -226,9 +226,9 @@ fn <unnamed> @ 0x210334 (size 228)
     br 0x210404
   blk19 @ 0x210404:
     x8 = #0x220000
-    w0 = load32(#0x2205e8)
+    v1 = load32(#0x2205e8)
     sp = (sp + #0x20)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":228,"sizeEstimated":true,"unsupported":0}
 

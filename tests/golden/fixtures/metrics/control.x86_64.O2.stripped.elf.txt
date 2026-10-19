@@ -305,17 +305,17 @@ fn <unnamed> @ 0x2013a0 (size 48)
 == 0x2013d0 -
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
-int32_t sub_2013d0(uint64_t *a0, int64_t a1) {
-    if ((a1 & 0xffffffff) <= 0x0) {
+int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
+    if (a1 <= 0x0) {
         return 0x0;
     }
-    rcx = (a1 & 0xffffffff);
+    rcx = a1;
     edx = 0x0;
-    if ((a1 & 0xffffffff) < 0x8 /* unsigned */) {
-        a1 = 0x0;
+    if (a1 < 0x8 /* unsigned */) {
+        v1 = 0x0;
         rax = 0x0;
     } else {
-        a1 = rcx & 0x7ffffff8;
+        v1 = rcx & 0x7ffffff8;
         rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
         xmm1 = 0x0;
         xmm1_hi = 0x0;
@@ -340,19 +340,19 @@ int32_t sub_2013d0(uint64_t *a0, int64_t a1) {
         } while (rax != r8);
         /* unsupported (5 steps): Paddd at 0x201446, Pshufd at 0x20144a, Paddd at 0x20144f, Pshufd at 0x201453, Paddd at 0x201458 */
         rax = (uint32_t)xmm0;
-        if (a1 == rcx) {
+        if (v1 == rcx) {
             return rax;
         }
     }
     do {
-        r8 = *(uint32_t *)(a0 + a1 * 0x4);
+        r8 = *(uint32_t *)(a0 + v1 * 0x4);
         rax = eax + (r8d <= 0x0 ? edx : r8d);
-        a1 = a1 + 0x1;
-    } while (rcx != a1);
+        v1 = v1 + 0x1;
+    } while (rcx != v1);
     return rax;
 }
 -- signature
-int32_t (uint64_t * a0, int64_t a1)
+int32_t (uint64_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -364,13 +364,13 @@ fn <unnamed> @ 0x2013d0 (size 192)
     rdx = #0x0
     brif cs (rsi & #0xffffffff), #0x8 -> 0x2013e9
   blk2 @ 0x2013dd:
-    rsi = #0x0
+    v1 = #0x0
     rax = #0x0
     br 0x201470
   blk3 @ 0x2013e6:
     ret #0x0
   blk4 @ 0x2013e9:
-    rsi = (rcx & #0x7ffffff8)
+    v1 = (rcx & #0x7ffffff8)
     rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     xmm1 = #0x0
     xmm1_hi = #0x0
@@ -401,12 +401,12 @@ fn <unnamed> @ 0x2013d0 (size 192)
     unsupported: Pshufd at 0x201453
     unsupported: Paddd at 0x201458
     rax = (xmm0 & #0xffffffff)
-    brif eq rsi, rcx -> 0x201486
+    brif eq v1, rcx -> 0x201486
   blk7 @ 0x201470:
-    r8 = (load32((rdi + (rsi * #0x4))) & #0xffffffff)
+    r8 = (load32((rdi + (v1 * #0x4))) & #0xffffffff)
     rax = (((rax & #0xffffffff) + select le (r8 & #0xffffffff), #0x0 ? (rdx & #0xffffffff), (r8 & #0xffffffff)) & #0xffffffff)
-    rsi = (rsi + #0x1)
-    brif ne rcx, rsi -> 0x201470
+    v1 = (v1 + #0x1)
+    brif ne rcx, v1 -> 0x201470
   blk8 @ 0x201486:
     ret rax
 -- card
@@ -421,7 +421,7 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, uint32_t a2) {
         return rax;
     }
     rcx = a1;
-    a1 = a1 ^ 0xffffffff;
+    v1 = a1 ^ 0xffffffff;
     r9 = a0 + 0x4;
     r10 = rcx - 0x1;
     r8 = 0xffffffffffffffff;
@@ -437,7 +437,7 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, uint32_t a2) {
                 rbx = rbx + 0x1;
             } while (r10 != rbx);
         }
-        r8 = r8 + a1;
+        r8 = r8 + v1;
         r9 = r9 + 0x4;
         r10 = r10 - 0x1;
         if (r11 == rcx) {
@@ -461,14 +461,14 @@ fn <unnamed> @ 0x201490 (size 112)
     brif le (rsi & #0xffffffff), #0x0 -> 0x2014ff
   blk1 @ 0x201499:
     rcx = (rsi & #0xffffffff)
-    rsi = (((rsi & #0xffffffff) ^ #0xffffffff) & #0xffffffff)
+    v1 = (((rsi & #0xffffffff) ^ #0xffffffff) & #0xffffffff)
     r9 = (rdi + #0x4)
     r10 = (rcx + #0xffffffffffffffff)
     r8 = #0xffffffffffffffff
     r11 = #0x0
     br 0x2014cf
   blk2 @ 0x2014c0:
-    r8 = (r8 + rsi)
+    r8 = (r8 + v1)
     r9 = (r9 + #0x4)
     r10 = (r10 + #0xffffffffffffffff)
     brif eq r11, rcx -> 0x2014fb

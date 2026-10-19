@@ -6,10 +6,10 @@
 /* velk pseudo-C: sub_201170 @ 0x201170 */
 /* ref: 0x200120 .rodata */
 uint32_t sub_201170(uint32_t a0) {
-    a0 = a0 - 0xa;
+    v1 = a0 - 0xa;
     rax = 0x0;
-    if (a0 <= 0x4 /* unsigned */) {
-        rax = dword_200120[a0];
+    if (v1 <= 0x4 /* unsigned */) {
+        rax = dword_200120[v1];
     }
     return rax;
 }
@@ -20,11 +20,11 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201170 (size 23)
   blk0 @ 0x201170:
-    edi = (edi + #0xfffffffffffffff6)
+    v1 = (edi + #0xfffffffffffffff6)
     rax = #0x0
-    brif hi edi, #0x4 -> 0x201186
+    brif hi v1, #0x4 -> 0x201186
   blk1 @ 0x20117a:
-    rax = (load32((#0x200120 + (edi * #0x4))) & #0xffffffff)
+    rax = (load32((#0x200120 + (v1 * #0x4))) & #0xffffffff)
   blk2 @ 0x201186:
     ret rax
 -- card

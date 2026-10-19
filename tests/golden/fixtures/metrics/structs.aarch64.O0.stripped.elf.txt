@@ -162,10 +162,9 @@ fn <unnamed> @ 0x21033c (size 48)
 uint32_t sub_21036c(uint32_t a0) {
     uint32_t local_0; /* [sp-4] */
 
-    w8 = a0;
-    local_0 = w8;
-    a0 = *(uint8_t *)&local_0;
-    return a0;
+    local_0 = a0;
+    v1 = *(uint8_t *)&local_0;
+    return v1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -174,17 +173,16 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x21036c (size 24)
   blk0 @ 0x21036c:
-    w8 = w0
-    store32(w8, (sp + #0xfffffffffffffffc))
-    w0 = load8((sp + #0xfffffffffffffffc))
-    ret w0
+    store32(w0, (sp + #0xfffffffffffffffc))
+    v1 = load8((sp + #0xfffffffffffffffc))
+    ret v1
 -- card
 {"addr":"0x21036c","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
 
 == 0x210384 -
 -- decompile
 /* velk pseudo-C: sub_210384 @ 0x210384 */
-uint32_t sub_210384(uint32_t a0) {
+uint32_t sub_210384(uint64_t a0) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-4] */
     uint32_t local_2; /* [sp-14] */
@@ -199,7 +197,7 @@ uint32_t sub_210384(uint32_t a0) {
     return local_2;
 }
 -- signature
-uint32_t (uint32_t a0)
+uint32_t (uint64_t a0)
 -- references
 
 -- ir

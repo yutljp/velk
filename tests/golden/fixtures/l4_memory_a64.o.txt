@@ -32,15 +32,15 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
         return 0x0;
     }
     x8 = a0;
-    a0 = 0x0;
+    v1 = 0x0;
     x9 = a1;
     do {
         w10 = *(uint32_t *)(x8);
         x8 = x8 + 0x4;
         x9 = x9 - 0x1;
-        a0 = w10 + (a0 & 0xffffffff);
+        v1 = w10 + v1;
     } while (x9 != 0x0);
-    return a0;
+    return v1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -52,16 +52,16 @@ fn array_sum @ 0x14 (size 48)
     brif lt w1, #0x1 -> 0x3c
   blk1 @ 0x1c:
     x8 = x0
-    x0 = #0x0
+    v1 = #0x0
     x9 = w1
   blk2 @ 0x28:
     w10 = load32(x8)
     x8 = (x8 + #0x4)
     x9 = (x9 - #0x1)
-    x0 = ((w10 + (x0 & #0xffffffff)) & #0xffffffff)
+    v1 = ((w10 + (v1 & #0xffffffff)) & #0xffffffff)
     brif ne x9, #0x0 -> 0x28
   blk3 @ 0x38:
-    ret x0
+    ret v1
   blk4 @ 0x3c:
     ret #0x0
 -- card

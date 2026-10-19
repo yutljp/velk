@@ -365,6 +365,10 @@ pub const FLAG_OPERANDS: [u16; 2] = [TEMP_BASE + 0x40, TEMP_BASE + 0x41];
 /// back.
 pub const EXCHANGE: u16 = TEMP_BASE + 0x42;
 
+/// Register indices from here up are the variables a parameter register
+/// holds once its parameter is dead, printed as `v<n>`.
+pub const VARIABLE_BASE: u16 = TEMP_BASE + 0x100;
+
 pub fn is_temp(index: u16) -> bool {
     index >= TEMP_BASE
 }
@@ -375,6 +379,9 @@ pub fn temp_id(index: u16) -> u64 {
 
 pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
     let _ = (isa, width);
+    if index >= VARIABLE_BASE {
+        return format!("v{}", index - VARIABLE_BASE + 1);
+    }
     if is_temp(index) {
         return format!("t{isode}", isode = temp_id(index));
     }

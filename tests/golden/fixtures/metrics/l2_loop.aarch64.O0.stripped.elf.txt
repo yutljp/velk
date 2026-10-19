@@ -23,9 +23,9 @@ uint32_t sub_2101d4(uint32_t a0) {
         dword_220380 = w8;
         local_2 += 0x1;
     }
-    a0 = local_1;
+    v1 = local_1;
     sp = sp + 0x10;
-    return a0;
+    return v1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -53,9 +53,9 @@ fn <unnamed> @ 0x2101d4 (size 100)
     store32(((load32((sp + #0x4)) + #0x1) & #0xffffffff), (sp + #0x4))
     br 0x2101e8
   blk5 @ 0x21022c:
-    w0 = load32((sp + #0x8))
+    v1 = load32((sp + #0x8))
     sp = (sp + #0x10)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x2101d4","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":100,"sizeEstimated":true,"unsupported":0}
 
@@ -75,9 +75,9 @@ uint32_t sub_210238(uint32_t a0) {
         local_0 -= 0x1;
         dword_220380 = local_1;
     } while (local_0 > 0x0);
-    a0 = local_1;
+    v1 = local_1;
     sp = sp + 0x10;
-    return a0;
+    return v1;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -100,9 +100,9 @@ fn <unnamed> @ 0x210238 (size 84)
   blk3 @ 0x21027c:
     br 0x210280
   blk4 @ 0x210280:
-    w0 = load32((sp + #0x8))
+    v1 = load32((sp + #0x8))
     sp = (sp + #0x10)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x210238","approxTokens":222,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":84,"sizeEstimated":true,"unsupported":0}
 
@@ -122,9 +122,9 @@ uint32_t sub_21028c(uint32_t a0) {
     for (;;) {
         w9 = local_0;
         if (local_2 >= w9) {
-            a0 = local_1;
+            v1 = local_1;
             sp = sp + 0x10;
-            return a0;
+            return v1;
         }
         if ((local_2 & 0x1) != 0x0) {
             break;
@@ -169,16 +169,16 @@ fn <unnamed> @ 0x21028c (size 116)
     store32(((load32((sp + #0x4)) + #0x1) & #0xffffffff), (sp + #0x4))
     br 0x2102a0
   blk8 @ 0x2102f4:
-    w0 = load32((sp + #0x8))
+    v1 = load32((sp + #0x8))
     sp = (sp + #0x10)
-    ret w0
+    ret v1
 -- card
 {"addr":"0x21028c","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":116,"sizeEstimated":true,"unsupported":0}
 
 == 0x210300 -
 -- decompile
 /* velk pseudo-C: sub_210300 @ 0x210300 */
-uint32_t sub_210300(uint32_t a0, uint32_t a1, uint32_t a2) {
+uint32_t sub_210300(uint64_t a0, uint32_t a1, uint32_t a2) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint32_t local_2; /* [sp-18] */
@@ -204,7 +204,7 @@ uint32_t sub_210300(uint32_t a0, uint32_t a1, uint32_t a2) {
     return local_4;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+uint32_t (uint64_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir
