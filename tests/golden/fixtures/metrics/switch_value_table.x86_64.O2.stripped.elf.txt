@@ -7,7 +7,7 @@
 /* ref: 0x200120 .rodata */
 int32_t sub_201170(int32_t a0) {
     v1 = a0 - 0xa;
-    rax = 0x0;
+    v2 = 0x0;
     switch (v1) {
     case 0:
     case 1:
@@ -16,10 +16,10 @@ int32_t sub_201170(int32_t a0) {
     case 4:
         break;
     default:
-        return rax;
+        return v2;
     }
-    rax = dword_200120[v1];
-    return rax;
+    v2 = dword_200120[v1];
+    return v2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -29,11 +29,11 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x201170 (size 23)
   blk0 @ 0x201170:
     v1 = (edi + #0xfffffffffffffff6)
-    rax = #0x0
+    v2 = #0x0
     brif hi v1, #0x4 -> 0x201186
   blk1 @ 0x20117a:
-    rax = (load32((#0x200120 + (v1 * #0x4))) & #0xffffffff)
+    v2 = (load32((#0x200120 + (v1 * #0x4))) & #0xffffffff)
   blk2 @ 0x201186:
-    ret rax
+    ret v2
 -- card
 {"addr":"0x201170","approxTokens":144,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":23,"unsupported":0}

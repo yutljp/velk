@@ -352,6 +352,152 @@ pub fn propagate_constants(ir: &mut FunctionIr) {
     }
 }
 
+/// The bits of each value its reads look at, given the bits each use needs:
+/// a store needs its width, a mask its bits, and the low bits of a sum, a
+/// product or a bitwise operation need only the operands' bits up to the
+/// highest one needed. Anything else needs every bit.
+fn demanded_bits(ssa: &Ssa) -> HashMap<u16, u64> {
+    use crate::ir::BinOp;
+    use crate::ir::semantics::mask;
+    fn up_to_highest(bits: u64) -> u64 {
+        if bits == 0 {
+            0
+        } else {
+            mask(64 - bits.leading_zeros())
+        }
+    }
+    fn walk(expr: &Expr, needed: u64, demand: &mut HashMap<u16, u64>) {
+        match expr {
+            Expr::Reg { index, width } => {
+                *demand.entry(*index).or_insert(0) |= needed & mask(u32::from(*width));
+            }
+            Expr::Const(_) => {}
+            Expr::Bin { op, lhs, rhs } => match op {
+                BinOp::And => {
+                    let (left, right) = match (lhs.as_ref(), rhs.as_ref()) {
+                        (_, Expr::Const(m)) => (needed & m, 0),
+                        (Expr::Const(m), _) => (0, needed & m),
+                        _ => (needed, needed),
+                    };
+                    walk(lhs, left, demand);
+                    walk(rhs, right, demand);
+                }
+                BinOp::Or | BinOp::Xor => {
+                    walk(lhs, needed, demand);
+                    walk(rhs, needed, demand);
+                }
+                BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Shl => {
+                    let low = up_to_highest(needed);
+                    walk(lhs, low, demand);
+                    // A shift amount is needed whole.
+                    walk(rhs, if *op == BinOp::Shl { u64::MAX } else { low }, demand);
+                }
+                _ => {
+                    walk(lhs, u64::MAX, demand);
+                    walk(rhs, u64::MAX, demand);
+                }
+            },
+            _ => {
+                for child in crate::ir::visit::children(expr) {
+                    walk(child, u64::MAX, demand);
+                }
+            }
+        }
+    }
+    // What an assignment or a φ needs of its operands is what its own uses
+    // need of it, so the needs flow back from the uses until they settle.
+    let mut demand: HashMap<u16, u64> = HashMap::new();
+    loop {
+        let mut next: HashMap<u16, u64> = HashMap::new();
+        for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+            match stmt {
+                Stmt::Store { addr, value, width } => {
+                    walk(addr, u64::MAX, &mut next);
+                    walk(value, mask(u32::from(*width) * 8), &mut next);
+                }
+                Stmt::Assign { dest, value } => {
+                    let needed = demand.get(&dest.index).copied().unwrap_or(0);
+                    walk(value, needed & mask(u32::from(dest.width)), &mut next);
+                }
+                other => {
+                    for expr in other.operands() {
+                        walk(expr, u64::MAX, &mut next);
+                    }
+                }
+            }
+        }
+        for phi in ssa.phis.iter().flatten() {
+            let needed = demand.get(&phi.value).copied().unwrap_or(0);
+            for arg in &phi.args {
+                *next.entry(*arg).or_insert(0) |= needed;
+            }
+        }
+        for (_, value) in ssa.implicit_reads.values().flatten() {
+            next.insert(*value, u64::MAX);
+        }
+        if next == demand {
+            return demand;
+        }
+        demand = next;
+    }
+}
+
+/// A partial write keeps the register's other bits: `v = (r & ~m) | x`.
+/// When no read of `v` looks at the kept bits, they never matter and the
+/// write is just `v = x`.
+pub fn narrow_partial_writes(ir: &mut FunctionIr) {
+    // An unmodeled instruction or an unknown jump may read any bit.
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Unsupported { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None }
+        )
+    }) {
+        return;
+    }
+    let Some(mut ssa) = build(ir) else {
+        return;
+    };
+    let demand = demanded_bits(&ssa);
+    let mut changed = false;
+    for stmt in ssa.ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+        let Stmt::Assign { dest, value } = stmt else {
+            continue;
+        };
+        let Expr::Bin {
+            op: crate::ir::BinOp::Or,
+            lhs,
+            rhs,
+        } = value
+        else {
+            continue;
+        };
+        let kept = |expr: &Expr| match expr {
+            Expr::Bin {
+                op: crate::ir::BinOp::And,
+                lhs,
+                rhs,
+            } if matches!(lhs.as_ref(), Expr::Reg { .. }) => match rhs.as_ref() {
+                Expr::Const(keep) => Some(*keep),
+                _ => None,
+            },
+            _ => None,
+        };
+        let (keep, written) = match (kept(lhs), kept(rhs)) {
+            (Some(keep), _) => (keep, rhs.as_ref().clone()),
+            (None, Some(keep)) => (keep, lhs.as_ref().clone()),
+            _ => continue,
+        };
+        if demand.get(&dest.index).copied().unwrap_or(0) & keep == 0 {
+            *value = written;
+            changed = true;
+        }
+    }
+    if changed {
+        *ir = lower(&ssa);
+    }
+}
+
 /// Leaves SSA form by giving every value its register back. Correct as long
 /// as each value's register still holds it wherever it is read, as it does
 /// after transformations that only rewrite reads into equal expressions.
@@ -737,6 +883,67 @@ mod tests {
         assert_eq!(
             phi.args[0], ssa.entry[&0],
             "the call brings the entry value"
+        );
+    }
+
+    #[test]
+    fn a_partial_write_only_its_low_byte_is_read_of_drops_the_rest() {
+        // r11b = 4; store8(r11): the bits r11 kept are never read.
+        let keep = Expr::bin(BinOp::And, Expr::reg(11, 64), Expr::Const(!0xff));
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(11, Expr::bin(BinOp::Or, keep.clone(), Expr::Const(4))),
+                Stmt::Store {
+                    addr: Expr::reg(7, 64),
+                    value: Expr::reg(11, 64),
+                    width: 1,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        super::narrow_partial_writes(&mut ir);
+        assert!(
+            matches!(
+                &ir.blocks[0].stmts[0],
+                Stmt::Assign {
+                    value: Expr::Const(4),
+                    ..
+                }
+            ),
+            "{}",
+            ir.render()
+        );
+        // Returned whole, the kept bits stay.
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(
+                    0,
+                    Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(!0xff)),
+                        Expr::Const(4),
+                    ),
+                ),
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        super::narrow_partial_writes(&mut ir);
+        assert!(
+            !matches!(
+                &ir.blocks[0].stmts[0],
+                Stmt::Assign {
+                    value: Expr::Const(4),
+                    ..
+                }
+            ),
+            "{}",
+            ir.render()
         );
     }
 

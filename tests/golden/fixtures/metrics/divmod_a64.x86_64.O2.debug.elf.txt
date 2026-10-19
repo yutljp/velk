@@ -267,8 +267,8 @@ fn lmod10 @ 0x201490 (size 44)
 -- decompile
 /* velk pseudo-C: umod10b @ 0x2014c0 */
 int64_t umod10b(uint64_t x) {
-    rdx = __umulh(x, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
-    return x - (rdx + rdx * 0x4);
+    v1 = __umulh(x, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
+    return x - (v1 + v1 * 0x4);
 }
 -- signature
 int64_t (uint64_t x)
@@ -277,8 +277,8 @@ int64_t (uint64_t x)
 -- ir
 fn umod10b @ 0x2014c0 (size 35)
   blk0 @ 0x2014c0:
-    rdx = (((rdi hi128 #0xcccccccccccccccd) >> #0x2) & #0xfffffffffffffffe)
-    ret (rdi - (rdx + (rdx * #0x4)))
+    v1 = (((rdi hi128 #0xcccccccccccccccd) >> #0x2) & #0xfffffffffffffffe)
+    ret (rdi - (v1 + (v1 * #0x4)))
 -- card
 {"addr":"0x2014c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf","unwind"],"section":".text","size":35,"unsupported":0}
 

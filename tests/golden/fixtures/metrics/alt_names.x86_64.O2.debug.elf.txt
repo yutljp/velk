@@ -26,12 +26,10 @@ int alt_helper(int x) {
     if (x <= 0x0) {
         return 0x0;
     }
-    rcx = ((x - 0x2) & 0xffffffff) * ((x - 0x1) & 0xffffffff);
-    rax = ((x - 0x3) & 0xffffffff) * rcx >> 0x1;
-    rax = eax * 0x55555556;
-    rax = eax + x;
-    rcx = rcx >> 0x1;
-    return ((eax + (rcx + rcx * 0x2) - 0x1) & 0xffffffff);
+    v1 = ((x - 0x2) & 0xffffffff) * ((x - 0x1) & 0xffffffff);
+    v2 = ((x - 0x3) & 0xffffffff) * v1 >> 0x1;
+    v5 = v1 >> 0x1;
+    return ((v2 * 0x55555556 + x + (v5 + v5 * 0x2) - 0x1) & 0xffffffff);
 }
 -- signature
 int (int x)
@@ -42,12 +40,10 @@ fn alt_helper @ 0x201180 (size 46)
   blk0 @ 0x201180:
     brif le (rdi & #0xffffffff), #0x0 -> 0x2011ab
   blk1 @ 0x201184:
-    rcx = (((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff))
-    rax = ((((rdi + #0xfffffffffffffffd) & #0xffffffff) * rcx) >> #0x1)
-    rax = (((rax & #0xffffffff) * #0x55555556) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + (rdi & #0xffffffff)) & #0xffffffff)
-    rcx = (rcx >> #0x1)
-    ret ((((rax & #0xffffffff) + (rcx + (rcx * #0x2))) + #0xffffffffffffffff) & #0xffffffff)
+    v1 = (((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff))
+    v2 = ((((rdi + #0xfffffffffffffffd) & #0xffffffff) * v1) >> #0x1)
+    v5 = (v1 >> #0x1)
+    ret ((((((v2 & #0xffffffff) * #0x55555556) + (rdi & #0xffffffff)) + (v5 + (v5 * #0x2))) + #0xffffffffffffffff) & #0xffffffff)
   blk2 @ 0x2011ab:
     ret #0x0
 -- card

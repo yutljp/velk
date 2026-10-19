@@ -17,9 +17,9 @@ int sum_while(int n) {
     local_1 = 0x0;
     local_2 = 0x0;
     while (local_2 < local_0) {
-        eax = local_2 + local_1;
-        local_1 = eax;
-        sink = eax;
+        v1 = local_2 + local_1;
+        local_1 = v1;
+        sink = v1;
         local_2 += 0x1;
     }
     return local_1;
@@ -37,9 +37,9 @@ fn sum_while @ 0x201200 (size 70)
   blk1 @ 0x201215:
     brif ge load32((rsp + #0xffffffffffffffec)), load32((rsp + #0xfffffffffffffff4)) -> 0x201241
   blk2 @ 0x201221:
-    eax = (load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xfffffffffffffff0)))
-    store32(eax, (rsp + #0xfffffffffffffff0))
-    store32((eax & #0xffffffff), #0x202350)
+    v1 = (load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xfffffffffffffff0)))
+    store32(v1, (rsp + #0xfffffffffffffff0))
+    store32((v1 & #0xffffffff), #0x202350)
     store32(((load32((rsp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffec))
     br 0x201215
   blk3 @ 0x201241:
@@ -97,9 +97,9 @@ int sum_skip_odd(int n) {
     local_2 = 0x0;
     while (local_2 < local_0) {
         if ((local_2 & 0x1) != 0x0) {
-            eax = local_2 + local_1;
-            local_1 = eax;
-            sink = eax;
+            v1 = local_2 + local_1;
+            local_1 = v1;
+            sink = v1;
         }
         local_2 += 0x1;
     }
@@ -122,9 +122,9 @@ fn sum_skip_odd @ 0x201290 (size 90)
   blk3 @ 0x2012c0:
     br 0x2012d7
   blk4 @ 0x2012c5:
-    eax = (load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xfffffffffffffff0)))
-    store32(eax, (rsp + #0xfffffffffffffff0))
-    store32((eax & #0xffffffff), #0x202350)
+    v1 = (load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xfffffffffffffff0)))
+    store32(v1, (rsp + #0xfffffffffffffff0))
+    store32((v1 & #0xffffffff), #0x202350)
   blk5 @ 0x2012d7:
     store32(((load32((rsp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffec))
     br 0x2012a5
@@ -148,8 +148,8 @@ int find_first(int *p, int n, int v) {
     local_2 = v;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        rcx = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + rcx * 0x4) == local_2) {
+        v1 = (int64_t)(int32_t)(local_3);
+        if (*(uint32_t *)(local_0 + v1 * 0x4) == local_2) {
             goto L_201325;
         }
         local_3 += 0x1;
@@ -174,8 +174,8 @@ fn find_first @ 0x2012f0 (size 95)
   blk1 @ 0x201305:
     brif ge (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff), load32((rsp + #0xffffffffffffffe4)) -> 0x201343
   blk2 @ 0x201311:
-    rcx = sext32(load32((rsp + #0xffffffffffffffdc)))
-    brif ne (load32((load64((rsp + #0xffffffffffffffe8)) + (rcx * #0x4))) & #0xffffffff), load32((rsp + #0xffffffffffffffe0)) -> 0x201330
+    v1 = sext32(load32((rsp + #0xffffffffffffffdc)))
+    brif ne (load32((load64((rsp + #0xffffffffffffffe8)) + (v1 * #0x4))) & #0xffffffff), load32((rsp + #0xffffffffffffffe0)) -> 0x201330
   blk3 @ 0x201325:
     store32((load32((rsp + #0xffffffffffffffdc)) & #0xffffffff), (rsp + #0xfffffffffffffff4))
     br 0x20134a

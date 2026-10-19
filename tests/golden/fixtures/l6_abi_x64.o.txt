@@ -25,19 +25,18 @@ fn tail_target @ 0x0 (size 14)
 == 0x10 tail_direct
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x10 */
-void tail_direct(int32_t a0) {
-    tail_target(a0 + 0x2);
-    return;
+int32_t tail_direct(int32_t a0) {
+    return tail_target(a0 + 0x2);
 }
 -- signature
-void (int32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
 fn tail_direct @ 0x10 (size 8)
   blk0 @ 0x10:
-    call 0x0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
-    ret rax
+    v2 = call 0x0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x10","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
 

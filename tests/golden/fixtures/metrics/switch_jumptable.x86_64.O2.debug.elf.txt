@@ -8,32 +8,32 @@
 /* ref: 0x2023d0 .bss */
 int d7(int x) {
     if (x <= 0x9 /* unsigned */) {
-        rax = (int64_t)(int32_t)(dword_200158[x]) + 0x200158;
+        v1 = (int64_t)(int32_t)(dword_200158[x]) + 0x200158;
         switch (x) {
         case 0:
-            rax = g;
+            v2 = g;
             goto L_2013c2;
         case 1:
             g = g;
-            rax = g + 0x1;
+            v2 = g + 0x1;
             goto L_2013c2;
         case 2:
             g = g;
             g += 0x1;
-            rax = g + 0x2;
+            v2 = g + 0x2;
             goto L_2013c2;
         case 3:
             g = g;
             g += 0x1;
             g += 0x2;
-            rax = g + 0x3;
+            v2 = g + 0x3;
             goto L_2013c2;
         case 4:
             g = g;
             g += 0x1;
             g += 0x2;
             g += 0x3;
-            rax = g + 0x4;
+            v2 = g + 0x4;
             goto L_2013c2;
         case 5:
             g = g;
@@ -41,7 +41,7 @@ int d7(int x) {
             g += 0x2;
             g += 0x3;
             g += 0x4;
-            rax = g + 0x5;
+            v2 = g + 0x5;
             goto L_2013c2;
         case 6:
             g = g;
@@ -50,7 +50,7 @@ int d7(int x) {
             g += 0x3;
             g += 0x4;
             g += 0x5;
-            rax = g + 0x6;
+            v2 = g + 0x6;
             goto L_2013c2;
         case 7:
             g = g;
@@ -60,7 +60,7 @@ int d7(int x) {
             g += 0x4;
             g += 0x5;
             g += 0x6;
-            rax = g + 0x7;
+            v2 = g + 0x7;
             goto L_2013c2;
         case 8:
             g = g;
@@ -71,7 +71,7 @@ int d7(int x) {
             g += 0x5;
             g += 0x6;
             g += 0x7;
-            rax = g + 0x8;
+            v2 = g + 0x8;
             goto L_2013c2;
         case 9:
             g = g;
@@ -83,15 +83,15 @@ int d7(int x) {
             g += 0x6;
             g += 0x7;
             g += 0x8;
-            rax = g + 0x9;
+            v2 = g + 0x9;
             goto L_2013c2;
         default:
             break;
         }
     }
-    rax = 0xffffffff;
+    v2 = 0xffffffff;
 L_2013c2:
-    g = eax;
+    g = v2;
     return g;
 }
 -- signature
@@ -104,17 +104,17 @@ fn d7 @ 0x2011c0 (size 527)
   blk0 @ 0x2011c0:
     brif hi edi, #0x9 -> 0x201376
   blk1 @ 0x2011c9:
-    rax = (sext32(load32((#0x200158 + (edi * #0x4)))) + #0x200158)
+    v1 = (sext32(load32((#0x200158 + (edi * #0x4)))) + #0x200158)
     switch edi [0->0x2011db, 1->0x2012ef, 2->0x201265, 3->0x201285, 4->0x2011e6, 5->0x201308, 6->0x20133d, 7->0x2012ac, 8->0x20137d, 9->0x201214] default 0x201376
   blk2 @ 0x2011db:
-    rax = (load32(#0x2023d0) & #0xffffffff)
+    v2 = (load32(#0x2023d0) & #0xffffffff)
     br 0x2013c2
   blk3 @ 0x2011e6:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x4) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x4) & #0xffffffff)
     br 0x2013c2
   blk4 @ 0x201214:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
@@ -126,18 +126,18 @@ fn d7 @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x6), #0x2023d0)
     store32((load32(#0x2023d0) + #0x7), #0x2023d0)
     store32((load32(#0x2023d0) + #0x8), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x9) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x9) & #0xffffffff)
     br 0x2013c2
   blk5 @ 0x201265:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x2) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x2) & #0xffffffff)
     br 0x2013c2
   blk6 @ 0x201285:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x3) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x3) & #0xffffffff)
     br 0x2013c2
   blk7 @ 0x2012ac:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
@@ -147,11 +147,11 @@ fn d7 @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x4), #0x2023d0)
     store32((load32(#0x2023d0) + #0x5), #0x2023d0)
     store32((load32(#0x2023d0) + #0x6), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x7) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x7) & #0xffffffff)
     br 0x2013c2
   blk8 @ 0x2012ef:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x1) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x1) & #0xffffffff)
     br 0x2013c2
   blk9 @ 0x201308:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
@@ -159,7 +159,7 @@ fn d7 @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
     store32((load32(#0x2023d0) + #0x4), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x5) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x5) & #0xffffffff)
     br 0x2013c2
   blk10 @ 0x20133d:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
@@ -168,10 +168,10 @@ fn d7 @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
     store32((load32(#0x2023d0) + #0x4), #0x2023d0)
     store32((load32(#0x2023d0) + #0x5), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x6) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x6) & #0xffffffff)
     br 0x2013c2
   blk11 @ 0x201376:
-    rax = #0xffffffff
+    v2 = #0xffffffff
     br 0x2013c2
   blk12 @ 0x20137d:
     store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
@@ -182,9 +182,9 @@ fn d7 @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x5), #0x2023d0)
     store32((load32(#0x2023d0) + #0x6), #0x2023d0)
     store32((load32(#0x2023d0) + #0x7), #0x2023d0)
-    rax = ((load32(#0x2023d0) + #0x8) & #0xffffffff)
+    v2 = ((load32(#0x2023d0) + #0x8) & #0xffffffff)
   blk13 @ 0x2013c2:
-    store32((rax & #0xffffffff), #0x2023d0)
+    store32((v2 & #0xffffffff), #0x2023d0)
     ret (load32(#0x2023d0) & #0xffffffff)
 -- card
 {"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":527,"unsupported":0}

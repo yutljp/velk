@@ -11,13 +11,10 @@ int32_t sub_201180(int32_t a0) {
     uint32_t local_2; /* [sp-c] */
 
     local_0 = a0;
-    rax = local_0 - 0xa;
-    rcx = eax;
-    local_1 = rcx;
-    if (eax <= 0x4 /* unsigned */) {
-        rcx = 0x200120;
-        rax = (int64_t)(int32_t)(dword_200120[local_1]);
-        rax = rax + 0x200120;
+    v2 = local_0 - 0xa;
+    local_1 = v2;
+    if (v2 <= 0x4 /* unsigned */) {
+        v8 = (int64_t)(int32_t)(dword_200120[local_1]) + 0x200120;
         switch (((*(uint32_t *)&local_1 - 0xe) & 0xffffffff)) {
         case -4:
             local_2 = 0x1;
@@ -49,14 +46,11 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x201180 (size 120)
   blk0 @ 0x201180:
     store32(edi, (rsp + #0xfffffffffffffff0))
-    rax = ((load32((rsp + #0xfffffffffffffff0)) + #0xfffffffffffffff6) & #0xffffffff)
-    rcx = (rax & #0xffffffff)
-    store64(rcx, (rsp + #0xffffffffffffffe8))
-    brif hi (rax & #0xffffffff), #0x4 -> 0x2011ec
+    v2 = ((load32((rsp + #0xfffffffffffffff0)) + #0xfffffffffffffff6) & #0xffffffff)
+    store64((v2 & #0xffffffff), (rsp + #0xffffffffffffffe8))
+    brif hi (v2 & #0xffffffff), #0x4 -> 0x2011ec
   blk1 @ 0x20119c:
-    rcx = #0x200120
-    rax = sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4))))
-    rax = (rax + #0x200120)
+    v8 = (sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4)))) + #0x200120)
     switch ((load32((rsp + #0xffffffffffffffe8)) + #0xfffffffffffffff2) & #0xffffffff) [-4->0x2011b0, -3->0x2011bc, -2->0x2011c8, -1->0x2011d4, 0->0x2011e0] default 0x2011ec
   blk2 @ 0x2011b0:
     store32(#0x1, (rsp + #0xfffffffffffffff4))

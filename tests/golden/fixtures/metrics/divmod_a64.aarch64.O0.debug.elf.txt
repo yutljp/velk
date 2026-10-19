@@ -182,8 +182,8 @@ fn ldiv16 @ 0x210474 (size 28)
 -- decompile
 /* velk pseudo-C: smod3 @ 0x210490 */
 int smod3(int x) {
-    w8 = x;
-    return w8 - (int32_t)(w8) / 0x3 * 0x3;
+    v1 = x;
+    return v1 - (int32_t)(v1) / 0x3 * 0x3;
 }
 -- signature
 int (int x)
@@ -192,8 +192,8 @@ int (int x)
 -- ir
 fn smod3 @ 0x210490 (size 36)
   blk0 @ 0x210490:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0x3) * #0x3)) & #0xffffffff)
 -- card
 {"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -201,8 +201,8 @@ fn smod3 @ 0x210490 (size 36)
 -- decompile
 /* velk pseudo-C: umod3 @ 0x2104b4 */
 uint32_t umod3(int32_t x) {
-    w8 = x;
-    return w8 - w8 / 0x3 * 0x3;
+    v1 = x;
+    return v1 - v1 / 0x3 * 0x3;
 }
 -- signature
 uint32_t (int32_t x)
@@ -211,8 +211,8 @@ uint32_t (int32_t x)
 -- ir
 fn umod3 @ 0x2104b4 (size 36)
   blk0 @ 0x2104b4:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0x3) * #0x3)) & #0xffffffff)
 -- card
 {"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -220,8 +220,8 @@ fn umod3 @ 0x2104b4 (size 36)
 -- decompile
 /* velk pseudo-C: umod10 @ 0x2104d8 */
 uint32_t umod10(int32_t x) {
-    w8 = x;
-    return w8 - w8 / 0xa * 0xa;
+    v1 = x;
+    return v1 - v1 / 0xa * 0xa;
 }
 -- signature
 uint32_t (int32_t x)
@@ -230,8 +230,8 @@ uint32_t (int32_t x)
 -- ir
 fn umod10 @ 0x2104d8 (size 36)
   blk0 @ 0x2104d8:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0xa) * #0xa)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0xa) * #0xa)) & #0xffffffff)
 -- card
 {"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -239,8 +239,8 @@ fn umod10 @ 0x2104d8 (size 36)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x2104fc */
 int smod10(int x) {
-    w8 = x;
-    return w8 - (int32_t)(w8) / 0xa * 0xa;
+    v1 = x;
+    return v1 - (int32_t)(v1) / 0xa * 0xa;
 }
 -- signature
 int (int x)
@@ -249,8 +249,8 @@ int (int x)
 -- ir
 fn smod10 @ 0x2104fc (size 36)
   blk0 @ 0x2104fc:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0xa) * #0xa)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0xa) * #0xa)) & #0xffffffff)
 -- card
 {"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -309,8 +309,8 @@ fn lmod16 @ 0x210568 (size 36)
 -- decompile
 /* velk pseudo-C: smod4 @ 0x21058c */
 int smod4(int x) {
-    w8 = x;
-    return w8 - (int32_t)(w8) / 0x4 * 0x4;
+    v1 = x;
+    return v1 - (int32_t)(v1) / 0x4 * 0x4;
 }
 -- signature
 int (int x)
@@ -319,8 +319,8 @@ int (int x)
 -- ir
 fn smod4 @ 0x21058c (size 36)
   blk0 @ 0x21058c:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0x4) * #0x4)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0x4) * #0x4)) & #0xffffffff)
 -- card
 {"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 

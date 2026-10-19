@@ -1,4 +1,4 @@
-# rust_probe: elf x86_64 0x14e70, 545 functions, 0 lift failures, 411 unsupported, 6026 gotos
+# rust_probe: elf x86_64 0x14e70, 545 functions, 0 lift failures, 411 unsupported, 6025 gotos
 0x14e70 38 _start symtab,entry,unwind
 0x14ea0 48 deregister_tm_clones symtab
 0x14ed0 64 register_tm_clones symtab
@@ -578,6 +578,6 @@ fn rust_probe::main @ 0x14f90 (size 57)
     rdi = #0x5091
     rsi = (rsp + #0xfffffffffffffff0)
     call *load64(#0x55ab0)
-    ret rax
+    ret v1
 -- card
 {"addr":"0x14f90","approxTokens":162,"blocks":1,"hardReasons":[],"name":"rust_probe::main","nameSources":["symtab","unwind"],"section":".text","size":57,"unsupported":0}

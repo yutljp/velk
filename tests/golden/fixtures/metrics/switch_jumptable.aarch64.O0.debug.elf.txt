@@ -18,9 +18,9 @@ int d7(int x) {
     uint32_t local_9; /* [sp-28] */
     uint32_t local_10; /* [sp-2c] */
 
-    w8 = x;
-    local_0 = w8;
-    if (w8 == 0x0) {
+    v1 = x;
+    local_0 = v1;
+    if (v1 == 0x0) {
         local_1 = 0x0;
         while (local_1 < 0x1) {
             g += local_1;
@@ -110,9 +110,9 @@ int (int x)
 -- ir
 fn d7 @ 0x21018c (size 880)
   blk0 @ 0x21018c:
-    x8 = (w0 & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xffffffffffffffd0))
-    brif eq (x8 & #0xffffffff), #0x0 -> 0x210234
+    v1 = (w0 & #0xffffffff)
+    store32((v1 & #0xffffffff), (sp + #0xffffffffffffffd0))
+    brif eq (v1 & #0xffffffff), #0x0 -> 0x210234
   blk1 @ 0x2101a0:
     br 0x2101a4
   blk2 @ 0x2101a4:

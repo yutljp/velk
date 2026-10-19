@@ -14,69 +14,69 @@ int32_t sub_201220(int64_t a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
     }
-    rcx = a1;
-    rdx = rcx & 0x3;
-    r8 = rcx & 0x7ffffffc;
-    r9 = -rdx;
-    r10 = 0x0;
-    r11 = 0x0;
-    rax = 0x0;
+    v1 = a1;
+    v2 = v1 & 0x3;
+    v3 = v1 & 0x7ffffffc;
+    v4 = -v2;
+    v5 = 0x0;
+    v6 = 0x0;
+    v7 = 0x0;
     for (;;) {
-        rbx = r11d * a1;
-        r14 = a0 + r11 * 0x4;
+        v8 = v6 * a1;
+        v9 = a0 + v6 * 0x4;
         if (a1 >= 0x4 /* unsigned */) {
-            r12 = 0x0;
+            v11 = 0x0;
             for (;;) {
-                r15 = r12;
-                if (r11 == r12) {
-                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                v12 = v11;
+                if (v6 == v11) {
+                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
                 }
-                r12 = r15 + 0x1;
-                if (r11 == r12) {
-                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                v13 = v12 + 0x1;
+                if (v6 == v13) {
+                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
                 }
-                r12 = r12 + 0x1;
-                if (r11 == r12) {
-                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                v14 = v13 + 0x1;
+                if (v6 == v14) {
+                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
                 }
-                r12 = r12 + 0x1;
-                if (r11 == r12) {
-                    rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+                v15 = v14 + 0x1;
+                if (v6 == v15) {
+                    v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
                 }
-                r12 = r12 + 0x1;
-                if (r12 == r8) {
+                v11 = v15 + 0x1;
+                if (v11 == v3) {
                     break;
                 }
             }
-            r15 = r15 + 0x4;
-            if (rdx == 0x0) {
+            v10 = v12 + 0x4;
+            if (v2 == 0x0) {
                 goto L_201250;
             }
         } else {
-            r15 = 0x0;
-            if (rdx == 0x0) {
+            v10 = 0x0;
+            if (v2 == 0x0) {
                 goto L_201250;
             }
         }
-        r15 = r15 + r10;
-        r12 = 0x0;
+        v16 = v10 + v5;
+        v17 = 0x0;
         for (;;) {
-            if (r15 == r12) {
-                rax = eax + *(uint32_t *)(r14 + rbx * 0x4);
+            if (v16 == v17) {
+                v7 = v7 + *(uint32_t *)(v9 + v8 * 0x4);
             }
-            r12 = r12 - 0x1;
-            if (r9 == r12) {
+            v17 = v17 - 0x1;
+            if (v4 == v17) {
                 break;
             }
         }
     L_201250:
-        r11 = r11 + 0x1;
-        r10 = r10 - 0x1;
-        if (r11 == rcx) {
+        v6 = v6 + 0x1;
+        v5 = v5 - 0x1;
+        if (v6 == v1) {
             break;
         }
     }
-    return rax;
+    return v7;
 }
 -- signature
 int32_t (int64_t a0, int32_t a1)
@@ -87,71 +87,71 @@ fn <unnamed> @ 0x201220 (size 242)
   blk0 @ 0x201220:
     brif le esi, #0x0 -> 0x20130f
   blk1 @ 0x201228:
-    rcx = esi
-    rdx = (rcx & #0x3)
-    r8 = (rcx & #0x7ffffffc)
-    r9 = (#0x0 - rdx)
-    r10 = #0x0
-    r11 = #0x0
-    rax = #0x0
+    v1 = esi
+    v2 = (v1 & #0x3)
+    v3 = (v1 & #0x7ffffffc)
+    v4 = (#0x0 - v2)
+    v5 = #0x0
+    v6 = #0x0
+    v7 = #0x0
     br 0x20125f
   blk2 @ 0x201250:
-    r11 = (r11 + #0x1)
-    r10 = (r10 + #0xffffffffffffffff)
-    brif eq r11, rcx -> 0x201307
+    v6 = (v6 + #0x1)
+    v5 = (v5 + #0xffffffffffffffff)
+    brif eq v6, v1 -> 0x201307
   blk3 @ 0x20125f:
-    rbx = (((r11 & #0xffffffff) * esi) & #0xffffffff)
-    r14 = (rdi + (r11 * #0x4))
+    v8 = (((v6 & #0xffffffff) * esi) & #0xffffffff)
+    v9 = (rdi + (v6 * #0x4))
     brif cs esi, #0x4 -> 0x201280
   blk4 @ 0x20126e:
-    r15 = #0x0
-    brif ne rdx, #0x0 -> 0x2012dd
+    v10 = #0x0
+    brif ne v2, #0x0 -> 0x2012dd
   blk5 @ 0x201276:
     br 0x201250
   blk6 @ 0x201280:
-    r12 = #0x0
+    v11 = #0x0
     br 0x201298
   blk7 @ 0x201290:
-    r12 = (r12 + #0x1)
-    brif eq r12, r8 -> 0x2012d0
+    v11 = (v15 + #0x1)
+    brif eq v11, v3 -> 0x2012d0
   blk8 @ 0x201298:
-    r15 = r12
-    brif ne r11, r12 -> 0x2012a4
+    v12 = v11
+    brif ne v6, v11 -> 0x2012a4
   blk9 @ 0x2012a0:
-    rax = (((rax & #0xffffffff) + load32((r14 + (rbx * #0x4)))) & #0xffffffff)
+    v7 = (((v7 & #0xffffffff) + load32((v9 + (v8 * #0x4)))) & #0xffffffff)
   blk10 @ 0x2012a4:
-    r12 = (r15 + #0x1)
-    brif ne r11, r12 -> 0x2012b1
+    v13 = (v12 + #0x1)
+    brif ne v6, v13 -> 0x2012b1
   blk11 @ 0x2012ad:
-    rax = (((rax & #0xffffffff) + load32((r14 + (rbx * #0x4)))) & #0xffffffff)
+    v7 = (((v7 & #0xffffffff) + load32((v9 + (v8 * #0x4)))) & #0xffffffff)
   blk12 @ 0x2012b1:
-    r12 = (r12 + #0x1)
-    brif ne r11, r12 -> 0x2012bd
+    v14 = (v13 + #0x1)
+    brif ne v6, v14 -> 0x2012bd
   blk13 @ 0x2012b9:
-    rax = (((rax & #0xffffffff) + load32((r14 + (rbx * #0x4)))) & #0xffffffff)
+    v7 = (((v7 & #0xffffffff) + load32((v9 + (v8 * #0x4)))) & #0xffffffff)
   blk14 @ 0x2012bd:
-    r12 = (r12 + #0x1)
-    brif ne r11, r12 -> 0x201290
+    v15 = (v14 + #0x1)
+    brif ne v6, v15 -> 0x201290
   blk15 @ 0x2012c5:
-    rax = (((rax & #0xffffffff) + load32((r14 + (rbx * #0x4)))) & #0xffffffff)
+    v7 = (((v7 & #0xffffffff) + load32((v9 + (v8 * #0x4)))) & #0xffffffff)
     br 0x201290
   blk16 @ 0x2012d0:
-    r15 = (r15 + #0x4)
-    brif eq rdx, #0x0 -> 0x201250
+    v10 = (v12 + #0x4)
+    brif eq v2, #0x0 -> 0x201250
   blk17 @ 0x2012dd:
-    r15 = (r15 + r10)
-    r12 = #0x0
+    v16 = (v10 + v5)
+    v17 = #0x0
     br 0x2012fc
   blk18 @ 0x2012f0:
-    r12 = (r12 + #0xffffffffffffffff)
-    brif eq r9, r12 -> 0x201250
+    v17 = (v17 + #0xffffffffffffffff)
+    brif eq v4, v17 -> 0x201250
   blk19 @ 0x2012fc:
-    brif ne r15, r12 -> 0x2012f0
+    brif ne v16, v17 -> 0x2012f0
   blk20 @ 0x201301:
-    rax = (((rax & #0xffffffff) + load32((r14 + (rbx * #0x4)))) & #0xffffffff)
+    v7 = (((v7 & #0xffffffff) + load32((v9 + (v8 * #0x4)))) & #0xffffffff)
     br 0x2012f0
   blk21 @ 0x201307:
-    ret rax
+    ret v7
   blk22 @ 0x20130f:
     ret #0x0
 -- card
@@ -162,16 +162,16 @@ fn <unnamed> @ 0x201220 (size 242)
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 /* struct: a2 +0x0:uint32_t */
 int32_t sub_201320(int32_t a0, int32_t a1, uint32_t *a2) {
-    rax = 0xffffffff;
+    v1 = 0xffffffff;
     if (a0 < 0x0) {
-        return rax;
+        return v1;
     }
     if (a1 == 0x0) {
-        return rax;
+        return v1;
     }
     a2->field_0x0 = a0 / a1;
-    rax = 0x0;
-    return rax;
+    v1 = 0x0;
+    return v1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, uint32_t * a2)
@@ -180,15 +180,15 @@ int32_t (int32_t a0, int32_t a1, uint32_t * a2)
 -- ir
 fn <unnamed> @ 0x201320 (size 26)
   blk0 @ 0x201320:
-    rax = #0xffffffff
+    v1 = #0xffffffff
     brif lt edi, #0x0 -> 0x201339
   blk1 @ 0x201329:
     brif eq esi, #0x0 -> 0x201339
   blk2 @ 0x20132d:
     store32((((edi & #0xffffffff) / esi) & #0xffffffff), rdx)
-    rax = #0x0
+    v1 = #0x0
   blk3 @ 0x201339:
-    ret rax
+    ret v1
 -- card
 {"accesses":["a2 +0x0:uint32_t"],"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":26,"unsupported":0}
 
@@ -197,7 +197,7 @@ fn <unnamed> @ 0x201320 (size 26)
 /* velk pseudo-C: sub_201340 @ 0x201340 */
 /* ref: 0x200120 .rodata */
 int32_t sub_201340(uint32_t a0) {
-    rax = 0xffffffff;
+    v1 = 0xffffffff;
     switch (a0) {
     case 0:
     case 1:
@@ -205,10 +205,10 @@ int32_t sub_201340(uint32_t a0) {
     case 3:
         break;
     default:
-        return rax;
+        return v1;
     }
-    rax = dword_200120[a0];
-    return rax;
+    v1 = dword_200120[a0];
+    return v1;
 }
 -- signature
 int32_t (uint32_t a0)
@@ -217,12 +217,12 @@ int32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201340 (size 23)
   blk0 @ 0x201340:
-    rax = #0xffffffff
+    v1 = #0xffffffff
     brif hi edi, #0x3 -> 0x201356
   blk1 @ 0x20134a:
-    rax = (load32((#0x200120 + (edi * #0x4))) & #0xffffffff)
+    v1 = (load32((#0x200120 + (edi * #0x4))) & #0xffffffff)
   blk2 @ 0x201356:
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201340","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":23,"unsupported":0}
 
@@ -282,19 +282,19 @@ fn <unnamed> @ 0x201360 (size 61)
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
 int32_t sub_2013a0(int64_t a0, int32_t a1) {
-    rax = 0x0;
+    v1 = 0x0;
     if (a0 == 0x0) {
-        return rax;
+        return v1;
     }
     if (a1 <= 0x0) {
-        return rax;
+        return v1;
     }
-    rax = 0x1;
+    v1 = 0x1;
     if (*(uint32_t *)(a0) == 0x1) {
-        return rax;
+        return v1;
     }
-    rax = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
-    return rax;
+    v1 = (*(uint32_t *)(a0 + a1 * 0x4 - 0x4) == 0x1 ? 0x1 : 0x0) & 0xff;
+    return v1;
 }
 -- signature
 int32_t (int64_t a0, int32_t a1)
@@ -303,17 +303,17 @@ int32_t (int64_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2013a0 (size 34)
   blk0 @ 0x2013a0:
-    rax = #0x0
+    v1 = #0x0
     brif eq rdi, #0x0 -> 0x2013c1
   blk1 @ 0x2013a7:
     brif le esi, #0x0 -> 0x2013c1
   blk2 @ 0x2013ab:
-    rax = #0x1
+    v1 = #0x1
     brif eq load32(rdi), #0x1 -> 0x2013c1
   blk3 @ 0x2013b5:
-    rax = (select eq load32(((rdi + (esi * #0x4)) + #0xfffffffffffffffc)), #0x1 ? #0x1, #0x0 & #0xff)
+    v1 = (select eq load32(((rdi + (esi * #0x4)) + #0xfffffffffffffffc)), #0x1 ? #0x1, #0x0 & #0xff)
   blk4 @ 0x2013c1:
-    ret rax
+    ret v1
 -- card
 {"addr":"0x2013a0","approxTokens":174,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":34,"unsupported":0}
 
@@ -324,23 +324,23 @@ int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
     }
-    rcx = a1;
-    rdx = 0x0;
+    v1 = a1;
+    v2 = 0x0;
     if (a1 >= 0x8 /* unsigned */) {
-        v1 = rcx & 0x7ffffff8;
-        rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
+        v3 = v1 & 0x7ffffff8;
+        v5 = (v1 >> 0x3 & 0xfffffff) << 0x5;
         xmm1 = 0x0;
         xmm1_hi = 0x0;
-        r8 = 0x0;
+        v6 = 0x0;
         xmm2 = 0x0;
         xmm2_hi = 0x0;
         xmm0 = 0x0;
         xmm0_hi = 0x0;
         do {
-            xmm3 = *(uint64_t *)(a0 + r8);
-            xmm3_hi = *(uint64_t *)(a0 + r8 + 0x8);
-            xmm4 = *(uint64_t *)(a0 + r8 + 0x10);
-            xmm4_hi = *(uint64_t *)(a0 + r8 + 0x18);
+            xmm3 = *(uint64_t *)(a0 + v6);
+            xmm3_hi = *(uint64_t *)(a0 + v6 + 0x8);
+            xmm4 = *(uint64_t *)(a0 + v6 + 0x10);
+            xmm4_hi = *(uint64_t *)(a0 + v6 + 0x18);
             /* unsupported: Pcmpgtd at 0x201421 */
             xmm5 = xmm3;
             xmm5_hi = xmm3_hi;
@@ -348,23 +348,23 @@ int32_t sub_2013d0(uint64_t *a0, int32_t a1) {
             xmm3 = xmm4;
             xmm3_hi = xmm4_hi;
             /* unsupported: Paddd at 0x201439 */
-            r8 = r8 + 0x20;
-        } while (rax != r8);
+            v6 = v6 + 0x20;
+        } while (v5 != v6);
         /* unsupported (5 steps): Paddd at 0x201446, Pshufd at 0x20144a, Paddd at 0x20144f, Pshufd at 0x201453, Paddd at 0x201458 */
-        rax = 0x0;
-        if (v1 == rcx) {
-            return rax;
+        v4 = 0x0;
+        if (v3 == v1) {
+            return v4;
         }
     } else {
-        v1 = 0x0;
-        rax = 0x0;
+        v3 = 0x0;
+        v4 = 0x0;
     }
     do {
-        r8 = *(uint32_t *)(a0 + v1 * 0x4);
-        rax = eax + (r8d <= 0x0 ? 0x0 : r8d);
-        v1 = v1 + 0x1;
-    } while (rcx != v1);
-    return rax;
+        v7 = *(uint32_t *)(a0 + v3 * 0x4);
+        v4 = v4 + (v7 <= 0x0 ? 0x0 : v7);
+        v3 = v3 + 0x1;
+    } while (v1 != v3);
+    return v4;
 }
 -- signature
 int32_t (uint64_t * a0, int32_t a1)
@@ -375,30 +375,30 @@ fn <unnamed> @ 0x2013d0 (size 183)
   blk0 @ 0x2013d0:
     brif le (rsi & #0xffffffff), #0x0 -> 0x2013e6
   blk1 @ 0x2013d4:
-    rcx = (rsi & #0xffffffff)
-    rdx = #0x0
+    v1 = (rsi & #0xffffffff)
+    v2 = #0x0
     brif cs (rsi & #0xffffffff), #0x8 -> 0x2013e9
   blk2 @ 0x2013dd:
-    v1 = #0x0
-    rax = #0x0
+    v3 = #0x0
+    v4 = #0x0
     br 0x201470
   blk3 @ 0x2013e6:
     ret #0x0
   blk4 @ 0x2013e9:
-    v1 = (rcx & #0x7ffffff8)
-    rax = ((((rcx & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
+    v3 = (v1 & #0x7ffffff8)
+    v5 = ((((v1 & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
     xmm1 = #0x0
     xmm1_hi = #0x0
-    r8 = #0x0
+    v6 = #0x0
     xmm2 = #0x0
     xmm2_hi = #0x0
     xmm0 = #0x0
     xmm0_hi = #0x0
   blk5 @ 0x201410:
-    xmm3 = load64((rdi + r8))
-    xmm3_hi = load64(((rdi + r8) + #0x8))
-    xmm4 = load64(((rdi + r8) + #0x10))
-    xmm4_hi = load64(((rdi + r8) + #0x18))
+    xmm3 = load64((rdi + v6))
+    xmm3_hi = load64(((rdi + v6) + #0x8))
+    xmm4 = load64(((rdi + v6) + #0x10))
+    xmm4_hi = load64(((rdi + v6) + #0x18))
     unsupported: Pcmpgtd at 0x201421
     xmm5 = xmm3
     xmm5_hi = xmm3_hi
@@ -407,23 +407,23 @@ fn <unnamed> @ 0x2013d0 (size 183)
     xmm3 = xmm4
     xmm3_hi = xmm4_hi
     unsupported: Paddd at 0x201439
-    r8 = (r8 + #0x20)
-    brif ne rax, r8 -> 0x201410
+    v6 = (v6 + #0x20)
+    brif ne v5, v6 -> 0x201410
   blk6 @ 0x201446:
     unsupported: Paddd at 0x201446
     unsupported: Pshufd at 0x20144a
     unsupported: Paddd at 0x20144f
     unsupported: Pshufd at 0x201453
     unsupported: Paddd at 0x201458
-    rax = #0x0
-    brif eq v1, rcx -> 0x201486
+    v4 = #0x0
+    brif eq v3, v1 -> 0x201486
   blk7 @ 0x201470:
-    r8 = (load32((rdi + (v1 * #0x4))) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + select le (r8 & #0xffffffff), #0x0 ? #0x0, (r8 & #0xffffffff)) & #0xffffffff)
-    v1 = (v1 + #0x1)
-    brif ne rcx, v1 -> 0x201470
+    v7 = (load32((rdi + (v3 * #0x4))) & #0xffffffff)
+    v4 = (((v4 & #0xffffffff) + select le (v7 & #0xffffffff), #0x0 ? #0x0, (v7 & #0xffffffff)) & #0xffffffff)
+    v3 = (v3 + #0x1)
+    brif ne v1, v3 -> 0x201470
   blk8 @ 0x201486:
-    ret rax
+    ret v4
 -- card
 {"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":183,"unsupported":9}
 
@@ -431,40 +431,40 @@ fn <unnamed> @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
-    rax = 0xffffffff;
+    v1 = 0xffffffff;
     if (a1 <= 0x0) {
-        return rax;
+        return v1;
     }
-    rcx = a1;
-    v1 = a1 ^ 0xffffffff;
-    r9 = a0 + 0x4;
-    r10 = rcx - 0x1;
-    r8 = 0xffffffffffffffff;
-    r11 = 0x0;
+    v2 = a1;
+    v3 = a1 ^ 0xffffffff;
+    v4 = a0 + 0x4;
+    v5 = v2 - 0x1;
+    v6 = 0xffffffffffffffff;
+    v7 = 0x0;
     for (;;) {
-        rbx = r11;
-        r11 = r11 + 0x1;
-        if (r11 < rcx /* unsigned */) {
-            ebp = *(uint32_t *)(a0 + rbx * 0x4);
-            rbx = 0x0;
+        v8 = v7;
+        v7 = v7 + 0x1;
+        if (v7 < v2 /* unsigned */) {
+            ebp = *(uint32_t *)(a0 + v8 * 0x4);
+            v9 = 0x0;
             do {
-                if (*(uint32_t *)(r9 + rbx * 0x4) + ebp == a2) {
+                if (*(uint32_t *)(v4 + v9 * 0x4) + ebp == a2) {
                     goto L_2014f6;
                 }
-                rbx = rbx + 0x1;
-            } while (r10 != rbx);
+                v9 = v9 + 0x1;
+            } while (v5 != v9);
         }
-        r8 = r8 + v1;
-        r9 = r9 + 0x4;
-        r10 = r10 - 0x1;
-        if (r11 == rcx) {
+        v6 = v6 + v3;
+        v4 = v4 + 0x4;
+        v5 = v5 - 0x1;
+        if (v7 == v2) {
             break;
         }
     }
 L_2014fb:
-    return rax;
+    return v1;
 L_2014f6:
-    rax = ebx - r8d;
+    v1 = v9 - v6;
     goto L_2014fb;
 }
 -- signature
@@ -474,39 +474,39 @@ int32_t (uint32_t * a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x201490 (size 112)
   blk0 @ 0x201490:
-    rax = #0xffffffff
+    v1 = #0xffffffff
     brif le (rsi & #0xffffffff), #0x0 -> 0x2014ff
   blk1 @ 0x201499:
-    rcx = (rsi & #0xffffffff)
-    v1 = (((rsi & #0xffffffff) ^ #0xffffffff) & #0xffffffff)
-    r9 = (rdi + #0x4)
-    r10 = (rcx + #0xffffffffffffffff)
-    r8 = #0xffffffffffffffff
-    r11 = #0x0
+    v2 = (rsi & #0xffffffff)
+    v3 = (((rsi & #0xffffffff) ^ #0xffffffff) & #0xffffffff)
+    v4 = (rdi + #0x4)
+    v5 = (v2 + #0xffffffffffffffff)
+    v6 = #0xffffffffffffffff
+    v7 = #0x0
     br 0x2014cf
   blk2 @ 0x2014c0:
-    r8 = (r8 + v1)
-    r9 = (r9 + #0x4)
-    r10 = (r10 + #0xffffffffffffffff)
-    brif eq r11, rcx -> 0x2014fb
+    v6 = (v6 + v3)
+    v4 = (v4 + #0x4)
+    v5 = (v5 + #0xffffffffffffffff)
+    brif eq v7, v2 -> 0x2014fb
   blk3 @ 0x2014cf:
-    rbx = r11
-    r11 = (r11 + #0x1)
-    brif cs r11, rcx -> 0x2014c0
+    v8 = v7
+    v7 = (v7 + #0x1)
+    brif cs v7, v2 -> 0x2014c0
   blk4 @ 0x2014da:
-    rbp = (load32((rdi + (rbx * #0x4))) & #0xffffffff)
-    rbx = #0x0
+    rbp = (load32((rdi + (v8 * #0x4))) & #0xffffffff)
+    v9 = #0x0
   blk5 @ 0x2014e0:
-    brif eq ((load32((r9 + (rbx * #0x4))) + (rbp & #0xffffffff)) & #0xffffffff), edx -> 0x2014f6
+    brif eq ((load32((v4 + (v9 * #0x4))) + (rbp & #0xffffffff)) & #0xffffffff), edx -> 0x2014f6
   blk6 @ 0x2014ec:
-    rbx = (rbx + #0x1)
-    brif ne r10, rbx -> 0x2014e0
+    v9 = (v9 + #0x1)
+    brif ne v5, v9 -> 0x2014e0
   blk7 @ 0x2014f4:
     br 0x2014c0
   blk8 @ 0x2014f6:
-    rax = (((rbx & #0xffffffff) - (r8 & #0xffffffff)) & #0xffffffff)
+    v1 = (((v9 & #0xffffffff) - (v6 & #0xffffffff)) & #0xffffffff)
   blk9 @ 0x2014fb:
   blk10 @ 0x2014ff:
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201490","approxTokens":174,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":112,"unsupported":0}

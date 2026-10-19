@@ -51,7 +51,7 @@ helper_ir=$("$BIN" ir $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_ir" | grep -q 'brif lt'                  || fail "ir helper branch"
 echo "$helper_ir" | grep -q -- '-> 0x48'               || fail "ir helper target"
 echo "$helper_ir" | grep -q '0x555'                   || fail "ir helper constant"
-echo "$helper_ir" | grep -q 'x8 = '                   || fail "ir helper assignment"
+echo "$helper_ir" | grep -q 'v1 = '                   || fail "ir helper assignment"
 ok "ir helper"
 
 arr_ir=$("$BIN" ir $FIX/arm64.o sum_arr 2>/dev/null)
@@ -134,8 +134,8 @@ echo "$x64_selq" | grep -q "a0 / 0x40"   || fail "x64 signed select 64bit div"
 x64_sel10=$("$BIN" decompile $FIX/x64_div.o pdiv10 2>/dev/null)
 echo "$x64_sel10" | grep -q "/ 0xa"      || fail "x64 signed sext div10"
 helper_cs=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$helper_cs" | grep -q "x8 = x8 >> 0x1;"    || fail "shift kept in its register"
-echo "$helper_cs" | grep -q "(w8 + (w8 << 0x1))" || fail "32-bit read shared without a temporary"
+echo "$helper_cs" | grep -q "v4 = v2 >> 0x1;"    || fail "shift kept in its variable"
+echo "$helper_cs" | grep -q "(v4 + (v4 << 0x1))" || fail "32-bit read shared without a temporary"
 ok "cse temps"
 x64_fold=$("$BIN" decompile $FIX/x64_div.o l3 2>/dev/null)
 echo "$x64_fold" | grep -q "0xfffffffffffffff8" && fail "frame prologue elision"
@@ -207,9 +207,9 @@ ok "frame settling and endless loop"
 arr_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$arr_ir" | grep -q "goto L_" && fail "sum_arr has no gotos"
 echo "$arr_ir" | grep -q "} else {"   || fail "if/else across a skipped block"
-echo "$arr_ir" | grep -q "x9 = a1;"                || fail "branch block prefix kept"
+echo "$arr_ir" | grep -q "v1 = a1;"                || fail "branch block prefix kept"
 helper_pre=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$helper_pre" | grep -q "x8 = a0 - 0x1;"  || fail "prefix before early return"
+echo "$helper_pre" | grep -q "v1 = a0 - 0x1;"  || fail "prefix before early return"
 ok "if/else structuring"
 sig_zero=$("$BIN" decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$sig_zero" | grep -q "int32_t is_zero(int32_t a0)" || fail "boolean signature by usage"
@@ -221,22 +221,22 @@ sig_helper=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$sig_helper" | grep -q "int32_t helper(int32_t a0)"    || fail "loop signature by usage"
 ok "types by usage"
 mask_ir=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$mask_ir" | grep -q "x8 = w8 \* (a0 - 0x2);" || fail "mask implied by 32-bit arithmetic"
-echo "$mask_ir" | grep -q "x8 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
+echo "$mask_ir" | grep -q "v2 = v1 \* (a0 - 0x2);" || fail "mask implied by 32-bit arithmetic"
+echo "$mask_ir" | grep -q "v1 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$narrow_ir" | grep -q "while (local_2 <= local_0)" || fail "32-bit comparison kept"
 echo "$narrow_ir" | grep -q "local_1 += local_2;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$narrow_dest" | grep -q "+ (w8 << 0x1)) - 0x1;" || fail "mask implied by the return type"
+echo "$narrow_dest" | grep -q "+ (v4 << 0x1)) - 0x1;" || fail "mask implied by the return type"
 echo "$narrow_dest" | grep -q "a0 = .*0xffffffff" && fail "return mask kept"
 ok "masks implied by the destination"
 masked_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
-echo "$masked_ir" | grep -q "x8 = w10 + w8;" || fail "mask bounded by its constant"
+echo "$masked_ir" | grep -q "v3 = v7 + v3;" || fail "mask bounded by its constant"
 echo "$masked_ir" | grep -q "w10 + w8) & 0xffffffff" && fail "bounded mask kept"
 ok "mask bounded by the constant"
 dwarf_ir=$("$BIN" decompile $FIX/arm64_debug.elf helper 2>/dev/null)
-echo "$dwarf_ir" | grep -q "x8 = x - 0x1;"      || fail "narrow DWARF type read without a mask"
+echo "$dwarf_ir" | grep -q "v1 = x - 0x1;"      || fail "narrow DWARF type read without a mask"
 echo "$dwarf_ir" | grep -q "(x & 0xffffffff)" && fail "narrow DWARF type keeps the mask"
 ok "narrow DWARF types"
 sign_ir2=$("$BIN" decompile $FIX/pe64.exe reg_sign 2>/dev/null)
@@ -281,8 +281,8 @@ echo "$settled" | grep -q "local_0 = a0;"     || fail "frame settled past a poin
 echo "$settled" | grep -q "sp = sp"           && fail "stack adjustments kept"
 ok "frame settling past pointer bases"
 narrow_dst=$("$BIN" decompile $FIX/arm64_loops.o sum_till_neg 2>/dev/null)
-echo "$narrow_dst" | grep -q "w8 = x10;" || fail "narrow destination uses its 32-bit name"
-echo "$narrow_dst" | grep -q "return w8;" || fail "narrow destination read back"
+echo "$narrow_dst" | grep -q "v3 = v2;" || fail "loop result variable"
+echo "$narrow_dst" | grep -q "return v3;" || fail "loop result read back"
 ok "narrow destination names"
 trap_ir=$("$BIN" decompile $FIX/go_stripped internal/abi.Kind.String 2>/dev/null)
 echo "$trap_ir" | grep -q "__builtin_trap();" || fail "trap rendered"
@@ -338,7 +338,7 @@ ok "indirect tail calls"
 # A value just stored into a slot feeds its reader directly.
 fwd=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
 echo "$fwd" | grep -q "x8 = local_3;" && fail "store not forwarded"
-echo "$fwd" | grep -q "local_4 = w8;" || fail "forwarded value missing"
+echo "$fwd" | grep -q "local_4 = v2;" || fail "forwarded value missing"
 pe_entry=$("$BIN" functions $FIX/pe64.exe --json 2>/dev/null | sed -n 's/.*"entry": "\(0x[0-9a-f]*\)".*/\1/p')
 entry_fwd=$("$BIN" decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
 echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_1 = 0x23;" || fail "partial store into a wider local"
@@ -395,7 +395,8 @@ moved_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$moved_ir" | grep -q "x8 = 0x1;" && fail "dead store before the loop"
 echo "$moved_ir" | grep -q "local_2 = 0x1;" || fail "live store before the loop"
 live_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
-echo "$live_ir" | grep -qE "[xw]19 = a0;" || fail "definition kept across a call"
+echo "$live_ir" | grep -q "v1 = a0;" || fail "definition kept across a call"
+echo "$live_ir" | grep -q "return ns__add_int__int_(v1, v2);" || fail "saved value passed after the call"
 ok "flow-sensitive dead stores"
 
 
@@ -566,7 +567,7 @@ ok "script API"
 
 # 14) extend-and-shift addressing (value-table switch)
 sw=$("$BIN" decompile $FIX/arm64_switch.elf dispatch 2>/dev/null)
-echo "$sw" | grep -q "dword_200120\[w8\]"   || fail "extend-shift addressing as a table"
+echo "$sw" | grep -q "dword_200120\[v1\]"   || fail "extend-shift addressing as a table"
 echo "$sw" | grep -q "ref: 0x"                || fail "switch table reference"
 if echo "$sw" | grep -q "unsupported:"; then fail "switch table unsupported"; fi
 ok "table-driven switch"

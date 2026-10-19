@@ -25,16 +25,15 @@ fn <unnamed> @ 0x2011e0 (size 22)
 == 0x201200 -
 -- decompile
 /* velk pseudo-C: sub_201200 @ 0x201200 */
-void sub_201200(int32_t a0) {
+int32_t sub_201200(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
 
     local_0 = a0;
     v1 = a0;
-    sub_2011e0(v1 + 0x2);
-    return;
+    return sub_2011e0(v1 + 0x2);
 }
 -- signature
-void (int32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -42,8 +41,8 @@ fn <unnamed> @ 0x201200 (size 28)
   blk0 @ 0x201200:
     store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
     v1 = (rdi & #0xffffffff)
-    call 0x2011e0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
-    ret rax
+    v3 = call 0x2011e0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v3
 -- card
 {"addr":"0x201200","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
 
@@ -72,7 +71,7 @@ fn <unnamed> @ 0x201220 (size 33)
     rax = rdi
     rdi = (((esi & #0xffffffff) + #0x1) & #0xffffffff)
     call *rax
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201220","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}
 

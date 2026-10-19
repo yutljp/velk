@@ -6,8 +6,8 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
-    x9 = a0 - 0xa;
-    switch (x9) {
+    v1 = a0 - 0xa;
+    switch (v1) {
     case 0:
     case 1:
     case 2:
@@ -28,73 +28,67 @@ int32_t dense(int32_t a0) {
     default:
         goto L_fc;
     }
-    w10 = 0x0;
-    w10 = 0x13c;
-    x12 = *(uint8_t *)(0x13c + x9);
+    v4 = *(uint8_t *)(0x13c + v1);
     switch (a0) {
     case 10:
-        x9 = g_sink + 0xb;
+        v6 = g_sink + 0xb;
         goto L_100;
     case 11:
-        w10 = 0x12;
-        x9 = g_sink ^ 0x12;
+        v6 = g_sink ^ 0x12;
         goto L_100;
     case 12:
-        x9 = g_sink - 0x19;
+        v6 = g_sink - 0x19;
         goto L_100;
     case 13:
-        x9 = g_sink | 0x20;
+        v6 = g_sink | 0x20;
         goto L_100;
     case 14:
-        x9 = g_sink + 0x27;
+        v6 = g_sink + 0x27;
         goto L_100;
     case 15:
-        w10 = 0x2e;
-        x9 = g_sink ^ 0x2e;
+        v6 = g_sink ^ 0x2e;
         goto L_100;
     case 16:
-        x9 = g_sink - 0x35;
+        v6 = g_sink - 0x35;
         goto L_100;
     case 17:
-        x9 = g_sink | 0x3c;
+        v6 = g_sink | 0x3c;
         goto L_100;
     case 18:
-        x9 = g_sink + 0x43;
+        v6 = g_sink + 0x43;
         goto L_100;
     case 19:
-        w10 = 0x4a;
-        x9 = g_sink ^ 0x4a;
+        v6 = g_sink ^ 0x4a;
         goto L_100;
     case 20:
-        x9 = g_sink - 0x51;
+        v6 = g_sink - 0x51;
         goto L_100;
     case 21:
-        x9 = g_sink;
-        w10 = 0x58;
+        v8 = g_sink;
+        v9 = 0x58;
         break;
     case 22:
-        x9 = g_sink + 0x5f;
+        v6 = g_sink + 0x5f;
         goto L_100;
     case 23:
-        w10 = 0x66;
-        x9 = g_sink ^ 0x66;
+        v6 = g_sink ^ 0x66;
         goto L_100;
     case 24:
-        x9 = g_sink - 0x6d;
+        v6 = g_sink - 0x6d;
         goto L_100;
     case 25:
-        x9 = g_sink;
-        w10 = 0x74;
+        v8 = g_sink;
+        v9 = 0x74;
         break;
     default:
         goto L_fc;
     }
-    x9 = w9 | w10;
+    v6 = v8 | v9;
     goto L_100;
 L_fc:
-    x9 = 0x0;
+    v6 = 0x0;
 L_100:
-    g_sink = w9;
+    g_sink = v6;
     return g_sink;
 }
 -- signature
@@ -104,73 +98,67 @@ int32_t (int32_t a0)
 -- ir
 fn dense @ 0x0 (size 268)
   blk0 @ 0x0:
-    x9 = ((w0 - #0xa) & #0xffffffff)
-    brif hi (x9 & #0xffffffff), #0xf -> 0xfc
+    v1 = ((w0 - #0xa) & #0xffffffff)
+    brif hi (v1 & #0xffffffff), #0xf -> 0xfc
   blk1 @ 0x10:
-    x10 = #0x0
-    x10 = #0x13c
-    x12 = (load8((#0x13c + x9)) & #0xffffffff)
+    v4 = (load8((#0x13c + v1)) & #0xffffffff)
     switch w0 [10->0x28, 11->0xa8, 12->0x74, 13->0x90, 14->0x4c, 15->0xb8, 16->0xd8, 17->0x9c, 18->0xf0, 19->0x64, 20->0xe4, 21->0x40, 22->0x58, 23->0xc8, 24->0x34, 25->0x80] default 0xfc
   blk2 @ 0x28:
-    x9 = ((load32(#0x14c) + #0xb) & #0xffffffff)
+    v6 = ((load32(#0x14c) + #0xb) & #0xffffffff)
     br 0x100
   blk3 @ 0x34:
-    x9 = ((load32(#0x14c) - #0x6d) & #0xffffffff)
+    v6 = ((load32(#0x14c) - #0x6d) & #0xffffffff)
     br 0x100
   blk4 @ 0x40:
-    x9 = (load32(#0x14c) & #0xffffffff)
-    x10 = #0x58
+    v8 = (load32(#0x14c) & #0xffffffff)
+    v9 = #0x58
     br 0x88
   blk5 @ 0x4c:
-    x9 = ((load32(#0x14c) + #0x27) & #0xffffffff)
+    v6 = ((load32(#0x14c) + #0x27) & #0xffffffff)
     br 0x100
   blk6 @ 0x58:
-    x9 = ((load32(#0x14c) + #0x5f) & #0xffffffff)
+    v6 = ((load32(#0x14c) + #0x5f) & #0xffffffff)
     br 0x100
   blk7 @ 0x64:
-    x10 = #0x4a
-    x9 = ((load32(#0x14c) ^ #0x4a) & #0xffffffff)
+    v6 = ((load32(#0x14c) ^ #0x4a) & #0xffffffff)
     br 0x100
   blk8 @ 0x74:
-    x9 = ((load32(#0x14c) - #0x19) & #0xffffffff)
+    v6 = ((load32(#0x14c) - #0x19) & #0xffffffff)
     br 0x100
   blk9 @ 0x80:
-    x9 = (load32(#0x14c) & #0xffffffff)
-    x10 = #0x74
+    v8 = (load32(#0x14c) & #0xffffffff)
+    v9 = #0x74
   blk10 @ 0x88:
-    x9 = (((x9 & #0xffffffff) | (x10 & #0xffffffff)) & #0xffffffff)
+    v6 = (((v8 & #0xffffffff) | (v9 & #0xffffffff)) & #0xffffffff)
     br 0x100
   blk11 @ 0x90:
-    x9 = ((load32(#0x14c) | #0x20) & #0xffffffff)
+    v6 = ((load32(#0x14c) | #0x20) & #0xffffffff)
     br 0x100
   blk12 @ 0x9c:
-    x9 = ((load32(#0x14c) | #0x3c) & #0xffffffff)
+    v6 = ((load32(#0x14c) | #0x3c) & #0xffffffff)
     br 0x100
   blk13 @ 0xa8:
-    x10 = #0x12
-    x9 = ((load32(#0x14c) ^ #0x12) & #0xffffffff)
+    v6 = ((load32(#0x14c) ^ #0x12) & #0xffffffff)
     br 0x100
   blk14 @ 0xb8:
-    x10 = #0x2e
-    x9 = ((load32(#0x14c) ^ #0x2e) & #0xffffffff)
+    v6 = ((load32(#0x14c) ^ #0x2e) & #0xffffffff)
     br 0x100
   blk15 @ 0xc8:
-    x10 = #0x66
-    x9 = ((load32(#0x14c) ^ #0x66) & #0xffffffff)
+    v6 = ((load32(#0x14c) ^ #0x66) & #0xffffffff)
     br 0x100
   blk16 @ 0xd8:
-    x9 = ((load32(#0x14c) - #0x35) & #0xffffffff)
+    v6 = ((load32(#0x14c) - #0x35) & #0xffffffff)
     br 0x100
   blk17 @ 0xe4:
-    x9 = ((load32(#0x14c) - #0x51) & #0xffffffff)
+    v6 = ((load32(#0x14c) - #0x51) & #0xffffffff)
     br 0x100
   blk18 @ 0xf0:
-    x9 = ((load32(#0x14c) + #0x43) & #0xffffffff)
+    v6 = ((load32(#0x14c) + #0x43) & #0xffffffff)
     br 0x100
   blk19 @ 0xfc:
-    x9 = #0x0
+    v6 = #0x0
   blk20 @ 0x100:
-    store32((x9 & #0xffffffff), #0x14c)
+    store32((v6 & #0xffffffff), #0x14c)
     ret load32(#0x14c)
 -- card
 {"addr":"0x0","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","unwind"],"section":".text","size":268,"unsupported":0}

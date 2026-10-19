@@ -27,7 +27,7 @@ fn <unnamed> @ 0x201180 (size 33)
     rax = rdi
     rdi = (((esi & #0xffffffff) + #0x1) & #0xffffffff)
     call *rax
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201180","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}
 

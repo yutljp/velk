@@ -182,8 +182,8 @@ fn <unnamed> @ 0x210474 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210490 @ 0x210490 */
 int32_t sub_210490(int32_t a0) {
-    w8 = a0;
-    return w8 - (int32_t)(w8) / 0x3 * 0x3;
+    v1 = a0;
+    return v1 - (int32_t)(v1) / 0x3 * 0x3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -192,8 +192,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210490 (size 36)
   blk0 @ 0x210490:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0x3) * #0x3)) & #0xffffffff)
 -- card
 {"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
@@ -201,8 +201,8 @@ fn <unnamed> @ 0x210490 (size 36)
 -- decompile
 /* velk pseudo-C: sub_2104b4 @ 0x2104b4 */
 uint32_t sub_2104b4(int32_t a0) {
-    w8 = a0;
-    return w8 - w8 / 0x3 * 0x3;
+    v1 = a0;
+    return v1 - v1 / 0x3 * 0x3;
 }
 -- signature
 uint32_t (int32_t a0)
@@ -211,8 +211,8 @@ uint32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2104b4 (size 36)
   blk0 @ 0x2104b4:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0x3) * #0x3)) & #0xffffffff)
 -- card
 {"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
@@ -220,8 +220,8 @@ fn <unnamed> @ 0x2104b4 (size 36)
 -- decompile
 /* velk pseudo-C: sub_2104d8 @ 0x2104d8 */
 uint32_t sub_2104d8(int32_t a0) {
-    w8 = a0;
-    return w8 - w8 / 0xa * 0xa;
+    v1 = a0;
+    return v1 - v1 / 0xa * 0xa;
 }
 -- signature
 uint32_t (int32_t a0)
@@ -230,8 +230,8 @@ uint32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2104d8 (size 36)
   blk0 @ 0x2104d8:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0xa) * #0xa)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0xa) * #0xa)) & #0xffffffff)
 -- card
 {"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
@@ -239,8 +239,8 @@ fn <unnamed> @ 0x2104d8 (size 36)
 -- decompile
 /* velk pseudo-C: sub_2104fc @ 0x2104fc */
 int32_t sub_2104fc(int32_t a0) {
-    w8 = a0;
-    return w8 - (int32_t)(w8) / 0xa * 0xa;
+    v1 = a0;
+    return v1 - (int32_t)(v1) / 0xa * 0xa;
 }
 -- signature
 int32_t (int32_t a0)
@@ -249,8 +249,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2104fc (size 36)
   blk0 @ 0x2104fc:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0xa) * #0xa)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0xa) * #0xa)) & #0xffffffff)
 -- card
 {"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
@@ -309,8 +309,8 @@ fn <unnamed> @ 0x210568 (size 36)
 -- decompile
 /* velk pseudo-C: sub_21058c @ 0x21058c */
 int32_t sub_21058c(int32_t a0) {
-    w8 = a0;
-    return w8 - (int32_t)(w8) / 0x4 * 0x4;
+    v1 = a0;
+    return v1 - (int32_t)(v1) / 0x4 * 0x4;
 }
 -- signature
 int32_t (int32_t a0)
@@ -319,8 +319,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x21058c (size 36)
   blk0 @ 0x21058c:
-    w8 = (w0 & #0xffffffff)
-    ret ((w8 - ((w8 / #0x4) * #0x4)) & #0xffffffff)
+    v1 = (w0 & #0xffffffff)
+    ret ((v1 - ((v1 / #0x4) * #0x4)) & #0xffffffff)
 -- card
 {"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 

@@ -39,9 +39,9 @@ int64_t sub_210238(int64_t a0, int32_t a1) {
     local_2 = 0x0;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        x8 = local_0 + local_3 * 0x18;
-        x9 = *(int16_t *)(local_0 + local_3 * 0x18 + 0x10);
-        local_2 += *(uint64_t *)(x8 + 0x8) * x9;
+        v2 = local_0 + local_3 * 0x18;
+        v3 = *(int16_t *)(local_0 + local_3 * 0x18 + 0x10);
+        local_2 += *(uint64_t *)(v2 + 0x8) * v3;
         local_3 += 0x1;
     }
     return local_2;
@@ -63,9 +63,9 @@ fn <unnamed> @ 0x210238 (size 136)
   blk2 @ 0x210260:
     br 0x210264
   blk3 @ 0x210264:
-    x8 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
-    x9 = load16(((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18)) + #0x10))s
-    store64((load64((sp + #0xffffffffffffffe8)) + (load64((x8 + #0x8)) * x9)), (sp + #0xffffffffffffffe8))
+    v2 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
+    v3 = load16(((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18)) + #0x10))s
+    store64((load64((sp + #0xffffffffffffffe8)) + (load64((v2 + #0x8)) * v3)), (sp + #0xffffffffffffffe8))
     br 0x2102a4
   blk4 @ 0x2102a4:
     store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
@@ -111,12 +111,12 @@ fn <unnamed> @ 0x2102c0 (size 56)
 int64_t sub_2102f8(int64_t a0) {
     uint64_t local_0; /* [sp-8] */
 
-    x9 = x8;
+    v1 = x8;
     local_0 = a0;
-    *(uint64_t *)(x9) = local_0;
-    *(uint64_t *)(x9 + 0x8) = local_0 + 0x1;
-    *(uint64_t *)(x9 + 0x10) = local_0 << 0x1;
-    *(uint64_t *)(x9 + 0x18) = local_0 * 0x3;
+    *(uint64_t *)(v1) = local_0;
+    *(uint64_t *)(v1 + 0x8) = local_0 + 0x1;
+    *(uint64_t *)(v1 + 0x10) = local_0 << 0x1;
+    *(uint64_t *)(v1 + 0x18) = local_0 * 0x3;
     return a0;
 }
 -- signature
@@ -126,12 +126,12 @@ int64_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x2102f8 (size 68)
   blk0 @ 0x2102f8:
-    x9 = x8
+    v1 = x8
     store64(x0, (sp + #0xfffffffffffffff8))
-    store64(load64((sp + #0xfffffffffffffff8)), x9)
-    store64((load64((sp + #0xfffffffffffffff8)) + #0x1), (x9 + #0x8))
-    store64((load64((sp + #0xfffffffffffffff8)) << #0x1), (x9 + #0x10))
-    store64((load64((sp + #0xfffffffffffffff8)) * #0x3), (x9 + #0x18))
+    store64(load64((sp + #0xfffffffffffffff8)), v1)
+    store64((load64((sp + #0xfffffffffffffff8)) + #0x1), (v1 + #0x8))
+    store64((load64((sp + #0xfffffffffffffff8)) << #0x1), (v1 + #0x10))
+    store64((load64((sp + #0xfffffffffffffff8)) * #0x3), (v1 + #0x18))
     ret x0
 -- card
 {"addr":"0x2102f8","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":68,"unsupported":0}
@@ -161,8 +161,8 @@ int32_t sub_21036c(int32_t a0) {
     uint32_t local_0; /* [sp-4] */
 
     local_0 = a0;
-    v1 = *(uint8_t *)&local_0;
-    return v1;
+    v2 = *(uint8_t *)&local_0;
+    return v2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -172,8 +172,8 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x21036c (size 24)
   blk0 @ 0x21036c:
     store32(w0, (sp + #0xfffffffffffffffc))
-    v1 = load8((sp + #0xfffffffffffffffc))
-    ret v1
+    v2 = load8((sp + #0xfffffffffffffffc))
+    ret v2
 -- card
 {"addr":"0x21036c","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
@@ -221,9 +221,9 @@ fn <unnamed> @ 0x210384 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2103d0 @ 0x2103d0 */
 int64_t sub_2103d0(int64_t a0, int32_t a1) {
-    x9 = a0;
-    w8 = *(uint8_t *)(x9);
-    *(uint8_t *)(x9) = w8 & 0xfffffff1 | (a1 & 0x7) << 0x1;
+    v1 = a0;
+    v2 = *(uint8_t *)(v1);
+    *(uint8_t *)(v1) = v2 & 0xfffffff1 | (a1 & 0x7) << 0x1;
     return a0;
 }
 -- signature
@@ -233,9 +233,9 @@ int64_t (int64_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2103d0 (size 48)
   blk0 @ 0x2103d0:
-    x9 = x0
-    w8 = load8(x9)
-    store8((((w8 & #0xfffffff1) | ((w1 & #0x7) << #0x1)) & #0xffffffff), x9)
+    v1 = x0
+    v2 = load8(v1)
+    store8((((v2 & #0xfffffff1) | ((w1 & #0x7) << #0x1)) & #0xffffffff), v1)
     ret x0
 -- card
 {"addr":"0x2103d0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}

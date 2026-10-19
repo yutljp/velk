@@ -18,19 +18,19 @@ parameter pointer | x86_64.O2 | 161/172
 parameter width | aarch64.O0 | 138/144
 parameter width | aarch64.O2 | 134/141
 parameter width | x86_64.O0 | 138/143
-parameter width | x86_64.O2 | 137/143
+parameter width | x86_64.O2 | 138/143
 parameter sign | aarch64.O0 | 122/138
 parameter sign | aarch64.O2 | 123/134
 parameter sign | x86_64.O0 | 126/138
-parameter sign | x86_64.O2 | 126/137
+parameter sign | x86_64.O2 | 126/138
 return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 143/148
-return void | x86_64.O0 | 123/148
-return void | x86_64.O2 | 142/148
+return void | x86_64.O0 | 126/148
+return void | x86_64.O2 | 143/148
 return width | aarch64.O0 | 114/120
 return width | aarch64.O2 | 111/120
-return width | x86_64.O0 | 112/117
-return width | x86_64.O2 | 113/118
+return width | x86_64.O0 | 114/120
+return width | x86_64.O2 | 114/120
 
 alt_names.aarch64.O0 0x21016c alt_sum3: ok
 alt_names.aarch64.O0 0x210198 alt_helper: ok
@@ -87,7 +87,7 @@ calls.x86_64.O0 0x2013d0 factorial: ok
 calls.x86_64.O0 0x201420 is_odd: ok
 calls.x86_64.O0 0x201460 is_even: ok
 calls.x86_64.O0 0x2014a0 sum9: 6 parameters, expected 9
-calls.x86_64.O0 0x2014f0 call_sum9: returns void, expected a signed 8-byte integer
+calls.x86_64.O0 0x2014f0 call_sum9: returns 4 bytes, expected 8
 calls.x86_64.O0 0x201540 sum_varargs: ok
 calls.x86_64.O2 0x2012f0 twice: ok
 calls.x86_64.O2 0x201300 square: ok
@@ -353,7 +353,7 @@ integers.x86_64.O0 0x201460 mul_high: parameter 0 signedness differs; parameter 
 integers.x86_64.O2 0x201210 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.x86_64.O2 0x201220 widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.x86_64.O2 0x201230 mixed_sign: parameter 1 signedness differs
-integers.x86_64.O2 0x201240 in_range: ok
+integers.x86_64.O2 0x201240 in_range: returns 8 bytes, expected 1
 integers.x86_64.O2 0x201250 rotate_left: parameter 1 signedness differs
 integers.x86_64.O2 0x201260 popcount: parameter 0 signedness differs
 integers.x86_64.O2 0x201280 byte_swap: ok
@@ -503,12 +503,12 @@ l6_abi.aarch64.O2 0x2101c8 tail_indirect: parameter 0 is a signed 4-byte integer
 l6_abi.aarch64.O2 0x2101d4 six_args: ok
 l6_abi.aarch64.O2 0x2101ec wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 l6_abi.x86_64.O0 0x2011e0 tail_target: ok
-l6_abi.x86_64.O0 0x201200 tail_direct: returns void, expected a signed 4-byte integer
+l6_abi.x86_64.O0 0x201200 tail_direct: ok
 l6_abi.x86_64.O0 0x201220 tail_indirect: parameter 0 is a signed 4-byte integer, expected a pointer
 l6_abi.x86_64.O0 0x201250 six_args: ok
 l6_abi.x86_64.O0 0x201280 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 l6_abi.x86_64.O2 0x2011b0 tail_target: ok
-l6_abi.x86_64.O2 0x2011c0 tail_direct: returns void, expected a signed 4-byte integer
+l6_abi.x86_64.O2 0x2011c0 tail_direct: ok
 l6_abi.x86_64.O2 0x2011d0 tail_indirect: parameter 0 is a signed 4-byte integer, expected a pointer
 l6_abi.x86_64.O2 0x2011e0 six_args: ok
 l6_abi.x86_64.O2 0x2011f0 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
@@ -553,7 +553,7 @@ memory.x86_64.O0 0x2013d0 pointer_distance: parameter 0 is a signed 8-byte integ
 memory.x86_64.O0 0x2013f0 read_volatile: parameter 0 is a signed 8-byte integer, expected a pointer
 memory.x86_64.O0 0x201420 swap_ints: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer; returns int64_t, expected void
 memory.x86_64.O2 0x201220 copy_bytes: returns int32_t, expected void
-memory.x86_64.O2 0x201310 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs
+memory.x86_64.O2 0x201310 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
 memory.x86_64.O2 0x201320 string_length: ok
 memory.x86_64.O2 0x201340 grid_get: ok
 memory.x86_64.O2 0x201360 grid_set: returns int32_t, expected void
@@ -595,7 +595,7 @@ structs.x86_64.O2 0x201280 big_make: 2 parameters, expected 1
 structs.x86_64.O2 0x2012a0 big_sum: 0 parameters, expected 1
 structs.x86_64.O2 0x2012c0 word_low_byte: returns 4 bytes, expected 1
 structs.x86_64.O2 0x2012d0 flags_level: ok
-structs.x86_64.O2 0x2012f0 flags_set_mode: parameter 1 is 8 bytes, expected 4; returns int64_t, expected void
+structs.x86_64.O2 0x2012f0 flags_set_mode: parameter 1 signedness differs; returns int64_t, expected void
 switch_jumptable.aarch64.O0 0x21018c d7: ok
 switch_jumptable.aarch64.O2 0x210184 d7: ok
 switch_jumptable.x86_64.O0 0x2011c0 d7: ok
@@ -611,10 +611,10 @@ tail_calls.aarch64.O2 0x21017c tail_one: ok
 tail_calls.aarch64.O2 0x210198 tail_two: ok
 tail_calls.aarch64.O2 0x2101a0 tail_three: ok
 tail_calls.x86_64.O0 0x2011a0 tail_one: ok
-tail_calls.x86_64.O0 0x2011c0 tail_two: returns void, expected a signed 4-byte integer
+tail_calls.x86_64.O0 0x2011c0 tail_two: ok
 tail_calls.x86_64.O0 0x2011e0 tail_three: ok
 tail_calls.x86_64.O2 0x201180 tail_one: ok
-tail_calls.x86_64.O2 0x201190 tail_two: returns void, expected a signed 4-byte integer
+tail_calls.x86_64.O2 0x201190 tail_two: ok
 tail_calls.x86_64.O2 0x2011a0 tail_three: ok
 tail_indirect.aarch64.O0 0x21017c via_ptr: parameter 0 is a signed 4-byte integer, expected a pointer
 tail_indirect.aarch64.O0 0x2101ac after_ptr: ok

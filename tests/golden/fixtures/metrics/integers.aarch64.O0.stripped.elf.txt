@@ -75,8 +75,8 @@ int32_t sub_21028c(int32_t a0, int32_t a1, int32_t a2) {
     if (a0 < a1) {
         return local_2 & 0x1;
     }
-    w9 = local_1;
-    local_2 = (local_0 - w9 + w9 <= w9 ? 0x1 : 0x0);
+    v2 = local_1;
+    local_2 = (local_0 - v2 + v2 <= v2 ? 0x1 : 0x0);
     return local_2 & 0x1;
 }
 -- signature
@@ -93,8 +93,8 @@ fn <unnamed> @ 0x21028c (size 84)
   blk1 @ 0x2102b4:
     br 0x2102b8
   blk2 @ 0x2102b8:
-    w9 = load32((sp + #0xfffffffffffffff4))
-    store32((select le (((load32((sp + #0xfffffffffffffffc)) - w9) & #0xffffffff) + w9), w9 ? #0x1, #0x0 & #0xffffffff), (sp + #0xfffffffffffffff0))
+    v2 = load32((sp + #0xfffffffffffffff4))
+    store32((select le (((load32((sp + #0xfffffffffffffffc)) - v2) & #0xffffffff) + v2), v2 ? #0x1, #0x0 & #0xffffffff), (sp + #0xfffffffffffffff0))
     br 0x2102d0
   blk3 @ 0x2102d0:
     ret (load32((sp + #0xfffffffffffffff0)) & #0x1)

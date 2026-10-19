@@ -101,8 +101,8 @@ int apply_pointer(void *f, int x) {
     local_0 = rax;
     rax = f;
     f = x;
-    (*(rax))();
-    return eax + 0x1;
+    v1 = (*(rax))();
+    return v1 + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -115,7 +115,7 @@ fn apply_pointer @ 0x201360 (size 12)
     rax = rdi
     rdi = esi
     call *rax
-    ret (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    ret (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x201360","approxTokens":138,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 
@@ -129,16 +129,16 @@ fn apply_pointer @ 0x201360 (size 12)
 /* ref: 0x2001c0 .rodata */
 /* ref: 0x2001c8 .rodata */
 int factorial(int n) {
-    rax = 0x1;
+    v1 = 0x1;
     if (n < 0x2) {
-        return rax;
+        return v1;
     }
     if (n >= 0x9 /* unsigned */) {
-        ecx = n - 0x1;
-        edx = ecx & 0xfffffffffffffff8;
+        v2 = n - 0x1;
+        v3 = v2 & 0xfffffffffffffff8;
         xmm0 = n;
         xmm0_hi = 0x0;
-        n = n - edx;
+        n = n - v3;
         /* unsupported (2 steps): Pshufd at 0x201395, Paddd at 0x20139a */
         xmm1 = qword_2001a0;
         xmm1_hi = qword_2001a8;
@@ -146,7 +146,7 @@ int factorial(int n) {
         xmm2_hi = qword_2001c8;
         xmm4 = qword_2001b0;
         xmm4_hi = qword_2001b8;
-        rax = edx;
+        v4 = v3;
         xmm3 = xmm1;
         xmm3_hi = xmm1_hi;
         do {
@@ -162,21 +162,21 @@ int factorial(int n) {
             xmm3 = xmm5;
             xmm3_hi = 0x0;
             /* unsupported (2 steps): Punpckldq at 0x201410, Paddd at 0x201414 */
-            rax = ((eax - 0x8) & 0xffffffff);
-        } while (eax != 0x0);
+            v4 = v4 - 0x8;
+        } while (v4 != 0x0);
         /* unsupported (9 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441 */
-        rax = (uint32_t)xmm1;
-        if (ecx == edx) {
-            return rax;
+        v1 = (uint32_t)xmm1;
+        if (v2 == v3) {
+            return v1;
         }
     }
     do {
-        rax = eax * n;
-        ecx = n - 0x1;
+        v1 = v1 * n;
+        v5 = n - 0x1;
         t65 = n;
-        n = ecx;
+        n = v5;
     } while (t65 > 0x2 /* unsigned */);
-    return rax;
+    return v1;
 }
 -- signature
 int (int n)
@@ -190,16 +190,16 @@ int (int n)
 -- ir
 fn factorial @ 0x201370 (size 238)
   blk0 @ 0x201370:
-    rax = #0x1
+    v1 = #0x1
     brif lt (rdi & #0xffffffff), #0x2 -> 0x20145d
   blk1 @ 0x20137e:
     brif cc (rdi & #0xffffffff), #0x9 -> 0x201450
   blk2 @ 0x201387:
-    ecx = (rdi + #0xffffffffffffffff)
-    edx = (ecx & #0xfffffffffffffff8)
+    v2 = (rdi + #0xffffffffffffffff)
+    v3 = (v2 & #0xfffffffffffffff8)
     xmm0 = (rdi & #0xffffffff)
     xmm0_hi = #0x0
-    rdi = (((rdi & #0xffffffff) - edx) & #0xffffffff)
+    rdi = (((rdi & #0xffffffff) - v3) & #0xffffffff)
     unsupported: Pshufd at 0x201395
     unsupported: Paddd at 0x20139a
     xmm1 = load64(#0x2001a0)
@@ -208,7 +208,7 @@ fn factorial @ 0x201370 (size 238)
     xmm2_hi = load64(#0x2001c8)
     xmm4 = load64(#0x2001b0)
     xmm4_hi = load64(#0x2001b8)
-    rax = edx
+    v4 = v3
     xmm3 = xmm1
     xmm3_hi = xmm1_hi
   blk3 @ 0x2013c0:
@@ -236,8 +236,8 @@ fn factorial @ 0x201370 (size 238)
     xmm3_hi = #0x0
     unsupported: Punpckldq at 0x201410
     unsupported: Paddd at 0x201414
-    rax = (((rax & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
-    brif ne eax, #0x0 -> 0x2013c0
+    v4 = (((v4 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
+    brif ne v4, #0x0 -> 0x2013c0
   blk4 @ 0x20141d:
     unsupported: Pshufd at 0x20141d
     unsupported: Pshufd at 0x201422
@@ -248,16 +248,16 @@ fn factorial @ 0x201370 (size 238)
     unsupported: Pshufd at 0x201438
     unsupported: Pmuludq at 0x20143d
     unsupported: Pmuludq at 0x201441
-    rax = (xmm1 & #0xffffffff)
-    brif eq ecx, edx -> 0x20145d
+    v1 = (xmm1 & #0xffffffff)
+    brif eq v2, v3 -> 0x20145d
   blk5 @ 0x201450:
-    rax = (((rax & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
-    ecx = (rdi + #0xffffffffffffffff)
+    v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
+    v5 = (rdi + #0xffffffffffffffff)
     t65 = rdi
-    rdi = ecx
+    rdi = v5
     brif hi t65, #0x2 -> 0x201450
   blk6 @ 0x20145d:
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201370","approxTokens":240,"blocks":7,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":238,"unsupported":27}
 
@@ -279,8 +279,8 @@ fn is_odd @ 0x201460 (size 14)
   blk0 @ 0x201460:
     brif eq (rdi & #0xffffffff), #0x0 -> 0x20146b
   blk1 @ 0x201464:
-    call 0x201470((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
-    ret rax
+    v2 = call 0x201470((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
+    ret v2
   blk2 @ 0x20146b:
     ret #0x0
 -- card
@@ -304,8 +304,8 @@ fn is_even @ 0x201470 (size 17)
   blk0 @ 0x201470:
     brif eq (rdi & #0xffffffff), #0x0 -> 0x20147b
   blk1 @ 0x201474:
-    call 0x201460((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
-    ret rax
+    v2 = call 0x201460((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
+    ret v2
   blk2 @ 0x20147b:
     ret #0x1
 -- card
@@ -354,8 +354,8 @@ fn call_sum9 @ 0x2014b0 (size 49)
     store64(#0x8, (rsp + #0xffffffffffffffe8))
     store64(#0x7, (rsp + #0xffffffffffffffe0))
     store64(#0x6, (rsp + #0xffffffffffffffd8))
-    call 0x201490(rdi, #0x1, #0x2, #0x3, #0x4, #0x5)
-    ret rax
+    v1 = call 0x201490(rdi, #0x1, #0x2, #0x3, #0x4, #0x5)
+    ret v1
 -- card
 {"addr":"0x2014b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":49,"unsupported":0}
 
@@ -421,39 +421,39 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
     v2 = local_21;
     v3 = local_22;
     if (count != 0x1) {
-        v5 = count & 0x7ffffffe;
-        rax = 0x0;
+        v6 = count & 0x7ffffffe;
+        v4 = 0x0;
         for (;;) {
             if (v1 > 0x28 /* unsigned */) {
-                v6 = v3 + 0x8;
-                local_22 = v6;
+                v7 = v3 + 0x8;
+                local_22 = v7;
             } else {
-                v6 = v3;
+                v7 = v3;
                 v3 = v1 + v2;
                 v1 = v1 + 0x8;
                 *(uint32_t *)&local_23 = v1;
             }
-            rax = eax + *(uint32_t *)(v3);
+            v8 = v4 + *(uint32_t *)(v3);
             if (v1 < 0x29 /* unsigned */) {
-                v3 = v6;
-                v6 = v1 + v2;
+                v3 = v7;
+                v7 = v1 + v2;
                 v1 = v1 + 0x8;
                 *(uint32_t *)&local_23 = v1;
             } else {
-                v3 = v6 + 0x8;
+                v3 = v7 + 0x8;
                 local_22 = v3;
             }
-            rax = eax + *(uint32_t *)(v6);
-            v5 = v5 - 0x2;
-            if (v5 == 0x0) {
+            v4 = v8 + *(uint32_t *)(v7);
+            v6 = v6 - 0x2;
+            if (v6 == 0x0) {
                 break;
             }
         }
     } else {
-        rax = 0x0;
+        v4 = 0x0;
     }
     if ((count & 0x1) == 0x0) {
-        return rax;
+        return v4;
     }
     if (v1 >= 0x29 /* unsigned */) {
         local_22 = v3 + 0x8;
@@ -461,8 +461,8 @@ int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64
         *(uint32_t *)&local_23 = v1 + 0x8;
         v3 = v2 + v1;
     }
-    rax = eax + *(uint32_t *)(v3);
-    return rax;
+    v4 = v4 + *(uint32_t *)(v3);
+    return v4;
 }
 -- signature
 int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -505,7 +505,7 @@ fn sum_varargs @ 0x2014f0 (size 283)
     v3 = load64((rsp + #0xffffffffffffff30))
     brif ne (rdi & #0xffffffff), #0x1 -> 0x20159b
   blk4 @ 0x201572:
-    rax = #0x0
+    v4 = #0x0
   blk5 @ 0x201574:
     brif eq (rdi & #0x1), #0x0 -> 0x201606
   blk6 @ 0x20157e:
@@ -517,41 +517,41 @@ fn sum_varargs @ 0x2014f0 (size 283)
   blk8 @ 0x201594:
     ret #0x0
   blk9 @ 0x20159b:
-    v5 = (rdi & #0x7ffffffe)
-    rax = #0x0
+    v6 = (rdi & #0x7ffffffe)
+    v4 = #0x0
     br 0x2015c9
   blk10 @ 0x2015b0:
-    v3 = v6
-    v6 = ((v1 & #0xffffffff) + v2)
+    v3 = v7
+    v7 = ((v1 & #0xffffffff) + v2)
     v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
     store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff28))
   blk11 @ 0x2015c0:
-    rax = (((rax & #0xffffffff) + load32(v6)) & #0xffffffff)
-    v5 = (((v5 & #0xffffffff) + #0xfffffffffffffffe) & #0xffffffff)
-    brif eq v5, #0x0 -> 0x201574
+    v4 = (((v8 & #0xffffffff) + load32(v7)) & #0xffffffff)
+    v6 = (((v6 & #0xffffffff) + #0xfffffffffffffffe) & #0xffffffff)
+    brif eq v6, #0x0 -> 0x201574
   blk12 @ 0x2015c9:
     brif hi (v1 & #0xffffffff), #0x28 -> 0x2015e0
   blk13 @ 0x2015ce:
-    v6 = v3
+    v7 = v3
     v3 = ((v1 & #0xffffffff) + v2)
     v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
     store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff28))
     br 0x2015e9
   blk14 @ 0x2015e0:
-    v6 = (v3 + #0x8)
-    store64(v6, (rsp + #0xffffffffffffff30))
+    v7 = (v3 + #0x8)
+    store64(v7, (rsp + #0xffffffffffffff30))
   blk15 @ 0x2015e9:
-    rax = (((rax & #0xffffffff) + load32(v3)) & #0xffffffff)
+    v8 = (((v4 & #0xffffffff) + load32(v3)) & #0xffffffff)
     brif cc (v1 & #0xffffffff), #0x29 -> 0x2015b0
   blk16 @ 0x2015f0:
-    v3 = (v6 + #0x8)
+    v3 = (v7 + #0x8)
     store64(v3, (rsp + #0xffffffffffffff30))
     br 0x2015c0
   blk17 @ 0x2015fb:
     store64((v3 + #0x8), (rsp + #0xffffffffffffff30))
   blk18 @ 0x201604:
-    rax = (((rax & #0xffffffff) + load32(v3)) & #0xffffffff)
+    v4 = (((v4 & #0xffffffff) + load32(v3)) & #0xffffffff)
   blk19 @ 0x201606:
-    ret rax
+    ret v4
 -- card
 {"addr":"0x2014f0","approxTokens":240,"blocks":20,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":283,"unsupported":0}

@@ -64,17 +64,19 @@ fn <unnamed> @ 0x201230 (size 9)
 == 0x201240 -
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
-uint8_t sub_201240(int32_t a0, int32_t a1, int32_t a2) {
-    return (a0 <= a2 ? 0x1 : 0x0) & 0xff & 0xff & ((a0 >= a1 ? 0x1 : 0x0) & 0xff) & 0xff;
+int64_t sub_201240(int32_t a0, int32_t a1, int32_t a2) {
+    v1 = rax & 0xffffffffffffff00 | (a0 <= a2 ? 0x1 : 0x0) & 0xff;
+    return v1 & 0xffffffffffffff00 | v1 & 0xff & ((a0 >= a1 ? 0x1 : 0x0) & 0xff) & 0xff;
 }
 -- signature
-uint8_t (int32_t a0, int32_t a1, int32_t a2)
+int64_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201240 (size 13)
   blk0 @ 0x201240:
-    ret ((((select le edi, edx ? #0x1, #0x0 & #0xff) & #0xff) & (select ge edi, esi ? #0x1, #0x0 & #0xff)) & #0xff)
+    v1 = ((rax & #0xffffffffffffff00) | (select le edi, edx ? #0x1, #0x0 & #0xff))
+    ret ((v1 & #0xffffffffffffff00) | (((v1 & #0xff) & (select ge edi, esi ? #0x1, #0x0 & #0xff)) & #0xff))
 -- card
 {"addr":"0x201240","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
 
@@ -99,16 +101,16 @@ fn <unnamed> @ 0x201250 (size 7)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 int32_t sub_201260(int32_t a0) {
-    rax = 0x0;
+    v1 = 0x0;
     if (a0 == 0x0) {
-        return rax;
+        return v1;
     }
     do {
-        rax = eax + 0x1;
-        ecx = ((a0 - 0x1) & 0xffffffff) & a0;
-        a0 = ecx;
-    } while (ecx != 0x0);
-    return rax;
+        v1 = v1 + 0x1;
+        v2 = ((a0 - 0x1) & 0xffffffff) & a0;
+        a0 = v2;
+    } while (v2 != 0x0);
+    return v1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -117,15 +119,15 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201260 (size 28)
   blk0 @ 0x201260:
-    rax = #0x0
+    v1 = #0x0
     brif eq (rdi & #0xffffffff), #0x0 -> 0x20127b
   blk1 @ 0x201270:
-    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
-    ecx = (((rdi + #0xffffffffffffffff) & #0xffffffff) & (rdi & #0xffffffff))
-    rdi = ecx
-    brif ne ecx, #0x0 -> 0x201270
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    v2 = (((rdi + #0xffffffffffffffff) & #0xffffffff) & (rdi & #0xffffffff))
+    rdi = v2
+    brif ne v2, #0x0 -> 0x201270
   blk2 @ 0x20127b:
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201260","approxTokens":156,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
 

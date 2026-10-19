@@ -267,8 +267,8 @@ fn <unnamed> @ 0x201490 (size 44)
 -- decompile
 /* velk pseudo-C: sub_2014c0 @ 0x2014c0 */
 int64_t sub_2014c0(uint64_t a0) {
-    rdx = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
-    return a0 - (rdx + rdx * 0x4);
+    v1 = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
+    return a0 - (v1 + v1 * 0x4);
 }
 -- signature
 int64_t (uint64_t a0)
@@ -277,8 +277,8 @@ int64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x2014c0 (size 35)
   blk0 @ 0x2014c0:
-    rdx = (((rdi hi128 #0xcccccccccccccccd) >> #0x2) & #0xfffffffffffffffe)
-    ret (rdi - (rdx + (rdx * #0x4)))
+    v1 = (((rdi hi128 #0xcccccccccccccccd) >> #0x2) & #0xfffffffffffffffe)
+    ret (rdi - (v1 + (v1 * #0x4)))
 -- card
 {"addr":"0x2014c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":35,"unsupported":0}
 

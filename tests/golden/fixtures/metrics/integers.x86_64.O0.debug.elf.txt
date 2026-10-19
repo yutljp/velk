@@ -38,9 +38,8 @@ int32_t widen_mul(int32_t a, int32_t b) {
     uint8_t local_0; /* [sp-a] */
 
     local_0 = b & 0xff;
-    rax = a & 0xff & 0xff;
-    ecx = local_0;
-    return eax * ecx & 0xffff;
+    v3 = local_0;
+    return (a & 0xff) * v3 & 0xffff;
 }
 -- signature
 int32_t (int32_t a, int32_t b)
@@ -50,9 +49,8 @@ int32_t (int32_t a, int32_t b)
 fn widen_mul @ 0x2012a0 (size 32)
   blk0 @ 0x2012a0:
     store8((rsi & #0xff), (rsp + #0xfffffffffffffff6))
-    rax = ((rdi & #0xff) & #0xff)
-    rcx = (load8((rsp + #0xfffffffffffffff6)) & #0xff)
-    ret (((rax & #0xffffffff) * (rcx & #0xffffffff)) & #0xffff)
+    v3 = (load8((rsp + #0xfffffffffffffff6)) & #0xff)
+    ret (((rdi & #0xff) * (v3 & #0xffffffff)) & #0xffff)
 -- card
 {"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
 
@@ -83,18 +81,16 @@ _Bool in_range(int x, int lo, int hi) {
 
     local_0 = x;
     local_1 = hi;
-    rax = 0x0;
     local_2 = 0x0;
     if (x < lo) {
-        rax = rax & 0xffffffffffffff00 | local_2;
-        return rax & 0x1 & 0xff;
+        v4 = local_2;
+        return v4 & 0x1;
     }
-    rax = local_0;
-    rax = rax & 0xffffffffffffff00 | (eax <= local_1 ? 0x1 : 0x0) & 0xff;
+    v3 = (local_0 <= local_1 ? 0x1 : 0x0) & 0xff;
     t66 = local_1;
-    local_2 = rax & 0xff;
-    rax = rax & 0xffffffffffffff00 | local_2;
-    return rax & 0x1 & 0xff;
+    local_2 = v3 & 0xff;
+    v4 = local_2;
+    return v4 & 0x1;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -105,17 +101,15 @@ fn in_range @ 0x2012e0 (size 52)
   blk0 @ 0x2012e0:
     store32(edi, (rsp + #0xfffffffffffffff4))
     store32(edx, (rsp + #0xffffffffffffffec))
-    rax = #0x0
     store8(#0x0, (rsp + #0xffffffffffffffeb))
     brif lt (edi & #0xffffffff), (esi & #0xffffffff) -> 0x20130a
   blk1 @ 0x2012fe:
-    rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
-    rax = ((rax & #0xffffffffffffff00) | (select le (rax & #0xffffffff), load32((rsp + #0xffffffffffffffec)) ? #0x1, #0x0 & #0xff))
+    v3 = (select le (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) ? #0x1, #0x0 & #0xff)
     t66 = load32((rsp + #0xffffffffffffffec))
-    store8((rax & #0xff), (rsp + #0xffffffffffffffeb))
+    store8((v3 & #0xff), (rsp + #0xffffffffffffffeb))
   blk2 @ 0x20130a:
-    rax = ((rax & #0xffffffffffffff00) | (load8((rsp + #0xffffffffffffffeb)) & #0xff))
-    ret ((rax & #0x1) & #0xff)
+    v4 = (load8((rsp + #0xffffffffffffffeb)) & #0xff)
+    ret (v4 & #0x1)
 -- card
 {"addr":"0x2012e0","approxTokens":210,"blocks":3,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
 
@@ -207,9 +201,9 @@ int min3(int a, int b, int c) {
     } else {
         local_3 = local_0;
     }
-    eax = local_3;
-    local_4 = eax;
-    if (eax >= local_2) {
+    v1 = local_3;
+    local_4 = v1;
+    if (v1 >= local_2) {
         local_5 = local_2;
         return local_5;
     }
@@ -233,9 +227,9 @@ fn min3 @ 0x2013d0 (size 82)
   blk2 @ 0x2013f4:
     store32(load32((rsp + #0xfffffffffffffff0)), (rsp + #0xffffffffffffffe4))
   blk3 @ 0x2013fa:
-    eax = load32((rsp + #0xffffffffffffffe4))
-    store32(eax, (rsp + #0xffffffffffffffe8))
-    brif ge (eax & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201417
+    v1 = load32((rsp + #0xffffffffffffffe4))
+    store32(v1, (rsp + #0xffffffffffffffe8))
+    brif ge (v1 & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201417
   blk4 @ 0x20140c:
     store32(load32((rsp + #0xffffffffffffffe8)), (rsp + #0xffffffffffffffe0))
     br 0x20141d

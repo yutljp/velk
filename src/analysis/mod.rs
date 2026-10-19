@@ -142,8 +142,17 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     } = lifted;
     let uniform_32 = passes::widths::specialize_widths(&mut ir);
     passes::optimize(&mut ir, has_jump_tables);
-    let parameters: Vec<u16> = ir.params.iter().map(|param| param.index).collect();
-    crate::ssa::split_variables(&mut ir, &parameters);
+    // Every general register becomes the variables it holds, apart from the
+    // stack and frame pointers, which address the frame.
+    let general: Vec<u16> = match ir.isa {
+        crate::loader::Isa::AArch64 => (0..=30).filter(|register| *register != 29).collect(),
+        _ => (0..16)
+            .filter(|register| !matches!(register, 4 | 5))
+            .collect(),
+    };
+    // Bits no read looks at go first, so the variables they tied split apart.
+    crate::ssa::narrow_partial_writes(&mut ir);
+    crate::ssa::split_variables(&mut ir, &general);
     // The new variables leave copies between them to fold away.
     passes::copies::copy_propagate_guarded(&mut ir);
     passes::dce::dce(&mut ir);

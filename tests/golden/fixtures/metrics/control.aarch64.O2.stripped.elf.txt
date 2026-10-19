@@ -14,28 +14,28 @@ int32_t sub_2101d4(uint32_t *a0, int32_t a1) {
     if (a1 < 0x1) {
         return 0x0;
     }
-    x9 = 0x0;
-    w8 = 0x0;
-    x10 = a1;
+    v1 = 0x0;
+    v2 = 0x0;
+    v3 = a1;
     for (;;) {
-        w11 = w9 * a1;
-        x12 = a0 + (x9 << 0x2);
-        x13 = 0x0;
+        v4 = v1 * a1;
+        v5 = a0 + (v1 << 0x2);
+        v6 = 0x0;
         for (;;) {
-            if (x9 == x13) {
-                w8 = *(uint32_t *)(x12 + (w11 << 0x2)) + w8;
+            if (v1 == v6) {
+                v2 = *(uint32_t *)(v5 + (v4 << 0x2)) + v2;
             }
-            x13 = x13 + 0x1;
-            if (x10 == x13) {
+            v6 = v6 + 0x1;
+            if (v3 == v6) {
                 break;
             }
         }
-        x9 = x9 + 0x1;
-        if (x9 == x10) {
+        v1 = v1 + 0x1;
+        if (v1 == v3) {
             break;
         }
     }
-    return w8;
+    return v2;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -46,28 +46,28 @@ fn <unnamed> @ 0x2101d4 (size 100)
   blk0 @ 0x2101d4:
     brif lt w1, #0x1 -> 0x210230
   blk1 @ 0x2101dc:
-    x9 = #0x0
-    x8 = #0x0
-    x10 = w1
+    v1 = #0x0
+    v2 = #0x0
+    v3 = w1
     br 0x2101f8
   blk2 @ 0x2101ec:
-    x9 = (x9 + #0x1)
-    brif eq x9, x10 -> 0x210228
+    v1 = (v1 + #0x1)
+    brif eq v1, v3 -> 0x210228
   blk3 @ 0x2101f8:
-    w11 = ((x9 & #0xffffffff) * w1)
-    x12 = (x0 + (x9 << #0x2))
-    x13 = #0x0
+    v4 = ((v1 & #0xffffffff) * w1)
+    v5 = (x0 + (v1 << #0x2))
+    v6 = #0x0
     br 0x210214
   blk4 @ 0x210208:
-    x13 = (x13 + #0x1)
-    brif eq x10, x13 -> 0x2101ec
+    v6 = (v6 + #0x1)
+    brif eq v3, v6 -> 0x2101ec
   blk5 @ 0x210214:
-    brif ne x9, x13 -> 0x210208
+    brif ne v1, v6 -> 0x210208
   blk6 @ 0x21021c:
-    x8 = ((load32((x12 + (w11 << #0x2))) + (x8 & #0xffffffff)) & #0xffffffff)
+    v2 = ((load32((v5 + (v4 << #0x2))) + (v2 & #0xffffffff)) & #0xffffffff)
     br 0x210208
   blk7 @ 0x210228:
-    ret (x8 & #0xffffffff)
+    ret (v2 & #0xffffffff)
   blk8 @ 0x210230:
     ret #0x0
 -- card
@@ -78,17 +78,17 @@ fn <unnamed> @ 0x2101d4 (size 100)
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 /* struct: a2 +0x0:uint32_t */
 int32_t sub_210238(int32_t a0, int32_t a1, uint32_t *a2) {
-    x8 = a0;
-    v1 = 0xffffffff;
-    if ((x8 & 0x80000000) != 0x0) {
-        return v1;
+    v1 = a0;
+    v2 = 0xffffffff;
+    if ((v1 & 0x80000000) != 0x0) {
+        return v2;
     }
     if (a1 == 0x0) {
-        return v1;
+        return v2;
     }
-    v1 = 0x0;
-    a2->field_0x0 = (int32_t)(w8) / a1;
-    return v1;
+    v2 = 0x0;
+    a2->field_0x0 = (int32_t)(v1) / a1;
+    return v2;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, uint32_t * a2)
@@ -97,16 +97,16 @@ int32_t (int32_t a0, int32_t a1, uint32_t * a2)
 -- ir
 fn <unnamed> @ 0x210238 (size 32)
   blk0 @ 0x210238:
-    x8 = (x0 & #0xffffffff)
-    v1 = #0xffffffff
-    brif ne (x8 & #0x80000000), #0x0 -> 0x210254
+    v1 = (x0 & #0xffffffff)
+    v2 = #0xffffffff
+    brif ne (v1 & #0x80000000), #0x0 -> 0x210254
   blk1 @ 0x210244:
     brif eq w1, #0x0 -> 0x210254
   blk2 @ 0x210248:
-    v1 = #0x0
-    store32((((x8 & #0xffffffff) / w1) & #0xffffffff), x2)
+    v2 = #0x0
+    store32((((v1 & #0xffffffff) / w1) & #0xffffffff), x2)
   blk3 @ 0x210254:
-    ret v1
+    ret v2
 -- card
 {"accesses":["a2 +0x0:uint32_t"],"addr":"0x210238","approxTokens":144,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}
 
@@ -198,18 +198,17 @@ fn <unnamed> @ 0x210278 (size 84)
 /* velk pseudo-C: sub_2102cc @ 0x2102cc */
 /* struct: a0 +0x0:uint32_t, +0xfffffffffffffffc:uint32_t */
 int32_t sub_2102cc(uint32_t *a0, int32_t a1) {
-    x8 = a0;
-    v1 = 0x0;
-    if (x8 == 0x0) {
-        return v1;
+    v1 = a0;
+    v2 = 0x0;
+    if (v1 == 0x0) {
+        return v2;
     }
     if (a1 < 0x1) {
-        return v1;
+        return v2;
     }
-    if (*(uint32_t *)(x8) != 0x1) {
-        x8 = x8 + (a1 << 0x2);
-        v1 = (*(uint32_t *)(x8 - 0x4) == 0x1 ? 0x1 : 0x0);
-        return v1;
+    if (*(uint32_t *)(v1) != 0x1) {
+        v2 = (*(uint32_t *)(v1 + (a1 << 0x2) - 0x4) == 0x1 ? 0x1 : 0x0);
+        return v2;
     }
     return 0x1;
 }
@@ -220,20 +219,19 @@ int32_t (uint32_t * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2102cc (size 60)
   blk0 @ 0x2102cc:
-    x8 = x0
-    v1 = #0x0
-    brif eq x8, #0x0 -> 0x210304
+    v1 = x0
+    v2 = #0x0
+    brif eq v1, #0x0 -> 0x210304
   blk1 @ 0x2102d8:
     brif lt w1, #0x1 -> 0x210304
   blk2 @ 0x2102e0:
-    brif ne load32(x8), #0x1 -> 0x2102f4
+    brif ne load32(v1), #0x1 -> 0x2102f4
   blk3 @ 0x2102ec:
     ret #0x1
   blk4 @ 0x2102f4:
-    x8 = (x8 + (w1 << #0x2))
-    v1 = (select eq (load32((x8 + #0xfffffffffffffffc)) & #0xffffffff), #0x1 ? #0x1, #0x0 & #0xffffffff)
+    v2 = (select eq (load32(((v1 + (w1 << #0x2)) + #0xfffffffffffffffc)) & #0xffffffff), #0x1 ? #0x1, #0x0 & #0xffffffff)
   blk5 @ 0x210304:
-    ret v1
+    ret v2
 -- card
 {"accesses":["a0 +0x0:uint32_t, +0xfffffffffffffffc:uint32_t"],"addr":"0x2102cc","approxTokens":156,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":60,"unsupported":0}
 
@@ -245,36 +243,36 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
     if (a1 < 0x1) {
         return 0x0;
     }
-    x9 = a1;
+    v1 = a1;
     if (a1 >= 0x8 /* unsigned */) {
         /* unsupported (2 steps): MOVI at 0x210334, MOVI at 0x210338 */
-        x10 = x9 & 0x7ffffff8;
+        v2 = v1 & 0x7ffffff8;
         /* unsupported: MOVI at 0x210340 */
-        x8 = a0 + 0x10;
-        x11 = x10;
+        v3 = a0 + 0x10;
+        v4 = v2;
         do {
             /* unsupported: SIMD vector pair load */
-            x11 = x11 - 0x8;
-            x8 = x8 + 0x20;
+            v4 = v4 - 0x8;
+            v3 = v3 + 0x20;
             /* unsupported (2 steps): SMAX at 0x210358, SMAX at 0x21035c */
-        } while (x11 != 0x0);
+        } while (v4 != 0x0);
         /* unsupported (2 steps): ADDV at 0x210374, FMOV at 0x210378 */
-        if (x10 == x9) {
-            return w8;
+        if (v2 == v1) {
+            return v3;
         }
     } else {
-        x10 = 0x0;
-        x8 = 0x0;
+        v2 = 0x0;
+        v3 = 0x0;
     }
-    x11 = a0 + (x10 << 0x2);
-    x9 = x9 - x10;
+    v5 = a0 + (v2 << 0x2);
+    v6 = v1 - v2;
     do {
-        x10 = *(uint32_t *)(x11);
-        x11 = x11 + 0x4;
-        x9 = x9 - 0x1;
-        x8 = (((w10 & ~(w10 >>> 0x1f)) + w8) & 0xffffffff);
-    } while (x9 != 0x0);
-    return w8;
+        v7 = *(uint32_t *)(v5);
+        v5 = v5 + 0x4;
+        v6 = v6 - 0x1;
+        v3 = (((v7 & ~(v7 >>> 0x1f)) + v3) & 0xffffffff);
+    } while (v6 != 0x0);
+    return v3;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -285,43 +283,43 @@ fn <unnamed> @ 0x210308 (size 156)
   blk0 @ 0x210308:
     brif lt w1, #0x1 -> 0x210328
   blk1 @ 0x210310:
-    x9 = w1
+    v1 = w1
     brif cs w1, #0x8 -> 0x210334
   blk2 @ 0x21031c:
-    x10 = #0x0
-    x8 = #0x0
+    v2 = #0x0
+    v3 = #0x0
     br 0x210380
   blk3 @ 0x210328:
     ret #0x0
   blk4 @ 0x210334:
     unsupported: MOVI at 0x210334
     unsupported: MOVI at 0x210338
-    x10 = (x9 & #0x7ffffff8)
+    v2 = (v1 & #0x7ffffff8)
     unsupported: MOVI at 0x210340
-    x8 = (x0 + #0x10)
-    x11 = x10
+    v3 = (x0 + #0x10)
+    v4 = v2
   blk5 @ 0x21034c:
     unsupported: SIMD vector pair load
-    x11 = (x11 - #0x8)
-    x8 = (x8 + #0x20)
+    v4 = (v4 - #0x8)
+    v3 = (v3 + #0x20)
     unsupported: SMAX at 0x210358
     unsupported: SMAX at 0x21035c
-    brif ne x11, #0x0 -> 0x21034c
+    brif ne v4, #0x0 -> 0x21034c
   blk6 @ 0x21036c:
     unsupported: ADDV at 0x210374
     unsupported: FMOV at 0x210378
-    brif eq x10, x9 -> 0x21039c
+    brif eq v2, v1 -> 0x21039c
   blk7 @ 0x210380:
-    x11 = (x0 + (x10 << #0x2))
-    x9 = (x9 - x10)
+    v5 = (x0 + (v2 << #0x2))
+    v6 = (v1 - v2)
   blk8 @ 0x210388:
-    x10 = (load32(x11) & #0xffffffff)
-    x11 = (x11 + #0x4)
-    x9 = (x9 - #0x1)
-    x8 = ((((x10 & #0xffffffff) & (((x10 & #0xffffffff) >>> #0x1f) ^ #0xffffffffffffffff)) + (x8 & #0xffffffff)) & #0xffffffff)
-    brif ne x9, #0x0 -> 0x210388
+    v7 = (load32(v5) & #0xffffffff)
+    v5 = (v5 + #0x4)
+    v6 = (v6 - #0x1)
+    v3 = ((((v7 & #0xffffffff) & (((v7 & #0xffffffff) >>> #0x1f) ^ #0xffffffffffffffff)) + (v3 & #0xffffffff)) & #0xffffffff)
+    brif ne v6, #0x0 -> 0x210388
   blk9 @ 0x21039c:
-    ret (x8 & #0xffffffff)
+    ret (v3 & #0xffffffff)
 -- card
 {"accesses":["a0 +0x0:uint32_t"],"addr":"0x210308","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":156,"unsupported":8}
 
@@ -331,42 +329,42 @@ fn <unnamed> @ 0x210308 (size 156)
 /* struct: a0 +0x0:uint32_t */
 int32_t sub_2103a4(uint32_t *a0, int32_t a1, int32_t a2) {
     if (a1 >= 0x1) {
-        x8 = 0x0;
-        x9 = a1;
-        w10 = a1 + 0x1;
-        x11 = a0 + 0x4;
-        w12 = 0x1;
-        x13 = 0x1;
+        v1 = 0x0;
+        v2 = a1;
+        v3 = a1 + 0x1;
+        v4 = a0 + 0x4;
+        v5 = 0x1;
+        v6 = 0x1;
         for (;;) {
-            x14 = x8 + 0x1;
-            if (x14 < x9 /* unsigned */) {
-                w15 = *(uint32_t *)(a0 + (x8 << 0x2));
-                x16 = x9;
-                x17 = x11;
-                x8 = w12;
+            v7 = v1 + 0x1;
+            if (v7 < v2 /* unsigned */) {
+                v8 = *(uint32_t *)(a0 + (v1 << 0x2));
+                v9 = v2;
+                v10 = v4;
+                v11 = v5;
                 do {
-                    w18 = *(uint32_t *)(x17);
-                    x17 = x17 + 0x4;
-                    if (w18 + w15 == a2) {
+                    v12 = *(uint32_t *)(v10);
+                    v10 = v10 + 0x4;
+                    if (v12 + v8 == a2) {
                         goto L_210424;
                     }
-                    x16 = x16 - 0x1;
-                    x8 = w8 + 0x1;
-                } while (x13 != x16);
+                    v9 = v9 - 0x1;
+                    v11 = v11 + 0x1;
+                } while (v6 != v9);
             }
-            x13 = x13 + 0x1;
-            w12 = w12 + w10;
-            x11 = x11 + 0x4;
-            x8 = x14;
-            if (x14 == x9) {
+            v6 = v6 + 0x1;
+            v5 = v5 + v3;
+            v4 = v4 + 0x4;
+            v1 = v7;
+            if (v7 == v2) {
                 break;
             }
         }
     }
-    x8 = 0xffffffff;
-    return w8;
+    v11 = 0xffffffff;
+    return v11;
 L_210424:
-    return w8;
+    return v11;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, int32_t a2)
@@ -377,40 +375,40 @@ fn <unnamed> @ 0x2103a4 (size 136)
   blk0 @ 0x2103a4:
     brif lt w1, #0x1 -> 0x210420
   blk1 @ 0x2103ac:
-    x8 = #0x0
-    x9 = w1
-    w10 = (w1 + #0x1)
-    x11 = (x0 + #0x4)
-    x12 = #0x1
-    x13 = #0x1
+    v1 = #0x0
+    v2 = w1
+    v3 = (w1 + #0x1)
+    v4 = (x0 + #0x4)
+    v5 = #0x1
+    v6 = #0x1
     br 0x2103e0
   blk2 @ 0x2103c8:
-    x13 = (x13 + #0x1)
-    x12 = (((x12 & #0xffffffff) + w10) & #0xffffffff)
-    x11 = (x11 + #0x4)
-    x8 = x14
-    brif eq x14, x9 -> 0x210420
+    v6 = (v6 + #0x1)
+    v5 = (((v5 & #0xffffffff) + v3) & #0xffffffff)
+    v4 = (v4 + #0x4)
+    v1 = v7
+    brif eq v7, v2 -> 0x210420
   blk3 @ 0x2103e0:
-    x14 = (x8 + #0x1)
-    brif cs x14, x9 -> 0x2103c8
+    v7 = (v1 + #0x1)
+    brif cs v7, v2 -> 0x2103c8
   blk4 @ 0x2103ec:
-    w15 = load32((x0 + (x8 << #0x2)))
-    x16 = x9
-    x17 = x11
-    x8 = (x12 & #0xffffffff)
+    v8 = load32((x0 + (v1 << #0x2)))
+    v9 = v2
+    v10 = v4
+    v11 = (v5 & #0xffffffff)
   blk5 @ 0x2103fc:
-    w18 = load32(x17)
-    x17 = (x17 + #0x4)
-    brif eq ((w18 + w15) & #0xffffffff), w2 -> 0x210424
+    v12 = load32(v10)
+    v10 = (v10 + #0x4)
+    brif eq ((v12 + v8) & #0xffffffff), w2 -> 0x210424
   blk6 @ 0x21040c:
-    x16 = (x16 - #0x1)
-    x8 = (((x8 & #0xffffffff) + #0x1) & #0xffffffff)
-    brif ne x13, x16 -> 0x2103fc
+    v9 = (v9 - #0x1)
+    v11 = (((v11 & #0xffffffff) + #0x1) & #0xffffffff)
+    brif ne v6, v9 -> 0x2103fc
   blk7 @ 0x21041c:
     br 0x2103c8
   blk8 @ 0x210420:
-    x8 = #0xffffffff
+    v11 = #0xffffffff
   blk9 @ 0x210424:
-    ret (x8 & #0xffffffff)
+    ret (v11 & #0xffffffff)
 -- card
 {"accesses":["a0 +0x0:uint32_t"],"addr":"0x2103a4","approxTokens":240,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":136,"unsupported":0}

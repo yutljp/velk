@@ -22,27 +22,27 @@ int32_t sub_2011f0(int64_t a0, int32_t a1) {
     local_2 = 0x0;
     local_3 = 0x0;
     while (true) {
-        rax = local_3;
-        if (eax >= local_1) break;
+        v1 = local_3;
+        if (v1 >= local_1) break;
         rcx = (int64_t)(int32_t)(local_3);
         xmm0 = *(uint64_t *)(local_0 + rcx * 0x8);
         xmm0_hi = 0x0;
         /* unsupported: Addsd at 0x201223 */
         local_2 = xmm0;
-        rax = local_3 + 0x1;
-        local_3 = eax;
+        v2 = local_3 + 0x1;
+        local_3 = v2;
     }
     if (local_1 <= 0x0) {
         local_4 = 0x0;
         xmm0 = local_4;
-        return rax;
+        return v1;
     }
     xmm0 = local_2;
     xmm0_hi = 0x0;
     /* unsupported (2 steps): Cvtsi2sd at 0x20124a, Divsd at 0x20124f */
     local_4 = xmm0;
     xmm0 = local_4;
-    return rax;
+    return v1;
 }
 -- signature
 int32_t (int64_t a0, int32_t a1)
@@ -58,16 +58,16 @@ fn <unnamed> @ 0x2011f0 (size 129)
     store64(#0x0, (rsp + #0xffffffffffffffe0))
     store32(#0x0, (rsp + #0xffffffffffffffdc))
   blk1 @ 0x20120a:
-    rax = (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)
-    brif ge (rax & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x20123b
+    v1 = (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)
+    brif ge (v1 & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x20123b
   blk2 @ 0x201216:
     rcx = sext32(load32((rsp + #0xffffffffffffffdc)))
     xmm0 = load64((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x8)))
     xmm0_hi = #0x0
     unsupported: Addsd at 0x201223
     store64(xmm0, (rsp + #0xffffffffffffffe0))
-    rax = ((load32((rsp + #0xffffffffffffffdc)) + #0x1) & #0xffffffff)
-    store32((rax & #0xffffffff), (rsp + #0xffffffffffffffdc))
+    v2 = ((load32((rsp + #0xffffffffffffffdc)) + #0x1) & #0xffffffff)
+    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffffdc))
     br 0x20120a
   blk3 @ 0x20123b:
     brif le load32((rsp + #0xffffffffffffffec)), #0x0 -> 0x20125d
@@ -83,7 +83,7 @@ fn <unnamed> @ 0x2011f0 (size 129)
     br 0x20126a
   blk6 @ 0x20126a:
     xmm0 = load64((rsp + #0xffffffffffffffd0))
-    ret rax
+    ret v1
 -- card
 {"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":129,"unsupported":3}
 
@@ -200,10 +200,10 @@ L_20131f:
     xmm0_hi = 0x0;
     xmm1 = local_1;
     xmm1_hi = 0x0;
-    rax = 0x0;
-    rcx = 0x1;
+    v1 = 0x0;
+    v2 = 0x1;
     /* unsupported: Ucomisd at 0x201330 */
-    rax = 0x0;
+    v3 = 0x0;
     local_2 = 0x0;
     return local_2;
 }
@@ -230,10 +230,10 @@ fn <unnamed> @ 0x2012f0 (size 79)
     xmm0_hi = #0x0
     xmm1 = load64((rsp + #0xffffffffffffffe8))
     xmm1_hi = #0x0
-    rax = #0x0
-    rcx = #0x1
+    v1 = #0x0
+    v2 = #0x1
     unsupported: Ucomisd at 0x201330
-    rax = #0x0
+    v3 = #0x0
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk3 @ 0x20133a:
     ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)

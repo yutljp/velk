@@ -8,8 +8,8 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2202e8 .bss */
 int32_t dense(int32_t a0) {
-    x9 = a0 - 0xa;
-    switch (x9) {
+    v1 = a0 - 0xa;
+    switch (v1) {
     case 0:
     case 1:
     case 2:
@@ -30,72 +30,67 @@ int32_t dense(int32_t a0) {
     default:
         goto L_2102a8;
     }
-    w10 = 0x200158;
-    x12 = *(uint8_t *)(0x200158 + x9);
+    v3 = *(uint8_t *)(0x200158 + v1);
     switch (a0) {
     case 10:
-        x9 = g_sink + 0xb;
+        v5 = g_sink + 0xb;
         goto L_2102ac;
     case 11:
-        w10 = 0x12;
-        x9 = g_sink ^ 0x12;
+        v5 = g_sink ^ 0x12;
         goto L_2102ac;
     case 12:
-        x9 = g_sink - 0x19;
+        v5 = g_sink - 0x19;
         goto L_2102ac;
     case 13:
-        x9 = g_sink | 0x20;
+        v5 = g_sink | 0x20;
         goto L_2102ac;
     case 14:
-        x9 = g_sink + 0x27;
+        v5 = g_sink + 0x27;
         goto L_2102ac;
     case 15:
-        w10 = 0x2e;
-        x9 = g_sink ^ 0x2e;
+        v5 = g_sink ^ 0x2e;
         goto L_2102ac;
     case 16:
-        x9 = g_sink - 0x35;
+        v5 = g_sink - 0x35;
         goto L_2102ac;
     case 17:
-        x9 = g_sink | 0x3c;
+        v5 = g_sink | 0x3c;
         goto L_2102ac;
     case 18:
-        x9 = g_sink + 0x43;
+        v5 = g_sink + 0x43;
         goto L_2102ac;
     case 19:
-        w10 = 0x4a;
-        x9 = g_sink ^ 0x4a;
+        v5 = g_sink ^ 0x4a;
         goto L_2102ac;
     case 20:
-        x9 = g_sink - 0x51;
+        v5 = g_sink - 0x51;
         goto L_2102ac;
     case 21:
-        x9 = g_sink;
-        w10 = 0x58;
+        v7 = g_sink;
+        v8 = 0x58;
         break;
     case 22:
-        x9 = g_sink + 0x5f;
+        v5 = g_sink + 0x5f;
         goto L_2102ac;
     case 23:
-        w10 = 0x66;
-        x9 = g_sink ^ 0x66;
+        v5 = g_sink ^ 0x66;
         goto L_2102ac;
     case 24:
-        x9 = g_sink - 0x6d;
+        v5 = g_sink - 0x6d;
         goto L_2102ac;
     case 25:
-        x9 = g_sink;
-        w10 = 0x74;
+        v7 = g_sink;
+        v8 = 0x74;
         break;
     default:
         goto L_2102a8;
     }
-    x9 = w9 | w10;
+    v5 = v7 | v8;
     goto L_2102ac;
 L_2102a8:
-    x9 = 0x0;
+    v5 = 0x0;
 L_2102ac:
-    g_sink = w9;
+    g_sink = v5;
     return g_sink;
 }
 -- signature
@@ -106,72 +101,67 @@ int32_t (int32_t a0)
 -- ir
 fn dense @ 0x2101ac (size 268)
   blk0 @ 0x2101ac:
-    x9 = ((w0 - #0xa) & #0xffffffff)
-    brif hi (x9 & #0xffffffff), #0xf -> 0x2102a8
+    v1 = ((w0 - #0xa) & #0xffffffff)
+    brif hi (v1 & #0xffffffff), #0xf -> 0x2102a8
   blk1 @ 0x2101bc:
-    x10 = #0x200158
-    x12 = (load8((#0x200158 + x9)) & #0xffffffff)
+    v3 = (load8((#0x200158 + v1)) & #0xffffffff)
     switch w0 [10->0x2101d4, 11->0x210254, 12->0x210220, 13->0x21023c, 14->0x2101f8, 15->0x210264, 16->0x210284, 17->0x210248, 18->0x21029c, 19->0x210210, 20->0x210290, 21->0x2101ec, 22->0x210204, 23->0x210274, 24->0x2101e0, 25->0x21022c] default 0x2102a8
   blk2 @ 0x2101d4:
-    x9 = ((load32(#0x2202e8) + #0xb) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) + #0xb) & #0xffffffff)
     br 0x2102ac
   blk3 @ 0x2101e0:
-    x9 = ((load32(#0x2202e8) - #0x6d) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) - #0x6d) & #0xffffffff)
     br 0x2102ac
   blk4 @ 0x2101ec:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x10 = #0x58
+    v7 = (load32(#0x2202e8) & #0xffffffff)
+    v8 = #0x58
     br 0x210234
   blk5 @ 0x2101f8:
-    x9 = ((load32(#0x2202e8) + #0x27) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) + #0x27) & #0xffffffff)
     br 0x2102ac
   blk6 @ 0x210204:
-    x9 = ((load32(#0x2202e8) + #0x5f) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) + #0x5f) & #0xffffffff)
     br 0x2102ac
   blk7 @ 0x210210:
-    x10 = #0x4a
-    x9 = ((load32(#0x2202e8) ^ #0x4a) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) ^ #0x4a) & #0xffffffff)
     br 0x2102ac
   blk8 @ 0x210220:
-    x9 = ((load32(#0x2202e8) - #0x19) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) - #0x19) & #0xffffffff)
     br 0x2102ac
   blk9 @ 0x21022c:
-    x9 = (load32(#0x2202e8) & #0xffffffff)
-    x10 = #0x74
+    v7 = (load32(#0x2202e8) & #0xffffffff)
+    v8 = #0x74
   blk10 @ 0x210234:
-    x9 = (((x9 & #0xffffffff) | (x10 & #0xffffffff)) & #0xffffffff)
+    v5 = (((v7 & #0xffffffff) | (v8 & #0xffffffff)) & #0xffffffff)
     br 0x2102ac
   blk11 @ 0x21023c:
-    x9 = ((load32(#0x2202e8) | #0x20) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) | #0x20) & #0xffffffff)
     br 0x2102ac
   blk12 @ 0x210248:
-    x9 = ((load32(#0x2202e8) | #0x3c) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) | #0x3c) & #0xffffffff)
     br 0x2102ac
   blk13 @ 0x210254:
-    x10 = #0x12
-    x9 = ((load32(#0x2202e8) ^ #0x12) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) ^ #0x12) & #0xffffffff)
     br 0x2102ac
   blk14 @ 0x210264:
-    x10 = #0x2e
-    x9 = ((load32(#0x2202e8) ^ #0x2e) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) ^ #0x2e) & #0xffffffff)
     br 0x2102ac
   blk15 @ 0x210274:
-    x10 = #0x66
-    x9 = ((load32(#0x2202e8) ^ #0x66) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) ^ #0x66) & #0xffffffff)
     br 0x2102ac
   blk16 @ 0x210284:
-    x9 = ((load32(#0x2202e8) - #0x35) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) - #0x35) & #0xffffffff)
     br 0x2102ac
   blk17 @ 0x210290:
-    x9 = ((load32(#0x2202e8) - #0x51) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) - #0x51) & #0xffffffff)
     br 0x2102ac
   blk18 @ 0x21029c:
-    x9 = ((load32(#0x2202e8) + #0x43) & #0xffffffff)
+    v5 = ((load32(#0x2202e8) + #0x43) & #0xffffffff)
     br 0x2102ac
   blk19 @ 0x2102a8:
-    x9 = #0x0
+    v5 = #0x0
   blk20 @ 0x2102ac:
-    store32((x9 & #0xffffffff), #0x2202e8)
+    store32((v5 & #0xffffffff), #0x2202e8)
     ret load32(#0x2202e8)
 -- card
 {"addr":"0x2101ac","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","entry","unwind"],"section":".text","size":268,"unsupported":0}

@@ -11,49 +11,49 @@ int32_t sum_while(int32_t a0) {
     if (a0 <= 0x0) {
         return 0x0;
     }
-    ecx = a0 & 0x7;
+    v1 = a0 & 0x7;
     if (a0 >= 0x8 /* unsigned */) {
-        v2 = -(a0 & 0x7ffffff8);
-        rax = 0x0;
-        rdx = 0x7;
+        v5 = -(a0 & 0x7ffffff8);
+        v3 = 0x0;
+        v6 = 0x7;
         do {
-            r8 = ((rdx + rax) & 0xffffffff);
-            rsi = edx;
-            sink = ((eax + esi - 0x7) & 0xffffffff);
-            rax = rsi + r8 - 0x7;
-            sink = ((rsi + r8 - 0xd) & 0xffffffff);
-            r8 = ((rsi + rax - 0x6) & 0xffffffff);
-            sink = ((rsi + rax - 0xb) & 0xffffffff);
-            rax = rsi + r8 - 0x5;
-            sink = ((rsi + r8 - 0x9) & 0xffffffff);
-            r8 = ((rsi + rax - 0x4) & 0xffffffff);
-            sink = ((rsi + rax - 0x7) & 0xffffffff);
-            rax = rsi + r8 - 0x3;
-            sink = ((rsi + r8 - 0x5) & 0xffffffff);
-            r8 = ((rsi + rax - 0x2) & 0xffffffff);
-            sink = ((rsi + rax - 0x3) & 0xffffffff);
-            rax = rsi + r8 - 0x1;
-            sink = eax;
-            rdx = edx + 0x8;
-        } while (esi + v2 + 0x8 != 0x7);
-        rdx = ((edx - 0x7) & 0xffffffff);
-        if (ecx == 0x0) {
-            return rax;
+            v7 = ((v6 + v3) & 0xffffffff);
+            v8 = v6;
+            v9 = v3 + v8;
+            sink = ((v9 - 0x7) & 0xffffffff);
+            v10 = ((v8 + v7 - 0x7) & 0xffffffff);
+            sink = ((v8 + v7 - 0xd) & 0xffffffff);
+            v11 = ((v8 + v10 - 0x6) & 0xffffffff);
+            sink = ((v8 + v10 - 0xb) & 0xffffffff);
+            v12 = ((v8 + v11 - 0x5) & 0xffffffff);
+            sink = ((v8 + v11 - 0x9) & 0xffffffff);
+            v13 = ((v8 + v12 - 0x4) & 0xffffffff);
+            sink = ((v8 + v12 - 0x7) & 0xffffffff);
+            v14 = ((v8 + v13 - 0x3) & 0xffffffff);
+            sink = ((v8 + v13 - 0x5) & 0xffffffff);
+            sink = ((v8 + v14 - 0x3) & 0xffffffff);
+            v3 = ((v8 + ((v8 + v14 - 0x2) & 0xffffffff) - 0x1) & 0xffffffff);
+            sink = v3;
+            v6 = v6 + 0x8;
+        } while (v8 + v5 + 0x8 != 0x7);
+        v2 = v6 - 0x7;
+        if (v1 == 0x0) {
+            return v3;
         }
     } else {
-        rdx = 0x0;
-        rax = 0x0;
-        if (ecx == 0x0) {
-            return rax;
+        v2 = 0x0;
+        v3 = 0x0;
+        if (v1 == 0x0) {
+            return v3;
         }
     }
     do {
-        rax = eax + edx;
-        sink = eax;
-        rdx = edx + 0x1;
-        ecx = ecx - 0x1;
-    } while (ecx != 0x0);
-    return rax;
+        v3 = v3 + v2;
+        sink = v3;
+        v2 = v2 + 0x1;
+        v1 = v1 - 0x1;
+    } while (v1 != 0x0);
+    return v3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -64,51 +64,51 @@ fn sum_while @ 0x0 (size 239)
   blk0 @ 0x0:
     brif le edi, #0x0 -> 0x1f
   blk1 @ 0x4:
-    ecx = (edi & #0x7)
+    v1 = (edi & #0x7)
     brif cs edi, #0x8 -> 0x22
   blk2 @ 0xe:
-    rdx = #0x0
-    rax = #0x0
-    brif ne ecx, #0x0 -> 0xe0
+    v2 = #0x0
+    v3 = #0x0
+    brif ne v1, #0x0 -> 0xe0
   blk3 @ 0x1a:
     br 0xee
   blk4 @ 0x1f:
     ret #0x0
   blk5 @ 0x22:
-    v2 = (#0x0 - (edi & #0x7ffffff8))
-    rax = #0x0
-    rdx = #0x7
+    v5 = (#0x0 - (edi & #0x7ffffff8))
+    v3 = #0x0
+    v6 = #0x7
   blk6 @ 0x40:
-    r8 = ((rdx + rax) & #0xffffffff)
-    rsi = (rdx & #0xffffffff)
-    store32(((((rax & #0xffffffff) + (rsi & #0xffffffff)) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
-    rax = (((rsi + r8) + #0xfffffffffffffff9) & #0xffffffff)
-    store32((((rsi + r8) + #0xfffffffffffffff3) & #0xffffffff), #0x204)
-    r8 = (((rsi + rax) + #0xfffffffffffffffa) & #0xffffffff)
-    store32((((rsi + rax) + #0xfffffffffffffff5) & #0xffffffff), #0x204)
-    rax = (((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff)
-    store32((((rsi + r8) + #0xfffffffffffffff7) & #0xffffffff), #0x204)
-    r8 = (((rsi + rax) + #0xfffffffffffffffc) & #0xffffffff)
-    store32((((rsi + rax) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
-    rax = (((rsi + r8) + #0xfffffffffffffffd) & #0xffffffff)
-    store32((((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff), #0x204)
-    r8 = (((rsi + rax) + #0xfffffffffffffffe) & #0xffffffff)
-    store32((((rsi + rax) + #0xfffffffffffffffd) & #0xffffffff), #0x204)
-    rax = (((rsi + r8) + #0xffffffffffffffff) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x204)
-    rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    brif ne ((((rsi & #0xffffffff) + v2) + #0x8) & #0xffffffff), #0x7 -> 0x40
+    v7 = ((v6 + v3) & #0xffffffff)
+    v8 = (v6 & #0xffffffff)
+    v9 = (((v3 & #0xffffffff) + (v8 & #0xffffffff)) & #0xffffffff)
+    store32((((v9 & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
+    v10 = (((v8 + v7) + #0xfffffffffffffff9) & #0xffffffff)
+    store32((((v8 + v7) + #0xfffffffffffffff3) & #0xffffffff), #0x204)
+    v11 = (((v8 + v10) + #0xfffffffffffffffa) & #0xffffffff)
+    store32((((v8 + v10) + #0xfffffffffffffff5) & #0xffffffff), #0x204)
+    v12 = (((v8 + v11) + #0xfffffffffffffffb) & #0xffffffff)
+    store32((((v8 + v11) + #0xfffffffffffffff7) & #0xffffffff), #0x204)
+    v13 = (((v8 + v12) + #0xfffffffffffffffc) & #0xffffffff)
+    store32((((v8 + v12) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
+    v14 = (((v8 + v13) + #0xfffffffffffffffd) & #0xffffffff)
+    store32((((v8 + v13) + #0xfffffffffffffffb) & #0xffffffff), #0x204)
+    store32((((v8 + v14) + #0xfffffffffffffffd) & #0xffffffff), #0x204)
+    v3 = (((v8 + (((v8 + v14) + #0xfffffffffffffffe) & #0xffffffff)) + #0xffffffffffffffff) & #0xffffffff)
+    store32((v3 & #0xffffffff), #0x204)
+    v6 = (((v6 & #0xffffffff) + #0x8) & #0xffffffff)
+    brif ne ((((v8 & #0xffffffff) + v5) + #0x8) & #0xffffffff), #0x7 -> 0x40
   blk7 @ 0xce:
-    rdx = (((rdx & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff)
-    brif eq ecx, #0x0 -> 0xee
+    v2 = (((v6 & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff)
+    brif eq v1, #0x0 -> 0xee
   blk8 @ 0xe0:
-    rax = (((rax & #0xffffffff) + (rdx & #0xffffffff)) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x204)
-    rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
-    ecx = (ecx + #0xffffffffffffffff)
-    brif ne ecx, #0x0 -> 0xe0
+    v3 = (((v3 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
+    store32((v3 & #0xffffffff), #0x204)
+    v2 = (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
+    v1 = (v1 + #0xffffffffffffffff)
+    brif ne v1, #0x0 -> 0xe0
   blk9 @ 0xee:
-    ret rax
+    ret v3
 -- card
 {"addr":"0x0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab","unwind"],"section":".text","size":239,"unsupported":0}
 
@@ -116,36 +116,36 @@ fn sum_while @ 0x0 (size 239)
 -- decompile
 /* velk pseudo-C: count_down @ 0xf0 */
 int32_t count_down(int32_t a0) {
-    rax = (a0 >= 0x2 ? a0 : 0x1);
-    ecx = rax & 0x7;
-    rdx = 0x0;
+    v1 = (a0 >= 0x2 ? a0 : 0x1);
+    v2 = v1 & 0x7;
+    v3 = 0x0;
     if (a0 >= 0x8) {
-        esi = -(rax & 0xfffffff8);
-        rdx = 0x4;
+        v4 = -(v1 & 0xfffffff8);
+        v5 = 0x4;
         do {
-            sink = ((rdx - 0x3) & 0xffffffff);
-            sink = ((rdx - 0x2) & 0xffffffff);
-            sink = ((rdx - 0x1) & 0xffffffff);
-            sink = edx;
-            sink = ((rdx + 0x1) & 0xffffffff);
-            sink = ((rdx + 0x2) & 0xffffffff);
-            sink = ((rdx + 0x3) & 0xffffffff);
-            sink = ((rdx + 0x4) & 0xffffffff);
-            v1 = rdx;
-            rdx = edx + 0x8;
-        } while (v1 + esi + 0x8 != 0x4);
-        rdx = ((edx - 0x4) & 0xffffffff);
+            sink = ((v5 - 0x3) & 0xffffffff);
+            sink = ((v5 - 0x2) & 0xffffffff);
+            sink = ((v5 - 0x1) & 0xffffffff);
+            sink = v5;
+            sink = ((v5 + 0x1) & 0xffffffff);
+            sink = ((v5 + 0x2) & 0xffffffff);
+            sink = ((v5 + 0x3) & 0xffffffff);
+            sink = ((v5 + 0x4) & 0xffffffff);
+            v6 = v5;
+            v5 = v5 + 0x8;
+        } while (v6 + v4 + 0x8 != 0x4);
+        v3 = v5 - 0x4;
     }
-    if (ecx == 0x0) {
-        return rax;
+    if (v2 == 0x0) {
+        return v1;
     }
-    rdx = edx + 0x1;
+    v8 = v3 + 0x1;
     do {
-        sink = edx;
-        rdx = edx + 0x1;
-        ecx = ecx - 0x1;
-    } while (ecx != 0x0);
-    return rax;
+        sink = v8;
+        v8 = v8 + 0x1;
+        v2 = v2 - 0x1;
+    } while (v2 != 0x0);
+    return v1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -154,38 +154,38 @@ int32_t (int32_t a0)
 -- ir
 fn count_down @ 0xf0 (size 157)
   blk0 @ 0xf0:
-    rax = (select ge edi, #0x2 ? edi, #0x1 & #0xffffffff)
-    ecx = (rax & #0x7)
-    rdx = #0x0
+    v1 = (select ge edi, #0x2 ? edi, #0x1 & #0xffffffff)
+    v2 = (v1 & #0x7)
+    v3 = #0x0
     brif lt edi, #0x8 -> 0x177
   blk1 @ 0x107:
-    esi = (#0x0 - (rax & #0xfffffff8))
-    rdx = #0x4
+    v4 = (#0x0 - (v1 & #0xfffffff8))
+    v5 = #0x4
   blk2 @ 0x120:
-    store32(((rdx + #0xfffffffffffffffd) & #0xffffffff), #0x204)
-    store32(((rdx + #0xfffffffffffffffe) & #0xffffffff), #0x204)
-    store32(((rdx + #0xffffffffffffffff) & #0xffffffff), #0x204)
-    store32((rdx & #0xffffffff), #0x204)
-    store32(((rdx + #0x1) & #0xffffffff), #0x204)
-    store32(((rdx + #0x2) & #0xffffffff), #0x204)
-    store32(((rdx + #0x3) & #0xffffffff), #0x204)
-    store32(((rdx + #0x4) & #0xffffffff), #0x204)
-    v1 = rdx
-    rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
-    brif ne (((v1 + esi) + #0x8) & #0xffffffff), #0x4 -> 0x120
+    store32(((v5 + #0xfffffffffffffffd) & #0xffffffff), #0x204)
+    store32(((v5 + #0xfffffffffffffffe) & #0xffffffff), #0x204)
+    store32(((v5 + #0xffffffffffffffff) & #0xffffffff), #0x204)
+    store32((v5 & #0xffffffff), #0x204)
+    store32(((v5 + #0x1) & #0xffffffff), #0x204)
+    store32(((v5 + #0x2) & #0xffffffff), #0x204)
+    store32(((v5 + #0x3) & #0xffffffff), #0x204)
+    store32(((v5 + #0x4) & #0xffffffff), #0x204)
+    v6 = v5
+    v5 = (((v5 & #0xffffffff) + #0x8) & #0xffffffff)
+    brif ne (((v6 + v4) + #0x8) & #0xffffffff), #0x4 -> 0x120
   blk3 @ 0x174:
-    rdx = (((rdx & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
+    v3 = (((v5 & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
   blk4 @ 0x177:
-    brif eq ecx, #0x0 -> 0x18c
+    brif eq v2, #0x0 -> 0x18c
   blk5 @ 0x17b:
-    rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
+    v8 = (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
   blk6 @ 0x180:
-    store32((rdx & #0xffffffff), #0x204)
-    rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
-    ecx = (ecx + #0xffffffffffffffff)
-    brif ne ecx, #0x0 -> 0x180
+    store32((v8 & #0xffffffff), #0x204)
+    v8 = (((v8 & #0xffffffff) + #0x1) & #0xffffffff)
+    v2 = (v2 + #0xffffffffffffffff)
+    brif ne v2, #0x0 -> 0x180
   blk7 @ 0x18c:
-    ret rax
+    ret v1
 -- card
 {"addr":"0xf0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab","unwind"],"section":".text","size":157,"unsupported":0}
 
@@ -197,29 +197,29 @@ int32_t sum_skip_odd(int32_t a0) {
         return 0x0;
     }
     if (a0 != 0x1) {
-        edx = a0 & 0x7ffffffe;
-        rcx = 0x0;
-        rax = 0x0;
+        v3 = a0 & 0x7ffffffe;
+        v1 = 0x0;
+        v2 = 0x0;
         do {
-            rax = eax + ecx;
-            rax = eax + 0x1;
-            sink = eax;
-            rcx = ecx + 0x2;
-        } while (edx != ecx);
+            v4 = v2 + v1;
+            v2 = v4 + 0x1;
+            sink = v2;
+            v1 = v1 + 0x2;
+        } while (v3 != v1);
     } else {
-        rcx = 0x0;
-        rax = 0x0;
+        v1 = 0x0;
+        v2 = 0x0;
     }
     if ((a0 & 0x1) == 0x0) {
-        return rax;
+        return v2;
     }
-    if ((rcx & 0x1) == 0x0) {
-        return rax;
+    if ((v1 & 0x1) == 0x0) {
+        return v2;
     }
-    rcx = ecx + eax;
-    sink = ecx;
-    rax = ecx;
-    return rax;
+    v5 = v1 + v2;
+    sink = v5;
+    v2 = v5;
+    return v2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -232,31 +232,31 @@ fn sum_skip_odd @ 0x190 (size 71)
   blk1 @ 0x194:
     brif ne (rdi & #0xffffffff), #0x1 -> 0x1a2
   blk2 @ 0x199:
-    rcx = #0x0
-    rax = #0x0
+    v1 = #0x0
+    v2 = #0x0
     br 0x1c1
   blk3 @ 0x19f:
     ret #0x0
   blk4 @ 0x1a2:
-    edx = (rdi & #0x7ffffffe)
-    rcx = #0x0
-    rax = #0x0
+    v3 = (rdi & #0x7ffffffe)
+    v1 = #0x0
+    v2 = #0x0
   blk5 @ 0x1b0:
-    rax = (((rax & #0xffffffff) + (rcx & #0xffffffff)) & #0xffffffff)
-    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x204)
-    rcx = (((rcx & #0xffffffff) + #0x2) & #0xffffffff)
-    brif ne edx, (rcx & #0xffffffff) -> 0x1b0
+    v4 = (((v2 & #0xffffffff) + (v1 & #0xffffffff)) & #0xffffffff)
+    v2 = (((v4 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32((v2 & #0xffffffff), #0x204)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    brif ne v3, (v1 & #0xffffffff) -> 0x1b0
   blk6 @ 0x1c1:
     brif eq (rdi & #0x1), #0x0 -> 0x1d6
   blk7 @ 0x1c7:
-    brif eq (rcx & #0x1), #0x0 -> 0x1d6
+    brif eq (v1 & #0x1), #0x0 -> 0x1d6
   blk8 @ 0x1cc:
-    rcx = (((rcx & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
-    store32((rcx & #0xffffffff), #0x204)
-    rax = (rcx & #0xffffffff)
+    v5 = (((v1 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
+    store32((v5 & #0xffffffff), #0x204)
+    v2 = (v5 & #0xffffffff)
   blk9 @ 0x1d6:
-    ret rax
+    ret v2
 -- card
 {"addr":"0x190","approxTokens":138,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","unwind"],"section":".text","size":71,"unsupported":0}
 
@@ -268,15 +268,15 @@ int32_t find_first(int64_t a0, int32_t a1, int32_t a2) {
         return 0xffffffff;
     }
     v1 = a1;
-    rcx = 0x0;
-    while (*(uint32_t *)(a0 + rcx * 0x4) != a2) {
-        rcx = rcx + 0x1;
-        if (v1 != rcx) {
+    v2 = 0x0;
+    while (*(uint32_t *)(a0 + v2 * 0x4) != a2) {
+        v2 = v2 + 0x1;
+        if (v1 != v2) {
             continue;
         }
         goto L_1fd;
     }
-    return ecx;
+    return v2;
 L_1fd:
     return 0xffffffff;
 }
@@ -290,15 +290,15 @@ fn find_first @ 0x1e0 (size 33)
     brif le (rsi & #0xffffffff), #0x0 -> 0x1fd
   blk1 @ 0x1e9:
     v1 = (rsi & #0xffffffff)
-    rcx = #0x0
+    v2 = #0x0
   blk2 @ 0x1f0:
-    brif eq load32((rdi + (rcx * #0x4))), edx -> 0x1fe
+    brif eq load32((rdi + (v2 * #0x4))), edx -> 0x1fe
   blk3 @ 0x1f5:
-    rcx = (rcx + #0x1)
-    brif ne v1, rcx -> 0x1f0
+    v2 = (v2 + #0x1)
+    brif ne v1, v2 -> 0x1f0
   blk4 @ 0x1fd:
     ret #0xffffffff
   blk5 @ 0x1fe:
-    ret (rcx & #0xffffffff)
+    ret (v2 & #0xffffffff)
 -- card
 {"addr":"0x1e0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","unwind"],"section":".text","size":33,"unsupported":0}

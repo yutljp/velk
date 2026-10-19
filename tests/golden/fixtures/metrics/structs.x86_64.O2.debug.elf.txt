@@ -34,28 +34,28 @@ long record_total(struct record *items, int n) {
     if (n <= 0x0) {
         return 0x0;
     }
-    rcx = n;
+    v1 = n;
     if (n != 0x1) {
-        v1 = rcx & 0x7ffffffe;
-        r8 = items + 0x28;
-        rdx = 0x0;
-        rax = 0x0;
+        v4 = v1 & 0x7ffffffe;
+        v5 = items + 0x28;
+        v2 = 0x0;
+        v3 = 0x0;
         do {
-            r9 = (int16_t)(*(uint16_t *)(r8 - 0x18)) * *(uint64_t *)(r8 - 0x20) + rax;
-            rax = (int16_t)(*(uint16_t *)(r8)) * *(uint64_t *)(r8 - 0x8) + r9;
-            rdx = rdx + 0x2;
-            r8 = r8 + 0x30;
-        } while (v1 != rdx);
+            v6 = (int16_t)(*(uint16_t *)(v5 - 0x18)) * *(uint64_t *)(v5 - 0x20) + v3;
+            v3 = (int16_t)(*(uint16_t *)(v5)) * *(uint64_t *)(v5 - 0x8) + v6;
+            v2 = v2 + 0x2;
+            v5 = v5 + 0x30;
+        } while (v4 != v2);
     } else {
-        rdx = 0x0;
-        rax = 0x0;
+        v2 = 0x0;
+        v3 = 0x0;
     }
-    if ((rcx & 0x1) == 0x0) {
-        return rax;
+    if ((v1 & 0x1) == 0x0) {
+        return v3;
     }
-    rcx = rdx + rdx * 0x2;
-    rax = rax + (int16_t)(*(uint16_t *)(items + rcx * 0x8 + 0x10)) * *(uint64_t *)(items + rcx * 0x8 + 0x8);
-    return rax;
+    v7 = v2 + v2 * 0x2;
+    v3 = v3 + (int16_t)(*(uint16_t *)(items + v7 * 0x8 + 0x10)) * *(uint64_t *)(items + v7 * 0x8 + 0x8);
+    return v3;
 }
 -- signature
 long (struct record * items, int n)
@@ -66,32 +66,32 @@ fn record_total @ 0x2011f0 (size 111)
   blk0 @ 0x2011f0:
     brif le (rsi & #0xffffffff), #0x0 -> 0x201201
   blk1 @ 0x2011f4:
-    rcx = (rsi & #0xffffffff)
+    v1 = (rsi & #0xffffffff)
     brif ne (rsi & #0xffffffff), #0x1 -> 0x201204
   blk2 @ 0x2011fb:
-    rdx = #0x0
-    rax = #0x0
+    v2 = #0x0
+    v3 = #0x0
     br 0x201246
   blk3 @ 0x201201:
     ret #0x0
   blk4 @ 0x201204:
-    v1 = (rcx & #0x7ffffffe)
-    r8 = (rdi + #0x28)
-    rdx = #0x0
-    rax = #0x0
+    v4 = (v1 & #0x7ffffffe)
+    v5 = (rdi + #0x28)
+    v2 = #0x0
+    v3 = #0x0
   blk5 @ 0x201220:
-    r9 = ((sext16(load16((r8 + #0xffffffffffffffe8))) * load64((r8 + #0xffffffffffffffe0))) + rax)
-    rax = ((sext16(load16(r8)) * load64((r8 + #0xfffffffffffffff8))) + r9)
-    rdx = (rdx + #0x2)
-    r8 = (r8 + #0x30)
-    brif ne v1, rdx -> 0x201220
+    v6 = ((sext16(load16((v5 + #0xffffffffffffffe8))) * load64((v5 + #0xffffffffffffffe0))) + v3)
+    v3 = ((sext16(load16(v5)) * load64((v5 + #0xfffffffffffffff8))) + v6)
+    v2 = (v2 + #0x2)
+    v5 = (v5 + #0x30)
+    brif ne v4, v2 -> 0x201220
   blk6 @ 0x201246:
-    brif eq (rcx & #0x1), #0x0 -> 0x20125e
+    brif eq (v1 & #0x1), #0x0 -> 0x20125e
   blk7 @ 0x20124b:
-    rcx = (rdx + (rdx * #0x2))
-    rax = (rax + (sext16(load16(((rdi + (rcx * #0x8)) + #0x10))) * load64(((rdi + (rcx * #0x8)) + #0x8))))
+    v7 = (v2 + (v2 * #0x2))
+    v3 = (v3 + (sext16(load16(((rdi + (v7 * #0x8)) + #0x10))) * load64(((rdi + (v7 * #0x8)) + #0x8))))
   blk8 @ 0x20125e:
-    ret rax
+    ret v3
 -- card
 {"accesses":["items +0x0:uint16_t, +0xffffffffffffffe8:uint16_t"],"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf","unwind"],"section":".text","size":111,"unsupported":0}
 
@@ -148,8 +148,8 @@ long big_sum(void) {
     xmm0 = local_0;
     xmm0_hi = local_1;
     /* unsupported (3 steps): Paddq at 0x2012a6, Pshufd at 0x2012ac, Paddq at 0x2012b1 */
-    rax = xmm1;
-    return rax;
+    v1 = xmm1;
+    return v1;
 }
 -- signature
 long ()
@@ -163,8 +163,8 @@ fn big_sum @ 0x2012a0 (size 27)
     unsupported: Paddq at 0x2012a6
     unsupported: Pshufd at 0x2012ac
     unsupported: Paddq at 0x2012b1
-    rax = xmm1
-    ret rax
+    v1 = xmm1
+    ret v1
 -- card
 {"addr":"0x2012a0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":27,"unsupported":3}
 
@@ -206,26 +206,26 @@ fn flags_level @ 0x2012d0 (size 23)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2012f0 */
 /* struct: f +0x0:uint8_t */
-int64_t flags_set_mode(struct flags *f, int64_t mode) {
-    rax = *(uint8_t *)(f) & 0xff;
+int64_t flags_set_mode(struct flags *f, int32_t mode) {
+    v1 = *(uint8_t *)(f) & 0xff;
     t1 = mode & 0xff;
-    rax = rax & 0xffffffffffffff00 | rax & 0xf1;
-    rax = rax & 0xffffffffffffff00 | (rax & 0xff | t1 + t1 & 0xff & 0xe) & 0xff;
-    *(uint8_t *)(f) = rax & 0xff;
-    return rax;
+    v3 = v1 & 0xffffffffffffff00 | v1 & 0xf1;
+    v4 = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe) & 0xff;
+    *(uint8_t *)(f) = v4 & 0xff;
+    return v4;
 }
 -- signature
-int64_t (struct flags * f, int64_t mode)
+int64_t (struct flags * f, int32_t mode)
 -- references
 
 -- ir
 fn flags_set_mode @ 0x2012f0 (size 18)
   blk0 @ 0x2012f0:
-    rax = (load8(rdi) & #0xff)
+    v1 = (load8(rdi) & #0xff)
     t1 = (rsi & #0xff)
-    rax = ((rax & #0xffffffffffffff00) | (rax & #0xf1))
-    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | (((t1 + t1) & #0xff) & #0xe)) & #0xff))
-    store8((rax & #0xff), rdi)
-    ret rax
+    v3 = ((v1 & #0xffffffffffffff00) | (v1 & #0xf1))
+    v4 = ((v3 & #0xffffffffffffff00) | (((v3 & #0xff) | ((t1 + t1) & #0xe)) & #0xff))
+    store8((v4 & #0xff), rdi)
+    ret v4
 -- card
 {"accesses":["f +0x0:uint8_t"],"addr":"0x2012f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":18,"unsupported":0}

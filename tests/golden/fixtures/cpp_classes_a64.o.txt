@@ -11,21 +11,21 @@
 /* struct: a0 +0x0:uint64_t */
 int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     if (a1 < 0x1) {
-        w19 = 0x0;
-        return w19;
+        v2 = 0x0;
+        return v2;
     }
-    x20 = a0;
-    w19 = 0x0;
-    x21 = a1;
+    v1 = a0;
+    v2 = 0x0;
+    v3 = a1;
     do {
-        a0 = *(uint64_t *)(x20);
-        x20 = x20 + 0x8;
+        a0 = *(uint64_t *)(v1);
+        v1 = v1 + 0x8;
         x8 = *(uint64_t *)(*(uint64_t *)(a0) + 0x10);
-        v1 = (*(x8))();
-        x21 = x21 - 0x1;
-        w19 = v1 + w19;
-    } while (x21 != 0x0);
-    return w19;
+        v4 = (*(x8))();
+        v3 = v3 - 0x1;
+        v2 = v4 + v2;
+    } while (v3 != 0x0);
+    return v2;
 }
 -- signature
 int32_t (uint64_t * a0, int32_t a1)
@@ -36,23 +36,23 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
   blk0 @ 0x0:
     brif lt w1, #0x1 -> 0x44
   blk1 @ 0x18:
-    x20 = x0
-    x19 = #0x0
-    x21 = w1
+    v1 = x0
+    v2 = #0x0
+    v3 = w1
   blk2 @ 0x24:
-    x0 = load64(x20)
-    x20 = (x20 + #0x8)
+    x0 = load64(v1)
+    v1 = (v1 + #0x8)
     x8 = load64((load64(x0) + #0x10))
     call *x8
-    x21 = (x21 - #0x1)
-    x19 = (((v1 & #0xffffffff) + (x19 & #0xffffffff)) & #0xffffffff)
-    brif ne x21, #0x0 -> 0x24
+    v3 = (v3 - #0x1)
+    v2 = (((v4 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
+    brif ne v3, #0x0 -> 0x24
   blk3 @ 0x40:
     br 0x48
   blk4 @ 0x44:
-    x19 = #0x0
+    v2 = #0x0
   blk5 @ 0x48:
-    ret (x19 & #0xffffffff)
+    ret (v2 & #0xffffffff)
 -- card
 {"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","size":92,"unsupported":0}
 

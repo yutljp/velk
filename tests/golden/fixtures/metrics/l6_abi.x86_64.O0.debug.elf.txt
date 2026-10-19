@@ -41,8 +41,8 @@ fn tail_direct @ 0x201200 (size 28)
   blk0 @ 0x201200:
     store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
     v1 = (rdi & #0xffffffff)
-    call 0x2011e0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
-    ret rax
+    v3 = call 0x2011e0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v3
 -- card
 {"addr":"0x201200","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
@@ -71,7 +71,7 @@ fn tail_indirect @ 0x201220 (size 33)
     rax = rdi
     rdi = (((esi & #0xffffffff) + #0x1) & #0xffffffff)
     call *rax
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201220","approxTokens":168,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}
 

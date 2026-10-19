@@ -92,7 +92,7 @@ fn apply_table @ 0x201360 (size 52)
     rax = load64((#0x202670 + (rcx * #0x8)))
     edi = (esi & #0xffffffff)
     call *rax
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
 
@@ -107,8 +107,8 @@ int apply_pointer(void *f, int x) {
     local_1 = x;
     rax = f;
     f = x;
-    (*(rax))();
-    return eax + 0x1;
+    v1 = (*(rax))();
+    return v1 + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -122,7 +122,7 @@ fn apply_pointer @ 0x2013a0 (size 33)
     rax = rdi
     rdi = (esi & #0xffffffff)
     call *rax
-    ret (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    ret (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2013a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}
 
@@ -139,8 +139,8 @@ int factorial(int n) {
         rax = local_0;
         local_2 = eax;
         v1 = local_0 - 0x1;
-        factorial(v1);
-        local_1 = local_2 * eax;
+        v2 = factorial(v1);
+        local_1 = local_2 * v2;
         return local_1;
     }
     local_1 = 0x1;
@@ -162,8 +162,8 @@ fn factorial @ 0x2013d0 (size 71)
     rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
     store32((rax & #0xffffffff), (rsp + #0xffffffffffffffec))
     v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
-    call 0x2013d0(v1)
-    store32(((load32((rsp + #0xffffffffffffffec)) * (rax & #0xffffffff)) & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    v2 = call 0x2013d0(v1)
+    store32(((load32((rsp + #0xffffffffffffffec)) * (v2 & #0xffffffff)) & #0xffffffff), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20140e:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
@@ -179,7 +179,8 @@ int is_odd(int n) {
     local_0 = n;
     if (n != 0x0) {
         v1 = local_0 - 0x1;
-        local_1 = is_even(v1);
+        v2 = is_even(v1);
+        local_1 = v2;
         return local_1;
     }
     local_1 = 0x0;
@@ -199,8 +200,8 @@ fn is_odd @ 0x201420 (size 54)
     br 0x20144d
   blk2 @ 0x20143f:
     v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
-    call 0x201460(v1)
-    store32((rax & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    v2 = call 0x201460(v1)
+    store32((v2 & #0xffffffff), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20144d:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
@@ -216,7 +217,8 @@ int is_even(int n) {
     local_0 = n;
     if (n != 0x0) {
         v1 = local_0 - 0x1;
-        local_1 = is_odd(v1);
+        v2 = is_odd(v1);
+        local_1 = v2;
         return local_1;
     }
     local_1 = 0x1;
@@ -236,8 +238,8 @@ fn is_even @ 0x201460 (size 57)
     br 0x201490
   blk2 @ 0x201482:
     v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
-    call 0x201420(v1)
-    store32((rax & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    v2 = call 0x201420(v1)
+    store32((v2 & #0xffffffff), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x201490:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
@@ -251,9 +253,9 @@ long sum9(long a, long b, long c, long d, long e, long f) {
     uint64_t local_1; /* [sp+10] */
     uint64_t local_2; /* [sp+8] */
 
-    rax = local_0;
-    rax = local_1;
-    rax = local_2;
+    v1 = local_0;
+    v2 = local_1;
+    v3 = local_2;
     return a + b + c + d + e + f + local_2 + local_1 + local_0;
 }
 -- signature
@@ -263,9 +265,9 @@ long (long a, long b, long c, long d, long e, long f)
 -- ir
 fn sum9 @ 0x2014a0 (size 78)
   blk0 @ 0x2014a0:
-    rax = load64((rsp + #0x18))
-    rax = load64((rsp + #0x10))
-    rax = load64((rsp + #0x8))
+    v1 = load64((rsp + #0x18))
+    v2 = load64((rsp + #0x10))
+    v3 = load64((rsp + #0x8))
     ret ((((((((rdi + rsi) + rdx) + rcx) + r8) + r9) + load64((rsp + #0x8))) + load64((rsp + #0x10))) + load64((rsp + #0x18)))
 -- card
 {"addr":"0x2014a0","approxTokens":228,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":78,"unsupported":0}
@@ -296,8 +298,8 @@ fn call_sum9 @ 0x2014f0 (size 80)
     store64(#0x6, (rsp + #0xffffffffffffffd8))
     store64(#0x7, (rsp + #0xffffffffffffffe0))
     store64(#0x8, (rsp + #0xffffffffffffffe8))
-    call 0x2014a0(rdi, #0x1, #0x2, #0x3, #0x4, #0x5)
-    ret rax
+    v2 = call 0x2014a0(rdi, #0x1, #0x2, #0x3, #0x4, #0x5)
+    ret v2
 -- card
 {"addr":"0x2014f0","approxTokens":198,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":80,"unsupported":0}
 
@@ -358,28 +360,28 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     local_19 = a2;
     local_20 = a1;
     local_21 = count;
-    rax = rsp - 0x28;
-    *(uint64_t *)(rax + 0x10) = rsp - 0xe8;
-    *(uint64_t *)(rax + 0x8) = rsp + 0x8;
-    *(uint32_t *)(rax + 0x4) = 0x30;
-    *(uint32_t *)(rax) = 0x8;
+    v1 = rsp - 0x28;
+    *(uint64_t *)(v1 + 0x10) = rsp - 0xe8;
+    *(uint64_t *)(v1 + 0x8) = rsp + 0x8;
+    *(uint32_t *)(v1 + 0x4) = 0x30;
+    *(uint32_t *)(v1) = 0x8;
     local_22 = 0x0;
     local_23 = 0x0;
     while (local_23 < local_21) {
         local_24 = rsp - 0x28;
-        rax = *(uint32_t *)(rsp - 0x28);
-        local_25 = eax;
-        if (eax > 0x28 /* unsigned */) {
-            v3 = local_24;
-            rax = *(uint64_t *)(v3 + 0x8);
-            *(uint64_t *)(v3 + 0x8) = rax + 0x8;
-            local_26 = rax;
+        v2 = *(uint32_t *)(rsp - 0x28);
+        local_25 = v2;
+        if (v2 > 0x28 /* unsigned */) {
+            v6 = local_24;
+            v7 = *(uint64_t *)(v6 + 0x8);
+            *(uint64_t *)(v6 + 0x8) = v7 + 0x8;
+            local_26 = v7;
         } else {
-            v1 = local_24;
-            v2 = local_25;
-            rax = (int64_t)(int32_t)(v2) + *(uint64_t *)(v1 + 0x10);
-            *(uint32_t *)(v1) = v2 + 0x8;
-            local_26 = rax;
+            v3 = local_24;
+            v4 = local_25;
+            v5 = (int64_t)(int32_t)(v4) + *(uint64_t *)(v3 + 0x10);
+            *(uint32_t *)(v3) = v4 + 0x8;
+            local_26 = v5;
         }
         local_22 += *(uint32_t *)(local_26);
         local_23 += 0x1;
@@ -418,32 +420,32 @@ fn sum_varargs @ 0x201540 (size 296)
     store64(rdx, (rsp + #0xffffffffffffff28))
     store64(rsi, (rsp + #0xffffffffffffff20))
     store32(edi, (rsp + #0xfffffffffffffff4))
-    rax = (rsp + #0xffffffffffffffd8)
-    store64((rsp + #0xffffffffffffff18), (rax + #0x10))
-    store64((rsp + #0x8), (rax + #0x8))
-    store32(#0x30, (rax + #0x4))
-    store32(#0x8, rax)
+    v1 = (rsp + #0xffffffffffffffd8)
+    store64((rsp + #0xffffffffffffff18), (v1 + #0x10))
+    store64((rsp + #0x8), (v1 + #0x8))
+    store32(#0x30, (v1 + #0x4))
+    store32(#0x8, v1)
     store32(#0x0, (rsp + #0xffffffffffffffd4))
     store32(#0x0, (rsp + #0xffffffffffffffd0))
   blk3 @ 0x2015d4:
     brif ge (load32((rsp + #0xffffffffffffffd0)) & #0xffffffff), load32((rsp + #0xfffffffffffffff4)) -> 0x20165c
   blk4 @ 0x2015e0:
     store64((rsp + #0xffffffffffffffd8), (rsp + #0xffffffffffffff08))
-    rax = (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff)
-    store32((rax & #0xffffffff), (rsp + #0xffffffffffffff14))
-    brif hi (rax & #0xffffffff), #0x28 -> 0x201622
+    v2 = (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff)
+    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffff14))
+    brif hi (v2 & #0xffffffff), #0x28 -> 0x201622
   blk5 @ 0x2015fd:
-    v1 = load64((rsp + #0xffffffffffffff08))
-    v2 = (load32((rsp + #0xffffffffffffff14)) & #0xffffffff)
-    rax = (sext32(v2) + load64((v1 + #0x10)))
-    store32((((v2 & #0xffffffff) + #0x8) & #0xffffffff), v1)
-    store64(rax, (rsp + #0xffffffffffffff00))
+    v3 = load64((rsp + #0xffffffffffffff08))
+    v4 = (load32((rsp + #0xffffffffffffff14)) & #0xffffffff)
+    v5 = (sext32(v4) + load64((v3 + #0x10)))
+    store32((((v4 & #0xffffffff) + #0x8) & #0xffffffff), v3)
+    store64(v5, (rsp + #0xffffffffffffff00))
     br 0x20163f
   blk6 @ 0x201622:
-    v3 = load64((rsp + #0xffffffffffffff08))
-    rax = load64((v3 + #0x8))
-    store64((rax + #0x8), (v3 + #0x8))
-    store64(rax, (rsp + #0xffffffffffffff00))
+    v6 = load64((rsp + #0xffffffffffffff08))
+    v7 = load64((v6 + #0x8))
+    store64((v7 + #0x8), (v6 + #0x8))
+    store64(v7, (rsp + #0xffffffffffffff00))
   blk7 @ 0x20163f:
     store32(((load32(load64((rsp + #0xffffffffffffff00))) + load32((rsp + #0xffffffffffffffd4))) & #0xffffffff), (rsp + #0xffffffffffffffd4))
     store32(((load32((rsp + #0xffffffffffffffd0)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffd0))

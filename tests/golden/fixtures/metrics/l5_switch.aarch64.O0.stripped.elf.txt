@@ -28,83 +28,64 @@ int32_t sub_210334(int32_t a0) {
     uint64_t local_1; /* [sp-20] */
 
     local_0 = a0;
-    x8 = local_0 - 0xa;
-    local_1 = x8;
-    if (x8 <= 0xf /* unsigned */) {
-        x8 = 0x210368;
+    v3 = local_0 - 0xa;
+    local_1 = v3;
+    if (v3 <= 0xf /* unsigned */) {
         x8 = 0x210368 + dword_200158[local_1];
         switch (*(uint32_t *)(sp - 0x34)) {
         case 10:
             sub_210418(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 11:
             sub_21042c(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 12:
             sub_210444(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 13:
             sub_210458(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 14:
             sub_21046c(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 15:
             sub_210480(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 16:
             sub_210498(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 17:
             sub_2104ac(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 18:
             sub_2104c0(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 19:
             sub_2104d4(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 20:
             sub_2104ec(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 21:
             sub_210500(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 22:
             sub_210518(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 23:
             sub_21052c(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 24:
             sub_210544(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         case 25:
             sub_210558(a0);
-            x8 = 0x220000;
             return dword_2205e8;
         default:
             break;
         }
     }
-    x8 = 0x220000;
     dword_2205e8 = 0x0;
-    x8 = 0x220000;
     return dword_2205e8;
 }
 -- signature
@@ -116,11 +97,10 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x210334 (size 228)
   blk0 @ 0x210334:
     store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
-    x8 = ((load32((sp + #0xffffffffffffffec)) - #0xa) & #0xffffffff)
-    store64(x8, (sp + #0xffffffffffffffe0))
-    brif hi x8, #0xf -> 0x2103f8
+    v3 = ((load32((sp + #0xffffffffffffffec)) - #0xa) & #0xffffffff)
+    store64(v3, (sp + #0xffffffffffffffe0))
+    brif hi v3, #0xf -> 0x2103f8
   blk1 @ 0x21035c:
-    x8 = #0x210368
     x8 = (#0x210368 + load32((#0x200158 + (load64((sp + #0xffffffffffffffe0)) << #0x2)))s)
     switch (load32((sp + #0xffffffffffffffcc)) & #0xffffffff) [10->0x210378, 11->0x210380, 12->0x210388, 13->0x210390, 14->0x210398, 15->0x2103a0, 16->0x2103a8, 17->0x2103b0, 18->0x2103b8, 19->0x2103c0, 20->0x2103c8, 21->0x2103d0, 22->0x2103d8, 23->0x2103e0, 24->0x2103e8, 25->0x2103f0] default 0x2103f8
   blk2 @ 0x210378:
@@ -172,11 +152,9 @@ fn <unnamed> @ 0x210334 (size 228)
     call 0x210558(x0)
     br 0x210404
   blk18 @ 0x2103f8:
-    x8 = #0x220000
     store32(#0x0, #0x2205e8)
     br 0x210404
   blk19 @ 0x210404:
-    x8 = #0x220000
     ret (load32(#0x2205e8) & #0xffffffff)
 -- card
 {"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":228,"unsupported":0}
@@ -508,9 +486,9 @@ int32_t sub_210570(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
 
-    w8 = a0;
-    local_0 = w8;
-    if (w8 - 0x1 == 0x0) {
+    v1 = a0;
+    local_0 = v1;
+    if (v1 - 0x1 == 0x0) {
         local_1 = 0x64;
         return local_1;
     }
@@ -532,9 +510,9 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210570 (size 120)
   blk0 @ 0x210570:
-    x8 = (w0 & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff4))
-    brif eq (((x8 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2105ac
+    v1 = (w0 & #0xffffffff)
+    store32((v1 & #0xffffffff), (sp + #0xfffffffffffffff4))
+    brif eq (((v1 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2105ac
   blk1 @ 0x210588:
     br 0x21058c
   blk2 @ 0x21058c:

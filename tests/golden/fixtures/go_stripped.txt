@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 622 unsupported, 5184 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 622 unsupported, 5182 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1436,11 +1436,12 @@ int64_t main_main(void) {
 
 L_466d00:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466d3f; }
-    local_0 = main_twice(0x15);
-    runtime_printlock(rax);
+    v1 = main_twice(0x15);
+    local_0 = v1;
+    runtime_printlock(v1);
     runtime_printint(local_0);
-    runtime_printnl();
-    return runtime_printunlock(rax);
+    v2 = runtime_printnl();
+    return runtime_printunlock(v2);
 L_466d3f:
     runtime_morestack_noctxt();
     __builtin_trap();
@@ -1454,13 +1455,13 @@ fn main.main @ 0x466d00 (size 96)
   blk0 @ 0x466d00:
     brif ls rsp, load64((r14 + #0x10)) -> 0x466d3f
   blk1 @ 0x466d06:
-    call 0x466cc0(#0x15)
-    store64(rax, (rsp + #0xfffffffffffffff0))
-    call 0x4305a0(rax)
+    v1 = call 0x466cc0(#0x15)
+    store64(v1, (rsp + #0xfffffffffffffff0))
+    call 0x4305a0(v1)
     call 0x430c40(load64((rsp + #0xfffffffffffffff0)))
-    call 0x4307e0()
-    call 0x430600(rax)
-    ret rax
+    v2 = call 0x4307e0()
+    v3 = call 0x430600(v2)
+    ret v3
   blk2 @ 0x466d3f:
     call 0x461de0()
     trap

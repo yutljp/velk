@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 622 unsupported, 5183 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 622 unsupported, 5181 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1442,14 +1442,14 @@ fn main.divmod @ 0x466cc0 (size 64)
 -- decompile
 /* velk pseudo-C: main.sumSlice @ 0x466d00 */
 int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
-    rcx = 0x0;
-    rdx = 0x0;
-    while (a1 > rcx) {
-        rsi = *(uint64_t *)(a0 + rcx * 0x8);
-        rcx = rcx + 0x1;
-        rdx = rdx + rsi;
+    v1 = 0x0;
+    v2 = 0x0;
+    while (a1 > v1) {
+        v3 = *(uint64_t *)(a0 + v1 * 0x8);
+        v1 = v1 + 0x1;
+        v2 = v2 + v3;
     }
-    return rdx;
+    return v2;
 }
 -- signature
 int64_t (uint64_t * a0, int64_t a1)
@@ -1458,17 +1458,17 @@ int64_t (uint64_t * a0, int64_t a1)
 -- ir
 fn main.sumSlice @ 0x466d00 (size 32)
   blk0 @ 0x466d00:
-    rcx = #0x0
-    rdx = #0x0
+    v1 = #0x0
+    v2 = #0x0
     br 0x466d15
   blk1 @ 0x466d0b:
-    rsi = load64((rax + (rcx * #0x8)))
-    rcx = (rcx + #0x1)
-    rdx = (rdx + rsi)
+    v3 = load64((rax + (v1 * #0x8)))
+    v1 = (v1 + #0x1)
+    v2 = (v2 + v3)
   blk2 @ 0x466d15:
-    brif gt rbx, rcx -> 0x466d0b
+    brif gt rbx, v1 -> 0x466d0b
   blk3 @ 0x466d1a:
-    ret rdx
+    ret v2
   blk4 @ 0x466d1e:
     trap
   blk5 @ 0x466d1f:
@@ -1486,9 +1486,9 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
     if (a0 == 0x0) {
         return 0x0;
     }
-    ecx = a0->field_0x10;
-    if (ecx != 0x778cdb8) {
-        if (ecx != 0xcb735792) {
+    v1 = a0->field_0x10;
+    if (v1 != 0x778cdb8) {
+        if (v1 != 0xcb735792) {
             return 0x0;
         }
         if (a0 != 0x46d400) {
@@ -1511,14 +1511,14 @@ fn main.kindName @ 0x466d20 (size 96)
   blk0 @ 0x466d20:
     brif eq rax, #0x0 -> 0x466d6b
   blk1 @ 0x466d2f:
-    rcx = (load32((rax + #0x10)) & #0xffffffff)
-    brif ne (rcx & #0xffffffff), #0x778cdb8 -> 0x466d4c
+    v1 = (load32((rax + #0x10)) & #0xffffffff)
+    brif ne (v1 & #0xffffffff), #0x778cdb8 -> 0x466d4c
   blk2 @ 0x466d3a:
     brif ne rax, #0x46d1c0 -> 0x466d6b
   blk3 @ 0x466d46:
     ret #0x2
   blk4 @ 0x466d4c:
-    brif ne (rcx & #0xffffffff), #0xcb735792 -> 0x466d6b
+    brif ne (v1 & #0xffffffff), #0xcb735792 -> 0x466d6b
   blk5 @ 0x466d54:
     brif ne rax, #0x46d400 -> 0x466d6b
   blk6 @ 0x466d65:
@@ -1580,15 +1580,18 @@ int64_t main_main(void) {
 
 L_466d80:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466e75; }
-    local_0 = main_divmod(0x7, 0x3);
+    v1 = main_divmod(0x7, 0x3);
+    local_0 = v1;
     local_1 = rbx;
     local_2 = 0x1;
     local_3 = 0x2;
     local_4 = 0x3;
-    rax = &local_2;
-    local_5 = main_sumSlice(rax, 0x3);
-    local_6 = main_add(0x1, 0x2);
-    runtime_printlock(rax);
+    v2 = &local_2;
+    v3 = main_sumSlice(v2, 0x3);
+    local_5 = v3;
+    v4 = main_add(0x1, 0x2);
+    local_6 = v4;
+    runtime_printlock(v4);
     runtime_printint(local_5);
     runtime_printsp();
     runtime_printint(local_6);
@@ -1596,13 +1599,14 @@ L_466d80:
     runtime_printint(local_0);
     runtime_printsp();
     runtime_printint(local_1);
-    runtime_printnl();
-    runtime_printunlock(rax);
-    local_5 = main_kindName(0x46d400, 0x4967e8);
-    runtime_printlock(rax);
+    v5 = runtime_printnl();
+    runtime_printunlock(v5);
+    v6 = main_kindName(0x46d400, 0x4967e8);
+    local_5 = v6;
+    runtime_printlock(v6);
     runtime_printint(local_5);
-    runtime_printnl();
-    return runtime_printunlock(rax);
+    v7 = runtime_printnl();
+    return runtime_printunlock(v7);
 L_466e75:
     runtime_morestack_noctxt();
     __builtin_trap();
@@ -1617,18 +1621,18 @@ fn main.main @ 0x466d80 (size 256)
   blk0 @ 0x466d80:
     brif ls rsp, load64((r14 + #0x10)) -> 0x466e75
   blk1 @ 0x466d8a:
-    call 0x466cc0(#0x7, #0x3)
-    store64(rax, (rsp + #0xffffffffffffffc8))
+    v1 = call 0x466cc0(#0x7, #0x3)
+    store64(v1, (rsp + #0xffffffffffffffc8))
     store64(rbx, (rsp + #0xffffffffffffffc0))
     store64(#0x1, (rsp + #0xffffffffffffffd8))
     store64(#0x2, (rsp + #0xffffffffffffffe0))
     store64(#0x3, (rsp + #0xffffffffffffffe8))
-    rax = (rsp + #0xffffffffffffffd8)
-    call 0x466d00(rax, #0x3)
-    store64(rax, (rsp + #0xffffffffffffffd0))
-    call 0x466ca0(#0x1, #0x2)
-    store64(rax, (rsp + #0xfffffffffffffff0))
-    call 0x4305a0(rax)
+    v2 = (rsp + #0xffffffffffffffd8)
+    v3 = call 0x466d00(v2, #0x3)
+    store64(v3, (rsp + #0xffffffffffffffd0))
+    v4 = call 0x466ca0(#0x1, #0x2)
+    store64(v4, (rsp + #0xfffffffffffffff0))
+    call 0x4305a0(v4)
     call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
     call 0x4307a0()
     call 0x430c40(load64((rsp + #0xfffffffffffffff0)))
@@ -1636,15 +1640,15 @@ fn main.main @ 0x466d80 (size 256)
     call 0x430c40(load64((rsp + #0xffffffffffffffc8)))
     call 0x4307a0()
     call 0x430c40(load64((rsp + #0xffffffffffffffc0)))
-    call 0x4307e0()
-    call 0x430600(rax)
-    call 0x466d20(#0x46d400, #0x4967e8)
-    store64(rax, (rsp + #0xffffffffffffffd0))
-    call 0x4305a0(rax)
+    v5 = call 0x4307e0()
+    call 0x430600(v5)
+    v6 = call 0x466d20(#0x46d400, #0x4967e8)
+    store64(v6, (rsp + #0xffffffffffffffd0))
+    call 0x4305a0(v6)
     call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
-    call 0x4307e0()
-    call 0x430600(rax)
-    ret rax
+    v7 = call 0x4307e0()
+    v8 = call 0x430600(v7)
+    ret v8
   blk2 @ 0x466e75:
     call 0x461de0()
     trap

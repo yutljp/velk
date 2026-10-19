@@ -92,10 +92,10 @@ int32_t sub_201240(int64_t a0, int32_t a1) {
     local_2 = 0x0;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        rcx = (int64_t)(int32_t)(local_3);
-        rax = *(uint32_t *)(local_0 + rcx * 0x4);
-        local_4 = eax;
-        if (eax < 0x0) {
+        v1 = (int64_t)(int32_t)(local_3);
+        v2 = *(uint32_t *)(local_0 + v1 * 0x4);
+        local_4 = v2;
+        if (v2 < 0x0) {
             return local_2;
         }
         local_2 += local_4;
@@ -117,10 +117,10 @@ fn <unnamed> @ 0x201240 (size 94)
   blk1 @ 0x201259:
     brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201299
   blk2 @ 0x201265:
-    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
-    rax = (load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))) & #0xffffffff)
-    store32((rax & #0xffffffff), (rsp + #0xffffffffffffffe0))
-    brif ge (rax & #0xffffffff), #0x0 -> 0x201282
+    v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
+    v2 = (load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) & #0xffffffff)
+    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffffe0))
+    brif ge (v2 & #0xffffffff), #0x0 -> 0x201282
   blk3 @ 0x20127d:
     br 0x201299
   blk4 @ 0x201282:
@@ -146,14 +146,14 @@ int32_t sub_2012a0(int64_t a0, int32_t a1) {
     local_2 = 0x0;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        rcx = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + rcx * 0x4) == 0x0) {
+        v1 = (int64_t)(int32_t)(local_3);
+        if (*(uint32_t *)(local_0 + v1 * 0x4) == 0x0) {
             return local_2;
         }
-        rcx = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + rcx * 0x4) >= 0x0) {
-            rcx = (int64_t)(int32_t)(local_3);
-            local_2 += *(uint32_t *)(local_0 + rcx * 0x4);
+        v2 = (int64_t)(int32_t)(local_3);
+        if (*(uint32_t *)(local_0 + v2 * 0x4) >= 0x0) {
+            v3 = (int64_t)(int32_t)(local_3);
+            local_2 += *(uint32_t *)(local_0 + v3 * 0x4);
         }
         local_3 += 0x1;
     }
@@ -173,18 +173,18 @@ fn <unnamed> @ 0x2012a0 (size 119)
   blk1 @ 0x2012b9:
     brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201312
   blk2 @ 0x2012c5:
-    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
-    brif ne load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))), #0x0 -> 0x2012dc
+    v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
+    brif ne load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))), #0x0 -> 0x2012dc
   blk3 @ 0x2012d7:
     br 0x201312
   blk4 @ 0x2012dc:
-    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
-    brif ge load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))), #0x0 -> 0x2012f3
+    v2 = sext32(load32((rsp + #0xffffffffffffffe4)))
+    brif ge load32((load64((rsp + #0xfffffffffffffff0)) + (v2 * #0x4))), #0x0 -> 0x2012f3
   blk5 @ 0x2012ee:
     br 0x201304
   blk6 @ 0x2012f3:
-    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
-    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
+    v3 = sext32(load32((rsp + #0xffffffffffffffe4)))
+    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (v3 * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
   blk7 @ 0x201304:
     store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
     br 0x2012b9

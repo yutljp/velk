@@ -140,9 +140,9 @@ int32_t sub_210300(int32_t a0) {
     uint32_t local_1; /* [sp-c] */
 
     local_0 = 0x0;
-    w8 = a0;
-    local_1 = w8;
-    if (w8 == 0x0) {
+    v1 = a0;
+    local_1 = v1;
+    if (v1 == 0x0) {
         local_0 += 0x1;
     } else {
         if (local_1 - 0x1 != 0x0) {
@@ -170,9 +170,9 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x210300 (size 160)
   blk0 @ 0x210300:
     store32(#0x0, (sp + #0xfffffffffffffff8))
-    x8 = (w0 & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff4))
-    brif eq (x8 & #0xffffffff), #0x0 -> 0x21034c
+    v1 = (w0 & #0xffffffff)
+    store32((v1 & #0xffffffff), (sp + #0xfffffffffffffff4))
+    brif eq (v1 & #0xffffffff), #0x0 -> 0x21034c
   blk1 @ 0x210318:
     br 0x21031c
   blk2 @ 0x21031c:
@@ -214,9 +214,9 @@ int32_t sub_2103a0(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
 
-    w8 = a0;
-    local_0 = w8;
-    if (w8 - 0x1 == 0x0) {
+    v1 = a0;
+    local_0 = v1;
+    if (v1 - 0x1 == 0x0) {
         local_1 = 0xa;
         return local_1;
     }
@@ -242,9 +242,9 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2103a0 (size 148)
   blk0 @ 0x2103a0:
-    x8 = (w0 & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff4))
-    brif eq (((x8 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2103f0
+    v1 = (w0 & #0xffffffff)
+    store32((v1 & #0xffffffff), (sp + #0xfffffffffffffff4))
+    brif eq (((v1 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2103f0
   blk1 @ 0x2103b8:
     br 0x2103bc
   blk2 @ 0x2103bc:
@@ -294,14 +294,13 @@ int32_t sub_210434(int64_t a0, int32_t a1) {
     if (a0 == 0x0) {
         return local_2 & 0x1;
     }
-    w9 = local_1;
     local_2 = 0x0;
-    if (w9 <= 0x0) {
+    if (local_1 <= 0x0) {
         return local_2 & 0x1;
     }
-    w9 = *(uint32_t *)(local_0) - 0x1;
+    v2 = *(uint32_t *)(local_0) - 0x1;
     local_3 = 0x1;
-    if (w9 != 0x0) {
+    if (v2 != 0x0) {
         local_3 = (*(uint32_t *)(local_0 + ((int64_t)(int32_t)(local_1 - 0x1) << 0x2)) - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
     }
     local_2 = local_3;
@@ -321,15 +320,14 @@ fn <unnamed> @ 0x210434 (size 144)
   blk1 @ 0x210450:
     br 0x210454
   blk2 @ 0x210454:
-    x9 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
     store32(#0x0, (sp + #0xfffffffffffffff0))
-    brif le w9, #0x0 -> 0x2104b4
+    brif le (load32((sp + #0xfffffffffffffff4)) & #0xffffffff), #0x0 -> 0x2104b4
   blk3 @ 0x210468:
     br 0x21046c
   blk4 @ 0x21046c:
-    x9 = ((load32(load64((sp + #0xfffffffffffffff8))) - #0x1) & #0xffffffff)
+    v2 = ((load32(load64((sp + #0xfffffffffffffff8))) - #0x1) & #0xffffffff)
     store32(#0x1, (sp + #0xffffffffffffffec))
-    brif eq w9, #0x0 -> 0x2104a8
+    brif eq v2, #0x0 -> 0x2104a8
   blk5 @ 0x210484:
     br 0x210488
   blk6 @ 0x210488:

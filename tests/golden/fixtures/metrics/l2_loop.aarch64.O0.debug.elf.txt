@@ -17,9 +17,9 @@ int sum_while(int n) {
     local_1 = 0x0;
     local_2 = 0x0;
     while (local_2 < local_0) {
-        w8 = local_1 + local_2;
-        local_1 = w8;
-        sink = w8;
+        v2 = local_1 + local_2;
+        local_1 = v2;
+        sink = v2;
         local_2 += 0x1;
     }
     return local_1;
@@ -40,9 +40,9 @@ fn sum_while @ 0x2101d4 (size 100)
   blk2 @ 0x2101f8:
     br 0x2101fc
   blk3 @ 0x2101fc:
-    w8 = (load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) & #0xffffffff))
-    store32(w8, (sp + #0xfffffffffffffff8))
-    store32((w8 & #0xffffffff), #0x220380)
+    v2 = (load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) & #0xffffffff))
+    store32(v2, (sp + #0xfffffffffffffff8))
+    store32((v2 & #0xffffffff), #0x220380)
     br 0x21021c
   blk4 @ 0x21021c:
     store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))
@@ -107,9 +107,9 @@ int sum_skip_odd(int n) {
     local_2 = 0x0;
     while (local_2 < local_0) {
         if ((local_2 & 0x1) != 0x0) {
-            w8 = local_1 + local_2;
-            local_1 = w8;
-            sink = w8;
+            v2 = local_1 + local_2;
+            local_1 = v2;
+            sink = v2;
         }
         local_2 += 0x1;
     }
@@ -137,9 +137,9 @@ fn sum_skip_odd @ 0x21028c (size 116)
   blk5 @ 0x2102c0:
     br 0x2102e4
   blk6 @ 0x2102c4:
-    x8 = ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff8))
-    store32((x8 & #0xffffffff), #0x220380)
+    v2 = ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
+    store32((v2 & #0xffffffff), (sp + #0xfffffffffffffff8))
+    store32((v2 & #0xffffffff), #0x220380)
     br 0x2102e4
   blk7 @ 0x2102e4:
     store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))

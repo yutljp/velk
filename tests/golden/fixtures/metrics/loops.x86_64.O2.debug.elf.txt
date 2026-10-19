@@ -8,19 +8,19 @@
 -- decompile
 /* velk pseudo-C: count_bits @ 0x201190 */
 int count_bits(int32_t x) {
-    rax = 0x0;
+    v1 = 0x0;
     if (x == 0x0) {
-        return rax;
+        return v1;
     }
-    ecx = x;
+    v2 = x;
     do {
-        edx = x & 0x1;
-        rax = eax + edx;
-        ecx = ecx >> 0x1;
+        v3 = x & 0x1;
+        v1 = v1 + v3;
+        v2 = v2 >> 0x1;
         t65 = x;
-        x = ecx;
+        x = v2;
     } while (t65 > 0x1 /* unsigned */);
-    return rax;
+    return v1;
 }
 -- signature
 int (int32_t x)
@@ -29,19 +29,19 @@ int (int32_t x)
 -- ir
 fn count_bits @ 0x201190 (size 33)
   blk0 @ 0x201190:
-    rax = #0x0
+    v1 = #0x0
     brif eq edi, #0x0 -> 0x2011b0
   blk1 @ 0x201196:
-    ecx = edi
+    v2 = edi
   blk2 @ 0x2011a0:
-    edx = (edi & #0x1)
-    rax = (((rax & #0xffffffff) + edx) & #0xffffffff)
-    ecx = (ecx >> #0x1)
+    v3 = (edi & #0x1)
+    v1 = (((v1 & #0xffffffff) + v3) & #0xffffffff)
+    v2 = (v2 >> #0x1)
     t65 = edi
-    edi = ecx
+    edi = v2
     brif hi t65, #0x1 -> 0x2011a0
   blk3 @ 0x2011b0:
-    ret rax
+    ret v1
 -- card
 {"addr":"0x201190","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}
 
@@ -73,19 +73,19 @@ fn sum_until @ 0x2011c0 (size 26)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x2011e0 */
 int sum_till_neg(int *p, int n) {
-    rcx = 0x0;
-    v1 = (n <= 0x0 ? 0x0 : n);
-    edx = 0x0;
+    v1 = 0x0;
+    v2 = (n <= 0x0 ? 0x0 : n);
+    v3 = 0x0;
     do {
-        rax = edx;
-        if (v1 == rcx) {
+        v4 = v3;
+        if (v2 == v1) {
             break;
         }
-        r8 = *(uint32_t *)(p + rcx * 0x4);
-        edx = r8 + rax;
-        rcx = rcx + 0x1;
-    } while (r8d >= 0x0);
-    return eax;
+        v5 = *(uint32_t *)(p + v1 * 0x4);
+        v3 = v5 + v4;
+        v1 = v1 + 0x1;
+    } while (v5 >= 0x0);
+    return v4;
 }
 -- signature
 int (int * p, int n)
@@ -94,19 +94,19 @@ int (int * p, int n)
 -- ir
 fn sum_till_neg @ 0x2011e0 (size 40)
   blk0 @ 0x2011e0:
-    rcx = #0x0
-    v1 = (select le (rsi & #0xffffffff), #0x0 ? #0x0, (rsi & #0xffffffff) & #0xffffffff)
-    rdx = #0x0
+    v1 = #0x0
+    v2 = (select le (rsi & #0xffffffff), #0x0 ? #0x0, (rsi & #0xffffffff) & #0xffffffff)
+    v3 = #0x0
   blk1 @ 0x2011f0:
-    rax = (rdx & #0xffffffff)
-    brif eq v1, rcx -> 0x201207
+    v4 = (v3 & #0xffffffff)
+    brif eq v2, v1 -> 0x201207
   blk2 @ 0x2011f7:
-    r8 = (load32((rdi + (rcx * #0x4))) & #0xffffffff)
-    rdx = ((r8 + rax) & #0xffffffff)
-    rcx = (rcx + #0x1)
-    brif ge (r8 & #0xffffffff), #0x0 -> 0x2011f0
+    v5 = (load32((rdi + (v1 * #0x4))) & #0xffffffff)
+    v3 = ((v5 + v4) & #0xffffffff)
+    v1 = (v1 + #0x1)
+    brif ge (v5 & #0xffffffff), #0x0 -> 0x2011f0
   blk3 @ 0x201207:
-    ret eax
+    ret v4
 -- card
 {"addr":"0x2011e0","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
@@ -117,20 +117,20 @@ int sum_until_zero(int *p, int n) {
     if (n <= 0x0) {
         return 0x0;
     }
-    rcx = n;
-    rdx = 0x0;
-    v1 = 0x0;
-    rax = 0x0;
+    v1 = n;
+    v2 = 0x0;
+    v3 = 0x0;
+    v4 = 0x0;
     do {
-        r8d = *(uint32_t *)(p + v1 * 0x4);
-        if (r8d == 0x0) {
+        v5 = *(uint32_t *)(p + v3 * 0x4);
+        if (v5 == 0x0) {
             break;
         }
         /* unsupported: cmov without compare at 0x201229 */
-        rax = eax + r8d;
-        v1 = v1 + 0x1;
-    } while (rcx != v1);
-    return rax;
+        v4 = v4 + v5;
+        v3 = v3 + 0x1;
+    } while (v1 != v3);
+    return v4;
 }
 -- signature
 int (int * p, int n)
@@ -141,20 +141,20 @@ fn sum_until_zero @ 0x201210 (size 44)
   blk0 @ 0x201210:
     brif le (rsi & #0xffffffff), #0x0 -> 0x201239
   blk1 @ 0x201214:
-    rcx = (rsi & #0xffffffff)
-    rdx = #0x0
-    v1 = #0x0
-    rax = #0x0
+    v1 = (rsi & #0xffffffff)
+    v2 = #0x0
+    v3 = #0x0
+    v4 = #0x0
   blk2 @ 0x201220:
-    r8d = load32((rdi + (v1 * #0x4)))
-    brif eq r8d, #0x0 -> 0x201238
+    v5 = load32((rdi + (v3 * #0x4)))
+    brif eq v5, #0x0 -> 0x201238
   blk3 @ 0x201229:
     unsupported: cmov without compare at 0x201229
-    rax = (((rax & #0xffffffff) + r8d) & #0xffffffff)
-    v1 = (v1 + #0x1)
-    brif ne rcx, v1 -> 0x201220
+    v4 = (((v4 & #0xffffffff) + v5) & #0xffffffff)
+    v3 = (v3 + #0x1)
+    brif ne v1, v3 -> 0x201220
   blk4 @ 0x201238:
-    ret rax
+    ret v4
   blk5 @ 0x201239:
     ret #0x0
 -- card

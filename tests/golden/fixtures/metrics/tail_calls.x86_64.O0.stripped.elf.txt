@@ -23,16 +23,15 @@ fn <unnamed> @ 0x2011a0 (size 22)
 == 0x2011c0 -
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
-void sub_2011c0(int32_t a0) {
+int32_t sub_2011c0(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
 
     local_0 = a0;
     v1 = a0;
-    sub_2011a0(v1 + 0x2);
-    return;
+    return sub_2011a0(v1 + 0x2);
 }
 -- signature
-void (int32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -40,8 +39,8 @@ fn <unnamed> @ 0x2011c0 (size 28)
   blk0 @ 0x2011c0:
     store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
     v1 = (rdi & #0xffffffff)
-    call 0x2011a0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
-    ret rax
+    v3 = call 0x2011a0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v3
 -- card
 {"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
 

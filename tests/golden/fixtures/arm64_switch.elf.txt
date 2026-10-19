@@ -6,18 +6,18 @@
 /* velk pseudo-C: dispatch @ 0x210164 */
 /* ref: 0x200120 .rodata */
 int32_t dispatch(int32_t a0) {
-    w8 = a0 - 0xa;
-    switch (x8) {
+    v1 = a0 - 0xa;
+    switch (v1) {
     case 0:
     case 1:
     case 2:
     case 3:
     case 4:
-        return dword_200120[w8];
+        return dword_200120[v1];
     default:
         return 0x0;
     }
-    return dword_200120[w8];
+    return dword_200120[v1];
 }
 -- signature
 int32_t (int32_t a0)
@@ -26,10 +26,10 @@ int32_t (int32_t a0)
 -- ir
 fn dispatch @ 0x210164 (size 36)
   blk0 @ 0x210164:
-    w8 = ((x0 & #0xffffffff) - #0xa)
-    brif hi w8, #0x4 -> 0x210180
+    v1 = ((x0 & #0xffffffff) - #0xa)
+    brif hi v1, #0x4 -> 0x210180
   blk1 @ 0x210170:
-    ret (load32((#0x200120 + (w8 << #0x2))) & #0xffffffff)
+    ret (load32((#0x200120 + (v1 << #0x2))) & #0xffffffff)
   blk2 @ 0x210180:
     ret #0x0
 -- card

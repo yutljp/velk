@@ -8,9 +8,9 @@ int32_t sub_210154(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
 
-    w8 = a0;
-    local_0 = w8;
-    if (w8 - 0xa == 0x0) {
+    v1 = a0;
+    local_0 = v1;
+    if (v1 - 0xa == 0x0) {
         local_1 = 0x1;
         return local_1;
     }
@@ -40,9 +40,9 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210154 (size 172)
   blk0 @ 0x210154:
-    x8 = (w0 & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xfffffffffffffff4))
-    brif eq (((x8 & #0xffffffff) - #0xa) & #0xffffffff), #0x0 -> 0x2101b0
+    v1 = (w0 & #0xffffffff)
+    store32((v1 & #0xffffffff), (sp + #0xfffffffffffffff4))
+    brif eq (((v1 & #0xffffffff) - #0xa) & #0xffffffff), #0x0 -> 0x2101b0
   blk1 @ 0x21016c:
     br 0x210170
   blk2 @ 0x210170:

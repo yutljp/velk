@@ -18,16 +18,16 @@ double average(double *values, int n) {
     /* unsupported (2 steps): MOVI at 0x2101c0, SIMD store */
     local_2 = 0x0;
     while (true) {
-        w9 = local_1;
-        w8 = local_2 - w9;
-        if (w8 + w9 >= w9) break;
-        w8 = local_0;
-        w9 = local_2;
+        v1 = local_1;
+        v2 = local_2 - v1;
+        if (v2 + v1 >= v1) break;
+        v3 = local_0;
+        v4 = local_2;
         /* unsupported (2 steps): FADD at 0x2101f4, SIMD store */
         local_2 += 0x1;
     }
-    w8 = local_1;
-    if (w8 <= 0x0) {
+    v5 = local_1;
+    if (v5 <= 0x0) {
         /* unsupported (2 steps): MOVI at 0x21023c, SIMD store */
         return values;
     }
@@ -48,14 +48,14 @@ fn average @ 0x2101b4 (size 160)
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk1 @ 0x2101d0:
-    x9 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    x8 = ((load32((sp + #0xffffffffffffffe4)) - (x9 & #0xffffffff)) & #0xffffffff)
-    brif ge (w8 + (x9 & #0xffffffff)), (x9 & #0xffffffff) -> 0x210210
+    v1 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
+    v2 = ((load32((sp + #0xffffffffffffffe4)) - (v1 & #0xffffffff)) & #0xffffffff)
+    brif ge (v2 + (v1 & #0xffffffff)), (v1 & #0xffffffff) -> 0x210210
   blk2 @ 0x2101e0:
     br 0x2101e4
   blk3 @ 0x2101e4:
-    x8 = load64((sp + #0xfffffffffffffff8))
-    x9 = load32((sp + #0xffffffffffffffe4))s
+    v3 = load64((sp + #0xfffffffffffffff8))
+    v4 = load32((sp + #0xffffffffffffffe4))s
     unsupported: FADD at 0x2101f4
     unsupported: SIMD store
     br 0x210200
@@ -63,8 +63,8 @@ fn average @ 0x2101b4 (size 160)
     store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk5 @ 0x210210:
-    x8 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    brif le w8, #0x0 -> 0x21023c
+    v5 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
+    brif le v5, #0x0 -> 0x21023c
   blk6 @ 0x21021c:
     br 0x210220
   blk7 @ 0x210220:
@@ -158,9 +158,9 @@ int compare_doubles(void) {
     local_0 = 0xffffffff;
     return local_0;
 L_2102e8:
-    x8 = 0x0;
+    v1 = 0x0;
     /* unsupported: FCMP at 0x2102f4 */
-    x8 = 0x0;
+    v2 = 0x0;
     local_0 = 0x0;
     return local_0;
 }
@@ -181,9 +181,9 @@ fn compare_doubles @ 0x2102bc (size 84)
     store32(#0xffffffff, (sp + #0xffffffffffffffec))
     br 0x210304
   blk3 @ 0x2102e8:
-    x8 = #0x0
+    v1 = #0x0
     unsupported: FCMP at 0x2102f4
-    x8 = #0x0
+    v2 = #0x0
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x210304
   blk4 @ 0x210304:

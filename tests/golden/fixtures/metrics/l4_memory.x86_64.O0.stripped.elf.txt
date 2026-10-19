@@ -35,8 +35,8 @@ int32_t sub_201240(int64_t a0, int32_t a1) {
     local_2 = 0x0;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        rcx = (int64_t)(int32_t)(local_3);
-        local_2 += *(uint32_t *)(local_0 + rcx * 0x4);
+        v1 = (int64_t)(int32_t)(local_3);
+        local_2 += *(uint32_t *)(local_0 + v1 * 0x4);
         local_3 += 0x1;
     }
     return local_2;
@@ -55,8 +55,8 @@ fn <unnamed> @ 0x201240 (size 73)
   blk1 @ 0x201259:
     brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201284
   blk2 @ 0x201265:
-    rcx = sext32(load32((rsp + #0xffffffffffffffe4)))
-    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (rcx * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
+    v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
+    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
     store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
     br 0x201259
   blk3 @ 0x201284:
@@ -69,9 +69,9 @@ fn <unnamed> @ 0x201240 (size 73)
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 /* ref: 0x2022c8 .bss */
 int32_t sub_201290(void) {
-    eax = dword_2022c8 + 0x1;
-    dword_2022c8 = eax;
-    return eax;
+    v1 = dword_2022c8 + 0x1;
+    dword_2022c8 = v1;
+    return v1;
 }
 -- signature
 int32_t ()
@@ -80,9 +80,9 @@ int32_t ()
 -- ir
 fn <unnamed> @ 0x201290 (size 21)
   blk0 @ 0x201290:
-    eax = (load32(#0x2022c8) + #0x1)
-    store32(eax, #0x2022c8)
-    ret eax
+    v1 = (load32(#0x2022c8) + #0x1)
+    store32(v1, #0x2022c8)
+    ret v1
 -- card
 {"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 

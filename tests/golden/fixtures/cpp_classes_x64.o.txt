@@ -17,17 +17,17 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
         ebp = 0x0;
         return ebp;
     }
-    rbx = a0;
-    r14 = a1;
-    r15 = 0x0;
+    v1 = a0;
+    v2 = a1;
+    v3 = 0x0;
     ebp = 0x0;
     do {
-        a0 = *(uint64_t *)(rbx + r15 * 0x8);
+        a0 = *(uint64_t *)(v1 + v3 * 0x8);
         rax = a0->field_0x0;
-        (*(*(uint64_t *)(rax + 0x10)))();
-        ebp = ebp + eax;
-        r15 = r15 + 0x1;
-    } while (r14 != r15);
+        v4 = (*(*(uint64_t *)(rax + 0x10)))();
+        ebp = ebp + v4;
+        v3 = v3 + 0x1;
+    } while (v2 != v3);
     return ebp;
 }
 -- signature
@@ -40,17 +40,17 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
     store64(rax, (rsp + #0xffffffffffffffd8))
     brif le esi, #0x0 -> 0x36
   blk1 @ 0xb:
-    rbx = rdi
-    r14 = esi
-    r15 = #0x0
+    v1 = rdi
+    v2 = esi
+    v3 = #0x0
     rbp = #0x0
   blk2 @ 0x20:
-    rdi = load64((rbx + (r15 * #0x8)))
+    rdi = load64((v1 + (v3 * #0x8)))
     rax = load64(rdi)
     call *load64((rax + #0x10))
-    rbp = (((rbp & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
-    r15 = (r15 + #0x1)
-    brif ne r14, r15 -> 0x20
+    rbp = (((rbp & #0xffffffff) + (v4 & #0xffffffff)) & #0xffffffff)
+    v3 = (v3 + #0x1)
+    brif ne v2, v3 -> 0x20
   blk3 @ 0x34:
     br 0x38
   blk4 @ 0x36:
