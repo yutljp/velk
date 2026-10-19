@@ -216,7 +216,7 @@ fn <unnamed> @ 0x2012d0 (size 23)
 == 0x2012f0 -
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
-int64_t sub_2012f0(uint8_t *a0, int32_t a1) {
+uint8_t sub_2012f0(uint8_t *a0, int32_t a1) {
     int64_t t1;
     int64_t v1;
     int64_t v3;
@@ -227,10 +227,10 @@ int64_t sub_2012f0(uint8_t *a0, int32_t a1) {
     v3 = v1 & 0xffffffffffffff00 | v1 & 0xf1;
     v4 = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe);
     *a0 = v4;
-    return v4;
+    return v4 & 0xff;
 }
 -- signature
-int64_t (uint8_t * a0, int32_t a1)
+uint8_t (uint8_t * a0, int32_t a1)
 -- references
 
 -- ir
@@ -241,6 +241,6 @@ fn <unnamed> @ 0x2012f0 (size 18)
     v3 = ((v1 & #0xffffffffffffff00) | (v1 & #0xf1))
     v4 = ((v3 & #0xffffffffffffff00) | (((v3 & #0xff) | ((t1 + t1) & #0xe)) & #0xff))
     store8(v4, rdi)
-    ret v4
+    ret (v4 & #0xff)
 -- card
 {"accesses":["a0 +0x0:uint8_t"],"addr":"0x2012f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":18,"unsupported":0}

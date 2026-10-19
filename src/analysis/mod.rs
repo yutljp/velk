@@ -366,6 +366,70 @@ fn set_up_arguments(ir: &mut FunctionIr) {
     }
 }
 
+/// Drops a value nothing reads that loads only from memory the program
+/// cannot change, such as the jump table entry a switch no longer needs:
+/// code, or constant data. Other loads may touch a device and stay.
+fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
+    use crate::ir::Expr;
+    let constant = |address: u64| {
+        image.section_at(address).is_some_and(|section| {
+            section.executable
+                || section.name.contains("rodata")
+                || section.name.contains("rel.ro")
+                || section.name.contains("__const")
+        })
+    };
+    // Every load reads at a constant base inside such memory, plus offsets.
+    fn constant_loads(expr: &Expr, constant: &dyn Fn(u64) -> bool) -> bool {
+        match expr {
+            Expr::Load { addr, .. } => {
+                let mut base = None;
+                let mut terms = vec![addr.as_ref()];
+                while let Some(term) = terms.pop() {
+                    match term {
+                        Expr::Bin {
+                            op: crate::ir::BinOp::Add,
+                            lhs,
+                            rhs,
+                        } => terms.extend([lhs.as_ref(), rhs.as_ref()]),
+                        Expr::Const(value) => base = Some(*value),
+                        other if !constant_loads(other, constant) => return false,
+                        _ => {}
+                    }
+                }
+                base.is_some_and(constant)
+            }
+            other => crate::ir::visit::children(other)
+                .into_iter()
+                .all(|child| constant_loads(child, constant)),
+        }
+    }
+    let live_in = crate::ir::cfg::live_in(ir);
+    for index in 0..ir.blocks.len() {
+        let mut live = crate::ir::cfg::live_out(ir, &live_in, index);
+        let mut keep = vec![true; ir.blocks[index].stmts.len()];
+        for (position, stmt) in ir.blocks[index].stmts.iter().enumerate().rev() {
+            let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+            if let Stmt::Assign { dest, value } = stmt
+                && !live.contains(&dest.index)
+                && constant_loads(value, &constant)
+            {
+                keep[position] = false;
+                continue;
+            }
+            for written in &writes {
+                live.remove(written);
+            }
+            live.extend(reads);
+        }
+        let mut position = 0;
+        ir.blocks[index].stmts.retain(|_| {
+            position += 1;
+            keep[position - 1]
+        });
+    }
+}
+
 /// Drops a write of AArch64's indirect result register that only a call
 /// reads, implicitly, when the callee does not return through memory: the
 /// compiler used it as a scratch register for the call's arguments.
@@ -629,5 +693,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     structures::recover(&mut ir);
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);
+    // Settling simplifies again, which can leave a table read unused.
+    drop_dead_constant_reads(&mut ir, image);
     Analysis { ir, references }
 }

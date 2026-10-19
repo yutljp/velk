@@ -66,10 +66,7 @@ fn pick_op @ 0x10 (size 28)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x2c */
 int32_t apply_table(uint32_t a0, int32_t a1) {
-    w8 = 0xaaab;
-    x9 = 0x0;
     x9 = &table;
-    w8 = 0xaaaaaaab;
     w8 = a0 * 0xaaaaaaab >> 0x21;
     w8 = w8 + (w8 << 0x1);
     w8 = a0 - w8;
@@ -84,10 +81,7 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn apply_table @ 0x2c (size 44)
   blk0 @ 0x2c:
-    x8 = #0xaaab
-    x9 = #0x0
     x9 = #0x290
-    x8 = #0xaaaaaaab
     x8 = ((w0 * #0xaaaaaaab) >> #0x21)
     x8 = (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)
     x8 = ((w0 - (x8 & #0xffffffff)) & #0xffffffff)

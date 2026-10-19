@@ -599,7 +599,7 @@ structs.x86_64.O2 0x201280 big_make: 2 parameters, expected 1
 structs.x86_64.O2 0x2012a0 big_sum: 0 parameters, expected 1
 structs.x86_64.O2 0x2012c0 word_low_byte: returns 4 bytes, expected 1
 structs.x86_64.O2 0x2012d0 flags_level: ok
-structs.x86_64.O2 0x2012f0 flags_set_mode: parameter 1 signedness differs; returns int64_t, expected void
+structs.x86_64.O2 0x2012f0 flags_set_mode: parameter 1 signedness differs; returns uint8_t, expected void
 switch_jumptable.aarch64.O0 0x21018c d7: ok
 switch_jumptable.aarch64.O2 0x210184 d7: ok
 switch_jumptable.x86_64.O0 0x2011c0 d7: ok

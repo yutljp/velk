@@ -67,9 +67,7 @@ fn <unnamed> @ 0x2102d4 (size 28)
 /* velk pseudo-C: sub_2102f0 @ 0x2102f0 */
 /* ref: 0x220528 .data.rel.ro */
 int32_t sub_2102f0(uint32_t a0, int32_t a1) {
-    w8 = 0xaaab;
     x9 = 0x220528;
-    w8 = 0xaaaaaaab;
     w8 = a0 * 0xaaaaaaab >> 0x21;
     w8 = w8 + (w8 << 0x1);
     w8 = a0 - w8;
@@ -84,9 +82,7 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2102f0 (size 44)
   blk0 @ 0x2102f0:
-    x8 = #0xaaab
     x9 = #0x220528
-    x8 = #0xaaaaaaab
     x8 = ((w0 * #0xaaaaaaab) >> #0x21)
     x8 = (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)
     x8 = ((w0 - (x8 & #0xffffffff)) & #0xffffffff)

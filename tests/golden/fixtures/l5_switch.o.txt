@@ -6,15 +6,13 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
-    uint64_t v1;
-    int64_t v4;
+    uint32_t v1;
     int64_t v6;
     int32_t v8;
     int32_t v9;
 
     v1 = a0 - 0xa;
     if (v1 <= 0xf /* unsigned */) {
-        v4 = *(uint8_t *)(0x13c + v1);
         switch (a0) {
         case 10:
             v6 = g_sink + 0xb;
@@ -88,7 +86,6 @@ fn dense @ 0x0 (size 268)
     v1 = ((w0 - #0xa) & #0xffffffff)
     brif hi (v1 & #0xffffffff), #0xf -> 0xfc
   blk1 @ 0x10:
-    v4 = (load8((#0x13c + v1)) & #0xffffffff)
     switch w0 [10->0x28, 11->0xa8, 12->0x74, 13->0x90, 14->0x4c, 15->0xb8, 16->0xd8, 17->0x9c, 18->0xf0, 19->0x64, 20->0xe4, 21->0x40, 22->0x58, 23->0xc8, 24->0x34, 25->0x80] default 0xfc
   blk2 @ 0x28:
     v6 = ((load32(#0x14c) + #0xb) & #0xffffffff)

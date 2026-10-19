@@ -572,13 +572,33 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
             continue;
         }
         if let Some(Stmt::Ret { value }) = block.stmts.last() {
-            let Some((_, bytes)) = partial(value) else {
-                return;
+            // A variable returns what each of its definitions puts in it.
+            let values: Vec<&Expr> = match value {
+                Expr::Reg { index, .. } if *index >= crate::ir::VARIABLE_BASE => ir
+                    .blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .filter_map(|stmt| match stmt {
+                        Stmt::Assign { dest, value } if dest.index == *index => Some(value),
+                        _ => None,
+                    })
+                    .collect(),
+                other => vec![other],
             };
-            if width.is_some_and(|width| width != bytes) {
-                return;
+            for value in values {
+                // A small constant, as `xor eax, eax` makes, fits whatever
+                // width the other returns show.
+                if matches!(value, Expr::Const(constant) if *constant <= 0xff) {
+                    continue;
+                }
+                let Some((_, bytes)) = partial(value) else {
+                    return;
+                };
+                if width.is_some_and(|width| width != bytes) {
+                    return;
+                }
+                width = Some(bytes);
             }
-            width = Some(bytes);
         }
     }
     let Some(bytes) = width else {
@@ -592,10 +612,14 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
         ) {
             continue;
         }
-        if let Some(Stmt::Ret { value }) = block.stmts.last_mut()
-            && let Some((low, _)) = partial(value)
-        {
-            *value = Expr::bin(BinOp::And, low, Expr::Const(mask));
+        if let Some(Stmt::Ret { value }) = block.stmts.last_mut() {
+            match partial(value) {
+                Some((low, _)) => *value = Expr::bin(BinOp::And, low, Expr::Const(mask)),
+                None if matches!(value, Expr::Reg { .. }) => {
+                    *value = Expr::bin(BinOp::And, value.clone(), Expr::Const(mask));
+                }
+                None => {}
+            }
         }
     }
     ir.ret_type = CType::int(bytes, false);

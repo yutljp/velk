@@ -234,7 +234,6 @@ fn _start @ 0x11a0 (size 38)
 -- decompile
 /* velk pseudo-C: deregister_tm_clones @ 0x11d0 */
 int32_t deregister_tm_clones(void) {
-    rax = __TMC_END__;
     return __TMC_END__;
 L_11e3:
     rax = qword_3fe0;
@@ -252,7 +251,6 @@ int32_t ()
 -- ir
 fn deregister_tm_clones @ 0x11d0 (size 48)
   blk0 @ 0x11d0:
-    rax = #0x4010
     br 0x11f8
   blk1 @ 0x11e3:
     rax = load64(#0x3fe0)
@@ -268,7 +266,6 @@ fn deregister_tm_clones @ 0x11d0 (size 48)
 -- decompile
 /* velk pseudo-C: register_tm_clones @ 0x1200 */
 int32_t register_tm_clones(void) {
-    rax = 0x0;
     return 0x0;
 L_1224:
     rax = qword_3ff0;
@@ -286,7 +283,6 @@ int32_t ()
 -- ir
 fn register_tm_clones @ 0x1200 (size 64)
   blk0 @ 0x1200:
-    rax = #0x0
     br 0x1238
   blk1 @ 0x1224:
     rax = load64(#0x3ff0)

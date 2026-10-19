@@ -67,9 +67,7 @@ fn <unnamed> @ 0x201310 (size 21)
 /* velk pseudo-C: sub_201330 @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
 int32_t sub_201330(uint32_t a0, int32_t a1) {
-    rdx = 0xaaaaaaab;
     rdx = 0xaaaaaaab * a0 >> 0x21;
-    rcx = ((rdx + rdx * 0x2) & 0xffffffff);
     rax = a0 % 0x3;
     rcx = 0x202610;
     a0 = a1;
@@ -82,9 +80,7 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201330 (size 34)
   blk0 @ 0x201330:
-    rdx = #0xaaaaaaab
     rdx = ((#0xaaaaaaab * edi) >> #0x21)
-    rcx = ((rdx + (rdx * #0x2)) & #0xffffffff)
     rax = (edi % #0x3)
     rcx = #0x202610
     edi = esi

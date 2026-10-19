@@ -7,11 +7,9 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2023d0 .bss */
 int32_t sub_2011c0(int32_t a0) {
-    int64_t v1;
     int64_t v2;
 
     if (a0 <= 0x9 /* unsigned */) {
-        v1 = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
         switch (a0) {
         case 0:
             v2 = dword_2023d0;
@@ -107,7 +105,6 @@ fn <unnamed> @ 0x2011c0 (size 527)
   blk0 @ 0x2011c0:
     brif hi edi, #0x9 -> 0x201376
   blk1 @ 0x2011c9:
-    v1 = (sext32(load32((#0x200158 + (edi * #0x4)))) + #0x200158)
     switch edi [0->0x2011db, 1->0x2012ef, 2->0x201265, 3->0x201285, 4->0x2011e6, 5->0x201308, 6->0x20133d, 7->0x2012ac, 8->0x20137d, 9->0x201214] default 0x201376
   blk2 @ 0x2011db:
     v2 = load32(#0x2023d0)
