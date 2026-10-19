@@ -180,6 +180,16 @@ impl<'a> Graph<'a> {
         }
     }
 
+    /// A block nothing reaches that only traps, as the filler between
+    /// functions does.
+    fn padding(&self, block: usize) -> bool {
+        !self.successors.iter().any(|next| next.contains(&block))
+            && self.blocks[block]
+                .stmts
+                .iter()
+                .all(|stmt| matches!(stmt, Stmt::Trap))
+    }
+
     fn in_loop(&self, header: usize, block: usize) -> bool {
         self.loops.get(&header).is_some_and(|body| body[block])
     }
@@ -477,14 +487,9 @@ pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
     }
     let graph = Graph::new(ir);
     (1..ir.blocks.len())
-        .filter(|block| graph.idom[*block].is_none() && !padding(&ir.blocks[*block]))
+        .filter(|block| graph.idom[*block].is_none() && !graph.padding(*block))
         .map(|block| ir.blocks[block].start)
         .collect()
-}
-
-/// A block that only traps, as the filler between functions does.
-fn padding(block: &Block) -> bool {
-    block.stmts.iter().all(|stmt| matches!(stmt, Stmt::Trap))
 }
 
 /// Rewrites each jump as falling through, `break`, `continue` or a goto.
@@ -823,7 +828,7 @@ pub(super) fn structure(ir: &FunctionIr) -> Option<Vec<Node>> {
     // Code the entry does not reach, and joins of it with code the entry
     // does reach, follow the function's own code.
     for block in 1..ir.blocks.len() {
-        if graph.idom[block].is_none() && !padding(&ir.blocks[block]) {
+        if graph.idom[block].is_none() && !graph.padding(block) {
             nodes.extend(graph.tree(block, 0)?);
         }
     }
