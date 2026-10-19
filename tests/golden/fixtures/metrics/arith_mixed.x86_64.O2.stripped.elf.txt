@@ -90,7 +90,7 @@ int32_t sub_2011e0(uint64_t *a0, int64_t a1) {
         xmm0 = 0x0;
         xmm0_hi = 0x0;
         a1 = 0x0;
-        xmm1d = 0x0;
+        xmm1 = 0x0;
         xmm1_hi = 0x0;
         do {
             xmm2 = *(uint64_t *)(a0 + a1);
@@ -102,7 +102,7 @@ int32_t sub_2011e0(uint64_t *a0, int64_t a1) {
             a1 = a1 + 0x20;
         } while (rax != a1);
         /* unsupported (5 steps): Paddd at 0x20123c, Pshufd at 0x201240, Paddd at 0x201245, Pshufd at 0x201249, Paddd at 0x20124e */
-        rax = xmm1d;
+        rax = (uint32_t)xmm1;
         if (rdx == rcx) {
             return rax;
         }

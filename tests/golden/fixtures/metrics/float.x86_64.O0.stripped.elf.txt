@@ -95,14 +95,14 @@ uint64_t sub_201280(void) {
     uint32_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
-    local_0 = xmm1d;
-    local_1 = xmm2d;
-    xmm1d = xmm0d;
+    local_0 = (uint32_t)xmm1;
+    local_1 = (uint32_t)xmm2;
+    xmm1 = (uint32_t)xmm0;
     xmm1_hi = 0x0;
-    xmm0d = local_0;
+    xmm0 = local_0;
     xmm0_hi = 0x0;
     /* unsupported: Subss at 0x20129d */
-    xmm2d = local_1;
+    xmm2 = local_1;
     xmm2_hi = 0x0;
     /* unsupported (2 steps): Mulss at 0x2012a7, Addss at 0x2012ab */
     return rax;
@@ -153,7 +153,7 @@ fn <unnamed> @ 0x2012c0 (size 16)
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
 /* ref: 0x200120 .rodata */
 uint64_t sub_2012d0(void) {
-    xmm0d = xmm0d;
+    xmm0 = (uint32_t)xmm0;
     xmm0_hi = 0x0;
     /* unsupported: Cvtss2sd at 0x2012de */
     xmm1 = qword_200120;

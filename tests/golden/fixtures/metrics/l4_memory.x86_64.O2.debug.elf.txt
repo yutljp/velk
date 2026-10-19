@@ -39,7 +39,7 @@ int array_sum(int *a, int n) {
         xmm0 = 0x0;
         xmm0_hi = 0x0;
         n = 0x0;
-        xmm1d = 0x0;
+        xmm1 = 0x0;
         xmm1_hi = 0x0;
         do {
             xmm2 = *(uint64_t *)(a + n);
@@ -51,7 +51,7 @@ int array_sum(int *a, int n) {
             n = n + 0x20;
         } while (rax != n);
         /* unsupported (5 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e */
-        rax = xmm1d;
+        rax = (uint32_t)xmm1;
         if (rdx == rcx) {
             return rax;
         }

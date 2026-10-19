@@ -395,7 +395,8 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
                 match index {
                     0..=7 => format!("e{}", &base[1..]),
                     8..=15 => format!("{base}d"),
-                    _ => format!("{base}d"),
+                    // The segment bases and xmm halves have no 32-bit names.
+                    _ => format!("(uint32_t){base}"),
                 }
             } else {
                 base.to_owned()
@@ -634,5 +635,12 @@ mod tests {
         };
         assert_eq!(Expr::bin(BinOp::And, reg.clone(), reg.clone()), reg);
         assert_eq!(Expr::bin(BinOp::Or, reg.clone(), reg.clone()), reg);
+    }
+
+    #[test]
+    fn registers_without_32_bit_names_read_as_casts() {
+        use crate::loader::Isa;
+        assert_eq!(super::reg_name(Isa::X86_64, 9, 32), "r9d");
+        assert_eq!(super::reg_name(Isa::X86_64, 20, 32), "(uint32_t)xmm1");
     }
 }

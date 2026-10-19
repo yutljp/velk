@@ -28,8 +28,12 @@ pub(crate) fn narrow_registers(ir: &FunctionIr) -> std::collections::HashSet<u16
             }
         }
     }
+    // The x86 segment bases and xmm halves have no 32-bit names to take.
+    let named = |index: &u16| {
+        ir.isa != crate::loader::Isa::X86_64 || !(16..crate::ir::TEMP_BASE).contains(index)
+    };
     seen.into_iter()
-        .filter(|index| !wide.contains(index))
+        .filter(|index| !wide.contains(index) && named(index))
         .collect()
 }
 

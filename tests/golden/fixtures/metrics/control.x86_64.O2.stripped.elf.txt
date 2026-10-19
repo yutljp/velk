@@ -322,7 +322,7 @@ int32_t sub_2013d0(uint64_t *a0, int64_t a1) {
         r8 = 0x0;
         xmm2 = 0x0;
         xmm2_hi = 0x0;
-        xmm0d = 0x0;
+        xmm0 = 0x0;
         xmm0_hi = 0x0;
         do {
             xmm3 = *(uint64_t *)(a0 + r8);
@@ -339,7 +339,7 @@ int32_t sub_2013d0(uint64_t *a0, int64_t a1) {
             r8 = r8 + 0x20;
         } while (rax != r8);
         /* unsupported (5 steps): Paddd at 0x201446, Pshufd at 0x20144a, Paddd at 0x20144f, Pshufd at 0x201453, Paddd at 0x201458 */
-        rax = xmm0d;
+        rax = (uint32_t)xmm0;
         if (a1 == rcx) {
             return rax;
         }

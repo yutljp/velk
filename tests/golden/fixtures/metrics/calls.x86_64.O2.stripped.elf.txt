@@ -164,7 +164,7 @@ int32_t sub_201370(int32_t a0) {
         rax = eax - 0x8;
     } while (eax != 0x0);
     /* unsupported (9 steps): Pshufd at 0x20141d, Pshufd at 0x201422, Pmuludq at 0x201427, Pmuludq at 0x20142b, Pshufd at 0x20142f, Pmuludq at 0x201434, Pshufd at 0x201438, Pmuludq at 0x20143d, Pmuludq at 0x201441 */
-    rax = xmm1d;
+    rax = (uint32_t)xmm1;
     if (ecx == edx) {
         return rax;
     }
