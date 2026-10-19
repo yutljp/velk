@@ -68,13 +68,13 @@ fn array_sum @ 0x201240 (size 73)
 -- decompile
 /* velk pseudo-C: bump @ 0x201290 */
 /* ref: 0x2022c8 .bss */
-uint32_t bump(void) {
+int32_t bump(void) {
     eax = g_counter + 0x1;
     g_counter = eax;
     return eax;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x2022c8 .bss
 -- ir

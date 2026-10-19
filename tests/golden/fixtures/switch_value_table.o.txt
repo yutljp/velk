@@ -4,7 +4,7 @@
 == 0x0 dispatch
 -- decompile
 /* velk pseudo-C: dispatch @ 0x0 */
-uint32_t dispatch(uint32_t a0) {
+int32_t dispatch(int32_t a0) {
     w8 = a0 - 0xa;
     if (w8 > 0x4 /* unsigned */) {
         return 0x0;
@@ -12,7 +12,7 @@ uint32_t dispatch(uint32_t a0) {
     return dword_24[w8];
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

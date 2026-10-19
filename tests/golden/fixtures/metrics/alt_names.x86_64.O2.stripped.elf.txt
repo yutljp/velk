@@ -5,11 +5,11 @@
 == 0x201170 -
 -- decompile
 /* velk pseudo-C: sub_201170 @ 0x201170 */
-uint32_t sub_201170(uint32_t a0, uint32_t a1, uint32_t a2) {
+int32_t sub_201170(int32_t a0, int32_t a1, int32_t a2) {
     return a0 + a1 + a2;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir

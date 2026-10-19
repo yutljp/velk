@@ -13,7 +13,7 @@
 /* velk pseudo-C: sub_210214 @ 0x210214 */
 /* struct: a0 +0x0:uint8_t */
 /* struct: a1 +0x0:uint8_t */
-uint64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
+int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     if (a2 == 0x0) {
         return a0;
     }
@@ -65,7 +65,7 @@ L_2102a4:
     return a0;
 }
 -- signature
-uint64_t (uint8_t * a0, uint8_t * a1, uint64_t a2)
+int64_t (uint8_t * a0, uint8_t * a1, uint64_t a2)
 -- references
 
 -- ir
@@ -129,14 +129,14 @@ fn <unnamed> @ 0x210214 (size 176)
 == 0x2102c4 -
 -- decompile
 /* velk pseudo-C: sub_2102c4 @ 0x2102c4 */
-uint64_t sub_2102c4(uint64_t a0, uint64_t a1, uint64_t a2) {
+int64_t sub_2102c4(int64_t a0, int64_t a1, int64_t a2) {
     if (a2 != 0x0) {
         return a0;
     }
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1, uint64_t a2)
+int64_t (int64_t a0, int64_t a1, int64_t a2)
 -- references
 
 -- ir
@@ -153,7 +153,7 @@ fn <unnamed> @ 0x2102c4 (size 12)
 == 0x2102d0 -
 -- decompile
 /* velk pseudo-C: sub_2102d0 @ 0x2102d0 */
-uint64_t sub_2102d0(uint8_t *a0) {
+int64_t sub_2102d0(uint8_t *a0) {
     x8 = 0x0;
     do {
         w9 = *(uint8_t *)(a0 + x8);
@@ -162,7 +162,7 @@ uint64_t sub_2102d0(uint8_t *a0) {
     return x8 - 0x1;
 }
 -- signature
-uint64_t (uint8_t * a0)
+int64_t (uint8_t * a0)
 -- references
 
 -- ir
@@ -182,11 +182,11 @@ fn <unnamed> @ 0x2102d0 (size 24)
 -- decompile
 /* velk pseudo-C: sub_2102e8 @ 0x2102e8 */
 /* ref: 0x220350 .bss */
-uint32_t sub_2102e8(uint32_t a0, uint32_t a1) {
+int32_t sub_2102e8(int32_t a0, int32_t a1) {
     return *(uint32_t *)(0x220350 + ((a0 & 0x3) << 0x5) + ((a1 & 0x7) << 0x2));
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 0x220350 .bss
 -- ir
@@ -200,12 +200,12 @@ fn <unnamed> @ 0x2102e8 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210304 @ 0x210304 */
 /* ref: 0x220350 .bss */
-uint64_t sub_210304(uint64_t a0, uint32_t a1, uint32_t a2) {
+int64_t sub_210304(int64_t a0, int32_t a1, int32_t a2) {
     *(uint32_t *)(0x220350 + ((a0 & 0x3) << 0x5) + ((a1 & 0x7) << 0x2)) = a2;
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0, uint32_t a1, uint32_t a2)
+int64_t (int64_t a0, int32_t a1, int32_t a2)
 -- references
 0x220350 .bss
 -- ir
@@ -219,11 +219,11 @@ fn <unnamed> @ 0x210304 (size 28)
 == 0x210320 -
 -- decompile
 /* velk pseudo-C: sub_210320 @ 0x210320 */
-uint64_t sub_210320(uint64_t a0, int64_t a1) {
+int64_t sub_210320(int64_t a0, int64_t a1) {
     return a1 - a0 >>> 0x2;
 }
 -- signature
-uint64_t (uint64_t a0, int64_t a1)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
@@ -237,11 +237,11 @@ fn <unnamed> @ 0x210320 (size 12)
 -- decompile
 /* velk pseudo-C: sub_21032c @ 0x21032c */
 /* struct: a0 +0x0:uint32_t */
-uint32_t sub_21032c(uint32_t *a0) {
+int32_t sub_21032c(uint32_t *a0) {
     return a0->field_0x0 + a0->field_0x0;
 }
 -- signature
-uint32_t (uint32_t * a0)
+int32_t (uint32_t * a0)
 -- references
 
 -- ir
@@ -256,14 +256,14 @@ fn <unnamed> @ 0x21032c (size 16)
 /* velk pseudo-C: sub_21033c @ 0x21033c */
 /* struct: a0 +0x0:uint32_t */
 /* struct: a1 +0x0:uint32_t */
-uint64_t sub_21033c(uint32_t *a0, uint32_t *a1) {
+int64_t sub_21033c(uint32_t *a0, uint32_t *a1) {
     w9 = a0->field_0x0;
     a0->field_0x0 = a1->field_0x0;
     a1->field_0x0 = w9;
     return a0;
 }
 -- signature
-uint64_t (uint32_t * a0, uint32_t * a1)
+int64_t (uint32_t * a0, uint32_t * a1)
 -- references
 
 -- ir

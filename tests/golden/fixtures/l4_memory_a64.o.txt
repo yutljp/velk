@@ -9,11 +9,11 @@
 /* velk pseudo-C: point_dot @ 0x0 */
 /* struct: a0 +0x0:uint32_t, +0x4:uint32_t */
 /* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
-uint32_t point_dot(uint32_t *a0, uint32_t *a1) {
+int32_t point_dot(uint32_t *a0, uint32_t *a1) {
     return a1->field_0x4 * a0->field_0x4 + a1->field_0x0 * a0->field_0x0;
 }
 -- signature
-uint32_t (uint32_t * a0, uint32_t * a1)
+int32_t (uint32_t * a0, uint32_t * a1)
 -- references
 
 -- ir
@@ -89,12 +89,12 @@ fn bump @ 0x44 (size 20)
 == 0x58 banner_first
 -- decompile
 /* velk pseudo-C: banner_first @ 0x58 */
-uint32_t banner_first(void) {
+int32_t banner_first(void) {
     w0 = *(uint8_t *)(banner);
     return w0;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 
 -- ir

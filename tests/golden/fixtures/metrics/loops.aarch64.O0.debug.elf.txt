@@ -7,7 +7,7 @@
 == 0x21019c count_bits
 -- decompile
 /* velk pseudo-C: count_bits @ 0x21019c */
-int count_bits(uint32_t x) {
+int count_bits(int32_t x) {
     uint32_t local_0; /* [sp-4] */
     uint32_t local_1; /* [sp-8] */
 
@@ -20,7 +20,7 @@ int count_bits(uint32_t x) {
     return local_1;
 }
 -- signature
-int (uint32_t x)
+int (int32_t x)
 -- references
 
 -- ir

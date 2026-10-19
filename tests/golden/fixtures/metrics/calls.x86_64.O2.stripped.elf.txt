@@ -13,11 +13,11 @@
 == 0x2012f0 -
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
-uint32_t sub_2012f0(uint32_t a0) {
+int32_t sub_2012f0(int32_t a0) {
     return a0 + a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -30,11 +30,11 @@ fn <unnamed> @ 0x2012f0 (size 16)
 == 0x201300 -
 -- decompile
 /* velk pseudo-C: sub_201300 @ 0x201300 */
-uint32_t sub_201300(uint32_t a0) {
+int32_t sub_201300(int32_t a0) {
     return a0 * a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -47,11 +47,11 @@ fn <unnamed> @ 0x201300 (size 16)
 == 0x201310 -
 -- decompile
 /* velk pseudo-C: sub_201310 @ 0x201310 */
-uint32_t sub_201310(uint32_t a0) {
+int32_t sub_201310(int32_t a0) {
     return (a0 == 0x0 ? 0x2012f0 : 0x201300);
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -65,7 +65,7 @@ fn <unnamed> @ 0x201310 (size 32)
 -- decompile
 /* velk pseudo-C: sub_201330 @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
-uint32_t sub_201330(uint32_t a0, uint32_t a1) {
+int32_t sub_201330(uint32_t a0, int32_t a1) {
     rdx = 0xaaaaaaab;
     rdx = 0xaaaaaaab * a0 >> 0x21;
     rcx = ((rdx + rdx * 0x2) & 0xffffffff);
@@ -75,7 +75,7 @@ uint32_t sub_201330(uint32_t a0, uint32_t a1) {
     goto *(qword_202610[rax]);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (uint32_t a0, int32_t a1)
 -- references
 0x202610 .data.rel.ro
 -- ir
@@ -94,7 +94,7 @@ fn <unnamed> @ 0x201330 (size 48)
 == 0x201360 -
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
-uint32_t sub_201360(uint32_t a0, uint32_t a1) {
+int32_t sub_201360(int32_t a0, int32_t a1) {
     uint64_t local_0; /* [sp-8] */
 
     local_0 = rax;
@@ -104,7 +104,7 @@ uint32_t sub_201360(uint32_t a0, uint32_t a1) {
     return eax + 0x1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -263,7 +263,7 @@ fn <unnamed> @ 0x201370 (size 240)
 == 0x201460 -
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
-uint32_t sub_201460(uint32_t a0) {
+int32_t sub_201460(int32_t a0) {
     for (;;) {
         if (a0 == 0x0) {
             return 0x0;
@@ -277,7 +277,7 @@ uint32_t sub_201460(uint32_t a0) {
     return 0x1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -302,11 +302,11 @@ fn <unnamed> @ 0x201460 (size 48)
 == 0x201490 -
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
-uint64_t sub_201490(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5) {
+int64_t sub_201490(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
     return a2 + a3 + (a1 + a0) + a4 + a5 + *(uint64_t *)(rsp + 0x8) + *(uint64_t *)(rsp + 0x10) + *(uint64_t *)(rsp + 0x18);
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- references
 
 -- ir
@@ -319,7 +319,7 @@ fn <unnamed> @ 0x201490 (size 32)
 == 0x2014b0 -
 -- decompile
 /* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
-uint32_t sub_2014b0(void) {
+int32_t sub_2014b0(void) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-18] */
     uint64_t local_2; /* [sp-20] */
@@ -338,7 +338,7 @@ uint32_t sub_2014b0(void) {
     return rax;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 
 -- ir
@@ -361,7 +361,7 @@ fn <unnamed> @ 0x2014b0 (size 64)
 == 0x2014f0 -
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
-int32_t sub_2014f0(int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5) {
+int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
     uint64_t local_0; /* [sp-b0] */
     uint64_t local_1; /* [sp-a8] */
     uint64_t local_2; /* [sp-a0] */
@@ -470,7 +470,7 @@ L_2015fb:
     return rax;
 }
 -- signature
-int32_t (int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- references
 
 -- ir

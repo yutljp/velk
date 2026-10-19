@@ -1278,11 +1278,11 @@
 == 0x466ca0 main.add
 -- decompile
 /* velk pseudo-C: main.add @ 0x466ca0 */
-uint64_t main_add(uint64_t a0, uint64_t a1) {
+int64_t main_add(int64_t a0, int64_t a1) {
     return a0 + a1;
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
@@ -1351,7 +1351,7 @@ fn main.add @ 0x466ca0 (size 32)
 == 0x466cc0 main.divmod
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
-uint64_t main_divmod(int64_t a0, int64_t a1) {
+int64_t main_divmod(int64_t a0, int64_t a1) {
     switch (a1) {
     case -1:
         v1 = -a0;
@@ -1365,7 +1365,7 @@ uint64_t main_divmod(int64_t a0, int64_t a1) {
     }
 }
 -- signature
-uint64_t (int64_t a0, int64_t a1)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
@@ -1438,7 +1438,7 @@ fn main.divmod @ 0x466cc0 (size 64)
 == 0x466d00 main.sumSlice
 -- decompile
 /* velk pseudo-C: main.sumSlice @ 0x466d00 */
-uint64_t main_sumSlice(uint64_t *a0, int64_t a1) {
+int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
     uint64_t local_0; /* [sp+8] */
 
     local_0 = a0;
@@ -1454,7 +1454,7 @@ L_466d15:
     return rdx;
 }
 -- signature
-uint64_t (uint64_t * a0, int64_t a1)
+int64_t (uint64_t * a0, int64_t a1)
 -- references
 
 -- ir
@@ -1485,7 +1485,7 @@ fn main.sumSlice @ 0x466d00 (size 32)
 /* ref: 0x46d1c0 .rodata */
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* struct: a0 +0x10:uint32_t */
-uint32_t main_kindName(uint32_t *a0, uint64_t a1) {
+int32_t main_kindName(uint32_t *a0, int64_t a1) {
     uint64_t local_0; /* [sp+8] */
     uint64_t local_1; /* [sp+10] */
 
@@ -1510,7 +1510,7 @@ L_466d4c:
     return 0x1;
 }
 -- signature
-uint32_t (uint32_t * a0, uint64_t a1)
+int32_t (uint32_t * a0, int64_t a1)
 -- references
 0x46d1c0 .rodata
 0x46d400 -> 0x8 "noptrdata"
@@ -1579,7 +1579,7 @@ fn main.kindName @ 0x466d20 (size 96)
 /* velk pseudo-C: main.main @ 0x466d80 */
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* ref: 0x4967e8 -> 0x1 ".text" */
-uint64_t main_main(void) {
+int64_t main_main(void) {
     uint64_t local_0; /* [sp-38] */
     uint64_t local_1; /* [sp-40] */
     uint64_t local_2; /* [sp-28] */
@@ -1640,7 +1640,7 @@ L_466e75:
     goto L_466d80;
 }
 -- signature
-uint64_t ()
+int64_t ()
 -- references
 0x46d400 -> 0x8 "noptrdata"
 0x4967e8 -> 0x1 ".text"

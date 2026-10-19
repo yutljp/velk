@@ -21,7 +21,7 @@
 0	l0_arith_a64.o	pick	has	? a0 : a1
 0	l0_arith_a64.o	negate	has	return -a0;
 0	l0_arith_x64.o	add3	has	+ a2;
-0	l0_arith_x64.o	add3	has	uint32_t add3(uint32_t a0, uint32_t a1, uint32_t a2)
+0	l0_arith_x64.o	add3	has	int32_t add3(int32_t a0, int32_t a1, int32_t a2)
 0	l0_arith_x64.o	negate	has	return -a0;
 
 # ---- L1 branches: readable as ternaries/if, no leftover goto ----
@@ -68,7 +68,8 @@
 6	tail_calls_stripped.o	-	count	3
 6	tail_indirect_stripped.o	-	count	2
 6	l6_abi_a64.o	six_args	has	a4 + a5
-6	l6_abi_a64.o	wide_add	has	uint64_t wide_add(uint64_t a0, uint64_t a1)
+6	l6_abi_a64.o	wide_add	has	int64_t wide_add(
+6	l6_abi_a64.o	wide_add	known_has	uint64_t wide_add(uint64_t a0, uint64_t a1)
 6	l6_abi_a64.o	tail_direct	has	tail_target();
 6	l6_abi_a64.o	tail_indirect	has	goto *(
 
@@ -77,7 +78,7 @@
 7	go_stripped	-	count	1273
 7	go_probe	-	has	main.divmod
 7	go_probe	-	has	main.sumSlice
-7	go_probe	main.add	has	uint64_t main_add(uint64_t a0, uint64_t a1)
+7	go_probe	main.add	has	int64_t main_add(int64_t a0, int64_t a1)
 7	rust_demo	-	has	rust_demo::
 7	rust_probe_stripped	-	count	515
 7	rust_probe_stripped	-	has_any	_main|entry

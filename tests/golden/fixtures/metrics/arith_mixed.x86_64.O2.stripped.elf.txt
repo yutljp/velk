@@ -7,11 +7,11 @@
 == 0x201190 -
 -- decompile
 /* velk pseudo-C: sub_201190 @ 0x201190 */
-uint32_t sub_201190(uint32_t a0, uint32_t a1, uint32_t a2) {
+int32_t sub_201190(int32_t a0, int32_t a1, int32_t a2) {
     return a0 + a1 + a2;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir
@@ -59,11 +59,11 @@ fn <unnamed> @ 0x2011a0 (size 48)
 -- decompile
 /* velk pseudo-C: sub_2011d0 @ 0x2011d0 */
 /* struct: a0 +0x4:uint32_t */
-uint32_t sub_2011d0(uint32_t *a0) {
+int32_t sub_2011d0(uint32_t *a0) {
     return a0->field_0x4 + a0->field_0x0;
 }
 -- signature
-uint32_t (uint32_t * a0)
+int32_t (uint32_t * a0)
 -- references
 
 -- ir

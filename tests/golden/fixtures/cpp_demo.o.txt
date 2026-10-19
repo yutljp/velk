@@ -6,11 +6,11 @@
 == 0x0 ns::add(int, int)
 -- decompile
 /* velk pseudo-C: ns::add(int, int) @ 0x0 */
-uint32_t ns__add_int__int_(uint32_t a0, uint32_t a1) {
+int32_t ns__add_int__int_(int32_t a0, int32_t a1) {
     return a1 + a0;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -23,11 +23,11 @@ fn ns::add(int, int) @ 0x0 (size 8)
 == 0x8 ns::mul(int, int)
 -- decompile
 /* velk pseudo-C: ns::mul(int, int) @ 0x8 */
-uint32_t ns__mul_int__int_(uint32_t a0, uint32_t a1) {
+int32_t ns__mul_int__int_(int32_t a0, int32_t a1) {
     return a1 * a0;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -40,7 +40,7 @@ fn ns::mul(int, int) @ 0x8 (size 8)
 == 0x10 use(int)
 -- decompile
 /* velk pseudo-C: use(int) @ 0x10 */
-uint32_t use_int_(uint32_t a0) {
+int32_t use_int_(int32_t a0) {
     x1 = 0x2;
     x19 = a0;
     ns__mul_int__int_();
@@ -50,7 +50,7 @@ uint32_t use_int_(uint32_t a0) {
     return a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

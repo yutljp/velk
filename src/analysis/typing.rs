@@ -16,10 +16,18 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
         .iter()
         .map(|param| narrow(ir, param.index) && !param.ty.is_pointer() && param.ty != CType::I32)
         .collect();
+    let evidence = SignEvidence::of(ir);
+    // Without an unsigned operation on it, an integer is most likely signed,
+    // as C's `int` and `long` are.
     let signed: Vec<bool> = ir
         .params
         .iter()
-        .map(|param| ir.signed_params.contains(&param.index) && !param.ty.is_pointer())
+        .map(|param| {
+            !param.ty.is_pointer()
+                && (ir.signed_params.contains(&param.index)
+                    || evidence.signed.contains(&param.index)
+                    || !evidence.unsigned.contains(&param.index))
+        })
         .collect();
     for ((param, narrow), signed) in ir
         .params
@@ -28,7 +36,7 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
         .zip(signed.iter().copied())
     {
         if signed {
-            // Signedness comes from the comparison, width from the body.
+            // Signedness comes from the operations, width from the body.
             if param.ty == CType::U32 || (param.ty == CType::U64 && narrow) {
                 param.ty = CType::I32;
             } else if param.ty == CType::U64 {
@@ -49,6 +57,99 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
         } else {
             CType::U64
         };
+    }
+    // As for the parameters, a returned integer no unsigned operation
+    // computes is most likely signed.
+    let mut returned = SignEvidence::default();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let crate::ir::Stmt::Ret { value } = stmt {
+            returned.walk(value);
+        }
+    }
+    if !returned.any_unsigned {
+        if ir.ret_type == CType::U32 {
+            ir.ret_type = CType::I32;
+        } else if ir.ret_type == CType::U64 {
+            ir.ret_type = CType::I64;
+        }
+    }
+}
+
+/// The registers signed operations read, and those unsigned ones read:
+/// comparisons, divisions and right shifts.
+#[derive(Default)]
+struct SignEvidence {
+    signed: std::collections::HashSet<u16>,
+    unsigned: std::collections::HashSet<u16>,
+    /// Some unsigned operation was seen, whatever it read.
+    any_unsigned: bool,
+}
+
+impl SignEvidence {
+    fn of(ir: &FunctionIr) -> Self {
+        use crate::ir::Stmt;
+        let mut evidence = Self::default();
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            match stmt {
+                Stmt::Assign { value, .. } | Stmt::Ret { value } => evidence.walk(value),
+                Stmt::Store { addr, value, .. } => {
+                    evidence.walk(addr);
+                    evidence.walk(value);
+                }
+                Stmt::Brif { cond, lhs, rhs, .. } => {
+                    evidence.compare(*cond, lhs, rhs);
+                    evidence.walk(lhs);
+                    evidence.walk(rhs);
+                }
+                Stmt::Switch { index, .. } => evidence.walk(index),
+                _ => {}
+            }
+        }
+        evidence
+    }
+
+    fn note(&mut self, signed: bool, operands: &[&crate::ir::Expr]) {
+        let into = if signed {
+            &mut self.signed
+        } else {
+            self.any_unsigned = true;
+            &mut self.unsigned
+        };
+        for operand in operands {
+            crate::ir::visit::expr_reads(operand, into);
+        }
+    }
+
+    fn compare(&mut self, cond: crate::ir::Cond, lhs: &crate::ir::Expr, rhs: &crate::ir::Expr) {
+        use crate::ir::Cond;
+        match cond {
+            Cond::Lt | Cond::Le | Cond::Gt | Cond::Ge => self.note(true, &[lhs, rhs]),
+            Cond::Cc | Cond::Cs | Cond::Hi | Cond::Ls => self.note(false, &[lhs, rhs]),
+            _ => {}
+        }
+    }
+
+    fn walk(&mut self, expr: &crate::ir::Expr) {
+        use crate::ir::{BinOp, Expr};
+        match expr {
+            Expr::Bin { op, lhs, rhs } => match op {
+                BinOp::DivS | BinOp::ModS => self.note(true, &[lhs, rhs]),
+                BinOp::DivU | BinOp::ModU => self.note(false, &[lhs, rhs]),
+                BinOp::Sar => self.note(true, &[lhs]),
+                // Shifting the top bit down tests the sign.
+                BinOp::Shr if matches!(rhs.as_ref(), Expr::Const(31 | 63)) => {
+                    self.note(true, &[lhs])
+                }
+                BinOp::Shr => self.note(false, &[lhs]),
+                _ => {}
+            },
+            Expr::SignExtend { value, .. } => self.note(true, &[value]),
+            Expr::Select { cond, lhs, rhs, .. } => self.compare(*cond, lhs, rhs),
+            _ => {}
+        }
+        for child in crate::ir::visit::children(expr) {
+            self.walk(child);
+        }
     }
 }
 
@@ -500,9 +601,34 @@ pub(crate) fn apply_dwarf_types(
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_partial_return, apply_void_return};
+    use super::{apply_partial_return, apply_void_return, apply_width_types};
     use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
     use crate::loader::Isa;
+
+    /// The type of a 32-bit parameter in rdi whose value is returned through `op`.
+    fn parameter_through(op: BinOp) -> CType {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::bin(op, Expr::reg(7, 32), Expr::Const(3)),
+            }],
+        );
+        ir.params = vec![crate::ir::Param {
+            index: 7,
+            name: "a0".to_owned(),
+            ty: CType::U32,
+        }];
+        apply_width_types(&mut ir, &Default::default());
+        ir.params[0].ty.clone()
+    }
+
+    #[test]
+    fn an_integer_is_signed_unless_an_unsigned_operation_reads_it() {
+        assert_eq!(parameter_through(BinOp::Add), CType::I32);
+        assert_eq!(parameter_through(BinOp::DivU), CType::U32);
+        assert_eq!(parameter_through(BinOp::Shr), CType::U32);
+        assert_eq!(parameter_through(BinOp::DivS), CType::I32);
+    }
 
     fn returns_register(isa: Isa) -> CType {
         let mut ir = FunctionIr::single_block(

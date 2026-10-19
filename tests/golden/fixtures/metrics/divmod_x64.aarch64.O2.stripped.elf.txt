@@ -174,11 +174,11 @@ fn <unnamed> @ 0x210350 (size 36)
 == 0x210374 -
 -- decompile
 /* velk pseudo-C: sub_210374 @ 0x210374 */
-uint32_t sub_210374(uint32_t a0) {
+int32_t sub_210374(int32_t a0) {
     return a0 & 0x7;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

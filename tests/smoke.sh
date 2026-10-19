@@ -61,7 +61,7 @@ ok "ir sum_arr"
 
 # 5) pseudo-C output
 c3=$("$BIN" decompile $FIX/arm64.o sum3 2>/dev/null)
-echo "$c3" | grep -q "uint32_t sum3(uint32_t a0, uint32_t a1, uint32_t a2)" || fail "decompile sum3 signature"
+echo "$c3" | grep -q "int32_t sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "decompile sum3 signature"
 echo "$c3" | grep -q "return a1 + a0 + a2;"   || fail "decompile sum3 fold"
 [ "$(echo "$c3" | grep -c '0xffffffff')" -eq 0 ] || fail "decompile sum3 masks"
 echo "$c3" | grep -q "return "               || fail "decompile sum3 return"
@@ -183,9 +183,9 @@ helper_cse=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cse" | grep -q "t1" && fail "temporary for a 32-bit register read"
 ok "two-round inlining"
 div_ir=$("$BIN" decompile $FIX/pe64.exe reg_div 2>/dev/null)
-echo "$div_ir" | grep -qF "return (int32_t)(a0) / (int32_t)(a1);" || fail "runtime division inlining"
+echo "$div_ir" | grep -qF "return a0 / a1;" || fail "runtime division inlining"
 mod_ir=$("$BIN" decompile $FIX/pe64.exe reg_mod 2>/dev/null)
-echo "$mod_ir" | grep -qF "(int32_t)(a0) % (int32_t)(a1)" || fail "idiv remainder dividend"
+echo "$mod_ir" | grep -qF "a0 % a1" || fail "idiv remainder dividend"
 ok "runtime division and remainder"
 stack_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$stack_ir" | grep -q "local_1"        || fail "stack locals named"
@@ -212,9 +212,9 @@ helper_pre=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_pre" | grep -q "x8 = a0 - 0x1;"  || fail "prefix before early return"
 ok "if/else structuring"
 sig_zero=$("$BIN" decompile $FIX/arm64_div.o is_zero 2>/dev/null)
-echo "$sig_zero" | grep -q "uint32_t is_zero(uint32_t a0)" || fail "boolean signature by usage"
+echo "$sig_zero" | grep -q "int32_t is_zero(int32_t a0)" || fail "boolean signature by usage"
 sig_mul=$("$BIN" decompile $FIX/pe64.exe reg_mul 2>/dev/null)
-echo "$sig_mul" | grep -q "uint32_t reg_mul(uint32_t a0, uint32_t a1)" || fail "mul signature by usage"
+echo "$sig_mul" | grep -q "int32_t reg_mul(int32_t a0, int32_t a1)" || fail "mul signature by usage"
 sig_h=$("$BIN" decompile $FIX/x64_div.o h10 2>/dev/null)
 echo "$sig_h" | grep -qE "uint64_t _?h10\(uint64_t a0\)" || fail "wide signature kept"
 sig_helper=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
@@ -245,7 +245,7 @@ echo "$sign_ir2" | grep -q "(int8_t)(a0) & 0xffffffff" && fail "sign-extend mask
 ok "sign-extended widths"
 degraded=$("$BIN" decompile $FIX/arm64_debug.o sum3 2>/dev/null)
 echo "$degraded" | grep -q "clang version" && fail "relocated DWARF name leaked"
-echo "$degraded" | grep -q "uint32_t sum3(uint32_t a0, uint32_t a1, uint32_t a2)" || fail "inferred signature kept"
+echo "$degraded" | grep -q "int32_t sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "inferred signature kept"
 ok "relocated DWARF falls back"
 field_ir=$("$BIN" decompile $FIX/arm64_debug.elf pair_sum 2>/dev/null)
 echo "$field_ir" | grep -q "p->a"   || fail "DWARF field name for the first member"
@@ -498,7 +498,7 @@ if echo "$x86_div" | grep -q "unsupported"; then fail "x86 idiv unresolved"; fi
 ok "x86 idiv"
 
 x86_c=$("$BIN" decompile $FIX/pe64.exe reg_add 2>/dev/null)
-echo "$x86_c" | grep -q "uint32_t reg_add(uint32_t a0, uint32_t a1)" || fail "x86 decompile signature"
+echo "$x86_c" | grep -q "int32_t reg_add(int32_t a0, int32_t a1)" || fail "x86 decompile signature"
 echo "$x86_c" | grep -q "return a0 + a1;"         || fail "x86 decompile return"
 ok "x86 decompile"
 
@@ -614,7 +614,7 @@ echo "$macho_json" | grep -q '"format": "macho"'   || fail "Mach-O format detect
 macho_c=$("$BIN" decompile $FIX/x64_div_macho.o _umod3x 2>/dev/null)
 echo "$macho_c" | grep -q "return a0 % 0x3;"     || fail "Mach-O x86-64 decompile"
 macho_a64=$("$BIN" decompile $FIX/arm64_macho.o _sum3 2>/dev/null)
-echo "$macho_a64" | grep -q "_sum3(uint32_t a0, uint32_t a1, uint32_t a2)" || fail "Mach-O AArch64 decompile"
+echo "$macho_a64" | grep -q "_sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "Mach-O AArch64 decompile"
 ok "Mach-O objects"
 
 # 19) MCP stdio server
@@ -627,7 +627,7 @@ mcp_out=$(printf '%s\n' \
   | "$BIN" mcp 2>/dev/null)
 echo "$mcp_out" | grep -q '"tools"'           || fail "mcp tools/list"
 echo "$mcp_out" | grep -q '"velk_run_script"' || fail "mcp tool entry"
-echo "$mcp_out" | grep -q 'uint32_t sum3'     || fail "mcp script call"
+echo "$mcp_out" | grep -q 'int32_t sum3'     || fail "mcp script call"
 echo "$mcp_out" | grep -q 'interface Func'    || fail "mcp api docs"
 echo "$mcp_out" | grep -q 'timed out'         || fail "mcp script timeout"
 ok "mcp server"

@@ -8,7 +8,7 @@
 == 0x21019c -
 -- decompile
 /* velk pseudo-C: sub_21019c @ 0x21019c */
-uint64_t sub_21019c(uint64_t a0, int32_t a1) {
+int64_t sub_21019c(int64_t a0, int32_t a1) {
     if (a1 < 0x1) {
         /* unsupported: MOVI at 0x210224 */
         return a0;
@@ -44,7 +44,7 @@ L_210210:
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0, int32_t a1)
+int64_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -97,12 +97,12 @@ fn <unnamed> @ 0x21019c (size 144)
 == 0x21022c -
 -- decompile
 /* velk pseudo-C: sub_21022c @ 0x21022c */
-uint64_t sub_21022c(uint64_t a0) {
+int64_t sub_21022c(int64_t a0) {
     /* unsupported (2 steps): FSUB at 0x21022c, FMADD at 0x210230 */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -117,12 +117,12 @@ fn <unnamed> @ 0x21022c (size 12)
 == 0x210238 -
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
-uint64_t sub_210238(uint64_t a0) {
+int64_t sub_210238(int64_t a0) {
     /* unsupported: FCVTZS at 0x210238 */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -136,12 +136,12 @@ fn <unnamed> @ 0x210238 (size 8)
 == 0x210240 -
 -- decompile
 /* velk pseudo-C: sub_210240 @ 0x210240 */
-uint64_t sub_210240(uint64_t a0) {
+int64_t sub_210240(int64_t a0) {
     /* unsupported (2 steps): FCVT at 0x210240, FADD at 0x210244 */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -156,14 +156,14 @@ fn <unnamed> @ 0x210240 (size 12)
 == 0x21024c -
 -- decompile
 /* velk pseudo-C: sub_21024c @ 0x21024c */
-uint32_t sub_21024c(void) {
+int32_t sub_21024c(void) {
     /* unsupported: FCMP at 0x21024c */
     w8 = (0x0 > 0x0 ? 0x1 : 0x0);
     w0 = (w8 >= 0x0 ? w8 : 0xffffffff);
     return w0;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 
 -- ir

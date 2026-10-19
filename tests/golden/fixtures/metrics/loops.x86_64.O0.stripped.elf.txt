@@ -7,7 +7,7 @@
 == 0x2011c0 -
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
-uint32_t sub_2011c0(uint32_t a0) {
+int32_t sub_2011c0(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
@@ -20,7 +20,7 @@ uint32_t sub_2011c0(uint32_t a0) {
     return local_1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -42,7 +42,7 @@ fn <unnamed> @ 0x2011c0 (size 64)
 == 0x201200 -
 -- decompile
 /* velk pseudo-C: sub_201200 @ 0x201200 */
-uint32_t sub_201200(uint32_t a0) {
+int32_t sub_201200(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
     uint32_t local_2; /* [sp-14] */
@@ -57,7 +57,7 @@ uint32_t sub_201200(uint32_t a0) {
     return local_1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -80,7 +80,7 @@ fn <unnamed> @ 0x201200 (size 64)
 == 0x201240 -
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
-uint32_t sub_201240(uint64_t a0, uint32_t a1) {
+int32_t sub_201240(int64_t a0, int32_t a1) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint32_t local_2; /* [sp-18] */
@@ -107,7 +107,7 @@ uint32_t sub_201240(uint64_t a0, uint32_t a1) {
     return local_2;
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -138,7 +138,7 @@ fn <unnamed> @ 0x201240 (size 96)
 == 0x2012a0 -
 -- decompile
 /* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
-uint32_t sub_2012a0(uint64_t a0, uint32_t a1) {
+int32_t sub_2012a0(int64_t a0, int32_t a1) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint32_t local_2; /* [sp-18] */
@@ -167,7 +167,7 @@ uint32_t sub_2012a0(uint64_t a0, uint32_t a1) {
     return local_2;
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir

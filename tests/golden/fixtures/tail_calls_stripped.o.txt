@@ -6,11 +6,11 @@
 == 0x0 -
 -- decompile
 /* velk pseudo-C: sub_0 @ 0x0 */
-uint32_t sub_0(uint32_t a0) {
+int32_t sub_0(int32_t a0) {
     return a0 + (a0 << 0x1) + 0x1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -23,13 +23,13 @@ fn <unnamed> @ 0x0 (size 28)
 == 0x1c -
 -- decompile
 /* velk pseudo-C: sub_1c @ 0x1c */
-uint32_t sub_1c(uint32_t a0) {
+int32_t sub_1c(int32_t a0) {
     a0 = a0 + 0x2;
     sub_<dynamic>();
     return a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -45,11 +45,11 @@ fn <unnamed> @ 0x1c (size 8)
 == 0x24 -
 -- decompile
 /* velk pseudo-C: sub_24 @ 0x24 */
-uint32_t sub_24(uint32_t a0) {
+int32_t sub_24(int32_t a0) {
     return a0 - 0x7;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

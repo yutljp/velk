@@ -99,11 +99,11 @@ fn six_args @ 0x201250 (size 44)
 == 0x201280 wide_add
 -- decompile
 /* velk pseudo-C: wide_add @ 0x201280 */
-uint64_t wide_add(uint64_t a, uint64_t b) {
+int64_t wide_add(int64_t a, int64_t b) {
     return a + b;
 }
 -- signature
-uint64_t (uint64_t a, uint64_t b)
+int64_t (int64_t a, int64_t b)
 -- references
 
 -- ir

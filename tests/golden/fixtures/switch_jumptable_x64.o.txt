@@ -4,7 +4,7 @@
 == 0x0 d7
 -- decompile
 /* velk pseudo-C: d7 @ 0x0 */
-uint32_t d7(uint32_t a0) {
+int32_t d7(int32_t a0) {
     if (a0 > 0x9 /* unsigned */) {
         rax = 0xffffffff;
         g = eax;
@@ -134,7 +134,7 @@ uint32_t d7(uint32_t a0) {
     }
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

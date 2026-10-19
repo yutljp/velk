@@ -14,11 +14,11 @@
 == 0x0 twice
 -- decompile
 /* velk pseudo-C: twice @ 0x0 */
-uint32_t twice(uint32_t a0) {
+int32_t twice(int32_t a0) {
     return a0 << 0x1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -31,11 +31,11 @@ fn twice @ 0x0 (size 8)
 == 0x8 square
 -- decompile
 /* velk pseudo-C: square @ 0x8 */
-uint32_t square(uint32_t a0) {
+int32_t square(int32_t a0) {
     return a0 * a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -48,12 +48,12 @@ fn square @ 0x8 (size 8)
 == 0x10 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x10 */
-uint32_t pick_op(uint32_t a0) {
+int32_t pick_op(int32_t a0) {
     v1 = (a0 == 0x0 ? 0x0 : &square);
     return v1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -67,7 +67,7 @@ fn pick_op @ 0x10 (size 28)
 == 0x2c apply_table
 -- decompile
 /* velk pseudo-C: apply_table @ 0x2c */
-uint32_t apply_table(uint32_t a0, uint32_t a1) {
+int32_t apply_table(uint32_t a0, int32_t a1) {
     w8 = 0xaaab;
     x9 = 0x0;
     x9 = &table;
@@ -80,7 +80,7 @@ uint32_t apply_table(uint32_t a0, uint32_t a1) {
     goto *(x2);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (uint32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -102,14 +102,14 @@ fn apply_table @ 0x2c (size 44)
 == 0x58 apply_pointer
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x58 */
-uint32_t apply_pointer(uint32_t a0, uint32_t a1) {
+int32_t apply_pointer(int32_t a0, int32_t a1) {
     x8 = a0;
     a0 = a1;
     (*(x8))();
     return a0 + 0x1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -205,7 +205,7 @@ fn factorial @ 0x78 (size 160)
 == 0x118 is_odd
 -- decompile
 /* velk pseudo-C: is_odd @ 0x118 */
-uint32_t is_odd(uint32_t a0) {
+int32_t is_odd(int32_t a0) {
     w8 = a0 - (a0 != 0x0 ? 0x1 : 0x0) + 0x1;
     if (w8 < 0x2 /* unsigned */) { goto L_15c; }
     w8 = w8 >> 0x1;
@@ -226,7 +226,7 @@ L_15c:
     return v1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -260,14 +260,14 @@ fn is_odd @ 0x118 (size 88)
 == 0x170 is_even
 -- decompile
 /* velk pseudo-C: is_even @ 0x170 */
-uint32_t is_even(uint32_t a0) {
+int32_t is_even(int32_t a0) {
     if (a0 == 0x0) {
         return 0x1;
     }
     return a0 - 0x1 - (a0 - (a0 != 0x1 ? 0x1 : 0x0) & 0xfffffffe);
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -284,11 +284,11 @@ fn is_even @ 0x170 (size 36)
 == 0x194 sum9
 -- decompile
 /* velk pseudo-C: sum9 @ 0x194 */
-uint64_t sum9(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+int64_t sum9(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
     return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + *(uint64_t *)(sp));
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
 -- references
 
 -- ir
@@ -301,11 +301,11 @@ fn sum9 @ 0x194 (size 40)
 == 0x1bc call_sum9
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x1bc */
-uint64_t call_sum9(uint64_t a0) {
+int64_t call_sum9(int64_t a0) {
     return a0 + 0x24;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -318,7 +318,7 @@ fn call_sum9 @ 0x1bc (size 8)
 == 0x1c4 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x1c4 */
-int32_t sum_varargs(int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-8] */
     uint64_t local_2; /* [sp-58] */
@@ -387,7 +387,7 @@ L_224:
     return w8;
 }
 -- signature
-int32_t (int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
+int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
 -- references
 
 -- ir

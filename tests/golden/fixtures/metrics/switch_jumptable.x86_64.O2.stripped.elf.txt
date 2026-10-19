@@ -6,7 +6,7 @@
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 /* ref: 0x200158 .rodata */
 /* ref: 0x2023d0 .bss */
-uint32_t sub_2011c0(uint32_t a0) {
+int32_t sub_2011c0(int32_t a0) {
     if (a0 > 0x9 /* unsigned */) {
         rax = 0xffffffff;
         dword_2023d0 = eax;
@@ -136,7 +136,7 @@ uint32_t sub_2011c0(uint32_t a0) {
     }
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 0x200158 .rodata
 0x2023d0 .bss

@@ -10,7 +10,7 @@
 == 0x201220 -
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
-int32_t sub_201220(uint64_t a0, int32_t a1) {
+int32_t sub_201220(int64_t a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
     }
@@ -75,7 +75,7 @@ int32_t sub_201220(uint64_t a0, int32_t a1) {
     }
 }
 -- signature
-int32_t (uint64_t a0, int32_t a1)
+int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -191,7 +191,7 @@ fn <unnamed> @ 0x201320 (size 32)
 -- decompile
 /* velk pseudo-C: sub_201340 @ 0x201340 */
 /* ref: 0x200120 .rodata */
-uint32_t sub_201340(uint32_t a0) {
+int32_t sub_201340(uint32_t a0) {
     rax = 0xffffffff;
     if (a0 <= 0x3 /* unsigned */) {
         rax = dword_200120[a0];
@@ -199,7 +199,7 @@ uint32_t sub_201340(uint32_t a0) {
     return rax;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (uint32_t a0)
 -- references
 0x200120 .rodata
 -- ir
@@ -267,7 +267,7 @@ fn <unnamed> @ 0x201360 (size 64)
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-int32_t sub_2013a0(uint64_t a0, int32_t a1) {
+int32_t sub_2013a0(int64_t a0, int32_t a1) {
     rax = 0x0;
     if (a0 == 0x0) {
         return rax;
@@ -282,7 +282,7 @@ int32_t sub_2013a0(uint64_t a0, int32_t a1) {
     return rax;
 }
 -- signature
-int32_t (uint64_t a0, int32_t a1)
+int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -415,7 +415,7 @@ fn <unnamed> @ 0x2013d0 (size 192)
 == 0x201490 -
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
-int32_t sub_201490(uint32_t *a0, int32_t a1, uint32_t a2) {
+int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
     rax = 0xffffffff;
     if (a1 <= 0x0) {
         return rax;
@@ -451,7 +451,7 @@ L_2014f6:
     goto L_2014fb;
 }
 -- signature
-int32_t (uint32_t * a0, int32_t a1, uint32_t a2)
+int32_t (uint32_t * a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir

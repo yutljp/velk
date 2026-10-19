@@ -7,7 +7,7 @@
 == 0x0 -
 -- decompile
 /* velk pseudo-C: sub_0 @ 0x0 */
-uint32_t sub_0(uint32_t a0) {
+int32_t sub_0(int32_t a0) {
     if (a0 == 0x0) {
         return a0;
     }
@@ -23,7 +23,7 @@ uint32_t sub_0(uint32_t a0) {
     return a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

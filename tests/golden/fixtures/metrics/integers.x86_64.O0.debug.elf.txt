@@ -13,14 +13,14 @@
 == 0x201280 narrow_add
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x201280 */
-uint32_t narrow_add(uint32_t a, uint32_t b) {
+int32_t narrow_add(int32_t a, int32_t b) {
     uint8_t local_0; /* [sp-a] */
 
     local_0 = b & 0xff;
     return (int8_t)((int8_t)(a) + (int8_t)(local_0));
 }
 -- signature
-uint32_t (uint32_t a, uint32_t b)
+int32_t (int32_t a, int32_t b)
 -- references
 
 -- ir
@@ -34,7 +34,7 @@ fn narrow_add @ 0x201280 (size 31)
 == 0x2012a0 widen_mul
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x2012a0 */
-uint32_t widen_mul(uint32_t a, uint32_t b) {
+int32_t widen_mul(int32_t a, int32_t b) {
     uint8_t local_0; /* [sp-a] */
 
     local_0 = b & 0xff;
@@ -43,7 +43,7 @@ uint32_t widen_mul(uint32_t a, uint32_t b) {
     return eax * ecx & 0xffff;
 }
 -- signature
-uint32_t (uint32_t a, uint32_t b)
+int32_t (int32_t a, int32_t b)
 -- references
 
 -- ir
@@ -59,11 +59,11 @@ fn widen_mul @ 0x2012a0 (size 32)
 == 0x2012c0 mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x2012c0 */
-uint64_t mixed_sign(int a, uint32_t b) {
+int64_t mixed_sign(int a, int32_t b) {
     return (int64_t)(int32_t)(a) - b;
 }
 -- signature
-uint64_t (int a, uint32_t b)
+int64_t (int a, int32_t b)
 -- references
 
 -- ir
@@ -120,11 +120,11 @@ fn in_range @ 0x2012e0 (size 52)
 == 0x201320 rotate_left
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x201320 */
-uint32_t rotate_left(uint32_t x, uint32_t k) {
+uint32_t rotate_left(uint32_t x, int32_t k) {
     return ((x << (k & 0x1f) | x >> (0x20 - k & 0x1f)) & 0xffffffff);
 }
 -- signature
-uint32_t (uint32_t x, uint32_t k)
+uint32_t (uint32_t x, int32_t k)
 -- references
 
 -- ir
@@ -137,7 +137,7 @@ fn rotate_left @ 0x201320 (size 43)
 == 0x201350 popcount
 -- decompile
 /* velk pseudo-C: popcount @ 0x201350 */
-int popcount(uint32_t x) {
+int popcount(int32_t x) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
@@ -150,7 +150,7 @@ int popcount(uint32_t x) {
     return local_1;
 }
 -- signature
-int (uint32_t x)
+int (int32_t x)
 -- references
 
 -- ir
@@ -281,11 +281,11 @@ fn labs_value @ 0x201430 (size 48)
 == 0x201460 mul_high
 -- decompile
 /* velk pseudo-C: mul_high @ 0x201460 */
-uint64_t mul_high(uint64_t a, uint64_t b) {
+int64_t mul_high(int64_t a, int64_t b) {
     return __umulh(a, b);
 }
 -- signature
-uint64_t (uint64_t a, uint64_t b)
+int64_t (int64_t a, int64_t b)
 -- references
 
 -- ir

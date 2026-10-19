@@ -5,7 +5,7 @@
 -- decompile
 /* velk pseudo-C: sub_201170 @ 0x201170 */
 /* ref: 0x200120 .rodata */
-uint32_t sub_201170(uint32_t a0) {
+int32_t sub_201170(int32_t a0) {
     v1 = a0 - 0xa;
     rax = 0x0;
     if (v1 <= 0x4 /* unsigned */) {
@@ -14,7 +14,7 @@ uint32_t sub_201170(uint32_t a0) {
     return rax;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 0x200120 .rodata
 -- ir

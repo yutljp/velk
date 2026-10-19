@@ -174,11 +174,11 @@ fn smod3x @ 0xd0 (size 29)
 == 0xf0 pmod8x
 -- decompile
 /* velk pseudo-C: pmod8x @ 0xf0 */
-uint32_t pmod8x(uint32_t a0) {
+int32_t pmod8x(int32_t a0) {
     return a0 & 0x7;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -259,12 +259,12 @@ fn lmod10x @ 0x140 (size 44)
 == 0x170 umod10x
 -- decompile
 /* velk pseudo-C: umod10x @ 0x170 */
-uint64_t umod10x(uint64_t a0) {
+int64_t umod10x(uint64_t a0) {
     rdx = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
     return a0 - (rdx + rdx * 0x4);
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir

@@ -4,7 +4,7 @@
 == 0x210154 -
 -- decompile
 /* velk pseudo-C: sub_210154 @ 0x210154 */
-uint32_t sub_210154(uint32_t a0) {
+int32_t sub_210154(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
 
@@ -34,7 +34,7 @@ uint32_t sub_210154(uint32_t a0) {
     return local_1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

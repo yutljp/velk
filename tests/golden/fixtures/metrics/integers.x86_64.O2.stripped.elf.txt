@@ -13,11 +13,11 @@
 == 0x201210 -
 -- decompile
 /* velk pseudo-C: sub_201210 @ 0x201210 */
-uint32_t sub_201210(uint32_t a0, uint32_t a1) {
+int32_t sub_201210(int32_t a0, int32_t a1) {
     return a1 + a0;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -30,11 +30,11 @@ fn <unnamed> @ 0x201210 (size 16)
 == 0x201220 -
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
-uint32_t sub_201220(uint32_t a0, uint32_t a1) {
+int32_t sub_201220(int32_t a0, int32_t a1) {
     return a0 * a1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -47,11 +47,11 @@ fn <unnamed> @ 0x201220 (size 16)
 == 0x201230 -
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
-uint64_t sub_201230(uint32_t a0, uint32_t a1) {
+int64_t sub_201230(int32_t a0, int32_t a1) {
     return (int64_t)(int32_t)(a0) - a1;
 }
 -- signature
-uint64_t (uint32_t a0, uint32_t a1)
+int64_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -81,11 +81,11 @@ fn <unnamed> @ 0x201240 (size 16)
 == 0x201250 -
 -- decompile
 /* velk pseudo-C: sub_201250 @ 0x201250 */
-uint32_t sub_201250(uint32_t a0, uint32_t a1) {
+uint32_t sub_201250(uint32_t a0, int32_t a1) {
     return ((a0 << (a1 & 0x1f) | a0 >> (0x20 - (a1 & 0x1f) & 0x1f)) & 0xffffffff);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+uint32_t (uint32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -98,7 +98,7 @@ fn <unnamed> @ 0x201250 (size 16)
 == 0x201260 -
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
-uint32_t sub_201260(uint32_t a0) {
+int32_t sub_201260(int32_t a0) {
     rax = 0x0;
     if (a0 == 0x0) {
         return rax;
@@ -111,7 +111,7 @@ uint32_t sub_201260(uint32_t a0) {
     return rax;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -166,11 +166,11 @@ fn <unnamed> @ 0x201290 (size 16)
 == 0x2012a0 -
 -- decompile
 /* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
-uint64_t sub_2012a0(int64_t a0) {
+int64_t sub_2012a0(int64_t a0) {
     return (-a0 < 0x0 ? a0 : -a0);
 }
 -- signature
-uint64_t (int64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -183,11 +183,11 @@ fn <unnamed> @ 0x2012a0 (size 16)
 == 0x2012b0 -
 -- decompile
 /* velk pseudo-C: sub_2012b0 @ 0x2012b0 */
-uint64_t sub_2012b0(uint64_t a0, uint64_t a1) {
+int64_t sub_2012b0(int64_t a0, int64_t a1) {
     return __umulh(a1, a0);
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir

@@ -1276,11 +1276,11 @@
 == 0x466ca0 main.add
 -- decompile
 /* velk pseudo-C: main.add @ 0x466ca0 */
-uint64_t main_add(uint64_t a0, uint64_t a1) {
+int64_t main_add(int64_t a0, int64_t a1) {
     return a0 + a1;
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
@@ -1349,7 +1349,7 @@ fn main.add @ 0x466ca0 (size 32)
 == 0x466cc0 main.twice
 -- decompile
 /* velk pseudo-C: main.twice @ 0x466cc0 */
-uint64_t main_twice(uint64_t a0) {
+int64_t main_twice(int64_t a0) {
     uint64_t local_0; /* [sp+8] */
 
 L_466cc0:
@@ -1368,7 +1368,7 @@ L_466cdc:
     goto L_466cc0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -1432,7 +1432,7 @@ fn main.twice @ 0x466cc0 (size 64)
 == 0x466d00 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d00 */
-uint64_t main_main(void) {
+int64_t main_main(void) {
     uint64_t local_0; /* [sp-10] */
 
 L_466d00:
@@ -1455,7 +1455,7 @@ L_466d3f:
     goto L_466d00;
 }
 -- signature
-uint64_t ()
+int64_t ()
 -- references
 
 -- ir

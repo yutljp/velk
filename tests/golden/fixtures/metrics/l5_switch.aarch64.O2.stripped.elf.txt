@@ -23,7 +23,7 @@
 /* velk pseudo-C: sub_210304 @ 0x210304 */
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
-uint32_t sub_210304(uint32_t a0) {
+int32_t sub_210304(int32_t a0) {
     x8 = a0 - 0xa;
     if (w8 > 0xf /* unsigned */) {
         dword_220554 = 0x0;
@@ -103,7 +103,7 @@ uint32_t sub_210304(uint32_t a0) {
     }
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 0x200158 .rodata
 0x220554 .bss
@@ -494,7 +494,7 @@ fn <unnamed> @ 0x21050c (size 24)
 == 0x210524 -
 -- decompile
 /* velk pseudo-C: sub_210524 @ 0x210524 */
-uint32_t sub_210524(uint32_t a0) {
+int32_t sub_210524(int32_t a0) {
     if (a0 == 0x1) {
         return 0x64;
     }
@@ -508,7 +508,7 @@ uint32_t sub_210524(uint32_t a0) {
     return 0x7;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

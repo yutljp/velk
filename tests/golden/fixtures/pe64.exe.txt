@@ -13,11 +13,11 @@
 == 0x140001000 reg_add
 -- decompile
 /* velk pseudo-C: reg_add @ 0x140001000 */
-uint32_t reg_add(uint32_t a0, uint32_t a1) {
+int32_t reg_add(int32_t a0, int32_t a1) {
     return a0 + a1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -30,11 +30,11 @@ fn reg_add @ 0x140001000 (size 16)
 == 0x140001010 reg_mul
 -- decompile
 /* velk pseudo-C: reg_mul @ 0x140001010 */
-uint32_t reg_mul(uint32_t a0, uint32_t a1) {
+int32_t reg_mul(int32_t a0, int32_t a1) {
     return a0 * a1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -47,11 +47,11 @@ fn reg_mul @ 0x140001010 (size 16)
 == 0x140001020 reg_sign
 -- decompile
 /* velk pseudo-C: reg_sign @ 0x140001020 */
-uint32_t reg_sign(uint32_t a0, uint32_t a1) {
+int32_t reg_sign(int32_t a0, int32_t a1) {
     return (int16_t)(a1) + (int8_t)(a0);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -81,11 +81,11 @@ fn reg_max @ 0x140001030 (size 16)
 == 0x140001040 reg_negative
 -- decompile
 /* velk pseudo-C: reg_negative @ 0x140001040 */
-uint32_t reg_negative(uint32_t a0) {
+int32_t reg_negative(int32_t a0) {
     return a0 >> 0x1f;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -98,11 +98,11 @@ fn reg_negative @ 0x140001040 (size 16)
 == 0x140001050 reg_abs
 -- decompile
 /* velk pseudo-C: reg_abs @ 0x140001050 */
-uint32_t reg_abs(uint32_t a0) {
+int32_t reg_abs(int32_t a0) {
     return (-a0 < 0x0 ? a0 : -a0);
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -116,11 +116,11 @@ fn reg_abs @ 0x140001050 (size 16)
 -- decompile
 /* velk pseudo-C: msg_first @ 0x140001060 */
 /* ref: 0x140003000 -> 0x140002000 "velk-ref-string" */
-uint32_t msg_first(void) {
+int32_t msg_first(void) {
     return (int8_t)(*(uint8_t *)(qword_140003000 + 0x1));
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x140003000 -> 0x140002000 "velk-ref-string"
 -- ir
@@ -133,11 +133,11 @@ fn msg_first @ 0x140001060 (size 16)
 == 0x140001070 reg_div
 -- decompile
 /* velk pseudo-C: reg_div @ 0x140001070 */
-uint32_t reg_div(uint32_t a0, uint32_t a1) {
-    return (int32_t)(a0) / (int32_t)(a1);
+int32_t reg_div(int32_t a0, int32_t a1) {
+    return a0 / a1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -150,11 +150,11 @@ fn reg_div @ 0x140001070 (size 16)
 == 0x140001080 reg_mod
 -- decompile
 /* velk pseudo-C: reg_mod @ 0x140001080 */
-uint32_t reg_mod(uint32_t a0, uint32_t a1) {
-    return (int32_t)(a0) % (int32_t)(a1);
+int32_t reg_mod(int32_t a0, int32_t a1) {
+    return a0 % a1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -167,7 +167,7 @@ fn reg_mod @ 0x140001080 (size 16)
 == 0x140001090 -
 -- decompile
 /* velk pseudo-C: sub_140001090 @ 0x140001090 */
-uint64_t sub_140001090(void) {
+int64_t sub_140001090(void) {
     uint32_t local_0; /* [sp-4] */
     uint64_t local_1; /* [sp-8] */
 
@@ -176,7 +176,7 @@ uint64_t sub_140001090(void) {
     return local_1;
 }
 -- signature
-uint64_t ()
+int64_t ()
 -- references
 
 -- ir

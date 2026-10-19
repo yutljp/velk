@@ -129,7 +129,7 @@ fn <unnamed> @ 0x210224 (size 64)
 == 0x210264 -
 -- decompile
 /* velk pseudo-C: sub_210264 @ 0x210264 */
-int32_t sub_210264(uint32_t *a0, int32_t a1, uint32_t a2) {
+int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
     if (a1 < 0x1) {
         v1 = 0xffffffff;
         return v1;
@@ -146,7 +146,7 @@ L_210294:
     return v1;
 }
 -- signature
-int32_t (uint32_t * a0, int32_t a1, uint32_t a2)
+int32_t (uint32_t * a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir

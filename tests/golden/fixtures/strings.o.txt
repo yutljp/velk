@@ -4,12 +4,12 @@
 == 0x0 pick
 -- decompile
 /* velk pseudo-C: pick @ 0x0 */
-uint32_t pick(void) {
+int32_t pick(void) {
     w0 = *(uint8_t *)(kName + 0x2);
     return w0;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 
 -- ir

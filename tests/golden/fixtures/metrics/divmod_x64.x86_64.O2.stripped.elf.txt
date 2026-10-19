@@ -174,11 +174,11 @@ fn <unnamed> @ 0x201380 (size 32)
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-uint32_t sub_2013a0(uint32_t a0) {
+int32_t sub_2013a0(int32_t a0) {
     return a0 & 0x7;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -259,12 +259,12 @@ fn <unnamed> @ 0x2013f0 (size 48)
 == 0x201420 -
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
-uint64_t sub_201420(uint64_t a0) {
+int64_t sub_201420(uint64_t a0) {
     rdx = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
     return a0 - (rdx + rdx * 0x4);
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir

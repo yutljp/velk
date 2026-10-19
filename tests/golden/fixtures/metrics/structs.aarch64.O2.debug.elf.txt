@@ -191,11 +191,11 @@ fn big_sum @ 0x2102c0 (size 20)
 == 0x2102d4 word_low_byte
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x2102d4 */
-uint64_t word_low_byte(union word w) {
+int64_t word_low_byte(union word w) {
     return w;
 }
 -- signature
-uint64_t (union word w)
+int64_t (union word w)
 -- references
 
 -- ir
@@ -226,14 +226,14 @@ fn flags_level @ 0x2102d8 (size 20)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2102ec */
 /* struct: f +0x0:uint8_t */
-uint64_t flags_set_mode(struct flags *f, uint32_t mode) {
+int64_t flags_set_mode(struct flags *f, int32_t mode) {
     w8 = f->field_0x0;
     w8 = w8 & 0xfffffff1;
     f->field_0x0 = w8 | (mode & 0x7) << 0x1;
     return f;
 }
 -- signature
-uint64_t (struct flags * f, uint32_t mode)
+int64_t (struct flags * f, int32_t mode)
 -- references
 
 -- ir

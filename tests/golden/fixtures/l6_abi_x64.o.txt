@@ -8,11 +8,11 @@
 == 0x0 tail_target
 -- decompile
 /* velk pseudo-C: tail_target @ 0x0 */
-uint32_t tail_target(uint32_t a0) {
+int32_t tail_target(int32_t a0) {
     return a0 + a0 * 0x2 + 0x1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -25,13 +25,13 @@ fn tail_target @ 0x0 (size 14)
 == 0x10 tail_direct
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x10 */
-void tail_direct(uint32_t a0) {
+void tail_direct(int32_t a0) {
     a0 = a0 + 0x2;
     tail_target();
     return;
 }
 -- signature
-void (uint32_t a0)
+void (int32_t a0)
 -- references
 
 -- ir
@@ -46,13 +46,13 @@ fn tail_direct @ 0x10 (size 8)
 == 0x20 tail_indirect
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x20 */
-uint32_t tail_indirect(uint32_t a0, uint32_t a1) {
+int32_t tail_indirect(int32_t a0, int32_t a1) {
     rax = a0;
     a0 = a1 + 0x1;
     goto *(rax);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -67,11 +67,11 @@ fn tail_indirect @ 0x20 (size 8)
 == 0x30 six_args
 -- decompile
 /* velk pseudo-C: six_args @ 0x30 */
-uint32_t six_args(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5) {
+int32_t six_args(int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5) {
     return a2 + a3 + (a1 + a0) + a4 + a5;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5)
 -- references
 
 -- ir
@@ -84,11 +84,11 @@ fn six_args @ 0x30 (size 14)
 == 0x40 wide_add
 -- decompile
 /* velk pseudo-C: wide_add @ 0x40 */
-uint64_t wide_add(uint64_t a0, uint64_t a1) {
+int64_t wide_add(int64_t a0, int64_t a1) {
     return a0 + a1;
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir

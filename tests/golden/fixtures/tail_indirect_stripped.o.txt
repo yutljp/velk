@@ -5,13 +5,13 @@
 == 0x0 -
 -- decompile
 /* velk pseudo-C: sub_0 @ 0x0 */
-uint32_t sub_0(uint32_t a0, uint32_t a1) {
+int32_t sub_0(int32_t a0, int32_t a1) {
     x2 = a0;
     a0 = a1 + 0x1;
     goto *(x2);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -26,11 +26,11 @@ fn <unnamed> @ 0x0 (size 12)
 == 0xc -
 -- decompile
 /* velk pseudo-C: sub_c @ 0xc */
-uint32_t sub_c(uint32_t a0) {
+int32_t sub_c(int32_t a0) {
     return a0 + 0x5;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

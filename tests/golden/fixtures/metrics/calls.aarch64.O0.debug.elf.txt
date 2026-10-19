@@ -66,7 +66,7 @@ fn pick_op @ 0x210350 (size 44)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
-int apply_table(uint32_t index, int x) {
+int apply_table(int32_t index, int x) {
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
@@ -80,7 +80,7 @@ int apply_table(uint32_t index, int x) {
     return index;
 }
 -- signature
-int (uint32_t index, int x)
+int (int32_t index, int x)
 -- references
 0x2206f0 .data.rel.ro
 -- ir
@@ -323,7 +323,7 @@ fn call_sum9 @ 0x210564 (size 76)
 == 0x2105b0 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x2105b0 */
-int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
     uint64_t local_0; /* [sp-48] */
     uint64_t local_1; /* [sp-50] */
     uint64_t local_2; /* [sp-58] */
@@ -393,7 +393,7 @@ int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, u
     goto L_2106b4;
 }
 -- signature
-int (int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
+int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
 -- references
 
 -- ir

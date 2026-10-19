@@ -13,7 +13,7 @@
 /* velk pseudo-C: copy_bytes @ 0x210214 */
 /* struct: dst +0x0:uint8_t */
 /* struct: src +0x0:uint8_t */
-uint64_t copy_bytes(void *dst, void *src, uint64_t n) {
+int64_t copy_bytes(void *dst, void *src, uint64_t n) {
     if (n == 0x0) {
         return dst;
     }
@@ -65,7 +65,7 @@ L_2102a4:
     return dst;
 }
 -- signature
-uint64_t (void * dst, void * src, uint64_t n)
+int64_t (void * dst, void * src, uint64_t n)
 -- references
 
 -- ir
@@ -129,14 +129,14 @@ fn copy_bytes @ 0x210214 (size 176)
 == 0x2102c4 fill_bytes
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x2102c4 */
-uint64_t fill_bytes(void *dst, uint64_t value, uint64_t n) {
+int64_t fill_bytes(void *dst, int64_t value, int64_t n) {
     if (n != 0x0) {
         return dst;
     }
     return dst;
 }
 -- signature
-uint64_t (void * dst, uint64_t value, uint64_t n)
+int64_t (void * dst, int64_t value, int64_t n)
 -- references
 
 -- ir
@@ -153,7 +153,7 @@ fn fill_bytes @ 0x2102c4 (size 12)
 == 0x2102d0 string_length
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102d0 */
-uint64_t string_length(char *s) {
+int64_t string_length(char *s) {
     x8 = 0x0;
     do {
         w9 = *(uint8_t *)(s + x8);
@@ -162,7 +162,7 @@ uint64_t string_length(char *s) {
     return x8 - 0x1;
 }
 -- signature
-uint64_t (char * s)
+int64_t (char * s)
 -- references
 
 -- ir
@@ -200,12 +200,12 @@ fn grid_get @ 0x2102e8 (size 28)
 -- decompile
 /* velk pseudo-C: grid_set @ 0x210304 */
 /* ref: 0x220350 .bss */
-uint64_t grid_set(int row, int col, int value) {
+int64_t grid_set(int row, int col, int value) {
     *(uint32_t *)(0x220350 + ((row & 0x3) << 0x5) + ((col & 0x7) << 0x2)) = value;
     return row;
 }
 -- signature
-uint64_t (int row, int col, int value)
+int64_t (int row, int col, int value)
 -- references
 0x220350 .bss
 -- ir
@@ -256,14 +256,14 @@ fn read_volatile @ 0x21032c (size 16)
 /* velk pseudo-C: swap_ints @ 0x21033c */
 /* struct: a +0x0:uint32_t */
 /* struct: b +0x0:uint32_t */
-uint64_t swap_ints(int *a, int *b) {
+int64_t swap_ints(int *a, int *b) {
     w9 = a->field_0x0;
     a->field_0x0 = b->field_0x0;
     b->field_0x0 = w9;
     return a;
 }
 -- signature
-uint64_t (int * a, int * b)
+int64_t (int * a, int * b)
 -- references
 
 -- ir

@@ -8,7 +8,7 @@
 == 0x2101b4 -
 -- decompile
 /* velk pseudo-C: sub_2101b4 @ 0x2101b4 */
-uint64_t sub_2101b4(uint64_t a0, uint32_t a1) {
+int64_t sub_2101b4(int64_t a0, int32_t a1) {
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
     uint32_t local_2; /* [sp-1c] */
@@ -35,7 +35,7 @@ uint64_t sub_2101b4(uint64_t a0, uint32_t a1) {
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0, uint32_t a1)
+int64_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -85,12 +85,12 @@ fn <unnamed> @ 0x2101b4 (size 160)
 == 0x210254 -
 -- decompile
 /* velk pseudo-C: sub_210254 @ 0x210254 */
-uint64_t sub_210254(uint64_t a0) {
+int64_t sub_210254(int64_t a0) {
     /* unsupported (5 steps): SIMD store, SIMD store, SIMD store, FSUB at 0x210270, FMADD at 0x210278 */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -108,12 +108,12 @@ fn <unnamed> @ 0x210254 (size 48)
 == 0x210284 -
 -- decompile
 /* velk pseudo-C: sub_210284 @ 0x210284 */
-uint64_t sub_210284(uint64_t a0) {
+int64_t sub_210284(int64_t a0) {
     /* unsupported (2 steps): SIMD store, FCVTZS at 0x210290 */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -128,12 +128,12 @@ fn <unnamed> @ 0x210284 (size 24)
 == 0x21029c -
 -- decompile
 /* velk pseudo-C: sub_21029c @ 0x21029c */
-uint64_t sub_21029c(uint64_t a0) {
+int64_t sub_21029c(int64_t a0) {
     /* unsupported (4 steps): SIMD store, FCVT at 0x2102a8, FMOV at 0x2102ac, FMUL at 0x2102b0 */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -150,7 +150,7 @@ fn <unnamed> @ 0x21029c (size 32)
 == 0x2102bc -
 -- decompile
 /* velk pseudo-C: sub_2102bc @ 0x2102bc */
-uint32_t sub_2102bc(void) {
+int32_t sub_2102bc(void) {
     uint32_t local_0; /* [sp-14] */
 
     /* unsupported (3 steps): SIMD store, SIMD store, FCMP at 0x2102d0 */
@@ -165,7 +165,7 @@ L_2102e8:
     return local_0;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 
 -- ir

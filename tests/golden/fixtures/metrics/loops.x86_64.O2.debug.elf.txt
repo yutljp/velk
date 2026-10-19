@@ -7,7 +7,7 @@
 == 0x201190 count_bits
 -- decompile
 /* velk pseudo-C: count_bits @ 0x201190 */
-int count_bits(uint32_t x) {
+int count_bits(int32_t x) {
     rax = 0x0;
     if (x == 0x0) {
         return rax;
@@ -23,7 +23,7 @@ int count_bits(uint32_t x) {
     return rax;
 }
 -- signature
-int (uint32_t x)
+int (int32_t x)
 -- references
 
 -- ir

@@ -317,11 +317,11 @@ fn smod4 @ 0x188 (size 20)
 == 0x19c negate
 -- decompile
 /* velk pseudo-C: negate @ 0x19c */
-uint32_t negate(uint32_t a0) {
+int32_t negate(int32_t a0) {
     return -a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -334,11 +334,11 @@ fn negate @ 0x19c (size 8)
 == 0x1a4 is_neg
 -- decompile
 /* velk pseudo-C: is_neg @ 0x1a4 */
-uint32_t is_neg(uint32_t a0) {
+int32_t is_neg(int32_t a0) {
     return a0 >> 0x1f;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -351,11 +351,11 @@ fn is_neg @ 0x1a4 (size 8)
 == 0x1ac is_zero
 -- decompile
 /* velk pseudo-C: is_zero @ 0x1ac */
-uint32_t is_zero(uint32_t a0) {
+int32_t is_zero(int32_t a0) {
     return (a0 == 0x0 ? 0x1 : 0x0);
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -385,11 +385,11 @@ fn is_pos @ 0x1b8 (size 12)
 == 0x1c4 lnegate
 -- decompile
 /* velk pseudo-C: lnegate @ 0x1c4 */
-uint64_t lnegate(uint64_t a0) {
+int64_t lnegate(int64_t a0) {
     return -a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir

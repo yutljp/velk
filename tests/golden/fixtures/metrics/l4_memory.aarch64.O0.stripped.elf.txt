@@ -7,11 +7,11 @@
 == 0x2101dc -
 -- decompile
 /* velk pseudo-C: sub_2101dc @ 0x2101dc */
-uint32_t sub_2101dc(uint64_t a0, uint64_t a1) {
+int32_t sub_2101dc(int64_t a0, int64_t a1) {
     return *(uint32_t *)(a0) * *(uint32_t *)(a1) + *(uint32_t *)(a0 + 0x4) * *(uint32_t *)(a1 + 0x4);
 }
 -- signature
-uint32_t (uint64_t a0, uint64_t a1)
+int32_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
@@ -24,7 +24,7 @@ fn <unnamed> @ 0x2101dc (size 64)
 == 0x21021c -
 -- decompile
 /* velk pseudo-C: sub_21021c @ 0x21021c */
-uint32_t sub_21021c(uint64_t a0, uint32_t a1) {
+int32_t sub_21021c(int64_t a0, int32_t a1) {
     uint64_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-c] */
     uint32_t local_2; /* [sp-10] */
@@ -41,7 +41,7 @@ uint32_t sub_21021c(uint64_t a0, uint32_t a1) {
     return local_2;
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -91,12 +91,12 @@ fn <unnamed> @ 0x210280 (size 20)
 -- decompile
 /* velk pseudo-C: sub_210294 @ 0x210294 */
 /* ref: 0x2202a8 -> 0x200158 "velk ladder" */
-uint32_t sub_210294(void) {
+int32_t sub_210294(void) {
     w0 = *(uint8_t *)(qword_2202a8);
     return w0;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x2202a8 -> 0x200158 "velk ladder"
 -- ir

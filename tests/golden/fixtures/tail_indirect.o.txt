@@ -5,13 +5,13 @@
 == 0x0 via_ptr
 -- decompile
 /* velk pseudo-C: via_ptr @ 0x0 */
-uint32_t via_ptr(uint32_t a0, uint32_t a1) {
+int32_t via_ptr(int32_t a0, int32_t a1) {
     x2 = a0;
     a0 = a1 + 0x1;
     goto *(x2);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -26,11 +26,11 @@ fn via_ptr @ 0x0 (size 12)
 == 0xc after_ptr
 -- decompile
 /* velk pseudo-C: after_ptr @ 0xc */
-uint32_t after_ptr(uint32_t a0) {
+int32_t after_ptr(int32_t a0) {
     return a0 + 0x5;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

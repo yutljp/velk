@@ -13,11 +13,11 @@
 == 0x210204 narrow_add
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x210204 */
-uint32_t narrow_add(uint32_t a, uint32_t b) {
+int32_t narrow_add(int32_t a, int32_t b) {
     return b + a;
 }
 -- signature
-uint32_t (uint32_t a, uint32_t b)
+int32_t (int32_t a, int32_t b)
 -- references
 
 -- ir
@@ -30,11 +30,11 @@ fn narrow_add @ 0x210204 (size 8)
 == 0x21020c widen_mul
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x21020c */
-uint32_t widen_mul(uint32_t a, uint32_t b) {
+int32_t widen_mul(int32_t a, int32_t b) {
     return (b & 0xff) * (a & 0xff);
 }
 -- signature
-uint32_t (uint32_t a, uint32_t b)
+int32_t (int32_t a, int32_t b)
 -- references
 
 -- ir
@@ -47,11 +47,11 @@ fn widen_mul @ 0x21020c (size 16)
 == 0x21021c mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x21021c */
-uint64_t mixed_sign(int a, uint32_t b) {
+int64_t mixed_sign(int a, int32_t b) {
     return (int64_t)(int32_t)(a) - b;
 }
 -- signature
-uint64_t (int a, uint32_t b)
+int64_t (int a, int32_t b)
 -- references
 
 -- ir
@@ -85,11 +85,11 @@ fn in_range @ 0x210228 (size 16)
 == 0x210238 rotate_left
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x210238 */
-uint32_t rotate_left(uint32_t x, uint32_t k) {
+uint32_t rotate_left(uint32_t x, int32_t k) {
     return ((x >> (-k & 0x1f) | x << (0x20 - (-k & 0x1f) & 0x1f)) & 0xffffffff);
 }
 -- signature
-uint32_t (uint32_t x, uint32_t k)
+uint32_t (uint32_t x, int32_t k)
 -- references
 
 -- ir
@@ -102,12 +102,12 @@ fn rotate_left @ 0x210238 (size 12)
 == 0x210244 popcount
 -- decompile
 /* velk pseudo-C: popcount @ 0x210244 */
-int popcount(uint64_t x) {
+int popcount(int64_t x) {
     /* unsupported (4 steps): FMOV at 0x210244, CNT at 0x210248, UADDLV at 0x21024c, FMOV at 0x210250 */
     return x;
 }
 -- signature
-int (uint64_t x)
+int (int64_t x)
 -- references
 
 -- ir
@@ -175,11 +175,11 @@ fn labs_value @ 0x210274 (size 12)
 == 0x210280 mul_high
 -- decompile
 /* velk pseudo-C: mul_high @ 0x210280 */
-uint64_t mul_high(uint64_t a, uint64_t b) {
+int64_t mul_high(int64_t a, int64_t b) {
     return __umulh(b, a);
 }
 -- signature
-uint64_t (uint64_t a, uint64_t b)
+int64_t (int64_t a, int64_t b)
 -- references
 
 -- ir

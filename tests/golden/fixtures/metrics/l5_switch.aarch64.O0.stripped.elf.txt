@@ -23,7 +23,7 @@
 /* velk pseudo-C: sub_210334 @ 0x210334 */
 /* ref: 0x200158 .rodata */
 /* ref: 0x2205e8 .bss */
-uint32_t sub_210334(uint32_t a0) {
+int32_t sub_210334(int32_t a0) {
     uint32_t local_0; /* [sp-14] */
     uint64_t local_1; /* [sp-20] */
 
@@ -152,7 +152,7 @@ uint32_t sub_210334(uint32_t a0) {
     }
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 0x200158 .rodata
 0x2205e8 .bss
@@ -555,7 +555,7 @@ fn <unnamed> @ 0x210558 (size 24)
 == 0x210570 -
 -- decompile
 /* velk pseudo-C: sub_210570 @ 0x210570 */
-uint32_t sub_210570(uint32_t a0) {
+int32_t sub_210570(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
 
@@ -577,7 +577,7 @@ uint32_t sub_210570(uint32_t a0) {
     return local_1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

@@ -11,7 +11,7 @@
 == 0x210234 copy_bytes
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x210234 */
-uint64_t copy_bytes(void *dst, void *src, uint64_t n) {
+int64_t copy_bytes(void *dst, void *src, int64_t n) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-18] */
@@ -30,7 +30,7 @@ uint64_t copy_bytes(void *dst, void *src, uint64_t n) {
     return dst;
 }
 -- signature
-uint64_t (void * dst, void * src, uint64_t n)
+int64_t (void * dst, void * src, int64_t n)
 -- references
 
 -- ir
@@ -62,7 +62,7 @@ fn copy_bytes @ 0x210234 (size 104)
 == 0x21029c fill_bytes
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x21029c */
-uint64_t fill_bytes(void *dst, uint32_t value, uint64_t n) {
+int64_t fill_bytes(void *dst, int32_t value, int64_t n) {
     uint64_t local_0; /* [sp-8] */
     uint8_t local_1; /* [sp-9] */
     uint64_t local_2; /* [sp-18] */
@@ -81,7 +81,7 @@ uint64_t fill_bytes(void *dst, uint32_t value, uint64_t n) {
     return dst;
 }
 -- signature
-uint64_t (void * dst, uint32_t value, uint64_t n)
+int64_t (void * dst, int32_t value, int64_t n)
 -- references
 
 -- ir
@@ -113,7 +113,7 @@ fn fill_bytes @ 0x21029c (size 92)
 == 0x2102f8 string_length
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102f8 */
-uint64_t string_length(char *s) {
+int64_t string_length(char *s) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-10] */
 
@@ -125,7 +125,7 @@ uint64_t string_length(char *s) {
     return local_1;
 }
 -- signature
-uint64_t (char * s)
+int64_t (char * s)
 -- references
 
 -- ir
@@ -168,7 +168,7 @@ fn grid_get @ 0x21033c (size 60)
 -- decompile
 /* velk pseudo-C: grid_set @ 0x210378 */
 /* ref: 0x220454 .bss */
-uint64_t grid_set(int row, int col, int value) {
+int64_t grid_set(int row, int col, int value) {
     uint32_t local_0; /* [sp-4] */
     uint32_t local_1; /* [sp-8] */
     uint32_t local_2; /* [sp-c] */
@@ -181,7 +181,7 @@ uint64_t grid_set(int row, int col, int value) {
     return row;
 }
 -- signature
-uint64_t (int row, int col, int value)
+int64_t (int row, int col, int value)
 -- references
 0x220454 .bss
 -- ir
@@ -237,7 +237,7 @@ fn read_volatile @ 0x2103e4 (size 52)
 == 0x210418 swap_ints
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x210418 */
-uint64_t swap_ints(int *a, int *b) {
+int64_t swap_ints(int *a, int *b) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-10] */
     uint32_t local_2; /* [sp-14] */
@@ -251,7 +251,7 @@ uint64_t swap_ints(int *a, int *b) {
     return a;
 }
 -- signature
-uint64_t (int * a, int * b)
+int64_t (int * a, int * b)
 -- references
 
 -- ir

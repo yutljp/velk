@@ -269,7 +269,7 @@ fn sum_skip_odd @ 0x190 (size 71)
 == 0x1e0 find_first
 -- decompile
 /* velk pseudo-C: find_first @ 0x1e0 */
-int32_t find_first(uint64_t a0, int32_t a1, uint32_t a2) {
+int32_t find_first(int64_t a0, int32_t a1, int32_t a2) {
     if (a1 <= 0x0) {
         return 0xffffffff;
     }
@@ -284,7 +284,7 @@ L_1fe:
     return ecx;
 }
 -- signature
-int32_t (uint64_t a0, int32_t a1, uint32_t a2)
+int32_t (int64_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir

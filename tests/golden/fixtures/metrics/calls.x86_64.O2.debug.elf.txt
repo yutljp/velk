@@ -379,7 +379,7 @@ fn call_sum9 @ 0x2014b0 (size 49)
 == 0x2014f0 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x2014f0 */
-int sum_varargs(int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5) {
+int sum_varargs(int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
     uint64_t local_0; /* [sp-b0] */
     uint64_t local_1; /* [sp-a8] */
     uint64_t local_2; /* [sp-a0] */
@@ -488,7 +488,7 @@ L_2015fb:
     return rax;
 }
 -- signature
-int (int count, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+int (int count, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- references
 
 -- ir

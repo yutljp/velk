@@ -272,7 +272,7 @@ fn <unnamed> @ 0x201360 (size 80)
 == 0x2013b0 -
 -- decompile
 /* velk pseudo-C: sub_2013b0 @ 0x2013b0 */
-int32_t sub_2013b0(uint64_t a0, int32_t a1, uint32_t a2) {
+int32_t sub_2013b0(int64_t a0, int32_t a1, int32_t a2) {
     if (a1 <= 0x0) {
         return 0xffffffff;
     }
@@ -287,7 +287,7 @@ L_2013ce:
     return ecx;
 }
 -- signature
-int32_t (uint64_t a0, int32_t a1, uint32_t a2)
+int32_t (int64_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir

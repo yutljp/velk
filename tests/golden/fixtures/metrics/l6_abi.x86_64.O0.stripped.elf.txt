@@ -8,11 +8,11 @@
 == 0x2011e0 -
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
-uint32_t sub_2011e0(uint32_t a0) {
+int32_t sub_2011e0(int32_t a0) {
     return a0 * 0x3 + 0x1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -25,7 +25,7 @@ fn <unnamed> @ 0x2011e0 (size 32)
 == 0x201200 -
 -- decompile
 /* velk pseudo-C: sub_201200 @ 0x201200 */
-void sub_201200(uint32_t a0) {
+void sub_201200(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
 
     local_0 = a0;
@@ -35,7 +35,7 @@ void sub_201200(uint32_t a0) {
     return;
 }
 -- signature
-void (uint32_t a0)
+void (int32_t a0)
 -- references
 
 -- ir
@@ -52,7 +52,7 @@ fn <unnamed> @ 0x201200 (size 32)
 == 0x201220 -
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
-uint32_t sub_201220(uint32_t a0, uint32_t a1) {
+int32_t sub_201220(int32_t a0, int32_t a1) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
@@ -64,7 +64,7 @@ uint32_t sub_201220(uint32_t a0, uint32_t a1) {
     return rax;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -82,11 +82,11 @@ fn <unnamed> @ 0x201220 (size 48)
 == 0x201250 -
 -- decompile
 /* velk pseudo-C: sub_201250 @ 0x201250 */
-uint32_t sub_201250(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5) {
+int32_t sub_201250(int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5) {
     return a0 + a1 + a2 + a3 + a4 + a5;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3, int32_t a4, int32_t a5)
 -- references
 
 -- ir
@@ -99,11 +99,11 @@ fn <unnamed> @ 0x201250 (size 48)
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
-uint64_t sub_201280(uint64_t a0, uint64_t a1) {
+int64_t sub_201280(int64_t a0, int64_t a1) {
     return a0 + a1;
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir

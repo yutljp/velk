@@ -5,12 +5,12 @@
 -- decompile
 /* velk pseudo-C: sub_21019c @ 0x21019c */
 /* ref: 0x2201b0 -> 0x200158 "velk-aarch64-string" */
-uint32_t sub_21019c(void) {
+int32_t sub_21019c(void) {
     w0 = *(uint8_t *)(qword_2201b0 + 0x2);
     return w0;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x2201b0 -> 0x200158 "velk-aarch64-string"
 -- ir

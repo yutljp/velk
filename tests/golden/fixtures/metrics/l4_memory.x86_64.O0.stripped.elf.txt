@@ -7,11 +7,11 @@
 == 0x201210 -
 -- decompile
 /* velk pseudo-C: sub_201210 @ 0x201210 */
-uint32_t sub_201210(uint64_t a0, uint64_t a1) {
+int32_t sub_201210(int64_t a0, int64_t a1) {
     return *(uint32_t *)(a0) * *(uint32_t *)(a1) + *(uint32_t *)(a0 + 0x4) * *(uint32_t *)(a1 + 0x4);
 }
 -- signature
-uint32_t (uint64_t a0, uint64_t a1)
+int32_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
@@ -24,7 +24,7 @@ fn <unnamed> @ 0x201210 (size 48)
 == 0x201240 -
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
-uint32_t sub_201240(uint64_t a0, uint32_t a1) {
+int32_t sub_201240(int64_t a0, int32_t a1) {
     uint64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
     uint32_t local_2; /* [sp-18] */
@@ -42,7 +42,7 @@ uint32_t sub_201240(uint64_t a0, uint32_t a1) {
     return local_2;
 }
 -- signature
-uint32_t (uint64_t a0, uint32_t a1)
+int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -68,13 +68,13 @@ fn <unnamed> @ 0x201240 (size 80)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 /* ref: 0x2022c8 .bss */
-uint32_t sub_201290(void) {
+int32_t sub_201290(void) {
     eax = dword_2022c8 + 0x1;
     dword_2022c8 = eax;
     return eax;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x2022c8 .bss
 -- ir
@@ -90,11 +90,11 @@ fn <unnamed> @ 0x201290 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2012b0 @ 0x2012b0 */
 /* ref: 0x2022c0 -> 0x200158 "velk ladder" */
-uint32_t sub_2012b0(void) {
+int32_t sub_2012b0(void) {
     return (int8_t)(*(uint8_t *)(qword_2022c0));
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x2022c0 -> 0x200158 "velk ladder"
 -- ir

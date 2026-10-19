@@ -8,7 +8,7 @@
 == 0x2011b0 -
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
-int32_t sub_2011b0(uint64_t a0, int32_t a1) {
+int32_t sub_2011b0(int64_t a0, int32_t a1) {
     xmm0 = 0x0;
     xmm0_hi = 0x0;
     xmm1 = 0x0;
@@ -44,7 +44,7 @@ L_20123d:
     return eax;
 }
 -- signature
-int32_t (uint64_t a0, int32_t a1)
+int32_t (int64_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -102,12 +102,12 @@ fn <unnamed> @ 0x2011b0 (size 176)
 == 0x201260 -
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
-uint64_t sub_201260(void) {
+int64_t sub_201260(void) {
     /* unsupported (3 steps): Subss at 0x201260, Mulss at 0x201264, Addss at 0x201268 */
     return rax;
 }
 -- signature
-uint64_t ()
+int64_t ()
 -- references
 
 -- ir
@@ -123,12 +123,12 @@ fn <unnamed> @ 0x201260 (size 16)
 == 0x201270 -
 -- decompile
 /* velk pseudo-C: sub_201270 @ 0x201270 */
-uint64_t sub_201270(void) {
+int64_t sub_201270(void) {
     /* unsupported: Cvttsd2si at 0x201270 */
     return rax;
 }
 -- signature
-uint64_t ()
+int64_t ()
 -- references
 
 -- ir
@@ -142,12 +142,12 @@ fn <unnamed> @ 0x201270 (size 16)
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
-uint64_t sub_201280(void) {
+int64_t sub_201280(void) {
     /* unsupported (2 steps): Cvtss2sd at 0x201280, Addsd at 0x201284 */
     return rax;
 }
 -- signature
-uint64_t ()
+int64_t ()
 -- references
 
 -- ir
@@ -162,7 +162,7 @@ fn <unnamed> @ 0x201280 (size 16)
 == 0x201290 -
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
-uint32_t sub_201290(void) {
+int32_t sub_201290(void) {
     ecx = 0x0;
     /* unsupported: Ucomisd at 0x201292 */
     ecx = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0) & 0xff;
@@ -172,7 +172,7 @@ uint32_t sub_201290(void) {
     return rax;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 
 -- ir

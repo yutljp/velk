@@ -7,12 +7,12 @@
 == 0x2101d4 -
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
-uint64_t sub_2101d4(uint64_t a0) {
+int64_t sub_2101d4(int64_t a0) {
     /* unsupported (2 steps): DUP at 0x2101e0, FMOV at 0x2101e8 */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -131,12 +131,12 @@ fn <unnamed> @ 0x21027c (size 20)
 -- decompile
 /* velk pseudo-C: sub_210290 @ 0x210290 */
 /* ref: 0x2202a0 -> 0x200158 "velk ladder" */
-uint32_t sub_210290(void) {
+int32_t sub_210290(void) {
     w0 = *(uint8_t *)(qword_2202a0);
     return w0;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x2202a0 -> 0x200158 "velk ladder"
 -- ir

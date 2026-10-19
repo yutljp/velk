@@ -6,11 +6,11 @@
 == 0x21017c -
 -- decompile
 /* velk pseudo-C: sub_21017c @ 0x21017c */
-uint32_t sub_21017c(uint32_t a0) {
+int32_t sub_21017c(int32_t a0) {
     return a0 + (a0 << 0x1) + 0x1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -23,13 +23,13 @@ fn <unnamed> @ 0x21017c (size 28)
 == 0x210198 -
 -- decompile
 /* velk pseudo-C: sub_210198 @ 0x210198 */
-uint32_t sub_210198(uint32_t a0) {
+int32_t sub_210198(int32_t a0) {
     a0 = a0 + 0x2;
     sub_21017c();
     return a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -44,11 +44,11 @@ fn <unnamed> @ 0x210198 (size 8)
 == 0x2101a0 -
 -- decompile
 /* velk pseudo-C: sub_2101a0 @ 0x2101a0 */
-uint32_t sub_2101a0(uint32_t a0) {
+int32_t sub_2101a0(int32_t a0) {
     return a0 - 0x7;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir

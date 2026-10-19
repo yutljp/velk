@@ -8,11 +8,11 @@
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 /* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
-uint32_t sub_2011e0(uint32_t a0, uint32_t *a1) {
+int32_t sub_2011e0(int32_t a0, uint32_t *a1) {
     return a1->field_0x4 * *(uint32_t *)(a0 + 0x4) + a1->field_0x0 * *(uint32_t *)(a0);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t * a1)
+int32_t (int32_t a0, uint32_t * a1)
 -- references
 
 -- ir
@@ -137,11 +137,11 @@ fn <unnamed> @ 0x201280 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 /* ref: 0x2022a0 -> 0x200158 "velk ladder" */
-uint32_t sub_201290(void) {
+int32_t sub_201290(void) {
     return (int8_t)(*(uint8_t *)(qword_2022a0));
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x2022a0 -> 0x200158 "velk ladder"
 -- ir

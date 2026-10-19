@@ -7,11 +7,11 @@
 == 0x0 _sum3
 -- decompile
 /* velk pseudo-C: _sum3 @ 0x0 */
-uint32_t _sum3(uint32_t a0, uint32_t a1, uint32_t a2) {
+int32_t _sum3(int32_t a0, int32_t a1, int32_t a2) {
     return a1 + a0 + a2;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir
@@ -59,11 +59,11 @@ fn _helper @ 0xc (size 68)
 -- decompile
 /* velk pseudo-C: _pair_sum @ 0x50 */
 /* struct: a0 +0x0:uint32_t, +0x4:uint32_t */
-uint32_t _pair_sum(uint32_t *a0) {
+int32_t _pair_sum(uint32_t *a0) {
     return a0->field_0x4 + a0->field_0x0;
 }
 -- signature
-uint32_t (uint32_t * a0)
+int32_t (uint32_t * a0)
 -- references
 
 -- ir

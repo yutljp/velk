@@ -266,12 +266,12 @@ fn lmod10 @ 0x201490 (size 44)
 == 0x2014c0 umod10b
 -- decompile
 /* velk pseudo-C: umod10b @ 0x2014c0 */
-uint64_t umod10b(uint64_t x) {
+int64_t umod10b(uint64_t x) {
     rdx = __umulh(x, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
     return x - (rdx + rdx * 0x4);
 }
 -- signature
-uint64_t (uint64_t x)
+int64_t (uint64_t x)
 -- references
 
 -- ir

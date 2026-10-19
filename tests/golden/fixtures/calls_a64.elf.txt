@@ -14,11 +14,11 @@
 == 0x2102b4 twice
 -- decompile
 /* velk pseudo-C: twice @ 0x2102b4 */
-uint32_t twice(uint32_t a0) {
+int32_t twice(int32_t a0) {
     return a0 << 0x1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -31,11 +31,11 @@ fn twice @ 0x2102b4 (size 8)
 == 0x2102bc square
 -- decompile
 /* velk pseudo-C: square @ 0x2102bc */
-uint32_t square(uint32_t a0) {
+int32_t square(int32_t a0) {
     return a0 * a0;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -48,12 +48,12 @@ fn square @ 0x2102bc (size 8)
 == 0x2102c4 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x2102c4 */
-uint32_t pick_op(uint32_t a0) {
+int32_t pick_op(int32_t a0) {
     v1 = (a0 == 0x0 ? twice : square);
     return v1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -68,7 +68,7 @@ fn pick_op @ 0x2102c4 (size 28)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x2102e0 */
 /* ref: 0x220538 .data.rel.ro */
-uint32_t apply_table(uint32_t a0, uint32_t a1) {
+int32_t apply_table(uint32_t a0, int32_t a1) {
     w8 = 0xaaab;
     x9 = &table;
     w8 = 0xaaaaaaab;
@@ -80,7 +80,7 @@ uint32_t apply_table(uint32_t a0, uint32_t a1) {
     goto *(x2);
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (uint32_t a0, int32_t a1)
 -- references
 0x220538 .data.rel.ro
 -- ir
@@ -101,14 +101,14 @@ fn apply_table @ 0x2102e0 (size 44)
 == 0x21030c apply_pointer
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x21030c */
-uint32_t apply_pointer(uint32_t a0, uint32_t a1) {
+int32_t apply_pointer(int32_t a0, int32_t a1) {
     x8 = a0;
     a0 = a1;
     (*(x8))();
     return a0 + 0x1;
 }
 -- signature
-uint32_t (uint32_t a0, uint32_t a1)
+int32_t (int32_t a0, int32_t a1)
 -- references
 
 -- ir
@@ -204,7 +204,7 @@ fn factorial @ 0x21032c (size 160)
 == 0x2103cc is_odd
 -- decompile
 /* velk pseudo-C: is_odd @ 0x2103cc */
-uint32_t is_odd(uint32_t a0) {
+int32_t is_odd(int32_t a0) {
     w8 = a0 - (a0 != 0x0 ? 0x1 : 0x0) + 0x1;
     if (w8 < 0x2 /* unsigned */) { goto L_210410; }
     w8 = w8 >> 0x1;
@@ -225,7 +225,7 @@ L_210410:
     return v1;
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -259,14 +259,14 @@ fn is_odd @ 0x2103cc (size 88)
 == 0x210424 is_even
 -- decompile
 /* velk pseudo-C: is_even @ 0x210424 */
-uint32_t is_even(uint32_t a0) {
+int32_t is_even(int32_t a0) {
     if (a0 == 0x0) {
         return 0x1;
     }
     return a0 - 0x1 - (a0 - (a0 != 0x1 ? 0x1 : 0x0) & 0xfffffffe);
 }
 -- signature
-uint32_t (uint32_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -283,11 +283,11 @@ fn is_even @ 0x210424 (size 36)
 == 0x210448 sum9
 -- decompile
 /* velk pseudo-C: sum9 @ 0x210448 */
-uint64_t sum9(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+int64_t sum9(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
     return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + *(uint64_t *)(sp));
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
 -- references
 
 -- ir
@@ -300,11 +300,11 @@ fn sum9 @ 0x210448 (size 40)
 == 0x210470 call_sum9
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x210470 */
-uint64_t call_sum9(uint64_t a0) {
+int64_t call_sum9(int64_t a0) {
     return a0 + 0x24;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -317,7 +317,7 @@ fn call_sum9 @ 0x210470 (size 8)
 == 0x210478 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x210478 */
-int32_t sum_varargs(int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-8] */
     uint64_t local_2; /* [sp-58] */
@@ -386,7 +386,7 @@ L_2104d8:
     return w8;
 }
 -- signature
-int32_t (int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
+int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
 -- references
 
 -- ir

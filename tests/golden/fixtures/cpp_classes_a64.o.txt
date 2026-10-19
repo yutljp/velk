@@ -76,11 +76,11 @@ fn clamp_int(int) @ 0x5c (size 20)
 == 0x70 clamp_long(long)
 -- decompile
 /* velk pseudo-C: clamp_long(long) @ 0x70 */
-uint64_t clamp_long_long_(int64_t a0) {
+int64_t clamp_long_long_(int64_t a0) {
     return ((a0 < 0x3e8 ? a0 : 0x3e8) > 0xfffffffffffffc18 ? (a0 < 0x3e8 ? a0 : 0x3e8) : 0xfffffffffffffc18);
 }
 -- signature
-uint64_t (int64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -93,12 +93,12 @@ fn clamp_long(long) @ 0x70 (size 28)
 == 0x8c dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
 /* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0x8c */
-uint64_t dot_sum_Vec2_const___Vec2_const__(uint64_t a0) {
+int64_t dot_sum_Vec2_const___Vec2_const__(int64_t a0) {
     /* unsupported: FMOV at 0x9c */
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -113,12 +113,12 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
 -- decompile
 /* velk pseudo-C: increment(int&) @ 0xa4 */
 /* struct: a0 +0x0:uint32_t */
-uint64_t increment_int__(uint32_t *a0) {
+int64_t increment_int__(uint32_t *a0) {
     a0->field_0x0 += 0x1;
     return a0;
 }
 -- signature
-uint64_t (uint32_t * a0)
+int64_t (uint32_t * a0)
 -- references
 
 -- ir

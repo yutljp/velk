@@ -547,7 +547,7 @@
 -- decompile
 /* velk pseudo-C: rust_demo::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
-uint32_t rust_demo__main(void) {
+int32_t rust_demo__main(void) {
     uint32_t local_0; /* [sp-14] */
     uint64_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-8] */
@@ -563,7 +563,7 @@ uint32_t rust_demo__main(void) {
     return rax;
 }
 -- signature
-uint32_t ()
+int32_t ()
 -- references
 0x55aa8 .got
 -- ir
