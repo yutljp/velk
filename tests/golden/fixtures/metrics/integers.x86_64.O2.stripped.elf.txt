@@ -1,4 +1,4 @@
-# metrics/integers.x86_64.O2.stripped.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/integers.x86_64.O2.stripped.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201210 16 - prologue
 0x201220 16 - prologue
 0x201230 16 - prologue
@@ -82,10 +82,7 @@ fn <unnamed> @ 0x201240 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201250 @ 0x201250 */
 uint32_t sub_201250(uint32_t a0, uint32_t a1) {
-    ecx = a1;
-    eax = a0;
-    /* unsupported: Rol at 0x201254 */
-    return eax;
+    return ((a0 << (a1 & 0x1f) | a0 >> (0x20 - (a1 & 0x1f) & 0x1f)) & 0xffffffff);
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1)
@@ -94,12 +91,9 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x201250 (size 16)
   blk0 @ 0x201250:
-    ecx = esi
-    eax = edi
-    unsupported: Rol at 0x201254
-    ret eax
+    ret (((edi << (esi & #0x1f)) | (edi >> ((#0x20 - (esi & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
-{"addr":"0x201250","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x201250","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x201260 -
 -- decompile
@@ -139,9 +133,7 @@ fn <unnamed> @ 0x201260 (size 32)
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 uint32_t sub_201280(uint32_t a0) {
-    eax = a0;
-    /* unsupported: Bswap at 0x201282 */
-    return eax;
+    return (a0 & 0xff) << 0x18 | (a0 >> 0x8 & 0xff) << 0x10 | (a0 >> 0x10 & 0xff) << 0x8 | a0 >> 0x18 & 0xff;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -150,11 +142,9 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201280 (size 16)
   blk0 @ 0x201280:
-    eax = edi
-    unsupported: Bswap at 0x201282
-    ret eax
+    ret ((((((edi & #0xff) << #0x18) | (((edi >> #0x8) & #0xff) << #0x10)) | (((edi >> #0x10) & #0xff) << #0x8)) | ((edi >> #0x18) & #0xff)) & #0xffffffff)
 -- card
-{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x201290 -
 -- decompile

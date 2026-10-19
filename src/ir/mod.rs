@@ -361,6 +361,10 @@ pub const TEMP_BASE: u16 = 0x1000;
 /// the flags, or a later one, overwrites what they read.
 pub const FLAG_OPERANDS: [u16; 2] = [TEMP_BASE + 0x40, TEMP_BASE + 0x41];
 
+/// The register holding a value an exchange overwrites before it is written
+/// back.
+pub const EXCHANGE: u16 = TEMP_BASE + 0x42;
+
 pub fn is_temp(index: u16) -> bool {
     index >= TEMP_BASE
 }

@@ -129,6 +129,14 @@ fn extend_shift(style: a64::ShiftStyle, amount: u64, value: Expr, size: SizeCode
         a64::ShiftStyle::SXTX => Some(8),
         _ => None,
     };
+    if style == a64::ShiftStyle::ROR {
+        let rotated = super::rotate(value, Expr::constant(amount), width, true);
+        return Some(if width == 32 {
+            Expr::bin(BinOp::And, rotated, Expr::constant(0xffff_ffff))
+        } else {
+            rotated
+        });
+    }
     if let Some(bytes) = signed_width {
         let widened = Expr::SignExtend {
             value: Box::new(value),
@@ -236,6 +244,64 @@ fn lift_madd(lifter: &mut Lifter, ops: [Operand; 4], accumulate: bool) {
 }
 
 /// `bic Rd, Rn, Rm` computes `Rn & ~Rm`.
+/// `orn` and `eon`: the operation with the second operand inverted.
+fn lift_inverted(lifter: &mut Lifter, ops: [Operand; 4], op: BinOp) {
+    let (Some(dest), Some(width)) = (destination(ops[0]), register_width(ops[0])) else {
+        return;
+    };
+    let (Some(base), Some(mask)) = (lifter.operand(ops[1], width), lifter.operand(ops[2], width))
+    else {
+        lifter.stmts.push(Stmt::Unsupported {
+            text: format!("{op:?} not"),
+        });
+        return;
+    };
+    let inverted = Expr::bin(BinOp::Xor, mask, Expr::constant(u64::MAX));
+    lifter.assign(dest, Expr::bin(op, base, inverted));
+}
+
+/// `extr`: the register pair `rn:rm` shifted right by `lsb`, which with
+/// `rn` equal to `rm` is `ror`.
+fn lift_extract(lifter: &mut Lifter, ops: [Operand; 4]) {
+    let Some(dest) = destination(ops[0]) else {
+        return;
+    };
+    let (Some(high), Some(low), Operand::Immediate(lsb)) = (
+        lifter.operand(ops[1], dest.width),
+        lifter.operand(ops[2], dest.width),
+        ops[3],
+    ) else {
+        return;
+    };
+    let lsb = u64::from(lsb) % u64::from(dest.width);
+    let value = if lsb == 0 {
+        low
+    } else {
+        Expr::bin(
+            BinOp::Or,
+            Expr::bin(BinOp::Shr, low, Expr::constant(lsb)),
+            Expr::bin(
+                BinOp::Shl,
+                high,
+                Expr::constant(u64::from(dest.width) - lsb),
+            ),
+        )
+    };
+    lifter.assign(dest, value);
+}
+
+/// `rev`, `rev16` and `rev32`: the bytes reversed within each `chunk` bytes.
+fn lift_reverse(lifter: &mut Lifter, ops: [Operand; 4], chunk: Option<u8>) {
+    let Some(dest) = destination(ops[0]) else {
+        return;
+    };
+    let Some(value) = lifter.operand(ops[1], dest.width) else {
+        return;
+    };
+    let chunk = chunk.unwrap_or(dest.width / 8);
+    lifter.assign(dest, super::reverse_bytes(value, dest.width, chunk));
+}
+
 fn lift_bic(lifter: &mut Lifter, ops: [Operand; 4]) {
     let width = match ops[0] {
         Operand::Register(size, _) | Operand::RegisterOrSP(size, _) => {
@@ -466,6 +532,10 @@ fn lift_variable_shift(lifter: &mut Lifter, ops: [Operand; 4], shift: a64::Shift
         a64::ShiftStyle::LSL => BinOp::Shl,
         a64::ShiftStyle::LSR => BinOp::Shr,
         a64::ShiftStyle::ASR => BinOp::Sar,
+        a64::ShiftStyle::ROR => {
+            lifter.assign(dest, super::rotate(value, amount, dest.width, true));
+            return;
+        }
         _ => {
             lifter.stmts.push(Stmt::Unsupported {
                 text: "rotate/extend".to_owned(),
@@ -881,6 +951,13 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::LSLV => lift_variable_shift(lifter, ops, a64::ShiftStyle::LSL),
         O::LSRV => lift_variable_shift(lifter, ops, a64::ShiftStyle::LSR),
         O::ASRV => lift_variable_shift(lifter, ops, a64::ShiftStyle::ASR),
+        O::RORV => lift_variable_shift(lifter, ops, a64::ShiftStyle::ROR),
+        O::EXTR => lift_extract(lifter, ops),
+        O::ORN => lift_inverted(lifter, ops, BinOp::Or),
+        O::EON => lift_inverted(lifter, ops, BinOp::Xor),
+        O::REV => lift_reverse(lifter, ops, None),
+        O::REV16 => lift_reverse(lifter, ops, Some(2)),
+        O::REV32 => lift_reverse(lifter, ops, Some(4)),
         O::LDR => lift_load(lifter, ops, O::LDR),
         O::LDRB => lift_load(lifter, ops, O::LDRB),
         O::LDRH => lift_load(lifter, ops, O::LDRH),

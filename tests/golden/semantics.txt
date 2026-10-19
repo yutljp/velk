@@ -1,9 +1,9 @@
-# 5547 functions, 48777 compared runs
+# 5547 functions, 52474 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 256
-#   step limit (Go): 7004
-#   step limit (Rust): 1021
-#   unsupported instruction (C and C++): 890
-#   unsupported instruction (Go): 6366
-#   unsupported instruction (Rust): 2240
+#   step limit (Go): 7754
+#   step limit (Rust): 1153
+#   unsupported instruction (C and C++): 794
+#   unsupported instruction (Go): 2428
+#   unsupported instruction (Rust): 1695
 metrics/memory.x86_64.O2.stripped.elf 0x201310 -: trial 1: calls differ (1 before, 1 after)

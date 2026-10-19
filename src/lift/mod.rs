@@ -65,6 +65,64 @@ pub fn lift(
     }
 }
 
+/// `value`, `width` bits wide, rotated by `amount`, which wraps at the width,
+/// towards the low bits or the high ones. Bits above the width are left for
+/// the write to clear.
+fn rotate(value: Expr, amount: Expr, width: u8, right: bool) -> Expr {
+    use crate::ir::BinOp;
+    let bits = u64::from(width);
+    let (amount, back) = match amount {
+        Expr::Const(amount) => match amount % bits {
+            0 => return value,
+            amount => (Expr::constant(amount), Expr::constant(bits - amount)),
+        },
+        amount => {
+            let amount = Expr::bin(BinOp::And, amount, Expr::constant(bits - 1));
+            // A rotation by zero shifts back by zero too, not by the width.
+            let back = Expr::bin(
+                BinOp::And,
+                Expr::bin(BinOp::Sub, Expr::constant(bits), amount.clone()),
+                Expr::constant(bits - 1),
+            );
+            (amount, back)
+        }
+    };
+    let (towards, from) = if right {
+        (BinOp::Shr, BinOp::Shl)
+    } else {
+        (BinOp::Shl, BinOp::Shr)
+    };
+    Expr::bin(
+        BinOp::Or,
+        Expr::bin(towards, value.clone(), amount),
+        Expr::bin(from, value, back),
+    )
+}
+
+/// `value`, `width` bits wide, with the order of the bytes reversed within
+/// each `chunk` bytes.
+fn reverse_bytes(value: Expr, width: u8, chunk: u8) -> Expr {
+    use crate::ir::BinOp;
+    let bytes = width / 8;
+    (0..bytes)
+        .map(|byte| {
+            let start = byte - byte % chunk;
+            let target = start + (chunk - 1 - byte % chunk);
+            let field = Expr::bin(
+                BinOp::And,
+                Expr::bin(
+                    BinOp::Shr,
+                    value.clone(),
+                    Expr::constant(8 * u64::from(byte)),
+                ),
+                Expr::constant(0xff),
+            );
+            Expr::bin(BinOp::Shl, field, Expr::constant(8 * u64::from(target)))
+        })
+        .reduce(|all, field| Expr::bin(BinOp::Or, all, field))
+        .unwrap_or(value)
+}
+
 /// What an instruction is about to overwrite.
 enum Write<'a> {
     /// A register and, when the register then holds exactly it, the value it receives.
@@ -465,6 +523,84 @@ mod tests {
         // xorps xmm0, xmm0; movq rax, xmm0; ret
         let code = vec![0x0f, 0x57, 0xc0, 0x66, 0x48, 0x0f, 0x7e, 0xc0, 0xc3];
         assert_eq!(returns(Isa::X86_64, code, &[(18, 5)]), 0);
+    }
+
+    #[test]
+    fn rotations_and_byte_reversals_lift() {
+        let x = 0x1122_3344_5566_7788;
+        // mov rax, rdi; rol rax, 8; ret
+        let rol = vec![0x48, 0x89, 0xf8, 0x48, 0xc1, 0xc0, 0x08, 0xc3];
+        assert_eq!(returns(Isa::X86_64, rol, &[(7, x)]), 0x2233_4455_6677_8811);
+        // mov eax, edi; ror eax, cl; ret
+        let ror = vec![0x89, 0xf8, 0xd3, 0xc8, 0xc3];
+        let rotated = |count| returns(Isa::X86_64, ror.clone(), &[(7, 0x1234_5678), (1, count)]);
+        assert_eq!(rotated(4), 0x8123_4567);
+        assert_eq!(rotated(0), 0x1234_5678);
+        // mov rax, rdi; bswap rax; ret
+        let bswap = vec![0x48, 0x89, 0xf8, 0x48, 0x0f, 0xc8, 0xc3];
+        assert_eq!(
+            returns(Isa::X86_64, bswap, &[(7, x)]),
+            0x8877_6655_4433_2211
+        );
+        // mov rax, rdi; shrd rax, rsi, 8; ret
+        let shrd = vec![0x48, 0x89, 0xf8, 0x48, 0x0f, 0xac, 0xf0, 0x08, 0xc3];
+        assert_eq!(
+            returns(Isa::X86_64, shrd, &[(7, x), (6, 0xaabb)]),
+            0xbb11_2233_4455_6677
+        );
+        let ret = 0xd65f_03c0;
+        let a64 = |word: u32, registers: &[(u16, u64)]| {
+            returns(Isa::AArch64, words(&[word, ret]), registers)
+        };
+        // ror x0, x1, #8
+        assert_eq!(a64(0x93c1_2020, &[(1, x)]), 0x8811_2233_4455_6677);
+        // orr x0, xzr, x1, ror #8
+        assert_eq!(a64(0xaac1_23e0, &[(1, x)]), 0x8811_2233_4455_6677);
+        // rorv w0, w1, w2
+        assert_eq!(a64(0x1ac2_2c20, &[(1, 0x1234_5678), (2, 36)]), 0x8123_4567);
+        // rev x0, x1; rev16 w0, w1
+        assert_eq!(a64(0xdac0_0c20, &[(1, x)]), 0x8877_6655_4433_2211);
+        assert_eq!(a64(0x5ac0_0420, &[(1, 0x1122_3344)]), 0x2211_4433);
+        // orn x0, x1, x2
+        assert_eq!(a64(0xaa22_0020, &[(1, 0xf0), (2, !0x0f)]), 0xff);
+    }
+
+    #[test]
+    fn exchanges_return_the_old_value() {
+        // mov eax, 5; xchg rax, rdi; ret
+        let xchg = vec![0xb8, 0x05, 0x00, 0x00, 0x00, 0x48, 0x97, 0xc3];
+        assert_eq!(returns(Isa::X86_64, xchg, &[(7, 9)]), 9);
+        // mov eax, 3; lock xadd [rdi], rax; ret
+        let xadd = vec![
+            0xb8, 0x03, 0x00, 0x00, 0x00, 0xf0, 0x48, 0x0f, 0xc1, 0x07, 0xc3,
+        ];
+        assert_eq!(
+            returns_with(Isa::X86_64, xadd, &[(7, 0x100)], &[(0x100, 10)]),
+            10
+        );
+        // mov eax, 10; lock cmpxchg [rdi], rsi; ret: a mismatch loads rax.
+        let cmpxchg = vec![
+            0xb8, 0x0a, 0x00, 0x00, 0x00, 0xf0, 0x48, 0x0f, 0xb1, 0x37, 0xc3,
+        ];
+        let registers = [(7, 0x100), (6, 42)];
+        assert_eq!(
+            returns_with(Isa::X86_64, cmpxchg, &registers, &[(0x100, 7)]),
+            7
+        );
+        // The same, then mov rax, [rdi]: a match stores rsi.
+        let stored = vec![
+            0xb8, 0x0a, 0x00, 0x00, 0x00, 0xf0, 0x48, 0x0f, 0xb1, 0x37, 0x48, 0x8b, 0x07, 0xc3,
+        ];
+        assert_eq!(
+            returns_with(Isa::X86_64, stored, &registers, &[(0x100, 10)]),
+            42
+        );
+        // xor eax, eax; bt rdi, 3; setb al; ret
+        let bt = vec![
+            0x31, 0xc0, 0x48, 0x0f, 0xba, 0xe7, 0x03, 0x0f, 0x92, 0xc0, 0xc3,
+        ];
+        assert_eq!(returns(Isa::X86_64, bt.clone(), &[(7, 8)]), 1);
+        assert_eq!(returns(Isa::X86_64, bt, &[(7, 7)]), 0);
     }
 
     #[test]

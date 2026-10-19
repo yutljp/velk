@@ -1,4 +1,4 @@
-# metrics/integers.x86_64.O2.debug.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/integers.x86_64.O2.debug.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201210 4 narrow_add symtab,dwarf
 0x201220 6 widen_mul symtab,dwarf
 0x201230 9 mixed_sign symtab,dwarf
@@ -82,10 +82,7 @@ fn in_range @ 0x201240 (size 13)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x201250 */
 uint32_t rotate_left(uint32_t x, uint32_t k) {
-    ecx = k;
-    eax = x;
-    /* unsupported: Rol at 0x201254 */
-    return eax;
+    return ((x << (k & 0x1f) | x >> (0x20 - (k & 0x1f) & 0x1f)) & 0xffffffff);
 }
 -- signature
 uint32_t (uint32_t x, uint32_t k)
@@ -94,12 +91,9 @@ uint32_t (uint32_t x, uint32_t k)
 -- ir
 fn rotate_left @ 0x201250 (size 7)
   blk0 @ 0x201250:
-    ecx = esi
-    eax = edi
-    unsupported: Rol at 0x201254
-    ret eax
+    ret (((edi << (esi & #0x1f)) | (edi >> ((#0x20 - (esi & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
-{"addr":"0x201250","approxTokens":120,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":7,"unsupported":1}
+{"addr":"0x201250","approxTokens":120,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":7,"unsupported":0}
 
 == 0x201260 popcount
 -- decompile
@@ -139,9 +133,7 @@ fn popcount @ 0x201260 (size 28)
 -- decompile
 /* velk pseudo-C: byte_swap @ 0x201280 */
 uint32_t byte_swap(uint32_t x) {
-    eax = x;
-    /* unsupported: Bswap at 0x201282 */
-    return eax;
+    return (x & 0xff) << 0x18 | (x >> 0x8 & 0xff) << 0x10 | (x >> 0x10 & 0xff) << 0x8 | x >> 0x18 & 0xff;
 }
 -- signature
 uint32_t (uint32_t x)
@@ -150,11 +142,9 @@ uint32_t (uint32_t x)
 -- ir
 fn byte_swap @ 0x201280 (size 5)
   blk0 @ 0x201280:
-    eax = edi
-    unsupported: Bswap at 0x201282
-    ret eax
+    ret ((((((edi & #0xff) << #0x18) | (((edi >> #0x8) & #0xff) << #0x10)) | (((edi >> #0x10) & #0xff) << #0x8)) | ((edi >> #0x18) & #0xff)) & #0xffffffff)
 -- card
-{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":1}
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":0}
 
 == 0x201290 min3
 -- decompile

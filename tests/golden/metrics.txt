@@ -16,11 +16,11 @@ parameter pointer | aarch64.O2 | 156/164
 parameter pointer | x86_64.O0 | 143/172
 parameter pointer | x86_64.O2 | 157/167
 parameter width | aarch64.O0 | 138/144
-parameter width | aarch64.O2 | 128/137
+parameter width | aarch64.O2 | 130/137
 parameter width | x86_64.O0 | 137/143
 parameter width | x86_64.O2 | 129/139
 parameter sign | aarch64.O0 | 28/138
-parameter sign | aarch64.O2 | 82/128
+parameter sign | aarch64.O2 | 84/130
 parameter sign | x86_64.O0 | 28/137
 parameter sign | x86_64.O2 | 82/129
 return void | aarch64.O0 | 143/148
@@ -28,7 +28,7 @@ return void | aarch64.O2 | 139/145
 return void | x86_64.O0 | 123/148
 return void | x86_64.O2 | 141/145
 return width | aarch64.O0 | 114/120
-return width | aarch64.O2 | 107/117
+return width | aarch64.O2 | 109/117
 return width | x86_64.O0 | 112/117
 return width | x86_64.O2 | 112/117
 
@@ -335,9 +335,9 @@ integers.aarch64.O2 0x210204 narrow_add: parameter 0 is 4 bytes, expected 1; par
 integers.aarch64.O2 0x21020c widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.aarch64.O2 0x21021c mixed_sign: parameter 0 signedness differs
 integers.aarch64.O2 0x210228 in_range: 2 parameters, expected 3; returns 4 bytes, expected 1
-integers.aarch64.O2 0x210238 rotate_left: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
+integers.aarch64.O2 0x210238 rotate_left: ok
 integers.aarch64.O2 0x210244 popcount: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
-integers.aarch64.O2 0x210258 byte_swap: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
+integers.aarch64.O2 0x210258 byte_swap: ok
 integers.aarch64.O2 0x210260 min3: ok
 integers.aarch64.O2 0x210274 labs_value: ok
 integers.aarch64.O2 0x210280 mul_high: ok

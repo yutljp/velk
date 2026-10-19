@@ -1,4 +1,4 @@
-# metrics/integers.aarch64.O2.stripped.elf: elf aarch64 no entry, 10 functions, 0 lift failures, 4 unsupported, 0 gotos
+# metrics/integers.aarch64.O2.stripped.elf: elf aarch64 no entry, 10 functions, 0 lift failures, 2 unsupported, 0 gotos
 0x210204 8 - prologue
 0x21020c 16 - prologue
 0x21021c 12 - prologue
@@ -85,23 +85,19 @@ fn <unnamed> @ 0x210228 (size 16)
 == 0x210238 -
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
-uint64_t sub_210238(uint64_t a0, uint32_t a1) {
-    w8 = -a1;
-    /* unsupported: RORV at 0x21023c */
-    return a0;
+uint32_t sub_210238(uint32_t a0, uint32_t a1) {
+    return ((a0 >> (-a1 & 0x1f) | a0 << (0x20 - (-a1 & 0x1f) & 0x1f)) & 0xffffffff);
 }
 -- signature
-uint64_t (uint64_t a0, uint32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210238 (size 12)
   blk0 @ 0x210238:
-    w8 = (#0x0 - w1)
-    unsupported: RORV at 0x21023c
-    ret x0
+    ret (((w0 >> ((#0x0 - w1) & #0x1f)) | (w0 << ((#0x20 - ((#0x0 - w1) & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
-{"addr":"0x210238","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210238","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
 
 == 0x210244 -
 -- decompile
@@ -128,21 +124,19 @@ fn <unnamed> @ 0x210244 (size 20)
 == 0x210258 -
 -- decompile
 /* velk pseudo-C: sub_210258 @ 0x210258 */
-uint64_t sub_210258(uint64_t a0) {
-    /* unsupported: REV at 0x210258 */
-    return a0;
+uint32_t sub_210258(uint32_t a0) {
+    return (a0 & 0xff) << 0x18 | (a0 >> 0x8 & 0xff) << 0x10 | (a0 >> 0x10 & 0xff) << 0x8 | a0 >> 0x18 & 0xff;
 }
 -- signature
-uint64_t (uint64_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210258 (size 8)
   blk0 @ 0x210258:
-    unsupported: REV at 0x210258
-    ret x0
+    ret ((((((w0 & #0xff) << #0x18) | (((w0 >> #0x8) & #0xff) << #0x10)) | (((w0 >> #0x10) & #0xff) << #0x8)) | ((w0 >> #0x18) & #0xff)) & #0xffffffff)
 -- card
-{"addr":"0x210258","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210258","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x210260 -
 -- decompile
