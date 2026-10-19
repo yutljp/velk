@@ -1,3 +1,21 @@
+/// True when `magic` is a multiplier that divides by `divisor` at some shift,
+/// so a remainder that multiplies the quotient back by `divisor` is exact.
+/// A zero-extended 32-bit value can sit in a 64-bit register, so a wider
+/// dividend also accepts a 32-bit magic.
+pub(crate) fn magic_matches(magic: u64, divisor: u64, domain_bits: u64, signed: bool) -> bool {
+    [domain_bits, domain_bits.min(32)].into_iter().any(|bits| {
+        let at_some_shift = (0..=127).any(|shift| {
+            let found = if signed {
+                magic_divisor_signed64(magic, shift, bits)
+            } else {
+                magic_divisor(magic, shift, bits)
+            };
+            found == Some(divisor)
+        });
+        at_some_shift || (signed && magic_divisor_signed(magic, bits) == Some(divisor))
+    })
+}
+
 /// Divisor for the signed `(x * M) >> S` (ARM64 `smulh` or x86-64 `imul`),
 /// exact over all `x` in `[-2^(n-1), 2^(n-1))`.
 pub(crate) fn magic_divisor_signed64(

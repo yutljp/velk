@@ -149,6 +149,27 @@ pub struct Image {
 }
 
 impl Image {
+    /// An image holding only `code`, mapped executable at `addr`.
+    #[cfg(test)]
+    pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
+        Self {
+            format: Format::Elf,
+            isa,
+            entry: None,
+            sections: vec![Section {
+                name: ".text".to_owned(),
+                vaddr: addr,
+                size: code.len() as u64,
+                file_offset: Some(0),
+                executable: true,
+            }],
+            bytes: code,
+            functions: BTreeMap::new(),
+            relocations: BTreeMap::new(),
+            go: false,
+        }
+    }
+
     pub fn section_at(&self, vaddr: u64) -> Option<&Section> {
         self.sections
             .iter()

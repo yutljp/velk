@@ -14,6 +14,7 @@ use crate::passes::division::chains::signed_chain;
 use crate::passes::division::chains::signed64_chain;
 use crate::passes::division::chains::unsigned64_chain;
 use crate::passes::division::divisor::magic_divisor;
+use crate::passes::division::divisor::magic_matches;
 use crate::passes::division::remainder::apply_remainder_follows;
 use crate::passes::division::remainder::remainder_leaf;
 use crate::passes::division::remainder::remainder_scan;
@@ -265,6 +266,7 @@ fn magic_block(
         // Remainder chain `x - (x / d) * d`, rewritten to `x % d`.
         if let Some((sub_position, chain_steps, divisor, signed, width)) =
             remainder_scan(block.stmts.as_slice(), index, dest.index)
+            && magic_matches(magic, divisor, domain_bits, signed)
             && single_use(block.stmts.as_slice(), index, sub_position, dest.index)
         {
             let mut all_safe = true;
@@ -743,4 +745,51 @@ fn dropped_dest_safe(statements: &[Stmt], start: usize, end: usize, position: us
         }
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::analysis::analyze;
+    use crate::loader::{Function, Image, Isa};
+
+    /// AArch64 `x % 3` for signed `x`, multiplying the quotient back by `1 + 2^shift`.
+    fn signed_mod_three(shift: u32) -> String {
+        let words: [u32; 9] = [
+            0x528a_aac8,                 // mov  w8, #0x5556
+            0x72aa_aaa8,                 // movk w8, #0x5555, lsl #16
+            0x9b28_7c08,                 // smull x8, w0, w8
+            0xd37f_fd09,                 // lsr  x9, x8, #63
+            0xd360_fd08,                 // lsr  x8, x8, #32
+            0x0b09_0108,                 // add  w8, w8, w9
+            0x0b08_0108 | (shift << 10), // add  w8, w8, w8, lsl #shift
+            0x4b08_0000,                 // sub  w0, w0, w8
+            0xd65f_03c0,                 // ret
+        ];
+        let code: Vec<u8> = words.iter().flat_map(|word| word.to_le_bytes()).collect();
+        let function = Function {
+            addr: 0,
+            size: Some(code.len() as u64),
+            size_estimated: false,
+            name: None,
+            aliases: Vec::new(),
+            sources: Vec::new(),
+        };
+        let image = Image::from_code(Isa::AArch64, 0, code);
+        analyze(&image, &function)
+            .expect("the code lifts")
+            .ir
+            .render()
+    }
+
+    #[test]
+    fn rewrites_a_remainder_whose_multiplier_matches_the_magic() {
+        let ir = signed_mod_three(1);
+        assert!(ir.contains("% #0x3"), "{ir}");
+    }
+
+    #[test]
+    fn keeps_a_remainder_whose_multiplier_does_not_match_the_magic() {
+        let ir = signed_mod_three(2);
+        assert!(!ir.contains('%'), "{ir}");
+    }
 }
