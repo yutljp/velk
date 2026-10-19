@@ -248,6 +248,30 @@ impl Image {
         }
     }
 
+    /// Removes the given starts where only the prologue scan found them, and
+    /// estimates again the sizes they cut short. Returns whether any went.
+    pub fn drop_scanned_starts(&mut self, starts: &std::collections::HashSet<u64>) -> bool {
+        let before = self.functions.len();
+        self.functions.retain(|address, function| {
+            !(starts.contains(address)
+                && function
+                    .sources
+                    .iter()
+                    .all(|source| *source == NameSource::Prologue))
+        });
+        if self.functions.len() == before {
+            return false;
+        }
+        for function in self.functions.values_mut() {
+            if function.size_estimated {
+                function.size = None;
+                function.size_estimated = false;
+            }
+        }
+        estimate_sizes(&self.sections, &mut self.functions);
+        true
+    }
+
     /// Drops functions outside executable sections, such as data symbols.
     fn retain_code_functions(&mut self) {
         self.functions.retain(|address, _| {

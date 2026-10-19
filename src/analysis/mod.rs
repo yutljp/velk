@@ -42,6 +42,44 @@ struct Lifted {
     has_jump_tables: bool,
 }
 
+/// Folds the cases of jump tables back into their functions where the
+/// prologue scan took a case, which follows a return like a new function
+/// would, for a function start. Each pass widens the functions it merges,
+/// which may expose further tables.
+pub fn absorb_jump_table_cases(image: &mut Image) {
+    for _ in 0..4 {
+        let mut cases = HashSet::new();
+        for function in image.functions.values() {
+            if !function
+                .sources
+                .contains(&crate::loader::NameSource::Prologue)
+            {
+                continue;
+            }
+            let size = function.size.unwrap_or(UNKNOWN_SIZE);
+            let Ok(blocks) = lift::lift(image, function.addr, size, &HashSet::new()) else {
+                continue;
+            };
+            for table in jump_table::recover(&blocks, image) {
+                cases.extend(
+                    table
+                        .targets()
+                        .into_iter()
+                        .filter(|target| *target != function.addr),
+                );
+            }
+            cases.extend(
+                jump_table::unbounded_targets(&blocks, image, function.addr, 0x1_0000)
+                    .into_iter()
+                    .filter(|target| *target != function.addr),
+            );
+        }
+        if !image.drop_scanned_starts(&cases) {
+            return;
+        }
+    }
+}
+
 fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError> {
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     let mut blocks = lift::lift(image, function.addr, size, &HashSet::new())?;

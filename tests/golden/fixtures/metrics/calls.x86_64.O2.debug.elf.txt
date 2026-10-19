@@ -67,8 +67,9 @@ fn pick_op @ 0x201310 (size 21)
 /* velk pseudo-C: apply_table @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
 int apply_table(uint32_t index, int x) {
-    rcx = index;
     rdx = 0xaaaaaaab;
+    rdx = 0xaaaaaaab * index >> 0x21;
+    rcx = ((rdx + rdx * 0x2) & 0xffffffff);
     rax = index % 0x3;
     rcx = 0x202610;
     index = x;
@@ -81,8 +82,9 @@ int (uint32_t index, int x)
 -- ir
 fn apply_table @ 0x201330 (size 34)
   blk0 @ 0x201330:
-    rcx = edi
     rdx = #0xaaaaaaab
+    rdx = ((#0xaaaaaaab * edi) >> #0x21)
+    rcx = ((rdx + (rdx * #0x2)) & #0xffffffff)
     rax = (edi % #0x3)
     rcx = #0x202610
     edi = esi

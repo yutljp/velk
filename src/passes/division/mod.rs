@@ -35,9 +35,14 @@ pub fn recover_divisions(ir: &mut FunctionIr) {
     // Signed 64-bit chains prove an int64 dividend, so these widen instead.
     let mut wide_signed: std::collections::HashSet<u16> = std::collections::HashSet::new();
     let mut wide_signed_ret: Vec<u16> = Vec::new();
-    for block in &mut ir.blocks {
+    let live_in = crate::ir::cfg::live_in(ir);
+    let live_out: Vec<_> = (0..ir.blocks.len())
+        .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
+        .collect();
+    for (block, live_out) in ir.blocks.iter_mut().zip(&live_out) {
         magic_block(
             block,
+            live_out,
             &mut domains,
             &mut narrowed,
             &mut wide_signed,
@@ -91,6 +96,7 @@ fn sar_dst_of(block: &crate::ir::Block, index: usize) -> u16 {
 
 fn magic_block(
     block: &mut crate::ir::Block,
+    live_out: &std::collections::HashSet<u16>,
     domains: &mut std::collections::HashSet<(u16, bool)>,
     narrowed: &mut Vec<(u16, bool)>,
     wide_signed: &mut std::collections::HashSet<u16>,
@@ -503,6 +509,17 @@ fn magic_block(
     if consumed.is_empty() {
         return;
     }
+    let mut last_writes: std::collections::HashMap<u16, usize> = std::collections::HashMap::new();
+    for (position, stmt) in block.stmts.iter().enumerate() {
+        for written in crate::ir::visit::statement_registers(stmt).0 {
+            last_writes.insert(written, position);
+        }
+    }
+    // When a step's value leaves the block, as an argument an indirect tail
+    // call may read, every step stays: the last one reads the others.
+    let keep_steps = consumed
+        .iter()
+        .any(|position| leaves_block(&block.stmts[*position], *position, &last_writes, live_out));
     let mut kept: Vec<Stmt> = Vec::with_capacity(block.stmts.len());
     let mut pending = replacements;
     for (position, stmt) in block.stmts.drain(..).enumerate() {
@@ -518,12 +535,24 @@ fn magic_block(
             kept.push(node);
             continue;
         }
-        if consumed.contains(&position) {
+        if consumed.contains(&position) && !keep_steps {
             continue;
         }
         kept.push(stmt);
     }
     block.stmts = kept;
+}
+
+/// True when the statement is the block's last write of a register live
+/// after the block.
+fn leaves_block(
+    stmt: &Stmt,
+    position: usize,
+    last_writes: &std::collections::HashMap<u16, usize>,
+    live_out: &std::collections::HashSet<u16>,
+) -> bool {
+    matches!(stmt, Stmt::Assign { dest, .. }
+        if live_out.contains(&dest.index) && last_writes.get(&dest.index) == Some(&position))
 }
 
 fn operand_index(operand: &Expr) -> Option<u16> {

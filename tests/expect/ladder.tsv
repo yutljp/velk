@@ -79,7 +79,7 @@
 7	go_probe	-	has	main.sumSlice
 7	go_probe	main.add	has	uint64_t main_add(uint64_t a0, uint64_t a1)
 7	rust_demo	-	has	rust_demo::
-7	rust_probe_stripped	-	count	376
+7	rust_probe_stripped	-	count	283
 7	rust_probe_stripped	-	has_any	_main|entry
 # Expectations the reference fixtures do not meet yet.
 2	arm64_loops.o	sum_till_neg	has	sum_till_neg(uint32_t *a0, int32_t a1)

@@ -424,9 +424,13 @@ fn lift_instruction(
             _ => 1,
         };
         let bits = width * 8;
+        // Flags from another block are unknown here.
         let (Some(cond), Some((lhs, rhs))) =
             (condition(ins.condition_code()), lifter.last_compare.clone())
         else {
+            lifter.stmts.push(Stmt::Unsupported {
+                text: format!("setcc without compare at 0x{:x}", ins.ip()),
+            });
             return false;
         };
         let value = Expr::Select {

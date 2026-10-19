@@ -35,6 +35,64 @@ pub fn recover(blocks: &[Block], image: &Image) -> Vec<Recovered> {
     recovered
 }
 
+/// The case targets of tables with no bounds check, such as a dispatch on an
+/// enum whose range the compiler knows: entries are read while they point
+/// into the code just after `function`, up to `reach` bytes.
+pub fn unbounded_targets(blocks: &[Block], image: &Image, function: u64, reach: u64) -> Vec<u64> {
+    let mut targets = Vec::new();
+    for (index, block) in blocks.iter().enumerate() {
+        let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
+            continue;
+        };
+        // A bounds check gives the table's length; reading on would run
+        // into the tables after it.
+        if index
+            .checked_sub(1)
+            .and_then(|previous| blocks.get(previous))
+            .and_then(bound)
+            .is_some()
+        {
+            continue;
+        }
+        let mut environment = std::collections::HashMap::new();
+        for stmt in &block.stmts {
+            if let Stmt::Assign { dest, value } = stmt {
+                let resolved = resolve(value, &environment);
+                environment.insert(dest.index, resolved);
+            }
+        }
+        let Some((base, table, _, scale, entry)) = table_pattern(&resolve(target, &environment))
+        else {
+            continue;
+        };
+        for position in 0..256u64 {
+            let offset = match entry {
+                Entry::Offset32 => match image.read_vaddr(table + position * 4, 4) {
+                    Some(bytes) => {
+                        i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+                    }
+                    None => break,
+                },
+                Entry::Byte => match image.read_vaddr(table + position, 1) {
+                    Some(bytes) => i64::from(bytes[0]) << scale,
+                    None => break,
+                },
+                Entry::Absolute => break,
+            };
+            let case = base.wrapping_add(offset as u64);
+            if !(function..function.saturating_add(reach)).contains(&case)
+                || image
+                    .section_at(case)
+                    .is_none_or(|section| !section.executable)
+            {
+                break;
+            }
+            targets.push(case);
+        }
+    }
+    targets
+}
+
 pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
     let Stmt::Brif {
         cond,

@@ -1,20 +1,12 @@
-# 5408 functions, 43142 compared runs
+# 5315 functions, 41999 compared runs
 # runs left unfinished:
+#   ran past the last block (Rust): 3
 #   step limit (C and C++): 238
-#   step limit (Go): 6468
+#   step limit (Go): 6444
 #   step limit (Rust): 655
 #   unsupported instruction (C and C++): 972
-#   unsupported instruction (Go): 9900
-#   unsupported instruction (Rust): 3390
-metrics/calls.x86_64.O2.debug.elf 0x201330 apply_table: trial 0: calls differ (1 before, 1 after)
-metrics/calls.x86_64.O2.stripped.elf 0x201330 -: trial 0: calls differ (1 before, 1 after)
+#   unsupported instruction (Go): 9972
+#   unsupported instruction (Rust): 3465
 metrics/memory.x86_64.O2.stripped.elf 0x201310 -: trial 1: calls differ (1 before, 1 after)
 rust_probe_stripped 0x1e300 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x1e900 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x3777b -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x377a6 -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x379f7 -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x37a3f -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x37c2a -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x37c9e -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x3ef7d -: trial 0: calls differ (1 before, 1 after)

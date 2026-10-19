@@ -36,10 +36,7 @@ fn passes_preserve_behavior() {
     fixtures.sort();
     let images: Vec<Image> = fixtures
         .iter()
-        .map(|fixture| {
-            loader::load(&root.join("tests/fixtures").join(fixture))
-                .unwrap_or_else(|error| panic!("{error}"))
-        })
+        .map(|fixture| open(&root.join("tests/fixtures").join(fixture)))
         .collect();
     let work: Vec<(usize, &Function)> = images
         .iter()
@@ -237,6 +234,13 @@ fn initial_memory(image: &Image) -> Vec<(u64, u64)> {
 }
 
 /// The calling convention of the image's code.
+/// An image as the service opens it, with jump table cases folded back.
+fn open(path: &std::path::Path) -> Image {
+    let mut image = loader::load(path).unwrap_or_else(|error| panic!("{error}"));
+    super::absorb_jump_table_cases(&mut image);
+    image
+}
+
 fn convention(image: &Image) -> Convention<'static> {
     match image.isa {
         Isa::AArch64 => Convention {
@@ -335,8 +339,7 @@ fn explain_function() {
     let fixture = std::env::var("VELK_FIXTURE").expect("set VELK_FIXTURE");
     let addr = std::env::var("VELK_FUNCTION").expect("set VELK_FUNCTION");
     let addr = crate::addr::parse(&addr).expect("VELK_FUNCTION is an address");
-    let image = loader::load(&root.join("tests/fixtures").join(fixture))
-        .unwrap_or_else(|error| panic!("{error}"));
+    let image = open(&root.join("tests/fixtures").join(fixture));
     let function = image
         .functions
         .get(&addr)
