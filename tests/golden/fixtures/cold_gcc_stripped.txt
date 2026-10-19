@@ -438,7 +438,7 @@ fn <unnamed> @ 0x1290 (size 240)
   blk3 @ 0x12d9:
     brif ne load32(v3), (rdx & #0xffffffff) -> 0x12d0
   blk4 @ 0x12dd:
-    rax = (load32((v3 + #0x4)) & #0xffffffff)
+    rax = load32((v3 + #0x4))
     brif ne load64((rsp + #0xffffffffffffffe0)), load64((fs_base + #0x28)) -> 0x137b
   blk5 @ 0x12f4:
     ret rax
@@ -453,7 +453,7 @@ fn <unnamed> @ 0x1290 (size 240)
     v13 = load64(#0x4020)
     call 0x10c0(v5, v13)
   blk7 @ 0x1350:
-    v14 = (load32((v12 + #0xfffffffffffffffc)) & #0xffffffff)
+    v14 = load32((v12 + #0xfffffffffffffffc))
     v15 = load64(#0x4020)
     v16 = v12
     rax = #0x0
@@ -486,7 +486,6 @@ fn <unnamed> @ 0x1290 (size 240)
 -- decompile
 /* velk pseudo-C: sub_1380 @ 0x1380 */
 void sub_1380(void) {
-    return;
 }
 -- signature
 void ()

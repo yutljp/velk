@@ -23,9 +23,22 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             }
             *value = simplified;
         }
-        Stmt::Store { addr, value, .. } => {
+        Stmt::Store { addr, value, width } => {
             *addr = simplify_expr(addr.clone(), constants);
             *value = simplify_expr(value.clone(), constants);
+            // A store keeps only its low bytes, which a mask covering them
+            // does not change.
+            let kept = crate::ir::semantics::mask(u32::from(*width) * 8);
+            while let Expr::Bin {
+                op: crate::ir::BinOp::And,
+                lhs,
+                rhs,
+            } = value
+                && let Expr::Const(mask) = rhs.as_ref()
+                && mask & kept == kept
+            {
+                *value = lhs.as_ref().clone();
+            }
         }
         Stmt::Brif { cond, lhs, rhs, .. } => {
             *lhs = simplify_expr(lhs.clone(), constants);
@@ -274,6 +287,21 @@ pub(crate) fn algebraic(expr: Expr) -> Expr {
         }
         crate::ir::BinOp::Sub if zero(rhs) => lhs.as_ref().clone(),
         crate::ir::BinOp::Add if zero(rhs) => lhs.as_ref().clone(),
+        // An unsigned load is already zero above its bytes; a mask of
+        // exactly those bytes keeps its width too.
+        crate::ir::BinOp::And
+            if let (
+                Expr::Load {
+                    width,
+                    signed: false,
+                    ..
+                },
+                Expr::Const(mask),
+            ) = (lhs.as_ref(), rhs.as_ref())
+                && *mask == crate::ir::semantics::mask(u32::from(*width) * 8) =>
+        {
+            lhs.as_ref().clone()
+        }
         // `(x & a) & b` is `x & (a & b)`.
         crate::ir::BinOp::And
             if let (

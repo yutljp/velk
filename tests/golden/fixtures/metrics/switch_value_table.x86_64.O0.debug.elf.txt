@@ -70,6 +70,6 @@ fn dispatch @ 0x201180 (size 120)
   blk7 @ 0x2011ec:
     store32(#0x0, (rsp + #0xfffffffffffffff4))
   blk8 @ 0x2011f3:
-    ret (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
+    ret load32((rsp + #0xfffffffffffffff4))
 -- card
 {"addr":"0x201180","approxTokens":192,"blocks":9,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","size":120,"unsupported":0}

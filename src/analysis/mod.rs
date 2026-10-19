@@ -179,6 +179,14 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         Some(_) => None,
         None => float_result(&blocks, image.isa),
     };
+    // A function the debug info says returns nothing returns no register.
+    if declared == Some(&crate::ir::CType::Void) {
+        for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let crate::ir::Stmt::Ret { value } = stmt {
+                *value = crate::ir::Expr::constant(0);
+            }
+        }
+    }
     if let (Some(precision), Some(slot)) = (float_return, float_return_slot(image.isa)) {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
             if let crate::ir::Stmt::Ret { value } = stmt {
@@ -230,12 +238,21 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the
     // stack and frame pointers, which address the frame.
+    // So do the registers the lifter keeps flag operands and exchanged
+    // values in.
     let general: Vec<u16> = match ir.isa {
-        crate::loader::Isa::AArch64 => (0..=30).filter(|register| *register != 29).collect(),
+        crate::loader::Isa::AArch64 => (0..=30)
+            .filter(|register| *register != 29)
+            .collect::<Vec<u16>>(),
         _ => (0..16)
             .filter(|register| !matches!(register, 4 | 5))
             .collect(),
-    };
+    }
+    .into_iter()
+    .chain(crate::ir::FLAG_OPERANDS)
+    .chain(crate::ir::FLAG_CARRIED)
+    .chain([crate::ir::EXCHANGE])
+    .collect();
     // Bits no read looks at go first, so the variables they tied split apart.
     crate::ssa::narrow_partial_writes(&mut ir);
     crate::ssa::split_variables(&mut ir, &general);

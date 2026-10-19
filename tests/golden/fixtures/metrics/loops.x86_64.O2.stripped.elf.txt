@@ -17,9 +17,9 @@ int32_t sub_201190(int32_t a0) {
         v3 = a0 & 0x1;
         v1 = v1 + v3;
         v2 = v2 >> 0x1;
-        t65 = a0;
+        v4 = a0;
         a0 = v2;
-    } while (t65 > 0x1 /* unsigned */);
+    } while (v4 > 0x1 /* unsigned */);
     return v1;
 }
 -- signature
@@ -37,9 +37,9 @@ fn <unnamed> @ 0x201190 (size 33)
     v3 = (edi & #0x1)
     v1 = (((v1 & #0xffffffff) + v3) & #0xffffffff)
     v2 = (v2 >> #0x1)
-    t65 = edi
+    v4 = edi
     edi = v2
-    brif hi t65, #0x1 -> 0x2011a0
+    brif hi v4, #0x1 -> 0x2011a0
   blk3 @ 0x2011b0:
     ret v1
 -- card
@@ -101,7 +101,7 @@ fn <unnamed> @ 0x2011e0 (size 40)
     v4 = (v3 & #0xffffffff)
     brif eq v2, v1 -> 0x201207
   blk2 @ 0x2011f7:
-    v5 = (load32((rdi + (v1 * #0x4))) & #0xffffffff)
+    v5 = load32((rdi + (v1 * #0x4)))
     v3 = ((v5 + v4) & #0xffffffff)
     v1 = (v1 + #0x1)
     brif ge (v5 & #0xffffffff), #0x0 -> 0x2011f0
@@ -122,11 +122,11 @@ int32_t sub_201210(uint32_t *a0, int32_t a1) {
     v3 = 0x0;
     do {
         v4 = *(uint32_t *)(a0 + v2 * 0x4);
-        t70 = v4;
+        v5 = v4;
         if (v4 == 0x0) {
             break;
         }
-        v3 = v3 + (t70 <= 0x0 ? 0x0 : v4);
+        v3 = v3 + (v5 <= 0x0 ? 0x0 : v4);
         v2 = v2 + 0x1;
     } while (v1 != v2);
     return v3;
@@ -145,10 +145,10 @@ fn <unnamed> @ 0x201210 (size 44)
     v3 = #0x0
   blk2 @ 0x201220:
     v4 = load32((rdi + (v2 * #0x4)))
-    t70 = v4
+    v5 = v4
     brif eq v4, #0x0 -> 0x201238
   blk3 @ 0x201229:
-    v3 = (((v3 & #0xffffffff) + select le t70, #0x0 ? #0x0, v4) & #0xffffffff)
+    v3 = (((v3 & #0xffffffff) + select le v5, #0x0 ? #0x0, v4) & #0xffffffff)
     v2 = (v2 + #0x1)
     brif ne v1, v2 -> 0x201220
   blk4 @ 0x201238:

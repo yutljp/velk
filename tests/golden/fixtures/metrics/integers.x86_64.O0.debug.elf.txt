@@ -16,7 +16,7 @@
 int32_t narrow_add(int32_t a, int32_t b) {
     uint8_t local_0; /* [sp-a] */
 
-    local_0 = b & 0xff;
+    local_0 = rax & 0xffffffffffffff00 | b & 0xff;
     return (int8_t)((int8_t)(a) + (int8_t)(local_0));
 }
 -- signature
@@ -26,7 +26,7 @@ int32_t (int32_t a, int32_t b)
 -- ir
 fn narrow_add @ 0x201280 (size 31)
   blk0 @ 0x201280:
-    store8((rsi & #0xff), (rsp + #0xfffffffffffffff6))
+    store8(((rax & #0xffffffffffffff00) | (rsi & #0xff)), (rsp + #0xfffffffffffffff6))
     ret (sext8(((sext8(rdi) + sext8(load8((rsp + #0xfffffffffffffff6)))) & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x201280","approxTokens":168,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"unsupported":0}
@@ -37,9 +37,8 @@ fn narrow_add @ 0x201280 (size 31)
 int32_t widen_mul(int32_t a, int32_t b) {
     uint8_t local_0; /* [sp-a] */
 
-    local_0 = b & 0xff;
-    v3 = local_0;
-    return (a & 0xff) * v3 & 0xffff;
+    local_0 = rax & 0xffffffffffffff00 | b & 0xff;
+    return (a & 0xff) * local_0 & 0xffff;
 }
 -- signature
 int32_t (int32_t a, int32_t b)
@@ -48,9 +47,8 @@ int32_t (int32_t a, int32_t b)
 -- ir
 fn widen_mul @ 0x2012a0 (size 32)
   blk0 @ 0x2012a0:
-    store8((rsi & #0xff), (rsp + #0xfffffffffffffff6))
-    v3 = (load8((rsp + #0xfffffffffffffff6)) & #0xff)
-    ret (((rdi & #0xff) * (v3 & #0xffffffff)) & #0xffff)
+    store8(((rax & #0xffffffffffffff00) | (rsi & #0xff)), (rsp + #0xfffffffffffffff6))
+    ret (((rdi & #0xff) * load8((rsp + #0xfffffffffffffff6))) & #0xffff)
 -- card
 {"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
 
@@ -83,14 +81,14 @@ _Bool in_range(int x, int lo, int hi) {
     local_1 = hi;
     local_2 = 0x0;
     if (x < lo) {
-        v4 = local_2;
-        return v4 & 0x1;
+        v5 = local_2;
+        return v5 & 0x1;
     }
     v3 = (local_0 <= local_1) & 0xff;
-    t66 = local_1;
-    local_2 = v3 & 0xff;
-    v4 = local_2;
-    return v4 & 0x1;
+    v4 = local_1;
+    local_2 = v3;
+    v5 = local_2;
+    return v5 & 0x1;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -104,12 +102,12 @@ fn in_range @ 0x2012e0 (size 52)
     store8(#0x0, (rsp + #0xffffffffffffffeb))
     brif lt (edi & #0xffffffff), (esi & #0xffffffff) -> 0x20130a
   blk1 @ 0x2012fe:
-    v3 = (select le (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) ? #0x1, #0x0 & #0xff)
-    t66 = load32((rsp + #0xffffffffffffffec))
-    store8((v3 & #0xff), (rsp + #0xffffffffffffffeb))
+    v3 = (select le load32((rsp + #0xfffffffffffffff4)), load32((rsp + #0xffffffffffffffec)) ? #0x1, #0x0 & #0xff)
+    v4 = load32((rsp + #0xffffffffffffffec))
+    store8(v3, (rsp + #0xffffffffffffffeb))
   blk2 @ 0x20130a:
-    v4 = (load8((rsp + #0xffffffffffffffeb)) & #0xff)
-    ret (v4 & #0x1)
+    v5 = load8((rsp + #0xffffffffffffffeb))
+    ret (v5 & #0x1)
 -- card
 {"addr":"0x2012e0","approxTokens":210,"blocks":3,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
 
@@ -158,7 +156,7 @@ fn popcount @ 0x201350 (size 55)
     brif eq load32((rsp + #0xfffffffffffffff4)), #0x0 -> 0x201382
   blk2 @ 0x201368:
     store32((((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff) & load32((rsp + #0xfffffffffffffff4))), (rsp + #0xfffffffffffffff4))
-    store32(((load32((rsp + #0xfffffffffffffff0)) + #0x1) & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
     br 0x20135e
   blk3 @ 0x201382:
     ret load32((rsp + #0xfffffffffffffff0))

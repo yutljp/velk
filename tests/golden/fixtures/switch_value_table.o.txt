@@ -28,7 +28,7 @@ fn dispatch @ 0x0 (size 36)
     v1 = ((x0 & #0xffffffff) - #0xa)
     brif hi v1, #0x4 -> 0x1c
   blk1 @ 0xc:
-    ret (load32((#0x24 + (v1 << #0x2))) & #0xffffffff)
+    ret load32((#0x24 + (v1 << #0x2)))
   blk2 @ 0x1c:
     ret #0x0
 -- card

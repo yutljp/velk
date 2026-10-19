@@ -154,7 +154,7 @@ fn <unnamed> @ 0x201400 (size 234)
   blk18 @ 0x2014d4:
     store32(#0x0, #0x202760)
   blk19 @ 0x2014de:
-    ret (load32(#0x202760) & #0xffffffff)
+    ret load32(#0x202760)
 -- card
 {"addr":"0x201400","approxTokens":198,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":234,"unsupported":0}
 

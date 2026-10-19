@@ -154,7 +154,7 @@ fn dense @ 0x201400 (size 234)
   blk18 @ 0x2014d4:
     store32(#0x0, #0x202760)
   blk19 @ 0x2014de:
-    ret (load32(#0x202760) & #0xffffffff)
+    ret load32(#0x202760)
 -- card
 {"addr":"0x201400","approxTokens":198,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf","unwind"],"section":".text","size":234,"unsupported":0}
 
@@ -162,21 +162,18 @@ fn dense @ 0x201400 (size 234)
 -- decompile
 /* velk pseudo-C: c0 @ 0x2014f0 */
 /* ref: 0x202760 .bss */
-int32_t c0(void) {
-    v1 = g_sink + 0xb;
-    g_sink = v1;
-    return v1;
+void c0(void) {
+    g_sink += 0xb;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c0 @ 0x2014f0 (size 21)
   blk0 @ 0x2014f0:
-    v1 = (load32(#0x202760) + #0xb)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0xb), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2014f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c0","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -184,21 +181,18 @@ fn c0 @ 0x2014f0 (size 21)
 -- decompile
 /* velk pseudo-C: c1 @ 0x201510 */
 /* ref: 0x202760 .bss */
-int32_t c1(void) {
-    v1 = g_sink ^ 0x12;
-    g_sink = v1;
-    return v1;
+void c1(void) {
+    g_sink ^= 0x12;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c1 @ 0x201510 (size 21)
   blk0 @ 0x201510:
-    v1 = (load32(#0x202760) ^ #0x12)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x12), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201510","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c1","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -206,21 +200,18 @@ fn c1 @ 0x201510 (size 21)
 -- decompile
 /* velk pseudo-C: c2 @ 0x201530 */
 /* ref: 0x202760 .bss */
-int32_t c2(void) {
-    v1 = g_sink - 0x19;
-    g_sink = v1;
-    return v1;
+void c2(void) {
+    g_sink -= 0x19;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c2 @ 0x201530 (size 21)
   blk0 @ 0x201530:
-    v1 = (load32(#0x202760) - #0x19)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x19), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201530","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c2","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -228,21 +219,18 @@ fn c2 @ 0x201530 (size 21)
 -- decompile
 /* velk pseudo-C: c3 @ 0x201550 */
 /* ref: 0x202760 .bss */
-int32_t c3(void) {
-    v1 = g_sink | 0x20;
-    g_sink = v1;
-    return v1;
+void c3(void) {
+    g_sink |= 0x20;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c3 @ 0x201550 (size 21)
   blk0 @ 0x201550:
-    v1 = (load32(#0x202760) | #0x20)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x20), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201550","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -250,21 +238,18 @@ fn c3 @ 0x201550 (size 21)
 -- decompile
 /* velk pseudo-C: c4 @ 0x201570 */
 /* ref: 0x202760 .bss */
-int32_t c4(void) {
-    v1 = g_sink + 0x27;
-    g_sink = v1;
-    return v1;
+void c4(void) {
+    g_sink += 0x27;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c4 @ 0x201570 (size 21)
   blk0 @ 0x201570:
-    v1 = (load32(#0x202760) + #0x27)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0x27), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201570","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c4","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -272,21 +257,18 @@ fn c4 @ 0x201570 (size 21)
 -- decompile
 /* velk pseudo-C: c5 @ 0x201590 */
 /* ref: 0x202760 .bss */
-int32_t c5(void) {
-    v1 = g_sink ^ 0x2e;
-    g_sink = v1;
-    return v1;
+void c5(void) {
+    g_sink ^= 0x2e;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c5 @ 0x201590 (size 21)
   blk0 @ 0x201590:
-    v1 = (load32(#0x202760) ^ #0x2e)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x2e), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201590","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c5","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -294,21 +276,18 @@ fn c5 @ 0x201590 (size 21)
 -- decompile
 /* velk pseudo-C: c6 @ 0x2015b0 */
 /* ref: 0x202760 .bss */
-int32_t c6(void) {
-    v1 = g_sink - 0x35;
-    g_sink = v1;
-    return v1;
+void c6(void) {
+    g_sink -= 0x35;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c6 @ 0x2015b0 (size 21)
   blk0 @ 0x2015b0:
-    v1 = (load32(#0x202760) - #0x35)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x35), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2015b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c6","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -316,21 +295,18 @@ fn c6 @ 0x2015b0 (size 21)
 -- decompile
 /* velk pseudo-C: c7 @ 0x2015d0 */
 /* ref: 0x202760 .bss */
-int32_t c7(void) {
-    v1 = g_sink | 0x3c;
-    g_sink = v1;
-    return v1;
+void c7(void) {
+    g_sink |= 0x3c;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c7 @ 0x2015d0 (size 21)
   blk0 @ 0x2015d0:
-    v1 = (load32(#0x202760) | #0x3c)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x3c), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2015d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -338,21 +314,18 @@ fn c7 @ 0x2015d0 (size 21)
 -- decompile
 /* velk pseudo-C: c8 @ 0x2015f0 */
 /* ref: 0x202760 .bss */
-int32_t c8(void) {
-    v1 = g_sink + 0x43;
-    g_sink = v1;
-    return v1;
+void c8(void) {
+    g_sink += 0x43;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c8 @ 0x2015f0 (size 21)
   blk0 @ 0x2015f0:
-    v1 = (load32(#0x202760) + #0x43)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0x43), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2015f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c8","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -360,21 +333,18 @@ fn c8 @ 0x2015f0 (size 21)
 -- decompile
 /* velk pseudo-C: c9 @ 0x201610 */
 /* ref: 0x202760 .bss */
-int32_t c9(void) {
-    v1 = g_sink ^ 0x4a;
-    g_sink = v1;
-    return v1;
+void c9(void) {
+    g_sink ^= 0x4a;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c9 @ 0x201610 (size 21)
   blk0 @ 0x201610:
-    v1 = (load32(#0x202760) ^ #0x4a)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x4a), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201610","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -382,21 +352,18 @@ fn c9 @ 0x201610 (size 21)
 -- decompile
 /* velk pseudo-C: c10 @ 0x201630 */
 /* ref: 0x202760 .bss */
-int32_t c10(void) {
-    v1 = g_sink - 0x51;
-    g_sink = v1;
-    return v1;
+void c10(void) {
+    g_sink -= 0x51;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c10 @ 0x201630 (size 21)
   blk0 @ 0x201630:
-    v1 = (load32(#0x202760) - #0x51)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x51), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201630","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -404,21 +371,18 @@ fn c10 @ 0x201630 (size 21)
 -- decompile
 /* velk pseudo-C: c11 @ 0x201650 */
 /* ref: 0x202760 .bss */
-int32_t c11(void) {
-    v1 = g_sink | 0x58;
-    g_sink = v1;
-    return v1;
+void c11(void) {
+    g_sink |= 0x58;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c11 @ 0x201650 (size 21)
   blk0 @ 0x201650:
-    v1 = (load32(#0x202760) | #0x58)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x58), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201650","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c11","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -426,21 +390,18 @@ fn c11 @ 0x201650 (size 21)
 -- decompile
 /* velk pseudo-C: c12 @ 0x201670 */
 /* ref: 0x202760 .bss */
-int32_t c12(void) {
-    v1 = g_sink + 0x5f;
-    g_sink = v1;
-    return v1;
+void c12(void) {
+    g_sink += 0x5f;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c12 @ 0x201670 (size 21)
   blk0 @ 0x201670:
-    v1 = (load32(#0x202760) + #0x5f)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) + #0x5f), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201670","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c12","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -448,21 +409,18 @@ fn c12 @ 0x201670 (size 21)
 -- decompile
 /* velk pseudo-C: c13 @ 0x201690 */
 /* ref: 0x202760 .bss */
-int32_t c13(void) {
-    v1 = g_sink ^ 0x66;
-    g_sink = v1;
-    return v1;
+void c13(void) {
+    g_sink ^= 0x66;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c13 @ 0x201690 (size 21)
   blk0 @ 0x201690:
-    v1 = (load32(#0x202760) ^ #0x66)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) ^ #0x66), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x201690","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c13","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -470,21 +428,18 @@ fn c13 @ 0x201690 (size 21)
 -- decompile
 /* velk pseudo-C: c14 @ 0x2016b0 */
 /* ref: 0x202760 .bss */
-int32_t c14(void) {
-    v1 = g_sink - 0x6d;
-    g_sink = v1;
-    return v1;
+void c14(void) {
+    g_sink -= 0x6d;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c14 @ 0x2016b0 (size 21)
   blk0 @ 0x2016b0:
-    v1 = (load32(#0x202760) - #0x6d)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) - #0x6d), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2016b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c14","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -492,21 +447,18 @@ fn c14 @ 0x2016b0 (size 21)
 -- decompile
 /* velk pseudo-C: c15 @ 0x2016d0 */
 /* ref: 0x202760 .bss */
-int32_t c15(void) {
-    v1 = g_sink | 0x74;
-    g_sink = v1;
-    return v1;
+void c15(void) {
+    g_sink |= 0x74;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x202760 .bss
 -- ir
 fn c15 @ 0x2016d0 (size 21)
   blk0 @ 0x2016d0:
-    v1 = (load32(#0x202760) | #0x74)
-    store32(v1, #0x202760)
-    ret v1
+    store32((load32(#0x202760) | #0x74), #0x202760)
+    ret #0x0
 -- card
 {"addr":"0x2016d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"c15","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 

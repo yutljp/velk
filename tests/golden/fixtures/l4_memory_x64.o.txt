@@ -66,7 +66,6 @@ fn array_sum @ 0x10 (size 31)
 /* velk pseudo-C: bump @ 0x30 */
 void bump(void) {
     g_counter += 0x1;
-    return;
 }
 -- signature
 void ()

@@ -33,6 +33,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) members: HashMap<(String, i64), String>,
     /// The struct type each pointer parameter points at, when known.
     pub(super) pointees: HashMap<u16, String>,
+    /// The size of the scalar each pointer parameter points at.
+    pub(super) elements: HashMap<u16, u8>,
     /// Registers whose readers only ever look at the low 32 bits.
     pub(super) narrow_regs: std::collections::HashSet<u16>,
     /// The function returns a 32-bit value, so reg 0 needs no truncation.
@@ -73,7 +75,7 @@ pub(crate) fn operator(op: BinOp) -> &'static str {
         BinOp::Xor => "^",
         BinOp::Shl => "<<",
         BinOp::Shr => ">>",
-        BinOp::Sar => ">>>",
+        BinOp::Sar => ">>",
         BinOp::DivS => "/",
         BinOp::ModS => "%",
         BinOp::DivU => "/",
@@ -257,7 +259,9 @@ pub(crate) fn float_operand(
             if let Some(member) = member_access(addr, *width, ctx) {
                 return member;
             }
-            if let Some(indexed) = array_access(addr, *width, ctx) {
+            if let Some(indexed) = array_access(addr, *width, ctx)
+                .or_else(|| crate::render::naming::flat_array_access(addr, *width, ctx))
+            {
                 return indexed;
             }
             let address = render_expr(addr, ctx);
@@ -494,6 +498,22 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
                 divisor
             )
         }
+        // C shifts a signed value arithmetically: a value that is not a
+        // signed parameter already is cast to a signed type of its width.
+        Expr::Bin {
+            op: BinOp::Sar,
+            lhs,
+            rhs,
+        } => {
+            let signed_parameter = matches!(lhs.as_ref(), Expr::Reg { index, .. } if ctx.signed_params.contains(index));
+            let shifted = if signed_parameter {
+                operand(lhs, ctx, 9, false)
+            } else {
+                let bytes = (crate::ir::semantics::operand_width(lhs, rhs) / 8) as u8;
+                format!("({}){}", type_of(bytes, true), operand(lhs, ctx, 12, false))
+            };
+            format!("{shifted} >> {}", operand(rhs, ctx, 9, true))
+        }
         Expr::Bin { op, lhs, rhs } => {
             let strength = precedence(value);
             format!(
@@ -511,7 +531,9 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
             if let Some(member) = member_access(addr, *width, ctx) {
                 return member;
             }
-            if let Some(indexed) = array_access(addr, *width, ctx) {
+            if let Some(indexed) = array_access(addr, *width, ctx)
+                .or_else(|| crate::render::naming::flat_array_access(addr, *width, ctx))
+            {
                 return indexed;
             }
             let address = render_expr(addr, ctx);

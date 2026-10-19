@@ -115,7 +115,7 @@ fn array_sum @ 0x2101f0 (size 140)
     v6 = (x0 + (v2 << #0x2))
     v7 = (v1 - v2)
   blk8 @ 0x210264:
-    v8 = (load32(v6) & #0xffffffff)
+    v8 = load32(v6)
     v6 = (v6 + #0x4)
     v7 = (v7 - #0x1)
     v3 = (((v8 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
@@ -131,7 +131,6 @@ fn array_sum @ 0x2101f0 (size 140)
 /* ref: 0x2202a8 .bss */
 void bump(void) {
     g_counter += 0x1;
-    return;
 }
 -- signature
 void ()
@@ -140,8 +139,8 @@ void ()
 -- ir
 fn bump @ 0x21027c (size 20)
   blk0 @ 0x21027c:
-    store32(((load32(#0x2202a8) + #0x1) & #0xffffffff), #0x2202a8)
-    ret x0
+    store32((load32(#0x2202a8) + #0x1), #0x2202a8)
+    ret #0x0
 -- card
 {"addr":"0x21027c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 

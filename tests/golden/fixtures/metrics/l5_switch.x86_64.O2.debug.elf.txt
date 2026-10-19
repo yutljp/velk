@@ -171,10 +171,10 @@ fn dense @ 0x201330 (size 167)
   blk17 @ 0x2013b6:
     call 0x201460()
   blk18 @ 0x2013bb:
-    ret (load32(#0x20250c) & #0xffffffff)
+    ret load32(#0x20250c)
   blk19 @ 0x2013c6:
     store32(#0x0, #0x20250c)
-    ret (load32(#0x20250c) & #0xffffffff)
+    ret load32(#0x20250c)
 -- card
 {"addr":"0x201330","approxTokens":156,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf","unwind"],"section":".text","size":167,"unsupported":0}
 
@@ -184,7 +184,6 @@ fn dense @ 0x201330 (size 167)
 /* ref: 0x20250c .bss */
 void c0(void) {
     g_sink += 0xb;
-    return;
 }
 -- signature
 void ()
@@ -194,7 +193,7 @@ void ()
 fn c0 @ 0x2013e0 (size 8)
   blk0 @ 0x2013e0:
     store32((load32(#0x20250c) + #0xb), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2013e0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c0","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -204,7 +203,6 @@ fn c0 @ 0x2013e0 (size 8)
 /* ref: 0x20250c .bss */
 void c1(void) {
     g_sink ^= 0x12;
-    return;
 }
 -- signature
 void ()
@@ -214,7 +212,7 @@ void ()
 fn c1 @ 0x2013f0 (size 8)
   blk0 @ 0x2013f0:
     store32((load32(#0x20250c) ^ #0x12), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2013f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c1","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -224,7 +222,6 @@ fn c1 @ 0x2013f0 (size 8)
 /* ref: 0x20250c .bss */
 void c2(void) {
     g_sink += 0xffffffffffffffe7;
-    return;
 }
 -- signature
 void ()
@@ -234,7 +231,7 @@ void ()
 fn c2 @ 0x201400 (size 8)
   blk0 @ 0x201400:
     store32((load32(#0x20250c) + #0xffffffffffffffe7), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201400","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c2","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -244,7 +241,6 @@ fn c2 @ 0x201400 (size 8)
 /* ref: 0x20250c .bss */
 void c3(void) {
     g_sink |= 0x20;
-    return;
 }
 -- signature
 void ()
@@ -254,7 +250,7 @@ void ()
 fn c3 @ 0x201410 (size 8)
   blk0 @ 0x201410:
     store32((load32(#0x20250c) | #0x20), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201410","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -264,7 +260,6 @@ fn c3 @ 0x201410 (size 8)
 /* ref: 0x20250c .bss */
 void c4(void) {
     g_sink += 0x27;
-    return;
 }
 -- signature
 void ()
@@ -274,7 +269,7 @@ void ()
 fn c4 @ 0x201420 (size 8)
   blk0 @ 0x201420:
     store32((load32(#0x20250c) + #0x27), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201420","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c4","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -284,7 +279,6 @@ fn c4 @ 0x201420 (size 8)
 /* ref: 0x20250c .bss */
 void c5(void) {
     g_sink ^= 0x2e;
-    return;
 }
 -- signature
 void ()
@@ -294,7 +288,7 @@ void ()
 fn c5 @ 0x201430 (size 8)
   blk0 @ 0x201430:
     store32((load32(#0x20250c) ^ #0x2e), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201430","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c5","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -304,7 +298,6 @@ fn c5 @ 0x201430 (size 8)
 /* ref: 0x20250c .bss */
 void c6(void) {
     g_sink += 0xffffffffffffffcb;
-    return;
 }
 -- signature
 void ()
@@ -314,7 +307,7 @@ void ()
 fn c6 @ 0x201440 (size 8)
   blk0 @ 0x201440:
     store32((load32(#0x20250c) + #0xffffffffffffffcb), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201440","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c6","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -324,7 +317,6 @@ fn c6 @ 0x201440 (size 8)
 /* ref: 0x20250c .bss */
 void c7(void) {
     g_sink |= 0x3c;
-    return;
 }
 -- signature
 void ()
@@ -334,7 +326,7 @@ void ()
 fn c7 @ 0x201450 (size 8)
   blk0 @ 0x201450:
     store32((load32(#0x20250c) | #0x3c), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201450","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -344,7 +336,6 @@ fn c7 @ 0x201450 (size 8)
 /* ref: 0x20250c .bss */
 void c8(void) {
     g_sink += 0x43;
-    return;
 }
 -- signature
 void ()
@@ -354,7 +345,7 @@ void ()
 fn c8 @ 0x201460 (size 8)
   blk0 @ 0x201460:
     store32((load32(#0x20250c) + #0x43), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201460","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c8","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -364,7 +355,6 @@ fn c8 @ 0x201460 (size 8)
 /* ref: 0x20250c .bss */
 void c9(void) {
     g_sink ^= 0x4a;
-    return;
 }
 -- signature
 void ()
@@ -374,7 +364,7 @@ void ()
 fn c9 @ 0x201470 (size 8)
   blk0 @ 0x201470:
     store32((load32(#0x20250c) ^ #0x4a), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201470","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -384,7 +374,6 @@ fn c9 @ 0x201470 (size 8)
 /* ref: 0x20250c .bss */
 void c10(void) {
     g_sink += 0xffffffffffffffaf;
-    return;
 }
 -- signature
 void ()
@@ -394,7 +383,7 @@ void ()
 fn c10 @ 0x201480 (size 8)
   blk0 @ 0x201480:
     store32((load32(#0x20250c) + #0xffffffffffffffaf), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201480","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -404,7 +393,6 @@ fn c10 @ 0x201480 (size 8)
 /* ref: 0x20250c .bss */
 void c11(void) {
     g_sink |= 0x58;
-    return;
 }
 -- signature
 void ()
@@ -414,7 +402,7 @@ void ()
 fn c11 @ 0x201490 (size 8)
   blk0 @ 0x201490:
     store32((load32(#0x20250c) | #0x58), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201490","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c11","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -424,7 +412,6 @@ fn c11 @ 0x201490 (size 8)
 /* ref: 0x20250c .bss */
 void c12(void) {
     g_sink += 0x5f;
-    return;
 }
 -- signature
 void ()
@@ -434,7 +421,7 @@ void ()
 fn c12 @ 0x2014a0 (size 8)
   blk0 @ 0x2014a0:
     store32((load32(#0x20250c) + #0x5f), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014a0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c12","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -444,7 +431,6 @@ fn c12 @ 0x2014a0 (size 8)
 /* ref: 0x20250c .bss */
 void c13(void) {
     g_sink ^= 0x66;
-    return;
 }
 -- signature
 void ()
@@ -454,7 +440,7 @@ void ()
 fn c13 @ 0x2014b0 (size 8)
   blk0 @ 0x2014b0:
     store32((load32(#0x20250c) ^ #0x66), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014b0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c13","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -464,7 +450,6 @@ fn c13 @ 0x2014b0 (size 8)
 /* ref: 0x20250c .bss */
 void c14(void) {
     g_sink += 0xffffffffffffff93;
-    return;
 }
 -- signature
 void ()
@@ -474,7 +459,7 @@ void ()
 fn c14 @ 0x2014c0 (size 8)
   blk0 @ 0x2014c0:
     store32((load32(#0x20250c) + #0xffffffffffffff93), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c14","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -484,7 +469,6 @@ fn c14 @ 0x2014c0 (size 8)
 /* ref: 0x20250c .bss */
 void c15(void) {
     g_sink |= 0x74;
-    return;
 }
 -- signature
 void ()
@@ -494,7 +478,7 @@ void ()
 fn c15 @ 0x2014d0 (size 8)
   blk0 @ 0x2014d0:
     store32((load32(#0x20250c) | #0x74), #0x20250c)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x2014d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c15","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 

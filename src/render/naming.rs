@@ -132,6 +132,81 @@ pub(crate) fn array_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Stri
     Some(format!("{}[{}]", name, render_expr(index, ctx)))
 }
 
+/// `*(T *)(base + a * k1 + b * k2)`, with each scale a multiple of the
+/// element size, indexes the table at `base` by `a * (k1 / size) + ...`:
+/// a two-dimensional array read as one row after another.
+pub(crate) fn flat_array_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+    let size = u64::from(width);
+    let mut terms = Vec::new();
+    let mut base = None;
+    let mut work = vec![addr];
+    while let Some(expr) = work.pop() {
+        match expr {
+            Expr::Bin {
+                op: BinOp::Add,
+                lhs,
+                rhs,
+            } => work.extend([lhs.as_ref(), rhs.as_ref()]),
+            Expr::Const(value) if base.is_none() => base = Some(*value),
+            other => terms.push(other),
+        }
+    }
+    let base = base?;
+    if terms.len() < 2 {
+        return None;
+    }
+    // Each term as an index and how many elements one step of it moves; a
+    // 32-bit mask on a term that fits changes nothing.
+    let scaled = |term: &Expr| -> Option<(Expr, u64)> {
+        let term = match term {
+            Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+                && crate::render::expr::fits(lhs, 32, ctx) =>
+            {
+                lhs.as_ref()
+            }
+            other => other,
+        };
+        let (index, scale) = match term {
+            Expr::Bin {
+                op: BinOp::Shl,
+                lhs,
+                rhs,
+            } => match rhs.as_ref() {
+                Expr::Const(shift) if *shift < 32 => (lhs.as_ref().clone(), 1u64 << shift),
+                _ => return None,
+            },
+            Expr::Bin {
+                op: BinOp::Mul,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Const(step), index) | (index, Expr::Const(step)) => (index.clone(), *step),
+                _ => return None,
+            },
+            _ => return None,
+        };
+        (scale % size == 0).then_some((index, scale / size))
+    };
+    let parts: Vec<(Expr, u64)> = terms.into_iter().map(scaled).collect::<Option<_>>()?;
+    let name = global_name(&Expr::Const(base), width, ctx)?;
+    let index: Vec<String> = parts
+        .iter()
+        .rev()
+        .map(|(index, step)| match step {
+            1 => crate::render::expr::operand(index, ctx, 10, false),
+            step => format!(
+                "{} * 0x{step:x}",
+                crate::render::expr::operand(index, ctx, 11, false)
+            ),
+        })
+        .collect();
+    Some(format!("{}[{}]", name, index.join(" + ")))
+}
+
 /// Names a constant address in a data section from the access width and the
 /// address: `*(uint64_t *)(0x140003000)` reads as `qword_140003000`.
 pub(crate) fn global_name(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
@@ -288,6 +363,17 @@ fn member_address(addr: &Expr) -> Option<(u16, i64)> {
 /// access's own width.
 pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
     let (base, offset) = member_address(addr)?;
+    // A pointer to scalars reads as one, or as an array of them.
+    if let Some(size) = ctx.elements.get(&base)
+        && *size == width
+        && offset % i64::from(*size) == 0
+    {
+        let name = ctx.register(base, 64);
+        return Some(match offset / i64::from(*size) {
+            0 => format!("*{name}"),
+            index => format!("{name}[{index}]"),
+        });
+    }
     if !ctx.pointer_params.contains(&base) {
         return None;
     }

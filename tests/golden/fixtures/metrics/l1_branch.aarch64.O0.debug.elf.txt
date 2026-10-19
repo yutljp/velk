@@ -37,7 +37,7 @@ fn classify @ 0x210184 (size 76)
     store32(#0xffffffff, (sp + #0xfffffffffffffffc))
     br 0x2101c4
   blk3 @ 0x2101a4:
-    brif ne (load32((sp + #0xfffffffffffffff8)) & #0xffffffff), #0x0 -> 0x2101b8
+    brif ne load32((sp + #0xfffffffffffffff8)), #0x0 -> 0x2101b8
   blk4 @ 0x2101ac:
     br 0x2101b0
   blk5 @ 0x2101b0:
@@ -135,7 +135,7 @@ fn sign_of @ 0x210238 (size 72)
     store32(#0x1, (sp + #0xfffffffffffffff8))
     br 0x210274
   blk3 @ 0x21025c:
-    store32((select ge load32((sp + #0xfffffffffffffffc)), #0x0 ? #0x0, #0xffffffff & #0xffffffff), (sp + #0xfffffffffffffff8))
+    store32(select ge load32((sp + #0xfffffffffffffffc)), #0x0 ? #0x0, #0xffffffff, (sp + #0xfffffffffffffff8))
     br 0x210274
   blk4 @ 0x210274:
     ret load32((sp + #0xfffffffffffffff8))

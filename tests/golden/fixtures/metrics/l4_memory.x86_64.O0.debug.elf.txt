@@ -53,14 +53,14 @@ fn array_sum @ 0x201240 (size 73)
     store32(#0x0, (rsp + #0xffffffffffffffe8))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk1 @ 0x201259:
-    brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201284
+    brif ge load32((rsp + #0xffffffffffffffe4)), load32((rsp + #0xffffffffffffffec)) -> 0x201284
   blk2 @ 0x201265:
     v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
-    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
-    store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
+    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
+    store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x201259
   blk3 @ 0x201284:
-    ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
+    ret load32((rsp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x201240","approxTokens":204,"blocks":4,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":73,"unsupported":0}
 
@@ -68,21 +68,18 @@ fn array_sum @ 0x201240 (size 73)
 -- decompile
 /* velk pseudo-C: bump @ 0x201290 */
 /* ref: 0x2022c8 .bss */
-int32_t bump(void) {
-    v1 = g_counter + 0x1;
-    g_counter = v1;
-    return v1;
+void bump(void) {
+    g_counter += 0x1;
 }
 -- signature
-int32_t ()
+void ()
 -- references
 0x2022c8 .bss
 -- ir
 fn bump @ 0x201290 (size 21)
   blk0 @ 0x201290:
-    v1 = (load32(#0x2022c8) + #0x1)
-    store32(v1, #0x2022c8)
-    ret v1
+    store32((load32(#0x2022c8) + #0x1), #0x2022c8)
+    ret #0x0
 -- card
 {"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 

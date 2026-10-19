@@ -44,7 +44,7 @@ fn <unnamed> @ 0x210234 (size 104)
   blk2 @ 0x21025c:
     br 0x210260
   blk3 @ 0x210260:
-    store8((load8((load64((sp + #0xfffffffffffffff0)) + load64((sp + #0xffffffffffffffe0)))) & #0xffffffff), (load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xffffffffffffffe0))))
+    store8(load8((load64((sp + #0xfffffffffffffff0)) + load64((sp + #0xffffffffffffffe0)))), (load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xffffffffffffffe0))))
     br 0x210284
   blk4 @ 0x210284:
     store64((load64((sp + #0xffffffffffffffe0)) + #0x1), (sp + #0xffffffffffffffe0))
@@ -90,7 +90,7 @@ fn <unnamed> @ 0x21029c (size 92)
   blk2 @ 0x2102c4:
     br 0x2102c8
   blk3 @ 0x2102c8:
-    store8((load8((sp + #0xfffffffffffffff7)) & #0xffffffff), (load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xffffffffffffffe0))))
+    store8(load8((sp + #0xfffffffffffffff7)), (load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xffffffffffffffe0))))
     br 0x2102e0
   blk4 @ 0x2102e0:
     store64((load64((sp + #0xffffffffffffffe0)) + #0x1), (sp + #0xffffffffffffffe0))
@@ -141,7 +141,7 @@ fn <unnamed> @ 0x2102f8 (size 68)
 /* velk pseudo-C: sub_21033c @ 0x21033c */
 /* ref: 0x220454 .bss */
 int32_t sub_21033c(int32_t a0, int32_t a1) {
-    return *(uint32_t *)(0x220454 + ((int64_t)(int32_t)(a0 & 0x3) << 0x5) + ((int64_t)(int32_t)(a1 & 0x7) << 0x2));
+    return dword_220454[(int64_t)(int32_t)(a0 & 0x3) * 0x8 + (int64_t)(int32_t)(a1 & 0x7)];
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -163,10 +163,10 @@ int64_t sub_210378(int64_t a0, int32_t a1, int32_t a2) {
     uint32_t local_1; /* [sp-8] */
     uint32_t local_2; /* [sp-c] */
 
-    local_0 = (a0 & 0xffffffff);
+    local_0 = a0;
     local_1 = a1;
     local_2 = a2;
-    *(uint32_t *)(0x220454 + ((int64_t)(int32_t)(local_0 & 0x3) << 0x5) + ((int64_t)(int32_t)(local_1 & 0x7) << 0x2)) = local_2;
+    dword_220454[(int64_t)(int32_t)(local_0 & 0x3) * 0x8 + (int64_t)(int32_t)(local_1 & 0x7)] = local_2;
     return a0;
 }
 -- signature
@@ -176,7 +176,7 @@ int64_t (int64_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x210378 (size 68)
   blk0 @ 0x210378:
-    store32((x0 & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32(x0, (sp + #0xfffffffffffffffc))
     store32(w1, (sp + #0xfffffffffffffff8))
     store32(w2, (sp + #0xfffffffffffffff4))
     store32(load32((sp + #0xfffffffffffffff4)), ((#0x220454 + (sext32((load32((sp + #0xfffffffffffffffc)) & #0x3)) << #0x5)) + (sext32((load32((sp + #0xfffffffffffffff8)) & #0x7)) << #0x2)))
@@ -217,7 +217,7 @@ int32_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x2103e4 (size 52)
   blk0 @ 0x2103e4:
-    store32((load32(x0) & #0xffffffff), (sp + #0xfffffffffffffff4))
+    store32(load32(x0), (sp + #0xfffffffffffffff4))
     ret ((load32((sp + #0xfffffffffffffff4)) + load32(x0)) & #0xffffffff)
 -- card
 {"addr":"0x2103e4","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":52,"unsupported":0}
@@ -246,9 +246,9 @@ fn <unnamed> @ 0x210418 (size 60)
   blk0 @ 0x210418:
     store64(x0, (sp + #0xfffffffffffffff8))
     store64(x1, (sp + #0xfffffffffffffff0))
-    store32((load32(x0) & #0xffffffff), (sp + #0xffffffffffffffec))
-    store32((load32(x1) & #0xffffffff), load64((sp + #0xfffffffffffffff8)))
-    store32((load32((sp + #0xffffffffffffffec)) & #0xffffffff), load64((sp + #0xfffffffffffffff0)))
+    store32(load32(x0), (sp + #0xffffffffffffffec))
+    store32(load32(x1), load64((sp + #0xfffffffffffffff8)))
+    store32(load32((sp + #0xffffffffffffffec)), load64((sp + #0xfffffffffffffff0)))
     ret x0
 -- card
 {"addr":"0x210418","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":60,"unsupported":0}

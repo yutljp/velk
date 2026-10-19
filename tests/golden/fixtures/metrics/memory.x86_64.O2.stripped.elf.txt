@@ -59,8 +59,8 @@ L_2012a6:
     if (v5 != 0x0) {
         v4 = rax;
         do {
-            v6 = *(uint8_t *)(a1 + v4) & 0xff;
-            *(uint8_t *)(a0 + v4) = v6 & 0xff;
+            v6 = *(uint8_t *)(a1 + v4);
+            *(uint8_t *)(a0 + v4) = v6;
             v4 = v4 + 0x1;
             v5 = v5 - 0x1;
         } while (v5 != 0x0);
@@ -70,14 +70,11 @@ L_2012a6:
         return rax;
     }
     do {
-        v7 = *(uint8_t *)(a1 + v4) & 0xff;
-        *(uint8_t *)(a0 + v4) = v7 & 0xff;
-        v8 = *(uint8_t *)(a1 + v4 + 0x1) & 0xff;
-        *(uint8_t *)(a0 + v4 + 0x1) = v8 & 0xff;
-        v9 = *(uint8_t *)(a1 + v4 + 0x2) & 0xff;
-        *(uint8_t *)(a0 + v4 + 0x2) = v9 & 0xff;
-        rax = *(uint8_t *)(a1 + v4 + 0x3) & 0xff;
-        *(uint8_t *)(a0 + v4 + 0x3) = rax & 0xff;
+        *(uint8_t *)(a0 + v4) = *(uint8_t *)(a1 + v4);
+        *(uint8_t *)(a0 + v4 + 0x1) = *(uint8_t *)(a1 + v4 + 0x1);
+        *(uint8_t *)(a0 + v4 + 0x2) = *(uint8_t *)(a1 + v4 + 0x2);
+        rax = *(uint8_t *)(a1 + v4 + 0x3);
+        *(uint8_t *)(a0 + v4 + 0x3) = rax;
         v4 = v4 + 0x4;
     } while (a2 != v4);
     return rax;
@@ -135,8 +132,8 @@ fn <unnamed> @ 0x201220 (size 236)
   blk13 @ 0x2012b2:
     v4 = rax
   blk14 @ 0x2012c0:
-    v6 = (load8((rsi + v4)) & #0xff)
-    store8((v6 & #0xff), (rdi + v4))
+    v6 = (load8((rsi + v4)) & #0xffffffff)
+    store8(v6, (rdi + v4))
     v4 = (v4 + #0x1)
     v5 = (v5 - #0x1)
     brif ne v5, #0x0 -> 0x2012c0
@@ -144,14 +141,11 @@ fn <unnamed> @ 0x201220 (size 236)
     rax = (rax - rdx)
     brif hi rax, #0xfffffffffffffffc -> 0x20130b
   blk16 @ 0x2012e0:
-    v7 = (load8((rsi + v4)) & #0xff)
-    store8((v7 & #0xff), (rdi + v4))
-    v8 = (load8(((rsi + v4) + #0x1)) & #0xff)
-    store8((v8 & #0xff), ((rdi + v4) + #0x1))
-    v9 = (load8(((rsi + v4) + #0x2)) & #0xff)
-    store8((v9 & #0xff), ((rdi + v4) + #0x2))
-    rax = (load8(((rsi + v4) + #0x3)) & #0xff)
-    store8((rax & #0xff), ((rdi + v4) + #0x3))
+    store8(load8((rsi + v4)), (rdi + v4))
+    store8(load8(((rsi + v4) + #0x1)), ((rdi + v4) + #0x1))
+    store8(load8(((rsi + v4) + #0x2)), ((rdi + v4) + #0x2))
+    rax = (load8(((rsi + v4) + #0x3)) & #0xffffffff)
+    store8(rax, ((rdi + v4) + #0x3))
     v4 = (v4 + #0x4)
     brif ne rdx, v4 -> 0x2012e0
   blk17 @ 0x20130b:
@@ -194,9 +188,9 @@ fn <unnamed> @ 0x201310 (size 15)
 int64_t sub_201320(uint8_t *a0) {
     v1 = 0xffffffffffffffff;
     do {
-        t65 = *(uint8_t *)(a0 + v1 + 0x1);
+        v2 = *(uint8_t *)(a0 + v1 + 0x1);
         v1 = v1 + 0x1;
-    } while (t65 != 0x0);
+    } while (v2 != 0x0);
     return v1;
 }
 -- signature
@@ -208,9 +202,9 @@ fn <unnamed> @ 0x201320 (size 28)
   blk0 @ 0x201320:
     v1 = #0xffffffffffffffff
   blk1 @ 0x201330:
-    t65 = load8(((rdi + v1) + #0x1))
+    v2 = load8(((rdi + v1) + #0x1))
     v1 = (v1 + #0x1)
-    brif ne t65, #0x0 -> 0x201330
+    brif ne v2, #0x0 -> 0x201330
   blk2 @ 0x20133b:
     ret v1
 -- card
@@ -221,7 +215,7 @@ fn <unnamed> @ 0x201320 (size 28)
 /* velk pseudo-C: sub_201340 @ 0x201340 */
 /* ref: 0x2023b0 .bss */
 int32_t sub_201340(int32_t a0, int32_t a1) {
-    return *(uint32_t *)(0x2023b0 + ((a0 & 0x3) << 0x5) + (a1 & 0x7) * 0x4);
+    return dword_2023b0[(a0 & 0x3) * 0x8 + (a1 & 0x7)];
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -230,7 +224,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201340 (size 23)
   blk0 @ 0x201340:
-    ret (load32(((#0x2023b0 + (((rdi & #0x3) << #0x5) & #0xffffffff)) + ((rsi & #0x7) * #0x4))) & #0xffffffff)
+    ret load32(((#0x2023b0 + (((rdi & #0x3) << #0x5) & #0xffffffff)) + ((rsi & #0x7) * #0x4)))
 -- card
 {"addr":"0x201340","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":23,"unsupported":0}
 
@@ -260,7 +254,7 @@ fn <unnamed> @ 0x201360 (size 23)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int64_t sub_201380(int64_t a0, int64_t a1) {
-    return a1 - a0 >>> 0x2;
+    return (int64_t)(a1 - a0) >> 0x2;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -276,9 +270,8 @@ fn <unnamed> @ 0x201380 (size 11)
 == 0x201390 -
 -- decompile
 /* velk pseudo-C: sub_201390 @ 0x201390 */
-/* struct: a0 +0x0:uint32_t */
 int32_t sub_201390(uint32_t *a0) {
-    return a0->field_0x0 + a0->field_0x0;
+    return *a0 + *a0;
 }
 -- signature
 int32_t (uint32_t * a0)
@@ -294,12 +287,10 @@ fn <unnamed> @ 0x201390 (size 5)
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-/* struct: a0 +0x0:uint32_t */
-/* struct: a1 +0x0:uint32_t */
 int32_t sub_2013a0(uint32_t *a0, uint32_t *a1) {
-    v1 = a0->field_0x0;
-    a0->field_0x0 = a1->field_0x0;
-    a1->field_0x0 = v1;
+    v1 = *a0;
+    *a0 = *a1;
+    *a1 = v1;
     return v1;
 }
 -- signature

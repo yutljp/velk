@@ -76,7 +76,7 @@ _Bool in_range(int x, int lo, int hi) {
         return local_2 & 0x1;
     }
     v2 = local_1;
-    local_2 = (local_0 - v2 + v2 <= v2);
+    local_2 = (local_0 - v2 + v2 <= v2 ? 0x1 : 0x0);
     return local_2 & 0x1;
 }
 -- signature
@@ -94,7 +94,7 @@ fn in_range @ 0x21028c (size 84)
     br 0x2102b8
   blk2 @ 0x2102b8:
     v2 = load32((sp + #0xfffffffffffffff4))
-    store32((select le (((load32((sp + #0xfffffffffffffffc)) - v2) & #0xffffffff) + v2), v2 ? #0x1, #0x0 & #0xffffffff), (sp + #0xfffffffffffffff0))
+    store32(select le (((load32((sp + #0xfffffffffffffffc)) - v2) & #0xffffffff) + v2), v2 ? #0x1, #0x0, (sp + #0xfffffffffffffff0))
     br 0x2102d0
   blk3 @ 0x2102d0:
     ret (load32((sp + #0xfffffffffffffff0)) & #0x1)
@@ -149,7 +149,7 @@ fn popcount @ 0x210320 (size 76)
     br 0x21033c
   blk3 @ 0x21033c:
     store32((load32((sp + #0xfffffffffffffffc)) & ((load32((sp + #0xfffffffffffffffc)) - #0x1) & #0xffffffff)), (sp + #0xfffffffffffffffc))
-    store32(((load32((sp + #0xfffffffffffffff8)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff8))
+    store32((load32((sp + #0xfffffffffffffff8)) + #0x1), (sp + #0xfffffffffffffff8))
     br 0x210330
   blk4 @ 0x210360:
     ret load32((sp + #0xfffffffffffffff8))

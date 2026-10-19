@@ -47,12 +47,12 @@ fn <unnamed> @ 0x2011f0 (size 129)
     store64(#0x0, (rsp + #0xffffffffffffffe0))
     store32(#0x0, (rsp + #0xffffffffffffffdc))
   blk1 @ 0x20120a:
-    v1 = (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)
+    v1 = load32((rsp + #0xffffffffffffffdc))
     brif ge (v1 & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x20123b
   blk2 @ 0x201216:
     v2 = sext32(load32((rsp + #0xffffffffffffffdc)))
     store64(fadd.d(load64((load64((rsp + #0xfffffffffffffff0)) + (v2 * #0x8))), load64((rsp + #0xffffffffffffffe0))), (rsp + #0xffffffffffffffe0))
-    store32(((load32((rsp + #0xffffffffffffffdc)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffdc))
+    store32((load32((rsp + #0xffffffffffffffdc)) + #0x1), (rsp + #0xffffffffffffffdc))
     br 0x20120a
   blk3 @ 0x20123b:
     brif le load32((rsp + #0xffffffffffffffec)), #0x0 -> 0x20125d
@@ -91,8 +91,8 @@ double (float a0, float a1, float a2)
 -- ir
 fn <unnamed> @ 0x201280 (size 49)
   blk0 @ 0x201280:
-    store32((xmm0 & #0xffffffff), (rsp + #0xfffffffffffffff4))
-    store32((xmm1 & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32(xmm0, (rsp + #0xfffffffffffffff4))
+    store32(xmm1, (rsp + #0xfffffffffffffff0))
     xmm1 = (xmm0 & #0xffffffff)
     xmm0 = load32((rsp + #0xfffffffffffffff0))
     xmm0 = ((xmm0 & #0xffffffff00000000) | fsub.s((xmm0 & #0xffffffff), load32((rsp + #0xfffffffffffffff4))))
@@ -150,7 +150,7 @@ int32_t sub_2012f0(double a0, double a1) {
     local_0 = a0;
     local_1 = a1;
     if (!(a0 < local_1)) {
-        local_2 = (local_1 < local_0);
+        local_2 = (local_1 < local_0 ? 0x1 : 0x0);
         return local_2;
     }
     local_2 = 0xffffffff;
@@ -170,8 +170,8 @@ fn <unnamed> @ 0x2012f0 (size 79)
     store32(#0xffffffff, (rsp + #0xffffffffffffffe4))
     br 0x20133a
   blk2 @ 0x20131f:
-    store32((select ne flt.d(load64((rsp + #0xffffffffffffffe8)), load64((rsp + #0xfffffffffffffff0))), #0x0 ? #0x1, #0x0 & #0xffffffff), (rsp + #0xffffffffffffffe4))
+    store32(select ne flt.d(load64((rsp + #0xffffffffffffffe8)), load64((rsp + #0xfffffffffffffff0))), #0x0 ? #0x1, #0x0, (rsp + #0xffffffffffffffe4))
   blk3 @ 0x20133a:
-    ret (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)
+    ret load32((rsp + #0xffffffffffffffe4))
 -- card
 {"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":79,"unsupported":0}

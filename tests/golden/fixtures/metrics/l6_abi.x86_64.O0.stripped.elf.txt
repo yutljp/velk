@@ -39,7 +39,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201200 (size 28)
   blk0 @ 0x201200:
-    store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
+    store32(rdi, (rsp + #0xfffffffffffffff4))
     v1 = (rdi & #0xffffffff)
     v3 = call 0x2011e0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
     ret v3

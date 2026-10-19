@@ -112,7 +112,7 @@ int (int x)
 fn d7 @ 0x2011c0 (size 592)
   blk0 @ 0x2011c0:
     store32(edi, (rsp + #0xfffffffffffffff4))
-    v1 = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
+    v1 = load32((rsp + #0xfffffffffffffff4))
     store64(v1, (rsp + #0xffffffffffffffc0))
     brif hi v1, #0x9 -> 0x2013fe
   blk1 @ 0x2011d8:
@@ -123,7 +123,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk3 @ 0x2011f3:
     brif ge load32((rsp + #0xfffffffffffffff0)), #0x1 -> 0x20121c
   blk4 @ 0x2011fd:
-    store32((load32(#0x202410) + (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xfffffffffffffff0))), #0x202410)
     store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
     br 0x2011f3
   blk5 @ 0x20121c:
@@ -133,7 +133,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk7 @ 0x201228:
     brif ge load32((rsp + #0xffffffffffffffec)), #0x2 -> 0x201251
   blk8 @ 0x201232:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffec)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffec))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffec)) + #0x1), (rsp + #0xffffffffffffffec))
     br 0x201228
   blk9 @ 0x201251:
@@ -143,7 +143,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk11 @ 0x20125d:
     brif ge load32((rsp + #0xffffffffffffffe8)), #0x3 -> 0x201286
   blk12 @ 0x201267:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffe8))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
     br 0x20125d
   blk13 @ 0x201286:
@@ -153,7 +153,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk15 @ 0x201292:
     brif ge load32((rsp + #0xffffffffffffffe4)), #0x4 -> 0x2012bb
   blk16 @ 0x20129c:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffe4))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x201292
   blk17 @ 0x2012bb:
@@ -163,7 +163,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk19 @ 0x2012c7:
     brif ge load32((rsp + #0xffffffffffffffe0)), #0x5 -> 0x2012f0
   blk20 @ 0x2012d1:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffe0)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffe0))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffe0)) + #0x1), (rsp + #0xffffffffffffffe0))
     br 0x2012c7
   blk21 @ 0x2012f0:
@@ -173,7 +173,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk23 @ 0x2012fc:
     brif ge load32((rsp + #0xffffffffffffffdc)), #0x6 -> 0x201325
   blk24 @ 0x201306:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffdc)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffdc))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffdc)) + #0x1), (rsp + #0xffffffffffffffdc))
     br 0x2012fc
   blk25 @ 0x201325:
@@ -183,7 +183,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk27 @ 0x201331:
     brif ge load32((rsp + #0xffffffffffffffd8)), #0x7 -> 0x20135a
   blk28 @ 0x20133b:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffd8))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffd8)) + #0x1), (rsp + #0xffffffffffffffd8))
     br 0x201331
   blk29 @ 0x20135a:
@@ -193,7 +193,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk31 @ 0x201366:
     brif ge load32((rsp + #0xffffffffffffffd4)), #0x8 -> 0x20138f
   blk32 @ 0x201370:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffd4)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffd4))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffd4)) + #0x1), (rsp + #0xffffffffffffffd4))
     br 0x201366
   blk33 @ 0x20138f:
@@ -203,7 +203,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk35 @ 0x20139b:
     brif ge load32((rsp + #0xffffffffffffffd0)), #0x9 -> 0x2013c4
   blk36 @ 0x2013a5:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffd0)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffd0))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffd0)) + #0x1), (rsp + #0xffffffffffffffd0))
     br 0x20139b
   blk37 @ 0x2013c4:
@@ -213,7 +213,7 @@ fn d7 @ 0x2011c0 (size 592)
   blk39 @ 0x2013d0:
     brif ge load32((rsp + #0xffffffffffffffcc)), #0xa -> 0x2013f9
   blk40 @ 0x2013da:
-    store32((load32(#0x202410) + (load32((rsp + #0xffffffffffffffcc)) & #0xffffffff)), #0x202410)
+    store32((load32(#0x202410) + load32((rsp + #0xffffffffffffffcc))), #0x202410)
     store32((load32((rsp + #0xffffffffffffffcc)) + #0x1), (rsp + #0xffffffffffffffcc))
     br 0x2013d0
   blk41 @ 0x2013f9:
@@ -221,6 +221,6 @@ fn d7 @ 0x2011c0 (size 592)
   blk42 @ 0x2013fe:
     store32(#0xffffffff, #0x202410)
   blk43 @ 0x201408:
-    ret (load32(#0x202410) & #0xffffffff)
+    ret load32(#0x202410)
 -- card
 {"addr":"0x2011c0","approxTokens":234,"blocks":44,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":592,"unsupported":0}

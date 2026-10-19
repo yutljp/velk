@@ -53,17 +53,17 @@ fn array_sum @ 0x21021c (size 100)
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x210234
   blk1 @ 0x210234:
-    brif ge load32((sp + #0xffffffffffffffec)), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x210274
+    brif ge load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x210274
   blk2 @ 0x210244:
     br 0x210248
   blk3 @ 0x210248:
-    store32(((load32((sp + #0xfffffffffffffff0)) + load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2)))) & #0xffffffff), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2)))), (sp + #0xfffffffffffffff0))
     br 0x210264
   blk4 @ 0x210264:
-    store32(((load32((sp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
     br 0x210234
   blk5 @ 0x210274:
-    ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret load32((sp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x21021c","approxTokens":240,"blocks":6,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":100,"unsupported":0}
 
@@ -73,7 +73,6 @@ fn array_sum @ 0x21021c (size 100)
 /* ref: 0x2202b0 .bss */
 void bump(void) {
     g_counter += 0x1;
-    return;
 }
 -- signature
 void ()
@@ -82,8 +81,8 @@ void ()
 -- ir
 fn bump @ 0x210280 (size 20)
   blk0 @ 0x210280:
-    store32(((load32(#0x2202b0) + #0x1) & #0xffffffff), #0x2202b0)
-    ret x0
+    store32((load32(#0x2202b0) + #0x1), #0x2202b0)
+    ret #0x0
 -- card
 {"addr":"0x210280","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 

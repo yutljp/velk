@@ -41,7 +41,7 @@ int (int x)
 -- ir
 fn tail_two @ 0x2101bc (size 40)
   blk0 @ 0x2101bc:
-    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(x0, (sp + #0xffffffffffffffec))
     w8 = (x0 & #0xffffffff)
     v2 = call 0x210194(((w8 + #0x2) & #0xffffffff))
     ret v2

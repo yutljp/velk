@@ -137,7 +137,7 @@ int factorial(int n) {
     local_0 = n;
     if (n > 0x1) {
         rax = local_0;
-        local_2 = eax;
+        local_2 = rax;
         v1 = local_0 - 0x1;
         v2 = factorial(v1);
         local_1 = local_2 * v2;
@@ -153,19 +153,19 @@ int (int n)
 -- ir
 fn factorial @ 0x2013d0 (size 71)
   blk0 @ 0x2013d0:
-    store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
+    store32(rdi, (rsp + #0xfffffffffffffff4))
     brif gt (rdi & #0xffffffff), #0x1 -> 0x2013f2
   blk1 @ 0x2013e5:
     store32(#0x1, (rsp + #0xfffffffffffffff0))
     br 0x20140e
   blk2 @ 0x2013f2:
-    rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
-    store32((rax & #0xffffffff), (rsp + #0xffffffffffffffec))
+    rax = load32((rsp + #0xfffffffffffffff4))
+    store32(rax, (rsp + #0xffffffffffffffec))
     v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
     v2 = call 0x2013d0(v1)
-    store32(((load32((rsp + #0xffffffffffffffec)) * (v2 & #0xffffffff)) & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32((load32((rsp + #0xffffffffffffffec)) * (v2 & #0xffffffff)), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20140e:
-    ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret load32((rsp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x2013d0","approxTokens":150,"blocks":4,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":71,"unsupported":0}
 
@@ -193,7 +193,7 @@ int (int n)
 -- ir
 fn is_odd @ 0x201420 (size 54)
   blk0 @ 0x201420:
-    store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
+    store32(rdi, (rsp + #0xfffffffffffffff4))
     brif ne (rdi & #0xffffffff), #0x0 -> 0x20143f
   blk1 @ 0x201435:
     store32(#0x0, (rsp + #0xfffffffffffffff0))
@@ -201,9 +201,9 @@ fn is_odd @ 0x201420 (size 54)
   blk2 @ 0x20143f:
     v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
     v2 = call 0x201460(v1)
-    store32((v2 & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32(v2, (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20144d:
-    ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret load32((rsp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x201420","approxTokens":150,"blocks":4,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":54,"unsupported":0}
 
@@ -231,7 +231,7 @@ int (int n)
 -- ir
 fn is_even @ 0x201460 (size 57)
   blk0 @ 0x201460:
-    store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
+    store32(rdi, (rsp + #0xfffffffffffffff4))
     brif ne (rdi & #0xffffffff), #0x0 -> 0x201482
   blk1 @ 0x201475:
     store32(#0x1, (rsp + #0xfffffffffffffff0))
@@ -239,9 +239,9 @@ fn is_even @ 0x201460 (size 57)
   blk2 @ 0x201482:
     v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
     v2 = call 0x201420(v1)
-    store32((v2 & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32(v2, (rsp + #0xfffffffffffffff0))
   blk3 @ 0x201490:
-    ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret load32((rsp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x201460","approxTokens":150,"blocks":4,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf","unwind"],"section":".text","size":57,"unsupported":0}
 
@@ -306,7 +306,6 @@ fn call_sum9 @ 0x2014f0 (size 80)
 == 0x201540 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x201540 */
-/* struct: a3 +0x0:uint32_t, +0x8:uint64_t */
 int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int64_t a5) {
     uint64_t local_0; /* [sp-b8] */
     uint64_t local_1; /* [sp-b0] */
@@ -333,8 +332,9 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     uint32_t local_22; /* [sp-2c] */
     uint32_t local_23; /* [sp-30] */
     uint64_t local_24; /* [sp-f8] */
-    uint32_t local_25; /* [sp-ec] */
-    uint64_t local_26; /* [sp-100] */
+    uint32_t local_25; /* [sp-28] */
+    uint32_t local_26; /* [sp-ec] */
+    uint64_t local_27; /* [sp-100] */
 
     if ((rax & 0xff) != 0x0) {
         local_0 = xmm0;
@@ -360,7 +360,7 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     local_19 = a2;
     local_20 = a1;
     local_21 = count;
-    v1 = rsp - 0x28;
+    v1 = &local_25;
     *(uint64_t *)(v1 + 0x10) = rsp - 0xe8;
     *(uint64_t *)(v1 + 0x8) = rsp + 0x8;
     *(uint32_t *)(v1 + 0x4) = 0x30;
@@ -368,22 +368,22 @@ int sum_varargs(int count, int64_t a1, int64_t a2, uint32_t *a3, int64_t a4, int
     local_22 = 0x0;
     local_23 = 0x0;
     while (local_23 < local_21) {
-        local_24 = rsp - 0x28;
-        v2 = *(uint32_t *)(rsp - 0x28);
-        local_25 = v2;
+        local_24 = &local_25;
+        v2 = local_25;
+        local_26 = v2;
         if (v2 > 0x28 /* unsigned */) {
             v6 = local_24;
             v7 = *(uint64_t *)(v6 + 0x8);
             *(uint64_t *)(v6 + 0x8) = v7 + 0x8;
-            local_26 = v7;
+            local_27 = v7;
         } else {
             v3 = local_24;
-            v4 = local_25;
+            v4 = local_26;
             v5 = (int64_t)(int32_t)(v4) + *(uint64_t *)(v3 + 0x10);
             *(uint32_t *)(v3) = v4 + 0x8;
-            local_26 = v5;
+            local_27 = v5;
         }
-        local_22 += *(uint32_t *)(local_26);
+        local_22 += *(uint32_t *)(local_27);
         local_23 += 0x1;
     }
     return local_22;
@@ -428,17 +428,17 @@ fn sum_varargs @ 0x201540 (size 296)
     store32(#0x0, (rsp + #0xffffffffffffffd4))
     store32(#0x0, (rsp + #0xffffffffffffffd0))
   blk3 @ 0x2015d4:
-    brif ge (load32((rsp + #0xffffffffffffffd0)) & #0xffffffff), load32((rsp + #0xfffffffffffffff4)) -> 0x20165c
+    brif ge load32((rsp + #0xffffffffffffffd0)), load32((rsp + #0xfffffffffffffff4)) -> 0x20165c
   blk4 @ 0x2015e0:
     store64((rsp + #0xffffffffffffffd8), (rsp + #0xffffffffffffff08))
-    v2 = (load32((rsp + #0xffffffffffffffd8)) & #0xffffffff)
-    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffff14))
+    v2 = load32((rsp + #0xffffffffffffffd8))
+    store32(v2, (rsp + #0xffffffffffffff14))
     brif hi (v2 & #0xffffffff), #0x28 -> 0x201622
   blk5 @ 0x2015fd:
     v3 = load64((rsp + #0xffffffffffffff08))
-    v4 = (load32((rsp + #0xffffffffffffff14)) & #0xffffffff)
+    v4 = load32((rsp + #0xffffffffffffff14))
     v5 = (sext32(v4) + load64((v3 + #0x10)))
-    store32((((v4 & #0xffffffff) + #0x8) & #0xffffffff), v3)
+    store32(((v4 & #0xffffffff) + #0x8), v3)
     store64(v5, (rsp + #0xffffffffffffff00))
     br 0x20163f
   blk6 @ 0x201622:
@@ -447,10 +447,10 @@ fn sum_varargs @ 0x201540 (size 296)
     store64((v7 + #0x8), (v6 + #0x8))
     store64(v7, (rsp + #0xffffffffffffff00))
   blk7 @ 0x20163f:
-    store32(((load32(load64((rsp + #0xffffffffffffff00))) + load32((rsp + #0xffffffffffffffd4))) & #0xffffffff), (rsp + #0xffffffffffffffd4))
-    store32(((load32((rsp + #0xffffffffffffffd0)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffd0))
+    store32((load32(load64((rsp + #0xffffffffffffff00))) + load32((rsp + #0xffffffffffffffd4))), (rsp + #0xffffffffffffffd4))
+    store32((load32((rsp + #0xffffffffffffffd0)) + #0x1), (rsp + #0xffffffffffffffd0))
     br 0x2015d4
   blk8 @ 0x20165c:
-    ret (load32((rsp + #0xffffffffffffffd4)) & #0xffffffff)
+    ret load32((rsp + #0xffffffffffffffd4))
 -- card
 {"accesses":["a3 +0x0:uint32_t, +0x8:uint64_t"],"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":296,"unsupported":0}

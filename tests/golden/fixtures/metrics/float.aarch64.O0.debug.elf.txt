@@ -43,21 +43,21 @@ fn average @ 0x2101b4 (size 160)
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk1 @ 0x2101d0:
-    brif ge load32((sp + #0xffffffffffffffe4)), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x210210
+    brif ge load32((sp + #0xffffffffffffffe4)), load32((sp + #0xfffffffffffffff4)) -> 0x210210
   blk2 @ 0x2101e0:
     br 0x2101e4
   blk3 @ 0x2101e4:
     store64(fadd.d(load64((sp + #0xffffffffffffffe8)), load64((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s << #0x3)))), (sp + #0xffffffffffffffe8))
     br 0x210200
   blk4 @ 0x210200:
-    store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
+    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
     br 0x2101d0
   blk5 @ 0x210210:
-    brif le (load32((sp + #0xfffffffffffffff4)) & #0xffffffff), #0x0 -> 0x21023c
+    brif le load32((sp + #0xfffffffffffffff4)), #0x0 -> 0x21023c
   blk6 @ 0x21021c:
     br 0x210220
   blk7 @ 0x210220:
-    store64(fdiv.d(load64((sp + #0xffffffffffffffe8)), s32tof.d((load32((sp + #0xfffffffffffffff4)) & #0xffffffff))), (sp + #0xffffffffffffffd8))
+    store64(fdiv.d(load64((sp + #0xffffffffffffffe8)), s32tof.d(load32((sp + #0xfffffffffffffff4)))), (sp + #0xffffffffffffffd8))
     br 0x210248
   blk8 @ 0x21023c:
     store64(#0x0, (sp + #0xffffffffffffffd8))
@@ -133,7 +133,7 @@ int compare_doubles(double a, double b) {
     local_0 = a;
     local_1 = b;
     if (!(a < b)) {
-        local_2 = (local_1 < local_0);
+        local_2 = (!(local_1 < local_0) ? 0x0 : 0x1);
         return local_2;
     }
     local_2 = 0xffffffff;
@@ -155,7 +155,7 @@ fn compare_doubles @ 0x2102bc (size 84)
     store32(#0xffffffff, (sp + #0xffffffffffffffec))
     br 0x210304
   blk3 @ 0x2102e8:
-    store32((select eq flt.d(load64((sp + #0xfffffffffffffff0)), load64((sp + #0xfffffffffffffff8))), #0x0 ? #0x0, #0x1 & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(select eq flt.d(load64((sp + #0xfffffffffffffff0)), load64((sp + #0xfffffffffffffff8))), #0x0 ? #0x0, #0x1, (sp + #0xffffffffffffffec))
     br 0x210304
   blk4 @ 0x210304:
     ret load32((sp + #0xffffffffffffffec))

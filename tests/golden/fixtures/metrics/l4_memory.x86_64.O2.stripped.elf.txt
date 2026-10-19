@@ -39,20 +39,19 @@ int32_t sub_2011f0(double *a0, int32_t a1) {
         xmm1 = 0x0;
         xmm1_hi = 0x0;
         do {
-            t67 = add_lanes32(xmm0_hi, *(uint64_t *)(a0 + v5 + 0x8));
+            v6 = add_lanes32(xmm0_hi, *(uint64_t *)(a0 + v5 + 0x8));
             xmm0 = add_lanes32(xmm0, *(uint64_t *)(a0 + v5));
-            xmm0_hi = t67;
+            xmm0_hi = v6;
             xmm2 = *(uint64_t *)(a0 + v5 + 0x10);
             xmm2_hi = *(uint64_t *)(a0 + v5 + 0x18);
-            t67 = add_lanes32(xmm1_hi, xmm2_hi);
+            v7 = add_lanes32(xmm1_hi, xmm2_hi);
             xmm1 = add_lanes32(xmm1, xmm2);
-            xmm1_hi = t67;
+            xmm1_hi = v7;
             v5 = v5 + 0x20;
         } while (v4 != v5);
         xmm1 = add_lanes32(xmm1, xmm0);
         xmm1_hi = add_lanes32(xmm1_hi, xmm0_hi);
         xmm0 = add_lanes32((uint32_t)xmm1_hi | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20, xmm1);
-        t67 = add_lanes32(((xmm0 >> 0x20) & 0xffffffff) | ((xmm0 >> 0x20) & 0xffffffff) << 0x20, add_lanes32((uint32_t)xmm1_hi | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20, xmm1_hi));
         v3 = (add_lanes32(((xmm0 >> 0x20) & 0xffffffff) | ((xmm0 >> 0x20) & 0xffffffff) << 0x20, xmm0) & 0xffffffff);
         if (v2 == v1) {
             return v3;
@@ -93,21 +92,20 @@ fn <unnamed> @ 0x2011f0 (size 140)
     xmm1 = #0x0
     xmm1_hi = #0x0
   blk5 @ 0x201230:
-    t67 = add_lanes32(xmm0_hi, load64(((rdi + v5) + #0x8)))
+    v6 = add_lanes32(xmm0_hi, load64(((rdi + v5) + #0x8)))
     xmm0 = add_lanes32(xmm0, load64((rdi + v5)))
-    xmm0_hi = t67
+    xmm0_hi = v6
     xmm2 = load64(((rdi + v5) + #0x10))
     xmm2_hi = load64(((rdi + v5) + #0x18))
-    t67 = add_lanes32(xmm1_hi, xmm2_hi)
+    v7 = add_lanes32(xmm1_hi, xmm2_hi)
     xmm1 = add_lanes32(xmm1, xmm2)
-    xmm1_hi = t67
+    xmm1_hi = v7
     v5 = (v5 + #0x20)
     brif ne v4, v5 -> 0x201230
   blk6 @ 0x20124c:
     xmm1 = add_lanes32(xmm1, xmm0)
     xmm1_hi = add_lanes32(xmm1_hi, xmm0_hi)
     xmm0 = add_lanes32(((xmm1_hi & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)), xmm1)
-    t67 = add_lanes32((((xmm0 >> #0x20) & #0xffffffff) | (((xmm0 >> #0x20) & #0xffffffff) << #0x20)), add_lanes32(((xmm1_hi & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)), xmm1_hi))
     v3 = (add_lanes32((((xmm0 >> #0x20) & #0xffffffff) | (((xmm0 >> #0x20) & #0xffffffff) << #0x20)), xmm0) & #0xffffffff)
     brif eq v2, v1 -> 0x20127b
   blk7 @ 0x201270:
@@ -125,7 +123,6 @@ fn <unnamed> @ 0x2011f0 (size 140)
 /* ref: 0x2022a8 .bss */
 void sub_201280(void) {
     dword_2022a8 += 0x1;
-    return;
 }
 -- signature
 void ()

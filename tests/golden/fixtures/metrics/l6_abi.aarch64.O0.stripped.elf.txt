@@ -43,7 +43,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101fc (size 40)
   blk0 @ 0x2101fc:
-    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(x0, (sp + #0xffffffffffffffec))
     w8 = (x0 & #0xffffffff)
     v2 = call 0x2101d4(((w8 + #0x2) & #0xffffffff))
     ret v2

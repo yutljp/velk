@@ -475,7 +475,7 @@ fn sum_varargs @ 0x1c4 (size 188)
     v1 = load64((sp + #0xffffffffffffffe0))
     v2 = load64((sp + #0xffffffffffffffe8))
     v3 = #0x0
-    v4 = (load32((sp + #0xfffffffffffffff8)) & #0xffffffff)
+    v4 = load32((sp + #0xfffffffffffffff8))
     br 0x248
   blk2 @ 0x224:
     v5 = v1

@@ -71,7 +71,6 @@ fn array_sum @ 0x14 (size 48)
 /* velk pseudo-C: bump @ 0x44 */
 void bump(void) {
     g_counter += 0x1;
-    return;
 }
 -- signature
 void ()
@@ -80,7 +79,7 @@ void ()
 -- ir
 fn bump @ 0x44 (size 20)
   blk0 @ 0x44:
-    store32(((load32(#0x68) + #0x1) & #0xffffffff), #0x68)
+    store32((load32(#0x68) + #0x1), #0x68)
     ret x0
 -- card
 {"addr":"0x44","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}

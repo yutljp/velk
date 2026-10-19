@@ -86,7 +86,7 @@ fn apply_table @ 0x21037c (size 72)
   blk0 @ 0x21037c:
     store32(w0, (sp + #0xffffffffffffffec))
     store32(w1, (sp + #0xffffffffffffffe8))
-    v1 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
+    v1 = load32((sp + #0xffffffffffffffec))
     x8 = load64((#0x2206f0 + ((((v1 & #0xffffffff) - (((v1 & #0xffffffff) / #0x3) * #0x3)) & #0xffffffff) << #0x3)))
     w0 = (w1 & #0xffffffff)
     call *x8
@@ -150,7 +150,7 @@ int (int n)
 -- ir
 fn factorial @ 0x2103f4 (size 96)
   blk0 @ 0x2103f4:
-    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(x0, (sp + #0xffffffffffffffec))
     brif gt (x0 & #0xffffffff), #0x1 -> 0x210420
   blk1 @ 0x210410:
     br 0x210414
@@ -158,13 +158,13 @@ fn factorial @ 0x2103f4 (size 96)
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x210444
   blk3 @ 0x210420:
-    store32((load32((sp + #0xffffffffffffffec)) & #0xffffffff), (sp + #0xffffffffffffffe4))
-    x8 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
+    store32(load32((sp + #0xffffffffffffffec)), (sp + #0xffffffffffffffe4))
+    x8 = load32((sp + #0xffffffffffffffec))
     v2 = call 0x2103f4((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32(((load32((sp + #0xffffffffffffffe4)) * (v2 & #0xffffffff)) & #0xffffffff), (sp + #0xffffffffffffffe8))
+    store32((load32((sp + #0xffffffffffffffe4)) * (v2 & #0xffffffff)), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
-    ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
+    ret load32((sp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x2103f4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":96,"unsupported":0}
 
@@ -192,7 +192,7 @@ int (int n)
 -- ir
 fn is_odd @ 0x210454 (size 76)
   blk0 @ 0x210454:
-    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(x0, (sp + #0xffffffffffffffec))
     brif ne (x0 & #0xffffffff), #0x0 -> 0x21047c
   blk1 @ 0x21046c:
     br 0x210470
@@ -200,12 +200,12 @@ fn is_odd @ 0x210454 (size 76)
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk3 @ 0x21047c:
-    x8 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
+    x8 = load32((sp + #0xffffffffffffffec))
     v2 = call 0x2104a0((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32((v2 & #0xffffffff), (sp + #0xffffffffffffffe8))
+    store32(v2, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
-    ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
+    ret load32((sp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 
@@ -233,7 +233,7 @@ int (int n)
 -- ir
 fn is_even @ 0x2104a0 (size 76)
   blk0 @ 0x2104a0:
-    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(x0, (sp + #0xffffffffffffffec))
     brif ne (x0 & #0xffffffff), #0x0 -> 0x2104c8
   blk1 @ 0x2104b8:
     br 0x2104bc
@@ -243,10 +243,10 @@ fn is_even @ 0x2104a0 (size 76)
   blk3 @ 0x2104c8:
     w8 = load32((sp + #0xffffffffffffffec))
     v2 = call 0x210454(((w8 - #0x1) & #0xffffffff))
-    store32((v2 & #0xffffffff), (sp + #0xffffffffffffffe8))
+    store32(v2, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:
-    ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
+    ret load32((sp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x2104a0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 
@@ -429,20 +429,20 @@ fn sum_varargs @ 0x2105b0 (size 316)
     store32(#0x0, (sp + #0xffffffffffffffc0))
     br 0x210638
   blk1 @ 0x210638:
-    v1 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
+    v1 = load32((sp + #0xffffffffffffffec))
     brif ge load32((sp + #0xffffffffffffffc0)), (v1 & #0xffffffff) -> 0x2106dc
   blk2 @ 0x210648:
     br 0x21064c
   blk3 @ 0x21064c:
     store64((sp + #0xffffffffffffffe0), (sp + #0xfffffffffffffef0))
-    v2 = (load32((sp + #0xffffffffffffffe0)) & #0xffffffff)
-    store32((v2 & #0xffffffff), (sp + #0xfffffffffffffefc))
+    v2 = load32((sp + #0xffffffffffffffe0))
+    store32(v2, (sp + #0xfffffffffffffefc))
     brif eq (v2 & #0x80000000), #0x0 -> 0x21069c
   blk4 @ 0x210668:
     br 0x21066c
   blk5 @ 0x21066c:
     v3 = ((load32((sp + #0xfffffffffffffefc)) + #0x8) & #0xffffffff)
-    store32((v3 & #0xffffffff), load64((sp + #0xfffffffffffffef0)))
+    store32(v3, load64((sp + #0xfffffffffffffef0)))
     brif gt (v3 & #0xffffffff), #0x0 -> 0x21069c
   blk6 @ 0x210684:
     br 0x210688
@@ -456,10 +456,10 @@ fn sum_varargs @ 0x2105b0 (size 316)
     store64(v5, (sp + #0xfffffffffffffee8))
     br 0x2106b4
   blk9 @ 0x2106b4:
-    store32(((load32((sp + #0xffffffffffffffc4)) + load32(load64((sp + #0xfffffffffffffee8)))) & #0xffffffff), (sp + #0xffffffffffffffc4))
+    store32((load32((sp + #0xffffffffffffffc4)) + load32(load64((sp + #0xfffffffffffffee8)))), (sp + #0xffffffffffffffc4))
     br 0x2106cc
   blk10 @ 0x2106cc:
-    store32(((load32((sp + #0xffffffffffffffc0)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffc0))
+    store32((load32((sp + #0xffffffffffffffc0)) + #0x1), (sp + #0xffffffffffffffc0))
     br 0x210638
   blk11 @ 0x2106dc:
     v6 = load32((sp + #0xffffffffffffffc4))

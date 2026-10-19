@@ -31,7 +31,7 @@ fn count_bits @ 0x2011c0 (size 54)
   blk1 @ 0x2011ce:
     brif eq load32((rsp + #0xfffffffffffffff4)), #0x0 -> 0x2011f1
   blk2 @ 0x2011d8:
-    store32((((load32((rsp + #0xfffffffffffffff4)) & #0x1) + load32((rsp + #0xfffffffffffffff0))) & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32(((load32((rsp + #0xfffffffffffffff4)) & #0x1) + load32((rsp + #0xfffffffffffffff0))), (rsp + #0xfffffffffffffff0))
     store32((load32((rsp + #0xfffffffffffffff4)) >> #0x1), (rsp + #0xfffffffffffffff4))
     br 0x2011ce
   blk3 @ 0x2011f1:
@@ -69,8 +69,8 @@ fn sum_until @ 0x201200 (size 61)
   blk1 @ 0x201215:
     brif gt load32((rsp + #0xffffffffffffffec)), load32((rsp + #0xfffffffffffffff4)) -> 0x201238
   blk2 @ 0x201221:
-    store32(((load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xfffffffffffffff0))) & #0xffffffff), (rsp + #0xfffffffffffffff0))
-    store32(((load32((rsp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffec))
+    store32((load32((rsp + #0xffffffffffffffec)) + load32((rsp + #0xfffffffffffffff0))), (rsp + #0xfffffffffffffff0))
+    store32((load32((rsp + #0xffffffffffffffec)) + #0x1), (rsp + #0xffffffffffffffec))
     br 0x201215
   blk3 @ 0x201238:
     ret load32((rsp + #0xfffffffffffffff0))
@@ -115,20 +115,20 @@ fn sum_till_neg @ 0x201240 (size 94)
     store32(#0x0, (rsp + #0xffffffffffffffe8))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk1 @ 0x201259:
-    brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201299
+    brif ge load32((rsp + #0xffffffffffffffe4)), load32((rsp + #0xffffffffffffffec)) -> 0x201299
   blk2 @ 0x201265:
     v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
-    v2 = (load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) & #0xffffffff)
-    store32((v2 & #0xffffffff), (rsp + #0xffffffffffffffe0))
+    v2 = load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4)))
+    store32(v2, (rsp + #0xffffffffffffffe0))
     brif ge (v2 & #0xffffffff), #0x0 -> 0x201282
   blk3 @ 0x20127d:
     br 0x201299
   blk4 @ 0x201282:
-    store32(((load32((rsp + #0xffffffffffffffe0)) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
-    store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
+    store32((load32((rsp + #0xffffffffffffffe0)) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
+    store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x201259
   blk5 @ 0x201299:
-    ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
+    ret load32((rsp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x201240","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":94,"unsupported":0}
 
@@ -171,7 +171,7 @@ fn sum_until_zero @ 0x2012a0 (size 119)
     store32(#0x0, (rsp + #0xffffffffffffffe8))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk1 @ 0x2012b9:
-    brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201312
+    brif ge load32((rsp + #0xffffffffffffffe4)), load32((rsp + #0xffffffffffffffec)) -> 0x201312
   blk2 @ 0x2012c5:
     v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
     brif ne load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))), #0x0 -> 0x2012dc
@@ -184,11 +184,11 @@ fn sum_until_zero @ 0x2012a0 (size 119)
     br 0x201304
   blk6 @ 0x2012f3:
     v3 = sext32(load32((rsp + #0xffffffffffffffe4)))
-    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (v3 * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
+    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (v3 * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
   blk7 @ 0x201304:
-    store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
+    store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x2012b9
   blk8 @ 0x201312:
-    ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
+    ret load32((rsp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x2012a0","approxTokens":180,"blocks":9,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":119,"unsupported":0}

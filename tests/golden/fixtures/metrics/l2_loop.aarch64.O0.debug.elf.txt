@@ -36,16 +36,16 @@ fn sum_while @ 0x2101d4 (size 100)
     store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2101e8
   blk1 @ 0x2101e8:
-    brif ge load32((sp + #0xfffffffffffffff4)), (load32((sp + #0xfffffffffffffffc)) & #0xffffffff) -> 0x21022c
+    brif ge load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffffc)) -> 0x21022c
   blk2 @ 0x2101f8:
     br 0x2101fc
   blk3 @ 0x2101fc:
-    v2 = (load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) & #0xffffffff))
+    v2 = (load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4)))
     store32(v2, (sp + #0xfffffffffffffff8))
-    store32((v2 & #0xffffffff), #0x220380)
+    store32(v2, #0x220380)
     br 0x21021c
   blk4 @ 0x21021c:
-    store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))
+    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
     br 0x2101e8
   blk5 @ 0x21022c:
     ret load32((sp + #0xfffffffffffffff8))
@@ -80,8 +80,8 @@ fn count_down @ 0x210238 (size 84)
     store32(#0x0, (sp + #0xfffffffffffffff8))
     br 0x210248
   blk1 @ 0x210248:
-    store32(((load32((sp + #0xfffffffffffffff8)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff8))
-    store32(((load32((sp + #0xfffffffffffffffc)) - #0x1) & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32((load32((sp + #0xfffffffffffffff8)) + #0x1), (sp + #0xfffffffffffffff8))
+    store32((load32((sp + #0xfffffffffffffffc)) - #0x1), (sp + #0xfffffffffffffffc))
     store32(load32((sp + #0xfffffffffffffff8)), #0x220380)
     br 0x210270
   blk2 @ 0x210270:
@@ -127,7 +127,7 @@ fn sum_skip_odd @ 0x21028c (size 116)
     store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2102a0
   blk1 @ 0x2102a0:
-    brif ge load32((sp + #0xfffffffffffffff4)), (load32((sp + #0xfffffffffffffffc)) & #0xffffffff) -> 0x2102f4
+    brif ge load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffffc)) -> 0x2102f4
   blk2 @ 0x2102b0:
     br 0x2102b4
   blk3 @ 0x2102b4:
@@ -138,11 +138,11 @@ fn sum_skip_odd @ 0x21028c (size 116)
     br 0x2102e4
   blk6 @ 0x2102c4:
     v2 = ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
-    store32((v2 & #0xffffffff), (sp + #0xfffffffffffffff8))
-    store32((v2 & #0xffffffff), #0x220380)
+    store32(v2, (sp + #0xfffffffffffffff8))
+    store32(v2, #0x220380)
     br 0x2102e4
   blk7 @ 0x2102e4:
-    store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))
+    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
     br 0x2102a0
   blk8 @ 0x2102f4:
     ret load32((sp + #0xfffffffffffffff8))
@@ -188,25 +188,25 @@ fn find_first @ 0x210300 (size 128)
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210318
   blk1 @ 0x210318:
-    brif ge load32((sp + #0xffffffffffffffe4)), (load32((sp + #0xffffffffffffffec)) & #0xffffffff) -> 0x210368
+    brif ge load32((sp + #0xffffffffffffffe4)), load32((sp + #0xffffffffffffffec)) -> 0x210368
   blk2 @ 0x210328:
     br 0x21032c
   blk3 @ 0x21032c:
-    brif ne load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4))s << #0x2))), (load32((sp + #0xffffffffffffffe8)) & #0xffffffff) -> 0x210354
+    brif ne load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4))s << #0x2))), load32((sp + #0xffffffffffffffe8)) -> 0x210354
   blk4 @ 0x210344:
     br 0x210348
   blk5 @ 0x210348:
-    store32((load32((sp + #0xffffffffffffffe4)) & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32(load32((sp + #0xffffffffffffffe4)), (sp + #0xfffffffffffffffc))
     br 0x210374
   blk6 @ 0x210354:
     br 0x210358
   blk7 @ 0x210358:
-    store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
+    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
     br 0x210318
   blk8 @ 0x210368:
     store32(#0xffffffff, (sp + #0xfffffffffffffffc))
     br 0x210374
   blk9 @ 0x210374:
-    ret (load32((sp + #0xfffffffffffffffc)) & #0xffffffff)
+    ret load32((sp + #0xfffffffffffffffc))
 -- card
 {"addr":"0x210300","approxTokens":240,"blocks":10,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf","unwind"],"section":".text","size":128,"unsupported":0}

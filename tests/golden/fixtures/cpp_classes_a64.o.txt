@@ -19,7 +19,7 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     do {
         a0 = *(uint64_t *)(v1);
         v1 = v1 + 0x8;
-        x8 = *(uint64_t *)(*(uint64_t *)(a0) + 0x10);
+        x8 = *(uint64_t *)(*a0 + 0x10);
         v4 = (*(x8))();
         v3 = v3 - 0x1;
         v2 = v4 + v2;
@@ -59,7 +59,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
 -- decompile
 /* velk pseudo-C: clamp_int(int) @ 0x5c */
 int32_t clamp_int_int_(int32_t a0) {
-    return (a0 < 0xff ? a0 : 0xff) & ~((a0 < 0xff ? a0 : 0xff) >>> 0x1f);
+    return (a0 < 0xff ? a0 : 0xff) & ~((int32_t)(a0 < 0xff ? a0 : 0xff) >> 0x1f);
 }
 -- signature
 int32_t (int32_t a0)
@@ -92,13 +92,11 @@ fn clamp_long(long) @ 0x70 (size 28)
 == 0x8c dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
 /* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0x8c */
-/* struct: a0 +0x0:uint64_t */
-/* struct: a1 +0x0:uint64_t */
 int32_t dot_sum_Vec2_const___Vec2_const__(double *a0, double *a1) {
     v0_hi = 0x0;
-    d1 = a1->field_0x0;
+    d1 = *a1;
     v1_hi = 0x0;
-    s0 = add_lanes32(d1, *(uint64_t *)(a0));
+    s0 = add_lanes32(d1, *a0);
     v0_hi = 0x0;
     /* unsupported: MUL at 0x98 */
     v1 = s0;
@@ -125,9 +123,8 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
 == 0xa4 increment(int&)
 -- decompile
 /* velk pseudo-C: increment(int&) @ 0xa4 */
-/* struct: a0 +0x0:uint32_t */
 int64_t increment_int__(uint32_t *a0) {
-    a0->field_0x0 += 0x1;
+    *a0 += 0x1;
     return a0;
 }
 -- signature
@@ -137,7 +134,7 @@ int64_t (uint32_t * a0)
 -- ir
 fn increment(int&) @ 0xa4 (size 16)
   blk0 @ 0xa4:
-    store32(((load32(x0) + #0x1) & #0xffffffff), x0)
+    store32((load32(x0) + #0x1), x0)
     ret x0
 -- card
 {"accesses":["a0 +0x0:uint32_t"],"addr":"0xa4","approxTokens":120,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab","unwind"],"section":".text","size":16,"unsupported":0}

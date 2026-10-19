@@ -52,10 +52,10 @@ fn alt_helper @ 0x210198 (size 96)
   blk2 @ 0x2101bc:
     br 0x2101c0
   blk3 @ 0x2101c0:
-    store32(((load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) * load32((sp + #0xfffffffffffffff4)))) & #0xffffffff), (sp + #0xfffffffffffffff8))
+    store32((load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) * load32((sp + #0xfffffffffffffff4)))), (sp + #0xfffffffffffffff8))
     br 0x2101dc
   blk4 @ 0x2101dc:
-    store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))
+    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
     br 0x2101ac
   blk5 @ 0x2101ec:
     ret load32((sp + #0xfffffffffffffff8))

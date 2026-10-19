@@ -234,20 +234,19 @@ fn flags_level @ 0x2102d8 (size 20)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2102ec */
 /* struct: f +0x0:uint8_t */
-int64_t flags_set_mode(struct flags *f, int32_t mode) {
+void flags_set_mode(struct flags *f, int32_t mode) {
     v1 = f->field_0x0;
     f->field_0x0 = v1 & 0xfffffff1 | (mode & 0x7) << 0x1;
-    return f;
 }
 -- signature
-int64_t (struct flags * f, int32_t mode)
+void (struct flags * f, int32_t mode)
 -- references
 
 -- ir
 fn flags_set_mode @ 0x2102ec (size 24)
   blk0 @ 0x2102ec:
     v1 = load8(x0)
-    store8((((v1 & #0xfffffff1) | ((w1 & #0x7) << #0x1)) & #0xffffffff), x0)
-    ret x0
+    store8(((v1 & #0xfffffff1) | ((w1 & #0x7) << #0x1)), x0)
+    ret #0x0
 -- card
 {"accesses":["f +0x0:uint8_t"],"addr":"0x2102ec","approxTokens":132,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}

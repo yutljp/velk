@@ -41,6 +41,7 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
         data_ranges: &[],
         members: HashMap::new(),
         pointees: HashMap::new(),
+        elements: HashMap::new(),
         narrow_regs: std::collections::HashSet::new(),
         narrow_return: false,
     };

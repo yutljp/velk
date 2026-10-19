@@ -67,6 +67,18 @@ impl CType {
         }
     }
 
+    /// The size of the scalar a pointer points at: 4 for `int *`.
+    pub fn pointee_size(&self) -> Option<u8> {
+        let CType::Pointer(target) = self else {
+            return None;
+        };
+        match target.as_ref() {
+            CType::Int { bytes, .. } => Some(*bytes),
+            CType::Named(name) => scalar_size(name),
+            _ => None,
+        }
+    }
+
     /// `pair` for `struct pair *`.
     pub fn pointee_struct(&self) -> Option<&str> {
         match self {
@@ -77,6 +89,32 @@ impl CType {
             _ => None,
         }
     }
+}
+
+/// The size of a scalar C type named by the debug info, ignoring
+/// qualifiers; None for anything else.
+fn scalar_size(name: &str) -> Option<u8> {
+    let words: Vec<&str> = name
+        .split_whitespace()
+        .filter(|word| !matches!(*word, "const" | "volatile" | "signed" | "unsigned"))
+        .collect();
+    Some(match words.as_slice() {
+        ["char"] | ["_Bool"] | ["bool"] => 1,
+        ["short"] | ["short", "int"] => 2,
+        ["int"] | ["float"] => 4,
+        ["long"] | ["long", "int"] | ["long", "long"] | ["long", "long", "int"] | ["double"] => 8,
+        [] => 4,
+        [other] => {
+            let bits: u8 = other
+                .strip_prefix("uint")
+                .or_else(|| other.strip_prefix("int"))?
+                .strip_suffix("_t")?
+                .parse()
+                .ok()?;
+            bits / 8
+        }
+        _ => return None,
+    })
 }
 
 fn narrow_c_name(name: &str) -> bool {

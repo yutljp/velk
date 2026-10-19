@@ -17,9 +17,9 @@ int count_bits(int32_t x) {
         v2 = v1 >> 0x1;
         v3 = v1 & 0x1;
         x = x + v3;
-        t65 = v1;
+        v4 = v1;
         v1 = v2;
-    } while (t65 > 0x1 /* unsigned */);
+    } while (v4 > 0x1 /* unsigned */);
     return x;
 }
 -- signature
@@ -37,9 +37,9 @@ fn count_bits @ 0x21018c (size 40)
     v2 = (v1 >> #0x1)
     v3 = (v1 & #0x1)
     x0 = (((x0 & #0xffffffff) + v3) & #0xffffffff)
-    t65 = v1
+    v4 = v1
     v1 = v2
-    brif hi t65, #0x1 -> 0x210198
+    brif hi v4, #0x1 -> 0x210198
   blk3 @ 0x2101b0:
     ret x0
 -- card
@@ -75,14 +75,14 @@ fn sum_until @ 0x2101b4 (size 40)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x2101dc */
 int sum_till_neg(int *p, int n) {
-    v1 = (n & ~(n >>> 0x1f) & 0xffffffff);
+    v1 = (n & ~((int32_t)n >> 0x1f) & 0xffffffff);
     v2 = 0x0;
     do {
         v3 = v2;
         if (v1 == 0x0) {
             break;
         }
-        v4 = p->field_0x0;
+        v4 = *p;
         p = p + 0x4;
         v1 = v1 - 0x1;
         v2 = v4 + v3;
@@ -102,7 +102,7 @@ fn sum_till_neg @ 0x2101dc (size 40)
     v3 = v2
     brif eq v1, #0x0 -> 0x2101fc
   blk2 @ 0x2101ec:
-    v4 = (load32(x0) & #0xffffffff)
+    v4 = load32(x0)
     x0 = (x0 + #0x4)
     v1 = (v1 - #0x1)
     v2 = (((v4 & #0xffffffff) + v3) & #0xffffffff)
@@ -129,7 +129,7 @@ int sum_until_zero(int *p, int n) {
             break;
         }
         v3 = v3 - 0x1;
-        v2 = (((v4 & ~(v4 >>> 0x1f)) + v2) & 0xffffffff);
+        v2 = (((v4 & ~((int32_t)v4 >> 0x1f)) + v2) & 0xffffffff);
     } while (v3 != 0x0);
     return v2;
 }

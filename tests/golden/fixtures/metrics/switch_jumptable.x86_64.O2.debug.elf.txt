@@ -107,17 +107,17 @@ fn d7 @ 0x2011c0 (size 527)
     v1 = (sext32(load32((#0x200158 + (edi * #0x4)))) + #0x200158)
     switch edi [0->0x2011db, 1->0x2012ef, 2->0x201265, 3->0x201285, 4->0x2011e6, 5->0x201308, 6->0x20133d, 7->0x2012ac, 8->0x20137d, 9->0x201214] default 0x201376
   blk2 @ 0x2011db:
-    v2 = (load32(#0x2023d0) & #0xffffffff)
+    v2 = load32(#0x2023d0)
     br 0x2013c2
   blk3 @ 0x2011e6:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
     v2 = ((load32(#0x2023d0) + #0x4) & #0xffffffff)
     br 0x2013c2
   blk4 @ 0x201214:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
@@ -129,18 +129,18 @@ fn d7 @ 0x2011c0 (size 527)
     v2 = ((load32(#0x2023d0) + #0x9) & #0xffffffff)
     br 0x2013c2
   blk5 @ 0x201265:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     v2 = ((load32(#0x2023d0) + #0x2) & #0xffffffff)
     br 0x2013c2
   blk6 @ 0x201285:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     v2 = ((load32(#0x2023d0) + #0x3) & #0xffffffff)
     br 0x2013c2
   blk7 @ 0x2012ac:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
@@ -150,11 +150,11 @@ fn d7 @ 0x2011c0 (size 527)
     v2 = ((load32(#0x2023d0) + #0x7) & #0xffffffff)
     br 0x2013c2
   blk8 @ 0x2012ef:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     v2 = ((load32(#0x2023d0) + #0x1) & #0xffffffff)
     br 0x2013c2
   blk9 @ 0x201308:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
@@ -162,7 +162,7 @@ fn d7 @ 0x2011c0 (size 527)
     v2 = ((load32(#0x2023d0) + #0x5) & #0xffffffff)
     br 0x2013c2
   blk10 @ 0x20133d:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
@@ -174,7 +174,7 @@ fn d7 @ 0x2011c0 (size 527)
     v2 = #0xffffffff
     br 0x2013c2
   blk12 @ 0x20137d:
-    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32(load32(#0x2023d0), #0x2023d0)
     store32((load32(#0x2023d0) + #0x1), #0x2023d0)
     store32((load32(#0x2023d0) + #0x2), #0x2023d0)
     store32((load32(#0x2023d0) + #0x3), #0x2023d0)
@@ -184,7 +184,7 @@ fn d7 @ 0x2011c0 (size 527)
     store32((load32(#0x2023d0) + #0x7), #0x2023d0)
     v2 = ((load32(#0x2023d0) + #0x8) & #0xffffffff)
   blk13 @ 0x2013c2:
-    store32((v2 & #0xffffffff), #0x2023d0)
-    ret (load32(#0x2023d0) & #0xffffffff)
+    store32(v2, #0x2023d0)
+    ret load32(#0x2023d0)
 -- card
 {"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","size":527,"unsupported":0}

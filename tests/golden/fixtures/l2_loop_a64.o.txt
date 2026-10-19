@@ -34,7 +34,7 @@ fn sum_while @ 0x0 (size 60)
   blk2 @ 0x14:
     v2 = (((v1 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
     v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((v2 & #0xffffffff), #0xd4)
+    store32(v2, #0xd4)
     brif ne w0, (v1 & #0xffffffff) -> 0x14
   blk3 @ 0x28:
     ret (v2 & #0xffffffff)
@@ -66,7 +66,7 @@ fn count_down @ 0x3c (size 36)
     v2 = select gt w0, #0x1 ? w0, #0x1
   blk1 @ 0x4c:
     v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((v1 & #0xffffffff), #0xd4)
+    store32(v1, #0xd4)
     brif ne v2, (v1 & #0xffffffff) -> 0x4c
   blk2 @ 0x5c:
     ret v2
@@ -114,7 +114,7 @@ fn sum_skip_odd @ 0x60 (size 64)
     brif eq (v1 & #0x1), #0x0 -> 0x78
   blk4 @ 0x88:
     v2 = (((v2 & #0xffffffff) + (v1 & #0xffffffff)) & #0xffffffff)
-    store32((v2 & #0xffffffff), #0xd4)
+    store32(v2, #0xd4)
     br 0x78
   blk5 @ 0x94:
     v2 = #0x0

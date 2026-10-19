@@ -53,14 +53,14 @@ fn <unnamed> @ 0x201240 (size 73)
     store32(#0x0, (rsp + #0xffffffffffffffe8))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk1 @ 0x201259:
-    brif ge (load32((rsp + #0xffffffffffffffe4)) & #0xffffffff), load32((rsp + #0xffffffffffffffec)) -> 0x201284
+    brif ge load32((rsp + #0xffffffffffffffe4)), load32((rsp + #0xffffffffffffffec)) -> 0x201284
   blk2 @ 0x201265:
     v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
-    store32(((load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) + load32((rsp + #0xffffffffffffffe8))) & #0xffffffff), (rsp + #0xffffffffffffffe8))
-    store32(((load32((rsp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffe4))
+    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
+    store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x201259
   blk3 @ 0x201284:
-    ret (load32((rsp + #0xffffffffffffffe8)) & #0xffffffff)
+    ret load32((rsp + #0xffffffffffffffe8))
 -- card
 {"addr":"0x201240","approxTokens":204,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":73,"unsupported":0}
 

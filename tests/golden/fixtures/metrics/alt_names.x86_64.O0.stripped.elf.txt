@@ -49,8 +49,8 @@ fn <unnamed> @ 0x2011a0 (size 65)
   blk1 @ 0x2011b5:
     brif ge load32((rsp + #0xffffffffffffffec)), load32((rsp + #0xfffffffffffffff4)) -> 0x2011dc
   blk2 @ 0x2011c1:
-    store32((((load32((rsp + #0xffffffffffffffec)) * load32((rsp + #0xffffffffffffffec))) + load32((rsp + #0xfffffffffffffff0))) & #0xffffffff), (rsp + #0xfffffffffffffff0))
-    store32(((load32((rsp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (rsp + #0xffffffffffffffec))
+    store32(((load32((rsp + #0xffffffffffffffec)) * load32((rsp + #0xffffffffffffffec))) + load32((rsp + #0xfffffffffffffff0))), (rsp + #0xfffffffffffffff0))
+    store32((load32((rsp + #0xffffffffffffffec)) + #0x1), (rsp + #0xffffffffffffffec))
     br 0x2011b5
   blk3 @ 0x2011dc:
     ret load32((rsp + #0xfffffffffffffff0))

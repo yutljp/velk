@@ -110,7 +110,7 @@ fn dense @ 0x0 (size 268)
     v6 = ((load32(#0x14c) - #0x6d) & #0xffffffff)
     br 0x100
   blk4 @ 0x40:
-    v8 = (load32(#0x14c) & #0xffffffff)
+    v8 = load32(#0x14c)
     v9 = #0x58
     br 0x88
   blk5 @ 0x4c:
@@ -126,7 +126,7 @@ fn dense @ 0x0 (size 268)
     v6 = ((load32(#0x14c) - #0x19) & #0xffffffff)
     br 0x100
   blk9 @ 0x80:
-    v8 = (load32(#0x14c) & #0xffffffff)
+    v8 = load32(#0x14c)
     v9 = #0x74
   blk10 @ 0x88:
     v6 = (((v8 & #0xffffffff) | (v9 & #0xffffffff)) & #0xffffffff)
@@ -158,7 +158,7 @@ fn dense @ 0x0 (size 268)
   blk19 @ 0xfc:
     v6 = #0x0
   blk20 @ 0x100:
-    store32((v6 & #0xffffffff), #0x14c)
+    store32(v6, #0x14c)
     ret load32(#0x14c)
 -- card
 {"addr":"0x0","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","unwind"],"section":".text","size":268,"unsupported":0}

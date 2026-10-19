@@ -99,6 +99,21 @@ fn render_with(
         .iter()
         .filter_map(|param| Some((param.index, param.ty.pointee_struct()?.to_owned())))
         .collect();
+    // `int *p` points at ints, so `*(p + 4)` reads `p[1]`. A pointer whose
+    // type the debug info names is believed; one recovered from its
+    // accesses is taken for a scalar only when nothing reads past it, and
+    // otherwise reads as a structure's fields.
+    let elements: HashMap<u16, u8> = ir
+        .params
+        .iter()
+        .filter(|param| match &param.ty {
+            CType::Pointer(target) if matches!(target.as_ref(), CType::Named(_)) => true,
+            _ => fields
+                .keys()
+                .all(|(base, offset)| *base != param.index || *offset == 0),
+        })
+        .filter_map(|param| Some((param.index, param.ty.pointee_size()?)))
+        .collect();
     let ctx = Ctx {
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
@@ -120,6 +135,7 @@ fn render_with(
         data_ranges,
         members,
         pointees,
+        elements,
         narrow_regs,
         narrow_return: ir.ret_type.is_32_bit_int(),
     };
@@ -133,8 +149,11 @@ fn render_with(
     for reference in references {
         out.push_str(&format!("/* ref: {} */\n", reference.describe()));
     }
-    for access in ir.access_lines() {
-        out.push_str(&format!("/* struct: {access} */\n"));
+    // A pointer read as one scalar is no structure.
+    for (access, line) in ir.accesses.iter().zip(ir.access_lines()) {
+        if !ctx.elements.contains_key(&access.register) {
+            out.push_str(&format!("/* struct: {line} */\n"));
+        }
     }
     out.push_str(&format!(
         "{} {}({}) {{\n",
@@ -153,7 +172,16 @@ fn render_with(
     });
     // The body is rendered first so only slots it names get declared.
     let mut body = String::new();
-    render_nodes(&structure_best(ir), 1, &mut body, &ctx);
+    let mut nodes = structure_best(ir);
+    // A function that returns nothing needs no return at its end, unless a
+    // label stands before it.
+    if ctx.void_return
+        && matches!(nodes.last(), Some(Node::Stmt(Stmt::Ret { .. })))
+        && !matches!(nodes.iter().rev().nth(1), Some(Node::Label(_)))
+    {
+        nodes.pop();
+    }
+    render_nodes(&nodes, 1, &mut body, &ctx);
     for local in &decls {
         if local.width == 0 || !body.contains(&local.name) {
             continue;
@@ -513,7 +541,10 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             format!("{target} = {};", render_value(value, ctx))
         }
         Stmt::Store { addr, value, width } => {
-            if let Some(member) = member_access(addr, *width, ctx) {
+            if let Some(member) = member_access(addr, *width, ctx).or_else(|| {
+                naming::array_access(addr, *width, ctx)
+                    .or_else(|| naming::flat_array_access(addr, *width, ctx))
+            }) {
                 return match update_of_same_location(addr, value, *width) {
                     Some((op, rhs)) => format!("{} {}= {};", member, op, render_expr(rhs, ctx)),
                     None => format!("{} = {};", member, render_value(value, ctx)),

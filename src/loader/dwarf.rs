@@ -103,12 +103,15 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             if resolve_low(&dwarf, &unit, entry) != Some(addr) {
                 continue;
             }
-            let ret = attribute(entry, gimli::DW_AT_type)
-                .and_then(|value| match value {
+            // A subprogram without a type returns nothing.
+            let ret = match attribute(entry, gimli::DW_AT_type) {
+                None => Some(crate::ir::CType::Void),
+                Some(value) => match value {
                     AttributeValue::UnitRef(offset) => type_name(&dwarf, &unit, offset, 8),
                     _ => None,
-                })
-                .filter(plausible_type);
+                }
+                .filter(plausible_type),
+            };
             let depth = entry.depth();
             let mut params = Vec::new();
             while let Ok(Some(child)) = entries.next_dfs() {

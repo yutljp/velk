@@ -17,9 +17,9 @@ int32_t sub_0(int32_t a0) {
         v2 = v1 >> 0x1;
         v3 = v1 & 0x1;
         a0 = a0 + v3;
-        t65 = v1;
+        v4 = v1;
         v1 = v2;
-    } while (t65 > 0x1 /* unsigned */);
+    } while (v4 > 0x1 /* unsigned */);
     return a0;
 }
 -- signature
@@ -37,9 +37,9 @@ fn <unnamed> @ 0x0 (size 40)
     v2 = (v1 >> #0x1)
     v3 = (v1 & #0x1)
     x0 = (((x0 & #0xffffffff) + v3) & #0xffffffff)
-    t65 = v1
+    v4 = v1
     v1 = v2
-    brif hi t65, #0x1 -> 0xc
+    brif hi v4, #0x1 -> 0xc
   blk3 @ 0x24:
     ret x0
 -- card
@@ -75,14 +75,14 @@ fn <unnamed> @ 0x28 (size 40)
 -- decompile
 /* velk pseudo-C: sub_50 @ 0x50 */
 int32_t sub_50(uint32_t *a0, int32_t a1) {
-    v1 = (a1 & ~(a1 >>> 0x1f) & 0xffffffff);
+    v1 = (a1 & ~(a1 >> 0x1f) & 0xffffffff);
     v2 = 0x0;
     do {
         v3 = v2;
         if (v1 == 0x0) {
             break;
         }
-        v4 = a0->field_0x0;
+        v4 = *a0;
         a0 = a0 + 0x4;
         v1 = v1 - 0x1;
         v2 = v4 + v3;
@@ -102,7 +102,7 @@ fn <unnamed> @ 0x50 (size 40)
     v3 = v2
     brif eq v1, #0x0 -> 0x70
   blk2 @ 0x60:
-    v4 = (load32(x0) & #0xffffffff)
+    v4 = load32(x0)
     x0 = (x0 + #0x4)
     v1 = (v1 - #0x1)
     v2 = (((v4 & #0xffffffff) + v3) & #0xffffffff)
@@ -129,7 +129,7 @@ int32_t sub_78(uint32_t *a0, int32_t a1) {
             break;
         }
         v3 = v3 - 0x1;
-        v2 = (((v4 & ~(v4 >>> 0x1f)) + v2) & 0xffffffff);
+        v2 = (((v4 & ~((int32_t)v4 >> 0x1f)) + v2) & 0xffffffff);
     } while (v3 != 0x0);
     return v2;
 }

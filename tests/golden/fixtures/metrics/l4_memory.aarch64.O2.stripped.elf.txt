@@ -7,10 +7,8 @@
 == 0x2101d4 -
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
-/* struct: a0 +0x0:uint64_t */
-/* struct: a1 +0x0:uint64_t */
 uint32_t sub_2101d4(double *a0, double *a1) {
-    d0 = mul_lanes32(*(uint64_t *)(a1), *(uint64_t *)(a0));
+    d0 = mul_lanes32(*a1, *a0);
     return (add_lanes32(((d0 >> 0x20) & 0xffffffff) * 0x100000001, d0) & 0xffffffff);
 }
 -- signature
@@ -115,7 +113,7 @@ fn <unnamed> @ 0x2101f0 (size 140)
     v6 = (x0 + (v2 << #0x2))
     v7 = (v1 - v2)
   blk8 @ 0x210264:
-    v8 = (load32(v6) & #0xffffffff)
+    v8 = load32(v6)
     v6 = (v6 + #0x4)
     v7 = (v7 - #0x1)
     v3 = (((v8 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
@@ -131,7 +129,6 @@ fn <unnamed> @ 0x2101f0 (size 140)
 /* ref: 0x2202a8 .bss */
 void sub_21027c(void) {
     dword_2202a8 += 0x1;
-    return;
 }
 -- signature
 void ()
@@ -140,7 +137,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x21027c (size 20)
   blk0 @ 0x21027c:
-    store32(((load32(#0x2202a8) + #0x1) & #0xffffffff), #0x2202a8)
+    store32((load32(#0x2202a8) + #0x1), #0x2202a8)
     ret x0
 -- card
 {"addr":"0x21027c","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}

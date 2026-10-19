@@ -161,7 +161,7 @@ fn <unnamed> @ 0x2101e8 (size 140)
     v6 = (x0 + (v2 << #0x2))
     v7 = (v1 - v2)
   blk8 @ 0x21025c:
-    v8 = (load32(v6) & #0xffffffff)
+    v8 = load32(v6)
     v6 = (v6 + #0x4)
     v7 = (v7 - #0x1)
     v3 = (((v8 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)

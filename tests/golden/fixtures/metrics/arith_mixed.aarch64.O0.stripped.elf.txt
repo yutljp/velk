@@ -54,10 +54,10 @@ fn <unnamed> @ 0x2101c8 (size 96)
   blk2 @ 0x2101ec:
     br 0x2101f0
   blk3 @ 0x2101f0:
-    store32(((load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) * load32((sp + #0xfffffffffffffff4)))) & #0xffffffff), (sp + #0xfffffffffffffff8))
+    store32((load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) * load32((sp + #0xfffffffffffffff4)))), (sp + #0xfffffffffffffff8))
     br 0x21020c
   blk4 @ 0x21020c:
-    store32(((load32((sp + #0xfffffffffffffff4)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff4))
+    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
     br 0x2101dc
   blk5 @ 0x21021c:
     ret load32((sp + #0xfffffffffffffff8))
@@ -113,16 +113,16 @@ fn <unnamed> @ 0x21024c (size 100)
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x210264
   blk1 @ 0x210264:
-    brif ge load32((sp + #0xffffffffffffffec)), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x2102a4
+    brif ge load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x2102a4
   blk2 @ 0x210274:
     br 0x210278
   blk3 @ 0x210278:
-    store32(((load32((sp + #0xfffffffffffffff0)) + load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2)))) & #0xffffffff), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2)))), (sp + #0xfffffffffffffff0))
     br 0x210294
   blk4 @ 0x210294:
-    store32(((load32((sp + #0xffffffffffffffec)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
     br 0x210264
   blk5 @ 0x2102a4:
-    ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret load32((sp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x21024c","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":100,"unsupported":0}

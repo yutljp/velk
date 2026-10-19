@@ -11,12 +11,11 @@
 == 0x2101dc -
 -- decompile
 /* velk pseudo-C: sub_2101dc @ 0x2101dc */
-/* struct: a0 +0x0:uint64_t, +0x8:uint64_t */
 int32_t sub_2101dc(double *a0) {
-    d1 = a0->field_0x0;
+    d1 = *a0;
     v1_hi = 0x0;
     v0_hi = 0x0;
-    s0 = sub_lanes32(*(uint64_t *)(a0 + 0x8), d1);
+    s0 = sub_lanes32(a0[1], d1);
     v0_hi = 0x0;
     /* unsupported: MUL at 0x2101e4 */
     v1 = s0;
@@ -181,9 +180,8 @@ fn <unnamed> @ 0x2102a8 (size 24)
 == 0x2102c0 -
 -- decompile
 /* velk pseudo-C: sub_2102c0 @ 0x2102c0 */
-/* struct: a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
 int64_t sub_2102c0(double *a0) {
-    return add_lanes64(*(uint64_t *)(a0), *(uint64_t *)(a0 + 0x10)) + add_lanes64(*(uint64_t *)(a0 + 0x8), *(uint64_t *)(a0 + 0x18));
+    return add_lanes64(*a0, a0[2]) + add_lanes64(a0[1], a0[3]);
 }
 -- signature
 int64_t (double * a0)
@@ -233,10 +231,9 @@ fn <unnamed> @ 0x2102d8 (size 20)
 == 0x2102ec -
 -- decompile
 /* velk pseudo-C: sub_2102ec @ 0x2102ec */
-/* struct: a0 +0x0:uint8_t */
 int64_t sub_2102ec(uint8_t *a0, int32_t a1) {
-    v1 = a0->field_0x0;
-    a0->field_0x0 = v1 & 0xfffffff1 | (a1 & 0x7) << 0x1;
+    v1 = *a0;
+    *a0 = v1 & 0xfffffff1 | (a1 & 0x7) << 0x1;
     return a0;
 }
 -- signature
@@ -247,7 +244,7 @@ int64_t (uint8_t * a0, int32_t a1)
 fn <unnamed> @ 0x2102ec (size 24)
   blk0 @ 0x2102ec:
     v1 = load8(x0)
-    store8((((v1 & #0xfffffff1) | ((w1 & #0x7) << #0x1)) & #0xffffffff), x0)
+    store8(((v1 & #0xfffffff1) | ((w1 & #0x7) << #0x1)), x0)
     ret x0
 -- card
 {"accesses":["a0 +0x0:uint8_t"],"addr":"0x2102ec","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}

@@ -59,7 +59,7 @@ fn record_total @ 0x210238 (size 136)
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210250
   blk1 @ 0x210250:
-    brif ge load32((sp + #0xffffffffffffffe4)), (load32((sp + #0xfffffffffffffff4)) & #0xffffffff) -> 0x2102b4
+    brif ge load32((sp + #0xffffffffffffffe4)), load32((sp + #0xfffffffffffffff4)) -> 0x2102b4
   blk2 @ 0x210260:
     br 0x210264
   blk3 @ 0x210264:
@@ -68,7 +68,7 @@ fn record_total @ 0x210238 (size 136)
     store64((load64((sp + #0xffffffffffffffe8)) + (load64((v2 + #0x8)) * v3)), (sp + #0xffffffffffffffe8))
     br 0x2102a4
   blk4 @ 0x2102a4:
-    store32(((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff), (sp + #0xffffffffffffffe4))
+    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
     br 0x210250
   blk5 @ 0x2102b4:
     ret load64((sp + #0xffffffffffffffe8))
@@ -99,8 +99,8 @@ fn point_add @ 0x2102c0 (size 56)
   blk0 @ 0x2102c0:
     store64(x0, (sp + #0xfffffffffffffff0))
     store64(x1, (sp + #0xffffffffffffffe8))
-    store32(((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffe8))) & #0xffffffff), (sp + #0xfffffffffffffff8))
-    store32(((load32((sp + #0xfffffffffffffff4)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffe8))), (sp + #0xfffffffffffffff8))
+    store32((load32((sp + #0xfffffffffffffff4)) + load32((sp + #0xffffffffffffffec))), (sp + #0xfffffffffffffffc))
     ret load64((sp + #0xfffffffffffffff8))
 -- card
 {"addr":"0x2102c0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":56,"unsupported":0}
@@ -201,32 +201,31 @@ int32_t (struct flags f)
 fn flags_level @ 0x210384 (size 76)
   blk0 @ 0x210384:
     store64(x0, (sp + #0xfffffffffffffff0))
-    store32((load32((sp + #0xfffffffffffffff0)) & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32(load32((sp + #0xfffffffffffffff0)), (sp + #0xfffffffffffffffc))
     brif eq (load8((sp + #0xfffffffffffffffc)) & #0x1), #0x0 -> 0x2103b0
   blk1 @ 0x21039c:
     br 0x2103a0
   blk2 @ 0x2103a0:
-    store32((((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x4) & #0xffffffff), (sp + #0xffffffffffffffec))
+    store32(((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x4), (sp + #0xffffffffffffffec))
     br 0x2103c4
   blk3 @ 0x2103b0:
     store32((((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x1) & #0x7), (sp + #0xffffffffffffffec))
     br 0x2103c4
   blk4 @ 0x2103c4:
-    ret (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
+    ret load32((sp + #0xffffffffffffffec))
 -- card
 {"addr":"0x210384","approxTokens":210,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 
 == 0x2103d0 flags_set_mode
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2103d0 */
-int64_t flags_set_mode(struct flags *f, int32_t mode) {
+void flags_set_mode(struct flags *f, int32_t mode) {
     v1 = f;
     v2 = *(uint8_t *)(v1);
     *(uint8_t *)(v1) = v2 & 0xfffffff1 | (mode & 0x7) << 0x1;
-    return f;
 }
 -- signature
-int64_t (struct flags * f, int32_t mode)
+void (struct flags * f, int32_t mode)
 -- references
 
 -- ir
@@ -234,7 +233,7 @@ fn flags_set_mode @ 0x2103d0 (size 48)
   blk0 @ 0x2103d0:
     v1 = x0
     v2 = load8(v1)
-    store8((((v2 & #0xfffffff1) | ((w1 & #0x7) << #0x1)) & #0xffffffff), v1)
-    ret x0
+    store8(((v2 & #0xfffffff1) | ((w1 & #0x7) << #0x1)), v1)
+    ret #0x0
 -- card
 {"addr":"0x2103d0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}

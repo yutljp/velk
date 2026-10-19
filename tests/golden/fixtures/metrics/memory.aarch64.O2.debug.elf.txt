@@ -11,9 +11,9 @@
 == 0x210214 copy_bytes
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x210214 */
-int64_t copy_bytes(void *dst, void *src, uint64_t n) {
+void copy_bytes(void *dst, void *src, uint64_t n) {
     if (n == 0x0) {
-        return dst;
+        return;
     }
     v1 = 0x0;
     if (n >= 0x8 /* unsigned */) {
@@ -37,7 +37,7 @@ int64_t copy_bytes(void *dst, void *src, uint64_t n) {
                     v3 = v3 + 0x20;
                 } while (v4 != 0x0);
                 if (v1 == n) {
-                    return dst;
+                    return;
                 }
                 if ((n & 0x18) == 0x0) {
                     goto L_2102a4;
@@ -58,7 +58,7 @@ int64_t copy_bytes(void *dst, void *src, uint64_t n) {
                 v7 = v7 + 0x8;
             } while (v8 != 0x0);
             if (v1 == n) {
-                return dst;
+                return;
             }
         }
     }
@@ -73,10 +73,9 @@ L_2102a4:
         *(uint8_t *)(v10) = v12;
         v10 = v10 + 0x1;
     } while (v9 != 0x0);
-    return dst;
 }
 -- signature
-int64_t (void * dst, void * src, uint64_t n)
+void (void * dst, void * src, uint64_t n)
 -- references
 
 -- ir
@@ -138,25 +137,24 @@ fn copy_bytes @ 0x210214 (size 176)
     v12 = (load8(v11) & #0xffffffff)
     v11 = (v11 + #0x1)
     v9 = (v9 - #0x1)
-    store8((v12 & #0xffffffff), v10)
+    store8(v12, v10)
     v10 = (v10 + #0x1)
     brif ne v9, #0x0 -> 0x2102b0
   blk14 @ 0x2102c0:
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x210214","approxTokens":240,"blocks":15,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":176,"unsupported":0}
 
 == 0x2102c4 fill_bytes
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x2102c4 */
-int64_t fill_bytes(void *dst, int64_t value, int64_t n) {
+void fill_bytes(void *dst, int64_t value, int64_t n) {
     if (n == 0x0) {
-        return dst;
+        return;
     }
-    return dst;
 }
 -- signature
-int64_t (void * dst, int64_t value, int64_t n)
+void (void * dst, int64_t value, int64_t n)
 -- references
 
 -- ir
@@ -166,7 +164,7 @@ fn fill_bytes @ 0x2102c4 (size 12)
   blk1 @ 0x2102c8:
     br 0x2102cc
   blk2 @ 0x2102cc:
-    ret x0
+    ret #0x0
 -- card
 {"addr":"0x2102c4","approxTokens":114,"blocks":3,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 
@@ -203,7 +201,7 @@ fn string_length @ 0x2102d0 (size 24)
 /* velk pseudo-C: grid_get @ 0x2102e8 */
 /* ref: 0x220350 .bss */
 int grid_get(int row, int col) {
-    return *(uint32_t *)(0x220350 + ((row & 0x3) << 0x5) + ((col & 0x7) << 0x2));
+    return grid[(row & 0x3) * 0x8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
@@ -220,19 +218,18 @@ fn grid_get @ 0x2102e8 (size 28)
 -- decompile
 /* velk pseudo-C: grid_set @ 0x210304 */
 /* ref: 0x220350 .bss */
-int64_t grid_set(int row, int col, int value) {
-    *(uint32_t *)(0x220350 + ((row & 0x3) << 0x5) + ((col & 0x7) << 0x2)) = value;
-    return row;
+void grid_set(int row, int col, int value) {
+    grid[(row & 0x3) * 0x8 + (col & 0x7)] = value;
 }
 -- signature
-int64_t (int row, int col, int value)
+void (int row, int col, int value)
 -- references
 0x220350 .bss
 -- ir
 fn grid_set @ 0x210304 (size 28)
   blk0 @ 0x210304:
-    store32(w2, ((#0x220350 + ((x0 & #0x3) << #0x5)) + ((w1 & #0x7) << #0x2)))
-    ret x0
+    store32(w2, ((#0x220350 + ((w0 & #0x3) << #0x5)) + ((w1 & #0x7) << #0x2)))
+    ret #0x0
 -- card
 {"addr":"0x210304","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
@@ -240,7 +237,7 @@ fn grid_set @ 0x210304 (size 28)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x210320 */
 long pointer_distance(int *begin, int *end) {
-    return end - begin >>> 0x2;
+    return (int64_t)(end - begin) >> 0x2;
 }
 -- signature
 long (int * begin, int * end)
@@ -256,9 +253,8 @@ fn pointer_distance @ 0x210320 (size 12)
 == 0x21032c read_volatile
 -- decompile
 /* velk pseudo-C: read_volatile @ 0x21032c */
-/* struct: p +0x0:uint32_t */
 int read_volatile(int *p) {
-    return p->field_0x0 + p->field_0x0;
+    return *p + *p;
 }
 -- signature
 int (int * p)
@@ -274,16 +270,13 @@ fn read_volatile @ 0x21032c (size 16)
 == 0x21033c swap_ints
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x21033c */
-/* struct: a +0x0:uint32_t */
-/* struct: b +0x0:uint32_t */
-int64_t swap_ints(int *a, int *b) {
-    v1 = a->field_0x0;
-    a->field_0x0 = b->field_0x0;
-    b->field_0x0 = v1;
-    return a;
+void swap_ints(int *a, int *b) {
+    v1 = *a;
+    *a = *b;
+    *b = v1;
 }
 -- signature
-int64_t (int * a, int * b)
+void (int * a, int * b)
 -- references
 
 -- ir
@@ -292,6 +285,6 @@ fn swap_ints @ 0x21033c (size 20)
     v1 = load32(x0)
     store32(load32(x1), x0)
     store32(v1, x1)
-    ret x0
+    ret #0x0
 -- card
 {"accesses":["a +0x0:uint32_t","b +0x0:uint32_t"],"addr":"0x21033c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}

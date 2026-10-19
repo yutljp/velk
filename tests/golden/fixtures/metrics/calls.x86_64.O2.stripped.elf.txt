@@ -140,17 +140,17 @@ int32_t sub_201370(int32_t a0) {
         v3 = v2 & 0xfffffffffffffff8;
         xmm0 = a0;
         a0 = a0 - v3;
-        t67 = (uint32_t)xmm0 | (uint32_t)xmm0 << 0x20;
+        v4 = (uint32_t)xmm0 | (uint32_t)xmm0 << 0x20;
         xmm0 = (uint32_t)xmm0 | (uint32_t)xmm0 << 0x20;
         xmm0 = add_lanes32(xmm0, qword_200190);
-        xmm0_hi = add_lanes32(t67, qword_200198);
+        xmm0_hi = add_lanes32(v4, qword_200198);
         xmm1 = qword_2001a0;
         xmm1_hi = qword_2001a8;
         xmm2 = qword_2001c0;
         xmm2_hi = qword_2001c8;
         xmm4 = qword_2001b0;
         xmm4_hi = qword_2001b8;
-        v4 = v3;
+        v5 = v3;
         xmm3 = xmm1;
         xmm3_hi = xmm1_hi;
         do {
@@ -158,39 +158,35 @@ int32_t sub_201370(int32_t a0) {
             xmm5_hi = add_lanes32(xmm0_hi, xmm2_hi);
             xmm6 = (uint32_t)xmm0 * (uint32_t)xmm1;
             xmm6_hi = (uint32_t)xmm0_hi * (uint32_t)xmm1_hi;
-            t67 = ((xmm1_hi >> 0x20) & 0xffffffff) | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20;
-            xmm1_hi = t67;
-            xmm7_hi = ((xmm0_hi >> 0x20 | ((xmm0_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * (uint32_t)xmm1_hi;
+            v6 = ((xmm1_hi >> 0x20) & 0xffffffff) | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20;
+            xmm7_hi = ((xmm0_hi >> 0x20 | ((xmm0_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * v6;
             xmm7 = (((xmm0 >> 0x20 | ((xmm0 >> 0x20) & 0xffffffff) << 0x20) * (xmm1 >> 0x20 | ((xmm1 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) | (uint32_t)xmm7_hi << 0x20;
             xmm1 = (uint32_t)xmm6 | (uint32_t)xmm6_hi << 0x20;
-            t67 = interleave_high32(xmm1, xmm7);
+            v7 = interleave_high32(xmm1, xmm7);
             xmm1 = interleave_low32(xmm1, xmm7);
-            xmm1_hi = t67;
-            t67 = ((xmm5_hi >> 0x20) & 0xffffffff) | ((xmm5_hi >> 0x20) & 0xffffffff) << 0x20;
+            xmm1_hi = v7;
+            v8 = ((xmm5_hi >> 0x20) & 0xffffffff) | ((xmm5_hi >> 0x20) & 0xffffffff) << 0x20;
             t1 = xmm5 >> 0x20;
             xmm6 = t1 | t1 << 0x20;
-            xmm6_hi = t67;
             xmm5 = (uint32_t)xmm5 * (uint32_t)xmm3;
             xmm5_hi = (uint32_t)xmm5_hi * (uint32_t)xmm3_hi;
-            t67 = ((xmm3_hi >> 0x20) & 0xffffffff) | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20;
+            v9 = ((xmm3_hi >> 0x20) & 0xffffffff) | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20;
             t1 = xmm3 >> 0x20;
             xmm3 = ((t1 | t1 << 0x20) & 0xffffffff) * (uint32_t)xmm6;
-            xmm3_hi = t67 * (uint32_t)xmm6_hi;
-            xmm6 = (uint32_t)xmm3 | (uint32_t)xmm3_hi << 0x20;
+            xmm6 = (uint32_t)xmm3 | v9 * v8 << 0x20;
             xmm3 = (uint32_t)xmm5 | (uint32_t)xmm5_hi << 0x20;
-            t67 = interleave_high32(xmm3, xmm6);
+            v10 = interleave_high32(xmm3, xmm6);
             xmm3 = interleave_low32(xmm3, xmm6);
-            xmm3_hi = t67;
-            t67 = add_lanes32(xmm0_hi, xmm4_hi);
+            xmm3_hi = v10;
+            v11 = add_lanes32(xmm0_hi, xmm4_hi);
             xmm0 = add_lanes32(xmm0, xmm4);
-            xmm0_hi = t67;
-            v4 = v4 - 0x8;
-        } while (v4 != 0x0);
+            xmm0_hi = v11;
+            v5 = v5 - 0x8;
+        } while (v5 != 0x0);
         t1 = xmm3 >> 0x20;
-        t67 = ((xmm3_hi >> 0x20 | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * ((xmm1_hi >> 0x20 | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff);
-        xmm2_hi = t67;
+        v12 = ((xmm3_hi >> 0x20 | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * ((xmm1_hi >> 0x20 | ((xmm1_hi >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff);
+        xmm2_hi = v12;
         xmm3_hi = (uint32_t)xmm3_hi * (uint32_t)xmm1_hi;
-        t67 = ((((uint32_t)xmm2_hi | (uint32_t)xmm2_hi << 0x20) * (uint32_t)xmm2_hi) & 0xffffffff) * ((((uint32_t)xmm3_hi | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) * (uint32_t)xmm3_hi) & 0xffffffff);
         v1 = ((((uint32_t)xmm2_hi | (uint32_t)xmm2_hi << 0x20) * (((t1 | t1 << 0x20) * (xmm1 >> 0x20 | ((xmm1 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) * (((uint32_t)xmm3_hi | ((xmm3_hi >> 0x20) & 0xffffffff) << 0x20) * ((uint32_t)xmm3 * (uint32_t)xmm1))) & 0xffffffff);
         if (v2 == v3) {
             return v1;
@@ -198,10 +194,10 @@ int32_t sub_201370(int32_t a0) {
     }
     do {
         v1 = v1 * a0;
-        v5 = a0 - 0x1;
-        t65 = a0;
-        a0 = v5;
-    } while (t65 > 0x2 /* unsigned */);
+        v14 = a0 - 0x1;
+        v15 = a0;
+        a0 = v14;
+    } while (v15 > 0x2 /* unsigned */);
     return v1;
 }
 -- signature
@@ -227,17 +223,17 @@ fn <unnamed> @ 0x201370 (size 238)
     v3 = (v2 & #0xfffffffffffffff8)
     xmm0 = (rdi & #0xffffffff)
     rdi = (((rdi & #0xffffffff) - v3) & #0xffffffff)
-    t67 = ((xmm0 & #0xffffffff) | ((xmm0 & #0xffffffff) << #0x20))
+    v4 = ((xmm0 & #0xffffffff) | ((xmm0 & #0xffffffff) << #0x20))
     xmm0 = ((xmm0 & #0xffffffff) | ((xmm0 & #0xffffffff) << #0x20))
     xmm0 = add_lanes32(xmm0, load64(#0x200190))
-    xmm0_hi = add_lanes32(t67, load64(#0x200198))
+    xmm0_hi = add_lanes32(v4, load64(#0x200198))
     xmm1 = load64(#0x2001a0)
     xmm1_hi = load64(#0x2001a8)
     xmm2 = load64(#0x2001c0)
     xmm2_hi = load64(#0x2001c8)
     xmm4 = load64(#0x2001b0)
     xmm4_hi = load64(#0x2001b8)
-    v4 = v3
+    v5 = v3
     xmm3 = xmm1
     xmm3_hi = xmm1_hi
   blk3 @ 0x2013c0:
@@ -245,48 +241,44 @@ fn <unnamed> @ 0x201370 (size 238)
     xmm5_hi = add_lanes32(xmm0_hi, xmm2_hi)
     xmm6 = ((xmm0 & #0xffffffff) * (xmm1 & #0xffffffff))
     xmm6_hi = ((xmm0_hi & #0xffffffff) * (xmm1_hi & #0xffffffff))
-    t67 = (((xmm1_hi >> #0x20) & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20))
-    xmm1_hi = t67
-    xmm7_hi = ((((xmm0_hi >> #0x20) | (((xmm0_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (xmm1_hi & #0xffffffff))
+    v6 = (((xmm1_hi >> #0x20) & #0xffffffff) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20))
+    xmm7_hi = ((((xmm0_hi >> #0x20) | (((xmm0_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (v6 & #0xffffffff))
     xmm7 = (((((xmm0 >> #0x20) | (((xmm0 >> #0x20) & #0xffffffff) << #0x20)) * ((xmm1 >> #0x20) | (((xmm1 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff) | ((xmm7_hi & #0xffffffff) << #0x20))
     xmm1 = ((xmm6 & #0xffffffff) | ((xmm6_hi & #0xffffffff) << #0x20))
-    t67 = interleave_high32(xmm1, xmm7)
+    v7 = interleave_high32(xmm1, xmm7)
     xmm1 = interleave_low32(xmm1, xmm7)
-    xmm1_hi = t67
-    t67 = (((xmm5_hi >> #0x20) & #0xffffffff) | (((xmm5_hi >> #0x20) & #0xffffffff) << #0x20))
+    xmm1_hi = v7
+    v8 = (((xmm5_hi >> #0x20) & #0xffffffff) | (((xmm5_hi >> #0x20) & #0xffffffff) << #0x20))
     t1 = (xmm5 >> #0x20)
     xmm6 = ((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20))
-    xmm6_hi = t67
     xmm5 = ((xmm5 & #0xffffffff) * (xmm3 & #0xffffffff))
     xmm5_hi = ((xmm5_hi & #0xffffffff) * (xmm3_hi & #0xffffffff))
-    t67 = (((xmm3_hi >> #0x20) & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20))
+    v9 = (((xmm3_hi >> #0x20) & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20))
     t1 = (xmm3 >> #0x20)
     xmm3 = ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) & #0xffffffff) * (xmm6 & #0xffffffff))
-    xmm3_hi = ((t67 & #0xffffffff) * (xmm6_hi & #0xffffffff))
-    xmm6 = ((xmm3 & #0xffffffff) | ((xmm3_hi & #0xffffffff) << #0x20))
+    xmm6 = ((xmm3 & #0xffffffff) | ((((v9 & #0xffffffff) * (v8 & #0xffffffff)) & #0xffffffff) << #0x20))
     xmm3 = ((xmm5 & #0xffffffff) | ((xmm5_hi & #0xffffffff) << #0x20))
-    t67 = interleave_high32(xmm3, xmm6)
+    v10 = interleave_high32(xmm3, xmm6)
     xmm3 = interleave_low32(xmm3, xmm6)
-    xmm3_hi = t67
-    t67 = add_lanes32(xmm0_hi, xmm4_hi)
+    xmm3_hi = v10
+    v11 = add_lanes32(xmm0_hi, xmm4_hi)
     xmm0 = add_lanes32(xmm0, xmm4)
-    xmm0_hi = t67
-    v4 = (((v4 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
-    brif ne v4, #0x0 -> 0x2013c0
+    xmm0_hi = v11
+    v5 = (((v5 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
+    brif ne v5, #0x0 -> 0x2013c0
   blk4 @ 0x20141d:
     t1 = (xmm3 >> #0x20)
-    t67 = ((((xmm3_hi >> #0x20) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (((xmm1_hi >> #0x20) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff))
-    xmm2_hi = t67
+    v12 = ((((xmm3_hi >> #0x20) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (((xmm1_hi >> #0x20) | (((xmm1_hi >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff))
+    xmm2_hi = v12
     xmm3_hi = ((xmm3_hi & #0xffffffff) * (xmm1_hi & #0xffffffff))
-    t67 = (((((xmm2_hi & #0xffffffff) | ((xmm2_hi & #0xffffffff) << #0x20)) * (xmm2_hi & #0xffffffff)) & #0xffffffff) * ((((xmm3_hi & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) * (xmm3_hi & #0xffffffff)) & #0xffffffff))
     v1 = (((((xmm2_hi & #0xffffffff) | ((xmm2_hi & #0xffffffff) << #0x20)) * ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) * ((xmm1 >> #0x20) | (((xmm1 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff)) * (((xmm3_hi & #0xffffffff) | (((xmm3_hi >> #0x20) & #0xffffffff) << #0x20)) * (((xmm3 & #0xffffffff) * (xmm1 & #0xffffffff)) & #0xffffffff))) & #0xffffffff)
     brif eq v2, v3 -> 0x20145d
   blk5 @ 0x201450:
     v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
-    v5 = (rdi + #0xffffffffffffffff)
-    t65 = rdi
-    rdi = v5
-    brif hi t65, #0x2 -> 0x201450
+    v14 = (rdi + #0xffffffffffffffff)
+    v15 = rdi
+    rdi = v14
+    brif hi v15, #0x2 -> 0x201450
   blk6 @ 0x20145d:
     ret v1
 -- card
@@ -531,7 +523,7 @@ fn <unnamed> @ 0x2014f0 (size 283)
     store64(#0x3000000008, (rsp + #0xffffffffffffff28))
     brif le (rdi & #0xffffffff), #0x0 -> 0x201594
   blk3 @ 0x20155f:
-    v1 = (load32((rsp + #0xffffffffffffff28)) & #0xffffffff)
+    v1 = load32((rsp + #0xffffffffffffff28))
     v2 = load64((rsp + #0xffffffffffffff38))
     v3 = load64((rsp + #0xffffffffffffff30))
     brif ne (rdi & #0xffffffff), #0x1 -> 0x20159b
@@ -542,7 +534,7 @@ fn <unnamed> @ 0x2014f0 (size 283)
   blk6 @ 0x20157e:
     brif cs (v1 & #0xffffffff), #0x29 -> 0x2015fb
   blk7 @ 0x201583:
-    store32((((v1 & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff28))
+    store32(((v1 & #0xffffffff) + #0x8), (rsp + #0xffffffffffffff28))
     v3 = (v2 + (v1 & #0xffffffff))
     br 0x201604
   blk8 @ 0x201594:
@@ -555,7 +547,7 @@ fn <unnamed> @ 0x2014f0 (size 283)
     v3 = v7
     v7 = ((v1 & #0xffffffff) + v2)
     v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
-    store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff28))
+    store32(v1, (rsp + #0xffffffffffffff28))
   blk11 @ 0x2015c0:
     v4 = (((v8 & #0xffffffff) + load32(v7)) & #0xffffffff)
     v6 = (((v6 & #0xffffffff) + #0xfffffffffffffffe) & #0xffffffff)
@@ -566,7 +558,7 @@ fn <unnamed> @ 0x2014f0 (size 283)
     v7 = v3
     v3 = ((v1 & #0xffffffff) + v2)
     v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
-    store32((v1 & #0xffffffff), (rsp + #0xffffffffffffff28))
+    store32(v1, (rsp + #0xffffffffffffff28))
     br 0x2015e9
   blk14 @ 0x2015e0:
     v7 = (v3 + #0x8)

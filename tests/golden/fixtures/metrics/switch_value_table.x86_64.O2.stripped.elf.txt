@@ -32,7 +32,7 @@ fn <unnamed> @ 0x201170 (size 23)
     v2 = #0x0
     brif hi v1, #0x4 -> 0x201186
   blk1 @ 0x20117a:
-    v2 = (load32((#0x200120 + (v1 * #0x4))) & #0xffffffff)
+    v2 = load32((#0x200120 + (v1 * #0x4)))
   blk2 @ 0x201186:
     ret v2
 -- card

@@ -123,8 +123,8 @@ fn <unnamed> @ 0x201230 (size 54)
     store32(#0x1, (rsp + #0xfffffffffffffff0))
     br 0x201261
   blk2 @ 0x20124e:
-    store32((select lt load32((rsp + #0xfffffffffffffff4)), #0x0 ? #0xffffffff, #0x0 & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    store32(select lt load32((rsp + #0xfffffffffffffff4)), #0x0 ? #0xffffffff, #0x0, (rsp + #0xfffffffffffffff0))
   blk3 @ 0x201261:
-    ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
+    ret load32((rsp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x201230","approxTokens":144,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":54,"unsupported":0}

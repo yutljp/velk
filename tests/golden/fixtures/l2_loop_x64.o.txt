@@ -20,18 +20,18 @@ int32_t sum_while(int32_t a0) {
             v7 = ((v6 + v3) & 0xffffffff);
             v8 = v6;
             v9 = v3 + v8;
-            sink = ((v9 - 0x7) & 0xffffffff);
+            sink = v9 - 0x7;
             v10 = ((v8 + v7 - 0x7) & 0xffffffff);
-            sink = ((v8 + v7 - 0xd) & 0xffffffff);
+            sink = v8 + v7 - 0xd;
             v11 = ((v8 + v10 - 0x6) & 0xffffffff);
-            sink = ((v8 + v10 - 0xb) & 0xffffffff);
+            sink = v8 + v10 - 0xb;
             v12 = ((v8 + v11 - 0x5) & 0xffffffff);
-            sink = ((v8 + v11 - 0x9) & 0xffffffff);
+            sink = v8 + v11 - 0x9;
             v13 = ((v8 + v12 - 0x4) & 0xffffffff);
-            sink = ((v8 + v12 - 0x7) & 0xffffffff);
+            sink = v8 + v12 - 0x7;
             v14 = ((v8 + v13 - 0x3) & 0xffffffff);
-            sink = ((v8 + v13 - 0x5) & 0xffffffff);
-            sink = ((v8 + v14 - 0x3) & 0xffffffff);
+            sink = v8 + v13 - 0x5;
+            sink = v8 + v14 - 0x3;
             v3 = ((v8 + ((v8 + v14 - 0x2) & 0xffffffff) - 0x1) & 0xffffffff);
             sink = v3;
             v6 = v6 + 0x8;
@@ -82,20 +82,20 @@ fn sum_while @ 0x0 (size 239)
     v7 = ((v6 + v3) & #0xffffffff)
     v8 = (v6 & #0xffffffff)
     v9 = (((v3 & #0xffffffff) + (v8 & #0xffffffff)) & #0xffffffff)
-    store32((((v9 & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
+    store32(((v9 & #0xffffffff) + #0xfffffffffffffff9), #0x204)
     v10 = (((v8 + v7) + #0xfffffffffffffff9) & #0xffffffff)
-    store32((((v8 + v7) + #0xfffffffffffffff3) & #0xffffffff), #0x204)
+    store32(((v8 + v7) + #0xfffffffffffffff3), #0x204)
     v11 = (((v8 + v10) + #0xfffffffffffffffa) & #0xffffffff)
-    store32((((v8 + v10) + #0xfffffffffffffff5) & #0xffffffff), #0x204)
+    store32(((v8 + v10) + #0xfffffffffffffff5), #0x204)
     v12 = (((v8 + v11) + #0xfffffffffffffffb) & #0xffffffff)
-    store32((((v8 + v11) + #0xfffffffffffffff7) & #0xffffffff), #0x204)
+    store32(((v8 + v11) + #0xfffffffffffffff7), #0x204)
     v13 = (((v8 + v12) + #0xfffffffffffffffc) & #0xffffffff)
-    store32((((v8 + v12) + #0xfffffffffffffff9) & #0xffffffff), #0x204)
+    store32(((v8 + v12) + #0xfffffffffffffff9), #0x204)
     v14 = (((v8 + v13) + #0xfffffffffffffffd) & #0xffffffff)
-    store32((((v8 + v13) + #0xfffffffffffffffb) & #0xffffffff), #0x204)
-    store32((((v8 + v14) + #0xfffffffffffffffd) & #0xffffffff), #0x204)
+    store32(((v8 + v13) + #0xfffffffffffffffb), #0x204)
+    store32(((v8 + v14) + #0xfffffffffffffffd), #0x204)
     v3 = (((v8 + (((v8 + v14) + #0xfffffffffffffffe) & #0xffffffff)) - #0x1) & #0xffffffff)
-    store32((v3 & #0xffffffff), #0x204)
+    store32(v3, #0x204)
     v6 = (((v6 & #0xffffffff) + #0x8) & #0xffffffff)
     brif ne ((((v8 & #0xffffffff) + v5) + #0x8) & #0xffffffff), #0x7 -> 0x40
   blk7 @ 0xce:
@@ -103,7 +103,7 @@ fn sum_while @ 0x0 (size 239)
     brif eq v1, #0x0 -> 0xee
   blk8 @ 0xe0:
     v3 = (((v3 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
-    store32((v3 & #0xffffffff), #0x204)
+    store32(v3, #0x204)
     v2 = (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
     v1 = (v1 - #0x1)
     brif ne v1, #0x0 -> 0xe0
@@ -123,14 +123,14 @@ int32_t count_down(int32_t a0) {
         v4 = -(v1 & 0xfffffff8);
         v5 = 0x4;
         do {
-            sink = ((v5 - 0x3) & 0xffffffff);
-            sink = ((v5 - 0x2) & 0xffffffff);
-            sink = ((v5 - 0x1) & 0xffffffff);
+            sink = v5 - 0x3;
+            sink = v5 - 0x2;
+            sink = v5 - 0x1;
             sink = v5;
-            sink = ((v5 + 0x1) & 0xffffffff);
-            sink = ((v5 + 0x2) & 0xffffffff);
-            sink = ((v5 + 0x3) & 0xffffffff);
-            sink = ((v5 + 0x4) & 0xffffffff);
+            sink = v5 + 0x1;
+            sink = v5 + 0x2;
+            sink = v5 + 0x3;
+            sink = v5 + 0x4;
             v6 = v5;
             v5 = v5 + 0x8;
         } while (v6 + v4 + 0x8 != 0x4);
@@ -162,14 +162,14 @@ fn count_down @ 0xf0 (size 157)
     v4 = (#0x0 - (v1 & #0xfffffff8))
     v5 = #0x4
   blk2 @ 0x120:
-    store32(((v5 + #0xfffffffffffffffd) & #0xffffffff), #0x204)
-    store32(((v5 + #0xfffffffffffffffe) & #0xffffffff), #0x204)
-    store32(((v5 + #0xffffffffffffffff) & #0xffffffff), #0x204)
-    store32((v5 & #0xffffffff), #0x204)
-    store32(((v5 + #0x1) & #0xffffffff), #0x204)
-    store32(((v5 + #0x2) & #0xffffffff), #0x204)
-    store32(((v5 + #0x3) & #0xffffffff), #0x204)
-    store32(((v5 + #0x4) & #0xffffffff), #0x204)
+    store32((v5 + #0xfffffffffffffffd), #0x204)
+    store32((v5 + #0xfffffffffffffffe), #0x204)
+    store32((v5 + #0xffffffffffffffff), #0x204)
+    store32(v5, #0x204)
+    store32((v5 + #0x1), #0x204)
+    store32((v5 + #0x2), #0x204)
+    store32((v5 + #0x3), #0x204)
+    store32((v5 + #0x4), #0x204)
     v6 = v5
     v5 = (((v5 & #0xffffffff) + #0x8) & #0xffffffff)
     brif ne (((v6 + v4) + #0x8) & #0xffffffff), #0x4 -> 0x120
@@ -180,7 +180,7 @@ fn count_down @ 0xf0 (size 157)
   blk5 @ 0x17b:
     v8 = (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
   blk6 @ 0x180:
-    store32((v8 & #0xffffffff), #0x204)
+    store32(v8, #0x204)
     v8 = (((v8 & #0xffffffff) + #0x1) & #0xffffffff)
     v2 = (v2 - #0x1)
     brif ne v2, #0x0 -> 0x180
@@ -244,7 +244,7 @@ fn sum_skip_odd @ 0x190 (size 71)
   blk5 @ 0x1b0:
     v4 = (((v2 & #0xffffffff) + (v1 & #0xffffffff)) & #0xffffffff)
     v2 = (((v4 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32((v2 & #0xffffffff), #0x204)
+    store32(v2, #0x204)
     v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
     brif ne v3, (v1 & #0xffffffff) -> 0x1b0
   blk6 @ 0x1c1:
@@ -253,7 +253,7 @@ fn sum_skip_odd @ 0x190 (size 71)
     brif eq (v1 & #0x1), #0x0 -> 0x1d6
   blk8 @ 0x1cc:
     v5 = (((v1 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
-    store32((v5 & #0xffffffff), #0x204)
+    store32(v5, #0x204)
     v2 = (v5 & #0xffffffff)
   blk9 @ 0x1d6:
     ret v2

@@ -1511,7 +1511,7 @@ fn main.kindName @ 0x466d20 (size 96)
   blk0 @ 0x466d20:
     brif eq rax, #0x0 -> 0x466d6b
   blk1 @ 0x466d2f:
-    v1 = (load32((rax + #0x10)) & #0xffffffff)
+    v1 = load32((rax + #0x10))
     brif ne (v1 & #0xffffffff), #0x778cdb8 -> 0x466d4c
   blk2 @ 0x466d3a:
     brif ne rax, #0x46d1c0 -> 0x466d6b

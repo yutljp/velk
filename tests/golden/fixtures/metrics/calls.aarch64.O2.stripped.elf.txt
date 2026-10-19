@@ -454,7 +454,7 @@ fn <unnamed> @ 0x210468 (size 188)
     v1 = load64((sp + #0xffffffffffffffe0))
     v2 = load64((sp + #0xffffffffffffffe8))
     v3 = #0x0
-    v4 = (load32((sp + #0xfffffffffffffff8)) & #0xffffffff)
+    v4 = load32((sp + #0xfffffffffffffff8))
     br 0x2104ec
   blk2 @ 0x2104c8:
     v5 = v1
