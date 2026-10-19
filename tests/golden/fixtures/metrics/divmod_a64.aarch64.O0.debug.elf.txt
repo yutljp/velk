@@ -1,4 +1,4 @@
-# metrics/divmod_a64.aarch64.O0.debug.elf: elf aarch64 no entry, 25 functions, 0 lift failures, 20 unsupported, 0 gotos
+# metrics/divmod_a64.aarch64.O0.debug.elf: elf aarch64 no entry, 25 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x210394 28 udiv3 symtab,dwarf
 0x2103b0 28 udiv10 symtab,dwarf
 0x2103cc 28 udiv64 symtab,dwarf
@@ -28,80 +28,59 @@
 == 0x210394 udiv3
 -- decompile
 /* velk pseudo-C: udiv3 @ 0x210394 */
-uint64_t udiv3(uint64_t x) {
-    w8 = (x & 0xffffffff);
-    x9 = 0x3;
-    /* unsupported: UDIV at 0x2103a4 */
-    return x;
+uint32_t udiv3(uint32_t x) {
+    return x / 0x3;
 }
 -- signature
-uint64_t (uint64_t x)
+uint32_t (uint32_t x)
 -- references
 
 -- ir
 fn udiv3 @ 0x210394 (size 28)
   blk0 @ 0x210394:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0x3
-    unsupported: UDIV at 0x2103a4
-    ret x0
+    ret (((w0 & #0xffffffff) / #0x3) & #0xffffffff)
 -- card
-{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x2103b0 udiv10
 -- decompile
 /* velk pseudo-C: udiv10 @ 0x2103b0 */
-uint64_t udiv10(uint64_t x) {
-    w8 = (x & 0xffffffff);
-    x9 = 0xa;
-    /* unsupported: UDIV at 0x2103c0 */
-    return x;
+uint32_t udiv10(uint32_t x) {
+    return x / 0xa;
 }
 -- signature
-uint64_t (uint64_t x)
+uint32_t (uint32_t x)
 -- references
 
 -- ir
 fn udiv10 @ 0x2103b0 (size 28)
   blk0 @ 0x2103b0:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0xa
-    unsupported: UDIV at 0x2103c0
-    ret x0
+    ret (((w0 & #0xffffffff) / #0xa) & #0xffffffff)
 -- card
-{"addr":"0x2103b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x2103b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x2103cc udiv64
 -- decompile
 /* velk pseudo-C: udiv64 @ 0x2103cc */
-uint64_t udiv64(uint64_t x) {
-    w8 = (x & 0xffffffff);
-    x9 = 0x40;
-    /* unsupported: UDIV at 0x2103dc */
-    return x;
+uint32_t udiv64(uint32_t x) {
+    return x / 0x40;
 }
 -- signature
-uint64_t (uint64_t x)
+uint32_t (uint32_t x)
 -- references
 
 -- ir
 fn udiv64 @ 0x2103cc (size 28)
   blk0 @ 0x2103cc:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0x40
-    unsupported: UDIV at 0x2103dc
-    ret x0
+    ret (((w0 & #0xffffffff) / #0x40) & #0xffffffff)
 -- card
-{"addr":"0x2103cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv64","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x2103cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv64","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x2103e8 hdiv3
 -- decompile
 /* velk pseudo-C: hdiv3 @ 0x2103e8 */
 uint64_t hdiv3(uint64_t x) {
-    x8 = x;
-    x9 = 0x3;
-    /* unsupported: UDIV at 0x2103f8 */
-    return x;
+    return x / 0x3;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -110,21 +89,15 @@ uint64_t (uint64_t x)
 -- ir
 fn hdiv3 @ 0x2103e8 (size 28)
   blk0 @ 0x2103e8:
-    x8 = x0
-    x9 = #0x3
-    unsupported: UDIV at 0x2103f8
-    ret x0
+    ret (x0 / #0x3)
 -- card
-{"addr":"0x2103e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x2103e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x210404 hdiv10
 -- decompile
 /* velk pseudo-C: hdiv10 @ 0x210404 */
 uint64_t hdiv10(uint64_t x) {
-    x8 = x;
-    x9 = 0xa;
-    /* unsupported: UDIV at 0x210414 */
-    return x;
+    return x / 0xa;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -133,21 +106,15 @@ uint64_t (uint64_t x)
 -- ir
 fn hdiv10 @ 0x210404 (size 28)
   blk0 @ 0x210404:
-    x8 = x0
-    x9 = #0xa
-    unsupported: UDIV at 0x210414
-    ret x0
+    ret (x0 / #0xa)
 -- card
-{"addr":"0x210404","approxTokens":138,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x210404","approxTokens":138,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x210420 sdiv3
 -- decompile
 /* velk pseudo-C: sdiv3 @ 0x210420 */
 int sdiv3(int x) {
-    w8 = x;
-    x9 = 0x3;
-    /* unsupported: SDIV at 0x210430 */
-    return x;
+    return (int32_t)(x) / 0x3;
 }
 -- signature
 int (int x)
@@ -156,21 +123,15 @@ int (int x)
 -- ir
 fn sdiv3 @ 0x210420 (size 28)
   blk0 @ 0x210420:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0x3
-    unsupported: SDIV at 0x210430
-    ret x0
+    ret (((w0 & #0xffffffff) / #0x3) & #0xffffffff)
 -- card
-{"addr":"0x210420","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x210420","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x21043c sdiv10
 -- decompile
 /* velk pseudo-C: sdiv10 @ 0x21043c */
 int sdiv10(int x) {
-    w8 = x;
-    x9 = 0xa;
-    /* unsupported: SDIV at 0x21044c */
-    return x;
+    return (int32_t)(x) / 0xa;
 }
 -- signature
 int (int x)
@@ -179,21 +140,15 @@ int (int x)
 -- ir
 fn sdiv10 @ 0x21043c (size 28)
   blk0 @ 0x21043c:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0xa
-    unsupported: SDIV at 0x21044c
-    ret x0
+    ret (((w0 & #0xffffffff) / #0xa) & #0xffffffff)
 -- card
-{"addr":"0x21043c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x21043c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x210458 sdiv16
 -- decompile
 /* velk pseudo-C: sdiv16 @ 0x210458 */
 int sdiv16(int x) {
-    w8 = x;
-    x9 = 0x10;
-    /* unsupported: SDIV at 0x210468 */
-    return x;
+    return (int32_t)(x) / 0x10;
 }
 -- signature
 int (int x)
@@ -202,21 +157,15 @@ int (int x)
 -- ir
 fn sdiv16 @ 0x210458 (size 28)
   blk0 @ 0x210458:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0x10
-    unsupported: SDIV at 0x210468
-    ret x0
+    ret (((w0 & #0xffffffff) / #0x10) & #0xffffffff)
 -- card
-{"addr":"0x210458","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x210458","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x210474 ldiv16
 -- decompile
 /* velk pseudo-C: ldiv16 @ 0x210474 */
 uint64_t ldiv16(uint64_t x) {
-    x8 = x;
-    x9 = 0x10;
-    /* unsupported: SDIV at 0x210484 */
-    return x;
+    return (int64_t)(x) / 0x10;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -225,23 +174,16 @@ uint64_t (uint64_t x)
 -- ir
 fn ldiv16 @ 0x210474 (size 28)
   blk0 @ 0x210474:
-    x8 = x0
-    x9 = #0x10
-    unsupported: SDIV at 0x210484
-    ret x0
+    ret (x0 / #0x10)
 -- card
-{"addr":"0x210474","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv16","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x210474","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv16","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x210490 smod3
 -- decompile
 /* velk pseudo-C: smod3 @ 0x210490 */
 int smod3(int x) {
     w8 = x;
-    w10 = 0x3;
-    /* unsupported: SDIV at 0x2104a0 */
-    w9 = w9 * w10;
-    x = w8 - w9;
-    return x;
+    return w8 - (int32_t)(w8) / 0x3 * 0x3;
 }
 -- signature
 int (int x)
@@ -251,24 +193,16 @@ int (int x)
 fn smod3 @ 0x210490 (size 36)
   blk0 @ 0x210490:
     w8 = (w0 & #0xffffffff)
-    x10 = #0x3
-    unsupported: SDIV at 0x2104a0
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x2104b4 umod3
 -- decompile
 /* velk pseudo-C: umod3 @ 0x2104b4 */
 uint32_t umod3(uint32_t x) {
     w8 = x;
-    w10 = 0x3;
-    /* unsupported: UDIV at 0x2104c4 */
-    w9 = w9 * w10;
-    x = w8 - w9;
-    return x;
+    return w8 - w8 / 0x3 * 0x3;
 }
 -- signature
 uint32_t (uint32_t x)
@@ -278,24 +212,16 @@ uint32_t (uint32_t x)
 fn umod3 @ 0x2104b4 (size 36)
   blk0 @ 0x2104b4:
     w8 = (w0 & #0xffffffff)
-    x10 = #0x3
-    unsupported: UDIV at 0x2104c4
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x2104d8 umod10
 -- decompile
 /* velk pseudo-C: umod10 @ 0x2104d8 */
 uint32_t umod10(uint32_t x) {
     w8 = x;
-    w10 = 0xa;
-    /* unsupported: UDIV at 0x2104e8 */
-    w9 = w9 * w10;
-    x = w8 - w9;
-    return x;
+    return w8 - w8 / 0xa * 0xa;
 }
 -- signature
 uint32_t (uint32_t x)
@@ -305,24 +231,16 @@ uint32_t (uint32_t x)
 fn umod10 @ 0x2104d8 (size 36)
   blk0 @ 0x2104d8:
     w8 = (w0 & #0xffffffff)
-    x10 = #0xa
-    unsupported: UDIV at 0x2104e8
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0xa) * #0xa)) & #0xffffffff)
 -- card
-{"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x2104fc smod10
 -- decompile
 /* velk pseudo-C: smod10 @ 0x2104fc */
 int smod10(int x) {
     w8 = x;
-    w10 = 0xa;
-    /* unsupported: SDIV at 0x21050c */
-    w9 = w9 * w10;
-    x = w8 - w9;
-    return x;
+    return w8 - (int32_t)(w8) / 0xa * 0xa;
 }
 -- signature
 int (int x)
@@ -332,24 +250,15 @@ int (int x)
 fn smod10 @ 0x2104fc (size 36)
   blk0 @ 0x2104fc:
     w8 = (w0 & #0xffffffff)
-    x10 = #0xa
-    unsupported: SDIV at 0x21050c
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0xa) * #0xa)) & #0xffffffff)
 -- card
-{"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x210520 lmod10
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x210520 */
 uint64_t lmod10(uint64_t x) {
-    x8 = x;
-    x10 = 0xa;
-    /* unsupported: SDIV at 0x210530 */
-    x9 = x9 * x10;
-    x = x8 - x9;
-    return x;
+    return x - (int64_t)(x) / 0xa * 0xa;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -358,25 +267,15 @@ uint64_t (uint64_t x)
 -- ir
 fn lmod10 @ 0x210520 (size 36)
   blk0 @ 0x210520:
-    x8 = x0
-    x10 = #0xa
-    unsupported: SDIV at 0x210530
-    x9 = (x9 * x10)
-    x0 = (x8 - x9)
-    ret x0
+    ret (x0 - ((x0 / #0xa) * #0xa))
 -- card
-{"addr":"0x210520","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x210520","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x210544 umod10b
 -- decompile
 /* velk pseudo-C: umod10b @ 0x210544 */
 uint64_t umod10b(uint64_t x) {
-    x8 = x;
-    x10 = 0xa;
-    /* unsupported: UDIV at 0x210554 */
-    x9 = x9 * x10;
-    x = x8 - x9;
-    return x;
+    return x - x / 0xa * 0xa;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -385,25 +284,15 @@ uint64_t (uint64_t x)
 -- ir
 fn umod10b @ 0x210544 (size 36)
   blk0 @ 0x210544:
-    x8 = x0
-    x10 = #0xa
-    unsupported: UDIV at 0x210554
-    x9 = (x9 * x10)
-    x0 = (x8 - x9)
-    ret x0
+    ret (x0 - ((x0 / #0xa) * #0xa))
 -- card
-{"addr":"0x210544","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x210544","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x210568 lmod16
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x210568 */
 uint64_t lmod16(uint64_t x) {
-    x8 = x;
-    x10 = 0x10;
-    /* unsupported: SDIV at 0x210578 */
-    x9 = x9 * x10;
-    x = x8 - x9;
-    return x;
+    return x - (int64_t)(x) / 0x10 * 0x10;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -412,25 +301,16 @@ uint64_t (uint64_t x)
 -- ir
 fn lmod16 @ 0x210568 (size 36)
   blk0 @ 0x210568:
-    x8 = x0
-    x10 = #0x10
-    unsupported: SDIV at 0x210578
-    x9 = (x9 * x10)
-    x0 = (x8 - x9)
-    ret x0
+    ret (x0 - ((x0 / #0x10) * #0x10))
 -- card
-{"addr":"0x210568","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod16","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x210568","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod16","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x21058c smod4
 -- decompile
 /* velk pseudo-C: smod4 @ 0x21058c */
 int smod4(int x) {
     w8 = x;
-    w10 = 0x4;
-    /* unsupported: SDIV at 0x21059c */
-    w9 = w9 * w10;
-    x = w8 - w9;
-    return x;
+    return w8 - (int32_t)(w8) / 0x4 * 0x4;
 }
 -- signature
 int (int x)
@@ -440,13 +320,9 @@ int (int x)
 fn smod4 @ 0x21058c (size 36)
   blk0 @ 0x21058c:
     w8 = (w0 & #0xffffffff)
-    x10 = #0x4
-    unsupported: SDIV at 0x21059c
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0x4) * #0x4)) & #0xffffffff)
 -- card
-{"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x2105b0 negate
 -- decompile
@@ -537,12 +413,7 @@ fn lnegate @ 0x210620 (size 28)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x21063c */
 uint64_t lmod3(uint64_t x) {
-    x8 = x;
-    x10 = 0x3;
-    /* unsupported: SDIV at 0x21064c */
-    x9 = x9 * x10;
-    x = x8 - x9;
-    return x;
+    return x - (int64_t)(x) / 0x3 * 0x3;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -551,23 +422,15 @@ uint64_t (uint64_t x)
 -- ir
 fn lmod3 @ 0x21063c (size 36)
   blk0 @ 0x21063c:
-    x8 = x0
-    x10 = #0x3
-    unsupported: SDIV at 0x21064c
-    x9 = (x9 * x10)
-    x0 = (x8 - x9)
-    ret x0
+    ret (x0 - ((x0 / #0x3) * #0x3))
 -- card
-{"addr":"0x21063c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x21063c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x210660 ldiv3
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x210660 */
 uint64_t ldiv3(uint64_t x) {
-    x8 = x;
-    x9 = 0x3;
-    /* unsupported: SDIV at 0x210670 */
-    return x;
+    return (int64_t)(x) / 0x3;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -576,21 +439,15 @@ uint64_t (uint64_t x)
 -- ir
 fn ldiv3 @ 0x210660 (size 28)
   blk0 @ 0x210660:
-    x8 = x0
-    x9 = #0x3
-    unsupported: SDIV at 0x210670
-    ret x0
+    ret (x0 / #0x3)
 -- card
-{"addr":"0x210660","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x210660","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
 == 0x21067c ldiv10
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x21067c */
 uint64_t ldiv10(uint64_t x) {
-    x8 = x;
-    x9 = 0xa;
-    /* unsupported: SDIV at 0x21068c */
-    return x;
+    return (int64_t)(x) / 0xa;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -599,9 +456,6 @@ uint64_t (uint64_t x)
 -- ir
 fn ldiv10 @ 0x21067c (size 28)
   blk0 @ 0x21067c:
-    x8 = x0
-    x9 = #0xa
-    unsupported: SDIV at 0x21068c
-    ret x0
+    ret (x0 / #0xa)
 -- card
-{"addr":"0x21067c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x21067c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}

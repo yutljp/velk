@@ -1,4 +1,4 @@
-# metrics/calls.x86_64.O0.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/calls.x86_64.O0.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x201310 16 - prologue
 0x201320 16 - prologue
 0x201330 48 - prologue
@@ -66,25 +66,21 @@ fn <unnamed> @ 0x201330 (size 48)
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x202670 .data.rel.ro */
-uint64_t sub_201360(uint32_t a0, uint32_t a1) {
+uint32_t sub_201360(uint32_t a0, uint32_t a1) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
     local_1 = a1;
-    rax = a0;
-    rcx = 0x3;
-    edx = 0x0;
-    /* unsupported: div at 0x201378 */
+    edx = a0 % 0x3;
     rcx = edx;
-    rax = 0x202670;
     rax = qword_202670[rcx];
-    a0 = local_1;
+    a0 = a1;
     (*(rax))();
     return rax;
 }
 -- signature
-uint64_t (uint32_t a0, uint32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 0x202670 .data.rel.ro
 -- ir
@@ -92,18 +88,14 @@ fn <unnamed> @ 0x201360 (size 64)
   blk0 @ 0x201360:
     store32(edi, (rsp + #0xfffffffffffffff4))
     store32(esi, (rsp + #0xfffffffffffffff0))
-    rax = (edi & #0xffffffff)
-    rcx = #0x3
-    rdx = #0x0
-    unsupported: div at 0x201378
+    rdx = (((edi & #0xffffffff) % #0x3) & #0xffffffff)
     rcx = (rdx & #0xffffffff)
-    rax = #0x202670
     rax = load64((#0x202670 + (rcx * #0x8)))
-    edi = load32((rsp + #0xfffffffffffffff0))
+    edi = (esi & #0xffffffff)
     call *rax
     ret rax
 -- card
-{"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
 
 == 0x2013a0 -
 -- decompile

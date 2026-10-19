@@ -13,6 +13,9 @@ pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
     last_compare: Option<(Expr, Expr)>,
     extended_dividend: Option<u8>,
+    /// The width of the high half of an unsigned dividend the previous
+    /// instruction cleared (`xor edx, edx`).
+    zeroed_dividend: Option<u8>,
     image: &'a Image,
     function: u64,
 }
@@ -23,6 +26,7 @@ impl<'a> Lifter<'a> {
             stmts: Vec::new(),
             last_compare: None,
             extended_dividend: None,
+            zeroed_dividend: None,
             image,
             function,
         }
@@ -398,6 +402,7 @@ fn lift_instruction(
     tail_call: bool,
 ) -> bool {
     let was_extended = lifter.extended_dividend.take();
+    let was_zeroed = lifter.zeroed_dividend.take();
     if is_cmov(ins.mnemonic()) {
         let Some(source) = operand(lifter, ins, 1) else {
             return false;
@@ -454,7 +459,17 @@ fn lift_instruction(
         Mnemonic::Sub => binary(lifter, ins, BinOp::Sub),
         Mnemonic::And => binary(lifter, ins, BinOp::And),
         Mnemonic::Or => binary(lifter, ins, BinOp::Or),
-        Mnemonic::Xor => binary(lifter, ins, BinOp::Xor),
+        Mnemonic::Xor => {
+            if ins.op0_kind() == OpKind::Register
+                && ins.op1_kind() == OpKind::Register
+                && ins.op0_register() == ins.op1_register()
+                && let Some((2, _)) = gpr(ins.op0_register())
+            {
+                // `xor edx, edx` clears all of rdx.
+                lifter.zeroed_dividend = Some(64);
+            }
+            binary(lifter, ins, BinOp::Xor)
+        }
         Mnemonic::Imul => match ins.op_count() {
             1 => lift_mul_high(lifter, ins, true),
             2 => {
@@ -592,10 +607,28 @@ fn lift_instruction(
             lifter.assign(2, width, remainder);
             lifter.assign(RAX, width, quotient);
         }
+        // An unsigned division whose high half rdx was just cleared divides
+        // rax alone; otherwise the 128-bit dividend is not modeled.
         Mnemonic::Div => {
-            lifter.stmts.push(Stmt::Unsupported {
-                text: format!("div at 0x{:x}", ins.ip()),
-            });
+            let Some(divisor) = operand(lifter, ins, 0) else {
+                return false;
+            };
+            let width = match ins.op0_kind() {
+                OpKind::Memory => memory_width(ins).unwrap_or(8) * 8,
+                OpKind::Register => gpr(ins.op0_register()).map(|(_, w)| w).unwrap_or(64),
+                _ => 64,
+            };
+            if was_zeroed.is_none() || !matches!(width, 32 | 64) {
+                lifter.stmts.push(Stmt::Unsupported {
+                    text: format!("div at 0x{:x}", ins.ip()),
+                });
+                return false;
+            }
+            let dividend = Lifter::read_reg(RAX, width);
+            let quotient = Expr::bin(BinOp::DivU, dividend.clone(), divisor.clone());
+            let remainder = Expr::bin(BinOp::ModU, dividend, divisor);
+            lifter.assign(2, width, remainder);
+            lifter.assign(RAX, width, quotient);
         }
         Mnemonic::Leave => {
             let base = Lifter::read_reg(5, 64);

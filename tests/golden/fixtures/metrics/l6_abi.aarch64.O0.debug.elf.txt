@@ -1,4 +1,4 @@
-# metrics/l6_abi.aarch64.O0.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 1 unsupported, 0 gotos
+# metrics/l6_abi.aarch64.O0.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101d4 40 tail_target symtab,dwarf
 0x2101fc 40 tail_direct symtab,dwarf
 0x210224 48 tail_indirect symtab,dwarf
@@ -29,26 +29,29 @@ fn tail_target @ 0x2101d4 (size 40)
 == 0x2101fc tail_direct
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x2101fc */
-int tail_direct(void) {
-    /* unsupported (2 steps): STUR at 0x210208, LDUR at 0x21020c */
-    w0 = w8 + 0x2;
+int tail_direct(int x) {
+    uint32_t local_0; /* [sp-14] */
+
+    local_0 = x;
+    w8 = x;
+    x = w8 + 0x2;
     tail_target();
-    return w0;
+    return x;
 }
 -- signature
-int ()
+int (int x)
 -- references
 
 -- ir
 fn tail_direct @ 0x2101fc (size 40)
   blk0 @ 0x2101fc:
-    unsupported: STUR at 0x210208
-    unsupported: LDUR at 0x21020c
+    store32(w0, (sp + #0xffffffffffffffec))
+    w8 = (w0 & #0xffffffff)
     w0 = (w8 + #0x2)
     call 0x2101d4
     ret w0
 -- card
-{"addr":"0x2101fc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":2}
+{"addr":"0x2101fc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
 
 == 0x210224 tail_indirect
 -- decompile

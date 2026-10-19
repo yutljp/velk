@@ -1,4 +1,4 @@
-# metrics/divmod_x64.x86_64.O0.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 5 unsupported, 0 gotos
+# metrics/divmod_x64.x86_64.O0.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201380 24 l3 symtab,dwarf
 0x2013a0 24 l10 symtab,dwarf
 0x2013c0 24 h3 symtab,dwarf
@@ -56,11 +56,7 @@ fn l10 @ 0x2013a0 (size 24)
 -- decompile
 /* velk pseudo-C: h3 @ 0x2013c0 */
 uint64_t h3(uint64_t x) {
-    rax = x;
-    rcx = 0x3;
-    rdx = 0x0;
-    /* unsupported: div at 0x2013d3 */
-    return rax;
+    return x / 0x3;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -69,23 +65,15 @@ uint64_t (uint64_t x)
 -- ir
 fn h3 @ 0x2013c0 (size 24)
   blk0 @ 0x2013c0:
-    rax = rdi
-    rcx = #0x3
-    rdx = #0x0
-    unsupported: div at 0x2013d3
-    ret rax
+    ret (rdi / #0x3)
 -- card
-{"addr":"0x2013c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"h3","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}
+{"addr":"0x2013c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"h3","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
 
 == 0x2013e0 h10
 -- decompile
 /* velk pseudo-C: h10 @ 0x2013e0 */
 uint64_t h10(uint64_t x) {
-    rax = x;
-    rcx = 0xa;
-    rdx = 0x0;
-    /* unsupported: div at 0x2013f3 */
-    return rax;
+    return x / 0xa;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -94,23 +82,15 @@ uint64_t (uint64_t x)
 -- ir
 fn h10 @ 0x2013e0 (size 24)
   blk0 @ 0x2013e0:
-    rax = rdi
-    rcx = #0xa
-    rdx = #0x0
-    unsupported: div at 0x2013f3
-    ret rax
+    ret (rdi / #0xa)
 -- card
-{"addr":"0x2013e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"h10","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}
+{"addr":"0x2013e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"h10","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
 
 == 0x201400 u64
 -- decompile
 /* velk pseudo-C: u64 @ 0x201400 */
 uint32_t u64(uint32_t x) {
-    eax = x;
-    rcx = 0x3;
-    rdx = 0x0;
-    /* unsupported: div at 0x201411 */
-    return eax;
+    return x / 0x3;
 }
 -- signature
 uint32_t (uint32_t x)
@@ -119,13 +99,9 @@ uint32_t (uint32_t x)
 -- ir
 fn u64 @ 0x201400 (size 21)
   blk0 @ 0x201400:
-    eax = (edi & #0xffffffff)
-    rcx = #0x3
-    rdx = #0x0
-    unsupported: div at 0x201411
-    ret eax
+    ret (((edi & #0xffffffff) / #0x3) & #0xffffffff)
 -- card
-{"addr":"0x201400","approxTokens":150,"blocks":1,"hardReasons":[],"name":"u64","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":1}
+{"addr":"0x201400","approxTokens":150,"blocks":1,"hardReasons":[],"name":"u64","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":0}
 
 == 0x201420 sdiv16x
 -- decompile
@@ -165,12 +141,7 @@ fn ldiv16x @ 0x201440 (size 24)
 -- decompile
 /* velk pseudo-C: umod3x @ 0x201460 */
 int umod3x(uint32_t x) {
-    eax = x;
-    rcx = 0x3;
-    rdx = 0x0;
-    /* unsupported: div at 0x201471 */
-    eax = rdx;
-    return eax;
+    return x % 0x3;
 }
 -- signature
 int (uint32_t x)
@@ -179,14 +150,9 @@ int (uint32_t x)
 -- ir
 fn umod3x @ 0x201460 (size 23)
   blk0 @ 0x201460:
-    eax = (edi & #0xffffffff)
-    rcx = #0x3
-    rdx = #0x0
-    unsupported: div at 0x201471
-    eax = rdx
-    ret eax
+    ret (((edi & #0xffffffff) % #0x3) & #0xffffffff)
 -- card
-{"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod3x","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":1}
+{"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod3x","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":0}
 
 == 0x201480 smod3x
 -- decompile
@@ -293,29 +259,19 @@ fn lmod10x @ 0x201510 (size 27)
 == 0x201530 umod10x
 -- decompile
 /* velk pseudo-C: umod10x @ 0x201530 */
-uint32_t umod10x(uint64_t x) {
-    rax = x;
-    rcx = 0xa;
-    rdx = 0x0;
-    /* unsupported: div at 0x201543 */
-    rax = rdx;
-    return rax;
+uint64_t umod10x(uint64_t x) {
+    return x % 0xa;
 }
 -- signature
-uint32_t (uint64_t x)
+uint64_t (uint64_t x)
 -- references
 
 -- ir
 fn umod10x @ 0x201530 (size 27)
   blk0 @ 0x201530:
-    rax = rdi
-    rcx = #0xa
-    rdx = #0x0
-    unsupported: div at 0x201543
-    rax = rdx
-    ret rax
+    ret (rdi % #0xa)
 -- card
-{"addr":"0x201530","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod10x","nameSources":["symtab","dwarf"],"section":".text","size":27,"unsupported":1}
+{"addr":"0x201530","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod10x","nameSources":["symtab","dwarf"],"section":".text","size":27,"unsupported":0}
 
 == 0x201550 pdiv64
 -- decompile

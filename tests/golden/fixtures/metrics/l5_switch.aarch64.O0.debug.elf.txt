@@ -1,4 +1,4 @@
-# metrics/l5_switch.aarch64.O0.debug.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 1 unsupported, 0 gotos
+# metrics/l5_switch.aarch64.O0.debug.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x210334 228 dense symtab,dwarf
 0x210418 20 c0 symtab,dwarf
 0x21042c 24 c1 symtab,dwarf
@@ -23,134 +23,136 @@
 /* velk pseudo-C: dense @ 0x210334 */
 /* ref: 0x200158 .rodata */
 /* ref: 0x2205e8 .bss */
-int dense(void) {
-    uint64_t local_0; /* [sp-20] */
+int dense(int x) {
+    uint32_t local_0; /* [sp-14] */
+    uint64_t local_1; /* [sp-20] */
 
     sp = sp - 0x20;
-    /* unsupported (2 steps): STUR at 0x210340, LDUR at 0x210344 */
+    local_0 = x;
+    x8 = local_0;
     x8 = w8 - 0xa;
     x8 = w8;
-    local_0 = x8;
+    local_1 = x8;
     x8 = x8 - 0xf;
     if (x8 + 0xf > 0xf /* unsigned */) {
         x8 = 0x220000;
         dword_2205e8 = 0x0;
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     }
     x8 = 0x210368;
-    x9 = dword_200158[local_0];
+    x9 = dword_200158[local_1];
     x8 = 0x210368 + x9;
-    switch (w8 - 0xa - 0xf) {
+    switch (*(uint32_t *)(sp - 0x14) - 0xa - 0xf) {
     case -15:
         c0();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -14:
         c1();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -13:
         c2();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -12:
         c3();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -11:
         c4();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -10:
         c5();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -9:
         c6();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -8:
         c7();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -7:
         c8();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -6:
         c9();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -5:
         c10();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -4:
         c11();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -3:
         c12();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -2:
         c13();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case -1:
         c14();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     case 0:
         c15();
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     default:
         x8 = 0x220000;
         dword_2205e8 = 0x0;
         x8 = 0x220000;
-        w0 = dword_2205e8;
+        x = dword_2205e8;
         sp = sp + 0x20;
-        return w0;
+        return x;
     }
 }
 -- signature
-int ()
+int (int x)
 -- references
 0x200158 .rodata
 0x2205e8 .bss
@@ -158,8 +160,8 @@ int ()
 fn dense @ 0x210334 (size 228)
   blk0 @ 0x210334:
     sp = (sp - #0x20)
-    unsupported: STUR at 0x210340
-    unsupported: LDUR at 0x210344
+    store32(w0, (sp + #0xc))
+    x8 = (load32((sp + #0xc)) & #0xffffffff)
     x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
     x8 = (x8 & #0xffffffff)
     store64(x8, sp)
@@ -169,7 +171,7 @@ fn dense @ 0x210334 (size 228)
     x8 = #0x210368
     x9 = load32((#0x200158 + (load64(sp) << #0x2)))s
     x8 = (#0x210368 + x9)
-    switch ((((x8 & #0xffffffff) - #0xa) & #0xffffffff) - #0xf) [-15->0x210378, -14->0x210380, -13->0x210388, -12->0x210390, -11->0x210398, -10->0x2103a0, -9->0x2103a8, -8->0x2103b0, -7->0x2103b8, -6->0x2103c0, -5->0x2103c8, -4->0x2103d0, -3->0x2103d8, -2->0x2103e0, -1->0x2103e8, 0->0x2103f0] default 0x2103f8
+    switch (((load32((sp + #0xffffffffffffffec)) - #0xa) & #0xffffffff) - #0xf) [-15->0x210378, -14->0x210380, -13->0x210388, -12->0x210390, -11->0x210398, -10->0x2103a0, -9->0x2103a8, -8->0x2103b0, -7->0x2103b8, -6->0x2103c0, -5->0x2103c8, -4->0x2103d0, -3->0x2103d8, -2->0x2103e0, -1->0x2103e8, 0->0x2103f0] default 0x2103f8
   blk2 @ 0x210378:
     call 0x210418
     br 0x210404
@@ -228,7 +230,7 @@ fn dense @ 0x210334 (size 228)
     sp = (sp + #0x20)
     ret w0
 -- card
-{"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":228,"unsupported":2}
+{"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":228,"unsupported":0}
 
 == 0x210418 c0
 -- decompile

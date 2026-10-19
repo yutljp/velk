@@ -311,6 +311,15 @@ mod tests {
 
     /// Runs the lifted code with the given registers and returns its result.
     fn returns(isa: Isa, code: Vec<u8>, registers: &[(u16, u64)]) -> u64 {
+        returns_with(isa, code, registers, &[])
+    }
+
+    fn returns_with(
+        isa: Isa,
+        code: Vec<u8>,
+        registers: &[(u16, u64)],
+        memory: &[(u64, u64)],
+    ) -> u64 {
         let len = code.len() as u64;
         let image = Image::from_code(isa, 0, code);
         let mut ir = FunctionIr::single_block(isa, Vec::new());
@@ -322,7 +331,7 @@ mod tests {
                 clobbered: &[],
             },
             registers,
-            memory: &[],
+            memory,
             step_limit: 100,
         };
         match eval::run(&ir, &setup) {
@@ -400,6 +409,23 @@ mod tests {
             ),
             "{blocks:?}"
         );
+    }
+
+    #[test]
+    fn integer_division_and_unscaled_loads_lift() {
+        // sdiv w0, w0, w1; ret: -7 / 2 is -3.
+        let sdiv = words(&[0x1ac1_0c00, 0xd65f_03c0]);
+        let quotient = returns(Isa::AArch64, sdiv, &[(0, (-7i32) as u32 as u64), (1, 2)]);
+        assert_eq!(quotient as u32, (-3i32) as u32);
+        // ldur w0, [x1, #-4]; ret
+        let ldur = words(&[0xb85f_c020, 0xd65f_03c0]);
+        assert_eq!(
+            returns_with(Isa::AArch64, ldur, &[(1, 0x1004)], &[(0x1000, 0x2a)]),
+            0x2a
+        );
+        // mov eax, edi; xor edx, edx; div esi; ret
+        let div = vec![0x89, 0xf8, 0x31, 0xd2, 0xf7, 0xf6, 0xc3];
+        assert_eq!(returns(Isa::X86_64, div, &[(7, 7), (6, 2)]), 3);
     }
 
     #[test]

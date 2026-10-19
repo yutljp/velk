@@ -1,4 +1,4 @@
-# metrics/divmod_x64.aarch64.O0.stripped.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 18 unsupported, 0 gotos
+# metrics/divmod_x64.aarch64.O0.stripped.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2102ec 28 - prologue
 0x210308 28 - prologue
 0x210324 28 - prologue
@@ -22,10 +22,7 @@
 -- decompile
 /* velk pseudo-C: sub_2102ec @ 0x2102ec */
 uint64_t sub_2102ec(uint64_t a0) {
-    x8 = a0;
-    x9 = 0x3;
-    /* unsupported: SDIV at 0x2102fc */
-    return a0;
+    return (int64_t)(a0) / 0x3;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -34,21 +31,15 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x2102ec (size 28)
   blk0 @ 0x2102ec:
-    x8 = x0
-    x9 = #0x3
-    unsupported: SDIV at 0x2102fc
-    ret x0
+    ret (x0 / #0x3)
 -- card
-{"addr":"0x2102ec","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2102ec","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x210308 -
 -- decompile
 /* velk pseudo-C: sub_210308 @ 0x210308 */
 uint64_t sub_210308(uint64_t a0) {
-    x8 = a0;
-    x9 = 0xa;
-    /* unsupported: SDIV at 0x210318 */
-    return a0;
+    return (int64_t)(a0) / 0xa;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -57,21 +48,15 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210308 (size 28)
   blk0 @ 0x210308:
-    x8 = x0
-    x9 = #0xa
-    unsupported: SDIV at 0x210318
-    ret x0
+    ret (x0 / #0xa)
 -- card
-{"addr":"0x210308","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210308","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x210324 -
 -- decompile
 /* velk pseudo-C: sub_210324 @ 0x210324 */
 uint64_t sub_210324(uint64_t a0) {
-    x8 = a0;
-    x9 = 0x3;
-    /* unsupported: UDIV at 0x210334 */
-    return a0;
+    return a0 / 0x3;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -80,21 +65,15 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210324 (size 28)
   blk0 @ 0x210324:
-    x8 = x0
-    x9 = #0x3
-    unsupported: UDIV at 0x210334
-    ret x0
+    ret (x0 / #0x3)
 -- card
-{"addr":"0x210324","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210324","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x210340 -
 -- decompile
 /* velk pseudo-C: sub_210340 @ 0x210340 */
 uint64_t sub_210340(uint64_t a0) {
-    x8 = a0;
-    x9 = 0xa;
-    /* unsupported: UDIV at 0x210350 */
-    return a0;
+    return a0 / 0xa;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -103,67 +82,49 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210340 (size 28)
   blk0 @ 0x210340:
-    x8 = x0
-    x9 = #0xa
-    unsupported: UDIV at 0x210350
-    ret x0
+    ret (x0 / #0xa)
 -- card
-{"addr":"0x210340","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210340","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x21035c -
 -- decompile
 /* velk pseudo-C: sub_21035c @ 0x21035c */
-uint64_t sub_21035c(uint64_t a0) {
-    w8 = (a0 & 0xffffffff);
-    x9 = 0x3;
-    /* unsupported: UDIV at 0x21036c */
-    return a0;
+uint32_t sub_21035c(uint32_t a0) {
+    return a0 / 0x3;
 }
 -- signature
-uint64_t (uint64_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x21035c (size 28)
   blk0 @ 0x21035c:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0x3
-    unsupported: UDIV at 0x21036c
-    ret x0
+    ret (((w0 & #0xffffffff) / #0x3) & #0xffffffff)
 -- card
-{"addr":"0x21035c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x21035c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x210378 -
 -- decompile
 /* velk pseudo-C: sub_210378 @ 0x210378 */
-uint64_t sub_210378(uint64_t a0) {
-    w8 = (a0 & 0xffffffff);
-    x9 = 0x10;
-    /* unsupported: SDIV at 0x210388 */
-    return a0;
+uint32_t sub_210378(uint32_t a0) {
+    return (int32_t)(a0) / 0x10;
 }
 -- signature
-uint64_t (uint64_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210378 (size 28)
   blk0 @ 0x210378:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0x10
-    unsupported: SDIV at 0x210388
-    ret x0
+    ret (((w0 & #0xffffffff) / #0x10) & #0xffffffff)
 -- card
-{"addr":"0x210378","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210378","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x210394 -
 -- decompile
 /* velk pseudo-C: sub_210394 @ 0x210394 */
 uint64_t sub_210394(uint64_t a0) {
-    x8 = a0;
-    x9 = 0x10;
-    /* unsupported: SDIV at 0x2103a4 */
-    return a0;
+    return (int64_t)(a0) / 0x10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -172,23 +133,16 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210394 (size 28)
   blk0 @ 0x210394:
-    x8 = x0
-    x9 = #0x10
-    unsupported: SDIV at 0x2103a4
-    ret x0
+    ret (x0 / #0x10)
 -- card
-{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x2103b0 -
 -- decompile
 /* velk pseudo-C: sub_2103b0 @ 0x2103b0 */
 uint32_t sub_2103b0(uint32_t a0) {
     w8 = a0;
-    w10 = 0x3;
-    /* unsupported: UDIV at 0x2103c0 */
-    w9 = w9 * w10;
-    a0 = w8 - w9;
-    return a0;
+    return w8 - w8 / 0x3 * 0x3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -198,24 +152,16 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x2103b0 (size 36)
   blk0 @ 0x2103b0:
     w8 = (w0 & #0xffffffff)
-    x10 = #0x3
-    unsupported: UDIV at 0x2103c0
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x2103b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2103b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x2103d4 -
 -- decompile
 /* velk pseudo-C: sub_2103d4 @ 0x2103d4 */
 uint32_t sub_2103d4(uint32_t a0) {
     w8 = a0;
-    w10 = 0x3;
-    /* unsupported: SDIV at 0x2103e4 */
-    w9 = w9 * w10;
-    a0 = w8 - w9;
-    return a0;
+    return w8 - (int32_t)(w8) / 0x3 * 0x3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -225,24 +171,16 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x2103d4 (size 36)
   blk0 @ 0x2103d4:
     w8 = (w0 & #0xffffffff)
-    x10 = #0x3
-    unsupported: SDIV at 0x2103e4
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0x3) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x2103d4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2103d4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x2103f8 -
 -- decompile
 /* velk pseudo-C: sub_2103f8 @ 0x2103f8 */
 uint32_t sub_2103f8(uint32_t a0) {
     w8 = a0;
-    w10 = 0x8;
-    /* unsupported: UDIV at 0x210408 */
-    w9 = w9 * w10;
-    a0 = w8 - w9;
-    return a0;
+    return w8 - w8 / 0x8 * 0x8;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -252,24 +190,16 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x2103f8 (size 36)
   blk0 @ 0x2103f8:
     w8 = (w0 & #0xffffffff)
-    x10 = #0x8
-    unsupported: UDIV at 0x210408
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0x8) * #0x8)) & #0xffffffff)
 -- card
-{"addr":"0x2103f8","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2103f8","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x21041c -
 -- decompile
 /* velk pseudo-C: sub_21041c @ 0x21041c */
 uint32_t sub_21041c(uint32_t a0) {
     w8 = a0;
-    w10 = 0x8;
-    /* unsupported: SDIV at 0x21042c */
-    w9 = w9 * w10;
-    a0 = w8 - w9;
-    return a0;
+    return w8 - (int32_t)(w8) / 0x8 * 0x8;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -279,24 +209,15 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x21041c (size 36)
   blk0 @ 0x21041c:
     w8 = (w0 & #0xffffffff)
-    x10 = #0x8
-    unsupported: SDIV at 0x21042c
-    w9 = (w9 * (x10 & #0xffffffff))
-    w0 = (w8 - w9)
-    ret w0
+    ret ((w8 - ((w8 / #0x8) * #0x8)) & #0xffffffff)
 -- card
-{"addr":"0x21041c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x21041c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x210440 -
 -- decompile
 /* velk pseudo-C: sub_210440 @ 0x210440 */
 uint64_t sub_210440(uint64_t a0) {
-    x8 = a0;
-    x10 = 0x10;
-    /* unsupported: SDIV at 0x210450 */
-    x9 = x9 * x10;
-    a0 = x8 - x9;
-    return a0;
+    return a0 - (int64_t)(a0) / 0x10 * 0x10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -305,23 +226,15 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210440 (size 36)
   blk0 @ 0x210440:
-    x8 = x0
-    x10 = #0x10
-    unsupported: SDIV at 0x210450
-    x9 = (x9 * x10)
-    x0 = (x8 - x9)
-    ret x0
+    ret (x0 - ((x0 / #0x10) * #0x10))
 -- card
-{"addr":"0x210440","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210440","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x210464 -
 -- decompile
 /* velk pseudo-C: sub_210464 @ 0x210464 */
 uint64_t sub_210464(uint64_t a0) {
-    x8 = a0;
-    x9 = 0x10;
-    /* unsupported: SDIV at 0x210474 */
-    return a0;
+    return (int64_t)(a0) / 0x10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -330,23 +243,15 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210464 (size 28)
   blk0 @ 0x210464:
-    x8 = x0
-    x9 = #0x10
-    unsupported: SDIV at 0x210474
-    ret x0
+    ret (x0 / #0x10)
 -- card
-{"addr":"0x210464","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210464","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x210480 -
 -- decompile
 /* velk pseudo-C: sub_210480 @ 0x210480 */
 uint64_t sub_210480(uint64_t a0) {
-    x8 = a0;
-    x10 = 0xa;
-    /* unsupported: SDIV at 0x210490 */
-    x9 = x9 * x10;
-    a0 = x8 - x9;
-    return a0;
+    return a0 - (int64_t)(a0) / 0xa * 0xa;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -355,25 +260,15 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x210480 (size 36)
   blk0 @ 0x210480:
-    x8 = x0
-    x10 = #0xa
-    unsupported: SDIV at 0x210490
-    x9 = (x9 * x10)
-    x0 = (x8 - x9)
-    ret x0
+    ret (x0 - ((x0 / #0xa) * #0xa))
 -- card
-{"addr":"0x210480","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210480","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x2104a4 -
 -- decompile
 /* velk pseudo-C: sub_2104a4 @ 0x2104a4 */
 uint64_t sub_2104a4(uint64_t a0) {
-    x8 = a0;
-    x10 = 0xa;
-    /* unsupported: UDIV at 0x2104b4 */
-    x9 = x9 * x10;
-    a0 = x8 - x9;
-    return a0;
+    return a0 - a0 / 0xa * 0xa;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -382,46 +277,32 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x2104a4 (size 36)
   blk0 @ 0x2104a4:
-    x8 = x0
-    x10 = #0xa
-    unsupported: UDIV at 0x2104b4
-    x9 = (x9 * x10)
-    x0 = (x8 - x9)
-    ret x0
+    ret (x0 - ((x0 / #0xa) * #0xa))
 -- card
-{"addr":"0x2104a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2104a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x2104c8 -
 -- decompile
 /* velk pseudo-C: sub_2104c8 @ 0x2104c8 */
-uint64_t sub_2104c8(uint64_t a0) {
-    w8 = (a0 & 0xffffffff);
-    x9 = 0x40;
-    /* unsupported: SDIV at 0x2104d8 */
-    return a0;
+uint32_t sub_2104c8(uint32_t a0) {
+    return (int32_t)(a0) / 0x40;
 }
 -- signature
-uint64_t (uint64_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x2104c8 (size 28)
   blk0 @ 0x2104c8:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0x40
-    unsupported: SDIV at 0x2104d8
-    ret x0
+    ret (((w0 & #0xffffffff) / #0x40) & #0xffffffff)
 -- card
-{"addr":"0x2104c8","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2104c8","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x2104e4 -
 -- decompile
 /* velk pseudo-C: sub_2104e4 @ 0x2104e4 */
 uint64_t sub_2104e4(uint64_t a0) {
-    x8 = a0;
-    x9 = 0x40;
-    /* unsupported: SDIV at 0x2104f4 */
-    return a0;
+    return (int64_t)(a0) / 0x40;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -430,32 +311,23 @@ uint64_t (uint64_t a0)
 -- ir
 fn <unnamed> @ 0x2104e4 (size 28)
   blk0 @ 0x2104e4:
-    x8 = x0
-    x9 = #0x40
-    unsupported: SDIV at 0x2104f4
-    ret x0
+    ret (x0 / #0x40)
 -- card
-{"addr":"0x2104e4","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2104e4","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
 
 == 0x210500 -
 -- decompile
 /* velk pseudo-C: sub_210500 @ 0x210500 */
-uint64_t sub_210500(uint64_t a0) {
-    w8 = (a0 & 0xffffffff);
-    x9 = 0xa;
-    /* unsupported: SDIV at 0x210510 */
-    return a0;
+uint32_t sub_210500(uint32_t a0) {
+    return (int32_t)(a0) / 0xa;
 }
 -- signature
-uint64_t (uint64_t a0)
+uint32_t (uint32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210500 (size 28)
   blk0 @ 0x210500:
-    w8 = (x0 & #0xffffffff)
-    x9 = #0xa
-    unsupported: SDIV at 0x210510
-    ret x0
+    ret (((w0 & #0xffffffff) / #0xa) & #0xffffffff)
 -- card
-{"addr":"0x210500","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210500","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}

@@ -1,4 +1,4 @@
-# metrics/memory.aarch64.O0.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 3 unsupported, 0 gotos
+# metrics/memory.aarch64.O0.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 2 unsupported, 0 gotos
 0x210234 104 copy_bytes symtab,dwarf
 0x21029c 92 fill_bytes symtab,dwarf
 0x2102f8 68 string_length symtab,dwarf
@@ -230,10 +230,7 @@ fn grid_set @ 0x210378 (size 68)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x2103bc */
 long pointer_distance(int *begin, int *end) {
-    x8 = end - begin;
-    x9 = 0x4;
-    /* unsupported: SDIV at 0x2103d8 */
-    return begin;
+    return (int64_t)(end - begin) / 0x4;
 }
 -- signature
 long (int * begin, int * end)
@@ -242,12 +239,9 @@ long (int * begin, int * end)
 -- ir
 fn pointer_distance @ 0x2103bc (size 40)
   blk0 @ 0x2103bc:
-    x8 = (x1 - x0)
-    x9 = #0x4
-    unsupported: SDIV at 0x2103d8
-    ret x0
+    ret ((x1 - x0) / #0x4)
 -- card
-{"addr":"0x2103bc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":1}
+{"addr":"0x2103bc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
 
 == 0x2103e4 read_volatile
 -- decompile

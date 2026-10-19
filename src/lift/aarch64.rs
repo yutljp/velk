@@ -845,6 +845,18 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::STR => lift_store(lifter, ops, O::STR),
         O::STRB => lift_store(lifter, ops, O::STRB),
         O::STRH => lift_store(lifter, ops, O::STRH),
+        // The unscaled forms differ only in how the offset is encoded.
+        O::LDUR => lift_load(lifter, ops, O::LDR),
+        O::LDURB => lift_load(lifter, ops, O::LDRB),
+        O::LDURH => lift_load(lifter, ops, O::LDRH),
+        O::LDURSB => lift_load(lifter, ops, O::LDRSB),
+        O::LDURSH => lift_load(lifter, ops, O::LDRSH),
+        O::LDURSW => lift_load(lifter, ops, O::LDRSW),
+        O::STUR => lift_store(lifter, ops, O::STR),
+        O::STURB => lift_store(lifter, ops, O::STRB),
+        O::STURH => lift_store(lifter, ops, O::STRH),
+        O::SDIV => lift_alu(lifter, ops, BinOp::DivS, false),
+        O::UDIV => lift_alu(lifter, ops, BinOp::DivU, false),
         O::LDP => lift_pair(lifter, ops, false),
         O::STP => lift_pair(lifter, ops, true),
         O::B => {

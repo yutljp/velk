@@ -1,4 +1,4 @@
-# metrics/calls.aarch64.O0.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 11 unsupported, 1 gotos
+# metrics/calls.aarch64.O0.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 1 unsupported, 1 gotos
 0x21031c 24 twice symtab,dwarf
 0x210334 28 square symtab,dwarf
 0x210350 44 pick_op symtab,dwarf
@@ -67,18 +67,15 @@ fn pick_op @ 0x210350 (size 44)
 /* velk pseudo-C: apply_table @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int apply_table(uint32_t index, int x) {
-    uint32_t local_0; /* [sp-18] */
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-18] */
 
-    /* unsupported: STUR at 0x210388 */
-    local_0 = x;
-    /* unsupported: LDUR at 0x210390 */
-    w10 = 0x3;
-    /* unsupported: UDIV at 0x210398 */
-    w9 = w9 * w10;
-    w9 = w8 - w9;
-    w8 = 0x2206f0;
+    local_0 = index;
+    local_1 = x;
+    w8 = local_0;
+    w9 = w8 - w8 / 0x3 * 0x3;
     w8 = qword_2206f0[w9];
-    index = local_0;
+    index = x;
     (*(x8))();
     return index;
 }
@@ -89,20 +86,16 @@ int (uint32_t index, int x)
 -- ir
 fn apply_table @ 0x21037c (size 72)
   blk0 @ 0x21037c:
-    unsupported: STUR at 0x210388
+    store32(w0, (sp + #0xffffffffffffffec))
     store32(w1, (sp + #0xffffffffffffffe8))
-    unsupported: LDUR at 0x210390
-    x10 = #0x3
-    unsupported: UDIV at 0x210398
-    w9 = (w9 * (x10 & #0xffffffff))
-    w9 = ((x8 & #0xffffffff) - w9)
-    x8 = #0x2206f0
+    x8 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
+    w9 = ((x8 & #0xffffffff) - ((((x8 & #0xffffffff) / #0x3) * #0x3) & #0xffffffff))
     x8 = load64((#0x2206f0 + (w9 << #0x3)))
-    w0 = load32((sp + #0xffffffffffffffe8))
+    w0 = (w1 & #0xffffffff)
     call *x8
     ret w0
 -- card
-{"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":72,"unsupported":3}
+{"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":72,"unsupported":0}
 
 == 0x2103c4 apply_pointer
 -- decompile
@@ -137,89 +130,83 @@ fn apply_pointer @ 0x2103c4 (size 48)
 == 0x2103f4 factorial
 -- decompile
 /* velk pseudo-C: factorial @ 0x2103f4 */
-int factorial(void) {
-    uint32_t local_0; /* [sp-18] */
-    uint32_t local_1; /* [sp-1c] */
+int factorial(int n) {
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-18] */
+    uint32_t local_2; /* [sp-1c] */
 
-    /* unsupported (2 steps): STUR at 0x210400, LDUR at 0x210404 */
-    w8 = w8 - 0x1;
-    if (w8 + 0x1 > 0x1) {
-        /* unsupported: LDUR at 0x210420 */
-        local_1 = w8;
-        /* unsupported: LDUR at 0x210428 */
-        w0 = w8 - 0x1;
+    local_0 = n;
+    if (n > 0x1) {
+        local_2 = local_0;
+        w8 = local_0;
+        n = w8 - 0x1;
         factorial();
-        w8 = local_1 * w0;
-        local_0 = w8;
-        return local_0;
+        local_1 = local_2 * n;
+        return local_1;
     }
-    local_0 = 0x1;
-    return local_0;
+    local_1 = 0x1;
+    return local_1;
 }
 -- signature
-int ()
+int (int n)
 -- references
 
 -- ir
 fn factorial @ 0x2103f4 (size 96)
   blk0 @ 0x2103f4:
-    unsupported: STUR at 0x210400
-    unsupported: LDUR at 0x210404
-    x8 = (((x8 & #0xffffffff) - #0x1) & #0xffffffff)
-    brif gt (w8 + #0x1), #0x1 -> 0x210420
+    store32(w0, (sp + #0xffffffffffffffec))
+    brif gt (w0 & #0xffffffff), #0x1 -> 0x210420
   blk1 @ 0x210410:
     br 0x210414
   blk2 @ 0x210414:
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x210444
   blk3 @ 0x210420:
-    unsupported: LDUR at 0x210420
-    store32((x8 & #0xffffffff), (sp + #0xffffffffffffffe4))
-    unsupported: LDUR at 0x210428
+    store32((load32((sp + #0xffffffffffffffec)) & #0xffffffff), (sp + #0xffffffffffffffe4))
+    x8 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
     w0 = ((x8 & #0xffffffff) - #0x1)
     call 0x2103f4
-    x8 = ((load32((sp + #0xffffffffffffffe4)) * w0) & #0xffffffff)
-    store32((x8 & #0xffffffff), (sp + #0xffffffffffffffe8))
+    store32(((load32((sp + #0xffffffffffffffe4)) * w0) & #0xffffffff), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
     ret load32((sp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x2103f4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":4}
+{"addr":"0x2103f4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":0}
 
 == 0x210454 is_odd
 -- decompile
 /* velk pseudo-C: is_odd @ 0x210454 */
-int is_odd(void) {
-    uint32_t local_0; /* [sp-18] */
+int is_odd(int n) {
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-18] */
 
-    /* unsupported (2 steps): STUR at 0x210460, LDUR at 0x210464 */
-    if (w8 != 0x0) {
-        /* unsupported: LDUR at 0x21047c */
-        w0 = w8 - 0x1;
+    local_0 = n;
+    if (n != 0x0) {
+        w8 = local_0;
+        n = w8 - 0x1;
         is_even();
-        local_0 = w0;
-        return local_0;
+        local_1 = n;
+        return local_1;
     }
-    local_0 = 0x0;
-    return local_0;
+    local_1 = 0x0;
+    return local_1;
 }
 -- signature
-int ()
+int (int n)
 -- references
 
 -- ir
 fn is_odd @ 0x210454 (size 76)
   blk0 @ 0x210454:
-    unsupported: STUR at 0x210460
-    unsupported: LDUR at 0x210464
-    brif ne (x8 & #0xffffffff), #0x0 -> 0x21047c
+    store32(w0, (sp + #0xffffffffffffffec))
+    brif ne (w0 & #0xffffffff), #0x0 -> 0x21047c
   blk1 @ 0x21046c:
     br 0x210470
   blk2 @ 0x210470:
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk3 @ 0x21047c:
-    unsupported: LDUR at 0x21047c
+    x8 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
     w0 = ((x8 & #0xffffffff) - #0x1)
     call 0x2104a0
     store32(w0, (sp + #0xffffffffffffffe8))
@@ -227,42 +214,42 @@ fn is_odd @ 0x210454 (size 76)
   blk4 @ 0x210490:
     ret load32((sp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":3}
+{"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":0}
 
 == 0x2104a0 is_even
 -- decompile
 /* velk pseudo-C: is_even @ 0x2104a0 */
-int is_even(void) {
-    uint32_t local_0; /* [sp-18] */
+int is_even(int n) {
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-18] */
 
-    /* unsupported (2 steps): STUR at 0x2104ac, LDUR at 0x2104b0 */
-    if (w8 != 0x0) {
-        /* unsupported: LDUR at 0x2104c8 */
-        x0 = w8 - 0x1;
+    local_0 = n;
+    if (n != 0x0) {
+        w8 = local_0;
+        n = w8 - 0x1;
         is_odd();
-        local_0 = w0;
-        return local_0;
+        local_1 = n;
+        return local_1;
     }
-    local_0 = 0x1;
-    return local_0;
+    local_1 = 0x1;
+    return local_1;
 }
 -- signature
-int ()
+int (int n)
 -- references
 
 -- ir
 fn is_even @ 0x2104a0 (size 76)
   blk0 @ 0x2104a0:
-    unsupported: STUR at 0x2104ac
-    unsupported: LDUR at 0x2104b0
-    brif ne w8, #0x0 -> 0x2104c8
+    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    brif ne (x0 & #0xffffffff), #0x0 -> 0x2104c8
   blk1 @ 0x2104b8:
     br 0x2104bc
   blk2 @ 0x2104bc:
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk3 @ 0x2104c8:
-    unsupported: LDUR at 0x2104c8
+    w8 = load32((sp + #0xffffffffffffffec))
     x0 = ((w8 - #0x1) & #0xffffffff)
     call 0x210454
     store32((x0 & #0xffffffff), (sp + #0xffffffffffffffe8))
@@ -270,7 +257,7 @@ fn is_even @ 0x2104a0 (size 76)
   blk4 @ 0x2104dc:
     ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
-{"addr":"0x2104a0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":3}
+{"addr":"0x2104a0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":0}
 
 == 0x2104ec sum9
 -- decompile

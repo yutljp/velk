@@ -1,4 +1,4 @@
-# metrics/calls.x86_64.O0.debug.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/calls.x86_64.O0.debug.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x201310 14 twice symtab,dwarf
 0x201320 16 square symtab,dwarf
 0x201330 33 pick_op symtab,dwarf
@@ -72,14 +72,10 @@ int apply_table(uint32_t index, int x) {
 
     local_0 = index;
     local_1 = x;
-    rax = index;
-    rcx = 0x3;
-    edx = 0x0;
-    /* unsupported: div at 0x201378 */
+    edx = index % 0x3;
     rcx = edx;
-    rax = 0x202670;
     rax = qword_202670[rcx];
-    index = local_1;
+    index = x;
     (*(rax))();
     return rax;
 }
@@ -92,18 +88,14 @@ fn apply_table @ 0x201360 (size 52)
   blk0 @ 0x201360:
     store32(edi, (rsp + #0xfffffffffffffff4))
     store32(esi, (rsp + #0xfffffffffffffff0))
-    rax = (edi & #0xffffffff)
-    rcx = #0x3
-    rdx = #0x0
-    unsupported: div at 0x201378
+    rdx = (((edi & #0xffffffff) % #0x3) & #0xffffffff)
     rcx = (rdx & #0xffffffff)
-    rax = #0x202670
     rax = load64((#0x202670 + (rcx * #0x8)))
-    edi = load32((rsp + #0xfffffffffffffff0))
+    edi = (esi & #0xffffffff)
     call *rax
     ret rax
 -- card
-{"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":1}
+{"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
 
 == 0x2013a0 apply_pointer
 -- decompile

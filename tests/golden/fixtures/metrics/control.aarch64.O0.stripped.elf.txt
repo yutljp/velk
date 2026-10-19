@@ -1,4 +1,4 @@
-# metrics/control.aarch64.O0.stripped.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 1 unsupported, 5 gotos
+# metrics/control.aarch64.O0.stripped.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 5 gotos
 0x2101e4 188 - prologue
 0x2102a0 96 - prologue
 0x210300 160 - prologue
@@ -103,13 +103,8 @@ uint32_t sub_2102a0(uint32_t a0, uint32_t a1, uint64_t a2) {
     sp = sp + 0x20;
     return a0;
 L_2102c8:
-    w8 = local_1;
-    if (w8 != 0x0) {
-        w8 = local_0;
-        x9 = local_1;
-        /* unsupported: SDIV at 0x2102e0 */
-        x9 = local_2;
-        *(uint32_t *)(x9) = w8;
+    if (local_1 != 0x0) {
+        *(uint32_t *)(local_2) = (int32_t)(local_0) / (int32_t)(local_1);
         local_3 = 0x0;
         a0 = local_3;
         sp = sp + 0x20;
@@ -137,18 +132,13 @@ fn <unnamed> @ 0x2102a0 (size 96)
   blk2 @ 0x2102c4:
     br 0x2102f4
   blk3 @ 0x2102c8:
-    x8 = (load32((sp + #0x18)) & #0xffffffff)
-    brif ne (x8 & #0xffffffff), #0x0 -> 0x2102d8
+    brif ne (load32((sp + #0x18)) & #0xffffffff), #0x0 -> 0x2102d8
   blk4 @ 0x2102d0:
     br 0x2102d4
   blk5 @ 0x2102d4:
     br 0x2102f4
   blk6 @ 0x2102d8:
-    x8 = (load32((sp + #0x1c)) & #0xffffffff)
-    x9 = (load32((sp + #0x18)) & #0xffffffff)
-    unsupported: SDIV at 0x2102e0
-    x9 = load64((sp + #0x10))
-    store32((x8 & #0xffffffff), x9)
+    store32((((load32((sp + #0x1c)) & #0xffffffff) / (load32((sp + #0x18)) & #0xffffffff)) & #0xffffffff), load64((sp + #0x10)))
     store32(#0x0, (sp + #0xc))
     br 0x2102f4
   blk7 @ 0x2102f4:
@@ -156,7 +146,7 @@ fn <unnamed> @ 0x2102a0 (size 96)
     sp = (sp + #0x20)
     ret w0
 -- card
-{"addr":"0x2102a0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x2102a0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}
 
 == 0x210300 -
 -- decompile
