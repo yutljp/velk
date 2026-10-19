@@ -19,7 +19,6 @@ int32_t dispatch(int32_t a0) {
     default:
         return 0x0;
     }
-    return dword_200120[v1];
 }
 -- signature
 int32_t (int32_t a0)

@@ -103,7 +103,6 @@ int32_t sub_201330(int32_t a0) {
     default:
         goto L_2013c6;
     }
-    return dword_20250c;
 L_2013c6:
     dword_20250c = 0x0;
     return dword_20250c;
@@ -496,7 +495,6 @@ int32_t sub_2014e0(int32_t a0) {
     default:
         return 0xffffffff;
     }
-    return 0xffffffff;
 }
 -- signature
 int32_t (int32_t a0)

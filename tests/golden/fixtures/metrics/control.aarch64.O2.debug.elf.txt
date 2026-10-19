@@ -133,7 +133,6 @@ int fallthrough(int x) {
     default:
         return 0xffffffff;
     }
-    return dword_200120[x];
 }
 -- signature
 int (int x)
@@ -171,7 +170,6 @@ int sparse(int x) {
     default:
         return 0x0;
     }
-    return 0x0;
 }
 -- signature
 int (int x)

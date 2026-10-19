@@ -322,11 +322,16 @@ pub(crate) fn prune_unreachable(nodes: &mut Vec<Node>) {
             reachable = false;
             true
         }
-        Node::If { .. }
-        | Node::DoWhile { .. }
-        | Node::Forever { .. }
-        | Node::While { .. }
-        | Node::Switch { .. } => {
+        // Nothing after an `if` or a `switch` runs when every way through
+        // it leaves.
+        Node::If { .. } | Node::Switch { .. } => {
+            if !reachable {
+                return false;
+            }
+            reachable = !ends(std::slice::from_ref(node), true);
+            true
+        }
+        Node::DoWhile { .. } | Node::Forever { .. } | Node::While { .. } => {
             reachable = true;
             true
         }
@@ -352,6 +357,32 @@ pub(crate) fn prune_unreachable(nodes: &mut Vec<Node>) {
             }
             _ => {}
         }
+    }
+}
+
+/// Whether control never runs off the end of `nodes`: they end in a return,
+/// a jump or a trap, or in an `if` or a `switch` with a default all of whose
+/// ways end so. A `break` leaves too where `break_leaves` says, as it does
+/// out of a loop, but not out of a `switch`, after which it carries on.
+fn ends(nodes: &[Node], break_leaves: bool) -> bool {
+    match nodes.last() {
+        Some(Node::Stmt(stmt)) => matches!(
+            stmt,
+            Stmt::Ret { .. }
+                | Stmt::Br { .. }
+                | Stmt::BrIndirect { .. }
+                | Stmt::Switch { .. }
+                | Stmt::Trap
+        ),
+        Some(Node::Continue) => true,
+        Some(Node::Break) => break_leaves,
+        Some(Node::If { then, els, .. }) => ends(then, break_leaves) && ends(els, break_leaves),
+        Some(Node::Switch {
+            arms,
+            default: Some(default),
+            ..
+        }) => arms.iter().all(|(_, body)| ends(body, false)) && ends(default, false),
+        _ => false,
     }
 }
 

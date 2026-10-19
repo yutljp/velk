@@ -133,7 +133,6 @@ int32_t sub_210258(uint32_t a0) {
     default:
         return 0xffffffff;
     }
-    return dword_200120[a0];
 }
 -- signature
 int32_t (uint32_t a0)
@@ -171,7 +170,6 @@ int32_t sub_210278(int32_t a0) {
     default:
         return 0x0;
     }
-    return 0x0;
 }
 -- signature
 int32_t (int32_t a0)

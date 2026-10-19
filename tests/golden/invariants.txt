@@ -1,0 +1,5 @@
+go_probe 0x4336e0 runtime.casgstatus: the pseudo-C runs off the end without a return
+go_stripped 0x4336e0 runtime.casgstatus: the pseudo-C runs off the end without a return
+rust_demo 0x1dc60 core::ptr::drop_glue::<core::result::Result<std::path::PathBuf, core::io::error::Error>>: the pseudo-C runs off the end without a return
+rust_probe 0x1dc60 core::ptr::drop_glue::<core::result::Result<std::path::PathBuf, core::io::error::Error>>: the pseudo-C runs off the end without a return
+rust_probe_stripped 0x1dc60 -: the pseudo-C runs off the end without a return

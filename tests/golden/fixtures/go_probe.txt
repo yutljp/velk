@@ -1365,7 +1365,6 @@ int64_t main_divmod(int64_t a0, int64_t a1) {
         v1 = a0 / a1;
         return v1;
     }
-    return v1;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
