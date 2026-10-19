@@ -94,7 +94,7 @@ cargo test                # ユニットテストと、以下の結合テスト�
 | `tests/golden.rs` | 全フィクスチャの関数一覧、疑似 C、IR、シグネチャ、card が変わっていない | `tests/golden/fixtures/` |
 | `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報(`*.debug.elf`) |
 | `src/analysis/semantics_tests.rs` | 最適化パスが関数の動作を変えていない(IR を実行して比べる) | 最適化前の IR |
-| `tests/invariants.rs` | 飛び先のない goto、未定義のレジスタの読み取りなどがない | 出力の性質 |
+| `tests/invariants.rs` | 飛び先のない goto、未定義のレジスタの読み取り、疑似 C での文や return の欠落がない | 出力の性質 |
 | `tests/api.rs` | スクリプト API の戻り値が `.d.ts` の宣言と一致する | `src/script/api/` |
 | `tests/robustness.rs` など | 壊れたファイルやランダムな命令列で panic しない | なし |
 | `tests/smoke.sh` | CLI と MCP の出力の要所、性能 | 文字列の照合 |
