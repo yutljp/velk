@@ -1,4 +1,4 @@
-# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 7 unsupported, 4 gotos
+# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 6 unsupported, 4 gotos
 0x2102c4 8 twice symtab,dwarf
 0x2102cc 8 square symtab,dwarf
 0x2102d4 28 pick_op symtab,dwarf
@@ -103,9 +103,9 @@ fn apply_table @ 0x2102f0 (size 44)
 /* velk pseudo-C: apply_pointer @ 0x21031c */
 int apply_pointer(void *f, int x) {
     x8 = f;
-    /* unsupported: BLR at 0x21032c */
-    f = x + 0x1;
-    return f;
+    f = x;
+    (*(x8))();
+    return (f & 0xffffffff) + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -115,11 +115,11 @@ int (void * f, int x)
 fn apply_pointer @ 0x21031c (size 32)
   blk0 @ 0x21031c:
     x8 = x0
-    unsupported: BLR at 0x21032c
-    x0 = (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
-    ret w0
+    x0 = w1
+    call *x8
+    ret (((x0 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":1}
+{"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
 
 == 0x21033c factorial
 -- decompile
@@ -373,7 +373,7 @@ L_2104c8:
         } else {
             w11 = w12 + 0x8;
             *(uint32_t *)&local_1 = w11;
-            if (w12 <= 0x8 /* unsigned */) { goto L_2104c8; }
+            if (w12 <= 0xfffffffffffffff8 /* unsigned */) { goto L_2104c8; }
         }
         x13 = x10 + 0x8;
         local_10 = x13;
@@ -434,7 +434,7 @@ fn sum_varargs @ 0x210468 (size 188)
   blk6 @ 0x2104f8:
     w11 = ((x12 & #0xffffffff) + #0x8)
     store32(w11, (sp + #0xd8))
-    brif ls (x12 & #0xffffffff), #0x8 -> 0x2104c8
+    brif ls (x12 & #0xffffffff), #0xfffffffffffffff8 -> 0x2104c8
   blk7 @ 0x210508:
     x13 = (x10 + #0x8)
     store64(x13, (sp + #0xc0))

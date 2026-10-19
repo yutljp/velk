@@ -19,66 +19,46 @@ L_1b:
     dword_238 = eax;
     return eax;
 L_26:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
-    t65 = dword_238 + 0x2;
     dword_238 += 0x2;
-    t65 = dword_238 + 0x3;
     dword_238 += 0x3;
     rax = dword_238 + 0x4;
     dword_238 = eax;
     return eax;
 L_54:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
-    t65 = dword_238 + 0x2;
     dword_238 += 0x2;
-    t65 = dword_238 + 0x3;
     dword_238 += 0x3;
-    t65 = dword_238 + 0x4;
     dword_238 += 0x4;
-    t65 = dword_238 + 0x5;
     dword_238 += 0x5;
-    t65 = dword_238 + 0x6;
     dword_238 += 0x6;
-    t65 = dword_238 + 0x7;
     dword_238 += 0x7;
-    t65 = dword_238 + 0x8;
     dword_238 += 0x8;
     rax = dword_238 + 0x9;
     dword_238 = eax;
     return eax;
 L_a5:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
     rax = dword_238 + 0x2;
     dword_238 = eax;
     return eax;
 L_c5:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
-    t65 = dword_238 + 0x2;
     dword_238 += 0x2;
     rax = dword_238 + 0x3;
     dword_238 = eax;
     return eax;
 L_ec:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
-    t65 = dword_238 + 0x2;
     dword_238 += 0x2;
-    t65 = dword_238 + 0x3;
     dword_238 += 0x3;
-    t65 = dword_238 + 0x4;
     dword_238 += 0x4;
-    t65 = dword_238 + 0x5;
     dword_238 += 0x5;
-    t65 = dword_238 + 0x6;
     dword_238 += 0x6;
     rax = dword_238 + 0x7;
     dword_238 = eax;
@@ -91,48 +71,32 @@ L_12f:
     dword_238 = eax;
     return eax;
 L_148:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
-    t65 = dword_238 + 0x2;
     dword_238 += 0x2;
-    t65 = dword_238 + 0x3;
     dword_238 += 0x3;
-    t65 = dword_238 + 0x4;
     dword_238 += 0x4;
     rax = dword_238 + 0x5;
     dword_238 = eax;
     return eax;
 L_17d:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
-    t65 = dword_238 + 0x2;
     dword_238 += 0x2;
-    t65 = dword_238 + 0x3;
     dword_238 += 0x3;
-    t65 = dword_238 + 0x4;
     dword_238 += 0x4;
-    t65 = dword_238 + 0x5;
     dword_238 += 0x5;
     rax = dword_238 + 0x6;
     dword_238 = eax;
     return eax;
 L_1bd:
-    rax = dword_238;
-    dword_238 = eax;
+    dword_238 = dword_238;
     dword_238 += 0x1;
-    t65 = dword_238 + 0x2;
     dword_238 += 0x2;
-    t65 = dword_238 + 0x3;
     dword_238 += 0x3;
-    t65 = dword_238 + 0x4;
     dword_238 += 0x4;
-    t65 = dword_238 + 0x5;
     dword_238 += 0x5;
-    t65 = dword_238 + 0x6;
     dword_238 += 0x6;
-    t65 = dword_238 + 0x7;
     dword_238 += 0x7;
     rax = dword_238 + 0x8;
     dword_238 = eax;
@@ -155,62 +119,42 @@ fn d7 @ 0x0 (size 527)
     rax = (load32(#0x238) & #0xffffffff)
     br 0x202
   blk3 @ 0x26:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    t65 = (load32(#0x238) + #0x2)
     store32((load32(#0x238) + #0x2), #0x238)
-    t65 = (load32(#0x238) + #0x3)
     store32((load32(#0x238) + #0x3), #0x238)
     rax = ((load32(#0x238) + #0x4) & #0xffffffff)
     br 0x202
   blk4 @ 0x54:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    t65 = (load32(#0x238) + #0x2)
     store32((load32(#0x238) + #0x2), #0x238)
-    t65 = (load32(#0x238) + #0x3)
     store32((load32(#0x238) + #0x3), #0x238)
-    t65 = (load32(#0x238) + #0x4)
     store32((load32(#0x238) + #0x4), #0x238)
-    t65 = (load32(#0x238) + #0x5)
     store32((load32(#0x238) + #0x5), #0x238)
-    t65 = (load32(#0x238) + #0x6)
     store32((load32(#0x238) + #0x6), #0x238)
-    t65 = (load32(#0x238) + #0x7)
     store32((load32(#0x238) + #0x7), #0x238)
-    t65 = (load32(#0x238) + #0x8)
     store32((load32(#0x238) + #0x8), #0x238)
     rax = ((load32(#0x238) + #0x9) & #0xffffffff)
     br 0x202
   blk5 @ 0xa5:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
     rax = ((load32(#0x238) + #0x2) & #0xffffffff)
     br 0x202
   blk6 @ 0xc5:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    t65 = (load32(#0x238) + #0x2)
     store32((load32(#0x238) + #0x2), #0x238)
     rax = ((load32(#0x238) + #0x3) & #0xffffffff)
     br 0x202
   blk7 @ 0xec:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    t65 = (load32(#0x238) + #0x2)
     store32((load32(#0x238) + #0x2), #0x238)
-    t65 = (load32(#0x238) + #0x3)
     store32((load32(#0x238) + #0x3), #0x238)
-    t65 = (load32(#0x238) + #0x4)
     store32((load32(#0x238) + #0x4), #0x238)
-    t65 = (load32(#0x238) + #0x5)
     store32((load32(#0x238) + #0x5), #0x238)
-    t65 = (load32(#0x238) + #0x6)
     store32((load32(#0x238) + #0x6), #0x238)
     rax = ((load32(#0x238) + #0x7) & #0xffffffff)
     br 0x202
@@ -221,28 +165,19 @@ fn d7 @ 0x0 (size 527)
     rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
     br 0x202
   blk9 @ 0x148:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    t65 = (load32(#0x238) + #0x2)
     store32((load32(#0x238) + #0x2), #0x238)
-    t65 = (load32(#0x238) + #0x3)
     store32((load32(#0x238) + #0x3), #0x238)
-    t65 = (load32(#0x238) + #0x4)
     store32((load32(#0x238) + #0x4), #0x238)
     rax = ((load32(#0x238) + #0x5) & #0xffffffff)
     br 0x202
   blk10 @ 0x17d:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    t65 = (load32(#0x238) + #0x2)
     store32((load32(#0x238) + #0x2), #0x238)
-    t65 = (load32(#0x238) + #0x3)
     store32((load32(#0x238) + #0x3), #0x238)
-    t65 = (load32(#0x238) + #0x4)
     store32((load32(#0x238) + #0x4), #0x238)
-    t65 = (load32(#0x238) + #0x5)
     store32((load32(#0x238) + #0x5), #0x238)
     rax = ((load32(#0x238) + #0x6) & #0xffffffff)
     br 0x202
@@ -250,20 +185,13 @@ fn d7 @ 0x0 (size 527)
     rax = #0xffffffff
     br 0x202
   blk12 @ 0x1bd:
-    rax = (load32(#0x238) & #0xffffffff)
-    store32((rax & #0xffffffff), #0x238)
+    store32((load32(#0x238) & #0xffffffff), #0x238)
     store32((load32(#0x238) + #0x1), #0x238)
-    t65 = (load32(#0x238) + #0x2)
     store32((load32(#0x238) + #0x2), #0x238)
-    t65 = (load32(#0x238) + #0x3)
     store32((load32(#0x238) + #0x3), #0x238)
-    t65 = (load32(#0x238) + #0x4)
     store32((load32(#0x238) + #0x4), #0x238)
-    t65 = (load32(#0x238) + #0x5)
     store32((load32(#0x238) + #0x5), #0x238)
-    t65 = (load32(#0x238) + #0x6)
     store32((load32(#0x238) + #0x6), #0x238)
-    t65 = (load32(#0x238) + #0x7)
     store32((load32(#0x238) + #0x7), #0x238)
     rax = ((load32(#0x238) + #0x8) & #0xffffffff)
   blk13 @ 0x202:

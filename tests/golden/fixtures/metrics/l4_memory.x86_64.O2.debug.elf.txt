@@ -106,7 +106,6 @@ fn array_sum @ 0x2011f0 (size 140)
 /* velk pseudo-C: bump @ 0x201280 */
 /* ref: 0x2022a8 .bss */
 void bump(void) {
-    t65 = dword_2022a8 + 0x1;
     dword_2022a8 += 0x1;
     return;
 }
@@ -117,7 +116,6 @@ void ()
 -- ir
 fn bump @ 0x201280 (size 7)
   blk0 @ 0x201280:
-    t65 = (load32(#0x2022a8) + #0x1)
     store32((load32(#0x2022a8) + #0x1), #0x2022a8)
     ret rax
 -- card

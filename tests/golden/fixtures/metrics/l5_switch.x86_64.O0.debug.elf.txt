@@ -24,10 +24,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202760 .bss */
 int dense(int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     rsp = rsp - 0x10;
     *(uint32_t *)(rbp - 0x4) = x;
@@ -35,7 +32,7 @@ int dense(int x) {
     rcx = eax;
     *(uint64_t *)(rbp - 0x10) = rcx;
     rax = eax - 0xf;
-    if (eax > 0x0 /* unsigned */) {
+    if (eax + 0xf > 0xf /* unsigned */) {
         dword_202760 = 0x0;
         rsp = rsp + 0x10;
         rsp = rsp + 0x8;
@@ -135,7 +132,6 @@ int (int x)
 fn dense @ 0x201400 (size 234)
   blk0 @ 0x201400:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
@@ -143,7 +139,7 @@ fn dense @ 0x201400 (size 234)
     rcx = (rax & #0xffffffff)
     store64(rcx, (rbp + #0xfffffffffffffff0))
     rax = (((rax & #0xffffffff) - #0xf) & #0xffffffff)
-    brif hi eax, #0x0 -> 0x2014d4
+    brif hi (eax + #0xf), #0xf -> 0x2014d4
   blk1 @ 0x201420:
     rcx = #0x200158
     rax = sext32(load32((#0x200158 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
@@ -562,10 +558,7 @@ fn c15 @ 0x2016d0 (size 21)
 -- decompile
 /* velk pseudo-C: sparse @ 0x2016f0 */
 int sparse(int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x8) = x;
     eax = x;
@@ -597,7 +590,6 @@ int (int x)
 fn sparse @ 0x2016f0 (size 111)
   blk0 @ 0x2016f0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffff8))
     eax = (edi & #0xffffffff)

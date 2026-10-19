@@ -1,4 +1,4 @@
-# metrics/l6_abi.aarch64.O0.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/l6_abi.aarch64.O0.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x2101d4 40 tail_target symtab,dwarf
 0x2101fc 40 tail_direct symtab,dwarf
 0x210224 48 tail_indirect symtab,dwarf
@@ -54,10 +54,14 @@ fn tail_direct @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x210224 */
 int tail_indirect(void *f, int x) {
+    uint64_t local_0; /* [sp-18] */
+    uint32_t local_1; /* [sp-1c] */
+
+    local_0 = f;
+    local_1 = x;
     x8 = f;
-    w9 = x;
-    f = w9 + 0x1;
-    /* unsupported: BLR at 0x210244 */
+    f = x + 0x1;
+    (*(x8))();
     return f;
 }
 -- signature
@@ -67,13 +71,14 @@ int (void * f, int x)
 -- ir
 fn tail_indirect @ 0x210224 (size 48)
   blk0 @ 0x210224:
+    store64(x0, (sp + #0xffffffffffffffe8))
+    store32(w1, (sp + #0xffffffffffffffe4))
     x8 = x0
-    w9 = (w1 & #0xffffffff)
-    x0 = ((w9 + #0x1) & #0xffffffff)
-    unsupported: BLR at 0x210244
+    x0 = (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
+    call *x8
     ret w0
 -- card
-{"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":1}
+{"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
 
 == 0x210254 six_args
 -- decompile

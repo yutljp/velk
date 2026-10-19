@@ -23,17 +23,11 @@
 /* velk pseudo-C: dense @ 0x210304 */
 /* ref: 0x200158 .rodata */
 int dense(int x) {
-    uint64_t local_0; /* [sp-10] */
-
-    sp = sp - 0x20;
-    local_0 = x19;
     x8 = x - 0xa;
     x19 = 0x220000;
     if (w8 > 0xf /* unsigned */) {
         *(uint32_t *)(x19 + 0x554) = 0x0;
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     }
     x11 = *(uint8_t *)(0x200158 + x8);
@@ -41,104 +35,70 @@ int dense(int x) {
     case 10:
         c0();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 11:
         c1();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 12:
         c2();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 13:
         c3();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 14:
         c4();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 15:
         c5();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 16:
         c6();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 17:
         c7();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 18:
         c8();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 19:
         c9();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 20:
         c10();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 21:
         c11();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 22:
         c12();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 23:
         c13();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 24:
         c14();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     case 25:
         c15();
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     default:
         *(uint32_t *)(x19 + 0x554) = 0x0;
         x = *(uint32_t *)(x19 + 0x554);
-        x19 = local_0;
-        sp = sp + 0x20;
         return x;
     }
 }
@@ -149,8 +109,6 @@ int (int x)
 -- ir
 fn dense @ 0x210304 (size 200)
   blk0 @ 0x210304:
-    sp = (sp + #0xffffffffffffffe0)
-    store64(x19, (sp + #0x10))
     x8 = ((w0 - #0xa) & #0xffffffff)
     x19 = #0x220000
     brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
@@ -209,8 +167,6 @@ fn dense @ 0x210304 (size 200)
     store32(#0x0, (x19 + #0x554))
   blk19 @ 0x2103bc:
     w0 = load32((x19 + #0x554))
-    x19 = load64((sp + #0x10))
-    sp = (sp + #0x20)
     ret w0
 -- card
 {"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":200,"unsupported":0}

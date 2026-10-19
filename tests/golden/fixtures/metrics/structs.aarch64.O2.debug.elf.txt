@@ -209,8 +209,7 @@ fn word_low_byte @ 0x2102d4 (size 4)
 /* velk pseudo-C: flags_level @ 0x2102d8 */
 uint32_t flags_level(struct flags f) {
     /* unsupported (2 steps): bitfield immr=4 imms=7, bitfield immr=1 imms=3 */
-    t65 = f;
-    f = (f == 0x1 ? w9 : w8);
+    f = ((f & 0x1) == 0x0 ? w9 : w8);
     return f;
 }
 -- signature
@@ -222,8 +221,7 @@ fn flags_level @ 0x2102d8 (size 20)
   blk0 @ 0x2102d8:
     unsupported: bitfield immr=4 imms=7
     unsupported: bitfield immr=1 imms=3
-    t65 = w0
-    w0 = select eq w0, #0x1 ? w9, w8
+    w0 = select eq (w0 & #0x1), #0x0 ? w9, w8
     ret w0
 -- card
 {"addr":"0x2102d8","approxTokens":126,"blocks":1,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":2}

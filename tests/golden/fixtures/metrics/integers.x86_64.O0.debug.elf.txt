@@ -14,11 +14,7 @@
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x201280 */
 uint32_t narrow_add(uint64_t a, uint32_t b) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     rcx = rcx & 0xffffffffffffff00 | a & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
     *(uint8_t *)(rbp - 0x2) = b & 0xff & 0xff & 0xff;
@@ -32,9 +28,7 @@ uint32_t (uint64_t a, uint32_t b)
 -- ir
 fn narrow_add @ 0x201280 (size 31)
   blk0 @ 0x201280:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
     store8((((rsi & #0xff) & #0xff) & #0xff), (rbp + #0xfffffffffffffffe))
@@ -47,11 +41,7 @@ fn narrow_add @ 0x201280 (size 31)
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x2012a0 */
 uint32_t widen_mul(uint64_t a, uint32_t b) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     rcx = rcx & 0xffffffffffffff00 | a & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
     *(uint8_t *)(rbp - 0x2) = b & 0xff & 0xff & 0xff;
@@ -66,9 +56,7 @@ uint32_t (uint64_t a, uint32_t b)
 -- ir
 fn widen_mul @ 0x2012a0 (size 32)
   blk0 @ 0x2012a0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
     store8((((rsi & #0xff) & #0xff) & #0xff), (rbp + #0xfffffffffffffffe))
@@ -82,11 +70,7 @@ fn widen_mul @ 0x2012a0 (size 32)
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x2012c0 */
 uint32_t mixed_sign(int a, uint32_t b) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a;
     *(uint32_t *)(rbp - 0x8) = b;
     return (int32_t)(a) - b;
@@ -98,9 +82,7 @@ uint32_t (int a, uint32_t b)
 -- ir
 fn mixed_sign @ 0x2012c0 (size 22)
   blk0 @ 0x2012c0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     ret (sext32(edi) - (esi & #0xffffffff))
@@ -111,10 +93,7 @@ fn mixed_sign @ 0x2012c0 (size 22)
 -- decompile
 /* velk pseudo-C: in_range @ 0x2012e0 */
 _Bool in_range(int x, int lo, int hi) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = lo;
@@ -140,7 +119,6 @@ _Bool (int x, int lo, int hi)
 fn in_range @ 0x2012e0 (size 52)
   blk0 @ 0x2012e0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
@@ -165,11 +143,7 @@ fn in_range @ 0x2012e0 (size 52)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x201320 */
 uint32_t rotate_left(uint32_t x, uint32_t k) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = k;
     return ((x << (k & 0x1f & 0xff) | x >> (0x20 - k & 0x1f & 0xff)) & 0xffffffff);
@@ -181,9 +155,7 @@ uint32_t (uint32_t x, uint32_t k)
 -- ir
 fn rotate_left @ 0x201320 (size 43)
   blk0 @ 0x201320:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     ret ((((edi & #0xffffffff) << ((((esi & #0xffffffff) & #0x1f) & #0xffffffff) & #0xff)) | ((edi & #0xffffffff) >> ((((#0x20 - (esi & #0xffffffff)) & #0x1f) & #0xffffffff) & #0xff))) & #0xffffffff)
@@ -194,10 +166,7 @@ fn rotate_left @ 0x201320 (size 43)
 -- decompile
 /* velk pseudo-C: popcount @ 0x201350 */
 int popcount(uint32_t x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = 0x0;
@@ -216,7 +185,6 @@ int (uint32_t x)
 fn popcount @ 0x201350 (size 55)
   blk0 @ 0x201350:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(#0x0, (rbp + #0xfffffffffffffff8))
@@ -253,10 +221,7 @@ fn byte_swap @ 0x201390 (size 51)
 -- decompile
 /* velk pseudo-C: min3 @ 0x2013d0 */
 int min3(int a, int b, int c) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = a;
     *(uint32_t *)(rbp - 0x8) = b;
@@ -284,7 +249,6 @@ int (int a, int b, int c)
 fn min3 @ 0x2013d0 (size 82)
   blk0 @ 0x2013d0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
@@ -314,10 +278,7 @@ fn min3 @ 0x2013d0 (size 82)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x201430 */
 long labs_value(long x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = x;
     if (x < 0x0) {
@@ -336,7 +297,6 @@ long (long x)
 fn labs_value @ 0x201430 (size 48)
   blk0 @ 0x201430:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     brif ge rdi, #0x0 -> 0x201452
@@ -355,11 +315,7 @@ fn labs_value @ 0x201430 (size 48)
 -- decompile
 /* velk pseudo-C: mul_high @ 0x201460 */
 uint64_t mul_high(uint64_t a, uint64_t b) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint64_t *)(rbp - 0x8) = a;
     *(uint64_t *)(rbp - 0x10) = b;
     return __umulh(a, b);
@@ -371,9 +327,7 @@ uint64_t (uint64_t a, uint64_t b)
 -- ir
 fn mul_high @ 0x201460 (size 28)
   blk0 @ 0x201460:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store64(rsi, (rbp + #0xfffffffffffffff0))
     ret (rdi hi128 rsi)

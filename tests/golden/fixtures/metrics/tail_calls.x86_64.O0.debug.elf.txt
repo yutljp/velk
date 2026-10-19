@@ -7,11 +7,7 @@
 -- decompile
 /* velk pseudo-C: tail_one @ 0x2011a0 */
 int tail_one(int x) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = x;
     eax = x * 0x3;
     *(uint32_t *)(rbp - 0x8) = eax;
@@ -25,9 +21,7 @@ int (int x)
 -- ir
 fn tail_one @ 0x2011a0 (size 22)
   blk0 @ 0x2011a0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     eax = ((edi & #0xffffffff) * #0x3)
     store32(eax, (rbp + #0xfffffffffffffff8))
@@ -40,11 +34,9 @@ fn tail_one @ 0x2011a0 (size 22)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x2011c0 */
 int tail_two(int x) {
-    uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
+    uint32_t local_0; /* [sp-c] */
 
-    local_0 = rbp;
-    local_1 = x;
+    local_0 = x;
     x = x;
     x = x + 0x2;
     tail_one();
@@ -57,7 +49,6 @@ int (int x)
 -- ir
 fn tail_two @ 0x2011c0 (size 28)
   blk0 @ 0x2011c0:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
     store32(edi, (rsp + #0xfffffffffffffff4))
     edi = (edi & #0xffffffff)
     edi = (edi + #0x2)
@@ -70,11 +61,7 @@ fn tail_two @ 0x2011c0 (size 28)
 -- decompile
 /* velk pseudo-C: tail_three @ 0x2011e0 */
 int tail_three(int x) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = x;
     eax = x - 0x7;
     *(uint32_t *)(rbp - 0x8) = eax;
@@ -87,9 +74,7 @@ int (int x)
 -- ir
 fn tail_three @ 0x2011e0 (size 21)
   blk0 @ 0x2011e0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     eax = ((edi & #0xffffffff) - #0x7)
     store32(eax, (rbp + #0xfffffffffffffff8))

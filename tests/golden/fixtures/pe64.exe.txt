@@ -134,7 +134,7 @@ fn msg_first @ 0x140001060 (size 16)
 -- decompile
 /* velk pseudo-C: reg_div @ 0x140001070 */
 uint32_t reg_div(uint32_t a0, uint32_t a1) {
-    return a0 / a1;
+    return (int32_t)(a0) / (int32_t)(a1);
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1)
@@ -151,7 +151,7 @@ fn reg_div @ 0x140001070 (size 16)
 -- decompile
 /* velk pseudo-C: reg_mod @ 0x140001080 */
 uint32_t reg_mod(uint32_t a0, uint32_t a1) {
-    return a0 % a1;
+    return (int32_t)(a0) % (int32_t)(a1);
 }
 -- signature
 uint32_t (uint32_t a0, uint32_t a1)

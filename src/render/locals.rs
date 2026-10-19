@@ -33,6 +33,7 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
         slots: HashMap::new(),
         local_widths: HashMap::new(),
         wide_params: std::collections::HashSet::new(),
+        signed_params: std::collections::HashSet::new(),
         pointer_params: std::collections::HashSet::new(),
         fields: HashMap::new(),
         callees: &HashMap::new(),

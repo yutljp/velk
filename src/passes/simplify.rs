@@ -49,7 +49,14 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
         Stmt::Ret { value } => {
             *value = simplify_expr(value.clone(), constants);
         }
-        Stmt::Call { .. } | Stmt::Unsupported { .. } => {
+        Stmt::Call { through, .. } => {
+            if let Some(through) = through {
+                *through = simplify_expr(through.clone(), constants);
+            }
+            // A call may clobber registers.
+            constants.clear();
+        }
+        Stmt::Unsupported { .. } => {
             // Unknown effects may clobber registers.
             constants.clear();
         }

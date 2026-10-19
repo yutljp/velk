@@ -230,10 +230,7 @@ fn grid_set @ 0x210378 (size 68)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x2103bc */
 long pointer_distance(int *begin, int *end) {
-    x9 = begin;
-    x8 = end - x9;
-    t65 = x8 + x9;
-    t66 = x9;
+    x8 = end - begin;
     x9 = 0x4;
     /* unsupported: SDIV at 0x2103d8 */
     return begin;
@@ -245,10 +242,7 @@ long (int * begin, int * end)
 -- ir
 fn pointer_distance @ 0x2103bc (size 40)
   blk0 @ 0x2103bc:
-    x9 = x0
-    x8 = (x1 - x9)
-    t65 = (x8 + x9)
-    t66 = x9
+    x8 = (x1 - x0)
     x9 = #0x4
     unsupported: SDIV at 0x2103d8
     ret x0

@@ -8,11 +8,7 @@
 -- decompile
 /* velk pseudo-C: point_dot @ 0x201210 */
 int point_dot(struct point *a, struct point *b) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint64_t *)(rbp - 0x8) = a;
     *(uint64_t *)(rbp - 0x10) = b;
     return a->x * b->x + a->y * b->y;
@@ -24,9 +20,7 @@ int (struct point * a, struct point * b)
 -- ir
 fn point_dot @ 0x201210 (size 44)
   blk0 @ 0x201210:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store64(rsi, (rbp + #0xfffffffffffffff0))
     ret (((load32(rdi) * load32(rsi)) + (load32((rdi + #0x4)) * load32((rsi + #0x4)))) & #0xffffffff)
@@ -37,10 +31,7 @@ fn point_dot @ 0x201210 (size 44)
 -- decompile
 /* velk pseudo-C: array_sum @ 0x201240 */
 int array_sum(int *a, int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a;
     *(uint32_t *)(rbp - 0xc) = n;
@@ -62,7 +53,6 @@ int (int * a, int n)
 fn array_sum @ 0x201240 (size 73)
   blk0 @ 0x201240:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))

@@ -107,7 +107,7 @@ fn u64 @ 0x201330 (size 16)
 -- decompile
 /* velk pseudo-C: sdiv16x @ 0x201340 */
 int sdiv16x(int x) {
-    return x / 0x10;
+    return (int32_t)(x) / 0x10;
 }
 -- signature
 int (int x)
@@ -158,7 +158,7 @@ fn umod3x @ 0x201360 (size 23)
 -- decompile
 /* velk pseudo-C: smod3x @ 0x201380 */
 int smod3x(int x) {
-    return (int32_t)(x) % 0x3;
+    return (int64_t)((int32_t)(x)) % 0x3;
 }
 -- signature
 int (int x)
@@ -192,7 +192,7 @@ fn pmod8x @ 0x2013a0 (size 6)
 -- decompile
 /* velk pseudo-C: pmod8s @ 0x2013b0 */
 int pmod8s(int x) {
-    return x % 0x8;
+    return (int32_t)(x) % 0x8;
 }
 -- signature
 int (int x)
@@ -279,7 +279,7 @@ fn umod10x @ 0x201420 (size 35)
 -- decompile
 /* velk pseudo-C: pdiv64 @ 0x201450 */
 int pdiv64(int x) {
-    return x / 0x40;
+    return (int32_t)(x) / 0x40;
 }
 -- signature
 int (int x)
@@ -313,7 +313,7 @@ fn qdiv64 @ 0x201460 (size 16)
 -- decompile
 /* velk pseudo-C: pdiv10 @ 0x201470 */
 int pdiv10(int x) {
-    return (int32_t)(x) / 0xa;
+    return (int64_t)((int32_t)(x)) / 0xa;
 }
 -- signature
 int (int x)

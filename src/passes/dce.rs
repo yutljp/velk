@@ -146,6 +146,7 @@ mod tests {
             },
             Stmt::Call {
                 target: Some(0x100),
+                through: None,
                 convention: Convention::Aapcs64,
             },
             Stmt::Ret {

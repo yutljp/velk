@@ -251,10 +251,7 @@ fn <unnamed> @ 0x210378 (size 68)
 -- decompile
 /* velk pseudo-C: sub_2103bc @ 0x2103bc */
 uint64_t sub_2103bc(uint64_t a0, uint64_t a1) {
-    x9 = a0;
-    x8 = a1 - x9;
-    t65 = x8 + x9;
-    t66 = x9;
+    x8 = a1 - a0;
     x9 = 0x4;
     /* unsupported: SDIV at 0x2103d8 */
     return a0;
@@ -266,10 +263,7 @@ uint64_t (uint64_t a0, uint64_t a1)
 -- ir
 fn <unnamed> @ 0x2103bc (size 40)
   blk0 @ 0x2103bc:
-    x9 = x0
-    x8 = (x1 - x9)
-    t65 = (x8 + x9)
-    t66 = x9
+    x8 = (x1 - x0)
     x9 = #0x4
     unsupported: SDIV at 0x2103d8
     ret x0

@@ -8,10 +8,7 @@
 -- decompile
 /* velk pseudo-C: count_bits @ 0x2011c0 */
 int count_bits(uint32_t x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = 0x0;
@@ -30,7 +27,6 @@ int (uint32_t x)
 fn count_bits @ 0x2011c0 (size 54)
   blk0 @ 0x2011c0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(#0x0, (rbp + #0xfffffffffffffff8))
@@ -50,10 +46,7 @@ fn count_bits @ 0x2011c0 (size 54)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x201200 */
 int sum_until(int limit) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = limit;
     *(uint32_t *)(rbp - 0x8) = 0x0;
@@ -73,7 +66,6 @@ int (int limit)
 fn sum_until @ 0x201200 (size 61)
   blk0 @ 0x201200:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(#0x0, (rbp + #0xfffffffffffffff8))
@@ -94,10 +86,7 @@ fn sum_until @ 0x201200 (size 61)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x201240 */
 int sum_till_neg(int *p, int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = p;
     *(uint32_t *)(rbp - 0xc) = n;
@@ -129,7 +118,6 @@ int (int * p, int n)
 fn sum_till_neg @ 0x201240 (size 94)
   blk0 @ 0x201240:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
@@ -158,10 +146,7 @@ fn sum_till_neg @ 0x201240 (size 94)
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x2012a0 */
 int sum_until_zero(int *p, int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = p;
     *(uint32_t *)(rbp - 0xc) = n;
@@ -196,7 +181,6 @@ int (int * p, int n)
 fn sum_until_zero @ 0x2012a0 (size 119)
   blk0 @ 0x2012a0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))

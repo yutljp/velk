@@ -1,4 +1,4 @@
-# cpp_classes_a64.o: elf aarch64 no entry, 5 functions, 0 lift failures, 2 unsupported, 0 gotos
+# cpp_classes_a64.o: elf aarch64 no entry, 5 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x0 92 total_area(Shape const* const*, int) symtab
 0x5c 20 clamp_int(int) symtab
 0x70 28 clamp_long(long) symtab
@@ -21,7 +21,7 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
         a0 = *(uint64_t *)(x20);
         x20 = x20 + 0x8;
         x8 = *(uint64_t *)(*(uint64_t *)(a0) + 0x10);
-        /* unsupported: BLR at 0x30 */
+        (*(x8))();
         x21 = x21 - 0x1;
         w19 = (a0 & 0xffffffff) + w19;
     } while (x21 != 0x0);
@@ -43,7 +43,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
     x0 = load64(x20)
     x20 = (x20 + #0x8)
     x8 = load64((load64(x0) + #0x10))
-    unsupported: BLR at 0x30
+    call *x8
     x21 = (x21 - #0x1)
     x19 = (((x0 & #0xffffffff) + (x19 & #0xffffffff)) & #0xffffffff)
     brif ne x21, #0x0 -> 0x24
@@ -54,7 +54,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
   blk5 @ 0x48:
     ret (x19 & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab"],"section":".text","size":92,"unsupported":1}
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab"],"section":".text","size":92,"unsupported":0}
 
 == 0x5c clamp_int(int)
 -- decompile
@@ -77,7 +77,7 @@ fn clamp_int(int) @ 0x5c (size 20)
 -- decompile
 /* velk pseudo-C: clamp_long(long) @ 0x70 */
 uint64_t clamp_long_long_(int64_t a0) {
-    return ((a0 < 0x3e8 ? a0 : 0x3e8) > 0x3e8 ? (a0 < 0x3e8 ? a0 : 0x3e8) : 0xfffffffffffffc18);
+    return ((a0 < 0x3e8 ? a0 : 0x3e8) > 0xfffffffffffffc18 ? (a0 < 0x3e8 ? a0 : 0x3e8) : 0xfffffffffffffc18);
 }
 -- signature
 uint64_t (int64_t a0)
@@ -86,7 +86,7 @@ uint64_t (int64_t a0)
 -- ir
 fn clamp_long(long) @ 0x70 (size 28)
   blk0 @ 0x70:
-    ret select gt select lt x0, #0x3e8 ? x0, #0x3e8, #0x3e8 ? select lt x0, #0x3e8 ? x0, #0x3e8, #0xfffffffffffffc18
+    ret select gt select lt x0, #0x3e8 ? x0, #0x3e8, #0xfffffffffffffc18 ? select lt x0, #0x3e8 ? x0, #0x3e8, #0xfffffffffffffc18
 -- card
 {"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
 

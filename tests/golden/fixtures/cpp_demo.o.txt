@@ -41,9 +41,6 @@ fn ns::mul(int, int) @ 0x8 (size 8)
 -- decompile
 /* velk pseudo-C: use(int) @ 0x10 */
 uint32_t use_int_(uint32_t a0) {
-    uint64_t local_0; /* [sp-10] */
-
-    local_0 = x19;
     x1 = 0x2;
     x19 = a0;
     ns__mul_int__int_();
@@ -59,7 +56,6 @@ uint32_t (uint32_t a0)
 -- ir
 fn use(int) @ 0x10 (size 44)
   blk0 @ 0x10:
-    store64(x19, (sp + #0xfffffffffffffff0))
     x1 = #0x2
     x19 = w0
     call 0x8

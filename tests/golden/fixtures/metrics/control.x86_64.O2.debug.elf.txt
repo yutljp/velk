@@ -163,7 +163,7 @@ int cleanup_on_error(int a, int b, int *out) {
         return rax;
     }
     if (b != 0x0) {
-        out->field_0x0 = a / b;
+        out->field_0x0 = (int32_t)(a) / (int32_t)(b);
         rax = 0x0;
     }
     return rax;

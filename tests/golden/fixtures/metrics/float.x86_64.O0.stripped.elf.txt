@@ -9,10 +9,7 @@
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 uint32_t sub_2011f0(uint64_t a0, uint32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a0;
     *(uint32_t *)(rbp - 0xc) = a1;
@@ -29,12 +26,10 @@ uint32_t sub_2011f0(uint64_t a0, uint32_t a1) {
         /* unsupported (4 steps): Movsd at 0x201245, Cvtsi2sd at 0x20124a, Divsd at 0x20124f, Movsd at 0x201253 */
     } else {
         /* unsupported (3 steps): Xorps at 0x20125d, Movsd at 0x201260, Movsd at 0x20126a */
-        rbp = local_0;
         rsp = rsp + 0x8;
         return rax;
     }
     /* unsupported: Movsd at 0x20126a */
-    rbp = local_0;
     rsp = rsp + 0x8;
     return rax;
 }
@@ -46,7 +41,6 @@ uint32_t (uint64_t a0, uint32_t a1)
 fn <unnamed> @ 0x2011f0 (size 144)
   blk0 @ 0x2011f0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
@@ -79,7 +73,6 @@ fn <unnamed> @ 0x2011f0 (size 144)
     br 0x20126a
   blk6 @ 0x20126a:
     unsupported: Movsd at 0x20126a
-    rbp = load64(rsp)
     rsp = (rsp + #0x8)
     ret rax
 -- card
@@ -159,10 +152,7 @@ fn <unnamed> @ 0x2012d0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 uint32_t sub_2012f0(void) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     /* unsupported (5 steps): Movsd at 0x2012f4, Movsd at 0x2012f9, Movsd at 0x2012fe, Movsd at 0x201303, Ucomisd at 0x201308 */
     if (/* ls */ true) { goto L_20131f; }
@@ -187,7 +177,6 @@ uint32_t ()
 fn <unnamed> @ 0x2012f0 (size 79)
   blk0 @ 0x2012f0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     unsupported: Movsd at 0x2012f4
     unsupported: Movsd at 0x2012f9

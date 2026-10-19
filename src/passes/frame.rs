@@ -173,13 +173,6 @@ fn address_uses_frame(expr: &Expr, sp: u16) -> bool {
 /// stack adjustments.
 pub fn elide_callee_saves(ir: &mut FunctionIr) {
     let sp = stack_pointer(ir.isa);
-    struct Access {
-        block: usize,
-        position: usize,
-        slot: i64,
-        store: bool,
-        reg: u16,
-    }
     let mut accesses: Vec<Access> = Vec::new();
     let frames = crate::passes::frame_slots::block_frames(ir, sp);
     for (block_index, block) in ir.blocks.iter().enumerate() {
@@ -276,6 +269,20 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
             }
         }
         if borrowed {
+            // A callee-saved register the body uses is still only preserved
+            // for the caller when the entry saves it and each return restores
+            // it: the round trip says nothing about the function itself.
+            if callee_saved(ir, first.reg, sp)
+                && saves_entry_value(ir, first)
+                && restores
+                    .iter()
+                    .all(|index| restores_on_return(ir, &accesses[*index]))
+            {
+                drop.insert((first.block, first.position));
+                for restore in restores.iter().map(|index| &accesses[*index]) {
+                    drop.insert((restore.block, restore.position));
+                }
+            }
             continue;
         }
         drop.insert((first.block, first.position));
@@ -333,6 +340,37 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
             .collect();
         block.stmts = kept;
     }
+}
+
+struct Access {
+    block: usize,
+    position: usize,
+    slot: i64,
+    store: bool,
+    reg: u16,
+}
+
+/// A register a call preserves, other than the stack pointer.
+fn callee_saved(ir: &FunctionIr, reg: u16, sp: u16) -> bool {
+    reg != sp && reg < 32 && !ir.convention.clobbered().contains(&reg)
+}
+
+/// The save sits in the entry block before anything writes the register.
+fn saves_entry_value(ir: &FunctionIr, save: &Access) -> bool {
+    save.block == 0
+        && ir.blocks[0].stmts[..save.position]
+            .iter()
+            .all(|stmt| !statement_registers(stmt).0.contains(&save.reg))
+}
+
+/// The restore is the register's last use on the way out of a return.
+fn restores_on_return(ir: &FunctionIr, restore: &Access) -> bool {
+    let stmts = &ir.blocks[restore.block].stmts;
+    matches!(stmts.last(), Some(Stmt::Ret { .. }))
+        && stmts[restore.position + 1..].iter().all(|stmt| {
+            let (writes, reads) = statement_registers(stmt);
+            !writes.contains(&restore.reg) && !reads.contains(&restore.reg)
+        })
 }
 
 /// `fp = sp` or `fp = sp + k`: the frame pointer setup in a frame-pointer
@@ -615,6 +653,56 @@ mod tests {
     }
 
     #[test]
+    fn elides_a_callee_saved_register_the_body_uses() {
+        // push rbx; rbx = rdi; call; rax = rbx; pop rbx; return rax;
+        const RBX: u16 = 3;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                adjust(-8),
+                Stmt::Store {
+                    addr: Expr::reg(RSP, 64),
+                    value: Expr::reg(RBX, 64),
+                    width: 8,
+                },
+                assign(RBX, Expr::reg(7, 64)),
+                Stmt::Call {
+                    target: Some(0x100),
+                    through: None,
+                    convention: Convention::SysV,
+                },
+                assign(0, Expr::reg(RBX, 64)),
+                assign(
+                    RBX,
+                    Expr::Load {
+                        addr: Box::new(Expr::reg(RSP, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                ),
+                adjust(8),
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+
+        elide_callee_saves(&mut ir);
+
+        let touches_stack = ir.blocks[0].stmts.iter().any(|stmt| {
+            matches!(stmt, Stmt::Store { .. })
+                || matches!(
+                    stmt,
+                    Stmt::Assign {
+                        value: Expr::Load { .. },
+                        ..
+                    }
+                )
+        });
+        assert!(!touches_stack, "{}", ir.render());
+    }
+
+    #[test]
     fn keeps_a_spill_a_later_path_clobbers() {
         // *slot = rax; loop: rax = *slot; if (rdi == 0) return; call; goto loop;
         let mut ir = FunctionIr::single_block(
@@ -652,6 +740,7 @@ mod tests {
             stmts: vec![
                 Stmt::Call {
                     target: Some(0x100),
+                    through: None,
                     convention: Convention::SysV,
                 },
                 Stmt::Br { target: Some(0x10) },
@@ -680,6 +769,7 @@ mod tests {
             assign(7, Expr::reg(RBP, 64)),
             Stmt::Call {
                 target: Some(0x100),
+                through: None,
                 convention: Convention::SysV,
             },
             Stmt::Trap,
@@ -736,6 +826,7 @@ mod tests {
                 store(0, Expr::Const(9), 8),
                 Stmt::Call {
                     target: Some(0x100),
+                    through: None,
                     convention: Convention::Aapcs64,
                 },
                 Stmt::Ret {

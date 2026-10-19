@@ -1,4 +1,4 @@
-# metrics/calls.aarch64.O0.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 13 unsupported, 1 gotos
+# metrics/calls.aarch64.O0.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 11 unsupported, 1 gotos
 0x21031c 24 twice symtab,dwarf
 0x210334 28 square symtab,dwarf
 0x210350 44 pick_op symtab,dwarf
@@ -75,13 +75,11 @@ int apply_table(uint32_t index, int x) {
     w10 = 0x3;
     /* unsupported: UDIV at 0x210398 */
     w9 = w9 * w10;
-    t66 = w9;
     w9 = w8 - w9;
-    t65 = x8;
-    x8 = 0x2206f0;
-    x8 = qword_2206f0[w9];
+    w8 = 0x2206f0;
+    w8 = qword_2206f0[w9];
     index = local_0;
-    /* unsupported: BLR at 0x2103b4 */
+    (*(x8))();
     return index;
 }
 -- signature
@@ -97,25 +95,28 @@ fn apply_table @ 0x21037c (size 72)
     x10 = #0x3
     unsupported: UDIV at 0x210398
     w9 = (w9 * (x10 & #0xffffffff))
-    t66 = w9
     w9 = ((x8 & #0xffffffff) - w9)
-    t65 = x8
     x8 = #0x2206f0
     x8 = load64((#0x2206f0 + (w9 << #0x3)))
     w0 = load32((sp + #0xffffffffffffffe8))
-    unsupported: BLR at 0x2103b4
+    call *x8
     ret w0
 -- card
-{"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":72,"unsupported":4}
+{"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":72,"unsupported":3}
 
 == 0x2103c4 apply_pointer
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2103c4 */
 int apply_pointer(void *f, int x) {
+    uint64_t local_0; /* [sp-18] */
+    uint32_t local_1; /* [sp-1c] */
+
+    local_0 = f;
+    local_1 = x;
     x8 = f;
-    /* unsupported: BLR at 0x2103e0 */
-    f = x + 0x1;
-    return f;
+    f = x;
+    (*(x8))();
+    return (f & 0xffffffff) + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -124,12 +125,14 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x2103c4 (size 48)
   blk0 @ 0x2103c4:
+    store64(x0, (sp + #0xffffffffffffffe8))
+    store32(w1, (sp + #0xffffffffffffffe4))
     x8 = x0
-    unsupported: BLR at 0x2103e0
-    x0 = (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
-    ret w0
+    x0 = (w1 & #0xffffffff)
+    call *x8
+    ret (((x0 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":1}
+{"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
 
 == 0x2103f4 factorial
 -- decompile
@@ -139,15 +142,14 @@ int factorial(void) {
     uint32_t local_1; /* [sp-1c] */
 
     /* unsupported (2 steps): STUR at 0x210400, LDUR at 0x210404 */
-    x8 = w8 - 0x1;
+    w8 = w8 - 0x1;
     if (w8 + 0x1 > 0x1) {
         /* unsupported: LDUR at 0x210420 */
         local_1 = w8;
         /* unsupported: LDUR at 0x210428 */
         w0 = w8 - 0x1;
         factorial();
-        t65 = x8;
-        x8 = local_1 * w0;
+        w8 = local_1 * w0;
         local_0 = w8;
         return local_0;
     }
@@ -176,7 +178,6 @@ fn factorial @ 0x2103f4 (size 96)
     unsupported: LDUR at 0x210428
     w0 = ((x8 & #0xffffffff) - #0x1)
     call 0x2103f4
-    t65 = x8
     x8 = ((load32((sp + #0xffffffffffffffe4)) * w0) & #0xffffffff)
     store32((x8 & #0xffffffff), (sp + #0xffffffffffffffe8))
     br 0x210444

@@ -3,7 +3,9 @@ use iced_x86::{
     ConditionCode, Decoder, DecoderOptions, FlowControl, Instruction, Mnemonic, OpKind, Register,
 };
 
-use super::{Decoded, MAX_INSTRUCTIONS, Machine, Write, call, preserve_compare, tail_call};
+use super::{
+    Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
+};
 use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 use crate::loader::Image;
 
@@ -257,9 +259,14 @@ fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
     let value = if matches!(op, BinOp::Xor | BinOp::Sub) && lhs == rhs {
         Expr::constant(0)
     } else {
-        Expr::bin(op, lhs, rhs)
+        Expr::bin(op, lhs.clone(), rhs.clone())
     };
-    lifter.last_compare = Some((value.clone(), Expr::constant(0)));
+    // `sub` sets the flags `cmp` would: carry and overflow compare its
+    // operands, which a test of the result against zero cannot show.
+    lifter.last_compare = Some(match op {
+        BinOp::Sub => (lhs, rhs),
+        _ => (value.clone(), Expr::constant(0)),
+    });
     write_destination(lifter, ins, value);
 }
 
@@ -618,10 +625,19 @@ fn lift_instruction(
             }
         }
         Mnemonic::Call => {
-            lifter.stmts.push(call(
-                lifter.image,
-                Some(resolved_target(ins, relocation_target)),
-            ));
+            if matches!(
+                ins.op0_kind(),
+                OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64
+            ) {
+                lifter.stmts.push(call(
+                    lifter.image,
+                    Some(resolved_target(ins, relocation_target)),
+                ));
+            } else if let Some(through) = operand(lifter, ins, 0) {
+                lifter.stmts.push(call_through(lifter.image, through));
+            } else {
+                lifter.stmts.push(call(lifter.image, None));
+            }
         }
         Mnemonic::Jmp => {
             if ins.op0_kind() == OpKind::NearBranch64 {

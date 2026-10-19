@@ -1,7 +1,9 @@
 use yaxpeax_arch::{Decoder, ReaderBuilder};
 use yaxpeax_arm::armv8::a64::{self, Instruction, Operand, SizeCode};
 
-use super::{Decoded, MAX_INSTRUCTIONS, Machine, Write, call, preserve_compare, tail_call};
+use super::{
+    Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, preserve_compare, tail_call,
+};
 use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 
 pub(super) struct Lifter<'a> {
@@ -180,10 +182,17 @@ fn lift_alu(lifter: &mut Lifter, ops: [Operand; 4], op: BinOp, flags: bool) {
     else {
         return;
     };
+    let value = Expr::bin(op, lhs.clone(), rhs.clone());
+    // The flags read as a compare: `subs` compares its operands, `adds` its
+    // first operand with the negated second (as `cmn` does), and `ands`
+    // its result with zero.
     if flags {
-        lifter.last_compare = Some((lhs.clone(), rhs.clone()));
+        lifter.last_compare = Some(match op {
+            BinOp::Add => (lhs, Expr::bin(BinOp::Sub, Expr::constant(0), rhs)),
+            BinOp::And => (value.clone(), Expr::constant(0)),
+            _ => (lhs, rhs),
+        });
     }
-    let value = Expr::bin(op, lhs, rhs);
     if let Some(dest) = dest {
         lifter.assign(dest, value)
     }
@@ -865,6 +874,11 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
                 lifter.stmts.push(Stmt::BrIndirect { target });
             }
             return true;
+        }
+        O::BLR => {
+            if let Some(through) = lifter.operand(ops[0], 64) {
+                lifter.stmts.push(call_through(lifter.image, through));
+            }
         }
         O::BL => {
             lifter

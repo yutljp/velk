@@ -183,9 +183,9 @@ helper_cse=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cse" | grep -q "t1" && fail "temporary for a 32-bit register read"
 ok "two-round inlining"
 div_ir=$("$BIN" decompile $FIX/pe64.exe reg_div 2>/dev/null)
-echo "$div_ir" | grep -q "return a0 / a1;"  || fail "runtime division inlining"
+echo "$div_ir" | grep -qF "return (int32_t)(a0) / (int32_t)(a1);" || fail "runtime division inlining"
 mod_ir=$("$BIN" decompile $FIX/pe64.exe reg_mod 2>/dev/null)
-echo "$mod_ir" | grep -q "a0 % a1"        || fail "idiv remainder dividend"
+echo "$mod_ir" | grep -qF "(int32_t)(a0) % (int32_t)(a1)" || fail "idiv remainder dividend"
 ok "runtime division and remainder"
 stack_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$stack_ir" | grep -q "local_1"        || fail "stack locals named"

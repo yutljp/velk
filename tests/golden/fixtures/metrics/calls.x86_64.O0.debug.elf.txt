@@ -67,10 +67,7 @@ fn pick_op @ 0x201330 (size 33)
 /* velk pseudo-C: apply_table @ 0x201360 */
 /* ref: 0x202670 .data.rel.ro */
 int apply_table(uint32_t index, int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     rsp = rsp - 0x10;
     *(uint32_t *)(rbp - 0x4) = index;
@@ -83,9 +80,8 @@ int apply_table(uint32_t index, int x) {
     rax = 0x202670;
     rax = qword_202670[rcx];
     index = *(uint32_t *)(rbp - 0x8);
-    sub_0();
+    (*(rax))();
     rsp = rsp + 0x10;
-    rbp = local_0;
     rsp = rsp + 0x8;
     return rax;
 }
@@ -97,7 +93,6 @@ int (uint32_t index, int x)
 fn apply_table @ 0x201360 (size 52)
   blk0 @ 0x201360:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
@@ -110,9 +105,8 @@ fn apply_table @ 0x201360 (size 52)
     rax = #0x202670
     rax = load64((#0x202670 + (rcx * #0x8)))
     edi = load32((rbp + #0xfffffffffffffff8))
-    call 0x0
+    call *rax
     rsp = (rsp + #0x10)
-    rbp = load64(rsp)
     rsp = (rsp + #0x8)
     ret rax
 -- card
@@ -122,16 +116,12 @@ fn apply_table @ 0x201360 (size 52)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2013a0 */
 int apply_pointer(void *f, int x) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint64_t *)(rbp - 0x8) = f;
     *(uint32_t *)(rbp - 0xc) = x;
     rax = f;
     f = x;
-    sub_0();
+    (*(rax))();
     return eax + 0x1;
 }
 -- signature
@@ -141,14 +131,12 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x2013a0 (size 33)
   blk0 @ 0x2013a0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
     rax = rdi
     rdi = (esi & #0xffffffff)
-    call 0x0
+    call *rax
     ret (((rax & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2013a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":33,"unsupported":0}
@@ -157,10 +145,7 @@ fn apply_pointer @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2013d0 */
 int factorial(int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     rsp = rsp - 0x10;
     *(uint32_t *)(rbp - 0x4) = n;
@@ -186,7 +171,6 @@ int (int n)
 fn factorial @ 0x2013d0 (size 71)
   blk0 @ 0x2013d0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
@@ -212,10 +196,7 @@ fn factorial @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x201420 */
 int is_odd(int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     rsp = rsp - 0x10;
     *(uint32_t *)(rbp - 0x4) = n;
@@ -238,7 +219,6 @@ int (int n)
 fn is_odd @ 0x201420 (size 54)
   blk0 @ 0x201420:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
@@ -261,10 +241,7 @@ fn is_odd @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: is_even @ 0x201460 */
 int is_even(int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     rsp = rsp - 0x10;
     *(uint32_t *)(rbp - 0x4) = n;
@@ -287,7 +264,6 @@ int (int n)
 fn is_even @ 0x201460 (size 57)
   blk0 @ 0x201460:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     rsp = (rsp - #0x10)
     store32(edi, (rbp + #0xfffffffffffffffc))
@@ -310,11 +286,7 @@ fn is_even @ 0x201460 (size 57)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x2014a0 */
 long sum9(long a, long b, long c, long d, long e, long f) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     rax = *(uint64_t *)(rbp + 0x20);
     rax = *(uint64_t *)(rbp + 0x18);
     rax = *(uint64_t *)(rbp + 0x10);
@@ -333,9 +305,7 @@ long (long a, long b, long c, long d, long e, long f)
 -- ir
 fn sum9 @ 0x2014a0 (size 78)
   blk0 @ 0x2014a0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     rax = load64((rbp + #0x20))
     rax = load64((rbp + #0x18))
     rax = load64((rbp + #0x10))
@@ -353,11 +323,11 @@ fn sum9 @ 0x2014a0 (size 78)
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x2014f0 */
 long call_sum9(long x) {
-    uint64_t local_2; /* [sp-20] */
-    uint64_t local_3; /* [sp-18] */
+    uint64_t local_0; /* [sp-28] */
+    uint64_t local_1; /* [sp-20] */
+    uint64_t local_2; /* [sp-18] */
 
     rsp = rsp - 0x8;
-    *(uint64_t *)(rsp) = rbp;
     rbp = rsp;
     rsp = rsp - 0x20;
     *(uint64_t *)(rbp - 0x8) = x;
@@ -367,9 +337,9 @@ long call_sum9(long x) {
     rcx = 0x3;
     r8 = 0x4;
     r9 = 0x5;
-    *(uint64_t *)(rsp) = 0x6;
-    local_2 = 0x7;
-    local_3 = 0x8;
+    local_0 = 0x6;
+    local_1 = 0x7;
+    local_2 = 0x8;
     sum9();
     return rax;
 }
@@ -381,7 +351,6 @@ long (long x)
 fn call_sum9 @ 0x2014f0 (size 80)
   blk0 @ 0x2014f0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     rsp = (rsp - #0x20)
     store64(rdi, (rbp + #0xfffffffffffffff8))
@@ -404,10 +373,7 @@ fn call_sum9 @ 0x2014f0 (size 80)
 /* velk pseudo-C: sum_varargs @ 0x201540 */
 /* struct: a3 +0x0:uint32_t, +0x8:uint64_t */
 int sum_varargs(int count, uint64_t a1, uint32_t a2, uint32_t *a3, uint64_t a4, uint64_t a5) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     rsp = rsp - 0x80;
     if ((rax & 0xff) != 0x0) {
@@ -462,7 +428,6 @@ int (int count, uint64_t a1, uint32_t a2, uint32_t * a3, uint64_t a4, uint64_t a
 fn sum_varargs @ 0x201540 (size 296)
   blk0 @ 0x201540:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     rsp = (rsp - #0x80)
     brif eq (rax & #0xff), #0x0 -> 0x20157c

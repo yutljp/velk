@@ -14,11 +14,7 @@
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 uint32_t sub_201280(uint64_t a0, uint32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     rcx = rcx & 0xffffffffffffff00 | a0 & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
     *(uint8_t *)(rbp - 0x2) = a1 & 0xff & 0xff & 0xff;
@@ -32,9 +28,7 @@ uint32_t (uint64_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x201280 (size 32)
   blk0 @ 0x201280:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
     store8((((rsi & #0xff) & #0xff) & #0xff), (rbp + #0xfffffffffffffffe))
@@ -47,11 +41,7 @@ fn <unnamed> @ 0x201280 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
 uint32_t sub_2012a0(uint64_t a0, uint32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     rcx = rcx & 0xffffffffffffff00 | a0 & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
     *(uint8_t *)(rbp - 0x2) = a1 & 0xff & 0xff & 0xff;
@@ -66,9 +56,7 @@ uint32_t (uint64_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x2012a0 (size 32)
   blk0 @ 0x2012a0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
     store8((((rsi & #0xff) & #0xff) & #0xff), (rbp + #0xfffffffffffffffe))
@@ -82,11 +70,7 @@ fn <unnamed> @ 0x2012a0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
 uint32_t sub_2012c0(uint32_t a0, uint32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
     return (int32_t)(a0) - a1;
@@ -98,9 +82,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x2012c0 (size 32)
   blk0 @ 0x2012c0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     ret (sext32(edi) - (esi & #0xffffffff))
@@ -111,10 +93,7 @@ fn <unnamed> @ 0x2012c0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2012e0 @ 0x2012e0 */
 uint32_t sub_2012e0(uint32_t a0, uint32_t a1, uint32_t a2) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
@@ -140,7 +119,6 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 fn <unnamed> @ 0x2012e0 (size 64)
   blk0 @ 0x2012e0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
@@ -165,11 +143,7 @@ fn <unnamed> @ 0x2012e0 (size 64)
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 uint32_t sub_201320(uint32_t a0, uint32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
     return ((a0 << (a1 & 0x1f & 0xff) | a0 >> (0x20 - a1 & 0x1f & 0xff)) & 0xffffffff);
@@ -181,9 +155,7 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x201320 (size 48)
   blk0 @ 0x201320:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     ret ((((edi & #0xffffffff) << ((((esi & #0xffffffff) & #0x1f) & #0xffffffff) & #0xff)) | ((edi & #0xffffffff) >> ((((#0x20 - (esi & #0xffffffff)) & #0x1f) & #0xffffffff) & #0xff))) & #0xffffffff)
@@ -194,10 +166,7 @@ fn <unnamed> @ 0x201320 (size 48)
 -- decompile
 /* velk pseudo-C: sub_201350 @ 0x201350 */
 uint32_t sub_201350(uint32_t a0) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = 0x0;
@@ -216,7 +185,6 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x201350 (size 64)
   blk0 @ 0x201350:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(#0x0, (rbp + #0xfffffffffffffff8))
@@ -253,10 +221,7 @@ fn <unnamed> @ 0x201390 (size 64)
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 uint32_t sub_2013d0(uint32_t a0, uint32_t a1, uint32_t a2) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = a0;
     *(uint32_t *)(rbp - 0x8) = a1;
@@ -284,7 +249,6 @@ uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 fn <unnamed> @ 0x2013d0 (size 96)
   blk0 @ 0x2013d0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
@@ -314,10 +278,7 @@ fn <unnamed> @ 0x2013d0 (size 96)
 -- decompile
 /* velk pseudo-C: sub_201430 @ 0x201430 */
 uint64_t sub_201430(uint64_t a0) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a0;
     if (a0 < 0x0) {
@@ -336,7 +297,6 @@ uint64_t (uint64_t a0)
 fn <unnamed> @ 0x201430 (size 48)
   blk0 @ 0x201430:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     brif ge rdi, #0x0 -> 0x201452
@@ -355,11 +315,7 @@ fn <unnamed> @ 0x201430 (size 48)
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 uint64_t sub_201460(uint64_t a0, uint64_t a1) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint64_t *)(rbp - 0x8) = a0;
     *(uint64_t *)(rbp - 0x10) = a1;
     return __umulh(a0, a1);
@@ -371,9 +327,7 @@ uint64_t (uint64_t a0, uint64_t a1)
 -- ir
 fn <unnamed> @ 0x201460 (size 28)
   blk0 @ 0x201460:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store64(rsi, (rbp + #0xfffffffffffffff0))
     ret (rdi hi128 rsi)

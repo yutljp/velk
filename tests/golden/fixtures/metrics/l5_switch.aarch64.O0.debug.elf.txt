@@ -29,7 +29,6 @@ int dense(void) {
     sp = sp - 0x20;
     /* unsupported (2 steps): STUR at 0x210340, LDUR at 0x210344 */
     x8 = w8 - 0xa;
-    t65 = w8 + 0xa;
     x8 = w8;
     local_0 = x8;
     x8 = x8 - 0xf;
@@ -162,7 +161,6 @@ fn dense @ 0x210334 (size 228)
     unsupported: STUR at 0x210340
     unsupported: LDUR at 0x210344
     x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
-    t65 = (w8 + #0xa)
     x8 = (x8 & #0xffffffff)
     store64(x8, sp)
     x8 = (x8 - #0xf)

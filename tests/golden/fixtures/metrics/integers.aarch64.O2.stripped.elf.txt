@@ -70,7 +70,6 @@ fn <unnamed> @ 0x21021c (size 12)
 /* velk pseudo-C: sub_210228 @ 0x210228 */
 int32_t sub_210228(int32_t a0, int32_t a1) {
     /* unsupported: CCMP at 0x21022c */
-    t65 = a0;
     a0 = (a0 <= a1 ? 0x1 : 0x0);
     return a0;
 }
@@ -82,7 +81,6 @@ int32_t (int32_t a0, int32_t a1)
 fn <unnamed> @ 0x210228 (size 16)
   blk0 @ 0x210228:
     unsupported: CCMP at 0x21022c
-    t65 = w0
     w0 = select le w0, w1 ? #0x1, #0x0
     ret w0
 -- card

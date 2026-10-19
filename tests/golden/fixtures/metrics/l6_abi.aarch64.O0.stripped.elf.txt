@@ -1,4 +1,4 @@
-# metrics/l6_abi.aarch64.O0.stripped.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 2 unsupported, 0 gotos
+# metrics/l6_abi.aarch64.O0.stripped.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x2101d4 40 - prologue
 0x2101fc 40 - prologue
 0x210224 48 - prologue
@@ -54,10 +54,14 @@ fn <unnamed> @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: sub_210224 @ 0x210224 */
 uint32_t sub_210224(uint32_t a0, uint32_t a1) {
+    uint64_t local_0; /* [sp-18] */
+    uint32_t local_1; /* [sp-1c] */
+
+    local_0 = a0;
+    local_1 = a1;
     x8 = a0;
-    w9 = a1;
-    a0 = w9 + 0x1;
-    /* unsupported: BLR at 0x210244 */
+    a0 = a1 + 0x1;
+    (*(x8))();
     return a0;
 }
 -- signature
@@ -67,13 +71,14 @@ uint32_t (uint32_t a0, uint32_t a1)
 -- ir
 fn <unnamed> @ 0x210224 (size 48)
   blk0 @ 0x210224:
+    store64(x0, (sp + #0xffffffffffffffe8))
+    store32(w1, (sp + #0xffffffffffffffe4))
     x8 = x0
-    w9 = (w1 & #0xffffffff)
-    x0 = ((w9 + #0x1) & #0xffffffff)
-    unsupported: BLR at 0x210244
+    x0 = (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
+    call *x8
     ret w0
 -- card
-{"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":1}
+{"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x210254 -
 -- decompile

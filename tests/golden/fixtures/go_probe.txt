@@ -1351,7 +1351,7 @@ fn main.add @ 0x466ca0 (size 32)
 == 0x466cc0 main.divmod
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
-uint64_t main_divmod(uint64_t a0, uint64_t a1) {
+uint64_t main_divmod(int64_t a0, int64_t a1) {
     switch (a1) {
     case -1:
         a0 = -a0;
@@ -1365,7 +1365,7 @@ uint64_t main_divmod(uint64_t a0, uint64_t a1) {
     }
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+uint64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir

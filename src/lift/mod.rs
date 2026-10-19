@@ -142,6 +142,16 @@ fn reads_memory(expr: &Expr) -> bool {
 fn call(image: &Image, target: Option<u64>) -> Stmt {
     Stmt::Call {
         target,
+        through: None,
+        convention: Convention::of(image.isa, image.format, image.go),
+    }
+}
+
+/// A call to the address `through` computes.
+fn call_through(image: &Image, through: Expr) -> Stmt {
+    Stmt::Call {
+        target: None,
+        through: Some(through),
         convention: Convention::of(image.isa, image.format, image.go),
     }
 }
@@ -210,7 +220,28 @@ fn build<M: Machine>(
         });
     }
     add_exits(image, start, &mut blocks);
+    drop_unread_compare_operands(&mut blocks);
     Ok(blocks)
+}
+
+/// Removes the copies of compare operands no branch went on to read: most
+/// instructions set flags that nothing tests.
+fn drop_unread_compare_operands(blocks: &mut [Block]) {
+    let mut read = HashSet::new();
+    for stmt in blocks.iter().flat_map(|block| &block.stmts) {
+        read.extend(
+            crate::ir::visit::statement_registers(stmt)
+                .1
+                .into_iter()
+                .filter(|register| FLAG_OPERANDS.contains(register)),
+        );
+    }
+    for block in blocks {
+        block.stmts.retain(|stmt| {
+            !matches!(stmt, Stmt::Assign { dest, .. }
+                if FLAG_OPERANDS.contains(&dest.index) && !read.contains(&dest.index))
+        });
+    }
 }
 
 /// Gives each branch out of the function a block of its own holding the tail
@@ -316,6 +347,59 @@ mod tests {
             0xff, 0xc9, 0x75, 0x06, 0xb8, 0, 0, 0, 0, 0xc3, 0xb8, 1, 0, 0, 0, 0xc3,
         ];
         assert_eq!(returns(Isa::X86_64, code, &[(1, 1)]), 0);
+    }
+
+    #[test]
+    fn flags_of_tst_and_cmn_test_the_result() {
+        // tst w0, w1; b.eq +12; mov w0, #0; ret; mov w0, #1; ret
+        let tst = words(&[
+            0x6a01_001f,
+            0x5400_0060,
+            0x5280_0000,
+            0xd65f_03c0,
+            0x5280_0020,
+            0xd65f_03c0,
+        ]);
+        // 6 & 9 is zero although 6 != 9.
+        assert_eq!(returns(Isa::AArch64, tst, &[(0, 6), (1, 9)]), 1);
+        // cmn w0, #8; b.le +12; ...: -8 + 8 <= 0.
+        let cmn = words(&[
+            0x3100_201f,
+            0x5400_006d,
+            0x5280_0000,
+            0xd65f_03c0,
+            0x5280_0020,
+            0xd65f_03c0,
+        ]);
+        assert_eq!(returns(Isa::AArch64, cmn, &[(0, 0xffff_fff8)]), 1);
+    }
+
+    #[test]
+    fn an_unsigned_test_after_sub_compares_the_operands() {
+        // sub edi, 9; ja +6; mov eax, 0; ret; mov eax, 1; ret
+        let code = vec![
+            0x83, 0xef, 0x09, 0x77, 0x06, 0xb8, 0, 0, 0, 0, 0xc3, 0xb8, 1, 0, 0, 0, 0xc3,
+        ];
+        // 5 - 9 is nonzero, but 5 is not above 9.
+        assert_eq!(returns(Isa::X86_64, code, &[(7, 5)]), 0);
+    }
+
+    #[test]
+    fn a_call_through_a_register_keeps_its_target() {
+        // call rax; ret
+        let image = Image::from_code(Isa::X86_64, 0, vec![0xff, 0xd0, 0xc3]);
+        let blocks = lift(&image, 0, 3, &HashSet::new()).expect("lifts");
+        assert!(
+            matches!(
+                blocks[0].stmts.first(),
+                Some(Stmt::Call {
+                    target: None,
+                    through: Some(Expr::Reg { index: 0, .. }),
+                    ..
+                })
+            ),
+            "{blocks:?}"
+        );
     }
 
     #[test]

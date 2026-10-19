@@ -157,7 +157,7 @@ fn <unnamed> @ 0x201220 (size 256)
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 /* struct: a2 +0x0:uint32_t */
-int32_t sub_201320(int32_t a0, uint32_t a1, uint32_t *a2) {
+int32_t sub_201320(int32_t a0, int32_t a1, uint32_t *a2) {
     rax = 0xffffffff;
     if (a0 < 0x0) {
         return rax;
@@ -169,7 +169,7 @@ int32_t sub_201320(int32_t a0, uint32_t a1, uint32_t *a2) {
     return rax;
 }
 -- signature
-int32_t (int32_t a0, uint32_t a1, uint32_t * a2)
+int32_t (int32_t a0, int32_t a1, uint32_t * a2)
 -- references
 
 -- ir

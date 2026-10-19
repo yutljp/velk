@@ -428,6 +428,8 @@ pub enum Stmt {
     },
     Call {
         target: Option<u64>,
+        /// The address an indirect call computes, when `target` is unknown.
+        through: Option<Expr>,
         convention: Convention,
     },
     Ret {
@@ -576,9 +578,12 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
                     .unwrap_or_else(|| "<none>".to_owned())
             )
         }
-        Stmt::Call { target, .. } => match target {
-            Some(target) => format!("call 0x{target:x}"),
-            None => "call <dynamic>".to_owned(),
+        Stmt::Call {
+            target, through, ..
+        } => match (target, through) {
+            (Some(target), _) => format!("call 0x{target:x}"),
+            (None, Some(through)) => format!("call *{}", through.render(isa)),
+            (None, None) => "call <dynamic>".to_owned(),
         },
         Stmt::Ret { value } => format!("ret {}", value.render(isa)),
         Stmt::Unsupported { text } => format!("unsupported: {text}"),

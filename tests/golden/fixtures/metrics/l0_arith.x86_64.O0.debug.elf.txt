@@ -8,11 +8,7 @@
 -- decompile
 /* velk pseudo-C: add3 @ 0x2011c0 */
 int add3(int a, int b, int c) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a;
     *(uint32_t *)(rbp - 0x8) = b;
     *(uint32_t *)(rbp - 0xc) = c;
@@ -25,9 +21,7 @@ int (int a, int b, int c)
 -- ir
 fn add3 @ 0x2011c0 (size 24)
   blk0 @ 0x2011c0:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
@@ -56,10 +50,7 @@ fn scale @ 0x2011e0 (size 16)
 -- decompile
 /* velk pseudo-C: pick @ 0x2011f0 */
 int pick(int a, int b) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = a;
     *(uint32_t *)(rbp - 0x8) = b;
@@ -79,7 +70,6 @@ int (int a, int b)
 fn pick @ 0x2011f0 (size 44)
   blk0 @ 0x2011f0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))

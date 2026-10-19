@@ -37,7 +37,7 @@ uint64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
         if (x8 == a2) {
             return a0;
         }
-        if (a2 == 0x18) { goto L_2102a4; }
+        if ((a2 & 0x18) == 0x0) { goto L_2102a4; }
     }
     x11 = x8;
     x8 = a2 & 0xfffffffffffffff8;
@@ -47,7 +47,7 @@ uint64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     do {
         x11 = x11 + 0x8;
         /* unsupported: SIMD store */
-    } while (x11 != 0x10);
+    } while (x11 != 0x0);
     if (x8 == a2) {
         return a0;
     }
@@ -97,7 +97,7 @@ fn <unnamed> @ 0x210214 (size 176)
   blk7 @ 0x210268:
     brif eq x8, x2 -> 0x2102c0
   blk8 @ 0x210270:
-    brif eq x2, #0x18 -> 0x2102a4
+    brif eq (x2 & #0x18), #0x0 -> 0x2102a4
   blk9 @ 0x210278:
     x11 = x8
     x8 = (x2 & #0xfffffffffffffff8)
@@ -107,7 +107,7 @@ fn <unnamed> @ 0x210214 (size 176)
   blk10 @ 0x21028c:
     x11 = (x11 + #0x8)
     unsupported: SIMD store
-    brif ne x11, #0x10 -> 0x21028c
+    brif ne x11, #0x0 -> 0x21028c
   blk11 @ 0x21029c:
     brif eq x8, x2 -> 0x2102c0
   blk12 @ 0x2102a4:
@@ -219,11 +219,11 @@ fn <unnamed> @ 0x210304 (size 28)
 == 0x210320 -
 -- decompile
 /* velk pseudo-C: sub_210320 @ 0x210320 */
-uint64_t sub_210320(uint64_t a0, uint64_t a1) {
+uint64_t sub_210320(uint64_t a0, int64_t a1) {
     return a1 - a0 >>> 0x2;
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+uint64_t (uint64_t a0, int64_t a1)
 -- references
 
 -- ir

@@ -16,7 +16,7 @@ uint32_t sub_2011c0(uint32_t a0) {
     rax = a0;
     *(uint64_t *)(rbp - 0x38) = rax;
     rax = rax - 0x9;
-    if (rax > 0x0 /* unsigned */) { goto L_2013fe; }
+    if (rax + 0x9 > 0x9 /* unsigned */) { goto L_2013fe; }
     rcx = 0x200158;
     rax = (int32_t)(dword_200158[*(uint64_t *)(rbp - 0x38)]);
     rax = rax + 0x200158;
@@ -36,7 +36,7 @@ fn <unnamed> @ 0x2011c0 (size 44)
     rax = (edi & #0xffffffff)
     store64(rax, (rbp + #0xffffffffffffffc8))
     rax = (rax - #0x9)
-    brif hi rax, #0x0 -> 0x2013fe
+    brif hi (rax + #0x9), #0x9 -> 0x2013fe
   blk1 @ 0x2011d8:
     rcx = #0x200158
     rax = sext32(load32((#0x200158 + (load64((rbp + #0xffffffffffffffc8)) * #0x4))))

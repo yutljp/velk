@@ -79,10 +79,19 @@ fn note_signed_cond(cond: crate::ir::Cond, operands: &[&Expr], signed: &mut Hash
     }
 }
 
-/// Walks an expression for selects whose condition is signed.
+/// Walks an expression for the operands of signed operations: selects whose
+/// condition is signed, signed division and remainder, and arithmetic shifts.
 fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
     match expr {
-        Expr::Bin { lhs, rhs, .. } => {
+        Expr::Bin { op, lhs, rhs } => {
+            match op {
+                crate::ir::BinOp::DivS | crate::ir::BinOp::ModS => {
+                    reads(lhs, signed);
+                    reads(rhs, signed);
+                }
+                crate::ir::BinOp::Sar => reads(lhs, signed),
+                _ => {}
+            }
             signed_in_expr(lhs, signed);
             signed_in_expr(rhs, signed);
         }

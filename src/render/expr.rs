@@ -19,6 +19,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) local_widths: HashMap<String, u8>,
     /// Parameters wider than 32 bits: masking one is a real truncation.
     pub(super) wide_params: std::collections::HashSet<u16>,
+    /// Parameters declared as signed integers.
+    pub(super) signed_params: std::collections::HashSet<u16>,
     /// Parameters declared as pointers, with the fields their accesses name.
     pub(super) pointer_params: std::collections::HashSet<u16>,
     pub(super) fields: HashMap<(u16, i64), (u8, bool)>,
@@ -255,6 +257,29 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
             render_expr(lhs, ctx),
             render_expr(rhs, ctx)
         ),
+        // `/` and `%` read as unsigned on an unsigned operand, so a signed
+        // division names its signedness unless the dividend is a signed
+        // parameter.
+        Expr::Bin {
+            op: op @ (BinOp::DivS | BinOp::ModS),
+            lhs,
+            rhs,
+        } if !signed_parameter(lhs, ctx) => {
+            // Both operands, or C converts the signed one to unsigned.
+            let bytes = crate::ir::visit::expr_width(lhs).map_or(8, |bits| bits / 8);
+            let divisor = match rhs.as_ref() {
+                Expr::Const(_) => operand(rhs, ctx, 11, true),
+                _ if signed_parameter(rhs, ctx) => operand(rhs, ctx, 11, true),
+                _ => format!("({})({})", type_of(bytes, true), render_expr(rhs, ctx)),
+            };
+            format!(
+                "({})({}) {} {}",
+                type_of(bytes, true),
+                render_expr(lhs, ctx),
+                operator(*op),
+                divisor
+            )
+        }
         Expr::Bin { op, lhs, rhs } => {
             let strength = precedence(value);
             format!(
@@ -300,6 +325,19 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
             operand(els, ctx, 1, true)
         ),
     }
+}
+
+/// A signed parameter, read whole or as its low 32 bits.
+fn signed_parameter(expr: &Expr, ctx: &Ctx<'_>) -> bool {
+    let register = match expr {
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => lhs.as_ref(),
+        other => other,
+    };
+    matches!(register, Expr::Reg { index, .. } if ctx.signed_params.contains(index))
 }
 
 /// A local read or written whole by name, and through a cast when the access

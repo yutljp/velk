@@ -235,11 +235,11 @@ fn <unnamed> @ 0x201360 (size 32)
 == 0x201380 -
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
-uint64_t sub_201380(uint64_t a0, uint64_t a1) {
+uint64_t sub_201380(uint64_t a0, int64_t a1) {
     return a1 - a0 >>> 0x2;
 }
 -- signature
-uint64_t (uint64_t a0, uint64_t a1)
+uint64_t (uint64_t a0, int64_t a1)
 -- references
 
 -- ir

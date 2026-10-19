@@ -7,10 +7,7 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x2011a0 */
 int classify(int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x8) = x;
     if (x < 0x0) {
@@ -33,7 +30,6 @@ int (int x)
 fn classify @ 0x2011a0 (size 63)
   blk0 @ 0x2011a0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffff8))
     brif ge (edi & #0xffffffff), #0x0 -> 0x2011bd
@@ -57,10 +53,7 @@ fn classify @ 0x2011a0 (size 63)
 -- decompile
 /* velk pseudo-C: clamp @ 0x2011e0 */
 int clamp(int x, int lo, int hi) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x8) = x;
     *(uint32_t *)(rbp - 0xc) = lo;
@@ -85,7 +78,6 @@ int (int x, int lo, int hi)
 fn clamp @ 0x2011e0 (size 70)
   blk0 @ 0x2011e0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
@@ -111,10 +103,7 @@ fn clamp @ 0x2011e0 (size 70)
 -- decompile
 /* velk pseudo-C: sign_of @ 0x201230 */
 int sign_of(int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     if (x > 0x0) {
@@ -133,7 +122,6 @@ int (int x)
 fn sign_of @ 0x201230 (size 54)
   blk0 @ 0x201230:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     brif le (edi & #0xffffffff), #0x0 -> 0x20124e

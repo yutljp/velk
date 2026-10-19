@@ -73,6 +73,12 @@ fn render_with(
         .filter(|param| !param.ty.is_narrow())
         .map(|param| param.index)
         .collect();
+    let signed_params: std::collections::HashSet<u16> = ir
+        .params
+        .iter()
+        .filter(|param| matches!(param.ty, crate::ir::CType::Int { signed: true, .. }))
+        .map(|param| param.index)
+        .collect();
     let (pointer_params, fields) = struct_fields(ir);
     let narrow_regs = narrow_registers(ir);
     let members: HashMap<(String, i64), String> = ir
@@ -98,6 +104,7 @@ fn render_with(
         slots: locals.slots,
         local_widths: locals.widths,
         wide_params,
+        signed_params,
         pointer_params,
         fields,
         callees,
@@ -493,6 +500,10 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             text.push('}');
             text
         }
+        Stmt::Call {
+            through: Some(through),
+            ..
+        } => format!("(*({}))();", render_value(through, ctx)),
         Stmt::Call { target, .. } => match target {
             Some(target) => match ctx.callees.get(target) {
                 Some(name) => format!("{}();", sanitize(name)),

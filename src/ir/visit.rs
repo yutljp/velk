@@ -139,7 +139,14 @@ pub(crate) fn statement_registers(
         }
         Stmt::Ret { value } => expr_reads(value, &mut reads),
         Stmt::BrIndirect { target } => expr_reads(target, &mut reads),
-        Stmt::Call { convention, .. } => {
+        Stmt::Call {
+            through,
+            convention,
+            ..
+        } => {
+            if let Some(through) = through {
+                expr_reads(through, &mut reads);
+            }
             reads.extend(convention.call_reads());
             writes.extend(convention.clobbered());
         }

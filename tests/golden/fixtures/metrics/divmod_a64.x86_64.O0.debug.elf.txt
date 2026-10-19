@@ -29,14 +29,14 @@
 -- decompile
 /* velk pseudo-C: udiv3 @ 0x201460 */
 uint32_t udiv3(uint32_t x) {
-    uint64_t local_0; /* [sp-8] */
-
-    local_0 = rbp;
+    rsp = rsp - 0x8;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x201471 */
-    rbp = local_0;
+    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -46,12 +46,14 @@ uint32_t (uint32_t x)
 -- ir
 fn udiv3 @ 0x201460 (size 21)
   blk0 @ 0x201460:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0xfffffffffffffff8)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x201471
-    rbp = load64((rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201460","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":1}
@@ -60,14 +62,14 @@ fn udiv3 @ 0x201460 (size 21)
 -- decompile
 /* velk pseudo-C: udiv10 @ 0x201480 */
 uint32_t udiv10(uint32_t x) {
-    uint64_t local_0; /* [sp-8] */
-
-    local_0 = rbp;
+    rsp = rsp - 0x8;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x201491 */
-    rbp = local_0;
+    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -77,12 +79,14 @@ uint32_t (uint32_t x)
 -- ir
 fn udiv10 @ 0x201480 (size 21)
   blk0 @ 0x201480:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0xfffffffffffffff8)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x201491
-    rbp = load64((rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201480","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":1}
@@ -108,14 +112,14 @@ fn udiv64 @ 0x2014a0 (size 15)
 -- decompile
 /* velk pseudo-C: hdiv3 @ 0x2014b0 */
 uint64_t hdiv3(uint64_t x) {
-    uint64_t local_0; /* [sp-8] */
-
-    local_0 = rbp;
+    rsp = rsp - 0x8;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = x;
     rax = x;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x2014c3 */
-    rbp = local_0;
+    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -125,12 +129,14 @@ uint64_t (uint64_t x)
 -- ir
 fn hdiv3 @ 0x2014b0 (size 24)
   blk0 @ 0x2014b0:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0xfffffffffffffff8)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x2014c3
-    rbp = load64((rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2014b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}
@@ -139,14 +145,14 @@ fn hdiv3 @ 0x2014b0 (size 24)
 -- decompile
 /* velk pseudo-C: hdiv10 @ 0x2014d0 */
 uint64_t hdiv10(uint64_t x) {
-    uint64_t local_0; /* [sp-8] */
-
-    local_0 = rbp;
+    rsp = rsp - 0x8;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = x;
     rax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x2014e3 */
-    rbp = local_0;
+    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -156,12 +162,14 @@ uint64_t (uint64_t x)
 -- ir
 fn hdiv10 @ 0x2014d0 (size 24)
   blk0 @ 0x2014d0:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0xfffffffffffffff8)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x2014e3
-    rbp = load64((rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x2014d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}
@@ -170,7 +178,7 @@ fn hdiv10 @ 0x2014d0 (size 24)
 -- decompile
 /* velk pseudo-C: sdiv3 @ 0x2014f0 */
 int sdiv3(int x) {
-    return x / 0x3;
+    return (int32_t)(x) / 0x3;
 }
 -- signature
 int (int x)
@@ -187,7 +195,7 @@ fn sdiv3 @ 0x2014f0 (size 20)
 -- decompile
 /* velk pseudo-C: sdiv10 @ 0x201510 */
 int sdiv10(int x) {
-    return x / 0xa;
+    return (int32_t)(x) / 0xa;
 }
 -- signature
 int (int x)
@@ -204,7 +212,7 @@ fn sdiv10 @ 0x201510 (size 20)
 -- decompile
 /* velk pseudo-C: sdiv16 @ 0x201530 */
 int sdiv16(int x) {
-    return x / 0x10;
+    return (int32_t)(x) / 0x10;
 }
 -- signature
 int (int x)
@@ -221,7 +229,7 @@ fn sdiv16 @ 0x201530 (size 20)
 -- decompile
 /* velk pseudo-C: ldiv16 @ 0x201550 */
 uint64_t ldiv16(uint64_t x) {
-    return x / 0x10;
+    return (int64_t)(x) / 0x10;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -238,7 +246,7 @@ fn ldiv16 @ 0x201550 (size 24)
 -- decompile
 /* velk pseudo-C: smod3 @ 0x201570 */
 int smod3(int x) {
-    return x % 0x3;
+    return (int32_t)(x) % 0x3;
 }
 -- signature
 int (int x)
@@ -255,15 +263,15 @@ fn smod3 @ 0x201570 (size 22)
 -- decompile
 /* velk pseudo-C: umod3 @ 0x201590 */
 uint32_t umod3(uint32_t x) {
-    uint64_t local_0; /* [sp-8] */
-
-    local_0 = rbp;
+    rsp = rsp - 0x8;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0x3;
     rdx = 0x0;
     /* unsupported: div at 0x2015a1 */
     eax = rdx;
-    rbp = local_0;
+    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -273,13 +281,15 @@ uint32_t (uint32_t x)
 -- ir
 fn umod3 @ 0x201590 (size 23)
   blk0 @ 0x201590:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0xfffffffffffffff8)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0x3
     rdx = #0x0
     unsupported: div at 0x2015a1
     eax = rdx
-    rbp = load64((rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x201590","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":1}
@@ -288,15 +298,15 @@ fn umod3 @ 0x201590 (size 23)
 -- decompile
 /* velk pseudo-C: umod10 @ 0x2015b0 */
 uint32_t umod10(uint32_t x) {
-    uint64_t local_0; /* [sp-8] */
-
-    local_0 = rbp;
+    rsp = rsp - 0x8;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
     eax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x2015c1 */
     eax = rdx;
-    rbp = local_0;
+    rsp = rsp + 0x8;
     return eax;
 }
 -- signature
@@ -306,13 +316,15 @@ uint32_t (uint32_t x)
 -- ir
 fn umod10 @ 0x2015b0 (size 23)
   blk0 @ 0x2015b0:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0xfffffffffffffff8)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
     eax = (edi & #0xffffffff)
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x2015c1
     eax = rdx
-    rbp = load64((rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0x8)
     ret eax
 -- card
 {"addr":"0x2015b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf"],"section":".text","size":23,"unsupported":1}
@@ -321,7 +333,7 @@ fn umod10 @ 0x2015b0 (size 23)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x2015d0 */
 int smod10(int x) {
-    return x % 0xa;
+    return (int32_t)(x) % 0xa;
 }
 -- signature
 int (int x)
@@ -338,7 +350,7 @@ fn smod10 @ 0x2015d0 (size 22)
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x2015f0 */
 uint64_t lmod10(uint64_t x) {
-    return x % 0xa;
+    return (int64_t)(x) % 0xa;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -355,15 +367,15 @@ fn lmod10 @ 0x2015f0 (size 27)
 -- decompile
 /* velk pseudo-C: umod10b @ 0x201610 */
 uint32_t umod10b(uint64_t x) {
-    uint64_t local_0; /* [sp-8] */
-
-    local_0 = rbp;
+    rsp = rsp - 0x8;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = x;
     rax = x;
     rcx = 0xa;
     rdx = 0x0;
     /* unsupported: div at 0x201623 */
     rax = rdx;
-    rbp = local_0;
+    rsp = rsp + 0x8;
     return rax;
 }
 -- signature
@@ -373,13 +385,15 @@ uint32_t (uint64_t x)
 -- ir
 fn umod10b @ 0x201610 (size 27)
   blk0 @ 0x201610:
-    store64(rbp, (rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0xfffffffffffffff8)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
     rax = rdi
     rcx = #0xa
     rdx = #0x0
     unsupported: div at 0x201623
     rax = rdx
-    rbp = load64((rsp + #0xfffffffffffffff8))
+    rsp = (rsp + #0x8)
     ret rax
 -- card
 {"addr":"0x201610","approxTokens":156,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf"],"section":".text","size":27,"unsupported":1}
@@ -388,7 +402,7 @@ fn umod10b @ 0x201610 (size 27)
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x201630 */
 uint64_t lmod16(uint64_t x) {
-    return x % 0x10;
+    return (int64_t)(x) % 0x10;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -405,7 +419,7 @@ fn lmod16 @ 0x201630 (size 27)
 -- decompile
 /* velk pseudo-C: smod4 @ 0x201650 */
 int smod4(int x) {
-    return x % 0x4;
+    return (int32_t)(x) % 0x4;
 }
 -- signature
 int (int x)
@@ -513,7 +527,7 @@ fn lnegate @ 0x2016e0 (size 16)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x2016f0 */
 uint64_t lmod3(uint64_t x) {
-    return x % 0x3;
+    return (int64_t)(x) % 0x3;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -530,7 +544,7 @@ fn lmod3 @ 0x2016f0 (size 27)
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x201710 */
 uint64_t ldiv3(uint64_t x) {
-    return x / 0x3;
+    return (int64_t)(x) / 0x3;
 }
 -- signature
 uint64_t (uint64_t x)
@@ -547,7 +561,7 @@ fn ldiv3 @ 0x201710 (size 24)
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x201730 */
 uint64_t ldiv10(uint64_t x) {
-    return x / 0xa;
+    return (int64_t)(x) / 0xa;
 }
 -- signature
 uint64_t (uint64_t x)

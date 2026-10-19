@@ -35,7 +35,7 @@ uint32_t sub_201400(uint32_t a0) {
     rcx = eax;
     *(uint64_t *)(rbp - 0x10) = rcx;
     rax = eax - 0xf;
-    if (eax > 0x0 /* unsigned */) { goto L_2014d4; }
+    if (eax + 0xf > 0xf /* unsigned */) { goto L_2014d4; }
     rcx = 0x200158;
     rax = (int32_t)(dword_200158[*(uint64_t *)(rbp - 0x10)]);
     rax = rax + 0x200158;
@@ -57,7 +57,7 @@ fn <unnamed> @ 0x201400 (size 52)
     rcx = (rax & #0xffffffff)
     store64(rcx, (rbp + #0xfffffffffffffff0))
     rax = (((rax & #0xffffffff) - #0xf) & #0xffffffff)
-    brif hi eax, #0x0 -> 0x2014d4
+    brif hi (eax + #0xf), #0xf -> 0x2014d4
   blk1 @ 0x201420:
     rcx = #0x200158
     rax = sext32(load32((#0x200158 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
@@ -491,10 +491,7 @@ fn <unnamed> @ 0x2016d0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2016f0 @ 0x2016f0 */
 uint32_t sub_2016f0(uint32_t a0) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x8) = a0;
     eax = a0;
@@ -526,7 +523,6 @@ uint32_t (uint32_t a0)
 fn <unnamed> @ 0x2016f0 (size 111)
   blk0 @ 0x2016f0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffff8))
     eax = (edi & #0xffffffff)

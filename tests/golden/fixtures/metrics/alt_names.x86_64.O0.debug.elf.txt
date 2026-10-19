@@ -6,11 +6,7 @@
 -- decompile
 /* velk pseudo-C: alt_sum3 @ 0x201180 */
 int alt_sum3(int a, int b, int c) {
-    uint64_t local_0; /* [sp-8] */
-
-    rsp = rsp - 0x8;
-    local_0 = rbp;
-    rbp = rsp;
+    rbp = rsp - 0x8;
     *(uint32_t *)(rbp - 0x4) = a;
     *(uint32_t *)(rbp - 0x8) = b;
     *(uint32_t *)(rbp - 0xc) = c;
@@ -23,9 +19,7 @@ int (int a, int b, int c)
 -- ir
 fn alt_sum3 @ 0x201180 (size 24)
   blk0 @ 0x201180:
-    rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
-    rbp = rsp
+    rbp = (rsp + #0xfffffffffffffff8)
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
     store32(edx, (rbp + #0xfffffffffffffff4))
@@ -37,10 +31,7 @@ fn alt_sum3 @ 0x201180 (size 24)
 -- decompile
 /* velk pseudo-C: alt_helper @ 0x2011a0 */
 int alt_helper(int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = 0x0;
@@ -60,7 +51,6 @@ int (int x)
 fn alt_helper @ 0x2011a0 (size 65)
   blk0 @ 0x2011a0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(#0x0, (rbp + #0xfffffffffffffff8))

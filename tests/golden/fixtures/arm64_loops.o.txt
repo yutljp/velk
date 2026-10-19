@@ -79,7 +79,7 @@ fn sum_until @ 0x28 (size 40)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x50 */
 /* struct: a0 +0x0:uint32_t */
-uint32_t sum_till_neg(uint32_t *a0, uint32_t a1) {
+int32_t sum_till_neg(uint32_t *a0, int32_t a1) {
     x9 = (a1 & ~(a1 >>> 0x1f) & 0xffffffff);
     x10 = 0x0;
     do {
@@ -95,7 +95,7 @@ uint32_t sum_till_neg(uint32_t *a0, uint32_t a1) {
     return w8;
 }
 -- signature
-uint32_t (uint32_t * a0, uint32_t a1)
+int32_t (uint32_t * a0, int32_t a1)
 -- references
 
 -- ir

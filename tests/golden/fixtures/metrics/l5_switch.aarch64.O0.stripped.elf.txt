@@ -34,7 +34,6 @@ uint32_t sub_210334(void) {
     x29 = sp + 0x10;
     /* unsupported (2 steps): STUR at 0x210340, LDUR at 0x210344 */
     x8 = w8 - 0xa;
-    t65 = w8 + 0xa;
     x8 = w8;
     local_2 = x8;
     x8 = x8 - 0xf;
@@ -76,7 +75,6 @@ fn <unnamed> @ 0x210334 (size 68)
     unsupported: STUR at 0x210340
     unsupported: LDUR at 0x210344
     x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
-    t65 = (w8 + #0xa)
     x8 = (x8 & #0xffffffff)
     store64(x8, sp)
     x8 = (x8 - #0xf)

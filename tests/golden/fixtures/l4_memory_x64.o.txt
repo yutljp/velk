@@ -65,7 +65,6 @@ fn array_sum @ 0x10 (size 31)
 -- decompile
 /* velk pseudo-C: bump @ 0x30 */
 void bump(void) {
-    t65 = dword_4c + 0x1;
     dword_4c += 0x1;
     return;
 }
@@ -76,7 +75,6 @@ void ()
 -- ir
 fn bump @ 0x30 (size 7)
   blk0 @ 0x30:
-    t65 = (load32(#0x4c) + #0x1)
     store32((load32(#0x4c) + #0x1), #0x4c)
     ret rax
 -- card

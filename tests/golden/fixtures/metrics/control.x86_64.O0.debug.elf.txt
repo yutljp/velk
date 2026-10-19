@@ -11,10 +11,7 @@
 -- decompile
 /* velk pseudo-C: matrix_trace @ 0x201230 */
 int matrix_trace(int *m, int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = m;
     *(uint32_t *)(rbp - 0xc) = n;
@@ -49,7 +46,6 @@ int (int * m, int n)
 fn matrix_trace @ 0x201230 (size 137)
   blk0 @ 0x201230:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
@@ -86,10 +82,7 @@ fn matrix_trace @ 0x201230 (size 137)
 -- decompile
 /* velk pseudo-C: cleanup_on_error @ 0x2012c0 */
 int cleanup_on_error(int a, int b, int *out) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = a;
     *(uint32_t *)(rbp - 0x8) = b;
@@ -100,8 +93,8 @@ int cleanup_on_error(int a, int b, int *out) {
         if (*(uint32_t *)(rbp - 0x8) == 0x0) {
         } else {
             rax = *(uint32_t *)(rbp - 0x4);
-            out = eax % *(uint32_t *)(rbp - 0x8);
-            ecx = eax / *(uint32_t *)(rbp - 0x8);
+            out = (int32_t)(eax) % (int32_t)(*(uint32_t *)(rbp - 0x8));
+            ecx = (int32_t)(eax) / (int32_t)(*(uint32_t *)(rbp - 0x8));
             *(uint32_t *)(*(uint64_t *)(rbp - 0x10)) = ecx;
             *(uint32_t *)(rbp - 0x14) = 0x0;
         }
@@ -117,7 +110,6 @@ int (int a, int b, int * out)
 fn cleanup_on_error @ 0x2012c0 (size 78)
   blk0 @ 0x2012c0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(esi, (rbp + #0xfffffffffffffff8))
@@ -147,17 +139,14 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
 /* velk pseudo-C: fallthrough @ 0x201310 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x4) = x;
     *(uint32_t *)(rbp - 0x8) = 0x0;
     rax = x;
     *(uint64_t *)(rbp - 0x10) = rax;
     rax = rax - 0x3;
-    if (rax > 0x0 /* unsigned */) {
+    if (rax + 0x3 > 0x3 /* unsigned */) {
         *(uint32_t *)(rbp - 0x8) = 0xffffffff;
         rsp = rsp + 0x8;
         return *(uint32_t *)(rbp - 0x8);
@@ -189,14 +178,13 @@ int (int x)
 fn fallthrough @ 0x201310 (size 107)
   blk0 @ 0x201310:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffffc))
     store32(#0x0, (rbp + #0xfffffffffffffff8))
     rax = (edi & #0xffffffff)
     store64(rax, (rbp + #0xfffffffffffffff0))
     rax = (rax - #0x3)
-    brif hi rax, #0x0 -> 0x20136f
+    brif hi (rax + #0x3), #0x3 -> 0x20136f
   blk1 @ 0x20132f:
     rcx = #0x200120
     rax = sext32(load32((#0x200120 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
@@ -226,10 +214,7 @@ fn fallthrough @ 0x201310 (size 107)
 -- decompile
 /* velk pseudo-C: sparse @ 0x201380 */
 int sparse(int x) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint32_t *)(rbp - 0x8) = x;
     eax = x;
@@ -266,7 +251,6 @@ int (int x)
 fn sparse @ 0x201380 (size 142)
   blk0 @ 0x201380:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store32(edi, (rbp + #0xfffffffffffffff8))
     eax = (edi & #0xffffffff)
@@ -310,10 +294,7 @@ fn sparse @ 0x201380 (size 142)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x201410 */
 int short_circuit(int *p, int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = p;
     *(uint32_t *)(rbp - 0xc) = n;
@@ -359,7 +340,6 @@ int (int * p, int n)
 fn short_circuit @ 0x201410 (size 99)
   blk0 @ 0x201410:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
@@ -397,10 +377,7 @@ fn short_circuit @ 0x201410 (size 99)
 -- decompile
 /* velk pseudo-C: skip_negatives @ 0x201480 */
 int skip_negatives(int *p, int n) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = p;
     *(uint32_t *)(rbp - 0xc) = n;
@@ -430,7 +407,6 @@ int (int * p, int n)
 fn skip_negatives @ 0x201480 (size 96)
   blk0 @ 0x201480:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
     store32(esi, (rbp + #0xfffffffffffffff4))
@@ -459,10 +435,7 @@ fn skip_negatives @ 0x201480 (size 96)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x2014e0 */
 int find_pair(int *p, int n, int target) {
-    uint64_t local_0; /* [sp-8] */
-
     rsp = rsp - 0x8;
-    local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x10) = p;
     *(uint32_t *)(rbp - 0x14) = n;
@@ -500,7 +473,6 @@ int (int * p, int n, int target)
 fn find_pair @ 0x2014e0 (size 153)
   blk0 @ 0x2014e0:
     rsp = (rsp + #0xfffffffffffffff8)
-    store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff0))
     store32(esi, (rbp + #0xffffffffffffffec))
