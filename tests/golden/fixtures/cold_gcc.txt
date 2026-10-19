@@ -165,8 +165,7 @@ int64_t main(int32_t a0) {
     local_5 = rax;
     local_6 = 0x0;
     lookup(&local_3, 0x2, a0);
-    rdx = local_0 - *(uint64_t *)(fs_base + 0x28);
-    if (rdx + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
+    if (local_0 != *(uint64_t *)(fs_base + 0x28)) {
         __stack_chk_fail();
         __builtin_trap();
     }
@@ -189,12 +188,11 @@ fn main @ 0x1120 (size 124)
     store64(rax, (rsp + #0xffffffffffffffd0))
     store64(#0x0, (rsp + #0xffffffffffffffe0))
     call 0x1290((rsp + #0xffffffffffffffb8), #0x2, (rdi & #0xffffffff))
-    rdx = (load64((rsp + #0xfffffffffffffff0)) - load64((fs_base + #0x28)))
-    brif ne (rdx + load64((fs_base + #0x28))), load64((fs_base + #0x28)) -> 0x1197
+    brif ne load64((rsp + #0xfffffffffffffff0)), load64((fs_base + #0x28)) -> 0x1197
   blk1 @ 0x1192:
     ret rax
   blk2 @ 0x1197:
-    call 0x10b0
+    call 0x10b0()
     trap
 -- card
 {"addr":"0x1120","approxTokens":228,"blocks":3,"hardReasons":[],"name":"main","nameSources":["symtab","unwind"],"section":".text","size":124,"unsupported":0}
@@ -311,12 +309,12 @@ int64_t __do_global_dtors_aux(void) {
         return rax;
     }
     if (qword_3ff8 != 0x0) {
-        rdi = __dso_handle;
-        __cxa_finalize();
+        v1 = __dso_handle;
+        __cxa_finalize(v1);
     }
-    v1 = deregister_tm_clones();
+    v2 = deregister_tm_clones();
     completed_0 = 0x1;
-    return v1;
+    return v2;
 }
 -- signature
 int64_t ()
@@ -329,12 +327,12 @@ fn __do_global_dtors_aux @ 0x1240 (size 64)
   blk1 @ 0x124d:
     brif eq load64(#0x3ff8), #0x0 -> 0x1267
   blk2 @ 0x125b:
-    rdi = load64(#0x4008)
-    call 0x1080
+    v1 = load64(#0x4008)
+    call 0x1080(v1)
   blk3 @ 0x1267:
-    v1 = call 0x11d0()
+    v2 = call 0x11d0()
     store8(#0x1, #0x4028)
-    ret v1
+    ret v2
   blk4 @ 0x1278:
     ret rax
 -- card
@@ -362,77 +360,64 @@ fn frame_dummy @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: lookup @ 0x1290 */
 /* struct: a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t */
-int32_t lookup(uint64_t *a0, int64_t a1, int64_t a2) {
+int32_t lookup(uint64_t *a0, int64_t a1, int32_t a2) {
     uint64_t local_0; /* [sp-20] */
     uint64_t local_1; /* [sp-78] */
     uint64_t local_2; /* [sp-70] */
 
     local_0 = *(uint64_t *)(fs_base + 0x28);
     if ((a1 & 0xffffffff) <= 0x0) {
-        v6 = rsp - 0x68;
+        v19 = rsp - 0x68;
         local_2 = 0x0;
-        r9d = a2;
-        r8 = 0x2004;
+        v20 = a2;
         local_1 = a1;
-        rcx = 0x40;
-        a2 = 0x2;
-        a1 = 0x40;
-        a0 = v6;
         rax = 0x0;
-        __snprintf_chk();
-        a1 = stderr_GLIBC_2_2_5;
-        a0 = v6;
-        fputs();
+        __snprintf_chk(v19, 0x40, 0x2, 0x40, 0x2004, v20);
+        v26 = stderr_GLIBC_2_2_5;
+        fputs(v19, v26);
     } else {
         v2 = a0;
         v3 = a0;
         rbp = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
-        rcx = a0 + rbp;
-        while (*(uint32_t *)(v3) != (a2 & 0xffffffff)) {
+        v4 = a0 + rbp;
+        while (*(uint32_t *)(v3) != a2) {
             v3 = v3 + 0x18;
-            if (v3 == rcx) {
+            if (v3 == v4) {
                 goto L_12fd;
             }
         }
         rax = *(uint32_t *)(v3 + 0x4);
-        a2 = local_0 - *(uint64_t *)(fs_base + 0x28);
-        if (a2 + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
+        if (local_0 != *(uint64_t *)(fs_base + 0x28)) {
             __stack_chk_fail();
             __builtin_trap();
         }
         return rax;
     L_12fd:
-        v4 = rsp - 0x68;
-        r9d = a2;
-        rcx = 0x40;
+        v5 = rsp - 0x68;
+        v6 = a2;
         local_1 = a1;
-        a0 = v4;
-        r8 = 0x2004;
-        a2 = 0x2;
-        a1 = 0x40;
         rax = 0x0;
-        v5 = v2 + 0x8;
-        rbp = rbp + v5;
-        __snprintf_chk();
-        a1 = stderr_GLIBC_2_2_5;
-        a0 = v4;
-        fputs();
+        v12 = v2 + 0x8;
+        rbp = rbp + v12;
+        __snprintf_chk(v5, 0x40, 0x2, 0x40, 0x2004, v6);
+        v13 = stderr_GLIBC_2_2_5;
+        fputs(v5, v13);
         do {
-            r8 = *(uint32_t *)(v5 - 0x4);
-            a0 = stderr_GLIBC_2_2_5;
-            rcx = v5;
+            v14 = *(uint32_t *)(v12 - 0x4);
+            v15 = stderr_GLIBC_2_2_5;
+            v16 = v12;
             rax = 0x0;
-            a2 = 0x201c;
-            a1 = 0x2;
-            v5 = v5 + 0x18;
-            __fprintf_chk();
-        } while (v5 != rbp);
+            v17 = 0x201c;
+            v18 = 0x2;
+            v12 = v12 + 0x18;
+            __fprintf_chk(v15, 0x2, 0x201c, v16, v14);
+        } while (v12 != rbp);
     }
     abort();
     __builtin_trap();
 }
 -- signature
-int32_t (uint64_t * a0, int64_t a1, int64_t a2)
+int32_t (uint64_t * a0, int64_t a1, int32_t a2)
 -- references
 
 -- ir
@@ -444,67 +429,54 @@ fn lookup @ 0x1290 (size 240)
     v2 = rdi
     v3 = rdi
     rbp = ((sext32(rsi) + (sext32(rsi) * #0x2)) << #0x3)
-    rcx = (rdi + rbp)
+    v4 = (rdi + rbp)
     br 0x12d9
   blk2 @ 0x12d0:
     v3 = (v3 + #0x18)
-    brif eq v3, rcx -> 0x12fd
+    brif eq v3, v4 -> 0x12fd
   blk3 @ 0x12d9:
     brif ne load32(v3), (rdx & #0xffffffff) -> 0x12d0
   blk4 @ 0x12dd:
     rax = (load32((v3 + #0x4)) & #0xffffffff)
-    rdx = (load64((rsp + #0xffffffffffffffe0)) - load64((fs_base + #0x28)))
-    brif ne (rdx + load64((fs_base + #0x28))), load64((fs_base + #0x28)) -> 0x137b
+    brif ne load64((rsp + #0xffffffffffffffe0)), load64((fs_base + #0x28)) -> 0x137b
   blk5 @ 0x12f4:
     ret rax
   blk6 @ 0x12fd:
-    v4 = (rsp + #0xffffffffffffff98)
-    r9d = rdx
-    rcx = #0x40
+    v5 = (rsp + #0xffffffffffffff98)
+    v6 = rdx
     store64(rsi, (rsp + #0xffffffffffffff88))
-    rdi = v4
-    r8 = #0x2004
-    rdx = #0x2
-    rsi = #0x40
     rax = #0x0
-    v5 = (v2 + #0x8)
-    rbp = (rbp + v5)
-    call 0x1090
-    rsi = load64(#0x4020)
-    rdi = v4
-    call 0x10c0
+    v12 = (v2 + #0x8)
+    rbp = (rbp + v12)
+    call 0x1090(v5, #0x40, #0x2, #0x40, #0x2004, v6)
+    v13 = load64(#0x4020)
+    call 0x10c0(v5, v13)
   blk7 @ 0x1350:
-    r8 = (load32((v5 + #0xfffffffffffffffc)) & #0xffffffff)
-    rdi = load64(#0x4020)
-    rcx = v5
+    v14 = (load32((v12 + #0xfffffffffffffffc)) & #0xffffffff)
+    v15 = load64(#0x4020)
+    v16 = v12
     rax = #0x0
-    rdx = #0x201c
-    rsi = #0x2
-    v5 = (v5 + #0x18)
-    call 0x10d0
-    brif ne v5, rbp -> 0x1350
+    v17 = #0x201c
+    v18 = #0x2
+    v12 = (v12 + #0x18)
+    call 0x10d0(v15, #0x2, #0x201c, v16, v14)
+    brif ne v12, rbp -> 0x1350
   blk8 @ 0x1376:
     br 0x111a
   blk9 @ 0x137b:
-    call 0x10b0
+    call 0x10b0()
     trap
   blk10 @ 0x10e0:
-    v6 = (rsp + #0xffffffffffffff98)
+    v19 = (rsp + #0xffffffffffffff98)
     store64(#0x0, (rsp + #0xffffffffffffff90))
-    r9d = rdx
-    r8 = #0x2004
+    v20 = rdx
     store64(rsi, (rsp + #0xffffffffffffff88))
-    rcx = #0x40
-    rdx = #0x2
-    rsi = #0x40
-    rdi = v6
     rax = #0x0
-    call 0x1090
-    rsi = load64(#0x4020)
-    rdi = v6
-    call 0x10c0
+    call 0x1090(v19, #0x40, #0x2, #0x40, #0x2004, v20)
+    v26 = load64(#0x4020)
+    call 0x10c0(v19, v26)
   blk11 @ 0x111a:
-    call 0x10a0
+    call 0x10a0()
     trap
 -- card
 {"accesses":["a0 +0x0:uint64_t, +0x4:uint32_t, +0x48:uint64_t, +0xfffffffffffffffc:uint32_t"],"addr":"0x1290","approxTokens":198,"blocks":12,"hardReasons":[],"name":"lookup","nameSources":["symtab","unwind"],"section":".text","size":240,"unsupported":0}

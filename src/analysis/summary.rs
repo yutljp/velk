@@ -217,10 +217,15 @@ fn by_name(image: &Image, addr: u64) -> Summary {
             .unwrap_or(name);
         NORETURN_IMPORTS.contains(&name)
     });
-    Summary {
-        arity: None,
-        noreturn,
-    }
+    // A linkage stub's callee takes what its prototype says.
+    let arity = function
+        .sources
+        .contains(&NameSource::Plt)
+        .then_some(function.name.as_deref())
+        .flatten()
+        .and_then(|name| super::prototypes::of(name, image.format == crate::loader::Format::MachO))
+        .map(|prototype| prototype.fixed);
+    Summary { arity, noreturn }
 }
 
 fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> Summary {

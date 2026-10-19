@@ -342,6 +342,105 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
     })
 }
 
+/// Gives each call to a variadic library function the arguments its format
+/// string's conversions take, where a constant format reaches the call.
+pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Image) {
+    let variadic = |target: u64| {
+        let name = image.functions.get(&target)?.name.as_deref()?;
+        let prototype =
+            crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)?;
+        Some((prototype.fixed, prototype.format?))
+    };
+    let pending = ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(stmt, Stmt::Call { target: Some(target), args: None, .. } if variadic(*target).is_some())
+    });
+    if !pending {
+        return;
+    }
+    let Some(mut ssa) = build(ir) else {
+        return;
+    };
+    let constants = sccp::constants(&ssa);
+    let mut changed = false;
+    for (block, contents) in ssa.ir.blocks.iter_mut().enumerate() {
+        for (position, stmt) in contents.stmts.iter_mut().enumerate() {
+            let Stmt::Call {
+                target: Some(target),
+                args: args @ None,
+                convention,
+                ..
+            } = stmt
+            else {
+                continue;
+            };
+            let Some((fixed, format)) = variadic(*target) else {
+                continue;
+            };
+            let registers = convention.arguments();
+            let Some(register) = registers.get(format) else {
+                continue;
+            };
+            // The format's address, as the value the call reads it in.
+            let Some(address) = ssa
+                .implicit_reads
+                .get(&(block, position))
+                .and_then(|reads| reads.iter().find(|(read, _)| read == register))
+                .and_then(|(_, value)| constants.get(value))
+            else {
+                continue;
+            };
+            let Some(format) = c_string(image, *address) else {
+                continue;
+            };
+            let count = (fixed + crate::analysis::prototypes::format_arguments(&format))
+                .min(registers.len());
+            let reads = &ssa.implicit_reads[&(block, position)];
+            let passed: Option<Vec<Expr>> = registers[..count]
+                .iter()
+                .map(|register| {
+                    reads
+                        .iter()
+                        .find(|(read, _)| read == register)
+                        .map(|(_, value)| Expr::reg(*value, 64))
+                })
+                .collect();
+            if let Some(passed) = passed {
+                *args = Some(passed);
+                changed = true;
+            }
+        }
+    }
+    if changed {
+        // The values a call names are no longer read without being named.
+        for ((block, position), reads) in ssa.implicit_reads.iter_mut() {
+            if let Stmt::Call {
+                args: Some(_),
+                convention,
+                ..
+            } = &ssa.ir.blocks[*block].stmts[*position]
+            {
+                reads.retain(|(register, _)| convention.call_extra().contains(register));
+            }
+        }
+        *ir = lower(&ssa);
+    }
+}
+
+/// The NUL-terminated text at `address`, within its section.
+fn c_string(image: &crate::loader::Image, address: u64) -> Option<String> {
+    let section = image.section_at(address)?;
+    let available = (section.vaddr + section.size)
+        .saturating_sub(address)
+        .min(256);
+    let bytes = image.read_vaddr(address, available)?;
+    let text: Vec<u8> = bytes
+        .iter()
+        .copied()
+        .take_while(|byte| *byte != 0)
+        .collect();
+    String::from_utf8(text).ok()
+}
+
 /// Propagates constants across the function through its SSA form.
 pub fn propagate_constants(ir: &mut FunctionIr) {
     let Some(mut ssa) = build(ir) else {

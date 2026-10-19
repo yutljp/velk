@@ -1,4 +1,5 @@
 mod jump_table;
+pub mod prototypes;
 pub mod refs;
 #[cfg(test)]
 mod semantics_tests;
@@ -142,6 +143,8 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     } = lifted;
     let uniform_32 = passes::widths::specialize_widths(&mut ir);
     passes::optimize(&mut ir, has_jump_tables);
+    crate::ssa::count_variadic_arguments(&mut ir, image);
+    passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the
     // stack and frame pointers, which address the frame.
     let general: Vec<u16> = match ir.isa {

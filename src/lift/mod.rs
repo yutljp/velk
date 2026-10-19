@@ -264,13 +264,28 @@ fn arguments(convention: Convention, count: Option<usize>) -> Option<Vec<Expr>> 
     )
 }
 
+/// A call to `target`. A variadic library function's arguments are left to
+/// the analysis, which counts them from its format string.
 fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
     let convention = Convention::of(image.isa, image.format, image.go);
+    let variadic = target.is_some_and(|target| {
+        image
+            .functions
+            .get(&target)
+            .and_then(|function| function.name.as_deref())
+            .and_then(|name| {
+                crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
+            })
+            .is_some_and(|prototype| prototype.format.is_some())
+    });
+    let arity = target
+        .filter(|_| !variadic)
+        .and_then(|target| summaries(target).arity);
     Stmt::Call {
         target,
         through: None,
         convention,
-        args: target.and_then(|target| arguments(convention, summaries(target).arity)),
+        args: arguments(convention, arity),
         result: None,
     }
 }

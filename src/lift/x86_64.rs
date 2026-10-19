@@ -998,9 +998,8 @@ fn lift_instruction(
                 OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64
             ) {
                 let target = resolved_target(ins, relocation_target);
-                lifter
-                    .stmts
-                    .push(call(lifter.image, lifter.summaries, Some(target)));
+                let made = call(lifter.image, lifter.summaries, Some(target));
+                lifter.stmts.push(made);
                 if (lifter.summaries)(target).noreturn {
                     lifter.stmts.push(Stmt::Trap);
                     return true;
@@ -1008,9 +1007,8 @@ fn lift_instruction(
             } else if let Some(through) = operand(lifter, ins, 0) {
                 lifter.stmts.push(call_through(lifter.image, through));
             } else {
-                lifter
-                    .stmts
-                    .push(call(lifter.image, lifter.summaries, None));
+                let made = call(lifter.image, lifter.summaries, None);
+                lifter.stmts.push(made);
             }
         }
         Mnemonic::Jmp => {

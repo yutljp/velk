@@ -410,6 +410,16 @@ fn explain_function() {
     }
 }
 
+/// The same calls in the same order, passing the same arguments as far as
+/// both name them: a call whose callee's arity is unknown passes every
+/// argument register, and one the analysis counted passes just those.
+fn calls_match(old: &[eval::Call], new: &[eval::Call]) -> bool {
+    old.len() == new.len()
+        && old.iter().zip(new).all(|(a, b)| {
+            a.target == b.target && a.arguments.iter().zip(&b.arguments).all(|(x, y)| x == y)
+        })
+}
+
 fn same(old: &Outcome, new: &Outcome, ret: &CType) -> bool {
     match (old, new) {
         (
@@ -432,7 +442,7 @@ fn same(old: &Outcome, new: &Outcome, ret: &CType) -> bool {
                 };
                 a & mask == b & mask
             });
-            values_match && ca == cb && ma == mb
+            values_match && calls_match(ca, cb) && ma == mb
         }
         (
             Outcome::Trap {
@@ -443,7 +453,7 @@ fn same(old: &Outcome, new: &Outcome, ret: &CType) -> bool {
                 calls: cb,
                 memory: mb,
             },
-        ) => ca == cb && ma == mb,
+        ) => calls_match(ca, cb) && ma == mb,
         _ => false,
     }
 }
@@ -462,7 +472,7 @@ fn describe(old: &Outcome, new: &Outcome, ret: &CType) -> String {
                 memory: mb,
             },
         ) => {
-            if ca != cb {
+            if !calls_match(ca, cb) {
                 format!("calls differ ({} before, {} after)", ca.len(), cb.len())
             } else if ma != mb {
                 "memory differs".to_owned()

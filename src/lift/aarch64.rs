@@ -1026,9 +1026,8 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         }
         O::BL => {
             let target = lifter.target_of(ops[0], pc);
-            lifter
-                .stmts
-                .push(call(lifter.image, lifter.summaries, target));
+            let made = call(lifter.image, lifter.summaries, target);
+            lifter.stmts.push(made);
             if target.is_some_and(|target| (lifter.summaries)(target).noreturn) {
                 lifter.stmts.push(Stmt::Trap);
                 return true;

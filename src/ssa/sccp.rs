@@ -230,6 +230,40 @@ fn replace(expr: &mut Expr, constants: &HashMap<u16, u64>) {
 
 /// Propagates constants through the function in SSA form; true when it
 /// changed anything.
+/// The constant each value holds on every path that can run.
+pub fn constants(ssa: &Ssa) -> HashMap<u16, u64> {
+    if ssa.ir.blocks.is_empty() {
+        return HashMap::new();
+    }
+    let mut solver = Solver {
+        ssa,
+        values: HashMap::new(),
+        executable: vec![false; ssa.ir.blocks.len()],
+        edges: HashSet::new(),
+        starts: ssa
+            .ir
+            .blocks
+            .iter()
+            .enumerate()
+            .map(|(index, block)| (block.start, index))
+            .collect(),
+    };
+    solver.executable[0] = true;
+    solver.edges.insert((super::ENTRY, 0));
+    for value in ssa.entry.values() {
+        solver.values.insert(*value, Lattice::Varying);
+    }
+    while solver.sweep() {}
+    solver
+        .values
+        .iter()
+        .filter_map(|(value, lattice)| match lattice {
+            Lattice::Constant(constant) => Some((*value, *constant)),
+            _ => None,
+        })
+        .collect()
+}
+
 pub fn propagate(ssa: &mut Ssa) -> bool {
     let count = ssa.ir.blocks.len();
     if count == 0 {
