@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use crate::error::LiftError;
 use crate::ir::visit::{children, expr_reads, expr_width};
 use crate::ir::{Block, Convention, Expr, FLAG_OPERANDS, RegRef, Stmt};
-use crate::loader::{Image, Isa};
+use crate::loader::{Image, Isa, Summary};
 
 const MAX_INSTRUCTIONS: usize = 8192;
 
@@ -29,27 +29,60 @@ trait Machine {
     fn block_split(&mut self);
 }
 
+/// What lifting needs to know of the functions a body calls.
+pub type Summaries<'a> = &'a dyn Fn(u64) -> Summary;
+
 /// Splits the function at `addr` into basic blocks; `extra_targets` adds
 /// block starts the branches alone do not show, such as jump-table cases.
+/// What each callee takes and whether it returns comes from its summary.
 pub fn lift(
     image: &Image,
     addr: u64,
     size: u64,
     extra_targets: &HashSet<u64>,
 ) -> Result<Vec<Block>, LiftError> {
+    lift_with(image, addr, size, extra_targets, &|target| {
+        crate::analysis::summary(image, target)
+    })
+}
+
+/// `lift`, knowing of callees only what `summaries` says.
+pub fn lift_with(
+    image: &Image,
+    addr: u64,
+    size: u64,
+    extra_targets: &HashSet<u64>,
+    summaries: Summaries<'_>,
+) -> Result<Vec<Block>, LiftError> {
     let bytes = image.read_vaddr(addr, size).ok_or(LiftError::Unreadable)?;
     match image.isa {
         Isa::AArch64 => {
-            let machine = aarch64::Lifter::new(image, addr);
+            let machine = aarch64::Lifter::new(image, addr, summaries);
             let (decoded, stop) =
                 decode_with_fragments(image, &machine, addr, bytes, aarch64::decode);
-            build(image, machine, addr, &decoded, stop, extra_targets)
+            build(
+                image,
+                summaries,
+                machine,
+                addr,
+                &decoded,
+                stop,
+                extra_targets,
+            )
         }
         Isa::X86_64 => {
-            let machine = x86_64::Lifter::new(image, addr);
+            let machine = x86_64::Lifter::new(image, addr, summaries);
             let (decoded, stop) =
                 decode_with_fragments(image, &machine, addr, bytes, x86_64::decode);
-            build(image, machine, addr, &decoded, stop, extra_targets)
+            build(
+                image,
+                summaries,
+                machine,
+                addr,
+                &decoded,
+                stop,
+                extra_targets,
+            )
         }
         Isa::Unsupported => Err(LiftError::UnsupportedIsa),
     }
@@ -219,11 +252,26 @@ fn reads_memory(expr: &Expr) -> bool {
     matches!(expr, Expr::Load { .. }) || children(expr).into_iter().any(reads_memory)
 }
 
-fn call(image: &Image, target: Option<u64>) -> Stmt {
+/// The argument registers a call to `target` passes, when the number the
+/// callee takes is known.
+fn arguments(convention: Convention, count: Option<usize>) -> Option<Vec<Expr>> {
+    let count = count?;
+    Some(
+        convention.arguments()[..count.min(convention.arguments().len())]
+            .iter()
+            .map(|register| Expr::reg(*register, 64))
+            .collect(),
+    )
+}
+
+fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
+    let convention = Convention::of(image.isa, image.format, image.go);
     Stmt::Call {
         target,
         through: None,
-        convention: Convention::of(image.isa, image.format, image.go),
+        convention,
+        args: target.and_then(|target| arguments(convention, summaries(target).arity)),
+        result: None,
     }
 }
 
@@ -233,17 +281,19 @@ fn call_through(image: &Image, through: Expr) -> Stmt {
         target: None,
         through: Some(through),
         convention: Convention::of(image.isa, image.format, image.go),
+        args: None,
+        result: None,
     }
 }
 
 /// A jump out of the function: the callee's result is this function's,
 /// unless the callee never returns.
-fn tail_call(image: &Image, target: Option<u64>) -> [Stmt; 2] {
-    if target.is_some_and(|target| image.noreturn.contains(&target)) {
-        return [call(image, target), Stmt::Trap];
+fn tail_call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> [Stmt; 2] {
+    if target.is_some_and(|target| summaries(target).noreturn) {
+        return [call(image, summaries, target), Stmt::Trap];
     }
     [
-        call(image, target),
+        call(image, summaries, target),
         Stmt::Ret {
             value: Expr::reg(crate::arch::RETURN, 64),
         },
@@ -252,6 +302,7 @@ fn tail_call(image: &Image, target: Option<u64>) -> [Stmt; 2] {
 
 fn build<M: Machine>(
     image: &Image,
+    summaries: Summaries<'_>,
     mut machine: M,
     start: u64,
     decoded: &[Decoded<M::Instruction>],
@@ -321,7 +372,7 @@ fn build<M: Machine>(
             stmts: pending,
         });
     }
-    add_exits(image, start, &mut blocks);
+    add_exits(image, summaries, start, &mut blocks);
     drop_unread_compare_operands(&mut blocks);
     Ok(blocks)
 }
@@ -350,7 +401,7 @@ fn drop_unread_compare_operands(blocks: &mut [Block]) {
 /// call, so the arguments it passes stay visible to the passes. When the
 /// extent is only estimated, a branch past it may mean the estimate is short,
 /// so only a branch to another known function counts.
-fn add_exits(image: &Image, function: u64, blocks: &mut Vec<Block>) {
+fn add_exits(image: &Image, summaries: Summaries<'_>, function: u64, blocks: &mut Vec<Block>) {
     let exact = image
         .functions
         .get(&function)
@@ -395,7 +446,7 @@ fn add_exits(image: &Image, function: u64, blocks: &mut Vec<Block>) {
     for target in exits {
         blocks.push(Block {
             start: target,
-            stmts: tail_call(image, Some(target)).into(),
+            stmts: tail_call(image, summaries, Some(target)).into(),
         });
     }
 }

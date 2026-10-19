@@ -6,7 +6,7 @@ mod relocate;
 mod symbols;
 mod unwind;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -140,6 +140,15 @@ impl Function {
     }
 }
 
+/// What a call needs to know of its callee.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Summary {
+    /// How many argument registers it reads, when known.
+    pub arity: Option<usize>,
+    /// No path through it returns.
+    pub noreturn: bool,
+}
+
 #[derive(Debug)]
 pub struct Image {
     pub format: Format,
@@ -153,8 +162,8 @@ pub struct Image {
     /// Code split off a function, such as its cold part, by start and size:
     /// it belongs to the functions that branch into it.
     pub fragments: BTreeMap<u64, u64>,
-    /// The functions that never return; a call to one ends its block.
-    pub noreturn: std::collections::HashSet<u64>,
+    /// What is known of each function as a callee, filled on demand.
+    pub summaries: std::sync::RwLock<HashMap<u64, Summary>>,
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
@@ -181,7 +190,7 @@ impl Image {
             functions: BTreeMap::new(),
             data_symbols: BTreeMap::new(),
             fragments: BTreeMap::new(),
-            noreturn: Default::default(),
+            summaries: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
         }
@@ -614,7 +623,7 @@ pub fn load(path: &Path) -> Result<Image> {
         functions,
         data_symbols,
         fragments: BTreeMap::new(),
-        noreturn: Default::default(),
+        summaries: Default::default(),
         relocations,
         go: false,
     };

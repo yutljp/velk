@@ -32,9 +32,7 @@ int tail_two(int x) {
 
     local_0 = x;
     w8 = x;
-    x = w8 + 0x2;
-    tail_one();
-    return x;
+    return tail_one(w8 + 0x2);
 }
 -- signature
 int (int x)
@@ -43,11 +41,10 @@ int (int x)
 -- ir
 fn tail_two @ 0x2101bc (size 40)
   blk0 @ 0x2101bc:
-    store32(w0, (sp + #0xffffffffffffffec))
-    w8 = (w0 & #0xffffffff)
-    w0 = (w8 + #0x2)
-    call 0x210194
-    ret w0
+    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    w8 = (x0 & #0xffffffff)
+    v2 = call 0x210194(((w8 + #0x2) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x2101bc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 

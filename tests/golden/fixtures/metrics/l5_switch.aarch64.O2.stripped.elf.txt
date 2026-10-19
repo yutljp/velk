@@ -33,67 +33,67 @@ int32_t sub_210304(int32_t a0) {
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (a0) {
     case 10:
-        sub_2103cc();
+        sub_2103cc(a0);
         v1 = dword_220554;
         return v1;
     case 11:
-        sub_2103e0();
+        sub_2103e0(a0);
         v1 = dword_220554;
         return v1;
     case 12:
-        sub_2103f8();
+        sub_2103f8(a0);
         v1 = dword_220554;
         return v1;
     case 13:
-        sub_21040c();
+        sub_21040c(a0);
         v1 = dword_220554;
         return v1;
     case 14:
-        sub_210420();
+        sub_210420(a0);
         v1 = dword_220554;
         return v1;
     case 15:
-        sub_210434();
+        sub_210434(a0);
         v1 = dword_220554;
         return v1;
     case 16:
-        sub_21044c();
+        sub_21044c(a0);
         v1 = dword_220554;
         return v1;
     case 17:
-        sub_210460();
+        sub_210460(a0);
         v1 = dword_220554;
         return v1;
     case 18:
-        sub_210474();
+        sub_210474(a0);
         v1 = dword_220554;
         return v1;
     case 19:
-        sub_210488();
+        sub_210488(a0);
         v1 = dword_220554;
         return v1;
     case 20:
-        sub_2104a0();
+        sub_2104a0(a0);
         v1 = dword_220554;
         return v1;
     case 21:
-        sub_2104b4();
+        sub_2104b4(a0);
         v1 = dword_220554;
         return v1;
     case 22:
-        sub_2104cc();
+        sub_2104cc(a0);
         v1 = dword_220554;
         return v1;
     case 23:
-        sub_2104e0();
+        sub_2104e0(a0);
         v1 = dword_220554;
         return v1;
     case 24:
-        sub_2104f8();
+        sub_2104f8(a0);
         v1 = dword_220554;
         return v1;
     case 25:
-        sub_21050c();
+        sub_21050c(a0);
         v1 = dword_220554;
         return v1;
     default:
@@ -110,63 +110,63 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210304 (size 200)
   blk0 @ 0x210304:
-    x8 = ((w0 - #0xa) & #0xffffffff)
+    x8 = (((x0 & #0xffffffff) - #0xa) & #0xffffffff)
     brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
     x11 = (load8((#0x200158 + x8)) & #0xffffffff)
-    switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
+    switch (x0 & #0xffffffff) [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
   blk2 @ 0x210338:
-    call 0x2103cc
+    call 0x2103cc(x0)
     br 0x2103bc
   blk3 @ 0x210340:
-    call 0x2104f8
+    call 0x2104f8(x0)
     br 0x2103bc
   blk4 @ 0x210348:
-    call 0x2104b4
+    call 0x2104b4(x0)
     br 0x2103bc
   blk5 @ 0x210350:
-    call 0x210420
+    call 0x210420(x0)
     br 0x2103bc
   blk6 @ 0x210358:
-    call 0x2104cc
+    call 0x2104cc(x0)
     br 0x2103bc
   blk7 @ 0x210360:
-    call 0x210488
+    call 0x210488(x0)
     br 0x2103bc
   blk8 @ 0x210368:
-    call 0x2103f8
+    call 0x2103f8(x0)
     br 0x2103bc
   blk9 @ 0x210370:
-    call 0x21050c
+    call 0x21050c(x0)
     br 0x2103bc
   blk10 @ 0x210378:
-    call 0x21040c
+    call 0x21040c(x0)
     br 0x2103bc
   blk11 @ 0x210380:
-    call 0x210460
+    call 0x210460(x0)
     br 0x2103bc
   blk12 @ 0x210388:
-    call 0x2103e0
+    call 0x2103e0(x0)
     br 0x2103bc
   blk13 @ 0x210390:
-    call 0x210434
+    call 0x210434(x0)
     br 0x2103bc
   blk14 @ 0x210398:
-    call 0x2104e0
+    call 0x2104e0(x0)
     br 0x2103bc
   blk15 @ 0x2103a0:
-    call 0x21044c
+    call 0x21044c(x0)
     br 0x2103bc
   blk16 @ 0x2103a8:
-    call 0x2104a0
+    call 0x2104a0(x0)
     br 0x2103bc
   blk17 @ 0x2103b0:
-    call 0x210474
+    call 0x210474(x0)
     br 0x2103bc
   blk18 @ 0x2103b8:
     store32(#0x0, #0x220554)
   blk19 @ 0x2103bc:
-    v1 = load32(#0x220554)
+    v1 = (load32(#0x220554) & #0xffffffff)
     ret v1
 -- card
 {"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":200,"unsupported":0}

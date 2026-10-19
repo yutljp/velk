@@ -284,6 +284,14 @@ fn magic_block(
             remainder_scan(block.stmts.as_slice(), index, dest.index)
             && magic_matches(magic, divisor, domain_bits, signed)
             && single_use(block.stmts.as_slice(), index, sub_position, dest.index)
+            // `x - q * d` is a remainder only of the value `q` divided.
+            && remainder::same_value(
+                block.stmts.as_slice(),
+                index,
+                &operand,
+                sub_position,
+                &remainder_leaf(&block.stmts[sub_position]),
+            )
         {
             let mut all_safe = true;
             for step in &chain_steps {
@@ -790,6 +798,41 @@ fn dropped_dest_safe(statements: &[Stmt], start: usize, end: usize, position: us
 mod tests {
     use crate::analysis::analyze;
     use crate::loader::{Function, Image, Isa};
+
+    fn analyzed(isa: Isa, code: Vec<u8>) -> String {
+        let function = Function {
+            addr: 0,
+            size: Some(code.len() as u64),
+            size_estimated: false,
+            name: None,
+            aliases: Vec::new(),
+            sources: Vec::new(),
+        };
+        let image = Image::from_code(isa, 0, code);
+        analyze(&image, &function)
+            .expect("the code lifts")
+            .ir
+            .render()
+    }
+
+    #[test]
+    fn a_remainder_of_another_value_stays_a_subtraction() {
+        // y = edi >> 1; edx = y - ((y + 2) / 3) * 3: the quotient divides y + 2.
+        let code = vec![
+            0x89, 0xfa, // mov edx, edi
+            0xd1, 0xea, // shr edx, 1
+            0x44, 0x8d, 0x4a, 0x02, // lea r9d, [rdx + 2]
+            0x41, 0xba, 0xab, 0xaa, 0xaa, 0xaa, // mov r10d, 0xaaaaaaab
+            0x4d, 0x0f, 0xaf, 0xd1, // imul r10, r9
+            0x49, 0xc1, 0xea, 0x21, // shr r10, 0x21
+            0x47, 0x8d, 0x0c, 0x52, // lea r9d, [r10 + r10 * 2]
+            0x44, 0x29, 0xca, // sub edx, r9d
+            0x89, 0xd0, // mov eax, edx
+            0xc3, // ret
+        ];
+        let ir = analyzed(Isa::X86_64, code);
+        assert!(!ir.contains("% #0x3"), "{ir}");
+    }
 
     /// AArch64 `x % 3` for signed `x`, multiplying the quotient back by `1 + 2^shift`.
     fn signed_mod_three(shift: u32) -> String {

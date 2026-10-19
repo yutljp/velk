@@ -237,6 +237,11 @@ impl Machine<'_> {
             .iter()
             .map(|index| self.register(*index))
             .collect();
+        self.call_with(target, arguments);
+    }
+
+    /// A call passing `arguments`; it clobbers what the convention lets it.
+    fn call_with(&mut self, target: Option<u64>, arguments: Vec<u64>) {
         self.calls.push(Call { target, arguments });
         let ordinal = self.calls.len() as u64;
         for index in self.convention.clobbered {
@@ -333,13 +338,30 @@ impl Machine<'_> {
                         break;
                     }
                     Stmt::Call {
-                        target, through, ..
+                        target,
+                        through,
+                        args,
+                        result,
+                        ..
                     } => {
                         let target = match through {
                             Some(through) => Some(self.eval(through)?),
                             None => *target,
                         };
-                        self.call(target)
+                        match args {
+                            Some(args) => {
+                                let values = args
+                                    .iter()
+                                    .map(|arg| self.eval(arg))
+                                    .collect::<Result<Vec<u64>, _>>()?;
+                                self.call_with(target, values)
+                            }
+                            None => self.call(target),
+                        }
+                        if let Some(result) = result {
+                            let value = self.register(crate::arch::RETURN);
+                            self.assign(*result, value);
+                        }
                     }
                     Stmt::Ret { value } => return Ok(Some(self.eval(value)?)),
                     Stmt::Trap => return Ok(None),

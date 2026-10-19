@@ -180,9 +180,11 @@ fn frame_accesses(
                         };
                     }
                 }
-                Stmt::Ret { value } => {
+                Stmt::Ret { .. } | Stmt::Call { .. } => {
                     let mut found = Vec::new();
-                    frame_loads(value, frame, sp, &mut found);
+                    for value in stmt.operands() {
+                        frame_loads(value, frame, sp, &mut found);
+                    }
                     for (addr, slot, width, signed) in found {
                         accesses.push((Some(slot), addr, width, signed));
                     }

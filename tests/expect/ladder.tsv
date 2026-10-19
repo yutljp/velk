@@ -70,7 +70,7 @@
 6	l6_abi_a64.o	six_args	has	a4 + a5
 6	l6_abi_a64.o	wide_add	has	int64_t wide_add(
 6	l6_abi_a64.o	wide_add	known_has	uint64_t wide_add(uint64_t a0, uint64_t a1)
-6	l6_abi_a64.o	tail_direct	has	tail_target();
+6	l6_abi_a64.o	tail_direct	has	return tail_target(a0 + 0x2);
 6	l6_abi_a64.o	tail_indirect	has	goto *(
 
 # ---- L7 language runtimes: Go pclntab / Rust demangling / stripped ----
@@ -87,7 +87,7 @@
 4	l2_loop_a64.o	count_down	has	sink
 5	switch_jumptable_x64.o	d7	has	switch (a0)
 6	calls_a64.elf	pick_op	has	twice
-6	cpp_demo.o	use(int)	has	ns__add_int__int_()
+6	cpp_demo.o	use(int)	has	ns__add_int__int_(
 7	cold_gcc_stripped	-	count	15
 7	cold_gcc	lookup	has	fputs(
 7	cold_gcc	-	nothas	lookup.cold

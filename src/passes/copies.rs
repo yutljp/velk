@@ -365,8 +365,17 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
         Stmt::Brif { lhs, rhs, .. } => total += count(lhs, reg) + count(rhs, reg),
         Stmt::Ret { value } => total += count(value, reg),
         Stmt::BrIndirect { target } => total += count(target, reg),
-        Stmt::Call { convention, .. } => {
-            total += usize::from(convention.call_reads().any(|read| read == reg))
+        Stmt::Call {
+            convention,
+            through,
+            args,
+            ..
+        } => {
+            total += through.iter().map(|expr| count(expr, reg)).sum::<usize>();
+            total += match args {
+                Some(args) => args.iter().map(|arg| count(arg, reg)).sum::<usize>(),
+                None => usize::from(convention.call_reads().any(|read| read == reg)),
+            };
         }
         _ => {}
     }
@@ -392,6 +401,17 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
         }
         Stmt::Ret { value } => substitute_reg_inner(value, dest, width, template, &mut ok),
         Stmt::BrIndirect { target } => substitute_reg_inner(target, dest, width, template, &mut ok),
+        // A call naming its arguments reads nothing else of them.
+        Stmt::Call {
+            through,
+            args: Some(args),
+            convention,
+            ..
+        } if !convention.call_extra().contains(&dest) => {
+            for expr in through.iter_mut().chain(args.iter_mut()) {
+                substitute_reg_inner(expr, dest, width, template, &mut ok);
+            }
+        }
         _ => ok = false,
     }
     ok

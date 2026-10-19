@@ -21,9 +21,9 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
         a0 = *(uint64_t *)(x20);
         x20 = x20 + 0x8;
         x8 = *(uint64_t *)(*(uint64_t *)(a0) + 0x10);
-        (*(x8))();
+        v1 = (*(x8))();
         x21 = x21 - 0x1;
-        w19 = (a0 & 0xffffffff) + w19;
+        w19 = v1 + w19;
     } while (x21 != 0x0);
     return w19;
 }
@@ -45,7 +45,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
     x8 = load64((load64(x0) + #0x10))
     call *x8
     x21 = (x21 - #0x1)
-    x19 = (((x0 & #0xffffffff) + (x19 & #0xffffffff)) & #0xffffffff)
+    x19 = (((v1 & #0xffffffff) + (x19 & #0xffffffff)) & #0xffffffff)
     brif ne x21, #0x0 -> 0x24
   blk3 @ 0x40:
     br 0x48

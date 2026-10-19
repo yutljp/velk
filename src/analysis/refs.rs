@@ -87,6 +87,11 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
                 Stmt::Ret { value } => expr_constants(value, &mut candidates),
                 Stmt::BrIndirect { target } => expr_constants(target, &mut candidates),
                 Stmt::Switch { index, .. } => expr_constants(index, &mut candidates),
+                Stmt::Call { .. } => {
+                    for value in stmt.operands() {
+                        expr_constants(value, &mut candidates);
+                    }
+                }
                 _ => {}
             }
         }

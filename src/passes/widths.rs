@@ -200,10 +200,11 @@ fn map_stmt(stmt: &mut Stmt, map: &mut dyn FnMut(&Expr) -> Expr) {
         Stmt::Ret { value } => *value = map(&*value),
         Stmt::BrIndirect { target } => *target = map(&*target),
         Stmt::Switch { index, .. } => *index = map(&*index),
-        Stmt::Call {
-            through: Some(through),
-            ..
-        } => *through = map(&*through),
+        Stmt::Call { through, args, .. } => {
+            for value in through.iter_mut().chain(args.iter_mut().flatten()) {
+                *value = map(&*value);
+            }
+        }
         _ => {}
     }
 }

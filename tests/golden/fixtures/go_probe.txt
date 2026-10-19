@@ -1382,7 +1382,7 @@ fn main.divmod @ 0x466cc0 (size 64)
   blk4 @ 0x466cdb:
     ret v1
   blk5 @ 0x466ce1:
-    call 0x42cf20
+    call 0x42cf20()
     trap
   blk6 @ 0x466ce6:
     trap
@@ -1594,46 +1594,29 @@ L_466d80:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466e75; }
     rsp = rsp - 0x8;
     rsp = rsp - 0x50;
-    rax = 0x7;
-    rbx = 0x3;
-    main_divmod();
-    local_0 = rax;
+    local_0 = main_divmod(0x7, 0x3);
     local_1 = rbx;
     local_2 = 0x1;
     local_3 = 0x2;
     local_4 = 0x3;
-    rcx = 0x3;
     rax = rsp + 0x30;
-    rbx = 0x3;
-    main_sumSlice();
-    local_5 = rax;
-    rbx = 0x2;
-    rax = 0x1;
-    main_add();
-    local_6 = rax;
-    runtime_printlock();
-    rax = local_5;
-    runtime_printint();
+    local_5 = main_sumSlice(rax, 0x3);
+    local_6 = main_add(0x1, 0x2);
+    runtime_printlock(rax);
+    runtime_printint(local_5);
     runtime_printsp();
-    rax = local_6;
-    runtime_printint();
+    runtime_printint(local_6);
     runtime_printsp();
-    rax = local_0;
-    runtime_printint();
+    runtime_printint(local_0);
     runtime_printsp();
-    rax = local_1;
-    runtime_printint();
+    runtime_printint(local_1);
     runtime_printnl();
-    runtime_printunlock();
-    rax = 0x46d400;
-    rbx = 0x4967e8;
-    main_kindName();
-    local_5 = rax;
-    runtime_printlock();
-    rax = local_5;
-    runtime_printint();
+    runtime_printunlock(rax);
+    local_5 = main_kindName(0x46d400, 0x4967e8);
+    runtime_printlock(rax);
+    runtime_printint(local_5);
     runtime_printnl();
-    runtime_printunlock();
+    runtime_printunlock(rax);
     rsp = rsp + 0x50;
     rsp = rsp + 0x8;
     return rax;
@@ -1653,51 +1636,38 @@ fn main.main @ 0x466d80 (size 256)
   blk1 @ 0x466d8a:
     rsp = (rsp + #0xfffffffffffffff8)
     rsp = (rsp - #0x50)
-    rax = #0x7
-    rbx = #0x3
-    call 0x466cc0
+    call 0x466cc0(#0x7, #0x3)
     store64(rax, (rsp + #0x20))
     store64(rbx, (rsp + #0x18))
     store64(#0x1, (rsp + #0x30))
     store64(#0x2, (rsp + #0x38))
     store64(#0x3, (rsp + #0x40))
-    rcx = #0x3
     rax = (rsp + #0x30)
-    rbx = #0x3
-    call 0x466d00
+    call 0x466d00(rax, #0x3)
     store64(rax, (rsp + #0x28))
-    rbx = #0x2
-    rax = #0x1
-    call 0x466ca0
+    call 0x466ca0(#0x1, #0x2)
     store64(rax, (rsp + #0x48))
-    call 0x4305a0
-    rax = load64((rsp + #0x28))
-    call 0x430c40
-    call 0x4307a0
-    rax = load64((rsp + #0x48))
-    call 0x430c40
-    call 0x4307a0
-    rax = load64((rsp + #0x20))
-    call 0x430c40
-    call 0x4307a0
-    rax = load64((rsp + #0x18))
-    call 0x430c40
-    call 0x4307e0
-    call 0x430600
-    rax = #0x46d400
-    rbx = #0x4967e8
-    call 0x466d20
+    call 0x4305a0(rax)
+    call 0x430c40(load64((rsp + #0x28)))
+    call 0x4307a0()
+    call 0x430c40(load64((rsp + #0x48)))
+    call 0x4307a0()
+    call 0x430c40(load64((rsp + #0x20)))
+    call 0x4307a0()
+    call 0x430c40(load64((rsp + #0x18)))
+    call 0x4307e0()
+    call 0x430600(rax)
+    call 0x466d20(#0x46d400, #0x4967e8)
     store64(rax, (rsp + #0x28))
-    call 0x4305a0
-    rax = load64((rsp + #0x28))
-    call 0x430c40
-    call 0x4307e0
-    call 0x430600
+    call 0x4305a0(rax)
+    call 0x430c40(load64((rsp + #0x28)))
+    call 0x4307e0()
+    call 0x430600(rax)
     rsp = (rsp + #0x50)
     rsp = (rsp + #0x8)
     ret rax
   blk2 @ 0x466e75:
-    call 0x461de0
+    call 0x461de0()
     trap
   blk3 @ 0x466e7a:
     br 0x466d80

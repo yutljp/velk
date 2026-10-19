@@ -155,10 +155,12 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
                 Stmt::Ret { value } if !frame_only(value, frame, sp) => {
                     return false;
                 }
-                Stmt::Call {
-                    through: Some(through),
-                    ..
-                } if !frame_only(through, frame, sp) => {
+                Stmt::Call { through, args, .. }
+                    if through
+                        .iter()
+                        .chain(args.iter().flatten())
+                        .any(|expr| !frame_only(expr, frame, sp)) =>
+                {
                     return false;
                 }
                 _ => {}
@@ -239,11 +241,12 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
                 }
                 Stmt::Switch { index: value, .. }
                 | Stmt::BrIndirect { target: value }
-                | Stmt::Ret { value }
-                | Stmt::Call {
-                    through: Some(value),
-                    ..
-                } => rewrite_expr_frame(value, frame, sp),
+                | Stmt::Ret { value } => rewrite_expr_frame(value, frame, sp),
+                Stmt::Call { through, args, .. } => {
+                    for value in through.iter_mut().chain(args.iter_mut().flatten()) {
+                        rewrite_expr_frame(value, frame, sp);
+                    }
+                }
                 _ => {}
             }
         }

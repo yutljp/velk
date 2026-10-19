@@ -76,8 +76,7 @@ int32_t sub_21037c(int32_t a0, int32_t a1) {
     w9 = w8 - w8 / 0x3 * 0x3;
     w8 = qword_2206f0[w9];
     a0 = a1;
-    (*(x8))();
-    return a0;
+    return (*(x8))();
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -93,7 +92,7 @@ fn <unnamed> @ 0x21037c (size 72)
     x8 = load64((#0x2206f0 + (w9 << #0x3)))
     w0 = (w1 & #0xffffffff)
     call *x8
-    ret w0
+    ret v1
 -- card
 {"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}
 
@@ -108,8 +107,8 @@ int32_t sub_2103c4(int32_t a0, int32_t a1) {
     local_1 = a1;
     x8 = a0;
     a0 = a1;
-    (*(x8))();
-    return a0 + 0x1;
+    v1 = (*(x8))();
+    return v1 + 0x1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -123,7 +122,7 @@ fn <unnamed> @ 0x2103c4 (size 48)
     x8 = x0
     x0 = (w1 & #0xffffffff)
     call *x8
-    ret (((x0 & #0xffffffff) + #0x1) & #0xffffffff)
+    ret (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
 
@@ -139,9 +138,8 @@ int32_t sub_2103f4(int32_t a0) {
     if (a0 > 0x1) {
         local_2 = local_0;
         w8 = local_0;
-        a0 = w8 - 0x1;
-        sub_2103f4();
-        local_1 = local_2 * a0;
+        v2 = sub_2103f4(w8 - 0x1);
+        local_1 = local_2 * v2;
         return local_1;
     }
     local_1 = 0x1;
@@ -154,8 +152,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2103f4 (size 96)
   blk0 @ 0x2103f4:
-    store32(w0, (sp + #0xffffffffffffffec))
-    brif gt (w0 & #0xffffffff), #0x1 -> 0x210420
+    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    brif gt (x0 & #0xffffffff), #0x1 -> 0x210420
   blk1 @ 0x210410:
     br 0x210414
   blk2 @ 0x210414:
@@ -164,12 +162,11 @@ fn <unnamed> @ 0x2103f4 (size 96)
   blk3 @ 0x210420:
     store32((load32((sp + #0xffffffffffffffec)) & #0xffffffff), (sp + #0xffffffffffffffe4))
     x8 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
-    w0 = ((x8 & #0xffffffff) - #0x1)
-    call 0x2103f4
-    store32(((load32((sp + #0xffffffffffffffe4)) * w0) & #0xffffffff), (sp + #0xffffffffffffffe8))
+    v2 = call 0x2103f4((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32(((load32((sp + #0xffffffffffffffe4)) * (v2 & #0xffffffff)) & #0xffffffff), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
-    ret load32((sp + #0xffffffffffffffe8))
+    ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
 {"addr":"0x2103f4","approxTokens":240,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"unsupported":0}
 
@@ -183,9 +180,8 @@ int32_t sub_210454(int32_t a0) {
     local_0 = a0;
     if (a0 != 0x0) {
         w8 = local_0;
-        a0 = w8 - 0x1;
-        sub_2104a0();
-        local_1 = a0;
+        v2 = sub_2104a0(w8 - 0x1);
+        local_1 = v2;
         return local_1;
     }
     local_1 = 0x0;
@@ -198,8 +194,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210454 (size 76)
   blk0 @ 0x210454:
-    store32(w0, (sp + #0xffffffffffffffec))
-    brif ne (w0 & #0xffffffff), #0x0 -> 0x21047c
+    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffec))
+    brif ne (x0 & #0xffffffff), #0x0 -> 0x21047c
   blk1 @ 0x21046c:
     br 0x210470
   blk2 @ 0x210470:
@@ -207,12 +203,11 @@ fn <unnamed> @ 0x210454 (size 76)
     br 0x210490
   blk3 @ 0x21047c:
     x8 = (load32((sp + #0xffffffffffffffec)) & #0xffffffff)
-    w0 = ((x8 & #0xffffffff) - #0x1)
-    call 0x2104a0
-    store32(w0, (sp + #0xffffffffffffffe8))
+    v2 = call 0x2104a0((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32((v2 & #0xffffffff), (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
-    ret load32((sp + #0xffffffffffffffe8))
+    ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
 -- card
 {"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 
@@ -226,9 +221,8 @@ int32_t sub_2104a0(int32_t a0) {
     local_0 = a0;
     if (a0 != 0x0) {
         w8 = local_0;
-        a0 = w8 - 0x1;
-        sub_210454();
-        local_1 = a0;
+        v2 = sub_210454(w8 - 0x1);
+        local_1 = v2;
         return local_1;
     }
     local_1 = 0x1;
@@ -250,9 +244,8 @@ fn <unnamed> @ 0x2104a0 (size 76)
     br 0x2104dc
   blk3 @ 0x2104c8:
     w8 = load32((sp + #0xffffffffffffffec))
-    x0 = ((w8 - #0x1) & #0xffffffff)
-    call 0x210454
-    store32((x0 & #0xffffffff), (sp + #0xffffffffffffffe8))
+    v2 = call 0x210454(((w8 - #0x1) & #0xffffffff))
+    store32((v2 & #0xffffffff), (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:
     ret (load32((sp + #0xffffffffffffffe8)) & #0xffffffff)
@@ -284,18 +277,9 @@ int32_t sub_210564(int64_t a0) {
     uint64_t local_1; /* [sp-20] */
 
     local_0 = a0;
-    a0 = a0;
     x8 = 0x8;
     local_1 = 0x8;
-    x1 = 0x1;
-    x2 = 0x2;
-    x3 = 0x3;
-    x4 = 0x4;
-    x5 = 0x5;
-    x6 = 0x6;
-    x7 = 0x7;
-    sub_2104ec();
-    return a0;
+    return sub_2104ec(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7);
 }
 -- signature
 int32_t (int64_t a0)
@@ -305,18 +289,10 @@ int32_t (int64_t a0)
 fn <unnamed> @ 0x210564 (size 76)
   blk0 @ 0x210564:
     store64(x0, (sp + #0xffffffffffffffe8))
-    x0 = x0
     x8 = #0x8
     store64(#0x8, (sp + #0xffffffffffffffe0))
-    x1 = #0x1
-    x2 = #0x2
-    x3 = #0x3
-    x4 = #0x4
-    x5 = #0x5
-    x6 = #0x6
-    x7 = #0x7
-    call 0x2104ec
-    ret x0
+    v2 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7)
+    ret v2
 -- card
 {"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 

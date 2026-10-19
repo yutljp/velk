@@ -106,7 +106,12 @@ fn tokens(ir: &FunctionIr) -> Vec<String> {
                     expr_tokens(index, &mut out);
                     out.push(format!("switch:{}", cases.len()));
                 }
-                Stmt::Call { .. } => out.push("call".to_owned()),
+                Stmt::Call { args, .. } => {
+                    for arg in args.iter().flatten() {
+                        expr_tokens(arg, &mut out);
+                    }
+                    out.push(format!("call:{}", args.as_ref().map_or(0, Vec::len)));
+                }
                 // The returned value separates two functions that both end
                 // in a single return.
                 Stmt::Ret { value } => {

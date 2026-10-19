@@ -102,6 +102,11 @@ impl SignEvidence {
                     evidence.walk(rhs);
                 }
                 Stmt::Switch { index, .. } => evidence.walk(index),
+                Stmt::Call { .. } => {
+                    for value in stmt.operands() {
+                        evidence.walk(value);
+                    }
+                }
                 _ => {}
             }
         }
@@ -326,6 +331,14 @@ fn collect_uses(
         Stmt::Ret { value } => scan_reads(value, register, false, reads_narrow, seen),
         Stmt::BrIndirect { target } => scan_reads(target, register, false, reads_narrow, seen),
         Stmt::Switch { index, .. } => scan_reads(index, register, false, reads_narrow, seen),
+        // A register passed whole takes the width the callee gives it.
+        Stmt::Call { .. } => {
+            for value in stmt.operands() {
+                if !matches!(value, crate::ir::Expr::Reg { .. }) {
+                    scan_reads(value, register, false, reads_narrow, seen);
+                }
+            }
+        }
         _ => {}
     }
 }

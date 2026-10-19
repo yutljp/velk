@@ -76,10 +76,11 @@ fn explicit_reads(stmt: &Stmt) -> HashSet<u16> {
         }
         Stmt::BrIndirect { target } => named(target, &mut out),
         Stmt::Switch { index, .. } => named(index, &mut out),
-        Stmt::Call {
-            through: Some(through),
-            ..
-        } => named(through, &mut out),
+        Stmt::Call { through, args, .. } => {
+            for value in through.iter().chain(args.iter().flatten()) {
+                named(value, &mut out);
+            }
+        }
         _ => {}
     }
     out
@@ -124,10 +125,11 @@ fn rename_reads(stmt: &mut Stmt, rename: &mut dyn FnMut(u16) -> u16) {
         }
         Stmt::BrIndirect { target } => rename_expr(target, rename),
         Stmt::Switch { index, .. } => rename_expr(index, rename),
-        Stmt::Call {
-            through: Some(through),
-            ..
-        } => rename_expr(through, rename),
+        Stmt::Call { through, args, .. } => {
+            for value in through.iter_mut().chain(args.iter_mut().flatten()) {
+                rename_expr(value, rename);
+            }
+        }
         _ => {}
     }
 }
@@ -262,6 +264,11 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                 // A call reads its argument registers whether or not it also
                 // names one, as the address it calls through.
                 let unnamed: Vec<u16> = match stmt {
+                    Stmt::Call {
+                        convention,
+                        args: Some(_),
+                        ..
+                    } => convention.call_extra().to_vec(),
                     Stmt::Call { convention, .. } => convention.call_reads().collect(),
                     _ => reads.difference(&explicit_reads(stmt)).copied().collect(),
                 };
@@ -281,6 +288,9 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                     pushed.push(register);
                     match stmt {
                         Stmt::Assign { dest, .. } if dest.index == register => dest.index = value,
+                        Stmt::Call {
+                            result: Some(dest), ..
+                        } if dest.index == register => dest.index = value,
                         _ => defined.push((register, value)),
                     }
                 }
@@ -397,13 +407,28 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         .values()
         .map(|value| class[usize::from(value - VALUE_BASE)])
         .collect();
-    for (_, value) in ssa
-        .implicit_reads
-        .values()
-        .chain(ssa.implicit_writes.values())
-        .flatten()
-    {
+    // A value a statement reads without naming it must be in its register.
+    for (_, value) in ssa.implicit_reads.values().flatten() {
         kept.insert(class[usize::from(value - VALUE_BASE)]);
+    }
+    // One a call defines, such as its result, moves into its variable
+    // right after the call, when anything reads it.
+    let mut read: HashSet<usize> = HashSet::new();
+    for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+        for value in explicit_reads(stmt) {
+            if Ssa::is_value(value) {
+                read.insert(class[usize::from(value - VALUE_BASE)]);
+            }
+        }
+    }
+    for arg in ssa.phis.iter().flatten().flat_map(|phi| &phi.args) {
+        read.insert(class[usize::from(arg - VALUE_BASE)]);
+    }
+    for (register, value) in ssa.implicit_writes.values().flatten() {
+        let root = class[usize::from(value - VALUE_BASE)];
+        if !read.contains(&root) || *register != crate::arch::RETURN {
+            kept.insert(root);
+        }
     }
     // Code no path reaches keeps its registers.
     let dominators = dom::dominators(&ssa.successors);
@@ -416,7 +441,8 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
                 kept.insert(class[usize::from(dest.index - VALUE_BASE)]);
             }
         }
-    } // Number the new variables in the order their first definitions appear
+    }
+    // Number the new variables in the order their first definitions appear
     // in the code, a φ before the statements of its block.
     let mut first: HashMap<usize, (usize, usize)> = HashMap::new();
     let mut note = |value: u16, at: (usize, usize)| {
@@ -433,6 +459,14 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         for (position, stmt) in contents.stmts.iter().enumerate() {
             if let Stmt::Assign { dest, .. } = stmt {
                 note(dest.index, (block, position + 1));
+            }
+            for (_, value) in ssa
+                .implicit_writes
+                .get(&(block, position))
+                .into_iter()
+                .flatten()
+            {
+                note(*value, (block, position + 1));
             }
         }
     }
@@ -457,7 +491,21 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
                 .map(|name| (VALUE_BASE + index as u16, *name))
         })
         .collect();
-    *ir = lower_with(&ssa, &renames);
+    let mut lowered = lower_with(&ssa, &renames);
+    // A renamed value a call returns goes straight into its variable.
+    for ((block, position), defined) in &ssa.implicit_writes {
+        for (_, value) in defined {
+            if let Some(name) = renames.get(value)
+                && let Stmt::Call { result, .. } = &mut lowered.blocks[*block].stmts[*position]
+            {
+                *result = Some(crate::ir::RegRef {
+                    index: *name,
+                    width: 64,
+                });
+            }
+        }
+    }
+    *ir = lowered;
 }
 
 /// Leaves SSA form, giving each value its name in `renames` or else its register.
@@ -475,8 +523,12 @@ fn lower_with(ssa: &Ssa, renames: &HashMap<u16, u16>) -> FunctionIr {
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {
             rename_reads(stmt, &mut back);
-            if let Stmt::Assign { dest, .. } = stmt {
-                dest.index = back(dest.index);
+            match stmt {
+                Stmt::Assign { dest, .. }
+                | Stmt::Call {
+                    result: Some(dest), ..
+                } => dest.index = back(dest.index),
+                _ => {}
             }
         }
     }
@@ -510,7 +562,11 @@ pub fn verify(ssa: &Ssa) -> Result<(), String> {
     }
     for (block, contents) in ssa.ir.blocks.iter().enumerate() {
         for (position, stmt) in contents.stmts.iter().enumerate() {
-            if let Stmt::Assign { dest, .. } = stmt {
+            if let Stmt::Assign { dest, .. }
+            | Stmt::Call {
+                result: Some(dest), ..
+            } = stmt
+            {
                 if !Ssa::is_value(dest.index) {
                     return Err(format!("block {block} assigns a register, not a value"));
                 }

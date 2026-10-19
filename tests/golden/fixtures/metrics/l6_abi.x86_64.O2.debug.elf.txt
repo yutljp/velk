@@ -26,9 +26,7 @@ fn tail_target @ 0x2011b0 (size 14)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x2011c0 */
 int tail_direct(int x) {
-    x = x + 0x2;
-    tail_target();
-    return rax;
+    return tail_target(x + 0x2);
 }
 -- signature
 int (int x)
@@ -37,8 +35,7 @@ int (int x)
 -- ir
 fn tail_direct @ 0x2011c0 (size 8)
   blk0 @ 0x2011c0:
-    edi = (edi + #0x2)
-    call 0x2011b0
+    call 0x2011b0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
     ret rax
 -- card
 {"addr":"0x2011c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}

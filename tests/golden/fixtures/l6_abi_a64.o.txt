@@ -26,9 +26,7 @@ fn tail_target @ 0x0 (size 28)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x1c */
 int32_t tail_direct(int32_t a0) {
-    a0 = a0 + 0x2;
-    tail_target();
-    return a0;
+    return tail_target(a0 + 0x2);
 }
 -- signature
 int32_t (int32_t a0)
@@ -37,9 +35,8 @@ int32_t (int32_t a0)
 -- ir
 fn tail_direct @ 0x1c (size 8)
   blk0 @ 0x1c:
-    w0 = (w0 + #0x2)
-    call 0x0
-    ret w0
+    v2 = call 0x0((((x0 & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x1c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
 

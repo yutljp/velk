@@ -277,8 +277,7 @@ fn labs_value @ 0x210424 (size 64)
 -- decompile
 /* velk pseudo-C: mul_high @ 0x210464 */
 int64_t mul_high(int64_t a, int64_t b) {
-    x9 = a;
-    return 0x0 * b + x9 * 0x0 + __umulh(x9, b);
+    return 0x0 * b + a * 0x0 + __umulh(a, b);
 }
 -- signature
 int64_t (int64_t a, int64_t b)
@@ -287,7 +286,6 @@ int64_t (int64_t a, int64_t b)
 -- ir
 fn mul_high @ 0x210464 (size 52)
   blk0 @ 0x210464:
-    x9 = x0
-    ret (((#0x0 * x1) + (x9 * #0x0)) + (x9 hi128 x1))
+    ret (((#0x0 * x1) + (x0 * #0x0)) + (x0 hi128 x1))
 -- card
 {"addr":"0x210464","approxTokens":174,"blocks":1,"hardReasons":[],"name":"mul_high","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}

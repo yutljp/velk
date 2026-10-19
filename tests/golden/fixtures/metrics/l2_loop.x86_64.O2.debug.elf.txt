@@ -19,8 +19,7 @@ int sum_while(int n) {
     if (ecx != 0x0) { goto L_2012b0; }
     return rax;
 L_2011f2:
-    v1 = n & 0x7ffffff8;
-    v2 = -v1;
+    v2 = -(n & 0x7ffffff8);
     rax = 0x0;
     rdx = 0x7;
     do {
@@ -78,8 +77,7 @@ fn sum_while @ 0x2011d0 (size 239)
   blk4 @ 0x2011ef:
     ret #0x0
   blk5 @ 0x2011f2:
-    v1 = (edi & #0x7ffffff8)
-    v2 = (#0x0 - v1)
+    v2 = (#0x0 - (edi & #0x7ffffff8))
     rax = #0x0
     rdx = #0x7
   blk6 @ 0x201210:

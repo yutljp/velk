@@ -18,8 +18,7 @@ int32_t sum_while(int32_t a0) {
     if (ecx != 0x0) { goto L_e0; }
     return rax;
 L_22:
-    v1 = a0 & 0x7ffffff8;
-    v2 = -v1;
+    v2 = -(a0 & 0x7ffffff8);
     rax = 0x0;
     rdx = 0x7;
     do {
@@ -77,8 +76,7 @@ fn sum_while @ 0x0 (size 239)
   blk4 @ 0x1f:
     ret #0x0
   blk5 @ 0x22:
-    v1 = (edi & #0x7ffffff8)
-    v2 = (#0x0 - v1)
+    v2 = (#0x0 - (edi & #0x7ffffff8))
     rax = #0x0
     rdx = #0x7
   blk6 @ 0x40:

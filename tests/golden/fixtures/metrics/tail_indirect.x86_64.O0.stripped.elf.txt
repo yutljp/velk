@@ -13,8 +13,7 @@ int32_t sub_201180(int32_t a0, int32_t a1) {
     local_1 = a1;
     rax = a0;
     a0 = a1 + 0x1;
-    (*(rax))();
-    return rax;
+    return (*(rax))();
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)

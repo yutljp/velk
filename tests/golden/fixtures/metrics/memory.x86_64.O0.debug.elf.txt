@@ -142,8 +142,7 @@ fn string_length @ 0x201320 (size 57)
 /* velk pseudo-C: grid_get @ 0x201360 */
 /* ref: 0x202450 .bss */
 int grid_get(int row, int col) {
-    rax = 0x202450 + ((int64_t)(int32_t)(row & 0x3) << 0x5);
-    return *(uint32_t *)(rax + (int64_t)(int32_t)(col & 0x7) * 0x4);
+    return *(uint32_t *)(0x202450 + ((int64_t)(int32_t)(row & 0x3) << 0x5) + (int64_t)(int32_t)(col & 0x7) * 0x4);
 }
 -- signature
 int (int row, int col)
@@ -152,8 +151,7 @@ int (int row, int col)
 -- ir
 fn grid_get @ 0x201360 (size 47)
   blk0 @ 0x201360:
-    rax = (#0x202450 + (sext32((edi & #0x3)) << #0x5))
-    ret (load32((rax + (sext32((esi & #0x7)) * #0x4))) & #0xffffffff)
+    ret (load32(((#0x202450 + (sext32((edi & #0x3)) << #0x5)) + (sext32((esi & #0x7)) * #0x4))) & #0xffffffff)
 -- card
 {"addr":"0x201360","approxTokens":192,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf","unwind"],"section":".text","size":47,"unsupported":0}
 

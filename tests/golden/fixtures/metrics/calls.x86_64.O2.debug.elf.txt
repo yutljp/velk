@@ -268,9 +268,7 @@ int is_odd(int n) {
     if (n == 0x0) {
         return 0x0;
     }
-    n = n - 0x1;
-    is_even();
-    return rax;
+    return is_even(((n - 0x1) & 0xffffffff));
 }
 -- signature
 int (int n)
@@ -279,10 +277,9 @@ int (int n)
 -- ir
 fn is_odd @ 0x201460 (size 14)
   blk0 @ 0x201460:
-    brif eq edi, #0x0 -> 0x20146b
+    brif eq (rdi & #0xffffffff), #0x0 -> 0x20146b
   blk1 @ 0x201464:
-    edi = (edi + #0xffffffffffffffff)
-    call 0x201470
+    call 0x201470((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
     ret rax
   blk2 @ 0x20146b:
     ret #0x0
@@ -296,9 +293,7 @@ int is_even(int n) {
     if (n == 0x0) {
         return 0x1;
     }
-    n = n - 0x1;
-    is_odd();
-    return rax;
+    return is_odd(((n - 0x1) & 0xffffffff));
 }
 -- signature
 int (int n)
@@ -307,10 +302,9 @@ int (int n)
 -- ir
 fn is_even @ 0x201470 (size 17)
   blk0 @ 0x201470:
-    brif eq edi, #0x0 -> 0x20147b
+    brif eq (rdi & #0xffffffff), #0x0 -> 0x20147b
   blk1 @ 0x201474:
-    edi = (edi + #0xffffffffffffffff)
-    call 0x201460
+    call 0x201460((((rdi & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff))
     ret rax
   blk2 @ 0x20147b:
     ret #0x1
@@ -337,41 +331,30 @@ fn sum9 @ 0x201490 (size 32)
 == 0x2014b0 call_sum9
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x2014b0 */
-long call_sum9(void) {
+long call_sum9(long x) {
     uint64_t local_0; /* [sp-8] */
     uint64_t local_1; /* [sp-18] */
     uint64_t local_2; /* [sp-20] */
     uint64_t local_3; /* [sp-28] */
 
     local_0 = rax;
-    rsi = 0x1;
-    rdx = 0x2;
-    rcx = 0x3;
-    r8 = 0x4;
-    r9 = 0x5;
     local_1 = 0x8;
     local_2 = 0x7;
     local_3 = 0x6;
-    sum9();
-    return rax;
+    return sum9(x, 0x1, 0x2, 0x3, 0x4, 0x5);
 }
 -- signature
-long ()
+long (long x)
 -- references
 
 -- ir
 fn call_sum9 @ 0x2014b0 (size 49)
   blk0 @ 0x2014b0:
     store64(rax, (rsp + #0xfffffffffffffff8))
-    rsi = #0x1
-    rdx = #0x2
-    rcx = #0x3
-    r8 = #0x4
-    r9 = #0x5
     store64(#0x8, (rsp + #0xffffffffffffffe8))
     store64(#0x7, (rsp + #0xffffffffffffffe0))
     store64(#0x6, (rsp + #0xffffffffffffffd8))
-    call 0x201490
+    call 0x201490(rdi, #0x1, #0x2, #0x3, #0x4, #0x5)
     ret rax
 -- card
 {"addr":"0x2014b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":49,"unsupported":0}
@@ -447,9 +430,8 @@ L_201574:
         return rax;
     }
     if (v1 >= 0x29 /* unsigned */) { goto L_2015fb; }
-    v4 = v2 + v1;
     *(uint32_t *)&local_23 = v1 + 0x8;
-    v3 = v4;
+    v3 = v2 + v1;
     rax = eax + *(uint32_t *)(v3);
     rsp = rsp + 0x58;
     return rax;
@@ -535,9 +517,8 @@ fn sum_varargs @ 0x2014f0 (size 283)
   blk6 @ 0x20157e:
     brif cs (v1 & #0xffffffff), #0x29 -> 0x2015fb
   blk7 @ 0x201583:
-    v4 = (v2 + (v1 & #0xffffffff))
     store32((((v1 & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff80))
-    v3 = v4
+    v3 = (v2 + (v1 & #0xffffffff))
     br 0x201604
   blk8 @ 0x201594:
     rsp = (rsp + #0x58)

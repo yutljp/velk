@@ -26,9 +26,7 @@ fn <unnamed> @ 0x2101a4 (size 28)
 -- decompile
 /* velk pseudo-C: sub_2101c0 @ 0x2101c0 */
 int32_t sub_2101c0(int32_t a0) {
-    a0 = a0 + 0x2;
-    sub_2101a4();
-    return a0;
+    return sub_2101a4(a0 + 0x2);
 }
 -- signature
 int32_t (int32_t a0)
@@ -37,9 +35,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101c0 (size 8)
   blk0 @ 0x2101c0:
-    w0 = (w0 + #0x2)
-    call 0x2101a4
-    ret w0
+    v2 = call 0x2101a4((((x0 & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x2101c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
 

@@ -49,8 +49,7 @@ fn <unnamed> @ 0x2102cc (size 8)
 -- decompile
 /* velk pseudo-C: sub_2102d4 @ 0x2102d4 */
 int32_t sub_2102d4(int32_t a0) {
-    v1 = (a0 == 0x0 ? 0x2102c4 : 0x2102cc);
-    return v1;
+    return (a0 == 0x0 ? 0x2102c4 : 0x2102cc);
 }
 -- signature
 int32_t (int32_t a0)
@@ -59,8 +58,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2102d4 (size 28)
   blk0 @ 0x2102d4:
-    v1 = select eq (x0 & #0xffffffff), #0x0 ? #0x2102c4, #0x2102cc
-    ret v1
+    ret select eq (x0 & #0xffffffff), #0x0 ? #0x2102c4, #0x2102cc
 -- card
 {"addr":"0x2102d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":28,"unsupported":0}
 
@@ -104,8 +102,8 @@ fn <unnamed> @ 0x2102f0 (size 44)
 int32_t sub_21031c(int32_t a0, int32_t a1) {
     x8 = a0;
     a0 = a1;
-    (*(x8))();
-    return a0 + 0x1;
+    v1 = (*(x8))();
+    return v1 + 0x1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -117,7 +115,7 @@ fn <unnamed> @ 0x21031c (size 32)
     x8 = x0
     x0 = w1
     call *x8
-    ret (((x0 & #0xffffffff) + #0x1) & #0xffffffff)
+    ret (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}
 
@@ -208,9 +206,7 @@ int32_t sub_2103dc(int32_t a0) {
     if (a0 == 0x0) {
         return a0;
     }
-    a0 = a0 - 0x1;
-    sub_2103ec();
-    return a0;
+    return sub_2103ec(a0 - 0x1);
 }
 -- signature
 int32_t (int32_t a0)
@@ -219,11 +215,10 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2103dc (size 16)
   blk0 @ 0x2103dc:
-    brif eq w0, #0x0 -> 0x2103e8
+    brif eq (x0 & #0xffffffff), #0x0 -> 0x2103e8
   blk1 @ 0x2103e0:
-    w0 = (w0 - #0x1)
-    call 0x2103ec
-    ret w0
+    v2 = call 0x2103ec((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
+    ret v2
   blk2 @ 0x2103e8:
     ret w0
 -- card
@@ -236,9 +231,7 @@ int32_t sub_2103ec(int32_t a0) {
     if (a0 == 0x0) {
         return 0x1;
     }
-    a0 = a0 - 0x1;
-    sub_2103dc();
-    return a0;
+    return sub_2103dc(a0 - 0x1);
 }
 -- signature
 int32_t (int32_t a0)
@@ -249,9 +242,8 @@ fn <unnamed> @ 0x2103ec (size 20)
   blk0 @ 0x2103ec:
     brif eq (x0 & #0xffffffff), #0x0 -> 0x2103f8
   blk1 @ 0x2103f0:
-    x0 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
-    call 0x2103dc
-    ret x0
+    v2 = call 0x2103dc((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
+    ret v2
   blk2 @ 0x2103f8:
     ret #0x1
 -- card
@@ -277,37 +269,22 @@ fn <unnamed> @ 0x210400 (size 40)
 == 0x210428 -
 -- decompile
 /* velk pseudo-C: sub_210428 @ 0x210428 */
-void sub_210428(void) {
+int32_t sub_210428(int64_t a0) {
     x8 = 0x8;
-    x1 = 0x1;
-    x2 = 0x2;
-    x3 = 0x3;
-    x4 = 0x4;
-    x5 = 0x5;
-    x6 = 0x6;
-    x7 = 0x7;
     *(uint64_t *)(sp - 0x20) = 0x8;
-    sub_210400();
-    return;
+    return sub_210400(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7);
 }
 -- signature
-void ()
+int32_t (int64_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x210428 (size 64)
   blk0 @ 0x210428:
     x8 = #0x8
-    x1 = #0x1
-    x2 = #0x2
-    x3 = #0x3
-    x4 = #0x4
-    x5 = #0x5
-    x6 = #0x6
-    x7 = #0x7
     store64(#0x8, (sp - #0x20))
-    call 0x210400
-    ret x0
+    v1 = call 0x210400(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7)
+    ret v1
 -- card
 {"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":64,"unsupported":0}
 

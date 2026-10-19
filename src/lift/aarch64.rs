@@ -10,15 +10,21 @@ pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
     last_compare: Option<(Expr, Expr)>,
     image: &'a crate::loader::Image,
+    summaries: super::Summaries<'a>,
     function: u64,
 }
 
 impl<'a> Lifter<'a> {
-    pub(super) fn new(image: &'a crate::loader::Image, function: u64) -> Self {
+    pub(super) fn new(
+        image: &'a crate::loader::Image,
+        function: u64,
+        summaries: super::Summaries<'a>,
+    ) -> Self {
         Self {
             stmts: Vec::new(),
             last_compare: None,
             image,
+            summaries,
             function,
         }
     }
@@ -986,13 +992,17 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             // A branch to itself is an unresolved reference to another
             // function; lift it as a tail call.
             if target == Some(pc) {
-                lifter.stmts.extend(tail_call(lifter.image, None));
+                lifter
+                    .stmts
+                    .extend(tail_call(lifter.image, lifter.summaries, None));
                 return true;
             }
             if let Some(target) = target
                 && lifter.is_tail_call(target)
             {
-                lifter.stmts.extend(tail_call(lifter.image, Some(target)));
+                lifter
+                    .stmts
+                    .extend(tail_call(lifter.image, lifter.summaries, Some(target)));
                 return true;
             }
             lifter.stmts.push(Stmt::Br { target });
@@ -1016,8 +1026,10 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         }
         O::BL => {
             let target = lifter.target_of(ops[0], pc);
-            lifter.stmts.push(call(lifter.image, target));
-            if target.is_some_and(|target| lifter.image.noreturn.contains(&target)) {
+            lifter
+                .stmts
+                .push(call(lifter.image, lifter.summaries, target));
+            if target.is_some_and(|target| (lifter.summaries)(target).noreturn) {
                 lifter.stmts.push(Stmt::Trap);
                 return true;
             }

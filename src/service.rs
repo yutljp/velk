@@ -79,7 +79,6 @@ impl Binary {
     fn load(path: &Path, modified: SystemTime) -> Result<Self> {
         let mut image = loader::load(path)?;
         crate::analysis::absorb_jump_table_cases(&mut image);
-        crate::analysis::mark_noreturn(&mut image);
         Ok(Self {
             path: path.to_owned(),
             modified,

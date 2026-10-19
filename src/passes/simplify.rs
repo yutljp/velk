@@ -57,9 +57,12 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
         Stmt::Ret { value } => {
             *value = simplify_expr(value.clone(), constants);
         }
-        Stmt::Call { through, .. } => {
+        Stmt::Call { through, args, .. } => {
             if let Some(through) = through {
                 *through = simplify_expr(through.clone(), constants);
+            }
+            for arg in args.iter_mut().flatten() {
+                *arg = simplify_expr(arg.clone(), constants);
             }
             // A call may clobber registers.
             constants.clear();

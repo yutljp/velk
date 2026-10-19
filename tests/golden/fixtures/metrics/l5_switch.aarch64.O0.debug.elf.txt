@@ -47,97 +47,97 @@ int dense(int x) {
     x8 = 0x210368 + x9;
     switch (*(uint32_t *)(sp - 0x14)) {
     case 10:
-        c0();
+        c0(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 11:
-        c1();
+        c1(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 12:
-        c2();
+        c2(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 13:
-        c3();
+        c3(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 14:
-        c4();
+        c4(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 15:
-        c5();
+        c5(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 16:
-        c6();
+        c6(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 17:
-        c7();
+        c7(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 18:
-        c8();
+        c8(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 19:
-        c9();
+        c9(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 20:
-        c10();
+        c10(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 21:
-        c11();
+        c11(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 22:
-        c12();
+        c12(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 23:
-        c13();
+        c13(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 24:
-        c14();
+        c14(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
         return v1;
     case 25:
-        c15();
+        c15(x);
         x8 = 0x220000;
         v1 = g_sink;
         sp = sp + 0x20;
@@ -160,7 +160,7 @@ int (int x)
 fn dense @ 0x210334 (size 228)
   blk0 @ 0x210334:
     sp = (sp - #0x20)
-    store32(w0, (sp + #0xc))
+    store32((x0 & #0xffffffff), (sp + #0xc))
     x8 = (load32((sp + #0xc)) & #0xffffffff)
     x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
     x8 = (x8 & #0xffffffff)
@@ -173,52 +173,52 @@ fn dense @ 0x210334 (size 228)
     x8 = (#0x210368 + x9)
     switch (load32((sp + #0xffffffffffffffec)) & #0xffffffff) [10->0x210378, 11->0x210380, 12->0x210388, 13->0x210390, 14->0x210398, 15->0x2103a0, 16->0x2103a8, 17->0x2103b0, 18->0x2103b8, 19->0x2103c0, 20->0x2103c8, 21->0x2103d0, 22->0x2103d8, 23->0x2103e0, 24->0x2103e8, 25->0x2103f0] default 0x2103f8
   blk2 @ 0x210378:
-    call 0x210418
+    call 0x210418(x0)
     br 0x210404
   blk3 @ 0x210380:
-    call 0x21042c
+    call 0x21042c(x0)
     br 0x210404
   blk4 @ 0x210388:
-    call 0x210444
+    call 0x210444(x0)
     br 0x210404
   blk5 @ 0x210390:
-    call 0x210458
+    call 0x210458(x0)
     br 0x210404
   blk6 @ 0x210398:
-    call 0x21046c
+    call 0x21046c(x0)
     br 0x210404
   blk7 @ 0x2103a0:
-    call 0x210480
+    call 0x210480(x0)
     br 0x210404
   blk8 @ 0x2103a8:
-    call 0x210498
+    call 0x210498(x0)
     br 0x210404
   blk9 @ 0x2103b0:
-    call 0x2104ac
+    call 0x2104ac(x0)
     br 0x210404
   blk10 @ 0x2103b8:
-    call 0x2104c0
+    call 0x2104c0(x0)
     br 0x210404
   blk11 @ 0x2103c0:
-    call 0x2104d4
+    call 0x2104d4(x0)
     br 0x210404
   blk12 @ 0x2103c8:
-    call 0x2104ec
+    call 0x2104ec(x0)
     br 0x210404
   blk13 @ 0x2103d0:
-    call 0x210500
+    call 0x210500(x0)
     br 0x210404
   blk14 @ 0x2103d8:
-    call 0x210518
+    call 0x210518(x0)
     br 0x210404
   blk15 @ 0x2103e0:
-    call 0x21052c
+    call 0x21052c(x0)
     br 0x210404
   blk16 @ 0x2103e8:
-    call 0x210544
+    call 0x210544(x0)
     br 0x210404
   blk17 @ 0x2103f0:
-    call 0x210558
+    call 0x210558(x0)
     br 0x210404
   blk18 @ 0x2103f8:
     x8 = #0x220000
@@ -226,7 +226,7 @@ fn dense @ 0x210334 (size 228)
     br 0x210404
   blk19 @ 0x210404:
     x8 = #0x220000
-    v1 = load32(#0x2205e8)
+    v1 = (load32(#0x2205e8) & #0xffffffff)
     sp = (sp + #0x20)
     ret v1
 -- card

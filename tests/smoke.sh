@@ -160,7 +160,7 @@ locals=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$locals" | grep -q "local_0 = a0"     || fail "stack local naming"
 echo "$locals" | grep -q "local_0 >>= 0x1"  || fail "stack local names one slot"
 use_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
-echo "$use_ir" | grep -q "ns__mul_int__int_()" || fail "C++ call relocation"
+echo "$use_ir" | grep -q "ns__mul_int__int_(a0, 0x2)" || fail "C++ call relocation"
 echo "$use_ir" | grep -qE "(= x20|x20 =)" && fail "callee-save elision (x20)"
 echo "$use_ir" | grep -qE "(= x30|x30 =)" && fail "callee-save elision (x30)"
 echo "$use_ir" | grep -qE "(= x29|x29 =)" && fail "frame setup elision"
@@ -202,7 +202,7 @@ echo "$frame_ir" | grep -qE "^ *sp = " && fail "frame adjustments hidden"
 echo "$frame_ir" | grep -q "sp + 0x4" && fail "frame slot canonicalized"
 loop_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$loop_ir" | grep -q "for (;;)" && fail "tail call read as a loop"
-echo "$loop_ir" | grep -q "ns__mul_int__int_()"  || fail "relocated call target"
+echo "$loop_ir" | grep -q "ns__mul_int__int_("  || fail "relocated call target"
 ok "frame settling and endless loop"
 arr_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$arr_ir" | grep -q "goto L_" && fail "sum_arr has no gotos"
@@ -394,7 +394,7 @@ moved_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$moved_ir" | grep -q "x8 = 0x1;" && fail "dead store before the loop"
 echo "$moved_ir" | grep -q "local_2 = 0x1;" || fail "live store before the loop"
 live_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
-echo "$live_ir" | grep -q "x19 = a0;" || fail "definition kept across a call"
+echo "$live_ir" | grep -qE "[xw]19 = a0;" || fail "definition kept across a call"
 ok "flow-sensitive dead stores"
 
 

@@ -24,9 +24,7 @@ fn tail_one @ 0x21017c (size 28)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x210198 */
 int tail_two(int x) {
-    x = x + 0x2;
-    tail_one();
-    return x;
+    return tail_one(x + 0x2);
 }
 -- signature
 int (int x)
@@ -35,9 +33,8 @@ int (int x)
 -- ir
 fn tail_two @ 0x210198 (size 8)
   blk0 @ 0x210198:
-    w0 = (w0 + #0x2)
-    call 0x21017c
-    ret w0
+    v2 = call 0x21017c((((x0 & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x210198","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 

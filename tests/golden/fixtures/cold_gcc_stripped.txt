@@ -146,7 +146,7 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 == 0x1120 -
 -- decompile
 /* velk pseudo-C: sub_1120 @ 0x1120 */
-int64_t sub_1120(int64_t a0) {
+int64_t sub_1120(int32_t a0) {
     uint64_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-40] */
     uint64_t local_2; /* [sp-38] */
@@ -156,11 +156,8 @@ int64_t sub_1120(int64_t a0) {
     uint64_t local_6; /* [sp-20] */
 
     rsp = rsp - 0x48;
-    rdx = (a0 & 0xffffffff);
-    rsi = 0x2;
     local_0 = *(uint64_t *)(fs_base + 0x28);
     rax = qword_2028;
-    a0 = rsp;
     local_1 = 0x656e6f;
     local_2 = 0x0;
     local_3 = rax;
@@ -168,7 +165,7 @@ int64_t sub_1120(int64_t a0) {
     local_4 = 0x6f7774;
     local_5 = rax;
     local_6 = 0x0;
-    sub_1290();
+    sub_1290(rsp, 0x2, a0);
     rdx = local_0 - *(uint64_t *)(fs_base + 0x28);
     if (rdx + *(uint64_t *)(fs_base + 0x28) != *(uint64_t *)(fs_base + 0x28)) {
         __stack_chk_fail();
@@ -179,18 +176,15 @@ int64_t sub_1120(int64_t a0) {
     }
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (int32_t a0)
 -- references
 
 -- ir
 fn <unnamed> @ 0x1120 (size 124)
   blk0 @ 0x1120:
     rsp = (rsp - #0x48)
-    rdx = (rdi & #0xffffffff)
-    rsi = #0x2
     store64(load64((fs_base + #0x28)), (rsp + #0x38))
     rax = load64(#0x2028)
-    rdi = rsp
     store64(#0x656e6f, (rsp + #0x8))
     store64(#0x0, (rsp + #0x10))
     store64(rax, rsp)
@@ -198,7 +192,7 @@ fn <unnamed> @ 0x1120 (size 124)
     store64(#0x6f7774, (rsp + #0x20))
     store64(rax, (rsp + #0x18))
     store64(#0x0, (rsp + #0x28))
-    call 0x1290
+    call 0x1290(rsp, #0x2, (rdi & #0xffffffff))
     rdx = (load64((rsp + #0x38)) - load64((fs_base + #0x28)))
     brif ne (rdx + load64((fs_base + #0x28))), load64((fs_base + #0x28)) -> 0x1197
   blk1 @ 0x1192:
@@ -348,7 +342,7 @@ fn <unnamed> @ 0x1240 (size 64)
     rdi = load64(#0x4008)
     call 0x1080
   blk3 @ 0x1267:
-    call 0x11d0
+    call 0x11d0()
     store8(#0x1, #0x4028)
     ret rax
   blk4 @ 0x1278:
@@ -370,7 +364,7 @@ void ()
 -- ir
 fn <unnamed> @ 0x1280 (size 16)
   blk0 @ 0x1280:
-    call 0x1200
+    call 0x1200()
     ret rax
 -- card
 {"addr":"0x1280","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}

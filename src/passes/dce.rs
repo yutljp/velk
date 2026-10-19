@@ -148,6 +148,8 @@ mod tests {
                 target: Some(0x100),
                 through: None,
                 convention: Convention::Aapcs64,
+                args: None,
+                result: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),

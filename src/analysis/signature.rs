@@ -229,6 +229,12 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                 Stmt::Ret { value } => reads(value, &mut used),
                 Stmt::BrIndirect { target } => reads(target, &mut used),
                 Stmt::Switch { index, .. } => reads(index, &mut used),
+                // What a call passes on is read here too.
+                Stmt::Call { through, args, .. } => {
+                    for value in through.iter().chain(args.iter().flatten()) {
+                        reads(value, &mut used);
+                    }
+                }
                 _ => {}
             }
             for register in used {
@@ -333,6 +339,11 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
                 }
                 Stmt::Ret { value } => signed_in_expr(value, &mut signed),
                 Stmt::Switch { index, .. } => signed_in_expr(index, &mut signed),
+                Stmt::Call { .. } => {
+                    for value in stmt.operands() {
+                        signed_in_expr(value, &mut signed);
+                    }
+                }
                 _ => {}
             }
         }

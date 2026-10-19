@@ -40,15 +40,19 @@ impl Convention {
         }
     }
 
-    /// Registers a call may read: its arguments, plus AArch64's indirect
-    /// result register and the vector count a variadic SysV call takes in al.
+    /// Registers a call may read: its arguments, plus the ones in `call_extra`.
     pub fn call_reads(self) -> impl Iterator<Item = u16> {
-        let extra: &[u16] = match self {
+        self.arguments().iter().chain(self.call_extra()).copied()
+    }
+
+    /// Registers a call may read besides its arguments: AArch64's indirect
+    /// result register and the vector count a variadic SysV call takes in al.
+    pub fn call_extra(self) -> &'static [u16] {
+        match self {
             Self::Aapcs64 => &[8],
             Self::SysV => &[0],
             Self::Win64 | Self::GoAmd64 => &[],
-        };
-        self.arguments().iter().chain(extra).copied()
+        }
     }
 
     /// Registers a call may leave changed.
@@ -463,6 +467,12 @@ pub enum Stmt {
         /// The address an indirect call computes, when `target` is unknown.
         through: Option<Expr>,
         convention: Convention,
+        /// The arguments, when the number the callee takes is known; else the
+        /// call reads every argument register of its convention.
+        args: Option<Vec<Expr>>,
+        /// Where the returned value goes besides the return register, when a
+        /// variable of its own holds it.
+        result: Option<RegRef>,
     },
     Ret {
         value: Expr,
@@ -472,6 +482,25 @@ pub enum Stmt {
     },
     /// A trap the CPU cannot return from (`int3`, `ud2`, `brk`).
     Trap,
+}
+
+impl Stmt {
+    /// Every expression the statement reads, in order.
+    pub fn operands(&self) -> Vec<&Expr> {
+        match self {
+            Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
+            Stmt::Store { addr, value, .. } => vec![addr, value],
+            Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],
+            Stmt::BrIndirect { target } => vec![target],
+            Stmt::Switch { index, .. } => vec![index],
+            Stmt::Call { through, args, .. } => {
+                through.iter().chain(args.iter().flatten()).collect()
+            }
+            Stmt::BrifFlags { .. } | Stmt::Br { .. } | Stmt::Unsupported { .. } | Stmt::Trap => {
+                Vec::new()
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -609,6 +638,26 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
                     .map(|t| format!("0x{t:x}"))
                     .unwrap_or_else(|| "<none>".to_owned())
             )
+        }
+        Stmt::Call {
+            target,
+            through,
+            args: Some(args),
+            result,
+            ..
+        } => {
+            let args: Vec<String> = args.iter().map(|arg| arg.render(isa)).collect();
+            let assigned = result.map_or(String::new(), |dest| {
+                format!("{} = ", reg_name(isa, dest.index, dest.width))
+            });
+            assigned
+                + &match (target, through) {
+                    (Some(target), _) => format!("call 0x{target:x}({})", args.join(", ")),
+                    (None, Some(through)) => {
+                        format!("call *{}({})", through.render(isa), args.join(", "))
+                    }
+                    (None, None) => format!("call <dynamic>({})", args.join(", ")),
+                }
         }
         Stmt::Call {
             target, through, ..

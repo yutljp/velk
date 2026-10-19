@@ -1,4 +1,4 @@
-# rust_demo: elf x86_64 0x14e70, 545 functions, 0 lift failures, 425 unsupported, 6862 gotos
+# rust_demo: elf x86_64 0x14e70, 545 functions, 0 lift failures, 425 unsupported, 6863 gotos
 0x14e70 38 _start symtab,entry,unwind
 0x14ea0 48 deregister_tm_clones symtab
 0x14ed0 64 register_tm_clones symtab
@@ -549,6 +549,7 @@
 -- decompile
 /* velk pseudo-C: rust_demo::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
+/* ref: 0x55ab0 .got */
 int32_t rust_demo__main(void) {
     uint32_t local_0; /* [sp-14] */
     uint64_t local_1; /* [sp-10] */
@@ -561,13 +562,13 @@ int32_t rust_demo__main(void) {
     local_2 = rax;
     rdi = 0x5091;
     rsi = rsp + 0x8;
-    (*(qword_55ab0))();
-    return rax;
+    return (*(qword_55ab0))();
 }
 -- signature
 int32_t ()
 -- references
 0x55aa8 .got
+0x55ab0 .got
 -- ir
 fn rust_demo::main @ 0x14f90 (size 57)
   blk0 @ 0x14f90:

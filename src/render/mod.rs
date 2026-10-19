@@ -263,8 +263,74 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             index += count;
             continue;
         }
+        // A call whose returned value the next statement takes reads as one
+        // expression: `x = f(a)` or `return f(a)`.
+        if let (Some(Node::Stmt(call @ Stmt::Call { .. })), Some(Node::Stmt(next))) =
+            (nodes.get(index), nodes.get(index + 1))
+            && let Some(text) = fused_call(call, next, ctx)
+        {
+            indent(depth, out);
+            out.push_str(&text);
+            out.push('\n');
+            index += 2;
+            continue;
+        }
         render_node(&nodes[index], depth, out, ctx);
         index += 1;
+    }
+}
+
+/// Whether the expression reads only the return register, whole or masked.
+fn reads_return(value: &Expr) -> bool {
+    match value {
+        Expr::Reg { index, .. } => *index == crate::arch::RETURN,
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } => matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) && reads_return(lhs),
+        _ => false,
+    }
+}
+
+/// `call` and the statement after it as one, when that statement only takes
+/// the call's result.
+fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
+    let Stmt::Call { result, .. } = call else {
+        return None;
+    };
+    // The call as an expression, without the variable that may take its value.
+    let bare = match call {
+        Stmt::Call { .. } if result.is_some() => {
+            let mut bare = call.clone();
+            if let Stmt::Call { result, .. } = &mut bare {
+                *result = None;
+            }
+            bare
+        }
+        _ => call.clone(),
+    };
+    let call_text = render_stmt(&bare, ctx);
+    let call_text = call_text.strip_suffix(';')?;
+    let takes = |value: &Expr| match result {
+        Some(dest) => matches!(value, Expr::Reg { index, .. } if *index == dest.index),
+        None => reads_return(value),
+    };
+    match next {
+        Stmt::Ret { value } if takes(value) && !ctx.void_return => {
+            Some(format!("return {call_text};"))
+        }
+        Stmt::Store { value, .. } if result.is_none() && reads_return(value) => {
+            let stored = render_stmt(next, ctx);
+            let (target, _) = stored.split_once(" = ")?;
+            Some(format!("{target} = {call_text};"))
+        }
+        Stmt::Assign { value, .. } if result.is_none() && reads_return(value) => {
+            let assigned = render_stmt(next, ctx);
+            let (target, _) = assigned.split_once(" = ")?;
+            Some(format!("{target} = {call_text};"))
+        }
+        _ => None,
     }
 }
 
@@ -506,16 +572,30 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             text
         }
         Stmt::Call {
-            through: Some(through),
+            target,
+            through,
+            args,
+            result,
             ..
-        } => format!("(*({}))();", render_value(through, ctx)),
-        Stmt::Call { target, .. } => match target {
-            Some(target) => match ctx.callees.get(target) {
-                Some(name) => format!("{}();", sanitize(name)),
-                None => format!("sub_{target:x}();"),
-            },
-            None => "sub_<dynamic>();".to_owned(),
-        },
+        } => {
+            let args: Vec<String> = args
+                .iter()
+                .flatten()
+                .map(|arg| render_value(arg, ctx))
+                .collect();
+            let callee = match (through, target) {
+                (Some(through), _) => format!("(*({}))", render_value(through, ctx)),
+                (None, Some(target)) => match ctx.callees.get(target) {
+                    Some(name) => sanitize(name),
+                    None => format!("sub_{target:x}"),
+                },
+                (None, None) => "sub_<dynamic>".to_owned(),
+            };
+            let assigned = result.map_or(String::new(), |dest| {
+                format!("{} = ", ctx.register(dest.index, 64))
+            });
+            format!("{assigned}{callee}({});", args.join(", "))
+        }
         Stmt::Ret { value } => {
             // A function that returns nothing carries no meaningful value.
             if ctx.void_return {

@@ -86,10 +86,14 @@ pub(crate) fn replace_reads(stmt: &mut Stmt, values: &[(u16, Expr)]) {
         }
         Stmt::BrIndirect { target } => replace(target),
         Stmt::Switch { index, .. } => replace(index),
-        Stmt::Call {
-            through: Some(through),
-            ..
-        } => replace(through),
+        Stmt::Call { through, args, .. } => {
+            if let Some(through) = through {
+                replace(through);
+            }
+            for arg in args.iter_mut().flatten() {
+                replace(arg);
+            }
+        }
         _ => {}
     }
 }
@@ -166,12 +170,25 @@ pub(crate) fn statement_registers(
         Stmt::Call {
             through,
             convention,
+            args,
+            result,
             ..
         } => {
+            if let Some(result) = result {
+                writes.insert(result.index);
+            }
             if let Some(through) = through {
                 expr_reads(through, &mut reads);
             }
-            reads.extend(convention.call_reads());
+            match args {
+                Some(args) => {
+                    for arg in args {
+                        expr_reads(arg, &mut reads);
+                    }
+                    reads.extend(convention.call_extra());
+                }
+                None => reads.extend(convention.call_reads()),
+            }
             writes.extend(convention.clobbered());
         }
         _ => {}

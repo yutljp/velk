@@ -300,10 +300,11 @@ pub fn propagate(ssa: &mut Ssa) -> bool {
                     replace(value, &constants);
                 }
                 Stmt::Ret { value } => replace(value, &constants),
-                Stmt::Call {
-                    through: Some(through),
-                    ..
-                } => replace(through, &constants),
+                Stmt::Call { through, args, .. } => {
+                    for value in through.iter_mut().chain(args.iter_mut().flatten()) {
+                        replace(value, &constants);
+                    }
+                }
                 Stmt::Brif { lhs, rhs, .. } => {
                     substitute(lhs, &constants, true);
                     substitute(rhs, &constants, true);

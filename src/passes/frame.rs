@@ -783,6 +783,8 @@ mod tests {
                     target: Some(0x100),
                     through: None,
                     convention: Convention::SysV,
+                    args: None,
+                    result: None,
                 },
                 assign(0, Expr::reg(RBX, 64)),
                 assign(
@@ -855,6 +857,8 @@ mod tests {
                     target: Some(0x100),
                     through: None,
                     convention: Convention::SysV,
+                    args: None,
+                    result: None,
                 },
                 Stmt::Br { target: Some(0x10) },
             ],
@@ -884,6 +888,8 @@ mod tests {
                 target: Some(0x100),
                 through: None,
                 convention: Convention::SysV,
+                args: None,
+                result: None,
             },
             Stmt::Trap,
         ]);
@@ -957,6 +963,8 @@ mod tests {
                     target: Some(0x100),
                     through: None,
                     convention: Convention::Aapcs64,
+                    args: None,
+                    result: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),

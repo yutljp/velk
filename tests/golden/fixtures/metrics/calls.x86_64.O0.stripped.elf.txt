@@ -76,8 +76,7 @@ int32_t sub_201360(uint32_t a0, int32_t a1) {
     rcx = edx;
     rax = qword_202670[rcx];
     a0 = a1;
-    (*(rax))();
-    return rax;
+    return (*(rax))();
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -141,8 +140,8 @@ int32_t sub_2013d0(int32_t a0) {
     } else {
         rax = local_0;
         local_2 = eax;
-        a0 = local_0 - 0x1;
-        sub_2013d0();
+        v1 = local_0 - 0x1;
+        sub_2013d0(v1);
         local_1 = local_2 * eax;
     }
     return local_1;
@@ -154,16 +153,16 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2013d0 (size 71)
   blk0 @ 0x2013d0:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    brif gt (edi & #0xffffffff), #0x1 -> 0x2013f2
+    store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
+    brif gt (rdi & #0xffffffff), #0x1 -> 0x2013f2
   blk1 @ 0x2013e5:
     store32(#0x1, (rsp + #0xfffffffffffffff0))
     br 0x20140e
   blk2 @ 0x2013f2:
     rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
     store32((rax & #0xffffffff), (rsp + #0xffffffffffffffec))
-    edi = (load32((rsp + #0xfffffffffffffff4)) - #0x1)
-    call 0x2013d0
+    v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
+    call 0x2013d0(v1)
     store32(((load32((rsp + #0xffffffffffffffec)) * (rax & #0xffffffff)) & #0xffffffff), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20140e:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
@@ -181,9 +180,8 @@ int32_t sub_201420(int32_t a0) {
     if (a0 == 0x0) {
         local_1 = 0x0;
     } else {
-        a0 = local_0 - 0x1;
-        sub_201460();
-        local_1 = eax;
+        v1 = local_0 - 0x1;
+        local_1 = sub_201460(v1);
     }
     return local_1;
 }
@@ -194,14 +192,14 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201420 (size 54)
   blk0 @ 0x201420:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    brif ne (edi & #0xffffffff), #0x0 -> 0x20143f
+    store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
+    brif ne (rdi & #0xffffffff), #0x0 -> 0x20143f
   blk1 @ 0x201435:
     store32(#0x0, (rsp + #0xfffffffffffffff0))
     br 0x20144d
   blk2 @ 0x20143f:
-    edi = (load32((rsp + #0xfffffffffffffff4)) - #0x1)
-    call 0x201460
+    v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
+    call 0x201460(v1)
     store32((rax & #0xffffffff), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20144d:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
@@ -219,9 +217,8 @@ int32_t sub_201460(int32_t a0) {
     if (a0 == 0x0) {
         local_1 = 0x1;
     } else {
-        a0 = local_0 - 0x1;
-        sub_201420();
-        local_1 = eax;
+        v1 = local_0 - 0x1;
+        local_1 = sub_201420(v1);
     }
     return local_1;
 }
@@ -232,14 +229,14 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201460 (size 57)
   blk0 @ 0x201460:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    brif ne (edi & #0xffffffff), #0x0 -> 0x201482
+    store32((rdi & #0xffffffff), (rsp + #0xfffffffffffffff4))
+    brif ne (rdi & #0xffffffff), #0x0 -> 0x201482
   blk1 @ 0x201475:
     store32(#0x1, (rsp + #0xfffffffffffffff0))
     br 0x201490
   blk2 @ 0x201482:
-    edi = (load32((rsp + #0xfffffffffffffff4)) - #0x1)
-    call 0x201420
+    v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
+    call 0x201420(v1)
     store32((rax & #0xffffffff), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x201490:
     ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
@@ -283,16 +280,10 @@ void sub_2014f0(int64_t a0) {
     uint64_t local_3; /* [sp-18] */
 
     local_0 = a0;
-    a0 = a0;
-    rsi = 0x1;
-    rdx = 0x2;
-    rcx = 0x3;
-    r8 = 0x4;
-    r9 = 0x5;
     local_1 = 0x6;
     local_2 = 0x7;
     local_3 = 0x8;
-    sub_2014a0();
+    sub_2014a0(a0, 0x1, 0x2, 0x3, 0x4, 0x5);
     return;
 }
 -- signature
@@ -303,16 +294,10 @@ void (int64_t a0)
 fn <unnamed> @ 0x2014f0 (size 80)
   blk0 @ 0x2014f0:
     store64(rdi, (rsp + #0xfffffffffffffff0))
-    rdi = rdi
-    rsi = #0x1
-    rdx = #0x2
-    rcx = #0x3
-    r8 = #0x4
-    r9 = #0x5
     store64(#0x6, (rsp + #0xffffffffffffffd8))
     store64(#0x7, (rsp + #0xffffffffffffffe0))
     store64(#0x8, (rsp + #0xffffffffffffffe8))
-    call 0x2014a0
+    call 0x2014a0(rdi, #0x1, #0x2, #0x3, #0x4, #0x5)
     ret rax
 -- card
 {"addr":"0x2014f0","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":80,"unsupported":0}

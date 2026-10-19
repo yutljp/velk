@@ -24,7 +24,14 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                         pending.push((*width, addr.clone(), value.clone()));
                     }
                 }
-                Stmt::Call { .. } | Stmt::Unsupported { .. } => pending.clear(),
+                // A call reads its arguments before it may change memory.
+                Stmt::Call { through, args, .. } => {
+                    for value in through.iter_mut().chain(args.iter_mut().flatten()) {
+                        forward_expr(value, &pending);
+                    }
+                    pending.clear();
+                }
+                Stmt::Unsupported { .. } => pending.clear(),
                 Stmt::Assign { dest, value } => {
                     // Moving the stack pointer changes what every remembered
                     // `sp`-relative address refers to.

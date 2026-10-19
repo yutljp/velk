@@ -286,8 +286,21 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
             Stmt::BrIndirect { target } => reads(target, &mut read),
             Stmt::Switch { index, .. } => reads(index, &mut read),
             Stmt::Ret { value } if ir.ret_type != CType::Void => reads(value, &mut read),
-            // A call leaves its results in the registers it may overwrite.
-            Stmt::Call { convention, .. } => written.extend(convention.clobbered()),
+            // A call leaves its results in the registers it may overwrite,
+            // and in the variable that takes its value; it reads its arguments.
+            Stmt::Call {
+                convention,
+                through,
+                args,
+                result,
+                ..
+            } => {
+                written.extend(convention.clobbered());
+                written.extend(result.map(|result| result.index));
+                for value in through.iter().chain(args.iter().flatten()) {
+                    reads(value, &mut read);
+                }
+            }
             Stmt::Ret { .. }
             | Stmt::BrifFlags { .. }
             | Stmt::Br { .. }

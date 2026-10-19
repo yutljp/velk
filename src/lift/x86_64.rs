@@ -17,17 +17,19 @@ pub(super) struct Lifter<'a> {
     /// instruction cleared (`xor edx, edx`).
     zeroed_dividend: Option<u8>,
     image: &'a Image,
+    summaries: super::Summaries<'a>,
     function: u64,
 }
 
 impl<'a> Lifter<'a> {
-    pub(super) fn new(image: &'a Image, function: u64) -> Self {
+    pub(super) fn new(image: &'a Image, function: u64, summaries: super::Summaries<'a>) -> Self {
         Self {
             stmts: Vec::new(),
             last_compare: None,
             extended_dividend: None,
             zeroed_dividend: None,
             image,
+            summaries,
             function,
         }
     }
@@ -996,24 +998,30 @@ fn lift_instruction(
                 OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64
             ) {
                 let target = resolved_target(ins, relocation_target);
-                lifter.stmts.push(call(lifter.image, Some(target)));
-                if lifter.image.noreturn.contains(&target) {
+                lifter
+                    .stmts
+                    .push(call(lifter.image, lifter.summaries, Some(target)));
+                if (lifter.summaries)(target).noreturn {
                     lifter.stmts.push(Stmt::Trap);
                     return true;
                 }
             } else if let Some(through) = operand(lifter, ins, 0) {
                 lifter.stmts.push(call_through(lifter.image, through));
             } else {
-                lifter.stmts.push(call(lifter.image, None));
+                lifter
+                    .stmts
+                    .push(call(lifter.image, lifter.summaries, None));
             }
         }
         Mnemonic::Jmp => {
             if ins.op0_kind() == OpKind::NearBranch64 {
                 let target = resolved_target(ins, relocation_target);
                 if tail_call {
-                    lifter
-                        .stmts
-                        .extend(self::tail_call(lifter.image, Some(target)));
+                    lifter.stmts.extend(self::tail_call(
+                        lifter.image,
+                        lifter.summaries,
+                        Some(target),
+                    ));
                 } else {
                     lifter.stmts.push(Stmt::Br {
                         target: Some(target),

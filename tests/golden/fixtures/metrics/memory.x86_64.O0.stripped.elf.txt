@@ -142,8 +142,7 @@ fn <unnamed> @ 0x201320 (size 57)
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x202450 .bss */
 int32_t sub_201360(int32_t a0, int32_t a1) {
-    rax = 0x202450 + ((int64_t)(int32_t)(a0 & 0x3) << 0x5);
-    return *(uint32_t *)(rax + (int64_t)(int32_t)(a1 & 0x7) * 0x4);
+    return *(uint32_t *)(0x202450 + ((int64_t)(int32_t)(a0 & 0x3) << 0x5) + (int64_t)(int32_t)(a1 & 0x7) * 0x4);
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -152,8 +151,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201360 (size 47)
   blk0 @ 0x201360:
-    rax = (#0x202450 + (sext32((edi & #0x3)) << #0x5))
-    ret (load32((rax + (sext32((esi & #0x7)) * #0x4))) & #0xffffffff)
+    ret (load32(((#0x202450 + (sext32((edi & #0x3)) << #0x5)) + (sext32((esi & #0x7)) * #0x4))) & #0xffffffff)
 -- card
 {"addr":"0x201360","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":47,"unsupported":0}
 

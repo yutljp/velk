@@ -26,8 +26,8 @@
 int32_t sub_201330(int32_t a0) {
     uint64_t local_0; /* [sp-8] */
 
-    a0 = ((a0 - 0xa) & 0xffffffff);
-    if (a0 > 0xf /* unsigned */) {
+    v1 = ((a0 - 0xa) & 0xffffffff);
+    if (v1 > 0xf /* unsigned */) {
         dword_20250c = 0x0;
         rax = dword_20250c;
         return rax;
@@ -35,8 +35,8 @@ int32_t sub_201330(int32_t a0) {
     rsp = rsp - 0x8;
     local_0 = rax;
     rax = 0x200158;
-    rcx = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
-    switch (a0) {
+    rcx = (int64_t)(int32_t)(dword_200158[v1]) + 0x200158;
+    switch (v1) {
     case 10:
         sub_2013e0();
         rsp = rsp + 0x8;
@@ -131,61 +131,61 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201330 (size 167)
   blk0 @ 0x201330:
-    rdi = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
-    brif hi (rdi & #0xffffffff), #0xf -> 0x2013c6
+    v1 = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
+    brif hi (v1 & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
     rsp = (rsp + #0xfffffffffffffff8)
     store64(rax, rsp)
     rax = #0x200158
-    rcx = (sext32(load32((#0x200158 + (rdi * #0x4)))) + #0x200158)
-    switch (rdi & #0xffffffff) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
+    rcx = (sext32(load32((#0x200158 + (v1 * #0x4)))) + #0x200158)
+    switch (v1 & #0xffffffff) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
   blk2 @ 0x20134d:
-    call 0x2013e0
+    call 0x2013e0()
     br 0x2013bb
   blk3 @ 0x201354:
-    call 0x2014c0
+    call 0x2014c0()
     br 0x2013bb
   blk4 @ 0x20135b:
-    call 0x201490
+    call 0x201490()
     br 0x2013bb
   blk5 @ 0x201362:
-    call 0x201420
+    call 0x201420()
     br 0x2013bb
   blk6 @ 0x201369:
-    call 0x2014a0
+    call 0x2014a0()
     br 0x2013bb
   blk7 @ 0x201370:
-    call 0x201470
+    call 0x201470()
     br 0x2013bb
   blk8 @ 0x201377:
-    call 0x201400
+    call 0x201400()
     br 0x2013bb
   blk9 @ 0x20137e:
-    call 0x2014d0
+    call 0x2014d0()
     br 0x2013bb
   blk10 @ 0x201385:
-    call 0x201410
+    call 0x201410()
     br 0x2013bb
   blk11 @ 0x20138c:
-    call 0x201450
+    call 0x201450()
     br 0x2013bb
   blk12 @ 0x201393:
-    call 0x2013f0
+    call 0x2013f0()
     br 0x2013bb
   blk13 @ 0x20139a:
-    call 0x201430
+    call 0x201430()
     br 0x2013bb
   blk14 @ 0x2013a1:
-    call 0x2014b0
+    call 0x2014b0()
     br 0x2013bb
   blk15 @ 0x2013a8:
-    call 0x201440
+    call 0x201440()
     br 0x2013bb
   blk16 @ 0x2013af:
-    call 0x201480
+    call 0x201480()
     br 0x2013bb
   blk17 @ 0x2013b6:
-    call 0x201460
+    call 0x201460()
   blk18 @ 0x2013bb:
     rsp = (rsp + #0x8)
     rax = (load32(#0x20250c) & #0xffffffff)

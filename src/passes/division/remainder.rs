@@ -353,18 +353,18 @@ pub(crate) fn apply_remainder_follows(
     _wide_signed: &mut std::collections::HashSet<u16>,
     wide_signed_ret: &mut Vec<u16>,
 ) {
-    let divisions: Vec<(usize, u64, bool)> = replacements
+    let divisions: Vec<(usize, u64, bool, Expr)> = replacements
         .iter()
         .filter_map(|(position, expr)| match expr {
             Expr::Bin {
                 op: crate::ir::BinOp::DivU,
+                lhs,
                 rhs,
-                ..
             }
             | Expr::Bin {
                 op: crate::ir::BinOp::DivS,
+                lhs,
                 rhs,
-                ..
             } => {
                 let unsigned = matches!(
                     expr,
@@ -376,20 +376,24 @@ pub(crate) fn apply_remainder_follows(
                 let Expr::Const(divisor) = rhs.as_ref() else {
                     return None;
                 };
-                Some((*position, *divisor, unsigned))
+                Some((*position, *divisor, unsigned, lhs.as_ref().clone()))
             }
             _ => None,
         })
         .collect();
-    for (div_position, divisor, unsigned) in divisions {
+    for (div_position, divisor, unsigned, dividend) in divisions {
         // Only one-step unwinds; `remainder_scan` handles multi-step ones.
         let unwind: Option<(usize, usize)> = single_mult_follow(statements, div_position, divisor)
             .or_else(|| direct_msub_follow(statements, div_position, divisor));
         let Some((mult_position, sub_position)) = unwind else {
             continue;
         };
-        consumed.insert(mult_position);
         let leaf = remainder_leaf(&statements[sub_position]);
+        // `x - q * d` is a remainder only of the value `q` divided.
+        if !same_value(statements, div_position, &dividend, sub_position, &leaf) {
+            continue;
+        }
+        consumed.insert(mult_position);
         // Retype the signature as for the chains `remainder_scan` matches.
         if let (Expr::Reg { width, .. }, Some((sub_dest, _))) =
             (&leaf, assignment_at(statements, sub_position))
@@ -403,6 +407,43 @@ pub(crate) fn apply_remainder_follows(
             }
         }
         replacements.push((sub_position, remainder(leaf, divisor, unsigned)));
+    }
+}
+
+/// The register holding `expr` at `position`, followed back through plain
+/// copies, with the statement that last defined it (`None` for the entry).
+fn origin(statements: &[Stmt], position: usize, expr: &Expr) -> Option<(u16, Option<usize>)> {
+    let mut register = unwrap_leaf(strip_and_mask(expr))?;
+    let mut position = position;
+    loop {
+        let defined = statements[..position]
+            .iter()
+            .rposition(|stmt| matches!(assign_of(stmt), Some((dest, _)) if dest.index == register));
+        let Some(at) = defined else {
+            return Some((register, None));
+        };
+        let (_, value) = assign_of(&statements[at]).expect("an assignment");
+        match unwrap_leaf(strip_and_mask(value)) {
+            Some(source) if matches!(strip_and_mask(value), Expr::Reg { .. }) => {
+                register = source;
+                position = at;
+            }
+            _ => return Some((register, Some(at))),
+        }
+    }
+}
+
+/// Whether `a` read at `at_a` and `b` read at `at_b` hold the same value.
+pub(crate) fn same_value(
+    statements: &[Stmt],
+    at_a: usize,
+    a: &Expr,
+    at_b: usize,
+    b: &Expr,
+) -> bool {
+    match (origin(statements, at_a, a), origin(statements, at_b, b)) {
+        (Some(left), Some(right)) => left == right,
+        _ => a == b,
     }
 }
 
