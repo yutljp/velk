@@ -1,6 +1,5 @@
-# metrics/l5_switch.aarch64.O0.stripped.elf: elf aarch64 no entry, 19 functions, 0 lift failures, 0 unsupported, 18 gotos
-0x210334 68 - prologue
-0x210378 160 - prologue
+# metrics/l5_switch.aarch64.O0.stripped.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x210334 228 - prologue
 0x210418 20 - prologue
 0x21042c 24 - prologue
 0x210444 20 - prologue
@@ -23,123 +22,215 @@
 -- decompile
 /* velk pseudo-C: sub_210334 @ 0x210334 */
 /* ref: 0x200158 .rodata */
+/* ref: 0x2205e8 .bss */
 uint32_t sub_210334(uint32_t a0) {
     uint32_t local_0; /* [sp-14] */
     uint64_t local_1; /* [sp-20] */
 
+    sp = sp - 0x20;
     local_0 = a0;
-    x8 = local_0 - 0xa;
+    x8 = local_0;
+    x8 = w8 - 0xa;
+    x8 = w8;
     local_1 = x8;
-    if (x8 > 0xf /* unsigned */) { goto L_2103f8; }
+    x8 = x8 - 0xf;
+    if (x8 + 0xf > 0xf /* unsigned */) {
+        x8 = 0x220000;
+        dword_2205e8 = 0x0;
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    }
     x8 = 0x210368;
-    x8 = 0x210368 + dword_200158[local_1];
-    switch (*(uint32_t *)(sp - 0x34)) {
-        case 10: goto L_210378;
-        case 11: goto L_210380;
-        case 12: goto L_210388;
-        case 13: goto L_210390;
-        case 14: goto L_210398;
-        case 15: goto L_2103a0;
-        case 16: goto L_2103a8;
-        case 17: goto L_2103b0;
-        case 18: goto L_2103b8;
-        case 19: goto L_2103c0;
-        case 20: goto L_2103c8;
-        case 21: goto L_2103d0;
-        case 22: goto L_2103d8;
-        case 23: goto L_2103e0;
-        case 24: goto L_2103e8;
-        case 25: goto L_2103f0;
-        default: goto L_2103f8;
+    x9 = dword_200158[local_1];
+    x8 = 0x210368 + x9;
+    switch (*(uint32_t *)(sp - 0x14)) {
+    case 10:
+        sub_210418();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 11:
+        sub_21042c();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 12:
+        sub_210444();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 13:
+        sub_210458();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 14:
+        sub_21046c();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 15:
+        sub_210480();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 16:
+        sub_210498();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 17:
+        sub_2104ac();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 18:
+        sub_2104c0();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 19:
+        sub_2104d4();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 20:
+        sub_2104ec();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 21:
+        sub_210500();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 22:
+        sub_210518();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 23:
+        sub_21052c();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 24:
+        sub_210544();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    case 25:
+        sub_210558();
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
+    default:
+        x8 = 0x220000;
+        dword_2205e8 = 0x0;
+        x8 = 0x220000;
+        a0 = dword_2205e8;
+        sp = sp + 0x20;
+        return a0;
     }
 }
 -- signature
 uint32_t (uint32_t a0)
 -- references
 0x200158 .rodata
--- ir
-fn <unnamed> @ 0x210334 (size 68)
-  blk0 @ 0x210334:
-    store32(w0, (sp + #0xffffffffffffffec))
-    x8 = ((load32((sp + #0xffffffffffffffec)) - #0xa) & #0xffffffff)
-    store64(x8, (sp + #0xffffffffffffffe0))
-    brif hi x8, #0xf -> 0x2103f8
-  blk1 @ 0x21035c:
-    x8 = #0x210368
-    x8 = (#0x210368 + load32((#0x200158 + (load64((sp + #0xffffffffffffffe0)) << #0x2)))s)
-    switch (load32((sp + #0xffffffffffffffcc)) & #0xffffffff) [10->0x210378, 11->0x210380, 12->0x210388, 13->0x210390, 14->0x210398, 15->0x2103a0, 16->0x2103a8, 17->0x2103b0, 18->0x2103b8, 19->0x2103c0, 20->0x2103c8, 21->0x2103d0, 22->0x2103d8, 23->0x2103e0, 24->0x2103e8, 25->0x2103f0] default 0x2103f8
--- card
-{"addr":"0x210334","approxTokens":198,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":68,"sizeEstimated":true,"unsupported":0}
-
-== 0x210378 -
--- decompile
-/* velk pseudo-C: sub_210378 @ 0x210378 */
-/* ref: 0x2205e8 .bss */
-uint32_t sub_210378(void) {
-    sub_210418();
-    return dword_2205e8;
-}
--- signature
-uint32_t ()
--- references
 0x2205e8 .bss
 -- ir
-fn <unnamed> @ 0x210378 (size 160)
-  blk0 @ 0x210378:
+fn <unnamed> @ 0x210334 (size 228)
+  blk0 @ 0x210334:
+    sp = (sp - #0x20)
+    store32(w0, (sp + #0xc))
+    x8 = (load32((sp + #0xc)) & #0xffffffff)
+    x8 = (((x8 & #0xffffffff) - #0xa) & #0xffffffff)
+    x8 = (x8 & #0xffffffff)
+    store64(x8, sp)
+    x8 = (x8 - #0xf)
+    brif hi (x8 + #0xf), #0xf -> 0x2103f8
+  blk1 @ 0x21035c:
+    x8 = #0x210368
+    x9 = load32((#0x200158 + (load64(sp) << #0x2)))s
+    x8 = (#0x210368 + x9)
+    switch (load32((sp + #0xffffffffffffffec)) & #0xffffffff) [10->0x210378, 11->0x210380, 12->0x210388, 13->0x210390, 14->0x210398, 15->0x2103a0, 16->0x2103a8, 17->0x2103b0, 18->0x2103b8, 19->0x2103c0, 20->0x2103c8, 21->0x2103d0, 22->0x2103d8, 23->0x2103e0, 24->0x2103e8, 25->0x2103f0] default 0x2103f8
+  blk2 @ 0x210378:
     call 0x210418
     br 0x210404
-  blk1 @ 0x210380:
+  blk3 @ 0x210380:
     call 0x21042c
     br 0x210404
-  blk2 @ 0x210388:
+  blk4 @ 0x210388:
     call 0x210444
     br 0x210404
-  blk3 @ 0x210390:
+  blk5 @ 0x210390:
     call 0x210458
     br 0x210404
-  blk4 @ 0x210398:
+  blk6 @ 0x210398:
     call 0x21046c
     br 0x210404
-  blk5 @ 0x2103a0:
+  blk7 @ 0x2103a0:
     call 0x210480
     br 0x210404
-  blk6 @ 0x2103a8:
+  blk8 @ 0x2103a8:
     call 0x210498
     br 0x210404
-  blk7 @ 0x2103b0:
+  blk9 @ 0x2103b0:
     call 0x2104ac
     br 0x210404
-  blk8 @ 0x2103b8:
+  blk10 @ 0x2103b8:
     call 0x2104c0
     br 0x210404
-  blk9 @ 0x2103c0:
+  blk11 @ 0x2103c0:
     call 0x2104d4
     br 0x210404
-  blk10 @ 0x2103c8:
+  blk12 @ 0x2103c8:
     call 0x2104ec
     br 0x210404
-  blk11 @ 0x2103d0:
+  blk13 @ 0x2103d0:
     call 0x210500
     br 0x210404
-  blk12 @ 0x2103d8:
+  blk14 @ 0x2103d8:
     call 0x210518
     br 0x210404
-  blk13 @ 0x2103e0:
+  blk15 @ 0x2103e0:
     call 0x21052c
     br 0x210404
-  blk14 @ 0x2103e8:
+  blk16 @ 0x2103e8:
     call 0x210544
     br 0x210404
-  blk15 @ 0x2103f0:
+  blk17 @ 0x2103f0:
     call 0x210558
     br 0x210404
-  blk16 @ 0x2103f8:
+  blk18 @ 0x2103f8:
+    x8 = #0x220000
     store32(#0x0, #0x2205e8)
     br 0x210404
-  blk17 @ 0x210404:
-    ret load32(#0x2205e8)
+  blk19 @ 0x210404:
+    x8 = #0x220000
+    w0 = load32(#0x2205e8)
+    sp = (sp + #0x20)
+    ret w0
 -- card
-{"addr":"0x210378","approxTokens":240,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":160,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210334","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":228,"sizeEstimated":true,"unsupported":0}
 
 == 0x210418 -
 -- decompile

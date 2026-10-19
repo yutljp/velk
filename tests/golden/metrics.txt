@@ -3,10 +3,10 @@ functions found | aarch64.O0 | 148/148
 functions found | aarch64.O2 | 145/148
 functions found | x86_64.O0 | 148/148
 functions found | x86_64.O2 | 145/148
-extra functions | aarch64.O0 | 4/152
-extra functions | aarch64.O2 | 3/148
-extra functions | x86_64.O0 | 4/152
-extra functions | x86_64.O2 | 2/147
+extra functions | aarch64.O0 | 0/148
+extra functions | aarch64.O2 | 1/146
+extra functions | x86_64.O0 | 0/148
+extra functions | x86_64.O2 | 0/145
 parameter count | aarch64.O0 | 144/147
 parameter count | aarch64.O2 | 138/144
 parameter count | x86_64.O0 | 140/147
@@ -27,7 +27,7 @@ return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 139/145
 return void | x86_64.O0 | 123/148
 return void | x86_64.O2 | 141/145
-return width | aarch64.O0 | 113/120
+return width | aarch64.O0 | 114/120
 return width | aarch64.O2 | 107/117
 return width | x86_64.O0 | 112/117
 return width | x86_64.O2 | 112/117
@@ -68,7 +68,6 @@ calls.aarch64.O0 0x2104ec sum9: 8 parameters, expected 9
 calls.aarch64.O0 0x210564 call_sum9: parameter 0 signedness differs; returns 4 bytes, expected 8
 calls.aarch64.O0 0x2105b0 sum_varargs: ok
 calls.aarch64.O2 0x2102d8 extra function
-calls.aarch64.O2 0x2103f8 extra function
 calls.aarch64.O2 0x2102c4 twice: parameter 0 signedness differs
 calls.aarch64.O2 0x2102cc square: parameter 0 signedness differs
 calls.aarch64.O2 0x2102d4 pick_op: not found
@@ -116,7 +115,6 @@ control.aarch64.O2 0x210278 sparse: ok
 control.aarch64.O2 0x2102cc short_circuit: ok
 control.aarch64.O2 0x210308 skip_negatives: ok
 control.aarch64.O2 0x2103a4 find_pair: parameter 2 signedness differs
-control.x86_64.O0 0x201343 extra function
 control.x86_64.O0 0x201230 matrix_trace: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 signedness differs
 control.x86_64.O0 0x2012c0 cleanup_on_error: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 is an unsigned 4-byte integer, expected a pointer
 control.x86_64.O0 0x201310 fallthrough: parameter 0 signedness differs
@@ -323,7 +321,6 @@ float.x86_64.O2 0x201260 lerp: 0 parameters, expected 3
 float.x86_64.O2 0x201270 truncate_to_int: 0 parameters, expected 1; returns 8 bytes, expected 4
 float.x86_64.O2 0x201280 widen: 0 parameters, expected 1
 float.x86_64.O2 0x201290 compare_doubles: 0 parameters, expected 2
-integers.aarch64.O0 0x210360 extra function
 integers.aarch64.O0 0x21022c narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.aarch64.O0 0x21024c widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.aarch64.O0 0x21026c mixed_sign: parameter 0 signedness differs
@@ -424,7 +421,6 @@ l4_memory.x86_64.O2 0x2011e0 point_dot: parameter 0 is an unsigned 4-byte intege
 l4_memory.x86_64.O2 0x2011f0 array_sum: parameter 0 is an unsigned 4-byte integer, expected a pointer; parameter 1 is 8 bytes, expected 4
 l4_memory.x86_64.O2 0x201280 bump: ok
 l4_memory.x86_64.O2 0x201290 banner_first: ok
-l5_switch.aarch64.O0 0x210378 extra function
 l5_switch.aarch64.O0 0x210334 dense: parameter 0 signedness differs
 l5_switch.aarch64.O0 0x210418 c0: ok
 l5_switch.aarch64.O0 0x21042c c1: ok
@@ -443,7 +439,6 @@ l5_switch.aarch64.O0 0x21052c c13: ok
 l5_switch.aarch64.O0 0x210544 c14: ok
 l5_switch.aarch64.O0 0x210558 c15: ok
 l5_switch.aarch64.O0 0x210570 sparse: parameter 0 signedness differs
-l5_switch.aarch64.O2 0x210338 extra function
 l5_switch.aarch64.O2 0x210304 dense: parameter 0 signedness differs
 l5_switch.aarch64.O2 0x2103cc c0: ok
 l5_switch.aarch64.O2 0x2103e0 c1: ok
@@ -462,7 +457,6 @@ l5_switch.aarch64.O2 0x2104e0 c13: ok
 l5_switch.aarch64.O2 0x2104f8 c14: ok
 l5_switch.aarch64.O2 0x21050c c15: ok
 l5_switch.aarch64.O2 0x210524 sparse: parameter 0 signedness differs
-l5_switch.x86_64.O0 0x201434 extra function
 l5_switch.x86_64.O0 0x201400 dense: parameter 0 signedness differs
 l5_switch.x86_64.O0 0x2014f0 c0: returns uint32_t, expected void
 l5_switch.x86_64.O0 0x201510 c1: returns uint32_t, expected void
@@ -481,7 +475,6 @@ l5_switch.x86_64.O0 0x201690 c13: returns uint32_t, expected void
 l5_switch.x86_64.O0 0x2016b0 c14: returns uint32_t, expected void
 l5_switch.x86_64.O0 0x2016d0 c15: returns uint32_t, expected void
 l5_switch.x86_64.O0 0x2016f0 sparse: parameter 0 signedness differs
-l5_switch.x86_64.O2 0x20134d extra function
 l5_switch.x86_64.O2 0x201330 dense: parameter 0 signedness differs
 l5_switch.x86_64.O2 0x2013e0 c0: ok
 l5_switch.x86_64.O2 0x2013f0 c1: ok
@@ -520,7 +513,6 @@ l6_abi.x86_64.O2 0x2011c0 tail_direct: parameter 0 signedness differs
 l6_abi.x86_64.O2 0x2011d0 tail_indirect: not found
 l6_abi.x86_64.O2 0x2011e0 six_args: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 5 signedness differs
 l6_abi.x86_64.O2 0x2011f0 wide_add: ok
-loops.aarch64.O0 0x2101dc extra function
 loops.aarch64.O0 0x21019c count_bits: ok
 loops.aarch64.O0 0x2101e8 sum_until: parameter 0 signedness differs
 loops.aarch64.O0 0x210244 sum_till_neg: parameter 0 is an unsigned 4-byte integer, expected a pointer; parameter 1 signedness differs
@@ -537,10 +529,9 @@ loops.x86_64.O2 0x201190 count_bits: ok
 loops.x86_64.O2 0x2011c0 sum_until: ok
 loops.x86_64.O2 0x2011e0 sum_till_neg: ok
 loops.x86_64.O2 0x201210 sum_until_zero: parameter 1 is 8 bytes, expected 4
-memory.aarch64.O0 0x210330 extra function
 memory.aarch64.O0 0x210234 copy_bytes: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer; returns uint64_t, expected void
 memory.aarch64.O0 0x21029c fill_bytes: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; returns uint64_t, expected void
-memory.aarch64.O0 0x2102f8 string_length: parameter 0 is an unsigned 8-byte integer, expected a pointer; returns 4 bytes, expected 8
+memory.aarch64.O0 0x2102f8 string_length: parameter 0 is an unsigned 8-byte integer, expected a pointer
 memory.aarch64.O0 0x21033c grid_get: parameter 0 signedness differs; parameter 1 signedness differs
 memory.aarch64.O0 0x210378 grid_set: parameter 0 is 8 bytes, expected 4; parameter 1 signedness differs; parameter 2 signedness differs; returns uint64_t, expected void
 memory.aarch64.O0 0x2103bc pointer_distance: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer
@@ -608,13 +599,10 @@ structs.x86_64.O2 0x2012d0 flags_level: ok
 structs.x86_64.O2 0x2012f0 flags_set_mode: parameter 1 is 8 bytes, expected 4; returns uint64_t, expected void
 switch_jumptable.aarch64.O0 0x21018c d7: parameter 0 signedness differs
 switch_jumptable.aarch64.O2 0x210184 d7: ok
-switch_jumptable.x86_64.O0 0x2011ec extra function
 switch_jumptable.x86_64.O0 0x2011c0 d7: parameter 0 signedness differs
-switch_jumptable.x86_64.O2 0x2011db extra function
 switch_jumptable.x86_64.O2 0x2011c0 d7: parameter 0 signedness differs
 switch_value_table.aarch64.O0 0x210154 dispatch: parameter 0 signedness differs
 switch_value_table.aarch64.O2 0x210164 dispatch: parameter 0 signedness differs
-switch_value_table.x86_64.O0 0x2011b0 extra function
 switch_value_table.x86_64.O0 0x201180 dispatch: parameter 0 signedness differs
 switch_value_table.x86_64.O2 0x201170 dispatch: parameter 0 signedness differs
 tail_calls.aarch64.O0 0x210194 tail_one: parameter 0 signedness differs

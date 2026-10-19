@@ -2,13 +2,7 @@ pe64.exe 0x140001090 -: reads rax without assigning it
 pe64.obj 0x90 entry: reads rax without assigning it
 rust_demo 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
 rust_probe 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
-rust_probe_stripped 0x161a0 -: reads rax without assigning it
-rust_probe_stripped 0x1fc6b -: reads rsi without assigning it
-rust_probe_stripped 0x21da1 -: reads rsi without assigning it
-rust_probe_stripped 0x34b8a -: reads rax without assigning it
-rust_probe_stripped 0x38779 -: reads rax without assigning it
 rust_probe_stripped 0x3b8e0 -: reads rax without assigning it
-rust_probe_stripped 0x3f973 -: reads rax without assigning it
 rust_probe_stripped 0x3f97f -: reads rax without assigning it
 rust_probe_stripped 0x3f996 -: reads rax without assigning it
 rust_probe_stripped 0x3f9a2 -: reads rax without assigning it

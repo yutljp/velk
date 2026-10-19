@@ -1,6 +1,5 @@
-# metrics/switch_value_table.x86_64.O0.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 7 gotos
-0x201180 48 - prologue
-0x2011b0 72 - prologue
+# metrics/switch_value_table.x86_64.O0.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201180 120 - prologue
 
 == 0x201180 -
 -- decompile
@@ -9,22 +8,38 @@
 uint32_t sub_201180(uint32_t a0) {
     uint32_t local_0; /* [sp-10] */
     uint64_t local_1; /* [sp-18] */
+    uint32_t local_2; /* [sp-c] */
 
     local_0 = a0;
     rax = local_0 - 0xa;
     rcx = eax;
     local_1 = rcx;
-    if (eax > 0x4 /* unsigned */) { goto L_2011ec; }
+    if (eax > 0x4 /* unsigned */) {
+        local_2 = 0x0;
+        return local_2;
+    }
     rcx = 0x200120;
     rax = (int64_t)(int32_t)(dword_200120[local_1]);
     rax = rax + 0x200120;
     switch (((*(uint32_t *)&local_1 - 0xe) & 0xffffffff)) {
-        case -4: goto L_2011b0;
-        case -3: goto L_2011bc;
-        case -2: goto L_2011c8;
-        case -1: goto L_2011d4;
-        case 0: goto L_2011e0;
-        default: goto L_2011ec;
+    case -4:
+        local_2 = 0x1;
+        return local_2;
+    case -3:
+        local_2 = 0x3;
+        return local_2;
+    case -2:
+        local_2 = 0x7;
+        return local_2;
+    case -1:
+        local_2 = 0x9;
+        return local_2;
+    case 0:
+        local_2 = 0xb;
+        return local_2;
+    default:
+        local_2 = 0x0;
+        return local_2;
     }
 }
 -- signature
@@ -32,7 +47,7 @@ uint32_t (uint32_t a0)
 -- references
 0x200120 .rodata
 -- ir
-fn <unnamed> @ 0x201180 (size 48)
+fn <unnamed> @ 0x201180 (size 120)
   blk0 @ 0x201180:
     store32(edi, (rsp + #0xfffffffffffffff0))
     rax = ((load32((rsp + #0xfffffffffffffff0)) + #0xfffffffffffffff6) & #0xffffffff)
@@ -44,40 +59,24 @@ fn <unnamed> @ 0x201180 (size 48)
     rax = sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4))))
     rax = (rax + #0x200120)
     switch ((load32((rsp + #0xffffffffffffffe8)) + #0xfffffffffffffff2) & #0xffffffff) [-4->0x2011b0, -3->0x2011bc, -2->0x2011c8, -1->0x2011d4, 0->0x2011e0] default 0x2011ec
+  blk2 @ 0x2011b0:
+    store32(#0x1, (rsp + #0xfffffffffffffff4))
+    br 0x2011f3
+  blk3 @ 0x2011bc:
+    store32(#0x3, (rsp + #0xfffffffffffffff4))
+    br 0x2011f3
+  blk4 @ 0x2011c8:
+    store32(#0x7, (rsp + #0xfffffffffffffff4))
+    br 0x2011f3
+  blk5 @ 0x2011d4:
+    store32(#0x9, (rsp + #0xfffffffffffffff4))
+    br 0x2011f3
+  blk6 @ 0x2011e0:
+    store32(#0xb, (rsp + #0xfffffffffffffff4))
+    br 0x2011f3
+  blk7 @ 0x2011ec:
+    store32(#0x0, (rsp + #0xfffffffffffffff4))
+  blk8 @ 0x2011f3:
+    ret (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
 -- card
-{"addr":"0x201180","approxTokens":180,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
-
-== 0x2011b0 -
--- decompile
-/* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
-uint32_t sub_2011b0(void) {
-    *(uint32_t *)(rbp - 0x4) = 0x1;
-    return *(uint32_t *)(rbp - 0x4);
-}
--- signature
-uint32_t ()
--- references
-
--- ir
-fn <unnamed> @ 0x2011b0 (size 72)
-  blk0 @ 0x2011b0:
-    store32(#0x1, (rbp + #0xfffffffffffffffc))
-    br 0x2011f3
-  blk1 @ 0x2011bc:
-    store32(#0x3, (rbp + #0xfffffffffffffffc))
-    br 0x2011f3
-  blk2 @ 0x2011c8:
-    store32(#0x7, (rbp + #0xfffffffffffffffc))
-    br 0x2011f3
-  blk3 @ 0x2011d4:
-    store32(#0x9, (rbp + #0xfffffffffffffffc))
-    br 0x2011f3
-  blk4 @ 0x2011e0:
-    store32(#0xb, (rbp + #0xfffffffffffffffc))
-    br 0x2011f3
-  blk5 @ 0x2011ec:
-    store32(#0x0, (rbp + #0xfffffffffffffffc))
-  blk6 @ 0x2011f3:
-    ret load32((rbp + #0xfffffffffffffffc))
--- card
-{"addr":"0x2011b0","approxTokens":108,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":72,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201180","approxTokens":192,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":120,"sizeEstimated":true,"unsupported":0}

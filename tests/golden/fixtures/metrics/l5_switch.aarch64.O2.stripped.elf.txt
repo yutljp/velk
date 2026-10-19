@@ -1,6 +1,5 @@
-# metrics/l5_switch.aarch64.O2.stripped.elf: elf aarch64 no entry, 19 functions, 0 lift failures, 0 unsupported, 18 gotos
-0x210304 52 - prologue
-0x210338 148 - prologue
+# metrics/l5_switch.aarch64.O2.stripped.elf: elf aarch64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x210304 200 - prologue
 0x2103cc 20 - prologue
 0x2103e0 24 - prologue
 0x2103f8 20 - prologue
@@ -25,26 +24,82 @@
 /* ref: 0x200158 .rodata */
 uint32_t sub_210304(uint32_t a0) {
     x8 = a0 - 0xa;
-    if (w8 > 0xf /* unsigned */) { goto L_2103b8; }
+    x19 = 0x220000;
+    if (w8 > 0xf /* unsigned */) {
+        *(uint32_t *)(x19 + 0x554) = 0x0;
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    }
     x11 = *(uint8_t *)(0x200158 + x8);
     switch (a0) {
-        case 10: goto L_210338;
-        case 11: goto L_210388;
-        case 12: goto L_210368;
-        case 13: goto L_210378;
-        case 14: goto L_210350;
-        case 15: goto L_210390;
-        case 16: goto L_2103a0;
-        case 17: goto L_210380;
-        case 18: goto L_2103b0;
-        case 19: goto L_210360;
-        case 20: goto L_2103a8;
-        case 21: goto L_210348;
-        case 22: goto L_210358;
-        case 23: goto L_210398;
-        case 24: goto L_210340;
-        case 25: goto L_210370;
-        default: goto L_2103b8;
+    case 10:
+        sub_2103cc();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 11:
+        sub_2103e0();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 12:
+        sub_2103f8();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 13:
+        sub_21040c();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 14:
+        sub_210420();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 15:
+        sub_210434();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 16:
+        sub_21044c();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 17:
+        sub_210460();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 18:
+        sub_210474();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 19:
+        sub_210488();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 20:
+        sub_2104a0();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 21:
+        sub_2104b4();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 22:
+        sub_2104cc();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 23:
+        sub_2104e0();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 24:
+        sub_2104f8();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    case 25:
+        sub_21050c();
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
+    default:
+        *(uint32_t *)(x19 + 0x554) = 0x0;
+        a0 = *(uint32_t *)(x19 + 0x554);
+        return a0;
     }
 }
 -- signature
@@ -52,83 +107,69 @@ uint32_t (uint32_t a0)
 -- references
 0x200158 .rodata
 -- ir
-fn <unnamed> @ 0x210304 (size 52)
+fn <unnamed> @ 0x210304 (size 200)
   blk0 @ 0x210304:
     x8 = ((w0 - #0xa) & #0xffffffff)
+    x19 = #0x220000
     brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
     x11 = (load8((#0x200158 + x8)) & #0xffffffff)
     switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
--- card
-{"addr":"0x210304","approxTokens":174,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":52,"sizeEstimated":true,"unsupported":0}
-
-== 0x210338 -
--- decompile
-/* velk pseudo-C: sub_210338 @ 0x210338 */
-uint32_t sub_210338(void) {
-    sub_2103cc();
-    return *(uint32_t *)(x19 + 0x554);
-}
--- signature
-uint32_t ()
--- references
-
--- ir
-fn <unnamed> @ 0x210338 (size 148)
-  blk0 @ 0x210338:
+  blk2 @ 0x210338:
     call 0x2103cc
     br 0x2103bc
-  blk1 @ 0x210340:
+  blk3 @ 0x210340:
     call 0x2104f8
     br 0x2103bc
-  blk2 @ 0x210348:
+  blk4 @ 0x210348:
     call 0x2104b4
     br 0x2103bc
-  blk3 @ 0x210350:
+  blk5 @ 0x210350:
     call 0x210420
     br 0x2103bc
-  blk4 @ 0x210358:
+  blk6 @ 0x210358:
     call 0x2104cc
     br 0x2103bc
-  blk5 @ 0x210360:
+  blk7 @ 0x210360:
     call 0x210488
     br 0x2103bc
-  blk6 @ 0x210368:
+  blk8 @ 0x210368:
     call 0x2103f8
     br 0x2103bc
-  blk7 @ 0x210370:
+  blk9 @ 0x210370:
     call 0x21050c
     br 0x2103bc
-  blk8 @ 0x210378:
+  blk10 @ 0x210378:
     call 0x21040c
     br 0x2103bc
-  blk9 @ 0x210380:
+  blk11 @ 0x210380:
     call 0x210460
     br 0x2103bc
-  blk10 @ 0x210388:
+  blk12 @ 0x210388:
     call 0x2103e0
     br 0x2103bc
-  blk11 @ 0x210390:
+  blk13 @ 0x210390:
     call 0x210434
     br 0x2103bc
-  blk12 @ 0x210398:
+  blk14 @ 0x210398:
     call 0x2104e0
     br 0x2103bc
-  blk13 @ 0x2103a0:
+  blk15 @ 0x2103a0:
     call 0x21044c
     br 0x2103bc
-  blk14 @ 0x2103a8:
+  blk16 @ 0x2103a8:
     call 0x2104a0
     br 0x2103bc
-  blk15 @ 0x2103b0:
+  blk17 @ 0x2103b0:
     call 0x210474
     br 0x2103bc
-  blk16 @ 0x2103b8:
+  blk18 @ 0x2103b8:
     store32(#0x0, (x19 + #0x554))
-  blk17 @ 0x2103bc:
-    ret load32((x19 + #0x554))
+  blk19 @ 0x2103bc:
+    w0 = load32((x19 + #0x554))
+    ret w0
 -- card
-{"addr":"0x210338","approxTokens":240,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":148,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210304","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":200,"sizeEstimated":true,"unsupported":0}
 
 == 0x2103cc -
 -- decompile

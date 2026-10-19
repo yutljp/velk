@@ -1,39 +1,20 @@
-# 5497 functions, 43903 compared runs
+# 5408 functions, 43142 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 238
 #   step limit (Go): 6468
-#   step limit (Rust): 664
+#   step limit (Rust): 655
 #   unsupported instruction (C and C++): 972
 #   unsupported instruction (Go): 9900
-#   unsupported instruction (Rust): 3486
+#   unsupported instruction (Rust): 3390
 metrics/calls.x86_64.O2.debug.elf 0x201330 apply_table: trial 0: calls differ (1 before, 1 after)
 metrics/calls.x86_64.O2.stripped.elf 0x201330 -: trial 0: calls differ (1 before, 1 after)
-metrics/control.x86_64.O0.stripped.elf 0x201310 -: trial 0: calls differ (1 before, 1 after)
 metrics/memory.x86_64.O2.stripped.elf 0x201310 -: trial 1: calls differ (1 before, 1 after)
-metrics/switch_jumptable.x86_64.O0.stripped.elf 0x2011c0 -: trial 0: calls differ (1 before, 1 after)
-metrics/switch_jumptable.x86_64.O2.stripped.elf 0x2011c0 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x16bbd -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x17099 -: trial 3: calls differ (1 before, 1 after)
-rust_probe_stripped 0x177df -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x1e300 -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x1e900 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x1f2d9 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x1f30b -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x1fc51 -: trial 4: calls differ (1 before, 1 after)
-rust_probe_stripped 0x1fe74 -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x2093e -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x37733 -: trial 0: calls differ (2 before, 2 after)
 rust_probe_stripped 0x3777b -: trial 0: calls differ (2 before, 2 after)
 rust_probe_stripped 0x377a6 -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x3780f -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x3785a -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x37905 -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x379cc -: trial 0: calls differ (2 before, 2 after)
 rust_probe_stripped 0x379f7 -: trial 0: calls differ (2 before, 2 after)
 rust_probe_stripped 0x37a3f -: trial 0: calls differ (2 before, 2 after)
 rust_probe_stripped 0x37c2a -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x37c9e -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x3892b -: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x3ef7d -: trial 0: calls differ (1 before, 1 after)
-rust_probe_stripped 0x42ad4 -: trial 0: calls differ (2 before, 2 after)
-rust_probe_stripped 0x4da80 -: trial 0: calls differ (1 before, 1 after)

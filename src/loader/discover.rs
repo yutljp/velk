@@ -31,11 +31,15 @@ pub(crate) fn aarch64_prologues(
             offset += 4;
             continue;
         }
-        // `ret`, `retaa`, `brk #0` and `br` (an indirect tail call) end a function.
-        if matches!(word, 0xd65f_03c0 | 0xd65f_0bff | 0xd420_0000)
-            || word & 0xffff_fc1f == 0xd61f_0000
-        {
+        // `ret`, `retaa` and `brk #0` end a function. So does `br`, an
+        // indirect tail call, unless it dispatches a jump table, whose cases
+        // follow it.
+        if matches!(word, 0xd65f_03c0 | 0xd65f_0bff | 0xd420_0000) {
             closed = true;
+        } else if word & 0xffff_fc1f == 0xd61f_0000 {
+            let previous = offset.checked_sub(4).and_then(|at| read_word(bytes, at));
+            closed = !previous.is_some_and(|previous| aarch64_table_dispatch(previous, word))
+                || read_word(bytes, offset + 4).is_none_or(is_aarch64_padding);
         } else if let Some(target) = aarch64_tail_jump(word, base + offset as u64) {
             let pc = base + offset as u64;
             // A branch to itself or one with a pending relocation is an
@@ -51,6 +55,14 @@ pub(crate) fn aarch64_prologues(
     }
     starts.dedup();
     starts
+}
+
+/// A jump table's `br` takes the address the instruction before computes as
+/// a base plus a scaled entry: `add xd, xbase, xentry, lsl #k` or with an
+/// extended register.
+fn aarch64_table_dispatch(previous: u32, br: u32) -> bool {
+    let added = previous & 0xff20_0000 == 0x8b00_0000 || previous & 0xffe0_0000 == 0x8b20_0000;
+    added && previous & 0x1f == (br >> 5) & 0x1f
 }
 
 /// The target of a `b` instruction (unconditional, no link).
@@ -78,9 +90,8 @@ fn aarch64_branch_targets(bytes: &[u8], base: u64) -> std::collections::HashSet<
         };
         let pc = base + offset as u64;
         let branch = match instruction.opcode {
-            Opcode::B | Opcode::Bcc(_) | Opcode::CBZ | Opcode::CBNZ => {
-                Some(instruction.operands[0])
-            }
+            Opcode::B | Opcode::Bcc(_) => Some(instruction.operands[0]),
+            Opcode::CBZ | Opcode::CBNZ => Some(instruction.operands[1]),
             Opcode::TBZ | Opcode::TBNZ => Some(instruction.operands[2]),
             _ => None,
         };
@@ -131,12 +142,23 @@ fn x86_is_padding(bytes: &[u8], base: u64, target: u64) -> bool {
 
 /// Function starts in a stripped x86-64 image: the first non-padding
 /// instruction after a return or tail jump, unless a branch targets it.
+/// An indirect jump ends a function unless it dispatches a jump table.
 pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
     use iced_x86::{Decoder, DecoderOptions, FlowControl};
+    // Every conditional branch target, wherever the branch: a later loop
+    // may jump back into code an earlier return seemed to end.
+    let mut targets = std::collections::HashSet::new();
+    let mut decoder = Decoder::with_ip(64, bytes, base, DecoderOptions::NONE);
+    while decoder.can_decode() {
+        let instruction = decoder.decode();
+        if instruction.flow_control() == FlowControl::ConditionalBranch {
+            targets.insert(instruction.near_branch_target());
+        }
+    }
     let mut decoder = Decoder::with_ip(64, bytes, base, DecoderOptions::NONE);
     let mut starts = Vec::new();
-    let mut targets = std::collections::HashSet::new();
     let mut closed = false;
+    let mut previous: Option<iced_x86::Instruction> = None;
     while decoder.can_decode() {
         let instruction = decoder.decode();
         let ip = instruction.ip();
@@ -148,12 +170,6 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
             closed = false;
         }
         match instruction.flow_control() {
-            FlowControl::ConditionalBranch => {
-                let target = instruction.near_branch_target();
-                if !x86_is_padding(bytes, base, target) {
-                    targets.insert(target);
-                }
-            }
             FlowControl::UnconditionalBranch => {
                 let target = instruction.near_branch_target();
                 if !x86_is_padding(bytes, base, target) {
@@ -168,9 +184,26 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
                     closed = true;
                 }
             }
-            FlowControl::Return | FlowControl::IndirectBranch => closed = true,
+            // A jump through a table, or to a register just computed as a
+            // table's base plus an entry, dispatches cases that follow.
+            FlowControl::IndirectBranch => {
+                let through_table = instruction.op0_kind() == iced_x86::OpKind::Memory
+                    && instruction.memory_index() != iced_x86::Register::None;
+                let computed = instruction.op0_kind() == iced_x86::OpKind::Register
+                    && previous.is_some_and(|previous| {
+                        previous.mnemonic() == iced_x86::Mnemonic::Add
+                            && previous.op0_kind() == iced_x86::OpKind::Register
+                            && previous.op0_register() == instruction.op0_register()
+                    });
+                // Padding after it ends the function all the same: the
+                // table held functions, as for a call through a table.
+                closed = !(through_table || computed)
+                    || x86_is_padding(bytes, base, instruction.next_ip());
+            }
+            FlowControl::Return => closed = true,
             _ => {}
         }
+        previous = Some(instruction);
     }
     starts
 }
@@ -203,5 +236,36 @@ pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64,
             func.size = Some(delta);
             func.size_estimated = true;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{aarch64_prologues, x86_prologues};
+
+    fn words(words: &[u32]) -> Vec<u8> {
+        words.iter().flat_map(|word| word.to_le_bytes()).collect()
+    }
+
+    #[test]
+    fn a_jump_table_case_after_the_dispatch_is_no_function() {
+        // add rax, rcx; jmp rax; (case) ret; int3
+        let code = [0x48, 0x01, 0xc8, 0xff, 0xe0, 0xc3, 0xcc];
+        assert!(x86_prologues(&code, 0).is_empty());
+    }
+
+    #[test]
+    fn a_function_after_an_indirect_tail_call_is_found() {
+        // AArch64: mov x2, x0; br x2; (next function) ret
+        let code = words(&[0xaa00_03e2, 0xd61f_0040, 0xd65f_03c0]);
+        assert_eq!(aarch64_prologues(&code, 0, &Default::default()), vec![8]);
+    }
+
+    #[test]
+    fn code_a_later_cbz_targets_continues_the_function() {
+        // ret; (0x4, reached only by the cbz below) mov x0, #0; cbz x0, -4
+        let code = words(&[0xd65f_03c0, 0xd280_0000, 0xb4ff_ffe0]);
+        let starts = aarch64_prologues(&code, 0, &Default::default());
+        assert!(!starts.contains(&4), "{starts:?}");
     }
 }

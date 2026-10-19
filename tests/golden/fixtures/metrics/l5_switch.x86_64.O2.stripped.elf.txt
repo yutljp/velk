@@ -1,6 +1,5 @@
-# metrics/l5_switch.x86_64.O2.stripped.elf: elf x86_64 no entry, 19 functions, 0 lift failures, 0 unsupported, 18 gotos
-0x201330 29 - prologue
-0x20134d 147 - prologue
+# metrics/l5_switch.x86_64.O2.stripped.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201330 176 - prologue
 0x2013e0 16 - prologue
 0x2013f0 16 - prologue
 0x201400 16 - prologue
@@ -23,114 +22,180 @@
 -- decompile
 /* velk pseudo-C: sub_201330 @ 0x201330 */
 /* ref: 0x200158 .rodata */
+/* ref: 0x20250c .bss */
 uint32_t sub_201330(uint32_t a0) {
+    uint64_t local_0; /* [sp-8] */
+
     a0 = ((a0 - 0xa) & 0xffffffff);
-    if (a0 > 0xf /* unsigned */) { goto L_2013c6; }
+    if (a0 > 0xf /* unsigned */) {
+        dword_20250c = 0x0;
+        rax = dword_20250c;
+        return rax;
+    }
+    rsp = rsp - 0x8;
+    local_0 = rax;
+    rax = 0x200158;
     rcx = (int64_t)(int32_t)(dword_200158[a0]) + 0x200158;
     switch (a0) {
-        case 10: goto L_20134d;
-        case 11: goto L_201393;
-        case 12: goto L_201377;
-        case 13: goto L_201385;
-        case 14: goto L_201362;
-        case 15: goto L_20139a;
-        case 16: goto L_2013a8;
-        case 17: goto L_20138c;
-        case 18: goto L_2013b6;
-        case 19: goto L_201370;
-        case 20: goto L_2013af;
-        case 21: goto L_20135b;
-        case 22: goto L_201369;
-        case 23: goto L_2013a1;
-        case 24: goto L_201354;
-        case 25: goto L_20137e;
-        default: goto L_2013c6;
+    case 10:
+        sub_2013e0();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 11:
+        sub_2013f0();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 12:
+        sub_201400();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 13:
+        sub_201410();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 14:
+        sub_201420();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 15:
+        sub_201430();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 16:
+        sub_201440();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 17:
+        sub_201450();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 18:
+        sub_201460();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 19:
+        sub_201470();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 20:
+        sub_201480();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 21:
+        sub_201490();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 22:
+        sub_2014a0();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 23:
+        sub_2014b0();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 24:
+        sub_2014c0();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    case 25:
+        sub_2014d0();
+        rsp = rsp + 0x8;
+        rax = dword_20250c;
+        return rax;
+    default:
+        dword_20250c = 0x0;
+        rax = dword_20250c;
+        return rax;
     }
 }
 -- signature
 uint32_t (uint32_t a0)
 -- references
 0x200158 .rodata
+0x20250c .bss
 -- ir
-fn <unnamed> @ 0x201330 (size 29)
+fn <unnamed> @ 0x201330 (size 176)
   blk0 @ 0x201330:
     rdi = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     brif hi (rdi & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rax, rsp)
+    rax = #0x200158
     rcx = (sext32(load32((#0x200158 + (rdi * #0x4)))) + #0x200158)
     switch (rdi & #0xffffffff) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
--- card
-{"addr":"0x201330","approxTokens":144,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":29,"sizeEstimated":true,"unsupported":0}
-
-== 0x20134d -
--- decompile
-/* velk pseudo-C: sub_20134d @ 0x20134d */
-/* ref: 0x20250c .bss */
-uint32_t sub_20134d(void) {
-    sub_2013e0();
-    return dword_20250c;
-}
--- signature
-uint32_t ()
--- references
-0x20250c .bss
--- ir
-fn <unnamed> @ 0x20134d (size 147)
-  blk0 @ 0x20134d:
+  blk2 @ 0x20134d:
     call 0x2013e0
     br 0x2013bb
-  blk1 @ 0x201354:
+  blk3 @ 0x201354:
     call 0x2014c0
     br 0x2013bb
-  blk2 @ 0x20135b:
+  blk4 @ 0x20135b:
     call 0x201490
     br 0x2013bb
-  blk3 @ 0x201362:
+  blk5 @ 0x201362:
     call 0x201420
     br 0x2013bb
-  blk4 @ 0x201369:
+  blk6 @ 0x201369:
     call 0x2014a0
     br 0x2013bb
-  blk5 @ 0x201370:
+  blk7 @ 0x201370:
     call 0x201470
     br 0x2013bb
-  blk6 @ 0x201377:
+  blk8 @ 0x201377:
     call 0x201400
     br 0x2013bb
-  blk7 @ 0x20137e:
+  blk9 @ 0x20137e:
     call 0x2014d0
     br 0x2013bb
-  blk8 @ 0x201385:
+  blk10 @ 0x201385:
     call 0x201410
     br 0x2013bb
-  blk9 @ 0x20138c:
+  blk11 @ 0x20138c:
     call 0x201450
     br 0x2013bb
-  blk10 @ 0x201393:
+  blk12 @ 0x201393:
     call 0x2013f0
     br 0x2013bb
-  blk11 @ 0x20139a:
+  blk13 @ 0x20139a:
     call 0x201430
     br 0x2013bb
-  blk12 @ 0x2013a1:
+  blk14 @ 0x2013a1:
     call 0x2014b0
     br 0x2013bb
-  blk13 @ 0x2013a8:
+  blk15 @ 0x2013a8:
     call 0x201440
     br 0x2013bb
-  blk14 @ 0x2013af:
+  blk16 @ 0x2013af:
     call 0x201480
     br 0x2013bb
-  blk15 @ 0x2013b6:
+  blk17 @ 0x2013b6:
     call 0x201460
-  blk16 @ 0x2013bb:
-    ret load32(#0x20250c)
-  blk17 @ 0x2013c6:
+  blk18 @ 0x2013bb:
+    rsp = (rsp + #0x8)
+    rax = (load32(#0x20250c) & #0xffffffff)
+    ret rax
+  blk19 @ 0x2013c6:
     store32(#0x0, #0x20250c)
-    eax = #0x0
-    ret #0x0
+    rax = (load32(#0x20250c) & #0xffffffff)
+    ret rax
 -- card
-{"addr":"0x20134d","approxTokens":108,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":147,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201330","approxTokens":156,"blocks":20,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":176,"sizeEstimated":true,"unsupported":0}
 
 == 0x2013e0 -
 -- decompile

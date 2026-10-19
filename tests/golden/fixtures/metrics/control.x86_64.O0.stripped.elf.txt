@@ -1,8 +1,7 @@
-# metrics/control.x86_64.O0.stripped.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 8 gotos
+# metrics/control.x86_64.O0.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 3 gotos
 0x201230 144 - prologue
 0x2012c0 80 - prologue
-0x201310 51 - prologue
-0x201343 61 - prologue
+0x201310 112 - prologue
 0x201380 144 - prologue
 0x201410 112 - prologue
 0x201480 96 - prologue
@@ -143,20 +142,37 @@ fn <unnamed> @ 0x2012c0 (size 80)
 /* ref: 0x200120 .rodata */
 uint32_t sub_201310(uint32_t a0) {
     uint32_t local_0; /* [sp-c] */
-    uint64_t local_1; /* [sp-18] */
+    uint32_t local_1; /* [sp-10] */
+    uint64_t local_2; /* [sp-18] */
 
     local_0 = a0;
+    local_1 = 0x0;
     rax = local_0;
-    local_1 = rax;
-    if (rax > 0x3 /* unsigned */) { goto L_20136f; }
-    rax = (int64_t)(int32_t)(dword_200120[local_1]);
+    local_2 = rax;
+    if (rax > 0x3 /* unsigned */) {
+        local_1 = 0xffffffff;
+        return local_1;
+    }
+    rax = (int64_t)(int32_t)(dword_200120[local_2]);
     rax = rax + 0x200120;
-    switch (local_1) {
-        case 0: goto L_201343;
-        case 1: goto L_20134c;
-        case 2: goto L_201355;
-        case 3: goto L_201363;
-        default: goto L_20136f;
+    switch (local_2) {
+    case 0:
+        local_1 += 0x1;
+        goto L_20134c;
+    case 1:
+    L_20134c:
+        local_1 += 0x2;
+        local_1 += 0x4;
+        return local_1;
+    case 2:
+        local_1 += 0x4;
+        return local_1;
+    case 3:
+        local_1 = 0x8;
+        return local_1;
+    default:
+        local_1 = 0xffffffff;
+        return local_1;
     }
 }
 -- signature
@@ -164,9 +180,10 @@ uint32_t (uint32_t a0)
 -- references
 0x200120 .rodata
 -- ir
-fn <unnamed> @ 0x201310 (size 51)
+fn <unnamed> @ 0x201310 (size 112)
   blk0 @ 0x201310:
     store32(edi, (rsp + #0xfffffffffffffff4))
+    store32(#0x0, (rsp + #0xfffffffffffffff0))
     rax = (load32((rsp + #0xfffffffffffffff4)) & #0xffffffff)
     store64(rax, (rsp + #0xffffffffffffffe8))
     brif hi rax, #0x3 -> 0x20136f
@@ -174,46 +191,22 @@ fn <unnamed> @ 0x201310 (size 51)
     rax = sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4))))
     rax = (rax + #0x200120)
     switch load64((rsp + #0xffffffffffffffe8)) [0->0x201343, 1->0x20134c, 2->0x201355, 3->0x201363] default 0x20136f
--- card
-{"addr":"0x201310","approxTokens":174,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":51,"sizeEstimated":true,"unsupported":0}
-
-== 0x201343 -
--- decompile
-/* velk pseudo-C: sub_201343 @ 0x201343 */
-uint32_t sub_201343(void) {
-    eax = *(uint32_t *)(rbp - 0x8) + 0x1;
-    *(uint32_t *)(rbp - 0x8) = eax;
-    eax = eax;
-    eax = eax + 0x2;
-    *(uint32_t *)(rbp - 0x8) = eax;
-    eax = eax;
-    *(uint32_t *)(rbp - 0x8) = eax + 0x4;
-    return *(uint32_t *)(rbp - 0x8);
-}
--- signature
-uint32_t ()
--- references
-
--- ir
-fn <unnamed> @ 0x201343 (size 61)
-  blk0 @ 0x201343:
-    eax = (load32((rbp + #0xfffffffffffffff8)) + #0x1)
-    store32(eax, (rbp + #0xfffffffffffffff8))
-    eax = (eax & #0xffffffff)
-    eax = (eax + #0x2)
-    store32(eax, (rbp + #0xfffffffffffffff8))
-    eax = (eax & #0xffffffff)
-    store32(((eax + #0x4) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+  blk2 @ 0x201343:
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
+  blk3 @ 0x20134c:
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x2), (rsp + #0xfffffffffffffff0))
+  blk4 @ 0x201355:
+    store32((load32((rsp + #0xfffffffffffffff0)) + #0x4), (rsp + #0xfffffffffffffff0))
     br 0x201376
-  blk1 @ 0x201363:
-    store32(#0x8, (rbp + #0xfffffffffffffff8))
+  blk5 @ 0x201363:
+    store32(#0x8, (rsp + #0xfffffffffffffff0))
     br 0x201376
-  blk2 @ 0x20136f:
-    store32(#0xffffffff, (rbp + #0xfffffffffffffff8))
-  blk3 @ 0x201376:
-    ret load32((rbp + #0xfffffffffffffff8))
+  blk6 @ 0x20136f:
+    store32(#0xffffffff, (rsp + #0xfffffffffffffff0))
+  blk7 @ 0x201376:
+    ret (load32((rsp + #0xfffffffffffffff0)) & #0xffffffff)
 -- card
-{"addr":"0x201343","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":61,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201310","approxTokens":234,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":112,"sizeEstimated":true,"unsupported":0}
 
 == 0x201380 -
 -- decompile

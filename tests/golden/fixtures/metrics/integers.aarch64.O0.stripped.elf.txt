@@ -1,11 +1,10 @@
-# metrics/integers.aarch64.O0.stripped.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/integers.aarch64.O0.stripped.elf: elf aarch64 no entry, 10 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x21022c 32 - prologue
 0x21024c 32 - prologue
 0x21026c 32 - prologue
 0x21028c 84 - prologue
 0x2102e0 64 - prologue
-0x210320 64 - prologue
-0x210360 12 - prologue
+0x210320 76 - prologue
 0x21036c 60 - prologue
 0x2103a8 124 - prologue
 0x210424 64 - prologue
@@ -132,22 +131,20 @@ uint32_t sub_210320(uint32_t a0) {
         local_0 &= local_0 - 0x1;
         local_1 += 0x1;
     }
-    sub_210360();
-    return a0;
+    return local_1;
 }
 -- signature
 uint32_t (uint32_t a0)
 -- references
 
 -- ir
-fn <unnamed> @ 0x210320 (size 64)
+fn <unnamed> @ 0x210320 (size 76)
   blk0 @ 0x210320:
-    store32((x0 & #0xffffffff), (sp + #0xfffffffffffffffc))
+    store32(w0, (sp + #0xfffffffffffffffc))
     store32(#0x0, (sp + #0xfffffffffffffff8))
     br 0x210330
   blk1 @ 0x210330:
-    w8 = load32((sp + #0xfffffffffffffffc))
-    brif eq w8, #0x0 -> 0x210360
+    brif eq load32((sp + #0xfffffffffffffffc)), #0x0 -> 0x210360
   blk2 @ 0x210338:
     br 0x21033c
   blk3 @ 0x21033c:
@@ -155,27 +152,9 @@ fn <unnamed> @ 0x210320 (size 64)
     store32(((load32((sp + #0xfffffffffffffff8)) + #0x1) & #0xffffffff), (sp + #0xfffffffffffffff8))
     br 0x210330
   blk4 @ 0x210360:
-    call 0x210360
-    ret x0
+    ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x210320","approxTokens":192,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
-
-== 0x210360 -
--- decompile
-/* velk pseudo-C: sub_210360 @ 0x210360 */
-uint32_t sub_210360(void) {
-    return *(uint32_t *)(sp + 0x8);
-}
--- signature
-uint32_t ()
--- references
-
--- ir
-fn <unnamed> @ 0x210360 (size 12)
-  blk0 @ 0x210360:
-    ret load32((sp + #0x8))
--- card
-{"addr":"0x210360","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x210320","approxTokens":210,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":76,"sizeEstimated":true,"unsupported":0}
 
 == 0x21036c -
 -- decompile
