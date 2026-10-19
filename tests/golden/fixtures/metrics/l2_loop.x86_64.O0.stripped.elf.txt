@@ -60,7 +60,7 @@ int32_t sub_201250(int32_t a0) {
     local_1 = 0x0;
     do {
         local_1 += 0x1;
-        local_0 += 0xffffffffffffffff;
+        local_0 += -0x1;
         dword_202350 = local_1;
     } while (local_0 > 0x0);
     return local_1;

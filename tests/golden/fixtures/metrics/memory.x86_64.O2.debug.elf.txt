@@ -78,7 +78,7 @@ L_2012a6:
             v10 = v10 - 0x1;
         } while (v10 != 0x0);
     }
-    if (v1 - n > 0xfffffffffffffffc /* unsigned */) {
+    if (v1 - n > -0x4 /* unsigned */) {
         return;
     }
     do {
@@ -199,7 +199,7 @@ unsigned long string_length(char *s) {
     int64_t v1;
     int32_t v2;
 
-    v1 = 0xffffffffffffffff;
+    v1 = -0x1;
     do {
         v2 = s[v1 + 0x1];
         v1 = v1 + 0x1;

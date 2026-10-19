@@ -422,6 +422,10 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
     match value {
         Expr::Apply { op, args } => render_operation(*op, args, ctx),
         Expr::Reg { index, width } => ctx.register(*index, *width),
+        // A 64-bit constant just below zero is a small negative number.
+        Expr::Const(value) if value.wrapping_neg() <= 1 << 31 && *value >= 1 << 63 => {
+            format!("-0x{:x}", value.wrapping_neg())
+        }
         Expr::Const(value) => format!("0x{value:x}"),
         Expr::Bin {
             op: BinOp::Sub,
@@ -566,12 +570,13 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
         }
         Expr::Bin { op, lhs, rhs } => {
             let strength = precedence(value);
-            let side = |side: &Expr, right: bool| {
-                if matches!(op, BinOp::Sub) {
-                    pointer_operand(side, ctx, strength, right)
-                } else {
-                    operand(side, ctx, strength, right)
+            let side = |side: &Expr, right: bool| match side {
+                // A bitwise operation reads a constant as its bits.
+                Expr::Const(value) if matches!(op, BinOp::And | BinOp::Or | BinOp::Xor) => {
+                    format!("0x{value:x}")
                 }
+                _ if matches!(op, BinOp::Sub) => pointer_operand(side, ctx, strength, right),
+                _ => operand(side, ctx, strength, right),
             };
             format!("{} {} {}", side(lhs, false), operator(*op), side(rhs, true))
         }
@@ -732,8 +737,24 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
         Cond::Eq | Cond::Ne => 7,
         _ => 8,
     };
-    let a = operand(lhs, ctx, strength, false);
-    let b = operand(rhs, ctx, strength, true);
+    // A signed comparison reads a constant with the top bit of the operands'
+    // width set as the negative number it is.
+    let signed = matches!(cond, Cond::Lt | Cond::Ge | Cond::Gt | Cond::Le);
+    let bits = crate::ir::semantics::operand_width(lhs, rhs);
+    let side = |side: &Expr, right: bool| match side {
+        Expr::Const(value)
+            if signed
+                && (1..=64).contains(&bits)
+                && *value & crate::ir::semantics::mask(bits) == *value
+                && (*value >> (bits - 1)) & 1 == 1 =>
+        {
+            let magnitude = crate::ir::semantics::sign_extend(*value, bits).unsigned_abs();
+            format!("-0x{magnitude:x}")
+        }
+        other => operand(other, ctx, strength, right),
+    };
+    let a = side(lhs, false);
+    let b = side(rhs, true);
     match cond {
         Cond::Eq => format!("{a} == {b}"),
         Cond::Ne => format!("{a} != {b}"),

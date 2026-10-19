@@ -13,10 +13,9 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     int64_t v2;
     int64_t v3;
     int32_t v4;
-    int32_t v5;
-    int64_t local_0; /* [sp-28] */
+    uint64_t *v5;
+    int32_t v6;
 
-    local_0 = rax;
     if (a1 <= 0x0) {
         v4 = 0x0;
         return v4;
@@ -26,10 +25,10 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     v3 = 0x0;
     v4 = 0x0;
     do {
-        a0 = v1[v3];
-        rax = *a0;
-        v5 = (*(*(uint64_t *)(rax + 0x10)))();
-        v4 = v4 + v5;
+        v5 = v1[v3];
+        rax = *v5;
+        v6 = (*(*(uint64_t *)(rax + 0x10)))(v5);
+        v4 = v4 + v6;
         v3 = v3 + 0x1;
     } while (v2 != v3);
     return v4;
@@ -41,7 +40,6 @@ int32_t (uint64_t * a0, int32_t a1)
 -- ir
 fn total_area(Shape const* const*, int) @ 0x0 (size 69)
   blk0 @ 0x0:
-    store64(rax, (rsp + #0xffffffffffffffd8))
     brif le esi, #0x0 -> 0x36
   blk1 @ 0xb:
     v1 = rdi
@@ -49,10 +47,10 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
     v3 = #0x0
     v4 = #0x0
   blk2 @ 0x20:
-    rdi = load64((v1 + (v3 * #0x8)))
-    rax = load64(rdi)
-    call *load64((rax + #0x10))
-    v4 = (((v4 & #0xffffffff) + (v5 & #0xffffffff)) & #0xffffffff)
+    v5 = load64((v1 + (v3 * #0x8)))
+    rax = load64(v5)
+    v6 = call *load64((rax + #0x10))(v5)
+    v4 = (((v4 & #0xffffffff) + (v6 & #0xffffffff)) & #0xffffffff)
     v3 = (v3 + #0x1)
     brif ne v2, v3 -> 0x20
   blk3 @ 0x34:
@@ -68,7 +66,10 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
 -- decompile
 /* velk pseudo-C: clamp_int(int) @ 0x50 */
 int32_t clamp_int_int_(int32_t a0) {
-    return ((a0 < 0xff ? a0 : 0xff) > 0x0 ? (a0 < 0xff ? a0 : 0xff) : 0x0);
+    int32_t v1;
+
+    v1 = (a0 < 0xff ? a0 : 0xff);
+    return (v1 > 0x0 ? v1 : 0x0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -77,7 +78,8 @@ int32_t (int32_t a0)
 -- ir
 fn clamp_int(int) @ 0x50 (size 22)
   blk0 @ 0x50:
-    ret (select gt (select lt edi, #0xff ? edi, #0xff & #0xffffffff), #0x0 ? (select lt edi, #0xff ? edi, #0xff & #0xffffffff), #0x0 & #0xffffffff)
+    v1 = (select lt edi, #0xff ? edi, #0xff & #0xffffffff)
+    ret (select gt (v1 & #0xffffffff), #0x0 ? (v1 & #0xffffffff), #0x0 & #0xffffffff)
 -- card
 {"addr":"0x50","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab","unwind"],"section":".text","size":22,"unsupported":0}
 
@@ -85,7 +87,10 @@ fn clamp_int(int) @ 0x50 (size 22)
 -- decompile
 /* velk pseudo-C: clamp_long(long) @ 0x70 */
 int64_t clamp_long_long_(int64_t a0) {
-    return ((a0 < 0x3e8 ? a0 : 0x3e8) >= 0xfffffffffffffc19 ? (a0 < 0x3e8 ? a0 : 0x3e8) : 0xfffffffffffffc18);
+    int64_t v1;
+
+    v1 = (a0 < 0x3e8 ? a0 : 0x3e8);
+    return (v1 >= -0x3e7 ? v1 : -0x3e8);
 }
 -- signature
 int64_t (int64_t a0)
@@ -94,7 +99,8 @@ int64_t (int64_t a0)
 -- ir
 fn clamp_long(long) @ 0x70 (size 35)
   blk0 @ 0x70:
-    ret select ge select lt rdi, #0x3e8 ? rdi, #0x3e8, #0xfffffffffffffc19 ? select lt rdi, #0x3e8 ? rdi, #0x3e8, #0xfffffffffffffc18
+    v1 = select lt rdi, #0x3e8 ? rdi, #0x3e8
+    ret select ge v1, #0xfffffffffffffc19 ? v1, #0xfffffffffffffc18
 -- card
 {"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
 

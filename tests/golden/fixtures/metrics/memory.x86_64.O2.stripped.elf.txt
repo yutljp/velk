@@ -77,7 +77,7 @@ L_2012a6:
         } while (v9 != 0x0);
     }
     rax = rax - a2;
-    if (rax > 0xfffffffffffffffc /* unsigned */) {
+    if (rax > -0x4 /* unsigned */) {
         return rax;
     }
     do {
@@ -200,7 +200,7 @@ int64_t sub_201320(uint8_t *a0) {
     int64_t v1;
     int32_t v2;
 
-    v1 = 0xffffffffffffffff;
+    v1 = -0x1;
     do {
         v2 = a0[v1 + 0x1];
         v1 = v1 + 0x1;

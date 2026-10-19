@@ -153,7 +153,10 @@ fn <unnamed> @ 0x201280 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 int32_t sub_201290(int32_t a0, int32_t a1, int32_t a2) {
-    return ((a0 < a1 ? a0 : a1) >= a2 ? a2 : (a0 < a1 ? a0 : a1));
+    int32_t v1;
+
+    v1 = (a0 < a1 ? a0 : a1);
+    return (v1 >= a2 ? a2 : v1);
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -162,7 +165,8 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x201290 (size 13)
   blk0 @ 0x201290:
-    ret (select ge (select lt edi, esi ? edi, esi & #0xffffffff), edx ? edx, (select lt edi, esi ? edi, esi & #0xffffffff) & #0xffffffff)
+    v1 = select lt edi, esi ? edi, esi
+    ret (select ge v1, edx ? edx, v1 & #0xffffffff)
 -- card
 {"addr":"0x201290","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
 

@@ -478,7 +478,7 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
     v3 = a1 ^ 0xffffffff;
     v4 = a0 + 0x1;
     v5 = v2 - 0x1;
-    v6 = 0xffffffffffffffff;
+    v6 = -0x1;
     v7 = 0x0;
     for (;;) {
         v8 = v7;

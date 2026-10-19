@@ -330,9 +330,12 @@ fn copy_propagate_block(
             index += 1;
             continue;
         }
-        // Inlining a compound value into two reads would undo CSE.
+        // Inlining a compound value into two reads would undo CSE, and a
+        // choice repeated reads as two.
         let reads_in_consumer = count_reg(&block.stmts[consumer], dest);
-        if avoid_duplication && reads_in_consumer > 1 && expr_size(&template) > 1 {
+        if reads_in_consumer > 1
+            && ((avoid_duplication && expr_size(&template) > 1) || contains_select(&template))
+        {
             index += 1;
             continue;
         }
@@ -343,6 +346,13 @@ fn copy_propagate_block(
         block.stmts.remove(index);
         // `index` now names the statement after the removed copy.
     }
+}
+
+fn contains_select(expr: &Expr) -> bool {
+    matches!(expr, Expr::Select { .. })
+        || crate::ir::visit::children(expr)
+            .into_iter()
+            .any(contains_select)
 }
 
 /// How many times a statement reads one register.

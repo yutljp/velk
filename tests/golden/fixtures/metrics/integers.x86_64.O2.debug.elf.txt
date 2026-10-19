@@ -153,7 +153,10 @@ fn byte_swap @ 0x201280 (size 5)
 -- decompile
 /* velk pseudo-C: min3 @ 0x201290 */
 int min3(int a, int b, int c) {
-    return ((a < b ? a : b) >= c ? c : (a < b ? a : b));
+    int32_t v1;
+
+    v1 = (a < b ? a : b);
+    return (v1 >= c ? c : v1);
 }
 -- signature
 int (int a, int b, int c)
@@ -162,7 +165,8 @@ int (int a, int b, int c)
 -- ir
 fn min3 @ 0x201290 (size 13)
   blk0 @ 0x201290:
-    ret (select ge (select lt edi, esi ? edi, esi & #0xffffffff), edx ? edx, (select lt edi, esi ? edi, esi & #0xffffffff) & #0xffffffff)
+    v1 = select lt edi, esi ? edi, esi
+    ret (select ge v1, edx ? edx, v1 & #0xffffffff)
 -- card
 {"addr":"0x201290","approxTokens":132,"blocks":1,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":13,"unsupported":0}
 

@@ -220,7 +220,7 @@ fn <unnamed> @ 0x2013f0 (size 8)
 /* velk pseudo-C: sub_201400 @ 0x201400 */
 /* ref: 0x20250c .bss */
 void sub_201400(void) {
-    dword_20250c += 0xffffffffffffffe7;
+    dword_20250c += -0x19;
 }
 -- signature
 void ()
@@ -296,7 +296,7 @@ fn <unnamed> @ 0x201430 (size 8)
 /* velk pseudo-C: sub_201440 @ 0x201440 */
 /* ref: 0x20250c .bss */
 void sub_201440(void) {
-    dword_20250c += 0xffffffffffffffcb;
+    dword_20250c += -0x35;
 }
 -- signature
 void ()
@@ -372,7 +372,7 @@ fn <unnamed> @ 0x201470 (size 8)
 /* velk pseudo-C: sub_201480 @ 0x201480 */
 /* ref: 0x20250c .bss */
 void sub_201480(void) {
-    dword_20250c += 0xffffffffffffffaf;
+    dword_20250c += -0x51;
 }
 -- signature
 void ()
@@ -448,7 +448,7 @@ fn <unnamed> @ 0x2014b0 (size 8)
 /* velk pseudo-C: sub_2014c0 @ 0x2014c0 */
 /* ref: 0x20250c .bss */
 void sub_2014c0(void) {
-    dword_20250c += 0xffffffffffffff93;
+    dword_20250c += -0x6d;
 }
 -- signature
 void ()

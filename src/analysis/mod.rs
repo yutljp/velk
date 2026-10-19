@@ -179,9 +179,34 @@ fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Pr
 
 /// Gives a call whose callee's arguments are unknown, such as one through a
 /// pointer, the argument registers the code sets up for it: up to the last
-/// one written since the block's previous call and not read again before
-/// the call, which a register used as scratch is.
+/// one written since the block's previous call and not used again before
+/// the call, as a register holding scratch is. Loading through a register,
+/// as a virtual call loads its table through the object, is no such use.
 fn set_up_arguments(ir: &mut FunctionIr) {
+    // The registers an expression reads other than as the base of a load.
+    fn used(expr: &crate::ir::Expr, out: &mut HashSet<u16>) {
+        use crate::ir::{BinOp, Expr};
+        match expr {
+            Expr::Load { addr, .. } => match addr.as_ref() {
+                Expr::Reg { .. } => {}
+                Expr::Bin {
+                    op: BinOp::Add,
+                    lhs,
+                    rhs,
+                } if matches!(lhs.as_ref(), Expr::Reg { .. })
+                    && matches!(rhs.as_ref(), Expr::Const(_)) => {}
+                other => used(other, out),
+            },
+            Expr::Reg { index, .. } => {
+                out.insert(*index);
+            }
+            other => {
+                for child in crate::ir::visit::children(other) {
+                    used(child, out);
+                }
+            }
+        }
+    }
     for block in &mut ir.blocks {
         let mut written: HashSet<u16> = HashSet::new();
         for stmt in &mut block.stmts {
@@ -189,11 +214,14 @@ fn set_up_arguments(ir: &mut FunctionIr) {
                 convention, args, ..
             } = stmt
             else {
-                let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+                let mut reads = HashSet::new();
+                for operand in stmt.operands() {
+                    used(operand, &mut reads);
+                }
                 for read in reads {
                     written.remove(&read);
                 }
-                written.extend(writes);
+                written.extend(crate::ir::visit::statement_registers(stmt).0);
                 continue;
             };
             let registers = convention.arguments();
