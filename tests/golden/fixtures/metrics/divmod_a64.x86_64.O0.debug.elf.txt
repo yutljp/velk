@@ -337,7 +337,7 @@ fn negate @ 0x201670 (size 14)
 int is_neg(int x) {
     int64_t v1;
 
-    v1 = (x < 0x0) & 0xff;
+    v1 = (x < 0x0);
     return v1 & 0x1;
 }
 -- signature
@@ -358,7 +358,7 @@ fn is_neg @ 0x201680 (size 21)
 int is_zero(int x) {
     int64_t v1;
 
-    v1 = (x == 0x0) & 0xff;
+    v1 = (x == 0x0);
     return v1 & 0x1;
 }
 -- signature
@@ -379,7 +379,7 @@ fn is_zero @ 0x2016a0 (size 21)
 int is_pos(int x) {
     int64_t v1;
 
-    v1 = (x > 0x0) & 0xff;
+    v1 = (x > 0x0);
     return v1 & 0x1;
 }
 -- signature

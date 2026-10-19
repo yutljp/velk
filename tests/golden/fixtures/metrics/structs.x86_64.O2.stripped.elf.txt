@@ -225,7 +225,7 @@ int64_t sub_2012f0(uint8_t *a0, int32_t a1) {
     v1 = *a0;
     t1 = a1 & 0xff;
     v3 = v1 & 0xffffffffffffff00 | v1 & 0xf1;
-    v4 = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe) & 0xff;
+    v4 = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe);
     *a0 = v4;
     return v4;
 }

@@ -163,12 +163,16 @@ fn printed_precedence(expr: &Expr, ctx: &Ctx<'_>) -> u8 {
                 13
             };
         }
+        // Another low mask over a value that fits prints as the value.
+        if matches!(rhs.as_ref(), Expr::Const(mask) if mask.wrapping_add(1).is_power_of_two() && *mask != 0)
+            && fits(lhs, rhs_bits(rhs), ctx)
+        {
+            return printed_precedence(lhs, ctx);
+        }
     }
     precedence(expr)
 }
 
-/// Renders a child of an operator with binding strength `parent`, adding
-/// parentheses only when needed; `right` marks the right operand.
 /// An operand of an addition or a subtraction, where a typed pointer the
 /// IR moves by bytes is counted as bytes.
 fn pointer_operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> String {
@@ -186,6 +190,8 @@ fn pointer_operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> Strin
     }
 }
 
+/// Renders a child of an operator with binding strength `parent`, adding
+/// parentheses only when needed; `right` marks the right operand.
 pub(crate) fn operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> String {
     let text = render_expr(expr, ctx);
     let own = printed_precedence(expr, ctx);
@@ -431,12 +437,15 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
         } if matches!(rhs.as_ref(), Expr::Const(u64::MAX)) => {
             format!("~{}", operand(lhs, ctx, 12, false))
         }
-        // A mask over a value that already fits in 32 bits changes nothing.
+        // A mask of the low bits over a value that already fits in them
+        // changes nothing.
         Expr::Bin {
             op: BinOp::And,
             lhs,
             rhs,
-        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) && fits(lhs, 32, ctx) => {
+        } if matches!(rhs.as_ref(), Expr::Const(mask) if mask.wrapping_add(1).is_power_of_two() && *mask != 0)
+            && fits(lhs, rhs_bits(rhs), ctx) =>
+        {
             render_expr(lhs, ctx)
         }
         Expr::Bin {
@@ -638,6 +647,14 @@ pub(crate) fn slot_access(name: &str, width: u8, signed: bool, ctx: &Ctx<'_>) ->
     }
 }
 
+/// The number of low bits a mask `2^n - 1` keeps.
+fn rhs_bits(mask: &Expr) -> u32 {
+    match mask {
+        Expr::Const(mask) => mask.count_ones(),
+        _ => 64,
+    }
+}
+
 /// True when the value provably fits in `bits` bits.
 pub(crate) fn fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
     match expr {
@@ -646,10 +663,12 @@ pub(crate) fn fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
         // whatever width the register read has.
         Expr::Reg { index, width } => {
             u32::from(*width) <= bits
-                || (ctx.names.contains_key(index) && !ctx.wide_params.contains(index))
+                || (bits >= 32 && ctx.names.contains_key(index) && !ctx.wide_params.contains(index))
         }
         Expr::Load { width, .. } => u32::from(*width) * 8 <= bits,
-        Expr::SignExtend { width, .. } => u32::from(*width) * 8 <= bits,
+        // A negative extended value fills the bits above, which only C's
+        // 32-bit arithmetic wraps away.
+        Expr::SignExtend { width, .. } => bits >= 32 && u32::from(*width) * 8 <= bits,
         Expr::Bin { op, lhs, rhs } => match op {
             BinOp::And => match rhs.as_ref() {
                 Expr::Const(mask) => bits >= 64 || (*mask >> bits) == 0,
@@ -657,10 +676,14 @@ pub(crate) fn fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
             },
             BinOp::Or | BinOp::Xor => fits(lhs, bits, ctx) && fits(rhs, bits, ctx),
             // Arithmetic on 32-bit operands wraps at 32 bits in C, which is
-            // what the mask would do.
-            BinOp::Add | BinOp::Sub | BinOp::Mul => fits(lhs, bits, ctx) && fits(rhs, bits, ctx),
+            // what the mask would do; narrower results carry out of the mask.
+            BinOp::Add | BinOp::Sub | BinOp::Mul => {
+                bits >= 32 && fits(lhs, bits, ctx) && fits(rhs, bits, ctx)
+            }
             BinOp::Shl => {
-                matches!(rhs.as_ref(), Expr::Const(amount) if *amount < 32) && fits(lhs, bits, ctx)
+                bits >= 32
+                    && matches!(rhs.as_ref(), Expr::Const(amount) if *amount < 32)
+                    && fits(lhs, bits, ctx)
             }
             BinOp::DivS | BinOp::DivU | BinOp::ModS | BinOp::ModU | BinOp::Shr | BinOp::Sar => {
                 fits(lhs, bits, ctx) && fits(rhs, bits, ctx)

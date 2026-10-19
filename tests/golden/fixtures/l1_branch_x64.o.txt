@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x0 */
 int32_t classify(int32_t a0) {
-    return (a0 >= 0x0 ? (a0 != 0x0) & 0xff : 0xffffffff);
+    return (a0 >= 0x0 ? (a0 != 0x0) : 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)
@@ -41,7 +41,7 @@ fn clamp @ 0x10 (size 13)
 -- decompile
 /* velk pseudo-C: sign_of @ 0x20 */
 int32_t sign_of(int32_t a0) {
-    return (a0 <= 0x0 ? -((a0 != 0x0) & 0xff) : 0x1);
+    return (a0 <= 0x0 ? -(a0 != 0x0) : 0x1);
 }
 -- signature
 int32_t (int32_t a0)

@@ -87,7 +87,7 @@ int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
         v5 = local_2;
         return v5 & 0x1;
     }
-    v3 = (local_0 <= local_1) & 0xff;
+    v3 = (local_0 <= local_1);
     v4 = local_1;
     local_2 = v3;
     v5 = local_2;

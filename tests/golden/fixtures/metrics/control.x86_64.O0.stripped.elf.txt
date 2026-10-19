@@ -314,7 +314,7 @@ int32_t sub_201410(uint32_t *a0, int32_t a1) {
         v6 = local_0;
         v7 = (int64_t)(int32_t)(local_1 - 0x1);
         v8 = v6[v7];
-        v9 = (v6[v7] == 0x1) & 0xff;
+        v9 = (v6[v7] == 0x1);
         local_3 = v9;
     }
     v10 = local_3;

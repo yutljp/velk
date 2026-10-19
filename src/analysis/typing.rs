@@ -548,7 +548,11 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
         else {
             return None;
         };
-        if !matches!(kept.as_ref(), Expr::Reg { index, .. } if *index == arch::RETURN) {
+        // The rest is the register's earlier value, or the variable it
+        // held.
+        if !matches!(kept.as_ref(), Expr::Reg { index, .. }
+            if *index == arch::RETURN || *index >= crate::ir::VARIABLE_BASE)
+        {
             return None;
         }
         let bytes = match keep.as_ref() {

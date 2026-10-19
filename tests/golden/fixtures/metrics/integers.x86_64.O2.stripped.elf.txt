@@ -64,21 +64,17 @@ fn <unnamed> @ 0x201230 (size 9)
 == 0x201240 -
 -- decompile
 /* velk pseudo-C: sub_201240 @ 0x201240 */
-int64_t sub_201240(int32_t a0, int32_t a1, int32_t a2) {
-    int64_t v1;
-
-    v1 = rax & 0xffffffffffffff00 | (a0 <= a2) & 0xff;
-    return v1 & 0xffffffffffffff00 | v1 & 0xff & ((a0 >= a1) & 0xff) & 0xff;
+uint8_t sub_201240(int32_t a0, int32_t a1, int32_t a2) {
+    return (a0 <= a2) & (a0 >= a1);
 }
 -- signature
-int64_t (int32_t a0, int32_t a1, int32_t a2)
+uint8_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 
 -- ir
 fn <unnamed> @ 0x201240 (size 13)
   blk0 @ 0x201240:
-    v1 = ((rax & #0xffffffffffffff00) | (select le edi, edx ? #0x1, #0x0 & #0xff))
-    ret ((v1 & #0xffffffffffffff00) | (((v1 & #0xff) & (select ge edi, esi ? #0x1, #0x0 & #0xff)) & #0xff))
+    ret ((((select le edi, edx ? #0x1, #0x0 & #0xff) & #0xff) & (select ge edi, esi ? #0x1, #0x0 & #0xff)) & #0xff)
 -- card
 {"addr":"0x201240","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
 

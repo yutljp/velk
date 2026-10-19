@@ -197,7 +197,7 @@ unsigned int flags_level(struct flags f) {
         return local_1;
     }
     v4 = *(uint8_t *)&local_0;
-    local_1 = (v4 & 0xff) >> 0x4 & 0xff;
+    local_1 = (v4 & 0xff) >> 0x4;
     return local_1;
 }
 -- signature
@@ -233,7 +233,7 @@ void flags_set_mode(struct flags *f, unsigned int mode) {
     v2 = f;
     v4 = *v2;
     v6 = v4 & 0xf1;
-    *v2 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (mode & 0x7) << 0x1 & 0xff) & 0xff;
+    *v2 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (mode & 0x7) << 0x1 & 0xff);
 }
 -- signature
 void (struct flags * f, unsigned int mode)

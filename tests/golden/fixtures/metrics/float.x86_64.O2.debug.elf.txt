@@ -172,7 +172,7 @@ fn widen @ 0x201280 (size 9)
 int compare_doubles(double a, double b) {
     int32_t v1;
 
-    v1 = (b < a) & 0xff;
+    v1 = (b < a);
     return (!(a < b) ? v1 : 0xffffffff);
 }
 -- signature

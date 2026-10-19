@@ -316,7 +316,7 @@ int short_circuit(int *p, int n) {
     if (*p == 0x1) {
         return v1;
     }
-    v1 = (p[n - 0x1] == 0x1) & 0xff;
+    v1 = (p[n - 0x1] == 0x1);
     return v1;
 }
 -- signature

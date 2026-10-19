@@ -30,7 +30,7 @@ return void | x86_64.O2 | 143/148
 return width | aarch64.O0 | 115/120
 return width | aarch64.O2 | 115/120
 return width | x86_64.O0 | 115/120
-return width | x86_64.O2 | 115/120
+return width | x86_64.O2 | 116/120
 float type | aarch64.O0 | 10/10
 float type | aarch64.O2 | 10/10
 float type | x86_64.O0 | 10/10
@@ -357,7 +357,7 @@ integers.x86_64.O0 0x201460 mul_high: parameter 0 signedness differs; parameter 
 integers.x86_64.O2 0x201210 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.x86_64.O2 0x201220 widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.x86_64.O2 0x201230 mixed_sign: parameter 1 signedness differs
-integers.x86_64.O2 0x201240 in_range: returns 8 bytes, expected 1
+integers.x86_64.O2 0x201240 in_range: ok
 integers.x86_64.O2 0x201250 rotate_left: parameter 1 signedness differs
 integers.x86_64.O2 0x201260 popcount: parameter 0 signedness differs
 integers.x86_64.O2 0x201280 byte_swap: ok

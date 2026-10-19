@@ -316,7 +316,7 @@ int32_t sub_2013a0(uint32_t *a0, int32_t a1) {
     if (*a0 == 0x1) {
         return v1;
     }
-    v1 = (a0[a1 - 0x1] == 0x1) & 0xff;
+    v1 = (a0[a1 - 0x1] == 0x1);
     return v1;
 }
 -- signature

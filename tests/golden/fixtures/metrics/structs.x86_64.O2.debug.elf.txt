@@ -210,7 +210,7 @@ void flags_set_mode(struct flags *f, unsigned int mode) {
 
     t1 = mode & 0xff;
     v3 = f->field_0x0 & 0xf1;
-    f->field_0x0 = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe) & 0xff;
+    f->field_0x0 = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe);
 }
 -- signature
 void (struct flags * f, unsigned int mode)
