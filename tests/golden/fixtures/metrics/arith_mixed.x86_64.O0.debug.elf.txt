@@ -25,9 +25,9 @@ fn sum3 @ 0x2011c0 (size 24)
 -- decompile
 /* velk pseudo-C: helper @ 0x2011e0 */
 int helper(int x) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    int32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
     local_0 = x;
     local_1 = 0x0;
@@ -81,10 +81,10 @@ fn pair_sum @ 0x201230 (size 23)
 /* velk pseudo-C: sum_arr @ 0x201250 */
 int sum_arr(int *p, int n) {
     int64_t v1;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
+    int *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
 
     local_0 = p;
     local_1 = n;
@@ -92,7 +92,7 @@ int sum_arr(int *p, int n) {
     local_3 = 0x0;
     while (local_3 < local_1) {
         v1 = (int64_t)(int32_t)(local_3);
-        local_2 += *(uint32_t *)(local_0 + v1 * 0x4);
+        local_2 += local_0[v1];
         local_3 += 0x1;
     }
     return local_2;

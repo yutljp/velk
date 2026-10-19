@@ -6,8 +6,8 @@
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
 int32_t sub_201180(int32_t a0, int32_t a1) {
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
+    int64_t local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
 
     local_0 = a0;
     local_1 = a1;

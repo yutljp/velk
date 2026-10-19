@@ -14,7 +14,7 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     int64_t v3;
     int32_t v4;
     int32_t v5;
-    uint64_t local_0; /* [sp-28] */
+    int64_t local_0; /* [sp-28] */
 
     local_0 = rax;
     if (a1 <= 0x0) {

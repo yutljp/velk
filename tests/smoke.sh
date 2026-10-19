@@ -193,7 +193,7 @@ echo "$stack_ir" | grep -q "local_1 += local_2;" || fail "stack local accumulati
 echo "$stack_ir" | grep -q "sp + 0x4" && fail "stack address left raw"
 ok "stack locals"
 decl_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$decl_ir" | grep -qF "uint32_t local_2; /* [sp-c] */" || fail "stack local declaration"
+echo "$decl_ir" | grep -qF "int32_t local_2; /* [sp-c] */" || fail "stack local declaration"
 echo "$decl_ir" | grep -q "(local_2 & 0xffffffff)" && fail "local mask elided"
 echo "$decl_ir" | grep -q "w9" && fail "32-bit register left between two locals"
 ok "stack local declarations"

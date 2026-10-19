@@ -551,9 +551,9 @@
 /* ref: 0x55aa8 .got */
 /* ref: 0x55ab0 .got */
 int32_t rust_demo__main(void) {
-    uint32_t local_0; /* [sp-14] */
-    uint64_t local_1; /* [sp-10] */
-    uint64_t local_2; /* [sp-8] */
+    int32_t local_0; /* [sp-14] */
+    int64_t local_1; /* [sp-10] */
+    int64_t local_2; /* [sp-8] */
 
     local_0 = 0x2a;
     local_1 = &local_0;

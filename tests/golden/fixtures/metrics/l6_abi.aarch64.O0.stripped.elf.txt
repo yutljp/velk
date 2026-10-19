@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
 int32_t sub_2101d4(int32_t a0) {
-    uint32_t local_0; /* [sp-4] */
+    int32_t local_0; /* [sp-4] */
 
     local_0 = a0;
     return local_0 * 0x3 + 0x1;
@@ -30,7 +30,7 @@ fn <unnamed> @ 0x2101d4 (size 40)
 -- decompile
 /* velk pseudo-C: sub_2101fc @ 0x2101fc */
 int32_t sub_2101fc(int32_t a0) {
-    uint32_t local_0; /* [sp-14] */
+    int32_t local_0; /* [sp-14] */
 
     local_0 = a0;
     w8 = a0;
@@ -54,8 +54,8 @@ fn <unnamed> @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: sub_210224 @ 0x210224 */
 int32_t sub_210224(int32_t a0, int32_t a1) {
-    uint64_t local_0; /* [sp-18] */
-    uint32_t local_1; /* [sp-1c] */
+    int64_t local_0; /* [sp-18] */
+    int32_t local_1; /* [sp-1c] */
 
     local_0 = a0;
     local_1 = a1;

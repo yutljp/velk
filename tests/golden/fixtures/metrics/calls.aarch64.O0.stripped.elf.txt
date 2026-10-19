@@ -68,8 +68,8 @@ fn <unnamed> @ 0x210350 (size 44)
 /* ref: 0x2206f0 .data.rel.ro */
 int32_t sub_21037c(int32_t a0, int32_t a1) {
     uint32_t v1;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
+    int32_t local_0; /* [sp-14] */
+    int32_t local_1; /* [sp-18] */
 
     local_0 = a0;
     local_1 = a1;
@@ -100,8 +100,8 @@ fn <unnamed> @ 0x21037c (size 72)
 /* velk pseudo-C: sub_2103c4 @ 0x2103c4 */
 int32_t sub_2103c4(int32_t a0, int32_t a1) {
     int32_t v1;
-    uint64_t local_0; /* [sp-18] */
-    uint32_t local_1; /* [sp-1c] */
+    int64_t local_0; /* [sp-18] */
+    int32_t local_1; /* [sp-1c] */
 
     local_0 = a0;
     local_1 = a1;
@@ -131,9 +131,9 @@ fn <unnamed> @ 0x2103c4 (size 48)
 /* velk pseudo-C: sub_2103f4 @ 0x2103f4 */
 int32_t sub_2103f4(int32_t a0) {
     int32_t v2;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-1c] */
+    int32_t local_0; /* [sp-14] */
+    int32_t local_1; /* [sp-18] */
+    int32_t local_2; /* [sp-1c] */
 
     local_0 = a0;
     if (a0 > 0x1) {
@@ -176,8 +176,8 @@ fn <unnamed> @ 0x2103f4 (size 96)
 /* velk pseudo-C: sub_210454 @ 0x210454 */
 int32_t sub_210454(int32_t a0) {
     int64_t v2;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
+    int32_t local_0; /* [sp-14] */
+    int32_t local_1; /* [sp-18] */
 
     local_0 = a0;
     if (a0 != 0x0) {
@@ -218,8 +218,8 @@ fn <unnamed> @ 0x210454 (size 76)
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int32_t sub_2104a0(int32_t a0) {
     int64_t v2;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
+    int32_t local_0; /* [sp-14] */
+    int32_t local_1; /* [sp-18] */
 
     local_0 = a0;
     if (a0 != 0x0) {
@@ -276,8 +276,8 @@ fn <unnamed> @ 0x2104ec (size 120)
 -- decompile
 /* velk pseudo-C: sub_210564 @ 0x210564 */
 int32_t sub_210564(int64_t a0) {
-    uint64_t local_0; /* [sp-18] */
-    uint64_t local_1; /* [sp-20] */
+    int64_t local_0; /* [sp-18] */
+    int64_t local_1; /* [sp-20] */
 
     local_0 = a0;
     x8 = 0x8;
@@ -309,40 +309,40 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t v4;
     int64_t v5;
     int32_t v6;
-    uint64_t local_0; /* [sp-90] */
-    uint64_t local_1; /* [sp-88] */
-    uint64_t local_2; /* [sp-a0] */
-    uint64_t local_3; /* [sp-98] */
-    uint64_t local_4; /* [sp-b0] */
-    uint64_t local_5; /* [sp-a8] */
-    uint64_t local_6; /* [sp-c0] */
-    uint64_t local_7; /* [sp-b8] */
-    uint64_t local_8; /* [sp-d0] */
-    uint64_t local_9; /* [sp-c8] */
-    uint64_t local_10; /* [sp-e0] */
-    uint64_t local_11; /* [sp-d8] */
-    uint64_t local_12; /* [sp-f0] */
-    uint64_t local_13; /* [sp-e8] */
-    uint64_t local_14; /* [sp-100] */
-    uint64_t local_15; /* [sp-f8] */
-    uint64_t local_16; /* [sp-48] */
-    uint64_t local_17; /* [sp-50] */
-    uint64_t local_18; /* [sp-58] */
-    uint64_t local_19; /* [sp-60] */
-    uint64_t local_20; /* [sp-68] */
-    uint64_t local_21; /* [sp-70] */
-    uint64_t local_22; /* [sp-78] */
-    uint32_t local_23; /* [sp-14] */
-    uint32_t local_24; /* [sp-1c] */
-    uint32_t local_25; /* [sp-20] */
-    uint64_t local_26; /* [sp-28] */
-    uint64_t local_27; /* [sp-30] */
-    uint64_t local_28; /* [sp-38] */
-    uint32_t local_29; /* [sp-3c] */
-    uint32_t local_30; /* [sp-40] */
-    uint64_t local_31; /* [sp-110] */
-    uint32_t local_32; /* [sp-104] */
-    uint64_t local_33; /* [sp-118] */
+    int64_t local_0; /* [sp-90] */
+    int64_t local_1; /* [sp-88] */
+    int64_t local_2; /* [sp-a0] */
+    int64_t local_3; /* [sp-98] */
+    int64_t local_4; /* [sp-b0] */
+    int64_t local_5; /* [sp-a8] */
+    int64_t local_6; /* [sp-c0] */
+    int64_t local_7; /* [sp-b8] */
+    int64_t local_8; /* [sp-d0] */
+    int64_t local_9; /* [sp-c8] */
+    int64_t local_10; /* [sp-e0] */
+    int64_t local_11; /* [sp-d8] */
+    int64_t local_12; /* [sp-f0] */
+    int64_t local_13; /* [sp-e8] */
+    int64_t local_14; /* [sp-100] */
+    int64_t local_15; /* [sp-f8] */
+    int64_t local_16; /* [sp-48] */
+    int64_t local_17; /* [sp-50] */
+    int64_t local_18; /* [sp-58] */
+    int64_t local_19; /* [sp-60] */
+    int64_t local_20; /* [sp-68] */
+    int64_t local_21; /* [sp-70] */
+    int64_t local_22; /* [sp-78] */
+    int32_t local_23; /* [sp-14] */
+    int32_t local_24; /* [sp-1c] */
+    int32_t local_25; /* [sp-20] */
+    int64_t local_26; /* [sp-28] */
+    int64_t local_27; /* [sp-30] */
+    int64_t local_28; /* [sp-38] */
+    int32_t local_29; /* [sp-3c] */
+    int32_t local_30; /* [sp-40] */
+    uint32_t *local_31; /* [sp-110] */
+    int32_t local_32; /* [sp-104] */
+    uint32_t *local_33; /* [sp-118] */
 
     local_0 = d7;
     local_1 = v7_hi;
@@ -383,7 +383,7 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         local_32 = v2;
         if ((v2 & 0x80000000) != 0x0) {
             v3 = local_32 + 0x8;
-            *(uint32_t *)(local_31) = v3;
+            *local_31 = v3;
             if (v3 <= 0x0) {
                 local_33 = local_27 + (int64_t)(int32_t)(local_32);
                 goto L_2106b4;
@@ -394,7 +394,7 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         local_28 = v4 + 0x8;
         local_33 = v5;
     L_2106b4:
-        local_29 += *(uint32_t *)(local_33);
+        local_29 += *local_33;
         local_30 += 0x1;
     }
     v6 = local_29;

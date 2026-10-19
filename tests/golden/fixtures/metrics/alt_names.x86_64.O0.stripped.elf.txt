@@ -23,9 +23,9 @@ fn <unnamed> @ 0x201180 (size 24)
 -- decompile
 /* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
 int32_t sub_2011a0(int32_t a0) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    int32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
     local_0 = a0;
     local_1 = 0x0;

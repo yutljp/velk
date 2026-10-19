@@ -9,22 +9,22 @@
 -- decompile
 /* velk pseudo-C: sub_2101b4 @ 0x2101b4 */
 double sub_2101b4(double *a0, int32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
-    uint64_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
-    uint64_t local_4; /* [sp-28] */
+    double *local_0; /* [sp-8] */
+    int32_t local_1; /* [sp-c] */
+    double local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
+    double local_4; /* [sp-28] */
 
     local_0 = a0;
     local_1 = a1;
-    local_2 = 0x0;
+    local_2 = 0.0;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        local_2 = local_2 + *(double *)(local_0 + (local_3 << 0x3));
+        local_2 = local_2 + local_0[local_3];
         local_3 += 0x1;
     }
     if (local_1 <= 0x0) {
-        local_4 = 0x0;
+        local_4 = 0.0;
         return local_4;
     }
     local_4 = local_2 / (double)(int32_t)local_1;
@@ -71,7 +71,7 @@ fn <unnamed> @ 0x2101b4 (size 160)
 -- decompile
 /* velk pseudo-C: sub_210254 @ 0x210254 */
 float sub_210254(float a0, float a1, float a2) {
-    uint32_t local_0; /* [sp-4] */
+    float local_0; /* [sp-4] */
 
     local_0 = a0;
     return fmaf(a1 - a0, a2, local_0);
@@ -126,9 +126,9 @@ fn <unnamed> @ 0x21029c (size 32)
 -- decompile
 /* velk pseudo-C: sub_2102bc @ 0x2102bc */
 int32_t sub_2102bc(double a0, double a1) {
-    uint64_t local_0; /* [sp-8] */
-    uint64_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    double local_0; /* [sp-8] */
+    double local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
     local_0 = a0;
     local_1 = a1;

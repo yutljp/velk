@@ -10,9 +10,9 @@
 /* ref: 0x220380 .bss */
 int sum_while(int n) {
     int32_t v2;
-    uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
-    uint32_t local_2; /* [sp-c] */
+    int32_t local_0; /* [sp-4] */
+    int32_t local_1; /* [sp-8] */
+    int32_t local_2; /* [sp-c] */
 
     local_0 = n;
     local_1 = 0x0;
@@ -58,8 +58,8 @@ fn sum_while @ 0x2101d4 (size 100)
 /* velk pseudo-C: count_down @ 0x210238 */
 /* ref: 0x220380 .bss */
 int count_down(int n) {
-    uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
+    int32_t local_0; /* [sp-4] */
+    int32_t local_1; /* [sp-8] */
 
     local_0 = n;
     local_1 = 0x0;
@@ -100,9 +100,9 @@ fn count_down @ 0x210238 (size 84)
 /* ref: 0x220380 .bss */
 int sum_skip_odd(int n) {
     int64_t v2;
-    uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
-    uint32_t local_2; /* [sp-c] */
+    int32_t local_0; /* [sp-4] */
+    int32_t local_1; /* [sp-8] */
+    int32_t local_2; /* [sp-c] */
 
     local_0 = n;
     local_1 = 0x0;
@@ -155,18 +155,18 @@ fn sum_skip_odd @ 0x21028c (size 116)
 -- decompile
 /* velk pseudo-C: find_first @ 0x210300 */
 int find_first(int *p, int n, int v) {
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
-    uint32_t local_4; /* [sp-4] */
+    int *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
+    int32_t local_4; /* [sp-4] */
 
     local_0 = p;
     local_1 = n;
     local_2 = v;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        if (*(uint32_t *)(local_0 + (local_3 << 0x2)) == local_2) {
+        if (local_0[local_3] == local_2) {
             goto L_210344;
         }
         local_3 += 0x1;

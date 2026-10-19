@@ -9,7 +9,7 @@
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 int32_t sub_2011c0(int32_t a0) {
     uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    int32_t local_1; /* [sp-10] */
 
     local_0 = a0;
     local_1 = 0x0;
@@ -43,9 +43,9 @@ fn <unnamed> @ 0x2011c0 (size 54)
 -- decompile
 /* velk pseudo-C: sub_201200 @ 0x201200 */
 int32_t sub_201200(int32_t a0) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    int32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
     local_0 = a0;
     local_1 = 0x0;
@@ -83,11 +83,11 @@ fn <unnamed> @ 0x201200 (size 61)
 int32_t sub_201240(uint32_t *a0, int32_t a1) {
     int64_t v1;
     int64_t v2;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
-    uint32_t local_4; /* [sp-20] */
+    uint32_t *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
+    int32_t local_4; /* [sp-20] */
 
     local_0 = a0;
     local_1 = a1;
@@ -95,7 +95,7 @@ int32_t sub_201240(uint32_t *a0, int32_t a1) {
     local_3 = 0x0;
     while (local_3 < local_1) {
         v1 = (int64_t)(int32_t)(local_3);
-        v2 = *(uint32_t *)(local_0 + v1 * 0x4);
+        v2 = local_0[v1];
         local_4 = v2;
         if (v2 < 0x0) {
             return local_2;
@@ -141,10 +141,10 @@ int32_t sub_2012a0(uint32_t *a0, int32_t a1) {
     int64_t v1;
     int64_t v2;
     int64_t v3;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
+    uint32_t *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
 
     local_0 = a0;
     local_1 = a1;
@@ -152,13 +152,13 @@ int32_t sub_2012a0(uint32_t *a0, int32_t a1) {
     local_3 = 0x0;
     while (local_3 < local_1) {
         v1 = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + v1 * 0x4) == 0x0) {
+        if (local_0[v1] == 0x0) {
             return local_2;
         }
         v2 = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + v2 * 0x4) >= 0x0) {
+        if (local_0[v2] >= 0x0) {
             v3 = (int64_t)(int32_t)(local_3);
-            local_2 += *(uint32_t *)(local_0 + v3 * 0x4);
+            local_2 += local_0[v3];
         }
         local_3 += 0x1;
     }

@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: tail_one @ 0x210194 */
 int tail_one(int x) {
-    uint32_t local_0; /* [sp-4] */
+    int32_t local_0; /* [sp-4] */
 
     local_0 = x;
     return local_0 * 0x3 + 0x1;
@@ -28,7 +28,7 @@ fn tail_one @ 0x210194 (size 40)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x2101bc */
 int tail_two(int x) {
-    uint32_t local_0; /* [sp-14] */
+    int32_t local_0; /* [sp-14] */
 
     local_0 = x;
     w8 = x;
@@ -52,7 +52,7 @@ fn tail_two @ 0x2101bc (size 40)
 -- decompile
 /* velk pseudo-C: tail_three @ 0x2101e4 */
 int tail_three(int x) {
-    uint32_t local_0; /* [sp-4] */
+    int32_t local_0; /* [sp-4] */
 
     local_0 = x;
     return local_0 - 0x7;

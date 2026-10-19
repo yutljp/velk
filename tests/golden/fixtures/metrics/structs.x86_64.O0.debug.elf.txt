@@ -32,10 +32,10 @@ long record_total(struct record *items, int n) {
     int64_t v1;
     int64_t v3;
     int64_t v4;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint64_t local_2; /* [sp-20] */
-    uint32_t local_3; /* [sp-24] */
+    struct record *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int64_t local_2; /* [sp-20] */
+    int32_t local_3; /* [sp-24] */
 
     local_0 = items;
     local_1 = n;
@@ -79,10 +79,10 @@ fn record_total @ 0x201270 (size 109)
 -- decompile
 /* velk pseudo-C: point_add @ 0x2012e0 */
 struct point point_add(struct point a, struct point b) {
-    uint64_t local_0; /* [sp-18] */
-    uint64_t local_1; /* [sp-20] */
-    uint64_t local_2; /* [sp-10] */
-    uint32_t local_3; /* [sp-c] */
+    int64_t local_0; /* [sp-18] */
+    int64_t local_1; /* [sp-20] */
+    int64_t local_2; /* [sp-10] */
+    int32_t local_3; /* [sp-c] */
 
     local_0 = a;
     local_1 = b;
@@ -109,7 +109,7 @@ fn point_add @ 0x2012e0 (size 36)
 -- decompile
 /* velk pseudo-C: big_make @ 0x201310 */
 struct big big_make(struct big *result, long seed) {
-    uint64_t local_0; /* [sp-10] */
+    int64_t local_0; /* [sp-10] */
 
     local_0 = seed;
     result->a = seed;
@@ -187,7 +187,7 @@ unsigned int flags_level(struct flags f) {
     uint64_t v4;
     uint64_t v6;
     uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    int32_t local_1; /* [sp-10] */
 
     local_0 = f;
     v1 = *(uint8_t *)&local_0;

@@ -37,18 +37,18 @@ fn <unnamed> @ 0x2101fc (size 60)
 int64_t sub_210238(uint64_t *a0, int32_t a1) {
     uint64_t *v2;
     int64_t v3;
-    uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
-    uint64_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
+    uint64_t *local_0; /* [sp-8] */
+    int32_t local_1; /* [sp-c] */
+    int64_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
 
     local_0 = a0;
     local_1 = a1;
     local_2 = 0x0;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        v2 = local_0 + local_3 * 0x18;
-        v3 = *(int16_t *)(local_0 + local_3 * 0x18 + 0x10);
+        v2 = local_0 + local_3 * 0x3;
+        v3 = *(int16_t *)(local_0 + (local_3 * 0x3 + 0x2));
         local_2 += v2[0x1] * v3;
         local_3 += 0x1;
     }
@@ -87,10 +87,10 @@ fn <unnamed> @ 0x210238 (size 136)
 -- decompile
 /* velk pseudo-C: sub_2102c0 @ 0x2102c0 */
 int64_t sub_2102c0(int64_t a0, int64_t a1) {
-    uint64_t local_0; /* [sp-10] */
-    uint64_t local_1; /* [sp-18] */
-    uint64_t local_2; /* [sp-8] */
-    uint32_t local_3; /* [sp-4] */
+    int64_t local_0; /* [sp-10] */
+    int64_t local_1; /* [sp-18] */
+    int64_t local_2; /* [sp-8] */
+    int32_t local_3; /* [sp-4] */
 
     local_0 = a0;
     local_1 = a1;
@@ -118,7 +118,7 @@ fn <unnamed> @ 0x2102c0 (size 56)
 /* velk pseudo-C: sub_2102f8 @ 0x2102f8 */
 int64_t sub_2102f8(int64_t a0) {
     uint64_t *v1;
-    uint64_t local_0; /* [sp-8] */
+    int64_t local_0; /* [sp-8] */
 
     v1 = x8;
     local_0 = a0;
@@ -196,9 +196,9 @@ fn <unnamed> @ 0x21036c (size 24)
 -- decompile
 /* velk pseudo-C: sub_210384 @ 0x210384 */
 int32_t sub_210384(int64_t a0) {
-    uint64_t local_0; /* [sp-10] */
+    int64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-4] */
-    uint32_t local_2; /* [sp-14] */
+    int32_t local_2; /* [sp-14] */
 
     local_0 = a0;
     local_1 = *(uint32_t *)&local_0;

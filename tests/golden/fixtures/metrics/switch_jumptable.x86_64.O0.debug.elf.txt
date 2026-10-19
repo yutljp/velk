@@ -9,18 +9,18 @@
 int d7(int x) {
     uint64_t v1;
     int64_t v6;
-    uint32_t local_0; /* [sp-c] */
-    uint64_t local_1; /* [sp-40] */
-    uint32_t local_2; /* [sp-10] */
-    uint32_t local_3; /* [sp-14] */
-    uint32_t local_4; /* [sp-18] */
-    uint32_t local_5; /* [sp-1c] */
-    uint32_t local_6; /* [sp-20] */
-    uint32_t local_7; /* [sp-24] */
-    uint32_t local_8; /* [sp-28] */
-    uint32_t local_9; /* [sp-2c] */
-    uint32_t local_10; /* [sp-30] */
-    uint32_t local_11; /* [sp-34] */
+    int32_t local_0; /* [sp-c] */
+    int64_t local_1; /* [sp-40] */
+    int32_t local_2; /* [sp-10] */
+    int32_t local_3; /* [sp-14] */
+    int32_t local_4; /* [sp-18] */
+    int32_t local_5; /* [sp-1c] */
+    int32_t local_6; /* [sp-20] */
+    int32_t local_7; /* [sp-24] */
+    int32_t local_8; /* [sp-28] */
+    int32_t local_9; /* [sp-2c] */
+    int32_t local_10; /* [sp-30] */
+    int32_t local_11; /* [sp-34] */
 
     local_0 = x;
     v1 = local_0;

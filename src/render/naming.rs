@@ -307,10 +307,9 @@ fn member_address(addr: &Expr) -> Option<(u16, i64)> {
 /// access's own width.
 pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
     // A pointer to scalars reads as one, or as an array of them.
-    if let Some((base, index)) = element_index(addr, ctx)
-        && ctx.elements[&base] == width
+    if let Some((name, element, index)) = element_index(addr, ctx)
+        && element == width
     {
-        let name = ctx.register(base, 64);
         return Some(match index {
             Expr::Const(0) => format!("*{name}"),
             index => format!("{name}[{}]", render_expr(&index, ctx)),
@@ -332,9 +331,23 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Str
     Some(format!("{}->field_0x{:x}", ctx.register(base, 64), offset))
 }
 
+/// The name of a pointer to scalars and the size of each: a register, or a
+/// local the frame holds it in.
+pub(crate) fn scalar_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u8)> {
+    match expr {
+        Expr::Reg { index, .. } => Some((ctx.register(*index, 64), *ctx.elements.get(index)?)),
+        Expr::Load { addr, width: 8, .. } => {
+            let name = ctx.slots.get(&render_expr(addr, ctx))?;
+            Some((name.clone(), *ctx.local_elements.get(name)?))
+        }
+        _ => None,
+    }
+}
+
 /// An address through a pointer to scalars, `p + i * size + k * size`, as
-/// the pointer and the element index `i + k`, which C scales by itself.
-pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(u16, Expr)> {
+/// the pointer, the size of its scalars, and the element index `i + k`,
+/// which C scales by itself.
+pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u8, Expr)> {
     fn terms<'e>(expr: &'e Expr, negative: bool, out: &mut Vec<(&'e Expr, bool)>) {
         match expr {
             Expr::Bin {
@@ -358,15 +371,16 @@ pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(u16, Expr)> {
     }
     let mut found = Vec::new();
     terms(addr, false, &mut found);
-    let mut bases = found.iter().filter_map(|(term, negative)| match term {
-        Expr::Reg { index, .. } if !negative && ctx.elements.contains_key(index) => Some(*index),
-        _ => None,
-    });
-    let base = bases.next()?;
+    let mut bases = found
+        .iter()
+        .enumerate()
+        .filter(|(_, (_, negative))| !negative)
+        .filter_map(|(at, (term, _))| Some((at, scalar_pointer(term, ctx)?)));
+    let (base_at, (base, element)) = bases.next()?;
     if bases.next().is_some() {
         return None;
     }
-    let size = u64::from(ctx.elements[&base]);
+    let size = u64::from(element);
     let mut constant: u64 = 0;
     let mut index: Option<Expr> = None;
     let mut add = |term: Expr| {
@@ -375,9 +389,9 @@ pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(u16, Expr)> {
             None => term,
         });
     };
-    for (term, negative) in &found {
+    for (at, (term, negative)) in found.iter().enumerate() {
         match term {
-            Expr::Reg { index, .. } if *index == base => {}
+            _ if at == base_at => {}
             Expr::Const(value) if *negative => constant = constant.wrapping_sub(*value),
             Expr::Const(value) => constant = constant.wrapping_add(*value),
             _ if *negative => return None,
@@ -430,5 +444,5 @@ pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(u16, Expr)> {
         }
         (Some(index), steps) => Expr::bin(BinOp::Add, index, Expr::Const(steps as u64)),
     };
-    Some((base, index))
+    Some((base, element, index))
 }

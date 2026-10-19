@@ -6,8 +6,8 @@
 -- decompile
 /* velk pseudo-C: via_ptr @ 0x201180 */
 int via_ptr(void *f, int x) {
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
+    void *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
 
     local_0 = f;
     local_1 = x;

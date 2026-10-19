@@ -26,10 +26,10 @@ fn point_dot @ 0x201210 (size 44)
 /* velk pseudo-C: array_sum @ 0x201240 */
 int array_sum(int *a, int n) {
     int64_t v1;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
+    int *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
 
     local_0 = a;
     local_1 = n;
@@ -37,7 +37,7 @@ int array_sum(int *a, int n) {
     local_3 = 0x0;
     while (local_3 < local_1) {
         v1 = (int64_t)(int32_t)(local_3);
-        local_2 += *(uint32_t *)(local_0 + v1 * 0x4);
+        local_2 += local_0[v1];
         local_3 += 0x1;
     }
     return local_2;

@@ -33,17 +33,17 @@ fn <unnamed> @ 0x2101dc (size 64)
 -- decompile
 /* velk pseudo-C: sub_21021c @ 0x21021c */
 int32_t sub_21021c(uint32_t *a0, int32_t a1) {
-    uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
-    uint32_t local_3; /* [sp-14] */
+    uint32_t *local_0; /* [sp-8] */
+    int32_t local_1; /* [sp-c] */
+    int32_t local_2; /* [sp-10] */
+    int32_t local_3; /* [sp-14] */
 
     local_0 = a0;
     local_1 = a1;
     local_2 = 0x0;
     local_3 = 0x0;
     while (local_3 < local_1) {
-        local_2 += *(uint32_t *)(local_0 + (local_3 << 0x2));
+        local_2 += local_0[local_3];
         local_3 += 0x1;
     }
     return local_2;

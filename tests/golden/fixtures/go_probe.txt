@@ -1585,13 +1585,13 @@ int64_t main_main(void) {
     int64_t v5;
     int64_t v6;
     int64_t v7;
-    uint64_t local_0; /* [sp-38] */
-    uint64_t local_1; /* [sp-40] */
-    uint64_t local_2; /* [sp-28] */
-    uint64_t local_3; /* [sp-20] */
-    uint64_t local_4; /* [sp-18] */
-    uint64_t local_5; /* [sp-30] */
-    uint64_t local_6; /* [sp-10] */
+    int64_t local_0; /* [sp-38] */
+    int64_t local_1; /* [sp-40] */
+    int64_t local_2; /* [sp-28] */
+    int64_t local_3; /* [sp-20] */
+    int64_t local_4; /* [sp-18] */
+    int64_t local_5; /* [sp-30] */
+    int64_t local_6; /* [sp-10] */
 
 L_466d80:
     if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) {

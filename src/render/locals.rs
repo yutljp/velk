@@ -7,12 +7,14 @@ use crate::passes::frame_slots::frame_slot;
 use crate::render::expr::Ctx;
 use crate::render::expr::render_expr;
 
-/// A named frame slot, with the widest access it receives.
+/// A named frame slot, with the widest access it receives, and the float
+/// or pointer type its uses show.
 pub(super) struct Local {
     pub(super) name: String,
     pub(super) slot: i64,
     pub(super) width: u8,
     pub(super) signed: bool,
+    pub(super) ty: Option<CType>,
 }
 
 pub(crate) struct Locals {
@@ -24,7 +26,11 @@ pub(crate) struct Locals {
 /// Names frame slots `local_N` in order of first use. Accesses to one slot
 /// share the name even when the stack pointer moved between them; a rendered
 /// address that maps to two different slots stays unnamed.
-pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
+pub(crate) fn stack_locals(
+    ir: &FunctionIr,
+    frames: &[Option<i64>],
+    variables: &std::collections::BTreeMap<u16, CType>,
+) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
         isa: ir.isa,
@@ -33,6 +39,8 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
         names: HashMap::new(),
         slots: HashMap::new(),
         local_widths: HashMap::new(),
+        local_elements: HashMap::new(),
+        local_floats: HashMap::new(),
         wide_params: std::collections::HashSet::new(),
         signed_params: std::collections::HashSet::new(),
         fields: HashMap::new(),
@@ -62,12 +70,14 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
                     slot: *slot,
                     width: 0,
                     signed: true,
+                    ty: None,
                 },
             );
         }
         if let Some(local) = slot_names.get_mut(slot) {
             local.width = local.width.max(*width);
-            if !*signed {
+            // Only a narrow load's extension says how the value is signed.
+            if !*signed && *width < 4 {
                 local.signed = false;
             }
         }
@@ -122,10 +132,269 @@ pub(crate) fn stack_locals(ir: &FunctionIr, frames: &[Option<i64>]) -> Locals {
         widths.insert(name.clone(), width);
         slots.insert(key, name);
     }
+    let (types, signs) = slot_types(ir, sp, frames, variables);
+    for (slot, ty) in types {
+        if let Some(local) = slot_names.get_mut(&slot)
+            && ty_width(&ty) == Some(local.width)
+        {
+            local.ty = Some(ty);
+        }
+    }
+    // A signed operation on a local makes it signed, and an unsigned one
+    // unsigned unless a signed one reads it too.
+    for (slot, signed) in signs {
+        if let Some(local) = slot_names.get_mut(&slot) {
+            local.signed = signed;
+        }
+    }
     Locals {
         slots,
         widths,
         decls: slot_names.into_values().collect(),
+    }
+}
+
+fn ty_width(ty: &CType) -> Option<u8> {
+    match ty {
+        CType::Pointer(_) => Some(8),
+        CType::Named(name) if name == "double" => Some(8),
+        CType::Named(name) if name == "float" => Some(4),
+        _ => None,
+    }
+}
+
+/// `float` or `double`.
+fn float_type(precision: crate::ir::Precision) -> CType {
+    CType::Named(
+        match precision {
+            crate::ir::Precision::Single => "float",
+            crate::ir::Precision::Double => "double",
+        }
+        .to_owned(),
+    )
+}
+
+/// The float or pointer type of each local slot: the type of a variable or
+/// parameter stored in it or loaded from it, where those agree, or else a
+/// float when a float operation reads it, and a pointer when an address
+/// adds offsets to it. Pointers that disagree on what they point at point
+/// at `void`.
+fn slot_types(
+    ir: &FunctionIr,
+    sp: u16,
+    frames: &[Option<i64>],
+    variables: &std::collections::BTreeMap<u16, CType>,
+) -> (HashMap<i64, CType>, HashMap<i64, bool>) {
+    let typed = |index: u16| -> Option<CType> {
+        let ty = variables.get(&index).cloned().or_else(|| {
+            ir.params
+                .iter()
+                .find(|param| param.index == index)
+                .map(|param| param.ty.clone())
+        })?;
+        ty_width(&ty).map(|_| ty)
+    };
+    let mut walk = Walk {
+        frame: 0,
+        sp,
+        strong: Vec::new(),
+        weak: Vec::new(),
+        signs: Vec::new(),
+    };
+    for (position, block) in ir.blocks.iter().enumerate() {
+        let Some(frame) = frames[position] else {
+            continue;
+        };
+        walk.frame = frame;
+        for stmt in &block.stmts {
+            match stmt {
+                Stmt::Store { addr, value, width } => {
+                    if let Some(slot) = walk.local(addr) {
+                        let ty = match value {
+                            Expr::Reg { index, .. } => typed(*index),
+                            Expr::Apply { op, .. } => op.result_precision().map(float_type),
+                            _ => None,
+                        };
+                        if let Some(ty) = ty.filter(|ty| ty_width(ty) == Some(*width)) {
+                            walk.strong.push((slot, ty));
+                        }
+                    }
+                    walk.address(addr, CType::int(*width, false));
+                }
+                Stmt::Assign { dest, value } => {
+                    if let Expr::Load { addr, .. } = value
+                        && let Some(slot) = walk.local(addr)
+                        && let Some(ty) = typed(dest.index)
+                    {
+                        walk.strong.push((slot, ty));
+                    }
+                }
+                Stmt::Brif { cond, lhs, rhs, .. } => walk.compare(*cond, &[lhs, rhs]),
+                _ => {}
+            }
+            for value in stmt.operands() {
+                walk.visit(value);
+            }
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.index == sp
+                && let Expr::Bin { op, rhs, .. } = value
+                && let Expr::Const(delta) = rhs.as_ref()
+            {
+                walk.frame = match op {
+                    BinOp::Add => walk.frame.wrapping_add(*delta as i64),
+                    BinOp::Sub => walk.frame.wrapping_sub(*delta as i64),
+                    _ => walk.frame,
+                };
+            }
+        }
+    }
+    let settle = |evidence: Vec<(i64, CType)>| {
+        let mut found: HashMap<i64, Option<CType>> = HashMap::new();
+        for (slot, ty) in evidence {
+            match found.get_mut(&slot) {
+                None => {
+                    found.insert(slot, Some(ty));
+                }
+                Some(Some(known)) if *known == ty => {}
+                Some(Some(CType::Pointer(_))) if matches!(ty, CType::Pointer(_)) => {
+                    found.insert(slot, Some(CType::pointer_to(CType::Void)));
+                }
+                Some(entry) => *entry = None,
+            }
+        }
+        found
+    };
+    let strong = settle(std::mem::take(&mut walk.strong));
+    let weak = settle(std::mem::take(&mut walk.weak));
+    let mut types: HashMap<i64, CType> = weak
+        .into_iter()
+        .filter_map(|(slot, ty)| Some((slot, ty?)))
+        .collect();
+    for (slot, ty) in strong {
+        match ty {
+            Some(ty) => {
+                types.insert(slot, ty);
+            }
+            None => {
+                types.remove(&slot);
+            }
+        }
+    }
+    let mut signs: HashMap<i64, bool> = HashMap::new();
+    for (slot, signed) in walk.signs {
+        *signs.entry(slot).or_insert(signed) |= signed;
+    }
+    (types, signs)
+}
+
+/// The walk `slot_types` makes, with the evidence it gathers by slot:
+/// what is stored and loaded, and how the slot is used.
+struct Walk {
+    frame: i64,
+    sp: u16,
+    strong: Vec<(i64, CType)>,
+    weak: Vec<(i64, CType)>,
+    /// The slots signed (`true`) and unsigned operations read.
+    signs: Vec<(i64, bool)>,
+}
+
+impl Walk {
+    /// The local slot an address names.
+    fn local(&self, addr: &Expr) -> Option<i64> {
+        frame_slot(addr, self.frame, self.sp).filter(|slot| *slot < 0)
+    }
+
+    fn loaded(&self, expr: &Expr) -> Option<i64> {
+        match expr {
+            Expr::Load { addr, .. } => self.local(addr),
+            Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => self.loaded(lhs),
+            Expr::SignExtend { value, .. } => self.loaded(value),
+            _ => None,
+        }
+    }
+
+    fn sign(&mut self, signed: bool, operands: &[&Expr]) {
+        for operand in operands {
+            if let Some(slot) = self.loaded(operand) {
+                self.signs.push((slot, signed));
+            }
+        }
+    }
+
+    fn compare(&mut self, cond: crate::ir::Cond, operands: &[&Expr]) {
+        use crate::ir::Cond;
+        match cond {
+            Cond::Lt | Cond::Le | Cond::Gt | Cond::Ge => self.sign(true, operands),
+            Cond::Cc | Cond::Cs | Cond::Hi | Cond::Ls => self.sign(false, operands),
+            _ => {}
+        }
+    }
+
+    fn visit(&mut self, expr: &Expr) {
+        match expr {
+            Expr::Apply { op, args } => {
+                for arg in args {
+                    // A float read from memory: the slot holds one, or the
+                    // pointer it goes through points at one.
+                    if let (Some(precision), Expr::Load { addr, width, .. }) =
+                        (op.argument_precision(), arg)
+                        && u32::from(*width) * 8 == u32::from(precision.bits())
+                    {
+                        match self.loaded(arg) {
+                            Some(slot) => self.weak.push((slot, float_type(precision))),
+                            None => self.address(addr, float_type(precision)),
+                        }
+                        self.visit(addr);
+                    } else {
+                        self.visit(arg);
+                    }
+                }
+                return;
+            }
+            Expr::Load { addr, width, .. } => self.address(addr, CType::int(*width, false)),
+            Expr::Bin { op, lhs, rhs } => match op {
+                BinOp::DivS | BinOp::ModS => self.sign(true, &[lhs, rhs]),
+                BinOp::DivU | BinOp::ModU => self.sign(false, &[lhs, rhs]),
+                BinOp::Sar => self.sign(true, &[lhs]),
+                BinOp::Shr => self.sign(false, &[lhs]),
+                _ => {}
+            },
+            Expr::Select { cond, lhs, rhs, .. } => self.compare(*cond, &[lhs, rhs]),
+            _ => {}
+        }
+        for child in crate::ir::visit::children(expr) {
+            self.visit(child);
+        }
+    }
+
+    /// An address that adds offsets to a pointer loaded from a slot makes
+    /// that slot a pointer to `element`.
+    fn address(&mut self, addr: &Expr, element: CType) {
+        let mut terms = vec![addr];
+        let mut bases = Vec::new();
+        while let Some(term) = terms.pop() {
+            match term {
+                Expr::Bin {
+                    op: BinOp::Add,
+                    lhs,
+                    rhs,
+                } => terms.extend([lhs.as_ref(), rhs.as_ref()]),
+                Expr::Bin {
+                    op: BinOp::Sub,
+                    lhs,
+                    rhs,
+                } if matches!(rhs.as_ref(), Expr::Const(_)) => terms.push(lhs),
+                Expr::Load { width: 8, .. } => bases.extend(self.loaded(term)),
+                _ => {}
+            }
+        }
+        if let [slot] = bases.as_slice() {
+            self.weak.push((*slot, CType::pointer_to(element)));
+        }
     }
 }
 
@@ -235,7 +504,7 @@ fn frame_accesses(
                         Expr::Const(_) => *width,
                         _ => *width,
                     };
-                    accesses.push((frame_slot(addr, frame, sp), addr.clone(), written, false));
+                    accesses.push((frame_slot(addr, frame, sp), addr.clone(), written, true));
                 }
                 Stmt::Assign { dest, value } => {
                     if let Expr::Load {

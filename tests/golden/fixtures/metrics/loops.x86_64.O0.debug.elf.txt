@@ -9,7 +9,7 @@
 /* velk pseudo-C: count_bits @ 0x2011c0 */
 int count_bits(unsigned int x) {
     uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    int32_t local_1; /* [sp-10] */
 
     local_0 = x;
     local_1 = 0x0;
@@ -43,9 +43,9 @@ fn count_bits @ 0x2011c0 (size 54)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x201200 */
 int sum_until(int limit) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    int32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
     local_0 = limit;
     local_1 = 0x0;
@@ -83,11 +83,11 @@ fn sum_until @ 0x201200 (size 61)
 int sum_till_neg(int *p, int n) {
     int64_t v1;
     int64_t v2;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
-    uint32_t local_4; /* [sp-20] */
+    int *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
+    int32_t local_4; /* [sp-20] */
 
     local_0 = p;
     local_1 = n;
@@ -95,7 +95,7 @@ int sum_till_neg(int *p, int n) {
     local_3 = 0x0;
     while (local_3 < local_1) {
         v1 = (int64_t)(int32_t)(local_3);
-        v2 = *(uint32_t *)(local_0 + v1 * 0x4);
+        v2 = local_0[v1];
         local_4 = v2;
         if (v2 < 0x0) {
             return local_2;
@@ -141,10 +141,10 @@ int sum_until_zero(int *p, int n) {
     int64_t v1;
     int64_t v2;
     int64_t v3;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
+    int *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
+    int32_t local_3; /* [sp-1c] */
 
     local_0 = p;
     local_1 = n;
@@ -152,13 +152,13 @@ int sum_until_zero(int *p, int n) {
     local_3 = 0x0;
     while (local_3 < local_1) {
         v1 = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + v1 * 0x4) == 0x0) {
+        if (local_0[v1] == 0x0) {
             return local_2;
         }
         v2 = (int64_t)(int32_t)(local_3);
-        if (*(uint32_t *)(local_0 + v2 * 0x4) >= 0x0) {
+        if (local_0[v2] >= 0x0) {
             v3 = (int64_t)(int32_t)(local_3);
-            local_2 += *(uint32_t *)(local_0 + v3 * 0x4);
+            local_2 += local_0[v3];
         }
         local_3 += 0x1;
     }

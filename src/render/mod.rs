@@ -54,8 +54,21 @@ pub fn render(
     data_ranges: &[(u64, u64)],
 ) -> String {
     let frames = block_frames(ir, stack_pointer(ir.isa));
-    let locals = stack_locals(ir, &frames);
+    let variable_types =
+        variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
+    let locals = stack_locals(ir, &frames, &variable_types);
     render_with(ir, references, locals, callees, data_ranges)
+}
+
+/// The precision of a float the function returns.
+fn float_return(ty: &CType) -> Option<crate::ir::Precision> {
+    ty.is_sse_float().then(|| {
+        if ty.to_string().contains("double") {
+            crate::ir::Precision::Double
+        } else {
+            crate::ir::Precision::Single
+        }
+    })
 }
 
 fn render_with(
@@ -84,13 +97,7 @@ fn render_with(
         .collect();
     let fields = struct_fields(ir);
     let narrow_regs = narrow_registers(ir);
-    let float_return = ir.ret_type.is_sse_float().then(|| {
-        if ir.ret_type.to_string().contains("double") {
-            crate::ir::Precision::Double
-        } else {
-            crate::ir::Precision::Single
-        }
-    });
+    let float_return = float_return(&ir.ret_type);
     let variable_types = variables::variable_types(ir, &narrow_regs, float_return);
     let floats: HashMap<u16, crate::ir::Precision> = variable_types
         .iter()
@@ -158,6 +165,23 @@ fn render_with(
         names,
         slots: locals.slots,
         local_widths: locals.widths,
+        local_floats: locals
+            .decls
+            .iter()
+            .filter_map(|local| {
+                let precision = match local.ty.as_ref()?.to_string().as_str() {
+                    "double" => crate::ir::Precision::Double,
+                    "float" => crate::ir::Precision::Single,
+                    _ => return None,
+                };
+                Some((local.name.clone(), precision))
+            })
+            .collect(),
+        local_elements: locals
+            .decls
+            .iter()
+            .filter_map(|local| Some((local.name.clone(), local.ty.as_ref()?.pointee_size()?)))
+            .collect(),
         wide_params,
         signed_params,
         fields,
@@ -252,9 +276,11 @@ fn render_with(
         }
         indent(1, &mut out);
         out.push_str(&format!(
-            "{} {}; /* [sp{}{:x}] */\n",
-            type_of(local.width, local.signed),
-            local.name,
+            "{}; /* [sp{}{:x}] */\n",
+            match &local.ty {
+                Some(ty) => declaration(ty, &local.name),
+                None => format!("{} {}", type_of(local.width, local.signed), local.name),
+            },
             if local.slot < 0 { "-" } else { "+" },
             local.slot.unsigned_abs()
         ));
@@ -684,6 +710,12 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             match ctx.slots.get(&address) {
                 Some(name) => {
                     let target = slot_access(name, *width, false, ctx);
+                    if let Some(precision) = ctx.local_floats.get(name) {
+                        return format!(
+                            "{target} = {};",
+                            expr::float_operand(value, *precision, ctx, 0, false)
+                        );
+                    }
                     match update_of_same_location(addr, value, *width) {
                         Some((op, rhs)) => {
                             format!("{} {}= {};", target, op, render_expr(rhs, ctx))

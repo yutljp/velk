@@ -8,9 +8,9 @@
 int dispatch(int x) {
     uint32_t v2;
     int64_t v8;
-    uint32_t local_0; /* [sp-10] */
-    uint64_t local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-c] */
+    int32_t local_0; /* [sp-10] */
+    int64_t local_1; /* [sp-18] */
+    int32_t local_2; /* [sp-c] */
 
     local_0 = x;
     v2 = local_0 - 0xa;

@@ -19,6 +19,10 @@ pub(crate) struct Ctx<'a> {
     pub(super) slots: HashMap<String, String>,
     /// Declared width of each local, so a mask to that width can be dropped.
     pub(super) local_widths: HashMap<String, u8>,
+    /// The size of the scalars each pointer local points at.
+    pub(super) local_elements: HashMap<String, u8>,
+    /// Locals holding floats, with their precision.
+    pub(super) local_floats: HashMap<String, Precision>,
     /// Parameters wider than 32 bits: masking one is a real truncation.
     pub(super) wide_params: std::collections::HashSet<u16>,
     /// Parameters declared as signed integers.
@@ -171,6 +175,12 @@ fn pointer_operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> Strin
     match expr {
         Expr::Reg { index, .. } if ctx.scaled.contains(index) => {
             format!("(uint8_t *){}", ctx.register(*index, 64))
+        }
+        Expr::Load { .. }
+            if let Some((name, element)) = crate::render::naming::scalar_pointer(expr, ctx)
+                && element != 1 =>
+        {
+            format!("(uint8_t *){name}")
         }
         other => operand(other, ctx, parent, right),
     }
@@ -458,8 +468,7 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
         Expr::Bin {
             op: BinOp::Add | BinOp::Sub,
             ..
-        } if let Some((base, index)) = crate::render::naming::element_index(value, ctx) => {
-            let name = ctx.register(base, 64);
+        } if let Some((name, _, index)) = crate::render::naming::element_index(value, ctx) => {
             match index {
                 Expr::Const(0) => name,
                 Expr::Bin {

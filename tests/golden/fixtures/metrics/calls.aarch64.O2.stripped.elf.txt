@@ -354,33 +354,33 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t v4;
     int64_t v5;
     int32_t v6;
-    uint64_t local_0; /* [sp-10] */
-    uint64_t local_1; /* [sp-8] */
-    uint64_t local_2; /* [sp-58] */
-    uint64_t local_3; /* [sp-50] */
-    uint64_t local_4; /* [sp-48] */
-    uint64_t local_5; /* [sp-40] */
-    uint64_t local_6; /* [sp-38] */
-    uint64_t local_7; /* [sp-30] */
-    uint64_t local_8; /* [sp-e0] */
-    uint64_t local_9; /* [sp-d8] */
-    uint64_t local_10; /* [sp-d0] */
-    uint64_t local_11; /* [sp-c8] */
-    uint64_t local_12; /* [sp-c0] */
-    uint64_t local_13; /* [sp-b8] */
-    uint64_t local_14; /* [sp-b0] */
-    uint64_t local_15; /* [sp-a8] */
-    uint64_t local_16; /* [sp-a0] */
-    uint64_t local_17; /* [sp-98] */
-    uint64_t local_18; /* [sp-90] */
-    uint64_t local_19; /* [sp-88] */
-    uint64_t local_20; /* [sp-80] */
-    uint64_t local_21; /* [sp-78] */
-    uint64_t local_22; /* [sp-70] */
-    uint64_t local_23; /* [sp-68] */
-    uint64_t local_24; /* [sp-18] */
-    uint64_t local_25; /* [sp-28] */
-    uint64_t local_26; /* [sp-20] */
+    int64_t local_0; /* [sp-10] */
+    int64_t local_1; /* [sp-8] */
+    int64_t local_2; /* [sp-58] */
+    int64_t local_3; /* [sp-50] */
+    int64_t local_4; /* [sp-48] */
+    int64_t local_5; /* [sp-40] */
+    int64_t local_6; /* [sp-38] */
+    int64_t local_7; /* [sp-30] */
+    int64_t local_8; /* [sp-e0] */
+    int64_t local_9; /* [sp-d8] */
+    int64_t local_10; /* [sp-d0] */
+    int64_t local_11; /* [sp-c8] */
+    int64_t local_12; /* [sp-c0] */
+    int64_t local_13; /* [sp-b8] */
+    int64_t local_14; /* [sp-b0] */
+    int64_t local_15; /* [sp-a8] */
+    int64_t local_16; /* [sp-a0] */
+    int64_t local_17; /* [sp-98] */
+    int64_t local_18; /* [sp-90] */
+    int64_t local_19; /* [sp-88] */
+    int64_t local_20; /* [sp-80] */
+    int64_t local_21; /* [sp-78] */
+    int64_t local_22; /* [sp-70] */
+    int64_t local_23; /* [sp-68] */
+    int64_t local_24; /* [sp-18] */
+    int64_t local_25; /* [sp-28] */
+    uint32_t *local_26; /* [sp-20] */
 
     local_0 = sp - 0x60;
     local_1 = 0xffffff80ffffffc8;

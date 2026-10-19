@@ -148,13 +148,13 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 /* velk pseudo-C: main @ 0x1120 */
 int64_t main(int32_t a0) {
     int64_t v1;
-    uint64_t local_0; /* [sp-10] */
-    uint64_t local_1; /* [sp-40] */
-    uint64_t local_2; /* [sp-38] */
-    uint64_t local_3; /* [sp-48] */
-    uint64_t local_4; /* [sp-28] */
-    uint64_t local_5; /* [sp-30] */
-    uint64_t local_6; /* [sp-20] */
+    int64_t local_0; /* [sp-10] */
+    int64_t local_1; /* [sp-40] */
+    int64_t local_2; /* [sp-38] */
+    int64_t local_3; /* [sp-48] */
+    int64_t local_4; /* [sp-28] */
+    int64_t local_5; /* [sp-30] */
+    int64_t local_6; /* [sp-20] */
 
     local_0 = *(uint64_t *)(fs_base + 0x28);
     v1 = qword_2028;
@@ -202,8 +202,8 @@ fn main @ 0x1120 (size 124)
 -- decompile
 /* velk pseudo-C: _start @ 0x11a0 */
 int32_t _start(int32_t a0, int64_t a1, int64_t a2) {
-    uint64_t local_0; /* [sp+0] */
-    uint64_t local_1; /* [sp-8] */
+    int64_t local_0; /* [sp+0] */
+    int64_t local_1; /* [sp-8] */
 
     r9 = a2;
     a1 = local_0;
@@ -381,9 +381,9 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     int64_t v21;
     int64_t v22;
     int64_t v28;
-    uint64_t local_0; /* [sp-20] */
-    uint64_t local_1; /* [sp-78] */
-    uint64_t local_2; /* [sp-70] */
+    int64_t local_0; /* [sp-20] */
+    int64_t local_1; /* [sp-78] */
+    int64_t local_2; /* [sp-70] */
 
     local_0 = *(uint64_t *)(fs_base + 0x28);
     if ((a1 & 0xffffffff) <= 0x0) {

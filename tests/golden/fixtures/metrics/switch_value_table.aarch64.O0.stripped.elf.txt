@@ -6,8 +6,8 @@
 /* velk pseudo-C: sub_210154 @ 0x210154 */
 int32_t sub_210154(int32_t a0) {
     int64_t v1;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-4] */
+    int32_t local_0; /* [sp-c] */
+    int32_t local_1; /* [sp-4] */
 
     v1 = a0;
     local_0 = v1;

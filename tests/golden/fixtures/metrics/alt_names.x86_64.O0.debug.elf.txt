@@ -23,9 +23,9 @@ fn alt_sum3 @ 0x201180 (size 24)
 -- decompile
 /* velk pseudo-C: alt_helper @ 0x2011a0 */
 int alt_helper(int x) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    int32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
     local_0 = x;
     local_1 = 0x0;

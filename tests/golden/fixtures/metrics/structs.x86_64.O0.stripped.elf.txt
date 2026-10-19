@@ -38,10 +38,10 @@ int64_t sub_201270(uint64_t *a0, int32_t a1) {
     int64_t v1;
     int64_t v3;
     int64_t v4;
-    uint64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-14] */
-    uint64_t local_2; /* [sp-20] */
-    uint32_t local_3; /* [sp-24] */
+    uint64_t *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int64_t local_2; /* [sp-20] */
+    int32_t local_3; /* [sp-24] */
 
     local_0 = a0;
     local_1 = a1;
@@ -50,8 +50,8 @@ int64_t sub_201270(uint64_t *a0, int32_t a1) {
     while (local_3 < local_1) {
         v1 = (int64_t)(int32_t)(local_3) * 0x18;
         v3 = (int64_t)(int32_t)(local_3) * 0x18;
-        v4 = (int16_t)(*(uint16_t *)(local_0 + v3 + 0x10));
-        local_2 += *(uint64_t *)(local_0 + v1 + 0x8) * v4;
+        v4 = (int16_t)(*(uint16_t *)((uint8_t *)local_0 + v3 + 0x10));
+        local_2 += *(uint64_t *)((uint8_t *)local_0 + v1 + 0x8) * v4;
         local_3 += 0x1;
     }
     return local_2;
@@ -85,10 +85,10 @@ fn <unnamed> @ 0x201270 (size 109)
 -- decompile
 /* velk pseudo-C: sub_2012e0 @ 0x2012e0 */
 int64_t sub_2012e0(int64_t a0, int64_t a1) {
-    uint64_t local_0; /* [sp-18] */
-    uint64_t local_1; /* [sp-20] */
-    uint64_t local_2; /* [sp-10] */
-    uint32_t local_3; /* [sp-c] */
+    int64_t local_0; /* [sp-18] */
+    int64_t local_1; /* [sp-20] */
+    int64_t local_2; /* [sp-10] */
+    int32_t local_3; /* [sp-c] */
 
     local_0 = a0;
     local_1 = a1;
@@ -121,7 +121,7 @@ struct sub_201310_a0 {
     int64_t field_0x18;
 };
 int64_t sub_201310(struct sub_201310_a0 *a0, int64_t a1) {
-    uint64_t local_0; /* [sp-10] */
+    int64_t local_0; /* [sp-10] */
 
     local_0 = a1;
     a0->field_0x0 = a1;
@@ -199,7 +199,7 @@ int32_t sub_201380(int32_t a0) {
     uint64_t v4;
     uint64_t v6;
     uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    int32_t local_1; /* [sp-10] */
 
     local_0 = a0;
     v1 = *(uint8_t *)&local_0;

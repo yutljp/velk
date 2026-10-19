@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: tail_target @ 0x2101d4 */
 int tail_target(int x) {
-    uint32_t local_0; /* [sp-4] */
+    int32_t local_0; /* [sp-4] */
 
     local_0 = x;
     return local_0 * 0x3 + 0x1;
@@ -30,7 +30,7 @@ fn tail_target @ 0x2101d4 (size 40)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x2101fc */
 int tail_direct(int x) {
-    uint32_t local_0; /* [sp-14] */
+    int32_t local_0; /* [sp-14] */
 
     local_0 = x;
     w8 = x;
@@ -54,8 +54,8 @@ fn tail_direct @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x210224 */
 int tail_indirect(void *f, int x) {
-    uint64_t local_0; /* [sp-18] */
-    uint32_t local_1; /* [sp-1c] */
+    void *local_0; /* [sp-18] */
+    int32_t local_1; /* [sp-1c] */
 
     local_0 = f;
     local_1 = x;

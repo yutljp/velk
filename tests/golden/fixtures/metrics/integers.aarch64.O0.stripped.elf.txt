@@ -66,9 +66,9 @@ fn <unnamed> @ 0x21026c (size 32)
 /* velk pseudo-C: sub_21028c @ 0x21028c */
 int32_t sub_21028c(int32_t a0, int32_t a1, int32_t a2) {
     int32_t v2;
-    uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
+    int32_t local_0; /* [sp-4] */
+    int32_t local_1; /* [sp-c] */
+    int32_t local_2; /* [sp-10] */
 
     local_0 = a0;
     local_1 = a2;
@@ -123,8 +123,8 @@ fn <unnamed> @ 0x2102e0 (size 64)
 -- decompile
 /* velk pseudo-C: sub_210320 @ 0x210320 */
 int32_t sub_210320(int32_t a0) {
-    uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
+    int32_t local_0; /* [sp-4] */
+    int32_t local_1; /* [sp-8] */
 
     local_0 = a0;
     local_1 = 0x0;
@@ -178,12 +178,12 @@ fn <unnamed> @ 0x21036c (size 60)
 -- decompile
 /* velk pseudo-C: sub_2103a8 @ 0x2103a8 */
 int32_t sub_2103a8(int32_t a0, int32_t a1, int32_t a2) {
-    uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
-    uint32_t local_2; /* [sp-c] */
-    uint32_t local_3; /* [sp-14] */
-    uint32_t local_4; /* [sp-10] */
-    uint32_t local_5; /* [sp-18] */
+    int32_t local_0; /* [sp-4] */
+    int32_t local_1; /* [sp-8] */
+    int32_t local_2; /* [sp-c] */
+    int32_t local_3; /* [sp-14] */
+    int32_t local_4; /* [sp-10] */
+    int32_t local_5; /* [sp-18] */
 
     local_0 = a0;
     local_1 = a1;
@@ -240,8 +240,8 @@ fn <unnamed> @ 0x2103a8 (size 124)
 -- decompile
 /* velk pseudo-C: sub_210424 @ 0x210424 */
 int64_t sub_210424(int64_t a0) {
-    uint64_t local_0; /* [sp-8] */
-    uint64_t local_1; /* [sp-10] */
+    int64_t local_0; /* [sp-8] */
+    int64_t local_1; /* [sp-10] */
 
     local_0 = a0;
     if ((a0 & 0x8000000000000000) == 0x0) {

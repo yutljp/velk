@@ -7,17 +7,17 @@
 /* ref: 0x2204fc .bss */
 int d7(int x) {
     int64_t v1;
-    uint32_t local_0; /* [sp-30] */
-    uint32_t local_1; /* [sp-8] */
-    uint32_t local_2; /* [sp-c] */
-    uint32_t local_3; /* [sp-10] */
-    uint32_t local_4; /* [sp-14] */
-    uint32_t local_5; /* [sp-18] */
-    uint32_t local_6; /* [sp-1c] */
-    uint32_t local_7; /* [sp-20] */
-    uint32_t local_8; /* [sp-24] */
-    uint32_t local_9; /* [sp-28] */
-    uint32_t local_10; /* [sp-2c] */
+    int32_t local_0; /* [sp-30] */
+    int32_t local_1; /* [sp-8] */
+    int32_t local_2; /* [sp-c] */
+    int32_t local_3; /* [sp-10] */
+    int32_t local_4; /* [sp-14] */
+    int32_t local_5; /* [sp-18] */
+    int32_t local_6; /* [sp-1c] */
+    int32_t local_7; /* [sp-20] */
+    int32_t local_8; /* [sp-24] */
+    int32_t local_9; /* [sp-28] */
+    int32_t local_10; /* [sp-2c] */
 
     v1 = x;
     local_0 = v1;
