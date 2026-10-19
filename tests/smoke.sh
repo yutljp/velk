@@ -574,6 +574,11 @@ ok "x86 ir reg_add"
 x86_mul=$("$BIN" ir $FIX/pe64.exe reg_mul 2>/dev/null)
 echo "$x86_mul" | grep -q " \* "                 || fail "x86 ir imul"
 ok "x86 ir imul"
+coff=$("$BIN" decompile $FIX/pe64.obj reg_add 2>/dev/null)
+echo "$coff" | grep -Eq 'reg_add\([^,]+, [^,]+\)'            || fail "COFF uses the Windows argument registers"
+zeroed=$("$BIN" decompile $FIX/l2_loop_x64.o find_first 2>/dev/null)
+echo "$zeroed" | grep -Eq 'find_first\([^,]+, [^,]+, [^,]+\)' || fail "xor zeroing is not an argument read"
+ok "argument registers"
 
 x86_sign=$("$BIN" decompile $FIX/pe64.exe reg_sign 2>/dev/null)
 echo "$x86_sign" | grep -q "int8_t"             || fail "x86 movsx byte"

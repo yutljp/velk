@@ -246,7 +246,12 @@ fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
     let (Some(lhs), Some(rhs)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) else {
         return;
     };
-    let value = Expr::bin(op, lhs, rhs);
+    // `xor r, r` and `sub r, r` clear the register without depending on its value.
+    let value = if matches!(op, BinOp::Xor | BinOp::Sub) && lhs == rhs {
+        Expr::constant(0)
+    } else {
+        Expr::bin(op, lhs, rhs)
+    };
     lifter.last_compare = Some((value.clone(), Expr::constant(0)));
     write_destination(lifter, ins, value);
 }

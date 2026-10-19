@@ -4,6 +4,7 @@ mod remainder;
 mod select;
 mod widened;
 
+use crate::arch;
 use crate::ir::CType;
 use crate::ir::visit::assign_of;
 use crate::ir::visit::assignment_at;
@@ -44,14 +45,16 @@ pub fn recover_divisions(ir: &mut FunctionIr) {
     }
     // A 32-bit quotient written to the return register proves a 32-bit return.
     for (dest_index, signed) in narrowed.drain(..) {
-        if dest_index == 0 && (ir.ret_type == CType::U64 || ir.ret_type == CType::I64) {
+        if reaches_return(ir, dest_index)
+            && (ir.ret_type == CType::U64 || ir.ret_type == CType::I64)
+        {
             ir.ret_type = if signed { CType::I32 } else { CType::U32 };
         }
     }
-    // Any signed 64-bit chain promotes the return type to int64.
-    wide_signed_ret.drain(..).for_each(|_| {
+    // A signed 64-bit quotient written to the return register proves an int64 return.
+    if wide_signed_ret.iter().any(|reg| reaches_return(ir, *reg)) {
         ir.ret_type = CType::I64;
-    });
+    }
     // Retype dividend parameters to the width the chain proved.
     for param in ir.params.iter_mut() {
         for (index, signed) in domains.iter() {
@@ -65,11 +68,24 @@ pub fn recover_divisions(ir: &mut FunctionIr) {
     }
 }
 
+/// True when `reg` is the return register or is copied into it or returned.
+fn reaches_return(ir: &FunctionIr, reg: u16) -> bool {
+    let is_reg =
+        |value: &Expr| matches!(strip_and_mask(value), Expr::Reg { index, .. } if *index == reg);
+    reg == arch::RETURN
+        || ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| match stmt {
+                Stmt::Assign { dest, value } => dest.index == arch::RETURN && is_reg(value),
+                Stmt::Ret { value } => is_reg(value),
+                _ => false,
+            })
+}
+
 fn sar_dst_of(block: &crate::ir::Block, index: usize) -> u16 {
-    assign_of(block.stmts.get(index).unwrap_or(&Stmt::Ret {
-        value: Expr::Const(0),
-    }))
-    .map_or(0, |(dest, _)| dest.index)
+    assignment_at(&block.stmts, index).map_or(0, |(dest, _)| dest.index)
 }
 
 fn magic_block(

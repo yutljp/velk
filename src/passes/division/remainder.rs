@@ -206,14 +206,12 @@ pub(crate) fn remainder_scan(
                     consumed.push(position);
                     continue;
                 }
-                (crate::ir::BinOp::Mul, Expr::Reg { index, .. }, Expr::Const(_)) => {
+                (crate::ir::BinOp::Mul, Expr::Reg { index, .. }, Expr::Const(d)) => {
                     // A standalone `q * d` read by the closing subtract.
                     if !aliases.contains(index) {
                         return None;
                     }
-                    if let Expr::Const(value) = rhs.as_ref() {
-                        let _ = value;
-                    }
+                    factor = factor.checked_mul(*d)?;
                     aliases.retain(|other| other != &dest);
                     aliases.push(dest);
                     consumed.push(position);

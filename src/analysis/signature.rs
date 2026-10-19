@@ -21,7 +21,7 @@ fn argument_registers(isa: Isa, format: Format, go: bool) -> &'static [u16] {
         // rsi, r8, r9, r10, r11.
         Isa::X86_64 if go => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
         Isa::X86_64 => match format {
-            Format::Pe => &[1, 2, 8, 9],
+            Format::Pe | Format::Coff => &[1, 2, 8, 9],
             _ => &[7, 6, 2, 1, 8, 9],
         },
         Isa::Unsupported => &[],
@@ -143,6 +143,19 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         }
     }
 
+    let writes: Vec<HashSet<u16>> = blocks
+        .iter()
+        .map(|block| {
+            block
+                .stmts
+                .iter()
+                .filter_map(|stmt| match stmt {
+                    Stmt::Assign { dest, .. } => Some(dest.index),
+                    _ => None,
+                })
+                .collect()
+        })
+        .collect();
     let mut entry: Vec<HashSet<u16>> = vec![universe.clone(); blocks.len()];
     if !entry.is_empty() {
         entry[0] = HashSet::new();
@@ -159,10 +172,10 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             }
             let mut merged: Option<HashSet<u16>> = None;
             for pred in preds {
-                let candidate = &entry[*pred];
+                let exit: HashSet<u16> = entry[*pred].union(&writes[*pred]).copied().collect();
                 merged = Some(match merged {
-                    None => candidate.clone(),
-                    Some(current) => current.intersection(candidate).copied().collect(),
+                    None => exit,
+                    Some(current) => current.intersection(&exit).copied().collect(),
                 });
             }
             let merged = merged.unwrap_or_default();
@@ -431,5 +444,39 @@ fn load_of(expr: &Expr) -> Option<(&Expr, u8)> {
             ..
         } => load_of(lhs),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::recover;
+    use crate::ir::{Block, Expr, RegRef, Stmt};
+    use crate::loader::{Format, Isa};
+
+    #[test]
+    fn a_register_written_in_an_earlier_block_is_not_an_argument() {
+        let blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Assign {
+                    dest: RegRef {
+                        index: 1,
+                        width: 64,
+                    },
+                    value: Expr::Const(7),
+                }],
+            },
+            Block {
+                start: 4,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::bin(crate::ir::BinOp::Add, Expr::reg(0, 64), Expr::reg(1, 64)),
+                }],
+            },
+        ];
+
+        let signature = recover(&blocks, Isa::AArch64, Format::Elf, false);
+
+        let params: Vec<u16> = signature.params.iter().map(|param| param.index).collect();
+        assert_eq!(params, vec![0]);
     }
 }

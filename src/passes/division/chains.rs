@@ -113,8 +113,8 @@ pub(crate) fn signed64_chain(
                 (crate::ir::BinOp::Add, lhs, rhs) => {
                     let lhs = strip_and_mask(lhs);
                     let rhs = strip_and_mask(rhs);
-                    let lhs_main = sum_shape(lhs, &p_aliases, main_alias, extra_shift).is_some();
-                    let rhs_main = sum_shape(rhs, &p_aliases, main_alias, extra_shift).is_some();
+                    let lhs_main = main_shape(lhs, &p_aliases, main_alias, extra_shift);
+                    let rhs_main = main_shape(rhs, &p_aliases, main_alias, extra_shift);
                     let lhs_sign = sign_shape(lhs, &p_aliases, sign_alias);
                     let rhs_sign = sign_shape(rhs, &p_aliases, sign_alias);
                     if !((lhs_main && rhs_sign) || (lhs_sign && rhs_main)) {
@@ -166,59 +166,27 @@ fn leaf_index(expr: &Expr) -> Option<u16> {
     }
 }
 
-/// Classifies a sum operand: `Some(63)` for the sign flag, `Some(k)` for the
-/// main part (`p` or `p asr k`), `None` otherwise.
-fn sum_shape(
+/// True when a sum operand is the main term: the product, a copy of it, or the
+/// product shifted right by the chain's extra shift.
+fn main_shape(
     expr: &Expr,
     p_aliases: &[u16],
-    sign_alias: Option<u16>,
+    main_alias: Option<u16>,
     extra_shift: Option<u64>,
-) -> Option<u64> {
-    let reg_index = |expr: &Expr| -> Option<u16> {
-        match expr {
-            Expr::Reg { index, .. } => Some(*index),
-            _ => None,
-        }
-    };
+) -> bool {
     match expr {
-        Expr::Bin {
-            op: crate::ir::BinOp::Shr | crate::ir::BinOp::Sar,
-            lhs,
-            rhs,
-        } => {
-            if matches!(rhs.as_ref(), Expr::Const(63))
-                && let Some(index) = reg_index(lhs)
-                && p_aliases.contains(&index)
-            {
-                return Some(63);
-            }
-        }
-        Expr::Reg { index, .. } if sign_alias == Some(*index) => {
-            return Some(63);
-        }
-        _ => {}
-    }
-    match expr {
-        Expr::Reg { index, .. } => {
-            if p_aliases.contains(index) {
-                return Some(extra_shift.unwrap_or(0));
-            }
-        }
+        Expr::Reg { index, .. } => p_aliases.contains(index) || main_alias == Some(*index),
         Expr::Bin {
             op: crate::ir::BinOp::Sar,
             lhs,
             rhs,
-        } => {
-            if let (Some(index), Expr::Const(k)) = (reg_index(lhs), rhs.as_ref())
-                && p_aliases.contains(&index)
-                && extra_shift == Some(*k)
-            {
-                return Some(extra_shift.unwrap_or(0));
-            }
-        }
-        _ => {}
+        } => matches!(
+            (lhs.as_ref(), rhs.as_ref()),
+            (Expr::Reg { index, .. }, Expr::Const(k))
+                if p_aliases.contains(index) && extra_shift == Some(*k)
+        ),
+        _ => false,
     }
-    None
 }
 
 /// Recognizes the unsigned 64-bit chain of x86-64 one-operand `mul`:
