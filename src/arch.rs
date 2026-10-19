@@ -6,6 +6,9 @@ pub mod x86 {
     pub const RAX: u16 = 0;
     pub const RDX: u16 = 2;
     pub const RSP: u16 = 4;
+    /// The segment bases thread-local storage is addressed through.
+    pub const FS_BASE: u16 = 16;
+    pub const GS_BASE: u16 = 17;
 }
 
 pub mod aarch64 {

@@ -335,9 +335,9 @@ fn operator(op: BinOp) -> &'static str {
 
 use crate::loader::Isa;
 
-const X86_NAMES64: [&str; 16] = [
+const X86_NAMES64: [&str; 18] = [
     "rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13",
-    "r14", "r15",
+    "r14", "r15", "fs_base", "gs_base",
 ];
 
 /// Register indices from here up are per-function CSE temporaries, printed as

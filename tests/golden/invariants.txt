@@ -1,5 +1,0 @@
-pe64.exe 0x140001090 -: reads rax without assigning it
-pe64.obj 0x90 entry: reads rax without assigning it
-rust_demo 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
-rust_probe 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
-rust_probe_stripped 0x3b8e0 -: reads rax without assigning it

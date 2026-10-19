@@ -175,7 +175,20 @@ fn memory_address(ins: &Instruction) -> Option<Expr> {
             None => Expr::constant(displacement),
         });
     }
-    address
+    let segment = match ins.memory_segment() {
+        Register::FS => Some(crate::arch::x86::FS_BASE),
+        Register::GS => Some(crate::arch::x86::GS_BASE),
+        _ => None,
+    };
+    match (segment, address) {
+        (Some(segment), Some(address)) => {
+            Some(Expr::bin(BinOp::Add, Expr::reg(segment, 64), address))
+        }
+        (Some(segment), None) => Some(Expr::reg(segment, 64)),
+        // No base, index or displacement addresses zero.
+        (None, None) => Some(Expr::constant(0)),
+        (None, address) => address,
+    }
 }
 
 fn load(ins: &Instruction) -> Option<Expr> {

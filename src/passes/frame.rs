@@ -76,7 +76,10 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
     };
     let dead: std::collections::HashSet<(usize, usize)> = stores
         .into_iter()
-        .filter(|(_, _, slot, width)| !overlaps(*slot, *width))
+        .filter(|(position, index, slot, width)| {
+            !overlaps(*slot, *width)
+                || overwritten(&ir.blocks[*position].stmts, *index, *slot, *width, sp)
+        })
         .map(|(position, index, _, _)| (position, index))
         .collect();
     if dead.is_empty() {
@@ -90,6 +93,52 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
             keep
         });
     }
+}
+
+/// True when later stores in the block cover every byte of the store at
+/// `index` before anything reads them.
+fn overwritten(stmts: &[Stmt], index: usize, slot: u64, width: u8, sp: u16) -> bool {
+    let start = slot as i64;
+    let end = start + i64::from(width);
+    let mut covered = vec![false; usize::from(width)];
+    for stmt in &stmts[index + 1..] {
+        let mut read = Vec::new();
+        match stmt {
+            Stmt::Store { addr, value, width } => {
+                collect_frame_reads(addr, sp, &mut read);
+                collect_frame_reads(value, sp, &mut read);
+                if read.iter().any(|(other, other_width)| {
+                    let other = *other as i64;
+                    other < end && start < other + i64::from(*other_width)
+                }) {
+                    return false;
+                }
+                if let Some(other) = frame_slot_of(addr, sp) {
+                    let other = other as i64;
+                    for byte in other.max(start)..(other + i64::from(*width)).min(end) {
+                        covered[(byte - start) as usize] = true;
+                    }
+                    if covered.iter().all(|byte| *byte) {
+                        return true;
+                    }
+                }
+            }
+            Stmt::Assign { dest, value } => {
+                if dest.index == sp {
+                    return false;
+                }
+                collect_frame_reads(value, sp, &mut read);
+                if read.iter().any(|(other, other_width)| {
+                    let other = *other as i64;
+                    other < end && start < other + i64::from(*other_width)
+                }) {
+                    return false;
+                }
+            }
+            _ => return false,
+        }
+    }
+    false
 }
 
 /// The offset `k` of an address that is exactly `sp + k`.
@@ -816,6 +865,22 @@ mod tests {
         );
         drop_dead_frame_stores(&mut ir);
         assert_eq!(ir.blocks[0].stmts.len(), 2, "{}", ir.render());
+    }
+
+    #[test]
+    fn drops_a_store_later_stores_cover() {
+        // An 8-byte store both halves of which are written before the read.
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(-8, Expr::reg(0, 64), 8),
+                store(-8, Expr::Const(1), 4),
+                store(-4, Expr::Const(2), 4),
+                Stmt::Ret { value: load(-8, 8) },
+            ],
+        );
+        drop_dead_frame_stores(&mut ir);
+        assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
     }
 
     #[test]

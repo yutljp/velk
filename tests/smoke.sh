@@ -340,8 +340,9 @@ echo "$fwd" | grep -q "x8 = local_3;" && fail "store not forwarded"
 echo "$fwd" | grep -q "local_4 = w8;" || fail "forwarded value missing"
 pe_entry=$("$BIN" functions $FIX/pe64.exe --json 2>/dev/null | sed -n 's/.*"entry": "\(0x[0-9a-f]*\)".*/\1/p')
 entry_fwd=$("$BIN" decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
-echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_0 = 0x23;" || fail "partial store into a wider local"
-echo "$entry_fwd" | grep -q "return local_0;" || fail "pop reads the pushed slot"
+echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_1 = 0x23;" || fail "partial store into a wider local"
+echo "$entry_fwd" | grep -q "return local_1;" || fail "pop reads the pushed slot"
+echo "$entry_fwd" | grep -q "= rax;" && fail "overwritten push kept"
 ok "stored values forwarded"
 
 

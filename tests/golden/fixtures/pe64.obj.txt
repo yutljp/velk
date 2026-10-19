@@ -167,13 +167,12 @@ fn reg_mod @ 0x80 (size 16)
 -- decompile
 /* velk pseudo-C: entry @ 0x90 */
 uint64_t entry(void) {
-    uint64_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
+    uint64_t local_1; /* [sp-8] */
 
-    local_0 = rax;
-    local_1 = 0x5;
-    *(uint32_t *)&local_0 = 0x23;
-    return local_0;
+    local_0 = 0x5;
+    *(uint32_t *)&local_1 = 0x23;
+    return local_1;
 }
 -- signature
 uint64_t ()
@@ -182,7 +181,6 @@ uint64_t ()
 -- ir
 fn entry @ 0x90 (size 30)
   blk0 @ 0x90:
-    store64(rax, (rsp + #0xfffffffffffffff8))
     store32(#0x5, (rsp + #0xfffffffffffffffc))
     store32(#0x23, (rsp + #0xfffffffffffffff8))
     ret load64((rsp + #0xfffffffffffffff8))
