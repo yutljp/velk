@@ -403,7 +403,7 @@ int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, 
     int64_t local_21; /* [sp-78] */
     int64_t local_22; /* [sp-70] */
     int64_t local_23; /* [sp-68] */
-    int64_t local_24; /* [sp-18] */
+    int64_t *local_24; /* [sp-18] */
     int64_t local_25; /* [sp-28] */
     uint32_t *local_26; /* [sp-20] */
 

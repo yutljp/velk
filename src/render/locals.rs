@@ -132,7 +132,18 @@ pub(crate) fn stack_locals(
         widths.insert(name.clone(), width);
         slots.insert(key, name);
     }
-    let (types, signs) = slot_types(ir, sp, frames, variables);
+    let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables);
+    // A local holding another's address points at what that one holds.
+    for (slot, target) in points_to {
+        let Some(target) = slot_names.get(&target) else {
+            continue;
+        };
+        let element = target
+            .ty
+            .clone()
+            .unwrap_or_else(|| CType::int(target.width, target.signed));
+        types.entry(slot).or_insert(CType::pointer_to(element));
+    }
     for (slot, ty) in types {
         if let Some(local) = slot_names.get_mut(&slot)
             && ty_width(&ty) == Some(local.width)
@@ -184,7 +195,7 @@ fn slot_types(
     sp: u16,
     frames: &[Option<i64>],
     variables: &std::collections::BTreeMap<u16, CType>,
-) -> (HashMap<i64, CType>, HashMap<i64, bool>) {
+) -> (HashMap<i64, CType>, HashMap<i64, bool>, HashMap<i64, i64>) {
     let typed = |index: u16| -> Option<CType> {
         let ty = variables.get(&index).cloned().or_else(|| {
             ir.params
@@ -201,6 +212,7 @@ fn slot_types(
         weak: Vec::new(),
         signs: Vec::new(),
     };
+    let mut points_to: HashMap<i64, Option<i64>> = HashMap::new();
     for (position, block) in ir.blocks.iter().enumerate() {
         let Some(frame) = frames[position] else {
             continue;
@@ -217,6 +229,12 @@ fn slot_types(
                         };
                         if let Some(ty) = ty.filter(|ty| ty_width(ty) == Some(*width)) {
                             walk.strong.push((slot, ty));
+                        }
+                        if let Some(target) = walk.local(value) {
+                            points_to.entry(slot).or_insert(Some(target));
+                            if points_to[&slot] != Some(target) {
+                                points_to.insert(slot, None);
+                            }
                         }
                     }
                     walk.address(addr, CType::int(*width, false));
@@ -284,7 +302,12 @@ fn slot_types(
     for (slot, signed) in walk.signs {
         *signs.entry(slot).or_insert(signed) |= signed;
     }
-    (types, signs)
+    let points_to = points_to
+        .into_iter()
+        .filter_map(|(slot, target)| Some((slot, target?)))
+        .filter(|(slot, _)| !types.contains_key(slot))
+        .collect();
+    (types, signs, points_to)
 }
 
 /// The walk `slot_types` makes, with the evidence it gathers by slot:

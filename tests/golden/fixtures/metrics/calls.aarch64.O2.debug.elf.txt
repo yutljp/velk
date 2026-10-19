@@ -372,7 +372,7 @@ int sum_varargs(int count, ...) {
     int64_t local_21; /* [sp-78] */
     int64_t local_22; /* [sp-70] */
     int64_t local_23; /* [sp-68] */
-    int64_t local_24; /* [sp-18] */
+    int64_t *local_24; /* [sp-18] */
     int64_t local_25; /* [sp-28] */
     uint32_t *local_26; /* [sp-20] */
 

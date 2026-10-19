@@ -314,7 +314,7 @@ int sum_varargs(int count, ...) {
     int32_t local_24; /* [sp-1c] */
     int32_t local_25; /* [sp-20] */
     int64_t local_26; /* [sp-28] */
-    int64_t local_27; /* [sp-30] */
+    int32_t *local_27; /* [sp-30] */
     int64_t local_28; /* [sp-38] */
     int32_t local_29; /* [sp-3c] */
     int32_t local_30; /* [sp-40] */
@@ -363,7 +363,7 @@ int sum_varargs(int count, ...) {
             v3 = local_32 + 0x8;
             *local_31 = v3;
             if (v3 <= 0x0) {
-                local_33 = local_27 + (int64_t)(int32_t)(local_32);
+                local_33 = (uint8_t *)local_27 + (int64_t)(int32_t)(local_32);
                 goto L_2106b4;
             }
         }
