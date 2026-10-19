@@ -57,6 +57,18 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
     }
 }
 
+/// `other` when `kept` is `r & keep` and `keep` shares no bit with `mask`.
+fn outside_mask<'e>(kept: &Expr, other: &'e Expr, mask: u64) -> Option<&'e Expr> {
+    match kept {
+        Expr::Bin {
+            op: crate::ir::BinOp::And,
+            rhs,
+            ..
+        } if matches!(rhs.as_ref(), Expr::Const(keep) if keep & mask == 0) => Some(other),
+        _ => None,
+    }
+}
+
 /// In a compare at `width` bits, `(a - b) + b` and `(a + b) - b` are `a`; a
 /// 32-bit mask on the inner result changes nothing at 32 bits.
 fn cancel_round_trip(expr: &mut Expr, width: u8) {
@@ -213,6 +225,20 @@ pub(crate) fn algebraic(expr: Expr) -> Expr {
         }
         crate::ir::BinOp::Sub if zero(rhs) => lhs.as_ref().clone(),
         crate::ir::BinOp::Add if zero(rhs) => lhs.as_ref().clone(),
+        // `((r & keep) | v) & mask` with `keep & mask == 0` is `v & mask`:
+        // the kept bits of a partial register write fall outside the mask.
+        crate::ir::BinOp::And
+            if let Expr::Const(mask) = rhs.as_ref()
+                && let Expr::Bin {
+                    op: crate::ir::BinOp::Or,
+                    lhs: a,
+                    rhs: b,
+                } = lhs.as_ref()
+                && let Some(value) =
+                    outside_mask(a, b, *mask).or_else(|| outside_mask(b, a, *mask)) =>
+        {
+            Expr::bin(crate::ir::BinOp::And, value.clone(), Expr::Const(*mask))
+        }
         // The low 32 bits of a sum, difference, product or bitwise operation
         // depend only on the low 32 bits of its operands.
         crate::ir::BinOp::And if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => {
@@ -296,6 +322,35 @@ mod tests {
     use super::simplify;
     use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn a_mask_drops_the_bits_a_partial_write_kept() {
+        // ((rcx & ~0xff) | v) & 0xff is v & 0xff.
+        let value = Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(0xff));
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::And,
+                    Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(BinOp::And, Expr::reg(1, 64), Expr::Const(!0xff)),
+                        value.clone(),
+                    ),
+                    Expr::Const(0xff),
+                ),
+            }],
+        );
+
+        simplify(&mut ir);
+
+        let Stmt::Ret { value: simplified } = &ir.blocks[0].stmts[0] else {
+            panic!("the return stays");
+        };
+        let mut reads = std::collections::HashSet::new();
+        crate::ir::visit::collect_reads(simplified, &mut reads);
+        assert!(!reads.contains(&1), "{}", ir.render());
+    }
 
     #[test]
     fn folds_an_offset_from_a_subtracted_base() {

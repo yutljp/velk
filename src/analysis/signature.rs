@@ -41,6 +41,27 @@ fn reads(expr: &Expr, into: &mut HashSet<u16>) {
     }
 }
 
+/// The new bits of `r = (r & keep) | value`, a write of part of a register
+/// that keeps the rest: the kept bits are no input.
+fn partial_write_source(value: &Expr, dest: u16) -> &Expr {
+    if let Expr::Bin {
+        op: crate::ir::BinOp::Or,
+        lhs,
+        rhs,
+    } = value
+        && let Expr::Bin {
+            op: crate::ir::BinOp::And,
+            lhs: kept,
+            rhs: mask,
+        } = lhs.as_ref()
+        && matches!(kept.as_ref(), Expr::Reg { index, .. } if *index == dest)
+        && matches!(mask.as_ref(), Expr::Const(_))
+    {
+        return rhs;
+    }
+    value
+}
+
 /// The condition kinds only a signed comparison produces.
 fn signed_cond(cond: crate::ir::Cond) -> bool {
     matches!(
@@ -185,7 +206,9 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         for stmt in &block.stmts {
             let mut used = HashSet::new();
             match stmt {
-                Stmt::Assign { value, .. } => reads(value, &mut used),
+                Stmt::Assign { dest, value } => {
+                    reads(partial_write_source(value, dest.index), &mut used)
+                }
                 Stmt::Store { addr, value, .. } => {
                     reads(addr, &mut used);
                     reads(value, &mut used);
@@ -214,18 +237,21 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         }
     }
 
-    let mut params = Vec::new();
-    for register in arguments {
-        if inputs.contains(register) {
-            params.push(Param {
-                index: *register,
-                name: format!("a{}", params.len()),
-                ty: CType::U64,
-            });
-        } else {
-            break;
-        }
-    }
+    // Arguments are passed in order, so every register before the last one
+    // the body reads is a parameter too, even one only passed on.
+    let count = arguments
+        .iter()
+        .rposition(|register| inputs.contains(register))
+        .map_or(0, |last| last + 1);
+    let mut params: Vec<Param> = arguments[..count]
+        .iter()
+        .enumerate()
+        .map(|(position, register)| Param {
+            index: *register,
+            name: format!("a{position}"),
+            ty: CType::U64,
+        })
+        .collect();
 
     // Which argument each register is derived from through copies and
     // base-preserving arithmetic, so loads through it type that argument.
@@ -466,5 +492,53 @@ mod tests {
 
         let params: Vec<u16> = signature.params.iter().map(|param| param.index).collect();
         assert_eq!(params, vec![0]);
+    }
+
+    fn params_of(stmts: Vec<Stmt>, isa: Isa) -> Vec<u16> {
+        let blocks = vec![Block { start: 0, stmts }];
+        recover(&blocks, isa, Format::Elf, false)
+            .params
+            .iter()
+            .map(|param| param.index)
+            .collect()
+    }
+
+    #[test]
+    fn registers_before_the_last_argument_read_are_parameters() {
+        // `if (x2 == 0) return; tail call`, passing x0 and x1 on unchanged.
+        let stmts = vec![
+            Stmt::Brif {
+                cond: crate::ir::Cond::Eq,
+                lhs: Expr::reg(2, 64),
+                rhs: Expr::Const(0),
+                target: 0x10,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ];
+        assert_eq!(params_of(stmts, Isa::AArch64), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn the_kept_bits_of_a_partial_write_are_no_argument() {
+        // cl = dil: rcx keeps its upper bits, which the body never uses.
+        let stmts = vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: 1,
+                    width: 64,
+                },
+                value: Expr::bin(
+                    crate::ir::BinOp::Or,
+                    Expr::bin(crate::ir::BinOp::And, Expr::reg(1, 64), Expr::Const(!0xff)),
+                    Expr::bin(crate::ir::BinOp::And, Expr::reg(7, 64), Expr::Const(0xff)),
+                ),
+            },
+            Stmt::Ret {
+                value: Expr::bin(crate::ir::BinOp::And, Expr::reg(1, 64), Expr::Const(0xff)),
+            },
+        ];
+        assert_eq!(params_of(stmts, Isa::X86_64), vec![7]);
     }
 }

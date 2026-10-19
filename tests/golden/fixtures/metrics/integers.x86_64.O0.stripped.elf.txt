@@ -21,7 +21,7 @@ uint32_t sub_201280(uint64_t a0, uint32_t a1) {
     rbp = rsp;
     rcx = rcx & 0xffffffffffffff00 | a0 & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
-    *(uint8_t *)(rbp - 0x2) = (rax & 0xffffffffffffff00 | a1 & 0xff & 0xff) & 0xff;
+    *(uint8_t *)(rbp - 0x2) = a1 & 0xff & 0xff & 0xff;
     rax = (int8_t)(rcx) + (int8_t)(*(uint8_t *)(rbp - 0x2));
     return (int8_t)(rax);
 }
@@ -37,7 +37,7 @@ fn <unnamed> @ 0x201280 (size 32)
     rbp = rsp
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
-    store8((((rax & #0xffffffffffffff00) | ((rsi & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffffe))
+    store8((((rsi & #0xff) & #0xff) & #0xff), (rbp + #0xfffffffffffffffe))
     rax = ((sext8(rcx) + sext8(load8((rbp + #0xfffffffffffffffe)))) & #0xffffffff)
     ret (sext8(rax) & #0xffffffff)
 -- card
@@ -54,7 +54,7 @@ uint32_t sub_2012a0(uint64_t a0, uint32_t a1) {
     rbp = rsp;
     rcx = rcx & 0xffffffffffffff00 | a0 & 0xff & 0xff;
     *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
-    *(uint8_t *)(rbp - 0x2) = (rax & 0xffffffffffffff00 | a1 & 0xff & 0xff) & 0xff;
+    *(uint8_t *)(rbp - 0x2) = a1 & 0xff & 0xff & 0xff;
     rax = rcx & 0xff & 0xff & 0xff;
     rax = eax * (*(uint8_t *)(rbp - 0x2) & 0xff);
     return rax & 0xffff & 0xffff;
@@ -71,7 +71,7 @@ fn <unnamed> @ 0x2012a0 (size 32)
     rbp = rsp
     rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
     store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
-    store8((((rax & #0xffffffffffffff00) | ((rsi & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffffe))
+    store8((((rsi & #0xff) & #0xff) & #0xff), (rbp + #0xfffffffffffffffe))
     rax = ((((rcx & #0xff) & #0xff) & #0xff) & #0xffffffff)
     rax = (((rax & #0xffffffff) * (load8((rbp + #0xfffffffffffffffe)) & #0xff)) & #0xffffffff)
     ret (((rax & #0xffff) & #0xffff) & #0xffffffff)

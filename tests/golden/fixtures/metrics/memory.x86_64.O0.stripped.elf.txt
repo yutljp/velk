@@ -67,7 +67,7 @@ uint64_t sub_2012d0(uint64_t a0, uint32_t a1, uint64_t a2) {
     local_0 = rbp;
     rbp = rsp;
     *(uint64_t *)(rbp - 0x8) = a0;
-    *(uint8_t *)(rbp - 0x9) = (rax & 0xffffffffffffff00 | a1 & 0xff & 0xff) & 0xff;
+    *(uint8_t *)(rbp - 0x9) = a1 & 0xff & 0xff & 0xff;
     *(uint64_t *)(rbp - 0x18) = a2;
     *(uint64_t *)(rbp - 0x20) = 0x0;
     while (*(uint64_t *)(rbp - 0x20) < *(uint64_t *)(rbp - 0x18) /* unsigned */) {
@@ -89,7 +89,7 @@ fn <unnamed> @ 0x2012d0 (size 80)
     store64(rbp, rsp)
     rbp = rsp
     store64(rdi, (rbp + #0xfffffffffffffff8))
-    store8((((rax & #0xffffffffffffff00) | ((rsi & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffff7))
+    store8((((rsi & #0xff) & #0xff) & #0xff), (rbp + #0xfffffffffffffff7))
     store64(rdx, (rbp + #0xffffffffffffffe8))
     store64(#0x0, (rbp + #0xffffffffffffffe0))
   blk1 @ 0x2012ea:

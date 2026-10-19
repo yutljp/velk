@@ -140,9 +140,9 @@ fn copy_bytes @ 0x201220 (size 236)
 == 0x201310 fill_bytes
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x201310 */
-void fill_bytes(void) {
-    if (rdx != 0x0) {
-        rsi = rsi & 0xff & 0xff;
+void fill_bytes(void *dst, uint32_t value, uint64_t n) {
+    if (n != 0x0) {
+        value = value & 0xff & 0xff;
     } else {
         return;
     }
@@ -150,7 +150,7 @@ void fill_bytes(void) {
     return;
 }
 -- signature
-void ()
+void (void * dst, uint32_t value, uint64_t n)
 -- references
 
 -- ir

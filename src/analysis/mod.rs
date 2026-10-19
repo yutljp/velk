@@ -58,6 +58,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     jump_table::apply(&mut blocks, &tables);
     let ir = FunctionIr {
         isa: image.isa,
+        convention: crate::ir::Convention::of(image.isa, image.format, image.go),
         params: signature.params,
         ret_type: signature.ret,
         accesses: signature.accesses,

@@ -113,6 +113,7 @@ fn <unnamed> @ 0x20134d (size 147)
     ret load32(#0x20250c)
   blk17 @ 0x2013c6:
     store32(#0x0, #0x20250c)
+    eax = #0x0
     ret #0x0
 -- card
 {"addr":"0x20134d","approxTokens":108,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":147,"sizeEstimated":true,"unsupported":0}

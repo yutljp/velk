@@ -140,14 +140,14 @@ fn <unnamed> @ 0x201220 (size 240)
 == 0x201310 -
 -- decompile
 /* velk pseudo-C: sub_201310 @ 0x201310 */
-uint64_t sub_201310(void) {
-    if (rdx == 0x0) {
-        return rax;
+void sub_201310(uint64_t a0, uint64_t a1, uint64_t a2) {
+    if (a2 == 0x0) {
+        return;
     }
     goto L_0;
 }
 -- signature
-uint64_t ()
+void (uint64_t a0, uint64_t a1, uint64_t a2)
 -- references
 
 -- ir

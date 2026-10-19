@@ -228,8 +228,9 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
         }
     }
     let exempt: &[u16] = match isa {
-        // x19-x28 callee-saved, x29 frame, x30 link, 31 stack.
-        Isa::AArch64 => &[19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+        // x8 the indirect result address, x19-x28 callee-saved, x29 frame,
+        // x30 link, 31 stack.
+        Isa::AArch64 => &[8, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
         // rbx, rsp, rbp, r12-r15.
         Isa::X86_64 => &[3, 4, 5, 12, 13, 14, 15],
         Isa::Unsupported => &[],

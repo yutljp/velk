@@ -207,7 +207,7 @@ uint64_t flags_set_mode(struct flags *f, uint64_t mode) {
     t1 = mode & 0xff;
     mode = mode & 0xffffffffffffff00 | t1 + t1 & 0xff;
     rax = rax & 0xffffffffffffff00 | rax & 0xff & 0xf1 & 0xff;
-    rax = rax & 0xffffffffffffff00 | (rax & 0xff | (mode & 0xffffffffffffff00 | mode & 0xff & 0xe & 0xff) & 0xff) & 0xff;
+    rax = rax & 0xffffffffffffff00 | (rax & 0xff | mode & 0xff & 0xe & 0xff & 0xff) & 0xff;
     *(uint8_t *)(f) = rax & 0xff;
     return rax;
 }
@@ -222,7 +222,7 @@ fn flags_set_mode @ 0x2012f0 (size 18)
     t1 = (rsi & #0xff)
     rsi = ((rsi & #0xffffffffffffff00) | ((t1 + t1) & #0xff))
     rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0xf1) & #0xff))
-    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | (((rsi & #0xffffffffffffff00) | (((rsi & #0xff) & #0xe) & #0xff)) & #0xff)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | ((((rsi & #0xff) & #0xe) & #0xff) & #0xff)) & #0xff))
     store8((rax & #0xff), rdi)
     ret rax
 -- card

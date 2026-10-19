@@ -264,7 +264,7 @@ fn flags_level @ 0x201380 (size 59)
 == 0x2013c0 flags_set_mode
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2013c0 */
-uint64_t flags_set_mode(struct flags *f, uint32_t mode, uint64_t a2) {
+uint64_t flags_set_mode(struct flags *f, uint32_t mode) {
     uint64_t local_0; /* [sp-8] */
 
     rsp = rsp - 0x8;
@@ -274,15 +274,15 @@ uint64_t flags_set_mode(struct flags *f, uint32_t mode, uint64_t a2) {
     *(uint32_t *)(rbp - 0xc) = mode;
     rcx = mode;
     rax = f;
-    a2 = a2 & 0xffffffffffffff00 | rcx & 0xff & 0xff;
+    rdx = rdx & 0xffffffffffffff00 | rcx & 0xff & 0xff;
     rcx = rcx & 0xffffffffffffff00 | *(uint8_t *)(rax) & 0xff;
-    a2 = a2 & 0xffffffffffffff00 | a2 & 0xff & 0x7 & 0xff;
+    rdx = rdx & 0xffffffffffffff00 | rdx & 0xff & 0x7 & 0xff;
     rcx = rcx & 0xffffffffffffff00 | rcx & 0xff & 0xf1 & 0xff;
-    *(uint8_t *)(rax) = (rcx & 0xffffffffffffff00 | (rcx & 0xff | (a2 & 0xffffffffffffff00 | (a2 & 0xff) << 0x1 & 0xff) & 0xff) & 0xff) & 0xff;
+    *(uint8_t *)(rax) = (rcx & 0xff | (rdx & 0xff) << 0x1 & 0xff & 0xff) & 0xff & 0xff;
     return rax;
 }
 -- signature
-uint64_t (struct flags * f, uint32_t mode, uint64_t a2)
+uint64_t (struct flags * f, uint32_t mode)
 -- references
 
 -- ir
@@ -299,7 +299,7 @@ fn flags_set_mode @ 0x2013c0 (size 36)
     rcx = ((rcx & #0xffffffffffffff00) | (load8(rax) & #0xff))
     rdx = ((rdx & #0xffffffffffffff00) | (((rdx & #0xff) & #0x7) & #0xff))
     rcx = ((rcx & #0xffffffffffffff00) | (((rcx & #0xff) & #0xf1) & #0xff))
-    store8((((rcx & #0xffffffffffffff00) | (((rcx & #0xff) | (((rdx & #0xffffffffffffff00) | (((rdx & #0xff) << #0x1) & #0xff)) & #0xff)) & #0xff)) & #0xff), rax)
+    store8(((((rcx & #0xff) | ((((rdx & #0xff) << #0x1) & #0xff) & #0xff)) & #0xff) & #0xff), rax)
     ret rax
 -- card
 {"addr":"0x2013c0","approxTokens":186,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}

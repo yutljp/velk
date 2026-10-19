@@ -207,7 +207,7 @@ uint64_t sub_2012f0(uint8_t *a0, uint64_t a1) {
     t1 = a1 & 0xff;
     a1 = a1 & 0xffffffffffffff00 | t1 + t1 & 0xff;
     rax = rax & 0xffffffffffffff00 | rax & 0xff & 0xf1 & 0xff;
-    rax = rax & 0xffffffffffffff00 | (rax & 0xff | (a1 & 0xffffffffffffff00 | a1 & 0xff & 0xe & 0xff) & 0xff) & 0xff;
+    rax = rax & 0xffffffffffffff00 | (rax & 0xff | a1 & 0xff & 0xe & 0xff & 0xff) & 0xff;
     *(uint8_t *)(a0) = rax & 0xff;
     return rax;
 }
@@ -222,7 +222,7 @@ fn <unnamed> @ 0x2012f0 (size 18)
     t1 = (rsi & #0xff)
     rsi = ((rsi & #0xffffffffffffff00) | ((t1 + t1) & #0xff))
     rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0xf1) & #0xff))
-    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | (((rsi & #0xffffffffffffff00) | (((rsi & #0xff) & #0xe) & #0xff)) & #0xff)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) | ((((rsi & #0xff) & #0xe) & #0xff) & #0xff)) & #0xff))
     store8((rax & #0xff), rdi)
     ret rax
 -- card

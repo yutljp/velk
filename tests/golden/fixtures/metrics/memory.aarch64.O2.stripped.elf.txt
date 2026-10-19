@@ -128,14 +128,14 @@ fn <unnamed> @ 0x210214 (size 176)
 == 0x2102c4 -
 -- decompile
 /* velk pseudo-C: sub_2102c4 @ 0x2102c4 */
-uint64_t sub_2102c4(uint64_t a0) {
-    if (x2 != 0x0) {
+uint64_t sub_2102c4(uint64_t a0, uint64_t a1, uint64_t a2) {
+    if (a2 != 0x0) {
         return a0;
     }
     return a0;
 }
 -- signature
-uint64_t (uint64_t a0)
+uint64_t (uint64_t a0, uint64_t a1, uint64_t a2)
 -- references
 
 -- ir

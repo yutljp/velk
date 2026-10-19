@@ -32,7 +32,8 @@ fn <unnamed> @ 0x21019c (size 64)
     store32(#0x0, (sp + #0xfffffffffffffff8))
     br 0x2101ac
   blk1 @ 0x2101ac:
-    brif eq load32((sp + #0xfffffffffffffffc)), #0x0 -> 0x2101dc
+    w8 = load32((sp + #0xfffffffffffffffc))
+    brif eq w8, #0x0 -> 0x2101dc
   blk2 @ 0x2101b4:
     br 0x2101b8
   blk3 @ 0x2101b8:

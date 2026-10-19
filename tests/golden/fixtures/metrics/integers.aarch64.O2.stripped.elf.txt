@@ -47,13 +47,13 @@ fn <unnamed> @ 0x21020c (size 16)
 == 0x21021c -
 -- decompile
 /* velk pseudo-C: sub_21021c @ 0x21021c */
-uint64_t sub_21021c(void) {
+uint64_t sub_21021c(uint64_t a0, uint32_t a1) {
     /* unsupported: bitfield immr=0 imms=31 */
-    x0 = x8 - w1;
-    return x0;
+    a0 = x8 - a1;
+    return a0;
 }
 -- signature
-uint64_t ()
+uint64_t (uint64_t a0, uint32_t a1)
 -- references
 
 -- ir

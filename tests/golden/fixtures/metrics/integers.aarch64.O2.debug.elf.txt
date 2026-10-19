@@ -47,13 +47,13 @@ fn widen_mul @ 0x21020c (size 16)
 == 0x21021c mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x21021c */
-uint64_t mixed_sign(void) {
+uint64_t mixed_sign(int a, uint32_t b) {
     /* unsupported: bitfield immr=0 imms=31 */
-    x0 = x8 - w1;
-    return x0;
+    a = x8 - b;
+    return a;
 }
 -- signature
-uint64_t ()
+uint64_t (int a, uint32_t b)
 -- references
 
 -- ir

@@ -140,7 +140,7 @@ pub(crate) fn statement_registers(
         Stmt::Ret { value } => expr_reads(value, &mut reads),
         Stmt::BrIndirect { target } => expr_reads(target, &mut reads),
         Stmt::Call { convention, .. } => {
-            reads.extend(convention.arguments());
+            reads.extend(convention.call_reads());
             writes.extend(convention.clobbered());
         }
         _ => {}

@@ -137,7 +137,8 @@ fn <unnamed> @ 0x2102f8 (size 56)
     store64(#0x0, (sp + #0xfffffffffffffff0))
     br 0x210308
   blk1 @ 0x210308:
-    brif eq (load8((load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xfffffffffffffff0)))) & #0xffffffff), #0x0 -> 0x210330
+    x8 = (load8((load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xfffffffffffffff0)))) & #0xffffffff)
+    brif eq (x8 & #0xffffffff), #0x0 -> 0x210330
   blk2 @ 0x21031c:
     br 0x210320
   blk3 @ 0x210320:

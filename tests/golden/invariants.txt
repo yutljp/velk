@@ -1,104 +1,28 @@
-metrics/memory.aarch64.O2.debug.elf 0x2102c4 fill_bytes: reads x2 without assigning it
-metrics/memory.aarch64.O2.stripped.elf 0x2102c4 -: reads x2 without assigning it
 metrics/memory.aarch64.O2.stripped.elf 0x2102d0 -: goto L_2102d4 has no label
-metrics/memory.x86_64.O2.stripped.elf 0x201310 -: reads rax without assigning it
-metrics/memory.x86_64.O2.stripped.elf 0x201310 -: reads rdx without assigning it
-metrics/structs.aarch64.O0.debug.elf 0x2102f8 big_make: reads x8 without assigning it
-metrics/structs.aarch64.O0.stripped.elf 0x2102f8 -: reads x8 without assigning it
-metrics/structs.aarch64.O2.debug.elf 0x2102a8 big_make: reads x8 without assigning it
-metrics/structs.aarch64.O2.stripped.elf 0x2102a8 -: reads x8 without assigning it
 pe64.exe 0x140001090 -: reads rax without assigning it
 pe64.obj 0x90 entry: reads rax without assigning it
-rust_demo 0x15040 __rustc::__rust_no_alloc_shim_is_unstable_v2: reads rax without assigning it
-rust_demo 0x1e2d0 core::ptr::drop_glue::<alloc::vec::Vec<u8>>: reads rax without assigning it
-rust_demo 0x1eba0 core::ptr::drop_glue::<std::sys::backtrace::_print_fmt::{closure#0}>: reads rax without assigning it
-rust_demo 0x1ebc0 core::ptr::drop_glue::<alloc::string::String>: reads rax without assigning it
-rust_demo 0x1ec20 core::ptr::drop_glue::<std::ffi::os_str::OsString>: reads rax without assigning it
-rust_demo 0x1f030 core::ptr::drop_glue::<<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError>: reads rax without assigning it
 rust_demo 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
 rust_demo 0x3cba0 std::sys::io::error::unix::is_interrupted: reads rax without assigning it
 rust_demo 0x3f3f0 <std::sys::stdio::unix::Stderr as std::io::Write>::is_write_vectored: reads rax without assigning it
 rust_demo 0x3f700 <alloc::vec::Vec<u8> as std::io::Write>::is_write_vectored: reads rax without assigning it
-rust_demo 0x428d0 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::provide: reads rax without assigning it
-rust_demo 0x44d92 <alloc::vec::Vec<u8> as core::ops::drop::Drop>::drop: reads rax without assigning it
-rust_demo 0x49cdb <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_str: reads rdx without assigning it
 rust_demo 0x52b10 <<core::io::error::OsFunctions>::DEFAULT::{closure#1} as core::ops::function::FnOnce<(i32,)>>::call_once: reads rax without assigning it
-rust_demo 0x52b50 _fini: reads rax without assigning it
-rust_probe 0x15040 __rustc::__rust_no_alloc_shim_is_unstable_v2: reads rax without assigning it
-rust_probe 0x1e2d0 core::ptr::drop_glue::<alloc::vec::Vec<u8>>: reads rax without assigning it
-rust_probe 0x1eba0 core::ptr::drop_glue::<std::sys::backtrace::_print_fmt::{closure#0}>: reads rax without assigning it
-rust_probe 0x1ebc0 core::ptr::drop_glue::<alloc::string::String>: reads rax without assigning it
-rust_probe 0x1ec20 core::ptr::drop_glue::<std::ffi::os_str::OsString>: reads rax without assigning it
-rust_probe 0x1f030 core::ptr::drop_glue::<<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError>: reads rax without assigning it
 rust_probe 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: reads rax without assigning it
 rust_probe 0x3cba0 std::sys::io::error::unix::is_interrupted: reads rax without assigning it
 rust_probe 0x3f3f0 <std::sys::stdio::unix::Stderr as std::io::Write>::is_write_vectored: reads rax without assigning it
 rust_probe 0x3f700 <alloc::vec::Vec<u8> as std::io::Write>::is_write_vectored: reads rax without assigning it
-rust_probe 0x428d0 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::provide: reads rax without assigning it
-rust_probe 0x44d92 <alloc::vec::Vec<u8> as core::ops::drop::Drop>::drop: reads rax without assigning it
-rust_probe 0x49cdb <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_str: reads rdx without assigning it
 rust_probe 0x52b10 <<core::io::error::OsFunctions>::DEFAULT::{closure#1} as core::ops::function::FnOnce<(i32,)>>::call_once: reads rax without assigning it
-rust_probe 0x52b50 _fini: reads rax without assigning it
-rust_probe_stripped 0x15000 -: reads rax without assigning it
 rust_probe_stripped 0x161a0 -: reads rax without assigning it
-rust_probe_stripped 0x1de80 -: reads rax without assigning it
-rust_probe_stripped 0x1e2d0 -: reads rax without assigning it
-rust_probe_stripped 0x1eba0 -: reads rax without assigning it
-rust_probe_stripped 0x1ebc0 -: reads rax without assigning it
-rust_probe_stripped 0x1ec20 -: reads rax without assigning it
-rust_probe_stripped 0x1f2d9 -: reads rdx without assigning it
-rust_probe_stripped 0x1f2d9 -: reads rdi without assigning it
 rust_probe_stripped 0x1fc6b -: reads rax without assigning it
 rust_probe_stripped 0x1fc6b -: reads rsi without assigning it
 rust_probe_stripped 0x1fcf2 -: reads rax without assigning it
-rust_probe_stripped 0x210d2 -: reads r8 without assigning it
-rust_probe_stripped 0x21d30 -: reads rcx without assigning it
-rust_probe_stripped 0x21d30 -: reads rdx without assigning it
-rust_probe_stripped 0x21d30 -: reads rsi without assigning it
 rust_probe_stripped 0x21da1 -: reads rsi without assigning it
-rust_probe_stripped 0x21df2 -: reads rsi without assigning it
-rust_probe_stripped 0x2caa0 -: reads r8 without assigning it
-rust_probe_stripped 0x2cac1 -: reads rsi without assigning it
-rust_probe_stripped 0x2cac1 -: reads rdi without assigning it
-rust_probe_stripped 0x2cac1 -: reads r8 without assigning it
-rust_probe_stripped 0x2cb50 -: reads r8 without assigning it
-rust_probe_stripped 0x2cba1 -: reads r8 without assigning it
 rust_probe_stripped 0x3213e -: goto L_32863 has no label
 rust_probe_stripped 0x34b8a -: reads rax without assigning it
-rust_probe_stripped 0x37630 -: reads rsi without assigning it
-rust_probe_stripped 0x37630 -: reads rdi without assigning it
-rust_probe_stripped 0x376b8 -: reads rsi without assigning it
-rust_probe_stripped 0x37712 -: reads rsi without assigning it
-rust_probe_stripped 0x377ee -: reads rsi without assigning it
-rust_probe_stripped 0x3783a -: reads rsi without assigning it
-rust_probe_stripped 0x37886 -: reads rsi without assigning it
-rust_probe_stripped 0x378a7 -: reads rsi without assigning it
-rust_probe_stripped 0x378e5 -: reads rsi without assigning it
-rust_probe_stripped 0x37930 -: reads rsi without assigning it
-rust_probe_stripped 0x37951 -: reads rsi without assigning it
-rust_probe_stripped 0x37951 -: reads rdi without assigning it
-rust_probe_stripped 0x379ab -: reads rsi without assigning it
-rust_probe_stripped 0x37a6a -: reads rsi without assigning it
-rust_probe_stripped 0x37abe -: reads rsi without assigning it
-rust_probe_stripped 0x37b5b -: reads rsi without assigning it
-rust_probe_stripped 0x37b5b -: reads rdi without assigning it
 rust_probe_stripped 0x37c0d -: reads rax without assigning it
 rust_probe_stripped 0x37c1c -: reads rax without assigning it
 rust_probe_stripped 0x37c36 -: reads rax without assigning it
 rust_probe_stripped 0x37c45 -: reads rax without assigning it
-rust_probe_stripped 0x37d8a -: reads r8 without assigning it
-rust_probe_stripped 0x37d8a -: reads r9 without assigning it
-rust_probe_stripped 0x37fe2 -: reads rsi without assigning it
-rust_probe_stripped 0x37fe2 -: reads r8 without assigning it
-rust_probe_stripped 0x37fe2 -: reads r9 without assigning it
-rust_probe_stripped 0x38141 -: reads rsi without assigning it
-rust_probe_stripped 0x38141 -: reads r8 without assigning it
-rust_probe_stripped 0x38141 -: reads r9 without assigning it
-rust_probe_stripped 0x381b2 -: reads rsi without assigning it
-rust_probe_stripped 0x381b2 -: reads r8 without assigning it
 rust_probe_stripped 0x38779 -: reads rax without assigning it
-rust_probe_stripped 0x38779 -: reads rsi without assigning it
-rust_probe_stripped 0x38779 -: reads r8 without assigning it
 rust_probe_stripped 0x3b8e0 -: reads rax without assigning it
 rust_probe_stripped 0x3cbcb -: reads rax without assigning it
 rust_probe_stripped 0x3cbce -: reads rax without assigning it
@@ -137,14 +61,8 @@ rust_probe_stripped 0x3cc31 -: reads rax without assigning it
 rust_probe_stripped 0x3cc34 -: reads rax without assigning it
 rust_probe_stripped 0x3cc37 -: reads rax without assigning it
 rust_probe_stripped 0x3cc3a -: reads rax without assigning it
-rust_probe_stripped 0x3ee80 -: reads rsi without assigning it
 rust_probe_stripped 0x3f973 -: reads rax without assigning it
 rust_probe_stripped 0x3f97f -: reads rax without assigning it
 rust_probe_stripped 0x3f996 -: reads rax without assigning it
 rust_probe_stripped 0x3f9a2 -: reads rax without assigning it
-rust_probe_stripped 0x428d0 -: reads rax without assigning it
-rust_probe_stripped 0x4da80 -: reads rsi without assigning it
-rust_probe_stripped 0x51e68 -: reads rcx without assigning it
-rust_probe_stripped 0x51f0e -: reads rcx without assigning it
 rust_probe_stripped 0x52b10 -: reads rax without assigning it
-rust_probe_stripped 0x52b50 -: reads rax without assigning it

@@ -341,7 +341,9 @@ fn reads_register(expr: &crate::ir::Expr, register: u16) -> bool {
 
 /// Marks the function void when the return register is never written, the body
 /// has a side effect, and the register is used only by a bare return. Requiring
-/// a side effect keeps `int id(int x)` from being mistaken for a void function.
+/// a side effect keeps `int id(int x)` from being mistaken for a void function
+/// where the return register also carries the first argument; elsewhere a
+/// return register nothing writes holds no result.
 pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
     use crate::ir::{Expr, Stmt};
     let mut written = false;
@@ -380,11 +382,13 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
                     used_elsewhere |= reads_register(target, arch::RETURN)
                 }
                 Stmt::Switch { index, .. } => used_elsewhere |= reads_register(index, arch::RETURN),
-                Stmt::Unsupported { .. } => {}
+                // An unsupported instruction may write the return register.
+                Stmt::Unsupported { .. } => return,
             }
         }
     }
-    if !saw_ret || written || !side_effect || used_elsewhere {
+    let carries_argument = ir.convention.arguments().contains(&arch::RETURN);
+    if !saw_ret || written || (carries_argument && !side_effect) || used_elsewhere {
         return;
     }
     ir.ret_type = CType::Void;
@@ -415,5 +419,34 @@ pub(crate) fn apply_dwarf_types(image: &Image, addr: u64, ir: &mut FunctionIr) {
     }
     if let Some(ret) = types.ret {
         ir.ret_type = ret;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::apply_void_return;
+    use crate::ir::{CType, Expr, FunctionIr, Stmt};
+    use crate::loader::Isa;
+
+    fn returns_register(isa: Isa) -> CType {
+        let mut ir = FunctionIr::single_block(
+            isa,
+            vec![Stmt::Ret {
+                value: Expr::reg(0, 64),
+            }],
+        );
+        apply_void_return(&mut ir);
+        ir.ret_type
+    }
+
+    #[test]
+    fn a_return_register_nothing_writes_holds_no_result() {
+        assert_eq!(returns_register(Isa::X86_64), CType::Void);
+    }
+
+    #[test]
+    fn a_return_register_that_carries_the_first_argument_may_return_it() {
+        // AArch64 `int id(int x) { return x; }` is a bare `ret`.
+        assert_ne!(returns_register(Isa::AArch64), CType::Void);
     }
 }

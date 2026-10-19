@@ -128,14 +128,14 @@ fn copy_bytes @ 0x210214 (size 176)
 == 0x2102c4 fill_bytes
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x2102c4 */
-uint64_t fill_bytes(void *dst) {
-    if (x2 != 0x0) {
+uint64_t fill_bytes(void *dst, uint64_t value, uint64_t n) {
+    if (n != 0x0) {
         return dst;
     }
     return dst;
 }
 -- signature
-uint64_t (void * dst)
+uint64_t (void * dst, uint64_t value, uint64_t n)
 -- references
 
 -- ir

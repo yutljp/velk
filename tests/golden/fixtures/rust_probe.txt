@@ -547,7 +547,7 @@
 -- decompile
 /* velk pseudo-C: rust_probe::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
-void rust_probe__main(void) {
+uint32_t rust_probe__main(void) {
     uint32_t local_0; /* [sp-14] */
     uint64_t local_1; /* [sp-10] */
     uint64_t local_2; /* [sp-8] */
@@ -555,14 +555,15 @@ void rust_probe__main(void) {
     rsp = rsp - 0x18;
     local_0 = 0x3;
     local_1 = rsp + 0x4;
-    local_2 = qword_55aa8;
+    rax = qword_55aa8;
+    local_2 = rax;
     rdi = 0x5091;
     rsi = rsp + 0x8;
     sub_0();
-    return;
+    return rax;
 }
 -- signature
-void ()
+uint32_t ()
 -- references
 0x55aa8 .got
 -- ir
@@ -571,7 +572,8 @@ fn rust_probe::main @ 0x14f90 (size 57)
     rsp = (rsp - #0x18)
     store32(#0x3, (rsp + #0x4))
     store64((rsp + #0x4), (rsp + #0x8))
-    store64(load64(#0x55aa8), (rsp + #0x10))
+    rax = load64(#0x55aa8)
+    store64(rax, (rsp + #0x10))
     rdi = #0x5091
     rsi = (rsp + #0x8)
     call 0x0

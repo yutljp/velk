@@ -66,11 +66,11 @@ fn <unnamed> @ 0x210350 (size 44)
 -- decompile
 /* velk pseudo-C: sub_21037c @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
-uint32_t sub_21037c(void) {
+uint32_t sub_21037c(uint32_t a0, uint32_t a1) {
     uint32_t local_0; /* [sp-18] */
 
     /* unsupported: STUR at 0x210388 */
-    local_0 = w1;
+    local_0 = a1;
     /* unsupported: LDUR at 0x210390 */
     w10 = 0x3;
     /* unsupported: UDIV at 0x210398 */
@@ -80,12 +80,12 @@ uint32_t sub_21037c(void) {
     t65 = x8;
     x8 = 0x2206f0;
     x8 = qword_2206f0[w9];
-    w0 = local_0;
+    a0 = local_0;
     /* unsupported: BLR at 0x2103b4 */
-    return w0;
+    return a0;
 }
 -- signature
-uint32_t ()
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 0x2206f0 .data.rel.ro
 -- ir
@@ -297,6 +297,7 @@ uint32_t sub_210564(uint64_t a0) {
 
     local_0 = a0;
     a0 = a0;
+    x8 = 0x8;
     local_1 = 0x8;
     x1 = 0x1;
     x2 = 0x2;
@@ -317,6 +318,7 @@ fn <unnamed> @ 0x210564 (size 76)
   blk0 @ 0x210564:
     store64(x0, (sp + #0xffffffffffffffe8))
     x0 = x0
+    x8 = #0x8
     store64(#0x8, (sp + #0xffffffffffffffe0))
     x1 = #0x1
     x2 = #0x2

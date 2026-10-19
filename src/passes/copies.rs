@@ -366,7 +366,7 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
         Stmt::Ret { value } => total += count(value, reg),
         Stmt::BrIndirect { target } => total += count(target, reg),
         Stmt::Call { convention, .. } => {
-            total += usize::from(convention.arguments().contains(&reg))
+            total += usize::from(convention.call_reads().any(|read| read == reg))
         }
         _ => {}
     }

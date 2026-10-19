@@ -39,6 +39,17 @@ impl Convention {
         }
     }
 
+    /// Registers a call may read: its arguments, plus AArch64's indirect
+    /// result register and the vector count a variadic SysV call takes in al.
+    pub fn call_reads(self) -> impl Iterator<Item = u16> {
+        let extra: &[u16] = match self {
+            Self::Aapcs64 => &[8],
+            Self::SysV => &[0],
+            Self::Win64 | Self::GoAmd64 => &[],
+        };
+        self.arguments().iter().chain(extra).copied()
+    }
+
     /// Registers a call may leave changed.
     pub fn clobbered(self) -> &'static [u16] {
         match self {
@@ -438,6 +449,8 @@ pub struct Block {
 #[derive(Debug, Clone)]
 pub struct FunctionIr {
     pub isa: Isa,
+    /// The calling convention the function itself follows.
+    pub convention: Convention,
     pub params: Vec<Param>,
     pub ret_type: CType,
     pub accesses: Vec<Access>,
@@ -456,6 +469,7 @@ impl FunctionIr {
     pub(crate) fn single_block(isa: Isa, stmts: Vec<Stmt>) -> Self {
         Self {
             isa,
+            convention: Convention::of(isa, crate::loader::Format::Elf, false),
             params: Vec::new(),
             ret_type: CType::U64,
             accesses: Vec::new(),
