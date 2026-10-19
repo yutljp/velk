@@ -1,0 +1,160 @@
+# x64_loops.o: elf x86_64 no entry, 4 functions, 0 lift failures, 1 unsupported, 0 gotos
+0x0 33 count_bits symtab
+0x30 26 sum_until symtab
+0x50 40 sum_till_neg symtab
+0x80 44 sum_until_zero symtab
+
+== 0x0 count_bits
+-- decompile
+/* velk pseudo-C: count_bits @ 0x0 */
+uint32_t count_bits(uint32_t a0) {
+    rax = 0x0;
+    if (a0 & a0 == 0x0) {
+        return rax;
+    }
+    ecx = a0;
+    do {
+        edx = a0 & 0x1;
+        rax = eax + edx;
+        ecx = ecx >> 0x1;
+        a0 = ecx;
+    } while (a0 > 0x1 /* unsigned */);
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn count_bits @ 0x0 (size 33)
+  blk0 @ 0x0:
+    rax = #0x0
+    brif eq (edi & edi), #0x0 -> 0x20
+  blk1 @ 0x6:
+    ecx = edi
+  blk2 @ 0x10:
+    edx = (edi & #0x1)
+    rax = (((rax & #0xffffffff) + edx) & #0xffffffff)
+    ecx = (ecx >> #0x1)
+    edi = ecx
+    brif hi edi, #0x1 -> 0x10
+  blk3 @ 0x20:
+    ret rax
+-- card
+{"addr":"0x0","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab"],"section":".text","size":33,"unsupported":0}
+
+== 0x30 sum_until
+-- decompile
+/* velk pseudo-C: sum_until @ 0x30 */
+int32_t sum_until(int32_t a0) {
+    if (a0 & a0 <= 0x0) {
+        return 0x0;
+    }
+    return (((((a0 - 0x2) & 0xffffffff) * ((a0 - 0x1) & 0xffffffff) >> 0x1) + a0 * 0x2 - 0x1) & 0xffffffff);
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn sum_until @ 0x30 (size 26)
+  blk0 @ 0x30:
+    brif le ((rdi & #0xffffffff) & (rdi & #0xffffffff)), #0x0 -> 0x47
+  blk1 @ 0x34:
+    ret ((((((((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff)) >> #0x1) + (rdi * #0x2)) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+  blk2 @ 0x47:
+    ret #0x0
+-- card
+{"addr":"0x30","approxTokens":150,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["symtab"],"section":".text","size":26,"unsupported":0}
+
+== 0x50 sum_till_neg
+-- decompile
+/* velk pseudo-C: sum_till_neg @ 0x50 */
+int32_t sum_till_neg(uint32_t *a0, int32_t a1) {
+    rcx = 0x0;
+    t1 = a1;
+    a1 = (t1 & t1 <= 0x0 ? 0x0 : t1);
+    edx = 0x0;
+    do {
+        rax = edx;
+        if (a1 == rcx) {
+            break;
+        }
+        r8 = *(uint32_t *)(a0 + rcx * 0x4);
+        edx = r8 + rax;
+        rcx = rcx + 0x1;
+        t1 = r8d;
+    } while (t1 & t1 >= 0x0);
+    return eax;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn sum_till_neg @ 0x50 (size 40)
+  blk0 @ 0x50:
+    rcx = #0x0
+    t1 = (rsi & #0xffffffff)
+    rsi = (select le (t1 & t1), #0x0 ? #0x0, t1 & #0xffffffff)
+    rdx = #0x0
+  blk1 @ 0x60:
+    rax = (rdx & #0xffffffff)
+    brif eq rsi, rcx -> 0x77
+  blk2 @ 0x67:
+    r8 = (load32((rdi + (rcx * #0x4))) & #0xffffffff)
+    rdx = ((r8 + rax) & #0xffffffff)
+    rcx = (rcx + #0x1)
+    t1 = (r8 & #0xffffffff)
+    brif ge (t1 & t1), #0x0 -> 0x60
+  blk3 @ 0x77:
+    ret eax
+-- card
+{"addr":"0x50","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab"],"section":".text","size":40,"unsupported":0}
+
+== 0x80 sum_until_zero
+-- decompile
+/* velk pseudo-C: sum_until_zero @ 0x80 */
+int32_t sum_until_zero(uint32_t *a0, int64_t a1) {
+    if ((a1 & 0xffffffff) & (a1 & 0xffffffff) <= 0x0) {
+        return 0x0;
+    }
+    rcx = (a1 & 0xffffffff);
+    a1 = 0x0;
+    rax = 0x0;
+    do {
+        r8d = *(uint32_t *)(a0 + a1 * 0x4);
+        if (r8d & r8d == 0x0) {
+            break;
+        }
+        /* unsupported: cmov without compare at 0x99 */
+        rax = eax + r8d;
+        a1 = a1 + 0x1;
+    } while (rcx != a1);
+    return rax;
+}
+-- signature
+int32_t (uint32_t * a0, int64_t a1)
+-- references
+
+-- ir
+fn sum_until_zero @ 0x80 (size 44)
+  blk0 @ 0x80:
+    brif le ((rsi & #0xffffffff) & (rsi & #0xffffffff)), #0x0 -> 0xa9
+  blk1 @ 0x84:
+    rcx = (rsi & #0xffffffff)
+    rsi = #0x0
+    rax = #0x0
+  blk2 @ 0x90:
+    r8d = load32((rdi + (rsi * #0x4)))
+    brif eq (r8d & r8d), #0x0 -> 0xa8
+  blk3 @ 0x99:
+    unsupported: cmov without compare at 0x99
+    rax = (((rax & #0xffffffff) + r8d) & #0xffffffff)
+    rsi = (rsi + #0x1)
+    brif ne rcx, rsi -> 0x90
+  blk4 @ 0xa8:
+    ret rax
+  blk5 @ 0xa9:
+    ret #0x0
+-- card
+{"addr":"0x80","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab"],"section":".text","size":44,"unsupported":1}

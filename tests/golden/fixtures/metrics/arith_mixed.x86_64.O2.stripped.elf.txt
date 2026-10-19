@@ -1,0 +1,156 @@
+# metrics/arith_mixed.x86_64.O2.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 2 gotos
+0x201190 16 - prologue
+0x2011a0 48 - prologue
+0x2011d0 16 - prologue
+0x2011e0 140 - prologue
+
+== 0x201190 -
+-- decompile
+/* velk pseudo-C: sub_201190 @ 0x201190 */
+uint32_t sub_201190(uint32_t a0, uint32_t a1, uint32_t a2) {
+    eax = a0 + a1;
+    return eax + a2;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201190 (size 16)
+  blk0 @ 0x201190:
+    eax = (rdi + rsi)
+    ret (eax + edx)
+-- card
+{"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2011a0 -
+-- decompile
+/* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
+int32_t sub_2011a0(int32_t a0) {
+    if (a0 & a0 <= 0x0) {
+        return 0x0;
+    }
+    rcx = ((a0 - 0x2) & 0xffffffff) * ((a0 - 0x1) & 0xffffffff);
+    rax = ((a0 - 0x3) & 0xffffffff) * rcx >> 0x1;
+    rax = eax * 0x55555556;
+    rax = eax + a0;
+    rcx = rcx >> 0x1;
+    return ((eax + ((rcx + rcx * 0x2) & 0xffffffff) - 0x1) & 0xffffffff);
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2011a0 (size 48)
+  blk0 @ 0x2011a0:
+    brif le ((rdi & #0xffffffff) & (rdi & #0xffffffff)), #0x0 -> 0x2011cb
+  blk1 @ 0x2011a4:
+    rcx = (((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff))
+    rax = ((((rdi + #0xfffffffffffffffd) & #0xffffffff) * rcx) >> #0x1)
+    rax = (((rax & #0xffffffff) * #0x55555556) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + (rdi & #0xffffffff)) & #0xffffffff)
+    rcx = (rcx >> #0x1)
+    ret (((((rax & #0xffffffff) + ((rcx + (rcx * #0x2)) & #0xffffffff)) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+  blk2 @ 0x2011cb:
+    ret #0x0
+-- card
+{"addr":"0x2011a0","approxTokens":186,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+
+== 0x2011d0 -
+-- decompile
+/* velk pseudo-C: sub_2011d0 @ 0x2011d0 */
+/* struct: a0 +0x4:uint32_t */
+uint32_t sub_2011d0(uint32_t *a0) {
+    return a0->field_0x4 + a0->field_0x0;
+}
+-- signature
+uint32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2011d0 (size 16)
+  blk0 @ 0x2011d0:
+    ret (load32((rdi + #0x4)) + load32(rdi))
+-- card
+{"accesses":["a0 +0x4:uint32_t"],"addr":"0x2011d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2011e0 -
+-- decompile
+/* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
+int32_t sub_2011e0(uint32_t a0, int64_t a1) {
+    if ((a1 & 0xffffffff) & (a1 & 0xffffffff) <= 0x0) {
+        return 0x0;
+    }
+    rcx = (a1 & 0xffffffff);
+    switch (a1) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        goto L_201260;
+    case 8:
+        rdx = ecx & 0x7ffffff8;
+        rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
+        /* unsupported: Pxor at 0x20120a */
+        a1 = 0x0;
+        /* unsupported: Pxor at 0x201210 */
+        do {
+            /* unsupported (4 steps): Movdqu at 0x201220, Paddd at 0x201225, Movdqu at 0x201229, Paddd at 0x20122f */
+            a1 = a1 + 0x20;
+        } while (rax != a1);
+        /* unsupported (6 steps): Paddd at 0x20123c, Pshufd at 0x201240, Paddd at 0x201245, Pshufd at 0x201249, Paddd at 0x20124e, Movd at 0x201252 */
+        if (rdx == rcx) {
+            return rax;
+        }
+        rax = eax + *(uint32_t *)(a0 + rdx * 0x4);
+        if (rcx != rdx + 0x1) { goto L_201260; }
+    }
+}
+-- signature
+int32_t (uint32_t a0, int64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2011e0 (size 140)
+  blk0 @ 0x2011e0:
+    brif le ((rsi & #0xffffffff) & (rsi & #0xffffffff)), #0x0 -> 0x2011f1
+  blk1 @ 0x2011e4:
+    rcx = (rsi & #0xffffffff)
+    brif cs (rsi & #0xffffffff), #0x8 -> 0x2011f4
+  blk2 @ 0x2011eb:
+    br 0x201260
+  blk3 @ 0x2011f1:
+    ret #0x0
+  blk4 @ 0x2011f4:
+    rdx = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
+    rax = ((((((rcx & #0xffffffff) >> #0x3) & #0xffffffff) & #0xfffffff) & #0xffffffff) << #0x5)
+    unsupported: Pxor at 0x20120a
+    rsi = #0x0
+    unsupported: Pxor at 0x201210
+  blk5 @ 0x201220:
+    unsupported: Movdqu at 0x201220
+    unsupported: Paddd at 0x201225
+    unsupported: Movdqu at 0x201229
+    unsupported: Paddd at 0x20122f
+    rsi = (rsi + #0x20)
+    brif ne rax, rsi -> 0x201220
+  blk6 @ 0x20123c:
+    unsupported: Paddd at 0x20123c
+    unsupported: Pshufd at 0x201240
+    unsupported: Paddd at 0x201245
+    unsupported: Pshufd at 0x201249
+    unsupported: Paddd at 0x20124e
+    unsupported: Movd at 0x201252
+    brif eq rdx, rcx -> 0x20126b
+  blk7 @ 0x20125b:
+    rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)
+    brif ne rcx, (rdx + #0x1) -> 0x201260
+  blk8 @ 0x20126b:
+    ret rax
+-- card
+{"addr":"0x2011e0","approxTokens":144,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":140,"sizeEstimated":true,"unsupported":12}

@@ -1,0 +1,94 @@
+# metrics/l0_arith.aarch64.O0.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x21019c 44 add3 symtab,dwarf
+0x2101c8 32 scale symtab,dwarf
+0x2101e8 68 pick symtab,dwarf
+0x21022c 28 negate symtab,dwarf
+
+== 0x21019c add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x21019c */
+int add3(int a, int b, int c) {
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn add3 @ 0x21019c (size 44)
+  blk0 @ 0x21019c:
+    ret ((w0 + w1) + w2)
+-- card
+{"addr":"0x21019c","approxTokens":162,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+
+== 0x2101c8 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x2101c8 */
+int scale(int x) {
+    return x * 0x7 + 0x3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn scale @ 0x2101c8 (size 32)
+  blk0 @ 0x2101c8:
+    ret ((w0 * #0x7) + #0x3)
+-- card
+{"addr":"0x2101c8","approxTokens":144,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+
+== 0x2101e8 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x2101e8 */
+int pick(int a, int b) {
+    uint32_t local_0; /* [sp-4] */
+    uint32_t local_1; /* [sp-8] */
+    uint32_t local_2; /* [sp-c] */
+
+    if (a - b <= b) {
+        local_2 = local_1;
+        return local_2;
+    }
+    local_2 = local_0;
+    return local_2;
+}
+-- signature
+int (int a, int b)
+-- references
+
+-- ir
+fn pick @ 0x2101e8 (size 68)
+  blk0 @ 0x2101e8:
+    store32(w0, (sp + #0xfffffffffffffffc))
+    store32(w1, (sp + #0xfffffffffffffff8))
+    brif le (w0 - w1), w1 -> 0x210214
+  blk1 @ 0x210204:
+    br 0x210208
+  blk2 @ 0x210208:
+    store32(load32((sp + #0xfffffffffffffffc)), (sp + #0xfffffffffffffff4))
+    br 0x210220
+  blk3 @ 0x210214:
+    store32(load32((sp + #0xfffffffffffffff8)), (sp + #0xfffffffffffffff4))
+    br 0x210220
+  blk4 @ 0x210220:
+    ret load32((sp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x2101e8","approxTokens":198,"blocks":5,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
+
+== 0x21022c negate
+-- decompile
+/* velk pseudo-C: negate @ 0x21022c */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x21022c (size 28)
+  blk0 @ 0x21022c:
+    ret (#0x0 - w0)
+-- card
+{"addr":"0x21022c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}

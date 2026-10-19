@@ -1,0 +1,313 @@
+# metrics/structs.x86_64.O0.debug.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201240 40 rect_area symtab,dwarf
+0x201270 109 record_total symtab,dwarf
+0x2012e0 36 point_add symtab,dwarf
+0x201310 52 big_make symtab,dwarf
+0x201350 25 big_sum symtab,dwarf
+0x201370 13 word_low_byte symtab,dwarf
+0x201380 59 flags_level symtab,dwarf
+0x2013c0 36 flags_set_mode symtab,dwarf
+
+== 0x201240 rect_area
+-- decompile
+/* velk pseudo-C: rect_area @ 0x201240 */
+int rect_area(struct rect *r) {
+    return (r->max - r->min) * (r->field_0xc - r->field_0x4);
+}
+-- signature
+int (struct rect * r)
+-- references
+
+-- ir
+fn rect_area @ 0x201240 (size 40)
+  blk0 @ 0x201240:
+    ret (((((load32((rdi + #0x8)) & #0xffffffff) - load32(rdi)) & #0xffffffff) * (((load32((rdi + #0xc)) & #0xffffffff) - load32((rdi + #0x4))) & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x201240","approxTokens":180,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+
+== 0x201270 record_total
+-- decompile
+/* velk pseudo-C: record_total @ 0x201270 */
+long record_total(struct record *items, int n) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = items;
+    *(uint32_t *)(rbp - 0xc) = n;
+    *(uint64_t *)(rbp - 0x18) = 0x0;
+    *(uint32_t *)(rbp - 0x1c) = 0x0;
+    while (*(uint32_t *)(rbp - 0x1c) < *(uint32_t *)(rbp - 0xc)) {
+        rax = *(uint64_t *)(rbp - 0x8);
+        rcx = (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
+        rax = rax + rcx;
+        rax = *(uint64_t *)(rax + 0x8);
+        rcx = *(uint64_t *)(rbp - 0x8);
+        rdx = (int32_t)(*(uint32_t *)(rbp - 0x1c)) * 0x18;
+        rcx = rcx + rdx;
+        rcx = (int16_t)(*(uint16_t *)(rcx + 0x10));
+        rax = rax * rcx;
+        rax = rax + *(uint64_t *)(rbp - 0x18);
+        *(uint64_t *)(rbp - 0x18) = rax;
+        *(uint32_t *)(rbp - 0x1c) = *(uint32_t *)(rbp - 0x1c) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return *(uint64_t *)(rbp - 0x18);
+}
+-- signature
+long (struct record * items, int n)
+-- references
+
+-- ir
+fn record_total @ 0x201270 (size 109)
+  blk0 @ 0x201270:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    store64(#0x0, (rbp + #0xffffffffffffffe8))
+    store32(#0x0, (rbp + #0xffffffffffffffe4))
+  blk1 @ 0x20128a:
+    rax = (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff)
+    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x2012d7
+  blk2 @ 0x201296:
+    rax = load64((rbp + #0xfffffffffffffff8))
+    rcx = (sext32(load32((rbp + #0xffffffffffffffe4))) * #0x18)
+    rax = (rax + rcx)
+    rax = load64((rax + #0x8))
+    rcx = load64((rbp + #0xfffffffffffffff8))
+    rdx = (sext32(load32((rbp + #0xffffffffffffffe4))) * #0x18)
+    rcx = (rcx + rdx)
+    rcx = sext16(load16((rcx + #0x10)))
+    rax = (rax * rcx)
+    rax = (rax + load64((rbp + #0xffffffffffffffe8)))
+    store64(rax, (rbp + #0xffffffffffffffe8))
+    store32((load32((rbp + #0xffffffffffffffe4)) + #0x1), (rbp + #0xffffffffffffffe4))
+    br 0x20128a
+  blk3 @ 0x2012d7:
+    rsp = (rsp + #0x8)
+    ret load64((rbp + #0xffffffffffffffe8))
+-- card
+{"addr":"0x201270","approxTokens":240,"blocks":4,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf"],"section":".text","size":109,"unsupported":0}
+
+== 0x2012e0 point_add
+-- decompile
+/* velk pseudo-C: point_add @ 0x2012e0 */
+struct point point_add(struct point a, struct point b) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x10) = a;
+    *(uint64_t *)(rbp - 0x18) = b;
+    *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x10) + *(uint32_t *)(rbp - 0x18);
+    *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0xc) + *(uint32_t *)(rbp - 0x14);
+    return *(uint64_t *)(rbp - 0x8);
+}
+-- signature
+struct point (struct point a, struct point b)
+-- references
+
+-- ir
+fn point_add @ 0x2012e0 (size 36)
+  blk0 @ 0x2012e0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff0))
+    store64(rsi, (rbp + #0xffffffffffffffe8))
+    store32((((load32((rbp + #0xfffffffffffffff0)) & #0xffffffff) + load32((rbp + #0xffffffffffffffe8))) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    store32((((load32((rbp + #0xfffffffffffffff4)) & #0xffffffff) + load32((rbp + #0xffffffffffffffec))) & #0xffffffff), (rbp + #0xfffffffffffffffc))
+    ret load64((rbp + #0xfffffffffffffff8))
+-- card
+{"addr":"0x2012e0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
+
+== 0x201310 big_make
+-- decompile
+/* velk pseudo-C: big_make @ 0x201310 */
+/* struct: seed +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
+struct big big_make(long seed, uint64_t a1) {
+    uint64_t local_0; /* [sp-8] */
+    uint64_t local_1; /* [sp-10] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    local_1 = a1;
+    *(uint64_t *)(seed) = a1;
+    *(uint64_t *)(seed + 0x8) = a1 + 0x1;
+    *(uint64_t *)(seed + 0x10) = a1 << 0x1;
+    *(uint64_t *)(seed + 0x18) = a1 * 0x3;
+    return seed;
+}
+-- signature
+struct big (long seed, uint64_t a1)
+-- references
+
+-- ir
+fn big_make @ 0x201310 (size 52)
+  blk0 @ 0x201310:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    store64(rsi, (rsp + #0xfffffffffffffff8))
+    store64(rsi, rdi)
+    store64((rsi + #0x1), (rdi + #0x8))
+    store64((rsi << #0x1), (rdi + #0x10))
+    store64((rsi * #0x3), (rdi + #0x18))
+    ret rdi
+-- card
+{"accesses":["seed +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201310","approxTokens":192,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
+
+== 0x201350 big_sum
+-- decompile
+/* velk pseudo-C: big_sum @ 0x201350 */
+long big_sum(void) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rcx = rsp + 0x10;
+    return *(uint64_t *)(rcx) + *(uint64_t *)(rcx + 0x8) + *(uint64_t *)(rcx + 0x10) + *(uint64_t *)(rcx + 0x18);
+}
+-- signature
+long ()
+-- references
+
+-- ir
+fn big_sum @ 0x201350 (size 25)
+  blk0 @ 0x201350:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rcx = (rsp + #0x10)
+    ret (((load64(rcx) + load64((rcx + #0x8))) + load64((rcx + #0x10))) + load64((rcx + #0x18)))
+-- card
+{"addr":"0x201350","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf"],"section":".text","size":25,"unsupported":0}
+
+== 0x201370 word_low_byte
+-- decompile
+/* velk pseudo-C: word_low_byte @ 0x201370 */
+uint32_t word_low_byte(union word w) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = w;
+    eax = *(uint8_t *)(rbp - 0x4) & 0xff;
+    return eax;
+}
+-- signature
+uint32_t (union word w)
+-- references
+
+-- ir
+fn word_low_byte @ 0x201370 (size 13)
+  blk0 @ 0x201370:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    eax = (load8((rbp + #0xfffffffffffffffc)) & #0xff)
+    ret eax
+-- card
+{"addr":"0x201370","approxTokens":132,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":0}
+
+== 0x201380 flags_level
+-- decompile
+/* velk pseudo-C: flags_level @ 0x201380 */
+uint32_t flags_level(struct flags f) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = f;
+    rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0x4) & 0xff;
+    rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff;
+    if (rax & 0xff & 0xff != 0x0) {
+        rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0x4) & 0xff;
+        rax = rax & 0xffffffffffffff00 | (rax & 0xff) >> 0x4 & 0xff;
+        *(uint32_t *)(rbp - 0x8) = rax & 0xff & 0xff;
+    } else {
+        rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0x4) & 0xff;
+        rax = rax & 0xffffffffffffff00 | (rax & 0xff) >> 0x1 & 0xff;
+        rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x7 & 0xff;
+        *(uint32_t *)(rbp - 0x8) = rax & 0xff & 0xff;
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x8);
+}
+-- signature
+uint32_t (struct flags f)
+-- references
+
+-- ir
+fn flags_level @ 0x201380 (size 59)
+  blk0 @ 0x201380:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffffc)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff))
+    brif eq (((rax & #0xff) & #0xff) & #0xffffffff), #0x0 -> 0x2013a9
+  blk1 @ 0x201398:
+    rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffffc)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) >> #0x4) & #0xff))
+    store32((((rax & #0xff) & #0xff) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+    br 0x2013b6
+  blk2 @ 0x2013a9:
+    rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffffc)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) >> #0x1) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x7) & #0xff))
+    store32((((rax & #0xff) & #0xff) & #0xffffffff), (rbp + #0xfffffffffffffff8))
+  blk3 @ 0x2013b6:
+    rsp = (rsp + #0x8)
+    ret (load32((rbp + #0xfffffffffffffff8)) & #0xffffffff)
+-- card
+{"addr":"0x201380","approxTokens":174,"blocks":4,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":59,"unsupported":0}
+
+== 0x2013c0 flags_set_mode
+-- decompile
+/* velk pseudo-C: flags_set_mode @ 0x2013c0 */
+uint64_t flags_set_mode(struct flags *f, uint32_t mode, uint64_t a2) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = f;
+    *(uint32_t *)(rbp - 0xc) = mode;
+    rcx = mode;
+    rax = f;
+    a2 = a2 & 0xffffffffffffff00 | rcx & 0xff & 0xff;
+    rcx = rcx & 0xffffffffffffff00 | *(uint8_t *)(rax) & 0xff;
+    a2 = a2 & 0xffffffffffffff00 | a2 & 0xff & 0x7 & 0xff;
+    rcx = rcx & 0xffffffffffffff00 | rcx & 0xff & 0xf1 & 0xff;
+    *(uint8_t *)(rax) = (rcx & 0xffffffffffffff00 | (rcx & 0xff | (a2 & 0xffffffffffffff00 | (a2 & 0xff) << 0x1 & 0xff) & 0xff) & 0xff) & 0xff;
+    return rax;
+}
+-- signature
+uint64_t (struct flags * f, uint32_t mode, uint64_t a2)
+-- references
+
+-- ir
+fn flags_set_mode @ 0x2013c0 (size 36)
+  blk0 @ 0x2013c0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    rcx = (esi & #0xffffffff)
+    rax = rdi
+    rdx = ((rdx & #0xffffffffffffff00) | ((rcx & #0xff) & #0xff))
+    rcx = ((rcx & #0xffffffffffffff00) | (load8(rax) & #0xff))
+    rdx = ((rdx & #0xffffffffffffff00) | (((rdx & #0xff) & #0x7) & #0xff))
+    rcx = ((rcx & #0xffffffffffffff00) | (((rcx & #0xff) & #0xf1) & #0xff))
+    store8((((rcx & #0xffffffffffffff00) | (((rcx & #0xff) | (((rdx & #0xffffffffffffff00) | (((rdx & #0xff) << #0x1) & #0xff)) & #0xff)) & #0xff)) & #0xff), rax)
+    ret rax
+-- card
+{"addr":"0x2013c0","approxTokens":186,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}

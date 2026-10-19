@@ -1,0 +1,64 @@
+# metrics/alt_names.aarch64.O0.stripped.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x21016c 44 - prologue
+0x210198 96 - prologue
+
+== 0x21016c -
+-- decompile
+/* velk pseudo-C: sub_21016c @ 0x21016c */
+uint32_t sub_21016c(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x21016c (size 44)
+  blk0 @ 0x21016c:
+    ret ((w0 + w1) + w2)
+-- card
+{"addr":"0x21016c","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
+
+== 0x210198 -
+-- decompile
+/* velk pseudo-C: sub_210198 @ 0x210198 */
+uint32_t sub_210198(uint32_t a0) {
+    uint32_t local_0; /* [sp+c] */
+    uint32_t local_1; /* [sp+8] */
+    uint32_t local_2; /* [sp+4] */
+
+    while (true) {
+        w9 = local_0;
+        w8 = local_2 - w9;
+        if (w8 >= w9) break;
+        w9 = local_2 * local_2;
+        local_1 += w9;
+        local_2 += 0x1;
+    }
+    return local_1;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210198 (size 96)
+  blk0 @ 0x210198:
+    br 0x2101ac
+  blk1 @ 0x2101ac:
+    w9 = load32((sp + #0xc))
+    w8 = (load32((sp + #0x4)) - w9)
+    brif ge w8, w9 -> 0x2101ec
+  blk2 @ 0x2101bc:
+    br 0x2101c0
+  blk3 @ 0x2101c0:
+    w9 = (load32((sp + #0x4)) * load32((sp + #0x4)))
+    store32((load32((sp + #0x8)) + w9), (sp + #0x8))
+    br 0x2101dc
+  blk4 @ 0x2101dc:
+    store32((load32((sp + #0x4)) + #0x1), (sp + #0x4))
+    br 0x2101ac
+  blk5 @ 0x2101ec:
+    ret load32((sp + #0x8))
+-- card
+{"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}

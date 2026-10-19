@@ -1,0 +1,97 @@
+# l6_abi_x64.o: elf x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x0 14 tail_target symtab
+0x10 8 tail_direct symtab
+0x20 8 tail_indirect symtab
+0x30 14 six_args symtab
+0x40 5 wide_add symtab
+
+== 0x0 tail_target
+-- decompile
+/* velk pseudo-C: tail_target @ 0x0 */
+uint32_t tail_target(uint32_t a0) {
+    eax = a0 + a0 * 0x2;
+    return eax + 0x1;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn tail_target @ 0x0 (size 14)
+  blk0 @ 0x0:
+    eax = (rdi + (rdi * #0x2))
+    ret (eax + #0x1)
+-- card
+{"addr":"0x0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab"],"section":".text","size":14,"unsupported":0}
+
+== 0x10 tail_direct
+-- decompile
+/* velk pseudo-C: tail_direct @ 0x10 */
+uint32_t tail_direct(uint32_t a0) {
+    tail_target();
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn tail_direct @ 0x10 (size 8)
+  blk0 @ 0x10:
+    call 0x0
+-- card
+{"addr":"0x10","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+
+== 0x20 tail_indirect
+-- decompile
+/* velk pseudo-C: tail_indirect @ 0x20 */
+uint32_t tail_indirect(uint64_t a0, uint64_t a1) {
+    goto *(a0);
+}
+-- signature
+uint32_t (uint64_t a0, uint64_t a1)
+-- references
+
+-- ir
+fn tail_indirect @ 0x20 (size 8)
+  blk0 @ 0x20:
+    br rdi
+-- card
+{"addr":"0x20","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+
+== 0x30 six_args
+-- decompile
+/* velk pseudo-C: six_args @ 0x30 */
+uint32_t six_args(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5) {
+    eax = a2 + a3;
+    eax = eax + (a1 + a0);
+    return eax + a4 + a5;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+-- references
+
+-- ir
+fn six_args @ 0x30 (size 14)
+  blk0 @ 0x30:
+    eax = (rdx + rcx)
+    eax = (eax + (esi + edi))
+    ret ((eax + r8d) + r9d)
+-- card
+{"addr":"0x30","approxTokens":132,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab"],"section":".text","size":14,"unsupported":0}
+
+== 0x40 wide_add
+-- decompile
+/* velk pseudo-C: wide_add @ 0x40 */
+uint64_t wide_add(uint64_t a0, uint64_t a1) {
+    return a0 + a1;
+}
+-- signature
+uint64_t (uint64_t a0, uint64_t a1)
+-- references
+
+-- ir
+fn wide_add @ 0x40 (size 5)
+  blk0 @ 0x40:
+    ret (rdi + rsi)
+-- card
+{"addr":"0x40","approxTokens":108,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab"],"section":".text","size":5,"unsupported":0}

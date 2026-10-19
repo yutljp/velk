@@ -1,0 +1,145 @@
+# metrics/l4_memory.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
+0x2101d4 28 point_dot symtab,dwarf
+0x2101f0 140 array_sum symtab,dwarf
+0x21027c 20 bump symtab,dwarf
+0x210290 16 banner_first symtab,dwarf
+
+== 0x2101d4 point_dot
+-- decompile
+/* velk pseudo-C: point_dot @ 0x2101d4 */
+int point_dot(struct point *a) {
+    /* unsupported (2 steps): DUP at 0x2101e0, FMOV at 0x2101e8 */
+    return a;
+}
+-- signature
+int (struct point * a)
+-- references
+
+-- ir
+fn point_dot @ 0x2101d4 (size 28)
+  blk0 @ 0x2101d4:
+    unsupported: DUP at 0x2101e0
+    unsupported: FMOV at 0x2101e8
+    ret x0
+-- card
+{"addr":"0x2101d4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":2}
+
+== 0x2101f0 array_sum
+-- decompile
+/* velk pseudo-C: array_sum @ 0x2101f0 */
+/* struct: a +0x0:uint32_t */
+int array_sum(int *a, int n) {
+    if (n < 0x1) {
+        return 0x0;
+    }
+    x9 = n;
+    if (n < 0x8 /* unsigned */) {
+        x10 = 0x0;
+        x8 = 0x0;
+    } else {
+        /* unsupported (2 steps): MOVI at 0x21021c, MOVI at 0x210220 */
+        x8 = a + 0x10;
+        x11 = x9 & 0x7ffffff8;
+        do {
+            /* unsupported: SIMD vector pair load */
+            x11 = x11 - 0x8;
+            x8 = x8 + 0x20;
+        } while (x11 != 0x8);
+        if (x10 == x9) {
+            return w8;
+        }
+    }
+    x11 = a + (x10 << 0x2);
+    x9 = x9 - x10;
+    do {
+        x10 = *(uint32_t *)(x11);
+        x11 = x11 + 0x4;
+        x9 = x9 - 0x1;
+        x8 = w10 + w8;
+    } while (x9 != 0x1);
+    return w8;
+}
+-- signature
+int (int * a, int n)
+-- references
+
+-- ir
+fn array_sum @ 0x2101f0 (size 140)
+  blk0 @ 0x2101f0:
+    brif lt w1, #0x1 -> 0x210210
+  blk1 @ 0x2101f8:
+    x9 = w1
+    brif cs w1, #0x8 -> 0x21021c
+  blk2 @ 0x210204:
+    x10 = #0x0
+    x8 = #0x0
+    br 0x21025c
+  blk3 @ 0x210210:
+    ret #0x0
+  blk4 @ 0x21021c:
+    unsupported: MOVI at 0x21021c
+    unsupported: MOVI at 0x210220
+    x8 = (x0 + #0x10)
+    x11 = (x9 & #0x7ffffff8)
+  blk5 @ 0x210230:
+    unsupported: SIMD vector pair load
+    x11 = (x11 - #0x8)
+    x8 = (x8 + #0x20)
+    brif ne x11, #0x8 -> 0x210230
+  blk6 @ 0x210248:
+    unsupported: ADDV at 0x210250
+    unsupported: FMOV at 0x210254
+    brif eq x10, x9 -> 0x210274
+  blk7 @ 0x21025c:
+    x11 = (x0 + (x10 << #0x2))
+    x9 = (x9 - x10)
+  blk8 @ 0x210264:
+    x10 = (load32(x11) & #0xffffffff)
+    x11 = (x11 + #0x4)
+    x9 = (x9 - #0x1)
+    x8 = (((x10 & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
+    brif ne x9, #0x1 -> 0x210264
+  blk9 @ 0x210274:
+    ret (x8 & #0xffffffff)
+-- card
+{"accesses":["a +0x0:uint32_t"],"addr":"0x2101f0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":5}
+
+== 0x21027c bump
+-- decompile
+/* velk pseudo-C: bump @ 0x21027c */
+/* ref: 0x2202a8 .bss */
+void bump(void) {
+    dword_2202a8 += 0x1;
+    return;
+}
+-- signature
+void ()
+-- references
+0x2202a8 .bss
+-- ir
+fn bump @ 0x21027c (size 20)
+  blk0 @ 0x21027c:
+    store32((load32(#0x2202a8) + #0x1), #0x2202a8)
+    ret x0
+-- card
+{"addr":"0x21027c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x210290 banner_first
+-- decompile
+/* velk pseudo-C: banner_first @ 0x210290 */
+/* ref: 0x2202a0 -> 0x200158 "velk ladder" */
+int banner_first(void) {
+    w0 = *(uint8_t *)(qword_2202a0);
+    return w0;
+}
+-- signature
+int ()
+-- references
+0x2202a0 -> 0x200158 "velk ladder"
+-- ir
+fn banner_first @ 0x210290 (size 16)
+  blk0 @ 0x210290:
+    w0 = load8(load64(#0x2202a0))
+    ret w0
+-- card
+{"addr":"0x210290","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf"],"section":".text","size":16,"strings":["velk ladder"],"unsupported":0}

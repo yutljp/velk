@@ -1,0 +1,470 @@
+# metrics/l5_switch.x86_64.O2.stripped.elf: elf x86_64 no entry, 19 functions, 0 lift failures, 0 unsupported, 2 gotos
+0x201330 29 - prologue
+0x20134d 147 - prologue
+0x2013e0 16 - prologue
+0x2013f0 16 - prologue
+0x201400 16 - prologue
+0x201410 16 - prologue
+0x201420 16 - prologue
+0x201430 16 - prologue
+0x201440 16 - prologue
+0x201450 16 - prologue
+0x201460 16 - prologue
+0x201470 16 - prologue
+0x201480 16 - prologue
+0x201490 16 - prologue
+0x2014a0 16 - prologue
+0x2014b0 16 - prologue
+0x2014c0 16 - prologue
+0x2014d0 16 - prologue
+0x2014e0 42 - prologue
+
+== 0x201330 -
+-- decompile
+/* velk pseudo-C: sub_201330 @ 0x201330 */
+/* ref: 0x200158 .rodata */
+uint32_t sub_201330(uint64_t a0) {
+    if ((((a0 & 0xffffffff) - 0xa) & 0xffffffff) > 0xf /* unsigned */) { goto L_2013c6; }
+    rcx = (int32_t)(dword_200158[a0]) + 0x200158;
+    goto *(rcx);
+}
+-- signature
+uint32_t (uint64_t a0)
+-- references
+0x200158 .rodata
+-- ir
+fn <unnamed> @ 0x201330 (size 29)
+  blk0 @ 0x201330:
+    brif hi (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff), #0xf -> 0x2013c6
+  blk1 @ 0x20133c:
+    rcx = (sext32(load32((#0x200158 + (rdi * #0x4)))) + #0x200158)
+    br rcx
+-- card
+{"addr":"0x201330","approxTokens":144,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":29,"sizeEstimated":true,"unsupported":0}
+
+== 0x20134d -
+-- decompile
+/* velk pseudo-C: sub_20134d @ 0x20134d */
+/* ref: 0x20250c .bss */
+void sub_20134d(void) {
+    sub_2013e0();
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x20134d (size 147)
+  blk0 @ 0x20134d:
+    call 0x2013e0
+    br 0x2013bb
+  blk1 @ 0x201354:
+    call 0x2014c0
+    br 0x2013bb
+  blk2 @ 0x20135b:
+    call 0x201490
+    br 0x2013bb
+  blk3 @ 0x201362:
+    call 0x201420
+    br 0x2013bb
+  blk4 @ 0x201369:
+    call 0x2014a0
+    br 0x2013bb
+  blk5 @ 0x201370:
+    call 0x201470
+    br 0x2013bb
+  blk6 @ 0x201377:
+    call 0x201400
+    br 0x2013bb
+  blk7 @ 0x20137e:
+    call 0x2014d0
+    br 0x2013bb
+  blk8 @ 0x201385:
+    call 0x201410
+    br 0x2013bb
+  blk9 @ 0x20138c:
+    call 0x201450
+    br 0x2013bb
+  blk10 @ 0x201393:
+    call 0x2013f0
+    br 0x2013bb
+  blk11 @ 0x20139a:
+    call 0x201430
+    br 0x2013bb
+  blk12 @ 0x2013a1:
+    call 0x2014b0
+    br 0x2013bb
+  blk13 @ 0x2013a8:
+    call 0x201440
+    br 0x2013bb
+  blk14 @ 0x2013af:
+    call 0x201480
+    br 0x2013bb
+  blk15 @ 0x2013b6:
+    call 0x201460
+  blk16 @ 0x2013bb:
+    ret load32(#0x20250c)
+  blk17 @ 0x2013c6:
+    store32(#0x0, #0x20250c)
+    ret #0x0
+-- card
+{"addr":"0x20134d","approxTokens":108,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":147,"sizeEstimated":true,"unsupported":0}
+
+== 0x2013e0 -
+-- decompile
+/* velk pseudo-C: sub_2013e0 @ 0x2013e0 */
+/* ref: 0x20250c .bss */
+void sub_2013e0(void) {
+    dword_20250c += 0xb;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x2013e0 (size 16)
+  blk0 @ 0x2013e0:
+    store32((load32(#0x20250c) + #0xb), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2013e0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2013f0 -
+-- decompile
+/* velk pseudo-C: sub_2013f0 @ 0x2013f0 */
+/* ref: 0x20250c .bss */
+void sub_2013f0(void) {
+    dword_20250c ^= 0x12;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x2013f0 (size 16)
+  blk0 @ 0x2013f0:
+    store32((load32(#0x20250c) ^ #0x12), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2013f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201400 -
+-- decompile
+/* velk pseudo-C: sub_201400 @ 0x201400 */
+/* ref: 0x20250c .bss */
+void sub_201400(void) {
+    dword_20250c += 0xffffffffffffffe7;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201400 (size 16)
+  blk0 @ 0x201400:
+    store32((load32(#0x20250c) + #0xffffffffffffffe7), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201400","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201410 -
+-- decompile
+/* velk pseudo-C: sub_201410 @ 0x201410 */
+/* ref: 0x20250c .bss */
+void sub_201410(void) {
+    dword_20250c |= 0x20;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201410 (size 16)
+  blk0 @ 0x201410:
+    store32((load32(#0x20250c) | #0x20), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201410","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201420 -
+-- decompile
+/* velk pseudo-C: sub_201420 @ 0x201420 */
+/* ref: 0x20250c .bss */
+void sub_201420(void) {
+    dword_20250c += 0x27;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201420 (size 16)
+  blk0 @ 0x201420:
+    store32((load32(#0x20250c) + #0x27), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201420","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201430 -
+-- decompile
+/* velk pseudo-C: sub_201430 @ 0x201430 */
+/* ref: 0x20250c .bss */
+void sub_201430(void) {
+    dword_20250c ^= 0x2e;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201430 (size 16)
+  blk0 @ 0x201430:
+    store32((load32(#0x20250c) ^ #0x2e), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201430","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201440 -
+-- decompile
+/* velk pseudo-C: sub_201440 @ 0x201440 */
+/* ref: 0x20250c .bss */
+void sub_201440(void) {
+    dword_20250c += 0xffffffffffffffcb;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201440 (size 16)
+  blk0 @ 0x201440:
+    store32((load32(#0x20250c) + #0xffffffffffffffcb), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201440","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201450 -
+-- decompile
+/* velk pseudo-C: sub_201450 @ 0x201450 */
+/* ref: 0x20250c .bss */
+void sub_201450(void) {
+    dword_20250c |= 0x3c;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201450 (size 16)
+  blk0 @ 0x201450:
+    store32((load32(#0x20250c) | #0x3c), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201450","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201460 -
+-- decompile
+/* velk pseudo-C: sub_201460 @ 0x201460 */
+/* ref: 0x20250c .bss */
+void sub_201460(void) {
+    dword_20250c += 0x43;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201460 (size 16)
+  blk0 @ 0x201460:
+    store32((load32(#0x20250c) + #0x43), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201460","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201470 -
+-- decompile
+/* velk pseudo-C: sub_201470 @ 0x201470 */
+/* ref: 0x20250c .bss */
+void sub_201470(void) {
+    dword_20250c ^= 0x4a;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201470 (size 16)
+  blk0 @ 0x201470:
+    store32((load32(#0x20250c) ^ #0x4a), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201470","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201480 -
+-- decompile
+/* velk pseudo-C: sub_201480 @ 0x201480 */
+/* ref: 0x20250c .bss */
+void sub_201480(void) {
+    dword_20250c += 0xffffffffffffffaf;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201480 (size 16)
+  blk0 @ 0x201480:
+    store32((load32(#0x20250c) + #0xffffffffffffffaf), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201480","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201490 -
+-- decompile
+/* velk pseudo-C: sub_201490 @ 0x201490 */
+/* ref: 0x20250c .bss */
+void sub_201490(void) {
+    dword_20250c |= 0x58;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x201490 (size 16)
+  blk0 @ 0x201490:
+    store32((load32(#0x20250c) | #0x58), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201490","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014a0 -
+-- decompile
+/* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
+/* ref: 0x20250c .bss */
+void sub_2014a0(void) {
+    dword_20250c += 0x5f;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x2014a0 (size 16)
+  blk0 @ 0x2014a0:
+    store32((load32(#0x20250c) + #0x5f), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014a0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014b0 -
+-- decompile
+/* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
+/* ref: 0x20250c .bss */
+void sub_2014b0(void) {
+    dword_20250c ^= 0x66;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x2014b0 (size 16)
+  blk0 @ 0x2014b0:
+    store32((load32(#0x20250c) ^ #0x66), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014b0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014c0 -
+-- decompile
+/* velk pseudo-C: sub_2014c0 @ 0x2014c0 */
+/* ref: 0x20250c .bss */
+void sub_2014c0(void) {
+    dword_20250c += 0xffffffffffffff93;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x2014c0 (size 16)
+  blk0 @ 0x2014c0:
+    store32((load32(#0x20250c) + #0xffffffffffffff93), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014d0 -
+-- decompile
+/* velk pseudo-C: sub_2014d0 @ 0x2014d0 */
+/* ref: 0x20250c .bss */
+void sub_2014d0(void) {
+    dword_20250c |= 0x74;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn <unnamed> @ 0x2014d0 (size 16)
+  blk0 @ 0x2014d0:
+    store32((load32(#0x20250c) | #0x74), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014e0 -
+-- decompile
+/* velk pseudo-C: sub_2014e0 @ 0x2014e0 */
+uint32_t sub_2014e0(uint32_t a0) {
+    if (a0 == 0x1) {
+        return 0x64;
+    }
+    if (a0 == 0x12c) {
+        return 0x12c;
+    }
+    if (a0 != 0x32) {
+        return 0xffffffff;
+    }
+    return 0x7;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2014e0 (size 42)
+  blk0 @ 0x2014e0:
+    brif eq edi, #0x1 -> 0x2014fe
+  blk1 @ 0x2014e5:
+    brif eq edi, #0x12c -> 0x2014f8
+  blk2 @ 0x2014ed:
+    brif ne edi, #0x32 -> 0x201504
+  blk3 @ 0x2014f2:
+    ret #0x7
+  blk4 @ 0x2014f8:
+    ret #0x12c
+  blk5 @ 0x2014fe:
+    ret #0x64
+  blk6 @ 0x201504:
+    ret #0xffffffff
+-- card
+{"addr":"0x2014e0","approxTokens":144,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":42,"sizeEstimated":true,"unsupported":0}

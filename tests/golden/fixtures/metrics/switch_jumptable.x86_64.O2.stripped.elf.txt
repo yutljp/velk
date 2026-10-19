@@ -1,0 +1,126 @@
+# metrics/switch_jumptable.x86_64.O2.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 2 gotos
+0x2011c0 27 - prologue
+0x2011db 500 - prologue
+
+== 0x2011c0 -
+-- decompile
+/* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
+/* ref: 0x200158 .rodata */
+uint32_t sub_2011c0(uint32_t a0) {
+    if (a0 > 0x9 /* unsigned */) { goto L_201376; }
+    rax = (int32_t)(dword_200158[a0]) + 0x200158;
+    goto *(rax);
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+0x200158 .rodata
+-- ir
+fn <unnamed> @ 0x2011c0 (size 27)
+  blk0 @ 0x2011c0:
+    brif hi edi, #0x9 -> 0x201376
+  blk1 @ 0x2011c9:
+    rax = (sext32(load32((#0x200158 + (edi * #0x4)))) + #0x200158)
+    br rax
+-- card
+{"addr":"0x2011c0","approxTokens":138,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
+
+== 0x2011db -
+-- decompile
+/* velk pseudo-C: sub_2011db @ 0x2011db */
+/* ref: 0x2023d0 .bss */
+uint32_t sub_2011db(void) {
+    rax = dword_2023d0;
+    dword_2023d0 = eax;
+    return eax;
+}
+-- signature
+uint32_t ()
+-- references
+0x2023d0 .bss
+-- ir
+fn <unnamed> @ 0x2011db (size 500)
+  blk0 @ 0x2011db:
+    rax = (load32(#0x2023d0) & #0xffffffff)
+    br 0x2013c2
+  blk1 @ 0x2011e6:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x3) & #0xffffffff) + #0x4) & #0xffffffff)
+    br 0x2013c2
+  blk2 @ 0x201214:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x6), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x7), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x8), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x8) & #0xffffffff) + #0x9) & #0xffffffff)
+    br 0x2013c2
+  blk3 @ 0x201265:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x1) & #0xffffffff) + #0x2) & #0xffffffff)
+    br 0x2013c2
+  blk4 @ 0x201285:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x2) & #0xffffffff) + #0x3) & #0xffffffff)
+    br 0x2013c2
+  blk5 @ 0x2012ac:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x6), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x6) & #0xffffffff) + #0x7) & #0xffffffff)
+    br 0x2013c2
+  blk6 @ 0x2012ef:
+    rax = (load32(#0x2023d0) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d0)
+    rax = (rax & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    br 0x2013c2
+  blk7 @ 0x201308:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x4) & #0xffffffff) + #0x5) & #0xffffffff)
+    br 0x2013c2
+  blk8 @ 0x20133d:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x5) & #0xffffffff) + #0x6) & #0xffffffff)
+    br 0x2013c2
+  blk9 @ 0x201376:
+    rax = #0xffffffff
+    br 0x2013c2
+  blk10 @ 0x20137d:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x6), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x7), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x7) & #0xffffffff) + #0x8) & #0xffffffff)
+  blk11 @ 0x2013c2:
+    store32((rax & #0xffffffff), #0x2023d0)
+    ret (rax & #0xffffffff)
+-- card
+{"addr":"0x2011db","approxTokens":108,"blocks":12,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":500,"sizeEstimated":true,"unsupported":0}

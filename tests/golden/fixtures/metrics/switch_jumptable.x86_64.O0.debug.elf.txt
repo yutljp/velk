@@ -1,0 +1,224 @@
+# metrics/switch_jumptable.x86_64.O0.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x2011c0 592 d7 symtab,dwarf
+
+== 0x2011c0 d7
+-- decompile
+/* velk pseudo-C: d7 @ 0x2011c0 */
+/* ref: 0x200158 .rodata */
+/* ref: 0x202410 .bss */
+int d7(int x) {
+    if (rax - 0x12 > 0x0 /* unsigned */) {
+        dword_202410 = 0xffffffff;
+        rsp = rsp + 0x8;
+        return dword_202410;
+    }
+    ecx = 0x200158;
+    rax = (int32_t)(dword_200158[*(uint64_t *)(rbp - 0x38)]);
+    goto *(rax + 0x200158);
+    while (*(uint32_t *)(rbp - 0x8) < 0x1) {
+        ecx = *(uint32_t *)(rbp - 0x8);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x8) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0xc) < 0x2) {
+        ecx = *(uint32_t *)(rbp - 0xc);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0xc) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x10) < 0x3) {
+        ecx = *(uint32_t *)(rbp - 0x10);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x10) = *(uint32_t *)(rbp - 0x10) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x14) < 0x4) {
+        ecx = *(uint32_t *)(rbp - 0x14);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x18) < 0x5) {
+        ecx = *(uint32_t *)(rbp - 0x18);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x18) = *(uint32_t *)(rbp - 0x18) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x1c) < 0x6) {
+        ecx = *(uint32_t *)(rbp - 0x1c);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x1c) = *(uint32_t *)(rbp - 0x1c) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x20) < 0x7) {
+        ecx = *(uint32_t *)(rbp - 0x20);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x20) = *(uint32_t *)(rbp - 0x20) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x24) < 0x8) {
+        ecx = *(uint32_t *)(rbp - 0x24);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x24) = *(uint32_t *)(rbp - 0x24) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x28) < 0x9) {
+        ecx = *(uint32_t *)(rbp - 0x28);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x28) = *(uint32_t *)(rbp - 0x28) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+    while (*(uint32_t *)(rbp - 0x2c) < 0xa) {
+        ecx = *(uint32_t *)(rbp - 0x2c);
+        dword_202410 += ecx;
+        *(uint32_t *)(rbp - 0x2c) = *(uint32_t *)(rbp - 0x2c) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return dword_202410;
+}
+-- signature
+int (int x)
+-- references
+0x200158 .rodata
+0x202410 .bss
+-- ir
+fn d7 @ 0x2011c0 (size 592)
+  blk0 @ 0x2011c0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    rax = (edi & #0xffffffff)
+    store64(rax, (rbp + #0xffffffffffffffc8))
+    brif hi (rax + #0xffffffffffffffee), #0x0 -> 0x2013fe
+  blk1 @ 0x2011d8:
+    rcx = #0x200158
+    rax = sext32(load32((#0x200158 + (load64((rbp + #0xffffffffffffffc8)) * #0x4))))
+    br (rax + #0x200158)
+  blk2 @ 0x2011ec:
+    store32(#0x0, (rbp + #0xfffffffffffffff8))
+  blk3 @ 0x2011f3:
+    brif ge load32((rbp + #0xfffffffffffffff8)), #0x1 -> 0x20121c
+  blk4 @ 0x2011fd:
+    rcx = (load32((rbp + #0xfffffffffffffff8)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xfffffffffffffff8)) + #0x1), (rbp + #0xfffffffffffffff8))
+    br 0x2011f3
+  blk5 @ 0x20121c:
+    br 0x201408
+  blk6 @ 0x201221:
+    store32(#0x0, (rbp + #0xfffffffffffffff4))
+  blk7 @ 0x201228:
+    brif ge load32((rbp + #0xfffffffffffffff4)), #0x2 -> 0x201251
+  blk8 @ 0x201232:
+    rcx = (load32((rbp + #0xfffffffffffffff4)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
+    br 0x201228
+  blk9 @ 0x201251:
+    br 0x201408
+  blk10 @ 0x201256:
+    store32(#0x0, (rbp + #0xfffffffffffffff0))
+  blk11 @ 0x20125d:
+    brif ge load32((rbp + #0xfffffffffffffff0)), #0x3 -> 0x201286
+  blk12 @ 0x201267:
+    rcx = (load32((rbp + #0xfffffffffffffff0)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xfffffffffffffff0)) + #0x1), (rbp + #0xfffffffffffffff0))
+    br 0x20125d
+  blk13 @ 0x201286:
+    br 0x201408
+  blk14 @ 0x20128b:
+    store32(#0x0, (rbp + #0xffffffffffffffec))
+  blk15 @ 0x201292:
+    brif ge load32((rbp + #0xffffffffffffffec)), #0x4 -> 0x2012bb
+  blk16 @ 0x20129c:
+    rcx = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    br 0x201292
+  blk17 @ 0x2012bb:
+    br 0x201408
+  blk18 @ 0x2012c0:
+    store32(#0x0, (rbp + #0xffffffffffffffe8))
+  blk19 @ 0x2012c7:
+    brif ge load32((rbp + #0xffffffffffffffe8)), #0x5 -> 0x2012f0
+  blk20 @ 0x2012d1:
+    rcx = (load32((rbp + #0xffffffffffffffe8)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xffffffffffffffe8)) + #0x1), (rbp + #0xffffffffffffffe8))
+    br 0x2012c7
+  blk21 @ 0x2012f0:
+    br 0x201408
+  blk22 @ 0x2012f5:
+    store32(#0x0, (rbp + #0xffffffffffffffe4))
+  blk23 @ 0x2012fc:
+    brif ge load32((rbp + #0xffffffffffffffe4)), #0x6 -> 0x201325
+  blk24 @ 0x201306:
+    rcx = (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xffffffffffffffe4)) + #0x1), (rbp + #0xffffffffffffffe4))
+    br 0x2012fc
+  blk25 @ 0x201325:
+    br 0x201408
+  blk26 @ 0x20132a:
+    store32(#0x0, (rbp + #0xffffffffffffffe0))
+  blk27 @ 0x201331:
+    brif ge load32((rbp + #0xffffffffffffffe0)), #0x7 -> 0x20135a
+  blk28 @ 0x20133b:
+    rcx = (load32((rbp + #0xffffffffffffffe0)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xffffffffffffffe0)) + #0x1), (rbp + #0xffffffffffffffe0))
+    br 0x201331
+  blk29 @ 0x20135a:
+    br 0x201408
+  blk30 @ 0x20135f:
+    store32(#0x0, (rbp + #0xffffffffffffffdc))
+  blk31 @ 0x201366:
+    brif ge load32((rbp + #0xffffffffffffffdc)), #0x8 -> 0x20138f
+  blk32 @ 0x201370:
+    rcx = (load32((rbp + #0xffffffffffffffdc)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xffffffffffffffdc)) + #0x1), (rbp + #0xffffffffffffffdc))
+    br 0x201366
+  blk33 @ 0x20138f:
+    br 0x201408
+  blk34 @ 0x201394:
+    store32(#0x0, (rbp + #0xffffffffffffffd8))
+  blk35 @ 0x20139b:
+    brif ge load32((rbp + #0xffffffffffffffd8)), #0x9 -> 0x2013c4
+  blk36 @ 0x2013a5:
+    rcx = (load32((rbp + #0xffffffffffffffd8)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xffffffffffffffd8)) + #0x1), (rbp + #0xffffffffffffffd8))
+    br 0x20139b
+  blk37 @ 0x2013c4:
+    br 0x201408
+  blk38 @ 0x2013c9:
+    store32(#0x0, (rbp + #0xffffffffffffffd4))
+  blk39 @ 0x2013d0:
+    brif ge load32((rbp + #0xffffffffffffffd4)), #0xa -> 0x2013f9
+  blk40 @ 0x2013da:
+    rcx = (load32((rbp + #0xffffffffffffffd4)) & #0xffffffff)
+    store32((load32(#0x202410) + (rcx & #0xffffffff)), #0x202410)
+    store32((load32((rbp + #0xffffffffffffffd4)) + #0x1), (rbp + #0xffffffffffffffd4))
+    br 0x2013d0
+  blk41 @ 0x2013f9:
+    br 0x201408
+  blk42 @ 0x2013fe:
+    store32(#0xffffffff, #0x202410)
+  blk43 @ 0x201408:
+    rsp = (rsp + #0x8)
+    ret (load32(#0x202410) & #0xffffffff)
+-- card
+{"addr":"0x2011c0","approxTokens":234,"blocks":44,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":592,"unsupported":0}

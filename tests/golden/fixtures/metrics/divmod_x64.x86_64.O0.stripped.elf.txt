@@ -1,0 +1,335 @@
+# metrics/divmod_x64.x86_64.O0.stripped.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 5 unsupported, 0 gotos
+0x201380 32 - prologue
+0x2013a0 32 - prologue
+0x2013c0 32 - prologue
+0x2013e0 32 - prologue
+0x201400 32 - prologue
+0x201420 32 - prologue
+0x201440 32 - prologue
+0x201460 32 - prologue
+0x201480 32 - prologue
+0x2014a0 16 - prologue
+0x2014b0 32 - prologue
+0x2014d0 32 - prologue
+0x2014f0 32 - prologue
+0x201510 32 - prologue
+0x201530 32 - prologue
+0x201550 32 - prologue
+0x201570 32 - prologue
+0x201590 20 - prologue
+
+== 0x201380 -
+-- decompile
+/* velk pseudo-C: sub_201380 @ 0x201380 */
+void sub_201380(uint64_t a0) {
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201380 (size 32)
+  blk0 @ 0x201380:
+    ret (rdi / #0x3)
+-- card
+{"addr":"0x201380","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x2013a0 -
+-- decompile
+/* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
+void sub_2013a0(uint64_t a0) {
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2013a0 (size 32)
+  blk0 @ 0x2013a0:
+    ret (rdi / #0xa)
+-- card
+{"addr":"0x2013a0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x2013c0 -
+-- decompile
+/* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
+void sub_2013c0(uint64_t a0) {
+    /* unsupported: div at 0x2013d3 */
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2013c0 (size 32)
+  blk0 @ 0x2013c0:
+    unsupported: div at 0x2013d3
+    ret rdi
+-- card
+{"addr":"0x2013c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
+
+== 0x2013e0 -
+-- decompile
+/* velk pseudo-C: sub_2013e0 @ 0x2013e0 */
+void sub_2013e0(uint64_t a0) {
+    /* unsupported: div at 0x2013f3 */
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2013e0 (size 32)
+  blk0 @ 0x2013e0:
+    unsupported: div at 0x2013f3
+    ret rdi
+-- card
+{"addr":"0x2013e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
+
+== 0x201400 -
+-- decompile
+/* velk pseudo-C: sub_201400 @ 0x201400 */
+void sub_201400(uint32_t a0) {
+    /* unsupported: div at 0x201411 */
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201400 (size 32)
+  blk0 @ 0x201400:
+    unsupported: div at 0x201411
+    ret edi
+-- card
+{"addr":"0x201400","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
+
+== 0x201420 -
+-- decompile
+/* velk pseudo-C: sub_201420 @ 0x201420 */
+void sub_201420(uint32_t a0) {
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201420 (size 32)
+  blk0 @ 0x201420:
+    ret (edi / #0x10)
+-- card
+{"addr":"0x201420","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201440 -
+-- decompile
+/* velk pseudo-C: sub_201440 @ 0x201440 */
+void sub_201440(uint64_t a0) {
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201440 (size 32)
+  blk0 @ 0x201440:
+    ret (rdi / #0x10)
+-- card
+{"addr":"0x201440","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201460 -
+-- decompile
+/* velk pseudo-C: sub_201460 @ 0x201460 */
+void sub_201460(uint32_t a0) {
+    /* unsupported: div at 0x201471 */
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201460 (size 32)
+  blk0 @ 0x201460:
+    unsupported: div at 0x201471
+    ret #0x0
+-- card
+{"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
+
+== 0x201480 -
+-- decompile
+/* velk pseudo-C: sub_201480 @ 0x201480 */
+void sub_201480(uint32_t a0) {
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201480 (size 32)
+  blk0 @ 0x201480:
+    ret (edi % #0x3)
+-- card
+{"addr":"0x201480","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014a0 -
+-- decompile
+/* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
+void sub_2014a0(uint32_t a0) {
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2014a0 (size 16)
+  blk0 @ 0x2014a0:
+    ret (edi & #0x7)
+-- card
+{"addr":"0x2014a0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014b0 -
+-- decompile
+/* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
+void sub_2014b0(uint32_t a0) {
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2014b0 (size 32)
+  blk0 @ 0x2014b0:
+    ret (edi % #0x8)
+-- card
+{"addr":"0x2014b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014d0 -
+-- decompile
+/* velk pseudo-C: sub_2014d0 @ 0x2014d0 */
+void sub_2014d0(uint64_t a0) {
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2014d0 (size 32)
+  blk0 @ 0x2014d0:
+    ret (rdi % #0x10)
+-- card
+{"addr":"0x2014d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014f0 -
+-- decompile
+/* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
+void sub_2014f0(uint64_t a0) {
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2014f0 (size 32)
+  blk0 @ 0x2014f0:
+    ret (rdi / #0x10)
+-- card
+{"addr":"0x2014f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201510 -
+-- decompile
+/* velk pseudo-C: sub_201510 @ 0x201510 */
+void sub_201510(uint64_t a0) {
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201510 (size 32)
+  blk0 @ 0x201510:
+    ret (rdi % #0xa)
+-- card
+{"addr":"0x201510","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201530 -
+-- decompile
+/* velk pseudo-C: sub_201530 @ 0x201530 */
+void sub_201530(uint64_t a0) {
+    /* unsupported: div at 0x201543 */
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201530 (size 32)
+  blk0 @ 0x201530:
+    unsupported: div at 0x201543
+    ret #0x0
+-- card
+{"addr":"0x201530","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":1}
+
+== 0x201550 -
+-- decompile
+/* velk pseudo-C: sub_201550 @ 0x201550 */
+void sub_201550(uint32_t a0) {
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201550 (size 32)
+  blk0 @ 0x201550:
+    ret (edi / #0x40)
+-- card
+{"addr":"0x201550","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201570 -
+-- decompile
+/* velk pseudo-C: sub_201570 @ 0x201570 */
+void sub_201570(uint64_t a0) {
+    return;
+}
+-- signature
+void (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201570 (size 32)
+  blk0 @ 0x201570:
+    ret (rdi / #0x40)
+-- card
+{"addr":"0x201570","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201590 -
+-- decompile
+/* velk pseudo-C: sub_201590 @ 0x201590 */
+void sub_201590(uint32_t a0) {
+    return;
+}
+-- signature
+void (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201590 (size 20)
+  blk0 @ 0x201590:
+    ret (edi / #0xa)
+-- card
+{"addr":"0x201590","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}

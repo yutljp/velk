@@ -1,0 +1,277 @@
+//! The script API matches its TypeScript declarations in src/script/api/:
+//! every declared method runs, every returned object carries the declared
+//! fields, and nothing undeclared.
+
+mod common;
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use serde_json::Value;
+use velk::script::Engine;
+
+/// Field names per interface, split into required and optional (`name?:`).
+fn declarations() -> BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)> {
+    let mut interfaces = BTreeMap::new();
+    for file in ["binary.d.ts", "func.d.ts", "types.d.ts"] {
+        let path = common::root().join("src/script/api").join(file);
+        let text = std::fs::read_to_string(&path)
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        let mut current: Option<(String, BTreeSet<String>, BTreeSet<String>)> = None;
+        for line in text.lines() {
+            let line = line.trim();
+            if let Some(rest) = line.strip_prefix("interface ") {
+                let name = rest.trim_end_matches('{').trim().to_owned();
+                current = Some((name, BTreeSet::new(), BTreeSet::new()));
+            } else if line == "}" {
+                if let Some((name, required, optional)) = current.take() {
+                    interfaces.insert(name, (required, optional));
+                }
+            } else if let Some((_, required, optional)) = current.as_mut() {
+                // A field is `name: type;` or `name?: type;`; methods have parentheses before the colon.
+                let Some((name, _)) = line.split_once(':') else {
+                    continue;
+                };
+                if line.starts_with("/*") || line.starts_with('*') || name.contains('(') {
+                    continue;
+                }
+                match name.strip_suffix('?') {
+                    Some(name) => optional.insert(name.to_owned()),
+                    None => required.insert(name.to_owned()),
+                };
+            }
+        }
+    }
+    interfaces
+}
+
+/// Runs every declared method on one fixture and returns the results as JSON.
+fn exercise(fixture: &str, function: &str) -> Value {
+    let path = common::fixtures_dir().join(fixture);
+    let script = format!(
+        r#"
+const b = velk.open({path:?});
+const f = b.getFunction({function:?});
+const signatures = b.buildSignatures();
+JSON.stringify({{
+  binary: {{ path: b.path, format: b.format, arch: b.arch, entry: b.entry }},
+  section: b.sections()[0],
+  func: Object.fromEntries(Object.entries(f)),
+  card: f.card(),
+  smallCard: f.card({{ budget: 100 }}),
+  decompile: f.decompile(),
+  disasm: f.disasm({{ limit: 3 }}),
+  ir: f.ir(),
+  signature: f.signature(),
+  references: f.references(),
+  strings: f.strings(),
+  shapeHash: f.shapeHash(),
+  signatures,
+  identify: b.identify(signatures.database),
+  functionCount: b.functions().length,
+  namedOnly: b.functions({{ named: true }}).every((g) => g.name !== null),
+  byRegExp: b.functions({{ name: /^{function}$/ }}).length,
+}})
+"#,
+        path = path.display().to_string(),
+    );
+    let outcome = Engine::new()
+        .unwrap_or_else(|error| panic!("{error}"))
+        .run(&script, None);
+    if let Some(error) = outcome.error {
+        panic!("{fixture}: {error}");
+    }
+    serde_json::from_str(&outcome.output)
+        .unwrap_or_else(|error| panic!("{fixture}: {error}: {}", outcome.output))
+}
+
+fn check(
+    interfaces: &BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)>,
+    interface: &str,
+    value: &Value,
+    at: &str,
+) -> Vec<String> {
+    let (required, optional) = interfaces
+        .get(interface)
+        .unwrap_or_else(|| panic!("no interface {interface} in the declarations"));
+    let Some(object) = value.as_object() else {
+        return vec![format!(
+            "{at}: expected an object for {interface}, got {value}"
+        )];
+    };
+    let mut problems = Vec::new();
+    for field in required {
+        if !object.contains_key(field) {
+            problems.push(format!("{at}: {interface}.{field} is missing"));
+        }
+    }
+    for field in object.keys() {
+        if !required.contains(field) && !optional.contains(field) {
+            problems.push(format!("{at}: {interface}.{field} is not declared"));
+        }
+    }
+    problems
+}
+
+#[test]
+fn script_results_match_the_declarations() {
+    let interfaces = declarations();
+    let cases = [
+        ("arm64.o", "pair_sum"),
+        ("x64_div.o", "smod3x"),
+        ("arm64_linked.elf", "pick"),
+    ];
+    let mut problems = Vec::new();
+    for (fixture, function) in cases {
+        let result = exercise(fixture, function);
+        let at = |field: &str| format!("{fixture} {function} {field}");
+        problems.extend(check(
+            &interfaces,
+            "Section",
+            &result["section"],
+            &at("sections()[0]"),
+        ));
+        problems.extend(check(&interfaces, "Card", &result["card"], &at("card()")));
+        problems.extend(check(
+            &interfaces,
+            "Card",
+            &result["smallCard"],
+            &at("card({budget: 100})"),
+        ));
+        problems.extend(check(
+            &interfaces,
+            "Signature",
+            &result["signature"],
+            &at("signature()"),
+        ));
+        problems.extend(check(
+            &interfaces,
+            "SignatureDb",
+            &result["signatures"]["database"],
+            &at("buildSignatures().database"),
+        ));
+        for (index, reference) in result["references"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .enumerate()
+        {
+            problems.extend(check(
+                &interfaces,
+                "Reference",
+                reference,
+                &at(&format!("references()[{index}]")),
+            ));
+        }
+        for (index, hit) in result["identify"]["matches"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .enumerate()
+        {
+            problems.extend(check(
+                &interfaces,
+                "Match",
+                hit,
+                &at(&format!("identify().matches[{index}]")),
+            ));
+        }
+
+        // The data fields of Binary and Func, without their methods.
+        let fields = |interface: &str| {
+            let (required, optional) = &interfaces[interface];
+            (required.clone(), optional.clone())
+        };
+        let (binary_fields, _) = fields("Binary");
+        for field in binary_fields {
+            if result["binary"].get(&field).is_none() {
+                problems.push(at(&format!("Binary.{field} is missing")));
+            }
+        }
+        let (func_required, func_optional) = fields("Func");
+        for field in func_required.iter() {
+            if result["func"].get(field).is_none() {
+                problems.push(at(&format!("Func.{field} is missing")));
+            }
+        }
+        for field in result["func"]
+            .as_object()
+            .into_iter()
+            .flat_map(|object| object.keys())
+        {
+            if !func_required.contains(field) && !func_optional.contains(field) {
+                problems.push(at(&format!("Func.{field} is not declared")));
+            }
+        }
+
+        for (field, kind) in [
+            ("decompile", "string"),
+            ("ir", "string"),
+            ("shapeHash", "string"),
+        ] {
+            if !result[field].is_string() {
+                problems.push(at(&format!("{field}() should return a {kind}")));
+            }
+        }
+        for field in ["disasm", "strings"] {
+            if !result[field].is_array() {
+                problems.push(at(&format!("{field}() should return an array")));
+            }
+        }
+        if result["disasm"]
+            .as_array()
+            .is_some_and(|lines| lines.len() > 3)
+        {
+            problems.push(at("disasm({limit: 3}) returned more than 3 lines"));
+        }
+        if result["smallCard"]["approxTokens"]
+            .as_u64()
+            .is_some_and(|tokens| tokens > 100)
+        {
+            problems.push(at("card({budget: 100}) is over its budget"));
+        }
+        if result["namedOnly"] != Value::Bool(true) {
+            problems.push(at("functions({named: true}) returned an unnamed function"));
+        }
+        if result["byRegExp"] != 1 {
+            problems.push(at(
+                "functions({name: RegExp}) did not find exactly the function",
+            ));
+        }
+    }
+    assert!(
+        problems.is_empty(),
+        "the API and its declarations disagree:\n{}",
+        problems.join("\n")
+    );
+}
+
+#[test]
+fn every_declared_method_is_exercised() {
+    let source =
+        std::fs::read_to_string(common::root().join("tests/api.rs")).expect("reading this test");
+    let mut missing = Vec::new();
+    for file in ["binary.d.ts", "func.d.ts"] {
+        let text = std::fs::read_to_string(common::root().join("src/script/api").join(file))
+            .expect("reading the declarations");
+        for line in text.lines() {
+            let line = line.trim();
+            let Some((name, _)) = line.split_once('(') else {
+                continue;
+            };
+            if line.starts_with("/*")
+                || line.starts_with('*')
+                || line.starts_with("//")
+                || name.contains([' ', ':'])
+            {
+                continue;
+            }
+            if !source.contains(&format!(".{name}(")) {
+                missing.push(name.to_owned());
+            }
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "declared but not exercised: {missing:?}"
+    );
+}

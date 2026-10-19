@@ -1,0 +1,173 @@
+# metrics/float.aarch64.O2.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 11 unsupported, 1 gotos
+0x21019c 144 average symtab,dwarf
+0x21022c 12 lerp symtab,dwarf
+0x210238 8 truncate_to_int symtab,dwarf
+0x210240 12 widen symtab,dwarf
+0x21024c 16 compare_doubles symtab,dwarf
+
+== 0x21019c average
+-- decompile
+/* velk pseudo-C: average @ 0x21019c */
+double average(double *values, int n) {
+    if (n < 0x1) {
+        /* unsupported: MOVI at 0x210224 */
+        return values;
+    }
+    /* unsupported: MOVI at 0x2101a4 */
+    x8 = n;
+    if (n < 0x4 /* unsigned */) {
+        x9 = 0x0;
+    } else {
+        x10 = values + 0x10;
+        x11 = x8 & 0x7ffffffc;
+        do {
+            /* unsupported: SIMD vector pair load */
+            x11 = x11 - 0x4;
+            x10 = x10 + 0x20;
+            /* unsupported (6 steps): DUP at 0x2101d4, FADD at 0x2101d8, DUP at 0x2101dc, FADD at 0x2101e0, FADD at 0x2101e4, FADD at 0x2101e8 */
+        } while (x11 != 0x4);
+        if (x9 == x8) { goto L_210210; }
+    }
+    x10 = values + (x9 << 0x3);
+    x8 = x8 - x9;
+    do {
+        x8 = x8 - 0x1;
+        /* unsupported: FADD at 0x210208 */
+    } while (x8 != 0x1);
+L_210210:
+    if (n <= 0x0) {
+        /* unsupported: MOVI at 0x210224 */
+        return values;
+    }
+    /* unsupported (2 steps): SCVTF at 0x210218, FDIV at 0x21021c */
+    return values;
+}
+-- signature
+double (double * values, int n)
+-- references
+
+-- ir
+fn average @ 0x21019c (size 144)
+  blk0 @ 0x21019c:
+    brif lt w1, #0x1 -> 0x210224
+  blk1 @ 0x2101a4:
+    unsupported: MOVI at 0x2101a4
+    x8 = w1
+    brif cs w1, #0x4 -> 0x2101bc
+  blk2 @ 0x2101b4:
+    x9 = #0x0
+    br 0x2101f8
+  blk3 @ 0x2101bc:
+    x10 = (x0 + #0x10)
+    x11 = (x8 & #0x7ffffffc)
+  blk4 @ 0x2101c8:
+    unsupported: SIMD vector pair load
+    x11 = (x11 - #0x4)
+    x10 = (x10 + #0x20)
+    unsupported: DUP at 0x2101d4
+    unsupported: FADD at 0x2101d8
+    unsupported: DUP at 0x2101dc
+    unsupported: FADD at 0x2101e0
+    unsupported: FADD at 0x2101e4
+    unsupported: FADD at 0x2101e8
+    brif ne x11, #0x4 -> 0x2101c8
+  blk5 @ 0x2101f0:
+    brif eq x9, x8 -> 0x210210
+  blk6 @ 0x2101f8:
+    x10 = (x0 + (x9 << #0x3))
+    x8 = (x8 - x9)
+  blk7 @ 0x210200:
+    x8 = (x8 - #0x1)
+    unsupported: FADD at 0x210208
+    brif ne x8, #0x1 -> 0x210200
+  blk8 @ 0x210210:
+    brif le w1, #0x0 -> 0x210224
+  blk9 @ 0x210218:
+    unsupported: SCVTF at 0x210218
+    unsupported: FDIV at 0x21021c
+    ret x0
+  blk10 @ 0x210224:
+    unsupported: MOVI at 0x210224
+    ret x0
+-- card
+{"addr":"0x21019c","approxTokens":240,"blocks":11,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":144,"unsupported":12}
+
+== 0x21022c lerp
+-- decompile
+/* velk pseudo-C: lerp @ 0x21022c */
+float lerp(float a) {
+    /* unsupported (2 steps): FSUB at 0x21022c, FMADD at 0x210230 */
+    return a;
+}
+-- signature
+float (float a)
+-- references
+
+-- ir
+fn lerp @ 0x21022c (size 12)
+  blk0 @ 0x21022c:
+    unsupported: FSUB at 0x21022c
+    unsupported: FMADD at 0x210230
+    ret x0
+-- card
+{"addr":"0x21022c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":2}
+
+== 0x210238 truncate_to_int
+-- decompile
+/* velk pseudo-C: truncate_to_int @ 0x210238 */
+int truncate_to_int(double x) {
+    /* unsupported: FCVTZS at 0x210238 */
+    return x;
+}
+-- signature
+int (double x)
+-- references
+
+-- ir
+fn truncate_to_int @ 0x210238 (size 8)
+  blk0 @ 0x210238:
+    unsupported: FCVTZS at 0x210238
+    ret x0
+-- card
+{"addr":"0x210238","approxTokens":108,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
+
+== 0x210240 widen
+-- decompile
+/* velk pseudo-C: widen @ 0x210240 */
+double widen(float x) {
+    /* unsupported (2 steps): FCVT at 0x210240, FADD at 0x210244 */
+    return x;
+}
+-- signature
+double (float x)
+-- references
+
+-- ir
+fn widen @ 0x210240 (size 12)
+  blk0 @ 0x210240:
+    unsupported: FCVT at 0x210240
+    unsupported: FADD at 0x210244
+    ret x0
+-- card
+{"addr":"0x210240","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":2}
+
+== 0x21024c compare_doubles
+-- decompile
+/* velk pseudo-C: compare_doubles @ 0x21024c */
+int compare_doubles(void) {
+    /* unsupported: FCMP at 0x21024c */
+    w0 = ((0x0 > 0x0 ? 0x1 : 0x0) >= 0x0 ? (0x0 > 0x0 ? 0x1 : 0x0) : 0xffffffff);
+    return w0;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn compare_doubles @ 0x21024c (size 16)
+  blk0 @ 0x21024c:
+    unsupported: FCMP at 0x21024c
+    w0 = select ge select gt #0x0, #0x0 ? #0x1, #0x0, #0x0 ? select gt #0x0, #0x0 ? #0x1, #0x0, #0xffffffff
+    ret w0
+-- card
+{"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}

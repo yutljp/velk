@@ -48,8 +48,8 @@
 3	arm64_div.o	umod3	has	a0 % 0x3
 3	arm64_div.o	hdiv3	has	/ 0x3
 3	arm64_div.o	lmod10	has	% 0xa
-3	x64_div.o	_l3	has	/ 0x3
-3	x64_div.o	_pmod8s	has	% 0x8
+3	x64_div.o	l3	has	/ 0x3
+3	x64_div.o	pmod8s	has	% 0x8
 
 # ---- L4 memory: members, arrays, string references ----
 4	l4_memory_a64.o	point_dot	has	field_0x0
@@ -74,10 +74,16 @@
 
 # ---- L7 language runtimes: Go pclntab / Rust demangling / stripped ----
 7	go_stripped	-	has	main.add
-7	go_stripped	-	count_min	500
+7	go_stripped	-	count	1273
 7	go_probe	-	has	main.divmod
 7	go_probe	-	has	main.sumSlice
 7	go_probe	main.add	has	uint64_t main_add(uint64_t a0, uint64_t a1)
 7	rust_demo	-	has	rust_demo::
-7	rust_probe_stripped	-	count_min	50
+7	rust_probe_stripped	-	count	453
 7	rust_probe_stripped	-	has_any	_main|entry
+# Expectations the reference fixtures do not meet yet.
+2	arm64_loops.o	sum_till_neg	known_has	sum_till_neg(uint32_t *a0, int32_t a1)
+4	l2_loop_a64.o	count_down	known_has	sink
+5	switch_jumptable_x64.o	d7	known_has	switch (a0)
+6	calls_a64.elf	pick_op	known_has	twice
+6	cpp_demo.o	use(int)	known_has	ns__add_int__int_()

@@ -1,5 +1,7 @@
 mod jump_table;
 pub mod refs;
+#[cfg(test)]
+mod semantics_tests;
 mod signature;
 mod typing;
 
@@ -30,6 +32,17 @@ impl Analysis {
 }
 
 pub fn analyze(image: &Image, function: &Function) -> Result<Analysis, LiftError> {
+    let lifted = lift_function(image, function)?;
+    Ok(optimize(image, lifted))
+}
+
+/// The function's IR before any optimization pass, with its recovered signature.
+struct Lifted {
+    ir: FunctionIr,
+    has_jump_tables: bool,
+}
+
+fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError> {
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     let mut blocks = lift::lift(image, function.addr, size, &HashSet::new())?;
     let mut tables = jump_table::recover(&blocks, image);
@@ -43,7 +56,7 @@ pub fn analyze(image: &Image, function: &Function) -> Result<Analysis, LiftError
     }
     let signature = signature::recover(&blocks, image.isa, image.format, image.go);
     jump_table::apply(&mut blocks, &tables);
-    let mut ir = FunctionIr {
+    let ir = FunctionIr {
         isa: image.isa,
         params: signature.params,
         ret_type: signature.ret,
@@ -55,13 +68,24 @@ pub fn analyze(image: &Image, function: &Function) -> Result<Analysis, LiftError
         size,
         blocks,
     };
+    Ok(Lifted {
+        ir,
+        has_jump_tables: !tables.is_empty(),
+    })
+}
+
+fn optimize(image: &Image, lifted: Lifted) -> Analysis {
+    let Lifted {
+        mut ir,
+        has_jump_tables,
+    } = lifted;
     let uniform_32 = passes::widths::specialize_widths(&mut ir);
-    passes::optimize(&mut ir, !tables.is_empty());
+    passes::optimize(&mut ir, has_jump_tables);
     typing::apply_width_types(&mut ir, &uniform_32);
     typing::apply_void_return(&mut ir);
-    typing::apply_dwarf_types(image, function.addr, &mut ir);
+    typing::apply_dwarf_types(image, ir.addr, &mut ir);
     passes::simplify::simplify(&mut ir);
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);
-    Ok(Analysis { ir, references })
+    Analysis { ir, references }
 }

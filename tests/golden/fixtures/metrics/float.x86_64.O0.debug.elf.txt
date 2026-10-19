@@ -1,0 +1,202 @@
+# metrics/float.x86_64.O0.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 10 unsupported, 1 gotos
+0x2011f0 129 average symtab,dwarf
+0x201280 49 lerp symtab,dwarf
+0x2012c0 16 truncate_to_int symtab,dwarf
+0x2012d0 32 widen symtab,dwarf
+0x2012f0 79 compare_doubles symtab,dwarf
+
+== 0x2011f0 average
+-- decompile
+/* velk pseudo-C: average @ 0x2011f0 */
+double average(double *values, int n) {
+    uint64_t local_0; /* [sp-8] */
+    uint64_t local_1; /* [sp+0] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = values;
+    *(uint32_t *)(rbp - 0xc) = n;
+    /* unsupported (2 steps): Xorps at 0x2011fb, Movsd at 0x2011fe */
+    *(uint32_t *)(rbp - 0x1c) = 0x0;
+    while (*(uint32_t *)(rbp - 0x1c) < *(uint32_t *)(rbp - 0xc)) {
+        rax = *(uint64_t *)(rbp - 0x8);
+        rcx = (int32_t)(*(uint32_t *)(rbp - 0x1c));
+        /* unsupported (3 steps): Movsd at 0x20121e, Addsd at 0x201223, Movsd at 0x201228 */
+        *(uint32_t *)(rbp - 0x1c) = *(uint32_t *)(rbp - 0x1c) + 0x1;
+    }
+    if (*(uint32_t *)(rbp - 0xc) > 0x0) {
+        /* unsupported (4 steps): Movsd at 0x201245, Cvtsi2sd at 0x20124a, Divsd at 0x20124f, Movsd at 0x201253 */
+    } else {
+        /* unsupported (3 steps): Xorps at 0x20125d, Movsd at 0x201260, Movsd at 0x20126a */
+        rbp = local_1;
+        return rax;
+    }
+    /* unsupported: Movsd at 0x20126a */
+    rbp = local_1;
+    return rax;
+}
+-- signature
+double (double * values, int n)
+-- references
+
+-- ir
+fn average @ 0x2011f0 (size 129)
+  blk0 @ 0x2011f0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    unsupported: Xorps at 0x2011fb
+    unsupported: Movsd at 0x2011fe
+    store32(#0x0, (rbp + #0xffffffffffffffe4))
+  blk1 @ 0x20120a:
+    rax = (load32((rbp + #0xffffffffffffffe4)) & #0xffffffff)
+    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x20123b
+  blk2 @ 0x201216:
+    rax = load64((rbp + #0xfffffffffffffff8))
+    rcx = sext32(load32((rbp + #0xffffffffffffffe4)))
+    unsupported: Movsd at 0x20121e
+    unsupported: Addsd at 0x201223
+    unsupported: Movsd at 0x201228
+    store32((load32((rbp + #0xffffffffffffffe4)) + #0x1), (rbp + #0xffffffffffffffe4))
+    br 0x20120a
+  blk3 @ 0x20123b:
+    brif le load32((rbp + #0xfffffffffffffff4)), #0x0 -> 0x20125d
+  blk4 @ 0x201245:
+    unsupported: Movsd at 0x201245
+    unsupported: Cvtsi2sd at 0x20124a
+    unsupported: Divsd at 0x20124f
+    unsupported: Movsd at 0x201253
+    br 0x20126a
+  blk5 @ 0x20125d:
+    unsupported: Xorps at 0x20125d
+    unsupported: Movsd at 0x201260
+    br 0x20126a
+  blk6 @ 0x20126a:
+    unsupported: Movsd at 0x20126a
+    rbp = load64((rsp + #0x8))
+    ret rax
+-- card
+{"addr":"0x2011f0","approxTokens":210,"blocks":7,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":129,"unsupported":12}
+
+== 0x201280 lerp
+-- decompile
+/* velk pseudo-C: lerp @ 0x201280 */
+float lerp(void) {
+    /* unsupported (9 steps): Movss at 0x201284, Movss at 0x201289, Movss at 0x20128e, Movss at 0x201293, Movss at 0x201298, Subss at 0x20129d, Movss at 0x2012a2, Mulss at 0x2012a7, Addss at 0x2012ab */
+    return rax;
+}
+-- signature
+float ()
+-- references
+
+-- ir
+fn lerp @ 0x201280 (size 49)
+  blk0 @ 0x201280:
+    unsupported: Movss at 0x201284
+    unsupported: Movss at 0x201289
+    unsupported: Movss at 0x20128e
+    unsupported: Movss at 0x201293
+    unsupported: Movss at 0x201298
+    unsupported: Subss at 0x20129d
+    unsupported: Movss at 0x2012a2
+    unsupported: Mulss at 0x2012a7
+    unsupported: Addss at 0x2012ab
+    ret rax
+-- card
+{"addr":"0x201280","approxTokens":174,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":49,"unsupported":9}
+
+== 0x2012c0 truncate_to_int
+-- decompile
+/* velk pseudo-C: truncate_to_int @ 0x2012c0 */
+int truncate_to_int(void) {
+    /* unsupported (2 steps): Movsd at 0x2012c4, Cvttsd2si at 0x2012c9 */
+    return rax;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn truncate_to_int @ 0x2012c0 (size 16)
+  blk0 @ 0x2012c0:
+    unsupported: Movsd at 0x2012c4
+    unsupported: Cvttsd2si at 0x2012c9
+    ret rax
+-- card
+{"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":2}
+
+== 0x2012d0 widen
+-- decompile
+/* velk pseudo-C: widen @ 0x2012d0 */
+double widen(void) {
+    /* unsupported (5 steps): Movss at 0x2012d4, Movss at 0x2012d9, Cvtss2sd at 0x2012de, Movsd at 0x2012e2, Mulsd at 0x2012ea */
+    return rax;
+}
+-- signature
+double ()
+-- references
+
+-- ir
+fn widen @ 0x2012d0 (size 32)
+  blk0 @ 0x2012d0:
+    unsupported: Movss at 0x2012d4
+    unsupported: Movss at 0x2012d9
+    unsupported: Cvtss2sd at 0x2012de
+    unsupported: Movsd at 0x2012e2
+    unsupported: Mulsd at 0x2012ea
+    ret rax
+-- card
+{"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":5}
+
+== 0x2012f0 compare_doubles
+-- decompile
+/* velk pseudo-C: compare_doubles @ 0x2012f0 */
+int compare_doubles(void) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    /* unsupported (5 steps): Movsd at 0x2012f4, Movsd at 0x2012f9, Movsd at 0x2012fe, Movsd at 0x201303, Ucomisd at 0x201308 */
+    if (/* ls */ true) { goto L_20131f; }
+    *(uint32_t *)(rbp - 0x14) = 0xffffffff;
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x14);
+L_20131f:
+    /* unsupported (3 steps): Movsd at 0x20131f, Movsd at 0x201324, Ucomisd at 0x201330 */
+    *(uint32_t *)(rbp - 0x14) = (0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0);
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x14);
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn compare_doubles @ 0x2012f0 (size 79)
+  blk0 @ 0x2012f0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    unsupported: Movsd at 0x2012f4
+    unsupported: Movsd at 0x2012f9
+    unsupported: Movsd at 0x2012fe
+    unsupported: Movsd at 0x201303
+    unsupported: Ucomisd at 0x201308
+    brif ls -> 0x20131f
+  blk1 @ 0x201312:
+    store32(#0xffffffff, (rbp + #0xffffffffffffffec))
+    br 0x20133a
+  blk2 @ 0x20131f:
+    unsupported: Movsd at 0x20131f
+    unsupported: Movsd at 0x201324
+    unsupported: Ucomisd at 0x201330
+    store32((select hi #0x0, #0x0 ? #0x1, #0x0 & #0xffffffff), (rbp + #0xffffffffffffffec))
+  blk3 @ 0x20133a:
+    rsp = (rsp + #0x8)
+    ret (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
+-- card
+{"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":79,"unsupported":8}

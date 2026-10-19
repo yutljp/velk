@@ -1,0 +1,141 @@
+# metrics/l4_memory.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 4 unsupported, 2 gotos
+0x2011e0 15 point_dot symtab,dwarf
+0x2011f0 140 array_sum symtab,dwarf
+0x201280 7 bump symtab,dwarf
+0x201290 11 banner_first symtab,dwarf
+
+== 0x2011e0 point_dot
+-- decompile
+/* velk pseudo-C: point_dot @ 0x2011e0 */
+/* struct: b +0x0:uint32_t, +0x4:uint32_t */
+int point_dot(struct point *a, struct point *b) {
+    return b->y * a->y + b->x * a->x;
+}
+-- signature
+int (struct point * a, struct point * b)
+-- references
+
+-- ir
+fn point_dot @ 0x2011e0 (size 15)
+  blk0 @ 0x2011e0:
+    ret ((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi)))
+-- card
+{"accesses":["b +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2011e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":15,"unsupported":0}
+
+== 0x2011f0 array_sum
+-- decompile
+/* velk pseudo-C: array_sum @ 0x2011f0 */
+int array_sum(int *a, int n) {
+    if (n & n <= 0x0) {
+        return 0x0;
+    }
+    rcx = n;
+    switch (n) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        goto L_201270;
+    case 8:
+        rdx = ecx & 0x7ffffff8;
+        rax = (ecx >> 0x3 & 0xfffffff) << 0x5;
+        /* unsupported: Pxor at 0x20121a */
+        n = 0x0;
+        /* unsupported: Pxor at 0x201220 */
+        do {
+            /* unsupported (4 steps): Movdqu at 0x201230, Paddd at 0x201235, Movdqu at 0x201239, Paddd at 0x20123f */
+            n = n + 0x20;
+        } while (rax != n);
+        /* unsupported (6 steps): Paddd at 0x20124c, Pshufd at 0x201250, Paddd at 0x201255, Pshufd at 0x201259, Paddd at 0x20125e, Movd at 0x201262 */
+        if (rdx == rcx) {
+            return rax;
+        }
+        rax = eax + *(uint32_t *)(a + rdx * 0x4);
+        if (rcx != rdx + 0x1) { goto L_201270; }
+    }
+}
+-- signature
+int (int * a, int n)
+-- references
+
+-- ir
+fn array_sum @ 0x2011f0 (size 140)
+  blk0 @ 0x2011f0:
+    brif le ((rsi & #0xffffffff) & (rsi & #0xffffffff)), #0x0 -> 0x201201
+  blk1 @ 0x2011f4:
+    rcx = (rsi & #0xffffffff)
+    brif cs (rsi & #0xffffffff), #0x8 -> 0x201204
+  blk2 @ 0x2011fb:
+    br 0x201270
+  blk3 @ 0x201201:
+    ret #0x0
+  blk4 @ 0x201204:
+    rdx = (((rcx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
+    rax = ((((((rcx & #0xffffffff) >> #0x3) & #0xffffffff) & #0xfffffff) & #0xffffffff) << #0x5)
+    unsupported: Pxor at 0x20121a
+    rsi = #0x0
+    unsupported: Pxor at 0x201220
+  blk5 @ 0x201230:
+    unsupported: Movdqu at 0x201230
+    unsupported: Paddd at 0x201235
+    unsupported: Movdqu at 0x201239
+    unsupported: Paddd at 0x20123f
+    rsi = (rsi + #0x20)
+    brif ne rax, rsi -> 0x201230
+  blk6 @ 0x20124c:
+    unsupported: Paddd at 0x20124c
+    unsupported: Pshufd at 0x201250
+    unsupported: Paddd at 0x201255
+    unsupported: Pshufd at 0x201259
+    unsupported: Paddd at 0x20125e
+    unsupported: Movd at 0x201262
+    brif eq rdx, rcx -> 0x20127b
+  blk7 @ 0x20126b:
+    rax = (((rax & #0xffffffff) + load32((rdi + (rdx * #0x4)))) & #0xffffffff)
+    brif ne rcx, (rdx + #0x1) -> 0x201270
+  blk8 @ 0x20127b:
+    ret rax
+-- card
+{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":12}
+
+== 0x201280 bump
+-- decompile
+/* velk pseudo-C: bump @ 0x201280 */
+/* ref: 0x2022a8 .bss */
+void bump(void) {
+    dword_2022a8 += 0x1;
+    return;
+}
+-- signature
+void ()
+-- references
+0x2022a8 .bss
+-- ir
+fn bump @ 0x201280 (size 7)
+  blk0 @ 0x201280:
+    store32((load32(#0x2022a8) + #0x1), #0x2022a8)
+    ret rax
+-- card
+{"addr":"0x201280","approxTokens":108,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":7,"unsupported":0}
+
+== 0x201290 banner_first
+-- decompile
+/* velk pseudo-C: banner_first @ 0x201290 */
+/* ref: 0x2022a0 -> 0x200158 "velk ladder" */
+int banner_first(void) {
+    return (int8_t)(*(uint8_t *)(qword_2022a0));
+}
+-- signature
+int ()
+-- references
+0x2022a0 -> 0x200158 "velk ladder"
+-- ir
+fn banner_first @ 0x201290 (size 11)
+  blk0 @ 0x201290:
+    ret (sext8(load8(load64(#0x2022a0))) & #0xffffffff)
+-- card
+{"addr":"0x201290","approxTokens":114,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf"],"section":".text","size":11,"strings":["velk ladder"],"unsupported":0}

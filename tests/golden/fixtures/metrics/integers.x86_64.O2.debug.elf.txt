@@ -1,0 +1,204 @@
+# metrics/integers.x86_64.O2.debug.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 2 unsupported, 1 gotos
+0x201210 4 narrow_add symtab,dwarf
+0x201220 6 widen_mul symtab,dwarf
+0x201230 9 mixed_sign symtab,dwarf
+0x201240 13 in_range symtab,dwarf
+0x201250 7 rotate_left symtab,dwarf
+0x201260 28 popcount symtab,dwarf
+0x201280 5 byte_swap symtab,dwarf
+0x201290 13 min3 symtab,dwarf
+0x2012a0 11 labs_value symtab,dwarf
+0x2012b0 10 mul_high symtab,dwarf
+
+== 0x201210 narrow_add
+-- decompile
+/* velk pseudo-C: narrow_add @ 0x201210 */
+uint32_t narrow_add(uint32_t a, uint32_t b) {
+    eax = b + a;
+    return eax;
+}
+-- signature
+uint32_t (uint32_t a, uint32_t b)
+-- references
+
+-- ir
+fn narrow_add @ 0x201210 (size 4)
+  blk0 @ 0x201210:
+    eax = (rsi + rdi)
+    ret eax
+-- card
+{"addr":"0x201210","approxTokens":108,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
+
+== 0x201220 widen_mul
+-- decompile
+/* velk pseudo-C: widen_mul @ 0x201220 */
+uint32_t widen_mul(uint32_t a, uint32_t b) {
+    return a * b;
+}
+-- signature
+uint32_t (uint32_t a, uint32_t b)
+-- references
+
+-- ir
+fn widen_mul @ 0x201220 (size 6)
+  blk0 @ 0x201220:
+    ret (edi * esi)
+-- card
+{"addr":"0x201220","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x201230 mixed_sign
+-- decompile
+/* velk pseudo-C: mixed_sign @ 0x201230 */
+uint32_t mixed_sign(int a, uint32_t b) {
+    return (int32_t)(a) - b;
+}
+-- signature
+uint32_t (int a, uint32_t b)
+-- references
+
+-- ir
+fn mixed_sign @ 0x201230 (size 9)
+  blk0 @ 0x201230:
+    ret (sext32(edi) - esi)
+-- card
+{"addr":"0x201230","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":9,"unsupported":0}
+
+== 0x201240 in_range
+-- decompile
+/* velk pseudo-C: in_range @ 0x201240 */
+_Bool in_range(int x, int lo, int hi, uint64_t a3) {
+    rax = rax & 0xffffffffffffff00 | ((x <= hi ? 0x1 : 0x0)) & 0xff & 0xff;
+    return rax & 0xffffffffffffff00 | rax & 0xff & ((a3 & 0xffffffffffffff00 | ((x >= lo ? 0x1 : 0x0)) & 0xff & 0xff) & 0xff) & 0xff;
+}
+-- signature
+_Bool (int x, int lo, int hi, uint64_t a3)
+-- references
+
+-- ir
+fn in_range @ 0x201240 (size 13)
+  blk0 @ 0x201240:
+    rax = ((rax & #0xffffffffffffff00) | ((select le edi, edx ? #0x1, #0x0 & #0xff) & #0xff))
+    ret ((rax & #0xffffffffffffff00) | (((rax & #0xff) & (((rcx & #0xffffffffffffff00) | ((select ge edi, esi ? #0x1, #0x0 & #0xff) & #0xff)) & #0xff)) & #0xff))
+-- card
+{"addr":"0x201240","approxTokens":132,"blocks":1,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":0}
+
+== 0x201250 rotate_left
+-- decompile
+/* velk pseudo-C: rotate_left @ 0x201250 */
+uint32_t rotate_left(uint32_t x, uint32_t k) {
+    /* unsupported: Rol at 0x201254 */
+    return x;
+}
+-- signature
+uint32_t (uint32_t x, uint32_t k)
+-- references
+
+-- ir
+fn rotate_left @ 0x201250 (size 7)
+  blk0 @ 0x201250:
+    unsupported: Rol at 0x201254
+    ret edi
+-- card
+{"addr":"0x201250","approxTokens":120,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":7,"unsupported":1}
+
+== 0x201260 popcount
+-- decompile
+/* velk pseudo-C: popcount @ 0x201260 */
+int popcount(uint32_t x) {
+    rax = 0x0;
+    if (x & x == 0x0) {
+        return rax;
+    }
+    ecx = x - 0x1;
+    rax = eax + 0x1;
+    ecx = ecx & x;
+    if (ecx & ecx != 0x0) { goto L_201270; }
+}
+-- signature
+int (uint32_t x)
+-- references
+
+-- ir
+fn popcount @ 0x201260 (size 28)
+  blk0 @ 0x201260:
+    rax = #0x0
+    brif eq ((rdi & #0xffffffff) & (rdi & #0xffffffff)), #0x0 -> 0x20127b
+  blk1 @ 0x201266:
+    ecx = (rdi + #0xffffffffffffffff)
+    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    ecx = (ecx & (rdi & #0xffffffff))
+    brif ne (ecx & (ecx & #0xffffffff)), #0x0 -> 0x201270
+  blk2 @ 0x20127b:
+    ret rax
+-- card
+{"addr":"0x201260","approxTokens":156,"blocks":3,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x201280 byte_swap
+-- decompile
+/* velk pseudo-C: byte_swap @ 0x201280 */
+uint32_t byte_swap(uint32_t x) {
+    /* unsupported: Bswap at 0x201282 */
+    return x;
+}
+-- signature
+uint32_t (uint32_t x)
+-- references
+
+-- ir
+fn byte_swap @ 0x201280 (size 5)
+  blk0 @ 0x201280:
+    unsupported: Bswap at 0x201282
+    ret edi
+-- card
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":1}
+
+== 0x201290 min3
+-- decompile
+/* velk pseudo-C: min3 @ 0x201290 */
+int min3(int a, int b, int c) {
+    return ((a < b ? a : b) >= c ? c : ((a < b ? a : b)));
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn min3 @ 0x201290 (size 13)
+  blk0 @ 0x201290:
+    ret select ge select lt edi, esi ? edi, esi, edx ? edx, select lt edi, esi ? edi, esi
+-- card
+{"addr":"0x201290","approxTokens":132,"blocks":1,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":0}
+
+== 0x2012a0 labs_value
+-- decompile
+/* velk pseudo-C: labs_value @ 0x2012a0 */
+long labs_value(long x) {
+    return (x < 0x0 ? x : -x);
+}
+-- signature
+long (long x)
+-- references
+
+-- ir
+fn labs_value @ 0x2012a0 (size 11)
+  blk0 @ 0x2012a0:
+    ret select lt rdi, #0x0 ? rdi, (#0x0 - rdi)
+-- card
+{"addr":"0x2012a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","size":11,"unsupported":0}
+
+== 0x2012b0 mul_high
+-- decompile
+/* velk pseudo-C: mul_high @ 0x2012b0 */
+uint64_t mul_high(uint64_t a, uint64_t b) {
+    return __umulh(b, a);
+}
+-- signature
+uint64_t (uint64_t a, uint64_t b)
+-- references
+
+-- ir
+fn mul_high @ 0x2012b0 (size 10)
+  blk0 @ 0x2012b0:
+    ret (rsi hi128 rdi)
+-- card
+{"addr":"0x2012b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mul_high","nameSources":["symtab","dwarf"],"section":".text","size":10,"unsupported":0}

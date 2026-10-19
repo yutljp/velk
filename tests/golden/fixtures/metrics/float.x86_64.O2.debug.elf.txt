@@ -1,0 +1,170 @@
+# metrics/float.x86_64.O2.debug.elf: elf x86_64 no entry, 5 functions, 0 lift failures, 9 unsupported, 2 gotos
+0x2011b0 161 average symtab,dwarf
+0x201260 13 lerp symtab,dwarf
+0x201270 5 truncate_to_int symtab,dwarf
+0x201280 9 widen symtab,dwarf
+0x201290 22 compare_doubles symtab,dwarf
+
+== 0x2011b0 average
+-- decompile
+/* velk pseudo-C: average @ 0x2011b0 */
+double average(double *values, int n) {
+    /* unsupported (2 steps): Xorpd at 0x2011b0, Xorpd at 0x2011b4 */
+    if (n & n <= 0x0) { goto L_20123d; }
+    rax = n & 0x7;
+    if (n < 0x8 /* unsigned */) {
+        rcx = 0x0;
+    } else {
+        rdx = edx & 0x7ffffff8;
+        rcx = 0x0;
+        do {
+            /* unsupported (8 steps): Addsd at 0x2011e0, Addsd at 0x2011e5, Addsd at 0x2011eb, Addsd at 0x2011f1, Addsd at 0x2011f7, Addsd at 0x2011fd, Addsd at 0x201203, Addsd at 0x201209 */
+            rcx = rcx + 0x8;
+        } while (rdx != rcx);
+    }
+    if (rax & rax == 0x0) { goto L_20123d; }
+    rcx = values + rcx * 0x8;
+    rdx = 0x0;
+    do {
+        /* unsupported: Addsd at 0x201230 */
+        rdx = rdx + 0x1;
+    } while (rax != rdx);
+L_20123d:
+    if (n & n > 0x0) {
+        /* unsupported (4 steps): Xorps at 0x201241, Cvtsi2sd at 0x201244, Divsd at 0x201248, Movapd at 0x20124c */
+    }
+    return eax;
+}
+-- signature
+double (double * values, int n)
+-- references
+
+-- ir
+fn average @ 0x2011b0 (size 161)
+  blk0 @ 0x2011b0:
+    unsupported: Xorpd at 0x2011b0
+    unsupported: Xorpd at 0x2011b4
+    brif le (esi & esi), #0x0 -> 0x20123d
+  blk1 @ 0x2011c0:
+    rax = (((esi & #0xffffffff) & #0x7) & #0xffffffff)
+    brif cs esi, #0x8 -> 0x2011d0
+  blk2 @ 0x2011cc:
+    rcx = #0x0
+    br 0x201218
+  blk3 @ 0x2011d0:
+    rdx = (((rdx & #0xffffffff) & #0x7ffffff8) & #0xffffffff)
+    rcx = #0x0
+  blk4 @ 0x2011e0:
+    unsupported: Addsd at 0x2011e0
+    unsupported: Addsd at 0x2011e5
+    unsupported: Addsd at 0x2011eb
+    unsupported: Addsd at 0x2011f1
+    unsupported: Addsd at 0x2011f7
+    unsupported: Addsd at 0x2011fd
+    unsupported: Addsd at 0x201203
+    unsupported: Addsd at 0x201209
+    rcx = (rcx + #0x8)
+    brif ne rdx, rcx -> 0x2011e0
+  blk5 @ 0x201218:
+    brif eq (rax & rax), #0x0 -> 0x20123d
+  blk6 @ 0x20121d:
+    rcx = (rdi + (rcx * #0x8))
+    rdx = #0x0
+  blk7 @ 0x201230:
+    unsupported: Addsd at 0x201230
+    rdx = (rdx + #0x1)
+    brif ne rax, rdx -> 0x201230
+  blk8 @ 0x20123d:
+    brif le (esi & esi), #0x0 -> 0x201250
+  blk9 @ 0x201241:
+    unsupported: Xorps at 0x201241
+    unsupported: Cvtsi2sd at 0x201244
+    unsupported: Divsd at 0x201248
+    unsupported: Movapd at 0x20124c
+  blk10 @ 0x201250:
+    ret eax
+-- card
+{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":161,"unsupported":15}
+
+== 0x201260 lerp
+-- decompile
+/* velk pseudo-C: lerp @ 0x201260 */
+float lerp(void) {
+    /* unsupported (3 steps): Subss at 0x201260, Mulss at 0x201264, Addss at 0x201268 */
+    return rax;
+}
+-- signature
+float ()
+-- references
+
+-- ir
+fn lerp @ 0x201260 (size 13)
+  blk0 @ 0x201260:
+    unsupported: Subss at 0x201260
+    unsupported: Mulss at 0x201264
+    unsupported: Addss at 0x201268
+    ret rax
+-- card
+{"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":3}
+
+== 0x201270 truncate_to_int
+-- decompile
+/* velk pseudo-C: truncate_to_int @ 0x201270 */
+int truncate_to_int(void) {
+    /* unsupported: Cvttsd2si at 0x201270 */
+    return rax;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn truncate_to_int @ 0x201270 (size 5)
+  blk0 @ 0x201270:
+    unsupported: Cvttsd2si at 0x201270
+    ret rax
+-- card
+{"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":1}
+
+== 0x201280 widen
+-- decompile
+/* velk pseudo-C: widen @ 0x201280 */
+double widen(void) {
+    /* unsupported (2 steps): Cvtss2sd at 0x201280, Addsd at 0x201284 */
+    return rax;
+}
+-- signature
+double ()
+-- references
+
+-- ir
+fn widen @ 0x201280 (size 9)
+  blk0 @ 0x201280:
+    unsupported: Cvtss2sd at 0x201280
+    unsupported: Addsd at 0x201284
+    ret rax
+-- card
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":9,"unsupported":2}
+
+== 0x201290 compare_doubles
+-- decompile
+/* velk pseudo-C: compare_doubles @ 0x201290 */
+int compare_doubles(void) {
+    /* unsupported: Ucomisd at 0x201292 */
+    ecx = ((0x0 > 0x0 /* unsigned */ ? 0x1 : 0x0)) & 0xff & 0xff;
+    /* unsupported: Ucomisd at 0x201299 */
+    return (0x0 <= 0x0 /* unsigned */ ? ecx : 0xffffffff);
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn compare_doubles @ 0x201290 (size 22)
+  blk0 @ 0x201290:
+    unsupported: Ucomisd at 0x201292
+    rcx = ((select hi #0x0, #0x0 ? #0x1, #0x0 & #0xff) & #0xff)
+    unsupported: Ucomisd at 0x201299
+    ret (select ls #0x0, #0x0 ? (rcx & #0xffffffff), #0xffffffff & #0xffffffff)
+-- card
+{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":22,"unsupported":2}

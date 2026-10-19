@@ -1,0 +1,193 @@
+# key	fixture	function	verdict	reason
+ed9f2ea4be53fccc	alt.o	alt_helper	same	-
+9b44a5a33da5ba43	alt.o	alt_sum3	same	-
+2aaaa27700d890b5	arm64.o	helper	same	-
+1d8032c780f33463	arm64.o	pair_sum	same	-
+f801243acdf4ce1c	arm64.o	sum3	same	-
+ffc5415a9ca8bb33	arm64.o	sum_arr	different	sum_arr loops wrong: SIMD reduction unsupported so the vector-path sum is never computed (returns pointer-derived x8) and x10 is never set on that path; scalar loop decrements x9 then tests x9 != 1, so for n=1 it does not stop after p[0] (runs on past the array) where the source returns p[0]
+af898913ef4ab86e	arm64_debug.elf	helper	same	-
+673f35c08d2a0ca8	arm64_debug.elf	pair_sum	same	-
+8d5850ad3e9ff5fb	arm64_debug.elf	sum3	same	-
+2368702a97406850	arm64_debug.elf	sum_arr	different	SIMD body dropped (vector loads/adds unsupported, x8 reused as pointer then returned as sum); x10 never set on the n>=8 path; loop exit tests x11!=8 / x9!=1 after decrement, so for n=2 only p[0] is summed and n=1 loops past the end
+2aaaa27700d890b5	arm64_debug.o	helper	same	-
+1d8032c780f33463	arm64_debug.o	pair_sum	same	-
+f801243acdf4ce1c	arm64_debug.o	sum3	same	-
+ffc5415a9ca8bb33	arm64_debug.o	sum_arr	different	scalar loop decrements x9 then tests x9 != 1, so it stops one element early (n=2 returns p[0], not p[0]+p[1]; n=1 never reaches 1 and runs off the array); vector path never accumulates into x8 (SIMD unsupported), uses x10 without setting it, and exits on x11 != 8 after the decrement
+af898913ef4ab86e	arm64_debug_stripped.elf	helper	same	-
+673f35c08d2a0ca8	arm64_debug_stripped.elf	pair_sum	same	-
+8d5850ad3e9ff5fb	arm64_debug_stripped.elf	sum3	same	-
+2368702a97406850	arm64_debug_stripped.elf	sum_arr	different	sum_arr loops wrong: SIMD reduction unsupported so the vector-path sum is never computed (returns pointer-derived x8) and x10 is never set on that path; scalar loop decrements x9 then tests x9 != 1, so for n=1 it does not stop after p[0] (runs on past the array) where the source returns p[0]
+551c7f7c8f03e0e3	arm64_div.o	hdiv10	same	-
+38137633b7a2d366	arm64_div.o	hdiv3	same	-
+1ecbe466173d078e	arm64_div.o	is_neg	same	-
+5f783c3a199dd0dd	arm64_div.o	is_pos	same	-
+33a159e04ec6649f	arm64_div.o	is_zero	same	-
+60e20f8807e414a1	arm64_div.o	ldiv10	same	-
+8a5227caf7e0edeb	arm64_div.o	ldiv16	same	-
+37a124ca8dac9630	arm64_div.o	ldiv3	same	-
+652acc48142c011d	arm64_div.o	lmod10	same	-
+767b0308b023d51d	arm64_div.o	lmod16	same	-
+28147c1fd870f1aa	arm64_div.o	lmod3	same	-
+6979aa5b6571204e	arm64_div.o	lnegate	same	-
+f653d494c7bdcdd5	arm64_div.o	negate	same	-
+a015417fbe0c85f9	arm64_div.o	sdiv10	same	-
+eb1807d668495ab3	arm64_div.o	sdiv16	same	-
+5515edeb5da8e0cd	arm64_div.o	sdiv3	same	-
+6fca065526c7cc14	arm64_div.o	smod10	same	-
+a9369b0ff5fa2305	arm64_div.o	smod3	same	-
+01b3c2b45d765dae	arm64_div.o	smod4	same	-
+79c5c4500f8ab8be	arm64_div.o	udiv10	same	-
+9089863835ccf270	arm64_div.o	udiv3	same	-
+3e6ab75938e525d7	arm64_div.o	udiv64	same	-
+1a25eb7c425eaebd	arm64_div.o	umod10	same	-
+ef626aaad9bce153	arm64_div.o	umod10b	same	-
+f4895abe759ff3f1	arm64_div.o	umod3	same	-
+2ba647662e3b3935	arm64_jumptable.elf	d7	same	-
+5282b162717e9d6a	arm64_loops.o	count_bits	different	no return after the do-while (nonzero input returns nothing); loop tests the already-shifted w8 > 1, so for x=2 it stops after one step with a0=0 (source returns 1)
+2324a205b7f88bab	arm64_loops.o	sum_till_neg	different	precedence: loop condition `x11 & 0x80000000 == 0x0` parses as x11 & (0x80000000==0) = 0, so the loop always exits after one element and returns 0; for p={1,2}, n=2 source returns 3 (with (x11 & 0x80000000)==0 it would be same)
+76e8a9c634cdcd1a	arm64_loops.o	sum_until	same	-
+dc2b17093aa1f650	arm64_loops.o	sum_until_zero	different	loop exit tests x9 != 1 after decrementing x9: for n=2 only p[0] is processed, for n=1 the loop continues past the end
+047cbaaa3a2f8bb8	arm64_loops0.o	count_bits	different	local_1 is never set from a0 and local_0 is never set to 0, so the loop reads uninitialized stack slots (source starts from x and n=0)
+3bfe339b2ea49780	arm64_loops0.o	sum_till_neg	different	i (local_2) and total (local_4) never initialized to 0; loop condition reads w8/w9 that are never loaded from i/n; 'x8 & 0x80000000 == 0x0' parses as x8 & 0 so the loop always returns after the first element
+39b3b4e96717d20e	arm64_loops0.o	sum_until	different	total local_2 is never initialized to 0 (read uninitialized), and the exit test is (local_1 - limit) > limit instead of i > limit; for limit=1 source returns 1, pseudo-C loops until i-1>1 and adds 1+2 to garbage
+1332e9819d830b69	arm64_loops0.o	sum_until_zero	different	i (local_2) and total (local_3) are never set to 0; the loop test uses w8/w9, which are never loaded from i and n; `x8 & 0x80000000 == 0x0` parses in C as x8 & 0, so it is always false and nothing is ever added (p={1}, n=1: source 1)
+615a97cbf81b577e	arm64_macho.o	_helper	same	-
+972e4aaccd45f03a	arm64_macho.o	_pair_sum	same	-
+5fc9d1fd05649bff	arm64_macho.o	_sum3	same	-
+d10cd937b09125db	arm64_macho.o	_sum_arr	different	SIMD loop body unsupported: vector partial sums never computed, x10 and the vector-path x8 never set (returns a0+0x20 pointer value); loop tests x11 != 0x10 / x9 != 1 after decrement, so for n=1 the scalar loop does not terminate after one element
+13fb846b00e555ba	arm64_switch.elf	dispatch	different	table index w8 is never set (should be a0-10); result reads dword_200120[undefined]
+ab0b628d8e7d4d13	calls_a64.elf	apply_pointer	different	the indirect call f(x) (BLR) is dropped; returns x+1 instead of f(x)+1, e.g. f=square, x=3: source 10, pseudo-C 4
+b897f0b4d7c02e40	calls_a64.elf	apply_table	same	-
+5f9cf8cbd05b75a0	calls_a64.elf	call_sum9	same	-
+01141f501b56dcd3	calls_a64.elf	factorial	different	vectorized path dropped (w9 never set, product of the vector lanes lost); scalar loop exits on w8 > 2 after decrement, so factorial(3) returns 3 instead of 6
+a5a453e8f4a1a224	calls_a64.elf	is_even	same	-
+eb1cfa2dcea4651f	calls_a64.elf	is_odd	different	w8 is read (in w9 = (w8>>1)+1 & ~1 and in w8 != w9) but never assigned, so the unrolled path's result depends on an unset value
+c561ea807f6b2e67	calls_a64.elf	pick_op	same	-
+e0306bb0589d11d9	calls_a64.elf	square	same	-
+ea28836d5d3e6a71	calls_a64.elf	sum9	same	-
+848966004a69bece	calls_a64.elf	sum_varargs	different	total x8 is never accumulated (always 0) and the count a0 is never decremented; va_list fields local_1/local_8/local_10 are read without being set; for count=1, arg 5 source returns 5, pseudo-C returns 0 (or never terminates)
+856f83419ebf639c	calls_a64.elf	twice	same	-
+7d458067d3cc187e	calls_a64.o	apply_pointer	different	the indirect call f(x) (BLR) is dropped and the result is a1+1, i.e. x+1 instead of f(x)+1 (e.g. f=square, x=3: source 10, pseudo 4)
+cdf106036158560e	calls_a64.o	apply_table	different	'a0 * 0xaaaaaaab >> 0x21' is a 32-bit multiply in the pseudo-C (needs 64-bit umull): for index=3 it gives t1=0 and slot 3 instead of 0; also the table base is missing (loads from absolute address (index%3)*8; relocation not applied)
+c765c17e79e67fd3	calls_a64.o	call_sum9	same	-
+65b0d56cc162b4a7	calls_a64.o	factorial	different	vector product unsupported (w9 never set, vector path returns a0); scalar loop exits when w8 <= 2 after decrement, skipping the *2 step: n=3 gives 3*1 = 3, source returns 6
+391096593a77f224	calls_a64.o	is_even	same	-
+697882efdb921a81	calls_a64.o	is_odd	different	w8 is read but never set (for n>=2 the result depends on an undefined w8); loop exit w10 != 2 after decrement is also off
+dd9a0e9e7b2ed357	calls_a64.o	pick_op	different	returns 0 for both branches; source returns &square when which!=0 and &twice otherwise, so the selection is lost
+199a773eb5e4e0bc	calls_a64.o	square	same	-
+faa73acd6c529f37	calls_a64.o	sum9	same	-
+0bca00a0ad4dc6bf	calls_a64.o	sum_varargs	different	the total (x8) is never accumulated and stays 0, so it always returns 0 (sum_varargs(1, 5): source 5); va_list fields local_1/local_8/local_10 are read without being initialized; `x12 & 0x80000000 == 0x0` parses as x12 & 0 (always false)
+d049b7718bcef33f	calls_a64.o	twice	same	-
+fb9ccb33cdd0d929	cpp_classes_a64.o	clamp_int(int)	same	-
+53fa247a2374669f	cpp_classes_a64.o	clamp_long(long)	different	lower bound check is wrong: it tests min(v,1000) > 1000 (never true), so it always returns -1000 (v=0: source 0, pseudo 0xfffffffffffffc18); should be > -1000
+b8c2fefe5cc5d33b	cpp_classes_a64.o	dot_sum(Vec2 const&, Vec2 const&)	different	returns a0 (address of a) unchanged; source returns (a.x+b.x)*(a.y+b.y); loads, adds and multiply are missing (FMOV unsupported)
+da83b1659de93cd3	cpp_classes_a64.o	increment(int&)	same	-
+0f5f9d326f9d221a	cpp_classes_a64.o	total_area(Shape const* const*, int)	different	virtual call area() (BLR) dropped: adds the low 32 bits of the object pointer instead of the call result; loop decrements x21 then tests x21 != 1, so for n=1 it does not stop after one element
+2bac1946b9a6bb74	cpp_classes_x64.o	clamp_int(int)	different	precedence: `m & m > 0x0 ? m : 0` parses as (m & (m > 0)) ? m : 0 = (m & 1) ? m : 0, so even values are clamped to 0: v=2 source 2, pseudo-C 0 (as m > 0 ? m : 0 it would be same)
+93e6fb7e70c4fd2d	cpp_classes_x64.o	clamp_long(long)	same	-
+3913a93fafe6b9f4	cpp_classes_x64.o	dot_sum(Vec2 const&, Vec2 const&)	same	-
+4ba7f3fdbb981afb	cpp_classes_x64.o	increment(int&)	same	-
+e193fbb72a77bc80	cpp_classes_x64.o	total_area(Shape const* const*, int)	different	the virtual call shapes[i]->area() through the vtable loaded in rax is shown as a direct recursive call to total_area; also `a1 & a1 <= 0x0` parses as a1 & (a1 <= 0), which is 0 for n=0, so n=0 enters the loop
+caf29c6d6fa0efbc	cpp_demo.o	use(int)	different	tail call to ns::add shown as unresolved sub_<dynamic>() and its result is never returned (function falls off the end without return)
+0193dadfdb620041	l0_arith_a64.o	add3	same	-
+3379ac629e692cc9	l0_arith_a64.o	negate	same	-
+ea905ab116e68f7a	l0_arith_a64.o	pick	same	-
+960807c2b22029ee	l0_arith_a64.o	scale	same	-
+208b48210ac602b6	l0_arith_x64.o	add3	same	-
+8c92e296982ca183	l0_arith_x64.o	negate	same	-
+20e5507666e5a9ee	l0_arith_x64.o	pick	same	-
+3bec9796cff5e335	l0_arith_x64.o	scale	same	-
+47c2afeff0786a28	l1_branch_a64.o	clamp	same	-
+2799bcb54220a434	l1_branch_a64.o	classify	same	-
+334b03730fcf0f25	l1_branch_a64.o	sign_of	same	-
+47c2afeff0786a28	l1_branch_x64.o	clamp	same	-
+ec75fd7a503a1f1d	l1_branch_x64.o	classify	different	operator precedence: 'a0 & a0 >= 0x0' is a0 & (a0>=0), so for x=2 it is 0 and returns -1 (source 1); 'a0 & a0 != 0x0' likewise gives ecx=0 for even x
+6e5321178463676b	l1_branch_x64.o	sign_of	different	precedence: `a0 & a0 != 0x0` parses as a0 & (a0 != 0) = a0 & 1, and `a0 & a0 <= 0x0` as a0 & (a0 <= 0); x=-2 gives ecx=0 and returns 1, source returns -1; x=2 returns 1 correctly only by luck (as written with test semantics it would be same)
+56b4e199c9cc6ba2	l2_loop_a64.o	count_down	same	-
+df0c32385042370f	l2_loop_a64.o	find_first	same	-
+68b584c3de028694	l2_loop_a64.o	sum_skip_odd	different	the n <= 0 path sets x8 = 0 but has no return
+1b1623dc980cdc64	l2_loop_a64.o	sum_while	different	store to volatile sink is rendered as a store to literal address 0 (x10=0; R_AARCH64 relocation for sink not applied); arithmetic otherwise matches
+f3f8ab12819de069	l2_loop_x64.o	count_down	different	returns rax, which is never set, and has no return on the fall-through path; switch is on n instead of the trip count; stores to sink go to nine different addresses (dword_186, dword_129, ...) instead of one; for n=3 source stores 1,2,3 to sink and returns 3
+c83272b9db895799	l2_loop_x64.o	find_first	different	when n<=0 or v is not found it returns rax, which is never set (source returns -1); also `a1 & a1 <= 0x0` parses as a1 & (a1 <= 0)
+cb6881d2e7a2f707	l2_loop_x64.o	sum_skip_odd	different	precedence: '(a0&0xffffffff) & ((a0&0xffffffff) <= 0)' does not return 0 for n<=0 (e.g. n=-5 enters the loop); 'a0 & 0xff & 0x1 == 0x0' is always 0 so the early returns never fire; no return at the end; sink shown as two different globals dword_1ba/dword_1d4 (unapplied relocations)
+cc6b5924aa01c28b	l2_loop_x64.o	sum_while	different	control flow is broken: it switches on the exact value of a0 (cases 0-8), so for n>=9 no case matches and the function falls off the end with no return; goto L_e0 targets a label that does not exist (remainder loop missing); case 8 ends with no return; `a0 & a0 <= 0x0` parses as a0 & (a0 <= 0)
+404efc9a30f28e5b	l4_memory_a64.o	array_sum	different	loop exit tests x9 != 1 after decrementing x9: for n=2 only a[0] is summed, for n=1 the loop runs past the end
+33d244238c4339c2	l4_memory_a64.o	banner_first	different	reads the banner pointer from qword_0: the data relocation is not applied
+fdb5a6ce0a4f8559	l4_memory_a64.o	bump	different	increments dword_0 instead of g_counter: the data relocation is not applied
+0eebbae850106409	l4_memory_a64.o	point_dot	same	-
+495271c56c9065f3	l4_memory_x64.o	array_sum	different	`a1 & a1 <= 0x0` parses in C as a1 & (a1 <= 0), which is 0 for n=0 (and for even negative n), so n=0 enters the do-while, reads a[0] and loops until rdx wraps, where the source returns 0 (only the operator precedence is wrong; the logic matches if read as (a1 & a1) <= 0)
+7c3ecb627687b96f	l4_memory_x64.o	banner_first	different	pointer banner read from qword_47, which is the next-instruction address inside banner_first's own code (R_X86_64_PC32 relocation not applied), not the banner global
+4032920ba2d28aaa	l4_memory_x64.o	bump	different	increments dword_36, an address inside bump's own code: the relocation is not applied
+2fd1e439dada4900	l4_memory_x64.o	point_dot	same	-
+27445ce20e99d6e3	l5_switch.elf	dense	different	the range guard `w9 > 0xf` reads w9, which is never set (it should be x-10), and the g_sink base x8 is never set; the case bodies themselves match c0..c15
+486617c8fdfb5874	l5_switch.o	dense	different	default path stores to *(x8) with x8 never set (should be g_sink); jump-table index reads *(x9) with x9 never set; case bodies (c0..c15 calls, return g_sink) are not represented
+046e669a8740af78	l6_abi_a64.o	six_args	same	-
+867ca628e99176da	l6_abi_a64.o	wide_add	same	-
+8ef29a910665fb0f	l6_abi_x64.o	six_args	same	-
+b8d153da5b01ce23	l6_abi_x64.o	wide_add	same	-
+191d7033afda4709	pe64.exe	msg_first	same	-
+2d9bb4438915c7ff	pe64.exe	reg_abs	different	branches inverted: returns a0 when a0<0 and -a0 otherwise (and with uint32 a0 the test is always false), so x=5 gives -5 where source returns 5
+991ab65a4dad0e82	pe64.exe	reg_add	same	-
+cdb78db42f908178	pe64.exe	reg_div	different	division is on uint32_t operands (unsigned), but the source is signed int division: a=-6, b=2 gives -3 in the source and 0x7ffffffd in the pseudo-C
+66587e43b066718a	pe64.exe	reg_max	same	-
+ee1f184fd342a52b	pe64.exe	reg_mod	different	signed % rendered on uint32 operands, so it is unsigned modulo: a=-7, b=3 source returns -1, pseudo-C returns 0xfffffff9 % 3 = 0
+734e06dfcd3ef6e4	pe64.exe	reg_mul	same	-
+dcff5043b9786c3b	pe64.exe	reg_negative	same	-
+52ac67ba5e89cbc8	pe64.exe	reg_sign	same	-
+edd0dbb3c360174a	pe64.obj	entry	different	calls to reg_add/reg_mul and the two volatile stores to x and y are missing; instead returns a qword from [rsp+8] (source is void with side effects)
+844aa41c21dac72a	pe64.obj	msg_first	different	kMsg pointer loaded from literal address 0x67 (next-instruction address inside msg_first; relocation not applied), not the kMsg global
+19c7319174746c30	pe64.obj	reg_abs	different	branches inverted: returns a0 when a0<0 and -a0 otherwise (and with uint32 a0 the test is always false), so x=5 gives -5 where source returns 5
+c4b96102dd265729	pe64.obj	reg_add	same	-
+1bf45b46c63e846f	pe64.obj	reg_div	different	division is on uint32_t operands (unsigned), but the source is signed int division: a=-6, b=2 gives -3 in the source and 0x7ffffffd in the pseudo-C
+a914484e0f1ee34d	pe64.obj	reg_max	same	-
+b2a331cbd812179a	pe64.obj	reg_mod	different	signed % rendered on uint32 operands, so it is unsigned modulo: a=-7, b=3 source returns -1, pseudo-C returns 0xfffffff9 % 3 = 0
+4896d73ce2045782	pe64.obj	reg_mul	same	-
+c1335695d135ced0	pe64.obj	reg_negative	same	-
+06fd2147b1c745f1	pe64.obj	reg_sign	same	-
+0e7b787a5710c1fc	switch_jumptable.o	d7	different	g is volatile but the reloads before each g += j and the final reload for `return g` are dropped (shown as w9 = w9, then return w9); the values match only if nothing else writes g, but the volatile reads are missing
+ed6ba2b80e6d74db	switch_jumptable_x64.o	d7	different	case bodies (g += j loops for cases 0..9) are not represented, only an indirect goto; default stores -1 to dword_208 but returns dword_20e, two different addresses for the same g (unapplied relocations)
+6911bc3deef7159a	switch_value_table.o	dispatch	different	the table load *(w8 << 2) reads w8, which is never set (it should be x-10), and has no table base, so cases 10..14 do not yield 1,3,7,9,11
+aa3e55ab9d36b7cd	x64_div.o	h10	same	-
+7ea88c98dd325a57	x64_div.o	h3	same	-
+2779fe3291f7a31e	x64_div.o	l10	same	-
+7356ea1b246e060f	x64_div.o	l3	same	-
+24e72490ca17f0bc	x64_div.o	ldiv16x	same	-
+2d71c553f9476a27	x64_div.o	lmod10x	same	-
+ed8c7515a70e62be	x64_div.o	pdiv10	same	-
+229896fce6945d48	x64_div.o	pdiv16l	same	-
+d13a75ca2fdf0645	x64_div.o	pdiv64	same	-
+3e0bb75c480f3a33	x64_div.o	pmod16l	same	-
+8118caf2d612c0ed	x64_div.o	pmod8s	same	-
+ae827e30097a9339	x64_div.o	pmod8x	same	-
+2e13c64e3efd2b51	x64_div.o	qdiv64	same	-
+adcedd94422e3dcc	x64_div.o	sdiv16x	same	-
+108d578c413479f1	x64_div.o	smod3x	same	-
+f41e3cf755708f17	x64_div.o	u64	same	-
+25d970e678d930ef	x64_div.o	umod10x	same	-
+695136c46d68c755	x64_div.o	umod3x	same	-
+57c60a940401b2c2	x64_div_macho.o	_h10	same	-
+c50c36acc6ef18cb	x64_div_macho.o	_h3	same	-
+1ab6d319a09e7438	x64_div_macho.o	_l10	same	-
+0961be6eb0cc0d01	x64_div_macho.o	_l3	same	-
+18366fd87ce08ec6	x64_div_macho.o	_ldiv16x	same	-
+efd9144f960f2855	x64_div_macho.o	_lmod10x	same	-
+7832a6098953c14d	x64_div_macho.o	_pdiv10	same	-
+bbbde49cefeb1b7a	x64_div_macho.o	_pdiv16l	same	-
+3a4fea2568dd679e	x64_div_macho.o	_pdiv64	same	-
+d1eb8b6d8c930962	x64_div_macho.o	_pmod16l	same	-
+6ec42f1ddbbff3a1	x64_div_macho.o	_pmod8s	same	-
+e9d43a5eb0de21a5	x64_div_macho.o	_pmod8x	same	-
+1fa980e3f6515e00	x64_div_macho.o	_qdiv64	same	-
+3b4394374deb6ee6	x64_div_macho.o	_sdiv16x	same	-
+af5d7099f5c4cb6c	x64_div_macho.o	_smod3x	same	-
+53416ba3c1399837	x64_div_macho.o	_u64	same	-
+0667d756baed2f67	x64_div_macho.o	_umod10x	same	-
+40e1aec611619e4d	x64_div_macho.o	_umod3x	same	-
+a03cc8bd592fd223	x64_loops.o	count_bits	different	no return on the loop exit path; adds a0 & 1 using the shifted value but stops when the shifted value <= 1 (for x=2: adds 0, x becomes 1, exits: 0 instead of 1); the entry test `a0 & a0 == 0x0` parses as a0 & (a0==0) and is always 0
+1b7683882d48fa21	x64_loops.o	sum_till_neg	different	`t1 & t1 >= 0x0` parses as t1 & (t1 >= 0), i.e. v & 1, so the loop stops at the first even non-negative value (p={2,3}, n=2: source 5, pseudo 0); likewise `t1 & t1 <= 0x0` leaves an even negative n unclamped (n=-2 reads past the array)
+67bcece564460a1f	x64_loops.o	sum_until	different	precedence: 'a0 & a0 <= 0x0' is a0 & (a0<=0), so for limit=-2 it is 0 and the closed form is evaluated (returns nonzero) where the source returns 0
+9f055207f5c8ff85	x64_loops.o	sum_until_zero	different	the `p[i] < 0 continue` (cmov) is dropped, so negative elements are added: p={-1}, n=1 source returns 0, pseudo-C returns -1; zero test `r8d & r8d == 0x0` also parses as r8d & (r8d==0) = 0, so the break never fires
+a7ed2b191382d6f4	arm64_linked.elf	pick	same	-
+4e7027ab022f7dc0	l5_switch.elf	sparse	different	the default path assigns -1 to a0 but has no return
+92413413a0424366	l5_switch.o	sparse	different	the default path assigns -1 to a0 but has no return
+b66c4231bedcf303	strings.o	pick	different	reads the kName pointer from qword_0: the data relocation is not applied

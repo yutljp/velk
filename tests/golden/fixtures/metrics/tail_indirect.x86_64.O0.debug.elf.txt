@@ -1,0 +1,67 @@
+# metrics/tail_indirect.x86_64.O0.debug.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201180 33 via_ptr symtab,dwarf
+0x2011b0 21 after_ptr symtab,dwarf
+
+== 0x201180 via_ptr
+-- decompile
+/* velk pseudo-C: via_ptr @ 0x201180 */
+int via_ptr(void *f, int x) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = f;
+    *(uint32_t *)(rbp - 0xc) = x;
+    rax = f;
+    sub_0();
+    return rax;
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn via_ptr @ 0x201180 (size 33)
+  blk0 @ 0x201180:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    rax = rdi
+    call 0x0
+    ret rax
+-- card
+{"addr":"0x201180","approxTokens":168,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf"],"section":".text","size":33,"unsupported":0}
+
+== 0x2011b0 after_ptr
+-- decompile
+/* velk pseudo-C: after_ptr @ 0x2011b0 */
+int after_ptr(int x) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
+    eax = x + 0x5;
+    *(uint32_t *)(rbp - 0x8) = eax;
+    return eax;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn after_ptr @ 0x2011b0 (size 21)
+  blk0 @ 0x2011b0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    eax = (edi + #0x5)
+    store32(eax, (rbp + #0xfffffffffffffff8))
+    ret eax
+-- card
+{"addr":"0x2011b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"after_ptr","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":0}

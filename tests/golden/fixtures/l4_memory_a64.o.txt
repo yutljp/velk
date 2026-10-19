@@ -1,0 +1,106 @@
+# l4_memory_a64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 20 point_dot symtab
+0x14 48 array_sum symtab
+0x44 20 bump symtab
+0x58 16 banner_first symtab
+
+== 0x0 point_dot
+-- decompile
+/* velk pseudo-C: point_dot @ 0x0 */
+/* struct: a0 +0x0:uint32_t, +0x4:uint32_t */
+/* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
+uint32_t point_dot(uint32_t *a0, uint32_t *a1) {
+    return a1->field_0x4 * a0->field_0x4 + a1->field_0x0 * a0->field_0x0;
+}
+-- signature
+uint32_t (uint32_t * a0, uint32_t * a1)
+-- references
+
+-- ir
+fn point_dot @ 0x0 (size 20)
+  blk0 @ 0x0:
+    ret (((load32((x1 + #0x4)) * load32((x0 + #0x4))) + (load32(x1) * load32(x0))) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t","a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+
+== 0x14 array_sum
+-- decompile
+/* velk pseudo-C: array_sum @ 0x14 */
+/* struct: a0 +0x0:uint32_t */
+int32_t array_sum(uint32_t *a0, int32_t a1) {
+    if (a1 < 0x1) {
+        return 0x0;
+    }
+    x8 = a0;
+    a0 = 0x0;
+    x9 = a1;
+    do {
+        w10 = *(uint32_t *)(x8);
+        x8 = x8 + 0x4;
+        x9 = x9 - 0x1;
+        a0 = w10 + (a0 & 0xffffffff);
+    } while (x9 != 0x1);
+    return a0;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn array_sum @ 0x14 (size 48)
+  blk0 @ 0x14:
+    brif lt w1, #0x1 -> 0x3c
+  blk1 @ 0x1c:
+    x8 = x0
+    x0 = #0x0
+    x9 = w1
+  blk2 @ 0x28:
+    w10 = load32(x8)
+    x8 = (x8 + #0x4)
+    x9 = (x9 - #0x1)
+    x0 = ((w10 + (x0 & #0xffffffff)) & #0xffffffff)
+    brif ne x9, #0x1 -> 0x28
+  blk3 @ 0x38:
+    ret x0
+  blk4 @ 0x3c:
+    ret #0x0
+-- card
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x14","approxTokens":156,"blocks":5,"hardReasons":[],"name":"array_sum","nameSources":["symtab"],"section":".text","size":48,"unsupported":0}
+
+== 0x44 bump
+-- decompile
+/* velk pseudo-C: bump @ 0x44 */
+void bump(void) {
+    dword_0 += 0x1;
+    return;
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn bump @ 0x44 (size 20)
+  blk0 @ 0x44:
+    store32((load32(#0x0) + #0x1), #0x0)
+    ret x0
+-- card
+{"addr":"0x44","approxTokens":126,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+
+== 0x58 banner_first
+-- decompile
+/* velk pseudo-C: banner_first @ 0x58 */
+uint32_t banner_first(void) {
+    w0 = *(uint8_t *)(qword_0);
+    return w0;
+}
+-- signature
+uint32_t ()
+-- references
+
+-- ir
+fn banner_first @ 0x58 (size 16)
+  blk0 @ 0x58:
+    w0 = load8(load64(#0x0))
+    ret w0
+-- card
+{"addr":"0x58","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}

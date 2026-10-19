@@ -1,0 +1,129 @@
+# cpp_classes_x64.o: elf x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 69 total_area(Shape const* const*, int) symtab
+0x50 22 clamp_int(int) symtab
+0x70 35 clamp_long(long) symtab
+0xa0 14 dot_sum(Vec2 const&, Vec2 const&) symtab
+0xb0 3 increment(int&) symtab
+
+== 0x0 total_area(Shape const* const*, int)
+-- decompile
+/* velk pseudo-C: total_area(Shape const* const*, int) @ 0x0 */
+/* struct: a0 +0x0:uint64_t */
+int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
+    if (a1 & a1 <= 0x0) {
+        ebp = 0x0;
+        return ebp;
+    }
+    rbx = a0;
+    r14 = a1;
+    r15 = 0x0;
+    ebp = 0x0;
+    do {
+        a0 = *(uint64_t *)(rbx + r15 * 0x8);
+        rax = a0->field_0x0;
+        total_area_Shape_const__const___int_();
+        ebp = ebp + eax;
+        r15 = r15 + 0x1;
+    } while (r14 != r15);
+    return ebp;
+}
+-- signature
+int32_t (uint64_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn total_area(Shape const* const*, int) @ 0x0 (size 69)
+  blk0 @ 0x0:
+    brif le (esi & esi), #0x0 -> 0x36
+  blk1 @ 0xb:
+    rbx = rdi
+    r14 = esi
+    r15 = #0x0
+    rbp = #0x0
+  blk2 @ 0x20:
+    rdi = load64((rbx + (r15 * #0x8)))
+    rax = load64(rdi)
+    call 0x0
+    rbp = (((rbp & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
+    r15 = (r15 + #0x1)
+    brif ne r14, r15 -> 0x20
+  blk3 @ 0x34:
+    br 0x38
+  blk4 @ 0x36:
+    rbp = #0x0
+  blk5 @ 0x38:
+    ret (rbp & #0xffffffff)
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x0","approxTokens":216,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab"],"section":".text","size":69,"unsupported":0}
+
+== 0x50 clamp_int(int)
+-- decompile
+/* velk pseudo-C: clamp_int(int) @ 0x50 */
+int32_t clamp_int_int_(int32_t a0) {
+    return (((a0 < 0xff ? a0 : 0xff)) & ((a0 < 0xff ? a0 : 0xff)) > 0x0 ? (a0 < 0xff ? a0 : 0xff) : 0x0);
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn clamp_int(int) @ 0x50 (size 22)
+  blk0 @ 0x50:
+    ret (select gt ((select lt edi, #0xff ? edi, #0xff & #0xffffffff) & (select lt edi, #0xff ? edi, #0xff & #0xffffffff)), #0x0 ? (select lt edi, #0xff ? edi, #0xff & #0xffffffff), #0x0 & #0xffffffff)
+-- card
+{"addr":"0x50","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab"],"section":".text","size":22,"unsupported":0}
+
+== 0x70 clamp_long(long)
+-- decompile
+/* velk pseudo-C: clamp_long(long) @ 0x70 */
+uint64_t clamp_long_long_(int64_t a0) {
+    return ((a0 < 0x3e8 ? a0 : 0x3e8) >= 0xfffffffffffffc19 ? (a0 < 0x3e8 ? a0 : 0x3e8) : 0xfffffffffffffc18);
+}
+-- signature
+uint64_t (int64_t a0)
+-- references
+
+-- ir
+fn clamp_long(long) @ 0x70 (size 35)
+  blk0 @ 0x70:
+    ret select ge select lt rdi, #0x3e8 ? rdi, #0x3e8, #0xfffffffffffffc19 ? select lt rdi, #0x3e8 ? rdi, #0x3e8, #0xfffffffffffffc18
+-- card
+{"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab"],"section":".text","size":35,"unsupported":0}
+
+== 0xa0 dot_sum(Vec2 const&, Vec2 const&)
+-- decompile
+/* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 */
+/* struct: a1 +0x0:uint32_t, +0x4:uint32_t */
+uint32_t dot_sum_Vec2_const___Vec2_const__(uint64_t a0, uint32_t *a1) {
+    return (a1->field_0x4 + *(uint32_t *)(a0 + 0x4)) * (a1->field_0x0 + *(uint32_t *)(a0));
+}
+-- signature
+uint32_t (uint64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 (size 14)
+  blk0 @ 0xa0:
+    ret ((load32((rsi + #0x4)) + load32((rdi + #0x4))) * (load32(rsi) + load32(rdi)))
+-- card
+{"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0xa0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab"],"section":".text","size":14,"unsupported":0}
+
+== 0xb0 increment(int&)
+-- decompile
+/* velk pseudo-C: increment(int&) @ 0xb0 */
+/* struct: a0 +0x0:uint32_t */
+void increment_int__(uint32_t *a0) {
+    a0->field_0x0 += 0x1;
+    return;
+}
+-- signature
+void (uint32_t * a0)
+-- references
+
+-- ir
+fn increment(int&) @ 0xb0 (size 3)
+  blk0 @ 0xb0:
+    store32((load32(rdi) + #0x1), rdi)
+    ret rax
+-- card
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0xb0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab"],"section":".text","size":3,"unsupported":0}

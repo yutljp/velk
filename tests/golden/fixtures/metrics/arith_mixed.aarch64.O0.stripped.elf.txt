@@ -1,0 +1,132 @@
+# metrics/arith_mixed.aarch64.O0.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x21019c 44 - prologue
+0x2101c8 96 - prologue
+0x210228 36 - prologue
+0x21024c 100 - prologue
+
+== 0x21019c -
+-- decompile
+/* velk pseudo-C: sub_21019c @ 0x21019c */
+uint32_t sub_21019c(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x21019c (size 44)
+  blk0 @ 0x21019c:
+    ret ((w0 + w1) + w2)
+-- card
+{"addr":"0x21019c","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
+
+== 0x2101c8 -
+-- decompile
+/* velk pseudo-C: sub_2101c8 @ 0x2101c8 */
+uint32_t sub_2101c8(uint32_t a0) {
+    uint32_t local_0; /* [sp+c] */
+    uint32_t local_1; /* [sp+8] */
+    uint32_t local_2; /* [sp+4] */
+
+    while (true) {
+        w9 = local_0;
+        w8 = local_2 - w9;
+        if (w8 >= w9) break;
+        w9 = local_2 * local_2;
+        local_1 += w9;
+        local_2 += 0x1;
+    }
+    return local_1;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2101c8 (size 96)
+  blk0 @ 0x2101c8:
+    br 0x2101dc
+  blk1 @ 0x2101dc:
+    w9 = load32((sp + #0xc))
+    w8 = (load32((sp + #0x4)) - w9)
+    brif ge w8, w9 -> 0x21021c
+  blk2 @ 0x2101ec:
+    br 0x2101f0
+  blk3 @ 0x2101f0:
+    w9 = (load32((sp + #0x4)) * load32((sp + #0x4)))
+    store32((load32((sp + #0x8)) + w9), (sp + #0x8))
+    br 0x21020c
+  blk4 @ 0x21020c:
+    store32((load32((sp + #0x4)) + #0x1), (sp + #0x4))
+    br 0x2101dc
+  blk5 @ 0x21021c:
+    ret load32((sp + #0x8))
+-- card
+{"addr":"0x2101c8","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":96,"sizeEstimated":true,"unsupported":0}
+
+== 0x210228 -
+-- decompile
+/* velk pseudo-C: sub_210228 @ 0x210228 */
+uint32_t sub_210228(uint64_t a0) {
+    return *(uint32_t *)(a0) + *(uint32_t *)(a0 + 0x4);
+}
+-- signature
+uint32_t (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210228 (size 36)
+  blk0 @ 0x210228:
+    ret (((load32(x0) & #0xffffffff) + (load32((x0 + #0x4)) & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x210228","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
+
+== 0x21024c -
+-- decompile
+/* velk pseudo-C: sub_21024c @ 0x21024c */
+uint32_t sub_21024c(uint32_t a0, uint32_t a1) {
+    uint64_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-c] */
+    uint32_t local_2; /* [sp-10] */
+    uint32_t local_3; /* [sp-14] */
+
+    local_0 = a0;
+    local_1 = a1;
+    while (true) {
+        w9 = local_1;
+        w8 = local_3 - w9;
+        if (w8 >= w9) break;
+        w9 = *(uint32_t *)(local_0 + (local_3 << 0x2));
+        local_2 += w9;
+        local_3 += 0x1;
+    }
+    return local_2;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x21024c (size 100)
+  blk0 @ 0x21024c:
+    store64(x0, (sp + #0xfffffffffffffff8))
+    store32(w1, (sp + #0xfffffffffffffff4))
+    br 0x210264
+  blk1 @ 0x210264:
+    x9 = (load32((sp + #0xfffffffffffffff4)) & #0xffffffff)
+    x8 = (((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - (x9 & #0xffffffff)) & #0xffffffff)
+    brif ge (x8 & #0xffffffff), (x9 & #0xffffffff) -> 0x2102a4
+  blk2 @ 0x210274:
+    br 0x210278
+  blk3 @ 0x210278:
+    x9 = (load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0xffffffff)
+    store32((load32((sp + #0xfffffffffffffff0)) + (x9 & #0xffffffff)), (sp + #0xfffffffffffffff0))
+    br 0x210294
+  blk4 @ 0x210294:
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
+    br 0x210264
+  blk5 @ 0x2102a4:
+    ret (load32((sp + #0xfffffffffffffff0)) & #0xffffffff)
+-- card
+{"addr":"0x21024c","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":100,"sizeEstimated":true,"unsupported":0}

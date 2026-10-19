@@ -1,4 +1,6 @@
 pub mod cfg;
+#[cfg(test)]
+pub mod eval;
 mod types;
 pub mod visit;
 
@@ -156,19 +158,13 @@ impl Expr {
                 BinOp::Xor => *a ^ *b,
                 BinOp::Shl => a.wrapping_shl(*b as u32),
                 BinOp::Shr => a.wrapping_shr(*b as u32),
-                BinOp::Sar => ((*a as i64) >> (*b as u32)) as u64,
-                BinOp::DivS if *b != 0 => ((*a as i64) / (*b as i64)) as u64,
-                BinOp::ModS if *b != 0 => ((*a as i64) % (*b as i64)) as u64,
+                BinOp::Sar => (*a as i64).wrapping_shr(*b as u32) as u64,
+                BinOp::DivS if *b != 0 => (*a as i64).wrapping_div(*b as i64) as u64,
+                BinOp::ModS if *b != 0 => (*a as i64).wrapping_rem(*b as i64) as u64,
                 BinOp::DivU if *b != 0 => a / b,
                 BinOp::ModU if *b != 0 => a % b,
-                BinOp::MulHigh => {
-                    let product = u128::from(*a) * u128::from(*b);
-                    u64::try_from(product >> 64).unwrap_or(0)
-                }
-                BinOp::MulHighS => {
-                    let product = i128::from(*a as i64) * i128::from(*b as i64);
-                    u64::try_from(product >> 64).unwrap_or(0)
-                }
+                BinOp::MulHigh => ((u128::from(*a) * u128::from(*b)) >> 64) as u64,
+                BinOp::MulHighS => ((i128::from(*a as i64) * i128::from(*b as i64)) >> 64) as u64,
                 BinOp::DivS | BinOp::ModS | BinOp::DivU | BinOp::ModU => {
                     return Expr::Bin {
                         op,
@@ -518,5 +514,24 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
         Stmt::Ret { value } => format!("ret {}", value.render(isa)),
         Stmt::Unsupported { text } => format!("unsupported: {text}"),
         Stmt::Trap => "trap".to_owned(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{BinOp, Expr};
+
+    #[test]
+    fn constant_folding_wraps_like_the_hardware() {
+        let fold = |op, a: u64, b: u64| Expr::bin(op, Expr::Const(a), Expr::Const(b));
+        let min = i64::MIN as u64;
+        assert_eq!(fold(BinOp::DivS, min, u64::MAX), Expr::Const(min));
+        assert_eq!(fold(BinOp::ModS, min, u64::MAX), Expr::Const(0));
+        assert_eq!(fold(BinOp::Sar, min, 64), Expr::Const(min));
+        assert_eq!(fold(BinOp::MulHighS, u64::MAX, 1), Expr::Const(u64::MAX));
+        assert_eq!(
+            fold(BinOp::MulHigh, u64::MAX, u64::MAX),
+            Expr::Const(u64::MAX - 1)
+        );
     }
 }

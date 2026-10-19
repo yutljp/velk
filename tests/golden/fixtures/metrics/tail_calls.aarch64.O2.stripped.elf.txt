@@ -1,0 +1,55 @@
+# metrics/tail_calls.aarch64.O2.stripped.elf: elf aarch64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x21017c 28 - prologue
+0x210198 8 - prologue
+0x2101a0 24 - prologue
+
+== 0x21017c -
+-- decompile
+/* velk pseudo-C: sub_21017c @ 0x21017c */
+uint32_t sub_21017c(uint32_t a0) {
+    return a0 + (a0 << 0x1) + 0x1;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x21017c (size 28)
+  blk0 @ 0x21017c:
+    ret ((w0 + (w0 << #0x1)) + #0x1)
+-- card
+{"addr":"0x21017c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":28,"sizeEstimated":true,"unsupported":0}
+
+== 0x210198 -
+-- decompile
+/* velk pseudo-C: sub_210198 @ 0x210198 */
+uint32_t sub_210198(uint32_t a0) {
+    sub_21017c();
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210198 (size 8)
+  blk0 @ 0x210198:
+    call 0x21017c
+-- card
+{"addr":"0x210198","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x2101a0 -
+-- decompile
+/* velk pseudo-C: sub_2101a0 @ 0x2101a0 */
+uint32_t sub_2101a0(uint32_t a0) {
+    return a0 - 0x7;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2101a0 (size 24)
+  blk0 @ 0x2101a0:
+    ret (w0 - #0x7)
+-- card
+{"addr":"0x2101a0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}

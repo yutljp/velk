@@ -1,0 +1,258 @@
+# l5_switch.elf: elf aarch64 0x2101ac, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x2101ac 268 dense symtab,entry
+0x2102b8 48 sparse symtab
+
+== 0x2101ac dense
+-- decompile
+/* velk pseudo-C: dense @ 0x2101ac */
+/* ref: 0x200158 .rodata */
+uint32_t dense(uint32_t a0) {
+    if (w9 > 0xf /* unsigned */) {
+        x9 = 0x0;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    }
+    w10 = 0x200158;
+    x12 = *(uint8_t *)(0x200158 + x9);
+    switch (a0) {
+    case 10:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 + 0xb;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 11:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        w10 = 0x12;
+        x9 = w9 ^ 0x12;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 12:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 - 0x19;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 13:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 | 0x20;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 14:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 + 0x27;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 15:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        w10 = 0x2e;
+        x9 = w9 ^ 0x2e;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 16:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 - 0x35;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 17:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 | 0x3c;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 18:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 + 0x43;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 19:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        w10 = 0x4a;
+        x9 = w9 ^ 0x4a;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 20:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 - 0x51;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 21:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        w10 = 0x58;
+        x9 = w9 | w10;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 22:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 + 0x5f;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 23:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        w10 = 0x66;
+        x9 = w9 ^ 0x66;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 24:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        x9 = w9 - 0x6d;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    case 25:
+        x9 = *(uint32_t *)(x8 + 0x2e8);
+        w10 = 0x74;
+        x9 = w9 | w10;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    default:
+        x9 = 0x0;
+        *(uint32_t *)(x8 + 0x2e8) = w9;
+        a0 = *(uint32_t *)(x8 + 0x2e8);
+        return a0;
+    }
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+0x200158 .rodata
+-- ir
+fn dense @ 0x2101ac (size 268)
+  blk0 @ 0x2101ac:
+    x9 = ((w0 - #0xa) & #0xffffffff)
+    x8 = #0x220000
+    brif hi (x9 & #0xffffffff), #0xf -> 0x2102a8
+  blk1 @ 0x2101bc:
+    x10 = #0x200158
+    x12 = (load8((#0x200158 + x9)) & #0xffffffff)
+    switch w0 [10->0x2101d4, 11->0x210254, 12->0x210220, 13->0x21023c, 14->0x2101f8, 15->0x210264, 16->0x210284, 17->0x210248, 18->0x21029c, 19->0x210210, 20->0x210290, 21->0x2101ec, 22->0x210204, 23->0x210274, 24->0x2101e0, 25->0x21022c] default 0x2102a8
+  blk2 @ 0x2101d4:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) + #0xb) & #0xffffffff)
+    br 0x2102ac
+  blk3 @ 0x2101e0:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) - #0x6d) & #0xffffffff)
+    br 0x2102ac
+  blk4 @ 0x2101ec:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x10 = #0x58
+    br 0x210234
+  blk5 @ 0x2101f8:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) + #0x27) & #0xffffffff)
+    br 0x2102ac
+  blk6 @ 0x210204:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) + #0x5f) & #0xffffffff)
+    br 0x2102ac
+  blk7 @ 0x210210:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x10 = #0x4a
+    x9 = (((x9 & #0xffffffff) ^ #0x4a) & #0xffffffff)
+    br 0x2102ac
+  blk8 @ 0x210220:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) - #0x19) & #0xffffffff)
+    br 0x2102ac
+  blk9 @ 0x21022c:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x10 = #0x74
+  blk10 @ 0x210234:
+    x9 = (((x9 & #0xffffffff) | (x10 & #0xffffffff)) & #0xffffffff)
+    br 0x2102ac
+  blk11 @ 0x21023c:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) | #0x20) & #0xffffffff)
+    br 0x2102ac
+  blk12 @ 0x210248:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) | #0x3c) & #0xffffffff)
+    br 0x2102ac
+  blk13 @ 0x210254:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x10 = #0x12
+    x9 = (((x9 & #0xffffffff) ^ #0x12) & #0xffffffff)
+    br 0x2102ac
+  blk14 @ 0x210264:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x10 = #0x2e
+    x9 = (((x9 & #0xffffffff) ^ #0x2e) & #0xffffffff)
+    br 0x2102ac
+  blk15 @ 0x210274:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x10 = #0x66
+    x9 = (((x9 & #0xffffffff) ^ #0x66) & #0xffffffff)
+    br 0x2102ac
+  blk16 @ 0x210284:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) - #0x35) & #0xffffffff)
+    br 0x2102ac
+  blk17 @ 0x210290:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) - #0x51) & #0xffffffff)
+    br 0x2102ac
+  blk18 @ 0x21029c:
+    x9 = (load32((x8 + #0x2e8)) & #0xffffffff)
+    x9 = (((x9 & #0xffffffff) + #0x43) & #0xffffffff)
+    br 0x2102ac
+  blk19 @ 0x2102a8:
+    x9 = #0x0
+  blk20 @ 0x2102ac:
+    store32((x9 & #0xffffffff), (x8 + #0x2e8))
+    w0 = load32((x8 + #0x2e8))
+    ret w0
+-- card
+{"addr":"0x2101ac","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","entry"],"section":".text","size":268,"unsupported":0}
+
+== 0x2102b8 sparse
+-- decompile
+/* velk pseudo-C: sparse @ 0x2102b8 */
+uint32_t sparse(uint32_t a0) {
+    if (a0 == 0x1) {
+        return 0x64;
+    }
+    if (a0 == 0x12c) {
+        return a0;
+    }
+    if (a0 != 0x32) {
+        a0 = 0xffffffff;
+    } else {
+        return 0x7;
+    }
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn sparse @ 0x2102b8 (size 48)
+  blk0 @ 0x2102b8:
+    brif eq (x0 & #0xffffffff), #0x1 -> 0x2102d8
+  blk1 @ 0x2102c0:
+    brif eq (x0 & #0xffffffff), #0x12c -> 0x2102e4
+  blk2 @ 0x2102c8:
+    brif ne (x0 & #0xffffffff), #0x32 -> 0x2102e0
+  blk3 @ 0x2102d0:
+    ret #0x7
+  blk4 @ 0x2102d8:
+    ret #0x64
+  blk5 @ 0x2102e0:
+    x0 = #0xffffffff
+  blk6 @ 0x2102e4:
+    ret x0
+-- card
+{"addr":"0x2102b8","approxTokens":144,"blocks":7,"hardReasons":[],"name":"sparse","nameSources":["symtab"],"section":".text","size":48,"unsupported":0}

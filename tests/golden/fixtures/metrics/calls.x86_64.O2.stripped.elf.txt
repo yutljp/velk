@@ -1,0 +1,403 @@
+# metrics/calls.x86_64.O2.stripped.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 5 unsupported, 6 gotos
+0x2012f0 16 - prologue
+0x201300 16 - prologue
+0x201310 32 - prologue
+0x201330 48 - prologue
+0x201360 16 - prologue
+0x201370 240 - prologue
+0x201460 48 - prologue
+0x201490 32 - prologue
+0x2014b0 64 - prologue
+0x2014f0 283 - prologue
+
+== 0x2012f0 -
+-- decompile
+/* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
+uint32_t sub_2012f0(uint32_t a0) {
+    eax = a0 + a0;
+    return eax;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2012f0 (size 16)
+  blk0 @ 0x2012f0:
+    eax = (rdi + rdi)
+    ret eax
+-- card
+{"addr":"0x2012f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201300 -
+-- decompile
+/* velk pseudo-C: sub_201300 @ 0x201300 */
+uint32_t sub_201300(uint32_t a0) {
+    return a0 * a0;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201300 (size 16)
+  blk0 @ 0x201300:
+    ret (edi * edi)
+-- card
+{"addr":"0x201300","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201310 -
+-- decompile
+/* velk pseudo-C: sub_201310 @ 0x201310 */
+uint32_t sub_201310(uint32_t a0) {
+    return (a0 & a0 == 0x0 ? 0x2012f0 : 0x201300);
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201310 (size 32)
+  blk0 @ 0x201310:
+    ret select eq (edi & edi), #0x0 ? #0x2012f0, #0x201300
+-- card
+{"addr":"0x201310","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201330 -
+-- decompile
+/* velk pseudo-C: sub_201330 @ 0x201330 */
+/* ref: 0x202610 .data.rel.ro */
+uint32_t sub_201330(uint32_t a0, uint32_t a1) {
+    goto *(qword_202610[a0 % 0x3]);
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+0x202610 .data.rel.ro
+-- ir
+fn <unnamed> @ 0x201330 (size 48)
+  blk0 @ 0x201330:
+    br load64((#0x202610 + ((edi % #0x3) * #0x8)))
+-- card
+{"addr":"0x201330","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+
+== 0x201360 -
+-- decompile
+/* velk pseudo-C: sub_201360 @ 0x201360 */
+uint32_t sub_201360(uint32_t a0, uint32_t a1) {
+    sub_0();
+    return a0 + 0x1;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201360 (size 16)
+  blk0 @ 0x201360:
+    call 0x0
+    ret (((rdi & #0xffffffff) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x201360","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201370 -
+-- decompile
+/* velk pseudo-C: sub_201370 @ 0x201370 */
+int32_t sub_201370(int32_t a0) {
+    rax = 0x1;
+    if (a0 < 0x2) {
+        return rax;
+    }
+    if (a0 < 0x9 /* unsigned */) { goto L_201450; }
+    ecx = a0 - 0x1;
+    edx = ecx & 0xfffffffffffffff8;
+    /* unsupported: Movd at 0x20138f */
+    a0 = a0 - edx;
+    /* unsupported (5 steps): Pshufd at 0x201395, Paddd at 0x20139a, Movdqa at 0x2013a2, Movdqa at 0x2013aa, Movdqa at 0x2013b2 */
+    rax = edx;
+    /* unsupported: Movdqa at 0x2013bc */
+    do {
+        /* unsupported (20 steps): Movdqa at 0x2013c0, Paddd at 0x2013c4, Movdqa at 0x2013c8, Pmuludq at 0x2013cc, Pshufd at 0x2013d0, Pshufd at 0x2013d5, Pshufd at 0x2013da, Pmuludq at 0x2013df, Pshufd at 0x2013e3, Movdqa at 0x2013e8, Punpckldq at 0x2013ec, Pshufd at 0x2013f0, Pmuludq at 0x2013f5, Pshufd at 0x2013f9, Pshufd at 0x2013fe, Pmuludq at 0x201403, Pshufd at 0x201407, Movdqa at 0x20140c, Punpckldq at 0x201410, Paddd at 0x201414 */
+        rax = eax - 0x8;
+    } while (eax - 0x8 != 0x0);
+    if (ecx == edx) {
+        return rax;
+    }
+    rax = eax * a0;
+    ecx = a0 - 0x1;
+    if (ecx > 0x2 /* unsigned */) { goto L_201450; }
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201370 (size 240)
+  blk0 @ 0x201370:
+    rax = #0x1
+    brif lt (rdi & #0xffffffff), #0x2 -> 0x20145d
+  blk1 @ 0x20137e:
+    brif cc (rdi & #0xffffffff), #0x9 -> 0x201450
+  blk2 @ 0x201387:
+    ecx = (rdi + #0xffffffffffffffff)
+    edx = (ecx & #0xfffffffffffffff8)
+    unsupported: Movd at 0x20138f
+    rdi = (((rdi & #0xffffffff) - edx) & #0xffffffff)
+    unsupported: Pshufd at 0x201395
+    unsupported: Paddd at 0x20139a
+    unsupported: Movdqa at 0x2013a2
+    unsupported: Movdqa at 0x2013aa
+    unsupported: Movdqa at 0x2013b2
+    rax = edx
+    unsupported: Movdqa at 0x2013bc
+  blk3 @ 0x2013c0:
+    unsupported: Movdqa at 0x2013c0
+    unsupported: Paddd at 0x2013c4
+    unsupported: Movdqa at 0x2013c8
+    unsupported: Pmuludq at 0x2013cc
+    unsupported: Pshufd at 0x2013d0
+    unsupported: Pshufd at 0x2013d5
+    unsupported: Pshufd at 0x2013da
+    unsupported: Pmuludq at 0x2013df
+    unsupported: Pshufd at 0x2013e3
+    unsupported: Movdqa at 0x2013e8
+    unsupported: Punpckldq at 0x2013ec
+    unsupported: Pshufd at 0x2013f0
+    unsupported: Pmuludq at 0x2013f5
+    unsupported: Pshufd at 0x2013f9
+    unsupported: Pshufd at 0x2013fe
+    unsupported: Pmuludq at 0x201403
+    unsupported: Pshufd at 0x201407
+    unsupported: Movdqa at 0x20140c
+    unsupported: Punpckldq at 0x201410
+    unsupported: Paddd at 0x201414
+    rax = (((rax & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
+    brif ne ((rax & #0xffffffff) + #0xfffffffffffffff8), #0x0 -> 0x2013c0
+  blk4 @ 0x20141d:
+    unsupported: Pshufd at 0x20141d
+    unsupported: Pshufd at 0x201422
+    unsupported: Pmuludq at 0x201427
+    unsupported: Pmuludq at 0x20142b
+    unsupported: Pshufd at 0x20142f
+    unsupported: Pmuludq at 0x201434
+    unsupported: Pshufd at 0x201438
+    unsupported: Pmuludq at 0x20143d
+    unsupported: Pmuludq at 0x201441
+    unsupported: Movd at 0x201445
+    brif eq ecx, edx -> 0x20145d
+  blk5 @ 0x20144d:
+    rax = (((rax & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
+    ecx = (rdi + #0xffffffffffffffff)
+    brif hi (ecx & #0xffffffff), #0x2 -> 0x201450
+  blk6 @ 0x20145d:
+    ret rax
+-- card
+{"addr":"0x201370","approxTokens":240,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":240,"sizeEstimated":true,"unsupported":37}
+
+== 0x201460 -
+-- decompile
+/* velk pseudo-C: sub_201460 @ 0x201460 */
+uint32_t sub_201460(uint32_t a0) {
+L_201460:
+    if (a0 & a0 == 0x0) {
+        return 0x0;
+    }
+    a0 = a0 - 0x1;
+    goto L_201470;
+    if (a0 & a0 == 0x0) {
+        return 0x1;
+    }
+    a0 = a0 - 0x1;
+    goto L_201460;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201460 (size 48)
+  blk0 @ 0x201460:
+    brif eq (edi & edi), #0x0 -> 0x20146b
+  blk1 @ 0x201464:
+    edi = (edi + #0xffffffffffffffff)
+    br 0x201470
+  blk2 @ 0x20146b:
+    ret #0x0
+  blk3 @ 0x20146e:
+    brif eq (edi & edi), #0x0 -> 0x20147b
+  blk4 @ 0x201474:
+    edi = (edi + #0xffffffffffffffff)
+    br 0x201460
+  blk5 @ 0x20147b:
+    ret #0x1
+-- card
+{"addr":"0x201460","approxTokens":120,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+
+== 0x201490 -
+-- decompile
+/* velk pseudo-C: sub_201490 @ 0x201490 */
+uint64_t sub_201490(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5) {
+    return a2 + a3 + (a1 + a0) + a4 + a5 + *(uint64_t *)(rsp + 0x8) + *(uint64_t *)(rsp + 0x10) + *(uint64_t *)(rsp + 0x18);
+}
+-- signature
+uint64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201490 (size 32)
+  blk0 @ 0x201490:
+    ret (((((((rdx + rcx) + (rsi + rdi)) + r8) + r9) + load64((rsp + #0x8))) + load64((rsp + #0x10))) + load64((rsp + #0x18)))
+-- card
+{"addr":"0x201490","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014b0 -
+-- decompile
+/* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
+uint64_t sub_2014b0(void) {
+    sub_201490();
+    return rax;
+}
+-- signature
+uint64_t ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x2014b0 (size 64)
+  blk0 @ 0x2014b0:
+    call 0x201490
+    ret rax
+-- card
+{"addr":"0x2014b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+
+== 0x2014f0 -
+-- decompile
+/* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
+int32_t sub_2014f0(int64_t a0, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, uint64_t a5) {
+    uint64_t local_0; /* [sp-b0] */
+    uint64_t local_1; /* [sp-a8] */
+    uint64_t local_2; /* [sp-a0] */
+    uint64_t local_3; /* [sp-98] */
+    uint64_t local_4; /* [sp-90] */
+    uint64_t local_5; /* [sp-c8] */
+    uint64_t local_6; /* [sp-d0] */
+    uint64_t local_7; /* [sp-d8] */
+
+    rsp = rsp - 0x58;
+    local_0 = a1;
+    local_1 = a2;
+    local_2 = a3;
+    local_3 = a4;
+    local_4 = a5;
+    t1 = rax & 0xff;
+    if (t1 & t1 != 0x0) {
+        /* unsupported (8 steps): Movaps at 0x201511, Movaps at 0x201516, Movaps at 0x20151b, Movaps at 0x201520, Movaps at 0x201524, Movaps at 0x201529, Movaps at 0x20152e, Movaps at 0x201533 */
+    }
+    if (t1 & t1 <= 0x0) {
+        rsp = rsp + 0x58;
+        return 0x0;
+    }
+    a2 = local_7;
+    a3 = local_5;
+    a1 = local_6;
+    if ((a0 & 0xffffffff) != 0x1) { goto L_20159b; }
+    rax = 0x0;
+    if (a0 & 0xff & 0x1 == 0x0) {
+        rsp = rsp + 0x58;
+        return rax;
+    }
+    if (a2 < 0x29 /* unsigned */) {
+        a3 = a3 + a2;
+        local_7 = a2 + 0x8;
+        a1 = a3;
+    } else {
+        local_6 = a1 + 0x8;
+    }
+    rax = eax + *(uint32_t *)(a1);
+}
+-- signature
+int32_t (int64_t a0, uint64_t a1, uint32_t a2, uint64_t a3, uint32_t a4, uint64_t a5)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2014f0 (size 283)
+  blk0 @ 0x2014f0:
+    rsp = (rsp - #0x58)
+    store64(rsi, (rsp + #0xffffffffffffffa8))
+    store64(rdx, (rsp + #0xffffffffffffffb0))
+    store64(rcx, (rsp + #0xffffffffffffffb8))
+    store64(r8, (rsp + #0xffffffffffffffc0))
+    store64(r9, (rsp + #0xffffffffffffffc8))
+    t1 = (rax & #0xff)
+    brif eq (t1 & t1), #0x0 -> 0x201538
+  blk1 @ 0x201511:
+    unsupported: Movaps at 0x201511
+    unsupported: Movaps at 0x201516
+    unsupported: Movaps at 0x20151b
+    unsupported: Movaps at 0x201520
+    unsupported: Movaps at 0x201524
+    unsupported: Movaps at 0x201529
+    unsupported: Movaps at 0x20152e
+    unsupported: Movaps at 0x201533
+  blk2 @ 0x201538:
+    store64((rsp + #0xffffffffffffffa0), (rsp + #0xffffffffffffff90))
+    store64((rsp + #0x60), (rsp + #0xffffffffffffff88))
+    store64(#0x3000000008, (rsp + #0xffffffffffffff80))
+    t1 = (rdi & #0xffffffff)
+    brif le (t1 & t1), #0x0 -> 0x201594
+  blk3 @ 0x20155f:
+    rdx = (load32((rsp + #0xffffffffffffff80)) & #0xffffffff)
+    rcx = load64((rsp + #0xffffffffffffff90))
+    rsi = load64((rsp + #0xffffffffffffff88))
+    brif ne (rdi & #0xffffffff), #0x1 -> 0x20159b
+  blk4 @ 0x201572:
+    rax = #0x0
+  blk5 @ 0x201574:
+    brif eq ((rdi & #0xff) & #0x1), #0x0 -> 0x201606
+  blk6 @ 0x20157e:
+    brif cs (rdx & #0xffffffff), #0x29 -> 0x2015fb
+  blk7 @ 0x201583:
+    rcx = (rcx + (rdx & #0xffffffff))
+    store32((((rdx & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff80))
+    rsi = rcx
+    br 0x201604
+  blk8 @ 0x201594:
+    rsp = (rsp + #0x58)
+    ret #0x0
+  blk9 @ 0x20159b:
+    r8 = (((rdi & #0xffffffff) & #0x7ffffffe) & #0xffffffff)
+    rax = #0x0
+    br 0x2015c9
+  blk10 @ 0x2015a9:
+    rsi = r9
+    r9 = ((rdx & #0xffffffff) + rcx)
+    store32((((rdx & #0xffffffff) + #0x8) & #0xffffffff), (rsp + #0xffffffffffffff80))
+  blk11 @ 0x2015c0:
+    rax = (((rax & #0xffffffff) + load32(r9)) & #0xffffffff)
+    r8 = (((r8 & #0xffffffff) + #0xfffffffffffffffe) & #0xffffffff)
+    brif eq ((r8 & #0xffffffff) + #0xfffffffffffffffe), #0x0 -> 0x201574
+  blk12 @ 0x2015c9:
+    brif hi (rdx & #0xffffffff), #0x28 -> 0x2015e0
+  blk13 @ 0x2015ce:
+    r9 = rsi
+    rsi = ((rdx & #0xffffffff) + rcx)
+    rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
+    store32((rdx & #0xffffffff), (rsp + #0xffffffffffffff80))
+    br 0x2015e9
+  blk14 @ 0x2015df:
+    store64((rsi + #0x8), (rsp + #0xffffffffffffff88))
+  blk15 @ 0x2015e9:
+    rax = (((rax & #0xffffffff) + load32(rsi)) & #0xffffffff)
+    brif cc (rdx & #0xffffffff), #0x29 -> 0x2015b0
+  blk16 @ 0x2015f0:
+    rsi = (r9 + #0x8)
+    store64(rsi, (rsp + #0xffffffffffffff88))
+    br 0x2015c0
+  blk17 @ 0x2015fb:
+    store64((rsi + #0x8), (rsp + #0xffffffffffffff88))
+  blk18 @ 0x201604:
+    rax = (((rax & #0xffffffff) + load32(rsi)) & #0xffffffff)
+  blk19 @ 0x201606:
+    rsp = (rsp + #0x58)
+    ret rax
+-- card
+{"addr":"0x2014f0","approxTokens":240,"blocks":20,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":283,"sizeEstimated":true,"unsupported":8}

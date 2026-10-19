@@ -1,0 +1,147 @@
+# metrics/l1_branch.x86_64.O0.debug.elf: elf x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x2011a0 63 classify symtab,dwarf
+0x2011e0 70 clamp symtab,dwarf
+0x201230 54 sign_of symtab,dwarf
+
+== 0x2011a0 classify
+-- decompile
+/* velk pseudo-C: classify @ 0x2011a0 */
+int classify(int x) {
+    uint64_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-10] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    local_1 = x;
+    if (x < 0x0) {
+        *(uint32_t *)(rbp - 0x4) = 0xffffffff;
+    } else {
+        if (*(uint32_t *)(rbp - 0x8) == 0x0) {
+            *(uint32_t *)(rbp - 0x4) = 0x0;
+        } else {
+            *(uint32_t *)(rbp - 0x4) = 0x1;
+        }
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x4);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn classify @ 0x2011a0 (size 63)
+  blk0 @ 0x2011a0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    store32(edi, (rsp + #0xfffffffffffffff8))
+    brif ge edi, #0x0 -> 0x2011bd
+  blk1 @ 0x2011b1:
+    store32(#0xffffffff, (rbp + #0xfffffffffffffffc))
+    br 0x2011da
+  blk2 @ 0x2011bd:
+    brif ne load32((rbp + #0xfffffffffffffff8)), #0x0 -> 0x2011d3
+  blk3 @ 0x2011c7:
+    store32(#0x0, (rbp + #0xfffffffffffffffc))
+    br 0x2011da
+  blk4 @ 0x2011d3:
+    store32(#0x1, (rbp + #0xfffffffffffffffc))
+  blk5 @ 0x2011da:
+    rsp = (rsp + #0x8)
+    ret load32((rbp + #0xfffffffffffffffc))
+-- card
+{"addr":"0x2011a0","approxTokens":138,"blocks":6,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":63,"unsupported":0}
+
+== 0x2011e0 clamp
+-- decompile
+/* velk pseudo-C: clamp @ 0x2011e0 */
+int clamp(int x, int lo, int hi) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x8) = x;
+    *(uint32_t *)(rbp - 0xc) = lo;
+    *(uint32_t *)(rbp - 0x10) = hi;
+    if (x < lo) {
+        *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0xc);
+    } else {
+        if (*(uint32_t *)(rbp - 0x8) > *(uint32_t *)(rbp - 0x10)) {
+            *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x10);
+        } else {
+            *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x8);
+        }
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x4);
+}
+-- signature
+int (int x, int lo, int hi)
+-- references
+
+-- ir
+fn clamp @ 0x2011e0 (size 70)
+  blk0 @ 0x2011e0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    store32(edx, (rbp + #0xfffffffffffffff0))
+    brif ge edi, esi -> 0x201204
+  blk1 @ 0x2011f9:
+    store32(load32((rbp + #0xfffffffffffffff4)), (rbp + #0xfffffffffffffffc))
+    br 0x201221
+  blk2 @ 0x201204:
+    brif le load32((rbp + #0xfffffffffffffff8)), load32((rbp + #0xfffffffffffffff0)) -> 0x20121b
+  blk3 @ 0x201210:
+    store32(load32((rbp + #0xfffffffffffffff0)), (rbp + #0xfffffffffffffffc))
+    br 0x201221
+  blk4 @ 0x20121b:
+    store32(load32((rbp + #0xfffffffffffffff8)), (rbp + #0xfffffffffffffffc))
+  blk5 @ 0x201221:
+    rsp = (rsp + #0x8)
+    ret load32((rbp + #0xfffffffffffffffc))
+-- card
+{"addr":"0x2011e0","approxTokens":162,"blocks":6,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":70,"unsupported":0}
+
+== 0x201230 sign_of
+-- decompile
+/* velk pseudo-C: sign_of @ 0x201230 */
+int sign_of(int x) {
+    uint64_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-c] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    local_1 = x;
+    if (x > 0x0) {
+        *(uint32_t *)(rbp - 0x8) = 0x1;
+    } else {
+        *(uint32_t *)(rbp - 0x8) = (*(uint32_t *)(rbp - 0x4) < 0x0 ? 0xffffffff : 0x0);
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x8);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sign_of @ 0x201230 (size 54)
+  blk0 @ 0x201230:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    store32(edi, (rsp + #0xfffffffffffffffc))
+    brif le edi, #0x0 -> 0x20124e
+  blk1 @ 0x201241:
+    store32(#0x1, (rbp + #0xfffffffffffffff8))
+    br 0x201261
+  blk2 @ 0x20124e:
+    store32((select lt load32((rbp + #0xfffffffffffffffc)), #0x0 ? #0xffffffff, #0x0 & #0xffffffff), (rbp + #0xfffffffffffffff8))
+  blk3 @ 0x201261:
+    rsp = (rsp + #0x8)
+    ret (load32((rbp + #0xfffffffffffffff8)) & #0xffffffff)
+-- card
+{"addr":"0x201230","approxTokens":144,"blocks":4,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":54,"unsupported":0}

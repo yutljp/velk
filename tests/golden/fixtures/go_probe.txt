@@ -1,0 +1,1668 @@
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 1778 unsupported, 6123 gotos
+0x401000 96 internal/abi.Kind.String pclntab
+0x401060 128 internal/abi.Name.IsBlank pclntab
+0x4010e0 192 internal/abi.Name.Name pclntab
+0x4011a0 288 internal/abi.Name.Tag pclntab
+0x4012c0 128 internal/abi.(*Kind).String pclntab
+0x401340 64 type:.eq.internal/abi.RegArgs pclntab
+0x401380 64 type:.eq.internal/abi.ITab pclntab
+0x4013c0 96 internal/cpu.Initialize pclntab
+0x401420 1344 internal/cpu.processOptions pclntab
+0x401960 2176 internal/cpu.doinit pclntab
+0x4021e0 32 internal/cpu.cpuid pclntab
+0x402200 32 internal/cpu.xgetbv pclntab
+0x402220 32 internal/cpu.getGOAMD64level pclntab
+0x402240 128 type:.eq.internal/cpu.option pclntab
+0x4022c0 608 type:.eq.[6]internal/cpu.option pclntab
+0x402520 128 runtime/internal/sys.OnesCount64 pclntab
+0x4025a0 32 type:.eq.runtime/internal/sys.NotInHeap pclntab
+0x4025c0 48 internal/bytealg.init.0 pclntab
+0x4025f0 368 memeqbody pclntab
+0x402760 32 runtime.memequal pclntab
+0x402780 32 runtime.memequal_varlen pclntab
+0x4027a0 320 indexbytebody pclntab
+0x4028e0 32 internal/bytealg.IndexByteString pclntab
+0x402900 160 internal/chacha8rand.(*State).Init pclntab
+0x4029a0 224 internal/chacha8rand.(*State).Refill pclntab
+0x402a80 256 internal/chacha8rand.(*State).Reseed pclntab
+0x402b80 1472 internal/chacha8rand.block pclntab
+0x403140 64 type:.eq.internal/chacha8rand.State pclntab
+0x403180 416 runtime.init pclntab
+0x403320 64 runtime.init.func1 pclntab
+0x403360 64 runtime.memhash128 pclntab
+0x4033a0 64 runtime.strhashFallback pclntab
+0x4033e0 576 runtime.mapKeyError2 pclntab
+0x403620 32 runtime.memequal0 pclntab
+0x403640 32 runtime.memequal8 pclntab
+0x403660 32 runtime.memequal16 pclntab
+0x403680 32 runtime.memequal32 pclntab
+0x4036a0 32 runtime.memequal64 pclntab
+0x4036c0 32 runtime.memequal128 pclntab
+0x4036e0 32 runtime.f32equal pclntab
+0x403700 32 runtime.f64equal pclntab
+0x403720 64 runtime.c64equal pclntab
+0x403760 64 runtime.c128equal pclntab
+0x4037a0 96 runtime.strequal pclntab
+0x403800 96 runtime.interequal pclntab
+0x403860 96 runtime.nilinterequal pclntab
+0x4038c0 192 runtime.efaceeq pclntab
+0x403980 192 runtime.ifaceeq pclntab
+0x403a40 160 runtime.alginit pclntab
+0x403ae0 96 runtime.init.0 pclntab
+0x403b40 384 runtime.(*mspan).setUserArenaChunkToFault pclntab
+0x403cc0 96 runtime.(*mspan).setUserArenaChunkToFault.func1 pclntab
+0x403d20 224 runtime.mmap pclntab
+0x403e00 128 runtime.mmap.func1 pclntab
+0x403e80 160 runtime.munmap pclntab
+0x403f20 64 runtime.munmap.func1 pclntab
+0x403f60 352 runtime.sigaction pclntab
+0x4040c0 96 runtime.sigaction.func1 pclntab
+0x404120 576 runtime.callbackUpdateSystemStack pclntab
+0x404360 480 runtime.makechan pclntab
+0x404540 32 runtime.chansend1 pclntab
+0x404560 1440 runtime.chansend pclntab
+0x404b00 64 runtime.chansend.func1 pclntab
+0x404b40 352 runtime.send pclntab
+0x404ca0 64 runtime.send.goready.func1 pclntab
+0x404ce0 192 runtime.timerchandrain pclntab
+0x404da0 128 runtime.sendDirect pclntab
+0x404e20 128 runtime.recvDirect pclntab
+0x404ea0 1056 runtime.closechan pclntab
+0x4052c0 64 runtime.closechan.goready.func1 pclntab
+0x405300 128 runtime.empty pclntab
+0x405380 32 runtime.chanrecv1 pclntab
+0x4053a0 1600 runtime.chanrecv pclntab
+0x4059e0 64 runtime.chanrecv.func1 pclntab
+0x405a20 512 runtime.recv pclntab
+0x405c20 64 runtime.recv.goready.func1 pclntab
+0x405c60 96 runtime.chanparkcommit pclntab
+0x405cc0 64 runtime.selectnbsend pclntab
+0x405d00 96 runtime.init.1 pclntab
+0x405d60 352 runtime.(*cpuProfile).add pclntab
+0x405ec0 256 runtime.(*cpuProfile).addNonGo pclntab
+0x405fc0 544 runtime.(*cpuProfile).addExtra pclntab
+0x4061e0 96 runtime.debugPinnerV1 pclntab
+0x406240 192 runtime.debugCallCheck pclntab
+0x406300 800 runtime.debugCallCheck.func1 pclntab
+0x406620 224 runtime.debugCallWrap pclntab
+0x406700 320 runtime.debugCallWrap.func1 pclntab
+0x406840 128 runtime.debugCallWrap1 pclntab
+0x4068c0 192 runtime.debugCallWrap2 pclntab
+0x406980 96 runtime.debugCallWrap2.func1 pclntab
+0x4069e0 320 runtime.gogetenv pclntab
+0x406b20 928 runtime.(*TypeAssertionError).Error pclntab
+0x406ec0 96 runtime.errorString.Error pclntab
+0x406f20 96 runtime.errorAddressString.Error pclntab
+0x406f80 32 runtime.plainError.Error pclntab
+0x406fa0 1568 runtime.boundsError.Error pclntab
+0x4075c0 1056 runtime.printpanicval pclntab
+0x4079e0 1824 runtime.printanycustomtype pclntab
+0x408100 288 runtime.printindented pclntab
+0x408220 992 runtime.panicwrap pclntab
+0x408600 480 runtime.checkfds pclntab
+0x4087e0 480 runtime.memhashFallback pclntab
+0x4089c0 64 runtime.memhash32Fallback pclntab
+0x408a00 192 runtime.(*timeHistogram).record pclntab
+0x408ac0 96 runtime.(*itabTableType).find pclntab
+0x408b20 320 runtime.itabAdd pclntab
+0x408c60 96 runtime.(*itabTableType).add pclntab
+0x408cc0 1088 runtime.itabInit pclntab
+0x409100 224 runtime.itabsinit pclntab
+0x4091e0 192 runtime.panicdottypeE pclntab
+0x4092a0 128 runtime.convT pclntab
+0x409320 128 runtime.convTnoptr pclntab
+0x4093a0 512 runtime.interfaceSwitch pclntab
+0x4095a0 576 runtime.buildInterfaceSwitchCache pclntab
+0x4097e0 128 runtime.iterate_itabs pclntab
+0x409860 64 runtime.unreachableMethod pclntab
+0x4098a0 352 runtime.(*lfstack).push pclntab
+0x409a00 224 runtime.lfnodeValidate pclntab
+0x409ae0 64 runtime.lock pclntab
+0x409b20 512 runtime.lock2 pclntab
+0x409d20 64 runtime.unlock pclntab
+0x409d60 192 runtime.unlock2 pclntab
+0x409e20 160 runtime.notewakeup pclntab
+0x409ec0 256 runtime.notesleep pclntab
+0x409fc0 448 runtime.notetsleep_internal pclntab
+0x40a180 128 runtime.notetsleep pclntab
+0x40a200 160 runtime.notetsleepg pclntab
+0x40a2a0 96 runtime.lockRank.String pclntab
+0x40a300 896 runtime.mallocinit pclntab
+0x40a680 1920 runtime.(*mheap).sysAlloc pclntab
+0x40ae00 256 runtime.sysReserveAligned pclntab
+0x40af00 192 runtime.(*mheap).enableMetadataHugePages pclntab
+0x40afc0 512 runtime.(*mcache).nextFree pclntab
+0x40b1c0 128 runtime.deductAssistCredit pclntab
+0x40b240 160 runtime.memclrNoHeapPointersChunked pclntab
+0x40b2e0 64 runtime.newobject pclntab
+0x40b320 224 runtime.profilealloc pclntab
+0x40b400 288 runtime.fastexprand pclntab
+0x40b520 160 runtime.persistentalloc pclntab
+0x40b5c0 64 runtime.persistentalloc.func1 pclntab
+0x40b600 704 runtime.persistentalloc1 pclntab
+0x40b8c0 256 runtime.(*linearAlloc).alloc pclntab
+0x40b9c0 128 runtime.(*hmap).incrnoverflow pclntab
+0x40ba40 640 runtime.(*hmap).newoverflow pclntab
+0x40bcc0 640 runtime.makeBucketArray pclntab
+0x40bf40 512 runtime.hashGrow pclntab
+0x40c140 160 runtime.growWork pclntab
+0x40c1e0 1440 runtime.evacuate pclntab
+0x40c780 224 runtime.advanceEvacuationMark pclntab
+0x40c860 384 runtime.mapaccess1_fast32 pclntab
+0x40c9e0 160 runtime.growWork_fast32 pclntab
+0x40ca80 960 runtime.evacuate_fast32 pclntab
+0x40ce40 960 runtime.mapaccess1_faststr pclntab
+0x40d200 160 runtime.growWork_faststr pclntab
+0x40d2a0 1056 runtime.evacuate_faststr pclntab
+0x40d6c0 32 runtime.wbZero pclntab
+0x40d6e0 64 runtime.wbMove pclntab
+0x40d720 256 runtime.reflectcallmove pclntab
+0x40d820 96 runtime.typedmemclr pclntab
+0x40d880 160 runtime.(*mspan).typePointersOf pclntab
+0x40d920 160 runtime.(*mspan).typePointersOfUnchecked pclntab
+0x40d9c0 256 runtime.typePointers.next pclntab
+0x40dac0 448 runtime.typePointers.fastForward pclntab
+0x40dc80 960 runtime.bulkBarrierPreWrite pclntab
+0x40e040 480 runtime.bulkBarrierPreWriteSrcOnly pclntab
+0x40e220 96 runtime.(*mspan).initHeapBits pclntab
+0x40e280 192 runtime.(*mspan).heapBits pclntab
+0x40e340 192 runtime.(*mspan).heapBitsSmallForAddr pclntab
+0x40e400 480 runtime.(*mspan).writeHeapBitsSmall pclntab
+0x40e5e0 448 runtime.heapSetType pclntab
+0x40e7a0 96 runtime.heapSetType.func1 pclntab
+0x40e800 32 runtime.(*mspan).refillAllocCache pclntab
+0x40e820 320 runtime.(*mspan).nextFreeIndex pclntab
+0x40e960 576 runtime.badPointer pclntab
+0x40eba0 416 runtime.bulkBarrierBitmap pclntab
+0x40ed40 576 runtime.typeBitsBulkBarrier pclntab
+0x40ef80 224 runtime.progToPointerMask pclntab
+0x40f060 1024 runtime.runGCProg pclntab
+0x40f460 128 runtime.materializeGCProg pclntab
+0x40f4e0 192 runtime.allocmcache pclntab
+0x40f5a0 128 runtime.allocmcache.func1 pclntab
+0x40f620 608 runtime.(*mcache).refill pclntab
+0x40f880 480 runtime.(*mcache).allocLarge pclntab
+0x40fa60 512 runtime.(*mcache).releaseAll pclntab
+0x40fc60 224 runtime.(*mcache).prepareForSweep pclntab
+0x40fd40 1120 runtime.(*mcentral).cacheSpan pclntab
+0x4101a0 224 runtime.(*mcentral).uncacheSpan pclntab
+0x410280 192 runtime.(*mcentral).grow pclntab
+0x410340 256 runtime.startCheckmarks pclntab
+0x410440 128 runtime.endCheckmarks pclntab
+0x4104c0 480 runtime.setCheckmark pclntab
+0x4106a0 64 runtime.sysAlloc pclntab
+0x4106e0 96 runtime.sysFree pclntab
+0x410740 96 runtime.sysReserve pclntab
+0x4107a0 96 runtime.sysMap pclntab
+0x410800 224 runtime.sysAllocOS pclntab
+0x4108e0 448 runtime.sysUnusedOS pclntab
+0x410aa0 160 runtime.sysUsedOS pclntab
+0x410b40 128 runtime.sysHugePageOS pclntab
+0x410bc0 128 runtime.sysNoHugePageOS pclntab
+0x410c40 160 runtime.sysFaultOS pclntab
+0x410ce0 320 runtime.sysMapOS pclntab
+0x410e20 608 runtime.queuefinalizer pclntab
+0x411080 96 runtime.createfing pclntab
+0x4110e0 96 runtime.finalizercommit pclntab
+0x411140 1248 runtime.runfinq pclntab
+0x411620 1728 runtime.SetFinalizer pclntab
+0x411ce0 96 runtime.SetFinalizer.func2 pclntab
+0x411d40 64 runtime.SetFinalizer.func1 pclntab
+0x411d80 288 runtime.(*fixalloc).init pclntab
+0x411ea0 288 runtime.(*fixalloc).alloc pclntab
+0x411fc0 32 runtime.(*fixalloc).free pclntab
+0x411fe0 128 runtime.gcinit pclntab
+0x412060 224 runtime.gcenable pclntab
+0x412140 96 runtime.gcenable.gowrap2 pclntab
+0x4121a0 96 runtime.gcenable.gowrap1 pclntab
+0x412200 160 runtime.pollFractionalWorkerExit pclntab
+0x4122a0 256 runtime.gcTrigger.test pclntab
+0x4123a0 1568 runtime.gcStart pclntab
+0x4129c0 128 runtime.gcStart.func3 pclntab
+0x412a40 96 runtime.gcStart.func1 pclntab
+0x412aa0 896 runtime.gcMarkDone pclntab
+0x412e20 160 runtime.gcMarkDone.func4 pclntab
+0x412ec0 192 runtime.gcMarkDone.func3 pclntab
+0x412f80 96 runtime.gcMarkDone.func2 pclntab
+0x412fe0 128 runtime.gcMarkDone.forEachP.func5 pclntab
+0x413060 3616 runtime.gcMarkTermination pclntab
+0x413e80 128 runtime.gcMarkTermination.forEachP.func6 pclntab
+0x413f00 64 runtime.gcMarkTermination.func3 pclntab
+0x413f40 224 runtime.gcMarkTermination.func2 pclntab
+0x414020 64 runtime.gcMarkTermination.func1 pclntab
+0x414060 352 runtime.gcBgMarkStartWorkers pclntab
+0x4141c0 96 runtime.gcBgMarkStartWorkers.gowrap1 pclntab
+0x414220 1184 runtime.gcBgMarkWorker pclntab
+0x4146c0 416 runtime.gcBgMarkWorker.func2 pclntab
+0x414860 1056 runtime.gcMark pclntab
+0x414c80 576 runtime.gcSweep pclntab
+0x414ec0 256 runtime.gcResetMarkState pclntab
+0x414fc0 416 runtime.clearpools pclntab
+0x415160 512 runtime.fmtNSAsMS pclntab
+0x415360 160 runtime.(*gcCPULimiterState).startGCTransition pclntab
+0x415400 160 runtime.(*gcCPULimiterState).finishGCTransition pclntab
+0x4154a0 160 runtime.(*gcCPULimiterState).update pclntab
+0x415540 512 runtime.(*gcCPULimiterState).updateLocked pclntab
+0x415740 160 runtime.(*gcCPULimiterState).accumulate pclntab
+0x4157e0 96 runtime.(*gcCPULimiterState).unlock pclntab
+0x415840 224 runtime.(*gcCPULimiterState).resetCapacity pclntab
+0x415920 160 runtime.(*limiterEvent).consume pclntab
+0x4159c0 384 runtime.(*limiterEvent).stop pclntab
+0x415b40 480 runtime.gcMarkRootPrepare pclntab
+0x415d20 192 runtime.gcMarkRootCheck pclntab
+0x415de0 288 runtime.gcMarkRootCheck.func1 pclntab
+0x415f00 1088 runtime.markroot pclntab
+0x416340 320 runtime.markroot.func1 pclntab
+0x416480 160 runtime.markrootBlock pclntab
+0x416520 256 runtime.markrootFreeGStacks pclntab
+0x416620 928 runtime.markrootSpans pclntab
+0x4169c0 1120 runtime.gcAssistAlloc pclntab
+0x416e20 64 runtime.gcAssistAlloc.func1 pclntab
+0x416e60 896 runtime.gcAssistAlloc1 pclntab
+0x4171e0 96 runtime.gcWakeAllAssists pclntab
+0x417240 288 runtime.gcParkAssist pclntab
+0x417360 384 runtime.gcFlushBgCredit pclntab
+0x4174e0 2016 runtime.scanstack pclntab
+0x417cc0 576 runtime.scanframeworker pclntab
+0x417f00 1088 runtime.gcDrain pclntab
+0x418340 544 runtime.gcDrainN pclntab
+0x418560 384 runtime.scanblock pclntab
+0x4186e0 736 runtime.scanobject pclntab
+0x4189c0 576 runtime.scanConservative pclntab
+0x418c00 96 runtime.shade pclntab
+0x418c60 768 runtime.greyobject pclntab
+0x418f60 1056 runtime.gcDumpObject pclntab
+0x419380 256 runtime.gcmarknewobject pclntab
+0x419480 192 runtime.gcMarkTinyAllocs pclntab
+0x419540 160 runtime.(*gcControllerState).init pclntab
+0x4195e0 800 runtime.(*gcControllerState).startCycle pclntab
+0x419900 448 runtime.(*gcControllerState).revise pclntab
+0x419ac0 1088 runtime.(*gcControllerState).endCycle pclntab
+0x419f00 320 runtime.(*gcControllerState).enlistWorker pclntab
+0x41a040 800 runtime.(*gcControllerState).findRunnableGCWorker pclntab
+0x41a360 256 runtime.(*gcControllerState).resetLive pclntab
+0x41a460 160 runtime.(*gcControllerState).markWorkerStop pclntab
+0x41a500 288 runtime.(*gcControllerState).update pclntab
+0x41a620 128 runtime.(*gcControllerState).heapGoalInternal pclntab
+0x41a6a0 192 runtime.(*gcControllerState).memoryLimitHeapGoal pclntab
+0x41a760 384 runtime.(*gcControllerState).trigger pclntab
+0x41a8e0 256 runtime.(*gcControllerState).commit pclntab
+0x41a9e0 128 runtime.readGOGC pclntab
+0x41aa60 192 runtime.readGOMEMLIMIT pclntab
+0x41ab20 224 runtime.(*gcControllerState).addIdleMarkWorker pclntab
+0x41ac00 224 runtime.(*gcControllerState).removeIdleMarkWorker pclntab
+0x41ace0 224 runtime.(*gcControllerState).setMaxIdleMarkWorkers pclntab
+0x41adc0 256 runtime.gcControllerCommit pclntab
+0x41aec0 416 runtime.gcPaceScavenger pclntab
+0x41b060 480 runtime.(*scavengerState).init pclntab
+0x41b240 128 runtime.(*scavengerState).park pclntab
+0x41b2c0 128 runtime.(*scavengerState).wake pclntab
+0x41b340 608 runtime.(*scavengerState).sleep pclntab
+0x41b5a0 96 runtime.(*scavengerState).controllerFailed pclntab
+0x41b600 448 runtime.(*scavengerState).run pclntab
+0x41b7c0 160 runtime.bgscavenge pclntab
+0x41b860 320 runtime.(*pageAlloc).scavenge pclntab
+0x41b9a0 96 runtime.(*pageAlloc).scavenge.func1 pclntab
+0x41ba00 480 runtime.printScavTrace pclntab
+0x41bbe0 992 runtime.(*pageAlloc).scavengeOne pclntab
+0x41bfc0 416 runtime.fillAligned pclntab
+0x41c160 864 runtime.(*pallocData).findScavengeCandidate pclntab
+0x41c4c0 224 runtime.(*scavengeIndex).init pclntab
+0x41c5a0 128 runtime.(*scavengeIndex).grow pclntab
+0x41c620 512 runtime.(*scavengeIndex).find pclntab
+0x41c820 256 runtime.(*scavengeIndex).alloc pclntab
+0x41c920 384 runtime.(*scavengeIndex).free pclntab
+0x41caa0 64 runtime.(*scavengeIndex).nextGen pclntab
+0x41cae0 192 runtime.(*scavengeIndex).setEmpty pclntab
+0x41cba0 256 runtime.(*scavChunkData).alloc pclntab
+0x41cca0 224 runtime.(*scavChunkData).free pclntab
+0x41cd80 288 runtime.(*piController).next pclntab
+0x41cea0 288 runtime.(*stackScanState).putPtr pclntab
+0x41cfc0 288 runtime.(*stackScanState).getPtr pclntab
+0x41d0e0 352 runtime.(*stackScanState).addObject pclntab
+0x41d240 288 runtime.binarySearchTree pclntab
+0x41d360 416 runtime.(*mheap).nextSpanForSweep pclntab
+0x41d500 416 runtime.(*activeSweep).end pclntab
+0x41d6a0 288 runtime.finishsweep_m pclntab
+0x41d7c0 416 runtime.bgsweep pclntab
+0x41d960 160 runtime.(*sweepLocker).tryAcquire pclntab
+0x41da00 608 runtime.sweepone pclntab
+0x41dc60 320 runtime.(*mspan).ensureSwept pclntab
+0x41dda0 3968 runtime.(*sweepLocked).sweep pclntab
+0x41ed20 128 runtime.(*sweepLocked).sweep.func2 pclntab
+0x41eda0 192 runtime.(*sweepLocked).sweep.(*mheap).freeSpan.func4 pclntab
+0x41ee60 192 runtime.(*sweepLocked).sweep.(*mheap).freeSpan.func3 pclntab
+0x41ef20 160 runtime.(*sweepLocked).sweep.func1 pclntab
+0x41efc0 768 runtime.(*mspan).reportZombies pclntab
+0x41f2c0 544 runtime.deductSweepCredit pclntab
+0x41f4e0 160 runtime.gcPaceSweeper pclntab
+0x41f580 96 runtime.(*gcWork).init pclntab
+0x41f5e0 288 runtime.(*gcWork).put pclntab
+0x41f700 512 runtime.(*gcWork).putBatch pclntab
+0x41f900 224 runtime.(*gcWork).tryGet pclntab
+0x41f9e0 224 runtime.(*gcWork).dispose pclntab
+0x41fac0 192 runtime.(*gcWork).balance pclntab
+0x41fb80 64 runtime.(*workbuf).checknonempty pclntab
+0x41fbc0 64 runtime.(*workbuf).checkempty pclntab
+0x41fc00 512 runtime.getempty pclntab
+0x41fe00 96 runtime.getempty.func1 pclntab
+0x41fe60 96 runtime.putempty pclntab
+0x41fec0 96 runtime.putfull pclntab
+0x41ff20 128 runtime.trygetfull pclntab
+0x41ffa0 192 runtime.handoff pclntab
+0x420060 256 runtime.prepareFreeWorkbufs pclntab
+0x420160 192 runtime.freeSomeWbufs pclntab
+0x420220 192 runtime.freeSomeWbufs.func1 pclntab
+0x4202e0 448 runtime.recordspan pclntab
+0x4204a0 128 runtime.spanOfHeap pclntab
+0x420520 416 runtime.(*mheap).init pclntab
+0x4206c0 800 runtime.(*mheap).reclaim pclntab
+0x4209e0 1184 runtime.(*mheap).reclaimChunk pclntab
+0x420e80 160 runtime.(*mheap).alloc pclntab
+0x420f20 128 runtime.(*mheap).alloc.func1 pclntab
+0x420fa0 96 runtime.(*mheap).allocManual pclntab
+0x421000 224 runtime.(*mheap).setSpans pclntab
+0x4210e0 320 runtime.(*mheap).allocNeedsZero pclntab
+0x421220 256 runtime.(*mheap).allocMSpanLocked pclntab
+0x421320 1568 runtime.(*mheap).allocSpan pclntab
+0x421940 736 runtime.(*mheap).initSpan pclntab
+0x421c20 704 runtime.(*mheap).grow pclntab
+0x421ee0 288 runtime.(*mheap).freeManual pclntab
+0x422000 928 runtime.(*mheap).freeSpanLocked pclntab
+0x4223a0 96 runtime.(*mspan).init pclntab
+0x422400 384 runtime.(*mSpanList).remove pclntab
+0x422580 256 runtime.(*mSpanList).insert pclntab
+0x422680 512 runtime.addspecial pclntab
+0x422880 480 runtime.removespecial pclntab
+0x422a60 544 runtime.addfinalizer pclntab
+0x422c80 160 runtime.removefinalizer pclntab
+0x422d20 96 runtime.gcWakeAllStrongFromWeak pclntab
+0x422d80 192 runtime.setprofilebucket pclntab
+0x422e40 512 runtime.freeSpecial pclntab
+0x423040 768 runtime.newMarkBits pclntab
+0x423340 192 runtime.nextMarkBitArenaEpoch pclntab
+0x423400 192 runtime.newArenaMayUnlock pclntab
+0x4234c0 448 runtime.(*pageAlloc).init pclntab
+0x423680 736 runtime.(*pageAlloc).grow pclntab
+0x423960 384 runtime.(*pageAlloc).enableChunkHugePages pclntab
+0x423ae0 1472 runtime.(*pageAlloc).update pclntab
+0x4240a0 1056 runtime.(*pageAlloc).allocRange pclntab
+0x4244c0 192 runtime.(*pageAlloc).findMappedAddr pclntab
+0x424580 2944 runtime.(*pageAlloc).find pclntab
+0x425100 384 runtime.(*pageAlloc).find.func1 pclntab
+0x425280 704 runtime.(*pageAlloc).alloc pclntab
+0x425540 960 runtime.(*pageAlloc).free pclntab
+0x425900 352 runtime.mergeSummaries pclntab
+0x425a60 320 runtime.(*pageAlloc).sysInit pclntab
+0x425ba0 1152 runtime.(*pageAlloc).sysGrow pclntab
+0x426020 128 runtime.(*pageAlloc).sysGrow.func3 pclntab
+0x4260a0 128 runtime.(*pageAlloc).sysGrow.func2 pclntab
+0x426120 800 runtime.(*scavengeIndex).sysGrow pclntab
+0x426440 192 runtime.(*scavengeIndex).sysInit pclntab
+0x426500 160 runtime.(*pageCache).alloc pclntab
+0x4265a0 320 runtime.(*pageCache).allocN pclntab
+0x4266e0 576 runtime.(*pageCache).flush pclntab
+0x426920 800 runtime.(*pageAlloc).allocToCache pclntab
+0x426c40 256 runtime.(*pageBits).setRange pclntab
+0x426d40 384 runtime.(*pageBits).clearRange pclntab
+0x426ec0 544 runtime.(*pageBits).popcntRange pclntab
+0x4270e0 480 runtime.(*pallocBits).summarize pclntab
+0x4272c0 160 runtime.(*pallocBits).find pclntab
+0x427360 256 runtime.(*pallocBits).findSmallN pclntab
+0x427460 288 runtime.(*pallocBits).findLargeN pclntab
+0x427580 128 runtime.(*pallocData).allocRange pclntab
+0x427600 160 runtime.newBucket pclntab
+0x4276a0 96 runtime.(*bucket).stk pclntab
+0x427700 96 runtime.(*bucket).mp pclntab
+0x427760 96 runtime.(*bucket).bp pclntab
+0x4277c0 1024 runtime.stkbucket pclntab
+0x427bc0 224 runtime.mProf_Flush pclntab
+0x427ca0 192 runtime.mProf_FlushLocked pclntab
+0x427d60 480 runtime.mProf_Malloc pclntab
+0x427f40 64 runtime.mProf_Malloc.func1 pclntab
+0x427f80 224 runtime.mProf_Free pclntab
+0x428060 192 runtime.blocksampled pclntab
+0x428120 704 runtime.saveblockevent pclntab
+0x4283e0 512 runtime.fpTracebackPartialExpand pclntab
+0x4285e0 352 runtime.(*lockTimer).begin pclntab
+0x428740 224 runtime.(*lockTimer).end pclntab
+0x428820 352 runtime.(*mLockProfile).recordLock pclntab
+0x428980 128 runtime.(*mLockProfile).recordUnlock pclntab
+0x428a00 352 runtime.(*mLockProfile).captureStack pclntab
+0x428b60 256 runtime.(*mLockProfile).captureStack.func1 pclntab
+0x428c60 352 runtime.(*mLockProfile).store pclntab
+0x428dc0 320 runtime.saveBlockEventStack pclntab
+0x428f00 96 runtime.tryRecordGoroutineProfileWB pclntab
+0x428f60 384 runtime.tryRecordGoroutineProfile pclntab
+0x4290e0 384 runtime.doRecordGoroutineProfile pclntab
+0x429260 96 runtime.doRecordGoroutineProfile.func1 pclntab
+0x4292c0 480 runtime.saveg pclntab
+0x4294a0 128 runtime.makeAddrRange pclntab
+0x429520 224 runtime.addrRange.subtract pclntab
+0x429600 160 runtime.(*addrRanges).init pclntab
+0x4296a0 224 runtime.(*addrRanges).findSucc pclntab
+0x429780 256 runtime.(*addrRanges).findAddrGreaterEqual pclntab
+0x429880 1344 runtime.(*addrRanges).add pclntab
+0x429dc0 224 runtime.(*addrRanges).cloneInto pclntab
+0x429ea0 448 runtime.(*spanSet).push pclntab
+0x42a060 288 runtime.(*spanSet).pop pclntab
+0x42a180 320 runtime.(*spanSet).reset pclntab
+0x42a2c0 160 runtime.(*spanSetBlockAlloc).alloc pclntab
+0x42a360 160 runtime.(*atomicHeadTailIndex).incTail pclntab
+0x42a400 32 runtime.init.4 pclntab
+0x42a420 192 runtime.(*sysMemStat).add pclntab
+0x42a4e0 224 runtime.(*consistentHeapStats).acquire pclntab
+0x42a5c0 160 runtime.(*consistentHeapStats).release pclntab
+0x42a660 192 runtime.(*cpuStats).accumulate pclntab
+0x42a720 32 runtime.(*wbBuf).reset pclntab
+0x42a740 96 runtime.wbBufFlush pclntab
+0x42a7a0 672 runtime.wbBufFlush1 pclntab
+0x42aa40 128 runtime.(*pollDesc).setEventErr pclntab
+0x42aac0 96 runtime.netpollGenericInit pclntab
+0x42ab20 288 runtime.netpollready pclntab
+0x42ac40 448 runtime.netpollinit pclntab
+0x42ae00 224 runtime.netpollBreak pclntab
+0x42aee0 960 runtime.netpoll pclntab
+0x42b2a0 192 runtime.futexsleep pclntab
+0x42b360 160 runtime.futexwakeup pclntab
+0x42b400 128 runtime.futexwakeup.func1 pclntab
+0x42b480 224 runtime.getproccount pclntab
+0x42b560 416 runtime.newosproc pclntab
+0x42b700 128 runtime.newosproc.func1 pclntab
+0x42b780 704 runtime.sysargs pclntab
+0x42ba40 320 runtime.sysauxv pclntab
+0x42bb80 288 runtime.getHugePageSize pclntab
+0x42bca0 64 runtime.osinit pclntab
+0x42bce0 256 runtime.readRandom pclntab
+0x42bde0 64 runtime.minit pclntab
+0x42be20 128 runtime.setsig pclntab
+0x42bea0 96 runtime.setsigstack pclntab
+0x42bf00 128 runtime.sysSigaction pclntab
+0x42bf80 128 runtime.signalM pclntab
+0x42c000 1056 runtime.setThreadCPUProfiler pclntab
+0x42c420 832 runtime.runPerThreadSyscall pclntab
+0x42c760 192 runtime.panicCheck1 pclntab
+0x42c820 96 runtime.panicCheck2 pclntab
+0x42c880 160 runtime.goPanicIndex pclntab
+0x42c920 160 runtime.goPanicIndexU pclntab
+0x42c9c0 160 runtime.goPanicSliceAlen pclntab
+0x42ca60 160 runtime.goPanicSliceAlenU pclntab
+0x42cb00 160 runtime.goPanicSliceAcap pclntab
+0x42cba0 160 runtime.goPanicSliceAcapU pclntab
+0x42cc40 160 runtime.goPanicSliceB pclntab
+0x42cce0 160 runtime.goPanicSliceBU pclntab
+0x42cd80 160 runtime.goPanicSlice3Alen pclntab
+0x42ce20 160 runtime.goPanicSlice3C pclntab
+0x42cec0 96 runtime.panicshift pclntab
+0x42cf20 96 runtime.panicdivide pclntab
+0x42cf80 224 runtime.deferconvert pclntab
+0x42d060 768 runtime.popDefer pclntab
+0x42d360 128 runtime.deferreturn pclntab
+0x42d3e0 384 runtime.preprintpanics pclntab
+0x42d560 256 runtime.printpanics pclntab
+0x42d660 32 runtime.(*PanicNilError).Error pclntab
+0x42d680 384 runtime.(*_panic).start pclntab
+0x42d800 448 runtime.(*_panic).nextDefer pclntab
+0x42d9c0 160 runtime.(*_panic).nextFrame pclntab
+0x42da60 384 runtime.(*_panic).nextFrame.func1 pclntab
+0x42dbe0 608 runtime.(*_panic).initOpenCodedDefers pclntab
+0x42de40 64 runtime.gorecover pclntab
+0x42de80 128 runtime.throw.func1 pclntab
+0x42df00 96 runtime.fatal pclntab
+0x42df60 128 runtime.fatal.func1 pclntab
+0x42dfe0 640 runtime.recovery pclntab
+0x42e260 128 runtime.fatalthrow pclntab
+0x42e2e0 192 runtime.fatalthrow.func1 pclntab
+0x42e3a0 192 runtime.fatalpanic pclntab
+0x42e460 160 runtime.fatalpanic.func1 pclntab
+0x42e500 384 runtime.startpanic_m pclntab
+0x42e680 800 runtime.dopanic_m pclntab
+0x42e9a0 288 runtime.canpanic pclntab
+0x42eac0 160 runtime.shouldPushSigpanic pclntab
+0x42eb60 64 runtime.isAbortPC pclntab
+0x42eba0 544 runtime.(*Pinner).Pin pclntab
+0x42edc0 224 runtime.(*Pinner).Unpin pclntab
+0x42eea0 256 runtime.(*pinner).unpin pclntab
+0x42efa0 256 runtime.pinnerGetPtr pclntab
+0x42f0a0 736 runtime.setPinned pclntab
+0x42f380 96 runtime.setPinned.func2 pclntab
+0x42f3e0 64 runtime.setPinned.func1 pclntab
+0x42f420 320 runtime.(*mspan).refreshPinnerBits pclntab
+0x42f560 352 runtime.(*mspan).incPinCounter pclntab
+0x42f6c0 416 runtime.(*mspan).decPinCounter pclntab
+0x42f860 1440 runtime.suspendG pclntab
+0x42fe00 448 runtime.resumeG pclntab
+0x42ffc0 96 runtime.asyncPreempt2 pclntab
+0x430020 192 runtime.init.5 pclntab
+0x4300e0 800 runtime.isAsyncSafePoint pclntab
+0x430400 416 runtime.recordForPanic pclntab
+0x4305a0 96 runtime.printlock pclntab
+0x430600 96 runtime.printunlock pclntab
+0x430660 320 runtime.gwrite pclntab
+0x4307a0 64 runtime.printsp pclntab
+0x4307e0 64 runtime.printnl pclntab
+0x430820 96 runtime.printbool pclntab
+0x430880 576 runtime.printfloat pclntab
+0x430ac0 160 runtime.printcomplex pclntab
+0x430b60 224 runtime.printuint pclntab
+0x430c40 96 runtime.printint pclntab
+0x430ca0 256 runtime.printhex pclntab
+0x430da0 64 runtime.printpointer pclntab
+0x430de0 64 runtime.printuintptr pclntab
+0x430e20 128 runtime.printstring pclntab
+0x430ea0 224 runtime.printslice pclntab
+0x430f80 608 runtime.hexdumpWords pclntab
+0x4311e0 1056 runtime.main pclntab
+0x431600 64 runtime.main.func2 pclntab
+0x431640 128 runtime.init.6 pclntab
+0x4316c0 64 runtime.init.7 pclntab
+0x431700 288 runtime.forcegchelper pclntab
+0x431820 32 runtime.Gosched pclntab
+0x431840 64 runtime.goschedIfBusy pclntab
+0x431880 736 runtime.acquireSudog pclntab
+0x431b60 800 runtime.releaseSudog pclntab
+0x431e80 64 runtime.badmcall pclntab
+0x431ec0 64 runtime.badmcall2 pclntab
+0x431f00 64 runtime.badreflectcall pclntab
+0x431f40 64 runtime.badmorestackg0 pclntab
+0x431f80 256 runtime.badmorestackg0.func1 pclntab
+0x432080 64 runtime.badmorestackgsignal pclntab
+0x4320c0 32 runtime.badctxt pclntab
+0x4320e0 192 runtime.switchToCrashStack pclntab
+0x4321a0 352 runtime.allgadd pclntab
+0x432300 160 runtime.forEachG pclntab
+0x4323a0 128 runtime.forEachGRace pclntab
+0x432420 320 runtime.getGodebugEarly pclntab
+0x432560 1376 runtime.schedinit pclntab
+0x432ac0 160 runtime.checkmcount pclntab
+0x432b60 96 runtime.mReserveID pclntab
+0x432bc0 672 runtime.mcommoninit pclntab
+0x432e60 640 runtime.ready pclntab
+0x4330e0 256 runtime.freezetheworld pclntab
+0x4331e0 1024 runtime.casfrom_Gscanstatus pclntab
+0x4335e0 256 runtime.castogscanstatus pclntab
+0x4336e0 896 runtime.casgstatus pclntab
+0x433a60 160 runtime.casgstatus.func1 pclntab
+0x433b00 128 runtime.casGToWaitingForGC pclntab
+0x433b80 160 runtime.casGToPreemptScan pclntab
+0x433c20 128 runtime.casGFromPreempted pclntab
+0x433ca0 1248 runtime.stopTheWorldWithSema pclntab
+0x434180 672 runtime.startTheWorldWithSema pclntab
+0x434420 160 runtime.mstart0 pclntab
+0x4344c0 256 runtime.mstart1 pclntab
+0x4345c0 96 runtime.mstartm0 pclntab
+0x434620 672 runtime.mexit pclntab
+0x4348c0 1056 runtime.forEachPInternal pclntab
+0x434ce0 160 runtime.runSafePointFn pclntab
+0x434d80 800 runtime.allocm pclntab
+0x4350a0 64 runtime.allocm.func1 pclntab
+0x4350e0 480 runtime.needm pclntab
+0x4352c0 96 runtime.newextram pclntab
+0x435320 352 runtime.oneNewExtraM pclntab
+0x435480 512 runtime.dropm pclntab
+0x435680 224 runtime.lockextra pclntab
+0x435760 96 runtime.getExtraM pclntab
+0x4357c0 96 runtime.addExtraM pclntab
+0x435820 416 runtime.newm pclntab
+0x4359c0 256 runtime.newm1 pclntab
+0x435ac0 224 runtime.startTemplateThread pclntab
+0x435ba0 256 runtime.templateThread pclntab
+0x435ca0 288 runtime.stopm pclntab
+0x435dc0 32 runtime.mspinning pclntab
+0x435de0 736 runtime.startm pclntab
+0x4360c0 896 runtime.handoffp pclntab
+0x436440 640 runtime.stoplockedm pclntab
+0x4366c0 160 runtime.startlockedm pclntab
+0x436760 288 runtime.gcstopm pclntab
+0x436880 448 runtime.execute pclntab
+0x436a40 4288 runtime.findRunnable pclntab
+0x437b00 256 runtime.pollWork pclntab
+0x437c00 1024 runtime.stealWork pclntab
+0x438000 320 runtime.checkRunqsNoP pclntab
+0x438140 160 runtime.checkTimersNoP pclntab
+0x4381e0 448 runtime.checkIdleGCNoP pclntab
+0x4383a0 96 runtime.wakeNetPoller pclntab
+0x438400 128 runtime.resetspinning pclntab
+0x438480 832 runtime.injectglist pclntab
+0x4387c0 672 runtime.schedule pclntab
+0x438a60 64 runtime.parkunlock_c pclntab
+0x438aa0 544 runtime.park_m pclntab
+0x438cc0 736 runtime.goschedImpl pclntab
+0x438fa0 64 runtime.gosched_m pclntab
+0x438fe0 128 runtime.goschedguarded_m pclntab
+0x439060 64 runtime.gopreempt_m pclntab
+0x4390a0 736 runtime.preemptPark pclntab
+0x439380 288 runtime.goyield_m pclntab
+0x4394a0 160 runtime.goexit1 pclntab
+0x439540 64 runtime.goexit0 pclntab
+0x439580 704 runtime.gdestroy pclntab
+0x439840 96 runtime.save pclntab
+0x4398a0 704 runtime.reentersyscall pclntab
+0x439b60 128 runtime.reentersyscall.func3 pclntab
+0x439be0 224 runtime.reentersyscall.func2 pclntab
+0x439cc0 224 runtime.reentersyscall.func1 pclntab
+0x439da0 96 runtime.entersyscall_sysmon pclntab
+0x439e00 384 runtime.entersyscall_gcwait pclntab
+0x439f80 256 runtime.entersyscallblock.func3 pclntab
+0x43a080 256 runtime.entersyscallblock.func2 pclntab
+0x43a180 256 runtime.entersyscallblock.func1 pclntab
+0x43a280 160 runtime.entersyscallblock_handoff pclntab
+0x43a320 96 runtime.exitsyscall.func2 pclntab
+0x43a380 64 runtime.exitsyscall.func1 pclntab
+0x43a3c0 384 runtime.exitsyscallfast pclntab
+0x43a540 64 runtime.exitsyscallfast.func1 pclntab
+0x43a580 160 runtime.exitsyscallfast_reacquired pclntab
+0x43a620 96 runtime.exitsyscallfast_reacquired.func1 pclntab
+0x43a680 192 runtime.exitsyscallfast_pidle pclntab
+0x43a740 544 runtime.exitsyscall0 pclntab
+0x43a960 224 runtime.malg pclntab
+0x43aa40 64 runtime.malg.func1 pclntab
+0x43aa80 128 runtime.newproc pclntab
+0x43ab00 128 runtime.newproc.func1 pclntab
+0x43ab80 1152 runtime.newproc1 pclntab
+0x43b000 704 runtime.saveAncestors pclntab
+0x43b2c0 512 runtime.gfput pclntab
+0x43b4c0 448 runtime.gfget pclntab
+0x43b680 64 runtime.gfget.func2 pclntab
+0x43b6c0 96 runtime.gfget.func1 pclntab
+0x43b720 352 runtime.gfpurge pclntab
+0x43b880 128 runtime.unlockOSThread pclntab
+0x43b900 64 runtime.badunlockosthread pclntab
+0x43b940 32 runtime._System pclntab
+0x43b960 32 runtime._ExternalCode pclntab
+0x43b980 32 runtime._LostExternalCode pclntab
+0x43b9a0 32 runtime._GC pclntab
+0x43b9c0 32 runtime._LostSIGPROFDuringAtomic64 pclntab
+0x43b9e0 32 runtime._LostContendedRuntimeLock pclntab
+0x43ba00 32 runtime._VDSO pclntab
+0x43ba20 1216 runtime.sigprof pclntab
+0x43bee0 416 runtime.(*p).init pclntab
+0x43c080 640 runtime.(*p).destroy pclntab
+0x43c300 96 runtime.(*p).destroy.freemcache.func2 pclntab
+0x43c360 224 runtime.(*p).destroy.func1 pclntab
+0x43c440 2464 runtime.procresize pclntab
+0x43cde0 192 runtime.acquirep pclntab
+0x43cea0 192 runtime.wirep pclntab
+0x43cf60 224 runtime.wirep.func2 pclntab
+0x43d040 160 runtime.releasep pclntab
+0x43d0e0 320 runtime.releasepNoTrace pclntab
+0x43d220 96 runtime.incidlelocked pclntab
+0x43d280 832 runtime.checkdead pclntab
+0x43d5c0 256 runtime.checkdead.func1 pclntab
+0x43d6c0 1120 runtime.sysmon pclntab
+0x43db20 736 runtime.retake pclntab
+0x43de00 128 runtime.preemptall pclntab
+0x43de80 192 runtime.preemptone pclntab
+0x43df40 2304 runtime.schedtrace pclntab
+0x43e840 320 runtime.schedEnableUser pclntab
+0x43e980 64 runtime.mput pclntab
+0x43e9c0 320 runtime.globrunqget pclntab
+0x43eb00 480 runtime.pidleput pclntab
+0x43ece0 384 runtime.pidleget pclntab
+0x43ee60 96 runtime.pidlegetSpinning pclntab
+0x43eec0 224 runtime.runqput pclntab
+0x43efa0 448 runtime.runqputslow pclntab
+0x43f160 320 runtime.runqputbatch pclntab
+0x43f2a0 320 runtime.runqdrain pclntab
+0x43f3e0 384 runtime.runqgrab pclntab
+0x43f560 224 runtime.runqsteal pclntab
+0x43f640 1312 runtime.doInit1 pclntab
+0x43fb60 160 runtime.(*profBuf).canWriteRecord pclntab
+0x43fc00 224 runtime.(*profBuf).canWriteTwoRecords pclntab
+0x43fce0 1504 runtime.(*profBuf).write pclntab
+0x4402c0 96 runtime.(*profBuf).close pclntab
+0x440320 96 runtime.(*profBuf).wakeupExtra pclntab
+0x440380 1504 runtime.(*profBuf).read pclntab
+0x440960 416 runtime.randinit pclntab
+0x440b00 320 runtime.readTimeRandom pclntab
+0x440c40 160 runtime.bootstrapRand pclntab
+0x440ce0 128 runtime.bootstrapRandReseed pclntab
+0x440d60 32 runtime.rand32 pclntab
+0x440d80 224 runtime.mrandinit pclntab
+0x440e60 160 runtime.retryOnEAGAIN pclntab
+0x440f00 160 runtime.(*ticksType).init pclntab
+0x440fa0 256 runtime.(*godebugInc).IncNonDefault pclntab
+0x4410a0 128 runtime.writeErrData pclntab
+0x441120 96 runtime.args pclntab
+0x441180 288 runtime.goargs pclntab
+0x4412a0 320 runtime.goenvs_unix pclntab
+0x4413e0 512 runtime.testAtomic64 pclntab
+0x4415e0 992 runtime.check pclntab
+0x4419c0 384 runtime.parsedebugvars pclntab
+0x441b40 1056 runtime.parsegodebug pclntab
+0x441f60 64 runtime.waitReason.String pclntab
+0x441fa0 32 runtime.getcallerfp pclntab
+0x441fc0 128 runtime.(*rwmutex).rlock pclntab
+0x442040 160 runtime.(*rwmutex).rlock.func1 pclntab
+0x4420e0 224 runtime.(*rwmutex).runlock pclntab
+0x4421c0 160 runtime.readyWithTime pclntab
+0x442260 64 runtime.readyWithTime.goready.func1 pclntab
+0x4422a0 864 runtime.semacquire1 pclntab
+0x442600 576 runtime.semrelease1 pclntab
+0x442840 992 runtime.(*semaRoot).queue pclntab
+0x442c20 864 runtime.(*semaRoot).dequeue pclntab
+0x442f80 352 runtime.(*semaRoot).rotateLeft pclntab
+0x4430e0 352 runtime.(*semaRoot).rotateRight pclntab
+0x443240 1504 runtime.dumpregs pclntab
+0x443820 224 runtime.(*sigctxt).preparePanic pclntab
+0x443900 480 runtime.initsig pclntab
+0x443ae0 288 runtime.doSigPreempt pclntab
+0x443c00 608 runtime.sigtrampgo pclntab
+0x443e60 160 runtime.sigprofNonGo pclntab
+0x443f00 96 runtime.sigprofNonGoPC pclntab
+0x443f60 672 runtime.adjustSignalStack pclntab
+0x444200 1696 runtime.sighandler pclntab
+0x4448a0 896 runtime.fatalsignal pclntab
+0x444c20 288 runtime.dieFromSignal pclntab
+0x444d40 320 runtime.raisebadsignal pclntab
+0x444e80 128 runtime.noSignalStack pclntab
+0x444f00 384 runtime.sigNotOnStack pclntab
+0x445080 128 runtime.signalDuringFork pclntab
+0x445100 160 runtime.badsignal pclntab
+0x4451a0 384 runtime.sigfwdgo pclntab
+0x445320 160 runtime.sigblock pclntab
+0x4453c0 160 runtime.unblocksig pclntab
+0x445460 32 runtime.minitSignals pclntab
+0x445480 320 runtime.minitSignalStack pclntab
+0x4455c0 288 runtime.minitSignalMask pclntab
+0x4456e0 160 runtime.unminitSignals pclntab
+0x445780 96 runtime.signalstack pclntab
+0x4457e0 352 runtime.sigsend pclntab
+0x445940 384 runtime.makeslicecopy pclntab
+0x445ac0 416 runtime.stackpoolalloc pclntab
+0x445c60 416 runtime.stackpoolfree pclntab
+0x445e00 256 runtime.stackcacherefill pclntab
+0x445f00 320 runtime.stackcacherelease pclntab
+0x446040 256 runtime.stackcache_clear pclntab
+0x446140 896 runtime.stackalloc pclntab
+0x4464c0 896 runtime.stackfree pclntab
+0x446840 512 runtime.adjustpointers pclntab
+0x446a40 736 runtime.adjustframe pclntab
+0x446d20 64 runtime.adjustctxt pclntab
+0x446d60 128 runtime.adjustdefers pclntab
+0x446de0 352 runtime.syncadjustsudogs pclntab
+0x446f40 1088 runtime.copystack pclntab
+0x447380 3072 runtime.newstack pclntab
+0x447f80 32 runtime.nilfunc pclntab
+0x447fa0 128 runtime.gostartcallfn pclntab
+0x448020 480 runtime.shrinkstack pclntab
+0x448200 416 runtime.freeStackSpans pclntab
+0x4483a0 192 runtime.gcComputeStartingStackSize pclntab
+0x448460 96 runtime.(*stkframe).argBytes pclntab
+0x4484c0 736 runtime.(*stkframe).argMapInternal pclntab
+0x4487a0 1632 runtime.(*stkframe).getStackMap pclntab
+0x448e00 288 runtime.stkobjinit pclntab
+0x448f20 544 runtime.concatstrings pclntab
+0x449140 160 runtime.concatstring2 pclntab
+0x4491e0 192 runtime.concatstring3 pclntab
+0x4492a0 256 runtime.concatstring4 pclntab
+0x4493a0 288 runtime.concatstring5 pclntab
+0x4494c0 192 runtime.rawstringtmp pclntab
+0x449580 224 runtime.atoi64 pclntab
+0x449660 480 runtime.parseByteCount pclntab
+0x449840 160 runtime.findnull pclntab
+0x4498e0 64 runtime.badsystemstack pclntab
+0x449920 2144 runtime.(*Frames).Next pclntab
+0x44a180 640 runtime.expandCgoFrames pclntab
+0x44a400 544 runtime.modulesinit pclntab
+0x44a620 288 runtime.(*moduledata).textAddr pclntab
+0x44a740 128 runtime.(*moduledata).funcName pclntab
+0x44a7c0 128 runtime.(*Func).Entry pclntab
+0x44a840 1760 runtime.pcvalue pclntab
+0x44af20 224 runtime.funcpkgpath pclntab
+0x44b000 224 runtime.funcfile pclntab
+0x44b0e0 320 runtime.funcMaxSPDelta pclntab
+0x44b220 128 runtime.pcdatavalue pclntab
+0x44b2a0 128 runtime.pcdatavalue1 pclntab
+0x44b320 224 runtime.(*inlineUnwinder).next pclntab
+0x44b400 288 runtime.(*timer).updateHeap pclntab
+0x44b520 384 runtime.(*timers).addHeap pclntab
+0x44b6a0 192 runtime.(*timer).maybeRunAsync pclntab
+0x44b760 64 runtime.(*timer).maybeRunAsync.func1 pclntab
+0x44b7a0 352 runtime.(*timer).stop pclntab
+0x44b900 416 runtime.(*timers).deleteMin pclntab
+0x44baa0 832 runtime.(*timer).modify pclntab
+0x44bde0 448 runtime.(*timer).maybeAdd pclntab
+0x44bfa0 544 runtime.(*timers).cleanHead pclntab
+0x44c1c0 288 runtime.(*timers).take pclntab
+0x44c2e0 768 runtime.(*timers).adjust pclntab
+0x44c5e0 544 runtime.(*timers).check pclntab
+0x44c800 320 runtime.(*timers).run pclntab
+0x44c940 672 runtime.(*timer).unlockAndRun pclntab
+0x44cbe0 192 runtime.timeSleepUntil pclntab
+0x44cca0 384 runtime.(*timers).siftUp pclntab
+0x44ce20 608 runtime.(*timers).siftDown pclntab
+0x44d080 128 runtime.(*timers).initHeap pclntab
+0x44d100 64 runtime.badTimer pclntab
+0x44d140 224 runtime.(*timer).maybeRunChan pclntab
+0x44d220 64 runtime.(*timer).maybeRunChan.func1 pclntab
+0x44d260 224 runtime.blockTimerChan pclntab
+0x44d340 160 runtime.unblockTimerChan pclntab
+0x44d3e0 320 runtime.traceAdvance.func6 pclntab
+0x44d520 128 runtime.traceAdvance.forEachP.func7 pclntab
+0x44d5a0 96 runtime.traceAdvance.func4 pclntab
+0x44d600 352 runtime.traceAdvance.func3 pclntab
+0x44d760 544 runtime.traceAdvance.func1 pclntab
+0x44d980 256 runtime.traceAdvance.func1.1 pclntab
+0x44da80 416 runtime.traceRegisterLabelsAndReasons pclntab
+0x44dc20 128 runtime.traceReader pclntab
+0x44dca0 128 runtime.(*traceAdvancerState).stop pclntab
+0x44dd20 128 runtime.(*wakeableSleep).wake pclntab
+0x44dda0 128 runtime.(*wakeableSleep).close pclntab
+0x44de20 192 runtime.traceLocker.SpanAlloc pclntab
+0x44dee0 160 runtime.traceLocker.SpanFree pclntab
+0x44df80 256 runtime.traceLocker.HeapObjectAlloc pclntab
+0x44e080 128 runtime.traceLocker.HeapObjectFree pclntab
+0x44e100 224 runtime.traceLocker.GoroutineStackAlloc pclntab
+0x44e1e0 128 runtime.traceLocker.GoroutineStackFree pclntab
+0x44e260 96 runtime.traceCompressStackSize pclntab
+0x44e2c0 864 runtime.(*unwinder).initAt pclntab
+0x44e620 736 runtime.(*unwinder).resolveInternal pclntab
+0x44e900 768 runtime.(*unwinder).next pclntab
+0x44ec00 320 runtime.(*unwinder).finishInternal pclntab
+0x44ed40 128 runtime.(*unwinder).symPC pclntab
+0x44edc0 224 runtime.(*unwinder).cgoCallers pclntab
+0x44eea0 992 runtime.tracebackPCs pclntab
+0x44f280 960 runtime.printArgs pclntab
+0x44f640 224 runtime.printArgs.func2 pclntab
+0x44f720 96 runtime.printArgs.func1 pclntab
+0x44f780 256 runtime.funcNamePiecesForPrint pclntab
+0x44f880 256 runtime.printFuncName pclntab
+0x44f980 192 runtime.printcreatedby pclntab
+0x44fa40 544 runtime.printcreatedby1 pclntab
+0x44fc60 128 runtime.tracebacktrap pclntab
+0x44fce0 832 runtime.traceback1 pclntab
+0x450020 416 runtime.traceback1.func1 pclntab
+0x4501c0 2240 runtime.traceback2 pclntab
+0x450a80 96 runtime.traceback2.func1 pclntab
+0x450ae0 512 runtime.printAncestorTraceback pclntab
+0x450ce0 480 runtime.printAncestorTracebackFuncInfo pclntab
+0x450ec0 224 runtime.callers.func1 pclntab
+0x450fa0 256 runtime.gcallers pclntab
+0x4510a0 192 runtime.showframe pclntab
+0x451160 416 runtime.showfuncinfo pclntab
+0x451300 320 runtime.isExportedRuntime pclntab
+0x451440 864 runtime.goroutineheader pclntab
+0x4517a0 224 runtime.tracebackothers pclntab
+0x451880 256 runtime.tracebackothers.func1 pclntab
+0x451980 480 runtime.tracebackHexdump pclntab
+0x451b60 64 runtime.tracebackHexdump.func1 pclntab
+0x451ba0 224 runtime.isSystemGoroutine pclntab
+0x451c80 288 runtime.printCgoTraceback pclntab
+0x451da0 512 runtime.printOneCgoTraceback pclntab
+0x451fa0 128 runtime.callCgoSymbolizer pclntab
+0x452020 224 runtime.cgoContextPCs pclntab
+0x452100 160 runtime.traceWriter.ensure pclntab
+0x4521a0 160 runtime.traceWriter.flush pclntab
+0x452240 96 runtime.traceWriter.flush.func1 pclntab
+0x4522a0 864 runtime.traceWriter.refill pclntab
+0x452600 224 runtime.traceWriter.refill.func1 pclntab
+0x4526e0 192 runtime.(*traceBuf).varintAt pclntab
+0x4527a0 192 runtime.traceBufFlush pclntab
+0x452860 256 runtime.traceStopReadCPU pclntab
+0x452960 1664 runtime.traceReadCPU pclntab
+0x452fe0 128 runtime.traceCPUFlush pclntab
+0x453060 128 runtime.traceCPUFlush.func1 pclntab
+0x4530e0 640 runtime.traceCPUSample pclntab
+0x453360 736 runtime.traceLocker.eventWriter pclntab
+0x453640 160 runtime.traceEventWriter.commit pclntab
+0x4536e0 608 runtime.traceWriter.event pclntab
+0x453940 160 runtime.traceLocker.startPC pclntab
+0x4539e0 160 runtime.traceExpWriter.ensure pclntab
+0x453a80 384 runtime.(*traceMap).put pclntab
+0x453c00 224 runtime.(*traceMap).newTraceMapNode pclntab
+0x453ce0 96 runtime.(*traceMap).reset pclntab
+0x453d40 448 runtime.(*traceRegionAlloc).alloc pclntab
+0x453f00 192 runtime.(*traceRegionAlloc).drop pclntab
+0x453fc0 32 runtime.traceLockInit pclntab
+0x453fe0 32 runtime.traceAllocFreeEnabled pclntab
+0x454000 32 runtime.traceTryAcquire pclntab
+0x454020 128 runtime.traceAcquireEnabled pclntab
+0x4540a0 64 runtime.traceTryAcquireEnabled pclntab
+0x4540e0 32 runtime.traceLocker.ok pclntab
+0x454100 64 runtime.traceRelease pclntab
+0x454140 224 runtime.traceLocker.Gomaxprocs pclntab
+0x454220 192 runtime.traceLocker.ProcStart pclntab
+0x4542e0 128 runtime.traceLocker.ProcStop pclntab
+0x454360 128 runtime.traceLocker.GCActive pclntab
+0x4543e0 192 runtime.traceLocker.GCStart pclntab
+0x4544a0 128 runtime.traceLocker.GCDone pclntab
+0x454520 288 runtime.traceLocker.STWStart pclntab
+0x454640 96 runtime.traceLocker.STWDone pclntab
+0x4546a0 128 runtime.traceLocker.GCSweepStart pclntab
+0x454720 256 runtime.traceLocker.GCSweepSpan pclntab
+0x454820 224 runtime.traceLocker.GCSweepDone pclntab
+0x454900 160 runtime.traceLocker.GCMarkAssistStart pclntab
+0x4549a0 96 runtime.traceLocker.GCMarkAssistDone pclntab
+0x454a00 384 runtime.traceLocker.GoCreate pclntab
+0x454b80 352 runtime.traceLocker.GoStart pclntab
+0x454ce0 96 runtime.traceLocker.GoEnd pclntab
+0x454d40 288 runtime.traceLocker.GoStop pclntab
+0x454e60 288 runtime.traceLocker.GoPark pclntab
+0x454f80 320 runtime.traceLocker.GoUnpark pclntab
+0x4550c0 320 runtime.emitUnblockStatus pclntab
+0x455200 256 runtime.traceLocker.GoSysCall pclntab
+0x455300 160 runtime.traceLocker.GoSysExit pclntab
+0x4553a0 480 runtime.traceLocker.ProcSteal pclntab
+0x455580 128 runtime.traceLocker.HeapAlloc pclntab
+0x455600 160 runtime.traceLocker.HeapGoal pclntab
+0x4556a0 192 runtime.traceLocker.GoCreateSyscall pclntab
+0x455760 96 runtime.traceLocker.GoDestroySyscall pclntab
+0x4557c0 224 runtime.traceThreadDestroy pclntab
+0x4558a0 160 runtime.traceThreadDestroy.func1 pclntab
+0x455940 1056 runtime.traceStack pclntab
+0x455d60 128 runtime.(*traceStackTable).put pclntab
+0x455de0 192 runtime.(*traceStackTable).dump pclntab
+0x455ea0 1504 runtime.dumpStacksRec pclntab
+0x456480 672 runtime.makeTraceFrames pclntab
+0x456720 256 runtime.makeTraceFrame pclntab
+0x456820 768 runtime.fpunwindExpand pclntab
+0x456b20 160 runtime.startPCForTrace pclntab
+0x456bc0 384 runtime.traceWriter.writeGoStatus pclntab
+0x456d40 448 runtime.traceWriter.writeProcStatusForP pclntab
+0x456f00 288 runtime.traceWriter.writeProcStatus pclntab
+0x457020 256 runtime.goStatusToTraceGoStatus pclntab
+0x457120 224 runtime.(*traceStringTable).put pclntab
+0x457200 64 runtime.(*traceStringTable).put.func1 pclntab
+0x457240 672 runtime.(*traceStringTable).writeString pclntab
+0x4574e0 160 runtime.(*traceStringTable).reset pclntab
+0x457580 128 runtime.(*traceStringTable).reset.func1 pclntab
+0x457600 352 runtime.traceFrequency pclntab
+0x457760 96 runtime.traceFrequency.func1 pclntab
+0x4577c0 96 runtime.(*traceTypeTable).put pclntab
+0x457820 160 runtime.(*traceTypeTable).dump pclntab
+0x4578c0 1216 runtime.dumpTypesRec pclntab
+0x457d80 128 runtime.rtype.string pclntab
+0x457e00 224 runtime.rtype.pkgpath pclntab
+0x457ee0 480 runtime.rtype.textOff pclntab
+0x4580c0 320 runtime.pkgPath pclntab
+0x458200 1472 runtime.typelinksinit pclntab
+0x4587c0 3104 runtime.typesEqual pclntab
+0x4593e0 64 runtime.panicunsafestringlen pclntab
+0x459420 64 runtime.panicunsafestringnilptr pclntab
+0x459460 64 runtime.panicunsafeslicelen pclntab
+0x4594a0 96 runtime.panicunsafeslicelen1 pclntab
+0x459500 1056 runtime.vdsoInitFromSysinfoEhdr pclntab
+0x459920 256 runtime.vdsoFindVersion pclntab
+0x459a20 736 runtime.vdsoParseSymbols pclntab
+0x459d00 416 runtime.vdsoParseSymbols.func1 pclntab
+0x459ea0 160 runtime.vdsoauxv pclntab
+0x459f40 32 runtime.printCgoTraceback.func1 pclntab
+0x459f60 96 runtime.traceAdvance.func2 pclntab
+0x459fc0 256 runtime.traceAdvance.func5 pclntab
+0x45a0c0 480 runtime.schedtrace.func1 pclntab
+0x45a2a0 64 runtime.wirep.func1 pclntab
+0x45a2e0 256 runtime.injectglist.func1 pclntab
+0x45a3e0 64 runtime.casgstatus.func2 pclntab
+0x45a420 32 runtime.init.6.func1 pclntab
+0x45a440 64 runtime.main.func1 pclntab
+0x45a480 64 runtime.fatalpanic.func2 pclntab
+0x45a4c0 224 runtime.preprintpanics.func1 pclntab
+0x45a5a0 64 runtime.sysSigaction.func1 pclntab
+0x45a5e0 64 runtime.wbBufFlush.func1 pclntab
+0x45a620 160 runtime.sweepone.func1 pclntab
+0x45a6c0 128 runtime.(*scavengerState).init.func1 pclntab
+0x45a740 192 runtime.(*scavengerState).init.func2 pclntab
+0x45a800 64 runtime.(*scavengerState).init.func3 pclntab
+0x45a840 32 runtime.(*scavengerState).init.func4 pclntab
+0x45a860 32 runtime.gcResetMarkState.func1 pclntab
+0x45a880 128 runtime.gcBgMarkWorker.func1 pclntab
+0x45a900 160 runtime.gcMarkTermination.func4 pclntab
+0x45a9a0 96 runtime.gcMarkTermination.func4.1 pclntab
+0x45aa00 64 runtime.gcMarkTermination.func5 pclntab
+0x45aa40 128 runtime.gcMarkDone.func1 pclntab
+0x45aac0 32 runtime.gcStart.func2 pclntab
+0x45aae0 576 runtime.debugCallWrap1.func1 pclntab
+0x45ad20 320 runtime.debugCallWrap.func2 pclntab
+0x45ae60 64 runtime.(*Pinner).Pin.func1 pclntab
+0x45aea0 32 runtime.(*mheap).allocSpan.func1 pclntab
+0x45aec0 32 runtime.(*timer).unlockAndRun.func1 pclntab
+0x45aee0 160 runtime.(*pageAlloc).sysGrow.func1 pclntab
+0x45af80 128 runtime.atomicwb pclntab
+0x45b000 64 internal/runtime/atomic.storePointer pclntab
+0x45b040 96 internal/runtime/atomic.casPointer pclntab
+0x45b0a0 224 runtime.cgocall pclntab
+0x45b180 704 runtime.getitab pclntab
+0x45b440 160 runtime.convTstring pclntab
+0x45b4e0 2560 runtime.mallocgc pclntab
+0x45bee0 160 runtime.newarray pclntab
+0x45bf80 416 runtime.makemap pclntab
+0x45c120 576 runtime.mapaccess2 pclntab
+0x45c360 1344 runtime.mapassign pclntab
+0x45c8a0 384 runtime.mapaccess2_fast32 pclntab
+0x45ca20 800 runtime.mapassign_fast32 pclntab
+0x45cd40 1056 runtime.mapassign_faststr pclntab
+0x45d160 128 runtime.typedmemmove pclntab
+0x45d1e0 160 runtime.typedslicecopy pclntab
+0x45d280 64 runtime.memclrHasPointers pclntab
+0x45d2c0 320 runtime.findObject pclntab
+0x45d400 128 runtime.blockevent pclntab
+0x45d480 256 sync.event pclntab
+0x45d580 64 runtime.fcntl pclntab
+0x45d5c0 864 runtime.gopanic pclntab
+0x45d920 96 runtime.throw pclntab
+0x45d980 320 runtime.gopark pclntab
+0x45dac0 320 runtime.wakep pclntab
+0x45dc00 64 runtime.entersyscall pclntab
+0x45dc40 512 runtime.entersyscallblock pclntab
+0x45de40 608 runtime.exitsyscall pclntab
+0x45e0a0 128 runtime.rand pclntab
+0x45e120 288 runtime/debug.SetTraceback pclntab
+0x45e240 992 runtime.sigpanic pclntab
+0x45e620 224 runtime.makeslice pclntab
+0x45e700 1952 runtime.growslice pclntab
+0x45eea0 32 runtime.morestackc pclntab
+0x45eec0 256 runtime.slicebytetostring pclntab
+0x45efc0 160 runtime.gostring pclntab
+0x45f060 2112 runtime.moduledataverify1 pclntab
+0x45f8a0 416 runtime.findfunc pclntab
+0x45fa40 256 runtime.funcline1 pclntab
+0x45fb40 128 runtime.pcdatavalue2 pclntab
+0x45fbc0 416 runtime.step pclntab
+0x45fd60 224 runtime.newInlineUnwinder pclntab
+0x45fe40 96 runtime.write pclntab
+0x45fea0 2304 runtime.traceAdvance pclntab
+0x4607a0 224 runtime.callers pclntab
+0x460880 640 runtime.resolveNameOff pclntab
+0x460b00 704 runtime.resolveTypeOff pclntab
+0x460dc0 64 gogo pclntab
+0x460e00 64 callRet pclntab
+0x460e40 64 gosave_systemstack_switch pclntab
+0x460e80 16 setg_gcc pclntab
+0x460e90 1392 aeshashbody pclntab
+0x461400 224 gcWriteBarrier pclntab
+0x4614e0 96 debugCall32 pclntab
+0x461540 96 debugCall64 pclntab
+0x4615a0 96 debugCall128 pclntab
+0x461600 96 debugCall256 pclntab
+0x461660 96 debugCall512 pclntab
+0x4616c0 96 debugCall1024 pclntab
+0x461720 96 debugCall2048 pclntab
+0x461780 128 debugCall4096 pclntab
+0x461800 128 debugCall8192 pclntab
+0x461880 128 debugCall16384 pclntab
+0x461900 128 debugCall32768 pclntab
+0x461980 128 debugCall65536 pclntab
+0x461a00 32 _rt0_amd64 pclntab
+0x461a20 384 runtime.rt0_go pclntab
+0x461ba0 32 runtime.asminit pclntab
+0x461bc0 32 runtime.mstart pclntab
+0x461be0 32 runtime.gogo pclntab
+0x461c00 96 runtime.mcall pclntab
+0x461c60 32 runtime.systemstack_switch pclntab
+0x461c80 160 runtime.systemstack pclntab
+0x461d20 64 runtime.switchToCrashStack0 pclntab
+0x461d60 128 runtime.morestack pclntab
+0x461de0 32 runtime.morestack_noctxt pclntab
+0x461e00 192 runtime.spillArgs pclntab
+0x461ec0 192 runtime.unspillArgs pclntab
+0x461f80 512 runtime.reflectcall pclntab
+0x462180 160 runtime.call16 pclntab
+0x462220 160 runtime.call32 pclntab
+0x4622c0 160 runtime.call64 pclntab
+0x462360 192 runtime.call128 pclntab
+0x462420 224 runtime.call256 pclntab
+0x462500 224 runtime.call512 pclntab
+0x4625e0 224 runtime.call1024 pclntab
+0x4626c0 224 runtime.call2048 pclntab
+0x4627a0 224 runtime.call4096 pclntab
+0x462880 224 runtime.call8192 pclntab
+0x462960 224 runtime.call16384 pclntab
+0x462a40 224 runtime.call32768 pclntab
+0x462b20 224 runtime.call65536 pclntab
+0x462c00 224 runtime.call131072 pclntab
+0x462ce0 224 runtime.call262144 pclntab
+0x462dc0 224 runtime.call524288 pclntab
+0x462ea0 224 runtime.call1048576 pclntab
+0x462f80 224 runtime.call2097152 pclntab
+0x463060 224 runtime.call4194304 pclntab
+0x463140 224 runtime.call8388608 pclntab
+0x463220 224 runtime.call16777216 pclntab
+0x463300 224 runtime.call33554432 pclntab
+0x4633e0 224 runtime.call67108864 pclntab
+0x4634c0 224 runtime.call134217728 pclntab
+0x4635a0 224 runtime.call268435456 pclntab
+0x463680 224 runtime.call536870912 pclntab
+0x463760 224 runtime.call1073741824 pclntab
+0x463840 32 runtime.procyield pclntab
+0x463860 32 runtime.publicationBarrier pclntab
+0x463880 32 runtime.asmcgocall_landingpad pclntab
+0x4638a0 192 runtime.asmcgocall pclntab
+0x463960 32 runtime.setg pclntab
+0x463980 32 runtime.abort pclntab
+0x4639a0 32 runtime.stackcheck pclntab
+0x4639c0 64 runtime.cputicks pclntab
+0x463a00 32 runtime.memhash pclntab
+0x463a20 32 runtime.strhash pclntab
+0x463a40 64 runtime.memhash32 pclntab
+0x463a80 32 runtime.checkASM pclntab
+0x463aa0 32 runtime.goexit pclntab
+0x463ac0 32 runtime.sigpanic0 pclntab
+0x463ae0 32 runtime.gcWriteBarrier1 pclntab
+0x463b00 32 runtime.gcWriteBarrier2 pclntab
+0x463b20 32 runtime.gcWriteBarrier3 pclntab
+0x463b40 32 runtime.gcWriteBarrier4 pclntab
+0x463b60 32 runtime.gcWriteBarrier5 pclntab
+0x463b80 32 runtime.gcWriteBarrier6 pclntab
+0x463ba0 32 runtime.gcWriteBarrier7 pclntab
+0x463bc0 32 runtime.gcWriteBarrier8 pclntab
+0x463be0 640 runtime.debugCallV2 pclntab
+0x463e60 64 runtime.debugCallPanicked pclntab
+0x463ea0 32 runtime.panicIndex pclntab
+0x463ec0 32 runtime.panicIndexU pclntab
+0x463ee0 32 runtime.panicSliceAlen pclntab
+0x463f00 32 runtime.panicSliceAlenU pclntab
+0x463f20 32 runtime.panicSliceAcap pclntab
+0x463f40 32 runtime.panicSliceAcapU pclntab
+0x463f60 32 runtime.panicSliceB pclntab
+0x463f80 32 runtime.panicSliceBU pclntab
+0x463fa0 32 runtime.panicSlice3Alen pclntab
+0x463fc0 32 runtime.panicSlice3C pclntab
+0x463fe0 32 runtime.getfp pclntab
+0x464000 384 runtime.duffzero pclntab
+0x464180 928 runtime.duffcopy pclntab
+0x464520 768 runtime.memclrNoHeapPointers pclntab
+0x464820 1728 runtime.memmove pclntab
+0x464ee0 448 runtime.asyncPreempt pclntab
+0x4650a0 32 _rt0_amd64_linux entry,pclntab
+0x4650c0 128 runtime.sigprofNonGoWrapper pclntab
+0x465140 32 runtime.exit pclntab
+0x465160 32 runtime.exitThread pclntab
+0x465180 64 runtime.open pclntab
+0x4651c0 32 runtime.closefd pclntab
+0x4651e0 32 runtime.write1 pclntab
+0x465200 32 runtime.read pclntab
+0x465220 64 runtime.usleep pclntab
+0x465260 32 runtime.gettid pclntab
+0x465280 64 runtime.raise pclntab
+0x4652c0 32 runtime.raiseproc pclntab
+0x4652e0 32 runtime.getpid pclntab
+0x465300 32 runtime.tgkill pclntab
+0x465320 32 runtime.timer_create pclntab
+0x465340 32 runtime.timer_settime pclntab
+0x465360 32 runtime.timer_delete pclntab
+0x465380 32 runtime.mincore pclntab
+0x4653a0 192 runtime.nanotime1 pclntab
+0x465460 64 runtime.rtsigprocmask pclntab
+0x4654a0 32 runtime.rt_sigaction pclntab
+0x4654c0 64 runtime.callCgoSigaction pclntab
+0x465500 64 runtime.sigfwd pclntab
+0x465540 128 runtime.sigtramp pclntab
+0x4655c0 192 runtime.cgoSigtramp pclntab
+0x465680 32 runtime.sigreturn__sigaction pclntab
+0x4656a0 96 runtime.sysMmap pclntab
+0x465700 96 runtime.callCgoMmap pclntab
+0x465760 64 runtime.sysMunmap pclntab
+0x4657a0 64 runtime.callCgoMunmap pclntab
+0x4657e0 32 runtime.madvise pclntab
+0x465800 64 runtime.futex pclntab
+0x465840 160 runtime.clone pclntab
+0x4658e0 64 runtime.sigaltstack pclntab
+0x465920 64 runtime.settls pclntab
+0x465960 32 runtime.osyield pclntab
+0x465980 32 runtime.sched_getaffinity pclntab
+0x4659a0 224 time.now pclntab
+0x465a80 160 runtime.(*lockRank).String pclntab
+0x465b20 96 runtime.(*waitReason).String pclntab
+0x465b80 128 runtime.(*errorString).Error pclntab
+0x465c00 128 runtime.(*errorAddressString).Error pclntab
+0x465c80 64 runtime.(*plainError).Error pclntab
+0x465cc0 128 runtime.(*boundsError).Error pclntab
+0x465d40 96 runtime.(*itabTableType).add-fm pclntab
+0x465da0 64 runtime.debugCallCheck pclntab
+0x465de0 64 runtime.debugCallWrap pclntab
+0x465e20 64 runtime.reflectcallmove pclntab
+0x465e60 32 runtime.wbBufFlush pclntab
+0x465e80 32 runtime.osinit pclntab
+0x465ea0 32 runtime.osyield pclntab
+0x465ec0 32 runtime.asyncPreempt2 pclntab
+0x465ee0 64 runtime.badmcall pclntab
+0x465f20 64 runtime.badmcall2 pclntab
+0x465f60 32 runtime.badreflectcall pclntab
+0x465f80 32 runtime.badmorestackg0 pclntab
+0x465fa0 32 runtime.badmorestackgsignal pclntab
+0x465fc0 32 runtime.schedinit pclntab
+0x465fe0 32 runtime.mstart0 pclntab
+0x466000 32 runtime.goexit1 pclntab
+0x466020 64 runtime.newproc pclntab
+0x466060 64 runtime.args pclntab
+0x4660a0 32 runtime.check pclntab
+0x4660c0 32 runtime.newstack pclntab
+0x4660e0 32 runtime.morestackc pclntab
+0x466100 32 runtime.badsystemstack pclntab
+0x466120 64 runtime.asmcgocall pclntab
+0x466160 64 runtime.write pclntab
+0x4661a0 192 type:.eq.runtime.Frame pclntab
+0x466260 160 type:.eq.runtime.modulehash pclntab
+0x466300 32 type:.eq.runtime.bitvector pclntab
+0x466320 96 type:.eq.runtime._func pclntab
+0x466380 32 type:.eq.runtime.PanicNilError pclntab
+0x4663a0 64 type:.eq.runtime.boundsError pclntab
+0x4663e0 160 type:.eq.runtime._panic pclntab
+0x466480 64 type:.eq.runtime.mcache pclntab
+0x4664c0 128 type:.eq.runtime.mspan pclntab
+0x466540 32 type:.eq.runtime.mSpanList pclntab
+0x466560 32 type:.eq.runtime.gcBits pclntab
+0x466580 64 type:.eq.runtime.special pclntab
+0x4665c0 32 type:.eq.struct { runtime.gList; runtime.n int32 } pclntab
+0x4665e0 128 type:.eq.runtime.hchan pclntab
+0x466660 192 type:.eq.runtime.pTraceState pclntab
+0x466720 128 type:.eq.runtime.traceSchedResourceState pclntab
+0x4667a0 32 type:.eq.runtime.notInHeap pclntab
+0x4667c0 32 type:.eq.runtime.limiterEvent pclntab
+0x4667e0 64 type:.eq.runtime.gcWork pclntab
+0x466820 64 type:.eq.runtime.workbuf pclntab
+0x466860 64 type:.eq.runtime.traceBuf pclntab
+0x4668a0 32 type:.eq.runtime.mOS pclntab
+0x4668c0 128 type:.eq.runtime.gTraceState pclntab
+0x466940 160 type:.eq.runtime.errorAddressString pclntab
+0x4669e0 128 type:.eq.runtime.TypeAssertionError pclntab
+0x466a60 160 type:.eq.runtime.piController pclntab
+0x466b00 416 type:.eq.[2]runtime.Frame pclntab
+0x466ca0 32 main.add pclntab
+0x466cc0 64 main.divmod pclntab
+0x466d00 32 main.sumSlice pclntab
+0x466d20 96 main.kindName pclntab
+0x466d80 256 main.main pclntab
+0x466e80 32 internal/runtime/atomic.(*Int32).Store pclntab
+0x466ea0 32 internal/runtime/atomic.(*Uint64).Store pclntab
+0x466ec0 32 type:.eq.internal/runtime/atomic.Int64 pclntab
+0x466ee0 32 type:.eq.internal/runtime/atomic.Uint64 pclntab
+0x466f00 160 internal/runtime/syscall.EpollWait pclntab
+0x466fa0 64 internal/runtime/syscall.Syscall6 pclntab
+0x466fe0 416 internal/runtime/exithook.Run pclntab
+0x467180 64 internal/runtime/exithook.Run.deferwrap2 pclntab
+0x4671c0 64 internal/runtime/exithook.Run.deferwrap1 pclntab
+0x467200 72 internal/runtime/exithook.Run.func1 pclntab
+
+== 0x466ca0 main.add
+-- decompile
+/* velk pseudo-C: main.add @ 0x466ca0 */
+uint64_t main_add(uint64_t a0, uint64_t a1) {
+    return a0 + a1;
+}
+-- signature
+uint64_t (uint64_t a0, uint64_t a1)
+-- references
+
+-- ir
+fn main.add @ 0x466ca0 (size 32)
+  blk0 @ 0x466ca0:
+    ret (rax + rbx)
+  blk1 @ 0x466ca4:
+    trap
+  blk2 @ 0x466ca5:
+    trap
+  blk3 @ 0x466ca6:
+    trap
+  blk4 @ 0x466ca7:
+    trap
+  blk5 @ 0x466ca8:
+    trap
+  blk6 @ 0x466ca9:
+    trap
+  blk7 @ 0x466caa:
+    trap
+  blk8 @ 0x466cab:
+    trap
+  blk9 @ 0x466cac:
+    trap
+  blk10 @ 0x466cad:
+    trap
+  blk11 @ 0x466cae:
+    trap
+  blk12 @ 0x466caf:
+    trap
+  blk13 @ 0x466cb0:
+    trap
+  blk14 @ 0x466cb1:
+    trap
+  blk15 @ 0x466cb2:
+    trap
+  blk16 @ 0x466cb3:
+    trap
+  blk17 @ 0x466cb4:
+    trap
+  blk18 @ 0x466cb5:
+    trap
+  blk19 @ 0x466cb6:
+    trap
+  blk20 @ 0x466cb7:
+    trap
+  blk21 @ 0x466cb8:
+    trap
+  blk22 @ 0x466cb9:
+    trap
+  blk23 @ 0x466cba:
+    trap
+  blk24 @ 0x466cbb:
+    trap
+  blk25 @ 0x466cbc:
+    trap
+  blk26 @ 0x466cbd:
+    trap
+  blk27 @ 0x466cbe:
+    trap
+  blk28 @ 0x466cbf:
+    trap
+-- card
+{"addr":"0x466ca0","approxTokens":108,"blocks":29,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
+
+== 0x466cc0 main.divmod
+-- decompile
+/* velk pseudo-C: main.divmod @ 0x466cc0 */
+uint64_t main_divmod(uint64_t a0, uint64_t a1) {
+    if (a1 & a1 == 0x0) { goto L_466ce1; }
+    if (a1 == 0xffffffffffffffff) {
+        a0 = -a0;
+    } else {
+        a0 = a0 / a1;
+    }
+    return a0;
+L_466ce1:
+    runtime_panicdivide();
+    __builtin_trap();
+}
+-- signature
+uint64_t (uint64_t a0, uint64_t a1)
+-- references
+
+-- ir
+fn main.divmod @ 0x466cc0 (size 64)
+  blk0 @ 0x466cc0:
+    brif eq (rbx & rbx), #0x0 -> 0x466ce1
+  blk1 @ 0x466cc9:
+    brif ne rbx, #0xffffffffffffffff -> 0x466cd6
+  blk2 @ 0x466ccf:
+    rax = (#0x0 - rax)
+    br 0x466cdb
+  blk3 @ 0x466cd6:
+    rax = (rax / rbx)
+  blk4 @ 0x466cdb:
+    ret rax
+  blk5 @ 0x466ce1:
+    call 0x42cf20
+    trap
+  blk6 @ 0x466ce8:
+    trap
+  blk7 @ 0x466ce9:
+    trap
+  blk8 @ 0x466cea:
+    trap
+  blk9 @ 0x466ceb:
+    trap
+  blk10 @ 0x466cec:
+    trap
+  blk11 @ 0x466ced:
+    trap
+  blk12 @ 0x466cee:
+    trap
+  blk13 @ 0x466cef:
+    trap
+  blk14 @ 0x466cf0:
+    trap
+  blk15 @ 0x466cf1:
+    trap
+  blk16 @ 0x466cf2:
+    trap
+  blk17 @ 0x466cf3:
+    trap
+  blk18 @ 0x466cf4:
+    trap
+  blk19 @ 0x466cf5:
+    trap
+  blk20 @ 0x466cf6:
+    trap
+  blk21 @ 0x466cf7:
+    trap
+  blk22 @ 0x466cf8:
+    trap
+  blk23 @ 0x466cf9:
+    trap
+  blk24 @ 0x466cfa:
+    trap
+  blk25 @ 0x466cfb:
+    trap
+  blk26 @ 0x466cfc:
+    trap
+  blk27 @ 0x466cfd:
+    trap
+  blk28 @ 0x466cfe:
+    trap
+  blk29 @ 0x466cff:
+    trap
+-- card
+{"addr":"0x466cc0","approxTokens":150,"blocks":30,"hardReasons":[],"name":"main.divmod","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
+
+== 0x466d00 main.sumSlice
+-- decompile
+/* velk pseudo-C: main.sumSlice @ 0x466d00 */
+uint64_t main_sumSlice(uint64_t *a0, int64_t a1) {
+    uint64_t local_0; /* [sp+8] */
+
+    local_0 = a0;
+    rcx = 0x0;
+    rdx = 0x0;
+    if (a1 > rcx) { goto L_466d0b; }
+    return rdx;
+L_466d0b:
+    rsi = *(uint64_t *)(a0 + rcx * 0x8);
+    rcx = rcx + 0x1;
+    rdx = rdx + rsi;
+    __builtin_trap();
+}
+-- signature
+uint64_t (uint64_t * a0, int64_t a1)
+-- references
+
+-- ir
+fn main.sumSlice @ 0x466d00 (size 32)
+  blk0 @ 0x466d00:
+    store64(rax, (rsp + #0x8))
+    rcx = #0x0
+    rdx = #0x0
+    br 0x466d15
+  blk1 @ 0x466d0b:
+    rsi = load64((rax + (rcx * #0x8)))
+    rcx = (rcx + #0x1)
+    rdx = (rdx + rsi)
+  blk2 @ 0x466d15:
+    brif gt rbx, rcx -> 0x466d0b
+  blk3 @ 0x466d1a:
+    ret rdx
+  blk4 @ 0x466d1e:
+    trap
+  blk5 @ 0x466d1f:
+    trap
+-- card
+{"addr":"0x466d00","approxTokens":120,"blocks":6,"hardReasons":[],"name":"main.sumSlice","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
+
+== 0x466d20 main.kindName
+-- decompile
+/* velk pseudo-C: main.kindName @ 0x466d20 */
+/* ref: 0x46d1c0 .rodata */
+/* ref: 0x46d400 -> 0x8 "noptrdata" */
+/* struct: a0 +0x10:uint32_t */
+uint32_t main_kindName(uint32_t *a0, uint64_t a1) {
+    if (a0 & a0 == 0x0) {
+        return 0x0;
+    }
+    if (*(uint32_t *)(a0 + 0x10) != 0x778cdb8) { goto L_466d4c; }
+    if (a0 != 0x46d1c0) {
+        return 0x0;
+    }
+    return 0x2;
+    do {
+        return 0x0;
+    } while (ecx != 0xcb735792);
+    if (a0 != 0x46d400) {
+        return 0x0;
+    }
+    return 0x1;
+}
+-- signature
+uint32_t (uint32_t * a0, uint64_t a1)
+-- references
+0x46d1c0 .rodata
+0x46d400 -> 0x8 "noptrdata"
+-- ir
+fn main.kindName @ 0x466d20 (size 96)
+  blk0 @ 0x466d20:
+    store64(rax, (rsp + #0x8))
+    store64(rbx, (rsp + #0x10))
+    brif eq (rax & rax), #0x0 -> 0x466d6b
+  blk1 @ 0x466d2f:
+    brif ne (load32((rax + #0x10)) & #0xffffffff), #0x778cdb8 -> 0x466d4c
+  blk2 @ 0x466d3a:
+    brif ne rax, #0x46d1c0 -> 0x466d6b
+  blk3 @ 0x466d46:
+    ret #0x2
+  blk4 @ 0x466d4c:
+    brif ne (rcx & #0xffffffff), #0xcb735792 -> 0x466d6b
+  blk5 @ 0x466d54:
+    brif ne rax, #0x46d400 -> 0x466d6b
+  blk6 @ 0x466d65:
+    ret #0x1
+  blk7 @ 0x466d6b:
+    ret #0x0
+  blk8 @ 0x466d6e:
+    trap
+  blk9 @ 0x466d6f:
+    trap
+  blk10 @ 0x466d70:
+    trap
+  blk11 @ 0x466d71:
+    trap
+  blk12 @ 0x466d72:
+    trap
+  blk13 @ 0x466d73:
+    trap
+  blk14 @ 0x466d74:
+    trap
+  blk15 @ 0x466d75:
+    trap
+  blk16 @ 0x466d76:
+    trap
+  blk17 @ 0x466d77:
+    trap
+  blk18 @ 0x466d78:
+    trap
+  blk19 @ 0x466d79:
+    trap
+  blk20 @ 0x466d7a:
+    trap
+  blk21 @ 0x466d7b:
+    trap
+  blk22 @ 0x466d7c:
+    trap
+  blk23 @ 0x466d7d:
+    trap
+  blk24 @ 0x466d7e:
+    trap
+  blk25 @ 0x466d7f:
+    trap
+-- card
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x466d20","approxTokens":168,"blocks":26,"hardReasons":[],"name":"main.kindName","nameHints":["noptrdata"],"nameSources":["pclntab"],"section":".text","size":96,"strings":["noptrdata"],"unsupported":0}
+
+== 0x466d80 main.main
+-- decompile
+/* velk pseudo-C: main.main @ 0x466d80 */
+/* ref: 0x46d400 -> 0x8 "noptrdata" */
+uint64_t main_main(void) {
+    uint64_t local_0; /* [sp-8] */
+    uint64_t local_1; /* [sp-38] */
+    uint64_t local_2; /* [sp-40] */
+    uint64_t local_3; /* [sp-28] */
+    uint64_t local_4; /* [sp-20] */
+    uint64_t local_5; /* [sp-18] */
+    uint64_t local_6; /* [sp-30] */
+    uint64_t local_7; /* [sp-10] */
+
+L_466d80:
+    if (rsp <= *(uint64_t *)(r14 + 0x10) /* unsigned */) { goto L_466e75; }
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rsp = rsp - 0x50;
+    main_divmod();
+    local_1 = 0x7;
+    local_2 = 0x3;
+    local_3 = 0x1;
+    local_4 = 0x2;
+    local_5 = 0x3;
+    main_sumSlice();
+    local_6 = rsp + 0x30;
+    main_add();
+    local_7 = 0x1;
+    runtime_printlock();
+    runtime_printint();
+    runtime_printsp();
+    runtime_printint();
+    runtime_printsp();
+    runtime_printint();
+    runtime_printsp();
+    runtime_printint();
+    runtime_printnl();
+    runtime_printunlock();
+    main_kindName();
+    local_6 = 0x46d400;
+    runtime_printlock();
+    rax = local_6;
+    runtime_printint();
+    runtime_printnl();
+    runtime_printunlock();
+    rsp = rsp + 0x50;
+    rsp = rsp + 0x8;
+    return rax;
+L_466e75:
+    runtime_morestack_noctxt();
+    goto L_466d80;
+}
+-- signature
+uint64_t ()
+-- references
+0x46d400 -> 0x8 "noptrdata"
+-- ir
+fn main.main @ 0x466d80 (size 256)
+  blk0 @ 0x466d80:
+    brif ls rsp, load64((r14 + #0x10)) -> 0x466e75
+  blk1 @ 0x466d8a:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rsp = (rsp - #0x50)
+    call 0x466cc0
+    store64(#0x7, (rsp + #0x20))
+    store64(#0x3, (rsp + #0x18))
+    store64(#0x1, (rsp + #0x30))
+    store64(#0x2, (rsp + #0x38))
+    store64(#0x3, (rsp + #0x40))
+    call 0x466d00
+    store64((rsp + #0x30), (rsp + #0x28))
+    call 0x466ca0
+    store64(#0x1, (rsp + #0x48))
+    call 0x4305a0
+    call 0x430c40
+    call 0x4307a0
+    call 0x430c40
+    call 0x4307a0
+    call 0x430c40
+    call 0x4307a0
+    call 0x430c40
+    call 0x4307e0
+    call 0x430600
+    call 0x466d20
+    store64(#0x46d400, (rsp + #0x28))
+    call 0x4305a0
+    rax = load64((rsp + #0x28))
+    call 0x430c40
+    call 0x4307e0
+    call 0x430600
+    rsp = (rsp + #0x50)
+    rsp = (rsp + #0x8)
+    ret rax
+  blk2 @ 0x466e75:
+    call 0x461de0
+    br 0x466d80
+  blk3 @ 0x466e7f:
+    trap
+-- card
+{"addr":"0x466d80","approxTokens":240,"blocks":4,"hardReasons":[],"name":"main.main","nameHints":["noptrdata"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata"],"unsupported":0}

@@ -1,0 +1,113 @@
+# metrics/l0_arith.x86_64.O0.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x2011c0 24 add3 symtab,dwarf
+0x2011e0 16 scale symtab,dwarf
+0x2011f0 44 pick symtab,dwarf
+0x201220 14 negate symtab,dwarf
+
+== 0x2011c0 add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x2011c0 */
+int add3(int a, int b, int c) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = a;
+    *(uint32_t *)(rbp - 0x8) = b;
+    *(uint32_t *)(rbp - 0xc) = c;
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn add3 @ 0x2011c0 (size 24)
+  blk0 @ 0x2011c0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(esi, (rbp + #0xfffffffffffffff8))
+    store32(edx, (rbp + #0xfffffffffffffff4))
+    ret ((edi + esi) + edx)
+-- card
+{"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+
+== 0x2011e0 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x2011e0 */
+int scale(int x) {
+    return x * 0x7 + 0x3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn scale @ 0x2011e0 (size 16)
+  blk0 @ 0x2011e0:
+    ret ((edi * #0x7) + #0x3)
+-- card
+{"addr":"0x2011e0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x2011f0 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x2011f0 */
+int pick(int a, int b) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = a;
+    *(uint32_t *)(rbp - 0x8) = b;
+    if (a > b) {
+        *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0x4);
+    } else {
+        *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0x8);
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0xc);
+}
+-- signature
+int (int a, int b)
+-- references
+
+-- ir
+fn pick @ 0x2011f0 (size 44)
+  blk0 @ 0x2011f0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(esi, (rbp + #0xfffffffffffffff8))
+    brif le edi, esi -> 0x201211
+  blk1 @ 0x201206:
+    store32(load32((rbp + #0xfffffffffffffffc)), (rbp + #0xfffffffffffffff4))
+    br 0x201217
+  blk2 @ 0x201211:
+    store32(load32((rbp + #0xfffffffffffffff8)), (rbp + #0xfffffffffffffff4))
+  blk3 @ 0x201217:
+    rsp = (rsp + #0x8)
+    ret load32((rbp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x2011f0","approxTokens":156,"blocks":4,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+
+== 0x201220 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x201220 */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x201220 (size 14)
+  blk0 @ 0x201220:
+    ret ((#0x0 - edi) & #0xffffffff)
+-- card
+{"addr":"0x201220","approxTokens":138,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}

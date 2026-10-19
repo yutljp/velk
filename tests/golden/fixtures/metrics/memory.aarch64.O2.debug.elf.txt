@@ -1,0 +1,256 @@
+# metrics/memory.aarch64.O2.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 2 unsupported, 4 gotos
+0x210214 176 copy_bytes symtab,dwarf
+0x2102c4 12 fill_bytes symtab,dwarf
+0x2102d0 24 string_length symtab,dwarf
+0x2102e8 28 grid_get symtab,dwarf
+0x210304 28 grid_set symtab,dwarf
+0x210320 12 pointer_distance symtab,dwarf
+0x21032c 16 read_volatile symtab,dwarf
+0x21033c 20 swap_ints symtab,dwarf
+
+== 0x210214 copy_bytes
+-- decompile
+/* velk pseudo-C: copy_bytes @ 0x210214 */
+/* struct: dst +0x0:uint8_t */
+/* struct: src +0x0:uint8_t */
+uint64_t copy_bytes(void *dst, void *src, uint64_t n) {
+    if (n == 0x0) {
+        return dst;
+    }
+    x8 = 0x0;
+    if (n < 0x8 /* unsigned */) { goto L_2102a4; }
+    if (dst - src < 0x20 /* unsigned */) { goto L_2102a4; }
+    if (n < 0x20 /* unsigned */) {
+        x8 = 0x0;
+    } else {
+        x9 = src + 0x10;
+        x10 = dst + 0x10;
+        x11 = n & 0xffffffffffffffe0;
+        do {
+            /* unsupported: SIMD vector pair load */
+            x11 = x11 - 0x20;
+            x9 = x9 + 0x20;
+            /* unsupported: SIMD vector pair store */
+            x10 = x10 + 0x20;
+        } while (x11 != 0x20);
+        if (x8 == n) {
+            return dst;
+        }
+        if (n == 0x18) { goto L_2102a4; }
+    }
+    x11 = x8 - (n & 0xfffffffffffffff8);
+    do {
+        x11 = x11 + 0x8;
+    } while (x11 != 0x8);
+    if (x8 == n) {
+        return dst;
+    }
+L_2102a4:
+    x9 = n - x8;
+    x10 = dst + x8;
+    x8 = src + x8;
+    do {
+        x11 = *(uint8_t *)(x8);
+        x8 = x8 + 0x1;
+        x9 = x9 - 0x1;
+        *(uint8_t *)(x10) = w11;
+        x10 = x10 + 0x1;
+    } while (x9 != 0x1);
+}
+-- signature
+uint64_t (void * dst, void * src, uint64_t n)
+-- references
+
+-- ir
+fn copy_bytes @ 0x210214 (size 176)
+  blk0 @ 0x210214:
+    brif eq x2, #0x0 -> 0x2102c0
+  blk1 @ 0x210218:
+    x8 = #0x0
+    brif cc x2, #0x8 -> 0x2102a4
+  blk2 @ 0x210224:
+    brif cc (x0 - x1), #0x20 -> 0x2102a4
+  blk3 @ 0x210230:
+    brif cs x2, #0x20 -> 0x210240
+  blk4 @ 0x210238:
+    x8 = #0x0
+    br 0x210278
+  blk5 @ 0x210240:
+    x9 = (x1 + #0x10)
+    x10 = (x0 + #0x10)
+    x11 = (x2 & #0xffffffffffffffe0)
+  blk6 @ 0x210250:
+    unsupported: SIMD vector pair load
+    x11 = (x11 - #0x20)
+    x9 = (x9 + #0x20)
+    unsupported: SIMD vector pair store
+    x10 = (x10 + #0x20)
+    brif ne x11, #0x20 -> 0x210250
+  blk7 @ 0x210268:
+    brif eq x8, x2 -> 0x2102c0
+  blk8 @ 0x210270:
+    brif eq x2, #0x18 -> 0x2102a4
+  blk9 @ 0x210278:
+    x11 = (x8 - (x2 & #0xfffffffffffffff8))
+  blk10 @ 0x21028c:
+    x11 = (x11 + #0x8)
+    brif ne x11, #0x8 -> 0x21028c
+  blk11 @ 0x21029c:
+    brif eq x8, x2 -> 0x2102c0
+  blk12 @ 0x2102a4:
+    x9 = (x2 - x8)
+    x10 = (x0 + x8)
+    x8 = (x1 + x8)
+  blk13 @ 0x2102b0:
+    x11 = (load8(x8) & #0xffffffff)
+    x8 = (x8 + #0x1)
+    x9 = (x9 - #0x1)
+    store8((x11 & #0xffffffff), x10)
+    x10 = (x10 + #0x1)
+    brif ne x9, #0x1 -> 0x2102b0
+  blk14 @ 0x2102c0:
+    ret x0
+-- card
+{"accesses":["dst +0x0:uint8_t","src +0x0:uint8_t"],"addr":"0x210214","approxTokens":240,"blocks":15,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","size":176,"unsupported":2}
+
+== 0x2102c4 fill_bytes
+-- decompile
+/* velk pseudo-C: fill_bytes @ 0x2102c4 */
+uint64_t fill_bytes(void *dst) {
+    if (x2 != 0x0) {
+        return dst;
+    }
+    return dst;
+}
+-- signature
+uint64_t (void * dst)
+-- references
+
+-- ir
+fn fill_bytes @ 0x2102c4 (size 12)
+  blk0 @ 0x2102c4:
+    brif eq x2, #0x0 -> 0x2102cc
+  blk1 @ 0x2102c8:
+    br 0x2102cc
+  blk2 @ 0x2102cc:
+    ret x0
+-- card
+{"addr":"0x2102c4","approxTokens":114,"blocks":3,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x2102d0 string_length
+-- decompile
+/* velk pseudo-C: string_length @ 0x2102d0 */
+uint32_t string_length(char *s) {
+    x8 = 0x1;
+    if (*(uint8_t *)(s) != 0x0) { goto L_2102d4; }
+    return x8 - 0x1;
+}
+-- signature
+uint32_t (char * s)
+-- references
+
+-- ir
+fn string_length @ 0x2102d0 (size 24)
+  blk0 @ 0x2102d0:
+    x8 = #0x1
+    brif ne (load8(x0) & #0xffffffff), #0x0 -> 0x2102d4
+  blk1 @ 0x2102e0:
+    ret (x8 - #0x1)
+-- card
+{"addr":"0x2102d0","approxTokens":132,"blocks":2,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+
+== 0x2102e8 grid_get
+-- decompile
+/* velk pseudo-C: grid_get @ 0x2102e8 */
+/* ref: 0x220350 .bss */
+int grid_get(int row, int col) {
+    return *(uint32_t *)(0x220350 + ((row & 0x3) << 0x5) + ((col & 0x7) << 0x2));
+}
+-- signature
+int (int row, int col)
+-- references
+0x220350 .bss
+-- ir
+fn grid_get @ 0x2102e8 (size 28)
+  blk0 @ 0x2102e8:
+    ret load32(((#0x220350 + (((w0 & #0x3) & #0xffffffff) << #0x5)) + (((w1 & #0x7) & #0xffffffff) << #0x2)))
+-- card
+{"addr":"0x2102e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x210304 grid_set
+-- decompile
+/* velk pseudo-C: grid_set @ 0x210304 */
+/* ref: 0x220350 .bss */
+uint64_t grid_set(int row, int col, int value) {
+    *(uint32_t *)(0x220350 + ((row & 0x3) << 0x5) + ((col & 0x7) << 0x2)) = value;
+    return row;
+}
+-- signature
+uint64_t (int row, int col, int value)
+-- references
+0x220350 .bss
+-- ir
+fn grid_set @ 0x210304 (size 28)
+  blk0 @ 0x210304:
+    store32(w2, ((#0x220350 + ((((x0 & #0xffffffff) & #0x3) & #0xffffffff) << #0x5)) + (((w1 & #0x7) & #0xffffffff) << #0x2)))
+    ret x0
+-- card
+{"addr":"0x210304","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x210320 pointer_distance
+-- decompile
+/* velk pseudo-C: pointer_distance @ 0x210320 */
+long pointer_distance(int *begin, int *end) {
+    return end - begin >>> 0x2;
+}
+-- signature
+long (int * begin, int * end)
+-- references
+
+-- ir
+fn pointer_distance @ 0x210320 (size 12)
+  blk0 @ 0x210320:
+    ret ((x1 - x0) >>> #0x2)
+-- card
+{"addr":"0x210320","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x21032c read_volatile
+-- decompile
+/* velk pseudo-C: read_volatile @ 0x21032c */
+/* struct: p +0x0:uint32_t */
+int read_volatile(int *p) {
+    return p->field_0x0 + p->field_0x0;
+}
+-- signature
+int (int * p)
+-- references
+
+-- ir
+fn read_volatile @ 0x21032c (size 16)
+  blk0 @ 0x21032c:
+    ret ((load32(x0) + load32(x0)) & #0xffffffff)
+-- card
+{"accesses":["p +0x0:uint32_t"],"addr":"0x21032c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x21033c swap_ints
+-- decompile
+/* velk pseudo-C: swap_ints @ 0x21033c */
+/* struct: a +0x0:uint32_t */
+/* struct: b +0x0:uint32_t */
+uint64_t swap_ints(int *a, int *b) {
+    a->field_0x0 = b->field_0x0;
+    b->field_0x0 = a->field_0x0;
+    return a;
+}
+-- signature
+uint64_t (int * a, int * b)
+-- references
+
+-- ir
+fn swap_ints @ 0x21033c (size 20)
+  blk0 @ 0x21033c:
+    store32(load32(x1), x0)
+    store32(load32(x0), x1)
+    ret x0
+-- card
+{"accesses":["a +0x0:uint32_t","b +0x0:uint32_t"],"addr":"0x21033c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}

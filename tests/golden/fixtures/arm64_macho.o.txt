@@ -1,0 +1,156 @@
+# arm64_macho.o: macho aarch64 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
+0x0 12 _sum3 symtab,dynamic
+0xc 68 _helper symtab,dynamic
+0x50 12 _pair_sum symtab,dynamic
+0x5c 164 _sum_arr symtab,dynamic
+
+== 0x0 _sum3
+-- decompile
+/* velk pseudo-C: _sum3 @ 0x0 */
+uint32_t _sum3(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a1 + a0 + a2;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+-- references
+
+-- ir
+fn _sum3 @ 0x0 (size 12)
+  blk0 @ 0x0:
+    ret ((w1 + w0) + w2)
+-- card
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_sum3","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0xc _helper
+-- decompile
+/* velk pseudo-C: _helper @ 0xc */
+int32_t _helper(int32_t a0) {
+    x8 = a0 - 0x1;
+    if (a0 < 0x1) {
+        return 0x0;
+    }
+    x8 = w8 * (a0 - 0x2);
+    x9 = x8 * (a0 - 0x3);
+    x9 = x9 >> 0x1;
+    t1 = x8 >> 0x1;
+    return w9 * 0x55555556 + a0 + (t1 + (t1 << 0x1)) - 0x1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn _helper @ 0xc (size 68)
+  blk0 @ 0xc:
+    x8 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
+    brif lt (x0 & #0xffffffff), #0x1 -> 0x48
+  blk1 @ 0x14:
+    x8 = ((x8 & #0xffffffff) * (((x0 & #0xffffffff) - #0x2) & #0xffffffff))
+    x9 = (x8 * (((x0 & #0xffffffff) - #0x3) & #0xffffffff))
+    x9 = (x9 >> #0x1)
+    t1 = ((x8 >> #0x1) & #0xffffffff)
+    ret ((((((((x9 & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + ((t1 + (t1 << #0x1)) & #0xffffffff)) & #0xffffffff) - #0x1) & #0xffffffff)
+  blk2 @ 0x48:
+    ret #0x0
+-- card
+{"addr":"0xc","approxTokens":186,"blocks":3,"hardReasons":[],"name":"_helper","nameSources":["symtab","dynamic"],"section":"__text","size":68,"sizeEstimated":true,"unsupported":0}
+
+== 0x50 _pair_sum
+-- decompile
+/* velk pseudo-C: _pair_sum @ 0x50 */
+/* struct: a0 +0x0:uint32_t, +0x4:uint32_t */
+uint32_t _pair_sum(uint32_t *a0) {
+    return a0->field_0x4 + a0->field_0x0;
+}
+-- signature
+uint32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn _pair_sum @ 0x50 (size 12)
+  blk0 @ 0x50:
+    ret ((load32((x0 + #0x4)) + load32(x0)) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x50","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_pair_sum","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0x5c _sum_arr
+-- decompile
+/* velk pseudo-C: _sum_arr @ 0x5c */
+/* struct: a0 +0x0:uint32_t */
+int32_t _sum_arr(uint32_t *a0, int32_t a1) {
+    if (a1 < 0x1) {
+        return 0x0;
+    }
+    x9 = a1;
+    if (a1 < 0x10 /* unsigned */) {
+        x10 = 0x0;
+        x8 = 0x0;
+    } else {
+        x8 = a0 + 0x20;
+        /* unsupported: MOVI at 0x90 */
+        x11 = x9 & 0x7ffffff0;
+        /* unsupported (3 steps): MOVI at 0x98, MOVI at 0x9c, MOVI at 0xa0 */
+        do {
+            /* unsupported (2 steps): SIMD vector pair load, SIMD vector pair load */
+            x11 = x11 - 0x10;
+        } while (x11 != 0x10);
+        if (x10 == x9) {
+            return x8;
+        }
+    }
+    x11 = a0 + (x10 << 0x2);
+    x9 = x9 - x10;
+    do {
+        x10 = *(uint32_t *)(x11);
+        x11 = x11 + 0x4;
+        x8 = w10 + w8;
+        x9 = x9 - 0x1;
+    } while (x9 != 0x1);
+    return x8;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn _sum_arr @ 0x5c (size 164)
+  blk0 @ 0x5c:
+    brif lt w1, #0x1 -> 0x7c
+  blk1 @ 0x64:
+    x9 = w1
+    brif cs w1, #0x10 -> 0x88
+  blk2 @ 0x70:
+    x10 = #0x0
+    x8 = #0x0
+    br 0xe0
+  blk3 @ 0x7c:
+    ret #0x0
+  blk4 @ 0x88:
+    x8 = (x0 + #0x20)
+    unsupported: MOVI at 0x90
+    x11 = (x9 & #0x7ffffff0)
+    unsupported: MOVI at 0x98
+    unsupported: MOVI at 0x9c
+    unsupported: MOVI at 0xa0
+  blk5 @ 0xa4:
+    unsupported: SIMD vector pair load
+    unsupported: SIMD vector pair load
+    x11 = (x11 - #0x10)
+    brif ne x11, #0x10 -> 0xa4
+  blk6 @ 0xc4:
+    unsupported: ADDV at 0xd0
+    unsupported: FMOV at 0xd4
+    brif eq x10, x9 -> 0xf8
+  blk7 @ 0xe0:
+    x11 = (x0 + (x10 << #0x2))
+    x9 = (x9 - x10)
+  blk8 @ 0xe8:
+    x10 = (load32(x11) & #0xffffffff)
+    x11 = (x11 + #0x4)
+    x8 = (((x10 & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
+    x9 = (x9 - #0x1)
+    brif ne x9, #0x1 -> 0xe8
+  blk9 @ 0xf8:
+    ret x8
+-- card
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x5c","approxTokens":162,"blocks":10,"hardReasons":[],"name":"_sum_arr","nameSources":["symtab","dynamic"],"section":"__text","size":164,"sizeEstimated":true,"unsupported":8}

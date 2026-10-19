@@ -1,0 +1,395 @@
+# calls_a64.o: elf aarch64 no entry, 11 functions, 0 lift failures, 4 unsupported, 6 gotos
+0x0 8 twice symtab
+0x8 8 square symtab
+0x10 28 pick_op symtab
+0x2c 44 apply_table symtab
+0x58 32 apply_pointer symtab
+0x78 160 factorial symtab
+0x118 88 is_odd symtab
+0x170 36 is_even symtab
+0x194 40 sum9 symtab
+0x1bc 8 call_sum9 symtab
+0x1c4 188 sum_varargs symtab
+
+== 0x0 twice
+-- decompile
+/* velk pseudo-C: twice @ 0x0 */
+uint32_t twice(uint32_t a0) {
+    return a0 << 0x1;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn twice @ 0x0 (size 8)
+  blk0 @ 0x0:
+    ret (w0 << #0x1)
+-- card
+{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+
+== 0x8 square
+-- decompile
+/* velk pseudo-C: square @ 0x8 */
+uint32_t square(uint32_t a0) {
+    return a0 * a0;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn square @ 0x8 (size 8)
+  blk0 @ 0x8:
+    ret (w0 * w0)
+-- card
+{"addr":"0x8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+
+== 0x10 pick_op
+-- decompile
+/* velk pseudo-C: pick_op @ 0x10 */
+uint32_t pick_op(uint32_t a0) {
+    a0 = (a0 == 0x0 ? 0x0 : 0x0);
+    return a0;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn pick_op @ 0x10 (size 28)
+  blk0 @ 0x10:
+    x0 = select eq (x0 & #0xffffffff), #0x0 ? #0x0, #0x0
+    ret x0
+-- card
+{"addr":"0x10","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pick_op","nameSources":["symtab"],"section":".text","size":28,"unsupported":0}
+
+== 0x2c apply_table
+-- decompile
+/* velk pseudo-C: apply_table @ 0x2c */
+uint32_t apply_table(uint32_t a0, uint32_t a1) {
+    t1 = a0 * 0xaaaaaaab >> 0x21;
+    goto *(*(uint64_t *)(a0 - (t1 + (t1 << 0x1)) << 0x3));
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn apply_table @ 0x2c (size 44)
+  blk0 @ 0x2c:
+    t1 = (((w0 * #0xaaaaaaab) >> #0x21) & #0xffffffff)
+    br load64((((w0 - ((t1 + (t1 << #0x1)) & #0xffffffff)) & #0xffffffff) << #0x3))
+-- card
+{"addr":"0x2c","approxTokens":162,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab"],"section":".text","size":44,"unsupported":0}
+
+== 0x58 apply_pointer
+-- decompile
+/* velk pseudo-C: apply_pointer @ 0x58 */
+uint32_t apply_pointer(uint64_t a0, uint32_t a1) {
+    /* unsupported: BLR at 0x68 */
+    return a1 + 0x1;
+}
+-- signature
+uint32_t (uint64_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn apply_pointer @ 0x58 (size 32)
+  blk0 @ 0x58:
+    unsupported: BLR at 0x68
+    ret (((w1 & #0xffffffff) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x58","approxTokens":144,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab"],"section":".text","size":32,"unsupported":1}
+
+== 0x78 factorial
+-- decompile
+/* velk pseudo-C: factorial @ 0x78 */
+int32_t factorial(int32_t a0) {
+    if (a0 >= 0x2) { goto L_88; }
+    return 0x1;
+L_88:
+    if (a0 < 0x9 /* unsigned */) {
+        w8 = a0;
+        a0 = 0x1;
+    } else {
+        /* unsupported: DUP at 0x9c */
+        w8 = 0x0;
+        /* unsupported (3 steps): MOVI at 0xa4, MVNI at 0xb0, MVNI at 0xb4 */
+        w10 = a0 - 0x1 & 0xfffffff8;
+        /* unsupported: MOVI at 0xc0 */
+        w8 = a0 - w10;
+        w11 = w10;
+        do {
+            w11 = w11 - 0x8;
+        } while (w11 != 0x8);
+        if (w9 == w10) {
+            return a0;
+        }
+    }
+    do {
+        a0 = w8 * a0;
+        w8 = w8 - 0x1;
+    } while (w8 > 0x2 /* unsigned */);
+    return a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn factorial @ 0x78 (size 160)
+  blk0 @ 0x78:
+    brif ge (x0 & #0xffffffff), #0x2 -> 0x88
+  blk1 @ 0x80:
+    ret #0x1
+  blk2 @ 0x88:
+    brif cs (x0 & #0xffffffff), #0x9 -> 0x9c
+  blk3 @ 0x90:
+    x8 = (x0 & #0xffffffff)
+    x0 = #0x1
+    br 0x104
+  blk4 @ 0x9c:
+    unsupported: DUP at 0x9c
+    x8 = #0x0
+    unsupported: MOVI at 0xa4
+    unsupported: MVNI at 0xb0
+    unsupported: MVNI at 0xb4
+    w10 = (((x0 & #0xffffffff) - #0x1) & #0xfffffff8)
+    unsupported: MOVI at 0xc0
+    x8 = (((x0 & #0xffffffff) - w10) & #0xffffffff)
+    w11 = w10
+  blk5 @ 0xcc:
+    w11 = (w11 - #0x8)
+    brif ne w11, #0x8 -> 0xcc
+  blk6 @ 0xe4:
+    unsupported: EXT at 0xec
+    unsupported: UMOV at 0xf4
+    unsupported: FMOV at 0xf8
+    x0 = ((w12 * w11) & #0xffffffff)
+    brif eq w9, w10 -> 0x114
+  blk7 @ 0x104:
+    x0 = (((x8 & #0xffffffff) * (x0 & #0xffffffff)) & #0xffffffff)
+    x8 = (((x8 & #0xffffffff) - #0x1) & #0xffffffff)
+    brif hi (x8 & #0xffffffff), #0x2 -> 0x104
+  blk8 @ 0x114:
+    ret x0
+-- card
+{"addr":"0x78","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab"],"section":".text","size":160,"unsupported":8}
+
+== 0x118 is_odd
+-- decompile
+/* velk pseudo-C: is_odd @ 0x118 */
+uint32_t is_odd(uint32_t a0) {
+    if (a0 - ((a0 != 0x0 ? 0x1 : 0x0)) + 0x1 < 0x2 /* unsigned */) { goto L_15c; }
+    w9 = (w8 >> 0x1) + 0x1 & 0xfffffffe;
+    a0 = a0 - (w9 << 0x1);
+    w10 = w9;
+    do {
+        w10 = w10 - 0x2;
+    } while (w10 != 0x2);
+    if (w8 != w9) { goto L_15c; }
+    return a0 + 0x2;
+L_15c:
+    a0 = a0 + 0x2;
+    do {
+        a0 = a0 - 0x2;
+    } while (a0 > 0x1 /* unsigned */);
+    return a0;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn is_odd @ 0x118 (size 88)
+  blk0 @ 0x118:
+    brif cc ((w0 - select ne w0, #0x0 ? #0x1, #0x0) + #0x1), #0x2 -> 0x15c
+  blk1 @ 0x130:
+    w9 = (((w8 >> #0x1) + #0x1) & #0xfffffffe)
+    w0 = (w0 - (w9 << #0x1))
+    w10 = w9
+  blk2 @ 0x144:
+    w10 = (w10 - #0x2)
+    brif ne w10, #0x2 -> 0x144
+  blk3 @ 0x14c:
+    brif ne w8, w9 -> 0x15c
+  blk4 @ 0x154:
+    ret (w0 + #0x2)
+  blk5 @ 0x15c:
+    w0 = (w0 + #0x2)
+  blk6 @ 0x160:
+    w0 = (w0 - #0x2)
+    brif hi w0, #0x1 -> 0x160
+  blk7 @ 0x16c:
+    ret w0
+-- card
+{"addr":"0x118","approxTokens":198,"blocks":8,"hardReasons":[],"name":"is_odd","nameSources":["symtab"],"section":".text","size":88,"unsupported":0}
+
+== 0x170 is_even
+-- decompile
+/* velk pseudo-C: is_even @ 0x170 */
+uint32_t is_even(uint64_t a0) {
+    if (a0 == 0x0) {
+        return 0x1;
+    }
+    return (a0 & 0xffffffff) - 0x1 - ((a0 & 0xffffffff) - (((a0 & 0xffffffff) != 0x1 ? 0x1 : 0x0)) & 0xfffffffe);
+}
+-- signature
+uint32_t (uint64_t a0)
+-- references
+
+-- ir
+fn is_even @ 0x170 (size 36)
+  blk0 @ 0x170:
+    brif eq x0, #0x0 -> 0x18c
+  blk1 @ 0x174:
+    ret ((((x0 & #0xffffffff) - #0x1) - (((x0 & #0xffffffff) - select ne (x0 & #0xffffffff), #0x1 ? #0x1, #0x0) & #0xfffffffe)) & #0xffffffff)
+  blk2 @ 0x18c:
+    ret #0x1
+-- card
+{"addr":"0x170","approxTokens":138,"blocks":3,"hardReasons":[],"name":"is_even","nameSources":["symtab"],"section":".text","size":36,"unsupported":0}
+
+== 0x194 sum9
+-- decompile
+/* velk pseudo-C: sum9 @ 0x194 */
+uint64_t sum9(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + *(uint64_t *)(sp));
+}
+-- signature
+uint64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
+-- references
+
+-- ir
+fn sum9 @ 0x194 (size 40)
+  blk0 @ 0x194:
+    ret ((((x1 + x0) + (x2 + x3)) + ((x4 + x5) + x6)) + (x7 + load64(sp)))
+-- card
+{"addr":"0x194","approxTokens":156,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab"],"section":".text","size":40,"unsupported":0}
+
+== 0x1bc call_sum9
+-- decompile
+/* velk pseudo-C: call_sum9 @ 0x1bc */
+uint64_t call_sum9(uint64_t a0) {
+    return a0 + 0x24;
+}
+-- signature
+uint64_t (uint64_t a0)
+-- references
+
+-- ir
+fn call_sum9 @ 0x1bc (size 8)
+  blk0 @ 0x1bc:
+    ret (x0 + #0x24)
+-- card
+{"addr":"0x1bc","approxTokens":108,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}
+
+== 0x1c4 sum_varargs
+-- decompile
+/* velk pseudo-C: sum_varargs @ 0x1c4 */
+int32_t sum_varargs(int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+    uint64_t local_1; /* [sp-8] */
+    uint64_t local_8; /* [sp-18] */
+    uint64_t local_10; /* [sp-20] */
+
+    if (a0 < 0x1) {
+        x8 = 0x0;
+        a0 = x8;
+        sp = sp + 0xe0;
+        return a0;
+    }
+    x10 = local_10;
+    x9 = local_8;
+    x8 = 0x0;
+    x12 = local_1;
+    goto L_248;
+L_224:
+    x12 = x9 + (int32_t)(x12);
+    x13 = x10;
+    x10 = x12;
+    for (;;) {
+        if (a0 == 0x1) {
+            a0 = x8;
+            sp = sp + 0xe0;
+            return a0;
+        }
+    L_248:
+        if (x12 & 0x80000000 == 0x0) {
+            w11 = x12;
+        } else {
+            w11 = w12 + 0x8;
+            local_1 = w11;
+            if (w12 <= 0x8 /* unsigned */) { goto L_224; }
+        }
+        x13 = x10 + 0x8;
+        local_10 = x13;
+    }
+    x8 = 0x0;
+    a0 = x8;
+    sp = sp + 0xe0;
+    return a0;
+}
+-- signature
+int32_t (int32_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
+-- references
+
+-- ir
+fn sum_varargs @ 0x1c4 (size 188)
+  blk0 @ 0x1c4:
+    sp = (sp - #0xe0)
+    x8 = #0xffffffffffffffc8
+    x8 = #0xffffff80ffffffc8
+    store64((sp + #0x80), (sp + #0xd0))
+    store64(#0xffffff80ffffffc8, (sp + #0xd8))
+    store64(x1, (sp + #0x88))
+    store64(x2, (sp + #0x90))
+    store64(x3, (sp + #0x98))
+    store64(x4, (sp + #0xa0))
+    store64(x5, (sp + #0xa8))
+    store64(x6, (sp + #0xb0))
+    unsupported: SIMD vector pair store
+    unsupported: SIMD vector pair store
+    unsupported: SIMD vector pair store
+    unsupported: SIMD vector pair store
+    store64((sp + #0xc0), (sp + #0xc8))
+    store64(x7, (sp + #0xb8))
+    store64((sp + #0xe0), (sp + #0xc0))
+    brif lt w0, #0x1 -> 0x270
+  blk1 @ 0x214:
+    x10 = load64((sp + #0xc0))
+    x9 = load64((sp + #0xc8))
+    x8 = #0x0
+    x12 = (load32((sp + #0xd8)) & #0xffffffff)
+    br 0x248
+  blk2 @ 0x224:
+    x12 = (x9 + sext32(x12))
+    x13 = x10
+    x10 = x12
+  blk3 @ 0x230:
+    x10 = (load32(x10) & #0xffffffff)
+    w0 = (w0 - #0x1)
+    x12 = w11
+    x8 = (((x10 & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
+    x10 = x13
+    brif eq w0, #0x1 -> 0x274
+  blk4 @ 0x248:
+    brif ne (x12 & #0x80000000), #0x0 -> 0x254
+  blk5 @ 0x24c:
+    w11 = x12
+    br 0x264
+  blk6 @ 0x254:
+    w11 = ((x12 & #0xffffffff) + #0x8)
+    store32(w11, (sp + #0xd8))
+    brif ls (x12 & #0xffffffff), #0x8 -> 0x224
+  blk7 @ 0x264:
+    x13 = (x10 + #0x8)
+    store64(x13, (sp + #0xc0))
+    br 0x230
+  blk8 @ 0x270:
+    x8 = #0x0
+  blk9 @ 0x274:
+    w0 = x8
+    sp = (sp + #0xe0)
+    ret w0
+-- card
+{"addr":"0x1c4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab"],"section":".text","size":188,"unsupported":4}

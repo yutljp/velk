@@ -1,42 +1,43 @@
-# Canonical test environment: pinned toolchains on x86-64 Linux, results
-# written to tests/out-canonical/. Compare local results (macOS/arm64 etc.)
-# against them with tests/env-diff.sh.
+# Reference environment: x86-64 Linux with pinned toolchain versions.
 #
-#   docker compose run --rm canonical        # run the canonical suite
-#   docker compose run --rm canonical ./tests/env-diff.sh   # also show the diff
+#   docker compose run --rm fixtures   # rebuild tests/fixtures/ from tests/cases/
+#   docker compose run --rm check      # run the test suite on Linux
 #
-# To change versions, override build.args (they map to the ARGs in the Dockerfile):
+# Change a version with a build argument (they match the Dockerfile ARGs):
 #   docker compose build --build-arg CLANG_MAJOR=19
+x-reference: &reference
+  build:
+    context: ./docker
+    args:
+      CLANG_MAJOR: "18"
+      RUST_VERSION: "1.98.1"
+      GO_VERSION: "1.23.4"
+  image: velk-canonical:ubuntu24.04-clang18-rust1.98-go1.23
+  platform: linux/amd64
+  init: true
+  working_dir: /work
+
 services:
-  canonical:
-    build:
-      context: ./docker
-      args:
-        CLANG_MAJOR: "18"
-        RUST_VERSION: "1.98.1"
-        GO_VERSION: "1.23.4"
-    image: velk-canonical:ubuntu24.04-clang18-rust1.98-go1.23
-    platform: linux/amd64
-    init: true
-    working_dir: /work
+  fixtures:
+    <<: *reference
     volumes:
-      # Sources are mounted read-write; build output goes to named volumes
-      # so x86 artifacts stay out of the host target/ and are reused next run.
       - .:/work
+    command: ["./tests/make_fixtures.sh"]
+
+  check:
+    <<: *reference
+    volumes:
+      - .:/work
+      # Build output stays in named volumes, out of the host target/, and is reused next run.
       - cargo-registry:/root/.cargo/registry
       - cargo-git:/root/.cargo/git
       - cargo-target:/target
     environment:
-      VELK_OUT: tests/out-canonical
       CARGO_TARGET_DIR: /target
       CARGO_TERM_COLOR: never
-      # Dependencies may be fetched; the named volumes keep them and the build between runs.
-      CARGO_NET_OFFLINE: "false"
       # Timings are meaningless under emulation; benchmark locally instead.
       VELK_BENCH: "0"
-      # Per-function pseudo-C dumps only on request, to keep normal runs fast.
-      VELK_DUMP: "0"
-    command: ["./tests/canonical.sh"]
+    command: ["sh", "-c", "cargo test && ./tests/smoke.sh && ./tests/ladder.sh"]
 
 volumes:
   cargo-registry:

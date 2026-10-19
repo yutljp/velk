@@ -1,0 +1,113 @@
+# metrics/switch_jumptable.x86_64.O2.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x2011c0 527 d7 symtab,dwarf
+
+== 0x2011c0 d7
+-- decompile
+/* velk pseudo-C: d7 @ 0x2011c0 */
+/* ref: 0x200158 .rodata */
+/* ref: 0x2023d0 .bss */
+int d7(int x) {
+    if (x > 0x9 /* unsigned */) {
+        rax = 0xffffffff;
+        dword_2023d0 = eax;
+        return eax;
+    }
+    rax = (int32_t)(dword_200158[x]) + 0x200158;
+    goto *(rax);
+}
+-- signature
+int (int x)
+-- references
+0x200158 .rodata
+0x2023d0 .bss
+-- ir
+fn d7 @ 0x2011c0 (size 527)
+  blk0 @ 0x2011c0:
+    brif hi edi, #0x9 -> 0x201376
+  blk1 @ 0x2011c9:
+    rax = (sext32(load32((#0x200158 + (edi * #0x4)))) + #0x200158)
+    br rax
+  blk2 @ 0x2011db:
+    rax = (load32(#0x2023d0) & #0xffffffff)
+    br 0x2013c2
+  blk3 @ 0x2011e6:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x3) & #0xffffffff) + #0x4) & #0xffffffff)
+    br 0x2013c2
+  blk4 @ 0x201214:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x6), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x7), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x8), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x8) & #0xffffffff) + #0x9) & #0xffffffff)
+    br 0x2013c2
+  blk5 @ 0x201265:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x1) & #0xffffffff) + #0x2) & #0xffffffff)
+    br 0x2013c2
+  blk6 @ 0x201285:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x2) & #0xffffffff) + #0x3) & #0xffffffff)
+    br 0x2013c2
+  blk7 @ 0x2012ac:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x6), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x6) & #0xffffffff) + #0x7) & #0xffffffff)
+    br 0x2013c2
+  blk8 @ 0x2012ef:
+    rax = (load32(#0x2023d0) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d0)
+    rax = (rax & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    br 0x2013c2
+  blk9 @ 0x201308:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x4) & #0xffffffff) + #0x5) & #0xffffffff)
+    br 0x2013c2
+  blk10 @ 0x20133d:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x5) & #0xffffffff) + #0x6) & #0xffffffff)
+    br 0x2013c2
+  blk11 @ 0x201376:
+    rax = #0xffffffff
+    br 0x2013c2
+  blk12 @ 0x20137d:
+    store32((load32(#0x2023d0) & #0xffffffff), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x1), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x2), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x3), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x4), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x5), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x6), #0x2023d0)
+    store32((load32(#0x2023d0) + #0x7), #0x2023d0)
+    rax = ((((load32(#0x2023d0) + #0x7) & #0xffffffff) + #0x8) & #0xffffffff)
+  blk13 @ 0x2013c2:
+    store32((rax & #0xffffffff), #0x2023d0)
+    ret (rax & #0xffffffff)
+-- card
+{"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":527,"unsupported":0}

@@ -1,0 +1,256 @@
+# metrics/loops.x86_64.O0.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 2 gotos
+0x2011c0 54 count_bits symtab,dwarf
+0x201200 61 sum_until symtab,dwarf
+0x201240 94 sum_till_neg symtab,dwarf
+0x2012a0 119 sum_until_zero symtab,dwarf
+
+== 0x2011c0 count_bits
+-- decompile
+/* velk pseudo-C: count_bits @ 0x2011c0 */
+int count_bits(uint32_t x) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
+    *(uint32_t *)(rbp - 0x8) = 0x0;
+    while (*(uint32_t *)(rbp - 0x4) != 0x0) {
+        eax = *(uint32_t *)(rbp - 0x4);
+        eax = eax & 0x1;
+        eax = eax + *(uint32_t *)(rbp - 0x8);
+        *(uint32_t *)(rbp - 0x8) = eax;
+        *(uint32_t *)(rbp - 0x4) = *(uint32_t *)(rbp - 0x4) >> 0x1;
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x8);
+}
+-- signature
+int (uint32_t x)
+-- references
+
+-- ir
+fn count_bits @ 0x2011c0 (size 54)
+  blk0 @ 0x2011c0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(#0x0, (rbp + #0xfffffffffffffff8))
+  blk1 @ 0x2011ce:
+    brif eq load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x2011f1
+  blk2 @ 0x2011d8:
+    eax = load32((rbp + #0xfffffffffffffffc))
+    eax = (eax & #0x1)
+    eax = (eax + load32((rbp + #0xfffffffffffffff8)))
+    store32(eax, (rbp + #0xfffffffffffffff8))
+    store32((load32((rbp + #0xfffffffffffffffc)) >> #0x1), (rbp + #0xfffffffffffffffc))
+    br 0x2011ce
+  blk3 @ 0x2011f1:
+    rsp = (rsp + #0x8)
+    ret load32((rbp + #0xfffffffffffffff8))
+-- card
+{"addr":"0x2011c0","approxTokens":180,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":54,"unsupported":0}
+
+== 0x201200 sum_until
+-- decompile
+/* velk pseudo-C: sum_until @ 0x201200 */
+int sum_until(int limit) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = limit;
+    *(uint32_t *)(rbp - 0x8) = 0x0;
+    *(uint32_t *)(rbp - 0xc) = 0x1;
+    while (*(uint32_t *)(rbp - 0xc) <= *(uint32_t *)(rbp - 0x4)) {
+        eax = *(uint32_t *)(rbp - 0xc);
+        eax = eax + *(uint32_t *)(rbp - 0x8);
+        *(uint32_t *)(rbp - 0x8) = eax;
+        *(uint32_t *)(rbp - 0xc) = *(uint32_t *)(rbp - 0xc) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x8);
+}
+-- signature
+int (int limit)
+-- references
+
+-- ir
+fn sum_until @ 0x201200 (size 61)
+  blk0 @ 0x201200:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(#0x0, (rbp + #0xfffffffffffffff8))
+    store32(#0x1, (rbp + #0xfffffffffffffff4))
+  blk1 @ 0x201215:
+    eax = load32((rbp + #0xfffffffffffffff4))
+    brif gt eax, load32((rbp + #0xfffffffffffffffc)) -> 0x201238
+  blk2 @ 0x201221:
+    eax = load32((rbp + #0xfffffffffffffff4))
+    eax = (eax + load32((rbp + #0xfffffffffffffff8)))
+    store32(eax, (rbp + #0xfffffffffffffff8))
+    store32((load32((rbp + #0xfffffffffffffff4)) + #0x1), (rbp + #0xfffffffffffffff4))
+    br 0x201215
+  blk3 @ 0x201238:
+    rsp = (rsp + #0x8)
+    ret load32((rbp + #0xfffffffffffffff8))
+-- card
+{"addr":"0x201200","approxTokens":186,"blocks":4,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":61,"unsupported":0}
+
+== 0x201240 sum_till_neg
+-- decompile
+/* velk pseudo-C: sum_till_neg @ 0x201240 */
+int sum_till_neg(int *p, int n) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = p;
+    *(uint32_t *)(rbp - 0xc) = n;
+    *(uint32_t *)(rbp - 0x10) = 0x0;
+    *(uint32_t *)(rbp - 0x14) = 0x0;
+    for (;;) {
+        if (eax >= *(uint32_t *)(rbp - 0xc)) {
+            rsp = rsp + 0x8;
+            return *(uint32_t *)(rbp - 0x10);
+        }
+        rax = *(uint64_t *)(rbp - 0x8);
+        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        rax = *(uint32_t *)(rax + rcx * 0x4);
+        *(uint32_t *)(rbp - 0x18) = eax;
+        if (eax >= 0x0) { goto L_201282; }
+        rsp = rsp + 0x8;
+        return *(uint32_t *)(rbp - 0x10);
+    L_201282:
+        rax = *(uint32_t *)(rbp - 0x18);
+        rax = eax + *(uint32_t *)(rbp - 0x10);
+        *(uint32_t *)(rbp - 0x10) = eax;
+        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x10);
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_till_neg @ 0x201240 (size 94)
+  blk0 @ 0x201240:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    store32(#0x0, (rbp + #0xfffffffffffffff0))
+    store32(#0x0, (rbp + #0xffffffffffffffec))
+  blk1 @ 0x201259:
+    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
+    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201299
+  blk2 @ 0x201265:
+    rax = load64((rbp + #0xfffffffffffffff8))
+    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
+    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
+    store32((rax & #0xffffffff), (rbp + #0xffffffffffffffe8))
+    brif ge (rax & #0xffffffff), #0x0 -> 0x201282
+  blk3 @ 0x20127d:
+    br 0x201299
+  blk4 @ 0x201282:
+    rax = (load32((rbp + #0xffffffffffffffe8)) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
+    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    br 0x201259
+  blk5 @ 0x201299:
+    rsp = (rsp + #0x8)
+    ret (load32((rbp + #0xfffffffffffffff0)) & #0xffffffff)
+-- card
+{"addr":"0x201240","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","size":94,"unsupported":0}
+
+== 0x2012a0 sum_until_zero
+-- decompile
+/* velk pseudo-C: sum_until_zero @ 0x2012a0 */
+int sum_until_zero(int *p, int n) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = p;
+    *(uint32_t *)(rbp - 0xc) = n;
+    *(uint32_t *)(rbp - 0x10) = 0x0;
+    *(uint32_t *)(rbp - 0x14) = 0x0;
+    for (;;) {
+        if (eax >= *(uint32_t *)(rbp - 0xc)) {
+            rsp = rsp + 0x8;
+            return *(uint32_t *)(rbp - 0x10);
+        }
+        rax = *(uint64_t *)(rbp - 0x8);
+        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        if (*(uint32_t *)(rax + rcx * 0x4) != 0x0) { goto L_2012dc; }
+        rsp = rsp + 0x8;
+        return *(uint32_t *)(rbp - 0x10);
+    L_2012dc:
+        rax = *(uint64_t *)(rbp - 0x8);
+        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        if (*(uint32_t *)(rax + rcx * 0x4) < 0x0) {
+        } else {
+            rax = *(uint64_t *)(rbp - 0x8);
+            rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+            rax = *(uint32_t *)(rax + rcx * 0x4);
+            rax = eax + *(uint32_t *)(rbp - 0x10);
+            *(uint32_t *)(rbp - 0x10) = eax;
+        }
+        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x10);
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_until_zero @ 0x2012a0 (size 119)
+  blk0 @ 0x2012a0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    store32(#0x0, (rbp + #0xfffffffffffffff0))
+    store32(#0x0, (rbp + #0xffffffffffffffec))
+  blk1 @ 0x2012b9:
+    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
+    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201312
+  blk2 @ 0x2012c5:
+    rax = load64((rbp + #0xfffffffffffffff8))
+    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
+    brif ne load32((rax + (rcx * #0x4))), #0x0 -> 0x2012dc
+  blk3 @ 0x2012d7:
+    br 0x201312
+  blk4 @ 0x2012dc:
+    rax = load64((rbp + #0xfffffffffffffff8))
+    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
+    brif ge load32((rax + (rcx * #0x4))), #0x0 -> 0x2012f3
+  blk5 @ 0x2012ee:
+    br 0x201304
+  blk6 @ 0x2012f3:
+    rax = load64((rbp + #0xfffffffffffffff8))
+    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
+    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
+    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
+  blk7 @ 0x201304:
+    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    br 0x2012b9
+  blk8 @ 0x201312:
+    rsp = (rsp + #0x8)
+    ret (load32((rbp + #0xfffffffffffffff0)) & #0xffffffff)
+-- card
+{"addr":"0x2012a0","approxTokens":180,"blocks":9,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","size":119,"unsupported":0}

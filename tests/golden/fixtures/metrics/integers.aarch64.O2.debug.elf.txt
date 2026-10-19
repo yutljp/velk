@@ -1,0 +1,196 @@
+# metrics/integers.aarch64.O2.debug.elf: elf aarch64 no entry, 10 functions, 0 lift failures, 5 unsupported, 0 gotos
+0x210204 8 narrow_add symtab,dwarf
+0x21020c 16 widen_mul symtab,dwarf
+0x21021c 12 mixed_sign symtab,dwarf
+0x210228 16 in_range symtab,dwarf
+0x210238 12 rotate_left symtab,dwarf
+0x210244 20 popcount symtab,dwarf
+0x210258 8 byte_swap symtab,dwarf
+0x210260 20 min3 symtab,dwarf
+0x210274 12 labs_value symtab,dwarf
+0x210280 8 mul_high symtab,dwarf
+
+== 0x210204 narrow_add
+-- decompile
+/* velk pseudo-C: narrow_add @ 0x210204 */
+uint32_t narrow_add(uint32_t a, uint32_t b) {
+    return b + a;
+}
+-- signature
+uint32_t (uint32_t a, uint32_t b)
+-- references
+
+-- ir
+fn narrow_add @ 0x210204 (size 8)
+  blk0 @ 0x210204:
+    ret (w1 + w0)
+-- card
+{"addr":"0x210204","approxTokens":108,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x21020c widen_mul
+-- decompile
+/* velk pseudo-C: widen_mul @ 0x21020c */
+uint32_t widen_mul(uint32_t a, uint32_t b) {
+    return (b & 0xff) * (a & 0xff);
+}
+-- signature
+uint32_t (uint32_t a, uint32_t b)
+-- references
+
+-- ir
+fn widen_mul @ 0x21020c (size 16)
+  blk0 @ 0x21020c:
+    ret ((w1 & #0xff) * (w0 & #0xff))
+-- card
+{"addr":"0x21020c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x21021c mixed_sign
+-- decompile
+/* velk pseudo-C: mixed_sign @ 0x21021c */
+uint64_t mixed_sign(void) {
+    /* unsupported: bitfield immr=0 imms=31 */
+    return x8 - w1;
+}
+-- signature
+uint64_t ()
+-- references
+
+-- ir
+fn mixed_sign @ 0x21021c (size 12)
+  blk0 @ 0x21021c:
+    unsupported: bitfield immr=0 imms=31
+    ret (x8 - w1)
+-- card
+{"addr":"0x21021c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
+
+== 0x210228 in_range
+-- decompile
+/* velk pseudo-C: in_range @ 0x210228 */
+_Bool in_range(int x, int lo) {
+    /* unsupported: CCMP at 0x21022c */
+    x = (x <= lo ? 0x1 : 0x0);
+    return x;
+}
+-- signature
+_Bool (int x, int lo)
+-- references
+
+-- ir
+fn in_range @ 0x210228 (size 16)
+  blk0 @ 0x210228:
+    unsupported: CCMP at 0x21022c
+    w0 = select le w0, w1 ? #0x1, #0x0
+    ret w0
+-- card
+{"addr":"0x210228","approxTokens":120,"blocks":1,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
+
+== 0x210238 rotate_left
+-- decompile
+/* velk pseudo-C: rotate_left @ 0x210238 */
+uint64_t rotate_left(uint64_t x, uint32_t k) {
+    /* unsupported: RORV at 0x21023c */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x, uint32_t k)
+-- references
+
+-- ir
+fn rotate_left @ 0x210238 (size 12)
+  blk0 @ 0x210238:
+    unsupported: RORV at 0x21023c
+    ret x0
+-- card
+{"addr":"0x210238","approxTokens":114,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
+
+== 0x210244 popcount
+-- decompile
+/* velk pseudo-C: popcount @ 0x210244 */
+int popcount(uint64_t x) {
+    /* unsupported (4 steps): FMOV at 0x210244, CNT at 0x210248, UADDLV at 0x21024c, FMOV at 0x210250 */
+    return x;
+}
+-- signature
+int (uint64_t x)
+-- references
+
+-- ir
+fn popcount @ 0x210244 (size 20)
+  blk0 @ 0x210244:
+    unsupported: FMOV at 0x210244
+    unsupported: CNT at 0x210248
+    unsupported: UADDLV at 0x21024c
+    unsupported: FMOV at 0x210250
+    ret x0
+-- card
+{"addr":"0x210244","approxTokens":126,"blocks":1,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":4}
+
+== 0x210258 byte_swap
+-- decompile
+/* velk pseudo-C: byte_swap @ 0x210258 */
+uint64_t byte_swap(uint64_t x) {
+    /* unsupported: REV at 0x210258 */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn byte_swap @ 0x210258 (size 8)
+  blk0 @ 0x210258:
+    unsupported: REV at 0x210258
+    ret x0
+-- card
+{"addr":"0x210258","approxTokens":108,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
+
+== 0x210260 min3
+-- decompile
+/* velk pseudo-C: min3 @ 0x210260 */
+int min3(int a, int b, int c) {
+    return ((a < b ? a : b) < c ? (a < b ? a : b) : c);
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn min3 @ 0x210260 (size 20)
+  blk0 @ 0x210260:
+    ret select lt select lt w0, w1 ? w0, w1, w2 ? select lt w0, w1 ? w0, w1, w2
+-- card
+{"addr":"0x210260","approxTokens":126,"blocks":1,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x210274 labs_value
+-- decompile
+/* velk pseudo-C: labs_value @ 0x210274 */
+long labs_value(long x) {
+    return (x >= 0x0 ? x : -x);
+}
+-- signature
+long (long x)
+-- references
+
+-- ir
+fn labs_value @ 0x210274 (size 12)
+  blk0 @ 0x210274:
+    ret select ge x0, #0x0 ? x0, (#0x0 - x0)
+-- card
+{"addr":"0x210274","approxTokens":114,"blocks":1,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x210280 mul_high
+-- decompile
+/* velk pseudo-C: mul_high @ 0x210280 */
+uint64_t mul_high(uint64_t a, uint64_t b) {
+    return __umulh(b, a);
+}
+-- signature
+uint64_t (uint64_t a, uint64_t b)
+-- references
+
+-- ir
+fn mul_high @ 0x210280 (size 8)
+  blk0 @ 0x210280:
+    ret (x1 hi128 x0)
+-- card
+{"addr":"0x210280","approxTokens":108,"blocks":1,"hardReasons":[],"name":"mul_high","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}

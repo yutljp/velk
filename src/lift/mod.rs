@@ -115,3 +115,37 @@ fn build<M: Machine>(
     }
     Ok(blocks)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use crate::analysis::analyze;
+    use crate::ir::eval::hash;
+    use crate::loader::{Function, Image, Isa};
+
+    /// Random bytes may decode to anything; analysis and rendering must still finish.
+    #[test]
+    fn random_code_never_panics() {
+        for isa in [Isa::AArch64, Isa::X86_64] {
+            for seed in 0..300u64 {
+                let len = 4 + (hash(seed, 0) % 508) as usize;
+                let code: Vec<u8> = (0..len as u64)
+                    .map(|offset| hash(seed, offset + 1) as u8)
+                    .collect();
+                let function = Function {
+                    addr: 0,
+                    size: Some(len as u64),
+                    size_estimated: false,
+                    name: None,
+                    aliases: Vec::new(),
+                    sources: Vec::new(),
+                };
+                let image = Image::from_code(isa, 0, code);
+                if let Ok(analysis) = analyze(&image, &function) {
+                    crate::render::render(&analysis.ir, &analysis.references, &HashMap::new(), &[]);
+                }
+            }
+        }
+    }
+}

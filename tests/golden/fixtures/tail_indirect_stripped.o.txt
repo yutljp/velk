@@ -1,0 +1,37 @@
+# tail_indirect_stripped.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x0 12 - prologue
+0xc 24 - prologue
+
+== 0x0 -
+-- decompile
+/* velk pseudo-C: sub_0 @ 0x0 */
+uint32_t sub_0(uint64_t a0, uint32_t a1) {
+    goto *(a0);
+}
+-- signature
+uint32_t (uint64_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x0 (size 12)
+  blk0 @ 0x0:
+    br x0
+-- card
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0xc -
+-- decompile
+/* velk pseudo-C: sub_c @ 0xc */
+uint32_t sub_c(uint32_t a0) {
+    return a0 + 0x5;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0xc (size 24)
+  blk0 @ 0xc:
+    ret (w0 + #0x5)
+-- card
+{"addr":"0xc","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}

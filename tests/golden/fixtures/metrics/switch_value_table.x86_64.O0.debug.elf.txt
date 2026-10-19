@@ -1,0 +1,55 @@
+# metrics/switch_value_table.x86_64.O0.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x201180 120 dispatch symtab,dwarf
+
+== 0x201180 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x201180 */
+/* ref: 0x200120 .rodata */
+int dispatch(int x) {
+    if (eax - 0x4 - 0x4 > 0x0 /* unsigned */) {
+        *(uint32_t *)(rbp - 0x4) = 0x0;
+        rsp = rsp + 0x8;
+        return *(uint32_t *)(rbp - 0x4);
+    }
+    rax = (int32_t)(dword_200120[*(uint64_t *)(rbp - 0x10)]);
+    goto *(rax + 0x200120);
+}
+-- signature
+int (int x)
+-- references
+0x200120 .rodata
+-- ir
+fn dispatch @ 0x201180 (size 120)
+  blk0 @ 0x201180:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffff8))
+    rax = (((edi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
+    store64((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    brif hi ((((rax & #0xffffffff) - #0x4) & #0xffffffff) - #0x4), #0x0 -> 0x2011ec
+  blk1 @ 0x20119c:
+    rax = sext32(load32((#0x200120 + (load64((rbp + #0xfffffffffffffff0)) * #0x4))))
+    br (rax + #0x200120)
+  blk2 @ 0x2011b0:
+    store32(#0x1, (rbp + #0xfffffffffffffffc))
+    br 0x2011f3
+  blk3 @ 0x2011bc:
+    store32(#0x3, (rbp + #0xfffffffffffffffc))
+    br 0x2011f3
+  blk4 @ 0x2011c8:
+    store32(#0x7, (rbp + #0xfffffffffffffffc))
+    br 0x2011f3
+  blk5 @ 0x2011d4:
+    store32(#0x9, (rbp + #0xfffffffffffffffc))
+    br 0x2011f3
+  blk6 @ 0x2011e0:
+    store32(#0xb, (rbp + #0xfffffffffffffffc))
+    br 0x2011f3
+  blk7 @ 0x2011ec:
+    store32(#0x0, (rbp + #0xfffffffffffffffc))
+  blk8 @ 0x2011f3:
+    rsp = (rsp + #0x8)
+    ret (load32((rbp + #0xfffffffffffffffc)) & #0xffffffff)
+-- card
+{"addr":"0x201180","approxTokens":192,"blocks":9,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":120,"unsupported":0}

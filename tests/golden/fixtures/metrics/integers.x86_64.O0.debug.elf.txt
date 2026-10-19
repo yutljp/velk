@@ -1,0 +1,384 @@
+# metrics/integers.x86_64.O0.debug.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201280 31 narrow_add symtab,dwarf
+0x2012a0 32 widen_mul symtab,dwarf
+0x2012c0 22 mixed_sign symtab,dwarf
+0x2012e0 52 in_range symtab,dwarf
+0x201320 43 rotate_left symtab,dwarf
+0x201350 55 popcount symtab,dwarf
+0x201390 51 byte_swap symtab,dwarf
+0x2013d0 82 min3 symtab,dwarf
+0x201430 48 labs_value symtab,dwarf
+0x201460 28 mul_high symtab,dwarf
+
+== 0x201280 narrow_add
+-- decompile
+/* velk pseudo-C: narrow_add @ 0x201280 */
+uint32_t narrow_add(uint64_t a, uint32_t b) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    rcx = rcx & 0xffffffffffffff00 | a & 0xff & 0xff;
+    *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
+    *(uint8_t *)(rbp - 0x2) = (rax & 0xffffffffffffff00 | b & 0xff & 0xff) & 0xff;
+    rax = (int8_t)(rcx);
+    rax = eax + (int8_t)(rax);
+    return (int8_t)(rax);
+}
+-- signature
+uint32_t (uint64_t a, uint32_t b)
+-- references
+
+-- ir
+fn narrow_add @ 0x201280 (size 31)
+  blk0 @ 0x201280:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
+    store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
+    store8((((rax & #0xffffffffffffff00) | ((rsi & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffffe))
+    rax = (sext8(rcx) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + (sext8(rax) & #0xffffffff)) & #0xffffffff)
+    ret (sext8(rax) & #0xffffffff)
+-- card
+{"addr":"0x201280","approxTokens":168,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":31,"unsupported":0}
+
+== 0x2012a0 widen_mul
+-- decompile
+/* velk pseudo-C: widen_mul @ 0x2012a0 */
+uint32_t widen_mul(uint64_t a, uint32_t b) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    rcx = rcx & 0xffffffffffffff00 | a & 0xff & 0xff;
+    *(uint8_t *)(rbp - 0x1) = rcx & 0xff;
+    *(uint8_t *)(rbp - 0x2) = (rax & 0xffffffffffffff00 | b & 0xff & 0xff) & 0xff;
+    rax = rcx & 0xff & 0xff;
+    rax = eax * (rax & 0xff & 0xff);
+    return rax & 0xffff & 0xffff;
+}
+-- signature
+uint32_t (uint64_t a, uint32_t b)
+-- references
+
+-- ir
+fn widen_mul @ 0x2012a0 (size 32)
+  blk0 @ 0x2012a0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    rcx = ((rcx & #0xffffffffffffff00) | ((rdi & #0xff) & #0xff))
+    store8((rcx & #0xff), (rbp + #0xffffffffffffffff))
+    store8((((rax & #0xffffffffffffff00) | ((rsi & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffffe))
+    rax = (((rcx & #0xff) & #0xff) & #0xffffffff)
+    rax = (((rax & #0xffffffff) * (((rax & #0xff) & #0xff) & #0xffffffff)) & #0xffffffff)
+    ret (((rax & #0xffff) & #0xffff) & #0xffffffff)
+-- card
+{"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+
+== 0x2012c0 mixed_sign
+-- decompile
+/* velk pseudo-C: mixed_sign @ 0x2012c0 */
+void mixed_sign(int a, uint32_t b) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = a;
+    *(uint32_t *)(rbp - 0x8) = b;
+    return;
+}
+-- signature
+void (int a, uint32_t b)
+-- references
+
+-- ir
+fn mixed_sign @ 0x2012c0 (size 22)
+  blk0 @ 0x2012c0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(esi, (rbp + #0xfffffffffffffff8))
+    ret (sext32(edi) - (esi & #0xffffffff))
+-- card
+{"addr":"0x2012c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":22,"unsupported":0}
+
+== 0x2012e0 in_range
+-- decompile
+/* velk pseudo-C: in_range @ 0x2012e0 */
+_Bool in_range(int x, int lo, int hi) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
+    *(uint32_t *)(rbp - 0x8) = lo;
+    *(uint32_t *)(rbp - 0xc) = hi;
+    rax = 0x0;
+    *(uint8_t *)(rbp - 0xd) = 0x0;
+    if (x >= lo) {
+        rax = *(uint32_t *)(rbp - 0x4);
+        *(uint8_t *)(rbp - 0xd) = (rax & 0xffffffffffffff00 | ((eax <= *(uint32_t *)(rbp - 0xc) ? 0x1 : 0x0)) & 0xff & 0xff) & 0xff;
+    }
+    rax = rax & 0xffffffffffffff00 | *(uint8_t *)(rbp - 0xd) & 0xff;
+    rax = rax & 0xffffffffffffff00 | rax & 0xff & 0x1 & 0xff;
+    rsp = rsp + 0x8;
+    return rax & 0xff & 0xff;
+}
+-- signature
+_Bool (int x, int lo, int hi)
+-- references
+
+-- ir
+fn in_range @ 0x2012e0 (size 52)
+  blk0 @ 0x2012e0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(esi, (rbp + #0xfffffffffffffff8))
+    store32(edx, (rbp + #0xfffffffffffffff4))
+    rax = #0x0
+    store8(#0x0, (rbp + #0xfffffffffffffff3))
+    brif lt edi, esi -> 0x20130a
+  blk1 @ 0x2012fe:
+    rax = (load32((rbp + #0xfffffffffffffffc)) & #0xffffffff)
+    store8((((rax & #0xffffffffffffff00) | ((select le (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) ? #0x1, #0x0 & #0xff) & #0xff)) & #0xff), (rbp + #0xfffffffffffffff3))
+  blk2 @ 0x20130a:
+    rax = ((rax & #0xffffffffffffff00) | (load8((rbp + #0xfffffffffffffff3)) & #0xff))
+    rax = ((rax & #0xffffffffffffff00) | (((rax & #0xff) & #0x1) & #0xff))
+    rsp = (rsp + #0x8)
+    ret (((rax & #0xff) & #0xff) & #0xffffffff)
+-- card
+{"addr":"0x2012e0","approxTokens":210,"blocks":3,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
+
+== 0x201320 rotate_left
+-- decompile
+/* velk pseudo-C: rotate_left @ 0x201320 */
+void rotate_left(uint32_t x, uint32_t k) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
+    *(uint32_t *)(rbp - 0x8) = k;
+    return;
+}
+-- signature
+void (uint32_t x, uint32_t k)
+-- references
+
+-- ir
+fn rotate_left @ 0x201320 (size 43)
+  blk0 @ 0x201320:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(esi, (rbp + #0xfffffffffffffff8))
+    ret ((edi << ((((esi & #0xffffffff) & #0x1f) & #0xffffffff) & #0xff)) | ((edi >> (((((#0x20 - esi) & #0xffffffff) & #0x1f) & #0xffffffff) & #0xff)) & #0xffffffff))
+-- card
+{"addr":"0x201320","approxTokens":198,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":43,"unsupported":0}
+
+== 0x201350 popcount
+-- decompile
+/* velk pseudo-C: popcount @ 0x201350 */
+int popcount(uint32_t x) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = x;
+    *(uint32_t *)(rbp - 0x8) = 0x0;
+    while (*(uint32_t *)(rbp - 0x4) != 0x0) {
+        eax = *(uint32_t *)(rbp - 0x4);
+        eax = eax - 0x1;
+        eax = eax & *(uint32_t *)(rbp - 0x4);
+        *(uint32_t *)(rbp - 0x4) = eax;
+        *(uint32_t *)(rbp - 0x8) = *(uint32_t *)(rbp - 0x8) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x8);
+}
+-- signature
+int (uint32_t x)
+-- references
+
+-- ir
+fn popcount @ 0x201350 (size 55)
+  blk0 @ 0x201350:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(#0x0, (rbp + #0xfffffffffffffff8))
+  blk1 @ 0x20135e:
+    brif eq load32((rbp + #0xfffffffffffffffc)), #0x0 -> 0x201382
+  blk2 @ 0x201368:
+    eax = load32((rbp + #0xfffffffffffffffc))
+    eax = (eax - #0x1)
+    eax = (eax & load32((rbp + #0xfffffffffffffffc)))
+    store32(eax, (rbp + #0xfffffffffffffffc))
+    store32((load32((rbp + #0xfffffffffffffff8)) + #0x1), (rbp + #0xfffffffffffffff8))
+    br 0x20135e
+  blk3 @ 0x201382:
+    rsp = (rsp + #0x8)
+    ret load32((rbp + #0xfffffffffffffff8))
+-- card
+{"addr":"0x201350","approxTokens":180,"blocks":4,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","size":55,"unsupported":0}
+
+== 0x201390 byte_swap
+-- decompile
+/* velk pseudo-C: byte_swap @ 0x201390 */
+void byte_swap(uint32_t x) {
+    return;
+}
+-- signature
+void (uint32_t x)
+-- references
+
+-- ir
+fn byte_swap @ 0x201390 (size 51)
+  blk0 @ 0x201390:
+    ret ((((edi >> #0x18) | ((edi >> #0x8) & #0xff00)) | ((edi << #0x8) & #0xff0000)) | (edi << #0x18))
+-- card
+{"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":51,"unsupported":0}
+
+== 0x2013d0 min3
+-- decompile
+/* velk pseudo-C: min3 @ 0x2013d0 */
+int min3(int a, int b, int c) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint32_t *)(rbp - 0x4) = a;
+    *(uint32_t *)(rbp - 0x8) = b;
+    *(uint32_t *)(rbp - 0xc) = c;
+    if (a < b) {
+        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x4);
+    } else {
+        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x8);
+    }
+    eax = *(uint32_t *)(rbp - 0x14);
+    *(uint32_t *)(rbp - 0x10) = eax;
+    if (eax < *(uint32_t *)(rbp - 0xc)) {
+        *(uint32_t *)(rbp - 0x18) = *(uint32_t *)(rbp - 0x10);
+    } else {
+        *(uint32_t *)(rbp - 0x18) = *(uint32_t *)(rbp - 0xc);
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x18);
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn min3 @ 0x2013d0 (size 82)
+  blk0 @ 0x2013d0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store32(edi, (rbp + #0xfffffffffffffffc))
+    store32(esi, (rbp + #0xfffffffffffffff8))
+    store32(edx, (rbp + #0xfffffffffffffff4))
+    brif ge edi, esi -> 0x2013f4
+  blk1 @ 0x2013e9:
+    store32(load32((rbp + #0xfffffffffffffffc)), (rbp + #0xffffffffffffffec))
+    br 0x2013fa
+  blk2 @ 0x2013f4:
+    store32(load32((rbp + #0xfffffffffffffff8)), (rbp + #0xffffffffffffffec))
+  blk3 @ 0x2013fa:
+    eax = load32((rbp + #0xffffffffffffffec))
+    store32(eax, (rbp + #0xfffffffffffffff0))
+    brif ge eax, load32((rbp + #0xfffffffffffffff4)) -> 0x201417
+  blk4 @ 0x20140c:
+    store32(load32((rbp + #0xfffffffffffffff0)), (rbp + #0xffffffffffffffe8))
+    br 0x20141d
+  blk5 @ 0x201417:
+    store32(load32((rbp + #0xfffffffffffffff4)), (rbp + #0xffffffffffffffe8))
+  blk6 @ 0x20141d:
+    rsp = (rsp + #0x8)
+    ret load32((rbp + #0xffffffffffffffe8))
+-- card
+{"addr":"0x2013d0","approxTokens":162,"blocks":7,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","size":82,"unsupported":0}
+
+== 0x201430 labs_value
+-- decompile
+/* velk pseudo-C: labs_value @ 0x201430 */
+long labs_value(long x) {
+    uint64_t local_0; /* [sp-8] */
+    uint64_t local_1; /* [sp-10] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    local_1 = x;
+    if (x < 0x0) {
+        *(uint64_t *)(rbp - 0x10) = -*(uint64_t *)(rbp - 0x8);
+    } else {
+        *(uint64_t *)(rbp - 0x10) = *(uint64_t *)(rbp - 0x8);
+    }
+    rsp = rsp + 0x8;
+    return *(uint64_t *)(rbp - 0x10);
+}
+-- signature
+long (long x)
+-- references
+
+-- ir
+fn labs_value @ 0x201430 (size 48)
+  blk0 @ 0x201430:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    store64(rdi, (rsp + #0xfffffffffffffff8))
+    brif ge rdi, #0x0 -> 0x201452
+  blk1 @ 0x201443:
+    store64((#0x0 - load64((rbp + #0xfffffffffffffff8))), (rbp + #0xfffffffffffffff0))
+    br 0x20145a
+  blk2 @ 0x201452:
+    store64(load64((rbp + #0xfffffffffffffff8)), (rbp + #0xfffffffffffffff0))
+  blk3 @ 0x20145a:
+    rsp = (rsp + #0x8)
+    ret load64((rbp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x201430","approxTokens":150,"blocks":4,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
+
+== 0x201460 mul_high
+-- decompile
+/* velk pseudo-C: mul_high @ 0x201460 */
+void mul_high(uint64_t a, uint64_t b) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = a;
+    *(uint64_t *)(rbp - 0x10) = b;
+    return;
+}
+-- signature
+void (uint64_t a, uint64_t b)
+-- references
+
+-- ir
+fn mul_high @ 0x201460 (size 28)
+  blk0 @ 0x201460:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store64(rsi, (rbp + #0xfffffffffffffff0))
+    ret (rdi hi128 rsi)
+-- card
+{"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":"mul_high","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}

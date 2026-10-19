@@ -19,3 +19,6 @@ yaxpeax-arm = "0.5.0"
 
 [lints.clippy]
 question_mark = "allow"
+
+[profile.test]
+opt-level = 2

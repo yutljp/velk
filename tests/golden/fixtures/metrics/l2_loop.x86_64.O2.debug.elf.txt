@@ -1,0 +1,357 @@
+# metrics/l2_loop.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 3 gotos
+0x2011d0 239 sum_while symtab,dwarf
+0x2012c0 157 count_down symtab,dwarf
+0x201360 71 sum_skip_odd symtab,dwarf
+0x2013b0 33 find_first symtab,dwarf
+
+== 0x2011d0 sum_while
+-- decompile
+/* velk pseudo-C: sum_while @ 0x2011d0 */
+/* ref: 0x2023d4 .bss */
+int sum_while(int n) {
+    if (n & n <= 0x0) {
+        return 0x0;
+    }
+    ecx = n & 0x7;
+    switch (n) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        rax = 0x0;
+        if (ecx & ecx != 0x0) { goto L_2012b0; }
+        return rax;
+    case 8:
+        n = n & 0x7ffffff8;
+        n = -n;
+        rax = 0x0;
+        rdx = 0x7;
+        do {
+            r8 = ((rdx + rax) & 0xffffffff);
+            rsi = edx;
+            rax = eax + esi;
+            rax = ((eax - 0x7) & 0xffffffff);
+            dword_2023d4 = eax;
+            rax = ((rsi + r8 - 0x7) & 0xffffffff);
+            r8 = ((rsi + r8 - 0xd) & 0xffffffff);
+            dword_2023d4 = r8d;
+            r8 = ((rsi + rax - 0x6) & 0xffffffff);
+            rax = ((rsi + rax - 0xb) & 0xffffffff);
+            dword_2023d4 = eax;
+            rax = ((rsi + r8 - 0x5) & 0xffffffff);
+            r8 = ((rsi + r8 - 0x9) & 0xffffffff);
+            dword_2023d4 = r8d;
+            r8 = ((rsi + rax - 0x4) & 0xffffffff);
+            rax = ((rsi + rax - 0x7) & 0xffffffff);
+            dword_2023d4 = eax;
+            rax = ((rsi + r8 - 0x3) & 0xffffffff);
+            r8 = ((rsi + r8 - 0x5) & 0xffffffff);
+            dword_2023d4 = r8d;
+            r8 = ((rsi + rax - 0x2) & 0xffffffff);
+            rax = ((rsi + rax - 0x3) & 0xffffffff);
+            dword_2023d4 = eax;
+            rax = ((((rsi + r8) & 0xffffffff) - 0x1) & 0xffffffff);
+            dword_2023d4 = eax;
+            rdx = edx + 0x8;
+            rsi = esi + n;
+            rsi = esi + 0x8;
+        } while (esi != 0x7);
+        rdx = ((edx - 0x7) & 0xffffffff);
+        if (ecx & ecx == 0x0) {
+            return rax;
+        }
+        rax = eax + edx;
+        dword_2023d4 = eax;
+        rdx = edx + 0x1;
+        if (ecx - 0x2 != 0x0) { goto L_2012b0; }
+    }
+}
+-- signature
+int (int n)
+-- references
+0x2023d4 .bss
+-- ir
+fn sum_while @ 0x2011d0 (size 239)
+  blk0 @ 0x2011d0:
+    brif le (edi & edi), #0x0 -> 0x2011ef
+  blk1 @ 0x2011d4:
+    ecx = (edi & #0x7)
+    brif cs edi, #0x8 -> 0x2011f2
+  blk2 @ 0x2011de:
+    rax = #0x0
+    brif ne (ecx & ecx), #0x0 -> 0x2012b0
+  blk3 @ 0x2011ea:
+    br 0x2012be
+  blk4 @ 0x2011ef:
+    ret #0x0
+  blk5 @ 0x2011f2:
+    edi = (edi & #0x7ffffff8)
+    edi = (#0x0 - edi)
+    rax = #0x0
+    rdx = #0x7
+  blk6 @ 0x201210:
+    r8 = ((rdx + rax) & #0xffffffff)
+    rsi = (rdx & #0xffffffff)
+    rax = (((rax & #0xffffffff) + (rsi & #0xffffffff)) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d4)
+    rax = (((rsi + r8) + #0xfffffffffffffff9) & #0xffffffff)
+    r8 = (((rsi + r8) + #0xfffffffffffffff3) & #0xffffffff)
+    store32((r8 & #0xffffffff), #0x2023d4)
+    r8 = (((rsi + rax) + #0xfffffffffffffffa) & #0xffffffff)
+    rax = (((rsi + rax) + #0xfffffffffffffff5) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d4)
+    rax = (((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff)
+    r8 = (((rsi + r8) + #0xfffffffffffffff7) & #0xffffffff)
+    store32((r8 & #0xffffffff), #0x2023d4)
+    r8 = (((rsi + rax) + #0xfffffffffffffffc) & #0xffffffff)
+    rax = (((rsi + rax) + #0xfffffffffffffff9) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d4)
+    rax = (((rsi + r8) + #0xfffffffffffffffd) & #0xffffffff)
+    r8 = (((rsi + r8) + #0xfffffffffffffffb) & #0xffffffff)
+    store32((r8 & #0xffffffff), #0x2023d4)
+    r8 = (((rsi + rax) + #0xfffffffffffffffe) & #0xffffffff)
+    rax = (((rsi + rax) + #0xfffffffffffffffd) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d4)
+    rax = ((((rsi + r8) & #0xffffffff) + #0xffffffffffffffff) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d4)
+    rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
+    rsi = (((rsi & #0xffffffff) + edi) & #0xffffffff)
+    rsi = (((rsi & #0xffffffff) + #0x8) & #0xffffffff)
+    brif ne (rsi & #0xffffffff), #0x7 -> 0x201210
+  blk7 @ 0x20129e:
+    rdx = (((rdx & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff)
+    brif eq (ecx & ecx), #0x0 -> 0x2012be
+  blk8 @ 0x2012a5:
+    rax = (((rax & #0xffffffff) + (rdx & #0xffffffff)) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d4)
+    rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
+    brif ne (ecx + #0xfffffffffffffffe), #0x0 -> 0x2012b0
+  blk9 @ 0x2012be:
+    ret rax
+-- card
+{"addr":"0x2011d0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":239,"unsupported":0}
+
+== 0x2012c0 count_down
+-- decompile
+/* velk pseudo-C: count_down @ 0x2012c0 */
+/* ref: 0x2023d4 .bss */
+int count_down(int n) {
+    ecx = ((n >= 0x2 ? n : 0x1)) & 0x7;
+    rdx = 0x0;
+    switch (n) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        if (ecx & ecx == 0x0) {
+            return rax;
+        }
+        rdx = edx + 0x1;
+        do {
+            dword_2023d4 = edx;
+            rdx = edx + 0x1;
+            ecx = ecx - 0x1;
+        } while (ecx - 0x1 != 0x0);
+    case 8:
+        esi = rax;
+        esi = esi & 0xfffffffffffffff8;
+        esi = -esi;
+        rdx = 0x4;
+        do {
+            n = rdx - 0x3;
+            dword_2023d4 = n;
+            n = rdx - 0x2;
+            dword_2023d4 = n;
+            n = rdx - 0x1;
+            dword_2023d4 = n;
+            dword_2023d4 = edx;
+            n = rdx + 0x1;
+            dword_2023d4 = n;
+            n = rdx + 0x2;
+            dword_2023d4 = n;
+            n = rdx + 0x3;
+            dword_2023d4 = n;
+            n = rdx + 0x4;
+            dword_2023d4 = n;
+            n = rdx;
+            rdx = edx + 0x8;
+            n = n + esi;
+            n = n + 0x8;
+        } while (n != 0x4);
+        rdx = ((edx - 0x4) & 0xffffffff);
+    }
+}
+-- signature
+int (int n)
+-- references
+0x2023d4 .bss
+-- ir
+fn count_down @ 0x2012c0 (size 157)
+  blk0 @ 0x2012c0:
+    ecx = ((select ge edi, #0x2 ? edi, #0x1 & #0xffffffff) & #0x7)
+    rdx = #0x0
+    brif lt edi, #0x8 -> 0x201347
+  blk1 @ 0x2012d7:
+    esi = rax
+    esi = (esi & #0xfffffffffffffff8)
+    esi = (#0x0 - esi)
+    rdx = #0x4
+  blk2 @ 0x2012f0:
+    edi = (rdx + #0xfffffffffffffffd)
+    store32(edi, #0x2023d4)
+    edi = (rdx + #0xfffffffffffffffe)
+    store32(edi, #0x2023d4)
+    edi = (rdx + #0xffffffffffffffff)
+    store32(edi, #0x2023d4)
+    store32((rdx & #0xffffffff), #0x2023d4)
+    edi = (rdx + #0x1)
+    store32(edi, #0x2023d4)
+    edi = (rdx + #0x2)
+    store32(edi, #0x2023d4)
+    edi = (rdx + #0x3)
+    store32(edi, #0x2023d4)
+    edi = (rdx + #0x4)
+    store32(edi, #0x2023d4)
+    edi = rdx
+    rdx = (((rdx & #0xffffffff) + #0x8) & #0xffffffff)
+    edi = (edi + esi)
+    edi = (edi + #0x8)
+    brif ne edi, #0x4 -> 0x2012f0
+  blk3 @ 0x201344:
+    rdx = (((rdx & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
+  blk4 @ 0x201347:
+    brif eq (ecx & ecx), #0x0 -> 0x20135c
+  blk5 @ 0x20134b:
+    rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
+  blk6 @ 0x201350:
+    store32((rdx & #0xffffffff), #0x2023d4)
+    rdx = (((rdx & #0xffffffff) + #0x1) & #0xffffffff)
+    ecx = (ecx + #0xffffffffffffffff)
+    brif ne (ecx + #0xffffffffffffffff), #0x0 -> 0x201350
+  blk7 @ 0x20135c:
+    ret rax
+-- card
+{"addr":"0x2012c0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":157,"unsupported":0}
+
+== 0x201360 sum_skip_odd
+-- decompile
+/* velk pseudo-C: sum_skip_odd @ 0x201360 */
+/* ref: 0x2023d4 .bss */
+int sum_skip_odd(int n) {
+    if (n & n <= 0x0) {
+        return 0x0;
+    }
+    if (n == 0x1) {
+        rcx = 0x0;
+        rax = 0x0;
+    } else {
+        edx = n;
+        edx = edx & 0x7ffffffe;
+        rcx = 0x0;
+        rax = 0x0;
+        do {
+            rax = eax + ecx;
+            rax = eax + 0x1;
+            dword_2023d4 = eax;
+            rcx = ecx + 0x2;
+        } while (edx != ecx);
+    }
+    if (n & 0xff & 0x1 == 0x0) {
+        return rax;
+    }
+    if (rcx & 0xff & 0x1 == 0x0) {
+        return rax;
+    }
+    rcx = ecx + eax;
+    dword_2023d4 = ecx;
+    rax = ecx;
+}
+-- signature
+int (int n)
+-- references
+0x2023d4 .bss
+-- ir
+fn sum_skip_odd @ 0x201360 (size 71)
+  blk0 @ 0x201360:
+    brif le ((rdi & #0xffffffff) & (rdi & #0xffffffff)), #0x0 -> 0x20136f
+  blk1 @ 0x201364:
+    brif ne (rdi & #0xffffffff), #0x1 -> 0x201372
+  blk2 @ 0x201369:
+    rcx = #0x0
+    rax = #0x0
+    br 0x201391
+  blk3 @ 0x20136f:
+    ret #0x0
+  blk4 @ 0x201372:
+    edx = rdi
+    edx = (edx & #0x7ffffffe)
+    rcx = #0x0
+    rax = #0x0
+  blk5 @ 0x201380:
+    rax = (((rax & #0xffffffff) + (rcx & #0xffffffff)) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    store32((rax & #0xffffffff), #0x2023d4)
+    rcx = (((rcx & #0xffffffff) + #0x2) & #0xffffffff)
+    brif ne edx, (rcx & #0xffffffff) -> 0x201380
+  blk6 @ 0x201391:
+    brif eq ((rdi & #0xff) & #0x1), #0x0 -> 0x2013a6
+  blk7 @ 0x201397:
+    brif eq ((rcx & #0xff) & #0x1), #0x0 -> 0x2013a6
+  blk8 @ 0x20139c:
+    rcx = (((rcx & #0xffffffff) + (rax & #0xffffffff)) & #0xffffffff)
+    store32((rcx & #0xffffffff), #0x2023d4)
+    rax = (rcx & #0xffffffff)
+  blk9 @ 0x2013a6:
+    ret rax
+-- card
+{"addr":"0x201360","approxTokens":138,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":71,"unsupported":0}
+
+== 0x2013b0 find_first
+-- decompile
+/* velk pseudo-C: find_first @ 0x2013b0 */
+int find_first(int *p, int n, int v) {
+    if (n & n <= 0x0) {
+        return rax;
+    }
+    n = n;
+    rcx = 0x0;
+    do {
+        if (*(uint32_t *)(p + rcx * 0x4) == v) { goto L_2013ce; }
+        rcx = rcx + 0x1;
+    } while (n != rcx);
+    return rax;
+L_2013ce:
+    return ecx;
+}
+-- signature
+int (int * p, int n, int v)
+-- references
+
+-- ir
+fn find_first @ 0x2013b0 (size 33)
+  blk0 @ 0x2013b0:
+    rax = #0xffffffff
+    brif le ((rsi & #0xffffffff) & (rsi & #0xffffffff)), #0x0 -> 0x2013cd
+  blk1 @ 0x2013b9:
+    rsi = (rsi & #0xffffffff)
+    rcx = #0x0
+  blk2 @ 0x2013c0:
+    brif eq load32((rdi + (rcx * #0x4))), edx -> 0x2013ce
+  blk3 @ 0x2013c5:
+    rcx = (rcx + #0x1)
+    brif ne rsi, rcx -> 0x2013c0
+  blk4 @ 0x2013cd:
+    ret rax
+  blk5 @ 0x2013ce:
+    ret (rcx & #0xffffffff)
+-- card
+{"addr":"0x2013b0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":33,"unsupported":0}

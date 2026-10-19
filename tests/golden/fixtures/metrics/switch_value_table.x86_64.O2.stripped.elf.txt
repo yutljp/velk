@@ -1,0 +1,29 @@
+# metrics/switch_value_table.x86_64.O2.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201170 23 - prologue
+
+== 0x201170 -
+-- decompile
+/* velk pseudo-C: sub_201170 @ 0x201170 */
+/* ref: 0x200120 .rodata */
+uint32_t sub_201170(uint32_t a0) {
+    rax = 0x0;
+    if (a0 - 0xa <= 0x4 /* unsigned */) {
+        rax = dword_200120[a0];
+    }
+    return rax;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+0x200120 .rodata
+-- ir
+fn <unnamed> @ 0x201170 (size 23)
+  blk0 @ 0x201170:
+    rax = #0x0
+    brif hi (edi + #0xfffffffffffffff6), #0x4 -> 0x201186
+  blk1 @ 0x20117a:
+    rax = (load32((#0x200120 + (edi * #0x4))) & #0xffffffff)
+  blk2 @ 0x201186:
+    ret rax
+-- card
+{"addr":"0x201170","approxTokens":144,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":23,"sizeEstimated":true,"unsupported":0}

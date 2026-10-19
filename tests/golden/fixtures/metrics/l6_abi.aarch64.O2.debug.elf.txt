@@ -1,0 +1,91 @@
+# metrics/l6_abi.aarch64.O2.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x2101a4 28 tail_target symtab,dwarf
+0x2101c0 8 tail_direct symtab,dwarf
+0x2101c8 12 tail_indirect symtab,dwarf
+0x2101d4 24 six_args symtab,dwarf
+0x2101ec 8 wide_add symtab,dwarf
+
+== 0x2101a4 tail_target
+-- decompile
+/* velk pseudo-C: tail_target @ 0x2101a4 */
+int tail_target(int x) {
+    return x + (x << 0x1) + 0x1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_target @ 0x2101a4 (size 28)
+  blk0 @ 0x2101a4:
+    ret ((w0 + (w0 << #0x1)) + #0x1)
+-- card
+{"addr":"0x2101a4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x2101c0 tail_direct
+-- decompile
+/* velk pseudo-C: tail_direct @ 0x2101c0 */
+int tail_direct(int x) {
+    tail_target();
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_direct @ 0x2101c0 (size 8)
+  blk0 @ 0x2101c0:
+    call 0x2101a4
+-- card
+{"addr":"0x2101c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2101c8 tail_indirect
+-- decompile
+/* velk pseudo-C: tail_indirect @ 0x2101c8 */
+int tail_indirect(void *f, int x) {
+    goto *(f);
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn tail_indirect @ 0x2101c8 (size 12)
+  blk0 @ 0x2101c8:
+    br x0
+-- card
+{"addr":"0x2101c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x2101d4 six_args
+-- decompile
+/* velk pseudo-C: six_args @ 0x2101d4 */
+int six_args(int a, int b, int c, int d, int e, int f) {
+    return b + a + (c + d) + (e + f);
+}
+-- signature
+int (int a, int b, int c, int d, int e, int f)
+-- references
+
+-- ir
+fn six_args @ 0x2101d4 (size 24)
+  blk0 @ 0x2101d4:
+    ret (((w1 + w0) + (w2 + w3)) + (w4 + w5))
+-- card
+{"addr":"0x2101d4","approxTokens":132,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+
+== 0x2101ec wide_add
+-- decompile
+/* velk pseudo-C: wide_add @ 0x2101ec */
+uint64_t wide_add(uint64_t a, uint64_t b) {
+    return b + a;
+}
+-- signature
+uint64_t (uint64_t a, uint64_t b)
+-- references
+
+-- ir
+fn wide_add @ 0x2101ec (size 8)
+  blk0 @ 0x2101ec:
+    ret (x1 + x0)
+-- card
+{"addr":"0x2101ec","approxTokens":108,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}

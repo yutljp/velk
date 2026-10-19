@@ -1,0 +1,462 @@
+# metrics/l5_switch.x86_64.O2.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x201330 167 dense symtab,dwarf
+0x2013e0 8 c0 symtab,dwarf
+0x2013f0 8 c1 symtab,dwarf
+0x201400 8 c2 symtab,dwarf
+0x201410 8 c3 symtab,dwarf
+0x201420 8 c4 symtab,dwarf
+0x201430 8 c5 symtab,dwarf
+0x201440 8 c6 symtab,dwarf
+0x201450 8 c7 symtab,dwarf
+0x201460 8 c8 symtab,dwarf
+0x201470 8 c9 symtab,dwarf
+0x201480 8 c10 symtab,dwarf
+0x201490 8 c11 symtab,dwarf
+0x2014a0 8 c12 symtab,dwarf
+0x2014b0 8 c13 symtab,dwarf
+0x2014c0 8 c14 symtab,dwarf
+0x2014d0 8 c15 symtab,dwarf
+0x2014e0 42 sparse symtab,dwarf
+
+== 0x201330 dense
+-- decompile
+/* velk pseudo-C: dense @ 0x201330 */
+/* ref: 0x200158 .rodata */
+/* ref: 0x20250c .bss */
+int dense(int x) {
+    uint64_t local_0; /* [sp-8] */
+
+    if (((x - 0xa) & 0xffffffff) > 0xf /* unsigned */) {
+        dword_20250c = 0x0;
+        return 0x0;
+    }
+    local_0 = rax;
+    rcx = (int32_t)(dword_200158[x]) + 0x200158;
+    goto *(rcx);
+}
+-- signature
+int (int x)
+-- references
+0x200158 .rodata
+0x20250c .bss
+-- ir
+fn dense @ 0x201330 (size 167)
+  blk0 @ 0x201330:
+    brif hi (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff), #0xf -> 0x2013c6
+  blk1 @ 0x20133c:
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    rcx = (sext32(load32((#0x200158 + (rdi * #0x4)))) + #0x200158)
+    br rcx
+  blk2 @ 0x20134d:
+    call 0x2013e0
+    br 0x2013bb
+  blk3 @ 0x201354:
+    call 0x2014c0
+    br 0x2013bb
+  blk4 @ 0x20135b:
+    call 0x201490
+    br 0x2013bb
+  blk5 @ 0x201362:
+    call 0x201420
+    br 0x2013bb
+  blk6 @ 0x201369:
+    call 0x2014a0
+    br 0x2013bb
+  blk7 @ 0x201370:
+    call 0x201470
+    br 0x2013bb
+  blk8 @ 0x201377:
+    call 0x201400
+    br 0x2013bb
+  blk9 @ 0x20137e:
+    call 0x2014d0
+    br 0x2013bb
+  blk10 @ 0x201385:
+    call 0x201410
+    br 0x2013bb
+  blk11 @ 0x20138c:
+    call 0x201450
+    br 0x2013bb
+  blk12 @ 0x201393:
+    call 0x2013f0
+    br 0x2013bb
+  blk13 @ 0x20139a:
+    call 0x201430
+    br 0x2013bb
+  blk14 @ 0x2013a1:
+    call 0x2014b0
+    br 0x2013bb
+  blk15 @ 0x2013a8:
+    call 0x201440
+    br 0x2013bb
+  blk16 @ 0x2013af:
+    call 0x201480
+    br 0x2013bb
+  blk17 @ 0x2013b6:
+    call 0x201460
+  blk18 @ 0x2013bb:
+    rsp = (rsp + #0x8)
+    ret (load32(#0x20250c) & #0xffffffff)
+  blk19 @ 0x2013c6:
+    store32(#0x0, #0x20250c)
+    ret #0x0
+-- card
+{"addr":"0x201330","approxTokens":156,"blocks":20,"hardReasons":[],"name":"dense","nameSources":["symtab","dwarf"],"section":".text","size":167,"unsupported":0}
+
+== 0x2013e0 c0
+-- decompile
+/* velk pseudo-C: c0 @ 0x2013e0 */
+/* ref: 0x20250c .bss */
+void c0(void) {
+    dword_20250c += 0xb;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c0 @ 0x2013e0 (size 8)
+  blk0 @ 0x2013e0:
+    store32((load32(#0x20250c) + #0xb), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2013e0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c0","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2013f0 c1
+-- decompile
+/* velk pseudo-C: c1 @ 0x2013f0 */
+/* ref: 0x20250c .bss */
+void c1(void) {
+    dword_20250c ^= 0x12;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c1 @ 0x2013f0 (size 8)
+  blk0 @ 0x2013f0:
+    store32((load32(#0x20250c) ^ #0x12), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2013f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c1","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201400 c2
+-- decompile
+/* velk pseudo-C: c2 @ 0x201400 */
+/* ref: 0x20250c .bss */
+void c2(void) {
+    dword_20250c += 0xffffffffffffffe7;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c2 @ 0x201400 (size 8)
+  blk0 @ 0x201400:
+    store32((load32(#0x20250c) + #0xffffffffffffffe7), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201400","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c2","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201410 c3
+-- decompile
+/* velk pseudo-C: c3 @ 0x201410 */
+/* ref: 0x20250c .bss */
+void c3(void) {
+    dword_20250c |= 0x20;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c3 @ 0x201410 (size 8)
+  blk0 @ 0x201410:
+    store32((load32(#0x20250c) | #0x20), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201410","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c3","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201420 c4
+-- decompile
+/* velk pseudo-C: c4 @ 0x201420 */
+/* ref: 0x20250c .bss */
+void c4(void) {
+    dword_20250c += 0x27;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c4 @ 0x201420 (size 8)
+  blk0 @ 0x201420:
+    store32((load32(#0x20250c) + #0x27), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201420","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c4","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201430 c5
+-- decompile
+/* velk pseudo-C: c5 @ 0x201430 */
+/* ref: 0x20250c .bss */
+void c5(void) {
+    dword_20250c ^= 0x2e;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c5 @ 0x201430 (size 8)
+  blk0 @ 0x201430:
+    store32((load32(#0x20250c) ^ #0x2e), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201430","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c5","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201440 c6
+-- decompile
+/* velk pseudo-C: c6 @ 0x201440 */
+/* ref: 0x20250c .bss */
+void c6(void) {
+    dword_20250c += 0xffffffffffffffcb;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c6 @ 0x201440 (size 8)
+  blk0 @ 0x201440:
+    store32((load32(#0x20250c) + #0xffffffffffffffcb), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201440","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c6","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201450 c7
+-- decompile
+/* velk pseudo-C: c7 @ 0x201450 */
+/* ref: 0x20250c .bss */
+void c7(void) {
+    dword_20250c |= 0x3c;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c7 @ 0x201450 (size 8)
+  blk0 @ 0x201450:
+    store32((load32(#0x20250c) | #0x3c), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201450","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c7","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201460 c8
+-- decompile
+/* velk pseudo-C: c8 @ 0x201460 */
+/* ref: 0x20250c .bss */
+void c8(void) {
+    dword_20250c += 0x43;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c8 @ 0x201460 (size 8)
+  blk0 @ 0x201460:
+    store32((load32(#0x20250c) + #0x43), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201460","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c8","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201470 c9
+-- decompile
+/* velk pseudo-C: c9 @ 0x201470 */
+/* ref: 0x20250c .bss */
+void c9(void) {
+    dword_20250c ^= 0x4a;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c9 @ 0x201470 (size 8)
+  blk0 @ 0x201470:
+    store32((load32(#0x20250c) ^ #0x4a), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201470","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c9","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201480 c10
+-- decompile
+/* velk pseudo-C: c10 @ 0x201480 */
+/* ref: 0x20250c .bss */
+void c10(void) {
+    dword_20250c += 0xffffffffffffffaf;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c10 @ 0x201480 (size 8)
+  blk0 @ 0x201480:
+    store32((load32(#0x20250c) + #0xffffffffffffffaf), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201480","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c10","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x201490 c11
+-- decompile
+/* velk pseudo-C: c11 @ 0x201490 */
+/* ref: 0x20250c .bss */
+void c11(void) {
+    dword_20250c |= 0x58;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c11 @ 0x201490 (size 8)
+  blk0 @ 0x201490:
+    store32((load32(#0x20250c) | #0x58), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x201490","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c11","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2014a0 c12
+-- decompile
+/* velk pseudo-C: c12 @ 0x2014a0 */
+/* ref: 0x20250c .bss */
+void c12(void) {
+    dword_20250c += 0x5f;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c12 @ 0x2014a0 (size 8)
+  blk0 @ 0x2014a0:
+    store32((load32(#0x20250c) + #0x5f), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014a0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c12","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2014b0 c13
+-- decompile
+/* velk pseudo-C: c13 @ 0x2014b0 */
+/* ref: 0x20250c .bss */
+void c13(void) {
+    dword_20250c ^= 0x66;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c13 @ 0x2014b0 (size 8)
+  blk0 @ 0x2014b0:
+    store32((load32(#0x20250c) ^ #0x66), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014b0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c13","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2014c0 c14
+-- decompile
+/* velk pseudo-C: c14 @ 0x2014c0 */
+/* ref: 0x20250c .bss */
+void c14(void) {
+    dword_20250c += 0xffffffffffffff93;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c14 @ 0x2014c0 (size 8)
+  blk0 @ 0x2014c0:
+    store32((load32(#0x20250c) + #0xffffffffffffff93), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c14","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2014d0 c15
+-- decompile
+/* velk pseudo-C: c15 @ 0x2014d0 */
+/* ref: 0x20250c .bss */
+void c15(void) {
+    dword_20250c |= 0x74;
+    return;
+}
+-- signature
+void ()
+-- references
+0x20250c .bss
+-- ir
+fn c15 @ 0x2014d0 (size 8)
+  blk0 @ 0x2014d0:
+    store32((load32(#0x20250c) | #0x74), #0x20250c)
+    ret rax
+-- card
+{"addr":"0x2014d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"c15","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2014e0 sparse
+-- decompile
+/* velk pseudo-C: sparse @ 0x2014e0 */
+int sparse(int x) {
+    if (x == 0x1) {
+        return 0x64;
+    }
+    if (x == 0x12c) {
+        return 0x12c;
+    }
+    if (x != 0x32) {
+        return 0xffffffff;
+    }
+    return 0x7;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sparse @ 0x2014e0 (size 42)
+  blk0 @ 0x2014e0:
+    brif eq edi, #0x1 -> 0x2014fe
+  blk1 @ 0x2014e5:
+    brif eq edi, #0x12c -> 0x2014f8
+  blk2 @ 0x2014ed:
+    brif ne edi, #0x32 -> 0x201504
+  blk3 @ 0x2014f2:
+    ret #0x7
+  blk4 @ 0x2014f8:
+    ret #0x12c
+  blk5 @ 0x2014fe:
+    ret #0x64
+  blk6 @ 0x201504:
+    ret #0xffffffff
+-- card
+{"addr":"0x2014e0","approxTokens":144,"blocks":7,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":42,"unsupported":0}

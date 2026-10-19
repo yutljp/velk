@@ -1,0 +1,77 @@
+# metrics/l0_arith.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201190 6 add3 symtab,dwarf
+0x2011a0 13 scale symtab,dwarf
+0x2011b0 8 pick symtab,dwarf
+0x2011c0 5 negate symtab,dwarf
+
+== 0x201190 add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x201190 */
+int add3(int a, int b, int c) {
+    eax = a + b;
+    return eax + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn add3 @ 0x201190 (size 6)
+  blk0 @ 0x201190:
+    eax = (rdi + rsi)
+    ret (eax + edx)
+-- card
+{"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x2011a0 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x2011a0 */
+int scale(int x) {
+    eax = x * 0x8;
+    return eax - x + 0x3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn scale @ 0x2011a0 (size 13)
+  blk0 @ 0x2011a0:
+    eax = (rdi * #0x8)
+    ret ((eax - (rdi & #0xffffffff)) + #0x3)
+-- card
+{"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":0}
+
+== 0x2011b0 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x2011b0 */
+int pick(int a, int b) {
+    return (a > b ? a : b);
+}
+-- signature
+int (int a, int b)
+-- references
+
+-- ir
+fn pick @ 0x2011b0 (size 8)
+  blk0 @ 0x2011b0:
+    ret select gt edi, esi ? edi, esi
+-- card
+{"addr":"0x2011b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x2011c0 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x2011c0 */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x2011c0 (size 5)
+  blk0 @ 0x2011c0:
+    ret (#0x0 - edi)
+-- card
+{"addr":"0x2011c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":0}

@@ -1,0 +1,283 @@
+# metrics/memory.x86_64.O2.stripped.elf: elf x86_64 no entry, 8 functions, 0 lift failures, 1 unsupported, 6 gotos
+0x201220 240 - prologue
+0x201310 16 - prologue
+0x201320 32 - prologue
+0x201340 32 - prologue
+0x201360 32 - prologue
+0x201380 16 - prologue
+0x201390 16 - prologue
+0x2013a0 9 - prologue
+
+== 0x201220 -
+-- decompile
+/* velk pseudo-C: sub_201220 @ 0x201220 */
+uint32_t sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
+    if (a2 & a2 == 0x0) {
+        return rax;
+    }
+    rax = 0x0;
+    if (a2 < 0x8 /* unsigned */) { goto L_2012a6; }
+    if (a0 - a1 < 0x20 /* unsigned */) { goto L_2012a6; }
+    if (a2 < 0x20 /* unsigned */) {
+        rax = 0x0;
+    } else {
+        rax = a2 & 0xffffffffffffffe0;
+        rcx = 0x0;
+        do {
+            /* unsupported (4 steps): Movups at 0x201250, Movups at 0x201254, Movups at 0x201259, Movups at 0x20125d */
+            rcx = rcx + 0x20;
+        } while (rax != rcx);
+        if (rax == a2) {
+            return rax;
+        }
+        if (a2 & 0xff & 0x18 == 0x0) { goto L_2012a6; }
+    }
+    rcx = rax;
+    rax = a2 & 0xfffffffffffffff8;
+    do {
+        r8 = *(uint64_t *)(a1 + rcx);
+        *(uint64_t *)(a0 + rcx) = r8;
+        rcx = rcx + 0x8;
+    } while (rax != rcx);
+    if (rax == a2) {
+        return rax;
+    }
+L_2012a6:
+    rcx = rax;
+    if (a2 & 0x3 & 0x3 == 0x0) { goto L_2012d1; }
+    rcx = rax;
+    do {
+        r9 = *(uint8_t *)(a1 + rcx) & 0xff;
+        *(uint8_t *)(a0 + rcx) = r9 & 0xff;
+        rcx = rcx + 0x1;
+        r8 = r8 - 0x1;
+    } while (r8 - 0x1 != 0x0);
+L_2012d1:
+    if (rax - a2 > 0xfffffffffffffffc /* unsigned */) {
+        return rax;
+    }
+    *(uint8_t *)(a0 + rcx) = *(uint8_t *)(a1 + rcx) & 0xff & 0xff;
+    *(uint8_t *)(a0 + rcx + 0x1) = *(uint8_t *)(a1 + rcx + 0x1) & 0xff & 0xff;
+    *(uint8_t *)(a0 + rcx + 0x2) = *(uint8_t *)(a1 + rcx + 0x2) & 0xff & 0xff;
+    rax = *(uint8_t *)(a1 + rcx + 0x3) & 0xff;
+    *(uint8_t *)(a0 + rcx + 0x3) = rax & 0xff;
+    if (a2 != rcx + 0x4) { goto L_2012e0; }
+}
+-- signature
+uint32_t (uint64_t * a0, uint64_t * a1, uint64_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201220 (size 240)
+  blk0 @ 0x201220:
+    brif eq (rdx & rdx), #0x0 -> 0x20130b
+  blk1 @ 0x201229:
+    rax = #0x0
+    brif cc rdx, #0x8 -> 0x2012a6
+  blk2 @ 0x201231:
+    brif cc (rdi - rsi), #0x20 -> 0x2012a6
+  blk3 @ 0x20123d:
+    brif cs rdx, #0x20 -> 0x201247
+  blk4 @ 0x201243:
+    rax = #0x0
+    br 0x201279
+  blk5 @ 0x201247:
+    rax = (rdx & #0xffffffffffffffe0)
+    rcx = #0x0
+  blk6 @ 0x201250:
+    unsupported: Movups at 0x201250
+    unsupported: Movups at 0x201254
+    unsupported: Movups at 0x201259
+    unsupported: Movups at 0x20125d
+    rcx = (rcx + #0x20)
+    brif ne rax, rcx -> 0x201250
+  blk7 @ 0x20126b:
+    brif eq rax, rdx -> 0x20130b
+  blk8 @ 0x201274:
+    brif eq ((rdx & #0xff) & #0x18), #0x0 -> 0x2012a6
+  blk9 @ 0x201279:
+    rcx = rax
+    rax = (rdx & #0xfffffffffffffff8)
+  blk10 @ 0x201290:
+    r8 = load64((rsi + rcx))
+    store64(r8, (rdi + rcx))
+    rcx = (rcx + #0x8)
+    brif ne rax, rcx -> 0x201290
+  blk11 @ 0x2012a1:
+    brif eq rax, rdx -> 0x20130b
+  blk12 @ 0x2012a6:
+    rcx = rax
+    brif eq ((rdx & #0x3) & #0x3), #0x0 -> 0x2012d1
+  blk13 @ 0x2012b2:
+    rcx = rax
+  blk14 @ 0x2012c0:
+    r9 = ((load8((rsi + rcx)) & #0xff) & #0xffffffff)
+    store8((r9 & #0xff), (rdi + rcx))
+    rcx = (rcx + #0x1)
+    r8 = (r8 + #0xffffffffffffffff)
+    brif ne (r8 + #0xffffffffffffffff), #0x0 -> 0x2012c0
+  blk15 @ 0x2012d1:
+    brif hi (rax - rdx), #0xfffffffffffffffc -> 0x20130b
+  blk16 @ 0x2012da:
+    store8((((load8((rsi + rcx)) & #0xff) & #0xffffffff) & #0xff), (rdi + rcx))
+    store8((((load8(((rsi + rcx) + #0x1)) & #0xff) & #0xffffffff) & #0xff), ((rdi + rcx) + #0x1))
+    store8((((load8(((rsi + rcx) + #0x2)) & #0xff) & #0xffffffff) & #0xff), ((rdi + rcx) + #0x2))
+    rax = ((load8(((rsi + rcx) + #0x3)) & #0xff) & #0xffffffff)
+    store8((rax & #0xff), ((rdi + rcx) + #0x3))
+    brif ne rdx, (rcx + #0x4) -> 0x2012e0
+  blk17 @ 0x20130b:
+    ret rax
+-- card
+{"addr":"0x201220","approxTokens":174,"blocks":18,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":240,"sizeEstimated":true,"unsupported":4}
+
+== 0x201310 -
+-- decompile
+/* velk pseudo-C: sub_201310 @ 0x201310 */
+uint64_t sub_201310(void) {
+    if (rdx & rdx == 0x0) {
+        return rax;
+    }
+    goto L_0;
+}
+-- signature
+uint64_t ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x201310 (size 16)
+  blk0 @ 0x201310:
+    brif eq (rdx & rdx), #0x0 -> 0x20131e
+  blk1 @ 0x201315:
+    br 0x0
+  blk2 @ 0x20131e:
+    ret rax
+-- card
+{"addr":"0x201310","approxTokens":120,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201320 -
+-- decompile
+/* velk pseudo-C: sub_201320 @ 0x201320 */
+uint64_t sub_201320(uint64_t a0) {
+    rax = 0xffffffffffffffff;
+    do {
+        rax = rax + 0x1;
+    } while (*(uint8_t *)(a0 + rax + 0x1) != 0x0);
+    return rax;
+}
+-- signature
+uint64_t (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201320 (size 32)
+  blk0 @ 0x201320:
+    rax = #0xffffffffffffffff
+  blk1 @ 0x201330:
+    rax = (rax + #0x1)
+    brif ne load8(((rdi + rax) + #0x1)), #0x0 -> 0x201330
+  blk2 @ 0x20133b:
+    ret rax
+-- card
+{"addr":"0x201320","approxTokens":132,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201340 -
+-- decompile
+/* velk pseudo-C: sub_201340 @ 0x201340 */
+/* ref: 0x2023b0 .bss */
+uint32_t sub_201340(uint32_t a0, uint32_t a1) {
+    return *(uint32_t *)(0x2023b0 + ((a0 & 0x3) << 0x5) + (a1 & 0x7) * 0x4);
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+0x2023b0 .bss
+-- ir
+fn <unnamed> @ 0x201340 (size 32)
+  blk0 @ 0x201340:
+    ret (load32(((#0x2023b0 + (((((rdi & #0xffffffff) & #0x3) & #0xffffffff) << #0x5) & #0xffffffff)) + ((((rsi & #0xffffffff) & #0x7) & #0xffffffff) * #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x201340","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201360 -
+-- decompile
+/* velk pseudo-C: sub_201360 @ 0x201360 */
+/* ref: 0x2023b0 .bss */
+uint32_t sub_201360(uint32_t a0, uint32_t a1, uint32_t a2) {
+    a0 = a0 & 0x3;
+    rax = 0x2023b0 + (a0 << 0x5);
+    *(uint32_t *)(rax + (a1 & 0x7) * 0x4) = a2;
+    return rax;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+-- references
+0x2023b0 .bss
+-- ir
+fn <unnamed> @ 0x201360 (size 32)
+  blk0 @ 0x201360:
+    rdi = (((rdi & #0xffffffff) & #0x3) & #0xffffffff)
+    rax = (#0x2023b0 + (((rdi & #0xffffffff) << #0x5) & #0xffffffff))
+    store32(edx, (rax + ((((rsi & #0xffffffff) & #0x7) & #0xffffffff) * #0x4)))
+    ret rax
+-- card
+{"addr":"0x201360","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201380 -
+-- decompile
+/* velk pseudo-C: sub_201380 @ 0x201380 */
+uint64_t sub_201380(uint64_t a0, uint64_t a1) {
+    return a1 - a0 >>> 0x2;
+}
+-- signature
+uint64_t (uint64_t a0, uint64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201380 (size 16)
+  blk0 @ 0x201380:
+    ret ((rsi - rdi) >>> #0x2)
+-- card
+{"addr":"0x201380","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201390 -
+-- decompile
+/* velk pseudo-C: sub_201390 @ 0x201390 */
+/* struct: a0 +0x0:uint32_t */
+uint32_t sub_201390(uint32_t *a0) {
+    return a0->field_0x0 + a0->field_0x0;
+}
+-- signature
+uint32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201390 (size 16)
+  blk0 @ 0x201390:
+    ret (load32(rdi) + load32(rdi))
+-- card
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x201390","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2013a0 -
+-- decompile
+/* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
+/* struct: a0 +0x0:uint32_t */
+/* struct: a1 +0x0:uint32_t */
+uint32_t sub_2013a0(uint32_t *a0, uint32_t *a1) {
+    eax = a0->field_0x0;
+    a0->field_0x0 = a1->field_0x0;
+    a1->field_0x0 = eax;
+    return eax;
+}
+-- signature
+uint32_t (uint32_t * a0, uint32_t * a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2013a0 (size 9)
+  blk0 @ 0x2013a0:
+    eax = load32(rdi)
+    store32(load32(rsi), rdi)
+    store32(eax, rsi)
+    ret eax
+-- card
+{"accesses":["a0 +0x0:uint32_t","a1 +0x0:uint32_t"],"addr":"0x2013a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":9,"sizeEstimated":true,"unsupported":0}

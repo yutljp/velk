@@ -78,38 +78,45 @@ MCP クライアントには、実行ファイルを `mcp` 引数付きで登録
 
 ## テスト
 
-テスト用のバイナリは `tests/cases/` のソースから `tests/make_fixtures.sh` で生成し、
-`tests/out/` に置きます(リポジトリには含めません)。足りないツールチェーンのケースは
-`tests/out/skipped.txt` に記録され、失敗ではなくスキップになります。
-
-| スクリプト | 内容 |
-|---|---|
-| `tests/make_fixtures.sh` | フィクスチャを生成する |
-| `tests/smoke.sh` | ビルド、ユニットテスト、CLI と MCP の出力、性能をまとめて確認する |
-| `tests/ladder.sh` | 難易度別の期待値(`tests/expect/ladder.tsv`)を採点する |
-| `tests/bench.sh` | コマンドごとの平均実行時間がしきい値以内か確認する |
-| `tests/dump.sh` | 全関数の疑似 C をファイルに書き出す |
-| `tests/env-diff.sh` | 基準環境の出力と手元の出力を比べる |
+テストの入力は `tests/fixtures/` のバイナリです。`tests/cases/` のソースから、版を固定した
+基準環境(x86-64 Linux のコンテナ。clang / LLVM 18、Rust 1.98.1、Go 1.23.4)で生成して
+リポジトリに含めているので、どのマシンでも同じバイト列をテストします。生成物にパスなどの
+ビルド環境の情報が残らないことは、生成時に確かめています。
 
 ```bash
-./tests/make_fixtures.sh
-./tests/smoke.sh
-./tests/ladder.sh
+cargo test                # ユニットテストと、以下の結合テストをすべて回す(オーバーフロー検査付き)
+./tests/smoke.sh          # CLI と MCP の出力、性能
+./tests/ladder.sh         # 難易度別の期待値
 ```
 
-### 基準環境
+| テスト | 確かめること | 正解 |
+|---|---|---|
+| `tests/golden.rs` | 全フィクスチャの関数一覧、疑似 C、IR、シグネチャ、card が変わっていない | `tests/golden/fixtures/` |
+| `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報(`*.debug.elf`) |
+| `src/analysis/semantics_tests.rs` | 最適化パスが関数の動作を変えていない(IR を実行して比べる) | 最適化前の IR |
+| `tests/invariants.rs` | 飛び先のない goto、未定義のレジスタの読み取りなどがない | 出力の性質 |
+| `tests/api.rs` | スクリプト API の戻り値が `.d.ts` の宣言と一致する | `src/script/api/` |
+| `tests/robustness.rs` など | 壊れたファイルやランダムな命令列で panic しない | なし |
+| `tests/smoke.sh` | CLI と MCP の出力の要所、性能 | 文字列の照合 |
+| `tests/ladder.sh` | 難易度 L0〜L7 の期待値(`known_*` は未達の目標) | `tests/expect/ladder.tsv` |
 
-コンパイラの版によって生成コードが変わるため、x86-64 Linux のコンテナで版を固定した
-ツールチェーンを使い、その出力を基準にします(clang / LLVM 18、Rust 1.98.1、Go 1.23.4、
-Ubuntu 24.04。版は `compose.yml` の `build.args` で変えられます)。
+正解率、不変条件の違反、動作の違いは、今の値を `tests/golden/` に記録しています。値が変わると
+テストは失敗し、増えたのか減ったのか、どの関数が変わったのかを示します。意図した変更なら
+`VELK_BLESS=1 cargo test` で記録を更新し、差分を確かめてからコミットします。
+
+### フィクスチャの再生成
 
 ```bash
-docker compose run --rm canonical                 # 基準環境で smoke と ladder を回す
-docker compose run --rm -e VELK_DUMP=1 canonical  # 疑似 C のダンプも作る(時間がかかる)
-./tests/dump.sh tests/out && ./tests/env-diff.sh --show 3
+docker compose run --rm fixtures   # tests/cases/ から tests/fixtures/ を作り直す
+docker compose run --rm check      # Linux でテストを回す
 ```
 
-`env-diff.sh` は関数ごとに、両環境で一致したもの、内容が違うもの、片方でしか復元できなかったものを数えます。
+### LLM による意味の確認
+
+`uv run tests/review.py [REVISION]` は、指定したリビジョンから疑似 C が変わった関数について、
+元のソースと新旧の疑似 C を並べた `tests/out/review.md` を作ります(`--all` で全関数)。
+LLM がそれを読んで意味が同じかを判定し、結果を `tests/review/verdicts.tsv` に残します。
+判定は合否には使わず、ほかのテストでは見つからない誤りを探すために使います。
 
 ## ライセンス
 

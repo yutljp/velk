@@ -1,0 +1,129 @@
+# metrics/l4_memory.x86_64.O0.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201210 44 point_dot symtab,dwarf
+0x201240 73 array_sum symtab,dwarf
+0x201290 21 bump symtab,dwarf
+0x2012b0 16 banner_first symtab,dwarf
+
+== 0x201210 point_dot
+-- decompile
+/* velk pseudo-C: point_dot @ 0x201210 */
+int point_dot(struct point *a, struct point *b) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = a;
+    *(uint64_t *)(rbp - 0x10) = b;
+    return a->x * b->x + a->y * b->y;
+}
+-- signature
+int (struct point * a, struct point * b)
+-- references
+
+-- ir
+fn point_dot @ 0x201210 (size 44)
+  blk0 @ 0x201210:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store64(rsi, (rbp + #0xfffffffffffffff0))
+    ret (((((load32(rdi) & #0xffffffff) * load32(rsi)) & #0xffffffff) + (((load32((rdi + #0x4)) & #0xffffffff) * load32((rsi + #0x4))) & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x201210","approxTokens":186,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+
+== 0x201240 array_sum
+-- decompile
+/* velk pseudo-C: array_sum @ 0x201240 */
+int array_sum(int *a, int n) {
+    uint64_t local_0; /* [sp-8] */
+
+    rsp = rsp - 0x8;
+    local_0 = rbp;
+    rbp = rsp;
+    *(uint64_t *)(rbp - 0x8) = a;
+    *(uint32_t *)(rbp - 0xc) = n;
+    *(uint32_t *)(rbp - 0x10) = 0x0;
+    *(uint32_t *)(rbp - 0x14) = 0x0;
+    while (*(uint32_t *)(rbp - 0x14) < *(uint32_t *)(rbp - 0xc)) {
+        rax = *(uint64_t *)(rbp - 0x8);
+        rcx = (int32_t)(*(uint32_t *)(rbp - 0x14));
+        rax = *(uint32_t *)(rax + rcx * 0x4);
+        rax = eax + *(uint32_t *)(rbp - 0x10);
+        *(uint32_t *)(rbp - 0x10) = eax;
+        *(uint32_t *)(rbp - 0x14) = *(uint32_t *)(rbp - 0x14) + 0x1;
+    }
+    rsp = rsp + 0x8;
+    return *(uint32_t *)(rbp - 0x10);
+}
+-- signature
+int (int * a, int n)
+-- references
+
+-- ir
+fn array_sum @ 0x201240 (size 73)
+  blk0 @ 0x201240:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rbp = rsp
+    store64(rdi, (rbp + #0xfffffffffffffff8))
+    store32(esi, (rbp + #0xfffffffffffffff4))
+    store32(#0x0, (rbp + #0xfffffffffffffff0))
+    store32(#0x0, (rbp + #0xffffffffffffffec))
+  blk1 @ 0x201259:
+    rax = (load32((rbp + #0xffffffffffffffec)) & #0xffffffff)
+    brif ge (rax & #0xffffffff), load32((rbp + #0xfffffffffffffff4)) -> 0x201284
+  blk2 @ 0x201265:
+    rax = load64((rbp + #0xfffffffffffffff8))
+    rcx = sext32(load32((rbp + #0xffffffffffffffec)))
+    rax = (load32((rax + (rcx * #0x4))) & #0xffffffff)
+    rax = (((rax & #0xffffffff) + load32((rbp + #0xfffffffffffffff0))) & #0xffffffff)
+    store32((rax & #0xffffffff), (rbp + #0xfffffffffffffff0))
+    store32((load32((rbp + #0xffffffffffffffec)) + #0x1), (rbp + #0xffffffffffffffec))
+    br 0x201259
+  blk3 @ 0x201284:
+    rsp = (rsp + #0x8)
+    ret (load32((rbp + #0xfffffffffffffff0)) & #0xffffffff)
+-- card
+{"addr":"0x201240","approxTokens":204,"blocks":4,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":73,"unsupported":0}
+
+== 0x201290 bump
+-- decompile
+/* velk pseudo-C: bump @ 0x201290 */
+/* ref: 0x2022c8 .bss */
+uint32_t bump(void) {
+    eax = dword_2022c8 + 0x1;
+    dword_2022c8 = eax;
+    return eax;
+}
+-- signature
+uint32_t ()
+-- references
+0x2022c8 .bss
+-- ir
+fn bump @ 0x201290 (size 21)
+  blk0 @ 0x201290:
+    eax = (load32(#0x2022c8) + #0x1)
+    store32(eax, #0x2022c8)
+    ret eax
+-- card
+{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":0}
+
+== 0x2012b0 banner_first
+-- decompile
+/* velk pseudo-C: banner_first @ 0x2012b0 */
+/* ref: 0x2022c0 -> 0x200158 "velk ladder" */
+int banner_first(void) {
+    return (int8_t)(*(uint8_t *)(qword_2022c0));
+}
+-- signature
+int ()
+-- references
+0x2022c0 -> 0x200158 "velk ladder"
+-- ir
+fn banner_first @ 0x2012b0 (size 16)
+  blk0 @ 0x2012b0:
+    ret (sext8(load8(load64(#0x2022c0))) & #0xffffffff)
+-- card
+{"addr":"0x2012b0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf"],"section":".text","size":16,"strings":["velk ladder"],"unsupported":0}

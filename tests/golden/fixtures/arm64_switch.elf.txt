@@ -1,0 +1,27 @@
+# arm64_switch.elf: elf aarch64 0x210164, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x210164 36 dispatch symtab,entry
+
+== 0x210164 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x210164 */
+/* ref: 0x200120 .rodata */
+uint32_t dispatch(uint32_t a0) {
+    if (a0 - 0xa > 0x4 /* unsigned */) {
+        return 0x0;
+    }
+    return dword_200120[w8];
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+0x200120 .rodata
+-- ir
+fn dispatch @ 0x210164 (size 36)
+  blk0 @ 0x210164:
+    brif hi ((x0 & #0xffffffff) - #0xa), #0x4 -> 0x210180
+  blk1 @ 0x210170:
+    ret (load32((#0x200120 + (w8 << #0x2))) & #0xffffffff)
+  blk2 @ 0x210180:
+    ret #0x0
+-- card
+{"addr":"0x210164","approxTokens":138,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","entry"],"section":".text","size":36,"unsupported":0}

@@ -1,0 +1,183 @@
+# pe64.obj: coff x86_64 no entry, 10 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 16 reg_add symtab
+0x10 16 reg_mul symtab
+0x20 16 reg_sign symtab
+0x30 16 reg_max symtab
+0x40 16 reg_negative symtab
+0x50 16 reg_abs symtab
+0x60 16 msg_first symtab
+0x70 16 reg_div symtab
+0x80 16 reg_mod symtab
+0x90 30 entry symtab
+
+== 0x0 reg_add
+-- decompile
+/* velk pseudo-C: reg_add @ 0x0 */
+uint32_t reg_add(uint32_t a0, uint32_t a1) {
+    eax = a0 + a1;
+    return eax;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn reg_add @ 0x0 (size 16)
+  blk0 @ 0x0:
+    eax = (rcx + rdx)
+    ret eax
+-- card
+{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"reg_add","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x10 reg_mul
+-- decompile
+/* velk pseudo-C: reg_mul @ 0x10 */
+uint32_t reg_mul(uint32_t a0, uint32_t a1) {
+    return a0 * a1;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn reg_mul @ 0x10 (size 16)
+  blk0 @ 0x10:
+    ret (ecx * edx)
+-- card
+{"addr":"0x10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_mul","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x20 reg_sign
+-- decompile
+/* velk pseudo-C: reg_sign @ 0x20 */
+uint64_t reg_sign(uint32_t a0, uint64_t a1) {
+    return (int16_t)(a1) + (int8_t)(a0);
+}
+-- signature
+uint64_t (uint32_t a0, uint64_t a1)
+-- references
+
+-- ir
+fn reg_sign @ 0x20 (size 16)
+  blk0 @ 0x20:
+    ret (sext16(rdx) + (sext8(rcx) & #0xffffffff))
+-- card
+{"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_sign","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x30 reg_max
+-- decompile
+/* velk pseudo-C: reg_max @ 0x30 */
+int32_t reg_max(int32_t a0, int32_t a1) {
+    return (a0 > a1 ? a0 : a1);
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn reg_max @ 0x30 (size 16)
+  blk0 @ 0x30:
+    ret select gt ecx, edx ? ecx, edx
+-- card
+{"addr":"0x30","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_max","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x40 reg_negative
+-- decompile
+/* velk pseudo-C: reg_negative @ 0x40 */
+uint32_t reg_negative(uint32_t a0) {
+    return a0 >> 0x1f;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn reg_negative @ 0x40 (size 16)
+  blk0 @ 0x40:
+    ret (ecx >> #0x1f)
+-- card
+{"addr":"0x40","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_negative","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x50 reg_abs
+-- decompile
+/* velk pseudo-C: reg_abs @ 0x50 */
+uint32_t reg_abs(uint32_t a0) {
+    return (a0 < 0x0 ? a0 : -a0);
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn reg_abs @ 0x50 (size 16)
+  blk0 @ 0x50:
+    ret select lt ecx, #0x0 ? ecx, (#0x0 - ecx)
+-- card
+{"addr":"0x50","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x60 msg_first
+-- decompile
+/* velk pseudo-C: msg_first @ 0x60 */
+uint32_t msg_first(void) {
+    return (int8_t)(*(uint8_t *)(*(uint64_t *)(0x67) + 0x1));
+}
+-- signature
+uint32_t ()
+-- references
+
+-- ir
+fn msg_first @ 0x60 (size 16)
+  blk0 @ 0x60:
+    ret (sext8(load8((load64(#0x67) + #0x1))) & #0xffffffff)
+-- card
+{"addr":"0x60","approxTokens":114,"blocks":1,"hardReasons":[],"name":"msg_first","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x70 reg_div
+-- decompile
+/* velk pseudo-C: reg_div @ 0x70 */
+uint32_t reg_div(uint32_t a0, uint32_t a1) {
+    return a0 / a1;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn reg_div @ 0x70 (size 16)
+  blk0 @ 0x70:
+    ret (ecx / edx)
+-- card
+{"addr":"0x70","approxTokens":126,"blocks":1,"hardReasons":[],"name":"reg_div","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x80 reg_mod
+-- decompile
+/* velk pseudo-C: reg_mod @ 0x80 */
+uint32_t reg_mod(uint32_t a0, uint32_t a1) {
+    return a0 % a1;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn reg_mod @ 0x80 (size 16)
+  blk0 @ 0x80:
+    ret (ecx % edx)
+-- card
+{"addr":"0x80","approxTokens":132,"blocks":1,"hardReasons":[],"name":"reg_mod","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x90 entry
+-- decompile
+/* velk pseudo-C: entry @ 0x90 */
+uint64_t entry(void) {
+    return *(uint64_t *)(rsp + 0x8);
+}
+-- signature
+uint64_t ()
+-- references
+
+-- ir
+fn entry @ 0x90 (size 30)
+  blk0 @ 0x90:
+    ret load64((rsp + #0x8))
+-- card
+{"addr":"0x90","approxTokens":150,"blocks":1,"hardReasons":[],"name":"entry","nameSources":["symtab"],"section":".text","size":30,"sizeEstimated":true,"unsupported":0}

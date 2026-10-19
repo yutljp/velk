@@ -1,0 +1,37 @@
+# metrics/tail_indirect.aarch64.O2.stripped.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x210164 12 - prologue
+0x210170 24 - prologue
+
+== 0x210164 -
+-- decompile
+/* velk pseudo-C: sub_210164 @ 0x210164 */
+uint32_t sub_210164(uint64_t a0, uint32_t a1) {
+    goto *(a0);
+}
+-- signature
+uint32_t (uint64_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210164 (size 12)
+  blk0 @ 0x210164:
+    br x0
+-- card
+{"addr":"0x210164","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0x210170 -
+-- decompile
+/* velk pseudo-C: sub_210170 @ 0x210170 */
+uint32_t sub_210170(uint32_t a0) {
+    return a0 + 0x5;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210170 (size 24)
+  blk0 @ 0x210170:
+    ret (w0 + #0x5)
+-- card
+{"addr":"0x210170","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}

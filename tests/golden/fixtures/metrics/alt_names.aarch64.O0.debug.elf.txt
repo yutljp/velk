@@ -1,0 +1,64 @@
+# metrics/alt_names.aarch64.O0.debug.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x21016c 44 alt_sum3 symtab,dwarf
+0x210198 96 alt_helper symtab,dwarf
+
+== 0x21016c alt_sum3
+-- decompile
+/* velk pseudo-C: alt_sum3 @ 0x21016c */
+int alt_sum3(int a, int b, int c) {
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn alt_sum3 @ 0x21016c (size 44)
+  blk0 @ 0x21016c:
+    ret ((w0 + w1) + w2)
+-- card
+{"addr":"0x21016c","approxTokens":162,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+
+== 0x210198 alt_helper
+-- decompile
+/* velk pseudo-C: alt_helper @ 0x210198 */
+int alt_helper(int x) {
+    uint32_t local_0; /* [sp+c] */
+    uint32_t local_1; /* [sp+8] */
+    uint32_t local_2; /* [sp+4] */
+
+    while (true) {
+        w9 = local_0;
+        w8 = local_2 - w9;
+        if (w8 >= w9) break;
+        w9 = local_2 * local_2;
+        local_1 += w9;
+        local_2 += 0x1;
+    }
+    return local_1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn alt_helper @ 0x210198 (size 96)
+  blk0 @ 0x210198:
+    br 0x2101ac
+  blk1 @ 0x2101ac:
+    w9 = load32((sp + #0xc))
+    w8 = (load32((sp + #0x4)) - w9)
+    brif ge w8, w9 -> 0x2101ec
+  blk2 @ 0x2101bc:
+    br 0x2101c0
+  blk3 @ 0x2101c0:
+    w9 = (load32((sp + #0x4)) * load32((sp + #0x4)))
+    store32((load32((sp + #0x8)) + w9), (sp + #0x8))
+    br 0x2101dc
+  blk4 @ 0x2101dc:
+    store32((load32((sp + #0x4)) + #0x1), (sp + #0x4))
+    br 0x2101ac
+  blk5 @ 0x2101ec:
+    ret load32((sp + #0x8))
+-- card
+{"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":0}

@@ -1,0 +1,527 @@
+# metrics/divmod_a64.aarch64.O0.debug.elf: elf aarch64 no entry, 25 functions, 0 lift failures, 20 unsupported, 0 gotos
+0x210394 28 udiv3 symtab,dwarf
+0x2103b0 28 udiv10 symtab,dwarf
+0x2103cc 28 udiv64 symtab,dwarf
+0x2103e8 28 hdiv3 symtab,dwarf
+0x210404 28 hdiv10 symtab,dwarf
+0x210420 28 sdiv3 symtab,dwarf
+0x21043c 28 sdiv10 symtab,dwarf
+0x210458 28 sdiv16 symtab,dwarf
+0x210474 28 ldiv16 symtab,dwarf
+0x210490 36 smod3 symtab,dwarf
+0x2104b4 36 umod3 symtab,dwarf
+0x2104d8 36 umod10 symtab,dwarf
+0x2104fc 36 smod10 symtab,dwarf
+0x210520 36 lmod10 symtab,dwarf
+0x210544 36 umod10b symtab,dwarf
+0x210568 36 lmod16 symtab,dwarf
+0x21058c 36 smod4 symtab,dwarf
+0x2105b0 28 negate symtab,dwarf
+0x2105cc 28 is_neg symtab,dwarf
+0x2105e8 28 is_zero symtab,dwarf
+0x210604 28 is_pos symtab,dwarf
+0x210620 28 lnegate symtab,dwarf
+0x21063c 36 lmod3 symtab,dwarf
+0x210660 28 ldiv3 symtab,dwarf
+0x21067c 28 ldiv10 symtab,dwarf
+
+== 0x210394 udiv3
+-- decompile
+/* velk pseudo-C: udiv3 @ 0x210394 */
+uint64_t udiv3(uint64_t x) {
+    /* unsupported: UDIV at 0x2103a4 */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn udiv3 @ 0x210394 (size 28)
+  blk0 @ 0x210394:
+    unsupported: UDIV at 0x2103a4
+    ret x0
+-- card
+{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x2103b0 udiv10
+-- decompile
+/* velk pseudo-C: udiv10 @ 0x2103b0 */
+uint64_t udiv10(uint64_t x) {
+    /* unsupported: UDIV at 0x2103c0 */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn udiv10 @ 0x2103b0 (size 28)
+  blk0 @ 0x2103b0:
+    unsupported: UDIV at 0x2103c0
+    ret x0
+-- card
+{"addr":"0x2103b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x2103cc udiv64
+-- decompile
+/* velk pseudo-C: udiv64 @ 0x2103cc */
+uint64_t udiv64(uint64_t x) {
+    /* unsupported: UDIV at 0x2103dc */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn udiv64 @ 0x2103cc (size 28)
+  blk0 @ 0x2103cc:
+    unsupported: UDIV at 0x2103dc
+    ret x0
+-- card
+{"addr":"0x2103cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"udiv64","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x2103e8 hdiv3
+-- decompile
+/* velk pseudo-C: hdiv3 @ 0x2103e8 */
+uint64_t hdiv3(uint64_t x) {
+    /* unsupported: UDIV at 0x2103f8 */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn hdiv3 @ 0x2103e8 (size 28)
+  blk0 @ 0x2103e8:
+    unsupported: UDIV at 0x2103f8
+    ret x0
+-- card
+{"addr":"0x2103e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x210404 hdiv10
+-- decompile
+/* velk pseudo-C: hdiv10 @ 0x210404 */
+uint64_t hdiv10(uint64_t x) {
+    /* unsupported: UDIV at 0x210414 */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn hdiv10 @ 0x210404 (size 28)
+  blk0 @ 0x210404:
+    unsupported: UDIV at 0x210414
+    ret x0
+-- card
+{"addr":"0x210404","approxTokens":138,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x210420 sdiv3
+-- decompile
+/* velk pseudo-C: sdiv3 @ 0x210420 */
+int sdiv3(int x) {
+    /* unsupported: SDIV at 0x210430 */
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sdiv3 @ 0x210420 (size 28)
+  blk0 @ 0x210420:
+    unsupported: SDIV at 0x210430
+    ret x0
+-- card
+{"addr":"0x210420","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x21043c sdiv10
+-- decompile
+/* velk pseudo-C: sdiv10 @ 0x21043c */
+int sdiv10(int x) {
+    /* unsupported: SDIV at 0x21044c */
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sdiv10 @ 0x21043c (size 28)
+  blk0 @ 0x21043c:
+    unsupported: SDIV at 0x21044c
+    ret x0
+-- card
+{"addr":"0x21043c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x210458 sdiv16
+-- decompile
+/* velk pseudo-C: sdiv16 @ 0x210458 */
+int sdiv16(int x) {
+    /* unsupported: SDIV at 0x210468 */
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sdiv16 @ 0x210458 (size 28)
+  blk0 @ 0x210458:
+    unsupported: SDIV at 0x210468
+    ret x0
+-- card
+{"addr":"0x210458","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x210474 ldiv16
+-- decompile
+/* velk pseudo-C: ldiv16 @ 0x210474 */
+uint64_t ldiv16(uint64_t x) {
+    /* unsupported: SDIV at 0x210484 */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn ldiv16 @ 0x210474 (size 28)
+  blk0 @ 0x210474:
+    unsupported: SDIV at 0x210484
+    ret x0
+-- card
+{"addr":"0x210474","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv16","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x210490 smod3
+-- decompile
+/* velk pseudo-C: smod3 @ 0x210490 */
+int smod3(int x) {
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = x;
+    /* unsupported: SDIV at 0x2104a0 */
+    return local_0 - w9 * 0x3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn smod3 @ 0x210490 (size 36)
+  blk0 @ 0x210490:
+    store32(w0, (sp + #0xfffffffffffffffc))
+    unsupported: SDIV at 0x2104a0
+    ret (load32((sp + #0xfffffffffffffffc)) - (w9 * #0x3))
+-- card
+{"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x2104b4 umod3
+-- decompile
+/* velk pseudo-C: umod3 @ 0x2104b4 */
+uint32_t umod3(uint32_t x) {
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = x;
+    /* unsupported: UDIV at 0x2104c4 */
+    return local_0 - w9 * 0x3;
+}
+-- signature
+uint32_t (uint32_t x)
+-- references
+
+-- ir
+fn umod3 @ 0x2104b4 (size 36)
+  blk0 @ 0x2104b4:
+    store32(w0, (sp + #0xfffffffffffffffc))
+    unsupported: UDIV at 0x2104c4
+    ret (load32((sp + #0xfffffffffffffffc)) - (w9 * #0x3))
+-- card
+{"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x2104d8 umod10
+-- decompile
+/* velk pseudo-C: umod10 @ 0x2104d8 */
+uint32_t umod10(uint32_t x) {
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = x;
+    /* unsupported: UDIV at 0x2104e8 */
+    return local_0 - w9 * 0xa;
+}
+-- signature
+uint32_t (uint32_t x)
+-- references
+
+-- ir
+fn umod10 @ 0x2104d8 (size 36)
+  blk0 @ 0x2104d8:
+    store32(w0, (sp + #0xfffffffffffffffc))
+    unsupported: UDIV at 0x2104e8
+    ret (load32((sp + #0xfffffffffffffffc)) - (w9 * #0xa))
+-- card
+{"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x2104fc smod10
+-- decompile
+/* velk pseudo-C: smod10 @ 0x2104fc */
+int smod10(int x) {
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = x;
+    /* unsupported: SDIV at 0x21050c */
+    return local_0 - w9 * 0xa;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn smod10 @ 0x2104fc (size 36)
+  blk0 @ 0x2104fc:
+    store32(w0, (sp + #0xfffffffffffffffc))
+    unsupported: SDIV at 0x21050c
+    ret (load32((sp + #0xfffffffffffffffc)) - (w9 * #0xa))
+-- card
+{"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x210520 lmod10
+-- decompile
+/* velk pseudo-C: lmod10 @ 0x210520 */
+uint64_t lmod10(uint64_t x) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = x;
+    /* unsupported: SDIV at 0x210530 */
+    return local_0 - x9 * 0xa;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn lmod10 @ 0x210520 (size 36)
+  blk0 @ 0x210520:
+    store64(x0, (sp + #0xfffffffffffffff8))
+    unsupported: SDIV at 0x210530
+    ret (load64((sp + #0xfffffffffffffff8)) - (x9 * #0xa))
+-- card
+{"addr":"0x210520","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x210544 umod10b
+-- decompile
+/* velk pseudo-C: umod10b @ 0x210544 */
+uint64_t umod10b(uint64_t x) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = x;
+    /* unsupported: UDIV at 0x210554 */
+    return local_0 - x9 * 0xa;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn umod10b @ 0x210544 (size 36)
+  blk0 @ 0x210544:
+    store64(x0, (sp + #0xfffffffffffffff8))
+    unsupported: UDIV at 0x210554
+    ret (load64((sp + #0xfffffffffffffff8)) - (x9 * #0xa))
+-- card
+{"addr":"0x210544","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x210568 lmod16
+-- decompile
+/* velk pseudo-C: lmod16 @ 0x210568 */
+uint64_t lmod16(uint64_t x) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = x;
+    /* unsupported: SDIV at 0x210578 */
+    return local_0 - x9 * 0x10;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn lmod16 @ 0x210568 (size 36)
+  blk0 @ 0x210568:
+    store64(x0, (sp + #0xfffffffffffffff8))
+    unsupported: SDIV at 0x210578
+    ret (load64((sp + #0xfffffffffffffff8)) - (x9 * #0x10))
+-- card
+{"addr":"0x210568","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod16","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x21058c smod4
+-- decompile
+/* velk pseudo-C: smod4 @ 0x21058c */
+int smod4(int x) {
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = x;
+    /* unsupported: SDIV at 0x21059c */
+    return local_0 - w9 * 0x4;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn smod4 @ 0x21058c (size 36)
+  blk0 @ 0x21058c:
+    store32(w0, (sp + #0xfffffffffffffffc))
+    unsupported: SDIV at 0x21059c
+    ret (load32((sp + #0xfffffffffffffffc)) - (w9 * #0x4))
+-- card
+{"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x2105b0 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x2105b0 */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x2105b0 (size 28)
+  blk0 @ 0x2105b0:
+    ret (#0x0 - w0)
+-- card
+{"addr":"0x2105b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x2105cc is_neg
+-- decompile
+/* velk pseudo-C: is_neg @ 0x2105cc */
+int is_neg(int x) {
+    return (x < 0x0 ? 0x1 : 0x0);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn is_neg @ 0x2105cc (size 28)
+  blk0 @ 0x2105cc:
+    ret select lt w0, #0x0 ? #0x1, #0x0
+-- card
+{"addr":"0x2105cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"is_neg","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x2105e8 is_zero
+-- decompile
+/* velk pseudo-C: is_zero @ 0x2105e8 */
+int is_zero(int x) {
+    return (x == 0x0 ? 0x1 : 0x0);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn is_zero @ 0x2105e8 (size 28)
+  blk0 @ 0x2105e8:
+    ret select eq w0, #0x0 ? #0x1, #0x0
+-- card
+{"addr":"0x2105e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"is_zero","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x210604 is_pos
+-- decompile
+/* velk pseudo-C: is_pos @ 0x210604 */
+int is_pos(int x) {
+    return (x > 0x0 ? 0x1 : 0x0);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn is_pos @ 0x210604 (size 28)
+  blk0 @ 0x210604:
+    ret select gt w0, #0x0 ? #0x1, #0x0
+-- card
+{"addr":"0x210604","approxTokens":138,"blocks":1,"hardReasons":[],"name":"is_pos","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x210620 lnegate
+-- decompile
+/* velk pseudo-C: lnegate @ 0x210620 */
+long lnegate(long x) {
+    return -x;
+}
+-- signature
+long (long x)
+-- references
+
+-- ir
+fn lnegate @ 0x210620 (size 28)
+  blk0 @ 0x210620:
+    ret (#0x0 - x0)
+-- card
+{"addr":"0x210620","approxTokens":138,"blocks":1,"hardReasons":[],"name":"lnegate","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x21063c lmod3
+-- decompile
+/* velk pseudo-C: lmod3 @ 0x21063c */
+uint64_t lmod3(uint64_t x) {
+    uint64_t local_0; /* [sp-8] */
+
+    local_0 = x;
+    /* unsupported: SDIV at 0x21064c */
+    return local_0 - x9 * 0x3;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn lmod3 @ 0x21063c (size 36)
+  blk0 @ 0x21063c:
+    store64(x0, (sp + #0xfffffffffffffff8))
+    unsupported: SDIV at 0x21064c
+    ret (load64((sp + #0xfffffffffffffff8)) - (x9 * #0x3))
+-- card
+{"addr":"0x21063c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x210660 ldiv3
+-- decompile
+/* velk pseudo-C: ldiv3 @ 0x210660 */
+uint64_t ldiv3(uint64_t x) {
+    /* unsupported: SDIV at 0x210670 */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn ldiv3 @ 0x210660 (size 28)
+  blk0 @ 0x210660:
+    unsupported: SDIV at 0x210670
+    ret x0
+-- card
+{"addr":"0x210660","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv3","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x21067c ldiv10
+-- decompile
+/* velk pseudo-C: ldiv10 @ 0x21067c */
+uint64_t ldiv10(uint64_t x) {
+    /* unsupported: SDIV at 0x21068c */
+    return x;
+}
+-- signature
+uint64_t (uint64_t x)
+-- references
+
+-- ir
+fn ldiv10 @ 0x21067c (size 28)
+  blk0 @ 0x21067c:
+    unsupported: SDIV at 0x21068c
+    ret x0
+-- card
+{"addr":"0x21067c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv10","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}

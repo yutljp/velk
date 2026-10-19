@@ -1,0 +1,154 @@
+# arm64_debug_stripped.elf: elf aarch64 0x21018c, 4 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x21018c 12 sum3 entry,dwarf
+0x210198 68 helper dwarf
+0x2101dc 12 pair_sum dwarf
+0x2101e8 140 sum_arr dwarf
+
+== 0x21018c sum3
+-- decompile
+/* velk pseudo-C: sum3 @ 0x21018c */
+int sum3(int a, int b, int c) {
+    return b + a + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn sum3 @ 0x21018c (size 12)
+  blk0 @ 0x21018c:
+    ret ((w1 + w0) + w2)
+-- card
+{"addr":"0x21018c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["entry","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x210198 helper
+-- decompile
+/* velk pseudo-C: helper @ 0x210198 */
+int helper(int x) {
+    x8 = x - 0x1;
+    if (x < 0x1) {
+        return 0x0;
+    }
+    x8 = w8 * (x - 0x2);
+    x9 = x8 * (x - 0x3);
+    t1 = x8 >> 0x1;
+    x9 = x9 >> 0x1;
+    return w9 * 0x55555556 + x + (t1 + (t1 << 0x1)) - 0x1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn helper @ 0x210198 (size 68)
+  blk0 @ 0x210198:
+    x8 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
+    brif lt (x0 & #0xffffffff), #0x1 -> 0x2101d4
+  blk1 @ 0x2101a0:
+    x8 = ((x8 & #0xffffffff) * (((x0 & #0xffffffff) - #0x2) & #0xffffffff))
+    x9 = (x8 * (((x0 & #0xffffffff) - #0x3) & #0xffffffff))
+    t1 = ((x8 >> #0x1) & #0xffffffff)
+    x9 = (x9 >> #0x1)
+    ret ((((((((x9 & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + ((t1 + (t1 << #0x1)) & #0xffffffff)) & #0xffffffff) - #0x1) & #0xffffffff)
+  blk2 @ 0x2101d4:
+    ret #0x0
+-- card
+{"addr":"0x210198","approxTokens":186,"blocks":3,"hardReasons":[],"name":"helper","nameSources":["dwarf"],"section":".text","size":68,"unsupported":0}
+
+== 0x2101dc pair_sum
+-- decompile
+/* velk pseudo-C: pair_sum @ 0x2101dc */
+/* struct: p +0x0:uint32_t, +0x4:uint32_t */
+int pair_sum(struct pair *p) {
+    return p->b + p->a;
+}
+-- signature
+int (struct pair * p)
+-- references
+
+-- ir
+fn pair_sum @ 0x2101dc (size 12)
+  blk0 @ 0x2101dc:
+    ret ((load32((x0 + #0x4)) + load32(x0)) & #0xffffffff)
+-- card
+{"accesses":["p +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2101dc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x2101e8 sum_arr
+-- decompile
+/* velk pseudo-C: sum_arr @ 0x2101e8 */
+/* struct: p +0x0:uint32_t */
+int sum_arr(int *p, int n) {
+    if (n < 0x1) {
+        return 0x0;
+    }
+    x9 = n;
+    if (n < 0x8 /* unsigned */) {
+        x10 = 0x0;
+        x8 = 0x0;
+    } else {
+        /* unsupported (2 steps): MOVI at 0x210214, MOVI at 0x210218 */
+        x8 = p + 0x10;
+        x11 = x9 & 0x7ffffff8;
+        do {
+            /* unsupported: SIMD vector pair load */
+            x11 = x11 - 0x8;
+            x8 = x8 + 0x20;
+        } while (x11 != 0x8);
+        if (x10 == x9) {
+            return w8;
+        }
+    }
+    x11 = p + (x10 << 0x2);
+    x9 = x9 - x10;
+    do {
+        x10 = *(uint32_t *)(x11);
+        x11 = x11 + 0x4;
+        x9 = x9 - 0x1;
+        x8 = w10 + w8;
+    } while (x9 != 0x1);
+    return w8;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_arr @ 0x2101e8 (size 140)
+  blk0 @ 0x2101e8:
+    brif lt w1, #0x1 -> 0x210208
+  blk1 @ 0x2101f0:
+    x9 = w1
+    brif cs w1, #0x8 -> 0x210214
+  blk2 @ 0x2101fc:
+    x10 = #0x0
+    x8 = #0x0
+    br 0x210254
+  blk3 @ 0x210208:
+    ret #0x0
+  blk4 @ 0x210214:
+    unsupported: MOVI at 0x210214
+    unsupported: MOVI at 0x210218
+    x8 = (x0 + #0x10)
+    x11 = (x9 & #0x7ffffff8)
+  blk5 @ 0x210228:
+    unsupported: SIMD vector pair load
+    x11 = (x11 - #0x8)
+    x8 = (x8 + #0x20)
+    brif ne x11, #0x8 -> 0x210228
+  blk6 @ 0x210240:
+    unsupported: ADDV at 0x210248
+    unsupported: FMOV at 0x21024c
+    brif eq x10, x9 -> 0x21026c
+  blk7 @ 0x210254:
+    x11 = (x0 + (x10 << #0x2))
+    x9 = (x9 - x10)
+  blk8 @ 0x21025c:
+    x10 = (load32(x11) & #0xffffffff)
+    x11 = (x11 + #0x4)
+    x9 = (x9 - #0x1)
+    x8 = (((x10 & #0xffffffff) + (x8 & #0xffffffff)) & #0xffffffff)
+    brif ne x9, #0x1 -> 0x21025c
+  blk9 @ 0x21026c:
+    ret (x8 & #0xffffffff)
+-- card
+{"accesses":["p +0x0:uint32_t"],"addr":"0x2101e8","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_arr","nameSources":["dwarf"],"section":".text","size":140,"unsupported":5}

@@ -1,0 +1,73 @@
+# metrics/l0_arith.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x21018c 12 add3 symtab,dwarf
+0x210198 16 scale symtab,dwarf
+0x2101a8 12 pick symtab,dwarf
+0x2101b4 8 negate symtab,dwarf
+
+== 0x21018c add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x21018c */
+int add3(int a, int b, int c) {
+    return b + a + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn add3 @ 0x21018c (size 12)
+  blk0 @ 0x21018c:
+    ret ((w1 + w0) + w2)
+-- card
+{"addr":"0x21018c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x210198 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x210198 */
+int scale(int x) {
+    return (x << 0x3) - x + 0x3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn scale @ 0x210198 (size 16)
+  blk0 @ 0x210198:
+    ret (((w0 << #0x3) - w0) + #0x3)
+-- card
+{"addr":"0x210198","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x2101a8 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x2101a8 */
+int pick(int a, int b) {
+    return (a > b ? a : b);
+}
+-- signature
+int (int a, int b)
+-- references
+
+-- ir
+fn pick @ 0x2101a8 (size 12)
+  blk0 @ 0x2101a8:
+    ret select gt w0, w1 ? w0, w1
+-- card
+{"addr":"0x2101a8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x2101b4 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x2101b4 */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x2101b4 (size 8)
+  blk0 @ 0x2101b4:
+    ret (#0x0 - w0)
+-- card
+{"addr":"0x2101b4","approxTokens":108,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}

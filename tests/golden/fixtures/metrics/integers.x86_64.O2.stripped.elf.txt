@@ -1,0 +1,204 @@
+# metrics/integers.x86_64.O2.stripped.elf: elf x86_64 no entry, 10 functions, 0 lift failures, 2 unsupported, 1 gotos
+0x201210 16 - prologue
+0x201220 16 - prologue
+0x201230 16 - prologue
+0x201240 16 - prologue
+0x201250 16 - prologue
+0x201260 32 - prologue
+0x201280 16 - prologue
+0x201290 16 - prologue
+0x2012a0 16 - prologue
+0x2012b0 10 - prologue
+
+== 0x201210 -
+-- decompile
+/* velk pseudo-C: sub_201210 @ 0x201210 */
+uint32_t sub_201210(uint32_t a0, uint32_t a1) {
+    eax = a1 + a0;
+    return eax;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201210 (size 16)
+  blk0 @ 0x201210:
+    eax = (rsi + rdi)
+    ret eax
+-- card
+{"addr":"0x201210","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201220 -
+-- decompile
+/* velk pseudo-C: sub_201220 @ 0x201220 */
+uint32_t sub_201220(uint32_t a0, uint32_t a1) {
+    return a0 * a1;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201220 (size 16)
+  blk0 @ 0x201220:
+    ret (edi * esi)
+-- card
+{"addr":"0x201220","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201230 -
+-- decompile
+/* velk pseudo-C: sub_201230 @ 0x201230 */
+uint32_t sub_201230(uint32_t a0, uint32_t a1) {
+    return (int32_t)(a0) - a1;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201230 (size 16)
+  blk0 @ 0x201230:
+    ret (sext32(edi) - esi)
+-- card
+{"addr":"0x201230","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201240 -
+-- decompile
+/* velk pseudo-C: sub_201240 @ 0x201240 */
+uint64_t sub_201240(int32_t a0, int32_t a1, int32_t a2, uint64_t a3) {
+    rax = rax & 0xffffffffffffff00 | ((a0 <= a2 ? 0x1 : 0x0)) & 0xff & 0xff;
+    return rax & 0xffffffffffffff00 | rax & 0xff & ((a3 & 0xffffffffffffff00 | ((a0 >= a1 ? 0x1 : 0x0)) & 0xff & 0xff) & 0xff) & 0xff;
+}
+-- signature
+uint64_t (int32_t a0, int32_t a1, int32_t a2, uint64_t a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201240 (size 16)
+  blk0 @ 0x201240:
+    rax = ((rax & #0xffffffffffffff00) | ((select le edi, edx ? #0x1, #0x0 & #0xff) & #0xff))
+    ret ((rax & #0xffffffffffffff00) | (((rax & #0xff) & (((rcx & #0xffffffffffffff00) | ((select ge edi, esi ? #0x1, #0x0 & #0xff) & #0xff)) & #0xff)) & #0xff))
+-- card
+{"addr":"0x201240","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201250 -
+-- decompile
+/* velk pseudo-C: sub_201250 @ 0x201250 */
+uint32_t sub_201250(uint32_t a0, uint32_t a1) {
+    /* unsupported: Rol at 0x201254 */
+    return a0;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201250 (size 16)
+  blk0 @ 0x201250:
+    unsupported: Rol at 0x201254
+    ret edi
+-- card
+{"addr":"0x201250","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":1}
+
+== 0x201260 -
+-- decompile
+/* velk pseudo-C: sub_201260 @ 0x201260 */
+uint32_t sub_201260(uint32_t a0) {
+    rax = 0x0;
+    if (a0 & a0 == 0x0) {
+        return rax;
+    }
+    ecx = a0 - 0x1;
+    rax = eax + 0x1;
+    ecx = ecx & a0;
+    if (ecx & ecx != 0x0) { goto L_201270; }
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201260 (size 32)
+  blk0 @ 0x201260:
+    rax = #0x0
+    brif eq ((rdi & #0xffffffff) & (rdi & #0xffffffff)), #0x0 -> 0x20127b
+  blk1 @ 0x201266:
+    ecx = (rdi + #0xffffffffffffffff)
+    rax = (((rax & #0xffffffff) + #0x1) & #0xffffffff)
+    ecx = (ecx & (rdi & #0xffffffff))
+    brif ne (ecx & (ecx & #0xffffffff)), #0x0 -> 0x201270
+  blk2 @ 0x20127b:
+    ret rax
+-- card
+{"addr":"0x201260","approxTokens":156,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x201280 -
+-- decompile
+/* velk pseudo-C: sub_201280 @ 0x201280 */
+uint32_t sub_201280(uint32_t a0) {
+    /* unsupported: Bswap at 0x201282 */
+    return a0;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201280 (size 16)
+  blk0 @ 0x201280:
+    unsupported: Bswap at 0x201282
+    ret edi
+-- card
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":1}
+
+== 0x201290 -
+-- decompile
+/* velk pseudo-C: sub_201290 @ 0x201290 */
+int32_t sub_201290(int32_t a0, int32_t a1, int32_t a2) {
+    return ((a0 < a1 ? a0 : a1) >= a2 ? a2 : ((a0 < a1 ? a0 : a1)));
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x201290 (size 16)
+  blk0 @ 0x201290:
+    ret select ge select lt edi, esi ? edi, esi, edx ? edx, select lt edi, esi ? edi, esi
+-- card
+{"addr":"0x201290","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2012a0 -
+-- decompile
+/* velk pseudo-C: sub_2012a0 @ 0x2012a0 */
+uint64_t sub_2012a0(int64_t a0) {
+    return (a0 < 0x0 ? a0 : -a0);
+}
+-- signature
+uint64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2012a0 (size 16)
+  blk0 @ 0x2012a0:
+    ret select lt rdi, #0x0 ? rdi, (#0x0 - rdi)
+-- card
+{"addr":"0x2012a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x2012b0 -
+-- decompile
+/* velk pseudo-C: sub_2012b0 @ 0x2012b0 */
+uint64_t sub_2012b0(uint64_t a0, uint64_t a1) {
+    return __umulh(a1, a0);
+}
+-- signature
+uint64_t (uint64_t a0, uint64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2012b0 (size 10)
+  blk0 @ 0x2012b0:
+    ret (rsi hi128 rdi)
+-- card
+{"addr":"0x2012b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":10,"sizeEstimated":true,"unsupported":0}

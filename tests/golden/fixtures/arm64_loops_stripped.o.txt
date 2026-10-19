@@ -1,0 +1,168 @@
+# arm64_loops_stripped.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 40 - prologue
+0x28 40 - prologue
+0x50 40 - prologue
+0x78 56 - prologue
+
+== 0x0 -
+-- decompile
+/* velk pseudo-C: sub_0 @ 0x0 */
+uint32_t sub_0(uint32_t a0) {
+    if (a0 == 0x0) {
+        return a0;
+    }
+    w8 = a0;
+    a0 = 0x0;
+    do {
+        w9 = w8 >> 0x1;
+        w10 = w8 & 0x1;
+        a0 = a0 + w10;
+        w8 = w9;
+    } while (w8 > 0x1 /* unsigned */);
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x0 (size 40)
+  blk0 @ 0x0:
+    brif eq x0, #0x0 -> 0x24
+  blk1 @ 0x4:
+    w8 = x0
+    x0 = #0x0
+  blk2 @ 0xc:
+    w9 = (w8 >> #0x1)
+    w10 = (w8 & #0x1)
+    x0 = (((x0 & #0xffffffff) + w10) & #0xffffffff)
+    w8 = w9
+    brif hi w8, #0x1 -> 0xc
+  blk3 @ 0x24:
+    ret x0
+-- card
+{"addr":"0x0","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":0}
+
+== 0x28 -
+-- decompile
+/* velk pseudo-C: sub_28 @ 0x28 */
+int32_t sub_28(int32_t a0) {
+    x8 = a0 - 0x1;
+    if (a0 < 0x1) {
+        return 0x0;
+    }
+    x8 = w8 * (a0 - 0x2);
+    x8 = x8 >> 0x1;
+    return w8 + (a0 << 0x1) - 0x1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x28 (size 40)
+  blk0 @ 0x28:
+    x8 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
+    brif lt (x0 & #0xffffffff), #0x1 -> 0x48
+  blk1 @ 0x30:
+    x8 = ((x8 & #0xffffffff) * ((x0 & #0xffffffff) - #0x2))
+    x8 = (x8 >> #0x1)
+    ret (((((x8 & #0xffffffff) + ((x0 & #0xffffffff) << #0x1)) & #0xffffffff) - #0x1) & #0xffffffff)
+  blk2 @ 0x48:
+    ret #0x0
+-- card
+{"addr":"0x28","approxTokens":144,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":0}
+
+== 0x50 -
+-- decompile
+/* velk pseudo-C: sub_50 @ 0x50 */
+/* struct: a0 +0x0:uint32_t */
+uint32_t sub_50(uint32_t *a0, uint32_t a1) {
+    x9 = (a1 & (~(a1 >>> 0x1f)) & 0xffffffff);
+    x10 = 0x0;
+    do {
+        w8 = x10;
+        if (x9 == 0x0) {
+            break;
+        }
+        x11 = a0->field_0x0;
+        a0 = a0 + 0x4;
+        x9 = x9 - 0x1;
+        x10 = w11 + w8;
+    } while (x11 & 0x80000000 == 0x0);
+    return w8;
+}
+-- signature
+uint32_t (uint32_t * a0, uint32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x50 (size 40)
+  blk0 @ 0x50:
+    x9 = ((w1 & ((w1 >>> #0x1f) ^ #0xffffffffffffffff)) & #0xffffffff)
+    x10 = #0x0
+  blk1 @ 0x58:
+    w8 = x10
+    brif eq x9, #0x0 -> 0x70
+  blk2 @ 0x60:
+    x11 = (load32(x0) & #0xffffffff)
+    x0 = (x0 + #0x4)
+    x9 = (x9 - #0x1)
+    x10 = (((x11 & #0xffffffff) + w8) & #0xffffffff)
+    brif eq (x11 & #0x80000000), #0x0 -> 0x58
+  blk3 @ 0x70:
+    ret w8
+-- card
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x50","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":40,"sizeEstimated":true,"unsupported":0}
+
+== 0x78 -
+-- decompile
+/* velk pseudo-C: sub_78 @ 0x78 */
+/* struct: a0 +0x0:uint32_t */
+int32_t sub_78(uint32_t *a0, int32_t a1) {
+    if (a1 < 0x1) {
+        return 0x0;
+    }
+    x8 = a0;
+    a0 = 0x0;
+    x9 = a1;
+    do {
+        x10 = *(uint32_t *)(x8);
+        x8 = x8 + 0x4;
+        if (x10 == 0x0) {
+            break;
+        }
+        t1 = w10;
+        x10 = (t1 & (~(t1 >>> 0x1f)) & 0xffffffff);
+        x9 = x9 - 0x1;
+        a0 = w10 + (a0 & 0xffffffff);
+    } while (x9 != 0x1);
+    return a0;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x78 (size 56)
+  blk0 @ 0x78:
+    brif lt w1, #0x1 -> 0xa8
+  blk1 @ 0x80:
+    x8 = x0
+    x0 = #0x0
+    x9 = w1
+  blk2 @ 0x8c:
+    x10 = (load32(x8) & #0xffffffff)
+    x8 = (x8 + #0x4)
+    brif eq x10, #0x0 -> 0xa4
+  blk3 @ 0x94:
+    t1 = (x10 & #0xffffffff)
+    x10 = ((t1 & ((t1 >>> #0x1f) ^ #0xffffffffffffffff)) & #0xffffffff)
+    x9 = (x9 - #0x1)
+    x0 = (((x10 & #0xffffffff) + (x0 & #0xffffffff)) & #0xffffffff)
+    brif ne x9, #0x1 -> 0x8c
+  blk4 @ 0xa4:
+    ret x0
+  blk5 @ 0xa8:
+    ret #0x0
+-- card
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x78","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":56,"sizeEstimated":true,"unsupported":0}

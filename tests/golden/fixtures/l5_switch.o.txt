@@ -1,0 +1,128 @@
+# l5_switch.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x0 268 dense symtab
+0x10c 48 sparse symtab
+
+== 0x0 dense
+-- decompile
+/* velk pseudo-C: dense @ 0x0 */
+uint32_t dense(uint32_t a0) {
+    if (a0 - 0xa > 0xf /* unsigned */) {
+        x9 = 0x0;
+        *(uint32_t *)(x8) = w9;
+        return w9;
+    }
+    w10 = 0x0;
+    w10 = 0x0;
+    goto *(0x28 + (*(uint8_t *)(x9) << 0x2));
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn dense @ 0x0 (size 268)
+  blk0 @ 0x0:
+    x8 = #0x0
+    brif hi ((w0 - #0xa) & #0xffffffff), #0xf -> 0xfc
+  blk1 @ 0x10:
+    x10 = #0x0
+    x10 = #0x0
+    br (#0x28 + ((load8(x9) & #0xffffffff) << #0x2))
+  blk2 @ 0x28:
+    x9 = (((load32(x8) & #0xffffffff) + #0xb) & #0xffffffff)
+    br 0x100
+  blk3 @ 0x34:
+    x9 = (((load32(x8) & #0xffffffff) - #0x6d) & #0xffffffff)
+    br 0x100
+  blk4 @ 0x40:
+    x9 = (load32(x8) & #0xffffffff)
+    x10 = #0x58
+    br 0x88
+  blk5 @ 0x4c:
+    x9 = (((load32(x8) & #0xffffffff) + #0x27) & #0xffffffff)
+    br 0x100
+  blk6 @ 0x58:
+    x9 = (((load32(x8) & #0xffffffff) + #0x5f) & #0xffffffff)
+    br 0x100
+  blk7 @ 0x64:
+    x9 = (((load32(x8) & #0xffffffff) ^ #0x4a) & #0xffffffff)
+    br 0x100
+  blk8 @ 0x74:
+    x9 = (((load32(x8) & #0xffffffff) - #0x19) & #0xffffffff)
+    br 0x100
+  blk9 @ 0x80:
+    x9 = (load32(x8) & #0xffffffff)
+    x10 = #0x74
+  blk10 @ 0x88:
+    x9 = (((x9 & #0xffffffff) | (x10 & #0xffffffff)) & #0xffffffff)
+    br 0x100
+  blk11 @ 0x90:
+    x9 = (((load32(x8) & #0xffffffff) | #0x20) & #0xffffffff)
+    br 0x100
+  blk12 @ 0x9c:
+    x9 = (((load32(x8) & #0xffffffff) | #0x3c) & #0xffffffff)
+    br 0x100
+  blk13 @ 0xa8:
+    x9 = (((load32(x8) & #0xffffffff) ^ #0x12) & #0xffffffff)
+    br 0x100
+  blk14 @ 0xb8:
+    x9 = (((load32(x8) & #0xffffffff) ^ #0x2e) & #0xffffffff)
+    br 0x100
+  blk15 @ 0xc8:
+    x9 = (((load32(x8) & #0xffffffff) ^ #0x66) & #0xffffffff)
+    br 0x100
+  blk16 @ 0xd8:
+    x9 = (((load32(x8) & #0xffffffff) - #0x35) & #0xffffffff)
+    br 0x100
+  blk17 @ 0xe4:
+    x9 = (((load32(x8) & #0xffffffff) - #0x51) & #0xffffffff)
+    br 0x100
+  blk18 @ 0xf0:
+    x9 = (((load32(x8) & #0xffffffff) + #0x43) & #0xffffffff)
+    br 0x100
+  blk19 @ 0xfc:
+    x9 = #0x0
+  blk20 @ 0x100:
+    store32((x9 & #0xffffffff), x8)
+    ret (x9 & #0xffffffff)
+-- card
+{"addr":"0x0","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab"],"section":".text","size":268,"unsupported":0}
+
+== 0x10c sparse
+-- decompile
+/* velk pseudo-C: sparse @ 0x10c */
+uint32_t sparse(uint32_t a0) {
+    if (a0 == 0x1) {
+        return 0x64;
+    }
+    if (a0 == 0x12c) {
+        return a0;
+    }
+    if (a0 != 0x32) {
+        a0 = 0xffffffff;
+    } else {
+        return 0x7;
+    }
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn sparse @ 0x10c (size 48)
+  blk0 @ 0x10c:
+    brif eq (x0 & #0xffffffff), #0x1 -> 0x12c
+  blk1 @ 0x114:
+    brif eq (x0 & #0xffffffff), #0x12c -> 0x138
+  blk2 @ 0x11c:
+    brif ne (x0 & #0xffffffff), #0x32 -> 0x134
+  blk3 @ 0x124:
+    ret #0x7
+  blk4 @ 0x12c:
+    ret #0x64
+  blk5 @ 0x134:
+    x0 = #0xffffffff
+  blk6 @ 0x138:
+    ret x0
+-- card
+{"addr":"0x10c","approxTokens":144,"blocks":7,"hardReasons":[],"name":"sparse","nameSources":["symtab"],"section":".text","size":48,"unsupported":0}

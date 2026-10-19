@@ -1,0 +1,73 @@
+# l0_arith_a64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 12 add3 symtab
+0xc 16 scale symtab
+0x1c 12 pick symtab
+0x28 8 negate symtab
+
+== 0x0 add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x0 */
+uint32_t add3(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a1 + a0 + a2;
+}
+-- signature
+uint32_t (uint32_t a0, uint32_t a1, uint32_t a2)
+-- references
+
+-- ir
+fn add3 @ 0x0 (size 12)
+  blk0 @ 0x0:
+    ret ((w1 + w0) + w2)
+-- card
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
+
+== 0xc scale
+-- decompile
+/* velk pseudo-C: scale @ 0xc */
+uint32_t scale(uint32_t a0) {
+    return (a0 << 0x3) - a0 + 0x3;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn scale @ 0xc (size 16)
+  blk0 @ 0xc:
+    ret (((w0 << #0x3) - w0) + #0x3)
+-- card
+{"addr":"0xc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}
+
+== 0x1c pick
+-- decompile
+/* velk pseudo-C: pick @ 0x1c */
+int32_t pick(int32_t a0, int32_t a1) {
+    return (a0 > a1 ? a0 : a1);
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn pick @ 0x1c (size 12)
+  blk0 @ 0x1c:
+    ret select gt w0, w1 ? w0, w1
+-- card
+{"addr":"0x1c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab"],"section":".text","size":12,"unsupported":0}
+
+== 0x28 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x28 */
+uint32_t negate(uint32_t a0) {
+    return -a0;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn negate @ 0x28 (size 8)
+  blk0 @ 0x28:
+    ret (#0x0 - w0)
+-- card
+{"addr":"0x28","approxTokens":108,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab"],"section":".text","size":8,"unsupported":0}

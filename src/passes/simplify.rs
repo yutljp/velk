@@ -51,7 +51,8 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
 fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
     match expr {
         Expr::Reg { index, width } => match constants.get(&index) {
-            Some(value) => Expr::constant(*value),
+            Some(value) if width >= 64 => Expr::constant(*value),
+            Some(value) => Expr::constant(*value & ((1u64 << width) - 1)),
             None => Expr::Reg { index, width },
         },
         Expr::Const(_) => expr,
@@ -165,7 +166,7 @@ fn fold_offsets(expr: Expr) -> Expr {
     };
     let total = match inner_op {
         crate::ir::BinOp::Add => offset.wrapping_add(outer),
-        crate::ir::BinOp::Sub => offset.wrapping_sub(outer),
+        crate::ir::BinOp::Sub => outer.wrapping_sub(*offset),
         _ => return Expr::Bin { op, lhs, rhs },
     };
     Expr::bin(
@@ -180,6 +181,64 @@ mod tests {
     use super::simplify;
     use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn folds_an_offset_from_a_subtracted_base() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::Const(0x20)),
+                    Expr::Const(8),
+                ),
+            }],
+        );
+
+        simplify(&mut ir);
+
+        let Stmt::Ret { value } = &ir.blocks[0].stmts[0] else {
+            panic!("the return stays");
+        };
+        let expected = Expr::bin(
+            BinOp::Add,
+            Expr::reg(31, 64),
+            Expr::Const(0x18u64.wrapping_neg()),
+        );
+        assert_eq!(*value, expected, "{}", ir.render());
+    }
+
+    #[test]
+    fn a_narrow_read_of_a_constant_keeps_its_low_bits() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 8,
+                        width: 64,
+                    },
+                    value: Expr::Const(0x1_0000_0001),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(8, 32),
+                },
+            ],
+        );
+
+        simplify(&mut ir);
+
+        assert!(
+            matches!(
+                ir.blocks[0].stmts[1],
+                Stmt::Ret {
+                    value: Expr::Const(1)
+                }
+            ),
+            "{}",
+            ir.render()
+        );
+    }
 
     #[test]
     fn folds_constant_register_uses() {

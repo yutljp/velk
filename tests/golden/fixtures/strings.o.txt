@@ -1,0 +1,21 @@
+# strings.o: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 16 pick symtab
+
+== 0x0 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x0 */
+uint32_t pick(void) {
+    w0 = *(uint8_t *)(qword_0 + 0x2);
+    return w0;
+}
+-- signature
+uint32_t ()
+-- references
+
+-- ir
+fn pick @ 0x0 (size 16)
+  blk0 @ 0x0:
+    w0 = load8((load64(#0x0) + #0x2))
+    ret w0
+-- card
+{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab"],"section":".text","size":16,"unsupported":0}
