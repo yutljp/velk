@@ -61,7 +61,21 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                         escaped = true;
                     }
                 }
-                // A callee may read its stack arguments from the frame.
+                // A callee whose arguments are known reads its stack ones
+                // through the loads among them; any other may read the
+                // frame anywhere.
+                Stmt::Call {
+                    through,
+                    args: Some(args),
+                    ..
+                } => {
+                    for value in through.iter().chain(args) {
+                        collect_frame_reads(value, sp, &mut read);
+                        if address_uses_frame(value, sp) {
+                            escaped = true;
+                        }
+                    }
+                }
                 Stmt::Call { .. } => escaped = true,
                 _ => {}
             }
@@ -156,6 +170,16 @@ fn frame_slot_of(addr: &Expr, sp: u16) -> Option<u64> {
         } => match (lhs.as_ref(), rhs.as_ref()) {
             (Expr::Reg { index, .. }, Expr::Const(delta)) if *index == sp => Some(*delta),
             (Expr::Const(delta), Expr::Reg { index, .. }) if *index == sp => Some(*delta),
+            _ => None,
+        },
+        Expr::Bin {
+            op: crate::ir::BinOp::Sub,
+            lhs,
+            rhs,
+        } => match (lhs.as_ref(), rhs.as_ref()) {
+            (Expr::Reg { index, .. }, Expr::Const(delta)) if *index == sp => {
+                Some(delta.wrapping_neg())
+            }
             _ => None,
         },
         _ => None,

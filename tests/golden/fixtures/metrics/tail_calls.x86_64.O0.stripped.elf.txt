@@ -25,9 +25,7 @@ fn <unnamed> @ 0x2011a0 (size 22)
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 int32_t sub_2011c0(int32_t a0) {
     int32_t v1;
-    int32_t local_0; /* [sp-c] */
 
-    local_0 = a0;
     v1 = a0;
     return sub_2011a0(v1 + 0x2);
 }
@@ -38,7 +36,6 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2011c0 (size 28)
   blk0 @ 0x2011c0:
-    store32(rdi, (rsp + #0xfffffffffffffff4))
     v1 = (rdi & #0xffffffff)
     v3 = call 0x2011a0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
     ret v3

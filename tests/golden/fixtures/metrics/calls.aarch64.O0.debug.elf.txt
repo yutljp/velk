@@ -276,13 +276,7 @@ fn sum9 @ 0x2104ec (size 120)
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x210564 */
 long call_sum9(long x) {
-    int64_t local_0; /* [sp-18] */
-    int64_t local_1; /* [sp-20] */
-
-    local_0 = x;
-    x8 = 0x8;
-    local_1 = 0x8;
-    return sum9(x, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7);
+    return sum9(x, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
 long (long x)
@@ -291,10 +285,7 @@ long (long x)
 -- ir
 fn call_sum9 @ 0x210564 (size 76)
   blk0 @ 0x210564:
-    store64(x0, (sp + #0xffffffffffffffe8))
-    x8 = #0x8
-    store64(#0x8, (sp + #0xffffffffffffffe0))
-    v2 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7)
+    v2 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v2
 -- card
 {"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}

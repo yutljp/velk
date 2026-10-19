@@ -12,6 +12,11 @@ pub struct Signature {
     pub accesses: Vec<Access>,
     /// Argument registers a signed comparison reads: the parameter is signed.
     pub signed: HashSet<u16>,
+    /// The 8-byte arguments past the registers, by offset from the stack
+    /// pointer on entry.
+    pub stack: Vec<i64>,
+    /// The body reads AArch64's indirect result register before writing it.
+    pub indirect_result: bool,
 }
 
 fn reads(expr: &Expr, into: &mut HashSet<u16>) {
@@ -138,7 +143,18 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             (convention.arguments(), convention.float_arguments())
         }
     };
-    let universe: HashSet<u16> = arguments.iter().chain(float_arguments).copied().collect();
+    // AArch64's indirect result register is no argument, but whether the
+    // body reads it says whether the function returns through memory.
+    let indirect = match isa {
+        Isa::AArch64 => Some(8),
+        _ => None,
+    };
+    let universe: HashSet<u16> = arguments
+        .iter()
+        .chain(float_arguments)
+        .copied()
+        .chain(indirect)
+        .collect();
 
     // Registers written on every path to each block; a register read before
     // it is written is an argument.
@@ -606,11 +622,162 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         })
         .collect();
 
+    // Arguments go on the stack only once the integer registers run out.
+    let registers_full = !arguments.is_empty()
+        && arguments
+            .iter()
+            .all(|register| params.iter().any(|param| param.index == *register));
+    let stack = match (registers_full, isa) {
+        (true, Isa::X86_64 | Isa::AArch64) => {
+            stack_arguments(blocks, isa, Convention::of(isa, format, go))
+        }
+        _ => Vec::new(),
+    };
+
     Signature {
         params,
         ret,
         accesses,
         signed: signed_args,
+        stack,
+        indirect_result: indirect.is_some_and(|register| inputs.contains(&register)),
+    }
+}
+
+/// The offsets of the arguments past the registers the body reads: loads
+/// from the caller's frame, through the stack pointer or a frame pointer
+/// set from it, up to the last one read.
+fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i64> {
+    let Some(start) = convention.stack_arguments() else {
+        return Vec::new();
+    };
+    let sp = crate::arch::stack_pointer(isa);
+    let fp = crate::arch::frame_pointer(isa);
+    // The stack pointer and the frame pointer on entry to each block, as
+    // offsets from the stack pointer on entry; `None` where unknown.
+    type Frame = (Option<i64>, Option<i64>);
+    let mut entry: Vec<Option<Frame>> = vec![None; blocks.len()];
+    if blocks.is_empty() {
+        return Vec::new();
+    }
+    entry[0] = Some((Some(0), None));
+    let offset_of = |expr: &Expr, frame: Frame| -> Option<i64> {
+        let (base, delta) = match expr {
+            Expr::Reg { index, .. } => (*index, 0),
+            Expr::Bin {
+                op: crate::ir::BinOp::Add,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Reg { index, .. }, Expr::Const(delta)) => (*index, *delta as i64),
+                _ => return None,
+            },
+            Expr::Bin {
+                op: crate::ir::BinOp::Sub,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Reg { index, .. }, Expr::Const(delta)) => {
+                    (*index, (*delta as i64).wrapping_neg())
+                }
+                _ => return None,
+            },
+            _ => return None,
+        };
+        let at = if base == sp {
+            frame.0?
+        } else if base == fp {
+            frame.1?
+        } else {
+            return None;
+        };
+        Some(at.wrapping_add(delta))
+    };
+    let step = |stmt: &Stmt, frame: &mut Frame| {
+        if let Stmt::Assign { dest, value } = stmt
+            && (dest.index == sp || dest.index == fp)
+        {
+            let moved = offset_of(value, *frame);
+            if dest.index == sp {
+                frame.0 = moved;
+            } else {
+                frame.1 = moved;
+            }
+        }
+    };
+    let mut work = vec![0];
+    while let Some(index) = work.pop() {
+        let mut frame = entry[index].expect("visited");
+        for stmt in &blocks[index].stmts {
+            step(stmt, &mut frame);
+        }
+        let mut targets = Vec::new();
+        if let Some(last) = blocks[index].stmts.last() {
+            match last {
+                Stmt::Br {
+                    target: Some(target),
+                } => targets.push(*target),
+                Stmt::Brif { target, .. } => targets.push(*target),
+                _ => {}
+            }
+        }
+        let mut next: Vec<usize> = targets
+            .iter()
+            .filter_map(|target| blocks.iter().position(|block| block.start == *target))
+            .collect();
+        if !matches!(
+            blocks[index].stmts.last(),
+            Some(Stmt::Br { .. } | Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Trap)
+        ) && index + 1 < blocks.len()
+        {
+            next.push(index + 1);
+        }
+        for next in next {
+            let merged = match entry[next] {
+                None => frame,
+                Some(old) => (
+                    old.0.filter(|at| Some(*at) == frame.0),
+                    old.1.filter(|at| Some(*at) == frame.1),
+                ),
+            };
+            if entry[next] != Some(merged) {
+                entry[next] = Some(merged);
+                work.push(next);
+            }
+        }
+    }
+    let mut last = None;
+    for (index, block) in blocks.iter().enumerate() {
+        let Some(mut frame) = entry[index] else {
+            continue;
+        };
+        for stmt in &block.stmts {
+            let mut loads = Vec::new();
+            for value in stmt.operands() {
+                integer_loads(value, &mut loads);
+                if let Expr::Apply { args, .. } = value {
+                    for arg in args {
+                        if let Expr::Load { addr, width, .. } = arg {
+                            loads.push((addr.as_ref(), *width));
+                        }
+                    }
+                }
+            }
+            for (addr, _) in loads {
+                if let Some(at) = offset_of(addr, frame)
+                    && at >= start
+                    && (at - start) % 8 == 0
+                    && at - start < 8 * 64
+                {
+                    last = last.max(Some(at));
+                }
+            }
+            step(stmt, &mut frame);
+        }
+    }
+    match last {
+        Some(last) => (start..=last).step_by(8).collect(),
+        None => Vec::new(),
     }
 }
 
@@ -940,6 +1107,49 @@ mod tests {
             .map(|param| param.ty.to_string())
             .collect();
         assert_eq!(types, vec!["uint32_t *", "uint64_t"]);
+    }
+
+    #[test]
+    fn arguments_past_the_registers_are_read_from_the_callers_frame() {
+        // Every integer register is read, then `push rbp; mov rbp, rsp`
+        // and a load of the second stack argument through rbp.
+        let sum = [7u16, 6, 2, 1, 8, 9]
+            .into_iter()
+            .map(|register| Expr::reg(register, 64))
+            .reduce(|a, b| Expr::bin(crate::ir::BinOp::Add, a, b))
+            .expect("registers");
+        let assign = |index, value| Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        };
+        let blocks = vec![Block {
+            start: 0,
+            stmts: vec![
+                assign(
+                    4,
+                    Expr::bin(crate::ir::BinOp::Sub, Expr::reg(4, 64), Expr::Const(8)),
+                ),
+                assign(5, Expr::reg(4, 64)),
+                assign(
+                    0,
+                    Expr::Load {
+                        addr: Box::new(Expr::bin(
+                            crate::ir::BinOp::Add,
+                            Expr::reg(5, 64),
+                            Expr::Const(0x18),
+                        )),
+                        width: 8,
+                        signed: false,
+                    },
+                ),
+                Stmt::Ret {
+                    value: Expr::bin(crate::ir::BinOp::Add, sum, Expr::reg(0, 64)),
+                },
+            ],
+        }];
+        let signature = recover(&blocks, Isa::X86_64, Format::Elf, false);
+        assert_eq!(signature.params.len(), 6);
+        assert_eq!(signature.stack, vec![8, 16]);
     }
 
     fn params_of(stmts: Vec<Stmt>, isa: Isa) -> Vec<u16> {

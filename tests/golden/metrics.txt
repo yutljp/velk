@@ -7,22 +7,22 @@ extra functions | aarch64.O0 | 0/148
 extra functions | aarch64.O2 | 0/148
 extra functions | x86_64.O0 | 0/148
 extra functions | x86_64.O2 | 0/148
-parameter count | aarch64.O0 | 146/147
-parameter count | aarch64.O2 | 146/147
-parameter count | x86_64.O0 | 144/147
-parameter count | x86_64.O2 | 144/147
-parameter pointer | aarch64.O0 | 168/173
-parameter pointer | aarch64.O2 | 167/173
-parameter pointer | x86_64.O0 | 166/172
-parameter pointer | x86_64.O2 | 165/172
-parameter width | aarch64.O0 | 138/144
-parameter width | aarch64.O2 | 138/144
-parameter width | x86_64.O0 | 138/143
-parameter width | x86_64.O2 | 138/143
-parameter sign | aarch64.O0 | 122/138
-parameter sign | aarch64.O2 | 126/138
-parameter sign | x86_64.O0 | 126/138
-parameter sign | x86_64.O2 | 126/138
+parameter count | aarch64.O0 | 147/147
+parameter count | aarch64.O2 | 147/147
+parameter count | x86_64.O0 | 145/147
+parameter count | x86_64.O2 | 145/147
+parameter pointer | aarch64.O0 | 177/182
+parameter pointer | aarch64.O2 | 176/182
+parameter pointer | x86_64.O0 | 175/181
+parameter pointer | x86_64.O2 | 174/181
+parameter width | aarch64.O0 | 147/153
+parameter width | aarch64.O2 | 147/153
+parameter width | x86_64.O0 | 147/152
+parameter width | x86_64.O2 | 147/152
+parameter sign | aarch64.O0 | 131/147
+parameter sign | aarch64.O2 | 135/147
+parameter sign | x86_64.O0 | 135/147
+parameter sign | x86_64.O2 | 135/147
 return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 143/148
 return void | x86_64.O0 | 142/148
@@ -68,7 +68,7 @@ calls.aarch64.O0 0x2103c4 apply_pointer: parameter 0 is a signed 4-byte integer,
 calls.aarch64.O0 0x2103f4 factorial: ok
 calls.aarch64.O0 0x210454 is_odd: ok
 calls.aarch64.O0 0x2104a0 is_even: ok
-calls.aarch64.O0 0x2104ec sum9: 8 parameters, expected 9
+calls.aarch64.O0 0x2104ec sum9: ok
 calls.aarch64.O0 0x210564 call_sum9: returns 4 bytes, expected 8
 calls.aarch64.O0 0x2105b0 sum_varargs: ok
 calls.aarch64.O2 0x2102c4 twice: ok
@@ -79,7 +79,7 @@ calls.aarch64.O2 0x21031c apply_pointer: parameter 0 is a signed 4-byte integer,
 calls.aarch64.O2 0x21033c factorial: ok
 calls.aarch64.O2 0x2103dc is_odd: ok
 calls.aarch64.O2 0x2103ec is_even: ok
-calls.aarch64.O2 0x210400 sum9: 8 parameters, expected 9
+calls.aarch64.O2 0x210400 sum9: ok
 calls.aarch64.O2 0x210428 call_sum9: returns 4 bytes, expected 8
 calls.aarch64.O2 0x210468 sum_varargs: ok
 calls.x86_64.O0 0x201310 twice: ok
@@ -90,7 +90,7 @@ calls.x86_64.O0 0x2013a0 apply_pointer: parameter 0 is a signed 4-byte integer, 
 calls.x86_64.O0 0x2013d0 factorial: ok
 calls.x86_64.O0 0x201420 is_odd: ok
 calls.x86_64.O0 0x201460 is_even: ok
-calls.x86_64.O0 0x2014a0 sum9: 6 parameters, expected 9
+calls.x86_64.O0 0x2014a0 sum9: ok
 calls.x86_64.O0 0x2014f0 call_sum9: returns 4 bytes, expected 8
 calls.x86_64.O0 0x201540 sum_varargs: ok
 calls.x86_64.O2 0x2012f0 twice: ok
@@ -101,7 +101,7 @@ calls.x86_64.O2 0x201360 apply_pointer: parameter 0 is a signed 4-byte integer, 
 calls.x86_64.O2 0x201370 factorial: ok
 calls.x86_64.O2 0x201460 is_odd: ok
 calls.x86_64.O2 0x201470 is_even: ok
-calls.x86_64.O2 0x201490 sum9: 6 parameters, expected 9
+calls.x86_64.O2 0x201490 sum9: ok
 calls.x86_64.O2 0x2014b0 call_sum9: returns 4 bytes, expected 8
 calls.x86_64.O2 0x2014f0 sum_varargs: ok
 control.aarch64.O0 0x2101e4 matrix_trace: ok

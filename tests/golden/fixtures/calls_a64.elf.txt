@@ -342,8 +342,8 @@ fn is_even @ 0x210424 (size 36)
 == 0x210448 sum9
 -- decompile
 /* velk pseudo-C: sum9 @ 0x210448 */
-int64_t sum9(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + *(uint64_t *)(sp));
+int64_t sum9(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + a8);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)

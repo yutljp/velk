@@ -145,6 +145,11 @@ impl Function {
 pub struct Summary {
     /// How many argument registers it reads, when known.
     pub arity: Option<usize>,
+    /// How many 8-byte arguments it reads past the registers.
+    pub stack: usize,
+    /// It reads AArch64's indirect result register: it returns through
+    /// memory the caller points it at.
+    pub indirect_result: bool,
     /// No path through it returns.
     pub noreturn: bool,
 }

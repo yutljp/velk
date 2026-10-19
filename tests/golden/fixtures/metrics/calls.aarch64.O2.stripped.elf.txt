@@ -308,8 +308,8 @@ fn <unnamed> @ 0x2103ec (size 20)
 == 0x210400 -
 -- decompile
 /* velk pseudo-C: sub_210400 @ 0x210400 */
-int64_t sub_210400(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + *(uint64_t *)(sp));
+int64_t sub_210400(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + a8);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -326,9 +326,7 @@ fn <unnamed> @ 0x210400 (size 40)
 -- decompile
 /* velk pseudo-C: sub_210428 @ 0x210428 */
 int32_t sub_210428(int64_t a0) {
-    x8 = 0x8;
-    *(uint64_t *)(sp - 0x20) = 0x8;
-    return sub_210400(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7);
+    return sub_210400(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
 int32_t (int64_t a0)
@@ -337,9 +335,7 @@ int32_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x210428 (size 64)
   blk0 @ 0x210428:
-    x8 = #0x8
-    store64(#0x8, (sp - #0x20))
-    v1 = call 0x210400(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7)
+    v1 = call 0x210400(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v1
 -- card
 {"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":64,"unsupported":0}

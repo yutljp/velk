@@ -26,7 +26,6 @@
 int dense(int x) {
     int64_t v1;
     int64_t v2;
-    int64_t local_0; /* [sp-8] */
 
     v1 = ((x - 0xa) & 0xffffffff);
     switch (v1) {
@@ -50,7 +49,6 @@ int dense(int x) {
     default:
         goto L_2013c6;
     }
-    local_0 = rax;
     rax = 0x200158;
     v2 = (int64_t)(int32_t)(dword_200158[v1]) + 0x200158;
     switch (v1) {
@@ -121,7 +119,6 @@ fn dense @ 0x201330 (size 167)
     v1 = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     brif hi (v1 & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
-    store64(rax, (rsp + #0xfffffffffffffff8))
     rax = #0x200158
     v2 = (sext32(load32((#0x200158 + (v1 * #0x4)))) + #0x200158)
     switch (v1 & #0xffffffff) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6

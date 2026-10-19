@@ -30,9 +30,6 @@ fn <unnamed> @ 0x2101d4 (size 40)
 -- decompile
 /* velk pseudo-C: sub_2101fc @ 0x2101fc */
 int32_t sub_2101fc(int32_t a0) {
-    int32_t local_0; /* [sp-14] */
-
-    local_0 = a0;
     w8 = a0;
     return sub_2101d4(w8 + 0x2);
 }
@@ -43,7 +40,6 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101fc (size 40)
   blk0 @ 0x2101fc:
-    store32(x0, (sp + #0xffffffffffffffec))
     w8 = (x0 & #0xffffffff)
     v2 = call 0x2101d4(((w8 + #0x2) & #0xffffffff))
     ret v2

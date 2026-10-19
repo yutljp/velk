@@ -293,14 +293,35 @@ fn reads_memory(expr: &Expr) -> bool {
 
 /// The argument registers a call to `target` passes, when the number the
 /// callee takes is known.
-fn arguments(convention: Convention, count: Option<usize>) -> Option<Vec<Expr>> {
+/// The arguments of a call reading `count` registers and `stack` slots
+/// past them, as they stand at the call.
+fn arguments(
+    convention: Convention,
+    isa: crate::loader::Isa,
+    count: Option<usize>,
+    stack: usize,
+) -> Option<Vec<Expr>> {
     let count = count?;
-    Some(
-        convention.arguments()[..count.min(convention.arguments().len())]
-            .iter()
-            .map(|register| Expr::reg(*register, 64))
-            .collect(),
-    )
+    let mut args: Vec<Expr> = convention.arguments()[..count.min(convention.arguments().len())]
+        .iter()
+        .map(|register| Expr::reg(*register, 64))
+        .collect();
+    if let Some(start) = convention.stack_arguments() {
+        let sp = crate::arch::stack_pointer(isa);
+        for slot in 0..stack {
+            let offset = start - convention.pushed_by_call() + 8 * slot as i64;
+            args.push(Expr::Load {
+                addr: Box::new(Expr::bin(
+                    crate::ir::BinOp::Add,
+                    Expr::reg(sp, 64),
+                    Expr::Const(offset as u64),
+                )),
+                width: 8,
+                signed: false,
+            });
+        }
+    }
+    Some(args)
 }
 
 /// A call to `target`. A variadic library function's arguments are left to
@@ -317,14 +338,14 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
             })
             .is_some_and(|prototype| prototype.format.is_some())
     });
-    let arity = target
-        .filter(|_| !variadic)
-        .and_then(|target| summaries(target).arity);
+    let summary = target.filter(|_| !variadic).map(summaries);
+    let arity = summary.and_then(|summary| summary.arity);
+    let stack = summary.map_or(0, |summary| summary.stack);
     Stmt::Call {
         target,
         through: None,
         convention,
-        args: arguments(convention, arity),
+        args: arguments(convention, image.isa, arity, stack),
         result: None,
     }
 }

@@ -25,9 +25,7 @@ fn tail_one @ 0x2011a0 (size 22)
 /* velk pseudo-C: tail_two @ 0x2011c0 */
 int tail_two(int x) {
     int32_t v1;
-    int32_t local_0; /* [sp-c] */
 
-    local_0 = x;
     v1 = x;
     return tail_one(v1 + 0x2);
 }
@@ -38,7 +36,6 @@ int (int x)
 -- ir
 fn tail_two @ 0x2011c0 (size 28)
   blk0 @ 0x2011c0:
-    store32(rdi, (rsp + #0xfffffffffffffff4))
     v1 = (rdi & #0xffffffff)
     v3 = call 0x2011a0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
     ret v3

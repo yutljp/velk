@@ -255,18 +255,15 @@ fn <unnamed> @ 0x201460 (size 57)
 == 0x2014a0 -
 -- decompile
 /* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
-int64_t sub_2014a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
+int64_t sub_2014a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
     int64_t v1;
     int64_t v2;
     int64_t v3;
-    int64_t local_0; /* [sp+18] */
-    int64_t local_1; /* [sp+10] */
-    int64_t local_2; /* [sp+8] */
 
-    v1 = local_0;
-    v2 = local_1;
-    v3 = local_2;
-    return a0 + a1 + a2 + a3 + a4 + a5 + local_2 + local_1 + local_0;
+    v1 = a8;
+    v2 = a7;
+    v3 = a6;
+    return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -286,16 +283,7 @@ fn <unnamed> @ 0x2014a0 (size 78)
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
 int32_t sub_2014f0(int64_t a0) {
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-28] */
-    int64_t local_2; /* [sp-20] */
-    int64_t local_3; /* [sp-18] */
-
-    local_0 = a0;
-    local_1 = 0x6;
-    local_2 = 0x7;
-    local_3 = 0x8;
-    return sub_2014a0(a0, 0x1, 0x2, 0x3, 0x4, 0x5);
+    return sub_2014a0(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
 int32_t (int64_t a0)
@@ -304,11 +292,7 @@ int32_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x2014f0 (size 80)
   blk0 @ 0x2014f0:
-    store64(rdi, (rsp + #0xfffffffffffffff0))
-    store64(#0x6, (rsp + #0xffffffffffffffd8))
-    store64(#0x7, (rsp + #0xffffffffffffffe0))
-    store64(#0x8, (rsp + #0xffffffffffffffe8))
-    v2 = call 0x2014a0(rdi, #0x1, #0x2, #0x3, #0x4, #0x5)
+    v2 = call 0x2014a0(rdi, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v2
 -- card
 {"addr":"0x2014f0","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":80,"unsupported":0}

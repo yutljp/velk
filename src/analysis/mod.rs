@@ -177,6 +177,55 @@ fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Pr
     }
 }
 
+/// Drops a write of AArch64's indirect result register that only a call
+/// reads, implicitly, when the callee does not return through memory: the
+/// compiler used it as a scratch register for the call's arguments.
+fn drop_unread_indirect_result(ir: &mut FunctionIr, image: &Image) {
+    const INDIRECT: u16 = 8;
+    if ir.isa != crate::loader::Isa::AArch64 {
+        return;
+    }
+    let reads = |expr: &crate::ir::Expr| {
+        let mut read = HashSet::new();
+        crate::ir::visit::collect_reads(expr, &mut read);
+        read.contains(&INDIRECT)
+    };
+    for block in &mut ir.blocks {
+        let mut dead = Vec::new();
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            let Stmt::Assign { dest, .. } = stmt else {
+                continue;
+            };
+            if dest.index != INDIRECT {
+                continue;
+            }
+            for later in &block.stmts[position + 1..] {
+                match later {
+                    Stmt::Call {
+                        target: Some(target),
+                        args: Some(_),
+                        ..
+                    } if !later.operands().into_iter().any(reads)
+                        && !summary::summary(image, *target).indirect_result =>
+                    {
+                        dead.push(position);
+                        break;
+                    }
+                    _ => {
+                        let (writes, read) = crate::ir::visit::statement_registers(later);
+                        if read.contains(&INDIRECT) || writes.contains(&INDIRECT) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        for position in dead.into_iter().rev() {
+            block.stmts.remove(position);
+        }
+    }
+}
+
 /// The function's IR before any optimization pass, with its recovered signature.
 struct Lifted {
     ir: FunctionIr,
@@ -274,11 +323,27 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // The signature reads the returns as they now are.
     let signature = signature::recover(&blocks, image.isa, image.format, image.go);
     jump_table::apply(&mut blocks, &tables);
+    // The arguments past the registers follow the register ones.
+    let stack_params = signature
+        .stack
+        .iter()
+        .enumerate()
+        .map(|(slot, offset)| {
+            let position = signature.params.len() + slot;
+            crate::ir::StackParam {
+                offset: *offset,
+                size: 8,
+                name: format!("a{position}"),
+                ty: crate::ir::CType::I64,
+                position,
+            }
+        })
+        .collect();
     let ir = FunctionIr {
         isa: image.isa,
         convention: crate::ir::Convention::of(image.isa, image.format, image.go),
         params: signature.params,
-        stack_params: Vec::new(),
+        stack_params,
         variadic: false,
         ret_type: match float_return {
             _ if ignored => crate::ir::CType::Void,
@@ -362,6 +427,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     passes::simplify::simplify(&mut ir);
     // Simplifying can fold a variable's value into its readers.
     passes::dce::dce(&mut ir);
+    drop_unread_indirect_result(&mut ir, image);
     structures::recover(&mut ir);
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);

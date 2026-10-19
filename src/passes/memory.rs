@@ -33,10 +33,61 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                 }
                 Stmt::Unsupported { .. } => pending.clear(),
                 Stmt::Assign { dest, value } => {
-                    // Moving the stack pointer changes what every remembered
-                    // `sp`-relative address refers to.
+                    // Moving the stack pointer by a constant moves every
+                    // remembered `sp`-relative address the other way; any
+                    // other move leaves them unknown.
                     if dest.index == sp {
-                        pending.clear();
+                        let delta = match value {
+                            Expr::Bin {
+                                op: crate::ir::BinOp::Add,
+                                lhs,
+                                rhs,
+                            } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) => {
+                                match rhs.as_ref() {
+                                    Expr::Const(delta) => Some(*delta),
+                                    _ => None,
+                                }
+                            }
+                            Expr::Bin {
+                                op: crate::ir::BinOp::Sub,
+                                lhs,
+                                rhs,
+                            } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) => {
+                                match rhs.as_ref() {
+                                    Expr::Const(delta) => Some(delta.wrapping_neg()),
+                                    _ => None,
+                                }
+                            }
+                            _ => None,
+                        };
+                        let Some(delta) = delta else {
+                            pending.clear();
+                            continue;
+                        };
+                        pending = pending
+                            .drain(..)
+                            .filter_map(|(width, addr, stored)| {
+                                let mut reads = std::collections::HashSet::new();
+                                crate::ir::visit::collect_reads(&stored, &mut reads);
+                                if reads.contains(&sp) {
+                                    return None;
+                                }
+                                let (base, offset) = split_offset(&addr);
+                                if !matches!(base, Expr::Reg { index, .. } if *index == sp) {
+                                    reads.clear();
+                                    crate::ir::visit::collect_reads(&addr, &mut reads);
+                                    return (!reads.contains(&sp)).then_some((width, addr, stored));
+                                }
+                                let moved = (offset as u64).wrapping_sub(delta);
+                                let base = base.clone();
+                                let addr = if moved == 0 {
+                                    base
+                                } else {
+                                    Expr::bin(crate::ir::BinOp::Add, base, Expr::Const(moved))
+                                };
+                                Some((width, addr, stored))
+                            })
+                            .collect();
                         continue;
                     }
                     forward_expr(value, &pending);

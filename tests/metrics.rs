@@ -206,7 +206,22 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
             continue;
         };
         let ir = &analysis.ir;
-        let got_params: Vec<Kind> = ir.params.iter().map(|param| kind_of(&param.ty)).collect();
+        // Parameters in the caller's frame take their places among the
+        // register ones.
+        let mut registers = ir.params.iter();
+        let got_params: Vec<Kind> = (0..ir.params.len() + ir.stack_params.len())
+            .filter_map(|position| {
+                match ir
+                    .stack_params
+                    .iter()
+                    .find(|param| param.position == position)
+                {
+                    Some(param) => Some(&param.ty),
+                    None => registers.next().map(|param| &param.ty),
+                }
+            })
+            .map(kind_of)
+            .collect();
         let got_ret = kind_of(&ir.ret_type);
         let mut mismatches = Vec::new();
         if !expected.variadic {

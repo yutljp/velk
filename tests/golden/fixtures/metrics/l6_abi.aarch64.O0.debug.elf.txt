@@ -30,9 +30,6 @@ fn tail_target @ 0x2101d4 (size 40)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x2101fc */
 int tail_direct(int x) {
-    int32_t local_0; /* [sp-14] */
-
-    local_0 = x;
     w8 = x;
     return tail_target(w8 + 0x2);
 }
@@ -43,7 +40,6 @@ int (int x)
 -- ir
 fn tail_direct @ 0x2101fc (size 40)
   blk0 @ 0x2101fc:
-    store32(x0, (sp + #0xffffffffffffffec))
     w8 = (x0 & #0xffffffff)
     v2 = call 0x2101d4(((w8 + #0x2) & #0xffffffff))
     ret v2

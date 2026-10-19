@@ -390,6 +390,16 @@ pub(crate) fn frame_slot(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
             }
             _ => None,
         },
+        Expr::Bin {
+            op: BinOp::Sub,
+            lhs,
+            rhs,
+        } => match (lhs.as_ref(), rhs.as_ref()) {
+            (Expr::Reg { index, .. }, Expr::Const(delta)) if *index == sp => {
+                Some(frame.wrapping_sub(*delta as i64))
+            }
+            _ => None,
+        },
         _ => None,
     }
 }

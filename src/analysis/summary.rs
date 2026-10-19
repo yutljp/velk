@@ -196,6 +196,8 @@ fn settle(image: &Image, part: &[u64], cache: &mut HashMap<u64, Summary>) {
                     (a, b) => a.or(b),
                 },
                 noreturn: current[addr].noreturn || next.noreturn,
+                stack: current[addr].stack.max(next.stack),
+                indirect_result: current[addr].indirect_result || next.indirect_result,
             };
             if merged != current[addr] {
                 current.insert(*addr, merged);
@@ -229,7 +231,12 @@ fn by_name(image: &Image, addr: u64) -> Summary {
         .flatten()
         .and_then(|name| super::prototypes::of(name, image.format == crate::loader::Format::MachO))
         .map(|prototype| prototype.fixed);
-    Summary { arity, noreturn }
+    Summary {
+        arity,
+        noreturn,
+        stack: 0,
+        indirect_result: false,
+    }
 }
 
 fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> Summary {
@@ -248,6 +255,8 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
     Summary {
         arity: Some(signature.params.len()),
         noreturn: named.noreturn || !can_return(&blocks),
+        stack: signature.stack.len(),
+        indirect_result: signature.indirect_result,
     }
 }
 

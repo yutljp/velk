@@ -40,6 +40,26 @@ impl Convention {
         }
     }
 
+    /// Where the arguments past the registers start, from the stack pointer
+    /// on entry: past the return address on x86-64, and past the space
+    /// Windows reserves for the register ones.
+    pub fn stack_arguments(self) -> Option<i64> {
+        match self {
+            Self::SysV => Some(8),
+            Self::Win64 => Some(40),
+            Self::Aapcs64 => Some(0),
+            Self::GoAmd64 => None,
+        }
+    }
+
+    /// Bytes a call pushes before the callee runs: the return address.
+    pub fn pushed_by_call(self) -> i64 {
+        match self {
+            Self::Aapcs64 => 0,
+            Self::SysV | Self::Win64 | Self::GoAmd64 => 8,
+        }
+    }
+
     /// Floating-point argument registers, in order: the low halves of xmm0
     /// to xmm7 (xmm3 on Windows, xmm14 in Go's ABI), or of v0 to v7.
     pub fn float_arguments(self) -> &'static [u16] {
