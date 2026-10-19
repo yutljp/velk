@@ -358,6 +358,32 @@ fn indent(depth: usize, out: &mut String) {
     }
 }
 
+/// Whether the statements up to the next call leave `rax` alone, and the
+/// call, whose arguments are known, reads no more of it than `al`.
+fn only_vector_count(rest: &[Node]) -> bool {
+    for node in rest {
+        let Node::Stmt(stmt) = node else {
+            return false;
+        };
+        let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+        match stmt {
+            Stmt::Call { args: Some(_), .. } => {
+                return !stmt.operands().into_iter().any(|operand| {
+                    let mut read = std::collections::HashSet::new();
+                    crate::ir::visit::collect_reads(operand, &mut read);
+                    read.contains(&crate::arch::RETURN)
+                });
+            }
+            _ if writes.contains(&crate::arch::RETURN) || reads.contains(&crate::arch::RETURN) => {
+                return false;
+            }
+            Stmt::Assign { .. } | Stmt::Store { .. } => {}
+            _ => return false,
+        }
+    }
+    false
+}
+
 fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     let mut index = 0;
     while index < nodes.len() {
@@ -381,6 +407,19 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
                 out.push_str(&format!("/* unsupported: {} */\n", merged));
             }
             index += count;
+            continue;
+        }
+        // On x86-64, `al` tells a variadic callee how many vector registers
+        // carry arguments; setting it is no part of the call as C writes it.
+        if ctx.isa == crate::loader::Isa::X86_64
+            && let Some(Node::Stmt(Stmt::Assign {
+                dest,
+                value: Expr::Const(0..=8),
+            })) = nodes.get(index)
+            && dest.index == crate::arch::RETURN
+            && only_vector_count(&nodes[index + 1..])
+        {
+            index += 1;
             continue;
         }
         // A call whose returned value the next statement takes reads as one

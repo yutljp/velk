@@ -360,6 +360,8 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     typing::apply_partial_return(&mut ir);
     typing::apply_dwarf_types(types, &mut ir);
     passes::simplify::simplify(&mut ir);
+    // Simplifying can fold a variable's value into its readers.
+    passes::dce::dce(&mut ir);
     structures::recover(&mut ir);
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);
