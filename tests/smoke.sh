@@ -497,7 +497,7 @@ echo "$x86_mod" | grep -q " % "              || fail "x86 idiv remainder"
 if echo "$x86_div" | grep -q "unsupported"; then fail "x86 idiv unresolved"; fi
 ok "x86 idiv"
 
-closed_pipe=$( { "$BIN" functions $FIX/go_probe --limit 100000 | head -1 >/dev/null; } 2>&1 )
+closed_pipe=$( { "$BIN" functions $FIX/go_probe --limit 100000 | head -1 >/dev/null || true; } 2>&1 )
 [ -z "$closed_pipe" ] || fail "closed pipe reports an error"
 ok "closed pipe"
 
