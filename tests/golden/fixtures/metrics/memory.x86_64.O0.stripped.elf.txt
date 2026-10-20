@@ -112,7 +112,7 @@ int64_t sub_201320(uint8_t *a0) {
     int64_t local_1; /* [sp-18] */
 
     local_0 = a0;
-    for (local_1 = 0x0; local_0[local_1] != 0x0; local_1 += 0x1) {
+    for (local_1 = 0x0; local_0[local_1] != 0x0; local_1++) {
     }
     return local_1;
 }

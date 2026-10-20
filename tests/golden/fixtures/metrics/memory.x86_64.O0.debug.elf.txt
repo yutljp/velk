@@ -21,7 +21,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     local_0 = dst;
     local_1 = src;
     local_2 = n;
-    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3 += 0x1) {
+    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3++) {
         v1 = local_1[local_3];
         local_0[local_3] = v1;
     }
@@ -62,7 +62,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     local_0 = dst;
     local_1 = rax & 0xffffffffffffff00 | value & 0xff;
     local_2 = n;
-    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3 += 0x1) {
+    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3++) {
         v1 = local_1;
         local_0[local_3] = v1;
     }
@@ -98,7 +98,7 @@ unsigned long string_length(char *s) {
     int64_t local_1; /* [sp-18] */
 
     local_0 = s;
-    for (local_1 = 0x0; local_0[local_1] != 0x0; local_1 += 0x1) {
+    for (local_1 = 0x0; local_0[local_1] != 0x0; local_1++) {
     }
     return local_1;
 }

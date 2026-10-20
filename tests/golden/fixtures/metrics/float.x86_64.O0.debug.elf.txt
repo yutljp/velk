@@ -19,7 +19,7 @@ double average(double *values, int n) {
     local_0 = values;
     local_1 = n;
     local_2 = 0.0;
-    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3++) {
         v1 = (int64_t)(int32_t)(local_3);
         local_2 = local_0[v1] + local_2;
     }

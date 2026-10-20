@@ -42,7 +42,7 @@ int32_t sub_201240(uint32_t *a0, int32_t a1) {
     local_0 = a0;
     local_1 = a1;
     local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3++) {
         v1 = (int64_t)(int32_t)(local_3);
         local_2 += local_0[v1];
     }

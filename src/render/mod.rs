@@ -720,13 +720,25 @@ fn for_loop(init: &Stmt, looped: &Node, depth: usize, ctx: &Ctx<'_>) -> Option<S
         let text = render_stmt(stmt, ctx);
         text.strip_suffix(';').unwrap_or(&text).to_owned()
     };
+    // A step of one reads as `i++` or `i += 1`'s shorter form.
+    let step_text = {
+        let text = clause(step);
+        match text.split_once(" = ") {
+            Some((name, value)) if value == format!("{name} + 0x1") => format!("{name}++"),
+            Some((name, value)) if value == format!("{name} - 0x1") => format!("{name}--"),
+            _ => match text.strip_suffix(" += 0x1") {
+                Some(name) => format!("{name}++"),
+                None => text,
+            },
+        }
+    };
     let mut out = String::new();
     indent(depth, &mut out);
     out.push_str(&format!(
         "for ({}; {}; {}) {{\n",
         clause(init),
         condition(*cond, lhs, rhs, ctx),
-        clause(step)
+        step_text
     ));
     render_nodes(rest, depth + 1, &mut out, ctx);
     indent(depth, &mut out);

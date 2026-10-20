@@ -558,6 +558,175 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
     }
 }
 
+/// Undoes the inversion compilers make of a counting loop: after a test
+/// that leaves unless `n >= 1`, `i = 0; do { ...; i += 1; } while (i != n);`
+/// runs as `while (i < n)`, which reads as the `for` loop it was. The body
+/// may change neither `i` nor `n` but at its last step.
+pub(crate) fn undo_loop_inversion(nodes: &mut Vec<Node>) {
+    invert_loops(nodes, &std::collections::HashSet::new());
+}
+
+/// The same, with `known` the registers an enclosing test leaves at least
+/// one.
+fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
+    use crate::ir::{BinOp, Cond, Expr};
+    let register = |expr: &Expr| match expr {
+        Expr::Reg { index, .. } => Some(*index),
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => match lhs.as_ref() {
+            Expr::Reg { index, .. } => Some(*index),
+            _ => None,
+        },
+        _ => None,
+    };
+    let below_one = |cond: &Cond, lhs: &Expr, rhs: &Expr| match (cond, register(lhs), rhs) {
+        (Cond::Lt, Some(n), Expr::Const(1)) | (Cond::Le, Some(n), Expr::Const(0)) => Some(n),
+        _ => None,
+    };
+    let mut known = known.clone();
+    let mut index = 0;
+    while index < nodes.len() {
+        // What a test that leaves here guarantees holds for what follows.
+        if let Node::If {
+            cond,
+            lhs,
+            rhs,
+            then,
+            els,
+        } = &nodes[index]
+            && els.is_empty()
+            && ends(then, false)
+            && let Some(limit) = below_one(cond, lhs, rhs)
+        {
+            known.insert(limit);
+        }
+        for child in children_mut(&mut nodes[index]) {
+            let mut written = std::collections::HashSet::new();
+            writes_in(child, &mut written);
+            let inner: std::collections::HashSet<u16> =
+                known.difference(&written).copied().collect();
+            invert_loops(child, &inner);
+        }
+        if let Node::Stmt(stmt) = &nodes[index] {
+            for written in crate::ir::visit::statement_registers(stmt).0 {
+                known.remove(&written);
+            }
+        }
+        let Node::DoWhile {
+            cond: Cond::Ne,
+            lhs,
+            rhs,
+            body,
+        } = &nodes[index]
+        else {
+            index += 1;
+            continue;
+        };
+        // The counter steps by one at the end of the body.
+        let Some((Node::Stmt(Stmt::Assign { dest, value }), rest)) = body.split_last() else {
+            index += 1;
+            continue;
+        };
+        let counter = dest.index;
+        let steps = matches!(value, Expr::Bin { op: BinOp::Add, lhs: base, rhs: one }
+            if register(base) == Some(counter) && matches!(one.as_ref(), Expr::Const(1)))
+            || matches!(value, Expr::Bin { op: BinOp::And, lhs: inner, rhs: mask }
+                if matches!(mask.as_ref(), Expr::Const(0xffff_ffff))
+                    && matches!(inner.as_ref(), Expr::Bin { op: BinOp::Add, lhs: base, rhs: one }
+                        if register(base) == Some(counter) && matches!(one.as_ref(), Expr::Const(1))));
+        let limit = match (register(lhs), register(rhs)) {
+            (Some(a), Some(b)) if a == counter => b,
+            (Some(a), Some(b)) if b == counter => a,
+            _ => u16::MAX,
+        };
+        let mut written = std::collections::HashSet::new();
+        writes_in(rest, &mut written);
+        if !steps
+            || limit == u16::MAX
+            || written.contains(&counter)
+            || written.contains(&limit)
+            || !known.contains(&limit)
+        {
+            index += 1;
+            continue;
+        }
+        // The counter set to zero before the loop, with what comes between
+        // leaving it alone.
+        let mut start = None;
+        for (at, before) in nodes[..index].iter().enumerate().rev() {
+            match before {
+                Node::Stmt(Stmt::Assign { dest, value }) if dest.index == counter => {
+                    if matches!(value, Expr::Const(0)) {
+                        start = Some(at);
+                    }
+                    break;
+                }
+                Node::Stmt(stmt @ (Stmt::Assign { .. } | Stmt::Store { .. })) => {
+                    let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+                    if writes.contains(&counter) || reads.contains(&counter) {
+                        break;
+                    }
+                }
+                _ => break,
+            }
+        }
+        let Some(start) = start else {
+            index += 1;
+            continue;
+        };
+        let Node::DoWhile { lhs, rhs, body, .. } = nodes[index].clone() else {
+            index += 1;
+            continue;
+        };
+        let (lhs, rhs) = if register(&lhs) == Some(counter) {
+            (lhs, rhs)
+        } else {
+            (rhs, lhs)
+        };
+        nodes[index] = Node::While {
+            prefix: Vec::new(),
+            cond: Cond::Lt,
+            lhs,
+            rhs,
+            body,
+        };
+        // The counter's start goes right before the loop, as a `for` has it.
+        let init = nodes.remove(start);
+        nodes.insert(index - 1, init);
+        index += 1;
+    }
+}
+
+/// The registers the nodes write, at any depth.
+fn writes_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
+    for node in nodes {
+        match node {
+            Node::Stmt(stmt) => out.extend(crate::ir::visit::statement_registers(stmt).0),
+            Node::If { then, els, .. } => {
+                writes_in(then, out);
+                writes_in(els, out);
+            }
+            Node::DoWhile { body, .. } | Node::Forever { body } => writes_in(body, out),
+            Node::While { prefix, body, .. } => {
+                writes_in(prefix, out);
+                writes_in(body, out);
+            }
+            Node::Switch { arms, default, .. } => {
+                for (_, body) in arms {
+                    writes_in(body, out);
+                }
+                if let Some(body) = default {
+                    writes_in(body, out);
+                }
+            }
+            Node::Label(_) | Node::Break | Node::Continue => {}
+        }
+    }
+}
+
 /// Drops a jump to the label that comes next anyway: at the end of a
 /// sequence, or of an `if` branch, that the label follows.
 pub(crate) fn drop_jumps_to_next(nodes: &mut Vec<Node>, follow: Option<u64>) {

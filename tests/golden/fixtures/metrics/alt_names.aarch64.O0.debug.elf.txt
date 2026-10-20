@@ -29,7 +29,7 @@ int alt_helper(int x) {
 
     local_0 = x;
     local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2 += 0x1) {
+    for (local_2 = 0x0; local_2 < local_0; local_2++) {
         local_1 += local_2 * local_2;
     }
     return local_1;

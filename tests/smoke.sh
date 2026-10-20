@@ -224,7 +224,7 @@ mask_ir=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$mask_ir" | grep -q "v2 = v1 \* (a0 - 0x2);" || fail "mask implied by 32-bit arithmetic"
 echo "$mask_ir" | grep -q "v1 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$narrow_ir" | grep -q "for (local_2 = 0x1; local_2 <= local_0; local_2 += 0x1)" || fail "32-bit comparison kept"
+echo "$narrow_ir" | grep -q "for (local_2 = 0x1; local_2 <= local_0; local_2++)" || fail "32-bit comparison kept"
 echo "$narrow_ir" | grep -q "local_1 += local_2;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
@@ -291,7 +291,7 @@ echo "$trap_ir" | grep -q "Int3" && fail "int3 note kept"
 echo "$trap_ir" | grep -q "local_0;" && fail "unused local declared"
 ok "trap padding and unused locals"
 back_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
-echo "$back_ir" | grep -q "for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {" || fail "unconditional back edge structured"
+echo "$back_ir" | grep -q "for (local_3 = 0x0; local_3 < local_1; local_3++) {" || fail "unconditional back edge structured"
 echo "$back_ir" | grep -q "goto " && fail "early exit as a return"
 echo "$back_ir" | grep -q "^L_c0:"         && fail "loop header kept as a label"
 uv run python - "$back_ir" <<'PY'

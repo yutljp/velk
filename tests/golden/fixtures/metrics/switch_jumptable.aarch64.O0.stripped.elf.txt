@@ -20,61 +20,61 @@ int32_t sub_21018c(int32_t a0) {
 
     local_0 = a0;
     if (a0 == 0x0) {
-        for (local_1 = 0x0; local_1 < 0x1; local_1 += 0x1) {
+        for (local_1 = 0x0; local_1 < 0x1; local_1++) {
             dword_2204fc += local_1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x1 == 0x0) {
-        for (local_2 = 0x0; local_2 < 0x2; local_2 += 0x1) {
+        for (local_2 = 0x0; local_2 < 0x2; local_2++) {
             dword_2204fc += local_2;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x2 == 0x0) {
-        for (local_3 = 0x0; local_3 < 0x3; local_3 += 0x1) {
+        for (local_3 = 0x0; local_3 < 0x3; local_3++) {
             dword_2204fc += local_3;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x3 == 0x0) {
-        for (local_4 = 0x0; local_4 < 0x4; local_4 += 0x1) {
+        for (local_4 = 0x0; local_4 < 0x4; local_4++) {
             dword_2204fc += local_4;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x4 == 0x0) {
-        for (local_5 = 0x0; local_5 < 0x5; local_5 += 0x1) {
+        for (local_5 = 0x0; local_5 < 0x5; local_5++) {
             dword_2204fc += local_5;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x5 == 0x0) {
-        for (local_6 = 0x0; local_6 < 0x6; local_6 += 0x1) {
+        for (local_6 = 0x0; local_6 < 0x6; local_6++) {
             dword_2204fc += local_6;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x6 == 0x0) {
-        for (local_7 = 0x0; local_7 < 0x7; local_7 += 0x1) {
+        for (local_7 = 0x0; local_7 < 0x7; local_7++) {
             dword_2204fc += local_7;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x7 == 0x0) {
-        for (local_8 = 0x0; local_8 < 0x8; local_8 += 0x1) {
+        for (local_8 = 0x0; local_8 < 0x8; local_8++) {
             dword_2204fc += local_8;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x8 == 0x0) {
-        for (local_9 = 0x0; local_9 < 0x9; local_9 += 0x1) {
+        for (local_9 = 0x0; local_9 < 0x9; local_9++) {
             dword_2204fc += local_9;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x9 == 0x0) {
-        for (local_10 = 0x0; local_10 < 0xa; local_10 += 0x1) {
+        for (local_10 = 0x0; local_10 < 0xa; local_10++) {
             dword_2204fc += local_10;
         }
         return dword_2204fc;

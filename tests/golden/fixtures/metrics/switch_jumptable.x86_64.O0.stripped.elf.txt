@@ -29,52 +29,52 @@ int32_t sub_2011c0(int32_t a0) {
         v6 = (int64_t)(int32_t)(dword_200158[local_1]) + 0x200158;
         switch (local_1) {
         case 0:
-            for (local_2 = 0x0; local_2 < 0x1; local_2 += 0x1) {
+            for (local_2 = 0x0; local_2 < 0x1; local_2++) {
                 dword_202410 += local_2;
             }
             return dword_202410;
         case 1:
-            for (local_3 = 0x0; local_3 < 0x2; local_3 += 0x1) {
+            for (local_3 = 0x0; local_3 < 0x2; local_3++) {
                 dword_202410 += local_3;
             }
             return dword_202410;
         case 2:
-            for (local_4 = 0x0; local_4 < 0x3; local_4 += 0x1) {
+            for (local_4 = 0x0; local_4 < 0x3; local_4++) {
                 dword_202410 += local_4;
             }
             return dword_202410;
         case 3:
-            for (local_5 = 0x0; local_5 < 0x4; local_5 += 0x1) {
+            for (local_5 = 0x0; local_5 < 0x4; local_5++) {
                 dword_202410 += local_5;
             }
             return dword_202410;
         case 4:
-            for (local_6 = 0x0; local_6 < 0x5; local_6 += 0x1) {
+            for (local_6 = 0x0; local_6 < 0x5; local_6++) {
                 dword_202410 += local_6;
             }
             return dword_202410;
         case 5:
-            for (local_7 = 0x0; local_7 < 0x6; local_7 += 0x1) {
+            for (local_7 = 0x0; local_7 < 0x6; local_7++) {
                 dword_202410 += local_7;
             }
             return dword_202410;
         case 6:
-            for (local_8 = 0x0; local_8 < 0x7; local_8 += 0x1) {
+            for (local_8 = 0x0; local_8 < 0x7; local_8++) {
                 dword_202410 += local_8;
             }
             return dword_202410;
         case 7:
-            for (local_9 = 0x0; local_9 < 0x8; local_9 += 0x1) {
+            for (local_9 = 0x0; local_9 < 0x8; local_9++) {
                 dword_202410 += local_9;
             }
             return dword_202410;
         case 8:
-            for (local_10 = 0x0; local_10 < 0x9; local_10 += 0x1) {
+            for (local_10 = 0x0; local_10 < 0x9; local_10++) {
                 dword_202410 += local_10;
             }
             return dword_202410;
         case 9:
-            for (local_11 = 0x0; local_11 < 0xa; local_11 += 0x1) {
+            for (local_11 = 0x0; local_11 < 0xa; local_11++) {
                 dword_202410 += local_11;
             }
             return dword_202410;
