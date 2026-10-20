@@ -69,10 +69,10 @@ long item_last_key(struct item *items, int n) {
         v2 = 0x0;
         v3 = 0x0;
         do {
-            if (*(uint32_t *)(v6 - 0x10) > 0x0) {
+            if (*(int32_t *)(v6 - 0x10) > 0x0) {
                 v3 = *(uint64_t *)(v6 - 0x18);
             }
-            if (*(uint32_t *)(v6) > 0x0) {
+            if (*(int32_t *)(v6) > 0x0) {
                 v3 = *(uint64_t *)(v6 - 0x8);
             }
             v2 = v2 + 0x2;
@@ -86,7 +86,7 @@ long item_last_key(struct item *items, int n) {
         return v3;
     }
     v4 = v2 << 0x4;
-    if (*(uint32_t *)((uint8_t *)items + v4 + 0x8) <= 0x0) {
+    if (*(int32_t *)((uint8_t *)items + v4 + 0x8) <= 0x0) {
         return v3;
     }
     return *(uint64_t *)((uint8_t *)items + v4);

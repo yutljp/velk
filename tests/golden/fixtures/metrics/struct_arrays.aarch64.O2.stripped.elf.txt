@@ -83,7 +83,7 @@ int32_t sub_2101a0(struct sub_2101a0_a0 *a0, int32_t a1) {
     v3 = a1;
     v4 = &a0->field_0x8;
     do {
-        if (*(uint32_t *)(v4) >= 0x1) {
+        if (*(int32_t *)(v4) >= 0x1) {
             v2 = *(uint64_t *)(v4 - 0x8);
         }
         v3 = v3 - 0x1;

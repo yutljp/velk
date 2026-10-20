@@ -1,0 +1,176 @@
+# functions left out:
+#   accesses memory: 148
+#   calls: 3788
+#   computes on floats or vectors: 1
+#   has an unsupported instruction: 2
+#   refers to data: 135
+#   returns no integer: 51
+#   returns nothing: 355
+#   takes an argument that is no integer: 391
+#   takes arguments on the stack: 22
+# runs left out:
+#   step limit: 14
+# alt.o: 2 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# arm64.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# arm64_debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# arm64_debug.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# arm64_debug_stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# arm64_div.o: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 1 differ
+# arm64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# arm64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# arm64_macho.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# calls_a64.elf: 11 functions, 6 qualify, 5 compile, 1 do not, 5 compared (53 runs), 0 differ
+# calls_a64.o: 11 functions, 6 qualify, 5 compile, 1 do not, 5 compared (53 runs), 0 differ
+# cpp_classes_a64.o: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# cpp_classes_x64.o: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# cpp_demo.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# go_probe: 1275 functions, 15 qualify, 14 compile, 1 do not, 14 compared (168 runs), 0 differ
+# go_stripped: 1273 functions, 15 qualify, 14 compile, 1 do not, 14 compared (168 runs), 0 differ
+# l0_arith_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# l0_arith_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# l1_branch_a64.o: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# l1_branch_x64.o: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# l5_switch.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# l5_switch.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# l6_abi_a64.o: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# l6_abi_x64.o: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/alt_names.aarch64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/alt_names.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/alt_names.aarch64.O2.debug.elf: 2 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/alt_names.aarch64.O2.stripped.elf: 2 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/alt_names.x86_64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/alt_names.x86_64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/alt_names.x86_64.O2.debug.elf: 2 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/alt_names.x86_64.O2.stripped.elf: 2 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/arith_mixed.aarch64.O0.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/arith_mixed.aarch64.O0.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/arith_mixed.aarch64.O2.debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/arith_mixed.aarch64.O2.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/arith_mixed.x86_64.O0.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/arith_mixed.x86_64.O0.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/arith_mixed.x86_64.O2.debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/arith_mixed.x86_64.O2.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/calls.aarch64.O0.debug.elf: 11 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/calls.aarch64.O0.stripped.elf: 11 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/calls.aarch64.O2.debug.elf: 11 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/calls.aarch64.O2.stripped.elf: 11 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/calls.x86_64.O0.debug.elf: 11 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/calls.x86_64.O0.stripped.elf: 11 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/calls.x86_64.O2.debug.elf: 11 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/calls.x86_64.O2.stripped.elf: 11 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/control.aarch64.O2.debug.elf: 7 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/control.aarch64.O2.stripped.elf: 7 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/control.x86_64.O2.debug.elf: 7 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/control.x86_64.O2.stripped.elf: 7 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/divmod_a64.aarch64.O0.debug.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 0 differ
+# metrics/divmod_a64.aarch64.O0.stripped.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 0 differ
+# metrics/divmod_a64.aarch64.O2.debug.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 1 differ
+# metrics/divmod_a64.aarch64.O2.stripped.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 1 differ
+# metrics/divmod_a64.x86_64.O0.debug.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 0 differ
+# metrics/divmod_a64.x86_64.O0.stripped.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 0 differ
+# metrics/divmod_a64.x86_64.O2.debug.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 1 differ
+# metrics/divmod_a64.x86_64.O2.stripped.elf: 25 functions, 25 qualify, 25 compile, 0 do not, 25 compared (300 runs), 1 differ
+# metrics/divmod_x64.aarch64.O0.debug.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/divmod_x64.aarch64.O0.stripped.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/divmod_x64.aarch64.O2.debug.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/divmod_x64.aarch64.O2.stripped.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/divmod_x64.x86_64.O0.debug.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/divmod_x64.x86_64.O0.stripped.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/divmod_x64.x86_64.O2.debug.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/divmod_x64.x86_64.O2.stripped.elf: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# metrics/integers.aarch64.O0.debug.elf: 10 functions, 6 qualify, 6 compile, 0 do not, 6 compared (72 runs), 0 differ
+# metrics/integers.aarch64.O0.stripped.elf: 10 functions, 6 qualify, 6 compile, 0 do not, 6 compared (72 runs), 1 differ
+# metrics/integers.aarch64.O2.debug.elf: 10 functions, 10 qualify, 10 compile, 0 do not, 10 compared (120 runs), 0 differ
+# metrics/integers.aarch64.O2.stripped.elf: 10 functions, 10 qualify, 10 compile, 0 do not, 10 compared (120 runs), 2 differ
+# metrics/integers.x86_64.O0.debug.elf: 10 functions, 6 qualify, 6 compile, 0 do not, 6 compared (72 runs), 0 differ
+# metrics/integers.x86_64.O0.stripped.elf: 10 functions, 6 qualify, 6 compile, 0 do not, 6 compared (72 runs), 1 differ
+# metrics/integers.x86_64.O2.debug.elf: 10 functions, 10 qualify, 10 compile, 0 do not, 10 compared (120 runs), 0 differ
+# metrics/integers.x86_64.O2.stripped.elf: 10 functions, 10 qualify, 10 compile, 0 do not, 10 compared (120 runs), 1 differ
+# metrics/l0_arith.aarch64.O0.debug.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l0_arith.aarch64.O0.stripped.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l0_arith.aarch64.O2.debug.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.aarch64.O2.stripped.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.x86_64.O0.debug.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l0_arith.x86_64.O0.stripped.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l0_arith.x86_64.O2.debug.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.x86_64.O2.stripped.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l1_branch.aarch64.O2.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.aarch64.O2.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.x86_64.O2.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.x86_64.O2.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l5_switch.aarch64.O2.debug.elf: 18 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/l5_switch.aarch64.O2.stripped.elf: 18 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/l5_switch.x86_64.O2.debug.elf: 18 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/l5_switch.x86_64.O2.stripped.elf: 18 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/l6_abi.aarch64.O0.debug.elf: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/l6_abi.aarch64.O0.stripped.elf: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/l6_abi.aarch64.O2.debug.elf: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l6_abi.aarch64.O2.stripped.elf: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l6_abi.x86_64.O0.debug.elf: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l6_abi.x86_64.O0.stripped.elf: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l6_abi.x86_64.O2.debug.elf: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l6_abi.x86_64.O2.stripped.elf: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/loops.aarch64.O2.debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/loops.aarch64.O2.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/loops.x86_64.O2.debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/loops.x86_64.O2.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# metrics/memory.aarch64.O0.stripped.elf: 8 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/memory.aarch64.O2.stripped.elf: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/memory.x86_64.O0.stripped.elf: 8 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/memory.x86_64.O2.stripped.elf: 8 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/structs.aarch64.O2.stripped.elf: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 1 differ
+# metrics/structs.x86_64.O2.stripped.elf: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/tail_calls.aarch64.O2.debug.elf: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/tail_calls.aarch64.O2.stripped.elf: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/tail_calls.x86_64.O0.debug.elf: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/tail_calls.x86_64.O0.stripped.elf: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/tail_calls.x86_64.O2.debug.elf: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/tail_calls.x86_64.O2.stripped.elf: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# metrics/tail_indirect.aarch64.O2.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/tail_indirect.aarch64.O2.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/tail_indirect.x86_64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/tail_indirect.x86_64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/tail_indirect.x86_64.O2.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/tail_indirect.x86_64.O2.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# pe64.exe: 10 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 1 differ
+# pe64.obj: 10 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 1 differ
+# rust_probe_stripped: 545 functions, 15 qualify, 14 compile, 1 do not, 14 compared (168 runs), 1 differ
+# tail_calls.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# tail_calls_stripped.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# tail_indirect.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# tail_indirect_stripped.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# x64_div.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# x64_div_macho.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
+# x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+# x64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 1 differ
+arm64_div.o 0x1a4 is_neg: trial 1 (0xffffffffffffffff): pseudo-C gives 0xffffffff at -O1, 0xffffffff at -O0, IR gives 0x1 (int32_t)
+arm64_loops.o 0x28 sum_until: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int32_t)
+arm64_loops_stripped.o 0x28 -: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int32_t)
+calls_a64.elf 0x2102c4 pick_op: does not compile: use of undeclared identifier 'twice'
+calls_a64.o 0x10 pick_op: does not compile: use of undeclared identifier 'square'
+go_probe 0x463fe0 runtime.getfp: does not compile: use of undeclared identifier 'rbp'
+go_stripped 0x463fe0 runtime.getfp: does not compile: use of undeclared identifier 'rbp'
+metrics/alt_names.x86_64.O2.debug.elf 0x201180 alt_helper: trial 2 (0x3a2b148a): pseudo-C gives 0x9b4f6edd at -O1, 0x9b4f6edd at -O0, IR gives 0x1b4f6edd (int)
+metrics/alt_names.x86_64.O2.stripped.elf 0x201180 -: trial 2 (0x3a2b148a): pseudo-C gives 0x9b4f6edd at -O1, 0x9b4f6edd at -O0, IR gives 0x1b4f6edd (int32_t)
+metrics/arith_mixed.x86_64.O2.debug.elf 0x2011a0 helper: trial 2 (0x3a2b148a): pseudo-C gives 0x9b4f6edd at -O1, 0x9b4f6edd at -O0, IR gives 0x1b4f6edd (int)
+metrics/arith_mixed.x86_64.O2.stripped.elf 0x2011a0 -: trial 2 (0x3a2b148a): pseudo-C gives 0x9b4f6edd at -O1, 0x9b4f6edd at -O0, IR gives 0x1b4f6edd (int32_t)
+metrics/divmod_a64.aarch64.O2.debug.elf 0x2104d0 is_neg: trial 1 (0xffffffffffffffff): pseudo-C gives 0xffffffff at -O1, 0xffffffff at -O0, IR gives 0x1 (int)
+metrics/divmod_a64.aarch64.O2.stripped.elf 0x2104d0 -: trial 1 (0xffffffffffffffff): pseudo-C gives 0xffffffff at -O1, 0xffffffff at -O0, IR gives 0x1 (int32_t)
+metrics/divmod_a64.x86_64.O2.debug.elf 0x201530 is_neg: trial 1 (0xffffffffffffffff): pseudo-C gives 0xffffffff at -O1, 0xffffffff at -O0, IR gives 0x1 (int)
+metrics/divmod_a64.x86_64.O2.stripped.elf 0x201530 -: trial 1 (0xffffffffffffffff): pseudo-C gives 0xffffffff at -O1, 0xffffffff at -O0, IR gives 0x1 (int32_t)
+metrics/integers.aarch64.O0.stripped.elf 0x21026c -: trial 1 (0xffffffffffffffff, 0xffffffff80000000): pseudo-C gives 0x7fffffff at -O1, 0x7fffffff at -O0, IR gives 0xffffffff7fffffff (int64_t)
+metrics/integers.aarch64.O2.stripped.elf 0x21021c -: trial 1 (0xffffffffffffffff, 0xffffffff80000000): pseudo-C gives 0x7fffffff at -O1, 0x7fffffff at -O0, IR gives 0xffffffff7fffffff (int64_t)
+metrics/integers.aarch64.O2.stripped.elf 0x210244 -: trial 1 (0xffffffffffffffff): pseudo-C gives 0x40 at -O1, 0x40 at -O0, IR gives 0x20 (int32_t)
+metrics/integers.x86_64.O0.stripped.elf 0x2012c0 -: trial 1 (0xffffffffffffffff, 0xffffffff80000000): pseudo-C gives 0x7fffffff at -O1, 0x7fffffff at -O0, IR gives 0xffffffff7fffffff (int64_t)
+metrics/integers.x86_64.O2.stripped.elf 0x201230 -: trial 1 (0xffffffffffffffff, 0xffffffff80000000): pseudo-C gives 0x7fffffff at -O1, 0x7fffffff at -O0, IR gives 0xffffffff7fffffff (int64_t)
+metrics/loops.aarch64.O2.debug.elf 0x2101b4 sum_until: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int)
+metrics/loops.aarch64.O2.stripped.elf 0x2101b4 -: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int32_t)
+metrics/loops.x86_64.O2.debug.elf 0x2011c0 sum_until: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int)
+metrics/loops.x86_64.O2.stripped.elf 0x2011c0 -: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int32_t)
+metrics/structs.aarch64.O2.stripped.elf 0x210290 -: trial 5 (0xb6bf613dbebb45dc, 0x16b1cba95fc60262): pseudo-C gives 0xcd712ce71e81483e at -O1, 0xcd712ce71e81483e at -O0, IR gives 0xcd712ce61e81483e (int64_t)
+pe64.exe 0x140001040 reg_negative: trial 1 (0xffffffffffffffff): pseudo-C gives 0xffffffff at -O1, 0xffffffff at -O0, IR gives 0x1 (int32_t)
+pe64.obj 0x40 reg_negative: trial 1 (0xffffffffffffffff): pseudo-C gives 0xffffffff at -O1, 0xffffffff at -O0, IR gives 0x1 (int32_t)
+rust_probe_stripped 0x3cbb0 -: does not compile: use of undeclared identifier 'rax'
+rust_probe_stripped 0x50c80 -: trial 1 (0x7fffffffffffffff, 0x80000000, 0x7fffffffffffffff, 0x1): pseudo-C gives 0x3fffffff at -O1, 0x3fffffff at -O0, IR gives 0xbfffffff (uint64_t)
+x64_loops.o 0x30 sum_until: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int32_t)
+x64_loops_stripped.o 0x30 -: trial 2 (0x3a2b148a): pseudo-C gives 0xd5167777 at -O1, 0xd5167777 at -O0, IR gives 0x55167777 (int32_t)
