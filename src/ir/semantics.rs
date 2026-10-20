@@ -55,6 +55,7 @@ pub(crate) fn width(expr: &Expr) -> u32 {
             | Operation::InterleaveLow(_)
             | Operation::InterleaveHigh(_)
             | Operation::Aes { .. } => 64,
+            Operation::WideDivide { bits, .. } => u32::from(*bits),
             Operation::SignBits(bits) => 64 / u32::from(*bits),
             Operation::SumLanes(bits) => u32::from(*bits),
             Operation::ReverseBits(bits) => u32::from(*bits),
@@ -169,6 +170,9 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
 /// `op` on constant arguments, unless the result is a NaN, whose bit pattern
 /// the processor running velk would choose.
 pub(crate) fn fold(op: Operation, args: &[u64]) -> Option<u64> {
+    if faults(op, args) {
+        return None;
+    }
     let value = apply(op, args);
     let nan = match op {
         Operation::FloatAdd(p)
@@ -264,12 +268,51 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::SignBits(_)
         | Operation::SumLanes(_)
         | Operation::Aes { .. } => 64,
+        Operation::WideDivide { bits, .. } => bits,
         Operation::IntToFloat { bits, .. }
         | Operation::CountLeadingZeros(bits)
         | Operation::CountTrailingZeros(bits)
         | Operation::PopCount(bits)
         | Operation::ReverseBits(bits) => bits,
     })
+}
+
+/// Whether `op` on `args` faults instead of giving a value: a wide division
+/// by zero, or one whose quotient does not fit.
+pub(crate) fn faults(op: Operation, args: &[u64]) -> bool {
+    let Operation::WideDivide { signed, bits, .. } = op else {
+        return false;
+    };
+    wide_division(signed, u32::from(bits), args).is_none()
+}
+
+/// The quotient and remainder of a wide division, each in `bits`, or None
+/// when it faults.
+fn wide_division(signed: bool, bits: u32, args: &[u64]) -> Option<(u64, u64)> {
+    let part = |value: u64| u128::from(value & mask(bits));
+    let dividend = (part(args[0]) << bits) | part(args[1]);
+    let divisor = part(args[2]);
+    if divisor == 0 {
+        return None;
+    }
+    if signed {
+        let extend = |value: u128, width: u32| ((value << (128 - width)) as i128) >> (128 - width);
+        let dividend = extend(dividend, 2 * bits);
+        let divisor = extend(divisor, bits);
+        let quotient = dividend.checked_div(divisor)?;
+        let limit = 1i128 << (bits - 1);
+        if quotient < -limit || quotient >= limit {
+            return None;
+        }
+        let remainder = dividend % divisor;
+        Some((quotient as u64 & mask(bits), remainder as u64 & mask(bits)))
+    } else {
+        let quotient = dividend / divisor;
+        if quotient >> bits != 0 {
+            return None;
+        }
+        Some((quotient as u64, (dividend % divisor) as u64))
+    }
 }
 
 /// The value of `op` on `args`, which hold floats as bit patterns.
@@ -415,6 +458,15 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
         Operation::ReverseBits(bits) => {
             (args[0] & mask(u32::from(bits))).reverse_bits() >> (64 - u32::from(bits))
         }
+        Operation::WideDivide {
+            signed,
+            remainder,
+            bits,
+        } => match wide_division(signed, u32::from(bits), args) {
+            Some((_, rest)) if remainder => rest,
+            Some((quotient, _)) => quotient,
+            None => 0,
+        },
         Operation::Aes { round, high } => {
             let state = u128::from(args[0]) | (u128::from(args[1]) << 64);
             let key = u128::from(args[2]) | (u128::from(args[3]) << 64);

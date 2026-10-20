@@ -221,6 +221,9 @@ impl Machine<'_> {
                     .iter()
                     .map(|arg| self.eval(arg))
                     .collect::<Result<Vec<u64>, _>>()?;
+                if super::semantics::faults(*op, &values) {
+                    return Err("division by zero");
+                }
                 let result = super::semantics::apply(*op, &values);
                 if self.isa == crate::loader::Isa::X86_64 {
                     x86_nan(*op, &values, result)

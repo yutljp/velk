@@ -374,6 +374,14 @@ pub enum Operation {
         round: AesRound,
         high: bool,
     },
+    /// A dividend of twice `bits`, given as its high and low halves, divided
+    /// by a divisor of `bits`: the quotient, or the remainder. A divisor of
+    /// zero, or a quotient too wide for `bits`, faults.
+    WideDivide {
+        signed: bool,
+        remainder: bool,
+        bits: u8,
+    },
 }
 
 impl Operation {
@@ -433,6 +441,7 @@ impl Operation {
             | Operation::SignBits(_) => 1,
             Operation::FloatMulAdd(_) => 3,
             Operation::Aes { .. } => 4,
+            Operation::WideDivide { .. } => 3,
             _ => 2,
         }
     }
@@ -679,6 +688,19 @@ pub(crate) fn operation_name(op: Operation) -> String {
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),
         Operation::PopCount(bits) => format!("popcount{bits}"),
         Operation::ReverseBits(bits) => format!("bitreverse{bits}"),
+        Operation::WideDivide {
+            signed,
+            remainder,
+            bits,
+        } => format!(
+            "{}{}{bits}",
+            if remainder {
+                "wide_remainder"
+            } else {
+                "wide_divide"
+            },
+            if signed { "_s" } else { "_u" }
+        ),
         Operation::Aes { round, high } => format!(
             "{}_{}",
             match round {

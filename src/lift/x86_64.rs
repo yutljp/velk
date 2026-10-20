@@ -1251,6 +1251,43 @@ fn operand_width(ins: &Instruction, index: u32) -> Option<u8> {
 
 /// Copies `value` into the exchange register, for an instruction that
 /// overwrites what it read before writing it elsewhere.
+/// A division of the dividend in rdx:rax (or ah:al for bytes) by `divisor`
+/// of `width` bits: the quotient into rax (al) and the remainder into rdx
+/// (ah).
+fn wide_divide(lifter: &mut Lifter, signed: bool, width: u8, divisor: Expr) {
+    let divide = |remainder, high: Expr, low: Expr| {
+        Expr::apply(
+            Operation::WideDivide {
+                signed,
+                remainder,
+                bits: width,
+            },
+            vec![high, low, divisor.clone()],
+        )
+    };
+    if width == 8 {
+        let ax = Lifter::read_reg(RAX, 16);
+        let high = Expr::bin(BinOp::Shr, ax.clone(), Expr::constant(8));
+        let low = Expr::bin(BinOp::And, ax, Expr::constant(0xff));
+        let quotient = divide(false, high.clone(), low.clone());
+        let remainder = divide(true, high, low);
+        // ax takes the remainder above the quotient.
+        let joined = Expr::bin(
+            BinOp::Or,
+            Expr::bin(BinOp::Shl, remainder, Expr::constant(8)),
+            quotient,
+        );
+        lifter.assign(RAX, 16, joined);
+        return;
+    }
+    let (high, low) = (Lifter::read_reg(RDX, width), Lifter::read_reg(RAX, width));
+    let quotient = divide(false, high.clone(), low.clone());
+    // Both read the dividend, so the quotient waits while rdx changes.
+    let quotient = hold(lifter, quotient);
+    lifter.assign(RDX, width, divide(true, high, low));
+    lifter.assign(RAX, width, quotient);
+}
+
 fn hold(lifter: &mut Lifter, value: Expr) -> Expr {
     preserve_compare(
         &mut lifter.last_compare,
@@ -2074,10 +2111,7 @@ fn lift_instruction(
                 _ => 64,
             };
             if was_extended != Some(width.min(64)) && was_extended.is_none() {
-                lifter.stmts.push(Stmt::unsupported(format!(
-                    "idiv without cdq/cqo at 0x{:x}",
-                    ins.ip()
-                )));
+                wide_divide(lifter, true, width, divisor);
                 return false;
             }
             let dividend = Lifter::read_reg(RAX, width);
@@ -2100,9 +2134,7 @@ fn lift_instruction(
                 _ => 64,
             };
             if was_zeroed.is_none() || !matches!(width, 32 | 64) {
-                lifter
-                    .stmts
-                    .push(Stmt::unsupported(format!("div at 0x{:x}", ins.ip())));
+                wide_divide(lifter, false, width, divisor);
                 return false;
             }
             let dividend = Lifter::read_reg(RAX, width);

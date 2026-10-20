@@ -416,6 +416,32 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         Operation::ReverseBits(bits) => {
             format!("__builtin_bitreverse{bits}({})", render_expr(&args[0], ctx))
         }
+        // The halves joined into a dividend of twice the width.
+        Operation::WideDivide {
+            signed,
+            remainder,
+            bits,
+        } => {
+            let (narrow, wide) = match bits {
+                64 => ("int64_t", "__int128"),
+                32 => ("int32_t", "int64_t"),
+                16 => ("int16_t", "int32_t"),
+                _ => ("int8_t", "int16_t"),
+            };
+            let sign = if signed { "" } else { "u" };
+            let wide = if signed || bits != 64 {
+                format!("{sign}{wide}")
+            } else {
+                "unsigned __int128".to_owned()
+            };
+            format!(
+                "({sign}{narrow})((({wide}){} << {bits} | {}) {} {})",
+                operand(&args[0], ctx, 12, false),
+                operand(&args[1], ctx, 9, true),
+                if remainder { "%" } else { "/" },
+                operand(&args[2], ctx, 11, true)
+            )
+        }
     }
 }
 

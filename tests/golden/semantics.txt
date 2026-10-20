@@ -1,10 +1,10 @@
-# 5616 functions, 61525 compared runs
+# 5616 functions, 61527 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 333
 #   step limit (Go): 2758
 #   step limit (Rust): 1692
 #   unsupported instruction (C and C++): 68
-#   unsupported instruction (Go): 318
+#   unsupported instruction (Go): 294
 #   unsupported instruction (Rust): 108
 go_probe 0x41a360 runtime.(*gcControllerState).resetLive: trial 0: memory differs
 go_probe 0x41f2c0 runtime.deductSweepCredit: trial 2: memory differs
@@ -14,6 +14,7 @@ go_probe 0x465180 runtime.open: trial 0: calls differ (1 before, 1 after)
 go_probe 0x4651c0 runtime.closefd: trial 0: calls differ (1 before, 1 after)
 go_probe 0x4651e0 runtime.write1: trial 0: calls differ (1 before, 1 after)
 go_probe 0x465200 runtime.read: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465220 runtime.usleep: trial 0: calls differ (1 before, 1 after)
 go_probe 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)
 go_probe 0x4652c0 runtime.raiseproc: trial 0: calls differ (2 before, 2 after)
 go_probe 0x465300 runtime.tgkill: trial 0: calls differ (1 before, 1 after)
@@ -40,6 +41,7 @@ go_stripped 0x465180 runtime.open: trial 0: calls differ (1 before, 1 after)
 go_stripped 0x4651c0 runtime.closefd: trial 0: calls differ (1 before, 1 after)
 go_stripped 0x4651e0 runtime.write1: trial 0: calls differ (1 before, 1 after)
 go_stripped 0x465200 runtime.read: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465220 runtime.usleep: trial 0: calls differ (1 before, 1 after)
 go_stripped 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)
 go_stripped 0x4652c0 runtime.raiseproc: trial 0: calls differ (2 before, 2 after)
 go_stripped 0x465300 runtime.tgkill: trial 0: calls differ (1 before, 1 after)
