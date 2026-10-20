@@ -90,13 +90,28 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
 
 /// `other` when `kept` is `r & keep` and `keep` shares no bit with `mask`.
 fn outside_mask<'e>(kept: &Expr, other: &'e Expr, mask: u64) -> Option<&'e Expr> {
-    match kept {
-        Expr::Bin {
-            op: crate::ir::BinOp::And,
-            rhs,
+    (possible_bits(kept) & mask == 0).then_some(other)
+}
+
+/// The bits the expression may have set.
+pub(crate) fn possible_bits(expr: &Expr) -> u64 {
+    use crate::ir::BinOp;
+    match expr {
+        Expr::Const(value) => *value,
+        Expr::Bin { op, lhs, rhs } => match (op, rhs.as_ref()) {
+            (BinOp::And, _) => possible_bits(lhs) & possible_bits(rhs),
+            (BinOp::Or | BinOp::Xor, _) => possible_bits(lhs) | possible_bits(rhs),
+            (BinOp::Shl, Expr::Const(shift)) if *shift < 64 => possible_bits(lhs) << shift,
+            (BinOp::Shr, Expr::Const(shift)) if *shift < 64 => possible_bits(lhs) >> shift,
+            _ => u64::MAX,
+        },
+        Expr::Load {
+            width,
+            signed: false,
             ..
-        } if matches!(rhs.as_ref(), Expr::Const(keep) if keep & mask == 0) => Some(other),
-        _ => None,
+        } if *width < 8 => crate::ir::semantics::mask(u32::from(*width) * 8),
+        Expr::Reg { width, .. } if *width < 64 => crate::ir::semantics::mask(u32::from(*width)),
+        _ => u64::MAX,
     }
 }
 
