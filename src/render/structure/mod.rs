@@ -141,7 +141,19 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
 fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     let mut nodes = dominance::structure(ir)?;
     // Code the entry does not reach keeps its label, which names where it starts.
-    tidy(&mut nodes, dominance::entries(ir).into_iter().collect());
+    let entries: std::collections::HashSet<u64> = dominance::entries(ir).into_iter().collect();
+    tidy(&mut nodes, entries.clone());
+    if label_count(&nodes) == 0 {
+        return Some(nodes);
+    }
+    // A loop's exits that one branch alone enters can sit where it leaves
+    // to them, when that leaves fewer labels.
+    if let Some(mut absorbing) = dominance::structure_absorbing(ir) {
+        tidy(&mut absorbing, entries);
+        if label_count(&absorbing) < label_count(&nodes) && labels_resolve(ir, &absorbing) {
+            return Some(absorbing);
+        }
+    }
     Some(nodes)
 }
 

@@ -96,12 +96,12 @@ pub(crate) fn short_name(name: &str) -> String {
     }
 }
 
-/// The name a function's own structures start with: its short name, with
-/// its address where shortening may have made it meet another's.
+/// The name a function's own structures start with: its short name, which
+/// need not differ from another function's, as each function's output
+/// defines its structures afresh.
 pub(crate) fn structure_prefix(name: Option<&str>, addr: u64) -> String {
     match name {
-        Some(name) if short_name(name) == name => sanitize(name),
-        Some(name) => format!("{}_{addr:x}", sanitize(&short_name(name))),
+        Some(name) => sanitize(&short_name(name)),
         None => format!("sub_{addr:x}"),
     }
 }

@@ -479,10 +479,10 @@ int find_pair(int *p, int n, int target) {
         v4 = v4 + 0x1;
         v5 = v5 - 0x1;
         if (v7 == v2) {
-            return v1;
+            break;
         }
     }
-    return v10 - v6;
+    return v1;
 }
 -- signature
 int (int * p, int n, int target)

@@ -30,6 +30,9 @@ struct Graph<'a> {
     /// Where each loop's own tests, at its header and latches, leave it to.
     tests: HashMap<usize, Vec<usize>>,
     index: HashMap<u64, usize>,
+    /// Loop exits whose code sits where the loop leaves to them, ahead of a
+    /// `break`, rather than after the loop.
+    absorbed: std::collections::HashSet<usize>,
 }
 
 fn successors(blocks: &[Block], index: &HashMap<u64, usize>, block: usize) -> Vec<usize> {
@@ -57,7 +60,7 @@ fn successors(blocks: &[Block], index: &HashMap<u64, usize>, block: usize) -> Ve
 }
 
 impl<'a> Graph<'a> {
-    fn new(ir: &'a FunctionIr) -> Graph<'a> {
+    fn new(ir: &'a FunctionIr, absorb: bool) -> Graph<'a> {
         let blocks = &ir.blocks;
         let count = blocks.len();
         let index: HashMap<u64, usize> = blocks
@@ -173,7 +176,7 @@ impl<'a> Graph<'a> {
             tests.insert(*header, exits);
             loops.insert(*header, body);
         }
-        Graph {
+        let mut graph = Graph {
             blocks,
             successors,
             order,
@@ -183,7 +186,63 @@ impl<'a> Graph<'a> {
             loops,
             tests,
             index,
+            absorbed: std::collections::HashSet::new(),
+        };
+        if absorb {
+            graph.absorbed = graph.absorbed_exits();
         }
+        graph
+    }
+
+    /// The exits of each loop with several that are entered by one branch
+    /// alone and are not where the loop's own tests leave: their code can
+    /// stay inside the loop, so the others follow it. One of them stays
+    /// after the loop when nothing else does, the one heading the most code.
+    fn absorbed_exits(&self) -> std::collections::HashSet<usize> {
+        let mut absorbed = std::collections::HashSet::new();
+        for header in self.loops.keys() {
+            let exits: Vec<usize> = (0..self.blocks.len())
+                .filter(|exit| {
+                    self.idom[*exit]
+                        .is_some_and(|parent| self.hoisted(parent, *exit) == Some(*header))
+                })
+                .collect();
+            if exits.len() < 2 {
+                continue;
+            }
+            // A short return already reads in place at each branch to it.
+            let private = |exit: &usize| {
+                let parent = self.idom[*exit].expect("an exit has a parent");
+                !self.merge[*exit]
+                    && !self.tests[header].contains(exit)
+                    && self.successors[parent].contains(exit)
+                    && !self
+                        .through_jumps(*exit)
+                        .is_some_and(|end| self.returns_only(end))
+            };
+            let mut candidates: Vec<usize> = exits.iter().copied().filter(private).collect();
+            if candidates.len() == exits.len() {
+                let largest = candidates
+                    .iter()
+                    .copied()
+                    .max_by_key(|exit| (self.subtree_size(*exit), std::cmp::Reverse(*exit)))
+                    .expect("several exits");
+                candidates.retain(|exit| *exit != largest);
+            }
+            absorbed.extend(candidates);
+        }
+        absorbed
+    }
+
+    /// How many blocks the subtree `block` heads holds.
+    fn subtree_size(&self, block: usize) -> usize {
+        let mut count = 0;
+        let mut pending = vec![block];
+        while let Some(next) = pending.pop() {
+            count += 1;
+            pending.extend(self.children[next].iter().copied());
+        }
+        count
     }
 
     /// A block nothing reaches that only traps, as the filler between
@@ -232,6 +291,9 @@ impl<'a> Graph<'a> {
         let mut inside = Vec::new();
         let mut after = Vec::new();
         for child in &self.children[block] {
+            if self.absorbed.contains(child) {
+                continue;
+            }
             match self.hoisted(block, *child) {
                 // Leaving a loop this block heads: the child follows the loop.
                 Some(outer) if outer == block => after.push(*child),
@@ -270,7 +332,9 @@ impl<'a> Graph<'a> {
                     let Some(parent) = self.idom[*other] else {
                         return false;
                     };
-                    parent != block && self.hoisted(parent, *other) == Some(block)
+                    parent != block
+                        && !self.absorbed.contains(other)
+                        && self.hoisted(parent, *other) == Some(block)
                 })
                 .collect();
             leaving.sort_by_key(|other| self.order[*other]);
@@ -430,8 +494,9 @@ impl<'a> Graph<'a> {
         self.idom[target] == Some(from)
             && !self.merge[target]
             && self.order[target] > self.order[from]
-            && self.hoisted(from, target).is_none()
-            && !(self.loops.contains_key(&from) && !self.in_loop(from, target))
+            && (self.absorbed.contains(&target)
+                || (self.hoisted(from, target).is_none()
+                    && !(self.loops.contains_key(&from) && !self.in_loop(from, target))))
     }
 
     /// A branch from `from` to `target`: the target's code, when this branch
@@ -503,7 +568,7 @@ pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
     if ir.blocks.is_empty() {
         return Vec::new();
     }
-    let graph = Graph::new(ir);
+    let graph = Graph::new(ir, false);
     (1..ir.blocks.len())
         .filter(|block| graph.idom[*block].is_none() && !graph.padding(*block))
         .map(|block| ir.blocks[block].start)
@@ -838,10 +903,20 @@ fn while_loop(body: &[Node]) -> Option<Node> {
 /// The function structured by its dominator tree, or None when the tree is
 /// too deep to walk.
 pub(super) fn structure(ir: &FunctionIr) -> Option<Vec<Node>> {
+    structure_with(ir, false)
+}
+
+/// The same, with each loop's exits that one branch alone enters placed
+/// where the loop leaves to them, so the others follow the loop.
+pub(super) fn structure_absorbing(ir: &FunctionIr) -> Option<Vec<Node>> {
+    structure_with(ir, true)
+}
+
+fn structure_with(ir: &FunctionIr, absorb: bool) -> Option<Vec<Node>> {
     if ir.blocks.is_empty() {
         return Some(Vec::new());
     }
-    let graph = Graph::new(ir);
+    let graph = Graph::new(ir, absorb);
     let mut nodes = graph.tree(0, 0)?;
     // Code the entry does not reach, and joins of it with code the entry
     // does reach, follow the function's own code.

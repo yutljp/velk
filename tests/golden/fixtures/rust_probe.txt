@@ -1,4 +1,4 @@
-# rust_probe: elf x86_64 0x14e70, 545 functions, 0 lift failures, 1 unsupported, 2847 gotos
+# rust_probe: elf x86_64 0x14e70, 545 functions, 0 lift failures, 1 unsupported, 2410 gotos
 0x14e70 38 _start symtab,entry,unwind
 0x14ea0 48 deregister_tm_clones symtab
 0x14ed0 64 register_tm_clones symtab
@@ -557,7 +557,7 @@ void rust_probe__main(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
     local_0 = 0x3;
     local_1 = &local_0;
     local_2 = qword_55aa8;
-    std__io__stdio___print(0x5091, &local_1, a2, a3);
+    stdio___print(0x5091, &local_1, a2, a3);
 }
 -- signature
 void (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
