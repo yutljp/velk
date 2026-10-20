@@ -1085,7 +1085,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     None => format!(
                         "*({} *)({}) = {};",
                         type_of(*width, false),
-                        address,
+                        expr::local_plus_offset(addr, ctx).unwrap_or(address),
                         render_value(value, ctx)
                     ),
                 },

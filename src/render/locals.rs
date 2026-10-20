@@ -55,7 +55,23 @@ pub(crate) fn stack_locals(
         floats: HashMap::new(),
         scaled: std::collections::HashSet::new(),
     };
-    let accesses = frame_accesses(ir, sp, frames);
+    let mut accesses = frame_accesses(ir, sp, frames);
+    // A buffer indexed from several nearby places is one local, from the
+    // lowest of them.
+    let buffers: Vec<i64> = accesses
+        .iter()
+        .filter(|(_, _, width, signed)| *width == 0 && !*signed)
+        .filter_map(|(slot, ..)| *slot)
+        .collect();
+    accesses.retain(|(slot, _, width, signed)| {
+        !(*width == 0
+            && !*signed
+            && slot.is_some_and(|slot| {
+                buffers
+                    .iter()
+                    .any(|lower| *lower < slot && slot - *lower < BUFFER_REACH)
+            }))
+    });
     let mut slot_names: HashMap<i64, Local> = HashMap::new();
     let mut rendered: HashMap<String, Option<i64>> = HashMap::new();
     for (slot, address, width, signed) in &accesses {
@@ -584,20 +600,76 @@ fn frame_accesses(
             for (addr, slot, width, signed) in found {
                 accesses.push((Some(slot), addr, width, signed));
             }
-            for (addr, slot) in taken {
-                accesses.push((Some(slot), addr, 0, true));
+            for (addr, slot, buffer) in taken {
+                accesses.push((Some(slot), addr, 0, !buffer));
             }
         }
     }
     accesses
 }
 
+/// How far above a buffer's start another indexed place still counts as
+/// inside it.
+pub(crate) const BUFFER_REACH: i64 = 16;
+
+/// A sum of the stack pointer, constants and other terms, split into the
+/// stack pointer plus the constants and the other terms.
+pub(crate) fn offset_local(expr: &Expr, sp: u16) -> Option<(Expr, Vec<&Expr>)> {
+    fn terms<'a>(expr: &'a Expr, out: &mut Vec<&'a Expr>) {
+        match expr {
+            Expr::Bin {
+                op: BinOp::Add,
+                lhs,
+                rhs,
+            } => {
+                terms(lhs, out);
+                terms(rhs, out);
+            }
+            other => out.push(other),
+        }
+    }
+    if !matches!(expr, Expr::Bin { op: BinOp::Add, .. }) {
+        return None;
+    }
+    let mut parts = Vec::new();
+    terms(expr, &mut parts);
+    let mut base = None;
+    let mut offset = 0u64;
+    let mut rest = Vec::new();
+    for part in parts {
+        match part {
+            Expr::Reg { index, width: 64 } if *index == sp && base.is_none() => base = Some(part),
+            Expr::Const(value) => offset = offset.wrapping_add(*value),
+            other => rest.push(other),
+        }
+    }
+    if rest.is_empty() {
+        return None;
+    }
+    Some((
+        Expr::bin(BinOp::Add, base?.clone(), Expr::Const(offset)),
+        rest,
+    ))
+}
+
 /// The local slots an expression takes the address of as a value, not to
 /// load through.
-fn frame_addresses(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64)>) {
+fn frame_addresses(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, bool)>) {
     if let Some(slot) = frame_slot(expr, frame, sp) {
         if slot < 0 {
-            out.push((expr.clone(), slot));
+            out.push((expr.clone(), slot, false));
+        }
+        return;
+    }
+    // A local with an offset added, as an index into a buffer: the local
+    // starts where the stack pointer and the constants put it.
+    if let Some((base, rest)) = offset_local(expr, sp) {
+        let slot = frame_slot(&base, frame, sp).unwrap_or(0);
+        if slot < 0 {
+            out.push((base, slot, true));
+        }
+        for term in rest {
+            frame_addresses(term, frame, sp, out);
         }
         return;
     }

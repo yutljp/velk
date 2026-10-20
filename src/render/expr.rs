@@ -636,7 +636,11 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
                 Some(name) => slot_access(name, *width, *signed, ctx),
                 None => match global_name(addr, *width, ctx) {
                     Some(name) => name,
-                    None => format!("*({} *)({})", type_of(*width, *signed), address),
+                    None => format!(
+                        "*({} *)({})",
+                        type_of(*width, *signed),
+                        local_plus_offset(addr, ctx).unwrap_or(address)
+                    ),
                 },
             }
         }
@@ -683,42 +687,33 @@ fn signed_parameter(expr: &Expr, ctx: &Ctx<'_>) -> bool {
 /// covers only part of it.
 /// `(uint8_t *)&local + offset` for a sum of the stack pointer, constants
 /// and other terms whose stack part addresses a local.
-fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
-    fn terms<'a>(expr: &'a Expr, out: &mut Vec<&'a Expr>) {
-        match expr {
-            Expr::Bin {
-                op: BinOp::Add,
-                lhs,
-                rhs,
-            } => {
-                terms(lhs, out);
-                terms(rhs, out);
-            }
-            other => out.push(other),
-        }
-    }
-    let sp = crate::arch::stack_pointer(ctx.isa);
-    let mut parts = Vec::new();
-    terms(value, &mut parts);
-    let mut base = None;
-    let mut offset = 0u64;
-    let mut rest = Vec::new();
-    for part in parts {
-        match part {
-            Expr::Reg { index, width: 64 } if *index == sp && base.is_none() => base = Some(part),
-            Expr::Const(value) => offset = offset.wrapping_add(*value),
-            other => rest.push(other.clone()),
-        }
-    }
-    let base = base?;
-    if rest.is_empty() {
+pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    let (slot, rest) =
+        crate::render::locals::offset_local(value, crate::arch::stack_pointer(ctx.isa))?;
+    let Expr::Bin { lhs: base, rhs, .. } = &slot else {
         return None;
-    }
-    let slot = Expr::bin(BinOp::Add, base.clone(), Expr::Const(offset));
-    let name = ctx.slots.get(&render_expr(&slot, ctx))?;
-    let rest = rest
+    };
+    let Expr::Const(offset) = rhs.as_ref() else {
+        return None;
+    };
+    // The buffer starts at the slot or a little below it.
+    let (name, below) = (0..crate::render::locals::BUFFER_REACH as u64).find_map(|below| {
+        let start = Expr::bin(
+            BinOp::Add,
+            base.as_ref().clone(),
+            Expr::Const(offset.wrapping_sub(below)),
+        );
+        ctx.slots
+            .get(&render_expr(&start, ctx))
+            .map(|name| (name, below))
+    })?;
+    let mut rest = rest
         .into_iter()
+        .cloned()
         .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))?;
+    if below != 0 {
+        rest = Expr::bin(BinOp::Add, rest, Expr::Const(below));
+    }
     Some(format!("(uint8_t *)&{name} + {}", render_expr(&rest, ctx)))
 }
 
