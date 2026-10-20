@@ -69,7 +69,7 @@ fn pick_op @ 0x2102d4 (size 28)
 int apply_table(unsigned int index, int x) {
     int64_t v2;
 
-    w8 = index - ((index * 0xaaaaaaab >> 0x21) + (index * 0xaaaaaaab >> 0x21 << 0x1));
+    w8 = index % 0x3;
     v2 = table[w8];
     return (*(v2))(x);
 }
@@ -80,7 +80,7 @@ int (unsigned int index, int x)
 -- ir
 fn apply_table @ 0x2102f0 (size 44)
   blk0 @ 0x2102f0:
-    x8 = ((w0 - (((w0 * #0xaaaaaaab) >> #0x21) + ((((w0 * #0xaaaaaaab) >> #0x21) & #0xffffffff) << #0x1))) & #0xffffffff)
+    x8 = ((w0 % #0x3) & #0xffffffff)
     v2 = load64((#0x220528 + ((x8 & #0xffffffff) << #0x3)))
     v3 = call *v2(w1)
     ret v3

@@ -19,7 +19,7 @@ parameter width | aarch64.O0 | 147/153
 parameter width | aarch64.O2 | 147/153
 parameter width | x86_64.O0 | 147/152
 parameter width | x86_64.O2 | 147/152
-parameter sign | aarch64.O0 | 131/147
+parameter sign | aarch64.O0 | 135/147
 parameter sign | aarch64.O2 | 135/147
 parameter sign | x86_64.O0 | 135/147
 parameter sign | x86_64.O2 | 135/147
@@ -142,8 +142,8 @@ divmod_a64.aarch64.O0 0x21043c sdiv10: ok
 divmod_a64.aarch64.O0 0x210458 sdiv16: ok
 divmod_a64.aarch64.O0 0x210474 ldiv16: ok
 divmod_a64.aarch64.O0 0x210490 smod3: ok
-divmod_a64.aarch64.O0 0x2104b4 umod3: parameter 0 signedness differs
-divmod_a64.aarch64.O0 0x2104d8 umod10: parameter 0 signedness differs
+divmod_a64.aarch64.O0 0x2104b4 umod3: ok
+divmod_a64.aarch64.O0 0x2104d8 umod10: ok
 divmod_a64.aarch64.O0 0x2104fc smod10: ok
 divmod_a64.aarch64.O0 0x210520 lmod10: ok
 divmod_a64.aarch64.O0 0x210544 umod10b: ok
@@ -239,9 +239,9 @@ divmod_x64.aarch64.O0 0x210340 h10: ok
 divmod_x64.aarch64.O0 0x21035c u64: ok
 divmod_x64.aarch64.O0 0x210378 sdiv16x: ok
 divmod_x64.aarch64.O0 0x210394 ldiv16x: ok
-divmod_x64.aarch64.O0 0x2103b0 umod3x: parameter 0 signedness differs
+divmod_x64.aarch64.O0 0x2103b0 umod3x: ok
 divmod_x64.aarch64.O0 0x2103d4 smod3x: ok
-divmod_x64.aarch64.O0 0x2103f8 pmod8x: parameter 0 signedness differs
+divmod_x64.aarch64.O0 0x2103f8 pmod8x: ok
 divmod_x64.aarch64.O0 0x21041c pmod8s: ok
 divmod_x64.aarch64.O0 0x210440 pmod16l: ok
 divmod_x64.aarch64.O0 0x210464 pdiv16l: ok

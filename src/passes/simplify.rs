@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::{Expr, FunctionIr, Stmt};
+use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 
 /// Propagates constants within a basic block and simplifies expressions.
 pub fn simplify(ir: &mut FunctionIr) {
@@ -404,7 +404,131 @@ fn counted_bits(expr: &Expr) -> Option<Expr> {
         .reduce(|sum, count| Expr::bin(crate::ir::BinOp::Add, sum, count))
 }
 
+/// `x` without a mask to 32 bits it does not need: a value that already
+/// fits.
+fn low32(expr: &Expr) -> &Expr {
+    match expr {
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) && fits32(lhs) => lhs,
+        other => other,
+    }
+}
+
+/// Whether `expr` provably holds less than 2^32.
+fn fits32(expr: &Expr) -> bool {
+    match expr {
+        Expr::Reg { width, .. } => *width <= 32,
+        Expr::Load {
+            width,
+            signed: false,
+            ..
+        } => *width <= 4,
+        Expr::Const(value) => *value <= 0xffff_ffff,
+        Expr::Bin {
+            op: BinOp::And,
+            rhs,
+            ..
+        } => matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff),
+        Expr::Bin {
+            op: BinOp::DivU | BinOp::ModU | BinOp::Shr,
+            lhs,
+            ..
+        } => fits32(lhs),
+        _ => false,
+    }
+}
+
+/// The divisor a multiply-and-shift by `magic` and `shift` divides a value
+/// below 2^32 by, exactly: `(x * magic) >> shift` is `x / d` for every such
+/// `x` when `2^shift <= magic * d <= 2^shift + 2^(shift - 32)`.
+fn magic_divisor(magic: u64, shift: u64) -> Option<u64> {
+    if magic == 0 || magic > 0xffff_ffff || !(32..64).contains(&shift) {
+        return None;
+    }
+    let power = 1u128 << shift;
+    let estimate = power / u128::from(magic);
+    (estimate..=estimate + 1).find_map(|divisor| {
+        let product = u128::from(magic) * divisor;
+        (divisor >= 2 && product >= power && product - power <= 1u128 << (shift - 32))
+            .then_some(divisor as u64)
+    })
+}
+
 pub(crate) fn algebraic(expr: Expr) -> Expr {
+    // A multiply by a magic number and a shift, as compilers divide a
+    // 32-bit value by a constant.
+    if let Expr::Bin {
+        op: BinOp::Shr,
+        lhs,
+        rhs,
+    } = &expr
+        && let (
+            Expr::Bin {
+                op: BinOp::Mul,
+                lhs: value,
+                rhs: magic,
+            },
+            Expr::Const(shift),
+        ) = (lhs.as_ref(), rhs.as_ref())
+        && let Expr::Const(magic) = magic.as_ref()
+        && fits32(value)
+        && let Some(divisor) = magic_divisor(*magic, *shift)
+    {
+        return Expr::bin(BinOp::DivU, value.as_ref().clone(), Expr::Const(divisor));
+    }
+    // `q + (q << k)` is `q * (2^k + 1)`, for a quotient whose remainder
+    // this leads to.
+    if let Expr::Bin {
+        op: BinOp::Add,
+        lhs,
+        rhs,
+    } = &expr
+        && let Expr::Bin {
+            op: BinOp::Shl,
+            lhs: shifted,
+            rhs: amount,
+        } = rhs.as_ref()
+        && let Expr::Const(amount @ 1..=31) = amount.as_ref()
+        && low32(shifted) == low32(lhs)
+        && matches!(
+            low32(lhs),
+            Expr::Bin {
+                op: BinOp::DivU,
+                ..
+            }
+        )
+        && fits32(low32(lhs))
+    {
+        return Expr::bin(
+            BinOp::Mul,
+            low32(lhs).clone(),
+            Expr::Const((1 << amount) + 1),
+        );
+    }
+    // `x - (x / d) * d` is `x % d`.
+    if let Expr::Bin {
+        op: BinOp::Sub,
+        lhs,
+        rhs,
+    } = &expr
+        && let Expr::Bin {
+            op: BinOp::Mul,
+            lhs: quotient,
+            rhs: times,
+        } = low32(rhs)
+        && let Expr::Bin {
+            op: BinOp::DivU,
+            lhs: dividend,
+            rhs: divisor,
+        } = low32(quotient)
+        && times == divisor
+        && low32(dividend) == low32(lhs)
+    {
+        return Expr::bin(BinOp::ModU, low32(lhs).clone(), divisor.as_ref().clone());
+    }
     // Only where the operations around it see the same width.
     if let Some(whole) = reassembled(&expr)
         && crate::ir::semantics::width(&whole) == crate::ir::semantics::width(&expr)
@@ -680,5 +804,34 @@ mod tests {
 
         let rendered = ir.render();
         assert!(rendered.contains("ret #0x55555556"), "{rendered}");
+    }
+}
+
+#[cfg(test)]
+mod magic_tests {
+    use super::magic_divisor;
+
+    #[test]
+    fn a_magic_multiply_divides_every_32_bit_value() {
+        // The magic numbers compilers use for unsigned 32-bit division.
+        for (magic, shift, divisor) in [
+            (0xaaaa_aaab, 33, 3),
+            (0xcccc_cccd, 34, 5),
+            (0xcccc_cccd, 35, 10),
+        ] {
+            assert_eq!(magic_divisor(magic, shift), Some(divisor));
+            for x in [
+                0u64,
+                1,
+                2,
+                divisor - 1,
+                divisor,
+                0x7fff_ffff,
+                0xffff_fffe,
+                0xffff_ffff,
+            ] {
+                assert_eq!((x * magic) >> shift, x / divisor, "{x} / {divisor}");
+            }
+        }
     }
 }

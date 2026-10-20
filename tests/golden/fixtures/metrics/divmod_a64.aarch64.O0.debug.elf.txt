@@ -203,10 +203,7 @@ fn smod3 @ 0x210490 (size 36)
 -- decompile
 /* velk pseudo-C: umod3 @ 0x2104b4 */
 unsigned int umod3(unsigned int x) {
-    uint32_t v1;
-
-    v1 = x;
-    return v1 - v1 / 0x3 * 0x3;
+    return x % 0x3;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -215,8 +212,7 @@ unsigned int (unsigned int x)
 -- ir
 fn umod3 @ 0x2104b4 (size 36)
   blk0 @ 0x2104b4:
-    v1 = (w0 & #0xffffffff)
-    ret ((v1 - ((v1 / #0x3) * #0x3)) & #0xffffffff)
+    ret (((w0 & #0xffffffff) % #0x3) & #0xffffffff)
 -- card
 {"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -224,10 +220,7 @@ fn umod3 @ 0x2104b4 (size 36)
 -- decompile
 /* velk pseudo-C: umod10 @ 0x2104d8 */
 unsigned int umod10(unsigned int x) {
-    uint32_t v1;
-
-    v1 = x;
-    return v1 - v1 / 0xa * 0xa;
+    return x % 0xa;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -236,8 +229,7 @@ unsigned int (unsigned int x)
 -- ir
 fn umod10 @ 0x2104d8 (size 36)
   blk0 @ 0x2104d8:
-    v1 = (w0 & #0xffffffff)
-    ret ((v1 - ((v1 / #0xa) * #0xa)) & #0xffffffff)
+    ret (((w0 & #0xffffffff) % #0xa) & #0xffffffff)
 -- card
 {"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -283,7 +275,7 @@ fn lmod10 @ 0x210520 (size 36)
 -- decompile
 /* velk pseudo-C: umod10b @ 0x210544 */
 unsigned long long umod10b(unsigned long long x) {
-    return x - x / 0xa * 0xa;
+    return x % 0xa;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -292,7 +284,7 @@ unsigned long long (unsigned long long x)
 -- ir
 fn umod10b @ 0x210544 (size 36)
   blk0 @ 0x210544:
-    ret (x0 - ((x0 / #0xa) * #0xa))
+    ret (x0 % #0xa)
 -- card
 {"addr":"0x210544","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 

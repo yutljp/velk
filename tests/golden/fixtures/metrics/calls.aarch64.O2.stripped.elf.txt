@@ -69,7 +69,7 @@ fn <unnamed> @ 0x2102d4 (size 28)
 int32_t sub_2102f0(uint32_t a0, int32_t a1) {
     int64_t v2;
 
-    w8 = a0 - ((a0 * 0xaaaaaaab >> 0x21) + (a0 * 0xaaaaaaab >> 0x21 << 0x1));
+    w8 = a0 % 0x3;
     v2 = qword_220528[w8];
     return (*(v2))(a1);
 }
@@ -80,7 +80,7 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2102f0 (size 44)
   blk0 @ 0x2102f0:
-    x8 = ((w0 - (((w0 * #0xaaaaaaab) >> #0x21) + ((((w0 * #0xaaaaaaab) >> #0x21) & #0xffffffff) << #0x1))) & #0xffffffff)
+    x8 = ((w0 % #0x3) & #0xffffffff)
     v2 = load64((#0x220528 + ((x8 & #0xffffffff) << #0x3)))
     v3 = call *v2(w1)
     ret v3
