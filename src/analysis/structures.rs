@@ -7,11 +7,7 @@ use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt, Structure};
 /// each field's width and no two overlap. A pointer the body indexes or
 /// moves points into an array instead, and keeps its scalar type.
 pub(crate) fn recover(ir: &mut FunctionIr) {
-    let function = crate::render::sanitize(
-        &ir.name
-            .clone()
-            .unwrap_or_else(|| format!("sub_{:x}", ir.addr)),
-    );
+    let function = crate::render::structure_prefix(ir.name.as_deref(), ir.addr);
     let mut accesses = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Store { addr, width, .. } = stmt {

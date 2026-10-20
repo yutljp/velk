@@ -41,10 +41,10 @@ pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
 /// the parameter list a demangled name ends in, when no other function has
 /// that name too.
 pub fn callee_names(image: &crate::loader::Image) -> HashMap<u64, String> {
-    let mut bases: HashMap<&str, usize> = HashMap::new();
+    let mut bases: HashMap<String, usize> = HashMap::new();
     for function in image.functions.values() {
         if let Some(name) = &function.name {
-            *bases.entry(without_parameters(name)).or_default() += 1;
+            *bases.entry(short_name(name)).or_default() += 1;
         }
     }
     image
@@ -54,17 +54,89 @@ pub fn callee_names(image: &crate::loader::Image) -> HashMap<u64, String> {
         .map(|(address, name)| (*address, name.clone()))
         .chain(image.functions.iter().filter_map(|(address, function)| {
             let name = function.name.as_ref()?;
-            let base = without_parameters(name);
+            let base = short_name(name);
+            // Names that would meet take the address after them.
             Some((
                 *address,
-                if bases.get(base) == Some(&1) {
-                    base.to_owned()
+                if bases.get(&base) == Some(&1) {
+                    base
                 } else {
-                    name.clone()
+                    format!("{base}_{address:x}")
                 },
             ))
         }))
         .collect()
+}
+
+/// A demangled name as callers read it: without its parameter list, its
+/// generic arguments, or the module path past the last two parts, as
+/// `<core::io::error::Error>::new::<&str>` reads `Error::new`.
+pub(crate) fn short_name(name: &str) -> String {
+    let base = without_parameters(name);
+    let last = |path: &str, keep: usize| -> String {
+        let parts: Vec<&str> = path.split("::").filter(|part| !part.is_empty()).collect();
+        parts[parts.len().saturating_sub(keep)..].join("::")
+    };
+    // `<Type as Trait>::method` is the type's method.
+    if let Some(inner) = base.strip_prefix('<')
+        && let Some(close) = matching_close(inner)
+    {
+        let (qualified, rest) = (&inner[..close], &inner[close + 1..]);
+        let owner = without_generics(qualified.split(" as ").next().unwrap_or(qualified));
+        let owner = last(&owner, 1);
+        let rest = without_generics(rest);
+        let short = format!("{owner}::{}", last(&rest, 2));
+        return short.trim_end_matches("::").to_owned();
+    }
+    let short = last(&without_generics(base), 2);
+    if short.is_empty() {
+        base.to_owned()
+    } else {
+        short
+    }
+}
+
+/// The name a function's own structures start with: its short name, with
+/// its address where shortening may have made it meet another's.
+pub(crate) fn structure_prefix(name: Option<&str>, addr: u64) -> String {
+    match name {
+        Some(name) if short_name(name) == name => sanitize(name),
+        Some(name) => format!("{}_{addr:x}", sanitize(&short_name(name))),
+        None => format!("sub_{addr:x}"),
+    }
+}
+
+/// Where the `>` closing the `<` before `text` falls in it.
+fn matching_close(text: &str) -> Option<usize> {
+    let mut depth = 1usize;
+    for (at, c) in text.char_indices() {
+        match c {
+            '<' => depth += 1,
+            '>' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(at);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+/// The text without any `<...>` and what they hold.
+fn without_generics(text: &str) -> String {
+    let mut out = String::new();
+    let mut depth = 0usize;
+    for c in text.chars() {
+        match c {
+            '<' => depth += 1,
+            '>' => depth = depth.saturating_sub(1),
+            _ if depth == 0 => out.push(c),
+            _ => {}
+        }
+    }
+    out.replace("::::", "::")
 }
 
 /// A demangled name without the parameter list it ends in, as

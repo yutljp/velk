@@ -928,12 +928,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             let position = signature.params.len();
             let name = format!(
                 "{}_a{position}",
-                crate::render::sanitize(
-                    &function
-                        .name
-                        .clone()
-                        .unwrap_or_else(|| format!("sub_{:x}", function.addr))
-                )
+                crate::render::structure_prefix(function.name.as_deref(), function.addr)
             );
             structures.push(crate::ir::Structure {
                 name: name.clone(),
