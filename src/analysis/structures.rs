@@ -45,7 +45,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         param.ty = CType::pointer_to(CType::Named(format!("struct {name}")));
         structures.push(Structure { name, fields });
     }
-    ir.structures = structures;
+    ir.structures.extend(structures);
 }
 
 /// The fields at the fixed offsets `base` is accessed at, or `None` when it

@@ -149,7 +149,13 @@ fn <unnamed> @ 0x201310 (size 52)
 == 0x201350 -
 -- decompile
 /* velk pseudo-C: sub_201350 @ 0x201350 */
-int64_t sub_201350(void) {
+struct sub_201350_a0 {
+    int64_t field_0x0;
+    int64_t field_0x8;
+    int64_t field_0x10;
+    int64_t field_0x18;
+};
+int64_t sub_201350(struct sub_201350_a0 a0) {
     uint64_t *v1;
 
     v1 = rsp + 0x8;

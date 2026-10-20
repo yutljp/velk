@@ -566,6 +566,53 @@ pub(crate) fn algebraic(expr: Expr) -> Expr {
     {
         return whole;
     }
+    // `x | ((x >> k) & m) << k` sets only bits of `x` that `x` sets: `x`;
+    // so is `(x & low) | ((x >> k) & m) << k` when the two cover every bit.
+    if let Expr::Bin {
+        op: BinOp::Or,
+        lhs,
+        rhs,
+    } = &expr
+        && let Expr::Bin {
+            op: BinOp::Shl,
+            lhs: masked,
+            rhs: back,
+        } = rhs.as_ref()
+        && let Expr::Bin {
+            op: BinOp::And,
+            lhs: shifted,
+            rhs: mask,
+        } = masked.as_ref()
+        && matches!(mask.as_ref(), Expr::Const(_))
+        && let Expr::Bin {
+            op: BinOp::Shr,
+            lhs: value,
+            rhs: out,
+        } = shifted.as_ref()
+        && out == back
+    {
+        if value == lhs {
+            return lhs.as_ref().clone();
+        }
+        if let (
+            Expr::Bin {
+                op: BinOp::And,
+                lhs: low_value,
+                rhs: low,
+            },
+            Expr::Const(shift),
+            Expr::Const(high),
+        ) = (lhs.as_ref(), back.as_ref(), mask.as_ref())
+            && let Expr::Const(low) = low.as_ref()
+            && *shift > 0
+            && *shift < 64
+            && low_value == value
+            && *low == (1u64 << shift) - 1
+            && (high << shift) | low == u64::MAX
+        {
+            return value.as_ref().clone();
+        }
+    }
     let Expr::Bin { op, lhs, rhs } = &expr else {
         return expr;
     };

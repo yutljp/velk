@@ -17,6 +17,9 @@ pub struct Signature {
     pub stack: Vec<i64>,
     /// The body reads AArch64's indirect result register before writing it.
     pub indirect_result: bool,
+    /// The stack arguments come while argument registers are left free:
+    /// they are one structure passed by value.
+    pub aggregate: bool,
 }
 
 fn reads(expr: &Expr, into: &mut HashSet<u16>) {
@@ -661,10 +664,16 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
     let registers_full = arguments
         .iter()
         .all(|register| params.iter().any(|param| param.index == *register));
+    // SysV passes a structure too large for registers in the caller's frame
+    // even while argument registers are free.
     let stack = match (registers_full, isa) {
         (true, Isa::X86_64 | Isa::AArch64) => stack_arguments(blocks, isa, convention),
+        (false, Isa::X86_64) if convention == Convention::SysV => {
+            stack_arguments(blocks, isa, convention)
+        }
         _ => Vec::new(),
     };
+    let aggregate = !registers_full && !stack.is_empty();
 
     Signature {
         params,
@@ -673,6 +682,7 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
         signed: signed_args,
         stack,
         indirect_result: isa == Isa::AArch64 && inputs.contains(&8),
+        aggregate,
     }
 }
 
@@ -693,17 +703,31 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i6
         return Vec::new();
     }
     entry[0] = Some((Some(0), None));
-    let offset_of = |expr: &Expr, frame: Frame| -> Option<i64> {
-        let (base, delta) = match expr {
-            Expr::Reg { index, .. } => (*index, 0),
+    // A register plus constants, nested as the upper half of a vector load
+    // adds its eight bytes.
+    fn based(expr: &Expr) -> Option<(u16, i64)> {
+        match expr {
+            Expr::Reg { index, .. } => Some((*index, 0)),
             Expr::Bin {
                 op: crate::ir::BinOp::Add,
                 lhs,
                 rhs,
-            } => match (lhs.as_ref(), rhs.as_ref()) {
-                (Expr::Reg { index, .. }, Expr::Const(delta)) => (*index, *delta as i64),
-                _ => return None,
+            } => match rhs.as_ref() {
+                Expr::Const(delta) => {
+                    based(lhs).map(|(base, inner)| (base, inner.wrapping_add(*delta as i64)))
+                }
+                _ => None,
             },
+            _ => None,
+        }
+    }
+    let offset_of = |expr: &Expr, frame: Frame| -> Option<i64> {
+        let (base, delta) = match expr {
+            Expr::Reg { .. }
+            | Expr::Bin {
+                op: crate::ir::BinOp::Add,
+                ..
+            } => based(expr)?,
             Expr::Bin {
                 op: crate::ir::BinOp::Sub,
                 lhs,
@@ -783,25 +807,42 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i6
         let Some(mut frame) = entry[index] else {
             continue;
         };
+        // Registers the block sets to an address in the caller's frame, as
+        // an argument structure's address the body reads it through.
+        let mut held: std::collections::HashMap<u16, i64> = std::collections::HashMap::new();
         for stmt in &block.stmts {
-            let mut loads = Vec::new();
-            for value in stmt.operands() {
-                integer_loads(value, &mut loads);
-                if let Expr::Apply { args, .. } = value {
-                    for arg in args {
-                        if let Expr::Load { addr, width, .. } = arg {
-                            loads.push((addr.as_ref(), *width));
-                        }
-                    }
+            // Every load, the ones vector operations make included.
+            fn all_loads<'a>(expr: &'a Expr, out: &mut Vec<&'a Expr>) {
+                if let Expr::Load { addr, .. } = expr {
+                    out.push(addr);
+                }
+                for child in crate::ir::visit::children(expr) {
+                    all_loads(child, out);
                 }
             }
-            for (addr, _) in loads {
-                if let Some(at) = offset_of(addr, frame)
+            let mut loads = Vec::new();
+            for value in stmt.operands() {
+                all_loads(value, &mut loads);
+            }
+            for addr in loads {
+                let through = based(addr)
+                    .and_then(|(base, delta)| Some(held.get(&base)?.wrapping_add(delta)));
+                if let Some(at) = offset_of(addr, frame).or(through)
                     && at >= start
                     && (at - start) % 8 == 0
                     && at - start < 8 * 64
                 {
                     last = last.max(Some(at));
+                }
+            }
+            if let Stmt::Assign { dest, value } = stmt {
+                match offset_of(value, frame).filter(|at| *at >= start) {
+                    Some(at) if dest.index != sp && dest.index != fp => {
+                        held.insert(dest.index, at);
+                    }
+                    _ => {
+                        held.remove(&dest.index);
+                    }
                 }
             }
             step(stmt, &mut frame);

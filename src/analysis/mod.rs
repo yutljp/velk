@@ -920,22 +920,53 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         image.convention_of(function.addr),
         image.go,
     );
-    // The arguments past the registers follow the register ones.
-    let stack_params = signature
-        .stack
-        .iter()
-        .enumerate()
-        .map(|(slot, offset)| {
-            let position = signature.params.len() + slot;
-            crate::ir::StackParam {
-                offset: *offset,
-                size: 8,
+    // The arguments past the registers follow the register ones; with
+    // registers left free, they are one structure.
+    let mut structures = Vec::new();
+    let stack_params = match (signature.aggregate, signature.stack.first()) {
+        (true, Some(first)) => {
+            let position = signature.params.len();
+            let name = format!(
+                "{}_a{position}",
+                crate::render::sanitize(
+                    &function
+                        .name
+                        .clone()
+                        .unwrap_or_else(|| format!("sub_{:x}", function.addr))
+                )
+            );
+            structures.push(crate::ir::Structure {
+                name: name.clone(),
+                fields: signature
+                    .stack
+                    .iter()
+                    .map(|offset| ((offset - first) as u64, crate::ir::CType::I64))
+                    .collect(),
+            });
+            vec![crate::ir::StackParam {
+                offset: *first,
+                size: 8 * signature.stack.len() as u64,
                 name: format!("a{position}"),
-                ty: crate::ir::CType::I64,
+                ty: crate::ir::CType::Named(format!("struct {name}")),
                 position,
-            }
-        })
-        .collect();
+            }]
+        }
+        _ => signature
+            .stack
+            .iter()
+            .enumerate()
+            .map(|(slot, offset)| {
+                let position = signature.params.len() + slot;
+                crate::ir::StackParam {
+                    offset: *offset,
+                    size: 8,
+                    name: format!("a{position}"),
+                    ty: crate::ir::CType::I64,
+                    position,
+                }
+            })
+            .collect(),
+    };
     let ir = FunctionIr {
         isa: image.isa,
         convention: image.convention_of(function.addr),
@@ -955,7 +986,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         },
         accesses: signature.accesses,
         members: Vec::new(),
-        structures: Vec::new(),
+        structures,
         signed_params: signature.signed,
         landing_pads,
         addr: function.addr,

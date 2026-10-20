@@ -131,7 +131,9 @@ pub(crate) fn stack_locals(
     // part by its field.
     for (address, slot, width) in stack_arguments(ir, sp, frames) {
         let Some(param) = ir.stack_params.iter().find(|param| {
-            slot >= param.offset && slot + i64::from(width) <= param.offset + param.size as i64
+            slot >= param.offset
+                && slot.saturating_add(i64::from(width))
+                    <= param.offset.saturating_add(param.size as i64)
         }) else {
             continue;
         };
