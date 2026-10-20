@@ -309,6 +309,16 @@ pub enum LaneOp {
     ShiftLeft,
     ShiftRight,
     ShiftRightSigned,
+    /// Sums and differences held at the lane's limits instead of wrapping.
+    AddSaturatingSigned,
+    AddSaturatingUnsigned,
+    SubSaturatingSigned,
+    SubSaturatingUnsigned,
+    /// The unsigned mean, rounded up.
+    Average,
+    /// The high half of the full product.
+    MulHighSigned,
+    MulHighUnsigned,
 }
 
 /// An operation `Expr::Apply` applies to its arguments, in order.
@@ -363,6 +373,18 @@ pub enum Operation {
     SignBits(u8),
     /// The sum of the lanes of `bits` in two halves, wrapping at `bits`.
     SumLanes(u8),
+    /// The signed lanes of `from` bits in two halves narrowed to half as
+    /// many bits, held at the narrow lane's limits: signed ones, or
+    /// unsigned ones when `unsigned` is set. The first argument's come first.
+    Pack {
+        from: u8,
+        unsigned: bool,
+    },
+    /// The signed 16-bit lanes of two halves multiplied pair by pair, each
+    /// two neighbouring products summed into a 32-bit lane.
+    MultiplyAddPairs,
+    /// The sum of the absolute differences of the bytes of two halves.
+    SumAbsoluteDifferences,
     /// Counts over the low `bits`; a zero value counts `bits`.
     CountLeadingZeros(u8),
     CountTrailingZeros(u8),
@@ -629,6 +651,13 @@ pub(crate) fn lane_op_name(op: LaneOp) -> &'static str {
         LaneOp::ShiftLeft => "shift_left_lanes",
         LaneOp::ShiftRight => "shift_right_lanes",
         LaneOp::ShiftRightSigned => "shift_right_lanes_s",
+        LaneOp::AddSaturatingSigned => "add_saturating_lanes",
+        LaneOp::AddSaturatingUnsigned => "add_saturating_lanes_u",
+        LaneOp::SubSaturatingSigned => "sub_saturating_lanes",
+        LaneOp::SubSaturatingUnsigned => "sub_saturating_lanes_u",
+        LaneOp::Average => "average_lanes_u",
+        LaneOp::MulHighSigned => "mul_high_lanes",
+        LaneOp::MulHighUnsigned => "mul_high_lanes_u",
     }
 }
 
@@ -684,6 +713,11 @@ pub(crate) fn operation_name(op: Operation) -> String {
         Operation::InterleaveHigh(bits) => format!("interleave_high{bits}"),
         Operation::SignBits(bits) => format!("sign_bits{bits}"),
         Operation::SumLanes(bits) => format!("sum_lanes{bits}"),
+        Operation::Pack { from, unsigned } => {
+            format!("pack_lanes{from}{}", if unsigned { "_u" } else { "" })
+        }
+        Operation::MultiplyAddPairs => "multiply_add_pairs16".to_owned(),
+        Operation::SumAbsoluteDifferences => "sum_absolute_differences8".to_owned(),
         Operation::CountLeadingZeros(bits) => format!("clz{bits}"),
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),
         Operation::PopCount(bits) => format!("popcount{bits}"),

@@ -375,6 +375,13 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         Pmaxub | Pmaxuw | Pmaxud => Some(LaneOp::MaxUnsigned),
         Pminsb | Pminsw | Pminsd => Some(LaneOp::MinSigned),
         Pmaxsb | Pmaxsw | Pmaxsd => Some(LaneOp::MaxSigned),
+        Paddsb | Paddsw => Some(LaneOp::AddSaturatingSigned),
+        Paddusb | Paddusw => Some(LaneOp::AddSaturatingUnsigned),
+        Psubsb | Psubsw => Some(LaneOp::SubSaturatingSigned),
+        Psubusb | Psubusw => Some(LaneOp::SubSaturatingUnsigned),
+        Pavgb | Pavgw => Some(LaneOp::Average),
+        Pmulhw => Some(LaneOp::MulHighSigned),
+        Pmulhuw => Some(LaneOp::MulHighUnsigned),
         _ => None,
     };
     let lane_bits = |mnemonic: Mnemonic| -> u8 {
@@ -417,6 +424,34 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 )
             };
             write(lifter, (half(false), half(true)))?;
+        }
+        // Narrowing two sources' lanes into one register, the first's low.
+        Packsswb | Packuswb | Packssdw => {
+            let (from, unsigned) = match ins.mnemonic() {
+                Packsswb => (16, false),
+                Packuswb => (16, true),
+                _ => (32, false),
+            };
+            let (a, b) = (halves(0)?, halves(1)?);
+            let pack = |(low, high): (Expr, Expr)| {
+                Expr::apply(Operation::Pack { from, unsigned }, vec![low, high])
+            };
+            write(lifter, (pack(a), pack(b)))?;
+        }
+        Pmaddwd | Psadbw => {
+            let op = if ins.mnemonic() == Pmaddwd {
+                Operation::MultiplyAddPairs
+            } else {
+                Operation::SumAbsoluteDifferences
+            };
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(
+                lifter,
+                (
+                    Expr::apply(op, vec![a.0, b.0]),
+                    Expr::apply(op, vec![a.1, b.1]),
+                ),
+            )?;
         }
         Paddq | Psubq | Pmuludq | Pandn => {
             let (a, b) = (halves(0)?, halves(1)?);
@@ -558,6 +593,184 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             );
             let (index, width) = gpr(ins.op0_register())?;
             lifter.assign(index, width, mask);
+        }
+        // The first unless the comparison prefers the second, which a NaN
+        // on either side makes it.
+        Maxpd | Minpd | Maxps | Minps => {
+            let single = matches!(ins.mnemonic(), Maxps | Minps);
+            let precision = if single {
+                Precision::Single
+            } else {
+                Precision::Double
+            };
+            let minimum = matches!(ins.mnemonic(), Minpd | Minps);
+            let choose = |x: Expr, y: Expr| {
+                let (smaller, larger) = if minimum {
+                    (x.clone(), y.clone())
+                } else {
+                    (y.clone(), x.clone())
+                };
+                Expr::Select {
+                    cond: Cond::Ne,
+                    lhs: Box::new(Expr::apply(
+                        Operation::FloatLess(precision),
+                        vec![smaller, larger],
+                    )),
+                    rhs: Box::new(Expr::constant(0)),
+                    then: Box::new(x),
+                    els: Box::new(y),
+                }
+            };
+            let each = |x: &Expr, y: &Expr| {
+                if single {
+                    let lane =
+                        |half: &Expr, index| lane_of(&(half.clone(), Expr::constant(0)), index, 32);
+                    pack(
+                        (0..2)
+                            .map(|index| choose(lane(x, index), lane(y, index)))
+                            .collect(),
+                        32,
+                    )
+                } else {
+                    choose(x.clone(), y.clone())
+                }
+            };
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(lifter, (each(&a.0, &b.0), each(&a.1, &b.1)))?;
+        }
+        Andnpd | Andnps => {
+            let (a, b) = (halves(0)?, halves(1)?);
+            let andn = |x: Expr, y: Expr| {
+                Expr::bin(
+                    BinOp::And,
+                    Expr::bin(BinOp::Xor, x, Expr::constant(u64::MAX)),
+                    y,
+                )
+            };
+            write(lifter, (andn(a.0, b.0), andn(a.1, b.1)))?;
+        }
+        // Each source's two doubles summed (or subtracted) into one.
+        Haddpd | Hsubpd => {
+            let op = if ins.mnemonic() == Haddpd {
+                Operation::FloatAdd(Precision::Double)
+            } else {
+                Operation::FloatSub(Precision::Double)
+            };
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(
+                lifter,
+                (
+                    Expr::apply(op, vec![a.0, a.1]),
+                    Expr::apply(op, vec![b.0, b.1]),
+                ),
+            )?;
+        }
+        Addsubpd => {
+            let (a, b) = (halves(0)?, halves(1)?);
+            write(
+                lifter,
+                (
+                    Expr::apply(Operation::FloatSub(Precision::Double), vec![a.0, b.0]),
+                    Expr::apply(Operation::FloatAdd(Precision::Double), vec![a.1, b.1]),
+                ),
+            )?;
+        }
+        // Conversions lane by lane, widening from the low half or narrowing
+        // into it.
+        Cvtdq2pd | Cvtps2pd => {
+            let source = halves(1)?;
+            let convert = |index| {
+                let lane = lane_of(&source, index, 32);
+                if ins.mnemonic() == Cvtdq2pd {
+                    Expr::apply(
+                        Operation::IntToFloat {
+                            signed: true,
+                            bits: 32,
+                            to: Precision::Double,
+                        },
+                        vec![lane],
+                    )
+                } else {
+                    Expr::apply(
+                        Operation::FloatConvert {
+                            from: Precision::Single,
+                            to: Precision::Double,
+                        },
+                        vec![lane],
+                    )
+                }
+            };
+            write(lifter, (convert(0), convert(1)))?;
+        }
+        Cvtpd2ps | Cvtpd2dq | Cvttpd2dq => {
+            let source = halves(1)?;
+            let convert = |half: Expr| match ins.mnemonic() {
+                Cvtpd2ps => Expr::apply(
+                    Operation::FloatConvert {
+                        from: Precision::Double,
+                        to: Precision::Single,
+                    },
+                    vec![half],
+                ),
+                mnemonic => Expr::apply(
+                    Operation::FloatToInt {
+                        signed: true,
+                        bits: 32,
+                        from: Precision::Double,
+                        saturating: false,
+                        rounding: if mnemonic == Cvttpd2dq {
+                            Rounding::TowardZero
+                        } else {
+                            Rounding::NearestEven
+                        },
+                    },
+                    vec![half],
+                ),
+            };
+            write(
+                lifter,
+                (
+                    pack(vec![convert(source.0), convert(source.1)], 32),
+                    Expr::constant(0),
+                ),
+            )?;
+        }
+        Cvtdq2ps | Cvtps2dq | Cvttps2dq => {
+            let source = halves(1)?;
+            let convert = |lane: Expr| match ins.mnemonic() {
+                Cvtdq2ps => Expr::apply(
+                    Operation::IntToFloat {
+                        signed: true,
+                        bits: 32,
+                        to: Precision::Single,
+                    },
+                    vec![lane],
+                ),
+                mnemonic => Expr::apply(
+                    Operation::FloatToInt {
+                        signed: true,
+                        bits: 32,
+                        from: Precision::Single,
+                        saturating: false,
+                        rounding: if mnemonic == Cvttps2dq {
+                            Rounding::TowardZero
+                        } else {
+                            Rounding::NearestEven
+                        },
+                    },
+                    vec![lane],
+                ),
+            };
+            let half = |index: u64| {
+                pack(
+                    vec![
+                        convert(lane_of(&source, index, 32)),
+                        convert(lane_of(&source, index + 1, 32)),
+                    ],
+                    32,
+                )
+            };
+            write(lifter, (half(0), half(2)))?;
         }
         Addpd | Subpd | Mulpd | Divpd | Addps | Subps | Mulps | Divps | Sqrtpd | Sqrtps => {
             let single = matches!(ins.mnemonic(), Addps | Subps | Mulps | Divps | Sqrtps);

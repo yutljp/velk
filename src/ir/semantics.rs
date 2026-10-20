@@ -54,7 +54,10 @@ pub(crate) fn width(expr: &Expr) -> u32 {
             Operation::Lanes(..)
             | Operation::InterleaveLow(_)
             | Operation::InterleaveHigh(_)
-            | Operation::Aes { .. } => 64,
+            | Operation::Aes { .. }
+            | Operation::Pack { .. }
+            | Operation::MultiplyAddPairs
+            | Operation::SumAbsoluteDifferences => 64,
             Operation::WideDivide { bits, .. } => u32::from(*bits),
             Operation::SignBits(bits) => 64 / u32::from(*bits),
             Operation::SumLanes(bits) => u32::from(*bits),
@@ -229,8 +232,37 @@ fn lanes(op: LaneOp, bits: u32, a: u64, b: u64) -> u64 {
             LaneOp::ShiftRight if b < u64::from(bits) => x >> b,
             LaneOp::ShiftLeft | LaneOp::ShiftRight => 0,
             LaneOp::ShiftRightSigned => (sx >> b.min(u64::from(bits) - 1)) as u64,
+            LaneOp::AddSaturatingSigned => clamp_signed(sx + sy, bits),
+            LaneOp::SubSaturatingSigned => clamp_signed(sx - sy, bits),
+            LaneOp::AddSaturatingUnsigned => (x + y).min(ones),
+            LaneOp::SubSaturatingUnsigned => x.saturating_sub(y),
+            LaneOp::Average => (x + y + 1) >> 1,
+            LaneOp::MulHighSigned => ((sx * sy) >> bits) as u64,
+            LaneOp::MulHighUnsigned => (x * y) >> bits,
         };
         out | (lane & ones) << shift
+    })
+}
+
+/// `value` held within a signed lane of `bits`.
+fn clamp_signed(value: i64, bits: u32) -> u64 {
+    let limit = 1i64 << (bits - 1);
+    value.clamp(-limit, limit - 1) as u64
+}
+
+/// The signed lanes of `from` bits in `low` then `high`, narrowed.
+fn pack(from: u32, unsigned: bool, low: u64, high: u64) -> u64 {
+    let narrow = from / 2;
+    let per_half = 64 / from;
+    (0..2 * per_half).fold(0, |out, index| {
+        let half = if index < per_half { low } else { high };
+        let lane = sign_extend((half >> ((index % per_half) * from)) & mask(from), from);
+        let held = if unsigned {
+            lane.clamp(0, mask(narrow) as i64) as u64
+        } else {
+            clamp_signed(lane, narrow) & mask(narrow)
+        };
+        out | held << (index * narrow)
     })
 }
 
@@ -267,7 +299,10 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::InterleaveHigh(_)
         | Operation::SignBits(_)
         | Operation::SumLanes(_)
-        | Operation::Aes { .. } => 64,
+        | Operation::Aes { .. }
+        | Operation::Pack { .. }
+        | Operation::MultiplyAddPairs
+        | Operation::SumAbsoluteDifferences => 64,
         Operation::WideDivide { bits, .. } => bits,
         Operation::IntToFloat { bits, .. }
         | Operation::CountLeadingZeros(bits)
@@ -458,6 +493,17 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
         Operation::ReverseBits(bits) => {
             (args[0] & mask(u32::from(bits))).reverse_bits() >> (64 - u32::from(bits))
         }
+        Operation::Pack { from, unsigned } => pack(u32::from(from), unsigned, args[0], args[1]),
+        Operation::MultiplyAddPairs => (0..2).fold(0, |out, pair| {
+            let lane = |value: u64, index: u32| sign_extend((value >> (16 * index)) & 0xffff, 16);
+            let sum = lane(args[0], 2 * pair) * lane(args[1], 2 * pair)
+                + lane(args[0], 2 * pair + 1) * lane(args[1], 2 * pair + 1);
+            out | (sum as u64 & 0xffff_ffff) << (32 * pair)
+        }),
+        Operation::SumAbsoluteDifferences => (0..8).fold(0, |sum, index| {
+            let byte = |value: u64| (value >> (8 * index)) & 0xff;
+            sum + byte(args[0]).abs_diff(byte(args[1]))
+        }),
         Operation::WideDivide {
             signed,
             remainder,
