@@ -2706,9 +2706,20 @@ fn lift_instruction(
                 lifter.stmts.extend(test.branch(cond, target));
                 return true;
             }
-            lifter
-                .stmts
-                .push(Stmt::unsupported(format!("{other:?} at 0x{:x}", ins.ip())));
+            // Instructions that report on the processor write only the
+            // registers they fill.
+            let writes = match other {
+                Mnemonic::Cpuid => Some(vec![0, 1, 2, 3]),
+                Mnemonic::Rdtsc | Mnemonic::Xgetbv | Mnemonic::Rdpmc => Some(vec![0, 2]),
+                Mnemonic::Rdtscp => Some(vec![0, 1, 2]),
+                // The direction flag is no register the analysis follows.
+                Mnemonic::Std | Mnemonic::Cld => Some(Vec::new()),
+                _ => None,
+            };
+            lifter.stmts.push(Stmt::Unsupported {
+                text: format!("{other:?} at 0x{:x}", ins.ip()),
+                writes,
+            });
         }
     }
     false
