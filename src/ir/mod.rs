@@ -159,7 +159,10 @@ impl Convention {
     }
 
     /// Registers a call returns values in, integer and floating-point: the
-    /// first, and those that carry a second half or further results.
+    /// first, and those that carry a second half or further results. A
+    /// call into Go's assembly ABI returns on the stack; the lifter moves
+    /// its results there from the registers Go's register ABI returns
+    /// integers in, which the call leaves changed.
     pub fn results(self) -> &'static [u16] {
         match self {
             Self::SysV => &[0, 2, 18, 20],
@@ -168,7 +171,7 @@ impl Convention {
             Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11, 18, 20, 22, 24],
             Self::SyscallX86 | Self::SyscallArm => &[0],
             Self::GoWriteBarrier => &[11],
-            Self::GoAbi0 => &[],
+            Self::GoAbi0 => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
         }
     }
 

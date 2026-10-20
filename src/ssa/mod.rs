@@ -1027,6 +1027,49 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     *ir = lowered;
 }
 
+/// A call's result that only moves on into another variable right after the
+/// call goes there directly: `v1 = f(); v2 = v1;` becomes `v2 = f();`.
+pub fn take_results_directly(ir: &mut FunctionIr) {
+    let mut reads: HashMap<u16, usize> = HashMap::new();
+    let mut definitions: HashMap<u16, usize> = HashMap::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let (written, read) = statement_registers(stmt);
+        for register in read {
+            *reads.entry(register).or_default() += 1;
+        }
+        for register in written {
+            *definitions.entry(register).or_default() += 1;
+        }
+    }
+    let variable = |index: u16| index >= crate::ir::VARIABLE_BASE;
+    for block in &mut ir.blocks {
+        let mut position = 0;
+        while position + 1 < block.stmts.len() {
+            if let [
+                Stmt::Call {
+                    result: Some(result),
+                    ..
+                },
+                Stmt::Assign {
+                    dest,
+                    value: Expr::Reg { index, width: 64 },
+                },
+            ] = &mut block.stmts[position..position + 2]
+                && *index == result.index
+                && variable(result.index)
+                && variable(dest.index)
+                && dest.width == 64
+                && reads.get(&result.index) == Some(&1)
+                && definitions.get(&result.index) == Some(&1)
+            {
+                *result = *dest;
+                block.stmts.remove(position + 1);
+            }
+            position += 1;
+        }
+    }
+}
+
 /// The one variable of `held` that every call the entry reaches finds in
 /// the register they share, following the writes of them forward. A tail
 /// call has left the frame, so no landing pad of it can be entered.
@@ -1260,6 +1303,37 @@ mod tests {
             stmts: vec![Stmt::Ret { value: x }],
         });
         ir
+    }
+
+    #[test]
+    fn a_result_only_moved_on_goes_to_its_variable() {
+        let (first, second) = (crate::ir::VARIABLE_BASE, crate::ir::VARIABLE_BASE + 1);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: crate::ir::Convention::GoAbi0,
+                    args: Some(Vec::new()),
+                    floats_named: false,
+                    result: Some(RegRef {
+                        index: first,
+                        width: 64,
+                    }),
+                },
+                assign(second, Expr::reg(first, 64)),
+                Stmt::Ret {
+                    value: Expr::reg(second, 64),
+                },
+            ],
+        );
+        super::take_results_directly(&mut ir);
+        assert_eq!(ir.blocks[0].stmts.len(), 2);
+        assert!(matches!(
+            ir.blocks[0].stmts[0],
+            Stmt::Call { result: Some(RegRef { index, .. }), .. } if index == second
+        ));
     }
 
     #[test]

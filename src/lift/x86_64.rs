@@ -2618,6 +2618,9 @@ fn lift_instruction(
                     lifter.stmts.push(Stmt::Trap);
                     return true;
                 }
+                lifter
+                    .stmts
+                    .extend(super::stack_results(lifter.image, lifter.summaries, target));
             } else if let Some(through) = operand(lifter, ins, 0) {
                 // A pointer the image fills itself is a call to its function.
                 if let Some(target) = super::pointer_target(lifter.image, &through) {
@@ -2628,6 +2631,11 @@ fn lift_instruction(
                         lifter.stmts.push(Stmt::Trap);
                         return true;
                     }
+                    lifter.stmts.extend(super::stack_results(
+                        lifter.image,
+                        lifter.summaries,
+                        target,
+                    ));
                 } else {
                     let noreturn = super::import_called(lifter.image, &through)
                         .is_some_and(|summary| summary.noreturn);

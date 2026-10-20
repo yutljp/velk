@@ -828,6 +828,30 @@ pub fn absorb_jump_table_cases(image: &mut Image) {
     }
 }
 
+/// The results the function at `addr` returns past its stack arguments,
+/// under Go's assembly ABI, as it finds them when it returns.
+fn stack_results(image: &Image, addr: u64) -> Vec<crate::ir::Expr> {
+    let convention = image.convention_of(addr);
+    let Some(start) = convention.stack_arguments() else {
+        return Vec::new();
+    };
+    let sp = crate::arch::stack_pointer(image.isa);
+    summary::summary(image, addr)
+        .stack_results
+        .iter()
+        .take_while(|(_, width)| *width != 0)
+        .map(|(offset, width)| crate::ir::Expr::Load {
+            addr: Box::new(crate::ir::Expr::bin(
+                crate::ir::BinOp::Add,
+                crate::ir::Expr::reg(sp, 64),
+                crate::ir::Expr::Const(start as u64 + u64::from(*offset)),
+            )),
+            width: *width,
+            signed: false,
+        })
+        .collect()
+}
+
 fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError> {
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     let extent = function.addr..function.addr.saturating_add(size);
@@ -872,6 +896,9 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     let types = crate::loader::dwarf::function_types(image, function.addr);
     // A function returning a float returns it in xmm0 or v0.
     let declared = types.as_ref().and_then(|types| types.ret.as_ref());
+    // A function of Go's assembly ABI returns what it writes past its
+    // arguments.
+    let stack_results = stack_results(image, function.addr);
     let float_return = match declared {
         Some(ret) if ret.is_sse_float() => Some(if ret.to_string().contains("double") {
             crate::ir::Precision::Double
@@ -879,6 +906,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             crate::ir::Precision::Single
         }),
         Some(_) => None,
+        None if !stack_results.is_empty() => None,
         None => float_result(&blocks, image.isa),
     };
     // Without debug info, a function whose callers all ignore what is left
@@ -887,6 +915,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // So does one that returns on some path with the register unset.
     let ignored = declared.is_none()
         && float_return.is_none()
+        && stack_results.is_empty()
         && !function.sources.contains(&crate::loader::NameSource::Plt)
         && (results::ignored_by_callers(image, function.addr)
             || results::returns_unset(&blocks, image.convention_of(function.addr)));
@@ -906,7 +935,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         }
     }
     // A Go function returns as many values as its callers read.
-    let further = if image.go && float_return.is_none() && !ignored {
+    let further = if image.go && float_return.is_none() && !ignored && stack_results.is_empty() {
         results::further_results(image, function.addr)
     } else {
         0
@@ -937,12 +966,31 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     if image.go || function.sources.contains(&crate::loader::NameSource::Plt) {
         drop_unreached(&mut blocks);
     }
-    let signature = signature::recover(
+    let mut signature = signature::recover(
         &blocks,
         image.isa,
         image.convention_of(function.addr),
         image.go,
     );
+    // Read only now, the results are no arguments to the signature.
+    if let Some(first) = stack_results.first() {
+        let returned = match stack_results.as_slice() {
+            [only] => only.clone(),
+            all => crate::ir::Expr::Apply {
+                op: crate::ir::Operation::Results,
+                args: all.to_vec(),
+            },
+        };
+        for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let crate::ir::Stmt::Ret { value } = stmt {
+                *value = returned.clone();
+            }
+        }
+        // Go's wider results are mostly `int` and `int32`, a byte one a `bool`.
+        if let crate::ir::Expr::Load { width, .. } = first {
+            signature.ret = crate::ir::CType::int(*width, *width > 1);
+        }
+    }
     // The arguments past the registers follow the register ones; with
     // registers left free, they are one structure.
     let mut structures = Vec::new();
@@ -975,11 +1023,16 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             .enumerate()
             .map(|(slot, offset)| {
                 let position = signature.params.len() + slot;
+                // Only the low bytes of a packed argument are read, as they are.
+                let ty = match signature.stack_widths.get(slot) {
+                    Some(width) if *width < 8 => crate::ir::CType::int(*width, false),
+                    _ => crate::ir::CType::I64,
+                };
                 crate::ir::StackParam {
                     offset: *offset,
                     size: 8,
                     name: format!("a{position}"),
-                    ty: crate::ir::CType::I64,
+                    ty,
                     position,
                 }
             })
@@ -1103,6 +1156,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     drop_stack_protector(&mut ir, image);
     // Settling simplifies again, which can leave a table read unused.
     drop_dead_constant_reads(&mut ir, image);
+    crate::ssa::take_results_directly(&mut ir);
     // A variable passed where a callee takes a pointer holds one.
     let mut pointer_values = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {

@@ -307,6 +307,8 @@ fn settle(
             pointers: current[&addr].pointers | next.pointers,
             noreturn: current[&addr].noreturn || next.noreturn,
             stack: current[&addr].stack.max(next.stack),
+            stack_widths: next.stack_widths,
+            stack_results: next.stack_results,
             indirect_result: current[&addr].indirect_result || next.indirect_result,
             narrow_return: current[&addr].narrow_return && next.narrow_return,
         };
@@ -365,6 +367,8 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
         pointers: 0,
         noreturn,
         stack: 0,
+        stack_widths: [0; 16],
+        stack_results: [(0, 0); 9],
         indirect_result: false,
         narrow_return: false,
     }
@@ -413,10 +417,25 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
                     .as_deref()
                     .is_some_and(|name| RETURNING_RUNTIME.contains(&name))),
         stack: signature.stack.len(),
-        indirect_result: signature.indirect_result,
-        narrow_return: crate::passes::widths::returns_32(&blocks, &|target| {
-            summaries(target).narrow_return
+        stack_widths: std::array::from_fn(|slot| match signature.stack_widths.get(slot) {
+            Some(8) | None => 0,
+            Some(width) => *width,
         }),
+        stack_results: std::array::from_fn(|position| {
+            match (
+                signature.stack_results.get(position),
+                convention.stack_arguments(),
+            ) {
+                (Some((at, width)), Some(start)) => ((at - start) as u16, *width),
+                _ => (0, 0),
+            }
+        }),
+        indirect_result: signature.indirect_result,
+        // One returning on the stack leaves nothing in the return register.
+        narrow_return: signature.stack_results.is_empty()
+            && crate::passes::widths::returns_32(&blocks, &|target| {
+                summaries(target).narrow_return
+            }),
     }
 }
 

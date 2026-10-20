@@ -151,6 +151,13 @@ pub struct Summary {
     pub pointers: u32,
     /// How many 8-byte arguments it reads past the registers.
     pub stack: usize,
+    /// How many bytes it reads of each of its first stack arguments, where
+    /// fewer than eight; zero where it reads all eight.
+    pub stack_widths: [u8; 16],
+    /// The results it writes past its stack arguments under Go's assembly
+    /// ABI, in order: offset from the first argument, and width in bytes.
+    /// A zero width ends them.
+    pub stack_results: [(u16, u8); 9],
     /// It reads AArch64's indirect result register: it returns through
     /// memory the caller points it at.
     pub indirect_result: bool,

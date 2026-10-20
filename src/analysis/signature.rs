@@ -15,6 +15,12 @@ pub struct Signature {
     /// The 8-byte arguments past the registers, by offset from the stack
     /// pointer on entry.
     pub stack: Vec<i64>,
+    /// How many bytes of each stack argument the body reads.
+    pub stack_widths: Vec<u8>,
+    /// The results past the stack arguments that a function of Go's
+    /// assembly ABI writes in its caller's frame: offset from the stack
+    /// pointer on entry, and width.
+    pub stack_results: Vec<(i64, u8)>,
     /// The body reads AArch64's indirect result register before writing it.
     pub indirect_result: bool,
     /// The stack arguments come while argument registers are left free:
@@ -683,13 +689,14 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
         .all(|register| params.iter().any(|param| param.index == *register));
     // SysV passes a structure too large for registers in the caller's frame
     // even while argument registers are free.
-    let stack = match (registers_full, isa) {
+    let frame = match (registers_full, isa) {
         (true, Isa::X86_64 | Isa::AArch64) => stack_arguments(blocks, isa, convention),
         (false, Isa::X86_64) if convention == Convention::SysV => {
             stack_arguments(blocks, isa, convention)
         }
-        _ => Vec::new(),
+        _ => StackFrame::default(),
     };
+    let stack = frame.offsets;
     let aggregate = !registers_full && !stack.is_empty();
 
     Signature {
@@ -698,28 +705,50 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
         accesses,
         signed: signed_args,
         stack,
+        stack_widths: frame.widths,
+        stack_results: frame.results,
         indirect_result: isa == Isa::AArch64 && inputs.contains(&8),
         aggregate,
     }
 }
 
+/// What the body uses of the caller's frame past the register arguments.
+#[derive(Default)]
+struct StackFrame {
+    /// The offsets of the 8-byte arguments.
+    offsets: Vec<i64>,
+    /// How many bytes of each argument the body reads, under Go's assembly
+    /// ABI; eight elsewhere.
+    widths: Vec<u8>,
+    /// The results the body writes past the arguments, under Go's assembly
+    /// ABI: offset and width.
+    results: Vec<(i64, u8)>,
+}
+
 /// The offsets of the arguments past the registers the body reads: loads
 /// from the caller's frame, through the stack pointer or a frame pointer
-/// set from it, up to the last one read.
-fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i64> {
+/// set from it, up to the last one read. And under Go's assembly ABI, the
+/// results that follow them: what the body writes past the last argument
+/// read, or the slot whose address it hands to a call. The arguments then
+/// run up to the first result.
+fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackFrame {
     let Some(start) = convention.stack_arguments() else {
-        return Vec::new();
+        return StackFrame::default();
     };
     let sp = crate::arch::stack_pointer(isa);
     let fp = crate::arch::frame_pointer(isa);
-    // The stack pointer and the frame pointer on entry to each block, as
-    // offsets from the stack pointer on entry; `None` where unknown.
-    type Frame = (Option<i64>, Option<i64>);
+    let results = convention == Convention::GoAbi0;
+    // The registers holding a known offset from the stack pointer on entry,
+    // as each block starts: the stack pointer and the frame pointer, and
+    // under Go's assembly ABI, whose code may keep the stack pointer in
+    // another register while it moves to another stack, any register.
+    type Frame = std::collections::BTreeMap<u16, i64>;
+    let tracked = |register: u16| register == sp || register == fp || results;
     let mut entry: Vec<Option<Frame>> = vec![None; blocks.len()];
     if blocks.is_empty() {
-        return Vec::new();
+        return StackFrame::default();
     }
-    entry[0] = Some((Some(0), None));
+    entry[0] = Some(Frame::from([(sp, 0)]));
     // A register plus constants, nested as the upper half of a vector load
     // adds its eight bytes.
     fn based(expr: &Expr) -> Option<(u16, i64)> {
@@ -738,7 +767,7 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i6
             _ => None,
         }
     }
-    let offset_of = |expr: &Expr, frame: Frame| -> Option<i64> {
+    let offset_of = |expr: &Expr, frame: &Frame| -> Option<i64> {
         let (base, delta) = match expr {
             Expr::Reg { .. }
             | Expr::Bin {
@@ -757,30 +786,28 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i6
             },
             _ => return None,
         };
-        let at = if base == sp {
-            frame.0?
-        } else if base == fp {
-            frame.1?
-        } else {
+        if !tracked(base) {
             return None;
-        };
-        Some(at.wrapping_add(delta))
+        }
+        Some(frame.get(&base)?.wrapping_add(delta))
     };
     let step = |stmt: &Stmt, frame: &mut Frame| {
         if let Stmt::Assign { dest, value } = stmt
-            && (dest.index == sp || dest.index == fp)
+            && tracked(dest.index)
         {
-            let moved = offset_of(value, *frame);
-            if dest.index == sp {
-                frame.0 = moved;
-            } else {
-                frame.1 = moved;
+            match offset_of(value, frame) {
+                Some(at) => frame.insert(dest.index, at),
+                None => frame.remove(&dest.index),
+            };
+        } else if results {
+            for register in crate::ir::visit::statement_registers(stmt).0 {
+                frame.remove(&register);
             }
         }
     };
     let mut work = vec![0];
     while let Some(index) = work.pop() {
-        let mut frame = entry[index].expect("visited");
+        let mut frame = entry[index].clone().expect("visited");
         for stmt in &blocks[index].stmts {
             step(stmt, &mut frame);
         }
@@ -806,32 +833,39 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i6
             next.push(index + 1);
         }
         for next in next {
-            let merged = match entry[next] {
-                None => frame,
-                Some(old) => (
-                    old.0.filter(|at| Some(*at) == frame.0),
-                    old.1.filter(|at| Some(*at) == frame.1),
-                ),
+            let merged = match &entry[next] {
+                None => frame.clone(),
+                Some(old) => old
+                    .iter()
+                    .filter(|(register, at)| frame.get(register) == Some(at))
+                    .map(|(register, at)| (*register, *at))
+                    .collect(),
             };
-            if entry[next] != Some(merged) {
+            if entry[next].as_ref() != Some(&merged) {
                 entry[next] = Some(merged);
                 work.push(next);
             }
         }
     }
     let mut last = None;
+    // Under Go's assembly ABI: how far into each slot of the caller's frame
+    // the body reads, the bytes it writes there, and the addresses in it
+    // that it passes to a call.
+    let mut extent: HashMap<i64, i64> = HashMap::new();
+    let (mut written, mut handed): (Vec<(i64, i64)>, Vec<i64>) = (Vec::new(), Vec::new());
+    let slot = |at: i64| at - (at - start).rem_euclid(8);
     for (index, block) in blocks.iter().enumerate() {
-        let Some(mut frame) = entry[index] else {
+        let Some(mut frame) = entry[index].clone() else {
             continue;
         };
         // Registers the block sets to an address in the caller's frame, as
         // an argument structure's address the body reads it through.
-        let mut held: std::collections::HashMap<u16, i64> = std::collections::HashMap::new();
+        let mut held: HashMap<u16, i64> = HashMap::new();
         for stmt in &block.stmts {
             // Every load, the ones vector operations make included.
-            fn all_loads<'a>(expr: &'a Expr, out: &mut Vec<&'a Expr>) {
-                if let Expr::Load { addr, .. } = expr {
-                    out.push(addr);
+            fn all_loads<'a>(expr: &'a Expr, out: &mut Vec<(&'a Expr, u8)>) {
+                if let Expr::Load { addr, width, .. } = expr {
+                    out.push((addr, *width));
                 }
                 for child in crate::ir::visit::children(expr) {
                     all_loads(child, out);
@@ -841,19 +875,45 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i6
             for value in stmt.operands() {
                 all_loads(value, &mut loads);
             }
-            for addr in loads {
+            let located = |addr: &Expr, frame: &Frame, held: &HashMap<u16, i64>| {
                 let through = based(addr)
                     .and_then(|(base, delta)| Some(held.get(&base)?.wrapping_add(delta)));
-                if let Some(at) = offset_of(addr, frame).or(through)
-                    && at >= start
-                    && (at - start) % 8 == 0
-                    && at - start < 8 * 64
-                {
+                offset_of(addr, frame)
+                    .or(through)
+                    .filter(|at| *at >= start && at - start < 8 * 64)
+            };
+            for (addr, width) in loads {
+                let Some(at) = located(addr, &frame, &held) else {
+                    continue;
+                };
+                if (at - start) % 8 == 0 {
                     last = last.max(Some(at));
                 }
+                if results {
+                    let reach = extent.entry(slot(at)).or_default();
+                    *reach = (*reach).max(at - slot(at) + i64::from(width));
+                }
+            }
+            match stmt {
+                Stmt::Store { addr, width, .. } if results => {
+                    if let Some(at) = located(addr, &frame, &held) {
+                        written.push((at, i64::from(*width)));
+                    }
+                }
+                Stmt::Call { .. } if results => {
+                    handed.extend(
+                        crate::ir::visit::statement_registers(stmt)
+                            .1
+                            .iter()
+                            .filter_map(|register| frame.get(register))
+                            .filter(|at| **at >= start)
+                            .map(|at| slot(*at)),
+                    );
+                }
+                _ => {}
             }
             if let Stmt::Assign { dest, value } = stmt {
-                match offset_of(value, frame).filter(|at| *at >= start) {
+                match offset_of(value, &frame).filter(|at| *at >= start) {
                     Some(at) if dest.index != sp && dest.index != fp => {
                         held.insert(dest.index, at);
                     }
@@ -865,9 +925,66 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> Vec<i6
             step(stmt, &mut frame);
         }
     }
-    match last {
-        Some(last) => (start..=last).step_by(8).collect(),
-        None => Vec::new(),
+    // A result follows every argument read. An address handed on may be
+    // that of the arguments, unless some argument is read before it.
+    let past = |at: i64| last.is_none_or(|last| at > last);
+    let first = written
+        .iter()
+        .map(|(at, _)| slot(*at))
+        .filter(|at| past(*at))
+        .chain(
+            handed
+                .iter()
+                .copied()
+                .filter(|at| last.is_some() && past(*at)),
+        )
+        .min();
+    let offsets: Vec<i64> = match (first, last) {
+        (Some(first), _) => (start..first).step_by(8).collect(),
+        (None, Some(last)) => (start..=last).step_by(8).collect(),
+        (None, None) => Vec::new(),
+    };
+    let widths = offsets
+        .iter()
+        .map(|at| match extent.get(at) {
+            Some(reach) => (*reach as u64).next_power_of_two().min(8) as u8,
+            None => 8,
+        })
+        .collect();
+    let results = first.map_or_else(Vec::new, |first| {
+        // A result handed on is written whole.
+        let mut fields: Vec<(i64, i64)> = written
+            .iter()
+            .copied()
+            .chain(handed.iter().map(|at| (*at, 8)))
+            .filter(|(at, _)| *at >= first)
+            .map(|(at, width)| (at, at + width))
+            .collect();
+        fields.sort_unstable();
+        let mut merged: Vec<(i64, i64)> = Vec::new();
+        for (from, to) in fields {
+            match merged.last_mut() {
+                Some(last) if from < last.1 => last.1 = last.1.max(to),
+                _ => merged.push((from, to)),
+            }
+        }
+        // Each must be a value a register holds, aligned to its size.
+        if merged.iter().any(|(from, to)| {
+            let width = to - from;
+            !matches!(width, 1 | 2 | 4 | 8) || from % width != 0
+        }) {
+            return Vec::new();
+        }
+        merged
+            .into_iter()
+            .take(convention.results().len())
+            .map(|(from, to)| (from, (to - from) as u8))
+            .collect()
+    });
+    StackFrame {
+        offsets,
+        widths,
+        results,
     }
 }
 
@@ -1257,6 +1374,60 @@ mod tests {
         );
         assert_eq!(signature.params.len(), 6);
         assert_eq!(signature.stack, vec![8, 16]);
+    }
+
+    #[test]
+    fn go_assembly_results_follow_the_arguments_read() {
+        // The stack pointer kept in r12 across a move to another stack, two
+        // arguments read through it, the second a byte, then a result
+        // stored and the address of the next handed to a call.
+        let load = |base: u16, offset: u64, width: u8| Expr::Load {
+            addr: Box::new(Expr::bin(
+                crate::ir::BinOp::Add,
+                Expr::reg(base, 64),
+                Expr::Const(offset),
+            )),
+            width,
+            signed: false,
+        };
+        let assign = |index, value| Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        };
+        let blocks = vec![Block {
+            start: 0,
+            stmts: vec![
+                assign(12, Expr::reg(4, 64)),
+                assign(4, load(0, 0x38, 8)),
+                assign(0, load(12, 8, 8)),
+                assign(3, load(12, 0x10, 1)),
+                assign(4, Expr::reg(12, 64)),
+                Stmt::Store {
+                    addr: Expr::bin(crate::ir::BinOp::Add, Expr::reg(4, 64), Expr::Const(0x18)),
+                    value: Expr::reg(0, 64),
+                    width: 4,
+                },
+                assign(
+                    8,
+                    Expr::bin(crate::ir::BinOp::Add, Expr::reg(4, 64), Expr::Const(0x20)),
+                ),
+                Stmt::Call {
+                    target: Some(0x2000),
+                    through: None,
+                    convention: Convention::GoAmd64,
+                    args: Some(vec![Expr::reg(3, 64), Expr::reg(8, 64)]),
+                    floats_named: false,
+                    result: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        }];
+        let signature = recover(&blocks, Isa::X86_64, Convention::GoAbi0, true);
+        assert_eq!(signature.stack, vec![8, 0x10]);
+        assert_eq!(signature.stack_widths, vec![8, 1]);
+        assert_eq!(signature.stack_results, vec![(0x18, 4), (0x20, 8)]);
     }
 
     fn params_of(stmts: Vec<Stmt>, isa: Isa) -> Vec<u16> {
