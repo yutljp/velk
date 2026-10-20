@@ -47,7 +47,7 @@ pub(crate) fn further_results(image: &Image, addr: u64) -> usize {
         let Some(blocks) = body(image, caller) else {
             continue;
         };
-        for block in &blocks {
+        for block in blocks.iter() {
             let Some(at) = block.stmts.iter().position(
                 |stmt| matches!(stmt, Stmt::Call { target: Some(target), .. } if *target == addr),
             ) else {
@@ -184,7 +184,7 @@ enum Fate {
 
 /// The body without its callees' summaries, which would take lifting
 /// everything they reach: a call then names no arguments.
-fn body(image: &Image, addr: u64) -> Option<Vec<Block>> {
+fn body(image: &Image, addr: u64) -> Option<std::sync::Arc<Vec<Block>>> {
     if image
         .functions
         .get(&addr)?

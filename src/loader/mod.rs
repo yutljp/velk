@@ -198,6 +198,8 @@ pub struct Image {
     /// Whether some caller reads what the function returns, filled on
     /// demand.
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
+    /// The lifts made so far, shared by everything that lifts the same.
+    pub lifts: crate::lift::Lifts,
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
@@ -274,6 +276,7 @@ impl Image {
             imports: BTreeMap::new(),
             landing_pads: BTreeMap::new(),
             result_reads: Default::default(),
+            lifts: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
         }
@@ -722,6 +725,7 @@ pub fn load(path: &Path) -> Result<Image> {
         go_abi0: Default::default(),
         stack_rows: Default::default(),
         result_reads: Default::default(),
+        lifts: Default::default(),
         relocations,
         imports: plt::imports(&file).into_iter().collect(),
         landing_pads: BTreeMap::new(),

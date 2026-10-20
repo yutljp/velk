@@ -8,6 +8,7 @@ mod x86_64;
 pub(crate) use exits::stack_heights;
 
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Mutex};
 
 use crate::error::LiftError;
 use crate::ir::visit::{children, expr_reads};
@@ -75,9 +76,89 @@ pub fn lift(
     size: u64,
     extra_targets: &HashSet<u64>,
 ) -> Result<Vec<Block>, LiftError> {
-    lift_with(image, addr, size, extra_targets, &|target| {
-        crate::analysis::summary(image, target)
+    let summaries = |target| crate::analysis::summary(image, target);
+    if extra_targets.is_empty() {
+        return lift_shared(image, addr, size, &summaries).map(Arc::unwrap_or_clone);
+    }
+    lift_with(image, addr, size, extra_targets, &summaries)
+}
+
+/// The lifts made so far, by function start and size, each with what it
+/// asked of its callees. Lifting reads nothing else that changes, so a lift
+/// whose callees all still answer the same is the lift made again.
+#[derive(Debug, Default)]
+pub struct Lifts(Mutex<HashMap<(u64, u64), Kept>>);
+
+/// The lifts kept of one function, oldest first.
+type Kept = Vec<Arc<Recorded>>;
+
+#[derive(Debug)]
+struct Recorded {
+    answers: Vec<(u64, Summary)>,
+    blocks: Result<Arc<Vec<Block>>, LiftError>,
+}
+
+/// The lifts kept of one function: knowing no callee, as the call graph is
+/// found, and knowing them all.
+const KEPT_LIFTS: usize = 2;
+
+/// `lift_with` and no extra block starts, sharing the lift with every other
+/// caller that gets the same summaries.
+pub fn lift_shared(
+    image: &Image,
+    addr: u64,
+    size: u64,
+    summaries: Summaries<'_>,
+) -> Result<Arc<Vec<Block>>, LiftError> {
+    let key = (addr, size);
+    let kept = image
+        .lifts
+        .0
+        .lock()
+        .expect("lifts lock")
+        .get(&key)
+        .cloned()
+        .unwrap_or_default();
+    // Asked outside the lock: a summary may lift other functions.
+    if let Some(found) = kept.iter().find(|recorded| {
+        recorded
+            .answers
+            .iter()
+            .all(|(target, summary)| calling(summaries(*target)) == *summary)
+    }) {
+        return found.blocks.clone();
+    }
+    let answers = std::cell::RefCell::new(Vec::new());
+    let blocks = lift_with(image, addr, size, &HashSet::new(), &|target| {
+        let summary = summaries(target);
+        answers.borrow_mut().push((target, calling(summary)));
+        summary
     })
+    .map(Arc::new);
+    let mut answers = answers.into_inner();
+    answers.sort_unstable_by_key(|(target, _)| *target);
+    answers.dedup_by_key(|(target, _)| *target);
+    let mut lifts = image.lifts.0.lock().expect("lifts lock");
+    let kept = lifts.entry(key).or_default();
+    if kept.len() == KEPT_LIFTS {
+        kept.remove(0);
+    }
+    kept.push(Arc::new(Recorded {
+        answers,
+        blocks: blocks.clone(),
+    }));
+    blocks
+}
+
+/// What a call needs of its callee's summary. Lifting reads nothing else,
+/// so lifts that differ only in the rest are the same lift.
+pub(crate) fn calling(summary: Summary) -> Summary {
+    Summary {
+        pointers: 0,
+        indirect_result: false,
+        narrow_return: false,
+        ..summary
+    }
 }
 
 /// `lift`, knowing of callees only what `summaries` says.
@@ -88,6 +169,7 @@ pub fn lift_with(
     extra_targets: &HashSet<u64>,
     summaries: Summaries<'_>,
 ) -> Result<Vec<Block>, LiftError> {
+    let summaries: Summaries<'_> = &|target| calling(summaries(target));
     let bytes = image.read_vaddr(addr, size).ok_or(LiftError::Unreadable)?;
     match image.isa {
         Isa::AArch64 => lift_continuing(
