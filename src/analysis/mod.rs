@@ -681,13 +681,19 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     let mut blocks = lift::lift(image, function.addr, size, &HashSet::new())?;
     let extent = function.addr..function.addr.saturating_add(size);
     let mut tables = jump_table::recover(&blocks, image, extent.clone());
-    if !tables.is_empty() {
-        let targets = tables
+    // Cases start blocks of their own, which may hold further tables.
+    let mut targets: HashSet<u64> = HashSet::new();
+    for _ in 0..4 {
+        let found: HashSet<u64> = tables
             .iter()
             .flat_map(jump_table::Recovered::targets)
             .collect();
+        if found.is_subset(&targets) {
+            break;
+        }
+        targets.extend(found);
         blocks = lift::lift(image, function.addr, size, &targets)?;
-        tables = jump_table::recover(&blocks, image, extent);
+        tables = jump_table::recover(&blocks, image, extent.clone());
     }
     if image.go {
         drop_stack_growth_check(&mut blocks, image);

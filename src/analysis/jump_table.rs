@@ -24,9 +24,28 @@ impl Recovered {
 /// The jump tables of the blocks. A table with no bounds check, as a
 /// dispatch on an enum whose range the compiler knows, has its entries read
 /// while they point into `extent` and before any address the code computes,
-/// where the next table would begin.
+/// where the next table would begin. A table's address held in a register
+/// since an earlier block counts, as found through the tables already read.
 pub fn recover(blocks: &[Block], image: &Image, extent: std::ops::Range<u64>) -> Vec<Recovered> {
+    let mut recovered = recover_once(blocks, image, &extent, &[]);
+    for _ in 0..4 {
+        let again = recover_once(blocks, image, &extent, &recovered);
+        if again.len() <= recovered.len() {
+            break;
+        }
+        recovered = again;
+    }
+    recovered
+}
+
+fn recover_once(
+    blocks: &[Block],
+    image: &Image,
+    extent: &std::ops::Range<u64>,
+    known: &[Recovered],
+) -> Vec<Recovered> {
     let starts = image.addressed.get_or_init(|| addressed(image));
+    let held = held_constants(blocks, known);
     let mut recovered = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
         let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
@@ -39,6 +58,7 @@ pub fn recover(blocks: &[Block], image: &Image, extent: std::ops::Range<u64>) ->
         let limits = Limits {
             extent: extent.clone(),
             tables: starts,
+            held: &held[index],
         };
         if let Some(mut entry) = recognize(block, target, image, bound, checked, &limits) {
             entry.block_start = block.start;
@@ -179,10 +199,124 @@ fn holding(block: &Block, index: &Expr) -> Option<u16> {
     found
 }
 
+/// The bits the expression may have set.
+fn possible_bits(expr: &Expr) -> u64 {
+    match expr {
+        Expr::Const(value) => *value,
+        Expr::Bin { op, lhs, rhs } => match op {
+            BinOp::And => possible_bits(lhs) & possible_bits(rhs),
+            BinOp::Or | BinOp::Xor => possible_bits(lhs) | possible_bits(rhs),
+            BinOp::Shr => match constant(rhs) {
+                Some(shift) if shift < 64 => possible_bits(lhs) >> shift,
+                _ => u64::MAX,
+            },
+            _ => u64::MAX,
+        },
+        Expr::Load { width, .. } if *width < 8 => (1u64 << (u32::from(*width) * 8)) - 1,
+        _ => u64::MAX,
+    }
+}
+
 /// Where an unchecked table's entries may lead and where other tables begin.
 struct Limits<'a> {
     extent: std::ops::Range<u64>,
     tables: &'a std::collections::HashSet<u64>,
+    /// The registers holding a constant as the block starts.
+    held: &'a std::collections::HashMap<u16, Expr>,
+}
+
+/// The registers holding one constant whenever each block starts, as a
+/// table's address loaded before a loop that dispatches through it.
+fn held_constants(
+    blocks: &[Block],
+    known: &[Recovered],
+) -> Vec<std::collections::HashMap<u16, Expr>> {
+    type Held = std::collections::HashMap<u16, Expr>;
+    let index: std::collections::HashMap<u64, usize> = blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    let mut entry: Vec<Option<Held>> = vec![None; blocks.len()];
+    if blocks.is_empty() {
+        return Vec::new();
+    }
+    let direct = |at: usize| -> Vec<usize> {
+        let falls = at + 1 < blocks.len();
+        match blocks[at].stmts.last() {
+            Some(Stmt::Br { target }) => target
+                .and_then(|target| index.get(&target).copied())
+                .into_iter()
+                .collect(),
+            Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => index
+                .get(target)
+                .copied()
+                .into_iter()
+                .chain(falls.then_some(at + 1))
+                .collect(),
+            Some(Stmt::Ret { .. } | Stmt::Trap | Stmt::BrIndirect { .. }) => Vec::new(),
+            _ => falls.then_some(at + 1).into_iter().collect(),
+        }
+    };
+    let tables: std::collections::HashMap<u64, Vec<usize>> = known
+        .iter()
+        .map(|table| {
+            let targets = table
+                .targets()
+                .iter()
+                .filter_map(|target| index.get(target).copied())
+                .collect();
+            (table.block_start, targets)
+        })
+        .collect();
+    entry[0] = Some(Held::new());
+    let mut pending = vec![0];
+    while let Some(at) = pending.pop() {
+        let Some(mut held) = entry[at].clone() else {
+            continue;
+        };
+        for stmt in &blocks[at].stmts {
+            match stmt {
+                Stmt::Assign { dest, value } => {
+                    let resolved = resolve(value, &held);
+                    match constant(&resolved) {
+                        Some(value) if dest.width == 64 => {
+                            held.insert(dest.index, Expr::Const(value));
+                        }
+                        _ => {
+                            held.remove(&dest.index);
+                        }
+                    }
+                }
+                other => {
+                    for written in crate::ir::visit::statement_registers(other).0 {
+                        held.remove(&written);
+                    }
+                }
+            }
+        }
+        let next = match blocks[at].stmts.last() {
+            Some(Stmt::BrIndirect { .. }) => {
+                tables.get(&blocks[at].start).cloned().unwrap_or_default()
+            }
+            _ => direct(at),
+        };
+        for successor in next {
+            let merged = match &entry[successor] {
+                None => held.clone(),
+                Some(existing) => existing
+                    .iter()
+                    .filter(|(register, value)| held.get(register) == Some(value))
+                    .map(|(register, value)| (*register, value.clone()))
+                    .collect(),
+            };
+            if entry[successor].as_ref() != Some(&merged) {
+                entry[successor] = Some(merged);
+                pending.push(successor);
+            }
+        }
+    }
+    entry.into_iter().map(Option::unwrap_or_default).collect()
 }
 
 /// The addresses `lea r, [rip + d]`, or `adrp` and the `add` right after it,
@@ -242,9 +376,11 @@ fn addressed(image: &Image) -> std::collections::HashSet<u64> {
 }
 
 /// The registers the block's assignments leave, as expressions of the
-/// registers it receives.
-fn environment_of(block: &Block) -> std::collections::HashMap<u16, Expr> {
-    let mut environment = std::collections::HashMap::new();
+/// registers it receives, given those known to hold `environment`.
+fn environment_from(
+    block: &Block,
+    mut environment: std::collections::HashMap<u16, Expr>,
+) -> std::collections::HashMap<u16, Expr> {
     for stmt in &block.stmts {
         if let Stmt::Assign { dest, value } = stmt {
             let resolved = resolve(value, &environment);
@@ -262,7 +398,7 @@ fn recognize(
     checked_block: Option<&Block>,
     limits: &Limits,
 ) -> Option<Recovered> {
-    let resolved = resolve(target, &environment_of(block));
+    let resolved = resolve(target, &environment_from(block, limits.held.clone()));
     let (base, table, index, scale, entry) = table_pattern(&resolved)?;
     let entry_bytes = match entry {
         Entry::Absolute => 8,
@@ -287,15 +423,22 @@ fn recognize(
             .is_some_and(|section| section.executable)
             .then_some(case)
     };
+    // A known index leaves one way to go.
+    if let Some(value) = constant(&index)
+        && value < 4096
+    {
+        return Some(Recovered {
+            block_start: block.start,
+            index: Expr::Const(value),
+            cases: vec![(value as i64, read_case(value)?)],
+            default: None,
+            table: (table + value * entry_bytes, entry_bytes),
+        });
+    }
     let (count, default, minimum, switch_base) = match bound {
         Some(bound) => bound,
         // An index masked to its low bits takes every value they hold.
-        None if let Expr::Bin {
-            op: BinOp::And,
-            rhs: mask,
-            ..
-        } = &index
-            && let Some(mask) = constant(mask)
+        None if let mask = possible_bits(&index)
             && mask < 4096
             && (mask + 1).is_power_of_two() =>
         {
@@ -556,6 +699,8 @@ fn index_expression(expr: &Expr) -> Option<Expr> {
                 None
             }
         }
+        // The index folded into the table's address.
+        Expr::Const(_) => Some(Expr::Const(0)),
         _ => None,
     }
 }

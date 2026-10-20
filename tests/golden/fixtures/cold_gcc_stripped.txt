@@ -1,4 +1,4 @@
-# cold_gcc_stripped: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 1 gotos
+# cold_gcc_stripped: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 6 gotos
 0x1000 27 - prologue
 0x1080 16 __cxa_finalize plt
 0x1090 16 __snprintf_chk plt
@@ -65,7 +65,12 @@ fn __cxa_finalize @ 0x1080 (size 16)
 -- decompile
 /* velk pseudo-C: __snprintf_chk @ 0x1090 */
 int32_t __snprintf_chk(void) {
-    return (*(qword_3fb0))();
+    switch (0x0) {
+    case 0:
+        goto L_1030;
+    default:
+        __builtin_unreachable();
+    }
 }
 -- signature
 int32_t ()
@@ -74,8 +79,7 @@ int32_t ()
 -- ir
 fn __snprintf_chk @ 0x1090 (size 16)
   blk0 @ 0x1090:
-    call *load64(#0x3fb0)
-    ret v1
+    switch #0x0 [0->0x1030] default <none>
 -- card
 {"addr":"0x1090","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__snprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -83,7 +87,12 @@ fn __snprintf_chk @ 0x1090 (size 16)
 -- decompile
 /* velk pseudo-C: abort @ 0x10a0 */
 int32_t abort(void) {
-    return (*(qword_3fb8))();
+    switch (0x0) {
+    case 0:
+        goto L_1040;
+    default:
+        __builtin_unreachable();
+    }
 }
 -- signature
 int32_t ()
@@ -92,8 +101,7 @@ int32_t ()
 -- ir
 fn abort @ 0x10a0 (size 16)
   blk0 @ 0x10a0:
-    call *load64(#0x3fb8)
-    ret v1
+    switch #0x0 [0->0x1040] default <none>
 -- card
 {"addr":"0x10a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -101,7 +109,12 @@ fn abort @ 0x10a0 (size 16)
 -- decompile
 /* velk pseudo-C: __stack_chk_fail @ 0x10b0 */
 int32_t __stack_chk_fail(void) {
-    return (*(qword_3fc0))();
+    switch (0x0) {
+    case 0:
+        goto L_1050;
+    default:
+        __builtin_unreachable();
+    }
 }
 -- signature
 int32_t ()
@@ -110,8 +123,7 @@ int32_t ()
 -- ir
 fn __stack_chk_fail @ 0x10b0 (size 16)
   blk0 @ 0x10b0:
-    call *load64(#0x3fc0)
-    ret v1
+    switch #0x0 [0->0x1050] default <none>
 -- card
 {"addr":"0x10b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__stack_chk_fail","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -119,7 +131,12 @@ fn __stack_chk_fail @ 0x10b0 (size 16)
 -- decompile
 /* velk pseudo-C: fputs @ 0x10c0 */
 int32_t fputs(void) {
-    return (*(qword_3fc8))();
+    switch (0x0) {
+    case 0:
+        goto L_1060;
+    default:
+        __builtin_unreachable();
+    }
 }
 -- signature
 int32_t ()
@@ -128,8 +145,7 @@ int32_t ()
 -- ir
 fn fputs @ 0x10c0 (size 16)
   blk0 @ 0x10c0:
-    call *load64(#0x3fc8)
-    ret v1
+    switch #0x0 [0->0x1060] default <none>
 -- card
 {"addr":"0x10c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -137,7 +153,12 @@ fn fputs @ 0x10c0 (size 16)
 -- decompile
 /* velk pseudo-C: __fprintf_chk @ 0x10d0 */
 int32_t __fprintf_chk(void) {
-    return (*(qword_3fd0))();
+    switch (0x0) {
+    case 0:
+        goto L_1070;
+    default:
+        __builtin_unreachable();
+    }
 }
 -- signature
 int32_t ()
@@ -146,8 +167,7 @@ int32_t ()
 -- ir
 fn __fprintf_chk @ 0x10d0 (size 16)
   blk0 @ 0x10d0:
-    call *load64(#0x3fd0)
-    ret v1
+    switch #0x0 [0->0x1070] default <none>
 -- card
 {"addr":"0x10d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__fprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
