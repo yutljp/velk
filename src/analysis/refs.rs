@@ -172,12 +172,16 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
 
 /// The `length` printable characters at `addr` in data, when they are.
 fn sized_string(image: &Image, addr: u64, length: u64) -> Option<(String, String)> {
-    // A small constant is more likely a size or a count than an address.
-    if !(2..=256).contains(&length) || addr <= SMALL_CONSTANT {
+    if !(2..=256).contains(&length) {
         return None;
     }
+    // Only read-only data holds string literals; a size passed with a count
+    // could fall anywhere else.
     let section = image.section_at(addr)?;
-    if section.executable {
+    let read_only = ["rodata", "rdata", "cstring", "__const"]
+        .iter()
+        .any(|kind| section.name.contains(kind));
+    if section.executable || !read_only {
         return None;
     }
     let bytes = image.read_vaddr(addr, length)?;
