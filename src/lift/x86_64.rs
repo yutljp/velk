@@ -1,7 +1,7 @@
 use crate::arch::x86::{RAX, RDX, RSP};
 use iced_x86::{
     ConditionCode, Decoder, DecoderOptions, EncodingKind, FlowControl, Instruction, Mnemonic,
-    OpKind, Register,
+    OpKind, Register, RflagsBits,
 };
 
 use super::flags::{Flags, Test};
@@ -12,6 +12,14 @@ use crate::ir::{
     BinOp, Block, Cond, EXCHANGE, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt,
 };
 use crate::loader::Image;
+
+/// The flags conditions read; the direction flag is none of them.
+const CONDITION_FLAGS: u32 = RflagsBits::CF
+    | RflagsBits::PF
+    | RflagsBits::AF
+    | RflagsBits::ZF
+    | RflagsBits::SF
+    | RflagsBits::OF;
 
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
@@ -2847,10 +2855,11 @@ impl Machine for Lifter<'_> {
             }
         }
         // Flags the instruction sets in a way not modelled are unknown.
-        if instruction.rflags_modified() != 0 && !self.flags_written {
+        let modified = instruction.rflags_modified() & CONDITION_FLAGS != 0;
+        if modified && !self.flags_written {
             self.last_compare = None;
         }
-        self.flags_touched |= instruction.rflags_modified() != 0
+        self.flags_touched |= modified
             || self.flags_written
             || self.stmts[first..]
                 .iter()
