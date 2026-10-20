@@ -178,6 +178,9 @@ pub struct Image {
     /// The addresses the code computes relative to the program counter, as
     /// where a table begins. Built on first use.
     pub addressed: std::sync::OnceLock<std::collections::HashSet<u64>>,
+    /// Go functions called through the assembly ABI: their callers zero
+    /// xmm15 again right after each call. Built on first use.
+    pub go_abi0: std::sync::OnceLock<std::collections::HashSet<u64>>,
     /// Whether some caller reads what the function returns, filled on
     /// demand.
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
@@ -195,6 +198,42 @@ pub struct Image {
 }
 
 impl Image {
+    /// The calling convention the function at `addr` follows.
+    pub fn convention_of(&self, addr: u64) -> crate::ir::Convention {
+        if self.go
+            && self.isa == Isa::X86_64
+            && self
+                .go_abi0
+                .get_or_init(|| self.assembly_callees())
+                .contains(&addr)
+        {
+            return crate::ir::Convention::GoAbi0;
+        }
+        crate::ir::Convention::of(self.isa, self.format, self.go)
+    }
+
+    /// The targets of the direct calls `xorps xmm15, xmm15` follows: Go
+    /// zeroes xmm15 again after calling into the assembly ABI, which uses it.
+    fn assembly_callees(&self) -> std::collections::HashSet<u64> {
+        let mut out = std::collections::HashSet::new();
+        for section in self.sections.iter().filter(|section| section.executable) {
+            let Some(bytes) = self.read_vaddr(section.vaddr, section.size) else {
+                continue;
+            };
+            for at in 0..bytes.len().saturating_sub(8) {
+                if bytes[at] != 0xe8 || bytes[at + 5..at + 9] != [0x45, 0x0f, 0x57, 0xff] {
+                    continue;
+                }
+                let displacement =
+                    i32::from_le_bytes(bytes[at + 1..at + 5].try_into().expect("four bytes"));
+                out.insert(
+                    (section.vaddr + at as u64 + 5).wrapping_add(displacement as i64 as u64),
+                );
+            }
+        }
+        out
+    }
+
     /// An image holding only `code`, mapped executable at `addr`.
     #[cfg(test)]
     pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
@@ -216,6 +255,7 @@ impl Image {
             summaries: Default::default(),
             branches_to: Default::default(),
             addressed: Default::default(),
+            go_abi0: Default::default(),
             imports: BTreeMap::new(),
             landing_pads: BTreeMap::new(),
             result_reads: Default::default(),
@@ -655,6 +695,7 @@ pub fn load(path: &Path) -> Result<Image> {
         summaries: Default::default(),
         branches_to: Default::default(),
         addressed: Default::default(),
+        go_abi0: Default::default(),
         result_reads: Default::default(),
         relocations,
         imports: plt::imports(&file).into_iter().collect(),

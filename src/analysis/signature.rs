@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::ir::{Access, Block, CType, Convention, Expr, Operation, Param, Stmt};
-use crate::loader::{Format, Isa};
+use crate::loader::Isa;
 
 #[derive(Debug, Clone)]
 pub struct Signature {
@@ -138,13 +138,10 @@ fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
 /// The register Go's x86-64 ABI passes a closure's context in.
 const GO_CLOSURE: u16 = 2;
 
-pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signature {
+pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> Signature {
     let (arguments, float_arguments) = match isa {
         Isa::Unsupported => (&[][..], &[][..]),
-        _ => {
-            let convention = Convention::of(isa, format, go);
-            (convention.arguments(), convention.float_arguments())
-        }
+        _ => (convention.arguments(), convention.float_arguments()),
     };
     // AArch64's indirect result register is no argument, but whether the
     // body reads it says whether the function returns through memory.
@@ -661,14 +658,11 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         .collect();
 
     // Arguments go on the stack only once the integer registers run out.
-    let registers_full = !arguments.is_empty()
-        && arguments
-            .iter()
-            .all(|register| params.iter().any(|param| param.index == *register));
+    let registers_full = arguments
+        .iter()
+        .all(|register| params.iter().any(|param| param.index == *register));
     let stack = match (registers_full, isa) {
-        (true, Isa::X86_64 | Isa::AArch64) => {
-            stack_arguments(blocks, isa, Convention::of(isa, format, go))
-        }
+        (true, Isa::X86_64 | Isa::AArch64) => stack_arguments(blocks, isa, convention),
         _ => Vec::new(),
     };
 
@@ -1074,7 +1068,7 @@ fn load_of(expr: &Expr) -> Option<(&Expr, u8)> {
 #[cfg(test)]
 mod tests {
     use super::recover;
-    use crate::ir::{Block, Expr, RegRef, Stmt};
+    use crate::ir::{Block, Convention, Expr, RegRef, Stmt};
     use crate::loader::{Format, Isa};
 
     #[test]
@@ -1098,7 +1092,12 @@ mod tests {
             },
         ];
 
-        let signature = recover(&blocks, Isa::AArch64, Format::Elf, false);
+        let signature = recover(
+            &blocks,
+            Isa::AArch64,
+            Convention::of(Isa::AArch64, Format::Elf, false),
+            false,
+        );
 
         let params: Vec<u16> = signature.params.iter().map(|param| param.index).collect();
         assert_eq!(params, vec![0]);
@@ -1138,7 +1137,12 @@ mod tests {
                 },
             ],
         }];
-        let signature = recover(&blocks, Isa::AArch64, Format::Elf, false);
+        let signature = recover(
+            &blocks,
+            Isa::AArch64,
+            Convention::of(Isa::AArch64, Format::Elf, false),
+            false,
+        );
         let types: Vec<String> = signature
             .params
             .iter()
@@ -1185,14 +1189,19 @@ mod tests {
                 },
             ],
         }];
-        let signature = recover(&blocks, Isa::X86_64, Format::Elf, false);
+        let signature = recover(
+            &blocks,
+            Isa::X86_64,
+            Convention::of(Isa::X86_64, Format::Elf, false),
+            false,
+        );
         assert_eq!(signature.params.len(), 6);
         assert_eq!(signature.stack, vec![8, 16]);
     }
 
     fn params_of(stmts: Vec<Stmt>, isa: Isa) -> Vec<u16> {
         let blocks = vec![Block { start: 0, stmts }];
-        recover(&blocks, isa, Format::Elf, false)
+        recover(&blocks, isa, Convention::of(isa, Format::Elf, false), false)
             .params
             .iter()
             .map(|param| param.index)

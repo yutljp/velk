@@ -340,7 +340,10 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
             result: None,
         };
     }
-    let convention = Convention::of(image.isa, image.format, image.go);
+    let convention = match target {
+        Some(target) => image.convention_of(target),
+        None => Convention::of(image.isa, image.format, image.go),
+    };
     let variadic = target.is_some_and(|target| {
         image
             .functions

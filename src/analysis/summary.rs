@@ -362,9 +362,9 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
     let Some(blocks) = body(image, addr, summaries) else {
         return named;
     };
-    let signature = signature::recover(&blocks, image.isa, image.format, image.go);
+    let convention = image.convention_of(addr);
+    let signature = signature::recover(&blocks, image.isa, convention, image.go);
     // A Go closure's context is no argument a call passes in order.
-    let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
     let count = |registers: &[u16]| {
         signature
             .params

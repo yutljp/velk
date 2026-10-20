@@ -846,10 +846,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         && float_return.is_none()
         && !function.sources.contains(&crate::loader::NameSource::Plt)
         && (results::ignored_by_callers(image, function.addr)
-            || results::returns_unset(
-                &blocks,
-                crate::ir::Convention::of(image.isa, image.format, image.go),
-            ));
+            || results::returns_unset(&blocks, image.convention_of(function.addr)));
     // A function the debug info says returns nothing returns no register.
     if declared == Some(&crate::ir::CType::Void) || ignored {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
@@ -874,7 +871,12 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     if image.go || function.sources.contains(&crate::loader::NameSource::Plt) {
         drop_unreached(&mut blocks);
     }
-    let signature = signature::recover(&blocks, image.isa, image.format, image.go);
+    let signature = signature::recover(
+        &blocks,
+        image.isa,
+        image.convention_of(function.addr),
+        image.go,
+    );
     // The arguments past the registers follow the register ones.
     let stack_params = signature
         .stack
@@ -893,7 +895,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         .collect();
     let ir = FunctionIr {
         isa: image.isa,
-        convention: crate::ir::Convention::of(image.isa, image.format, image.go),
+        convention: image.convention_of(function.addr),
         params: signature.params,
         stack_params,
         variadic: false,
