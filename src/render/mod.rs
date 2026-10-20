@@ -135,16 +135,22 @@ fn render_with(
         .collect();
     // `int *p` points at ints, so `*(p + 4)` reads `p[1]`. A pointer whose
     // type the debug info names is believed; one recovered from its
-    // accesses is taken for a scalar only when nothing reads past it, and
-    // otherwise reads as a structure's fields.
+    // accesses is taken for a scalar only when every access reads a whole
+    // element, and otherwise reads as a structure's fields.
     let elements: HashMap<u16, u8> = ir
         .params
         .iter()
         .filter(|param| match &param.ty {
             CType::Pointer(target) if matches!(target.as_ref(), CType::Named(_)) => true,
-            _ => fields
-                .keys()
-                .all(|(base, offset)| *base != param.index || *offset == 0),
+            _ => {
+                let size = param.ty.pointee_size().unwrap_or(0);
+                size > 0
+                    && fields.iter().all(|((base, offset), (width, _))| {
+                        *base != param.index
+                            || *offset == 0
+                            || (*width == size && offset % i64::from(size) == 0)
+                    })
+            }
         })
         .filter_map(|param| Some((param.index, param.ty.pointee_size()?)))
         .collect();

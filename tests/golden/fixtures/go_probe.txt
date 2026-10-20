@@ -1372,14 +1372,13 @@ fn main.sumSlice @ 0x466d00 (size 32)
 /* velk pseudo-C: main.kindName @ 0x466d20 */
 /* ref: 0x46d1c0 .rodata */
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
-/* struct: a0 +0x10:uint32_t */
 int32_t main_kindName(uint32_t *a0, int64_t a1) {
     int32_t v1;
 
     if (a0 == 0x0) {
         return 0x0;
     }
-    v1 = *(uint32_t *)((uint8_t *)a0 + 0x10);
+    v1 = a0[0x4];
     if (v1 != 0x778cdb8) {
         if (v1 != 0xcb735792) {
             return 0x0;
