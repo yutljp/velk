@@ -90,8 +90,7 @@ int32_t sub_210224(int32_t a0) {
     int64_t v2;
 
     if (a0 < 0x1) {
-        v2 = 0x0;
-        return v2;
+        return 0x0;
     }
     v1 = 0x0;
     v2 = 0x0;
@@ -140,17 +139,15 @@ fn <unnamed> @ 0x210224 (size 64)
 /* velk pseudo-C: sub_210264 @ 0x210264 */
 int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
     int64_t v2;
-    int64_t v3;
 
     if (a1 >= 0x1) {
         v2 = 0x0;
-        v3 = a1;
         do {
             if (a0[v2] == a2) {
                 return v2;
             }
             v2 = v2 + 0x1;
-        } while (v3 != v2);
+        } while (a1 != v2);
     }
     return 0xffffffff;
 }

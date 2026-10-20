@@ -199,13 +199,11 @@ fn <unnamed> @ 0x201310 (size 107)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
-    int32_t v1;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-c] */
 
-    v1 = a0;
-    local_0 = v1;
-    if (v1 - 0x1 == 0x0) {
+    local_0 = a0;
+    if (a0 - 0x1 == 0x0) {
         local_1 = 0xa;
         return local_1;
     }

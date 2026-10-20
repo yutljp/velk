@@ -37,17 +37,57 @@ pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
 }
 
 /// The names of the functions and data objects, by address, and of the
-/// imports by the slots that hold them.
+/// imports by the slots that hold them. A function goes by its name without
+/// the parameter list a demangled name ends in, when no other function has
+/// that name too.
 pub fn callee_names(image: &crate::loader::Image) -> HashMap<u64, String> {
+    let mut bases: HashMap<&str, usize> = HashMap::new();
+    for function in image.functions.values() {
+        if let Some(name) = &function.name {
+            *bases.entry(without_parameters(name)).or_default() += 1;
+        }
+    }
     image
         .imports
         .iter()
         .chain(&image.data_symbols)
         .map(|(address, name)| (*address, name.clone()))
         .chain(image.functions.iter().filter_map(|(address, function)| {
-            function.name.as_ref().map(|name| (*address, name.clone()))
+            let name = function.name.as_ref()?;
+            let base = without_parameters(name);
+            Some((
+                *address,
+                if bases.get(base) == Some(&1) {
+                    base.to_owned()
+                } else {
+                    name.clone()
+                },
+            ))
         }))
         .collect()
+}
+
+/// A demangled name without the parameter list it ends in, as
+/// `ns::f(int, long) const` without `(int, long) const`.
+fn without_parameters(name: &str) -> &str {
+    let trimmed = name.trim_end_matches(" const").trim_end_matches(['&', ' ']);
+    if !trimmed.ends_with(')') {
+        return name;
+    }
+    let mut depth = 0;
+    for (at, c) in trimmed.char_indices().rev() {
+        match c {
+            ')' => depth += 1,
+            '(' => {
+                depth -= 1;
+                if depth == 0 {
+                    return if at == 0 { name } else { &trimmed[..at] };
+                }
+            }
+            _ => {}
+        }
+    }
+    name
 }
 
 pub fn render(
@@ -219,6 +259,8 @@ fn render_with(
         .clone()
         .unwrap_or_else(|| format!("sub_{:x}", ir.addr));
     out.push_str(&format!("/* velk pseudo-C: {name} @ 0x{:x} */\n", ir.addr));
+    // The function goes by the name its callers use.
+    let name = callees.get(&ir.addr).cloned().unwrap_or(name);
     for reference in references {
         out.push_str(&format!("/* ref: {} */\n", reference.describe()));
     }
@@ -666,25 +708,35 @@ fn only_vector_count(rest: &[Node]) -> bool {
 fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     let mut index = 0;
     while index < nodes.len() {
-        // A value assigned only to be returned right away reads as returned.
+        // A value assigned only to be returned right away reads as returned;
+        // a constant also through the mask a narrow return puts on it.
         if let (
             Node::Stmt(Stmt::Assign { dest, value }),
-            Some(Node::Stmt(Stmt::Ret {
-                value: Expr::Reg { index: read, width },
-            })),
+            Some(Node::Stmt(Stmt::Ret { value: returned })),
         ) = (&nodes[index], nodes.get(index + 1))
-            && dest.index == *read
-            && dest.width == *width
             && dest.index >= crate::ir::VARIABLE_BASE
             && !ctx.void_return
+            && let Some(value) = match returned {
+                Expr::Reg { index: read, width } if *read == dest.index => (dest.width == *width
+                    || matches!(value, Expr::Const(c) if dest.width < 64 && *c >> dest.width == 0))
+                .then(|| value.clone()),
+                Expr::Bin {
+                    op: BinOp::And,
+                    lhs,
+                    rhs,
+                } => match (lhs.as_ref(), rhs.as_ref(), value) {
+                    (Expr::Reg { index: read, .. }, Expr::Const(mask), Expr::Const(c))
+                        if *read == dest.index =>
+                    {
+                        Some(Expr::Const(c & mask))
+                    }
+                    _ => None,
+                },
+                _ => None,
+            }
         {
             indent(depth, out);
-            out.push_str(&render_stmt(
-                &Stmt::Ret {
-                    value: value.clone(),
-                },
-                ctx,
-            ));
+            out.push_str(&render_stmt(&Stmt::Ret { value }, ctx));
             out.push('\n');
             index += 2;
             continue;

@@ -6,7 +6,6 @@
 /* velk pseudo-C: sub_21018c @ 0x21018c */
 /* ref: 0x2204fc .bss */
 int32_t sub_21018c(int32_t a0) {
-    int64_t v1;
     int32_t local_0; /* [sp-30] */
     int32_t local_1; /* [sp-8] */
     int32_t local_2; /* [sp-c] */
@@ -19,9 +18,8 @@ int32_t sub_21018c(int32_t a0) {
     int32_t local_9; /* [sp-28] */
     int32_t local_10; /* [sp-2c] */
 
-    v1 = a0;
-    local_0 = v1;
-    if (v1 == 0x0) {
+    local_0 = a0;
+    if (a0 == 0x0) {
         for (local_1 = 0x0; local_1 < 0x1; local_1 += 0x1) {
             dword_2204fc += local_1;
         }

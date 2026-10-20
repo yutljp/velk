@@ -468,13 +468,11 @@ fn <unnamed> @ 0x2016d0 (size 21)
 -- decompile
 /* velk pseudo-C: sub_2016f0 @ 0x2016f0 */
 int32_t sub_2016f0(int32_t a0) {
-    int32_t v1;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-c] */
 
-    v1 = a0;
-    local_0 = v1;
-    if (v1 - 0x1 == 0x0) {
+    local_0 = a0;
+    if (a0 - 0x1 == 0x0) {
         local_1 = 0x64;
         return local_1;
     }

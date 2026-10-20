@@ -132,14 +132,12 @@ fn <unnamed> @ 0x2102a0 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210300 @ 0x210300 */
 int32_t sub_210300(int32_t a0) {
-    int64_t v1;
     int32_t local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */
 
     local_0 = 0x0;
-    v1 = a0;
-    local_1 = v1;
-    if (v1 == 0x0) {
+    local_1 = a0;
+    if (a0 == 0x0) {
         local_0 += 0x1;
     } else if (local_1 - 0x1 != 0x0) {
         if (local_1 - 0x2 == 0x0) {
@@ -206,13 +204,11 @@ fn <unnamed> @ 0x210300 (size 160)
 -- decompile
 /* velk pseudo-C: sub_2103a0 @ 0x2103a0 */
 int32_t sub_2103a0(int32_t a0) {
-    int64_t v1;
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-4] */
 
-    v1 = a0;
-    local_0 = v1;
-    if (v1 - 0x1 == 0x0) {
+    local_0 = a0;
+    if (a0 - 0x1 == 0x0) {
         local_1 = 0xa;
         return local_1;
     }

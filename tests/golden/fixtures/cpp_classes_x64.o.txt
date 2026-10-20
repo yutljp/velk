@@ -8,8 +8,7 @@
 == 0x0 total_area(Shape const* const*, int)
 -- decompile
 /* velk pseudo-C: total_area(Shape const* const*, int) @ 0x0 */
-int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
-    int64_t v2;
+int32_t total_area(uint64_t *a0, int32_t a1) {
     int64_t v3;
     int32_t v4;
     uint64_t *v5;
@@ -17,10 +16,8 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
     int32_t v7;
 
     if (a1 <= 0x0) {
-        v4 = 0x0;
-        return v4;
+        return 0x0;
     }
-    v2 = a1;
     v3 = 0x0;
     v4 = 0x0;
     do {
@@ -29,7 +26,7 @@ int32_t total_area_Shape_const__const___int_(uint64_t *a0, int32_t a1) {
         v7 = (*(v6[0x2]))(v5);
         v4 = v4 + v7;
         v3 = v3 + 0x1;
-    } while (v2 != v3);
+    } while (a1 != v3);
     return v4;
 }
 -- signature
@@ -64,7 +61,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
 == 0x50 clamp_int(int)
 -- decompile
 /* velk pseudo-C: clamp_int(int) @ 0x50 */
-int32_t clamp_int_int_(int32_t a0) {
+int32_t clamp_int(int32_t a0) {
     int32_t v1;
 
     v1 = (a0 < 0xff ? a0 : 0xff);
@@ -85,7 +82,7 @@ fn clamp_int(int) @ 0x50 (size 22)
 == 0x70 clamp_long(long)
 -- decompile
 /* velk pseudo-C: clamp_long(long) @ 0x70 */
-int64_t clamp_long_long_(int64_t a0) {
+int64_t clamp_long(int64_t a0) {
     int64_t v1;
 
     v1 = (a0 < 0x3e8 ? a0 : 0x3e8);
@@ -114,7 +111,7 @@ struct dot_sum_Vec2_const___Vec2_const___a1 {
     int32_t field_0x0;
     int32_t field_0x4;
 };
-int32_t dot_sum_Vec2_const___Vec2_const__(struct dot_sum_Vec2_const___Vec2_const___a0 *a0, struct dot_sum_Vec2_const___Vec2_const___a1 *a1) {
+int32_t dot_sum(struct dot_sum_Vec2_const___Vec2_const___a0 *a0, struct dot_sum_Vec2_const___Vec2_const___a1 *a1) {
     return (a1->field_0x4 + a0->field_0x4) * (a1->field_0x0 + a0->field_0x0);
 }
 -- signature
@@ -131,7 +128,7 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 (size 14)
 == 0xb0 increment(int&)
 -- decompile
 /* velk pseudo-C: increment(int&) @ 0xb0 */
-void increment_int__(uint32_t *a0) {
+void increment(uint32_t *a0) {
     *a0 += 0x1;
 }
 -- signature

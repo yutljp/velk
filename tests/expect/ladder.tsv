@@ -88,7 +88,7 @@
 4	l2_loop_a64.o	count_down	has	sink
 5	switch_jumptable_x64.o	d7	has	switch (a0)
 6	calls_a64.elf	pick_op	has	twice
-6	cpp_demo.o	use(int)	has	ns__add_int__int_(
+6	cpp_demo.o	use(int)	has	ns__add(
 7	cold_gcc_stripped	-	count	15
 7	cold_gcc	lookup	has	fputs(
 7	cold_gcc	-	nothas	lookup.cold

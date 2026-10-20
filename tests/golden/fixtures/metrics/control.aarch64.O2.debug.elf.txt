@@ -403,8 +403,7 @@ int find_pair(int *p, int n, int target) {
             }
         }
     }
-    v11 = 0xffffffff;
-    return v11;
+    return 0xffffffff;
 }
 -- signature
 int (int * p, int n, int target)

@@ -404,8 +404,7 @@ int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, 
     local_27 = a7;
     local_26 = sp;
     if (a0 < 0x1) {
-        v3 = 0x0;
-        return v3;
+        return 0x0;
     }
     v1 = local_26;
     v2 = local_25;

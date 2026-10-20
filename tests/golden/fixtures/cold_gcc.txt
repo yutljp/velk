@@ -360,7 +360,6 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     int64_t v4;
     int64_t v5;
     int64_t v7;
-    int64_t v8;
     uint32_t *v15;
     int64_t v16;
     int64_t v17;
@@ -368,7 +367,6 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     int64_t v19;
     int64_t v20;
     int64_t v24;
-    int64_t v25;
     int64_t v32;
     int64_t local_0; /* [sp-68] */
     int64_t local_1; /* [sp-78] */
@@ -377,9 +375,8 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     if ((a1 & 0xffffffff) <= 0x0) {
         v24 = &local_0;
         local_2 = 0x0;
-        v25 = a2;
         local_1 = a1;
-        __snprintf_chk(v24, 0x40, 0x2, 0x40, 0x2004, v25);
+        __snprintf_chk(v24, 0x40, 0x2, 0x40, 0x2004, a2);
         v32 = stderr_GLIBC_2_2_5;
         fputs(v24, v32);
         abort();
@@ -397,11 +394,10 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     return v3[0x1];
 L_12fd:
     v7 = &local_0;
-    v8 = a2;
     local_1 = a1;
     v15 = a0 + 0x2;
     v16 = v4 + (uint8_t *)v15;
-    __snprintf_chk(v7, 0x40, 0x2, 0x40, 0x2004, v8);
+    __snprintf_chk(v7, 0x40, 0x2, 0x40, 0x2004, a2);
     v17 = stderr_GLIBC_2_2_5;
     fputs(v7, v17);
     do {

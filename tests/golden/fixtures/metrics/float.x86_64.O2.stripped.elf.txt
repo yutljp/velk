@@ -11,7 +11,6 @@
 double sub_2011b0(double *a0, int32_t a1) {
     double v1;
     double v2;
-    int64_t v3;
     int64_t v4;
     int64_t v5;
     int64_t v6;
@@ -28,10 +27,9 @@ double sub_2011b0(double *a0, int32_t a1) {
     v1 = 0.0;
     v2 = 0.0;
     if (a1 > 0x0) {
-        v3 = a1;
-        v4 = v3 & 0x7;
+        v4 = a1 & 0x7;
         if (a1 >= 0x8 /* unsigned */) {
-            v6 = v3 & 0x7ffffff8;
+            v6 = a1 & 0x7ffffff8;
             v5 = 0x0;
             do {
                 v7 = v2 + a0[v5];

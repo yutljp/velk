@@ -48,8 +48,22 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         },
         _ => None,
     };
+    // A 32-bit parameter is copied in its 32-bit register.
+    let narrow = ir
+        .params
+        .iter()
+        .any(|held| held.index == param && held.ty.is_32_bit_int());
     let source_of = |value: &Expr| match value {
         Expr::Reg { index, width: 64 } => Some(Source::Register(*index)),
+        Expr::Reg { index, width: 32 } if narrow => Some(Source::Register(*index)),
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if narrow && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => match lhs.as_ref() {
+            Expr::Reg { index, .. } => Some(Source::Register(*index)),
+            _ => None,
+        },
         Expr::Load { addr, width: 8, .. } => slot_of(addr).map(Source::Slot),
         _ => None,
     };
@@ -60,7 +74,9 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             Stmt::Assign { dest, value } => defined
                 .entry(Source::Register(dest.index))
                 .or_default()
-                .push(source_of(value).filter(|_| dest.width == 64)),
+                .push(
+                    source_of(value).filter(|_| dest.width == 64 || (narrow && dest.width == 32)),
+                ),
             Stmt::Store { addr, value, width } => {
                 if let Some(slot) = slot_of(addr) {
                     defined
