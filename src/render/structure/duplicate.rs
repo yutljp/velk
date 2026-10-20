@@ -100,6 +100,127 @@ fn straight(stmt: &Stmt) -> bool {
     )
 }
 
+/// The function with the same test, ending several blocks and choosing
+/// between the same two places, made once in a block of its own that they
+/// all jump to: the check a compiler copied into each branch before the
+/// code they share.
+pub(super) fn merged_checks(ir: &FunctionIr) -> Option<FunctionIr> {
+    use crate::ir::{Cond, Expr};
+    let original = ir;
+    let starts: std::collections::HashMap<u64, usize> = ir
+        .blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    // Where control goes from a block start, past blocks that only jump.
+    let settle = |mut target: u64| {
+        for _ in 0..8 {
+            match starts
+                .get(&target)
+                .map(|position| ir.blocks[*position].stmts.as_slice())
+            {
+                Some([Stmt::Br { target: Some(next) }]) if *next != target => target = *next,
+                _ => break,
+            }
+        }
+        target
+    };
+    // Each conditional exit as (cond, lhs, rhs, taken, otherwise), the
+    // condition put the way that compares smaller first.
+    type Exit = (Cond, Expr, Expr, u64, u64);
+    let mut exits: Vec<(usize, Exit)> = Vec::new();
+    for (position, block) in ir.blocks.iter().enumerate() {
+        let Some(Stmt::Brif {
+            cond,
+            lhs,
+            rhs,
+            target,
+        }) = block.stmts.last()
+        else {
+            continue;
+        };
+        let Some(next) = ir.blocks.get(position + 1) else {
+            continue;
+        };
+        let (taken, otherwise) = (settle(*target), settle(next.start));
+        let exit = if taken <= otherwise {
+            (*cond, lhs.clone(), rhs.clone(), taken, otherwise)
+        } else {
+            (cond.invert(), lhs.clone(), rhs.clone(), otherwise, taken)
+        };
+        exits.push((position, exit));
+    }
+    let mut ir = ir.clone();
+    let mut next_copy = COPIES + 0x1000_0000;
+    let mut changed = false;
+    let mut done = vec![false; exits.len()];
+    for first in 0..exits.len() {
+        if done[first] {
+            continue;
+        }
+        let same: Vec<usize> = (first..exits.len())
+            .filter(|other| !done[*other] && exits[*other].1 == exits[first].1)
+            .collect();
+        if same.len() < 2 {
+            continue;
+        }
+        let (cond, lhs, rhs, taken, otherwise) = exits[first].1.clone();
+        let check = next_copy;
+        next_copy += 2;
+        for member in &same {
+            done[*member] = true;
+            let block = &mut ir.blocks[exits[*member].0];
+            block.stmts.pop();
+            block.stmts.push(Stmt::Br {
+                target: Some(check),
+            });
+        }
+        // The test falls into a jump to the other place.
+        ir.blocks.push(crate::ir::Block {
+            start: check,
+            stmts: vec![Stmt::Brif {
+                cond,
+                lhs,
+                rhs,
+                target: taken,
+            }],
+        });
+        ir.blocks.push(crate::ir::Block {
+            start: check + 1,
+            stmts: vec![Stmt::Br {
+                target: Some(otherwise),
+            }],
+        });
+        changed = true;
+    }
+    if !changed {
+        return None;
+    }
+    // A block only the old tests fell into is left behind.
+    let before = reached(original);
+    let after = reached(&ir);
+    let mut position = 0;
+    ir.blocks.retain(|_| {
+        position += 1;
+        after[position - 1] || !before.get(position - 1).copied().unwrap_or(false)
+    });
+    Some(ir)
+}
+
+/// Which blocks a path from the entry reaches.
+fn reached(ir: &FunctionIr) -> Vec<bool> {
+    let mut seen = vec![false; ir.blocks.len()];
+    let mut pending = vec![0];
+    while let Some(at) = pending.pop() {
+        if at >= seen.len() || std::mem::replace(&mut seen[at], true) {
+            continue;
+        }
+        pending.extend(crate::render::structure::compare_chain::successors(ir, at));
+    }
+    seen
+}
+
 /// Sends a branch to `from` to `to` instead.
 fn retarget(stmt: &mut Stmt, from: u64, to: u64) {
     let replace = |target: &mut u64| {

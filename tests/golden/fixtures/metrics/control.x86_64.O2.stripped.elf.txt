@@ -1,4 +1,4 @@
-# metrics/control.x86_64.O2.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/control.x86_64.O2.stripped.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201220 242 - unwind,prologue
 0x201320 26 - unwind,prologue
 0x201340 23 - unwind,prologue
@@ -67,27 +67,22 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
                 }
             }
             v10 = v12 + 0x4;
-            if (v2 == 0x0) {
-                goto L_201250;
-            }
         } else {
             v10 = 0x0;
-            if (v2 == 0x0) {
-                goto L_201250;
+        }
+        if (v2 != 0x0) {
+            v16 = v10 + v5;
+            v17 = 0x0;
+            for (;;) {
+                if (v16 == v17) {
+                    v7 = v7 + v9[v8];
+                }
+                v17 = v17 - 0x1;
+                if (v4 == v17) {
+                    break;
+                }
             }
         }
-        v16 = v10 + v5;
-        v17 = 0x0;
-        for (;;) {
-            if (v16 == v17) {
-                v7 = v7 + v9[v8];
-            }
-            v17 = v17 - 0x1;
-            if (v4 == v17) {
-                break;
-            }
-        }
-    L_201250:
         v6 = v6 + 0x1;
         v5 = v5 - 0x1;
         if (v6 == v1) {

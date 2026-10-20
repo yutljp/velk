@@ -63,10 +63,22 @@ pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
         return best;
     }
     // A branch to a block that only jumps on can go where the jump does.
+    let mut best = best;
     if let Some(threaded) = duplicate::threaded(ir) {
         let candidate = structure_variants(&threaded);
         if label_count(&candidate) < label_count(&best) {
-            return candidate;
+            best = candidate;
+        }
+    }
+    if label_count(&best) == 0 {
+        return best;
+    }
+    // A test copied into several branches can be made once where they meet.
+    if let Some(merged) = duplicate::merged_checks(ir) {
+        let merged = duplicate::threaded(&merged).unwrap_or(merged);
+        let candidate = structure_variants(&merged);
+        if label_count(&candidate) < label_count(&best) {
+            best = candidate;
         }
     }
     best
