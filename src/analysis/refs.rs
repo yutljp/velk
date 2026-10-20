@@ -136,14 +136,64 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
         });
     }
     // A call passing a pointer and a length, as Go and Rust pass a string,
-    // names that many characters, which need end in no zero byte.
+    // names that many characters, which need end in no zero byte. A small
+    // constant where the callee takes a pointer, or a format string, points
+    // at a string in read-only data too, as in a position-independent
+    // executable whose data starts low.
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         let Stmt::Call {
-            args: Some(args), ..
+            args: Some(args),
+            target,
+            ..
         } = stmt
         else {
             continue;
         };
+        let pointers = target.map_or(0, |target| {
+            let named = image
+                .functions
+                .get(&target)
+                .and_then(|function| function.name.as_deref())
+                .and_then(|name| {
+                    crate::analysis::prototypes::of(
+                        name,
+                        image.format == crate::loader::Format::MachO,
+                    )
+                })
+                .and_then(|prototype| prototype.format)
+                .map_or(0, |format| 1u64 << format.min(63));
+            named | u64::from(crate::analysis::summary::summary(image, target).pointers)
+        });
+        for (position, arg) in args.iter().enumerate().take(64) {
+            let Expr::Const(addr) = arg else {
+                continue;
+            };
+            if pointers & 1 << position == 0
+                || references
+                    .iter()
+                    .any(|known| known.addr == *addr && known.text.is_some())
+            {
+                continue;
+            }
+            let Some(section) = image.section_at(*addr) else {
+                continue;
+            };
+            let read_only = ["rodata", "rdata", "cstring", "__const"]
+                .iter()
+                .any(|kind| section.name.contains(kind));
+            if !read_only {
+                continue;
+            }
+            if let Some(text) = strings_at(image, *addr) {
+                references.retain(|known| known.addr != *addr);
+                references.push(Reference {
+                    addr: *addr,
+                    section: section.name.clone(),
+                    text: Some(text),
+                    pointer: None,
+                });
+            }
+        }
         for pair in args.windows(2) {
             let (Expr::Const(addr), Expr::Const(length)) = (&pair[0], &pair[1]) else {
                 continue;
