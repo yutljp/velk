@@ -259,25 +259,20 @@ fn <unnamed> @ 0x2104ec (size 120)
 == 0x210564 -
 -- decompile
 /* velk pseudo-C: sub_210564 @ 0x210564 */
-/* ref: 0x1 ".t" */
-/* ref: 0x2 "tex" */
-/* ref: 0x7 ".data.re" */
 int64_t sub_210564(int64_t a0) {
-    return sub_2104ec(a0, ".t", "tex", 0x3, 0x4, 0x5, 0x6, ".data.re", 0x8);
+    return sub_2104ec(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
 int64_t (int64_t a0)
 -- references
-0x1 ".t"
-0x2 "tex"
-0x7 ".data.re"
+
 -- ir
 fn <unnamed> @ 0x210564 (size 76)
   blk0 @ 0x210564:
     v2 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v2
 -- card
-{"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameHints":["tex","data_re"],"nameSources":["unwind","prologue"],"section":".text","size":76,"strings":[".t","tex",".data.re"],"unsupported":0}
+{"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 
 == 0x2105b0 -
 -- decompile

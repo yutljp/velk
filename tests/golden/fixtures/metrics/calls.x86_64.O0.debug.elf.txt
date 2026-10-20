@@ -262,33 +262,20 @@ fn sum9 @ 0x2014a0 (size 78)
 == 0x2014f0 call_sum9
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x2014f0 */
-/* ref: 0x1 "es" */
-/* ref: 0x2 "sts" */
-/* ref: 0x3 "ts/c" */
-/* ref: 0x4 "s/cas" */
-/* ref: 0x5 "/cases" */
-/* ref: 0x6 "cases/c" */
-/* ref: 0x7 "ases/c/c" */
 long call_sum9(long x) {
-    return sum9(x, "es", "sts", "ts/c", "s/cas", "/cases", "cases/c", "ases/c/c", 0x8);
+    return sum9(x, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
 long (long x)
 -- references
-0x1 "es"
-0x2 "sts"
-0x3 "ts/c"
-0x4 "s/cas"
-0x5 "/cases"
-0x6 "cases/c"
-0x7 "ases/c/c"
+
 -- ir
 fn call_sum9 @ 0x2014f0 (size 80)
   blk0 @ 0x2014f0:
     v2 = call 0x2014a0(rdi, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v2
 -- card
-{"addr":"0x2014f0","approxTokens":198,"blocks":1,"hardReasons":[],"name":"call_sum9","nameHints":["sts","ts_c","s_cas","cases"],"nameSources":["symtab","dwarf","unwind"],"section":".text","size":80,"strings":["es","sts","ts/c","s/cas","/cases","cases/c","ases/c/c"],"unsupported":0}
+{"addr":"0x2014f0","approxTokens":198,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":80,"unsupported":0}
 
 == 0x201540 sum_varargs
 -- decompile

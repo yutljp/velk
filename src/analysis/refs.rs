@@ -5,6 +5,9 @@ use crate::loader::Image;
 
 const MAX_STRING: u64 = 96;
 
+/// Constants up to this are taken for numbers rather than addresses.
+const SMALL_CONSTANT: u64 = 0x10000;
+
 #[derive(Debug, Clone)]
 pub struct Reference {
     pub addr: u64,
@@ -169,7 +172,8 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
 
 /// The `length` printable characters at `addr` in data, when they are.
 fn sized_string(image: &Image, addr: u64, length: u64) -> Option<(String, String)> {
-    if !(2..=256).contains(&length) {
+    // A small constant is more likely a size or a count than an address.
+    if !(2..=256).contains(&length) || addr <= SMALL_CONSTANT {
         return None;
     }
     let section = image.section_at(addr)?;
@@ -192,7 +196,7 @@ fn sized_string(image: &Image, addr: u64, length: u64) -> Option<(String, String
 fn expr_constants(expr: &Expr, out: &mut Vec<u64>) {
     match expr {
         Expr::Reg { .. } => {}
-        Expr::Const(value) if *value > 0x10000 => out.push(*value),
+        Expr::Const(value) if *value > SMALL_CONSTANT => out.push(*value),
         Expr::Const(_) => {}
         Expr::Bin { lhs, rhs, .. } => {
             expr_constants(lhs, out);

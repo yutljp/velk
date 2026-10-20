@@ -262,25 +262,20 @@ fn <unnamed> @ 0x2014a0 (size 78)
 == 0x2014f0 -
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
-/* ref: 0x1 ".t" */
-/* ref: 0x2 "tex" */
-/* ref: 0x7 ".data.re" */
 int64_t sub_2014f0(int64_t a0) {
-    return sub_2014a0(a0, ".t", "tex", 0x3, 0x4, 0x5, 0x6, ".data.re", 0x8);
+    return sub_2014a0(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
 int64_t (int64_t a0)
 -- references
-0x1 ".t"
-0x2 "tex"
-0x7 ".data.re"
+
 -- ir
 fn <unnamed> @ 0x2014f0 (size 80)
   blk0 @ 0x2014f0:
     v2 = call 0x2014a0(rdi, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v2
 -- card
-{"addr":"0x2014f0","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameHints":["tex","data_re"],"nameSources":["unwind","prologue"],"section":".text","size":80,"strings":[".t","tex",".data.re"],"unsupported":0}
+{"addr":"0x2014f0","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":80,"unsupported":0}
 
 == 0x201540 -
 -- decompile

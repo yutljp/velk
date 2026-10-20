@@ -293,25 +293,20 @@ fn <unnamed> @ 0x210400 (size 40)
 == 0x210428 -
 -- decompile
 /* velk pseudo-C: sub_210428 @ 0x210428 */
-/* ref: 0x1 ".t" */
-/* ref: 0x2 "tex" */
-/* ref: 0x7 ".data.re" */
 int64_t sub_210428(int64_t a0) {
-    return sub_210400(a0, ".t", "tex", 0x3, 0x4, 0x5, 0x6, ".data.re", 0x8);
+    return sub_210400(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
 }
 -- signature
 int64_t (int64_t a0)
 -- references
-0x1 ".t"
-0x2 "tex"
-0x7 ".data.re"
+
 -- ir
 fn <unnamed> @ 0x210428 (size 64)
   blk0 @ 0x210428:
     v1 = call 0x210400(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v1
 -- card
-{"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameHints":["tex","data_re"],"nameSources":["unwind","prologue"],"section":".text","size":64,"strings":[".t","tex",".data.re"],"unsupported":0}
+{"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":64,"unsupported":0}
 
 == 0x210468 -
 -- decompile
