@@ -703,6 +703,41 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
 /// Drops a write of AArch64's indirect result register that only a call
 /// reads, implicitly, when the callee does not return through memory: the
 /// compiler used it as a scratch register for the call's arguments.
+/// A function returning a structure too large for registers writes it
+/// through a pointer its caller passes first and returns that pointer: the
+/// first parameter is the result, no parameter of the source.
+fn name_indirect_result(ir: &mut FunctionIr) {
+    use crate::ir::{Convention, Expr};
+    if !matches!(ir.convention, Convention::SysV | Convention::Win64) {
+        return;
+    }
+    let first = ir.convention.arguments()[0];
+    let Some(param) = ir.params.iter().position(|param| param.index == first) else {
+        return;
+    };
+    let based = |addr: &Expr| match addr {
+        Expr::Reg { index, .. } => *index == first,
+        Expr::Bin { lhs, rhs, .. } => {
+            matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == first)
+                && matches!(rhs.as_ref(), Expr::Const(_))
+        }
+        _ => false,
+    };
+    let stmts = || ir.blocks.iter().flat_map(|block| &block.stmts);
+    let returns_it = stmts()
+        .filter_map(|stmt| match stmt {
+            Stmt::Ret { value } => Some(value),
+            _ => None,
+        })
+        .all(|value| matches!(value, Expr::Reg { index, width: 64 } if *index == first));
+    let writes_through =
+        stmts().any(|stmt| matches!(stmt, Stmt::Store { addr, .. } if based(addr)));
+    let returns = stmts().any(|stmt| matches!(stmt, Stmt::Ret { .. }));
+    if returns && returns_it && writes_through {
+        ir.params[param].name = "result".to_owned();
+    }
+}
+
 fn drop_unread_indirect_result(ir: &mut FunctionIr, image: &Image) {
     const INDIRECT: u16 = 8;
     if ir.isa != crate::loader::Isa::AArch64 {
@@ -1001,7 +1036,12 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // Simplifying can fold a variable's value into its readers.
     passes::dce::dce(&mut ir);
     drop_unread_indirect_result(&mut ir, image);
+    name_indirect_result(&mut ir);
     structures::recover(&mut ir);
+    // It returns the pointer it wrote the result through.
+    if let Some(result) = ir.params.iter().find(|param| param.name == "result") {
+        ir.ret_type = result.ty.clone();
+    }
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);
     drop_stack_protector(&mut ir, image);

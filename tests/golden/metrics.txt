@@ -9,20 +9,20 @@ extra functions | x86_64.O0 | 0/148
 extra functions | x86_64.O2 | 0/148
 parameter count | aarch64.O0 | 147/147
 parameter count | aarch64.O2 | 147/147
-parameter count | x86_64.O0 | 145/147
-parameter count | x86_64.O2 | 145/147
+parameter count | x86_64.O0 | 146/147
+parameter count | x86_64.O2 | 146/147
 parameter pointer | aarch64.O0 | 180/182
 parameter pointer | aarch64.O2 | 179/182
-parameter pointer | x86_64.O0 | 178/181
-parameter pointer | x86_64.O2 | 177/181
+parameter pointer | x86_64.O0 | 179/182
+parameter pointer | x86_64.O2 | 178/182
 parameter width | aarch64.O0 | 147/153
 parameter width | aarch64.O2 | 147/153
-parameter width | x86_64.O0 | 147/152
-parameter width | x86_64.O2 | 147/152
+parameter width | x86_64.O0 | 148/153
+parameter width | x86_64.O2 | 148/153
 parameter sign | aarch64.O0 | 135/147
 parameter sign | aarch64.O2 | 135/147
-parameter sign | x86_64.O0 | 135/147
-parameter sign | x86_64.O2 | 135/147
+parameter sign | x86_64.O0 | 136/148
+parameter sign | x86_64.O2 | 136/148
 return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 143/148
 return void | x86_64.O0 | 142/148
@@ -587,7 +587,7 @@ structs.aarch64.O2 0x2102ec flags_set_mode: parameter 1 signedness differs; retu
 structs.x86_64.O0 0x201240 rect_area: ok
 structs.x86_64.O0 0x201270 record_total: ok
 structs.x86_64.O0 0x2012e0 point_add: ok
-structs.x86_64.O0 0x201310 big_make: 2 parameters, expected 1
+structs.x86_64.O0 0x201310 big_make: ok
 structs.x86_64.O0 0x201350 big_sum: 0 parameters, expected 1
 structs.x86_64.O0 0x201370 word_low_byte: returns 4 bytes, expected 1
 structs.x86_64.O0 0x201380 flags_level: ok
@@ -595,7 +595,7 @@ structs.x86_64.O0 0x2013c0 flags_set_mode: parameter 1 signedness differs; retur
 structs.x86_64.O2 0x2011e0 rect_area: ok
 structs.x86_64.O2 0x2011f0 record_total: ok
 structs.x86_64.O2 0x201260 point_add: ok
-structs.x86_64.O2 0x201280 big_make: 2 parameters, expected 1
+structs.x86_64.O2 0x201280 big_make: ok
 structs.x86_64.O2 0x2012a0 big_sum: 0 parameters, expected 1
 structs.x86_64.O2 0x2012c0 word_low_byte: returns 4 bytes, expected 1
 structs.x86_64.O2 0x2012d0 flags_level: ok

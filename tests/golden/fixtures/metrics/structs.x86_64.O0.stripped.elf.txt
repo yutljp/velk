@@ -114,24 +114,24 @@ fn <unnamed> @ 0x2012e0 (size 36)
 == 0x201310 -
 -- decompile
 /* velk pseudo-C: sub_201310 @ 0x201310 */
-struct sub_201310_a0 {
+struct sub_201310_result {
     int64_t field_0x0;
     int64_t field_0x8;
     int64_t field_0x10;
     int64_t field_0x18;
 };
-int64_t sub_201310(struct sub_201310_a0 *a0, int64_t a1) {
+struct sub_201310_result *sub_201310(struct sub_201310_result *result, int64_t a1) {
     int64_t local_0; /* [sp-10] */
 
     local_0 = a1;
-    a0->field_0x0 = a1;
-    a0->field_0x8 = local_0 + 0x1;
-    a0->field_0x10 = local_0 << 0x1;
-    a0->field_0x18 = local_0 * 0x3;
-    return a0;
+    result->field_0x0 = a1;
+    result->field_0x8 = local_0 + 0x1;
+    result->field_0x10 = local_0 << 0x1;
+    result->field_0x18 = local_0 * 0x3;
+    return result;
 }
 -- signature
-int64_t (struct sub_201310_a0 * a0, int64_t a1)
+struct sub_201310_result * (struct sub_201310_result * result, int64_t a1)
 -- references
 
 -- ir
@@ -144,7 +144,7 @@ fn <unnamed> @ 0x201310 (size 52)
     store64((load64((rsp + #0xfffffffffffffff0)) * #0x3), (rdi + #0x18))
     ret rdi
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201310","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":52,"unsupported":0}
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201310","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":52,"unsupported":0}
 
 == 0x201350 -
 -- decompile

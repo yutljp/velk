@@ -48,7 +48,7 @@ fn square @ 0x201320 (size 16)
 == 0x201330 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x201330 */
-void * pick_op(int which) {
+void *pick_op(int which) {
     return (which != 0x0 ? square : twice);
 }
 -- signature

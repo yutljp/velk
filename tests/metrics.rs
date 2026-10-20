@@ -207,9 +207,15 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
         };
         let ir = &analysis.ir;
         // Parameters in the caller's frame take their places among the
-        // register ones.
-        let mut registers = ir.params.iter();
-        let got_params: Vec<Kind> = (0..ir.params.len() + ir.stack_params.len())
+        // register ones. The pointer a structure is returned through is no
+        // parameter of the source.
+        let named: Vec<_> = ir
+            .params
+            .iter()
+            .filter(|param| param.name != "result")
+            .collect();
+        let mut registers = named.iter().copied();
+        let got_params: Vec<Kind> = (0..named.len() + ir.stack_params.len())
             .filter_map(|position| {
                 match ir
                     .stack_params

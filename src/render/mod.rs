@@ -245,10 +245,11 @@ fn render_with(
         out.push_str("};\n");
     }
     out.push_str(&format!(
-        "{} {}({}) {{\n",
-        ir.ret_type,
-        sanitize(&name),
-        signature(ir)
+        "{} {{\n",
+        declaration(
+            &ir.ret_type,
+            &format!("{}({})", sanitize(&name), signature(ir))
+        )
     ));
     let mut decls = locals.decls;
     // The numeric suffix of `local_N` is its order of first use.

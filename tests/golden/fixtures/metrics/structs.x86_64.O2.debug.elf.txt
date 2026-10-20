@@ -120,7 +120,7 @@ fn point_add @ 0x201260 (size 26)
 == 0x201280 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x201280 */
-struct big big_make(struct big *result, long seed) {
+struct big *big_make(struct big *result, long seed) {
     result->a = seed;
     result->b = seed + 0x1;
     result->c = seed + seed;
@@ -128,7 +128,7 @@ struct big big_make(struct big *result, long seed) {
     return result;
 }
 -- signature
-struct big (struct big * result, long seed)
+struct big * (struct big * result, long seed)
 -- references
 
 -- ir
