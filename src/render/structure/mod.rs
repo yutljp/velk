@@ -1,4 +1,6 @@
 mod build;
+#[cfg(test)]
+mod classify;
 mod cleanup;
 pub mod compare_chain;
 mod dominance;
@@ -6,6 +8,7 @@ mod duplicate;
 #[cfg(test)]
 pub(crate) mod lower;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use crate::ir::{Cond, Expr, FunctionIr, Stmt};
@@ -58,66 +61,71 @@ pub enum Node {
 /// that tree cannot cover, such as one with code only an indirect jump
 /// reaches, is structured in address order instead.
 pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
-    let best = structure_variants(ir);
-    if label_count(&best) == 0 {
+    best_structure(ir).0
+}
+
+/// The same, with the function as the chosen structure reads it: the
+/// variant whose blocks were structured.
+pub(crate) fn best_structure(ir: &FunctionIr) -> (Vec<Node>, Cow<'_, FunctionIr>) {
+    let mut best = structure_variants(Cow::Borrowed(ir));
+    if label_count(&best.0) == 0 {
         return best;
     }
     // A branch to a block that only jumps on can go where the jump does.
-    let mut best = best;
     if let Some(threaded) = duplicate::threaded(ir) {
-        let candidate = structure_variants(&threaded);
-        if label_count(&candidate) < label_count(&best) {
+        let candidate = structure_variants(Cow::Owned(threaded));
+        if label_count(&candidate.0) < label_count(&best.0) {
             best = candidate;
         }
     }
-    if label_count(&best) == 0 {
+    if label_count(&best.0) == 0 {
         return best;
     }
     // A test copied into several branches can be made once where they meet.
     if let Some(merged) = duplicate::merged_checks(ir) {
         let merged = duplicate::threaded(&merged).unwrap_or(merged);
-        let candidate = structure_variants(&merged);
-        if label_count(&candidate) < label_count(&best) {
+        let candidate = structure_variants(Cow::Owned(merged));
+        if label_count(&candidate.0) < label_count(&best.0) {
             best = candidate;
         }
     }
     best
 }
 
-fn structure_variants(ir: &FunctionIr) -> Vec<Node> {
-    let best = structure_chosen(ir);
-    if label_count(&best) == 0 {
+fn structure_variants(ir: Cow<'_, FunctionIr>) -> (Vec<Node>, Cow<'_, FunctionIr>) {
+    let best = structure_chosen(ir.clone());
+    if label_count(&best.0) == 0 {
         return best;
     }
     // Copying short shared blocks into the branches that enter them can
     // leave fewer labels.
-    if let Some(duplicated) = duplicate::tail_duplicated(ir) {
-        let candidate = structure_chosen(&duplicated);
-        if label_count(&candidate) < label_count(&best) {
+    if let Some(duplicated) = duplicate::tail_duplicated(&ir) {
+        let candidate = structure_chosen(Cow::Owned(duplicated));
+        if label_count(&candidate.0) < label_count(&best.0) {
             return candidate;
         }
     }
     best
 }
 
-fn structure_chosen(ir: &FunctionIr) -> Vec<Node> {
-    let Some(primary) = by_dominance(ir) else {
-        return by_layout(ir);
+fn structure_chosen(ir: Cow<'_, FunctionIr>) -> (Vec<Node>, Cow<'_, FunctionIr>) {
+    let Some(primary) = by_dominance(&ir) else {
+        return (by_layout(&ir), ir);
     };
     // A compare tree over one value reads as a switch, unless that leaves
     // more labels.
-    let mut chained = ir.clone();
-    let chains = crate::render::structure::compare_chain::recover_chains(&chained);
+    let chains = crate::render::structure::compare_chain::recover_chains(&ir);
     if !chains.is_empty() {
+        let mut chained = ir.clone().into_owned();
         crate::render::structure::compare_chain::apply_chains(&mut chained, &chains);
         if let Some(candidate) = by_dominance(&chained)
             && label_count(&candidate) <= label_count(&primary)
-            && labels_resolve(ir, &candidate)
+            && labels_resolve(&ir, &candidate)
         {
-            return candidate;
+            return (candidate, Cow::Owned(chained));
         }
     }
-    primary
+    (primary, ir)
 }
 
 /// Drops labels nothing jumps to but the `kept` ones, code after a jump,
