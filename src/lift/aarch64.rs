@@ -2181,6 +2181,8 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             through: None,
             convention: crate::ir::Convention::SyscallArm,
             args: None,
+            // The kernel reads no floating-point register.
+            floats_named: true,
             result: None,
         }),
         other => {

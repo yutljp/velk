@@ -336,6 +336,7 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
             through: None,
             convention: Convention::GoWriteBarrier,
             args: Some(Vec::new()),
+            floats_named: false,
             result: None,
         };
     }
@@ -353,11 +354,24 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
     let summary = target.filter(|_| !variadic).map(summaries);
     let arity = summary.and_then(|summary| summary.arity);
     let stack = summary.map_or(0, |summary| summary.stack);
+    let mut args = arguments(convention, image.isa, arity, stack);
+    // The floating-point arguments follow the integer ones.
+    let floats = summary
+        .and_then(|summary| summary.floats)
+        .filter(|_| args.is_some());
+    if let (Some(args), Some(floats)) = (&mut args, floats) {
+        args.extend(
+            convention.float_arguments()[..floats.min(convention.float_arguments().len())]
+                .iter()
+                .map(|register| Expr::reg(*register, 64)),
+        );
+    }
     Stmt::Call {
         target,
         through: None,
         convention,
-        args: arguments(convention, image.isa, arity, stack),
+        args,
+        floats_named: floats.is_some(),
         result: None,
     }
 }
@@ -386,6 +400,7 @@ fn call_through(image: &Image, through: Expr) -> Stmt {
         through: Some(through),
         convention: Convention::of(image.isa, image.format, image.go),
         args: None,
+        floats_named: false,
         result: None,
     }
 }

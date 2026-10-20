@@ -149,6 +149,7 @@ mod tests {
                 through: None,
                 convention: Convention::Aapcs64,
                 args: None,
+                floats_named: false,
                 result: None,
             },
             Stmt::Ret {

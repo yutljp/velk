@@ -143,8 +143,10 @@ impl Function {
 /// What a call needs to know of its callee.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Summary {
-    /// How many argument registers it reads, when known.
+    /// How many integer argument registers it reads, when known.
     pub arity: Option<usize>,
+    /// How many floating-point argument registers it reads, when known.
+    pub floats: Option<usize>,
     /// How many 8-byte arguments it reads past the registers.
     pub stack: usize,
     /// It reads AArch64's indirect result register: it returns through

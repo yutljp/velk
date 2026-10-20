@@ -220,6 +220,7 @@ fn tail_calls_through_pointers(
             through: Some(through),
             convention: crate::ir::Convention::of(image.isa, image.format, image.go),
             args: None,
+            floats_named: false,
             result: None,
         });
         block.stmts.push(Stmt::Ret {

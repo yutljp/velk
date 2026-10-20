@@ -379,6 +379,7 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
             convention,
             through,
             args,
+            floats_named,
             ..
         } => {
             total += through.iter().map(|expr| count(expr, reg)).sum::<usize>();
@@ -386,7 +387,7 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
                 Some(args) => args.iter().map(|arg| count(arg, reg)).sum::<usize>(),
                 None => usize::from(
                     convention
-                        .call_reads_through(through.as_ref())
+                        .call_reads_through(through.as_ref(), *floats_named)
                         .contains(&reg),
                 ),
             };
@@ -420,8 +421,9 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
             through,
             args: Some(args),
             convention,
+            floats_named,
             ..
-        } if !convention.unnamed_reads().any(|read| read == dest) => {
+        } if !convention.unnamed_reads(*floats_named).contains(&dest) => {
             for expr in through.iter_mut().chain(args.iter_mut()) {
                 substitute_reg_inner(expr, dest, width, template, &mut ok);
             }

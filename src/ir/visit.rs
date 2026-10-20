@@ -186,6 +186,7 @@ pub(crate) fn statement_registers(
             convention,
             args,
             result,
+            floats_named,
             ..
         } => {
             if let Some(result) = result {
@@ -199,9 +200,11 @@ pub(crate) fn statement_registers(
                     for arg in args {
                         expr_reads(arg, &mut reads);
                     }
-                    reads.extend(convention.unnamed_reads());
+                    reads.extend(convention.unnamed_reads(*floats_named));
                 }
-                None => reads.extend(convention.call_reads_through(through.as_ref())),
+                None => {
+                    reads.extend(convention.call_reads_through(through.as_ref(), *floats_named))
+                }
             }
             writes.extend(convention.clobbered());
         }

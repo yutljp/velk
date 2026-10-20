@@ -290,6 +290,10 @@ fn settle(
                 (Some(a), Some(b)) => Some(a.max(b)),
                 (a, b) => a.or(b),
             },
+            floats: match (current[&addr].floats, next.floats) {
+                (Some(a), Some(b)) => Some(a.max(b)),
+                (a, b) => a.or(b),
+            },
             noreturn: current[&addr].noreturn || next.noreturn,
             stack: current[&addr].stack.max(next.stack),
             indirect_result: current[&addr].indirect_result || next.indirect_result,
@@ -330,6 +334,7 @@ fn by_name(image: &Image, addr: u64) -> Summary {
         .map(|prototype| prototype.fixed);
     Summary {
         arity,
+        floats: None,
         noreturn,
         stack: 0,
         indirect_result: false,
@@ -350,13 +355,17 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
     };
     let signature = signature::recover(&blocks, image.isa, image.format, image.go);
     // A Go closure's context is no argument a call passes in order.
-    let passed = signature
-        .params
-        .iter()
-        .filter(|param| param.name != "closure")
-        .count();
+    let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
+    let count = |registers: &[u16]| {
+        signature
+            .params
+            .iter()
+            .filter(|param| param.name != "closure" && registers.contains(&param.index))
+            .count()
+    };
     Summary {
-        arity: Some(passed),
+        arity: Some(count(convention.arguments())),
+        floats: Some(count(convention.float_arguments())),
         noreturn: named.noreturn
             || (!can_return(&blocks)
                 && !function

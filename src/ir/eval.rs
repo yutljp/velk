@@ -433,6 +433,7 @@ impl Machine<'_> {
                         args,
                         result,
                         convention,
+                        ..
                     } => {
                         let target = match through {
                             Some(through) => Some(self.eval(through)?),
@@ -457,6 +458,14 @@ impl Machine<'_> {
                                 self.call_with(target, values)
                             }
                             None => self.call(target),
+                        }
+                        // So do the vector registers its convention lets it change.
+                        let ordinal = self.calls.len() as u64;
+                        for index in convention.clobbered() {
+                            self.registers.insert(
+                                *index,
+                                hash(self.seed ^ ordinal, 0x2_0000 + u64::from(*index)),
+                            );
                         }
                         if let Some(result) = result {
                             let value = self.register(crate::arch::RETURN);

@@ -98,14 +98,20 @@ impl Convention {
     /// The registers a call of unknown arguments through `through` may read.
     /// One holding the address called is no vector count: a variadic call
     /// sets al after choosing another register for the address.
-    pub fn call_reads_through(self, through: Option<&Expr>) -> Vec<u16> {
+    /// With `floats_named`, the floating-point arguments are named apart.
+    pub fn call_reads_through(self, through: Option<&Expr>, floats_named: bool) -> Vec<u16> {
         let mut addressing = std::collections::HashSet::new();
         if let Some(through) = through {
             crate::ir::visit::collect_reads(through, &mut addressing);
         }
+        let floats: &[u16] = if floats_named {
+            &[]
+        } else {
+            self.float_arguments()
+        };
         self.arguments()
             .iter()
-            .chain(self.float_arguments())
+            .chain(floats)
             .copied()
             .chain(
                 self.call_extra()
@@ -119,13 +125,19 @@ impl Convention {
     /// Registers a call whose integer arguments are named still reads: the
     /// floating-point arguments and AArch64's indirect result register.
     /// SysV's vector count in al is left out: only a variadic callee reads
-    /// it, and the pseudo-C leaves its setting out.
-    pub fn unnamed_reads(self) -> impl Iterator<Item = u16> {
+    /// it, and the pseudo-C leaves its setting out. With `floats_named`, the
+    /// floating-point arguments are named too.
+    pub fn unnamed_reads(self, floats_named: bool) -> Vec<u16> {
         let extra: &[u16] = match self {
             Self::SysV => &[],
             other => other.call_extra(),
         };
-        self.float_arguments().iter().chain(extra).copied()
+        let floats: &[u16] = if floats_named {
+            &[]
+        } else {
+            self.float_arguments()
+        };
+        floats.iter().chain(extra).copied().collect()
     }
 
     /// Registers a call may read besides its arguments: AArch64's indirect
@@ -1064,6 +1076,9 @@ pub enum Stmt {
         /// The arguments, when the number the callee takes is known; else the
         /// call reads every argument register of its convention.
         args: Option<Vec<Expr>>,
+        /// `args` lists the floating-point arguments too, after the integer
+        /// ones, so the call reads no other floating-point register.
+        floats_named: bool,
         /// Where the returned value goes besides the return register, when a
         /// variable of its own holds it.
         result: Option<RegRef>,
@@ -1082,6 +1097,25 @@ pub enum Stmt {
 }
 
 impl Stmt {
+    /// The registers a call reads besides those its expressions name.
+    pub fn unnamed_call_reads(&self) -> Vec<u16> {
+        match self {
+            Stmt::Call {
+                convention,
+                args: Some(_),
+                floats_named,
+                ..
+            } => convention.unnamed_reads(*floats_named),
+            Stmt::Call {
+                convention,
+                through,
+                floats_named,
+                ..
+            } => convention.call_reads_through(through.as_ref(), *floats_named),
+            _ => Vec::new(),
+        }
+    }
+
     pub fn unsupported(text: impl Into<String>) -> Self {
         Stmt::Unsupported {
             text: text.into(),

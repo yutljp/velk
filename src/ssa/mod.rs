@@ -269,16 +269,7 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                 // A call reads its argument registers whether or not it also
                 // names one, as the address it calls through.
                 let unnamed: Vec<u16> = match stmt {
-                    Stmt::Call {
-                        convention,
-                        args: Some(_),
-                        ..
-                    } => convention.unnamed_reads().collect(),
-                    Stmt::Call {
-                        convention,
-                        through,
-                        ..
-                    } => convention.call_reads_through(through.as_ref()),
+                    Stmt::Call { .. } => stmt.unnamed_call_reads(),
                     _ => reads.difference(&explicit_reads(stmt)).copied().collect(),
                 };
                 let mut implicit: Vec<(u16, u16)> = unnamed
@@ -422,15 +413,10 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
     if changed {
         // The values a call names are no longer read without being named.
         for ((block, position), reads) in ssa.implicit_reads.iter_mut() {
-            if let Stmt::Call {
-                args: Some(_),
-                convention,
-                ..
-            } = &ssa.ir.blocks[*block].stmts[*position]
-            {
-                reads.retain(|(register, _)| {
-                    convention.unnamed_reads().any(|read| read == *register)
-                });
+            let call = &ssa.ir.blocks[*block].stmts[*position];
+            if let Stmt::Call { args: Some(_), .. } = call {
+                let unnamed = call.unnamed_call_reads();
+                reads.retain(|(register, _)| unnamed.contains(register));
             }
         }
         *ir = lower(&ssa);

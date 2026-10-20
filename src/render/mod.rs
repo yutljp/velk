@@ -1082,6 +1082,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             args,
             result,
             convention,
+            ..
         } => {
             // A system call's number reads as the name the system gives it.
             let number = match args.as_ref().and_then(|values| values.first()) {

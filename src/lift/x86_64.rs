@@ -2672,6 +2672,8 @@ fn lift_instruction(
             through: None,
             convention: crate::ir::Convention::SyscallX86,
             args: None,
+            // The kernel reads no floating-point register.
+            floats_named: true,
             result: None,
         }),
         Mnemonic::Int3 | Mnemonic::Ud2 | Mnemonic::Hlt => {
