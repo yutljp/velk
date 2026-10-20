@@ -14,3 +14,6 @@ private/
 # Generated regression fixtures
 tests/out/
 tests/out*/
+
+# Local agent worktrees and settings
+/.claude/
