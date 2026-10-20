@@ -154,6 +154,9 @@ pub struct Summary {
     /// It reads AArch64's indirect result register: it returns through
     /// memory the caller points it at.
     pub indirect_result: bool,
+    /// Every value it returns is 32 bits wide: a call to it writes only
+    /// the low half of the return register.
+    pub narrow_return: bool,
 
     /// No path through it returns.
     pub noreturn: bool,

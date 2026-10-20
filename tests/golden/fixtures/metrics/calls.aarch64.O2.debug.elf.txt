@@ -244,7 +244,7 @@ fn is_odd @ 0x2103dc (size 16)
     v2 = call 0x2103ec((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
     ret v2
   blk2 @ 0x2103e8:
-    ret x0
+    ret w0
 -- card
 {"addr":"0x2103dc","approxTokens":120,"blocks":3,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":0}
 

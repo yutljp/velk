@@ -16,11 +16,11 @@ parameter pointer | aarch64.O2 | 179/182
 parameter pointer | x86_64.O0 | 180/182
 parameter pointer | x86_64.O2 | 179/182
 parameter width | aarch64.O0 | 147/153
-parameter width | aarch64.O2 | 146/153
+parameter width | aarch64.O2 | 147/153
 parameter width | x86_64.O0 | 148/153
 parameter width | x86_64.O2 | 148/153
 parameter sign | aarch64.O0 | 135/147
-parameter sign | aarch64.O2 | 134/146
+parameter sign | aarch64.O2 | 135/147
 parameter sign | x86_64.O0 | 136/148
 parameter sign | x86_64.O2 | 136/148
 return void | aarch64.O0 | 143/148
@@ -28,7 +28,7 @@ return void | aarch64.O2 | 143/148
 return void | x86_64.O0 | 142/148
 return void | x86_64.O2 | 145/148
 return width | aarch64.O0 | 116/120
-return width | aarch64.O2 | 115/120
+return width | aarch64.O2 | 116/120
 return width | x86_64.O0 | 116/120
 return width | x86_64.O2 | 117/120
 float type | aarch64.O0 | 10/10
@@ -77,7 +77,7 @@ calls.aarch64.O2 0x2102d4 pick_op: ok
 calls.aarch64.O2 0x2102f0 apply_table: ok
 calls.aarch64.O2 0x21031c apply_pointer: ok
 calls.aarch64.O2 0x21033c factorial: ok
-calls.aarch64.O2 0x2103dc is_odd: parameter 0 is 8 bytes, expected 4; returns 8 bytes, expected 4
+calls.aarch64.O2 0x2103dc is_odd: ok
 calls.aarch64.O2 0x2103ec is_even: ok
 calls.aarch64.O2 0x210400 sum9: ok
 calls.aarch64.O2 0x210428 call_sum9: ok

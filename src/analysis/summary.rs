@@ -249,9 +249,17 @@ fn settle(
     edges: &HashMap<u64, Vec<u64>>,
     cache: &mut HashMap<u64, Summary>,
 ) {
+    // A narrow return starts assumed and can only be disproved, as a cycle
+    // of tail calls returns 32 bits when every way out of it does.
     let mut current: HashMap<u64, Summary> = part
         .iter()
-        .map(|addr| (*addr, by_name(image, *addr)))
+        .map(|addr| {
+            let summary = Summary {
+                narrow_return: true,
+                ..by_name(image, *addr)
+            };
+            (*addr, summary)
+        })
         .collect();
     // Who calls each function, within the part.
     let mut callers: HashMap<u64, Vec<u64>> = HashMap::new();
@@ -266,15 +274,17 @@ fn settle(
     }
     // Start from what can only grow: no arguments, and returning unless the
     // name says otherwise; a pass can only add arguments and remove
-    // returns, so the work ends.
+    // returns and narrow returns, so the work ends.
     let mut pending: std::collections::VecDeque<u64> = part.iter().copied().collect();
     let mut queued: HashSet<u64> = part.iter().copied().collect();
     let mut passes: HashMap<u64, usize> = HashMap::new();
+    let mut unsettled = false;
     while let Some(addr) = pending.pop_front() {
         queued.remove(&addr);
         let count = passes.entry(addr).or_default();
         *count += 1;
         if *count > 8 {
+            unsettled = true;
             continue;
         }
         let lookup = |target: u64| {
@@ -298,6 +308,7 @@ fn settle(
             noreturn: current[&addr].noreturn || next.noreturn,
             stack: current[&addr].stack.max(next.stack),
             indirect_result: current[&addr].indirect_result || next.indirect_result,
+            narrow_return: current[&addr].narrow_return && next.narrow_return,
         };
         if merged != current[&addr] {
             current.insert(addr, merged);
@@ -308,6 +319,12 @@ fn settle(
                     }
                 }
             }
+        }
+    }
+    // Given up on before it settled, a narrow return is still only assumed.
+    if unsettled {
+        for summary in current.values_mut() {
+            summary.narrow_return = false;
         }
     }
     cache.extend(current);
@@ -349,6 +366,7 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
         noreturn,
         stack: 0,
         indirect_result: false,
+        narrow_return: false,
     }
 }
 
@@ -396,6 +414,9 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
                     .is_some_and(|name| RETURNING_RUNTIME.contains(&name))),
         stack: signature.stack.len(),
         indirect_result: signature.indirect_result,
+        narrow_return: crate::passes::widths::returns_32(&blocks, &|target| {
+            summaries(target).narrow_return
+        }),
     }
 }
 

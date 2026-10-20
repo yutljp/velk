@@ -1026,7 +1026,9 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
         has_jump_tables,
         types,
     } = lifted;
-    let uniform_32 = passes::widths::specialize_widths(&mut ir);
+    let uniform_32 = passes::widths::specialize_widths(&mut ir, &|target| {
+        summary::summary(image, target).narrow_return
+    });
     passes::optimize(&mut ir, has_jump_tables);
     crate::ssa::count_variadic_arguments(&mut ir, image);
     set_up_arguments(&mut ir);

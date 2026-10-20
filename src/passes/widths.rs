@@ -1,33 +1,97 @@
-use crate::ir::{Expr, FunctionIr, Stmt};
+use std::collections::HashMap;
 
-/// Registers read and written only as 32-bit values become 32-bit variables
-/// without the lifter's zero-extension masks; returns those registers.
-pub fn specialize_widths(ir: &mut FunctionIr) -> std::collections::HashSet<u16> {
+use crate::ir::{Block, Expr, FunctionIr, Stmt};
+
+/// Whether the function at an address returns only 32-bit values.
+pub type NarrowReturn<'a> = &'a dyn Fn(u64) -> bool;
+
+/// The widths each register is written at. A write is 32-bit when the
+/// lifter wrapped the value in a zero-extension mask, or when it is the
+/// result of a call to a function returning 32 bits; a constant that fits
+/// in 32 bits is width 0, as wide as whatever else the register holds;
+/// anything else writes all 64 bits.
+fn register_writes(blocks: &[Block], narrow_return: NarrowReturn<'_>) -> HashMap<u16, Vec<u8>> {
     use crate::ir::BinOp;
-    use std::collections::{HashMap, HashSet};
 
-    // A write is 32-bit when the lifter wrapped the value in a zero-extension
-    // mask; anything else, a call's result included, writes all 64 bits.
     let mut writes: HashMap<u16, Vec<u8>> = HashMap::new();
-    for block in &ir.blocks {
+    for block in blocks {
         for stmt in &block.stmts {
-            if let Stmt::Assign { dest, value } = stmt {
-                let width = match value {
-                    Expr::Bin {
-                        op: BinOp::And,
-                        rhs,
-                        ..
-                    } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => 32,
-                    _ => 64,
-                };
-                writes.entry(dest.index).or_default().push(width);
-            } else {
-                for written in crate::ir::visit::statement_registers(stmt).0 {
-                    writes.entry(written).or_default().push(64);
+            match stmt {
+                Stmt::Assign { dest, value } => {
+                    let width = match value {
+                        Expr::Bin {
+                            op: BinOp::And,
+                            rhs,
+                            ..
+                        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => 32,
+                        Expr::Const(value) if *value <= 0xffff_ffff => 0,
+                        _ => 64,
+                    };
+                    writes.entry(dest.index).or_default().push(width);
+                }
+                Stmt::Call { target, result, .. } => {
+                    let narrow = target.is_some_and(narrow_return);
+                    let returned = result.map_or(crate::arch::RETURN, |result| result.index);
+                    for written in crate::ir::visit::statement_registers(stmt).0 {
+                        let width =
+                            if narrow && (written == returned || written == crate::arch::RETURN) {
+                                32
+                            } else {
+                                64
+                            };
+                        writes.entry(written).or_default().push(width);
+                    }
+                }
+                _ => {
+                    for written in crate::ir::visit::statement_registers(stmt).0 {
+                        writes.entry(written).or_default().push(64);
+                    }
                 }
             }
         }
     }
+    writes
+}
+
+fn only_32(writes: &HashMap<u16, Vec<u8>>, register: u16) -> bool {
+    writes
+        .get(&register)
+        .is_some_and(|widths| !widths.is_empty() && widths.iter().all(|width| *width == 32))
+}
+
+/// Whether every return of the lifted `blocks` returns a register written
+/// at 32 bits, and otherwise only with constants that fit, so the function
+/// returns 32-bit values.
+pub fn returns_32(blocks: &[Block], narrow_return: NarrowReturn<'_>) -> bool {
+    let writes = register_writes(blocks, narrow_return);
+    let mut returns = blocks
+        .iter()
+        .filter_map(|block| match block.stmts.last() {
+            Some(Stmt::Ret { value }) => Some(value),
+            _ => None,
+        })
+        .peekable();
+    returns.peek().is_some()
+        && returns.all(|value| {
+            let Expr::Reg { index, width: 64 } = value else {
+                return false;
+            };
+            writes.get(index).is_some_and(|widths| {
+                widths.contains(&32) && widths.iter().all(|width| *width <= 32)
+            })
+        })
+}
+
+/// Registers read and written only as 32-bit values become 32-bit variables
+/// without the lifter's zero-extension masks; returns those registers.
+pub fn specialize_widths(
+    ir: &mut FunctionIr,
+    narrow_return: NarrowReturn<'_>,
+) -> std::collections::HashSet<u16> {
+    use crate::ir::BinOp;
+    use std::collections::HashSet;
+
+    let writes = register_writes(&ir.blocks, narrow_return);
 
     // A returned register that is only ever written at 32 bits returns its
     // 32-bit view.
@@ -39,10 +103,7 @@ pub fn specialize_widths(ir: &mut FunctionIr) -> std::collections::HashSet<u16> 
             let Expr::Reg { index, width: 64 } = value else {
                 continue;
             };
-            let only_32 = writes.get(index).is_some_and(|widths| {
-                !widths.is_empty() && widths.iter().all(|width| *width == 32)
-            });
-            if only_32 {
+            if only_32(&writes, *index) {
                 *value = Expr::Reg {
                     index: *index,
                     width: 32,
