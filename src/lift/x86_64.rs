@@ -549,7 +549,8 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             };
             write(lifter, result)?;
         }
-        Punpcklbw | Punpcklwd | Punpckldq | Punpckhbw | Punpckhwd | Punpckhdq => {
+        Punpcklbw | Punpcklwd | Punpckldq | Punpckhbw | Punpckhwd | Punpckhdq | Unpcklps
+        | Unpckhps => {
             let (a, b) = (halves(0)?, halves(1)?);
             let name = format!("{:?}", ins.mnemonic());
             let bits = match &name[name.len() - 2..] {
@@ -557,7 +558,7 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 "wd" => 16,
                 _ => 32,
             };
-            let (x, y) = if name.starts_with("Punpckh") {
+            let (x, y) = if name.starts_with("Punpckh") || name == "Unpckhps" {
                 (a.1, b.1)
             } else {
                 (a.0, b.0)
