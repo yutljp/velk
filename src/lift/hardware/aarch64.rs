@@ -263,9 +263,10 @@ fn register_only(instruction: &a64::Instruction) -> bool {
 /// write only registers and flags.
 fn instruction(seed: u64) -> Option<(u32, a64::Instruction)> {
     let bits = hash(seed, 1) as u32;
-    let word = match hash(seed, 2) % 5 {
-        // Advanced SIMD on vectors.
+    let word = match hash(seed, 2) % 6 {
+        // Advanced SIMD on vectors, and on scalars.
         4 => (bits & !(0b1111 << 25 | 1 << 31)) | (0b0111 << 25),
+        5 => (bits & !(0b11 << 30 | 0b1111 << 25)) | (0b01 << 30 | 0b1111 << 25),
         0 => (bits & !(0b111 << 26)) | (0b100 << 26),
         1 => (bits & !(0b111 << 25)) | (0b101 << 25),
         // Scalar floating point: data processing and conversions, and the
@@ -348,10 +349,6 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
     let Some(ir) = lift_words(&[body.as_slice(), &[RET]].concat()) else {
         return;
     };
-    if let Some(name) = unsupported(&ir) {
-        *findings.unsupported.entry(name).or_default() += 1;
-        return;
-    }
     let mut state: State = [0; 46];
     for (index, slot) in state.iter_mut().enumerate().take(28) {
         if usable(index as u16) {
@@ -365,6 +362,11 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
     let initial = state;
     if !page.run(&body, &mut state) {
         findings.undefined += 1;
+        return;
+    }
+    // Only an instruction the processor defines counts as one to lift.
+    if let Some(name) = unsupported(&ir) {
+        *findings.unsupported.entry(name).or_default() += 1;
         return;
     }
     findings.tried += 1;
