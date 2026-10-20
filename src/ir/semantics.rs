@@ -54,6 +54,8 @@ pub(crate) fn width(expr: &Expr) -> u32 {
             Operation::Lanes(..)
             | Operation::InterleaveLow(_)
             | Operation::InterleaveHigh(_)
+            | Operation::Widen { .. }
+            | Operation::Narrow(_)
             | Operation::Aes { .. }
             | Operation::Pack { .. }
             | Operation::MultiplyAddPairs
@@ -239,14 +241,15 @@ fn lanes(op: LaneOp, bits: u32, a: u64, b: u64) -> u64 {
             LaneOp::ShiftRight if b < u64::from(bits) => x >> b,
             LaneOp::ShiftLeft | LaneOp::ShiftRight => 0,
             LaneOp::ShiftRightSigned => (sx >> b.min(u64::from(bits) - 1)) as u64,
-            LaneOp::AddSaturatingSigned => clamp_signed(sx + sy, bits),
-            LaneOp::SubSaturatingSigned => clamp_signed(sx - sy, bits),
-            LaneOp::AddSaturatingUnsigned => (x + y).min(ones),
+            LaneOp::AddSaturatingSigned => clamp_signed(sx.saturating_add(sy), bits),
+            LaneOp::SubSaturatingSigned => clamp_signed(sx.saturating_sub(sy), bits),
+            LaneOp::AddSaturatingUnsigned => x.saturating_add(y).min(ones),
             LaneOp::SubSaturatingUnsigned => x.saturating_sub(y),
             LaneOp::Average => (x + y + 1) >> 1,
             LaneOp::MulHighSigned => ((sx * sy) >> bits) as u64,
             LaneOp::MulHighUnsigned => (x * y) >> bits,
             LaneOp::PopCount => u64::from(x.count_ones()),
+            LaneOp::CountLeadingZeros => u64::from(x.leading_zeros() - (64 - bits)),
         };
         out | (lane & ones) << shift
     })
@@ -254,6 +257,9 @@ fn lanes(op: LaneOp, bits: u32, a: u64, b: u64) -> u64 {
 
 /// `value` held within a signed lane of `bits`.
 fn clamp_signed(value: i64, bits: u32) -> u64 {
+    if bits >= 64 {
+        return value as u64;
+    }
     let limit = 1i64 << (bits - 1);
     value.clamp(-limit, limit - 1) as u64
 }
@@ -305,6 +311,8 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         Operation::Lanes(..)
         | Operation::InterleaveLow(_)
         | Operation::InterleaveHigh(_)
+        | Operation::Widen { .. }
+        | Operation::Narrow(_)
         | Operation::SignBits(_)
         | Operation::SumLanes(_)
         | Operation::Aes { .. }
@@ -475,6 +483,28 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
                 let take = |value: u64| (value >> (start + index * bits)) & lane;
                 out | take(args[0]) << (2 * index * bits)
                     | take(args[1]) << ((2 * index + 1) * bits)
+            })
+        }
+        Operation::Widen { bits, signed, high } => {
+            let bits = u32::from(bits);
+            let start = if high { 32 } else { 0 };
+            (0..32 / bits).fold(0, |out, index| {
+                let lane = (args[0] >> (start + index * bits)) & mask(bits);
+                let wide = if signed {
+                    sign_extend(lane, bits) as u64 & mask(2 * bits)
+                } else {
+                    lane
+                };
+                out | wide << (2 * index * bits)
+            })
+        }
+        Operation::Narrow(from) => {
+            let from = u32::from(from);
+            let per_half = 64 / from;
+            (0..2 * per_half).fold(0, |out, index| {
+                let half = if index < per_half { args[0] } else { args[1] };
+                let lane = (half >> ((index % per_half) * from)) & mask(from / 2);
+                out | lane << (index * from / 2)
             })
         }
         Operation::SignBits(bits) => {

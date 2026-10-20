@@ -1062,6 +1062,8 @@ fn vector_reading(op: Operation) -> Option<Option<u8>> {
         Operation::Lanes(_, bits)
         | Operation::InterleaveLow(bits)
         | Operation::InterleaveHigh(bits)
+        | Operation::Widen { bits, .. }
+        | Operation::Narrow(bits)
         | Operation::SignBits(bits)
         | Operation::SumLanes(bits) => Some(Some(bits / 8)),
         _ if op.argument_precision().is_some() => Some(None),

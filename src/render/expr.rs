@@ -424,6 +424,8 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         Operation::Lanes(..)
         | Operation::InterleaveLow(_)
         | Operation::InterleaveHigh(_)
+        | Operation::Widen { .. }
+        | Operation::Narrow(_)
         | Operation::SignBits(_)
         | Operation::SumLanes(_)
         | Operation::Aes { .. }

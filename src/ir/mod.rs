@@ -386,6 +386,9 @@ pub enum LaneOp {
     MulHighUnsigned,
     /// The set bits of each lane of the first argument; the second is unused.
     PopCount,
+    /// The leading zeros of each lane of the first argument; the second is
+    /// unused.
+    CountLeadingZeros,
 }
 
 /// An operation `Expr::Apply` applies to its arguments, in order.
@@ -436,6 +439,16 @@ pub enum Operation {
     /// in turn, the first argument's first.
     InterleaveLow(u8),
     InterleaveHigh(u8),
+    /// The lanes of `bits` in the low (or, when `high` is set, high) 32 bits
+    /// of a half, each extended to twice `bits`.
+    Widen {
+        bits: u8,
+        signed: bool,
+        high: bool,
+    },
+    /// The lanes of `from` bits in two halves, each cut to its low half of
+    /// the bits, the first argument's first.
+    Narrow(u8),
     /// The top bit of each lane of `bits` in a half, lowest lane first.
     SignBits(u8),
     /// The sum of the lanes of `bits` in two halves, wrapping at `bits`.
@@ -543,6 +556,7 @@ impl Operation {
             | Operation::CountTrailingZeros(_)
             | Operation::PopCount(_)
             | Operation::ReverseBits(_)
+            | Operation::Widen { .. }
             | Operation::SignBits(_) => 1,
             Operation::FloatMulAdd(_) => 3,
             Operation::Aes { .. } => 4,
@@ -742,6 +756,7 @@ pub(crate) fn lane_op_name(op: LaneOp) -> &'static str {
         LaneOp::MulHighSigned => "mul_high_lanes",
         LaneOp::MulHighUnsigned => "mul_high_lanes_u",
         LaneOp::PopCount => "popcount_lanes",
+        LaneOp::CountLeadingZeros => "clz_lanes",
     }
 }
 
@@ -795,6 +810,12 @@ pub(crate) fn operation_name(op: Operation) -> String {
         Operation::Lanes(op, bits) => format!("{}{bits}", lane_op_name(op)),
         Operation::InterleaveLow(bits) => format!("interleave_low{bits}"),
         Operation::InterleaveHigh(bits) => format!("interleave_high{bits}"),
+        Operation::Widen { bits, signed, high } => format!(
+            "widen_{}{bits}{}",
+            if high { "high" } else { "low" },
+            if signed { "_s" } else { "_u" }
+        ),
+        Operation::Narrow(from) => format!("narrow_lanes{from}"),
         Operation::SignBits(bits) => format!("sign_bits{bits}"),
         Operation::SumLanes(bits) => format!("sum_lanes{bits}"),
         Operation::Pack { from, unsigned } => {
