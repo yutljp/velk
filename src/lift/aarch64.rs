@@ -2077,6 +2077,14 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             }
         }
         O::HINT => {}
+        // The kernel's call: its number and arguments in registers.
+        O::SVC => lifter.stmts.push(Stmt::Call {
+            target: None,
+            through: None,
+            convention: crate::ir::Convention::SyscallArm,
+            args: None,
+            result: None,
+        }),
         other => {
             lifter
                 .stmts

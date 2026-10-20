@@ -648,6 +648,7 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
         Convention::SysV => 8,
         Convention::Win64 => 40,
         Convention::Aapcs64 | Convention::GoAmd64 => 0,
+        Convention::SyscallX86 | Convention::SyscallArm => return,
     };
     let mut params = Vec::new();
     let mut stack_params = Vec::new();
@@ -771,7 +772,10 @@ fn returned_in_memory(convention: crate::ir::Convention, size: u64) -> bool {
         Convention::SysV => size > 16,
         Convention::Win64 => !matches!(size, 1 | 2 | 4 | 8),
         // AArch64 passes that address in x8, which is no argument.
-        Convention::Aapcs64 | Convention::GoAmd64 => false,
+        Convention::Aapcs64
+        | Convention::GoAmd64
+        | Convention::SyscallX86
+        | Convention::SyscallArm => false,
     }
 }
 

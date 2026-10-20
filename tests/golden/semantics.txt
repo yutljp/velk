@@ -1,18 +1,62 @@
-# 5616 functions, 61377 compared runs
+# 5616 functions, 61517 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 333
 #   step limit (Go): 2736
 #   step limit (Rust): 1692
 #   unsupported instruction (C and C++): 68
-#   unsupported instruction (Go): 972
+#   unsupported instruction (Go): 348
 #   unsupported instruction (Rust): 108
 go_probe 0x41a360 runtime.(*gcControllerState).resetLive: trial 0: memory differs
 go_probe 0x41f2c0 runtime.deductSweepCredit: trial 2: memory differs
 go_probe 0x43cde0 runtime.acquirep: trial 0: memory differs
+go_probe 0x465140 runtime.exit: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465180 runtime.open: trial 0: calls differ (1 before, 1 after)
+go_probe 0x4651c0 runtime.closefd: trial 0: calls differ (1 before, 1 after)
+go_probe 0x4651e0 runtime.write1: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465200 runtime.read: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)
+go_probe 0x4652c0 runtime.raiseproc: trial 0: calls differ (2 before, 2 after)
+go_probe 0x465300 runtime.tgkill: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465320 runtime.timer_create: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465340 runtime.timer_settime: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465360 runtime.timer_delete: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465380 runtime.mincore: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465460 runtime.rtsigprocmask: trial 0: calls differ (1 before, 1 after)
+go_probe 0x4654a0 runtime.rt_sigaction: trial 0: calls differ (1 before, 1 after)
+go_probe 0x4656a0 runtime.sysMmap: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465760 runtime.sysMunmap: trial 0: calls differ (1 before, 1 after)
+go_probe 0x4657e0 runtime.madvise: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465800 runtime.futex: trial 0: calls differ (1 before, 1 after)
+go_probe 0x4658e0 runtime.sigaltstack: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465920 runtime.settls: trial 0: calls differ (1 before, 1 after)
+go_probe 0x465980 runtime.sched_getaffinity: trial 0: calls differ (1 before, 1 after)
 go_probe 0x466060 runtime.args: trial 0: returns 0x60e7e35e instead of 0x5549f8a060e7e35e (int64_t)
+go_probe 0x466fa0 internal/runtime/syscall.Syscall6: trial 0: calls differ (1 before, 1 after)
 go_stripped 0x41a360 runtime.(*gcControllerState).resetLive: trial 0: memory differs
 go_stripped 0x41f2c0 runtime.deductSweepCredit: trial 2: memory differs
 go_stripped 0x43cde0 runtime.acquirep: trial 0: memory differs
+go_stripped 0x465140 runtime.exit: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465180 runtime.open: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x4651c0 runtime.closefd: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x4651e0 runtime.write1: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465200 runtime.read: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)
+go_stripped 0x4652c0 runtime.raiseproc: trial 0: calls differ (2 before, 2 after)
+go_stripped 0x465300 runtime.tgkill: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465320 runtime.timer_create: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465340 runtime.timer_settime: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465360 runtime.timer_delete: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465380 runtime.mincore: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465460 runtime.rtsigprocmask: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x4654a0 runtime.rt_sigaction: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x4656a0 runtime.sysMmap: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465760 runtime.sysMunmap: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x4657e0 runtime.madvise: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465800 runtime.futex: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x4658e0 runtime.sigaltstack: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465920 runtime.settls: trial 0: calls differ (1 before, 1 after)
+go_stripped 0x465980 runtime.sched_getaffinity: trial 0: calls differ (1 before, 1 after)
 go_stripped 0x466060 runtime.args: trial 0: returns 0x60e7e35e instead of 0x5549f8a060e7e35e (int64_t)
+go_stripped 0x466e80 internal/runtime/syscall.Syscall6: trial 0: calls differ (1 before, 1 after)
 rust_probe_stripped 0x2a5c0 -: trial 0: returns 0x60e7e35e instead of 0x5549f8a060e7e35e (int64_t)
 rust_probe_stripped 0x4a22e -: trial 0: returns 0x60e7e35e instead of 0x5549f8a060e7e35e (int64_t)

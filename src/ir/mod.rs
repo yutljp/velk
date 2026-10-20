@@ -16,6 +16,12 @@ pub enum Convention {
     Win64,
     /// Go's internal register ABI on x86-64.
     GoAmd64,
+    /// A Linux system call on x86-64: the number in rax, then the
+    /// arguments; it overwrites rax, rcx and r11.
+    SyscallX86,
+    /// A Linux system call on AArch64: the number in x8, then the
+    /// arguments; it overwrites x0.
+    SyscallArm,
 }
 
 impl Convention {
@@ -37,6 +43,8 @@ impl Convention {
             Self::Win64 => &[1, 2, 8, 9],
             // rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11.
             Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
+            Self::SyscallX86 => &[0, 7, 6, 2, 10, 8, 9],
+            Self::SyscallArm => &[8, 0, 1, 2, 3, 4, 5],
         }
     }
 
@@ -48,14 +56,14 @@ impl Convention {
             Self::SysV => Some(8),
             Self::Win64 => Some(40),
             Self::Aapcs64 => Some(0),
-            Self::GoAmd64 => None,
+            Self::GoAmd64 | Self::SyscallX86 | Self::SyscallArm => None,
         }
     }
 
     /// Bytes a call pushes before the callee runs: the return address.
     pub fn pushed_by_call(self) -> i64 {
         match self {
-            Self::Aapcs64 => 0,
+            Self::Aapcs64 | Self::SyscallX86 | Self::SyscallArm => 0,
             Self::SysV | Self::Win64 | Self::GoAmd64 => 8,
         }
     }
@@ -68,6 +76,7 @@ impl Convention {
             Self::SysV => &[18, 20, 22, 24, 26, 28, 30, 32],
             Self::Win64 => &[18, 20, 22, 24],
             Self::GoAmd64 => &[18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46],
+            Self::SyscallX86 | Self::SyscallArm => &[],
         }
     }
 
@@ -96,7 +105,7 @@ impl Convention {
         match self {
             Self::Aapcs64 => &[8],
             Self::SysV => &[0],
-            Self::Win64 | Self::GoAmd64 => &[],
+            Self::Win64 | Self::GoAmd64 | Self::SyscallX86 | Self::SyscallArm => &[],
         }
     }
 
@@ -124,6 +133,8 @@ impl Convention {
                 0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
                 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
             ],
+            Self::SyscallX86 => &[0, 1, 11],
+            Self::SyscallArm => &[0],
         }
     }
 }

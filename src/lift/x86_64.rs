@@ -2077,6 +2077,14 @@ fn lift_instruction(
                 lifter.set_flags(Flags::carry(flipped));
             }
         }
+        // The kernel's call: its number and arguments in registers.
+        Mnemonic::Syscall => lifter.stmts.push(Stmt::Call {
+            target: None,
+            through: None,
+            convention: crate::ir::Convention::SyscallX86,
+            args: None,
+            result: None,
+        }),
         Mnemonic::Int3 | Mnemonic::Ud2 | Mnemonic::Hlt => {
             lifter.stmts.push(Stmt::Trap);
             return true;
