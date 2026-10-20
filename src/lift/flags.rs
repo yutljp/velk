@@ -32,6 +32,10 @@ pub(super) enum Source {
     /// A floating-point comparison of `lhs` with `rhs`: x86 `ucomisd`,
     /// AArch64 `fcmp`.
     FloatCompare(Precision),
+    /// Loaded from the byte `lhs` as x86 `sahf` loads them: sign from bit
+    /// 7, zero 6, adjust 4, parity 2 and carry 0. Overflow, which the byte
+    /// does not hold, is one or zero in `rhs` when known.
+    Stored { overflow: bool },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,6 +45,9 @@ pub(super) struct Flags {
     pub rhs: Expr,
     /// False when the instruction left the carry as it was (x86 `inc`, `dec`).
     pub carry: bool,
+    /// Whether the x86 parity and adjust flags are clear whatever the
+    /// result, as `popcnt` leaves them.
+    pub low_cleared: bool,
     /// For a conditional compare, the condition under the earlier flags that
     /// chose this compare; when it fails the flags are `otherwise`.
     pub chosen: Option<Choice>,
@@ -85,15 +92,78 @@ impl Flags {
         Self::new(Source::FloatCompare(precision), lhs, rhs)
     }
 
-    /// Whether the x86 parity flag is set (`even`) or clear: after a
-    /// floating-point comparison it is set by a NaN.
+    /// Whether the x86 parity flag is set (`even`) or clear: set by an even
+    /// count of ones in the result's low byte, and after a floating-point
+    /// comparison by a NaN.
     pub fn parity(&self, even: bool) -> Test {
-        match self.source {
-            Source::FloatCompare(precision) if self.chosen.is_none() => {
-                let unordered = holds(Operation::FloatUnordered(precision), &self.lhs, &self.rhs);
-                if even { unordered } else { not(unordered) }
+        let set = match self.source {
+            _ if self.chosen.is_some() => Test::Unknown,
+            Source::FloatCompare(precision) => {
+                holds(Operation::FloatUnordered(precision), &self.lhs, &self.rhs)
+            }
+            _ if self.low_cleared => Test::Never,
+            Source::Stored { .. } => bit_set(&self.lhs, 2),
+            Source::Difference | Source::Sum | Source::Logic => {
+                let low = Expr::bin(BinOp::And, self.value(), Expr::constant(0xff));
+                let folded = Expr::bin(
+                    BinOp::And,
+                    Expr::bin(
+                        BinOp::Xor,
+                        low.clone(),
+                        Expr::bin(BinOp::Shr, low, Expr::constant(4)),
+                    ),
+                    Expr::constant(0xf),
+                );
+                // Bit n of 0x9669 is set when n has an even count of ones.
+                bit_set(&Expr::bin(BinOp::Shr, Expr::constant(0x9669), folded), 0)
             }
             _ => Test::Unknown,
+        };
+        if even { set } else { not(set) }
+    }
+
+    /// Whether the x86 adjust flag is set: by a carry or borrow out of the
+    /// result's low four bits.
+    pub fn adjust(&self) -> Test {
+        match self.source {
+            _ if self.chosen.is_some() => Test::Unknown,
+            Source::FloatCompare(_) => Test::Never,
+            _ if self.low_cleared => Test::Never,
+            Source::Stored { .. } => bit_set(&self.lhs, 4),
+            Source::Difference | Source::Sum => {
+                let operands = Expr::bin(BinOp::Xor, self.lhs.clone(), self.rhs.clone());
+                bit_set(&Expr::bin(BinOp::Xor, operands, self.value()), 4)
+            }
+            _ => Test::Unknown,
+        }
+    }
+
+    /// The value whose low bits set parity and adjust.
+    fn value(&self) -> Expr {
+        let op = match self.source {
+            Source::Difference => BinOp::Sub,
+            Source::Sum => BinOp::Add,
+            _ => return self.lhs.clone(),
+        };
+        Expr::bin(op, self.lhs.clone(), self.rhs.clone())
+    }
+
+    /// Flags loaded from `byte` as x86 `sahf` loads them, with the overflow
+    /// as one or zero when known.
+    pub fn stored(byte: Expr, overflow: Option<Expr>) -> Self {
+        let known = overflow.is_some();
+        Self::new(
+            Source::Stored { overflow: known },
+            byte,
+            overflow.unwrap_or(Expr::constant(0)),
+        )
+    }
+
+    /// The same flags with parity and adjust clear.
+    pub fn clearing_low(self) -> Self {
+        Self {
+            low_cleared: true,
+            ..self
         }
     }
 
@@ -115,6 +185,7 @@ impl Flags {
             lhs,
             rhs,
             carry: true,
+            low_cleared: false,
             chosen: None,
         }
     }
@@ -220,6 +291,7 @@ impl Flags {
                 }
             }
             Source::FloatCompare(precision) => float_test(a, b, precision, cond, isa),
+            Source::Stored { overflow } => stored_test(a, b, overflow, cond),
             Source::Fixed(nzcv) => {
                 if fixed_holds(cond, nzcv) {
                     Test::Always
@@ -276,6 +348,57 @@ impl Flags {
             }
             Source::Sum => sum(a, b, bits, cond, isa),
         }
+    }
+}
+
+/// Whether bit `bit` of `value` is set.
+fn bit_set(value: &Expr, bit: u64) -> Test {
+    let shifted = match bit {
+        0 => value.clone(),
+        _ => Expr::bin(BinOp::Shr, value.clone(), Expr::constant(bit)),
+    };
+    Test::Compare(
+        Cond::Ne,
+        Expr::bin(BinOp::And, shifted, Expr::constant(1)),
+        Expr::constant(0),
+    )
+}
+
+/// `cond` under x86 flags loaded from `byte`, with the overflow as one or
+/// zero in `overflow` when `known`.
+fn stored_test(byte: &Expr, overflow: &Expr, known: bool, cond: Cond) -> Test {
+    let zero = || Expr::constant(0);
+    let sign = || {
+        Expr::bin(
+            BinOp::And,
+            Expr::bin(BinOp::Shr, byte.clone(), Expr::constant(7)),
+            Expr::constant(1),
+        )
+    };
+    // Neither carry nor zero: "above".
+    let above = Test::Compare(
+        Cond::Eq,
+        Expr::bin(BinOp::And, byte.clone(), Expr::constant(0x41)),
+        zero(),
+    );
+    let sign_is_overflow = || Test::Compare(Cond::Eq, sign(), overflow.clone());
+    let greater = || both(not(bit_set(byte, 6)), sign_is_overflow());
+    match cond {
+        Cond::Eq => bit_set(byte, 6),
+        Cond::Ne => not(bit_set(byte, 6)),
+        Cond::Cc => bit_set(byte, 0),
+        Cond::Cs => not(bit_set(byte, 0)),
+        Cond::Mi => bit_set(byte, 7),
+        Cond::Pl => not(bit_set(byte, 7)),
+        Cond::Hi => above,
+        Cond::Ls => not(above),
+        _ if !known => Test::Unknown,
+        Cond::Vs => Test::Compare(Cond::Ne, overflow.clone(), zero()),
+        Cond::Vc => Test::Compare(Cond::Eq, overflow.clone(), zero()),
+        Cond::Ge => sign_is_overflow(),
+        Cond::Lt => not(sign_is_overflow()),
+        Cond::Gt => greater(),
+        Cond::Le => not(greater()),
     }
 }
 

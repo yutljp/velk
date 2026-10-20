@@ -1986,10 +1986,14 @@ fn lift_count(lifter: &mut Lifter, ins: &Instruction) {
             Flags::carry(empty),
         ),
         // Zero follows the source; carry, sign and overflow are clear, as
-        // after comparing the small count with zero.
+        // after comparing the small count with zero, and so are parity and
+        // adjust.
         Mnemonic::Popcnt => {
             let value = count(Operation::PopCount(width));
-            (value.clone(), Flags::difference(value, zero()))
+            (
+                value.clone(),
+                Flags::difference(value, zero()).clearing_low(),
+            )
         }
         _ => {
             let Some(old) = operand(lifter, ins, 0) else {
@@ -2161,6 +2165,38 @@ fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool) {
     };
     lifter.set_flags(Flags::carry(out));
     write_destination(lifter, ins, value);
+}
+
+/// `lahf`: sign, zero, adjust, parity and carry into bits 7, 6, 4, 2 and 0
+/// of `ah`, with bit 1 set; unsupported when the flags here leave one open.
+fn lift_lahf(lifter: &mut Lifter, ins: &Instruction) {
+    let bits = lifter.last_compare.as_ref().and_then(|flags| {
+        [
+            (lifter.test(Cond::Mi), 7),
+            (lifter.test(Cond::Eq), 6),
+            (flags.adjust(), 4),
+            (flags.parity(true), 2),
+            (lifter.test(Cond::Cc), 0),
+        ]
+        .into_iter()
+        .try_fold(Expr::constant(2), |byte, (test, bit)| {
+            let value = test.select(Expr::constant(1 << bit), Expr::constant(0))?;
+            Some(Expr::bin(BinOp::Or, byte, value))
+        })
+    });
+    let Some(byte) = bits else {
+        lifter.stmts.push(Stmt::unsupported(format!(
+            "lahf on flags not modelled at 0x{:x}",
+            ins.ip()
+        )));
+        return;
+    };
+    // The byte may read registers that keep the flags' operands, which
+    // writing `rax` may move there.
+    let byte = hold(lifter, byte);
+    let kept = Expr::bin(BinOp::And, Expr::reg(RAX, 64), Expr::constant(!0xff00));
+    let placed = Expr::bin(BinOp::Shl, byte, Expr::constant(8));
+    lifter.assign(RAX, 64, Expr::bin(BinOp::Or, kept, placed));
 }
 
 /// The count a shift or rotate uses: its low six bits for a 64-bit operand,
@@ -2732,6 +2768,19 @@ fn lift_instruction(
         | Mnemonic::Mfence => {}
         Mnemonic::Adc => with_carry(lifter, ins, false),
         Mnemonic::Sbb => with_carry(lifter, ins, true),
+        Mnemonic::Lahf => lift_lahf(lifter, ins),
+        // Overflow, which `ah` does not hold, stays as it was.
+        Mnemonic::Sahf => {
+            let overflow = lifter
+                .test(Cond::Vs)
+                .select(Expr::constant(1), Expr::constant(0));
+            let ah = Expr::bin(
+                BinOp::And,
+                Expr::bin(BinOp::Shr, Expr::reg(RAX, 64), Expr::constant(8)),
+                Expr::constant(0xff),
+            );
+            lifter.set_flags(Flags::stored(ah, overflow));
+        }
         Mnemonic::Clc => lifter.set_flags(Flags::carry(Expr::constant(0))),
         Mnemonic::Stc => lifter.set_flags(Flags::carry(Expr::constant(1))),
         Mnemonic::Cmc => {
