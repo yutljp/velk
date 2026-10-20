@@ -313,14 +313,15 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int32_t local_23; /* [sp-14] */
     int32_t local_24; /* [sp-1c] */
     int32_t local_25; /* [sp-20] */
-    int64_t local_26; /* [sp-28] */
-    int32_t *local_27; /* [sp-30] */
-    int64_t local_28; /* [sp-38] */
-    int32_t local_29; /* [sp-3c] */
-    int32_t local_30; /* [sp-40] */
-    uint32_t *local_31; /* [sp-110] */
-    int32_t local_32; /* [sp-104] */
-    uint32_t *local_33; /* [sp-118] */
+    int64_t *local_26; /* [sp-28] */
+    int64_t local_27; /* [sp-80] */
+    int32_t *local_28; /* [sp-30] */
+    int32_t local_29; /* [sp-40] */
+    int64_t local_30; /* [sp-38] */
+    int32_t local_31; /* [sp-3c] */
+    uint32_t *local_32; /* [sp-110] */
+    int32_t local_33; /* [sp-104] */
+    uint32_t *local_34; /* [sp-118] */
 
     local_0 = d7;
     local_1 = v7_hi;
@@ -348,34 +349,34 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_23 = a0;
     local_24 = 0xffffff80;
     local_25 = 0xffffffc8;
-    local_26 = sp - 0x80;
-    local_27 = &local_30;
-    local_28 = sp;
+    local_26 = &local_27;
+    local_28 = &local_29;
+    local_30 = sp;
+    local_31 = 0x0;
     local_29 = 0x0;
-    local_30 = 0x0;
     while (true) {
         v1 = local_23;
-        if (local_30 >= v1) break;
-        local_31 = &local_25;
+        if (local_29 >= v1) break;
+        local_32 = &local_25;
         v2 = local_25;
-        local_32 = v2;
+        local_33 = v2;
         if ((v2 & 0x80000000) != 0x0) {
-            v3 = local_32 + 0x8;
-            *local_31 = v3;
+            v3 = local_33 + 0x8;
+            *local_32 = v3;
             if (v3 <= 0x0) {
-                local_33 = (uint8_t *)local_27 + (int64_t)(int32_t)(local_32);
+                local_34 = (uint8_t *)local_28 + (int64_t)(int32_t)(local_33);
                 goto L_2106b4;
             }
         }
-        v4 = local_28;
+        v4 = local_30;
         v5 = v4;
-        local_28 = v4 + 0x8;
-        local_33 = v5;
+        local_30 = v4 + 0x8;
+        local_34 = v5;
     L_2106b4:
-        local_29 += *local_33;
-        local_30 += 0x1;
+        local_31 += *local_34;
+        local_29 += 0x1;
     }
-    v6 = local_29;
+    v6 = local_31;
     return v6;
 }
 -- signature

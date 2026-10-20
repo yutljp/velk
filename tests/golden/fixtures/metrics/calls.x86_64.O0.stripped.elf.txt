@@ -314,12 +314,13 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t local_19; /* [sp-d8] */
     int64_t local_20; /* [sp-e0] */
     int32_t local_21; /* [sp-c] */
-    int32_t local_22; /* [sp-2c] */
-    int32_t local_23; /* [sp-30] */
-    void *local_24; /* [sp-f8] */
-    int32_t local_25; /* [sp-28] */
-    int32_t local_26; /* [sp-ec] */
-    uint32_t *local_27; /* [sp-100] */
+    int32_t local_22; /* [sp-28] */
+    int64_t local_23; /* [sp-e8] */
+    int32_t local_24; /* [sp-2c] */
+    int32_t local_25; /* [sp-30] */
+    void *local_26; /* [sp-f8] */
+    int32_t local_27; /* [sp-ec] */
+    uint32_t *local_28; /* [sp-100] */
 
     if ((rax & 0xff) != 0x0) {
         local_0 = xmm0;
@@ -345,33 +346,33 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_19 = a2;
     local_20 = a1;
     local_21 = a0;
-    v1 = &local_25;
-    *(uint64_t *)(v1 + 0x10) = rsp - 0xe8;
+    v1 = &local_22;
+    *(uint64_t *)(v1 + 0x10) = &local_23;
     *(uint64_t *)(v1 + 0x8) = rsp + 0x8;
     *(uint32_t *)(v1 + 0x4) = 0x30;
     *(uint32_t *)(v1) = 0x8;
-    local_22 = 0x0;
-    local_23 = 0x0;
-    while (local_23 < local_21) {
-        local_24 = &local_25;
-        v2 = local_25;
-        local_26 = v2;
+    local_24 = 0x0;
+    local_25 = 0x0;
+    while (local_25 < local_21) {
+        local_26 = &local_22;
+        v2 = local_22;
+        local_27 = v2;
         if (v2 > 0x28 /* unsigned */) {
-            v6 = local_24;
+            v6 = local_26;
             v7 = v6[0x1];
             v6[0x1] = v7 + 0x8;
-            local_27 = v7;
+            local_28 = v7;
         } else {
-            v3 = local_24;
-            v4 = local_26;
+            v3 = local_26;
+            v4 = local_27;
             v5 = (int64_t)(int32_t)(v4) + *(uint64_t *)(v3 + 0x10);
             *(uint32_t *)(v3) = v4 + 0x8;
-            local_27 = v5;
+            local_28 = v5;
         }
-        local_22 += *local_27;
-        local_23 += 0x1;
+        local_24 += *local_28;
+        local_25 += 0x1;
     }
-    return local_22;
+    return local_24;
 }
 -- signature
 int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)

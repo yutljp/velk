@@ -92,6 +92,13 @@ pub(crate) fn stack_locals(
             }
         }
     }
+    // A local only ever pointed at, as a buffer a callee fills, has no
+    // width of its own to read: it is declared as a 64-bit one.
+    for local in slot_names.values_mut() {
+        if local.width == 0 {
+            local.width = 8;
+        }
+    }
     let mut slots: HashMap<String, String> = rendered
         .into_iter()
         .filter_map(|(key, slot)| {
@@ -519,53 +526,87 @@ fn frame_accesses(
         };
         let mut frame = frame;
         for stmt in &block.stmts {
-            match stmt {
-                Stmt::Store {
-                    addr, value, width, ..
-                } => {
-                    let written = match value {
-                        Expr::Const(_) => *width,
-                        _ => *width,
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.index == sp
+            {
+                if let Expr::Bin { op, rhs, .. } = value
+                    && let Expr::Const(delta) = rhs.as_ref()
+                {
+                    frame = match op {
+                        BinOp::Add => frame.wrapping_add(*delta as i64),
+                        BinOp::Sub => frame.wrapping_sub(*delta as i64),
+                        _ => frame,
                     };
-                    accesses.push((frame_slot(addr, frame, sp), addr.clone(), written, true));
                 }
-                Stmt::Assign { dest, value } => {
-                    if let Expr::Load {
+                continue;
+            }
+            if let Stmt::Store { addr, width, .. } = stmt {
+                accesses.push((frame_slot(addr, frame, sp), addr.clone(), *width, true));
+            }
+            if let Stmt::Assign {
+                value:
+                    Expr::Load {
                         addr,
                         width,
                         signed,
-                    } = value
-                    {
-                        accesses.push((
-                            frame_slot(addr, frame, sp),
-                            addr.as_ref().clone(),
-                            *width,
-                            *signed,
-                        ));
+                    },
+                ..
+            } = stmt
+                && frame_slot(addr, frame, sp).is_some_and(|slot| slot >= 0)
+            {
+                accesses.push((
+                    frame_slot(addr, frame, sp),
+                    addr.as_ref().clone(),
+                    *width,
+                    *signed,
+                ));
+            }
+            // Loads anywhere in the statement, and the addresses of locals
+            // it takes as values.
+            let mut found = Vec::new();
+            let mut taken = Vec::new();
+            for value in stmt.operands() {
+                let value = match stmt {
+                    Stmt::Store { addr, .. } if std::ptr::eq(value, addr) => {
+                        // The address a store writes is its access already;
+                        // only what it is computed from counts here.
+                        if frame_slot(addr, frame, sp).is_some() {
+                            continue;
+                        }
+                        value
                     }
-                    if dest.index == sp
-                        && let Expr::Bin { op, rhs, .. } = value
-                        && let Expr::Const(delta) = rhs.as_ref()
-                    {
-                        frame = match op {
-                            BinOp::Add => frame.wrapping_add(*delta as i64),
-                            BinOp::Sub => frame.wrapping_sub(*delta as i64),
-                            _ => frame,
-                        };
-                    }
-                }
-                Stmt::Ret { .. } | Stmt::Call { .. } => {
-                    let mut found = Vec::new();
-                    for value in stmt.operands() {
-                        frame_loads(value, frame, sp, &mut found);
-                    }
-                    for (addr, slot, width, signed) in found {
-                        accesses.push((Some(slot), addr, width, signed));
-                    }
-                }
-                _ => {}
+                    _ => value,
+                };
+                frame_loads(value, frame, sp, &mut found);
+                frame_addresses(value, frame, sp, &mut taken);
+            }
+            for (addr, slot, width, signed) in found {
+                accesses.push((Some(slot), addr, width, signed));
+            }
+            for (addr, slot) in taken {
+                accesses.push((Some(slot), addr, 0, true));
             }
         }
     }
     accesses
+}
+
+/// The local slots an expression takes the address of as a value, not to
+/// load through.
+fn frame_addresses(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64)>) {
+    if let Some(slot) = frame_slot(expr, frame, sp) {
+        if slot < 0 {
+            out.push((expr.clone(), slot));
+        }
+        return;
+    }
+    match expr {
+        Expr::Load { addr, .. } if frame_slot(addr, frame, sp).is_some() => {}
+        Expr::Load { addr, .. } => frame_addresses(addr, frame, sp, out),
+        other => {
+            for child in crate::ir::visit::children(other) {
+                frame_addresses(child, frame, sp, out);
+            }
+        }
+    }
 }

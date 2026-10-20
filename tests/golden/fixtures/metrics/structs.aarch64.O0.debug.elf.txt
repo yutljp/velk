@@ -85,11 +85,13 @@ struct point point_add(struct point a, struct point b) {
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-8] */
     int32_t local_3; /* [sp-4] */
+    int32_t local_4; /* [sp-c] */
+    int32_t local_5; /* [sp-14] */
 
     local_0 = a;
     local_1 = b;
     *(uint32_t *)&local_2 = *(uint32_t *)&local_0 + *(uint32_t *)&local_1;
-    local_3 = *(uint32_t *)(sp - 0xc) + *(uint32_t *)(sp - 0x14);
+    local_3 = local_4 + local_5;
     return local_2;
 }
 -- signature

@@ -58,7 +58,7 @@ fn copy_bytes @ 0x210234 (size 104)
 /* velk pseudo-C: fill_bytes @ 0x21029c */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     unsigned char *local_0; /* [sp-8] */
-    int8_t local_1; /* [sp-9] */
+    uint8_t local_1; /* [sp-9] */
     uint64_t local_2; /* [sp-18] */
     uint64_t local_3; /* [sp-20] */
 

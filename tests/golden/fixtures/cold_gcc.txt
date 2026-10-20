@@ -374,15 +374,16 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     int64_t v22;
     int64_t v28;
     int64_t local_0; /* [sp-20] */
-    int64_t local_1; /* [sp-78] */
-    int64_t local_2; /* [sp-70] */
+    int64_t local_1; /* [sp-68] */
+    int64_t local_2; /* [sp-78] */
+    int64_t local_3; /* [sp-70] */
 
     local_0 = *(uint64_t *)(fs_base + 0x28);
     if ((a1 & 0xffffffff) <= 0x0) {
-        v21 = rsp - 0x68;
-        local_2 = 0x0;
+        v21 = &local_1;
+        local_3 = 0x0;
         v22 = a2;
-        local_1 = a1;
+        local_2 = a1;
         __snprintf_chk(v21, 0x40, 0x2, 0x40, 0x2004, v22);
         v28 = stderr_GLIBC_2_2_5;
         fputs(v21, v28);
@@ -406,9 +407,9 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     }
     return rax;
 L_12fd:
-    v6 = rsp - 0x68;
+    v6 = &local_1;
     v7 = a2;
-    local_1 = a1;
+    local_2 = a1;
     v13 = v2 + 0x8;
     v14 = v4 + (uint8_t *)v13;
     __snprintf_chk(v6, 0x40, 0x2, 0x40, 0x2004, v7);

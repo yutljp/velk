@@ -373,73 +373,74 @@ int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, 
     int64_t v4;
     int64_t v5;
     int32_t v6;
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-8] */
-    int64_t local_2; /* [sp-58] */
-    int64_t local_3; /* [sp-50] */
-    int64_t local_4; /* [sp-48] */
-    int64_t local_5; /* [sp-40] */
-    int64_t local_6; /* [sp-38] */
-    int64_t local_7; /* [sp-30] */
-    int64_t local_8; /* [sp-e0] */
-    int64_t local_9; /* [sp-d8] */
-    int64_t local_10; /* [sp-d0] */
-    int64_t local_11; /* [sp-c8] */
-    int64_t local_12; /* [sp-c0] */
-    int64_t local_13; /* [sp-b8] */
-    int64_t local_14; /* [sp-b0] */
-    int64_t local_15; /* [sp-a8] */
-    int64_t local_16; /* [sp-a0] */
-    int64_t local_17; /* [sp-98] */
-    int64_t local_18; /* [sp-90] */
-    int64_t local_19; /* [sp-88] */
-    int64_t local_20; /* [sp-80] */
-    int64_t local_21; /* [sp-78] */
-    int64_t local_22; /* [sp-70] */
-    int64_t local_23; /* [sp-68] */
-    int64_t *local_24; /* [sp-18] */
-    int64_t local_25; /* [sp-28] */
+    int64_t *local_0; /* [sp-10] */
+    int64_t local_1; /* [sp-60] */
+    int64_t local_2; /* [sp-8] */
+    int64_t local_3; /* [sp-58] */
+    int64_t local_4; /* [sp-50] */
+    int64_t local_5; /* [sp-48] */
+    int64_t local_6; /* [sp-40] */
+    int64_t local_7; /* [sp-38] */
+    int64_t local_8; /* [sp-30] */
+    int64_t local_9; /* [sp-e0] */
+    int64_t local_10; /* [sp-d8] */
+    int64_t local_11; /* [sp-d0] */
+    int64_t local_12; /* [sp-c8] */
+    int64_t local_13; /* [sp-c0] */
+    int64_t local_14; /* [sp-b8] */
+    int64_t local_15; /* [sp-b0] */
+    int64_t local_16; /* [sp-a8] */
+    int64_t local_17; /* [sp-a0] */
+    int64_t local_18; /* [sp-98] */
+    int64_t local_19; /* [sp-90] */
+    int64_t local_20; /* [sp-88] */
+    int64_t local_21; /* [sp-80] */
+    int64_t local_22; /* [sp-78] */
+    int64_t local_23; /* [sp-70] */
+    int64_t local_24; /* [sp-68] */
+    int64_t *local_25; /* [sp-18] */
     uint32_t *local_26; /* [sp-20] */
+    int64_t local_27; /* [sp-28] */
 
-    local_0 = sp - 0x60;
-    local_1 = 0xffffff80ffffffc8;
-    local_2 = a1;
-    local_3 = a2;
-    local_4 = a3;
-    local_5 = a4;
-    local_6 = a5;
-    local_7 = a6;
-    local_8 = d0;
-    local_9 = v0_hi;
-    local_10 = d1;
-    local_11 = v1_hi;
-    local_12 = d2;
-    local_13 = v2_hi;
-    local_14 = d3;
-    local_15 = v3_hi;
-    local_16 = d4;
-    local_17 = v4_hi;
-    local_18 = d5;
-    local_19 = v5_hi;
-    local_20 = d6;
-    local_21 = v6_hi;
-    local_22 = d7;
-    local_23 = v7_hi;
-    local_24 = &local_26;
-    local_25 = a7;
+    local_0 = &local_1;
+    local_2 = 0xffffff80ffffffc8;
+    local_3 = a1;
+    local_4 = a2;
+    local_5 = a3;
+    local_6 = a4;
+    local_7 = a5;
+    local_8 = a6;
+    local_9 = d0;
+    local_10 = v0_hi;
+    local_11 = d1;
+    local_12 = v1_hi;
+    local_13 = d2;
+    local_14 = v2_hi;
+    local_15 = d3;
+    local_16 = v3_hi;
+    local_17 = d4;
+    local_18 = v4_hi;
+    local_19 = d5;
+    local_20 = v5_hi;
+    local_21 = d6;
+    local_22 = v6_hi;
+    local_23 = d7;
+    local_24 = v7_hi;
+    local_25 = &local_26;
+    local_27 = a7;
     local_26 = sp;
     if (a0 < 0x1) {
         v3 = 0x0;
         return v3;
     }
     v1 = local_26;
-    v2 = local_24;
+    v2 = local_25;
     v3 = 0x0;
-    v4 = *(uint32_t *)&local_1;
+    v4 = *(uint32_t *)&local_2;
     for (;;) {
         if ((v4 & 0x80000000) != 0x0) {
             v6 = v4 + 0x8;
-            *(uint32_t *)&local_1 = v6;
+            *(uint32_t *)&local_2 = v6;
             if (v4 <= 0xfffffff8 /* unsigned */) {
                 v5 = v1;
                 v1 = v2 + (int64_t)(int32_t)(v4);

@@ -415,9 +415,10 @@ int sum_varargs(int count, ...) {
     int64_t local_18; /* [sp-20] */
     int64_t local_19; /* [sp-18] */
     int64_t local_20; /* [sp-10] */
-    int64_t local_21; /* [sp-c8] */
-    uint32_t *local_22; /* [sp-d0] */
-    int64_t local_23; /* [sp-d8] */
+    int64_t *local_21; /* [sp-c8] */
+    int64_t local_22; /* [sp-b8] */
+    uint32_t *local_23; /* [sp-d0] */
+    int64_t local_24; /* [sp-d8] */
 
     local_0 = rsi;
     local_1 = rdx;
@@ -442,37 +443,37 @@ int sum_varargs(int count, ...) {
         local_19 = xmm7;
         local_20 = xmm7_hi;
     }
-    local_21 = rsp - 0xb8;
-    local_22 = rsp + 0x8;
-    local_23 = 0x3000000008;
+    local_21 = &local_22;
+    local_23 = rsp + 0x8;
+    local_24 = 0x3000000008;
     if (count <= 0x0) {
         return 0x0;
     }
-    v1 = *(uint32_t *)&local_23;
+    v1 = *(uint32_t *)&local_24;
     v2 = local_21;
-    v3 = local_22;
+    v3 = local_23;
     if (count != 0x1) {
         v6 = count & 0x7ffffffe;
         v4 = 0x0;
         for (;;) {
             if (v1 > 0x28 /* unsigned */) {
                 v7 = v3 + 0x2;
-                local_22 = v7;
+                local_23 = v7;
             } else {
                 v7 = v3;
                 v3 = v1 + v2;
                 v1 = v1 + 0x8;
-                *(uint32_t *)&local_23 = v1;
+                *(uint32_t *)&local_24 = v1;
             }
             v8 = v4 + *v3;
             if (v1 < 0x29 /* unsigned */) {
                 v3 = v7;
                 v7 = v1 + v2;
                 v1 = v1 + 0x8;
-                *(uint32_t *)&local_23 = v1;
+                *(uint32_t *)&local_24 = v1;
             } else {
                 v3 = v7 + 0x2;
-                local_22 = v3;
+                local_23 = v3;
             }
             v4 = v8 + *v7;
             v6 = v6 - 0x2;
@@ -487,9 +488,9 @@ int sum_varargs(int count, ...) {
         return v4;
     }
     if (v1 >= 0x29 /* unsigned */) {
-        local_22 = v3 + 0x2;
+        local_23 = v3 + 0x2;
     } else {
-        *(uint32_t *)&local_23 = v1 + 0x8;
+        *(uint32_t *)&local_24 = v1 + 0x8;
         v3 = v2 + v1;
     }
     v4 = v4 + *v3;
