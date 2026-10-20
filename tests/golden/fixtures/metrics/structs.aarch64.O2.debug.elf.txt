@@ -1,4 +1,4 @@
-# metrics/structs.aarch64.O2.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 1 unsupported, 0 gotos
+# metrics/structs.aarch64.O2.debug.elf: elf aarch64 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101dc 20 rect_area symtab,dwarf,unwind
 0x2101f0 160 record_total symtab,dwarf,unwind
 0x210290 24 point_add symtab,dwarf,unwind
@@ -13,20 +13,9 @@
 /* velk pseudo-C: rect_area @ 0x2101dc */
 int rect_area(struct rect *r) {
     uint64_t v1;
-    int64_t v2;
-    int64_t v3;
-    uint64_t v4;
-    int64_t v5;
-    int32_t v6;
 
-    v1 = r->min.x;
-    v2 = 0x0;
-    v3 = 0x0;
-    v4 = sub_lanes32(r->max.x, v1);
-    v5 = 0x0;
-    /* unsupported: MUL at 0x2101e4 */
-    v6 = s0;
-    return v6;
+    v1 = sub_lanes32(r->max.x, r->min.x);
+    return (mul_lanes32(v1, ((v1 >> 0x20) & 0xffffffff) * 0x100000001) & 0xffffffff);
 }
 -- signature
 int (struct rect * r)
@@ -35,16 +24,10 @@ int (struct rect * r)
 -- ir
 fn rect_area @ 0x2101dc (size 20)
   blk0 @ 0x2101dc:
-    v1 = load64(x0)
-    v2 = #0x0
-    v3 = #0x0
-    v4 = sub_lanes32(load64((x0 + #0x8)), v1)
-    v5 = #0x0
-    unsupported: MUL at 0x2101e4
-    v6 = (d0 & #0xffffffff)
-    ret v6
+    v1 = sub_lanes32(load64((x0 + #0x8)), load64(x0))
+    ret (mul_lanes32(v1, (((v1 >> #0x20) & #0xffffffff) * #0x100000001)) & #0xffffffff)
 -- card
-{"accesses":["r +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x2101dc","approxTokens":126,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":1}
+{"accesses":["r +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x2101dc","approxTokens":126,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
 == 0x2101f0 record_total
 -- decompile

@@ -1,4 +1,4 @@
-# cpp_classes_a64.o: elf aarch64 no entry, 5 functions, 0 lift failures, 1 unsupported, 0 gotos
+# cpp_classes_a64.o: elf aarch64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 92 total_area(Shape const* const*, int) symtab,unwind
 0x5c 20 clamp_int(int) symtab,unwind
 0x70 28 clamp_long(long) symtab,unwind
@@ -106,40 +106,23 @@ fn clamp_long(long) @ 0x70 (size 28)
 == 0x8c dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
 /* velk pseudo-C: dot_sum(Vec2 const&, Vec2 const&) @ 0x8c */
-int32_t dot_sum_Vec2_const___Vec2_const__(uint32_t *a0, uint32_t *a1) {
-    int64_t v1;
-    uint64_t v2;
-    int64_t v3;
-    uint64_t v4;
-    int64_t v5;
-    int32_t v6;
+uint32_t dot_sum_Vec2_const___Vec2_const__(uint32_t *a0, uint32_t *a1) {
+    uint64_t v1;
 
-    v1 = 0x0;
-    v2 = *(uint64_t *)(a1);
-    v3 = 0x0;
-    v4 = add_lanes32(v2, *(uint64_t *)(a0));
-    v5 = 0x0;
-    /* unsupported: MUL at 0x98 */
-    v6 = s0;
-    return v6;
+    v1 = add_lanes32(*(uint64_t *)(a1), *(uint64_t *)(a0));
+    return (mul_lanes32(v1, ((v1 >> 0x20) & 0xffffffff) * 0x100000001) & 0xffffffff);
 }
 -- signature
-int32_t (uint32_t * a0, uint32_t * a1)
+uint32_t (uint32_t * a0, uint32_t * a1)
 -- references
 
 -- ir
 fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
   blk0 @ 0x8c:
-    v1 = #0x0
-    v2 = load64(x1)
-    v3 = #0x0
-    v4 = add_lanes32(v2, load64(x0))
-    v5 = #0x0
-    unsupported: MUL at 0x98
-    v6 = (d0 & #0xffffffff)
-    ret v6
+    v1 = add_lanes32(load64(x1), load64(x0))
+    ret (mul_lanes32(v1, (((v1 >> #0x20) & #0xffffffff) * #0x100000001)) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint64_t","a1 +0x0:uint64_t"],"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","size":24,"unsupported":1}
+{"accesses":["a0 +0x0:uint64_t","a1 +0x0:uint64_t"],"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","size":24,"unsupported":0}
 
 == 0xa4 increment(int&)
 -- decompile

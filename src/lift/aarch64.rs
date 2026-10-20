@@ -1370,6 +1370,32 @@ fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                     Operand::Immediate(0) | Operand::Imm64(0) => {
                         (Expr::constant(0), Expr::constant(0))
                     }
+                    // One lane of a register, as `mul v0.2s, v1.2s, v2.s[1]`
+                    // takes, copied into every lane.
+                    Operand::SIMDRegisterElementsLane(_, number, element, lane) => {
+                        let bits = match element {
+                            a64::SIMDSizeCode::H => 16u64,
+                            a64::SIMDSizeCode::S => 32,
+                            a64::SIMDSizeCode::D => 64,
+                            _ => return None,
+                        };
+                        let at = u64::from(lane) * bits;
+                        let half =
+                            Expr::reg(crate::arch::aarch64::V0 + 2 * number + (at / 64) as u16, 64);
+                        let within = at % 64;
+                        let value = if bits == 64 {
+                            half
+                        } else {
+                            Expr::bin(
+                                BinOp::And,
+                                Expr::bin(BinOp::Shr, half, Expr::constant(within)),
+                                Expr::constant((1u64 << bits) - 1),
+                            )
+                        };
+                        let copied =
+                            Expr::bin(BinOp::Mul, value, Expr::constant(replicated(1, bits as u8)));
+                        (copied.clone(), copied)
+                    }
                     operand => halves(vector(operand)?),
                 },
             );
@@ -1505,15 +1531,16 @@ fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         O::EXT => {
             let dest = vector(ops[0])?;
             let (n, m) = (halves(vector(ops[1])?), halves(vector(ops[2])?));
-            let Operand::Immediate(start) = ops[3] else {
-                return None;
+            let start = match ops[3] {
+                Operand::Imm64(value) => value,
+                other => immediates(other)?,
             };
             let parts = if dest.1 {
                 vec![n.0, n.1, m.0, m.1]
             } else {
                 vec![n.0, m.0]
             };
-            let start = 8 * u64::from(start);
+            let start = 8 * start;
             let low = window(&parts, start);
             let high = if dest.1 {
                 window(&parts, start + 64)
