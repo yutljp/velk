@@ -148,29 +148,22 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 /* velk pseudo-C: sub_1120 @ 0x1120 */
 int64_t sub_1120(int32_t a0) {
     int64_t v1;
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-40] */
-    int64_t local_2; /* [sp-38] */
-    int64_t local_3; /* [sp-48] */
-    int64_t local_4; /* [sp-28] */
-    int64_t local_5; /* [sp-30] */
-    int64_t local_6; /* [sp-20] */
+    int64_t local_0; /* [sp-40] */
+    int64_t local_1; /* [sp-38] */
+    int64_t local_2; /* [sp-48] */
+    int64_t local_3; /* [sp-28] */
+    int64_t local_4; /* [sp-30] */
+    int64_t local_5; /* [sp-20] */
 
-    local_0 = *(uint64_t *)(fs_base + 0x28);
     v1 = qword_2028;
-    local_1 = 0x656e6f;
-    local_2 = 0x0;
-    local_3 = v1;
+    local_0 = 0x656e6f;
+    local_1 = 0x0;
+    local_2 = v1;
     rax = qword_2030;
-    local_4 = 0x6f7774;
-    local_5 = rax;
-    local_6 = 0x0;
-    sub_1290(&local_3, 0x2, a0);
-    if (local_0 != *(uint64_t *)(fs_base + 0x28)) {
-        __stack_chk_fail();
-        __builtin_trap();
-    }
-    return rax;
+    local_3 = 0x6f7774;
+    local_4 = rax;
+    local_5 = 0x0;
+    return sub_1290(&local_2, 0x2, a0);
 }
 -- signature
 int64_t (int32_t a0)
@@ -179,7 +172,6 @@ int64_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x1120 (size 124)
   blk0 @ 0x1120:
-    store64(load64((fs_base + #0x28)), (rsp + #0xfffffffffffffff0))
     v1 = load64(#0x2028)
     store64(#0x656e6f, (rsp + #0xffffffffffffffc0))
     store64(#0x0, (rsp + #0xffffffffffffffc8))
@@ -189,14 +181,11 @@ fn <unnamed> @ 0x1120 (size 124)
     store64(rax, (rsp + #0xffffffffffffffd0))
     store64(#0x0, (rsp + #0xffffffffffffffe0))
     call 0x1290((rsp + #0xffffffffffffffb8), #0x2, (rdi & #0xffffffff))
-    brif ne load64((rsp + #0xfffffffffffffff0)), load64((fs_base + #0x28)) -> 0x1197
+    br 0x1192
   blk1 @ 0x1192:
     ret rax
-  blk2 @ 0x1197:
-    call 0x10b0()
-    trap
 -- card
-{"addr":"0x1120","approxTokens":228,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":124,"unsupported":0}
+{"addr":"0x1120","approxTokens":228,"blocks":2,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":124,"unsupported":0}
 
 == 0x11a0 -
 -- decompile
@@ -371,17 +360,15 @@ int32_t sub_1290(uint32_t *a0, int64_t a1, int32_t a2) {
     int64_t v21;
     int64_t v22;
     int64_t v28;
-    int64_t local_0; /* [sp-20] */
-    int64_t local_1; /* [sp-68] */
-    int64_t local_2; /* [sp-78] */
-    int64_t local_3; /* [sp-70] */
+    int64_t local_0; /* [sp-68] */
+    int64_t local_1; /* [sp-78] */
+    int64_t local_2; /* [sp-70] */
 
-    local_0 = *(uint64_t *)(fs_base + 0x28);
     if ((a1 & 0xffffffff) <= 0x0) {
-        v21 = &local_1;
-        local_3 = 0x0;
+        v21 = &local_0;
+        local_2 = 0x0;
         v22 = a2;
-        local_2 = a1;
+        local_1 = a1;
         __snprintf_chk(v21, 0x40, 0x2, 0x40, 0x2004, v22);
         v28 = stderr;
         fputs(v21, v28);
@@ -399,15 +386,11 @@ int32_t sub_1290(uint32_t *a0, int64_t a1, int32_t a2) {
         }
     }
     rax = v3[0x1];
-    if (local_0 != *(uint64_t *)(fs_base + 0x28)) {
-        __stack_chk_fail();
-        __builtin_trap();
-    }
     return rax;
 L_12fd:
-    v6 = &local_1;
+    v6 = &local_0;
     v7 = a2;
-    local_2 = a1;
+    local_1 = a1;
     v13 = v2 + 0x8;
     v14 = v4 + (uint8_t *)v13;
     __snprintf_chk(v6, 0x40, 0x2, 0x40, 0x2004, v7);
@@ -430,7 +413,6 @@ int32_t (uint32_t * a0, int64_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x1290 (size 240)
   blk0 @ 0x1290:
-    store64(load64((fs_base + #0x28)), (rsp + #0xffffffffffffffe0))
     brif le (rsi & #0xffffffff), #0x0 -> 0x10e0
   blk1 @ 0x12b4:
     v2 = rdi
@@ -445,7 +427,7 @@ fn <unnamed> @ 0x1290 (size 240)
     brif ne load32(v3), (rdx & #0xffffffff) -> 0x12d0
   blk4 @ 0x12dd:
     rax = load32((v3 + #0x4))
-    brif ne load64((rsp + #0xffffffffffffffe0)), load64((fs_base + #0x28)) -> 0x137b
+    br 0x12f4
   blk5 @ 0x12f4:
     ret rax
   blk6 @ 0x12fd:
@@ -468,10 +450,7 @@ fn <unnamed> @ 0x1290 (size 240)
     brif ne v13, v14 -> 0x1350
   blk8 @ 0x1376:
     br 0x111a
-  blk9 @ 0x137b:
-    call 0x10b0()
-    trap
-  blk10 @ 0x10e0:
+  blk9 @ 0x10e0:
     v21 = (rsp + #0xffffffffffffff98)
     store64(#0x0, (rsp + #0xffffffffffffff90))
     v22 = rdx
@@ -480,11 +459,11 @@ fn <unnamed> @ 0x1290 (size 240)
     call 0x1090(v21, #0x40, #0x2, #0x40, #0x2004, v22)
     v28 = load64(#0x4020)
     call 0x10c0(v21, v28)
-  blk11 @ 0x111a:
+  blk10 @ 0x111a:
     call 0x10a0()
     trap
 -- card
-{"addr":"0x1290","approxTokens":198,"blocks":12,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":240,"unsupported":0}
+{"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":240,"unsupported":0}
 
 == 0x1380 -
 -- decompile

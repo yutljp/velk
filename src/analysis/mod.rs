@@ -366,6 +366,99 @@ fn set_up_arguments(ir: &mut FunctionIr) {
     }
 }
 
+/// Drops the stack protector: the guard value copied into the frame on
+/// entry, and the test before each return that calls the runtime to abort
+/// when the copy no longer matches. Neither is part of what the function
+/// does. The blocks only that test reached go too.
+fn drop_stack_protector(ir: &mut FunctionIr, image: &Image) {
+    use crate::ir::Expr;
+    let fails = |block: &crate::ir::Block| {
+        block.stmts.iter().any(|stmt| {
+            matches!(stmt, Stmt::Call { target: Some(target), .. }
+                if image.functions.get(target).and_then(|function| function.name.as_deref())
+                    .is_some_and(|name| name.trim_start_matches('_') == "stack_chk_fail"))
+        })
+    };
+    let failing: HashSet<u64> = ir
+        .blocks
+        .iter()
+        .filter(|block| fails(block))
+        .map(|block| block.start)
+        .collect();
+    if failing.is_empty() {
+        return;
+    }
+    let sp = crate::arch::stack_pointer(ir.isa);
+    let in_frame = |expr: &Expr| match expr {
+        Expr::Load { addr, .. } => {
+            let mut read = HashSet::new();
+            crate::ir::visit::collect_reads(addr, &mut read);
+            read.contains(&sp)
+        }
+        _ => false,
+    };
+    // The frame copy and the guard each test compares it with.
+    let mut guarded: Vec<(Expr, Expr)> = Vec::new();
+    for index in 0..ir.blocks.len() {
+        let next = ir.blocks.get(index + 1).map(|block| block.start);
+        let Some(Stmt::Brif {
+            cond,
+            lhs,
+            rhs,
+            target,
+        }) = ir.blocks[index].stmts.last()
+        else {
+            continue;
+        };
+        let (copy, guard) = match (in_frame(lhs), in_frame(rhs)) {
+            (true, false) => (lhs.clone(), rhs.clone()),
+            (false, true) => (rhs.clone(), lhs.clone()),
+            _ => continue,
+        };
+        let continues = match cond {
+            crate::ir::Cond::Ne if failing.contains(target) => next,
+            crate::ir::Cond::Eq if next.is_some_and(|next| failing.contains(&next)) => {
+                Some(*target)
+            }
+            _ => continue,
+        };
+        let Some(continues) = continues else {
+            continue;
+        };
+        *ir.blocks[index].stmts.last_mut().expect("a branch") = Stmt::Br {
+            target: Some(continues),
+        };
+        guarded.push((copy, guard));
+    }
+    if guarded.is_empty() {
+        return;
+    }
+    for block in &mut ir.blocks {
+        block.stmts.retain(|stmt| {
+            !matches!(stmt, Stmt::Store { addr, value, .. }
+            if guarded.iter().any(|(copy, guard)| {
+                matches!(copy, Expr::Load { addr: slot, .. } if slot.as_ref() == addr)
+                    && guard == value
+            }))
+        });
+    }
+    // The failing blocks nothing reaches any more.
+    loop {
+        let reached: HashSet<usize> = (0..ir.blocks.len())
+            .flat_map(|from| crate::render::structure::compare_chain::successors(ir, from))
+            .collect();
+        let before = ir.blocks.len();
+        let mut position = 0;
+        ir.blocks.retain(|block| {
+            position += 1;
+            position == 1 || reached.contains(&(position - 1)) || !failing.contains(&block.start)
+        });
+        if ir.blocks.len() == before {
+            break;
+        }
+    }
+}
+
 /// Drops a value nothing reads that loads only from memory the program
 /// cannot change, such as the jump table entry a switch no longer needs:
 /// code, or constant data. Other loads may touch a device and stay.
@@ -693,6 +786,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     structures::recover(&mut ir);
     let references = refs::collect(&ir, image);
     passes::frame_slots::settle(&mut ir);
+    drop_stack_protector(&mut ir, image);
     // Settling simplifies again, which can leave a table read unused.
     drop_dead_constant_reads(&mut ir, image);
     Analysis { ir, references }
