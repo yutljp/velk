@@ -259,7 +259,10 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
                 .collect();
             match values.and_then(|values| crate::ir::semantics::fold(op, &values)) {
                 Some(value) => Expr::constant(value),
-                None => Expr::Apply { op, args },
+                None => {
+                    let applied = Expr::Apply { op, args };
+                    counted_bits(&applied).unwrap_or(applied)
+                }
             }
         }
     }
@@ -371,6 +374,36 @@ fn reassembled(expr: &Expr) -> Option<Expr> {
 }
 
 /// Removes a double negation and the addition or subtraction of zero.
+/// The bit count a vector sums out of per-byte counts, as AArch64 counts
+/// the bits of a general register: `uaddlv(cnt(x))` is `popcount(x)`.
+fn counted_bits(expr: &Expr) -> Option<Expr> {
+    use crate::ir::{LaneOp, Operation};
+    let Expr::Apply {
+        op: Operation::SumLanesLong {
+            bits: 8,
+            signed: false,
+        },
+        args,
+    } = expr
+    else {
+        return None;
+    };
+    let mut counts = Vec::new();
+    for half in args {
+        match half {
+            Expr::Const(0) => {}
+            Expr::Apply {
+                op: Operation::Lanes(LaneOp::PopCount, 8),
+                args,
+            } => counts.push(Expr::apply(Operation::PopCount(64), vec![args[0].clone()])),
+            _ => return None,
+        }
+    }
+    counts
+        .into_iter()
+        .reduce(|sum, count| Expr::bin(crate::ir::BinOp::Add, sum, count))
+}
+
 pub(crate) fn algebraic(expr: Expr) -> Expr {
     // Only where the operations around it see the same width.
     if let Some(whole) = reassembled(&expr)

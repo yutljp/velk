@@ -1,4 +1,4 @@
-# calls_a64.o: elf aarch64 no entry, 11 functions, 0 lift failures, 1 unsupported, 2 gotos
+# calls_a64.o: elf aarch64 no entry, 11 functions, 0 lift failures, 1 unsupported, 1 gotos
 0x0 8 twice symtab,unwind
 0x8 8 square symtab,unwind
 0x10 28 pick_op symtab,unwind
@@ -66,13 +66,11 @@ fn pick_op @ 0x10 (size 28)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x2c */
 int32_t apply_table(uint32_t a0, int32_t a1) {
-    x9 = &table;
-    w8 = a0 * 0xaaaaaaab >> 0x21;
-    w8 = w8 + (w8 << 0x1);
-    w8 = a0 - w8;
-    a0 = a1;
-    x2 = table[w8];
-    goto *(x2);
+    int64_t v2;
+
+    w8 = a0 - ((a0 * 0xaaaaaaab >> 0x21) + (a0 * 0xaaaaaaab >> 0x21 << 0x1));
+    v2 = table[w8];
+    return (*(v2))(a1);
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -81,13 +79,10 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn apply_table @ 0x2c (size 44)
   blk0 @ 0x2c:
-    x9 = #0x290
-    x8 = ((w0 * #0xaaaaaaab) >> #0x21)
-    x8 = (((x8 & #0xffffffff) + ((x8 & #0xffffffff) << #0x1)) & #0xffffffff)
-    x8 = ((w0 - (x8 & #0xffffffff)) & #0xffffffff)
-    w0 = w1
-    x2 = load64((#0x290 + ((x8 & #0xffffffff) << #0x3)))
-    br x2
+    x8 = ((w0 - (((w0 * #0xaaaaaaab) >> #0x21) + ((((w0 * #0xaaaaaaab) >> #0x21) & #0xffffffff) << #0x1))) & #0xffffffff)
+    v2 = load64((#0x290 + ((x8 & #0xffffffff) << #0x3)))
+    v3 = call *v2(w1)
+    ret v3
 -- card
 {"addr":"0x2c","approxTokens":162,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","unwind"],"section":".text","size":44,"unsupported":0}
 

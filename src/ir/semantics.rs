@@ -62,6 +62,10 @@ pub(crate) fn width(expr: &Expr) -> u32 {
             Operation::Crc32 { .. } => 32,
             Operation::WideDivide { bits, .. } => u32::from(*bits),
             Operation::SignBits(bits) => 64 / u32::from(*bits),
+            // A count of up to 64 bits, with no sign.
+            Operation::CountLeadingZeros(_)
+            | Operation::CountTrailingZeros(_)
+            | Operation::PopCount(_) => 8,
             Operation::SumLanes(bits) => u32::from(*bits),
             Operation::ReverseBits(bits) => u32::from(*bits),
             // A truth value or a count is small and never negative.

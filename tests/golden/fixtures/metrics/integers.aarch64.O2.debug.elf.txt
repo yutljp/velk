@@ -105,7 +105,7 @@ fn rotate_left @ 0x210238 (size 12)
 int popcount(unsigned int x) {
     int32_t v1;
 
-    v1 = sum_lanes_long8(popcount_lanes8(x, 0x0), 0x0);
+    v1 = __builtin_popcountll(x);
     return v1;
 }
 -- signature
@@ -115,7 +115,7 @@ int (unsigned int x)
 -- ir
 fn popcount @ 0x210244 (size 20)
   blk0 @ 0x210244:
-    v1 = (sum_lanes_long8(popcount_lanes8(w0, #0x0), #0x0) & #0xffff)
+    v1 = (popcount64(w0) & #0xffff)
     ret (v1 & #0xffffffff)
 -- card
 {"addr":"0x210244","approxTokens":126,"blocks":1,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}

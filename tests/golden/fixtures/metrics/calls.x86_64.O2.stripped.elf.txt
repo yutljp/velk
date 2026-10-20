@@ -1,4 +1,4 @@
-# metrics/calls.x86_64.O2.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/calls.x86_64.O2.stripped.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2012f0 4 - unwind,prologue
 0x201300 6 - unwind,prologue
 0x201310 21 - unwind,prologue
@@ -67,11 +67,11 @@ fn <unnamed> @ 0x201310 (size 21)
 /* velk pseudo-C: sub_201330 @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
 int32_t sub_201330(uint32_t a0, int32_t a1) {
-    rdx = 0xaaaaaaab * a0 >> 0x21;
-    rax = a0 % 0x3;
-    rcx = 0x202610;
-    a0 = a1;
-    goto *(qword_202610[rax]);
+    int64_t v1;
+
+    v1 = 0xaaaaaaab * a0 >> 0x21;
+    rax = a0 - (v1 + v1 * 0x2);
+    return (*(qword_202610[rax]))(a1, a1, v1, 0x202610);
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -80,11 +80,10 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201330 (size 34)
   blk0 @ 0x201330:
-    rdx = ((#0xaaaaaaab * edi) >> #0x21)
-    rax = (edi % #0x3)
-    rcx = #0x202610
-    edi = esi
-    br load64((#0x202610 + (rax * #0x8)))
+    v1 = ((#0xaaaaaaab * edi) >> #0x21)
+    rax = (((edi & #0xffffffff) - (v1 + (v1 * #0x2))) & #0xffffffff)
+    v4 = call *load64((#0x202610 + (rax * #0x8)))(esi, rsi, v1, #0x202610)
+    ret v4
 -- card
 {"addr":"0x201330","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":34,"unsupported":0}
 

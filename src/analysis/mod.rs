@@ -177,6 +177,57 @@ fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Pr
     }
 }
 
+/// Takes a jump through a pointer read from memory, or through a register
+/// the block never sets, as a call that ends the function: a tail call, as
+/// through a table of functions. A jump to an address the block computes
+/// otherwise, as an unrecovered jump table's, stays a jump.
+fn tail_calls_through_pointers(
+    blocks: &mut [crate::ir::Block],
+    switched: &HashSet<u64>,
+    image: &Image,
+) {
+    use crate::ir::Expr;
+    for block in blocks.iter_mut() {
+        if switched.contains(&block.start) {
+            continue;
+        }
+        let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
+            continue;
+        };
+        let pointer = match target {
+            Expr::Load { .. } => true,
+            Expr::Reg { index, .. } => {
+                let set = block
+                    .stmts
+                    .iter()
+                    .rev()
+                    .skip(1)
+                    .find_map(|stmt| match stmt {
+                        Stmt::Assign { dest, value } if dest.index == *index => Some(value),
+                        _ => None,
+                    });
+                matches!(set, None | Some(Expr::Load { .. }))
+            }
+            _ => false,
+        };
+        if !pointer {
+            continue;
+        }
+        let through = target.clone();
+        block.stmts.pop();
+        block.stmts.push(Stmt::Call {
+            target: None,
+            through: Some(through),
+            convention: crate::ir::Convention::of(image.isa, image.format, image.go),
+            args: None,
+            result: None,
+        });
+        block.stmts.push(Stmt::Ret {
+            value: Expr::reg(crate::arch::RETURN, 64),
+        });
+    }
+}
+
 /// Drops the check a Go function starts with, which compares the stack
 /// pointer with the goroutine's stack limit and, when it runs low, calls the
 /// runtime to grow the stack and starts the function again. It is no part
@@ -335,7 +386,10 @@ fn set_up_arguments(ir: &mut FunctionIr) {
         let mut written: HashSet<u16> = HashSet::new();
         for stmt in &mut block.stmts {
             let Stmt::Call {
-                convention, args, ..
+                convention,
+                args,
+                through,
+                ..
             } = stmt
             else {
                 let mut reads = HashSet::new();
@@ -348,6 +402,12 @@ fn set_up_arguments(ir: &mut FunctionIr) {
                 written.extend(crate::ir::visit::statement_registers(stmt).0);
                 continue;
             };
+            // The register holding the callee's address is no argument.
+            if let Some(through) = through {
+                let mut read = HashSet::new();
+                crate::ir::visit::collect_reads(through, &mut read);
+                written.retain(|register| !read.contains(register));
+            }
             let registers = convention.arguments();
             if args.is_none()
                 && let Some(last) = registers
@@ -635,6 +695,8 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     if image.go {
         drop_stack_growth_check(&mut blocks, image);
     }
+    let switched: HashSet<u64> = tables.iter().map(|table| table.block_start).collect();
+    tail_calls_through_pointers(&mut blocks, &switched, image);
     let types = crate::loader::dwarf::function_types(image, function.addr);
     // A function returning a float returns it in xmm0 or v0.
     let declared = types.as_ref().and_then(|types| types.ret.as_ref());
