@@ -705,6 +705,30 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             index += 2;
             continue;
         }
+        // A further result the call before returned in another register.
+        if let (
+            Some(Node::Stmt(Stmt::Call { convention, .. })),
+            Node::Stmt(
+                copy @ Stmt::Assign {
+                    value:
+                        Expr::Reg {
+                            index: register, ..
+                        },
+                    ..
+                },
+            ),
+        ) = (
+            index.checked_sub(1).and_then(|before| nodes.get(before)),
+            &nodes[index],
+        ) && *register != crate::arch::RETURN
+            && convention.results().contains(register)
+        {
+            indent(depth, out);
+            out.push_str(&render_stmt(copy, ctx));
+            out.push_str(" /* also returned by the call */\n");
+            index += 1;
+            continue;
+        }
         render_node(&nodes[index], depth, out, ctx);
         index += 1;
     }

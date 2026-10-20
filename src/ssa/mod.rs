@@ -676,10 +676,18 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     for arg in ssa.phis.iter().flatten().flat_map(|phi| &phi.args) {
         read.insert(class[usize::from(arg - VALUE_BASE)]);
     }
-    for (register, value) in ssa.implicit_writes.values().flatten() {
-        let root = class[usize::from(value - VALUE_BASE)];
-        if !read.contains(&root) || *register != crate::arch::RETURN {
-            kept.insert(root);
+    // Further results, as a second half in rdx or a Go function's later
+    // ones, move into their variables too.
+    for ((block, position), defined) in &ssa.implicit_writes {
+        let returns = match &ssa.ir.blocks[*block].stmts[*position] {
+            Stmt::Call { convention, .. } => convention.results(),
+            _ => &[crate::arch::RETURN],
+        };
+        for (register, value) in defined {
+            let root = class[usize::from(value - VALUE_BASE)];
+            if !read.contains(&root) || !returns.contains(register) {
+                kept.insert(root);
+            }
         }
     }
     // Code no path reaches keeps its registers.
@@ -695,39 +703,47 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         }
     }
     // Number the new variables in the order their first definitions appear
-    // in the code, a φ before the statements of its block.
-    let mut first: HashMap<usize, (usize, usize)> = HashMap::new();
-    let mut note = |value: u16, at: (usize, usize)| {
+    // in the code, a φ before the statements of its block and a call's
+    // results in the order the convention returns them.
+    let mut first: HashMap<usize, (usize, usize, u16)> = HashMap::new();
+    let mut note = |value: u16, at: (usize, usize, u16)| {
         let root = class[usize::from(value - VALUE_BASE)];
         let entry = first.entry(root).or_insert(at);
         *entry = (*entry).min(at);
     };
     for (block, list) in ssa.phis.iter().enumerate() {
         for phi in list {
-            note(phi.value, (block, 0));
+            note(phi.value, (block, 0, 0));
         }
     }
     for (block, contents) in ssa.ir.blocks.iter().enumerate() {
         for (position, stmt) in contents.stmts.iter().enumerate() {
             if let Stmt::Assign { dest, .. } = stmt {
-                note(dest.index, (block, position + 1));
+                note(dest.index, (block, position + 1, 0));
             }
-            for (_, value) in ssa
+            let returns = match stmt {
+                Stmt::Call { convention, .. } => convention.results(),
+                _ => &[],
+            };
+            for (register, value) in ssa
                 .implicit_writes
                 .get(&(block, position))
                 .into_iter()
                 .flatten()
             {
-                note(*value, (block, position + 1));
+                let rank = returns
+                    .iter()
+                    .position(|result| result == register)
+                    .map_or(*register, |rank| rank as u16);
+                note(*value, (block, position + 1, rank));
             }
         }
     }
-    let mut order: Vec<(usize, usize)> = first
+    let mut order: Vec<(usize, (usize, usize, u16))> = first
         .into_iter()
         .filter(|(root, _)| registers.contains(&ssa.origin[*root]) && !kept.contains(root))
-        .map(|(root, at)| (root, at.0 * 0x10000 + at.1))
         .collect();
-    order.sort_by_key(|(_, at)| *at);
+    order.sort_by_key(|(root, at)| (*at, *root));
     let names: HashMap<usize, u16> = order
         .into_iter()
         .enumerate()
@@ -744,18 +760,38 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         })
         .collect();
     let mut lowered = lower_with(&ssa, &renames);
-    // A renamed value a call returns goes straight into its variable.
+    // A renamed value a call returns goes straight into its variable; one
+    // in another result register is copied out of it right after the call.
+    let mut copies: Vec<(usize, usize, u16, u16)> = Vec::new();
     for ((block, position), defined) in &ssa.implicit_writes {
-        for (_, value) in defined {
-            if let Some(name) = renames.get(value)
-                && let Stmt::Call { result, .. } = &mut lowered.blocks[*block].stmts[*position]
-            {
-                *result = Some(crate::ir::RegRef {
-                    index: *name,
-                    width: 64,
-                });
+        for (register, value) in defined {
+            let Some(name) = renames.get(value) else {
+                continue;
+            };
+            match &mut lowered.blocks[*block].stmts[*position] {
+                Stmt::Call { result, .. } if *register == crate::arch::RETURN => {
+                    *result = Some(crate::ir::RegRef {
+                        index: *name,
+                        width: 64,
+                    });
+                }
+                Stmt::Call { .. } => copies.push((*block, *position, *name, *register)),
+                _ => {}
             }
         }
+    }
+    copies.sort_by_key(|copy| std::cmp::Reverse((copy.0, copy.1, copy.3)));
+    for (block, position, name, register) in copies {
+        lowered.blocks[block].stmts.insert(
+            position + 1,
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: name,
+                    width: 64,
+                },
+                value: Expr::reg(register, 64),
+            },
+        );
     }
     // Code no path reaches, as a landing pad the unwinder enters, finds a
     // callee-saved register holding what it held across the calls: the

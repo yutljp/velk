@@ -112,6 +112,18 @@ impl Convention {
         }
     }
 
+    /// Registers a call returns values in, integer and floating-point: the
+    /// first, and those that carry a second half or further results.
+    pub fn results(self) -> &'static [u16] {
+        match self {
+            Self::SysV => &[0, 2, 18, 20],
+            Self::Win64 => &[0, 18],
+            Self::Aapcs64 => &[0, 1, 32, 34],
+            Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11, 18, 20, 22, 24],
+            Self::SyscallX86 | Self::SyscallArm => &[0],
+        }
+    }
+
     /// Registers a call may leave changed.
     pub fn clobbered(self) -> &'static [u16] {
         match self {
