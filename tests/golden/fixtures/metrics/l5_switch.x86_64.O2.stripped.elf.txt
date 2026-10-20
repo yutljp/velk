@@ -27,62 +27,62 @@ int32_t sub_201330(int32_t a0) {
     uint64_t v1;
 
     v1 = ((a0 - 0xa) & 0xffffffff);
-    if (v1 <= 0xf /* unsigned */) {
-        switch (v1 + 0xa) {
-        case 10:
-            sub_2013e0();
-            return dword_20250c;
-        case 11:
-            sub_2013f0();
-            return dword_20250c;
-        case 12:
-            sub_201400();
-            return dword_20250c;
-        case 13:
-            sub_201410();
-            return dword_20250c;
-        case 14:
-            sub_201420();
-            return dword_20250c;
-        case 15:
-            sub_201430();
-            return dword_20250c;
-        case 16:
-            sub_201440();
-            return dword_20250c;
-        case 17:
-            sub_201450();
-            return dword_20250c;
-        case 18:
-            sub_201460();
-            return dword_20250c;
-        case 19:
-            sub_201470();
-            return dword_20250c;
-        case 20:
-            sub_201480();
-            return dword_20250c;
-        case 21:
-            sub_201490();
-            return dword_20250c;
-        case 22:
-            sub_2014a0();
-            return dword_20250c;
-        case 23:
-            sub_2014b0();
-            return dword_20250c;
-        case 24:
-            sub_2014c0();
-            return dword_20250c;
-        case 25:
-            sub_2014d0();
-            return dword_20250c;
-        default:
-            dword_20250c = 0x0;
-            return dword_20250c;
-        }
+    if (v1 > 0xf /* unsigned */) {
+        dword_20250c = 0x0;
+        return dword_20250c;
     }
-    dword_20250c = 0x0;
+    switch (v1 + 0xa) {
+    case 10:
+        sub_2013e0();
+        return dword_20250c;
+    case 11:
+        sub_2013f0();
+        return dword_20250c;
+    case 12:
+        sub_201400();
+        return dword_20250c;
+    case 13:
+        sub_201410();
+        return dword_20250c;
+    case 14:
+        sub_201420();
+        return dword_20250c;
+    case 15:
+        sub_201430();
+        return dword_20250c;
+    case 16:
+        sub_201440();
+        return dword_20250c;
+    case 17:
+        sub_201450();
+        return dword_20250c;
+    case 18:
+        sub_201460();
+        return dword_20250c;
+    case 19:
+        sub_201470();
+        return dword_20250c;
+    case 20:
+        sub_201480();
+        return dword_20250c;
+    case 21:
+        sub_201490();
+        return dword_20250c;
+    case 22:
+        sub_2014a0();
+        return dword_20250c;
+    case 23:
+        sub_2014b0();
+        return dword_20250c;
+    case 24:
+        sub_2014c0();
+        return dword_20250c;
+    case 25:
+        sub_2014d0();
+        return dword_20250c;
+    default:
+        __builtin_unreachable();
+    }
     return dword_20250c;
 }
 -- signature
@@ -96,7 +96,7 @@ fn <unnamed> @ 0x201330 (size 167)
     v1 = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     brif hi (v1 & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
-    switch (v1 + #0xa) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
+    switch (v1 + #0xa) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default <none>
   blk2 @ 0x20134d:
     call 0x2013e0()
     br 0x2013bb

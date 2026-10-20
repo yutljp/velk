@@ -78,7 +78,7 @@ float (float a0, float a1, float a2)
 -- ir
 fn <unnamed> @ 0x210254 (size 48)
   blk0 @ 0x210254:
-    ret (fma.s((fsub.s((s1 & #0xffffffff), (s0 & #0xffffffff)) & #0xffffffff), (s2 & #0xffffffff), (s0 & #0xffffffff)) & #0xffffffff)
+    ret (fma.s(fsub.s(s1, s0), s2, s0) & #0xffffffff)
 -- card
 {"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
 

@@ -30,7 +30,7 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x2011a0 (size 63)
   blk0 @ 0x2011a0:
     store32(edi, (rsp + #0xfffffffffffffff0))
-    brif ge (edi & #0xffffffff), #0x0 -> 0x2011bd
+    brif ge edi, #0x0 -> 0x2011bd
   blk1 @ 0x2011b1:
     store32(#0xffffffff, (rsp + #0xfffffffffffffff4))
     br 0x2011da
@@ -79,7 +79,7 @@ fn <unnamed> @ 0x2011e0 (size 70)
     store32(edi, (rsp + #0xfffffffffffffff0))
     store32(esi, (rsp + #0xffffffffffffffec))
     store32(edx, (rsp + #0xffffffffffffffe8))
-    brif ge (edi & #0xffffffff), (esi & #0xffffffff) -> 0x201204
+    brif ge edi, esi -> 0x201204
   blk1 @ 0x2011f9:
     store32(load32((rsp + #0xffffffffffffffec)), (rsp + #0xfffffffffffffff4))
     br 0x201221
@@ -118,7 +118,7 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x201230 (size 54)
   blk0 @ 0x201230:
     store32(edi, (rsp + #0xfffffffffffffff4))
-    brif le (edi & #0xffffffff), #0x0 -> 0x20124e
+    brif le edi, #0x0 -> 0x20124e
   blk1 @ 0x201241:
     store32(#0x1, (rsp + #0xfffffffffffffff0))
     br 0x201261

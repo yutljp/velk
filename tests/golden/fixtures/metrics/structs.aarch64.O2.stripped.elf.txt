@@ -19,7 +19,7 @@ uint32_t sub_2101dc(struct sub_2101dc_a0 *a0) {
     uint64_t v1;
 
     v1 = sub_lanes32(a0->field_0x8, a0->field_0x0);
-    return (mul_lanes32(v1, ((v1 >> 0x20) & 0xffffffff) * 0x100000001) & 0xffffffff);
+    return (mul_lanes32(v1, (v1 >> 0x20) * 0x100000001) & 0xffffffff);
 }
 -- signature
 uint32_t (struct sub_2101dc_a0 * a0)

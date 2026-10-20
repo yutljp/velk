@@ -249,7 +249,6 @@ fn d7 @ 0x0 (size 736)
   blk14 @ 0x11c:
     brif eq w0, #0x5 -> 0x184
   blk15 @ 0x124:
-    brif ne w0, #0x6 -> 0x2d4
   blk16 @ 0x12c:
     v30 = load32(#0x2e0)
     store32(v30, #0x2e0)

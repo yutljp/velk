@@ -87,7 +87,7 @@ int32_t sum_till_neg(uint32_t *a0, int32_t a1) {
     int32_t v3;
     int64_t v4;
 
-    v1 = (a1 & ~(a1 >> 0x1f) & 0xffffffff);
+    v1 = a1 & ~(a1 >> 0x1f);
     v2 = 0x0;
     do {
         v3 = v2;

@@ -87,8 +87,7 @@ int32_t d7(int32_t a0) {
             v2 = g + 0x9;
             break;
         default:
-            v2 = 0xffffffff;
-            break;
+            __builtin_unreachable();
         }
     }
     g = v2;
@@ -103,7 +102,7 @@ fn d7 @ 0x0 (size 527)
   blk0 @ 0x0:
     brif hi edi, #0x9 -> 0x1b6
   blk1 @ 0x9:
-    switch edi [0->0x1b, 1->0x12f, 2->0xa5, 3->0xc5, 4->0x26, 5->0x148, 6->0x17d, 7->0xec, 8->0x1bd, 9->0x54] default 0x1b6
+    switch edi [0->0x1b, 1->0x12f, 2->0xa5, 3->0xc5, 4->0x26, 5->0x148, 6->0x17d, 7->0xec, 8->0x1bd, 9->0x54] default <none>
   blk2 @ 0x1b:
     v2 = load32(#0x238)
     br 0x202

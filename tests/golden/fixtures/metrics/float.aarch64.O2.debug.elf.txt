@@ -1,4 +1,4 @@
-# metrics/float.aarch64.O2.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/float.aarch64.O2.debug.elf: elf aarch64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21019c 144 average symtab,dwarf,unwind
 0x21022c 12 lerp symtab,dwarf,unwind
 0x210238 8 truncate_to_int symtab,dwarf,unwind
@@ -43,7 +43,7 @@ double average(double *values, int n) {
             v1 = v10 + v7 + v8 + v9;
         } while (v5 != 0x0);
         if (v3 == v2) {
-            goto L_210210;
+            return v1 / (double)(int32_t)n;
         }
     } else {
         v3 = 0x0;
@@ -56,10 +56,6 @@ double average(double *values, int n) {
         v14 = v14 - 0x1;
         v1 = v1 + v15;
     } while (v14 != 0x0);
-L_210210:
-    if (n <= 0x0) {
-        return 0.0;
-    }
     return v1 / (double)(int32_t)n;
 }
 -- signature
@@ -103,7 +99,6 @@ fn average @ 0x21019c (size 144)
     v1 = fadd.d(v1, v15)
     brif ne v14, #0x0 -> 0x210200
   blk8 @ 0x210210:
-    brif le w1, #0x0 -> 0x210224
   blk9 @ 0x210218:
     ret fdiv.d(v1, s32tof.d(w1))
   blk10 @ 0x210224:
@@ -124,7 +119,7 @@ float (float a, float b, float t)
 -- ir
 fn lerp @ 0x21022c (size 12)
   blk0 @ 0x21022c:
-    ret (fma.s((fsub.s(s1, s0) & #0xffffffff), s2, s0) & #0xffffffff)
+    ret (fma.s(fsub.s(s1, s0), s2, s0) & #0xffffffff)
 -- card
 {"addr":"0x21022c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 

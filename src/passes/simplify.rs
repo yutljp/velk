@@ -90,29 +90,7 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
 
 /// `other` when `kept` is `r & keep` and `keep` shares no bit with `mask`.
 fn outside_mask<'e>(kept: &Expr, other: &'e Expr, mask: u64) -> Option<&'e Expr> {
-    (possible_bits(kept) & mask == 0).then_some(other)
-}
-
-/// The bits the expression may have set.
-pub(crate) fn possible_bits(expr: &Expr) -> u64 {
-    use crate::ir::BinOp;
-    match expr {
-        Expr::Const(value) => *value,
-        Expr::Bin { op, lhs, rhs } => match (op, rhs.as_ref()) {
-            (BinOp::And, _) => possible_bits(lhs) & possible_bits(rhs),
-            (BinOp::Or | BinOp::Xor, _) => possible_bits(lhs) | possible_bits(rhs),
-            (BinOp::Shl, Expr::Const(shift)) if *shift < 64 => possible_bits(lhs) << shift,
-            (BinOp::Shr, Expr::Const(shift)) if *shift < 64 => possible_bits(lhs) >> shift,
-            _ => u64::MAX,
-        },
-        Expr::Load {
-            width,
-            signed: false,
-            ..
-        } if *width < 8 => crate::ir::semantics::mask(u32::from(*width) * 8),
-        Expr::Reg { width, .. } if *width < 64 => crate::ir::semantics::mask(u32::from(*width)),
-        _ => u64::MAX,
-    }
+    (crate::ssa::ranges::of(kept).possible() & mask == 0).then_some(other)
 }
 
 /// In a compare at `width` bits, `(a - b) + b` and `(a + b) - b` are `a`; a
@@ -450,26 +428,7 @@ fn low32(expr: &Expr) -> &Expr {
 
 /// Whether `expr` provably holds less than 2^32.
 fn fits32(expr: &Expr) -> bool {
-    match expr {
-        Expr::Reg { width, .. } => *width <= 32,
-        Expr::Load {
-            width,
-            signed: false,
-            ..
-        } => *width <= 4,
-        Expr::Const(value) => *value <= 0xffff_ffff,
-        Expr::Bin {
-            op: BinOp::And,
-            rhs,
-            ..
-        } => matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff),
-        Expr::Bin {
-            op: BinOp::DivU | BinOp::ModU | BinOp::Shr,
-            lhs,
-            ..
-        } => fits32(lhs),
-        _ => false,
-    }
+    crate::ssa::ranges::of(expr).hi <= 0xffff_ffff
 }
 
 /// The divisor a multiply-and-shift by `magic` and `shift` divides a value

@@ -816,8 +816,17 @@ fn rhs_bits(mask: &Expr) -> u32 {
     }
 }
 
-/// True when the value provably fits in `bits` bits.
+/// True when the value provably fits in `bits` bits, or wraps in C as a
+/// mask to them would.
 pub(crate) fn fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
+    crate::ssa::ranges::of(expr).hi <= crate::ir::semantics::mask(bits)
+        || typed_fits(expr, bits, ctx)
+}
+
+/// True when the C types of the operands keep the value within `bits`
+/// bits, or wrap it as a mask to them would. The value alone fitting says
+/// nothing of the types, so it is not asked of the operands.
+fn typed_fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
     match expr {
         Expr::Const(value) => bits >= 64 || (*value >> bits) == 0,
         // A named parameter that is not wide holds at most 32 bits,
@@ -833,25 +842,25 @@ pub(crate) fn fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
         Expr::Bin { op, lhs, rhs } => match op {
             BinOp::And => match rhs.as_ref() {
                 Expr::Const(mask) => bits >= 64 || (*mask >> bits) == 0,
-                _ => fits(lhs, bits, ctx) && fits(rhs, bits, ctx),
+                _ => typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx),
             },
-            BinOp::Or | BinOp::Xor => fits(lhs, bits, ctx) && fits(rhs, bits, ctx),
+            BinOp::Or | BinOp::Xor => typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx),
             // Arithmetic on 32-bit operands wraps at 32 bits in C, which is
             // what the mask would do; narrower results carry out of the mask.
             BinOp::Add | BinOp::Sub | BinOp::Mul => {
-                bits >= 32 && fits(lhs, bits, ctx) && fits(rhs, bits, ctx)
+                bits >= 32 && typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx)
             }
             BinOp::Shl => {
                 bits >= 32
                     && matches!(rhs.as_ref(), Expr::Const(amount) if *amount < 32)
-                    && fits(lhs, bits, ctx)
+                    && typed_fits(lhs, bits, ctx)
             }
             BinOp::DivS | BinOp::DivU | BinOp::ModS | BinOp::ModU | BinOp::Shr | BinOp::Sar => {
-                fits(lhs, bits, ctx) && fits(rhs, bits, ctx)
+                typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx)
             }
             _ => false,
         },
-        Expr::Select { then, els, .. } => fits(then, bits, ctx) && fits(els, bits, ctx),
+        Expr::Select { then, els, .. } => typed_fits(then, bits, ctx) && typed_fits(els, bits, ctx),
         Expr::Apply { .. } => crate::ir::semantics::width(expr) <= bits,
     }
 }

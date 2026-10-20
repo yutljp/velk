@@ -216,7 +216,7 @@ fn flags_level @ 0x201380 (size 59)
     brif eq (v1 & #0x1), #0x0 -> 0x2013a9
   blk1 @ 0x201398:
     v4 = load8((rsp + #0xfffffffffffffff4))
-    store32((((v4 & #0xff) >> #0x4) & #0xff), (rsp + #0xfffffffffffffff0))
+    store32(((v4 & #0xff) >> #0x4), (rsp + #0xfffffffffffffff0))
     br 0x2013b6
   blk2 @ 0x2013a9:
     v6 = load8((rsp + #0xfffffffffffffff4))
@@ -231,11 +231,9 @@ fn flags_level @ 0x201380 (size 59)
 /* velk pseudo-C: flags_set_mode @ 0x2013c0 */
 void flags_set_mode(struct flags *f, unsigned int mode) {
     int64_t v4;
-    int64_t v6;
 
     v4 = f->field_0x0;
-    v6 = v4 & 0xf1;
-    f->field_0x0 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (mode & 0x7) << 0x1 & 0xff);
+    f->field_0x0 = v4 & 0xf1 | (mode & 0x7) << 0x1;
 }
 -- signature
 void (struct flags * f, unsigned int mode)
@@ -246,8 +244,7 @@ fn flags_set_mode @ 0x2013c0 (size 36)
   blk0 @ 0x2013c0:
     v2 = rdi
     v4 = load8(v2)
-    v6 = (v4 & #0xf1)
-    store8(((v6 & #0xffffffffffffff00) | (((v6 & #0xff) | (((esi & #0x7) << #0x1) & #0xff)) & #0xff)), v2)
+    store8(((v4 & #0xf1) | ((esi & #0x7) << #0x1)), v2)
     ret #0x0
 -- card
 {"addr":"0x2013c0","approxTokens":186,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}

@@ -199,22 +199,11 @@ fn holding(block: &Block, index: &Expr) -> Option<u16> {
     found
 }
 
-/// The bits the expression may have set.
-fn possible_bits(expr: &Expr) -> u64 {
-    match expr {
-        Expr::Const(value) => *value,
-        Expr::Bin { op, lhs, rhs } => match op {
-            BinOp::And => possible_bits(lhs) & possible_bits(rhs),
-            BinOp::Or | BinOp::Xor => possible_bits(lhs) | possible_bits(rhs),
-            BinOp::Shr => match constant(rhs) {
-                Some(shift) if shift < 64 => possible_bits(lhs) >> shift,
-                _ => u64::MAX,
-            },
-            _ => u64::MAX,
-        },
-        Expr::Load { width, .. } if *width < 8 => (1u64 << (u32::from(*width) * 8)) - 1,
-        _ => u64::MAX,
-    }
+/// The largest value the index may take, from how it is computed. A
+/// register's width alone bounds nothing: the check may lie elsewhere.
+fn largest(index: &Expr) -> u64 {
+    crate::ssa::ranges::expression(index, &|_, _| Some(crate::ssa::ranges::Fact::TOP))
+        .map_or(u64::MAX, |fact| fact.hi)
 }
 
 /// Where an unchecked table's entries may lead and where other tables begin.
@@ -437,12 +426,12 @@ fn recognize(
     }
     let (count, default, minimum, switch_base) = match bound {
         Some(bound) => bound,
-        // An index masked to its low bits takes every value they hold.
-        None if let mask = possible_bits(&index)
-            && mask < 4096
-            && (mask + 1).is_power_of_two() =>
+        // An index masked to its low bits, or otherwise bounded, takes
+        // every value up to its largest.
+        None if let largest = largest(&index)
+            && largest < 4096 =>
         {
-            (mask as i64 + 1, None, 0, index.clone())
+            (largest as i64 + 1, None, 0, index.clone())
         }
         None => {
             let count = (0..4096u64)

@@ -15,7 +15,7 @@ int rect_area(struct rect *r) {
     uint64_t v1;
 
     v1 = sub_lanes32(r->max.x, r->min.x);
-    return (mul_lanes32(v1, ((v1 >> 0x20) & 0xffffffff) * 0x100000001) & 0xffffffff);
+    return (mul_lanes32(v1, (v1 >> 0x20) * 0x100000001) & 0xffffffff);
 }
 -- signature
 int (struct rect * r)

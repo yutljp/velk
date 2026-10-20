@@ -215,38 +215,31 @@ fn count_down @ 0xf0 (size 157)
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x190 */
 int32_t sum_skip_odd(int32_t a0) {
-    int64_t v1;
     int64_t v2;
     int32_t v3;
     int32_t v4;
-    int64_t v5;
+    int32_t v5;
 
     if (a0 <= 0x0) {
         return 0x0;
     }
     if (a0 != 0x1) {
         v3 = a0 & 0x7ffffffe;
-        v1 = 0x0;
+        v4 = 0x0;
         v2 = 0x0;
         do {
-            v4 = v2 + v1;
-            v2 = v4 + 0x1;
+            v5 = v2 + v4;
+            v2 = v5 + 0x1;
             sink = v2;
-            v1 = v1 + 0x2;
-        } while (v3 != v1);
+            v4 = v4 + 0x2;
+        } while (v3 != v4);
     } else {
-        v1 = 0x0;
         v2 = 0x0;
     }
     if ((a0 & 0x1) == 0x0) {
         return v2;
     }
-    if ((v1 & 0x1) == 0x0) {
-        return v2;
-    }
-    v5 = v1 + v2;
-    sink = v5;
-    return v5;
+    return v2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -259,33 +252,28 @@ fn sum_skip_odd @ 0x190 (size 71)
   blk1 @ 0x194:
     brif ne (rdi & #0xffffffff), #0x1 -> 0x1a2
   blk2 @ 0x199:
-    v1 = #0x0
     v2 = #0x0
     br 0x1c1
   blk3 @ 0x19f:
     ret #0x0
   blk4 @ 0x1a2:
     v3 = (rdi & #0x7ffffffe)
-    v1 = #0x0
+    v4 = #0x0
     v2 = #0x0
   blk5 @ 0x1b0:
-    v4 = (((v2 & #0xffffffff) + (v1 & #0xffffffff)) & #0xffffffff)
-    v2 = (((v4 & #0xffffffff) + #0x1) & #0xffffffff)
+    v5 = (((v2 & #0xffffffff) + (v4 & #0xffffffff)) & #0xffffffff)
+    v2 = (((v5 & #0xffffffff) + #0x1) & #0xffffffff)
     store32(v2, #0x204)
-    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
-    brif ne v3, (v1 & #0xffffffff) -> 0x1b0
+    v4 = (((v4 & #0xffffffff) + #0x2) & #0xffffffff)
+    brif ne v3, (v4 & #0xffffffff) -> 0x1b0
   blk6 @ 0x1c1:
     brif eq (rdi & #0x1), #0x0 -> 0x1d6
   blk7 @ 0x1c7:
-    brif eq (v1 & #0x1), #0x0 -> 0x1d6
-  blk8 @ 0x1cc:
-    v5 = (((v1 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
-    store32(v5, #0x204)
-    v2 = (v5 & #0xffffffff)
-  blk9 @ 0x1d6:
+    br 0x1d6
+  blk8 @ 0x1d6:
     ret v2
 -- card
-{"addr":"0x190","approxTokens":138,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","unwind"],"section":".text","size":71,"unsupported":0}
+{"addr":"0x190","approxTokens":138,"blocks":9,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","unwind"],"section":".text","size":71,"unsupported":0}
 
 == 0x1e0 find_first
 -- decompile

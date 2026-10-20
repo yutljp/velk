@@ -106,7 +106,7 @@ fn <unnamed> @ 0x2012c0 (size 78)
     store32(esi, (rsp + #0xfffffffffffffff0))
     store64(rdx, (rsp + #0xffffffffffffffe8))
     store32(#0xffffffff, (rsp + #0xffffffffffffffe4))
-    brif ge (edi & #0xffffffff), #0x0 -> 0x2012e4
+    brif ge edi, #0x0 -> 0x2012e4
   blk1 @ 0x2012df:
     br 0x201309
   blk2 @ 0x2012e4:

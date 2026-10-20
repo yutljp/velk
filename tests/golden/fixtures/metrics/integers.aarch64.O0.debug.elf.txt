@@ -57,7 +57,7 @@ long long (int a, unsigned int b)
 -- ir
 fn mixed_sign @ 0x21026c (size 32)
   blk0 @ 0x21026c:
-    ret (sext32(x0) - (w1 & #0xffffffff))
+    ret (sext32(x0) - w1)
 -- card
 {"addr":"0x21026c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
 
@@ -90,7 +90,7 @@ fn in_range @ 0x21028c (size 84)
     store32(w0, (sp + #0xfffffffffffffffc))
     store32(w2, (sp + #0xfffffffffffffff4))
     store32(#0x0, (sp + #0xfffffffffffffff0))
-    brif lt (w0 & #0xffffffff), (w1 & #0xffffffff) -> 0x2102d0
+    brif lt w0, w1 -> 0x2102d0
   blk1 @ 0x2102b4:
     br 0x2102b8
   blk2 @ 0x2102b8:
@@ -115,7 +115,7 @@ unsigned int (unsigned int x, unsigned int k)
 -- ir
 fn rotate_left @ 0x2102e0 (size 64)
   blk0 @ 0x2102e0:
-    ret ((((w0 & #0xffffffff) << (w1 & #0x1f)) | ((w0 & #0xffffffff) >> ((#0x20 - (w1 & #0xffffffff)) & #0x1f))) & #0xffffffff)
+    ret (((w0 << (w1 & #0x1f)) | (w0 >> ((#0x20 - w1) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x2102e0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf","unwind"],"section":".text","size":64,"unsupported":0}
 
@@ -170,7 +170,7 @@ unsigned int (unsigned int x)
 -- ir
 fn byte_swap @ 0x21036c (size 60)
   blk0 @ 0x21036c:
-    ret (((((((w0 & #0xffffffff) >> #0x8) & #0xff00) | ((w0 & #0xffffffff) >> #0x18)) | (((w0 & #0xffffffff) << #0x8) & #0xff0000)) | ((w0 & #0xffffffff) << #0x18)) & #0xffffffff)
+    ret ((((((w0 >> #0x8) & #0xff00) | (w0 >> #0x18)) | ((w0 << #0x8) & #0xff0000)) | (w0 << #0x18)) & #0xffffffff)
 -- card
 {"addr":"0x21036c","approxTokens":186,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf","unwind"],"section":".text","size":60,"unsupported":0}
 
@@ -211,7 +211,7 @@ fn min3 @ 0x2103a8 (size 124)
     store32(w0, (sp + #0xfffffffffffffffc))
     store32(w1, (sp + #0xfffffffffffffff8))
     store32(w2, (sp + #0xfffffffffffffff4))
-    brif ge (w0 & #0xffffffff), (w1 & #0xffffffff) -> 0x2103d8
+    brif ge w0, w1 -> 0x2103d8
   blk1 @ 0x2103c8:
     br 0x2103cc
   blk2 @ 0x2103cc:

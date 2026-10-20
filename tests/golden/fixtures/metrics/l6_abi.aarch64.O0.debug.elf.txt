@@ -22,7 +22,7 @@ int (int x)
 fn tail_target @ 0x2101d4 (size 40)
   blk0 @ 0x2101d4:
     store32(w0, (sp + #0xfffffffffffffffc))
-    ret ((((w0 & #0xffffffff) * #0x3) + #0x1) & #0xffffffff)
+    ret (((w0 * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2101d4","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
 
@@ -79,7 +79,7 @@ int (int a, int b, int c, int d, int e, int f)
 -- ir
 fn six_args @ 0x210254 (size 80)
   blk0 @ 0x210254:
-    ret (((((((w0 & #0xffffffff) + (w1 & #0xffffffff)) + (w2 & #0xffffffff)) + (w3 & #0xffffffff)) + (w4 & #0xffffffff)) + (w5 & #0xffffffff)) & #0xffffffff)
+    ret ((((((w0 + w1) + w2) + w3) + w4) + w5) & #0xffffffff)
 -- card
 {"addr":"0x210254","approxTokens":216,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf","unwind"],"section":".text","size":80,"unsupported":0}
 

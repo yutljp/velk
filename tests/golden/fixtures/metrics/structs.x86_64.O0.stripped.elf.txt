@@ -228,7 +228,7 @@ fn <unnamed> @ 0x201380 (size 59)
     brif eq (v1 & #0x1), #0x0 -> 0x2013a9
   blk1 @ 0x201398:
     v4 = load8((rsp + #0xfffffffffffffff4))
-    store32((((v4 & #0xff) >> #0x4) & #0xff), (rsp + #0xfffffffffffffff0))
+    store32(((v4 & #0xff) >> #0x4), (rsp + #0xfffffffffffffff0))
     br 0x2013b6
   blk2 @ 0x2013a9:
     v6 = load8((rsp + #0xfffffffffffffff4))
@@ -243,11 +243,9 @@ fn <unnamed> @ 0x201380 (size 59)
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
 int64_t sub_2013c0(uint8_t *a0, int32_t a1) {
     int64_t v4;
-    int64_t v6;
 
     v4 = *a0;
-    v6 = v4 & 0xf1;
-    *a0 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (a1 & 0x7) << 0x1 & 0xff);
+    *a0 = v4 & 0xf1 | (a1 & 0x7) << 0x1;
     return a0;
 }
 -- signature
@@ -259,8 +257,7 @@ fn <unnamed> @ 0x2013c0 (size 36)
   blk0 @ 0x2013c0:
     v2 = rdi
     v4 = load8(v2)
-    v6 = (v4 & #0xf1)
-    store8(((v6 & #0xffffffffffffff00) | (((v6 & #0xff) | (((esi & #0x7) << #0x1) & #0xff)) & #0xff)), v2)
+    store8(((v4 & #0xf1) | ((esi & #0x7) << #0x1)), v2)
     ret v2
 -- card
 {"addr":"0x2013c0","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}

@@ -7,6 +7,7 @@
 //! the statements.
 
 pub(crate) mod dom;
+pub mod ranges;
 pub mod sccp;
 
 use std::collections::{HashMap, HashSet};

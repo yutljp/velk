@@ -1146,6 +1146,8 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     crate::ssa::narrow_partial_writes(&mut ir);
     passes::copies::copy_propagate_guarded(&mut ir);
     passes::simplify::simplify(&mut ir);
+    // With the variables split, what they hold narrows again.
+    crate::ssa::ranges::simplify(&mut ir);
     // Simplifying can fold a variable's value into its readers.
     passes::dce::dce(&mut ir);
     drop_unread_indirect_result(&mut ir, image);

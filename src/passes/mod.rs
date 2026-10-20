@@ -39,6 +39,7 @@ pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) {
     }
     memory::fuse_load_op_store(ir);
     crate::ssa::propagate_constants(ir);
+    crate::ssa::ranges::simplify(ir);
     simplify::simplify(ir);
     dce::dce(ir);
 }

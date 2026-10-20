@@ -87,7 +87,7 @@ int sum_till_neg(int *p, int n) {
     int32_t v3;
     int64_t v4;
 
-    v1 = (n & ~((int32_t)n >> 0x1f) & 0xffffffff);
+    v1 = n & ~((int32_t)n >> 0x1f);
     v2 = 0x0;
     do {
         v3 = v2;

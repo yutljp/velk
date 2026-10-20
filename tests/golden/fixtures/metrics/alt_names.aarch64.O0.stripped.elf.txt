@@ -15,7 +15,7 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x21016c (size 44)
   blk0 @ 0x21016c:
-    ret ((((w0 & #0xffffffff) + (w1 & #0xffffffff)) + (w2 & #0xffffffff)) & #0xffffffff)
+    ret (((w0 + w1) + w2) & #0xffffffff)
 -- card
 {"addr":"0x21016c","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
 

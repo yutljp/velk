@@ -52,7 +52,7 @@ int32_t sub_2011f0(uint32_t *a0, int32_t a1) {
     }
     if (a1 >= 0x8 /* unsigned */) {
         v2 = a1 & 0x7ffffff8;
-        v4 = (a1 >> 0x3 & 0xfffffff) << 0x5;
+        v4 = a1 >> 0x3 << 0x5;
         v5 = 0x0;
         v6 = 0x0;
         v7 = 0x0;
@@ -70,7 +70,7 @@ int32_t sub_2011f0(uint32_t *a0, int32_t a1) {
             v7 = v7 + 0x20;
         } while (v4 != v7);
         v16 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
-        v3 = (add_lanes32(((v16 >> 0x20) & 0xffffffff) | ((v16 >> 0x20) & 0xffffffff) << 0x20, v16) & 0xffffffff);
+        v3 = (add_lanes32(v16 >> 0x20 | v16 >> 0x20 << 0x20, v16) & 0xffffffff);
         if (v2 == a1) {
             return v3;
         }
@@ -103,7 +103,7 @@ fn <unnamed> @ 0x2011f0 (size 140)
     ret #0x0
   blk4 @ 0x201204:
     v2 = (v1 & #0x7ffffff8)
-    v4 = ((((v1 & #0xffffffff) >> #0x3) & #0xfffffff) << #0x5)
+    v4 = (((v1 & #0xffffffff) >> #0x3) << #0x5)
     v5 = #0x0
     v6 = #0x0
     v7 = #0x0

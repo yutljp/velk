@@ -33,7 +33,7 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn clamp @ 0x10 (size 20)
   blk0 @ 0x10:
-    ret (select lt w0, w1 ? w1, (select lt w0, w2 ? w0, w2 & #0xffffffff) & #0xffffffff)
+    ret (select lt w0, w1 ? w1, select lt w0, w2 ? w0, w2 & #0xffffffff)
 -- card
 {"addr":"0x10","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
 
