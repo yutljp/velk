@@ -1028,7 +1028,8 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
 }
 
 /// A call's result that only moves on into another variable right after the
-/// call goes there directly: `v1 = f(); v2 = v1;` becomes `v2 = f();`.
+/// call goes there directly: `v1 = f(); v2 = v1;` becomes `v2 = f();`, and
+/// `v1 = f(); v3 = rbx; v2 = v1; v4 = v3;` becomes `v2 = f(); v4 = rbx;`.
 pub fn take_results_directly(ir: &mut FunctionIr) {
     let mut reads: HashMap<u16, usize> = HashMap::new();
     let mut definitions: HashMap<u16, usize> = HashMap::new();
@@ -1042,30 +1043,64 @@ pub fn take_results_directly(ir: &mut FunctionIr) {
         }
     }
     let variable = |index: u16| index >= crate::ir::VARIABLE_BASE;
+    // So do the further results copied out of their registers right after it.
+    let further = |stmt: &Stmt| {
+        matches!(stmt, Stmt::Assign {
+            dest,
+            value: Expr::Reg { index, .. },
+        } if variable(dest.index) && !variable(*index))
+    };
     for block in &mut ir.blocks {
         let mut position = 0;
-        while position + 1 < block.stmts.len() {
-            if let [
-                Stmt::Call {
-                    result: Some(result),
-                    ..
-                },
-                Stmt::Assign {
-                    dest,
-                    value: Expr::Reg { index, width: 64 },
-                },
-            ] = &mut block.stmts[position..position + 2]
-                && *index == result.index
-                && variable(result.index)
-                && variable(dest.index)
-                && dest.width == 64
-                && reads.get(&result.index) == Some(&1)
-                && definitions.get(&result.index) == Some(&1)
-            {
-                *result = *dest;
-                block.stmts.remove(position + 1);
-            }
+        while position < block.stmts.len() {
             position += 1;
+            if !matches!(block.stmts[position - 1], Stmt::Call { .. }) {
+                continue;
+            }
+            let position = position - 1;
+            let mut next = position + 1;
+            while block.stmts.get(next).is_some_and(further) {
+                next += 1;
+            }
+            while let Some(Stmt::Assign {
+                dest,
+                value: Expr::Reg { index, width: 64 },
+            }) = block.stmts.get(next)
+            {
+                let (dest, taken) = (*dest, *index);
+                let written = |stmt: &Stmt| statement_registers(stmt).0;
+                if !(variable(taken)
+                    && variable(dest.index)
+                    && dest.width == 64
+                    && reads.get(&taken) == Some(&1)
+                    && definitions.get(&taken) == Some(&1)
+                    && !block.stmts[position..next]
+                        .iter()
+                        .any(|stmt| written(stmt).contains(&dest.index)))
+                {
+                    break;
+                }
+                let Some(definition) =
+                    block.stmts[position..next]
+                        .iter_mut()
+                        .find_map(|stmt| match stmt {
+                            Stmt::Call {
+                                result: Some(result),
+                                ..
+                            }
+                            | Stmt::Assign { dest: result, .. }
+                                if result.index == taken =>
+                            {
+                                Some(result)
+                            }
+                            _ => None,
+                        })
+                else {
+                    break;
+                };
+                *definition = dest;
+                block.stmts.remove(next);
+            }
         }
     }
 }
@@ -1333,6 +1368,46 @@ mod tests {
         assert!(matches!(
             ir.blocks[0].stmts[0],
             Stmt::Call { result: Some(RegRef { index, .. }), .. } if index == second
+        ));
+    }
+
+    #[test]
+    fn further_results_moved_on_go_to_their_variables() {
+        // v1 = f(); v3 = rbx; v2 = v1; v4 = v3; return v2 + v4;
+        let [first, second, third, fourth] =
+            [0, 1, 2, 3].map(|offset| crate::ir::VARIABLE_BASE + offset);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: crate::ir::Convention::GoAmd64,
+                    args: Some(Vec::new()),
+                    floats_named: false,
+                    result: Some(RegRef {
+                        index: first,
+                        width: 64,
+                    }),
+                },
+                assign(third, Expr::reg(3, 64)),
+                assign(second, Expr::reg(first, 64)),
+                assign(fourth, Expr::reg(third, 64)),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, Expr::reg(second, 64), Expr::reg(fourth, 64)),
+                },
+            ],
+        );
+        super::take_results_directly(&mut ir);
+        let stmts = &ir.blocks[0].stmts;
+        assert_eq!(stmts.len(), 3, "{}", ir.render());
+        assert!(matches!(
+            stmts[0],
+            Stmt::Call { result: Some(RegRef { index, .. }), .. } if index == second
+        ));
+        assert!(matches!(
+            &stmts[1],
+            Stmt::Assign { dest, value: Expr::Reg { index: 3, .. } } if dest.index == fourth
         ));
     }
 

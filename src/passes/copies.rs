@@ -5,7 +5,7 @@ use crate::ir::visit::expr_reads;
 use crate::ir::visit::expr_width;
 use crate::ir::visit::statement_reads;
 use crate::ir::visit::statement_registers;
-use crate::ir::{Expr, FunctionIr, Stmt};
+use crate::ir::{Expr, FunctionIr, Stmt, VARIABLE_BASE};
 use crate::passes::frame::reads_outside_frame;
 
 /// Folds a definition read exactly once before its register is written again
@@ -16,6 +16,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| live_out(ir, &live_in, index))
         .collect();
+    let params = parameters(ir);
     for (position, block) in ir.blocks.iter_mut().enumerate() {
         let mut index = 0;
         while index < block.stmts.len() {
@@ -78,7 +79,10 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                 index += 1;
                 continue;
             };
-            if reads != 1 || clobbered {
+            if reads != 1
+                || clobbered
+                || !further_result_moves(&block.stmts, index, use_at, &params)
+            {
                 index += 1;
                 continue;
             }
@@ -215,6 +219,7 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| live_out(ir, &live_in, index))
         .collect();
+    let params = parameters(ir);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
         if opaque(block) {
             continue;
@@ -224,13 +229,56 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
             outer.extend(reads[index].iter().copied());
         }
         outer.extend(live_out[index].iter().copied());
-        copy_propagate_block(block, &outer, avoid_duplication);
+        copy_propagate_block(block, &outer, &params, avoid_duplication);
     }
+}
+
+/// Whether the last of `stmts` to write `register` is a call.
+pub(crate) fn left_by_call(stmts: &[Stmt], register: u16) -> bool {
+    stmts
+        .iter()
+        .rev()
+        .find(|stmt| statement_registers(stmt).0.contains(&register))
+        .is_some_and(|stmt| matches!(stmt, Stmt::Call { .. }))
+}
+
+/// Whether the copy at `index` may fold into `consumer`. One into a variable
+/// of what a call before it left in a parameter's register, such as a
+/// further result, only moves on into another variable: elsewhere the
+/// register would read as the parameter it is named for.
+fn further_result_moves(
+    stmts: &[Stmt],
+    index: usize,
+    consumer: usize,
+    params: &std::collections::HashSet<u16>,
+) -> bool {
+    let Stmt::Assign {
+        dest,
+        value: Expr::Reg { index: src, .. },
+    } = &stmts[index]
+    else {
+        return true;
+    };
+    let further =
+        dest.index >= VARIABLE_BASE && params.contains(src) && left_by_call(&stmts[..index], *src);
+    !further
+        || matches!(
+            &stmts[consumer],
+            Stmt::Assign {
+                dest: next,
+                value: Expr::Reg { index: read, width: 64 },
+            } if next.index >= VARIABLE_BASE && next.width == 64 && *read == dest.index
+        )
+}
+
+fn parameters(ir: &FunctionIr) -> std::collections::HashSet<u16> {
+    ir.params.iter().map(|param| param.index).collect()
 }
 
 fn copy_propagate_block(
     block: &mut crate::ir::Block,
     outer_reads: &std::collections::HashSet<u16>,
+    params: &std::collections::HashSet<u16>,
     avoid_duplication: bool,
 ) {
     let mut index = 0;
@@ -299,7 +347,7 @@ fn copy_propagate_block(
             index += 1;
             continue;
         };
-        if !foldable {
+        if !foldable || !further_result_moves(&block.stmts, index, consumer, params) {
             index += 1;
             continue;
         }
@@ -507,7 +555,9 @@ fn substitute_reg_inner(expr: &mut Expr, dest: u16, width: u8, template: &Expr, 
 #[cfg(test)]
 mod tests {
     use super::{copy_propagate, inline_local_copies};
-    use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
+    use crate::ir::{
+        BinOp, Block, CType, Cond, Convention, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE,
+    };
     use crate::loader::Isa;
 
     #[test]
@@ -535,6 +585,51 @@ mod tests {
         let truncated = Expr::bin(BinOp::And, sum, Expr::Const(0xffff_ffff));
         assert!(
             matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value }] if *value == truncated),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_further_result_in_a_parameter_register_stays_in_its_variable() {
+        // v1 = f(rbx); v2 = rbx; return v2; with rbx the parameter.
+        let (first, second) = (VARIABLE_BASE, VARIABLE_BASE + 1);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::GoAmd64,
+                    args: Some(vec![Expr::reg(3, 64)]),
+                    floats_named: false,
+                    result: Some(RegRef {
+                        index: first,
+                        width: 64,
+                    }),
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: second,
+                        width: 64,
+                    },
+                    value: Expr::reg(3, 64),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(second, 64),
+                },
+            ],
+        );
+        ir.params = vec![Param {
+            index: 3,
+            name: "a0".to_owned(),
+            ty: CType::I64,
+        }];
+
+        copy_propagate(&mut ir);
+
+        assert!(
+            matches!(ir.blocks[0].stmts.as_slice(), [_, Stmt::Assign { .. }, Stmt::Ret { value }] if *value == Expr::reg(second, 64)),
             "{}",
             ir.render()
         );

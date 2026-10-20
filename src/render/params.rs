@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::arch::stack_pointer;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt, VARIABLE_BASE};
+use crate::passes::copies::left_by_call;
 
 pub(super) fn fold_saved_parameters(ir: &mut FunctionIr) {
     let params: Vec<u16> = ir.params.iter().map(|param| param.index).collect();
@@ -68,40 +69,56 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         _ => None,
     };
     // What each register and slot is given; `None` for anything but a copy.
+    // A register a call before in the block left changed holds what the call
+    // left there, such as a further result, not what it held on entry.
+    let before_call = |stmts: &[Stmt], source: Option<Source>| {
+        source.filter(|source| match source {
+            Source::Register(index) => !left_by_call(stmts, *index),
+            Source::Slot(_) => true,
+        })
+    };
     let mut defined: HashMap<Source, Vec<Option<Source>>> = HashMap::new();
-    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        match stmt {
-            Stmt::Assign { dest, value } => defined
-                .entry(Source::Register(dest.index))
-                .or_default()
-                .push(
-                    source_of(value).filter(|_| dest.width == 64 || (narrow && dest.width == 32)),
-                ),
-            Stmt::Store { addr, value, width } => {
-                if let Some(slot) = slot_of(addr) {
-                    defined
-                        .entry(Source::Slot(slot))
-                        .or_default()
-                        .push(match value {
-                            Expr::Reg { index, width: 64 } if *width == 8 => {
-                                Some(Source::Register(*index))
-                            }
-                            _ => None,
-                        });
-                    // A narrower store over part of a slot changes it too.
-                    if *width != 8 {
-                        defined.entry(Source::Slot(slot)).or_default().push(None);
+    for block in &ir.blocks {
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            let earlier = &block.stmts[..position];
+            match stmt {
+                Stmt::Assign { dest, value } => defined
+                    .entry(Source::Register(dest.index))
+                    .or_default()
+                    .push(before_call(
+                        earlier,
+                        source_of(value)
+                            .filter(|_| dest.width == 64 || (narrow && dest.width == 32)),
+                    )),
+                Stmt::Store { addr, value, width } => {
+                    if let Some(slot) = slot_of(addr) {
+                        defined
+                            .entry(Source::Slot(slot))
+                            .or_default()
+                            .push(before_call(
+                                earlier,
+                                match value {
+                                    Expr::Reg { index, width: 64 } if *width == 8 => {
+                                        Some(Source::Register(*index))
+                                    }
+                                    _ => None,
+                                },
+                            ));
+                        // A narrower store over part of a slot changes it too.
+                        if *width != 8 {
+                            defined.entry(Source::Slot(slot)).or_default().push(None);
+                        }
                     }
                 }
+                Stmt::Call {
+                    result: Some(result),
+                    ..
+                } => defined
+                    .entry(Source::Register(result.index))
+                    .or_default()
+                    .push(None),
+                _ => {}
             }
-            Stmt::Call {
-                result: Some(result),
-                ..
-            } => defined
-                .entry(Source::Register(result.index))
-                .or_default()
-                .push(None),
-            _ => {}
         }
     }
     // The variables and slots holding nothing but the parameter's value.
@@ -127,9 +144,12 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             break;
         }
     }
-    if !aliases
-        .iter()
-        .any(|alias| matches!(alias, Source::Register(_)))
+    // A variable holds it, or the parameter's register gets it back.
+    if aliases.is_empty()
+        || !aliases
+            .iter()
+            .any(|alias| matches!(alias, Source::Register(_)))
+            && !defined.contains_key(&origin)
     {
         return;
     }

@@ -968,7 +968,17 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
                 })
         {
             indent(depth, out);
-            out.push_str(&render_stmt(copy, ctx));
+            // The register no longer holds the parameter it is named for.
+            match copy {
+                Stmt::Assign { dest, .. } if ctx.names.contains_key(&register) => {
+                    out.push_str(&format!(
+                        "{} = {};",
+                        ctx.register(dest.index, dest.width),
+                        crate::ir::reg_name(ctx.isa, register, 64)
+                    ));
+                }
+                _ => out.push_str(&render_stmt(copy, ctx)),
+            }
             out.push_str(" /* also returned by the call */\n");
             index += 1;
             continue;
@@ -1556,5 +1566,51 @@ mod tests {
         ];
         let text = rendered(&ir);
         assert!(text.contains("return a0[a1 + 0x2];"), "{text}");
+    }
+
+    #[test]
+    fn a_further_result_in_a_parameter_register_is_no_parameter() {
+        // v1 = f(a0, a1); v2 = rbx; return results(v1, v2);
+        let (first, second) = (VARIABLE_BASE, VARIABLE_BASE + 1);
+        let convention = crate::ir::Convention::GoAmd64;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention,
+                    args: Some(vec![Expr::reg(0, 64), Expr::reg(3, 64)]),
+                    floats_named: false,
+                    result: Some(RegRef {
+                        index: first,
+                        width: 64,
+                    }),
+                },
+                assign(second, Expr::reg(3, 64)),
+                Stmt::Ret {
+                    value: Expr::Apply {
+                        op: Operation::Results,
+                        args: vec![Expr::reg(first, 64), Expr::reg(second, 64)],
+                    },
+                },
+            ],
+        );
+        ir.convention = convention;
+        ir.params = ["a0", "a1"]
+            .iter()
+            .zip([0, 3])
+            .map(|(name, index)| Param {
+                index,
+                name: (*name).to_owned(),
+                ty: CType::I64,
+            })
+            .collect();
+        let text = rendered(&ir);
+        assert!(
+            text.contains("v2 = rbx; /* also returned by the call */"),
+            "{text}"
+        );
+        assert!(text.contains("return v1; /* also returns v2 */"), "{text}");
     }
 }
