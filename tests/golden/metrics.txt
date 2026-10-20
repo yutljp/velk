@@ -13,8 +13,8 @@ parameter count | x86_64.O0 | 147/147
 parameter count | x86_64.O2 | 147/147
 parameter pointer | aarch64.O0 | 180/182
 parameter pointer | aarch64.O2 | 179/182
-parameter pointer | x86_64.O0 | 179/182
-parameter pointer | x86_64.O2 | 178/182
+parameter pointer | x86_64.O0 | 180/182
+parameter pointer | x86_64.O2 | 179/182
 parameter width | aarch64.O0 | 147/153
 parameter width | aarch64.O2 | 147/153
 parameter width | x86_64.O0 | 148/153
@@ -407,7 +407,7 @@ l2_loop.x86_64.O0 0x2012f0 find_first: ok
 l2_loop.x86_64.O2 0x2011d0 sum_while: ok
 l2_loop.x86_64.O2 0x2012c0 count_down: ok
 l2_loop.x86_64.O2 0x201360 sum_skip_odd: ok
-l2_loop.x86_64.O2 0x2013b0 find_first: parameter 0 is a signed 8-byte integer, expected a pointer
+l2_loop.x86_64.O2 0x2013b0 find_first: ok
 l4_memory.aarch64.O0 0x2101dc point_dot: ok
 l4_memory.aarch64.O0 0x21021c array_sum: ok
 l4_memory.aarch64.O0 0x210280 bump: ok
@@ -550,7 +550,7 @@ memory.aarch64.O2 0x21032c read_volatile: ok
 memory.aarch64.O2 0x21033c swap_ints: returns int64_t, expected void
 memory.x86_64.O0 0x201280 copy_bytes: parameter 2 signedness differs; returns int64_t, expected void
 memory.x86_64.O0 0x2012d0 fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
-memory.x86_64.O0 0x201320 string_length: parameter 0 is a signed 8-byte integer, expected a pointer
+memory.x86_64.O0 0x201320 string_length: ok
 memory.x86_64.O0 0x201360 grid_get: ok
 memory.x86_64.O0 0x201390 grid_set: returns int64_t, expected void
 memory.x86_64.O0 0x2013d0 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer

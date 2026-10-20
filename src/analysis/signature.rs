@@ -529,6 +529,23 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
             };
             note(addr, *width, register, None, origin, &mut pointer_elements);
         }
+        // Memory a compare or a return reads holds integers too.
+        Stmt::Brif { lhs, rhs, .. } => {
+            for value in [lhs, rhs] {
+                let mut nested = Vec::new();
+                integer_loads(value, &mut nested);
+                for (addr, width) in nested {
+                    note(addr, width, None, None, origin, &mut pointer_elements);
+                }
+            }
+        }
+        Stmt::Ret { value } => {
+            let mut nested = Vec::new();
+            integer_loads(value, &mut nested);
+            for (addr, width) in nested {
+                note(addr, width, None, None, origin, &mut pointer_elements);
+            }
+        }
         // An argument the code calls or jumps through points at code.
         Stmt::Call {
             through: Some(Expr::Reg { index, .. }),

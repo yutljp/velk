@@ -107,17 +107,17 @@ fn <unnamed> @ 0x2012d0 (size 73)
 == 0x201320 -
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
-int64_t sub_201320(int64_t a0) {
-    int64_t local_0; /* [sp-10] */
+int64_t sub_201320(uint8_t *a0) {
+    uint8_t *local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
 
     local_0 = a0;
-    for (local_1 = 0x0; *(uint8_t *)(local_0 + local_1) != 0x0; local_1 += 0x1) {
+    for (local_1 = 0x0; local_0[local_1] != 0x0; local_1 += 0x1) {
     }
     return local_1;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint8_t * a0)
 -- references
 
 -- ir
