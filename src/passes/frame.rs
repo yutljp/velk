@@ -436,6 +436,49 @@ struct Access {
 }
 
 /// A register a call preserves, other than the stack pointer.
+/// Drops the pushes of a scratch register the entry block makes before
+/// writing it, as `push rax` does to align the stack: the register holds no
+/// argument there, and no load reads the slot.
+pub fn drop_alignment_pushes(ir: &mut FunctionIr) {
+    use crate::ir::Convention;
+    if !matches!(ir.convention, Convention::SysV | Convention::Win64) {
+        return;
+    }
+    let sp = stack_pointer(ir.isa);
+    let arguments = ir.convention.arguments();
+    let loads_from_frame = ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        let mut read = Vec::new();
+        for operand in stmt.operands() {
+            collect_frame_reads(operand, sp, &mut read);
+        }
+        !read.is_empty()
+    });
+    if loads_from_frame {
+        return;
+    }
+    let Some(entry) = ir.blocks.first_mut() else {
+        return;
+    };
+    let mut written = std::collections::HashSet::new();
+    let mut keep = Vec::with_capacity(entry.stmts.len());
+    for stmt in entry.stmts.drain(..) {
+        let pushed = matches!(&stmt, Stmt::Store {
+                addr,
+                value: Expr::Reg { index, width: 64 },
+                width: 8,
+            } if frame_slot_of(addr, sp).is_some()
+                && *index != sp
+                && !arguments.contains(index)
+                && ir.convention.clobbered().contains(index)
+                && !written.contains(index));
+        written.extend(crate::ir::visit::statement_registers(&stmt).0);
+        if !pushed {
+            keep.push(stmt);
+        }
+    }
+    entry.stmts = keep;
+}
+
 fn callee_saved(ir: &FunctionIr, reg: u16, sp: u16) -> bool {
     reg != sp && reg < 32 && !ir.convention.clobbered().contains(&reg)
 }

@@ -21,6 +21,8 @@ pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) {
     frame::elide_callee_saves(ir);
     copies::copy_propagate(ir);
     dce::dce(ir);
+    // The pop matching the push goes first when nothing reads it.
+    frame::drop_alignment_pushes(ir);
     if !has_jump_tables {
         dce::dce_flow(ir);
     }
