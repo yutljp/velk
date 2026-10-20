@@ -1,4 +1,4 @@
-# metrics/switch_jumptable.x86_64.O2.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 10 gotos
+# metrics/switch_jumptable.x86_64.O2.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011c0 527 d7 symtab,dwarf,unwind
 
 == 0x2011c0 d7
@@ -9,33 +9,35 @@
 int d7(int x) {
     int64_t v2;
 
-    if (x <= 0x9 /* unsigned */) {
+    if (x > 0x9 /* unsigned */) {
+        v2 = 0xffffffff;
+    } else {
         switch (x) {
         case 0:
             v2 = g;
-            goto L_2013c2;
+            break;
         case 1:
             g = g;
             v2 = g + 0x1;
-            goto L_2013c2;
+            break;
         case 2:
             g = g;
             g += 0x1;
             v2 = g + 0x2;
-            goto L_2013c2;
+            break;
         case 3:
             g = g;
             g += 0x1;
             g += 0x2;
             v2 = g + 0x3;
-            goto L_2013c2;
+            break;
         case 4:
             g = g;
             g += 0x1;
             g += 0x2;
             g += 0x3;
             v2 = g + 0x4;
-            goto L_2013c2;
+            break;
         case 5:
             g = g;
             g += 0x1;
@@ -43,7 +45,7 @@ int d7(int x) {
             g += 0x3;
             g += 0x4;
             v2 = g + 0x5;
-            goto L_2013c2;
+            break;
         case 6:
             g = g;
             g += 0x1;
@@ -52,7 +54,7 @@ int d7(int x) {
             g += 0x4;
             g += 0x5;
             v2 = g + 0x6;
-            goto L_2013c2;
+            break;
         case 7:
             g = g;
             g += 0x1;
@@ -62,7 +64,7 @@ int d7(int x) {
             g += 0x5;
             g += 0x6;
             v2 = g + 0x7;
-            goto L_2013c2;
+            break;
         case 8:
             g = g;
             g += 0x1;
@@ -73,7 +75,7 @@ int d7(int x) {
             g += 0x6;
             g += 0x7;
             v2 = g + 0x8;
-            goto L_2013c2;
+            break;
         case 9:
             g = g;
             g += 0x1;
@@ -85,13 +87,12 @@ int d7(int x) {
             g += 0x7;
             g += 0x8;
             v2 = g + 0x9;
-            goto L_2013c2;
+            break;
         default:
+            v2 = 0xffffffff;
             break;
         }
     }
-    v2 = 0xffffffff;
-L_2013c2:
     g = v2;
     return g;
 }

@@ -2,6 +2,7 @@ mod build;
 mod cleanup;
 pub mod compare_chain;
 mod dominance;
+mod duplicate;
 #[cfg(test)]
 pub(crate) mod lower;
 
@@ -57,6 +58,22 @@ pub enum Node {
 /// that tree cannot cover, such as one with code only an indirect jump
 /// reaches, is structured in address order instead.
 pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
+    let best = structure_chosen(ir);
+    if label_count(&best) == 0 {
+        return best;
+    }
+    // Copying short shared blocks into the branches that enter them can
+    // leave fewer labels.
+    if let Some(duplicated) = duplicate::tail_duplicated(ir) {
+        let candidate = structure_chosen(&duplicated);
+        if label_count(&candidate) < label_count(&best) {
+            return candidate;
+        }
+    }
+    best
+}
+
+fn structure_chosen(ir: &FunctionIr) -> Vec<Node> {
     let Some(primary) = by_dominance(ir) else {
         return by_layout(ir);
     };

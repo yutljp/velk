@@ -466,10 +466,9 @@ int sparse(int x) {
     case 300:
         return x;
     default:
-        break;
+        x = 0xffffffff;
+        return x;
     }
-    x = 0xffffffff;
-    return x;
 }
 -- signature
 int (int x)

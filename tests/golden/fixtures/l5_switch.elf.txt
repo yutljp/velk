@@ -1,4 +1,4 @@
-# l5_switch.elf: elf aarch64 0x2101ac, 2 functions, 0 lift failures, 0 unsupported, 16 gotos
+# l5_switch.elf: elf aarch64 0x2101ac, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101ac 268 dense symtab,entry,unwind
 0x2102b8 48 sparse symtab,unwind
 
@@ -14,67 +14,67 @@ int32_t dense(int32_t a0) {
     int32_t v8;
 
     v1 = a0 - 0xa;
-    if (v1 <= 0xf /* unsigned */) {
+    if (v1 > 0xf /* unsigned */) {
+        v5 = 0x0;
+    } else {
         switch (a0) {
         case 10:
             v5 = g_sink + 0xb;
-            goto L_2102ac;
+            break;
         case 11:
             v5 = g_sink ^ 0x12;
-            goto L_2102ac;
+            break;
         case 12:
             v5 = g_sink - 0x19;
-            goto L_2102ac;
+            break;
         case 13:
             v5 = g_sink | 0x20;
-            goto L_2102ac;
+            break;
         case 14:
             v5 = g_sink + 0x27;
-            goto L_2102ac;
+            break;
         case 15:
             v5 = g_sink ^ 0x2e;
-            goto L_2102ac;
+            break;
         case 16:
             v5 = g_sink - 0x35;
-            goto L_2102ac;
+            break;
         case 17:
             v5 = g_sink | 0x3c;
-            goto L_2102ac;
+            break;
         case 18:
             v5 = g_sink + 0x43;
-            goto L_2102ac;
+            break;
         case 19:
             v5 = g_sink ^ 0x4a;
-            goto L_2102ac;
+            break;
         case 20:
             v5 = g_sink - 0x51;
-            goto L_2102ac;
+            break;
         case 21:
             v7 = g_sink;
             v8 = 0x58;
+            v5 = v7 | v8;
             break;
         case 22:
             v5 = g_sink + 0x5f;
-            goto L_2102ac;
+            break;
         case 23:
             v5 = g_sink ^ 0x66;
-            goto L_2102ac;
+            break;
         case 24:
             v5 = g_sink - 0x6d;
-            goto L_2102ac;
+            break;
         case 25:
             v7 = g_sink;
             v8 = 0x74;
+            v5 = v7 | v8;
             break;
         default:
-            goto L_2102a8;
+            v5 = 0x0;
+            break;
         }
-        v5 = v7 | v8;
-        goto L_2102ac;
     }
-L_2102a8:
-    v5 = 0x0;
-L_2102ac:
     g_sink = v5;
     return g_sink;
 }
@@ -163,10 +163,9 @@ int32_t sparse(int32_t a0) {
     case 300:
         return a0;
     default:
-        break;
+        a0 = 0xffffffff;
+        return a0;
     }
-    a0 = 0xffffffff;
-    return a0;
 }
 -- signature
 int32_t (int32_t a0)

@@ -122,7 +122,13 @@ impl<'a> Graph<'a> {
             if order[block] == usize::MAX {
                 continue;
             }
+            // Several edges from one block, as switch values sharing a
+            // case, enter its target once.
+            let mut seen = std::collections::HashSet::new();
             for successor in next {
+                if !seen.insert(*successor) {
+                    continue;
+                }
                 if order[*successor] > order[block] {
                     forward[*successor] += 1;
                 } else if dominates(*successor, block) {
@@ -971,6 +977,28 @@ mod tests {
         let ir = function(vec![
             (0x0, vec![brif(0x20)]),
             (0x10, vec![assign(0, Expr::Const(1))]),
+            (0x20, vec![ret()]),
+        ]);
+        let nodes = structure(&ir).expect("structures");
+        assert_eq!(gotos(&nodes), 0, "{nodes:#?}");
+    }
+
+    #[test]
+    fn switch_values_sharing_a_case_enter_it_once() {
+        // switch (r1) { case 0, 1: r0 = 1; } return r0
+        let ir = function(vec![
+            (
+                0x0,
+                vec![Stmt::Switch {
+                    index: Expr::reg(1, 64),
+                    cases: vec![(0, 0x10), (1, 0x10)],
+                    default: Some(0x20),
+                }],
+            ),
+            (
+                0x10,
+                vec![assign(0, Expr::Const(1)), Stmt::Br { target: Some(0x20) }],
+            ),
             (0x20, vec![ret()]),
         ]);
         let nodes = structure(&ir).expect("structures");
