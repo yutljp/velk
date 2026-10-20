@@ -270,6 +270,16 @@ pub enum Rounding {
     Up,
 }
 
+/// Which AES round: encryption or decryption, and whether it is the last,
+/// which leaves out mixing the columns.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum AesRound {
+    Encrypt,
+    EncryptLast,
+    Decrypt,
+    DecryptLast,
+}
+
 /// An operation on each pair of lanes of two vectors' halves.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LaneOp {
@@ -352,6 +362,12 @@ pub enum Operation {
     CountTrailingZeros(u8),
     PopCount(u8),
     ReverseBits(u8),
+    /// One AES round on a 128-bit state and round key, each given as its
+    /// low and high halves: the half of the new state `high` names.
+    Aes {
+        round: AesRound,
+        high: bool,
+    },
 }
 
 impl Operation {
@@ -410,6 +426,7 @@ impl Operation {
             | Operation::ReverseBits(_)
             | Operation::SignBits(_) => 1,
             Operation::FloatMulAdd(_) => 3,
+            Operation::Aes { .. } => 4,
             _ => 2,
         }
     }
@@ -656,6 +673,16 @@ pub(crate) fn operation_name(op: Operation) -> String {
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),
         Operation::PopCount(bits) => format!("popcount{bits}"),
         Operation::ReverseBits(bits) => format!("bitreverse{bits}"),
+        Operation::Aes { round, high } => format!(
+            "{}_{}",
+            match round {
+                AesRound::Encrypt => "aesenc",
+                AesRound::EncryptLast => "aesenclast",
+                AesRound::Decrypt => "aesdec",
+                AesRound::DecryptLast => "aesdeclast",
+            },
+            if high { "high" } else { "low" }
+        ),
     }
 }
 

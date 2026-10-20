@@ -232,6 +232,17 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
     match hash(seed, 0x30) % 9 {
         // Integer and packed SSE: 66 0F with an opcode of those groups, a
         // register operand byte and an immediate for the ones that take one.
+        // AES rounds: 66 0F 38 DC to DF on two xmm registers.
+        7 if hash(seed, 0x3e).is_multiple_of(4) => {
+            let code = [
+                0x66,
+                0x0f,
+                0x38,
+                0xdc + (hash(seed, 0x3b) % 4) as u8,
+                0xc0 | (hash(seed, 0x34) as u8 & 0x3f),
+            ];
+            bytes.splice(0..code.len(), code);
+        }
         7 | 8 => {
             let opcode = match hash(seed, 0x3a) % 4 {
                 0 => 0x60 + (hash(seed, 0x3b) % 0x20) as u8,

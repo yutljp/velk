@@ -408,7 +408,8 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         | Operation::InterleaveLow(_)
         | Operation::InterleaveHigh(_)
         | Operation::SignBits(_)
-        | Operation::SumLanes(_) => call(&crate::ir::operation_name(op), None),
+        | Operation::SumLanes(_)
+        | Operation::Aes { .. } => call(&crate::ir::operation_name(op), None),
         Operation::CountLeadingZeros(bits) => builtin("clz", bits),
         Operation::CountTrailingZeros(bits) => builtin("ctz", bits),
         Operation::PopCount(bits) => builtin("popcount", bits),

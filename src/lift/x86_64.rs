@@ -395,6 +395,28 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 (lanes(op, bits, a.0, b.0), lanes(op, bits, a.1, b.1)),
             )?;
         }
+        // An AES round reads the whole state and key for each half.
+        Aesenc | Aesenclast | Aesdec | Aesdeclast => {
+            let round = match ins.mnemonic() {
+                Aesenc => crate::ir::AesRound::Encrypt,
+                Aesenclast => crate::ir::AesRound::EncryptLast,
+                Aesdec => crate::ir::AesRound::Decrypt,
+                _ => crate::ir::AesRound::DecryptLast,
+            };
+            let (state, key) = (halves(0)?, halves(1)?);
+            let half = |high| {
+                Expr::apply(
+                    Operation::Aes { round, high },
+                    vec![
+                        state.0.clone(),
+                        state.1.clone(),
+                        key.0.clone(),
+                        key.1.clone(),
+                    ],
+                )
+            };
+            write(lifter, (half(false), half(true)))?;
+        }
         Paddq | Psubq | Pmuludq | Pandn => {
             let (a, b) = (halves(0)?, halves(1)?);
             let combine = |x: Expr, y: Expr| match ins.mnemonic() {

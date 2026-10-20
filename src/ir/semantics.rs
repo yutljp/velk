@@ -51,7 +51,10 @@ pub(crate) fn width(expr: &Expr) -> u32 {
         Expr::Apply { op, args } => match op {
             _ if let Some(precision) = op.result_precision() => u32::from(precision.bits()),
             Operation::FloatToInt { bits, .. } => u32::from(*bits),
-            Operation::Lanes(..) | Operation::InterleaveLow(_) | Operation::InterleaveHigh(_) => 64,
+            Operation::Lanes(..)
+            | Operation::InterleaveLow(_)
+            | Operation::InterleaveHigh(_)
+            | Operation::Aes { .. } => 64,
             Operation::SignBits(bits) => 64 / u32::from(*bits),
             Operation::SumLanes(bits) => u32::from(*bits),
             Operation::ReverseBits(bits) => u32::from(*bits),
@@ -259,7 +262,8 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::InterleaveLow(_)
         | Operation::InterleaveHigh(_)
         | Operation::SignBits(_)
-        | Operation::SumLanes(_) => 64,
+        | Operation::SumLanes(_)
+        | Operation::Aes { .. } => 64,
         Operation::IntToFloat { bits, .. }
         | Operation::CountLeadingZeros(bits)
         | Operation::CountTrailingZeros(bits)
@@ -411,5 +415,138 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
         Operation::ReverseBits(bits) => {
             (args[0] & mask(u32::from(bits))).reverse_bits() >> (64 - u32::from(bits))
         }
+        Operation::Aes { round, high } => {
+            let state = u128::from(args[0]) | (u128::from(args[1]) << 64);
+            let key = u128::from(args[2]) | (u128::from(args[3]) << 64);
+            let result = aes_round(round, state) ^ key;
+            if high {
+                (result >> 64) as u64
+            } else {
+                result as u64
+            }
+        }
+    }
+}
+
+/// The AES S-box, or its inverse: each byte's multiplicative inverse in
+/// GF(2^8), then the affine map.
+fn aes_sbox(inverse: bool) -> &'static [u8; 256] {
+    static FORWARD: std::sync::OnceLock<[u8; 256]> = std::sync::OnceLock::new();
+    static BACKWARD: std::sync::OnceLock<[u8; 256]> = std::sync::OnceLock::new();
+    let forward = FORWARD.get_or_init(|| {
+        let mut table = [0u8; 256];
+        for (value, entry) in table.iter_mut().enumerate() {
+            let inverse = (1..=255u8)
+                .find(|candidate| gf_multiply(value as u8, *candidate) == 1)
+                .unwrap_or(0);
+            let mut out = inverse;
+            for shift in 1..5 {
+                out ^= inverse.rotate_left(shift);
+            }
+            *entry = out ^ 0x63;
+        }
+        table
+    });
+    if !inverse {
+        return forward;
+    }
+    BACKWARD.get_or_init(|| {
+        let mut table = [0u8; 256];
+        for (value, image) in forward.iter().enumerate() {
+            table[usize::from(*image)] = value as u8;
+        }
+        table
+    })
+}
+
+/// The product in GF(2^8) under AES's polynomial.
+fn gf_multiply(mut a: u8, mut b: u8) -> u8 {
+    let mut product = 0;
+    while b != 0 {
+        if b & 1 != 0 {
+            product ^= a;
+        }
+        a = (a << 1) ^ if a & 0x80 != 0 { 0x1b } else { 0 };
+        b >>= 1;
+    }
+    product
+}
+
+/// One AES round before its key: the state's bytes in column order, the
+/// rows shifted, the bytes substituted and, but in the last round, each
+/// column mixed.
+fn aes_round(round: crate::ir::AesRound, state: u128) -> u128 {
+    use crate::ir::AesRound;
+    let bytes = state.to_le_bytes();
+    let decrypt = matches!(round, AesRound::Decrypt | AesRound::DecryptLast);
+    let sbox = aes_sbox(decrypt);
+    let mut shifted = [0u8; 16];
+    for column in 0..4 {
+        for row in 0..4 {
+            let from = if decrypt {
+                (column + 4 - row) % 4
+            } else {
+                (column + row) % 4
+            };
+            shifted[row + 4 * column] = sbox[usize::from(bytes[row + 4 * from])];
+        }
+    }
+    if matches!(round, AesRound::EncryptLast | AesRound::DecryptLast) {
+        return u128::from_le_bytes(shifted);
+    }
+    let matrix: [[u8; 4]; 4] = if decrypt {
+        [
+            [14, 11, 13, 9],
+            [9, 14, 11, 13],
+            [13, 9, 14, 11],
+            [11, 13, 9, 14],
+        ]
+    } else {
+        [[2, 3, 1, 1], [1, 2, 3, 1], [1, 1, 2, 3], [3, 1, 1, 2]]
+    };
+    let mut mixed = [0u8; 16];
+    for column in 0..4 {
+        for row in 0..4 {
+            mixed[row + 4 * column] = (0..4).fold(0, |sum, term| {
+                sum ^ gf_multiply(matrix[row][term], shifted[term + 4 * column])
+            });
+        }
+    }
+    u128::from_le_bytes(mixed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::apply;
+    use crate::ir::{AesRound, Operation};
+
+    #[test]
+    fn aes_rounds_match_the_published_example() {
+        // The state 0x7b5b5465_73745665_63746f72_5d53475d and the round key
+        // 0x48692853_68617929_5b477565_726f6e5d, round by round.
+        let args = [
+            0x6374_6f72_5d53_475d,
+            0x7b5b_5465_7374_5665,
+            0x5b47_7565_726f_6e5d,
+            0x4869_2853_6861_7929,
+        ];
+        let round = |round, high| apply(Operation::Aes { round, high }, &args);
+        let whole = |kind| (u128::from(round(kind, true)) << 64) | u128::from(round(kind, false));
+        assert_eq!(
+            whole(AesRound::Encrypt),
+            0xa831_1c2f_9fdb_a3c5_8b10_4b58_ded7_e595
+        );
+        assert_eq!(
+            whole(AesRound::EncryptLast),
+            0xc7fb_881e_938c_5964_177e_c425_53fd_c611
+        );
+        assert_eq!(
+            whole(AesRound::Decrypt),
+            0x138a_c342_faea_2787_b58e_b95e_b730_392a
+        );
+        assert_eq!(
+            whole(AesRound::DecryptLast),
+            0xc5a3_91ef_6b31_7f95_d410_637b_72a5_93d0
+        );
     }
 }
