@@ -182,7 +182,7 @@ cargo test                # ユニットテストと結合テスト
 | `src/analysis/semantics_tests.rs` | 最適化が関数の動作を変えていない（IR を実行して比べる） | 最適化前の IR |
 | `tests/invariants.rs` | 飛び先のない goto、代入されないレジスタの読み取り、疑似 C での文の欠落がない | 出力の性質 |
 | `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報（`*.debug.elf`） |
-| `tests/golden.rs` | 全テスト用バイナリの関数一覧、疑似 C、IR、シグネチャ、要約が変わっていない | `tests/golden/fixtures/` に記録した出力 |
+| `tests/golden.rs` | 全テスト用バイナリの関数一覧、疑似 C、IR、シグネチャ、要約と、読みやすさの数（変数・キャスト・レジスタ名・goto など）が変わっていない | `tests/golden/fixtures/` と `tests/golden/readability.txt` に記録した出力 |
 | `tests/api.rs` | スクリプト API の戻り値が `.d.ts` の宣言と一致する | `src/script/api/` |
 | `tests/robustness.rs` など | 壊れたファイルやランダムな命令列で panic しない | なし |
 | `tests/smoke.sh` | CLI と MCP の出力の要所、性能 | 文字列の照合 |

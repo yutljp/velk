@@ -1,6 +1,7 @@
 //! Every fixture's analysis output, compared with the files under tests/golden/fixtures/.
 //! After an intended change, regenerate them with `VELK_BLESS=1 cargo test --test golden`
-//! and review the diff before committing it.
+//! and review the diff before committing it. Counts of what makes the output
+//! harder to read, over every function, are kept in tests/golden/readability.txt.
 
 mod common;
 
@@ -19,7 +20,12 @@ fn analysis_output_matches_golden_files() {
     });
     let mut failures = Vec::new();
     let mut expected_files = Vec::new();
-    for (fixture, actual) in fixtures.iter().zip(rendered) {
+    let mut readability = String::from(
+        "# fixture: output lines, declared variables, casts, register names, \
+         unsigned comments, traps, gotos\n",
+    );
+    for (fixture, (actual, counts)) in fixtures.iter().zip(rendered) {
+        writeln!(readability, "{}: {counts}", fixture.display()).expect("writing to a String");
         let golden = golden_dir.join(format!("{}.txt", fixture.display()));
         if let Some(difference) = common::check_expected(&golden, &actual) {
             failures.push(difference);
@@ -27,6 +33,10 @@ fn analysis_output_matches_golden_files() {
         expected_files.push(golden);
     }
     failures.extend(stale_files(&golden_dir, &expected_files));
+    failures.extend(common::check_expected(
+        &common::root().join("tests/golden/readability.txt"),
+        &readability,
+    ));
     assert!(
         failures.is_empty(),
         "{} golden file(s) differ; rerun with VELK_BLESS=1 after checking the change:\n{}",
@@ -60,13 +70,14 @@ fn stale_files(dir: &Path, expected: &[std::path::PathBuf]) -> Vec<String> {
     stale
 }
 
-fn render_fixture(path: &Path, fixture: &Path) -> String {
+fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
     let mut binary = Binary::open(path).unwrap_or_else(|error| panic!("{error}"));
     let functions: Vec<Function> = binary.image().functions.values().cloned().collect();
     let mut out = String::new();
     let mut lift_failures = 0;
     let mut unsupported = 0;
     let mut gotos = 0;
+    let mut readability = Readability::default();
     let mut details = String::new();
     for function in &functions {
         let decompiled = match binary.decompile(function.addr, None) {
@@ -78,6 +89,7 @@ fn render_fixture(path: &Path, fixture: &Path) -> String {
         };
         unsupported += decompiled.matches("/* unsupported").count();
         gotos += decompiled.matches("goto ").count();
+        readability.add(&decompiled);
         if recorded(fixture, function) {
             details.push_str(&render_function(&mut binary, function, &decompiled));
         }
@@ -113,7 +125,116 @@ fn render_fixture(path: &Path, fixture: &Path) -> String {
         .expect("writing to a String");
     }
     out.push_str(&details);
-    out
+    (out, readability)
+}
+
+/// What makes pseudo-C harder to read, counted over a fixture's functions.
+#[derive(Default)]
+struct Readability {
+    lines: usize,
+    variables: usize,
+    casts: usize,
+    registers: usize,
+    unsigned: usize,
+    traps: usize,
+    gotos: usize,
+}
+
+impl Readability {
+    fn add(&mut self, decompiled: &str) {
+        for line in decompiled.lines() {
+            self.lines += 1;
+            let code = line.split("/*").next().unwrap_or("");
+            if is_declaration(code) {
+                self.variables += 1;
+            }
+            self.casts += casts(code);
+            self.registers += code
+                .split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                .filter(|word| is_register(word))
+                .count();
+        }
+        self.unsigned += decompiled.matches("/* unsigned */").count();
+        self.traps += decompiled.matches("__builtin_trap").count();
+        self.gotos += decompiled.matches("goto ").count();
+    }
+}
+
+impl std::fmt::Display for Readability {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{} lines, {} variables, {} casts, {} registers, {} unsigned, {} traps, {} gotos",
+            self.lines,
+            self.variables,
+            self.casts,
+            self.registers,
+            self.unsigned,
+            self.traps,
+            self.gotos
+        )
+    }
+}
+
+/// A local declaration such as `int32_t v1;` or `uint8_t local_0[16];`.
+fn is_declaration(code: &str) -> bool {
+    let Some(body) = code.strip_prefix("    ") else {
+        return false;
+    };
+    let Some(body) = body.trim_end().strip_suffix(';') else {
+        return false;
+    };
+    if body.starts_with(' ') || body.contains(['=', '(']) {
+        return false;
+    }
+    let name = body
+        .rsplit([' ', '*'])
+        .next()
+        .unwrap_or("")
+        .split('[')
+        .next()
+        .unwrap_or("");
+    body.contains(' ')
+        && (name.strip_prefix('v').or(name.strip_prefix("local_")))
+            .is_some_and(|digits| !digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// Casts to a scalar, pointer or structure type, such as `(int8_t)` or `(struct s1 *)`.
+fn casts(code: &str) -> usize {
+    code.match_indices('(')
+        .filter(|&(start, _)| {
+            let rest = &code[start + 1..];
+            let Some(end) = rest.find(')') else {
+                return false;
+            };
+            let inner = rest[..end].trim_end_matches([' ', '*']);
+            inner.ends_with("_t")
+                && inner
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_')
+                || inner.starts_with("struct ")
+                || matches!(inner, "float" | "double" | "bool" | "char")
+        })
+        .count()
+}
+
+/// A machine register name left in the output instead of a variable.
+fn is_register(word: &str) -> bool {
+    const X86: [&str; 16] = [
+        "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "eax", "ebx", "ecx", "edx", "esi",
+        "edi", "r8", "r9",
+    ];
+    let numbered = |prefix: &str, range: std::ops::Range<u32>| {
+        word.strip_prefix(prefix).is_some_and(|digits| {
+            (digits == "0" || !digits.starts_with('0'))
+                && digits.parse::<u32>().is_ok_and(|n| range.contains(&n))
+        })
+    };
+    X86.contains(&word)
+        || numbered("r", 10..16)
+        || numbered("xmm", 0..16)
+        || numbered("x", 0..31)
+        || numbered("w", 0..31)
 }
 
 /// Go and Rust executables carry thousands of runtime functions; only the
