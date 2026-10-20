@@ -102,16 +102,20 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
     if let Some(known) = cache.get(&addr) {
         return *known;
     }
-    for part in parts_from(image, addr, &cache) {
-        settle(image, &part, &mut cache);
+    let mut recursive = HashSet::new();
+    let mut edges = HashMap::new();
+    for part in parts_from(image, addr, &cache, &mut recursive, &mut edges) {
+        let cyclic = part.len() > 1 || recursive.contains(&part[0]);
+        settle(image, &part, cyclic, &edges, &mut cache);
     }
     cache.get(&addr).copied().unwrap_or_default()
 }
 
-/// The functions a body calls or jumps to, among the known functions.
-fn callees(image: &Image, addr: u64) -> Vec<u64> {
+/// The functions a body calls or jumps to, among the known functions, and
+/// whether it calls itself.
+fn callees(image: &Image, addr: u64) -> (Vec<u64>, bool) {
     let Some(blocks) = body(image, addr, &|_| Summary::default()) else {
-        return Vec::new();
+        return (Vec::new(), false);
     };
     let mut out: Vec<u64> = blocks
         .iter()
@@ -123,11 +127,13 @@ fn callees(image: &Image, addr: u64) -> Vec<u64> {
             } => Some(*target),
             _ => None,
         })
-        .filter(|target| *target != addr && image.functions.contains_key(target))
+        .filter(|target| image.functions.contains_key(target))
         .collect();
     out.sort_unstable();
     out.dedup();
-    out
+    let calls_itself = out.contains(&addr);
+    out.retain(|target| *target != addr);
+    (out, calls_itself)
 }
 
 pub(super) fn body(
@@ -141,15 +147,21 @@ pub(super) fn body(
 }
 
 /// The strongly connected parts of the call graph reachable from `root`
-/// and not yet summarized, callees before callers.
-fn parts_from(image: &Image, root: u64, known: &HashMap<u64, Summary>) -> Vec<Vec<u64>> {
+/// and not yet summarized, callees before callers; the functions that call
+/// themselves go into `recursive`.
+fn parts_from(
+    image: &Image,
+    root: u64,
+    known: &HashMap<u64, Summary>,
+    recursive: &mut HashSet<u64>,
+    edges: &mut HashMap<u64, Vec<u64>>,
+) -> Vec<Vec<u64>> {
     struct Node {
         index: usize,
         low: usize,
         on_stack: bool,
     }
     let mut nodes: HashMap<u64, Node> = HashMap::new();
-    let mut edges: HashMap<u64, Vec<u64>> = HashMap::new();
     let mut stack: Vec<u64> = Vec::new();
     let mut parts = Vec::new();
     let mut counter = 0;
@@ -174,7 +186,11 @@ fn parts_from(image: &Image, root: u64, known: &HashMap<u64, Summary>) -> Vec<Ve
     enter(root, &mut nodes, &mut stack, &mut walk);
     while let Some((addr, next)) = walk.last().copied() {
         let list = edges.entry(addr).or_insert_with(|| {
-            callees(image, addr)
+            let (callees, calls_itself) = callees(image, addr);
+            if calls_itself {
+                recursive.insert(addr);
+            }
+            callees
                 .into_iter()
                 .filter(|callee| !known.contains_key(callee))
                 .collect()
@@ -218,41 +234,70 @@ fn parts_from(image: &Image, root: u64, known: &HashMap<u64, Summary>) -> Vec<Ve
 }
 
 /// Summarizes the functions of one part, whose callees outside it are known.
-fn settle(image: &Image, part: &[u64], cache: &mut HashMap<u64, Summary>) {
+/// A part that is no cycle needs one pass: nothing in it depends on itself.
+/// In a cycle, a function is summarized again only when one it calls
+/// changed.
+fn settle(
+    image: &Image,
+    part: &[u64],
+    cyclic: bool,
+    edges: &HashMap<u64, Vec<u64>>,
+    cache: &mut HashMap<u64, Summary>,
+) {
     let mut current: HashMap<u64, Summary> = part
         .iter()
         .map(|addr| (*addr, by_name(image, *addr)))
         .collect();
-    // Within a cycle, start from what can only grow: no arguments, and
-    // returning unless the name says otherwise; a pass can only add
-    // arguments and remove returns, so the repetition ends.
-    for _ in 0..8 {
-        let mut changed = false;
-        for addr in part {
-            let lookup = |target: u64| {
-                current
-                    .get(&target)
-                    .or_else(|| cache.get(&target))
-                    .copied()
-                    .unwrap_or_default()
-            };
-            let next = compute(image, *addr, &lookup);
-            let merged = Summary {
-                arity: match (current[addr].arity, next.arity) {
-                    (Some(a), Some(b)) => Some(a.max(b)),
-                    (a, b) => a.or(b),
-                },
-                noreturn: current[addr].noreturn || next.noreturn,
-                stack: current[addr].stack.max(next.stack),
-                indirect_result: current[addr].indirect_result || next.indirect_result,
-            };
-            if merged != current[addr] {
-                current.insert(*addr, merged);
-                changed = true;
+    // Who calls each function, within the part.
+    let mut callers: HashMap<u64, Vec<u64>> = HashMap::new();
+    for caller in part {
+        for callee in edges.get(caller).into_iter().flatten() {
+            if current.contains_key(callee) {
+                callers.entry(*callee).or_default().push(*caller);
             }
         }
-        if !changed {
-            break;
+        // One calling itself depends on itself.
+        callers.entry(*caller).or_default().push(*caller);
+    }
+    // Start from what can only grow: no arguments, and returning unless the
+    // name says otherwise; a pass can only add arguments and remove
+    // returns, so the work ends.
+    let mut pending: std::collections::VecDeque<u64> = part.iter().copied().collect();
+    let mut queued: HashSet<u64> = part.iter().copied().collect();
+    let mut passes: HashMap<u64, usize> = HashMap::new();
+    while let Some(addr) = pending.pop_front() {
+        queued.remove(&addr);
+        let count = passes.entry(addr).or_default();
+        *count += 1;
+        if *count > 8 {
+            continue;
+        }
+        let lookup = |target: u64| {
+            current
+                .get(&target)
+                .or_else(|| cache.get(&target))
+                .copied()
+                .unwrap_or_default()
+        };
+        let next = compute(image, addr, &lookup);
+        let merged = Summary {
+            arity: match (current[&addr].arity, next.arity) {
+                (Some(a), Some(b)) => Some(a.max(b)),
+                (a, b) => a.or(b),
+            },
+            noreturn: current[&addr].noreturn || next.noreturn,
+            stack: current[&addr].stack.max(next.stack),
+            indirect_result: current[&addr].indirect_result || next.indirect_result,
+        };
+        if merged != current[&addr] {
+            current.insert(addr, merged);
+            if cyclic {
+                for caller in callers.get(&addr).into_iter().flatten() {
+                    if queued.insert(*caller) {
+                        pending.push_back(*caller);
+                    }
+                }
+            }
         }
     }
     cache.extend(current);
