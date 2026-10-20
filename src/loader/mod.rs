@@ -147,6 +147,8 @@ pub struct Summary {
     pub arity: Option<usize>,
     /// How many floating-point argument registers it reads, when known.
     pub floats: Option<usize>,
+    /// The integer arguments it takes as pointers, one bit for each.
+    pub pointers: u32,
     /// How many 8-byte arguments it reads past the registers.
     pub stack: usize,
     /// It reads AArch64's indirect result register: it returns through

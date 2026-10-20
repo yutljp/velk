@@ -87,6 +87,12 @@ pub(crate) fn variable_types(
             && !narrow.contains(&index)
         {
             CType::Pointer(Box::new(element(ir, &uses, index, widths)))
+        } else if ir.pointer_values.contains(&index)
+            && !uses.arithmetic.contains(&index)
+            && !narrow.contains(&index)
+        {
+            // A callee takes it as a pointer.
+            CType::pointer_to(CType::Void)
         } else {
             CType::Int {
                 bytes: if narrow.contains(&index) { 4 } else { 8 },

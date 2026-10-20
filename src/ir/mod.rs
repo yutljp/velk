@@ -1201,6 +1201,8 @@ pub struct FunctionIr {
     /// The blocks exceptions unwind into, each with the code ranges whose
     /// calls throw them there.
     pub landing_pads: Vec<(u64, Vec<(u64, u64)>)>,
+    /// The variables the function passes where a callee takes a pointer.
+    pub pointer_values: Vec<u16>,
     pub addr: u64,
     pub name: Option<String>,
     pub size: u64,
@@ -1222,6 +1224,7 @@ impl FunctionIr {
             structures: Vec::new(),
             signed_params: std::collections::HashSet::new(),
             landing_pads: Vec::new(),
+            pointer_values: Vec::new(),
             addr: 0,
             name: None,
             size: 0,

@@ -989,6 +989,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         structures,
         signed_params: signature.signed,
         landing_pads,
+        pointer_values: Vec::new(),
         addr: function.addr,
         name: function.name.clone(),
         size,
@@ -1078,5 +1079,26 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     drop_stack_protector(&mut ir, image);
     // Settling simplifies again, which can leave a table read unused.
     drop_dead_constant_reads(&mut ir, image);
+    // A variable passed where a callee takes a pointer holds one.
+    let mut pointer_values = Vec::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Call {
+            target: Some(target),
+            args: Some(args),
+            ..
+        } = stmt
+        {
+            let pointers = summary::summary(image, *target).pointers;
+            for (position, arg) in args.iter().enumerate().take(32) {
+                if pointers & 1 << position != 0
+                    && let crate::ir::Expr::Reg { index, width: 64 } = arg
+                    && *index >= crate::ir::VARIABLE_BASE
+                {
+                    pointer_values.push(*index);
+                }
+            }
+        }
+    }
+    ir.pointer_values = pointer_values;
     Analysis { ir, references }
 }

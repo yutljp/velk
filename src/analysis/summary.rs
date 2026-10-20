@@ -294,6 +294,7 @@ fn settle(
                 (Some(a), Some(b)) => Some(a.max(b)),
                 (a, b) => a.or(b),
             },
+            pointers: current[&addr].pointers | next.pointers,
             noreturn: current[&addr].noreturn || next.noreturn,
             stack: current[&addr].stack.max(next.stack),
             indirect_result: current[&addr].indirect_result || next.indirect_result,
@@ -344,6 +345,7 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
     Summary {
         arity,
         floats: None,
+        pointers: 0,
         noreturn,
         stack: 0,
         indirect_result: false,
@@ -375,6 +377,17 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
     Summary {
         arity: Some(count(convention.arguments())),
         floats: Some(count(convention.float_arguments())),
+        pointers: convention
+            .arguments()
+            .iter()
+            .enumerate()
+            .filter(|(_, register)| {
+                signature
+                    .params
+                    .iter()
+                    .any(|param| param.index == **register && param.ty.is_pointer())
+            })
+            .fold(0, |bits, (position, _)| bits | 1 << position),
         noreturn: named.noreturn
             || (!can_return(&blocks)
                 && !function
