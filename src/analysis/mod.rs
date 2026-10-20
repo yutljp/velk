@@ -309,10 +309,24 @@ fn drop_unreached(blocks: &mut Vec<crate::ir::Block>) {
 }
 
 /// Go code on x86-64 keeps xmm15 zero: it holds zero as a function starts
-/// and after every call.
+/// and after every call. It keeps the goroutine in r14 too, and reloading it
+/// from thread-local storage after a call changes nothing.
 fn zero_fixed_register(blocks: &mut [crate::ir::Block], isa: crate::loader::Isa) {
     if isa != crate::loader::Isa::X86_64 {
         return;
+    }
+    for block in blocks.iter_mut() {
+        block.stmts.retain(|stmt| {
+            !matches!(stmt, crate::ir::Stmt::Assign {
+                dest: crate::ir::RegRef { index: 14, width: 64 },
+                value: crate::ir::Expr::Load { addr, width: 8, .. },
+            } if matches!(addr.as_ref(), crate::ir::Expr::Bin {
+                    op: crate::ir::BinOp::Add,
+                    lhs,
+                    rhs,
+                } if matches!(lhs.as_ref(), crate::ir::Expr::Reg { index: crate::arch::x86::FS_BASE, .. })
+                    && matches!(rhs.as_ref(), crate::ir::Expr::Const(0xffff_ffff_ffff_fff8))))
+        });
     }
     let Some(first) = blocks.first_mut() else {
         return;
