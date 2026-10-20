@@ -803,10 +803,18 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         .map(|(pad, sites)| (*pad, sites.clone()))
         .collect();
     let pads: HashSet<u64> = landing_pads.iter().map(|(pad, _)| *pad).collect();
-    let mut blocks = lift::lift(image, function.addr, size, &pads)?;
+    // A block ends where the calls that unwind into a pad do, so the state
+    // after them is what the pad receives.
+    let starts: HashSet<u64> = landing_pads
+        .iter()
+        .flat_map(|(_, sites)| sites.iter().map(|(_, end)| *end))
+        .filter(|end| extent.contains(end))
+        .chain(pads.iter().copied())
+        .collect();
+    let mut blocks = lift::lift(image, function.addr, size, &starts)?;
     let mut tables = jump_table::recover(&blocks, image, extent.clone());
     // Cases start blocks of their own, which may hold further tables.
-    let mut targets: HashSet<u64> = pads.clone();
+    let mut targets: HashSet<u64> = starts.clone();
     for _ in 0..4 {
         let found: HashSet<u64> = tables
             .iter()

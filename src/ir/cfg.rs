@@ -3,8 +3,26 @@ use std::collections::HashSet;
 use crate::ir::visit::statement_registers;
 use crate::ir::{Block, Expr, FunctionIr, Stmt};
 
+/// The blocks control can go to from the end of block `index`, a landing
+/// pad included where the block ends with a call that unwinds into it.
 pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
-    block_successors(&ir.blocks, index)
+    let mut out = block_successors(&ir.blocks, index);
+    if ir.landing_pads.is_empty() {
+        return out;
+    }
+    let start = ir.blocks[index].start;
+    let end = ir.blocks.get(index + 1).map_or(u64::MAX, |next| next.start);
+    for (pad, sites) in &ir.landing_pads {
+        if sites
+            .iter()
+            .any(|(from, to)| start < *to && *to <= end && *from < end)
+            && let Some(position) = ir.blocks.iter().position(|block| block.start == *pad)
+            && !out.contains(&position)
+        {
+            out.push(position);
+        }
+    }
+    out
 }
 
 pub(crate) fn block_successors(blocks: &[Block], index: usize) -> Vec<usize> {
