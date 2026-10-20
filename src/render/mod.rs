@@ -790,6 +790,42 @@ fn only_vector_count(rest: &[Node]) -> bool {
 fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     let mut index = 0;
     while index < nodes.len() {
+        // A compare-and-exchange: the old value read, and the new one stored
+        // in its place when the old one was the expected one.
+        if let (
+            Node::Stmt(Stmt::Assign {
+                dest,
+                value: loaded @ Expr::Load { addr, width, .. },
+            }),
+            Some(Node::Stmt(Stmt::Store {
+                addr: stored,
+                width: stored_width,
+                value:
+                    Expr::Select {
+                        cond: crate::ir::Cond::Eq,
+                        lhs,
+                        rhs: expected,
+                        then: replacement,
+                        els,
+                    },
+            })),
+        ) = (&nodes[index], nodes.get(index + 1))
+            && stored == addr.as_ref()
+            && stored_width == width
+            && matches!(lhs.as_ref(), Expr::Reg { index: read, .. } if *read == dest.index)
+            && matches!(els.as_ref(), Expr::Reg { index: read, .. } if *read == dest.index)
+        {
+            indent(depth, out);
+            out.push_str(&format!(
+                "{} = __sync_val_compare_and_swap(&{}, {}, {});\n",
+                ctx.register(dest.index, dest.width),
+                render_expr(loaded, ctx),
+                render_value(expected, ctx),
+                render_value(replacement, ctx)
+            ));
+            index += 2;
+            continue;
+        }
         // A value assigned only to be returned right away reads as returned;
         // a constant also through the mask a narrow return puts on it.
         if let (
