@@ -361,25 +361,25 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     int64_t v4;
     int64_t v5;
     int64_t v7;
-    uint32_t *v15;
-    int64_t v16;
-    int64_t v17;
-    int64_t v18;
-    int64_t v19;
-    int64_t v20;
-    int64_t v24;
-    int64_t v32;
+    uint32_t *v8;
+    int64_t v9;
+    int64_t v10;
+    int64_t v11;
+    int64_t v12;
+    int64_t v13;
+    int64_t v14;
+    int64_t v15;
     int64_t local_0; /* [sp-68] */
     int64_t local_1; /* [sp-78] */
     int64_t local_2; /* [sp-70] */
 
     if ((a1 & 0xffffffff) <= 0x0) {
-        v24 = &local_0;
+        v14 = &local_0;
         local_2 = 0x0;
         local_1 = a1;
-        __snprintf_chk(v24, 0x40, 0x2, 0x40, "missing key %d among %d", a2);
-        v32 = stderr_GLIBC_2_2_5;
-        fputs(v24, v32);
+        __snprintf_chk(v14, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
+        v15 = stderr_GLIBC_2_2_5;
+        fputs(v14, v15);
         abort();
         __builtin_trap();
     }
@@ -396,18 +396,18 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
 L_12fd:
     v7 = &local_0;
     local_1 = a1;
-    v15 = a0 + 0x2;
-    v16 = v4 + (uint8_t *)v15;
-    __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2);
-    v17 = stderr_GLIBC_2_2_5;
-    fputs(v7, v17);
+    v8 = a0 + 0x2;
+    v9 = v4 + (uint8_t *)v8;
+    __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
+    v10 = stderr_GLIBC_2_2_5;
+    fputs(v7, v10);
     do {
-        v18 = v15[-0x1];
-        v19 = stderr_GLIBC_2_2_5;
-        v20 = v15;
-        v15 = v15 + 0x6;
-        __fprintf_chk(v19, 0x2, 0x201c, v20, v18);
-    } while (v15 != v16);
+        v11 = v8[-0x1];
+        v12 = stderr_GLIBC_2_2_5;
+        v13 = v8;
+        v8 = v8 + 0x6;
+        __fprintf_chk(v12, 0x2, 0x201c, v13, v11);
+    } while (v8 != v9);
     abort();
     __builtin_trap();
 }
@@ -437,30 +437,28 @@ fn lookup @ 0x1290 (size 240)
     ret v6
   blk6 @ 0x12fd:
     v7 = (rsp + #0xffffffffffffff98)
-    v8 = (rdx & #0xffffffff)
     store64(rsi, (rsp + #0xffffffffffffff88))
-    v15 = (v2 + #0x8)
-    v16 = (v4 + v15)
-    call 0x1090(v7, #0x40, #0x2, #0x40, #0x2004, v8)
-    v17 = load64(#0x4020)
-    call 0x10c0(v7, v17)
+    v8 = (v2 + #0x8)
+    v9 = (v4 + v8)
+    call 0x1090(v7, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
+    v10 = load64(#0x4020)
+    call 0x10c0(v7, v10)
   blk7 @ 0x1350:
-    v18 = load32((v15 + #0xfffffffffffffffc))
-    v19 = load64(#0x4020)
-    v20 = v15
-    v15 = (v15 + #0x18)
-    call 0x10d0(v19, #0x2, #0x201c, v20, v18)
-    brif ne v15, v16 -> 0x1350
+    v11 = load32((v8 + #0xfffffffffffffffc))
+    v12 = load64(#0x4020)
+    v13 = v8
+    v8 = (v8 + #0x18)
+    call 0x10d0(v12, #0x2, #0x201c, v13, v11)
+    brif ne v8, v9 -> 0x1350
   blk8 @ 0x1376:
     br 0x111a
   blk9 @ 0x10e0:
-    v24 = (rsp + #0xffffffffffffff98)
+    v14 = (rsp + #0xffffffffffffff98)
     store64(#0x0, (rsp + #0xffffffffffffff90))
-    v25 = (rdx & #0xffffffff)
     store64(rsi, (rsp + #0xffffffffffffff88))
-    call 0x1090(v24, #0x40, #0x2, #0x40, #0x2004, v25)
-    v32 = load64(#0x4020)
-    call 0x10c0(v24, v32)
+    call 0x1090(v14, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
+    v15 = load64(#0x4020)
+    call 0x10c0(v14, v15)
   blk10 @ 0x111a:
     call 0x10a0()
     trap

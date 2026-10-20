@@ -295,7 +295,7 @@ fn reads_memory(expr: &Expr) -> bool {
 /// callee takes is known.
 /// The arguments of a call reading `count` registers and `stack` slots
 /// past them, as they stand at the call.
-fn arguments(
+pub(crate) fn arguments(
     convention: Convention,
     isa: crate::loader::Isa,
     count: Option<usize>,

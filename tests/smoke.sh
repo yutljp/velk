@@ -534,6 +534,11 @@ echo "$msg_card" | grep -q 'velk-ref-string'  || fail "card string reference"
 echo "$msg_card" | grep -q 'velk_ref_string'   || fail "card name hint"
 ok "string references"
 
+# A format's arguments past the registers are read from the stack
+fmt_c=$("$BIN" decompile $FIX/cold_gcc lookup 2>/dev/null)
+echo "$fmt_c" | grep -q '"missing key %d among %d", a2, a1);' || fail "variadic stack argument"
+ok "variadic stack arguments"
+
 # 10) struct access recovery
 pair=$("$BIN" decompile $FIX/arm64.o pair_sum 2>/dev/null)
 echo "$pair" | grep -q "struct pair_sum_a0 {"  || fail "struct definition"

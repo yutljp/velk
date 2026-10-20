@@ -1029,8 +1029,10 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     let uniform_32 = passes::widths::specialize_widths(&mut ir, &|target| {
         summary::summary(image, target).narrow_return
     });
-    passes::optimize(&mut ir, has_jump_tables);
+    // Before the stack adjustments a call reads unseen, such as the push
+    // of an argument, are dropped as dead.
     crate::ssa::count_variadic_arguments(&mut ir, image);
+    passes::optimize(&mut ir, has_jump_tables);
     set_up_arguments(&mut ir);
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the

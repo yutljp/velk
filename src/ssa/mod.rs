@@ -357,12 +357,11 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
     if !pending {
         return;
     }
-    let Some(mut ssa) = build(ir) else {
+    let Some(ssa) = build(ir) else {
         return;
     };
     let constants = sccp::constants(&ssa);
-    let mut changed = false;
-    for (block, contents) in ssa.ir.blocks.iter_mut().enumerate() {
+    for (block, contents) in ir.blocks.iter_mut().enumerate() {
         for (position, stmt) in contents.stmts.iter_mut().enumerate() {
             let Stmt::Call {
                 target: Some(target),
@@ -392,34 +391,15 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
             let Some(format) = c_string(image, *address) else {
                 continue;
             };
-            let count = (fixed + crate::analysis::prototypes::format_arguments(&format))
-                .min(registers.len());
-            let reads = &ssa.implicit_reads[&(block, position)];
-            let passed: Option<Vec<Expr>> = registers[..count]
-                .iter()
-                .map(|register| {
-                    reads
-                        .iter()
-                        .find(|(read, _)| read == register)
-                        .map(|(_, value)| Expr::reg(*value, 64))
-                })
-                .collect();
-            if let Some(passed) = passed {
-                *args = Some(passed);
-                changed = true;
-            }
+            let count = fixed + crate::analysis::prototypes::format_arguments(&format);
+            // The rest are read from the stack, where the call finds them.
+            *args = crate::lift::arguments(
+                *convention,
+                ir.isa,
+                Some(count),
+                count.saturating_sub(registers.len()),
+            );
         }
-    }
-    if changed {
-        // The values a call names are no longer read without being named.
-        for ((block, position), reads) in ssa.implicit_reads.iter_mut() {
-            let call = &ssa.ir.blocks[*block].stmts[*position];
-            if let Stmt::Call { args: Some(_), .. } = call {
-                let unnamed = call.unnamed_call_reads();
-                reads.retain(|(register, _)| unnamed.contains(register));
-            }
-        }
-        *ir = lower(&ssa);
     }
 }
 
