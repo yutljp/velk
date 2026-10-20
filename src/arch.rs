@@ -12,6 +12,14 @@ pub mod x86 {
     /// The low 64 bits of xmm0; each xmm register is a pair of slots, low
     /// half first.
     pub const XMM0: u16 = 18;
+    /// Bits 128 to 191 of ymm0, then 192 to 255; each ymm register's upper
+    /// half is a pair of slots in the same order as the xmm ones.
+    pub const YMM_UPPER: u16 = 50;
+
+    /// The slot that holds the bits 128 above those of an xmm slot.
+    pub fn upper(slot: u16) -> u16 {
+        YMM_UPPER + (slot - XMM0)
+    }
 }
 
 pub mod aarch64 {

@@ -28,11 +28,10 @@ fn usable(index: u16) -> bool {
 }
 
 fn name(index: u16) -> String {
-    match index.checked_sub(crate::arch::x86::XMM0) {
-        Some(half) if half % 2 == 1 => format!("xmm{}_hi", half / 2),
-        Some(half) => format!("xmm{}", half / 2),
-        None => NAMES[usize::from(index)].to_owned(),
+    if index >= crate::arch::x86::XMM0 {
+        return crate::ir::reg_name(crate::loader::Isa::X86_64, index, 64);
     }
+    NAMES[usize::from(index)].to_owned()
 }
 
 const NAMES: [&str; 16] = [
@@ -54,8 +53,9 @@ struct Case {
     code: Vec<u8>,
     registers: [u64; 16],
     flags: u64,
-    /// xmm0 to xmm7, as halves, low first.
-    vectors: [u64; 16],
+    /// xmm0 to xmm7, as halves, low first, then the upper halves of ymm0
+    /// to ymm7 the same way.
+    vectors: [u64; 32],
     /// The buffer's contents, for a case that reads or writes memory.
     memory: Option<Vec<u8>>,
 }
@@ -63,10 +63,30 @@ struct Case {
 struct Outcome {
     registers: [u64; 16],
     flags: u64,
-    vectors: [u64; 16],
+    vectors: [u64; 32],
     memory: Option<Vec<u8>>,
     /// The signal the code raised, or zero.
     signal: u8,
+}
+
+/// Where a vector slot of the IR lies among the case's vector words: the
+/// xmm halves first, then the ymm upper halves.
+fn vector_word(index: u16) -> Option<usize> {
+    use crate::arch::x86::{XMM0, YMM_UPPER};
+    match index {
+        _ if (XMM0..XMM0 + 16).contains(&index) => Some(usize::from(index - XMM0)),
+        _ if (YMM_UPPER..YMM_UPPER + 16).contains(&index) => {
+            Some(16 + usize::from(index - YMM_UPPER))
+        }
+        _ => None,
+    }
+}
+
+/// The vector slots a case sets and compares: xmm0 to xmm7 and the upper
+/// halves of ymm0 to ymm7.
+fn vector_slots() -> impl Iterator<Item = u16> {
+    use crate::arch::x86::{XMM0, YMM_UPPER};
+    (XMM0..XMM0 + 16).chain(YMM_UPPER..YMM_UPPER + 16)
 }
 
 /// Builds the runner once for every test, or None when this machine has
@@ -139,7 +159,7 @@ fn run(mut runner: Command, cases: &[Case]) -> Vec<Outcome> {
     let mut outcomes = Vec::new();
     let mut rest = output.stdout.as_slice();
     for case in cases {
-        let state = 33 * 8;
+        let state = 49 * 8;
         let size = state + case.memory.as_ref().map_or(0, Vec::len) + 1;
         let (chunk, tail) = rest.split_at(size);
         rest = tail;
@@ -213,7 +233,7 @@ fn register_only(instruction: &Instruction, info: &mut InstructionInfoFactory) -
             let register = used.register();
             (register.is_gpr()
                 && !matches!(register.full_register(), Register::RSP | Register::R15))
-                || (register.is_xmm() && register.number() < 8)
+                || ((register.is_xmm() || register.is_ymm()) && register.number() < 8)
         })
 }
 
@@ -232,6 +252,55 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
     match hash(seed, 0x30) % 9 {
         // Integer and packed SSE: 66 0F with an opcode of those groups, a
         // register operand byte and an immediate for the ones that take one.
+        // AVX on registers: VEX moves, bitwise and lane operations of 128
+        // or 256 bits, the byte mask, the broadcast, and clearing the upper
+        // halves.
+        8 if hash(seed, 0x3f).is_multiple_of(3) => {
+            const OPCODES: [(u8, u8); 18] = [
+                (0x6f, 2),
+                (0x6f, 1),
+                (0xef, 1),
+                (0xdb, 1),
+                (0xeb, 1),
+                (0xdf, 1),
+                (0x74, 1),
+                (0x75, 1),
+                (0x76, 1),
+                (0xfc, 1),
+                (0xfe, 1),
+                (0xd4, 1),
+                (0xf8, 1),
+                (0xfb, 1),
+                (0xda, 1),
+                (0xde, 1),
+                (0xd7, 1),
+                (0x77, 0),
+            ];
+            let (opcode, prefix) = OPCODES[(hash(seed, 0x3b) % OPCODES.len() as u64) as usize];
+            let wide = !hash(seed, 0x3c).is_multiple_of(3);
+            let source = (hash(seed, 0x3d) % 8) as u8;
+            let modrm = 0xc0 | (hash(seed, 0x34) as u8 & 0x3f);
+            let code: Vec<u8> = match (opcode, prefix) {
+                // vzeroupper.
+                (0x77, _) => vec![0xc5, 0xf8, 0x77],
+                // vpmovmskb names no second source.
+                (0xd7, _) => vec![0xc5, 0xf9 | if wide { 0x04 } else { 0 }, 0xd7, modrm],
+                _ if hash(seed, 0x3e).is_multiple_of(8) => {
+                    // vpbroadcastb from an xmm register.
+                    vec![0xc4, 0xe2, 0x79 | if wide { 0x04 } else { 0 }, 0x78, modrm]
+                }
+                _ => {
+                    let unused = if opcode == 0x6f { 0xf } else { !source & 0xf };
+                    vec![
+                        0xc5,
+                        0x80 | (unused << 3) | if wide { 0x04 } else { 0 } | prefix,
+                        opcode,
+                        modrm,
+                    ]
+                }
+            };
+            bytes.splice(0..code.len(), code);
+        }
         // AES rounds: 66 0F 38 DC to DF on two xmm registers.
         7 if hash(seed, 0x3e).is_multiple_of(4) => {
             let code = [
@@ -383,12 +452,7 @@ fn prepare(seed: u64, info: &mut InstructionInfoFactory) -> Option<Prepared> {
     let registers = (0..16u16)
         .filter(|index| usable(*index))
         .map(|index| (index, value(seed, 0x100 + u64::from(index))))
-        .chain((0..16u16).map(|half| {
-            (
-                crate::arch::x86::XMM0 + half,
-                float_bits(seed, 0x200 + u64::from(half)),
-            )
-        }))
+        .chain(vector_slots().map(|slot| (slot, float_bits(seed, 0x200 + u64::from(slot)))))
         .collect();
     Some(Prepared {
         seed,
@@ -424,10 +488,10 @@ fn lifted_instructions_match_the_processor() {
     let cases: Vec<Case> = prepared
         .iter()
         .map(|case| {
-            let (mut registers, mut vectors) = ([0; 16], [0; 16]);
+            let (mut registers, mut vectors) = ([0; 16], [0; 32]);
             for (index, value) in &case.registers {
-                match index.checked_sub(crate::arch::x86::XMM0) {
-                    Some(half) => vectors[usize::from(half)] = *value,
+                match vector_word(*index) {
+                    Some(word) => vectors[word] = *value,
                     None => registers[usize::from(*index)] = *value,
                 }
             }
@@ -465,8 +529,8 @@ fn lifted_instructions_match_the_processor() {
         if let Some(differ) = register_differences(
             &ir,
             &case.registers,
-            |index| match index.checked_sub(crate::arch::x86::XMM0) {
-                Some(half) => outcome.vectors[usize::from(half)],
+            |index| match vector_word(index) {
+                Some(word) => outcome.vectors[word],
                 None => outcome.registers[usize::from(index)],
             },
             name,
@@ -669,7 +733,7 @@ fn memory_instruction(
     let registers = details.used_registers().iter().all(|used| {
         let register = used.register();
         (register.is_gpr() && !matches!(register.full_register(), Register::RSP | Register::R15))
-            || (register.is_xmm() && register.number() < 8)
+            || ((register.is_xmm() || register.is_ymm()) && register.number() < 8)
     });
     (addressed && registers && !details.used_memory().is_empty()).then_some((bytes, decoded))
 }
@@ -715,7 +779,7 @@ fn lifted_memory_operands_match_the_processor() {
                 hash(seed, 0x100 + index as u64) % 64
             };
         }
-        let vectors: [u64; 16] = std::array::from_fn(|half| float_bits(seed, 0x200 + half as u64));
+        let vectors: [u64; 32] = std::array::from_fn(|word| float_bits(seed, 0x200 + word as u64));
         let memory: Vec<u8> = (0..BUFFER_SIZE)
             .map(|index| hash(seed, 0x400 + index as u64) as u8)
             .collect();
@@ -738,10 +802,10 @@ fn lifted_memory_operands_match_the_processor() {
         let registers: Vec<(u16, u64)> = (0..16u16)
             .filter(|index| usable(*index))
             .map(|index| (index, case.registers[usize::from(index)]))
-            .chain((0..16u16).map(|half| {
+            .chain(vector_slots().map(|slot| {
                 (
-                    crate::arch::x86::XMM0 + half,
-                    case.vectors[usize::from(half)],
+                    slot,
+                    case.vectors[vector_word(slot).expect("a vector slot")],
                 )
             }))
             .collect();
@@ -781,8 +845,8 @@ fn lifted_memory_operands_match_the_processor() {
                 continue;
             }
         };
-        let real = |index: u16| match index.checked_sub(crate::arch::x86::XMM0) {
-            Some(half) => outcome.vectors[usize::from(half)],
+        let real = |index: u16| match vector_word(index) {
+            Some(word) => outcome.vectors[word],
             None => outcome.registers[usize::from(index)],
         };
         let mut differ: Vec<String> = registers
