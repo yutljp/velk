@@ -526,11 +526,13 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
 }
 
 /// A function whose every return writes only the low byte or half-word of
-/// the return register (`sete al; ret`) returns that narrow value: the
-/// convention leaves the rest of the register undefined for the caller.
+/// the register it returns (`sete al; ret`, or `mov r15b, 1` then
+/// `mov eax, r15d`) returns that narrow value: the convention leaves the
+/// rest of the return register undefined for the caller.
 pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
     use crate::ir::{BinOp, Expr, Stmt};
-    // The new bits and their width in bytes, for `(ret & keep) | value`.
+    // The new bits and their width in bytes, for `(r & keep) | value`, the
+    // rest being the register's earlier value.
     let partial = |value: &Expr| -> Option<(Expr, u8)> {
         let Expr::Bin {
             op: BinOp::Or,
@@ -548,11 +550,7 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
         else {
             return None;
         };
-        // The rest is the register's earlier value, or the variable it
-        // held.
-        if !matches!(kept.as_ref(), Expr::Reg { index, .. }
-            if *index == arch::RETURN || *index >= crate::ir::VARIABLE_BASE)
-        {
+        if !matches!(kept.as_ref(), Expr::Reg { .. }) {
             return None;
         }
         let bytes = match keep.as_ref() {
@@ -562,43 +560,94 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
         };
         Some((rhs.as_ref().clone(), bytes))
     };
+    // The register a return reads, whole or through a mask of its low bits.
+    let returned = |value: &Expr| -> Option<(u16, u64)> {
+        match value {
+            Expr::Reg { index, .. } => Some((*index, u64::MAX)),
+            Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Reg { index, .. }, Expr::Const(mask)) => Some((*index, *mask)),
+                _ => None,
+            },
+            _ => None,
+        }
+    };
+    // A tail call returns its callee's value, whatever its width.
+    let tail_call = |stmts: &[Stmt]| matches!(stmts, [.., Stmt::Call { .. }, Stmt::Ret { .. }]);
+    let Some(ssa) = crate::ssa::build(ir) else {
+        return;
+    };
+    let definitions: std::collections::HashMap<u16, &Expr> = ssa
+        .ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .filter_map(|stmt| match stmt {
+            Stmt::Assign { dest, value } => Some((dest.index, value)),
+            _ => None,
+        })
+        .collect();
+    let phis: std::collections::HashMap<u16, &[u16]> = ssa
+        .phis
+        .iter()
+        .flatten()
+        .map(|phi| (phi.value, phi.args.as_slice()))
+        .collect();
     let mut width = None;
-    for block in &ir.blocks {
-        // A tail call returns its callee's value, whatever its width.
-        if matches!(
-            block.stmts.as_slice(),
-            [.., Stmt::Call { .. }, Stmt::Ret { .. }]
-        ) {
+    for block in &ssa.ir.blocks {
+        if tail_call(&block.stmts) {
             continue;
         }
-        if let Some(Stmt::Ret { value }) = block.stmts.last() {
-            // A variable returns what each of its definitions puts in it.
-            let values: Vec<&Expr> = match value {
-                Expr::Reg { index, .. } if *index >= crate::ir::VARIABLE_BASE => ir
-                    .blocks
-                    .iter()
-                    .flat_map(|block| &block.stmts)
-                    .filter_map(|stmt| match stmt {
-                        Stmt::Assign { dest, value } if dest.index == *index => Some(value),
-                        _ => None,
-                    })
-                    .collect(),
-                other => vec![other],
-            };
-            for value in values {
-                // A small constant, as `xor eax, eax` makes, fits whatever
-                // width the other returns show.
-                if matches!(value, Expr::Const(constant) if *constant <= 0xff) {
-                    continue;
+        let Some(Stmt::Ret { value }) = block.stmts.last() else {
+            continue;
+        };
+        // A register returns what each definition reaching the return puts
+        // in it.
+        let mut values = Vec::new();
+        match returned(value) {
+            Some((register, mask)) if crate::ssa::Ssa::is_value(register) && mask >= 0xffff => {
+                let mut pending = vec![register];
+                let mut seen = std::collections::HashSet::new();
+                while let Some(value) = pending.pop() {
+                    if !seen.insert(value) {
+                        continue;
+                    }
+                    if let Some(args) = phis.get(&value) {
+                        pending.extend(args.iter());
+                    } else if let Some(definition) = definitions.get(&value) {
+                        // A copy of another register, as `mov eax, r15d`
+                        // makes, returns what that one holds.
+                        match returned(definition) {
+                            Some((copied, mask))
+                                if crate::ssa::Ssa::is_value(copied) && mask >= 0xffff =>
+                            {
+                                pending.push(copied)
+                            }
+                            _ => values.push(*definition),
+                        }
+                    } else {
+                        return;
+                    }
                 }
-                let Some((_, bytes)) = partial(value) else {
-                    return;
-                };
-                if width.is_some_and(|width| width != bytes) {
-                    return;
-                }
-                width = Some(bytes);
             }
+            _ => values.push(value),
+        }
+        for value in values {
+            // A small constant, as `xor eax, eax` makes, fits whatever
+            // width the other returns show.
+            if matches!(value, Expr::Const(constant) if *constant <= 0xff) {
+                continue;
+            }
+            let Some((_, bytes)) = partial(value) else {
+                return;
+            };
+            if width.is_some_and(|width| width != bytes) {
+                return;
+            }
+            width = Some(bytes);
         }
     }
     let Some(bytes) = width else {
@@ -606,19 +655,14 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
     };
     let mask = (1u64 << (u32::from(bytes) * 8)) - 1;
     for block in &mut ir.blocks {
-        if matches!(
-            block.stmts.as_slice(),
-            [.., Stmt::Call { .. }, Stmt::Ret { .. }]
-        ) {
+        if tail_call(&block.stmts) {
             continue;
         }
         if let Some(Stmt::Ret { value }) = block.stmts.last_mut() {
-            match partial(value) {
-                Some((low, _)) => *value = Expr::bin(BinOp::And, low, Expr::Const(mask)),
-                None if matches!(value, Expr::Reg { .. }) => {
-                    *value = Expr::bin(BinOp::And, value.clone(), Expr::Const(mask));
-                }
-                None => {}
+            if let Some((low, _)) = partial(value) {
+                *value = Expr::bin(BinOp::And, low, Expr::Const(mask));
+            } else if let Some((register, _)) = returned(value) {
+                *value = Expr::bin(BinOp::And, Expr::reg(register, 64), Expr::Const(mask));
             }
         }
     }
@@ -881,6 +925,57 @@ mod tests {
             &ir.blocks[0].stmts[0],
             Stmt::Ret { value } if *value == Expr::bin(BinOp::And, flag, Expr::Const(0xff))
         ));
+    }
+
+    /// `mov r15b, 1` then `mov eax, r15d; ret`, or with `whole` a write of
+    /// all of r15 instead.
+    fn returns_r15(whole: bool) -> FunctionIr {
+        const R15: u16 = 15;
+        let one = if whole {
+            Expr::Const(0x100)
+        } else {
+            Expr::bin(
+                BinOp::Or,
+                Expr::bin(BinOp::And, Expr::reg(R15, 64), Expr::Const(!0xff)),
+                Expr::Const(1),
+            )
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: R15,
+                        width: 64,
+                    },
+                    value: one,
+                },
+                Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: 0,
+                        width: 64,
+                    },
+                    value: Expr::bin(BinOp::And, Expr::reg(R15, 64), Expr::Const(0xffff_ffff)),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        ir.ret_type = CType::U32;
+        apply_partial_return(&mut ir);
+        ir
+    }
+
+    #[test]
+    fn a_return_copied_from_a_byte_of_another_register_is_a_byte() {
+        let ir = returns_r15(false);
+        assert_eq!(ir.ret_type, CType::int(1, false));
+        assert!(matches!(
+            &ir.blocks[0].stmts[2],
+            Stmt::Ret { value } if *value == Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xff))
+        ));
+        assert_eq!(returns_r15(true).ret_type, CType::U32);
     }
 
     #[test]

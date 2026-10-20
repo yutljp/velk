@@ -1067,7 +1067,9 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     .chain(crate::ir::FLAG_CARRIED)
     .chain([crate::ir::EXCHANGE, crate::ir::SWITCH_INDEX])
     .collect();
-    // Bits no read looks at go first, so the variables they tied split apart.
+    // Bits no read looks at go first, so the variables they tied split apart;
+    // a narrow return reads fewer of them.
+    typing::apply_partial_return(&mut ir);
     crate::ssa::narrow_partial_writes(&mut ir);
     crate::ssa::split_variables(&mut ir, &general);
     // The new variables leave copies between them to fold away, and values
