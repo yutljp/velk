@@ -230,6 +230,53 @@ fn tail_calls_through_pointers(
 
 /// Drops the check a Go function starts with, which compares the stack
 /// pointer with the goroutine's stack limit and, when it runs low, calls the
+/// Drops the blocks no path from the entry reaches, unless an indirect jump
+/// may reach any of them.
+fn drop_unreached(blocks: &mut Vec<crate::ir::Block>) {
+    use crate::ir::Stmt;
+    if blocks.iter().any(|block| {
+        matches!(
+            block.stmts.last(),
+            Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None })
+        )
+    }) {
+        return;
+    }
+    let index: std::collections::HashMap<u64, usize> = blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    let mut seen = vec![false; blocks.len()];
+    let mut pending = vec![0];
+    while let Some(at) = pending.pop() {
+        if at >= blocks.len() || std::mem::replace(&mut seen[at], true) {
+            continue;
+        }
+        let falls = at + 1;
+        match blocks[at].stmts.last() {
+            Some(Stmt::Br {
+                target: Some(target),
+            }) => pending.extend(index.get(target)),
+            Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => {
+                pending.extend(index.get(target));
+                pending.push(falls);
+            }
+            Some(Stmt::Switch { cases, default, .. }) => {
+                pending.extend(cases.iter().filter_map(|(_, target)| index.get(target)));
+                pending.extend(default.iter().filter_map(|target| index.get(target)));
+            }
+            Some(Stmt::Ret { .. } | Stmt::Trap) => {}
+            _ => pending.push(falls),
+        }
+    }
+    let mut position = 0;
+    blocks.retain(|_| {
+        position += 1;
+        seen[position - 1]
+    });
+}
+
 /// Go code on x86-64 keeps xmm15 zero: it holds zero as a function starts
 /// and after every call.
 fn zero_fixed_register(blocks: &mut [crate::ir::Block], isa: crate::loader::Isa) {
@@ -761,6 +808,11 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // The signature reads the returns as they now are, and the cases
     // through the switches.
     jump_table::apply(&mut blocks, &tables);
+    // Go has no landing pads an unwinder enters, so code no path reaches,
+    // as the epilogue after a call that does not return, is dead.
+    if image.go {
+        drop_unreached(&mut blocks);
+    }
     let signature = signature::recover(&blocks, image.isa, image.format, image.go);
     // The arguments past the registers follow the register ones.
     let stack_params = signature

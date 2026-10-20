@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 738 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 681 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1289,64 +1289,8 @@ int64_t (int64_t a0, int64_t a1)
 fn main.add @ 0x466ca0 (size 32)
   blk0 @ 0x466ca0:
     ret (rax + rbx)
-  blk1 @ 0x466ca4:
-    trap
-  blk2 @ 0x466ca5:
-    trap
-  blk3 @ 0x466ca6:
-    trap
-  blk4 @ 0x466ca7:
-    trap
-  blk5 @ 0x466ca8:
-    trap
-  blk6 @ 0x466ca9:
-    trap
-  blk7 @ 0x466caa:
-    trap
-  blk8 @ 0x466cab:
-    trap
-  blk9 @ 0x466cac:
-    trap
-  blk10 @ 0x466cad:
-    trap
-  blk11 @ 0x466cae:
-    trap
-  blk12 @ 0x466caf:
-    trap
-  blk13 @ 0x466cb0:
-    trap
-  blk14 @ 0x466cb1:
-    trap
-  blk15 @ 0x466cb2:
-    trap
-  blk16 @ 0x466cb3:
-    trap
-  blk17 @ 0x466cb4:
-    trap
-  blk18 @ 0x466cb5:
-    trap
-  blk19 @ 0x466cb6:
-    trap
-  blk20 @ 0x466cb7:
-    trap
-  blk21 @ 0x466cb8:
-    trap
-  blk22 @ 0x466cb9:
-    trap
-  blk23 @ 0x466cba:
-    trap
-  blk24 @ 0x466cbb:
-    trap
-  blk25 @ 0x466cbc:
-    trap
-  blk26 @ 0x466cbd:
-    trap
-  blk27 @ 0x466cbe:
-    trap
-  blk28 @ 0x466cbf:
-    trap
 -- card
-{"addr":"0x466ca0","approxTokens":108,"blocks":29,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x466ca0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
 
 == 0x466cc0 main.divmod
 -- decompile
@@ -1386,58 +1330,8 @@ fn main.divmod @ 0x466cc0 (size 64)
   blk5 @ 0x466ce1:
     call 0x42cf20()
     trap
-  blk6 @ 0x466ce6:
-    trap
-  blk7 @ 0x466ce8:
-    trap
-  blk8 @ 0x466ce9:
-    trap
-  blk9 @ 0x466cea:
-    trap
-  blk10 @ 0x466ceb:
-    trap
-  blk11 @ 0x466cec:
-    trap
-  blk12 @ 0x466ced:
-    trap
-  blk13 @ 0x466cee:
-    trap
-  blk14 @ 0x466cef:
-    trap
-  blk15 @ 0x466cf0:
-    trap
-  blk16 @ 0x466cf1:
-    trap
-  blk17 @ 0x466cf2:
-    trap
-  blk18 @ 0x466cf3:
-    trap
-  blk19 @ 0x466cf4:
-    trap
-  blk20 @ 0x466cf5:
-    trap
-  blk21 @ 0x466cf6:
-    trap
-  blk22 @ 0x466cf7:
-    trap
-  blk23 @ 0x466cf8:
-    trap
-  blk24 @ 0x466cf9:
-    trap
-  blk25 @ 0x466cfa:
-    trap
-  blk26 @ 0x466cfb:
-    trap
-  blk27 @ 0x466cfc:
-    trap
-  blk28 @ 0x466cfd:
-    trap
-  blk29 @ 0x466cfe:
-    trap
-  blk30 @ 0x466cff:
-    trap
 -- card
-{"addr":"0x466cc0","approxTokens":150,"blocks":31,"hardReasons":[],"name":"main.divmod","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x466cc0","approxTokens":150,"blocks":6,"hardReasons":[],"name":"main.divmod","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
 
 == 0x466d00 main.sumSlice
 -- decompile
@@ -1474,12 +1368,8 @@ fn main.sumSlice @ 0x466d00 (size 32)
     brif gt rbx, v1 -> 0x466d0b
   blk3 @ 0x466d1a:
     ret v2
-  blk4 @ 0x466d1e:
-    trap
-  blk5 @ 0x466d1f:
-    trap
 -- card
-{"addr":"0x466d00","approxTokens":120,"blocks":6,"hardReasons":[],"name":"main.sumSlice","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x466d00","approxTokens":120,"blocks":4,"hardReasons":[],"name":"main.sumSlice","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
 
 == 0x466d20 main.kindName
 -- decompile
@@ -1532,44 +1422,8 @@ fn main.kindName @ 0x466d20 (size 96)
     ret #0x1
   blk7 @ 0x466d6b:
     ret #0x0
-  blk8 @ 0x466d6e:
-    trap
-  blk9 @ 0x466d6f:
-    trap
-  blk10 @ 0x466d70:
-    trap
-  blk11 @ 0x466d71:
-    trap
-  blk12 @ 0x466d72:
-    trap
-  blk13 @ 0x466d73:
-    trap
-  blk14 @ 0x466d74:
-    trap
-  blk15 @ 0x466d75:
-    trap
-  blk16 @ 0x466d76:
-    trap
-  blk17 @ 0x466d77:
-    trap
-  blk18 @ 0x466d78:
-    trap
-  blk19 @ 0x466d79:
-    trap
-  blk20 @ 0x466d7a:
-    trap
-  blk21 @ 0x466d7b:
-    trap
-  blk22 @ 0x466d7c:
-    trap
-  blk23 @ 0x466d7d:
-    trap
-  blk24 @ 0x466d7e:
-    trap
-  blk25 @ 0x466d7f:
-    trap
 -- card
-{"accesses":["a0 +0x10:uint32_t"],"addr":"0x466d20","approxTokens":168,"blocks":26,"hardReasons":[],"name":"main.kindName","nameHints":["noptrdata"],"nameSources":["pclntab"],"section":".text","size":96,"strings":["noptrdata"],"unsupported":0}
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x466d20","approxTokens":168,"blocks":8,"hardReasons":[],"name":"main.kindName","nameHints":["noptrdata"],"nameSources":["pclntab"],"section":".text","size":96,"strings":["noptrdata"],"unsupported":0}
 
 == 0x466d80 main.main
 -- decompile
@@ -1656,7 +1510,5 @@ fn main.main @ 0x466d80 (size 256)
     call 0x4307e0()
     call 0x430600()
     ret #0x0
-  blk2 @ 0x466e7f:
-    trap
 -- card
-{"addr":"0x466d80","approxTokens":240,"blocks":3,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata",".text"],"unsupported":0}
+{"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata",".text"],"unsupported":0}

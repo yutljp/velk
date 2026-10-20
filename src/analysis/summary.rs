@@ -80,6 +80,11 @@ const NORETURN_RUNTIME: &[&str] = &[
     "std::sys::pal::unix::abort_internal",
 ];
 
+/// Functions whose code never returns that the caller still sees return:
+/// `runtime.mcall` leaves for another stack, and the goroutine resumes past
+/// the call when it is scheduled again.
+const RETURNING_RUNTIME: &[&str] = &["runtime.mcall"];
+
 fn runtime_noreturn(name: &str) -> bool {
     NORETURN_RUNTIME
         .iter()
@@ -352,7 +357,12 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
         .count();
     Summary {
         arity: Some(passed),
-        noreturn: named.noreturn || !can_return(&blocks),
+        noreturn: named.noreturn
+            || (!can_return(&blocks)
+                && !function
+                    .name
+                    .as_deref()
+                    .is_some_and(|name| RETURNING_RUNTIME.contains(&name))),
         stack: signature.stack.len(),
         indirect_result: signature.indirect_result,
     }

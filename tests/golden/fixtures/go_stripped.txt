@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 18 unsupported, 738 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 18 unsupported, 681 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1287,64 +1287,8 @@ int64_t (int64_t a0, int64_t a1)
 fn main.add @ 0x466ca0 (size 32)
   blk0 @ 0x466ca0:
     ret (rax + rbx)
-  blk1 @ 0x466ca4:
-    trap
-  blk2 @ 0x466ca5:
-    trap
-  blk3 @ 0x466ca6:
-    trap
-  blk4 @ 0x466ca7:
-    trap
-  blk5 @ 0x466ca8:
-    trap
-  blk6 @ 0x466ca9:
-    trap
-  blk7 @ 0x466caa:
-    trap
-  blk8 @ 0x466cab:
-    trap
-  blk9 @ 0x466cac:
-    trap
-  blk10 @ 0x466cad:
-    trap
-  blk11 @ 0x466cae:
-    trap
-  blk12 @ 0x466caf:
-    trap
-  blk13 @ 0x466cb0:
-    trap
-  blk14 @ 0x466cb1:
-    trap
-  blk15 @ 0x466cb2:
-    trap
-  blk16 @ 0x466cb3:
-    trap
-  blk17 @ 0x466cb4:
-    trap
-  blk18 @ 0x466cb5:
-    trap
-  blk19 @ 0x466cb6:
-    trap
-  blk20 @ 0x466cb7:
-    trap
-  blk21 @ 0x466cb8:
-    trap
-  blk22 @ 0x466cb9:
-    trap
-  blk23 @ 0x466cba:
-    trap
-  blk24 @ 0x466cbb:
-    trap
-  blk25 @ 0x466cbc:
-    trap
-  blk26 @ 0x466cbd:
-    trap
-  blk27 @ 0x466cbe:
-    trap
-  blk28 @ 0x466cbf:
-    trap
 -- card
-{"addr":"0x466ca0","approxTokens":108,"blocks":29,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x466ca0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
 
 == 0x466cc0 main.twice
 -- decompile
@@ -1363,46 +1307,8 @@ fn main.twice @ 0x466cc0 (size 64)
   blk1 @ 0x466cc6:
     v1 = call 0x466ca0(rax, rax)
     ret v1
-  blk2 @ 0x466ced:
-    trap
-  blk3 @ 0x466cee:
-    trap
-  blk4 @ 0x466cef:
-    trap
-  blk5 @ 0x466cf0:
-    trap
-  blk6 @ 0x466cf1:
-    trap
-  blk7 @ 0x466cf2:
-    trap
-  blk8 @ 0x466cf3:
-    trap
-  blk9 @ 0x466cf4:
-    trap
-  blk10 @ 0x466cf5:
-    trap
-  blk11 @ 0x466cf6:
-    trap
-  blk12 @ 0x466cf7:
-    trap
-  blk13 @ 0x466cf8:
-    trap
-  blk14 @ 0x466cf9:
-    trap
-  blk15 @ 0x466cfa:
-    trap
-  blk16 @ 0x466cfb:
-    trap
-  blk17 @ 0x466cfc:
-    trap
-  blk18 @ 0x466cfd:
-    trap
-  blk19 @ 0x466cfe:
-    trap
-  blk20 @ 0x466cff:
-    trap
 -- card
-{"addr":"0x466cc0","approxTokens":156,"blocks":21,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x466cc0","approxTokens":156,"blocks":2,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
 
 == 0x466d00 main.main
 -- decompile
@@ -1431,55 +1337,5 @@ fn main.main @ 0x466d00 (size 96)
     call 0x4307e0()
     call 0x430600()
     ret #0x0
-  blk2 @ 0x466d47:
-    trap
-  blk3 @ 0x466d48:
-    trap
-  blk4 @ 0x466d49:
-    trap
-  blk5 @ 0x466d4a:
-    trap
-  blk6 @ 0x466d4b:
-    trap
-  blk7 @ 0x466d4c:
-    trap
-  blk8 @ 0x466d4d:
-    trap
-  blk9 @ 0x466d4e:
-    trap
-  blk10 @ 0x466d4f:
-    trap
-  blk11 @ 0x466d50:
-    trap
-  blk12 @ 0x466d51:
-    trap
-  blk13 @ 0x466d52:
-    trap
-  blk14 @ 0x466d53:
-    trap
-  blk15 @ 0x466d54:
-    trap
-  blk16 @ 0x466d55:
-    trap
-  blk17 @ 0x466d56:
-    trap
-  blk18 @ 0x466d57:
-    trap
-  blk19 @ 0x466d58:
-    trap
-  blk20 @ 0x466d59:
-    trap
-  blk21 @ 0x466d5a:
-    trap
-  blk22 @ 0x466d5b:
-    trap
-  blk23 @ 0x466d5c:
-    trap
-  blk24 @ 0x466d5d:
-    trap
-  blk25 @ 0x466d5e:
-    trap
-  blk26 @ 0x466d5f:
-    trap
 -- card
-{"addr":"0x466d00","approxTokens":198,"blocks":27,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x466d00","approxTokens":198,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}
