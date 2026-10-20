@@ -1617,46 +1617,81 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
             let swapped = super::reverse_bytes(value, width, width / 8);
             write_destination(lifter, ins, swapped);
         }
-        // A rotate through the carry by one, with the carry known: the
-        // carry comes in at one end and the bit at the other goes out to it.
-        Mnemonic::Rcl | Mnemonic::Rcr
-            if matches!(operand(lifter, ins, 1), Some(Expr::Const(1)))
-                && lifter.carry().is_some() =>
-        {
-            let carry = lifter.carry().expect("a known carry");
-            let (rotated, out) = if ins.mnemonic() == Mnemonic::Rcr {
-                (
-                    Expr::bin(
-                        BinOp::Or,
-                        Expr::bin(BinOp::Shr, value.clone(), Expr::constant(1)),
-                        Expr::bin(BinOp::Shl, carry, Expr::constant(bits - 1)),
-                    ),
-                    Expr::bin(BinOp::And, value, Expr::constant(1)),
-                )
-            } else {
-                (
-                    Expr::bin(
-                        BinOp::Or,
-                        Expr::bin(BinOp::Shl, value.clone(), Expr::constant(1)),
-                        carry,
-                    ),
-                    Expr::bin(
-                        BinOp::And,
-                        Expr::bin(BinOp::Shr, value, Expr::constant(bits - 1)),
-                        Expr::constant(1),
-                    ),
-                )
+        // A rotate through the carry, with the carry known: the operand and
+        // the carry rotate together as one value a bit wider.
+        Mnemonic::Rcl | Mnemonic::Rcr if lifter.carry().is_some() => {
+            let Some(amount) = operand(lifter, ins, 1) else {
+                return;
             };
+            let carry = lifter.carry().expect("a known carry");
+            // The carry may read registers that keep the earlier flags'
+            // operands, which keeping the new flags' operands overwrites.
+            let carry = hold(lifter, carry);
+            let count = match shift_count(amount, width) {
+                Expr::Const(count) if width < 32 => Expr::constant(count % (bits + 1)),
+                count if width < 32 => Expr::bin(BinOp::ModU, count, Expr::constant(bits + 1)),
+                count => count,
+            };
+            let shifted = |op, value: Expr, by: Expr| Expr::bin(op, value, by);
+            let sub =
+                |a: u64, count: &Expr| Expr::bin(BinOp::Sub, Expr::constant(a), count.clone());
+            let one = || Expr::constant(1);
+            let (towards, from) = if ins.mnemonic() == Mnemonic::Rcl {
+                (BinOp::Shl, BinOp::Shr)
+            } else {
+                (BinOp::Shr, BinOp::Shl)
+            };
+            // For a count from one to the width: the operand shifted by the
+            // count, the carry beside it and the bits that wrap past it.
+            let carry_at = if towards == BinOp::Shl {
+                Expr::bin(BinOp::Sub, count.clone(), one())
+            } else {
+                sub(bits, &count)
+            };
+            let wrapped = shifted(from, shifted(from, value.clone(), sub(bits, &count)), one());
+            let rotated = Expr::bin(
+                BinOp::Or,
+                Expr::bin(
+                    BinOp::Or,
+                    shifted(towards, value.clone(), count.clone()),
+                    shifted(BinOp::Shl, carry.clone(), carry_at),
+                ),
+                wrapped,
+            );
             let rotated = if bits == 64 {
                 rotated
             } else {
                 Expr::bin(BinOp::And, rotated, Expr::constant((1u64 << bits) - 1))
             };
+            let out_at = if towards == BinOp::Shl {
+                sub(bits, &count)
+            } else {
+                Expr::bin(BinOp::Sub, count.clone(), one())
+            };
+            let out = Expr::bin(
+                BinOp::And,
+                shifted(BinOp::Shr, value.clone(), out_at),
+                one(),
+            );
+            let (rotated, out) = match count {
+                Expr::Const(0) => (value, carry),
+                Expr::Const(_) => (rotated, out),
+                count => {
+                    let unless_zero = |then: Expr, els: Expr| Expr::Select {
+                        cond: Cond::Eq,
+                        lhs: Box::new(count.clone()),
+                        rhs: Box::new(Expr::constant(0)),
+                        then: Box::new(then),
+                        els: Box::new(els),
+                    };
+                    (unless_zero(value, rotated), unless_zero(carry, out))
+                }
+            };
             lifter.set_flags(Flags::carry(out));
             write_destination(lifter, ins, rotated);
         }
         Mnemonic::Rcl | Mnemonic::Rcr => lifter.stmts.push(Stmt::unsupported(format!(
-            "{:?} at 0x{:x}",
+            "{:?} on a carry not modelled at 0x{:x}",
             ins.mnemonic(),
             ins.ip()
         ))),
