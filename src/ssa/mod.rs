@@ -752,7 +752,9 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     let mut lowered = lower_with(&ssa, &renames);
     // A renamed value a call returns goes straight into its variable; one
     // in another result register is copied out of it right after the call.
-    let mut copies: Vec<(usize, usize, u16, u16)> = Vec::new();
+    // (block, position, variable, register, the register's place among the
+    // call's results)
+    let mut copies: Vec<(usize, usize, u16, u16, usize)> = Vec::new();
     for ((block, position), defined) in &ssa.implicit_writes {
         for (register, value) in defined {
             let Some(name) = renames.get(value) else {
@@ -767,13 +769,22 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
                         width: 64,
                     });
                 }
-                Stmt::Call { .. } => copies.push((*block, *position, *name, *register)),
+                Stmt::Call { convention, .. } => {
+                    let rank = convention
+                        .results()
+                        .iter()
+                        .position(|result| result == register)
+                        .unwrap_or(usize::MAX);
+                    copies.push((*block, *position, *name, *register, rank));
+                }
                 _ => {}
             }
         }
     }
-    copies.sort_by_key(|copy| std::cmp::Reverse((copy.0, copy.1, copy.3)));
-    for (block, position, name, register) in copies {
+    // Each goes right after the call, so the last inserted comes first: the
+    // results end up in the order the convention returns them.
+    copies.sort_by_key(|copy| std::cmp::Reverse((copy.0, copy.1, copy.4, copy.3)));
+    for (block, position, name, register, _) in copies {
         lowered.blocks[block].stmts.insert(
             position + 1,
             Stmt::Assign {

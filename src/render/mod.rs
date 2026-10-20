@@ -915,23 +915,40 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             index += 2;
             continue;
         }
-        // A further result the call before returned in another register.
-        if let (
-            Some(Node::Stmt(Stmt::Call { convention, .. })),
-            Node::Stmt(
-                copy @ Stmt::Assign {
-                    value:
-                        Expr::Reg {
-                            index: register, ..
-                        },
+        // A further result a call before returned in another register, past
+        // the copies of its other results.
+        let further = |node: &Node| -> Option<u16> {
+            match node {
+                Node::Stmt(Stmt::Assign {
+                    value: Expr::Reg { index, .. },
                     ..
-                },
-            ),
-        ) = (
-            index.checked_sub(1).and_then(|before| nodes.get(before)),
-            &nodes[index],
-        ) && convention.results().first() != Some(register)
-            && convention.results().contains(register)
+                }) => Some(*index),
+                _ => None,
+            }
+        };
+        let call_before = nodes[..index]
+            .iter()
+            .rev()
+            .find(|node| further(node).is_none())
+            .and_then(|node| match node {
+                Node::Stmt(Stmt::Call { convention, .. }) => Some(*convention),
+                _ => None,
+            });
+        if let (Some(convention), Node::Stmt(copy @ Stmt::Assign { .. })) =
+            (call_before, &nodes[index])
+            && let Some(register) = further(&nodes[index])
+            && convention.results().first() != Some(&register)
+            && convention.results().contains(&register)
+            && nodes[..index]
+                .iter()
+                .rev()
+                .take_while(|node| further(node).is_some())
+                .all(|node| {
+                    further(node).is_some_and(|other| {
+                        convention.results().first() != Some(&other)
+                            && convention.results().contains(&other)
+                    })
+                })
         {
             indent(depth, out);
             out.push_str(&render_stmt(copy, ctx));
