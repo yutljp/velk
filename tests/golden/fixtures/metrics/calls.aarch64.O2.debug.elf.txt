@@ -381,7 +381,7 @@ int sum_varargs(int count, ...) {
     v2 = local_25;
     v3 = 0x0;
     v4 = *(uint32_t *)&local_2;
-    for (;;) {
+    do {
         if ((v4 & 0x80000000) != 0x0) {
             v6 = v4 + 0x8;
             *(uint32_t *)&local_2 = v6;
@@ -401,10 +401,7 @@ int sum_varargs(int count, ...) {
         v4 = v6;
         v3 = *v1 + v3;
         v1 = v5;
-        if (count == 0x0) {
-            break;
-        }
-    }
+    } while (count != 0x0);
     return v3;
 }
 -- signature

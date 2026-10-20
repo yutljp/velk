@@ -24,24 +24,18 @@ int matrix_trace(int *m, int n) {
     v1 = 0x0;
     v2 = 0x0;
     v3 = n;
-    for (;;) {
+    do {
         v4 = v1 * n;
         v5 = m + v1;
         v6 = 0x0;
-        for (;;) {
+        do {
             if (v1 == v6) {
                 v2 = v5[v4] + v2;
             }
             v6 = v6 + 0x1;
-            if (v3 == v6) {
-                break;
-            }
-        }
+        } while (v3 != v6);
         v1 = v1 + 0x1;
-        if (v1 == v3) {
-            break;
-        }
-    }
+    } while (v1 != v3);
     return v2;
 }
 -- signature
@@ -377,7 +371,7 @@ int find_pair(int *p, int n, int target) {
         v4 = p + 0x1;
         v5 = 0x1;
         v6 = 0x1;
-        for (;;) {
+        do {
             v7 = v1 + 0x1;
             if (v7 < v2 /* unsigned */) {
                 v8 = p[v1];
@@ -398,10 +392,7 @@ int find_pair(int *p, int n, int target) {
             v5 = v5 + v3;
             v4 = v4 + 0x4;
             v1 = v7;
-            if (v7 == v2) {
-                break;
-            }
-        }
+        } while (v7 != v2);
     }
     return 0xffffffff;
 }

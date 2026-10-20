@@ -36,8 +36,8 @@
 2	l2_loop_a64.o	sum_while	has	} while (
 2	l2_loop_a64.o	count_down	has	do {
 2	l2_loop_a64.o	find_first	has	} while (
-2	l2_loop_a64.o	sum_skip_odd	has	for (;;)
-2	l2_loop_a64.o	sum_skip_odd	has	break;
+2	l2_loop_a64.o	sum_skip_odd	has	do {
+2	l2_loop_a64.o	sum_skip_odd	has	} while (a0 != v1);
 2	l2_loop_a64.o	sum_skip_odd	nothas	goto L_
 2	l2_loop_x64.o	sum_while	has	} while (
 

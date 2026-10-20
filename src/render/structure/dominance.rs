@@ -832,6 +832,29 @@ fn shape(nodes: &mut Vec<Node>) {
 /// `do { body } while (c)`: the body ends in `if (c) continue;`, and nothing
 /// else in it continues, which would skip the test.
 fn do_while(body: &[Node]) -> Option<Node> {
+    // A body that leaves at its end when a test holds, and otherwise falls
+    // back to its start.
+    if let [
+        prefix @ ..,
+        Node::If {
+            cond,
+            lhs,
+            rhs,
+            then,
+            els,
+        },
+    ] = body
+        && matches!(then.as_slice(), [Node::Break])
+        && els.is_empty()
+        && !mentions_continue(prefix)
+    {
+        return Some(Node::DoWhile {
+            cond: cond.invert(),
+            lhs: lhs.clone(),
+            rhs: rhs.clone(),
+            body: prefix.to_vec(),
+        });
+    }
     let (prefix, test) = match body {
         [prefix @ .., test @ Node::If { els, .. }] if matches!(els.as_slice(), [Node::Break]) => {
             (prefix, test)

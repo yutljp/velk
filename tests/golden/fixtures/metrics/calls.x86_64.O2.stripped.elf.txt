@@ -445,7 +445,7 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     if (a0 != 0x1) {
         v6 = a0 & 0x7ffffffe;
         v4 = 0x0;
-        for (;;) {
+        do {
             if (v1 > 0x28 /* unsigned */) {
                 v7 = v3 + 0x2;
                 local_23 = v7;
@@ -467,10 +467,7 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
             }
             v4 = v8 + *v7;
             v6 = v6 - 0x2;
-            if (v6 == 0x0) {
-                break;
-            }
-        }
+        } while (v6 != 0x0);
     } else {
         v4 = 0x0;
     }
