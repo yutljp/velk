@@ -1360,7 +1360,9 @@ fn shift_count(operand: Operand) -> Option<u64> {
 /// into every lane.
 fn source_halves(operand: Operand) -> Option<(Expr, Expr)> {
     match operand {
-        Operand::Immediate(0) | Operand::Imm64(0) => Some((Expr::constant(0), Expr::constant(0))),
+        Operand::Immediate(0) | Operand::Imm64(0) | Operand::ImmediateDouble(0.0) => {
+            Some((Expr::constant(0), Expr::constant(0)))
+        }
         Operand::SIMDRegisterElementsLane(_, number, element, lane) => {
             let bits = match element {
                 a64::SIMDSizeCode::H => 16u64,
@@ -2298,6 +2300,290 @@ fn reverse_lanes(half: Expr, bits: u8, part: u8) -> Expr {
         .unwrap_or(half)
 }
 
+/// `f` on each float lane of `bits` of `args`, taken lane by lane: a
+/// double in each half, or two singles. A scalar keeps only the lowest.
+fn float_lanes(
+    (bits, full, scalar): (u8, bool, bool),
+    args: &[(Expr, Expr)],
+    f: impl Fn(Vec<Expr>) -> Expr,
+) -> (Expr, Expr) {
+    let half = |part: fn(&(Expr, Expr)) -> Expr| {
+        let parts: Vec<Expr> = args.iter().map(part).collect();
+        if bits == 64 {
+            return f(parts);
+        }
+        let low = f(parts
+            .iter()
+            .map(|part| Expr::bin(BinOp::And, part.clone(), Expr::constant(0xffff_ffff)))
+            .collect());
+        if scalar {
+            return low;
+        }
+        let high = f(parts
+            .iter()
+            .map(|part| Expr::bin(BinOp::Shr, part.clone(), Expr::constant(32)))
+            .collect());
+        Expr::bin(
+            BinOp::Or,
+            low,
+            Expr::bin(BinOp::Shl, high, Expr::constant(32)),
+        )
+    };
+    let low = half(|part| part.0.clone());
+    let high = if full {
+        half(|part| part.1.clone())
+    } else {
+        Expr::constant(0)
+    };
+    (low, high)
+}
+
+/// The floating-point instructions on vectors, and on scalars where only
+/// the vector forms' encodings give them.
+fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+    use a64::Opcode as O;
+    let ops = ins.operands;
+    let (dest, scalar) = match ops[0] {
+        Operand::SIMDRegister(a64::SIMDSizeCode::S, number) => {
+            ((crate::arch::aarch64::V0 + 2 * number, false, 32), true)
+        }
+        operand => (vector(operand)?, false),
+    };
+    let source = |operand: Operand| match operand {
+        Operand::SIMDRegister(..) => {
+            let (slot, _) = simd(operand)?;
+            Some((Expr::reg(slot, 64), Expr::constant(0)))
+        }
+        operand => source_halves(operand),
+    };
+    let shape = (dest.2, dest.1, scalar);
+    let p = precision(u16::from(dest.2));
+    let apply = |op: Operation, args: Vec<Expr>| Expr::apply(op, args);
+    let truth = |value: Expr| {
+        Expr::bin(
+            BinOp::Mul,
+            value,
+            Expr::constant(mask_bits(u64::from(dest.2))),
+        )
+    };
+    let (low, high) = match ins.opcode {
+        O::FADD | O::FSUB | O::FMUL | O::FDIV | O::FABD => {
+            let p = p?;
+            let args = [source(ops[1])?, source(ops[2])?];
+            float_lanes(shape, &args, |mut lane| {
+                let (a, b) = (lane.remove(0), lane.remove(0));
+                match ins.opcode {
+                    O::FADD => apply(Operation::FloatAdd(p), vec![a, b]),
+                    O::FSUB => apply(Operation::FloatSub(p), vec![a, b]),
+                    O::FMUL => apply(Operation::FloatMul(p), vec![a, b]),
+                    O::FDIV => apply(Operation::FloatDiv(p), vec![a, b]),
+                    _ => apply(
+                        Operation::FloatAbs(p),
+                        vec![apply(Operation::FloatSub(p), vec![a, b])],
+                    ),
+                }
+            })
+        }
+        // The product added to the destination, or for fmls the first
+        // source negated, rounded once.
+        O::FMLA | O::FMLS => {
+            let p = p?;
+            let accumulator = (Expr::reg(dest.0, 64), Expr::reg(dest.0 + 1, 64));
+            let args = [source(ops[1])?, source(ops[2])?, accumulator];
+            float_lanes(shape, &args, |mut lane| {
+                let (n, m, acc) = (lane.remove(0), lane.remove(0), lane.remove(0));
+                let n = if ins.opcode == O::FMLS {
+                    apply(Operation::FloatNegate(p), vec![n])
+                } else {
+                    n
+                };
+                apply(Operation::FloatMulAdd(p), vec![n, m, acc])
+            })
+        }
+        O::FABS
+        | O::FNEG
+        | O::FSQRT
+        | O::FRINTN
+        | O::FRINTA
+        | O::FRINTM
+        | O::FRINTP
+        | O::FRINTZ
+        | O::FRINTX
+        | O::FRINTI => {
+            let p = p?;
+            let op = match ins.opcode {
+                O::FABS => Operation::FloatAbs(p),
+                O::FNEG => Operation::FloatNegate(p),
+                O::FSQRT => Operation::FloatSqrt(p),
+                O::FRINTA => Operation::FloatRound(p, Rounding::NearestAway),
+                O::FRINTM => Operation::FloatRound(p, Rounding::Down),
+                O::FRINTP => Operation::FloatRound(p, Rounding::Up),
+                O::FRINTZ => Operation::FloatRound(p, Rounding::TowardZero),
+                _ => Operation::FloatRound(p, Rounding::NearestEven),
+            };
+            float_lanes(shape, &[source(ops[1])?], |lane| apply(op, lane))
+        }
+        // All ones where the comparison holds; against zero, or the
+        // absolute values for the facge and facgt.
+        O::FCMEQ | O::FCMGE | O::FCMGT | O::FCMLE | O::FCMLT | O::FACGE | O::FACGT => {
+            let p = p?;
+            let args = [source(ops[1])?, source(ops[2])?];
+            float_lanes(shape, &args, |mut lane| {
+                let (a, b) = (lane.remove(0), lane.remove(0));
+                let abs = |value| apply(Operation::FloatAbs(p), vec![value]);
+                truth(match ins.opcode {
+                    O::FCMEQ => apply(Operation::FloatEqual(p), vec![a, b]),
+                    O::FCMGE => apply(Operation::FloatLessEqual(p), vec![b, a]),
+                    O::FCMGT => apply(Operation::FloatLess(p), vec![b, a]),
+                    O::FCMLE => apply(Operation::FloatLessEqual(p), vec![a, b]),
+                    O::FCMLT => apply(Operation::FloatLess(p), vec![a, b]),
+                    O::FACGE => apply(Operation::FloatLessEqual(p), vec![abs(b), abs(a)]),
+                    _ => apply(Operation::FloatLess(p), vec![abs(b), abs(a)]),
+                })
+            })
+        }
+        // A fixed-point source has that many fraction bits; dividing by a
+        // power of two adds no rounding.
+        O::SCVTF | O::UCVTF => {
+            let p = p?;
+            let fraction = shift_count(ops[2]).unwrap_or(0) as u32;
+            float_lanes(shape, &[source(ops[1])?], |lane| {
+                let converted = apply(
+                    Operation::IntToFloat {
+                        signed: ins.opcode == O::SCVTF,
+                        bits: dest.2,
+                        to: p,
+                    },
+                    lane,
+                );
+                if fraction > 0 {
+                    apply(
+                        Operation::FloatDiv(p),
+                        vec![converted, power_of_two(fraction, p)],
+                    )
+                } else {
+                    converted
+                }
+            })
+        }
+        O::FCVTZS
+        | O::FCVTZU
+        | O::FCVTNS
+        | O::FCVTNU
+        | O::FCVTAS
+        | O::FCVTAU
+        | O::FCVTMS
+        | O::FCVTMU
+        | O::FCVTPS
+        | O::FCVTPU => {
+            let p = p?;
+            let (signed, rounding) = match ins.opcode {
+                O::FCVTZS => (true, Rounding::TowardZero),
+                O::FCVTZU => (false, Rounding::TowardZero),
+                O::FCVTNS => (true, Rounding::NearestEven),
+                O::FCVTNU => (false, Rounding::NearestEven),
+                O::FCVTAS => (true, Rounding::NearestAway),
+                O::FCVTAU => (false, Rounding::NearestAway),
+                O::FCVTMS => (true, Rounding::Down),
+                O::FCVTMU => (false, Rounding::Down),
+                O::FCVTPS => (true, Rounding::Up),
+                _ => (false, Rounding::Up),
+            };
+            let fraction = shift_count(ops[2]).unwrap_or(0) as u32;
+            float_lanes(shape, &[source(ops[1])?], |mut lane| {
+                let value = lane.remove(0);
+                // A fixed-point result keeps that many fraction bits.
+                let value = if fraction > 0 {
+                    apply(
+                        Operation::FloatMul(p),
+                        vec![value, power_of_two(fraction, p)],
+                    )
+                } else {
+                    value
+                };
+                apply(
+                    Operation::FloatToInt {
+                        signed,
+                        bits: dest.2,
+                        from: p,
+                        saturating: true,
+                        rounding,
+                    },
+                    vec![value],
+                )
+            })
+        }
+        // Neighbouring lanes of the two sources taken as one added, or the
+        // two lanes of one source for the scalar form.
+        O::FADDP => {
+            let p = p?;
+            let add = |lane: Vec<Expr>| apply(Operation::FloatAdd(p), lane);
+            let a = source(ops[1])?;
+            if matches!(ops[2], Operand::Nothing) {
+                let pair = if dest.2 == 64 {
+                    (a.0, a.1)
+                } else {
+                    (
+                        Expr::bin(BinOp::And, a.0.clone(), Expr::constant(0xffff_ffff)),
+                        Expr::bin(BinOp::Shr, a.0, Expr::constant(32)),
+                    )
+                };
+                (add(vec![pair.0, pair.1]), Expr::constant(0))
+            } else {
+                let b = source(ops[2])?;
+                let even = unzip(a.clone(), b.clone(), dest.2, dest.1, false);
+                let odd = unzip(a, b, dest.2, dest.1, true);
+                float_lanes(shape, &[even, odd], add)
+            }
+        }
+        // Singles to doubles, from the low half or, for fcvtl2, the high one.
+        O::FCVTL | O::FCVTL2 if dest.2 == 64 => {
+            let (low, high) = source(ops[1])?;
+            let half = if ins.opcode == O::FCVTL2 { high } else { low };
+            let widen = |single: Expr| {
+                apply(
+                    Operation::FloatConvert {
+                        from: Precision::Single,
+                        to: Precision::Double,
+                    },
+                    vec![single],
+                )
+            };
+            (
+                widen(Expr::bin(
+                    BinOp::And,
+                    half.clone(),
+                    Expr::constant(0xffff_ffff),
+                )),
+                widen(Expr::bin(BinOp::Shr, half, Expr::constant(32))),
+            )
+        }
+        // Doubles to singles, into the low half or, for fcvtn2, the high one.
+        O::FCVTN | O::FCVTN2 if dest.2 == 32 => {
+            let (low, high) = source(ops[1])?;
+            let narrow = |double: Expr| {
+                apply(
+                    Operation::FloatConvert {
+                        from: Precision::Double,
+                        to: Precision::Single,
+                    },
+                    vec![double],
+                )
+            };
+            let value = Expr::bin(
+                BinOp::Or,
+                narrow(low),
+                Expr::bin(BinOp::Shl, narrow(high), Expr::constant(32)),
+            );
+            write_narrow(lifter, dest, ins.opcode == O::FCVTN2, value);
+            return Some(());
+        }
+        _ => return None,
+    };
+    lifter.write_vector(dest, low, high);
+    Some(())
+}
+
 /// The scalar instructions on floating-point registers.
 fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     use a64::Opcode as O;
@@ -2503,6 +2789,16 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                     Precision::Single => u64::from((value as f32).to_bits()),
                 };
                 lifter.write_simd(slot, bits, (Expr::constant(pattern), Expr::constant(0)));
+            }
+            // The constant in every lane.
+            (Operand::SIMDRegisterElements(..), Operand::ImmediateDouble(value)) => {
+                let dest = vector(ops[0])?;
+                let pattern = match precision(u16::from(dest.2))? {
+                    Precision::Double => value.to_bits(),
+                    Precision::Single => u64::from((value as f32).to_bits()),
+                };
+                let half = Expr::constant(replicated(pattern, dest.2));
+                lifter.write_vector(dest, half.clone(), half);
             }
             // The upper half of a 128-bit register, which the rest keeps.
             (Operand::SIMDRegisterElementsLane(_, number, a64::SIMDSizeCode::D, 1), source) => {
@@ -2758,7 +3054,10 @@ fn lift_csel(lifter: &mut Lifter, ops: [Operand; 4]) {
 fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
     use a64::Opcode as O;
     let ops = ins.operands;
-    if lift_float(lifter, ins).is_some() || lift_vector(lifter, ins).is_some() {
+    if lift_float(lifter, ins).is_some()
+        || lift_vector(lifter, ins).is_some()
+        || lift_vector_float(lifter, ins).is_some()
+    {
         return false;
     }
     // Only loads and stores handle vector operands past this point.
