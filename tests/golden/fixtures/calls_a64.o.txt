@@ -1,4 +1,4 @@
-# calls_a64.o: elf aarch64 no entry, 11 functions, 0 lift failures, 1 unsupported, 1 gotos
+# calls_a64.o: elf aarch64 no entry, 11 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x0 8 twice symtab,unwind
 0x8 8 square symtab,unwind
 0x10 28 pick_op symtab,unwind
@@ -447,14 +447,15 @@ int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, 
             if (v4 <= 0xfffffff8 /* unsigned */) {
                 v5 = v1;
                 v1 = v2 + (int64_t)(int32_t)(v4);
-                goto L_230;
+            } else {
+                v5 = v1 + 0x2;
+                local_26 = v5;
             }
         } else {
             v6 = v4;
+            v5 = v1 + 0x2;
+            local_26 = v5;
         }
-        v5 = v1 + 0x2;
-        local_26 = v5;
-    L_230:
         a0 = a0 - 0x1;
         v4 = v6;
         v3 = *v1 + v3;

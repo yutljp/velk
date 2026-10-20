@@ -1139,6 +1139,24 @@ impl Stmt {
             }
         }
     }
+
+    /// The same, to change.
+    pub fn operands_mut(&mut self) -> Vec<&mut Expr> {
+        match self {
+            Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
+            Stmt::Store { addr, value, .. } => vec![addr, value],
+            Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],
+            Stmt::BrIndirect { target } => vec![target],
+            Stmt::Switch { index, .. } => vec![index],
+            Stmt::Call { through, args, .. } => through
+                .iter_mut()
+                .chain(args.iter_mut().flatten())
+                .collect(),
+            Stmt::BrifFlags { .. } | Stmt::Br { .. } | Stmt::Unsupported { .. } | Stmt::Trap => {
+                Vec::new()
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

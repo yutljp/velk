@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 681 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 658 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab

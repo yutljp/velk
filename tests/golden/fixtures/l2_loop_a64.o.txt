@@ -136,16 +136,14 @@ fn sum_skip_odd @ 0x60 (size 64)
 -- decompile
 /* velk pseudo-C: find_first @ 0xa0 */
 int32_t find_first(uint32_t *a0, int32_t a1, int32_t a2) {
-    uint32_t *v1;
     int64_t v2;
     int64_t v3;
 
     if (a1 >= 0x1) {
-        v1 = a0;
         v2 = 0x0;
         v3 = a1;
         do {
-            if (v1[v2] == a2) {
+            if (a0[v2] == a2) {
                 goto L_d0;
             }
             v2 = v2 + 0x1;

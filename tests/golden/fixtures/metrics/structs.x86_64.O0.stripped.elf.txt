@@ -238,15 +238,13 @@ fn <unnamed> @ 0x201380 (size 59)
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
 int64_t sub_2013c0(uint8_t *a0, int32_t a1) {
-    uint8_t *v2;
     int64_t v4;
     int64_t v6;
 
-    v2 = a0;
-    v4 = *v2;
+    v4 = *a0;
     v6 = v4 & 0xf1;
-    *v2 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (a1 & 0x7) << 0x1 & 0xff);
-    return v2;
+    *a0 = v6 & 0xffffffffffffff00 | (v6 & 0xff | (a1 & 0x7) << 0x1 & 0xff);
+    return a0;
 }
 -- signature
 int64_t (uint8_t * a0, int32_t a1)

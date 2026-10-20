@@ -1,3 +1,0 @@
-rust_demo 0x1fe50 gimli::read::line::parse_attribute::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>: the pseudo-C drops `Store { addr: Bin { op: Add, lhs: Reg { index: 7, width: 64 }, rhs: Const(8) }, value: Const(19), width: 2 }`
-rust_probe 0x1fe50 gimli::read::line::parse_attribute::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>: the pseudo-C drops `Store { addr: Bin { op: Add, lhs: Reg { index: 7, width: 64 }, rhs: Const(8) }, value: Const(19), width: 2 }`
-rust_probe_stripped 0x1fe50 -: the pseudo-C drops `Store { addr: Bin { op: Add, lhs: Reg { index: 7, width: 64 }, rhs: Const(8) }, value: Const(19), width: 2 }`

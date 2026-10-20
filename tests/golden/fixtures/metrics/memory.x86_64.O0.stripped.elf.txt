@@ -222,16 +222,12 @@ fn <unnamed> @ 0x2013f0 (size 34)
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 int64_t sub_201420(uint32_t *a0, uint32_t *a1) {
-    uint32_t *v1;
-    uint32_t *local_0; /* [sp-18] */
-    int32_t local_1; /* [sp-1c] */
+    int32_t local_0; /* [sp-1c] */
 
-    local_0 = a1;
-    local_1 = *a0;
+    local_0 = *a0;
     *a0 = *a1;
-    v1 = local_0;
-    *v1 = local_1;
-    return v1;
+    *a1 = local_0;
+    return a1;
 }
 -- signature
 int64_t (uint32_t * a0, uint32_t * a1)

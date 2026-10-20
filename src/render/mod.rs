@@ -1,6 +1,7 @@
 mod expr;
 mod locals;
 mod naming;
+mod params;
 pub mod structure;
 mod variables;
 
@@ -55,6 +56,9 @@ pub fn render(
     callees: &HashMap<u64, String>,
     data_ranges: &[(u64, u64)],
 ) -> String {
+    let mut folded = ir.clone();
+    params::fold_saved_parameters(&mut folded);
+    let ir = &folded;
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
         variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
@@ -816,16 +820,33 @@ fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             indent(depth, out);
             out.push_str(&format!("if ({}) {{\n", condition(*cond, lhs, rhs, ctx)));
             render_nodes(then, depth + 1, out, ctx);
-            if els.is_empty() {
+            // An `else` holding only another `if` continues the chain.
+            let mut els = els;
+            while let [
+                Node::If {
+                    cond,
+                    lhs,
+                    rhs,
+                    then,
+                    els: rest,
+                },
+            ] = els.as_slice()
+            {
                 indent(depth, out);
-                out.push_str("}\n");
-            } else {
+                out.push_str(&format!(
+                    "}} else if ({}) {{\n",
+                    condition(*cond, lhs, rhs, ctx)
+                ));
+                render_nodes(then, depth + 1, out, ctx);
+                els = rest;
+            }
+            if !els.is_empty() {
                 indent(depth, out);
                 out.push_str("} else {\n");
                 render_nodes(els, depth + 1, out, ctx);
-                indent(depth, out);
-                out.push_str("}\n");
             }
+            indent(depth, out);
+            out.push_str("}\n");
         }
         Node::Switch {
             index,

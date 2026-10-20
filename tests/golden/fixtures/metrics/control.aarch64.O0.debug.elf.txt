@@ -1,4 +1,4 @@
-# metrics/control.aarch64.O0.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 2 gotos
+# metrics/control.aarch64.O0.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x2101e4 188 matrix_trace symtab,dwarf,unwind
 0x2102a0 96 cleanup_on_error symtab,dwarf,unwind
 0x210300 160 fallthrough symtab,dwarf,unwind
@@ -141,22 +141,24 @@ int fallthrough(int x) {
     local_1 = v1;
     if (v1 == 0x0) {
         local_0 += 0x1;
-    } else {
-        if (local_1 - 0x1 != 0x0) {
-            if (local_1 - 0x2 == 0x0) {
-                goto L_21036c;
-            }
-            if (local_1 - 0x3 == 0x0) {
-                local_0 = 0x8;
-                return local_0;
-            }
-            local_0 = 0xffffffff;
-            return local_0;
-        }
+        local_0 += 0x2;
+        local_0 += 0x4;
+        return local_0;
     }
-    local_0 += 0x2;
-L_21036c:
-    local_0 += 0x4;
+    if (local_1 - 0x1 == 0x0) {
+        local_0 += 0x2;
+        local_0 += 0x4;
+        return local_0;
+    }
+    if (local_1 - 0x2 == 0x0) {
+        local_0 += 0x4;
+        return local_0;
+    }
+    if (local_1 - 0x3 == 0x0) {
+        local_0 = 0x8;
+        return local_0;
+    }
+    local_0 = 0xffffffff;
     return local_0;
 }
 -- signature

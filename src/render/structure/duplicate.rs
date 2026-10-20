@@ -5,7 +5,8 @@ use crate::ir::{FunctionIr, Stmt};
 const COPIES: u64 = 0xc000_0000_0000_0000;
 
 /// The function with each short block that several branches enter, and
-/// that only assigns before going on, copied into each of them. A branch
+/// that only assigns, stores or calls before going on, copied into each of
+/// them. A branch
 /// that skipped such a block to reach the code after it, as `switch` arms
 /// that leave past the code the default runs, then meets the others there,
 /// where structuring needs no `goto`.
@@ -19,7 +20,7 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
         let short = block.stmts.len() <= 3
             && block.start < COPIES
             && block.stmts.iter().enumerate().all(|(position, stmt)| {
-                matches!(stmt, Stmt::Assign { .. })
+                straight(stmt)
                     || (position + 1 == block.stmts.len()
                         && matches!(stmt, Stmt::Br { target: Some(_) }))
             });
@@ -47,7 +48,7 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
         let body: Vec<Stmt> = ir.blocks[candidate]
             .stmts
             .iter()
-            .filter(|stmt| matches!(stmt, Stmt::Assign { .. }))
+            .filter(|stmt| straight(stmt))
             .cloned()
             .chain(std::iter::once(Stmt::Br {
                 target: Some(follow),
@@ -89,6 +90,14 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
         changed = true;
     }
     changed.then_some(ir)
+}
+
+/// A statement that goes on to the next.
+fn straight(stmt: &Stmt) -> bool {
+    matches!(
+        stmt,
+        Stmt::Assign { .. } | Stmt::Store { .. } | Stmt::Call { .. }
+    )
 }
 
 /// Sends a branch to `from` to `to` instead.

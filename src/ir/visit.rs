@@ -17,6 +17,23 @@ pub(crate) fn children(expr: &Expr) -> Vec<&Expr> {
     }
 }
 
+pub(crate) fn children_mut(expr: &mut Expr) -> Vec<&mut Expr> {
+    match expr {
+        Expr::Bin { lhs, rhs, .. } => vec![lhs.as_mut(), rhs.as_mut()],
+        Expr::Select {
+            lhs,
+            rhs,
+            then,
+            els,
+            ..
+        } => vec![lhs.as_mut(), rhs.as_mut(), then.as_mut(), els.as_mut()],
+        Expr::Load { addr, .. } => vec![addr.as_mut()],
+        Expr::SignExtend { value, .. } => vec![value.as_mut()],
+        Expr::Apply { args, .. } => args.iter_mut().collect(),
+        _ => Vec::new(),
+    }
+}
+
 /// The width an expression computes at. `None` for a constant, a sign
 /// extension or mixed operand widths.
 pub(crate) fn expr_width(expr: &Expr) -> Option<u8> {

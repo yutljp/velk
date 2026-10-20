@@ -224,12 +224,10 @@ fn flags_level @ 0x210384 (size 76)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2103d0 */
 void flags_set_mode(struct flags *f, unsigned int mode) {
-    uint8_t *v1;
     int32_t v2;
 
-    v1 = f;
-    v2 = *v1;
-    *v1 = v2 & 0xfffffff1 | (mode & 0x7) << 0x1;
+    v2 = f->field_0x0;
+    f->field_0x0 = v2 & 0xfffffff1 | (mode & 0x7) << 0x1;
 }
 -- signature
 void (struct flags * f, unsigned int mode)
