@@ -582,7 +582,8 @@ pub fn lower(ssa: &Ssa) -> FunctionIr {
 }
 
 /// The values joined through φs: each set is one variable of the program.
-fn congruence_classes(ssa: &Ssa) -> Vec<usize> {
+/// A φ whose value nothing in `needed` reads joins nothing.
+fn congruence_classes(ssa: &Ssa, needed: &HashSet<u16>) -> Vec<usize> {
     let mut parent: Vec<usize> = (0..ssa.origin.len()).collect();
     fn find(parent: &mut [usize], mut index: usize) -> usize {
         while parent[index] != index {
@@ -592,6 +593,9 @@ fn congruence_classes(ssa: &Ssa) -> Vec<usize> {
         index
     }
     for phi in ssa.phis.iter().flatten() {
+        if !needed.contains(&phi.value) {
+            continue;
+        }
         let value = usize::from(phi.value - VALUE_BASE);
         for arg in &phi.args {
             let (a, b) = (
@@ -604,6 +608,178 @@ fn congruence_classes(ssa: &Ssa) -> Vec<usize> {
     (0..parent.len())
         .map(|index| find(&mut parent, index))
         .collect()
+}
+
+/// The values of vector register halves that hold vector data rather than
+/// a scalar float: a half loaded together with the other one from the next
+/// eight bytes, one an integer lane operation reads or gives, an integer
+/// sum or product, and one computed from those without floating-point
+/// arithmetic.
+fn vector_values(ssa: &Ssa) -> HashSet<u16> {
+    let isa = ssa.ir.isa;
+    let half = |value: u16| {
+        Ssa::is_value(value) && crate::arch::vector_half(isa, ssa.register_of(value)).is_some()
+    };
+    let mut vectors = HashSet::new();
+    let mut derived: Vec<(u16, HashSet<u16>)> = Vec::new();
+    for block in &ssa.ir.blocks {
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            if let Stmt::Assign { dest, value } = stmt
+                && half(dest.index)
+            {
+                let mut lanes = false;
+                let mut float = false;
+                lane_operands(value, &mut lanes, &mut float, &mut vectors, &half);
+                // Integer sums and products of halves are lane arithmetic too.
+                if let Expr::Bin {
+                    op: crate::ir::BinOp::Add | crate::ir::BinOp::Sub | crate::ir::BinOp::Mul,
+                    lhs,
+                    rhs,
+                } = value
+                {
+                    lanes = true;
+                    for operand in [lhs, rhs] {
+                        if let Expr::Reg { index, .. } = operand.as_ref()
+                            && half(*index)
+                        {
+                            vectors.insert(*index);
+                        }
+                    }
+                }
+                if lanes && !float {
+                    vectors.insert(dest.index);
+                }
+                let expected = match crate::arch::vector_half(isa, ssa.register_of(dest.index)) {
+                    Some(true) => -8,
+                    _ => 8,
+                };
+                if let Expr::Load { addr, width: 8, .. } = value
+                    && let Some(other) = [position.checked_sub(1), Some(position + 1)]
+                        .into_iter()
+                        .flatten()
+                        .find_map(|at| match block.stmts.get(at) {
+                            Some(Stmt::Assign {
+                                dest: other,
+                                value:
+                                    Expr::Load {
+                                        addr: other_addr,
+                                        width: 8,
+                                        ..
+                                    },
+                            }) if half(other.index)
+                                && ssa.register_of(other.index) ^ 1
+                                    == ssa.register_of(dest.index)
+                                && apart(addr, other_addr) == Some(expected) =>
+                            {
+                                Some(other.index)
+                            }
+                            _ => None,
+                        })
+                {
+                    vectors.insert(dest.index);
+                    vectors.insert(other);
+                }
+                if !float {
+                    let mut reads = HashSet::new();
+                    named(value, &mut reads);
+                    derived.push((dest.index, reads));
+                }
+            }
+        }
+    }
+    let phis: Vec<&Phi> = ssa.phis.iter().flatten().collect();
+    loop {
+        let before = vectors.len();
+        for (value, reads) in &derived {
+            if reads.iter().any(|read| vectors.contains(read)) {
+                vectors.insert(*value);
+            }
+        }
+        for phi in &phis {
+            if half(phi.value) && phi.args.iter().any(|arg| vectors.contains(arg)) {
+                vectors.insert(phi.value);
+            }
+        }
+        if vectors.len() == before {
+            return vectors;
+        }
+    }
+}
+
+/// Notes whether `expr` holds an integer lane operation or floating-point
+/// arithmetic, adding the vector halves a lane operation reads to `vectors`.
+fn lane_operands(
+    expr: &Expr,
+    lanes: &mut bool,
+    float: &mut bool,
+    vectors: &mut HashSet<u16>,
+    half: &dyn Fn(u16) -> bool,
+) {
+    use crate::ir::Operation;
+    if let Expr::Apply { op, args } = expr {
+        match op {
+            Operation::Lanes(..)
+            | Operation::InterleaveLow(_)
+            | Operation::InterleaveHigh(_)
+            | Operation::SignBits(_)
+            | Operation::SumLanes(_)
+            | Operation::Pack { .. }
+            | Operation::MultiplyAddPairs
+            | Operation::SumAbsoluteDifferences
+            | Operation::SumLanesLong { .. } => {
+                *lanes = true;
+                for arg in args {
+                    if let Expr::Reg { index, .. } = arg
+                        && half(*index)
+                    {
+                        vectors.insert(*index);
+                    }
+                }
+            }
+            Operation::FloatAdd(_)
+            | Operation::FloatSub(_)
+            | Operation::FloatMul(_)
+            | Operation::FloatDiv(_)
+            | Operation::FloatSqrt(_)
+            | Operation::FloatNegate(_)
+            | Operation::FloatAbs(_)
+            | Operation::FloatMulAdd(_)
+            | Operation::FloatEqual(_)
+            | Operation::FloatLess(_)
+            | Operation::FloatLessEqual(_)
+            | Operation::FloatUnordered(_)
+            | Operation::IntToFloat { .. }
+            | Operation::FloatToInt { .. }
+            | Operation::FloatRound(..)
+            | Operation::FloatConvert { .. } => *float = true,
+            _ => {}
+        }
+    }
+    for child in crate::ir::visit::children(expr) {
+        lane_operands(child, lanes, float, vectors, half);
+    }
+}
+
+/// How many bytes `high` lies past `low`, when both are the same base plus
+/// constants.
+fn apart(low: &Expr, high: &Expr) -> Option<i64> {
+    fn split(addr: &Expr) -> (Option<&Expr>, i64) {
+        match addr {
+            Expr::Const(offset) => (None, *offset as i64),
+            Expr::Bin {
+                op: crate::ir::BinOp::Add,
+                lhs,
+                rhs,
+            } => match rhs.as_ref() {
+                Expr::Const(offset) => (Some(lhs), *offset as i64),
+                _ => (Some(addr), 0),
+            },
+            _ => (Some(addr), 0),
+        }
+    }
+    let (low_base, low_offset) = split(low);
+    let (high_base, high_offset) = split(high);
+    (low_base == high_base).then(|| high_offset.wrapping_sub(low_offset))
 }
 
 /// Gives each variable a register of `registers` holds once the value it
@@ -623,16 +799,56 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     let Some(ssa) = build(ir) else {
         return;
     };
-    let class = congruence_classes(&ssa);
+    // A value a statement reads without naming it must be in its register,
+    // but for vector data a call of unknown floating-point arguments could
+    // only take as a scalar one.
+    let vectors = vector_values(&ssa);
+    let mut needed: HashSet<u16> = HashSet::new();
+    for (&(block, position), reads) in &ssa.implicit_reads {
+        let floats = match &ssa.ir.blocks[block].stmts[position] {
+            Stmt::Call { convention, .. } => convention.float_arguments(),
+            _ => &[],
+        };
+        needed.extend(
+            reads
+                .iter()
+                .filter(|(register, value)| !(floats.contains(register) && vectors.contains(value)))
+                .map(|(_, value)| *value),
+        );
+    }
+    let implicit = needed.clone();
+    for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+        needed.extend(explicit_reads(stmt));
+    }
+    // A φ only such a call reads joins nothing, so the vector data and what
+    // the register held before it can be variables apart.
+    let mut pending: Vec<u16> = needed.iter().copied().collect();
+    let phi_of: HashMap<u16, &Phi> = ssa
+        .phis
+        .iter()
+        .flatten()
+        .map(|phi| (phi.value, phi))
+        .collect();
+    while let Some(value) = pending.pop() {
+        for arg in phi_of
+            .get(&value)
+            .map(|phi| &phi.args)
+            .into_iter()
+            .flatten()
+        {
+            if needed.insert(*arg) {
+                pending.push(*arg);
+            }
+        }
+    }
+    let class = congruence_classes(&ssa, &needed);
     let mut kept: HashSet<usize> = ssa
         .entry
         .values()
+        .chain(&implicit)
+        .chain(phi_of.keys().filter(|value| !needed.contains(value)))
         .map(|value| class[usize::from(value - VALUE_BASE)])
         .collect();
-    // A value a statement reads without naming it must be in its register.
-    for (_, value) in ssa.implicit_reads.values().flatten() {
-        kept.insert(class[usize::from(value - VALUE_BASE)]);
-    }
     // One a call defines, such as its result, moves into its variable
     // right after the call, when anything reads it.
     let mut read: HashSet<usize> = HashSet::new();
@@ -1243,5 +1459,66 @@ mod split_tests {
         let before = ir.render();
         split_variables(&mut ir, &[RSI]);
         assert_eq!(ir.render(), before);
+    }
+
+    /// Copies eight or sixteen bytes from rdi to rsi through xmm0, then calls
+    /// through rax, which may take floating-point arguments.
+    fn copy_through_xmm0(both_halves: bool) -> FunctionIr {
+        const XMM0: u16 = 18;
+        let at = |base: u16, offset: u64| {
+            Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(offset))
+        };
+        let load = |addr: Expr| Expr::Load {
+            addr: Box::new(addr),
+            width: 8,
+            signed: false,
+        };
+        let store = |value: Expr, addr: Expr| Stmt::Store {
+            addr,
+            value,
+            width: 8,
+        };
+        let mut stmts = vec![assign(XMM0, load(Expr::reg(7, 64)))];
+        if both_halves {
+            stmts.push(assign(XMM0 + 1, load(at(7, 8))));
+        }
+        stmts.push(store(Expr::reg(XMM0, 64), Expr::reg(RSI, 64)));
+        if both_halves {
+            stmts.push(store(Expr::reg(XMM0 + 1, 64), at(RSI, 8)));
+        }
+        stmts.push(Stmt::Call {
+            target: None,
+            through: Some(Expr::reg(0, 64)),
+            convention: crate::ir::Convention::SysV,
+            args: None,
+            floats_named: false,
+            result: None,
+        });
+        stmts.push(Stmt::Ret {
+            value: Expr::Const(0),
+        });
+        let mut ir = function(vec![stmts]);
+        split_variables(&mut ir, &[XMM0, XMM0 + 1]);
+        ir
+    }
+
+    #[test]
+    fn sixteen_bytes_copied_through_a_vector_register_are_no_float_argument() {
+        let ir = copy_through_xmm0(true);
+        assert!(
+            matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, .. } if dest.index >= VARIABLE_BASE),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_scalar_loaded_into_a_float_argument_register_stays_there() {
+        let ir = copy_through_xmm0(false);
+        assert!(
+            matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, .. } if dest.index == 18),
+            "{}",
+            ir.render()
+        );
     }
 }
