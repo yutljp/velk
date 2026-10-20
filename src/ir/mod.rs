@@ -175,6 +175,28 @@ impl Convention {
         }
     }
 
+    /// Registers a call may leave changed: those the callee's summary
+    /// names, when it knows them, or else those the convention lets it.
+    pub fn clobbered_by(self, known: Option<Registers>) -> Vec<u16> {
+        match known {
+            Some(known) => known.iter().collect(),
+            None => self.clobbered().to_vec(),
+        }
+    }
+
+    /// Registers the convention keeps whatever the callee does: the stack
+    /// pointer, and under Go's register ABI the goroutine in r14 and the
+    /// zero in xmm15.
+    pub fn fixed(self) -> &'static [u16] {
+        match self {
+            Self::GoAmd64 => &[4, 14, 48, 49],
+            Self::Aapcs64 | Self::SyscallArm => &[31],
+            Self::SysV | Self::Win64 | Self::SyscallX86 | Self::GoWriteBarrier | Self::GoAbi0 => {
+                &[4]
+            }
+        }
+    }
+
     /// Registers a call may leave changed.
     pub fn clobbered(self) -> &'static [u16] {
         match self {
@@ -210,6 +232,36 @@ impl Convention {
             Self::SyscallArm => &[0],
             Self::GoWriteBarrier => &[11],
         }
+    }
+}
+
+/// A set of machine registers, one bit for each index below 128.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct Registers(pub u128);
+
+impl Registers {
+    pub fn insert(&mut self, index: u16) {
+        if index < 128 {
+            self.0 |= 1 << index;
+        }
+    }
+
+    pub fn contains(self, index: u16) -> bool {
+        index < 128 && self.0 & 1 << index != 0
+    }
+
+    pub fn iter(self) -> impl Iterator<Item = u16> {
+        (0..128).filter(move |index| self.contains(*index))
+    }
+}
+
+impl FromIterator<u16> for Registers {
+    fn from_iter<I: IntoIterator<Item = u16>>(iter: I) -> Self {
+        let mut set = Registers::default();
+        for index in iter {
+            set.insert(index);
+        }
+        set
     }
 }
 
@@ -471,6 +523,10 @@ pub enum Operation {
     /// The values a function returns in several registers, the first in the
     /// return register; as a value, the first.
     Results,
+    /// What a register holds after a call that changes it without returning
+    /// anything in it: no value the code may rely on. It takes no
+    /// arguments, and the interpreter reads it as zero.
+    Undefined,
     /// The sum of the lanes of `bits` in two halves, each extended first,
     /// in twice `bits`.
     SumLanesLong {
@@ -561,6 +617,7 @@ impl Operation {
             | Operation::ReverseBits(_)
             | Operation::Widen { .. }
             | Operation::SignBits(_) => 1,
+            Operation::Undefined => 0,
             Operation::FloatMulAdd(_) => 3,
             Operation::Aes { .. } => 4,
             Operation::WideDivide { .. } => 3,
@@ -655,6 +712,10 @@ impl Expr {
         }
         if matches!(op, BinOp::Add | BinOp::Or | BinOp::Xor) && matches!(lhs, Expr::Const(0)) {
             return rhs;
+        }
+        // As `sbb rdx, rdx` starts, whatever rdx holds.
+        if matches!(op, BinOp::Sub | BinOp::Xor) && lhs == rhs {
+            return Expr::Const(0);
         }
         if matches!(op, BinOp::And | BinOp::Or) && lhs == rhs {
             return lhs;
@@ -833,6 +894,7 @@ pub(crate) fn operation_name(op: Operation) -> String {
         }
         Operation::SumAbsoluteDifferences => "sum_absolute_differences8".to_owned(),
         Operation::Results => "results".to_owned(),
+        Operation::Undefined => "undefined".to_owned(),
         Operation::CountLeadingZeros(bits) => format!("clz{bits}"),
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),
         Operation::PopCount(bits) => format!("popcount{bits}"),
@@ -1125,6 +1187,9 @@ pub enum Stmt {
         /// Where the returned value goes besides the return register, when a
         /// variable of its own holds it.
         result: Option<RegRef>,
+        /// The registers the callee may leave changed, when its summary
+        /// knows them; else the call changes those its convention lets it.
+        clobbers: Option<Registers>,
     },
     Ret {
         value: Expr,
@@ -1140,6 +1205,18 @@ pub enum Stmt {
 }
 
 impl Stmt {
+    /// The registers a call may leave changed; none for another statement.
+    pub fn call_clobbers(&self) -> Vec<u16> {
+        match self {
+            Stmt::Call {
+                convention,
+                clobbers,
+                ..
+            } => convention.clobbered_by(*clobbers),
+            _ => Vec::new(),
+        }
+    }
+
     /// The registers a call reads besides those its expressions name.
     pub fn unnamed_call_reads(&self) -> Vec<u16> {
         match self {

@@ -25,7 +25,6 @@ fn point_dot @ 0x201210 (size 44)
 -- decompile
 /* velk pseudo-C: array_sum @ 0x201240 */
 int array_sum(int *a, int n) {
-    int64_t v1;
     int *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
     int32_t local_2; /* [sp-18] */
@@ -35,8 +34,7 @@ int array_sum(int *a, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = local_3;
-        local_2 += local_0[v1];
+        local_2 += local_0[local_3];
     }
     return local_2;
 }
@@ -54,8 +52,7 @@ fn array_sum @ 0x201240 (size 73)
   blk1 @ 0x201259:
     brif ge load32((rsp + #0xffffffffffffffe4)), load32((rsp + #0xffffffffffffffec)) -> 0x201284
   blk2 @ 0x201265:
-    v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
-    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
+    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffe4))) * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
     store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x201259
   blk3 @ 0x201284:

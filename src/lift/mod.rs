@@ -459,6 +459,7 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
             convention: Convention::GoWriteBarrier,
             args: Some(Vec::new()),
             floats_named: false,
+            clobbers: None,
             result: None,
         };
     }
@@ -509,6 +510,7 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
         args,
         floats_named: floats.is_some(),
         result: None,
+        clobbers: summary.and_then(|summary| summary.clobbers),
     }
 }
 
@@ -861,6 +863,7 @@ pub(crate) fn call_through(image: &Image, through: Expr) -> Stmt {
         convention,
         args: arguments(convention, image.isa, arity, 0),
         floats_named: false,
+        clobbers: None,
         result: None,
     }
 }

@@ -223,7 +223,7 @@ pub(crate) fn statement_registers(
                     reads.extend(convention.call_reads_through(through.as_ref(), *floats_named))
                 }
             }
-            writes.extend(convention.clobbered());
+            writes.extend(stmt.call_clobbers());
         }
         // An unmodeled instruction may leave changed the registers it names,
         // or any machine register when they are not known.

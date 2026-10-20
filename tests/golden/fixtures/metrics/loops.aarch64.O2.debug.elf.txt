@@ -10,8 +10,7 @@
 int count_bits(unsigned int x) {
     uint32_t v1;
     int32_t v2;
-    int32_t v3;
-    uint32_t v4;
+    uint32_t v3;
 
     if (x == 0x0) {
         return x;
@@ -19,12 +18,11 @@ int count_bits(unsigned int x) {
     v1 = x;
     x = 0x0;
     do {
-        v2 = v1 >> 0x1;
-        v3 = v1 & 0x1;
-        x = x + v3;
-        v4 = v1;
-        v1 = v2;
-    } while (v4 > 0x1 /* unsigned */);
+        v2 = v1 & 0x1;
+        x = x + v2;
+        v3 = v1;
+        v1 = v1 >> 0x1;
+    } while (v3 > 0x1 /* unsigned */);
     return x;
 }
 -- signature
@@ -39,12 +37,11 @@ fn count_bits @ 0x21018c (size 40)
     v1 = x0
     x0 = #0x0
   blk2 @ 0x210198:
-    v2 = (v1 >> #0x1)
-    v3 = (v1 & #0x1)
-    x0 = (((x0 & #0xffffffff) + v3) & #0xffffffff)
-    v4 = v1
-    v1 = v2
-    brif hi v4, #0x1 -> 0x210198
+    v2 = (v1 & #0x1)
+    x0 = (((x0 & #0xffffffff) + v2) & #0xffffffff)
+    v3 = v1
+    v1 = (v1 >> #0x1)
+    brif hi v3, #0x1 -> 0x210198
   blk3 @ 0x2101b0:
     ret x0
 -- card

@@ -208,6 +208,17 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
         }
     }
 
+    // Code compiled to the convention takes no argument past a call in a
+    // register the convention lets the call change, whatever the callee
+    // really leaves there: a read of one is no argument either.
+    let call_writes = |stmt: &Stmt| match stmt {
+        Stmt::Call { convention, .. } => {
+            let mut written = stmt.call_clobbers();
+            written.extend(convention.clobbered());
+            written
+        }
+        _ => Vec::new(),
+    };
     let writes: Vec<HashSet<u16>> = blocks
         .iter()
         .map(|block| {
@@ -216,7 +227,7 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
                 .iter()
                 .flat_map(|stmt| match stmt {
                     Stmt::Assign { dest, .. } => vec![dest.index],
-                    Stmt::Call { convention, .. } => convention.clobbered().to_vec(),
+                    Stmt::Call { .. } => call_writes(stmt),
                     // Unsupported instructions are mostly vector ones, which
                     // may write any floating-point register.
                     Stmt::Unsupported { .. } => float_arguments.to_vec(),
@@ -327,7 +338,7 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
                 Stmt::Assign { dest, .. } => {
                     written.insert(dest.index);
                 }
-                Stmt::Call { convention, .. } => written.extend(convention.clobbered()),
+                Stmt::Call { .. } => written.extend(call_writes(stmt)),
                 Stmt::Unsupported { .. } => written.extend(float_arguments),
                 _ => {}
             }
@@ -408,9 +419,9 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
     for stmt in blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
             Stmt::Assign { dest, .. } => *definitions.entry(dest.index).or_default() += 1,
-            Stmt::Call { convention, .. } => {
-                for register in convention.clobbered() {
-                    *definitions.entry(*register).or_default() += 2;
+            Stmt::Call { .. } => {
+                for register in stmt.call_clobbers() {
+                    *definitions.entry(register).or_default() += 2;
                 }
             }
             _ => {}
@@ -1137,9 +1148,9 @@ impl Origins {
                     }
                 }
             }
-            Stmt::Call { convention, .. } => {
-                for register in convention.clobbered() {
-                    origin.remove(register);
+            Stmt::Call { .. } => {
+                for register in stmt.call_clobbers() {
+                    origin.remove(&register);
                 }
             }
             _ => {}
@@ -1417,6 +1428,7 @@ mod tests {
                     convention: Convention::GoAmd64,
                     args: Some(vec![Expr::reg(3, 64), Expr::reg(8, 64)]),
                     floats_named: false,
+                    clobbers: None,
                     result: None,
                 },
                 Stmt::Ret {

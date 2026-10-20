@@ -478,6 +478,8 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         | Operation::SumLanesLong { .. }
         | Operation::Crc32 { .. }
         | Operation::Results => call(&crate::ir::operation_name(op), None),
+        // Any value would do; the comment says none was meant.
+        Operation::Undefined => "0 /* undefined */".to_owned(),
         Operation::CountLeadingZeros(bits) => builtin("clz", bits),
         Operation::CountTrailingZeros(bits) => builtin("ctz", bits),
         Operation::PopCount(bits) => builtin("popcount", bits),

@@ -1981,6 +1981,7 @@ mod tests {
                     convention,
                     args: Some(vec![Expr::reg(0, 64), Expr::reg(3, 64)]),
                     floats_named: false,
+                    clobbers: None,
                     result: Some(RegRef {
                         index: first,
                         width: 64,

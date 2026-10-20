@@ -27,61 +27,62 @@ int dense(int x) {
     uint64_t x8;
 
     x8 = ((x - 0xa) & 0xffffffff);
-    if ((uint32_t)x8 <= 0xf /* unsigned */) {
-        switch (x) {
-        case 10:
-            c0();
-            return g_sink;
-        case 11:
-            c1();
-            return g_sink;
-        case 12:
-            c2();
-            return g_sink;
-        case 13:
-            c3();
-            return g_sink;
-        case 14:
-            c4();
-            return g_sink;
-        case 15:
-            c5();
-            return g_sink;
-        case 16:
-            c6();
-            return g_sink;
-        case 17:
-            c7();
-            return g_sink;
-        case 18:
-            c8();
-            return g_sink;
-        case 19:
-            c9();
-            return g_sink;
-        case 20:
-            c10();
-            return g_sink;
-        case 21:
-            c11();
-            return g_sink;
-        case 22:
-            c12();
-            return g_sink;
-        case 23:
-            c13();
-            return g_sink;
-        case 24:
-            c14();
-            return g_sink;
-        case 25:
-            c15();
-            return g_sink;
-        default:
-            break;
-        }
+    if ((uint32_t)x8 > 0xf /* unsigned */) {
+        g_sink = 0x0;
+        return g_sink;
     }
-    g_sink = 0x0;
+    switch (x) {
+    case 10:
+        c0();
+        return g_sink;
+    case 11:
+        c1();
+        return g_sink;
+    case 12:
+        c2();
+        return g_sink;
+    case 13:
+        c3();
+        return g_sink;
+    case 14:
+        c4();
+        return g_sink;
+    case 15:
+        c5();
+        return g_sink;
+    case 16:
+        c6();
+        return g_sink;
+    case 17:
+        c7();
+        return g_sink;
+    case 18:
+        c8();
+        return g_sink;
+    case 19:
+        c9();
+        return g_sink;
+    case 20:
+        c10();
+        return g_sink;
+    case 21:
+        c11();
+        return g_sink;
+    case 22:
+        c12();
+        return g_sink;
+    case 23:
+        c13();
+        return g_sink;
+    case 24:
+        c14();
+        return g_sink;
+    case 25:
+        c15();
+        return g_sink;
+    default:
+        __builtin_unreachable();
+    }
     return g_sink;
 }
 -- signature
@@ -92,10 +93,10 @@ int (int x)
 -- ir
 fn dense @ 0x210304 (size 200)
   blk0 @ 0x210304:
-    x8 = (((x0 & #0xffffffff) - #0xa) & #0xffffffff)
+    x8 = ((w0 - #0xa) & #0xffffffff)
     brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
-    switch (x0 & #0xffffffff) [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
+    switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default <none>
   blk2 @ 0x210338:
     call 0x2103cc()
     br 0x2103bc

@@ -1,9 +1,7 @@
-# 5640 functions, 62411 compared runs
+# 5640 functions, 62431 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 353
-#   step limit (Go): 2806
+#   step limit (Go): 2808
 #   step limit (Rust): 1692
 #   switch without a matching case (Rust): 144
 #   unsupported instruction (Go): 252
-go_probe 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)
-go_stripped 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)

@@ -448,6 +448,29 @@ fn magic_divisor(magic: u64, shift: u64) -> Option<u64> {
 }
 
 pub(crate) fn algebraic(expr: Expr) -> Expr {
+    // The undefined value may be taken as any value, as zero: masked or
+    // shifted it stays undefined, and bits put in beside it, as a partial
+    // write of a register a call left undefined puts them, are the value.
+    if let Expr::Bin { op, lhs, rhs } = &expr {
+        let undefined = |expr: &Expr| {
+            matches!(
+                expr,
+                Expr::Apply {
+                    op: crate::ir::Operation::Undefined,
+                    ..
+                }
+            )
+        };
+        match op {
+            BinOp::And if undefined(lhs) || undefined(rhs) => {
+                return Expr::apply(crate::ir::Operation::Undefined, Vec::new());
+            }
+            BinOp::Shl | BinOp::Shr | BinOp::Sar if undefined(lhs) => return lhs.as_ref().clone(),
+            BinOp::Or if undefined(lhs) => return rhs.as_ref().clone(),
+            BinOp::Or if undefined(rhs) => return lhs.as_ref().clone(),
+            _ => {}
+        }
+    }
     // A multiply by a magic number and a shift, as compilers divide a
     // 32-bit value by a constant.
     if let Expr::Bin {

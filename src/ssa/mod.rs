@@ -343,6 +343,65 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
     })
 }
 
+/// Makes each read of what a call leaves in a register it changes, but
+/// returns nothing in, read the undefined value: the register's earlier
+/// value is gone, and the code cannot rely on what is there instead. A
+/// value a φ joins with others is left as it is.
+pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
+    if !ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::Call { .. }))
+    {
+        return;
+    }
+    let Some(ssa) = build(ir) else {
+        return;
+    };
+    let mut undefined: HashSet<u16> = HashSet::new();
+    for (&(block, position), defined) in &ssa.implicit_writes {
+        let Stmt::Call { convention, .. } = &ssa.ir.blocks[block].stmts[position] else {
+            continue;
+        };
+        let results = convention.results();
+        undefined.extend(
+            defined
+                .iter()
+                .filter(|(register, _)| {
+                    crate::arch::machine_registers().contains(register)
+                        && !results.contains(register)
+                })
+                .map(|(_, value)| *value),
+        );
+    }
+    if undefined.is_empty() {
+        return;
+    }
+    fn undefine(original: &mut Expr, renamed: &Expr, undefined: &HashSet<u16>) {
+        if let Expr::Reg { index, .. } = renamed
+            && undefined.contains(index)
+        {
+            *original = Expr::apply(crate::ir::Operation::Undefined, Vec::new());
+            return;
+        }
+        let children = crate::ir::visit::children(renamed);
+        for (original, renamed) in crate::ir::visit::children_mut(original)
+            .into_iter()
+            .zip(children)
+        {
+            undefine(original, renamed, undefined);
+        }
+    }
+    for (contents, renamed) in ir.blocks.iter_mut().zip(&ssa.ir.blocks) {
+        for (stmt, renamed) in contents.stmts.iter_mut().zip(&renamed.stmts) {
+            for (original, renamed) in stmt.operands_mut().into_iter().zip(renamed.operands()) {
+                undefine(original, renamed, &undefined);
+            }
+        }
+    }
+}
+
 /// Gives each call to a variadic library function the arguments its format
 /// string's conversions take, where a constant format reaches the call.
 pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Image) {
@@ -1318,6 +1377,63 @@ mod tests {
         }
     }
 
+    /// `call; mov cl, 1; mov eax, ecx; ret` with the callee changing what
+    /// `clobbers` says.
+    fn byte_after_call(clobbers: Option<crate::ir::Registers>) -> FunctionIr {
+        const RCX: u16 = 1;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x2000),
+                    through: None,
+                    convention: crate::ir::Convention::SysV,
+                    args: Some(Vec::new()),
+                    floats_named: false,
+                    result: None,
+                    clobbers,
+                },
+                assign(
+                    RCX,
+                    Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(BinOp::And, Expr::reg(RCX, 64), Expr::Const(!0xff)),
+                        Expr::Const(1),
+                    ),
+                ),
+                Stmt::Ret {
+                    value: Expr::reg(RCX, 64),
+                },
+            ],
+        );
+        super::undefine_clobbered_reads(&mut ir);
+        crate::passes::simplify::simplify(&mut ir);
+        ir
+    }
+
+    #[test]
+    fn a_partial_write_over_a_register_a_call_destroyed_is_the_new_bits() {
+        let ir = byte_after_call(None);
+        assert!(matches!(
+            &ir.blocks[0].stmts[1],
+            Stmt::Assign {
+                value: Expr::Const(1),
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn a_register_the_callee_keeps_holds_its_earlier_value() {
+        let ir = byte_after_call(Some(crate::ir::Registers::default()));
+        let Stmt::Assign { value, .. } = &ir.blocks[0].stmts[1] else {
+            panic!("an assignment");
+        };
+        let mut read = std::collections::HashSet::new();
+        crate::ir::visit::collect_reads(value, &mut read);
+        assert!(read.contains(&1));
+    }
+
     /// x = 0; loop: x = x + 1; if x != n goto loop; return x
     fn counting_loop() -> FunctionIr {
         let x = Expr::reg(0, 64);
@@ -1353,6 +1469,7 @@ mod tests {
                     convention: crate::ir::Convention::GoAbi0,
                     args: Some(Vec::new()),
                     floats_named: false,
+                    clobbers: None,
                     result: Some(RegRef {
                         index: first,
                         width: 64,
@@ -1386,6 +1503,7 @@ mod tests {
                     convention: crate::ir::Convention::GoAmd64,
                     args: Some(Vec::new()),
                     floats_named: false,
+                    clobbers: None,
                     result: Some(RegRef {
                         index: first,
                         width: 64,
@@ -1642,6 +1760,7 @@ mod split_tests {
             convention: crate::ir::Convention::SysV,
             args: None,
             floats_named: false,
+            clobbers: None,
             result: None,
         });
         stmts.push(Stmt::Ret {

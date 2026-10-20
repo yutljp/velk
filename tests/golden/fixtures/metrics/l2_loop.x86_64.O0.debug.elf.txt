@@ -135,7 +135,6 @@ fn sum_skip_odd @ 0x201290 (size 90)
 -- decompile
 /* velk pseudo-C: find_first @ 0x2012f0 */
 int find_first(int *p, int n, int v) {
-    int64_t v1;
     int *local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
     int32_t local_2; /* [sp-20] */
@@ -146,8 +145,7 @@ int find_first(int *p, int n, int v) {
     local_1 = n;
     local_2 = v;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = local_3;
-        if (local_0[v1] == local_2) {
+        if (local_0[local_3] == local_2) {
             local_4 = local_3;
             return local_4;
         }
@@ -169,8 +167,7 @@ fn find_first @ 0x2012f0 (size 95)
   blk1 @ 0x201305:
     brif ge load32((rsp + #0xffffffffffffffdc)), load32((rsp + #0xffffffffffffffe4)) -> 0x201343
   blk2 @ 0x201311:
-    v1 = sext32(load32((rsp + #0xffffffffffffffdc)))
-    brif ne load32((load64((rsp + #0xffffffffffffffe8)) + (v1 * #0x4))), load32((rsp + #0xffffffffffffffe0)) -> 0x201330
+    brif ne load32((load64((rsp + #0xffffffffffffffe8)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x4))), load32((rsp + #0xffffffffffffffe0)) -> 0x201330
   blk3 @ 0x201325:
     store32(load32((rsp + #0xffffffffffffffdc)), (rsp + #0xfffffffffffffff4))
     br 0x20134a

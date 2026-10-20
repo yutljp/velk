@@ -1,3 +1,4 @@
+mod clobbers;
 mod jump_table;
 pub mod prototypes;
 pub mod refs;
@@ -223,6 +224,7 @@ fn tail_calls_through_pointers(
             convention: crate::ir::Convention::of(image.isa, image.format, image.go),
             args: None,
             floats_named: false,
+            clobbers: None,
             result: None,
         });
         block.stmts.push(Stmt::Ret {
@@ -1089,6 +1091,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // Before the stack adjustments a call reads unseen, such as the push
     // of an argument, are dropped as dead.
     crate::ssa::count_variadic_arguments(&mut ir, image);
+    crate::ssa::undefine_clobbered_reads(&mut ir);
     passes::optimize(&mut ir, has_jump_tables);
     set_up_arguments(&mut ir);
     passes::dce::dce(&mut ir);

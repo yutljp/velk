@@ -11,7 +11,6 @@
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
 int32_t sub_201230(uint32_t *a0, int32_t a1) {
-    int64_t v1;
     uint32_t *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
     int32_t local_2; /* [sp-18] */
@@ -24,8 +23,7 @@ int32_t sub_201230(uint32_t *a0, int32_t a1) {
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         for (local_4 = 0x0; local_4 < local_1; local_4++) {
             if (local_3 == local_4) {
-                v1 = local_3 * local_1 + local_4;
-                local_2 += local_0[v1];
+                local_2 += local_0[local_3 * local_1 + local_4];
             }
         }
     }
@@ -51,8 +49,7 @@ fn <unnamed> @ 0x201230 (size 137)
   blk4 @ 0x201268:
     brif ne load32((rsp + #0xffffffffffffffe4)), load32((rsp + #0xffffffffffffffe0)) -> 0x20128e
   blk5 @ 0x201274:
-    v1 = sext32(((load32((rsp + #0xffffffffffffffe4)) * load32((rsp + #0xffffffffffffffec))) + load32((rsp + #0xffffffffffffffe0))))
-    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
+    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (sext32(((load32((rsp + #0xffffffffffffffe4)) * load32((rsp + #0xffffffffffffffec))) + load32((rsp + #0xffffffffffffffe0)))) * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
   blk6 @ 0x20128e:
     br 0x201293
   blk7 @ 0x201293:
@@ -343,8 +340,6 @@ fn <unnamed> @ 0x201410 (size 99)
 -- decompile
 /* velk pseudo-C: sub_201480 @ 0x201480 */
 int32_t sub_201480(uint32_t *a0, int32_t a1) {
-    int64_t v1;
-    int64_t v2;
     uint32_t *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
     int32_t local_2; /* [sp-18] */
@@ -354,10 +349,8 @@ int32_t sub_201480(uint32_t *a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = local_3;
-        if ((int32_t)local_0[v1] >= 0x0) {
-            v2 = local_3;
-            local_2 += local_0[v2];
+        if ((int32_t)local_0[local_3] >= 0x0) {
+            local_2 += local_0[local_3];
         }
     }
     return local_2;
@@ -376,13 +369,11 @@ fn <unnamed> @ 0x201480 (size 96)
   blk1 @ 0x201499:
     brif ge load32((rsp + #0xffffffffffffffe4)), load32((rsp + #0xffffffffffffffec)) -> 0x2014db
   blk2 @ 0x2014a5:
-    v1 = sext32(load32((rsp + #0xffffffffffffffe4)))
-    brif ge load32((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x4))), #0x0 -> 0x2014bc
+    brif ge load32((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffe4))) * #0x4))), #0x0 -> 0x2014bc
   blk3 @ 0x2014b7:
     br 0x2014cd
   blk4 @ 0x2014bc:
-    v2 = sext32(load32((rsp + #0xffffffffffffffe4)))
-    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (v2 * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
+    store32((load32((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffe4))) * #0x4))) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
   blk5 @ 0x2014cd:
     store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x201499
@@ -395,7 +386,6 @@ fn <unnamed> @ 0x201480 (size 96)
 -- decompile
 /* velk pseudo-C: sub_2014e0 @ 0x2014e0 */
 int32_t sub_2014e0(uint32_t *a0, int32_t a1, int32_t a2) {
-    int64_t v1;
     uint32_t *local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
     int32_t local_2; /* [sp-20] */
@@ -408,8 +398,7 @@ int32_t sub_2014e0(uint32_t *a0, int32_t a1, int32_t a2) {
     local_2 = a2;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         for (local_4 = local_3 + 0x1; local_4 < local_1; local_4++) {
-            v1 = local_4;
-            if (local_0[local_3] + local_0[v1] == local_2) {
+            if (local_0[local_3] + local_0[local_4] == local_2) {
                 local_5 = local_3 * local_1 + local_4;
                 return local_5;
             }
@@ -436,8 +425,7 @@ fn <unnamed> @ 0x2014e0 (size 153)
   blk3 @ 0x20150a:
     brif ge load32((rsp + #0xffffffffffffffd8)), load32((rsp + #0xffffffffffffffe4)) -> 0x20155a
   blk4 @ 0x201516:
-    v1 = sext32(load32((rsp + #0xffffffffffffffd8)))
-    brif ne ((load32((load64((rsp + #0xffffffffffffffe8)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x4))) + load32((load64((rsp + #0xffffffffffffffe8)) + (v1 * #0x4)))) & #0xffffffff), load32((rsp + #0xffffffffffffffe0)) -> 0x201547
+    brif ne ((load32((load64((rsp + #0xffffffffffffffe8)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x4))) + load32((load64((rsp + #0xffffffffffffffe8)) + (sext32(load32((rsp + #0xffffffffffffffd8))) * #0x4)))) & #0xffffffff), load32((rsp + #0xffffffffffffffe0)) -> 0x201547
   blk5 @ 0x201535:
     store32(((load32((rsp + #0xffffffffffffffdc)) * load32((rsp + #0xffffffffffffffe4))) + load32((rsp + #0xffffffffffffffd8))), (rsp + #0xfffffffffffffff4))
     br 0x201574

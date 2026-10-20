@@ -42,7 +42,8 @@ struct sub_210238_a0 {
 };
 int64_t sub_210238(struct sub_210238_a0 *a0, int32_t a1) {
     struct sub_210238_a0 *v2;
-    int64_t v3;
+    struct sub_210238_a0 *v3;
+    int64_t v4;
     struct sub_210238_a0 *local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */
     int64_t local_2; /* [sp-18] */
@@ -53,8 +54,9 @@ int64_t sub_210238(struct sub_210238_a0 *a0, int32_t a1) {
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         v2 = local_0 + local_3;
-        v3 = local_0[local_3].field_0x10;
-        local_2 += v2->field_0x8 * v3;
+        v3 = local_0 + local_3;
+        v4 = v3->field_0x10;
+        local_2 += v2->field_0x8 * v4;
     }
     return local_2;
 }
@@ -76,8 +78,9 @@ fn <unnamed> @ 0x210238 (size 136)
     br 0x210264
   blk3 @ 0x210264:
     v2 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
-    v3 = load16(((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18)) + #0x10))s
-    store64((load64((sp + #0xffffffffffffffe8)) + (load64((v2 + #0x8)) * v3)), (sp + #0xffffffffffffffe8))
+    v3 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
+    v4 = load16((v3 + #0x10))s
+    store64((load64((sp + #0xffffffffffffffe8)) + (load64((v2 + #0x8)) * v4)), (sp + #0xffffffffffffffe8))
     br 0x2102a4
   blk4 @ 0x2102a4:
     store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))

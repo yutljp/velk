@@ -313,6 +313,8 @@ impl Machine<'_> {
         }
     }
 
+    /// A call the code leaves by, passing what the convention passes; it
+    /// changes what the convention lets it.
     fn call(&mut self, target: Option<u64>) {
         let arguments = self
             .convention
@@ -320,18 +322,9 @@ impl Machine<'_> {
             .iter()
             .map(|index| self.register(*index))
             .collect();
-        self.call_with(target, arguments);
-    }
-
-    /// A call passing `arguments`; it clobbers what the convention lets it.
-    fn call_with(&mut self, target: Option<u64>, arguments: Vec<u64>) {
-        self.call_clobbering(target, arguments, self.convention.clobbered);
-    }
-
-    fn call_clobbering(&mut self, target: Option<u64>, arguments: Vec<u64>, clobbered: &[u16]) {
         self.calls.push(Call { target, arguments });
         let ordinal = self.calls.len() as u64;
-        for index in clobbered {
+        for index in self.convention.clobbered {
             self.registers.insert(
                 *index,
                 hash(self.seed ^ ordinal, 0x2_0000 + u64::from(*index)),
@@ -433,51 +426,43 @@ impl Machine<'_> {
                         args,
                         result,
                         convention,
+                        clobbers,
                         ..
                     } => {
                         let target = match through {
                             Some(through) => Some(self.eval(through)?),
                             None => *target,
                         };
-                        // Go's write barrier keeps every register but the
-                        // one it returns in.
-                        if *convention == crate::ir::Convention::GoWriteBarrier {
-                            self.call_clobbering(target, Vec::new(), convention.clobbered());
-                            if let Some(result) = result {
-                                let value = self.register(convention.clobbered()[0]);
-                                self.assign(*result, value);
-                            }
-                            continue;
-                        }
-                        match args {
+                        let arguments = match args {
                             Some(args) => {
-                                let values = args
-                                    .iter()
+                                args.iter()
                                     .map(|arg| self.eval(arg))
-                                    .collect::<Result<Vec<u64>, _>>()?;
-                                self.call_with(target, values)
+                                    .collect::<Result<Vec<u64>, _>>()?
                             }
                             // The registers its own convention passes, as a
                             // system call's number and arguments.
-                            None => {
-                                let arguments = convention
-                                    .arguments()
-                                    .iter()
-                                    .map(|index| self.register(*index))
-                                    .collect();
-                                self.call_with(target, arguments)
-                            }
-                        }
-                        // So do the vector registers its convention lets it change.
+                            None => convention
+                                .arguments()
+                                .iter()
+                                .map(|index| self.register(*index))
+                                .collect(),
+                        };
+                        self.calls.push(Call { target, arguments });
+                        // A register it changes holds a result, or else a
+                        // value the caller cannot rely on, read as zero as
+                        // the undefined value is.
                         let ordinal = self.calls.len() as u64;
-                        for index in convention.clobbered() {
-                            self.registers.insert(
-                                *index,
-                                hash(self.seed ^ ordinal, 0x2_0000 + u64::from(*index)),
-                            );
+                        let results = convention.results();
+                        for index in convention.clobbered_by(*clobbers) {
+                            let value = if results.contains(&index) {
+                                hash(self.seed ^ ordinal, 0x2_0000 + u64::from(index))
+                            } else {
+                                0
+                            };
+                            self.registers.insert(index, value);
                         }
                         if let Some(result) = result {
-                            let value = self.register(crate::arch::RETURN);
+                            let value = self.register(results[0]);
                             self.assign(*result, value);
                         }
                     }

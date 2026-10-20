@@ -98,7 +98,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210334 (size 228)
   blk0 @ 0x210334:
-    store32(x0, (sp + #0xffffffffffffffec))
+    store32(w0, (sp + #0xffffffffffffffec))
     v3 = ((load32((sp + #0xffffffffffffffec)) - #0xa) & #0xffffffff)
     store64(v3, (sp + #0xffffffffffffffe0))
     brif hi v3, #0xf -> 0x2103f8

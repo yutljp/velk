@@ -1,4 +1,4 @@
-use crate::ir::cfg::{cyclic_blocks, live_in, live_out, opaque};
+use crate::ir::cfg::{live_in, live_out, opaque};
 use crate::ir::visit::assign_of;
 use crate::ir::visit::children;
 use crate::ir::visit::expr_reads;
@@ -210,11 +210,9 @@ fn reads_elsewhere(
 
 fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
     let reads = block_reads(ir);
-    // A block inside a cycle reads its own live-outs again on the next
-    // iteration, so its own reads are live at its boundary too.
-    let cyclic = cyclic_blocks(ir);
     // A register live on leaving the block, such as one a tail call through
-    // an indirect jump reads, is kept too.
+    // an indirect jump reads or the block itself reads again on the next
+    // pass of a loop, is kept too.
     let live_in = live_in(ir);
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| live_out(ir, &live_in, index))
@@ -225,9 +223,6 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
             continue;
         }
         let mut outer = reads_elsewhere(&reads, index);
-        if cyclic.contains(&index) {
-            outer.extend(reads[index].iter().copied());
-        }
         outer.extend(live_out[index].iter().copied());
         copy_propagate_block(block, &outer, &params, avoid_duplication);
     }
@@ -603,6 +598,7 @@ mod tests {
                     convention: Convention::GoAmd64,
                     args: Some(vec![Expr::reg(3, 64)]),
                     floats_named: false,
+                    clobbers: None,
                     result: Some(RegRef {
                         index: first,
                         width: 64,

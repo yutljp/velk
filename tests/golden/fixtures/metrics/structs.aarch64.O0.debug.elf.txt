@@ -30,7 +30,8 @@ fn rect_area @ 0x2101fc (size 60)
 /* velk pseudo-C: record_total @ 0x210238 */
 long record_total(struct record *items, int n) {
     uint64_t *v2;
-    int64_t v3;
+    uint16_t *v3;
+    int64_t v4;
     struct record *local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */
     int64_t local_2; /* [sp-18] */
@@ -41,8 +42,9 @@ long record_total(struct record *items, int n) {
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         v2 = (uint8_t *)local_0 + (int64_t)local_3 * 0x18;
-        v3 = *(int16_t *)((uint8_t *)local_0 + (int64_t)local_3 * 0x18 + 0x10);
-        local_2 += v2[0x1] * v3;
+        v3 = (uint8_t *)local_0 + (int64_t)local_3 * 0x18;
+        v4 = v3[0x8];
+        local_2 += v2[0x1] * v4;
     }
     return local_2;
 }
@@ -64,8 +66,9 @@ fn record_total @ 0x210238 (size 136)
     br 0x210264
   blk3 @ 0x210264:
     v2 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
-    v3 = load16(((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18)) + #0x10))s
-    store64((load64((sp + #0xffffffffffffffe8)) + (load64((v2 + #0x8)) * v3)), (sp + #0xffffffffffffffe8))
+    v3 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
+    v4 = load16((v3 + #0x10))s
+    store64((load64((sp + #0xffffffffffffffe8)) + (load64((v2 + #0x8)) * v4)), (sp + #0xffffffffffffffe8))
     br 0x2102a4
   blk4 @ 0x2102a4:
     store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))

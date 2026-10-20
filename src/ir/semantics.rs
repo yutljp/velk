@@ -180,9 +180,10 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
 }
 
 /// `op` on constant arguments, unless the result is a NaN, whose bit pattern
-/// the processor running velk would choose.
+/// the processor running velk would choose. The undefined value stays
+/// what it is.
 pub(crate) fn fold(op: Operation, args: &[u64]) -> Option<u64> {
-    if faults(op, args) {
+    if faults(op, args) || op == Operation::Undefined {
         return None;
     }
     let value = apply(op, args);
@@ -321,7 +322,8 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::SumAbsoluteDifferences
         | Operation::SumLanesLong { .. }
         | Operation::Crc32 { .. }
-        | Operation::Results => 64,
+        | Operation::Results
+        | Operation::Undefined => 64,
         Operation::WideDivide { bits, .. } => bits,
         Operation::IntToFloat { bits, .. }
         | Operation::CountLeadingZeros(bits)
@@ -556,6 +558,7 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
             sum as u64 & mask(2 * bits)
         }
         Operation::Results => args.first().copied().unwrap_or(0),
+        Operation::Undefined => 0,
         Operation::Crc32 { castagnoli, bits } => {
             let polynomial: u32 = if castagnoli { 0x82f6_3b78 } else { 0xedb8_8320 };
             let mut crc = args[0] as u32;

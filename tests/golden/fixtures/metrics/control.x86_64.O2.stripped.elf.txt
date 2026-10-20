@@ -327,9 +327,8 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
     uint64_t v12;
     uint64_t v13;
     uint64_t v14;
-    uint64_t v17;
-    uint64_t v19;
-    int32_t v21;
+    uint64_t v16;
+    int32_t v17;
 
     if (a1 <= 0x0) {
         return 0x0;
@@ -349,13 +348,12 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
             v14 = *(uint64_t *)((uint8_t *)a0 + v6 + 0x18);
             v7 = add_lanes32(v7, greater_lanes32(v11, 0x0) & v11);
             v8 = add_lanes32(v8, greater_lanes32(v12, 0x0) & v12);
-            v17 = add_lanes32(v10, greater_lanes32(v14, 0x0) & v14);
             v9 = add_lanes32(v9, greater_lanes32(v13, 0x0) & v13);
-            v10 = v17;
+            v10 = add_lanes32(v10, greater_lanes32(v14, 0x0) & v14);
             v6 = v6 + 0x20;
         } while (v4 != v6);
-        v19 = add_lanes32(add_lanes32(v10, v8), add_lanes32(v9, v7));
-        v3 = (add_lanes32(v19 >> 0x20 | v19 >> 0x20 << 0x20, v19) & 0xffffffff);
+        v16 = add_lanes32(add_lanes32(v10, v8), add_lanes32(v9, v7));
+        v3 = (add_lanes32(v16 >> 0x20 | v16 >> 0x20 << 0x20, v16) & 0xffffffff);
         if (v2 == a1) {
             return v3;
         }
@@ -364,8 +362,8 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
         v3 = 0x0;
     }
     do {
-        v21 = a0[v2];
-        v3 = ((v3 + (v21 <= 0x0 ? 0x0 : v21)) & 0xffffffff);
+        v17 = a0[v2];
+        v3 = ((v3 + (v17 <= 0x0 ? 0x0 : v17)) & 0xffffffff);
         v2 = v2 + 0x1;
     } while (a1 != v2);
     return v3;
@@ -402,18 +400,17 @@ fn <unnamed> @ 0x2013d0 (size 183)
     v14 = load64(((rdi + v6) + #0x18))
     v7 = add_lanes32(v7, (greater_lanes32(v11, #0x0) & v11))
     v8 = add_lanes32(v8, (greater_lanes32(v12, #0x0) & v12))
-    v17 = add_lanes32(v10, (greater_lanes32(v14, #0x0) & v14))
     v9 = add_lanes32(v9, (greater_lanes32(v13, #0x0) & v13))
-    v10 = v17
+    v10 = add_lanes32(v10, (greater_lanes32(v14, #0x0) & v14))
     v6 = (v6 + #0x20)
     brif ne v4, v6 -> 0x201410
   blk6 @ 0x201446:
-    v19 = add_lanes32(add_lanes32(v10, v8), add_lanes32(v9, v7))
-    v3 = (add_lanes32((((v19 >> #0x20) & #0xffffffff) | (((v19 >> #0x20) & #0xffffffff) << #0x20)), v19) & #0xffffffff)
+    v16 = add_lanes32(add_lanes32(v10, v8), add_lanes32(v9, v7))
+    v3 = (add_lanes32((((v16 >> #0x20) & #0xffffffff) | (((v16 >> #0x20) & #0xffffffff) << #0x20)), v16) & #0xffffffff)
     brif eq v2, v1 -> 0x201486
   blk7 @ 0x201470:
-    v21 = load32((rdi + (v2 * #0x4)))
-    v3 = (((v3 & #0xffffffff) + select le (v21 & #0xffffffff), #0x0 ? #0x0, (v21 & #0xffffffff)) & #0xffffffff)
+    v17 = load32((rdi + (v2 * #0x4)))
+    v3 = (((v3 & #0xffffffff) + select le (v17 & #0xffffffff), #0x0 ? #0x0, (v17 & #0xffffffff)) & #0xffffffff)
     v2 = (v2 + #0x1)
     brif ne v1, v2 -> 0x201470
   blk8 @ 0x201486:

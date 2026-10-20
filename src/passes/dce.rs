@@ -45,6 +45,16 @@ pub fn dce_flow(ir: &mut FunctionIr) {
 /// Per-block dead-store removal: drops an assignment whose destination no
 /// other block reads and that is overwritten or never read later in its block.
 pub fn dce(ir: &mut FunctionIr) {
+    // A copy of a register into itself, as a restore after a call that
+    // left the register alone becomes, does nothing.
+    for block in &mut ir.blocks {
+        block.stmts.retain(|stmt| {
+            !matches!(stmt, Stmt::Assign {
+                dest,
+                value: crate::ir::Expr::Reg { index, width: 64 },
+            } if dest.width == 64 && *index == dest.index)
+        });
+    }
     // A register read in another block is live at this block's boundary.
     let reads: Vec<std::collections::HashSet<u16>> = ir
         .blocks
@@ -150,6 +160,7 @@ mod tests {
                 convention: Convention::Aapcs64,
                 args: None,
                 floats_named: false,
+                clobbers: None,
                 result: None,
             },
             Stmt::Ret {

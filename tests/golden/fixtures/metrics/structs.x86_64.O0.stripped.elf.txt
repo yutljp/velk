@@ -41,7 +41,6 @@ struct sub_201270_a0 {
     uint8_t gap_0x12[0x6];
 };
 int64_t sub_201270(struct sub_201270_a0 *a0, int32_t a1) {
-    int64_t v4;
     struct sub_201270_a0 *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
     int64_t local_2; /* [sp-20] */
@@ -51,8 +50,7 @@ int64_t sub_201270(struct sub_201270_a0 *a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v4 = (int16_t)(local_0[local_3].field_0x10);
-        local_2 += local_0[local_3].field_0x8 * v4;
+        local_2 += local_0[local_3].field_0x8 * (int16_t)(local_0[local_3].field_0x10);
     }
     return local_2;
 }
@@ -70,8 +68,7 @@ fn <unnamed> @ 0x201270 (size 109)
   blk1 @ 0x20128a:
     brif ge load32((rsp + #0xffffffffffffffdc)), load32((rsp + #0xffffffffffffffec)) -> 0x2012d7
   blk2 @ 0x201296:
-    v4 = sext16(load16(((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x18)) + #0x10)))
-    store64(((load64(((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x18)) + #0x8)) * v4) + load64((rsp + #0xffffffffffffffe0))), (rsp + #0xffffffffffffffe0))
+    store64(((load64(((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x18)) + #0x8)) * sext16(load16(((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x18)) + #0x10)))) + load64((rsp + #0xffffffffffffffe0))), (rsp + #0xffffffffffffffe0))
     store32((load32((rsp + #0xffffffffffffffdc)) + #0x1), (rsp + #0xffffffffffffffdc))
     br 0x20128a
   blk3 @ 0x2012d7:

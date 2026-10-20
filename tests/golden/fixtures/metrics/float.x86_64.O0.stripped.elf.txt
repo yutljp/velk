@@ -9,7 +9,6 @@
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 double sub_2011f0(double *a0, int32_t a1) {
-    int64_t v1;
     double *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
     double local_2; /* [sp-20] */
@@ -20,8 +19,7 @@ double sub_2011f0(double *a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0.0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = local_3;
-        local_2 = local_0[v1] + local_2;
+        local_2 = local_0[local_3] + local_2;
     }
     if (local_1 <= 0x0) {
         local_4 = 0.0;
@@ -44,8 +42,7 @@ fn <unnamed> @ 0x2011f0 (size 129)
   blk1 @ 0x20120a:
     brif ge load32((rsp + #0xffffffffffffffdc)), load32((rsp + #0xffffffffffffffec)) -> 0x20123b
   blk2 @ 0x201216:
-    v1 = sext32(load32((rsp + #0xffffffffffffffdc)))
-    store64(fadd.d(load64((load64((rsp + #0xfffffffffffffff0)) + (v1 * #0x8))), load64((rsp + #0xffffffffffffffe0))), (rsp + #0xffffffffffffffe0))
+    store64(fadd.d(load64((load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xffffffffffffffdc))) * #0x8))), load64((rsp + #0xffffffffffffffe0))), (rsp + #0xffffffffffffffe0))
     store32((load32((rsp + #0xffffffffffffffdc)) + #0x1), (rsp + #0xffffffffffffffdc))
     br 0x20120a
   blk3 @ 0x20123b:

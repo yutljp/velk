@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, OnceLock, PoisonError};
 
 use super::{UNKNOWN_SIZE, signature};
-use crate::ir::{Block, Stmt};
+use crate::ir::{Block, Registers, Stmt};
 use crate::lift::{calling, lift_shared};
 use crate::loader::{Image, NameSource, Summary};
 
@@ -105,7 +105,13 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
         return *known;
     }
     if !image.functions.contains_key(&addr) {
-        return Summary::default();
+        let entered = entered_inside(image, addr);
+        image
+            .summaries
+            .write()
+            .expect("summaries lock")
+            .insert(addr, entered);
+        return entered;
     }
     let mut cache = image.summaries.write().expect("summaries lock");
     if let Some(known) = cache.get(&addr) {
@@ -116,6 +122,33 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
     let settled = settle_parts(image, &parts, &recursive, &edges, &cache);
     cache.extend(settled);
     cache.get(&addr).copied().unwrap_or_default()
+}
+
+/// What a call into the middle of a function, as Go's into its code that
+/// zeroes or copies a block, knows of the code from there on: the
+/// registers it changes. The rest is left unknown.
+fn entered_inside(image: &Image, addr: u64) -> Summary {
+    let Some((_, function)) = image.functions.range(..addr).next_back() else {
+        return Summary::default();
+    };
+    let Some(end) = function.size.map(|size| function.addr + size) else {
+        return Summary::default();
+    };
+    if addr >= end || function.sources.contains(&NameSource::Plt) {
+        return Summary::default();
+    }
+    // Its own calls are taken as the convention has them.
+    let Ok(blocks) = lift_shared(image, addr, end - addr, &|_| Summary::default()) else {
+        return Summary::default();
+    };
+    Summary {
+        clobbers: super::clobbers::clobbers(
+            &blocks,
+            image.convention_of(function.addr),
+            crate::arch::stack_pointer(image.isa),
+        ),
+        ..Summary::default()
+    }
 }
 
 /// The functions a body calls or jumps to, among the known functions, and
@@ -429,29 +462,30 @@ fn settle(
     edges: &HashMap<u64, Vec<u64>>,
     outside: &(dyn Fn(u64) -> Option<Summary> + Sync),
 ) -> HashMap<u64, Summary> {
-    // A narrow return starts assumed and can only be disproved, as a cycle
-    // of tail calls returns 32 bits when every way out of it does.
-    let mut current: HashMap<u64, Summary> = part
-        .iter()
-        .map(|addr| {
-            let summary = Summary {
-                narrow_return: true,
-                ..by_name(image, *addr)
-            };
-            (*addr, summary)
-        })
-        .collect();
     // Who calls each function, within the part.
+    let members: HashSet<u64> = part.iter().copied().collect();
     let mut callers: HashMap<u64, Vec<u64>> = HashMap::new();
     for caller in part {
         for callee in edges.get(caller).into_iter().flatten() {
-            if current.contains_key(callee) {
+            if members.contains(callee) {
                 callers.entry(*callee).or_default().push(*caller);
             }
         }
         // One calling itself depends on itself.
         callers.entry(*caller).or_default().push(*caller);
     }
+    // In a cycle the registers each function changes are settled on their
+    // own; until they are, a call into the cycle changes what the
+    // convention lets it, which is all the other fields need.
+    let clobbers = if cyclic {
+        settle_clobbers(image, part, &callers, outside)
+    } else {
+        HashMap::new()
+    };
+    let mut current: HashMap<u64, Summary> = part
+        .iter()
+        .map(|addr| (*addr, assumed(image, *addr, cyclic)))
+        .collect();
     // Start from what can only grow: no arguments, and returning unless the
     // name says otherwise; a pass can only add arguments and remove
     // returns and narrow returns, so the work ends.
@@ -477,7 +511,7 @@ fn settle(
                     .unwrap_or_default()
             };
             in_parallel(&pending, |addr| {
-                compute(image, *addr, &lookup, seen.get(addr))
+                compute(image, *addr, &lookup, seen.get(addr), !cyclic)
             })
         };
         let mut next = Vec::new();
@@ -503,7 +537,119 @@ fn settle(
             summary.narrow_return = false;
         }
     }
+    for (addr, clobbers) in clobbers {
+        current.get_mut(&addr).expect("a member").clobbers = clobbers;
+    }
     current
+}
+
+/// What a function of a part is taken to be before its first pass.
+fn assumed(image: &Image, addr: u64, cyclic: bool) -> Summary {
+    let named = by_name(image, addr);
+    let none = cyclic.then_some(0);
+    Summary {
+        arity: named.arity.or(none),
+        floats: named.floats.or(none),
+        narrow_return: true,
+        ..named
+    }
+}
+
+/// The registers each function of a cycle changes, from none: a function
+/// changes what some way out of it does, its callees' changes included.
+/// Each round finds them again, in parallel, for every function one it
+/// calls changed in the round before. A round can only add registers, so
+/// the work ends; given up on before it does, they are not known.
+fn settle_clobbers(
+    image: &Image,
+    part: &[u64],
+    callers: &HashMap<u64, Vec<u64>>,
+    outside: &(dyn Fn(u64) -> Option<Summary> + Sync),
+) -> HashMap<u64, Option<Registers>> {
+    // Each function is lifted once, the rest of the cycle as the settling
+    // of the other fields starts it: each call returns unless the name says
+    // otherwise, which only adds ways out, and passes no arguments. What
+    // its calls into the cycle change is then looked up each round.
+    let lookup = |target: u64| match part.binary_search(&target) {
+        Ok(_) => assumed(image, target, true),
+        Err(_) => outside(target).unwrap_or_default(),
+    };
+    let bodies: HashMap<u64, Option<Vec<Block>>> = part
+        .iter()
+        .copied()
+        .zip(in_parallel(part, |addr| own_body(image, *addr, &lookup)))
+        .collect();
+    let convention = |addr: u64| image.convention_of(addr);
+    let sp = crate::arch::stack_pointer(image.isa);
+    let mut current: HashMap<u64, Option<Registers>> = part
+        .iter()
+        .map(|addr| (*addr, Some(Registers::default())))
+        .collect();
+    let mut pending: Vec<u64> = part.to_vec();
+    let mut passes: HashMap<u64, usize> = HashMap::new();
+    while !pending.is_empty() {
+        for addr in &pending {
+            let count = passes.entry(*addr).or_default();
+            *count += 1;
+            if *count > 8 {
+                return part.iter().map(|addr| (*addr, None)).collect();
+            }
+        }
+        let found = {
+            let known = |target: u64| current.get(&target).copied();
+            in_parallel(&pending, |addr| {
+                bodies[addr].as_ref().and_then(|blocks| {
+                    super::clobbers::clobbers_knowing(blocks, convention(*addr), sp, &known)
+                })
+            })
+        };
+        let mut next = Vec::new();
+        for (addr, found) in pending.iter().zip(found) {
+            let merged = match (current[addr], found) {
+                (Some(a), Some(b)) => Some(Registers(a.0 | b.0)),
+                _ => None,
+            };
+            if merged != current[addr] {
+                next.extend(callers.get(addr).into_iter().flatten());
+            }
+            current.insert(*addr, merged);
+        }
+        next.sort_unstable();
+        next.dedup();
+        pending = next;
+    }
+    current
+}
+
+/// The body of the function at `addr` as its own registers flow through
+/// it, lifted knowing of its callees what `summaries` says: none for a
+/// linkage stub, whose callee is in another module.
+fn own_body(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> Option<Vec<Block>> {
+    let function = image.functions.get(&addr)?;
+    if function.sources.contains(&NameSource::Plt) {
+        return None;
+    }
+    Some(without_stack_growth(image, &body(image, addr, summaries)?))
+}
+
+/// The blocks, less those growing a Go stack, which restart the function
+/// with its registers as they came in.
+fn without_stack_growth(image: &Image, blocks: &[Block]) -> Vec<Block> {
+    let mut blocks = blocks.to_vec();
+    if image.go {
+        super::drop_stack_growth_check(&mut blocks, image);
+    }
+    blocks
+}
+
+/// The registers the function at `addr`, lifted as `blocks`, changes.
+fn clobbers_of(image: &Image, addr: u64, blocks: &[Block]) -> Option<Registers> {
+    let convention = image.convention_of(addr);
+    let sp = crate::arch::stack_pointer(image.isa);
+    if !image.go {
+        return super::clobbers::clobbers(blocks, convention, sp);
+    }
+    super::clobbers::clobbers(&without_stack_growth(image, blocks), convention, sp)
 }
 
 /// What a function is known to be once a pass finds `next`: what only
@@ -525,6 +671,7 @@ fn merge(current: Summary, next: Summary) -> Summary {
         stack_results: next.stack_results,
         indirect_result: current.indirect_result || next.indirect_result,
         narrow_return: current.narrow_return && next.narrow_return,
+        clobbers: next.clobbers,
     }
 }
 
@@ -567,6 +714,7 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
         stack_results: [(0, 0); 9],
         indirect_result: false,
         narrow_return: false,
+        clobbers: None,
     }
 }
 
@@ -574,11 +722,14 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
 /// it, which the next pass keeps if the body is the same.
 type Seen = (Arc<Vec<Block>>, Arc<signature::Signature>);
 
+/// The summary of the function at `addr` from its body; the registers it
+/// changes are left unknown unless `with_clobbers`.
 fn compute(
     image: &Image,
     addr: u64,
     summaries: crate::lift::Summaries<'_>,
     seen: Option<&Seen>,
+    with_clobbers: bool,
 ) -> (Summary, Option<Seen>) {
     let named = by_name(image, addr);
     let Some(function) = image.functions.get(&addr) else {
@@ -644,6 +795,9 @@ fn compute(
             && crate::passes::widths::returns_32(&blocks, &|target| {
                 summaries(target).narrow_return
             }),
+        clobbers: with_clobbers
+            .then(|| clobbers_of(image, addr, &blocks))
+            .flatten(),
     };
     (summary, Some((blocks, signature)))
 }

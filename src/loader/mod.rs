@@ -164,6 +164,9 @@ pub struct Summary {
     /// Every value it returns is 32 bits wide: a call to it writes only
     /// the low half of the return register.
     pub narrow_return: bool,
+    /// The registers it may return with changed, when every way out of it
+    /// is known; the ones it saves and restores are not among them.
+    pub clobbers: Option<crate::ir::Registers>,
 
     /// No path through it returns.
     pub noreturn: bool,

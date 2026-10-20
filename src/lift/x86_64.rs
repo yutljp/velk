@@ -2812,6 +2812,7 @@ fn lift_instruction(
             args: None,
             // The kernel reads no floating-point register.
             floats_named: true,
+            clobbers: None,
             result: None,
         }),
         Mnemonic::Int3 | Mnemonic::Ud2 | Mnemonic::Hlt => {

@@ -17,7 +17,6 @@ double sub_21019c(double *a0, int32_t a1) {
     double v7;
     double v8;
     double v9;
-    double v10;
     double *v13;
     int64_t v14;
     double v15;
@@ -37,8 +36,7 @@ double sub_21019c(double *a0, int32_t a1) {
             v9 = v4[0x1];
             v5 = v5 - 0x4;
             v4 = v4 + 0x4;
-            v10 = v1 + v6;
-            v1 = v10 + v7 + v8 + v9;
+            v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0x0);
         if (v3 == a1) {
             return v1 / (double)(int32_t)a1;
@@ -82,8 +80,7 @@ fn <unnamed> @ 0x21019c (size 144)
     v9 = load64((v4 + #0x8))
     v5 = (v5 - #0x4)
     v4 = (v4 + #0x20)
-    v10 = fadd.d(v1, v6)
-    v1 = fadd.d(fadd.d(fadd.d(v10, v7), v8), v9)
+    v1 = fadd.d(fadd.d(fadd.d(fadd.d(v1, v6), v7), v8), v9)
     brif ne v5, #0x0 -> 0x2101c8
   blk5 @ 0x2101f0:
     brif eq v3, v2 -> 0x210210
