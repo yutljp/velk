@@ -988,6 +988,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // A narrower return reads fewer bits, which may leave more of a
     // partial write unread.
     crate::ssa::narrow_partial_writes(&mut ir);
+    passes::copies::copy_propagate_guarded(&mut ir);
     passes::simplify::simplify(&mut ir);
     // Simplifying can fold a variable's value into its readers.
     passes::dce::dce(&mut ir);

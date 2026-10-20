@@ -152,7 +152,7 @@ int factorial(int n) {
     uint64_t v36;
     uint64_t v37;
     uint64_t v39;
-    int32_t v42;
+    int32_t v40;
     uint64_t v44;
     int32_t v46;
     uint32_t v47;
@@ -204,9 +204,9 @@ int factorial(int n) {
             v15 = v15 - 0x8;
         } while (v15 != 0x0);
         t1 = v16 >> 0x20;
-        v42 = ((v17 >> 0x20 | ((v17 >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * ((v10 >> 0x20 | ((v10 >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff);
+        v40 = ((v17 >> 0x20 | ((v17 >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff) * ((v10 >> 0x20 | ((v10 >> 0x20) & 0xffffffff) << 0x20) & 0xffffffff);
         v44 = v17 * v10;
-        v1 = (((v42 | v42 << 0x20) * (((t1 | t1 << 0x20) * (v9 >> 0x20 | ((v9 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) * ((v44 | ((v44 >> 0x20) & 0xffffffff) << 0x20) * (v16 * v9))) & 0xffffffff);
+        v1 = (((v40 | v40 << 0x20) * (((t1 | t1 << 0x20) * (v9 >> 0x20 | ((v9 >> 0x20) & 0xffffffff) << 0x20)) & 0xffffffff) * ((v44 | ((v44 >> 0x20) & 0xffffffff) << 0x20) * (v16 * v9))) & 0xffffffff);
         if (v2 == v3) {
             return v1;
         }
@@ -281,9 +281,9 @@ fn factorial @ 0x201370 (size 238)
     brif ne v15, #0x0 -> 0x2013c0
   blk4 @ 0x20141d:
     t1 = (v16 >> #0x20)
-    v42 = ((((v17 >> #0x20) | (((v17 >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (((v10 >> #0x20) | (((v10 >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff))
+    v40 = ((((v17 >> #0x20) | (((v17 >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff) * (((v10 >> #0x20) | (((v10 >> #0x20) & #0xffffffff) << #0x20)) & #0xffffffff))
     v44 = ((v17 & #0xffffffff) * (v10 & #0xffffffff))
-    v1 = (((((v42 & #0xffffffff) | ((v42 & #0xffffffff) << #0x20)) * ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) * ((v9 >> #0x20) | (((v9 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff)) * (((v44 & #0xffffffff) | (((v44 >> #0x20) & #0xffffffff) << #0x20)) * (((v16 & #0xffffffff) * (v9 & #0xffffffff)) & #0xffffffff))) & #0xffffffff)
+    v1 = (((((v40 & #0xffffffff) | ((v40 & #0xffffffff) << #0x20)) * ((((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20)) * ((v9 >> #0x20) | (((v9 >> #0x20) & #0xffffffff) << #0x20))) & #0xffffffff)) * (((v44 & #0xffffffff) | (((v44 >> #0x20) & #0xffffffff) << #0x20)) * (((v16 & #0xffffffff) * (v9 & #0xffffffff)) & #0xffffffff))) & #0xffffffff)
     brif eq v2, v3 -> 0x20145d
   blk5 @ 0x201450:
     v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)

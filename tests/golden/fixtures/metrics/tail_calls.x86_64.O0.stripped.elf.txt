@@ -24,10 +24,7 @@ fn <unnamed> @ 0x2011a0 (size 22)
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 int32_t sub_2011c0(int32_t a0) {
-    int32_t v1;
-
-    v1 = a0;
-    return sub_2011a0(v1 + 0x2);
+    return sub_2011a0(a0 + 0x2);
 }
 -- signature
 int32_t (int32_t a0)
@@ -36,8 +33,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2011c0 (size 28)
   blk0 @ 0x2011c0:
-    v1 = (rdi & #0xffffffff)
-    v3 = call 0x2011a0((((v1 & #0xffffffff) + #0x2) & #0xffffffff))
+    v3 = call 0x2011a0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
     ret v3
 -- card
 {"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
