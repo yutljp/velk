@@ -250,6 +250,22 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
                 .into_iter()
                 .map(|arg| simplify_expr(arg, constants))
                 .collect();
+            // Comparing or subtracting a value's lanes with themselves, as
+            // `pcmpeqd x, x` does to set every bit, reads nothing of them.
+            if let (crate::ir::Operation::Lanes(lane, _), [a, b]) = (op, args.as_slice())
+                && a == b
+            {
+                use crate::ir::LaneOp;
+                match lane {
+                    LaneOp::Equal | LaneOp::GreaterEqualSigned | LaneOp::GreaterEqualUnsigned => {
+                        return Expr::constant(u64::MAX);
+                    }
+                    LaneOp::Sub | LaneOp::GreaterSigned | LaneOp::GreaterUnsigned => {
+                        return Expr::constant(0);
+                    }
+                    _ => {}
+                }
+            }
             let values: Option<Vec<u64>> = args
                 .iter()
                 .map(|arg| match arg {

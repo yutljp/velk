@@ -356,7 +356,17 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             _ => None,
         }
     };
-    let lanes = |op, bits, a: Expr, b: Expr| Expr::apply(Operation::Lanes(op, bits), vec![a, b]);
+    // Comparing or subtracting a register with itself, as `pcmpeqd x, x`
+    // does to set every bit, reads nothing of it.
+    let lanes = |op, bits, a: Expr, b: Expr| match op {
+        LaneOp::Equal | LaneOp::GreaterEqualSigned | LaneOp::GreaterEqualUnsigned if a == b => {
+            Expr::constant(u64::MAX)
+        }
+        LaneOp::Sub | LaneOp::GreaterSigned | LaneOp::GreaterUnsigned if a == b => {
+            Expr::constant(0)
+        }
+        _ => Expr::apply(Operation::Lanes(op, bits), vec![a, b]),
+    };
     let write = |lifter: &mut Lifter, (low, high): (Expr, Expr)| -> Option<()> {
         let slot = destination?;
         // The high half may read the low one it replaces.

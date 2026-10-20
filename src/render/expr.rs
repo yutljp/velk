@@ -212,6 +212,10 @@ pub(crate) fn render_value(value: &Expr, ctx: &Ctx<'_>) -> String {
     {
         return format!("&{name}");
     }
+    // So does it with an offset added, as an index into a local buffer.
+    if let Some(text) = local_plus_offset(value, ctx) {
+        return text;
+    }
     match value {
         // Only a top-level constant becomes a function name: an immediate
         // inside arithmetic can coincidentally equal a function address.
@@ -677,6 +681,47 @@ fn signed_parameter(expr: &Expr, ctx: &Ctx<'_>) -> bool {
 
 /// A local read or written whole by name, and through a cast when the access
 /// covers only part of it.
+/// `(uint8_t *)&local + offset` for a sum of the stack pointer, constants
+/// and other terms whose stack part addresses a local.
+fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    fn terms<'a>(expr: &'a Expr, out: &mut Vec<&'a Expr>) {
+        match expr {
+            Expr::Bin {
+                op: BinOp::Add,
+                lhs,
+                rhs,
+            } => {
+                terms(lhs, out);
+                terms(rhs, out);
+            }
+            other => out.push(other),
+        }
+    }
+    let sp = crate::arch::stack_pointer(ctx.isa);
+    let mut parts = Vec::new();
+    terms(value, &mut parts);
+    let mut base = None;
+    let mut offset = 0u64;
+    let mut rest = Vec::new();
+    for part in parts {
+        match part {
+            Expr::Reg { index, width: 64 } if *index == sp && base.is_none() => base = Some(part),
+            Expr::Const(value) => offset = offset.wrapping_add(*value),
+            other => rest.push(other.clone()),
+        }
+    }
+    let base = base?;
+    if rest.is_empty() {
+        return None;
+    }
+    let slot = Expr::bin(BinOp::Add, base.clone(), Expr::Const(offset));
+    let name = ctx.slots.get(&render_expr(&slot, ctx))?;
+    let rest = rest
+        .into_iter()
+        .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))?;
+    Some(format!("(uint8_t *)&{name} + {}", render_expr(&rest, ctx)))
+}
+
 pub(crate) fn slot_access(name: &str, width: u8, signed: bool, ctx: &Ctx<'_>) -> String {
     match ctx.local_widths.get(name) {
         Some(declared) if *declared != width => {

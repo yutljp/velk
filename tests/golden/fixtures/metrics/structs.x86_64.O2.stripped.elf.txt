@@ -215,14 +215,10 @@ fn <unnamed> @ 0x2012d0 (size 23)
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 uint8_t sub_2012f0(uint8_t *a0, int32_t a1) {
     int64_t t1;
-    int64_t v1;
-    int64_t v3;
     int64_t v4;
 
-    v1 = *a0;
     t1 = a1 & 0xff;
-    v3 = v1 & 0xffffffffffffff00 | v1 & 0xf1;
-    v4 = v3 & 0xffffffffffffff00 | (v3 & 0xff | t1 + t1 & 0xe);
+    v4 = *a0 & 0xf1 | t1 + t1 & 0xe;
     *a0 = v4;
     return v4 & 0xff;
 }
@@ -233,10 +229,8 @@ uint8_t (uint8_t * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2012f0 (size 18)
   blk0 @ 0x2012f0:
-    v1 = (load8(rdi) & #0xffffffff)
     t1 = (rsi & #0xff)
-    v3 = ((v1 & #0xffffffffffffff00) | (v1 & #0xf1))
-    v4 = ((v3 & #0xffffffffffffff00) | (((v3 & #0xff) | ((t1 + t1) & #0xe)) & #0xff))
+    v4 = (((load8(rdi) & #0xf1) | ((t1 + t1) & #0xe)) & #0xff)
     store8(v4, rdi)
     ret (v4 & #0xff)
 -- card
