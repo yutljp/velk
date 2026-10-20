@@ -135,6 +135,9 @@ fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
     }
 }
 
+/// The register Go's x86-64 ABI passes a closure's context in.
+const GO_CLOSURE: u16 = 2;
+
 pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signature {
     let (arguments, float_arguments) = match isa {
         Isa::Unsupported => (&[][..], &[][..]),
@@ -147,6 +150,8 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
     // body reads it says whether the function returns through memory.
     let indirect = match isa {
         Isa::AArch64 => Some(8),
+        // Go passes a closure's context in rdx.
+        Isa::X86_64 if go => Some(GO_CLOSURE),
         _ => None,
     };
     let universe: HashSet<u16> = arguments
@@ -376,6 +381,14 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
             index: *register,
             name: format!("a{}", params.len()),
             ty: CType::Named(if narrow { "float" } else { "double" }.to_owned()),
+        });
+    }
+    // A Go function value's code reads its closure's context.
+    if go && isa == Isa::X86_64 && inputs.contains(&GO_CLOSURE) {
+        params.push(Param {
+            index: GO_CLOSURE,
+            name: "closure".to_owned(),
+            ty: CType::pointer_to(CType::Void),
         });
     }
 
@@ -665,7 +678,7 @@ pub fn recover(blocks: &[Block], isa: Isa, format: Format, go: bool) -> Signatur
         accesses,
         signed: signed_args,
         stack,
-        indirect_result: indirect.is_some_and(|register| inputs.contains(&register)),
+        indirect_result: isa == Isa::AArch64 && inputs.contains(&8),
     }
 }
 

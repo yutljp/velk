@@ -344,8 +344,14 @@ fn compute(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> S
         return named;
     };
     let signature = signature::recover(&blocks, image.isa, image.format, image.go);
+    // A Go closure's context is no argument a call passes in order.
+    let passed = signature
+        .params
+        .iter()
+        .filter(|param| param.name != "closure")
+        .count();
     Summary {
-        arity: Some(signature.params.len()),
+        arity: Some(passed),
         noreturn: named.noreturn || !can_return(&blocks),
         stack: signature.stack.len(),
         indirect_result: signature.indirect_result,

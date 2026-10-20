@@ -78,11 +78,15 @@ fn render_with(
     callees: &HashMap<u64, String>,
     data_ranges: &[(u64, u64)],
 ) -> String {
-    let names: HashMap<u16, &str> = ir
+    let mut names: HashMap<u16, &str> = ir
         .params
         .iter()
         .map(|param| (param.index, param.name.as_str()))
         .collect();
+    // Go keeps the running goroutine in r14.
+    if ir.convention == crate::ir::Convention::GoAmd64 {
+        names.entry(14).or_insert("g");
+    }
     let wide_params: std::collections::HashSet<u16> = ir
         .params
         .iter()
