@@ -358,6 +358,15 @@ fn render_with(
                 Some((local.name.clone(), precision))
             })
             .collect(),
+        signed_locals: locals
+            .decls
+            .iter()
+            .filter(|local| match &local.ty {
+                Some(ty) => matches!(ty, CType::Int { signed: true, .. }),
+                None => local.signed,
+            })
+            .map(|local| local.name.clone())
+            .collect(),
         local_elements,
         local_pointees,
         local_scaled,
@@ -1546,6 +1555,215 @@ mod tests {
             width,
             signed: false,
         }
+    }
+
+    /// The condition printed for `return lhs <cond> rhs ? 1 : 0` in a
+    /// function whose parameters are `params` (register, type) and which
+    /// first assigns `copies` (variable, value).
+    fn compared(
+        isa: Isa,
+        params: &[(u16, CType)],
+        copies: &[(u16, Expr)],
+        cond: crate::ir::Cond,
+        lhs: Expr,
+        rhs: Expr,
+    ) -> String {
+        let mut stmts: Vec<Stmt> = copies
+            .iter()
+            .map(|(index, value)| assign(*index, value.clone()))
+            .collect();
+        stmts.push(Stmt::Ret {
+            value: Expr::Select {
+                cond,
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+                then: Box::new(Expr::Const(1)),
+                els: Box::new(Expr::Const(0)),
+            },
+        });
+        let mut ir = FunctionIr::single_block(isa, stmts);
+        ir.params = params
+            .iter()
+            .enumerate()
+            .map(|(position, (index, ty))| Param {
+                index: *index,
+                name: format!("a{position}"),
+                ty: ty.clone(),
+            })
+            .collect();
+        let text = rendered(&ir);
+        let line = text
+            .lines()
+            .find_map(|line| {
+                line.trim()
+                    .strip_prefix("return (")?
+                    .strip_suffix(" ? 0x1 : 0x0);")
+            })
+            .unwrap_or_else(|| panic!("{text}"));
+        line.to_owned()
+    }
+
+    fn mask(value: Expr, mask: u64) -> Expr {
+        Expr::bin(BinOp::And, value, Expr::Const(mask))
+    }
+
+    #[test]
+    fn a_signed_comparison_of_a_masked_byte_reads_the_byte_as_signed() {
+        use crate::ir::Cond;
+        let byte = VARIABLE_BASE;
+        let copies = [(byte, load(Expr::reg(7, 64), 1))];
+        let text = compared(
+            Isa::X86_64,
+            &[(7, CType::pointer_to(CType::Void))],
+            &copies,
+            Cond::Lt,
+            mask(Expr::reg(byte, 64), 0xff),
+            Expr::Const(0),
+        );
+        assert_eq!(text, "(int8_t)v1 < 0x0");
+        // An unsigned comparison of the same byte keeps the mask.
+        let text = compared(
+            Isa::X86_64,
+            &[(7, CType::pointer_to(CType::Void))],
+            &copies,
+            Cond::Cc,
+            mask(Expr::reg(byte, 64), 0xff),
+            Expr::Const(0xf0),
+        );
+        assert_eq!(text, "(v1 & 0xff) < 0xf0 /* unsigned */");
+    }
+
+    #[test]
+    fn a_signed_comparison_of_unsigned_memory_reads_it_as_signed() {
+        use crate::ir::Cond;
+        let text = compared(
+            Isa::AArch64,
+            &[(0, CType::pointer_to(CType::Void))],
+            &[],
+            Cond::Gt,
+            load(Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(8)), 2),
+            Expr::Const(5),
+        );
+        assert_eq!(text, "*(int16_t *)(a0 + 0x8) > 0x5");
+    }
+
+    #[test]
+    fn both_operands_of_a_signed_32_bit_comparison_are_read_as_signed() {
+        use crate::ir::Cond;
+        let wide = [(0, CType::U64), (1, CType::U64)];
+        let text = compared(
+            Isa::AArch64,
+            &wide,
+            &[],
+            Cond::Le,
+            mask(Expr::reg(0, 64), 0xffff_ffff),
+            mask(
+                Expr::bin(BinOp::Sub, Expr::reg(1, 64), Expr::Const(2)),
+                0xffff_ffff,
+            ),
+        );
+        assert_eq!(text, "(int32_t)a0 <= (int32_t)(a1 - 0x2)");
+        // A 32-bit signed parameter needs no cast.
+        let text = compared(
+            Isa::X86_64,
+            &[(
+                7,
+                CType::Int {
+                    bytes: 4,
+                    signed: true,
+                },
+            )],
+            &[],
+            Cond::Lt,
+            Expr::reg(7, 32),
+            Expr::Const(5),
+        );
+        assert_eq!(text, "a0 < 0x5");
+        // Nor does one whose register is masked to its width.
+        let text = compared(
+            Isa::AArch64,
+            &[(
+                0,
+                CType::Int {
+                    bytes: 4,
+                    signed: true,
+                },
+            )],
+            &[],
+            Cond::Lt,
+            mask(Expr::reg(0, 64), 0xffff_ffff),
+            Expr::Const(1),
+        );
+        assert_eq!(text, "a0 < 0x1");
+    }
+
+    #[test]
+    fn a_narrow_sum_compared_signed_wraps_at_its_width() {
+        use crate::ir::Cond;
+        let text = compared(
+            Isa::X86_64,
+            &[(7, CType::pointer_to(CType::Void))],
+            &[],
+            Cond::Ge,
+            mask(
+                Expr::bin(
+                    BinOp::Add,
+                    load(Expr::reg(7, 64), 1),
+                    load(Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)), 1),
+                ),
+                0xff,
+            ),
+            Expr::Const(0),
+        );
+        assert_eq!(
+            text,
+            "(int8_t)(*(uint8_t *)(a0) + *(uint8_t *)(a0 + 0x1)) >= 0x0"
+        );
+    }
+
+    #[test]
+    fn an_unsigned_comparison_of_a_sign_extended_value_reads_all_64_bits() {
+        use crate::ir::Cond;
+        let text = compared(
+            Isa::AArch64,
+            &[(0, CType::U64)],
+            &[],
+            Cond::Cc,
+            Expr::SignExtend {
+                value: Box::new(Expr::reg(0, 64)),
+                width: 1,
+            },
+            Expr::Const(0x80),
+        );
+        assert_eq!(text, "(uint64_t)(int8_t)(a0) < 0x80 /* unsigned */");
+    }
+
+    #[test]
+    fn a_variable_read_narrower_than_declared_is_compared_by_that_part() {
+        use crate::ir::Cond;
+        let value = VARIABLE_BASE;
+        let copies = [(value, load(Expr::reg(7, 64), 8))];
+        let wide = Expr::bin(BinOp::Add, Expr::reg(value, 64), Expr::reg(value, 64));
+        // Read whole elsewhere, the variable is 64 bits wide.
+        let copies = [copies[0].clone(), (VARIABLE_BASE + 1, wide)];
+        let text = compared(
+            Isa::X86_64,
+            &[(7, CType::U64)],
+            &copies,
+            Cond::Eq,
+            Expr::reg(value, 32),
+            Expr::Const(5),
+        );
+        assert_eq!(text, "(uint32_t)v1 == 0x5");
+        let text = compared(
+            Isa::X86_64,
+            &[(7, CType::U64)],
+            &copies,
+            Cond::Lt,
+            Expr::reg(value, 32),
+            Expr::Const(5),
+        );
+        assert_eq!(text, "(int32_t)v1 < 0x5");
     }
 
     #[test]

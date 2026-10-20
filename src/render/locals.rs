@@ -45,6 +45,7 @@ pub(crate) fn stack_locals(
         local_pointees: HashMap::new(),
         local_scaled: std::collections::HashSet::new(),
         local_floats: HashMap::new(),
+        signed_locals: std::collections::HashSet::new(),
         wide_params: std::collections::HashSet::new(),
         signed_params: std::collections::HashSet::new(),
         fields: HashMap::new(),

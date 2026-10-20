@@ -93,7 +93,7 @@ int sum_skip_odd(int n) {
         return 0x0;
     }
     v2 = 0x0;
-    for (v1 = 0x0; v1 < n; v1++) {
+    for (v1 = 0x0; (int32_t)v1 < n; v1++) {
         if ((v1 & 0x1) != 0x0) {
             v2 = v2 + v1;
             sink = v2;

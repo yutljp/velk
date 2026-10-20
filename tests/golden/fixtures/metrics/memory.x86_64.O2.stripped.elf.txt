@@ -199,7 +199,7 @@ int64_t sub_201320(uint8_t *a0) {
     do {
         v2 = a0[v1 + 0x1];
         v1 = v1 + 0x1;
-    } while (v2 != 0x0);
+    } while ((uint8_t)v2 != 0x0);
     return v1;
 }
 -- signature

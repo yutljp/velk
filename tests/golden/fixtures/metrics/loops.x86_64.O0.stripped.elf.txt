@@ -94,7 +94,7 @@ int32_t sub_201240(uint32_t *a0, int32_t a1) {
         v1 = (int64_t)(int32_t)(local_3);
         v2 = local_0[v1];
         local_4 = v2;
-        if (v2 < 0x0) {
+        if ((int32_t)v2 < 0x0) {
             return local_2;
         }
         local_2 += local_4;

@@ -31,6 +31,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) local_scaled: std::collections::HashSet<String>,
     /// Locals holding floats, with their precision.
     pub(super) local_floats: HashMap<String, Precision>,
+    /// Locals declared as signed integers.
+    pub(super) signed_locals: std::collections::HashSet<String>,
     /// Parameters wider than 32 bits: masking one is a real truncation.
     pub(super) wide_params: std::collections::HashSet<u16>,
     /// Parameters declared as signed integers.
@@ -905,7 +907,10 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
             let magnitude = crate::ir::semantics::sign_extend(*value, bits).unsigned_abs();
             format!("-0x{magnitude:x}")
         }
-        other => operand(other, ctx, strength, right),
+        other => match comparison_cast(other, cond, bits, ctx) {
+            Some(text) => text,
+            None => operand(other, ctx, strength, right),
+        },
     };
     let a = side(lhs, false);
     let b = side(rhs, true);
@@ -925,6 +930,146 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
         Cond::Vs => "flags_vs /* vs */".to_owned(),
         Cond::Vc => "flags_vc /* vc */".to_owned(),
     }
+}
+
+/// An operand of a comparison at `bits` bits cast to the type C must compare
+/// it as, when its printed text alone would read as another value: a signed
+/// comparison narrower than 64 bits reads the low `bits` bits as signed, an
+/// unsigned 64-bit one reads a sign-extended operand as 64 bits, and a
+/// variable read narrower than it is declared reads only that part of it,
+/// with no sign when the comparison is wider. None when the text already
+/// reads as the IR's operand.
+fn comparison_cast(side: &Expr, cond: Cond, bits: u32, ctx: &Ctx<'_>) -> Option<String> {
+    let signed = matches!(cond, Cond::Lt | Cond::Ge | Cond::Gt | Cond::Le);
+    let unsigned = matches!(cond, Cond::Cs | Cond::Cc | Cond::Hi | Cond::Ls);
+    let ty = if signed && bits < 64 && !reads_signed(side, bits, ctx) {
+        type_of((bits / 8) as u8, true)
+    } else if unsigned && bits == 64 && extends_sign(side) {
+        "uint64_t"
+    } else if let Expr::Reg { index, width } = side
+        && declared_bits(*index, ctx).is_some_and(|declared| u32::from(*width) < declared)
+    {
+        let read = u32::from(*width).min(bits);
+        type_of((read / 8) as u8, signed && read == bits)
+    } else {
+        return None;
+    };
+    let inner = match side {
+        // The cast itself truncates, so a mask to the compared width goes.
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(mask) if *mask == crate::ir::semantics::mask(bits)) => {
+            lhs.as_ref()
+        }
+        // Memory read as signed names the signed type instead, unless it is
+        // read by a name, which keeps the type it is declared with.
+        Expr::Load { addr, width, .. } if signed => {
+            let as_signed = Expr::Load {
+                addr: addr.clone(),
+                width: *width,
+                signed: true,
+            };
+            let text = render_expr(&as_signed, ctx);
+            if text != render_expr(side, ctx) {
+                return Some(text);
+            }
+            side
+        }
+        other => other,
+    };
+    Some(format!("({ty}){}", operand(inner, ctx, 12, false)))
+}
+
+/// The width a variable or parameter is declared with, which its name
+/// keeps whatever width the register read has; None for a machine register,
+/// whose name gives the width read.
+fn declared_bits(index: u16, ctx: &Ctx<'_>) -> Option<u32> {
+    if (crate::ir::TEMP_BASE..crate::ir::VALUE_BASE).contains(&index) {
+        Some(if ctx.narrow_regs.contains(&index) {
+            32
+        } else {
+            64
+        })
+    } else if ctx.names.contains_key(&index) {
+        Some(if ctx.wide_params.contains(&index) {
+            64
+        } else {
+            32
+        })
+    } else {
+        None
+    }
+}
+
+/// True when the printed operand, read as C, holds the low `bits` bits of
+/// the IR's operand read as signed (`bits` below 64).
+fn reads_signed(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
+    // A value whose top bit is clear reads the same either way.
+    if fits(expr, bits - 1, ctx) {
+        return true;
+    }
+    match expr {
+        Expr::Const(_) | Expr::SignExtend { .. } => true,
+        // Narrower registers fit, so a register read is as wide as the comparison.
+        Expr::Reg { index, .. } => {
+            declared_bits(*index, ctx).is_none_or(|declared| declared == bits)
+        }
+        Expr::Load {
+            addr,
+            width,
+            signed,
+        } => {
+            let text = render_expr(expr, ctx);
+            let as_signed = Expr::Load {
+                addr: addr.clone(),
+                width: *width,
+                signed: true,
+            };
+            // Memory read by a name has the type the name is declared
+            // with: a local's is known, and a field's, an element's or a
+            // global's is taken as given.
+            *signed
+                || ctx.signed_locals.contains(&text)
+                || (!ctx.local_widths.contains_key(&text) && render_expr(&as_signed, ctx) == text)
+        }
+        Expr::Bin { op, lhs, rhs } => match op {
+            // A mask to the compared width keeps the bits but drops the sign,
+            // unless it is not printed because the value already has that width.
+            BinOp::And if matches!(rhs.as_ref(), Expr::Const(mask) if *mask == crate::ir::semantics::mask(bits)) => {
+                render_expr(expr, ctx) == render_expr(lhs, ctx) && reads_signed(lhs, bits, ctx)
+            }
+            BinOp::And | BinOp::Or | BinOp::Xor => {
+                reads_signed(lhs, bits, ctx) && reads_signed(rhs, bits, ctx)
+            }
+            // C promotes values narrower than int, so their arithmetic does
+            // not wrap at their width.
+            BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Shl => {
+                bits >= 32 && reads_signed(lhs, bits, ctx) && reads_signed(rhs, bits, ctx)
+            }
+            _ => true,
+        },
+        Expr::Select { then, els, .. } => {
+            reads_signed(then, bits, ctx) && reads_signed(els, bits, ctx)
+        }
+        Expr::Apply { op, .. } => !matches!(op, Operation::FloatToInt { signed: false, .. }),
+    }
+}
+
+/// True when the printed operand has a signed type narrower than 64 bits:
+/// against a narrower operand C compares it signed, where the IR compares
+/// its 64-bit extension without a sign.
+fn extends_sign(expr: &Expr) -> bool {
+    matches!(
+        expr,
+        Expr::SignExtend { .. }
+            | Expr::Load {
+                signed: true,
+                width: 1..=4,
+                ..
+            }
+    )
 }
 
 fn is_comparison(op: Operation) -> bool {

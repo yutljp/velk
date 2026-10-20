@@ -359,7 +359,7 @@ int sum_varargs(int count, ...) {
         if ((v2 & 0x80000000) != 0x0) {
             v3 = local_33 + 0x8;
             *local_32 = v3;
-            if (v3 <= 0x0) {
+            if ((int32_t)v3 <= 0x0) {
                 local_34 = (uint8_t *)local_28 + (int64_t)(int32_t)(local_33);
                 local_31 += *local_34;
                 local_29 += 0x1;
