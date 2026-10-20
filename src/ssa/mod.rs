@@ -274,7 +274,11 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                         args: Some(_),
                         ..
                     } => convention.unnamed_reads().collect(),
-                    Stmt::Call { convention, .. } => convention.call_reads().collect(),
+                    Stmt::Call {
+                        convention,
+                        through,
+                        ..
+                    } => convention.call_reads_through(through.as_ref()),
                     _ => reads.difference(&explicit_reads(stmt)).copied().collect(),
                 };
                 let mut implicit: Vec<(u16, u16)> = unnamed

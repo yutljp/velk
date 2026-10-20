@@ -384,7 +384,11 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
             total += through.iter().map(|expr| count(expr, reg)).sum::<usize>();
             total += match args {
                 Some(args) => args.iter().map(|arg| count(arg, reg)).sum::<usize>(),
-                None => usize::from(convention.call_reads().any(|read| read == reg)),
+                None => usize::from(
+                    convention
+                        .call_reads_through(through.as_ref())
+                        .contains(&reg),
+                ),
             };
         }
         _ => {}

@@ -19,11 +19,13 @@
 -- decompile
 /* velk pseudo-C: _init @ 0x1000 */
 int64_t _init(void) {
-    rax = qword_3fe8;
-    if (rax == 0x0) {
-        return rax;
+    int64_t v1;
+
+    v1 = qword_3fe8;
+    if (v1 == 0x0) {
+        return v1;
     }
-    return (*(rax))();
+    return (*(v1))();
 }
 -- signature
 int64_t ()
@@ -32,12 +34,12 @@ int64_t ()
 -- ir
 fn _init @ 0x1000 (size 27)
   blk0 @ 0x1000:
-    rax = load64(#0x3fe8)
-    brif eq rax, #0x0 -> 0x1016
+    v1 = load64(#0x3fe8)
+    brif eq v1, #0x0 -> 0x1016
   blk1 @ 0x1014:
-    call *rax
+    call *v1
   blk2 @ 0x1016:
-    ret rax
+    ret v1
 -- card
 {"addr":"0x1000","approxTokens":144,"blocks":3,"hardReasons":[],"name":"_init","nameSources":["symtab"],"section":".init","size":27,"sizeEstimated":true,"unsupported":0}
 

@@ -90,6 +90,27 @@ impl Convention {
             .copied()
     }
 
+    /// The registers a call of unknown arguments through `through` may read.
+    /// One holding the address called is no vector count: a variadic call
+    /// sets al after choosing another register for the address.
+    pub fn call_reads_through(self, through: Option<&Expr>) -> Vec<u16> {
+        let mut addressing = std::collections::HashSet::new();
+        if let Some(through) = through {
+            crate::ir::visit::collect_reads(through, &mut addressing);
+        }
+        self.arguments()
+            .iter()
+            .chain(self.float_arguments())
+            .copied()
+            .chain(
+                self.call_extra()
+                    .iter()
+                    .copied()
+                    .filter(|register| !addressing.contains(register)),
+            )
+            .collect()
+    }
+
     /// Registers a call whose integer arguments are named still reads: the
     /// floating-point arguments and AArch64's indirect result register.
     /// SysV's vector count in al is left out: only a variadic callee reads

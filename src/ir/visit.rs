@@ -201,7 +201,7 @@ pub(crate) fn statement_registers(
                     }
                     reads.extend(convention.unnamed_reads());
                 }
-                None => reads.extend(convention.call_reads()),
+                None => reads.extend(convention.call_reads_through(through.as_ref())),
             }
             writes.extend(convention.clobbered());
         }
