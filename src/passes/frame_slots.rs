@@ -445,8 +445,34 @@ pub(crate) fn block_frames(ir: &FunctionIr, sp: u16) -> Vec<Option<i64>> {
         return frames;
     }
     frames[0] = Some(0);
+    // A landing pad starts in the frame of the calls that unwind into it:
+    // that of the block holding the first of them.
+    let pads: Vec<(usize, usize)> = ir
+        .landing_pads
+        .iter()
+        .filter_map(|(pad, sites)| {
+            let pad = *index.get(pad)?;
+            let (site, _) = sites.first()?;
+            let holder = ir
+                .blocks
+                .iter()
+                .enumerate()
+                .filter(|(_, block)| block.start <= *site)
+                .max_by_key(|(_, block)| block.start)?
+                .0;
+            Some((pad, holder))
+        })
+        .collect();
     for _ in 0..ir.blocks.len().max(1) * 4 {
         let mut changed = false;
+        for (pad, holder) in &pads {
+            if frames[*pad].is_none()
+                && let Some(frame) = frames[*holder]
+            {
+                frames[*pad] = Some(frame);
+                changed = true;
+            }
+        }
         for position in 0..ir.blocks.len() {
             let Some(entry) = frames[position] else {
                 continue;
