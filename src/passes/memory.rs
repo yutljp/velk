@@ -36,9 +36,13 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     through,
                     args,
                     convention,
+                    result,
                     ..
                 } => {
-                    let clobbered = convention.clobbered();
+                    // What it leaves changed, the variable its result goes to
+                    // included.
+                    let mut clobbered = convention.clobbered().to_vec();
+                    clobbered.extend(result.map(|result| result.index));
                     let mut passed = 0;
                     for value in through.iter_mut().chain(args.iter_mut().flatten()) {
                         forward_expr(value, &pending);

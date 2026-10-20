@@ -1,15 +1,9 @@
-# 5616 functions, 62089 compared runs
+# 5616 functions, 62137 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 337
-#   step limit (Go): 2794
+#   step limit (Go): 2808
 #   step limit (Rust): 1692
 #   switch without a matching case (Rust): 144
 #   unsupported instruction (Go): 252
-go_probe 0x41a360 runtime.(*gcControllerState).resetLive: trial 0: memory differs
-go_probe 0x41f2c0 runtime.deductSweepCredit: trial 2: memory differs
-go_probe 0x43cde0 runtime.acquirep: trial 0: memory differs
 go_probe 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)
-go_stripped 0x41a360 runtime.(*gcControllerState).resetLive: trial 0: memory differs
-go_stripped 0x41f2c0 runtime.deductSweepCredit: trial 2: memory differs
-go_stripped 0x43cde0 runtime.acquirep: trial 0: memory differs
 go_stripped 0x465280 runtime.raise: trial 0: calls differ (3 before, 3 after)
