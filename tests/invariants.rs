@@ -191,12 +191,22 @@ fn reachable(ir: &FunctionIr) -> HashSet<usize> {
 /// The stores, calls, returns and unsupported instructions of the reachable
 /// IR that the structured body leaves out; folding may rewrite assignments
 /// and branches, but never drops an effect or an exit.
+/// What a statement does, to look for in the structured code: a return as
+/// one, whose value the execution tests compare, as the structuring may put
+/// the constant a path left in its place.
+fn effect(stmt: &Stmt) -> String {
+    match stmt {
+        Stmt::Ret { .. } => "return".to_owned(),
+        other => format!("{other:?}"),
+    }
+}
+
 fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
     fn collect(nodes: &[Node], kept: &mut HashSet<String>) {
         for node in nodes {
             match node {
                 Node::Stmt(stmt) => {
-                    kept.insert(format!("{stmt:?}"));
+                    kept.insert(effect(stmt));
                 }
                 Node::If { then, els, .. } => {
                     collect(then, kept);
@@ -236,7 +246,7 @@ fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
                     | Stmt::Ret { .. }
             )
         })
-        .map(|stmt| format!("{stmt:?}"))
+        .map(effect)
         .filter(|effect| !kept.contains(effect))
         .collect();
     dropped.sort();

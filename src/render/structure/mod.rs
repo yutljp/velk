@@ -137,6 +137,7 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
     cleanup::drop_jumps_to_next(nodes, None);
     prune(nodes);
     cleanup::undo_loop_inversion(nodes);
+    cleanup::return_known_constants(nodes);
 }
 
 fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {

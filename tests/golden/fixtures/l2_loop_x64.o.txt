@@ -58,7 +58,7 @@ int32_t sum_while(int32_t a0) {
         v2 = 0x0;
         v3 = 0x0;
         if (v1 == 0x0) {
-            return v3;
+            return 0x0;
         }
     }
     do {
