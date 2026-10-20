@@ -1949,13 +1949,28 @@ fn shift(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
         return;
     };
     let amount = shift_count(amount, width);
-    // A shift by zero leaves the flags as they were.
-    let counted = matches!(amount, Expr::Const(count) if count != 0);
-    let value = Expr::bin(op, value, amount);
-    if counted {
-        lifter.set_flags(Flags::result(value.clone()));
+    let shifted = Expr::bin(op, value.clone(), amount.clone());
+    // A shift by zero leaves the flags as they were. The carry holds the
+    // last bit shifted out, which a count of the width or more leaves
+    // undefined.
+    match amount {
+        Expr::Const(count) if count != 0 && count < u64::from(width) => {
+            let out = if op == BinOp::Shl {
+                u64::from(width) - count
+            } else {
+                count - 1
+            };
+            let carry = Expr::bin(
+                BinOp::And,
+                Expr::bin(BinOp::Shr, value, Expr::constant(out)),
+                Expr::constant(1),
+            );
+            lifter.set_flags(Flags::shift(shifted.clone(), carry));
+        }
+        Expr::Const(count) if count != 0 => lifter.set_flags(Flags::result(shifted.clone())),
+        _ => {}
     }
-    write_destination(lifter, ins, value);
+    write_destination(lifter, ins, shifted);
 }
 
 /// `tzcnt`, `lzcnt`, `popcnt`, and `bsf` and `bsr`, which leave the

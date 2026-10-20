@@ -20,8 +20,11 @@ pub(super) enum Source {
     /// A logical result `lhs`, with carry and overflow cleared.
     Logic,
     /// Only zero and sign follow the result `lhs`; carry and overflow mean
-    /// something else (an x86 shift).
+    /// something else (an x86 shift by its width or more, `bsf`).
     Result,
+    /// An x86 shift's result `lhs`, with the carry the bit `rhs` it shifted
+    /// out last; overflow is unknown.
+    Shift,
     /// Set to the given N, Z, C and V bits, from high to low (AArch64).
     Fixed(u8),
     /// Only the carry is known, equal to the bit `lhs` (x86 `bt`).
@@ -88,6 +91,10 @@ impl Flags {
         Self::new(Source::Result, result, Expr::constant(0))
     }
 
+    pub fn shift(result: Expr, carry: Expr) -> Self {
+        Self::new(Source::Shift, result, carry)
+    }
+
     pub fn float_compare(lhs: Expr, rhs: Expr, precision: Precision) -> Self {
         Self::new(Source::FloatCompare(precision), lhs, rhs)
     }
@@ -103,7 +110,7 @@ impl Flags {
             }
             _ if self.low_cleared => Test::Never,
             Source::Stored { .. } => bit_set(&self.lhs, 2),
-            Source::Difference | Source::Sum | Source::Logic => {
+            Source::Difference | Source::Sum | Source::Logic | Source::Shift => {
                 let low = Expr::bin(BinOp::And, self.value(), Expr::constant(0xff));
                 let folded = Expr::bin(
                     BinOp::And,
@@ -320,7 +327,7 @@ impl Flags {
                     _ => compare(cond, a, b),
                 }
             }
-            Source::Logic | Source::Result => {
+            Source::Logic | Source::Result | Source::Shift => {
                 let sign = |cond| match cond {
                     Cond::Mi => Cond::Lt,
                     Cond::Pl => Cond::Ge,
@@ -328,7 +335,17 @@ impl Flags {
                 };
                 match cond {
                     Cond::Eq | Cond::Ne | Cond::Mi | Cond::Pl => compare(sign(cond), a, &zero),
-                    _ if self.source == Source::Result => Test::Unknown,
+                    // On x86, where "below" asks for a set carry.
+                    Cond::Cc if self.source == Source::Shift => compare(Cond::Ne, b, &zero),
+                    Cond::Cs if self.source == Source::Shift => compare(Cond::Eq, b, &zero),
+                    Cond::Hi | Cond::Ls if self.source == Source::Shift => {
+                        let above = both(
+                            Test::Compare(Cond::Eq, b.clone(), zero.clone()),
+                            Test::Compare(Cond::Ne, a.clone(), zero.clone()),
+                        );
+                        if cond == Cond::Hi { above } else { not(above) }
+                    }
+                    _ if self.source != Source::Logic => Test::Unknown,
                     Cond::Vs => Test::Never,
                     Cond::Vc => Test::Always,
                     Cond::Ge | Cond::Lt | Cond::Gt | Cond::Le => compare(cond, a, &zero),
