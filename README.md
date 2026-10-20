@@ -5,18 +5,35 @@
 velk は ELF / PE / Mach-O の実行ファイルとオブジェクトを読み、関数ごとに疑似 C・中間表現・
 逆アセンブル・関数の要約（指定したトークン数に収まる JSON）を返します。エージェントは MCP 経由で
 JavaScript を実行して必要な結果だけを受け取り、人は CLI から使います。単一のバイナリで動き、
-起動から 1 関数の疑似 C を出すまで数ミリ秒です（`tests/bench.sh`）。
+起動から 1 関数の疑似 C を出すまで、小さなバイナリなら数ミリ秒です（`tests/bench.sh`）。
+
+シンボルもデバッグ情報もない、最適化なしの x86-64 の関数から（元は `double average(const double *values, int n)`）:
 
 ```c
-/* velk pseudo-C: count_down @ 0x3c */
-int32_t count_down(int32_t a0) {
-    v1 = 0x0;
-    v2 = (a0 > 0x1 ? a0 : 0x1);
-    do {
-        v1 = v1 + 0x1;
-        sink = v1;
-    } while (v2 != v1);
-    return v2;
+/* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
+double sub_2011f0(double *a0, int32_t a1) {
+    int64_t v1;
+    double *local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    double local_2; /* [sp-20] */
+    int32_t local_3; /* [sp-24] */
+    double local_4; /* [sp-30] */
+
+    local_0 = a0;
+    local_1 = a1;
+    local_2 = 0.0;
+    local_3 = 0x0;
+    while (local_3 < local_1) {
+        v1 = (int64_t)(int32_t)(local_3);
+        local_2 = local_0[v1] + local_2;
+        local_3 += 0x1;
+    }
+    if (local_1 <= 0x0) {
+        local_4 = 0.0;
+        return local_4;
+    }
+    local_4 = local_2 / (double)(int32_t)local_1;
+    return local_4;
 }
 ```
 
