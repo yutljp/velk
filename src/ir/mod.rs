@@ -22,6 +22,10 @@ pub enum Convention {
     /// A Linux system call on AArch64: the number in x8, then the
     /// arguments; it overwrites x0.
     SyscallArm,
+    /// Go's write barrier on x86-64: it takes nothing, keeps every other
+    /// register, and returns in r11 where to record the pointers about to
+    /// be written.
+    GoWriteBarrier,
 }
 
 impl Convention {
@@ -45,6 +49,7 @@ impl Convention {
             Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
             Self::SyscallX86 => &[0, 7, 6, 2, 10, 8, 9],
             Self::SyscallArm => &[8, 0, 1, 2, 3, 4, 5],
+            Self::GoWriteBarrier => &[],
         }
     }
 
@@ -56,7 +61,7 @@ impl Convention {
             Self::SysV => Some(8),
             Self::Win64 => Some(40),
             Self::Aapcs64 => Some(0),
-            Self::GoAmd64 | Self::SyscallX86 | Self::SyscallArm => None,
+            Self::GoAmd64 | Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => None,
         }
     }
 
@@ -64,7 +69,7 @@ impl Convention {
     pub fn pushed_by_call(self) -> i64 {
         match self {
             Self::Aapcs64 | Self::SyscallX86 | Self::SyscallArm => 0,
-            Self::SysV | Self::Win64 | Self::GoAmd64 => 8,
+            Self::SysV | Self::Win64 | Self::GoAmd64 | Self::GoWriteBarrier => 8,
         }
     }
 
@@ -76,7 +81,7 @@ impl Convention {
             Self::SysV => &[18, 20, 22, 24, 26, 28, 30, 32],
             Self::Win64 => &[18, 20, 22, 24],
             Self::GoAmd64 => &[18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46],
-            Self::SyscallX86 | Self::SyscallArm => &[],
+            Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => &[],
         }
     }
 
@@ -129,7 +134,11 @@ impl Convention {
         match self {
             Self::Aapcs64 => &[8],
             Self::SysV => &[0],
-            Self::Win64 | Self::GoAmd64 | Self::SyscallX86 | Self::SyscallArm => &[],
+            Self::Win64
+            | Self::GoAmd64
+            | Self::SyscallX86
+            | Self::SyscallArm
+            | Self::GoWriteBarrier => &[],
         }
     }
 
@@ -142,6 +151,7 @@ impl Convention {
             Self::Aapcs64 => &[0, 1, 32, 34],
             Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11, 18, 20, 22, 24],
             Self::SyscallX86 | Self::SyscallArm => &[0],
+            Self::GoWriteBarrier => &[11],
         }
     }
 
@@ -168,15 +178,17 @@ impl Convention {
                 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
                 74, 75, 76, 77, 78, 79, 80, 81,
             ],
-            // Everything but rsp, rbp, r14 (the goroutine) and r15.
+            // Everything but rsp, rbp, r14 (the goroutine), r15 and xmm15,
+            // which stays zero.
             Self::GoAmd64 => &[
                 0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
-                29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-                50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
-                71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+                29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50, 51,
+                52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72,
+                73, 74, 75, 76, 77, 78, 79, 80, 81,
             ],
             Self::SyscallX86 => &[0, 1, 11],
             Self::SyscallArm => &[0],
+            Self::GoWriteBarrier => &[11],
         }
     }
 }

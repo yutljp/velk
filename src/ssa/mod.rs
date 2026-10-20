@@ -773,7 +773,9 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
                 continue;
             };
             match &mut lowered.blocks[*block].stmts[*position] {
-                Stmt::Call { result, .. } if *register == crate::arch::RETURN => {
+                Stmt::Call {
+                    result, convention, ..
+                } if convention.results().first() == Some(register) => {
                     *result = Some(crate::ir::RegRef {
                         index: *name,
                         width: 64,

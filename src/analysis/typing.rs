@@ -648,7 +648,7 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
         Convention::SysV => 8,
         Convention::Win64 => 40,
         Convention::Aapcs64 | Convention::GoAmd64 => 0,
-        Convention::SyscallX86 | Convention::SyscallArm => return,
+        Convention::SyscallX86 | Convention::SyscallArm | Convention::GoWriteBarrier => return,
     };
     let mut params = Vec::new();
     let mut stack_params = Vec::new();
@@ -775,7 +775,8 @@ fn returned_in_memory(convention: crate::ir::Convention, size: u64) -> bool {
         Convention::Aapcs64
         | Convention::GoAmd64
         | Convention::SyscallX86
-        | Convention::SyscallArm => false,
+        | Convention::SyscallArm
+        | Convention::GoWriteBarrier => false,
     }
 }
 

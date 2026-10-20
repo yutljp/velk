@@ -401,6 +401,14 @@ fn setup<'a>(
 /// so loops over a count finish; the rest use boundary values or hashed ones.
 fn registers(image: &Image, trial: u64) -> Vec<(u16, u64)> {
     let goroutine = image.go.then_some((R14, GO_G));
+    // Go code on x86-64 keeps xmm15 zero.
+    let zero = (image.go && image.isa == Isa::X86_64)
+        .then_some([
+            (crate::arch::x86::XMM0 + 30, 0),
+            (crate::arch::x86::XMM0 + 31, 0),
+        ])
+        .into_iter()
+        .flatten();
     convention(image)
         .arguments
         .iter()
@@ -415,6 +423,7 @@ fn registers(image: &Image, trial: u64) -> Vec<(u16, u64)> {
             (*register, value)
         })
         .chain(goroutine)
+        .chain(zero)
         .collect()
 }
 

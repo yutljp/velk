@@ -230,6 +230,29 @@ fn tail_calls_through_pointers(
 
 /// Drops the check a Go function starts with, which compares the stack
 /// pointer with the goroutine's stack limit and, when it runs low, calls the
+/// Go code on x86-64 keeps xmm15 zero: it holds zero as a function starts
+/// and after every call.
+fn zero_fixed_register(blocks: &mut [crate::ir::Block], isa: crate::loader::Isa) {
+    if isa != crate::loader::Isa::X86_64 {
+        return;
+    }
+    let Some(first) = blocks.first_mut() else {
+        return;
+    };
+    for half in [crate::arch::x86::XMM0 + 30, crate::arch::x86::XMM0 + 31] {
+        first.stmts.insert(
+            0,
+            crate::ir::Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: half,
+                    width: 64,
+                },
+                value: crate::ir::Expr::constant(0),
+            },
+        );
+    }
+}
+
 /// runtime to grow the stack and starts the function again. It is no part
 /// of what the function does. The blocks that grow the stack and restart
 /// go too.
@@ -697,6 +720,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     }
     if image.go {
         drop_stack_growth_check(&mut blocks, image);
+        zero_fixed_register(&mut blocks, image.isa);
     }
     let switched: HashSet<u64> = tables.iter().map(|table| table.block_start).collect();
     tail_calls_through_pointers(&mut blocks, &switched, image);

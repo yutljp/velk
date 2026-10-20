@@ -325,9 +325,13 @@ impl Machine<'_> {
 
     /// A call passing `arguments`; it clobbers what the convention lets it.
     fn call_with(&mut self, target: Option<u64>, arguments: Vec<u64>) {
+        self.call_clobbering(target, arguments, self.convention.clobbered);
+    }
+
+    fn call_clobbering(&mut self, target: Option<u64>, arguments: Vec<u64>, clobbered: &[u16]) {
         self.calls.push(Call { target, arguments });
         let ordinal = self.calls.len() as u64;
-        for index in self.convention.clobbered {
+        for index in clobbered {
             self.registers.insert(
                 *index,
                 hash(self.seed ^ ordinal, 0x2_0000 + u64::from(*index)),
@@ -428,12 +432,22 @@ impl Machine<'_> {
                         through,
                         args,
                         result,
-                        ..
+                        convention,
                     } => {
                         let target = match through {
                             Some(through) => Some(self.eval(through)?),
                             None => *target,
                         };
+                        // Go's write barrier keeps every register but the
+                        // one it returns in.
+                        if *convention == crate::ir::Convention::GoWriteBarrier {
+                            self.call_clobbering(target, Vec::new(), convention.clobbered());
+                            if let Some(result) = result {
+                                let value = self.register(convention.clobbered()[0]);
+                                self.assign(*result, value);
+                            }
+                            continue;
+                        }
                         match args {
                             Some(args) => {
                                 let values = args

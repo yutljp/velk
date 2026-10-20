@@ -720,7 +720,7 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
         ) = (
             index.checked_sub(1).and_then(|before| nodes.get(before)),
             &nodes[index],
-        ) && *register != crate::arch::RETURN
+        ) && convention.results().first() != Some(register)
             && convention.results().contains(register)
         {
             indent(depth, out);
