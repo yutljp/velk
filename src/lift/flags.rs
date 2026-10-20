@@ -54,6 +54,9 @@ pub(super) struct Flags {
     /// For a conditional compare, the condition under the earlier flags that
     /// chose this compare; when it fails the flags are `otherwise`.
     pub chosen: Option<Choice>,
+    /// The width the operation computed at, when wider than its result reads:
+    /// a 64-bit `ands` with `0xff` leaves a result whose sign bit is clear.
+    pub width: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,6 +88,14 @@ impl Flags {
 
     pub fn logic(result: Expr) -> Self {
         Self::new(Source::Logic, result, Expr::constant(0))
+    }
+
+    /// A logical result of an operation `width` bits wide.
+    pub fn logic_at(result: Expr, width: u32) -> Self {
+        Self {
+            width: Some(width),
+            ..Self::logic(result)
+        }
     }
 
     pub fn result(result: Expr) -> Self {
@@ -194,6 +205,7 @@ impl Flags {
             carry: true,
             low_cleared: false,
             chosen: None,
+            width: None,
         }
     }
 
@@ -325,6 +337,22 @@ impl Flags {
                     (Cond::Vs, _) => Test::Compare(Cond::Lt, overflow(), zero),
                     (Cond::Vc, _) => Test::Compare(Cond::Ge, overflow(), zero),
                     _ => compare(cond, a, b),
+                }
+            }
+            // The result reads narrower than the operation computed it: its
+            // sign bit, that of the operation, is clear.
+            Source::Logic
+                if self.width.is_some_and(|width| width > bits)
+                    && matches!(
+                        cond,
+                        Cond::Mi | Cond::Pl | Cond::Lt | Cond::Ge | Cond::Gt | Cond::Le
+                    ) =>
+            {
+                match cond {
+                    Cond::Mi | Cond::Lt => Test::Never,
+                    Cond::Pl | Cond::Ge => Test::Always,
+                    Cond::Gt => compare(Cond::Ne, a, &zero),
+                    _ => compare(Cond::Eq, a, &zero),
                 }
             }
             Source::Logic | Source::Result | Source::Shift => {

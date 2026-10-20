@@ -346,7 +346,7 @@ fn lift_alu(lifter: &mut Lifter, ops: [Operand; 4], op: BinOp, flags: bool) {
     if flags {
         lifter.last_compare = Some(match op {
             BinOp::Add => Flags::sum(lhs, rhs),
-            BinOp::And => Flags::logic(value.clone()),
+            BinOp::And => Flags::logic_at(value.clone(), u32::from(width)),
             _ => Flags::difference(lhs, rhs),
         });
     }
@@ -501,7 +501,7 @@ fn lift_bic(lifter: &mut Lifter, ops: [Operand; 4], flags: bool) {
     let inverted = Expr::bin(BinOp::Xor, mask, Expr::constant(u64::MAX));
     let value = Expr::bin(BinOp::And, base, inverted);
     if flags {
-        lifter.last_compare = Some(Flags::logic(value.clone()));
+        lifter.last_compare = Some(Flags::logic_at(value.clone(), u32::from(width)));
     }
     // `bics` into the zero register only sets the flags.
     if let Some(dest) = destination(ops[0]) {

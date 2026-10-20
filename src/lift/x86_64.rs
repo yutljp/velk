@@ -1926,10 +1926,11 @@ fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
     } else {
         Expr::bin(op, lhs.clone(), rhs.clone())
     };
+    let width = operand_width(ins, 0).map_or(64, u32::from);
     lifter.set_flags(match op {
         BinOp::Sub => Flags::difference(lhs, rhs),
         BinOp::Add => Flags::sum(lhs, rhs),
-        _ => Flags::logic(value.clone()),
+        _ => Flags::logic_at(value.clone(), width),
     });
     write_destination(lifter, ins, value);
 }
@@ -2434,7 +2435,8 @@ fn lift_instruction(
         Mnemonic::Test => {
             if let (Some(a), Some(b)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) {
                 let masked = Expr::bin(BinOp::And, a, b);
-                lifter.set_flags(Flags::logic(masked));
+                let width = operand_width(ins, 0).map_or(64, u32::from);
+                lifter.set_flags(Flags::logic_at(masked, width));
             }
         }
         Mnemonic::Shl | Mnemonic::Sal => shift(lifter, ins, BinOp::Shl),
