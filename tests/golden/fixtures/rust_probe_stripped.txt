@@ -1,4 +1,4 @@
-# rust_probe_stripped: elf x86_64 0x14e70, 545 functions, 0 lift failures, 8 unsupported, 3350 gotos
+# rust_probe_stripped: elf x86_64 0x14e70, 545 functions, 0 lift failures, 8 unsupported, 3339 gotos
 0x14e70 38 - entry,unwind,prologue
 0x14ea0 48 - prologue
 0x14ed0 64 - prologue

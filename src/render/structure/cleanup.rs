@@ -456,6 +456,46 @@ pub(crate) fn prune_labels(nodes: &mut Vec<Node>, used: &std::collections::HashS
     }
 }
 
+/// Drops a jump to the label that comes next anyway: at the end of a
+/// sequence, or of an `if` branch, that the label follows.
+pub(crate) fn drop_jumps_to_next(nodes: &mut Vec<Node>, follow: Option<u64>) {
+    let mut index = 0;
+    while index < nodes.len() {
+        let next = match nodes.get(index + 1) {
+            Some(Node::Label(label)) => Some(*label),
+            Some(_) => None,
+            None => follow,
+        };
+        match &mut nodes[index] {
+            Node::Stmt(Stmt::Br {
+                target: Some(target),
+            }) if Some(*target) == next => {
+                nodes.remove(index);
+                continue;
+            }
+            Node::If { then, els, .. } => {
+                drop_jumps_to_next(then, next);
+                drop_jumps_to_next(els, next);
+            }
+            Node::DoWhile { body, .. } | Node::Forever { body } => drop_jumps_to_next(body, None),
+            Node::While { prefix, body, .. } => {
+                drop_jumps_to_next(prefix, None);
+                drop_jumps_to_next(body, None);
+            }
+            Node::Switch { arms, default, .. } => {
+                for (_, body) in arms {
+                    drop_jumps_to_next(body, None);
+                }
+                if let Some(body) = default {
+                    drop_jumps_to_next(body, None);
+                }
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::fold_exit_branches;

@@ -108,15 +108,27 @@ fn structure_chosen(ir: &FunctionIr) -> Vec<Node> {
     primary
 }
 
+/// Drops labels nothing jumps to but the `kept` ones, code after a jump,
+/// and jumps to where the code goes next anyway; hoisting an `else` after
+/// a branch that leaves can bring a jump right before its label.
+fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
+    let prune = |nodes: &mut Vec<Node>| {
+        let mut used = kept.clone();
+        collect_targets(nodes, &mut used);
+        prune_labels(nodes, &used);
+    };
+    cleanup::drop_jumps_to_next(nodes, None);
+    prune(nodes);
+    prune_unreachable(nodes);
+    flatten_early_returns(nodes);
+    cleanup::drop_jumps_to_next(nodes, None);
+    prune(nodes);
+}
+
 fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     let mut nodes = dominance::structure(ir)?;
-    let mut used = std::collections::HashSet::new();
-    collect_targets(&nodes, &mut used);
     // Code the entry does not reach keeps its label, which names where it starts.
-    used.extend(dominance::entries(ir));
-    prune_labels(&mut nodes, &used);
-    prune_unreachable(&mut nodes);
-    flatten_early_returns(&mut nodes);
+    tidy(&mut nodes, dominance::entries(ir).into_iter().collect());
     Some(nodes)
 }
 
@@ -257,10 +269,6 @@ fn structure_with(ir: &FunctionIr, reordered: bool) -> Vec<Node> {
         reordered,
     };
     let mut nodes = structurer.emit(0, ir.blocks.len());
-    let mut used = entries;
-    collect_targets(&nodes, &mut used);
-    prune_labels(&mut nodes, &used);
-    prune_unreachable(&mut nodes);
-    flatten_early_returns(&mut nodes);
+    tidy(&mut nodes, entries);
     nodes
 }
