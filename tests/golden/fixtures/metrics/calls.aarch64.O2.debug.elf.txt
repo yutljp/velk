@@ -1,4 +1,4 @@
-# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 4 unsupported, 2 gotos
+# metrics/calls.aarch64.O2.debug.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 1 unsupported, 2 gotos
 0x2102c4 8 twice symtab,dwarf,unwind
 0x2102cc 8 square symtab,dwarf,unwind
 0x2102d4 28 pick_op symtab,dwarf,unwind
@@ -123,57 +123,64 @@ fn apply_pointer @ 0x21031c (size 32)
 int factorial(int n) {
     uint32_t v1;
     int64_t v2;
-    int64_t v3;
+    uint64_t v3;
     uint64_t v4;
-    uint64_t v5;
-    int32_t v6;
-    int32_t v7;
-    uint64_t v8;
-    uint64_t v9;
+    int32_t v5;
+    int64_t v6;
+    int64_t v7;
+    int64_t v8;
+    int64_t v9;
     int32_t v10;
     uint64_t v11;
     uint64_t v12;
     uint64_t v13;
     uint64_t v14;
-    uint64_t v15;
-    int64_t v16;
-    int32_t v17;
-    int32_t v18;
+    int32_t v15;
+    uint64_t v16;
+    uint64_t v17;
+    uint64_t v18;
+    uint64_t v19;
+    uint64_t v20;
+    int64_t v21;
+    int32_t v22;
+    int32_t v23;
 
     if (n >= 0x2) {
         if (n >= 0x9 /* unsigned */) {
-            v3 = 0x200000;
-            /* unsupported: MOVI at 0x210368 */
-            v4 = qword_200190;
-            v5 = qword_200198;
-            v6 = n - 0x1;
-            /* unsupported (2 steps): MVNI at 0x210374, MVNI at 0x210378 */
-            v7 = v6 & 0xfffffff8;
-            v8 = add_lanes32(n * 0x100000001, v4);
-            v9 = add_lanes32(n * 0x100000001, v5);
-            /* unsupported: MOVI at 0x210384 */
-            v1 = n - v7;
-            v10 = v7;
+            v3 = 0x100000001;
+            v4 = 0x100000001;
+            v5 = n - 0x1;
+            v6 = 0xfffffffcfffffffc;
+            v7 = 0xfffffffcfffffffc;
+            v8 = 0xfffffff8fffffff8;
+            v9 = 0xfffffff8fffffff8;
+            v10 = v5 & 0xfffffff8;
+            v11 = add_lanes32(n * 0x100000001, qword_200190);
+            v12 = add_lanes32(n * 0x100000001, qword_200198);
+            v13 = 0x100000001;
+            v14 = 0x100000001;
+            v1 = n - v10;
+            v15 = v10;
             do {
-                v11 = add_lanes32(v8, d3);
-                v12 = add_lanes32(v9, v3_hi);
-                d0 = mul_lanes32(v8, d0);
-                v0_hi = mul_lanes32(v9, v0_hi);
-                v10 = v10 - 0x8;
-                v8 = add_lanes32(v8, d4);
-                v9 = add_lanes32(v9, v4_hi);
-                d2 = mul_lanes32(v11, d2);
-                v2_hi = mul_lanes32(v12, v2_hi);
-            } while (v10 != 0x0);
-            v13 = mul_lanes32(d2, d0);
-            v14 = mul_lanes32(v2_hi, v0_hi);
+                v16 = add_lanes32(v11, 0xfffffffcfffffffc);
+                v17 = add_lanes32(v12, 0xfffffffcfffffffc);
+                v13 = mul_lanes32(v11, v13);
+                v14 = mul_lanes32(v12, v14);
+                v15 = v15 - 0x8;
+                v11 = add_lanes32(v11, 0xfffffff8fffffff8);
+                v12 = add_lanes32(v12, 0xfffffff8fffffff8);
+                v3 = mul_lanes32(v16, v3);
+                v4 = mul_lanes32(v17, v4);
+            } while (v15 != 0x0);
+            v18 = mul_lanes32(v3, v13);
+            v19 = mul_lanes32(v4, v14);
             /* unsupported: EXT at 0x2103b0 */
-            v15 = mul_lanes32(d0, d1);
-            v16 = 0x0;
-            v17 = v15 >> 0x20;
-            v18 = v15;
-            v2 = v18 * v17;
-            if (v6 == v7) {
+            v20 = mul_lanes32(d0, d1);
+            v21 = 0x0;
+            v22 = v20 >> 0x20;
+            v23 = v20;
+            v2 = v23 * v22;
+            if (v5 == v10) {
                 return v2;
             }
         } else {
@@ -206,40 +213,41 @@ fn factorial @ 0x21033c (size 160)
     v2 = #0x1
     br 0x2103c8
   blk4 @ 0x210360:
-    v3 = #0x200000
-    unsupported: MOVI at 0x210368
-    v4 = load64(#0x200190)
-    v5 = load64(#0x200198)
-    v6 = ((x0 & #0xffffffff) - #0x1)
-    unsupported: MVNI at 0x210374
-    unsupported: MVNI at 0x210378
-    v7 = (v6 & #0xfffffff8)
-    v8 = add_lanes32(((x0 & #0xffffffff) * #0x100000001), v4)
-    v9 = add_lanes32(((x0 & #0xffffffff) * #0x100000001), v5)
-    unsupported: MOVI at 0x210384
-    v1 = (((x0 & #0xffffffff) - v7) & #0xffffffff)
-    v10 = v7
+    v3 = #0x100000001
+    v4 = #0x100000001
+    v5 = ((x0 & #0xffffffff) - #0x1)
+    v6 = #0xfffffffcfffffffc
+    v7 = #0xfffffffcfffffffc
+    v8 = #0xfffffff8fffffff8
+    v9 = #0xfffffff8fffffff8
+    v10 = (v5 & #0xfffffff8)
+    v11 = add_lanes32(((x0 & #0xffffffff) * #0x100000001), load64(#0x200190))
+    v12 = add_lanes32(((x0 & #0xffffffff) * #0x100000001), load64(#0x200198))
+    v13 = #0x100000001
+    v14 = #0x100000001
+    v1 = (((x0 & #0xffffffff) - v10) & #0xffffffff)
+    v15 = v10
   blk5 @ 0x210390:
-    v11 = add_lanes32(v8, d3)
-    v12 = add_lanes32(v9, v3_hi)
-    d0 = mul_lanes32(v8, d0)
-    v0_hi = mul_lanes32(v9, v0_hi)
-    v10 = (v10 - #0x8)
-    v8 = add_lanes32(v8, d4)
-    v9 = add_lanes32(v9, v4_hi)
-    d2 = mul_lanes32(v11, d2)
-    v2_hi = mul_lanes32(v12, v2_hi)
-    brif ne v10, #0x0 -> 0x210390
+    v16 = add_lanes32(v11, #0xfffffffcfffffffc)
+    v17 = add_lanes32(v12, #0xfffffffcfffffffc)
+    v13 = mul_lanes32(v11, v13)
+    v14 = mul_lanes32(v12, v14)
+    v15 = (v15 - #0x8)
+    v11 = add_lanes32(v11, #0xfffffff8fffffff8)
+    v12 = add_lanes32(v12, #0xfffffff8fffffff8)
+    v3 = mul_lanes32(v16, v3)
+    v4 = mul_lanes32(v17, v4)
+    brif ne v15, #0x0 -> 0x210390
   blk6 @ 0x2103a8:
-    v13 = mul_lanes32(d2, d0)
-    v14 = mul_lanes32(v2_hi, v0_hi)
+    v18 = mul_lanes32(v3, v13)
+    v19 = mul_lanes32(v4, v14)
     unsupported: EXT at 0x2103b0
-    v15 = mul_lanes32(d0, d1)
-    v16 = #0x0
-    v17 = (v15 >> #0x20)
-    v18 = v15
-    v2 = ((v18 * v17) & #0xffffffff)
-    brif eq v6, v7 -> 0x2103d8
+    v20 = mul_lanes32(d0, d1)
+    v21 = #0x0
+    v22 = (v20 >> #0x20)
+    v23 = v20
+    v2 = ((v23 * v22) & #0xffffffff)
+    brif eq v5, v10 -> 0x2103d8
   blk7 @ 0x2103c8:
     v2 = (((v1 & #0xffffffff) * (v2 & #0xffffffff)) & #0xffffffff)
     v1 = (((v1 & #0xffffffff) - #0x1) & #0xffffffff)
@@ -247,7 +255,7 @@ fn factorial @ 0x21033c (size 160)
   blk8 @ 0x2103d8:
     ret v2
 -- card
-{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":5}
+{"addr":"0x21033c","approxTokens":120,"blocks":9,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":1}
 
 == 0x2103dc is_odd
 -- decompile

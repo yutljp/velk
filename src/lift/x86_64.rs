@@ -2623,6 +2623,24 @@ fn lift_instruction(
         Mnemonic::Tzcnt | Mnemonic::Lzcnt | Mnemonic::Popcnt | Mnemonic::Bsf | Mnemonic::Bsr => {
             lift_count(lifter, ins)
         }
+        // The Castagnoli checksum, updated with the source's bytes.
+        Mnemonic::Crc32 => {
+            if let (Some(crc), Some(data), Some(bits)) = (
+                operand(lifter, ins, 0),
+                operand(lifter, ins, 1),
+                operand_width(ins, 1),
+            ) {
+                let crc = Expr::bin(BinOp::And, crc, Expr::constant(0xffff_ffff));
+                let value = Expr::apply(
+                    Operation::Crc32 {
+                        castagnoli: true,
+                        bits,
+                    },
+                    vec![crc, data],
+                );
+                write_destination(lifter, ins, value);
+            }
+        }
         // Hints and fences change nothing a single thread sees.
         Mnemonic::Nop
         | Mnemonic::Endbr64

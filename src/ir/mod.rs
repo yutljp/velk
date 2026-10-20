@@ -319,6 +319,8 @@ pub enum LaneOp {
     /// The high half of the full product.
     MulHighSigned,
     MulHighUnsigned,
+    /// The set bits of each lane of the first argument; the second is unused.
+    PopCount,
 }
 
 /// An operation `Expr::Apply` applies to its arguments, in order.
@@ -385,6 +387,19 @@ pub enum Operation {
     MultiplyAddPairs,
     /// The sum of the absolute differences of the bytes of two halves.
     SumAbsoluteDifferences,
+    /// The sum of the lanes of `bits` in two halves, each extended first,
+    /// in twice `bits`.
+    SumLanesLong {
+        bits: u8,
+        signed: bool,
+    },
+    /// A CRC-32 step: the checksum in the first argument updated with the
+    /// low `bits` of the second, bit-reflected, by the ISO-HDLC polynomial
+    /// or, when `castagnoli` is set, Castagnoli's.
+    Crc32 {
+        castagnoli: bool,
+        bits: u8,
+    },
     /// Counts over the low `bits`; a zero value counts `bits`.
     CountLeadingZeros(u8),
     CountTrailingZeros(u8),
@@ -658,6 +673,7 @@ pub(crate) fn lane_op_name(op: LaneOp) -> &'static str {
         LaneOp::Average => "average_lanes_u",
         LaneOp::MulHighSigned => "mul_high_lanes",
         LaneOp::MulHighUnsigned => "mul_high_lanes_u",
+        LaneOp::PopCount => "popcount_lanes",
     }
 }
 
@@ -717,6 +733,12 @@ pub(crate) fn operation_name(op: Operation) -> String {
             format!("pack_lanes{from}{}", if unsigned { "_u" } else { "" })
         }
         Operation::MultiplyAddPairs => "multiply_add_pairs16".to_owned(),
+        Operation::SumLanesLong { bits, signed } => {
+            format!("sum_lanes_long{bits}{}", if signed { "_s" } else { "" })
+        }
+        Operation::Crc32 { castagnoli, bits } => {
+            format!("crc32{}_{bits}", if castagnoli { "c" } else { "" })
+        }
         Operation::SumAbsoluteDifferences => "sum_absolute_differences8".to_owned(),
         Operation::CountLeadingZeros(bits) => format!("clz{bits}"),
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),

@@ -58,6 +58,8 @@ pub(crate) fn width(expr: &Expr) -> u32 {
             | Operation::Pack { .. }
             | Operation::MultiplyAddPairs
             | Operation::SumAbsoluteDifferences => 64,
+            Operation::SumLanesLong { bits, .. } => 2 * u32::from(*bits),
+            Operation::Crc32 { .. } => 32,
             Operation::WideDivide { bits, .. } => u32::from(*bits),
             Operation::SignBits(bits) => 64 / u32::from(*bits),
             Operation::SumLanes(bits) => u32::from(*bits),
@@ -239,6 +241,7 @@ fn lanes(op: LaneOp, bits: u32, a: u64, b: u64) -> u64 {
             LaneOp::Average => (x + y + 1) >> 1,
             LaneOp::MulHighSigned => ((sx * sy) >> bits) as u64,
             LaneOp::MulHighUnsigned => (x * y) >> bits,
+            LaneOp::PopCount => u64::from(x.count_ones()),
         };
         out | (lane & ones) << shift
     })
@@ -302,7 +305,9 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::Aes { .. }
         | Operation::Pack { .. }
         | Operation::MultiplyAddPairs
-        | Operation::SumAbsoluteDifferences => 64,
+        | Operation::SumAbsoluteDifferences
+        | Operation::SumLanesLong { .. }
+        | Operation::Crc32 { .. } => 64,
         Operation::WideDivide { bits, .. } => bits,
         Operation::IntToFloat { bits, .. }
         | Operation::CountLeadingZeros(bits)
@@ -500,6 +505,30 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
                 + lane(args[0], 2 * pair + 1) * lane(args[1], 2 * pair + 1);
             out | (sum as u64 & 0xffff_ffff) << (32 * pair)
         }),
+        Operation::SumLanesLong { bits, signed } => {
+            let bits = u32::from(bits);
+            let sum = [args[0], args[1]].iter().fold(0i64, |sum, half| {
+                (0..64 / bits).fold(sum, |sum, index| {
+                    let lane = (half >> (index * bits)) & mask(bits);
+                    sum + if signed {
+                        sign_extend(lane, bits)
+                    } else {
+                        lane as i64
+                    }
+                })
+            });
+            sum as u64 & mask(2 * bits)
+        }
+        Operation::Crc32 { castagnoli, bits } => {
+            let polynomial: u32 = if castagnoli { 0x82f6_3b78 } else { 0xedb8_8320 };
+            let mut crc = args[0] as u32;
+            let data = args[1] & mask(u32::from(bits));
+            for index in 0..u32::from(bits) {
+                let bit = ((data >> index) as u32 ^ crc) & 1;
+                crc = (crc >> 1) ^ if bit != 0 { polynomial } else { 0 };
+            }
+            u64::from(crc)
+        }
         Operation::SumAbsoluteDifferences => (0..8).fold(0, |sum, index| {
             let byte = |value: u64| (value >> (8 * index)) & 0xff;
             sum + byte(args[0]).abs_diff(byte(args[1]))
@@ -617,6 +646,23 @@ fn aes_round(round: crate::ir::AesRound, state: u128) -> u128 {
 mod tests {
     use super::apply;
     use crate::ir::{AesRound, Operation};
+
+    #[test]
+    fn crc32_steps_give_the_check_values() {
+        // The checksums of "123456789", from an all-ones start, inverted.
+        for (castagnoli, check) in [(false, 0xcbf4_3926), (true, 0xe306_9283)] {
+            let crc = b"123456789".iter().fold(0xffff_ffff, |crc, byte| {
+                apply(
+                    Operation::Crc32 {
+                        castagnoli,
+                        bits: 8,
+                    },
+                    &[crc, u64::from(*byte)],
+                )
+            });
+            assert_eq!(crc ^ 0xffff_ffff, check);
+        }
+    }
 
     #[test]
     fn aes_rounds_match_the_published_example() {

@@ -1291,6 +1291,27 @@ fn halves((slot, full, _): (u16, bool, u8)) -> (Expr, Expr) {
     (Expr::reg(slot, 64), high)
 }
 
+/// The lane a vector immediate gives: shifted left, filling with zeros or,
+/// for `msl`, ones, and complemented for `mvni`.
+fn immediate_lane(operand: Operand, complement: bool, bits: u8) -> Option<u64> {
+    let lane = match operand {
+        Operand::ImmShift(value, shift) => u64::from(value) << shift,
+        Operand::ImmShiftMSL(value, shift) => (u64::from(value) << shift) | ((1 << shift) - 1),
+        _ => return None,
+    };
+    let lane = if complement { !lane } else { lane };
+    Some(if bits == 64 {
+        lane
+    } else {
+        lane & ((1u64 << bits) - 1)
+    })
+}
+
+/// A constant lane in every lane of `bits` of a half.
+fn replicated(lane: u64, bits: u8) -> u64 {
+    (0..64 / u32::from(bits)).fold(0, |out, index| out | lane << (index * u32::from(bits)))
+}
+
 /// `value` in every lane of `bits` of a half.
 fn replicate(value: Expr, bits: u8) -> Expr {
     if bits == 64 {
@@ -1369,6 +1390,49 @@ fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             let low = lanes(op, bits, a.0, b.0);
             let high = lanes(op, bits, a.1, b.1);
             lifter.write_vector(dest, low, high);
+        }
+        // A shifted immediate set (orr) or cleared (bic) in every lane.
+        O::ORR | O::BIC
+            if vector(ops[0]).is_some()
+                && matches!(ops[1], Operand::ImmShift(..) | Operand::ImmShiftMSL(..)) =>
+        {
+            let dest = vector(ops[0])?;
+            let lane = immediate_lane(ops[1], false, dest.2)?;
+            let bits = Expr::constant(replicated(lane, dest.2));
+            let (low, high) = halves(dest);
+            let combine = |half: Expr| match ins.opcode {
+                O::ORR => Expr::bin(BinOp::Or, half, bits.clone()),
+                _ => Expr::bin(
+                    BinOp::And,
+                    half,
+                    Expr::bin(BinOp::Xor, bits.clone(), Expr::constant(u64::MAX)),
+                ),
+            };
+            lifter.write_vector(dest, combine(low), combine(high));
+        }
+        // The set bits of each byte.
+        O::CNT => {
+            let dest = vector(ops[0])?;
+            let (low, high) = halves(vector(ops[1])?);
+            lifter.write_vector(
+                dest,
+                lanes(LaneOp::PopCount, 8, low, Expr::constant(0)),
+                lanes(LaneOp::PopCount, 8, high, Expr::constant(0)),
+            );
+        }
+        // The sum of every lane, each extended, into a scalar twice as wide.
+        O::UADDLV | O::SADDLV => {
+            let (slot, bits) = simd(ops[0])?;
+            let source = vector(ops[1])?;
+            let (low, high) = halves(source);
+            let sum = Expr::apply(
+                Operation::SumLanesLong {
+                    bits: source.2,
+                    signed: ins.opcode == O::SADDLV,
+                },
+                vec![low, high],
+            );
+            lifter.write_simd(slot, bits, (sum, Expr::constant(0)));
         }
         O::AND | O::ORR | O::EOR | O::BIC | O::ORN if vector(ops[0]).is_some() => {
             let dest = vector(ops[0])?;
@@ -1752,6 +1816,13 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             );
         }
         // Zero, or a 64-bit pattern in each half.
+        // A shifted immediate (or its complement) in every lane.
+        O::MOVI | O::MVNI if matches!(ops[1], Operand::ImmShift(..) | Operand::ImmShiftMSL(..)) => {
+            let dest = vector(ops[0])?;
+            let lane = immediate_lane(ops[1], ins.opcode == O::MVNI, dest.2)?;
+            let half = Expr::constant(replicated(lane, dest.2));
+            lifter.write_vector(dest, half.clone(), half);
+        }
         O::MOVI => {
             let Operand::Imm64(value) = ops[1] else {
                 return None;
@@ -2077,6 +2148,33 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             }
         }
         O::HINT => {}
+        O::CRC32B
+        | O::CRC32H
+        | O::CRC32W
+        | O::CRC32X
+        | O::CRC32CB
+        | O::CRC32CH
+        | O::CRC32CW
+        | O::CRC32CX => {
+            let (castagnoli, bits) = match ins.opcode {
+                O::CRC32B => (false, 8),
+                O::CRC32H => (false, 16),
+                O::CRC32W => (false, 32),
+                O::CRC32X => (false, 64),
+                O::CRC32CB => (true, 8),
+                O::CRC32CH => (true, 16),
+                O::CRC32CW => (true, 32),
+                _ => (true, 64),
+            };
+            if let (Some(dest), Some(crc), Some(data)) = (
+                destination(ops[0]),
+                lifter.operand(ops[1], 32),
+                lifter.operand(ops[2], bits.max(32)),
+            ) {
+                let value = Expr::apply(Operation::Crc32 { castagnoli, bits }, vec![crc, data]);
+                lifter.assign(dest, value);
+            }
+        }
         // The kernel's call: its number and arguments in registers.
         O::SVC => lifter.stmts.push(Stmt::Call {
             target: None,
