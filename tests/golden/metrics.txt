@@ -1,36 +1,36 @@
 # metric | config | correct/total
-functions found | aarch64.O0 | 148/148
-functions found | aarch64.O2 | 148/148
-functions found | x86_64.O0 | 148/148
-functions found | x86_64.O2 | 148/148
-extra functions | aarch64.O0 | 0/148
-extra functions | aarch64.O2 | 0/148
-extra functions | x86_64.O0 | 0/148
-extra functions | x86_64.O2 | 0/148
-parameter count | aarch64.O0 | 147/147
-parameter count | aarch64.O2 | 147/147
-parameter count | x86_64.O0 | 147/147
-parameter count | x86_64.O2 | 147/147
-parameter pointer | aarch64.O0 | 180/182
-parameter pointer | aarch64.O2 | 179/182
-parameter pointer | x86_64.O0 | 180/182
-parameter pointer | x86_64.O2 | 179/182
-parameter width | aarch64.O0 | 147/153
-parameter width | aarch64.O2 | 147/153
-parameter width | x86_64.O0 | 148/153
-parameter width | x86_64.O2 | 148/153
-parameter sign | aarch64.O0 | 135/147
-parameter sign | aarch64.O2 | 135/147
-parameter sign | x86_64.O0 | 136/148
-parameter sign | x86_64.O2 | 136/148
-return void | aarch64.O0 | 143/148
-return void | aarch64.O2 | 143/148
-return void | x86_64.O0 | 142/148
-return void | x86_64.O2 | 145/148
-return width | aarch64.O0 | 116/120
-return width | aarch64.O2 | 116/120
-return width | x86_64.O0 | 116/120
-return width | x86_64.O2 | 117/120
+functions found | aarch64.O0 | 151/151
+functions found | aarch64.O2 | 151/151
+functions found | x86_64.O0 | 151/151
+functions found | x86_64.O2 | 151/151
+extra functions | aarch64.O0 | 0/151
+extra functions | aarch64.O2 | 0/151
+extra functions | x86_64.O0 | 0/151
+extra functions | x86_64.O2 | 0/151
+parameter count | aarch64.O0 | 150/150
+parameter count | aarch64.O2 | 150/150
+parameter count | x86_64.O0 | 150/150
+parameter count | x86_64.O2 | 150/150
+parameter pointer | aarch64.O0 | 187/189
+parameter pointer | aarch64.O2 | 186/189
+parameter pointer | x86_64.O0 | 187/189
+parameter pointer | x86_64.O2 | 186/189
+parameter width | aarch64.O0 | 151/157
+parameter width | aarch64.O2 | 151/157
+parameter width | x86_64.O0 | 152/157
+parameter width | x86_64.O2 | 152/157
+parameter sign | aarch64.O0 | 139/151
+parameter sign | aarch64.O2 | 139/151
+parameter sign | x86_64.O0 | 140/152
+parameter sign | x86_64.O2 | 140/152
+return void | aarch64.O0 | 145/151
+return void | aarch64.O2 | 145/151
+return void | x86_64.O0 | 144/151
+return void | x86_64.O2 | 147/151
+return width | aarch64.O0 | 118/122
+return width | aarch64.O2 | 117/122
+return width | x86_64.O0 | 118/122
+return width | x86_64.O2 | 118/122
 float type | aarch64.O0 | 10/10
 float type | aarch64.O2 | 10/10
 float type | x86_64.O0 | 10/10
@@ -568,6 +568,18 @@ strings.aarch64.O0 0x21019c pick: ok
 strings.aarch64.O2 0x21019c pick: ok
 strings.x86_64.O0 0x2011b0 pick: ok
 strings.x86_64.O2 0x2011b0 pick: ok
+struct_arrays.aarch64.O0 0x210184 item_weight: ok
+struct_arrays.aarch64.O0 0x2101bc cell_set: returns int64_t, expected void
+struct_arrays.aarch64.O0 0x210208 item_last_key: ok
+struct_arrays.aarch64.O2 0x210174 item_weight: ok
+struct_arrays.aarch64.O2 0x210188 cell_set: returns int64_t, expected void
+struct_arrays.aarch64.O2 0x2101a0 item_last_key: returns 4 bytes, expected 8
+struct_arrays.x86_64.O0 0x2011a0 item_weight: ok
+struct_arrays.x86_64.O0 0x2011e0 cell_set: returns int64_t, expected void
+struct_arrays.x86_64.O0 0x201220 item_last_key: ok
+struct_arrays.x86_64.O2 0x201180 item_weight: ok
+struct_arrays.x86_64.O2 0x2011a0 cell_set: returns int64_t, expected void
+struct_arrays.x86_64.O2 0x2011b0 item_last_key: returns 4 bytes, expected 8
 structs.aarch64.O0 0x2101fc rect_area: ok
 structs.aarch64.O0 0x210238 record_total: ok
 structs.aarch64.O0 0x2102c0 point_add: ok

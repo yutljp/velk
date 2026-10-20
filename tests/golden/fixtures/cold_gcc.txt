@@ -356,8 +356,13 @@ fn frame_dummy @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: lookup @ 0x1290 */
 /* ref: 0x2004 "missing key %d among %d" */
-int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
-    uint32_t *v3;
+struct lookup_a0 {
+    int32_t field_0x0;
+    int32_t field_0x4;
+    uint8_t gap_0x8[0x10];
+};
+int32_t lookup(struct lookup_a0 *a0, int64_t a1, int32_t a2) {
+    struct lookup_a0 *v3;
     int64_t v4;
     int64_t v5;
     int64_t v7;
@@ -386,17 +391,17 @@ int32_t lookup(uint32_t *a0, int64_t a1, int32_t a2) {
     v3 = a0;
     v4 = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
     v5 = (uint8_t *)a0 + v4;
-    while (*v3 != a2) {
-        v3 = v3 + 0x6;
+    while (v3->field_0x0 != a2) {
+        v3 = v3 + 0x1;
         if (v3 == v5) {
             goto L_12fd;
         }
     }
-    return v3[0x1];
+    return v3->field_0x4;
 L_12fd:
     v7 = &local_0;
     local_1 = a1;
-    v8 = a0 + 0x2;
+    v8 = (uint8_t *)a0 + 0x8;
     v9 = v4 + (uint8_t *)v8;
     __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
     v10 = stderr_GLIBC_2_2_5;
@@ -412,7 +417,7 @@ L_12fd:
     __builtin_trap();
 }
 -- signature
-int32_t (uint32_t * a0, int64_t a1, int32_t a2)
+int32_t (struct lookup_a0 * a0, int64_t a1, int32_t a2)
 -- references
 0x2004 "missing key %d among %d"
 -- ir

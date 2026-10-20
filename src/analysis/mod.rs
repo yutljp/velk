@@ -1008,6 +1008,8 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
                     .iter()
                     .map(|offset| ((offset - first) as u64, crate::ir::CType::I64))
                     .collect(),
+                size: None,
+                elements: Vec::new(),
             });
             vec![crate::ir::StackParam {
                 offset: *first,

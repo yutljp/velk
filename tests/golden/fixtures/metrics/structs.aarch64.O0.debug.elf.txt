@@ -40,8 +40,8 @@ long record_total(struct record *items, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v2 = local_0 + local_3 * 0x18;
-        v3 = *(int16_t *)(local_0 + local_3 * 0x18 + 0x10);
+        v2 = (uint8_t *)local_0 + local_3 * 0x18;
+        v3 = *(int16_t *)((uint8_t *)local_0 + local_3 * 0x18 + 0x10);
         local_2 += v2[0x1] * v3;
     }
     return local_2;

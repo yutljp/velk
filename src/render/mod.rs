@@ -189,6 +189,17 @@ fn float_return(ty: &CType) -> Option<crate::ir::Precision> {
     })
 }
 
+/// Whether C scales arithmetic on a pointer of this type: it points at
+/// something wider than a byte.
+fn scales(ty: &CType) -> bool {
+    match ty {
+        CType::Pointer(target) => {
+            !matches!(target.as_ref(), CType::Void) && ty.pointee_size() != Some(1)
+        }
+        _ => false,
+    }
+}
+
 fn render_with(
     ir: &FunctionIr,
     references: &[Reference],
@@ -240,16 +251,39 @@ fn render_with(
         })
         .collect();
     // `struct pair *p` points at a `pair`, so `p->0x4` can take a name.
-    let pointees: HashMap<u16, String> = ir
+    let mut pointees: HashMap<u16, String> = ir
         .params
         .iter()
         .filter_map(|param| Some((param.index, param.ty.pointee_struct()?.to_owned())))
         .collect();
+    let arrays: HashMap<String, naming::Layout> = ir
+        .structures
+        .iter()
+        .filter_map(|structure| {
+            let layout = naming::Layout {
+                size: structure.size?,
+                fields: structure
+                    .fields
+                    .iter()
+                    .filter_map(|(offset, ty)| match ty {
+                        CType::Int { bytes, .. } => Some((*offset, *bytes)),
+                        _ => None,
+                    })
+                    .collect(),
+            };
+            Some((structure.name.clone(), layout))
+        })
+        .collect();
+    let element_size = |ty: &CType| {
+        ty.pointee_size()
+            .map(u64::from)
+            .or_else(|| Some(arrays.get(ty.pointee_struct()?)?.size))
+    };
     // `int *p` points at ints, so `*(p + 4)` reads `p[1]`. A pointer whose
     // type the debug info names is believed; one recovered from its
     // accesses is taken for a scalar only when every access reads a whole
     // element, and otherwise reads as a structure's fields.
-    let elements: HashMap<u16, u8> = ir
+    let mut elements: HashMap<u16, u64> = ir
         .params
         .iter()
         .filter(|param| match &param.ty {
@@ -264,28 +298,41 @@ fn render_with(
                     })
             }
         })
-        .filter_map(|param| Some((param.index, param.ty.pointee_size()?)))
+        .filter_map(|param| Some((param.index, element_size(&param.ty)?)))
         .collect();
     let scaled: std::collections::HashSet<u16> = ir
         .params
         .iter()
         .map(|param| (param.index, &param.ty))
         .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
-        .filter(|(_, ty)| match ty {
-            CType::Pointer(target) => {
-                !matches!(target.as_ref(), CType::Void) && ty.pointee_size() != Some(1)
-            }
-            _ => false,
-        })
+        .filter(|(_, ty)| scales(ty))
         .map(|(index, _)| index)
         .collect();
-    // A pointer variable moves along scalars as a parameter does.
-    let mut elements = elements;
-    elements.extend(
-        variable_types
+    // A pointer variable moves along its elements as a parameter does.
+    for (index, ty) in &variable_types {
+        if let Some(size) = element_size(ty) {
+            elements.insert(*index, size);
+        }
+        if let Some(structure) = ty.pointee_struct() {
+            pointees.insert(*index, structure.to_owned());
+        }
+    }
+    let local_types = || {
+        locals
+            .decls
             .iter()
-            .filter_map(|(index, ty)| Some((*index, ty.pointee_size()?))),
-    );
+            .filter_map(|local| Some((local.name.clone(), local.ty.as_ref()?)))
+    };
+    let local_elements = local_types()
+        .filter_map(|(name, ty)| Some((name, element_size(ty)?)))
+        .collect();
+    let local_pointees = local_types()
+        .filter_map(|(name, ty)| Some((name, ty.pointee_struct()?.to_owned())))
+        .collect();
+    let local_scaled = local_types()
+        .filter(|(_, ty)| scales(ty))
+        .map(|(name, _)| name)
+        .collect();
     let ctx = Ctx {
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
@@ -311,11 +358,9 @@ fn render_with(
                 Some((local.name.clone(), precision))
             })
             .collect(),
-        local_elements: locals
-            .decls
-            .iter()
-            .filter_map(|local| Some((local.name.clone(), local.ty.as_ref()?.pointee_size()?)))
-            .collect(),
+        local_elements,
+        local_pointees,
+        local_scaled,
         wide_params,
         signed_params,
         fields,
@@ -324,6 +369,7 @@ fn render_with(
         members,
         pointees,
         elements,
+        arrays,
         narrow_regs,
         narrow_return: ir.ret_type.is_32_bit_int(),
         floats,
@@ -366,6 +412,11 @@ fn render_with(
                     CType::Int { bytes, .. } => u64::from(*bytes),
                     _ => 0,
                 };
+        }
+        if let Some(size) = structure.size
+            && size > end
+        {
+            out.push_str(&format!("    uint8_t gap_0x{end:x}[0x{:x}];\n", size - end));
         }
         out.push_str("};\n");
     }
@@ -1612,5 +1663,84 @@ mod tests {
             "{text}"
         );
         assert!(text.contains("return v1; /* also returns v2 */"), "{text}");
+    }
+
+    #[test]
+    fn an_array_of_structures_is_indexed_by_elements() {
+        // struct { int64_t field_0x0; int32_t field_0x8; } of 16 bytes.
+        let element = VARIABLE_BASE;
+        let field = VARIABLE_BASE + 1;
+        let scaled = |offset: u64| {
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(
+                    BinOp::Add,
+                    Expr::reg(7, 64),
+                    Expr::bin(BinOp::Shl, Expr::reg(6, 64), Expr::Const(4)),
+                ),
+                Expr::Const(offset),
+            )
+        };
+        let store = |addr: Expr, width: u8| Stmt::Store {
+            addr,
+            value: Expr::Const(0),
+            width,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                store(scaled(8), 4),
+                store(
+                    Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(0x28)),
+                    4,
+                ),
+                store(Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)), 4),
+                assign(element, scaled(0)),
+                store(Expr::reg(element, 64), 8),
+                assign(
+                    element,
+                    Expr::bin(BinOp::Add, Expr::reg(element, 64), Expr::Const(0x20)),
+                ),
+                assign(field, scaled(8)),
+                // Four bytes into a field is no field.
+                Stmt::Ret {
+                    value: load(scaled(0xc), 4),
+                },
+            ],
+        );
+        let name = "sub_0_a0".to_owned();
+        ir.params = vec![
+            Param {
+                index: 7,
+                name: "a0".to_owned(),
+                ty: CType::pointer_to(CType::Named(format!("struct {name}"))),
+            },
+            Param {
+                index: 6,
+                name: "a1".to_owned(),
+                ty: CType::I64,
+            },
+        ];
+        ir.structures = vec![crate::ir::Structure {
+            name,
+            fields: vec![(0, CType::I64), (8, CType::I32)],
+            size: Some(0x10),
+            elements: vec![element],
+        }];
+        let text = rendered(&ir);
+        for line in [
+            "    uint8_t gap_0xc[0x4];\n};\n",
+            "    struct sub_0_a0 *v1;\n",
+            "    a0[a1].field_0x8 = 0x0;\n",
+            "    a0[0x2].field_0x8 = 0x0;\n",
+            "    a0->field_0x8 = 0x0;\n",
+            "    v1 = a0 + a1;\n",
+            "    v1->field_0x0 = 0x0;\n",
+            "    v1 = v1 + 0x2;\n",
+            "    v2 = &a0[a1].field_0x8;\n",
+            "    return *(uint32_t *)((uint8_t *)a0 + (a1 << 0x4) + 0xc);\n",
+        ] {
+            assert!(text.contains(line), "{line:?} in {text}");
+        }
     }
 }

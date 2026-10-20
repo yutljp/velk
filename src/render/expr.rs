@@ -23,8 +23,12 @@ pub(crate) struct Ctx<'a> {
     pub(super) slots: HashMap<String, String>,
     /// Declared width of each local, so a mask to that width can be dropped.
     pub(super) local_widths: HashMap<String, u8>,
-    /// The size of the scalars each pointer local points at.
-    pub(super) local_elements: HashMap<String, u8>,
+    /// The size of the elements each pointer local points at.
+    pub(super) local_elements: HashMap<String, u64>,
+    /// The structure each pointer local points at.
+    pub(super) local_pointees: HashMap<String, String>,
+    /// Pointer locals whose arithmetic C scales by a pointee wider than a byte.
+    pub(super) local_scaled: std::collections::HashSet<String>,
     /// Locals holding floats, with their precision.
     pub(super) local_floats: HashMap<String, Precision>,
     /// Parameters wider than 32 bits: masking one is a real truncation.
@@ -38,10 +42,12 @@ pub(crate) struct Ctx<'a> {
     pub(super) data_ranges: &'a [(u64, u64)],
     /// Structure fields the debug info names, by struct and byte offset.
     pub(super) members: HashMap<(String, i64), String>,
-    /// The struct type each pointer parameter points at, when known.
+    /// The struct type each pointer parameter or variable points at, when known.
     pub(super) pointees: HashMap<u16, String>,
-    /// The size of the scalar each pointer parameter points at.
-    pub(super) elements: HashMap<u16, u8>,
+    /// The size of the element each pointer parameter or variable points at.
+    pub(super) elements: HashMap<u16, u64>,
+    /// The recovered structures arrays are made of, by name.
+    pub(super) arrays: HashMap<String, crate::render::naming::Layout>,
     /// Registers whose readers only ever look at the low 32 bits.
     pub(super) narrow_regs: std::collections::HashSet<u16>,
     /// The function returns a 32-bit value, so reg 0 needs no truncation.
@@ -180,18 +186,68 @@ fn printed_precedence(expr: &Expr, ctx: &Ctx<'_>) -> u8 {
 /// An operand of an addition or a subtraction, where a typed pointer the
 /// IR moves by bytes is counted as bytes.
 fn pointer_operand(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> String {
+    byte_pointer(expr, ctx).unwrap_or_else(|| operand(expr, ctx, parent, right))
+}
+
+/// A pointer whose arithmetic C scales, cast to count bytes.
+fn byte_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     match expr {
         Expr::Reg { index, .. } if ctx.scaled.contains(index) => {
-            format!("(uint8_t *){}", ctx.register(*index, 64))
+            Some(format!("(uint8_t *){}", ctx.register(*index, 64)))
         }
         Expr::Load { .. }
             if let Some((name, element)) = crate::render::naming::scalar_pointer(expr, ctx)
                 && element != 1 =>
         {
-            format!("(uint8_t *){name}")
+            Some(format!("(uint8_t *){name}"))
         }
-        other => operand(other, ctx, parent, right),
+        Expr::Load { addr, width: 8, .. }
+            if let Some(name) = ctx.slots.get(&render_expr(addr, ctx))
+                && ctx.local_scaled.contains(name) =>
+        {
+            Some(format!("(uint8_t *){name}"))
+        }
+        _ => None,
     }
+}
+
+/// A sum through such a pointer, nested inside it, that is no whole number
+/// of its elements, as bytes from the pointer: C would scale the part that
+/// is, `a0 + a1` in `(a0 + a1 * 0x10) + 0xc`.
+fn byte_sum(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    let Expr::Bin {
+        op: BinOp::Add | BinOp::Sub,
+        lhs,
+        rhs,
+    } = value
+    else {
+        return None;
+    };
+    let mut terms = Vec::new();
+    crate::render::naming::sum_terms(value, false, &mut terms);
+    let at = terms
+        .iter()
+        .position(|(term, negative)| !negative && byte_pointer(term, ctx).is_some())?;
+    // On either side, the pointer is cast where it stands.
+    if std::ptr::eq(terms[at].0, lhs.as_ref()) || std::ptr::eq(terms[at].0, rhs.as_ref()) {
+        return None;
+    }
+    let mut text = byte_pointer(terms[at].0, ctx)?;
+    for (term, negative) in terms
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| *index != at)
+        .map(|(_, term)| term)
+    {
+        text.push_str(&match (term, negative) {
+            (Expr::Const(value), true) => format!(" - 0x{value:x}"),
+            (Expr::Const(value), false) if *value >= 1 << 63 => {
+                format!(" - 0x{:x}", value.wrapping_neg())
+            }
+            _ => format!(" + {}", operand(term, ctx, 10, true)),
+        });
+    }
+    Some(text)
 }
 
 /// Renders a child of an operator with binding strength `parent`, adding
@@ -216,6 +272,12 @@ pub(crate) fn render_value(value: &Expr, ctx: &Ctx<'_>) -> String {
     }
     // So does it with an offset added, as an index into a local buffer.
     if let Some(text) = local_plus_offset(value, ctx) {
+        return text;
+    }
+    // And the address of a field of an element of an array of structures.
+    if matches!(value, Expr::Bin { op: BinOp::Add, .. })
+        && let Some(text) = crate::render::naming::field_address(value, ctx)
+    {
         return text;
     }
     match value {
@@ -546,6 +608,10 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
                 index => format!("{name} + {}", operand(&index, ctx, 10, true)),
             }
         }
+        Expr::Bin {
+            op: BinOp::Add | BinOp::Sub,
+            ..
+        } if let Some(text) = byte_sum(value, ctx) => text,
         // A constant with the top bit set is a negative displacement.
         Expr::Bin {
             op: BinOp::Add,

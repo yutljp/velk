@@ -191,6 +191,10 @@ pub struct Access {
 pub struct Structure {
     pub name: String,
     pub fields: Vec<(u64, CType)>,
+    /// The element size of an array of them, which the definition pads to.
+    pub size: Option<u64>,
+    /// The variables that point at the start of an element of that array.
+    pub elements: Vec<u16>,
 }
 
 #[derive(Debug, Clone)]

@@ -1,6 +1,6 @@
-# 5616 functions, 62139 compared runs
+# 5640 functions, 62411 compared runs
 # runs left unfinished:
-#   step limit (C and C++): 337
+#   step limit (C and C++): 353
 #   step limit (Go): 2806
 #   step limit (Rust): 1692
 #   switch without a matching case (Rust): 144

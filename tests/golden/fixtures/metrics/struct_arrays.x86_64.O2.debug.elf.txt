@@ -1,0 +1,139 @@
+# metrics/struct_arrays.x86_64.O2.debug.elf: elf x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201180 18 item_weight symtab,dwarf,unwind
+0x2011a0 14 cell_set symtab,dwarf,unwind
+0x2011b0 100 item_last_key symtab,dwarf,unwind
+
+== 0x201180 item_weight
+-- decompile
+/* velk pseudo-C: item_weight @ 0x201180 */
+int item_weight(struct item *items, int i) {
+    int64_t v1;
+
+    v1 = (int64_t)(int32_t)(i) << 0x4;
+    return (int16_t)(*(uint16_t *)((uint8_t *)items + v1 + 0xc)) * *(uint32_t *)((uint8_t *)items + v1 + 0x8);
+}
+-- signature
+int (struct item * items, int i)
+-- references
+
+-- ir
+fn item_weight @ 0x201180 (size 18)
+  blk0 @ 0x201180:
+    v1 = (sext32(esi) << #0x4)
+    ret ((sext16(load16(((rdi + v1) + #0xc))) * load32(((rdi + v1) + #0x8))) & #0xffffffff)
+-- card
+{"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","size":18,"unsupported":0}
+
+== 0x2011a0 cell_set
+-- decompile
+/* velk pseudo-C: cell_set @ 0x2011a0 */
+void cell_set(struct cell *cells, long i, int v) {
+    int64_t v1;
+
+    v1 = i + i * 0x2;
+    *(uint32_t *)((uint8_t *)cells + v1 * 0x4) = v;
+    *(uint32_t *)((uint8_t *)cells + v1 * 0x4 + 0x8) = v + 0x1;
+}
+-- signature
+void (struct cell * cells, long i, int v)
+-- references
+
+-- ir
+fn cell_set @ 0x2011a0 (size 14)
+  blk0 @ 0x2011a0:
+    v1 = (rsi + (rsi * #0x2))
+    store32(edx, (rdi + (v1 * #0x4)))
+    store32((edx + #0x1), ((rdi + (v1 * #0x4)) + #0x8))
+    ret #0x0
+-- card
+{"addr":"0x2011a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x2011b0 item_last_key
+-- decompile
+/* velk pseudo-C: item_last_key @ 0x2011b0 */
+long item_last_key(struct item *items, int n) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v3;
+    int64_t v4;
+    int64_t v5;
+    void *v6;
+
+    if (n <= 0x0) {
+        return 0x0;
+    }
+    v1 = n;
+    if (n != 0x1) {
+        v5 = v1 & 0x7ffffffe;
+        v6 = (uint8_t *)items + 0x18;
+        v2 = 0x0;
+        v3 = 0x0;
+        do {
+            if (*(uint32_t *)(v6 - 0x10) > 0x0) {
+                v3 = *(uint64_t *)(v6 - 0x18);
+            }
+            if (*(uint32_t *)(v6) > 0x0) {
+                v3 = *(uint64_t *)(v6 - 0x8);
+            }
+            v2 = v2 + 0x2;
+            v6 = v6 + 0x20;
+        } while (v5 != v2);
+    } else {
+        v2 = 0x0;
+        v3 = 0x0;
+    }
+    if ((v1 & 0x1) == 0x0) {
+        return v3;
+    }
+    v4 = v2 << 0x4;
+    if (*(uint32_t *)((uint8_t *)items + v4 + 0x8) <= 0x0) {
+        return v3;
+    }
+    return *(uint64_t *)((uint8_t *)items + v4);
+}
+-- signature
+long (struct item * items, int n)
+-- references
+
+-- ir
+fn item_last_key @ 0x2011b0 (size 100)
+  blk0 @ 0x2011b0:
+    brif le (rsi & #0xffffffff), #0x0 -> 0x2011d4
+  blk1 @ 0x2011b4:
+    v1 = (rsi & #0xffffffff)
+    brif ne (rsi & #0xffffffff), #0x1 -> 0x2011d7
+  blk2 @ 0x2011bb:
+    v2 = #0x0
+    v3 = #0x0
+  blk3 @ 0x2011bf:
+    brif eq (v1 & #0x1), #0x0 -> 0x2011d3
+  blk4 @ 0x2011c4:
+    v4 = (v2 << #0x4)
+    brif le load32(((rdi + v4) + #0x8)), #0x0 -> 0x2011d3
+  blk5 @ 0x2011cf:
+    v3 = load64((rdi + v4))
+  blk6 @ 0x2011d3:
+    ret v3
+  blk7 @ 0x2011d4:
+    ret #0x0
+  blk8 @ 0x2011d7:
+    v5 = (v1 & #0x7ffffffe)
+    v6 = (rdi + #0x18)
+    v2 = #0x0
+    v3 = #0x0
+    br 0x2011fd
+  blk9 @ 0x2011f0:
+    v2 = (v2 + #0x2)
+    v6 = (v6 + #0x20)
+    brif eq v5, v2 -> 0x2011bf
+  blk10 @ 0x2011fd:
+    brif le load32((v6 + #0xfffffffffffffff0)), #0x0 -> 0x201208
+  blk11 @ 0x201204:
+    v3 = load64((v6 + #0xffffffffffffffe8))
+  blk12 @ 0x201208:
+    brif le load32(v6), #0x0 -> 0x2011f0
+  blk13 @ 0x20120e:
+    v3 = load64((v6 + #0xfffffffffffffff8))
+    br 0x2011f0
+-- card
+{"addr":"0x2011b0","approxTokens":180,"blocks":14,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf","unwind"],"section":".text","size":100,"unsupported":0}

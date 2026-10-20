@@ -1,0 +1,104 @@
+# metrics/struct_arrays.aarch64.O2.debug.elf: elf aarch64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x210174 20 item_weight symtab,dwarf,unwind
+0x210188 24 cell_set symtab,dwarf,unwind
+0x2101a0 68 item_last_key symtab,dwarf,unwind
+
+== 0x210174 item_weight
+-- decompile
+/* velk pseudo-C: item_weight @ 0x210174 */
+int item_weight(struct item *items, int i) {
+    void *v1;
+    int32_t v2;
+
+    v1 = (uint8_t *)items + ((int64_t)(int32_t)(i) << 0x4);
+    v2 = *(int16_t *)(v1 + 0xc);
+    return *(uint32_t *)(v1 + 0x8) * v2;
+}
+-- signature
+int (struct item * items, int i)
+-- references
+
+-- ir
+fn item_weight @ 0x210174 (size 20)
+  blk0 @ 0x210174:
+    v1 = (x0 + (sext32(w1) << #0x4))
+    v2 = load16((v1 + #0xc))s
+    ret ((load32((v1 + #0x8)) * v2) & #0xffffffff)
+-- card
+{"addr":"0x210174","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
+
+== 0x210188 cell_set
+-- decompile
+/* velk pseudo-C: cell_set @ 0x210188 */
+void cell_set(struct cell *cells, long i, int v) {
+    uint32_t *v1;
+
+    v1 = i * 0xc + (uint8_t *)cells;
+    *v1 = v;
+    v1[0x2] = v + 0x1;
+}
+-- signature
+void (struct cell * cells, long i, int v)
+-- references
+
+-- ir
+fn cell_set @ 0x210188 (size 24)
+  blk0 @ 0x210188:
+    v1 = ((x1 * #0xc) + x0)
+    store32(w2, v1)
+    store32((w2 + #0x1), (v1 + #0x8))
+    ret #0x0
+-- card
+{"addr":"0x210188","approxTokens":132,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+
+== 0x2101a0 item_last_key
+-- decompile
+/* velk pseudo-C: item_last_key @ 0x2101a0 */
+long item_last_key(struct item *items, int n) {
+    int64_t v2;
+    int64_t v3;
+    void *v4;
+
+    if (n < 0x1) {
+        return 0x0;
+    }
+    v2 = 0x0;
+    v3 = n;
+    v4 = (uint8_t *)items + 0x8;
+    do {
+        if (*(uint32_t *)(v4) >= 0x1) {
+            v2 = *(uint64_t *)(v4 - 0x8);
+        }
+        v3 = v3 - 0x1;
+        v4 = v4 + 0x10;
+    } while (v3 != 0x0);
+    return v2;
+}
+-- signature
+long (struct item * items, int n)
+-- references
+
+-- ir
+fn item_last_key @ 0x2101a0 (size 68)
+  blk0 @ 0x2101a0:
+    brif lt w1, #0x1 -> 0x2101dc
+  blk1 @ 0x2101a8:
+    v2 = #0x0
+    v3 = w1
+    v4 = (x0 + #0x8)
+    br 0x2101c8
+  blk2 @ 0x2101bc:
+    v3 = (v3 - #0x1)
+    v4 = (v4 + #0x10)
+    brif eq v3, #0x0 -> 0x2101e0
+  blk3 @ 0x2101c8:
+    brif lt load32(v4), #0x1 -> 0x2101bc
+  blk4 @ 0x2101d4:
+    v2 = load64((v4 + #0xfffffffffffffff8))
+    br 0x2101bc
+  blk5 @ 0x2101dc:
+    v2 = #0x0
+  blk6 @ 0x2101e0:
+    ret v2
+-- card
+{"addr":"0x2101a0","approxTokens":198,"blocks":7,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}

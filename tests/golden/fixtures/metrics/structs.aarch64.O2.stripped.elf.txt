@@ -36,7 +36,13 @@ fn <unnamed> @ 0x2101dc (size 20)
 == 0x2101f0 -
 -- decompile
 /* velk pseudo-C: sub_2101f0 @ 0x2101f0 */
-int64_t sub_2101f0(uint64_t *a0, int32_t a1) {
+struct sub_2101f0_a0 {
+    uint8_t gap_0x0[0x8];
+    int64_t field_0x8;
+    int16_t field_0x10;
+    uint8_t gap_0x12[0x6];
+};
+int64_t sub_2101f0(struct sub_2101f0_a0 *a0, int32_t a1) {
     int64_t v2;
     int64_t v3;
     int64_t v4;
@@ -59,7 +65,7 @@ int64_t sub_2101f0(uint64_t *a0, int32_t a1) {
         v2 = a1 & 0x7ffffffe;
         v4 = 0x0;
         v5 = 0x0;
-        v6 = a0 + 0x4;
+        v6 = &a0[0x1].field_0x8;
         v7 = v2;
         do {
             v8 = *(uint64_t *)(v6 - 0x18);
@@ -80,7 +86,7 @@ int64_t sub_2101f0(uint64_t *a0, int32_t a1) {
         v3 = 0x0;
     }
     v12 = a1 - v2;
-    v13 = a0 + (v2 * 0x3 + 0x2);
+    v13 = &a0[v2].field_0x10;
     do {
         v14 = *(uint64_t *)(v13 - 0x8);
         v15 = *(int16_t *)(v13);
@@ -91,7 +97,7 @@ int64_t sub_2101f0(uint64_t *a0, int32_t a1) {
     return v3;
 }
 -- signature
-int64_t (uint64_t * a0, int32_t a1)
+int64_t (struct sub_2101f0_a0 * a0, int32_t a1)
 -- references
 
 -- ir
