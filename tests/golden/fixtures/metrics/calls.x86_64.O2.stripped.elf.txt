@@ -290,7 +290,7 @@ fn <unnamed> @ 0x201370 (size 238)
   blk5 @ 0x201450:
     v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
     v46 = (rdi + #0xffffffffffffffff)
-    v47 = rdi
+    v47 = (rdi & #0xffffffff)
     rdi = v46
     brif hi v47, #0x2 -> 0x201450
   blk6 @ 0x20145d:

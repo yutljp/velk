@@ -538,11 +538,12 @@ fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             let (a, b) = (halves(0)?, halves(1)?);
             write(lifter, (b.1, a.1))?;
         }
-        Pmovmskb | Movmskpd | Movmskps => {
+        // The VEX forms on an xmm register write a general one, as these do.
+        Pmovmskb | Movmskpd | Movmskps | Vpmovmskb | Vmovmskpd | Vmovmskps => {
             let source = halves(1)?;
             let bits = match ins.mnemonic() {
-                Pmovmskb => 8,
-                Movmskps => 32,
+                Pmovmskb | Vpmovmskb => 8,
+                Movmskps | Vmovmskps => 32,
                 _ => 64,
             };
             let signs = |half| Expr::apply(Operation::SignBits(bits), vec![half]);
@@ -1371,7 +1372,7 @@ fn lift_exchange(lifter: &mut Lifter, ins: &Instruction) {
     }
 }
 
-/// `rol`, `ror`, `shld`, `shrd`, `bswap` and `bt`.
+/// `rol`, `ror`, `rcl`, `rcr`, `shld`, `shrd`, `bswap` and `bt`.
 fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
     let (Some(value), Some(width)) = (operand(lifter, ins, 0), operand_width(ins, 0)) else {
         lifter.stmts.push(Stmt::unsupported(format!(
@@ -1392,6 +1393,49 @@ fn lift_bits(lifter: &mut Lifter, ins: &Instruction) {
             let swapped = super::reverse_bytes(value, width, width / 8);
             write_destination(lifter, ins, swapped);
         }
+        // A rotate through the carry by one, with the carry known: the
+        // carry comes in at one end and the bit at the other goes out to it.
+        Mnemonic::Rcl | Mnemonic::Rcr
+            if matches!(operand(lifter, ins, 1), Some(Expr::Const(1)))
+                && lifter.carry().is_some() =>
+        {
+            let carry = lifter.carry().expect("a known carry");
+            let (rotated, out) = if ins.mnemonic() == Mnemonic::Rcr {
+                (
+                    Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(BinOp::Shr, value.clone(), Expr::constant(1)),
+                        Expr::bin(BinOp::Shl, carry, Expr::constant(bits - 1)),
+                    ),
+                    Expr::bin(BinOp::And, value, Expr::constant(1)),
+                )
+            } else {
+                (
+                    Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(BinOp::Shl, value.clone(), Expr::constant(1)),
+                        carry,
+                    ),
+                    Expr::bin(
+                        BinOp::And,
+                        Expr::bin(BinOp::Shr, value, Expr::constant(bits - 1)),
+                        Expr::constant(1),
+                    ),
+                )
+            };
+            let rotated = if bits == 64 {
+                rotated
+            } else {
+                Expr::bin(BinOp::And, rotated, Expr::constant((1u64 << bits) - 1))
+            };
+            lifter.set_flags(Flags::carry(out));
+            write_destination(lifter, ins, rotated);
+        }
+        Mnemonic::Rcl | Mnemonic::Rcr => lifter.stmts.push(Stmt::unsupported(format!(
+            "{:?} at 0x{:x}",
+            ins.mnemonic(),
+            ins.ip()
+        ))),
         Mnemonic::Rol | Mnemonic::Ror => {
             let Some(amount) = operand(lifter, ins, 1) else {
                 return;
@@ -1506,6 +1550,7 @@ fn lift_mul_high(lifter: &mut Lifter, ins: &Instruction, signed: bool) {
             Expr::bin(high_op, multiplicand.clone(), source.clone()),
         );
         lifter.assign(RAX, 64, Expr::bin(BinOp::Mul, multiplicand, source));
+        lifter.set_flags(Flags::carry_overflow(lost_high(RDX, RAX, 64, signed)));
         return;
     }
     let widen = |value: Expr| {
@@ -1521,6 +1566,23 @@ fn lift_mul_high(lifter: &mut Lifter, ins: &Instruction, signed: bool) {
     let product = Expr::bin(BinOp::Mul, widen(multiplicand), widen(source));
     if width == 8 {
         lifter.assign(RAX, 16, product);
+        // ah against what al's sign (or zero) would put there.
+        let ax = Lifter::read_reg(RAX, 16);
+        let low = Expr::bin(BinOp::And, ax.clone(), Expr::constant(0xff));
+        let expected = if signed {
+            Expr::SignExtend {
+                value: Box::new(low),
+                width: 1,
+            }
+        } else {
+            low
+        };
+        let lost = Expr::bin(
+            BinOp::And,
+            Expr::bin(BinOp::Xor, ax, expected),
+            Expr::constant(0xffff),
+        );
+        lifter.set_flags(Flags::carry_overflow(lost));
         return;
     }
     let product = hold(lifter, product);
@@ -1534,6 +1596,57 @@ fn lift_mul_high(lifter: &mut Lifter, ins: &Instruction, signed: bool) {
         ),
     );
     lifter.assign(RAX, width, product);
+    lifter.set_flags(Flags::carry_overflow(lost_high(RDX, RAX, width, signed)));
+}
+
+/// Nonzero when the signed product of `a` and `b` does not fit in `width`
+/// bits: the full product against its truncation, sign-extended.
+fn signed_product_lost(a: &Expr, b: &Expr, width: u8) -> Expr {
+    if width == 64 {
+        let product = Expr::bin(BinOp::Mul, a.clone(), b.clone());
+        return Expr::bin(
+            BinOp::Xor,
+            Expr::bin(BinOp::MulHighS, a.clone(), b.clone()),
+            Expr::bin(BinOp::Sar, product, Expr::constant(63)),
+        );
+    }
+    let extend = |value: Expr, bytes: u8| Expr::SignExtend {
+        value: Box::new(value),
+        width: bytes,
+    };
+    let bytes = width / 8;
+    let full = Expr::bin(
+        BinOp::Mul,
+        extend(a.clone(), bytes),
+        extend(b.clone(), bytes),
+    );
+    let truncated = Expr::bin(
+        BinOp::And,
+        full.clone(),
+        Expr::constant((1u64 << width) - 1),
+    );
+    Expr::bin(BinOp::Xor, full, extend(truncated, bytes))
+}
+
+/// What a multiply's high half `high` holds beyond what its low half
+/// `low` implies, zero or its sign: nonzero when the product did not fit.
+fn lost_high(high: u16, low: u16, width: u8, signed: bool) -> Expr {
+    let high = Lifter::read_reg(high, width);
+    let expected = if signed {
+        Expr::bin(
+            BinOp::Sar,
+            Lifter::read_reg(low, width),
+            Expr::constant(u64::from(width) - 1),
+        )
+    } else {
+        Expr::constant(0)
+    };
+    let lost = Expr::bin(BinOp::Xor, high, expected);
+    if width == 64 {
+        lost
+    } else {
+        Expr::bin(BinOp::And, lost, Expr::constant((1u64 << width) - 1))
+    }
 }
 
 fn binary(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
@@ -1979,14 +2092,14 @@ fn lift_instruction(
         }
         Mnemonic::Imul => match ins.op_count() {
             1 => lift_mul_high(lifter, ins, true),
-            2 => {
-                if let (Some(a), Some(b)) = (operand(lifter, ins, 0), operand(lifter, ins, 1)) {
-                    let value = Expr::bin(BinOp::Mul, a, b);
-                    write_destination(lifter, ins, value);
-                }
-            }
-            3 => {
-                if let (Some(a), Some(b)) = (operand(lifter, ins, 1), operand(lifter, ins, 2)) {
+            2 | 3 => {
+                let first = ins.op_count() - 2;
+                if let (Some(a), Some(b), Some(width)) = (
+                    operand(lifter, ins, first),
+                    operand(lifter, ins, first + 1),
+                    operand_width(ins, 0),
+                ) {
+                    lifter.set_flags(Flags::carry_overflow(signed_product_lost(&a, &b, width)));
                     let value = Expr::bin(BinOp::Mul, a, b);
                     write_destination(lifter, ins, value);
                 }
@@ -2269,6 +2382,8 @@ fn lift_instruction(
         Mnemonic::Xchg | Mnemonic::Xadd | Mnemonic::Cmpxchg => lift_exchange(lifter, ins),
         Mnemonic::Rol
         | Mnemonic::Ror
+        | Mnemonic::Rcl
+        | Mnemonic::Rcr
         | Mnemonic::Shld
         | Mnemonic::Shrd
         | Mnemonic::Bswap

@@ -26,6 +26,9 @@ pub(super) enum Source {
     Fixed(u8),
     /// Only the carry is known, equal to the bit `lhs` (x86 `bt`).
     Carry,
+    /// Only the carry and the overflow are known, both set when `lhs` is
+    /// nonzero (an x86 multiply whose product did not fit).
+    CarryOverflow,
     /// A floating-point comparison of `lhs` with `rhs`: x86 `ucomisd`,
     /// AArch64 `fcmp`.
     FloatCompare(Precision),
@@ -96,6 +99,10 @@ impl Flags {
 
     pub fn carry(bit: Expr) -> Self {
         Self::new(Source::Carry, bit, Expr::constant(0))
+    }
+
+    pub fn carry_overflow(lost: Expr) -> Self {
+        Self::new(Source::CarryOverflow, lost, Expr::constant(0))
     }
 
     pub fn fixed(nzcv: u8) -> Self {
@@ -192,6 +199,11 @@ impl Flags {
         let compare = |cond, lhs: &Expr, rhs: &Expr| Test::Compare(cond, lhs.clone(), rhs.clone());
         let zero = Expr::constant(0);
         match self.source {
+            Source::CarryOverflow => match cond {
+                Cond::Cc | Cond::Vs => compare(Cond::Ne, a, &zero),
+                Cond::Cs | Cond::Vc => compare(Cond::Eq, a, &zero),
+                _ => Test::Unknown,
+            },
             Source::Carry => {
                 // On x86 "below" asks for a set carry, on AArch64 `hs`.
                 let set = if isa == Isa::X86_64 {
