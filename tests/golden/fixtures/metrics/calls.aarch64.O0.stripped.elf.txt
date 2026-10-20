@@ -286,7 +286,6 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t v3;
     int64_t v4;
     int64_t v5;
-    int32_t v6;
     int64_t local_0; /* [sp-90] */
     int64_t local_1; /* [sp-88] */
     int64_t local_2; /* [sp-a0] */
@@ -377,8 +376,7 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         local_31 += *local_34;
         local_29 += 0x1;
     }
-    v6 = local_31;
-    return v6;
+    return local_31;
 }
 -- signature
 int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)

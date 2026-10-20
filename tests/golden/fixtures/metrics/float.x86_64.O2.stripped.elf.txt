@@ -59,8 +59,7 @@ double sub_2011b0(double *a0, int32_t a1) {
     if (a1 <= 0x0) {
         return v1;
     }
-    v1 = v2 / (double)(int32_t)a1;
-    return v1;
+    return v2 / (double)(int32_t)a1;
 }
 -- signature
 double (double * a0, int32_t a1)

@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 658 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 611 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1296,18 +1296,14 @@ fn main.add @ 0x466ca0 (size 32)
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
 int64_t main_divmod(int64_t a0, int64_t a1) {
-    int64_t v1;
-
     switch (a1) {
     case -1:
-        v1 = -a0;
-        return v1;
+        return -a0;
     case 0:
         runtime_panicdivide();
         __builtin_trap();
     default:
-        v1 = a0 / a1;
-        return v1;
+        return a0 / a1;
     }
 }
 -- signature

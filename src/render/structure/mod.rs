@@ -118,6 +118,7 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
         prune_labels(nodes, &used);
     };
     cleanup::drop_jumps_to_next(nodes, None);
+    cleanup::inline_return_tails(nodes);
     prune(nodes);
     prune_unreachable(nodes);
     flatten_early_returns(nodes);

@@ -172,12 +172,10 @@ fn <unnamed> @ 0x21033c (size 48)
 -- decompile
 /* velk pseudo-C: sub_21036c @ 0x21036c */
 int32_t sub_21036c(int32_t a0) {
-    int32_t v2;
     uint32_t local_0; /* [sp-4] */
 
     local_0 = a0;
-    v2 = *(uint8_t *)&local_0;
-    return v2;
+    return *(uint8_t *)&local_0;
 }
 -- signature
 int32_t (int32_t a0)

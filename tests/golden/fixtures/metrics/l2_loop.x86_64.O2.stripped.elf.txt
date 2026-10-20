@@ -1,4 +1,4 @@
-# metrics/l2_loop.x86_64.O2.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/l2_loop.x86_64.O2.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011d0 239 - unwind,prologue
 0x2012c0 157 - unwind,prologue
 0x201360 71 - unwind,prologue
@@ -249,8 +249,7 @@ int32_t sub_201360(int32_t a0) {
     }
     v5 = v1 + v2;
     dword_2023d4 = v5;
-    v2 = v5;
-    return v2;
+    return v5;
 }
 -- signature
 int32_t (int32_t a0)
@@ -308,11 +307,9 @@ int32_t sub_2013b0(int64_t a0, int32_t a1, int32_t a2) {
         if (v1 != v2) {
             continue;
         }
-        goto L_2013cd;
+        return 0xffffffff;
     }
     return v2;
-L_2013cd:
-    return 0xffffffff;
 }
 -- signature
 int32_t (int64_t a0, int32_t a1, int32_t a2)

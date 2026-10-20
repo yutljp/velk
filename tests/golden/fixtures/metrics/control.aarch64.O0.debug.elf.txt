@@ -1,4 +1,4 @@
-# metrics/control.aarch64.O0.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/control.aarch64.O0.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101e4 188 matrix_trace symtab,dwarf,unwind
 0x2102a0 96 cleanup_on_error symtab,dwarf,unwind
 0x210300 160 fallthrough symtab,dwarf,unwind
@@ -141,24 +141,20 @@ int fallthrough(int x) {
     local_1 = v1;
     if (v1 == 0x0) {
         local_0 += 0x1;
-        local_0 += 0x2;
-        local_0 += 0x4;
+    } else if (local_1 - 0x1 != 0x0) {
+        if (local_1 - 0x2 == 0x0) {
+            local_0 += 0x4;
+            return local_0;
+        }
+        if (local_1 - 0x3 == 0x0) {
+            local_0 = 0x8;
+            return local_0;
+        }
+        local_0 = 0xffffffff;
         return local_0;
     }
-    if (local_1 - 0x1 == 0x0) {
-        local_0 += 0x2;
-        local_0 += 0x4;
-        return local_0;
-    }
-    if (local_1 - 0x2 == 0x0) {
-        local_0 += 0x4;
-        return local_0;
-    }
-    if (local_1 - 0x3 == 0x0) {
-        local_0 = 0x8;
-        return local_0;
-    }
-    local_0 = 0xffffffff;
+    local_0 += 0x2;
+    local_0 += 0x4;
     return local_0;
 }
 -- signature
@@ -411,14 +407,12 @@ int find_pair(int *p, int n, int target) {
     for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         for (local_4 = local_3 + 0x1; local_4 < local_1; local_4 += 0x1) {
             if (local_0[local_3] + local_0[local_4] == local_2) {
-                goto L_2105b8;
+                local_5 = local_3 * local_1 + local_4;
+                return local_5;
             }
         }
     }
     local_5 = 0xffffffff;
-    return local_5;
-L_2105b8:
-    local_5 = local_3 * local_1 + local_4;
     return local_5;
 }
 -- signature

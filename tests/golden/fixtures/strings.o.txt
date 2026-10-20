@@ -5,10 +5,7 @@
 -- decompile
 /* velk pseudo-C: pick @ 0x0 */
 int32_t pick(void) {
-    int32_t v1;
-
-    v1 = *(uint8_t *)(kName + 0x2);
-    return v1;
+    return *(uint8_t *)(kName + 0x2);
 }
 -- signature
 int32_t ()

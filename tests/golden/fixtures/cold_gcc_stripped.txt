@@ -359,7 +359,6 @@ int32_t sub_1290(uint32_t *a0, int64_t a1, int32_t a2) {
     uint32_t *v3;
     int64_t v4;
     int64_t v5;
-    int64_t v6;
     int64_t v7;
     int64_t v8;
     uint32_t *v15;
@@ -395,8 +394,7 @@ int32_t sub_1290(uint32_t *a0, int64_t a1, int32_t a2) {
             goto L_12fd;
         }
     }
-    v6 = v3[0x1];
-    return v6;
+    return v3[0x1];
 L_12fd:
     v7 = &local_0;
     v8 = a2;

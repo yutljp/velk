@@ -491,8 +491,7 @@ int sum_varargs(int count, ...) {
         *(uint32_t *)&local_24 = v1 + 0x8;
         v3 = v2 + v1;
     }
-    v4 = v4 + *v3;
-    return v4;
+    return v4 + *v3;
 }
 -- signature
 int (int count)

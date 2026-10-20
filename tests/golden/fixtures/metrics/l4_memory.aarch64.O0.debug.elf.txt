@@ -89,10 +89,7 @@ fn bump @ 0x210280 (size 20)
 /* velk pseudo-C: banner_first @ 0x210294 */
 /* ref: 0x2202a8 -> 0x200158 "velk ladder" */
 int banner_first(void) {
-    int32_t v1;
-
-    v1 = *(uint8_t *)(banner);
-    return v1;
+    return *(uint8_t *)(banner);
 }
 -- signature
 int ()

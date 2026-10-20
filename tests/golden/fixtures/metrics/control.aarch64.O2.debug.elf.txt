@@ -1,4 +1,4 @@
-# metrics/control.aarch64.O2.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/control.aarch64.O2.debug.elf: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101d4 100 matrix_trace symtab,dwarf,unwind
 0x210238 32 cleanup_on_error symtab,dwarf,unwind
 0x210258 32 fallthrough symtab,dwarf,unwind
@@ -209,8 +209,7 @@ int short_circuit(int *p, int n) {
         return v2;
     }
     if (*p != 0x1) {
-        v2 = (p[n - 0x1] == 0x1);
-        return v2;
+        return (p[n - 0x1] == 0x1);
     }
     return 0x1;
 }
@@ -389,7 +388,7 @@ int find_pair(int *p, int n, int target) {
                     v12 = *v10;
                     v10 = v10 + 0x1;
                     if (v12 + v8 == target) {
-                        goto L_210424;
+                        return v11;
                     }
                     v9 = v9 - 0x1;
                     v11 = v11 + 0x1;
@@ -405,8 +404,6 @@ int find_pair(int *p, int n, int target) {
         }
     }
     v11 = 0xffffffff;
-    return v11;
-L_210424:
     return v11;
 }
 -- signature

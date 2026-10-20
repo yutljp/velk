@@ -1,4 +1,4 @@
-# metrics/l2_loop.aarch64.O0.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/l2_loop.aarch64.O0.stripped.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101d4 100 - unwind,prologue
 0x210238 84 - unwind,prologue
 0x21028c 116 - unwind,prologue
@@ -162,13 +162,11 @@ int32_t sub_210300(uint32_t *a0, int32_t a1, int32_t a2) {
     local_2 = a2;
     for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         if (local_0[local_3] == local_2) {
-            goto L_210344;
+            local_4 = local_3;
+            return local_4;
         }
     }
     local_4 = 0xffffffff;
-    return local_4;
-L_210344:
-    local_4 = local_3;
     return local_4;
 }
 -- signature

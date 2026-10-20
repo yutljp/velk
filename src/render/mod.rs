@@ -659,6 +659,29 @@ fn only_vector_count(rest: &[Node]) -> bool {
 fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     let mut index = 0;
     while index < nodes.len() {
+        // A value assigned only to be returned right away reads as returned.
+        if let (
+            Node::Stmt(Stmt::Assign { dest, value }),
+            Some(Node::Stmt(Stmt::Ret {
+                value: Expr::Reg { index: read, width },
+            })),
+        ) = (&nodes[index], nodes.get(index + 1))
+            && dest.index == *read
+            && dest.width == *width
+            && dest.index >= crate::ir::VARIABLE_BASE
+            && !ctx.void_return
+        {
+            indent(depth, out);
+            out.push_str(&render_stmt(
+                &Stmt::Ret {
+                    value: value.clone(),
+                },
+                ctx,
+            ));
+            out.push('\n');
+            index += 2;
+            continue;
+        }
         // Consecutive instructions the lifter could not model read as one
         // note instead of one comment per instruction.
         if let Node::Stmt(Stmt::Unsupported { text, .. }) = &nodes[index] {

@@ -1,4 +1,4 @@
-# metrics/l2_loop.x86_64.O0.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/l2_loop.x86_64.O0.stripped.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201200 70 - unwind,prologue
 0x201250 56 - unwind,prologue
 0x201290 90 - unwind,prologue
@@ -148,13 +148,11 @@ int32_t sub_2012f0(uint32_t *a0, int32_t a1, int32_t a2) {
     for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         v1 = (int64_t)(int32_t)(local_3);
         if (local_0[v1] == local_2) {
-            goto L_201325;
+            local_4 = local_3;
+            return local_4;
         }
     }
     local_4 = 0xffffffff;
-    return local_4;
-L_201325:
-    local_4 = local_3;
     return local_4;
 }
 -- signature

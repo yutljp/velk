@@ -159,12 +159,10 @@ fn big_sum @ 0x201350 (size 25)
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x201370 */
 unsigned char word_low_byte(union word w) {
-    int32_t v1;
     uint32_t local_0; /* [sp-c] */
 
     local_0 = w;
-    v1 = *(uint8_t *)&local_0;
-    return v1;
+    return *(uint8_t *)&local_0;
 }
 -- signature
 unsigned char (union word w)

@@ -60,8 +60,7 @@ long record_total(struct record *items, int n) {
         return v3;
     }
     v7 = v2 + v2 * 0x2;
-    v3 = v3 + (int16_t)(*(uint16_t *)((uint8_t *)items + v7 * 0x8 + 0x10)) * *(uint64_t *)((uint8_t *)items + v7 * 0x8 + 0x8);
-    return v3;
+    return v3 + (int16_t)(*(uint16_t *)((uint8_t *)items + v7 * 0x8 + 0x10)) * *(uint64_t *)((uint8_t *)items + v7 * 0x8 + 0x8);
 }
 -- signature
 long (struct record * items, int n)
@@ -148,11 +147,9 @@ fn big_make @ 0x201280 (size 31)
 /* velk pseudo-C: big_sum @ 0x2012a0 */
 long big_sum(struct big value) {
     uint64_t v1;
-    int64_t v2;
 
     v1 = value.b + value.d;
-    v2 = (v1 | ((v1 >> 0x20) & 0xffffffff) << 0x20) + (value.a + value.c);
-    return v2;
+    return (v1 | ((v1 >> 0x20) & 0xffffffff) << 0x20) + (value.a + value.c);
 }
 -- signature
 long ()

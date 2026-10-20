@@ -1,4 +1,4 @@
-# metrics/control.x86_64.O2.debug.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 4 gotos
+# metrics/control.x86_64.O2.debug.elf: elf x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 2 gotos
 0x201220 242 matrix_trace symtab,dwarf,unwind
 0x201320 26 cleanup_on_error symtab,dwarf,unwind
 0x201340 23 fallthrough symtab,dwarf,unwind
@@ -189,8 +189,7 @@ int cleanup_on_error(int a, int b, int *out) {
         return v1;
     }
     *out = (int32_t)(a) / (int32_t)(b);
-    v1 = 0x0;
-    return v1;
+    return 0x0;
 }
 -- signature
 int (int a, int b, int * out)
@@ -222,8 +221,7 @@ int fallthrough(int x) {
     if (x > 0x3 /* unsigned */) {
         return v1;
     }
-    v1 = dword_200120[x];
-    return v1;
+    return dword_200120[x];
 }
 -- signature
 int (int x)
@@ -309,8 +307,7 @@ int short_circuit(int *p, int n) {
     if (*p == 0x1) {
         return v1;
     }
-    v1 = (p[n - 0x1] == 0x1);
-    return v1;
+    return (p[n - 0x1] == 0x1);
 }
 -- signature
 int (int * p, int n)
@@ -481,7 +478,7 @@ int find_pair(int *p, int n, int target) {
             v10 = 0x0;
             do {
                 if (v4[v10] + v9 == target) {
-                    goto L_2014f6;
+                    return v10 - v6;
                 }
                 v10 = v10 + 0x1;
             } while (v5 != v10);
@@ -490,14 +487,10 @@ int find_pair(int *p, int n, int target) {
         v4 = v4 + 0x1;
         v5 = v5 - 0x1;
         if (v7 == v2) {
-            break;
+            return v1;
         }
     }
-L_2014fb:
-    return v1;
-L_2014f6:
-    v1 = v10 - v6;
-    goto L_2014fb;
+    return v10 - v6;
 }
 -- signature
 int (int * p, int n, int target)

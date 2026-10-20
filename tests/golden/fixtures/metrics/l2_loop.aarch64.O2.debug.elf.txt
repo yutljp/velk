@@ -1,4 +1,4 @@
-# metrics/l2_loop.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/l2_loop.aarch64.O2.debug.elf: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2101c4 60 sum_while symtab,dwarf,unwind
 0x210200 36 count_down symtab,dwarf,unwind
 0x210224 64 sum_skip_odd symtab,dwarf,unwind
@@ -147,15 +147,12 @@ int find_first(int *p, int n, int v) {
         v3 = n;
         do {
             if (p[v2] == v) {
-                goto L_210294;
+                return v2;
             }
             v2 = v2 + 0x1;
         } while (v3 != v2);
     }
-    v2 = 0xffffffff;
-    return v2;
-L_210294:
-    return v2;
+    return 0xffffffff;
 }
 -- signature
 int (int * p, int n, int v)

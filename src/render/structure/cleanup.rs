@@ -1,5 +1,6 @@
 use crate::ir::{Expr, Stmt};
 use crate::render::structure::Node;
+use std::collections::HashMap;
 
 /// A conditional branch to the block right after the loop reads as `break`.
 /// Inside a nested loop or a switch a `break` would leave that instead, so
@@ -453,6 +454,107 @@ pub(crate) fn prune_labels(nodes: &mut Vec<Node>, used: &std::collections::HashS
             }
             _ => {}
         }
+    }
+}
+
+/// The node lists directly inside a node.
+fn children(node: &Node) -> Vec<&Vec<Node>> {
+    match node {
+        Node::If { then, els, .. } => vec![then, els],
+        Node::DoWhile { body, .. } | Node::Forever { body } => vec![body],
+        Node::While { prefix, body, .. } => vec![prefix, body],
+        Node::Switch { arms, default, .. } => arms
+            .iter()
+            .map(|(_, body)| body)
+            .chain(default.iter())
+            .collect(),
+        Node::Stmt(_) | Node::Label(_) | Node::Break | Node::Continue => Vec::new(),
+    }
+}
+
+/// The same, to change.
+fn children_mut(node: &mut Node) -> Vec<&mut Vec<Node>> {
+    match node {
+        Node::If { then, els, .. } => vec![then, els],
+        Node::DoWhile { body, .. } | Node::Forever { body } => vec![body],
+        Node::While { prefix, body, .. } => vec![prefix, body],
+        Node::Switch { arms, default, .. } => arms
+            .iter_mut()
+            .map(|(_, body)| body)
+            .chain(default.iter_mut())
+            .collect(),
+        Node::Stmt(_) | Node::Label(_) | Node::Break | Node::Continue => Vec::new(),
+    }
+}
+
+/// Replaces each jump to a label that only runs a few statements before
+/// returning, or before trapping after a call that does not return, with
+/// those statements, while that copies no more than a few in all.
+pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
+    fn jumps(nodes: &[Node], counts: &mut HashMap<u64, usize>) {
+        for node in nodes {
+            if let Node::Stmt(Stmt::Br {
+                target: Some(target),
+            }) = node
+            {
+                *counts.entry(*target).or_default() += 1;
+            }
+            for child in children(node) {
+                jumps(child, counts);
+            }
+        }
+    }
+    fn collect(nodes: &mut [Node], tails: &mut HashMap<u64, Vec<Node>>) {
+        for index in 0..nodes.len() {
+            if let Node::Label(label) = nodes[index] {
+                let mut tail = Vec::new();
+                for next in &nodes[index + 1..] {
+                    match next {
+                        Node::Label(_) => {}
+                        Node::Stmt(
+                            stmt @ (Stmt::Assign { .. } | Stmt::Store { .. } | Stmt::Call { .. }),
+                        ) if tail.len() < 3 => tail.push(Node::Stmt(stmt.clone())),
+                        Node::Stmt(stmt @ (Stmt::Ret { .. } | Stmt::Trap)) => {
+                            tail.push(Node::Stmt(stmt.clone()));
+                            tails.insert(label, tail);
+                            break;
+                        }
+                        _ => break,
+                    }
+                }
+            }
+            for child in children_mut(&mut nodes[index]) {
+                collect(child, tails);
+            }
+        }
+    }
+    fn replace(nodes: &mut Vec<Node>, tails: &HashMap<u64, Vec<Node>>) {
+        let mut index = 0;
+        while index < nodes.len() {
+            if let Node::Stmt(Stmt::Br {
+                target: Some(target),
+            }) = &nodes[index]
+                && let Some(tail) = tails.get(target)
+            {
+                let tail = tail.clone();
+                let length = tail.len();
+                nodes.splice(index..=index, tail);
+                index += length;
+                continue;
+            }
+            for child in children_mut(&mut nodes[index]) {
+                replace(child, tails);
+            }
+            index += 1;
+        }
+    }
+    let mut tails = HashMap::new();
+    collect(nodes, &mut tails);
+    let mut counts = HashMap::new();
+    jumps(nodes, &mut counts);
+    tails.retain(|label, tail| (tail.len() - 1) * counts.get(label).copied().unwrap_or(0) <= 4);
+    if !tails.is_empty() {
+        replace(nodes, &tails);
     }
 }
 

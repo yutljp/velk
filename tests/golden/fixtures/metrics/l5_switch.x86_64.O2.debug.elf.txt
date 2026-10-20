@@ -1,4 +1,4 @@
-# metrics/l5_switch.x86_64.O2.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/l5_switch.x86_64.O2.debug.elf: elf x86_64 no entry, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201330 167 dense symtab,dwarf,unwind
 0x2013e0 8 c0 symtab,dwarf,unwind
 0x2013f0 8 c1 symtab,dwarf,unwind
@@ -78,10 +78,10 @@ int dense(int x) {
             c15();
             return g_sink;
         default:
-            goto L_2013c6;
+            g_sink = 0x0;
+            return g_sink;
         }
     }
-L_2013c6:
     g_sink = 0x0;
     return g_sink;
 }

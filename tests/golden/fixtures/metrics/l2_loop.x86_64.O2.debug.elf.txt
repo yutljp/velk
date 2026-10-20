@@ -1,4 +1,4 @@
-# metrics/l2_loop.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+# metrics/l2_loop.x86_64.O2.debug.elf: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011d0 239 sum_while symtab,dwarf,unwind
 0x2012c0 157 count_down symtab,dwarf,unwind
 0x201360 71 sum_skip_odd symtab,dwarf,unwind
@@ -249,8 +249,7 @@ int sum_skip_odd(int n) {
     }
     v5 = v1 + v2;
     sink = v5;
-    v2 = v5;
-    return v2;
+    return v5;
 }
 -- signature
 int (int n)
@@ -308,11 +307,9 @@ int find_first(int *p, int n, int v) {
         if (v1 != v2) {
             continue;
         }
-        goto L_2013cd;
+        return 0xffffffff;
     }
     return v2;
-L_2013cd:
-    return 0xffffffff;
 }
 -- signature
 int (int * p, int n, int v)

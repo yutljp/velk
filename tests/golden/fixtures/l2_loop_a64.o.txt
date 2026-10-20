@@ -1,4 +1,4 @@
-# l2_loop_a64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+# l2_loop_a64.o: elf aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 60 sum_while symtab,unwind
 0x3c 36 count_down symtab,unwind
 0x60 64 sum_skip_odd symtab,unwind
@@ -144,15 +144,12 @@ int32_t find_first(uint32_t *a0, int32_t a1, int32_t a2) {
         v3 = a1;
         do {
             if (a0[v2] == a2) {
-                goto L_d0;
+                return v2;
             }
             v2 = v2 + 0x1;
         } while (v3 != v2);
     }
-    v2 = 0xffffffff;
-    return v2;
-L_d0:
-    return v2;
+    return 0xffffffff;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, int32_t a2)
