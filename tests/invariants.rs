@@ -269,6 +269,8 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
         return HashSet::new();
     }
     let mut written: HashSet<u16> = ir.params.iter().map(|param| param.index).collect();
+    // A landing pad receives the exception and its selector.
+    written.extend([velk::ir::EXCEPTION, velk::ir::SELECTOR]);
     // A variadic function's further arguments arrive in the argument
     // registers its declaration leaves unnamed.
     if ir.variadic {

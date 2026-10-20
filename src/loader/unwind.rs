@@ -96,6 +96,117 @@ pub(crate) fn frames(image: &Image) -> Vec<Frame> {
     frames
 }
 
+/// The landing pads the exception tables name, each with the code ranges
+/// whose calls unwind into it.
+pub(crate) fn landing_pads(image: &Image) -> std::collections::BTreeMap<u64, Vec<(u64, u64)>> {
+    let mut pads: std::collections::BTreeMap<u64, Vec<(u64, u64)>> = Default::default();
+    let Some(section) = image
+        .sections
+        .iter()
+        .find(|section| matches!(section.name.as_str(), ".eh_frame" | "__eh_frame"))
+    else {
+        return pads;
+    };
+    let Some(data) = image.section_data(&section.name) else {
+        return pads;
+    };
+    let mut eh_frame = EhFrame::new(data, LittleEndian);
+    eh_frame.set_address_size(8);
+    let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
+    let mut entries = eh_frame.entries(&bases);
+    while let Ok(Some(entry)) = entries.next() {
+        let CieOrFde::Fde(partial) = entry else {
+            continue;
+        };
+        let Ok(fde) = partial.parse(EhFrame::cie_from_offset) else {
+            continue;
+        };
+        let Some(gimli::Pointer::Direct(lsda)) = fde.lsda() else {
+            continue;
+        };
+        let _ = call_sites(image, lsda, fde.initial_address(), &mut pads);
+    }
+    pads
+}
+
+/// Reads the call-site table of the exception table at `lsda`, for the
+/// function starting at `function`.
+fn call_sites(
+    image: &Image,
+    lsda: u64,
+    function: u64,
+    pads: &mut std::collections::BTreeMap<u64, Vec<(u64, u64)>>,
+) -> Option<()> {
+    let mut at = lsda;
+    let byte = |at: &mut u64| -> Option<u8> {
+        let value = image.read_vaddr(*at, 1)?[0];
+        *at += 1;
+        Some(value)
+    };
+    let uleb = |at: &mut u64| -> Option<u64> {
+        let mut value = 0u64;
+        for shift in (0..64).step_by(7) {
+            let next = byte(at)?;
+            value |= u64::from(next & 0x7f) << shift;
+            if next & 0x80 == 0 {
+                return Some(value);
+            }
+        }
+        None
+    };
+    // A value in the given pointer encoding; only the forms these tables
+    // use for offsets.
+    let encoded = |at: &mut u64, encoding: u8| -> Option<u64> {
+        let place = *at;
+        let fixed = |at: &mut u64, size: u64| -> Option<u64> {
+            let bytes = image.read_vaddr(*at, size)?;
+            *at += size;
+            let mut buffer = [0u8; 8];
+            buffer[..size as usize].copy_from_slice(&bytes[..size as usize]);
+            Some(u64::from_le_bytes(buffer))
+        };
+        let value = match encoding & 0x0f {
+            0x00 => fixed(at, 8)?,
+            0x01 => uleb(at)?,
+            0x02 => fixed(at, 2)?,
+            0x03 => fixed(at, 4)?,
+            0x04 | 0x0c => fixed(at, 8)?,
+            0x0a => fixed(at, 2)? as i16 as i64 as u64,
+            0x0b => fixed(at, 4)? as i32 as i64 as u64,
+            _ => return None,
+        };
+        Some(match encoding & 0x70 {
+            0x00 => value,
+            0x10 => place.wrapping_add(value),
+            _ => return None,
+        })
+    };
+    let start_encoding = byte(&mut at)?;
+    let base = if start_encoding == 0xff {
+        function
+    } else {
+        encoded(&mut at, start_encoding)?
+    };
+    if byte(&mut at)? != 0xff {
+        uleb(&mut at)?;
+    }
+    let site_encoding = byte(&mut at)?;
+    let length = uleb(&mut at)?;
+    let end = at + length;
+    while at < end {
+        let start = encoded(&mut at, site_encoding)?;
+        let size = encoded(&mut at, site_encoding)?;
+        let pad = encoded(&mut at, site_encoding)?;
+        uleb(&mut at)?;
+        if pad != 0 {
+            pads.entry(base + pad)
+                .or_default()
+                .push((base + start, base + start + size));
+        }
+    }
+    Some(())
+}
+
 #[cfg(test)]
 mod probe {
     #[test]

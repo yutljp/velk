@@ -173,6 +173,7 @@ fn render_with(
         void_return: ir.ret_type == CType::Void,
         float_return,
         names,
+        landing_pads: ir.landing_pads.iter().cloned().collect(),
         slots: locals.slots,
         local_widths: locals.widths,
         local_floats: locals
@@ -273,7 +274,10 @@ fn render_with(
     let mut declared = 0;
     for (index, ty) in &variable_types {
         let name = ctx.register(*index, 64);
-        if !variables::mentions(&body, &name) {
+        // What a landing pad receives is no variable of the function.
+        if matches!(*index, crate::ir::EXCEPTION | crate::ir::SELECTOR)
+            || !variables::mentions(&body, &name)
+        {
             continue;
         }
         indent(1, &mut out);
@@ -807,6 +811,17 @@ fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             }
         }
         Node::Label(address) => {
+            if let Some(sites) = ctx.landing_pads.get(address) {
+                let ranges: Vec<String> = sites
+                    .iter()
+                    .map(|(start, end)| format!("0x{start:x}-0x{end:x}"))
+                    .collect();
+                indent(depth.saturating_sub(1), out);
+                out.push_str(&format!(
+                    "/* landing pad: an exception thrown by a call at {} arrives here */\n",
+                    ranges.join(", ")
+                ));
+            }
             indent(depth.saturating_sub(1), out);
             out.push_str(&format!("L_{address:x}:\n"));
         }

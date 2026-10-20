@@ -625,6 +625,12 @@ macho_a64=$("$BIN" decompile $FIX/arm64_macho.o _sum3 2>/dev/null)
 echo "$macho_a64" | grep -q "_sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "Mach-O AArch64 decompile"
 ok "Mach-O objects"
 
+# 18b) landing pads from the exception tables
+pad=$($BIN decompile tests/fixtures/rust_probe_stripped 0x4d240)
+echo "$pad" | grep -q 'landing pad: an exception thrown by a call at 0x4d24a-0x4d250' || fail "landing pad note"
+echo "$pad" | grep -q '_Unwind_Resume(exception);' || fail "landing pad exception"
+ok "landing pads"
+
 # 19) MCP stdio server
 mcp_out=$(printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \

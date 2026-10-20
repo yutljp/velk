@@ -37,6 +37,7 @@ pub(crate) fn stack_locals(
         void_return: ir.ret_type == CType::Void,
         float_return: None,
         names: HashMap::new(),
+        landing_pads: HashMap::new(),
         slots: HashMap::new(),
         local_widths: HashMap::new(),
         local_elements: HashMap::new(),

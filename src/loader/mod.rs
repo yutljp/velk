@@ -187,6 +187,9 @@ pub struct Image {
     /// The slots the dynamic linker fills with another module's function or
     /// object, by its name: calls through them call it.
     pub imports: BTreeMap<u64, String>,
+    /// The landing pads of the exception tables, each with the code ranges
+    /// whose calls unwind into it.
+    pub landing_pads: BTreeMap<u64, Vec<(u64, u64)>>,
     /// The image carries a Go pclntab, so its functions follow the Go ABI.
     pub go: bool,
 }
@@ -214,6 +217,7 @@ impl Image {
             branches_to: Default::default(),
             addressed: Default::default(),
             imports: BTreeMap::new(),
+            landing_pads: BTreeMap::new(),
             result_reads: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
@@ -654,11 +658,13 @@ pub fn load(path: &Path) -> Result<Image> {
         result_reads: Default::default(),
         relocations,
         imports: plt::imports(&file).into_iter().collect(),
+        landing_pads: BTreeMap::new(),
         go: false,
     };
     image.add_go_functions();
     image.add_dwarf_functions();
     image.add_unwind_functions();
+    image.landing_pads = unwind::landing_pads(&image);
     // Only an image without symbols, debug info or a Go pclntab needs the
     // prologue scan, and only for the code no unwind entry covers.
     if image.functions.values().all(|function| {

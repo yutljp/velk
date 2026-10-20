@@ -229,6 +229,38 @@ fn tail_calls_through_pointers(
     }
 }
 
+/// A landing pad receives the exception in the return register and the
+/// handler selector in the next: its reads of them before writing them read
+/// those.
+fn receive_exceptions(
+    blocks: &mut [crate::ir::Block],
+    pads: &HashSet<u64>,
+    isa: crate::loader::Isa,
+) {
+    let (exception, selector) = match isa {
+        crate::loader::Isa::X86_64 => (0, 2),
+        crate::loader::Isa::AArch64 => (0, 1),
+        crate::loader::Isa::Unsupported => return,
+    };
+    for block in blocks
+        .iter_mut()
+        .filter(|block| pads.contains(&block.start))
+    {
+        let mut received = vec![
+            (exception, crate::ir::Expr::reg(crate::ir::EXCEPTION, 64)),
+            (selector, crate::ir::Expr::reg(crate::ir::SELECTOR, 64)),
+        ];
+        for stmt in &mut block.stmts {
+            crate::ir::visit::replace_reads(stmt, &received);
+            let written = crate::ir::visit::statement_registers(stmt).0;
+            received.retain(|(register, _)| !written.contains(register));
+            if received.is_empty() {
+                break;
+            }
+        }
+    }
+}
+
 /// Drops the blocks no path from the entry reaches, unless an indirect jump
 /// may reach any of them.
 fn drop_unreached(blocks: &mut Vec<crate::ir::Block>) {
@@ -749,11 +781,18 @@ pub fn absorb_jump_table_cases(image: &mut Image) {
 
 fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError> {
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
-    let mut blocks = lift::lift(image, function.addr, size, &HashSet::new())?;
     let extent = function.addr..function.addr.saturating_add(size);
+    // Landing pads start blocks of their own, which exceptions enter.
+    let landing_pads: Vec<(u64, Vec<(u64, u64)>)> = image
+        .landing_pads
+        .range(extent.clone())
+        .map(|(pad, sites)| (*pad, sites.clone()))
+        .collect();
+    let pads: HashSet<u64> = landing_pads.iter().map(|(pad, _)| *pad).collect();
+    let mut blocks = lift::lift(image, function.addr, size, &pads)?;
     let mut tables = jump_table::recover(&blocks, image, extent.clone());
     // Cases start blocks of their own, which may hold further tables.
-    let mut targets: HashSet<u64> = HashSet::new();
+    let mut targets: HashSet<u64> = pads.clone();
     for _ in 0..4 {
         let found: HashSet<u64> = tables
             .iter()
@@ -770,6 +809,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         drop_stack_growth_check(&mut blocks, image);
         zero_fixed_register(&mut blocks, image.isa);
     }
+    receive_exceptions(&mut blocks, &pads, image.isa);
     let switched: HashSet<u64> = tables.iter().map(|table| table.block_start).collect();
     tail_calls_through_pointers(&mut blocks, &switched, image);
     let types = crate::loader::dwarf::function_types(image, function.addr);
@@ -858,6 +898,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         members: Vec::new(),
         structures: Vec::new(),
         signed_params: signature.signed,
+        landing_pads,
         addr: function.addr,
         name: function.name.clone(),
         size,

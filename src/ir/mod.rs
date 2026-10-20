@@ -968,6 +968,11 @@ pub const EXCHANGE: u16 = TEMP_BASE + 0x42;
 /// target overwrites the register it came in.
 pub const SWITCH_INDEX: u16 = TEMP_BASE + 0x49;
 
+/// What a landing pad receives: the exception being thrown, and the value
+/// that chooses among its handlers.
+pub const EXCEPTION: u16 = TEMP_BASE + 0x4a;
+pub const SELECTOR: u16 = TEMP_BASE + 0x4b;
+
 /// Register indices from here up are the variables a parameter register
 /// holds once its parameter is dead, printed as `v<n>`.
 pub const VARIABLE_BASE: u16 = TEMP_BASE + 0x100;
@@ -990,6 +995,11 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
     }
     if index >= VARIABLE_BASE {
         return format!("v{}", index - VARIABLE_BASE + 1);
+    }
+    match index {
+        EXCEPTION => return "exception".to_owned(),
+        SELECTOR => return "selector".to_owned(),
+        _ => {}
     }
     if is_temp(index) {
         return format!("t{isode}", isode = temp_id(index));
@@ -1183,6 +1193,9 @@ pub struct FunctionIr {
     pub structures: Vec<Structure>,
     /// Argument registers a signed comparison reads.
     pub signed_params: std::collections::HashSet<u16>,
+    /// The blocks exceptions unwind into, each with the code ranges whose
+    /// calls throw them there.
+    pub landing_pads: Vec<(u64, Vec<(u64, u64)>)>,
     pub addr: u64,
     pub name: Option<String>,
     pub size: u64,
@@ -1203,6 +1216,7 @@ impl FunctionIr {
             members: Vec::new(),
             structures: Vec::new(),
             signed_params: std::collections::HashSet::new(),
+            landing_pads: Vec::new(),
             addr: 0,
             name: None,
             size: 0,
