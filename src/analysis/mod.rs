@@ -6,7 +6,7 @@ mod results;
 mod semantics_tests;
 mod signature;
 mod structures;
-mod summary;
+pub(crate) mod summary;
 pub(crate) mod typing;
 
 use std::collections::HashSet;
@@ -229,8 +229,6 @@ fn tail_calls_through_pointers(
     }
 }
 
-/// Drops the check a Go function starts with, which compares the stack
-/// pointer with the goroutine's stack limit and, when it runs low, calls the
 /// Drops the blocks no path from the entry reaches, unless an indirect jump
 /// may reach any of them.
 fn drop_unreached(blocks: &mut Vec<crate::ir::Block>) {
@@ -301,6 +299,8 @@ fn zero_fixed_register(blocks: &mut [crate::ir::Block], isa: crate::loader::Isa)
     }
 }
 
+/// Drops the check a Go function starts with, which compares the stack
+/// pointer with the goroutine's stack limit and, when it runs low, calls the
 /// runtime to grow the stack and starts the function again. It is no part
 /// of what the function does. The blocks that grow the stack and restart
 /// go too.
@@ -787,10 +787,15 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // Without debug info, a function whose callers all ignore what is left
     // in the return register returns nothing either. A linkage stub returns
     // what the library function does, whatever these callers make of it.
+    // So does one that returns on some path with the register unset.
     let ignored = declared.is_none()
         && float_return.is_none()
         && !function.sources.contains(&crate::loader::NameSource::Plt)
-        && results::ignored_by_callers(image, function.addr);
+        && (results::ignored_by_callers(image, function.addr)
+            || results::returns_unset(
+                &blocks,
+                crate::ir::Convention::of(image.isa, image.format, image.go),
+            ));
     // A function the debug info says returns nothing returns no register.
     if declared == Some(&crate::ir::CType::Void) || ignored {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {

@@ -317,20 +317,29 @@ fn by_name(image: &Image, addr: u64) -> Summary {
     let Some(function) = image.functions.get(&addr) else {
         return Summary::default();
     };
-    let noreturn = function.name.as_deref().is_some_and(|name| {
-        let name = name
-            .strip_prefix('_')
-            .filter(|_| image.format == crate::loader::Format::MachO)
-            .unwrap_or(name);
-        NORETURN_IMPORTS.contains(&name) || runtime_noreturn(name)
-    });
-    // A linkage stub's callee takes what its prototype says.
-    let arity = function
-        .sources
-        .contains(&NameSource::Plt)
-        .then_some(function.name.as_deref())
+    let Some(name) = function.name.as_deref() else {
+        return Summary::default();
+    };
+    named(image, name, function.sources.contains(&NameSource::Plt))
+}
+
+/// What is known of an imported function another module defines, by its
+/// name.
+pub(crate) fn import(image: &Image, name: &str) -> Summary {
+    named(image, name, true)
+}
+
+/// What a function's name says; an import's also gives the arguments its
+/// prototype takes.
+fn named(image: &Image, name: &str, imported: bool) -> Summary {
+    let unprefixed = name
+        .strip_prefix('_')
+        .filter(|_| image.format == crate::loader::Format::MachO)
+        .unwrap_or(name);
+    let noreturn = NORETURN_IMPORTS.contains(&unprefixed) || runtime_noreturn(unprefixed);
+    let arity = imported
+        .then(|| super::prototypes::of(name, image.format == crate::loader::Format::MachO))
         .flatten()
-        .and_then(|name| super::prototypes::of(name, image.format == crate::loader::Format::MachO))
         .map(|prototype| prototype.fixed);
     Summary {
         arity,

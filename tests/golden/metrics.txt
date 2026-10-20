@@ -26,7 +26,7 @@ parameter sign | x86_64.O2 | 135/147
 return void | aarch64.O0 | 143/148
 return void | aarch64.O2 | 143/148
 return void | x86_64.O0 | 142/148
-return void | x86_64.O2 | 143/148
+return void | x86_64.O2 | 145/148
 return width | aarch64.O0 | 116/120
 return width | aarch64.O2 | 116/120
 return width | x86_64.O0 | 116/120
@@ -556,8 +556,8 @@ memory.x86_64.O0 0x201390 grid_set: returns int64_t, expected void
 memory.x86_64.O0 0x2013d0 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
 memory.x86_64.O0 0x2013f0 read_volatile: ok
 memory.x86_64.O0 0x201420 swap_ints: returns int64_t, expected void
-memory.x86_64.O2 0x201220 copy_bytes: returns int32_t, expected void
-memory.x86_64.O2 0x201310 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
+memory.x86_64.O2 0x201220 copy_bytes: ok
+memory.x86_64.O2 0x201310 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs
 memory.x86_64.O2 0x201320 string_length: ok
 memory.x86_64.O2 0x201340 grid_get: ok
 memory.x86_64.O2 0x201360 grid_set: returns int32_t, expected void

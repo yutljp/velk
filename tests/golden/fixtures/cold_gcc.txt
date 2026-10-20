@@ -1,4 +1,4 @@
-# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 4 gotos
+# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 1 gotos
 0x1000 27 _init symtab
 0x1080 16 __cxa_finalize plt
 0x1090 16 __snprintf_chk plt
@@ -21,7 +21,7 @@
 int64_t _init(void) {
     int64_t v1;
 
-    v1 = qword_3fe8;
+    v1 = __gmon_start__;
     if (v1 == 0x0) {
         return v1;
     }
@@ -46,17 +46,17 @@ fn _init @ 0x1000 (size 27)
 == 0x1080 __cxa_finalize
 -- decompile
 /* velk pseudo-C: __cxa_finalize @ 0x1080 */
-int32_t __cxa_finalize(void) {
-    return (*(qword_3ff8))();
+int32_t __cxa_finalize(int64_t a0) {
+    return __cxa_finalize(a0);
 }
 -- signature
-int32_t ()
+int32_t (int64_t a0)
 -- references
 
 -- ir
 fn __cxa_finalize @ 0x1080 (size 16)
   blk0 @ 0x1080:
-    call *load64(#0x3ff8)
+    v1 = call *load64(#0x3ff8)(rdi)
     ret v1
 -- card
 {"addr":"0x1080","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt.got","size":16,"sizeEstimated":true,"unsupported":0}
@@ -65,12 +65,7 @@ fn __cxa_finalize @ 0x1080 (size 16)
 -- decompile
 /* velk pseudo-C: __snprintf_chk @ 0x1090 */
 int32_t __snprintf_chk(void) {
-    switch (0x0) {
-    case 0:
-        goto L_1030;
-    default:
-        __builtin_unreachable();
-    }
+    return __snprintf_chk();
 }
 -- signature
 int32_t ()
@@ -79,7 +74,8 @@ int32_t ()
 -- ir
 fn __snprintf_chk @ 0x1090 (size 16)
   blk0 @ 0x1090:
-    switch #0x0 [0->0x1030] default <none>
+    call *load64(#0x3fb0)
+    ret v1
 -- card
 {"addr":"0x1090","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__snprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -87,12 +83,8 @@ fn __snprintf_chk @ 0x1090 (size 16)
 -- decompile
 /* velk pseudo-C: abort @ 0x10a0 */
 int32_t abort(void) {
-    switch (0x0) {
-    case 0:
-        goto L_1040;
-    default:
-        __builtin_unreachable();
-    }
+    abort();
+    __builtin_trap();
 }
 -- signature
 int32_t ()
@@ -101,7 +93,8 @@ int32_t ()
 -- ir
 fn abort @ 0x10a0 (size 16)
   blk0 @ 0x10a0:
-    switch #0x0 [0->0x1040] default <none>
+    call *load64(#0x3fb8)()
+    trap
 -- card
 {"addr":"0x10a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -109,12 +102,8 @@ fn abort @ 0x10a0 (size 16)
 -- decompile
 /* velk pseudo-C: __stack_chk_fail @ 0x10b0 */
 int32_t __stack_chk_fail(void) {
-    switch (0x0) {
-    case 0:
-        goto L_1050;
-    default:
-        __builtin_unreachable();
-    }
+    __stack_chk_fail();
+    __builtin_trap();
 }
 -- signature
 int32_t ()
@@ -123,7 +112,8 @@ int32_t ()
 -- ir
 fn __stack_chk_fail @ 0x10b0 (size 16)
   blk0 @ 0x10b0:
-    switch #0x0 [0->0x1050] default <none>
+    call *load64(#0x3fc0)()
+    trap
 -- card
 {"addr":"0x10b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__stack_chk_fail","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -148,18 +138,18 @@ fn fputs @ 0x10c0 (size 16)
 == 0x10d0 __fprintf_chk
 -- decompile
 /* velk pseudo-C: __fprintf_chk @ 0x10d0 */
-int64_t __fprintf_chk(void) {
-    return __do_global_dtors_aux();
+void __fprintf_chk(void) {
+    __do_global_dtors_aux();
 }
 -- signature
-int64_t ()
+void ()
 -- references
 
 -- ir
 fn __fprintf_chk @ 0x10d0 (size 16)
   blk0 @ 0x10d0:
-    v1 = call 0x1240()
-    ret v1
+    call 0x1240()
+    ret #0x0
 -- card
 {"addr":"0x10d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__fprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -221,7 +211,7 @@ int32_t _start(int64_t a0, int64_t a1, int64_t a2) {
     v3 = rsp + 0x8;
     local_0 = rax;
     local_1 = rsp;
-    (*(qword_3fd8))(main, v2, v3, 0x0, 0x0, a2);
+    __libc_start_main(main, v2, v3, 0x0, 0x0, a2);
     __builtin_trap();
 }
 -- signature
@@ -246,7 +236,7 @@ fn _start @ 0x11a0 (size 38)
 int32_t deregister_tm_clones(void) {
     return __TMC_END__;
 L_11e3:
-    rax = qword_3fe0;
+    rax = _ITM_deregisterTMCloneTable;
     if (rax == 0x0) {
         return __TMC_END__;
     }
@@ -279,7 +269,7 @@ fn deregister_tm_clones @ 0x11d0 (size 48)
 int32_t register_tm_clones(void) {
     return 0x0;
 L_1224:
-    rax = qword_3ff0;
+    rax = _ITM_registerTMCloneTable;
     if (rax == 0x0) {
         return 0x0;
     }
@@ -309,23 +299,21 @@ fn register_tm_clones @ 0x1200 (size 64)
 == 0x1240 __do_global_dtors_aux
 -- decompile
 /* velk pseudo-C: __do_global_dtors_aux @ 0x1240 */
-int64_t __do_global_dtors_aux(void) {
+void __do_global_dtors_aux(void) {
     int64_t v1;
-    int64_t v2;
 
     if (completed_0 != 0x0) {
-        return rax;
+        return;
     }
-    if (qword_3ff8 != 0x0) {
+    if (__cxa_finalize != 0x0) {
         v1 = __dso_handle;
         __cxa_finalize(v1);
     }
-    v2 = deregister_tm_clones();
+    deregister_tm_clones();
     completed_0 = 0x1;
-    return v2;
 }
 -- signature
-int64_t ()
+void ()
 -- references
 
 -- ir
@@ -338,11 +326,11 @@ fn __do_global_dtors_aux @ 0x1240 (size 64)
     v1 = load64(#0x4008)
     call 0x1080(v1)
   blk3 @ 0x1267:
-    v2 = call 0x11d0()
+    call 0x11d0()
     store8(#0x1, #0x4028)
-    ret v2
+    ret #0x0
   blk4 @ 0x1278:
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x1240","approxTokens":174,"blocks":5,"hardReasons":[],"name":"__do_global_dtors_aux","nameSources":["symtab"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
 
@@ -498,6 +486,6 @@ void ()
 -- ir
 fn _fini @ 0x1380 (size 13)
   blk0 @ 0x1380:
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x1380","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_fini","nameSources":["symtab"],"section":".fini","size":13,"sizeEstimated":true,"unsupported":0}

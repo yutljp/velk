@@ -153,7 +153,7 @@ void ()
 fn <unnamed> @ 0x201280 (size 7)
   blk0 @ 0x201280:
     store32((load32(#0x2022a8) + #0x1), #0x2022a8)
-    ret rax
+    ret #0x0
 -- card
 {"addr":"0x201280","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":7,"unsupported":0}
 

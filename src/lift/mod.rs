@@ -393,13 +393,40 @@ pub(crate) fn pointer_target(image: &Image, through: &Expr) -> Option<u64> {
     image.functions.contains_key(&target).then_some(target)
 }
 
-/// A call to the address `through` computes.
-fn call_through(image: &Image, through: Expr) -> Stmt {
+/// The name of the import whose slot `through` loads.
+pub(crate) fn import_name<'a>(image: &'a Image, through: &Expr) -> Option<&'a str> {
+    let Expr::Load { addr, width: 8, .. } = through else {
+        return None;
+    };
+    let Expr::Const(slot) = addr.as_ref() else {
+        return None;
+    };
+    image.imports.get(slot).map(String::as_str)
+}
+
+/// The import a call through `through` reaches, when it loads a slot the
+/// dynamic linker fills, and what its name says of it.
+pub(crate) fn import_called(image: &Image, through: &Expr) -> Option<crate::loader::Summary> {
+    import_name(image, through).map(|name| crate::analysis::summary::import(image, name))
+}
+
+/// A call to the address `through` computes. One through an import's slot
+/// passes the arguments its prototype takes.
+pub(crate) fn call_through(image: &Image, through: Expr) -> Stmt {
+    let convention = Convention::of(image.isa, image.format, image.go);
+    let variadic = crate::lift::import_name(image, &through)
+        .and_then(|name| {
+            crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
+        })
+        .is_some_and(|prototype| prototype.format.is_some());
+    let arity = import_called(image, &through)
+        .filter(|_| !variadic)
+        .and_then(|summary| summary.arity);
     Stmt::Call {
         target: None,
         through: Some(through),
-        convention: Convention::of(image.isa, image.format, image.go),
-        args: None,
+        convention,
+        args: arguments(convention, image.isa, arity, 0),
         floats_named: false,
         result: None,
     }

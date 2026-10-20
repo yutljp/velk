@@ -184,6 +184,9 @@ pub struct Image {
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
+    /// The slots the dynamic linker fills with another module's function or
+    /// object, by its name: calls through them call it.
+    pub imports: BTreeMap<u64, String>,
     /// The image carries a Go pclntab, so its functions follow the Go ABI.
     pub go: bool,
 }
@@ -210,6 +213,7 @@ impl Image {
             summaries: Default::default(),
             branches_to: Default::default(),
             addressed: Default::default(),
+            imports: BTreeMap::new(),
             result_reads: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
@@ -649,6 +653,7 @@ pub fn load(path: &Path) -> Result<Image> {
         addressed: Default::default(),
         result_reads: Default::default(),
         relocations,
+        imports: plt::imports(&file).into_iter().collect(),
         go: false,
     };
     image.add_go_functions();

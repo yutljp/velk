@@ -25,6 +25,68 @@ pub(crate) fn ignored_by_callers(image: &Image, addr: u64) -> bool {
     !reads(image, addr, &mut HashSet::new()).0
 }
 
+/// Whether some path returns with the return register as the caller left
+/// it, as a function that returns nothing does when no call or assignment
+/// on the way sets it. Only for conventions that pass no argument there.
+pub(crate) fn returns_unset(blocks: &[Block], convention: crate::ir::Convention) -> bool {
+    if convention.arguments().contains(&RETURN) || blocks.is_empty() {
+        return false;
+    }
+    let index: HashMap<u64, usize> = blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    // Whether the register may still be unset as each block starts.
+    let mut unset = vec![false; blocks.len()];
+    unset[0] = true;
+    let mut pending = vec![0];
+    while let Some(at) = pending.pop() {
+        let mut still = true;
+        for stmt in &blocks[at].stmts {
+            if let Stmt::Ret { .. } = stmt {
+                return true;
+            }
+            if crate::ir::visit::statement_registers(stmt)
+                .0
+                .contains(&RETURN)
+            {
+                still = false;
+                break;
+            }
+        }
+        if !still {
+            continue;
+        }
+        let falls = at + 1;
+        let next: Vec<usize> = match blocks[at].stmts.last() {
+            Some(Stmt::Br {
+                target: Some(target),
+            }) => index.get(target).copied().into_iter().collect(),
+            Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => index
+                .get(target)
+                .copied()
+                .into_iter()
+                .chain(std::iter::once(falls))
+                .collect(),
+            Some(Stmt::Switch { cases, default, .. }) => cases
+                .iter()
+                .map(|(_, target)| target)
+                .chain(default)
+                .filter_map(|target| index.get(target).copied())
+                .collect(),
+            Some(Stmt::Trap | Stmt::BrIndirect { .. } | Stmt::Br { target: None }) => Vec::new(),
+            _ => vec![falls],
+        };
+        for successor in next {
+            if successor < blocks.len() && !std::mem::replace(&mut unset[successor], true) {
+                pending.push(successor);
+            }
+        }
+    }
+    false
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Fate {
     /// Every path writes the register first, or ends in a trap.

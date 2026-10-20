@@ -12,6 +12,26 @@ pub(super) fn is_stub_section(name: &str) -> bool {
     matches!(name, ".plt" | ".plt.sec" | ".plt.got" | "__stubs")
 }
 
+/// The slots dynamic relocations fill with the address of a symbol another
+/// module defines, by the symbol's name.
+pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
+    let (Some(relocations), Some(symbols)) =
+        (file.dynamic_relocations(), file.dynamic_symbol_table())
+    else {
+        return HashMap::new();
+    };
+    relocations
+        .filter_map(|(slot, relocation)| {
+            let RelocationTarget::Symbol(index) = relocation.target() else {
+                return None;
+            };
+            let symbol = symbols.symbol_by_index(index).ok()?;
+            let name = symbol.name().ok()?;
+            (!name.is_empty() && symbol.is_undefined()).then(|| (slot, name.to_owned()))
+        })
+        .collect()
+}
+
 /// `(stub address, imported name)` for every stub that jumps through a slot
 /// a dynamic relocation names.
 pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {

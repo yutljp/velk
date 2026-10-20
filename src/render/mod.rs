@@ -35,11 +35,13 @@ pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
         .collect()
 }
 
-/// The names of the functions and data objects, by address.
+/// The names of the functions and data objects, by address, and of the
+/// imports by the slots that hold them.
 pub fn callee_names(image: &crate::loader::Image) -> HashMap<u64, String> {
     image
-        .data_symbols
+        .imports
         .iter()
+        .chain(&image.data_symbols)
         .map(|(address, name)| (*address, name.clone()))
         .chain(image.functions.iter().filter_map(|(address, function)| {
             function.name.as_ref().map(|name| (*address, name.clone()))
@@ -1104,6 +1106,13 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 ) =>
                 {
                     "syscall".to_owned()
+                }
+                // A named slot's function is called by its name.
+                (Some(Expr::Load { addr, width: 8, .. }), _)
+                    if let Expr::Const(slot) = addr.as_ref()
+                        && let Some(name) = ctx.callees.get(slot) =>
+                {
+                    sanitize(name)
                 }
                 (Some(through), _) => format!("(*({}))", render_value(through, ctx)),
                 (None, Some(target)) => match ctx.callees.get(target) {

@@ -2519,7 +2519,13 @@ fn lift_instruction(
                         return true;
                     }
                 } else {
+                    let noreturn = super::import_called(lifter.image, &through)
+                        .is_some_and(|summary| summary.noreturn);
                     lifter.stmts.push(call_through(lifter.image, through));
+                    if noreturn {
+                        lifter.stmts.push(Stmt::Trap);
+                        return true;
+                    }
                 }
             } else {
                 let made = call(lifter.image, lifter.summaries, None);
@@ -2547,6 +2553,17 @@ fn lift_instruction(
                         lifter.summaries,
                         Some(target),
                     )),
+                    // A jump through an import's slot calls it for the result.
+                    None if let Some(summary) = super::import_called(lifter.image, &target) => {
+                        lifter.stmts.push(call_through(lifter.image, target));
+                        lifter.stmts.push(if summary.noreturn {
+                            Stmt::Trap
+                        } else {
+                            Stmt::Ret {
+                                value: Lifter::read_reg(RAX, 64),
+                            }
+                        });
+                    }
                     None => lifter.stmts.push(Stmt::BrIndirect { target }),
                 }
             }
