@@ -38,8 +38,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101bc (size 40)
   blk0 @ 0x2101bc:
-    w8 = (x0 & #0xffffffff)
-    v2 = call 0x210194(((w8 + #0x2) & #0xffffffff))
+    x8 = (x0 & #0xffffffff)
+    v2 = call 0x210194((((x8 & #0xffffffff) + #0x2) & #0xffffffff))
     ret v2
 -- card
 {"addr":"0x2101bc","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":40,"unsupported":0}

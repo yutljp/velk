@@ -38,11 +38,11 @@ int32_t (uint64_t * a0, int32_t a1)
 -- ir
 fn total_area(Shape const* const*, int) @ 0x0 (size 92)
   blk0 @ 0x0:
-    brif lt w1, #0x1 -> 0x44
+    brif lt (x1 & #0xffffffff), #0x1 -> 0x44
   blk1 @ 0x18:
     v1 = x0
     v2 = #0x0
-    v3 = w1
+    v3 = (x1 & #0xffffffff)
   blk2 @ 0x24:
     v4 = load64(v1)
     v1 = (v1 + #0x8)

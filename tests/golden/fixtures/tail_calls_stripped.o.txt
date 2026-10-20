@@ -34,7 +34,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x1c (size 8)
   blk0 @ 0x1c:
-    w0 = (w0 + #0x2)
+    x0 = (((x0 & #0xffffffff) + #0x2) & #0xffffffff)
   blk1 @ 0x20:
     call <dynamic>
     ret v1

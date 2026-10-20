@@ -7,7 +7,7 @@ pub fn specialize_widths(ir: &mut FunctionIr) -> std::collections::HashSet<u16> 
     use std::collections::{HashMap, HashSet};
 
     // A write is 32-bit when the lifter wrapped the value in a zero-extension
-    // mask; anything else writes all 64 bits.
+    // mask; anything else, a call's result included, writes all 64 bits.
     let mut writes: HashMap<u16, Vec<u8>> = HashMap::new();
     for block in &ir.blocks {
         for stmt in &block.stmts {
@@ -21,6 +21,10 @@ pub fn specialize_widths(ir: &mut FunctionIr) -> std::collections::HashSet<u16> 
                     _ => 64,
                 };
                 writes.entry(dest.index).or_default().push(width);
+            } else {
+                for written in crate::ir::visit::statement_registers(stmt).0 {
+                    writes.entry(written).or_default().push(64);
+                }
             }
         }
     }

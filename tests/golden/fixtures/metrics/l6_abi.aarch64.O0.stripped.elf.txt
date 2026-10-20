@@ -40,8 +40,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101fc (size 40)
   blk0 @ 0x2101fc:
-    w8 = (x0 & #0xffffffff)
-    v2 = call 0x2101d4(((w8 + #0x2) & #0xffffffff))
+    x8 = (x0 & #0xffffffff)
+    v2 = call 0x2101d4((((x8 & #0xffffffff) + #0x2) & #0xffffffff))
     ret v2
 -- card
 {"addr":"0x2101fc","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":40,"unsupported":0}
@@ -61,7 +61,7 @@ int32_t (void * a0, int32_t a1)
 fn <unnamed> @ 0x210224 (size 48)
   blk0 @ 0x210224:
     x8 = x0
-    v2 = call *x8((((w1 & #0xffffffff) + #0x1) & #0xffffffff))
+    v2 = call *x8((((x1 & #0xffffffff) + #0x1) & #0xffffffff))
     ret v2
 -- card
 {"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}

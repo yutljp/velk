@@ -98,7 +98,7 @@ int (int x)
 -- ir
 fn dense @ 0x201400 (size 234)
   blk0 @ 0x201400:
-    store32(edi, (rsp + #0xfffffffffffffff4))
+    store32(rdi, (rsp + #0xfffffffffffffff4))
     v2 = ((load32((rsp + #0xfffffffffffffff4)) + #0xfffffffffffffff6) & #0xffffffff)
     store64((v2 & #0xffffffff), (rsp + #0xffffffffffffffe8))
     brif hi (v2 & #0xffffffff), #0xf -> 0x2014d4

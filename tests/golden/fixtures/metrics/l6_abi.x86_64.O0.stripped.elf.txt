@@ -53,7 +53,7 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201220 (size 33)
   blk0 @ 0x201220:
-    v3 = call *rdi((((esi & #0xffffffff) + #0x1) & #0xffffffff))
+    v3 = call *rdi((((rsi & #0xffffffff) + #0x1) & #0xffffffff))
     ret v3
 -- card
 {"addr":"0x201220","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}

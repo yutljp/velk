@@ -67,12 +67,10 @@ fn <unnamed> @ 0x210350 (size 44)
 /* velk pseudo-C: sub_21037c @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int32_t sub_21037c(int32_t a0, int32_t a1) {
-    uint32_t v1;
-    int32_t local_0; /* [sp-14] */
+    uint32_t local_0; /* [sp-14] */
 
     local_0 = a0;
-    v1 = local_0;
-    x8 = qword_2206f0[v1 - v1 / 0x3 * 0x3];
+    x8 = qword_2206f0[local_0 % 0x3];
     return (*(x8))(a1);
 }
 -- signature
@@ -82,10 +80,9 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x21037c (size 72)
   blk0 @ 0x21037c:
-    store32(w0, (sp + #0xffffffffffffffec))
-    v1 = load32((sp + #0xffffffffffffffec))
-    x8 = load64((#0x2206f0 + ((((v1 & #0xffffffff) - (((v1 & #0xffffffff) / #0x3) * #0x3)) & #0xffffffff) << #0x3)))
-    v4 = call *x8((w1 & #0xffffffff))
+    store32(x0, (sp + #0xffffffffffffffec))
+    x8 = load64((#0x2206f0 + (((load32((sp + #0xffffffffffffffec)) % #0x3) & #0xffffffff) << #0x3)))
+    v4 = call *x8((x1 & #0xffffffff))
     ret v4
 -- card
 {"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}
@@ -108,7 +105,7 @@ int32_t (void * a0, int32_t a1)
 fn <unnamed> @ 0x2103c4 (size 48)
   blk0 @ 0x2103c4:
     x8 = x0
-    v2 = call *x8((w1 & #0xffffffff))
+    v2 = call *x8((x1 & #0xffffffff))
     ret (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
@@ -233,8 +230,8 @@ fn <unnamed> @ 0x2104a0 (size 76)
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk3 @ 0x2104c8:
-    w8 = load32((sp + #0xffffffffffffffec))
-    v2 = call 0x210454(((w8 - #0x1) & #0xffffffff))
+    x8 = load32((sp + #0xffffffffffffffec))
+    v2 = call 0x210454((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
     store32(v2, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:

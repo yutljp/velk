@@ -81,9 +81,9 @@ int (unsigned int index, int x)
 -- ir
 fn apply_table @ 0x201360 (size 52)
   blk0 @ 0x201360:
-    v1 = (((edi & #0xffffffff) % #0x3) & #0xffffffff)
+    v1 = (((rdi & #0xffffffff) % #0x3) & #0xffffffff)
     v3 = load64((#0x202670 + ((v1 & #0xffffffff) * #0x8)))
-    v5 = call *v3((esi & #0xffffffff))
+    v5 = call *v3((rsi & #0xffffffff))
     ret v5
 -- card
 {"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
@@ -104,7 +104,7 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x2013a0 (size 33)
   blk0 @ 0x2013a0:
-    v3 = call *rdi((esi & #0xffffffff))
+    v3 = call *rdi((rsi & #0xffffffff))
     ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2013a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}

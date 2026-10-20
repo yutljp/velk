@@ -15,7 +15,7 @@ int (void * f, int x)
 -- ir
 fn via_ptr @ 0x201180 (size 33)
   blk0 @ 0x201180:
-    v3 = call *rdi((((esi & #0xffffffff) + #0x1) & #0xffffffff))
+    v3 = call *rdi((((rsi & #0xffffffff) + #0x1) & #0xffffffff))
     ret v3
 -- card
 {"addr":"0x201180","approxTokens":168,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}

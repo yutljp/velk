@@ -17,7 +17,7 @@ int32_t (void * a0, int32_t a1)
 fn <unnamed> @ 0x21017c (size 48)
   blk0 @ 0x21017c:
     x8 = x0
-    v2 = call *x8((((w1 & #0xffffffff) + #0x1) & #0xffffffff))
+    v2 = call *x8((((x1 & #0xffffffff) + #0x1) & #0xffffffff))
     ret v2
 -- card
 {"addr":"0x21017c","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}

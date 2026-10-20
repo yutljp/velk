@@ -436,7 +436,7 @@ fn lookup @ 0x1290 (size 240)
     ret v6
   blk6 @ 0x12fd:
     v7 = (rsp + #0xffffffffffffff98)
-    v8 = rdx
+    v8 = (rdx & #0xffffffff)
     store64(rsi, (rsp + #0xffffffffffffff88))
     v15 = (v2 + #0x8)
     v16 = (v4 + v15)
@@ -455,7 +455,7 @@ fn lookup @ 0x1290 (size 240)
   blk9 @ 0x10e0:
     v24 = (rsp + #0xffffffffffffff98)
     store64(#0x0, (rsp + #0xffffffffffffff90))
-    v25 = rdx
+    v25 = (rdx & #0xffffffff)
     store64(rsi, (rsp + #0xffffffffffffff88))
     call 0x1090(v24, #0x40, #0x2, #0x40, #0x2004, v25)
     v32 = load64(#0x4020)

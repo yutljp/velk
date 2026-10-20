@@ -457,7 +457,16 @@ impl Machine<'_> {
                                     .collect::<Result<Vec<u64>, _>>()?;
                                 self.call_with(target, values)
                             }
-                            None => self.call(target),
+                            // The registers its own convention passes, as a
+                            // system call's number and arguments.
+                            None => {
+                                let arguments = convention
+                                    .arguments()
+                                    .iter()
+                                    .map(|index| self.register(*index))
+                                    .collect();
+                                self.call_with(target, arguments)
+                            }
                         }
                         // So do the vector registers its convention lets it change.
                         let ordinal = self.calls.len() as u64;

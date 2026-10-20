@@ -80,9 +80,9 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2102f0 (size 44)
   blk0 @ 0x2102f0:
-    x8 = ((w0 % #0x3) & #0xffffffff)
+    x8 = (((x0 & #0xffffffff) % #0x3) & #0xffffffff)
     v2 = load64((#0x220528 + ((x8 & #0xffffffff) << #0x3)))
-    v3 = call *v2(w1)
+    v3 = call *v2((x1 & #0xffffffff))
     ret v3
 -- card
 {"addr":"0x2102f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
@@ -105,7 +105,7 @@ int32_t (void * a0, int32_t a1)
 fn <unnamed> @ 0x21031c (size 32)
   blk0 @ 0x21031c:
     x8 = x0
-    v2 = call *x8(w1)
+    v2 = call *x8((x1 & #0xffffffff))
     ret (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}
@@ -226,14 +226,14 @@ fn <unnamed> @ 0x21033c (size 160)
 == 0x2103dc -
 -- decompile
 /* velk pseudo-C: sub_2103dc @ 0x2103dc */
-int32_t sub_2103dc(int32_t a0) {
-    if (a0 == 0x0) {
+int64_t sub_2103dc(int64_t a0) {
+    if ((a0 & 0xffffffff) == 0x0) {
         return a0;
     }
-    return sub_2103ec(a0 - 0x1);
+    return sub_2103ec((a0 & 0xffffffff) - 0x1);
 }
 -- signature
-int32_t (int32_t a0)
+int64_t (int64_t a0)
 -- references
 
 -- ir
@@ -244,7 +244,7 @@ fn <unnamed> @ 0x2103dc (size 16)
     v2 = call 0x2103ec((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
     ret v2
   blk2 @ 0x2103e8:
-    ret w0
+    ret x0
 -- card
 {"addr":"0x2103dc","approxTokens":120,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":16,"unsupported":0}
 
