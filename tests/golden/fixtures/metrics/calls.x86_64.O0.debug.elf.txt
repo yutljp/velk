@@ -68,10 +68,11 @@ fn pick_op @ 0x201330 (size 33)
 /* ref: 0x202670 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
     int32_t v1;
+    int64_t v3;
 
     v1 = index % 0x3;
-    rax = table[v1];
-    return (*(rax))(x);
+    v3 = table[v1];
+    return (*(v3))(x);
 }
 -- signature
 int (unsigned int index, int x)
@@ -81,9 +82,9 @@ int (unsigned int index, int x)
 fn apply_table @ 0x201360 (size 52)
   blk0 @ 0x201360:
     v1 = (((edi & #0xffffffff) % #0x3) & #0xffffffff)
-    rax = load64((#0x202670 + ((v1 & #0xffffffff) * #0x8)))
-    v4 = call *rax((esi & #0xffffffff))
-    ret v4
+    v3 = load64((#0x202670 + ((v1 & #0xffffffff) * #0x8)))
+    v5 = call *v3((esi & #0xffffffff))
+    ret v5
 -- card
 {"addr":"0x201360","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
 
@@ -91,11 +92,10 @@ fn apply_table @ 0x201360 (size 52)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2013a0 */
 int apply_pointer(void *f, int x) {
-    int32_t v2;
+    int32_t v3;
 
-    rax = f;
-    v2 = (*(rax))(x);
-    return v2 + 0x1;
+    v3 = (*(f))(x);
+    return v3 + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -104,9 +104,8 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x2013a0 (size 33)
   blk0 @ 0x2013a0:
-    rax = rdi
-    v2 = call *rax((esi & #0xffffffff))
-    ret (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
+    v3 = call *rdi((esi & #0xffffffff))
+    ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2013a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}
 
@@ -122,8 +121,7 @@ int factorial(int n) {
 
     local_0 = n;
     if (n > 0x1) {
-        rax = local_0;
-        local_2 = rax;
+        local_2 = local_0;
         v1 = local_0 - 0x1;
         v2 = factorial(v1);
         local_1 = local_2 * v2;
@@ -145,8 +143,7 @@ fn factorial @ 0x2013d0 (size 71)
     store32(#0x1, (rsp + #0xfffffffffffffff0))
     br 0x20140e
   blk2 @ 0x2013f2:
-    rax = load32((rsp + #0xfffffffffffffff4))
-    store32(rax, (rsp + #0xffffffffffffffec))
+    store32(load32((rsp + #0xfffffffffffffff4)), (rsp + #0xffffffffffffffec))
     v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
     v2 = call 0x2013d0(v1)
     store32((load32((rsp + #0xffffffffffffffec)) * (v2 & #0xffffffff)), (rsp + #0xfffffffffffffff0))

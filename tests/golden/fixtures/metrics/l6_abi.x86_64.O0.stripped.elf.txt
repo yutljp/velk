@@ -48,8 +48,7 @@ fn <unnamed> @ 0x201200 (size 28)
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
 int32_t sub_201220(void *a0, int32_t a1) {
-    rax = a0;
-    return (*(rax))(a1 + 0x1);
+    return (*(a0))(a1 + 0x1);
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -58,9 +57,8 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201220 (size 33)
   blk0 @ 0x201220:
-    rax = rdi
-    v2 = call *rax((((esi & #0xffffffff) + #0x1) & #0xffffffff))
-    ret v2
+    v3 = call *rdi((((esi & #0xffffffff) + #0x1) & #0xffffffff))
+    ret v3
 -- card
 {"addr":"0x201220","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}
 

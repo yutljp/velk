@@ -440,12 +440,37 @@ fn callee_saved(ir: &FunctionIr, reg: u16, sp: u16) -> bool {
     reg != sp && reg < 32 && !ir.convention.clobbered().contains(&reg)
 }
 
-/// The save sits in the entry block before anything writes the register.
+/// The save stores the register's value on entry: nothing writes it before
+/// the save in its block, nor in any block a path from the entry passes
+/// on the way there, as when the prologue waits past an early return.
 fn saves_entry_value(ir: &FunctionIr, save: &Access) -> bool {
-    save.block == 0
-        && ir.blocks[0].stmts[..save.position]
+    let writes = |stmts: &[Stmt]| {
+        stmts
             .iter()
-            .all(|stmt| !statement_registers(stmt).0.contains(&save.reg))
+            .any(|stmt| statement_registers(stmt).0.contains(&save.reg))
+    };
+    if writes(&ir.blocks[save.block].stmts[..save.position]) {
+        return false;
+    }
+    if save.block == 0 {
+        return true;
+    }
+    // The blocks from which the save's block can be reached.
+    let successors: Vec<Vec<usize>> = (0..ir.blocks.len())
+        .map(|index| crate::ir::cfg::block_successors(&ir.blocks, index))
+        .collect();
+    let mut before = std::collections::HashSet::new();
+    let mut work = vec![save.block];
+    while let Some(block) = work.pop() {
+        for (from, next) in successors.iter().enumerate() {
+            if next.contains(&block) && before.insert(from) {
+                work.push(from);
+            }
+        }
+    }
+    !before.contains(&save.block)
+        && before.contains(&0)
+        && before.iter().all(|block| !writes(&ir.blocks[*block].stmts))
 }
 
 /// The restore is the register's last use on the way out of a return.

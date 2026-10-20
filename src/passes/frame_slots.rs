@@ -78,30 +78,51 @@ fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
 fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool {
     let sp = stack_pointer(ir.isa);
     let fp = crate::arch::frame_pointer(ir.isa);
-    let Some(mut frame) = frames.first().copied().flatten() else {
-        return false;
-    };
-    // The setup, and the entry-frame offset it gives the frame pointer.
+    // The setup, its block, and the entry-frame offset it gives the frame
+    // pointer: in the entry block, or later where the prologue waits past
+    // an early return.
     let mut setup = None;
-    for (position, stmt) in ir.blocks[0].stmts.iter().enumerate() {
-        match stmt {
-            Stmt::Assign { dest, value } if dest.index == fp => {
-                setup = frame_slot(value, frame, sp).map(|base| (position, base));
-                break;
+    'find: for (index, block) in ir.blocks.iter().enumerate() {
+        let Some(mut frame) = frames[index] else {
+            continue;
+        };
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            match stmt {
+                Stmt::Assign { dest, value } if dest.index == fp => {
+                    if let Some(base) = frame_slot(value, frame, sp) {
+                        setup = Some((index, position, base));
+                        break 'find;
+                    }
+                }
+                Stmt::Assign { dest, value } if dest.index == sp => {
+                    frame = adjusted(frame, value, sp);
+                }
+                _ => {}
             }
-            Stmt::Assign { dest, value } if dest.index == sp => {
-                frame = adjusted(frame, value, sp);
-            }
-            _ => {}
         }
     }
-    let Some((setup_at, base)) = setup else {
+    let Some((setup_block, setup_at, base)) = setup else {
         return false;
+    };
+    // The frame pointer means the frame only in the blocks the setup
+    // dominates; elsewhere it still holds the caller's.
+    let successors: Vec<Vec<usize>> = (0..ir.blocks.len())
+        .map(|index| crate::ir::cfg::block_successors(&ir.blocks, index))
+        .collect();
+    let idom = crate::ssa::dom::dominators(&successors).idom;
+    let dominated = |mut block: usize| loop {
+        if block == setup_block {
+            return true;
+        }
+        match idom[block] {
+            Some(parent) if parent != block => block = parent,
+            _ => return false,
+        }
     };
     // Any other write restores the caller's frame pointer before a return.
     for (index, block) in ir.blocks.iter().enumerate() {
         for (position, stmt) in block.stmts.iter().enumerate() {
-            if (index, position) == (0, setup_at)
+            if (index, position) == (setup_block, setup_at)
                 || !crate::ir::visit::statement_registers(stmt).0.contains(&fp)
             {
                 continue;
@@ -121,13 +142,19 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
             }
         }
     }
+    if (0..ir.blocks.len()).any(|index| dominated(index) && frames[index].is_none()) {
+        return false;
+    }
     for (index, block) in ir.blocks.iter_mut().enumerate() {
+        if !dominated(index) {
+            continue;
+        }
         let Some(mut frame) = frames[index] else {
             return false;
         };
         for (position, stmt) in block.stmts.iter_mut().enumerate() {
             // The save before the setup reads the caller's frame pointer.
-            if index != 0 || position > setup_at {
+            if index != setup_block || position > setup_at {
                 let address = Expr::bin(
                     BinOp::Add,
                     Expr::reg(sp, 64),
@@ -142,7 +169,7 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
             }
         }
     }
-    ir.blocks[0].stmts.remove(setup_at);
+    ir.blocks[setup_block].stmts.remove(setup_at);
     true
 }
 

@@ -91,12 +91,15 @@ impl Convention {
     }
 
     /// Registers a call whose integer arguments are named still reads: the
-    /// floating-point arguments and those in `call_extra`.
+    /// floating-point arguments and AArch64's indirect result register.
+    /// SysV's vector count in al is left out: only a variadic callee reads
+    /// it, and the pseudo-C leaves its setting out.
     pub fn unnamed_reads(self) -> impl Iterator<Item = u16> {
-        self.float_arguments()
-            .iter()
-            .chain(self.call_extra())
-            .copied()
+        let extra: &[u16] = match self {
+            Self::SysV => &[],
+            other => other.call_extra(),
+        };
+        self.float_arguments().iter().chain(extra).copied()
     }
 
     /// Registers a call may read besides its arguments: AArch64's indirect

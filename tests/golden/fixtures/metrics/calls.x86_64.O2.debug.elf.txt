@@ -68,10 +68,11 @@ fn pick_op @ 0x201310 (size 21)
 /* ref: 0x202610 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
     int64_t v1;
+    int64_t v2;
 
     v1 = 0xaaaaaaab * index >> 0x21;
-    rax = ((index - (v1 + v1 * 0x2)) & 0xffffffff);
-    return (*(table[rax]))(x, x, v1, &table);
+    v2 = ((index - (v1 + v1 * 0x2)) & 0xffffffff);
+    return (*(table[v2]))(x, x, v1, &table);
 }
 -- signature
 int (unsigned int index, int x)
@@ -81,9 +82,9 @@ int (unsigned int index, int x)
 fn apply_table @ 0x201330 (size 34)
   blk0 @ 0x201330:
     v1 = ((#0xaaaaaaab * edi) >> #0x21)
-    rax = (((edi & #0xffffffff) - (v1 + (v1 * #0x2))) & #0xffffffff)
-    v4 = call *load64((#0x202610 + (rax * #0x8)))(esi, rsi, v1, #0x202610)
-    ret v4
+    v2 = (((edi & #0xffffffff) - (v1 + (v1 * #0x2))) & #0xffffffff)
+    v5 = call *load64((#0x202610 + (v2 * #0x8)))(esi, rsi, v1, #0x202610)
+    ret v5
 -- card
 {"addr":"0x201330","approxTokens":156,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf","unwind"],"section":".text","size":34,"unsupported":0}
 
@@ -91,11 +92,10 @@ fn apply_table @ 0x201330 (size 34)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x201360 */
 int apply_pointer(void *f, int x) {
-    int32_t v2;
+    int32_t v3;
 
-    rax = f;
-    v2 = (*(rax))(x);
-    return v2 + 0x1;
+    v3 = (*(f))(x);
+    return v3 + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -104,9 +104,8 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x201360 (size 12)
   blk0 @ 0x201360:
-    rax = rdi
-    v2 = call *rax(esi)
-    ret (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
+    v3 = call *rdi(esi)
+    ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x201360","approxTokens":138,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 

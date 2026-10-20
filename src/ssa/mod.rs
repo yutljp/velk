@@ -757,7 +757,93 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             }
         }
     }
+    // Code no path reaches, as a landing pad the unwinder enters, finds a
+    // callee-saved register holding what it held across the calls: the
+    // variable the register holds at every call, when that is one.
+    let clobbered = ir.convention.clobbered();
+    for register in registers.iter().filter(|register| {
+        crate::arch::machine_registers().contains(register) && !clobbered.contains(register)
+    }) {
+        let held: HashSet<u16> = names
+            .iter()
+            .filter(|(root, _)| ssa.origin[**root] == *register)
+            .map(|(_, name)| *name)
+            .collect();
+        let Some(variable) = held_across_calls(&lowered, &held, &dominators) else {
+            continue;
+        };
+        for (block, contents) in lowered.blocks.iter_mut().enumerate() {
+            if block == 0 || dominators.idom[block].is_some() {
+                continue;
+            }
+            for stmt in &mut contents.stmts {
+                rename_reads(stmt, &mut |index| {
+                    if index == *register { variable } else { index }
+                });
+                if crate::ir::visit::statement_registers(stmt)
+                    .0
+                    .contains(register)
+                {
+                    break;
+                }
+            }
+        }
+    }
     *ir = lowered;
+}
+
+/// The one variable of `held` that every call the entry reaches finds in
+/// the register they share, following the writes of them forward. A tail
+/// call has left the frame, so no landing pad of it can be entered.
+fn held_across_calls(
+    ir: &FunctionIr,
+    held: &HashSet<u16>,
+    dominators: &dom::Dominators,
+) -> Option<u16> {
+    if held.is_empty() {
+        return None;
+    }
+    // Per block on entry: the variable in the register, `Some(None)` when
+    // paths disagree or none was written.
+    let mut entry: Vec<Option<Option<u16>>> = vec![None; ir.blocks.len()];
+    entry[0] = Some(None);
+    let mut work = vec![0];
+    let mut seen: Option<Option<u16>> = None;
+    while let Some(index) = work.pop() {
+        let mut current = entry[index].expect("visited");
+        let stmts = &ir.blocks[index].stmts;
+        for (position, stmt) in stmts.iter().enumerate() {
+            match stmt {
+                Stmt::Assign { dest, .. } if held.contains(&dest.index) => {
+                    current = Some(dest.index);
+                }
+                Stmt::Call { .. } if matches!(stmts.get(position + 1), Some(Stmt::Ret { .. })) => {}
+                Stmt::Call { .. } => {
+                    seen = Some(match seen {
+                        None => current,
+                        Some(before) if before == current => current,
+                        Some(_) => None,
+                    });
+                }
+                _ => {}
+            }
+        }
+        for next in crate::ir::cfg::block_successors(&ir.blocks, index) {
+            if dominators.idom[next].is_none() && next != 0 {
+                continue;
+            }
+            let merged = match entry[next] {
+                None => current,
+                Some(old) if old == current => current,
+                Some(_) => None,
+            };
+            if entry[next] != Some(merged) {
+                entry[next] = Some(merged);
+                work.push(next);
+            }
+        }
+    }
+    seen.flatten()
 }
 
 /// Leaves SSA form, giving each value its name in `renames` or else its register.

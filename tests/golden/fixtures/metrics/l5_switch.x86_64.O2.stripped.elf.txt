@@ -28,7 +28,6 @@ int32_t sub_201330(int32_t a0) {
 
     v1 = ((a0 - 0xa) & 0xffffffff);
     if (v1 <= 0xf /* unsigned */) {
-        rax = 0x200158;
         switch (v1 + 0xa) {
         case 10:
             sub_2013e0();
@@ -97,7 +96,6 @@ fn <unnamed> @ 0x201330 (size 167)
     v1 = (((rdi & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
     brif hi (v1 & #0xffffffff), #0xf -> 0x2013c6
   blk1 @ 0x20133c:
-    rax = #0x200158
     switch (v1 + #0xa) [10->0x20134d, 11->0x201393, 12->0x201377, 13->0x201385, 14->0x201362, 15->0x20139a, 16->0x2013a8, 17->0x20138c, 18->0x2013b6, 19->0x201370, 20->0x2013af, 21->0x20135b, 22->0x201369, 23->0x2013a1, 24->0x201354, 25->0x20137e] default 0x2013c6
   blk2 @ 0x20134d:
     call 0x2013e0()
