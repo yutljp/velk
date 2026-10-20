@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: item_weight @ 0x2011a0 */
 int item_weight(struct item *items, int i) {
-    return (int16_t)(*(uint16_t *)((uint8_t *)items + ((int64_t)(int32_t)(i) << 0x4) + 0xc)) * *(uint32_t *)((uint8_t *)items + ((int64_t)(int32_t)(i) << 0x4) + 0x8);
+    return (int16_t)(*(uint16_t *)((uint8_t *)items + ((uint64_t)i << 0x4) + 0xc)) * *(uint32_t *)((uint8_t *)items + ((uint64_t)i << 0x4) + 0x8);
 }
 -- signature
 int (struct item * items, int i)
@@ -65,9 +65,9 @@ long item_last_key(struct item *items, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = (int64_t)(int32_t)(local_3) << 0x4;
+        v1 = (uint64_t)local_3 << 0x4;
         if (*(int32_t *)((uint8_t *)local_0 + v1 + 0x8) > 0x0) {
-            v2 = (int64_t)(int32_t)(local_3) << 0x4;
+            v2 = (uint64_t)local_3 << 0x4;
             local_2 = *(uint64_t *)((uint8_t *)local_0 + v2);
         }
     }

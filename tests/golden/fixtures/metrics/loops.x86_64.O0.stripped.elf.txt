@@ -91,7 +91,7 @@ int32_t sub_201240(uint32_t *a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = (int64_t)(int32_t)(local_3);
+        v1 = local_3;
         v2 = local_0[v1];
         local_4 = v2;
         if ((int32_t)v2 < 0x0) {
@@ -146,13 +146,13 @@ int32_t sub_2012a0(uint32_t *a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = (int64_t)(int32_t)(local_3);
+        v1 = local_3;
         if (local_0[v1] == 0x0) {
             return local_2;
         }
-        v2 = (int64_t)(int32_t)(local_3);
-        if (local_0[v2] >= 0x0) {
-            v3 = (int64_t)(int32_t)(local_3);
+        v2 = local_3;
+        if ((int32_t)local_0[v2] >= 0x0) {
+            v3 = local_3;
             local_2 += local_0[v3];
         }
     }

@@ -9,9 +9,9 @@ int dispatch(int x) {
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-4] */
 
-    v1 = x;
+    v1 = (x & 0xffffffff);
     local_0 = v1;
-    if (v1 - 0xa == 0x0) {
+    if ((uint32_t)(v1 - 0xa) == 0x0) {
         local_1 = 0x1;
         return local_1;
     }

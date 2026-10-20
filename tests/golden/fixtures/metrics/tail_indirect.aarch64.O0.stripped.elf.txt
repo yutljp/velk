@@ -6,6 +6,8 @@
 -- decompile
 /* velk pseudo-C: sub_21017c @ 0x21017c */
 int32_t sub_21017c(void *a0, int32_t a1) {
+    uint64_t x8;
+
     x8 = a0;
     return (*(x8))(a1 + 0x1);
 }

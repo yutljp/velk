@@ -133,7 +133,7 @@ fn string_length @ 0x2102f8 (size 68)
 /* velk pseudo-C: grid_get @ 0x21033c */
 /* ref: 0x220454 .bss */
 int grid_get(int row, int col) {
-    return grid[(int64_t)(int32_t)(row & 0x3) * 0x8 + (int64_t)(int32_t)(col & 0x7)];
+    return grid[(row & 0x3) * 0x8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
@@ -158,7 +158,7 @@ void grid_set(int row, int col, int value) {
     local_0 = row;
     local_1 = col;
     local_2 = value;
-    grid[(int64_t)(int32_t)(local_0 & 0x3) * 0x8 + (int64_t)(int32_t)(local_1 & 0x7)] = local_2;
+    grid[(local_0 & 0x3) * 0x8 + (local_1 & 0x7)] = local_2;
 }
 -- signature
 void (int row, int col, int value)

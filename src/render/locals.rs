@@ -47,7 +47,6 @@ pub(crate) fn stack_locals(
         local_floats: HashMap::new(),
         signed_locals: std::collections::HashSet::new(),
         wide_params: std::collections::HashSet::new(),
-        signed_params: std::collections::HashSet::new(),
         fields: HashMap::new(),
         callees: &HashMap::new(),
         data_ranges: &[],
@@ -56,9 +55,12 @@ pub(crate) fn stack_locals(
         elements: HashMap::new(),
         arrays: HashMap::new(),
         narrow_regs: std::collections::HashSet::new(),
-        narrow_return: false,
         floats: HashMap::new(),
         scaled: std::collections::HashSet::new(),
+        returned: None,
+        declared: HashMap::new(),
+        value_bits: HashMap::new(),
+        taken: Default::default(),
     };
     let mut accesses = frame_accesses(ir, sp, frames);
     // A buffer indexed from several nearby places is one local, from the

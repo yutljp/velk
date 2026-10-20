@@ -27,8 +27,8 @@ double average(double *values, int n) {
         return 0.0;
     }
     v1 = 0.0;
-    v2 = n;
-    if (n >= 0x4 /* unsigned */) {
+    v2 = (uint32_t)n;
+    if ((uint32_t)n >= 0x4 /* unsigned */) {
         v3 = v2 & 0x7ffffffc;
         v4 = values + 0x2;
         v5 = v3;
@@ -110,7 +110,7 @@ fn average @ 0x21019c (size 144)
 -- decompile
 /* velk pseudo-C: lerp @ 0x21022c */
 float lerp(float a, float b, float t) {
-    return fmaf(b - a, t, a);
+    return (fmaf(b - a, t, a) & 0xffffffff);
 }
 -- signature
 float (float a, float b, float t)

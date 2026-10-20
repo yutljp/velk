@@ -54,7 +54,7 @@ int32_t dense(int32_t a0) {
         case 21:
             v7 = g_sink;
             v8 = 0x58;
-            v5 = v7 | v8;
+            v5 = ((v7 | v8) & 0xffffffff);
             break;
         case 22:
             v5 = g_sink + 0x5f;
@@ -68,7 +68,7 @@ int32_t dense(int32_t a0) {
         case 25:
             v7 = g_sink;
             v8 = 0x74;
-            v5 = v7 | v8;
+            v5 = ((v7 | v8) & 0xffffffff);
             break;
         default:
             __builtin_unreachable();

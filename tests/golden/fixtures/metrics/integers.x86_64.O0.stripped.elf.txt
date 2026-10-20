@@ -48,7 +48,7 @@ fn <unnamed> @ 0x2012a0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
 int64_t sub_2012c0(int32_t a0, int32_t a1) {
-    return (int64_t)(int32_t)(a0) - a1;
+    return (int64_t)a0 - (uint32_t)a1;
 }
 -- signature
 int64_t (int32_t a0, int32_t a1)
@@ -67,7 +67,7 @@ fn <unnamed> @ 0x2012c0 (size 22)
 int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
     int64_t v3;
     int64_t v4;
-    int64_t v5;
+    int32_t v5;
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-14] */
     uint8_t local_2; /* [sp-15] */
@@ -80,7 +80,7 @@ int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
         return v5 & 0x1;
     }
     v3 = (local_0 <= local_1);
-    v4 = local_1;
+    v4 = (uint32_t)local_1;
     local_2 = v3;
     v5 = local_2;
     return v5 & 0x1;
@@ -110,7 +110,7 @@ fn <unnamed> @ 0x2012e0 (size 52)
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 uint32_t sub_201320(uint32_t a0, int32_t a1) {
-    return ((a0 << (a1 & 0x1f) | a0 >> (0x20 - a1 & 0x1f)) & 0xffffffff);
+    return a0 << (a1 & 0x1f) | a0 >> (0x20 - a1 & 0x1f);
 }
 -- signature
 uint32_t (uint32_t a0, int32_t a1)

@@ -40,8 +40,8 @@ long record_total(struct record *items, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v2 = (uint8_t *)local_0 + local_3 * 0x18;
-        v3 = *(int16_t *)((uint8_t *)local_0 + local_3 * 0x18 + 0x10);
+        v2 = (uint8_t *)local_0 + (int64_t)local_3 * 0x18;
+        v3 = *(int16_t *)((uint8_t *)local_0 + (int64_t)local_3 * 0x18 + 0x10);
         local_2 += v2[0x1] * v3;
     }
     return local_2;
@@ -111,6 +111,7 @@ fn point_add @ 0x2102c0 (size 56)
 -- decompile
 /* velk pseudo-C: big_make @ 0x2102f8 */
 struct big big_make(long seed) {
+    uint64_t x8;
     uint64_t *v1;
     int64_t local_0; /* [sp-8] */
 

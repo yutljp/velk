@@ -114,7 +114,7 @@ fn hdiv10 @ 0x201390 (size 24)
 -- decompile
 /* velk pseudo-C: sdiv3 @ 0x2013b0 */
 int sdiv3(int x) {
-    return (int64_t)((int64_t)(int32_t)(x)) / 0x3;
+    return x / 0x3;
 }
 -- signature
 int (int x)
@@ -131,7 +131,7 @@ fn sdiv3 @ 0x2013b0 (size 24)
 -- decompile
 /* velk pseudo-C: sdiv10 @ 0x2013d0 */
 int sdiv10(int x) {
-    return (int64_t)((int64_t)(int32_t)(x)) / 0xa;
+    return x / 0xa;
 }
 -- signature
 int (int x)
@@ -148,7 +148,7 @@ fn sdiv10 @ 0x2013d0 (size 24)
 -- decompile
 /* velk pseudo-C: sdiv16 @ 0x2013f0 */
 int sdiv16(int x) {
-    return (int32_t)(x) / 0x10;
+    return x / 0x10;
 }
 -- signature
 int (int x)
@@ -165,7 +165,7 @@ fn sdiv16 @ 0x2013f0 (size 12)
 -- decompile
 /* velk pseudo-C: ldiv16 @ 0x201400 */
 long long ldiv16(long long x) {
-    return (int64_t)(x) / 0x10;
+    return x / 0x10;
 }
 -- signature
 long long (long long x)
@@ -182,7 +182,7 @@ fn ldiv16 @ 0x201400 (size 16)
 -- decompile
 /* velk pseudo-C: smod3 @ 0x201410 */
 int smod3(int x) {
-    return (int64_t)((int64_t)(int32_t)(x)) % 0x3;
+    return x % 0x3;
 }
 -- signature
 int (int x)
@@ -233,7 +233,7 @@ fn umod10 @ 0x201450 (size 25)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x201470 */
 int smod10(int x) {
-    return (int64_t)((int64_t)(int32_t)(x)) % 0xa;
+    return x % 0xa;
 }
 -- signature
 int (int x)
@@ -250,7 +250,7 @@ fn smod10 @ 0x201470 (size 31)
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x201490 */
 long long lmod10(long long x) {
-    return (int64_t)(x) % 0xa;
+    return x % 0xa;
 }
 -- signature
 long long (long long x)
@@ -288,7 +288,7 @@ fn umod10b @ 0x2014c0 (size 35)
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x2014f0 */
 long long lmod16(long long x) {
-    return (int64_t)(x) % 0x10;
+    return x % 0x10;
 }
 -- signature
 long long (long long x)
@@ -305,7 +305,7 @@ fn lmod16 @ 0x2014f0 (size 22)
 -- decompile
 /* velk pseudo-C: smod4 @ 0x201510 */
 int smod4(int x) {
-    return (int32_t)(x) % 0x4;
+    return x % 0x4;
 }
 -- signature
 int (int x)
@@ -339,7 +339,7 @@ fn negate @ 0x201520 (size 5)
 -- decompile
 /* velk pseudo-C: is_neg @ 0x201530 */
 int is_neg(int x) {
-    return x >> 0x1f;
+    return (uint32_t)x >> 0x1f;
 }
 -- signature
 int (int x)
@@ -407,7 +407,7 @@ fn lnegate @ 0x201560 (size 7)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x201570 */
 long long lmod3(long long x) {
-    return (int64_t)(x) % 0x3;
+    return x % 0x3;
 }
 -- signature
 long long (long long x)
@@ -424,7 +424,7 @@ fn lmod3 @ 0x201570 (size 37)
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x2015a0 */
 long long ldiv3(long long x) {
-    return (int64_t)(x) / 0x3;
+    return x / 0x3;
 }
 -- signature
 long long (long long x)
@@ -441,7 +441,7 @@ fn ldiv3 @ 0x2015a0 (size 27)
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x2015c0 */
 long long ldiv10(long long x) {
-    return (int64_t)(x) / 0xa;
+    return x / 0xa;
 }
 -- signature
 long long (long long x)

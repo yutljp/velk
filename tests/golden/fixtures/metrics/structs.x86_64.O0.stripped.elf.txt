@@ -51,8 +51,8 @@ int64_t sub_201270(struct sub_201270_a0 *a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v4 = (int16_t)(local_0[(int64_t)(int32_t)(local_3)].field_0x10);
-        local_2 += local_0[(int64_t)(int32_t)(local_3)].field_0x8 * v4;
+        v4 = (int16_t)(local_0[local_3].field_0x10);
+        local_2 += local_0[local_3].field_0x8 * v4;
     }
     return local_2;
 }
@@ -199,9 +199,9 @@ fn <unnamed> @ 0x201370 (size 13)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
-    int64_t v1;
-    uint64_t v4;
-    uint64_t v6;
+    int32_t v1;
+    uint32_t v4;
+    uint32_t v6;
     uint32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-10] */
 
@@ -209,11 +209,11 @@ int32_t sub_201380(int32_t a0) {
     v1 = *(uint8_t *)&local_0;
     if ((v1 & 0x1) == 0x0) {
         v6 = *(uint8_t *)&local_0;
-        local_1 = (v6 & 0xff) >> 0x1 & 0x7;
+        local_1 = v6 >> 0x1 & 0x7;
         return local_1;
     }
     v4 = *(uint8_t *)&local_0;
-    local_1 = (v4 & 0xff) >> 0x4;
+    local_1 = v4 >> 0x4;
     return local_1;
 }
 -- signature
@@ -242,7 +242,7 @@ fn <unnamed> @ 0x201380 (size 59)
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
 int64_t sub_2013c0(uint8_t *a0, int32_t a1) {
-    int64_t v4;
+    int32_t v4;
 
     v4 = *a0;
     *a0 = v4 & 0xf1 | (a1 & 0x7) << 0x1;

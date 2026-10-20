@@ -13,7 +13,7 @@ struct sub_210184_a0 {
     uint8_t gap_0xe[0x2];
 };
 int32_t sub_210184(struct sub_210184_a0 *a0, int32_t a1) {
-    return a0[(int64_t)(int32_t)(a1)].field_0xc * a0[(int64_t)(int32_t)(a1)].field_0x8;
+    return a0[a1].field_0xc * a0[a1].field_0x8;
 }
 -- signature
 int32_t (struct sub_210184_a0 * a0, int32_t a1)
@@ -80,7 +80,7 @@ int64_t sub_210208(struct sub_210208_a0 *a0, int32_t a1) {
     local_1 = a1;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        if (local_0[local_3].field_0x8 > 0x0) {
+        if ((int32_t)local_0[local_3].field_0x8 > 0x0) {
             local_2 = local_0[local_3].field_0x0;
         }
     }

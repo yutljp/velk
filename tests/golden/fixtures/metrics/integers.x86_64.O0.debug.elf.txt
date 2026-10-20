@@ -31,7 +31,7 @@ fn narrow_add @ 0x201280 (size 31)
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x2012a0 */
 unsigned short widen_mul(unsigned char a, unsigned char b) {
-    return (a & 0xff) * (b & 0xff);
+    return a * b;
 }
 -- signature
 unsigned short (unsigned char a, unsigned char b)
@@ -48,7 +48,7 @@ fn widen_mul @ 0x2012a0 (size 32)
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x2012c0 */
 long long mixed_sign(int a, unsigned int b) {
-    return (int64_t)(int32_t)(a) - b;
+    return (int64_t)a - b;
 }
 -- signature
 long long (int a, unsigned int b)
@@ -67,7 +67,7 @@ fn mixed_sign @ 0x2012c0 (size 22)
 _Bool in_range(int x, int lo, int hi) {
     int64_t v3;
     int64_t v4;
-    int64_t v5;
+    int32_t v5;
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-14] */
     uint8_t local_2; /* [sp-15] */
@@ -80,7 +80,7 @@ _Bool in_range(int x, int lo, int hi) {
         return v5 & 0x1;
     }
     v3 = (local_0 <= local_1);
-    v4 = local_1;
+    v4 = (uint32_t)local_1;
     local_2 = v3;
     v5 = local_2;
     return v5 & 0x1;
@@ -110,7 +110,7 @@ fn in_range @ 0x2012e0 (size 52)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x201320 */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
-    return ((x << (k & 0x1f) | x >> (0x20 - k & 0x1f)) & 0xffffffff);
+    return x << (k & 0x1f) | x >> (0x20 - k & 0x1f);
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)

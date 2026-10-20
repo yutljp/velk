@@ -67,10 +67,11 @@ fn <unnamed> @ 0x2102d4 (size 28)
 /* velk pseudo-C: sub_2102f0 @ 0x2102f0 */
 /* ref: 0x220528 .data.rel.ro */
 int32_t sub_2102f0(uint32_t a0, int32_t a1) {
+    uint64_t x8;
     int64_t v2;
 
-    w8 = a0 % 0x3;
-    v2 = qword_220528[w8];
+    x8 = a0 % 0x3;
+    v2 = qword_220528[(x8 & 0xffffffff)];
     return (*(v2))(a1);
 }
 -- signature
@@ -91,6 +92,7 @@ fn <unnamed> @ 0x2102f0 (size 44)
 -- decompile
 /* velk pseudo-C: sub_21031c @ 0x21031c */
 int32_t sub_21031c(void *a0, int32_t a1) {
+    uint64_t x8;
     int32_t v2;
 
     x8 = a0;
@@ -132,13 +134,13 @@ int32_t sub_21033c(int32_t a0) {
     uint64_t v15;
 
     if (a0 >= 0x2) {
-        if (a0 >= 0x9 /* unsigned */) {
+        if ((uint32_t)a0 >= 0x9 /* unsigned */) {
             v3 = 0x100000001;
             v4 = 0x100000001;
             v5 = a0 - 0x1;
             v6 = v5 & 0xfffffff8;
-            v7 = add_lanes32(a0 * 0x100000001, qword_200190);
-            v8 = add_lanes32(a0 * 0x100000001, qword_200198);
+            v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, qword_200190);
+            v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, qword_200198);
             v9 = 0x100000001;
             v10 = 0x100000001;
             v1 = a0 - v6;
@@ -164,7 +166,7 @@ int32_t sub_21033c(int32_t a0) {
             v2 = 0x1;
         }
         do {
-            v2 = v1 * v2;
+            v2 = ((v1 * v2) & 0xffffffff);
             v1 = v1 - 0x1;
         } while (v1 + 0x1 > 0x2 /* unsigned */);
         return v2;
@@ -387,7 +389,7 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
             *(uint32_t *)&local_2 = v6;
             if (v4 <= 0xfffffff8 /* unsigned */) {
                 v5 = v1;
-                v1 = v2 + (int64_t)(int32_t)(v4);
+                v1 = v2 + (int32_t)(v4);
             } else {
                 v5 = v1 + 0x2;
                 local_26 = v5;
@@ -398,7 +400,7 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
             local_26 = v5;
         }
         a0 = a0 - 0x1;
-        v4 = v6;
+        v4 = (uint32_t)v6;
         v3 = *v1 + v3;
         v1 = v5;
     } while (a0 != 0x0);

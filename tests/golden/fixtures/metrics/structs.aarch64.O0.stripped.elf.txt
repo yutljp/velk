@@ -123,6 +123,7 @@ fn <unnamed> @ 0x2102c0 (size 56)
 -- decompile
 /* velk pseudo-C: sub_2102f8 @ 0x2102f8 */
 int64_t sub_2102f8(int64_t a0) {
+    uint64_t x8;
     uint64_t *v1;
     int64_t local_0; /* [sp-8] */
 

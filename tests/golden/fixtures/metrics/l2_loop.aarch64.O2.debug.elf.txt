@@ -18,7 +18,7 @@ int sum_while(int n) {
     v1 = 0x0;
     v2 = 0x0;
     do {
-        v2 = v1 + v2;
+        v2 = ((v1 + v2) & 0xffffffff);
         v1 = v1 + 0x1;
         sink = v2;
     } while (n != v1);
@@ -58,9 +58,9 @@ int count_down(int n) {
     v1 = 0x0;
     v2 = (n > 0x1 ? n : 0x1);
     do {
-        v1 = v1 + 0x1;
+        v1 = ((v1 + 0x1) & 0xffffffff);
         sink = v1;
-    } while (v2 != v1);
+    } while ((uint32_t)v2 != v1);
     return v2;
 }
 -- signature
@@ -86,16 +86,16 @@ fn count_down @ 0x210200 (size 36)
 /* velk pseudo-C: sum_skip_odd @ 0x210224 */
 /* ref: 0x220298 .bss */
 int sum_skip_odd(int n) {
-    int64_t v1;
+    int32_t v1;
     int64_t v2;
 
     if (n < 0x1) {
         return 0x0;
     }
     v2 = 0x0;
-    for (v1 = 0x0; (int32_t)v1 < n; v1++) {
+    for (v1 = 0x0; v1 < n; v1++) {
         if ((v1 & 0x1) != 0x0) {
-            v2 = v2 + v1;
+            v2 = ((v2 + v1) & 0xffffffff);
             sink = v2;
         }
     }
@@ -138,7 +138,7 @@ int find_first(int *p, int n, int v) {
 
     if (n >= 0x1) {
         v2 = 0x0;
-        v3 = n;
+        v3 = (uint32_t)n;
         do {
             if (p[v2] == v) {
                 return v2;

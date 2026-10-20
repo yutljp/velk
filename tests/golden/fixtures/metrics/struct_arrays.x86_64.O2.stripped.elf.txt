@@ -13,7 +13,7 @@ struct sub_201180_a0 {
     uint8_t gap_0xe[0x2];
 };
 int32_t sub_201180(struct sub_201180_a0 *a0, int32_t a1) {
-    return (int16_t)(a0[(int64_t)(int32_t)(a1)].field_0xc) * a0[(int64_t)(int32_t)(a1)].field_0x8;
+    return (int16_t)(a0[a1].field_0xc) * a0[a1].field_0x8;
 }
 -- signature
 int32_t (struct sub_201180_a0 * a0, int32_t a1)

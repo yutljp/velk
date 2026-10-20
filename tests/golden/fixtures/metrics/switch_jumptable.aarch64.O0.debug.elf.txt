@@ -19,7 +19,7 @@ int d7(int x) {
     int32_t local_9; /* [sp-28] */
     int32_t local_10; /* [sp-2c] */
 
-    v1 = x;
+    v1 = (x & 0xffffffff);
     local_0 = v1;
     if (v1 == 0x0) {
         for (local_1 = 0x0; local_1 < 0x1; local_1++) {

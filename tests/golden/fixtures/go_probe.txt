@@ -1435,6 +1435,7 @@ fn main.kindName @ 0x466d20 (size 96)
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* ref: 0x4967e8 -> 0x1 ".text" */
 void main_main(void) {
+    uint64_t rbx;
     int64_t v1;
     int64_t v2;
     int64_t v4;

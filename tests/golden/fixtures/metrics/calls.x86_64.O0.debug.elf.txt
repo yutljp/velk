@@ -48,6 +48,8 @@ fn square @ 0x201320 (size 16)
 == 0x201330 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x201330 */
+void square(void);
+void twice(void);
 void *pick_op(int which) {
     return (which != 0x0 ? square : twice);
 }
@@ -122,7 +124,7 @@ int factorial(int n) {
     local_0 = n;
     if (n > 0x1) {
         local_2 = local_0;
-        v1 = local_0 - 0x1;
+        v1 = ((local_0 - 0x1) & 0xffffffff);
         v2 = factorial(v1);
         local_1 = local_2 * v2;
         return local_1;
@@ -163,7 +165,7 @@ int is_odd(int n) {
 
     local_0 = n;
     if (n != 0x0) {
-        v1 = local_0 - 0x1;
+        v1 = ((local_0 - 0x1) & 0xffffffff);
         v2 = is_even(v1);
         local_1 = v2;
         return local_1;
@@ -203,7 +205,7 @@ int is_even(int n) {
 
     local_0 = n;
     if (n != 0x0) {
-        v1 = local_0 - 0x1;
+        v1 = ((local_0 - 0x1) & 0xffffffff);
         v2 = is_odd(v1);
         local_1 = v2;
         return local_1;
@@ -282,6 +284,12 @@ fn call_sum9 @ 0x2014f0 (size 80)
 /* velk pseudo-C: sum_varargs @ 0x201540 */
 /* struct: rcx +0x0:uint32_t, +0x8:uint64_t */
 int sum_varargs(int count, ...) {
+    uint64_t rax;
+    uint64_t rcx;
+    uint64_t rdx;
+    uint64_t rsi;
+    uint64_t r8;
+    uint64_t r9;
     void *v1;
     uint64_t v2;
     void *v3;
@@ -351,7 +359,7 @@ int sum_varargs(int count, ...) {
     local_24 = 0x0;
     for (local_25 = 0x0; local_25 < local_21; local_25++) {
         local_26 = &local_22;
-        v2 = local_22;
+        v2 = (uint32_t)local_22;
         local_27 = v2;
         if (v2 > 0x28 /* unsigned */) {
             v6 = local_26;
@@ -360,8 +368,8 @@ int sum_varargs(int count, ...) {
             local_28 = v7;
         } else {
             v3 = local_26;
-            v4 = local_27;
-            v5 = (int64_t)(int32_t)(v4) + *(uint64_t *)(v3 + 0x10);
+            v4 = (uint32_t)local_27;
+            v5 = (int32_t)(v4) + *(uint64_t *)(v3 + 0x10);
             *(uint32_t *)(v3) = v4 + 0x8;
             local_28 = v5;
         }

@@ -26,7 +26,7 @@ int32_t sum_while(int32_t a0) {
         return 0x0;
     }
     v1 = a0 & 0x7;
-    if (a0 >= 0x8 /* unsigned */) {
+    if ((uint32_t)a0 >= 0x8 /* unsigned */) {
         v5 = -(a0 & 0x7ffffff8);
         v3 = 0x0;
         v6 = 0x7;
@@ -46,10 +46,10 @@ int32_t sum_while(int32_t a0) {
             v14 = ((v8 + v13 - 0x3) & 0xffffffff);
             sink = v8 + v13 - 0x5;
             sink = v8 + v14 - 0x3;
-            v3 = ((v8 + ((v8 + v14 - 0x2) & 0xffffffff) - 0x1) & 0xffffffff);
+            v3 = ((v8 + (v8 + v14 - 0x2) - 0x1) & 0xffffffff);
             sink = v3;
-            v6 = v6 + 0x8;
-        } while (v8 + v5 + 0x8 != 0x7);
+            v6 = ((v6 + 0x8) & 0xffffffff);
+        } while ((uint32_t)(v8 + v5 + 0x8) != 0x7);
         v2 = v6 - 0x7;
         if (v1 == 0x0) {
             return v3;
@@ -62,7 +62,7 @@ int32_t sum_while(int32_t a0) {
         }
     }
     do {
-        v3 = v3 + v2;
+        v3 = ((v3 + v2) & 0xffffffff);
         sink = v3;
         v2 = v2 + 0x1;
         v1 = v1 - 0x1;
@@ -138,7 +138,7 @@ int32_t count_down(int32_t a0) {
     int32_t v6;
     int64_t v8;
 
-    v1 = (a0 >= 0x2 ? a0 : 0x1);
+    v1 = ((a0 >= 0x2 ? a0 : 0x1) & 0xffffffff);
     v2 = v1 & 0x7;
     v3 = 0x0;
     if (a0 >= 0x8) {
@@ -154,17 +154,17 @@ int32_t count_down(int32_t a0) {
             sink = v5 + 0x3;
             sink = v5 + 0x4;
             v6 = v5;
-            v5 = v5 + 0x8;
+            v5 = ((v5 + 0x8) & 0xffffffff);
         } while (v6 + v4 + 0x8 != 0x4);
         v3 = v5 - 0x4;
     }
     if (v2 == 0x0) {
         return v1;
     }
-    v8 = v3 + 0x1;
+    v8 = ((v3 + 0x1) & 0xffffffff);
     do {
         sink = v8;
-        v8 = v8 + 0x1;
+        v8 = ((v8 + 0x1) & 0xffffffff);
         v2 = v2 - 0x1;
     } while (v2 != 0x0);
     return v1;
@@ -229,7 +229,7 @@ int32_t sum_skip_odd(int32_t a0) {
         v2 = 0x0;
         do {
             v5 = v2 + v4;
-            v2 = v5 + 0x1;
+            v2 = ((v5 + 0x1) & 0xffffffff);
             sink = v2;
             v4 = v4 + 0x2;
         } while (v3 != v4);

@@ -24,8 +24,10 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
 int dense(int x) {
-    w8 = x - 0xa;
-    if (w8 <= 0xf /* unsigned */) {
+    uint64_t x8;
+
+    x8 = ((x - 0xa) & 0xffffffff);
+    if ((uint32_t)x8 <= 0xf /* unsigned */) {
         switch (x) {
         case 10:
             c0();

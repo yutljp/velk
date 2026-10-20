@@ -170,7 +170,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     if (n == 0x0) {
         return;
     }
-    sub_0(dst, value & 0xff);
+    sub_0(dst, value);
 }
 -- signature
 void (unsigned char * dst, unsigned char value, unsigned long n)

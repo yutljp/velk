@@ -106,7 +106,7 @@ int32_t sub_21028c(int32_t a0) {
     local_1 = 0x0;
     for (local_2 = 0x0; local_2 < local_0; local_2++) {
         if ((local_2 & 0x1) != 0x0) {
-            v2 = local_1 + local_2;
+            v2 = ((local_1 + local_2) & 0xffffffff);
             local_1 = v2;
             dword_220380 = v2;
         }

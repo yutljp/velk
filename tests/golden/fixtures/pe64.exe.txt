@@ -82,7 +82,7 @@ fn reg_max @ 0x140001030 (size 16)
 -- decompile
 /* velk pseudo-C: reg_negative @ 0x140001040 */
 int32_t reg_negative(int32_t a0) {
-    return a0 >> 0x1f;
+    return (uint32_t)a0 >> 0x1f;
 }
 -- signature
 int32_t (int32_t a0)

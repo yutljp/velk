@@ -335,7 +335,7 @@ fn negate @ 0x19c (size 8)
 -- decompile
 /* velk pseudo-C: is_neg @ 0x1a4 */
 int32_t is_neg(int32_t a0) {
-    return a0 >> 0x1f;
+    return (uint32_t)a0 >> 0x1f;
 }
 -- signature
 int32_t (int32_t a0)

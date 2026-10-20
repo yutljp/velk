@@ -24,15 +24,16 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2205e8 .bss */
 int32_t sub_210334(int32_t a0) {
+    uint64_t x8;
     uint64_t v3;
     int32_t local_0; /* [sp-14] */
     int64_t local_1; /* [sp-20] */
 
     local_0 = a0;
-    v3 = local_0 - 0xa;
+    v3 = ((local_0 - 0xa) & 0xffffffff);
     local_1 = v3;
     if (v3 <= 0xf /* unsigned */) {
-        x8 = 0x210368 + dword_200158[local_1];
+        x8 = 0x210368 + (int64_t)dword_200158[local_1];
         switch (local_1 + 0xa) {
         case 10:
             sub_210418();

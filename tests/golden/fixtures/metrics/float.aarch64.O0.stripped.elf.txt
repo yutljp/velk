@@ -69,7 +69,7 @@ fn <unnamed> @ 0x2101b4 (size 160)
 -- decompile
 /* velk pseudo-C: sub_210254 @ 0x210254 */
 float sub_210254(float a0, float a1, float a2) {
-    return fmaf(a1 - a0, a2, a0);
+    return (fmaf(a1 - a0, a2, a0) & 0xffffffff);
 }
 -- signature
 float (float a0, float a1, float a2)

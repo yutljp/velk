@@ -19,7 +19,7 @@ uint32_t sub_2101dc(struct sub_2101dc_a0 *a0) {
     uint64_t v1;
 
     v1 = sub_lanes32(a0->field_0x8, a0->field_0x0);
-    return (mul_lanes32(v1, (v1 >> 0x20) * 0x100000001) & 0xffffffff);
+    return mul_lanes32(v1, (v1 >> 0x20) * 0x100000001);
 }
 -- signature
 uint32_t (struct sub_2101dc_a0 * a0)
@@ -151,7 +151,7 @@ fn <unnamed> @ 0x2101f0 (size 160)
 -- decompile
 /* velk pseudo-C: sub_210290 @ 0x210290 */
 int64_t sub_210290(int64_t a0, int64_t a1) {
-    return (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000 | (a1 & 0xffffffff) + (a0 & 0xffffffff);
+    return (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000 | ((a1 + a0) & 0xffffffff);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -168,6 +168,7 @@ fn <unnamed> @ 0x210290 (size 24)
 -- decompile
 /* velk pseudo-C: sub_2102a8 @ 0x2102a8 */
 int64_t sub_2102a8(int64_t a0) {
+    uint64_t x8;
     int64_t v1;
 
     v1 = a0 << 0x1;

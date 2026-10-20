@@ -1,4 +1,5 @@
 mod expr;
+mod int;
 mod locals;
 mod naming;
 mod params;
@@ -17,6 +18,7 @@ use crate::render::expr::render_expr;
 use crate::render::expr::render_value;
 use crate::render::expr::slot_access;
 use crate::render::expr::type_of;
+use crate::render::expr::{render_at, render_value_at};
 use crate::render::locals::Locals;
 use crate::render::locals::stack_locals;
 use crate::render::naming::global_name;
@@ -216,22 +218,27 @@ fn render_with(
     if ir.convention == crate::ir::Convention::GoAmd64 {
         names.entry(14).or_insert("g");
     }
+    // Any other general register the body uses is a variable of its own.
+    let machine: Vec<(u16, String)> = general_registers(ir)
+        .into_iter()
+        .filter(|index| !names.contains_key(index))
+        .map(|index| (index, crate::ir::reg_name(ir.isa, index, 64)))
+        .collect();
+    for (index, name) in &machine {
+        names.insert(*index, name);
+    }
     let wide_params: std::collections::HashSet<u16> = ir
         .params
         .iter()
         .filter(|param| !param.ty.is_narrow())
         .map(|param| param.index)
         .collect();
-    let signed_params: std::collections::HashSet<u16> = ir
-        .params
-        .iter()
-        .filter(|param| matches!(param.ty, crate::ir::CType::Int { signed: true, .. }))
-        .map(|param| param.index)
-        .collect();
     let fields = struct_fields(ir);
     let narrow_regs = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
     let variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    let declared_registers =
+        declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
     let floats: HashMap<u16, crate::ir::Precision> = variable_types
         .iter()
         .filter_map(|(index, ty)| match ty.to_string().as_str() {
@@ -371,7 +378,6 @@ fn render_with(
         local_pointees,
         local_scaled,
         wide_params,
-        signed_params,
         fields,
         callees,
         data_ranges,
@@ -380,9 +386,12 @@ fn render_with(
         elements,
         arrays,
         narrow_regs,
-        narrow_return: ir.ret_type.is_32_bit_int(),
         floats,
         scaled,
+        returned: declared(&ir.ret_type, false),
+        declared: declared_registers,
+        value_bits: int::value_bits(ir),
+        taken: Default::default(),
     };
 
     let mut out = String::new();
@@ -429,6 +438,7 @@ fn render_with(
         }
         out.push_str("};\n");
     }
+    let prototypes_at = out.len();
     out.push_str(&format!(
         "{} {{\n",
         declaration(
@@ -457,7 +467,27 @@ fn render_with(
         nodes.pop();
     }
     render_nodes(&nodes, 1, &mut body, &ctx);
+    // A function whose address the body takes is declared ahead of it,
+    // with no type known for it.
+    let own = sanitize(&name);
+    let prototypes: String = ctx
+        .taken
+        .borrow()
+        .iter()
+        .filter(|taken| **taken != own)
+        .map(|taken| format!("void {taken}(void);\n"))
+        .collect();
+    out.insert_str(prototypes_at, &prototypes);
     let mut declared = 0;
+    // A register the body uses beyond the parameters holds what it holds
+    // on entry until the body sets it.
+    for (_, name) in &machine {
+        if variables::mentions(&body, name) {
+            indent(1, &mut out);
+            out.push_str(&format!("uint64_t {name};\n"));
+            declared += 1;
+        }
+    }
     for (index, ty) in &variable_types {
         let name = ctx.register(*index, 64);
         // What a landing pad receives is no variable of the function.
@@ -495,6 +525,71 @@ fn render_with(
     out.push_str(&body);
     out.push_str("}\n");
     out
+}
+
+/// The general registers other than the stack pointer that the body reads
+/// or writes.
+fn general_registers(ir: &FunctionIr) -> std::collections::BTreeSet<u16> {
+    let general = match ir.isa {
+        crate::loader::Isa::X86_64 => 0..16,
+        crate::loader::Isa::AArch64 => 0..31,
+        crate::loader::Isa::Unsupported => 0..0,
+    };
+    let mut used = std::collections::HashSet::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        for value in stmt.operands() {
+            crate::ir::visit::expr_reads(value, &mut used);
+        }
+        match stmt {
+            Stmt::Assign { dest, .. }
+            | Stmt::Call {
+                result: Some(dest), ..
+            } => {
+                used.insert(dest.index);
+            }
+            _ => {}
+        }
+    }
+    used.into_iter()
+        .filter(|index| general.contains(index) && *index != stack_pointer(ir.isa))
+        .collect()
+}
+
+/// How each parameter, variable and register named for the body is
+/// declared, where its type is an integer or a pointer.
+fn declared_types(
+    ir: &FunctionIr,
+    variables: &std::collections::BTreeMap<u16, CType>,
+    machine: impl Iterator<Item = u16>,
+) -> HashMap<u16, expr::Declared> {
+    let mut types: HashMap<u16, expr::Declared> = machine
+        .map(|index| (index, declared(&CType::U64, false).expect("an integer")))
+        .collect();
+    for (index, ty) in variables {
+        types.extend(declared(ty, false).map(|declared| (*index, declared)));
+    }
+    for param in &ir.params {
+        types.extend(declared(&param.ty, true).map(|declared| (param.index, declared)));
+    }
+    types
+}
+
+/// How a value of type `ty` is declared, for an integer or a pointer.
+fn declared(ty: &CType, param: bool) -> Option<expr::Declared> {
+    match ty.integer() {
+        Some((bits, signed)) => Some(expr::Declared {
+            bits,
+            signed,
+            param,
+            integer: true,
+        }),
+        None => ty.is_pointer().then_some(expr::Declared {
+            bits: 64,
+            signed: false,
+            param,
+            integer: false,
+        }),
+    }
 }
 
 /// A store of `op(load(same address), rhs)` is a compound assignment.
@@ -1203,7 +1298,7 @@ fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             default,
         } => {
             indent(depth, out);
-            out.push_str(&format!("switch ({}) {{\n", render_expr(index, ctx)));
+            out.push_str(&format!("switch ({}) {{\n", expr::switch_index(index, ctx)));
             for (values, body) in arms {
                 for label in case_labels(values) {
                     indent(depth, out);
@@ -1310,6 +1405,30 @@ pub(crate) fn sanitize(name: &str) -> String {
         .collect()
 }
 
+/// A call's argument. One the code zero-extends from 32 bits was set as a
+/// 32-bit register, which the callee reads as a 32-bit parameter.
+fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
+    let bits = match value {
+        Expr::Bin {
+            op: BinOp::And,
+            rhs,
+            ..
+        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => 32,
+        _ => 64,
+    };
+    render_value_at(value, ctx, bits, false)
+}
+
+/// A returned value, of which the caller sees what the return type holds.
+fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
+    render_value_at(
+        value,
+        ctx,
+        ctx.returned.map_or(64, |returned| returned.bits),
+        ctx.returned.is_some_and(|returned| returned.integer),
+    )
+}
+
 pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
     match stmt {
         Stmt::Assign { dest, value } => {
@@ -1323,30 +1442,6 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             } else {
                 ctx.register(dest.index, dest.width)
             };
-            // A register whose readers only use the low 32 bits never needs
-            // the zero extension, and the return register is already typed.
-            if let Expr::Bin {
-                op: BinOp::And,
-                lhs,
-                rhs,
-            } = value
-            {
-                let truncates_param = match lhs.as_ref() {
-                    Expr::Reg { index, .. } => ctx.wide_params.contains(index),
-                    _ => false,
-                };
-                if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
-                    && !truncates_param
-                    && (ctx.narrow_regs.contains(&dest.index)
-                        || (ctx.narrow_return && dest.index == 0))
-                {
-                    let value = match lhs.as_ref() {
-                        Expr::Reg { index, .. } => ctx.register(*index, 32),
-                        other => render_expr(other, ctx),
-                    };
-                    return format!("{target} = {value};");
-                }
-            }
             if let Some(precision) = ctx.floats.get(&dest.index) {
                 return format!(
                     "{target} = {};",
@@ -1357,16 +1452,34 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             if dest.index == crate::arch::stack_pointer(ctx.isa) {
                 return format!("{target} = {};", render_expr(value, ctx));
             }
-            format!("{target} = {};", render_value(value, ctx))
+            // C keeps of the value what the destination is declared to hold.
+            let declared = ctx.declared.get(&dest.index);
+            format!(
+                "{target} = {};",
+                render_value_at(
+                    value,
+                    ctx,
+                    declared.map_or(64, |declared| declared.bits),
+                    declared.is_some_and(|declared| declared.integer)
+                )
+            )
         }
         Stmt::Store { addr, value, width } => {
+            // Memory keeps of the value the bits stored.
+            let stored = u32::from(*width) * 8;
             if let Some(member) = member_access(addr, *width, ctx).or_else(|| {
                 naming::array_access(addr, *width, ctx)
                     .or_else(|| naming::flat_array_access(addr, *width, ctx))
             }) {
                 return match update_of_same_location(addr, value, *width) {
-                    Some((op, rhs)) => format!("{} {}= {};", member, op, render_expr(rhs, ctx)),
-                    None => format!("{} = {};", member, render_value(value, ctx)),
+                    Some((op, rhs)) => {
+                        format!("{} {}= {};", member, op, render_at(rhs, ctx, stored))
+                    }
+                    None => format!(
+                        "{} = {};",
+                        member,
+                        render_value_at(value, ctx, stored, false)
+                    ),
                 };
             }
             let address = render_expr(addr, ctx);
@@ -1381,23 +1494,29 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     }
                     match update_of_same_location(addr, value, *width) {
                         Some((op, rhs)) => {
-                            format!("{} {}= {};", target, op, render_expr(rhs, ctx))
+                            format!("{} {}= {};", target, op, render_at(rhs, ctx, stored))
                         }
-                        None => format!("{} = {};", target, render_value(value, ctx)),
+                        None => format!(
+                            "{} = {};",
+                            target,
+                            render_value_at(value, ctx, stored, false)
+                        ),
                     }
                 }
                 None => match global_name(addr, *width, ctx) {
                     Some(name) => match update_of_same_location(addr, value, *width) {
                         Some((op, rhs)) => {
-                            format!("{} {}= {};", name, op, render_expr(rhs, ctx))
+                            format!("{} {}= {};", name, op, render_at(rhs, ctx, stored))
                         }
-                        None => format!("{} = {};", name, render_value(value, ctx)),
+                        None => {
+                            format!("{} = {};", name, render_value_at(value, ctx, stored, false))
+                        }
                     },
                     None => format!(
                         "*({} *)({}) = {};",
                         type_of(*width, false),
                         expr::local_plus_offset(addr, ctx).unwrap_or(address),
-                        render_value(value, ctx)
+                        render_value_at(value, ctx, stored, false)
                     ),
                 },
             }
@@ -1428,7 +1547,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             cases,
             default,
         } => {
-            let mut text = format!("switch ({}) {{\n", render_expr(index, ctx));
+            let mut text = format!("switch ({}) {{\n", expr::switch_index(index, ctx));
             let mut start = 0;
             while start < cases.len() {
                 let target = cases[start].1;
@@ -1464,7 +1583,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             let mut args: Vec<String> = args
                 .iter()
                 .flatten()
-                .map(|arg| render_value(arg, ctx))
+                .map(|arg| argument(arg, ctx))
                 .collect();
             if let (Some(name), Some(first)) = (number, args.first_mut()) {
                 *first = format!("SYS_{name}");
@@ -1507,7 +1626,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             let further: Vec<String> = args[1..].iter().map(|arg| render_value(arg, ctx)).collect();
             format!(
                 "return {}; /* also returns {} */",
-                render_value(&args[0], ctx),
+                returned(&args[0], ctx),
                 further.join(", ")
             )
         }
@@ -1521,7 +1640,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     expr::float_operand(value, precision, ctx, 0, false)
                 )
             } else {
-                format!("return {};", render_value(value, ctx))
+                format!("return {};", returned(value, ctx))
             }
         }
         Stmt::Unsupported { text, .. } => format!("/* unsupported: {text} */"),
@@ -1621,11 +1740,22 @@ mod tests {
             Expr::Const(0),
         );
         assert_eq!(text, "(int8_t)v1 < 0x0");
-        // An unsigned comparison of the same byte keeps the mask.
+        // An unsigned comparison of the same byte needs no mask, as the
+        // variable holds only the byte.
         let text = compared(
             Isa::X86_64,
             &[(7, CType::pointer_to(CType::Void))],
             &copies,
+            Cond::Cc,
+            mask(Expr::reg(byte, 64), 0xff),
+            Expr::Const(0xf0),
+        );
+        assert_eq!(text, "v1 < 0xf0 /* unsigned */");
+        // Of a wider value it keeps the mask.
+        let text = compared(
+            Isa::X86_64,
+            &[(7, CType::pointer_to(CType::Void))],
+            &[(byte, load(Expr::reg(7, 64), 8))],
             Cond::Cc,
             mask(Expr::reg(byte, 64), 0xff),
             Expr::Const(0xf0),
@@ -1960,5 +2090,152 @@ mod tests {
         ] {
             assert!(text.contains(line), "{line:?} in {text}");
         }
+    }
+
+    /// The function returning `value` from parameters `params` (register,
+    /// type), printed whole.
+    fn returning(params: &[(u16, CType)], ret_type: CType, value: Expr) -> String {
+        let mut ir = FunctionIr::single_block(Isa::AArch64, vec![Stmt::Ret { value }]);
+        ir.ret_type = ret_type;
+        ir.params = params
+            .iter()
+            .enumerate()
+            .map(|(position, (index, ty))| Param {
+                index: *index,
+                name: format!("a{position}"),
+                ty: ty.clone(),
+            })
+            .collect();
+        rendered(&ir)
+    }
+
+    /// The expression of the function's return statement.
+    fn returned(params: &[(u16, CType)], ret_type: CType, value: Expr) -> String {
+        let text = returning(params, ret_type, value);
+        text.lines()
+            .find_map(|line| line.trim().strip_prefix("return ")?.strip_suffix(';'))
+            .unwrap_or_else(|| panic!("{text}"))
+            .to_owned()
+    }
+
+    #[test]
+    fn a_logical_shift_of_a_signed_value_shifts_it_without_its_sign() {
+        let text = returned(
+            &[(0, CType::I32)],
+            CType::I32,
+            Expr::bin(BinOp::Shr, Expr::reg(0, 32), Expr::Const(31)),
+        );
+        assert_eq!(text, "(uint32_t)a0 >> 0x1f");
+        // An unsigned one needs no cast.
+        let text = returned(
+            &[(0, CType::U32)],
+            CType::I32,
+            Expr::bin(BinOp::Shr, Expr::reg(0, 32), Expr::Const(31)),
+        );
+        assert_eq!(text, "a0 >> 0x1f");
+    }
+
+    #[test]
+    fn a_product_whose_high_bits_are_read_is_computed_at_64_bits() {
+        let product = Expr::bin(BinOp::Mul, Expr::reg(0, 32), Expr::reg(1, 32));
+        let text = returned(
+            &[(0, CType::U32), (1, CType::U32)],
+            CType::U32,
+            mask(
+                Expr::bin(BinOp::Shr, product.clone(), Expr::Const(1)),
+                0xffff_ffff,
+            ),
+        );
+        assert_eq!(text, "(uint64_t)a0 * a1 >> 0x1");
+        // Read only in its low 32 bits, it stays as C computes it.
+        let text = returned(
+            &[(0, CType::U32), (1, CType::U32)],
+            CType::U32,
+            mask(product, 0xffff_ffff),
+        );
+        assert_eq!(text, "a0 * a1");
+    }
+
+    #[test]
+    fn a_zero_extended_register_in_wider_arithmetic_is_read_without_its_sign() {
+        let text = returned(
+            &[(0, CType::I32), (1, CType::I32)],
+            CType::I64,
+            Expr::bin(
+                BinOp::Sub,
+                Expr::SignExtend {
+                    value: Box::new(Expr::reg(0, 64)),
+                    width: 4,
+                },
+                Expr::reg(1, 32),
+            ),
+        );
+        assert_eq!(text, "(int64_t)a0 - (uint32_t)a1");
+    }
+
+    #[test]
+    fn a_builtin_takes_its_argument_at_its_own_width() {
+        let text = returned(
+            &[(0, CType::I32)],
+            CType::I32,
+            Expr::Apply {
+                op: Operation::PopCount(64),
+                args: vec![Expr::reg(0, 32)],
+            },
+        );
+        assert_eq!(text, "__builtin_popcountll((uint32_t)a0)");
+    }
+
+    #[test]
+    fn a_mask_stays_on_a_sum_that_can_carry_out_of_it() {
+        let low = |index| mask(Expr::reg(index, 64), 0xffff_ffff);
+        let text = returned(
+            &[(0, CType::I64), (1, CType::I64)],
+            CType::I64,
+            mask(Expr::bin(BinOp::Add, low(1), low(0)), 0xffff_ffff),
+        );
+        assert_eq!(text, "((a1 + a0) & 0xffffffff)");
+        // Read in its low 32 bits only, it goes.
+        let text = returned(
+            &[(0, CType::I64), (1, CType::I64)],
+            CType::I32,
+            mask(Expr::bin(BinOp::Add, low(1), low(0)), 0xffff_ffff),
+        );
+        assert_eq!(text, "a1 + a0");
+    }
+
+    #[test]
+    fn a_shifted_constant_has_the_width_of_the_shift() {
+        let text = returned(
+            &[(0, CType::U64)],
+            CType::U64,
+            Expr::bin(
+                BinOp::Shl,
+                Expr::Const(1),
+                Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0x3f)),
+            ),
+        );
+        assert_eq!(text, "0x1ULL << (a0 & 0x3f)");
+    }
+
+    #[test]
+    fn a_register_that_is_no_parameter_is_declared() {
+        let text = returning(&[], CType::I64, Expr::reg(29, 64));
+        assert!(text.contains("    uint64_t x29;\n"), "{text}");
+    }
+
+    #[test]
+    fn a_function_whose_address_is_taken_is_declared_and_read_as_a_number() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![Stmt::Ret {
+                value: Expr::Const(0x40),
+            }],
+        );
+        ir.ret_type = CType::I64;
+        let callees = HashMap::from([(0x40, "square".to_owned())]);
+        let text = render(&ir, &[], &callees, &[]);
+        assert!(text.contains("void square(void);\n"), "{text}");
+        assert!(text.contains("    return (uintptr_t)square;\n"), "{text}");
     }
 }

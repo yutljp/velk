@@ -67,6 +67,46 @@ impl CType {
         }
     }
 
+    /// The width in bits and the sign of an integer type, None for any
+    /// other type or one whose width is not known.
+    pub fn integer(&self) -> Option<(u32, bool)> {
+        match self {
+            CType::Int { bytes, signed } => Some((u32::from(*bytes) * 8, *signed)),
+            CType::Named(name) => {
+                let words: Vec<&str> = name.split_whitespace().collect();
+                if words.iter().any(|word| matches!(*word, "float" | "double")) {
+                    return None;
+                }
+                // Rust's integers name their width and sign.
+                if let [word] = words.as_slice()
+                    && let Some((sign, digits)) = word.split_at_checked(1)
+                    && matches!(sign, "u" | "i")
+                    && let Some(bits) = match digits {
+                        "size" => Some(64),
+                        digits => digits
+                            .parse()
+                            .ok()
+                            .filter(|bits| matches!(bits, 8 | 16 | 32 | 64)),
+                    }
+                {
+                    return Some((bits, sign == "i"));
+                }
+                let unsigned = words.iter().any(|word| {
+                    matches!(
+                        *word,
+                        "unsigned" | "_Bool" | "bool" | "size_t" | "uintptr_t"
+                    ) || word.starts_with("uint")
+                });
+                let bits = match words.as_slice() {
+                    ["size_t" | "ssize_t" | "uintptr_t" | "intptr_t" | "ptrdiff_t"] => 64,
+                    _ => u32::from(scalar_size(name)?) * 8,
+                };
+                Some((bits, !unsigned))
+            }
+            CType::Void | CType::Pointer(_) | CType::Array(_) => None,
+        }
+    }
+
     /// The size of the scalar a pointer points at: 4 for `int *`.
     pub fn pointee_size(&self) -> Option<u8> {
         let CType::Pointer(target) = self else {

@@ -48,6 +48,8 @@ fn square @ 0x210334 (size 28)
 == 0x210350 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x210350 */
+void square(void);
+void twice(void);
 void *pick_op(int which) {
     return (which != 0x0 ? square : twice);
 }
@@ -67,6 +69,7 @@ fn pick_op @ 0x210350 (size 44)
 /* velk pseudo-C: apply_table @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
+    uint64_t x8;
     uint32_t local_0; /* [sp-14] */
 
     local_0 = index;
@@ -91,6 +94,7 @@ fn apply_table @ 0x21037c (size 72)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2103c4 */
 int apply_pointer(void *f, int x) {
+    uint64_t x8;
     int32_t v2;
 
     x8 = f;
@@ -114,6 +118,7 @@ fn apply_pointer @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2103f4 */
 int factorial(int n) {
+    uint64_t x8;
     int32_t v2;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-18] */
@@ -122,8 +127,8 @@ int factorial(int n) {
     local_0 = n;
     if (n > 0x1) {
         local_2 = local_0;
-        w8 = local_0;
-        v2 = factorial(w8 - 0x1);
+        x8 = (uint32_t)local_0;
+        v2 = factorial(x8 - 0x1);
         local_1 = local_2 * v2;
         return local_1;
     }
@@ -159,14 +164,15 @@ fn factorial @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x210454 */
 int is_odd(int n) {
+    uint64_t x8;
     int64_t v2;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-18] */
 
     local_0 = n;
     if (n != 0x0) {
-        w8 = local_0;
-        v2 = is_even(w8 - 0x1);
+        x8 = (uint32_t)local_0;
+        v2 = is_even(x8 - 0x1);
         local_1 = v2;
         return local_1;
     }
@@ -201,14 +207,15 @@ fn is_odd @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: is_even @ 0x2104a0 */
 int is_even(int n) {
+    uint64_t x8;
     int64_t v2;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-18] */
 
     local_0 = n;
     if (n != 0x0) {
-        w8 = local_0;
-        v2 = is_odd(w8 - 0x1);
+        x8 = (uint32_t)local_0;
+        v2 = is_odd(x8 - 0x1);
         local_1 = v2;
         return local_1;
     }
@@ -278,6 +285,13 @@ fn call_sum9 @ 0x210564 (size 76)
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x2105b0 */
 int sum_varargs(int count, ...) {
+    uint64_t x1;
+    uint64_t x2;
+    uint64_t x3;
+    uint64_t x4;
+    uint64_t x5;
+    uint64_t x6;
+    uint64_t x7;
     int32_t v1;
     int64_t v2;
     int64_t v3;
@@ -354,13 +368,13 @@ int sum_varargs(int count, ...) {
         v1 = local_23;
         if (local_29 >= v1) break;
         local_32 = &local_25;
-        v2 = local_25;
+        v2 = (uint32_t)local_25;
         local_33 = v2;
         if ((v2 & 0x80000000) != 0x0) {
-            v3 = local_33 + 0x8;
+            v3 = ((local_33 + 0x8) & 0xffffffff);
             *local_32 = v3;
             if ((int32_t)v3 <= 0x0) {
-                local_34 = (uint8_t *)local_28 + (int64_t)(int32_t)(local_33);
+                local_34 = (uint8_t *)local_28 + local_33;
                 local_31 += *local_34;
                 local_29 += 0x1;
                 continue;

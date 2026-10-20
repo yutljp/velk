@@ -201,7 +201,9 @@ fn main @ 0x1120 (size 124)
 == 0x11a0 _start
 -- decompile
 /* velk pseudo-C: _start @ 0x11a0 */
+void main(void);
 int32_t _start(int64_t a0, int64_t a1, int64_t a2) {
+    uint64_t rax;
     int64_t v2;
     int64_t v3;
     int64_t local_0; /* [sp+0] */
@@ -233,16 +235,19 @@ fn _start @ 0x11a0 (size 38)
 == 0x11d0 deregister_tm_clones
 -- decompile
 /* velk pseudo-C: deregister_tm_clones @ 0x11d0 */
+void __TMC_END__(void);
 int32_t deregister_tm_clones(void) {
-    return __TMC_END__;
+    uint64_t rax;
+
+    return (uintptr_t)__TMC_END__;
 L_11e3:
     rax = _ITM_deregisterTMCloneTable;
     if (rax == 0x0) {
-        return __TMC_END__;
+        return (uintptr_t)__TMC_END__;
     }
     return (*(rax))();
 L_11f8:
-    return __TMC_END__;
+    return (uintptr_t)__TMC_END__;
 }
 -- signature
 int32_t ()
@@ -267,6 +272,8 @@ fn deregister_tm_clones @ 0x11d0 (size 48)
 -- decompile
 /* velk pseudo-C: register_tm_clones @ 0x1200 */
 int32_t register_tm_clones(void) {
+    uint64_t rax;
+
     return 0x0;
 L_1224:
     rax = _ITM_registerTMCloneTable;
@@ -389,7 +396,7 @@ int32_t lookup(struct lookup_a0 *a0, int64_t a1, int32_t a2) {
         __builtin_trap();
     }
     v3 = a0;
-    v4 = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
+    v4 = (int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
     v5 = (uint8_t *)a0 + v4;
     while (v3->field_0x0 != a2) {
         v3 = v3 + 0x1;

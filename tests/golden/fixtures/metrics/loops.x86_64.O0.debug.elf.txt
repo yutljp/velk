@@ -91,7 +91,7 @@ int sum_till_neg(int *p, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = (int64_t)(int32_t)(local_3);
+        v1 = local_3;
         v2 = local_0[v1];
         local_4 = v2;
         if ((int32_t)v2 < 0x0) {
@@ -146,13 +146,13 @@ int sum_until_zero(int *p, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = (int64_t)(int32_t)(local_3);
+        v1 = local_3;
         if (local_0[v1] == 0x0) {
             return local_2;
         }
-        v2 = (int64_t)(int32_t)(local_3);
-        if (local_0[v2] >= 0x0) {
-            v3 = (int64_t)(int32_t)(local_3);
+        v2 = local_3;
+        if ((int32_t)local_0[v2] >= 0x0) {
+            v3 = local_3;
             local_2 += local_0[v3];
         }
     }

@@ -202,6 +202,7 @@ fn <unnamed> @ 0x1120 (size 124)
 -- decompile
 /* velk pseudo-C: sub_11a0 @ 0x11a0 */
 int32_t sub_11a0(int64_t a0, int64_t a1, int64_t a2) {
+    uint64_t rax;
     int64_t v2;
     int64_t v3;
     int64_t local_0; /* [sp+0] */
@@ -234,6 +235,8 @@ fn <unnamed> @ 0x11a0 (size 38)
 -- decompile
 /* velk pseudo-C: sub_11d0 @ 0x11d0 */
 int32_t sub_11d0(void) {
+    uint64_t rax;
+
     return 0x4010;
 L_11e3:
     rax = _ITM_deregisterTMCloneTable;
@@ -267,6 +270,8 @@ fn <unnamed> @ 0x11d0 (size 48)
 -- decompile
 /* velk pseudo-C: sub_1200 @ 0x1200 */
 int32_t sub_1200(void) {
+    uint64_t rax;
+
     return 0x0;
 L_1224:
     rax = _ITM_registerTMCloneTable;
@@ -389,7 +394,7 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int64_t a1, int32_t a2) {
         __builtin_trap();
     }
     v3 = a0;
-    v4 = (int64_t)(int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
+    v4 = (int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
     v5 = (uint8_t *)a0 + v4;
     while (v3->field_0x0 != a2) {
         v3 = v3 + 0x1;

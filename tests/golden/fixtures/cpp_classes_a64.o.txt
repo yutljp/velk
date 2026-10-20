@@ -9,6 +9,7 @@
 -- decompile
 /* velk pseudo-C: total_area(Shape const* const*, int) @ 0x0 */
 int32_t total_area(uint64_t *a0, int32_t a1) {
+    uint64_t x8;
     uint64_t *v1;
     int32_t v2;
     int64_t v3;
@@ -20,7 +21,7 @@ int32_t total_area(uint64_t *a0, int32_t a1) {
     }
     v1 = a0;
     v2 = 0x0;
-    v3 = a1;
+    v3 = (a1 & 0xffffffff);
     do {
         v4 = *v1;
         v1 = v1 + 0x1;
@@ -67,7 +68,7 @@ int32_t clamp_int(int32_t a0) {
     int32_t v1;
 
     v1 = (a0 < 0xff ? a0 : 0xff);
-    return v1 & ~((int32_t)v1 >> 0x1f);
+    return v1 & ~(v1 >> 0x1f);
 }
 -- signature
 int32_t (int32_t a0)
@@ -109,7 +110,7 @@ uint32_t dot_sum(uint32_t *a0, uint32_t *a1) {
     uint64_t v1;
 
     v1 = add_lanes32(*(uint64_t *)(a1), *(uint64_t *)(a0));
-    return (mul_lanes32(v1, (v1 >> 0x20) * 0x100000001) & 0xffffffff);
+    return mul_lanes32(v1, (v1 >> 0x20) * 0x100000001);
 }
 -- signature
 uint32_t (uint32_t * a0, uint32_t * a1)

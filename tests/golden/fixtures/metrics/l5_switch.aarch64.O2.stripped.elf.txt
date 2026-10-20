@@ -24,8 +24,10 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
 int32_t sub_210304(int32_t a0) {
-    w8 = a0 - 0xa;
-    if (w8 <= 0xf /* unsigned */) {
+    uint64_t x8;
+
+    x8 = ((a0 - 0xa) & 0xffffffff);
+    if ((uint32_t)x8 <= 0xf /* unsigned */) {
         switch (a0) {
         case 10:
             sub_2103cc();

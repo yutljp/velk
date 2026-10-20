@@ -70,7 +70,7 @@ int32_t sub_201330(uint32_t a0, int32_t a1) {
     int64_t v1;
     int64_t v2;
 
-    v1 = 0xaaaaaaab * a0 >> 0x21;
+    v1 = 0xaaaaaaab * (uint64_t)a0 >> 0x21;
     v2 = ((a0 - (v1 + v1 * 0x2)) & 0xffffffff);
     return (*(qword_202610[v2]))(a1, a1, v1, 0x202610);
 }
@@ -159,13 +159,13 @@ int32_t sub_201370(int32_t a0) {
     if (a0 < 0x2) {
         return 0x1;
     }
-    if (a0 >= 0x9 /* unsigned */) {
+    if ((uint32_t)a0 >= 0x9 /* unsigned */) {
         v2 = a0 - 0x1;
         v3 = v2 & 0xfffffffffffffff8;
         v4 = a0;
         a0 = a0 - v3;
-        v7 = add_lanes32(v4 | v4 << 0x20, qword_200190);
-        v8 = add_lanes32(v4 | v4 << 0x20, qword_200198);
+        v7 = add_lanes32((v4 & 0xffffffff) | (uint64_t)v4 << 0x20, qword_200190);
+        v8 = add_lanes32((v4 & 0xffffffff) | (uint64_t)v4 << 0x20, qword_200198);
         v9 = qword_2001a0;
         v10 = qword_2001a8;
         v11 = qword_2001c0;
@@ -180,9 +180,9 @@ int32_t sub_201370(int32_t a0) {
             v19 = add_lanes32(v8, v12);
             v20 = v8 * v10;
             v21 = v10 >> 0x20 | v10 >> 0x20 << 0x20;
-            v23 = v7 * v9 | v20 << 0x20;
+            v23 = ((v7 * v9) & 0xffffffff) | (uint64_t)v20 << 0x20;
             v25 = (v8 >> 0x20) * v21;
-            v26 = (((v7 >> 0x20) * (v9 >> 0x20)) & 0xffffffff) | v25 << 0x20;
+            v26 = (((v7 >> 0x20) * (v9 >> 0x20)) & 0xffffffff) | (uint64_t)v25 << 0x20;
             v28 = v23;
             v9 = interleave_low32(v28, v26);
             v10 = interleave_high32(v28, v26);
@@ -192,8 +192,8 @@ int32_t sub_201370(int32_t a0) {
             v34 = v19 * v17;
             v35 = v17 >> 0x20 | v17 >> 0x20 << 0x20;
             t1 = v16 >> 0x20;
-            v40 = t1 * v31 | ((v35 * (v19 >> 0x20)) & 0xffffffff) << 0x20;
-            v41 = v33 | v34 << 0x20;
+            v40 = ((t1 * v31) & 0xffffffff) | v35 * (v19 >> 0x20) << 0x20;
+            v41 = (v33 & 0xffffffff) | (uint64_t)v34 << 0x20;
             v16 = interleave_low32(v41, v40);
             v17 = interleave_high32(v41, v40);
             v43 = add_lanes32(v8, v14);
@@ -201,13 +201,13 @@ int32_t sub_201370(int32_t a0) {
             v8 = v43;
             v15 = v15 - 0x8;
         } while (v15 != 0x0);
-        v1 = (((v17 >> 0x20) * (v10 >> 0x20)) & 0xffffffff) * (((v16 >> 0x20) * (v9 >> 0x20)) & 0xffffffff) * (v17 * v10 * (v16 * v9));
+        v1 = (((v17 >> 0x20) * (v10 >> 0x20) * ((v16 >> 0x20) * (v9 >> 0x20)) * (v17 * v10 * (v16 * v9))) & 0xffffffff);
         if (v2 == v3) {
             return v1;
         }
     }
     do {
-        v1 = v1 * a0;
+        v1 = ((v1 * a0) & 0xffffffff);
         v50 = a0 - 0x1;
         v51 = a0;
         a0 = v50;
@@ -377,6 +377,7 @@ fn <unnamed> @ 0x2014b0 (size 49)
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
 int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
+    uint64_t rax;
     uint64_t v1;
     int64_t v2;
     uint32_t *v3;
@@ -452,14 +453,14 @@ int32_t sub_2014f0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
             } else {
                 v7 = v3;
                 v3 = v1 + v2;
-                v1 = v1 + 0x8;
+                v1 = ((v1 + 0x8) & 0xffffffff);
                 *(uint32_t *)&local_24 = v1;
             }
             v8 = v4 + *v3;
             if (v1 < 0x29 /* unsigned */) {
                 v3 = v7;
                 v7 = v1 + v2;
-                v1 = v1 + 0x8;
+                v1 = ((v1 + 0x8) & 0xffffffff);
                 *(uint32_t *)&local_24 = v1;
             } else {
                 v3 = v7 + 0x2;

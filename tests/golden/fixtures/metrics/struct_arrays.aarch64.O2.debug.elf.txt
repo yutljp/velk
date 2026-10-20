@@ -10,7 +10,7 @@ int item_weight(struct item *items, int i) {
     void *v1;
     int32_t v2;
 
-    v1 = (uint8_t *)items + ((int64_t)(int32_t)(i) << 0x4);
+    v1 = (uint8_t *)items + ((uint64_t)i << 0x4);
     v2 = *(int16_t *)(v1 + 0xc);
     return *(uint32_t *)(v1 + 0x8) * v2;
 }
@@ -63,7 +63,7 @@ long item_last_key(struct item *items, int n) {
         return 0x0;
     }
     v2 = 0x0;
-    v3 = n;
+    v3 = (uint32_t)n;
     v4 = (uint8_t *)items + 0x8;
     do {
         if (*(int32_t *)(v4) >= 0x1) {

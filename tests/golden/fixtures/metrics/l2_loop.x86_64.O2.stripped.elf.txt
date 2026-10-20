@@ -27,7 +27,7 @@ int32_t sub_2011d0(int32_t a0) {
         return 0x0;
     }
     v1 = a0 & 0x7;
-    if (a0 >= 0x8 /* unsigned */) {
+    if ((uint32_t)a0 >= 0x8 /* unsigned */) {
         v5 = -(a0 & 0x7ffffff8);
         v3 = 0x0;
         v6 = 0x7;
@@ -47,10 +47,10 @@ int32_t sub_2011d0(int32_t a0) {
             v14 = ((v8 + v13 - 0x3) & 0xffffffff);
             dword_2023d4 = v8 + v13 - 0x5;
             dword_2023d4 = v8 + v14 - 0x3;
-            v3 = ((v8 + ((v8 + v14 - 0x2) & 0xffffffff) - 0x1) & 0xffffffff);
+            v3 = ((v8 + (v8 + v14 - 0x2) - 0x1) & 0xffffffff);
             dword_2023d4 = v3;
-            v6 = v6 + 0x8;
-        } while (v8 + v5 + 0x8 != 0x7);
+            v6 = ((v6 + 0x8) & 0xffffffff);
+        } while ((uint32_t)(v8 + v5 + 0x8) != 0x7);
         v2 = v6 - 0x7;
         if (v1 == 0x0) {
             return v3;
@@ -63,7 +63,7 @@ int32_t sub_2011d0(int32_t a0) {
         }
     }
     do {
-        v3 = v3 + v2;
+        v3 = ((v3 + v2) & 0xffffffff);
         dword_2023d4 = v3;
         v2 = v2 + 0x1;
         v1 = v1 - 0x1;
@@ -140,7 +140,7 @@ int32_t sub_2012c0(int32_t a0) {
     int32_t v6;
     int64_t v8;
 
-    v1 = (a0 >= 0x2 ? a0 : 0x1);
+    v1 = ((a0 >= 0x2 ? a0 : 0x1) & 0xffffffff);
     v2 = v1 & 0x7;
     v3 = 0x0;
     if (a0 >= 0x8) {
@@ -156,17 +156,17 @@ int32_t sub_2012c0(int32_t a0) {
             dword_2023d4 = v5 + 0x3;
             dword_2023d4 = v5 + 0x4;
             v6 = v5;
-            v5 = v5 + 0x8;
+            v5 = ((v5 + 0x8) & 0xffffffff);
         } while (v6 + v4 + 0x8 != 0x4);
         v3 = v5 - 0x4;
     }
     if (v2 == 0x0) {
         return v1;
     }
-    v8 = v3 + 0x1;
+    v8 = ((v3 + 0x1) & 0xffffffff);
     do {
         dword_2023d4 = v8;
-        v8 = v8 + 0x1;
+        v8 = ((v8 + 0x1) & 0xffffffff);
         v2 = v2 - 0x1;
     } while (v2 != 0x0);
     return v1;
@@ -232,7 +232,7 @@ int32_t sub_201360(int32_t a0) {
         v2 = 0x0;
         do {
             v5 = v2 + v4;
-            v2 = v5 + 0x1;
+            v2 = ((v5 + 0x1) & 0xffffffff);
             dword_2023d4 = v2;
             v4 = v4 + 0x2;
         } while (v3 != v4);

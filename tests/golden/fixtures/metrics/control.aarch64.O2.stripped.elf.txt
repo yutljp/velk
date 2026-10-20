@@ -26,7 +26,7 @@ int32_t sub_2101d4(uint32_t *a0, int32_t a1) {
         v5 = a0 + v1;
         for (v6 = 0x0; v6 < a1; v6++) {
             if (v1 == v6) {
-                v2 = v5[v4] + v2;
+                v2 = v5[(uint32_t)v4] + v2;
             }
         }
     }
@@ -191,7 +191,7 @@ int32_t sub_2102cc(uint32_t *a0, int32_t a1) {
         return 0x0;
     }
     if (*a0 != 0x1) {
-        return (a0[a1 - 0x1] == 0x1);
+        return (a0[(uint64_t)(uint32_t)a1 - 0x1] == 0x1);
     }
     return 0x1;
 }
@@ -241,7 +241,7 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
     if (a1 < 0x1) {
         return 0x0;
     }
-    if (a1 >= 0x8 /* unsigned */) {
+    if ((uint32_t)a1 >= 0x8 /* unsigned */) {
         v4 = 0x0;
         v5 = 0x0;
         v2 = a1 & 0x7ffffff8;
@@ -275,7 +275,7 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
         v16 = *v14;
         v14 = v14 + 0x1;
         v15 = v15 - 0x1;
-        v3 = (v16 & ~((int32_t)v16 >> 0x1f)) + v3;
+        v3 = (v16 & ~(v16 >> 0x1f)) + v3;
     } while (v15 != 0x0);
     return v3;
 }

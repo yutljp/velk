@@ -24,15 +24,16 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2205e8 .bss */
 int dense(int x) {
+    uint64_t x8;
     uint64_t v3;
     int32_t local_0; /* [sp-14] */
     int64_t local_1; /* [sp-20] */
 
     local_0 = x;
-    v3 = local_0 - 0xa;
+    v3 = ((local_0 - 0xa) & 0xffffffff);
     local_1 = v3;
     if (v3 <= 0xf /* unsigned */) {
-        x8 = 0x210368 + dword_200158[local_1];
+        x8 = 0x210368 + (int64_t)dword_200158[local_1];
         switch (local_1 + 0xa) {
         case 10:
             c0();
@@ -472,9 +473,9 @@ int sparse(int x) {
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-4] */
 
-    v1 = x;
+    v1 = (x & 0xffffffff);
     local_0 = v1;
-    if (v1 - 0x1 == 0x0) {
+    if ((uint32_t)(v1 - 0x1) == 0x0) {
         local_1 = 0x64;
         return local_1;
     }

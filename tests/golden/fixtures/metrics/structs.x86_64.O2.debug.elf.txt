@@ -29,7 +29,7 @@ fn rect_area @ 0x2011e0 (size 15)
 -- decompile
 /* velk pseudo-C: record_total @ 0x2011f0 */
 long record_total(struct record *items, int n) {
-    int64_t v1;
+    int32_t v1;
     int64_t v2;
     int64_t v3;
     int64_t v4;
@@ -42,7 +42,7 @@ long record_total(struct record *items, int n) {
     }
     v1 = n;
     if (n != 0x1) {
-        v4 = v1 & 0x7ffffffe;
+        v4 = (uint32_t)v1 & 0x7ffffffe;
         v5 = (uint8_t *)items + 0x28;
         v2 = 0x0;
         v3 = 0x0;
@@ -186,7 +186,7 @@ fn word_low_byte @ 0x2012c0 (size 3)
 -- decompile
 /* velk pseudo-C: flags_level @ 0x2012d0 */
 unsigned int flags_level(struct flags f) {
-    return ((f & 0x1) == 0x0 ? (f & 0xffffffff) >> 0x1 & 0x7 : (f & 0xffffffff) >> 0x4 & 0xf);
+    return ((f & 0x1) == 0x0 ? f >> 0x1 & 0x7 : f >> 0x4 & 0xf);
 }
 -- signature
 unsigned int (struct flags f)

@@ -67,6 +67,7 @@ fn <unnamed> @ 0x210350 (size 44)
 /* velk pseudo-C: sub_21037c @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int32_t sub_21037c(int32_t a0, int32_t a1) {
+    uint64_t x8;
     uint32_t local_0; /* [sp-14] */
 
     local_0 = a0;
@@ -91,6 +92,7 @@ fn <unnamed> @ 0x21037c (size 72)
 -- decompile
 /* velk pseudo-C: sub_2103c4 @ 0x2103c4 */
 int32_t sub_2103c4(void *a0, int32_t a1) {
+    uint64_t x8;
     int32_t v2;
 
     x8 = a0;
@@ -114,6 +116,7 @@ fn <unnamed> @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: sub_2103f4 @ 0x2103f4 */
 int32_t sub_2103f4(int32_t a0) {
+    uint64_t x8;
     int32_t v2;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-18] */
@@ -122,8 +125,8 @@ int32_t sub_2103f4(int32_t a0) {
     local_0 = a0;
     if (a0 > 0x1) {
         local_2 = local_0;
-        w8 = local_0;
-        v2 = sub_2103f4(w8 - 0x1);
+        x8 = (uint32_t)local_0;
+        v2 = sub_2103f4(x8 - 0x1);
         local_1 = local_2 * v2;
         return local_1;
     }
@@ -159,14 +162,15 @@ fn <unnamed> @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210454 @ 0x210454 */
 int32_t sub_210454(int32_t a0) {
+    uint64_t x8;
     int64_t v2;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-18] */
 
     local_0 = a0;
     if (a0 != 0x0) {
-        w8 = local_0;
-        v2 = sub_2104a0(w8 - 0x1);
+        x8 = (uint32_t)local_0;
+        v2 = sub_2104a0(x8 - 0x1);
         local_1 = v2;
         return local_1;
     }
@@ -201,14 +205,15 @@ fn <unnamed> @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int32_t sub_2104a0(int32_t a0) {
+    uint64_t x8;
     int64_t v2;
     int32_t local_0; /* [sp-14] */
     int32_t local_1; /* [sp-18] */
 
     local_0 = a0;
     if (a0 != 0x0) {
-        w8 = local_0;
-        v2 = sub_210454(w8 - 0x1);
+        x8 = (uint32_t)local_0;
+        v2 = sub_210454(x8 - 0x1);
         local_1 = v2;
         return local_1;
     }
@@ -354,13 +359,13 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         v1 = local_23;
         if (local_29 >= v1) break;
         local_32 = &local_25;
-        v2 = local_25;
+        v2 = (uint32_t)local_25;
         local_33 = v2;
         if ((v2 & 0x80000000) != 0x0) {
-            v3 = local_33 + 0x8;
+            v3 = ((local_33 + 0x8) & 0xffffffff);
             *local_32 = v3;
             if ((int32_t)v3 <= 0x0) {
-                local_34 = (uint8_t *)local_28 + (int64_t)(int32_t)(local_33);
+                local_34 = (uint8_t *)local_28 + local_33;
                 local_31 += *local_34;
                 local_29 += 0x1;
                 continue;

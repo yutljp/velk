@@ -48,8 +48,10 @@ fn square @ 0x2102bc (size 8)
 == 0x2102c4 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x2102c4 */
+void square(void);
+void twice(void);
 int32_t pick_op(int32_t a0) {
-    return (a0 == 0x0 ? twice : square);
+    return (a0 == 0x0 ? (uintptr_t)twice : (uintptr_t)square);
 }
 -- signature
 int32_t (int32_t a0)
@@ -67,10 +69,11 @@ fn pick_op @ 0x2102c4 (size 28)
 /* velk pseudo-C: apply_table @ 0x2102e0 */
 /* ref: 0x220538 .data.rel.ro */
 int32_t apply_table(uint32_t a0, int32_t a1) {
+    uint64_t x8;
     int64_t v2;
 
-    w8 = a0 % 0x3;
-    v2 = table[w8];
+    x8 = a0 % 0x3;
+    v2 = table[(x8 & 0xffffffff)];
     return (*(v2))(a1);
 }
 -- signature
@@ -91,6 +94,7 @@ fn apply_table @ 0x2102e0 (size 44)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x21030c */
 int32_t apply_pointer(void *a0, int32_t a1) {
+    uint64_t x8;
     int32_t v2;
 
     x8 = a0;
@@ -132,13 +136,13 @@ int32_t factorial(int32_t a0) {
     uint64_t v15;
 
     if (a0 >= 0x2) {
-        if (a0 >= 0x9 /* unsigned */) {
+        if ((uint32_t)a0 >= 0x9 /* unsigned */) {
             v3 = 0x100000001;
             v4 = 0x100000001;
             v5 = a0 - 0x1;
             v6 = v5 & 0xfffffff8;
-            v7 = add_lanes32(a0 * 0x100000001, qword_200190);
-            v8 = add_lanes32(a0 * 0x100000001, qword_200198);
+            v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, qword_200190);
+            v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, qword_200198);
             v9 = 0x100000001;
             v10 = 0x100000001;
             v1 = a0 - v6;
@@ -164,7 +168,7 @@ int32_t factorial(int32_t a0) {
             v2 = 0x1;
         }
         do {
-            v2 = v1 * v2;
+            v2 = ((v1 * v2) & 0xffffffff);
             v1 = v1 - 0x1;
         } while (v1 + 0x1 > 0x2 /* unsigned */);
         return v2;
@@ -420,7 +424,7 @@ int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, 
             *(uint32_t *)&local_2 = v6;
             if (v4 <= 0xfffffff8 /* unsigned */) {
                 v5 = v1;
-                v1 = v2 + (int64_t)(int32_t)(v4);
+                v1 = v2 + (int32_t)(v4);
             } else {
                 v5 = v1 + 0x2;
                 local_26 = v5;
@@ -431,7 +435,7 @@ int32_t sum_varargs(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, 
             local_26 = v5;
         }
         a0 = a0 - 0x1;
-        v4 = v6;
+        v4 = (uint32_t)v6;
         v3 = *v1 + v3;
         v1 = v5;
     } while (a0 != 0x0);

@@ -30,8 +30,10 @@ fn <unnamed> @ 0x2101d4 (size 40)
 -- decompile
 /* velk pseudo-C: sub_2101fc @ 0x2101fc */
 int32_t sub_2101fc(int32_t a0) {
-    w8 = a0;
-    return sub_2101d4(w8 + 0x2);
+    uint64_t x8;
+
+    x8 = (a0 & 0xffffffff);
+    return sub_2101d4(x8 + 0x2);
 }
 -- signature
 int32_t (int32_t a0)
@@ -50,6 +52,8 @@ fn <unnamed> @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: sub_210224 @ 0x210224 */
 int32_t sub_210224(void *a0, int32_t a1) {
+    uint64_t x8;
+
     x8 = a0;
     return (*(x8))(a1 + 0x1);
 }

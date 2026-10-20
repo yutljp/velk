@@ -23,7 +23,7 @@ int matrix_trace(int *m, int n) {
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         for (local_4 = 0x0; local_4 < local_1; local_4++) {
             if (local_3 == local_4) {
-                local_2 += local_0[(int64_t)(int32_t)(local_3 * local_1 + local_4)];
+                local_2 += local_0[local_3 * local_1 + local_4];
             }
         }
     }
@@ -89,7 +89,7 @@ int cleanup_on_error(int a, int b, int *out) {
     local_3 = 0xffffffff;
     if ((a & 0x80000000) == 0x0) {
         if (local_1 != 0x0) {
-            *local_2 = (int32_t)(local_0) / (int32_t)(local_1);
+            *local_2 = local_0 / local_1;
             local_3 = 0x0;
             return local_3;
         }
@@ -137,7 +137,7 @@ int fallthrough(int x) {
     int32_t local_1; /* [sp-c] */
 
     local_0 = 0x0;
-    v1 = x;
+    v1 = (x & 0xffffffff);
     local_1 = v1;
     if (v1 == 0x0) {
         local_0 += 0x1;
@@ -210,9 +210,9 @@ int sparse(int x) {
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-4] */
 
-    v1 = x;
+    v1 = (x & 0xffffffff);
     local_0 = v1;
-    if (v1 - 0x1 == 0x0) {
+    if ((uint32_t)(v1 - 0x1) == 0x0) {
         local_1 = 0xa;
         return local_1;
     }
@@ -298,7 +298,7 @@ int short_circuit(int *p, int n) {
     v2 = *local_0 - 0x1;
     local_3 = 0x1;
     if (v2 != 0x0) {
-        local_3 = (local_0[(int64_t)(int32_t)(local_1 - 0x1)] - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
+        local_3 = (local_0[local_1 - 0x1] - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
     }
     local_2 = local_3;
     return local_2 & 0x1;

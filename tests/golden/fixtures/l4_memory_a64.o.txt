@@ -43,12 +43,12 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
     }
     v1 = a0;
     v2 = 0x0;
-    v3 = a1;
+    v3 = (uint32_t)a1;
     do {
         v4 = *v1;
         v1 = v1 + 0x1;
         v3 = v3 - 0x1;
-        v2 = v4 + v2;
+        v2 = ((v4 + v2) & 0xffffffff);
     } while (v3 != 0x0);
     return v2;
 }

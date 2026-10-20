@@ -22,7 +22,7 @@
 -- decompile
 /* velk pseudo-C: l3 @ 0x201380 */
 long long l3(long long x) {
-    return (int64_t)(x) / 0x3;
+    return x / 0x3;
 }
 -- signature
 long long (long long x)
@@ -39,7 +39,7 @@ fn l3 @ 0x201380 (size 24)
 -- decompile
 /* velk pseudo-C: l10 @ 0x2013a0 */
 long long l10(long long x) {
-    return (int64_t)(x) / 0xa;
+    return x / 0xa;
 }
 -- signature
 long long (long long x)
@@ -107,7 +107,7 @@ fn u64 @ 0x201400 (size 21)
 -- decompile
 /* velk pseudo-C: sdiv16x @ 0x201420 */
 int sdiv16x(int x) {
-    return (int32_t)(x) / 0x10;
+    return x / 0x10;
 }
 -- signature
 int (int x)
@@ -124,7 +124,7 @@ fn sdiv16x @ 0x201420 (size 20)
 -- decompile
 /* velk pseudo-C: ldiv16x @ 0x201440 */
 long long ldiv16x(long long x) {
-    return (int64_t)(x) / 0x10;
+    return x / 0x10;
 }
 -- signature
 long long (long long x)
@@ -158,7 +158,7 @@ fn umod3x @ 0x201460 (size 23)
 -- decompile
 /* velk pseudo-C: smod3x @ 0x201480 */
 int smod3x(int x) {
-    return (int32_t)(x) % 0x3;
+    return x % 0x3;
 }
 -- signature
 int (int x)
@@ -192,7 +192,7 @@ fn pmod8x @ 0x2014a0 (size 15)
 -- decompile
 /* velk pseudo-C: pmod8s @ 0x2014b0 */
 int pmod8s(int x) {
-    return (int32_t)(x) % 0x8;
+    return x % 0x8;
 }
 -- signature
 int (int x)
@@ -209,7 +209,7 @@ fn pmod8s @ 0x2014b0 (size 22)
 -- decompile
 /* velk pseudo-C: pmod16l @ 0x2014d0 */
 long long pmod16l(long long x) {
-    return (int64_t)(x) % 0x10;
+    return x % 0x10;
 }
 -- signature
 long long (long long x)
@@ -226,7 +226,7 @@ fn pmod16l @ 0x2014d0 (size 27)
 -- decompile
 /* velk pseudo-C: pdiv16l @ 0x2014f0 */
 long long pdiv16l(long long x) {
-    return (int64_t)(x) / 0x10;
+    return x / 0x10;
 }
 -- signature
 long long (long long x)
@@ -243,7 +243,7 @@ fn pdiv16l @ 0x2014f0 (size 24)
 -- decompile
 /* velk pseudo-C: lmod10x @ 0x201510 */
 long long lmod10x(long long x) {
-    return (int64_t)(x) % 0xa;
+    return x % 0xa;
 }
 -- signature
 long long (long long x)
@@ -277,7 +277,7 @@ fn umod10x @ 0x201530 (size 27)
 -- decompile
 /* velk pseudo-C: pdiv64 @ 0x201550 */
 int pdiv64(int x) {
-    return (int32_t)(x) / 0x40;
+    return x / 0x40;
 }
 -- signature
 int (int x)
@@ -294,7 +294,7 @@ fn pdiv64 @ 0x201550 (size 20)
 -- decompile
 /* velk pseudo-C: qdiv64 @ 0x201570 */
 long long qdiv64(long long x) {
-    return (int64_t)(x) / 0x40;
+    return x / 0x40;
 }
 -- signature
 long long (long long x)
@@ -311,7 +311,7 @@ fn qdiv64 @ 0x201570 (size 24)
 -- decompile
 /* velk pseudo-C: pdiv10 @ 0x201590 */
 int pdiv10(int x) {
-    return (int32_t)(x) / 0xa;
+    return x / 0xa;
 }
 -- signature
 int (int x)

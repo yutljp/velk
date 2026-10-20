@@ -28,7 +28,7 @@ double sub_2011b0(double *a0, int32_t a1) {
     v2 = 0.0;
     if (a1 > 0x0) {
         v4 = a1 & 0x7;
-        if (a1 >= 0x8 /* unsigned */) {
+        if ((uint32_t)a1 >= 0x8 /* unsigned */) {
             v6 = a1 & 0x7ffffff8;
             v5 = 0x0;
             do {
@@ -112,7 +112,7 @@ fn <unnamed> @ 0x2011b0 (size 161)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 float sub_201260(float a0, float a1, float a2) {
-    return a0 + (a1 - a0) * a2;
+    return a0 + (((a1 - a0) * a2) & 0xffffffff);
 }
 -- signature
 float (float a0, float a1, float a2)

@@ -6,8 +6,10 @@
 -- decompile
 /* velk pseudo-C: sub_210164 @ 0x210164 */
 int32_t sub_210164(void *a0, int32_t a1) {
+    uint64_t x2;
+
     x2 = a0;
-    a0 = a1 + 0x1;
+    a0 = ((a1 + 0x1) & 0xffffffff);
     goto *(x2);
 }
 -- signature

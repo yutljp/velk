@@ -335,7 +335,7 @@ fn <unnamed> @ 0x2104c8 (size 8)
 -- decompile
 /* velk pseudo-C: sub_2104d0 @ 0x2104d0 */
 int32_t sub_2104d0(int32_t a0) {
-    return a0 >> 0x1f;
+    return (uint32_t)a0 >> 0x1f;
 }
 -- signature
 int32_t (int32_t a0)

@@ -59,9 +59,9 @@ pub(crate) fn scan_reads(
         }
         Expr::Const(_) => {}
         Expr::Bin { op, lhs, rhs } => {
-            // A masked read only observes the low 32 bits.
+            // A read masked to 32 bits or fewer observes only the low 32 bits.
             if matches!(op, BinOp::And)
-                && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+                && matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff)
                 && let Expr::Reg { index, .. } = lhs.as_ref()
             {
                 seen.insert(*index);

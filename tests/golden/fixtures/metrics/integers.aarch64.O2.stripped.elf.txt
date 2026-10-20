@@ -48,7 +48,7 @@ fn <unnamed> @ 0x21020c (size 16)
 -- decompile
 /* velk pseudo-C: sub_21021c @ 0x21021c */
 int64_t sub_21021c(int32_t a0, int32_t a1) {
-    return (int64_t)(int32_t)(a0) - a1;
+    return (int64_t)a0 - (uint32_t)a1;
 }
 -- signature
 int64_t (int32_t a0, int32_t a1)
@@ -85,7 +85,7 @@ uint32_t sub_210238(uint32_t a0, int32_t a1) {
     int32_t t1;
 
     t1 = -a1 & 0x1f;
-    return ((a0 >> t1 | a0 << (0x20 - t1 & 0x1f)) & 0xffffffff);
+    return a0 >> t1 | a0 << (0x20 - t1 & 0x1f);
 }
 -- signature
 uint32_t (uint32_t a0, int32_t a1)
@@ -105,7 +105,7 @@ fn <unnamed> @ 0x210238 (size 12)
 int32_t sub_210244(int32_t a0) {
     int32_t v1;
 
-    v1 = __builtin_popcountll(a0);
+    v1 = __builtin_popcountll((uint32_t)a0);
     return v1;
 }
 -- signature
@@ -124,7 +124,7 @@ fn <unnamed> @ 0x210244 (size 20)
 -- decompile
 /* velk pseudo-C: sub_210258 @ 0x210258 */
 uint32_t sub_210258(uint32_t a0) {
-    return (a0 & 0xff) << 0x18 | (a0 >> 0x8 & 0xff) << 0x10 | (a0 >> 0x10 & 0xff) << 0x8 | a0 >> 0x18;
+    return a0 << 0x18 | (a0 >> 0x8 & 0xff) << 0x10 | (a0 >> 0x10 & 0xff) << 0x8 | a0 >> 0x18;
 }
 -- signature
 uint32_t (uint32_t a0)

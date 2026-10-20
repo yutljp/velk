@@ -41,8 +41,8 @@ long record_total(struct record *items, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = (int64_t)(int32_t)(local_3) * 0x18;
-        v3 = (int64_t)(int32_t)(local_3) * 0x18;
+        v1 = (int64_t)local_3 * 0x18;
+        v3 = (int64_t)local_3 * 0x18;
         v4 = (int16_t)(*(uint16_t *)((uint8_t *)local_0 + v3 + 0x10));
         local_2 += *(uint64_t *)((uint8_t *)local_0 + v1 + 0x8) * v4;
     }
@@ -187,9 +187,9 @@ fn word_low_byte @ 0x201370 (size 13)
 -- decompile
 /* velk pseudo-C: flags_level @ 0x201380 */
 unsigned int flags_level(struct flags f) {
-    int64_t v1;
-    uint64_t v4;
-    uint64_t v6;
+    int32_t v1;
+    uint32_t v4;
+    uint32_t v6;
     uint32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-10] */
 
@@ -197,11 +197,11 @@ unsigned int flags_level(struct flags f) {
     v1 = *(uint8_t *)&local_0;
     if ((v1 & 0x1) == 0x0) {
         v6 = *(uint8_t *)&local_0;
-        local_1 = (v6 & 0xff) >> 0x1 & 0x7;
+        local_1 = v6 >> 0x1 & 0x7;
         return local_1;
     }
     v4 = *(uint8_t *)&local_0;
-    local_1 = (v4 & 0xff) >> 0x4;
+    local_1 = v4 >> 0x4;
     return local_1;
 }
 -- signature
@@ -230,7 +230,7 @@ fn flags_level @ 0x201380 (size 59)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2013c0 */
 void flags_set_mode(struct flags *f, unsigned int mode) {
-    int64_t v4;
+    int32_t v4;
 
     v4 = f->field_0x0;
     f->field_0x0 = v4 & 0xf1 | (mode & 0x7) << 0x1;

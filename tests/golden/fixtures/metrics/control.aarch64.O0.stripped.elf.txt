@@ -23,7 +23,7 @@ int32_t sub_2101e4(uint32_t *a0, int32_t a1) {
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         for (local_4 = 0x0; local_4 < local_1; local_4++) {
             if (local_3 == local_4) {
-                local_2 += local_0[(int64_t)(int32_t)(local_3 * local_1 + local_4)];
+                local_2 += local_0[local_3 * local_1 + local_4];
             }
         }
     }
@@ -89,7 +89,7 @@ int32_t sub_2102a0(int32_t a0, int32_t a1, uint32_t *a2) {
     local_3 = 0xffffffff;
     if ((a0 & 0x80000000) == 0x0) {
         if (local_1 != 0x0) {
-            *local_2 = (int32_t)(local_0) / (int32_t)(local_1);
+            *local_2 = local_0 / local_1;
             local_3 = 0x0;
             return local_3;
         }
@@ -294,7 +294,7 @@ int32_t sub_210434(uint32_t *a0, int32_t a1) {
     v2 = *local_0 - 0x1;
     local_3 = 0x1;
     if (v2 != 0x0) {
-        local_3 = (local_0[(int64_t)(int32_t)(local_1 - 0x1)] - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
+        local_3 = (local_0[local_1 - 0x1] - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
     }
     local_2 = local_3;
     return local_2 & 0x1;

@@ -53,6 +53,7 @@ fn copy_bytes @ 0x201280 (size 79)
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x2012d0 */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
+    uint64_t rax;
     int64_t v1;
     unsigned char *local_0; /* [sp-10] */
     uint8_t local_1; /* [sp-11] */
@@ -60,7 +61,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint64_t local_3; /* [sp-28] */
 
     local_0 = dst;
-    local_1 = rax & 0xffffffffffffff00 | value & 0xff;
+    local_1 = rax & 0xffffffffffffff00 | value;
     local_2 = n;
     for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3++) {
         v1 = local_1;
@@ -126,7 +127,7 @@ fn string_length @ 0x201320 (size 57)
 /* velk pseudo-C: grid_get @ 0x201360 */
 /* ref: 0x202450 .bss */
 int grid_get(int row, int col) {
-    return grid[(int64_t)(int32_t)(row & 0x3) * 0x8 + (int64_t)(int32_t)(col & 0x7)];
+    return grid[(row & 0x3) * 0x8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
@@ -144,7 +145,7 @@ fn grid_get @ 0x201360 (size 47)
 /* velk pseudo-C: grid_set @ 0x201390 */
 /* ref: 0x202450 .bss */
 void grid_set(int row, int col, int value) {
-    grid[(int64_t)(int32_t)(row & 0x3) * 0x8 + (int64_t)(int32_t)(col & 0x7)] = value;
+    grid[(row & 0x3) * 0x8 + (col & 0x7)] = value;
 }
 -- signature
 void (int row, int col, int value)

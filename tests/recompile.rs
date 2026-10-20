@@ -444,6 +444,15 @@ fn check(fixtures: &[Fixture], scratch: &Path) -> Vec<Findings> {
         let image = fixtures[fixture].binary.image();
         for trial in 0..trials::TRIALS {
             let arguments = canonical.next().unwrap_or_default();
+            // Another function's address differs between the binary and
+            // the compiled program.
+            if !declared_functions(&candidate.code).is_empty() {
+                *results[fixture]
+                    .skipped
+                    .entry("takes a function's address")
+                    .or_default() += 1;
+                continue;
+            }
             match interpret(image, candidate, trial, &arguments) {
                 Ok(outcome) => expected.push(Expected {
                     function: index,
@@ -704,6 +713,15 @@ fn program(candidates: &[&Candidate], alive: &[usize]) -> Program {
         line += lines;
         text.push_str(&code);
     }
+    // The functions whose address the printed ones take, defined so the
+    // program links.
+    let declared: std::collections::BTreeSet<&str> = alive
+        .iter()
+        .flat_map(|&index| declared_functions(&candidates[index].code))
+        .collect();
+    for name in declared {
+        writeln!(text, "void {name}(void) {{}}").expect("writing to a String");
+    }
     text.push_str("static uint64_t velk_call(int k, const uint64_t *a) {\n    switch (k) {\n");
     for &index in alive {
         let arguments: Vec<String> = (0..candidates[index].params.len())
@@ -734,6 +752,14 @@ fn program(candidates: &[&Candidate], alive: &[usize]) -> Program {
     text.push_str("    }\n}\n");
     text.push_str(DRIVER);
     Program { text, ranges }
+}
+
+/// The functions the printed code declares ahead of itself, whose address
+/// it takes.
+fn declared_functions(code: &str) -> Vec<&str> {
+    code.lines()
+        .filter_map(|line| line.strip_prefix("void ")?.strip_suffix("(void);"))
+        .collect()
 }
 
 /// The printed function under the name `velk_f<index>`, so names cannot

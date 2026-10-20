@@ -222,7 +222,7 @@ uint8_t sub_2012f0(uint8_t *a0, int32_t a1) {
     t1 = a1 & 0xff;
     v4 = *a0 & 0xf1 | t1 + t1 & 0xe;
     *a0 = v4;
-    return v4 & 0xff;
+    return v4;
 }
 -- signature
 uint8_t (uint8_t * a0, int32_t a1)

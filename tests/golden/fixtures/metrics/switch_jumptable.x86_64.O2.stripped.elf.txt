@@ -9,7 +9,7 @@
 int32_t sub_2011c0(int32_t a0) {
     int64_t v2;
 
-    if (a0 > 0x9 /* unsigned */) {
+    if ((uint32_t)a0 > 0x9 /* unsigned */) {
         v2 = 0xffffffff;
     } else {
         switch (a0) {

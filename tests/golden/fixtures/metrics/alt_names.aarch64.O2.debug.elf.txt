@@ -32,10 +32,10 @@ int alt_helper(int x) {
     if (x < 0x1) {
         return 0x0;
     }
-    v2 = v1 * (x - 0x2);
-    v3 = v2 * (x - 0x3);
+    v2 = (uint64_t)(v1 & 0xffffffff) * ((x - 0x2) & 0xffffffff);
+    v3 = v2 * ((x - 0x3) & 0xffffffff);
     v4 = v2 >> 0x1;
-    return ((v3 >> 0x1) & 0xffffffff) * 0x55555556 + x + (v4 + (v4 << 0x1)) - 0x1;
+    return (v3 >> 0x1) * 0x55555556 + x + (v4 + (v4 << 0x1)) - 0x1;
 }
 -- signature
 int (int x)

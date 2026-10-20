@@ -24,7 +24,7 @@ int matrix_trace(int *m, int n) {
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         for (local_4 = 0x0; local_4 < local_1; local_4++) {
             if (local_3 == local_4) {
-                v1 = (int64_t)(int32_t)(local_3 * local_1 + local_4);
+                v1 = local_3 * local_1 + local_4;
                 local_2 += local_0[v1];
             }
         }
@@ -86,8 +86,8 @@ int cleanup_on_error(int a, int b, int *out) {
     if (a >= 0x0) {
         if (local_1 != 0x0) {
             v1 = local_0;
-            v2 = (int32_t)(v1) % (int32_t)(local_1);
-            *local_2 = (int32_t)(v1) / (int32_t)(local_1);
+            v2 = ((v1 % local_1) & 0xffffffff);
+            *local_2 = v1 / local_1;
             local_3 = 0x0;
             return local_3;
         }
@@ -136,7 +136,7 @@ int fallthrough(int x) {
 
     local_0 = x;
     local_1 = 0x0;
-    v1 = local_0;
+    v1 = (uint32_t)local_0;
     local_2 = v1;
     if (v1 <= 0x3 /* unsigned */) {
         v5 = (int64_t)(int32_t)(dword_200120[local_2]) + 0x200120;
@@ -277,7 +277,7 @@ int short_circuit(int *p, int n) {
     int64_t v8;
     int64_t v9;
     int64_t v10;
-    int64_t v11;
+    int32_t v11;
     int32_t local_0; /* [sp-14] */
     uint8_t local_1; /* [sp-15] */
     uint8_t local_2; /* [sp-16] */
@@ -297,7 +297,7 @@ int short_circuit(int *p, int n) {
     v5 = *p;
     local_2 = 0x1;
     if (v5 != 0x1) {
-        v7 = (int64_t)(int32_t)(local_0 - 0x1);
+        v7 = local_0 - 0x1;
         v8 = p[v7];
         v9 = (p[v7] == 0x1);
         local_2 = v9;
@@ -356,9 +356,9 @@ int skip_negatives(int *p, int n) {
     local_1 = n;
     local_2 = 0x0;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v1 = (int64_t)(int32_t)(local_3);
-        if (local_0[v1] >= 0x0) {
-            v2 = (int64_t)(int32_t)(local_3);
+        v1 = local_3;
+        if ((int32_t)local_0[v1] >= 0x0) {
+            v2 = local_3;
             local_2 += local_0[v2];
         }
     }
@@ -410,8 +410,8 @@ int find_pair(int *p, int n, int target) {
     local_2 = target;
     for (local_3 = 0x0; local_3 < local_1; local_3++) {
         for (local_4 = local_3 + 0x1; local_4 < local_1; local_4++) {
-            v1 = (int64_t)(int32_t)(local_4);
-            if (local_0[(int64_t)(int32_t)(local_3)] + local_0[v1] == local_2) {
+            v1 = local_4;
+            if (local_0[local_3] + local_0[v1] == local_2) {
                 local_5 = local_3 * local_1 + local_4;
                 return local_5;
             }

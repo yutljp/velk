@@ -23,7 +23,7 @@ int32_t sub_2011c0(int32_t a0) {
     int32_t local_11; /* [sp-34] */
 
     local_0 = a0;
-    v1 = local_0;
+    v1 = (uint32_t)local_0;
     local_1 = v1;
     if (v1 <= 0x9 /* unsigned */) {
         v6 = (int64_t)(int32_t)(dword_200158[local_1]) + 0x200158;

@@ -9,7 +9,7 @@
 int item_weight(struct item *items, int i) {
     int64_t v1;
 
-    v1 = (int64_t)(int32_t)(i) << 0x4;
+    v1 = (uint64_t)i << 0x4;
     return (int16_t)(*(uint16_t *)((uint8_t *)items + v1 + 0xc)) * *(uint32_t *)((uint8_t *)items + v1 + 0x8);
 }
 -- signature
@@ -52,7 +52,7 @@ fn cell_set @ 0x2011a0 (size 14)
 -- decompile
 /* velk pseudo-C: item_last_key @ 0x2011b0 */
 long item_last_key(struct item *items, int n) {
-    int64_t v1;
+    int32_t v1;
     int64_t v2;
     int64_t v3;
     int64_t v4;
@@ -64,7 +64,7 @@ long item_last_key(struct item *items, int n) {
     }
     v1 = n;
     if (n != 0x1) {
-        v5 = v1 & 0x7ffffffe;
+        v5 = (uint32_t)v1 & 0x7ffffffe;
         v6 = (uint8_t *)items + 0x18;
         v2 = 0x0;
         v3 = 0x0;

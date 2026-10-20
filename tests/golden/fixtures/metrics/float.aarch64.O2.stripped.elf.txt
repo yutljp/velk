@@ -26,7 +26,7 @@ double sub_21019c(double *a0, int32_t a1) {
         return 0.0;
     }
     v1 = 0.0;
-    if (a1 >= 0x4 /* unsigned */) {
+    if ((uint32_t)a1 >= 0x4 /* unsigned */) {
         v3 = a1 & 0x7ffffffc;
         v4 = a0 + 0x2;
         v5 = v3;
@@ -108,7 +108,7 @@ fn <unnamed> @ 0x21019c (size 144)
 -- decompile
 /* velk pseudo-C: sub_21022c @ 0x21022c */
 float sub_21022c(float a0, float a1, float a2) {
-    return fmaf(a1 - a0, a2, a0);
+    return (fmaf(a1 - a0, a2, a0) & 0xffffffff);
 }
 -- signature
 float (float a0, float a1, float a2)

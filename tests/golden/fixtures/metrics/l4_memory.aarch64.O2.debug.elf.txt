@@ -11,7 +11,7 @@ int point_dot(struct point *a, struct point *b) {
     uint64_t v1;
 
     v1 = mul_lanes32(b->x, a->x);
-    return (add_lanes32((v1 >> 0x20) * 0x100000001, v1) & 0xffffffff);
+    return add_lanes32((v1 >> 0x20) * 0x100000001, v1);
 }
 -- signature
 int (struct point * a, struct point * b)
@@ -49,8 +49,8 @@ int array_sum(int *a, int n) {
     if (n < 0x1) {
         return 0x0;
     }
-    v1 = n;
-    if (n >= 0x8 /* unsigned */) {
+    v1 = (uint32_t)n;
+    if ((uint32_t)n >= 0x8 /* unsigned */) {
         v4 = 0x0;
         v5 = 0x0;
         v6 = 0x0;

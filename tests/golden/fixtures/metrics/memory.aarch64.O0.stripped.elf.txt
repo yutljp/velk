@@ -135,7 +135,7 @@ fn <unnamed> @ 0x2102f8 (size 68)
 /* velk pseudo-C: sub_21033c @ 0x21033c */
 /* ref: 0x220454 .bss */
 int32_t sub_21033c(int32_t a0, int32_t a1) {
-    return dword_220454[(int64_t)(int32_t)(a0 & 0x3) * 0x8 + (int64_t)(int32_t)(a1 & 0x7)];
+    return dword_220454[(a0 & 0x3) * 0x8 + (a1 & 0x7)];
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -160,7 +160,7 @@ int64_t sub_210378(int64_t a0, int32_t a1, int32_t a2) {
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
-    dword_220454[(int64_t)(int32_t)(local_0 & 0x3) * 0x8 + (int64_t)(int32_t)(local_1 & 0x7)] = local_2;
+    dword_220454[(local_0 & 0x3) * 0x8 + (local_1 & 0x7)] = local_2;
     return a0;
 }
 -- signature
@@ -182,7 +182,7 @@ fn <unnamed> @ 0x210378 (size 68)
 -- decompile
 /* velk pseudo-C: sub_2103bc @ 0x2103bc */
 int64_t sub_2103bc(int64_t a0, int64_t a1) {
-    return (int64_t)(a1 - a0) / 0x4;
+    return (a1 - a0) / 0x4;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

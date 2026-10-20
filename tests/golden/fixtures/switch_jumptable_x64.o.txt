@@ -7,7 +7,7 @@
 int32_t d7(int32_t a0) {
     int64_t v2;
 
-    if (a0 > 0x9 /* unsigned */) {
+    if ((uint32_t)a0 > 0x9 /* unsigned */) {
         v2 = 0xffffffff;
     } else {
         switch (a0) {
