@@ -42,11 +42,10 @@ pub(super) struct Lifter<'a> {
     zeroed_dividend: Option<u8>,
     image: &'a Image,
     summaries: super::Summaries<'a>,
-    function: u64,
 }
 
 impl<'a> Lifter<'a> {
-    pub(super) fn new(image: &'a Image, function: u64, summaries: super::Summaries<'a>) -> Self {
+    pub(super) fn new(image: &'a Image, summaries: super::Summaries<'a>) -> Self {
         Self {
             stmts: Vec::new(),
             last_compare: None,
@@ -59,7 +58,6 @@ impl<'a> Lifter<'a> {
             zeroed_dividend: None,
             image,
             summaries,
-            function,
         }
     }
 
@@ -2331,7 +2329,6 @@ fn lift_instruction(
     lifter: &mut Lifter,
     ins: &Instruction,
     relocation_target: Option<u64>,
-    tail_call: bool,
 ) -> bool {
     let was_extended = lifter.extended_dividend.take();
     let was_zeroed = lifter.zeroed_dividend.take();
@@ -2652,18 +2649,11 @@ fn lift_instruction(
         }
         Mnemonic::Jmp => {
             if ins.op0_kind() == OpKind::NearBranch64 {
-                let target = resolved_target(ins, relocation_target);
-                if tail_call {
-                    lifter.stmts.extend(self::tail_call(
-                        lifter.image,
-                        lifter.summaries,
-                        Some(target),
-                    ));
-                } else {
-                    lifter.stmts.push(Stmt::Br {
-                        target: Some(target),
-                    });
-                }
+                // Whether a jump out of the function is a tail call is
+                // decided once its blocks are known.
+                lifter.stmts.push(Stmt::Br {
+                    target: Some(resolved_target(ins, relocation_target)),
+                });
             } else if let Some(target) = operand(lifter, ins, 0) {
                 match super::pointer_target(lifter.image, &target) {
                     Some(target) => lifter.stmts.extend(self::tail_call(
@@ -2898,16 +2888,10 @@ impl Machine for Lifter<'_> {
 
     fn step(&mut self, instruction: &Instruction, pc: u64) -> bool {
         let relocation_target = self.image.relocations.get(&pc).copied();
-        let tail_call = instruction.mnemonic() == Mnemonic::Jmp
-            && instruction.op0_kind() == OpKind::NearBranch64
-            && {
-                let target = resolved_target(instruction, relocation_target);
-                target != self.function && self.image.functions.contains_key(&target)
-            };
         self.flags_written = false;
         self.incomplete = false;
         let first = self.stmts.len();
-        let ended = lift_instruction(self, instruction, relocation_target, tail_call);
+        let ended = lift_instruction(self, instruction, relocation_target);
         if self.incomplete {
             self.stmts.push(Stmt::unsupported(format!(
                 "{:?} operands at 0x{:x}",

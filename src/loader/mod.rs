@@ -193,6 +193,8 @@ pub struct Image {
     /// Go functions called through the assembly ABI: their callers zero
     /// xmm15 again right after each call. Built on first use.
     pub go_abi0: std::sync::OnceLock<std::collections::HashSet<u64>>,
+    /// The unwind table's rows, by address. Built on first use.
+    stack_rows: std::sync::OnceLock<Vec<unwind::StackRow>>,
     /// Whether some caller reads what the function returns, filled on
     /// demand.
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
@@ -268,6 +270,7 @@ impl Image {
             branches_to: Default::default(),
             addressed: Default::default(),
             go_abi0: Default::default(),
+            stack_rows: Default::default(),
             imports: BTreeMap::new(),
             landing_pads: BTreeMap::new(),
             result_reads: Default::default(),
@@ -458,6 +461,15 @@ impl Image {
                 self.fragments.insert(frame.start, frame.size);
             }
         }
+    }
+
+    /// Whether the unwind table has the stack pointer where it was on the
+    /// function's entry at `pc`; `None` where no table covers `pc`.
+    pub(crate) fn stack_at_entry(&self, pc: u64) -> Option<bool> {
+        let rows = self.stack_rows.get_or_init(|| unwind::stack_rows(self));
+        let index = rows.partition_point(|row| row.start <= pc).checked_sub(1)?;
+        let row = rows[index];
+        (pc < row.end).then_some(row.at_entry)
     }
 
     /// The fragment holding `address`, as its start and size.
@@ -708,6 +720,7 @@ pub fn load(path: &Path) -> Result<Image> {
         branches_to: Default::default(),
         addressed: Default::default(),
         go_abi0: Default::default(),
+        stack_rows: Default::default(),
         result_reads: Default::default(),
         relocations,
         imports: plt::imports(&file).into_iter().collect(),

@@ -170,8 +170,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     if (n == 0x0) {
         return;
     }
-    value = value & 0xff;
-    sub_0();
+    sub_0(dst, value & 0xff);
 }
 -- signature
 void (unsigned char * dst, unsigned char value, unsigned long n)
@@ -182,15 +181,12 @@ fn fill_bytes @ 0x201310 (size 15)
   blk0 @ 0x201310:
     brif eq rdx, #0x0 -> 0x20131e
   blk1 @ 0x201315:
-    rsi = (rsi & #0xff)
-    br 0x0
+    call 0x0(rdi, (rsi & #0xff))
+    ret #0x0
   blk2 @ 0x20131e:
     ret #0x0
-  blk3 @ 0x0:
-    call 0x0
-    ret #0x0
 -- card
-{"addr":"0x201310","approxTokens":120,"blocks":4,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":15,"unsupported":0}
+{"addr":"0x201310","approxTokens":120,"blocks":3,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf","unwind"],"section":".text","size":15,"unsupported":0}
 
 == 0x201320 string_length
 -- decompile

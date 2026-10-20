@@ -1,8 +1,11 @@
 mod aarch64;
+mod exits;
 mod flags;
 #[cfg(test)]
 mod hardware;
 mod x86_64;
+
+pub(crate) use exits::stack_heights;
 
 use std::collections::{HashMap, HashSet};
 
@@ -87,31 +90,23 @@ pub fn lift_with(
 ) -> Result<Vec<Block>, LiftError> {
     let bytes = image.read_vaddr(addr, size).ok_or(LiftError::Unreadable)?;
     match image.isa {
-        Isa::AArch64 => {
-            let machine = || aarch64::Lifter::new(image, addr, summaries);
-            let (decoded, stop) =
-                decode_with_fragments(image, &machine(), addr, bytes, aarch64::decode);
-            build_carrying(
-                image,
-                summaries,
-                machine,
-                addr,
-                &decoded,
-                stop,
-                extra_targets,
-            )
-        }
+        Isa::AArch64 => lift_continuing(
+            image,
+            summaries,
+            || aarch64::Lifter::new(image, summaries),
+            addr,
+            bytes,
+            aarch64::decode,
+            extra_targets,
+        ),
         Isa::X86_64 => {
-            let machine = || x86_64::Lifter::new(image, addr, summaries);
-            let (decoded, stop) =
-                decode_with_fragments(image, &machine(), addr, bytes, x86_64::decode);
-            let mut blocks = build_carrying(
+            let mut blocks = lift_continuing(
                 image,
                 summaries,
-                machine,
+                || x86_64::Lifter::new(image, summaries),
                 addr,
-                &decoded,
-                stop,
+                bytes,
+                x86_64::decode,
                 extra_targets,
             )?;
             if image.go {
@@ -183,16 +178,57 @@ fn reverse_bytes(value: Expr, width: u8, chunk: u8) -> Expr {
 
 type Decoder<I> = fn(&[u8], u64) -> (Vec<Decoded<I>>, Option<String>);
 
-/// The function's instructions, followed by those of every fragment split
-/// off it, such as a cold part, that its branches reach.
+/// The function's blocks, lifted again with the code its branches out
+/// continue in, which is no tail call, until no more such code turns up.
+fn lift_continuing<M: Machine>(
+    image: &Image,
+    summaries: Summaries<'_>,
+    machine: impl Fn() -> M,
+    addr: u64,
+    bytes: &[u8],
+    decode: Decoder<M::Instruction>,
+    extra_targets: &HashSet<u64>,
+) -> Result<Vec<Block>, LiftError> {
+    let mut pulled = exits::Pulled::new();
+    let mut rounds = 0;
+    loop {
+        rounds += 1;
+        let (decoded, stop) =
+            decode_with_fragments(image, &machine(), addr, bytes, decode, &pulled);
+        let (blocks, more) = build_carrying(
+            image,
+            summaries,
+            &machine,
+            addr,
+            &decoded,
+            stop,
+            extra_targets,
+        )?;
+        let known = pulled.len();
+        pulled.extend(more);
+        if pulled.len() == known || rounds == 4 {
+            return Ok(blocks);
+        }
+    }
+}
+
+/// The function's instructions, followed by those of the code `pulled`
+/// names and of every fragment split off it, such as a cold part, that its
+/// branches reach.
 fn decode_with_fragments<M: Machine>(
     image: &Image,
     machine: &M,
     addr: u64,
     bytes: &[u8],
     decode: Decoder<M::Instruction>,
+    pulled: &exits::Pulled,
 ) -> (Vec<Decoded<M::Instruction>>, Option<String>) {
     let (mut decoded, stop) = decode(bytes, addr);
+    for (start, size) in pulled {
+        if let Some(bytes) = image.read_vaddr(*start, *size) {
+            decoded.extend(decode(bytes, *start).0);
+        }
+    }
     let mut included = HashSet::new();
     let mut scanned = 0;
     while scanned < decoded.len() {
@@ -764,6 +800,7 @@ fn tail_call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> [S
 /// The blocks, lifted once to find the blocks that read flags they do not
 /// know and the flags each block ends with, and again where every block
 /// before such a block ends with flags of one shape, which then carry over.
+/// Also returns the code the branches out of it continue in.
 fn build_carrying<M: Machine>(
     image: &Image,
     summaries: Summaries<'_>,
@@ -772,9 +809,9 @@ fn build_carrying<M: Machine>(
     decoded: &[Decoded<M::Instruction>],
     stop: Option<String>,
     extra_targets: &HashSet<u64>,
-) -> Result<Vec<Block>, LiftError> {
+) -> Result<(Vec<Block>, exits::Pulled), LiftError> {
     let none = CarriedFlags::default();
-    let (blocks, exits) = build(
+    let (blocks, exits, pulled) = build(
         image,
         summaries,
         machine(),
@@ -786,9 +823,9 @@ fn build_carrying<M: Machine>(
     )?;
     let carried = carry_flags(&blocks, &exits, extra_targets);
     if carried.entry.is_empty() {
-        return Ok(blocks);
+        return Ok((blocks, pulled));
     }
-    Ok(build(
+    let (blocks, _, pulled) = build(
         image,
         summaries,
         machine(),
@@ -797,8 +834,8 @@ fn build_carrying<M: Machine>(
         stop,
         extra_targets,
         &carried,
-    )?
-    .0)
+    )?;
+    Ok((blocks, pulled))
 }
 
 /// Whether a block reads flags its own code did not set: a branch on them,
@@ -945,6 +982,10 @@ fn finish_block<M: Machine>(
     Block { start, stmts }
 }
 
+/// The blocks, the flags each leaves, and the code its branches out continue
+/// in.
+type Built = (Vec<Block>, HashMap<u64, Exit>, exits::Pulled);
+
 #[allow(clippy::too_many_arguments)]
 fn build<M: Machine>(
     image: &Image,
@@ -955,8 +996,12 @@ fn build<M: Machine>(
     stop: Option<String>,
     extra_targets: &HashSet<u64>,
     carried: &CarriedFlags,
-) -> Result<(Vec<Block>, HashMap<u64, Exit>), LiftError> {
+) -> Result<Built, LiftError> {
     let mut exits = HashMap::new();
+    // The address of the instruction ending each block that a branch ends.
+    let mut ends = HashMap::new();
+    // Where the code goes on past each start that left no block.
+    let mut passed: HashMap<u64, u64> = HashMap::new();
     if decoded.is_empty() {
         return Err(LiftError::NoInstructions);
     }
@@ -998,8 +1043,15 @@ fn build<M: Machine>(
         if d.pc != block_start && targets.contains(&d.pc) {
             pending.extend(machine.take_statements());
             // Instructions without statements, such as padding, leave no
-            // block, unless they set flags a later block may read.
-            if !pending.is_empty() || machine.flags_touched() {
+            // block, unless they set flags a later block may read or a
+            // jump table lands on them. The branches to them go on to the
+            // next block instead.
+            if pending.is_empty()
+                && !machine.flags_touched()
+                && !extra_targets.contains(&block_start)
+            {
+                passed.insert(block_start, d.pc);
+            } else {
                 let stmts = std::mem::take(&mut pending);
                 blocks.push(finish_block(
                     &machine,
@@ -1015,6 +1067,7 @@ fn build<M: Machine>(
         }
         if machine.step(&d.instruction, d.pc) {
             pending.extend(machine.take_statements());
+            ends.insert(block_start, d.pc);
             let stmts = std::mem::take(&mut pending);
             blocks.push(finish_block(
                 &machine,
@@ -1055,9 +1108,21 @@ fn build<M: Machine>(
     {
         last.stmts.push(Stmt::Trap);
     }
-    add_exits(image, summaries, start, &mut blocks);
+    for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+        if let Stmt::Br {
+            target: Some(target),
+        }
+        | Stmt::Brif { target, .. }
+        | Stmt::BrifFlags { target, .. } = stmt
+        {
+            while let Some(next) = passed.get(target) {
+                *target = *next;
+            }
+        }
+    }
+    let pulled = exits::resolve_exits(image, summaries, start, &mut blocks, &ends);
     drop_unread_compare_operands(&mut blocks);
-    Ok((blocks, exits))
+    Ok((blocks, exits, pulled))
 }
 
 /// Removes the copies of compare operands no branch went on to read: most
@@ -1076,60 +1141,6 @@ fn drop_unread_compare_operands(blocks: &mut [Block]) {
         block.stmts.retain(|stmt| {
             !matches!(stmt, Stmt::Assign { dest, .. }
                 if FLAG_OPERANDS.contains(&dest.index) && !read.contains(&dest.index))
-        });
-    }
-}
-
-/// Gives each branch out of the function a block of its own holding the tail
-/// call, so the arguments it passes stay visible to the passes. When the
-/// extent is only estimated, a branch past it may mean the estimate is short,
-/// so only a branch to another known function counts.
-fn add_exits(image: &Image, summaries: Summaries<'_>, function: u64, blocks: &mut Vec<Block>) {
-    let exact = image
-        .functions
-        .get(&function)
-        .is_some_and(|function| function.size.is_some() && !function.size_estimated);
-    let starts: HashSet<u64> = blocks.iter().map(|block| block.start).collect();
-    let mut exits: Vec<u64> = blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .filter_map(|stmt| match stmt {
-            Stmt::Brif { target, .. }
-            | Stmt::BrifFlags { target, .. }
-            | Stmt::Br {
-                target: Some(target),
-            } => Some(*target),
-            _ => None,
-        })
-        .filter(|target| {
-            !starts.contains(target) && (exact || image.functions.contains_key(target))
-        })
-        .collect();
-    if exits.is_empty() {
-        return;
-    }
-    exits.sort_unstable();
-    exits.dedup();
-    // The last block must not fall through into the exits; past its end
-    // is code that a call which does not return never reaches.
-    if let Some(last) = blocks.last_mut()
-        && !matches!(
-            last.stmts.last(),
-            Some(
-                Stmt::Ret { .. }
-                    | Stmt::Br { .. }
-                    | Stmt::BrIndirect { .. }
-                    | Stmt::Switch { .. }
-                    | Stmt::Trap
-            )
-        )
-    {
-        last.stmts.push(Stmt::Trap);
-    }
-    for target in exits {
-        blocks.push(Block {
-            start: target,
-            stmts: tail_call(image, summaries, Some(target)).into(),
         });
     }
 }

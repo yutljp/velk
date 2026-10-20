@@ -19,8 +19,8 @@ cold_gcc_stripped: 178 lines, 29 variables, 8 casts, 9 registers, 0 unsigned, 5 
 cpp_classes_a64.o: 50 lines, 9 variables, 4 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos
 cpp_classes_x64.o: 52 lines, 8 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
 cpp_demo.o: 15 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-go_probe: 83646 lines, 18208 variables, 7390 casts, 2262 registers, 1523 unsigned, 1400 traps, 363 gotos
-go_stripped: 83557 lines, 18190 variables, 7390 casts, 2261 registers, 1523 unsigned, 1399 traps, 363 gotos
+go_probe: 83645 lines, 18210 variables, 7397 casts, 2231 registers, 1523 unsigned, 1400 traps, 364 gotos
+go_stripped: 83556 lines, 18192 variables, 7397 casts, 2230 registers, 1523 unsigned, 1399 traps, 364 gotos
 l0_arith_a64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
 l0_arith_x64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
 l1_branch_a64.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
@@ -159,8 +159,8 @@ metrics/memory.aarch64.O2.debug.elf: 126 lines, 20 variables, 3 casts, 0 registe
 metrics/memory.aarch64.O2.stripped.elf: 130 lines, 20 variables, 1 casts, 0 registers, 3 unsigned, 0 traps, 1 gotos
 metrics/memory.x86_64.O0.debug.elf: 75 lines, 18 variables, 11 casts, 1 registers, 2 unsigned, 0 traps, 0 gotos
 metrics/memory.x86_64.O0.stripped.elf: 90 lines, 23 variables, 9 casts, 1 registers, 2 unsigned, 0 traps, 0 gotos
-metrics/memory.x86_64.O2.debug.elf: 126 lines, 16 variables, 13 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos
-metrics/memory.x86_64.O2.stripped.elf: 131 lines, 19 variables, 43 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos
+metrics/memory.x86_64.O2.debug.elf: 125 lines, 16 variables, 13 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos
+metrics/memory.x86_64.O2.stripped.elf: 130 lines, 19 variables, 43 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos
 metrics/strings.aarch64.O0.debug.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
 metrics/strings.aarch64.O0.stripped.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
 metrics/strings.aarch64.O2.debug.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos

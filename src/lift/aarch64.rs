@@ -17,15 +17,10 @@ pub(super) struct Lifter<'a> {
     last_compare: Option<Flags>,
     image: &'a crate::loader::Image,
     summaries: super::Summaries<'a>,
-    function: u64,
 }
 
 impl<'a> Lifter<'a> {
-    pub(super) fn new(
-        image: &'a crate::loader::Image,
-        function: u64,
-        summaries: super::Summaries<'a>,
-    ) -> Self {
+    pub(super) fn new(image: &'a crate::loader::Image, summaries: super::Summaries<'a>) -> Self {
         Self {
             stmts: Vec::new(),
             incomplete: Default::default(),
@@ -33,7 +28,6 @@ impl<'a> Lifter<'a> {
             last_compare: None,
             image,
             summaries,
-            function,
         }
     }
 
@@ -43,11 +37,6 @@ impl<'a> Lifter<'a> {
             return Some(*target);
         }
         relative_target(operand, pc)
-    }
-
-    /// A branch to another known function is a tail call.
-    fn is_tail_call(&self, target: u64) -> bool {
-        target != self.function && self.image.functions.contains_key(&target)
     }
 
     /// `cond` under the flags; flags set in another block are unknown.
@@ -3163,14 +3152,8 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
                     .extend(tail_call(lifter.image, lifter.summaries, None));
                 return true;
             }
-            if let Some(target) = target
-                && lifter.is_tail_call(target)
-            {
-                lifter
-                    .stmts
-                    .extend(tail_call(lifter.image, lifter.summaries, Some(target)));
-                return true;
-            }
+            // Whether a branch out of the function is a tail call is
+            // decided once its blocks are known.
             lifter.stmts.push(Stmt::Br { target });
             return true;
         }

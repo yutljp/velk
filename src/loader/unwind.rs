@@ -96,6 +96,70 @@ pub(crate) fn frames(image: &Image) -> Vec<Frame> {
     frames
 }
 
+/// A stretch of code over which the unwind table holds the stack at one
+/// height relative to the function's entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct StackRow {
+    pub start: u64,
+    pub end: u64,
+    /// The stack pointer is where it was on entry: only the return address
+    /// is on the stack, as at the first instruction.
+    pub at_entry: bool,
+}
+
+/// Every row of every frame description, by address. A frame address kept
+/// in another register than the stack pointer means a frame is set up.
+pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
+    let Some(section) = image
+        .sections
+        .iter()
+        .find(|section| matches!(section.name.as_str(), ".eh_frame" | "__eh_frame"))
+    else {
+        return Vec::new();
+    };
+    let Some(data) = image.section_data(&section.name) else {
+        return Vec::new();
+    };
+    let stack = match image.isa {
+        Isa::X86_64 => Register(7),
+        Isa::AArch64 => Register(31),
+        Isa::Unsupported => return Vec::new(),
+    };
+    let entry_offset = if image.isa == Isa::X86_64 { 8 } else { 0 };
+    let mut eh_frame = EhFrame::new(data, LittleEndian);
+    eh_frame.set_address_size(8);
+    let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
+    let mut context = Box::new(UnwindContext::new());
+    let mut out = Vec::new();
+    let mut entries = eh_frame.entries(&bases);
+    while let Ok(Some(entry)) = entries.next() {
+        let CieOrFde::Fde(partial) = entry else {
+            continue;
+        };
+        let Ok(fde) = partial.parse(EhFrame::cie_from_offset) else {
+            continue;
+        };
+        let Ok(mut rows) = fde.rows(&eh_frame, &bases, &mut context) else {
+            continue;
+        };
+        while let Ok(Some(row)) = rows.next_row() {
+            let at_entry = match row.cfa() {
+                CfaRule::RegisterAndOffset { register, offset } => {
+                    *register == stack && *offset == entry_offset
+                }
+                CfaRule::Expression(_) => continue,
+            };
+            out.push(StackRow {
+                start: row.start_address(),
+                end: row.end_address(),
+                at_entry,
+            });
+        }
+    }
+    out.sort_by_key(|row| row.start);
+    out
+}
+
 /// The landing pads the exception tables name, each with the code ranges
 /// whose calls unwind into it.
 pub(crate) fn landing_pads(image: &Image) -> std::collections::BTreeMap<u64, Vec<(u64, u64)>> {
@@ -217,5 +281,21 @@ mod probe {
         for frame in super::frames(&image) {
             println!("0x{:x} {} {:?}", frame.start, frame.size, frame.kind);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_table_has_the_stack_as_on_entry_only_outside_the_frame() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cold_gcc");
+        let image = crate::loader::load(&path).expect("loads");
+        // lookup: pushes three registers and reserves 0x50 bytes, and pops
+        // them all before its return at 0x12fc.
+        assert_eq!(image.stack_at_entry(0x1290), Some(true));
+        assert_eq!(image.stack_at_entry(0x12dd), Some(false));
+        assert_eq!(image.stack_at_entry(0x12fa), Some(false));
+        assert_eq!(image.stack_at_entry(0x12fc), Some(true));
+        assert_eq!(image.stack_at_entry(0), None);
     }
 }

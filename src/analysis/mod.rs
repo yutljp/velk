@@ -180,15 +180,17 @@ fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Pr
 /// Takes a jump through a pointer read from memory, or through a register
 /// the block never sets, as a call that ends the function: a tail call, as
 /// through a table of functions. A jump to an address the block computes
-/// otherwise, as an unrecovered jump table's, stays a jump.
+/// otherwise, as an unrecovered jump table's, stays a jump, as does one
+/// made with the stack away from its height on entry.
 fn tail_calls_through_pointers(
     blocks: &mut [crate::ir::Block],
     switched: &HashSet<u64>,
     image: &Image,
 ) {
     use crate::ir::Expr;
-    for block in blocks.iter_mut() {
-        if switched.contains(&block.start) {
+    let heights = crate::lift::stack_heights(blocks, image.isa);
+    for (block, height) in blocks.iter_mut().zip(heights) {
+        if switched.contains(&block.start) || height.is_some_and(|height| height != 0) {
             continue;
         }
         let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
@@ -1181,4 +1183,34 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     }
     ir.pointer_values = pointer_values;
     Analysis { ir, references }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use crate::ir::Stmt;
+    use crate::loader::{Image, Isa};
+
+    fn ends_through_pointer(code: Vec<u8>) -> Option<Stmt> {
+        let size = code.len() as u64;
+        let image = Image::from_code(Isa::X86_64, 0, code);
+        let mut blocks = crate::lift::lift(&image, 0, size, &HashSet::new()).expect("lifts");
+        super::tail_calls_through_pointers(&mut blocks, &HashSet::new(), &image);
+        blocks[0].stmts.iter().rev().nth(1).cloned()
+    }
+
+    #[test]
+    fn a_jump_through_a_register_is_a_tail_call_only_with_the_stack_as_on_entry() {
+        // jmp rax
+        assert!(matches!(
+            ends_through_pointer(vec![0xff, 0xe0]),
+            Some(Stmt::Call { .. })
+        ));
+        // push rbx; jmp rax
+        assert!(!matches!(
+            ends_through_pointer(vec![0x53, 0xff, 0xe0]),
+            Some(Stmt::Call { .. })
+        ));
+    }
 }
