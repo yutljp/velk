@@ -839,10 +839,32 @@ fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
                 }
                 render_nodes(body, depth + 1, out, ctx);
             }
-            if let Some(body) = default {
+            // Cases taking every value a mask leaves need no default.
+            let covered = match index {
+                Expr::Bin {
+                    op: crate::ir::BinOp::And,
+                    rhs,
+                    ..
+                } => match **rhs {
+                    Expr::Const(mask) if mask < 4096 => (0..=mask as i64)
+                        .all(|value| arms.iter().any(|(values, _)| values.contains(&value))),
+                    _ => false,
+                },
+                _ => false,
+            };
+            if default.is_some() || !covered {
                 indent(depth, out);
                 out.push_str("default:\n");
-                render_nodes(body, depth + 1, out, ctx);
+            }
+            match default {
+                Some(body) => render_nodes(body, depth + 1, out, ctx),
+                None if covered => {}
+                // A table with no bounds check: the compiler knew no other
+                // value reaches it.
+                None => {
+                    indent(depth + 1, out);
+                    out.push_str("__builtin_unreachable();\n");
+                }
             }
             indent(depth, out);
             out.push_str("}\n");

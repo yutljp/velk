@@ -21,7 +21,12 @@ impl Recovered {
     }
 }
 
-pub fn recover(blocks: &[Block], image: &Image) -> Vec<Recovered> {
+/// The jump tables of the blocks. A table with no bounds check, as a
+/// dispatch on an enum whose range the compiler knows, has its entries read
+/// while they point into `extent` and before any address the code computes,
+/// where the next table would begin.
+pub fn recover(blocks: &[Block], image: &Image, extent: std::ops::Range<u64>) -> Vec<Recovered> {
+    let starts = image.addressed.get_or_init(|| addressed(image));
     let mut recovered = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
         let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
@@ -31,70 +36,16 @@ pub fn recover(blocks: &[Block], image: &Image) -> Vec<Recovered> {
             .checked_sub(1)
             .and_then(|previous| blocks.get(previous));
         let bound = checked.and_then(bound);
-        if let Some(mut entry) = recognize(block, target, image, bound, checked) {
+        let limits = Limits {
+            extent: extent.clone(),
+            tables: starts,
+        };
+        if let Some(mut entry) = recognize(block, target, image, bound, checked, &limits) {
             entry.block_start = block.start;
             recovered.push(entry);
         }
     }
     recovered
-}
-
-/// The case targets of tables with no bounds check, such as a dispatch on an
-/// enum whose range the compiler knows: entries are read while they point
-/// into the code just after `function`, up to `reach` bytes.
-pub fn unbounded_targets(blocks: &[Block], image: &Image, function: u64, reach: u64) -> Vec<u64> {
-    let mut targets = Vec::new();
-    for (index, block) in blocks.iter().enumerate() {
-        let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
-            continue;
-        };
-        // A bounds check gives the table's length; reading on would run
-        // into the tables after it.
-        if index
-            .checked_sub(1)
-            .and_then(|previous| blocks.get(previous))
-            .and_then(bound)
-            .is_some()
-        {
-            continue;
-        }
-        let mut environment = std::collections::HashMap::new();
-        for stmt in &block.stmts {
-            if let Stmt::Assign { dest, value } = stmt {
-                let resolved = resolve(value, &environment);
-                environment.insert(dest.index, resolved);
-            }
-        }
-        let Some((base, table, _, scale, entry)) = table_pattern(&resolve(target, &environment))
-        else {
-            continue;
-        };
-        for position in 0..256u64 {
-            let offset = match entry {
-                Entry::Offset32 => match image.read_vaddr(table + position * 4, 4) {
-                    Some(bytes) => {
-                        i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-                    }
-                    None => break,
-                },
-                Entry::Byte => match image.read_vaddr(table + position, 1) {
-                    Some(bytes) => i64::from(bytes[0]) << scale,
-                    None => break,
-                },
-                Entry::Absolute => break,
-            };
-            let case = base.wrapping_add(offset as u64);
-            if !(function..function.saturating_add(reach)).contains(&case)
-                || image
-                    .section_at(case)
-                    .is_none_or(|section| !section.executable)
-            {
-                break;
-            }
-            targets.push(case);
-        }
-    }
-    targets
 }
 
 pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
@@ -163,6 +114,15 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
             continue;
         }
         block.stmts.pop();
+        // A register the block leaves holding the index names it best.
+        if let Some(register) = holding(block, &entry.index) {
+            block.stmts.push(Stmt::Switch {
+                index: Expr::reg(register, 64),
+                cases: entry.cases.clone(),
+                default: entry.default,
+            });
+            continue;
+        }
         // The index reads the registers as the block receives them; one the
         // block writes first is read into a register of its own up front.
         let mut read = std::collections::HashSet::new();
@@ -196,24 +156,165 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
     }
 }
 
-fn recognize(
-    block: &Block,
-    target: &Expr,
-    image: &Image,
-    bound: Option<(i64, Option<u64>, i64, Expr)>,
-    checked_block: Option<&Block>,
-) -> Option<Recovered> {
-    let mut environment: std::collections::HashMap<u16, Expr> = std::collections::HashMap::new();
+/// A 64-bit register the block's statements leave holding `index`.
+fn holding(block: &Block, index: &Expr) -> Option<u16> {
+    let mut environment = std::collections::HashMap::new();
+    let mut found = None;
+    for stmt in &block.stmts {
+        let Stmt::Assign { dest, value } = stmt else {
+            if !crate::ir::visit::statement_registers(stmt).0.is_empty() {
+                found = None;
+            }
+            continue;
+        };
+        let resolved = resolve(value, &environment);
+        if found == Some(dest.index) {
+            found = None;
+        }
+        if dest.width == 64 && resolved == *index && found.is_none() {
+            found = Some(dest.index);
+        }
+        environment.insert(dest.index, resolved);
+    }
+    found
+}
+
+/// Where an unchecked table's entries may lead and where other tables begin.
+struct Limits<'a> {
+    extent: std::ops::Range<u64>,
+    tables: &'a std::collections::HashSet<u64>,
+}
+
+/// The addresses `lea r, [rip + d]`, or `adrp` and the `add` right after it,
+/// compute anywhere in the code.
+fn addressed(image: &Image) -> std::collections::HashSet<u64> {
+    let mut out = std::collections::HashSet::new();
+    for section in image.sections.iter().filter(|section| section.executable) {
+        let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
+            continue;
+        };
+        match image.isa {
+            crate::loader::Isa::X86_64 => {
+                for at in 0..bytes.len().saturating_sub(6) {
+                    if bytes[at] & 0xf8 != 0x48
+                        || bytes[at + 1] != 0x8d
+                        || bytes[at + 2] & 0xc7 != 0x05
+                    {
+                        continue;
+                    }
+                    let displacement =
+                        i32::from_le_bytes(bytes[at + 3..at + 7].try_into().expect("four bytes"));
+                    out.insert(
+                        (section.vaddr + at as u64 + 7).wrapping_add(displacement as i64 as u64),
+                    );
+                }
+            }
+            crate::loader::Isa::AArch64 => {
+                let words: Vec<u32> = bytes
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .map(|chunk| u32::from_le_bytes(*chunk))
+                    .collect();
+                for (index, pair) in words.windows(2).enumerate() {
+                    let (adrp, add) = (pair[0], pair[1]);
+                    // ADRP xd, then ADD xd', xd, #imm12 without a shift.
+                    if adrp & 0x9f00_0000 != 0x9000_0000
+                        || add & 0xffc0_0000 != 0x9100_0000
+                        || (add >> 5) & 0x1f != adrp & 0x1f
+                    {
+                        continue;
+                    }
+                    let page = (((adrp >> 29) & 3) | (((adrp >> 5) & 0x7ffff) << 2)) as u64;
+                    let page = ((page << 43) as i64 >> 31) as u64;
+                    let site = section.vaddr + index as u64 * 4;
+                    out.insert(
+                        (site & !0xfff)
+                            .wrapping_add(page)
+                            .wrapping_add(u64::from((add >> 10) & 0xfff)),
+                    );
+                }
+            }
+            crate::loader::Isa::Unsupported => {}
+        }
+    }
+    out
+}
+
+/// The registers the block's assignments leave, as expressions of the
+/// registers it receives.
+fn environment_of(block: &Block) -> std::collections::HashMap<u16, Expr> {
+    let mut environment = std::collections::HashMap::new();
     for stmt in &block.stmts {
         if let Stmt::Assign { dest, value } = stmt {
             let resolved = resolve(value, &environment);
             environment.insert(dest.index, resolved);
         }
     }
-    let resolved = resolve(target, &environment);
-    let (base, table, index, scale, entry) = table_pattern(&resolved)?;
+    environment
+}
 
-    let (count, default, minimum, switch_base) = bound?;
+fn recognize(
+    block: &Block,
+    target: &Expr,
+    image: &Image,
+    bound: Option<(i64, Option<u64>, i64, Expr)>,
+    checked_block: Option<&Block>,
+    limits: &Limits,
+) -> Option<Recovered> {
+    let resolved = resolve(target, &environment_of(block));
+    let (base, table, index, scale, entry) = table_pattern(&resolved)?;
+    let entry_bytes = match entry {
+        Entry::Absolute => 8,
+        Entry::Offset32 => 4,
+        Entry::Byte => 1,
+    };
+    let read_case = |position: u64| -> Option<u64> {
+        let offset = match entry {
+            Entry::Absolute => {
+                u64::from_le_bytes(image.read_vaddr(table + position * 8, 8)?.try_into().ok()?)
+                    as i64
+            }
+            Entry::Offset32 => {
+                let bytes = image.read_vaddr(table + position * 4, 4)?;
+                i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+            }
+            Entry::Byte => i64::from(image.read_vaddr(table + position, 1)?[0]) << scale,
+        };
+        let case = base.wrapping_add(offset as u64);
+        image
+            .section_at(case)
+            .is_some_and(|section| section.executable)
+            .then_some(case)
+    };
+    let (count, default, minimum, switch_base) = match bound {
+        Some(bound) => bound,
+        // An index masked to its low bits takes every value they hold.
+        None if let Expr::Bin {
+            op: BinOp::And,
+            rhs: mask,
+            ..
+        } = &index
+            && let Some(mask) = constant(mask)
+            && mask < 4096
+            && (mask + 1).is_power_of_two() =>
+        {
+            (mask as i64 + 1, None, 0, index.clone())
+        }
+        None => {
+            let count = (0..4096u64)
+                .take_while(|position| {
+                    let at = table + position * entry_bytes;
+                    (*position == 0 || !limits.tables.contains(&at))
+                        && read_case(*position).is_some_and(|case| limits.extent.contains(&case))
+                })
+                .count();
+            if count < 2 {
+                return None;
+            }
+            (count as i64, None, 0, index.clone())
+        }
+    };
     if count <= 0 || count > 4096 {
         return None;
     }
@@ -232,24 +333,7 @@ fn recognize(
 
     let mut cases = Vec::new();
     for position in 0..count {
-        let offset = if entry == Entry::Absolute {
-            let bytes = image.read_vaddr(table + (position as u64) * 8, 8)?;
-            u64::from_le_bytes(bytes.try_into().ok()?) as i64
-        } else if entry == Entry::Offset32 {
-            let bytes = image.read_vaddr(table + (position as u64) * 4, 4)?;
-            i64::from(i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-        } else {
-            let byte = image.read_vaddr(table + position as u64, 1)?[0];
-            i64::from(byte) << scale
-        };
-        let case_target = base.wrapping_add(offset as u64);
-        if image
-            .section_at(case_target)
-            .is_none_or(|section| !section.executable)
-        {
-            return None;
-        }
-        cases.push((minimum + position, case_target));
+        cases.push((minimum + position, read_case(position as u64)?));
     }
 
     // The value the bounds check tested before taking the cases' lowest
@@ -262,11 +346,6 @@ fn recognize(
         switch_base
     } else {
         Expr::bin(BinOp::Add, index, Expr::Const(minimum as u64))
-    };
-    let entry_bytes = match entry {
-        Entry::Absolute => 8,
-        Entry::Offset32 => 4,
-        Entry::Byte => 1,
     };
     Some(Recovered {
         block_start: block.start,

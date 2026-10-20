@@ -173,6 +173,9 @@ pub struct Image {
     /// The direct calls and jumps the code makes, by target: the address of
     /// each instruction. Built on first use.
     pub branches_to: std::sync::OnceLock<HashMap<u64, Vec<u64>>>,
+    /// The addresses the code computes relative to the program counter, as
+    /// where a table begins. Built on first use.
+    pub addressed: std::sync::OnceLock<std::collections::HashSet<u64>>,
     /// Whether some caller reads what the function returns, filled on
     /// demand.
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
@@ -204,6 +207,7 @@ impl Image {
             fragments: BTreeMap::new(),
             summaries: Default::default(),
             branches_to: Default::default(),
+            addressed: Default::default(),
             result_reads: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
@@ -640,6 +644,7 @@ pub fn load(path: &Path) -> Result<Image> {
         fragments: BTreeMap::new(),
         summaries: Default::default(),
         branches_to: Default::default(),
+        addressed: Default::default(),
         result_reads: Default::default(),
         relocations,
         go: false,

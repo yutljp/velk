@@ -660,7 +660,8 @@ pub fn absorb_jump_table_cases(image: &mut Image) {
             }) else {
                 continue;
             };
-            for table in jump_table::recover(&blocks, image) {
+            let reach = function.addr..function.addr.saturating_add(0x1_0000);
+            for table in jump_table::recover(&blocks, image, reach) {
                 cases.extend(
                     table
                         .targets()
@@ -668,11 +669,6 @@ pub fn absorb_jump_table_cases(image: &mut Image) {
                         .filter(|target| *target != function.addr),
                 );
             }
-            cases.extend(
-                jump_table::unbounded_targets(&blocks, image, function.addr, 0x1_0000)
-                    .into_iter()
-                    .filter(|target| *target != function.addr),
-            );
         }
         if !image.drop_scanned_starts(&cases) {
             return;
@@ -683,14 +679,15 @@ pub fn absorb_jump_table_cases(image: &mut Image) {
 fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError> {
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     let mut blocks = lift::lift(image, function.addr, size, &HashSet::new())?;
-    let mut tables = jump_table::recover(&blocks, image);
+    let extent = function.addr..function.addr.saturating_add(size);
+    let mut tables = jump_table::recover(&blocks, image, extent.clone());
     if !tables.is_empty() {
         let targets = tables
             .iter()
             .flat_map(jump_table::Recovered::targets)
             .collect();
         blocks = lift::lift(image, function.addr, size, &targets)?;
-        tables = jump_table::recover(&blocks, image);
+        tables = jump_table::recover(&blocks, image, extent);
     }
     if image.go {
         drop_stack_growth_check(&mut blocks, image);
@@ -731,9 +728,10 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             }
         }
     }
-    // The signature reads the returns as they now are.
-    let signature = signature::recover(&blocks, image.isa, image.format, image.go);
+    // The signature reads the returns as they now are, and the cases
+    // through the switches.
     jump_table::apply(&mut blocks, &tables);
+    let signature = signature::recover(&blocks, image.isa, image.format, image.go);
     // The arguments past the registers follow the register ones.
     let stack_params = signature
         .stack

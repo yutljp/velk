@@ -153,7 +153,8 @@ fn falls_through(nodes: &[Node]) -> bool {
                     || breaks(default)
                     || arms.iter().any(|(_, body)| breaks(body))
             }
-            None => true,
+            // No other value reaches a switch without a default.
+            None => arms.iter().any(|(_, body)| breaks(body)),
         },
     }
 }

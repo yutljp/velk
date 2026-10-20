@@ -186,7 +186,8 @@ fn indirect_jumps(
     let targets: std::collections::HashSet<u64> =
         lifted.blocks.iter().map(|block| block.start).collect();
     let raw = crate::lift::lift(image, function.addr, size, &targets).ok()?;
-    let tables = super::jump_table::recover(&raw, image)
+    let extent = function.addr..function.addr.saturating_add(size);
+    let tables = super::jump_table::recover(&raw, image, extent)
         .into_iter()
         .map(|table| table.table)
         .collect();
