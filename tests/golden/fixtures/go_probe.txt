@@ -1432,6 +1432,8 @@ fn main.kindName @ 0x466d20 (size 96)
 == 0x466d80 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d80 */
+/* ref: 0x1 ".t" */
+/* ref: 0x7 ".no" */
 /* ref: 0x46d400 -> 0x8 "noptrdata" */
 /* ref: 0x4967e8 -> 0x1 ".text" */
 void main_main(void) {
@@ -1448,16 +1450,16 @@ void main_main(void) {
     int64_t local_5; /* [sp-30] */
     int64_t local_6; /* [sp-10] */
 
-    v1 = main_divmod(0x7, 0x3);
+    v1 = main_divmod(".no", 0x3);
     v2 = rbx; /* also returned by the call */
     local_0 = v1;
     local_1 = v2;
-    local_2 = 0x1;
+    local_2 = ".t";
     local_3 = 0x2;
     local_4 = 0x3;
     v4 = main_sumSlice(&local_2, 0x3);
     local_5 = v4;
-    v5 = main_add(0x1, 0x2);
+    v5 = main_add(".t", 0x2);
     local_6 = v5;
     runtime_printlock();
     runtime_printint(local_5);
@@ -1479,6 +1481,8 @@ void main_main(void) {
 -- signature
 void ()
 -- references
+0x1 ".t"
+0x7 ".no"
 0x46d400 -> 0x8 "noptrdata"
 0x4967e8 -> 0x1 ".text"
 -- ir
@@ -1515,4 +1519,4 @@ fn main.main @ 0x466d80 (size 256)
     call 0x430600()
     ret #0x0
 -- card
-{"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata",".text"],"unsupported":0}
+{"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":[".t",".no","noptrdata",".text"],"unsupported":0}

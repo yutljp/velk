@@ -16,6 +16,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) names: HashMap<u16, &'a str>,
     /// The landing pads, with the code ranges whose calls unwind into each.
     pub(super) landing_pads: HashMap<u64, Vec<(u64, u64)>>,
+    /// The strings constants point at.
+    pub(super) strings: HashMap<u64, String>,
     /// Rendered stack address to local name, computed once per function so a
     /// load and its store share a name even after the stack pointer moves.
     pub(super) slots: HashMap<String, String>,
@@ -217,6 +219,15 @@ pub(crate) fn render_value(value: &Expr, ctx: &Ctx<'_>) -> String {
         return text;
     }
     match value {
+        // A constant pointing at a string reads as the string.
+        Expr::Const(address) if let Some(text) = ctx.strings.get(address) => {
+            format!(
+                "\"{}\"",
+                text.chars()
+                    .flat_map(char::escape_default)
+                    .collect::<String>()
+            )
+        }
         // Only a top-level constant becomes a function name: an immediate
         // inside arithmetic can coincidentally equal a function address.
         Expr::Const(address) if *address != 0 => match ctx.callees.get(address) {

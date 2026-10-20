@@ -69,7 +69,9 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
                 })
                 .map(|target| format!("{label}: goto {target} has no label")),
         );
-        if text.matches('{').count() != text.matches('}').count() {
+        // Braces inside string literals are no part of the structure.
+        let code = without_strings(&text);
+        if code.matches('{').count() != code.matches('}').count() {
             found.push(format!("{label}: unbalanced braces"));
         }
         let analysis = binary
@@ -240,6 +242,24 @@ fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
     dropped.sort();
     dropped.dedup();
     dropped
+}
+
+/// The text with every string literal's contents dropped.
+fn without_strings(text: &str) -> String {
+    let mut out = String::new();
+    let mut inside = false;
+    let mut escaped = false;
+    for c in text.chars() {
+        match (inside, escaped, c) {
+            (true, true, _) => escaped = false,
+            (true, false, '\\') => escaped = true,
+            (true, false, '"') => inside = false,
+            (true, false, _) => {}
+            (false, _, '"') => inside = true,
+            (false, _, other) => out.push(other),
+        }
+    }
+    out
 }
 
 fn missing_labels(text: &str) -> Vec<String> {

@@ -132,7 +132,61 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             pointer,
         });
     }
+    // A call passing a pointer and a length, as Go and Rust pass a string,
+    // names that many characters, which need end in no zero byte.
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let Stmt::Call {
+            args: Some(args), ..
+        } = stmt
+        else {
+            continue;
+        };
+        for pair in args.windows(2) {
+            let (Expr::Const(addr), Expr::Const(length)) = (&pair[0], &pair[1]) else {
+                continue;
+            };
+            let known = references.iter().position(|known| known.addr == *addr);
+            if known.is_some_and(|known| references[known].text.is_some()) {
+                continue;
+            }
+            let Some((section, text)) = sized_string(image, *addr, *length) else {
+                continue;
+            };
+            match known {
+                Some(known) => references[known].text = Some(text),
+                None => references.push(Reference {
+                    addr: *addr,
+                    section,
+                    text: Some(text),
+                    pointer: None,
+                }),
+            }
+        }
+    }
+    references.sort_by_key(|reference| reference.addr);
     references
+}
+
+/// The `length` printable characters at `addr` in data, when they are.
+fn sized_string(image: &Image, addr: u64, length: u64) -> Option<(String, String)> {
+    if !(2..=256).contains(&length) {
+        return None;
+    }
+    let section = image.section_at(addr)?;
+    if section.executable {
+        return None;
+    }
+    let bytes = image.read_vaddr(addr, length)?;
+    if !bytes
+        .iter()
+        .all(|b| (0x20..0x7f).contains(b) || matches!(b, b'\t' | b'\n'))
+    {
+        return None;
+    }
+    Some((
+        section.name.clone(),
+        String::from_utf8_lossy(&bytes[..length as usize]).into_owned(),
+    ))
 }
 
 fn expr_constants(expr: &Expr, out: &mut Vec<u64>) {

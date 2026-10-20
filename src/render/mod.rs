@@ -292,6 +292,11 @@ fn render_with(
         float_return,
         names,
         landing_pads: ir.landing_pads.iter().cloned().collect(),
+        strings: references
+            .iter()
+            .filter(|reference| reference.pointer.is_none())
+            .filter_map(|reference| Some((reference.addr, reference.text.clone()?)))
+            .collect(),
         slots: locals.slots,
         local_widths: locals.widths,
         local_floats: locals
