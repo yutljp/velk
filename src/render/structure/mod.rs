@@ -58,6 +58,21 @@ pub enum Node {
 /// that tree cannot cover, such as one with code only an indirect jump
 /// reaches, is structured in address order instead.
 pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
+    let best = structure_variants(ir);
+    if label_count(&best) == 0 {
+        return best;
+    }
+    // A branch to a block that only jumps on can go where the jump does.
+    if let Some(threaded) = duplicate::threaded(ir) {
+        let candidate = structure_variants(&threaded);
+        if label_count(&candidate) < label_count(&best) {
+            return candidate;
+        }
+    }
+    best
+}
+
+fn structure_variants(ir: &FunctionIr) -> Vec<Node> {
     let best = structure_chosen(ir);
     if label_count(&best) == 0 {
         return best;

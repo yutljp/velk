@@ -42,6 +42,53 @@ const NORETURN_IMPORTS: &[&str] = &[
     "ExitProcess",
 ];
 
+/// Functions of the Go and Rust runtimes that never return, which the
+/// analysis cannot always prove: they throw, panic or exit through code it
+/// does not follow. Names match exactly, or by prefix where they end in `*`.
+const NORETURN_RUNTIME: &[&str] = &[
+    "runtime.throw",
+    "runtime.fatal",
+    "runtime.fatalthrow",
+    "runtime.fatalpanic",
+    "runtime.gopanic",
+    "runtime.Goexit",
+    "runtime.panicdivide",
+    "runtime.panicshift",
+    "runtime.panicmem*",
+    "runtime.panicIndex*",
+    "runtime.panicSlice*",
+    "runtime.goPanic*",
+    "runtime.panicdottype*",
+    "runtime.panicnildottype",
+    "runtime.panicunsafe*",
+    "os.Exit",
+    "core::panicking::panic*",
+    "core::panicking::assert_failed*",
+    "core::option::unwrap_failed",
+    "core::option::expect_failed",
+    "core::result::unwrap_failed",
+    "core::slice::index::slice_*",
+    "core::str::slice_error_fail*",
+    "alloc::alloc::handle_alloc_error",
+    "alloc::raw_vec::capacity_overflow",
+    "alloc::raw_vec::handle_error",
+    "std::process::abort",
+    "std::process::exit",
+    "std::panicking::begin_panic*",
+    "std::panicking::rust_panic_with_hook",
+    "__rustc::rust_panic",
+    "std::sys::pal::unix::abort_internal",
+];
+
+fn runtime_noreturn(name: &str) -> bool {
+    NORETURN_RUNTIME
+        .iter()
+        .any(|known| match known.split_once('*') {
+            Some((prefix, _)) => name.starts_with(prefix),
+            None => name == *known,
+        })
+}
+
 /// The summary of the function at `addr`, computing it and those of every
 /// function it reaches on first use.
 pub fn summary(image: &Image, addr: u64) -> Summary {
@@ -221,7 +268,7 @@ fn by_name(image: &Image, addr: u64) -> Summary {
             .strip_prefix('_')
             .filter(|_| image.format == crate::loader::Format::MachO)
             .unwrap_or(name);
-        NORETURN_IMPORTS.contains(&name)
+        NORETURN_IMPORTS.contains(&name) || runtime_noreturn(name)
     });
     // A linkage stub's callee takes what its prototype says.
     let arity = function

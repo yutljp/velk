@@ -114,3 +114,76 @@ fn retarget(stmt: &mut Stmt, from: u64, to: u64) {
         _ => {}
     }
 }
+
+/// The function with each branch to a block that only jumps on sent to
+/// where the jumps end, and such blocks nothing reaches any more dropped.
+pub(super) fn threaded(ir: &FunctionIr) -> Option<FunctionIr> {
+    let only_jump = |stmts: &[Stmt]| match stmts {
+        [
+            Stmt::Br {
+                target: Some(target),
+            },
+        ] => Some(*target),
+        _ => None,
+    };
+    let jumps: std::collections::HashMap<u64, u64> = ir
+        .blocks
+        .iter()
+        .skip(1)
+        .filter_map(|block| Some((block.start, only_jump(&block.stmts)?)))
+        .collect();
+    if jumps.is_empty() {
+        return None;
+    }
+    let end = |mut target: u64| {
+        for _ in 0..8 {
+            match jumps.get(&target) {
+                Some(next) if *next != target => target = *next,
+                _ => break,
+            }
+        }
+        target
+    };
+    let mut ir = ir.clone();
+    let mut changed = false;
+    for block in &mut ir.blocks {
+        let Some(last) = block.stmts.last_mut() else {
+            continue;
+        };
+        let mut redirect = |target: &mut u64| {
+            let threaded = end(*target);
+            if threaded != *target {
+                *target = threaded;
+                changed = true;
+            }
+        };
+        match last {
+            Stmt::Br {
+                target: Some(target),
+            }
+            | Stmt::Brif { target, .. } => redirect(target),
+            Stmt::Switch { cases, default, .. } => {
+                for (_, target) in cases {
+                    redirect(target);
+                }
+                if let Some(target) = default {
+                    redirect(target);
+                }
+            }
+            _ => {}
+        }
+    }
+    if !changed {
+        return None;
+    }
+    // A jump-only block stays while anything still falls or branches to it.
+    let reached: std::collections::HashSet<usize> = (0..ir.blocks.len())
+        .flat_map(|from| crate::render::structure::compare_chain::successors(&ir, from))
+        .collect();
+    let mut position = 0;
+    ir.blocks.retain(|block| {
+        position += 1;
+        position == 1 || reached.contains(&(position - 1)) || only_jump(&block.stmts).is_none()
+    });
+    Some(ir)
+}
