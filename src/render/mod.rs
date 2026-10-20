@@ -751,6 +751,16 @@ fn continues(nodes: &[Node]) -> bool {
     })
 }
 
+/// Whether a `break` among the nodes leaves the switch they are in, rather
+/// than a loop or switch inside them.
+fn leaves_switch(nodes: &[Node]) -> bool {
+    nodes.iter().any(|node| match node {
+        Node::Break => true,
+        Node::If { then, els, .. } => leaves_switch(then) || leaves_switch(els),
+        _ => false,
+    })
+}
+
 /// Whether the statements up to the next call leave `rax` alone, and the
 /// call, whose arguments are known, reads no more of it than `al`.
 fn only_vector_count(rest: &[Node]) -> bool {
@@ -1014,6 +1024,36 @@ fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
                 out.push_str("} else {\n");
                 render_nodes(els, depth + 1, out, ctx);
             }
+            indent(depth, out);
+            out.push_str("}\n");
+        }
+        // A switch whose cases only leave it runs its default when the value
+        // is none of them.
+        Node::Switch {
+            index,
+            arms,
+            default: Some(default),
+        } if !arms.is_empty()
+            && arms.iter().map(|(values, _)| values.len()).sum::<usize>() <= 4
+            && arms
+                .iter()
+                .all(|(_, body)| matches!(body.as_slice(), [Node::Break]))
+            && let rest = match default.split_last() {
+                Some((Node::Break, rest)) => rest,
+                _ => default.as_slice(),
+            }
+            && !leaves_switch(rest) =>
+        {
+            let tests: Vec<String> = arms
+                .iter()
+                .flat_map(|(values, _)| values)
+                .map(|value| {
+                    condition(crate::ir::Cond::Ne, index, &Expr::Const(*value as u64), ctx)
+                })
+                .collect();
+            indent(depth, out);
+            out.push_str(&format!("if ({}) {{\n", tests.join(" && ")));
+            render_nodes(rest, depth + 1, out, ctx);
             indent(depth, out);
             out.push_str("}\n");
         }
