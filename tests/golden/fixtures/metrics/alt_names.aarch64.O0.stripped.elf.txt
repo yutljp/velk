@@ -29,10 +29,8 @@ int32_t sub_210198(int32_t a0) {
 
     local_0 = a0;
     local_1 = 0x0;
-    local_2 = 0x0;
-    while (local_2 < local_0) {
+    for (local_2 = 0x0; local_2 < local_0; local_2 += 0x1) {
         local_1 += local_2 * local_2;
-        local_2 += 0x1;
     }
     return local_1;
 }

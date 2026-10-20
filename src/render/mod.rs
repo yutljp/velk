@@ -410,6 +410,109 @@ fn indent(depth: usize, out: &mut String) {
     }
 }
 
+/// `init; while (cond) { body; step; }` as `for (init; cond; step) { body }`,
+/// when `init` and `step` write the one register or local the condition
+/// reads, `step` updates it from itself, and no `continue` in the body
+/// would skip the step.
+fn for_loop(init: &Stmt, looped: &Node, depth: usize, ctx: &Ctx<'_>) -> Option<String> {
+    let Node::While {
+        prefix,
+        cond,
+        lhs,
+        rhs,
+        body,
+    } = looped
+    else {
+        return None;
+    };
+    if !prefix.is_empty() {
+        return None;
+    }
+    let (Node::Stmt(step), rest) = body.split_last()? else {
+        return None;
+    };
+    // What the counter is: a register or a frame slot's address.
+    enum Counter<'e> {
+        Register(u16),
+        Slot(&'e Expr),
+    }
+    let counter = match init {
+        Stmt::Assign { dest, .. } => Counter::Register(dest.index),
+        Stmt::Store { addr, .. } => Counter::Slot(addr),
+        _ => return None,
+    };
+    let reads = |expr: &Expr| -> bool {
+        match &counter {
+            Counter::Register(index) => {
+                let mut read = std::collections::HashSet::new();
+                crate::ir::visit::collect_reads(expr, &mut read);
+                read.contains(index)
+            }
+            Counter::Slot(addr) => loads_from(expr, addr),
+        }
+    };
+    let steps = match (&counter, step) {
+        (Counter::Register(index), Stmt::Assign { dest, value }) => {
+            dest.index == *index && reads(value)
+        }
+        (
+            Counter::Slot(addr),
+            Stmt::Store {
+                addr: written,
+                value,
+                ..
+            },
+        ) => written == *addr && reads(value),
+        _ => false,
+    };
+    if !steps || !(reads(lhs) || reads(rhs)) || continues(rest) {
+        return None;
+    }
+    if let Counter::Slot(addr) = counter
+        && !ctx.slots.contains_key(&render_expr(addr, ctx))
+    {
+        return None;
+    }
+    let clause = |stmt: &Stmt| {
+        let text = render_stmt(stmt, ctx);
+        text.strip_suffix(';').unwrap_or(&text).to_owned()
+    };
+    let mut out = String::new();
+    indent(depth, &mut out);
+    out.push_str(&format!(
+        "for ({}; {}; {}) {{\n",
+        clause(init),
+        condition(*cond, lhs, rhs, ctx),
+        clause(step)
+    ));
+    render_nodes(rest, depth + 1, &mut out, ctx);
+    indent(depth, &mut out);
+    out.push_str("}\n");
+    Some(out)
+}
+
+/// Whether a load from `addr` appears in `expr`.
+fn loads_from(expr: &Expr, addr: &Expr) -> bool {
+    matches!(expr, Expr::Load { addr: read, .. } if read.as_ref() == addr)
+        || crate::ir::visit::children(expr)
+            .into_iter()
+            .any(|child| loads_from(child, addr))
+}
+
+/// Whether a `continue` in `nodes` goes to the loop they are the body of,
+/// rather than to one nested in it.
+fn continues(nodes: &[Node]) -> bool {
+    nodes.iter().any(|node| match node {
+        Node::Continue => true,
+        Node::If { then, els, .. } => continues(then) || continues(els),
+        Node::Switch { arms, default, .. } => {
+            arms.iter().any(|(_, body)| continues(body))
+                || default.as_ref().is_some_and(|body| continues(body))
+        }
+        _ => false,
+    })
+}
+
 /// Whether the statements up to the next call leave `rax` alone, and the
 /// call, whose arguments are known, reads no more of it than `al`.
 fn only_vector_count(rest: &[Node]) -> bool {
@@ -472,6 +575,15 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             && only_vector_count(&nodes[index + 1..])
         {
             index += 1;
+            continue;
+        }
+        // A counter set before a loop that tests it and steps it last reads
+        // as a `for`.
+        if let (Some(Node::Stmt(init)), Some(looped)) = (nodes.get(index), nodes.get(index + 1))
+            && let Some(text) = for_loop(init, looped, depth, ctx)
+        {
+            out.push_str(&text);
+            index += 2;
             continue;
         }
         // A call whose returned value the next statement takes reads as one

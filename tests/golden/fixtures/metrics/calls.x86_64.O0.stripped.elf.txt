@@ -352,8 +352,7 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     *(uint32_t *)(v1 + 0x4) = 0x30;
     *(uint32_t *)(v1) = 0x8;
     local_24 = 0x0;
-    local_25 = 0x0;
-    while (local_25 < local_21) {
+    for (local_25 = 0x0; local_25 < local_21; local_25 += 0x1) {
         local_26 = &local_22;
         v2 = local_22;
         local_27 = v2;
@@ -370,7 +369,6 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
             local_28 = v5;
         }
         local_24 += *local_28;
-        local_25 += 0x1;
     }
     return local_24;
 }

@@ -16,12 +16,10 @@ int sum_while(int n) {
 
     local_0 = n;
     local_1 = 0x0;
-    local_2 = 0x0;
-    while (local_2 < local_0) {
+    for (local_2 = 0x0; local_2 < local_0; local_2 += 0x1) {
         v2 = local_1 + local_2;
         local_1 = v2;
         sink = v2;
-        local_2 += 0x1;
     }
     return local_1;
 }
@@ -106,14 +104,12 @@ int sum_skip_odd(int n) {
 
     local_0 = n;
     local_1 = 0x0;
-    local_2 = 0x0;
-    while (local_2 < local_0) {
+    for (local_2 = 0x0; local_2 < local_0; local_2 += 0x1) {
         if ((local_2 & 0x1) != 0x0) {
             v2 = local_1 + local_2;
             local_1 = v2;
             sink = v2;
         }
-        local_2 += 0x1;
     }
     return local_1;
 }
@@ -164,12 +160,10 @@ int find_first(int *p, int n, int v) {
     local_0 = p;
     local_1 = n;
     local_2 = v;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         if (local_0[local_3] == local_2) {
             goto L_210344;
         }
-        local_3 += 0x1;
     }
     local_4 = 0xffffffff;
     return local_4;

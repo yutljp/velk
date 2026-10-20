@@ -52,10 +52,8 @@ int32_t sub_2101e8(int32_t a0) {
 
     local_0 = a0;
     local_1 = 0x0;
-    local_2 = 0x1;
-    while (local_2 <= local_0) {
+    for (local_2 = 0x1; local_2 <= local_0; local_2 += 0x1) {
         local_1 += local_2;
-        local_2 += 0x1;
     }
     return local_1;
 }
@@ -99,15 +97,13 @@ int32_t sub_210244(uint32_t *a0, int32_t a1) {
     local_0 = a0;
     local_1 = a1;
     local_2 = 0x0;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         v2 = local_0[local_3];
         local_4 = v2;
         if ((v2 & 0x80000000) != 0x0) {
             return local_2;
         }
         local_2 += local_4;
-        local_3 += 0x1;
     }
     return local_2;
 }
@@ -156,15 +152,13 @@ int32_t sub_2102bc(uint32_t *a0, int32_t a1) {
     local_0 = a0;
     local_1 = a1;
     local_2 = 0x0;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         if (local_0[local_3] == 0x0) {
             return local_2;
         }
         if ((local_0[local_3] & 0x80000000) == 0x0) {
             local_2 += local_0[local_3];
         }
-        local_3 += 0x1;
     }
     return local_2;
 }

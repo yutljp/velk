@@ -22,82 +22,62 @@ int32_t sub_21018c(int32_t a0) {
     v1 = a0;
     local_0 = v1;
     if (v1 == 0x0) {
-        local_1 = 0x0;
-        while (local_1 < 0x1) {
+        for (local_1 = 0x0; local_1 < 0x1; local_1 += 0x1) {
             dword_2204fc += local_1;
-            local_1 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x1 == 0x0) {
-        local_2 = 0x0;
-        while (local_2 < 0x2) {
+        for (local_2 = 0x0; local_2 < 0x2; local_2 += 0x1) {
             dword_2204fc += local_2;
-            local_2 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x2 == 0x0) {
-        local_3 = 0x0;
-        while (local_3 < 0x3) {
+        for (local_3 = 0x0; local_3 < 0x3; local_3 += 0x1) {
             dword_2204fc += local_3;
-            local_3 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x3 == 0x0) {
-        local_4 = 0x0;
-        while (local_4 < 0x4) {
+        for (local_4 = 0x0; local_4 < 0x4; local_4 += 0x1) {
             dword_2204fc += local_4;
-            local_4 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x4 == 0x0) {
-        local_5 = 0x0;
-        while (local_5 < 0x5) {
+        for (local_5 = 0x0; local_5 < 0x5; local_5 += 0x1) {
             dword_2204fc += local_5;
-            local_5 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x5 == 0x0) {
-        local_6 = 0x0;
-        while (local_6 < 0x6) {
+        for (local_6 = 0x0; local_6 < 0x6; local_6 += 0x1) {
             dword_2204fc += local_6;
-            local_6 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x6 == 0x0) {
-        local_7 = 0x0;
-        while (local_7 < 0x7) {
+        for (local_7 = 0x0; local_7 < 0x7; local_7 += 0x1) {
             dword_2204fc += local_7;
-            local_7 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x7 == 0x0) {
-        local_8 = 0x0;
-        while (local_8 < 0x8) {
+        for (local_8 = 0x0; local_8 < 0x8; local_8 += 0x1) {
             dword_2204fc += local_8;
-            local_8 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x8 == 0x0) {
-        local_9 = 0x0;
-        while (local_9 < 0x9) {
+        for (local_9 = 0x0; local_9 < 0x9; local_9 += 0x1) {
             dword_2204fc += local_9;
-            local_9 += 0x1;
         }
         return dword_2204fc;
     }
     if (local_0 - 0x9 == 0x0) {
-        local_10 = 0x0;
-        while (local_10 < 0xa) {
+        for (local_10 = 0x0; local_10 < 0xa; local_10 += 0x1) {
             dword_2204fc += local_10;
-            local_10 += 0x1;
         }
         return dword_2204fc;
     }

@@ -21,17 +21,13 @@ int matrix_trace(int *m, int n) {
     local_0 = m;
     local_1 = n;
     local_2 = 0x0;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
-        local_4 = 0x0;
-        while (local_4 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
+        for (local_4 = 0x0; local_4 < local_1; local_4 += 0x1) {
             if (local_3 == local_4) {
                 v1 = (int64_t)(int32_t)(local_3 * local_1 + local_4);
                 local_2 += local_0[v1];
             }
-            local_4 += 0x1;
         }
-        local_3 += 0x1;
     }
     return local_2;
 }
@@ -363,14 +359,12 @@ int skip_negatives(int *p, int n) {
     local_0 = p;
     local_1 = n;
     local_2 = 0x0;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         v1 = (int64_t)(int32_t)(local_3);
         if (local_0[v1] >= 0x0) {
             v2 = (int64_t)(int32_t)(local_3);
             local_2 += local_0[v2];
         }
-        local_3 += 0x1;
     }
     return local_2;
 }
@@ -418,17 +412,13 @@ int find_pair(int *p, int n, int target) {
     local_0 = p;
     local_1 = n;
     local_2 = target;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
-        local_4 = local_3 + 0x1;
-        while (local_4 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
+        for (local_4 = local_3 + 0x1; local_4 < local_1; local_4 += 0x1) {
             v1 = (int64_t)(int32_t)(local_4);
             if (local_0[(int64_t)(int32_t)(local_3)] + local_0[v1] == local_2) {
                 goto L_201535;
             }
-            local_4 += 0x1;
         }
-        local_3 += 0x1;
     }
     local_5 = 0xffffffff;
     return local_5;

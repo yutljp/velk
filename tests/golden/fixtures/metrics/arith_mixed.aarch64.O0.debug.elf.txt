@@ -31,10 +31,8 @@ int helper(int x) {
 
     local_0 = x;
     local_1 = 0x0;
-    local_2 = 0x0;
-    while (local_2 < local_0) {
+    for (local_2 = 0x0; local_2 < local_0; local_2 += 0x1) {
         local_1 += local_2 * local_2;
-        local_2 += 0x1;
     }
     return local_1;
 }
@@ -93,10 +91,8 @@ int sum_arr(int *p, int n) {
     local_0 = p;
     local_1 = n;
     local_2 = 0x0;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         local_2 += local_0[local_3];
-        local_3 += 0x1;
     }
     return local_2;
 }

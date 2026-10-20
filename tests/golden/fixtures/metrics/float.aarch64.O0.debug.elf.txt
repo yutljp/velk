@@ -18,10 +18,8 @@ double average(double *values, int n) {
     local_0 = values;
     local_1 = n;
     local_2 = 0.0;
-    local_3 = 0x0;
-    while (local_3 < local_1) {
+    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
         local_2 = local_2 + local_0[local_3];
-        local_3 += 0x1;
     }
     if (local_1 <= 0x0) {
         local_4 = 0.0;
