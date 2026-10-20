@@ -905,6 +905,29 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             }
         }
     }
+    // A Go function returns as many values as its callers read.
+    let further = if image.go && float_return.is_none() && !ignored {
+        results::further_results(image, function.addr)
+    } else {
+        0
+    };
+    if further > 0 {
+        let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
+        let returned: Vec<crate::ir::Expr> = convention.results()[..=further]
+            .iter()
+            .map(|register| crate::ir::Expr::reg(*register, 64))
+            .collect();
+        for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let crate::ir::Stmt::Ret { value } = stmt
+                && matches!(value, crate::ir::Expr::Reg { .. })
+            {
+                *value = crate::ir::Expr::Apply {
+                    op: crate::ir::Operation::Results,
+                    args: returned.clone(),
+                };
+            }
+        }
+    }
     // The signature reads the returns as they now are, and the cases
     // through the switches.
     jump_table::apply(&mut blocks, &tables);

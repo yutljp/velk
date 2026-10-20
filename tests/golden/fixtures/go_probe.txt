@@ -1296,14 +1296,21 @@ fn main.add @ 0x466ca0 (size 32)
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
 int64_t main_divmod(int64_t a0, int64_t a1) {
+    uint64_t v1;
+    uint64_t v2;
+
     switch (a1) {
     case -1:
-        return -a0;
+        v1 = -a0;
+        v2 = 0x0;
+        return v1; /* also returns v2 */
     case 0:
         runtime_panicdivide();
         __builtin_trap();
     default:
-        return a0 / a1;
+        v2 = a0 % a1;
+        v1 = a0 / a1;
+        return v1; /* also returns v2 */
     }
 }
 -- signature
@@ -1318,11 +1325,13 @@ fn main.divmod @ 0x466cc0 (size 64)
     brif ne rbx, #0xffffffffffffffff -> 0x466cd6
   blk2 @ 0x466ccf:
     v1 = (#0x0 - rax)
+    v2 = #0x0
     br 0x466cdb
   blk3 @ 0x466cd6:
+    v2 = (rax % rbx)
     v1 = (rax / rbx)
   blk4 @ 0x466cdb:
-    ret v1
+    ret results(v1, v2)
   blk5 @ 0x466ce1:
     call 0x42cf20()
     trap

@@ -2143,11 +2143,14 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             return true;
         }
         O::BLR => {
+            // A call leaves the flags undefined.
+            lifter.last_compare = None;
             if let Some(through) = lifter.operand(ops[0], 64) {
                 lifter.stmts.push(call_through(lifter.image, through));
             }
         }
         O::BL => {
+            lifter.last_compare = None;
             let target = lifter.target_of(ops[0], pc);
             let made = call(lifter.image, lifter.summaries, target);
             lifter.stmts.push(made);

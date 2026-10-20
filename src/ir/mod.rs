@@ -452,6 +452,9 @@ pub enum Operation {
     MultiplyAddPairs,
     /// The sum of the absolute differences of the bytes of two halves.
     SumAbsoluteDifferences,
+    /// The values a function returns in several registers, the first in the
+    /// return register; as a value, the first.
+    Results,
     /// The sum of the lanes of `bits` in two halves, each extended first,
     /// in twice `bits`.
     SumLanesLong {
@@ -805,6 +808,7 @@ pub(crate) fn operation_name(op: Operation) -> String {
             format!("crc32{}_{bits}", if castagnoli { "c" } else { "" })
         }
         Operation::SumAbsoluteDifferences => "sum_absolute_differences8".to_owned(),
+        Operation::Results => "results".to_owned(),
         Operation::CountLeadingZeros(bits) => format!("clz{bits}"),
         Operation::CountTrailingZeros(bits) => format!("ctz{bits}"),
         Operation::PopCount(bits) => format!("popcount{bits}"),

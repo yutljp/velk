@@ -25,6 +25,92 @@ pub(crate) fn ignored_by_callers(image: &Image, addr: u64) -> bool {
     !reads(image, addr, &mut HashSet::new()).0
 }
 
+/// How many integer results past the first the function returns, as its
+/// callers read them: the furthest result register some caller reads within
+/// the few statements right after a call, before writing it, counts with
+/// every one before it. Only for Go, whose functions return several values
+/// in registers and whose callers take them at once.
+pub(crate) fn further_results(image: &Image, addr: u64) -> usize {
+    let convention = crate::ir::Convention::of(image.isa, image.format, image.go);
+    if convention != crate::ir::Convention::GoAmd64 {
+        return 0;
+    }
+    let results: Vec<u16> = convention
+        .results()
+        .iter()
+        .copied()
+        .take_while(|register| !convention.float_arguments().contains(register))
+        .skip(1)
+        .collect();
+    let mut furthest = 0;
+    for caller in callers(image, addr) {
+        let Some(blocks) = body(image, caller) else {
+            continue;
+        };
+        for block in &blocks {
+            let Some(at) = block.stmts.iter().position(
+                |stmt| matches!(stmt, Stmt::Call { target: Some(target), .. } if *target == addr),
+            ) else {
+                continue;
+            };
+            let mut pending: Vec<(usize, u16)> = results.iter().copied().enumerate().collect();
+            for stmt in block.stmts[at + 1..].iter().take(FURTHER_READS_WITHIN) {
+                // Another call writes them all.
+                if matches!(stmt, Stmt::Call { .. }) {
+                    break;
+                }
+                let mut read = HashSet::new();
+                for operand in stmt.operands() {
+                    crate::ir::visit::collect_reads(operand, &mut read);
+                }
+                // Writing part of a register keeps bits nobody reads.
+                if let Stmt::Assign { dest, value } = stmt
+                    && partial_write_of(value, dest.index)
+                {
+                    read.remove(&dest.index);
+                }
+                let written = crate::ir::visit::statement_registers(stmt).0;
+                pending.retain(|(position, register)| {
+                    if read.contains(register) {
+                        furthest = furthest.max(position + 1);
+                        return false;
+                    }
+                    !written.contains(register)
+                });
+                if pending.is_empty() {
+                    break;
+                }
+            }
+        }
+    }
+    furthest
+}
+
+/// How many statements after a call its further results are looked for.
+const FURTHER_READS_WITHIN: usize = 6;
+
+/// Whether `value` is `(register & mask) | x` with `x` free of the register:
+/// a write of part of it.
+fn partial_write_of(value: &Expr, register: u16) -> bool {
+    let Expr::Bin {
+        op: crate::ir::BinOp::Or,
+        lhs,
+        rhs,
+    } = value
+    else {
+        return false;
+    };
+    let kept = matches!(lhs.as_ref(), Expr::Bin {
+        op: crate::ir::BinOp::And,
+        lhs: inner,
+        rhs: mask,
+    } if matches!(inner.as_ref(), Expr::Reg { index, .. } if *index == register)
+        && matches!(mask.as_ref(), Expr::Const(_)));
+    let mut rest = HashSet::new();
+    crate::ir::visit::collect_reads(rhs, &mut rest);
+    kept && !rest.contains(&register)
+}
+
 /// Whether some path returns with the return register as the caller left
 /// it, as a function that returns nothing does when no call or assignment
 /// on the way sets it. Only for conventions that pass no argument there.

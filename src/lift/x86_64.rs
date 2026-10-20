@@ -2507,6 +2507,9 @@ fn lift_instruction(
             }
         }
         Mnemonic::Call => {
+            // A call leaves the flags undefined: none of the compare before
+            // it is read after it.
+            lifter.last_compare = None;
             if matches!(
                 ins.op0_kind(),
                 OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64

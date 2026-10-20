@@ -1409,6 +1409,21 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             });
             format!("{assigned}{callee}({});", args.join(", "))
         }
+        // Several values, the further ones in a comment.
+        Stmt::Ret {
+            value:
+                Expr::Apply {
+                    op: crate::ir::Operation::Results,
+                    args,
+                },
+        } if !ctx.void_return && !args.is_empty() => {
+            let further: Vec<String> = args[1..].iter().map(|arg| render_value(arg, ctx)).collect();
+            format!(
+                "return {}; /* also returns {} */",
+                render_value(&args[0], ctx),
+                further.join(", ")
+            )
+        }
         Stmt::Ret { value } => {
             // A function that returns nothing carries no meaningful value.
             if ctx.void_return {

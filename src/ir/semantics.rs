@@ -57,7 +57,8 @@ pub(crate) fn width(expr: &Expr) -> u32 {
             | Operation::Aes { .. }
             | Operation::Pack { .. }
             | Operation::MultiplyAddPairs
-            | Operation::SumAbsoluteDifferences => 64,
+            | Operation::SumAbsoluteDifferences
+            | Operation::Results => 64,
             Operation::SumLanesLong { bits, .. } => 2 * u32::from(*bits),
             Operation::Crc32 { .. } => 32,
             Operation::WideDivide { bits, .. } => u32::from(*bits),
@@ -311,7 +312,8 @@ pub(crate) fn argument_bits(op: Operation) -> u32 {
         | Operation::MultiplyAddPairs
         | Operation::SumAbsoluteDifferences
         | Operation::SumLanesLong { .. }
-        | Operation::Crc32 { .. } => 64,
+        | Operation::Crc32 { .. }
+        | Operation::Results => 64,
         Operation::WideDivide { bits, .. } => bits,
         Operation::IntToFloat { bits, .. }
         | Operation::CountLeadingZeros(bits)
@@ -523,6 +525,7 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
             });
             sum as u64 & mask(2 * bits)
         }
+        Operation::Results => args.first().copied().unwrap_or(0),
         Operation::Crc32 { castagnoli, bits } => {
             let polynomial: u32 = if castagnoli { 0x82f6_3b78 } else { 0xedb8_8320 };
             let mut crc = args[0] as u32;
