@@ -24,10 +24,10 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
 int dense(int x) {
-    uint64_t x8;
+    uint32_t v1;
 
-    x8 = ((x - 0xa) & 0xffffffff);
-    if ((uint32_t)x8 > 0xf) {
+    v1 = x - 0xa;
+    if (v1 > 0xf) {
         g_sink = 0x0;
         return g_sink;
     }
@@ -93,8 +93,8 @@ int (int x)
 -- ir
 fn dense @ 0x210304 (size 200)
   blk0 @ 0x210304:
-    x8 = ((w0 - #0xa) & #0xffffffff)
-    brif hi (x8 & #0xffffffff), #0xf -> 0x2103b8
+    v1 = ((w0 - #0xa) & #0xffffffff)
+    brif hi (v1 & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
     switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default <none>
   blk2 @ 0x210338:

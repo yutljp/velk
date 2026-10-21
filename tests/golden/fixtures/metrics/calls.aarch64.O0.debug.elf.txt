@@ -115,8 +115,8 @@ fn apply_pointer @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2103f4 */
 int factorial(int n) {
-    uint64_t x8;
-    int32_t v2;
+    int32_t v1;
+    int32_t v3;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
     uint32_t local_2; /* [sp-1c] */
@@ -124,9 +124,9 @@ int factorial(int n) {
     local_0 = n;
     if (n > 0x1) {
         local_2 = local_0;
-        x8 = local_0;
-        v2 = factorial(x8 - 0x1);
-        local_1 = local_2 * v2;
+        v1 = local_0;
+        v3 = factorial(v1 - 0x1);
+        local_1 = local_2 * v3;
         return local_1;
     }
     local_1 = 0x1;
@@ -148,9 +148,9 @@ fn factorial @ 0x2103f4 (size 96)
     br 0x210444
   blk3 @ 0x210420:
     store32(load32((sp + #0xffffffffffffffec)), (sp + #0xffffffffffffffe4))
-    x8 = load32((sp + #0xffffffffffffffec))
-    v2 = call 0x2103f4((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32((load32((sp + #0xffffffffffffffe4)) * (v2 & #0xffffffff)), (sp + #0xffffffffffffffe8))
+    v1 = load32((sp + #0xffffffffffffffec))
+    v3 = call 0x2103f4((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32((load32((sp + #0xffffffffffffffe4)) * (v3 & #0xffffffff)), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
     ret load32((sp + #0xffffffffffffffe8))
@@ -161,16 +161,16 @@ fn factorial @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x210454 */
 int is_odd(int n) {
-    uint64_t x8;
-    int32_t v2;
+    int32_t v1;
+    int32_t v3;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
     local_0 = n;
     if (n != 0x0) {
-        x8 = local_0;
-        v2 = is_even(x8 - 0x1);
-        local_1 = v2;
+        v1 = local_0;
+        v3 = is_even(v1 - 0x1);
+        local_1 = v3;
         return local_1;
     }
     local_1 = 0x0;
@@ -191,9 +191,9 @@ fn is_odd @ 0x210454 (size 76)
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk3 @ 0x21047c:
-    x8 = load32((sp + #0xffffffffffffffec))
-    v2 = call 0x2104a0((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32(v2, (sp + #0xffffffffffffffe8))
+    v1 = load32((sp + #0xffffffffffffffec))
+    v3 = call 0x2104a0((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32(v3, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
     ret load32((sp + #0xffffffffffffffe8))
@@ -204,16 +204,16 @@ fn is_odd @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: is_even @ 0x2104a0 */
 int is_even(int n) {
-    uint64_t x8;
-    int32_t v2;
+    int32_t v1;
+    int32_t v3;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
     local_0 = n;
     if (n != 0x0) {
-        x8 = local_0;
-        v2 = is_odd(x8 - 0x1);
-        local_1 = v2;
+        v1 = local_0;
+        v3 = is_odd(v1 - 0x1);
+        local_1 = v3;
         return local_1;
     }
     local_1 = 0x1;
@@ -234,9 +234,9 @@ fn is_even @ 0x2104a0 (size 76)
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk3 @ 0x2104c8:
-    x8 = load32((sp + #0xffffffffffffffec))
-    v2 = call 0x210454((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32(v2, (sp + #0xffffffffffffffe8))
+    v1 = load32((sp + #0xffffffffffffffec))
+    v3 = call 0x210454((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32(v3, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:
     ret load32((sp + #0xffffffffffffffe8))

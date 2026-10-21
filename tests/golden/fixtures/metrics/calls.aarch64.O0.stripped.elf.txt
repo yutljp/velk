@@ -111,16 +111,14 @@ fn <unnamed> @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: sub_2103f4 @ 0x2103f4 */
 int32_t sub_2103f4(int32_t a0) {
-    uint64_t x8;
-    int32_t v2;
+    int32_t v3;
     uint32_t local_0; /* [sp-18] */
     uint32_t local_1; /* [sp-1c] */
 
     if (a0 > 0x1) {
         local_1 = a0;
-        x8 = (uint32_t)a0;
-        v2 = sub_2103f4(x8 - 0x1);
-        local_0 = local_1 * v2;
+        v3 = sub_2103f4(a0 - 0x1);
+        local_0 = local_1 * v3;
         return local_0;
     }
     local_0 = 0x1;
@@ -142,9 +140,9 @@ fn <unnamed> @ 0x2103f4 (size 96)
     br 0x210444
   blk3 @ 0x210420:
     store32(load32((sp + #0xffffffffffffffec)), (sp + #0xffffffffffffffe4))
-    x8 = load32((sp + #0xffffffffffffffec))
-    v2 = call 0x2103f4((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32((load32((sp + #0xffffffffffffffe4)) * (v2 & #0xffffffff)), (sp + #0xffffffffffffffe8))
+    v1 = load32((sp + #0xffffffffffffffec))
+    v3 = call 0x2103f4((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32((load32((sp + #0xffffffffffffffe4)) * (v3 & #0xffffffff)), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
     ret load32((sp + #0xffffffffffffffe8))
@@ -155,14 +153,12 @@ fn <unnamed> @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210454 @ 0x210454 */
 int32_t sub_210454(int32_t a0) {
-    uint64_t x8;
-    int32_t v2;
+    int32_t v3;
     uint32_t local_0; /* [sp-18] */
 
     if (a0 != 0x0) {
-        x8 = (uint32_t)a0;
-        v2 = sub_2104a0(x8 - 0x1);
-        local_0 = v2;
+        v3 = sub_2104a0(a0 - 0x1);
+        local_0 = v3;
         return local_0;
     }
     local_0 = 0x0;
@@ -183,9 +179,9 @@ fn <unnamed> @ 0x210454 (size 76)
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk3 @ 0x21047c:
-    x8 = load32((sp + #0xffffffffffffffec))
-    v2 = call 0x2104a0((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32(v2, (sp + #0xffffffffffffffe8))
+    v1 = load32((sp + #0xffffffffffffffec))
+    v3 = call 0x2104a0((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32(v3, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
     ret load32((sp + #0xffffffffffffffe8))
@@ -196,14 +192,12 @@ fn <unnamed> @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int32_t sub_2104a0(int32_t a0) {
-    uint64_t x8;
-    int32_t v2;
+    int32_t v3;
     uint32_t local_0; /* [sp-18] */
 
     if (a0 != 0x0) {
-        x8 = (uint32_t)a0;
-        v2 = sub_210454(x8 - 0x1);
-        local_0 = v2;
+        v3 = sub_210454(a0 - 0x1);
+        local_0 = v3;
         return local_0;
     }
     local_0 = 0x1;
@@ -224,9 +218,9 @@ fn <unnamed> @ 0x2104a0 (size 76)
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk3 @ 0x2104c8:
-    x8 = load32((sp + #0xffffffffffffffec))
-    v2 = call 0x210454((((x8 & #0xffffffff) - #0x1) & #0xffffffff))
-    store32(v2, (sp + #0xffffffffffffffe8))
+    v1 = load32((sp + #0xffffffffffffffec))
+    v3 = call 0x210454((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    store32(v3, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:
     ret load32((sp + #0xffffffffffffffe8))

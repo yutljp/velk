@@ -859,27 +859,36 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     let Some(ssa) = build(ir) else {
         return;
     };
-    // A value a statement reads without naming it must be in its register,
-    // but for vector data a call of unknown floating-point arguments could
-    // only take as a scalar one.
-    let vectors = vector_values(&ssa);
     let mut needed: HashSet<u16> = HashSet::new();
-    for (&(block, position), reads) in &ssa.implicit_reads {
-        let floats = match &ssa.ir.blocks[block].stmts[position] {
-            Stmt::Call { convention, .. } => convention.float_arguments(),
-            _ => &[],
-        };
-        needed.extend(
-            reads
-                .iter()
-                .filter(|(register, value)| !(floats.contains(register) && vectors.contains(value)))
-                .map(|(_, value)| *value),
-        );
-    }
-    let implicit = needed.clone();
     for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
         needed.extend(explicit_reads(stmt));
     }
+    // A value a statement reads without naming it must be in its register,
+    // but for vector data a call of unknown floating-point arguments could
+    // only take as a scalar one, and for a value the code computes with in
+    // a register a call reads unnamed besides its arguments, AArch64's
+    // indirect result register or SysV's vector count: that is scratch the
+    // call passes by.
+    let vectors = vector_values(&ssa);
+    let mut implicit: HashSet<u16> = HashSet::new();
+    for (&(block, position), reads) in &ssa.implicit_reads {
+        let (floats, extra) = match &ssa.ir.blocks[block].stmts[position] {
+            Stmt::Call { convention, .. } => {
+                (convention.float_arguments(), convention.call_extra())
+            }
+            _ => (&[][..], &[][..]),
+        };
+        implicit.extend(
+            reads
+                .iter()
+                .filter(|(register, value)| {
+                    !(floats.contains(register) && vectors.contains(value))
+                        && !(extra.contains(register) && needed.contains(value))
+                })
+                .map(|(_, value)| *value),
+        );
+    }
+    needed.extend(&implicit);
     // A φ only such a call reads joins nothing, so the vector data and what
     // the register held before it can be variables apart.
     let mut pending: Vec<u16> = needed.iter().copied().collect();
