@@ -223,9 +223,9 @@ metrics/tail_indirect.x86_64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 3 reg
 metrics/tail_indirect.x86_64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
 pe64.exe: 46 lines, 3 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.obj: 45 lines, 3 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-rust_demo: 75034 lines, 15911 variables, 7440 casts, 1825 registers, 0 unsigned, 32 traps, 1602 gotos, 126 indirect calls
-rust_probe: 75034 lines, 15911 variables, 7440 casts, 1825 registers, 0 unsigned, 32 traps, 1602 gotos, 126 indirect calls
-rust_probe_stripped: 74987 lines, 16087 variables, 7203 casts, 1004 registers, 0 unsigned, 31 traps, 1596 gotos, 126 indirect calls
+rust_demo: 75035 lines, 15940 variables, 7357 casts, 1670 registers, 0 unsigned, 32 traps, 1602 gotos, 126 indirect calls
+rust_probe: 75035 lines, 15940 variables, 7357 casts, 1670 registers, 0 unsigned, 32 traps, 1602 gotos, 126 indirect calls
+rust_probe_stripped: 74953 lines, 16100 variables, 7120 casts, 847 registers, 0 unsigned, 31 traps, 1596 gotos, 126 indirect calls
 strings.o: 4 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 switch_jumptable.o: 177 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 switch_jumptable_x64.o: 90 lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

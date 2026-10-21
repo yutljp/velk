@@ -110,14 +110,45 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
         .map(|index| crate::ir::cfg::block_successors(&ir.blocks, index))
         .collect();
     let idom = crate::ssa::dom::dominators(&successors).idom;
-    let dominated = |mut block: usize| loop {
-        if block == setup_block {
-            return true;
+    // A landing pad holds the frame pointer of the call that unwinds into
+    // it, which the unwinder restores as it does every register the callee
+    // saves: it is the frame where that call's block is.
+    let starts: HashMap<u64, usize> = ir
+        .blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    let caller_of: HashMap<usize, usize> = ir
+        .landing_pads
+        .iter()
+        .filter_map(|(pad, sites)| {
+            let (site, _) = sites.first()?;
+            let holder = ir
+                .blocks
+                .iter()
+                .enumerate()
+                .filter(|(_, block)| block.start <= *site)
+                .max_by_key(|(_, block)| block.start)?
+                .0;
+            Some((*starts.get(pad)?, holder))
+        })
+        .collect();
+    let count = ir.blocks.len();
+    let dominated = |mut block: usize| {
+        for _ in 0..=count {
+            if block == setup_block {
+                return true;
+            }
+            match idom[block] {
+                Some(parent) if parent != block => block = parent,
+                _ => match caller_of.get(&block) {
+                    Some(caller) if *caller != block => block = *caller,
+                    _ => return false,
+                },
+            }
         }
-        match idom[block] {
-            Some(parent) if parent != block => block = parent,
-            _ => return false,
-        }
+        false
     };
     // Any other write restores the caller's frame pointer before a return.
     for (index, block) in ir.blocks.iter().enumerate() {
@@ -672,6 +703,82 @@ mod tests {
         settle(&mut ir);
 
         let reads_rbp = ir.blocks[0]
+            .stmts
+            .iter()
+            .any(|stmt| crate::ir::visit::statement_registers(stmt).1.contains(&RBP));
+        assert!(!reads_rbp, "{}", ir.render());
+    }
+
+    #[test]
+    fn a_landing_pad_reads_its_call_sites_frame_through_the_frame_pointer() {
+        const RSP: u16 = 4;
+        const RBP: u16 = 5;
+        let at = |base: u16, offset: i64| {
+            Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(offset as u64))
+        };
+        let assign = |index, value| Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        };
+        let call = Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::SysV,
+            args: Some(Vec::new()),
+            floats_named: false,
+            result: None,
+            clobbers: None,
+            via: None,
+        };
+        // push rbp; mov rbp, rsp; [rbp-8] = edi; call f; ... ret, and a pad
+        // at 0x40 for the call that reads [rbp-8].
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(RSP, at(RSP, -8)),
+                Stmt::Store {
+                    addr: Expr::reg(RSP, 64),
+                    value: Expr::reg(RBP, 64),
+                    width: 8,
+                },
+                assign(RBP, Expr::reg(RSP, 64)),
+                assign(RSP, at(RSP, -0x10)),
+                Stmt::Store {
+                    addr: at(RBP, -8),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                call,
+                assign(RSP, at(RSP, 0x10)),
+                assign(
+                    RBP,
+                    Expr::Load {
+                        addr: Box::new(Expr::reg(RSP, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                ),
+                assign(RSP, at(RSP, 8)),
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        ir.blocks.push(crate::ir::Block {
+            start: 0x40,
+            stmts: vec![Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(at(RBP, -8)),
+                    width: 8,
+                    signed: false,
+                },
+            }],
+        });
+        ir.landing_pads = vec![(0x40, vec![(0x0, 0x10)])];
+
+        settle(&mut ir);
+
+        let reads_rbp = ir.blocks[1]
             .stmts
             .iter()
             .any(|stmt| crate::ir::visit::statement_registers(stmt).1.contains(&RBP));
