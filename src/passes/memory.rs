@@ -550,11 +550,12 @@ pub(crate) fn strip_mask(expr: &Expr) -> &Expr {
 /// that variable there once and only reads it back: a value kept across
 /// calls in the frame, `local_0 = v1; ... f(local_0)`, reads `f(v1)`, and
 /// the store goes. The slot must be private to the frame and touched only
-/// whole, stored once by a variable defined once, earlier in the same
-/// block, and read only where that store has run; no call may take it as
-/// an argument on the stack, and no Go call of unknown arguments may run
-/// after the store. Slots are told apart by their offset from the stack
-/// pointer on entry, which tracks the stack pointer's moves.
+/// whole, stored once by a variable defined once, before the store and
+/// outside any loop unless in the store's block, and read only where that
+/// store has run; no call may take it as an argument on the stack, and no
+/// Go call of unknown arguments may run after the store. Slots are told
+/// apart by their offset from the stack pointer on entry, which tracks the
+/// stack pointer's moves.
 pub fn forward_spilled_variables(ir: &mut FunctionIr) {
     use std::collections::HashMap;
     let sp = stack_pointer(ir.isa);
@@ -673,6 +674,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
             _ => return false,
         }
     };
+    let cyclic = crate::ir::cfg::cyclic_blocks(ir);
     let mut forwarded: Vec<(i64, u8, u16)> = Vec::new();
     let mut dropped: Vec<(usize, usize)> = Vec::new();
     for (offset, uses) in &accesses {
@@ -706,10 +708,14 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
             continue;
         };
         let variable = *variable;
-        let defined_before = matches!(
-            definitions.get(&variable).map(Vec::as_slice),
-            Some([(block, at)]) if *block == store_block && *at < store_at
-        );
+        // The variable holds one value from its definition on: given earlier
+        // in the store's block, or in a block that runs once and comes
+        // before it on every path.
+        let defined_before = match definitions.get(&variable).map(Vec::as_slice) {
+            Some([(block, at)]) if *block == store_block => *at < store_at,
+            Some([(block, _)]) => !cyclic.contains(block) && dominates(*block, store_block),
+            _ => false,
+        };
         let read_after = uses
             .iter()
             .filter(|(.., store)| !*store)
