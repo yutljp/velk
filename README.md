@@ -175,6 +175,7 @@ cargo test                # ユニットテストと結合テスト
 | `src/lift/hardware/` | lift した命令が実機と同じ結果になる（AArch64 は arm64 の macOS、x86-64 は C コンパイラのある環境で実行） | 実機での実行 |
 | `src/analysis/semantics_tests.rs` | 最適化が関数の動作を変えていない（IR を実行して比べる） | 最適化前の IR |
 | `tests/recompile.rs` | 整数の計算だけの関数で、疑似 C をコンパイルして実行した結果が IR と同じになり、コンパイルできる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile.txt` |
+| `tests/recompile.rs` | メモリを読み書きする関数で、疑似 C を実行した後の戻り値とメモリの内容が IR と同じになる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile_memory.txt` |
 | `tests/invariants.rs` | 飛び先のない goto、代入されないレジスタの読み取り、疑似 C での文の欠落がない | 出力の性質 |
 | `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報（`*.debug.elf`） |
 | `tests/golden.rs` | 全テスト用バイナリの関数一覧、疑似 C、IR、シグネチャ、要約と、読みやすさの数（変数・キャスト・レジスタ名・goto など）が変わっていない | `tests/golden/fixtures/` と `tests/golden/readability.txt` に記録した出力 |
