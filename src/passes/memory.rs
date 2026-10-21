@@ -45,7 +45,17 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     let mut clobbered = convention.clobbered_by(*clobbers);
                     clobbered.extend(result.map(|result| result.index));
                     let mut passed = 0;
-                    for value in through.iter_mut().chain(args.iter_mut().flatten()) {
+                    if let Some(through) = through {
+                        forward_expr(through, &pending);
+                    }
+                    // Arguments past the registers are the ones the stack
+                    // carries; a register argument loaded from a slot only
+                    // reads it.
+                    let in_registers = convention.arguments().len();
+                    for value in args.iter_mut().flatten().take(in_registers) {
+                        forward_expr(value, &pending);
+                    }
+                    for value in args.iter_mut().flatten().skip(in_registers) {
                         forward_expr(value, &pending);
                         if let Expr::Load { addr, width, .. } = value {
                             let (base, offset) = split_offset(addr);
@@ -54,7 +64,14 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                             }
                         }
                     }
+                    // A callee of Go's register convention spills its
+                    // arguments to the area at the bottom of the frame that
+                    // is its own, which the caller stores nothing to: a slot
+                    // the caller stored to keeps its value. Only a call of
+                    // unknown arguments, or of another convention, may write
+                    // more.
                     let spilled = match args {
+                        Some(_) if spills && *convention == crate::ir::Convention::GoAmd64 => 0,
                         Some(args) if spills => 8 * args.len() as i64,
                         None if spills => i64::MAX,
                         _ => 0,
