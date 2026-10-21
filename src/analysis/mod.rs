@@ -692,6 +692,7 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
     let constant = |address: u64| {
         image.section_at(address).is_some_and(|section| {
             section.executable
+                || section.read_only
                 || section.name.contains("rodata")
                 || section.name.contains("rel.ro")
                 || section.name.contains("__const")

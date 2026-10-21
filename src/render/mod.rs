@@ -178,6 +178,8 @@ pub fn render(
     let mut folded = ir.clone();
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
+    // A saved parameter returned reads as the parameter now.
+    crate::analysis::typing::apply_pointer_return(&mut folded);
     let ir = &folded;
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
