@@ -24,10 +24,16 @@ pub(super) fn layout(file: &ObjFile) -> HashMap<SectionIndex, u64> {
         if !allocated(&section) {
             continue;
         }
+        // Sizes no address space holds leave the sections after unplaced.
         let align = section.align().max(1);
-        let base = cursor.div_ceil(align) * align;
+        let Some(base) = cursor.div_ceil(align).checked_mul(align) else {
+            break;
+        };
+        let Some(end) = base.checked_add(section.size()) else {
+            break;
+        };
         bases.insert(section.index(), base);
-        cursor = base + section.size();
+        cursor = end;
     }
     bases
 }
@@ -165,9 +171,11 @@ fn patch(bytes: &mut [u8], place: usize, pc: u64, symbol: u64, relocation: &obje
         (RelocationKind::Absolute, object::RelocationEncoding::Generic, 64) => {
             write_u64(bytes, place, value)
         }
-        (RelocationKind::Absolute, object::RelocationEncoding::Generic, 32) => {
-            write_u32(bytes, place, value as u32)
-        }
+        (
+            RelocationKind::Absolute,
+            object::RelocationEncoding::Generic | object::RelocationEncoding::X86Signed,
+            32,
+        ) => write_u32(bytes, place, value as u32),
         (
             RelocationKind::Relative | RelocationKind::PltRelative,
             object::RelocationEncoding::Generic | object::RelocationEncoding::X86Branch,

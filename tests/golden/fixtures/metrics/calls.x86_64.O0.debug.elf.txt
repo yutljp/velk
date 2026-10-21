@@ -51,7 +51,7 @@ fn square @ 0x201320 (size 16)
 void square(void);
 void twice(void);
 void *pick_op(int which) {
-    return (which != 0x0 ? square : twice);
+    return (void *)(which != 0x0 ? square : twice);
 }
 -- signature
 void * (int which)
@@ -74,7 +74,7 @@ int apply_table(unsigned int index, int x) {
 
     v1 = index % 0x3;
     v3 = table[v1];
-    return (*(v3))(x);
+    return ((uint64_t (*)())v3)(x);
 }
 -- signature
 int (unsigned int index, int x)
@@ -96,7 +96,7 @@ fn apply_table @ 0x201360 (size 52)
 int apply_pointer(void *f, int x) {
     int32_t v3;
 
-    v3 = (*(f))(x);
+    v3 = ((uint64_t (*)())f)(x);
     return v3 + 0x1;
 }
 -- signature
@@ -288,7 +288,7 @@ int sum_varargs(int count, ...) {
 
     local_0 = count;
     v1 = &local_1;
-    v1->field_0x10 = &local_2;
+    v1->field_0x10 = (uintptr_t)&local_2;
     v1->field_0x8 = rsp + 0x8;
     v1->field_0x4 = 0x30;
     v1->field_0x0 = 0x8;
@@ -298,12 +298,12 @@ int sum_varargs(int count, ...) {
         v2 = local_1;
         local_6 = v2;
         if (v2 > 0x28) {
-            v6 = local_5;
+            v6 = (uint64_t *)local_5;
             v5 = v6[0x1];
             v6[0x1] = v5 + 0x8;
             local_7 = v5;
         } else {
-            v3 = local_5;
+            v3 = (struct sum_varargs_s2 *)local_5;
             v4 = local_6;
             v5 = v4 + v3->field_0x10;
             v3->field_0x0 = v4 + 0x8;

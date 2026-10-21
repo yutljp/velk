@@ -117,8 +117,8 @@ int32_t sub_201410(uint64_t *a0, int32_t a1) {
     uint64_t *v2;
     int32_t v3;
 
-    v2 = *a0;
-    v3 = (*(v2[0x2]))(a0); /* vtable slot 2: sub_201430, sub_201460 */
+    v2 = (uint64_t *)*a0;
+    v3 = ((uint64_t (*)())v2[0x2])(a0); /* vtable slot 2: sub_201430, sub_201460 */
     return v3 * a1;
 }
 -- signature
@@ -251,7 +251,7 @@ int32_t sub_201480(int32_t a0) {
     int32_t v3;
 
     v1 = qword_204610;
-    v2 = 0x203610 + v1;
+    v2 = (void *)(0x203610 + v1);
     qword_204610 = v1 + 0x10;
     sub_201420(v2, a0);
     v3 = sub_201430(v2); /* via vtable slot 2 */
@@ -286,7 +286,7 @@ int32_t sub_2014e0(int32_t a0, int32_t a1, int32_t a2) {
     void *v4;
 
     v3 = qword_204610;
-    v4 = 0x203610 + v3;
+    v4 = (void *)(0x203610 + v3);
     qword_204610 = v3 + 0x10;
     sub_201440(v4, a0, a1);
     return sub_201470(v4, a2); /* via vtable slot 3 */
@@ -314,8 +314,8 @@ fn <unnamed> @ 0x2014e0 (size 77)
 int32_t sub_201530(uint64_t *a0) {
     uint64_t *v1;
 
-    v1 = *a0;
-    return (*(v1[0x2]))(a0); /* vtable slot 2: sub_201430, sub_201460 */
+    v1 = (uint64_t *)*a0;
+    return ((uint64_t (*)())v1[0x2])(a0); /* vtable slot 2: sub_201430, sub_201460 */
 }
 -- signature
 int32_t (uint64_t * a0)
@@ -337,7 +337,7 @@ int32_t sub_201540(uint64_t *a0, int64_t a1) {
     int64_t v1;
 
     v1 = *(uint64_t *)(*a0 + 0x18);
-    return (*(v1))(a0, a1); /* vtable slot 3: sub_201410, sub_201470 */
+    return ((uint64_t (*)())v1)(a0, a1); /* vtable slot 3: sub_201410, sub_201470 */
 }
 -- signature
 int32_t (uint64_t * a0, int64_t a1)

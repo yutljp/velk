@@ -389,6 +389,13 @@ fn recognize(
 ) -> Option<Recovered> {
     let resolved = resolve(target, &environment_from(block, limits.held.clone()));
     let (base, table, index, scale, entry) = table_pattern(&resolved)?;
+    // A table the program may write holds no cases known here.
+    if !image
+        .section_at(table)
+        .is_some_and(|section| section.read_only || section.executable)
+    {
+        return None;
+    }
     let entry_bytes = match entry {
         Entry::Absolute => 8,
         Entry::Offset32 => 4,

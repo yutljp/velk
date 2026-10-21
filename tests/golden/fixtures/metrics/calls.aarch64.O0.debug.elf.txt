@@ -51,7 +51,7 @@ fn square @ 0x210334 (size 28)
 void square(void);
 void twice(void);
 void *pick_op(int which) {
-    return (which != 0x0 ? square : twice);
+    return (void *)(which != 0x0 ? square : twice);
 }
 -- signature
 void * (int which)
@@ -74,7 +74,7 @@ int apply_table(unsigned int index, int x) {
 
     local_0 = index;
     v3 = table[local_0 % 0x3];
-    return (*(v3))(x);
+    return ((uint64_t (*)())v3)(x);
 }
 -- signature
 int (unsigned int index, int x)
@@ -96,7 +96,7 @@ fn apply_table @ 0x21037c (size 72)
 int apply_pointer(void *f, int x) {
     int32_t v3;
 
-    v3 = (*(f))(x);
+    v3 = ((uint64_t (*)())f)(x);
     return v3 + 0x1;
 }
 -- signature

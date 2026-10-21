@@ -43,7 +43,7 @@ int64_t sub_210188(struct sub_210188_a0 *a0, int64_t a1, int32_t a2) {
     v1 = a0 + a1;
     v1->field_0x0 = a2;
     v1->field_0x8 = a2 + 0x1;
-    return a0;
+    return (uintptr_t)a0;
 }
 -- signature
 int64_t (struct sub_210188_a0 * a0, int64_t a1, int32_t a2)

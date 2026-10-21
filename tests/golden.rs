@@ -223,25 +223,9 @@ fn casts(code: &str) -> usize {
 }
 
 /// Calls through a pointer the analysis could not resolve, printed
-/// `(*(address))(arguments)`: a parenthesis opening a dereference whose
-/// match a parenthesized argument list follows.
+/// `((uint64_t (*)())address)(arguments)`.
 fn indirect_calls(code: &str) -> usize {
-    code.match_indices("(*(")
-        .filter(|&(start, _)| {
-            let mut depth = 0;
-            for (offset, c) in code[start..].char_indices() {
-                match c {
-                    '(' => depth += 1,
-                    ')' => depth -= 1,
-                    _ => continue,
-                }
-                if depth == 0 {
-                    return code[start + offset + 1..].starts_with('(');
-                }
-            }
-            false
-        })
-        .count()
+    code.matches("((uint64_t (*)())").count()
 }
 
 /// A machine register name left in the output instead of a variable.

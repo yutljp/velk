@@ -364,7 +364,7 @@ int find_pair(int *p, int n, int target) {
         v1 = 0x0;
         v2 = n;
         v3 = n + 0x1;
-        v4 = p + 0x1;
+        v4 = (uintptr_t)(p + 0x1);
         v5 = 0x1;
         v6 = 0x1;
         do {
@@ -372,7 +372,7 @@ int find_pair(int *p, int n, int target) {
             if (v7 < v2) {
                 v8 = p[v1];
                 v9 = v2;
-                v10 = v4;
+                v10 = (uint32_t *)v4;
                 v11 = v5;
                 do {
                     v12 = *v10;

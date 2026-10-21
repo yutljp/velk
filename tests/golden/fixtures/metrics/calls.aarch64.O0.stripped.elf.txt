@@ -70,7 +70,7 @@ int32_t sub_21037c(int32_t a0, int32_t a1) {
     int64_t v3;
 
     v3 = qword_2206f0[(uint32_t)a0 % 0x3];
-    return (*(v3))(a1);
+    return ((uint64_t (*)())v3)(a1);
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -92,7 +92,7 @@ fn <unnamed> @ 0x21037c (size 72)
 int32_t sub_2103c4(void *a0, int32_t a1) {
     int32_t v3;
 
-    v3 = (*(a0))(a1);
+    v3 = ((uint64_t (*)())a0)(a1);
     return v3 + 0x1;
 }
 -- signature

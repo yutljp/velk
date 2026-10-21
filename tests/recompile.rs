@@ -364,6 +364,18 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
         let code = binary
             .decompile(function.addr, None)
             .unwrap_or_else(|error| panic!("{error}"));
+        // The printed code reads such a register uninitialized, which C
+        // leaves undefined.
+        if code.lines().any(|line| {
+            line.strip_prefix("    uint64_t ")
+                .and_then(|rest| rest.strip_suffix(';'))
+                .is_some_and(machine_register)
+        }) {
+            *excluded
+                .entry("reads a register that is not a parameter")
+                .or_default() += 1;
+            continue;
+        }
         let image = binary.image();
         let inputs = (0..trials::TRIALS)
             .map(|trial| {
@@ -1037,6 +1049,17 @@ fn program(candidates: &[&Candidate], alive: &[usize], mode: Mode) -> Program {
     Program { text, ranges }
 }
 
+/// Whether `name` is a machine register's, as the printed code names one
+/// it reads on entry.
+fn machine_register(name: &str) -> bool {
+    matches!(
+        name,
+        "g" | "rax" | "rbx" | "rcx" | "rdx" | "rsi" | "rdi" | "rbp"
+    ) || name
+        .strip_prefix(['r', 'x', 'w'])
+        .is_some_and(|rest| !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_digit()))
+}
+
 /// The functions the printed code declares ahead of itself, whose address
 /// it takes.
 fn declared_functions(code: &str) -> Vec<&str> {
@@ -1048,6 +1071,32 @@ fn declared_functions(code: &str) -> Vec<&str> {
 /// The printed function under the name `velk_f<index>`, so names cannot
 /// clash with each other or with the C library.
 fn renamed(code: &str, index: usize) -> String {
+    // Each function's own structures are its own, whatever another names
+    // the same.
+    let mut code = code.to_owned();
+    let defined: Vec<String> = code
+        .lines()
+        .filter_map(|line| {
+            let tag = line.strip_prefix("struct ")?.split_once(" {")?.0;
+            Some(tag.to_owned())
+        })
+        .collect();
+    for tag in defined {
+        let from = format!("struct {tag}");
+        let mut out = String::new();
+        let mut rest = code.as_str();
+        while let Some(at) = rest.find(&from) {
+            let after = &rest[at + from.len()..];
+            out.push_str(&rest[..at]);
+            out.push_str(&from);
+            if !after.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_') {
+                write!(out, "_k{index}").expect("writing to a String");
+            }
+            rest = after;
+        }
+        out.push_str(rest);
+        code = out;
+    }
     let mut out = String::new();
     let mut done = false;
     for line in code.lines() {

@@ -225,15 +225,15 @@ fn render_with(
         .iter()
         .map(|param| (param.index, param.name.as_str()))
         .collect();
+    // Any other general register the body uses is a variable of its own;
     // Go keeps the running goroutine in r14.
-    if ir.convention == crate::ir::Convention::GoAmd64 {
-        names.entry(14).or_insert("g");
-    }
-    // Any other general register the body uses is a variable of its own.
     let machine: Vec<(u16, String)> = general_registers(ir)
         .into_iter()
         .filter(|index| !names.contains_key(index))
-        .map(|index| (index, crate::ir::reg_name(ir.isa, index, 64)))
+        .map(|index| match index {
+            14 if ir.convention == crate::ir::Convention::GoAmd64 => (index, "g".to_owned()),
+            _ => (index, crate::ir::reg_name(ir.isa, index, 64)),
+        })
         .collect();
     for (index, name) in &machine {
         names.insert(*index, name);
@@ -447,6 +447,18 @@ fn render_with(
         scaled,
         returned: declared(&ir.ret_type, false),
         declared: declared_registers,
+        pointer_types: ir
+            .params
+            .iter()
+            .map(|param| (param.index, &param.ty))
+            .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
+            .filter(|(_, ty)| ty.is_pointer())
+            .map(|(index, ty)| (index, ty.to_string().trim_end().to_owned()))
+            .collect(),
+        ret_pointer: ir
+            .ret_type
+            .is_pointer()
+            .then(|| ir.ret_type.to_string().trim_end().to_owned()),
         value_bits: int::value_bits(ir),
         read_once: Default::default(),
         taken: Default::default(),
@@ -1533,12 +1545,37 @@ fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
 
 /// A returned value, of which the caller sees what the return type holds.
 fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
-    render_value_at(
+    let text = render_value_at(
         value,
         ctx,
         ctx.returned.map_or(64, |returned| returned.bits),
         ctx.returned.is_some_and(|returned| returned.integer),
-    )
+    );
+    conformed(value, text, ctx.ret_pointer.as_deref(), ctx)
+}
+
+/// The value as C takes it into a pointer of type `pointer`, or into an
+/// integer when that is None: C converts between the two only by a cast.
+fn conformed(value: &Expr, text: String, pointer: Option<&str>, ctx: &Ctx<'_>) -> String {
+    let is_pointer = expr::pointer_valued(value, ctx)
+        || text.starts_with('&')
+        || text.starts_with("(uint8_t *)");
+    // Printed with no space, or in its own parentheses, the value binds
+    // tighter than the cast.
+    let operand = |text: String| {
+        if !text.contains(char::is_whitespace) || expr::enclosed(&text) {
+            text
+        } else {
+            format!("({text})")
+        }
+    };
+    match pointer {
+        Some(ty) if !is_pointer && !matches!(value, Expr::Const(0)) => {
+            format!("({ty}){}", operand(text))
+        }
+        None if is_pointer => format!("(uintptr_t){}", operand(text)),
+        _ => text,
+    }
 }
 
 pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
@@ -1566,15 +1603,14 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             }
             // C keeps of the value what the destination is declared to hold.
             let declared = ctx.declared.get(&dest.index);
-            format!(
-                "{target} = {};",
-                render_value_at(
-                    value,
-                    ctx,
-                    declared.map_or(64, |declared| declared.bits),
-                    declared.is_some_and(|declared| declared.integer)
-                )
-            )
+            let text = render_value_at(
+                value,
+                ctx,
+                declared.map_or(64, |declared| declared.bits),
+                declared.is_some_and(|declared| declared.integer),
+            );
+            let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
+            format!("{target} = {};", conformed(value, text, pointer, ctx))
         }
         Stmt::Store { addr, value, width } => {
             // Memory keeps of the value the bits stored.
@@ -1587,11 +1623,19 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     Some((op, rhs)) => {
                         format!("{} {}= {};", member, op, render_at(rhs, ctx, stored))
                     }
-                    None => format!(
-                        "{} = {};",
-                        member,
-                        render_value_at(value, ctx, stored, false)
-                    ),
+                    None => {
+                        let text = render_value_at(value, ctx, stored, false);
+                        // A field recovered from accesses, or an element of an
+                        // integer type, holds an integer.
+                        let text = if member.contains("field_0x")
+                            || naming::element_is_integer(addr, ctx)
+                        {
+                            conformed(value, text, None, ctx)
+                        } else {
+                            text
+                        };
+                        format!("{member} = {text};")
+                    }
                 };
             }
             let address = render_expr(addr, ctx);
@@ -1628,7 +1672,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                         "*({} *)({}) = {};",
                         type_of(*width, false),
                         expr::local_plus_offset(addr, ctx).unwrap_or(address),
-                        render_value_at(value, ctx, stored, false)
+                        conformed(value, render_value_at(value, ctx, stored, false), None, ctx)
                     ),
                 },
             }
@@ -1715,7 +1759,15 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 {
                     sanitize(name)
                 }
-                (Some(through), _) => format!("(*({}))", render_value(through, ctx)),
+                // C calls through a value only of a function's pointer type.
+                (Some(through), _) => {
+                    let text = render_value(through, ctx);
+                    if text.contains(char::is_whitespace) {
+                        format!("((uint64_t (*)())({text}))")
+                    } else {
+                        format!("((uint64_t (*)()){text})")
+                    }
+                }
                 (None, Some(target)) => match ctx.callees.get(target) {
                     Some(name) => sanitize(name),
                     None => format!("sub_{target:x}"),
@@ -2340,6 +2392,41 @@ mod tests {
     }
 
     #[test]
+    fn a_pointer_taken_as_an_integer_is_cast() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(
+                    VARIABLE_BASE,
+                    Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(7)),
+                ),
+                Stmt::Ret {
+                    value: Expr::Select {
+                        cond: crate::ir::Cond::Ne,
+                        lhs: Box::new(Expr::reg(VARIABLE_BASE, 64)),
+                        rhs: Box::new(Expr::Const(0)),
+                        then: Box::new(Expr::reg(7, 64)),
+                        els: Box::new(Expr::Const(0)),
+                    },
+                },
+            ],
+        );
+        ir.params = vec![Param {
+            index: 7,
+            name: "a0".to_owned(),
+            ty: CType::pointer_to(CType::U32),
+        }];
+        ir.ret_type = CType::U64;
+        let text = rendered(&ir);
+        for line in [
+            "    v1 = (uintptr_t)a0 & 0x7;\n",
+            "    return (uintptr_t)(v1 != 0x0 ? a0 : 0x0);\n",
+        ] {
+            assert!(text.contains(line), "{line:?} in {text}");
+        }
+    }
+
+    #[test]
     fn an_array_of_structures_is_indexed_by_elements() {
         // struct { int64_t field_0x0; int32_t field_0x8; } of 16 bytes.
         let element = VARIABLE_BASE;
@@ -2411,7 +2498,7 @@ mod tests {
             "    v1 = a0 + a1;\n",
             "    v1->field_0x0 = 0x0;\n",
             "    v1 = v1 + 0x2;\n",
-            "    v2 = &a0[a1].field_0x8;\n",
+            "    v2 = (uintptr_t)&a0[a1].field_0x8;\n",
             "    return *(uint32_t *)((uint8_t *)a0 + (a1 << 0x4) + 0xc);\n",
         ] {
             assert!(text.contains(line), "{line:?} in {text}");

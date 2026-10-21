@@ -72,7 +72,7 @@ int32_t sub_201360(uint32_t a0, int32_t a1) {
 
     v1 = a0 % 0x3;
     v3 = qword_202670[v1];
-    return (*(v3))(a1);
+    return ((uint64_t (*)())v3)(a1);
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -94,7 +94,7 @@ fn <unnamed> @ 0x201360 (size 52)
 int32_t sub_2013a0(void *a0, int32_t a1) {
     int32_t v3;
 
-    v3 = (*(a0))(a1);
+    v3 = ((uint64_t (*)())a0)(a1);
     return v3 + 0x1;
 }
 -- signature
@@ -280,7 +280,7 @@ int32_t sub_201540(int32_t a0, ...) {
 
     local_0 = a0;
     v1 = &local_1;
-    v1->field_0x10 = &local_2;
+    v1->field_0x10 = (uintptr_t)&local_2;
     v1->field_0x8 = rsp + 0x8;
     v1->field_0x4 = 0x30;
     v1->field_0x0 = 0x8;
@@ -290,12 +290,12 @@ int32_t sub_201540(int32_t a0, ...) {
         v2 = local_1;
         local_6 = v2;
         if (v2 > 0x28) {
-            v6 = local_5;
+            v6 = (uint64_t *)local_5;
             v5 = v6[0x1];
             v6[0x1] = v5 + 0x8;
             local_7 = v5;
         } else {
-            v3 = local_5;
+            v3 = (struct sub_201540_s2 *)local_5;
             v4 = local_6;
             v5 = v4 + v3->field_0x10;
             v3->field_0x0 = v4 + 0x8;

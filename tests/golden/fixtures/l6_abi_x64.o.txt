@@ -44,7 +44,7 @@ fn tail_direct @ 0x10 (size 8)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x20 */
 int32_t tail_indirect(void *a0, int32_t a1) {
-    return (*(a0))(a1 + 0x1);
+    return ((uint64_t (*)())a0)(a1 + 0x1);
 }
 -- signature
 int32_t (void * a0, int32_t a1)

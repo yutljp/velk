@@ -814,7 +814,8 @@ fn read_later(
 }
 
 /// The function a pointer in data names, for a call or jump through it:
-/// `call [slot]`, where the slot holds a known function's address.
+/// `call [slot]`, where the slot holds a known function's address and the
+/// program cannot write another there.
 pub(crate) fn pointer_target(image: &Image, through: &Expr) -> Option<u64> {
     let Expr::Load { addr, width: 8, .. } = through else {
         return None;
@@ -822,7 +823,8 @@ pub(crate) fn pointer_target(image: &Image, through: &Expr) -> Option<u64> {
     let Expr::Const(slot) = addr.as_ref() else {
         return None;
     };
-    if image.section_at(*slot)?.executable {
+    let section = image.section_at(*slot)?;
+    if section.executable || !section.read_only {
         return None;
     }
     let bytes = image.read_vaddr(*slot, 8)?;

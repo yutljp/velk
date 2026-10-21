@@ -76,6 +76,10 @@ pub(crate) struct Ctx<'a> {
     pub(super) scaled: std::collections::HashSet<u16>,
     /// The integer or pointer type the function returns.
     pub(super) returned: Option<Declared>,
+    /// The pointer type each named register is declared with, as a cast
+    /// names it, and the function's return type when it is a pointer.
+    pub(super) pointer_types: HashMap<u16, String>,
+    pub(super) ret_pointer: Option<String>,
     /// The integer type each named register is declared with.
     pub(super) declared: HashMap<u16, Declared>,
     /// The bits each variable's values fit in.
@@ -388,6 +392,63 @@ fn rounding_function(rounding: Rounding) -> &'static str {
     }
 }
 
+/// Whether C gives the printed value a pointer type: a pointer register,
+/// one moved by an offset, or a choice between pointers and null.
+pub(crate) fn pointer_valued(value: &Expr, ctx: &Ctx<'_>) -> bool {
+    match value {
+        Expr::Reg { index, .. } => ctx.pointer_types.contains_key(index),
+        Expr::Bin {
+            op: BinOp::Add | BinOp::Sub,
+            lhs,
+            rhs,
+        } => {
+            pointer_valued(lhs, ctx)
+                || (matches!(value, Expr::Bin { op: BinOp::Add, .. }) && pointer_valued(rhs, ctx))
+        }
+        Expr::Select { then, els, .. } => {
+            let null = |arm: &Expr| matches!(arm, Expr::Const(0));
+            (pointer_valued(then, ctx) || null(then))
+                && (pointer_valued(els, ctx) || null(els))
+                && !(null(then) && null(els))
+        }
+        _ => false,
+    }
+}
+
+/// Whether the text is one parenthesized whole, `(a ? b : c)`.
+pub(crate) fn enclosed(text: &str) -> bool {
+    let mut depth = 0;
+    for (at, c) in text.char_indices() {
+        match c {
+            '(' => depth += 1,
+            ')' => {
+                depth -= 1;
+                if depth == 0 {
+                    return at == text.len() - 1 && text.starts_with('(');
+                }
+            }
+            _ => {}
+        }
+    }
+    false
+}
+
+/// An operand of an operation C applies to integers only: a pointer is
+/// taken as its address, an integer.
+fn integral(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
+    let printed = print(expr, ctx, bits);
+    if pointer_valued(expr, ctx) {
+        Printed::new(
+            format!("(uintptr_t){}", printed.within(12, false).text),
+            Int::U64,
+            ALL,
+            12,
+        )
+    } else {
+        printed
+    }
+}
+
 /// `op` applied to `args`, as C.
 fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
     let infix = |precision, symbol: &str, strength| {
@@ -597,7 +658,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                     wrapped(inverted.exact, inverted.ty)
                 }
             };
-            let inverted = widened(print(lhs, ctx, bits), lhs, bits, keeps);
+            let inverted = widened(integral(lhs, ctx, bits), lhs, bits, keeps);
             let exact = keeps(&inverted);
             Printed::new(
                 format!("~{}", inverted.within(12, false).text),
@@ -734,7 +795,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             lhs,
             rhs,
         } => {
-            let (mut dividend, mut divisor) = (print(lhs, ctx, ALL), print(rhs, ctx, ALL));
+            let (mut dividend, mut divisor) = (integral(lhs, ctx, ALL), integral(rhs, ctx, ALL));
             let whole = |dividend: &Printed, divisor: &Printed| {
                 let ty = dividend.ty.common(divisor.ty);
                 converted(dividend, ty).min(converted(divisor, ty))
@@ -772,7 +833,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             rhs,
         } => {
             let width = crate::ir::semantics::operand_width(lhs, rhs);
-            let shifted = print(lhs, ctx, width);
+            let shifted = integral(lhs, ctx, width);
             let shifted = if shifted.ty.signed && shifted.ty.bits <= width && shifted.exact >= width
             {
                 shifted
@@ -803,7 +864,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             };
             let keeps =
                 |shifted: &Printed| wrapped(shifted.exact.saturating_add(amount), shifted.ty);
-            let shifted = print(lhs, ctx, bits.saturating_sub(amount));
+            let shifted = integral(lhs, ctx, bits.saturating_sub(amount));
             let shifted = if keeps(&shifted) < bits && shifted.ty.bits < 64 {
                 widen(shifted, matches!(lhs.as_ref(), Expr::Const(_)), true)
             } else {
@@ -835,7 +896,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 }
                 _ => (ALL, 63),
             };
-            let shifted = print(lhs, ctx, needed);
+            let shifted = integral(lhs, ctx, needed);
             let exact = if shifted.exact == ALL {
                 ALL
             } else {
@@ -859,7 +920,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                     Printed::new(format!("0x{value:x}"), Int::literal(*value), ALL, 13)
                 }
                 _ if matches!(op, BinOp::Sub) => pointer_side(side, ctx, bits),
-                _ => print(side, ctx, bits),
+                _ => integral(side, ctx, bits),
             };
             binary(*op, (side(lhs), lhs), (side(rhs), rhs), bits, ctx)
         }
@@ -1101,7 +1162,7 @@ fn signed_constant(value: u64, width: u32) -> Printed {
 /// value already fits in them or the reader looks at no more bits.
 fn masked(lhs: &Expr, mask: u64, ctx: &Ctx<'_>, bits: u32) -> Printed {
     let kept = mask.count_ones();
-    let inner = print(lhs, ctx, bits.min(kept));
+    let inner = integral(lhs, ctx, bits.min(kept));
     let alone = if (inner.exact == ALL && zero_bits(lhs, ctx) <= kept)
         || (inner.exact >= kept && inner.unsigned_bits() <= kept)
     {

@@ -4,35 +4,36 @@
 #   computes on floats or vectors: 60
 #   computes on registers alone: 839
 #   has an unsupported instruction: 4
+#   reads a register that is not a parameter: 49
 #   refers to data: 330
 #   returns no integer: 40
 #   takes an argument that is no integer: 28
 #   takes arguments on the stack: 34
 # runs left out:
-#   reaches memory no page can map: 86
-#   reads a register that is not a parameter: 58
-#   step limit: 196
-#   switch without a matching case: 60
+#   reaches memory no page can map: 413
+#   reads a register that is not a parameter: 96
+#   step limit: 422
+#   switch without a matching case: 36
 # arm64.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # arm64_debug.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
-# arm64_debug.o: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# arm64_debug.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # arm64_debug_stripped.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
 # arm64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # arm64_loops0.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (45 runs), 0 differ
 # arm64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # arm64_macho.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# cpp_classes_a64.o: 5 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# cpp_classes_a64.o: 5 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # cpp_classes_x64.o: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_virtual_a64.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # cpp_virtual_a64_stripped.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
-# cpp_virtual_x64.elf: 18 functions, 3 qualify, 1 compile, 2 do not, 1 compared (12 runs), 0 differ
+# cpp_virtual_x64.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # cpp_virtual_x64_stripped.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
-# go_probe: 1275 functions, 62 qualify, 27 compile, 35 do not, 26 compared (296 runs), 0 differ
-# go_stripped: 1273 functions, 61 qualify, 14 compile, 47 do not, 13 compared (156 runs), 0 differ
+# go_probe: 1275 functions, 41 qualify, 38 compile, 3 do not, 31 compared (356 runs), 0 differ
+# go_stripped: 1273 functions, 40 qualify, 37 compile, 3 do not, 30 compared (348 runs), 0 differ
 # l2_loop_a64.o: 4 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
 # l2_loop_x64.o: 4 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
 # l4_memory_a64.o: 4 functions, 4 qualify, 2 compile, 2 do not, 2 compared (22 runs), 0 differ
-# l4_memory_x64.o: 4 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
+# l4_memory_x64.o: 4 functions, 4 qualify, 2 compile, 2 do not, 2 compared (22 runs), 0 differ
 # l5_switch.o: 2 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
 # metrics/alt_names.aarch64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # metrics/alt_names.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
@@ -48,8 +49,8 @@
 # metrics/arith_mixed.x86_64.O2.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/control.aarch64.O0.debug.elf: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (78 runs), 0 differ
 # metrics/control.aarch64.O0.stripped.elf: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (78 runs), 0 differ
-# metrics/control.aarch64.O2.debug.elf: 7 functions, 4 qualify, 3 compile, 1 do not, 3 compared (34 runs), 0 differ
-# metrics/control.aarch64.O2.stripped.elf: 7 functions, 4 qualify, 3 compile, 1 do not, 3 compared (34 runs), 0 differ
+# metrics/control.aarch64.O2.debug.elf: 7 functions, 4 qualify, 4 compile, 0 do not, 4 compared (44 runs), 0 differ
+# metrics/control.aarch64.O2.stripped.elf: 7 functions, 4 qualify, 4 compile, 0 do not, 4 compared (44 runs), 0 differ
 # metrics/control.x86_64.O0.debug.elf: 7 functions, 6 qualify, 6 compile, 0 do not, 6 compared (66 runs), 0 differ
 # metrics/control.x86_64.O0.stripped.elf: 7 functions, 6 qualify, 6 compile, 0 do not, 6 compared (66 runs), 0 differ
 # metrics/control.x86_64.O2.debug.elf: 7 functions, 4 qualify, 4 compile, 0 do not, 4 compared (44 runs), 0 differ
@@ -75,7 +76,7 @@
 # metrics/l2_loop.x86_64.O2.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
 # metrics/l2_loop.x86_64.O2.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
 # metrics/l4_memory.aarch64.O0.debug.elf: 4 functions, 2 qualify, 1 compile, 1 do not, 1 compared (10 runs), 0 differ
-# metrics/l4_memory.aarch64.O0.stripped.elf: 4 functions, 2 qualify, 1 compile, 1 do not, 1 compared (10 runs), 0 differ
+# metrics/l4_memory.aarch64.O0.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/l4_memory.x86_64.O0.debug.elf: 4 functions, 2 qualify, 1 compile, 1 do not, 1 compared (10 runs), 0 differ
 # metrics/l4_memory.x86_64.O0.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/l4_memory.x86_64.O2.debug.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
@@ -95,25 +96,25 @@
 # metrics/loops.x86_64.O2.debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/loops.x86_64.O2.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/memory.aarch64.O0.debug.elf: 8 functions, 5 qualify, 2 compile, 3 do not, 2 compared (24 runs), 0 differ
-# metrics/memory.aarch64.O0.stripped.elf: 8 functions, 5 qualify, 1 compile, 4 do not, 1 compared (12 runs), 0 differ
+# metrics/memory.aarch64.O0.stripped.elf: 8 functions, 5 qualify, 2 compile, 3 do not, 2 compared (24 runs), 0 differ
 # metrics/memory.aarch64.O2.debug.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (41 runs), 0 differ
-# metrics/memory.aarch64.O2.stripped.elf: 8 functions, 4 qualify, 2 compile, 2 do not, 2 compared (24 runs), 0 differ
-# metrics/memory.x86_64.O0.debug.elf: 8 functions, 5 qualify, 2 compile, 3 do not, 2 compared (24 runs), 0 differ
-# metrics/memory.x86_64.O0.stripped.elf: 8 functions, 5 qualify, 1 compile, 4 do not, 1 compared (12 runs), 0 differ
+# metrics/memory.aarch64.O2.stripped.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (41 runs), 0 differ
+# metrics/memory.x86_64.O0.debug.elf: 8 functions, 4 qualify, 2 compile, 2 do not, 2 compared (24 runs), 0 differ
+# metrics/memory.x86_64.O0.stripped.elf: 8 functions, 4 qualify, 2 compile, 2 do not, 2 compared (24 runs), 0 differ
 # metrics/memory.x86_64.O2.debug.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (41 runs), 0 differ
 # metrics/memory.x86_64.O2.stripped.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (41 runs), 0 differ
 # metrics/struct_arrays.aarch64.O0.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
-# metrics/struct_arrays.aarch64.O0.stripped.elf: 3 functions, 3 qualify, 2 compile, 1 do not, 2 compared (15 runs), 0 differ
+# metrics/struct_arrays.aarch64.O0.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/struct_arrays.aarch64.O2.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
-# metrics/struct_arrays.aarch64.O2.stripped.elf: 3 functions, 3 qualify, 2 compile, 1 do not, 2 compared (15 runs), 0 differ
+# metrics/struct_arrays.aarch64.O2.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/struct_arrays.x86_64.O0.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
-# metrics/struct_arrays.x86_64.O0.stripped.elf: 3 functions, 3 qualify, 2 compile, 1 do not, 2 compared (15 runs), 0 differ
+# metrics/struct_arrays.x86_64.O0.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/struct_arrays.x86_64.O2.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
-# metrics/struct_arrays.x86_64.O2.stripped.elf: 3 functions, 3 qualify, 2 compile, 1 do not, 2 compared (15 runs), 0 differ
+# metrics/struct_arrays.x86_64.O2.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/structs.aarch64.O0.debug.elf: 8 functions, 3 qualify, 1 compile, 2 do not, 1 compared (10 runs), 0 differ
-# metrics/structs.aarch64.O0.stripped.elf: 8 functions, 8 qualify, 6 compile, 2 do not, 6 compared (70 runs), 0 differ
+# metrics/structs.aarch64.O0.stripped.elf: 8 functions, 7 qualify, 7 compile, 0 do not, 7 compared (82 runs), 0 differ
 # metrics/structs.aarch64.O2.debug.elf: 8 functions, 2 qualify, 1 compile, 1 do not, 1 compared (10 runs), 0 differ
-# metrics/structs.aarch64.O2.stripped.elf: 8 functions, 3 qualify, 2 compile, 1 do not, 1 compared (10 runs), 0 differ
+# metrics/structs.aarch64.O2.stripped.elf: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/structs.x86_64.O0.debug.elf: 8 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
 # metrics/structs.x86_64.O0.stripped.elf: 8 functions, 7 qualify, 6 compile, 1 do not, 6 compared (70 runs), 0 differ
 # metrics/structs.x86_64.O2.debug.elf: 8 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
@@ -126,9 +127,9 @@
 # metrics/tail_indirect.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # pe64.exe: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # pe64.obj: 10 functions, 2 qualify, 1 compile, 1 do not, 1 compared (12 runs), 0 differ
-# rust_demo: 545 functions, 37 qualify, 10 compile, 27 do not, 7 compared (66 runs), 0 differ
-# rust_probe: 545 functions, 37 qualify, 4 compile, 33 do not, 3 compared (36 runs), 0 differ
-# rust_probe_stripped: 545 functions, 33 qualify, 9 compile, 24 do not, 7 compared (66 runs), 0 differ
+# rust_demo: 545 functions, 36 qualify, 24 compile, 12 do not, 14 compared (116 runs), 0 differ
+# rust_probe: 545 functions, 36 qualify, 24 compile, 12 do not, 14 compared (116 runs), 0 differ
+# rust_probe_stripped: 545 functions, 32 qualify, 23 compile, 9 do not, 14 compared (116 runs), 0 differ
 # strings.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
 # switch_jumptable.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
 # switch_jumptable_x64.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
@@ -136,93 +137,13 @@
 # x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # x64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 arm64_debug.elf 0x2101dc pair_sum: does not compile: incomplete definition of type 'struct pair'
-arm64_debug.o 0x50 pair_sum: does not compile: redefinition of 'pair_sum_a0'
 arm64_debug_stripped.elf 0x2101dc pair_sum: does not compile: incomplete definition of type 'struct pair'
-cpp_classes_a64.o 0xa4 increment(int&): does not compile: incompatible pointer to integer conversion returning 'uint32_t *' (aka 'unsigned int *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-cpp_virtual_x64.elf 0x201460 Rect::area() const: does not compile: redefinition of 'Rect__area_a0'
-cpp_virtual_x64.elf 0x201470 Rect::scaled(int) const: does not compile: redefinition of 'Rect__scaled_a0'
-go_probe 0x408ac0 runtime.(*itabTableType).find: does not compile: incompatible integer to pointer conversion assigning to 'struct runtime___itabTableType__find_s1 *' from 'uint64_t' (aka 'unsigned long long') [-Wint-conversion]
-go_probe 0x408c60 runtime.(*itabTableType).add: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint64_t *' (aka 'unsigned long long *'); dereference with * [-Wint-conversion]
-go_probe 0x40e340 runtime.(*mspan).heapBitsSmallForAddr: does not compile: incompatible integer to pointer conversion assigning to 'uint64_t *' (aka 'unsigned long long *') from 'int64_t' (aka 'long long') [-Wint-conversion]
-go_probe 0x411fc0 runtime.(*fixalloc).free: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint64_t *' (aka 'unsigned long long *') [-Wint-conversion]
-go_probe 0x428060 runtime.blocksampled: does not compile: use of undeclared identifier 'g'
-go_probe 0x428820 runtime.(*mLockProfile).recordLock: does not compile: incompatible pointer to integer conversion returning 'uint8_t *' (aka 'unsigned char *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-go_probe 0x42a720 runtime.(*wbBuf).reset: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
-go_probe 0x42ab20 runtime.netpollready: does not compile: incompatible integer to pointer conversion assigning to 'uint64_t *' (aka 'unsigned long long *') from 'int64_t' (aka 'long long') [-Wint-conversion]
-go_probe 0x42e9a0 runtime.canpanic: does not compile: use of undeclared identifier 'g'
-go_probe 0x435dc0 runtime.mspinning: does not compile: use of undeclared identifier 'g'
-go_probe 0x446d60 runtime.adjustdefers: does not compile: incompatible integer to pointer conversion assigning to 'struct runtime_adjustdefers_s1 *' from 'uint64_t' (aka 'unsigned long long') [-Wint-conversion]
+go_probe 0x42ab20 runtime.netpollready: does not compile: incompatible pointer to integer conversion passing 'uint64_t *' (aka 'unsigned long long *') to parameter of type 'int64_t' (aka 'long long') [-Wint-conversion]
 go_probe 0x447f80 runtime.nilfunc: does not compile: use of undeclared identifier 'byte_0'
-go_probe 0x450a80 runtime.traceback2.func1: does not compile: incompatible integer to pointer conversion assigning to 'uint64_t *' (aka 'unsigned long long *') from 'int64_t' (aka 'long long') [-Wint-conversion]
-go_probe 0x451b60 runtime.tracebackHexdump.func1: does not compile: incompatible integer to pointer conversion assigning to 'struct runtime_tracebackHexdump_func1_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-go_probe 0x454100 runtime.traceRelease: does not compile: use of undeclared identifier 'g'
-go_probe 0x45a420 runtime.init.6.func1: does not compile: use of undeclared identifier 'g'
-go_probe 0x45a860 runtime.gcResetMarkState.func1: does not compile: incompatible pointer to integer conversion returning 'struct runtime_gcResetMarkState_func1_a0 *' from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
 go_probe 0x460e80 setg_gcc: does not compile: use of undeclared identifier 'fs_base'
-go_probe 0x4614e0 debugCall32: does not compile: use of undeclared identifier 'g'
-go_probe 0x461540 debugCall64: does not compile: use of undeclared identifier 'g'
-go_probe 0x4615a0 debugCall128: does not compile: use of undeclared identifier 'g'
-go_probe 0x461600 debugCall256: does not compile: use of undeclared identifier 'g'
-go_probe 0x461660 debugCall512: does not compile: use of undeclared identifier 'g'
-go_probe 0x4616c0 debugCall1024: does not compile: use of undeclared identifier 'g'
-go_probe 0x461720 debugCall2048: does not compile: use of undeclared identifier 'g'
-go_probe 0x461780 debugCall4096: does not compile: use of undeclared identifier 'g'
-go_probe 0x461800 debugCall8192: does not compile: use of undeclared identifier 'g'
-go_probe 0x461880 debugCall16384: does not compile: use of undeclared identifier 'g'
-go_probe 0x461900 debugCall32768: does not compile: use of undeclared identifier 'g'
-go_probe 0x461980 debugCall65536: does not compile: use of undeclared identifier 'g'
-go_probe 0x461e00 runtime.spillArgs: does not compile: use of undeclared identifier 'xmm0'
-go_probe 0x466e80 internal/runtime/atomic.(*Int32).Store: does not compile: incompatible pointer to integer conversion returning 'uint32_t *' (aka 'unsigned int *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-go_probe 0x466ea0 internal/runtime/atomic.(*Uint64).Store: does not compile: incompatible pointer to integer conversion returning 'uint64_t *' (aka 'unsigned long long *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-go_probe 0x467180 internal/runtime/exithook.Run.deferwrap2: does not compile: use of undeclared identifier 'g'
-go_probe 0x4671c0 internal/runtime/exithook.Run.deferwrap1: does not compile: use of undeclared identifier 'g'
-go_stripped 0x401380 type:.eq.internal/abi.ITab: does not compile: redefinition of 'type__eq_internal_abi_ITab_a0'
-go_stripped 0x4036c0 runtime.memequal128: does not compile: redefinition of 'runtime_memequal128_a0'
-go_stripped 0x408ac0 runtime.(*itabTableType).find: does not compile: redefinition of 'runtime___itabTableType__find_s1'
-go_stripped 0x408c60 runtime.(*itabTableType).add: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint64_t *' (aka 'unsigned long long *'); dereference with * [-Wint-conversion]
-go_stripped 0x40e340 runtime.(*mspan).heapBitsSmallForAddr: does not compile: redefinition of 'runtime___mspan__heapBitsSmallForAddr_a0'
-go_stripped 0x411fc0 runtime.(*fixalloc).free: does not compile: redefinition of 'runtime___fixalloc__free_a0'
-go_stripped 0x41a6a0 runtime.(*gcControllerState).memoryLimitHeapGoal: does not compile: redefinition of 'runtime___gcControllerState__memoryLimitHeapGoal_a0'
-go_stripped 0x4223a0 runtime.(*mspan).init: does not compile: redefinition of 'runtime___mspan__init_a0'
-go_stripped 0x428060 runtime.blocksampled: does not compile: use of undeclared identifier 'g'
-go_stripped 0x428820 runtime.(*mLockProfile).recordLock: does not compile: redefinition of 'runtime___mLockProfile__recordLock_s1'
-go_stripped 0x42a720 runtime.(*wbBuf).reset: does not compile: redefinition of 'runtime___wbBuf__reset_a0'
-go_stripped 0x42ab20 runtime.netpollready: does not compile: redefinition of 'runtime_netpollready_a1'
-go_stripped 0x42e9a0 runtime.canpanic: does not compile: redefinition of 'runtime_canpanic_s1'
-go_stripped 0x435dc0 runtime.mspinning: does not compile: use of undeclared identifier 'g'
-go_stripped 0x446d20 runtime.adjustctxt: does not compile: redefinition of 'runtime_adjustctxt_a0'
-go_stripped 0x446d60 runtime.adjustdefers: does not compile: redefinition of 'runtime_adjustdefers_a1'
+go_stripped 0x42ab20 runtime.netpollready: does not compile: incompatible pointer to integer conversion passing 'uint64_t *' (aka 'unsigned long long *') to parameter of type 'int64_t' (aka 'long long') [-Wint-conversion]
 go_stripped 0x447f80 runtime.nilfunc: does not compile: use of undeclared identifier 'byte_0'
-go_stripped 0x44f720 runtime.printArgs.func1: does not compile: redefinition of 'runtime_printArgs_func1_closure'
-go_stripped 0x450a80 runtime.traceback2.func1: does not compile: redefinition of 'runtime_traceback2_func1_closure'
-go_stripped 0x451b60 runtime.tracebackHexdump.func1: does not compile: redefinition of 'runtime_tracebackHexdump_func1_closure'
-go_stripped 0x454100 runtime.traceRelease: does not compile: redefinition of 'runtime_traceRelease_a0'
-go_stripped 0x45a420 runtime.init.6.func1: does not compile: use of undeclared identifier 'g'
-go_stripped 0x45a860 runtime.gcResetMarkState.func1: does not compile: redefinition of 'runtime_gcResetMarkState_func1_a0'
 go_stripped 0x460e80 setg_gcc: does not compile: use of undeclared identifier 'fs_base'
-go_stripped 0x4614e0 debugCall32: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461540 debugCall64: does not compile: use of undeclared identifier 'g'
-go_stripped 0x4615a0 debugCall128: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461600 debugCall256: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461660 debugCall512: does not compile: use of undeclared identifier 'g'
-go_stripped 0x4616c0 debugCall1024: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461720 debugCall2048: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461780 debugCall4096: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461800 debugCall8192: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461880 debugCall16384: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461900 debugCall32768: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461980 debugCall65536: does not compile: use of undeclared identifier 'g'
-go_stripped 0x461e00 runtime.spillArgs: does not compile: use of undeclared identifier 'xmm0'
-go_stripped 0x466300 type:.eq.runtime.bitvector: does not compile: redefinition of 'type__eq_runtime_bitvector_a0'
-go_stripped 0x4663a0 type:.eq.runtime.boundsError: does not compile: redefinition of 'type__eq_runtime_boundsError_a0'
-go_stripped 0x466540 type:.eq.runtime.mSpanList: does not compile: redefinition of 'type__eq_runtime_mSpanList_a0'
-go_stripped 0x466580 type:.eq.runtime.special: does not compile: redefinition of 'type__eq_runtime_special_a0'
-go_stripped 0x4665c0 type:.eq.struct { runtime.gList; runtime.n int32 }: does not compile: redefinition of 'type__eq_struct___runtime_gList__runtime_n_int32___a0'
-go_stripped 0x4668a0 type:.eq.runtime.mOS: does not compile: redefinition of 'type__eq_runtime_mOS_a0'
-go_stripped 0x466d60 internal/runtime/atomic.(*Int32).Store: does not compile: incompatible pointer to integer conversion returning 'uint32_t *' (aka 'unsigned int *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-go_stripped 0x466d80 internal/runtime/atomic.(*Uint64).Store: does not compile: incompatible pointer to integer conversion returning 'uint64_t *' (aka 'unsigned long long *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-go_stripped 0x467060 internal/runtime/exithook.Run.deferwrap2: does not compile: use of undeclared identifier 'g'
-go_stripped 0x4670a0 internal/runtime/exithook.Run.deferwrap1: does not compile: use of undeclared identifier 'g'
 l2_loop_a64.o 0x0 sum_while: does not compile: use of undeclared identifier 'sink'
 l2_loop_a64.o 0x3c count_down: does not compile: use of undeclared identifier 'sink'
 l2_loop_a64.o 0x60 sum_skip_odd: does not compile: use of undeclared identifier 'sink'
@@ -231,7 +152,6 @@ l2_loop_x64.o 0xf0 count_down: does not compile: use of undeclared identifier 's
 l2_loop_x64.o 0x190 sum_skip_odd: does not compile: use of undeclared identifier 'sink'
 l4_memory_a64.o 0x44 bump: does not compile: use of undeclared identifier 'g_counter'
 l4_memory_a64.o 0x58 banner_first: does not compile: use of undeclared identifier 'banner'
-l4_memory_x64.o 0x0 point_dot: does not compile: redefinition of 'point_dot_a0'
 l4_memory_x64.o 0x30 bump: does not compile: use of undeclared identifier 'g_counter'
 l4_memory_x64.o 0x40 banner_first: does not compile: use of undeclared identifier 'banner'
 l5_switch.o 0x0 dense: does not compile: use of undeclared identifier 'g_sink'
@@ -239,10 +159,7 @@ metrics/arith_mixed.aarch64.O0.debug.elf 0x210228 pair_sum: does not compile: in
 metrics/arith_mixed.aarch64.O2.debug.elf 0x2101dc pair_sum: does not compile: incomplete definition of type 'struct pair'
 metrics/arith_mixed.x86_64.O0.debug.elf 0x201230 pair_sum: does not compile: incomplete definition of type 'struct pair'
 metrics/arith_mixed.x86_64.O2.debug.elf 0x2011d0 pair_sum: does not compile: incomplete definition of type 'struct pair'
-metrics/control.aarch64.O2.debug.elf 0x2103a4 find_pair: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'int *' [-Wint-conversion]
-metrics/control.aarch64.O2.stripped.elf 0x2103a4 -: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint32_t *' (aka 'unsigned int *') [-Wint-conversion]
 metrics/l4_memory.aarch64.O0.debug.elf 0x2101dc point_dot: does not compile: incomplete definition of type 'struct point'
-metrics/l4_memory.aarch64.O0.stripped.elf 0x2101dc -: does not compile: redefinition of 'sub_2101dc_a0'
 metrics/l4_memory.x86_64.O0.debug.elf 0x201210 point_dot: does not compile: incomplete definition of type 'struct point'
 metrics/l4_memory.x86_64.O2.debug.elf 0x2011e0 point_dot: does not compile: incomplete definition of type 'struct point'
 metrics/memory.aarch64.O0.debug.elf 0x210234 copy_bytes: does not compile: invalid operands to binary expression ('unsigned char *' and 'uint8_t *' (aka 'unsigned char *'))
@@ -251,119 +168,55 @@ metrics/memory.aarch64.O0.debug.elf 0x2102f8 string_length: does not compile: in
 metrics/memory.aarch64.O0.stripped.elf 0x210234 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
 metrics/memory.aarch64.O0.stripped.elf 0x21029c -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
 metrics/memory.aarch64.O0.stripped.elf 0x2102f8 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
-metrics/memory.aarch64.O0.stripped.elf 0x210418 -: does not compile: incompatible pointer to integer conversion returning 'uint32_t *' (aka 'unsigned int *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-metrics/memory.aarch64.O2.stripped.elf 0x210214 -: does not compile: incompatible pointer to integer conversion returning 'uint8_t *' (aka 'unsigned char *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-metrics/memory.aarch64.O2.stripped.elf 0x21033c -: does not compile: incompatible pointer to integer conversion returning 'uint32_t *' (aka 'unsigned int *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
 metrics/memory.x86_64.O0.debug.elf 0x201280 copy_bytes: does not compile: invalid operands to binary expression ('unsigned char *' and 'uint8_t *' (aka 'unsigned char *'))
-metrics/memory.x86_64.O0.debug.elf 0x2012d0 fill_bytes: does not compile: invalid operands to binary expression ('unsigned char *' and 'uint8_t *' (aka 'unsigned char *'))
 metrics/memory.x86_64.O0.debug.elf 0x201320 string_length: does not compile: invalid operands to binary expression ('char *' and 'uint8_t *' (aka 'unsigned char *'))
 metrics/memory.x86_64.O0.stripped.elf 0x201280 -: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
-metrics/memory.x86_64.O0.stripped.elf 0x2012d0 -: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
 metrics/memory.x86_64.O0.stripped.elf 0x201320 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
-metrics/memory.x86_64.O0.stripped.elf 0x201420 -: does not compile: incompatible pointer to integer conversion returning 'uint32_t *' (aka 'unsigned int *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-metrics/struct_arrays.aarch64.O0.stripped.elf 0x2101bc -: does not compile: incompatible pointer to integer conversion returning 'struct sub_2101bc_a0 *' from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-metrics/struct_arrays.aarch64.O2.stripped.elf 0x210188 -: does not compile: incompatible pointer to integer conversion returning 'struct sub_210188_a0 *' from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-metrics/struct_arrays.x86_64.O0.stripped.elf 0x2011e0 -: does not compile: redefinition of 'sub_2011e0_a0'
-metrics/struct_arrays.x86_64.O2.stripped.elf 0x2011a0 -: does not compile: redefinition of 'sub_2011a0_a0'
 metrics/structs.aarch64.O0.debug.elf 0x2101fc rect_area: does not compile: incomplete definition of type 'struct rect'
 metrics/structs.aarch64.O0.debug.elf 0x2103d0 flags_set_mode: does not compile: incomplete definition of type 'struct flags'
-metrics/structs.aarch64.O0.stripped.elf 0x2102f8 -: does not compile: incompatible integer to pointer conversion assigning to 'struct sub_2102f8_s1 *' from 'uint64_t' (aka 'unsigned long long') [-Wint-conversion]
-metrics/structs.aarch64.O0.stripped.elf 0x2103d0 -: does not compile: incompatible pointer to integer conversion returning 'uint8_t *' (aka 'unsigned char *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
 metrics/structs.aarch64.O2.debug.elf 0x2102ec flags_set_mode: does not compile: incomplete definition of type 'struct flags'
-metrics/structs.aarch64.O2.stripped.elf 0x2102ec -: does not compile: incompatible pointer to integer conversion returning 'uint8_t *' (aka 'unsigned char *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
 metrics/structs.x86_64.O0.debug.elf 0x201240 rect_area: does not compile: incomplete definition of type 'struct rect'
-metrics/structs.x86_64.O0.debug.elf 0x201310 big_make: does not compile: incomplete definition of type 'struct big'
+metrics/structs.x86_64.O0.debug.elf 0x201310 big_make: does not compile: expected function body after function declarator
 metrics/structs.x86_64.O0.debug.elf 0x2013c0 flags_set_mode: does not compile: incomplete definition of type 'struct flags'
-metrics/structs.x86_64.O0.stripped.elf 0x2013c0 -: does not compile: incompatible pointer to integer conversion returning 'uint8_t *' (aka 'unsigned char *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
+metrics/structs.x86_64.O0.stripped.elf 0x201240 -: does not compile: incomplete definition of type 'struct sub_201240_a0_k344'
 metrics/structs.x86_64.O2.debug.elf 0x2011e0 rect_area: does not compile: incomplete definition of type 'struct rect'
-metrics/structs.x86_64.O2.debug.elf 0x201280 big_make: does not compile: incomplete definition of type 'struct big'
+metrics/structs.x86_64.O2.debug.elf 0x201280 big_make: does not compile: expected function body after function declarator
 metrics/structs.x86_64.O2.debug.elf 0x2012f0 flags_set_mode: does not compile: incomplete definition of type 'struct flags'
-metrics/structs.x86_64.O2.stripped.elf 0x2011e0 -: does not compile: redefinition of 'sub_2011e0_a0'
+metrics/structs.x86_64.O2.stripped.elf 0x2011e0 -: does not compile: incomplete definition of type 'struct sub_2011e0_a0_k355'
 pe64.obj 0x60 msg_first: does not compile: use of undeclared identifier 'kMsg'
-rust_demo 0x1fe50 gimli::read::line::parse_attribute::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'uint64_t' (aka 'unsigned long long') [-Wint-conversion]
-rust_demo 0x21d30 gimli::read::unit::skip_attributes::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'uint64_t' (aka 'unsigned long long') [-Wint-conversion]
-rust_demo 0x23170 core::slice::sort::shared::smallsort::sort4_stable::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'void *' [-Wint-conversion]
-rust_demo 0x23bb0 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}>: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint64_t *' (aka 'unsigned long long *') [-Wint-conversion]
-rust_demo 0x23c60 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>: does not compile: redefinition of 'smallsort__insertion_sort_shift_left_s1'
-rust_demo 0x2a730 core::str::pattern::simd_contains::{closure#2}: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
-rust_demo 0x2caa0 <gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::attr_string: does not compile: incompatible integer to pointer conversion assigning to 'struct Dwarf__attr_string_s2 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x31950 <gimli::read::aranges::ArangeHeader<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse: does not compile: incompatible integer to pointer conversion assigning to 'struct ArangeHeader__parse_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x31df0 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: incompatible integer to pointer conversion assigning to 'struct DebugInfoUnitHeadersIter__next_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x327e0 <gimli::read::index::UnitIndex<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint32_t *' (aka 'unsigned int *') [-Wint-conversion]
-rust_demo 0x33060 <u64>::from_ascii_radix: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
-rust_demo 0x37460 <std::backtrace_rs::symbolize::gimli::elf::Object>::build_id: does not compile: incompatible integer to pointer conversion assigning to 'void *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x37cd0 <gimli::read::rnglists::RngListIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: incompatible integer to pointer conversion assigning to 'struct RngListIter__next_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x38c60 <gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'int64_t' (aka 'long long') [-Wint-conversion]
+rust_demo 0x31df0 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: use of undeclared identifier 'dword_7534'
+rust_demo 0x327e0 <gimli::read::index::UnitIndex<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
+rust_demo 0x37460 <std::backtrace_rs::symbolize::gimli::elf::Object>::build_id: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'void *' [-Wint-conversion]
 rust_demo 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: does not compile: use of undeclared identifier 'fs_base'
 rust_demo 0x3ea20 <alloc::string::String as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_70b8'
 rust_demo 0x3ea30 <&str as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_7118'
-rust_demo 0x41af0 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_offset: does not compile: incompatible integer to pointer conversion assigning to 'struct EndianSlice__read_offset_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x41b70 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_uleb128: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'int64_t' (aka 'long long') [-Wint-conversion]
 rust_demo 0x428e0 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::type_id: does not compile: use of undeclared identifier 'qword_7158'
-rust_demo 0x440a4 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::get::<u64>: does not compile: incompatible integer to pointer conversion assigning to 'void *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x44b3e <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::entry: does not compile: incompatible integer to pointer conversion assigning to 'void *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_demo 0x4de80 <core::ffi::c_str::CStr>::from_bytes_with_nul: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
-rust_demo 0x50330 core::str::converts::from_utf8: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
-rust_demo 0x50600 core::slice::memchr::memchr_aligned: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
+rust_demo 0x4de80 <core::ffi::c_str::CStr>::from_bytes_with_nul: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
+rust_demo 0x50330 core::str::converts::from_utf8: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
+rust_demo 0x50600 core::slice::memchr::memchr_aligned: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
 rust_demo 0x508a0 core::unicode::unicode_data::cn_planes_0_3::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data13cn_planes_0_317SHORT_OFFSET_RUNS'
 rust_demo 0x50aa0 core::unicode::unicode_data::default_ignorable_code_point::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data28default_ignorable_code_point17SHORT_OFFSET_RUNS'
-rust_probe 0x1fe50 gimli::read::line::parse_attribute::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>: does not compile: redefinition of 'line__parse_attribute_a1'
-rust_probe 0x21d30 gimli::read::unit::skip_attributes::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>: does not compile: redefinition of 'unit__skip_attributes_a1'
-rust_probe 0x23170 core::slice::sort::shared::smallsort::sort4_stable::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>: does not compile: redefinition of 'smallsort__sort4_stable_s1'
-rust_probe 0x23bb0 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}>: does not compile: redefinition of 'smallsort__insertion_sort_shift_left_s1'
-rust_probe 0x23c60 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}>: does not compile: redefinition of 'smallsort__insertion_sort_shift_left_s1'
-rust_probe 0x29090 core::slice::sort::unstable::heapsort::heapsort::<std::backtrace_rs::symbolize::gimli::elf::ParsedSym, <[std::backtrace_rs::symbolize::gimli::elf::ParsedSym]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::elf::Object>::parse::{closure#3}>::{closure#0}>: does not compile: redefinition of 'heapsort__heapsort_s1'
-rust_probe 0x2a730 core::str::pattern::simd_contains::{closure#2}: does not compile: redefinition of 'simd_contains___closure_2__a0'
-rust_probe 0x2caa0 <gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::attr_string: does not compile: redefinition of 'Dwarf__attr_string_a1'
-rust_probe 0x31950 <gimli::read::aranges::ArangeHeader<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse: does not compile: redefinition of 'ArangeHeader__parse_a1'
-rust_probe 0x31df0 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: redefinition of 'DebugInfoUnitHeadersIter__next_a0'
-rust_probe 0x327e0 <gimli::read::index::UnitIndex<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint32_t *' (aka 'unsigned int *') [-Wint-conversion]
-rust_probe 0x33060 <u64>::from_ascii_radix: does not compile: redefinition of 'u64__from_ascii_radix_a0'
-rust_probe 0x37460 <std::backtrace_rs::symbolize::gimli::elf::Object>::build_id: does not compile: redefinition of 'Object__build_id_a0'
-rust_probe 0x37cd0 <gimli::read::rnglists::RngListIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: redefinition of 'RngListIter__next_a1'
-rust_probe 0x38c60 <gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse: does not compile: redefinition of 'FileEntry__parse_a1'
+rust_probe 0x31df0 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: use of undeclared identifier 'dword_7534'
+rust_probe 0x327e0 <gimli::read::index::UnitIndex<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
+rust_probe 0x37460 <std::backtrace_rs::symbolize::gimli::elf::Object>::build_id: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'void *' [-Wint-conversion]
 rust_probe 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: does not compile: use of undeclared identifier 'fs_base'
 rust_probe 0x3ea20 <alloc::string::String as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_70b8'
 rust_probe 0x3ea30 <&str as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_7118'
-rust_probe 0x3ee80 <gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize> as core::clone::Clone>::clone: does not compile: redefinition of 'FileEntry__clone_a0'
-rust_probe 0x3f0e0 <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::as_str: does not compile: redefinition of 'StaticStrPayload__as_str_a0'
-rust_probe 0x41af0 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_offset: does not compile: redefinition of 'EndianSlice__read_offset_a1'
-rust_probe 0x41b70 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_uleb128: does not compile: redefinition of 'EndianSlice__read_uleb128_a1'
-rust_probe 0x41c20 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_sized_offset: does not compile: redefinition of 'EndianSlice__read_sized_offset_a1'
 rust_probe 0x428e0 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::type_id: does not compile: use of undeclared identifier 'qword_7158'
-rust_probe 0x440a4 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::get::<u64>: does not compile: redefinition of 'BTreeMap__get_a0'
-rust_probe 0x44b3e <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::entry: does not compile: redefinition of 'BTreeMap__entry_a1'
-rust_probe 0x46e0d <rustc_demangle::v0::Parser>::integer_62: does not compile: redefinition of 'Parser__integer_62_result'
-rust_probe 0x4de80 <core::ffi::c_str::CStr>::from_bytes_with_nul: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
-rust_probe 0x50330 core::str::converts::from_utf8: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
-rust_probe 0x50600 core::slice::memchr::memchr_aligned: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
+rust_probe 0x4de80 <core::ffi::c_str::CStr>::from_bytes_with_nul: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
+rust_probe 0x50330 core::str::converts::from_utf8: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
+rust_probe 0x50600 core::slice::memchr::memchr_aligned: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
 rust_probe 0x508a0 core::unicode::unicode_data::cn_planes_0_3::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data13cn_planes_0_317SHORT_OFFSET_RUNS'
 rust_probe 0x50aa0 core::unicode::unicode_data::default_ignorable_code_point::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data28default_ignorable_code_point17SHORT_OFFSET_RUNS'
-rust_probe 0x515c0 <core::str::lossy::Utf8Chunks as core::iter::traits::iterator::Iterator>::next: does not compile: redefinition of 'Utf8Chunks__next_a1'
-rust_probe_stripped 0x1fe50 -: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'uint64_t' (aka 'unsigned long long') [-Wint-conversion]
-rust_probe_stripped 0x21d30 -: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'uint64_t' (aka 'unsigned long long') [-Wint-conversion]
-rust_probe_stripped 0x23bb0 -: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint64_t *' (aka 'unsigned long long *') [-Wint-conversion]
-rust_probe_stripped 0x23c60 -: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint64_t *' (aka 'unsigned long long *') [-Wint-conversion]
-rust_probe_stripped 0x2a730 -: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
-rust_probe_stripped 0x2caa0 -: does not compile: incompatible integer to pointer conversion assigning to 'struct sub_2caa0_s2 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x31950 -: does not compile: incompatible integer to pointer conversion assigning to 'struct sub_31950_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x31df0 -: does not compile: incompatible integer to pointer conversion assigning to 'struct sub_31df0_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x327e0 -: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint32_t *' (aka 'unsigned int *') [-Wint-conversion]
-rust_probe_stripped 0x33060 -: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
-rust_probe_stripped 0x37460 -: does not compile: incompatible integer to pointer conversion assigning to 'void *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x37cd0 -: does not compile: incompatible integer to pointer conversion assigning to 'struct sub_37cd0_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x38c60 -: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'int64_t' (aka 'long long') [-Wint-conversion]
+rust_probe_stripped 0x31df0 -: does not compile: use of undeclared identifier 'dword_7534'
+rust_probe_stripped 0x327e0 -: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
+rust_probe_stripped 0x37460 -: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'void *' [-Wint-conversion]
 rust_probe_stripped 0x3b8e0 -: does not compile: use of undeclared identifier 'fs_base'
-rust_probe_stripped 0x41af0 -: does not compile: incompatible integer to pointer conversion assigning to 'struct sub_41af0_s1 *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x41b70 -: does not compile: incompatible integer to pointer conversion assigning to 'uint8_t *' (aka 'unsigned char *') from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x440a4 -: does not compile: incompatible integer to pointer conversion assigning to 'void *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x44b3e -: does not compile: incompatible integer to pointer conversion assigning to 'void *' from 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x4de80 -: does not compile: incompatible pointer to integer conversion returning 'uint64_t *' (aka 'unsigned long long *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
-rust_probe_stripped 0x50330 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
-rust_probe_stripped 0x50600 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'unsigned long')
+rust_probe_stripped 0x4de80 -: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
+rust_probe_stripped 0x50330 -: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
+rust_probe_stripped 0x50600 -: does not compile: invalid operands to binary expression ('unsigned long' and 'uint8_t *' (aka 'unsigned char *'))
 rust_probe_stripped 0x508a0 -: does not compile: use of undeclared identifier 'dword_a324'
 rust_probe_stripped 0x50aa0 -: does not compile: use of undeclared identifier 'dword_a480'
-rust_probe_stripped 0x515c0 -: does not compile: incompatible pointer to integer conversion returning 'uint64_t *' (aka 'unsigned long long *') from a function with result type 'int64_t' (aka 'long long') [-Wint-conversion]
 strings.o 0x0 pick: does not compile: use of undeclared identifier 'kName'
 switch_jumptable.o 0x0 d7: does not compile: use of undeclared identifier 'g'
 switch_jumptable_x64.o 0x0 d7: does not compile: use of undeclared identifier 'g'

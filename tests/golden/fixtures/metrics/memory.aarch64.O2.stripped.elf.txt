@@ -28,7 +28,7 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     uint8_t v17;
 
     if (a2 == 0x0) {
-        return a0;
+        return (uintptr_t)a0;
     }
     v1 = 0x0;
     if (a2 >= 0x8) {
@@ -52,7 +52,7 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
                     v3 = v3 + 0x4;
                 } while (v4 != 0x0);
                 if (v1 == a2) {
-                    return a0;
+                    return (uintptr_t)a0;
                 }
                 if ((a2 & 0x18) == 0x0) {
                     goto L_2102a4;
@@ -73,7 +73,7 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
                 v11 = v11 + 0x1;
             } while (v4 != 0x0);
             if (v1 == a2) {
-                return a0;
+                return (uintptr_t)a0;
             }
         }
     }
@@ -88,7 +88,7 @@ L_2102a4:
         *v15 = v17;
         v15 = v15 + 0x1;
     } while (v14 != 0x0);
-    return a0;
+    return (uintptr_t)a0;
 }
 -- signature
 int64_t (uint8_t * a0, uint8_t * a1, uint64_t a2)
@@ -297,7 +297,7 @@ int64_t sub_21033c(uint32_t *a0, uint32_t *a1) {
     v1 = *a0;
     *a0 = *a1;
     *a1 = v1;
-    return a0;
+    return (uintptr_t)a0;
 }
 -- signature
 int64_t (uint32_t * a0, uint32_t * a1)

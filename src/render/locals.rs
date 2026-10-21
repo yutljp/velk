@@ -63,6 +63,8 @@ pub(crate) fn stack_locals(
         scaled: std::collections::HashSet::new(),
         returned: None,
         declared: HashMap::new(),
+        pointer_types: HashMap::new(),
+        ret_pointer: None,
         value_bits: HashMap::new(),
         read_once: Default::default(),
         taken: Default::default(),

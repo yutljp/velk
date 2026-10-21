@@ -424,6 +424,14 @@ pub(crate) fn element_signed(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<bo
     }
 }
 
+/// Whether the element `addr` reads through a pointer has an integer type.
+pub(crate) fn element_is_integer(addr: &Expr, ctx: &Ctx<'_>) -> bool {
+    match element_terms(addr, ctx) {
+        Some((_, _, _, 0, Expr::Reg { index, .. })) => ctx.element_signs.contains_key(index),
+        _ => false,
+    }
+}
+
 /// Whether `addr` is an element of a pointer to `char`.
 pub(crate) fn plain_char_access(addr: &Expr, ctx: &Ctx<'_>) -> bool {
     element_terms(addr, ctx).is_some_and(|(name, size, _, offset, _)| {

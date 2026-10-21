@@ -421,10 +421,11 @@ impl Image {
         (end <= self.bytes.len() as u64).then(|| &self.bytes[offset as usize..end as usize])
     }
 
+    /// The file's bytes at a virtual address; None where no section holds
+    /// file data, as in zero-initialized data.
     pub fn read_vaddr(&self, vaddr: u64, len: u64) -> Option<&[u8]> {
         self.virtual_offset(vaddr)
             .and_then(|offset| self.read(offset, len))
-            .or_else(|| self.read(vaddr, len))
     }
 
     fn add_go_functions(&mut self) {

@@ -3,13 +3,13 @@
 #   calls: 3800
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 2
+#   reads a register that is not a parameter: 3
 #   refers to data: 136
 #   returns no integer: 51
 #   returns nothing: 369
 #   takes an argument that is no integer: 415
 #   takes arguments on the stack: 28
 # runs left out:
-#   reads a register that is not a parameter: 33
 #   step limit: 14
 #   takes a function's address: 36
 # alt.o: 2 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
@@ -32,8 +32,8 @@
 # cpp_virtual_a64_stripped.elf: 18 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # cpp_virtual_x64.elf: 18 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_virtual_x64_stripped.elf: 18 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
-# go_probe: 1275 functions, 15 qualify, 15 compile, 0 do not, 14 compared (168 runs), 0 differ
-# go_stripped: 1273 functions, 15 qualify, 15 compile, 0 do not, 14 compared (168 runs), 0 differ
+# go_probe: 1275 functions, 14 qualify, 14 compile, 0 do not, 14 compared (168 runs), 0 differ
+# go_stripped: 1273 functions, 14 qualify, 14 compile, 0 do not, 14 compared (168 runs), 0 differ
 # l0_arith_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # l0_arith_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # l1_branch_a64.o: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
@@ -144,7 +144,7 @@
 # pe64.obj: 10 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # rust_demo: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # rust_probe: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# rust_probe_stripped: 545 functions, 16 qualify, 16 compile, 0 do not, 16 compared (183 runs), 0 differ
+# rust_probe_stripped: 545 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
 # tail_calls.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # tail_calls_stripped.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # tail_indirect.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ

@@ -51,7 +51,7 @@ fn square @ 0x2102cc (size 8)
 void square(void);
 void twice(void);
 void *pick_op(int which) {
-    return (which == 0x0 ? twice : square);
+    return (void *)(which == 0x0 ? twice : square);
 }
 -- signature
 void * (int which)
@@ -74,7 +74,7 @@ int apply_table(unsigned int index, int x) {
 
     v1 = index % 0x3;
     v3 = table[v1];
-    return (*(v3))(x);
+    return ((uint64_t (*)())v3)(x);
 }
 -- signature
 int (unsigned int index, int x)
@@ -96,7 +96,7 @@ fn apply_table @ 0x2102f0 (size 44)
 int apply_pointer(void *f, int x) {
     int32_t v3;
 
-    v3 = (*(f))(x);
+    v3 = ((uint64_t (*)())f)(x);
     return v3 + 0x1;
 }
 -- signature
@@ -331,7 +331,7 @@ int sum_varargs(int count, ...) {
     if (count < 0x1) {
         return 0x0;
     }
-    v1 = local_4;
+    v1 = (uint32_t *)local_4;
     v2 = local_3;
     v3 = 0x0;
     v4 = *(uint32_t *)&local_2;
@@ -340,21 +340,21 @@ int sum_varargs(int count, ...) {
             v6 = v4 + 0x8;
             *(uint32_t *)&local_2 = v6;
             if (v4 <= 0xfffffff8) {
-                v5 = v1;
-                v1 = v2 + (int32_t)(v4);
+                v5 = (uintptr_t)v1;
+                v1 = (uint32_t *)(v2 + (int32_t)(v4));
             } else {
-                v5 = v1 + 0x2;
+                v5 = (uintptr_t)(v1 + 0x2);
                 local_4 = v5;
             }
         } else {
             v6 = v4;
-            v5 = v1 + 0x2;
+            v5 = (uintptr_t)(v1 + 0x2);
             local_4 = v5;
         }
         count = count - 0x1;
         v4 = v6;
         v3 = *v1 + v3;
-        v1 = v5;
+        v1 = (uint32_t *)v5;
     } while (count != 0x0);
     return v3;
 }

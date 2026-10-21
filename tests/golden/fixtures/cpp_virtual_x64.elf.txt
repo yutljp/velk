@@ -117,8 +117,8 @@ int32_t Shape__scaled(uint64_t *a0, int32_t a1) {
     uint64_t *v2;
     int32_t v3;
 
-    v2 = *a0;
-    v3 = (*(v2[0x2]))(a0); /* vtable slot 2: Square__area, Rect__area */
+    v2 = (uint64_t *)*a0;
+    v3 = ((uint64_t (*)())v2[0x2])(a0); /* vtable slot 2: Square__area, Rect__area */
     return v3 * a1;
 }
 -- signature
@@ -251,7 +251,7 @@ int32_t square_area(int32_t a0) {
     int32_t v3;
 
     v1 = _ZL4used;
-    v2 = 0x203610 + v1;
+    v2 = (void *)(0x203610 + v1);
     _ZL4used = v1 + 0x10;
     Square__Square(v2, a0);
     v3 = Square__area(v2); /* via vtable slot 2 */
@@ -286,7 +286,7 @@ int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
     void *v4;
 
     v3 = _ZL4used;
-    v4 = 0x203610 + v3;
+    v4 = (void *)(0x203610 + v3);
     _ZL4used = v3 + 0x10;
     Rect__Rect(v4, a0, a1);
     return Rect__scaled(v4, a2); /* via vtable slot 3 */
@@ -314,8 +314,8 @@ fn rect_scaled(int, int, int) @ 0x2014e0 (size 77)
 int32_t any_area(uint64_t *a0) {
     uint64_t *v1;
 
-    v1 = *a0;
-    return (*(v1[0x2]))(a0); /* vtable slot 2: Square__area, Rect__area */
+    v1 = (uint64_t *)*a0;
+    return ((uint64_t (*)())v1[0x2])(a0); /* vtable slot 2: Square__area, Rect__area */
 }
 -- signature
 int32_t (uint64_t * a0)
@@ -337,7 +337,7 @@ int32_t any_scaled(uint64_t *a0, int64_t a1) {
     int64_t v1;
 
     v1 = *(uint64_t *)(*a0 + 0x18);
-    return (*(v1))(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
+    return ((uint64_t (*)())v1)(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
 }
 -- signature
 int32_t (uint64_t * a0, int64_t a1)
