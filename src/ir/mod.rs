@@ -1271,12 +1271,28 @@ impl Stmt {
     /// The registers a call reads besides those its expressions name.
     pub fn unnamed_call_reads(&self) -> Vec<u16> {
         match self {
+            // The register a call goes through holds the callee's address,
+            // not an argument the convention reads unnamed.
             Stmt::Call {
                 convention,
                 args: Some(_),
                 floats_named,
+                through,
                 ..
-            } => convention.unnamed_reads(*floats_named),
+            } => {
+                let mut addressing = std::collections::HashSet::new();
+                if let Some(through) = through {
+                    crate::ir::visit::collect_reads(through, &mut addressing);
+                }
+                convention
+                    .unnamed_reads(*floats_named)
+                    .into_iter()
+                    .filter(|register| {
+                        !addressing.contains(register)
+                            || !convention.call_extra().contains(register)
+                    })
+                    .collect()
+            }
             Stmt::Call {
                 convention,
                 through,

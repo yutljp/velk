@@ -94,12 +94,10 @@ fn apply_table @ 0x2102f0 (size 44)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x21031c */
 int apply_pointer(void *f, int x) {
-    uint64_t x8;
-    int32_t v2;
+    int32_t v3;
 
-    x8 = f;
-    v2 = (*(x8))(x);
-    return v2 + 0x1;
+    v3 = (*(f))(x);
+    return v3 + 0x1;
 }
 -- signature
 int (void * f, int x)
@@ -108,9 +106,8 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x21031c (size 32)
   blk0 @ 0x21031c:
-    x8 = x0
-    v2 = call *x8((x1 & #0xffffffff))
-    ret (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
+    v3 = call *x0((x1 & #0xffffffff))
+    ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
 

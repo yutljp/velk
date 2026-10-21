@@ -49,10 +49,7 @@ fn <unnamed> @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: sub_210224 @ 0x210224 */
 int32_t sub_210224(void *a0, int32_t a1) {
-    uint64_t x8;
-
-    x8 = a0;
-    return (*(x8))(a1 + 0x1);
+    return (*(a0))(a1 + 0x1);
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -61,9 +58,8 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x210224 (size 48)
   blk0 @ 0x210224:
-    x8 = x0
-    v2 = call *x8((((x1 & #0xffffffff) + #0x1) & #0xffffffff))
-    ret v2
+    v3 = call *x0((((x1 & #0xffffffff) + #0x1) & #0xffffffff))
+    ret v3
 -- card
 {"addr":"0x210224","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
 

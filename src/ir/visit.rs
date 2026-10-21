@@ -200,10 +200,8 @@ pub(crate) fn statement_registers(
         Stmt::Switch { index, .. } => expr_reads(index, &mut reads),
         Stmt::Call {
             through,
-            convention,
             args,
             result,
-            floats_named,
             ..
         } => {
             if let Some(result) = result {
@@ -212,17 +210,10 @@ pub(crate) fn statement_registers(
             if let Some(through) = through {
                 expr_reads(through, &mut reads);
             }
-            match args {
-                Some(args) => {
-                    for arg in args {
-                        expr_reads(arg, &mut reads);
-                    }
-                    reads.extend(convention.unnamed_reads(*floats_named));
-                }
-                None => {
-                    reads.extend(convention.call_reads_through(through.as_ref(), *floats_named))
-                }
+            for arg in args.iter().flatten() {
+                expr_reads(arg, &mut reads);
             }
+            reads.extend(stmt.unnamed_call_reads());
             writes.extend(stmt.call_clobbers());
         }
         // An unmodeled instruction may leave changed the registers it names,

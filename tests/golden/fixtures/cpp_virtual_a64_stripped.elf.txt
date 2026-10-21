@@ -116,12 +116,12 @@ fn <unnamed> @ 0x2103c8 (size 4)
 -- decompile
 /* velk pseudo-C: sub_2103cc @ 0x2103cc */
 int32_t sub_2103cc(uint64_t *a0, int32_t a1) {
-    uint64_t x8;
-    int32_t v2;
+    int64_t v2;
+    int32_t v3;
 
-    x8 = *(uint64_t *)(*a0 + 0x10);
-    v2 = (*(x8))(a0); /* vtable slot 2: sub_21040c, sub_21042c */
-    return v2 * a1;
+    v2 = *(uint64_t *)(*a0 + 0x10);
+    v3 = (*(v2))(a0); /* vtable slot 2: sub_21040c, sub_21042c */
+    return v3 * a1;
 }
 -- signature
 int32_t (uint64_t * a0, int32_t a1)
@@ -131,9 +131,9 @@ int32_t (uint64_t * a0, int32_t a1)
 fn <unnamed> @ 0x2103cc (size 44)
   blk0 @ 0x2103cc:
     v1 = (x1 & #0xffffffff)
-    x8 = load64((load64(x0) + #0x10))
-    v2 = call *x8(x0)
-    ret (((v2 & #0xffffffff) * (v1 & #0xffffffff)) & #0xffffffff)
+    v2 = load64((load64(x0) + #0x10))
+    v3 = call *v2(x0)
+    ret (((v3 & #0xffffffff) * (v1 & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x2103cc","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":44,"unsupported":0}
 
