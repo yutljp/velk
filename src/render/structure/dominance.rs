@@ -33,6 +33,7 @@ struct Graph<'a> {
     /// Loop exits whose code sits where the loop leaves to them, ahead of a
     /// `break`, rather than after the loop.
     absorbed: std::collections::HashSet<usize>,
+    absorb: Absorb,
 }
 
 fn successors(blocks: &[Block], index: &HashMap<u64, usize>, block: usize) -> Vec<usize> {
@@ -60,7 +61,7 @@ fn successors(blocks: &[Block], index: &HashMap<u64, usize>, block: usize) -> Ve
 }
 
 impl<'a> Graph<'a> {
-    fn new(ir: &'a FunctionIr, absorb: bool) -> Graph<'a> {
+    fn new(ir: &'a FunctionIr, absorb: Absorb) -> Graph<'a> {
         let blocks = &ir.blocks;
         let count = blocks.len();
         let index: HashMap<u64, usize> = blocks
@@ -187,9 +188,10 @@ impl<'a> Graph<'a> {
             tests,
             index,
             absorbed: std::collections::HashSet::new(),
+            absorb,
         };
-        if absorb {
-            graph.absorbed = graph.absorbed_exits();
+        if absorb != Absorb::Nothing {
+            graph.absorbed = graph.absorbed_exits(absorb);
         }
         graph
     }
@@ -198,7 +200,11 @@ impl<'a> Graph<'a> {
     /// alone and are not where the loop's own tests leave: their code can
     /// stay inside the loop, so the others follow it. One of them stays
     /// after the loop when nothing else does, the one heading the most code.
-    fn absorbed_exits(&self) -> std::collections::HashSet<usize> {
+    /// With `Absorb::Every`, the exits the loop's own tests leave to stay
+    /// inside too, and none need stay after it: exits that all go on to the
+    /// same code then meet it right after the loop. A short return is then
+    /// copied to a test of the loop too, so another exit can follow it.
+    fn absorbed_exits(&self, absorb: Absorb) -> std::collections::HashSet<usize> {
         let mut absorbed = std::collections::HashSet::new();
         for header in self.loops.keys() {
             let exits: Vec<usize> = (0..self.blocks.len())
@@ -214,14 +220,14 @@ impl<'a> Graph<'a> {
             let private = |exit: &usize| {
                 let parent = self.idom[*exit].expect("an exit has a parent");
                 !self.merge[*exit]
-                    && !self.tests[header].contains(exit)
+                    && (absorb == Absorb::Every || !self.tests[header].contains(exit))
                     && self.successors[parent].contains(exit)
                     && !self
                         .through_jumps(*exit)
                         .is_some_and(|end| self.returns_only(end))
             };
             let mut candidates: Vec<usize> = exits.iter().copied().filter(private).collect();
-            if candidates.len() == exits.len() {
+            if candidates.len() == exits.len() && absorb == Absorb::Private {
                 let largest = candidates
                     .iter()
                     .copied()
@@ -519,7 +525,7 @@ impl<'a> Graph<'a> {
         } else if let Some(end) = self.through_jumps(target)
             && self.returns_only(end)
             && self.order[target] > self.order[from]
-            && self.leaves_aside(from, target)
+            && (self.absorb == Absorb::Every || self.leaves_aside(from, target))
         {
             // A shared return, as compilers merge them, reads in place.
             self.code(end, depth + 1)
@@ -529,17 +535,62 @@ impl<'a> Graph<'a> {
     }
 }
 
-/// What falling off the end of a sequence reaches.
+/// Which exits of a loop with several keep their code inside it.
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Next {
-    Label(u64),
-    /// The end of a loop body: the header again.
-    Repeat(u64),
-    Unknown,
+pub(super) enum Absorb {
+    Nothing,
+    Private,
+    Every,
+}
+
+/// What falling off the end of a sequence reaches: the labels that stand
+/// there before any code, or where a jump there leads, and at the end of a
+/// loop body its header again.
+#[derive(Clone, Default)]
+struct Next {
+    labels: Vec<u64>,
+    repeat: Option<u64>,
+}
+
+impl Next {
+    fn reaches(&self, target: u64) -> bool {
+        self.labels.contains(&target) || self.repeat == Some(target)
+    }
+}
+
+/// What runs once the node at `position` completes, `next` being what the
+/// end of the sequence reaches.
+fn after_of(nodes: &[Node], position: usize, next: &Next) -> Next {
+    let mut labels = Vec::new();
+    for node in &nodes[position + 1..] {
+        match node {
+            Node::Label(label) => labels.push(*label),
+            Node::Stmt(Stmt::Br {
+                target: Some(target),
+            }) => {
+                labels.push(*target);
+                return Next {
+                    labels,
+                    repeat: None,
+                };
+            }
+            _ => {
+                return Next {
+                    labels,
+                    repeat: None,
+                };
+            }
+        }
+    }
+    labels.extend(next.labels.iter().copied());
+    Next {
+        labels,
+        repeat: next.repeat,
+    }
 }
 
 /// The constructs a `break` or `continue` may leave.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum Enclosing {
     Loop { header: u64, follow: Next },
     Switch { follow: Next },
@@ -568,7 +619,7 @@ pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
     if ir.blocks.is_empty() {
         return Vec::new();
     }
-    let graph = Graph::new(ir, false);
+    let graph = Graph::new(ir, Absorb::Nothing);
     (1..ir.blocks.len())
         .filter(|block| graph.idom[*block].is_none() && !graph.padding(*block))
         .map(|block| ir.blocks[block].start)
@@ -576,15 +627,10 @@ pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
 }
 
 /// Rewrites each jump as falling through, `break`, `continue` or a goto.
-fn resolve(nodes: &mut Vec<Node>, next: Next, enclosing: &mut Vec<Enclosing>) {
+fn resolve(nodes: &mut Vec<Node>, next: &Next, enclosing: &mut Vec<Enclosing>) {
     let mut position = 0;
     while position < nodes.len() {
-        // What runs once this node completes.
-        let after = match nodes.get(position + 1) {
-            Some(Node::Label(label)) => Next::Label(*label),
-            Some(_) => Next::Unknown,
-            None => next,
-        };
+        let after = after_of(nodes, position, next);
         let header = match position.checked_sub(1).map(|before| &nodes[before]) {
             Some(Node::Label(label)) => Some(*label),
             _ => None,
@@ -592,7 +638,7 @@ fn resolve(nodes: &mut Vec<Node>, next: Next, enclosing: &mut Vec<Enclosing>) {
         match &mut nodes[position] {
             Node::Stmt(Stmt::Br {
                 target: Some(target),
-            }) => match jump(*target, after, enclosing) {
+            }) => match jump(*target, &after, enclosing) {
                 Some(node) => nodes[position] = node,
                 None => {
                     nodes.remove(position);
@@ -600,27 +646,55 @@ fn resolve(nodes: &mut Vec<Node>, next: Next, enclosing: &mut Vec<Enclosing>) {
                 }
             },
             Node::If { then, els, .. } => {
-                resolve(then, after, enclosing);
-                resolve(els, after, enclosing);
+                resolve(then, &after, enclosing);
+                resolve(els, &after, enclosing);
             }
             Node::Forever { body } => {
                 let header = header.unwrap_or(u64::MAX);
                 enclosing.push(Enclosing::Loop {
                     header,
-                    follow: after,
+                    follow: after.clone(),
                 });
-                resolve(body, Next::Repeat(header), enclosing);
+                let repeat = Next {
+                    labels: Vec::new(),
+                    repeat: Some(header),
+                };
+                resolve(body, &repeat, enclosing);
                 enclosing.pop();
+                prune_dead(body);
+                let leaving = (!mentions_break(body))
+                    .then(|| leave_by_break(&mut [body], &after, enclosing))
+                    .flatten();
+                if let Some(node) = leaving {
+                    nodes.insert(position + 1, node);
+                }
             }
             Node::Switch { arms, default, .. } => {
-                enclosing.push(Enclosing::Switch { follow: after });
+                enclosing.push(Enclosing::Switch {
+                    follow: after.clone(),
+                });
                 for (_, body) in arms.iter_mut() {
-                    resolve(body, Next::Unknown, enclosing);
+                    resolve(body, &Next::default(), enclosing);
                 }
-                if let Some(body) = default {
-                    resolve(body, Next::Unknown, enclosing);
+                if let Some(body) = default.as_mut() {
+                    resolve(body, &Next::default(), enclosing);
                 }
                 enclosing.pop();
+                let closed = default.is_some();
+                let mut bodies: Vec<&mut Vec<Node>> = arms
+                    .iter_mut()
+                    .map(|(_, body)| body)
+                    .chain(default.as_mut())
+                    .collect();
+                for body in bodies.iter_mut() {
+                    prune_dead(body);
+                }
+                let leaving = (closed && bodies.iter().all(|body| !mentions_break(body)))
+                    .then(|| leave_by_break(&mut bodies, &after, enclosing))
+                    .flatten();
+                if let Some(node) = leaving {
+                    nodes.insert(position + 1, node);
+                }
             }
             _ => {}
         }
@@ -628,22 +702,110 @@ fn resolve(nodes: &mut Vec<Node>, next: Next, enclosing: &mut Vec<Enclosing>) {
     }
 }
 
+/// For a loop or a switch control never leaves at its end, the goto its
+/// `bodies` make most often becomes `break`, and that jump follows the
+/// construct instead: returned as it resolves there, unless it falls
+/// through. Exits a compiler sent from deep inside to one place then read
+/// as one `break` each, and the jump after them often as nothing at all.
+fn leave_by_break(
+    bodies: &mut [&mut Vec<Node>],
+    after: &Next,
+    enclosing: &[Enclosing],
+) -> Option<Node> {
+    fn count(nodes: &[Node], counts: &mut HashMap<u64, usize>) {
+        for node in nodes {
+            match node {
+                Node::Stmt(Stmt::Br {
+                    target: Some(target),
+                }) => *counts.entry(*target).or_default() += 1,
+                Node::If { then, els, .. } => {
+                    count(then, counts);
+                    count(els, counts);
+                }
+                _ => {}
+            }
+        }
+    }
+    fn replace(nodes: &mut [Node], target: u64) {
+        for node in nodes {
+            match node {
+                Node::Stmt(Stmt::Br { target: Some(jump) }) if *jump == target => {
+                    *node = Node::Break
+                }
+                Node::If { then, els, .. } => {
+                    replace(then, target);
+                    replace(els, target);
+                }
+                _ => {}
+            }
+        }
+    }
+    let mut counts = HashMap::new();
+    let mut inside = Vec::new();
+    for body in bodies.iter() {
+        count(body, &mut counts);
+        labels_in(body, &mut inside);
+    }
+    // A jump to code inside the construct stays where it is.
+    counts.retain(|target, _| !inside.contains(target));
+    let (target, _) = counts
+        .into_iter()
+        .max_by_key(|(target, count)| (*count, std::cmp::Reverse(*target)))?;
+    for body in bodies.iter_mut() {
+        replace(body, target);
+    }
+    jump(target, after, enclosing)
+}
+
 /// A jump to `target` given what the code reaches next; None when falling
 /// through already gets there.
-fn jump(target: u64, after: Next, enclosing: &[Enclosing]) -> Option<Node> {
-    if after == Next::Label(target) || after == Next::Repeat(target) {
+fn jump(target: u64, after: &Next, enclosing: &[Enclosing]) -> Option<Node> {
+    if after.reaches(target) {
         return None;
     }
+    // `continue` inside a switch still goes on with the loop around it.
+    let innermost_loop = enclosing
+        .iter()
+        .rev()
+        .find_map(|construct| match construct {
+            Enclosing::Loop { header, .. } => Some(*header),
+            Enclosing::Switch { .. } => None,
+        });
     match enclosing.last() {
         Some(Enclosing::Loop { header, .. }) if *header == target => Some(Node::Continue),
         Some(Enclosing::Loop { follow, .. }) | Some(Enclosing::Switch { follow })
-            if *follow == Next::Label(target) =>
+            if follow.reaches(target) =>
         {
             Some(Node::Break)
         }
+        _ if innermost_loop == Some(target) => Some(Node::Continue),
         _ => Some(Node::Stmt(Stmt::Br {
             target: Some(target),
         })),
+    }
+}
+
+/// The labels the sequence holds, at any depth.
+fn labels_in(nodes: &[Node], found: &mut Vec<u64>) {
+    for node in nodes {
+        match node {
+            Node::Label(label) => found.push(*label),
+            Node::If { then, els, .. } => {
+                labels_in(then, found);
+                labels_in(els, found);
+            }
+            Node::Forever { body } | Node::DoWhile { body, .. } => labels_in(body, found),
+            Node::While { prefix, body, .. } => {
+                labels_in(prefix, found);
+                labels_in(body, found);
+            }
+            Node::Switch { arms, default, .. } => {
+                for body in arms.iter().map(|(_, body)| body).chain(default.iter()) {
+                    labels_in(body, found);
+                }
+            }
+            Node::Stmt(_) | Node::Break | Node::Continue => {}
+        }
     }
 }
 
@@ -926,16 +1088,16 @@ fn while_loop(body: &[Node]) -> Option<Node> {
 /// The function structured by its dominator tree, or None when the tree is
 /// too deep to walk.
 pub(super) fn structure(ir: &FunctionIr) -> Option<Vec<Node>> {
-    structure_with(ir, false)
+    structure_with(ir, Absorb::Nothing)
 }
 
 /// The same, with each loop's exits that one branch alone enters placed
 /// where the loop leaves to them, so the others follow the loop.
-pub(super) fn structure_absorbing(ir: &FunctionIr) -> Option<Vec<Node>> {
-    structure_with(ir, true)
+pub(super) fn structure_absorbing(ir: &FunctionIr, absorb: Absorb) -> Option<Vec<Node>> {
+    structure_with(ir, absorb)
 }
 
-fn structure_with(ir: &FunctionIr, absorb: bool) -> Option<Vec<Node>> {
+fn structure_with(ir: &FunctionIr, absorb: Absorb) -> Option<Vec<Node>> {
     if ir.blocks.is_empty() {
         return Some(Vec::new());
     }
@@ -948,7 +1110,7 @@ fn structure_with(ir: &FunctionIr, absorb: bool) -> Option<Vec<Node>> {
             nodes.extend(graph.tree(block, 0)?);
         }
     }
-    resolve(&mut nodes, Next::Unknown, &mut Vec::new());
+    resolve(&mut nodes, &Next::default(), &mut Vec::new());
     shape(&mut nodes);
     Some(nodes)
 }
@@ -1100,6 +1262,174 @@ mod tests {
             (0x20, vec![ret()]),
         ]);
         let nodes = structure(&ir).expect("structures");
+        assert_eq!(gotos(&nodes), 0, "{nodes:#?}");
+    }
+
+    #[test]
+    fn an_inner_loop_ending_its_outer_body_leaves_to_it_by_break() {
+        // for (;;) { if (r1 == r6) return; for (;;) { r2 += 1;
+        //   if (r2 == r6) continue outer; if (r1 != r6) return; } }
+        let ir = function(vec![
+            (0x0, vec![assign(1, Expr::Const(0))]),
+            (
+                0x10,
+                vec![Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(1, 64),
+                    rhs: Expr::reg(6, 64),
+                    target: 0x60,
+                }],
+            ),
+            (
+                0x20,
+                vec![
+                    assign(2, Expr::bin(BinOp::Add, Expr::reg(2, 64), Expr::Const(1))),
+                    Stmt::Brif {
+                        cond: Cond::Ne,
+                        lhs: Expr::reg(2, 64),
+                        rhs: Expr::reg(6, 64),
+                        target: 0x40,
+                    },
+                ],
+            ),
+            (0x30, vec![Stmt::Br { target: Some(0x10) }]),
+            (0x40, vec![brif(0x20)]),
+            (0x50, vec![ret()]),
+            (0x60, vec![ret()]),
+        ]);
+        let nodes = crate::render::structure::structure_best(&ir);
+        assert_eq!(gotos(&nodes), 0, "{nodes:#?}");
+    }
+
+    #[test]
+    fn a_switch_whose_arms_all_leave_its_loop_breaks_twice() {
+        // for (;;) { r2 += 1; if (r2 == r6) continue;
+        //   switch (r1) { case 0: r0 = 1; goto out; case 1: r0 = 2; goto out;
+        //   case 2: continue; default: return; } }
+        // out: a tail too long to copy.
+        let tail: Vec<Stmt> = (0..8)
+            .map(|offset| Stmt::Store {
+                addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset * 8)),
+                value: Expr::reg(0, 64),
+                width: 8,
+            })
+            .chain(std::iter::once(ret()))
+            .collect();
+        let ir = function(vec![
+            (0x0, vec![assign(2, Expr::Const(0))]),
+            (
+                0x10,
+                vec![
+                    assign(2, Expr::bin(BinOp::Add, Expr::reg(2, 64), Expr::Const(1))),
+                    Stmt::Brif {
+                        cond: Cond::Eq,
+                        lhs: Expr::reg(2, 64),
+                        rhs: Expr::reg(6, 64),
+                        target: 0x10,
+                    },
+                ],
+            ),
+            (
+                0x20,
+                vec![Stmt::Switch {
+                    index: Expr::reg(1, 64),
+                    cases: vec![(0, 0x30), (1, 0x40), (2, 0x10)],
+                    default: Some(0x50),
+                }],
+            ),
+            (
+                0x30,
+                vec![assign(0, Expr::Const(1)), Stmt::Br { target: Some(0x60) }],
+            ),
+            (
+                0x40,
+                vec![assign(0, Expr::Const(2)), Stmt::Br { target: Some(0x60) }],
+            ),
+            (0x50, vec![ret()]),
+            (0x60, tail),
+        ]);
+        let nodes = crate::render::structure::structure_best(&ir);
+        assert_eq!(gotos(&nodes), 0, "{nodes:#?}");
+    }
+
+    #[test]
+    fn a_loop_exit_sent_past_a_test_it_decided_meets_the_others_there() {
+        // r4 = 0; if (r5 != r6) do { r4 += 1; if (r7 == r6) break; } while (r1 != r4);
+        // if (r4 != r1) { ...; return; } then a tail too long to copy, which
+        // the loop's end jumps to straight, knowing r4 == r1.
+        let tail = |count: u64| -> Vec<Stmt> {
+            (0..count)
+                .map(|offset| Stmt::Store {
+                    addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset * 8)),
+                    value: Expr::reg(0, 64),
+                    width: 8,
+                })
+                .chain(std::iter::once(ret()))
+                .collect()
+        };
+        let test = |cond: Cond, lhs: u16, rhs: u16, target: u64| Stmt::Brif {
+            cond,
+            lhs: Expr::reg(lhs, 64),
+            rhs: Expr::reg(rhs, 64),
+            target,
+        };
+        let ir = function(vec![
+            (
+                0x0,
+                vec![assign(4, Expr::Const(0)), test(Cond::Eq, 5, 6, 0x50)],
+            ),
+            (
+                0x10,
+                vec![
+                    assign(4, Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(1))),
+                    test(Cond::Eq, 7, 6, 0x50),
+                ],
+            ),
+            (
+                0x18,
+                vec![assign(8, Expr::reg(4, 64)), test(Cond::Ne, 1, 4, 0x10)],
+            ),
+            (0x20, vec![Stmt::Br { target: Some(0x60) }]),
+            (0x50, vec![test(Cond::Eq, 4, 1, 0x60)]),
+            (0x58, tail(7)),
+            (0x60, tail(8)),
+        ]);
+        let nodes = crate::render::structure::structure_best(&ir);
+        assert_eq!(gotos(&nodes), 0, "{nodes:#?}");
+    }
+
+    #[test]
+    fn a_test_that_completes_another_joins_it() {
+        // if (r1 != r6 && r2 != r6) r0 = 1; else { r2 = ... = r6 = 2; }
+        // then a tail too long to copy.
+        let stores: Vec<Stmt> = (0..8)
+            .map(|offset| Stmt::Store {
+                addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset * 8)),
+                value: Expr::reg(0, 64),
+                width: 8,
+            })
+            .chain(std::iter::once(ret()))
+            .collect();
+        let fails = |lhs: u16| Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(lhs, 64),
+            rhs: Expr::reg(6, 64),
+            target: 0x30,
+        };
+        let ir = function(vec![
+            (0x0, vec![fails(1)]),
+            (0x10, vec![fails(2)]),
+            (
+                0x20,
+                vec![assign(0, Expr::Const(1)), Stmt::Br { target: Some(0x40) }],
+            ),
+            (
+                0x30,
+                (2..7).map(|index| assign(index, Expr::Const(2))).collect(),
+            ),
+            (0x40, stores),
+        ]);
+        let nodes = crate::render::structure::structure_best(&ir);
         assert_eq!(gotos(&nodes), 0, "{nodes:#?}");
     }
 }

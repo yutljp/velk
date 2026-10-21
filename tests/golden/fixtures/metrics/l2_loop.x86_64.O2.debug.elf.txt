@@ -292,10 +292,9 @@ int find_first(int *p, int n, int v) {
     v2 = 0x0;
     while (p[v2] != v) {
         v2 = v2 + 0x1;
-        if (v1 != v2) {
-            continue;
+        if (v1 == v2) {
+            return 0xffffffff;
         }
-        return 0xffffffff;
     }
     return v2;
 }

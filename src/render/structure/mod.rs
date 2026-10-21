@@ -7,6 +7,7 @@ mod dominance;
 mod duplicate;
 #[cfg(test)]
 pub(crate) mod lower;
+mod short_circuit;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -57,7 +58,8 @@ pub enum Node {
 }
 
 /// Structures the function by its dominator tree, also with compare chains
-/// rebuilt as switches, keeping the result with the fewest labels. A function
+/// rebuilt as switches, keeping the result with the fewest labels, and of
+/// those the fewest gotos. A function
 /// that tree cannot cover, such as one with code only an indirect jump
 /// reaches, is structured in address order instead.
 pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
@@ -74,7 +76,7 @@ pub(crate) fn best_structure(ir: &FunctionIr) -> (Vec<Node>, Cow<'_, FunctionIr>
     // A branch to a block that only jumps on can go where the jump does.
     if let Some(threaded) = duplicate::threaded(ir) {
         let candidate = structure_variants(Cow::Owned(threaded));
-        if label_count(&candidate.0) < label_count(&best.0) {
+        if cost(&candidate.0) < cost(&best.0) {
             best = candidate;
         }
     }
@@ -85,7 +87,27 @@ pub(crate) fn best_structure(ir: &FunctionIr) -> (Vec<Node>, Cow<'_, FunctionIr>
     if let Some(merged) = duplicate::merged_checks(ir) {
         let merged = duplicate::threaded(&merged).unwrap_or(merged);
         let candidate = structure_variants(Cow::Owned(merged));
-        if label_count(&candidate.0) < label_count(&best.0) {
+        if cost(&candidate.0) < cost(&best.0) {
+            best = candidate;
+        }
+    }
+    if label_count(&best.0) == 0 {
+        return best;
+    }
+    // A branch sent past a test it decided can go through the test again.
+    if let Some(unthreaded) = duplicate::unthreaded(&best.1) {
+        let candidate = structure_variants(Cow::Owned(unthreaded));
+        if cost(&candidate.0) < cost(&best.0) {
+            best = candidate;
+        }
+    }
+    if label_count(&best.0) == 0 {
+        return best;
+    }
+    // Tests that only complete another one can join it as `&&` or `||`.
+    if let Some(joined) = short_circuit::short_circuited(&best.1) {
+        let candidate = structure_variants(Cow::Owned(joined));
+        if cost(&candidate.0) < cost(&best.0) {
             best = candidate;
         }
     }
@@ -101,7 +123,7 @@ fn structure_variants(ir: Cow<'_, FunctionIr>) -> (Vec<Node>, Cow<'_, FunctionIr
     // leave fewer labels.
     if let Some(duplicated) = duplicate::tail_duplicated(&ir) {
         let candidate = structure_chosen(Cow::Owned(duplicated));
-        if label_count(&candidate.0) < label_count(&best.0) {
+        if cost(&candidate.0) < cost(&best.0) {
             return candidate;
         }
     }
@@ -119,7 +141,7 @@ fn structure_chosen(ir: Cow<'_, FunctionIr>) -> (Vec<Node>, Cow<'_, FunctionIr>)
         let mut chained = ir.clone().into_owned();
         crate::render::structure::compare_chain::apply_chains(&mut chained, &chains);
         if let Some(candidate) = by_dominance(&chained)
-            && label_count(&candidate) <= label_count(&primary)
+            && cost(&candidate) <= cost(&primary)
             && labels_resolve(&ir, &candidate)
         {
             return (candidate, Cow::Owned(chained));
@@ -141,6 +163,8 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
     cleanup::inline_return_tails(nodes);
     prune(nodes);
     prune_unreachable(nodes);
+    cleanup::shape_forever_loops(nodes);
+    cleanup::fold_trailing_continues(nodes);
     flatten_early_returns(nodes);
     cleanup::drop_jumps_to_next(nodes, None);
     prune(nodes);
@@ -158,13 +182,19 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     }
     // A loop's exits that one branch alone enters can sit where it leaves
     // to them, when that leaves fewer labels.
-    if let Some(mut absorbing) = dominance::structure_absorbing(ir) {
-        tidy(&mut absorbing, entries);
-        if label_count(&absorbing) < label_count(&nodes) && labels_resolve(ir, &absorbing) {
-            return Some(absorbing);
+    let mut best = nodes;
+    for absorb in [dominance::Absorb::Private, dominance::Absorb::Every] {
+        if let Some(mut absorbing) = dominance::structure_absorbing(ir, absorb) {
+            tidy(&mut absorbing, entries.clone());
+            if cost(&absorbing) < cost(&best) && labels_resolve(ir, &absorbing) {
+                best = absorbing;
+            }
+        }
+        if label_count(&best) == 0 {
+            break;
         }
     }
-    Some(nodes)
+    Some(best)
 }
 
 /// The address-order structuring and its variants, keeping the one with the
@@ -188,7 +218,7 @@ fn by_layout(ir: &FunctionIr) -> Vec<Node> {
     // reaching exactly one of them.
     let mut best = primary;
     for candidate in candidates {
-        if label_count(&candidate) < label_count(&best) && labels_resolve(ir, &candidate) {
+        if cost(&candidate) < cost(&best) && labels_resolve(ir, &candidate) {
             best = candidate;
         }
     }
@@ -230,6 +260,27 @@ fn labels_resolve(ir: &FunctionIr, nodes: &[Node]) -> bool {
         .iter()
         .filter(|target| ir.blocks.iter().any(|block| block.start == **target))
         .all(|target| found.iter().filter(|label| *label == target).count() == 1)
+}
+
+/// What a structure leaves to read as jumps: its labels, then its gotos.
+fn cost(nodes: &[Node]) -> (usize, usize) {
+    fn gotos(nodes: &[Node]) -> usize {
+        nodes
+            .iter()
+            .map(|node| match node {
+                Node::Stmt(Stmt::Br { target: Some(_) }) => 1,
+                Node::If { then, els, .. } => gotos(then) + gotos(els),
+                Node::DoWhile { body, .. } | Node::Forever { body } => gotos(body),
+                Node::While { prefix, body, .. } => gotos(prefix) + gotos(body),
+                Node::Switch { arms, default, .. } => {
+                    arms.iter().map(|(_, body)| gotos(body)).sum::<usize>()
+                        + default.as_ref().map_or(0, |body| gotos(body))
+                }
+                _ => 0,
+            })
+            .sum()
+    }
+    (label_count(nodes), gotos(nodes))
 }
 
 fn label_count(nodes: &[Node]) -> usize {

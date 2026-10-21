@@ -317,3 +317,176 @@ pub(super) fn threaded(ir: &FunctionIr) -> Option<FunctionIr> {
     });
     Some(ir)
 }
+
+/// The function with each branch that went past a test whose outcome its
+/// own test decided sent through that test again. A compiler that knows,
+/// say, that `i == n` where a loop ends sends the loop's exit straight to
+/// where a later `if (i != n)` would go; the later test is then a join of
+/// its own, which the structure can only reach with a goto. Through the
+/// test again, the exit meets the other paths before it.
+pub(super) fn unthreaded(ir: &FunctionIr) -> Option<FunctionIr> {
+    use crate::ir::{Block, Cond, Expr};
+    // The blocks that only test, as (position, cond, lhs, rhs, taken, otherwise).
+    type Test<'a> = (usize, Cond, &'a Expr, &'a Expr, u64, u64);
+    let tests: Vec<Test> = ir
+        .blocks
+        .iter()
+        .enumerate()
+        .filter_map(|(position, block)| match block.stmts.as_slice() {
+            [
+                Stmt::Brif {
+                    cond,
+                    lhs,
+                    rhs,
+                    target,
+                },
+            ] => {
+                let next = ir.blocks.get(position + 1)?.start;
+                Some((position, *cond, lhs, rhs, *target, next))
+            }
+            _ => None,
+        })
+        .collect();
+    if tests.is_empty() {
+        return None;
+    }
+    let starts: std::collections::HashMap<u64, usize> = ir
+        .blocks
+        .iter()
+        .enumerate()
+        .map(|(position, block)| (block.start, position))
+        .collect();
+    // Where control goes from a block start, past blocks that only jump.
+    let settle = |mut target: u64| {
+        for _ in 0..8 {
+            match starts
+                .get(&target)
+                .map(|position| ir.blocks[*position].stmts.as_slice())
+            {
+                Some([Stmt::Br { target: Some(next) }]) if *next != target => target = *next,
+                _ => break,
+            }
+        }
+        target
+    };
+    let original = ir;
+    let mut ir = ir.clone();
+    let mut next_copy = COPIES + 0x2000_0000;
+    // Jumps to add after a block that falls into its branch's new place.
+    let mut jumps: Vec<(usize, u64)> = Vec::new();
+    let mut changed = false;
+    for position in 0..ir.blocks.len() {
+        // A test sent on to another would go back and forth with it.
+        if tests.iter().any(|(test, ..)| *test == position) {
+            continue;
+        }
+        let Some(Stmt::Brif {
+            cond,
+            lhs,
+            rhs,
+            target,
+        }) = ir.blocks[position].stmts.last()
+        else {
+            continue;
+        };
+        let Some(fallthrough) = ir.blocks.get(position + 1).map(|block| block.start) else {
+            continue;
+        };
+        let (cond, lhs, rhs, target) = (*cond, lhs.clone(), rhs.clone(), *target);
+        for (edge, holds) in [(target, true), (fallthrough, false)] {
+            let again = tests
+                .iter()
+                .find(|(test, other, left, right, taken, otherwise)| {
+                    *test != position
+                        && settle(original.blocks[*test].start) != settle(edge)
+                        && implied((cond, &lhs, &rhs, holds), (*other, left, right)).is_some_and(
+                            |outcome| {
+                                settle(edge) == settle(if outcome { *taken } else { *otherwise })
+                            },
+                        )
+                });
+            let Some((test, ..)) = again else {
+                continue;
+            };
+            let start = ir.blocks[*test].start;
+            if holds {
+                if let Some(Stmt::Brif { target, .. }) = ir.blocks[position].stmts.last_mut() {
+                    *target = start;
+                }
+            } else {
+                jumps.push((position, start));
+            }
+            changed = true;
+        }
+    }
+    if !changed {
+        return None;
+    }
+    // Later positions first, so the earlier ones stay where they were.
+    for (position, start) in jumps.into_iter().rev() {
+        ir.blocks.insert(
+            position + 1,
+            Block {
+                start: next_copy,
+                stmts: vec![Stmt::Br {
+                    target: Some(start),
+                }],
+            },
+        );
+        next_copy += 1;
+    }
+    // A block only the old branches went to is left behind.
+    let before: std::collections::HashMap<u64, bool> = original
+        .blocks
+        .iter()
+        .zip(reached(original))
+        .map(|(block, reached)| (block.start, reached))
+        .collect();
+    let after = reached(&ir);
+    let mut position = 0;
+    ir.blocks.retain(|block| {
+        position += 1;
+        after[position - 1] || !before.get(&block.start).copied().unwrap_or(false)
+    });
+    Some(ir)
+}
+
+/// What a test `(cond, lhs, rhs)` comes to where `fact` is known to hold
+/// or not, when the two compare the same values.
+fn implied(
+    fact: (crate::ir::Cond, &crate::ir::Expr, &crate::ir::Expr, bool),
+    test: (crate::ir::Cond, &crate::ir::Expr, &crate::ir::Expr),
+) -> Option<bool> {
+    use crate::ir::Cond;
+    let (known, left, right, holds) = fact;
+    let (cond, lhs, rhs) = test;
+    let flags = |cond: Cond| matches!(cond, Cond::Mi | Cond::Pl | Cond::Vs | Cond::Vc);
+    if flags(known) || flags(cond) {
+        return None;
+    }
+    let cond = if (lhs, rhs) == (left, right) {
+        cond
+    } else if (lhs, rhs) == (right, left) {
+        // `a < b` is `b > a`.
+        match cond {
+            Cond::Lt => Cond::Gt,
+            Cond::Gt => Cond::Lt,
+            Cond::Le => Cond::Ge,
+            Cond::Ge => Cond::Le,
+            Cond::Cc => Cond::Hi,
+            Cond::Hi => Cond::Cc,
+            Cond::Cs => Cond::Ls,
+            Cond::Ls => Cond::Cs,
+            other => other,
+        }
+    } else {
+        return None;
+    };
+    if cond == known {
+        Some(holds)
+    } else if cond == known.invert() {
+        Some(!holds)
+    } else {
+        None
+    }
+}

@@ -120,13 +120,11 @@ fn ir_runs_off_the_end(ir: &FunctionIr) -> bool {
 
 /// True when execution can reach the end of the nodes.
 fn falls_through(nodes: &[Node]) -> bool {
+    // A `break` in a `switch` leaves the switch, not the loop around it.
     fn breaks(nodes: &[Node]) -> bool {
         nodes.iter().any(|node| match node {
             Node::Break => true,
             Node::If { then, els, .. } => breaks(then) || breaks(els),
-            Node::Switch { arms, default, .. } => {
-                arms.iter().any(|(_, body)| breaks(body)) || default.as_deref().is_some_and(breaks)
-            }
             _ => false,
         })
     }

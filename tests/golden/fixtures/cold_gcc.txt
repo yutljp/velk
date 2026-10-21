@@ -1,4 +1,4 @@
-# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 1 gotos
+# cold_gcc: elf x86_64 0x11a0, 15 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x1000 27 _init symtab
 0x1080 16 __cxa_finalize plt
 0x1090 16 __snprintf_chk plt
@@ -401,27 +401,25 @@ int32_t lookup(struct lookup_a0 *a0, int64_t a1, int32_t a2) {
     while (v3->field_0x0 != a2) {
         v3 = v3 + 0x1;
         if (v3 == v5) {
-            goto L_12fd;
+            v7 = &local_0;
+            local_1 = a1;
+            v8 = (uint8_t *)a0 + 0x8;
+            v9 = v4 + (uint8_t *)v8;
+            __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
+            v10 = stderr_GLIBC_2_2_5;
+            fputs(v7, v10);
+            do {
+                v11 = v8[-0x1];
+                v12 = stderr_GLIBC_2_2_5;
+                v13 = v8;
+                v8 = v8 + 0x6;
+                __fprintf_chk(v12, 0x2, 0x201c, v13, v11);
+            } while (v8 != v9);
+            abort();
+            __builtin_trap();
         }
     }
     return v3->field_0x4;
-L_12fd:
-    v7 = &local_0;
-    local_1 = a1;
-    v8 = (uint8_t *)a0 + 0x8;
-    v9 = v4 + (uint8_t *)v8;
-    __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
-    v10 = stderr_GLIBC_2_2_5;
-    fputs(v7, v10);
-    do {
-        v11 = v8[-0x1];
-        v12 = stderr_GLIBC_2_2_5;
-        v13 = v8;
-        v8 = v8 + 0x6;
-        __fprintf_chk(v12, 0x2, 0x201c, v13, v11);
-    } while (v8 != v9);
-    abort();
-    __builtin_trap();
 }
 -- signature
 int32_t (struct lookup_a0 * a0, int64_t a1, int32_t a2)

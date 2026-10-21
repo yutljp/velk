@@ -332,7 +332,13 @@ pub(crate) fn prune_unreachable(nodes: &mut Vec<Node>) {
             reachable = !ends(std::slice::from_ref(node), true);
             true
         }
-        Node::DoWhile { .. } | Node::Forever { .. } | Node::While { .. } => {
+        // Only a `break` leaves a `for (;;)`; a label after it is reached
+        // by its own jumps.
+        Node::Forever { body } => {
+            reachable = breaks_out(body);
+            true
+        }
+        Node::DoWhile { .. } | Node::While { .. } => {
             reachable = true;
             true
         }
@@ -361,6 +367,152 @@ pub(crate) fn prune_unreachable(nodes: &mut Vec<Node>) {
     }
 }
 
+/// Whether a `break` in `nodes` leaves the loop they are the body of, rather
+/// than an inner loop or a `switch`.
+fn breaks_out(nodes: &[Node]) -> bool {
+    nodes.iter().any(|node| match node {
+        Node::Break => true,
+        Node::If { then, els, .. } => breaks_out(then) || breaks_out(els),
+        _ => false,
+    })
+}
+
+/// Whether a `continue` in `nodes` goes to the loop they are the body of.
+fn continues_out(nodes: &[Node]) -> bool {
+    nodes.iter().any(|node| match node {
+        Node::Continue => true,
+        Node::If { then, els, .. } => continues_out(then) || continues_out(els),
+        Node::Switch { arms, default, .. } => {
+            arms.iter().any(|(_, body)| continues_out(body))
+                || default.as_deref().is_some_and(continues_out)
+        }
+        _ => false,
+    })
+}
+
+/// Gives `for (;;)` loops the shape their tests have:
+/// `for (;;) { if (c) { s } r }` where `s` never runs into `r` and `r`
+/// leaves the function is `while (c) { s } r`, the `continue`s of `s`
+/// going back to the test either way; and a body that ends in
+/// `if (c) continue; t` with `t` leaving the function is
+/// `do { ... } while (c); t`, when nothing before it continues, which a
+/// `do`/`while` would send to the test instead of the top.
+pub(crate) fn shape_forever_loops(nodes: &mut Vec<Node>) {
+    for node in nodes.iter_mut() {
+        for body in children_mut(node) {
+            shape_forever_loops(body);
+        }
+    }
+    let mut shaped = Vec::with_capacity(nodes.len());
+    for node in std::mem::take(nodes) {
+        let Node::Forever { body } = node else {
+            shaped.push(node);
+            continue;
+        };
+        if breaks_out(&body) {
+            shaped.push(Node::Forever { body });
+            continue;
+        }
+        let leaves = |tail: &[Node]| !tail.is_empty() && ends(tail, false) && !continues_out(tail);
+        if let [Node::If { then, els, .. }, rest @ ..] = body.as_slice()
+            && els.is_empty()
+            && ends(then, false)
+            && leaves(rest)
+        {
+            let mut body = body;
+            let rest = body.split_off(1);
+            let Some(Node::If {
+                cond,
+                lhs,
+                rhs,
+                mut then,
+                ..
+            }) = body.pop()
+            else {
+                unreachable!("the body starts with an if");
+            };
+            if matches!(then.last(), Some(Node::Continue)) {
+                then.pop();
+            }
+            shaped.push(Node::While {
+                prefix: Vec::new(),
+                cond,
+                lhs,
+                rhs,
+                body: then,
+            });
+            shaped.extend(rest);
+            continue;
+        }
+        let test = body.iter().position(|node| {
+            matches!(node, Node::If { then, els, .. }
+                if els.is_empty() && matches!(then.as_slice(), [Node::Continue]))
+        });
+        if let Some(test) = test
+            && leaves(&body[test + 1..])
+            && !continues_out(&body[..test])
+        {
+            let mut body = body;
+            let tail = body.split_off(test + 1);
+            let Some(Node::If { cond, lhs, rhs, .. }) = body.pop() else {
+                unreachable!("the test is an if");
+            };
+            shaped.push(Node::DoWhile {
+                cond,
+                lhs,
+                rhs,
+                body,
+            });
+            shaped.extend(tail);
+            continue;
+        }
+        shaped.push(Node::Forever { body });
+    }
+    *nodes = shaped;
+}
+
+/// Writes `if (c) continue; t` at the end of a loop's body as
+/// `if (!c) { t }`: running off the end of the body goes on with the loop
+/// as `continue` does. A tail with a label stays, as jumps enter it.
+pub(crate) fn fold_trailing_continues(nodes: &mut [Node]) {
+    for node in nodes.iter_mut() {
+        if let Node::Forever { body } | Node::DoWhile { body, .. } | Node::While { body, .. } = node
+        {
+            fold_tail(body);
+        }
+        for body in children_mut(node) {
+            fold_trailing_continues(body);
+        }
+    }
+    fn fold_tail(body: &mut Vec<Node>) {
+        let Some(test) = body.iter().rposition(|node| {
+            matches!(node, Node::If { then, els, .. }
+                if els.is_empty() && matches!(then.as_slice(), [Node::Continue]))
+        }) else {
+            return;
+        };
+        if body[test + 1..]
+            .iter()
+            .any(|node| matches!(node, Node::Label(_)))
+        {
+            return;
+        }
+        let tail = body.split_off(test + 1);
+        let Some(Node::If { cond, lhs, rhs, .. }) = body.pop() else {
+            unreachable!("the test is an if");
+        };
+        if !tail.is_empty() {
+            body.push(Node::If {
+                cond: cond.invert(),
+                lhs,
+                rhs,
+                then: tail,
+                els: Vec::new(),
+            });
+        }
+    }
+}
+
 /// Whether control never runs off the end of `nodes`: they end in a return,
 /// a jump or a trap, or in an `if` or a `switch` with a default all of whose
 /// ways end so. A `break` leaves too where `break_leaves` says, as it does
@@ -377,6 +529,7 @@ fn ends(nodes: &[Node], break_leaves: bool) -> bool {
         ),
         Some(Node::Continue) => true,
         Some(Node::Break) => break_leaves,
+        Some(Node::Forever { body }) => !breaks_out(body),
         Some(Node::If { then, els, .. }) => ends(then, break_leaves) && ends(els, break_leaves),
         Some(Node::Switch {
             arms,
@@ -487,9 +640,17 @@ fn children_mut(node: &mut Node) -> Vec<&mut Vec<Node>> {
     }
 }
 
+/// The most statements a copied return tail runs before it returns.
+const TAIL_STATEMENTS: usize = 6;
+
+/// The most lines the copies of one return tail may add in all.
+const TAIL_LINES: usize = 8;
+
 /// Replaces each jump to a label that only runs a few statements before
 /// returning, or before trapping after a call that does not return, with
-/// those statements, while that copies no more than a few in all.
+/// those statements, while that adds no more than a few lines in all. A
+/// tail that reads as one line, as `return f(x);` does, is copied to every
+/// jump: the copy takes no more room than the goto.
 pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
     fn jumps(nodes: &[Node], counts: &mut HashMap<u64, usize>) {
         for node in nodes {
@@ -512,8 +673,11 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
                     match next {
                         Node::Label(_) => {}
                         Node::Stmt(
-                            stmt @ (Stmt::Assign { .. } | Stmt::Store { .. } | Stmt::Call { .. }),
-                        ) if tail.len() < 3 => tail.push(Node::Stmt(stmt.clone())),
+                            stmt @ (Stmt::Assign { .. }
+                            | Stmt::Store { .. }
+                            | Stmt::Call { .. }
+                            | Stmt::Unsupported { .. }),
+                        ) if tail.len() < TAIL_STATEMENTS => tail.push(Node::Stmt(stmt.clone())),
                         Node::Stmt(stmt @ (Stmt::Ret { .. } | Stmt::Trap)) => {
                             tail.push(Node::Stmt(stmt.clone()));
                             tails.insert(label, tail);
@@ -552,10 +716,28 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
     collect(nodes, &mut tails);
     let mut counts = HashMap::new();
     jumps(nodes, &mut counts);
-    tails.retain(|label, tail| (tail.len() - 1) * counts.get(label).copied().unwrap_or(0) <= 4);
+    tails.retain(|label, tail| {
+        let added = added_lines(tail);
+        added == 0 || added * counts.get(label).copied().unwrap_or(0) <= TAIL_LINES
+    });
     if !tails.is_empty() {
         replace(nodes, &tails);
     }
+}
+
+/// How many more lines a copy of `tail` takes than the goto it replaces:
+/// one per statement before the last, but a return of what a call just
+/// returned prints with the call.
+fn added_lines(tail: &[Node]) -> usize {
+    let fused = matches!(
+        tail,
+        [
+            ..,
+            Node::Stmt(Stmt::Call { .. }),
+            Node::Stmt(Stmt::Ret { .. })
+        ]
+    );
+    tail.len() - 1 - usize::from(fused)
 }
 
 /// Returns the constant a variable holds on each path to a return, where
@@ -964,6 +1146,138 @@ mod tests {
         );
         assert!(
             matches!(&nodes[2], Node::Switch { arms, .. } if matches!(arms[0].1.as_slice(), [Node::Stmt(Stmt::Brif { .. })]))
+        );
+    }
+
+    fn test(then: Vec<Node>) -> Node {
+        Node::If {
+            cond: Cond::Ne,
+            lhs: Expr::reg(0, 64),
+            rhs: Expr::constant(0),
+            then,
+            els: Vec::new(),
+        }
+    }
+
+    fn call() -> Node {
+        Node::Stmt(Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::SysV,
+            args: None,
+            floats_named: false,
+            result: None,
+            clobbers: None,
+        })
+    }
+
+    fn ret() -> Node {
+        Node::Stmt(Stmt::Ret {
+            value: Expr::constant(0),
+        })
+    }
+
+    #[test]
+    fn a_loop_that_starts_with_its_only_way_on_is_a_while() {
+        // for (;;) { if (r0 != 0) { f(); continue; } return 0; }
+        let mut nodes = vec![Node::Forever {
+            body: vec![test(vec![call(), Node::Continue]), ret()],
+        }];
+        super::shape_forever_loops(&mut nodes);
+        assert!(
+            matches!(nodes.as_slice(), [Node::While { body, .. }, Node::Stmt(Stmt::Ret { .. })]
+                if matches!(body.as_slice(), [Node::Stmt(Stmt::Call { .. })])),
+            "{nodes:?}"
+        );
+    }
+
+    #[test]
+    fn a_loop_that_continues_on_a_last_test_is_a_do_while() {
+        // for (;;) { f(); if (r0 != 0) continue; return 0; }
+        let mut nodes = vec![Node::Forever {
+            body: vec![call(), test(vec![Node::Continue]), ret()],
+        }];
+        super::shape_forever_loops(&mut nodes);
+        assert!(
+            matches!(
+                nodes.as_slice(),
+                [
+                    Node::DoWhile { cond: Cond::Ne, .. },
+                    Node::Stmt(Stmt::Ret { .. })
+                ]
+            ),
+            "{nodes:?}"
+        );
+        // A continue before the test would go to the test in a do/while.
+        let mut nodes = vec![Node::Forever {
+            body: vec![
+                test(vec![Node::Continue]),
+                call(),
+                test(vec![Node::Continue]),
+                ret(),
+            ],
+        }];
+        super::shape_forever_loops(&mut nodes);
+        assert!(
+            matches!(nodes.as_slice(), [Node::Forever { .. }]),
+            "{nodes:?}"
+        );
+    }
+
+    #[test]
+    fn a_loop_left_by_a_break_keeps_its_shape_and_what_follows() {
+        let mut nodes = vec![
+            Node::Forever {
+                body: vec![test(vec![Node::Break]), call()],
+            },
+            ret(),
+        ];
+        super::shape_forever_loops(&mut nodes);
+        super::prune_unreachable(&mut nodes);
+        assert!(matches!(
+            nodes.as_slice(),
+            [Node::Forever { .. }, Node::Stmt(Stmt::Ret { .. })]
+        ));
+        // Without a break, nothing after the loop runs; a break in a
+        // switch only leaves the switch.
+        let mut nodes = vec![
+            Node::Forever {
+                body: vec![
+                    Node::Switch {
+                        index: Expr::reg(1, 64),
+                        arms: vec![(vec![0], vec![Node::Break])],
+                        default: None,
+                    },
+                    call(),
+                ],
+            },
+            ret(),
+        ];
+        super::prune_unreachable(&mut nodes);
+        assert!(
+            matches!(nodes.as_slice(), [Node::Forever { .. }]),
+            "{nodes:?}"
+        );
+    }
+
+    #[test]
+    fn a_continue_at_the_end_of_a_body_becomes_the_inverse_test() {
+        // while (...) { f(); if (r0 != 0) continue; f(); }
+        let mut nodes = vec![Node::While {
+            prefix: Vec::new(),
+            cond: Cond::Eq,
+            lhs: Expr::reg(1, 64),
+            rhs: Expr::constant(0),
+            body: vec![call(), test(vec![Node::Continue]), call()],
+        }];
+        super::fold_trailing_continues(&mut nodes);
+        let [Node::While { body, .. }] = nodes.as_slice() else {
+            panic!("{nodes:?}");
+        };
+        assert!(
+            matches!(body.as_slice(), [Node::Stmt(Stmt::Call { .. }), Node::If { cond: Cond::Eq, then, .. }]
+                if matches!(then.as_slice(), [Node::Stmt(Stmt::Call { .. })])),
+            "{body:?}"
         );
     }
 }
