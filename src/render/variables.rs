@@ -96,7 +96,11 @@ pub(crate) fn variable_types(
                 Some(structure) => {
                     CType::pointer_to(CType::Named(format!("struct {}", structure.name)))
                 }
-                None => CType::Pointer(Box::new(element(ir, &uses, index, widths))),
+                // The structure its accesses at fixed offsets make.
+                None => match ir.value_types.get(&index) {
+                    Some(given) if given.pointee_struct().is_some() => given.clone(),
+                    _ => CType::Pointer(Box::new(element(ir, &uses, index, widths))),
+                },
             }
         } else if ir.pointer_values.contains(&index)
             && !uses.arithmetic.contains(&index)
@@ -158,6 +162,9 @@ pub(crate) fn variable_types(
 fn agreeing(used: CType, given: &CType, narrow: bool, arithmetic: bool) -> CType {
     if used.is_sse_float() || used.pointee_struct().is_some() {
         return used;
+    }
+    if given.pointee_struct().is_some() && !narrow {
+        return given.clone();
     }
     if given.is_pointer() {
         let vague = crate::analysis::prototypes::void_pointer(given) && used.is_pointer();

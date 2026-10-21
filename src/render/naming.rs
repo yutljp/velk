@@ -236,7 +236,7 @@ pub(crate) fn global_name(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Strin
 /// `(pointer register, byte offset)` to the `(width, signed)` of the field there.
 pub(crate) type Fields = HashMap<(u16, i64), (u8, bool)>;
 
-/// The fields the accesses through pointer parameters name, so a member
+/// The fields the accesses through pointers name, so a member
 /// reads as `p->field_0x4` instead of a cast.
 pub(crate) fn struct_fields(ir: &FunctionIr) -> Fields {
     fn loads(expr: &Expr, out: &mut Vec<(Expr, u8, bool)>) {
@@ -252,11 +252,18 @@ pub(crate) fn struct_fields(ir: &FunctionIr) -> Fields {
             loads(child, out);
         }
     }
+    // Pointer parameters, and variables whose accesses made a structure.
     let pointer_params: std::collections::HashSet<u16> = ir
         .params
         .iter()
         .filter(|param| param.ty.is_pointer())
         .map(|param| param.index)
+        .chain(
+            ir.value_types
+                .iter()
+                .filter(|(_, ty)| ty.pointee_struct().is_some())
+                .map(|(index, _)| *index),
+        )
         .collect();
     let mut accesses = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {

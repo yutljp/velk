@@ -6,13 +6,18 @@
 == 0x210174 item_weight
 -- decompile
 /* velk pseudo-C: item_weight @ 0x210174 */
+struct item_weight_s1 {
+    uint8_t gap_0x0[0x8];
+    int32_t field_0x8;
+    int16_t field_0xc;
+};
 int item_weight(struct item *items, int i) {
-    void *v1;
+    struct item_weight_s1 *v1;
     int32_t v2;
 
     v1 = (uint8_t *)items + ((uint64_t)i << 0x4);
-    v2 = *(int16_t *)(v1 + 0xc);
-    return *(uint32_t *)(v1 + 0x8) * v2;
+    v2 = v1->field_0xc;
+    return v1->field_0x8 * v2;
 }
 -- signature
 int (struct item * items, int i)
@@ -30,12 +35,17 @@ fn item_weight @ 0x210174 (size 20)
 == 0x210188 cell_set
 -- decompile
 /* velk pseudo-C: cell_set @ 0x210188 */
+struct cell_set_s1 {
+    int32_t field_0x0;
+    uint8_t gap_0x4[0x4];
+    int32_t field_0x8;
+};
 void cell_set(struct cell *cells, long i, int v) {
-    uint32_t *v1;
+    struct cell_set_s1 *v1;
 
     v1 = i * 0xc + (uint8_t *)cells;
-    *v1 = v;
-    v1[0x2] = v + 0x1;
+    v1->field_0x0 = v;
+    v1->field_0x8 = v + 0x1;
 }
 -- signature
 void (struct cell * cells, long i, int v)

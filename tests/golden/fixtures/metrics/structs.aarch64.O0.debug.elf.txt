@@ -109,15 +109,21 @@ fn point_add @ 0x2102c0 (size 56)
 == 0x2102f8 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x2102f8 */
+struct big_make_s1 {
+    int64_t field_0x0;
+    int64_t field_0x8;
+    int64_t field_0x10;
+    int64_t field_0x18;
+};
 struct big big_make(long seed) {
     uint64_t x8;
-    uint64_t *v1;
+    struct big_make_s1 *v1;
 
     v1 = x8;
-    *v1 = seed;
-    v1[0x1] = seed + 0x1;
-    v1[0x2] = seed << 0x1;
-    v1[0x3] = seed * 0x3;
+    v1->field_0x0 = seed;
+    v1->field_0x8 = seed + 0x1;
+    v1->field_0x10 = seed << 0x1;
+    v1->field_0x18 = seed * 0x3;
     return seed;
 }
 -- signature

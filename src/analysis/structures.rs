@@ -74,7 +74,80 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         ir.params[at].ty = CType::pointer_to(CType::Named(format!("struct {}", structure.name)));
         structures.push(structure);
     }
+    // A variable read or written at several fixed offsets points at a
+    // structure as a parameter does: a pointer a call returns, or one the
+    // code loads from another structure.
+    // One stepped by a constant walks an array instead, as a copy loop's
+    // pointer does.
+    let stepped: HashSet<u16> = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .filter_map(|stmt| match stmt {
+            Stmt::Assign { dest, value } => match base_of(value) {
+                Some(base) if base == dest.index && !matches!(value, Expr::Reg { .. }) => {
+                    Some(base)
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    let touches = touches_of(ir);
+    let mut variables: Vec<u16> = touches
+        .iter()
+        .filter_map(|touch| match base_of(&touch.addr) {
+            Some(base) if base >= crate::ir::VARIABLE_BASE && !stepped.contains(&base) => {
+                Some(base)
+            }
+            _ => None,
+        })
+        .collect();
+    variables.sort_unstable();
+    variables.dedup();
+    // Variables whose fields match share one structure.
+    let mut named: Vec<(Vec<(u64, CType)>, String)> = Vec::new();
+    for (variable, fields) in variables
+        .into_iter()
+        .filter_map(|variable| Some((variable, layout(variable, &touches)?)))
+    {
+        let name = match named.iter().find(|(known, _)| *known == fields) {
+            Some((_, name)) => name.clone(),
+            None => {
+                let name = format!("{function}_s{}", named.len() + 1);
+                named.push((fields.clone(), name.clone()));
+                structures.push(Structure {
+                    name: name.clone(),
+                    fields,
+                    size: None,
+                    elements: Vec::new(),
+                });
+                name
+            }
+        };
+        ir.value_types.insert(
+            variable,
+            CType::pointer_to(CType::Named(format!("struct {name}"))),
+        );
+    }
     ir.structures.extend(structures);
+}
+
+/// The register an address reads at a constant offset, if it is one.
+fn base_of(addr: &Expr) -> Option<u16> {
+    match addr {
+        Expr::Reg { index, width: 64 } => Some(*index),
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } => match (lhs.as_ref(), rhs.as_ref()) {
+            (Expr::Reg { index, width: 64 }, Expr::Const(_))
+            | (Expr::Const(_), Expr::Reg { index, width: 64 }) => Some(*index),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 /// Whether the function reads `register` only whole, or in sums.
@@ -871,6 +944,48 @@ mod tests {
             ty: CType::pointer_to(CType::U32),
         }];
         ir
+    }
+
+    #[test]
+    fn a_pointer_variable_accessed_at_fixed_offsets_points_at_a_structure() {
+        // v1 = *a0; v2 = *(a0 + 8); v1->0 = 0; v1->8 = 0; v2->0 = 0; v2->8 = 0.
+        let (v1, v2) = (VARIABLE_BASE, VARIABLE_BASE + 1);
+        let put = |base: u16, offset: u64| Stmt::Store {
+            addr: Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(offset)),
+            value: Expr::Const(0),
+            width: 8,
+        };
+        let mut ir = pointer_function(vec![
+            assign(v1, load(Expr::reg(7, 64), 8, false)),
+            assign(
+                v2,
+                load(
+                    Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)),
+                    8,
+                    false,
+                ),
+            ),
+            put(v1, 0),
+            put(v1, 8),
+            put(v2, 0),
+            put(v2, 8),
+        ]);
+        recover(&mut ir);
+        let given = |variable| ir.value_types.get(&variable).map(ToString::to_string);
+        // The two share the one layout they have.
+        assert_eq!(given(v1), given(v2));
+        assert!(
+            given(v1).is_some_and(|ty| ty.starts_with("struct ")),
+            "{:?}",
+            given(v1)
+        );
+        assert_eq!(
+            ir.structures
+                .iter()
+                .filter(|structure| structure.name.contains("_s"))
+                .count(),
+            1
+        );
     }
 
     #[test]

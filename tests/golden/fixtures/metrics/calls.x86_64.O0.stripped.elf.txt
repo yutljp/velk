@@ -275,11 +275,22 @@ fn <unnamed> @ 0x2014f0 (size 80)
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
 /* struct: a3 +0x0:uint32_t, +0x8:uint64_t */
+struct sub_201540_s1 {
+    int32_t field_0x0;
+    int32_t field_0x4;
+    int64_t field_0x8;
+    int64_t field_0x10;
+};
+struct sub_201540_s2 {
+    int32_t field_0x0;
+    uint8_t gap_0x4[0xc];
+    int64_t field_0x10;
+};
 int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
     uint64_t rax;
-    void *v1;
+    struct sub_201540_s1 *v1;
     uint32_t v2;
-    void *v3;
+    struct sub_201540_s2 *v3;
     int32_t v4;
     int64_t v5;
     uint64_t *v6;
@@ -339,10 +350,10 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_20 = a1;
     local_21 = a0;
     v1 = &local_22;
-    *(uint64_t *)(v1 + 0x10) = &local_23;
-    *(uint64_t *)(v1 + 0x8) = rsp + 0x8;
-    *(uint32_t *)(v1 + 0x4) = 0x30;
-    *(uint32_t *)(v1) = 0x8;
+    v1->field_0x10 = &local_23;
+    v1->field_0x8 = rsp + 0x8;
+    v1->field_0x4 = 0x30;
+    v1->field_0x0 = 0x8;
     local_24 = 0x0;
     for (local_25 = 0x0; local_25 < local_21; local_25++) {
         local_26 = &local_22;
@@ -356,8 +367,8 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         } else {
             v3 = local_26;
             v4 = local_27;
-            v5 = v4 + *(uint64_t *)(v3 + 0x10);
-            *(uint32_t *)(v3) = v4 + 0x8;
+            v5 = v4 + v3->field_0x10;
+            v3->field_0x0 = v4 + 0x8;
             local_28 = v5;
         }
         local_24 += *local_28;

@@ -949,7 +949,11 @@ pub(crate) fn apply_prototypes(ir: &mut FunctionIr, image: &crate::loader::Image
             settle_param(param, ty);
         }
     }
-    ir.value_types = values;
+    // A structure the body's accesses gave a variable says more than a
+    // prototype's pointer.
+    for (variable, ty) in values {
+        ir.value_types.entry(variable).or_insert(ty);
+    }
 }
 
 /// Gives a parameter the type a prototype gives it, unless what the body
