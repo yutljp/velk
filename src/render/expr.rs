@@ -58,6 +58,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) pointees: HashMap<u16, String>,
     /// The size of the element each pointer parameter or variable points at.
     pub(super) elements: HashMap<u16, u64>,
+    /// The pointers, by name, to `char`, whose sign the platform decides.
+    pub(super) plain_chars: std::collections::HashSet<String>,
     /// The recovered structures arrays are made of, by name.
     pub(super) arrays: HashMap<String, crate::render::naming::Layout>,
     /// Registers whose readers only ever look at the low 32 bits.
@@ -1145,6 +1147,11 @@ fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
         }
     };
     let bits = u32::from(width) * 8;
+    // A `char` extends with a sign on some platforms and not on others:
+    // only its own bits are known.
+    if width == 1 && crate::render::naming::plain_char_access(addr, ctx) {
+        return Printed::new(text, Int::INT, bits, 13).ranging(Range::Signed(bits + 1));
+    }
     let exact = match (declared_signed, signed) {
         (true, true) => 64,
         (false, false) => ALL,

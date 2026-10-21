@@ -700,20 +700,23 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
         .filter(|_| image.format == crate::loader::Format::MachO)
         .unwrap_or(name);
     let noreturn = NORETURN_IMPORTS.contains(&unprefixed) || runtime_noreturn(unprefixed);
-    let arity = imported
+    let prototype = imported
         .then(|| super::prototypes::of(name, image.format == crate::loader::Format::MachO))
-        .flatten()
-        .map(|prototype| prototype.fixed);
+        .flatten();
     Summary {
-        arity,
-        floats: None,
-        pointers: 0,
+        arity: prototype.map(super::prototypes::Prototype::fixed),
+        // A variadic function may read floating-point arguments its format
+        // string asks for.
+        floats: prototype
+            .filter(|prototype| !prototype.variadic)
+            .map(super::prototypes::Prototype::floats),
+        pointers: prototype.map_or(0, super::prototypes::Prototype::pointers),
         noreturn,
         stack: 0,
         stack_widths: [0; 16],
         stack_results: [(0, 0); 9],
         indirect_result: false,
-        narrow_return: false,
+        narrow_return: prototype.is_some_and(super::prototypes::Prototype::narrow_return),
         clobbers: None,
     }
 }
@@ -745,7 +748,13 @@ fn compute(
     let convention = image.convention_of(addr);
     let signature = match seen {
         Some((before, signature)) if Arc::ptr_eq(before, &blocks) => signature.clone(),
-        _ => Arc::new(signature::recover(&blocks, image.isa, convention, image.go)),
+        _ => Arc::new(signature::recover_with(
+            &blocks,
+            image.isa,
+            convention,
+            image.go,
+            &|stmt| super::prototypes::called(image, stmt),
+        )),
     };
     // A Go closure's context is no argument a call passes in order.
     let count = |registers: &[u16]| {

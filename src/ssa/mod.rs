@@ -409,7 +409,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
         let name = image.functions.get(&target)?.name.as_deref()?;
         let prototype =
             crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)?;
-        Some((prototype.fixed, prototype.format?))
+        Some((prototype.fixed(), prototype.format?, prototype.scans))
     };
     let pending = ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         matches!(stmt, Stmt::Call { target: Some(target), args: None, .. } if variadic(*target).is_some())
@@ -432,7 +432,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
             else {
                 continue;
             };
-            let Some((fixed, format)) = variadic(*target) else {
+            let Some((fixed, format, scans)) = variadic(*target) else {
                 continue;
             };
             let registers = convention.arguments();
@@ -451,7 +451,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
             let Some(format) = c_string(image, *address) else {
                 continue;
             };
-            let count = fixed + crate::analysis::prototypes::format_arguments(&format);
+            let count = fixed + crate::analysis::prototypes::conversion_types(&format, scans).len();
             // The rest are read from the stack, where the call finds them.
             *args = crate::lift::arguments(
                 *convention,
@@ -464,7 +464,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
 }
 
 /// The NUL-terminated text at `address`, within its section.
-fn c_string(image: &crate::loader::Image, address: u64) -> Option<String> {
+pub(crate) fn c_string(image: &crate::loader::Image, address: u64) -> Option<String> {
     let section = image.section_at(address)?;
     let available = (section.vaddr + section.size)
         .saturating_sub(address)

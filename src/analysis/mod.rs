@@ -404,31 +404,52 @@ fn drop_stack_growth_check(blocks: &mut Vec<crate::ir::Block>, image: &Image) {
 }
 
 /// A function that only ever returns what the functions it calls return
-/// returns as wide a value as they do, or nothing when they return nothing.
+/// returns as wide a value as they do, or nothing when they return nothing;
+/// a library function's result, or one a constant moves, is of the type
+/// its prototype gives it.
 fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
-    use crate::ir::{CType, Expr};
+    use crate::ir::{BinOp, CType, Expr};
     if ir.ret_type == CType::Void || crate::ir::cfg::own_return(&ir.blocks).is_some() {
         return;
     }
     let mut width = None;
     for block in &ir.blocks {
-        let [.., Stmt::Call { target, result, .. }, Stmt::Ret { value }] = block.stmts.as_slice()
+        let [
+            ..,
+            call @ Stmt::Call { target, result, .. },
+            Stmt::Ret { value },
+        ] = block.stmts.as_slice()
         else {
             if matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
                 return;
             }
             continue;
         };
+        let prototype = prototypes::called(image, call);
         let returned = match value {
             Expr::Reg { index, .. } => *index,
+            Expr::Bin {
+                op: BinOp::Add | BinOp::Sub,
+                lhs,
+                rhs,
+            } if matches!(rhs.as_ref(), Expr::Const(_))
+                && prototype.is_some_and(|prototype| prototype.ret.integer().is_some()) =>
+            {
+                match lhs.as_ref() {
+                    Expr::Reg { index, .. } => *index,
+                    _ => return,
+                }
+            }
             _ => return,
         };
         let carried = result.map_or(crate::arch::RETURN, |result| result.index);
-        let Some(target) = target else {
-            return;
-        };
-        let Some(returned_type) = returned_type(image, *target) else {
-            return;
+        let returned_type = match (prototype, target) {
+            (Some(prototype), _) => prototype.ret.clone(),
+            (None, Some(target)) => match returned_type(image, *target) {
+                Some(returned_type) => returned_type,
+                None => return,
+            },
+            (None, None) => return,
         };
         if returned != carried || width.as_ref().is_some_and(|width| *width != returned_type) {
             return;
@@ -451,7 +472,8 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
         (Some(CType::Int { bytes, .. }), CType::Int { signed, .. }) => {
             ir.ret_type = CType::int(bytes, *signed);
         }
-        _ => {}
+        (Some(CType::Int { .. }) | None, _) => {}
+        (Some(given), _) => ir.ret_type = given,
     }
 }
 
@@ -973,11 +995,12 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     if image.go || function.sources.contains(&crate::loader::NameSource::Plt) {
         drop_unreached(&mut blocks);
     }
-    let mut signature = signature::recover(
+    let mut signature = signature::recover_with(
         &blocks,
         image.isa,
         image.convention_of(function.addr),
         image.go,
+        &|stmt| prototypes::called(image, stmt),
     );
     // Read only now, the results are no arguments to the signature.
     if let Some(first) = stack_results.first() {
@@ -1070,6 +1093,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         signed_params: signature.signed,
         landing_pads,
         pointer_values: Vec::new(),
+        value_types: std::collections::BTreeMap::new(),
         addr: function.addr,
         name: function.name.clone(),
         size,
@@ -1190,6 +1214,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
         }
     }
     ir.pointer_values = pointer_values;
+    typing::apply_prototypes(&mut ir, image);
     Analysis { ir, references }
 }
 

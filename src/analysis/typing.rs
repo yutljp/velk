@@ -35,6 +35,10 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
         .zip(decided.iter().copied())
         .zip(signed.iter().copied())
     {
+        // A type a prototype names is settled.
+        if matches!(param.ty, CType::Named(_)) {
+            continue;
+        }
         if signed {
             // Signedness comes from the operations, width from the body.
             if param.ty == CType::U32 || (param.ty == CType::U64 && narrow) {
@@ -873,6 +877,90 @@ pub(crate) fn apply_dwarf_types(
     }
     if let Some(ret) = types.ret {
         ir.ret_type = ret;
+    }
+}
+
+/// The types the prototypes of the library functions the body calls give
+/// the values it passes them and the values they return: the variables
+/// that hold them, and the parameters it passes on unchanged where a
+/// variadic function's format string takes them.
+pub(crate) fn apply_prototypes(ir: &mut FunctionIr, image: &crate::loader::Image) {
+    use crate::analysis::prototypes::{called, conversion_types, preferred};
+    use crate::ir::{Expr, Stmt};
+    // The register a value is, or the low half of.
+    let held = |expr: &Expr| match expr {
+        Expr::Reg { index, .. } => Some(*index),
+        Expr::Bin {
+            op: crate::ir::BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => match lhs.as_ref() {
+            Expr::Reg { index, .. } => Some(*index),
+            _ => None,
+        },
+        _ => None,
+    };
+    let offer = |types: &mut std::collections::BTreeMap<u16, CType>, index: u16, ty: &CType| {
+        let ty = match types.remove(&index) {
+            Some(first) => preferred(first, ty),
+            None => ty.clone(),
+        };
+        types.insert(index, ty);
+    };
+    let mut values = std::collections::BTreeMap::new();
+    let mut variadic = std::collections::BTreeMap::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let Stmt::Call {
+            args: Some(args),
+            result,
+            ..
+        } = stmt
+        else {
+            continue;
+        };
+        let Some(prototype) = called(image, stmt) else {
+            continue;
+        };
+        let mut types: Vec<CType> = prototype.integer_params().cloned().collect();
+        let fixed = types.len();
+        if let Some(Expr::Const(address)) = prototype.format.and_then(|format| args.get(format))
+            && let Some(format) = crate::ssa::c_string(image, *address)
+        {
+            types.extend(conversion_types(&format, prototype.scans));
+        }
+        for (position, (arg, ty)) in args.iter().zip(&types).enumerate() {
+            let Some(index) = held(arg) else {
+                continue;
+            };
+            if (crate::ir::TEMP_BASE..crate::ir::VALUE_BASE).contains(&index) {
+                offer(&mut values, index, ty);
+            } else if position >= fixed && ir.params.iter().any(|param| param.index == index) {
+                offer(&mut variadic, index, ty);
+            }
+        }
+        if let Some(dest) = result
+            && prototype.ret != CType::Void
+        {
+            offer(&mut values, dest.index, &prototype.ret);
+        }
+    }
+    for param in &mut ir.params {
+        if let Some(ty) = variadic.get(&param.index) {
+            settle_param(param, ty);
+        }
+    }
+    ir.value_types = values;
+}
+
+/// Gives a parameter the type a prototype gives it, unless what the body
+/// does with it says more: the elements a pointer's accesses read, rather
+/// than `void *`, or that it is a pointer at all.
+pub(crate) fn settle_param(param: &mut Param, ty: &CType) {
+    let keep = param.ty.is_sse_float()
+        || (param.ty.is_pointer()
+            && (crate::analysis::prototypes::void_pointer(ty) || !ty.is_pointer()));
+    if !keep {
+        param.ty = ty.clone();
     }
 }
 

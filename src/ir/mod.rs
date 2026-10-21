@@ -1359,6 +1359,9 @@ pub struct FunctionIr {
     pub landing_pads: Vec<(u64, Vec<(u64, u64)>)>,
     /// The variables the function passes where a callee takes a pointer.
     pub pointer_values: Vec<u16>,
+    /// The types the prototypes of the library functions the body calls
+    /// give the variables it passes them and those holding their results.
+    pub value_types: std::collections::BTreeMap<u16, CType>,
     pub addr: u64,
     pub name: Option<String>,
     pub size: u64,
@@ -1381,6 +1384,7 @@ impl FunctionIr {
             signed_params: std::collections::HashSet::new(),
             landing_pads: Vec::new(),
             pointer_values: Vec::new(),
+            value_types: std::collections::BTreeMap::new(),
             addr: 0,
             name: None,
             size: 0,

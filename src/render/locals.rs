@@ -53,6 +53,7 @@ pub(crate) fn stack_locals(
         members: HashMap::new(),
         pointees: HashMap::new(),
         elements: HashMap::new(),
+        plain_chars: std::collections::HashSet::new(),
         arrays: HashMap::new(),
         narrow_regs: std::collections::HashSet::new(),
         floats: HashMap::new(),

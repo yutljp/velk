@@ -325,6 +325,39 @@ fn render_with(
             pointees.insert(*index, structure.to_owned());
         }
     }
+    // `char` alone, which is neither `signed char` nor `unsigned char`.
+    let plain_char = |ty: &CType| match ty {
+        CType::Pointer(target) => match target.as_ref() {
+            CType::Named(name) => name
+                .split_whitespace()
+                .filter(|word| !matches!(*word, "const" | "volatile"))
+                .eq(["char"]),
+            _ => false,
+        },
+        _ => false,
+    };
+    let mut plain_chars: std::collections::HashSet<String> = ir
+        .params
+        .iter()
+        .filter(|param| plain_char(&param.ty))
+        .map(|param| param.name.clone())
+        .collect();
+    plain_chars.extend(
+        variable_types
+            .iter()
+            .filter(|(_, ty)| plain_char(ty))
+            .map(|(index, _)| match names.get(index) {
+                Some(name) => (*name).to_owned(),
+                None => crate::ir::reg_name(ir.isa, *index, 64),
+            }),
+    );
+    plain_chars.extend(
+        locals
+            .decls
+            .iter()
+            .filter(|local| local.ty.as_ref().is_some_and(plain_char))
+            .map(|local| local.name.clone()),
+    );
     let local_types = || {
         locals
             .decls
@@ -385,6 +418,7 @@ fn render_with(
         members,
         pointees,
         elements,
+        plain_chars,
         arrays,
         narrow_regs,
         floats,

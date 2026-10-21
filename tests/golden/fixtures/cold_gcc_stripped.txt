@@ -46,29 +46,29 @@ fn <unnamed> @ 0x1000 (size 27)
 == 0x1080 __cxa_finalize
 -- decompile
 /* velk pseudo-C: __cxa_finalize @ 0x1080 */
-int32_t __cxa_finalize(int64_t a0) {
-    return __cxa_finalize(a0);
+void __cxa_finalize(void *a0) {
+    __cxa_finalize(a0);
 }
 -- signature
-int32_t (int64_t a0)
+void (void * a0)
 -- references
 
 -- ir
 fn __cxa_finalize @ 0x1080 (size 16)
   blk0 @ 0x1080:
-    v1 = call *load64(#0x3ff8)(rdi)
-    ret v1
+    call *load64(#0x3ff8)(rdi)
+    ret #0x0
 -- card
 {"addr":"0x1080","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt.got","size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x1090 __snprintf_chk
 -- decompile
 /* velk pseudo-C: __snprintf_chk @ 0x1090 */
-int32_t __snprintf_chk(void) {
+int __snprintf_chk(void) {
     return __snprintf_chk();
 }
 -- signature
-int32_t ()
+int ()
 -- references
 
 -- ir
@@ -120,11 +120,11 @@ fn __stack_chk_fail @ 0x10b0 (size 16)
 == 0x10c0 fputs
 -- decompile
 /* velk pseudo-C: fputs @ 0x10c0 */
-int32_t fputs(int64_t a0, int64_t a1) {
+int fputs(const char *a0, FILE *a1) {
     return fputs(a0, a1);
 }
 -- signature
-int32_t (int64_t a0, int64_t a1)
+int (const char * a0, FILE * a1)
 -- references
 
 -- ir
@@ -138,11 +138,11 @@ fn fputs @ 0x10c0 (size 16)
 == 0x10d0 __fprintf_chk
 -- decompile
 /* velk pseudo-C: __fprintf_chk @ 0x10d0 */
-int32_t __fprintf_chk(void) {
+int __fprintf_chk(void) {
     return __fprintf_chk();
 }
 -- signature
-int32_t ()
+int ()
 -- references
 
 -- ir
@@ -201,10 +201,10 @@ fn <unnamed> @ 0x1120 (size 124)
 == 0x11a0 -
 -- decompile
 /* velk pseudo-C: sub_11a0 @ 0x11a0 */
-int32_t sub_11a0(int64_t a0, int64_t a1, int64_t a2) {
+int32_t sub_11a0(int64_t a0, int64_t a1, void *a2) {
     uint64_t rax;
     int64_t v2;
-    int64_t v3;
+    char **v3;
     int64_t local_0; /* [sp+0] */
     int64_t local_1; /* [sp-8] */
 
@@ -216,7 +216,7 @@ int32_t sub_11a0(int64_t a0, int64_t a1, int64_t a2) {
     __builtin_trap();
 }
 -- signature
-int32_t (int64_t a0, int64_t a1, int64_t a2)
+int32_t (int64_t a0, int64_t a1, void * a2)
 -- references
 
 -- ir
@@ -305,7 +305,7 @@ fn <unnamed> @ 0x1200 (size 64)
 -- decompile
 /* velk pseudo-C: sub_1240 @ 0x1240 */
 void sub_1240(void) {
-    int64_t v1;
+    void *v1;
 
     if (byte_4028 != 0x0) {
         return;
@@ -366,24 +366,24 @@ struct sub_1290_a0 {
     int32_t field_0x4;
     uint8_t gap_0x8[0x10];
 };
-int32_t sub_1290(struct sub_1290_a0 *a0, int64_t a1, int32_t a2) {
+int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
     struct sub_1290_a0 *v3;
     int64_t v4;
     int64_t v5;
-    int64_t v7;
+    void *v7;
     uint32_t *v8;
     int64_t v9;
-    int64_t v10;
+    void *v10;
     uint32_t v11;
-    int64_t v12;
-    int64_t v13;
-    int64_t v14;
-    int64_t v15;
+    void *v12;
+    const char *v13;
+    void *v14;
+    void *v15;
     int64_t local_0; /* [sp-68] */
     int64_t local_1; /* [sp-78] */
     int64_t local_2; /* [sp-70] */
 
-    if ((int32_t)a1 <= 0x0) {
+    if (a1 <= 0x0) {
         v14 = &local_0;
         local_2 = 0x0;
         local_1 = a1;
@@ -394,7 +394,7 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int64_t a1, int32_t a2) {
         __builtin_trap();
     }
     v3 = a0;
-    v4 = (int32_t)(a1) + (int64_t)(int32_t)(a1) * 0x2 << 0x3;
+    v4 = a1 + (int64_t)a1 * 0x2 << 0x3;
     v5 = (uint8_t *)a0 + v4;
     while (v3->field_0x0 != a2) {
         v3 = v3 + 0x1;
@@ -420,7 +420,7 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int64_t a1, int32_t a2) {
     return v3->field_0x4;
 }
 -- signature
-int32_t (struct sub_1290_a0 * a0, int64_t a1, int32_t a2)
+int32_t (struct sub_1290_a0 * a0, int a1, int a2)
 -- references
 0x2004 "missing key %d among %d"
 -- ir

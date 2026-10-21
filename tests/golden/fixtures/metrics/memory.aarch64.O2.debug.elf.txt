@@ -195,7 +195,7 @@ unsigned long string_length(char *s) {
 
     v1 = 0x0;
     do {
-        v2 = s[v1];
+        v2 = (uint8_t)s[v1];
         v1 = v1 + 0x1;
     } while (v2 != 0x0);
     return v1 - 0x1;

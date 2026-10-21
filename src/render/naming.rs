@@ -404,6 +404,13 @@ pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64, 
     }
 }
 
+/// Whether `addr` is an element of a pointer to `char`.
+pub(crate) fn plain_char_access(addr: &Expr, ctx: &Ctx<'_>) -> bool {
+    element_terms(addr, ctx).is_some_and(|(name, size, _, offset, _)| {
+        size == 1 && offset == 0 && ctx.plain_chars.contains(&name)
+    })
+}
+
 /// The terms of a sum, each with whether it is subtracted; only constants
 /// are.
 pub(crate) fn sum_terms<'e>(expr: &'e Expr, negative: bool, out: &mut Vec<(&'e Expr, bool)>) {

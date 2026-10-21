@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::analysis::prototypes::{Prototype, preferred};
 use crate::ir::{Access, Block, CType, Convention, Expr, Operation, Param, Stmt};
 use crate::loader::Isa;
 
@@ -147,7 +148,23 @@ fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
 /// The register Go's x86-64 ABI passes a closure's context in.
 const GO_CLOSURE: u16 = 2;
 
-pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> Signature {
+/// The prototype of the library function a call reaches, when known.
+pub type Callees<'a> = &'a dyn Fn(&Stmt) -> Option<&'static Prototype>;
+
+#[cfg(test)]
+fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> Signature {
+    recover_with(blocks, isa, convention, go, &|_| None)
+}
+
+/// The signature, with each argument passed unchanged to a library function
+/// of the type that function's prototype gives it.
+pub fn recover_with(
+    blocks: &[Block],
+    isa: Isa,
+    convention: Convention,
+    go: bool,
+    callees: Callees<'_>,
+) -> Signature {
     let (arguments, float_arguments) = match isa {
         Isa::Unsupported => (&[][..], &[][..]),
         _ => (convention.arguments(), convention.float_arguments()),
@@ -431,23 +448,29 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
         .iter()
         .map(|param| (param.index, param.index))
         .collect();
-    let mut origins = Origins {
-        entry: entry_origins.clone(),
-        global: entry_origins
-            .into_iter()
-            .filter(|(register, _)| !definitions.contains_key(register))
-            .collect(),
-        slots: HashMap::new(),
-        definitions,
-    };
-    loop {
-        let (global, slots) = origins.walk(blocks, &mut |_, _| {});
-        if global == origins.global && slots == origins.slots {
-            break;
+    let settle = |exact: bool| {
+        let mut origins = Origins {
+            entry: entry_origins.clone(),
+            global: entry_origins
+                .iter()
+                .filter(|(register, _)| !definitions.contains_key(register))
+                .map(|(register, param)| (*register, *param))
+                .collect(),
+            slots: HashMap::new(),
+            definitions: definitions.clone(),
+            exact,
+        };
+        loop {
+            let (global, slots) = origins.walk(blocks, &mut |_, _| {});
+            if global == origins.global && slots == origins.slots {
+                break;
+            }
+            origins.global = global;
+            origins.slots = slots;
         }
-        origins.global = global;
-        origins.slots = slots;
-    }
+        origins
+    };
+    let origins = settle(false);
 
     // What a vector register holds, from the operations that read it: the
     // floats of a float operation, or the lanes of an integer one.
@@ -582,6 +605,12 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
             param.ty = CType::pointer_to(element.clone());
         } else if code_pointers.contains(&param.index) {
             param.ty = CType::pointer_to(CType::Void);
+        }
+    }
+    let offered = prototype_types(blocks, &settle(true), callees);
+    for param in &mut params {
+        if let Some(ty) = offered.get(&param.index) {
+            crate::analysis::typing::settle_param(param, ty);
         }
     }
 
@@ -721,6 +750,50 @@ pub fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> 
         indirect_result: isa == Isa::AArch64 && inputs.contains(&8),
         aggregate,
     }
+}
+
+/// The types library functions give the arguments the body passes them
+/// unchanged, by argument register.
+fn prototype_types(
+    blocks: &[Block],
+    origins: &Origins,
+    callees: Callees<'_>,
+) -> HashMap<u16, CType> {
+    let mut offered: HashMap<u16, CType> = HashMap::new();
+    origins.walk(blocks, &mut |stmt, origin| {
+        let Stmt::Call {
+            args, convention, ..
+        } = stmt
+        else {
+            return;
+        };
+        let Some(prototype) = callees(stmt) else {
+            return;
+        };
+        // A variadic call's arguments are counted later; its fixed ones are
+        // in the first argument registers.
+        let registers: Vec<u16> = match args {
+            Some(args) => args
+                .iter()
+                .map(|arg| match arg {
+                    Expr::Reg { index, .. } => *index,
+                    _ => u16::MAX,
+                })
+                .collect(),
+            None => convention.arguments().to_vec(),
+        };
+        for (register, ty) in registers.iter().zip(prototype.integer_params()) {
+            let Some(param) = origin.get(register) else {
+                continue;
+            };
+            let ty = match offered.remove(param) {
+                Some(first) => preferred(first, ty),
+                None => ty.clone(),
+            };
+            offered.insert(*param, ty);
+        }
+    });
+    offered
 }
 
 /// What the body uses of the caller's frame past the register arguments.
@@ -1055,6 +1128,8 @@ struct Origins {
     slots: HashMap<String, Option<u16>>,
     /// How often each register is written; a call counts twice.
     definitions: HashMap<u16, usize>,
+    /// Only copies of an argument hold it, not values offset from it.
+    exact: bool,
 }
 
 impl Origins {
@@ -1132,6 +1207,7 @@ impl Origins {
                     Expr::Load { addr, width: 8, .. } => {
                         self.slots.get(&format!("{addr:?}")).copied().flatten()
                     }
+                    _ if self.exact => copy_origin(value, origin),
                     _ => base_origin(value, origin),
                 };
                 match source {
@@ -1168,6 +1244,19 @@ fn integer_loads<'e>(expr: &'e Expr, out: &mut Vec<(&'e Expr, u8)>) {
                 integer_loads(child, out);
             }
         }
+    }
+}
+
+/// The argument a register, or its low half, holds.
+fn copy_origin(expr: &Expr, origin: &HashMap<u16, u16>) -> Option<u16> {
+    match expr {
+        Expr::Reg { index, .. } => origin.get(index).copied(),
+        Expr::Bin {
+            op: crate::ir::BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => copy_origin(lhs, origin),
+        _ => None,
     }
 }
 

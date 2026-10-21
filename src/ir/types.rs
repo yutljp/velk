@@ -62,7 +62,10 @@ impl CType {
     pub fn is_narrow(&self) -> bool {
         match self {
             CType::Int { bytes, .. } => *bytes <= 4,
-            CType::Named(name) => narrow_c_name(name),
+            CType::Named(name) => match self.integer() {
+                Some((bits, _)) => bits <= 32,
+                None => narrow_c_name(name),
+            },
             CType::Void | CType::Pointer(_) | CType::Array(_) => false,
         }
     }
@@ -97,6 +100,11 @@ impl CType {
                         "unsigned" | "_Bool" | "bool" | "size_t" | "uintptr_t"
                     ) || word.starts_with("uint")
                 });
+                if let [word] = words.as_slice()
+                    && let Some(known) = typedef_integer(word)
+                {
+                    return Some(known);
+                }
                 let bits = match words.as_slice() {
                     ["size_t" | "ssize_t" | "uintptr_t" | "intptr_t" | "ptrdiff_t"] => 64,
                     _ => u32::from(scalar_size(name)?) * 8,
@@ -129,6 +137,19 @@ impl CType {
             _ => None,
         }
     }
+}
+
+/// The width and sign of the system's integer typedefs, as Linux and macOS
+/// on 64-bit machines define them. `mode_t` is 16 bits on macOS, but a
+/// register passes it extended to 32.
+fn typedef_integer(name: &str) -> Option<(u32, bool)> {
+    Some(match name {
+        "off_t" | "time_t" | "clock_t" => (64, true),
+        "pthread_t" | "nfds_t" => (64, false),
+        "pid_t" | "clockid_t" => (32, true),
+        "uid_t" | "gid_t" | "mode_t" | "useconds_t" | "socklen_t" | "in_addr_t" => (32, false),
+        _ => return None,
+    })
 }
 
 /// The size of a scalar C type named by the debug info, ignoring
@@ -191,6 +212,7 @@ impl fmt::Display for CType {
                     u32::from(*bytes) * 8
                 )
             }
+            CType::Pointer(target) if target.is_pointer() => write!(f, "{target}*"),
             CType::Pointer(target) => write!(f, "{target} *"),
             CType::Array(element) => write!(f, "{element} []"),
             CType::Named(name) => f.write_str(name),

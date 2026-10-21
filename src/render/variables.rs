@@ -138,9 +138,39 @@ pub(crate) fn variable_types(
             },
             None => CType::Int { bytes: 8, signed },
         };
+        let ty = match ir.value_types.get(&index) {
+            Some(given) => agreeing(
+                ty,
+                given,
+                narrow.contains(&index),
+                uses.arithmetic.contains(&index),
+            ),
+            None => ty,
+        };
         types.insert(index, ty);
     }
     types
+}
+
+/// The type a prototype gives a variable where it agrees with how the body
+/// uses it: a pointer the body does no arithmetic on, and that the
+/// accesses through it say no more of; an integer as wide as its reads.
+fn agreeing(used: CType, given: &CType, narrow: bool, arithmetic: bool) -> CType {
+    if used.is_sse_float() || used.pointee_struct().is_some() {
+        return used;
+    }
+    if given.is_pointer() {
+        let vague = crate::analysis::prototypes::void_pointer(given) && used.is_pointer();
+        return if narrow || arithmetic || vague {
+            used
+        } else {
+            given.clone()
+        };
+    }
+    match given.integer() {
+        Some((bits, _)) if !used.is_pointer() && (bits <= 32) == narrow => given.clone(),
+        _ => used,
+    }
 }
 
 /// What a pointer variable points at: the type of the parameter it moves
