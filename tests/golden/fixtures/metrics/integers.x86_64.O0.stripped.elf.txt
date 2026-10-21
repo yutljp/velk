@@ -91,7 +91,6 @@ fn <unnamed> @ 0x2012e0 (size 52)
     brif lt edi, esi -> 0x20130a
   blk1 @ 0x2012fe:
     v2 = (select le load32((rsp + #0xfffffffffffffff4)), load32((rsp + #0xffffffffffffffec)) ? #0x1, #0x0 & #0xff)
-    v4 = load32((rsp + #0xffffffffffffffec))
     store8(v2, (rsp + #0xffffffffffffffeb))
   blk2 @ 0x20130a:
     v2 = load8((rsp + #0xffffffffffffffeb))

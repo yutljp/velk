@@ -238,11 +238,6 @@ fn is_even @ 0x201460 (size 57)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x2014a0 */
 long sum9(long a, long b, long c, long d, long e, long f, long g, long h, long i) {
-    int32_t v1;
-
-    v1 = i;
-    v1 = h;
-    v1 = g;
     return a + b + c + d + e + f + g + h + i;
 }
 -- signature
@@ -252,9 +247,6 @@ long (long a, long b, long c, long d, long e, long f)
 -- ir
 fn sum9 @ 0x2014a0 (size 78)
   blk0 @ 0x2014a0:
-    v1 = load64((rsp + #0x18))
-    v1 = load64((rsp + #0x10))
-    v1 = load64((rsp + #0x8))
     ret ((((((((rdi + rsi) + rdx) + rcx) + r8) + r9) + load64((rsp + #0x8))) + load64((rsp + #0x10))) + load64((rsp + #0x18)))
 -- card
 {"addr":"0x2014a0","approxTokens":228,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":78,"unsupported":0}

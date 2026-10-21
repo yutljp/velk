@@ -7,7 +7,6 @@
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
     uint32_t v1;
-    int32_t v8;
     uint32_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     uint32_t local_2; /* [sp-c] */
@@ -16,7 +15,6 @@ int dispatch(int x) {
     v1 = local_0 - 0xa;
     local_1 = v1;
     if (v1 <= 0x4) {
-        v8 = (int32_t)(dword_200120[local_1]) + 0x200120;
         switch (local_1 - 0x4) {
         case -4:
             local_2 = 0x1;
@@ -52,7 +50,6 @@ fn dispatch @ 0x201180 (size 120)
     store64((v1 & #0xffffffff), (rsp + #0xffffffffffffffe8))
     brif hi (v1 & #0xffffffff), #0x4 -> 0x2011ec
   blk1 @ 0x20119c:
-    v8 = (sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4)))) + #0x200120)
     switch (load64((rsp + #0xffffffffffffffe8)) + #0xfffffffffffffffc) [-4->0x2011b0, -3->0x2011bc, -2->0x2011c8, -1->0x2011d4, 0->0x2011e0] default 0x2011ec
   blk2 @ 0x2011b0:
     store32(#0x1, (rsp + #0xfffffffffffffff4))

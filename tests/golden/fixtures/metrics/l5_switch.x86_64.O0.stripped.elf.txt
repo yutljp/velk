@@ -25,13 +25,11 @@
 /* ref: 0x202760 .bss */
 int32_t sub_201400(int32_t a0) {
     uint32_t v1;
-    int32_t v8;
     int64_t local_0; /* [sp-18] */
 
     v1 = a0 - 0xa;
     local_0 = v1;
     if (v1 <= 0xf) {
-        v8 = (int32_t)(dword_200158[local_0]) + 0x200158;
         switch (local_0 - 0xf) {
         case -15:
             sub_2014f0();
@@ -101,7 +99,6 @@ fn <unnamed> @ 0x201400 (size 234)
     store64((v1 & #0xffffffff), (rsp + #0xffffffffffffffe8))
     brif hi (v1 & #0xffffffff), #0xf -> 0x2014d4
   blk1 @ 0x201420:
-    v8 = (sext32(load32((#0x200158 + (load64((rsp + #0xffffffffffffffe8)) * #0x4)))) + #0x200158)
     switch (load64((rsp + #0xffffffffffffffe8)) + #0xfffffffffffffff1) [-15->0x201434, -14->0x20143e, -13->0x201448, -12->0x201452, -11->0x20145c, -10->0x201466, -9->0x201470, -8->0x20147a, -7->0x201484, -6->0x20148e, -5->0x201498, -4->0x2014a2, -3->0x2014ac, -2->0x2014b6, -1->0x2014c0, 0->0x2014ca] default 0x2014d4
   blk2 @ 0x201434:
     call 0x2014f0()

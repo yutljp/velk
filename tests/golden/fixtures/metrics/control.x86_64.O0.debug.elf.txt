@@ -68,7 +68,6 @@ fn matrix_trace @ 0x201230 (size 137)
 /* velk pseudo-C: cleanup_on_error @ 0x2012c0 */
 int cleanup_on_error(int a, int b, int *out) {
     int32_t v1;
-    int32_t v2;
     uint32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-10] */
     uint32_t local_2; /* [sp-1c] */
@@ -79,7 +78,6 @@ int cleanup_on_error(int a, int b, int *out) {
     if (a >= 0x0) {
         if (local_1 != 0x0) {
             v1 = local_0;
-            v2 = v1 % local_1;
             *out = v1 / local_1;
             local_2 = 0x0;
             return local_2;
@@ -108,7 +106,6 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
     br 0x201309
   blk4 @ 0x2012f3:
     v1 = load32((rsp + #0xfffffffffffffff4))
-    v2 = (((v1 & #0xffffffff) % load32((rsp + #0xfffffffffffffff0))) & #0xffffffff)
     store32(((v1 & #0xffffffff) / load32((rsp + #0xfffffffffffffff0))), load64((rsp + #0xffffffffffffffe8)))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk5 @ 0x201309:
@@ -122,7 +119,6 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
     uint32_t v1;
-    int32_t v5;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
     int64_t local_2; /* [sp-18] */
@@ -132,7 +128,6 @@ int fallthrough(int x) {
     v1 = local_0;
     local_2 = v1;
     if (v1 <= 0x3) {
-        v5 = (int32_t)(dword_200120[local_2]) + 0x200120;
         switch (local_2) {
         case 0:
             local_1 += 0x1;
@@ -169,7 +164,6 @@ fn fallthrough @ 0x201310 (size 107)
     store64(v1, (rsp + #0xffffffffffffffe8))
     brif hi v1, #0x3 -> 0x20136f
   blk1 @ 0x20132f:
-    v5 = (sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4)))) + #0x200120)
     switch load64((rsp + #0xffffffffffffffe8)) [0->0x201343, 1->0x20134c, 2->0x201355, 3->0x201363] default 0x20136f
   blk2 @ 0x201343:
     store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))

@@ -685,7 +685,8 @@ fn drop_stack_protector(ir: &mut FunctionIr, image: &Image) {
 
 /// Drops a value nothing reads that loads only from memory the program
 /// cannot change, such as the jump table entry a switch no longer needs:
-/// code, or constant data. Other loads may touch a device and stay.
+/// code, or constant data, at addresses that may take an index read from
+/// the function's own frame. Other loads may touch a device and stay.
 fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
     use crate::ir::Expr;
     let constant = |address: u64| {
@@ -696,11 +697,15 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
                 || section.name.contains("__const")
         })
     };
-    // Every load reads at a constant base inside such memory, plus offsets.
-    fn constant_loads(expr: &Expr, constant: &dyn Fn(u64) -> bool) -> bool {
+    // Every load reads at a constant base inside such memory, plus offsets,
+    // or in the function's own frame, as an index spilled there.
+    let sp = crate::arch::stack_pointer(ir.isa);
+    fn constant_loads(expr: &Expr, constant: &dyn Fn(u64) -> bool, sp: u16) -> bool {
         match expr {
             Expr::Load { addr, .. } => {
                 let mut base = None;
+                let mut frame = false;
+                let mut indexed = false;
                 let mut terms = vec![addr.as_ref()];
                 while let Some(term) = terms.pop() {
                     match term {
@@ -710,15 +715,21 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
                             rhs,
                         } => terms.extend([lhs.as_ref(), rhs.as_ref()]),
                         Expr::Const(value) => base = Some(*value),
-                        other if !constant_loads(other, constant) => return false,
-                        _ => {}
+                        Expr::Reg { index, .. } if *index == sp => frame = true,
+                        other if !constant_loads(other, constant, sp) => return false,
+                        _ => indexed = true,
                     }
                 }
-                base.is_some_and(constant)
+                match (frame, base) {
+                    (true, offset) => {
+                        !indexed && offset.is_none_or(|offset| (offset as i64).abs() < 0x1_0000)
+                    }
+                    (false, base) => base.is_some_and(constant),
+                }
             }
             other => crate::ir::visit::children(other)
                 .into_iter()
-                .all(|child| constant_loads(child, constant)),
+                .all(|child| constant_loads(child, constant, sp)),
         }
     }
     let live_in = crate::ir::cfg::live_in(ir);
@@ -729,7 +740,7 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
             let (writes, reads) = crate::ir::visit::statement_registers(stmt);
             if let Stmt::Assign { dest, value } = stmt
                 && !live.contains(&dest.index)
-                && constant_loads(value, &constant)
+                && constant_loads(value, &constant, sp)
             {
                 keep[position] = false;
                 continue;
@@ -747,9 +758,6 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
     }
 }
 
-/// Drops a write of AArch64's indirect result register that only a call
-/// reads, implicitly, when the callee does not return through memory: the
-/// compiler used it as a scratch register for the call's arguments.
 /// A function returning a structure too large for registers writes it
 /// through a pointer its caller passes first and returns that pointer: the
 /// first parameter is the result, no parameter of the source.
@@ -785,6 +793,11 @@ fn name_indirect_result(ir: &mut FunctionIr) {
     }
 }
 
+/// Drops each value AArch64 code leaves in x8, its indirect result
+/// register, that no path reads before the register changes: a call reads
+/// it unnamed only when its callee may return through memory, so a
+/// compiler's scratch there, as a jump table's computed target, is dead
+/// before calls of callees known to take no result address.
 fn drop_unread_indirect_result(ir: &mut FunctionIr, image: &Image) {
     const INDIRECT: u16 = 8;
     if ir.isa != crate::loader::Isa::AArch64 {
@@ -795,37 +808,59 @@ fn drop_unread_indirect_result(ir: &mut FunctionIr, image: &Image) {
         crate::ir::visit::collect_reads(expr, &mut read);
         read.contains(&INDIRECT)
     };
-    for block in &mut ir.blocks {
-        let mut dead = Vec::new();
-        for (position, stmt) in block.stmts.iter().enumerate() {
-            let Stmt::Assign { dest, .. } = stmt else {
-                continue;
-            };
-            if dest.index != INDIRECT {
-                continue;
-            }
-            for later in &block.stmts[position + 1..] {
-                match later {
-                    Stmt::Call {
-                        target: Some(target),
-                        args: Some(_),
-                        ..
-                    } if !later.operands().into_iter().any(reads)
-                        && !summary::summary(image, *target).indirect_result =>
-                    {
-                        dead.push(position);
-                        break;
-                    }
-                    _ => {
-                        let (writes, read) = crate::ir::visit::statement_registers(later);
-                        if read.contains(&INDIRECT) || writes.contains(&INDIRECT) {
-                            break;
-                        }
-                    }
-                }
+    // Whether x8's value is needed before the statement, given whether it
+    // is after it. A call whose callee's summary takes no result address
+    // reads it only where its expressions name it.
+    let before = |stmt: &Stmt, after: bool| match stmt {
+        _ if stmt.operands().into_iter().any(reads) => true,
+        Stmt::Call {
+            target: Some(target),
+            args: Some(_),
+            ..
+        } if !summary::summary(image, *target).indirect_result => {
+            after && !stmt.call_clobbers().contains(&INDIRECT)
+        }
+        _ => {
+            let (writes, read) = crate::ir::visit::statement_registers(stmt);
+            read.contains(&INDIRECT) || (after && !writes.contains(&INDIRECT))
+        }
+    };
+    let count = ir.blocks.len();
+    let successors: Vec<Vec<usize>> = (0..count)
+        .map(|index| crate::ir::cfg::successors(ir, index))
+        .collect();
+    let out = |live: &[bool], index: usize| {
+        crate::ir::cfg::opaque(&ir.blocks[index])
+            || successors[index].iter().any(|next| live[*next])
+    };
+    let mut live = vec![false; count];
+    loop {
+        let mut changed = false;
+        for index in (0..count).rev() {
+            let entry = ir.blocks[index]
+                .stmts
+                .iter()
+                .rev()
+                .fold(out(&live, index), |after, stmt| before(stmt, after));
+            if entry && !live[index] {
+                live[index] = true;
+                changed = true;
             }
         }
-        for position in dead.into_iter().rev() {
+        if !changed {
+            break;
+        }
+    }
+    let outs: Vec<bool> = (0..count).map(|index| out(&live, index)).collect();
+    for (block, mut after) in ir.blocks.iter_mut().zip(outs) {
+        let mut dead = Vec::new();
+        for (position, stmt) in block.stmts.iter().enumerate().rev() {
+            if matches!(stmt, Stmt::Assign { dest, .. } if dest.index == INDIRECT) && !after {
+                dead.push(position);
+            }
+            after = before(stmt, after);
+        }
+        for position in dead {
             block.stmts.remove(position);
         }
     }
@@ -1180,6 +1215,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // a narrow return reads fewer of them.
     typing::apply_partial_return(&mut ir);
     crate::ssa::narrow_partial_writes(&mut ir);
+    drop_unread_indirect_result(&mut ir, image);
     crate::ssa::split_variables(&mut ir, &general);
     // The new variables leave copies between them to fold away, and values
     // spilled across calls that now survive them in their variables.
@@ -1203,7 +1239,6 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // Simplifying can fold a variable's value into its readers.
     passes::dce::dce(&mut ir);
     passes::coalesce::coalesce_copies(&mut ir);
-    drop_unread_indirect_result(&mut ir, image);
     name_indirect_result(&mut ir);
     structures::recover(&mut ir);
     // It returns the pointer it wrote the result through.

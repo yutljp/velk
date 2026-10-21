@@ -8,7 +8,6 @@
 /* ref: 0x202410 .bss */
 int d7(int x) {
     uint32_t v1;
-    int32_t v6;
     uint32_t local_0; /* [sp-c] */
     int64_t local_1; /* [sp-40] */
     int32_t local_2; /* [sp-10] */
@@ -26,7 +25,6 @@ int d7(int x) {
     v1 = local_0;
     local_1 = v1;
     if (v1 <= 0x9) {
-        v6 = (int32_t)(dword_200158[local_1]) + 0x200158;
         switch (local_1) {
         case 0:
             for (local_2 = 0x0; local_2 < 0x1; local_2++) {
@@ -98,7 +96,6 @@ fn d7 @ 0x2011c0 (size 592)
     store64(v1, (rsp + #0xffffffffffffffc0))
     brif hi v1, #0x9 -> 0x2013fe
   blk1 @ 0x2011d8:
-    v6 = (sext32(load32((#0x200158 + (load64((rsp + #0xffffffffffffffc0)) * #0x4)))) + #0x200158)
     switch load64((rsp + #0xffffffffffffffc0)) [0->0x2011ec, 1->0x201221, 2->0x201256, 3->0x20128b, 4->0x2012c0, 5->0x2012f5, 6->0x20132a, 7->0x20135f, 8->0x201394, 9->0x2013c9] default 0x2013fe
   blk2 @ 0x2011ec:
     store32(#0x0, (rsp + #0xfffffffffffffff0))

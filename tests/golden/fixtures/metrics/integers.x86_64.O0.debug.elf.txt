@@ -66,7 +66,6 @@ fn mixed_sign @ 0x2012c0 (size 22)
 /* velk pseudo-C: in_range @ 0x2012e0 */
 _Bool in_range(int x, int lo, int hi) {
     uint8_t v2;
-    int32_t v4;
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-14] */
     uint8_t local_2; /* [sp-15] */
@@ -79,7 +78,6 @@ _Bool in_range(int x, int lo, int hi) {
         return v2 & 0x1;
     }
     v2 = (local_0 <= local_1);
-    v4 = local_1;
     local_2 = v2;
     v2 = local_2;
     return v2 & 0x1;
@@ -97,7 +95,6 @@ fn in_range @ 0x2012e0 (size 52)
     brif lt edi, esi -> 0x20130a
   blk1 @ 0x2012fe:
     v2 = (select le load32((rsp + #0xfffffffffffffff4)), load32((rsp + #0xffffffffffffffec)) ? #0x1, #0x0 & #0xff)
-    v4 = load32((rsp + #0xffffffffffffffec))
     store8(v2, (rsp + #0xffffffffffffffeb))
   blk2 @ 0x20130a:
     v2 = load8((rsp + #0xffffffffffffffeb))

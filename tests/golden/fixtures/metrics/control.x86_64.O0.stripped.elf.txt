@@ -65,13 +65,11 @@ fn <unnamed> @ 0x201230 (size 137)
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
 int32_t sub_2012c0(int32_t a0, int32_t a1, uint32_t *a2) {
-    int32_t v2;
     uint32_t local_0; /* [sp-1c] */
 
     local_0 = 0xffffffff;
     if (a0 >= 0x0) {
         if (a1 != 0x0) {
-            v2 = a0 % a1;
             *a2 = a0 / a1;
             local_0 = 0x0;
             return local_0;
@@ -100,7 +98,6 @@ fn <unnamed> @ 0x2012c0 (size 78)
     br 0x201309
   blk4 @ 0x2012f3:
     v1 = load32((rsp + #0xfffffffffffffff4))
-    v2 = (((v1 & #0xffffffff) % load32((rsp + #0xfffffffffffffff0))) & #0xffffffff)
     store32(((v1 & #0xffffffff) / load32((rsp + #0xfffffffffffffff0))), load64((rsp + #0xffffffffffffffe8)))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk5 @ 0x201309:
@@ -113,12 +110,10 @@ fn <unnamed> @ 0x2012c0 (size 78)
 /* velk pseudo-C: sub_201310 @ 0x201310 */
 /* ref: 0x200120 .rodata */
 int32_t sub_201310(int32_t a0) {
-    int32_t v5;
     uint32_t local_0; /* [sp-10] */
 
     local_0 = 0x0;
     if ((uint64_t)a0 <= 0x3) {
-        v5 = (int32_t)(dword_200120[a0]) + 0x200120;
         switch (a0) {
         case 0:
             local_0 += 0x1;
@@ -155,7 +150,6 @@ fn <unnamed> @ 0x201310 (size 107)
     store64(v1, (rsp + #0xffffffffffffffe8))
     brif hi v1, #0x3 -> 0x20136f
   blk1 @ 0x20132f:
-    v5 = (sext32(load32((#0x200120 + (load64((rsp + #0xffffffffffffffe8)) * #0x4)))) + #0x200120)
     switch load64((rsp + #0xffffffffffffffe8)) [0->0x201343, 1->0x20134c, 2->0x201355, 3->0x201363] default 0x20136f
   blk2 @ 0x201343:
     store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
