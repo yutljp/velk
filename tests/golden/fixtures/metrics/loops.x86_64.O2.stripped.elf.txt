@@ -10,7 +10,6 @@
 int32_t sub_201190(int32_t a0) {
     int32_t v1;
     uint32_t v2;
-    int32_t v3;
     uint32_t v4;
 
     v1 = 0x0;
@@ -19,8 +18,7 @@ int32_t sub_201190(int32_t a0) {
     }
     v2 = a0;
     do {
-        v3 = a0 & 0x1;
-        v1 = v1 + v3;
+        v1 = v1 + (a0 & 0x1);
         v2 = v2 >> 0x1;
         v4 = a0;
         a0 = v2;
@@ -39,8 +37,7 @@ fn <unnamed> @ 0x201190 (size 33)
   blk1 @ 0x201196:
     v2 = edi
   blk2 @ 0x2011a0:
-    v3 = (edi & #0x1)
-    v1 = (((v1 & #0xffffffff) + v3) & #0xffffffff)
+    v1 = (((v1 & #0xffffffff) + (edi & #0x1)) & #0xffffffff)
     v2 = (v2 >> #0x1)
     v4 = edi
     edi = v2

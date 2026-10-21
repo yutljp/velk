@@ -67,8 +67,7 @@ fn matrix_trace @ 0x201230 (size 137)
 -- decompile
 /* velk pseudo-C: cleanup_on_error @ 0x2012c0 */
 int cleanup_on_error(int a, int b, int *out) {
-    int32_t v1;
-    uint32_t local_0; /* [sp-c] */
+    int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-10] */
     uint32_t local_2; /* [sp-1c] */
 
@@ -77,8 +76,7 @@ int cleanup_on_error(int a, int b, int *out) {
     local_2 = 0xffffffff;
     if (a >= 0x0) {
         if (local_1 != 0x0) {
-            v1 = local_0;
-            *out = v1 / local_1;
+            *out = local_0 / local_1;
             local_2 = 0x0;
             return local_2;
         }
@@ -105,8 +103,7 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
   blk3 @ 0x2012ee:
     br 0x201309
   blk4 @ 0x2012f3:
-    v1 = load32((rsp + #0xfffffffffffffff4))
-    store32(((v1 & #0xffffffff) / load32((rsp + #0xfffffffffffffff0))), load64((rsp + #0xffffffffffffffe8)))
+    store32(((load32((rsp + #0xfffffffffffffff4)) & #0xffffffff) / load32((rsp + #0xfffffffffffffff0))), load64((rsp + #0xffffffffffffffe8)))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk5 @ 0x201309:
     ret load32((rsp + #0xffffffffffffffe4))

@@ -115,7 +115,6 @@ fn apply_pointer @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2013d0 */
 int factorial(int n) {
-    uint32_t v1;
     int32_t v2;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
@@ -124,8 +123,7 @@ int factorial(int n) {
     local_0 = n;
     if (n > 0x1) {
         local_2 = local_0;
-        v1 = local_0 - 0x1;
-        v2 = factorial(v1);
+        v2 = factorial(local_0 - 0x1);
         local_1 = local_2 * v2;
         return local_1;
     }
@@ -146,8 +144,7 @@ fn factorial @ 0x2013d0 (size 71)
     br 0x20140e
   blk2 @ 0x2013f2:
     store32(load32((rsp + #0xfffffffffffffff4)), (rsp + #0xffffffffffffffec))
-    v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
-    v2 = call 0x2013d0(v1)
+    v2 = call 0x2013d0(((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff))
     store32((load32((rsp + #0xffffffffffffffec)) * (v2 & #0xffffffff)), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20140e:
     ret load32((rsp + #0xfffffffffffffff0))
@@ -158,15 +155,13 @@ fn factorial @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x201420 */
 int is_odd(int n) {
-    uint32_t v1;
     int32_t v2;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
     local_0 = n;
     if (n != 0x0) {
-        v1 = local_0 - 0x1;
-        v2 = is_even(v1);
+        v2 = is_even(local_0 - 0x1);
         local_1 = v2;
         return local_1;
     }
@@ -186,8 +181,7 @@ fn is_odd @ 0x201420 (size 54)
     store32(#0x0, (rsp + #0xfffffffffffffff0))
     br 0x20144d
   blk2 @ 0x20143f:
-    v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
-    v2 = call 0x201460(v1)
+    v2 = call 0x201460(((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff))
     store32(v2, (rsp + #0xfffffffffffffff0))
   blk3 @ 0x20144d:
     ret load32((rsp + #0xfffffffffffffff0))
@@ -198,15 +192,13 @@ fn is_odd @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: is_even @ 0x201460 */
 int is_even(int n) {
-    uint32_t v1;
     int32_t v2;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
     local_0 = n;
     if (n != 0x0) {
-        v1 = local_0 - 0x1;
-        v2 = is_odd(v1);
+        v2 = is_odd(local_0 - 0x1);
         local_1 = v2;
         return local_1;
     }
@@ -226,8 +218,7 @@ fn is_even @ 0x201460 (size 57)
     store32(#0x1, (rsp + #0xfffffffffffffff0))
     br 0x201490
   blk2 @ 0x201482:
-    v1 = ((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff)
-    v2 = call 0x201420(v1)
+    v2 = call 0x201420(((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff))
     store32(v2, (rsp + #0xfffffffffffffff0))
   blk3 @ 0x201490:
     ret load32((rsp + #0xfffffffffffffff0))

@@ -97,8 +97,7 @@ fn <unnamed> @ 0x2012c0 (size 78)
   blk3 @ 0x2012ee:
     br 0x201309
   blk4 @ 0x2012f3:
-    v1 = load32((rsp + #0xfffffffffffffff4))
-    store32(((v1 & #0xffffffff) / load32((rsp + #0xfffffffffffffff0))), load64((rsp + #0xffffffffffffffe8)))
+    store32(((load32((rsp + #0xfffffffffffffff4)) & #0xffffffff) / load32((rsp + #0xfffffffffffffff0))), load64((rsp + #0xffffffffffffffe8)))
     store32(#0x0, (rsp + #0xffffffffffffffe4))
   blk5 @ 0x201309:
     ret load32((rsp + #0xffffffffffffffe4))

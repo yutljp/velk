@@ -1251,6 +1251,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // Settling simplifies again, which can leave a table read unused.
     drop_dead_constant_reads(&mut ir, image);
     crate::ssa::take_results_directly(&mut ir);
+    passes::read_once::fold_values_read_once(&mut ir);
     // A variable passed where a callee takes a pointer holds one.
     let mut pointer_values = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {

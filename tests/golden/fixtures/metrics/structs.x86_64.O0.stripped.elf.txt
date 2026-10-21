@@ -192,17 +192,13 @@ fn <unnamed> @ 0x201370 (size 13)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
-    uint8_t v1;
     uint32_t local_0; /* [sp-10] */
 
-    v1 = a0;
-    if ((v1 & 0x1) == 0x0) {
-        v1 = a0;
-        local_0 = v1 >> 0x1 & 0x7;
+    if ((a0 & 0x1) == 0x0) {
+        local_0 = a0 >> 0x1 & 0x7;
         return local_0;
     }
-    v1 = a0;
-    local_0 = v1 >> 0x4;
+    local_0 = (a0 & 0xff) >> 0x4;
     return local_0;
 }
 -- signature
@@ -213,15 +209,12 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x201380 (size 59)
   blk0 @ 0x201380:
     store32(edi, (rsp + #0xfffffffffffffff4))
-    v1 = load8((rsp + #0xfffffffffffffff4))
-    brif eq (v1 & #0x1), #0x0 -> 0x2013a9
+    brif eq (load8((rsp + #0xfffffffffffffff4)) & #0x1), #0x0 -> 0x2013a9
   blk1 @ 0x201398:
-    v1 = load8((rsp + #0xfffffffffffffff4))
-    store32(((v1 & #0xff) >> #0x4), (rsp + #0xfffffffffffffff0))
+    store32(((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x4), (rsp + #0xfffffffffffffff0))
     br 0x2013b6
   blk2 @ 0x2013a9:
-    v1 = load8((rsp + #0xfffffffffffffff4))
-    store32((((v1 & #0xff) >> #0x1) & #0x7), (rsp + #0xfffffffffffffff0))
+    store32((((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x1) & #0x7), (rsp + #0xfffffffffffffff0))
   blk3 @ 0x2013b6:
     ret load32((rsp + #0xfffffffffffffff0))
 -- card

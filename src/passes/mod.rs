@@ -7,6 +7,7 @@ pub mod frame;
 pub mod frame_slots;
 pub mod layout;
 pub mod memory;
+pub mod read_once;
 pub mod simplify;
 pub mod widths;
 

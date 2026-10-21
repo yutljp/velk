@@ -21,8 +21,6 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     int64_t v7;
     int64_t v8;
     int64_t v9;
-    uint8_t v11;
-    uint8_t v12;
 
     if (n == 0x0) {
         return;
@@ -56,8 +54,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
             v7 = v1;
             v1 = n & 0xfffffffffffffff8;
             do {
-                v8 = *(uint64_t *)(src + v7);
-                *(uint64_t *)(dst + v7) = v8;
+                *(uint64_t *)(dst + v7) = *(uint64_t *)(src + v7);
                 v7 = v7 + 0x8;
             } while (v1 != v7);
             if (v1 == n) {
@@ -71,8 +68,7 @@ L_2012a6:
     if (v8 != 0x0) {
         v9 = v1;
         do {
-            v11 = src[v9];
-            dst[v9] = v11;
+            dst[v9] = src[v9];
             v9 = v9 + 0x1;
             v8 = v8 - 0x1;
         } while (v8 != 0x0);
@@ -84,8 +80,7 @@ L_2012a6:
         dst[v9] = src[v9];
         dst[v9 + 0x1] = src[v9 + 0x1];
         dst[v9 + 0x2] = src[v9 + 0x2];
-        v12 = src[v9 + 0x3];
-        dst[v9 + 0x3] = v12;
+        dst[v9 + 0x3] = src[v9 + 0x3];
         v9 = v9 + 0x4;
     } while (n != v9);
 }
@@ -129,8 +124,7 @@ fn copy_bytes @ 0x201220 (size 236)
     v7 = v1
     v1 = (rdx & #0xfffffffffffffff8)
   blk10 @ 0x201290:
-    v8 = load64((rsi + v7))
-    store64(v8, (rdi + v7))
+    store64(load64((rsi + v7)), (rdi + v7))
     v7 = (v7 + #0x8)
     brif ne v1, v7 -> 0x201290
   blk11 @ 0x2012a1:
@@ -142,8 +136,7 @@ fn copy_bytes @ 0x201220 (size 236)
   blk13 @ 0x2012b2:
     v9 = v1
   blk14 @ 0x2012c0:
-    v11 = (load8((rsi + v9)) & #0xffffffff)
-    store8(v11, (rdi + v9))
+    store8((load8((rsi + v9)) & #0xffffffff), (rdi + v9))
     v9 = (v9 + #0x1)
     v8 = (v8 - #0x1)
     brif ne v8, #0x0 -> 0x2012c0
@@ -153,8 +146,7 @@ fn copy_bytes @ 0x201220 (size 236)
     store8(load8((rsi + v9)), (rdi + v9))
     store8(load8(((rsi + v9) + #0x1)), ((rdi + v9) + #0x1))
     store8(load8(((rsi + v9) + #0x2)), ((rdi + v9) + #0x2))
-    v12 = (load8(((rsi + v9) + #0x3)) & #0xffffffff)
-    store8(v12, ((rdi + v9) + #0x3))
+    store8((load8(((rsi + v9) + #0x3)) & #0xffffffff), ((rdi + v9) + #0x3))
     v9 = (v9 + #0x4)
     brif ne rdx, v9 -> 0x2012e0
   blk17 @ 0x20130b:

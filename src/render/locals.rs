@@ -61,6 +61,7 @@ pub(crate) fn stack_locals(
         returned: None,
         declared: HashMap::new(),
         value_bits: HashMap::new(),
+        read_once: Default::default(),
         taken: Default::default(),
     };
     let mut accesses = frame_accesses(ir, sp, frames);

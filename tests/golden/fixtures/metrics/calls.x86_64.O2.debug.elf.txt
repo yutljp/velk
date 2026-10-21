@@ -143,7 +143,6 @@ int factorial(int n) {
     uint64_t v18;
     uint64_t v19;
     uint64_t v20;
-    int64_t v21;
     int64_t v24;
     uint64_t v25;
     uint64_t v26;
@@ -175,11 +174,10 @@ int factorial(int n) {
             v18 = add_lanes32(v6, v11);
             v19 = add_lanes32(v8, v12);
             v20 = (v6 & 0xffffffff) * (v9 & 0xffffffff);
-            v21 = (v8 & 0xffffffff) * (v10 & 0xffffffff);
             v5 = v10 >> 0x20 | v10 >> 0x20 << 0x20;
             v24 = (v8 >> 0x20) * v5;
             v25 = (((v6 >> 0x20) * (v9 >> 0x20)) & 0xffffffff) | v24 << 0x20;
-            v26 = (v20 & 0xffffffff) | v21 << 0x20;
+            v26 = (v20 & 0xffffffff) | v8 * v10 << 0x20;
             v9 = interleave_low32(v26, v25);
             v10 = interleave_high32(v26, v25);
             v5 = v19 >> 0x20 | v19 >> 0x20 << 0x20;
@@ -204,9 +202,8 @@ int factorial(int n) {
     }
     do {
         v1 = v1 * n;
-        v2 = n - 0x1;
         v47 = n;
-        n = v2;
+        n = n - 0x1;
     } while (v47 > 0x2);
     return v1;
 }
@@ -248,11 +245,10 @@ fn factorial @ 0x201370 (size 238)
     v18 = add_lanes32(v6, v11)
     v19 = add_lanes32(v8, v12)
     v20 = ((v6 & #0xffffffff) * (v9 & #0xffffffff))
-    v21 = ((v8 & #0xffffffff) * (v10 & #0xffffffff))
     v5 = (((v10 >> #0x20) & #0xffffffff) | (((v10 >> #0x20) & #0xffffffff) << #0x20))
     v24 = (((v8 >> #0x20) & #0xffffffff) * (v5 & #0xffffffff))
     v25 = ((((v6 >> #0x20) * (v9 >> #0x20)) & #0xffffffff) | ((v24 & #0xffffffff) << #0x20))
-    v26 = ((v20 & #0xffffffff) | ((v21 & #0xffffffff) << #0x20))
+    v26 = ((v20 & #0xffffffff) | ((((v8 & #0xffffffff) * (v10 & #0xffffffff)) & #0xffffffff) << #0x20))
     v9 = interleave_low32(v26, v25)
     v10 = interleave_high32(v26, v25)
     v5 = (((v19 >> #0x20) & #0xffffffff) | (((v19 >> #0x20) & #0xffffffff) << #0x20))
@@ -275,9 +271,8 @@ fn factorial @ 0x201370 (size 238)
     brif eq v2, v3 -> 0x20145d
   blk5 @ 0x201450:
     v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
-    v2 = (rdi + #0xffffffffffffffff)
     v47 = (rdi & #0xffffffff)
-    rdi = v2
+    rdi = ((rdi + #0xffffffffffffffff) & #0xffffffff)
     brif hi v47, #0x2 -> 0x201450
   blk6 @ 0x20145d:
     ret v1

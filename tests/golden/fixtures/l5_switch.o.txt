@@ -9,61 +9,65 @@ int32_t dense(int32_t a0) {
     int32_t v5;
     int32_t v9;
 
-    switch (a0) {
-    case 10:
-        v5 = g_sink + 0xb;
-        break;
-    case 11:
-        v5 = g_sink ^ 0x12;
-        break;
-    case 12:
-        v5 = g_sink - 0x19;
-        break;
-    case 13:
-        v5 = g_sink | 0x20;
-        break;
-    case 14:
-        v5 = g_sink + 0x27;
-        break;
-    case 15:
-        v5 = g_sink ^ 0x2e;
-        break;
-    case 16:
-        v5 = g_sink - 0x35;
-        break;
-    case 17:
-        v5 = g_sink | 0x3c;
-        break;
-    case 18:
-        v5 = g_sink + 0x43;
-        break;
-    case 19:
-        v5 = g_sink ^ 0x4a;
-        break;
-    case 20:
-        v5 = g_sink - 0x51;
-        break;
-    case 21:
-        v5 = g_sink;
-        v9 = 0x58;
-        v5 = v5 | v9;
-        break;
-    case 22:
-        v5 = g_sink + 0x5f;
-        break;
-    case 23:
-        v5 = g_sink ^ 0x66;
-        break;
-    case 24:
-        v5 = g_sink - 0x6d;
-        break;
-    case 25:
-        v5 = g_sink;
-        v9 = 0x74;
-        v5 = v5 | v9;
-        break;
-    default:
+    if ((uint32_t)(a0 - 0xa) > 0xf) {
         v5 = 0x0;
+    } else {
+        switch (a0) {
+        case 10:
+            v5 = g_sink + 0xb;
+            break;
+        case 11:
+            v5 = g_sink ^ 0x12;
+            break;
+        case 12:
+            v5 = g_sink - 0x19;
+            break;
+        case 13:
+            v5 = g_sink | 0x20;
+            break;
+        case 14:
+            v5 = g_sink + 0x27;
+            break;
+        case 15:
+            v5 = g_sink ^ 0x2e;
+            break;
+        case 16:
+            v5 = g_sink - 0x35;
+            break;
+        case 17:
+            v5 = g_sink | 0x3c;
+            break;
+        case 18:
+            v5 = g_sink + 0x43;
+            break;
+        case 19:
+            v5 = g_sink ^ 0x4a;
+            break;
+        case 20:
+            v5 = g_sink - 0x51;
+            break;
+        case 21:
+            v5 = g_sink;
+            v9 = 0x58;
+            v5 = v5 | v9;
+            break;
+        case 22:
+            v5 = g_sink + 0x5f;
+            break;
+        case 23:
+            v5 = g_sink ^ 0x66;
+            break;
+        case 24:
+            v5 = g_sink - 0x6d;
+            break;
+        case 25:
+            v5 = g_sink;
+            v9 = 0x74;
+            v5 = v5 | v9;
+            break;
+        default:
+            __builtin_unreachable();
+        }
     }
     g_sink = v5;
     return g_sink;
@@ -75,8 +79,7 @@ int32_t (int32_t a0)
 -- ir
 fn dense @ 0x0 (size 268)
   blk0 @ 0x0:
-    v1 = ((w0 - #0xa) & #0xffffffff)
-    brif hi (v1 & #0xffffffff), #0xf -> 0xfc
+    brif hi (((w0 - #0xa) & #0xffffffff) & #0xffffffff), #0xf -> 0xfc
   blk1 @ 0x10:
     switch w0 [10->0x28, 11->0xa8, 12->0x74, 13->0x90, 14->0x4c, 15->0xb8, 16->0xd8, 17->0x9c, 18->0xf0, 19->0x64, 20->0xe4, 21->0x40, 22->0x58, 23->0xc8, 24->0x34, 25->0x80] default <none>
   blk2 @ 0x28:

@@ -140,8 +140,7 @@ fn <unnamed> @ 0x2103f4 (size 96)
     br 0x210444
   blk3 @ 0x210420:
     store32(load32((sp + #0xffffffffffffffec)), (sp + #0xffffffffffffffe4))
-    v1 = load32((sp + #0xffffffffffffffec))
-    v3 = call 0x2103f4((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    v3 = call 0x2103f4((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32((load32((sp + #0xffffffffffffffe4)) * (v3 & #0xffffffff)), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
@@ -179,8 +178,7 @@ fn <unnamed> @ 0x210454 (size 76)
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk3 @ 0x21047c:
-    v1 = load32((sp + #0xffffffffffffffec))
-    v3 = call 0x2104a0((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    v3 = call 0x2104a0((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32(v3, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
@@ -218,8 +216,7 @@ fn <unnamed> @ 0x2104a0 (size 76)
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk3 @ 0x2104c8:
-    v1 = load32((sp + #0xffffffffffffffec))
-    v3 = call 0x210454((((v1 & #0xffffffff) - #0x1) & #0xffffffff))
+    v3 = call 0x210454((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32(v3, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:
@@ -382,7 +379,6 @@ fn <unnamed> @ 0x2105b0 (size 316)
     store32((load32((sp + #0xffffffffffffffc0)) + #0x1), (sp + #0xffffffffffffffc0))
     br 0x210638
   blk11 @ 0x2106dc:
-    v6 = load32((sp + #0xffffffffffffffc4))
-    ret v6
+    ret load32((sp + #0xffffffffffffffc4))
 -- card
 {"addr":"0x2105b0","approxTokens":240,"blocks":12,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":316,"unsupported":0}

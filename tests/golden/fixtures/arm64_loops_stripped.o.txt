@@ -9,7 +9,6 @@
 /* velk pseudo-C: sub_0 @ 0x0 */
 int32_t sub_0(int32_t a0) {
     uint32_t v1;
-    int32_t v2;
     uint32_t v3;
 
     if (a0 == 0x0) {
@@ -18,8 +17,7 @@ int32_t sub_0(int32_t a0) {
     v1 = a0;
     a0 = 0x0;
     do {
-        v2 = v1 & 0x1;
-        a0 = a0 + v2;
+        a0 = a0 + (v1 & 0x1);
         v3 = v1;
         v1 = v1 >> 0x1;
     } while (v3 > 0x1);
@@ -37,8 +35,7 @@ fn <unnamed> @ 0x0 (size 40)
     v1 = x0
     x0 = #0x0
   blk2 @ 0xc:
-    v2 = (v1 & #0x1)
-    x0 = (((x0 & #0xffffffff) + v2) & #0xffffffff)
+    x0 = (((x0 & #0xffffffff) + (v1 & #0x1)) & #0xffffffff)
     v3 = v1
     v1 = (v1 >> #0x1)
     brif hi v3, #0x1 -> 0xc

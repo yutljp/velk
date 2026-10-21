@@ -108,7 +108,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
 
 /// The value a register of `width` bits holds once it is assigned `value`:
 /// a narrow destination drops the high bits a sum or product may carry.
-fn truncated(value: &Expr, width: u8) -> Expr {
+pub(crate) fn truncated(value: &Expr, width: u8) -> Expr {
     if width >= 64 || fits(value, width) {
         return value.clone();
     }
@@ -139,7 +139,7 @@ fn fits(value: &Expr, width: u8) -> bool {
     }
 }
 
-fn reads_memory(expr: &Expr) -> bool {
+pub(crate) fn reads_memory(expr: &Expr) -> bool {
     matches!(expr, Expr::Load { .. }) || children(expr).into_iter().any(reads_memory)
 }
 
@@ -441,7 +441,7 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
 }
 
 /// Number of expression nodes, used to keep inlining from exploding.
-fn expr_size(expr: &Expr) -> usize {
+pub(crate) fn expr_size(expr: &Expr) -> usize {
     1 + children(expr).into_iter().map(expr_size).sum::<usize>()
 }
 
@@ -476,7 +476,13 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
     ok
 }
 
-fn substitute_reg_inner(expr: &mut Expr, dest: u16, width: u8, template: &Expr, ok: &mut bool) {
+pub(crate) fn substitute_reg_inner(
+    expr: &mut Expr,
+    dest: u16,
+    width: u8,
+    template: &Expr,
+    ok: &mut bool,
+) {
     if !*ok {
         return;
     }

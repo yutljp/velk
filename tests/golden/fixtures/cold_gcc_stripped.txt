@@ -201,15 +201,13 @@ fn <unnamed> @ 0x1120 (size 124)
 int32_t sub_11a0(int64_t a0, int64_t a1, void *a2) {
     uint64_t rax;
     int64_t v2;
-    char **v3;
     int64_t local_0; /* [sp+0] */
     int64_t local_1; /* [sp-8] */
 
     v2 = local_0;
-    v3 = rsp + 0x8;
     local_0 = rax;
     local_1 = rsp;
-    __libc_start_main(0x1120, v2, v3, 0x0, 0x0, a2);
+    __libc_start_main(0x1120, v2, rsp + 0x8, 0x0, 0x0, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, void * a2)
@@ -219,10 +217,9 @@ int32_t (int64_t a0, int64_t a1, void * a2)
 fn <unnamed> @ 0x11a0 (size 38)
   blk0 @ 0x11a0:
     v2 = load64(rsp)
-    v3 = (rsp + #0x8)
     store64(rax, rsp)
     store64(rsp, (rsp + #0xfffffffffffffff8))
-    call *load64(#0x3fd8)(#0x1120, v2, v3, #0x0, #0x0, rdx)
+    call *load64(#0x3fd8)(#0x1120, v2, (rsp + #0x8), #0x0, #0x0, rdx)
     trap
 -- card
 {"addr":"0x11a0","approxTokens":174,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind"],"section":".text","size":38,"unsupported":0}
@@ -269,14 +266,11 @@ fn <unnamed> @ 0x1200 (size 64)
 -- decompile
 /* velk pseudo-C: sub_1240 @ 0x1240 */
 void sub_1240(void) {
-    void *v1;
-
     if (byte_4028 != 0x0) {
         return;
     }
     if (__cxa_finalize != 0x0) {
-        v1 = qword_4008;
-        __cxa_finalize(v1);
+        __cxa_finalize(qword_4008);
     }
     sub_11d0();
     byte_4028 = 0x1;
@@ -292,8 +286,7 @@ fn <unnamed> @ 0x1240 (size 64)
   blk1 @ 0x124d:
     brif eq load64(#0x3ff8), #0x0 -> 0x1267
   blk2 @ 0x125b:
-    v1 = load64(#0x4008)
-    call 0x1080(v1)
+    call 0x1080(load64(#0x4008))
   blk3 @ 0x1267:
     call 0x11d0()
     store8(#0x1, #0x4028)
@@ -333,9 +326,7 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
     const char *v5;
     void *v7;
     uint32_t *v8;
-    void *v10;
     uint32_t v11;
-    void *v12;
     int64_t local_0; /* [sp-68] */
     int64_t local_1; /* [sp-78] */
     int64_t local_2; /* [sp-70] */
@@ -345,35 +336,32 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
         local_2 = 0x0;
         local_1 = a1;
         __snprintf_chk(v2, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
-        v10 = stderr;
-        fputs(v2, v10);
+        fputs(v2, stderr);
         abort();
     }
     v2 = a0;
     v3 = a0;
     v4 = a1 + (int64_t)a1 * 0x2 << 0x3;
     v5 = (uint8_t *)a0 + v4;
-    while (v3->field_0x0 != a2) {
-        v3 = v3 + 0x1;
-        if (v3 == v5) {
-            v7 = &local_0;
-            local_1 = a1;
-            v8 = v2 + 0x8;
-            v4 = v4 + (uint8_t *)v8;
-            __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
-            v10 = stderr;
-            fputs(v7, v10);
-            do {
-                v11 = v8[-0x1];
-                v12 = stderr;
-                v5 = v8;
-                v8 = v8 + 0x6;
-                __fprintf_chk(v12, 0x2, 0x201c, v5, v11);
-            } while (v8 != v4);
-            abort();
+    do {
+        if (v3->field_0x0 == a2) {
+            return v3->field_0x4;
         }
-    }
-    return v3->field_0x4;
+        v3 = v3 + 0x1;
+    } while (v3 != v5);
+    v7 = &local_0;
+    local_1 = a1;
+    v8 = v2 + 0x8;
+    v4 = v4 + (uint8_t *)v8;
+    __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
+    fputs(v7, stderr);
+    do {
+        v11 = v8[-0x1];
+        v5 = v8;
+        v8 = v8 + 0x6;
+        __fprintf_chk(stderr, 0x2, 0x201c, v5, v11);
+    } while (v8 != v4);
+    abort();
 }
 -- signature
 int32_t (struct sub_1290_a0 * a0, int a1, int a2)
@@ -395,24 +383,21 @@ fn <unnamed> @ 0x1290 (size 240)
   blk3 @ 0x12d9:
     brif ne load32(v3), (rdx & #0xffffffff) -> 0x12d0
   blk4 @ 0x12dd:
-    v6 = load32((v3 + #0x4))
     br 0x12f4
   blk5 @ 0x12f4:
-    ret v6
+    ret load32((v3 + #0x4))
   blk6 @ 0x12fd:
     v7 = (rsp + #0xffffffffffffff98)
     store64(rsi, (rsp + #0xffffffffffffff88))
     v8 = (v2 + #0x8)
     v4 = (v4 + v8)
     call 0x1090(v7, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
-    v10 = load64(#0x4020)
-    call 0x10c0(v7, v10)
+    call 0x10c0(v7, load64(#0x4020))
   blk7 @ 0x1350:
     v11 = load32((v8 + #0xfffffffffffffffc))
-    v12 = load64(#0x4020)
     v5 = v8
     v8 = (v8 + #0x18)
-    call 0x10d0(v12, #0x2, #0x201c, v5, v11)
+    call 0x10d0(load64(#0x4020), #0x2, #0x201c, v5, v11)
     brif ne v8, v4 -> 0x1350
   blk8 @ 0x1376:
     br 0x111a
@@ -421,8 +406,7 @@ fn <unnamed> @ 0x1290 (size 240)
     store64(#0x0, (rsp + #0xffffffffffffff90))
     store64(rsi, (rsp + #0xffffffffffffff88))
     call 0x1090(v2, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
-    v10 = load64(#0x4020)
-    call 0x10c0(v2, v10)
+    call 0x10c0(v2, load64(#0x4020))
   blk10 @ 0x111a:
     call 0x10a0()
     trap

@@ -265,9 +265,8 @@ int32_t (int32_t a0)
 fn square_area(int) @ 0x21044c (size 108)
   blk0 @ 0x21044c:
     v1 = load64(#0x2315c8)
-    v2 = (x0 & #0xffffffff)
     store64((v1 + #0x10), #0x2315c8)
-    call 0x2103f8((#0x2305c8 + v1), v2)
+    call 0x2103f8((#0x2305c8 + v1), (x0 & #0xffffffff))
     v4 = call 0x21040c((#0x2305c8 + v1))
     call 0x210530((#0x2305c8 + v1))
     ret (v4 & #0xffffffff)
@@ -296,9 +295,8 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 fn rect_scaled(int, int, int) @ 0x2104b8 (size 92)
   blk0 @ 0x2104b8:
     v1 = load64(#0x2315c8)
-    v4 = (x0 & #0xffffffff)
     store64((v1 + #0x10), #0x2315c8)
-    call 0x210418((#0x2305c8 + v1), v4, (x1 & #0xffffffff))
+    call 0x210418((#0x2305c8 + v1), (x0 & #0xffffffff), (x1 & #0xffffffff))
     v6 = call 0x210438((#0x2305c8 + v1), (x2 & #0xffffffff))
     ret v6
 -- card
@@ -308,11 +306,9 @@ fn rect_scaled(int, int, int) @ 0x2104b8 (size 92)
 -- decompile
 /* velk pseudo-C: any_area(Shape const*) @ 0x210514 */
 int32_t any_area(uint64_t *a0) {
-    uint64_t *v1;
     int64_t v2;
 
-    v1 = *a0;
-    v2 = v1[0x2];
+    v2 = *(uint64_t *)(*a0 + 0x10);
     return (*(v2))(a0); /* vtable slot 2: Square__area, Rect__area */
 }
 -- signature
@@ -322,8 +318,7 @@ int32_t (uint64_t * a0)
 -- ir
 fn any_area(Shape const*) @ 0x210514 (size 12)
   blk0 @ 0x210514:
-    v1 = load64(x0)
-    v2 = load64((v1 + #0x10))
+    v2 = load64((load64(x0) + #0x10))
     v3 = call *v2(x0)
     ret v3
 -- card
@@ -333,11 +328,9 @@ fn any_area(Shape const*) @ 0x210514 (size 12)
 -- decompile
 /* velk pseudo-C: any_scaled(Shape const*, int) @ 0x210520 */
 int32_t any_scaled(uint64_t *a0, int64_t a1) {
-    uint64_t *v1;
     int64_t v2;
 
-    v1 = *a0;
-    v2 = v1[0x3];
+    v2 = *(uint64_t *)(*a0 + 0x18);
     return (*(v2))(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
 }
 -- signature
@@ -347,8 +340,7 @@ int32_t (uint64_t * a0, int64_t a1)
 -- ir
 fn any_scaled(Shape const*, int) @ 0x210520 (size 12)
   blk0 @ 0x210520:
-    v1 = load64(x0)
-    v2 = load64((v1 + #0x18))
+    v2 = load64((load64(x0) + #0x18))
     v3 = call *v2(x0, x1)
     ret v3
 -- card

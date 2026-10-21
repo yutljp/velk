@@ -103,10 +103,7 @@ fn rotate_left @ 0x210238 (size 12)
 -- decompile
 /* velk pseudo-C: popcount @ 0x210244 */
 int popcount(unsigned int x) {
-    int32_t v1;
-
-    v1 = __builtin_popcountll(x);
-    return v1;
+    return __builtin_popcountll(x);
 }
 -- signature
 int (unsigned int x)
@@ -115,8 +112,7 @@ int (unsigned int x)
 -- ir
 fn popcount @ 0x210244 (size 20)
   blk0 @ 0x210244:
-    v1 = (popcount64(w0) & #0xffff)
-    ret (v1 & #0xffffffff)
+    ret ((popcount64(w0) & #0xffff) & #0xffffffff)
 -- card
 {"addr":"0x210244","approxTokens":126,"blocks":1,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 

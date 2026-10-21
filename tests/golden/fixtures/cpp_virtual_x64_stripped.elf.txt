@@ -299,11 +299,10 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x2014e0 (size 77)
   blk0 @ 0x2014e0:
-    v2 = (rsi & #0xffffffff)
     v3 = load64(#0x204610)
     v4 = (#0x203610 + v3)
     store64((v3 + #0x10), #0x204610)
-    call 0x201440(v4, (rdi & #0xffffffff), v2)
+    call 0x201440(v4, (rdi & #0xffffffff), (rsi & #0xffffffff))
     v5 = call 0x201470(v4, (rdx & #0xffffffff))
     ret v5
 -- card

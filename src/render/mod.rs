@@ -1,3 +1,4 @@
+mod calls;
 mod expr;
 mod int;
 mod locals;
@@ -196,6 +197,11 @@ fn float_return(ty: &CType) -> Option<crate::ir::Precision> {
     })
 }
 
+/// The type the output declares each variable with.
+pub(crate) fn variable_types(ir: &FunctionIr) -> std::collections::BTreeMap<u16, CType> {
+    variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type))
+}
+
 /// Whether C scales arithmetic on a pointer of this type: it points at
 /// something wider than a byte.
 fn scales(ty: &CType) -> bool {
@@ -378,7 +384,7 @@ fn render_with(
         .filter(|(_, ty)| scales(ty))
         .map(|(name, _)| name)
         .collect();
-    let ctx = Ctx {
+    let mut ctx = Ctx {
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return,
@@ -430,6 +436,7 @@ fn render_with(
         returned: declared(&ir.ret_type, false),
         declared: declared_registers,
         value_bits: int::value_bits(ir),
+        read_once: Default::default(),
         taken: Default::default(),
     };
 
@@ -513,6 +520,7 @@ fn render_with(
     {
         nodes.pop();
     }
+    ctx.read_once = calls::read_once(&nodes);
     render_nodes(&nodes, 1, &mut body, &ctx);
     // A function whose address the body takes is declared ahead of it,
     // with no type known for it.
@@ -1140,6 +1148,14 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             indent(depth, out);
             out.push_str(&text);
             out.push('\n');
+            index += 2;
+            continue;
+        }
+        if let (Some(Node::Stmt(call @ Stmt::Call { .. })), Some(next)) =
+            (nodes.get(index), nodes.get(index + 1))
+            && let Some(text) = calls::call_in_reader(call, next, depth, ctx)
+        {
+            out.push_str(&text);
             index += 2;
             continue;
         }
