@@ -1,0 +1,78 @@
+# shared_pointers_x64.so: elf x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x13d0 4 helper_one symtab,dynamic,unwind
+0x13e0 7 helper_two symtab,dynamic,unwind
+0x13f0 10 target symtab,dynamic,unwind
+0x1400 9 use_ptr symtab,dynamic,unwind
+
+== 0x13d0 helper_one
+-- decompile
+/* velk pseudo-C: helper_one @ 0x13d0 */
+int32_t helper_one(int32_t a0) {
+    return a0 - 0x2;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn helper_one @ 0x13d0 (size 4)
+  blk0 @ 0x13d0:
+    ret ((rdi + #0xfffffffffffffffe) & #0xffffffff)
+-- card
+{"addr":"0x13d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"helper_one","nameSources":["symtab","dynamic","unwind"],"section":".text","size":4,"unsupported":0}
+
+== 0x13e0 helper_two
+-- decompile
+/* velk pseudo-C: helper_two @ 0x13e0 */
+int32_t helper_two(int32_t a0) {
+    return a0 + a0 ^ 0xa;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn helper_two @ 0x13e0 (size 7)
+  blk0 @ 0x13e0:
+    ret (((rdi + rdi) ^ #0xa) & #0xffffffff)
+-- card
+{"addr":"0x13e0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"helper_two","nameSources":["symtab","dynamic","unwind"],"section":".text","size":7,"unsupported":0}
+
+== 0x13f0 target
+-- decompile
+/* velk pseudo-C: target @ 0x13f0 */
+int32_t target(int32_t a0) {
+    return a0 * 0x8 - a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn target @ 0x13f0 (size 10)
+  blk0 @ 0x13f0:
+    ret (((rdi * #0x8) - (rdi & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x13f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"target","nameSources":["symtab","dynamic","unwind"],"section":".text","size":10,"unsupported":0}
+
+== 0x1400 use_ptr
+-- decompile
+/* velk pseudo-C: use_ptr @ 0x1400 */
+int32_t use_ptr(void) {
+    uint64_t *v1;
+
+    v1 = (uint64_t *)qword_24b0;
+    return ((uint64_t (*)())*v1)();
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn use_ptr @ 0x1400 (size 9)
+  blk0 @ 0x1400:
+    v1 = load64(#0x24b0)
+    call *load64(v1)
+    ret v2
+-- card
+{"addr":"0x1400","approxTokens":108,"blocks":1,"hardReasons":[],"name":"use_ptr","nameSources":["symtab","dynamic","unwind"],"section":".text","size":9,"unsupported":0}

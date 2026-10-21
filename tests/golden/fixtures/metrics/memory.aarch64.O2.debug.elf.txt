@@ -255,7 +255,7 @@ fn grid_set @ 0x210304 (size 28)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x210320 */
 long pointer_distance(int *begin, int *end) {
-    return (int64_t)(uintptr_t)((uint8_t *)end - (uint8_t *)begin) >> 0x2;
+    return (int64_t)((uint8_t *)end - (uint8_t *)begin) >> 0x2;
 }
 -- signature
 long (int * begin, int * end)

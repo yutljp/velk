@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol};
+use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol, ObjectSymbolTable};
 use object::{RelocationFlags, RelocationKind, RelocationTarget, SectionIndex, SectionKind};
 
 /// Base addresses for the sections of an ELF or COFF relocatable object,
@@ -70,13 +70,25 @@ pub(super) fn symbol_address<'data>(
     base.wrapping_add(symbol.address())
 }
 
-/// Applies the relocations of every laid-out section to `bytes`, the file's
-/// contents. A relocation against an undefined symbol, or of a kind this
-/// does not model, leaves its place as the object has it.
+/// Applies the relocations of every laid-out section, and of the debug
+/// information that names places in them, to `bytes`, the file's contents.
+/// A relocation against an undefined symbol, or of a kind this does not
+/// model, leaves its place as the object has it.
 pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &mut [u8]) {
+    // Debug information is not loaded: it and the offsets into it start at
+    // zero.
+    let debug = |index: SectionIndex| {
+        !bases.is_empty()
+            && file
+                .section_by_index(index)
+                .and_then(|section| section.name())
+                .is_ok_and(|name| name.starts_with(".debug"))
+    };
     for section in file.sections() {
-        let Some(base) = bases.get(&section.index()).copied() else {
-            continue;
+        let base = match bases.get(&section.index()) {
+            Some(base) => *base,
+            None if debug(section.index()) => 0,
+            None => continue,
         };
         let Some((file_offset, _)) = section.file_range() else {
             continue;
@@ -89,6 +101,7 @@ pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &
                 },
                 RelocationTarget::Section(index) => match bases.get(&index) {
                     Some(base) => *base,
+                    None if debug(index) => 0,
                     None => continue,
                 },
                 _ => continue,
@@ -107,6 +120,10 @@ pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &
 /// defines itself. Pointers to symbols of other modules stay as they are.
 pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut [u8]) {
     let Some(relocations) = file.dynamic_relocations() else {
+        return;
+    };
+    // Dynamic relocations number the dynamic symbols, not the full table's.
+    let Some(symbols) = file.dynamic_symbol_table() else {
         return;
     };
     let file_offset = |address: u64| {
@@ -131,7 +148,7 @@ pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut [u8]) {
         let value = match relocation.target() {
             _ if r_type == relative => relocation.addend() as u64,
             _ if !absolute.contains(&r_type) => continue,
-            RelocationTarget::Symbol(index) => match file.symbol_by_index(index) {
+            RelocationTarget::Symbol(index) => match symbols.symbol_by_index(index) {
                 Ok(symbol) if !symbol.is_undefined() && symbol.address() != 0 => {
                     symbol.address().wrapping_add(relocation.addend() as u64)
                 }
@@ -143,7 +160,10 @@ pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut [u8]) {
         else {
             continue;
         };
-        if let Some(slot) = bytes.get_mut(place..place + 8) {
+        if let Some(slot) = place
+            .checked_add(8)
+            .and_then(|end| bytes.get_mut(place..end))
+        {
             slot.copy_from_slice(&value.to_le_bytes());
         }
     }

@@ -65,6 +65,11 @@ ld.lld -m aarch64elf -e d7 -o "$OUT/arm64_jumptable.elf" "$OUT/switch_jumptable.
 "${CC[@]}" $A64 -O2 -c "$CASES/c/calls.c" -o "$OUT/calls_a64.o"
 ld.lld -m aarch64elf -e pick_op -o "$OUT/calls_a64.elf" "$OUT/calls_a64.o"
 
+# A shared library: dynamic relocations number the dynamic symbols.
+"${CC[@]}" $X64 -O1 -fPIC -c "$CASES/c/shared_pointers.c" -o "$OUT/shared_pointers_x64.o"
+ld.lld -shared -o "$OUT/shared_pointers_x64.so" "$OUT/shared_pointers_x64.o"
+rm "$OUT/shared_pointers_x64.o"
+
 # DWARF names, types and members, and the same image without symbols.
 "${CC[@]}" -g $A64 -O2 -c "$CASES/c/arith_mixed.c" -o "$OUT/arm64_debug.o"
 ld.lld -m aarch64elf -e sum3 -o "$OUT/arm64_debug.elf" "$OUT/arm64_debug.o"
@@ -123,7 +128,7 @@ done
 # info, for both ISAs at -O0 and -O2.
 for source in "$CASES"/c/*.c; do
   case=$(basename "$source" .c)
-  [ "$case" = pe64 ] && continue
+  case "$case" in pe64 | shared_pointers) continue ;; esac
   for isa in aarch64 x86_64; do
     emulation=aarch64elf; [ "$isa" = x86_64 ] && emulation=elf_x86_64
     for opt in O0 O2; do

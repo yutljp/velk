@@ -596,12 +596,18 @@ pub fn load(path: &Path) -> Result<Image> {
 
     let mut sections = Vec::new();
     for section in file.sections() {
+        let vaddr = bases
+            .get(&section.index())
+            .copied()
+            .unwrap_or(section.address());
+        // A damaged header can place a section past the end of the address
+        // space; nothing in it is reachable.
+        if vaddr.checked_add(section.size()).is_none() {
+            continue;
+        }
         sections.push(Section {
             name: section.name().unwrap_or("<unnamed>").to_owned(),
-            vaddr: bases
-                .get(&section.index())
-                .copied()
-                .unwrap_or(section.address()),
+            vaddr,
             size: section.size(),
             file_offset: section.file_range().map(|(offset, _)| offset),
             executable: is_executable(section.kind()),

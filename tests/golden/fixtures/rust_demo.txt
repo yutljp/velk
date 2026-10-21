@@ -1,4 +1,4 @@
-# rust_demo: elf x86_64 0x14e70, 545 functions, 0 lift failures, 3 unsupported, 1595 gotos
+# rust_demo: elf x86_64 0x14e70, 545 functions, 0 lift failures, 3 unsupported, 1589 gotos
 0x14e70 38 _start symtab,entry,unwind
 0x14ea0 48 deregister_tm_clones symtab
 0x14ed0 64 register_tm_clones symtab
@@ -549,7 +549,7 @@
 -- decompile
 /* velk pseudo-C: rust_demo::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
-void rust_demo__main(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
+void rust_demo__main(void) {
     uint32_t local_0; /* [sp-14] */
     uint32_t *local_1; /* [sp-10] */
     int64_t local_2; /* [sp-8] */
@@ -557,10 +557,10 @@ void rust_demo__main(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
     local_0 = 0x2a;
     local_1 = &local_0;
     local_2 = qword_55aa8;
-    stdio___print(0x5091, &local_1, a2, a3);
+    stdio___print(0x5091, &local_1);
 }
 -- signature
-void (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+void ()
 -- references
 0x55aa8 .got
 -- ir
@@ -569,7 +569,7 @@ fn rust_demo::main @ 0x14f90 (size 57)
     store32(#0x2a, (rsp + #0xffffffffffffffec))
     store64((rsp + #0xffffffffffffffec), (rsp + #0xfffffffffffffff0))
     store64(load64(#0x55aa8), (rsp + #0xfffffffffffffff8))
-    call 0x3b540(#0x5091, (rsp + #0xfffffffffffffff0), rdx, rcx)
+    call 0x3b540(#0x5091, (rsp + #0xfffffffffffffff0))
     ret #0x0
 -- card
 {"addr":"0x14f90","approxTokens":162,"blocks":1,"hardReasons":[],"name":"rust_demo::main","nameSources":["symtab","unwind"],"section":".text","size":57,"unsupported":0}

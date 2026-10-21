@@ -246,8 +246,8 @@ echo "$sign_ir2" | grep -q "(int8_t)(a0) & 0xffffffff" && fail "sign-extend mask
 ok "sign-extended widths"
 degraded=$("$BIN" decompile $FIX/arm64_debug.o sum3 2>/dev/null)
 echo "$degraded" | grep -q "clang version" && fail "relocated DWARF name leaked"
-echo "$degraded" | grep -q "int32_t sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "inferred signature kept"
-ok "relocated DWARF falls back"
+echo "$degraded" | grep -q "int sum3(int a, int b, int c)" || fail "relocated DWARF signature"
+ok "relocated DWARF in an object"
 field_ir=$("$BIN" decompile $FIX/arm64_debug.elf pair_sum 2>/dev/null)
 echo "$field_ir" | grep -q "p->a"   || fail "DWARF field name for the first member"
 echo "$field_ir" | grep -q "p->b"   || fail "DWARF field name for the second member"

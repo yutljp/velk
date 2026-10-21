@@ -1,4 +1,4 @@
-# 5712 functions, 63295 compared runs
+# 5716 functions, 63343 compared runs
 # runs left unfinished:
 #   step limit (C and C++): 353
 #   step limit (Go): 2808
