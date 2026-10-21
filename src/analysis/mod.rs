@@ -1222,6 +1222,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     passes::copies::copy_propagate_guarded(&mut ir);
     if !has_jump_tables {
         passes::memory::forward_stored_values(&mut ir);
+        passes::memory::forward_spilled_variables(&mut ir);
     }
     passes::dce::dce(&mut ir);
     typing::apply_width_types(&mut ir, &uniform_32);

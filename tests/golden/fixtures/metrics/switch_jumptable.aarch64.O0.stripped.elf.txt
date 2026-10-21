@@ -23,13 +23,13 @@ int32_t sub_21018c(int32_t a0) {
         }
         return dword_2204fc;
     }
-    if (a0 - 0x1 == 0x0) {
+    if (a0 == 0x1) {
         for (local_1 = 0x0; local_1 < 0x2; local_1++) {
             dword_2204fc += local_1;
         }
         return dword_2204fc;
     }
-    if (a0 - 0x2 == 0x0) {
+    if (a0 == 0x2) {
         for (local_2 = 0x0; local_2 < 0x3; local_2++) {
             dword_2204fc += local_2;
         }
@@ -88,44 +88,43 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x21018c (size 880)
   blk0 @ 0x21018c:
     v1 = (w0 & #0xffffffff)
-    store32(v1, (sp + #0xffffffffffffffd0))
     brif eq (v1 & #0xffffffff), #0x0 -> 0x210234
   blk1 @ 0x2101a0:
     br 0x2101a4
   blk2 @ 0x2101a4:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x1) & #0xffffffff), #0x0 -> 0x210278
+    brif eq v1, #0x1 -> 0x210278
   blk3 @ 0x2101b0:
     br 0x2101b4
   blk4 @ 0x2101b4:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x2) & #0xffffffff), #0x0 -> 0x2102bc
+    brif eq v1, #0x2 -> 0x2102bc
   blk5 @ 0x2101c0:
     br 0x2101c4
   blk6 @ 0x2101c4:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x3) & #0xffffffff), #0x0 -> 0x210300
+    brif eq ((v1 - #0x3) & #0xffffffff), #0x0 -> 0x210300
   blk7 @ 0x2101d0:
     br 0x2101d4
   blk8 @ 0x2101d4:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x4) & #0xffffffff), #0x0 -> 0x210344
+    brif eq ((v1 - #0x4) & #0xffffffff), #0x0 -> 0x210344
   blk9 @ 0x2101e0:
     br 0x2101e4
   blk10 @ 0x2101e4:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x5) & #0xffffffff), #0x0 -> 0x210388
+    brif eq ((v1 - #0x5) & #0xffffffff), #0x0 -> 0x210388
   blk11 @ 0x2101f0:
     br 0x2101f4
   blk12 @ 0x2101f4:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x6) & #0xffffffff), #0x0 -> 0x2103cc
+    brif eq ((v1 - #0x6) & #0xffffffff), #0x0 -> 0x2103cc
   blk13 @ 0x210200:
     br 0x210204
   blk14 @ 0x210204:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x7) & #0xffffffff), #0x0 -> 0x210410
+    brif eq ((v1 - #0x7) & #0xffffffff), #0x0 -> 0x210410
   blk15 @ 0x210210:
     br 0x210214
   blk16 @ 0x210214:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x8) & #0xffffffff), #0x0 -> 0x210454
+    brif eq ((v1 - #0x8) & #0xffffffff), #0x0 -> 0x210454
   blk17 @ 0x210220:
     br 0x210224
   blk18 @ 0x210224:
-    brif eq ((load32((sp + #0xffffffffffffffd0)) - #0x9) & #0xffffffff), #0x0 -> 0x210498
+    brif eq ((v1 - #0x9) & #0xffffffff), #0x0 -> 0x210498
   blk19 @ 0x210230:
     br 0x2104dc
   blk20 @ 0x210234:

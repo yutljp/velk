@@ -546,6 +546,274 @@ pub(crate) fn strip_mask(expr: &Expr) -> &Expr {
     }
 }
 
+/// Reads a frame slot as the variable it holds where the function stores
+/// that variable there once and only reads it back: a value kept across
+/// calls in the frame, `local_0 = v1; ... f(local_0)`, reads `f(v1)`, and
+/// the store goes. The slot must be private to the frame and touched only
+/// whole, stored once by a variable defined once, earlier in the same
+/// block, and read only where that store has run; no call may take it as
+/// an argument on the stack, and no Go call of unknown arguments may run
+/// after the store. Slots are told apart by their offset from the stack
+/// pointer on entry, which tracks the stack pointer's moves.
+pub fn forward_spilled_variables(ir: &mut FunctionIr) {
+    use std::collections::HashMap;
+    let sp = stack_pointer(ir.isa);
+    let go = ir.convention == crate::ir::Convention::GoAmd64;
+    if frame_address_escapes(ir, sp)
+        || ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }))
+    {
+        return;
+    }
+    // Slots by their offset from the stack pointer on entry, through the
+    // frame each block starts in and the moves of the stack pointer in it.
+    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let slot = |addr: &Expr, frame: i64| -> Option<i64> {
+        let (base, offset) = split_offset(addr);
+        matches!(base, Expr::Reg { index, .. } if *index == sp)
+            .then_some(frame.wrapping_add(offset))
+    };
+    // Every access of each slot: (block, position, width, is store).
+    let mut accesses: HashMap<i64, Vec<(usize, usize, u8, bool)>> = HashMap::new();
+    let mut overlapping: Vec<(i64, u8)> = Vec::new();
+    // The slots a call passes on the stack.
+    let mut passed: std::collections::HashSet<i64> = std::collections::HashSet::new();
+    // The Go calls of unknown arguments, which may spill over any slot.
+    let mut unknown: Vec<(usize, usize)> = Vec::new();
+    // How many times each variable is given a value, and where.
+    let mut definitions: HashMap<u16, Vec<(usize, usize)>> = HashMap::new();
+    for (block, stmts) in ir.blocks.iter().enumerate() {
+        let Some(mut frame) = frames[block] else {
+            // A block of unknown frame may touch any slot.
+            if stmts
+                .stmts
+                .iter()
+                .any(|stmt| statement_registers(stmt).1.contains(&sp))
+            {
+                return;
+            }
+            continue;
+        };
+        for (position, stmt) in stmts.stmts.iter().enumerate() {
+            let mut loads = Vec::new();
+            for operand in stmt.operands() {
+                collect_loads(operand, &mut loads);
+            }
+            for (addr, width) in loads {
+                if let Some(offset) = slot(addr, frame) {
+                    accesses
+                        .entry(offset)
+                        .or_default()
+                        .push((block, position, width, false));
+                    overlapping.push((offset, width));
+                }
+            }
+            match stmt {
+                Stmt::Store { addr, width, .. } => {
+                    if let Some(offset) = slot(addr, frame) {
+                        accesses
+                            .entry(offset)
+                            .or_default()
+                            .push((block, position, *width, true));
+                        overlapping.push((offset, *width));
+                    }
+                }
+                Stmt::Assign { dest, value } => {
+                    if dest.index == sp {
+                        match moved(value, sp) {
+                            Some(delta) => frame = frame.wrapping_add(delta),
+                            None => return,
+                        }
+                    }
+                    definitions
+                        .entry(dest.index)
+                        .or_default()
+                        .push((block, position));
+                }
+                Stmt::Call {
+                    args,
+                    convention,
+                    result,
+                    ..
+                } => {
+                    if go && args.is_none() {
+                        unknown.push((block, position));
+                    }
+                    if let Some(result) = result {
+                        definitions
+                            .entry(result.index)
+                            .or_default()
+                            .push((block, position));
+                    }
+                    for arg in args.iter().flatten().skip(convention.arguments().len()) {
+                        if let Expr::Load { addr, .. } = arg
+                            && let Some(offset) = slot(addr, frame)
+                        {
+                            passed.insert(offset);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    let successors: Vec<Vec<usize>> = (0..ir.blocks.len())
+        .map(|index| crate::ir::cfg::successors(ir, index))
+        .collect();
+    let idom = crate::ssa::dom::dominators(&successors).idom;
+    let dominates = |above: usize, mut block: usize| loop {
+        if block == above {
+            return true;
+        }
+        match idom[block] {
+            Some(parent) if parent != block => block = parent,
+            _ => return false,
+        }
+    };
+    let mut forwarded: Vec<(i64, u8, u16)> = Vec::new();
+    let mut dropped: Vec<(usize, usize)> = Vec::new();
+    for (offset, uses) in &accesses {
+        let stores: Vec<(usize, usize, u8, bool)> =
+            uses.iter().copied().filter(|(.., store)| *store).collect();
+        let [(store_block, store_at, width, _)] = stores.as_slice() else {
+            continue;
+        };
+        let (store_block, store_at, width) = (*store_block, *store_at, *width);
+        if !matches!(width, 4 | 8)
+            || passed.contains(offset)
+            || uses.iter().any(|(.., used, _)| *used != width)
+            // Another access reaching into the slot from elsewhere.
+            || overlapping.iter().any(|(other, other_width)| {
+                other != offset
+                    && *other < offset + i64::from(width)
+                    && *offset < other + i64::from(*other_width)
+            })
+        {
+            continue;
+        }
+        let Stmt::Store {
+            value:
+                Expr::Reg {
+                    index: variable,
+                    width: 64,
+                },
+            ..
+        } = &ir.blocks[store_block].stmts[store_at]
+        else {
+            continue;
+        };
+        let variable = *variable;
+        let defined_before = matches!(
+            definitions.get(&variable).map(Vec::as_slice),
+            Some([(block, at)]) if *block == store_block && *at < store_at
+        );
+        let read_after = uses
+            .iter()
+            .filter(|(.., store)| !*store)
+            .all(|(block, at, ..)| {
+                if *block == store_block {
+                    *at > store_at
+                } else {
+                    dominates(store_block, *block)
+                }
+            });
+        // A call between the store and a read runs after the store: one the
+        // store does not come before on every path would leave a read the
+        // store does not come before either.
+        let overwritten = unknown.iter().any(|(block, at)| {
+            if *block == store_block {
+                *at > store_at
+            } else {
+                dominates(store_block, *block)
+            }
+        });
+        if variable < crate::ir::VARIABLE_BASE || !defined_before || !read_after || overwritten {
+            continue;
+        }
+        forwarded.push((*offset, width, variable));
+        dropped.push((store_block, store_at));
+    }
+    if forwarded.is_empty() {
+        return;
+    }
+    fn replace(expr: &mut Expr, sp: u16, frame: i64, forwarded: &[(i64, u8, u16)]) {
+        if let Expr::Load {
+            addr,
+            width,
+            signed,
+        } = expr
+        {
+            let (base, offset) = split_offset(addr);
+            if matches!(base, Expr::Reg { index, .. } if *index == sp)
+                && let Some((_, _, variable)) = forwarded.iter().find(|(slot, slot_width, _)| {
+                    *slot == frame.wrapping_add(offset) && slot_width == width
+                })
+            {
+                *expr = match (*width, *signed) {
+                    (8, _) => Expr::reg(*variable, 64),
+                    (_, false) => Expr::reg(*variable, 32),
+                    (width, true) => Expr::SignExtend {
+                        value: Box::new(Expr::reg(*variable, 32)),
+                        width,
+                    },
+                };
+                return;
+            }
+        }
+        for child in crate::ir::visit::children_mut(expr) {
+            replace(child, sp, frame, forwarded);
+        }
+    }
+    for (block, stmts) in ir.blocks.iter_mut().enumerate() {
+        let mut position = 0;
+        stmts.stmts.retain(|_| {
+            position += 1;
+            !dropped.contains(&(block, position - 1))
+        });
+        let Some(mut frame) = frames[block] else {
+            continue;
+        };
+        for stmt in &mut stmts.stmts {
+            for operand in stmt.operands_mut() {
+                replace(operand, sp, frame, &forwarded);
+            }
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.index == sp
+            {
+                frame = frame.wrapping_add(moved(value, sp).unwrap_or(0));
+            }
+        }
+    }
+}
+
+/// How far `sp = value` moves the stack pointer, when by a constant.
+fn moved(value: &Expr, sp: u16) -> Option<i64> {
+    let Expr::Bin { op, lhs, rhs } = value else {
+        return None;
+    };
+    if !matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) {
+        return None;
+    }
+    match (op, rhs.as_ref()) {
+        (crate::ir::BinOp::Add, Expr::Const(delta)) => Some(*delta as i64),
+        (crate::ir::BinOp::Sub, Expr::Const(delta)) => Some((*delta as i64).wrapping_neg()),
+        _ => None,
+    }
+}
+
+/// The address and width of every load in `expr`.
+fn collect_loads<'e>(expr: &'e Expr, out: &mut Vec<(&'e Expr, u8)>) {
+    if let Expr::Load { addr, width, .. } = expr {
+        out.push((addr, *width));
+    }
+    for child in crate::ir::visit::children(expr) {
+        collect_loads(child, out);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{forward_stored_values, fuse_load_op_store};
@@ -693,6 +961,94 @@ mod tests {
 
         assert!(
             matches!(&ir.blocks[0].stmts[2], Stmt::Ret { value } if *value == load(-8, 8)),
+            "{}",
+            ir.render()
+        );
+    }
+
+    #[test]
+    fn a_variable_kept_in_a_slot_across_blocks_reads_as_itself() {
+        // v1 = *x0; *(sp - 8) = v1; f(); if (x2 != 0) { return *(sp - 8) }.
+        let v1 = crate::ir::VARIABLE_BASE;
+        let call = Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: false,
+            result: None,
+            clobbers: None,
+            via: None,
+        };
+        let build = |second_store: bool| {
+            let mut first = vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: v1,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(0, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                },
+                store(-8, Expr::reg(v1, 64), 8),
+                call.clone(),
+            ];
+            if second_store {
+                first.push(store(-8, Expr::Const(0), 8));
+            }
+            first.push(Stmt::Brif {
+                cond: crate::ir::Cond::Eq,
+                lhs: Expr::reg(2, 64),
+                rhs: Expr::Const(0),
+                target: 0x20,
+            });
+            let mut ir = FunctionIr::single_block(Isa::AArch64, first);
+            ir.blocks.push(crate::ir::Block {
+                start: 0x10,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(slot(-8)),
+                        width: 8,
+                        signed: false,
+                    },
+                }],
+            });
+            ir.blocks.push(crate::ir::Block {
+                start: 0x20,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(0),
+                }],
+            });
+            ir
+        };
+        let mut ir = build(false);
+        super::forward_spilled_variables(&mut ir);
+        assert!(
+            matches!(&ir.blocks[1].stmts[0], Stmt::Ret { value: Expr::Reg { index, .. } } if *index == v1),
+            "{}",
+            ir.render()
+        );
+        assert!(
+            !ir.blocks[0]
+                .stmts
+                .iter()
+                .any(|stmt| matches!(stmt, Stmt::Store { .. })),
+            "{}",
+            ir.render()
+        );
+        // A slot stored twice holds what the later store left.
+        let mut ir = build(true);
+        super::forward_spilled_variables(&mut ir);
+        assert!(
+            matches!(
+                &ir.blocks[1].stmts[0],
+                Stmt::Ret {
+                    value: Expr::Load { .. }
+                }
+            ),
             "{}",
             ir.render()
         );

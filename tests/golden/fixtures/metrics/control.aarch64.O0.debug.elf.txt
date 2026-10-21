@@ -130,19 +130,17 @@ fn cleanup_on_error @ 0x2102a0 (size 96)
 int fallthrough(int x) {
     int32_t v1;
     uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
 
     local_0 = 0x0;
     v1 = x;
-    local_1 = v1;
     if (v1 == 0x0) {
         local_0 += 0x1;
-    } else if (local_1 - 0x1 != 0x0) {
-        if (local_1 - 0x2 == 0x0) {
+    } else if (v1 != 0x1) {
+        if (v1 == 0x2) {
             local_0 += 0x4;
             return local_0;
         }
-        if (local_1 - 0x3 == 0x0) {
+        if (v1 - 0x3 == 0x0) {
             local_0 = 0x8;
             return local_0;
         }
@@ -162,20 +160,19 @@ fn fallthrough @ 0x210300 (size 160)
   blk0 @ 0x210300:
     store32(#0x0, (sp + #0xfffffffffffffff8))
     v1 = (w0 & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff4))
     brif eq (v1 & #0xffffffff), #0x0 -> 0x21034c
   blk1 @ 0x210318:
     br 0x21031c
   blk2 @ 0x21031c:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff), #0x0 -> 0x21035c
+    brif eq v1, #0x1 -> 0x21035c
   blk3 @ 0x210328:
     br 0x21032c
   blk4 @ 0x21032c:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x2) & #0xffffffff), #0x0 -> 0x21036c
+    brif eq v1, #0x2 -> 0x21036c
   blk5 @ 0x210338:
     br 0x21033c
   blk6 @ 0x21033c:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x3) & #0xffffffff), #0x0 -> 0x21037c
+    brif eq ((v1 - #0x3) & #0xffffffff), #0x0 -> 0x21037c
   blk7 @ 0x210348:
     br 0x210388
   blk8 @ 0x21034c:
@@ -203,29 +200,27 @@ fn fallthrough @ 0x210300 (size 160)
 /* velk pseudo-C: sparse @ 0x2103a0 */
 int sparse(int x) {
     int32_t v1;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
     v1 = x;
-    local_0 = v1;
     if (v1 - 0x1 == 0x0) {
-        local_1 = 0xa;
-        return local_1;
+        local_0 = 0xa;
+        return local_0;
     }
-    if (local_0 - 0x64 == 0x0) {
-        local_1 = 0x14;
-        return local_1;
+    if (v1 - 0x64 == 0x0) {
+        local_0 = 0x14;
+        return local_0;
     }
-    if (local_0 - 0x3e8 == 0x0) {
-        local_1 = 0x1e;
-        return local_1;
+    if (v1 - 0x3e8 == 0x0) {
+        local_0 = 0x1e;
+        return local_0;
     }
-    if (local_0 - 0x2710 == 0x0) {
-        local_1 = 0x28;
-        return local_1;
+    if (v1 - 0x2710 == 0x0) {
+        local_0 = 0x28;
+        return local_0;
     }
-    local_1 = 0x0;
-    return local_1;
+    local_0 = 0x0;
+    return local_0;
 }
 -- signature
 int (int x)
@@ -235,20 +230,19 @@ int (int x)
 fn sparse @ 0x2103a0 (size 148)
   blk0 @ 0x2103a0:
     v1 = (w0 & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff4))
     brif eq (((v1 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2103f0
   blk1 @ 0x2103b8:
     br 0x2103bc
   blk2 @ 0x2103bc:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x64) & #0xffffffff), #0x0 -> 0x2103fc
+    brif eq ((v1 - #0x64) & #0xffffffff), #0x0 -> 0x2103fc
   blk3 @ 0x2103c8:
     br 0x2103cc
   blk4 @ 0x2103cc:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x3e8) & #0xffffffff), #0x0 -> 0x210408
+    brif eq ((v1 - #0x3e8) & #0xffffffff), #0x0 -> 0x210408
   blk5 @ 0x2103d8:
     br 0x2103dc
   blk6 @ 0x2103dc:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x2710) & #0xffffffff), #0x0 -> 0x210414
+    brif eq ((v1 - #0x2710) & #0xffffffff), #0x0 -> 0x210414
   blk7 @ 0x2103ec:
     br 0x210420
   blk8 @ 0x2103f0:

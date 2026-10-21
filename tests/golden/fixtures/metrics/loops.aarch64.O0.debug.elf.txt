@@ -87,21 +87,19 @@ fn sum_until @ 0x2101e8 (size 92)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x210244 */
 int sum_till_neg(int *p, int n) {
-    uint32_t v2;
+    int32_t v2;
     int32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
     int32_t local_2; /* [sp-14] */
-    uint32_t local_3; /* [sp-18] */
 
     local_0 = n;
     local_1 = 0x0;
     for (local_2 = 0x0; local_2 < local_0; local_2++) {
         v2 = p[local_2];
-        local_3 = v2;
-        if ((v2 & 0x80000000) != 0x0) {
+        if (((uint32_t)v2 & 0x80000000) != 0x0) {
             return local_1;
         }
-        local_1 += local_3;
+        local_1 += v2;
     }
     return local_1;
 }
@@ -123,14 +121,13 @@ fn sum_till_neg @ 0x210244 (size 120)
     br 0x210270
   blk3 @ 0x210270:
     v2 = load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2)))
-    store32(v2, (sp + #0xffffffffffffffe8))
     brif eq (v2 & #0x80000000), #0x0 -> 0x210290
   blk4 @ 0x210288:
     br 0x21028c
   blk5 @ 0x21028c:
     br 0x2102b0
   blk6 @ 0x210290:
-    store32((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffe8))), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff0)) + v2), (sp + #0xfffffffffffffff0))
     store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
     br 0x21025c
   blk7 @ 0x2102b0:

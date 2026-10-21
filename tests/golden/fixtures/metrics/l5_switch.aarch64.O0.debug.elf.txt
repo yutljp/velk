@@ -467,25 +467,23 @@ fn c15 @ 0x210558 (size 24)
 /* velk pseudo-C: sparse @ 0x210570 */
 int sparse(int x) {
     int32_t v1;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
     v1 = x;
-    local_0 = v1;
     if (v1 - 0x1 == 0x0) {
-        local_1 = 0x64;
-        return local_1;
+        local_0 = 0x64;
+        return local_0;
     }
-    if (local_0 - 0x32 == 0x0) {
-        local_1 = 0x7;
-        return local_1;
+    if (v1 - 0x32 == 0x0) {
+        local_0 = 0x7;
+        return local_0;
     }
-    if (local_0 - 0x12c == 0x0) {
-        local_1 = 0x12c;
-        return local_1;
+    if (v1 - 0x12c == 0x0) {
+        local_0 = 0x12c;
+        return local_0;
     }
-    local_1 = 0xffffffff;
-    return local_1;
+    local_0 = 0xffffffff;
+    return local_0;
 }
 -- signature
 int (int x)
@@ -495,16 +493,15 @@ int (int x)
 fn sparse @ 0x210570 (size 120)
   blk0 @ 0x210570:
     v1 = (w0 & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff4))
     brif eq (((v1 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2105ac
   blk1 @ 0x210588:
     br 0x21058c
   blk2 @ 0x21058c:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x32) & #0xffffffff), #0x0 -> 0x2105b8
+    brif eq ((v1 - #0x32) & #0xffffffff), #0x0 -> 0x2105b8
   blk3 @ 0x210598:
     br 0x21059c
   blk4 @ 0x21059c:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x12c) & #0xffffffff), #0x0 -> 0x2105c4
+    brif eq ((v1 - #0x12c) & #0xffffffff), #0x0 -> 0x2105c4
   blk5 @ 0x2105a8:
     br 0x2105d0
   blk6 @ 0x2105ac:

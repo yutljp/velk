@@ -489,16 +489,15 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x210570 (size 120)
   blk0 @ 0x210570:
     v1 = (w0 & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff4))
     brif eq (((v1 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2105ac
   blk1 @ 0x210588:
     br 0x21058c
   blk2 @ 0x21058c:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x32) & #0xffffffff), #0x0 -> 0x2105b8
+    brif eq ((v1 - #0x32) & #0xffffffff), #0x0 -> 0x2105b8
   blk3 @ 0x210598:
     br 0x21059c
   blk4 @ 0x21059c:
-    brif eq ((load32((sp + #0xfffffffffffffff4)) - #0x12c) & #0xffffffff), #0x0 -> 0x2105c4
+    brif eq ((v1 - #0x12c) & #0xffffffff), #0x0 -> 0x2105c4
   blk5 @ 0x2105a8:
     br 0x2105d0
   blk6 @ 0x2105ac:
