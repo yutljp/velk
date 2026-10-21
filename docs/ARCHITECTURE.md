@@ -300,11 +300,17 @@ FunctionIr（ブロック・文・式）
   `do { ... } while (c); t` にします。ループ本体の末尾の `if (c) continue; t` は、本体の終わりに流れるのが
   `continue` と同じなので `if (!c) { t }` と書きます。return へ数文で着く末尾の複製は、増える行が 8 行までにします
   （`return f(x);` のように 1 行で書ける末尾は、goto と同じ長さなので、どこへでも複製します）。
+- switch の前の判定の取り込み（`structure/cleanup.rs`）: `v = x - k; if (v > n) t else switch (x) { ... }` で、`k` から
+  `k + n` までのすべての値に case があるものは、`t` を default にした switch にします（case のない値は switch を
+  抜けるだけなので、取り込めるのはすべてを覆うときだけです）。switch の直前（または `else` の中が switch だけ）の
+  `if (x == c) t` は、`t` が抜けるなら `case c:` にします。どちらも、`t` が外側のループを抜ける `break` を持つときは
+  取り込みません（switch の中では switch を抜ける意味になるため）。
 - `structure/classify.rs`（テスト用）: 残った goto を、それを生んだ制御フローの形（別の判定を補う判定、判定を飛び越す
   分岐、下で判定するように回したループ、まとめられた return と戻らない呼び出し、出口の多いループ、switch の展開と
   ほかの共有された末尾、既約でないループ、unwind のコードとの合流、複数のループをまとめて抜ける出口）ごとに数えます。
 - `structure/build.rs`: アドレス順の構造化。支配木が深すぎて辿れない関数に使います。
-- `structure/compare_chain.rs`: 1 つの値に対する比較の連鎖を switch に組み直します。
+- `structure/compare_chain.rs`: 1 つの値に対する比較の連鎖を switch に組み直します。レジスタの下位 32 ビットの比較
+  （`w0`、`x0 & 0xffffffff`）は 32 ビットの値の比較として扱い、レジスタ全体の比較とは別の値とします。
 - `structure/lower.rs`（テスト用）: 構造化したコードをブロックに戻し、インタプリタで元の IR と比べられるようにします。
 - 関数の名前: デマングルした名前から引数リスト・型引数・最後の 2 つより前のモジュールのパスを除いた短い名前
   （`<core::io::error::Error>::new::<&str>` は `Error::new`）を、関数の見出しと呼び出しに使います。

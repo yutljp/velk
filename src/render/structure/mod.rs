@@ -165,6 +165,7 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
     prune_unreachable(nodes);
     cleanup::shape_forever_loops(nodes);
     cleanup::fold_trailing_continues(nodes);
+    cleanup::absorb_switch_tests(nodes);
     flatten_early_returns(nodes);
     cleanup::drop_jumps_to_next(nodes, None);
     prune(nodes);

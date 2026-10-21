@@ -460,10 +460,9 @@ fn <unnamed> @ 0x2014d0 (size 8)
 -- decompile
 /* velk pseudo-C: sub_2014e0 @ 0x2014e0 */
 int32_t sub_2014e0(int32_t a0) {
-    if (a0 == 0x1) {
-        return 0x64;
-    }
     switch (a0) {
+    case 1:
+        return 0x64;
     case 50:
         return 0x7;
     case 300:

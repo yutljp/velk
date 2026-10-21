@@ -8,71 +8,65 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2202e8 .bss */
 int32_t dense(int32_t a0) {
-    uint32_t v1;
     int32_t v5;
     int32_t v7;
     int32_t v8;
 
-    v1 = a0 - 0xa;
-    if (v1 > 0xf) {
+    switch (a0) {
+    case 10:
+        v5 = g_sink + 0xb;
+        break;
+    case 11:
+        v5 = g_sink ^ 0x12;
+        break;
+    case 12:
+        v5 = g_sink - 0x19;
+        break;
+    case 13:
+        v5 = g_sink | 0x20;
+        break;
+    case 14:
+        v5 = g_sink + 0x27;
+        break;
+    case 15:
+        v5 = g_sink ^ 0x2e;
+        break;
+    case 16:
+        v5 = g_sink - 0x35;
+        break;
+    case 17:
+        v5 = g_sink | 0x3c;
+        break;
+    case 18:
+        v5 = g_sink + 0x43;
+        break;
+    case 19:
+        v5 = g_sink ^ 0x4a;
+        break;
+    case 20:
+        v5 = g_sink - 0x51;
+        break;
+    case 21:
+        v7 = g_sink;
+        v8 = 0x58;
+        v5 = v7 | v8;
+        break;
+    case 22:
+        v5 = g_sink + 0x5f;
+        break;
+    case 23:
+        v5 = g_sink ^ 0x66;
+        break;
+    case 24:
+        v5 = g_sink - 0x6d;
+        break;
+    case 25:
+        v7 = g_sink;
+        v8 = 0x74;
+        v5 = v7 | v8;
+        break;
+    default:
         v5 = 0x0;
-    } else {
-        switch (a0) {
-        case 10:
-            v5 = g_sink + 0xb;
-            break;
-        case 11:
-            v5 = g_sink ^ 0x12;
-            break;
-        case 12:
-            v5 = g_sink - 0x19;
-            break;
-        case 13:
-            v5 = g_sink | 0x20;
-            break;
-        case 14:
-            v5 = g_sink + 0x27;
-            break;
-        case 15:
-            v5 = g_sink ^ 0x2e;
-            break;
-        case 16:
-            v5 = g_sink - 0x35;
-            break;
-        case 17:
-            v5 = g_sink | 0x3c;
-            break;
-        case 18:
-            v5 = g_sink + 0x43;
-            break;
-        case 19:
-            v5 = g_sink ^ 0x4a;
-            break;
-        case 20:
-            v5 = g_sink - 0x51;
-            break;
-        case 21:
-            v7 = g_sink;
-            v8 = 0x58;
-            v5 = v7 | v8;
-            break;
-        case 22:
-            v5 = g_sink + 0x5f;
-            break;
-        case 23:
-            v5 = g_sink ^ 0x66;
-            break;
-        case 24:
-            v5 = g_sink - 0x6d;
-            break;
-        case 25:
-            v7 = g_sink;
-            v8 = 0x74;
-            v5 = v7 | v8;
-            break;
-        default:
-            __builtin_unreachable();
-        }
     }
     g_sink = v5;
     return g_sink;
@@ -153,10 +147,9 @@ fn dense @ 0x2101ac (size 268)
 -- decompile
 /* velk pseudo-C: sparse @ 0x2102b8 */
 int32_t sparse(int32_t a0) {
-    if (a0 == 0x1) {
-        return 0x64;
-    }
     switch (a0) {
+    case 1:
+        return 0x64;
     case 50:
         return 0x7;
     case 300:

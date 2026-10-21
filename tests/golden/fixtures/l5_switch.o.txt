@@ -6,71 +6,65 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
-    uint32_t v1;
     int32_t v6;
     int32_t v8;
     int32_t v9;
 
-    v1 = a0 - 0xa;
-    if (v1 > 0xf) {
+    switch (a0) {
+    case 10:
+        v6 = g_sink + 0xb;
+        break;
+    case 11:
+        v6 = g_sink ^ 0x12;
+        break;
+    case 12:
+        v6 = g_sink - 0x19;
+        break;
+    case 13:
+        v6 = g_sink | 0x20;
+        break;
+    case 14:
+        v6 = g_sink + 0x27;
+        break;
+    case 15:
+        v6 = g_sink ^ 0x2e;
+        break;
+    case 16:
+        v6 = g_sink - 0x35;
+        break;
+    case 17:
+        v6 = g_sink | 0x3c;
+        break;
+    case 18:
+        v6 = g_sink + 0x43;
+        break;
+    case 19:
+        v6 = g_sink ^ 0x4a;
+        break;
+    case 20:
+        v6 = g_sink - 0x51;
+        break;
+    case 21:
+        v8 = g_sink;
+        v9 = 0x58;
+        v6 = v8 | v9;
+        break;
+    case 22:
+        v6 = g_sink + 0x5f;
+        break;
+    case 23:
+        v6 = g_sink ^ 0x66;
+        break;
+    case 24:
+        v6 = g_sink - 0x6d;
+        break;
+    case 25:
+        v8 = g_sink;
+        v9 = 0x74;
+        v6 = v8 | v9;
+        break;
+    default:
         v6 = 0x0;
-    } else {
-        switch (a0) {
-        case 10:
-            v6 = g_sink + 0xb;
-            break;
-        case 11:
-            v6 = g_sink ^ 0x12;
-            break;
-        case 12:
-            v6 = g_sink - 0x19;
-            break;
-        case 13:
-            v6 = g_sink | 0x20;
-            break;
-        case 14:
-            v6 = g_sink + 0x27;
-            break;
-        case 15:
-            v6 = g_sink ^ 0x2e;
-            break;
-        case 16:
-            v6 = g_sink - 0x35;
-            break;
-        case 17:
-            v6 = g_sink | 0x3c;
-            break;
-        case 18:
-            v6 = g_sink + 0x43;
-            break;
-        case 19:
-            v6 = g_sink ^ 0x4a;
-            break;
-        case 20:
-            v6 = g_sink - 0x51;
-            break;
-        case 21:
-            v8 = g_sink;
-            v9 = 0x58;
-            v6 = v8 | v9;
-            break;
-        case 22:
-            v6 = g_sink + 0x5f;
-            break;
-        case 23:
-            v6 = g_sink ^ 0x66;
-            break;
-        case 24:
-            v6 = g_sink - 0x6d;
-            break;
-        case 25:
-            v8 = g_sink;
-            v9 = 0x74;
-            v6 = v8 | v9;
-            break;
-        default:
-            __builtin_unreachable();
-        }
     }
     g_sink = v6;
     return g_sink;
@@ -150,10 +144,9 @@ fn dense @ 0x0 (size 268)
 -- decompile
 /* velk pseudo-C: sparse @ 0x10c */
 int32_t sparse(int32_t a0) {
-    if (a0 == 0x1) {
-        return 0x64;
-    }
     switch (a0) {
+    case 1:
+        return 0x64;
     case 50:
         return 0x7;
     case 300:
