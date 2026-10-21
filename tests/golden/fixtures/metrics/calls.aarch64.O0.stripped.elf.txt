@@ -276,7 +276,6 @@ fn <unnamed> @ 0x210564 (size 76)
 /* velk pseudo-C: sub_2105b0 @ 0x2105b0 */
 int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
     uint32_t v2;
-    int32_t v3;
     int64_t v4;
     int64_t local_0; /* [sp-90] */
     int64_t local_1; /* [sp-88] */
@@ -350,9 +349,9 @@ int32_t sub_2105b0(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
         v2 = local_25;
         local_33 = v2;
         if ((v2 & 0x80000000) != 0x0) {
-            v3 = local_33 + 0x8;
-            *local_32 = v3;
-            if (v3 <= 0x0) {
+            v2 = local_33 + 0x8;
+            *local_32 = v2;
+            if ((int32_t)v2 <= 0x0) {
                 local_34 = (uint8_t *)local_28 + local_33;
                 local_31 += *local_34;
                 local_29 += 0x1;
@@ -418,9 +417,9 @@ fn <unnamed> @ 0x2105b0 (size 316)
   blk4 @ 0x210668:
     br 0x21066c
   blk5 @ 0x21066c:
-    v3 = ((load32((sp + #0xfffffffffffffefc)) + #0x8) & #0xffffffff)
-    store32(v3, load64((sp + #0xfffffffffffffef0)))
-    brif gt (v3 & #0xffffffff), #0x0 -> 0x21069c
+    v2 = ((load32((sp + #0xfffffffffffffefc)) + #0x8) & #0xffffffff)
+    store32(v2, load64((sp + #0xfffffffffffffef0)))
+    brif gt (v2 & #0xffffffff), #0x0 -> 0x21069c
   blk6 @ 0x210684:
     br 0x210688
   blk7 @ 0x210688:

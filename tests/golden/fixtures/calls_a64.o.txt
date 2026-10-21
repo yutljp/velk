@@ -129,7 +129,6 @@ int32_t factorial(int32_t a0) {
     int32_t v11;
     uint64_t v12;
     uint64_t v13;
-    uint64_t v15;
 
     if (a0 >= 0x2) {
         if ((uint32_t)a0 >= 0x9) {
@@ -154,8 +153,8 @@ int32_t factorial(int32_t a0) {
                 v3 = mul_lanes32(v12, v3);
                 v4 = mul_lanes32(v13, v4);
             } while (v11 != 0x0);
-            v15 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10));
-            v2 = v15 * (v15 >> 0x20);
+            v9 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10));
+            v2 = v9 * (v9 >> 0x20);
             if (v5 == v6) {
                 return v2;
             }
@@ -210,8 +209,8 @@ fn factorial @ 0x78 (size 160)
     v4 = mul_lanes32(v13, v4)
     brif ne v11, #0x0 -> 0xcc
   blk6 @ 0xe4:
-    v15 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10))
-    v2 = (((v15 & #0xffffffff) * (v15 >> #0x20)) & #0xffffffff)
+    v9 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10))
+    v2 = (((v9 & #0xffffffff) * (v9 >> #0x20)) & #0xffffffff)
     brif eq v5, v6 -> 0x114
   blk7 @ 0x104:
     v2 = (((v1 & #0xffffffff) * (v2 & #0xffffffff)) & #0xffffffff)
@@ -227,21 +226,20 @@ fn factorial @ 0x78 (size 160)
 /* velk pseudo-C: is_odd @ 0x118 */
 int32_t is_odd(int32_t a0) {
     uint32_t v1;
-    int32_t v3;
     int32_t v4;
     int32_t v5;
     uint32_t v6;
 
     v1 = a0 - (a0 != 0x0) + 0x1;
     if (v1 >= 0x2) {
-        v3 = (v1 >> 0x1) + 0x1;
-        v4 = v3 & 0xfffffffe;
+        v1 = (v1 >> 0x1) + 0x1;
+        v4 = v1 & 0xfffffffe;
         a0 = a0 - (v4 << 0x1);
         v5 = v4;
         do {
             v5 = v5 - 0x2;
         } while (v5 != 0x0);
-        if (v3 == v4) {
+        if (v1 == v4) {
             return a0 + 0x2;
         }
     }
@@ -261,15 +259,15 @@ fn is_odd @ 0x118 (size 88)
     v1 = (((w0 - select ne w0, #0x0 ? #0x1, #0x0) & #0xffffffff) + #0x1)
     brif cc v1, #0x2 -> 0x15c
   blk1 @ 0x130:
-    v3 = ((v1 >> #0x1) + #0x1)
-    v4 = (v3 & #0xfffffffe)
+    v1 = ((v1 >> #0x1) + #0x1)
+    v4 = (v1 & #0xfffffffe)
     w0 = (w0 - (v4 << #0x1))
     v5 = v4
   blk2 @ 0x144:
     v5 = (v5 - #0x2)
     brif ne v5, #0x0 -> 0x144
   blk3 @ 0x14c:
-    brif ne v3, v4 -> 0x15c
+    brif ne v1, v4 -> 0x15c
   blk4 @ 0x154:
     ret ((w0 + #0x2) & #0xffffffff)
   blk5 @ 0x15c:

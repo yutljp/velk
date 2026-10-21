@@ -363,8 +363,8 @@ int32_t (uint64_t * a0, int64_t a1)
 fn <unnamed> @ 0x201540 (size 9)
   blk0 @ 0x201540:
     v1 = load64((load64(rdi) + #0x18))
-    v2 = call *v1(rdi, rsi)
-    ret v2
+    v1 = call *v1(rdi, rsi)
+    ret v1
 -- card
 {"accesses":["a0 +0x0:uint64_t"],"addr":"0x201540","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":9,"unsupported":0}
 

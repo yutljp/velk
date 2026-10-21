@@ -156,7 +156,6 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 /* velk pseudo-C: sub_1120 @ 0x1120 */
 int64_t sub_1120(int32_t a0) {
     int64_t v1;
-    int64_t v2;
     int64_t local_0; /* [sp-40] */
     int64_t local_1; /* [sp-38] */
     int64_t local_2; /* [sp-48] */
@@ -168,9 +167,9 @@ int64_t sub_1120(int32_t a0) {
     local_0 = 0x656e6f;
     local_1 = 0x0;
     local_2 = v1;
-    v2 = qword_2030;
+    v1 = qword_2030;
     local_3 = 0x6f7774;
-    local_4 = v2;
+    local_4 = v1;
     local_5 = 0x0;
     return sub_1290(&local_2, 0x2, a0);
 }
@@ -185,14 +184,14 @@ fn <unnamed> @ 0x1120 (size 124)
     store64(#0x656e6f, (rsp + #0xffffffffffffffc0))
     store64(#0x0, (rsp + #0xffffffffffffffc8))
     store64(v1, (rsp + #0xffffffffffffffb8))
-    v2 = load64(#0x2030)
+    v1 = load64(#0x2030)
     store64(#0x6f7774, (rsp + #0xffffffffffffffd8))
-    store64(v2, (rsp + #0xffffffffffffffd0))
+    store64(v1, (rsp + #0xffffffffffffffd0))
     store64(#0x0, (rsp + #0xffffffffffffffe0))
-    v3 = call 0x1290((rsp + #0xffffffffffffffb8), #0x2, (rdi & #0xffffffff))
+    v1 = call 0x1290((rsp + #0xffffffffffffffb8), #0x2, (rdi & #0xffffffff))
     br 0x1192
   blk1 @ 0x1192:
-    ret v3
+    ret v1
 -- card
 {"addr":"0x1120","approxTokens":228,"blocks":2,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":124,"unsupported":0}
 
@@ -364,31 +363,29 @@ struct sub_1290_a0 {
     uint8_t gap_0x8[0x10];
 };
 int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
+    void *v2;
     struct sub_1290_a0 *v3;
     int64_t v4;
-    int64_t v5;
+    const char *v5;
     void *v7;
     uint32_t *v8;
-    int64_t v9;
     void *v10;
     uint32_t v11;
     void *v12;
-    const char *v13;
-    void *v14;
-    void *v15;
     int64_t local_0; /* [sp-68] */
     int64_t local_1; /* [sp-78] */
     int64_t local_2; /* [sp-70] */
 
     if (a1 <= 0x0) {
-        v14 = &local_0;
+        v2 = &local_0;
         local_2 = 0x0;
         local_1 = a1;
-        __snprintf_chk(v14, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
-        v15 = stderr;
-        fputs(v14, v15);
+        __snprintf_chk(v2, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
+        v10 = stderr;
+        fputs(v2, v10);
         abort();
     }
+    v2 = a0;
     v3 = a0;
     v4 = a1 + (int64_t)a1 * 0x2 << 0x3;
     v5 = (uint8_t *)a0 + v4;
@@ -397,18 +394,18 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
         if (v3 == v5) {
             v7 = &local_0;
             local_1 = a1;
-            v8 = (uint8_t *)a0 + 0x8;
-            v9 = v4 + (uint8_t *)v8;
+            v8 = v2 + 0x8;
+            v4 = v4 + (uint8_t *)v8;
             __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
             v10 = stderr;
             fputs(v7, v10);
             do {
                 v11 = v8[-0x1];
                 v12 = stderr;
-                v13 = v8;
+                v5 = v8;
                 v8 = v8 + 0x6;
-                __fprintf_chk(v12, 0x2, 0x201c, v13, v11);
-            } while (v8 != v9);
+                __fprintf_chk(v12, 0x2, 0x201c, v5, v11);
+            } while (v8 != v4);
             abort();
         }
     }
@@ -442,26 +439,26 @@ fn <unnamed> @ 0x1290 (size 240)
     v7 = (rsp + #0xffffffffffffff98)
     store64(rsi, (rsp + #0xffffffffffffff88))
     v8 = (v2 + #0x8)
-    v9 = (v4 + v8)
+    v4 = (v4 + v8)
     call 0x1090(v7, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
     v10 = load64(#0x4020)
     call 0x10c0(v7, v10)
   blk7 @ 0x1350:
     v11 = load32((v8 + #0xfffffffffffffffc))
     v12 = load64(#0x4020)
-    v13 = v8
+    v5 = v8
     v8 = (v8 + #0x18)
-    call 0x10d0(v12, #0x2, #0x201c, v13, v11)
-    brif ne v8, v9 -> 0x1350
+    call 0x10d0(v12, #0x2, #0x201c, v5, v11)
+    brif ne v8, v4 -> 0x1350
   blk8 @ 0x1376:
     br 0x111a
   blk9 @ 0x10e0:
-    v14 = (rsp + #0xffffffffffffff98)
+    v2 = (rsp + #0xffffffffffffff98)
     store64(#0x0, (rsp + #0xffffffffffffff90))
     store64(rsi, (rsp + #0xffffffffffffff88))
-    call 0x1090(v14, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
-    v15 = load64(#0x4020)
-    call 0x10c0(v14, v15)
+    call 0x1090(v2, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
+    v10 = load64(#0x4020)
+    call 0x10c0(v2, v10)
   blk10 @ 0x111a:
     call 0x10a0()
     trap

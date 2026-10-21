@@ -1437,9 +1437,6 @@ void main_main(void) {
     uint64_t rbx;
     int64_t v1;
     int64_t v2;
-    int64_t v4;
-    int64_t v5;
-    int64_t v6;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
     int64_t local_2; /* [sp-28] */
@@ -1455,10 +1452,10 @@ void main_main(void) {
     local_2 = 0x1;
     local_3 = 0x2;
     local_4 = 0x3;
-    v4 = main_sumSlice(&local_2, 0x3);
-    local_5 = v4;
-    v5 = main_add(0x1, 0x2);
-    local_6 = v5;
+    v1 = main_sumSlice(&local_2, 0x3);
+    local_5 = v1;
+    v1 = main_add(0x1, 0x2);
+    local_6 = v1;
     runtime_printlock();
     runtime_printint(local_5);
     runtime_printsp();
@@ -1469,8 +1466,8 @@ void main_main(void) {
     runtime_printint(local_1);
     runtime_printnl();
     runtime_printunlock();
-    v6 = main_kindName(0x46d400, 0x4967e8);
-    local_5 = v6;
+    v1 = main_kindName(0x46d400, 0x4967e8);
+    local_5 = v1;
     runtime_printlock();
     runtime_printint(local_5);
     runtime_printnl();
@@ -1493,10 +1490,10 @@ fn main.main @ 0x466d80 (size 256)
     store64(#0x1, (rsp + #0xffffffffffffffd8))
     store64(#0x2, (rsp + #0xffffffffffffffe0))
     store64(#0x3, (rsp + #0xffffffffffffffe8))
-    v4 = call 0x466d00((rsp + #0xffffffffffffffd8), #0x3)
-    store64(v4, (rsp + #0xffffffffffffffd0))
-    v5 = call 0x466ca0(#0x1, #0x2)
-    store64(v5, (rsp + #0xfffffffffffffff0))
+    v1 = call 0x466d00((rsp + #0xffffffffffffffd8), #0x3)
+    store64(v1, (rsp + #0xffffffffffffffd0))
+    v1 = call 0x466ca0(#0x1, #0x2)
+    store64(v1, (rsp + #0xfffffffffffffff0))
     call 0x4305a0()
     call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
     call 0x4307a0()
@@ -1507,8 +1504,8 @@ fn main.main @ 0x466d80 (size 256)
     call 0x430c40(load64((rsp + #0xffffffffffffffc0)))
     call 0x4307e0()
     call 0x430600()
-    v6 = call 0x466d20(#0x46d400, #0x4967e8)
-    store64(v6, (rsp + #0xffffffffffffffd0))
+    v1 = call 0x466d20(#0x46d400, #0x4967e8)
+    store64(v1, (rsp + #0xffffffffffffffd0))
     call 0x4305a0()
     call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
     call 0x4307e0()

@@ -7,51 +7,6 @@
 /* ref: 0x220464 .bss */
 int d7(int x) {
     int32_t v1;
-    int32_t v2;
-    int32_t v4;
-    int32_t v6;
-    int32_t v8;
-    int32_t v10;
-    int32_t v12;
-    int32_t v14;
-    int32_t v16;
-    int32_t v18;
-    int32_t v20;
-    int32_t v22;
-    int32_t v24;
-    int32_t v26;
-    int32_t v28;
-    int32_t v30;
-    int32_t v32;
-    int32_t v34;
-    int32_t v36;
-    int32_t v38;
-    int32_t v40;
-    int32_t v42;
-    int32_t v44;
-    int32_t v46;
-    int32_t v48;
-    int32_t v50;
-    int32_t v52;
-    int32_t v54;
-    int32_t v56;
-    int32_t v58;
-    int32_t v60;
-    int32_t v62;
-    int32_t v64;
-    int32_t v66;
-    int32_t v68;
-    int32_t v70;
-    int32_t v72;
-    int32_t v74;
-    int32_t v76;
-    int32_t v78;
-    int32_t v80;
-    int32_t v82;
-    int32_t v84;
-    int32_t v86;
-    int32_t v88;
-    int32_t v90;
 
     v1 = 0xffffffff;
     switch (x) {
@@ -59,121 +14,121 @@ int d7(int x) {
         v1 = g;
         break;
     case 1:
-        v28 = g;
-        g = v28;
-        v1 = v28 + 0x1;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
         break;
     case 2:
-        v52 = g;
-        g = v52;
-        v54 = v52 + 0x1;
-        g = v54;
-        v1 = v54 + 0x2;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
         break;
     case 3:
-        v70 = g;
-        g = v70;
-        v72 = v70 + 0x1;
-        g = v72;
-        v74 = v72 + 0x2;
-        g = v74;
-        v1 = v74 + 0x3;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
+        g = v1;
+        v1 = v1 + 0x3;
         break;
     case 4:
-        v2 = g;
-        g = v2;
-        v4 = v2 + 0x1;
-        g = v4;
-        v6 = v4 + 0x2;
-        g = v6;
-        v8 = v6 + 0x3;
-        g = v8;
-        v1 = v8 + 0x4;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
+        g = v1;
+        v1 = v1 + 0x3;
+        g = v1;
+        v1 = v1 + 0x4;
         break;
     case 5:
-        v42 = g;
-        g = v42;
-        v44 = v42 + 0x1;
-        g = v44;
-        v46 = v44 + 0x2;
-        g = v46;
-        v48 = v46 + 0x3;
-        g = v48;
-        v50 = v48 + 0x4;
-        g = v50;
-        v1 = v50 + 0x5;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
+        g = v1;
+        v1 = v1 + 0x3;
+        g = v1;
+        v1 = v1 + 0x4;
+        g = v1;
+        v1 = v1 + 0x5;
         break;
     case 6:
-        v30 = g;
-        g = v30;
-        v32 = v30 + 0x1;
-        g = v32;
-        v34 = v32 + 0x2;
-        g = v34;
-        v36 = v34 + 0x3;
-        g = v36;
-        v38 = v36 + 0x4;
-        g = v38;
-        v40 = v38 + 0x5;
-        g = v40;
-        v1 = v40 + 0x6;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
+        g = v1;
+        v1 = v1 + 0x3;
+        g = v1;
+        v1 = v1 + 0x4;
+        g = v1;
+        v1 = v1 + 0x5;
+        g = v1;
+        v1 = v1 + 0x6;
         break;
     case 7:
-        v56 = g;
-        g = v56;
-        v58 = v56 + 0x1;
-        g = v58;
-        v60 = v58 + 0x2;
-        g = v60;
-        v62 = v60 + 0x3;
-        g = v62;
-        v64 = v62 + 0x4;
-        g = v64;
-        v66 = v64 + 0x5;
-        g = v66;
-        v68 = v66 + 0x6;
-        g = v68;
-        v1 = v68 + 0x7;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
+        g = v1;
+        v1 = v1 + 0x3;
+        g = v1;
+        v1 = v1 + 0x4;
+        g = v1;
+        v1 = v1 + 0x5;
+        g = v1;
+        v1 = v1 + 0x6;
+        g = v1;
+        v1 = v1 + 0x7;
         break;
     case 8:
-        v76 = g;
-        g = v76;
-        v78 = v76 + 0x1;
-        g = v78;
-        v80 = v78 + 0x2;
-        g = v80;
-        v82 = v80 + 0x3;
-        g = v82;
-        v84 = v82 + 0x4;
-        g = v84;
-        v86 = v84 + 0x5;
-        g = v86;
-        v88 = v86 + 0x6;
-        g = v88;
-        v90 = v88 + 0x7;
-        g = v90;
-        v1 = v90 + 0x8;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
+        g = v1;
+        v1 = v1 + 0x3;
+        g = v1;
+        v1 = v1 + 0x4;
+        g = v1;
+        v1 = v1 + 0x5;
+        g = v1;
+        v1 = v1 + 0x6;
+        g = v1;
+        v1 = v1 + 0x7;
+        g = v1;
+        v1 = v1 + 0x8;
         break;
     case 9:
-        v10 = g;
-        g = v10;
-        v12 = v10 + 0x1;
-        g = v12;
-        v14 = v12 + 0x2;
-        g = v14;
-        v16 = v14 + 0x3;
-        g = v16;
-        v18 = v16 + 0x4;
-        g = v18;
-        v20 = v18 + 0x5;
-        g = v20;
-        v22 = v20 + 0x6;
-        g = v22;
-        v24 = v22 + 0x7;
-        g = v24;
-        v26 = v24 + 0x8;
-        g = v26;
-        v1 = v26 + 0x9;
+        v1 = g;
+        g = v1;
+        v1 = v1 + 0x1;
+        g = v1;
+        v1 = v1 + 0x2;
+        g = v1;
+        v1 = v1 + 0x3;
+        g = v1;
+        v1 = v1 + 0x4;
+        g = v1;
+        v1 = v1 + 0x5;
+        g = v1;
+        v1 = v1 + 0x6;
+        g = v1;
+        v1 = v1 + 0x7;
+        g = v1;
+        v1 = v1 + 0x8;
+        g = v1;
+        v1 = v1 + 0x9;
         break;
     default:
         break;
@@ -199,15 +154,15 @@ fn d7 @ 0x210184 (size 736)
   blk4 @ 0x2101ac:
     brif ne w0, #0x4 -> 0x210458
   blk5 @ 0x2101b4:
-    v2 = load32(#0x220464)
-    store32(v2, #0x220464)
-    v4 = (((v2 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v4, #0x220464)
-    v6 = (((v4 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32(v6, #0x220464)
-    v8 = (((v6 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32(v8, #0x220464)
-    v1 = (((v8 & #0xffffffff) + #0x4) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x4) & #0xffffffff)
     br 0x210458
   blk6 @ 0x2101ec:
     brif le w0, #0x6 -> 0x2102a0
@@ -218,120 +173,120 @@ fn d7 @ 0x210184 (size 736)
   blk9 @ 0x210204:
     brif ne w0, #0x9 -> 0x210458
   blk10 @ 0x21020c:
-    v10 = load32(#0x220464)
-    store32(v10, #0x220464)
-    v12 = (((v10 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v12, #0x220464)
-    v14 = (((v12 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32(v14, #0x220464)
-    v16 = (((v14 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32(v16, #0x220464)
-    v18 = (((v16 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32(v18, #0x220464)
-    v20 = (((v18 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32(v20, #0x220464)
-    v22 = (((v20 & #0xffffffff) + #0x6) & #0xffffffff)
-    store32(v22, #0x220464)
-    v24 = (((v22 & #0xffffffff) + #0x7) & #0xffffffff)
-    store32(v24, #0x220464)
-    v26 = (((v24 & #0xffffffff) + #0x8) & #0xffffffff)
-    store32(v26, #0x220464)
-    v1 = (((v26 & #0xffffffff) + #0x9) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x4) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x5) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x6) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x7) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x9) & #0xffffffff)
     br 0x210458
   blk11 @ 0x210280:
     brif eq w0, #0x0 -> 0x210300
   blk12 @ 0x210284:
     brif ne w0, #0x1 -> 0x210458
   blk13 @ 0x21028c:
-    v28 = load32(#0x220464)
-    store32(v28, #0x220464)
-    v1 = (((v28 & #0xffffffff) + #0x1) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
     br 0x210458
   blk14 @ 0x2102a0:
     brif eq w0, #0x5 -> 0x210308
   blk15 @ 0x2102a8:
   blk16 @ 0x2102b0:
-    v30 = load32(#0x220464)
-    store32(v30, #0x220464)
-    v32 = (((v30 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v32, #0x220464)
-    v34 = (((v32 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32(v34, #0x220464)
-    v36 = (((v34 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32(v36, #0x220464)
-    v38 = (((v36 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32(v38, #0x220464)
-    v40 = (((v38 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32(v40, #0x220464)
-    v1 = (((v40 & #0xffffffff) + #0x6) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x4) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x5) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x6) & #0xffffffff)
     br 0x210458
   blk17 @ 0x210300:
     v1 = load32(#0x220464)
     br 0x210458
   blk18 @ 0x210308:
-    v42 = load32(#0x220464)
-    store32(v42, #0x220464)
-    v44 = (((v42 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v44, #0x220464)
-    v46 = (((v44 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32(v46, #0x220464)
-    v48 = (((v46 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32(v48, #0x220464)
-    v50 = (((v48 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32(v50, #0x220464)
-    v1 = (((v50 & #0xffffffff) + #0x5) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x4) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x5) & #0xffffffff)
     br 0x210458
   blk19 @ 0x21034c:
-    v52 = load32(#0x220464)
-    store32(v52, #0x220464)
-    v54 = (((v52 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v54, #0x220464)
-    v1 = (((v54 & #0xffffffff) + #0x2) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
     br 0x210458
   blk20 @ 0x21036c:
-    v56 = load32(#0x220464)
-    store32(v56, #0x220464)
-    v58 = (((v56 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v58, #0x220464)
-    v60 = (((v58 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32(v60, #0x220464)
-    v62 = (((v60 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32(v62, #0x220464)
-    v64 = (((v62 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32(v64, #0x220464)
-    v66 = (((v64 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32(v66, #0x220464)
-    v68 = (((v66 & #0xffffffff) + #0x6) & #0xffffffff)
-    store32(v68, #0x220464)
-    v1 = (((v68 & #0xffffffff) + #0x7) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x4) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x5) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x6) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x7) & #0xffffffff)
     br 0x210458
   blk21 @ 0x2103c8:
-    v70 = load32(#0x220464)
-    store32(v70, #0x220464)
-    v72 = (((v70 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v72, #0x220464)
-    v74 = (((v72 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32(v74, #0x220464)
-    v1 = (((v74 & #0xffffffff) + #0x3) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
     br 0x210458
   blk22 @ 0x2103f4:
-    v76 = load32(#0x220464)
-    store32(v76, #0x220464)
-    v78 = (((v76 & #0xffffffff) + #0x1) & #0xffffffff)
-    store32(v78, #0x220464)
-    v80 = (((v78 & #0xffffffff) + #0x2) & #0xffffffff)
-    store32(v80, #0x220464)
-    v82 = (((v80 & #0xffffffff) + #0x3) & #0xffffffff)
-    store32(v82, #0x220464)
-    v84 = (((v82 & #0xffffffff) + #0x4) & #0xffffffff)
-    store32(v84, #0x220464)
-    v86 = (((v84 & #0xffffffff) + #0x5) & #0xffffffff)
-    store32(v86, #0x220464)
-    v88 = (((v86 & #0xffffffff) + #0x6) & #0xffffffff)
-    store32(v88, #0x220464)
-    v90 = (((v88 & #0xffffffff) + #0x7) & #0xffffffff)
-    store32(v90, #0x220464)
-    v1 = (((v90 & #0xffffffff) + #0x8) & #0xffffffff)
+    v1 = load32(#0x220464)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x1) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x2) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x4) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x5) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x6) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x7) & #0xffffffff)
+    store32(v1, #0x220464)
+    v1 = (((v1 & #0xffffffff) + #0x8) & #0xffffffff)
   blk23 @ 0x210458:
     store32(v1, #0x220464)
     ret (v1 & #0xffffffff)

@@ -1094,6 +1094,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         landing_pads,
         pointer_values: Vec::new(),
         value_types: std::collections::BTreeMap::new(),
+        variable_registers: std::collections::BTreeMap::new(),
         addr: function.addr,
         name: function.name.clone(),
         size,

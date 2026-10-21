@@ -20,11 +20,8 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     int64_t v6;
     int64_t v7;
     int64_t v8;
-    int64_t v9;
     uint64_t *v10;
     uint64_t *v11;
-    int64_t v12;
-    int64_t v13;
     int64_t v14;
     uint8_t *v15;
     uint8_t *v16;
@@ -63,18 +60,18 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
             } else {
                 v1 = 0x0;
             }
-            v9 = v1;
+            v4 = v1;
             v1 = n & 0xfffffffffffffff8;
-            v10 = src + v9;
-            v11 = dst + v9;
-            v12 = v9 - v1;
+            v10 = src + v4;
+            v11 = dst + v4;
+            v4 = v4 - v1;
             do {
-                v13 = *v10;
+                v5 = *v10;
                 v10 = v10 + 0x1;
-                v12 = v12 + 0x8;
-                *v11 = v13;
+                v4 = v4 + 0x8;
+                *v11 = v5;
                 v11 = v11 + 0x1;
-            } while (v12 != 0x0);
+            } while (v4 != 0x0);
             if (v1 == n) {
                 return;
             }
@@ -133,18 +130,18 @@ fn copy_bytes @ 0x210214 (size 176)
   blk8 @ 0x210270:
     brif eq (x2 & #0x18), #0x0 -> 0x2102a4
   blk9 @ 0x210278:
-    v9 = v1
+    v4 = v1
     v1 = (x2 & #0xfffffffffffffff8)
-    v10 = (x1 + v9)
-    v11 = (x0 + v9)
-    v12 = (v9 - v1)
+    v10 = (x1 + v4)
+    v11 = (x0 + v4)
+    v4 = (v4 - v1)
   blk10 @ 0x21028c:
-    v13 = load64(v10)
+    v5 = load64(v10)
     v10 = (v10 + #0x8)
-    v12 = (v12 + #0x8)
-    store64(v13, v11)
+    v4 = (v4 + #0x8)
+    store64(v5, v11)
     v11 = (v11 + #0x8)
-    brif ne v12, #0x0 -> 0x21028c
+    brif ne v4, #0x0 -> 0x21028c
   blk11 @ 0x21029c:
     brif eq v1, x2 -> 0x2102c0
   blk12 @ 0x2102a4:

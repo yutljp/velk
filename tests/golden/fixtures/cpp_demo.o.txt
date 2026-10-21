@@ -55,7 +55,7 @@ fn use(int) @ 0x10 (size 44)
   blk0 @ 0x10:
     v1 = (x0 & #0xffffffff)
     v2 = call 0x8(x0, #0x2)
-    v5 = call 0x0((v1 & #0xffffffff), (v2 & #0xffffffff))
-    ret v5
+    v2 = call 0x0((v1 & #0xffffffff), (v2 & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x10","approxTokens":162,"blocks":1,"hardReasons":[],"name":"use(int)","nameSources":["symtab","unwind"],"section":".text","size":44,"unsupported":0}

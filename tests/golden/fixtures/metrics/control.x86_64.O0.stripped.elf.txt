@@ -246,37 +246,35 @@ fn <unnamed> @ 0x201380 (size 142)
 -- decompile
 /* velk pseudo-C: sub_201410 @ 0x201410 */
 int32_t sub_201410(uint32_t *a0, int32_t a1) {
-    int32_t v5;
+    int32_t v3;
     int64_t v7;
-    int32_t v8;
     uint8_t v9;
-    uint8_t v10;
-    uint8_t v11;
     uint8_t local_0; /* [sp-15] */
     uint8_t local_1; /* [sp-16] */
 
     local_0 = 0x0;
     if (a0 == 0x0) {
-        v11 = local_0;
-        return v11 & 0x1;
+        v9 = local_0;
+        return v9 & 0x1;
     }
+    v3 = a1;
     local_0 = 0x0;
-    if (a1 <= 0x0) {
-        v11 = local_0;
-        return v11 & 0x1;
+    if (v3 <= 0x0) {
+        v9 = local_0;
+        return v9 & 0x1;
     }
-    v5 = *a0;
+    v3 = *a0;
     local_1 = 0x1;
-    if (v5 != 0x1) {
+    if (v3 != 0x1) {
         v7 = a1 - 0x1;
-        v8 = a0[v7];
+        v3 = a0[v7];
         v9 = (a0[v7] == 0x1);
         local_1 = v9;
     }
-    v10 = local_1;
-    local_0 = v10;
-    v11 = local_0;
-    return v11 & 0x1;
+    v9 = local_1;
+    local_0 = v9;
+    v9 = local_0;
+    return v9 & 0x1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -294,21 +292,21 @@ fn <unnamed> @ 0x201410 (size 99)
     store8(#0x0, (rsp + #0xffffffffffffffeb))
     brif le v3, #0x0 -> 0x201469
   blk2 @ 0x20143a:
-    v5 = load32(load64((rsp + #0xfffffffffffffff0)))
+    v3 = load32(load64((rsp + #0xfffffffffffffff0)))
     store8(#0x1, (rsp + #0xffffffffffffffea))
-    brif eq v5, #0x1 -> 0x201463
+    brif eq v3, #0x1 -> 0x201463
   blk3 @ 0x20144c:
     v6 = load64((rsp + #0xfffffffffffffff0))
     v7 = sext32((load32((rsp + #0xffffffffffffffec)) - #0x1))
-    v8 = load32((v6 + (v7 * #0x4)))
+    v3 = load32((v6 + (v7 * #0x4)))
     v9 = (select eq load32((v6 + (v7 * #0x4))), #0x1 ? #0x1, #0x0 & #0xff)
     store8(v9, (rsp + #0xffffffffffffffea))
   blk4 @ 0x201463:
-    v10 = load8((rsp + #0xffffffffffffffea))
-    store8(v10, (rsp + #0xffffffffffffffeb))
+    v9 = load8((rsp + #0xffffffffffffffea))
+    store8(v9, (rsp + #0xffffffffffffffeb))
   blk5 @ 0x201469:
-    v11 = load8((rsp + #0xffffffffffffffeb))
-    ret (v11 & #0x1)
+    v9 = load8((rsp + #0xffffffffffffffeb))
+    ret (v9 & #0x1)
 -- card
 {"addr":"0x201410","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":99,"unsupported":0}
 

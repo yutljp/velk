@@ -1362,6 +1362,8 @@ pub struct FunctionIr {
     /// The types the prototypes of the library functions the body calls
     /// give the variables it passes them and those holding their results.
     pub value_types: std::collections::BTreeMap<u16, CType>,
+    /// The machine register each variable was split from.
+    pub variable_registers: std::collections::BTreeMap<u16, u16>,
     pub addr: u64,
     pub name: Option<String>,
     pub size: u64,
@@ -1385,6 +1387,7 @@ impl FunctionIr {
             landing_pads: Vec::new(),
             pointer_values: Vec::new(),
             value_types: std::collections::BTreeMap::new(),
+            variable_registers: std::collections::BTreeMap::new(),
             addr: 0,
             name: None,
             size: 0,

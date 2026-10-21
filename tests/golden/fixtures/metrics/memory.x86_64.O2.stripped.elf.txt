@@ -21,7 +21,6 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
     int64_t v7;
     int64_t v8;
     int64_t v9;
-    int64_t v10;
     uint8_t v11;
     uint8_t v12;
 
@@ -68,15 +67,15 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
     }
 L_2012a6:
     v9 = v1;
-    v10 = a2 & 0x3;
-    if (v10 != 0x0) {
+    v8 = a2 & 0x3;
+    if (v8 != 0x0) {
         v9 = v1;
         do {
             v11 = *(uint8_t *)((uint8_t *)a1 + v9);
             *(uint8_t *)((uint8_t *)a0 + v9) = v11;
             v9 = v9 + 0x1;
-            v10 = v10 - 0x1;
-        } while (v10 != 0x0);
+            v8 = v8 - 0x1;
+        } while (v8 != 0x0);
     }
     if (v1 - a2 > -0x4) {
         return;
@@ -138,16 +137,16 @@ fn <unnamed> @ 0x201220 (size 236)
     brif eq v1, rdx -> 0x20130b
   blk12 @ 0x2012a6:
     v9 = v1
-    v10 = (rdx & #0x3)
-    brif eq v10, #0x0 -> 0x2012d1
+    v8 = (rdx & #0x3)
+    brif eq v8, #0x0 -> 0x2012d1
   blk13 @ 0x2012b2:
     v9 = v1
   blk14 @ 0x2012c0:
     v11 = (load8((rsi + v9)) & #0xffffffff)
     store8(v11, (rdi + v9))
     v9 = (v9 + #0x1)
-    v10 = (v10 - #0x1)
-    brif ne v10, #0x0 -> 0x2012c0
+    v8 = (v8 - #0x1)
+    brif ne v8, #0x0 -> 0x2012c0
   blk15 @ 0x2012d1:
     brif hi (v1 - rdx), #0xfffffffffffffffc -> 0x20130b
   blk16 @ 0x2012e0:

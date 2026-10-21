@@ -11,17 +11,9 @@
 double average(double *values, int n) {
     double v1;
     double v2;
-    int32_t v3;
+    uint32_t v3;
     uint32_t v4;
     int64_t v5;
-    uint32_t v6;
-    double v7;
-    double v8;
-    double v9;
-    double v10;
-    double v11;
-    double v12;
-    double v13;
     double *v14;
     int64_t v15;
 
@@ -31,19 +23,19 @@ double average(double *values, int n) {
         v3 = n;
         v4 = v3 & 0x7;
         if ((uint32_t)n >= 0x8) {
-            v6 = v3 & 0x7ffffff8;
+            v3 = v3 & 0x7ffffff8;
             v5 = 0x0;
             do {
-                v7 = v2 + values[v5];
-                v8 = v7 + values[v5 + 0x1];
-                v9 = v8 + values[v5 + 0x2];
-                v10 = v9 + values[v5 + 0x3];
-                v11 = v10 + values[v5 + 0x4];
-                v12 = v11 + values[v5 + 0x5];
-                v13 = v12 + values[v5 + 0x6];
-                v2 = v13 + values[v5 + 0x7];
+                v2 = v2 + values[v5];
+                v2 = v2 + values[v5 + 0x1];
+                v2 = v2 + values[v5 + 0x2];
+                v2 = v2 + values[v5 + 0x3];
+                v2 = v2 + values[v5 + 0x4];
+                v2 = v2 + values[v5 + 0x5];
+                v2 = v2 + values[v5 + 0x6];
+                v2 = v2 + values[v5 + 0x7];
                 v5 = v5 + 0x8;
-            } while (v6 != v5);
+            } while (v3 != v5);
         } else {
             v5 = 0x0;
         }
@@ -79,19 +71,19 @@ fn average @ 0x2011b0 (size 161)
     v5 = #0x0
     br 0x201218
   blk3 @ 0x2011d0:
-    v6 = (v3 & #0x7ffffff8)
+    v3 = (v3 & #0x7ffffff8)
     v5 = #0x0
   blk4 @ 0x2011e0:
-    v7 = fadd.d(v2, load64((rdi + (v5 * #0x8))))
-    v8 = fadd.d(v7, load64(((rdi + (v5 * #0x8)) + #0x8)))
-    v9 = fadd.d(v8, load64(((rdi + (v5 * #0x8)) + #0x10)))
-    v10 = fadd.d(v9, load64(((rdi + (v5 * #0x8)) + #0x18)))
-    v11 = fadd.d(v10, load64(((rdi + (v5 * #0x8)) + #0x20)))
-    v12 = fadd.d(v11, load64(((rdi + (v5 * #0x8)) + #0x28)))
-    v13 = fadd.d(v12, load64(((rdi + (v5 * #0x8)) + #0x30)))
-    v2 = fadd.d(v13, load64(((rdi + (v5 * #0x8)) + #0x38)))
+    v2 = fadd.d(v2, load64((rdi + (v5 * #0x8))))
+    v2 = fadd.d(v2, load64(((rdi + (v5 * #0x8)) + #0x8)))
+    v2 = fadd.d(v2, load64(((rdi + (v5 * #0x8)) + #0x10)))
+    v2 = fadd.d(v2, load64(((rdi + (v5 * #0x8)) + #0x18)))
+    v2 = fadd.d(v2, load64(((rdi + (v5 * #0x8)) + #0x20)))
+    v2 = fadd.d(v2, load64(((rdi + (v5 * #0x8)) + #0x28)))
+    v2 = fadd.d(v2, load64(((rdi + (v5 * #0x8)) + #0x30)))
+    v2 = fadd.d(v2, load64(((rdi + (v5 * #0x8)) + #0x38)))
     v5 = (v5 + #0x8)
-    brif ne v6, v5 -> 0x2011e0
+    brif ne v3, v5 -> 0x2011e0
   blk5 @ 0x201218:
     brif eq v4, #0x0 -> 0x20123d
   blk6 @ 0x20121d:

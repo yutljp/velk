@@ -217,12 +217,12 @@ fn <unnamed> @ 0x2012d0 (size 23)
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 uint8_t sub_2012f0(uint8_t *a0, int32_t a1) {
     uint8_t t1;
-    uint8_t v4;
+    uint8_t v1;
 
     t1 = a1;
-    v4 = *a0 & 0xf1 | t1 + t1 & 0xe;
-    *a0 = v4;
-    return v4;
+    v1 = *a0 & 0xf1 | t1 + t1 & 0xe;
+    *a0 = v1;
+    return v1;
 }
 -- signature
 uint8_t (uint8_t * a0, int32_t a1)
@@ -232,8 +232,8 @@ uint8_t (uint8_t * a0, int32_t a1)
 fn <unnamed> @ 0x2012f0 (size 18)
   blk0 @ 0x2012f0:
     t1 = (rsi & #0xff)
-    v4 = (((load8(rdi) & #0xf1) | ((t1 + t1) & #0xe)) & #0xff)
-    store8(v4, rdi)
-    ret (v4 & #0xff)
+    v1 = (((load8(rdi) & #0xf1) | ((t1 + t1) & #0xe)) & #0xff)
+    store8(v1, rdi)
+    ret (v1 & #0xff)
 -- card
 {"accesses":["a0 +0x0:uint8_t"],"addr":"0x2012f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":18,"unsupported":0}

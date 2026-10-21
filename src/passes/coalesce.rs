@@ -96,50 +96,52 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
     // gave them.
     let entry: HashSet<u16> = live_in.first().cloned().unwrap_or_default();
 
-    let mut leader: HashMap<u16, u16> = HashMap::new();
-    let find = |leader: &HashMap<u16, u16>, mut variable: u16| {
-        while let Some(next) = leader.get(&variable) {
-            variable = *next;
-        }
-        variable
-    };
-    let mut members: HashMap<u16, Vec<u16>> = HashMap::new();
+    let mut groups = Groups::default();
     let mut joined = false;
     for (dest, source) in copies {
-        let (a, b) = (find(&leader, dest), find(&leader, source));
-        if a == b || (entry.contains(&a) && entry.contains(&b)) {
+        joined |= groups.join(dest, source, &interferes, &entry);
+    }
+    // Values a register held one after another, of one width, are one
+    // variable too where their lives do not overlap, as the register is
+    // in the machine code: a counter reused for a second loop.
+    let mut addresses = HashSet::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Store { addr, .. } = stmt {
+            crate::ir::visit::collect_reads(addr, &mut addresses);
+        }
+        for operand in stmt.operands() {
+            address_reads(operand, &mut addresses);
+        }
+    }
+    // Only plain values: one that takes part in an address, as a base or
+    // an index, would give its pointer type to the other's values.
+    let mut kinds: HashMap<(u16, bool), Vec<u16>> = HashMap::new();
+    for (variable, register) in &ir.variable_registers {
+        if !bits.contains_key(variable) || addresses.contains(variable) {
             continue;
         }
-        let group = |leader: u16, members: &HashMap<u16, Vec<u16>>| {
-            members
-                .get(&leader)
-                .cloned()
-                .unwrap_or_else(|| vec![leader])
-        };
-        let (first, second) = (group(a, &members), group(b, &members));
-        let clash = first.iter().any(|x| {
-            interferes
-                .get(x)
-                .is_some_and(|others| second.iter().any(|y| others.contains(y)))
-        });
-        if clash {
-            continue;
+        let wide = bits.get(variable).copied().unwrap_or(64) > 32;
+        kinds.entry((*register, wide)).or_default().push(*variable);
+    }
+    let mut kinds: Vec<Vec<u16>> = kinds.into_values().collect();
+    kinds.sort();
+    for kind in kinds {
+        for (at, variable) in kind.iter().enumerate() {
+            for earlier in &kind[..at] {
+                if groups.join(*earlier, *variable, &interferes, &entry) {
+                    joined = true;
+                    break;
+                }
+            }
         }
-        // The lower index names the group, as the earlier variable does.
-        let (keep, drop) = if a < b { (a, b) } else { (b, a) };
-        leader.insert(drop, keep);
-        let mut all = first;
-        all.extend(second);
-        members.remove(&drop);
-        members.insert(keep, all);
-        joined = true;
     }
     if !joined {
         return;
     }
-    let renamed: HashMap<u16, u16> = leader
+    let renamed: HashMap<u16, u16> = groups
+        .leader
         .keys()
-        .map(|variable| (*variable, find(&leader, *variable)))
+        .map(|variable| (*variable, groups.find(*variable)))
         .collect();
     let class = |variable: u16| renamed.get(&variable).copied().unwrap_or(variable);
     for block in &mut ir.blocks {
@@ -150,6 +152,70 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
         for stmt in &mut block.stmts {
             rename(stmt, &renamed);
         }
+    }
+}
+
+/// Variables joined so far, each group named by its lowest variable.
+#[derive(Default)]
+struct Groups {
+    leader: HashMap<u16, u16>,
+    members: HashMap<u16, Vec<u16>>,
+}
+
+impl Groups {
+    fn find(&self, mut variable: u16) -> u16 {
+        while let Some(next) = self.leader.get(&variable) {
+            variable = *next;
+        }
+        variable
+    }
+
+    /// Joins the groups of `a` and `b` unless a member of one interferes
+    /// with a member of the other, or both hold what the caller left.
+    fn join(
+        &mut self,
+        a: u16,
+        b: u16,
+        interferes: &HashMap<u16, HashSet<u16>>,
+        entry: &HashSet<u16>,
+    ) -> bool {
+        let (a, b) = (self.find(a), self.find(b));
+        if a == b || (entry.contains(&a) && entry.contains(&b)) {
+            return false;
+        }
+        let group = |leader: u16| {
+            self.members
+                .get(&leader)
+                .cloned()
+                .unwrap_or_else(|| vec![leader])
+        };
+        let (first, second) = (group(a), group(b));
+        let clash = first.iter().any(|x| {
+            interferes
+                .get(x)
+                .is_some_and(|others| second.iter().any(|y| others.contains(y)))
+        });
+        if clash {
+            return false;
+        }
+        // The lower index names the group, as the earlier variable does.
+        let (keep, drop) = if a < b { (a, b) } else { (b, a) };
+        self.leader.insert(drop, keep);
+        let mut all = first;
+        all.extend(second);
+        self.members.remove(&drop);
+        self.members.insert(keep, all);
+        true
+    }
+}
+
+/// The registers `expr`'s loads read their addresses from.
+fn address_reads(expr: &Expr, out: &mut HashSet<u16>) {
+    if let Expr::Load { addr, .. } = expr {
+        crate::ir::visit::collect_reads(addr, out);
+    }
+    for child in crate::ir::visit::children(expr) {
+        address_reads(child, out);
     }
 }
 
@@ -367,5 +433,49 @@ mod tests {
         );
         coalesce_copies(&mut ir);
         assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
+    }
+
+    #[test]
+    fn values_a_register_held_one_after_another_become_one_variable() {
+        // v1 = a0 + 1; v2 = v1 * 2; v3 = a1 + 3; return v2 + v3, with v1 and
+        // v3 from one register: v1 is dead before v3 is set.
+        let (v1, v2, v3) = (VARIABLE_BASE, VARIABLE_BASE + 1, VARIABLE_BASE + 2);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(v1, Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1))),
+                assign(v2, Expr::bin(BinOp::Mul, Expr::reg(v1, 64), Expr::Const(2))),
+                assign(v3, Expr::bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(3))),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, Expr::reg(v2, 64), Expr::reg(v3, 64)),
+                },
+            ],
+        );
+        ir.variable_registers = [(v1, 0), (v2, 1), (v3, 0)].into_iter().collect();
+        let mut addressed = ir.clone();
+        coalesce_copies(&mut ir);
+        let written: Vec<u16> = ir.blocks[0]
+            .stmts
+            .iter()
+            .filter_map(|stmt| match stmt {
+                Stmt::Assign { dest, .. } => Some(dest.index),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(written, [v1, v2, v1], "{}", ir.render());
+        // One that an address reads stays apart.
+        addressed.blocks[0].stmts[3] = Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::reg(v3, 64)),
+                width: 8,
+                signed: false,
+            },
+        };
+        coalesce_copies(&mut addressed);
+        assert!(
+            matches!(&addressed.blocks[0].stmts[2], Stmt::Assign { dest, .. } if dest.index == v3),
+            "{}",
+            addressed.render()
+        );
     }
 }

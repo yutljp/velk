@@ -28,7 +28,6 @@ int32_t helper(int32_t a0) {
     uint32_t v1;
     uint64_t v2;
     uint64_t v3;
-    int32_t v4;
 
     v1 = a0 - 0x1;
     if (a0 < 0x1) {
@@ -36,8 +35,8 @@ int32_t helper(int32_t a0) {
     }
     v2 = (uint64_t)v1 * ((a0 - 0x2) & 0xffffffff);
     v3 = v2 * ((a0 - 0x3) & 0xffffffff);
-    v4 = v2 >> 0x1;
-    return (v3 >> 0x1) * 0x55555556 + a0 + (v4 + (v4 << 0x1)) - 0x1;
+    v2 = v2 >> 0x1;
+    return (v3 >> 0x1) * 0x55555556 + a0 + (v2 + (v2 << 0x1)) - 0x1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -51,8 +50,8 @@ fn helper @ 0xc (size 68)
   blk1 @ 0x14:
     v2 = ((v1 & #0xffffffff) * (((x0 & #0xffffffff) - #0x2) & #0xffffffff))
     v3 = (v2 * (((x0 & #0xffffffff) - #0x3) & #0xffffffff))
-    v4 = (v2 >> #0x1)
-    ret ((((((((v3 >> #0x1) & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + (((v4 & #0xffffffff) + ((v4 & #0xffffffff) << #0x1)) & #0xffffffff)) - #0x1) & #0xffffffff)
+    v2 = (v2 >> #0x1)
+    ret ((((((((v3 >> #0x1) & #0xffffffff) * #0x55555556) + (x0 & #0xffffffff)) & #0xffffffff) + (((v2 & #0xffffffff) + ((v2 & #0xffffffff) << #0x1)) & #0xffffffff)) - #0x1) & #0xffffffff)
   blk2 @ 0x48:
     ret #0x0
 -- card
@@ -97,7 +96,6 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
     uint64_t v13;
     uint32_t *v15;
     int64_t v16;
-    int32_t v17;
 
     if (a1 < 0x1) {
         return 0x0;
@@ -133,10 +131,10 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
     v15 = a0 + v2;
     v16 = a1 - v2;
     do {
-        v17 = *v15;
+        v2 = *v15;
         v15 = v15 + 0x1;
         v16 = v16 - 0x1;
-        v3 = v17 + v3;
+        v3 = v2 + v3;
     } while (v16 != 0x0);
     return v3;
 }
@@ -184,10 +182,10 @@ fn sum_arr @ 0x5c (size 140)
     v15 = (x0 + (v2 << #0x2))
     v16 = (v1 - v2)
   blk8 @ 0xd0:
-    v17 = load32(v15)
+    v2 = load32(v15)
     v15 = (v15 + #0x4)
     v16 = (v16 - #0x1)
-    v3 = (((v17 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
+    v3 = (((v2 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
     brif ne v16, #0x0 -> 0xd0
   blk9 @ 0xe0:
     ret (v3 & #0xffffffff)

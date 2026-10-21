@@ -6,67 +6,66 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
-    int32_t v6;
-    int32_t v8;
+    int32_t v5;
     int32_t v9;
 
     switch (a0) {
     case 10:
-        v6 = g_sink + 0xb;
+        v5 = g_sink + 0xb;
         break;
     case 11:
-        v6 = g_sink ^ 0x12;
+        v5 = g_sink ^ 0x12;
         break;
     case 12:
-        v6 = g_sink - 0x19;
+        v5 = g_sink - 0x19;
         break;
     case 13:
-        v6 = g_sink | 0x20;
+        v5 = g_sink | 0x20;
         break;
     case 14:
-        v6 = g_sink + 0x27;
+        v5 = g_sink + 0x27;
         break;
     case 15:
-        v6 = g_sink ^ 0x2e;
+        v5 = g_sink ^ 0x2e;
         break;
     case 16:
-        v6 = g_sink - 0x35;
+        v5 = g_sink - 0x35;
         break;
     case 17:
-        v6 = g_sink | 0x3c;
+        v5 = g_sink | 0x3c;
         break;
     case 18:
-        v6 = g_sink + 0x43;
+        v5 = g_sink + 0x43;
         break;
     case 19:
-        v6 = g_sink ^ 0x4a;
+        v5 = g_sink ^ 0x4a;
         break;
     case 20:
-        v6 = g_sink - 0x51;
+        v5 = g_sink - 0x51;
         break;
     case 21:
-        v8 = g_sink;
+        v5 = g_sink;
         v9 = 0x58;
-        v6 = v8 | v9;
+        v5 = v5 | v9;
         break;
     case 22:
-        v6 = g_sink + 0x5f;
+        v5 = g_sink + 0x5f;
         break;
     case 23:
-        v6 = g_sink ^ 0x66;
+        v5 = g_sink ^ 0x66;
         break;
     case 24:
-        v6 = g_sink - 0x6d;
+        v5 = g_sink - 0x6d;
         break;
     case 25:
-        v8 = g_sink;
+        v5 = g_sink;
         v9 = 0x74;
-        v6 = v8 | v9;
+        v5 = v5 | v9;
         break;
     default:
-        v6 = 0x0;
+        v5 = 0x0;
     }
-    g_sink = v6;
+    g_sink = v5;
     return g_sink;
 }
 -- signature
@@ -81,61 +80,61 @@ fn dense @ 0x0 (size 268)
   blk1 @ 0x10:
     switch w0 [10->0x28, 11->0xa8, 12->0x74, 13->0x90, 14->0x4c, 15->0xb8, 16->0xd8, 17->0x9c, 18->0xf0, 19->0x64, 20->0xe4, 21->0x40, 22->0x58, 23->0xc8, 24->0x34, 25->0x80] default <none>
   blk2 @ 0x28:
-    v6 = ((load32(#0x14c) + #0xb) & #0xffffffff)
+    v5 = ((load32(#0x14c) + #0xb) & #0xffffffff)
     br 0x100
   blk3 @ 0x34:
-    v6 = ((load32(#0x14c) - #0x6d) & #0xffffffff)
+    v5 = ((load32(#0x14c) - #0x6d) & #0xffffffff)
     br 0x100
   blk4 @ 0x40:
-    v8 = load32(#0x14c)
+    v5 = load32(#0x14c)
     v9 = #0x58
     br 0x88
   blk5 @ 0x4c:
-    v6 = ((load32(#0x14c) + #0x27) & #0xffffffff)
+    v5 = ((load32(#0x14c) + #0x27) & #0xffffffff)
     br 0x100
   blk6 @ 0x58:
-    v6 = ((load32(#0x14c) + #0x5f) & #0xffffffff)
+    v5 = ((load32(#0x14c) + #0x5f) & #0xffffffff)
     br 0x100
   blk7 @ 0x64:
-    v6 = ((load32(#0x14c) ^ #0x4a) & #0xffffffff)
+    v5 = ((load32(#0x14c) ^ #0x4a) & #0xffffffff)
     br 0x100
   blk8 @ 0x74:
-    v6 = ((load32(#0x14c) - #0x19) & #0xffffffff)
+    v5 = ((load32(#0x14c) - #0x19) & #0xffffffff)
     br 0x100
   blk9 @ 0x80:
-    v8 = load32(#0x14c)
+    v5 = load32(#0x14c)
     v9 = #0x74
   blk10 @ 0x88:
-    v6 = (((v8 & #0xffffffff) | (v9 & #0xffffffff)) & #0xffffffff)
+    v5 = (((v5 & #0xffffffff) | (v9 & #0xffffffff)) & #0xffffffff)
     br 0x100
   blk11 @ 0x90:
-    v6 = ((load32(#0x14c) | #0x20) & #0xffffffff)
+    v5 = ((load32(#0x14c) | #0x20) & #0xffffffff)
     br 0x100
   blk12 @ 0x9c:
-    v6 = ((load32(#0x14c) | #0x3c) & #0xffffffff)
+    v5 = ((load32(#0x14c) | #0x3c) & #0xffffffff)
     br 0x100
   blk13 @ 0xa8:
-    v6 = ((load32(#0x14c) ^ #0x12) & #0xffffffff)
+    v5 = ((load32(#0x14c) ^ #0x12) & #0xffffffff)
     br 0x100
   blk14 @ 0xb8:
-    v6 = ((load32(#0x14c) ^ #0x2e) & #0xffffffff)
+    v5 = ((load32(#0x14c) ^ #0x2e) & #0xffffffff)
     br 0x100
   blk15 @ 0xc8:
-    v6 = ((load32(#0x14c) ^ #0x66) & #0xffffffff)
+    v5 = ((load32(#0x14c) ^ #0x66) & #0xffffffff)
     br 0x100
   blk16 @ 0xd8:
-    v6 = ((load32(#0x14c) - #0x35) & #0xffffffff)
+    v5 = ((load32(#0x14c) - #0x35) & #0xffffffff)
     br 0x100
   blk17 @ 0xe4:
-    v6 = ((load32(#0x14c) - #0x51) & #0xffffffff)
+    v5 = ((load32(#0x14c) - #0x51) & #0xffffffff)
     br 0x100
   blk18 @ 0xf0:
-    v6 = ((load32(#0x14c) + #0x43) & #0xffffffff)
+    v5 = ((load32(#0x14c) + #0x43) & #0xffffffff)
     br 0x100
   blk19 @ 0xfc:
-    v6 = #0x0
+    v5 = #0x0
   blk20 @ 0x100:
-    store32(v6, #0x14c)
+    store32(v5, #0x14c)
     ret load32(#0x14c)
 -- card
 {"addr":"0x0","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","unwind"],"section":".text","size":268,"unsupported":0}

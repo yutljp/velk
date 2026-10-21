@@ -998,6 +998,10 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     if names.is_empty() {
         return;
     }
+    let origins: Vec<(u16, u16)> = names
+        .iter()
+        .map(|(root, name)| (*name, ssa.origin[*root]))
+        .collect();
     let renames: HashMap<u16, u16> = (0..ssa.origin.len())
         .filter_map(|index| {
             names
@@ -1085,6 +1089,7 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         }
     }
     *ir = lowered;
+    ir.variable_registers.extend(origins);
 }
 
 /// A call's result that only moves on into another variable right after the

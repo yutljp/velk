@@ -134,8 +134,8 @@ echo "$x64_selq" | grep -q "a0 / 0x40"   || fail "x64 signed select 64bit div"
 x64_sel10=$("$BIN" decompile $FIX/x64_div.o pdiv10 2>/dev/null)
 echo "$x64_sel10" | grep -q "/ 0xa"      || fail "x64 signed sext div10"
 helper_cs=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$helper_cs" | grep -q "v4 = v2 >> 0x1;"    || fail "shift kept in its variable"
-echo "$helper_cs" | grep -q "(v4 + (v4 << 0x1))" || fail "32-bit read shared without a temporary"
+echo "$helper_cs" | grep -q "v2 = v2 >> 0x1;"    || fail "shift kept in its variable"
+echo "$helper_cs" | grep -q "(v2 + (v2 << 0x1))" || fail "32-bit read shared without a temporary"
 ok "cse temps"
 x64_fold=$("$BIN" decompile $FIX/x64_div.o l3 2>/dev/null)
 echo "$x64_fold" | grep -q "0xfffffffffffffff8" && fail "frame prologue elision"
@@ -229,7 +229,7 @@ echo "$narrow_ir" | grep -q "for (local_1 = 0x1; local_1 <= a0; local_1++)" || f
 echo "$narrow_ir" | grep -q "local_0 += local_1;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$narrow_dest" | grep -q "+ (v4 << 0x1)) - 0x1;" || fail "mask implied by the return type"
+echo "$narrow_dest" | grep -q "+ (v2 << 0x1)) - 0x1;" || fail "mask implied by the return type"
 echo "$narrow_dest" | grep -q "a0 = .*0xffffffff" && fail "return mask kept"
 ok "masks implied by the destination"
 masked_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
