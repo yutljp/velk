@@ -1,5 +1,5 @@
 # functions left out:
-#   accesses memory: 144
+#   accesses memory: 138
 #   calls: 3800
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 2
@@ -7,7 +7,7 @@
 #   returns no integer: 51
 #   returns nothing: 369
 #   takes an argument that is no integer: 415
-#   takes arguments on the stack: 22
+#   takes arguments on the stack: 28
 # runs left out:
 #   reads a register that is not a parameter: 33
 #   step limit: 14

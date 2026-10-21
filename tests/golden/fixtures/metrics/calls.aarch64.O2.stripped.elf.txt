@@ -309,7 +309,7 @@ fn <unnamed> @ 0x210428 (size 64)
 == 0x210468 -
 -- decompile
 /* velk pseudo-C: sub_210468 @ 0x210468 */
-int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
+int32_t sub_210468(int32_t a0, ...) {
     uint32_t *v1;
     int64_t v2;
     int32_t v3;
@@ -319,64 +319,18 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t *local_0; /* [sp-10] */
     int64_t local_1; /* [sp-60] */
     int64_t local_2; /* [sp-8] */
-    int64_t local_3; /* [sp-58] */
-    int64_t local_4; /* [sp-50] */
-    int64_t local_5; /* [sp-48] */
-    int64_t local_6; /* [sp-40] */
-    int64_t local_7; /* [sp-38] */
-    int64_t local_8; /* [sp-30] */
-    int64_t local_9; /* [sp-e0] */
-    int64_t local_10; /* [sp-d8] */
-    int64_t local_11; /* [sp-d0] */
-    int64_t local_12; /* [sp-c8] */
-    int64_t local_13; /* [sp-c0] */
-    int64_t local_14; /* [sp-b8] */
-    int64_t local_15; /* [sp-b0] */
-    int64_t local_16; /* [sp-a8] */
-    int64_t local_17; /* [sp-a0] */
-    int64_t local_18; /* [sp-98] */
-    int64_t local_19; /* [sp-90] */
-    int64_t local_20; /* [sp-88] */
-    int64_t local_21; /* [sp-80] */
-    int64_t local_22; /* [sp-78] */
-    int64_t local_23; /* [sp-70] */
-    int64_t local_24; /* [sp-68] */
-    int64_t *local_25; /* [sp-18] */
-    uint32_t *local_26; /* [sp-20] */
-    int64_t local_27; /* [sp-28] */
+    int64_t *local_3; /* [sp-18] */
+    uint32_t *local_4; /* [sp-20] */
 
     local_0 = &local_1;
     local_2 = 0xffffff80ffffffc8;
-    local_3 = a1;
-    local_4 = a2;
-    local_5 = a3;
-    local_6 = a4;
-    local_7 = a5;
-    local_8 = a6;
-    local_9 = d0;
-    local_10 = v0_hi;
-    local_11 = d1;
-    local_12 = v1_hi;
-    local_13 = d2;
-    local_14 = v2_hi;
-    local_15 = d3;
-    local_16 = v3_hi;
-    local_17 = d4;
-    local_18 = v4_hi;
-    local_19 = d5;
-    local_20 = v5_hi;
-    local_21 = d6;
-    local_22 = v6_hi;
-    local_23 = d7;
-    local_24 = v7_hi;
-    local_25 = &local_26;
-    local_27 = a7;
-    local_26 = sp;
+    local_3 = &local_4;
+    local_4 = sp;
     if (a0 < 0x1) {
         return 0x0;
     }
-    v1 = local_26;
-    v2 = local_25;
+    v1 = local_4;
+    v2 = local_3;
     v3 = 0x0;
     v4 = *(uint32_t *)&local_2;
     do {
@@ -388,12 +342,12 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
                 v1 = v2 + (int32_t)(v4);
             } else {
                 v5 = v1 + 0x2;
-                local_26 = v5;
+                local_4 = v5;
             }
         } else {
             v6 = v4;
             v5 = v1 + 0x2;
-            local_26 = v5;
+            local_4 = v5;
         }
         a0 = a0 - 0x1;
         v4 = v6;
@@ -403,7 +357,7 @@ int32_t sub_210468(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     return v3;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int32_t (int32_t a0)
 -- references
 
 -- ir

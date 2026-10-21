@@ -272,7 +272,6 @@ fn <unnamed> @ 0x2014f0 (size 80)
 == 0x201540 -
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
-/* struct: a3 +0x0:uint32_t, +0x8:uint64_t */
 struct sub_201540_s1 {
     int32_t field_0x0;
     int32_t field_0x4;
@@ -280,96 +279,51 @@ struct sub_201540_s1 {
     int64_t field_0x10;
 };
 struct sub_201540_s2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };
-int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
-    uint64_t rax;
+int32_t sub_201540(int32_t a0, ...) {
     struct sub_201540_s1 *v1;
     uint32_t v2;
     struct sub_201540_s2 *v3;
     int32_t v4;
     int64_t v5;
     uint64_t *v6;
-    int64_t local_0; /* [sp-b8] */
-    int64_t local_1; /* [sp-b0] */
-    int64_t local_2; /* [sp-a8] */
-    int64_t local_3; /* [sp-a0] */
-    int64_t local_4; /* [sp-98] */
-    int64_t local_5; /* [sp-90] */
-    int64_t local_6; /* [sp-88] */
-    int64_t local_7; /* [sp-80] */
-    int64_t local_8; /* [sp-78] */
-    int64_t local_9; /* [sp-70] */
-    int64_t local_10; /* [sp-68] */
-    int64_t local_11; /* [sp-60] */
-    int64_t local_12; /* [sp-58] */
-    int64_t local_13; /* [sp-50] */
-    int64_t local_14; /* [sp-48] */
-    int64_t local_15; /* [sp-40] */
-    int64_t local_16; /* [sp-c0] */
-    int64_t local_17; /* [sp-c8] */
-    int64_t local_18; /* [sp-d0] */
-    int64_t local_19; /* [sp-d8] */
-    int64_t local_20; /* [sp-e0] */
-    int32_t local_21; /* [sp-c] */
-    uint32_t local_22; /* [sp-28] */
-    int64_t local_23; /* [sp-e8] */
-    uint32_t local_24; /* [sp-2c] */
-    int32_t local_25; /* [sp-30] */
-    void *local_26; /* [sp-f8] */
-    uint32_t local_27; /* [sp-ec] */
-    uint32_t *local_28; /* [sp-100] */
+    int32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-28] */
+    int64_t local_2; /* [sp-e8] */
+    uint32_t local_3; /* [sp-2c] */
+    int32_t local_4; /* [sp-30] */
+    void *local_5; /* [sp-f8] */
+    uint32_t local_6; /* [sp-ec] */
+    uint32_t *local_7; /* [sp-100] */
 
-    if ((rax & 0xff) != 0x0) {
-        local_0 = xmm0;
-        local_1 = xmm0_hi;
-        local_2 = xmm1;
-        local_3 = xmm1_hi;
-        local_4 = xmm2;
-        local_5 = xmm2_hi;
-        local_6 = xmm3;
-        local_7 = xmm3_hi;
-        local_8 = xmm4;
-        local_9 = xmm4_hi;
-        local_10 = xmm5;
-        local_11 = xmm5_hi;
-        local_12 = xmm6;
-        local_13 = xmm6_hi;
-        local_14 = xmm7;
-        local_15 = xmm7_hi;
-    }
-    local_16 = a5;
-    local_17 = a4;
-    local_18 = a3;
-    local_19 = a2;
-    local_20 = a1;
-    local_21 = a0;
-    v1 = &local_22;
-    v1->field_0x10 = &local_23;
+    local_0 = a0;
+    v1 = &local_1;
+    v1->field_0x10 = &local_2;
     v1->field_0x8 = rsp + 0x8;
     v1->field_0x4 = 0x30;
     v1->field_0x0 = 0x8;
-    local_24 = 0x0;
-    for (local_25 = 0x0; local_25 < local_21; local_25++) {
-        local_26 = &local_22;
-        v2 = local_22;
-        local_27 = v2;
+    local_3 = 0x0;
+    for (local_4 = 0x0; local_4 < local_0; local_4++) {
+        local_5 = &local_1;
+        v2 = local_1;
+        local_6 = v2;
         if (v2 > 0x28) {
-            v6 = local_26;
+            v6 = local_5;
             v5 = v6[0x1];
             v6[0x1] = v5 + 0x8;
-            local_28 = v5;
+            local_7 = v5;
         } else {
-            v3 = local_26;
-            v4 = local_27;
+            v3 = local_5;
+            v4 = local_6;
             v5 = v4 + v3->field_0x10;
             v3->field_0x0 = v4 + 0x8;
-            local_28 = v5;
+            local_7 = v5;
         }
-        local_24 += *local_28;
+        local_3 += *local_7;
     }
-    return local_24;
+    return local_3;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -433,4 +387,4 @@ fn <unnamed> @ 0x201540 (size 296)
   blk8 @ 0x20165c:
     ret load32((rsp + #0xffffffffffffffd4))
 -- card
-{"accesses":["a3 +0x0:uint32_t, +0x8:uint64_t"],"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":296,"unsupported":0}
+{"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":296,"unsupported":0}

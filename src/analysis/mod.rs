@@ -10,6 +10,7 @@ mod signature;
 mod structures;
 pub(crate) mod summary;
 pub(crate) mod typing;
+pub(crate) mod variadic;
 
 use std::collections::HashSet;
 
@@ -1237,6 +1238,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     }
     ir.pointer_values = pointer_values;
     typing::apply_prototypes(&mut ir, image);
+    variadic::mark_variadic(&mut ir);
     Analysis { ir, references }
 }
 

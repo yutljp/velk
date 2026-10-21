@@ -175,6 +175,7 @@ pub fn render(
     data_ranges: &[(u64, u64)],
 ) -> String {
     let mut folded = ir.clone();
+    crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
     let ir = &folded;
     let frames = block_frames(ir, stack_pointer(ir.isa));
