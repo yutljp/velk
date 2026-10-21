@@ -286,8 +286,11 @@ echo "$narrow_dst" | grep -q "v3 = v2;" || fail "loop result variable"
 echo "$narrow_dst" | grep -q "return v3;" || fail "loop result read back"
 ok "narrow destination names"
 trap_ir=$("$BIN" decompile $FIX/go_stripped internal/abi.Kind.String 2>/dev/null)
-echo "$trap_ir" | grep -q "__builtin_trap();" || fail "trap rendered"
-echo "$trap_ir" | grep -c "__builtin_trap();" | grep -qx 1 || fail "trap padding collapsed"
+echo "$trap_ir" | grep -q "runtime_panicIndex(0x0, a1, 0x0);" || fail "call that never returns kept"
+echo "$trap_ir" | grep -q "__builtin_trap();" && fail "trap after a call that never returns"
+pure_virtual=$("$BIN" decompile $FIX/cpp_virtual_x64.elf __cxa_pure_virtual 2>/dev/null)
+echo "$pure_virtual" | grep -q "__builtin_trap();" || fail "trap rendered"
+echo "$pure_virtual" | grep -c "__builtin_trap();" | grep -qx 1 || fail "trap padding collapsed"
 echo "$trap_ir" | grep -q "Int3" && fail "int3 note kept"
 echo "$trap_ir" | grep -q "local_0;" && fail "unused local declared"
 ok "trap padding and unused locals"

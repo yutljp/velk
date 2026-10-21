@@ -1066,6 +1066,15 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             index += 2;
             continue;
         }
+        // A trap right after a call is the one a compiler puts after a call
+        // that never returns; the call already ends the path.
+        if matches!(nodes[index], Node::Stmt(Stmt::Trap))
+            && index > 0
+            && matches!(nodes[index - 1], Node::Stmt(Stmt::Call { .. }))
+        {
+            index += 1;
+            continue;
+        }
         // Consecutive instructions the lifter could not model read as one
         // note instead of one comment per instruction.
         if let Node::Stmt(Stmt::Unsupported { text, .. }) = &nodes[index] {
@@ -2106,6 +2115,27 @@ mod tests {
         };
         assert_eq!(declared(false), "uint32_t local_0; /* [sp-10] */");
         assert_eq!(declared(true), "int32_t local_0; /* [sp-10] */");
+    }
+
+    #[test]
+    fn a_trap_after_a_call_is_left_out_and_one_alone_is_kept() {
+        let call = Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::SysV,
+            args: Some(Vec::new()),
+            floats_named: false,
+            result: None,
+            clobbers: None,
+            via: None,
+        };
+        let mut ir = FunctionIr::single_block(Isa::X86_64, vec![call, Stmt::Trap]);
+        ir.ret_type = CType::Void;
+        let text = rendered(&ir);
+        assert!(text.contains("sub_1000();"), "{text}");
+        assert!(!text.contains("__builtin_trap"), "{text}");
+        let ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Trap]);
+        assert!(rendered(&ir).contains("__builtin_trap();"));
     }
 
     #[test]

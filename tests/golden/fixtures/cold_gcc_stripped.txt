@@ -84,7 +84,6 @@ fn __snprintf_chk @ 0x1090 (size 16)
 /* velk pseudo-C: abort @ 0x10a0 */
 int32_t abort(void) {
     abort();
-    __builtin_trap();
 }
 -- signature
 int32_t ()
@@ -103,7 +102,6 @@ fn abort @ 0x10a0 (size 16)
 /* velk pseudo-C: __stack_chk_fail @ 0x10b0 */
 int32_t __stack_chk_fail(void) {
     __stack_chk_fail();
-    __builtin_trap();
 }
 -- signature
 int32_t ()
@@ -213,7 +211,6 @@ int32_t sub_11a0(int64_t a0, int64_t a1, void *a2) {
     local_0 = rax;
     local_1 = rsp;
     __libc_start_main(0x1120, v2, v3, 0x0, 0x0, a2);
-    __builtin_trap();
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, void * a2)
@@ -391,7 +388,6 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
         v15 = stderr;
         fputs(v14, v15);
         abort();
-        __builtin_trap();
     }
     v3 = a0;
     v4 = a1 + (int64_t)a1 * 0x2 << 0x3;
@@ -414,7 +410,6 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
                 __fprintf_chk(v12, 0x2, 0x201c, v13, v11);
             } while (v8 != v9);
             abort();
-            __builtin_trap();
         }
     }
     return v3->field_0x4;
