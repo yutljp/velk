@@ -132,6 +132,49 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             }
         }
     }
+    // A slot read wider than its narrowest store, or touched at another
+    // offset among its bytes, holds more than the value stored there.
+    fn loads(expr: &Expr, out: &mut Vec<(Expr, u8)>) {
+        if let Expr::Load { addr, width, .. } = expr {
+            out.push((addr.as_ref().clone(), *width));
+        }
+        for child in crate::ir::visit::children(expr) {
+            loads(child, out);
+        }
+    }
+    let mut accesses: Vec<(u64, u8, bool)> = Vec::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Store { addr, width, .. } = stmt
+            && let Some(slot) = slot_of(addr)
+        {
+            accesses.push((slot, *width, true));
+        }
+        let mut loaded = Vec::new();
+        for operand in stmt.operands() {
+            loads(operand, &mut loaded);
+        }
+        accesses.extend(
+            loaded
+                .iter()
+                .filter_map(|(addr, width)| Some((slot_of(addr)?, *width, false))),
+        );
+    }
+    let mixed = |slot: u64| {
+        let narrowest = stored.get(&slot).copied().unwrap_or(8);
+        let extent = accesses
+            .iter()
+            .filter(|(at, _, _)| *at == slot)
+            .map(|(_, width, _)| u64::from(*width))
+            .max()
+            .unwrap_or(8);
+        accesses.iter().any(|(at, width, store)| {
+            if *at == slot {
+                !store && *width > narrowest
+            } else {
+                *at < slot.wrapping_add(extent) && slot < at.wrapping_add(u64::from(*width))
+            }
+        })
+    };
     // The variables and slots holding nothing but the parameter's value.
     let origin = Source::Register(param);
     let mut aliases: HashSet<Source> = HashSet::new();
@@ -140,7 +183,7 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         for (place, sources) in &defined {
             let renamable = match place {
                 Source::Register(index) => *index >= VARIABLE_BASE,
-                Source::Slot(_) => true,
+                Source::Slot(slot) => !mixed(*slot),
             };
             if renamable
                 && !aliases.contains(place)
@@ -167,14 +210,15 @@ fn fold(ir: &mut FunctionIr, param: u16) {
     if !restored_only {
         return;
     }
-    let held = |value: &Expr| {
-        source_of(value).is_some_and(|source| aliases.contains(&source))
-            && match (value, source_of(value)) {
-                (Expr::Load { width, .. }, Some(Source::Slot(slot))) => stored
+    // A load no wider than the slot's stores reads the parameter's low bytes.
+    let held = |value: &Expr| match value {
+        Expr::Load { addr, width, .. } => slot_of(addr).is_some_and(|slot| {
+            aliases.contains(&Source::Slot(slot))
+                && stored
                     .get(&slot)
-                    .is_some_and(|narrowest| width <= narrowest),
-                _ => true,
-            }
+                    .is_some_and(|narrowest| width <= narrowest)
+        }),
+        _ => source_of(value).is_some_and(|source| aliases.contains(&source)),
     };
     let renames: Vec<(u16, Expr)> = aliases
         .iter()
@@ -209,9 +253,9 @@ fn replace_loads(stmt: &mut Stmt, held: &impl Fn(&Expr) -> bool, param: u16) {
         {
             *expr = match (*width, *signed) {
                 (8, _) => Expr::reg(param, 64),
-                (_, false) => Expr::reg(param, 32),
+                (width, false) => Expr::reg(param, width * 8),
                 (width, true) => Expr::SignExtend {
-                    value: Box::new(Expr::reg(param, 32)),
+                    value: Box::new(Expr::reg(param, width * 8)),
                     width,
                 },
             };

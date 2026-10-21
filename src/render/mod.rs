@@ -2209,7 +2209,11 @@ mod tests {
         assert!(!text.contains("local_0"), "{text}");
         assert!(text.contains("return a0;"), "{text}");
         let text = rendered_with(8);
-        assert!(text.contains("local_0"), "{text}");
+        assert!(text.contains("local_0 = a0;"), "{text}");
+        // A byte of it reads the parameter's low byte.
+        let text = rendered_with(1);
+        assert!(!text.contains("local_0"), "{text}");
+        assert!(text.contains("a0"), "{text}");
     }
 
     #[test]

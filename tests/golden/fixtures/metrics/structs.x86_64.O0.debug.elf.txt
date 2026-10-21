@@ -72,16 +72,18 @@ fn record_total @ 0x201270 (size 109)
 -- decompile
 /* velk pseudo-C: point_add @ 0x2012e0 */
 struct point point_add(struct point a, struct point b) {
-    int64_t local_0; /* [sp-10] */
-    uint32_t local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-20] */
+    int64_t local_0; /* [sp-18] */
+    int64_t local_1; /* [sp-20] */
+    int64_t local_2; /* [sp-10] */
     uint32_t local_3; /* [sp-c] */
     uint32_t local_4; /* [sp-14] */
     uint32_t local_5; /* [sp-1c] */
 
-    *(uint32_t *)&local_0 = local_1 + local_2;
+    local_0 = a;
+    local_1 = b;
+    *(uint32_t *)&local_2 = *(uint32_t *)&local_0 + *(uint32_t *)&local_1;
     local_3 = local_4 + local_5;
-    return local_0;
+    return local_2;
 }
 -- signature
 struct point (struct point a, struct point b)
