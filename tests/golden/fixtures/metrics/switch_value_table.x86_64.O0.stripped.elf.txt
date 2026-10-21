@@ -8,37 +8,35 @@
 int32_t sub_201180(int32_t a0) {
     uint32_t v2;
     int32_t v8;
-    uint32_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-c] */
+    int64_t local_0; /* [sp-18] */
+    uint32_t local_1; /* [sp-c] */
 
-    local_0 = a0;
-    v2 = local_0 - 0xa;
-    local_1 = v2;
+    v2 = a0 - 0xa;
+    local_0 = v2;
     if (v2 <= 0x4 /* unsigned */) {
-        v8 = (int32_t)(dword_200120[local_1]) + 0x200120;
-        switch (local_1 - 0x4) {
+        v8 = (int32_t)(dword_200120[local_0]) + 0x200120;
+        switch (local_0 - 0x4) {
         case -4:
-            local_2 = 0x1;
-            return local_2;
+            local_1 = 0x1;
+            return local_1;
         case -3:
-            local_2 = 0x3;
-            return local_2;
+            local_1 = 0x3;
+            return local_1;
         case -2:
-            local_2 = 0x7;
-            return local_2;
+            local_1 = 0x7;
+            return local_1;
         case -1:
-            local_2 = 0x9;
-            return local_2;
+            local_1 = 0x9;
+            return local_1;
         case 0:
-            local_2 = 0xb;
-            return local_2;
+            local_1 = 0xb;
+            return local_1;
         default:
             break;
         }
     }
-    local_2 = 0x0;
-    return local_2;
+    local_1 = 0x0;
+    return local_1;
 }
 -- signature
 int32_t (int32_t a0)

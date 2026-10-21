@@ -66,6 +66,7 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             _ => None,
         },
         Expr::Load { addr, width: 8, .. } => slot_of(addr).map(Source::Slot),
+        Expr::Load { addr, width: 4, .. } if narrow => slot_of(addr).map(Source::Slot),
         _ => None,
     };
     // What each register and slot is given; `None` for anything but a copy.
@@ -78,6 +79,8 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         })
     };
     let mut defined: HashMap<Source, Vec<Option<Source>>> = HashMap::new();
+    // The narrowest store to each slot: a wider load reads bytes it left.
+    let mut stored: HashMap<u64, u8> = HashMap::new();
     for block in &ir.blocks {
         for (position, stmt) in block.stmts.iter().enumerate() {
             let earlier = &block.stmts[..position];
@@ -101,11 +104,19 @@ fn fold(ir: &mut FunctionIr, param: u16) {
                                     Expr::Reg { index, width: 64 } if *width == 8 => {
                                         Some(Source::Register(*index))
                                     }
+                                    // Unoptimized code spills a 32-bit parameter
+                                    // as its 32-bit register.
+                                    Expr::Reg {
+                                        index,
+                                        width: 32 | 64,
+                                    } if narrow && *width == 4 => Some(Source::Register(*index)),
                                     _ => None,
                                 },
                             ));
+                        let narrowest = stored.entry(slot).or_insert(*width);
+                        *narrowest = (*narrowest).min(*width);
                         // A narrower store over part of a slot changes it too.
-                        if *width != 8 {
+                        if *width != 8 && !(narrow && *width == 4) {
                             defined.entry(Source::Slot(slot)).or_default().push(None);
                         }
                     }
@@ -144,13 +155,7 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             break;
         }
     }
-    // A variable holds it, or the parameter's register gets it back.
-    if aliases.is_empty()
-        || !aliases
-            .iter()
-            .any(|alias| matches!(alias, Source::Register(_)))
-            && !defined.contains_key(&origin)
-    {
+    if aliases.is_empty() {
         return;
     }
     // The parameter's register may only get one of them back.
@@ -162,7 +167,15 @@ fn fold(ir: &mut FunctionIr, param: u16) {
     if !restored_only {
         return;
     }
-    let held = |value: &Expr| source_of(value).is_some_and(|source| aliases.contains(&source));
+    let held = |value: &Expr| {
+        source_of(value).is_some_and(|source| aliases.contains(&source))
+            && match (value, source_of(value)) {
+                (Expr::Load { width, .. }, Some(Source::Slot(slot))) => stored
+                    .get(&slot)
+                    .is_some_and(|narrowest| width <= narrowest),
+                _ => true,
+            }
+    };
     let renames: Vec<(u16, Expr)> = aliases
         .iter()
         .filter_map(|alias| match alias {
@@ -191,8 +204,17 @@ fn fold(ir: &mut FunctionIr, param: u16) {
 /// Rewrites each load `held` accepts as a read of `param`.
 fn replace_loads(stmt: &mut Stmt, held: &impl Fn(&Expr) -> bool, param: u16) {
     fn walk(expr: &mut Expr, held: &impl Fn(&Expr) -> bool, param: u16) {
-        if held(expr) && matches!(expr, Expr::Load { .. }) {
-            *expr = Expr::reg(param, 64);
+        if held(expr)
+            && let Expr::Load { width, signed, .. } = expr
+        {
+            *expr = match (*width, *signed) {
+                (8, _) => Expr::reg(param, 64),
+                (_, false) => Expr::reg(param, 32),
+                (width, true) => Expr::SignExtend {
+                    value: Box::new(Expr::reg(param, 32)),
+                    width,
+                },
+            };
             return;
         }
         crate::ir::visit::children_mut(expr)

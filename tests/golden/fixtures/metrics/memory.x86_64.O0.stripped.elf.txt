@@ -14,21 +14,15 @@
 int64_t sub_201280(uint8_t *a0, uint8_t *a1, int64_t a2) {
     uint64_t v1;
     uint8_t v2;
-    uint8_t *local_0; /* [sp-10] */
-    uint8_t *local_1; /* [sp-18] */
-    uint64_t local_2; /* [sp-20] */
-    int64_t local_3; /* [sp-28] */
+    uint8_t *local_0; /* [sp-28] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = a2;
-    local_3 = 0x0;
+    local_0 = 0x0;
     while (true) {
-        v1 = local_3;
-        if (v1 >= local_2 /* unsigned */) break;
-        v2 = local_1[local_3];
-        local_0[local_3] = v2;
-        local_3 += 0x1;
+        v1 = local_0;
+        if (v1 >= a2 /* unsigned */) break;
+        v2 = *(uint8_t *)(a1 + local_0);
+        *(uint8_t *)(a0 + local_0) = v2;
+        local_0 += 0x1;
     }
     return v1;
 }
@@ -63,21 +57,17 @@ int64_t sub_2012d0(uint8_t *a0, int32_t a1, int64_t a2) {
     uint64_t rax;
     uint64_t v1;
     uint8_t v2;
-    uint8_t *local_0; /* [sp-10] */
-    uint8_t local_1; /* [sp-11] */
-    uint64_t local_2; /* [sp-20] */
-    int64_t local_3; /* [sp-28] */
+    uint8_t local_0; /* [sp-11] */
+    uint8_t *local_1; /* [sp-28] */
 
-    local_0 = a0;
-    local_1 = rax & 0xffffffffffffff00 | a1;
-    local_2 = a2;
-    local_3 = 0x0;
+    local_0 = rax & 0xffffffffffffff00 | a1;
+    local_1 = 0x0;
     while (true) {
-        v1 = local_3;
-        if (v1 >= local_2 /* unsigned */) break;
-        v2 = local_1;
-        local_0[local_3] = v2;
-        local_3 += 0x1;
+        v1 = local_1;
+        if (v1 >= a2 /* unsigned */) break;
+        v2 = local_0;
+        *(uint8_t *)(a0 + local_1) = v2;
+        local_1 += 0x1;
     }
     return v1;
 }
@@ -109,13 +99,11 @@ fn <unnamed> @ 0x2012d0 (size 73)
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 int64_t sub_201320(uint8_t *a0) {
-    uint8_t *local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
+    uint8_t *local_0; /* [sp-18] */
 
-    local_0 = a0;
-    for (local_1 = 0x0; local_0[local_1] != 0x0; local_1++) {
+    for (local_0 = 0x0; *(uint8_t *)(a0 + local_0) != 0x0; local_0++) {
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 int64_t (uint8_t * a0)

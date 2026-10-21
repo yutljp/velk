@@ -66,23 +66,17 @@ fn <unnamed> @ 0x2012c0 (size 22)
 /* velk pseudo-C: sub_2012e0 @ 0x2012e0 */
 int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
     uint8_t v3;
-    int32_t v4;
     uint8_t v5;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-14] */
-    uint8_t local_2; /* [sp-15] */
+    uint8_t local_0; /* [sp-15] */
 
-    local_0 = a0;
-    local_1 = a2;
-    local_2 = 0x0;
+    local_0 = 0x0;
     if (a0 < a1) {
-        v5 = local_2;
+        v5 = local_0;
         return v5 & 0x1;
     }
-    v3 = (local_0 <= local_1);
-    v4 = local_1;
-    local_2 = v3;
-    v5 = local_2;
+    v3 = (a0 <= a2);
+    local_0 = v3;
+    v5 = local_0;
     return v5 & 0x1;
 }
 -- signature
@@ -180,29 +174,23 @@ fn <unnamed> @ 0x201390 (size 51)
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int32_t sub_2013d0(int32_t a0, int32_t a1, int32_t a2) {
     int32_t v1;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
-    uint32_t local_3; /* [sp-1c] */
-    uint32_t local_4; /* [sp-18] */
-    uint32_t local_5; /* [sp-20] */
+    uint32_t local_0; /* [sp-1c] */
+    uint32_t local_1; /* [sp-18] */
+    uint32_t local_2; /* [sp-20] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = a2;
     if (a0 >= a1) {
-        local_3 = local_1;
+        local_0 = a1;
     } else {
-        local_3 = local_0;
+        local_0 = a0;
     }
-    v1 = local_3;
-    local_4 = v1;
-    if (v1 >= local_2) {
-        local_5 = local_2;
-        return local_5;
+    v1 = local_0;
+    local_1 = v1;
+    if (v1 >= a2) {
+        local_2 = a2;
+        return local_2;
     }
-    local_5 = local_4;
-    return local_5;
+    local_2 = local_1;
+    return local_2;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -238,16 +226,14 @@ fn <unnamed> @ 0x2013d0 (size 82)
 -- decompile
 /* velk pseudo-C: sub_201430 @ 0x201430 */
 int64_t sub_201430(int64_t a0) {
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
+    int64_t local_0; /* [sp-18] */
 
-    local_0 = a0;
     if (a0 >= 0x0) {
-        local_1 = local_0;
-        return local_1;
+        local_0 = a0;
+        return local_0;
     }
-    local_1 = -local_0;
-    return local_1;
+    local_0 = -a0;
+    return local_0;
 }
 -- signature
 int64_t (int64_t a0)

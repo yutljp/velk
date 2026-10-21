@@ -83,18 +83,16 @@ fn pair_sum @ 0x210228 (size 36)
 -- decompile
 /* velk pseudo-C: sum_arr @ 0x21024c */
 int sum_arr(int *p, int n) {
-    int *local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
-    int32_t local_3; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
-    local_0 = p;
-    local_1 = n;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        local_2 += local_0[local_3];
+    local_0 = n;
+    local_1 = 0x0;
+    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+        local_1 += p[local_2];
     }
-    return local_2;
+    return local_1;
 }
 -- signature
 int (int * p, int n)

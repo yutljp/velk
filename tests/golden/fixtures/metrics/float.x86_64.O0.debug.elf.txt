@@ -9,24 +9,22 @@
 -- decompile
 /* velk pseudo-C: average @ 0x2011f0 */
 double average(double *values, int n) {
-    double *local_0; /* [sp-10] */
-    int32_t local_1; /* [sp-14] */
-    double local_2; /* [sp-20] */
-    int32_t local_3; /* [sp-24] */
-    double local_4; /* [sp-30] */
+    int32_t local_0; /* [sp-14] */
+    double local_1; /* [sp-20] */
+    int32_t local_2; /* [sp-24] */
+    double local_3; /* [sp-30] */
 
-    local_0 = values;
-    local_1 = n;
-    local_2 = 0.0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        local_2 = local_0[local_3] + local_2;
+    local_0 = n;
+    local_1 = 0.0;
+    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+        local_1 = values[local_2] + local_1;
     }
-    if (local_1 <= 0x0) {
-        local_4 = 0.0;
-        return local_4;
+    if (local_0 <= 0x0) {
+        local_3 = 0.0;
+        return local_3;
     }
-    local_4 = local_2 / (double)(int32_t)local_1;
-    return local_4;
+    local_3 = local_1 / (double)(int32_t)local_0;
+    return local_3;
 }
 -- signature
 double (double * values, int n)
@@ -114,18 +112,14 @@ fn widen @ 0x2012d0 (size 32)
 -- decompile
 /* velk pseudo-C: compare_doubles @ 0x2012f0 */
 int compare_doubles(double a, double b) {
-    double local_0; /* [sp-10] */
-    double local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-1c] */
+    uint32_t local_0; /* [sp-1c] */
 
-    local_0 = a;
-    local_1 = b;
     if (!(a < b)) {
-        local_2 = (local_1 < local_0 ? 0x1 : 0x0);
-        return local_2;
+        local_0 = (b < a ? 0x1 : 0x0);
+        return local_0;
     }
-    local_2 = 0xffffffff;
-    return local_2;
+    local_0 = 0xffffffff;
+    return local_0;
 }
 -- signature
 int (double a, double b)

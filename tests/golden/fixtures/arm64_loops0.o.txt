@@ -46,16 +46,14 @@ fn count_bits @ 0x0 (size 76)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x4c */
 int32_t sum_until(int32_t a0) {
-    int32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
-    int32_t local_2; /* [sp-c] */
+    uint32_t local_0; /* [sp-8] */
+    int32_t local_1; /* [sp-c] */
 
-    local_0 = a0;
-    local_1 = 0x0;
-    for (local_2 = 0x1; local_2 <= local_0; local_2++) {
-        local_1 += local_2;
+    local_0 = 0x0;
+    for (local_1 = 0x1; local_1 <= a0; local_1++) {
+        local_0 += local_1;
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -88,24 +86,20 @@ fn sum_until @ 0x4c (size 92)
 /* velk pseudo-C: sum_till_neg @ 0xa8 */
 int32_t sum_till_neg(uint32_t *a0, int32_t a1) {
     uint32_t v2;
-    uint32_t *local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
-    int32_t local_3; /* [sp-14] */
-    uint32_t local_4; /* [sp-18] */
+    uint32_t local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    uint32_t local_2; /* [sp-18] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v2 = local_0[local_3];
-        local_4 = v2;
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < a1; local_1++) {
+        v2 = a0[local_1];
+        local_2 = v2;
         if ((v2 & 0x80000000) != 0x0) {
-            return local_2;
+            return local_0;
         }
-        local_2 += local_4;
+        local_0 += local_2;
     }
-    return local_2;
+    return local_0;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -144,23 +138,19 @@ fn sum_till_neg @ 0xa8 (size 120)
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x120 */
 int32_t sum_until_zero(uint32_t *a0, int32_t a1) {
-    uint32_t *local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
-    int32_t local_3; /* [sp-14] */
+    uint32_t local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        if (local_0[local_3] == 0x0) {
-            return local_2;
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < a1; local_1++) {
+        if (a0[local_1] == 0x0) {
+            return local_0;
         }
-        if ((local_0[local_3] & 0x80000000) == 0x0) {
-            local_2 += local_0[local_3];
+        if ((a0[local_1] & 0x80000000) == 0x0) {
+            local_0 += a0[local_1];
         }
     }
-    return local_2;
+    return local_0;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)

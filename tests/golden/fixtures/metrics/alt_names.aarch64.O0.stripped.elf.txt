@@ -23,16 +23,14 @@ fn <unnamed> @ 0x21016c (size 44)
 -- decompile
 /* velk pseudo-C: sub_210198 @ 0x210198 */
 int32_t sub_210198(int32_t a0) {
-    int32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
-    int32_t local_2; /* [sp-c] */
+    uint32_t local_0; /* [sp-8] */
+    int32_t local_1; /* [sp-c] */
 
-    local_0 = a0;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        local_1 += local_2 * local_2;
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < a0; local_1++) {
+        local_0 += local_1 * local_1;
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)

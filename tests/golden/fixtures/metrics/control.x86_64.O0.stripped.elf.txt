@@ -11,23 +11,19 @@
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
 int32_t sub_201230(uint32_t *a0, int32_t a1) {
-    uint32_t *local_0; /* [sp-10] */
-    int32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    int32_t local_3; /* [sp-1c] */
-    int32_t local_4; /* [sp-20] */
+    uint32_t local_0; /* [sp-18] */
+    int32_t local_1; /* [sp-1c] */
+    int32_t local_2; /* [sp-20] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        for (local_4 = 0x0; local_4 < local_1; local_4++) {
-            if (local_3 == local_4) {
-                local_2 += local_0[local_3 * local_1 + local_4];
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < a1; local_1++) {
+        for (local_2 = 0x0; local_2 < a1; local_2++) {
+            if (local_1 == local_2) {
+                local_0 += a0[local_1 * a1 + local_2];
             }
         }
     }
-    return local_2;
+    return local_0;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -69,28 +65,20 @@ fn <unnamed> @ 0x201230 (size 137)
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
 int32_t sub_2012c0(int32_t a0, int32_t a1, uint32_t *a2) {
-    int32_t v1;
     int32_t v2;
-    uint32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
-    uint32_t *local_2; /* [sp-18] */
-    uint32_t local_3; /* [sp-1c] */
+    uint32_t local_0; /* [sp-1c] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = a2;
-    local_3 = 0xffffffff;
+    local_0 = 0xffffffff;
     if (a0 >= 0x0) {
-        if (local_1 != 0x0) {
-            v1 = local_0;
-            v2 = v1 % local_1;
-            *local_2 = v1 / local_1;
-            local_3 = 0x0;
-            return local_3;
+        if (a1 != 0x0) {
+            v2 = a0 % a1;
+            *a2 = a0 / a1;
+            local_0 = 0x0;
+            return local_0;
         }
-        return local_3;
+        return local_0;
     }
-    return local_3;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, uint32_t * a2)
@@ -125,40 +113,34 @@ fn <unnamed> @ 0x2012c0 (size 78)
 /* velk pseudo-C: sub_201310 @ 0x201310 */
 /* ref: 0x200120 .rodata */
 int32_t sub_201310(int32_t a0) {
-    uint32_t v1;
     int32_t v5;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    int64_t local_2; /* [sp-18] */
+    uint32_t local_0; /* [sp-10] */
 
-    local_0 = a0;
-    local_1 = 0x0;
-    v1 = local_0;
-    local_2 = v1;
-    if (v1 <= 0x3 /* unsigned */) {
-        v5 = (int32_t)(dword_200120[local_2]) + 0x200120;
-        switch (local_2) {
+    local_0 = 0x0;
+    if ((uint64_t)a0 <= 0x3 /* unsigned */) {
+        v5 = (int32_t)(dword_200120[a0]) + 0x200120;
+        switch (a0) {
         case 0:
-            local_1 += 0x1;
+            local_0 += 0x1;
             break;
         case 1:
             break;
         case 2:
-            local_1 += 0x4;
-            return local_1;
+            local_0 += 0x4;
+            return local_0;
         case 3:
-            local_1 = 0x8;
-            return local_1;
+            local_0 = 0x8;
+            return local_0;
         default:
-            local_1 = 0xffffffff;
-            return local_1;
+            local_0 = 0xffffffff;
+            return local_0;
         }
-        local_1 += 0x2;
-        local_1 += 0x4;
-        return local_1;
+        local_0 += 0x2;
+        local_0 += 0x4;
+        return local_0;
     }
-    local_1 = 0xffffffff;
-    return local_1;
+    local_0 = 0xffffffff;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -196,28 +178,26 @@ fn <unnamed> @ 0x201310 (size 107)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-c] */
+    uint32_t local_0; /* [sp-c] */
 
-    local_0 = a0;
     if (a0 - 0x1 == 0x0) {
-        local_1 = 0xa;
-        return local_1;
+        local_0 = 0xa;
+        return local_0;
     }
-    if (local_0 - 0x64 == 0x0) {
-        local_1 = 0x14;
-        return local_1;
+    if (a0 - 0x64 == 0x0) {
+        local_0 = 0x14;
+        return local_0;
     }
-    if (local_0 - 0x3e8 == 0x0) {
-        local_1 = 0x1e;
-        return local_1;
+    if (a0 - 0x3e8 == 0x0) {
+        local_0 = 0x1e;
+        return local_0;
     }
-    if (local_0 - 0x2710 == 0x0) {
-        local_1 = 0x28;
-        return local_1;
+    if (a0 - 0x2710 == 0x0) {
+        local_0 = 0x28;
+        return local_0;
     }
-    local_1 = 0x0;
-    return local_1;
+    local_0 = 0x0;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -266,40 +246,36 @@ fn <unnamed> @ 0x201380 (size 142)
 -- decompile
 /* velk pseudo-C: sub_201410 @ 0x201410 */
 int32_t sub_201410(uint32_t *a0, int32_t a1) {
-    int32_t v3;
     int32_t v5;
     int64_t v7;
     int32_t v8;
     uint8_t v9;
     uint8_t v10;
     uint8_t v11;
-    int32_t local_0; /* [sp-14] */
-    uint8_t local_1; /* [sp-15] */
-    uint8_t local_2; /* [sp-16] */
+    uint8_t local_0; /* [sp-15] */
+    uint8_t local_1; /* [sp-16] */
 
-    local_0 = a1;
-    local_1 = 0x0;
+    local_0 = 0x0;
     if (a0 == 0x0) {
-        v11 = local_1;
+        v11 = local_0;
         return v11 & 0x1;
     }
-    v3 = local_0;
-    local_1 = 0x0;
-    if (v3 <= 0x0) {
-        v11 = local_1;
+    local_0 = 0x0;
+    if (a1 <= 0x0) {
+        v11 = local_0;
         return v11 & 0x1;
     }
     v5 = *a0;
-    local_2 = 0x1;
+    local_1 = 0x1;
     if (v5 != 0x1) {
-        v7 = local_0 - 0x1;
+        v7 = a1 - 0x1;
         v8 = a0[v7];
         v9 = (a0[v7] == 0x1);
-        local_2 = v9;
+        local_1 = v9;
     }
-    v10 = local_2;
-    local_1 = v10;
-    v11 = local_1;
+    v10 = local_1;
+    local_0 = v10;
+    v11 = local_0;
     return v11 & 0x1;
 }
 -- signature
@@ -340,20 +316,16 @@ fn <unnamed> @ 0x201410 (size 99)
 -- decompile
 /* velk pseudo-C: sub_201480 @ 0x201480 */
 int32_t sub_201480(uint32_t *a0, int32_t a1) {
-    uint32_t *local_0; /* [sp-10] */
-    int32_t local_1; /* [sp-14] */
-    uint32_t local_2; /* [sp-18] */
-    int32_t local_3; /* [sp-1c] */
+    uint32_t local_0; /* [sp-18] */
+    int32_t local_1; /* [sp-1c] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        if ((int32_t)local_0[local_3] >= 0x0) {
-            local_2 += local_0[local_3];
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < a1; local_1++) {
+        if ((int32_t)a0[local_1] >= 0x0) {
+            local_0 += a0[local_1];
         }
     }
-    return local_2;
+    return local_0;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -386,26 +358,20 @@ fn <unnamed> @ 0x201480 (size 96)
 -- decompile
 /* velk pseudo-C: sub_2014e0 @ 0x2014e0 */
 int32_t sub_2014e0(uint32_t *a0, int32_t a1, int32_t a2) {
-    uint32_t *local_0; /* [sp-18] */
-    int32_t local_1; /* [sp-1c] */
-    uint32_t local_2; /* [sp-20] */
-    int32_t local_3; /* [sp-24] */
-    int32_t local_4; /* [sp-28] */
-    uint32_t local_5; /* [sp-c] */
+    int32_t local_0; /* [sp-24] */
+    int32_t local_1; /* [sp-28] */
+    uint32_t local_2; /* [sp-c] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = a2;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        for (local_4 = local_3 + 0x1; local_4 < local_1; local_4++) {
-            if (local_0[local_3] + local_0[local_4] == local_2) {
-                local_5 = local_3 * local_1 + local_4;
-                return local_5;
+    for (local_0 = 0x0; local_0 < a1; local_0++) {
+        for (local_1 = local_0 + 0x1; local_1 < a1; local_1++) {
+            if (a0[local_0] + a0[local_1] == a2) {
+                local_2 = local_0 * a1 + local_1;
+                return local_2;
             }
         }
     }
-    local_5 = 0xffffffff;
-    return local_5;
+    local_2 = 0xffffffff;
+    return local_2;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, int32_t a2)

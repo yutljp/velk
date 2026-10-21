@@ -5,32 +5,30 @@
 -- decompile
 /* velk pseudo-C: sub_210154 @ 0x210154 */
 int32_t sub_210154(int32_t a0) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
-    local_0 = a0;
     if (a0 - 0xa == 0x0) {
-        local_1 = 0x1;
-        return local_1;
+        local_0 = 0x1;
+        return local_0;
     }
-    if (local_0 - 0xb == 0x0) {
-        local_1 = 0x3;
-        return local_1;
+    if (a0 - 0xb == 0x0) {
+        local_0 = 0x3;
+        return local_0;
     }
-    if (local_0 - 0xc == 0x0) {
-        local_1 = 0x7;
-        return local_1;
+    if (a0 - 0xc == 0x0) {
+        local_0 = 0x7;
+        return local_0;
     }
-    if (local_0 - 0xd == 0x0) {
-        local_1 = 0x9;
-        return local_1;
+    if (a0 - 0xd == 0x0) {
+        local_0 = 0x9;
+        return local_0;
     }
-    if (local_0 - 0xe == 0x0) {
-        local_1 = 0xb;
-        return local_1;
+    if (a0 - 0xe == 0x0) {
+        local_0 = 0xb;
+        return local_0;
     }
-    local_1 = 0x0;
-    return local_1;
+    local_0 = 0x0;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)

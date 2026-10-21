@@ -2064,8 +2064,8 @@ mod tests {
 
     #[test]
     fn a_narrow_local_takes_its_sign_from_how_it_is_loaded() {
-        // *(int32_t *)(rsp - 0x10) = a0; return it, loaded with zeros or
-        // with its sign.
+        // *(int32_t *)(rsp - 0x10) = a0 + 1; return it, loaded with zeros or
+        // with its sign. A copy of a0 itself would read as a0.
         let slot = || {
             Expr::bin(
                 BinOp::Add,
@@ -2079,7 +2079,7 @@ mod tests {
                 vec![
                     Stmt::Store {
                         addr: slot(),
-                        value: Expr::reg(7, 64),
+                        value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
                         width: 4,
                     },
                     Stmt::Ret {
@@ -2106,6 +2106,50 @@ mod tests {
         };
         assert_eq!(declared(false), "uint32_t local_0; /* [sp-10] */");
         assert_eq!(declared(true), "int32_t local_0; /* [sp-10] */");
+    }
+
+    #[test]
+    fn a_spilled_32_bit_parameter_reads_as_itself() {
+        // *(int32_t *)(rsp - 0x10) = a0; return the slot, and a 64-bit load
+        // of it, which reads bytes the spill did not write.
+        let slot = || {
+            Expr::bin(
+                BinOp::Add,
+                Expr::reg(4, 64),
+                Expr::Const(0xffff_ffff_ffff_fff0),
+            )
+        };
+        let rendered_with = |width: u8| {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Store {
+                        addr: slot(),
+                        value: Expr::reg(7, 32),
+                        width: 4,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(slot()),
+                            width,
+                            signed: false,
+                        },
+                    },
+                ],
+            );
+            ir.params = vec![Param {
+                index: 7,
+                name: "a0".to_owned(),
+                ty: CType::I32,
+            }];
+            ir.ret_type = CType::U32;
+            rendered(&ir)
+        };
+        let text = rendered_with(4);
+        assert!(!text.contains("local_0"), "{text}");
+        assert!(text.contains("return a0;"), "{text}");
+        let text = rendered_with(8);
+        assert!(text.contains("local_0"), "{text}");
     }
 
     #[test]

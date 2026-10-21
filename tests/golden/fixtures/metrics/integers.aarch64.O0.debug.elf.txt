@@ -240,16 +240,14 @@ fn min3 @ 0x2103a8 (size 124)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x210424 */
 long labs_value(long x) {
-    int64_t local_0; /* [sp-8] */
-    int64_t local_1; /* [sp-10] */
+    int64_t local_0; /* [sp-10] */
 
-    local_0 = x;
     if ((x & 0x8000000000000000) == 0x0) {
-        local_1 = local_0;
-        return local_1;
+        local_0 = x;
+        return local_0;
     }
-    local_1 = -local_0;
-    return local_1;
+    local_0 = -x;
+    return local_0;
 }
 -- signature
 long (long x)

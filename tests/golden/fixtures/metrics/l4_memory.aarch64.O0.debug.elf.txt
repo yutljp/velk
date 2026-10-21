@@ -25,18 +25,16 @@ fn point_dot @ 0x2101dc (size 64)
 -- decompile
 /* velk pseudo-C: array_sum @ 0x21021c */
 int array_sum(int *a, int n) {
-    int *local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
-    int32_t local_3; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
-    local_0 = a;
-    local_1 = n;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        local_2 += local_0[local_3];
+    local_0 = n;
+    local_1 = 0x0;
+    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+        local_1 += a[local_2];
     }
-    return local_2;
+    return local_1;
 }
 -- signature
 int (int * a, int n)

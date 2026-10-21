@@ -12,16 +12,10 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x210234 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
-    unsigned char *local_0; /* [sp-8] */
-    unsigned char *local_1; /* [sp-10] */
-    uint64_t local_2; /* [sp-18] */
-    uint64_t local_3; /* [sp-20] */
+    uint8_t *local_0; /* [sp-20] */
 
-    local_0 = dst;
-    local_1 = src;
-    local_2 = n;
-    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3++) {
-        local_0[local_3] = local_1[local_3];
+    for (local_0 = 0x0; local_0 < n /* unsigned */; local_0++) {
+        *(uint8_t *)(dst + local_0) = *(uint8_t *)(src + local_0);
     }
 }
 -- signature
@@ -55,16 +49,12 @@ fn copy_bytes @ 0x210234 (size 104)
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x21029c */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
-    unsigned char *local_0; /* [sp-8] */
-    uint8_t local_1; /* [sp-9] */
-    uint64_t local_2; /* [sp-18] */
-    uint64_t local_3; /* [sp-20] */
+    uint8_t local_0; /* [sp-9] */
+    uint8_t *local_1; /* [sp-20] */
 
-    local_0 = dst;
-    local_1 = value;
-    local_2 = n;
-    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3++) {
-        local_0[local_3] = local_1;
+    local_0 = value;
+    for (local_1 = 0x0; local_1 < n /* unsigned */; local_1++) {
+        *(uint8_t *)(dst + local_1) = local_0;
     }
 }
 -- signature
@@ -98,13 +88,11 @@ fn fill_bytes @ 0x21029c (size 92)
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102f8 */
 unsigned long string_length(char *s) {
-    char *local_0; /* [sp-8] */
-    int64_t local_1; /* [sp-10] */
+    uint8_t *local_0; /* [sp-10] */
 
-    local_0 = s;
-    for (local_1 = 0x0; (uint8_t)local_0[local_1] != 0x0; local_1++) {
+    for (local_0 = 0x0; *(uint8_t *)(s + local_0) != 0x0; local_0++) {
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 unsigned long (char * s)
@@ -217,15 +205,11 @@ fn read_volatile @ 0x2103e4 (size 52)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x210418 */
 void swap_ints(int *a, int *b) {
-    int *local_0; /* [sp-8] */
-    int *local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    uint32_t local_0; /* [sp-14] */
 
-    local_0 = a;
-    local_1 = b;
-    local_2 = *a;
-    *local_0 = *b;
-    *local_1 = local_2;
+    local_0 = *a;
+    *a = *b;
+    *b = local_0;
 }
 -- signature
 void (int * a, int * b)

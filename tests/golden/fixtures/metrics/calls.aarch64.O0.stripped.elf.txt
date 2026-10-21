@@ -68,10 +68,8 @@ fn <unnamed> @ 0x210350 (size 44)
 /* ref: 0x2206f0 .data.rel.ro */
 int32_t sub_21037c(int32_t a0, int32_t a1) {
     uint64_t x8;
-    uint32_t local_0; /* [sp-14] */
 
-    local_0 = a0;
-    x8 = qword_2206f0[local_0 % 0x3];
+    x8 = qword_2206f0[(uint32_t)a0 % 0x3];
     return (*(x8))(a1);
 }
 -- signature
@@ -118,20 +116,18 @@ fn <unnamed> @ 0x2103c4 (size 48)
 int32_t sub_2103f4(int32_t a0) {
     uint64_t x8;
     int32_t v2;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-1c] */
+    uint32_t local_0; /* [sp-18] */
+    uint32_t local_1; /* [sp-1c] */
 
-    local_0 = a0;
     if (a0 > 0x1) {
-        local_2 = local_0;
-        x8 = local_0;
+        local_1 = a0;
+        x8 = (uint32_t)a0;
         v2 = sub_2103f4(x8 - 0x1);
-        local_1 = local_2 * v2;
-        return local_1;
+        local_0 = local_1 * v2;
+        return local_0;
     }
-    local_1 = 0x1;
-    return local_1;
+    local_0 = 0x1;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -164,18 +160,16 @@ fn <unnamed> @ 0x2103f4 (size 96)
 int32_t sub_210454(int32_t a0) {
     uint64_t x8;
     int32_t v2;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
+    uint32_t local_0; /* [sp-18] */
 
-    local_0 = a0;
     if (a0 != 0x0) {
-        x8 = local_0;
+        x8 = (uint32_t)a0;
         v2 = sub_2104a0(x8 - 0x1);
-        local_1 = v2;
-        return local_1;
+        local_0 = v2;
+        return local_0;
     }
-    local_1 = 0x0;
-    return local_1;
+    local_0 = 0x0;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -207,18 +201,16 @@ fn <unnamed> @ 0x210454 (size 76)
 int32_t sub_2104a0(int32_t a0) {
     uint64_t x8;
     int32_t v2;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
+    uint32_t local_0; /* [sp-18] */
 
-    local_0 = a0;
     if (a0 != 0x0) {
-        x8 = local_0;
+        x8 = (uint32_t)a0;
         v2 = sub_210454(x8 - 0x1);
-        local_1 = v2;
-        return local_1;
+        local_0 = v2;
+        return local_0;
     }
-    local_1 = 0x1;
-    return local_1;
+    local_0 = 0x1;
+    return local_0;
 }
 -- signature
 int32_t (int32_t a0)

@@ -13,17 +13,11 @@
 /* velk pseudo-C: copy_bytes @ 0x201280 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint8_t v1;
-    unsigned char *local_0; /* [sp-10] */
-    unsigned char *local_1; /* [sp-18] */
-    uint64_t local_2; /* [sp-20] */
-    uint64_t local_3; /* [sp-28] */
+    uint8_t *local_0; /* [sp-28] */
 
-    local_0 = dst;
-    local_1 = src;
-    local_2 = n;
-    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3++) {
-        v1 = local_1[local_3];
-        local_0[local_3] = v1;
+    for (local_0 = 0x0; local_0 < n /* unsigned */; local_0++) {
+        v1 = *(uint8_t *)(src + local_0);
+        *(uint8_t *)(dst + local_0) = v1;
     }
 }
 -- signature
@@ -55,17 +49,13 @@ fn copy_bytes @ 0x201280 (size 79)
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint64_t rax;
     uint8_t v1;
-    unsigned char *local_0; /* [sp-10] */
-    uint8_t local_1; /* [sp-11] */
-    uint64_t local_2; /* [sp-20] */
-    uint64_t local_3; /* [sp-28] */
+    uint8_t local_0; /* [sp-11] */
+    uint8_t *local_1; /* [sp-28] */
 
-    local_0 = dst;
-    local_1 = rax & 0xffffffffffffff00 | value;
-    local_2 = n;
-    for (local_3 = 0x0; local_3 < local_2 /* unsigned */; local_3++) {
-        v1 = local_1;
-        local_0[local_3] = v1;
+    local_0 = rax & 0xffffffffffffff00 | value;
+    for (local_1 = 0x0; local_1 < n /* unsigned */; local_1++) {
+        v1 = local_0;
+        *(uint8_t *)(dst + local_1) = v1;
     }
 }
 -- signature
@@ -95,13 +85,11 @@ fn fill_bytes @ 0x2012d0 (size 73)
 -- decompile
 /* velk pseudo-C: string_length @ 0x201320 */
 unsigned long string_length(char *s) {
-    char *local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
+    uint8_t *local_0; /* [sp-18] */
 
-    local_0 = s;
-    for (local_1 = 0x0; (uint8_t)local_0[local_1] != 0x0; local_1++) {
+    for (local_0 = 0x0; *(uint8_t *)(s + local_0) != 0x0; local_0++) {
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 unsigned long (char * s)
@@ -204,13 +192,11 @@ fn read_volatile @ 0x2013f0 (size 34)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x201420 */
 void swap_ints(int *a, int *b) {
-    int *local_0; /* [sp-18] */
-    uint32_t local_1; /* [sp-1c] */
+    uint32_t local_0; /* [sp-1c] */
 
-    local_0 = b;
-    local_1 = *a;
+    local_0 = *a;
     *a = *b;
-    *local_0 = local_1;
+    *b = local_0;
 }
 -- signature
 void (int * a, int * b)

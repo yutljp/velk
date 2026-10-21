@@ -24,15 +24,11 @@ fn item_weight @ 0x210184 (size 56)
 -- decompile
 /* velk pseudo-C: cell_set @ 0x2101bc */
 void cell_set(struct cell *cells, long i, int v) {
-    struct cell *local_0; /* [sp-8] */
-    int64_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    uint32_t local_0; /* [sp-14] */
 
-    local_0 = cells;
-    local_1 = i;
-    local_2 = v;
-    *(uint32_t *)((uint8_t *)local_0 + local_1 * 0xc) = local_2;
-    *(uint32_t *)((uint8_t *)local_0 + local_1 * 0xc + 0x8) = local_2 + 0x1;
+    local_0 = v;
+    *(uint32_t *)((uint8_t *)cells + i * 0xc) = local_0;
+    *(uint32_t *)((uint8_t *)cells + i * 0xc + 0x8) = local_0 + 0x1;
 }
 -- signature
 void (struct cell * cells, long i, int v)
@@ -54,20 +50,18 @@ fn cell_set @ 0x2101bc (size 76)
 -- decompile
 /* velk pseudo-C: item_last_key @ 0x210208 */
 long item_last_key(struct item *items, int n) {
-    struct item *local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
-    int64_t local_2; /* [sp-18] */
-    int32_t local_3; /* [sp-1c] */
+    int32_t local_0; /* [sp-c] */
+    int64_t local_1; /* [sp-18] */
+    int32_t local_2; /* [sp-1c] */
 
-    local_0 = items;
-    local_1 = n;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        if (*(int32_t *)((uint8_t *)local_0 + ((uint64_t)local_3 << 0x4) + 0x8) > 0x0) {
-            local_2 = *(uint64_t *)((uint8_t *)local_0 + ((uint64_t)local_3 << 0x4));
+    local_0 = n;
+    local_1 = 0x0;
+    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+        if (*(int32_t *)((uint8_t *)items + ((uint64_t)local_2 << 0x4) + 0x8) > 0x0) {
+            local_1 = *(uint64_t *)((uint8_t *)items + ((uint64_t)local_2 << 0x4));
         }
     }
-    return local_2;
+    return local_1;
 }
 -- signature
 long (struct item * items, int n)

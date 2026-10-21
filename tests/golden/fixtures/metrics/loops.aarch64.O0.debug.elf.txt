@@ -88,24 +88,22 @@ fn sum_until @ 0x2101e8 (size 92)
 /* velk pseudo-C: sum_till_neg @ 0x210244 */
 int sum_till_neg(int *p, int n) {
     uint32_t v2;
-    int *local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
-    int32_t local_3; /* [sp-14] */
-    uint32_t local_4; /* [sp-18] */
+    int32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
+    uint32_t local_3; /* [sp-18] */
 
-    local_0 = p;
-    local_1 = n;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        v2 = local_0[local_3];
-        local_4 = v2;
+    local_0 = n;
+    local_1 = 0x0;
+    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+        v2 = p[local_2];
+        local_3 = v2;
         if ((v2 & 0x80000000) != 0x0) {
-            return local_2;
+            return local_1;
         }
-        local_2 += local_4;
+        local_1 += local_3;
     }
-    return local_2;
+    return local_1;
 }
 -- signature
 int (int * p, int n)
@@ -144,23 +142,21 @@ fn sum_till_neg @ 0x210244 (size 120)
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x2102bc */
 int sum_until_zero(int *p, int n) {
-    int *local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
-    uint32_t local_2; /* [sp-10] */
-    int32_t local_3; /* [sp-14] */
+    int32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+    int32_t local_2; /* [sp-14] */
 
-    local_0 = p;
-    local_1 = n;
-    local_2 = 0x0;
-    for (local_3 = 0x0; local_3 < local_1; local_3++) {
-        if (local_0[local_3] == 0x0) {
-            return local_2;
+    local_0 = n;
+    local_1 = 0x0;
+    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+        if (p[local_2] == 0x0) {
+            return local_1;
         }
-        if ((local_0[local_3] & 0x80000000) == 0x0) {
-            local_2 += local_0[local_3];
+        if ((p[local_2] & 0x80000000) == 0x0) {
+            local_1 += p[local_2];
         }
     }
-    return local_2;
+    return local_1;
 }
 -- signature
 int (int * p, int n)

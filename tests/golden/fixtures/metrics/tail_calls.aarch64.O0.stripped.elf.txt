@@ -7,9 +7,6 @@
 -- decompile
 /* velk pseudo-C: sub_210194 @ 0x210194 */
 int32_t sub_210194(int32_t a0) {
-    uint32_t local_0; /* [sp-4] */
-
-    local_0 = a0;
     return a0 * 0x3 + 0x1;
 }
 -- signature
@@ -50,9 +47,6 @@ fn <unnamed> @ 0x2101bc (size 40)
 -- decompile
 /* velk pseudo-C: sub_2101e4 @ 0x2101e4 */
 int32_t sub_2101e4(int32_t a0) {
-    uint32_t local_0; /* [sp-4] */
-
-    local_0 = a0;
     return a0 - 0x7;
 }
 -- signature

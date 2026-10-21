@@ -189,12 +189,12 @@ echo "$mod_ir" | grep -qF "a0 % a1" || fail "idiv remainder dividend"
 ok "runtime division and remainder"
 stack_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$stack_ir" | grep -q "local_1"        || fail "stack locals named"
-echo "$stack_ir" | grep -q "local_1 += local_2;" || fail "stack local accumulation"
+echo "$stack_ir" | grep -q "local_0 += local_1;" || fail "stack local accumulation"
 echo "$stack_ir" | grep -q "sp + 0x4" && fail "stack address left raw"
 ok "stack locals"
 decl_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$decl_ir" | grep -qF "int32_t local_2; /* [sp-c] */" || fail "stack local declaration"
-echo "$decl_ir" | grep -q "(local_2 & 0xffffffff)" && fail "local mask elided"
+echo "$decl_ir" | grep -qF "int32_t local_1; /* [sp-c] */" || fail "stack local declaration"
+echo "$decl_ir" | grep -q "(local_1 & 0xffffffff)" && fail "local mask elided"
 echo "$decl_ir" | grep -q "w9" && fail "32-bit register left between two locals"
 ok "stack local declarations"
 frame_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
@@ -225,8 +225,8 @@ echo "$mask_ir" | grep -qF "return (v3 >> 0x1) * 0x55555556 + a0" || fail "mask 
 echo "$mask_ir" | grep -qF "v2 = (uint64_t)v1 * ((a0 - 0x2) & 0xffffffff);" || fail "64-bit product of 32-bit values"
 echo "$mask_ir" | grep -q "v1 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$narrow_ir" | grep -q "for (local_2 = 0x1; local_2 <= local_0; local_2++)" || fail "32-bit comparison kept"
-echo "$narrow_ir" | grep -q "local_1 += local_2;"   || fail "compound store in a loop"
+echo "$narrow_ir" | grep -q "for (local_1 = 0x1; local_1 <= a0; local_1++)" || fail "32-bit comparison kept"
+echo "$narrow_ir" | grep -q "local_0 += local_1;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$narrow_dest" | grep -q "+ (v4 << 0x1)) - 0x1;" || fail "mask implied by the return type"
@@ -278,7 +278,7 @@ echo "$wide_ir" | grep -q "__umulh(a0, 0xcccccccccccccccd)"  || fail "wide multi
 echo "$wide_ir" | grep -q " hi128 " && fail "wide multiply kept the infix"
 ok "wide multiply intrinsic"
 settled=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
-echo "$settled" | grep -q "local_0 = a0;"     || fail "frame settled past a pointer load"
+echo "$settled" | grep -qF "v2 = a0[local_1];" || fail "frame settled past a pointer load"
 echo "$settled" | grep -q "sp = sp"           && fail "stack adjustments kept"
 ok "frame settling past pointer bases"
 narrow_dst=$("$BIN" decompile $FIX/arm64_loops.o sum_till_neg 2>/dev/null)
@@ -292,7 +292,7 @@ echo "$trap_ir" | grep -q "Int3" && fail "int3 note kept"
 echo "$trap_ir" | grep -q "local_0;" && fail "unused local declared"
 ok "trap padding and unused locals"
 back_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
-echo "$back_ir" | grep -q "for (local_3 = 0x0; local_3 < local_1; local_3++) {" || fail "unconditional back edge structured"
+echo "$back_ir" | grep -q "for (local_1 = 0x0; local_1 < a1; local_1++) {" || fail "unconditional back edge structured"
 echo "$back_ir" | grep -q "goto " && fail "early exit as a return"
 echo "$back_ir" | grep -q "^L_c0:"         && fail "loop header kept as a label"
 uv run python - "$back_ir" <<'PY'
@@ -338,8 +338,8 @@ in_n=$("$BIN" functions $FIX/tail_indirect_stripped.o 2>/dev/null | sed -n '1s/.
 ok "indirect tail calls"
 # A value just stored into a slot feeds its reader directly.
 fwd=$("$BIN" decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
-echo "$fwd" | grep -q "x8 = local_3;" && fail "store not forwarded"
-echo "$fwd" | grep -q "local_4 = v2;" || fail "forwarded value missing"
+echo "$fwd" | grep -q "x8 = local_1;" && fail "store not forwarded"
+echo "$fwd" | grep -q "local_2 = v2;" || fail "forwarded value missing"
 pe_entry=$("$BIN" functions $FIX/pe64.exe --json 2>/dev/null | sed -n 's/.*"entry": "\(0x[0-9a-f]*\)".*/\1/p')
 entry_fwd=$("$BIN" decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
 echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_1 = 0x23;" || fail "partial store into a wider local"
@@ -394,7 +394,7 @@ echo "$entry_ir" | grep -q "local_2" && fail "spurious slot after settling"
 ok "dead frame loads"
 moved_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$moved_ir" | grep -q "x8 = 0x1;" && fail "dead store before the loop"
-echo "$moved_ir" | grep -q "local_2 = 0x1;" || fail "live store before the loop"
+echo "$moved_ir" | grep -q "local_1 = 0x1;" || fail "live store before the loop"
 live_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$live_ir" | grep -q "ns__add(a0, v2);" || fail "definition kept across a call"
 echo "$live_ir" | grep -q "v1 = a0;" && fail "saved value folded into the parameter"
@@ -524,7 +524,7 @@ loop_pc=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$loop_pc" | grep -Eq "while \(local_[0-9]+ != 0x0\)" || fail "while structuring"
 echo "$loop_pc" | grep -q "if (x8 == 0x0) break;" && fail "while header folded"
 loop_break=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$loop_break" | grep -q "local_2 <= local_0;" || fail "while break condition"
+echo "$loop_break" | grep -q "local_1 <= a0;" || fail "while break condition"
 ok "while structuring"
 
 # 9) data (string) reference recovery
