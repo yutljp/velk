@@ -1581,6 +1581,13 @@ mod tests {
     }
 
     #[test]
+    fn a_division_by_rdx_divides_by_its_value_before_the_remainder() {
+        // mov eax, edi; cdq; idiv edx; ret: -5 / -1
+        let code = vec![0x89, 0xf8, 0x99, 0xf7, 0xfa, 0xc3];
+        assert_eq!(returns(Isa::X86_64, code, &[(7, (-5i64) as u64)]), 5);
+    }
+
+    #[test]
     fn pop_reads_the_slot_push_wrote() {
         // push rbx; pop rax; ret
         assert_eq!(returns(Isa::X86_64, vec![0x53, 0x58, 0xc3], &[(3, 7)]), 7);

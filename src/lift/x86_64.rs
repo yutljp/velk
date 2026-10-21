@@ -2545,11 +2545,13 @@ fn lift_instruction(
                 return false;
             }
             let dividend = Lifter::read_reg(RAX, width);
-            let quotient = Expr::bin(BinOp::DivS, dividend.clone(), divisor.clone());
-            let remainder = Expr::bin(BinOp::ModS, dividend, divisor);
-            // Both results read the original rax, so rdx (the remainder) is
-            // written before rax (the quotient).
-            lifter.assign(2, width, remainder);
+            // Both results read the dividend and the divisor, which may be
+            // rdx, so the quotient waits while rdx takes the remainder.
+            let quotient = hold(
+                lifter,
+                Expr::bin(BinOp::DivS, dividend.clone(), divisor.clone()),
+            );
+            lifter.assign(RDX, width, Expr::bin(BinOp::ModS, dividend, divisor));
             lifter.assign(RAX, width, quotient);
         }
         // An unsigned division whose high half rdx was just cleared divides
@@ -2568,9 +2570,11 @@ fn lift_instruction(
                 return false;
             }
             let dividend = Lifter::read_reg(RAX, width);
-            let quotient = Expr::bin(BinOp::DivU, dividend.clone(), divisor.clone());
-            let remainder = Expr::bin(BinOp::ModU, dividend, divisor);
-            lifter.assign(2, width, remainder);
+            let quotient = hold(
+                lifter,
+                Expr::bin(BinOp::DivU, dividend.clone(), divisor.clone()),
+            );
+            lifter.assign(RDX, width, Expr::bin(BinOp::ModU, dividend, divisor));
             lifter.assign(RAX, width, quotient);
         }
         Mnemonic::Leave => {
