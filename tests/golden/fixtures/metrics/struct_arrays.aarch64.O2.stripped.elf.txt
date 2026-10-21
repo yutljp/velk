@@ -12,11 +12,7 @@ struct sub_210174_a0 {
     int16_t field_0xc;
     uint8_t gap_0xe[0x2];
 };
-struct sub_210174_s1 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int16_t field_0xc;
-};
+struct sub_210174_s1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; };
 int32_t sub_210174(struct sub_210174_a0 *a0, int32_t a1) {
     struct sub_210174_a0 *v1;
     int32_t v2;
@@ -41,16 +37,8 @@ fn <unnamed> @ 0x210174 (size 20)
 == 0x210188 -
 -- decompile
 /* velk pseudo-C: sub_210188 @ 0x210188 */
-struct sub_210188_a0 {
-    int32_t field_0x0;
-    uint8_t gap_0x4[0x4];
-    int32_t field_0x8;
-};
-struct sub_210188_s1 {
-    int32_t field_0x0;
-    uint8_t gap_0x4[0x4];
-    int32_t field_0x8;
-};
+struct sub_210188_a0 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
+struct sub_210188_s1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 int64_t sub_210188(struct sub_210188_a0 *a0, int64_t a1, int32_t a2) {
     struct sub_210188_a0 *v1;
 
@@ -76,11 +64,7 @@ fn <unnamed> @ 0x210188 (size 24)
 == 0x2101a0 -
 -- decompile
 /* velk pseudo-C: sub_2101a0 @ 0x2101a0 */
-struct sub_2101a0_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-    uint8_t gap_0xc[0x4];
-};
+struct sub_2101a0_a0 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };
 int32_t sub_2101a0(struct sub_2101a0_a0 *a0, int32_t a1) {
     int32_t v2;
     int64_t v3;

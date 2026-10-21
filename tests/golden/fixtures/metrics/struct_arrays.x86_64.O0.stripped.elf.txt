@@ -29,11 +29,7 @@ fn <unnamed> @ 0x2011a0 (size 51)
 == 0x2011e0 -
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
-struct sub_2011e0_a0 {
-    int32_t field_0x0;
-    uint8_t gap_0x4[0x4];
-    int32_t field_0x8;
-};
+struct sub_2011e0_a0 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 int64_t sub_2011e0(struct sub_2011e0_a0 *a0, int64_t a1, int32_t a2) {
     struct sub_2011e0_a0 *v1;
 
@@ -62,11 +58,7 @@ fn <unnamed> @ 0x2011e0 (size 55)
 == 0x201220 -
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
-struct sub_201220_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-    uint8_t gap_0xc[0x4];
-};
+struct sub_201220_a0 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };
 int64_t sub_201220(struct sub_201220_a0 *a0, int32_t a1) {
     int64_t local_0; /* [sp-20] */
     int32_t local_1; /* [sp-24] */

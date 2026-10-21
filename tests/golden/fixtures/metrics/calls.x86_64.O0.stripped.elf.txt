@@ -279,11 +279,7 @@ struct sub_201540_s1 {
     int64_t field_0x8;
     int64_t field_0x10;
 };
-struct sub_201540_s2 {
-    int32_t field_0x0;
-    uint8_t gap_0x4[0xc];
-    int64_t field_0x10;
-};
+struct sub_201540_s2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };
 int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
     uint64_t rax;
     struct sub_201540_s1 *v1;

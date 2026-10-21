@@ -11,10 +11,7 @@
 == 0x2101dc -
 -- decompile
 /* velk pseudo-C: sub_2101dc @ 0x2101dc */
-struct sub_2101dc_a0 {
-    int64_t field_0x0;
-    int64_t field_0x8;
-};
+struct sub_2101dc_a0 { int64_t field_0x0; int64_t field_0x8; };
 uint32_t sub_2101dc(struct sub_2101dc_a0 *a0) {
     uint64_t v1;
 

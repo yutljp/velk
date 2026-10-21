@@ -7,14 +7,8 @@
 == 0x201210 -
 -- decompile
 /* velk pseudo-C: sub_201210 @ 0x201210 */
-struct sub_201210_a0 {
-    int32_t field_0x0;
-    int32_t field_0x4;
-};
-struct sub_201210_a1 {
-    int32_t field_0x0;
-    int32_t field_0x4;
-};
+struct sub_201210_a0 { int32_t field_0x0; int32_t field_0x4; };
+struct sub_201210_a1 { int32_t field_0x0; int32_t field_0x4; };
 int32_t sub_201210(struct sub_201210_a0 *a0, struct sub_201210_a1 *a1) {
     return a0->field_0x0 * a1->field_0x0 + a0->field_0x4 * a1->field_0x4;
 }

@@ -287,11 +287,7 @@ struct sum_varargs_s1 {
     int64_t field_0x8;
     int64_t field_0x10;
 };
-struct sum_varargs_s2 {
-    int32_t field_0x0;
-    uint8_t gap_0x4[0xc];
-    int64_t field_0x10;
-};
+struct sum_varargs_s2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };
 int sum_varargs(int count, ...) {
     uint64_t rax;
     uint64_t rcx;

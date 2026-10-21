@@ -141,10 +141,7 @@ fn Shape::scaled(int) const @ 0x2103cc (size 44)
 -- decompile
 /* velk pseudo-C: Square::Square(int) @ 0x2103f8 */
 /* ref: 0x220548 .data.rel.ro */
-struct Square__Square_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-};
+struct Square__Square_a0 { int64_t field_0x0; int32_t field_0x8; };
 void Square__Square(struct Square__Square_a0 *a0, int32_t a1) {
     a0->field_0x8 = a1;
     a0->field_0x0 = 0x220548;
@@ -187,11 +184,7 @@ fn Square::area() const @ 0x21040c (size 12)
 -- decompile
 /* velk pseudo-C: Rect::Rect(int, int) @ 0x210418 */
 /* ref: 0x220578 .data.rel.ro */
-struct Rect__Rect_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct Rect__Rect_a0 { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
 void Rect__Rect(struct Rect__Rect_a0 *a0, int32_t a1, int32_t a2) {
     a0->field_0x8 = a1;
     a0->field_0xc = a2;
@@ -214,11 +207,7 @@ fn Rect::Rect(int, int) @ 0x210418 (size 20)
 == 0x21042c Rect::area() const
 -- decompile
 /* velk pseudo-C: Rect::area() const @ 0x21042c */
-struct Rect__area_a0 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct Rect__area_a0 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t Rect__area(struct Rect__area_a0 *a0) {
     return a0->field_0xc * a0->field_0x8;
 }
@@ -236,11 +225,7 @@ fn Rect::area() const @ 0x21042c (size 12)
 == 0x210438 Rect::scaled(int) const
 -- decompile
 /* velk pseudo-C: Rect::scaled(int) const @ 0x210438 */
-struct Rect__scaled_a0 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct Rect__scaled_a0 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t Rect__scaled(struct Rect__scaled_a0 *a0, int32_t a1) {
     return a0->field_0x8 * a1 * a0->field_0xc + 0x1;
 }

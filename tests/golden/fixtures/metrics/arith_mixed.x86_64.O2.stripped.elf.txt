@@ -57,10 +57,7 @@ fn <unnamed> @ 0x2011a0 (size 46)
 == 0x2011d0 -
 -- decompile
 /* velk pseudo-C: sub_2011d0 @ 0x2011d0 */
-struct sub_2011d0_a0 {
-    int32_t field_0x0;
-    int32_t field_0x4;
-};
+struct sub_2011d0_a0 { int32_t field_0x0; int32_t field_0x4; };
 int32_t sub_2011d0(struct sub_2011d0_a0 *a0) {
     return a0->field_0x4 + a0->field_0x0;
 }

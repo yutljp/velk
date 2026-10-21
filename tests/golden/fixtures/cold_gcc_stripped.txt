@@ -357,11 +357,7 @@ fn <unnamed> @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1290 @ 0x1290 */
 /* ref: 0x2004 "missing key %d among %d" */
-struct sub_1290_a0 {
-    int32_t field_0x0;
-    int32_t field_0x4;
-    uint8_t gap_0x8[0x10];
-};
+struct sub_1290_a0 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
     void *v2;
     struct sub_1290_a0 *v3;

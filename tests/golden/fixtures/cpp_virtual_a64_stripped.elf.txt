@@ -141,10 +141,7 @@ fn <unnamed> @ 0x2103cc (size 44)
 -- decompile
 /* velk pseudo-C: sub_2103f8 @ 0x2103f8 */
 /* ref: 0x220548 .data.rel.ro */
-struct sub_2103f8_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-};
+struct sub_2103f8_a0 { int64_t field_0x0; int32_t field_0x8; };
 void sub_2103f8(struct sub_2103f8_a0 *a0, int32_t a1) {
     a0->field_0x8 = a1;
     a0->field_0x0 = 0x220548;
@@ -187,11 +184,7 @@ fn <unnamed> @ 0x21040c (size 12)
 -- decompile
 /* velk pseudo-C: sub_210418 @ 0x210418 */
 /* ref: 0x220578 .data.rel.ro */
-struct sub_210418_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct sub_210418_a0 { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
 void sub_210418(struct sub_210418_a0 *a0, int32_t a1, int32_t a2) {
     a0->field_0x8 = a1;
     a0->field_0xc = a2;
@@ -214,11 +207,7 @@ fn <unnamed> @ 0x210418 (size 20)
 == 0x21042c -
 -- decompile
 /* velk pseudo-C: sub_21042c @ 0x21042c */
-struct sub_21042c_a0 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct sub_21042c_a0 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_21042c(struct sub_21042c_a0 *a0) {
     return a0->field_0xc * a0->field_0x8;
 }
@@ -236,11 +225,7 @@ fn <unnamed> @ 0x21042c (size 12)
 == 0x210438 -
 -- decompile
 /* velk pseudo-C: sub_210438 @ 0x210438 */
-struct sub_210438_a0 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct sub_210438_a0 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_210438(struct sub_210438_a0 *a0, int32_t a1) {
     return a0->field_0x8 * a1 * a0->field_0xc + 0x1;
 }

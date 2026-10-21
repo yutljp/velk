@@ -6,11 +6,7 @@
 == 0x210174 item_weight
 -- decompile
 /* velk pseudo-C: item_weight @ 0x210174 */
-struct item_weight_s1 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int16_t field_0xc;
-};
+struct item_weight_s1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; };
 int item_weight(struct item *items, int i) {
     struct item_weight_s1 *v1;
     int32_t v2;
@@ -35,11 +31,7 @@ fn item_weight @ 0x210174 (size 20)
 == 0x210188 cell_set
 -- decompile
 /* velk pseudo-C: cell_set @ 0x210188 */
-struct cell_set_s1 {
-    int32_t field_0x0;
-    uint8_t gap_0x4[0x4];
-    int32_t field_0x8;
-};
+struct cell_set_s1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 void cell_set(struct cell *cells, long i, int v) {
     struct cell_set_s1 *v1;
 

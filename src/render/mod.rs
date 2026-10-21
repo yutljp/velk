@@ -165,6 +165,9 @@ fn without_parameters(name: &str) -> &str {
     name
 }
 
+/// The longest structure definition written on one line.
+const STRUCTURE_LINE: usize = 100;
+
 pub fn render(
     ir: &FunctionIr,
     references: &[Reference],
@@ -450,16 +453,13 @@ fn render_with(
         }
     }
     for structure in &ir.structures {
-        out.push_str(&format!("struct {} {{\n", structure.name));
+        let mut members = Vec::new();
         let mut end = 0;
         for (offset, ty) in &structure.fields {
             if *offset > end {
-                out.push_str(&format!(
-                    "    uint8_t gap_0x{end:x}[0x{:x}];\n",
-                    offset - end
-                ));
+                members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", offset - end));
             }
-            out.push_str(&format!("    {ty} field_0x{offset:x};\n"));
+            members.push(format!("{ty} field_0x{offset:x};"));
             end = offset
                 + match ty {
                     CType::Int { bytes, .. } => u64::from(*bytes),
@@ -469,9 +469,20 @@ fn render_with(
         if let Some(size) = structure.size
             && size > end
         {
-            out.push_str(&format!("    uint8_t gap_0x{end:x}[0x{:x}];\n", size - end));
+            members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
         }
-        out.push_str("};\n");
+        // A short structure reads on one line, a longer one a member a line.
+        let line = format!("struct {} {{ {} }};", structure.name, members.join(" "));
+        if line.len() <= STRUCTURE_LINE {
+            out.push_str(&line);
+            out.push('\n');
+        } else {
+            out.push_str(&format!("struct {} {{\n", structure.name));
+            for member in members {
+                out.push_str(&format!("    {member}\n"));
+            }
+            out.push_str("};\n");
+        }
     }
     let prototypes_at = out.len();
     out.push_str(&format!(
@@ -2348,7 +2359,7 @@ mod tests {
         }];
         let text = rendered(&ir);
         for line in [
-            "    uint8_t gap_0xc[0x4];\n};\n",
+            "uint8_t gap_0xc[0x4]; };\n",
             "    struct sub_0_a0 *v1;\n",
             "    a0[a1].field_0x8 = 0x0;\n",
             "    a0[0x2].field_0x8 = 0x0;\n",

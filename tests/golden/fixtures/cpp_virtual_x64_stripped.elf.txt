@@ -139,10 +139,7 @@ fn <unnamed> @ 0x201410 (size 14)
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 /* ref: 0x202588 .data.rel.ro */
-struct sub_201420_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-};
+struct sub_201420_a0 { int64_t field_0x0; int32_t field_0x8; };
 int32_t sub_201420(struct sub_201420_a0 *a0, int32_t a1) {
     a0->field_0x0 = 0x202588;
     a0->field_0x8 = a1;
@@ -186,11 +183,7 @@ fn <unnamed> @ 0x201430 (size 7)
 -- decompile
 /* velk pseudo-C: sub_201440 @ 0x201440 */
 /* ref: 0x2025b8 .data.rel.ro */
-struct sub_201440_a0 {
-    int64_t field_0x0;
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct sub_201440_a0 { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_201440(struct sub_201440_a0 *a0, int32_t a1, int32_t a2) {
     a0->field_0x0 = 0x2025b8;
     a0->field_0x8 = a1;
@@ -214,11 +207,7 @@ fn <unnamed> @ 0x201440 (size 17)
 == 0x201460 -
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
-struct sub_201460_a0 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct sub_201460_a0 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_201460(struct sub_201460_a0 *a0) {
     return a0->field_0xc * a0->field_0x8;
 }
@@ -236,11 +225,7 @@ fn <unnamed> @ 0x201460 (size 8)
 == 0x201470 -
 -- decompile
 /* velk pseudo-C: sub_201470 @ 0x201470 */
-struct sub_201470_a0 {
-    uint8_t gap_0x0[0x8];
-    int32_t field_0x8;
-    int32_t field_0xc;
-};
+struct sub_201470_a0 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_201470(struct sub_201470_a0 *a0, int32_t a1) {
     return a1 * a0->field_0x8 * a0->field_0xc + 0x1;
 }

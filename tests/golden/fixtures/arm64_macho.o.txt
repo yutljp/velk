@@ -60,10 +60,7 @@ fn _helper @ 0xc (size 68)
 == 0x50 _pair_sum
 -- decompile
 /* velk pseudo-C: _pair_sum @ 0x50 */
-struct _pair_sum_a0 {
-    int32_t field_0x0;
-    int32_t field_0x4;
-};
+struct _pair_sum_a0 { int32_t field_0x0; int32_t field_0x4; };
 int32_t _pair_sum(struct _pair_sum_a0 *a0) {
     return a0->field_0x4 + a0->field_0x0;
 }

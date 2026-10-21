@@ -359,11 +359,7 @@ fn frame_dummy @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: lookup @ 0x1290 */
 /* ref: 0x2004 "missing key %d among %d" */
-struct lookup_a0 {
-    int32_t field_0x0;
-    int32_t field_0x4;
-    uint8_t gap_0x8[0x10];
-};
+struct lookup_a0 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t lookup(struct lookup_a0 *a0, int a1, int a2) {
     void *v2;
     struct lookup_a0 *v3;
