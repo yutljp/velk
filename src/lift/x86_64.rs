@@ -2814,6 +2814,7 @@ fn lift_instruction(
             floats_named: true,
             clobbers: None,
             result: None,
+            via: None,
         }),
         Mnemonic::Int3 | Mnemonic::Ud2 | Mnemonic::Hlt => {
             lifter.stmts.push(Stmt::Trap);

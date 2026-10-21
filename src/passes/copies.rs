@@ -603,6 +603,7 @@ mod tests {
                         index: first,
                         width: 64,
                     }),
+                    via: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {

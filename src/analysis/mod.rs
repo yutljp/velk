@@ -1,4 +1,5 @@
 mod clobbers;
+mod indirect;
 mod jump_table;
 pub mod prototypes;
 pub mod refs;
@@ -226,6 +227,7 @@ fn tail_calls_through_pointers(
             floats_named: false,
             clobbers: None,
             result: None,
+            via: None,
         });
         block.stmts.push(Stmt::Ret {
             value: Expr::reg(crate::arch::RETURN, 64),
@@ -897,6 +899,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     receive_exceptions(&mut blocks, &pads, image.isa);
     let switched: HashSet<u64> = tables.iter().map(|table| table.block_start).collect();
     tail_calls_through_pointers(&mut blocks, &switched, image);
+    indirect::resolve(&mut blocks, &landing_pads, image);
     let types = crate::loader::dwarf::function_types(image, function.addr);
     // A function returning a float returns it in xmm0 or v0.
     let declared = types.as_ref().and_then(|types| types.ret.as_ref());

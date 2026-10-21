@@ -73,6 +73,9 @@ pub struct Section {
     #[serde(skip)]
     pub file_offset: Option<u64>,
     pub executable: bool,
+    /// Data the program does not write once loaded, relocated data included.
+    #[serde(skip)]
+    pub read_only: bool,
 }
 
 /// Where a function's start, name or size was found.
@@ -214,6 +217,11 @@ pub struct Image {
     pub landing_pads: BTreeMap<u64, Vec<(u64, u64)>>,
     /// The image carries a Go pclntab, so its functions follow the Go ABI.
     pub go: bool,
+    /// The C++ virtual tables, by address point. Built on first use.
+    pub vtables: std::sync::OnceLock<std::collections::BTreeSet<u64>>,
+    /// The table each function leaves at the start of the object its first
+    /// argument points to, as a constructor does, filled on demand.
+    pub installs: std::sync::Mutex<HashMap<u64, Option<u64>>>,
 }
 
 impl Image {
@@ -266,6 +274,7 @@ impl Image {
                 size: code.len() as u64,
                 file_offset: Some(0),
                 executable: true,
+                read_only: false,
             }],
             bytes: code,
             functions: BTreeMap::new(),
@@ -282,6 +291,8 @@ impl Image {
             lifts: Default::default(),
             relocations: BTreeMap::new(),
             go: false,
+            vtables: Default::default(),
+            installs: Default::default(),
         }
     }
 
@@ -530,6 +541,18 @@ fn is_executable(kind: object::SectionKind) -> bool {
     matches!(kind, object::SectionKind::Text)
 }
 
+/// Whether a section holds constants. A relocated one the loader makes
+/// read-only after applying its relocations, as `.data.rel.ro` and the
+/// global offset table, counts too.
+fn is_read_only(kind: object::SectionKind, name: &str) -> bool {
+    use object::SectionKind;
+    matches!(
+        kind,
+        SectionKind::ReadOnlyData | SectionKind::ReadOnlyDataWithRel | SectionKind::ReadOnlyString
+    ) || name.starts_with(".data.rel.ro")
+        || name == ".got"
+}
+
 fn upsert(
     functions: &mut BTreeMap<u64, Function>,
     addr: u64,
@@ -581,6 +604,7 @@ pub fn load(path: &Path) -> Result<Image> {
             size: section.size(),
             file_offset: section.file_range().map(|(offset, _)| offset),
             executable: is_executable(section.kind()),
+            read_only: is_read_only(section.kind(), section.name().unwrap_or("")),
         });
     }
 
@@ -733,6 +757,8 @@ pub fn load(path: &Path) -> Result<Image> {
         imports: plt::imports(&file).into_iter().collect(),
         landing_pads: BTreeMap::new(),
         go: false,
+        vtables: Default::default(),
+        installs: Default::default(),
     };
     image.add_go_functions();
     image.add_dwarf_functions();

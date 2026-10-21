@@ -1135,6 +1135,53 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
     }
 }
 
+/// Where an indirect call takes its callee's address from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Via {
+    pub table: Table,
+    /// The slot's index in the table: from the address point of a C++
+    /// table, among the methods of a Rust or Go one.
+    pub slot: u64,
+    /// For a call left indirect, the functions the slot holds in the
+    /// tables it may read.
+    pub candidates: Vec<u64>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Table {
+    /// A C++ virtual table, read through the object.
+    Vtable,
+    /// A Rust trait object's table: drop, size, align, then the methods.
+    TraitObject,
+    /// A Go interface table: interface, type, hash, then the methods.
+    Itab,
+    /// A Go function value, whose first word is the code.
+    FuncValue,
+    /// A pointer in constant data, at the address `slot` holds.
+    Pointer,
+    /// A register holding the code address itself.
+    Register,
+}
+
+impl Via {
+    /// What a comment after the call says of it.
+    pub fn describe(&self, name: &dyn Fn(u64) -> String) -> String {
+        let place = match self.table {
+            Table::Vtable => format!("vtable slot {}", self.slot),
+            Table::TraitObject => format!("trait object method {}", self.slot),
+            Table::Itab => format!("itab method {}", self.slot),
+            Table::FuncValue => "func value".to_owned(),
+            Table::Pointer => format!("pointer at 0x{:x}", self.slot),
+            Table::Register => "register".to_owned(),
+        };
+        if self.candidates.is_empty() {
+            return place;
+        }
+        let names: Vec<String> = self.candidates.iter().map(|addr| name(*addr)).collect();
+        format!("{place}: {}", names.join(", "))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RegRef {
     pub index: u16,
@@ -1190,6 +1237,10 @@ pub enum Stmt {
         /// The registers the callee may leave changed, when its summary
         /// knows them; else the call changes those its convention lets it.
         clobbers: Option<Registers>,
+        /// The table the machine code loads the callee's address from,
+        /// when it is one: for a call with `target` known, the indirect
+        /// call it was; for one still through a pointer, the slot it reads.
+        via: Option<Box<Via>>,
     },
     Ret {
         value: Expr,

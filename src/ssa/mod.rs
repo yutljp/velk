@@ -1392,6 +1392,7 @@ mod tests {
                     floats_named: false,
                     result: None,
                     clobbers,
+                    via: None,
                 },
                 assign(
                     RCX,
@@ -1474,6 +1475,7 @@ mod tests {
                         index: first,
                         width: 64,
                     }),
+                    via: None,
                 },
                 assign(second, Expr::reg(first, 64)),
                 Stmt::Ret {
@@ -1508,6 +1510,7 @@ mod tests {
                         index: first,
                         width: 64,
                     }),
+                    via: None,
                 },
                 assign(third, Expr::reg(3, 64)),
                 assign(second, Expr::reg(first, 64)),
@@ -1762,6 +1765,7 @@ mod split_tests {
             floats_named: false,
             clobbers: None,
             result: None,
+            via: None,
         });
         stmts.push(Stmt::Ret {
             value: Expr::Const(0),

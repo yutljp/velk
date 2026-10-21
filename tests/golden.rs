@@ -22,7 +22,7 @@ fn analysis_output_matches_golden_files() {
     let mut expected_files = Vec::new();
     let mut readability = String::from(
         "# fixture: output lines, declared variables, casts, register names, \
-         unsigned comments, traps, gotos\n",
+         unsigned comments, traps, gotos, indirect calls\n",
     );
     for (fixture, (actual, counts)) in fixtures.iter().zip(rendered) {
         writeln!(readability, "{}: {counts}", fixture.display()).expect("writing to a String");
@@ -138,6 +138,7 @@ struct Readability {
     unsigned: usize,
     traps: usize,
     gotos: usize,
+    indirect_calls: usize,
 }
 
 impl Readability {
@@ -149,6 +150,7 @@ impl Readability {
                 self.variables += 1;
             }
             self.casts += casts(code);
+            self.indirect_calls += indirect_calls(code);
             self.registers += code
                 .split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
                 .filter(|word| is_register(word))
@@ -164,14 +166,16 @@ impl std::fmt::Display for Readability {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "{} lines, {} variables, {} casts, {} registers, {} unsigned, {} traps, {} gotos",
+            "{} lines, {} variables, {} casts, {} registers, {} unsigned, {} traps, {} gotos, \
+             {} indirect calls",
             self.lines,
             self.variables,
             self.casts,
             self.registers,
             self.unsigned,
             self.traps,
-            self.gotos
+            self.gotos,
+            self.indirect_calls
         )
     }
 }
@@ -214,6 +218,28 @@ fn casts(code: &str) -> usize {
                     .all(|b| b.is_ascii_alphanumeric() || b == b'_')
                 || inner.starts_with("struct ")
                 || matches!(inner, "float" | "double" | "bool" | "char")
+        })
+        .count()
+}
+
+/// Calls through a pointer the analysis could not resolve, printed
+/// `(*(address))(arguments)`: a parenthesis opening a dereference whose
+/// match a parenthesized argument list follows.
+fn indirect_calls(code: &str) -> usize {
+    code.match_indices("(*(")
+        .filter(|&(start, _)| {
+            let mut depth = 0;
+            for (offset, c) in code[start..].char_indices() {
+                match c {
+                    '(' => depth += 1,
+                    ')' => depth -= 1,
+                    _ => continue,
+                }
+                if depth == 0 {
+                    return code[start + offset + 1..].starts_with('(');
+                }
+            }
+            false
         })
         .count()
 }

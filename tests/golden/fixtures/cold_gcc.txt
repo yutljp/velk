@@ -19,13 +19,13 @@
 -- decompile
 /* velk pseudo-C: _init @ 0x1000 */
 int64_t _init(void) {
-    int64_t v1;
+    uint64_t rax;
 
-    v1 = __gmon_start__;
-    if (v1 == 0x0) {
-        return v1;
+    rax = __gmon_start__;
+    if (rax == 0x0) {
+        return rax;
     }
-    return (*(v1))();
+    return __gmon_start__();
 }
 -- signature
 int64_t ()
@@ -34,12 +34,12 @@ int64_t ()
 -- ir
 fn _init @ 0x1000 (size 27)
   blk0 @ 0x1000:
-    v1 = load64(#0x3fe8)
-    brif eq v1, #0x0 -> 0x1016
+    rax = load64(#0x3fe8)
+    brif eq rax, #0x0 -> 0x1016
   blk1 @ 0x1014:
-    call *v1
+    call *load64(#0x3fe8)
   blk2 @ 0x1016:
-    ret v1
+    ret rax
 -- card
 {"addr":"0x1000","approxTokens":144,"blocks":3,"hardReasons":[],"name":"_init","nameSources":["symtab"],"section":".init","size":27,"sizeEstimated":true,"unsupported":0}
 
@@ -245,7 +245,7 @@ L_11e3:
     if (rax == 0x0) {
         return (uintptr_t)__TMC_END__;
     }
-    return (*(rax))();
+    return _ITM_deregisterTMCloneTable();
 L_11f8:
     return (uintptr_t)__TMC_END__;
 }
@@ -261,7 +261,7 @@ fn deregister_tm_clones @ 0x11d0 (size 48)
     rax = load64(#0x3fe0)
     brif eq rax, #0x0 -> 0x11f8
   blk2 @ 0x11ef:
-    call *rax
+    call *load64(#0x3fe0)
     ret v3
   blk3 @ 0x11f8:
     ret #0x4010
@@ -280,7 +280,7 @@ L_1224:
     if (rax == 0x0) {
         return 0x0;
     }
-    return (*(rax))();
+    return _ITM_registerTMCloneTable();
 L_1238:
     return 0x0;
 }
@@ -296,7 +296,7 @@ fn register_tm_clones @ 0x1200 (size 64)
     rax = load64(#0x3ff0)
     brif eq rax, #0x0 -> 0x1238
   blk2 @ 0x1230:
-    call *rax
+    call *load64(#0x3ff0)
     ret v4
   blk3 @ 0x1238:
     ret #0x0

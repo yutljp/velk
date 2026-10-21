@@ -107,6 +107,16 @@ llvm-strip -s "$OUT/rust_probe" -o "$OUT/rust_probe_stripped"
 "${CXX[@]}" $A64 -O2 -c "$CASES/cpp/namespace.cpp" -o "$OUT/cpp_demo.o"
 "${CXX[@]}" $A64 -O2 -c "$CASES/cpp/classes.cpp" -o "$OUT/cpp_classes_a64.o"
 "${CXX[@]}" $X64 -O2 -c "$CASES/cpp/classes.cpp" -o "$OUT/cpp_classes_x64.o"
+# Virtual calls, linked so the tables hold the functions' addresses, and
+# without symbols, where the tables are found from the code alone.
+for isa in a64 x64; do
+  target=$A64; emulation=aarch64elf
+  [ "$isa" = x64 ] && target=$X64 && emulation=elf_x86_64
+  "${CXX[@]}" $target -O2 -fno-rtti -fno-exceptions -c "$CASES/cpp/virtual.cpp" -o "$OUT/cpp_virtual_$isa.o"
+  ld.lld -m "$emulation" -e _Z11square_areai -o "$OUT/cpp_virtual_$isa.elf" "$OUT/cpp_virtual_$isa.o"
+  rm "$OUT/cpp_virtual_$isa.o"
+  llvm-strip -s "$OUT/cpp_virtual_$isa.elf" -o "$OUT/cpp_virtual_${isa}_stripped.elf"
+done
 
 # Ground truth for the recovery metrics: each C case linked with debug info,
 # so the DWARF is relocated, and the same executable without symbols or debug

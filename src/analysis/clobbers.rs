@@ -338,6 +338,7 @@ mod tests {
             floats_named: false,
             result: None,
             clobbers: None,
+            via: None,
         }
     }
 
@@ -403,6 +404,7 @@ mod tests {
             floats_named: false,
             result: None,
             clobbers: Some([RBX].into_iter().collect()),
+            via: None,
         };
         let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
         assert_eq!(changed.iter().collect::<Vec<_>>(), vec![RBX]);

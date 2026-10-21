@@ -890,6 +890,7 @@ mod tests {
                     floats_named: false,
                     clobbers: None,
                     result: None,
+                    via: None,
                 },
                 assign(0, Expr::reg(RBX, 64)),
                 assign(
@@ -966,6 +967,7 @@ mod tests {
                     floats_named: false,
                     clobbers: None,
                     result: None,
+                    via: None,
                 },
                 Stmt::Br { target: Some(0x10) },
             ],
@@ -999,6 +1001,7 @@ mod tests {
                 floats_named: false,
                 clobbers: None,
                 result: None,
+                via: None,
             },
             Stmt::Trap,
         ]);
@@ -1097,6 +1100,7 @@ mod tests {
                     floats_named: false,
                     clobbers: None,
                     result: None,
+                    via: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),

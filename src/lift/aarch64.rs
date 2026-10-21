@@ -3185,6 +3185,10 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
                 return true;
             }
         }
+        O::BRK | O::UDF => {
+            lifter.stmts.push(Stmt::Trap);
+            return true;
+        }
         O::RET => {
             let value = Lifter::read_reg(0, 64);
             lifter.stmts.push(Stmt::Ret { value });
@@ -3241,6 +3245,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             floats_named: true,
             clobbers: None,
             result: None,
+            via: None,
         }),
         other => {
             lifter

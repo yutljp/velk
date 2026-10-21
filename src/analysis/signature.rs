@@ -1430,6 +1430,7 @@ mod tests {
                     floats_named: false,
                     clobbers: None,
                     result: None,
+                    via: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),

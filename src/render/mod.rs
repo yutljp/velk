@@ -1164,44 +1164,61 @@ fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
         return None;
     };
     // The call as an expression, without the variable that may take its value.
-    let bare = match call {
-        Stmt::Call { .. } if result.is_some() => {
-            let mut bare = call.clone();
-            if let Stmt::Call { result, .. } = &mut bare {
-                *result = None;
-            }
-            bare
-        }
-        _ => call.clone(),
-    };
+    let mut bare = call.clone();
+    if let Stmt::Call { result, .. } = &mut bare {
+        *result = None;
+    }
     let call_text = render_stmt(&bare, ctx);
     let call_text = call_text.strip_suffix(';')?;
+    let comment = via_comment(call, ctx);
     let takes = |value: &Expr| match result {
         Some(dest) => matches!(value, Expr::Reg { index, .. } if *index == dest.index),
         None => reads_return(value),
     };
     match next {
         Stmt::Ret { value } if takes(value) && !ctx.void_return => {
-            Some(format!("return {call_text};"))
+            Some(format!("return {call_text};{comment}"))
         }
         Stmt::Store { value, .. } if result.is_none() && reads_return(value) => {
             let stored = render_stmt(next, ctx);
             let (target, _) = stored.split_once(" = ")?;
-            Some(format!("{target} = {call_text};"))
+            Some(format!("{target} = {call_text};{comment}"))
         }
         Stmt::Assign { value, .. } if result.is_none() && reads_return(value) => {
             let assigned = render_stmt(next, ctx);
             let (target, _) = assigned.split_once(" = ")?;
-            Some(format!("{target} = {call_text};"))
+            Some(format!("{target} = {call_text};{comment}"))
         }
         _ => None,
+    }
+}
+
+/// What a call that was or is indirect reads its callee's address from,
+/// as a comment after it.
+fn via_comment(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
+    let Stmt::Call {
+        target,
+        via: Some(via),
+        ..
+    } = stmt
+    else {
+        return String::new();
+    };
+    let name = |addr: u64| {
+        ctx.callees
+            .get(&addr)
+            .map_or_else(|| format!("sub_{addr:x}"), |name| sanitize(name))
+    };
+    match target {
+        Some(_) => format!(" /* via {} */", via.describe(&name)),
+        None => format!(" /* {} */", via.describe(&name)),
     }
 }
 
 fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     match node {
         Node::Stmt(stmt) => {
-            let text = render_stmt(stmt, ctx);
+            let text = render_stmt(stmt, ctx) + &via_comment(stmt, ctx);
             if !text.is_empty() {
                 for line in text.lines() {
                     indent(depth, out);
@@ -2111,6 +2128,7 @@ mod tests {
                         index: first,
                         width: 64,
                     }),
+                    via: None,
                 },
                 assign(second, Expr::reg(3, 64)),
                 Stmt::Ret {

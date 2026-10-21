@@ -1,236 +1,240 @@
-# fixture: output lines, declared variables, casts, register names, unsigned comments, traps, gotos
-alt.o: 20 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-arm64.o: 87 lines, 20 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-arm64_debug.elf: 85 lines, 21 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-arm64_debug.o: 87 lines, 20 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-arm64_debug_stripped.elf: 85 lines, 21 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-arm64_div.o: 100 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-arm64_jumptable.elf: 178 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-arm64_linked.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-arm64_loops.o: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-arm64_loops0.o: 68 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-arm64_loops_stripped.o: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-arm64_macho.o: 107 lines, 28 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-arm64_switch.elf: 11 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-calls_a64.elf: 228 lines, 57 variables, 6 casts, 6 registers, 5 unsigned, 0 traps, 0 gotos
-calls_a64.o: 224 lines, 57 variables, 5 casts, 6 registers, 5 unsigned, 0 traps, 0 gotos
-cold_gcc: 183 lines, 29 variables, 11 casts, 12 registers, 0 unsigned, 5 traps, 0 gotos
-cold_gcc_stripped: 181 lines, 29 variables, 8 casts, 12 registers, 0 unsigned, 5 traps, 0 gotos
-cpp_classes_a64.o: 51 lines, 9 variables, 3 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos
-cpp_classes_x64.o: 52 lines, 8 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-cpp_demo.o: 15 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-go_probe: 81821 lines, 17282 variables, 7528 casts, 2432 registers, 1472 unsigned, 1333 traps, 128 gotos
-go_stripped: 81731 lines, 17264 variables, 7528 casts, 2430 registers, 1472 unsigned, 1332 traps, 128 gotos
-l0_arith_a64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-l0_arith_x64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-l1_branch_a64.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-l1_branch_x64.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-l2_loop_a64.o: 62 lines, 10 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-l2_loop_x64.o: 148 lines, 29 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-l4_memory_a64.o: 41 lines, 5 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-l4_memory_x64.o: 34 lines, 3 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-l5_switch.elf: 88 lines, 4 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-l5_switch.o: 86 lines, 4 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-l6_abi_a64.o: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-l6_abi_x64.o: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/alt_names.aarch64.O0.debug.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/alt_names.aarch64.O0.stripped.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/alt_names.aarch64.O2.debug.elf: 20 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/alt_names.aarch64.O2.stripped.elf: 20 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/alt_names.x86_64.O0.debug.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/alt_names.x86_64.O0.stripped.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/alt_names.x86_64.O2.debug.elf: 18 lines, 3 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/alt_names.x86_64.O2.stripped.elf: 18 lines, 3 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.aarch64.O0.debug.elf: 36 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.aarch64.O0.stripped.elf: 40 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.aarch64.O2.debug.elf: 85 lines, 21 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.aarch64.O2.stripped.elf: 87 lines, 20 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.x86_64.O0.debug.elf: 36 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.x86_64.O0.stripped.elf: 40 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.x86_64.O2.debug.elf: 75 lines, 17 variables, 11 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/arith_mixed.x86_64.O2.stripped.elf: 77 lines, 16 variables, 12 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/calls.aarch64.O0.debug.elf: 195 lines, 54 variables, 1 casts, 29 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/calls.aarch64.O0.stripped.elf: 186 lines, 54 variables, 1 casts, 15 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/calls.aarch64.O2.debug.elf: 215 lines, 51 variables, 4 casts, 20 registers, 3 unsigned, 0 traps, 0 gotos
-metrics/calls.aarch64.O2.stripped.elf: 206 lines, 51 variables, 4 casts, 6 registers, 3 unsigned, 0 traps, 0 gotos
-metrics/calls.x86_64.O0.debug.elf: 195 lines, 59 variables, 6 casts, 21 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/calls.x86_64.O0.stripped.elf: 188 lines, 59 variables, 6 casts, 11 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/calls.x86_64.O2.debug.elf: 268 lines, 68 variables, 6 casts, 21 registers, 5 unsigned, 0 traps, 0 gotos
-metrics/calls.x86_64.O2.stripped.elf: 260 lines, 68 variables, 6 casts, 11 registers, 5 unsigned, 0 traps, 0 gotos
-metrics/control.aarch64.O0.debug.elf: 161 lines, 36 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/control.aarch64.O0.stripped.elf: 157 lines, 34 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/control.aarch64.O2.debug.elf: 195 lines, 38 variables, 7 casts, 0 registers, 3 unsigned, 0 traps, 0 gotos
-metrics/control.aarch64.O2.stripped.elf: 182 lines, 34 variables, 4 casts, 0 registers, 3 unsigned, 0 traps, 0 gotos
-metrics/control.x86_64.O0.debug.elf: 188 lines, 45 variables, 2 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/control.x86_64.O0.stripped.elf: 186 lines, 44 variables, 2 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/control.x86_64.O2.debug.elf: 231 lines, 47 variables, 14 casts, 0 registers, 4 unsigned, 0 traps, 0 gotos
-metrics/control.x86_64.O2.stripped.elf: 225 lines, 44 variables, 14 casts, 0 registers, 4 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.aarch64.O0.debug.elf: 109 lines, 3 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.aarch64.O0.stripped.elf: 100 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.aarch64.O2.debug.elf: 100 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.aarch64.O2.stripped.elf: 100 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.x86_64.O0.debug.elf: 109 lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.x86_64.O0.stripped.elf: 109 lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.x86_64.O2.debug.elf: 103 lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_a64.x86_64.O2.stripped.elf: 103 lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.aarch64.O0.debug.elf: 78 lines, 2 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.aarch64.O0.stripped.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.aarch64.O2.debug.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.aarch64.O2.stripped.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.x86_64.O0.debug.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.x86_64.O0.stripped.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.x86_64.O2.debug.elf: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/divmod_x64.x86_64.O2.stripped.elf: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/float.aarch64.O0.debug.elf: 48 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/float.aarch64.O0.stripped.elf: 48 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/float.aarch64.O2.debug.elf: 68 lines, 14 variables, 8 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/float.aarch64.O2.stripped.elf: 66 lines, 13 variables, 7 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/float.x86_64.O0.debug.elf: 49 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/float.x86_64.O0.stripped.elf: 49 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/float.x86_64.O2.debug.elf: 76 lines, 18 variables, 5 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/float.x86_64.O2.stripped.elf: 74 lines, 17 variables, 5 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/integers.aarch64.O0.debug.elf: 92 lines, 17 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/integers.aarch64.O0.stripped.elf: 92 lines, 17 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/integers.aarch64.O2.debug.elf: 49 lines, 3 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/integers.aarch64.O2.stripped.elf: 49 lines, 3 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/integers.x86_64.O0.debug.elf: 99 lines, 20 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/integers.x86_64.O0.stripped.elf: 99 lines, 20 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/integers.x86_64.O2.debug.elf: 55 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/integers.x86_64.O2.stripped.elf: 55 lines, 4 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.aarch64.O0.debug.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.aarch64.O0.stripped.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.aarch64.O2.debug.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.aarch64.O2.stripped.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.x86_64.O0.debug.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.x86_64.O0.stripped.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.x86_64.O2.debug.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l0_arith.x86_64.O2.stripped.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.aarch64.O0.debug.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.aarch64.O0.stripped.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.aarch64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.aarch64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.x86_64.O0.debug.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.x86_64.O0.stripped.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.x86_64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l1_branch.x86_64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.aarch64.O0.debug.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.aarch64.O0.stripped.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.aarch64.O2.debug.elf: 67 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.aarch64.O2.stripped.elf: 65 lines, 10 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.x86_64.O0.debug.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.x86_64.O0.stripped.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.x86_64.O2.debug.elf: 153 lines, 30 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l2_loop.x86_64.O2.stripped.elf: 151 lines, 29 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.aarch64.O0.debug.elf: 29 lines, 5 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.aarch64.O0.stripped.elf: 37 lines, 5 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.aarch64.O2.debug.elf: 78 lines, 18 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.aarch64.O2.stripped.elf: 76 lines, 17 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.x86_64.O0.debug.elf: 29 lines, 5 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.x86_64.O0.stripped.elf: 41 lines, 7 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.x86_64.O2.debug.elf: 67 lines, 14 variables, 12 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l4_memory.x86_64.O2.stripped.elf: 73 lines, 13 variables, 13 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.aarch64.O0.debug.elf: 173 lines, 7 variables, 1 casts, 2 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.aarch64.O0.stripped.elf: 171 lines, 6 variables, 1 casts, 2 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.aarch64.O2.debug.elf: 160 lines, 0 variables, 1 casts, 3 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.aarch64.O2.stripped.elf: 160 lines, 0 variables, 1 casts, 3 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.x86_64.O0.debug.elf: 173 lines, 8 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.x86_64.O0.stripped.elf: 171 lines, 7 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.x86_64.O2.debug.elf: 159 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l5_switch.x86_64.O2.stripped.elf: 159 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/l6_abi.aarch64.O0.debug.elf: 29 lines, 1 variables, 0 casts, 6 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l6_abi.aarch64.O0.stripped.elf: 29 lines, 1 variables, 0 casts, 6 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l6_abi.aarch64.O2.debug.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/l6_abi.aarch64.O2.stripped.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/l6_abi.x86_64.O0.debug.elf: 20 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l6_abi.x86_64.O0.stripped.elf: 20 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/l6_abi.x86_64.O2.debug.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/l6_abi.x86_64.O2.stripped.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/loops.aarch64.O0.debug.elf: 68 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/loops.aarch64.O0.stripped.elf: 68 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/loops.aarch64.O2.debug.elf: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/loops.aarch64.O2.stripped.elf: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/loops.x86_64.O0.debug.elf: 68 lines, 19 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/loops.x86_64.O0.stripped.elf: 68 lines, 19 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/loops.x86_64.O2.debug.elf: 75 lines, 17 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/loops.x86_64.O2.stripped.elf: 71 lines, 16 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/memory.aarch64.O0.debug.elf: 78 lines, 18 variables, 3 casts, 0 registers, 2 unsigned, 0 traps, 0 gotos
-metrics/memory.aarch64.O0.stripped.elf: 82 lines, 18 variables, 0 casts, 0 registers, 2 unsigned, 0 traps, 0 gotos
-metrics/memory.aarch64.O2.debug.elf: 126 lines, 20 variables, 3 casts, 0 registers, 3 unsigned, 0 traps, 1 gotos
-metrics/memory.aarch64.O2.stripped.elf: 130 lines, 20 variables, 0 casts, 0 registers, 3 unsigned, 0 traps, 1 gotos
-metrics/memory.x86_64.O0.debug.elf: 76 lines, 18 variables, 3 casts, 2 registers, 2 unsigned, 0 traps, 0 gotos
-metrics/memory.x86_64.O0.stripped.elf: 91 lines, 23 variables, 1 casts, 2 registers, 2 unsigned, 0 traps, 0 gotos
-metrics/memory.x86_64.O2.debug.elf: 125 lines, 16 variables, 13 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos
-metrics/memory.x86_64.O2.stripped.elf: 130 lines, 19 variables, 43 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos
-metrics/strings.aarch64.O0.debug.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/strings.aarch64.O0.stripped.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/strings.aarch64.O2.debug.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/strings.aarch64.O2.stripped.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/strings.x86_64.O0.debug.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/strings.x86_64.O0.stripped.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/strings.x86_64.O2.debug.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/strings.x86_64.O2.stripped.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.aarch64.O0.debug.elf: 33 lines, 8 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.aarch64.O0.stripped.elf: 50 lines, 8 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.aarch64.O2.debug.elf: 38 lines, 7 variables, 12 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.aarch64.O2.stripped.elf: 55 lines, 8 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.x86_64.O0.debug.elf: 37 lines, 10 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.x86_64.O0.stripped.elf: 52 lines, 10 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.x86_64.O2.debug.elf: 56 lines, 8 variables, 22 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/struct_arrays.x86_64.O2.stripped.elf: 60 lines, 5 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.aarch64.O0.debug.elf: 87 lines, 23 variables, 22 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.aarch64.O0.stripped.elf: 106 lines, 23 variables, 11 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.aarch64.O2.debug.elf: 100 lines, 19 variables, 23 casts, 5 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.aarch64.O2.stripped.elf: 114 lines, 18 variables, 13 casts, 5 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.x86_64.O0.debug.elf: 95 lines, 25 variables, 21 casts, 1 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.x86_64.O0.stripped.elf: 110 lines, 23 variables, 12 casts, 1 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.x86_64.O2.debug.elf: 76 lines, 7 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/structs.x86_64.O2.stripped.elf: 93 lines, 7 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.aarch64.O0.debug.elf: 81 lines, 12 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.aarch64.O0.stripped.elf: 79 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.aarch64.O2.debug.elf: 178 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.aarch64.O2.stripped.elf: 178 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.x86_64.O0.debug.elf: 82 lines, 14 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.x86_64.O0.stripped.elf: 82 lines, 14 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.x86_64.O2.debug.elf: 92 lines, 1 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_jumptable.x86_64.O2.stripped.elf: 92 lines, 1 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.aarch64.O0.debug.elf: 31 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.aarch64.O0.stripped.elf: 29 lines, 3 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.aarch64.O2.debug.elf: 11 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.aarch64.O2.stripped.elf: 11 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.x86_64.O0.debug.elf: 37 lines, 6 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.x86_64.O0.stripped.elf: 37 lines, 6 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.x86_64.O2.debug.elf: 13 lines, 2 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/switch_value_table.x86_64.O2.stripped.elf: 13 lines, 2 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.aarch64.O0.debug.elf: 21 lines, 2 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.aarch64.O0.stripped.elf: 21 lines, 2 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.aarch64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.aarch64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.x86_64.O0.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.x86_64.O0.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.x86_64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_calls.x86_64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_indirect.aarch64.O0.debug.elf: 14 lines, 1 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_indirect.aarch64.O0.stripped.elf: 14 lines, 1 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_indirect.aarch64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/tail_indirect.aarch64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/tail_indirect.x86_64.O0.debug.elf: 8 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_indirect.x86_64.O0.stripped.elf: 8 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-metrics/tail_indirect.x86_64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-metrics/tail_indirect.x86_64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-pe64.exe: 46 lines, 3 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-pe64.obj: 45 lines, 3 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-rust_demo: 75031 lines, 16550 variables, 7746 casts, 1893 registers, 2424 unsigned, 843 traps, 1621 gotos
-rust_probe: 75031 lines, 16550 variables, 7746 casts, 1893 registers, 2424 unsigned, 843 traps, 1621 gotos
-rust_probe_stripped: 75090 lines, 16768 variables, 7514 casts, 1158 registers, 2465 unsigned, 849 traps, 1615 gotos
-strings.o: 4 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-switch_jumptable.o: 177 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-switch_jumptable_x64.o: 90 lines, 1 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-switch_value_table.o: 10 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-tail_calls.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-tail_calls_stripped.o: 13 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-tail_indirect.o: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-tail_indirect_stripped.o: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos
-x64_div.o: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-x64_div_macho.o: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos
-x64_loops.o: 71 lines, 16 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
-x64_loops_stripped.o: 71 lines, 16 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos
+# fixture: output lines, declared variables, casts, register names, unsigned comments, traps, gotos, indirect calls
+alt.o: 20 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64.o: 87 lines, 20 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_debug.elf: 85 lines, 21 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_debug.o: 87 lines, 20 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_debug_stripped.elf: 85 lines, 21 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_div.o: 100 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_jumptable.elf: 178 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_linked.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_loops.o: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_loops0.o: 68 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_loops_stripped.o: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_macho.o: 107 lines, 28 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64_switch.elf: 11 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+calls_a64.elf: 228 lines, 57 variables, 6 casts, 6 registers, 5 unsigned, 0 traps, 0 gotos, 2 indirect calls
+calls_a64.o: 224 lines, 57 variables, 5 casts, 6 registers, 5 unsigned, 0 traps, 0 gotos, 2 indirect calls
+cold_gcc: 183 lines, 28 variables, 11 casts, 14 registers, 0 unsigned, 5 traps, 0 gotos, 0 indirect calls
+cold_gcc_stripped: 181 lines, 28 variables, 8 casts, 14 registers, 0 unsigned, 5 traps, 0 gotos, 0 indirect calls
+cpp_classes_a64.o: 51 lines, 9 variables, 3 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+cpp_classes_x64.o: 52 lines, 8 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+cpp_demo.o: 15 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+cpp_virtual_a64.elf: 137 lines, 11 variables, 7 casts, 9 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
+cpp_virtual_a64_stripped.elf: 137 lines, 11 variables, 7 casts, 9 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
+cpp_virtual_x64.elf: 134 lines, 14 variables, 5 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
+cpp_virtual_x64_stripped.elf: 134 lines, 14 variables, 5 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
+go_probe: 81809 lines, 17278 variables, 7528 casts, 2430 registers, 1472 unsigned, 1333 traps, 128 gotos, 121 indirect calls
+go_stripped: 81719 lines, 17260 variables, 7528 casts, 2428 registers, 1472 unsigned, 1332 traps, 128 gotos, 121 indirect calls
+l0_arith_a64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l0_arith_x64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l1_branch_a64.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l1_branch_x64.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l2_loop_a64.o: 62 lines, 10 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l2_loop_x64.o: 148 lines, 29 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l4_memory_a64.o: 41 lines, 5 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l4_memory_x64.o: 34 lines, 3 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l5_switch.elf: 88 lines, 4 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l5_switch.o: 86 lines, 4 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+l6_abi_a64.o: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+l6_abi_x64.o: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/alt_names.aarch64.O0.debug.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/alt_names.aarch64.O0.stripped.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/alt_names.aarch64.O2.debug.elf: 20 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/alt_names.aarch64.O2.stripped.elf: 20 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/alt_names.x86_64.O0.debug.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/alt_names.x86_64.O0.stripped.elf: 17 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/alt_names.x86_64.O2.debug.elf: 18 lines, 3 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/alt_names.x86_64.O2.stripped.elf: 18 lines, 3 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.aarch64.O0.debug.elf: 36 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.aarch64.O0.stripped.elf: 40 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.aarch64.O2.debug.elf: 85 lines, 21 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.aarch64.O2.stripped.elf: 87 lines, 20 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.x86_64.O0.debug.elf: 36 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.x86_64.O0.stripped.elf: 40 lines, 9 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.x86_64.O2.debug.elf: 75 lines, 17 variables, 11 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/arith_mixed.x86_64.O2.stripped.elf: 77 lines, 16 variables, 12 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/calls.aarch64.O0.debug.elf: 195 lines, 54 variables, 1 casts, 29 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.aarch64.O0.stripped.elf: 186 lines, 54 variables, 1 casts, 15 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.aarch64.O2.debug.elf: 215 lines, 51 variables, 4 casts, 20 registers, 3 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.aarch64.O2.stripped.elf: 206 lines, 51 variables, 4 casts, 6 registers, 3 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.x86_64.O0.debug.elf: 195 lines, 59 variables, 6 casts, 21 registers, 1 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.x86_64.O0.stripped.elf: 188 lines, 59 variables, 6 casts, 11 registers, 1 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.x86_64.O2.debug.elf: 268 lines, 68 variables, 6 casts, 21 registers, 5 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.x86_64.O2.stripped.elf: 260 lines, 68 variables, 6 casts, 11 registers, 5 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/control.aarch64.O0.debug.elf: 161 lines, 36 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/control.aarch64.O0.stripped.elf: 157 lines, 34 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/control.aarch64.O2.debug.elf: 195 lines, 38 variables, 7 casts, 0 registers, 3 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/control.aarch64.O2.stripped.elf: 182 lines, 34 variables, 4 casts, 0 registers, 3 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/control.x86_64.O0.debug.elf: 188 lines, 45 variables, 2 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/control.x86_64.O0.stripped.elf: 186 lines, 44 variables, 2 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/control.x86_64.O2.debug.elf: 231 lines, 47 variables, 14 casts, 0 registers, 4 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/control.x86_64.O2.stripped.elf: 225 lines, 44 variables, 14 casts, 0 registers, 4 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.aarch64.O0.debug.elf: 109 lines, 3 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.aarch64.O0.stripped.elf: 100 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.aarch64.O2.debug.elf: 100 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.aarch64.O2.stripped.elf: 100 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.x86_64.O0.debug.elf: 109 lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.x86_64.O0.stripped.elf: 109 lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.x86_64.O2.debug.elf: 103 lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_a64.x86_64.O2.stripped.elf: 103 lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.aarch64.O0.debug.elf: 78 lines, 2 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.aarch64.O0.stripped.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.aarch64.O2.debug.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.aarch64.O2.stripped.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.x86_64.O0.debug.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.x86_64.O0.stripped.elf: 72 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.x86_64.O2.debug.elf: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/divmod_x64.x86_64.O2.stripped.elf: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.aarch64.O0.debug.elf: 48 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.aarch64.O0.stripped.elf: 48 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.aarch64.O2.debug.elf: 68 lines, 14 variables, 8 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.aarch64.O2.stripped.elf: 66 lines, 13 variables, 7 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.x86_64.O0.debug.elf: 49 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.x86_64.O0.stripped.elf: 49 lines, 10 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.x86_64.O2.debug.elf: 76 lines, 18 variables, 5 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/float.x86_64.O2.stripped.elf: 74 lines, 17 variables, 5 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.aarch64.O0.debug.elf: 92 lines, 17 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.aarch64.O0.stripped.elf: 92 lines, 17 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.aarch64.O2.debug.elf: 49 lines, 3 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.aarch64.O2.stripped.elf: 49 lines, 3 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.x86_64.O0.debug.elf: 99 lines, 20 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.x86_64.O0.stripped.elf: 99 lines, 20 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.x86_64.O2.debug.elf: 55 lines, 4 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/integers.x86_64.O2.stripped.elf: 55 lines, 4 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.aarch64.O0.debug.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.aarch64.O0.stripped.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.aarch64.O2.debug.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.aarch64.O2.stripped.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.x86_64.O0.debug.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.x86_64.O0.stripped.elf: 27 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.x86_64.O2.debug.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l0_arith.x86_64.O2.stripped.elf: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.aarch64.O0.debug.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.aarch64.O0.stripped.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.aarch64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.aarch64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.x86_64.O0.debug.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.x86_64.O0.stripped.elf: 51 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.x86_64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l1_branch.x86_64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.aarch64.O0.debug.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.aarch64.O0.stripped.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.aarch64.O2.debug.elf: 67 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.aarch64.O2.stripped.elf: 65 lines, 10 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.x86_64.O0.debug.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.x86_64.O0.stripped.elf: 71 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.x86_64.O2.debug.elf: 153 lines, 30 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l2_loop.x86_64.O2.stripped.elf: 151 lines, 29 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.aarch64.O0.debug.elf: 29 lines, 5 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.aarch64.O0.stripped.elf: 37 lines, 5 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.aarch64.O2.debug.elf: 78 lines, 18 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.aarch64.O2.stripped.elf: 76 lines, 17 variables, 4 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.x86_64.O0.debug.elf: 29 lines, 5 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.x86_64.O0.stripped.elf: 41 lines, 7 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.x86_64.O2.debug.elf: 67 lines, 14 variables, 12 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l4_memory.x86_64.O2.stripped.elf: 73 lines, 13 variables, 13 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.aarch64.O0.debug.elf: 173 lines, 7 variables, 1 casts, 2 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.aarch64.O0.stripped.elf: 171 lines, 6 variables, 1 casts, 2 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.aarch64.O2.debug.elf: 160 lines, 0 variables, 1 casts, 3 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.aarch64.O2.stripped.elf: 160 lines, 0 variables, 1 casts, 3 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.x86_64.O0.debug.elf: 173 lines, 8 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.x86_64.O0.stripped.elf: 171 lines, 7 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.x86_64.O2.debug.elf: 159 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l5_switch.x86_64.O2.stripped.elf: 159 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/l6_abi.aarch64.O0.debug.elf: 29 lines, 1 variables, 0 casts, 6 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/l6_abi.aarch64.O0.stripped.elf: 29 lines, 1 variables, 0 casts, 6 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/l6_abi.aarch64.O2.debug.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/l6_abi.aarch64.O2.stripped.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/l6_abi.x86_64.O0.debug.elf: 20 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/l6_abi.x86_64.O0.stripped.elf: 20 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/l6_abi.x86_64.O2.debug.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/l6_abi.x86_64.O2.stripped.elf: 24 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/loops.aarch64.O0.debug.elf: 68 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/loops.aarch64.O0.stripped.elf: 68 lines, 19 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/loops.aarch64.O2.debug.elf: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/loops.aarch64.O2.stripped.elf: 74 lines, 14 variables, 3 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/loops.x86_64.O0.debug.elf: 68 lines, 19 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/loops.x86_64.O0.stripped.elf: 68 lines, 19 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/loops.x86_64.O2.debug.elf: 75 lines, 17 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/loops.x86_64.O2.stripped.elf: 71 lines, 16 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/memory.aarch64.O0.debug.elf: 78 lines, 18 variables, 3 casts, 0 registers, 2 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/memory.aarch64.O0.stripped.elf: 82 lines, 18 variables, 0 casts, 0 registers, 2 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/memory.aarch64.O2.debug.elf: 126 lines, 20 variables, 3 casts, 0 registers, 3 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/memory.aarch64.O2.stripped.elf: 130 lines, 20 variables, 0 casts, 0 registers, 3 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/memory.x86_64.O0.debug.elf: 76 lines, 18 variables, 3 casts, 2 registers, 2 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/memory.x86_64.O0.stripped.elf: 91 lines, 23 variables, 1 casts, 2 registers, 2 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/memory.x86_64.O2.debug.elf: 125 lines, 16 variables, 13 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/memory.x86_64.O2.stripped.elf: 130 lines, 19 variables, 43 casts, 0 registers, 4 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/strings.aarch64.O0.debug.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/strings.aarch64.O0.stripped.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/strings.aarch64.O2.debug.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/strings.aarch64.O2.stripped.elf: 5 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/strings.x86_64.O0.debug.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/strings.x86_64.O0.stripped.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/strings.x86_64.O2.debug.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/strings.x86_64.O2.stripped.elf: 5 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.aarch64.O0.debug.elf: 33 lines, 8 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.aarch64.O0.stripped.elf: 50 lines, 8 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.aarch64.O2.debug.elf: 38 lines, 7 variables, 12 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.aarch64.O2.stripped.elf: 55 lines, 8 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.x86_64.O0.debug.elf: 37 lines, 10 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.x86_64.O0.stripped.elf: 52 lines, 10 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.x86_64.O2.debug.elf: 56 lines, 8 variables, 22 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.x86_64.O2.stripped.elf: 60 lines, 5 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.aarch64.O0.debug.elf: 87 lines, 23 variables, 22 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.aarch64.O0.stripped.elf: 106 lines, 23 variables, 11 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.aarch64.O2.debug.elf: 100 lines, 19 variables, 23 casts, 5 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.aarch64.O2.stripped.elf: 114 lines, 18 variables, 13 casts, 5 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.x86_64.O0.debug.elf: 95 lines, 25 variables, 21 casts, 1 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.x86_64.O0.stripped.elf: 110 lines, 23 variables, 12 casts, 1 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.x86_64.O2.debug.elf: 76 lines, 7 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.x86_64.O2.stripped.elf: 93 lines, 7 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.aarch64.O0.debug.elf: 81 lines, 12 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.aarch64.O0.stripped.elf: 79 lines, 11 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.aarch64.O2.debug.elf: 178 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.aarch64.O2.stripped.elf: 178 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.x86_64.O0.debug.elf: 82 lines, 14 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.x86_64.O0.stripped.elf: 82 lines, 14 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.x86_64.O2.debug.elf: 92 lines, 1 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_jumptable.x86_64.O2.stripped.elf: 92 lines, 1 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.aarch64.O0.debug.elf: 31 lines, 4 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.aarch64.O0.stripped.elf: 29 lines, 3 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.aarch64.O2.debug.elf: 11 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.aarch64.O2.stripped.elf: 11 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.x86_64.O0.debug.elf: 37 lines, 6 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.x86_64.O0.stripped.elf: 37 lines, 6 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.x86_64.O2.debug.elf: 13 lines, 2 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/switch_value_table.x86_64.O2.stripped.elf: 13 lines, 2 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.aarch64.O0.debug.elf: 21 lines, 2 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.aarch64.O0.stripped.elf: 21 lines, 2 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.aarch64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.aarch64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.x86_64.O0.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.x86_64.O0.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.x86_64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_calls.x86_64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/tail_indirect.aarch64.O0.debug.elf: 14 lines, 1 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/tail_indirect.aarch64.O0.stripped.elf: 14 lines, 1 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/tail_indirect.aarch64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/tail_indirect.aarch64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/tail_indirect.x86_64.O0.debug.elf: 8 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/tail_indirect.x86_64.O0.stripped.elf: 8 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
+metrics/tail_indirect.x86_64.O2.debug.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+metrics/tail_indirect.x86_64.O2.stripped.elf: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+pe64.exe: 46 lines, 3 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+pe64.obj: 45 lines, 3 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+rust_demo: 75047 lines, 16567 variables, 7716 casts, 1873 registers, 2424 unsigned, 843 traps, 1621 gotos, 126 indirect calls
+rust_probe: 75047 lines, 16567 variables, 7716 casts, 1873 registers, 2424 unsigned, 843 traps, 1621 gotos, 126 indirect calls
+rust_probe_stripped: 75031 lines, 16761 variables, 7484 casts, 1067 registers, 2465 unsigned, 849 traps, 1615 gotos, 126 indirect calls
+strings.o: 4 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+switch_jumptable.o: 177 lines, 47 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+switch_jumptable_x64.o: 90 lines, 1 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+switch_value_table.o: 10 lines, 1 variables, 0 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+tail_calls.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+tail_calls_stripped.o: 13 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+tail_indirect.o: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+tail_indirect_stripped.o: 12 lines, 0 variables, 0 casts, 3 registers, 0 unsigned, 0 traps, 1 gotos, 0 indirect calls
+x64_div.o: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+x64_div_macho.o: 75 lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+x64_loops.o: 71 lines, 16 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls
+x64_loops_stripped.o: 71 lines, 16 variables, 1 casts, 0 registers, 1 unsigned, 0 traps, 0 gotos, 0 indirect calls

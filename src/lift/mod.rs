@@ -448,7 +448,7 @@ pub(crate) fn arguments(
 
 /// A call to `target`. A variadic library function's arguments are left to
 /// the analysis, which counts them from its format string.
-fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
+pub(crate) fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
     let name = target
         .and_then(|target| image.functions.get(&target))
         .and_then(|function| function.name.as_deref());
@@ -461,6 +461,7 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
             floats_named: false,
             clobbers: None,
             result: None,
+            via: None,
         };
     }
     let convention = match target {
@@ -511,6 +512,7 @@ fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
         floats_named: floats.is_some(),
         result: None,
         clobbers: summary.and_then(|summary| summary.clobbers),
+        via: None,
     }
 }
 
@@ -865,6 +867,7 @@ pub(crate) fn call_through(image: &Image, through: Expr) -> Stmt {
         floats_named: false,
         clobbers: None,
         result: None,
+        via: None,
     }
 }
 

@@ -1,0 +1,417 @@
+# cpp_virtual_x64.elf: elf x86_64 0x201480, 18 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x2013a0 2 __cxa_pure_virtual symtab,unwind
+0x2013b0 36 operator new(unsigned long) symtab,unwind
+0x2013e0 1 operator delete(void*) symtab,unwind
+0x2013f0 1 operator delete(void*, unsigned long) symtab,unwind
+0x201400 2 Shape::~Shape() symtab,unwind
+0x201410 14 Shape::scaled(int) const symtab,unwind
+0x201420 14 Square::Square(int) symtab,unwind
+0x201430 7 Square::area() const symtab,unwind
+0x201440 17 Rect::Rect(int, int) symtab,unwind
+0x201460 8 Rect::area() const symtab,unwind
+0x201470 12 Rect::scaled(int) const symtab,unwind
+0x201480 81 square_area(int) symtab,entry,unwind
+0x2014e0 77 rect_scaled(int, int, int) symtab,unwind
+0x201530 6 any_area(Shape const*) symtab,unwind
+0x201540 9 any_scaled(Shape const*, int) symtab,unwind
+0x201550 1 Shape::~Shape() symtab,unwind
+0x201560 1 Square::~Square() symtab,unwind
+0x201570 1 Rect::~Rect() symtab,unwind
+
+== 0x2013a0 __cxa_pure_virtual
+-- decompile
+/* velk pseudo-C: __cxa_pure_virtual @ 0x2013a0 */
+int32_t __cxa_pure_virtual(void) {
+    __builtin_trap();
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn __cxa_pure_virtual @ 0x2013a0 (size 2)
+  blk0 @ 0x2013a0:
+    trap
+-- card
+{"addr":"0x2013a0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"__cxa_pure_virtual","nameSources":["symtab","unwind"],"section":".text","size":2,"unsupported":0}
+
+== 0x2013b0 operator new(unsigned long)
+-- decompile
+/* velk pseudo-C: operator new(unsigned long) @ 0x2013b0 */
+/* ref: 0x203610 .bss */
+/* ref: 0x204610 .bss */
+int64_t operator_new(int64_t a0) {
+    int64_t v1;
+
+    v1 = _ZL4used;
+    _ZL4used = (a0 + 0xf & 0xfffffffffffffff0) + v1;
+    return 0x203610 + v1;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+0x203610 .bss
+0x204610 .bss
+-- ir
+fn operator new(unsigned long) @ 0x2013b0 (size 36)
+  blk0 @ 0x2013b0:
+    v1 = load64(#0x204610)
+    store64((((rdi + #0xf) & #0xfffffffffffffff0) + v1), #0x204610)
+    ret (#0x203610 + v1)
+-- card
+{"addr":"0x2013b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"operator new(unsigned long)","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x2013e0 operator delete(void*)
+-- decompile
+/* velk pseudo-C: operator delete(void*) @ 0x2013e0 */
+void operator_delete_2013e0(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn operator delete(void*) @ 0x2013e0 (size 1)
+  blk0 @ 0x2013e0:
+    ret #0x0
+-- card
+{"addr":"0x2013e0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*)","nameSources":["symtab","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x2013f0 operator delete(void*, unsigned long)
+-- decompile
+/* velk pseudo-C: operator delete(void*, unsigned long) @ 0x2013f0 */
+void operator_delete_2013f0(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn operator delete(void*, unsigned long) @ 0x2013f0 (size 1)
+  blk0 @ 0x2013f0:
+    ret #0x0
+-- card
+{"addr":"0x2013f0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*, unsigned long)","nameSources":["symtab","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201400 Shape::~Shape()
+-- decompile
+/* velk pseudo-C: Shape::~Shape() @ 0x201400 */
+int32_t Shape___Shape_201400(void) {
+    __builtin_trap();
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn Shape::~Shape() @ 0x201400 (size 2)
+  blk0 @ 0x201400:
+    trap
+-- card
+{"addr":"0x201400","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Shape::~Shape()","nameSources":["symtab","unwind"],"section":".text","size":2,"unsupported":0}
+
+== 0x201410 Shape::scaled(int) const
+-- decompile
+/* velk pseudo-C: Shape::scaled(int) const @ 0x201410 */
+int32_t Shape__scaled(uint64_t *a0, int32_t a1) {
+    uint64_t *v2;
+    int32_t v3;
+
+    v2 = *a0;
+    v3 = (*(v2[0x2]))(a0); /* vtable slot 2: Square__area, Rect__area */
+    return v3 * a1;
+}
+-- signature
+int32_t (uint64_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn Shape::scaled(int) const @ 0x201410 (size 14)
+  blk0 @ 0x201410:
+    v1 = (rsi & #0xffffffff)
+    v2 = load64(rdi)
+    v3 = call *load64((v2 + #0x10))(rdi)
+    ret (((v3 & #0xffffffff) * (v1 & #0xffffffff)) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x201410","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Shape::scaled(int) const","nameSources":["symtab","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x201420 Square::Square(int)
+-- decompile
+/* velk pseudo-C: Square::Square(int) @ 0x201420 */
+/* ref: 0x202588 .data.rel.ro */
+struct Square__Square_a0 {
+    int64_t field_0x0;
+    int32_t field_0x8;
+};
+int32_t Square__Square(struct Square__Square_a0 *a0, int32_t a1) {
+    a0->field_0x0 = 0x202588;
+    a0->field_0x8 = a1;
+    return 0x202588;
+}
+-- signature
+int32_t (struct Square__Square_a0 * a0, int32_t a1)
+-- references
+0x202588 .data.rel.ro
+-- ir
+fn Square::Square(int) @ 0x201420 (size 14)
+  blk0 @ 0x201420:
+    store64(#0x202588, rdi)
+    store32(esi, (rdi + #0x8))
+    ret #0x202588
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201420","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Square::Square(int)","nameSources":["symtab","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x201430 Square::area() const
+-- decompile
+/* velk pseudo-C: Square::area() const @ 0x201430 */
+int32_t Square__area(uint32_t *a0) {
+    int32_t v1;
+
+    v1 = a0[0x2];
+    return v1 * v1;
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn Square::area() const @ 0x201430 (size 7)
+  blk0 @ 0x201430:
+    v1 = load32((rdi + #0x8))
+    ret ((v1 * v1) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x201430","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Square::area() const","nameSources":["symtab","unwind"],"section":".text","size":7,"unsupported":0}
+
+== 0x201440 Rect::Rect(int, int)
+-- decompile
+/* velk pseudo-C: Rect::Rect(int, int) @ 0x201440 */
+/* ref: 0x2025b8 .data.rel.ro */
+struct Rect__Rect_a0 {
+    int64_t field_0x0;
+    int32_t field_0x8;
+    int32_t field_0xc;
+};
+int32_t Rect__Rect(struct Rect__Rect_a0 *a0, int32_t a1, int32_t a2) {
+    a0->field_0x0 = 0x2025b8;
+    a0->field_0x8 = a1;
+    a0->field_0xc = a2;
+    return 0x2025b8;
+}
+-- signature
+int32_t (struct Rect__Rect_a0 * a0, int32_t a1, int32_t a2)
+-- references
+0x2025b8 .data.rel.ro
+-- ir
+fn Rect::Rect(int, int) @ 0x201440 (size 17)
+  blk0 @ 0x201440:
+    store64(#0x2025b8, rdi)
+    store32(esi, (rdi + #0x8))
+    store32(edx, (rdi + #0xc))
+    ret #0x2025b8
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x201440","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Rect::Rect(int, int)","nameSources":["symtab","unwind"],"section":".text","size":17,"unsupported":0}
+
+== 0x201460 Rect::area() const
+-- decompile
+/* velk pseudo-C: Rect::area() const @ 0x201460 */
+struct Rect__area_a0 {
+    uint8_t gap_0x0[0x8];
+    int32_t field_0x8;
+    int32_t field_0xc;
+};
+int32_t Rect__area(struct Rect__area_a0 *a0) {
+    return a0->field_0xc * a0->field_0x8;
+}
+-- signature
+int32_t (struct Rect__area_a0 * a0)
+-- references
+
+-- ir
+fn Rect::area() const @ 0x201460 (size 8)
+  blk0 @ 0x201460:
+    ret ((load32((rdi + #0xc)) * load32((rdi + #0x8))) & #0xffffffff)
+-- card
+{"accesses":["a0 +0xc:uint32_t"],"addr":"0x201460","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Rect::area() const","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x201470 Rect::scaled(int) const
+-- decompile
+/* velk pseudo-C: Rect::scaled(int) const @ 0x201470 */
+struct Rect__scaled_a0 {
+    uint8_t gap_0x0[0x8];
+    int32_t field_0x8;
+    int32_t field_0xc;
+};
+int32_t Rect__scaled(struct Rect__scaled_a0 *a0, int32_t a1) {
+    return a1 * a0->field_0x8 * a0->field_0xc + 0x1;
+}
+-- signature
+int32_t (struct Rect__scaled_a0 * a0, int32_t a1)
+-- references
+
+-- ir
+fn Rect::scaled(int) const @ 0x201470 (size 12)
+  blk0 @ 0x201470:
+    ret ((((((rsi & #0xffffffff) * load32((rdi + #0x8))) & #0xffffffff) * load32((rdi + #0xc))) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x201470","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Rect::scaled(int) const","nameSources":["symtab","unwind"],"section":".text","size":12,"unsupported":0}
+
+== 0x201480 square_area(int)
+-- decompile
+/* velk pseudo-C: square_area(int) @ 0x201480 */
+/* ref: 0x203610 .bss */
+/* ref: 0x204610 .bss */
+int32_t square_area(int32_t a0) {
+    int64_t v1;
+    void *v2;
+    int32_t v3;
+
+    v1 = _ZL4used;
+    v2 = 0x203610 + v1;
+    _ZL4used = v1 + 0x10;
+    Square__Square(v2, a0);
+    v3 = Square__area(v2); /* via vtable slot 2 */
+    Square___Square(); /* via vtable slot 1 */
+    return v3;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+0x203610 .bss
+0x204610 .bss
+-- ir
+fn square_area(int) @ 0x201480 (size 81)
+  blk0 @ 0x201480:
+    v1 = load64(#0x204610)
+    v2 = (#0x203610 + v1)
+    store64((v1 + #0x10), #0x204610)
+    call 0x201420(v2, (rdi & #0xffffffff))
+    v3 = call 0x201430(v2)
+    call 0x201560()
+    ret (v3 & #0xffffffff)
+-- card
+{"addr":"0x201480","approxTokens":240,"blocks":1,"hardReasons":[],"name":"square_area(int)","nameSources":["symtab","entry","unwind"],"section":".text","size":81,"unsupported":0}
+
+== 0x2014e0 rect_scaled(int, int, int)
+-- decompile
+/* velk pseudo-C: rect_scaled(int, int, int) @ 0x2014e0 */
+/* ref: 0x203610 .bss */
+/* ref: 0x204610 .bss */
+int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
+    int64_t v3;
+    void *v4;
+
+    v3 = _ZL4used;
+    v4 = 0x203610 + v3;
+    _ZL4used = v3 + 0x10;
+    Rect__Rect(v4, a0, a1);
+    return Rect__scaled(v4, a2); /* via vtable slot 3 */
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2)
+-- references
+0x203610 .bss
+0x204610 .bss
+-- ir
+fn rect_scaled(int, int, int) @ 0x2014e0 (size 77)
+  blk0 @ 0x2014e0:
+    v2 = (rsi & #0xffffffff)
+    v3 = load64(#0x204610)
+    v4 = (#0x203610 + v3)
+    store64((v3 + #0x10), #0x204610)
+    call 0x201440(v4, (rdi & #0xffffffff), v2)
+    v5 = call 0x201470(v4, (rdx & #0xffffffff))
+    ret v5
+-- card
+{"addr":"0x2014e0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"rect_scaled(int, int, int)","nameSources":["symtab","unwind"],"section":".text","size":77,"unsupported":0}
+
+== 0x201530 any_area(Shape const*)
+-- decompile
+/* velk pseudo-C: any_area(Shape const*) @ 0x201530 */
+int32_t any_area(uint64_t *a0) {
+    uint64_t *v1;
+
+    v1 = *a0;
+    return (*(v1[0x2]))(a0); /* vtable slot 2: Square__area, Rect__area */
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn any_area(Shape const*) @ 0x201530 (size 6)
+  blk0 @ 0x201530:
+    v1 = load64(rdi)
+    v2 = call *load64((v1 + #0x10))(rdi)
+    ret v2
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x201530","approxTokens":108,"blocks":1,"hardReasons":[],"name":"any_area(Shape const*)","nameSources":["symtab","unwind"],"section":".text","size":6,"unsupported":0}
+
+== 0x201540 any_scaled(Shape const*, int)
+-- decompile
+/* velk pseudo-C: any_scaled(Shape const*, int) @ 0x201540 */
+int32_t any_scaled(uint64_t *a0, int64_t a1) {
+    int64_t v1;
+
+    v1 = *(uint64_t *)(*a0 + 0x18);
+    return (*(v1))(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
+}
+-- signature
+int32_t (uint64_t * a0, int64_t a1)
+-- references
+
+-- ir
+fn any_scaled(Shape const*, int) @ 0x201540 (size 9)
+  blk0 @ 0x201540:
+    v1 = load64((load64(rdi) + #0x18))
+    v2 = call *v1(rdi, rsi)
+    ret v2
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x201540","approxTokens":114,"blocks":1,"hardReasons":[],"name":"any_scaled(Shape const*, int)","nameSources":["symtab","unwind"],"section":".text","size":9,"unsupported":0}
+
+== 0x201550 Shape::~Shape()
+-- decompile
+/* velk pseudo-C: Shape::~Shape() @ 0x201550 */
+void Shape___Shape_201550(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn Shape::~Shape() @ 0x201550 (size 1)
+  blk0 @ 0x201550:
+    ret #0x0
+-- card
+{"addr":"0x201550","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Shape::~Shape()","nameSources":["symtab","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201560 Square::~Square()
+-- decompile
+/* velk pseudo-C: Square::~Square() @ 0x201560 */
+void Square___Square(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn Square::~Square() @ 0x201560 (size 1)
+  blk0 @ 0x201560:
+    ret #0x0
+-- card
+{"addr":"0x201560","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Square::~Square()","nameSources":["symtab","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201570 Rect::~Rect()
+-- decompile
+/* velk pseudo-C: Rect::~Rect() @ 0x201570 */
+void Rect___Rect(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn Rect::~Rect() @ 0x201570 (size 1)
+  blk0 @ 0x201570:
+    ret #0x0
+-- card
+{"addr":"0x201570","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Rect::~Rect()","nameSources":["symtab","unwind"],"section":".text","size":1,"unsupported":0}

@@ -1168,6 +1168,7 @@ mod tests {
             floats_named: false,
             result: None,
             clobbers: None,
+            via: None,
         })
     }
 

@@ -637,6 +637,13 @@ echo "$pad" | grep -q 'landing pad: an exception thrown by a call at 0x4d24a-0x4
 echo "$pad" | grep -q '_Unwind_Resume(exception);' || fail "landing pad exception"
 ok "landing pads"
 
+# 18c) indirect calls whose callee read-only tables fix
+virtual=$("$BIN" decompile $FIX/cpp_virtual_x64_stripped.elf 0x201480 2>/dev/null)
+echo "$virtual" | grep -qE 'v3 = sub_201430\(v2\); /\* via vtable slot 2 \*/' || fail "virtual call through a known table"
+open_virtual=$("$BIN" decompile $FIX/cpp_virtual_x64_stripped.elf 0x201410 2>/dev/null)
+echo "$open_virtual" | grep -q 'vtable slot 2: sub_201430, sub_201460' || fail "virtual call candidates"
+ok "indirect calls"
+
 # 19) MCP stdio server
 mcp_out=$(printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \

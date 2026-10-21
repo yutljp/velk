@@ -310,7 +310,7 @@ fn held_constants(
 
 /// The addresses `lea r, [rip + d]`, or `adrp` and the `add` right after it,
 /// compute anywhere in the code.
-fn addressed(image: &Image) -> std::collections::HashSet<u64> {
+pub(crate) fn addressed(image: &Image) -> std::collections::HashSet<u64> {
     let mut out = std::collections::HashSet::new();
     for section in image.sections.iter().filter(|section| section.executable) {
         let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
