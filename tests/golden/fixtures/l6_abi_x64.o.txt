@@ -1,4 +1,4 @@
-# l6_abi_x64.o: elf x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 1 gotos
+# l6_abi_x64.o: elf x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 14 tail_target symtab,unwind
 0x10 8 tail_direct symtab,unwind
 0x20 8 tail_indirect symtab,unwind
@@ -44,11 +44,7 @@ fn tail_direct @ 0x10 (size 8)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x20 */
 int32_t tail_indirect(void *a0, int32_t a1) {
-    uint64_t rax;
-
-    rax = a0;
-    a0 = ((a1 + 0x1) & 0xffffffff);
-    goto *(rax);
+    return (*(a0))(a1 + 0x1);
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -57,9 +53,8 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn tail_indirect @ 0x20 (size 8)
   blk0 @ 0x20:
-    rax = rdi
-    rdi = ((rsi + #0x1) & #0xffffffff)
-    br rax
+    v3 = call *rdi(((rsi + #0x1) & #0xffffffff))
+    ret v3
 -- card
 {"addr":"0x20","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
 

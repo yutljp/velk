@@ -198,22 +198,23 @@ fn tail_calls_through_pointers(
         let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
             continue;
         };
-        let pointer = match target {
-            Expr::Load { .. } => true,
-            Expr::Reg { index, .. } => {
-                let set = block
-                    .stmts
-                    .iter()
-                    .rev()
-                    .skip(1)
-                    .find_map(|stmt| match stmt {
-                        Stmt::Assign { dest, value } if dest.index == *index => Some(value),
-                        _ => None,
-                    });
-                matches!(set, None | Some(Expr::Load { .. }))
+        // A copy of such a register is one too, as an argument moved aside
+        // for the arguments the callee takes.
+        let mut pointer = matches!(target, Expr::Load { .. });
+        let mut copied = target;
+        let mut earlier = block.stmts.iter().rev().skip(1);
+        while let Expr::Reg { index, .. } = copied {
+            match earlier.find_map(|stmt| match stmt {
+                Stmt::Assign { dest, value } if dest.index == *index => Some(value),
+                _ => None,
+            }) {
+                None | Some(Expr::Load { .. }) => {
+                    pointer = true;
+                    break;
+                }
+                Some(value) => copied = value,
             }
-            _ => false,
-        };
+        }
         if !pointer {
             continue;
         }
@@ -1240,6 +1241,16 @@ mod tests {
         // jmp rax
         assert!(matches!(
             ends_through_pointer(vec![0xff, 0xe0]),
+            Some(Stmt::Call { .. })
+        ));
+        // mov rax, rdi; jmp rax
+        assert!(matches!(
+            ends_through_pointer(vec![0x48, 0x89, 0xf8, 0xff, 0xe0]),
+            Some(Stmt::Call { .. })
+        ));
+        // lea rax, [rdi + 8]; jmp rax
+        assert!(!matches!(
+            ends_through_pointer(vec![0x48, 0x8d, 0x47, 0x08, 0xff, 0xe0]),
             Some(Stmt::Call { .. })
         ));
         // push rbx; jmp rax

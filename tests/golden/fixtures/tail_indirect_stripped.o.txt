@@ -1,4 +1,4 @@
-# tail_indirect_stripped.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 1 gotos
+# tail_indirect_stripped.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 12 - prologue
 0xc 24 - prologue
 
@@ -6,11 +6,7 @@
 -- decompile
 /* velk pseudo-C: sub_0 @ 0x0 */
 int32_t sub_0(void *a0, int32_t a1) {
-    uint64_t x2;
-
-    x2 = a0;
-    a0 = ((a1 + 0x1) & 0xffffffff);
-    goto *(x2);
+    return (*(a0))(a1 + 0x1);
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -19,9 +15,8 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x0 (size 12)
   blk0 @ 0x0:
-    x2 = x0
-    x0 = ((w1 + #0x1) & #0xffffffff)
-    br x2
+    v3 = call *x0((((x1 & #0xffffffff) + #0x1) & #0xffffffff))
+    ret v3
 -- card
 {"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
 
