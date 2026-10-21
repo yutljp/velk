@@ -60,7 +60,9 @@ impl Engine {
         self.deadline.set(deadline);
         let mut outcome = context.with(|ctx| self.evaluate(&ctx, code));
         self.deadline.set(None);
-        if outcome.error.is_some() && deadline.is_some_and(|deadline| Instant::now() > deadline) {
+        // A run past its time is a timeout even when the work it overran
+        // finished.
+        if deadline.is_some_and(|deadline| Instant::now() > deadline) {
             let millis = timeout.unwrap_or_default().as_millis();
             outcome.error = Some(format!("timed out after {millis} ms"));
         }

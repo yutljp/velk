@@ -13,6 +13,7 @@ const INVALID_REQUEST: RpcError = (-32600, "invalid request");
 const METHOD_NOT_FOUND: RpcError = (-32601, "method not found");
 
 const MAX_OUTPUT_CHARS: usize = 20_000;
+const MAX_ERROR_CHARS: usize = 2_000;
 const DEFAULT_TIMEOUT_MS: u64 = 10_000;
 const MAX_TIMEOUT_MS: u64 = 120_000;
 
@@ -142,12 +143,19 @@ fn run_script(engine: &Engine, arguments: &Value) -> (String, bool) {
         .unwrap_or(DEFAULT_TIMEOUT_MS)
         .clamp(1, MAX_TIMEOUT_MS);
     let outcome = engine.run(code, Some(Duration::from_millis(millis)));
-    let mut text = truncate(outcome.output);
-    if let Some(error) = &outcome.error {
+    // The error is kept, within its own share of the limit; the output
+    // takes the rest.
+    let error = outcome
+        .error
+        .as_ref()
+        .map(|error| truncate(format!("error: {error}"), MAX_ERROR_CHARS));
+    let room = MAX_OUTPUT_CHARS - error.as_ref().map_or(0, |error| error.chars().count());
+    let mut text = truncate(outcome.output, room);
+    if let Some(error) = error {
         if !text.is_empty() {
             text.push('\n');
         }
-        text.push_str(&format!("error: {error}"));
+        text.push_str(&error);
     }
     (text, outcome.error.is_some())
 }
@@ -162,8 +170,9 @@ fn read_api(arguments: &Value) -> (String, bool) {
     }
 }
 
-fn truncate(mut text: String) -> String {
-    let Some((cut, _)) = text.char_indices().nth(MAX_OUTPUT_CHARS) else {
+/// The text cut to `limit` characters and a note of how many went.
+fn truncate(mut text: String, limit: usize) -> String {
+    let Some((cut, _)) = text.char_indices().nth(limit) else {
         return text;
     };
     let dropped = text[cut..].chars().count();
