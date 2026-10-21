@@ -75,23 +75,41 @@ impl Engine {
             Ok(value) => (value, None),
             Err(error) => (Value::new_undefined(ctx.clone()), Some(describe(error))),
         };
-        let output = ctx
+        let finished = ctx
             .globals()
             .get::<_, Function>("__velkFinish")
             .and_then(|finish| finish.call::<_, String>((value,)))
-            .unwrap_or_default();
-        Outcome { output, error }
+            .catch(ctx);
+        let (output, failure) = match finished {
+            Ok(output) => (
+                output,
+                ctx.globals()
+                    .get::<_, Option<String>>("__velkFinishError")
+                    .ok()
+                    .flatten(),
+            ),
+            Err(caught) => (String::new(), Some(describe(caught))),
+        };
+        Outcome {
+            output,
+            error: error.or(failure),
+        }
     }
 
     fn install<'js>(&self, ctx: &Ctx<'js>) -> rquickjs::Result<()> {
         let session = Rc::clone(&self.session);
+        let deadline = Rc::clone(&self.deadline);
         let native = Function::new(
             ctx.clone(),
             move |ctx: Ctx<'js>, request: String| -> rquickjs::Result<String> {
                 let request = serde_json::from_str(&request).map_err(|error| {
                     Exception::throw_type(&ctx, &format!("invalid request: {error}"))
                 })?;
-                ops::handle(&mut session.borrow_mut(), request)
+                let deadline = deadline.get();
+                if deadline.is_some_and(|deadline| Instant::now() > deadline) {
+                    return Err(Exception::throw_message(&ctx, &Error::TimedOut.to_string()));
+                }
+                ops::handle(&mut session.borrow_mut(), request, deadline)
                     .map(|value| value.to_string())
                     .map_err(|error| Exception::throw_message(&ctx, &error.to_string()))
             },

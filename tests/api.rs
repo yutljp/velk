@@ -275,3 +275,44 @@ fn every_declared_method_is_exercised() {
         "declared but not exercised: {missing:?}"
     );
 }
+
+/// A global pattern matches each name on its own, as a plain one does.
+#[test]
+fn a_global_pattern_finds_every_matching_function() {
+    let path = common::fixtures_dir().join("arm64.o");
+    let engine = Engine::new().expect("an engine");
+    let outcome = engine.run(
+        &format!(
+            "const b = velk.open({path:?}); \
+             [b.functions({{ name: /^./ }}).length, b.functions({{ name: /^./g }}).length].join(' ')"
+        ),
+        None,
+    );
+    assert_eq!(outcome.error, None);
+    let counts: Vec<&str> = outcome.output.split(' ').collect();
+    assert_eq!(counts[0], counts[1], "{}", outcome.output);
+}
+
+/// A result the output cannot show is an error, and what was logged before
+/// it stays.
+#[test]
+fn a_result_that_cannot_be_shown_is_an_error() {
+    let engine = Engine::new().expect("an engine");
+    let outcome = engine.run("console.log('before'); 1n", None);
+    assert!(outcome.error.is_some(), "{:?}", outcome.output);
+    assert!(outcome.output.contains("before"), "{:?}", outcome.output);
+}
+
+/// The time allowed stops an operation over the whole binary too.
+#[test]
+fn a_timeout_stops_an_operation_over_the_binary() {
+    let path = common::fixtures_dir().join("go_probe");
+    let engine = Engine::new().expect("an engine");
+    let started = std::time::Instant::now();
+    let outcome = engine.run(
+        &format!("velk.open({path:?}).buildSignatures().database.entries.length"),
+        Some(std::time::Duration::from_millis(500)),
+    );
+    assert!(outcome.error.is_some(), "{:?}", outcome.output);
+    assert!(started.elapsed() < std::time::Duration::from_secs(10));
+}

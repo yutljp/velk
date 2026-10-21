@@ -161,7 +161,7 @@ fn run(command: Command) -> Result<ExitCode> {
             print!("{}", binary.analysis(addr)?.ir.render());
         }
         Command::BuildSignatures { path, output } => {
-            let build = Binary::open(&path)?.build_signatures();
+            let build = Binary::open(&path)?.build_signatures(None)?;
             write_json(&output, &json!(build.database))?;
             eprintln!(
                 "{} entries -> {}",
@@ -177,7 +177,7 @@ fn run(command: Command) -> Result<ExitCode> {
         } => {
             let database = Database::load(&signatures)?;
             let mut binary = Binary::open(&path)?;
-            let identification = binary.identify(&database);
+            let identification = binary.identify(&database, None)?;
             for hit in identification.matches.iter().take(limit) {
                 println!(
                     "{:<14} {:>6}  {}  (currently: {})",

@@ -69,7 +69,13 @@ pub enum Request {
     },
 }
 
-pub fn handle(session: &mut Session, request: Request) -> Result<Value> {
+/// Answers `request`; an operation over the whole binary stops with an
+/// error once `deadline` passes.
+pub fn handle(
+    session: &mut Session,
+    request: Request,
+    deadline: Option<std::time::Instant>,
+) -> Result<Value> {
     match request {
         Request::Open { path } => {
             let binary = session.open(&path)?;
@@ -132,7 +138,7 @@ pub fn handle(session: &mut Session, request: Request) -> Result<Value> {
             Ok(json!(session.open(&bin)?.shape_hash(parse(&addr)?)?))
         }
         Request::BuildSignatures { bin } => {
-            let build = session.open(&bin)?.build_signatures();
+            let build = session.open(&bin)?.build_signatures(deadline)?;
             Ok(json!({ "database": build.database, "failures": failures(&build.failures) }))
         }
         Request::Identify { bin, signatures } => {
@@ -140,7 +146,7 @@ pub fn handle(session: &mut Session, request: Request) -> Result<Value> {
                 Value::String(path) => Database::load(path.as_ref())?,
                 value => Database::from_json(value)?,
             };
-            let identification = session.open(&bin)?.identify(&database);
+            let identification = session.open(&bin)?.identify(&database, deadline)?;
             Ok(json!({
                 "matches": identification.matches.iter().map(|m| json!({
                     "addr": addr::format(m.addr),

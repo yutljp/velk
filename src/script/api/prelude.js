@@ -35,7 +35,9 @@
     functions({ name, named, minSize } = {}) {
       this.#functions ??= call("functions", { bin: this.#id }).map((row) => new Func(this.#id, row));
       const names = (f) => [f.name, ...f.aliases].filter((n) => n !== null);
-      const matches = (n) => (name instanceof RegExp ? name.test(n) : n.includes(name));
+      // A global or sticky pattern would carry its position from one name to the next.
+      const pattern = name instanceof RegExp ? new RegExp(name.source, name.flags.replace(/[gy]/g, "")) : null;
+      const matches = (n) => (pattern ? pattern.test(n) : n.includes(name));
       return this.#functions.filter((f) =>
         (name === undefined || names(f).some(matches)) &&
         (named === undefined || (f.name !== null) === named) &&
@@ -54,8 +56,16 @@
 
   globalThis.console = Object.freeze({ log, info: log, warn: log, error: log });
   globalThis.velk = Object.freeze({ open: (path) => new Binary(call("open", { path })) });
+  // The logged output, and the result's text unless showing it fails: then
+  // the failure is left in __velkFinishError and the log still returned.
   globalThis.__velkFinish = (value) => {
-    if (value !== undefined) output.push(show(value));
+    if (value !== undefined) {
+      try {
+        output.push(show(value));
+      } catch (error) {
+        globalThis.__velkFinishError = `cannot show the result: ${error?.message ?? error}`;
+      }
+    }
     return output.join("\n");
   };
 })();

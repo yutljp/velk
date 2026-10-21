@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 use crate::analysis::{self, Analysis};
 use crate::card::{self, Card};
@@ -211,13 +211,15 @@ impl Binary {
         Ok(sigs::shape_hash(&self.analysis(addr)?.ir))
     }
 
-    pub fn build_signatures(&mut self) -> SignatureBuild {
+    /// Signatures of the named functions; Err once `deadline` passes.
+    pub fn build_signatures(&mut self, deadline: Option<Instant>) -> Result<SignatureBuild> {
         let mut entries = Vec::new();
         let mut failures = Vec::new();
         for function in self.image.functions.values() {
             let Some(name) = &function.name else {
                 continue;
             };
+            passed(deadline)?;
             match cached(&mut self.analyses, &self.image, function) {
                 Ok(analysis) => entries.extend(sigs::entry(name, function.size, &analysis.ir)),
                 Err(error) => failures.push(Failure {
@@ -226,16 +228,22 @@ impl Binary {
                 }),
             }
         }
-        SignatureBuild {
+        Ok(SignatureBuild {
             database: Database::new(entries),
             failures,
-        }
+        })
     }
 
-    pub fn identify(&mut self, database: &Database) -> Identification {
+    /// The functions `database` names; Err once `deadline` passes.
+    pub fn identify(
+        &mut self,
+        database: &Database,
+        deadline: Option<Instant>,
+    ) -> Result<Identification> {
         let mut matches = Vec::new();
         let mut failures = Vec::new();
         for function in self.image.functions.values() {
+            passed(deadline)?;
             match cached(&mut self.analyses, &self.image, function) {
                 Ok(analysis) => {
                     if let Some(entry) = database.lookup(&analysis.ir) {
@@ -253,7 +261,15 @@ impl Binary {
                 }),
             }
         }
-        Identification { matches, failures }
+        Ok(Identification { matches, failures })
+    }
+}
+
+/// Err once `deadline` has passed.
+fn passed(deadline: Option<Instant>) -> Result<()> {
+    match deadline {
+        Some(deadline) if Instant::now() > deadline => Err(Error::TimedOut),
+        _ => Ok(()),
     }
 }
 

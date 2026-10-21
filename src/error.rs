@@ -43,6 +43,8 @@ pub enum Error {
     Stdio(std::io::Error),
     #[error("script engine: {0}")]
     Engine(rquickjs::Error),
+    #[error("the time allowed ran out")]
+    TimedOut,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
