@@ -72,7 +72,7 @@
 6	l6_abi_a64.o	wide_add	has	int64_t wide_add(
 6	l6_abi_a64.o	wide_add	known_has	uint64_t wide_add(uint64_t a0, uint64_t a1)
 6	l6_abi_a64.o	tail_direct	has	return tail_target(a0 + 0x2);
-6	l6_abi_a64.o	tail_indirect	has	goto *(
+6	l6_abi_a64.o	tail_indirect	has	return (*(a0))(a1 + 0x1);
 
 # ---- L7 language runtimes: Go pclntab / Rust demangling / stripped ----
 7	go_stripped	-	has	main.add

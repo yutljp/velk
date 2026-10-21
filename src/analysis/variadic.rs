@@ -62,7 +62,7 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     // through them reach.
     let floats_block = if guard.is_some() { 1 } else { 0 };
     let blocks: Vec<usize> = match guard {
-        Some(join) if join == 2 => vec![0, 1, 2],
+        Some(2) => vec![0, 1, 2],
         Some(_) => return None,
         None => vec![0],
     };
