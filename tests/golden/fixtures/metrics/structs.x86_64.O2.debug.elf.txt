@@ -145,7 +145,6 @@ fn big_make @ 0x201280 (size 31)
 == 0x2012a0 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x2012a0 */
-struct big_sum_a0 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 long big_sum(struct big value) {
     return value.b + value.d + (value.a + value.c);
 }

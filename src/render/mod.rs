@@ -460,6 +460,10 @@ fn render_with(
             out.push_str(&format!("/* struct: {line} */\n"));
         }
     }
+    // Each definition, to drop the ones nothing in the function names once
+    // it is written: folding values into their readers can leave a
+    // structure without its variable.
+    let mut definitions: Vec<(String, String)> = Vec::new();
     for structure in &ir.structures {
         let mut members = Vec::new();
         let mut end = 0;
@@ -481,16 +485,17 @@ fn render_with(
         }
         // A short structure reads on one line, a longer one a member a line.
         let line = format!("struct {} {{ {} }};", structure.name, members.join(" "));
-        if line.len() <= STRUCTURE_LINE {
-            out.push_str(&line);
-            out.push('\n');
+        let definition = if line.len() <= STRUCTURE_LINE {
+            line + "\n"
         } else {
-            out.push_str(&format!("struct {} {{\n", structure.name));
+            let mut text = format!("struct {} {{\n", structure.name);
             for member in members {
-                out.push_str(&format!("    {member}\n"));
+                text.push_str(&format!("    {member}\n"));
             }
-            out.push_str("};\n");
-        }
+            text + "};\n"
+        };
+        out.push_str(&definition);
+        definitions.push((structure.name.clone(), definition));
     }
     let prototypes_at = out.len();
     out.push_str(&format!(
@@ -579,6 +584,12 @@ fn render_with(
     }
     out.push_str(&body);
     out.push_str("}\n");
+    // The definition is the one place a structure nothing uses is named.
+    for (name, definition) in definitions {
+        if out.matches(&format!("struct {name} ")).count() == 1 {
+            out = out.replacen(&definition, "", 1);
+        }
+    }
     out
 }
 
