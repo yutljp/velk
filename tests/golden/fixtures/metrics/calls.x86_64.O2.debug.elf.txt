@@ -386,8 +386,8 @@ int sum_varargs(int count, ...) {
         return 0x0;
     }
     v1 = *(uint32_t *)&local_3;
-    v2 = local_0;
-    v3 = (uint32_t *)local_2;
+    v2 = (uintptr_t)local_0;
+    v3 = local_2;
     if (count != 0x1) {
         v6 = count & 0x7ffffffe;
         v4 = 0x0;

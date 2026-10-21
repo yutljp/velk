@@ -1242,6 +1242,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     passes::coalesce::coalesce_copies(&mut ir);
     name_indirect_result(&mut ir);
     structures::recover(&mut ir);
+    typing::apply_pointer_return(&mut ir);
     // It returns the pointer it wrote the result through.
     if let Some(result) = ir.params.iter().find(|param| param.name == "result") {
         ir.ret_type = result.ty.clone();

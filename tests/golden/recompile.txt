@@ -5,9 +5,9 @@
 #   has an unsupported instruction: 2
 #   reads a register that is not a parameter: 3
 #   refers to data: 136
-#   returns no integer: 51
+#   returns no integer: 75
 #   returns nothing: 369
-#   takes an argument that is no integer: 415
+#   takes an argument that is no integer: 391
 #   takes arguments on the stack: 28
 # runs left out:
 #   step limit: 14

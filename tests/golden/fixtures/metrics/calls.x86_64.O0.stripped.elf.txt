@@ -290,12 +290,12 @@ int32_t sub_201540(int32_t a0, ...) {
         v2 = local_1;
         local_6 = v2;
         if (v2 > 0x28) {
-            v6 = (uint64_t *)local_5;
+            v6 = local_5;
             v5 = v6[0x1];
             v6[0x1] = v5 + 0x8;
             local_7 = v5;
         } else {
-            v3 = (struct sub_201540_s2 *)local_5;
+            v3 = local_5;
             v4 = local_6;
             v5 = v4 + v3->field_0x10;
             v3->field_0x0 = v4 + 0x8;

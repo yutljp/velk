@@ -127,12 +127,12 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
 == 0xa4 increment(int&)
 -- decompile
 /* velk pseudo-C: increment(int&) @ 0xa4 */
-int64_t increment(uint32_t *a0) {
+uint32_t *increment(uint32_t *a0) {
     *a0 += 0x1;
-    return (uintptr_t)a0;
+    return a0;
 }
 -- signature
-int64_t (uint32_t * a0)
+uint32_t * (uint32_t * a0)
 -- references
 
 -- ir

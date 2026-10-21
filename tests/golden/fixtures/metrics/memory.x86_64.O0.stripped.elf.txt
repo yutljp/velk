@@ -18,7 +18,7 @@ int64_t sub_201280(uint8_t *a0, uint8_t *a1, int64_t a2) {
 
     local_0 = 0x0;
     while (true) {
-        v1 = local_0;
+        v1 = (uintptr_t)local_0;
         if (v1 >= a2) break;
         v2 = *(uint8_t *)(a1 + local_0);
         *(uint8_t *)(a0 + local_0) = v2;
@@ -63,7 +63,7 @@ int64_t sub_2012d0(uint8_t *a0, int32_t a1, int64_t a2) {
     local_0 = rax & 0xffffffffffffff00 | a1;
     local_1 = 0x0;
     while (true) {
-        v1 = local_1;
+        v1 = (uintptr_t)local_1;
         if (v1 >= a2) break;
         v2 = local_0;
         *(uint8_t *)(a0 + local_1) = v2;
@@ -103,7 +103,7 @@ int64_t sub_201320(uint8_t *a0) {
 
     for (local_0 = 0x0; *(uint8_t *)(a0 + local_0) != 0x0; local_0++) {
     }
-    return local_0;
+    return (uintptr_t)local_0;
 }
 -- signature
 int64_t (uint8_t * a0)

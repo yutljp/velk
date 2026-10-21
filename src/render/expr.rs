@@ -79,6 +79,8 @@ pub(crate) struct Ctx<'a> {
     /// The pointer type each named register is declared with, as a cast
     /// names it, and the function's return type when it is a pointer.
     pub(super) pointer_types: HashMap<u16, String>,
+    /// The pointer type each pointer local is declared with.
+    pub(super) local_pointer_types: HashMap<String, String>,
     pub(super) ret_pointer: Option<String>,
     /// The integer type each named register is declared with.
     pub(super) declared: HashMap<u16, Declared>,

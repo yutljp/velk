@@ -170,7 +170,7 @@ metrics/memory.aarch64.O0.stripped.elf 0x21029c -: does not compile: invalid ope
 metrics/memory.aarch64.O0.stripped.elf 0x2102f8 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
 metrics/memory.x86_64.O0.debug.elf 0x201280 copy_bytes: does not compile: invalid operands to binary expression ('unsigned char *' and 'uint8_t *' (aka 'unsigned char *'))
 metrics/memory.x86_64.O0.debug.elf 0x201320 string_length: does not compile: invalid operands to binary expression ('char *' and 'uint8_t *' (aka 'unsigned char *'))
-metrics/memory.x86_64.O0.stripped.elf 0x201280 -: does not compile: incompatible pointer to integer conversion assigning to 'uint64_t' (aka 'unsigned long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]
+metrics/memory.x86_64.O0.stripped.elf 0x201280 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
 metrics/memory.x86_64.O0.stripped.elf 0x201320 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
 metrics/structs.aarch64.O0.debug.elf 0x2101fc rect_area: does not compile: incomplete definition of type 'struct rect'
 metrics/structs.aarch64.O0.debug.elf 0x2103d0 flags_set_mode: does not compile: incomplete definition of type 'struct flags'

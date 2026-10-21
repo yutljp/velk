@@ -408,6 +408,14 @@ fn render_with(
         slots: locals.slots,
         local_parts: locals.parts,
         local_widths: locals.widths,
+        local_pointer_types: locals
+            .decls
+            .iter()
+            .filter_map(|local| {
+                let ty = local.ty.as_ref().filter(|ty| ty.is_pointer())?;
+                Some((local.name.clone(), ty.to_string().trim_end().to_owned()))
+            })
+            .collect(),
         local_floats: locals
             .decls
             .iter()
@@ -1558,6 +1566,7 @@ fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
 /// integer when that is None: C converts between the two only by a cast.
 fn conformed(value: &Expr, text: String, pointer: Option<&str>, ctx: &Ctx<'_>) -> String {
     let is_pointer = expr::pointer_valued(value, ctx)
+        || ctx.local_pointer_types.contains_key(&text)
         || text.starts_with('&')
         || text.starts_with("(uint8_t *)");
     // Printed with no space, or in its own parentheses, the value binds
@@ -1570,6 +1579,16 @@ fn conformed(value: &Expr, text: String, pointer: Option<&str>, ctx: &Ctx<'_>) -
         }
     };
     match pointer {
+        // Memory read whole is read as the pointer it holds.
+        Some(ty)
+            if !is_pointer
+                && matches!(value, Expr::Load { width: 8, .. })
+                && let Some(address) = text
+                    .strip_prefix("*(uint64_t *)")
+                    .or_else(|| text.strip_prefix("*(int64_t *)")) =>
+        {
+            format!("*({ty}*){address}")
+        }
         Some(ty) if !is_pointer && !matches!(value, Expr::Const(0)) => {
             format!("({ty}){}", operand(text))
         }

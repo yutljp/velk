@@ -497,6 +497,38 @@ fn reads_register(expr: &crate::ir::Expr, register: u16) -> bool {
 /// a side effect keeps `int id(int x)` from being mistaken for a void function
 /// where the return register also carries the first argument; elsewhere a
 /// return register nothing writes holds no result.
+/// A function that returns the same pointer parameter on every path
+/// returns that parameter's type, not the 64-bit integer it was taken for.
+pub(crate) fn apply_pointer_return(ir: &mut FunctionIr) {
+    use crate::ir::{Expr, Stmt};
+    if !matches!(ir.ret_type, CType::Int { bytes: 8, .. }) {
+        return;
+    }
+    let mut returned: Option<CType> = None;
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let Stmt::Ret { value } = stmt else {
+            continue;
+        };
+        let Expr::Reg { index, width: 64 } = value else {
+            return;
+        };
+        let Some(param) = ir
+            .params
+            .iter()
+            .find(|param| param.index == *index && param.ty.is_pointer())
+        else {
+            return;
+        };
+        if returned.as_ref().is_some_and(|ty| *ty != param.ty) {
+            return;
+        }
+        returned = Some(param.ty.clone());
+    }
+    if let Some(ty) = returned {
+        ir.ret_type = ty;
+    }
+}
+
 pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
     use crate::ir::{Expr, Stmt};
     let mut written = false;

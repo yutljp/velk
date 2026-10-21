@@ -92,7 +92,7 @@ unsigned long string_length(char *s) {
 
     for (local_0 = 0x0; *(uint8_t *)(s + local_0) != 0x0; local_0++) {
     }
-    return local_0;
+    return (uintptr_t)local_0;
 }
 -- signature
 unsigned long (char * s)

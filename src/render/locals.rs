@@ -64,6 +64,7 @@ pub(crate) fn stack_locals(
         returned: None,
         declared: HashMap::new(),
         pointer_types: HashMap::new(),
+        local_pointer_types: HashMap::new(),
         ret_pointer: None,
         value_bits: HashMap::new(),
         read_once: Default::default(),
