@@ -15,9 +15,9 @@
 #   step limit: 422
 #   switch without a matching case: 36
 # arm64.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# arm64_debug.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
-# arm64_debug.o: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
-# arm64_debug_stripped.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# arm64_debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# arm64_debug.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# arm64_debug_stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # arm64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # arm64_loops0.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (45 runs), 0 differ
 # arm64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
@@ -39,13 +39,13 @@
 # metrics/alt_names.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # metrics/alt_names.x86_64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # metrics/alt_names.x86_64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
-# metrics/arith_mixed.aarch64.O0.debug.elf: 4 functions, 3 qualify, 2 compile, 1 do not, 2 compared (21 runs), 0 differ
+# metrics/arith_mixed.aarch64.O0.debug.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (33 runs), 0 differ
 # metrics/arith_mixed.aarch64.O0.stripped.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (33 runs), 0 differ
-# metrics/arith_mixed.aarch64.O2.debug.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# metrics/arith_mixed.aarch64.O2.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/arith_mixed.aarch64.O2.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# metrics/arith_mixed.x86_64.O0.debug.elf: 4 functions, 3 qualify, 2 compile, 1 do not, 2 compared (21 runs), 0 differ
+# metrics/arith_mixed.x86_64.O0.debug.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (33 runs), 0 differ
 # metrics/arith_mixed.x86_64.O0.stripped.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (33 runs), 0 differ
-# metrics/arith_mixed.x86_64.O2.debug.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# metrics/arith_mixed.x86_64.O2.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/arith_mixed.x86_64.O2.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/control.aarch64.O0.debug.elf: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (78 runs), 0 differ
 # metrics/control.aarch64.O0.stripped.elf: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (78 runs), 0 differ
@@ -75,11 +75,11 @@
 # metrics/l2_loop.x86_64.O0.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
 # metrics/l2_loop.x86_64.O2.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
 # metrics/l2_loop.x86_64.O2.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
-# metrics/l4_memory.aarch64.O0.debug.elf: 4 functions, 2 qualify, 1 compile, 1 do not, 1 compared (10 runs), 0 differ
+# metrics/l4_memory.aarch64.O0.debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/l4_memory.aarch64.O0.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
-# metrics/l4_memory.x86_64.O0.debug.elf: 4 functions, 2 qualify, 1 compile, 1 do not, 1 compared (10 runs), 0 differ
+# metrics/l4_memory.x86_64.O0.debug.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/l4_memory.x86_64.O0.stripped.elf: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
-# metrics/l4_memory.x86_64.O2.debug.elf: 4 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# metrics/l4_memory.x86_64.O2.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/l4_memory.x86_64.O2.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/l5_switch.aarch64.O0.debug.elf: 18 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/l5_switch.aarch64.O0.stripped.elf: 18 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
@@ -111,14 +111,14 @@
 # metrics/struct_arrays.x86_64.O0.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/struct_arrays.x86_64.O2.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/struct_arrays.x86_64.O2.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
-# metrics/structs.aarch64.O0.debug.elf: 8 functions, 3 qualify, 1 compile, 2 do not, 1 compared (10 runs), 0 differ
+# metrics/structs.aarch64.O0.debug.elf: 8 functions, 3 qualify, 2 compile, 1 do not, 2 compared (22 runs), 0 differ
 # metrics/structs.aarch64.O0.stripped.elf: 8 functions, 7 qualify, 7 compile, 0 do not, 7 compared (82 runs), 0 differ
 # metrics/structs.aarch64.O2.debug.elf: 8 functions, 2 qualify, 1 compile, 1 do not, 1 compared (10 runs), 0 differ
 # metrics/structs.aarch64.O2.stripped.elf: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
-# metrics/structs.x86_64.O0.debug.elf: 8 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
-# metrics/structs.x86_64.O0.stripped.elf: 8 functions, 7 qualify, 6 compile, 1 do not, 6 compared (70 runs), 0 differ
-# metrics/structs.x86_64.O2.debug.elf: 8 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
-# metrics/structs.x86_64.O2.stripped.elf: 8 functions, 4 qualify, 3 compile, 1 do not, 3 compared (34 runs), 0 differ
+# metrics/structs.x86_64.O0.debug.elf: 8 functions, 4 qualify, 3 compile, 1 do not, 3 compared (34 runs), 0 differ
+# metrics/structs.x86_64.O0.stripped.elf: 8 functions, 7 qualify, 7 compile, 0 do not, 7 compared (82 runs), 0 differ
+# metrics/structs.x86_64.O2.debug.elf: 8 functions, 4 qualify, 3 compile, 1 do not, 3 compared (34 runs), 0 differ
+# metrics/structs.x86_64.O2.stripped.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (46 runs), 0 differ
 # metrics/switch_value_table.aarch64.O0.debug.elf: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/switch_value_table.aarch64.O0.stripped.elf: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/tail_calls.aarch64.O0.debug.elf: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
@@ -136,9 +136,6 @@
 # switch_value_table.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
 # x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # x64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
-arm64_debug.elf 0x2101dc pair_sum: does not compile: incomplete definition of type 'struct pair'
-arm64_debug.o 0x50 pair_sum: does not compile: incomplete definition of type 'struct pair'
-arm64_debug_stripped.elf 0x2101dc pair_sum: does not compile: incomplete definition of type 'struct pair'
 go_probe 0x42ab20 runtime.netpollready: does not compile: incompatible pointer to integer conversion passing 'uint64_t *' (aka 'unsigned long long *') to parameter of type 'int64_t' (aka 'long long') [-Wint-conversion]
 go_probe 0x447f80 runtime.nilfunc: does not compile: use of undeclared identifier 'byte_0'
 go_probe 0x460e80 setg_gcc: does not compile: use of undeclared identifier 'fs_base'
@@ -156,13 +153,6 @@ l4_memory_a64.o 0x58 banner_first: does not compile: use of undeclared identifie
 l4_memory_x64.o 0x30 bump: does not compile: use of undeclared identifier 'g_counter'
 l4_memory_x64.o 0x40 banner_first: does not compile: use of undeclared identifier 'banner'
 l5_switch.o 0x0 dense: does not compile: use of undeclared identifier 'g_sink'
-metrics/arith_mixed.aarch64.O0.debug.elf 0x210228 pair_sum: does not compile: incomplete definition of type 'struct pair'
-metrics/arith_mixed.aarch64.O2.debug.elf 0x2101dc pair_sum: does not compile: incomplete definition of type 'struct pair'
-metrics/arith_mixed.x86_64.O0.debug.elf 0x201230 pair_sum: does not compile: incomplete definition of type 'struct pair'
-metrics/arith_mixed.x86_64.O2.debug.elf 0x2011d0 pair_sum: does not compile: incomplete definition of type 'struct pair'
-metrics/l4_memory.aarch64.O0.debug.elf 0x2101dc point_dot: does not compile: incomplete definition of type 'struct point'
-metrics/l4_memory.x86_64.O0.debug.elf 0x201210 point_dot: does not compile: incomplete definition of type 'struct point'
-metrics/l4_memory.x86_64.O2.debug.elf 0x2011e0 point_dot: does not compile: incomplete definition of type 'struct point'
 metrics/memory.aarch64.O0.debug.elf 0x210234 copy_bytes: does not compile: invalid operands to binary expression ('unsigned char *' and 'uint8_t *' (aka 'unsigned char *'))
 metrics/memory.aarch64.O0.debug.elf 0x21029c fill_bytes: does not compile: invalid operands to binary expression ('unsigned char *' and 'uint8_t *' (aka 'unsigned char *'))
 metrics/memory.aarch64.O0.debug.elf 0x2102f8 string_length: does not compile: invalid operands to binary expression ('char *' and 'uint8_t *' (aka 'unsigned char *'))
@@ -173,17 +163,10 @@ metrics/memory.x86_64.O0.debug.elf 0x201280 copy_bytes: does not compile: invali
 metrics/memory.x86_64.O0.debug.elf 0x201320 string_length: does not compile: invalid operands to binary expression ('char *' and 'uint8_t *' (aka 'unsigned char *'))
 metrics/memory.x86_64.O0.stripped.elf 0x201280 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
 metrics/memory.x86_64.O0.stripped.elf 0x201320 -: does not compile: invalid operands to binary expression ('uint8_t *' (aka 'unsigned char *') and 'uint8_t *')
-metrics/structs.aarch64.O0.debug.elf 0x2101fc rect_area: does not compile: incomplete definition of type 'struct rect'
 metrics/structs.aarch64.O0.debug.elf 0x2103d0 flags_set_mode: does not compile: incomplete definition of type 'struct flags'
 metrics/structs.aarch64.O2.debug.elf 0x2102ec flags_set_mode: does not compile: incomplete definition of type 'struct flags'
-metrics/structs.x86_64.O0.debug.elf 0x201240 rect_area: does not compile: incomplete definition of type 'struct rect'
-metrics/structs.x86_64.O0.debug.elf 0x201310 big_make: does not compile: expected function body after function declarator
 metrics/structs.x86_64.O0.debug.elf 0x2013c0 flags_set_mode: does not compile: incomplete definition of type 'struct flags'
-metrics/structs.x86_64.O0.stripped.elf 0x201240 -: does not compile: incomplete definition of type 'struct sub_201240_a0_k344'
-metrics/structs.x86_64.O2.debug.elf 0x2011e0 rect_area: does not compile: incomplete definition of type 'struct rect'
-metrics/structs.x86_64.O2.debug.elf 0x201280 big_make: does not compile: expected function body after function declarator
 metrics/structs.x86_64.O2.debug.elf 0x2012f0 flags_set_mode: does not compile: incomplete definition of type 'struct flags'
-metrics/structs.x86_64.O2.stripped.elf 0x2011e0 -: does not compile: incomplete definition of type 'struct sub_2011e0_a0_k355'
 pe64.obj 0x60 msg_first: does not compile: use of undeclared identifier 'kMsg'
 rust_demo 0x31df0 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: use of undeclared identifier 'dword_7534'
 rust_demo 0x327e0 <gimli::read::index::UnitIndex<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse: does not compile: incompatible pointer to integer conversion assigning to 'int64_t' (aka 'long long') from 'uint8_t *' (aka 'unsigned char *') [-Wint-conversion]

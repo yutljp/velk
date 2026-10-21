@@ -5,7 +5,7 @@ pub mod trials;
 mod types;
 pub mod visit;
 
-pub use types::{Access, CType, Member, Param, StackParam, Structure};
+pub use types::{Access, CType, Definition, Member, Param, StackParam, Structure};
 
 /// The integer calling convention a call follows: which registers carry
 /// its arguments and which it may overwrite.
@@ -1366,6 +1366,8 @@ pub struct FunctionIr {
     pub accesses: Vec<Access>,
     /// Structure fields the debug info names.
     pub members: Vec<Member>,
+    /// The structures and unions the debug info defines.
+    pub definitions: Vec<Definition>,
     /// Structures recovered from the accesses through pointer parameters.
     pub structures: Vec<Structure>,
     /// Argument registers a signed comparison reads.
@@ -1398,6 +1400,7 @@ impl FunctionIr {
             ret_type: CType::U64,
             accesses: Vec::new(),
             members: Vec::new(),
+            definitions: Vec::new(),
             structures: Vec::new(),
             signed_params: std::collections::HashSet::new(),
             landing_pads: Vec::new(),

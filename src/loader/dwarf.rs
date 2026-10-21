@@ -2,7 +2,7 @@
 
 use gimli::{AttributeValue, Dwarf, EndianSlice, LittleEndian, SectionId, Unit};
 
-use crate::ir::{CType, Member};
+use crate::ir::{CType, Definition, Member};
 use crate::loader::Image;
 
 #[derive(Debug, Clone)]
@@ -26,6 +26,8 @@ pub struct FunctionTypes {
     pub variadic: bool,
     /// The named fields of every structure in the unit.
     pub members: Vec<Member>,
+    /// The C definition of every named structure and union in the unit.
+    pub definitions: Vec<Definition>,
 }
 
 fn attribute<'a>(
@@ -200,10 +202,206 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 param_aggregate_sizes,
                 variadic,
                 members: structure_members(&dwarf, &unit),
+                definitions: definitions(&dwarf, &unit),
             });
         }
     }
     None
+}
+
+/// A byte count in an attribute.
+fn byte_count(value: AttributeValue<EndianSlice<'_, LittleEndian>>) -> Option<u64> {
+    match value {
+        AttributeValue::Udata(size) => Some(size),
+        AttributeValue::Data1(size) => Some(u64::from(size)),
+        AttributeValue::Data2(size) => Some(u64::from(size)),
+        AttributeValue::Data4(size) => Some(u64::from(size)),
+        AttributeValue::Data8(size) => Some(size),
+        _ => None,
+    }
+}
+
+/// The byte size of a type, through typedefs and qualifiers, and of an
+/// array by its element count.
+fn type_size(
+    unit: &Unit<EndianSlice<'_, LittleEndian>>,
+    offset: gimli::UnitOffset<usize>,
+    depth: usize,
+) -> Option<u64> {
+    if depth == 0 {
+        return None;
+    }
+    let entry = unit.entry(offset).ok()?;
+    let inner = || match attribute(&entry, gimli::DW_AT_type)? {
+        AttributeValue::UnitRef(inner) => type_size(unit, inner, depth - 1),
+        _ => None,
+    };
+    match entry.tag() {
+        gimli::DW_TAG_typedef
+        | gimli::DW_TAG_const_type
+        | gimli::DW_TAG_volatile_type
+        | gimli::DW_TAG_restrict_type => inner(),
+        gimli::DW_TAG_pointer_type => Some(
+            attribute(&entry, gimli::DW_AT_byte_size)
+                .and_then(byte_count)
+                .unwrap_or(8),
+        ),
+        gimli::DW_TAG_array_type => {
+            let element = inner()?;
+            let mut count = 1u64;
+            let mut tree = unit.entries_tree(Some(offset)).ok()?;
+            let root = tree.root().ok()?;
+            let mut children = root.children();
+            while let Ok(Some(child)) = children.next() {
+                let child = child.entry();
+                if child.tag() != gimli::DW_TAG_subrange_type {
+                    continue;
+                }
+                let length = match attribute(child, gimli::DW_AT_count).and_then(byte_count) {
+                    Some(length) => length,
+                    None => attribute(child, gimli::DW_AT_upper_bound)
+                        .and_then(byte_count)?
+                        .checked_add(1)?,
+                };
+                count = count.checked_mul(length)?;
+            }
+            element.checked_mul(count)
+        }
+        _ => attribute(&entry, gimli::DW_AT_byte_size).and_then(byte_count),
+    }
+}
+
+/// The C definition of each named structure and union in the unit whose
+/// members all have a known type and size; a member that is a bit-field,
+/// or of an unnamed type, is left a gap of its bytes.
+fn definitions(
+    dwarf: &Dwarf<EndianSlice<'_, LittleEndian>>,
+    unit: &Unit<EndianSlice<'_, LittleEndian>>,
+) -> Vec<Definition> {
+    let mut found = Vec::new();
+    let mut entries = unit.entries();
+    let mut aggregates = Vec::new();
+    while let Ok(Some(entry)) = entries.next_dfs() {
+        let union = match entry.tag() {
+            gimli::DW_TAG_structure_type => false,
+            gimli::DW_TAG_union_type => true,
+            _ => continue,
+        };
+        // A declaration alone has no members to give.
+        if attribute(entry, gimli::DW_AT_declaration).is_some() {
+            continue;
+        }
+        let Some(name) = attribute(entry, gimli::DW_AT_name)
+            .and_then(|value| attribute_string(dwarf, unit, value))
+        else {
+            continue;
+        };
+        let Some(size) = attribute(entry, gimli::DW_AT_byte_size).and_then(byte_count) else {
+            continue;
+        };
+        aggregates.push((entry.offset(), name, union, size));
+    }
+    'aggregates: for (offset, name, union, size) in aggregates {
+        let keyword = if union { "union" } else { "struct" };
+        let mut members = Vec::new();
+        let mut fields = Vec::new();
+        let mut contains = Vec::new();
+        let mut end = 0u64;
+        let Ok(mut tree) = unit.entries_tree(Some(offset)) else {
+            continue;
+        };
+        let Ok(root) = tree.root() else {
+            continue;
+        };
+        let mut children = root.children();
+        while let Ok(Some(child)) = children.next() {
+            let child = child.entry();
+            if child.tag() != gimli::DW_TAG_member {
+                continue;
+            }
+            let at = if union {
+                0
+            } else {
+                attribute(child, gimli::DW_AT_data_member_location)
+                    .and_then(|value| attribute_offset(dwarf, unit, value))
+                    .unwrap_or(0)
+            };
+            let Some(AttributeValue::UnitRef(ty_offset)) = attribute(child, gimli::DW_AT_type)
+            else {
+                continue 'aggregates;
+            };
+            let Some(width) = type_size(unit, ty_offset, 8) else {
+                continue 'aggregates;
+            };
+            if at < end {
+                // A bit-field sharing bytes with the one before.
+                continue;
+            }
+            let member_name = attribute(child, gimli::DW_AT_name)
+                .and_then(|value| attribute_string(dwarf, unit, value));
+            let ty = type_name(dwarf, unit, ty_offset, 8).filter(plausible_type);
+            let declared = match (member_name, ty) {
+                (Some(member_name), Some(ty))
+                    if attribute(child, gimli::DW_AT_bit_size).is_none() =>
+                {
+                    let declaration = match &ty {
+                        CType::Array(element) => {
+                            let Some(element_size) = element_type_size(element) else {
+                                continue 'aggregates;
+                            };
+                            let separator = if element.is_pointer() { "" } else { " " };
+                            format!(
+                                "{element}{separator}{member_name}[{}];",
+                                width / element_size
+                            )
+                        }
+                        ty if ty.is_pointer() => format!("{ty}{member_name};"),
+                        ty => format!("{ty} {member_name};"),
+                    };
+                    if let CType::Named(named) = &ty
+                        && (named.starts_with("struct ") || named.starts_with("union "))
+                    {
+                        contains.push(named.clone());
+                    }
+                    fields.push(member_name);
+                    Some(declaration)
+                }
+                _ => None,
+            };
+            if union {
+                members.extend(declared);
+                continue;
+            }
+            if at > end {
+                members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", at - end));
+            }
+            members.push(declared.unwrap_or_else(|| format!("uint8_t gap_0x{at:x}[0x{width:x}];")));
+            end = at.saturating_add(width);
+        }
+        if !union && size > end {
+            members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
+        }
+        if members.is_empty() {
+            continue;
+        }
+        found.push(Definition {
+            name: format!("{keyword} {name}"),
+            members,
+            fields,
+            contains,
+        });
+    }
+    found
+}
+
+/// The size of an array's element, for the count of its elements.
+fn element_type_size(element: &CType) -> Option<u64> {
+    if element.is_pointer() {
+        return Some(8);
+    }
+    CType::pointer_to(element.clone())
+        .pointee_size()
+        .map(u64::from)
 }
 
 /// Each structure's name and direct fields: offset, name and type.

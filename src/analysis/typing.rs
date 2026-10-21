@@ -889,6 +889,7 @@ pub(crate) fn apply_dwarf_types(
         return;
     };
     ir.members = types.members.clone();
+    ir.definitions = types.definitions.clone();
     // Only a declaration whose every parameter has a type the debug info
     // could read replaces the recovered signature; otherwise its names go
     // onto the recovered parameters in order.

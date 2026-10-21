@@ -259,6 +259,20 @@ pub struct Structure {
     pub elements: Vec<u16>,
 }
 
+/// A structure or union the debug info defines, as C declares it.
+#[derive(Debug, Clone)]
+pub struct Definition {
+    /// `struct pair` or `union value`.
+    pub name: String,
+    /// Each member's declaration, `int a;`, with gaps where the layout
+    /// leaves bytes no member names, such as bit-fields.
+    pub members: Vec<String>,
+    /// The names its members are accessed by.
+    pub fields: Vec<String>,
+    /// The structures and unions it holds by value, which C defines first.
+    pub contains: Vec<String>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Member {
     pub structure: String,

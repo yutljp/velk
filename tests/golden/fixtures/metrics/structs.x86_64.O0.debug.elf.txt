@@ -11,6 +11,8 @@
 == 0x201240 rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x201240 */
+struct point { int x; int y; };
+struct rect { struct point min; struct point max; };
 int rect_area(struct rect *r) {
     return (r->max.x - r->min.x) * (r->max.y - r->min.y);
 }
@@ -71,6 +73,7 @@ fn record_total @ 0x201270 (size 109)
 == 0x2012e0 point_add
 -- decompile
 /* velk pseudo-C: point_add @ 0x2012e0 */
+struct point { int x; int y; };
 struct point point_add(struct point a, struct point b) {
     int64_t local_0; /* [sp-18] */
     int64_t local_1; /* [sp-20] */
@@ -100,6 +103,7 @@ fn point_add @ 0x2012e0 (size 36)
 == 0x201310 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x201310 */
+struct big { long a; long b; long c; long d; };
 struct big *big_make(struct big *result, long seed) {
     result->a = seed;
     result->b = seed + 0x1;
@@ -126,6 +130,7 @@ fn big_make @ 0x201310 (size 52)
 == 0x201350 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x201350 */
+struct big { long a; long b; long c; long d; };
 struct big_sum_s1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 long big_sum(struct big value) {
     struct big_sum_s1 *v1;
@@ -148,6 +153,7 @@ fn big_sum @ 0x201350 (size 25)
 == 0x201370 word_low_byte
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x201370 */
+union word { unsigned int u; float f; unsigned char bytes[4]; };
 unsigned char word_low_byte(union word w) {
     uint32_t local_0; /* [sp-c] */
 
@@ -170,6 +176,7 @@ fn word_low_byte @ 0x201370 (size 13)
 == 0x201380 flags_level
 -- decompile
 /* velk pseudo-C: flags_level @ 0x201380 */
+struct flags { uint8_t gap_0x0[0x4]; };
 unsigned int flags_level(struct flags f) {
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */

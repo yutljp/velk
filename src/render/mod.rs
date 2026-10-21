@@ -498,6 +498,7 @@ fn render_with(
     // it is written: folding values into their readers can leave a
     // structure without its variable.
     let mut definitions: Vec<(String, String)> = Vec::new();
+    let definitions_at = out.len();
     for structure in &ir.structures {
         let mut members = Vec::new();
         let mut end = 0;
@@ -517,17 +518,7 @@ fn render_with(
         {
             members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
         }
-        // A short structure reads on one line, a longer one a member a line.
-        let line = format!("struct {} {{ {} }};", structure.name, members.join(" "));
-        let definition = if line.len() <= STRUCTURE_LINE {
-            line + "\n"
-        } else {
-            let mut text = format!("struct {} {{\n", structure.name);
-            for member in members {
-                text.push_str(&format!("    {member}\n"));
-            }
-            text + "};\n"
-        };
+        let definition = defined(&format!("struct {}", structure.name), &members);
         out.push_str(&definition);
         definitions.push((structure.name.clone(), definition));
     }
@@ -624,7 +615,69 @@ fn render_with(
             out = out.replacen(&definition, "", 1);
         }
     }
+    let debug = debug_definitions(ir, &out);
+    out.insert_str(definitions_at, &debug);
     out
+}
+
+/// A structure's definition: on one line when short, else a member a line.
+fn defined(name: &str, members: &[String]) -> String {
+    let line = format!("{name} {{ {} }};", members.join(" "));
+    if line.len() <= STRUCTURE_LINE {
+        return line + "\n";
+    }
+    let mut text = format!("{name} {{\n");
+    for member in members {
+        text.push_str(&format!("    {member}\n"));
+    }
+    text + "};\n"
+}
+
+/// The definitions from the debug info that the printed code needs to
+/// compile: those of the structures and unions it reaches a member of or
+/// holds by value, after those they hold by value in turn.
+fn debug_definitions(ir: &FunctionIr, code: &str) -> String {
+    let named = |name: &str| {
+        code.match_indices(name).any(|(at, _)| {
+            !code[at + name.len()..].starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+        })
+    };
+    let needed = |definition: &crate::ir::Definition| {
+        named(&definition.name)
+            && (definition.fields.iter().any(|field| {
+                code.contains(&format!("->{field}")) || code.contains(&format!(".{field}"))
+            }) || code
+                .match_indices(&format!("{} ", definition.name))
+                .any(|(at, _)| !code[at + definition.name.len() + 1..].starts_with('*')))
+    };
+    let mut ordered: Vec<&crate::ir::Definition> = Vec::new();
+    fn place<'a>(
+        definition: &'a crate::ir::Definition,
+        all: &'a [crate::ir::Definition],
+        ordered: &mut Vec<&'a crate::ir::Definition>,
+        depth: usize,
+    ) {
+        if depth > 8 || ordered.iter().any(|placed| placed.name == definition.name) {
+            return;
+        }
+        for inner in &definition.contains {
+            if let Some(inner) = all.iter().find(|candidate| candidate.name == *inner) {
+                place(inner, all, ordered, depth + 1);
+            }
+        }
+        ordered.push(definition);
+    }
+    for definition in ir
+        .definitions
+        .iter()
+        .filter(|definition| needed(definition))
+    {
+        place(definition, &ir.definitions, &mut ordered, 0);
+    }
+    ordered
+        .iter()
+        .map(|definition| defined(&definition.name, &definition.members))
+        .collect()
 }
 
 /// The general registers other than the stack pointer that the body reads

@@ -11,6 +11,8 @@
 == 0x2101dc rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x2101dc */
+struct point { int x; int y; };
+struct rect { struct point min; struct point max; };
 int rect_area(struct rect *r) {
     uint64_t v1;
 
@@ -141,6 +143,7 @@ fn record_total @ 0x2101f0 (size 160)
 == 0x210290 point_add
 -- decompile
 /* velk pseudo-C: point_add @ 0x210290 */
+struct point { int x; int y; };
 struct point point_add(struct point a, struct point b) {
     return (a & 0xffffffff00000000) + b & 0xffffffff00000000 | ((b + a) & 0xffffffff);
 }
@@ -158,6 +161,7 @@ fn point_add @ 0x210290 (size 24)
 == 0x2102a8 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x2102a8 */
+struct big { long a; long b; long c; long d; };
 struct big big_make(long seed) {
     uint64_t x8;
     int64_t v1;
@@ -189,6 +193,7 @@ fn big_make @ 0x2102a8 (size 24)
 -- decompile
 /* velk pseudo-C: big_sum @ 0x2102c0 */
 /* struct: value +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
+struct big { long a; long b; long c; long d; };
 long big_sum(struct big value) {
     return add_lanes64(*(uint64_t *)(value), *(uint64_t *)(value + 0x10)) + add_lanes64(*(uint64_t *)(value + 0x8), *(uint64_t *)(value + 0x18));
 }
@@ -206,6 +211,7 @@ fn big_sum @ 0x2102c0 (size 20)
 == 0x2102d4 word_low_byte
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x2102d4 */
+union word { unsigned int u; float f; unsigned char bytes[4]; };
 unsigned char word_low_byte(union word w) {
     return w;
 }
@@ -223,6 +229,7 @@ fn word_low_byte @ 0x2102d4 (size 4)
 == 0x2102d8 flags_level
 -- decompile
 /* velk pseudo-C: flags_level @ 0x2102d8 */
+struct flags { uint8_t gap_0x0[0x4]; };
 unsigned int flags_level(struct flags f) {
     return ((f & 0x1) == 0x0 ? f >> 0x1 & 0x7 : f >> 0x4 & 0xf);
 }

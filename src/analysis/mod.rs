@@ -1144,6 +1144,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         },
         accesses: signature.accesses,
         members: Vec::new(),
+        definitions: Vec::new(),
         structures,
         signed_params: signature.signed,
         landing_pads,
