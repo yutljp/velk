@@ -14,7 +14,7 @@
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint8_t *local_0; /* [sp-20] */
 
-    for (local_0 = 0x0; local_0 < n /* unsigned */; local_0++) {
+    for (local_0 = 0x0; local_0 < n; local_0++) {
         *(uint8_t *)(dst + local_0) = *(uint8_t *)(src + local_0);
     }
 }
@@ -53,7 +53,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint8_t *local_1; /* [sp-20] */
 
     local_0 = value;
-    for (local_1 = 0x0; local_1 < n /* unsigned */; local_1++) {
+    for (local_1 = 0x0; local_1 < n; local_1++) {
         *(uint8_t *)(dst + local_1) = local_0;
     }
 }

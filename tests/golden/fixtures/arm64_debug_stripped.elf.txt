@@ -100,7 +100,7 @@ int sum_arr(int *p, int n) {
         return 0x0;
     }
     v1 = (uint32_t)n;
-    if ((uint32_t)n >= 0x8 /* unsigned */) {
+    if ((uint32_t)n >= 0x8) {
         v4 = 0x0;
         v5 = 0x0;
         v6 = 0x0;

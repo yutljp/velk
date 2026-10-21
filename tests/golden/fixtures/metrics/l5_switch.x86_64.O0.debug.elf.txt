@@ -32,7 +32,7 @@ int dense(int x) {
     local_0 = x;
     v2 = local_0 - 0xa;
     local_1 = v2;
-    if (v2 <= 0xf /* unsigned */) {
+    if (v2 <= 0xf) {
         v8 = (int32_t)(dword_200158[local_1]) + 0x200158;
         switch (local_1 - 0xf) {
         case -15:

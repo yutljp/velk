@@ -106,7 +106,7 @@ fn <unnamed> @ 0x210238 (size 32)
 /* velk pseudo-C: sub_210258 @ 0x210258 */
 /* ref: 0x200120 .rodata */
 int32_t sub_210258(uint32_t a0) {
-    if (a0 > 0x3 /* unsigned */) {
+    if (a0 > 0x3) {
         return 0xffffffff;
     }
     return dword_200120[a0];
@@ -241,7 +241,7 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
     if (a1 < 0x1) {
         return 0x0;
     }
-    if ((uint32_t)a1 >= 0x8 /* unsigned */) {
+    if ((uint32_t)a1 >= 0x8) {
         v4 = 0x0;
         v5 = 0x0;
         v6 = 0x0;
@@ -357,7 +357,7 @@ int32_t sub_2103a4(uint32_t *a0, int32_t a1, int32_t a2) {
         v6 = 0x1;
         do {
             v7 = v1 + 0x1;
-            if (v7 < a1 /* unsigned */) {
+            if (v7 < a1) {
                 v8 = a0[v1];
                 v9 = a1;
                 v10 = v4;

@@ -115,7 +115,7 @@ fn cleanup_on_error @ 0x210238 (size 32)
 /* velk pseudo-C: fallthrough @ 0x210258 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
-    if ((uint32_t)x > 0x3 /* unsigned */) {
+    if ((uint32_t)x > 0x3) {
         return 0xffffffff;
     }
     return dword_200120[(x & 0xffffffff)];
@@ -252,7 +252,7 @@ int skip_negatives(int *p, int n) {
         return 0x0;
     }
     v1 = (uint32_t)n;
-    if ((uint32_t)n >= 0x8 /* unsigned */) {
+    if ((uint32_t)n >= 0x8) {
         v4 = 0x0;
         v5 = 0x0;
         v6 = 0x0;
@@ -370,7 +370,7 @@ int find_pair(int *p, int n, int target) {
         v6 = 0x1;
         do {
             v7 = v1 + 0x1;
-            if (v7 < v2 /* unsigned */) {
+            if (v7 < v2) {
                 v8 = p[v1];
                 v9 = v2;
                 v10 = v4;

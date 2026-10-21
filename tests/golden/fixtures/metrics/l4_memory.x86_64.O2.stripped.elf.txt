@@ -48,7 +48,7 @@ int32_t sub_2011f0(uint32_t *a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
     }
-    if ((uint32_t)a1 >= 0x8 /* unsigned */) {
+    if ((uint32_t)a1 >= 0x8) {
         v2 = a1 & 0x7ffffff8;
         v4 = (uint64_t)((a1 & 0xffffffff) >> 0x3) << 0x5;
         v5 = 0x0;

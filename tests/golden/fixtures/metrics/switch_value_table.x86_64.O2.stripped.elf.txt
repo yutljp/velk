@@ -11,7 +11,7 @@ int32_t sub_201170(int32_t a0) {
 
     v1 = a0 - 0xa;
     v2 = 0x0;
-    if (v1 > 0x4 /* unsigned */) {
+    if (v1 > 0x4) {
         return 0x0;
     }
     return dword_200120[v1];

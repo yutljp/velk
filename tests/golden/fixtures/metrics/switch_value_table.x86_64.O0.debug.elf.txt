@@ -15,7 +15,7 @@ int dispatch(int x) {
     local_0 = x;
     v2 = local_0 - 0xa;
     local_1 = v2;
-    if (v2 <= 0x4 /* unsigned */) {
+    if (v2 <= 0x4) {
         v8 = (int32_t)(dword_200120[local_1]) + 0x200120;
         switch (local_1 - 0x4) {
         case -4:

@@ -9,7 +9,7 @@
 int d7(int x) {
     int32_t v2;
 
-    if ((uint32_t)x > 0x9 /* unsigned */) {
+    if ((uint32_t)x > 0x9) {
         v2 = 0xffffffff;
     } else {
         switch (x) {

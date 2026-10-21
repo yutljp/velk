@@ -22,7 +22,7 @@ int count_bits(unsigned int x) {
         x = x + v2;
         v3 = v1;
         v1 = v1 >> 0x1;
-    } while (v3 > 0x1 /* unsigned */);
+    } while (v3 > 0x1);
     return x;
 }
 -- signature

@@ -19,7 +19,7 @@ int32_t sub_2011c0(int32_t a0) {
     int32_t local_8; /* [sp-30] */
     int32_t local_9; /* [sp-34] */
 
-    if ((uint64_t)a0 <= 0x9 /* unsigned */) {
+    if ((uint64_t)a0 <= 0x9) {
         v6 = (int32_t)(dword_200158[a0]) + 0x200158;
         switch (a0) {
         case 0:

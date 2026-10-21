@@ -13,7 +13,7 @@ int32_t sub_201180(int32_t a0) {
 
     v2 = a0 - 0xa;
     local_0 = v2;
-    if (v2 <= 0x4 /* unsigned */) {
+    if (v2 <= 0x4) {
         v8 = (int32_t)(dword_200120[local_0]) + 0x200120;
         switch (local_0 - 0x4) {
         case -4:

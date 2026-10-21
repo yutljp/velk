@@ -19,7 +19,7 @@ int64_t sub_201280(uint8_t *a0, uint8_t *a1, int64_t a2) {
     local_0 = 0x0;
     while (true) {
         v1 = local_0;
-        if (v1 >= a2 /* unsigned */) break;
+        if (v1 >= a2) break;
         v2 = *(uint8_t *)(a1 + local_0);
         *(uint8_t *)(a0 + local_0) = v2;
         local_0 += 0x1;
@@ -64,7 +64,7 @@ int64_t sub_2012d0(uint8_t *a0, int32_t a1, int64_t a2) {
     local_1 = 0x0;
     while (true) {
         v1 = local_1;
-        if (v1 >= a2 /* unsigned */) break;
+        if (v1 >= a2) break;
         v2 = local_0;
         *(uint8_t *)(a0 + local_1) = v2;
         local_1 += 0x1;

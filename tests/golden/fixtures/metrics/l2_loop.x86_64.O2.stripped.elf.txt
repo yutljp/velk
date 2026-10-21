@@ -27,7 +27,7 @@ int32_t sub_2011d0(int32_t a0) {
         return 0x0;
     }
     v1 = a0 & 0x7;
-    if ((uint32_t)a0 >= 0x8 /* unsigned */) {
+    if ((uint32_t)a0 >= 0x8) {
         v5 = -(a0 & 0x7ffffff8);
         v3 = 0x0;
         v6 = 0x7;

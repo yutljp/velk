@@ -161,7 +161,7 @@ int factorial(int n) {
     if (n < 0x2) {
         return 0x1;
     }
-    if ((uint32_t)n >= 0x9 /* unsigned */) {
+    if ((uint32_t)n >= 0x9) {
         v2 = n - 0x1;
         v3 = v2 & 0xfffffffffffffff8;
         v4 = (n & 0xffffffff);
@@ -212,7 +212,7 @@ int factorial(int n) {
         v46 = n - 0x1;
         v47 = n;
         n = v46;
-    } while (v47 > 0x2 /* unsigned */);
+    } while (v47 > 0x2);
     return v1;
 }
 -- signature
@@ -452,7 +452,7 @@ int sum_varargs(int count, ...) {
         v6 = count & 0x7ffffffe;
         v4 = 0x0;
         do {
-            if (v1 > 0x28 /* unsigned */) {
+            if (v1 > 0x28) {
                 v7 = v3 + 0x2;
                 local_23 = v7;
             } else {
@@ -462,7 +462,7 @@ int sum_varargs(int count, ...) {
                 *(uint32_t *)&local_24 = v1;
             }
             v8 = v4 + *v3;
-            if (v1 < 0x29 /* unsigned */) {
+            if (v1 < 0x29) {
                 v3 = v7;
                 v7 = v1 + v2;
                 v1 = ((v1 + 0x8) & 0xffffffff);
@@ -480,7 +480,7 @@ int sum_varargs(int count, ...) {
     if ((count & 0x1) == 0x0) {
         return v4;
     }
-    if (v1 >= 0x29 /* unsigned */) {
+    if (v1 >= 0x29) {
         local_23 = v3 + 0x2;
     } else {
         *(uint32_t *)&local_24 = v1 + 0x8;

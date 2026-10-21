@@ -25,7 +25,7 @@ int d7(int x) {
     local_0 = x;
     v1 = local_0;
     local_1 = v1;
-    if (v1 <= 0x9 /* unsigned */) {
+    if (v1 <= 0x9) {
         v6 = (int32_t)(dword_200158[local_1]) + 0x200158;
         switch (local_1) {
         case 0:

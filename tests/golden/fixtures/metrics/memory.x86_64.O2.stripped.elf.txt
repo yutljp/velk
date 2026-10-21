@@ -29,9 +29,9 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
         return;
     }
     v1 = 0x0;
-    if (a2 >= 0x8 /* unsigned */) {
-        if ((uint8_t *)a0 - (uint8_t *)a1 >= 0x20 /* unsigned */) {
-            if (a2 >= 0x20 /* unsigned */) {
+    if (a2 >= 0x8) {
+        if ((uint8_t *)a0 - (uint8_t *)a1 >= 0x20) {
+            if (a2 >= 0x20) {
                 v1 = a2 & 0xffffffffffffffe0;
                 v2 = 0x0;
                 do {
@@ -78,7 +78,7 @@ L_2012a6:
             v10 = v10 - 0x1;
         } while (v10 != 0x0);
     }
-    if (v1 - a2 > -0x4 /* unsigned */) {
+    if (v1 - a2 > -0x4) {
         return;
     }
     do {

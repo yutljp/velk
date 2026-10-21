@@ -93,7 +93,7 @@ int sum_arr(int *p, int n) {
         return 0x0;
     }
     v1 = (n & 0xffffffff);
-    if ((uint32_t)n >= 0x8 /* unsigned */) {
+    if ((uint32_t)n >= 0x8) {
         v2 = v1 & 0x7ffffff8;
         v4 = v1 >> 0x3 << 0x5;
         v5 = 0x0;

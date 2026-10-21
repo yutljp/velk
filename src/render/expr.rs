@@ -1325,7 +1325,27 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
         Cond::Eq | Cond::Ne => 7,
         _ => 8,
     };
-    let [a, b] = compared(cond, lhs, rhs, ctx);
+    let [mut a, mut b] = compared(cond, lhs, rhs, ctx);
+    // C compares in the common type of the two sides: an unsigned test of
+    // values one of which may be negative there reads one side unsigned,
+    // which takes the other along.
+    let common = a.ty.common(b.ty);
+    let below_sign = |printed: &crate::render::int::Printed, expr: &Expr| match expr {
+        Expr::Const(value) => *value >> (common.bits - 1) == 0,
+        _ => {
+            matches!(printed.range, crate::render::int::Range::Unsigned(bits) if bits < common.bits)
+        }
+    };
+    if matches!(cond, Cond::Cs | Cond::Cc | Cond::Hi | Cond::Ls)
+        && common.signed
+        && !(below_sign(&a, lhs) && below_sign(&b, rhs))
+    {
+        if matches!(lhs, Expr::Const(_)) {
+            b = b.clone().cast(common.bits, false, b.exact);
+        } else {
+            a = a.clone().cast(common.bits, false, a.exact);
+        }
+    }
     let a = a.within(strength, false).text;
     let b = b.within(strength, true).text;
     match cond {
@@ -1335,10 +1355,10 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
         Cond::Ge => format!("{a} >= {b}"),
         Cond::Gt => format!("{a} > {b}"),
         Cond::Le => format!("{a} <= {b}"),
-        Cond::Cs => format!("{a} >= {b} /* unsigned */"),
-        Cond::Cc => format!("{a} < {b} /* unsigned */"),
-        Cond::Hi => format!("{a} > {b} /* unsigned */"),
-        Cond::Ls => format!("{a} <= {b} /* unsigned */"),
+        Cond::Cs => format!("{a} >= {b}"),
+        Cond::Cc => format!("{a} < {b}"),
+        Cond::Hi => format!("{a} > {b}"),
+        Cond::Ls => format!("{a} <= {b}"),
         Cond::Mi => "flags_mi /* mi */".to_owned(),
         Cond::Pl => "flags_pl /* pl */".to_owned(),
         Cond::Vs => "flags_vs /* vs */".to_owned(),

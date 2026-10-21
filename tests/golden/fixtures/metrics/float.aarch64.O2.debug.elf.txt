@@ -27,7 +27,7 @@ double average(double *values, int n) {
     }
     v1 = 0.0;
     v2 = (uint32_t)n;
-    if ((uint32_t)n >= 0x4 /* unsigned */) {
+    if ((uint32_t)n >= 0x4) {
         v4 = values + 0x2;
         v3 = v2 & 0x7ffffffc;
         v5 = v3;

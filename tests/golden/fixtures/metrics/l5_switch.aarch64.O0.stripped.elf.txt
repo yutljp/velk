@@ -30,7 +30,7 @@ int32_t sub_210334(int32_t a0) {
 
     v3 = a0 - 0xa;
     local_0 = v3;
-    if (v3 <= 0xf /* unsigned */) {
+    if (v3 <= 0xf) {
         x8 = 0x210368 + (int64_t)dword_200158[local_0];
         switch (local_0 + 0xa) {
         case 10:

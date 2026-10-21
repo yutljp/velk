@@ -131,7 +131,7 @@ int fallthrough(int x) {
     local_1 = 0x0;
     v1 = local_0;
     local_2 = v1;
-    if (v1 <= 0x3 /* unsigned */) {
+    if (v1 <= 0x3) {
         v5 = (int32_t)(dword_200120[local_2]) + 0x200120;
         switch (local_2) {
         case 0:

@@ -30,7 +30,7 @@ double average(double *values, int n) {
     if (n > 0x0) {
         v3 = n;
         v4 = v3 & 0x7;
-        if ((uint32_t)n >= 0x8 /* unsigned */) {
+        if ((uint32_t)n >= 0x8) {
             v6 = v3 & 0x7ffffff8;
             v5 = 0x0;
             do {

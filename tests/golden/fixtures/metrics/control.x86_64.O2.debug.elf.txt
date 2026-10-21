@@ -42,7 +42,7 @@ int matrix_trace(int *m, int n) {
     do {
         v8 = ((v6 * n) & 0xffffffff);
         v9 = m + v6;
-        if ((uint32_t)n >= 0x4 /* unsigned */) {
+        if ((uint32_t)n >= 0x4) {
             v11 = 0x0;
             do {
                 v12 = v11;
@@ -201,7 +201,7 @@ int fallthrough(int x) {
     int32_t v1;
 
     v1 = 0xffffffff;
-    if ((uint32_t)x > 0x3 /* unsigned */) {
+    if ((uint32_t)x > 0x3) {
         return 0xffffffff;
     }
     return dword_200120[(uint32_t)x];
@@ -337,7 +337,7 @@ int skip_negatives(int *p, int n) {
         return 0x0;
     }
     v1 = (n & 0xffffffff);
-    if ((uint32_t)n >= 0x8 /* unsigned */) {
+    if ((uint32_t)n >= 0x8) {
         v2 = v1 & 0x7ffffff8;
         v4 = v1 >> 0x3 << 0x5;
         v6 = 0x0;
@@ -450,7 +450,7 @@ int find_pair(int *p, int n, int target) {
     do {
         v8 = v7;
         v7 = v7 + 0x1;
-        if (v7 < v2 /* unsigned */) {
+        if (v7 < v2) {
             v9 = p[v8];
             v10 = 0x0;
             do {

@@ -14,7 +14,7 @@
 int64_t sub_210234(uint8_t *a0, uint8_t *a1, int64_t a2) {
     uint8_t *local_0; /* [sp-20] */
 
-    for (local_0 = 0x0; local_0 < a2 /* unsigned */; local_0++) {
+    for (local_0 = 0x0; local_0 < a2; local_0++) {
         *(uint8_t *)(a0 + local_0) = *(uint8_t *)(a1 + local_0);
     }
     return a0;
@@ -54,7 +54,7 @@ int64_t sub_21029c(uint8_t *a0, int32_t a1, int64_t a2) {
     uint8_t *local_1; /* [sp-20] */
 
     local_0 = a1;
-    for (local_1 = 0x0; local_1 < a2 /* unsigned */; local_1++) {
+    for (local_1 = 0x0; local_1 < a2; local_1++) {
         *(uint8_t *)(a0 + local_1) = local_0;
     }
     return a0;

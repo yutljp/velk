@@ -40,7 +40,7 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
     do {
         v8 = ((v6 * a1) & 0xffffffff);
         v9 = a0 + v6;
-        if ((uint32_t)a1 >= 0x4 /* unsigned */) {
+        if ((uint32_t)a1 >= 0x4) {
             v11 = 0x0;
             do {
                 v12 = v11;
@@ -199,7 +199,7 @@ int32_t sub_201340(uint32_t a0) {
     int32_t v1;
 
     v1 = 0xffffffff;
-    if (a0 > 0x3 /* unsigned */) {
+    if (a0 > 0x3) {
         return 0xffffffff;
     }
     return dword_200120[a0];
@@ -333,7 +333,7 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
     if (a1 <= 0x0) {
         return 0x0;
     }
-    if ((uint32_t)a1 >= 0x8 /* unsigned */) {
+    if ((uint32_t)a1 >= 0x8) {
         v2 = a1 & 0x7ffffff8;
         v4 = (uint64_t)((a1 & 0xffffffff) >> 0x3) << 0x5;
         v6 = 0x0;
@@ -444,7 +444,7 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
     do {
         v8 = v7;
         v7 = v7 + 0x1;
-        if (v7 < a1 /* unsigned */) {
+        if (v7 < a1) {
             v9 = a0[v8];
             v10 = 0x0;
             do {

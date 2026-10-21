@@ -34,9 +34,9 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         return;
     }
     v1 = 0x0;
-    if (n >= 0x8 /* unsigned */) {
-        if (dst - src >= 0x20 /* unsigned */) {
-            if (n >= 0x20 /* unsigned */) {
+    if (n >= 0x8) {
+        if (dst - src >= 0x20) {
+            if (n >= 0x20) {
                 v2 = src + 0x10;
                 v3 = dst + 0x10;
                 v1 = n & 0xffffffffffffffe0;

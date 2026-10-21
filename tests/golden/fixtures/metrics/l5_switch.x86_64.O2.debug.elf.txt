@@ -27,7 +27,7 @@ int dense(int x) {
     uint64_t v1;
 
     v1 = ((x - 0xa) & 0xffffffff);
-    if (v1 > 0xf /* unsigned */) {
+    if (v1 > 0xf) {
         g_sink = 0x0;
         return g_sink;
     }

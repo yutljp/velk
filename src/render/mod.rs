@@ -1812,7 +1812,7 @@ mod tests {
             mask(Expr::reg(byte, 64), 0xff),
             Expr::Const(0xf0),
         );
-        assert_eq!(text, "v1 < 0xf0 /* unsigned */");
+        assert_eq!(text, "v1 < 0xf0");
         // Of a wider value, read whole elsewhere, it keeps the mask.
         let text = compared(
             Isa::X86_64,
@@ -1822,7 +1822,26 @@ mod tests {
             mask(Expr::reg(byte, 64), 0xff),
             Expr::Const(0xf0),
         );
-        assert_eq!(text, "(v1 & 0xff) < 0xf0 /* unsigned */");
+        assert_eq!(text, "(v1 & 0xff) < 0xf0");
+    }
+
+    #[test]
+    fn an_unsigned_comparison_of_a_signed_parameter_reads_it_unsigned() {
+        use crate::ir::Cond;
+        // C compares a signed parameter signed.
+        let test = |cond| {
+            compared(
+                Isa::X86_64,
+                &[(7, CType::I64)],
+                &[],
+                cond,
+                Expr::reg(7, 64),
+                Expr::Const(1),
+            )
+        };
+        assert_eq!(test(Cond::Gt), "a0 > 0x1");
+        assert_eq!(test(Cond::Hi), "(uint64_t)a0 > 0x1");
+        assert_eq!(test(Cond::Cc), "(uint64_t)a0 < 0x1");
     }
 
     #[test]
@@ -1927,7 +1946,7 @@ mod tests {
             },
             Expr::Const(0x80),
         );
-        assert_eq!(text, "(uint64_t)(int8_t)(a0) < 0x80 /* unsigned */");
+        assert_eq!(text, "(uint64_t)(int8_t)(a0) < 0x80");
     }
 
     #[test]

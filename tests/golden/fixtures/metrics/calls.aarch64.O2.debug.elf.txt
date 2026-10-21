@@ -136,7 +136,7 @@ int factorial(int n) {
     uint64_t v15;
 
     if (n >= 0x2) {
-        if ((uint32_t)n >= 0x9 /* unsigned */) {
+        if ((uint32_t)n >= 0x9) {
             v3 = 0x100000001;
             v4 = 0x100000001;
             v5 = n - 0x1;
@@ -170,7 +170,7 @@ int factorial(int n) {
         do {
             v2 = v1 * v2;
             v1 = v1 - 0x1;
-        } while (v1 + 0x1 > 0x2 /* unsigned */);
+        } while (v1 + 0x1 > 0x2);
         return v2;
     }
     return 0x1;
@@ -396,7 +396,7 @@ int sum_varargs(int count, ...) {
         if ((v4 & 0x80000000) != 0x0) {
             v6 = v4 + 0x8;
             *(uint32_t *)&local_2 = v6;
-            if (v4 <= 0xfffffff8 /* unsigned */) {
+            if (v4 <= 0xfffffff8) {
                 v5 = v1;
                 v1 = v2 + (int32_t)(v4);
             } else {

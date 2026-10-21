@@ -361,7 +361,7 @@ int sum_varargs(int count, ...) {
         local_26 = &local_22;
         v2 = local_22;
         local_27 = v2;
-        if (v2 > 0x28 /* unsigned */) {
+        if (v2 > 0x28) {
             v6 = local_26;
             v7 = v6[0x1];
             v6[0x1] = v7 + 0x8;

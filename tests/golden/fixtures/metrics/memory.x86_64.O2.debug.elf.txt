@@ -29,9 +29,9 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         return;
     }
     v1 = 0x0;
-    if (n >= 0x8 /* unsigned */) {
-        if (dst - src >= 0x20 /* unsigned */) {
-            if (n >= 0x20 /* unsigned */) {
+    if (n >= 0x8) {
+        if (dst - src >= 0x20) {
+            if (n >= 0x20) {
                 v1 = n & 0xffffffffffffffe0;
                 v2 = 0x0;
                 do {
@@ -78,7 +78,7 @@ L_2012a6:
             v10 = v10 - 0x1;
         } while (v10 != 0x0);
     }
-    if (v1 - n > -0x4 /* unsigned */) {
+    if (v1 - n > -0x4) {
         return;
     }
     do {
