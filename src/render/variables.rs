@@ -205,9 +205,14 @@ fn element(ir: &FunctionIr, uses: &Uses, index: u16, widths: &[u8]) -> CType {
     match uses.float_elements.get(&index) {
         Some(Precision::Double) if width == 8 => CType::Named("double".to_owned()),
         Some(Precision::Single) if width == 4 => CType::Named("float".to_owned()),
+        // Elements every load extends with the sign are signed.
         _ => CType::Int {
             bytes: width,
-            signed: false,
+            signed: width < 8
+                && uses
+                    .extended
+                    .get(&index)
+                    .is_some_and(|signs| signs.iter().all(|signed| *signed)),
         },
     }
 }
@@ -231,6 +236,8 @@ struct Uses {
     float_elements: HashMap<u16, Precision>,
     /// The pointer each assignment offsets, `u16::MAX` for any other value.
     derived: HashMap<u16, Vec<u16>>,
+    /// Whether each load through a pointer extends with the sign.
+    extended: HashMap<u16, Vec<bool>>,
 }
 
 impl Uses {
@@ -273,7 +280,16 @@ impl Uses {
             Expr::Reg { index, .. } => {
                 self.seen.insert(*index);
             }
-            Expr::Load { addr, width, .. } => self.address(addr, *width),
+            Expr::Load {
+                addr,
+                width,
+                signed,
+            } => {
+                self.address(addr, *width);
+                if let Some(base) = base(addr) {
+                    self.extended.entry(base).or_default().push(*signed);
+                }
+            }
             Expr::Bin { op, lhs, rhs } => {
                 if !matches!(op, BinOp::Add | BinOp::Sub) {
                     for side in [lhs, rhs] {

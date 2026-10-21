@@ -139,7 +139,7 @@ int sum_until_zero(int *p, int n) {
         if (p[local_2] == 0x0) {
             return local_1;
         }
-        if ((int32_t)p[local_2] >= 0x0) {
+        if (p[local_2] >= 0x0) {
             local_1 += p[local_2];
         }
     }

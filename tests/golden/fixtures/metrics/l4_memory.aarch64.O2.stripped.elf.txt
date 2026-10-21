@@ -53,7 +53,7 @@ int32_t sub_2101f0(uint32_t *a0, int32_t a1) {
         v6 = 0x0;
         v7 = 0x0;
         v8 = a0 + 0x4;
-        v2 = a1 & 0x7ffffff8;
+        v2 = (uint32_t)a1 & 0x7ffffff8;
         v9 = v2;
         do {
             v10 = v8[-0x2];
@@ -68,7 +68,7 @@ int32_t sub_2101f0(uint32_t *a0, int32_t a1) {
             v7 = add_lanes32(v13, v7);
         } while (v9 != 0x0);
         v3 = sum_lanes32(add_lanes32(v6, v4), add_lanes32(v7, v5));
-        if (v2 == a1) {
+        if (v2 == (uint32_t)a1) {
             return v3;
         }
     } else {
@@ -76,7 +76,7 @@ int32_t sub_2101f0(uint32_t *a0, int32_t a1) {
         v3 = 0x0;
     }
     v15 = a0 + v2;
-    v16 = a1 - v2;
+    v16 = (uint32_t)a1 - v2;
     do {
         v2 = *v15;
         v15 = v15 + 0x1;

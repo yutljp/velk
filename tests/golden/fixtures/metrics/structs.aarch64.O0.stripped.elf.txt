@@ -93,14 +93,11 @@ int64_t sub_2102c0(int64_t a0, int64_t a1) {
     int64_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-8] */
-    uint32_t local_3; /* [sp-4] */
-    uint32_t local_4; /* [sp-c] */
-    uint32_t local_5; /* [sp-14] */
 
     local_0 = a0;
     local_1 = a1;
     *(uint32_t *)&local_2 = *(uint32_t *)&local_0 + *(uint32_t *)&local_1;
-    local_3 = local_4 + local_5;
+    *(uint32_t *)((uint8_t *)&local_2 + 0x4) = *(uint32_t *)((uint8_t *)&local_0 + 0x4) + *(uint32_t *)((uint8_t *)&local_1 + 0x4);
     return local_2;
 }
 -- signature

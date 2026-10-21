@@ -207,7 +207,7 @@ ok "frame settling and endless loop"
 arr_ir=$("$BIN" decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$arr_ir" | grep -q "goto L_" && fail "sum_arr has no gotos"
 echo "$arr_ir" | grep -q "} else {"   || fail "if/else across a skipped block"
-echo "$arr_ir" | grep -q "v2 = a1 & 0x7ffffff8;"   || fail "branch block prefix kept"
+echo "$arr_ir" | grep -qF "v2 = (uint32_t)a1 & 0x7ffffff8;"   || fail "branch block prefix kept"
 helper_pre=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_pre" | grep -q "v1 = a0 - 0x1;"  || fail "prefix before early return"
 ok "if/else structuring"
@@ -345,8 +345,8 @@ echo "$fwd" | grep -q "x8 = local_1;" && fail "store not forwarded"
 echo "$fwd" | grep -q "local_0 += v2;" || fail "forwarded value missing"
 pe_entry=$("$BIN" functions $FIX/pe64.exe --json 2>/dev/null | sed -n 's/.*"entry": "\(0x[0-9a-f]*\)".*/\1/p')
 entry_fwd=$("$BIN" decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
-echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_1 = 0x23;" || fail "partial store into a wider local"
-echo "$entry_fwd" | grep -q "return local_1;" || fail "pop reads the pushed slot"
+echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_0 = 0x23;" || fail "partial store into a wider local"
+echo "$entry_fwd" | grep -q "return local_0;" || fail "pop reads the pushed slot"
 echo "$entry_fwd" | grep -q "= rax;" && fail "overwritten push kept"
 ok "stored values forwarded"
 
@@ -599,7 +599,7 @@ ok "jump-table switch"
 go_json=$("$BIN" functions $FIX/go_stripped --json 2>/dev/null)
 echo "$go_json" | grep -q '"functionCount"'         || fail "go functions"
 go_list=$("$BIN" functions $FIX/go_stripped --limit 5000 2>/dev/null)
-echo "$go_list" | grep -q "main.twice"              || fail "go pclntab names"
+grep -q "main.twice" <<<"$go_list"               || fail "go pclntab names"
 go_card=$("$BIN" card $FIX/go_stripped main.twice 2>/dev/null)
 echo "$go_card" | grep -q '"nameSources": \['       || fail "go card"
 echo "$go_card" | grep -q '"pclntab"'               || fail "go card source"

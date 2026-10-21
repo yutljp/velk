@@ -33,6 +33,9 @@ pub(crate) struct Ctx<'a> {
     /// Rendered stack address to local name, computed once per function so a
     /// load and its store share a name even after the stack pointer moves.
     pub(super) slots: HashMap<String, String>,
+    /// Rendered stack address within a wider local to that address as bytes
+    /// into the local.
+    pub(super) local_parts: HashMap<String, String>,
     /// Declared width of each local, so a mask to that width can be dropped.
     pub(super) local_widths: HashMap<String, u8>,
     /// The size of the elements each pointer local points at.
@@ -58,6 +61,9 @@ pub(crate) struct Ctx<'a> {
     pub(super) pointees: HashMap<u16, String>,
     /// The size of the element each pointer parameter or variable points at.
     pub(super) elements: HashMap<u16, u64>,
+    /// Whether the integer each pointer parameter or variable points at is
+    /// signed, when its type says.
+    pub(super) element_signs: HashMap<u16, bool>,
     /// The pointers, by name, to `char`, whose sign the platform decides.
     pub(super) plain_chars: std::collections::HashSet<String>,
     /// The recovered structures arrays are made of, by name.
@@ -1132,7 +1138,8 @@ fn masked(lhs: &Expr, mask: u64, ctx: &Ctx<'_>, bits: u32) -> Printed {
 /// Memory read `width` bytes wide, by name where it has one.
 fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
     let (text, declared_signed) = if let Some(member) = member_access(addr, width, ctx) {
-        (member, signed)
+        let declared = crate::render::naming::element_signed(addr, width, ctx);
+        (member, declared.unwrap_or(signed))
     } else if let Some(indexed) = array_access(addr, width, ctx)
         .or_else(|| crate::render::naming::flat_array_access(addr, width, ctx))
     {
@@ -1234,6 +1241,9 @@ fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>) -> Printe
 /// `(uint8_t *)&local + offset` for a sum of the stack pointer, constants
 /// and other terms whose stack part addresses a local.
 pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    if let Some(part) = ctx.local_parts.get(&render_expr(value, ctx)) {
+        return Some(part.clone());
+    }
     let (slot, rest) =
         crate::render::locals::offset_local(value, crate::arch::stack_pointer(ctx.isa))?;
     let Expr::Bin { lhs: base, rhs, .. } = &slot else {

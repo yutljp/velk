@@ -411,6 +411,19 @@ pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64, 
     }
 }
 
+/// Whether the element `addr` reads, `width` bytes wide, has a signed type,
+/// when the pointer's type says.
+pub(crate) fn element_signed(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<bool> {
+    let (_, size, _, offset, base) = element_terms(addr, ctx)?;
+    if size != u64::from(width) || offset != 0 || width >= 8 {
+        return None;
+    }
+    match base {
+        Expr::Reg { index, .. } => ctx.element_signs.get(index).copied(),
+        _ => None,
+    }
+}
+
 /// Whether `addr` is an element of a pointer to `char`.
 pub(crate) fn plain_char_access(addr: &Expr, ctx: &Ctx<'_>) -> bool {
     element_terms(addr, ctx).is_some_and(|(name, size, _, offset, _)| {

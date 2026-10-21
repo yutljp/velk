@@ -129,7 +129,7 @@ int sum_arr(int *p, int n) {
     v15 = p + v2;
     v16 = v1 - v2;
     do {
-        v2 = *v15;
+        v2 = (uint32_t)*v15;
         v15 = v15 + 0x1;
         v16 = v16 - 0x1;
         v3 = v2 + v3;

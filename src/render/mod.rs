@@ -335,6 +335,16 @@ fn render_with(
             pointees.insert(*index, structure.to_owned());
         }
     }
+    let element_signs: HashMap<u16, bool> = ir
+        .params
+        .iter()
+        .map(|param| (param.index, &param.ty))
+        .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
+        .filter_map(|(index, ty)| match ty {
+            CType::Pointer(target) => Some((index, target.integer()?.1)),
+            _ => None,
+        })
+        .collect();
     // `char` alone, which is neither `signed char` nor `unsigned char`.
     let plain_char = |ty: &CType| match ty {
         CType::Pointer(target) => match target.as_ref() {
@@ -396,6 +406,7 @@ fn render_with(
             .filter_map(|reference| Some((reference.addr, reference.text.clone()?)))
             .collect(),
         slots: locals.slots,
+        local_parts: locals.parts,
         local_widths: locals.widths,
         local_floats: locals
             .decls
@@ -428,6 +439,7 @@ fn render_with(
         members,
         pointees,
         elements,
+        element_signs,
         plain_chars,
         arrays,
         narrow_regs,

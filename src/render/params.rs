@@ -79,20 +79,38 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         })
     };
     let mut defined: HashMap<Source, Vec<Option<Source>>> = HashMap::new();
+    // The registers given more than the 32 bits of a narrow parameter.
+    let mut given_wide: HashSet<u16> = HashSet::new();
     // The narrowest store to each slot: a wider load reads bytes it left.
     let mut stored: HashMap<u64, u8> = HashMap::new();
     for block in &ir.blocks {
         for (position, stmt) in block.stmts.iter().enumerate() {
             let earlier = &block.stmts[..position];
             match stmt {
-                Stmt::Assign { dest, value } => defined
-                    .entry(Source::Register(dest.index))
-                    .or_default()
-                    .push(before_call(
-                        earlier,
-                        source_of(value)
-                            .filter(|_| dest.width == 64 || (narrow && dest.width == 32)),
-                    )),
+                Stmt::Assign { dest, value } => {
+                    let zero_extended = dest.width == 32
+                        || matches!(
+                            value,
+                            Expr::Reg { width: 32, .. }
+                                | Expr::Load {
+                                    width: 4,
+                                    signed: false,
+                                    ..
+                                }
+                                | Expr::Bin { op: BinOp::And, .. }
+                        );
+                    if !zero_extended {
+                        given_wide.insert(dest.index);
+                    }
+                    defined
+                        .entry(Source::Register(dest.index))
+                        .or_default()
+                        .push(before_call(
+                            earlier,
+                            source_of(value)
+                                .filter(|_| dest.width == 64 || (narrow && dest.width == 32)),
+                        ))
+                }
                 Stmt::Store { addr, value, width } => {
                     if let Some(slot) = slot_of(addr) {
                         defined
@@ -223,6 +241,10 @@ fn fold(ir: &mut FunctionIr, param: u16) {
     let renames: Vec<(u16, Expr)> = aliases
         .iter()
         .filter_map(|alias| match alias {
+            // One that holds only a narrow parameter's 32 bits reads them.
+            Source::Register(index) if narrow && !given_wide.contains(index) => {
+                Some((*index, Expr::reg(param, 32)))
+            }
             Source::Register(index) => Some((*index, Expr::reg(param, 64))),
             Source::Slot(_) => None,
         })

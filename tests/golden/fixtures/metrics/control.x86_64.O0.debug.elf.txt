@@ -332,7 +332,7 @@ int skip_negatives(int *p, int n) {
     local_0 = n;
     local_1 = 0x0;
     for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        if ((int32_t)p[local_2] >= 0x0) {
+        if (p[local_2] >= 0x0) {
             local_1 += p[local_2];
         }
     }

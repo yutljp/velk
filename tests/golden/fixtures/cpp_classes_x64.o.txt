@@ -26,7 +26,7 @@ int32_t total_area(uint64_t *a0, int32_t a1) {
         v7 = (*(v6[0x2]))(v5);
         v4 = v4 + v7;
         v3 = v3 + 0x1;
-    } while (a1 != v3);
+    } while ((uint32_t)a1 != v3);
     return v4;
 }
 -- signature

@@ -112,7 +112,7 @@ int32_t sub_201310(int32_t a0) {
     uint32_t local_0; /* [sp-10] */
 
     local_0 = 0x0;
-    if ((uint64_t)a0 <= 0x3) {
+    if ((uint32_t)a0 <= 0x3) {
         switch (a0) {
         case 0:
             local_0 += 0x1;

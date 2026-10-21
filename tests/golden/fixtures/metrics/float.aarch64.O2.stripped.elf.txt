@@ -26,7 +26,7 @@ double sub_21019c(double *a0, int32_t a1) {
     v1 = 0.0;
     if ((uint32_t)a1 >= 0x4) {
         v4 = a0 + 0x2;
-        v3 = a1 & 0x7ffffffc;
+        v3 = (uint32_t)a1 & 0x7ffffffc;
         v5 = v3;
         do {
             v6 = v4[-0x2];
@@ -37,14 +37,14 @@ double sub_21019c(double *a0, int32_t a1) {
             v4 = v4 + 0x4;
             v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0x0);
-        if (v3 == a1) {
+        if (v3 == (uint32_t)a1) {
             return v1 / (double)a1;
         }
     } else {
         v3 = 0x0;
     }
     v13 = a0 + v3;
-    v14 = a1 - v3;
+    v14 = (uint32_t)a1 - v3;
     do {
         v6 = *v13;
         v13 = v13 + 0x1;

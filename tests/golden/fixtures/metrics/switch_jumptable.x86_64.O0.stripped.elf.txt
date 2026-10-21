@@ -18,7 +18,7 @@ int32_t sub_2011c0(int32_t a0) {
     int32_t local_8; /* [sp-30] */
     int32_t local_9; /* [sp-34] */
 
-    if ((uint64_t)a0 <= 0x9) {
+    if ((uint32_t)a0 <= 0x9) {
         switch (a0) {
         case 0:
             for (local_0 = 0x0; local_0 < 0x1; local_0++) {

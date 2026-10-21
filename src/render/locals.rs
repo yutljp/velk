@@ -19,6 +19,7 @@ pub(super) struct Local {
 
 pub(crate) struct Locals {
     pub(super) slots: HashMap<String, String>,
+    pub(super) parts: HashMap<String, String>,
     pub(super) widths: HashMap<String, u8>,
     pub(super) decls: Vec<Local>,
 }
@@ -40,6 +41,7 @@ pub(crate) fn stack_locals(
         landing_pads: HashMap::new(),
         strings: HashMap::new(),
         slots: HashMap::new(),
+        local_parts: HashMap::new(),
         local_widths: HashMap::new(),
         local_elements: HashMap::new(),
         local_pointees: HashMap::new(),
@@ -53,6 +55,7 @@ pub(crate) fn stack_locals(
         members: HashMap::new(),
         pointees: HashMap::new(),
         elements: HashMap::new(),
+        element_signs: HashMap::new(),
         plain_chars: std::collections::HashSet::new(),
         arrays: HashMap::new(),
         narrow_regs: std::collections::HashSet::new(),
@@ -142,6 +145,48 @@ pub(crate) fn stack_locals(
             !zero_loads.contains(&local.slot)
         };
     }
+    // A slot that lies within a wider local is part of it: as a local of its
+    // own, the wider one would not see what is written there.
+    let within: HashMap<i64, i64> = slot_names
+        .keys()
+        .filter_map(|inner| {
+            let end = inner.saturating_add(i64::from(slot_names[inner].width));
+            slot_names
+                .values()
+                .filter(|outer| {
+                    outer.slot < *inner && end <= outer.slot.saturating_add(i64::from(outer.width))
+                })
+                .map(|outer| outer.slot)
+                .min()
+                .map(|outer| (*inner, outer))
+        })
+        .collect();
+    slot_names.retain(|slot, _| !within.contains_key(slot));
+    let mut order: Vec<i64> = Vec::new();
+    for slot in accesses.iter().filter_map(|(slot, ..)| *slot) {
+        if slot_names.contains_key(&slot) && !order.contains(&slot) {
+            order.push(slot);
+        }
+    }
+    for (number, slot) in order.iter().enumerate() {
+        if let Some(local) = slot_names.get_mut(slot) {
+            local.name = format!("local_{number}");
+        }
+    }
+    let parts: HashMap<String, String> = rendered
+        .iter()
+        .filter_map(|(key, slot)| {
+            let outer = within.get(&(*slot)?)?;
+            Some((
+                key.clone(),
+                format!(
+                    "(uint8_t *)&{} + 0x{:x}",
+                    slot_names[outer].name,
+                    (*slot)? - outer
+                ),
+            ))
+        })
+        .collect();
     let mut slots: HashMap<String, String> = rendered
         .into_iter()
         .filter_map(|(key, slot)| {
@@ -212,6 +257,7 @@ pub(crate) fn stack_locals(
     }
     Locals {
         slots,
+        parts,
         widths,
         decls: slot_names.into_values().collect(),
     }

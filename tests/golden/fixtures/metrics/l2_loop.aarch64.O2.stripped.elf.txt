@@ -142,7 +142,7 @@ int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
                 return v2;
             }
             v2 = v2 + 0x1;
-        } while (a1 != v2);
+        } while ((uint32_t)a1 != v2);
     }
     return 0xffffffff;
 }

@@ -30,7 +30,7 @@ fn rect_area @ 0x2101fc (size 60)
 /* velk pseudo-C: record_total @ 0x210238 */
 long record_total(struct record *items, int n) {
     uint64_t *v2;
-    uint16_t *v3;
+    int16_t *v3;
     int64_t v4;
     int32_t local_0; /* [sp-c] */
     int64_t local_1; /* [sp-18] */
@@ -83,14 +83,11 @@ struct point point_add(struct point a, struct point b) {
     int64_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-8] */
-    uint32_t local_3; /* [sp-4] */
-    uint32_t local_4; /* [sp-c] */
-    uint32_t local_5; /* [sp-14] */
 
     local_0 = a;
     local_1 = b;
     *(uint32_t *)&local_2 = *(uint32_t *)&local_0 + *(uint32_t *)&local_1;
-    local_3 = local_4 + local_5;
+    *(uint32_t *)((uint8_t *)&local_2 + 0x4) = *(uint32_t *)((uint8_t *)&local_0 + 0x4) + *(uint32_t *)((uint8_t *)&local_1 + 0x4);
     return local_2;
 }
 -- signature
