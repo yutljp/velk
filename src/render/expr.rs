@@ -427,12 +427,26 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         Operation::FloatAbs(p) => call(&format!("fabs{}", suffix(p)), Some(p)),
         Operation::FloatNegate(p) => format!("-{}", float_operand(&args[0], p, ctx, 12, false)),
         Operation::FloatMulAdd(p) => call(&format!("fma{}", suffix(p)), Some(p)),
-        Operation::IntToFloat { signed, bits, to } => format!(
-            "({})({}){}",
-            float_type(to),
-            type_of(bits / 8, signed),
-            print(&args[0], ctx, u32::from(bits)).within(12, false).text
-        ),
+        Operation::IntToFloat { signed, bits, to } => {
+            let operand = print(&args[0], ctx, u32::from(bits));
+            // An operand already of the integer type converts as it is.
+            let typed = operand.ty
+                == crate::render::int::Int {
+                    bits: u32::from(bits),
+                    signed,
+                }
+                && operand.exact >= u32::from(bits);
+            if typed {
+                format!("({}){}", float_type(to), operand.within(12, false).text)
+            } else {
+                format!(
+                    "({})({}){}",
+                    float_type(to),
+                    type_of(bits / 8, signed),
+                    operand.within(12, false).text
+                )
+            }
+        }
         Operation::FloatToInt {
             signed,
             bits,

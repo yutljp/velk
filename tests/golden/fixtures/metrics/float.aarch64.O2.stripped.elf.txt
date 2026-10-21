@@ -39,7 +39,7 @@ double sub_21019c(double *a0, int32_t a1) {
             v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0x0);
         if (v3 == a1) {
-            return v1 / (double)(int32_t)a1;
+            return v1 / (double)a1;
         }
     } else {
         v3 = 0x0;
@@ -52,7 +52,7 @@ double sub_21019c(double *a0, int32_t a1) {
         v14 = v14 - 0x1;
         v1 = v1 + v15;
     } while (v14 != 0x0);
-    return v1 / (double)(int32_t)a1;
+    return v1 / (double)a1;
 }
 -- signature
 double (double * a0, int32_t a1)

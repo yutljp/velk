@@ -41,7 +41,7 @@ double average(double *values, int n) {
             v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0x0);
         if (v3 == v2) {
-            return v1 / (double)(int32_t)n;
+            return v1 / (double)n;
         }
     } else {
         v3 = 0x0;
@@ -54,7 +54,7 @@ double average(double *values, int n) {
         v14 = v14 - 0x1;
         v1 = v1 + v15;
     } while (v14 != 0x0);
-    return v1 / (double)(int32_t)n;
+    return v1 / (double)n;
 }
 -- signature
 double (double * values, int n)

@@ -12,26 +12,20 @@ JavaScript を実行して必要な結果だけを受け取り、人は CLI か�
 ```c
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 double sub_2011f0(double *a0, int32_t a1) {
-    int64_t v1;
-    double *local_0; /* [sp-10] */
-    int32_t local_1; /* [sp-14] */
-    double local_2; /* [sp-20] */
-    int32_t local_3; /* [sp-24] */
-    double local_4; /* [sp-30] */
+    double local_0; /* [sp-20] */
+    int32_t local_1; /* [sp-24] */
+    double local_2; /* [sp-30] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = 0.0;
-    for (local_3 = 0x0; local_3 < local_1; local_3 += 0x1) {
-        v1 = (int64_t)(int32_t)(local_3);
-        local_2 = local_0[v1] + local_2;
+    local_0 = 0.0;
+    for (local_1 = 0x0; local_1 < a1; local_1++) {
+        local_0 = a0[local_1] + local_0;
     }
-    if (local_1 <= 0x0) {
-        local_4 = 0.0;
-        return local_4;
+    if (a1 <= 0x0) {
+        local_2 = 0.0;
+        return local_2;
     }
-    local_4 = local_2 / (double)(int32_t)local_1;
-    return local_4;
+    local_2 = local_0 / (double)a1;
+    return local_2;
 }
 ```
 

@@ -23,7 +23,7 @@ double average(double *values, int n) {
         local_3 = 0.0;
         return local_3;
     }
-    local_3 = local_1 / (double)(int32_t)local_0;
+    local_3 = local_1 / (double)local_0;
     return local_3;
 }
 -- signature

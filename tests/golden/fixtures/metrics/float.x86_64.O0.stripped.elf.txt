@@ -21,7 +21,7 @@ double sub_2011f0(double *a0, int32_t a1) {
         local_2 = 0.0;
         return local_2;
     }
-    local_2 = local_0 / (double)(int32_t)a1;
+    local_2 = local_0 / (double)a1;
     return local_2;
 }
 -- signature
