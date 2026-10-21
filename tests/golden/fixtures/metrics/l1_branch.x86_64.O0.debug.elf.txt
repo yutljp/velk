@@ -7,8 +7,8 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x2011a0 */
 int classify(int x) {
-    int32_t local_0; /* [sp-10] */
-    int32_t local_1; /* [sp-c] */
+    uint32_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-c] */
 
     local_0 = x;
     if (x >= 0x0) {
@@ -51,9 +51,9 @@ fn classify @ 0x2011a0 (size 63)
 /* velk pseudo-C: clamp @ 0x2011e0 */
 int clamp(int x, int lo, int hi) {
     int32_t local_0; /* [sp-10] */
-    int32_t local_1; /* [sp-14] */
+    uint32_t local_1; /* [sp-14] */
     int32_t local_2; /* [sp-18] */
-    int32_t local_3; /* [sp-c] */
+    uint32_t local_3; /* [sp-c] */
 
     local_0 = x;
     local_1 = lo;
@@ -100,7 +100,7 @@ fn clamp @ 0x2011e0 (size 70)
 /* velk pseudo-C: sign_of @ 0x201230 */
 int sign_of(int x) {
     int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t local_1; /* [sp-10] */
 
     local_0 = x;
     if (x <= 0x0) {

@@ -9,7 +9,7 @@
 /* ref: 0x2202e8 .bss */
 int32_t dense(int32_t a0) {
     uint32_t v1;
-    int64_t v5;
+    int32_t v5;
     int32_t v7;
     int32_t v8;
 
@@ -54,7 +54,7 @@ int32_t dense(int32_t a0) {
         case 21:
             v7 = g_sink;
             v8 = 0x58;
-            v5 = ((v7 | v8) & 0xffffffff);
+            v5 = v7 | v8;
             break;
         case 22:
             v5 = g_sink + 0x5f;
@@ -68,7 +68,7 @@ int32_t dense(int32_t a0) {
         case 25:
             v7 = g_sink;
             v8 = 0x74;
-            v5 = ((v7 | v8) & 0xffffffff);
+            v5 = v7 | v8;
             break;
         default:
             __builtin_unreachable();

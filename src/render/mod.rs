@@ -5,6 +5,7 @@ mod naming;
 mod params;
 pub mod structure;
 mod variables;
+mod widths;
 
 use crate::arch::stack_pointer;
 use expr::condition;
@@ -1739,7 +1740,8 @@ mod tests {
             mask(Expr::reg(byte, 64), 0xff),
             Expr::Const(0),
         );
-        assert_eq!(text, "(int8_t)v1 < 0x0");
+        // Only ever read as a signed byte, the variable is one.
+        assert_eq!(text, "v1 < 0x0");
         // An unsigned comparison of the same byte needs no mask, as the
         // variable holds only the byte.
         let text = compared(
@@ -1751,11 +1753,11 @@ mod tests {
             Expr::Const(0xf0),
         );
         assert_eq!(text, "v1 < 0xf0 /* unsigned */");
-        // Of a wider value it keeps the mask.
+        // Of a wider value, read whole elsewhere, it keeps the mask.
         let text = compared(
             Isa::X86_64,
             &[(7, CType::pointer_to(CType::Void))],
-            &[(byte, load(Expr::reg(7, 64), 8))],
+            &[(byte, load(Expr::reg(7, 64), 8)), (0, Expr::reg(byte, 64))],
             Cond::Cc,
             mask(Expr::reg(byte, 64), 0xff),
             Expr::Const(0xf0),
@@ -1875,7 +1877,7 @@ mod tests {
         let copies = [(value, load(Expr::reg(7, 64), 8))];
         let wide = Expr::bin(BinOp::Add, Expr::reg(value, 64), Expr::reg(value, 64));
         // Read whole elsewhere, the variable is 64 bits wide.
-        let copies = [copies[0].clone(), (VARIABLE_BASE + 1, wide)];
+        let copies = [copies[0].clone(), (0, wide)];
         let text = compared(
             Isa::X86_64,
             &[(7, CType::U64)],
@@ -1930,6 +1932,129 @@ mod tests {
         assert!(text.contains("    int64_t v3;\n"), "{text}");
         // The pointer moved by bytes moves by bytes in C too.
         assert!(text.contains("v2 = (uint8_t *)v2 + v3;"), "{text}");
+    }
+
+    #[test]
+    fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
+        // v1 = 0; v1 = (v1 + 1) & 0xffffffff; *a0 = (int32_t)v1; return v1;
+        let counter = VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(counter, Expr::Const(0)),
+                assign(
+                    counter,
+                    Expr::bin(
+                        BinOp::And,
+                        Expr::bin(BinOp::Add, Expr::reg(counter, 64), Expr::Const(1)),
+                        Expr::Const(0xffff_ffff),
+                    ),
+                ),
+                Stmt::Store {
+                    addr: Expr::reg(7, 64),
+                    value: Expr::SignExtend {
+                        value: Box::new(Expr::reg(counter, 64)),
+                        width: 4,
+                    },
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(counter, 64),
+                },
+            ],
+        );
+        ir.ret_type = CType::I32;
+        ir.params = vec![Param {
+            index: 7,
+            name: "a0".to_owned(),
+            ty: CType::pointer_to(CType::I64),
+        }];
+        let text = rendered(&ir);
+        assert!(text.contains("    int32_t v1;\n"), "{text}");
+        assert!(text.contains("v1 = v1 + 0x1;"), "{text}");
+        assert!(text.contains("*a0 = v1;"), "{text}");
+    }
+
+    #[test]
+    fn a_32_bit_value_read_whole_is_a_32_bit_variable_without_a_sign() {
+        // v1 = *(uint32_t *)a0; return v1 == a1;
+        let value = VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(value, load(Expr::reg(7, 64), 4)),
+                Stmt::Ret {
+                    value: Expr::Select {
+                        cond: crate::ir::Cond::Eq,
+                        lhs: Box::new(Expr::reg(value, 64)),
+                        rhs: Box::new(Expr::reg(6, 64)),
+                        then: Box::new(Expr::Const(1)),
+                        els: Box::new(Expr::Const(0)),
+                    },
+                },
+            ],
+        );
+        ir.params = vec![
+            Param {
+                index: 7,
+                name: "a0".to_owned(),
+                ty: CType::pointer_to(CType::U32),
+            },
+            Param {
+                index: 6,
+                name: "a1".to_owned(),
+                ty: CType::U64,
+            },
+        ];
+        let text = rendered(&ir);
+        assert!(text.contains("    uint32_t v1;\n"), "{text}");
+        assert!(text.contains("v1 == a1"), "{text}");
+    }
+
+    #[test]
+    fn a_narrow_local_takes_its_sign_from_how_it_is_loaded() {
+        // *(int32_t *)(rsp - 0x10) = a0; return it, loaded with zeros or
+        // with its sign.
+        let slot = || {
+            Expr::bin(
+                BinOp::Add,
+                Expr::reg(4, 64),
+                Expr::Const(0xffff_ffff_ffff_fff0),
+            )
+        };
+        let declared = |signed: bool| {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Store {
+                        addr: slot(),
+                        value: Expr::reg(7, 64),
+                        width: 4,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(slot()),
+                            width: 4,
+                            signed,
+                        },
+                    },
+                ],
+            );
+            ir.params = vec![Param {
+                index: 7,
+                name: "a0".to_owned(),
+                ty: CType::I32,
+            }];
+            ir.ret_type = CType::I64;
+            let text = rendered(&ir);
+            text.lines()
+                .find(|line| line.contains(" local_0;"))
+                .unwrap_or_else(|| panic!("{text}"))
+                .trim()
+                .to_owned()
+        };
+        assert_eq!(declared(false), "uint32_t local_0; /* [sp-10] */");
+        assert_eq!(declared(true), "int32_t local_0; /* [sp-10] */");
     }
 
     #[test]

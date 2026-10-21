@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::analysis::typing::SignEvidence;
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Operation, Precision, Stmt};
+use crate::render::widths::Narrow;
 
 /// The C type of each variable, from how the body uses it: a float when
 /// float operations compute or read it, a pointer when it addresses memory
@@ -70,6 +71,7 @@ pub(crate) fn variable_types(
     }
     let signs = SignEvidence::of(ir);
     let mut types = BTreeMap::new();
+    let mut ints = HashSet::new();
     for index in uses.seen.clone() {
         if !(crate::ir::TEMP_BASE..crate::ir::VALUE_BASE).contains(&index) {
             continue;
@@ -103,11 +105,38 @@ pub(crate) fn variable_types(
             // A callee takes it as a pointer.
             CType::pointer_to(CType::Void)
         } else {
-            CType::Int {
-                bytes: if narrow.contains(&index) { 4 } else { 8 },
-                signed: !uses.bits.contains(&index)
-                    && (signs.signed.contains(&index) || !signs.unsigned.contains(&index)),
-            }
+            ints.insert(index);
+            continue;
+        };
+        types.insert(index, ty);
+    }
+    let pointers: HashSet<u16> = types
+        .iter()
+        .filter(|(_, ty)| ty.is_pointer())
+        .map(|(index, _)| *index)
+        .chain(
+            ir.params
+                .iter()
+                .filter(|param| param.ty.is_pointer())
+                .map(|param| param.index),
+        )
+        .chain([crate::arch::stack_pointer(ir.isa)])
+        .collect();
+    let narrowed = crate::render::widths::narrow_variables(ir, &ints, narrow, &pointers);
+    for index in ints {
+        let signed = !uses.bits.contains(&index) && signs.mostly_signed(index);
+        let ty = match narrowed.get(&index) {
+            // A byte or a half word no signed operation reads is taken for
+            // one without a sign, as is one a reader extends with zeros.
+            Some(Narrow::Read { bits, extended }) => CType::Int {
+                bytes: (bits / 8) as u8,
+                signed: signed && ((!extended && *bits == 32) || signs.signed.contains(&index)),
+            },
+            Some(Narrow::Held) => CType::Int {
+                bytes: 4,
+                signed: false,
+            },
+            None => CType::Int { bytes: 8, signed },
         };
         types.insert(index, ty);
     }

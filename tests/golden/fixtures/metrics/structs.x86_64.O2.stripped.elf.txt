@@ -43,7 +43,7 @@ struct sub_2011f0_a0 {
 int64_t sub_2011f0(struct sub_2011f0_a0 *a0, int32_t a1) {
     int64_t v2;
     int64_t v3;
-    int64_t v4;
+    uint32_t v4;
     void *v5;
     int64_t v6;
 
@@ -216,10 +216,10 @@ fn <unnamed> @ 0x2012d0 (size 23)
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 uint8_t sub_2012f0(uint8_t *a0, int32_t a1) {
-    int64_t t1;
-    int64_t v4;
+    uint8_t t1;
+    uint8_t v4;
 
-    t1 = a1 & 0xff;
+    t1 = a1;
     v4 = *a0 & 0xf1 | t1 + t1 & 0xe;
     *a0 = v4;
     return v4;

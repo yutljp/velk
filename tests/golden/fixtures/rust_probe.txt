@@ -550,8 +550,8 @@
 /* velk pseudo-C: rust_probe::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
 void rust_probe__main(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
-    int32_t local_0; /* [sp-14] */
-    int32_t *local_1; /* [sp-10] */
+    uint32_t local_0; /* [sp-14] */
+    uint32_t *local_1; /* [sp-10] */
     int64_t local_2; /* [sp-8] */
 
     local_0 = 0x3;

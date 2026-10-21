@@ -13,7 +13,7 @@
 int matrix_trace(int *m, int n) {
     int64_t v1;
     int32_t v2;
-    int64_t v3;
+    uint32_t v3;
     int32_t v4;
     int *v5;
     int64_t v6;
@@ -23,7 +23,7 @@ int matrix_trace(int *m, int n) {
     }
     v1 = 0x0;
     v2 = 0x0;
-    v3 = (uint32_t)n;
+    v3 = n;
     do {
         v4 = v1 * n;
         v5 = m + v1;
@@ -190,7 +190,7 @@ fn sparse @ 0x210278 (size 84)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x2102cc */
 int short_circuit(int *p, int n) {
-    int64_t v2;
+    int32_t v2;
 
     v2 = 0x0;
     if (p == 0x0) {
@@ -349,7 +349,7 @@ fn skip_negatives @ 0x210308 (size 156)
 /* velk pseudo-C: find_pair @ 0x2103a4 */
 int find_pair(int *p, int n, int target) {
     int64_t v1;
-    uint64_t v2;
+    uint32_t v2;
     int32_t v3;
     int64_t v4;
     int32_t v5;
@@ -363,7 +363,7 @@ int find_pair(int *p, int n, int target) {
 
     if (n >= 0x1) {
         v1 = 0x0;
-        v2 = (uint32_t)n;
+        v2 = n;
         v3 = n + 0x1;
         v4 = p + 0x1;
         v5 = 0x1;

@@ -85,9 +85,9 @@ struct point point_add(struct point a, struct point b) {
     int64_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-8] */
-    int32_t local_3; /* [sp-4] */
-    int32_t local_4; /* [sp-c] */
-    int32_t local_5; /* [sp-14] */
+    uint32_t local_3; /* [sp-4] */
+    uint32_t local_4; /* [sp-c] */
+    uint32_t local_5; /* [sp-14] */
 
     local_0 = a;
     local_1 = b;
@@ -188,7 +188,7 @@ fn word_low_byte @ 0x21036c (size 24)
 unsigned int flags_level(struct flags f) {
     int64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-4] */
-    int32_t local_2; /* [sp-14] */
+    uint32_t local_2; /* [sp-14] */
 
     local_0 = f;
     local_1 = *(uint32_t *)&local_0;
@@ -226,7 +226,7 @@ fn flags_level @ 0x210384 (size 76)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2103d0 */
 void flags_set_mode(struct flags *f, unsigned int mode) {
-    int32_t v2;
+    uint8_t v2;
 
     v2 = f->field_0x0;
     f->field_0x0 = v2 & 0xfffffff1 | (mode & 0x7) << 0x1;

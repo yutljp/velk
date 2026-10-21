@@ -11,7 +11,7 @@
 int sum_while(int n) {
     int32_t v1;
     int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t local_1; /* [sp-10] */
     int32_t local_2; /* [sp-14] */
 
     local_0 = n;
@@ -52,7 +52,7 @@ fn sum_while @ 0x201200 (size 70)
 /* ref: 0x202350 .bss */
 int count_down(int n) {
     int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t local_1; /* [sp-10] */
 
     local_0 = n;
     local_1 = 0x0;
@@ -89,7 +89,7 @@ fn count_down @ 0x201250 (size 56)
 int sum_skip_odd(int n) {
     int32_t v1;
     int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t local_1; /* [sp-10] */
     int32_t local_2; /* [sp-14] */
 
     local_0 = n;
@@ -137,9 +137,9 @@ fn sum_skip_odd @ 0x201290 (size 90)
 int find_first(int *p, int n, int v) {
     int *local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
-    int32_t local_2; /* [sp-20] */
+    uint32_t local_2; /* [sp-20] */
     int32_t local_3; /* [sp-24] */
-    int32_t local_4; /* [sp-c] */
+    uint32_t local_4; /* [sp-c] */
 
     local_0 = p;
     local_1 = n;

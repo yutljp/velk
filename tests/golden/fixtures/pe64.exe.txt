@@ -168,7 +168,7 @@ fn reg_mod @ 0x140001080 (size 16)
 -- decompile
 /* velk pseudo-C: sub_140001090 @ 0x140001090 */
 int64_t sub_140001090(void) {
-    int32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
     int64_t local_1; /* [sp-8] */
 
     local_0 = 0x5;

@@ -27,7 +27,7 @@ fn point_dot @ 0x201210 (size 44)
 int array_sum(int *a, int n) {
     int *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
-    int32_t local_2; /* [sp-18] */
+    uint32_t local_2; /* [sp-18] */
     int32_t local_3; /* [sp-1c] */
 
     local_0 = a;

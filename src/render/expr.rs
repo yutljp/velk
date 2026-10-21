@@ -1016,10 +1016,14 @@ fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
         return Printed::new(text, ty, ALL, 13);
     };
     // A parameter arrives extended to 64 bits as its type says; a variable
-    // holds no more than its own bits.
+    // holds no more than its own bits, which are all of a value that fits.
+    let fits = !declared.param
+        && ctx.value_bits.get(&index).is_some_and(|bits| {
+            *bits < declared.bits || (*bits == declared.bits && !declared.signed)
+        });
     let exact = if read < declared.bits {
         read
-    } else if !declared.signed && (declared.param || read == declared.bits) {
+    } else if fits || (!declared.signed && (declared.param || read == declared.bits)) {
         ALL
     } else if declared.param {
         read

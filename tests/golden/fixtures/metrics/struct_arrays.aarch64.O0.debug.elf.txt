@@ -26,7 +26,7 @@ fn item_weight @ 0x210184 (size 56)
 void cell_set(struct cell *cells, long i, int v) {
     struct cell *local_0; /* [sp-8] */
     int64_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
+    uint32_t local_2; /* [sp-14] */
 
     local_0 = cells;
     local_1 = i;

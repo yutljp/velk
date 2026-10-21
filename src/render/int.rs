@@ -236,13 +236,24 @@ pub(crate) fn value_bits(ir: &FunctionIr) -> HashMap<u16, u32> {
             _ => {}
         }
     }
-    // Each round widens what an assignment shows to be wider, until none does.
+    // Each round widens what an assignment shows to be wider, until none
+    // does. A value that keeps growing, as a counter does a bit a round,
+    // grows to the next width of an integer type at once.
+    let mut grown: HashMap<u16, u32> = HashMap::new();
     for _ in 0..=64 {
         let mut changed = false;
         for (index, value) in &assigned {
-            let bits = zero_bits_in(value, &known);
+            let mut bits = zero_bits_in(value, &known).min(range_bits(value, &known));
             let entry = known.entry(*index).or_insert(0);
             if bits > *entry {
+                let times = grown.entry(*index).or_insert(0);
+                *times += 1;
+                if *times > 2 {
+                    bits = [8, 16, 32, 64]
+                        .into_iter()
+                        .find(|width| *width >= bits)
+                        .unwrap_or(64);
+                }
                 *entry = bits;
                 changed = true;
             }
@@ -253,6 +264,17 @@ pub(crate) fn value_bits(ir: &FunctionIr) -> HashMap<u16, u32> {
     }
     known.values_mut().for_each(|bits| *bits = 64);
     known
+}
+
+/// The bits the value of `expr` fits in as the value ranges bound it, each
+/// register within the bits `known` gives it.
+fn range_bits(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
+    let read = |index: u16, width: u32| {
+        Some(crate::ssa::ranges::Fact::width(
+            width.min(known.get(&index).copied().unwrap_or(64)),
+        ))
+    };
+    crate::ssa::ranges::expression(expr, &read).map_or(64, |fact| 64 - fact.hi.leading_zeros())
 }
 
 fn zero_bits_in(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
@@ -397,5 +419,31 @@ mod tests {
             ),
             64
         );
+    }
+
+    #[test]
+    fn a_variable_fits_in_the_bits_its_values_range_over() {
+        use crate::ir::{RegRef, VARIABLE_BASE};
+        // v1 = load16(a0) / 0x100 is at most 0xff, which the bits of a
+        // division alone would put at 16 bits.
+        let ir = FunctionIr::single_block(
+            crate::loader::Isa::X86_64,
+            vec![Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::bin(
+                    BinOp::DivU,
+                    Expr::Load {
+                        addr: Box::new(Expr::reg(7, 64)),
+                        width: 2,
+                        signed: false,
+                    },
+                    Expr::Const(0x100),
+                ),
+            }],
+        );
+        assert_eq!(value_bits(&ir).get(&VARIABLE_BASE), Some(&8));
     }
 }

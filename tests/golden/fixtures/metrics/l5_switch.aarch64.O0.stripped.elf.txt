@@ -25,12 +25,12 @@
 /* ref: 0x2205e8 .bss */
 int32_t sub_210334(int32_t a0) {
     uint64_t x8;
-    uint64_t v3;
-    int32_t local_0; /* [sp-14] */
+    uint32_t v3;
+    uint32_t local_0; /* [sp-14] */
     int64_t local_1; /* [sp-20] */
 
     local_0 = a0;
-    v3 = ((local_0 - 0xa) & 0xffffffff);
+    v3 = local_0 - 0xa;
     local_1 = v3;
     if (v3 <= 0xf /* unsigned */) {
         x8 = 0x210368 + (int64_t)dword_200158[local_1];
@@ -469,8 +469,8 @@ fn <unnamed> @ 0x210558 (size 24)
 -- decompile
 /* velk pseudo-C: sub_210570 @ 0x210570 */
 int32_t sub_210570(int32_t a0) {
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-4] */
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-4] */
 
     local_0 = a0;
     if (a0 - 0x1 == 0x0) {

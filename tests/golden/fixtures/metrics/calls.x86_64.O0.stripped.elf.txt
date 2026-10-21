@@ -67,7 +67,7 @@ fn <unnamed> @ 0x201330 (size 33)
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x202670 .data.rel.ro */
 int32_t sub_201360(uint32_t a0, int32_t a1) {
-    int32_t v1;
+    int64_t v1;
     int64_t v3;
 
     v1 = a0 % 0x3;
@@ -113,16 +113,16 @@ fn <unnamed> @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int32_t sub_2013d0(int32_t a0) {
-    int64_t v1;
+    uint32_t v1;
     int32_t v2;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
+    uint32_t local_2; /* [sp-14] */
 
     local_0 = a0;
     if (a0 > 0x1) {
         local_2 = local_0;
-        v1 = ((local_0 - 0x1) & 0xffffffff);
+        v1 = local_0 - 0x1;
         v2 = sub_2013d0(v1);
         local_1 = local_2 * v2;
         return local_1;
@@ -156,14 +156,14 @@ fn <unnamed> @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 int32_t sub_201420(int32_t a0) {
-    int64_t v1;
-    int64_t v2;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t v1;
+    int32_t v2;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
     if (a0 != 0x0) {
-        v1 = ((local_0 - 0x1) & 0xffffffff);
+        v1 = local_0 - 0x1;
         v2 = sub_201460(v1);
         local_1 = v2;
         return local_1;
@@ -196,14 +196,14 @@ fn <unnamed> @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 int32_t sub_201460(int32_t a0) {
-    int64_t v1;
-    int64_t v2;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t v1;
+    int32_t v2;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
     if (a0 != 0x0) {
-        v1 = ((local_0 - 0x1) & 0xffffffff);
+        v1 = local_0 - 0x1;
         v2 = sub_201420(v1);
         local_1 = v2;
         return local_1;
@@ -236,9 +236,9 @@ fn <unnamed> @ 0x201460 (size 57)
 -- decompile
 /* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
 int64_t sub_2014a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    int64_t v1;
-    int64_t v2;
-    int64_t v3;
+    int32_t v1;
+    int32_t v2;
+    int32_t v3;
 
     v1 = a8;
     v2 = a7;
@@ -284,9 +284,9 @@ fn <unnamed> @ 0x2014f0 (size 80)
 int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
     uint64_t rax;
     void *v1;
-    uint64_t v2;
+    uint32_t v2;
     void *v3;
-    int64_t v4;
+    int32_t v4;
     int64_t v5;
     uint64_t *v6;
     int64_t v7;
@@ -312,12 +312,12 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t local_19; /* [sp-d8] */
     int64_t local_20; /* [sp-e0] */
     int32_t local_21; /* [sp-c] */
-    int32_t local_22; /* [sp-28] */
+    uint32_t local_22; /* [sp-28] */
     int64_t local_23; /* [sp-e8] */
-    int32_t local_24; /* [sp-2c] */
+    uint32_t local_24; /* [sp-2c] */
     int32_t local_25; /* [sp-30] */
     void *local_26; /* [sp-f8] */
-    int32_t local_27; /* [sp-ec] */
+    uint32_t local_27; /* [sp-ec] */
     uint32_t *local_28; /* [sp-100] */
 
     if ((rax & 0xff) != 0x0) {
@@ -352,7 +352,7 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_24 = 0x0;
     for (local_25 = 0x0; local_25 < local_21; local_25++) {
         local_26 = &local_22;
-        v2 = (uint32_t)local_22;
+        v2 = local_22;
         local_27 = v2;
         if (v2 > 0x28 /* unsigned */) {
             v6 = local_26;
@@ -361,8 +361,8 @@ int32_t sub_201540(int32_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
             local_28 = v7;
         } else {
             v3 = local_26;
-            v4 = (uint32_t)local_27;
-            v5 = (int32_t)(v4) + *(uint64_t *)(v3 + 0x10);
+            v4 = local_27;
+            v5 = v4 + *(uint64_t *)(v3 + 0x10);
             *(uint32_t *)(v3) = v4 + 0x8;
             local_28 = v5;
         }

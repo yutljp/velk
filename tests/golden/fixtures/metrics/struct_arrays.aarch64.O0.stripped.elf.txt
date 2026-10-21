@@ -37,7 +37,7 @@ struct sub_2101bc_a0 {
 int64_t sub_2101bc(struct sub_2101bc_a0 *a0, int64_t a1, int32_t a2) {
     struct sub_2101bc_a0 *local_0; /* [sp-8] */
     int64_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
+    uint32_t local_2; /* [sp-14] */
 
     local_0 = a0;
     local_1 = a1;

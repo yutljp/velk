@@ -7,9 +7,9 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202410 .bss */
 int d7(int x) {
-    uint64_t v1;
-    int64_t v6;
-    int32_t local_0; /* [sp-c] */
+    uint32_t v1;
+    int32_t v6;
+    uint32_t local_0; /* [sp-c] */
     int64_t local_1; /* [sp-40] */
     int32_t local_2; /* [sp-10] */
     int32_t local_3; /* [sp-14] */
@@ -23,10 +23,10 @@ int d7(int x) {
     int32_t local_11; /* [sp-34] */
 
     local_0 = x;
-    v1 = (uint32_t)local_0;
+    v1 = local_0;
     local_1 = v1;
     if (v1 <= 0x9 /* unsigned */) {
-        v6 = (int64_t)(int32_t)(dword_200158[local_1]) + 0x200158;
+        v6 = (int32_t)(dword_200158[local_1]) + 0x200158;
         switch (local_1) {
         case 0:
             for (local_2 = 0x0; local_2 < 0x1; local_2++) {

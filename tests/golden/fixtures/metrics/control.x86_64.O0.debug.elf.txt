@@ -13,7 +13,7 @@
 int matrix_trace(int *m, int n) {
     int *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
-    int32_t local_2; /* [sp-18] */
+    uint32_t local_2; /* [sp-18] */
     int32_t local_3; /* [sp-1c] */
     int32_t local_4; /* [sp-20] */
 
@@ -70,11 +70,11 @@ fn matrix_trace @ 0x201230 (size 137)
 /* velk pseudo-C: cleanup_on_error @ 0x2012c0 */
 int cleanup_on_error(int a, int b, int *out) {
     int32_t v1;
-    int64_t v2;
-    int32_t local_0; /* [sp-c] */
+    int32_t v2;
+    uint32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-10] */
     int *local_2; /* [sp-18] */
-    int32_t local_3; /* [sp-1c] */
+    uint32_t local_3; /* [sp-1c] */
 
     local_0 = a;
     local_1 = b;
@@ -83,7 +83,7 @@ int cleanup_on_error(int a, int b, int *out) {
     if (a >= 0x0) {
         if (local_1 != 0x0) {
             v1 = local_0;
-            v2 = ((v1 % local_1) & 0xffffffff);
+            v2 = v1 % local_1;
             *local_2 = v1 / local_1;
             local_3 = 0x0;
             return local_3;
@@ -125,18 +125,18 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
 /* velk pseudo-C: fallthrough @ 0x201310 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
-    uint64_t v1;
-    int64_t v5;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t v1;
+    int32_t v5;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
     int64_t local_2; /* [sp-18] */
 
     local_0 = x;
     local_1 = 0x0;
-    v1 = (uint32_t)local_0;
+    v1 = local_0;
     local_2 = v1;
     if (v1 <= 0x3 /* unsigned */) {
-        v5 = (int64_t)(int32_t)(dword_200120[local_2]) + 0x200120;
+        v5 = (int32_t)(dword_200120[local_2]) + 0x200120;
         switch (local_2) {
         case 0:
             local_1 += 0x1;
@@ -197,8 +197,8 @@ fn fallthrough @ 0x201310 (size 107)
 /* velk pseudo-C: sparse @ 0x201380 */
 int sparse(int x) {
     int32_t v1;
-    int32_t local_0; /* [sp-14] */
-    int32_t local_1; /* [sp-c] */
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-c] */
 
     v1 = x;
     local_0 = v1;
@@ -271,10 +271,10 @@ int short_circuit(int *p, int n) {
     int32_t v3;
     int32_t v5;
     int64_t v7;
-    int64_t v8;
-    int64_t v9;
-    int64_t v10;
-    int32_t v11;
+    int32_t v8;
+    uint8_t v9;
+    uint8_t v10;
+    uint8_t v11;
     int32_t local_0; /* [sp-14] */
     uint8_t local_1; /* [sp-15] */
     uint8_t local_2; /* [sp-16] */
@@ -344,7 +344,7 @@ fn short_circuit @ 0x201410 (size 99)
 int skip_negatives(int *p, int n) {
     int *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
-    int32_t local_2; /* [sp-18] */
+    uint32_t local_2; /* [sp-18] */
     int32_t local_3; /* [sp-1c] */
 
     local_0 = p;
@@ -390,10 +390,10 @@ fn skip_negatives @ 0x201480 (size 96)
 int find_pair(int *p, int n, int target) {
     int *local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
-    int32_t local_2; /* [sp-20] */
+    uint32_t local_2; /* [sp-20] */
     int32_t local_3; /* [sp-24] */
     int32_t local_4; /* [sp-28] */
-    int32_t local_5; /* [sp-c] */
+    uint32_t local_5; /* [sp-c] */
 
     local_0 = p;
     local_1 = n;

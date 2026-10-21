@@ -67,12 +67,12 @@ pub(crate) fn stack_locals(
     // lowest of them.
     let buffers: Vec<i64> = accesses
         .iter()
-        .filter(|(_, _, width, signed)| *width == 0 && !*signed)
+        .filter(|(_, _, width, signed)| *width == 0 && *signed == Some(false))
         .filter_map(|(slot, ..)| *slot)
         .collect();
     accesses.retain(|(slot, _, width, signed)| {
         !(*width == 0
-            && !*signed
+            && *signed == Some(false)
             && slot.is_some_and(|slot| {
                 buffers
                     .iter()
@@ -81,6 +81,10 @@ pub(crate) fn stack_locals(
     });
     let mut slot_names: HashMap<i64, Local> = HashMap::new();
     let mut rendered: HashMap<String, Option<i64>> = HashMap::new();
+    // The slots some load extends with zeros below 32 bits, or takes as a
+    // buffer, and those some load extends with its sign.
+    let mut zero_loads = std::collections::HashSet::new();
+    let mut sign_loads = std::collections::HashSet::new();
     for (slot, address, width, signed) in &accesses {
         let Some(slot) = slot else {
             continue;
@@ -100,9 +104,14 @@ pub(crate) fn stack_locals(
         }
         if let Some(local) = slot_names.get_mut(slot) {
             local.width = local.width.max(*width);
-            // Only a narrow load's extension says how the value is signed.
-            if !*signed && *width < 4 {
-                local.signed = false;
+            match signed {
+                Some(true) => {
+                    sign_loads.insert(*slot);
+                }
+                Some(false) if *width < 4 => {
+                    zero_loads.insert(*slot);
+                }
+                _ => {}
             }
         }
         let key = render_expr(address, &base);
@@ -122,6 +131,14 @@ pub(crate) fn stack_locals(
         if local.width == 0 {
             local.width = 8;
         }
+        // Only a load's extension says how the value is signed: one of 32
+        // bits or fewer that no load extends with its sign is read whole
+        // without one.
+        local.signed = if local.width <= 4 {
+            sign_loads.contains(&local.slot)
+        } else {
+            !zero_loads.contains(&local.slot)
+        };
     }
     let mut slots: HashMap<String, String> = rendered
         .into_iter()
@@ -373,10 +390,14 @@ impl Walk {
         }
     }
 
+    /// Notes the slots loaded anywhere in the operands of an operation of
+    /// the given sign, other than for an address.
     fn sign(&mut self, signed: bool, operands: &[&Expr]) {
         for operand in operands {
             if let Some(slot) = self.loaded(operand) {
                 self.signs.push((slot, signed));
+            } else if !matches!(operand, Expr::Load { .. }) {
+                self.sign(signed, &crate::ir::visit::children(operand));
             }
         }
     }
@@ -419,6 +440,7 @@ impl Walk {
                 BinOp::Shr => self.sign(false, &[lhs]),
                 _ => {}
             },
+            Expr::SignExtend { value, .. } => self.sign(true, &[value]),
             Expr::Select { cond, lhs, rhs, .. } => self.compare(*cond, &[lhs, rhs]),
             _ => {}
         }
@@ -538,13 +560,15 @@ fn frame_loads(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, u8, b
     }
 }
 
-/// Every frame-relative store and load, with its slot (when known) and the
-/// address expression as written.
+/// Every frame-relative store and load, with its slot (when known), the
+/// address expression as written, its width, and for a load whether it
+/// extends the value with its sign; a buffer whose address is taken counts
+/// as a load of no width extended with zeros.
 fn frame_accesses(
     ir: &FunctionIr,
     sp: u16,
     frames: &[Option<i64>],
-) -> Vec<(Option<i64>, Expr, u8, bool)> {
+) -> Vec<(Option<i64>, Expr, u8, Option<bool>)> {
     let mut accesses = Vec::new();
     for (position, block) in ir.blocks.iter().enumerate() {
         let Some(frame) = frames[position] else {
@@ -567,7 +591,7 @@ fn frame_accesses(
                 continue;
             }
             if let Stmt::Store { addr, width, .. } = stmt {
-                accesses.push((frame_slot(addr, frame, sp), addr.clone(), *width, true));
+                accesses.push((frame_slot(addr, frame, sp), addr.clone(), *width, None));
             }
             if let Stmt::Assign {
                 value:
@@ -584,7 +608,7 @@ fn frame_accesses(
                     frame_slot(addr, frame, sp),
                     addr.as_ref().clone(),
                     *width,
-                    *signed,
+                    Some(*signed),
                 ));
             }
             // Loads anywhere in the statement, and the addresses of locals
@@ -607,10 +631,10 @@ fn frame_accesses(
                 frame_addresses(value, frame, sp, &mut taken);
             }
             for (addr, slot, width, signed) in found {
-                accesses.push((Some(slot), addr, width, signed));
+                accesses.push((Some(slot), addr, width, Some(signed)));
             }
             for (addr, slot, buffer) in taken {
-                accesses.push((Some(slot), addr, 0, !buffer));
+                accesses.push((Some(slot), addr, 0, buffer.then_some(false)));
             }
         }
     }

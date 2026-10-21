@@ -122,7 +122,7 @@ fn widen @ 0x21029c (size 32)
 int compare_doubles(double a, double b) {
     double local_0; /* [sp-8] */
     double local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
+    uint32_t local_2; /* [sp-14] */
 
     local_0 = a;
     local_1 = b;

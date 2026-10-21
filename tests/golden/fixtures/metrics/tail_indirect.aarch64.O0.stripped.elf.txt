@@ -28,7 +28,7 @@ fn <unnamed> @ 0x21017c (size 48)
 -- decompile
 /* velk pseudo-C: sub_2101ac @ 0x2101ac */
 int32_t sub_2101ac(int32_t a0) {
-    int32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
     local_0 = a0;
     return a0 + 0x5;

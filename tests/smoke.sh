@@ -222,7 +222,7 @@ echo "$sig_helper" | grep -q "int32_t helper(int32_t a0)"    || fail "loop signa
 ok "types by usage"
 mask_ir=$("$BIN" decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$mask_ir" | grep -qF "return (v3 >> 0x1) * 0x55555556 + a0" || fail "mask implied by 32-bit arithmetic"
-echo "$mask_ir" | grep -qF "v2 = (uint64_t)(v1 & 0xffffffff) * ((a0 - 0x2) & 0xffffffff);" || fail "64-bit product of 32-bit values"
+echo "$mask_ir" | grep -qF "v2 = (uint64_t)v1 * ((a0 - 0x2) & 0xffffffff);" || fail "64-bit product of 32-bit values"
 echo "$mask_ir" | grep -q "v1 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$narrow_ir" | grep -q "for (local_2 = 0x1; local_2 <= local_0; local_2++)" || fail "32-bit comparison kept"

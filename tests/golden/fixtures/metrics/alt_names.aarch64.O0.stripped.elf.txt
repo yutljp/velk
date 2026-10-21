@@ -24,7 +24,7 @@ fn <unnamed> @ 0x21016c (size 44)
 /* velk pseudo-C: sub_210198 @ 0x210198 */
 int32_t sub_210198(int32_t a0) {
     int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
+    uint32_t local_1; /* [sp-8] */
     int32_t local_2; /* [sp-c] */
 
     local_0 = a0;

@@ -27,7 +27,7 @@ fn <unnamed> @ 0x201190 (size 6)
 int32_t sub_2011a0(int32_t a0) {
     uint64_t v1;
     int32_t v2;
-    int64_t v5;
+    int32_t v5;
 
     if (a0 <= 0x0) {
         return 0x0;
@@ -81,7 +81,7 @@ fn <unnamed> @ 0x2011d0 (size 6)
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 int32_t sub_2011e0(uint32_t *a0, int32_t a1) {
     int64_t v2;
-    int64_t v3;
+    int32_t v3;
     int64_t v4;
     uint64_t v5;
     uint64_t v6;
@@ -115,7 +115,7 @@ int32_t sub_2011e0(uint32_t *a0, int32_t a1) {
             v7 = v7 + 0x20;
         } while (v4 != v7);
         v15 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
-        v3 = (add_lanes32(v15 >> 0x20 | v15 >> 0x20 << 0x20, v15) & 0xffffffff);
+        v3 = add_lanes32(v15 >> 0x20 | v15 >> 0x20 << 0x20, v15);
         if (v2 == a1) {
             return v3;
         }
@@ -124,7 +124,7 @@ int32_t sub_2011e0(uint32_t *a0, int32_t a1) {
         v3 = 0x0;
     }
     do {
-        v3 = ((v3 + a0[v2]) & 0xffffffff);
+        v3 = v3 + a0[v2];
         v2 = v2 + 0x1;
     } while (a1 != v2);
     return v3;

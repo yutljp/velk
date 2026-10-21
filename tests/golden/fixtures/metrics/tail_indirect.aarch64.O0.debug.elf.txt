@@ -28,7 +28,7 @@ fn via_ptr @ 0x21017c (size 48)
 -- decompile
 /* velk pseudo-C: after_ptr @ 0x2101ac */
 int after_ptr(int x) {
-    int32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
     local_0 = x;
     return x + 0x5;

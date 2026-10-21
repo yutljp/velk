@@ -7,7 +7,7 @@
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
     uint32_t v1;
-    int64_t v2;
+    int32_t v2;
 
     v1 = x - 0xa;
     v2 = 0x0;

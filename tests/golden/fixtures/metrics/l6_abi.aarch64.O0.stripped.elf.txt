@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
 int32_t sub_2101d4(int32_t a0) {
-    int32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
     local_0 = a0;
     return a0 * 0x3 + 0x1;

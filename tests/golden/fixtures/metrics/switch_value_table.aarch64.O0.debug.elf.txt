@@ -5,13 +5,13 @@
 -- decompile
 /* velk pseudo-C: dispatch @ 0x210154 */
 int dispatch(int x) {
-    int64_t v1;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-4] */
+    int32_t v1;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-4] */
 
-    v1 = (x & 0xffffffff);
+    v1 = x;
     local_0 = v1;
-    if ((uint32_t)(v1 - 0xa) == 0x0) {
+    if (v1 - 0xa == 0x0) {
         local_1 = 0x1;
         return local_1;
     }

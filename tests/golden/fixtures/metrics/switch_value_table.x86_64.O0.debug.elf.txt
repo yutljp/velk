@@ -7,16 +7,16 @@
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
     uint32_t v2;
-    int64_t v8;
-    int32_t local_0; /* [sp-10] */
+    int32_t v8;
+    uint32_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
-    int32_t local_2; /* [sp-c] */
+    uint32_t local_2; /* [sp-c] */
 
     local_0 = x;
     v2 = local_0 - 0xa;
     local_1 = v2;
     if (v2 <= 0x4 /* unsigned */) {
-        v8 = (int64_t)(int32_t)(dword_200120[local_1]) + 0x200120;
+        v8 = (int32_t)(dword_200120[local_1]) + 0x200120;
         switch (local_1 - 0x4) {
         case -4:
             local_2 = 0x1;

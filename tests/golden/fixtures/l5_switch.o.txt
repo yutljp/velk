@@ -7,7 +7,7 @@
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
     uint32_t v1;
-    int64_t v6;
+    int32_t v6;
     int32_t v8;
     int32_t v9;
 
@@ -52,7 +52,7 @@ int32_t dense(int32_t a0) {
         case 21:
             v8 = g_sink;
             v9 = 0x58;
-            v6 = ((v8 | v9) & 0xffffffff);
+            v6 = v8 | v9;
             break;
         case 22:
             v6 = g_sink + 0x5f;
@@ -66,7 +66,7 @@ int32_t dense(int32_t a0) {
         case 25:
             v8 = g_sink;
             v9 = 0x74;
-            v6 = ((v8 | v9) & 0xffffffff);
+            v6 = v8 | v9;
             break;
         default:
             __builtin_unreachable();

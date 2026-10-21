@@ -11,7 +11,7 @@
 int32_t sub_2101d4(int32_t a0) {
     int32_t v2;
     int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
+    uint32_t local_1; /* [sp-8] */
     int32_t local_2; /* [sp-c] */
 
     local_0 = a0;
@@ -57,7 +57,7 @@ fn <unnamed> @ 0x2101d4 (size 100)
 /* ref: 0x220380 .bss */
 int32_t sub_210238(int32_t a0) {
     int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
+    uint32_t local_1; /* [sp-8] */
 
     local_0 = a0;
     local_1 = 0x0;
@@ -97,16 +97,16 @@ fn <unnamed> @ 0x210238 (size 84)
 /* velk pseudo-C: sub_21028c @ 0x21028c */
 /* ref: 0x220380 .bss */
 int32_t sub_21028c(int32_t a0) {
-    int64_t v2;
+    int32_t v2;
     int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
+    uint32_t local_1; /* [sp-8] */
     int32_t local_2; /* [sp-c] */
 
     local_0 = a0;
     local_1 = 0x0;
     for (local_2 = 0x0; local_2 < local_0; local_2++) {
         if ((local_2 & 0x1) != 0x0) {
-            v2 = ((local_1 + local_2) & 0xffffffff);
+            v2 = local_1 + local_2;
             local_1 = v2;
             dword_220380 = v2;
         }
@@ -153,9 +153,9 @@ fn <unnamed> @ 0x21028c (size 116)
 int32_t sub_210300(uint32_t *a0, int32_t a1, int32_t a2) {
     uint32_t *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
-    int32_t local_2; /* [sp-18] */
+    uint32_t local_2; /* [sp-18] */
     int32_t local_3; /* [sp-1c] */
-    int32_t local_4; /* [sp-4] */
+    uint32_t local_4; /* [sp-4] */
 
     local_0 = a0;
     local_1 = a1;

@@ -32,7 +32,7 @@ long record_total(struct record *items, int n) {
     int32_t v1;
     int64_t v2;
     int64_t v3;
-    int64_t v4;
+    uint32_t v4;
     void *v5;
     int64_t v6;
     int64_t v7;
@@ -42,7 +42,7 @@ long record_total(struct record *items, int n) {
     }
     v1 = n;
     if (n != 0x1) {
-        v4 = (uint32_t)v1 & 0x7ffffffe;
+        v4 = v1 & 0x7ffffffe;
         v5 = (uint8_t *)items + 0x28;
         v2 = 0x0;
         v3 = 0x0;
@@ -203,9 +203,9 @@ fn flags_level @ 0x2012d0 (size 23)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2012f0 */
 void flags_set_mode(struct flags *f, unsigned int mode) {
-    int64_t t1;
+    uint8_t t1;
 
-    t1 = mode & 0xff;
+    t1 = mode;
     f->field_0x0 = f->field_0x0 & 0xf1 | t1 + t1 & 0xe;
 }
 -- signature

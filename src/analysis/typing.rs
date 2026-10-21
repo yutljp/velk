@@ -81,6 +81,8 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
 pub(crate) struct SignEvidence {
     pub(crate) signed: std::collections::HashSet<u16>,
     pub(crate) unsigned: std::collections::HashSet<u16>,
+    /// How many signed and unsigned operations read each register.
+    pub(crate) counts: std::collections::HashMap<u16, (usize, usize)>,
     /// Some unsigned operation was seen, whatever it read.
     any_unsigned: bool,
 }
@@ -114,15 +116,32 @@ impl SignEvidence {
     }
 
     fn note(&mut self, signed: bool, operands: &[&crate::ir::Expr]) {
-        let into = if signed {
-            &mut self.signed
+        let mut read = std::collections::HashSet::new();
+        for operand in operands {
+            crate::ir::visit::expr_reads(operand, &mut read);
+        }
+        for index in &read {
+            let (signed_reads, unsigned_reads) = self.counts.entry(*index).or_default();
+            if signed {
+                *signed_reads += 1;
+            } else {
+                *unsigned_reads += 1;
+            }
+        }
+        if signed {
+            self.signed.extend(read);
         } else {
             self.any_unsigned = true;
-            &mut self.unsigned
-        };
-        for operand in operands {
-            crate::ir::visit::expr_reads(operand, into);
+            self.unsigned.extend(read);
         }
+    }
+
+    /// Whether the register reads as signed: no more unsigned operations
+    /// read it than signed ones.
+    pub(crate) fn mostly_signed(&self, index: u16) -> bool {
+        self.counts
+            .get(&index)
+            .is_none_or(|(signed, unsigned)| signed >= unsigned)
     }
 
     fn compare(&mut self, cond: crate::ir::Cond, lhs: &crate::ir::Expr, rhs: &crate::ir::Expr) {
@@ -987,5 +1006,26 @@ mod tests {
     fn a_return_register_that_carries_the_first_argument_may_return_it() {
         // AArch64 `int id(int x) { return x; }` is a bare `ret`.
         assert_ne!(returns_register(Isa::AArch64), CType::Void);
+    }
+
+    #[test]
+    fn a_register_reads_as_signed_unless_more_unsigned_operations_read_it() {
+        use crate::ir::Cond;
+        let compare = |cond: Cond| Stmt::Brif {
+            cond,
+            lhs: Expr::reg(7, 64),
+            rhs: Expr::Const(0),
+            target: 0,
+        };
+        let evidence = |conds: &[Cond]| {
+            let ir = FunctionIr::single_block(
+                Isa::X86_64,
+                conds.iter().map(|cond| compare(*cond)).collect(),
+            );
+            super::SignEvidence::of(&ir).mostly_signed(7)
+        };
+        assert!(evidence(&[]));
+        assert!(evidence(&[Cond::Lt, Cond::Cc]));
+        assert!(!evidence(&[Cond::Lt, Cond::Cc, Cond::Hi]));
     }
 }

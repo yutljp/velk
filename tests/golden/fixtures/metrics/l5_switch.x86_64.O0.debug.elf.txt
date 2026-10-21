@@ -25,15 +25,15 @@
 /* ref: 0x202760 .bss */
 int dense(int x) {
     uint32_t v2;
-    int64_t v8;
-    int32_t local_0; /* [sp-c] */
+    int32_t v8;
+    uint32_t local_0; /* [sp-c] */
     int64_t local_1; /* [sp-18] */
 
     local_0 = x;
     v2 = local_0 - 0xa;
     local_1 = v2;
     if (v2 <= 0xf /* unsigned */) {
-        v8 = (int64_t)(int32_t)(dword_200158[local_1]) + 0x200158;
+        v8 = (int32_t)(dword_200158[local_1]) + 0x200158;
         switch (local_1 - 0xf) {
         case -15:
             c0();
@@ -469,8 +469,8 @@ fn c15 @ 0x2016d0 (size 21)
 /* velk pseudo-C: sparse @ 0x2016f0 */
 int sparse(int x) {
     int32_t v1;
-    int32_t local_0; /* [sp-14] */
-    int32_t local_1; /* [sp-c] */
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-c] */
 
     v1 = x;
     local_0 = v1;

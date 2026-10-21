@@ -13,7 +13,7 @@
 int32_t sub_201230(uint32_t *a0, int32_t a1) {
     uint32_t *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
-    int32_t local_2; /* [sp-18] */
+    uint32_t local_2; /* [sp-18] */
     int32_t local_3; /* [sp-1c] */
     int32_t local_4; /* [sp-20] */
 
@@ -70,11 +70,11 @@ fn <unnamed> @ 0x201230 (size 137)
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
 int32_t sub_2012c0(int32_t a0, int32_t a1, uint32_t *a2) {
     int32_t v1;
-    int64_t v2;
-    int32_t local_0; /* [sp-c] */
+    int32_t v2;
+    uint32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-10] */
     uint32_t *local_2; /* [sp-18] */
-    int32_t local_3; /* [sp-1c] */
+    uint32_t local_3; /* [sp-1c] */
 
     local_0 = a0;
     local_1 = a1;
@@ -83,7 +83,7 @@ int32_t sub_2012c0(int32_t a0, int32_t a1, uint32_t *a2) {
     if (a0 >= 0x0) {
         if (local_1 != 0x0) {
             v1 = local_0;
-            v2 = ((v1 % local_1) & 0xffffffff);
+            v2 = v1 % local_1;
             *local_2 = v1 / local_1;
             local_3 = 0x0;
             return local_3;
@@ -125,18 +125,18 @@ fn <unnamed> @ 0x2012c0 (size 78)
 /* velk pseudo-C: sub_201310 @ 0x201310 */
 /* ref: 0x200120 .rodata */
 int32_t sub_201310(int32_t a0) {
-    uint64_t v1;
-    int64_t v5;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
+    uint32_t v1;
+    int32_t v5;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-10] */
     int64_t local_2; /* [sp-18] */
 
     local_0 = a0;
     local_1 = 0x0;
-    v1 = (uint32_t)local_0;
+    v1 = local_0;
     local_2 = v1;
     if (v1 <= 0x3 /* unsigned */) {
-        v5 = (int64_t)(int32_t)(dword_200120[local_2]) + 0x200120;
+        v5 = (int32_t)(dword_200120[local_2]) + 0x200120;
         switch (local_2) {
         case 0:
             local_1 += 0x1;
@@ -196,8 +196,8 @@ fn <unnamed> @ 0x201310 (size 107)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
-    int32_t local_0; /* [sp-14] */
-    int32_t local_1; /* [sp-c] */
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-c] */
 
     local_0 = a0;
     if (a0 - 0x1 == 0x0) {
@@ -269,10 +269,10 @@ int32_t sub_201410(uint32_t *a0, int32_t a1) {
     int32_t v3;
     int32_t v5;
     int64_t v7;
-    int64_t v8;
-    int64_t v9;
-    int64_t v10;
-    int32_t v11;
+    int32_t v8;
+    uint8_t v9;
+    uint8_t v10;
+    uint8_t v11;
     int32_t local_0; /* [sp-14] */
     uint8_t local_1; /* [sp-15] */
     uint8_t local_2; /* [sp-16] */
@@ -342,7 +342,7 @@ fn <unnamed> @ 0x201410 (size 99)
 int32_t sub_201480(uint32_t *a0, int32_t a1) {
     uint32_t *local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
-    int32_t local_2; /* [sp-18] */
+    uint32_t local_2; /* [sp-18] */
     int32_t local_3; /* [sp-1c] */
 
     local_0 = a0;
@@ -388,10 +388,10 @@ fn <unnamed> @ 0x201480 (size 96)
 int32_t sub_2014e0(uint32_t *a0, int32_t a1, int32_t a2) {
     uint32_t *local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
-    int32_t local_2; /* [sp-20] */
+    uint32_t local_2; /* [sp-20] */
     int32_t local_3; /* [sp-24] */
     int32_t local_4; /* [sp-28] */
-    int32_t local_5; /* [sp-c] */
+    uint32_t local_5; /* [sp-c] */
 
     local_0 = a0;
     local_1 = a1;

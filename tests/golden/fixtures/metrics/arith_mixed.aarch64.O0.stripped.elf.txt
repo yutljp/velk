@@ -26,7 +26,7 @@ fn <unnamed> @ 0x21019c (size 44)
 /* velk pseudo-C: sub_2101c8 @ 0x2101c8 */
 int32_t sub_2101c8(int32_t a0) {
     int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
+    uint32_t local_1; /* [sp-8] */
     int32_t local_2; /* [sp-c] */
 
     local_0 = a0;
@@ -89,7 +89,7 @@ fn <unnamed> @ 0x210228 (size 36)
 int32_t sub_21024c(uint32_t *a0, int32_t a1) {
     uint32_t *local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */
-    int32_t local_2; /* [sp-10] */
+    uint32_t local_2; /* [sp-10] */
     int32_t local_3; /* [sp-14] */
 
     local_0 = a0;

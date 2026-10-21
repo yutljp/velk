@@ -34,7 +34,7 @@ fn point_dot @ 0x0 (size 20)
 /* velk pseudo-C: array_sum @ 0x14 */
 int32_t array_sum(uint32_t *a0, int32_t a1) {
     uint32_t *v1;
-    int64_t v2;
+    int32_t v2;
     int64_t v3;
     int32_t v4;
 
@@ -48,7 +48,7 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
         v4 = *v1;
         v1 = v1 + 0x1;
         v3 = v3 - 0x1;
-        v2 = ((v4 + v2) & 0xffffffff);
+        v2 = v4 + v2;
     } while (v3 != 0x0);
     return v2;
 }

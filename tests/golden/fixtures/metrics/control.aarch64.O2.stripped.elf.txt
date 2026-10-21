@@ -181,7 +181,7 @@ fn <unnamed> @ 0x210278 (size 84)
 -- decompile
 /* velk pseudo-C: sub_2102cc @ 0x2102cc */
 int32_t sub_2102cc(uint32_t *a0, int32_t a1) {
-    int64_t v2;
+    int32_t v2;
 
     v2 = 0x0;
     if (a0 == 0x0) {

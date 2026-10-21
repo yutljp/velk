@@ -22,8 +22,8 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
     int64_t v8;
     int64_t v9;
     int64_t v10;
-    int64_t v11;
-    int64_t v12;
+    uint8_t v11;
+    uint8_t v12;
 
     if (a2 == 0x0) {
         return;
@@ -193,13 +193,13 @@ fn <unnamed> @ 0x201310 (size 15)
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 int64_t sub_201320(uint8_t *a0) {
     int64_t v1;
-    int32_t v2;
+    uint8_t v2;
 
     v1 = -0x1;
     do {
         v2 = a0[v1 + 0x1];
         v1 = v1 + 0x1;
-    } while ((uint8_t)v2 != 0x0);
+    } while (v2 != 0x0);
     return v1;
 }
 -- signature

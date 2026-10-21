@@ -12,9 +12,9 @@ double average(double *values, int n) {
     double v1;
     double v2;
     int32_t v3;
-    int64_t v4;
+    uint32_t v4;
     int64_t v5;
-    int64_t v6;
+    uint32_t v6;
     double v7;
     double v8;
     double v9;
@@ -31,7 +31,7 @@ double average(double *values, int n) {
         v3 = n;
         v4 = v3 & 0x7;
         if ((uint32_t)n >= 0x8 /* unsigned */) {
-            v6 = (uint32_t)v3 & 0x7ffffff8;
+            v6 = v3 & 0x7ffffff8;
             v5 = 0x0;
             do {
                 v7 = v2 + values[v5];

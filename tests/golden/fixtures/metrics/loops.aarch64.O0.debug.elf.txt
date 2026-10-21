@@ -9,7 +9,7 @@
 /* velk pseudo-C: count_bits @ 0x21019c */
 int count_bits(unsigned int x) {
     uint32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
+    uint32_t local_1; /* [sp-8] */
 
     local_0 = x;
     local_1 = 0x0;
@@ -47,7 +47,7 @@ fn count_bits @ 0x21019c (size 76)
 /* velk pseudo-C: sum_until @ 0x2101e8 */
 int sum_until(int limit) {
     int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
+    uint32_t local_1; /* [sp-8] */
     int32_t local_2; /* [sp-c] */
 
     local_0 = limit;
@@ -87,12 +87,12 @@ fn sum_until @ 0x2101e8 (size 92)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x210244 */
 int sum_till_neg(int *p, int n) {
-    int64_t v2;
+    uint32_t v2;
     int *local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */
-    int32_t local_2; /* [sp-10] */
+    uint32_t local_2; /* [sp-10] */
     int32_t local_3; /* [sp-14] */
-    int32_t local_4; /* [sp-18] */
+    uint32_t local_4; /* [sp-18] */
 
     local_0 = p;
     local_1 = n;
@@ -146,7 +146,7 @@ fn sum_till_neg @ 0x210244 (size 120)
 int sum_until_zero(int *p, int n) {
     int *local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */
-    int32_t local_2; /* [sp-10] */
+    uint32_t local_2; /* [sp-10] */
     int32_t local_3; /* [sp-14] */
 
     local_0 = p;

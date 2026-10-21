@@ -57,9 +57,9 @@ fn <unnamed> @ 0x2011a0 (size 14)
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
 int32_t sub_2011b0(uint32_t *a0, int32_t a1) {
     int64_t v2;
-    int64_t v3;
+    int32_t v3;
     int64_t v4;
-    int64_t v5;
+    uint32_t v5;
     void *v6;
 
     if (a1 <= 0x0) {

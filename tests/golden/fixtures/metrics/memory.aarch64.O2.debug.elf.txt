@@ -28,7 +28,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     int64_t v14;
     uint8_t *v15;
     uint8_t *v16;
-    int64_t v17;
+    uint8_t v17;
 
     if (n == 0x0) {
         return;

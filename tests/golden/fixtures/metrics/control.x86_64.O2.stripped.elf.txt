@@ -12,11 +12,11 @@
 /* velk pseudo-C: sub_201220 @ 0x201220 */
 int32_t sub_201220(uint32_t *a0, int32_t a1) {
     int64_t v2;
-    int64_t v3;
+    uint32_t v3;
     int64_t v4;
     int64_t v5;
     int64_t v6;
-    int64_t v7;
+    int32_t v7;
     int64_t v8;
     uint32_t *v9;
     int64_t v10;
@@ -45,19 +45,19 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
             do {
                 v12 = v11;
                 if (v6 == v11) {
-                    v7 = ((v7 + v9[v8]) & 0xffffffff);
+                    v7 = v7 + v9[v8];
                 }
                 v13 = v12 + 0x1;
                 if (v6 == v13) {
-                    v7 = ((v7 + v9[v8]) & 0xffffffff);
+                    v7 = v7 + v9[v8];
                 }
                 v14 = v13 + 0x1;
                 if (v6 == v14) {
-                    v7 = ((v7 + v9[v8]) & 0xffffffff);
+                    v7 = v7 + v9[v8];
                 }
                 v15 = v14 + 0x1;
                 if (v6 == v15) {
-                    v7 = ((v7 + v9[v8]) & 0xffffffff);
+                    v7 = v7 + v9[v8];
                 }
                 v11 = v15 + 0x1;
             } while (v11 != v3);
@@ -70,7 +70,7 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
             v17 = 0x0;
             do {
                 if (v16 == v17) {
-                    v7 = ((v7 + v9[v8]) & 0xffffffff);
+                    v7 = v7 + v9[v8];
                 }
                 v17 = v17 - 0x1;
             } while (v4 != v17);
@@ -196,7 +196,7 @@ fn <unnamed> @ 0x201320 (size 26)
 /* velk pseudo-C: sub_201340 @ 0x201340 */
 /* ref: 0x200120 .rodata */
 int32_t sub_201340(uint32_t a0) {
-    int64_t v1;
+    int32_t v1;
 
     v1 = 0xffffffff;
     if (a0 > 0x3 /* unsigned */) {
@@ -275,7 +275,7 @@ fn <unnamed> @ 0x201360 (size 61)
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
 int32_t sub_2013a0(uint32_t *a0, int32_t a1) {
-    int64_t v1;
+    int32_t v1;
 
     v1 = 0x0;
     if (a0 == 0x0) {
@@ -316,7 +316,7 @@ fn <unnamed> @ 0x2013a0 (size 34)
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
     int64_t v2;
-    int64_t v3;
+    int32_t v3;
     int64_t v4;
     int64_t v6;
     uint64_t v7;
@@ -353,7 +353,7 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
             v6 = v6 + 0x20;
         } while (v4 != v6);
         v16 = add_lanes32(add_lanes32(v10, v8), add_lanes32(v9, v7));
-        v3 = (add_lanes32(v16 >> 0x20 | v16 >> 0x20 << 0x20, v16) & 0xffffffff);
+        v3 = add_lanes32(v16 >> 0x20 | v16 >> 0x20 << 0x20, v16);
         if (v2 == a1) {
             return v3;
         }
@@ -363,7 +363,7 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
     }
     do {
         v17 = a0[v2];
-        v3 = ((v3 + (v17 <= 0x0 ? 0x0 : v17)) & 0xffffffff);
+        v3 = v3 + (v17 <= 0x0 ? 0x0 : v17);
         v2 = v2 + 0x1;
     } while (a1 != v2);
     return v3;
@@ -422,11 +422,11 @@ fn <unnamed> @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
-    int64_t v1;
-    int64_t v3;
+    int32_t v1;
+    int32_t v3;
     uint32_t *v4;
     int64_t v5;
-    int64_t v6;
+    int32_t v6;
     uint64_t v7;
     int64_t v8;
     int32_t v9;

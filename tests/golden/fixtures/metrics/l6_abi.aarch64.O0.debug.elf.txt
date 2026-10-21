@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: tail_target @ 0x2101d4 */
 int tail_target(int x) {
-    int32_t local_0; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
     local_0 = x;
     return x * 0x3 + 0x1;

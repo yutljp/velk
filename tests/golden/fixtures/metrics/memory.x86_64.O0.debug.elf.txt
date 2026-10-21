@@ -12,7 +12,7 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x201280 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
-    int64_t v1;
+    uint8_t v1;
     unsigned char *local_0; /* [sp-10] */
     unsigned char *local_1; /* [sp-18] */
     uint64_t local_2; /* [sp-20] */
@@ -54,7 +54,7 @@ fn copy_bytes @ 0x201280 (size 79)
 /* velk pseudo-C: fill_bytes @ 0x2012d0 */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint64_t rax;
-    int64_t v1;
+    uint8_t v1;
     unsigned char *local_0; /* [sp-10] */
     uint8_t local_1; /* [sp-11] */
     uint64_t local_2; /* [sp-20] */
@@ -180,8 +180,8 @@ fn pointer_distance @ 0x2013d0 (size 29)
 -- decompile
 /* velk pseudo-C: read_volatile @ 0x2013f0 */
 int read_volatile(int *p) {
-    int32_t local_0; /* [sp-14] */
-    int32_t local_1; /* [sp-18] */
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-18] */
 
     local_0 = *p;
     local_1 = *p;
@@ -205,7 +205,7 @@ fn read_volatile @ 0x2013f0 (size 34)
 /* velk pseudo-C: swap_ints @ 0x201420 */
 void swap_ints(int *a, int *b) {
     int *local_0; /* [sp-18] */
-    int32_t local_1; /* [sp-1c] */
+    uint32_t local_1; /* [sp-1c] */
 
     local_0 = b;
     local_1 = *a;
