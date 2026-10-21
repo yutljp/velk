@@ -62,10 +62,10 @@ int64_t sub_2101f0(struct sub_2101f0_a0 *a0, int32_t a1) {
         return 0x0;
     }
     if (a1 != 0x1) {
-        v2 = a1 & 0x7ffffffe;
         v4 = 0x0;
         v5 = 0x0;
         v6 = &a0[0x1].field_0x8;
+        v2 = a1 & 0x7ffffffe;
         v7 = v2;
         do {
             v8 = *(uint64_t *)(v6 - 0x18);
@@ -114,10 +114,10 @@ fn <unnamed> @ 0x2101f0 (size 160)
   blk3 @ 0x210210:
     ret #0x0
   blk4 @ 0x21021c:
-    v2 = (v1 & #0x7ffffffe)
     v4 = #0x0
     v5 = #0x0
     v6 = (x0 + #0x20)
+    v2 = (v1 & #0x7ffffffe)
     v7 = v2
   blk5 @ 0x210230:
     v8 = load64((v6 + #0xffffffffffffffe8))

@@ -165,14 +165,14 @@ int32_t sub_201370(int32_t a0) {
         a0 = a0 - v3;
         v7 = add_lanes32(v4 | v4 << 0x20, qword_200190);
         v8 = add_lanes32(v4 | v4 << 0x20, qword_200198);
-        v9 = qword_2001a0;
-        v10 = qword_2001a8;
         v11 = qword_2001c0;
         v12 = qword_2001c8;
         v13 = qword_2001b0;
         v14 = qword_2001b8;
         v15 = v3;
+        v9 = qword_2001a0;
         v16 = v9;
+        v10 = qword_2001a8;
         v17 = v10;
         do {
             v18 = add_lanes32(v7, v11);
@@ -237,14 +237,14 @@ fn <unnamed> @ 0x201370 (size 238)
     rdi = (((rdi & #0xffffffff) - v3) & #0xffffffff)
     v7 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x200190))
     v8 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x200198))
-    v9 = load64(#0x2001a0)
-    v10 = load64(#0x2001a8)
     v11 = load64(#0x2001c0)
     v12 = load64(#0x2001c8)
     v13 = load64(#0x2001b0)
     v14 = load64(#0x2001b8)
     v15 = v3
+    v9 = load64(#0x2001a0)
     v16 = v9
+    v10 = load64(#0x2001a8)
     v17 = v10
   blk3 @ 0x2013c0:
     v18 = add_lanes32(v7, v11)

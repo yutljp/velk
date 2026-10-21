@@ -1180,6 +1180,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     crate::ssa::ranges::simplify(&mut ir);
     // Simplifying can fold a variable's value into its readers.
     passes::dce::dce(&mut ir);
+    passes::coalesce::coalesce_copies(&mut ir);
     drop_unread_indirect_result(&mut ir, image);
     name_indirect_result(&mut ir);
     structures::recover(&mut ir);

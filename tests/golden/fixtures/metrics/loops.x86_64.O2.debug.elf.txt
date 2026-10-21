@@ -129,7 +129,6 @@ int sum_until_zero(int *p, int n) {
     int64_t v2;
     int32_t v3;
     int32_t v4;
-    int32_t v5;
 
     if (n <= 0x0) {
         return 0x0;
@@ -139,11 +138,10 @@ int sum_until_zero(int *p, int n) {
     v3 = 0x0;
     do {
         v4 = p[v2];
-        v5 = v4;
         if (v4 == 0x0) {
             break;
         }
-        v3 = v3 + (v5 <= 0x0 ? 0x0 : v4);
+        v3 = v3 + (v4 <= 0x0 ? 0x0 : v4);
         v2 = v2 + 0x1;
     } while (v1 != v2);
     return v3;
@@ -162,10 +160,9 @@ fn sum_until_zero @ 0x201210 (size 44)
     v3 = #0x0
   blk2 @ 0x201220:
     v4 = load32((rdi + (v2 * #0x4)))
-    v5 = v4
     brif eq v4, #0x0 -> 0x201238
   blk3 @ 0x201229:
-    v3 = (((v3 & #0xffffffff) + select le v5, #0x0 ? #0x0, v4) & #0xffffffff)
+    v3 = (((v3 & #0xffffffff) + select le v4, #0x0 ? #0x0, v4) & #0xffffffff)
     v2 = (v2 + #0x1)
     brif ne v1, v2 -> 0x201220
   blk4 @ 0x201238:

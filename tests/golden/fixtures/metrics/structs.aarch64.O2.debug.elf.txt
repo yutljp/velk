@@ -54,10 +54,10 @@ long record_total(struct record *items, int n) {
     }
     v1 = (uint32_t)n;
     if (n != 0x1) {
-        v2 = v1 & 0x7ffffffe;
         v4 = 0x0;
         v5 = 0x0;
         v6 = (uint8_t *)items + 0x20;
+        v2 = v1 & 0x7ffffffe;
         v7 = v2;
         do {
             v8 = *(uint64_t *)(v6 - 0x18);
@@ -106,10 +106,10 @@ fn record_total @ 0x2101f0 (size 160)
   blk3 @ 0x210210:
     ret #0x0
   blk4 @ 0x21021c:
-    v2 = (v1 & #0x7ffffffe)
     v4 = #0x0
     v5 = #0x0
     v6 = (x0 + #0x20)
+    v2 = (v1 & #0x7ffffffe)
     v7 = v2
   blk5 @ 0x210230:
     v8 = load64((v6 + #0xffffffffffffffe8))

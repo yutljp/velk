@@ -85,7 +85,6 @@ int sum_arr(int *p, int n) {
     int64_t v7;
     uint64_t v8;
     uint64_t v9;
-    uint64_t v10;
     uint64_t v11;
     uint64_t v12;
     uint64_t v15;
@@ -103,9 +102,8 @@ int sum_arr(int *p, int n) {
         v8 = 0x0;
         v9 = 0x0;
         do {
-            v10 = add_lanes32(v6, *(uint64_t *)((uint8_t *)p + v7 + 0x8));
             v5 = add_lanes32(v5, *(uint64_t *)((uint8_t *)p + v7));
-            v6 = v10;
+            v6 = add_lanes32(v6, *(uint64_t *)((uint8_t *)p + v7 + 0x8));
             v11 = *(uint64_t *)((uint8_t *)p + v7 + 0x10);
             v12 = *(uint64_t *)((uint8_t *)p + v7 + 0x18);
             v8 = add_lanes32(v8, v11);
@@ -153,9 +151,8 @@ fn sum_arr @ 0x2011e0 (size 140)
     v8 = #0x0
     v9 = #0x0
   blk5 @ 0x201220:
-    v10 = add_lanes32(v6, load64(((rdi + v7) + #0x8)))
     v5 = add_lanes32(v5, load64((rdi + v7)))
-    v6 = v10
+    v6 = add_lanes32(v6, load64(((rdi + v7) + #0x8)))
     v11 = load64(((rdi + v7) + #0x10))
     v12 = load64(((rdi + v7) + #0x18))
     v8 = add_lanes32(v8, v11)

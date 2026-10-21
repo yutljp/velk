@@ -28,8 +28,8 @@ double average(double *values, int n) {
     v1 = 0.0;
     v2 = (uint32_t)n;
     if ((uint32_t)n >= 0x4 /* unsigned */) {
-        v3 = v2 & 0x7ffffffc;
         v4 = values + 0x2;
+        v3 = v2 & 0x7ffffffc;
         v5 = v3;
         do {
             v6 = v4[-0x2];
@@ -72,8 +72,8 @@ fn average @ 0x21019c (size 144)
     v3 = #0x0
     br 0x2101f8
   blk3 @ 0x2101bc:
-    v3 = (v2 & #0x7ffffffc)
     v4 = (x0 + #0x10)
+    v3 = (v2 & #0x7ffffffc)
     v5 = v3
   blk4 @ 0x2101c8:
     v6 = load64((v4 + #0xfffffffffffffff0))

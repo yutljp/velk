@@ -37,9 +37,9 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     if (a2 >= 0x8 /* unsigned */) {
         if (a0 - a1 >= 0x20 /* unsigned */) {
             if (a2 >= 0x20 /* unsigned */) {
-                v1 = a2 & 0xffffffffffffffe0;
                 v2 = a1 + 0x10;
                 v3 = a0 + 0x10;
+                v1 = a2 & 0xffffffffffffffe0;
                 v4 = v1;
                 do {
                     v5 = v2[-0x2];
@@ -112,9 +112,9 @@ fn <unnamed> @ 0x210214 (size 176)
     v1 = #0x0
     br 0x210278
   blk5 @ 0x210240:
-    v1 = (x2 & #0xffffffffffffffe0)
     v2 = (x1 + #0x10)
     v3 = (x0 + #0x10)
+    v1 = (x2 & #0xffffffffffffffe0)
     v4 = v1
   blk6 @ 0x210250:
     v5 = load64((v2 + #0xfffffffffffffff0))

@@ -1,3 +1,4 @@
+pub mod coalesce;
 pub mod copies;
 pub mod cse;
 pub mod dce;
