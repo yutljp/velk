@@ -25,6 +25,23 @@ pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
     out
 }
 
+/// The starts of the blocks some path from the entry reaches.
+pub(crate) fn reached(ir: &FunctionIr) -> HashSet<u64> {
+    let mut seen = vec![false; ir.blocks.len()];
+    let mut pending = vec![0];
+    while let Some(at) = pending.pop() {
+        if at < ir.blocks.len() && !std::mem::replace(&mut seen[at], true) {
+            pending.extend(successors(ir, at));
+        }
+    }
+    ir.blocks
+        .iter()
+        .zip(seen)
+        .filter(|(_, seen)| *seen)
+        .map(|(block, _)| block.start)
+        .collect()
+}
+
 pub(crate) fn block_successors(blocks: &[Block], index: usize) -> Vec<usize> {
     let find = |address: u64| blocks.iter().position(|block| block.start == address);
     let fallthrough = (index + 1 < blocks.len()).then_some(index + 1);

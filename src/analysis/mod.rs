@@ -315,6 +315,23 @@ fn drop_unreached(blocks: &mut Vec<crate::ir::Block>) {
     });
 }
 
+/// Drops the blocks of `reached`, those a path reached before optimizing,
+/// that none does now: a branch folded to one way leaves the other dead.
+/// Code no path reached to begin with, as a landing pad's the unwind
+/// tables do not lead to, stays.
+fn drop_folded_away(ir: &mut FunctionIr, reached: &HashSet<u64>) {
+    if ir
+        .blocks
+        .iter()
+        .any(|block| matches!(block.stmts.last(), Some(Stmt::BrIndirect { .. })))
+    {
+        return;
+    }
+    let now = crate::ir::cfg::reached(ir);
+    ir.blocks
+        .retain(|block| now.contains(&block.start) || !reached.contains(&block.start));
+}
+
 /// Go code on x86-64 keeps xmm15 zero: it holds zero as a function starts
 /// and after every call. It keeps the goroutine in r14 too, and reloading it
 /// from thread-local storage after a call changes nothing.
@@ -1121,7 +1138,9 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     // of an argument, are dropped as dead.
     crate::ssa::count_variadic_arguments(&mut ir, image);
     crate::ssa::undefine_clobbered_reads(&mut ir);
+    let reached = crate::ir::cfg::reached(&ir);
     passes::optimize(&mut ir, has_jump_tables);
+    drop_folded_away(&mut ir, &reached);
     set_up_arguments(&mut ir);
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the

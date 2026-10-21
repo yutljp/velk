@@ -233,16 +233,6 @@ fn _start @ 0x11a0 (size 38)
 /* velk pseudo-C: deregister_tm_clones @ 0x11d0 */
 void __TMC_END__(void);
 int32_t deregister_tm_clones(void) {
-    uint64_t rax;
-
-    return (uintptr_t)__TMC_END__;
-L_11e3:
-    rax = _ITM_deregisterTMCloneTable;
-    if (rax == 0x0) {
-        return (uintptr_t)__TMC_END__;
-    }
-    return _ITM_deregisterTMCloneTable();
-L_11f8:
     return (uintptr_t)__TMC_END__;
 }
 -- signature
@@ -253,31 +243,15 @@ int32_t ()
 fn deregister_tm_clones @ 0x11d0 (size 48)
   blk0 @ 0x11d0:
     br 0x11f8
-  blk1 @ 0x11e3:
-    rax = load64(#0x3fe0)
-    brif eq rax, #0x0 -> 0x11f8
-  blk2 @ 0x11ef:
-    call *load64(#0x3fe0)
-    ret v3
-  blk3 @ 0x11f8:
+  blk1 @ 0x11f8:
     ret #0x4010
 -- card
-{"addr":"0x11d0","approxTokens":156,"blocks":4,"hardReasons":[],"name":"deregister_tm_clones","nameSources":["symtab"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x11d0","approxTokens":156,"blocks":2,"hardReasons":[],"name":"deregister_tm_clones","nameSources":["symtab"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x1200 register_tm_clones
 -- decompile
 /* velk pseudo-C: register_tm_clones @ 0x1200 */
 int32_t register_tm_clones(void) {
-    uint64_t rax;
-
-    return 0x0;
-L_1224:
-    rax = _ITM_registerTMCloneTable;
-    if (rax == 0x0) {
-        return 0x0;
-    }
-    return _ITM_registerTMCloneTable();
-L_1238:
     return 0x0;
 }
 -- signature
@@ -288,16 +262,10 @@ int32_t ()
 fn register_tm_clones @ 0x1200 (size 64)
   blk0 @ 0x1200:
     br 0x1238
-  blk1 @ 0x1224:
-    rax = load64(#0x3ff0)
-    brif eq rax, #0x0 -> 0x1238
-  blk2 @ 0x1230:
-    call *load64(#0x3ff0)
-    ret v4
-  blk3 @ 0x1238:
+  blk1 @ 0x1238:
     ret #0x0
 -- card
-{"addr":"0x1200","approxTokens":186,"blocks":4,"hardReasons":[],"name":"register_tm_clones","nameSources":["symtab"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1200","approxTokens":186,"blocks":2,"hardReasons":[],"name":"register_tm_clones","nameSources":["symtab"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
 
 == 0x1240 __do_global_dtors_aux
 -- decompile
