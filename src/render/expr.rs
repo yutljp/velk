@@ -400,13 +400,16 @@ pub(crate) fn pointer_valued(value: &Expr, ctx: &Ctx<'_>) -> bool {
     match value {
         Expr::Reg { index, .. } => ctx.pointer_types.contains_key(index),
         Expr::Bin {
-            op: BinOp::Add | BinOp::Sub,
+            op: BinOp::Add,
             lhs,
             rhs,
-        } => {
-            pointer_valued(lhs, ctx)
-                || (matches!(value, Expr::Bin { op: BinOp::Add, .. }) && pointer_valued(rhs, ctx))
-        }
+        } => pointer_valued(lhs, ctx) || pointer_valued(rhs, ctx),
+        // The difference of two pointers is a count, an integer.
+        Expr::Bin {
+            op: BinOp::Sub,
+            lhs,
+            rhs,
+        } => pointer_valued(lhs, ctx) && !pointer_valued(rhs, ctx),
         Expr::Select { then, els, .. } => {
             let null = |arm: &Expr| matches!(arm, Expr::Const(0));
             (pointer_valued(then, ctx) || null(then))
