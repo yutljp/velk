@@ -16,25 +16,31 @@ pub struct ChainSwitch {
     pub blocks: Vec<u64>,
 }
 
-/// Drops the zero-extension a 32-bit read carries, so `w0` and
-/// `(x0 & 0xffffffff)` compare equal.
+/// A register's low 32 bits as the 32-bit read they are, so `w0` and
+/// `(x0 & 0xffffffff)` compare equal, while the whole register stays apart:
+/// a test of the low half says nothing of the upper one.
 fn normalized(expr: &Expr) -> Expr {
     if let Expr::Bin {
         op: BinOp::And,
         lhs,
         rhs,
     } = expr
-        && matches!(
-            rhs.as_ref(),
-            Expr::Const(0xffff_ffff) | Expr::Const(u64::MAX)
-        )
     {
-        return normalized(lhs);
+        match rhs.as_ref() {
+            Expr::Const(u64::MAX) => return normalized(lhs),
+            Expr::Const(0xffff_ffff) => {
+                if let Expr::Reg {
+                    index,
+                    width: 32 | 64,
+                } = normalized(lhs)
+                {
+                    return Expr::reg(index, 32);
+                }
+            }
+            _ => {}
+        }
     }
-    match expr {
-        Expr::Reg { index, width: 32 } => Expr::reg(*index, 64),
-        _ => expr.clone(),
-    }
+    expr.clone()
 }
 
 fn same_value(left: &Expr, right: &Expr) -> bool {
