@@ -115,7 +115,12 @@ impl Solver<'_> {
             let stmts = &ssa.ir.blocks[block].stmts;
             for (position, stmt) in stmts.iter().enumerate() {
                 if let Stmt::Assign { dest, value } = stmt {
-                    let lattice = self.expression(value);
+                    let lattice = match self.expression(value) {
+                        Lattice::Constant(value) => {
+                            Lattice::Constant(value & mask(u32::from(dest.width)))
+                        }
+                        lattice => lattice,
+                    };
                     if lattice != Lattice::Unknown {
                         changed |= self.set(dest.index, lattice);
                     }
@@ -589,5 +594,97 @@ mod tests {
             "{}",
             ir.render()
         );
+    }
+
+    #[test]
+    fn assignment_width_is_kept_by_wide_consumers_and_constant_branches() {
+        use crate::ir::eval::{self, Convention, Outcome, Setup};
+        for width in [8, 16, 32, 64] {
+            for raw in [0, 1, 0x100, 0x1_0000, 0x1_0000_0000, 1 << 63, u64::MAX] {
+                let ir = function(vec![
+                    vec![
+                        Stmt::Assign {
+                            dest: RegRef { index: 0, width },
+                            value: Expr::Const(raw),
+                        },
+                        Stmt::Store {
+                            addr: Expr::Const(0x4000),
+                            value: Expr::reg(0, 64),
+                            width: 8,
+                        },
+                        assign(
+                            1,
+                            Expr::apply(Operation::PopCount(64), vec![Expr::reg(0, 64)]),
+                        ),
+                        Stmt::Store {
+                            addr: Expr::Const(0x4008),
+                            value: Expr::reg(1, 64),
+                            width: 8,
+                        },
+                        Stmt::Brif {
+                            cond: Cond::Eq,
+                            lhs: Expr::reg(1, 64),
+                            rhs: Expr::Const(1),
+                            target: 0x20,
+                        },
+                    ],
+                    vec![assign(2, Expr::Const(3)), Stmt::Br { target: Some(0x30) }],
+                    vec![assign(2, Expr::Const(0)), Stmt::Br { target: Some(0x30) }],
+                    vec![Stmt::Ret {
+                        value: Expr::reg(2, 64),
+                    }],
+                ]);
+                let truncated = (u128::from(raw) % (1u128 << width)) as u64;
+                let population = u64::from(truncated.count_ones());
+                let returned = if population == 1 { 0 } else { 3 };
+                let memory = [(0x4000, truncated), (0x4008, population)]
+                    .into_iter()
+                    .flat_map(|(address, value)| {
+                        value
+                            .to_le_bytes()
+                            .into_iter()
+                            .enumerate()
+                            .map(move |(offset, byte)| (address + offset as u64, byte))
+                    })
+                    .collect();
+                let expected = Outcome::Return {
+                    value: returned,
+                    calls: Vec::new(),
+                    memory,
+                };
+                let setup = Setup {
+                    seed: 0,
+                    convention: Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &[],
+                    memory: &[],
+                    step_limit: 40,
+                };
+                let ssa = crate::ssa::build(&ir).unwrap();
+                let constants = super::constants(&ssa);
+                for (statement, expected_value) in [(0, truncated), (2, population)] {
+                    let Stmt::Assign { dest, .. } = &ssa.ir.blocks[0].stmts[statement] else {
+                        unreachable!()
+                    };
+                    assert_eq!(
+                        constants.get(&dest.index),
+                        Some(&expected_value),
+                        "width {width}, raw {raw:#x}, statement {statement}"
+                    );
+                }
+                let lowered = crate::ssa::lower(&ssa);
+                let mut folded = ir.clone();
+                propagate_constants(&mut folded);
+                for candidate in [&ir, &lowered, &folded] {
+                    assert_eq!(
+                        eval::run(candidate, &setup),
+                        expected,
+                        "width {width}, raw {raw:#x}"
+                    );
+                }
+            }
+        }
     }
 }
