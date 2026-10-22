@@ -38,7 +38,10 @@ running an already built velk binary.
 | `src/analysis/semantics_tests.rs` | Optimization and structure lowering preserve behavior | Pre-transformation IR interpreter results |
 | `src/ir/abi.rs`, `src/analysis/abi.rs` units | Aggregate classification, register banks, stack alignment, indirect results | Structured type layouts and expected ABI locations |
 | `src/analysis/signature.rs`, `summary.rs` units | Incoming physical stack slots, definite writes, normal and exceptional predecessors | Explicit frame offsets, byte dependencies, and CFG expectations |
+| `src/analysis/typing.rs` units | Exact pointer-return types, live output widths, entry bits used before later writes | SSA definitions, expected types, retained output controls |
+| `src/analysis/indirect.rs` units | Constant-return propagation through read-only callees | Fixed instruction bytes and independently specified targets |
 | `src/ssa/mod.rs` units | Entry-bit requirements, private spills, complete result dependencies | Explicit masks, frames, and observable memory effects |
+| `src/render/structure/compare_chain.rs` units | Sparse equality dispatch, entry preservation, disjoint rewrites | Full original/transformed/lowered IR outcomes |
 | `src/passes/copies.rs`, `read_once.rs` units | Assignment/read truncation and signed-operation/comparison widths | Full before/after interpreter outcomes |
 | `src/render/` units | Pointer/integer distinctions, real member access, truth values, floating mask preconditions, segment-base bindings, saved-parameter overlap and load/store order | Expected typed pseudo-C and recognition controls |
 | `tests/loader.rs` | Section allocation, relocation, nested DWARF member type/width/ownership | Input metadata and declared layout |
@@ -76,6 +79,15 @@ checks are compiled for arm64 macOS. The x86-64 executor is enabled on
 x86-64 Unix and arm64 macOS, where it uses the system's x86-64 execution
 support; availability still depends on a suitable compiler/runtime.
 
+The focused AArch64 `SQDMULH` test compares the integer bits of the four
+ordinary 16/32-bit vector forms, including saturation, register aliasing
+and upper-half clearing. It requires every selected processor case to
+execute and compares integer lanes without NaN equivalence. The current
+IR does not model FPSR.QC; direct FPSR reads/writes remain unsupported,
+with refusal checked before and after optimization. Scalar and indexed
+forms remain unsupported. These checks concern register results, not
+complete floating-status behavior or arbitrary external FPSR observers.
+
 Fixture semantics checks attempt the discovered functions on finite trial
 inputs, comparing return values, calls, and memory. Structured output is
 also lowered to blocks for comparison. Unknown or unsupported executions
@@ -104,6 +116,18 @@ views, declared members, signed loads, overlapping accesses, raw float
 bits, pointers, shifts, and whole-region checksums. The shift suite adds
 strict shift sanitization and disables the common wrapping option so
 invalid C shifts are observable.
+
+A focused physical-call test uses a real host C callee to observe zero-extended
+argument bits, call count and the full-width returned value. It covers narrow
+and wide parameter storage at both optimization levels; it does not rely on
+the interpreter's synthetic call results as the callee oracle.
+
+Sparse equality-dispatch tests compare complete IR outcomes before recovery,
+after recovery and after structured lowering. Generated-C cases check case and
+default selection, low-bit normalization, high constants and a once-only head
+effect. An independent byte reference checks interpreter memory; host C is
+compared through return values and the existing region checksum. These checks
+do not execute original target instructions.
 
 Segment-base comparisons require explicit target FS/GS values and memory
 contents shared by the interpreter and C adapter. These are test inputs,
@@ -335,6 +359,9 @@ VELK_BLESS=0 CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release
 
 Inspect the golden diff and investigate new mismatches, compile failures,
 or exclusions. Keep unsupported/unknown cases distinct from compared cases.
+A passing blessed invariant test means the findings match the recorded file;
+it does not mean there are no invariant findings. Inspect that file separately
+and investigate newly recorded violations before accepting the update.
 
 ## Regenerating fixtures
 
