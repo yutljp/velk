@@ -52,6 +52,7 @@ enum Mode {
 /// What the pseudo-C uses beyond its own text: fixed-width integers, `bool`,
 /// the high half of a product, and the integer type names debug info gives.
 const HEADER: &str = r#"#include <inttypes.h>
+#include <math.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -1086,6 +1087,185 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
     check_candidates("shift-memory", updates, Mode::Memory, &sanitizer);
 }
 
+#[test]
+fn printed_masked_float_operands_preserve_result_bits() {
+    let mut candidates = Vec::new();
+    for (name, precision, mask, fused) in [
+        ("masked_single_lerp", Precision::Single, 0xffff_ffff, false),
+        ("masked_single_superset", Precision::Single, u64::MAX, false),
+        ("masked_double_lerp", Precision::Double, u64::MAX, false),
+        ("masked_single_fma", Precision::Single, 0xffff_ffff, true),
+        ("masked_double_fma", Precision::Double, u64::MAX, true),
+    ] {
+        let bits = |value: f64| match precision {
+            Precision::Single => u64::from((value as f32).to_bits()),
+            Precision::Double => value.to_bits(),
+        };
+        let (p, m, negative_m) = match precision {
+            Precision::Single => (0x3f80_0001, 0x3f7f_fffe, 0xbf7f_fffe),
+            Precision::Double => (
+                0x3ff0_0000_0000_0001,
+                0x3fef_ffff_ffff_fffe,
+                0xbfef_ffff_ffff_fffe,
+            ),
+        };
+        let rows = if fused {
+            [
+                [p, m, bits(-1.0)],
+                [bits(1.0), bits(1.0), bits(-1.0)],
+                [bits(1.25), bits(2.5), bits(-0.125)],
+                [bits(-1.25), bits(2.5), bits(0.125)],
+                [bits(-0.0), bits(1.0), bits(0.0)],
+                [bits(0.0), bits(-1.0), bits(-0.0)],
+                [bits(-0.0), bits(-1.0), bits(-0.0)],
+                [bits(0.0), bits(1.0), bits(0.0)],
+                [bits(2.0), bits(0.5), bits(1.0)],
+                [bits(-2.0), bits(0.5), bits(-1.0)],
+                [p, m, bits(1.0)],
+                [p, negative_m, bits(1.0)],
+            ]
+        } else {
+            [
+                [bits(0.0), bits(1.0), bits(0.0)],
+                [bits(0.0), bits(1.0), bits(1.0)],
+                [bits(0.0), bits(1.0), bits(0.5)],
+                [bits(1.0), bits(2.0), bits(0.5)],
+                [bits(-1.0), bits(1.0), bits(0.5)],
+                [bits(2.0), bits(-2.0), bits(0.25)],
+                [bits(-0.0), bits(0.0), bits(1.0)],
+                [bits(0.0), bits(-0.0), bits(1.0)],
+                [bits(-0.0), bits(-0.0), bits(0.5)],
+                [p, m, bits(0.5)],
+                [bits(16.0), bits(17.0), bits(0.5)],
+                [bits(-16.0), bits(-17.0), bits(0.5)],
+            ]
+        };
+        assert_eq!(rows.len(), trials::TRIALS as usize);
+        for row in &rows {
+            for &raw in row {
+                assert!(match precision {
+                    Precision::Single => {
+                        assert_eq!(raw >> 32, 0);
+                        f32::from_bits(raw as u32).is_finite()
+                    }
+                    Precision::Double => f64::from_bits(raw).is_finite(),
+                });
+            }
+        }
+        let width = precision.bits() / 8;
+        let inputs = (0..3)
+            .map(|index| Expr::Load {
+                addr: Box::new(Expr::Const(REGION + 0x8000 + index * 8)),
+                width,
+                signed: false,
+            })
+            .collect::<Vec<_>>();
+        let [a, b, c]: [Expr; 3] = inputs.try_into().expect("three floating inputs");
+        let value = if fused {
+            Expr::apply(
+                Operation::FloatNegate(precision),
+                vec![Expr::bin(
+                    BinOp::And,
+                    Expr::apply(Operation::FloatMulAdd(precision), vec![a, b, c]),
+                    Expr::Const(mask),
+                )],
+            )
+        } else {
+            Expr::apply(
+                Operation::FloatAdd(precision),
+                vec![
+                    a.clone(),
+                    Expr::bin(
+                        BinOp::And,
+                        Expr::apply(
+                            Operation::FloatMul(precision),
+                            vec![Expr::apply(Operation::FloatSub(precision), vec![b, a]), c],
+                        ),
+                        Expr::Const(mask),
+                    ),
+                ],
+            )
+        };
+        let registers = [7, 6, 2];
+        let params = registers
+            .iter()
+            .zip(["a_bits", "b_bits", "c_bits"])
+            .map(|(&index, name)| Param {
+                index,
+                name: name.to_owned(),
+                ty: CType::U64,
+            })
+            .collect();
+        let mut stmts = registers
+            .iter()
+            .enumerate()
+            .map(|(index, &register)| Stmt::Store {
+                addr: Expr::Const(REGION + 0x8000 + index as u64 * 8),
+                width,
+                value: Expr::reg(register, 64),
+            })
+            .collect::<Vec<_>>();
+        let result = REGION + 0x8040;
+        stmts.push(Stmt::Store {
+            addr: Expr::Const(result),
+            width,
+            value,
+        });
+        stmts.push(Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::Const(result)),
+                width,
+                signed: false,
+            },
+        });
+        let ir = synthetic_ir(name, params, CType::U64, stmts);
+        if fused {
+            let registers = registers.into_iter().zip(rows[0]).collect::<Vec<_>>();
+            let outcome = eval::run(
+                &ir,
+                &eval::Setup {
+                    seed: 0,
+                    convention: eval::Convention {
+                        arguments: Convention::SysV.arguments(),
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &[],
+                    step_limit: trials::STEP_LIMIT,
+                },
+            );
+            let Outcome::Return { value, calls, .. } = outcome else {
+                panic!("the fused discriminator must return: {outcome:?}");
+            };
+            assert!(calls.is_empty());
+            assert_eq!(
+                value,
+                match precision {
+                    Precision::Single => 0x2880_0000,
+                    Precision::Double => 0x3970_0000_0000_0000,
+                }
+            );
+        }
+        candidates.push(printed_candidate(
+            ir,
+            rows.into_iter().map(|row| row.to_vec()).collect(),
+        ));
+    }
+    assert_eq!(candidates.len(), 5);
+    check_candidates(
+        "float-masks",
+        candidates,
+        Mode::Memory,
+        &[
+            "-ffp-contract=off",
+            // Preserve the FMA result before the separate negation.
+            "-fno-builtin-fma",
+            "-fno-builtin-fmaf",
+            "-lm",
+        ],
+    );
+}
+
 fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt>) -> FunctionIr {
     FunctionIr {
         isa: Isa::X86_64,
@@ -1866,10 +2046,10 @@ fn build(source: &Program, scratch: &Path, level: &str, compiler_args: &[&str]) 
     let compiled = Command::new(COMPILER)
         .arg(level)
         .args(FLAGS)
-        .args(compiler_args)
         .arg("-o")
         .arg(&output)
         .arg(&path)
+        .args(compiler_args)
         .output()
         .unwrap_or_else(|error| panic!("{COMPILER}: {error}"));
     assert!(

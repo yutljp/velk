@@ -106,7 +106,7 @@ fn average @ 0x2011b0 (size 161)
 -- decompile
 /* velk pseudo-C: lerp @ 0x201260 */
 float lerp(float a, float b, float t) {
-    return a + (((b - a) * t) & 0xffffffff);
+    return a + (b - a) * t;
 }
 -- signature
 float (float a, float b, float t)

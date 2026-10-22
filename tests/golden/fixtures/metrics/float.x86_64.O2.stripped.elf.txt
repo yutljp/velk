@@ -106,7 +106,7 @@ fn <unnamed> @ 0x2011b0 (size 161)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 float sub_201260(float a0, float a1, float a2) {
-    return a0 + (((a1 - a0) * a2) & 0xffffffff);
+    return a0 + (a1 - a0) * a2;
 }
 -- signature
 float (float a0, float a1, float a2)

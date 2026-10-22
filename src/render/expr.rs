@@ -338,6 +338,24 @@ fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
     }
 }
 
+fn unmasked_float(expr: &Expr, precision: Precision) -> Option<&Expr> {
+    let Expr::Bin {
+        op: BinOp::And,
+        lhs,
+        rhs,
+    } = expr
+    else {
+        return None;
+    };
+    let Expr::Apply { op, .. } = lhs.as_ref() else {
+        return None;
+    };
+    let kept = crate::ir::semantics::mask(u32::from(precision.bits()));
+    (op.result_precision() == Some(precision)
+        && matches!(rhs.as_ref(), Expr::Const(mask) if mask & kept == kept))
+    .then_some(lhs.as_ref())
+}
+
 /// An argument of a floating-point operation: a constant reads as the
 /// number its bits hold.
 pub(crate) fn float_operand(
@@ -347,6 +365,9 @@ pub(crate) fn float_operand(
     parent: u8,
     right: bool,
 ) -> String {
+    if let Some(value) = unmasked_float(expr, precision) {
+        return float_operand(value, precision, ctx, parent, right);
+    }
     match expr {
         Expr::Const(bits) => {
             let value = match precision {
@@ -1895,6 +1916,111 @@ mod tests {
                 assert!(!text.contains(&format!("({ty})(uint64_t)")), "{text}");
             }
         }
+    }
+
+    #[test]
+    fn covering_masks_keep_matching_float_results_in_float_consumers() {
+        for (precision, ty, mask) in [
+            (Precision::Single, "float", 0xffff_ffff),
+            (Precision::Single, "float", 0xffff_ffff_ffff_ffff),
+            (Precision::Double, "double", 0xffff_ffff_ffff_ffff),
+        ] {
+            let value = Expr::bin(
+                BinOp::And,
+                Expr::apply(
+                    Operation::FloatAdd(precision),
+                    vec![Expr::reg(7, 64), Expr::reg(6, 64)],
+                ),
+                Expr::Const(mask),
+            );
+            let text = global_returned(
+                value,
+                CType::Named(ty.to_owned()),
+                &[CType::Named(ty.to_owned()), CType::Named(ty.to_owned())],
+            );
+            assert!(text.contains("return a0 + a1;"), "{text}");
+        }
+    }
+
+    #[test]
+    fn nested_masked_float_results_keep_precedence_and_fused_operations() {
+        let float = CType::Named("float".to_owned());
+        let params = [float.clone(), float.clone(), float.clone()];
+        let masked = |value| Expr::bin(BinOp::And, value, Expr::Const(0xffff_ffff));
+        let source = Expr::apply(
+            Operation::FloatSub(Precision::Single),
+            vec![Expr::reg(6, 64), Expr::reg(7, 64)],
+        );
+        let product = Expr::apply(
+            Operation::FloatMul(Precision::Single),
+            vec![source, Expr::reg(2, 64)],
+        );
+        let lerp = Expr::apply(
+            Operation::FloatAdd(Precision::Single),
+            vec![Expr::reg(7, 64), masked(product)],
+        );
+        let text = global_returned(lerp, float.clone(), &params);
+        assert!(text.contains("return a0 + (a1 - a0) * a2;"), "{text}");
+
+        let sum = Expr::apply(
+            Operation::FloatAdd(Precision::Single),
+            vec![Expr::reg(6, 64), Expr::reg(2, 64)],
+        );
+        let difference = Expr::apply(
+            Operation::FloatSub(Precision::Single),
+            vec![Expr::reg(7, 64), masked(sum)],
+        );
+        let text = global_returned(difference, float.clone(), &params);
+        assert!(text.contains("return a0 - (a1 + a2);"), "{text}");
+
+        let fused = Expr::apply(
+            Operation::FloatMulAdd(Precision::Single),
+            vec![Expr::reg(7, 64), Expr::reg(6, 64), Expr::reg(2, 64)],
+        );
+        let negated = Expr::apply(
+            Operation::FloatNegate(Precision::Single),
+            vec![masked(fused)],
+        );
+        let text = global_returned(negated, float, &params);
+        assert!(text.contains("return -fmaf(a0, a1, a2);"), "{text}");
+    }
+
+    #[test]
+    fn a_float_mask_view_rejects_changed_bits_and_precision() {
+        let float = |precision| {
+            Expr::apply(
+                Operation::FloatAdd(precision),
+                vec![Expr::reg(7, 64), Expr::reg(6, 64)],
+            )
+        };
+        for (source, consumer, mask) in [
+            (Precision::Single, Precision::Single, 0x7fff_ffff),
+            (Precision::Single, Precision::Single, 0xffff_fffe),
+            (Precision::Double, Precision::Single, 0xffff_ffff),
+            (Precision::Double, Precision::Single, u64::MAX),
+            (Precision::Single, Precision::Double, u64::MAX),
+            (Precision::Double, Precision::Double, 0xffff_ffff),
+        ] {
+            let value = Expr::bin(BinOp::And, float(source), Expr::Const(mask));
+            assert!(super::unmasked_float(&value, consumer).is_none());
+        }
+        let variable_mask = Expr::bin(BinOp::And, float(Precision::Single), Expr::reg(2, 64));
+        assert!(super::unmasked_float(&variable_mask, Precision::Single).is_none());
+        let integer = Expr::bin(
+            BinOp::And,
+            Expr::apply(
+                Operation::FloatToInt {
+                    signed: false,
+                    bits: 32,
+                    from: Precision::Single,
+                    rounding: crate::ir::Rounding::TowardZero,
+                    saturating: false,
+                },
+                vec![Expr::reg(7, 64)],
+            ),
+            Expr::Const(0xffff_ffff),
+        );
+        assert!(super::unmasked_float(&integer, Precision::Single).is_none());
     }
 
     #[test]
