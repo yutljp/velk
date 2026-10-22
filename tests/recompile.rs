@@ -15,7 +15,7 @@
 
 mod common;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
@@ -23,10 +23,11 @@ use std::process::{Command, Stdio};
 
 use velk::ir::eval::{self, Outcome};
 use velk::ir::{
-    Access, BinOp, Block, CType, Convention, Definition, Expr, FunctionIr, Member, Operation,
+    Access, BinOp, Block, CType, Cond, Convention, Definition, Expr, FunctionIr, Member, Operation,
     Param, Precision, Stmt, trials,
 };
 use velk::loader::{Image, Isa};
+use velk::render::{SegmentBase, SegmentBaseRead};
 use velk::service::Binary;
 
 const COMPILER: &str = "clang";
@@ -169,6 +170,7 @@ static void velk_fault(int sig, siginfo_t *info, void *context) {
         if (mapped == (void *)page) {
             velk_pages[velk_page_count++] = page;
             velk_fill(page, velk_page);
+            velk_fixture_overlay(page, velk_page);
             return;
         }
         if (mapped != MAP_FAILED) {
@@ -228,6 +230,7 @@ int main(void) {
         int sig = sigsetjmp(velk_jump, 1);
         if (sig == 0) {
             velk_timer(200000);
+            velk_prepare(k, velk_seed);
             uint64_t r = velk_call(k, a);
             velk_timer(0);
             uint64_t sum = 0xcbf29ce484222325ULL;
@@ -510,6 +513,8 @@ fn printed_global_views_preserve_addresses_and_memory() {
             let ir = synthetic_ir(&name, params, ret_type, stmts);
             Candidate {
                 label: name,
+                segment_bases: Vec::new(),
+                states: Vec::new(),
                 code: velk::render::render(&ir, &[], &symbols, &[(REGION, REGION_SIZE)]),
                 params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
                 inputs: (0..trials::TRIALS)
@@ -779,6 +784,8 @@ fn printed_members_preserve_declared_types_and_access_widths() {
             }
             Candidate {
                 label: name,
+                segment_bases: Vec::new(),
+                states: Vec::new(),
                 params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
                 inputs: (0..trials::TRIALS)
                     .map(|trial| vec![REGION + 0x2000, REGION + 0x4000, eval::hash(trial, 0)])
@@ -1070,6 +1077,8 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
         let code = velk::render::render(&ir, &[], &Default::default(), &[(base, 0x1_0001_0000)]);
         updates.push(Candidate {
             label: name.to_owned(),
+            segment_bases: Vec::new(),
+            states: Vec::new(),
             params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
             inputs: (0..trials::TRIALS).map(|_| vec![input, 0]).collect(),
             void: false,
@@ -1266,6 +1275,503 @@ fn printed_masked_float_operands_preserve_result_bits() {
     );
 }
 
+#[test]
+fn printed_segment_bases_preserve_controlled_state() {
+    let offset = |index, amount: i64| {
+        Expr::bin(BinOp::Add, Expr::reg(index, 64), Expr::Const(amount as u64))
+    };
+    let load = |addr| Expr::Load {
+        addr: Box::new(addr),
+        width: 8,
+        signed: false,
+    };
+    let value_bits = |trial| 0xfedc_ba98_7654_3210 ^ trial;
+    let mut candidates = Vec::new();
+    for (case, name) in [
+        "segment_fs_zero",
+        "segment_fs_positive",
+        "segment_fs_negative",
+        "segment_gs_zero",
+        "segment_distinct",
+        "segment_store_alias",
+        "segment_partial_store",
+        "segment_nested",
+        "segment_narrow_base",
+        "segment_parameter_collision",
+        "velk_x86_fs_base",
+        "segment_reserved_names",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut params = Vec::new();
+        let mut stmts = Vec::new();
+        let value = match case {
+            0 => load(Expr::reg(16, 64)),
+            1 | 10 => load(offset(16, 8)),
+            2 => load(offset(16, -8)),
+            3 => load(Expr::reg(17, 64)),
+            4 => Expr::bin(BinOp::Xor, load(offset(16, 8)), load(offset(17, 8))),
+            5 => {
+                params.extend([
+                    Param {
+                        index: 7,
+                        name: "alias".to_owned(),
+                        ty: CType::pointer_to(CType::U64),
+                    },
+                    Param {
+                        index: 6,
+                        name: "value".to_owned(),
+                        ty: CType::U64,
+                    },
+                ]);
+                stmts.push(Stmt::Store {
+                    addr: offset(16, -8),
+                    width: 8,
+                    value: Expr::reg(6, 64),
+                });
+                load(Expr::reg(7, 64))
+            }
+            6 => {
+                params.push(Param {
+                    index: 7,
+                    name: "value".to_owned(),
+                    ty: CType::U64,
+                });
+                stmts.push(Stmt::Store {
+                    addr: offset(17, -6),
+                    width: 2,
+                    value: Expr::reg(7, 64),
+                });
+                load(offset(17, -8))
+            }
+            7 => Expr::Select {
+                cond: Cond::Eq,
+                lhs: Box::new(load(Expr::bin(
+                    BinOp::Sub,
+                    load(Expr::reg(16, 64)),
+                    Expr::Const(0x20),
+                ))),
+                rhs: Box::new(Expr::Const(0)),
+                then: Box::new(Expr::Const(1)),
+                els: Box::new(Expr::Const(0)),
+            },
+            8 => Expr::bin(BinOp::Add, Expr::reg(16, 32), Expr::Const(1)),
+            9 => {
+                params.push(Param {
+                    index: 7,
+                    name: "fs_base".to_owned(),
+                    ty: CType::U64,
+                });
+                Expr::bin(BinOp::Xor, Expr::reg(7, 64), load(offset(16, 8)))
+            }
+            11 => {
+                params.push(Param {
+                    index: 16,
+                    name: "target_base".to_owned(),
+                    ty: CType::U64,
+                });
+                Expr::bin(BinOp::Xor, Expr::reg(16, 64), load(offset(17, 8)))
+            }
+            _ => unreachable!(),
+        };
+        stmts.push(Stmt::Ret { value });
+        let ir = synthetic_ir(name, params, CType::U64, stmts);
+        let inputs = (0..trials::TRIALS)
+            .map(|trial| match case {
+                5 => vec![
+                    REGION + 0x1000 + (trial % 2) * 0x1000 - 8,
+                    value_bits(trial),
+                ],
+                6 | 9 => vec![value_bits(trial)],
+                11 => vec![REGION + 0x9000 + trial],
+                _ => Vec::new(),
+            })
+            .collect();
+        let mut candidate = printed_candidate(ir, inputs);
+        if case == 11 {
+            let symbols = velk::render::Symbols {
+                functions: [
+                    (0x1110, "velk_x86_fs_base".to_owned()),
+                    (0x1120, "velk_x86_gs_base".to_owned()),
+                ]
+                .into(),
+                ..Default::default()
+            };
+            let rendered =
+                velk::render::render_with_dependencies(&candidate.ir, &[], &symbols, &[]);
+            candidate.code = rendered.code;
+            candidate.segment_bases = rendered.segment_bases;
+        }
+        assert!(!candidate.segment_bases.is_empty(), "{name}");
+        assert!(
+            declared_functions(&candidate.code).is_empty(),
+            "{}",
+            candidate.code
+        );
+        if case == 4 {
+            assert_eq!(candidate.segment_bases.len(), 2);
+        }
+        if case == 10 {
+            assert!(
+                candidate
+                    .segment_bases
+                    .iter()
+                    .all(|read| read.provider != name)
+            );
+        }
+        if case == 11 {
+            assert_eq!(candidate.segment_bases.len(), 1);
+            assert_eq!(candidate.segment_bases[0].segment, SegmentBase::Gs);
+            assert_ne!(candidate.segment_bases[0].provider, "velk_x86_gs_base");
+        }
+        candidates.push(candidate);
+    }
+    let fixture = Fixture {
+        name: "segments".into(),
+        convention: eval::Convention {
+            arguments: Convention::SysV.arguments(),
+            clobbered: &[],
+        },
+        entry_registers: Vec::new(),
+        initial_memory: vec![(REGION + 0x1008, 0x11), (REGION + 0x2008, 0x22)],
+        functions: candidates.len(),
+        excluded: BTreeMap::new(),
+        candidates,
+    };
+    assert_eq!(fixture.candidates.len(), 12);
+    for (case, candidate) in fixture.candidates.iter().enumerate() {
+        for trial in 0..trials::TRIALS {
+            let context = trial % 2;
+            let fs = REGION + 0x1000 + context * 0x1000;
+            let expected = match case {
+                0 => REGION + 0x6000 + context * 0x1000,
+                1 | 10 => segment_word(trial, context, 2),
+                2 => segment_word(trial, context, 1),
+                3 => segment_word(trial, context, 3),
+                4 => segment_word(trial, context, 2) ^ segment_word(trial, context, 5),
+                5 => value_bits(trial),
+                6 => {
+                    (segment_word(trial, context, 4) & !(0xffff << 16))
+                        | ((value_bits(trial) & 0xffff) << 16)
+                }
+                7 => u64::from(context == 0),
+                8 => (fs & 0xffff_ffff) + 1,
+                9 => value_bits(trial) ^ segment_word(trial, context, 2),
+                11 => (REGION + 0x9000 + trial) ^ segment_word(trial, context, 5),
+                _ => unreachable!(),
+            };
+            let outcome = interpret(
+                &fixture,
+                candidate,
+                trial,
+                &candidate.inputs[trial as usize],
+                Mode::Memory,
+            )
+            .expect("a controlled return");
+            let Outcome::Return { value, calls, .. } = outcome else {
+                panic!("{outcome:?}")
+            };
+            assert_eq!(value, expected, "{} trial {trial}", candidate.label);
+            assert!(calls.is_empty());
+        }
+    }
+    let scratch = scratch_dir("segments");
+    let results = check(&[fixture], &scratch, Mode::Memory, &[]);
+    std::fs::remove_dir_all(&scratch).ok();
+    assert_comparisons(&results[0], 12);
+}
+
+#[test]
+fn printed_real_segment_functions_use_controlled_state() {
+    let mut fixtures = Vec::new();
+    for (name, address) in [
+        ("go_probe", 0x460e80),
+        ("go_stripped", 0x460e80),
+        ("rust_demo", 0x3b8e0),
+        ("rust_probe", 0x3b8e0),
+        ("rust_probe_stripped", 0x3b8e0),
+    ] {
+        let mut fixture = prepare(Path::new(name), Mode::Memory);
+        fixture
+            .candidates
+            .retain(|candidate| candidate.ir.addr == address);
+        assert_eq!(
+            fixture.candidates.len(),
+            1,
+            "{name}: expected the segment-dependent function"
+        );
+        assert_eq!(fixture.candidates[0].segment_bases.len(), 1);
+        assert_eq!(
+            fixture.candidates[0].segment_bases[0].segment,
+            SegmentBase::Fs
+        );
+        assert_eq!(fixture.candidates[0].void, name != "rust_probe_stripped");
+        fixtures.push(fixture);
+    }
+    let scratch = scratch_dir("real-segments");
+    let results = check(&fixtures, &scratch, Mode::Memory, &[]);
+    std::fs::remove_dir_all(&scratch).ok();
+    assert_eq!(results.len(), 5);
+    for result in &results {
+        assert_comparisons(result, 1);
+    }
+}
+
+#[test]
+fn segment_dependencies_reject_missing_state() {
+    let mut candidate = printed_candidate(
+        synthetic_ir(
+            "missing_segment",
+            Vec::new(),
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::reg(16, 64),
+            }],
+        ),
+        (0..trials::TRIALS).map(|_| Vec::new()).collect(),
+    );
+    assert_eq!(candidate.segment_bases.len(), 1);
+    candidate.states.clear();
+    assert!(segment_state(&candidate, 0).is_err());
+    candidate.states = segment_states();
+    candidate.states[0].fs = None;
+    assert!(segment_state(&candidate, 0).is_err());
+}
+
+#[test]
+fn segment_fixture_overlays_preserve_region_boundaries() {
+    let address = REGION + REGION_SIZE - 4;
+    let load = |addr, width| Expr::Load {
+        addr: Box::new(Expr::Const(addr)),
+        width,
+        signed: false,
+    };
+    let value = Expr::bin(
+        BinOp::Xor,
+        Expr::bin(
+            BinOp::Or,
+            load(address, 4),
+            Expr::bin(BinOp::Shl, load(address + 4, 4), Expr::Const(32)),
+        ),
+        Expr::bin(
+            BinOp::Or,
+            load(address - 1, 1),
+            Expr::bin(BinOp::Shl, load(address + 10, 1), Expr::Const(8)),
+        ),
+    );
+    let candidate = printed_candidate(
+        synthetic_ir(
+            "fixture_boundary",
+            Vec::new(),
+            CType::U64,
+            vec![Stmt::Ret { value }],
+        ),
+        (0..trials::TRIALS).map(|_| Vec::new()).collect(),
+    );
+    assert!(candidate.segment_bases.is_empty());
+    let fixture = Fixture {
+        name: "segment-fixture-boundary".into(),
+        convention: eval::Convention {
+            arguments: Convention::SysV.arguments(),
+            clobbered: &[],
+        },
+        entry_registers: Vec::new(),
+        initial_memory: vec![
+            (address, 0x0123_4567_89ab_cdef),
+            (address + 2, 0xfedc_ba98_7654_3210),
+            (address + 10, 0x1122_3344_5566_775a),
+        ],
+        functions: 1,
+        excluded: BTreeMap::new(),
+        candidates: vec![candidate],
+    };
+    for trial in 0..trials::TRIALS {
+        let outcome = interpret(&fixture, &fixture.candidates[0], trial, &[], Mode::Memory)
+            .expect("defined fixture bytes");
+        let Outcome::Return { value, .. } = outcome else {
+            panic!("{outcome:?}")
+        };
+        assert_eq!(
+            value,
+            0xba98_7654_3210_cdef ^ (eval::hash(trial, address - 1) & 0xff) ^ 0x5a00
+        );
+    }
+    let scratch = scratch_dir("segment-fixture-boundary");
+    let results = check(&[fixture], &scratch, Mode::Memory, &[]);
+    std::fs::remove_dir_all(&scratch).ok();
+    assert_comparisons(&results[0], 1);
+}
+
+#[test]
+fn segment_state_checks_ignore_void_returns_but_preserve_effects() {
+    let address = REGION + 0x1230;
+    let memory = [(address, 0)];
+    let run = |ir: &FunctionIr, seed| {
+        eval::run(
+            ir,
+            &eval::Setup {
+                seed,
+                convention: eval::Convention {
+                    arguments: Convention::SysV.arguments(),
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &memory,
+                step_limit: trials::STEP_LIMIT,
+            },
+        )
+    };
+    let candidate = |value, returned| {
+        printed_candidate(
+            synthetic_ir(
+                "void_effects",
+                Vec::new(),
+                CType::Void,
+                vec![
+                    Stmt::Store {
+                        addr: Expr::Const(address),
+                        width: 8,
+                        value,
+                    },
+                    Stmt::Ret { value: returned },
+                ],
+            ),
+            (0..trials::TRIALS).map(|_| Vec::new()).collect(),
+        )
+    };
+    let mut defined_store = candidate(Expr::Const(5), Expr::reg(0, 64));
+    let (first, second) = (run(&defined_store.ir, 1), run(&defined_store.ir, 2));
+    let (
+        Outcome::Return {
+            value: a,
+            memory: am,
+            ..
+        },
+        Outcome::Return {
+            value: b,
+            memory: bm,
+            ..
+        },
+    ) = (&first, &second)
+    else {
+        panic!("expected returns")
+    };
+    assert_ne!(a, b);
+    assert_eq!(am, bm);
+    assert!(same_outcome(&first, &second, &defined_store));
+    defined_store.void = false;
+    defined_store.ir.ret_type = CType::U64;
+    assert!(!same_outcome(&first, &second, &defined_store));
+
+    let undefined_store = candidate(Expr::reg(3, 64), Expr::Const(0));
+    let (first, second) = (run(&undefined_store.ir, 1), run(&undefined_store.ir, 2));
+    let (
+        Outcome::Return {
+            value: a,
+            memory: am,
+            ..
+        },
+        Outcome::Return {
+            value: b,
+            memory: bm,
+            ..
+        },
+    ) = (&first, &second)
+    else {
+        panic!("expected returns")
+    };
+    assert_eq!(a, b);
+    assert_ne!(am, bm);
+    assert!(!same_outcome(&first, &second, &undefined_store));
+}
+
+#[test]
+fn segment_provider_rebinding_preserves_other_c_tokens() {
+    let code = "provider(); provider_more(); /* provider */\n// provider\n\"provider\\\"\" '\\'';";
+    let expected =
+        "rebound(); provider_more(); /* provider */\n// provider\n\"provider\\\"\" '\\'';";
+    assert_eq!(replace_c_identifier(code, "provider", "rebound"), expected);
+}
+
+#[test]
+fn segment_providers_need_an_adapter_and_do_not_replace_function_addresses() {
+    let state = printed_candidate(
+        synthetic_ir(
+            "segment_binding",
+            Vec::new(),
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::reg(16, 64),
+            }],
+        ),
+        (0..trials::TRIALS).map(|_| Vec::new()).collect(),
+    );
+    assert_eq!(state.segment_bases.len(), 1);
+    assert!(declared_functions(&state.code).is_empty());
+    let provider = &state.segment_bases[0].provider;
+    let scratch = scratch_dir("segment-binding");
+    let unbound = scratch.join("unbound.c");
+    std::fs::write(
+        &unbound,
+        format!(
+            "{HEADER}{}\nint main(void) {{ return (int)segment_binding(); }}\n",
+            state.code
+        ),
+    )
+    .expect("saved source");
+    let syntax = Command::new(COMPILER)
+        .args(FLAGS)
+        .arg("-fsyntax-only")
+        .arg(&unbound)
+        .output()
+        .expect("a C compiler");
+    assert!(
+        syntax.status.success(),
+        "{}",
+        String::from_utf8_lossy(&syntax.stderr)
+    );
+    let linked = Command::new(COMPILER)
+        .args(FLAGS)
+        .arg(&unbound)
+        .arg("-o")
+        .arg(scratch.join("unbound"))
+        .output()
+        .expect("a C compiler");
+    assert!(
+        !linked.status.success(),
+        "a missing state adapter must not link"
+    );
+    assert!(
+        String::from_utf8_lossy(&linked.stderr).contains(provider),
+        "{}",
+        String::from_utf8_lossy(&linked.stderr)
+    );
+
+    let mut address = printed_candidate(
+        synthetic_ir(
+            "address_binding",
+            Vec::new(),
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::Const(0),
+            }],
+        ),
+        (0..trials::TRIALS).map(|_| Vec::new()).collect(),
+    );
+    // This address value is checked for compilation and binding, not execution.
+    address.code = format!(
+        "void {provider}(void);\nuint64_t address_binding(void) {{\n    return (uint64_t)(uintptr_t)&{provider};\n}}\n"
+    );
+    assert_eq!(declared_functions(&address.code), vec![provider.as_str()]);
+    let source = program(&[&state, &address], &[&[], &[]], &[0, 1], Mode::Memory);
+    assert!(source.text.contains(&format!("void {provider}(void) {{}}")));
+    assert!(!source.text.contains(&format!("uint64_t {provider}(void)")));
+    let executable = build(&source, &scratch, "-O0", &[]);
+    assert!(executable.is_file());
+    std::fs::remove_dir_all(&scratch).ok();
+}
+
 fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt>) -> FunctionIr {
     FunctionIr {
         isa: Isa::X86_64,
@@ -1291,9 +1797,17 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
 }
 
 fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
+    let rendered = velk::render::render_with_dependencies(&ir, &[], &Default::default(), &[]);
+    let states = if rendered.segment_bases.is_empty() {
+        Vec::new()
+    } else {
+        segment_states()
+    };
     Candidate {
         label: ir.name.clone().expect("a named synthetic function"),
-        code: velk::render::render(&ir, &[], &Default::default(), &[]),
+        code: rendered.code,
+        segment_bases: rendered.segment_bases,
+        states,
         params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
         inputs,
         void: ir.ret_type == CType::Void,
@@ -1318,7 +1832,10 @@ fn check_candidates(name: &str, candidates: Vec<Candidate>, mode: Mode, compiler
     let scratch = scratch_dir(name);
     let results = check(&[fixture], &scratch, mode, compiler_args);
     std::fs::remove_dir_all(&scratch).ok();
-    let result = &results[0];
+    assert_comparisons(&results[0], count);
+}
+
+fn assert_comparisons(result: &Findings, count: usize) {
     assert!(result.lines.is_empty(), "{}", result.lines.join("\n"));
     assert!(result.skipped.is_empty(), "{:?}", result.skipped);
     assert_eq!(result.compiled, count);
@@ -1408,11 +1925,93 @@ struct Candidate {
     label: String,
     ir: FunctionIr,
     code: String,
+    segment_bases: Vec<SegmentBaseRead>,
+    states: Vec<SegmentState>,
     params: Vec<String>,
     /// Each trial's argument values, in parameter order.
     inputs: Vec<Vec<u64>>,
     /// It returns nothing, so only its effects compare.
     void: bool,
+}
+
+#[derive(Clone)]
+struct SegmentState {
+    fs: Option<u64>,
+    gs: Option<u64>,
+    memory: Vec<(u64, u64)>,
+}
+
+impl SegmentState {
+    fn base(&self, segment: SegmentBase) -> Option<u64> {
+        match segment {
+            SegmentBase::Fs => self.fs,
+            SegmentBase::Gs => self.gs,
+        }
+    }
+}
+
+fn segment_word(trial: u64, context: u64, slot: u64) -> u64 {
+    0x8123_4567_89ab_cdef ^ (trial << 32) ^ (context << 16) ^ slot
+}
+
+fn segment_states() -> Vec<SegmentState> {
+    (0..trials::TRIALS)
+        .map(|trial| {
+            let mut memory = Vec::new();
+            for context in 0..2 {
+                let fs = REGION + 0x1000 + context * 0x1000;
+                let gs = REGION + 0x3000 + context * 0x1000;
+                let target = REGION + 0x6000 + context * 0x1000;
+                let nested = if context == 0 {
+                    0
+                } else {
+                    0x8000_0000_0000_0001
+                };
+                memory.extend([
+                    (fs, target),
+                    (fs - 8, segment_word(trial, context, 1)),
+                    (fs + 8, segment_word(trial, context, 2)),
+                    (gs, segment_word(trial, context, 3)),
+                    (gs - 8, segment_word(trial, context, 4)),
+                    (gs + 8, segment_word(trial, context, 5)),
+                    (target - 0x20, nested),
+                    (fs - 0x20, u64::from(nested == 0)),
+                ]);
+            }
+            SegmentState {
+                fs: Some(REGION + 0x1000 + (trial % 2) * 0x1000),
+                gs: Some(REGION + 0x3000 + (trial % 2) * 0x1000),
+                memory,
+            }
+        })
+        .collect()
+}
+
+fn segment_state(candidate: &Candidate, trial: u64) -> Result<Option<&SegmentState>, &'static str> {
+    if candidate.segment_bases.is_empty() && candidate.states.is_empty() {
+        return Ok(None);
+    }
+    if candidate.states.len() != trials::TRIALS as usize {
+        return Err("segment state is required for every trial");
+    }
+    let state = &candidate.states[trial as usize];
+    for dependency in &candidate.segment_bases {
+        let Some(base) = state.base(dependency.segment) else {
+            return Err("a required segment base is missing");
+        };
+        if !(REGION..REGION + REGION_SIZE).contains(&base) {
+            return Err("the controlled segment base is outside the region");
+        }
+    }
+    if state.memory.iter().any(|(addr, _)| {
+        *addr < REGION
+            || addr
+                .checked_add(8)
+                .is_none_or(|end| end > REGION + REGION_SIZE)
+    }) {
+        return Err("segment memory is outside the region");
+    }
+    Ok(Some(state))
 }
 
 fn prepare(fixture: &Path, mode: Mode) -> Fixture {
@@ -1435,9 +2034,14 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
             continue;
         }
         let ir = analysis.ir.clone();
-        let code = binary
-            .decompile(function.addr, None)
+        let rendered = binary
+            .decompile_with_dependencies(function.addr, None)
             .unwrap_or_else(|error| panic!("{error}"));
+        if mode == Mode::Registers && !rendered.segment_bases.is_empty() {
+            *excluded.entry("requires segment state").or_default() += 1;
+            continue;
+        }
+        let code = rendered.code;
         // The printed code reads such a register uninitialized, which C
         // leaves undefined.
         if code.lines().any(|line| {
@@ -1479,6 +2083,12 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
             ),
             params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
             void: ir.ret_type == CType::Void,
+            states: if rendered.segment_bases.is_empty() {
+                Vec::new()
+            } else {
+                segment_states()
+            },
+            segment_bases: rendered.segment_bases,
             ir,
             code,
             inputs,
@@ -1684,7 +2294,17 @@ fn check(
         .flat_map(|(index, fixture)| fixture.candidates.iter().map(move |c| (index, c)))
         .collect();
     let candidates: Vec<&Candidate> = all.iter().map(|(_, candidate)| *candidate).collect();
-    let (alive, failures) = compiles(&candidates, &scratch.join("check.c"), mode);
+    let initial_memory: Vec<&[(u64, u64)]> = all
+        .iter()
+        .map(|(fixture, _)| fixtures[*fixture].initial_memory.as_slice())
+        .collect();
+    for candidate in &candidates {
+        for trial in 0..trials::TRIALS {
+            segment_state(candidate, trial)
+                .unwrap_or_else(|reason| panic!("{}: {reason}", candidate.label));
+        }
+    }
+    let (alive, failures) = compiles(&candidates, &initial_memory, &scratch.join("check.c"), mode);
     for (index, message) in &failures {
         let (fixture, candidate) = all[*index];
         results[fixture].failed += 1;
@@ -1698,7 +2318,7 @@ fn check(
     if alive.is_empty() {
         return results;
     }
-    let source = program(&candidates, &alive, mode);
+    let source = program(&candidates, &initial_memory, &alive, mode);
     let programs: Vec<PathBuf> = std::thread::scope(|scope| {
         let handles: Vec<_> = LEVELS
             .iter()
@@ -1854,7 +2474,7 @@ fn interpret(
         .zip(arguments.iter().copied())
         .collect();
     registers.extend_from_slice(&fixture.entry_registers);
-    let mut memory = fixture.initial_memory.clone();
+    let mut memory = Vec::new();
     // The region holds what the trial's seed hashes, whatever seed reads
     // the rest, so a second seed tells registers apart and not memory.
     if mode == Mode::Memory {
@@ -1864,6 +2484,22 @@ fn interpret(
             });
             (addr, word)
         }));
+    }
+    memory.extend_from_slice(&fixture.initial_memory);
+    if let Some(state) = segment_state(candidate, trial)
+        .unwrap_or_else(|reason| panic!("{}: {reason}", candidate.label))
+    {
+        for dependency in &candidate.segment_bases {
+            let index = match dependency.segment {
+                SegmentBase::Fs => 16,
+                SegmentBase::Gs => 17,
+            };
+            registers.push((
+                index,
+                state.base(dependency.segment).expect("configured segment"),
+            ));
+        }
+        memory.extend_from_slice(&state.memory);
     }
     let setup = eval::Setup {
         seed: trial,
@@ -1898,10 +2534,28 @@ fn mask(candidate: &Candidate) -> u64 {
 
 fn same_outcome(a: &Outcome, b: &Outcome, candidate: &Candidate) -> bool {
     match (a, b) {
-        (Outcome::Return { value: x, .. }, Outcome::Return { value: y, .. }) => {
-            x & mask(candidate) == y & mask(candidate)
-        }
-        (Outcome::Trap { .. }, Outcome::Trap { .. }) => true,
+        (
+            Outcome::Return {
+                value: x,
+                calls: xc,
+                memory: xm,
+            },
+            Outcome::Return {
+                value: y,
+                calls: yc,
+                memory: ym,
+            },
+        ) => (candidate.void || x & mask(candidate) == y & mask(candidate)) && xc == yc && xm == ym,
+        (
+            Outcome::Trap {
+                calls: xc,
+                memory: xm,
+            },
+            Outcome::Trap {
+                calls: yc,
+                memory: ym,
+            },
+        ) => xc == yc && xm == ym,
         _ => false,
     }
 }
@@ -1981,13 +2635,14 @@ fn request(mode: char, index: usize, arguments: &[u64]) -> String {
 /// checking again until the rest pass.
 fn compiles(
     candidates: &[&Candidate],
+    initial_memory: &[&[(u64, u64)]],
     source: &Path,
     mode: Mode,
 ) -> (Vec<usize>, BTreeMap<usize, String>) {
     let mut alive: Vec<usize> = (0..candidates.len()).collect();
     let mut failures = BTreeMap::new();
     for _ in 0..COMPILE_ROUNDS {
-        let text = program(candidates, &alive, mode);
+        let text = program(candidates, initial_memory, &alive, mode);
         std::fs::write(source, &text.text).unwrap_or_else(|error| panic!("{error}"));
         let checked = Command::new(COMPILER)
             .args(FLAGS)
@@ -2054,7 +2709,7 @@ fn build(source: &Program, scratch: &Path, level: &str, compiler_args: &[&str]) 
         .unwrap_or_else(|error| panic!("{COMPILER}: {error}"));
     assert!(
         compiled.status.success(),
-        "{COMPILER} {level} fails on {} after its syntax passed:\n{}",
+        "{COMPILER} {level} fails on {}:\n{}",
         path.display(),
         String::from_utf8_lossy(&compiled.stderr)
     );
@@ -2067,8 +2722,175 @@ struct Program {
     ranges: Vec<(usize, std::ops::RangeInclusive<usize>)>,
 }
 
+fn fresh_name(reserved: &mut BTreeSet<String>, preferred: &str) -> String {
+    let mut name = preferred.to_owned();
+    let mut suffix = 0;
+    while !reserved.insert(name.clone()) {
+        suffix += 1;
+        name = format!("{preferred}_{suffix}");
+    }
+    name
+}
+
+fn replace_c_identifier(code: &str, from: &str, to: &str) -> String {
+    let mut out = String::new();
+    let mut index = 0;
+    while index < code.len() {
+        let rest = &code[index..];
+        let first = rest.chars().next().expect("remaining C");
+        let length = if rest.starts_with("/*") {
+            rest.find("*/").map_or(rest.len(), |end| end + 2)
+        } else if rest.starts_with("//") {
+            rest.find('\n').unwrap_or(rest.len())
+        } else if matches!(first, '\'' | '"') {
+            let mut escaped = false;
+            let mut length = rest.len();
+            for (at, ch) in rest.char_indices().skip(1) {
+                if escaped {
+                    escaped = false;
+                } else if ch == '\\' {
+                    escaped = true;
+                } else if ch == first {
+                    length = at + ch.len_utf8();
+                    break;
+                }
+            }
+            length
+        } else if first.is_ascii_alphabetic() || first == '_' {
+            rest.find(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_')
+                .unwrap_or(rest.len())
+        } else {
+            first.len_utf8()
+        };
+        let token = &rest[..length];
+        out.push_str(if token == from { to } else { token });
+        index += length;
+    }
+    out
+}
+
+fn bound_candidate(
+    candidate: &Candidate,
+    index: usize,
+    reserved: &mut BTreeSet<String>,
+) -> (String, Vec<(String, SegmentBase)>) {
+    let mut code = renamed(&candidate.code, index);
+    let mut seen = BTreeMap::new();
+    let mut providers = Vec::new();
+    for dependency in &candidate.segment_bases {
+        if let Some(previous) = seen.insert(&dependency.provider, dependency.segment) {
+            assert_eq!(previous, dependency.segment, "conflicting segment binding");
+            continue;
+        }
+        let kind = match dependency.segment {
+            SegmentBase::Fs => "fs",
+            SegmentBase::Gs => "gs",
+        };
+        let name = fresh_name(reserved, &format!("velk_segment_{index}_{kind}"));
+        code = replace_c_identifier(&code, &dependency.provider, &name);
+        providers.push((name, dependency.segment));
+    }
+    (code, providers)
+}
+
+fn write_memory_words(text: &mut String, words: &[(u64, u64)]) {
+    for (addr, value) in words {
+        writeln!(text, "        for (unsigned byte = 0; byte < 8; byte++) ((volatile uint8_t *)(uintptr_t)0x{addr:x}ULL)[byte] = (uint8_t)(0x{value:x}ULL >> (8 * byte));")
+            .expect("writing to a String");
+    }
+}
+
+fn segment_support(
+    candidates: &[&Candidate],
+    initial_memory: &[&[(u64, u64)]],
+    alive: &[usize],
+    providers: &[(String, SegmentBase)],
+    reserved: &mut BTreeSet<String>,
+) -> (String, String, String) {
+    let prepare = fresh_name(reserved, "velk_prepare");
+    let overlay = fresh_name(reserved, "velk_fixture_overlay");
+    let active = fresh_name(reserved, "velk_active_candidate");
+    let values = [
+        fresh_name(reserved, "velk_fs_value"),
+        fresh_name(reserved, "velk_gs_value"),
+    ];
+    let valid = [
+        fresh_name(reserved, "velk_fs_valid"),
+        fresh_name(reserved, "velk_gs_valid"),
+    ];
+    let mut text = format!(
+        "static uint64_t {}, {};\nstatic bool {}, {};\nstatic volatile sig_atomic_t {active} = -1;\n",
+        values[0], values[1], valid[0], valid[1]
+    );
+    writeln!(
+        text,
+        "static void {overlay}(uintptr_t start, uint64_t size) {{\n    switch ({active}) {{"
+    )
+    .expect("writing to a String");
+    for &index in alive {
+        if initial_memory[index].is_empty() {
+            continue;
+        }
+        writeln!(text, "    case {index}:").expect("writing to a String");
+        for (addr, value) in initial_memory[index] {
+            writeln!(text, "        for (unsigned byte = 0; byte < 8; byte++) {{\n            uintptr_t addr = (uintptr_t)0x{addr:x}ULL + byte;\n            if (addr >= start && addr - start < size) *(volatile uint8_t *)addr = (uint8_t)(0x{value:x}ULL >> (8 * byte));\n        }}").expect("writing to a String");
+        }
+        text.push_str("        break;\n");
+    }
+    text.push_str("    }\n}\n");
+    for (provider, segment) in providers {
+        let slot = match segment {
+            SegmentBase::Fs => 0,
+            SegmentBase::Gs => 1,
+        };
+        writeln!(
+            text,
+            "uint64_t {provider}(void) {{ if (!{}) __builtin_trap(); return {}; }}",
+            valid[slot], values[slot]
+        )
+        .expect("writing to a String");
+    }
+    writeln!(text, "static void {prepare}(int k, uint64_t trial) {{\n    {active} = k;\n    {} = false; {} = false;\n    {overlay}(REGION_START, REGION_BYTES);\n    switch (k) {{", valid[0], valid[1]).expect("writing to a String");
+    for &index in alive {
+        let candidate = candidates[index];
+        if candidate.states.is_empty() {
+            continue;
+        }
+        writeln!(text, "    case {index}:").expect("writing to a String");
+        text.push_str("        switch (trial) {\n");
+        for trial in 0..trials::TRIALS {
+            let state = segment_state(candidate, trial)
+                .expect("configured segment state")
+                .expect("a trial state");
+            writeln!(text, "        case {trial}:").expect("writing to a String");
+            write_memory_words(&mut text, &state.memory);
+            for (slot, segment) in [SegmentBase::Fs, SegmentBase::Gs].into_iter().enumerate() {
+                if let Some(base) = state.base(segment) {
+                    writeln!(
+                        text,
+                        "            {} = 0x{base:x}ULL; {} = true;",
+                        values[slot], valid[slot]
+                    )
+                    .expect("writing to a String");
+                }
+            }
+            text.push_str("            break;\n");
+        }
+        text.push_str("        default: __builtin_trap();\n        }\n");
+        text.push_str("        break;\n");
+    }
+    text.push_str("    }\n}\n");
+    (text, prepare, overlay)
+}
+
 /// The C program holding the functions in `alive`.
-fn program(candidates: &[&Candidate], alive: &[usize], mode: Mode) -> Program {
+fn program(
+    candidates: &[&Candidate],
+    initial_memory: &[&[(u64, u64)]],
+    alive: &[usize],
+    mode: Mode,
+) -> Program {
+    assert_eq!(candidates.len(), initial_memory.len());
     let mut text = String::from(HEADER);
     if mode == Mode::Memory {
         writeln!(
@@ -2078,9 +2900,20 @@ fn program(candidates: &[&Candidate], alive: &[usize], mode: Mode) -> Program {
         .expect("writing to a String");
     }
     let mut ranges = Vec::new();
+    let mut reserved: BTreeSet<String> = candidates
+        .iter()
+        .map(|candidate| candidate.code.as_str())
+        .chain([HEADER, DRIVER, MEMORY_DRIVER])
+        .flat_map(|code| code.split(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_'))
+        .filter(|word| !word.is_empty())
+        .map(str::to_owned)
+        .collect();
+    reserved.extend((0..candidates.len()).map(|index| format!("velk_f{index}")));
+    let mut providers = Vec::new();
     let mut line = text.lines().count() + 1;
     for &index in alive {
-        let code = renamed(&candidates[index].code, index);
+        let (code, bindings) = bound_candidate(candidates[index], index, &mut reserved);
+        providers.extend(bindings);
         let lines = code.lines().count();
         ranges.push((index, line..=line + lines - 1));
         line += lines;
@@ -2132,10 +2965,28 @@ fn program(candidates: &[&Candidate], alive: &[usize], mode: Mode) -> Program {
         text.push_str(" break;\n");
     }
     text.push_str("    }\n}\n");
-    text.push_str(match mode {
-        Mode::Registers => DRIVER,
-        Mode::Memory => MEMORY_DRIVER,
-    });
+    if mode == Mode::Memory {
+        let (support, prepare, overlay) =
+            segment_support(candidates, initial_memory, alive, &providers, &mut reserved);
+        text.push_str(&support);
+        text.push_str(
+            &MEMORY_DRIVER
+                .replace(
+                    "velk_prepare(k, velk_seed)",
+                    &format!("{prepare}(k, velk_seed)"),
+                )
+                .replace(
+                    "velk_fixture_overlay(page, velk_page)",
+                    &format!("{overlay}(page, velk_page)"),
+                ),
+        );
+    } else {
+        assert!(
+            providers.is_empty(),
+            "register comparisons need explicit segment state"
+        );
+        text.push_str(DRIVER);
+    }
     Program { text, ranges }
 }
 

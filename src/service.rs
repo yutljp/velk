@@ -176,6 +176,16 @@ impl Binary {
     }
 
     pub fn decompile(&mut self, addr: u64, signatures: Option<&Database>) -> Result<String> {
+        self.decompile_with_dependencies(addr, signatures)
+            .map(|rendered| rendered.code)
+    }
+
+    /// Renders pseudo-C and the external segment-base reads its caller must bind.
+    pub fn decompile_with_dependencies(
+        &mut self,
+        addr: u64,
+        signatures: Option<&Database>,
+    ) -> Result<render::Rendered> {
         let function = self
             .image
             .functions
@@ -187,17 +197,18 @@ impl Binary {
                 addr,
                 source: source.clone(),
             })?;
-        let mut text = String::new();
-        if let Some(name) = identify(signatures, Ok(analysis)) {
-            text.push_str(&format!("/* identified: {name} */\n"));
-        }
-        text.push_str(&render::render(
+        let mut rendered = render::render_with_dependencies(
             &analysis.ir,
             &analysis.references,
             &self.symbols,
             &self.data_ranges,
-        ));
-        Ok(text)
+        );
+        if let Some(name) = identify(signatures, Ok(analysis)) {
+            rendered
+                .code
+                .insert_str(0, &format!("/* identified: {name} */\n"));
+        }
+        Ok(rendered)
     }
 
     pub fn disasm(&self, addr: u64, max_lines: usize) -> Result<Vec<String>> {
@@ -305,4 +316,80 @@ fn modified(path: &Path) -> Result<SystemTime> {
             path: path.to_owned(),
             source,
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{CType, Expr, FunctionIr, Stmt};
+    use crate::loader::Isa;
+
+    fn fixture(name: &str) -> Binary {
+        Binary::open(
+            &Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(name),
+        )
+        .expect("fixture loads")
+    }
+
+    #[test]
+    fn decompile_string_wrapper_preserves_dependency_free_output() {
+        let mut binary = fixture("arm64.o");
+        let addr = binary.find("pair_sum").expect("fixture function").addr;
+        let rendered = binary
+            .decompile_with_dependencies(addr, None)
+            .expect("typed decompilation");
+        assert!(rendered.segment_bases.is_empty());
+        assert_eq!(binary.decompile(addr, None).unwrap(), rendered.code);
+        assert!(matches!(
+            binary.decompile_with_dependencies(u64::MAX, None),
+            Err(Error::NoFunctionAt(u64::MAX))
+        ));
+    }
+
+    #[test]
+    fn decompile_keeps_dependencies_and_identification_from_cached_analysis() {
+        let mut binary = fixture("x64_div.o");
+        let addr = binary.find("smod3x").expect("fixture function").addr;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::Reg {
+                    index: crate::arch::x86::FS_BASE,
+                    width: 64,
+                },
+            }],
+        );
+        ir.addr = addr;
+        ir.ret_type = CType::U64;
+        let signatures = Database::new(vec![sigs::entry("segment_reader", None, &ir).unwrap()]);
+        binary.analyses.insert(
+            addr,
+            Ok(Analysis {
+                ir,
+                references: Vec::new(),
+            }),
+        );
+        let rendered = binary
+            .decompile_with_dependencies(addr, Some(&signatures))
+            .expect("typed decompilation");
+        assert_eq!(rendered.segment_bases.len(), 1);
+        let dependency = &rendered.segment_bases[0];
+        assert_eq!(dependency.segment, render::SegmentBase::Fs);
+        assert!(
+            rendered
+                .code
+                .contains(&format!("uint64_t {}(void);", dependency.provider))
+        );
+        assert!(
+            rendered
+                .code
+                .starts_with("/* identified: segment_reader */\n")
+        );
+        assert_eq!(
+            binary.decompile(addr, Some(&signatures)).unwrap(),
+            rendered.code
+        );
+    }
 }

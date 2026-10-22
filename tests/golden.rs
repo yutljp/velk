@@ -180,7 +180,7 @@ impl std::fmt::Display for Readability {
     }
 }
 
-/// A recovered local or an initialized pointer to global storage.
+/// A recovered local or an initialized scalar or pointer.
 fn is_declaration(code: &str) -> bool {
     let Some(body) = code.strip_prefix("    ") else {
         return false;
@@ -192,7 +192,11 @@ fn is_declaration(code: &str) -> bool {
         return false;
     }
     if let Some((declaration, _)) = body.split_once('=') {
-        let Some((ty, name)) = declaration.trim_end().split_once('*') else {
+        let declaration = declaration.trim_end();
+        let Some((ty, name)) = declaration
+            .split_once('*')
+            .or_else(|| declaration.rsplit_once(' '))
+        else {
             return false;
         };
         let name = name.trim();
@@ -233,6 +237,9 @@ fn declarations_include_named_global_views() {
         "    uint8_t *const bytes_u8 = (uint8_t *)(uintptr_t)0x1001;",
         "    float *const samples = (float *)(uintptr_t)0x2000;",
         "    double *values = (double *)(uintptr_t)0x3000;",
+        "    uint64_t fs_base = velk_x86_fs_base();",
+        "    uint64_t target_state = read_target_state();",
+        "    float gain = 1.0f;",
     ] {
         assert!(is_declaration(code), "{code}");
     }
@@ -242,6 +249,14 @@ fn declarations_include_named_global_views() {
         "    counter[0] = 1;",
         "    counter = (uint32_t *)(uintptr_t)0x1000;",
         "    counter *= 2;",
+        "    fs_base = velk_x86_fs_base();",
+        "    target_state = read_target_state();",
+        "    object.field = read_target_state();",
+        "    object->field = read_target_state();",
+        "    uint64_t 1state = read_target_state();",
+        "    uint64_t state[0] = read_target_state();",
+        "    return read_target_state();",
+        "    consume(read_target_state());",
         "    return *counter;",
         "    return counter;",
         "    return v1;",
@@ -255,10 +270,12 @@ fn declarations_include_named_global_views() {
     let mut counts = Readability::default();
     counts.add(concat!(
         "    uint32_t *const counter = (uint32_t *)(uintptr_t)0x1000;\n",
+        "    uint64_t fs_base = velk_x86_fs_base();\n",
+        "    float gain = 1.0f;\n",
         "    uint64_t rax;\n",
         "    *counter = rax;\n",
     ));
-    assert_eq!(counts.variables, 1);
+    assert_eq!(counts.variables, 3);
     assert_eq!(counts.registers, 2);
 }
 

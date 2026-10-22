@@ -37,7 +37,7 @@ running an already built velk binary.
 | `src/lift/hardware/` | Lifted instructions, registers, conditions, and memory | Processor execution on supported hosts |
 | `src/analysis/semantics_tests.rs` | Optimization and structure lowering preserve behavior | Pre-transformation IR interpreter results |
 | `src/passes/copies.rs`, `read_once.rs` units | Assignment/read truncation and signed-operation/comparison widths | Full before/after interpreter outcomes |
-| `src/render/` units | Pointer/integer distinctions, real member access, truth values, floating mask preconditions | Expected typed pseudo-C and recognition controls |
+| `src/render/` units | Pointer/integer distinctions, real member access, truth values, floating mask preconditions, segment-base bindings | Expected typed pseudo-C and recognition controls |
 | `tests/loader.rs` | Section allocation, relocation, nested DWARF member type/width/ownership | Input metadata and declared layout |
 | `tests/recompile.rs` | Generated C results and memory effects | Optimized IR interpreter outcomes |
 | `tests/invariants.rs` | Missing destinations, undefined register reads, omitted statements | Recorded structural properties |
@@ -86,6 +86,20 @@ views, declared members, signed loads, overlapping accesses, raw float
 bits, pointers, shifts, and whole-region checksums. The shift suite adds
 strict shift sanitization and disables the common wrapping option so
 invalid C shifts are observable.
+
+Segment-base comparisons require explicit target FS/GS values and memory
+contents shared by the interpreter and C adapter. These are test inputs,
+not host TLS values. Dependency records identify each selected provider
+by its FS or GS kind; function-address prototypes remain separate.
+Memory initialization must apply the hashed region first, then fixture
+contents, then per-trial state. Fixture bytes outside the fixed region are
+applied only after an accessed page is first mapped and hash-filled;
+unreferenced pages are not touched. A boundary regression covers clipped,
+overlapping fixture words and reads on both sides of the region boundary.
+A successful comparison of a void function
+does not establish that a compiler retained unused memory reads. Returning
+loads and observed stores are needed to exercise those accesses. These
+checks do not validate a target-native TLS adapter or concurrent threads.
 
 The floating mask suite uses explicit finite inputs and signed zeros,
 passed as integer bits through memory. It exercises masks preserving every

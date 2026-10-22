@@ -12,6 +12,27 @@ mod widths;
 
 pub use symbols::Symbols;
 
+/// An x86 segment base supplied by the target execution context.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum SegmentBase {
+    Fs,
+    Gs,
+}
+
+/// The external C binding for one required entry segment base.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SegmentBaseRead {
+    pub segment: SegmentBase,
+    pub provider: String,
+}
+
+/// Printed code and the target state it requires from its caller.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Rendered {
+    pub code: String,
+    pub segment_bases: Vec<SegmentBaseRead>,
+}
+
 use crate::arch::stack_pointer;
 use expr::condition;
 use std::collections::HashMap;
@@ -72,7 +93,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             Some((*address, name))
         })
         .collect();
-    Symbols {
+    let mut symbols = Symbols {
         functions,
         import_slots: image
             .imports
@@ -84,7 +105,21 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .iter()
             .map(|(address, name)| (*address, name.clone()))
             .collect(),
+        ..Symbols::default()
+    };
+    for name in image
+        .functions
+        .values()
+        .flat_map(|function| function.name.iter().chain(&function.aliases))
+        .chain(image.imports.values())
+        .chain(image.data_symbols.values())
+    {
+        symbols.reserve_name(name);
     }
+    for name in symbols.functions.values().cloned().collect::<Vec<_>>() {
+        symbols.reserve_name(&name);
+    }
+    symbols
 }
 
 /// A demangled name as callers read it: without its parameter list, its
@@ -190,6 +225,16 @@ pub fn render(
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
 ) -> String {
+    render_with_dependencies(ir, references, symbols, data_ranges).code
+}
+
+/// Print entry segment reads as external providers without choosing their values.
+pub fn render_with_dependencies(
+    ir: &FunctionIr,
+    references: &[Reference],
+    symbols: &Symbols,
+    data_ranges: &[(u64, u64)],
+) -> Rendered {
     let mut folded = ir.clone();
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
@@ -236,7 +281,7 @@ fn render_with(
     locals: Locals,
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
-) -> String {
+) -> Rendered {
     let mut names: HashMap<u16, &str> = ir
         .params
         .iter()
@@ -264,7 +309,7 @@ fn render_with(
     let narrow_regs = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
     let variable_types = variables::variable_types(ir, &narrow_regs, float_return);
-    let declared_registers =
+    let mut declared_registers =
         declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
     let floats: HashMap<u16, crate::ir::Precision> = variable_types
         .iter()
@@ -418,6 +463,40 @@ fn render_with(
                 .filter(|name| !name.is_empty())
                 .map(str::to_owned),
         );
+    }
+    let mut reads = std::collections::HashSet::new();
+    if ir.isa == crate::loader::Isa::X86_64 {
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            for value in stmt.operands() {
+                crate::ir::visit::expr_reads(value, &mut reads);
+            }
+        }
+    }
+    let needed: Vec<_> = [
+        (SegmentBase::Fs, crate::arch::x86::FS_BASE, "fs"),
+        (SegmentBase::Gs, crate::arch::x86::GS_BASE, "gs"),
+    ]
+    .into_iter()
+    .filter(|(_, index, _)| reads.contains(index) && !names.contains_key(index))
+    .collect();
+    let mut segment_bases = Vec::new();
+    if !needed.is_empty() {
+        let mut segment_reserved: std::collections::HashSet<String> = reserved
+            .iter()
+            .cloned()
+            .chain(symbols.reserved_names.iter().cloned())
+            .chain(symbols.data.values().map(|name| sanitize(name)))
+            .collect();
+        for (segment, index, base) in needed {
+            let provider = vacant_name(&format!("velk_x86_{base}_base"), &mut segment_reserved);
+            let snapshot = vacant_name(&format!("{base}_base"), &mut segment_reserved);
+            reserved.extend([provider.clone(), snapshot.clone()]);
+            declared_registers.insert(index, declared(&CType::U64, false).expect("an integer"));
+            segment_bases.push((segment, index, provider, snapshot));
+        }
+    }
+    for (_, index, _, snapshot) in &segment_bases {
+        names.insert(*index, snapshot);
     }
     let mut ctx = Ctx {
         isa: ir.isa,
@@ -576,18 +655,30 @@ fn render_with(
     }
     ctx.read_once = calls::read_once(&nodes);
     render_nodes(&nodes, 1, &mut body, &ctx);
+    let segment_bases: Vec<_> = segment_bases
+        .iter()
+        .filter(|(_, _, _, snapshot)| code_mentions(&body, snapshot))
+        .collect();
     // A function whose address the body takes is declared ahead of it,
     // with no type known for it.
     let own = sanitize(&name);
-    let prototypes: String = ctx
+    let mut prototypes: String = ctx
         .taken
         .borrow()
         .iter()
         .filter(|taken| **taken != own)
         .map(|taken| format!("void {taken}(void);\n"))
         .collect();
+    for (_, _, provider, _) in &segment_bases {
+        prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
+    }
     out.insert_str(prototypes_at, &prototypes);
     let mut declared = 0;
+    for (_, _, provider, snapshot) in &segment_bases {
+        indent(1, &mut out);
+        out.push_str(&format!("uint64_t {snapshot} = {provider}();\n"));
+        declared += 1;
+    }
     for declaration in ctx.globals.declarations(&body) {
         indent(1, &mut out);
         out.push_str(&declaration);
@@ -647,7 +738,76 @@ fn render_with(
     }
     let debug = debug_definitions(ir, &out);
     out.insert_str(definitions_at, &debug);
-    out
+    Rendered {
+        code: out,
+        segment_bases: segment_bases
+            .into_iter()
+            .map(|(segment, _, provider, _)| SegmentBaseRead {
+                segment: *segment,
+                provider: provider.clone(),
+            })
+            .collect(),
+    }
+}
+
+fn vacant_name(base: &str, reserved: &mut std::collections::HashSet<String>) -> String {
+    let mut name = base.to_owned();
+    let mut suffix = 2;
+    while !reserved.insert(name.clone()) {
+        name = format!("{base}_{suffix}");
+        suffix += 1;
+    }
+    name
+}
+
+fn code_mentions(text: &str, name: &str) -> bool {
+    let bytes = text.as_bytes();
+    let mut at = 0;
+    let mut member = false;
+    while at < bytes.len() {
+        if bytes[at..].starts_with(b"//") {
+            while at < bytes.len() && bytes[at] != b'\n' {
+                at += 1;
+            }
+        } else if bytes[at..].starts_with(b"/*") {
+            at += 2;
+            while at < bytes.len() && !bytes[at..].starts_with(b"*/") {
+                at += 1;
+            }
+            at = (at + 2).min(bytes.len());
+        } else if matches!(bytes[at], b'\'' | b'"') {
+            member = false;
+            let quote = bytes[at];
+            at += 1;
+            while at < bytes.len() {
+                let next = bytes[at];
+                at += 1;
+                if next == b'\\' {
+                    at = (at + 1).min(bytes.len());
+                } else if next == quote {
+                    break;
+                }
+            }
+        } else if bytes[at..].starts_with(b"->") {
+            member = true;
+            at += 2;
+        } else if bytes[at].is_ascii_alphabetic() || bytes[at] == b'_' {
+            let start = at;
+            while at < bytes.len() && (bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_') {
+                at += 1;
+            }
+            if !member && &text[start..at] == name {
+                return true;
+            }
+            member = false;
+        } else {
+            if !bytes[at].is_ascii_whitespace() {
+                member = bytes[at] == b'.';
+            }
+            at += 1;
+        }
+    }
+    false
 }
 
 /// A structure's definition: on one line when short, else a member a line.
@@ -2011,7 +2171,9 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{Symbols, callee_names, render};
+    use super::{
+        SegmentBase, SegmentBaseRead, Symbols, callee_names, render, render_with_dependencies,
+    };
     use crate::ir::{
         BinOp, CType, Expr, FunctionIr, Operation, Param, Precision, RegRef, Stmt, VARIABLE_BASE,
     };
@@ -3140,6 +3302,343 @@ mod tests {
     }
 
     #[test]
+    fn segment_reads_have_ordered_providers_and_entry_snapshots() {
+        let fs = crate::arch::x86::FS_BASE;
+        let gs = crate::arch::x86::GS_BASE;
+        for registers in [vec![fs], vec![gs], vec![gs, fs, fs]] {
+            let value = registers
+                .iter()
+                .map(|index| load(Expr::reg(*index, 64), 8))
+                .reduce(|lhs, rhs| Expr::bin(BinOp::Add, lhs, rhs))
+                .unwrap();
+            let ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }]);
+            let symbols = Symbols::default();
+            let rendered = render_with_dependencies(&ir, &[], &symbols, &[]);
+            assert_eq!(render(&ir, &[], &symbols, &[]), rendered.code);
+            let expected: Vec<_> = [(fs, SegmentBase::Fs, "fs"), (gs, SegmentBase::Gs, "gs")]
+                .into_iter()
+                .filter(|(index, _, _)| registers.contains(index))
+                .map(|(_, segment, base)| SegmentBaseRead {
+                    segment,
+                    provider: format!("velk_x86_{base}_base"),
+                })
+                .collect();
+            assert_eq!(rendered.segment_bases, expected);
+            for binding in &rendered.segment_bases {
+                let base = match binding.segment {
+                    SegmentBase::Fs => "fs_base",
+                    SegmentBase::Gs => "gs_base",
+                };
+                assert!(
+                    rendered
+                        .code
+                        .contains(&format!("uint64_t {}(void);\n", binding.provider)),
+                    "{}",
+                    rendered.code
+                );
+                let snapshot = format!("    uint64_t {base} = {}();\n", binding.provider);
+                assert_eq!(
+                    rendered.code.matches(&snapshot).count(),
+                    1,
+                    "{}",
+                    rendered.code
+                );
+                assert!(
+                    rendered.code.contains(&format!("*(uint64_t *)({base})")),
+                    "{}",
+                    rendered.code
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn segment_dependencies_only_supply_unbound_x86_inputs() {
+        let fs = crate::arch::x86::FS_BASE;
+        let gs = crate::arch::x86::GS_BASE;
+        for (isa, index) in [(Isa::X86_64, 0), (Isa::AArch64, fs), (Isa::AArch64, gs)] {
+            let ir = FunctionIr::single_block(
+                isa,
+                vec![Stmt::Ret {
+                    value: Expr::reg(index, 64),
+                }],
+            );
+            let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
+            assert!(rendered.segment_bases.is_empty());
+            assert!(!rendered.code.contains("velk_x86_"), "{}", rendered.code);
+        }
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::bin(BinOp::Add, Expr::reg(fs, 64), Expr::reg(gs, 64)),
+            }],
+        );
+        ir.params = vec![Param {
+            index: fs,
+            name: "entry_fs".to_owned(),
+            ty: CType::U64,
+        }];
+        let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
+        assert_eq!(
+            rendered.segment_bases,
+            vec![SegmentBaseRead {
+                segment: SegmentBase::Gs,
+                provider: "velk_x86_gs_base".to_owned(),
+            }]
+        );
+        assert!(
+            rendered.code.contains("uint64_t sub_0(uint64_t entry_fs)"),
+            "{}",
+            rendered.code
+        );
+        assert!(
+            rendered.code.contains("return entry_fs + gs_base;"),
+            "{}",
+            rendered.code
+        );
+        assert!(
+            !rendered.code.contains("velk_x86_fs_base"),
+            "{}",
+            rendered.code
+        );
+    }
+
+    #[test]
+    fn narrow_segment_reads_truncate_the_full_width_snapshot() {
+        for (width, ty) in [(8, "uint8_t"), (16, "uint16_t"), (32, "uint32_t")] {
+            let ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: Expr::reg(crate::arch::x86::FS_BASE, width),
+                }],
+            );
+            let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
+            assert_eq!(rendered.segment_bases.len(), 1);
+            assert!(
+                rendered
+                    .code
+                    .contains("uint64_t fs_base = velk_x86_fs_base();"),
+                "{}",
+                rendered.code
+            );
+            assert!(
+                rendered.code.contains(&format!("return ({ty})fs_base;")),
+                "{}",
+                rendered.code
+            );
+        }
+    }
+
+    #[test]
+    fn segment_dependencies_removed_from_the_body_need_no_provider() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::unsupported("fs_base"),
+                Stmt::Ret {
+                    value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+                },
+            ],
+        );
+        ir.ret_type = CType::Void;
+        let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
+        assert!(
+            rendered.code.contains("/* unsupported: fs_base */"),
+            "{}",
+            rendered.code
+        );
+        assert!(rendered.segment_bases.is_empty());
+        assert!(
+            !rendered.code.contains("velk_x86_fs_base"),
+            "{}",
+            rendered.code
+        );
+        assert!(
+            !rendered.code.contains("uint64_t fs_base"),
+            "{}",
+            rendered.code
+        );
+    }
+
+    #[test]
+    fn retained_segment_identifiers_exclude_comments_and_literals() {
+        let text =
+            "/* fs_base π */ \"fs_base \\\"\" 'fs_base' // fs_base\nother_fs_base + fs_base_other";
+        assert!(!super::code_mentions(text, "fs_base"));
+        assert!(!super::code_mentions(
+            "\"fs_base\\\" still inside\"",
+            "fs_base"
+        ));
+        assert!(super::code_mentions(
+            &format!("{text}\n(uint32_t)fs_base"),
+            "fs_base"
+        ));
+        assert!(!super::code_mentions("/* fs_base", "fs_base"));
+        assert!(!super::code_mentions("\"fs_base", "fs_base"));
+        assert!(!super::code_mentions(
+            "p-> /* field */ fs_base = q.\nfs_base;",
+            "fs_base"
+        ));
+        assert!(super::code_mentions("p->fs_base = fs_base;", "fs_base"));
+    }
+
+    #[test]
+    fn a_member_name_does_not_retain_an_unused_segment_snapshot() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: Expr::reg(0, 64),
+                    value: Expr::Const(0),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+                },
+            ],
+        );
+        ir.ret_type = CType::Void;
+        ir.params = vec![Param {
+            index: 0,
+            name: "p".to_owned(),
+            ty: CType::pointer_to(CType::Named("struct holder".to_owned())),
+        }];
+        ir.members.push(crate::ir::Member {
+            structure: "holder".to_owned(),
+            offset: 0,
+            name: "fs_base".to_owned(),
+            ty: CType::U64,
+            width: 8,
+        });
+        let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
+        assert!(
+            rendered.code.contains("p->fs_base = 0x0;"),
+            "{}",
+            rendered.code
+        );
+        assert!(rendered.segment_bases.is_empty());
+        assert!(
+            !rendered.code.contains("velk_x86_fs_base"),
+            "{}",
+            rendered.code
+        );
+    }
+
+    #[test]
+    fn segment_bindings_keep_real_calls_parameters_and_data_distinct() {
+        let call = |target, through| Stmt::Call {
+            target: Some(target),
+            through,
+            convention: crate::ir::Convention::SysV,
+            args: Some(Vec::new()),
+            floats_named: false,
+            result: None,
+            clobbers: None,
+            via: None,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                call(0x40, None),
+                call(0x80, Some(load(Expr::Const(0x80), 8))),
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Add,
+                        Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(crate::arch::x86::FS_BASE, 64),
+                            Expr::reg(0, 64),
+                        ),
+                        Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(crate::arch::x86::GS_BASE, 64),
+                            load(Expr::Const(0x1000), 8),
+                        ),
+                    ),
+                },
+            ],
+        );
+        ir.params = vec![
+            Param {
+                index: 0,
+                name: "fs_base".to_owned(),
+                ty: CType::U64,
+            },
+            Param {
+                index: 1,
+                name: "velk_x86_fs_base_2".to_owned(),
+                ty: CType::U64,
+            },
+        ];
+        let symbols = Symbols {
+            functions: HashMap::from([(0x40, "velk_x86_fs_base".to_owned())]),
+            import_slots: HashMap::from([(0x80, "velk_x86_gs_base".to_owned())]),
+            data: HashMap::from([(0x1000, "fs_base_2".to_owned())]),
+            ..Symbols::default()
+        };
+        let rendered = render_with_dependencies(&ir, &[], &symbols, &[(0x1000, 8)]);
+        assert_eq!(
+            rendered.segment_bases,
+            vec![
+                SegmentBaseRead {
+                    segment: SegmentBase::Fs,
+                    provider: "velk_x86_fs_base_3".to_owned()
+                },
+                SegmentBaseRead {
+                    segment: SegmentBase::Gs,
+                    provider: "velk_x86_gs_base_2".to_owned()
+                },
+            ]
+        );
+        for text in [
+            "    velk_x86_fs_base();\n",
+            "    velk_x86_gs_base();\n",
+            "    uint64_t fs_base_3 = velk_x86_fs_base_3();\n",
+            "    uint64_t gs_base = velk_x86_gs_base_2();\n",
+            "    uint64_t *const fs_base_2 = (uint64_t *)(uintptr_t)0x1000;\n",
+            "fs_base_3 + fs_base",
+            "gs_base + *fs_base_2",
+        ] {
+            assert!(
+                rendered.code.contains(text),
+                "missing {text:?}: {}",
+                rendered.code
+            );
+        }
+    }
+
+    #[test]
+    fn segment_providers_do_not_replace_the_functions_own_name() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+            }],
+        );
+        ir.name = Some("velk_x86_fs_base".to_owned());
+        let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
+        assert_eq!(
+            rendered.segment_bases,
+            vec![SegmentBaseRead {
+                segment: SegmentBase::Fs,
+                provider: "velk_x86_fs_base_2".to_owned(),
+            }]
+        );
+        assert!(
+            rendered.code.contains("uint64_t velk_x86_fs_base(void) {"),
+            "{}",
+            rendered.code
+        );
+        assert!(
+            rendered
+                .code
+                .contains("uint64_t fs_base = velk_x86_fs_base_2();"),
+            "{}",
+            rendered.code
+        );
+    }
+
+    #[test]
     fn a_function_whose_address_is_taken_is_declared_and_read_as_a_number() {
         let mut ir = FunctionIr::single_block(
             Isa::AArch64,
@@ -3175,7 +3674,11 @@ mod tests {
                     size: None,
                     size_estimated: false,
                     name: Some(name.to_owned()),
-                    aliases: Vec::new(),
+                    aliases: if address == 0x40 {
+                        vec!["velk_x86_fs_base()".to_owned()]
+                    } else {
+                        Vec::new()
+                    },
                     sources: Vec::new(),
                 },
             );
@@ -3191,6 +3694,32 @@ mod tests {
         assert_eq!(symbols.functions[&0x100], "owner__method_40_2");
         assert_eq!(symbols.import_slots[&0x40], "imported_object");
         assert_eq!(symbols.data[&0x40], "object");
+        for name in [
+            "owner::method",
+            "owner__method",
+            "owner__method_40_3",
+            "velk_x86_fs_base()",
+            "velk_x86_fs_base__",
+            "velk_x86_fs_base",
+            "imported_object",
+            "object",
+        ] {
+            assert!(symbols.reserved_names.contains(name), "missing {name}");
+        }
+        let ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+            }],
+        );
+        let rendered = render_with_dependencies(&ir, &[], &symbols, &[]);
+        assert_eq!(
+            rendered.segment_bases,
+            vec![SegmentBaseRead {
+                segment: SegmentBase::Fs,
+                provider: "velk_x86_fs_base_2".to_owned(),
+            }]
+        );
     }
 
     #[test]
@@ -3220,6 +3749,7 @@ mod tests {
             functions: HashMap::from([(0x40, "direct_function".to_owned())]),
             import_slots: HashMap::from([(0x40, "imported_function".to_owned())]),
             data: HashMap::from([(0x40, "data_object".to_owned())]),
+            ..Symbols::default()
         };
         let text = render(&ir, &[], &symbols, &[]);
         assert!(text.contains("    direct_function();\n"), "{text}");
