@@ -168,8 +168,8 @@ int factorial(int n) {
         v3 = v2 & 0xfffffffffffffff8;
         v4 = (n & 0xffffffff);
         n = n - v3;
-        v6 = add_lanes32(v4 | v4 << 0x20, *qword_200190);
-        v8 = add_lanes32(v4 | v4 << 0x20, *qword_200198);
+        v6 = add_lanes32(v4 | (uint64_t)v4 << 0x20, *qword_200190);
+        v8 = add_lanes32(v4 | (uint64_t)v4 << 0x20, *qword_200198);
         v11 = *qword_2001c0;
         v12 = *qword_2001c8;
         v13 = *qword_2001b0;
@@ -185,13 +185,13 @@ int factorial(int n) {
             v20 = (v6 & 0xffffffff) * (v9 & 0xffffffff);
             v5 = v10 >> 0x20 | v10 >> 0x20 << 0x20;
             v24 = (v8 >> 0x20) * v5;
-            v25 = (((v6 >> 0x20) * (v9 >> 0x20)) & 0xffffffff) | v24 << 0x20;
+            v25 = (((v6 >> 0x20) * (v9 >> 0x20)) & 0xffffffff) | (uint64_t)v24 << 0x20;
             v26 = (v20 & 0xffffffff) | v8 * v10 << 0x20;
             v9 = interleave_low32(v26, v25);
             v10 = interleave_high32(v26, v25);
             v5 = v19 >> 0x20 | v19 >> 0x20 << 0x20;
             t1 = v18 >> 0x20;
-            v20 = t1 | t1 << 0x20;
+            v20 = t1 | (uint64_t)t1 << 0x20;
             v18 = (v18 & 0xffffffff) * (v16 & 0xffffffff);
             v19 = (v19 & 0xffffffff) * (v17 & 0xffffffff);
             v33 = v17 >> 0x20 | v17 >> 0x20 << 0x20;

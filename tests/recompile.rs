@@ -519,7 +519,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
             }
         })
         .collect::<Vec<_>>();
-    check_memory_candidates("globals", candidates);
+    check_candidates("globals", candidates, Mode::Memory, &[]);
 }
 
 #[test]
@@ -788,7 +788,302 @@ fn printed_members_preserve_declared_types_and_access_widths() {
             }
         })
         .collect();
-    check_memory_candidates("members", candidates);
+    check_candidates("members", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_shifts_preserve_counts_widths_and_updates() {
+    let counts = [0, 1, 7, 8, 16, 31, 32, 40, 63, 64, 65, u64::MAX];
+    let constants = [0, 1, 31, 32, 40, 63, 64, 65, u64::MAX];
+    assert_eq!(counts.len(), trials::TRIALS as usize);
+    let mut scalar = Vec::new();
+    let mut updates = Vec::new();
+    for bytes in [1u8, 2, 4] {
+        for signed in [false, true] {
+            let ty = CType::int(bytes, signed);
+            let raw = (1u64 << (bytes * 8 - 1)) | 5;
+            let source = Expr::reg(7, bytes * 8);
+            let source = if signed {
+                Expr::SignExtend {
+                    value: Box::new(source),
+                    width: bytes,
+                }
+            } else {
+                source
+            };
+            for (operation, op) in [
+                ("shl", BinOp::Shl),
+                ("shr", BinOp::Shr),
+                ("sar", BinOp::Sar),
+            ] {
+                let prefix = format!(
+                    "{operation}_{}{}",
+                    if signed { 'i' } else { 'u' },
+                    bytes * 8
+                );
+                for count in constants.into_iter().map(Some).chain(std::iter::once(None)) {
+                    let mut params = vec![Param {
+                        index: 7,
+                        name: "value".to_owned(),
+                        ty: ty.clone(),
+                    }];
+                    if count.is_none() {
+                        params.push(Param {
+                            index: 6,
+                            name: "count".to_owned(),
+                            ty: CType::int(1, false),
+                        });
+                    }
+                    let suffix =
+                        count.map_or_else(|| "variable8".to_owned(), |count| count.to_string());
+                    let ir = synthetic_ir(
+                        &format!("{prefix}_{suffix}"),
+                        params,
+                        CType::U64,
+                        vec![Stmt::Ret {
+                            value: Expr::Bin {
+                                op,
+                                lhs: Box::new(source.clone()),
+                                rhs: Box::new(count.map_or_else(|| Expr::reg(6, 8), Expr::Const)),
+                            },
+                        }],
+                    );
+                    let inputs = counts
+                        .iter()
+                        .map(|amount| {
+                            if count.is_some() {
+                                vec![raw]
+                            } else {
+                                vec![raw, *amount]
+                            }
+                        })
+                        .collect();
+                    scalar.push(printed_candidate(ir, inputs));
+                }
+                if !signed && op == BinOp::Sar {
+                    let ir = synthetic_ir(
+                        &format!("{prefix}_variable64"),
+                        vec![
+                            Param {
+                                index: 7,
+                                name: "value".to_owned(),
+                                ty: ty.clone(),
+                            },
+                            Param {
+                                index: 6,
+                                name: "count".to_owned(),
+                                ty: CType::U64,
+                            },
+                        ],
+                        CType::U64,
+                        vec![Stmt::Ret {
+                            value: Expr::Bin {
+                                op,
+                                lhs: Box::new(source.clone()),
+                                rhs: Box::new(Expr::reg(6, 64)),
+                            },
+                        }],
+                    );
+                    scalar.push(printed_candidate(
+                        ir,
+                        counts.iter().map(|amount| vec![raw, *amount]).collect(),
+                    ));
+                }
+                let address = Expr::reg(7, 64);
+                let ir = synthetic_ir(
+                    &format!("{prefix}_update"),
+                    vec![
+                        Param {
+                            index: 7,
+                            name: "value".to_owned(),
+                            ty: CType::pointer_to(ty.clone()),
+                        },
+                        Param {
+                            index: 6,
+                            name: "count".to_owned(),
+                            ty: CType::int(1, false),
+                        },
+                    ],
+                    CType::U64,
+                    vec![
+                        Stmt::Store {
+                            addr: address.clone(),
+                            width: 8,
+                            value: Expr::Const(0x0123_4567_89ab_cdef),
+                        },
+                        Stmt::Store {
+                            addr: address.clone(),
+                            width: bytes,
+                            value: Expr::Const(raw),
+                        },
+                        Stmt::Store {
+                            addr: address.clone(),
+                            width: bytes,
+                            value: Expr::Bin {
+                                op,
+                                lhs: Box::new(Expr::Load {
+                                    addr: Box::new(address.clone()),
+                                    width: bytes,
+                                    signed,
+                                }),
+                                rhs: Box::new(Expr::reg(6, 8)),
+                            },
+                        },
+                        Stmt::Ret {
+                            value: Expr::Load {
+                                addr: Box::new(address),
+                                width: 8,
+                                signed: false,
+                            },
+                        },
+                    ],
+                );
+                let candidate = printed_candidate(
+                    ir,
+                    counts
+                        .iter()
+                        .map(|amount| vec![REGION + 0x2000, *amount])
+                        .collect(),
+                );
+                assert!(!candidate.code.contains("<<="), "{}", candidate.code);
+                assert!(!candidate.code.contains(">>="), "{}", candidate.code);
+                updates.push(candidate);
+            }
+        }
+    }
+    for mask in [0xff, 0xffff, 0xffff_ffff] {
+        for count in [0, 1, 31, 64, 65, u64::MAX] {
+            let ir = synthetic_ir(
+                &format!("shr_mask_{mask:x}_{count}"),
+                vec![Param {
+                    index: 7,
+                    name: "value".to_owned(),
+                    ty: CType::U64,
+                }],
+                CType::U64,
+                vec![Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::And,
+                        Expr::bin(BinOp::Shr, Expr::reg(7, 64), Expr::Const(count)),
+                        Expr::Const(mask),
+                    ),
+                }],
+            );
+            scalar.push(printed_candidate(
+                ir,
+                (0..trials::TRIALS)
+                    .map(|_| vec![0xfedc_ba98_8765_4385])
+                    .collect(),
+            ));
+        }
+    }
+    for (name, ret_type) in [
+        ("shl_reg32_return32", CType::U32),
+        ("shl_reg32_return64", CType::U64),
+    ] {
+        let ir = synthetic_ir(
+            name,
+            vec![Param {
+                index: 7,
+                name: "value".to_owned(),
+                ty: CType::U64,
+            }],
+            ret_type,
+            vec![Stmt::Ret {
+                value: Expr::bin(BinOp::Shl, Expr::reg(7, 32), Expr::Const(1)),
+            }],
+        );
+        scalar.push(printed_candidate(
+            ir,
+            (0..trials::TRIALS)
+                .map(|trial| {
+                    vec![match trial {
+                        0 => 0,
+                        1 => 1,
+                        2 => u64::MAX,
+                        _ => 0xfedc_ba98_8000_0005,
+                    }]
+                })
+                .collect(),
+        ));
+    }
+    assert_eq!(scalar.len(), 203);
+    assert_eq!(updates.len(), 18);
+    for (name, op, input, amount) in [
+        ("flat_index_shl", BinOp::Shl, 0x8000_0005u64, 3u64),
+        ("flat_index_add", BinOp::Add, 0xffff_fffe, 5),
+        ("flat_index_sub", BinOp::Sub, 3, 5),
+        ("flat_index_mul", BinOp::Mul, 0x4000_0005, 4),
+    ] {
+        let offset = match op {
+            BinOp::Shl => input.wrapping_shl(amount as u32),
+            BinOp::Add => input.wrapping_add(amount),
+            BinOp::Sub => input.wrapping_sub(amount),
+            BinOp::Mul => input.wrapping_mul(amount),
+            _ => unreachable!(),
+        } & 0xffff_ffff;
+        let base = REGION + 0x2000 - offset;
+        let address = Expr::bin(
+            BinOp::Add,
+            Expr::bin(
+                BinOp::Add,
+                Expr::Const(base),
+                Expr::bin(
+                    BinOp::And,
+                    Expr::bin(op, Expr::reg(7, 64), Expr::Const(amount)),
+                    Expr::Const(0xffff_ffff),
+                ),
+            ),
+            Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(8)),
+        );
+        let ir = synthetic_ir(
+            name,
+            vec![
+                Param {
+                    index: 7,
+                    name: "value".to_owned(),
+                    ty: CType::U32,
+                },
+                Param {
+                    index: 6,
+                    name: "index".to_owned(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: address,
+                    width: 1,
+                    value: Expr::Const(0x5a),
+                },
+                Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::Const(REGION + 0x2000)),
+                        width: 8,
+                        signed: false,
+                    },
+                },
+            ],
+        );
+        let code = velk::render::render(&ir, &[], &Default::default(), &[(base, 0x1_0001_0000)]);
+        updates.push(Candidate {
+            label: name.to_owned(),
+            params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
+            inputs: (0..trials::TRIALS).map(|_| vec![input, 0]).collect(),
+            void: false,
+            ir,
+            code,
+        });
+    }
+    assert_eq!(updates.len(), 22);
+    let sanitizer = [
+        "-fno-wrapv",
+        "-fsanitize=shift",
+        "-fno-sanitize-recover=shift",
+    ];
+    check_candidates("shifts", scalar, Mode::Registers, &sanitizer);
+    check_candidates("shift-memory", updates, Mode::Memory, &sanitizer);
 }
 
 fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt>) -> FunctionIr {
@@ -815,7 +1110,18 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
     }
 }
 
-fn check_memory_candidates(name: &str, candidates: Vec<Candidate>) {
+fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
+    Candidate {
+        label: ir.name.clone().expect("a named synthetic function"),
+        code: velk::render::render(&ir, &[], &Default::default(), &[]),
+        params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
+        inputs,
+        void: ir.ret_type == CType::Void,
+        ir,
+    }
+}
+
+fn check_candidates(name: &str, candidates: Vec<Candidate>, mode: Mode, compiler_args: &[&str]) {
     let count = candidates.len();
     let fixture = Fixture {
         name: name.into(),
@@ -830,7 +1136,7 @@ fn check_memory_candidates(name: &str, candidates: Vec<Candidate>) {
         candidates,
     };
     let scratch = scratch_dir(name);
-    let results = check(&[fixture], &scratch, Mode::Memory);
+    let results = check(&[fixture], &scratch, mode, compiler_args);
     std::fs::remove_dir_all(&scratch).ok();
     let result = &results[0];
     assert!(result.lines.is_empty(), "{}", result.lines.join("\n"));
@@ -853,7 +1159,7 @@ fn compare(mode: Mode, golden: &str) {
         Mode::Registers => "registers",
         Mode::Memory => "memory",
     });
-    let results = check(&prepared, &scratch, mode);
+    let results = check(&prepared, &scratch, mode, &[]);
     std::fs::remove_dir_all(&scratch).ok();
 
     let mut excluded: BTreeMap<&str, usize> = BTreeMap::new();
@@ -1185,7 +1491,12 @@ struct Expected {
 /// Compiles every fixture's functions into one program per optimization
 /// level, which keeps the compiler runs few, and compares their runs with
 /// the interpreter's.
-fn check(fixtures: &[Fixture], scratch: &Path, mode: Mode) -> Vec<Findings> {
+fn check(
+    fixtures: &[Fixture],
+    scratch: &Path,
+    mode: Mode,
+    compiler_args: &[&str],
+) -> Vec<Findings> {
     let mut results: Vec<Findings> = fixtures.iter().map(|_| Findings::default()).collect();
     let all: Vec<(usize, &Candidate)> = fixtures
         .iter()
@@ -1213,7 +1524,7 @@ fn check(fixtures: &[Fixture], scratch: &Path, mode: Mode) -> Vec<Findings> {
             .iter()
             .map(|level| {
                 let source = &source;
-                scope.spawn(move || build(source, scratch, level))
+                scope.spawn(move || build(source, scratch, level, compiler_args))
             })
             .collect();
         handles
@@ -1548,13 +1859,14 @@ fn compiles(
 }
 
 /// The program compiled at `level`.
-fn build(source: &Program, scratch: &Path, level: &str) -> PathBuf {
+fn build(source: &Program, scratch: &Path, level: &str, compiler_args: &[&str]) -> PathBuf {
     let path = scratch.join(format!("check{level}.c"));
     let output = scratch.join(format!("check{level}"));
     std::fs::write(&path, &source.text).unwrap_or_else(|error| panic!("{error}"));
     let compiled = Command::new(COMPILER)
         .arg(level)
         .args(FLAGS)
+        .args(compiler_args)
         .arg("-o")
         .arg(&output)
         .arg(&path)
@@ -1723,7 +2035,7 @@ fn run(program: &Path, input: &str) -> String {
     let mut child = Command::new(program)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
         .unwrap_or_else(|error| panic!("{}: {error}", program.display()));
     let mut stdin = child.stdin.take().expect("a pipe");
@@ -1733,6 +2045,13 @@ fn run(program: &Path, input: &str) -> String {
         .wait_with_output()
         .unwrap_or_else(|error| panic!("{}: {error}", program.display()));
     writer.join().ok();
+    assert!(
+        output.status.success(),
+        "{} failed with {}:\n{}",
+        program.display(),
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 

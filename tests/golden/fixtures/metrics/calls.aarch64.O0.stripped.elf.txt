@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: sub_21031c @ 0x21031c */
 int32_t sub_21031c(int32_t a0) {
-    return a0 << 0x1;
+    return (uint64_t)a0 << 0x1;
 }
 -- signature
 int32_t (int32_t a0)

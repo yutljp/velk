@@ -125,7 +125,7 @@ struct big big_make(long seed) {
     v1 = (struct big_make_s1 *)x8;
     v1->field_0x0 = seed;
     v1->field_0x8 = seed + 0x1;
-    v1->field_0x10 = seed << 0x1;
+    v1->field_0x10 = (uint64_t)seed << 0x1;
     v1->field_0x18 = seed * 0x3;
     return seed;
 }

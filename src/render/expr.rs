@@ -420,6 +420,101 @@ fn integral(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
     print(expr, ctx, bits).address_integer()
 }
 
+fn shift_count(expr: &Expr, ctx: &Ctx<'_>) -> (Printed, u32) {
+    if let Expr::Const(amount) = expr {
+        let amount = (amount & 63) as u32;
+        return (constant(u64::from(amount)), amount);
+    }
+    if let Some(range) = value_range(expr, ctx)
+        && range.hi <= 63
+    {
+        (integral(expr, ctx, 64), range.hi as u32)
+    } else {
+        (masked(expr, 63, ctx, 64), 63)
+    }
+}
+
+fn shift(op: BinOp, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
+    let (count, maximum) = shift_count(rhs, ctx);
+    if op != BinOp::Sar && maximum == 0 {
+        return integral(lhs, ctx, bits);
+    }
+    if op == BinOp::Sar {
+        let width = crate::ir::semantics::operand_width(lhs, rhs);
+        let mut value = integral(lhs, ctx, width);
+        if !value.ty.signed || value.ty.bits > width || value.exact < width {
+            value = value.cast(width, true, width);
+        }
+        if maximum >= value.ty.bits {
+            value = value.cast(64, true, width);
+        }
+        return Printed::new(
+            if maximum == 0 {
+                value.text
+            } else {
+                format!(
+                    "{} >> {}",
+                    value.within(9, false).text,
+                    count.within(9, true).text
+                )
+            },
+            value.ty,
+            width,
+            if maximum == 0 { value.strength } else { 9 },
+        )
+        .ranging(Range::Signed(width));
+    }
+
+    let amount = match rhs {
+        Expr::Const(amount) if op == BinOp::Shl => (amount & 63) as u32,
+        _ => 0,
+    };
+    let read = if op == BinOp::Shl && matches!(rhs, Expr::Const(_)) {
+        bits.saturating_sub(amount)
+    } else {
+        64
+    };
+    let mut value = integral(lhs, ctx, read);
+    let value_bits = value.unsigned_bits().min(if value.exact == ALL {
+        zero_bits(lhs, ctx)
+    } else {
+        ALL
+    });
+    let result_bits = value_bits.saturating_add(maximum);
+    let safe = maximum < value.ty.bits
+        && match op {
+            BinOp::Shl if value.ty.signed => result_bits < value.ty.bits,
+            BinOp::Shl => bits <= value.ty.bits || result_bits <= value.ty.bits,
+            _ => !value.ty.signed || value_bits < value.ty.bits,
+        };
+    if !safe {
+        value = if matches!(lhs, Expr::Const(_)) {
+            widen(value, true, true)
+        } else {
+            let exact = converted(&value, Int::U64);
+            value.cast(64, false, exact)
+        };
+    }
+    let exact = if op == BinOp::Shr
+        || (value.exact == ALL && result_bits < value.ty.bits + u32::from(!value.ty.signed))
+    {
+        ALL
+    } else {
+        wrapped(value.exact.saturating_add(amount), value.ty)
+    };
+    Printed::new(
+        format!(
+            "{} {} {}",
+            value.within(9, false).text,
+            operator(op),
+            count.within(9, true).text
+        ),
+        value.ty,
+        exact,
+        9,
+    )
+}
+
 /// `op` applied to `args`, as C.
 fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
     let infix = |precision, symbol: &str, strength| {
@@ -780,94 +875,11 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 11,
             )
         }
-        // C shifts a signed value arithmetically: a value that is not one
-        // of the operation's width is cast to the signed type of that width.
         Expr::Bin {
-            op: BinOp::Sar,
+            op: op @ (BinOp::Shl | BinOp::Shr | BinOp::Sar),
             lhs,
             rhs,
-        } => {
-            let width = crate::ir::semantics::operand_width(lhs, rhs);
-            let shifted = integral(lhs, ctx, width);
-            let shifted = if shifted.ty.signed && shifted.ty.bits <= width && shifted.exact >= width
-            {
-                shifted
-            } else {
-                shifted.cast(width, true, width)
-            };
-            Printed::new(
-                format!(
-                    "{} >> {}",
-                    shifted.within(9, false).text,
-                    integral(rhs, ctx, 64).within(9, true).text
-                ),
-                shifted.ty,
-                width,
-                9,
-            )
-            .ranging(Range::Signed(width))
-        }
-        // C shifts at the type of the shifted value.
-        Expr::Bin {
-            op: BinOp::Shl,
-            lhs,
-            rhs,
-        } => {
-            let amount = match rhs.as_ref() {
-                Expr::Const(amount) if *amount < 64 => *amount as u32,
-                _ => 0,
-            };
-            let keeps =
-                |shifted: &Printed| wrapped(shifted.exact.saturating_add(amount), shifted.ty);
-            let shifted = integral(lhs, ctx, bits.saturating_sub(amount));
-            let shifted = if keeps(&shifted) < bits && shifted.ty.bits < 64 {
-                widen(shifted, matches!(lhs.as_ref(), Expr::Const(_)), true)
-            } else {
-                shifted
-            };
-            let exact = keeps(&shifted);
-            Printed::new(
-                format!(
-                    "{} << {}",
-                    shifted.within(9, false).text,
-                    integral(rhs, ctx, 64).within(9, true).text
-                ),
-                shifted.ty,
-                exact,
-                9,
-            )
-        }
-        // A logical shift brings the bits above the reader's into view, and
-        // zeros, which C brings in only above a value of no sign.
-        Expr::Bin {
-            op: BinOp::Shr,
-            lhs,
-            rhs,
-        } => {
-            let (needed, dropped) = match rhs.as_ref() {
-                Expr::Const(amount) => {
-                    let amount = (*amount).min(64) as u32;
-                    ((bits + amount).min(ALL), amount)
-                }
-                _ => (ALL, 63),
-            };
-            let shifted = integral(lhs, ctx, needed);
-            let exact = if shifted.exact == ALL {
-                ALL
-            } else {
-                shifted.exact.saturating_sub(dropped)
-            };
-            Printed::new(
-                format!(
-                    "{} >> {}",
-                    shifted.within(9, false).text,
-                    integral(rhs, ctx, 64).within(9, true).text
-                ),
-                shifted.ty,
-                exact,
-                9,
-            )
-        }
+        } => shift(*op, lhs, rhs, ctx, bits),
         Expr::Bin { op, lhs, rhs } => {
             let side = |side: &Expr| match side {
                 // A bitwise operation reads a constant as its bits.
@@ -1445,50 +1457,22 @@ pub(crate) fn slot_access(name: &str, width: u8, signed: bool, ctx: &Ctx<'_>) ->
 
 /// True when the value provably fits in `bits` bits.
 pub(crate) fn fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
-    crate::ssa::ranges::of(expr).hi <= crate::ir::semantics::mask(bits)
-        || typed_fits(expr, bits, ctx)
+    bits >= 64
+        || value_range(expr, ctx).is_some_and(|range| range.hi <= crate::ir::semantics::mask(bits))
 }
 
-/// True when the C types of the operands keep the value within `bits`
-/// bits. The value alone fitting says nothing of the types, so it is not
-/// asked of the operands.
-fn typed_fits(expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> bool {
-    match expr {
-        Expr::Const(value) => bits >= 64 || (*value >> bits) == 0,
-        // A named parameter that is not wide holds at most 32 bits,
-        // whatever width the register read has.
-        Expr::Reg { index, width } => {
-            u32::from(*width) <= bits
-                || (bits >= 32 && ctx.names.contains_key(index) && !ctx.wide_params.contains(index))
-        }
-        Expr::Load { width, .. } => u32::from(*width) * 8 <= bits,
-        // A negative extended value fills the bits above, which only C's
-        // 32-bit arithmetic wraps away.
-        Expr::SignExtend { width, .. } => bits >= 32 && u32::from(*width) * 8 <= bits,
-        Expr::Bin { op, lhs, rhs } => match op {
-            BinOp::And => match rhs.as_ref() {
-                Expr::Const(mask) => bits >= 64 || (*mask >> bits) == 0,
-                _ => typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx),
-            },
-            BinOp::Or | BinOp::Xor => typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx),
-            // Arithmetic on 32-bit operands wraps at 32 bits in C, which is
-            // what the mask would do; narrower results carry out of the mask.
-            BinOp::Add | BinOp::Sub | BinOp::Mul => {
-                bits >= 32 && typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx)
-            }
-            BinOp::Shl => {
-                bits >= 32
-                    && matches!(rhs.as_ref(), Expr::Const(amount) if *amount < 32)
-                    && typed_fits(lhs, bits, ctx)
-            }
-            BinOp::DivS | BinOp::DivU | BinOp::ModS | BinOp::ModU | BinOp::Shr | BinOp::Sar => {
-                typed_fits(lhs, bits, ctx) && typed_fits(rhs, bits, ctx)
-            }
-            _ => false,
-        },
-        Expr::Select { then, els, .. } => typed_fits(then, bits, ctx) && typed_fits(els, bits, ctx),
-        Expr::Apply { .. } => crate::ir::semantics::width(expr) <= bits,
-    }
+fn value_range(expr: &Expr, ctx: &Ctx<'_>) -> Option<crate::ssa::ranges::Fact> {
+    crate::ssa::ranges::expression(expr, &|index, width| {
+        let known = ctx.value_bits.get(&index).copied().unwrap_or(64);
+        let parameter = ctx
+            .declared
+            .get(&index)
+            .filter(|declared| declared.param && declared.integer && !declared.signed)
+            .map_or(64, |declared| declared.bits);
+        Some(crate::ssa::ranges::Fact::width(
+            width.min(known).min(parameter),
+        ))
+    })
 }
 
 pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> String {
@@ -2093,7 +2077,7 @@ mod tests {
             ),
             (
                 Expr::bin(BinOp::Shl, Expr::Const(1), Expr::reg(7, 64)),
-                "<< (uintptr_t)a0;",
+                "<< ((uintptr_t)a0 & 0x3f);",
             ),
             (
                 Expr::Apply {
@@ -2167,5 +2151,101 @@ mod tests {
         stmts.push(Stmt::Ret { value: loaded(4) });
         let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);
         assert!(text.contains("return *(uint32_t *)&local_0;"), "{text}");
+    }
+
+    #[test]
+    fn shift_counts_wrap_at_sixty_four_and_bounded_counts_keep_their_mask() {
+        for op in [BinOp::Shl, BinOp::Shr] {
+            let identity = returned(
+                Expr::bin(op, Expr::reg(7, 64), Expr::Const(64)),
+                &[CType::U64],
+            );
+            assert!(identity.contains("return a0;"), "{identity}");
+            let variable = returned(
+                Expr::bin(op, Expr::reg(7, 64), Expr::reg(6, 64)),
+                &[CType::U64, CType::U64],
+            );
+            assert!(variable.contains("(a1 & 0x3f)"), "{variable}");
+            let bounded = returned(
+                Expr::bin(
+                    op,
+                    Expr::reg(7, 64),
+                    Expr::bin(BinOp::And, Expr::reg(6, 64), Expr::Const(31)),
+                ),
+                &[CType::U64, CType::U64],
+            );
+            assert!(bounded.contains("(a1 & 0x1f)"), "{bounded}");
+            assert!(!bounded.contains("0x3f"), "{bounded}");
+        }
+    }
+
+    #[test]
+    fn wide_right_shift_counts_widen_narrow_c_operands() {
+        let logical = returned(
+            Expr::bin(BinOp::Shr, Expr::reg(7, 32), Expr::Const(40)),
+            &[CType::U32],
+        );
+        assert!(
+            logical.contains("return (uint64_t)a0 >> 0x28;"),
+            "{logical}"
+        );
+        let arithmetic = returned(
+            Expr::bin(BinOp::Sar, Expr::reg(7, 32), Expr::Const(40)),
+            &[CType::U32],
+        );
+        assert!(
+            arithmetic.contains("(int64_t)(int32_t)a0 >> 0x28"),
+            "{arithmetic}"
+        );
+        assert!(arithmetic.contains("return (uint32_t)"), "{arithmetic}");
+    }
+
+    #[test]
+    fn left_shifts_avoid_negative_and_overflowing_signed_c_operands() {
+        let signed = returned(
+            Expr::bin(BinOp::Shl, Expr::reg(7, 64), Expr::Const(1)),
+            &[CType::I64],
+        );
+        assert!(signed.contains("return (uint64_t)a0 << 0x1;"), "{signed}");
+        let mut ir = function(
+            vec![Stmt::Ret {
+                value: Expr::bin(BinOp::Shl, Expr::reg(7, 8), Expr::Const(24)),
+            }],
+            &[CType::int(1, false)],
+        );
+        ir.ret_type = CType::U32;
+        let promoted = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
+        assert!(
+            promoted.contains("return (uint64_t)a0 << 0x18;"),
+            "{promoted}"
+        );
+    }
+
+    #[test]
+    fn left_shifts_only_keep_source_truncation_that_the_reader_observes() {
+        let value = Expr::bin(BinOp::Shl, Expr::reg(7, 32), Expr::Const(1));
+        let mut ir = function(vec![Stmt::Ret { value }], &[CType::U64]);
+        ir.ret_type = CType::U32;
+        let narrow = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
+        assert!(narrow.contains("return a0 << 0x1;"), "{narrow}");
+        ir.ret_type = CType::U64;
+        let wide = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
+        assert!(wide.contains("(uint32_t)a0"), "{wide}");
+        assert!(!wide.contains("return a0 <<"), "{wide}");
+    }
+
+    #[test]
+    fn masked_wrapping_right_shifts_keep_their_result_mask() {
+        for count in [64, 65] {
+            let value = Expr::bin(
+                BinOp::And,
+                Expr::bin(BinOp::Shr, Expr::reg(7, 64), Expr::Const(count)),
+                Expr::Const(255),
+            );
+            let text = returned(value, &[CType::U64]);
+            assert!(text.contains("& 0xff"), "{text}");
+            assert!(!text.contains("0x40"), "{text}");
+            assert!(!text.contains("0x41"), "{text}");
+        }
     }
 }

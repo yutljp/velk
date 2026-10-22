@@ -107,7 +107,7 @@ struct big { long a; long b; long c; long d; };
 struct big *big_make(struct big *result, long seed) {
     result->a = seed;
     result->b = seed + 0x1;
-    result->c = seed << 0x1;
+    result->c = (uint64_t)seed << 0x1;
     result->d = seed * 0x3;
     return result;
 }

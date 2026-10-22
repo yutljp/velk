@@ -335,11 +335,11 @@ fn zero_bits_in(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
             BinOp::Add => (bits(lhs).max(bits(rhs)) + 1).min(64),
             BinOp::Mul => (bits(lhs) + bits(rhs)).min(64),
             BinOp::Shl => match rhs.as_ref() {
-                Expr::Const(amount) if *amount < 64 => (bits(lhs) + *amount as u32).min(64),
+                Expr::Const(amount) => (bits(lhs) + (amount & 63) as u32).min(64),
                 _ => 64,
             },
             BinOp::Shr => match rhs.as_ref() {
-                Expr::Const(amount) => bits(lhs).saturating_sub((*amount).min(64) as u32),
+                Expr::Const(amount) => bits(lhs).saturating_sub((amount & 63) as u32),
                 _ => bits(lhs),
             },
             BinOp::DivU => bits(lhs),
@@ -409,6 +409,41 @@ pub(crate) fn fit(mut printed: Printed, expr: &Expr, bits: u32, ctx: &Ctx<'_>) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shift_widths_use_wrapped_counts() {
+        let known = HashMap::from([(7, 8)]);
+        for (amount, left, right) in [(63, 64, 0), (64, 8, 8), (65, 9, 7), (128, 8, 8)] {
+            for (op, expected) in [(BinOp::Shl, left), (BinOp::Shr, right)] {
+                let value = Expr::bin(op, Expr::reg(7, 64), Expr::Const(amount));
+                assert_eq!(zero_bits_in(&value, &known), expected, "{op:?} {amount}");
+            }
+        }
+    }
+
+    #[test]
+    fn shift_width_bounds_cover_evaluated_results() {
+        for width in [8, 16, 32, 64] {
+            let known = HashMap::from([(7, width)]);
+            let source_mask = crate::ir::semantics::mask(width);
+            for amount in [0, 1, 31, 32, 40, 63, 64, 65, 127, 128, u64::MAX] {
+                for op in [BinOp::Shl, BinOp::Shr] {
+                    let expr = Expr::bin(op, Expr::reg(7, 64), Expr::Const(amount));
+                    let bound = zero_bits_in(&expr, &known);
+                    for value in [0, 1, 1u64 << (width - 1), source_mask] {
+                        let result = crate::ir::semantics::evaluate(&expr, &|index| {
+                            (index == 7).then_some(value)
+                        })
+                        .expect("a register expression");
+                        assert!(
+                            64 - result.leading_zeros() <= bound,
+                            "{width}-bit {value:x} {op:?} {amount}: {result:x} exceeds {bound} bits"
+                        );
+                    }
+                }
+            }
+        }
+    }
 
     #[test]
     fn address_conversion_only_changes_pointer_values() {

@@ -187,7 +187,7 @@ fn word_low_byte @ 0x2012c0 (size 3)
 /* velk pseudo-C: flags_level @ 0x2012d0 */
 struct flags { uint8_t gap_0x0[0x4]; };
 unsigned int flags_level(struct flags f) {
-    return ((f & 0x1) == 0x0 ? f >> 0x1 & 0x7 : f >> 0x4 & 0xf);
+    return ((f & 0x1) == 0x0 ? (f & 0xffffffff) >> 0x1 & 0x7 : (f & 0xffffffff) >> 0x4 & 0xf);
 }
 -- signature
 unsigned int (struct flags f)

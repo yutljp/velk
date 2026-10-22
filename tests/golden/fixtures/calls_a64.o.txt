@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: twice @ 0x0 */
 int32_t twice(int32_t a0) {
-    return a0 << 0x1;
+    return (uint64_t)a0 << 0x1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -234,7 +234,7 @@ int32_t is_odd(int32_t a0) {
     if (v1 >= 0x2) {
         v1 = (v1 >> 0x1) + 0x1;
         v4 = v1 & 0xfffffffe;
-        a0 = a0 - (v4 << 0x1);
+        a0 = a0 - ((uint64_t)v4 << 0x1);
         v5 = v4;
         do {
             v5 = v5 - 0x2;

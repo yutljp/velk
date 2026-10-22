@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: twice @ 0x201310 */
 int twice(int x) {
-    return x << 0x1;
+    return (uint64_t)x << 0x1;
 }
 -- signature
 int (int x)

@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: tail_one @ 0x0 */
 int32_t tail_one(int32_t a0) {
-    return a0 + (a0 << 0x1) + 0x1;
+    return a0 + ((uint64_t)a0 << 0x1) + 0x1;
 }
 -- signature
 int32_t (int32_t a0)

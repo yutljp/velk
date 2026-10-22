@@ -25,7 +25,7 @@ fn add3 @ 0x21018c (size 12)
 -- decompile
 /* velk pseudo-C: scale @ 0x210198 */
 int scale(int x) {
-    return (x << 0x3) - x + 0x3;
+    return ((uint64_t)x << 0x3) - x + 0x3;
 }
 -- signature
 int (int x)

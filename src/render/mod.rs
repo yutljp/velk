@@ -3005,7 +3005,7 @@ mod tests {
             "    v1->field_0x0 = 0x0;\n",
             "    v1 = v1 + 0x2;\n",
             "    v2 = (uintptr_t)&a0[a1].field_0x8;\n",
-            "    return *(uint32_t *)((uint8_t *)a0 + (a1 << 0x4) + 0xc);\n",
+            "    return *(uint32_t *)((uint8_t *)a0 + ((uint64_t)a1 << 0x4) + 0xc);\n",
         ] {
             assert!(text.contains(line), "{line:?} in {text}");
         }
