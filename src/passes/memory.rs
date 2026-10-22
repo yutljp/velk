@@ -169,7 +169,7 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
 
 /// Whether an address in the frame is used as a value: stored, passed, or
 /// computed with, rather than only loaded and stored through.
-fn frame_address_escapes(ir: &FunctionIr, sp: u16) -> bool {
+pub(crate) fn frame_address_escapes(ir: &FunctionIr, sp: u16) -> bool {
     fn escapes(expr: &Expr, sp: u16) -> bool {
         match expr {
             Expr::Reg { index, .. } => *index == sp,

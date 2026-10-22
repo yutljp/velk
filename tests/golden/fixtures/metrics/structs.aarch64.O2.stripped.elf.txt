@@ -200,7 +200,7 @@ struct sub_2102c0_a0 {
     int64_t field_0x18;
 };
 int64_t sub_2102c0(struct sub_2102c0_a0 *a0) {
-    return add_lanes64(a0->field_0x0, a0->field_0x10) + add_lanes64(a0->field_0x8, a0->field_0x18);
+    return a0->field_0x0 + a0->field_0x10 + (a0->field_0x8 + a0->field_0x18);
 }
 -- signature
 int64_t (struct sub_2102c0_a0 * a0)

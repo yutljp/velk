@@ -1,3 +1,5 @@
+mod abi;
+mod abi_objects;
 mod calls;
 mod expr;
 mod globals;
@@ -240,12 +242,49 @@ pub fn render_with_dependencies(
     params::fold_saved_parameters(&mut folded);
     // A saved parameter returned reads as the parameter now.
     crate::analysis::typing::apply_pointer_return(&mut folded);
+    let mut logical = abi::prepare(&mut folded, symbols);
     let ir = &folded;
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
         variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
     let locals = stack_locals(ir, &frames, &variable_types);
-    render_with(ir, references, locals, symbols, data_ranges)
+    if let Some(logical) = &mut logical {
+        let params: std::collections::HashSet<_> =
+            ir.params.iter().map(|param| param.index).collect();
+        let mut reserved: std::collections::HashSet<String> = locals
+            .decls
+            .iter()
+            .map(|local| local.name.clone())
+            .collect();
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+            for register in writes
+                .into_iter()
+                .chain(reads)
+                .filter(|register| !params.contains(register))
+            {
+                reserved.insert(crate::ir::reg_name(ir.isa, register, 64));
+                reserved.insert(crate::ir::reg_name(ir.isa, register, 32));
+            }
+        }
+        logical.resolve_names(
+            reserved,
+            variable_types
+                .values()
+                .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+                .chain(ir.members.iter().map(|member| &member.ty))
+                .chain(std::iter::once(&ir.ret_type))
+                .map(ToString::to_string),
+        );
+    }
+    render_with(
+        ir,
+        references,
+        locals,
+        symbols,
+        data_ranges,
+        logical.as_ref(),
+    )
 }
 
 /// The precision of a float the function returns.
@@ -281,6 +320,7 @@ fn render_with(
     locals: Locals,
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
+    logical: Option<&abi::Plan>,
 ) -> Rendered {
     let mut names: HashMap<u16, &str> = ir
         .params
@@ -308,7 +348,15 @@ fn render_with(
         .collect();
     let narrow_regs = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
-    let variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    let mut variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    if let Some(logical) = logical {
+        for capture in &logical.captures {
+            variable_types.remove(&capture.register);
+        }
+        for pointer in &logical.pointers {
+            variable_types.remove(&pointer.register);
+        }
+    }
     let mut declared_registers =
         declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
     let floats: HashMap<u16, crate::ir::Precision> = variable_types
@@ -430,6 +478,9 @@ fn render_with(
         .chain(symbols.functions.values().map(|name| sanitize(name)))
         .chain(symbols.import_slots.values().map(|name| sanitize(name)))
         .collect();
+    if let Some(logical) = logical {
+        reserved.extend(logical.reserved_names());
+    }
     reserved.push(sanitize(
         &symbols
             .functions
@@ -498,7 +549,18 @@ fn render_with(
     for (_, index, _, snapshot) in &segment_bases {
         names.insert(*index, snapshot);
     }
+    let mut value_bits = int::value_bits(ir);
+    if let Some(logical) = logical {
+        for capture in &logical.captures {
+            declared_registers.insert(
+                capture.register,
+                declared(&CType::U64, false).expect("an integer"),
+            );
+            value_bits.remove(&capture.register);
+        }
+    }
     let mut ctx = Ctx {
+        abi: logical,
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return,
@@ -510,6 +572,7 @@ fn render_with(
             .filter_map(|reference| Some((reference.addr, reference.text.clone()?)))
             .collect(),
         slots: locals.slots,
+        parameter_addresses: locals.parameter_addresses,
         local_parts: locals.parts,
         local_widths: locals.widths,
         local_pointer_types: locals
@@ -568,7 +631,7 @@ fn render_with(
             .ret_type
             .is_pointer()
             .then(|| ir.ret_type.to_string().trim_end().to_owned()),
-        value_bits: int::value_bits(ir),
+        value_bits,
         read_once: Default::default(),
         taken: Default::default(),
     };
@@ -630,7 +693,11 @@ fn render_with(
         "{} {{\n",
         declaration(
             &ir.ret_type,
-            &format!("{}({})", sanitize(&name), signature(ir))
+            &format!(
+                "{}({})",
+                sanitize(&name),
+                logical.map_or_else(|| signature(ir), abi::Plan::signature)
+            )
         )
     ));
     let mut decls = locals.decls;
@@ -674,6 +741,14 @@ fn render_with(
     }
     out.insert_str(prototypes_at, &prototypes);
     let mut declared = 0;
+    if let Some(logical) = logical {
+        for declaration in logical.declarations() {
+            indent(1, &mut out);
+            out.push_str(&declaration);
+            out.push('\n');
+            declared += 1;
+        }
+    }
     for (_, _, provider, snapshot) in &segment_bases {
         indent(1, &mut out);
         out.push_str(&format!("uint64_t {snapshot} = {provider}();\n"));
@@ -866,7 +941,17 @@ fn debug_definitions(ir: &FunctionIr, code: &str) -> String {
     }
     ordered
         .iter()
-        .map(|definition| defined(&definition.name, &definition.members))
+        .map(|definition| {
+            let mut members = definition.members.clone();
+            if let Some(alignment) = definition.alignment
+                && alignment.is_power_of_two()
+                && !definition.compatible_profiles.is_empty()
+                && let Some(first) = members.first_mut()
+            {
+                *first = format!("_Alignas({alignment}) {first}");
+            }
+            defined(&definition.name, &members)
+        })
         .collect()
 }
 
@@ -1334,6 +1419,7 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
         ) = (&nodes[index], nodes.get(index + 1))
             && stored == addr.as_ref()
             && stored_width == width
+            && expr::copy_address(addr, *width, ctx).is_none()
             && expr::fits(expected, u32::from(*width) * 8, ctx)
             && matches!(lhs.as_ref(), Expr::Reg { index: read, .. } if *read == dest.index)
             && matches!(els.as_ref(), Expr::Reg { index: read, .. } if *read == dest.index)
@@ -1362,7 +1448,12 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             out.push_str(&format!(
                 "{} = {};\n",
                 ctx.register(dest.index, dest.width),
-                conformed(loaded, call, pointer, ctx)
+                narrow_write(
+                    dest.index,
+                    dest.width,
+                    conformed(loaded, call, pointer, ctx),
+                    ctx
+                )
             ));
             index += 2;
             continue;
@@ -1850,7 +1941,8 @@ fn conformed(value: &Expr, printed: int::Printed, pointer: Option<&str>, ctx: &C
         // Memory read whole is read as the pointer it holds.
         Some(ty)
             if !printed.is_pointer()
-                && matches!(value, Expr::Load { width: 8, .. })
+                && let Expr::Load { addr, width: 8, .. } = value
+                && expr::copy_address(addr, 8, ctx).is_none()
                 && let Some(address) = printed
                     .text
                     .strip_prefix("*(uint64_t *)")
@@ -1899,6 +1991,51 @@ fn stored_value(value: &Expr, bits: u32, ctx: &Ctx<'_>) -> int::Printed {
     .ranging(int::Range::Unsigned(u32::from(precision.bits())))
 }
 
+fn narrow_write(index: u16, width: u8, value: String, ctx: &Ctx<'_>) -> String {
+    if width < 64
+        && ctx
+            .abi
+            .is_some_and(|abi| abi.captures.iter().any(|capture| capture.register == index))
+    {
+        format!("({})({value})", type_of(width / 8, false))
+    } else {
+        value
+    }
+}
+
+fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    let result = ctx.abi?.result.as_ref()?;
+    if result.indirect {
+        return Some(format!("return {};", result.name));
+    }
+    let values: &[Expr] = match value {
+        Expr::Apply {
+            op: crate::ir::Operation::Results,
+            args,
+        } => args,
+        value => std::slice::from_ref(value),
+    };
+    if values.len() != result.pieces.len() {
+        return None;
+    }
+    let mut lines = vec!["{".to_owned()];
+    for ((_, name), value) in result.pieces.iter().zip(values) {
+        lines.push(format!(
+            "    uint64_t {name} = {};",
+            stored_value(value, 64, ctx).text
+        ));
+    }
+    for (piece, name) in &result.pieces {
+        lines.push(format!(
+            "    __builtin_memcpy((unsigned char *)&{} + 0x{:x}, &{name}, {});",
+            result.name, piece.object_offset, piece.bytes
+        ));
+    }
+    lines.push(format!("    return {};", result.name));
+    lines.push("}".to_owned());
+    Some(lines.join("\n"))
+}
+
 pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
     match stmt {
         Stmt::Assign { dest, value } => {
@@ -1912,6 +2049,17 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             } else {
                 ctx.register(dest.index, dest.width)
             };
+            if ctx.abi.is_some_and(|abi| {
+                abi.captures
+                    .iter()
+                    .any(|capture| capture.register == dest.index)
+            }) {
+                let value = stored_value(value, u32::from(dest.width), ctx).text;
+                return format!(
+                    "{target} = {};",
+                    narrow_write(dest.index, dest.width, value, ctx)
+                );
+            }
             if let Some(precision) = ctx.floats.get(&dest.index) {
                 return format!(
                     "{target} = {};",
@@ -1936,6 +2084,11 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         Stmt::Store { addr, value, width } => {
             // Memory keeps of the value the bits stored.
             let stored = u32::from(*width) * 8;
+            if let Some(address) = expr::copy_address(addr, *width, ctx) {
+                let ty = type_of(*width, false);
+                let value = conformed(value, stored_value(value, stored, ctx), None, ctx);
+                return format!("__builtin_memcpy({address}, &({ty}){{{value}}}, {width});");
+            }
             let precision = value_precision(value, ctx);
             let view = precision
                 .filter(|precision| u32::from(precision.bits()) == stored)
@@ -2136,6 +2289,25 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             });
             format!("{assigned}{callee}({});", args.join(", "))
         }
+        Stmt::Ret { value } if ctx.abi.is_some_and(|abi| abi.result.is_some()) => {
+            aggregate_return(value, ctx).expect("validated aggregate result pieces")
+        }
+        Stmt::Ret {
+            value:
+                Expr::Apply {
+                    op: crate::ir::Operation::Results,
+                    args,
+                },
+        } if ctx.abi.is_some() && args.len() == 1 => {
+            if let Some(precision) = ctx.float_return {
+                format!(
+                    "return {};",
+                    expr::float_operand(&args[0], precision, ctx, 0, false)
+                )
+            } else {
+                format!("return {};", returned(&args[0], ctx))
+            }
+        }
         // Several values, the further ones in a comment.
         Stmt::Ret {
             value:
@@ -2197,6 +2369,273 @@ mod tests {
             width,
             signed: false,
         }
+    }
+
+    fn object_access_ir(stmts: Vec<Stmt>) -> FunctionIr {
+        use crate::ir::{
+            AbiLocation, AbiPiece, AbiProfile, DeclaredSignature, Definition, Passing,
+            RegisterClass, SignatureAbi, ValueAbi,
+        };
+        let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
+        ir.params = vec![Param {
+            index: 0,
+            name: "a0".to_owned(),
+            ty: CType::U64,
+        }];
+        ir.definitions = vec![Definition {
+            name: "struct bytes".to_owned(),
+            members: vec!["unsigned char bytes[24];".to_owned()],
+            fields: vec!["bytes".to_owned()],
+            contains: vec![],
+            size: 24,
+            alignment: Some(1),
+            compatible_profiles: vec![AbiProfile::Aapcs64],
+        }];
+        ir.declared_signature = Some(DeclaredSignature {
+            params: vec![("value".to_owned(), CType::Named("struct bytes".to_owned()))],
+            ret: CType::U64,
+            variadic: false,
+            abi: Ok(SignatureAbi {
+                profile: AbiProfile::Aapcs64,
+                arguments: vec![ValueAbi {
+                    aggregate: true,
+                    size: 24,
+                    alignment: 1,
+                    defined_bits: vec![(0, 192)],
+                    passing: Passing::Indirect {
+                        pointer: AbiLocation::Register(0),
+                        returned_pointer: None,
+                    },
+                }],
+                result: Some(ValueAbi {
+                    aggregate: false,
+                    size: 8,
+                    alignment: 8,
+                    defined_bits: vec![(0, 64)],
+                    passing: Passing::Direct(vec![AbiPiece {
+                        location: AbiLocation::Register(0),
+                        object_offset: 0,
+                        bytes: 8,
+                        class: Some(RegisterClass::Integer),
+                    }]),
+                }),
+            }),
+        });
+        ir
+    }
+
+    #[test]
+    fn object_loads_copy_the_exact_width_and_preserve_signedness() {
+        for width in [1, 2, 4, 8] {
+            for signed in [false, true] {
+                let mut ir = object_access_ir(vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1))),
+                        width,
+                        signed,
+                    },
+                }]);
+                let code = rendered(&ir);
+                let ty = super::type_of(width, false);
+                assert!(
+                    code.contains(&format!(
+                        "__builtin_memcpy(({ty}[1]){{0}}, value_address + 0x1, {width})"
+                    )),
+                    "{code}"
+                );
+                if signed {
+                    assert!(code.contains(super::type_of(width, true)), "{code}");
+                }
+                ir.declared_signature = None;
+                ir.params[0].ty = CType::pointer_to(CType::int(1, false));
+                assert!(!rendered(&ir).contains("__builtin_memcpy"));
+            }
+        }
+    }
+
+    #[test]
+    fn overlapping_object_store_copies_its_source_before_writing() {
+        let address = Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1));
+        let ir = object_access_ir(vec![
+            Stmt::Store {
+                addr: address.clone(),
+                value: load(Expr::reg(0, 64), 8),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: load(address, 8),
+            },
+        ]);
+        let code = rendered(&ir);
+        let store = code
+            .lines()
+            .find(|line| line.contains("__builtin_memcpy(value_address + 0x1,"))
+            .expect("an object store");
+        assert_eq!(store.matches("__builtin_memcpy").count(), 2, "{code}");
+        assert_eq!(store.matches("value_address, 8").count(), 1, "{code}");
+        assert!(store.contains("&(uint64_t){"), "{code}");
+    }
+
+    #[test]
+    fn object_pointer_load_converts_copied_integer_bits() {
+        let mut ir = object_access_ir(vec![Stmt::Ret {
+            value: load(Expr::reg(0, 64), 8),
+        }]);
+        ir.declared_signature.as_mut().unwrap().ret = CType::pointer_to(CType::int(1, false));
+        let code = rendered(&ir);
+        assert!(
+            code.contains("__builtin_memcpy((uint64_t[1]){0}, value_address, 8)"),
+            "{code}"
+        );
+        assert!(!code.contains("*(uint8_t **)__builtin_memcpy"), "{code}");
+    }
+
+    #[test]
+    fn floating_object_loads_reinterpret_copied_bits() {
+        for precision in [Precision::Single, Precision::Double] {
+            let width = precision.bits() / 8;
+            let ir = object_access_ir(vec![Stmt::Ret {
+                value: Expr::apply(
+                    Operation::FloatEqual(precision),
+                    vec![
+                        load(
+                            Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1)),
+                            width,
+                        ),
+                        Expr::Const(0),
+                    ],
+                ),
+            }]);
+            let code = rendered(&ir);
+            let ty = super::type_of(width, false);
+            assert!(
+                code.contains(&format!(
+                    "__builtin_memcpy(({ty}[1]){{0}}, value_address + 0x1, {width})"
+                )),
+                "{code}"
+            );
+            assert!(
+                !code.contains("*(float *)") && !code.contains("*(double *)"),
+                "{code}"
+            );
+        }
+    }
+
+    #[test]
+    fn object_compare_exchange_patterns_keep_copy_accesses() {
+        let address = Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1));
+        let old = VARIABLE_BASE;
+        let ir = object_access_ir(vec![
+            assign(old, load(address.clone(), 8)),
+            Stmt::Store {
+                addr: address,
+                width: 8,
+                value: Expr::Select {
+                    cond: crate::ir::Cond::Eq,
+                    lhs: Box::new(Expr::reg(old, 64)),
+                    rhs: Box::new(Expr::Const(5)),
+                    then: Box::new(Expr::Const(7)),
+                    els: Box::new(Expr::reg(old, 64)),
+                },
+            },
+            Stmt::Ret {
+                value: Expr::reg(old, 64),
+            },
+        ]);
+        let code = rendered(&ir);
+        assert_eq!(code.matches("__builtin_memcpy").count(), 2, "{code}");
+        assert!(!code.contains("__sync_val_compare_and_swap"), "{code}");
+    }
+
+    fn scalar_stack_ir(stmts: Vec<Stmt>) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
+        ir.params = [7, 6, 2, 1, 8, 9]
+            .into_iter()
+            .enumerate()
+            .map(|(position, index)| Param {
+                index,
+                name: format!("a{position}"),
+                ty: CType::U64,
+            })
+            .collect();
+        ir.stack_params = (0..3)
+            .map(|index| crate::ir::StackParam {
+                offset: 8 * (index + 1),
+                size: 8,
+                name: format!("a{}", index + 6),
+                ty: CType::U64,
+                position: index as usize + 6,
+            })
+            .collect();
+        ir
+    }
+
+    #[test]
+    fn scalar_stack_parameter_parts_use_bounded_byte_copies() {
+        let sp = crate::arch::stack_pointer(Isa::X86_64);
+        let at = |offset| Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset));
+        let ir = scalar_stack_ir(vec![Stmt::Ret {
+            value: Expr::bin(
+                BinOp::Add,
+                load(at(31), 1),
+                Expr::bin(BinOp::Add, load(at(24), 4), load(at(24), 8)),
+            ),
+        }]);
+        let code = rendered(&ir);
+        assert!(code.contains("(uint8_t *)&a8 + 0x7, 1)"), "{code}");
+        assert!(code.contains("(uint8_t *)&a8 + 0x0, 4)"), "{code}");
+        assert_eq!(code.matches("__builtin_memcpy").count(), 2, "{code}");
+        assert!(!code.contains("rsp"), "{code}");
+        let full = rendered(&scalar_stack_ir(vec![Stmt::Ret {
+            value: load(at(24), 8),
+        }]));
+        assert!(full.contains("return a8;"), "{full}");
+        assert!(!full.contains("__builtin_memcpy"), "{full}");
+    }
+
+    #[test]
+    fn scalar_stack_parameter_parts_reject_unknown_or_incompatible_storage() {
+        let sp = crate::arch::stack_pointer(Isa::X86_64);
+        for (offset, width, ty) in [
+            (31, 2, CType::U64),
+            (24, 8, CType::U32),
+            (28, 1, CType::U32),
+            (31, 1, CType::Named("opaque_scalar".to_owned())),
+        ] {
+            let mut ir = scalar_stack_ir(vec![Stmt::Ret {
+                value: load(
+                    Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset)),
+                    width,
+                ),
+            }]);
+            ir.stack_params[2].ty = ty;
+            let code = rendered(&ir);
+            assert!(!code.contains("__builtin_memcpy"), "{code}");
+            assert!(code.contains("rsp"), "{code}");
+        }
+        let mut ir = scalar_stack_ir(vec![Stmt::Ret {
+            value: load(Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(25)), 1),
+        }]);
+        ir.stack_params[2].ty = CType::U32;
+        let code = rendered(&ir);
+        assert!(code.contains("(uint8_t *)&a8 + 0x1, 1)"), "{code}");
+        assert!(!code.contains("rsp"), "{code}");
+    }
+
+    #[test]
+    fn scalar_stack_parameter_parts_reject_ambiguous_frame_addresses() {
+        let sp = crate::arch::stack_pointer(Isa::X86_64);
+        let address = Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(31));
+        let ir = scalar_stack_ir(vec![
+            assign(VARIABLE_BASE, load(address.clone(), 1)),
+            assign(sp, Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8))),
+            Stmt::Ret {
+                value: load(address, 1),
+            },
+        ]);
+        let frames = super::block_frames(&ir, sp);
+        let locals = super::stack_locals(&ir, &frames, &Default::default());
+        assert!(locals.parameter_addresses.is_empty());
     }
 
     /// The condition printed for `return lhs <cond> rhs ? 1 : 0` in a

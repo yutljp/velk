@@ -4,9 +4,9 @@
 == 0x210154 read_outer
 -- decompile
 /* velk pseudo-C: read_outer @ 0x210154 */
-struct inner { unsigned int head; };
+struct inner { _Alignas(4) unsigned int head; };
 struct outer {
-    struct inner first;
+    _Alignas(8) struct inner first;
     uint8_t gap_0x4[0x4];
     int *next;
     short count;

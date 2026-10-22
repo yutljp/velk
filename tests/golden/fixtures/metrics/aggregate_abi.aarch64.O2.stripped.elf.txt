@@ -1,0 +1,207 @@
+# metrics/aggregate_abi.aarch64.O2.stripped.elf: elf aarch64 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x210214 12 - unwind,prologue
+0x210220 20 - unwind,prologue
+0x210234 8 - unwind,prologue
+0x21023c 8 - unwind,prologue
+0x210244 8 - unwind,prologue
+0x21024c 8 - unwind,prologue
+0x210254 60 - unwind,prologue
+0x210290 84 - unwind,prologue
+0x2102e4 24 - unwind,prologue
+0x2102fc 60 - unwind,prologue
+0x210338 84 - unwind,prologue
+
+== 0x210214 -
+-- decompile
+/* velk pseudo-C: sub_210214 @ 0x210214 */
+int64_t sub_210214(int64_t a0, int64_t a1, int64_t a2) {
+    return a0 + a2;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210214 (size 12)
+  blk0 @ 0x210214:
+    ret (x0 + x2)
+-- card
+{"addr":"0x210214","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":0}
+
+== 0x210220 -
+-- decompile
+/* velk pseudo-C: sub_210220 @ 0x210220 */
+int64_t sub_210220(int64_t a0, int64_t a1, int64_t a2, double a3) {
+    return a0 + a3;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, double a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210220 (size 20)
+  blk0 @ 0x210220:
+    ret fadd.d(x0, d0)
+-- card
+{"addr":"0x210220","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+
+== 0x210234 -
+-- decompile
+/* velk pseudo-C: sub_210234 @ 0x210234 */
+double sub_210234(double a0, double a1) {
+    return a0 + a1;
+}
+-- signature
+double (double a0, double a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210234 (size 8)
+  blk0 @ 0x210234:
+    ret fadd.d(d0, d1)
+-- card
+{"addr":"0x210234","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+
+== 0x21023c -
+-- decompile
+/* velk pseudo-C: sub_21023c @ 0x21023c */
+int64_t sub_21023c(int64_t a0, float a1, double a2, double a3) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, float a1, double a2, double a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x21023c (size 8)
+  blk0 @ 0x21023c:
+    ret x0
+-- card
+{"addr":"0x21023c","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+
+== 0x210244 -
+-- decompile
+/* velk pseudo-C: sub_210244 @ 0x210244 */
+int64_t sub_210244(int64_t a0, float a1, float a2, double a3, double a4) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, float a1, float a2, double a3, double a4)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210244 (size 8)
+  blk0 @ 0x210244:
+    ret x0
+-- card
+{"addr":"0x210244","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+
+== 0x21024c -
+-- decompile
+/* velk pseudo-C: sub_21024c @ 0x21024c */
+int64_t sub_21024c(int64_t a0, float a1, float a2, float a3, double a4, double a5) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, float a1, float a2, float a3, double a4, double a5)
+-- references
+
+-- ir
+fn <unnamed> @ 0x21024c (size 8)
+  blk0 @ 0x21024c:
+    ret x0
+-- card
+{"addr":"0x21024c","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+
+== 0x210254 -
+-- decompile
+/* velk pseudo-C: sub_210254 @ 0x210254 */
+int64_t sub_210254(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
+    return a7 * 0x13 + (a5 * 0xd + (a4 * 0xb + (a1 + ((uint64_t)a1 << 0x1) + a0 + (a2 + ((uint64_t)a2 << 0x2)) - a3 + ((uint64_t)a3 << 0x3))) + (a6 + ((uint64_t)a6 << 0x4)));
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210254 (size 60)
+  blk0 @ 0x210254:
+    ret ((x7 * #0x13) + (((x5 * #0xd) + ((x4 * #0xb) + (((((x1 + (x1 << #0x1)) + x0) + (x2 + (x2 << #0x2))) - x3) + (x3 << #0x3)))) + (x6 + (x6 << #0x4))))
+-- card
+{"addr":"0x210254","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":60,"unsupported":0}
+
+== 0x210290 -
+-- decompile
+/* velk pseudo-C: sub_210290 @ 0x210290 */
+int64_t sub_210290(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+    return *(uint64_t *)(sp + 0x10) * 0x1d + (*(uint64_t *)(sp + 0x8) * 0x17 + (*(uint64_t *)(sp) * 0x13 + (a5 * 0xd + (a4 * 0xb + (a1 + ((uint64_t)a1 << 0x1) + a0 + (a2 + ((uint64_t)a2 << 0x2)) - a3 + ((uint64_t)a3 << 0x3))) + (a6 + ((uint64_t)a6 << 0x4)))));
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210290 (size 84)
+  blk0 @ 0x210290:
+    ret ((load64((sp + #0x10)) * #0x1d) + ((load64((sp + #0x8)) * #0x17) + ((load64(sp) * #0x13) + (((x5 * #0xd) + ((x4 * #0xb) + (((((x1 + (x1 << #0x1)) + x0) + (x2 + (x2 << #0x2))) - x3) + (x3 << #0x3)))) + (x6 + (x6 << #0x4))))))
+-- card
+{"addr":"0x210290","approxTokens":222,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":84,"unsupported":0}
+
+== 0x2102e4 -
+-- decompile
+/* velk pseudo-C: sub_2102e4 @ 0x2102e4 */
+int64_t sub_2102e4(int64_t a0, int64_t a1, int64_t a2) {
+    uint64_t x8;
+
+    *(uint64_t *)(x8) = a0 + a2;
+    *(uint64_t *)(x8 + 0x8) = a1 ^ a2;
+    *(uint64_t *)(x8 + 0x10) = a0 - a1;
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2102e4 (size 24)
+  blk0 @ 0x2102e4:
+    store64((x0 + x2), x8)
+    store64((x1 ^ x2), (x8 + #0x8))
+    store64((x0 - x1), (x8 + #0x10))
+    ret x0
+-- card
+{"addr":"0x2102e4","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+
+== 0x2102fc -
+-- decompile
+/* velk pseudo-C: sub_2102fc @ 0x2102fc */
+int64_t sub_2102fc(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
+    return a7 * 0x13 + (a5 * 0xd + (a4 * 0xb + (a1 + ((uint64_t)a1 << 0x1) + a0 + (a2 + ((uint64_t)a2 << 0x2)) - a3 + ((uint64_t)a3 << 0x3))) + (a6 + ((uint64_t)a6 << 0x4)));
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+-- references
+
+-- ir
+fn <unnamed> @ 0x2102fc (size 60)
+  blk0 @ 0x2102fc:
+    ret ((x7 * #0x13) + (((x5 * #0xd) + ((x4 * #0xb) + (((((x1 + (x1 << #0x1)) + x0) + (x2 + (x2 << #0x2))) - x3) + (x3 << #0x3)))) + (x6 + (x6 << #0x4))))
+-- card
+{"addr":"0x2102fc","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":60,"unsupported":0}
+
+== 0x210338 -
+-- decompile
+/* velk pseudo-C: sub_210338 @ 0x210338 */
+int64_t sub_210338(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+    return *(uint64_t *)(sp + 0x10) * 0x1d + (*(uint64_t *)(sp + 0x8) * 0x17 + (*(uint64_t *)(sp) * 0x13 + (a5 * 0xd + (a4 * 0xb + (a1 + ((uint64_t)a1 << 0x1) + a0 + (a2 + ((uint64_t)a2 << 0x2)) - a3 + ((uint64_t)a3 << 0x3))) + (a6 + ((uint64_t)a6 << 0x4)))));
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
+-- references
+
+-- ir
+fn <unnamed> @ 0x210338 (size 84)
+  blk0 @ 0x210338:
+    ret ((load64((sp + #0x10)) * #0x1d) + ((load64((sp + #0x8)) * #0x17) + ((load64(sp) * #0x13) + (((x5 * #0xd) + ((x4 * #0xb) + (((((x1 + (x1 << #0x1)) + x0) + (x2 + (x2 << #0x2))) - x3) + (x3 << #0x3)))) + (x6 + (x6 << #0x4))))))
+-- card
+{"addr":"0x210338","approxTokens":222,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":84,"unsupported":0}

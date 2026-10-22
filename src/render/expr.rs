@@ -21,6 +21,7 @@ pub(crate) struct Declared {
 }
 
 pub(crate) struct Ctx<'a> {
+    pub(super) abi: Option<&'a super::abi::Plan>,
     pub(super) isa: Isa,
     /// The function returns nothing: a `return` carries no value.
     pub(super) void_return: bool,
@@ -34,6 +35,8 @@ pub(crate) struct Ctx<'a> {
     /// Rendered stack address to local name, computed once per function so a
     /// load and its store share a name even after the stack pointer moves.
     pub(super) slots: HashMap<String, String>,
+    /// Byte addresses proven to fit a scalar stack parameter at this access width.
+    pub(super) parameter_addresses: HashMap<(String, u8), String>,
     /// Rendered stack address within a wider local to that address as bytes
     /// into the local.
     pub(super) local_parts: HashMap<String, String>,
@@ -386,18 +389,35 @@ pub(crate) fn float_operand(
             }
         }
         // A register, or its low half, holds the float itself.
+        Expr::Reg { index, width }
+            if ctx.abi.is_some()
+                && (ctx.floats.get(index) != Some(&precision)
+                    || u32::from(*width) < u32::from(precision.bits())) =>
+        {
+            let bits = print(&Expr::reg(*index, *width), ctx, 64).text;
+            bits_float(bits, precision)
+        }
         Expr::Reg { index, .. } => ctx.register(*index, 64),
+        Expr::Apply { op, args }
+            if ctx.abi.is_some() && op.result_precision() == Some(precision) =>
+        {
+            render_operation(*op, args, ctx)
+        }
         Expr::Bin {
             op: BinOp::And,
             lhs,
             rhs,
         } if matches!(lhs.as_ref(), Expr::Reg { .. })
-            && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) =>
+            && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+            && (precision == Precision::Single || ctx.abi.is_none()) =>
         {
             float_operand(lhs, precision, ctx, parent, right)
         }
         // Memory read as a float names the float type.
         Expr::Load { addr, width, .. } if u32::from(*width) * 8 == u32::from(precision.bits()) => {
+            if let Some(bits) = copied_load(addr, *width, ctx) {
+                return bits_float(bits, precision);
+            }
             let float_type = match precision {
                 Precision::Single => "float",
                 Precision::Double => "double",
@@ -423,8 +443,17 @@ pub(crate) fn float_operand(
                 },
             }
         }
+        _ if ctx.abi.is_some() => bits_float(print(expr, ctx, 64).text, precision),
         _ => operand(expr, ctx, parent, right),
     }
+}
+
+fn bits_float(bits: String, precision: Precision) -> String {
+    let (float, integer) = match precision {
+        Precision::Single => ("float", "uint32_t"),
+        Precision::Double => ("double", "uint64_t"),
+    };
+    format!("((union {{ {integer} bits; {float} value; }}){{ .bits = ({integer})({bits}) }}).value")
 }
 
 /// The C function that rounds a float to an integral value this way.
@@ -1199,6 +1228,16 @@ fn widen(printed: Printed, constant: bool, unsigned: bool) -> Printed {
 fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
     let text = ctx.register(index, width);
     let read = u32::from(width);
+    if ctx.abi.is_some()
+        && let Some(precision) = ctx.floats.get(&index)
+    {
+        let bits = float_bits(text, *precision);
+        return if read < u32::from(precision.bits()) {
+            bits.cast(read, false, ALL)
+        } else {
+            bits
+        };
+    }
     if ctx.pointer_types.contains_key(&index) {
         let pointer = Printed::pointer(text, 13);
         return if read < 64 {
@@ -1307,8 +1346,46 @@ fn masked(lhs: &Expr, mask: u64, ctx: &Ctx<'_>, bits: u32) -> Printed {
     Printed::new(text, ty, exact, strength).ranging(Range::Unsigned(kept))
 }
 
+fn object_address(addr: &Expr, ctx: &Ctx<'_>) -> bool {
+    let base = match addr {
+        Expr::Reg { index, width: 64 } => *index,
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(_)) => {
+            let Expr::Reg { index, width: 64 } = lhs.as_ref() else {
+                return false;
+            };
+            *index
+        }
+        _ => return false,
+    };
+    ctx.abi
+        .is_some_and(|abi| abi.pointers.iter().any(|binding| binding.register == base))
+}
+
+pub(super) fn copy_address(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+    let address = render_expr(addr, ctx);
+    ctx.parameter_addresses
+        .get(&(address.clone(), width))
+        .cloned()
+        .or_else(|| object_address(addr, ctx).then_some(address))
+}
+
+fn copied_load(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+    let address = copy_address(addr, width, ctx)?;
+    let ty = type_of(width, false);
+    Some(format!(
+        "*({ty} *)__builtin_memcpy(({ty}[1]){{0}}, {address}, {width})"
+    ))
+}
+
 /// Memory read `width` bytes wide, by name where it has one.
 fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
+    if let Some(text) = copied_load(addr, width, ctx) {
+        return global_load(text, width, signed, 12);
+    }
     let member = member_access(addr, width, ctx)
         .filter(|member| member.integer().is_some() || member.ty.is_pointer());
     let mut plain_char = false;
@@ -1389,6 +1466,20 @@ fn global_load(text: String, width: u8, signed: bool, strength: u8) -> Printed {
 /// `op` applied to `args`: the bit counts C has builtins for take their
 /// argument at the builtin's width.
 fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>) -> Printed {
+    if op == Operation::Lanes(crate::ir::LaneOp::Add, 64) && args.len() == 2 {
+        return binary(
+            BinOp::Add,
+            (integral(&args[0], ctx, 64), &args[0]),
+            (integral(&args[1], ctx, 64), &args[1]),
+            64,
+            ctx,
+        );
+    }
+    if ctx.abi.is_some()
+        && let Some(precision) = op.result_precision()
+    {
+        return float_bits(render_operation(op, args, ctx), precision);
+    }
     let builtin = |name: &str, bits: u8| {
         let (suffix, width) = if bits == 64 { ("ll", 64) } else { ("", 32) };
         Printed::new(
@@ -1431,6 +1522,20 @@ fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>) -> Printe
         ),
         _ => Printed::opaque(render_operation(op, args, ctx), precedence(expr)),
     }
+}
+
+fn float_bits(value: String, precision: Precision) -> Printed {
+    let (float, integer) = match precision {
+        Precision::Single => ("float", "uint32_t"),
+        Precision::Double => ("double", "uint64_t"),
+    };
+    Printed::new(
+        format!("((union {{ {float} value; {integer} bits; }}){{ .value = {value} }}).bits"),
+        Int::promoted(u32::from(precision.bits()), false),
+        ALL,
+        13,
+    )
+    .ranging(Range::Unsigned(u32::from(precision.bits())))
 }
 
 /// A local read or written whole by name, and through a cast when the access

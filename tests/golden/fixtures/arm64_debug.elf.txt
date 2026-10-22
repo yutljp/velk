@@ -60,7 +60,7 @@ fn helper @ 0x210198 (size 68)
 == 0x2101dc pair_sum
 -- decompile
 /* velk pseudo-C: pair_sum @ 0x2101dc */
-struct pair { int a; int b; };
+struct pair { _Alignas(4) int a; int b; };
 int pair_sum(struct pair *p) {
     return p->b + p->a;
 }

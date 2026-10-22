@@ -11,8 +11,8 @@
 == 0x2011e0 rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x2011e0 */
-struct point { int x; int y; };
-struct rect { struct point min; struct point max; };
+struct point { _Alignas(4) int x; int y; };
+struct rect { _Alignas(4) struct point min; struct point max; };
 int rect_area(struct rect *r) {
     return (r->max.y - r->min.y) * (r->max.x - r->min.x);
 }
@@ -105,34 +105,47 @@ fn record_total @ 0x2011f0 (size 111)
 == 0x201260 point_add
 -- decompile
 /* velk pseudo-C: point_add @ 0x201260 */
-struct point { int x; int y; };
+struct point { _Alignas(4) int x; int y; };
 struct point point_add(struct point a, struct point b) {
-    return ((a + b) & 0xffffffff) | (a & 0xffffffff00000000) + b & 0xffffffff00000000;
+    struct point result = {0};
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
+
+    {
+        uint64_t result_bits = ((a_bits + b_bits) & 0xffffffff) | (a_bits & 0xffffffff00000000) + b_bits & 0xffffffff00000000;
+        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        return result;
+    }
 }
 -- signature
-struct point (struct point a, struct point b)
+int64_t (int64_t a0, int64_t a1)
 -- references
 
 -- ir
 fn point_add @ 0x201260 (size 26)
   blk0 @ 0x201260:
-    ret (((rdi + rsi) & #0xffffffff) | (((rdi & #0xffffffff00000000) + rsi) & #0xffffffff00000000))
+    ret results((((rdi + rsi) & #0xffffffff) | (((rdi & #0xffffffff00000000) + rsi) & #0xffffffff00000000)))
 -- card
 {"addr":"0x201260","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":26,"unsupported":0}
 
 == 0x201280 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x201280 */
-struct big { long a; long b; long c; long d; };
-struct big *big_make(struct big *result, long seed) {
-    result->a = seed;
-    result->b = seed + 0x1;
-    result->c = seed + seed;
-    result->d = seed + seed * 0x2;
+/* struct: rdi +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
+struct big { _Alignas(8) long a; long b; long c; long d; };
+struct big big_make(long seed) {
+    struct big result = {0};
+    uint64_t seed_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&seed + 0x0, 8);
+    uint8_t *result_address = (uint8_t *)&result;
+
+    __builtin_memcpy(result_address, &(uint64_t){seed_bits}, 8);
+    __builtin_memcpy(result_address + 0x8, &(uint64_t){seed_bits + 0x1}, 8);
+    __builtin_memcpy(result_address + 0x10, &(uint64_t){seed_bits + seed_bits}, 8);
+    __builtin_memcpy(result_address + 0x18, &(uint64_t){seed_bits + seed_bits * 0x2}, 8);
     return result;
 }
 -- signature
-struct big * (struct big * result, long seed)
+struct big_make_a0 * (struct big_make_a0 * a0, int64_t a1)
 -- references
 
 -- ir
@@ -144,59 +157,65 @@ fn big_make @ 0x201280 (size 31)
     store64((rsi + (rsi * #0x2)), (rdi + #0x18))
     ret rdi
 -- card
-{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201280","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201280","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"unsupported":0}
 
 == 0x2012a0 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x2012a0 */
-struct big { long a; long b; long c; long d; };
+struct big { _Alignas(8) long a; long b; long c; long d; };
 long big_sum(struct big value) {
-    return *(uint64_t *)((uint8_t *)&value + 0x8) + *(uint64_t *)((uint8_t *)&value + 0x18) + (*(uint64_t *)((uint8_t *)&value + 0x0) + *(uint64_t *)((uint8_t *)&value + 0x10));
+    uint8_t *value_address = (uint8_t *)&value;
+
+    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x18, 8) + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x10, 8));
 }
 -- signature
-long ()
+int64_t ()
 -- references
 
 -- ir
 fn big_sum @ 0x2012a0 (size 27)
   blk0 @ 0x2012a0:
-    ret ((load64((rsp + #0x10)) + load64((rsp + #0x20))) + (load64((rsp + #0x8)) + load64((rsp + #0x18))))
+    ret results(((load64((rsp + #0x10)) + load64((rsp + #0x20))) + (load64((rsp + #0x8)) + load64((rsp + #0x18)))))
 -- card
 {"addr":"0x2012a0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":27,"unsupported":0}
 
 == 0x2012c0 word_low_byte
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x2012c0 */
-union word { unsigned int u; float f; unsigned char bytes[4]; };
+union word { _Alignas(4) unsigned int u; float f; unsigned char bytes[4]; };
 unsigned char word_low_byte(union word w) {
-    return w;
+    uint64_t w_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&w + 0x0, 4);
+
+    return w_bits;
 }
 -- signature
-unsigned char (union word w)
+int64_t (int32_t a0)
 -- references
 
 -- ir
 fn word_low_byte @ 0x2012c0 (size 3)
   blk0 @ 0x2012c0:
-    ret edi
+    ret results(edi)
 -- card
 {"addr":"0x2012c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf","unwind"],"section":".text","size":3,"unsupported":0}
 
 == 0x2012d0 flags_level
 -- decompile
 /* velk pseudo-C: flags_level @ 0x2012d0 */
-struct flags { uint8_t gap_0x0[0x4]; };
+struct flags { _Alignas(4) uint8_t gap_0x0[0x4]; };
 unsigned int flags_level(struct flags f) {
-    return ((f & 0x1) == 0x0 ? (f & 0xffffffff) >> 0x1 & 0x7 : (f & 0xffffffff) >> 0x4 & 0xf);
+    uint64_t f_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&f + 0x0, 4);
+
+    return ((f_bits & 0x1) == 0x0 ? (f_bits & 0xffffffff) >> 0x1 & 0x7 : (f_bits & 0xffffffff) >> 0x4 & 0xf);
 }
 -- signature
-unsigned int (struct flags f)
+uint64_t (uint32_t a0)
 -- references
 
 -- ir
 fn flags_level @ 0x2012d0 (size 23)
   blk0 @ 0x2012d0:
-    ret select eq (rdi & #0x1), #0x0 ? (((rdi & #0xffffffff) >> #0x1) & #0x7), (((rdi & #0xffffffff) >> #0x4) & #0xf)
+    ret results(select eq (rdi & #0x1), #0x0 ? (((rdi & #0xffffffff) >> #0x1) & #0x7), (((rdi & #0xffffffff) >> #0x4) & #0xf))
 -- card
 {"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
 

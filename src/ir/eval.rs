@@ -12,7 +12,7 @@ use super::semantics::{holds, mask, operand_width, sign_extend};
 use super::{BinOp, Block, Expr, FunctionIr, RegRef, Stmt};
 
 pub const STACK_TOP: u64 = 0x7fff_ff00_0000;
-const STACK_SPAN: u64 = 1 << 24;
+pub(crate) const STACK_SPAN: u64 = 1 << 24;
 
 /// The registers a call reads its arguments from and the ones it may overwrite.
 pub struct Convention<'a> {

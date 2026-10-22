@@ -1,14 +1,14 @@
 # functions left out:
-#   accesses memory: 139
+#   accesses memory: 145
 #   calls: 3800
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 2
 #   reads a register that is not a parameter: 3
 #   refers to data: 136
-#   returns no integer: 75
-#   returns nothing: 369
-#   takes an argument that is no integer: 393
-#   takes arguments on the stack: 28
+#   returns no integer: 112
+#   returns nothing: 374
+#   takes an argument that is no integer: 409
+#   takes arguments on the stack: 44
 # runs left out:
 #   step limit: 14
 #   takes a function's address: 24
@@ -42,6 +42,10 @@
 # l5_switch.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # l6_abi_a64.o: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # l6_abi_x64.o: 5 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/aggregate_abi.aarch64.O0.stripped.elf: 11 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/aggregate_abi.aarch64.O2.stripped.elf: 11 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/aggregate_abi.x86_64.O0.stripped.elf: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/aggregate_abi.x86_64.O2.stripped.elf: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/alt_names.aarch64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/alt_names.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/alt_names.aarch64.O2.debug.elf: 2 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ

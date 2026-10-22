@@ -23,8 +23,9 @@ use std::process::{Command, Stdio};
 
 use velk::ir::eval::{self, Outcome};
 use velk::ir::{
-    Access, BinOp, Block, CType, Cond, Convention, Definition, Expr, FunctionIr, Member, Operation,
-    Param, Precision, Stmt, trials,
+    AbiLocation, AbiPiece, AbiProfile, Access, BinOp, Block, CType, Cond, Convention,
+    DeclaredSignature, Definition, Expr, FunctionIr, Member, Operation, Param, Passing, Precision,
+    RegisterClass, SignatureAbi, Stmt, ValueAbi, trials,
 };
 use velk::loader::{Image, Isa};
 use velk::render::{SegmentBase, SegmentBaseRead};
@@ -512,6 +513,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
         .map(|(name, params, stmts, ret_type)| {
             let ir = synthetic_ir(&name, params, ret_type, stmts);
             Candidate {
+                marshalling: None,
                 label: name,
                 segment_bases: Vec::new(),
                 states: Vec::new(),
@@ -729,6 +731,13 @@ fn printed_members_preserve_declared_types_and_access_widths() {
                     members: vec!["uint32_t lo;".to_owned(), "uint32_t hi;".to_owned()],
                     fields: vec!["lo".to_owned(), "hi".to_owned()],
                     contains: Vec::new(),
+                    size: 8,
+                    alignment: Some(4),
+                    compatible_profiles: vec![
+                        AbiProfile::SysV,
+                        AbiProfile::Aapcs64,
+                        AbiProfile::Win64,
+                    ],
                 },
                 Definition {
                     name: "struct record".to_owned(),
@@ -754,6 +763,13 @@ fn printed_members_preserve_declared_types_and_access_widths() {
                         .map(|(_, name, _, _)| (*name).to_owned())
                         .collect(),
                     contains: vec!["struct pair".to_owned()],
+                    size: 64,
+                    alignment: Some(8),
+                    compatible_profiles: vec![
+                        AbiProfile::SysV,
+                        AbiProfile::Aapcs64,
+                        AbiProfile::Win64,
+                    ],
                 },
             ];
             let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -783,6 +799,7 @@ fn printed_members_preserve_declared_types_and_access_widths() {
                 assert!(!code.contains(&format!("->{}", field)), "{name}: {code}");
             }
             Candidate {
+                marshalling: None,
                 label: name,
                 segment_bases: Vec::new(),
                 states: Vec::new(),
@@ -1076,6 +1093,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
         );
         let code = velk::render::render(&ir, &[], &Default::default(), &[(base, 0x1_0001_0000)]);
         updates.push(Candidate {
+            marshalling: None,
             label: name.to_owned(),
             segment_bases: Vec::new(),
             states: Vec::new(),
@@ -1687,6 +1705,1729 @@ fn segment_state_checks_ignore_void_returns_but_preserve_effects() {
 }
 
 #[test]
+fn generic_comparisons_keep_declared_objects_on_the_focused_path() {
+    let ir = integer_object_ir(4, false);
+    for mode in [Mode::Registers, Mode::Memory] {
+        assert_eq!(
+            qualifies(&ir, true, mode),
+            Err("takes an argument that is no integer")
+        );
+    }
+    let (inputs, upper) = aggregate_inputs(&[4, 8], 1);
+    let candidates = aggregate_candidates(ir.clone(), inputs, upper);
+    assert_eq!(candidates.len(), 1);
+    let call = candidates[0]
+        .marshalling
+        .as_ref()
+        .expect("the focused object path");
+    assert!(call.signature.abi.as_ref().unwrap().arguments[0].aggregate);
+    assert_eq!(candidates[0].inputs.len(), 3);
+    assert!(candidates[0].code.contains("struct bytes value"));
+
+    for ty in [
+        CType::Named("struct missing".into()),
+        CType::Named("union missing".into()),
+        CType::Named("double".into()),
+    ] {
+        let mut unsupported = ir.clone();
+        let signature = unsupported.declared_signature.as_mut().unwrap();
+        signature.params[0].1 = ty.clone();
+        signature.abi = Err(velk::ir::AbiIssue::UnsupportedType);
+        for mode in [Mode::Registers, Mode::Memory] {
+            assert_eq!(
+                qualifies(&unsupported, true, mode),
+                Err("takes an argument that is no integer")
+            );
+        }
+        unsupported.declared_signature.as_mut().unwrap().ret = ty;
+        for mode in [Mode::Registers, Mode::Memory] {
+            assert_eq!(
+                qualifies(&unsupported, true, mode),
+                Err("returns no integer")
+            );
+        }
+    }
+
+    let mut scalar = ir;
+    let signature = scalar.declared_signature.as_mut().unwrap();
+    signature.params[0].1 = CType::U64;
+    signature.abi = Err(velk::ir::AbiIssue::UnsupportedType);
+    assert_eq!(qualifies(&scalar, true, Mode::Registers), Ok(()));
+
+    let pointer = CType::pointer_to(CType::U64);
+    let mut memory = synthetic_ir(
+        "declared_pointer_store",
+        vec![Param {
+            index: 7,
+            name: "output".into(),
+            ty: pointer.clone(),
+        }],
+        CType::Void,
+        vec![
+            Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: Expr::Const(1),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ],
+    );
+    memory.declared_signature = Some(DeclaredSignature {
+        params: vec![("output".into(), pointer)],
+        ret: CType::Void,
+        variadic: false,
+        abi: Err(velk::ir::AbiIssue::UnsupportedType),
+    });
+    assert_eq!(qualifies(&memory, true, Mode::Memory), Ok(()));
+    assert_eq!(
+        qualifies(&memory, true, Mode::Registers),
+        Err("returns nothing")
+    );
+}
+
+#[test]
+fn aggregate_object_view_rejects_observed_non_object_bits() {
+    let mut ir = integer_object_ir(4, false);
+    ir.blocks[0].stmts = vec![Stmt::Ret {
+        value: Expr::reg(7, 64),
+    }];
+    let mut observed = BTreeSet::new();
+    for upper in [0, u64::MAX, 0xa55a_3cc3_9669_f00f] {
+        let input = 0x8123_4567 | (upper & !0xffff_ffff);
+        let outcome = eval::run(
+            &ir,
+            &eval::Setup {
+                seed: 0,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[(7, input), (6, 0)],
+                memory: &[],
+                step_limit: trials::STEP_LIMIT,
+            },
+        );
+        let Outcome::Return { value, .. } = outcome else {
+            panic!("{outcome:?}")
+        };
+        assert_eq!(value, input);
+        observed.insert(value);
+    }
+    assert_eq!(observed.len(), 3);
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    let signature = code
+        .lines()
+        .find(|line| line.starts_with("uint64_t aggregate_bytes_4_scalar("))
+        .expect("the physical function remains renderable");
+    assert!(signature.contains("uint64_t piece0"), "{signature}");
+    assert!(!signature.contains("struct bytes"), "{signature}");
+}
+
+#[test]
+fn printed_aggregate_integer_objects_preserve_bounded_pieces() {
+    let mut candidates = Vec::new();
+    for size in 1..=16 {
+        for aggregate_return in [false, true] {
+            let ir = integer_object_ir(size, aggregate_return);
+            let (inputs, upper) = aggregate_inputs(&[size, 8], 12);
+            let batch = aggregate_candidates(ir, inputs, upper);
+            assert_aggregate_oracle(&batch, |input, slice| {
+                let words = size.div_ceil(8) as usize;
+                let tail = input[words];
+                if aggregate_return {
+                    let at = slice.offset as usize / 8;
+                    (input[at] ^ tail) & byte_mask(slice.bytes)
+                } else {
+                    input[..words]
+                        .iter()
+                        .enumerate()
+                        .fold(tail, |value, (part, word)| {
+                            value ^ (word & byte_mask((size - part as u64 * 8).min(8) as u8))
+                        })
+                }
+            });
+            candidates.extend(batch);
+        }
+    }
+    check_candidates(
+        "aggregate-integer-objects",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn printed_aggregate_capture_tracks_narrow_register_writes() {
+    let mut candidates = Vec::new();
+    for written in [0x1_0000_0001, 0x1_8000_0000, 0x1_ffff_ffff] {
+        let mut ir = integer_object_ir(8, false);
+        ir.name = Some(format!("aggregate_narrow_write_{written:x}"));
+        ir.blocks[0].stmts = vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: velk::ir::VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::reg(7, 64),
+            },
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: 7,
+                    width: 32,
+                },
+                value: Expr::Const(written),
+            },
+            Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Xor,
+                    Expr::reg(velk::ir::VARIABLE_BASE, 64),
+                    Expr::reg(7, 64),
+                ),
+            },
+        ];
+        let (inputs, upper) = aggregate_inputs(&[8, 8], 12);
+        let batch = aggregate_candidates(ir, inputs, upper);
+        assert_aggregate_oracle(&batch, |input, _| input[0] ^ (written & 0xffff_ffff));
+        candidates.extend(batch);
+    }
+    let mut ir = integer_object_ir(4, false);
+    ir.name = Some("aggregate_capture_wide_write".into());
+    let written = 0xfedc_ba98_8123_4567;
+    ir.blocks[0].stmts = vec![
+        Stmt::Assign {
+            dest: velk::ir::RegRef {
+                index: velk::ir::VARIABLE_BASE,
+                width: 64,
+            },
+            value: Expr::reg(7, 32),
+        },
+        Stmt::Assign {
+            dest: velk::ir::RegRef {
+                index: 7,
+                width: 64,
+            },
+            value: Expr::Const(written),
+        },
+        Stmt::Ret {
+            value: Expr::bin(
+                BinOp::Xor,
+                Expr::reg(velk::ir::VARIABLE_BASE, 64),
+                Expr::reg(7, 64),
+            ),
+        },
+    ];
+    let (inputs, upper) = aggregate_inputs(&[4, 8], 12);
+    let batch = aggregate_candidates(ir, inputs, upper);
+    assert_aggregate_oracle(&batch, |input, _| (input[0] & 0xffff_ffff) ^ written);
+    candidates.extend(batch);
+    check_candidates("aggregate-narrow-write", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn printed_scalar_stack_parameter_views_preserve_loaded_values() {
+    let mut candidates = Vec::new();
+    for kind in ["u8", "u16", "u32", "i32", "f32", "f64"] {
+        let (offset, width) = match kind {
+            "u8" => (7, 1),
+            "u16" => (1, 2),
+            "u32" => (3, 4),
+            "i32" | "f32" => (1, 4),
+            "f64" => (0, 8),
+            _ => unreachable!(),
+        };
+        let load = Expr::Load {
+            addr: Box::new(Expr::bin(
+                BinOp::Add,
+                Expr::reg(4, 64),
+                Expr::Const(24 + offset),
+            )),
+            width,
+            signed: kind == "i32",
+        };
+        let value = match kind {
+            "f32" => Expr::Apply {
+                op: Operation::FloatLess(Precision::Single),
+                args: vec![load, Expr::Const(u64::from(0.5f32.to_bits()))],
+            },
+            "f64" => Expr::Apply {
+                op: Operation::FloatLess(Precision::Double),
+                args: vec![load, Expr::Const(0.5f64.to_bits())],
+            },
+            _ => load,
+        };
+        let ir = scalar_stack_ir(
+            &format!("scalar_stack_read_{kind}"),
+            3,
+            vec![Stmt::Ret { value }],
+        );
+        assert_scalar_stack_render_control(&ir);
+        let (mut inputs, upper) = aggregate_inputs(&[8; 9], 12);
+        for (trial, input) in inputs.iter_mut().enumerate() {
+            let row = trial / 3;
+            let raw = match kind {
+                "f32" => u64::from([0.0f32, -0.0, 1.25, -2.5, 3.75, -4.0][row % 6].to_bits()),
+                "f64" => [0.0f64, -0.0, 1.25, -2.5, 3.75, -4.0][row % 6].to_bits(),
+                _ => {
+                    let sign = 1u64 << (width * 8 - 1);
+                    [0, 1, sign - 1, sign, byte_mask(width)][row % 5]
+                }
+            };
+            let mask = byte_mask(width) << (8 * offset);
+            input[8] = (input[8] & !mask) | ((raw << (8 * offset)) & mask);
+        }
+        let batch = aggregate_candidates(ir, inputs, upper);
+        assert_aggregate_oracle(&batch, |input, _| {
+            let raw = (input[8] >> (8 * offset)) & byte_mask(width);
+            match kind {
+                "i32" => (raw as i32) as i64 as u64,
+                "f32" => u64::from(f32::from_bits(raw as u32) < 0.5),
+                "f64" => u64::from(f64::from_bits(raw) < 0.5),
+                _ => raw,
+            }
+        });
+        candidates.extend(batch);
+    }
+    assert_eq!(candidates.len(), 6);
+    check_candidates(
+        "scalar-stack-parameter-views",
+        candidates,
+        Mode::Registers,
+        &["-fsanitize=alignment", "-fno-sanitize-recover=alignment"],
+    );
+}
+
+#[test]
+fn printed_scalar_stack_parameter_stores_preserve_surrounding_bytes() {
+    let address = |offset| Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset));
+    let load = |offset, width| Expr::Load {
+        addr: Box::new(address(offset)),
+        width,
+        signed: false,
+    };
+    let mut candidates = Vec::new();
+    for width in [1u8, 2, 4] {
+        let mut stmts = vec![Stmt::Store {
+            addr: address(25),
+            value: load(24, width),
+            width,
+        }];
+        for (part, offset) in [16, 24, 32].into_iter().enumerate() {
+            stmts.push(Stmt::Store {
+                addr: Expr::Const(REGION + 0x1800 + part as u64 * 8),
+                value: load(offset, 8),
+                width: 8,
+            });
+        }
+        stmts.push(Stmt::Ret { value: load(24, 8) });
+        let ir = scalar_stack_ir(&format!("scalar_stack_store_{width}"), 4, stmts);
+        assert_scalar_stack_render_control(&ir);
+        let (mut inputs, upper) = aggregate_inputs(&[8; 10], 12);
+        for (trial, input) in inputs.iter_mut().enumerate() {
+            input[8] =
+                0xfedc_ba98_7654_3210 ^ (trial as u64 / 3).wrapping_mul(0x0101_0101_0101_0101);
+        }
+        let batch = aggregate_candidates(ir, inputs, upper);
+        let fixture = Fixture {
+            name: "scalar stack store oracle".into(),
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            entry_registers: Vec::new(),
+            initial_memory: Vec::new(),
+            functions: batch.len(),
+            excluded: BTreeMap::new(),
+            candidates: Vec::new(),
+        };
+        for candidate in &batch {
+            for (trial, input) in candidate.inputs.iter().enumerate() {
+                let before = input[8].to_le_bytes();
+                let mut after = before;
+                after[1..1 + usize::from(width)].copy_from_slice(&before[..usize::from(width)]);
+                let changed = u64::from_le_bytes(after);
+                let memory = [input[7], changed, input[9]]
+                    .into_iter()
+                    .enumerate()
+                    .flat_map(|(part, word)| {
+                        word.to_le_bytes()
+                            .into_iter()
+                            .enumerate()
+                            .map(move |(byte, value)| {
+                                (REGION + 0x1800 + part as u64 * 8 + byte as u64, value)
+                            })
+                    })
+                    .collect();
+                let outcome =
+                    interpret(&fixture, candidate, trial as u64, input, Mode::Registers).unwrap();
+                assert_eq!(
+                    outcome,
+                    Outcome::Return {
+                        value: changed,
+                        calls: Vec::new(),
+                        memory
+                    }
+                );
+            }
+        }
+        candidates.extend(batch);
+    }
+    assert_eq!(candidates.len(), 3);
+    check_candidates(
+        "scalar-stack-parameter-stores",
+        candidates,
+        Mode::Memory,
+        &["-fsanitize=alignment", "-fno-sanitize-recover=alignment"],
+    );
+}
+
+fn scalar_stack_ir(name: &str, count: usize, stmts: Vec<Stmt>) -> FunctionIr {
+    let registers = [7, 6, 2, 1, 8, 9];
+    let mut ir = synthetic_ir(
+        name,
+        registers
+            .into_iter()
+            .enumerate()
+            .map(|(position, index)| Param {
+                index,
+                name: format!("physical{position}"),
+                ty: CType::U64,
+            })
+            .collect(),
+        CType::U64,
+        stmts,
+    );
+    ir.stack_params = (0..count)
+        .map(|slot| velk::ir::StackParam {
+            offset: (slot as i64 + 1) * 8,
+            size: 8,
+            name: format!("stack{slot}"),
+            ty: CType::U64,
+            position: 6 + slot,
+        })
+        .collect();
+    let scalar = |location| ValueAbi {
+        aggregate: false,
+        size: 8,
+        alignment: 8,
+        defined_bits: vec![(0, 64)],
+        passing: Passing::Direct(vec![AbiPiece {
+            location,
+            object_offset: 0,
+            bytes: 8,
+            class: if matches!(location, AbiLocation::Register(_)) {
+                Some(RegisterClass::Integer)
+            } else {
+                None
+            },
+        }]),
+    };
+    ir.declared_signature = Some(DeclaredSignature {
+        params: (0..6 + count)
+            .map(|position| (format!("logical{position}"), CType::U64))
+            .collect(),
+        ret: CType::U64,
+        variadic: false,
+        abi: Ok(SignatureAbi {
+            profile: AbiProfile::SysV,
+            arguments: registers
+                .into_iter()
+                .map(AbiLocation::Register)
+                .chain((0..count).map(|slot| AbiLocation::Stack((slot as i64 + 1) * 8)))
+                .map(scalar)
+                .collect(),
+            result: Some(scalar(AbiLocation::Register(0))),
+        }),
+    });
+    ir
+}
+
+fn assert_scalar_stack_render_control(ir: &FunctionIr) {
+    let abi = ir
+        .declared_signature
+        .as_ref()
+        .unwrap()
+        .abi
+        .as_ref()
+        .unwrap();
+    assert!(
+        abi.arguments
+            .iter()
+            .chain(&abi.result)
+            .all(|value| !value.aggregate)
+    );
+    let actual = velk::render::render_with_dependencies(ir, &[], &Default::default(), &[]);
+    let mut physical = ir.clone();
+    physical.declared_signature = None;
+    let expected = velk::render::render_with_dependencies(&physical, &[], &Default::default(), &[]);
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn printed_aggregate_unaligned_object_accesses_preserve_bits() {
+    let mut candidates = Vec::new();
+    for offset in [0u64, 1] {
+        for kind in ["u64", "i8", "i16", "i32", "f32", "f64"] {
+            let width = match kind {
+                "i8" => 1,
+                "i16" => 2,
+                "i32" | "f32" => 4,
+                _ => 8,
+            };
+            let source = if kind == "u64" { 1 - offset } else { offset };
+            let target = if kind == "u64" {
+                offset
+            } else {
+                24 - u64::from(if kind.starts_with('i') { 8 } else { width }) - offset
+            };
+            let address = |at| Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(at));
+            let load = |at, bytes, signed| Expr::Load {
+                addr: Box::new(address(at)),
+                width: bytes,
+                signed,
+            };
+            let value = match kind {
+                "f32" => Expr::Apply {
+                    op: Operation::FloatAdd(Precision::Single),
+                    args: vec![
+                        load(source, 4, false),
+                        Expr::Const(u64::from(0.5f32.to_bits())),
+                    ],
+                },
+                "f64" => Expr::Apply {
+                    op: Operation::FloatAdd(Precision::Double),
+                    args: vec![load(source, 8, false), Expr::Const((-0.25f64).to_bits())],
+                },
+                _ => load(source, width, kind.starts_with('i')),
+            };
+            let stored = if kind.starts_with('i') { 8 } else { width };
+            let ir = indirect_byte_object_ir(
+                &format!("aggregate_unaligned_{kind}_{offset}"),
+                vec![
+                    Stmt::Store {
+                        addr: address(target),
+                        width: stored,
+                        value,
+                    },
+                    Stmt::Ret {
+                        value: load(target, stored, false),
+                    },
+                ],
+            );
+            let (mut inputs, upper) = aggregate_inputs(&[24, 8], 12);
+            for (trial, input) in inputs.iter_mut().enumerate() {
+                let row = trial / 3;
+                let raw = match kind {
+                    "f32" => u64::from([0.0f32, -0.0, 1.25, -2.5, 3.75, -4.0][row % 6].to_bits()),
+                    "f64" => [0.0f64, -0.0, 1.25, -2.5, 3.75, -4.0][row % 6].to_bits(),
+                    "i8" | "i16" | "i32" => {
+                        let sign = 1u64 << (width * 8 - 1);
+                        [0, 1, sign - 1, sign, byte_mask(width)][row % 5]
+                    }
+                    _ => continue,
+                };
+                for byte in 0..u64::from(width) {
+                    let at = source + byte;
+                    let shift = (at % 8) * 8;
+                    input[at as usize / 8] = (input[at as usize / 8] & !(0xff << shift))
+                        | ((raw >> (byte * 8)) & 0xff) << shift;
+                }
+            }
+            let batch = aggregate_candidates(ir, inputs, upper);
+            assert_aggregate_oracle(&batch, |input, _| {
+                let bytes: Vec<_> = input[..3]
+                    .iter()
+                    .flat_map(|word| word.to_le_bytes())
+                    .collect();
+                let raw = (0..u64::from(width)).fold(0u64, |word, byte| {
+                    word | u64::from(bytes[(source + byte) as usize]) << (8 * byte)
+                });
+                match kind {
+                    "i8" => (raw as i8) as i64 as u64,
+                    "i16" => (raw as i16) as i64 as u64,
+                    "i32" => (raw as i32) as i64 as u64,
+                    "f32" => u64::from((f32::from_bits(raw as u32) + 0.5).to_bits()),
+                    "f64" => (f64::from_bits(raw) - 0.25).to_bits(),
+                    _ => raw,
+                }
+            });
+            candidates.extend(batch);
+        }
+    }
+    check_candidates(
+        "aggregate-unaligned-objects",
+        candidates,
+        Mode::Registers,
+        &["-fsanitize=alignment", "-fno-sanitize-recover=alignment"],
+    );
+}
+
+fn indirect_byte_object_ir(name: &str, stmts: Vec<Stmt>) -> FunctionIr {
+    let mut ir = synthetic_ir(
+        name,
+        vec![
+            Param {
+                index: 0,
+                name: "address".into(),
+                ty: CType::pointer_to(CType::int(1, false)),
+            },
+            Param {
+                index: 1,
+                name: "tail".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        stmts,
+    );
+    ir.isa = Isa::AArch64;
+    ir.convention = Convention::Aapcs64;
+    ir.definitions.push(Definition {
+        name: "struct byte_object".into(),
+        members: vec!["unsigned char bytes[24];".into()],
+        fields: vec!["bytes".into()],
+        contains: Vec::new(),
+        size: 24,
+        alignment: Some(1),
+        compatible_profiles: vec![AbiProfile::Aapcs64],
+    });
+    let scalar = |index| ValueAbi {
+        aggregate: false,
+        size: 8,
+        alignment: 8,
+        defined_bits: vec![(0, 64)],
+        passing: Passing::Direct(vec![AbiPiece {
+            location: AbiLocation::Register(index),
+            object_offset: 0,
+            bytes: 8,
+            class: Some(RegisterClass::Integer),
+        }]),
+    };
+    ir.declared_signature = Some(DeclaredSignature {
+        params: vec![
+            ("value".into(), CType::Named("struct byte_object".into())),
+            ("tail".into(), CType::U64),
+        ],
+        ret: CType::U64,
+        variadic: false,
+        abi: Ok(SignatureAbi {
+            profile: AbiProfile::Aapcs64,
+            arguments: vec![
+                ValueAbi {
+                    aggregate: true,
+                    size: 24,
+                    alignment: 1,
+                    defined_bits: vec![(0, 192)],
+                    passing: Passing::Indirect {
+                        pointer: AbiLocation::Register(0),
+                        returned_pointer: None,
+                    },
+                },
+                scalar(1),
+            ],
+            result: Some(scalar(0)),
+        }),
+    });
+    ir
+}
+
+#[test]
+fn printed_aggregate_arguments_preserve_scalar_128_bit_results() {
+    let mut candidates = Vec::new();
+    for ty in ["unsigned __int128", "__int128"] {
+        let mut ir = integer_object_ir(16, true);
+        ir.name = Some(
+            if ty.starts_with("unsigned") {
+                "aggregate_unsigned_wide_result"
+            } else {
+                "aggregate_signed_wide_result"
+            }
+            .into(),
+        );
+        ir.ret_type = CType::Named(ty.into());
+        let signature = ir.declared_signature.as_mut().unwrap();
+        signature.ret = ir.ret_type.clone();
+        let result = signature.abi.as_mut().unwrap().result.as_mut().unwrap();
+        result.aggregate = false;
+        result.alignment = 16;
+        ir.blocks[0].stmts = vec![Stmt::Ret {
+            value: Expr::Apply {
+                op: Operation::Results,
+                args: vec![
+                    Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::reg(2, 64)),
+                    Expr::bin(BinOp::Xor, Expr::reg(6, 64), Expr::reg(2, 64)),
+                ],
+            },
+        }];
+        let (mut inputs, upper) = aggregate_inputs(&[16, 8], 12);
+        let boundaries = [
+            0,
+            1,
+            u64::MAX,
+            0x8000_0000_0000_0000,
+            0x7fff_ffff_ffff_ffff,
+            0x8123_4567_89ab_cdef,
+        ];
+        for (trial, input) in inputs.iter_mut().enumerate() {
+            let row = trial / 3;
+            input[0] = boundaries[row % boundaries.len()];
+            input[1] = boundaries[(row + 3) % boundaries.len()];
+            input[2] = boundaries[(row + 1) % boundaries.len()];
+        }
+        let batch = aggregate_candidates(ir, inputs, upper);
+        assert_eq!(batch.len(), 2);
+        assert_aggregate_oracle(&batch, |input, slice| {
+            if slice.offset == 0 {
+                input[0].wrapping_add(input[2])
+            } else {
+                input[1] ^ input[2]
+            }
+        });
+        let high = batch
+            .iter()
+            .find(|candidate| candidate.marshalling.as_ref().unwrap().result.offset == 8)
+            .unwrap();
+        assert_ne!(
+            high.inputs[0][1] ^ high.inputs[0][2],
+            high.inputs[3][1] ^ high.inputs[3][2]
+        );
+        candidates.extend(batch);
+    }
+    check_candidates(
+        "aggregate-scalar-wide-results",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn printed_aggregate_parameter_names_preserve_execution() {
+    let mut candidates = Vec::new();
+    for case in ["stack", "typedef", "duplicates", "free", "builtin"] {
+        let mut ir = integer_object_ir(8, false);
+        ir.name = Some(format!("aggregate_name_{case}"));
+        let signature = ir.declared_signature.as_mut().unwrap();
+        signature.params[0].0 = match case {
+            "stack" => "local_0",
+            "typedef" => "uint64_t",
+            "builtin" => "__builtin_memcpy",
+            "duplicates" => "value.x",
+            "free" => "bytes",
+            _ => unreachable!(),
+        }
+        .into();
+        if case == "duplicates" {
+            signature.params[1].0 = "value-x".into();
+        }
+        match case {
+            "stack" => {
+                let address = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+                ir.blocks[0].stmts = vec![
+                    Stmt::Store {
+                        addr: address.clone(),
+                        width: 8,
+                        value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                    },
+                    Stmt::Ret {
+                        value: Expr::bin(
+                            BinOp::Xor,
+                            Expr::Load {
+                                addr: Box::new(address),
+                                width: 8,
+                                signed: false,
+                            },
+                            Expr::reg(6, 64),
+                        ),
+                    },
+                ];
+            }
+            "typedef" => {
+                ir.blocks[0].stmts = vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: 7,
+                            width: 32,
+                        },
+                        value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                    },
+                    Stmt::Ret {
+                        value: Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::reg(6, 64)),
+                    },
+                ];
+            }
+            _ => {}
+        }
+        let (inputs, upper) = aggregate_inputs(&[8, 8], 12);
+        let batch = aggregate_candidates(ir, inputs, upper);
+        assert_aggregate_oracle(&batch, |input, _| {
+            let first = match case {
+                "stack" => input[0].wrapping_add(1),
+                "typedef" => input[0].wrapping_add(1) & 0xffff_ffff,
+                _ => input[0],
+            };
+            first ^ input[1]
+        });
+        if case == "free" {
+            assert!(
+                batch[0].code.contains("struct bytes bytes"),
+                "{}",
+                batch[0].code
+            );
+        } else if case == "stack" {
+            assert!(
+                batch[0].code.contains("uint64_t local_0"),
+                "{}",
+                batch[0].code
+            );
+        }
+        candidates.extend(batch);
+    }
+    check_candidates(
+        "aggregate-parameter-names",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn printed_indirect_aggregate_copy_keeps_external_stores_observable() {
+    let pointer = CType::pointer_to(CType::int(1, false));
+    let address = |index, offset| Expr::bin(BinOp::Add, Expr::reg(index, 64), Expr::Const(offset));
+    let load = |offset| Expr::Load {
+        addr: Box::new(address(0, offset)),
+        width: 8,
+        signed: false,
+    };
+    let written = 0xdead_beef_8123_4567;
+    let mut ir = synthetic_ir(
+        "aggregate_private_copy",
+        vec![
+            Param {
+                index: 0,
+                name: "copy".into(),
+                ty: pointer.clone(),
+            },
+            Param {
+                index: 1,
+                name: "output".into(),
+                ty: pointer.clone(),
+            },
+        ],
+        CType::U64,
+        vec![
+            Stmt::Store {
+                addr: address(0, 8),
+                value: Expr::Const(written),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: Expr::reg(1, 64),
+                value: Expr::bin(BinOp::Xor, load(0), load(16)),
+                width: 8,
+            },
+            Stmt::Ret { value: load(8) },
+        ],
+    );
+    ir.isa = Isa::AArch64;
+    ir.convention = Convention::Aapcs64;
+    ir.definitions.push(Definition {
+        name: "struct private_bytes".into(),
+        members: vec!["unsigned char bytes[24];".into()],
+        fields: vec!["bytes".into()],
+        contains: Vec::new(),
+        size: 24,
+        alignment: Some(1),
+        compatible_profiles: vec![AbiProfile::Aapcs64],
+    });
+    let scalar = |index| ValueAbi {
+        aggregate: false,
+        size: 8,
+        alignment: 8,
+        defined_bits: vec![(0, 64)],
+        passing: Passing::Direct(vec![AbiPiece {
+            location: AbiLocation::Register(index),
+            object_offset: 0,
+            bytes: 8,
+            class: Some(RegisterClass::Integer),
+        }]),
+    };
+    ir.declared_signature = Some(DeclaredSignature {
+        params: vec![
+            ("value".into(), CType::Named("struct private_bytes".into())),
+            ("output".into(), pointer),
+        ],
+        ret: CType::U64,
+        variadic: false,
+        abi: Ok(SignatureAbi {
+            profile: AbiProfile::Aapcs64,
+            arguments: vec![
+                ValueAbi {
+                    aggregate: true,
+                    size: 24,
+                    alignment: 1,
+                    defined_bits: vec![(0, 192)],
+                    passing: Passing::Indirect {
+                        pointer: AbiLocation::Register(0),
+                        returned_pointer: None,
+                    },
+                },
+                scalar(1),
+            ],
+            result: Some(scalar(0)),
+        }),
+    });
+    let (mut inputs, upper) = aggregate_inputs(&[24, 8], 12);
+    for input in &mut inputs {
+        input[3] = REGION + 0x1800;
+    }
+    let mut candidates = Vec::new();
+    for name in ["value", "uint64_t"] {
+        let mut variant = ir.clone();
+        variant.name = Some(format!("aggregate_private_copy_{name}"));
+        variant.declared_signature.as_mut().unwrap().params[0].0 = name.into();
+        candidates.extend(aggregate_candidates(variant, inputs.clone(), upper.clone()));
+    }
+    let fixture = Fixture {
+        name: "aggregate private copy oracle".into(),
+        convention: eval::Convention {
+            arguments: &[],
+            clobbered: &[],
+        },
+        entry_registers: Vec::new(),
+        initial_memory: Vec::new(),
+        functions: candidates.len(),
+        excluded: BTreeMap::new(),
+        candidates: Vec::new(),
+    };
+    for candidate in &candidates {
+        for (trial, input) in candidate.inputs.iter().enumerate() {
+            let outcome =
+                interpret(&fixture, candidate, trial as u64, input, Mode::Registers).unwrap();
+            let expected = (input[0] ^ input[2])
+                .to_le_bytes()
+                .into_iter()
+                .enumerate()
+                .map(|(offset, byte)| (input[3] + offset as u64, byte))
+                .collect();
+            assert_eq!(
+                outcome,
+                Outcome::Return {
+                    value: written,
+                    calls: Vec::new(),
+                    memory: expected
+                }
+            );
+        }
+    }
+    check_candidates("aggregate-private-copy", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_aggregate_struct_fixtures_match_independent_oracles() {
+    let mut candidates = Vec::new();
+    for isa in ["x86_64", "aarch64"] {
+        for optimization in ["O0", "O2"] {
+            let path = common::fixtures_dir()
+                .join(format!("metrics/structs.{isa}.{optimization}.debug.elf"));
+            let mut binary = Binary::open(&path).unwrap();
+            for name in ["flags_level", "word_low_byte", "point_add", "big_sum"] {
+                let address = binary.find(name).unwrap().addr;
+                let mut ir = binary.analysis(address).unwrap().ir.clone();
+                let signature = ir
+                    .declared_signature
+                    .as_ref()
+                    .expect("the source signature");
+                let abi = signature.abi.as_ref().expect("the source ABI layout");
+                assert_eq!(
+                    abi.profile,
+                    if isa == "x86_64" {
+                        AbiProfile::SysV
+                    } else {
+                        AbiProfile::Aapcs64
+                    }
+                );
+                assert_struct_fixture_placement(name, abi);
+                let sizes: Vec<_> = abi.arguments.iter().map(|argument| argument.size).collect();
+                let rows = if matches!(name, "flags_level" | "word_low_byte") {
+                    256
+                } else {
+                    12
+                };
+                let (inputs, upper) = aggregate_inputs(&sizes, rows);
+                ir.name = Some(name.into());
+                let mut batch = aggregate_candidates(ir, inputs, upper);
+                assert_aggregate_oracle(&batch, |input, _| match name {
+                    "flags_level" => {
+                        let byte = input[0] as u8;
+                        u64::from(if byte & 1 != 0 {
+                            byte >> 4
+                        } else {
+                            (byte >> 1) & 7
+                        })
+                    }
+                    "word_low_byte" => input[0] & 0xff,
+                    "point_add" => {
+                        let x = (input[0] as u32).wrapping_add(input[1] as u32);
+                        let y = ((input[0] >> 32) as u32).wrapping_add((input[1] >> 32) as u32);
+                        u64::from(x) | u64::from(y) << 32
+                    }
+                    "big_sum" => input
+                        .iter()
+                        .fold(0u64, |sum, value| sum.wrapping_add(*value)),
+                    _ => unreachable!(),
+                });
+                for candidate in &mut batch {
+                    candidate.label = format!("{isa} {optimization} {}", candidate.label);
+                }
+                candidates.extend(batch);
+            }
+        }
+    }
+    check_candidates(
+        "aggregate-struct-fixtures",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+fn assert_struct_fixture_placement(name: &str, abi: &SignatureAbi) {
+    let x86 = abi.profile == AbiProfile::SysV;
+    let direct = |index, bytes| {
+        Passing::Direct(vec![AbiPiece {
+            location: AbiLocation::Register(index),
+            object_offset: 0,
+            bytes,
+            class: Some(RegisterClass::Integer),
+        }])
+    };
+    let arguments = &abi.arguments;
+    let result = abi.result.as_ref().expect("a return layout");
+    let first = if x86 { 7 } else { 0 };
+    match name {
+        "flags_level" | "word_low_byte" => {
+            assert_eq!(arguments.len(), 1);
+            assert!(arguments[0].aggregate);
+            assert_eq!(arguments[0].size, 4);
+            assert_eq!(arguments[0].passing, direct(first, 4));
+            assert_eq!(
+                result.passing,
+                direct(0, if name == "flags_level" { 4 } else { 1 })
+            );
+        }
+        "point_add" => {
+            assert_eq!(arguments.len(), 2);
+            for (argument, index) in arguments.iter().zip(if x86 { [7, 6] } else { [0, 1] }) {
+                assert!(argument.aggregate);
+                assert_eq!(argument.size, 8);
+                assert_eq!(argument.passing, direct(index, 8));
+            }
+            assert!(result.aggregate);
+            assert_eq!(result.size, 8);
+            assert_eq!(result.passing, direct(0, 8));
+        }
+        "big_sum" => {
+            assert_eq!(arguments.len(), 1);
+            assert!(arguments[0].aggregate);
+            assert_eq!(arguments[0].size, 32);
+            assert_eq!(
+                arguments[0].passing,
+                if x86 {
+                    Passing::Direct(vec![AbiPiece {
+                        location: AbiLocation::Stack(8),
+                        object_offset: 0,
+                        bytes: 32,
+                        class: None,
+                    }])
+                } else {
+                    Passing::Indirect {
+                        pointer: AbiLocation::Register(0),
+                        returned_pointer: None,
+                    }
+                }
+            );
+            assert_eq!(result.passing, direct(0, 8));
+        }
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn aggregate_unresolved_alignment_uses_whole_function_fallback() {
+    let mut checked = 0;
+    for (isa, name) in [
+        ("x86_64", "abi_exhaust_seven"),
+        ("aarch64", "abi_exhaust_five"),
+    ] {
+        for optimization in ["O0", "O2"] {
+            let path = common::fixtures_dir().join(format!(
+                "metrics/aggregate_abi.{isa}.{optimization}.debug.elf"
+            ));
+            let mut binary = Binary::open(&path).unwrap();
+            let address = binary.find(name).unwrap().addr;
+            let ir = binary.analysis(address).unwrap().ir.clone();
+            let signature = ir
+                .declared_signature
+                .as_ref()
+                .expect("the source signature");
+            assert_eq!(
+                signature.abi,
+                Err(velk::ir::AbiIssue::UnknownLayout),
+                "{isa} {optimization} {name}"
+            );
+            let actual = velk::render::render_with_dependencies(&ir, &[], &Default::default(), &[]);
+            let mut physical = ir;
+            physical.declared_signature = None;
+            let expected =
+                velk::render::render_with_dependencies(&physical, &[], &Default::default(), &[]);
+            assert_eq!(actual, expected, "{isa} {optimization} {name}");
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 4);
+}
+
+#[test]
+fn printed_aggregate_abi_fixtures_observe_every_result_piece() {
+    let mut candidates = Vec::new();
+    let mut ordinary = 0;
+    let mut aligned = 0;
+    for isa in ["x86_64", "aarch64"] {
+        for optimization in ["O0", "O2"] {
+            let path = common::fixtures_dir().join(format!(
+                "metrics/aggregate_abi.{isa}.{optimization}.debug.elf"
+            ));
+            let mut binary = Binary::open(&path).unwrap();
+            for name in [
+                "abi_pair_adjust",
+                "abi_mixed_adjust",
+                "abi_hfa1_adjust",
+                "abi_hfa2_adjust",
+                "abi_hfa3_adjust",
+                "abi_hfa4_adjust",
+                "abi_exhaust_five",
+                "abi_exhaust_seven",
+                "abi_indirect_make",
+                "abi_exhaust_five_aligned",
+                "abi_exhaust_seven_aligned",
+            ] {
+                if matches!(
+                    (isa, name),
+                    ("x86_64", "abi_exhaust_seven") | ("aarch64", "abi_exhaust_five")
+                ) {
+                    continue;
+                }
+                let address = binary.find(name).unwrap().addr;
+                let mut ir = binary.analysis(address).unwrap().ir.clone();
+                let signature = ir
+                    .declared_signature
+                    .as_ref()
+                    .expect("the source signature");
+                let abi = signature.abi.as_ref().expect("the source ABI layout");
+                assert_eq!(
+                    abi.profile,
+                    if isa == "x86_64" {
+                        AbiProfile::SysV
+                    } else {
+                        AbiProfile::Aapcs64
+                    }
+                );
+                assert_abi_fixture_placement(name, abi);
+                let sizes: Vec<_> = abi.arguments.iter().map(|argument| argument.size).collect();
+                let (mut inputs, upper) = aggregate_inputs(&sizes, 12);
+                if name.starts_with("abi_hfa") {
+                    let lanes = sizes[0] as usize / 8;
+                    for (trial, input) in inputs.iter_mut().enumerate() {
+                        for (lane, value) in
+                            [1.25f64, -2.5, 3.75, -4.0].iter().take(lanes).enumerate()
+                        {
+                            input[lane] = value.to_bits();
+                        }
+                        input[lanes] = if (trial / 3) % 2 == 0 {
+                            0.5f64
+                        } else {
+                            -0.25f64
+                        }
+                        .to_bits();
+                    }
+                } else if name == "abi_mixed_adjust" {
+                    for (trial, input) in inputs.iter_mut().enumerate() {
+                        input[0] = (-2.5f64).to_bits();
+                        input[3] = if (trial / 3) % 2 == 0 {
+                            0.5f64
+                        } else {
+                            -0.25f64
+                        }
+                        .to_bits();
+                    }
+                }
+                ir.name = Some(name.into());
+                let mut batch = aggregate_candidates(ir, inputs, upper);
+                assert_aggregate_oracle(&batch, |input, slice| {
+                    abi_fixture_oracle(name, input, slice)
+                });
+                if name.starts_with("abi_hfa") {
+                    let last_offset = sizes[0] - 8;
+                    let last = batch
+                        .iter()
+                        .find(|candidate| {
+                            candidate.marshalling.as_ref().unwrap().result.offset == last_offset
+                        })
+                        .expect("the last HFA result is observed");
+                    let slice = last.marshalling.as_ref().unwrap().result;
+                    assert_ne!(
+                        abi_fixture_oracle(name, &last.inputs[0], slice),
+                        abi_fixture_oracle(name, &last.inputs[3], slice)
+                    );
+                }
+                for candidate in &mut batch {
+                    candidate.label = format!("{isa} {optimization} {}", candidate.label);
+                }
+                if name.ends_with("_aligned") {
+                    aligned += 1;
+                } else {
+                    ordinary += 1;
+                }
+                candidates.extend(batch);
+            }
+        }
+    }
+    assert_eq!(ordinary, 32);
+    assert_eq!(aligned, 8);
+    assert_eq!(candidates.len(), 80);
+    check_candidates("aggregate-abi-fixtures", candidates, Mode::Registers, &[]);
+}
+
+fn abi_fixture_oracle(name: &str, input: &[u64], slice: ObjectSlice) -> u64 {
+    let name = name.strip_suffix("_aligned").unwrap_or(name);
+    let piece = slice.offset as usize / 8;
+    match name {
+        "abi_pair_adjust" => [input[0].wrapping_add(input[2]), input[1] ^ input[2]][piece],
+        "abi_mixed_adjust" => [
+            (f64::from_bits(input[0]) + f64::from_bits(input[3])).to_bits(),
+            input[1] ^ input[2],
+        ][piece],
+        "abi_indirect_make" => [
+            input[0].wrapping_add(input[2]),
+            input[1] ^ input[2],
+            input[0].wrapping_sub(input[1]),
+        ][piece],
+        "abi_exhaust_five" => [1u64, 3, 5, 7, 11, 13, 17, 19]
+            .iter()
+            .zip(input)
+            .fold(0u64, |sum, (coefficient, value)| {
+                sum.wrapping_add(coefficient.wrapping_mul(*value))
+            }),
+        "abi_exhaust_seven" => [1u64, 3, 5, 7, 11, 13, 17, 19, 23, 29]
+            .iter()
+            .zip(input)
+            .fold(0u64, |sum, (coefficient, value)| {
+                sum.wrapping_add(coefficient.wrapping_mul(*value))
+            }),
+        name if name.starts_with("abi_hfa") => {
+            let lanes = input.len() - 1;
+            if piece + 1 == lanes {
+                (f64::from_bits(input[piece]) + f64::from_bits(input[lanes])).to_bits()
+            } else {
+                input[piece]
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn assert_abi_fixture_placement(name: &str, abi: &SignatureAbi) {
+    let name = name.strip_suffix("_aligned").unwrap_or(name);
+    let x86 = abi.profile == AbiProfile::SysV;
+    let ints: &[u16] = if x86 {
+        &[7, 6, 2, 1, 8, 9]
+    } else {
+        &[0, 1, 2, 3, 4, 5, 6, 7]
+    };
+    let simd = if x86 { 18 } else { 32 };
+    let reg = |index, offset, class| AbiPiece {
+        location: AbiLocation::Register(index),
+        object_offset: offset,
+        bytes: 8,
+        class: Some(class),
+    };
+    let integer = |index| Passing::Direct(vec![reg(index, 0, RegisterClass::Integer)]);
+    let float = |index| Passing::Direct(vec![reg(index, 0, RegisterClass::Simd)]);
+    let pair = |first, second| {
+        Passing::Direct(vec![
+            reg(first, 0, RegisterClass::Integer),
+            reg(second, 8, RegisterClass::Integer),
+        ])
+    };
+    let stack = |offset, bytes| {
+        Passing::Direct(vec![AbiPiece {
+            location: AbiLocation::Stack(offset),
+            object_offset: 0,
+            bytes,
+            class: None,
+        }])
+    };
+    let hidden = || Passing::Indirect {
+        pointer: AbiLocation::Register(if x86 { 7 } else { 8 }),
+        returned_pointer: if x86 { Some(0) } else { None },
+    };
+    let (arguments, result) = match name {
+        "abi_pair_adjust" => (
+            vec![pair(ints[0], ints[1]), integer(ints[2])],
+            pair(0, if x86 { 2 } else { 1 }),
+        ),
+        "abi_mixed_adjust" if x86 => (
+            vec![
+                Passing::Direct(vec![
+                    reg(18, 0, RegisterClass::Simd),
+                    reg(7, 8, RegisterClass::Integer),
+                ]),
+                integer(6),
+                float(20),
+            ],
+            Passing::Direct(vec![
+                reg(18, 0, RegisterClass::Simd),
+                reg(0, 8, RegisterClass::Integer),
+            ]),
+        ),
+        "abi_mixed_adjust" => (vec![pair(0, 1), integer(2), float(32)], pair(0, 1)),
+        "abi_indirect_make" => (
+            vec![
+                pair(ints[usize::from(x86)], ints[usize::from(x86) + 1]),
+                integer(ints[usize::from(x86) + 2]),
+            ],
+            hidden(),
+        ),
+        "abi_exhaust_five" => {
+            let mut arguments: Vec<_> = ints[..5].iter().copied().map(integer).collect();
+            arguments.push(if x86 { stack(8, 16) } else { pair(5, 6) });
+            arguments.push(integer(if x86 { 9 } else { 7 }));
+            (arguments, integer(0))
+        }
+        "abi_exhaust_seven" => {
+            let mut arguments: Vec<_> = ints.iter().take(7).copied().map(integer).collect();
+            if x86 {
+                arguments.push(stack(8, 8));
+            }
+            arguments.push(stack(if x86 { 16 } else { 0 }, 16));
+            arguments.push(stack(if x86 { 32 } else { 16 }, 8));
+            (arguments, integer(0))
+        }
+        name if name.starts_with("abi_hfa") => {
+            let lanes = name.as_bytes()[7] - b'0';
+            let hfa = Passing::Direct(
+                (0..lanes)
+                    .map(|lane| {
+                        reg(
+                            simd + u16::from(lane) * 2,
+                            u64::from(lane) * 8,
+                            RegisterClass::Simd,
+                        )
+                    })
+                    .collect(),
+            );
+            if x86 && lanes > 2 {
+                (vec![stack(8, u64::from(lanes) * 8), float(simd)], hidden())
+            } else {
+                (vec![hfa.clone(), float(simd + u16::from(lanes) * 2)], hfa)
+            }
+        }
+        _ => unreachable!(),
+    };
+    assert_eq!(abi.arguments.len(), arguments.len(), "{name}");
+    for (actual, expected) in abi.arguments.iter().zip(arguments) {
+        assert_eq!(actual.passing, expected, "{name}");
+    }
+    assert_eq!(
+        abi.result.as_ref().expect("a result layout").passing,
+        result,
+        "{name}"
+    );
+}
+
+fn byte_mask(bytes: u8) -> u64 {
+    assert!((1..=8).contains(&bytes));
+    u64::MAX >> (64 - u32::from(bytes) * 8)
+}
+
+fn aggregate_inputs(sizes: &[u64], rows: u64) -> (Vec<Vec<u64>>, Vec<u64>) {
+    let upper_patterns = [0, u64::MAX, 0xa55a_3cc3_9669_f00f];
+    let mut inputs = Vec::new();
+    let mut upper = Vec::new();
+    for row in 0..rows {
+        let mut input = Vec::new();
+        for (argument, &size) in sizes.iter().enumerate() {
+            for part in 0..size.div_ceil(8) {
+                let word = eval::hash(row + 0x1020, argument as u64 * 16 + part);
+                input.push(if part == 0 {
+                    (word & !0xff) | (row & 0xff)
+                } else {
+                    word
+                });
+            }
+        }
+        for pattern in upper_patterns {
+            inputs.push(input.clone());
+            upper.push(pattern);
+        }
+    }
+    (inputs, upper)
+}
+
+fn integer_object_ir(size: u64, aggregate_return: bool) -> FunctionIr {
+    let ty = CType::Named("struct bytes".into());
+    let pieces: Vec<_> = (0..size)
+        .step_by(8)
+        .enumerate()
+        .map(|(part, offset)| AbiPiece {
+            location: AbiLocation::Register([7, 6][part]),
+            object_offset: offset,
+            bytes: (size - offset).min(8),
+            class: Some(RegisterClass::Integer),
+        })
+        .collect();
+    let tail = [6, 2][pieces.len() - 1];
+    let mut params: Vec<_> = pieces
+        .iter()
+        .enumerate()
+        .map(|(part, piece)| Param {
+            index: match piece.location {
+                AbiLocation::Register(index) => index,
+                _ => unreachable!(),
+            },
+            name: format!("piece{part}"),
+            ty: CType::U64,
+        })
+        .collect();
+    params.push(Param {
+        index: tail,
+        name: "tail".into(),
+        ty: CType::U64,
+    });
+    let values: Vec<_> = pieces
+        .iter()
+        .map(|piece| {
+            let AbiLocation::Register(index) = piece.location else {
+                unreachable!()
+            };
+            Expr::bin(
+                BinOp::And,
+                Expr::reg(index, 64),
+                Expr::Const(byte_mask(piece.bytes as u8)),
+            )
+        })
+        .collect();
+    let results: Vec<_> = values
+        .iter()
+        .zip(&pieces)
+        .map(|(value, piece)| {
+            Expr::bin(
+                BinOp::And,
+                Expr::bin(BinOp::Xor, value.clone(), Expr::reg(tail, 64)),
+                Expr::Const(byte_mask(piece.bytes as u8)),
+            )
+        })
+        .collect();
+    let ret = if aggregate_return {
+        ty.clone()
+    } else {
+        CType::U64
+    };
+    let expression = if aggregate_return {
+        Expr::Apply {
+            op: Operation::Results,
+            args: results,
+        }
+    } else {
+        values
+            .into_iter()
+            .fold(Expr::reg(tail, 64), |value, piece| {
+                Expr::bin(BinOp::Xor, value, piece)
+            })
+    };
+    let mut ir = synthetic_ir(
+        &format!(
+            "aggregate_bytes_{size}_{}",
+            if aggregate_return { "object" } else { "scalar" }
+        ),
+        params,
+        ret.clone(),
+        vec![Stmt::Ret { value: expression }],
+    );
+    ir.definitions.push(Definition {
+        name: ty.to_string(),
+        members: vec![format!("unsigned char bytes[{size}];")],
+        fields: vec!["bytes".into()],
+        contains: Vec::new(),
+        size,
+        alignment: Some(1),
+        compatible_profiles: vec![AbiProfile::SysV],
+    });
+    let scalar = |index| ValueAbi {
+        aggregate: false,
+        size: 8,
+        alignment: 8,
+        defined_bits: vec![(0, 64)],
+        passing: Passing::Direct(vec![AbiPiece {
+            location: AbiLocation::Register(index),
+            object_offset: 0,
+            bytes: 8,
+            class: Some(RegisterClass::Integer),
+        }]),
+    };
+    let argument = ValueAbi {
+        aggregate: true,
+        size,
+        alignment: 1,
+        defined_bits: vec![(0, size * 8)],
+        passing: Passing::Direct(pieces.clone()),
+    };
+    let result = if aggregate_return {
+        ValueAbi {
+            passing: Passing::Direct(
+                pieces
+                    .into_iter()
+                    .enumerate()
+                    .map(|(part, mut piece)| {
+                        piece.location = AbiLocation::Register([0, 2][part]);
+                        piece
+                    })
+                    .collect(),
+            ),
+            ..argument.clone()
+        }
+    } else {
+        scalar(0)
+    };
+    ir.declared_signature = Some(DeclaredSignature {
+        params: vec![("value".into(), ty), ("tail".into(), CType::U64)],
+        ret,
+        variadic: false,
+        abi: Ok(SignatureAbi {
+            profile: AbiProfile::SysV,
+            arguments: vec![argument, scalar(tail)],
+            result: Some(result),
+        }),
+    });
+    ir
+}
+
+#[test]
+fn aggregate_result_projection_observes_each_piece() {
+    let values = vec![
+        Expr::bin(BinOp::Xor, Expr::reg(u16::MAX, 64), Expr::Const(0x1234)),
+        Expr::bin(BinOp::Add, Expr::reg(u16::MAX - 1, 64), Expr::Const(1)),
+    ];
+    let ir = synthetic_ir(
+        "aggregate_projection",
+        Vec::new(),
+        CType::Named("struct result".to_owned()),
+        vec![
+            Stmt::Store {
+                addr: Expr::Const(REGION + 0x100),
+                value: Expr::Const(0x5a),
+                width: 1,
+            },
+            Stmt::Ret {
+                value: Expr::Apply {
+                    op: Operation::Results,
+                    args: values.clone(),
+                },
+            },
+        ],
+    );
+    for selected in 0..2 {
+        let projected = project_result(&ir, 2, selected, 8).expect("a complete result");
+        assert_eq!(projected.ret_type, CType::U64);
+        assert_eq!(projected.blocks[0].stmts.len(), 4);
+        let mut temporaries = BTreeSet::new();
+        for (index, expected) in values.iter().enumerate() {
+            let Stmt::Assign { dest, value } = &projected.blocks[0].stmts[index + 1] else {
+                panic!("each result must be evaluated in order")
+            };
+            assert_eq!(value, expected);
+            assert_eq!(dest.width, 64);
+            assert!(![u16::MAX, u16::MAX - 1].contains(&dest.index));
+            assert!(temporaries.insert(dest.index));
+        }
+        let Stmt::Assign { dest, .. } = &projected.blocks[0].stmts[selected + 1] else {
+            unreachable!()
+        };
+        let Stmt::Ret { value } = &projected.blocks[0].stmts[3] else {
+            panic!("the projection must return its saved result")
+        };
+        assert_eq!(value, &Expr::reg(dest.index, 64));
+        for second in [0xfedc_ba98_7654_3210, 0x8000_0000_0000_0000] {
+            let registers = [(u16::MAX, 0x1122_3344_5566_7788), (u16::MAX - 1, second)];
+            let run = |source| {
+                eval::run(
+                    source,
+                    &eval::Setup {
+                        seed: 1,
+                        convention: eval::Convention {
+                            arguments: &[],
+                            clobbered: &[],
+                        },
+                        registers: &registers,
+                        memory: &[],
+                        step_limit: trials::STEP_LIMIT,
+                    },
+                )
+            };
+            let Outcome::Return {
+                value: original,
+                memory: original_memory,
+                calls: original_calls,
+            } = run(&ir)
+            else {
+                panic!("the source must return")
+            };
+            let Outcome::Return {
+                value,
+                memory,
+                calls,
+            } = run(&projected)
+            else {
+                panic!("the projection must return")
+            };
+            assert_eq!(original, 0x1122_3344_5566_65bc);
+            assert_eq!(
+                value,
+                [0x1122_3344_5566_65bc, second.wrapping_add(1)][selected]
+            );
+            assert_eq!(memory, original_memory);
+            assert_eq!(memory.get(&(REGION + 0x100)), Some(&0x5a));
+            assert_eq!(calls, original_calls);
+        }
+    }
+    assert_eq!(ir.blocks[0].stmts.len(), 2);
+}
+
+#[test]
+fn aggregate_result_projection_keeps_unknown_loads_and_faults() {
+    let load = |addr| Expr::Load {
+        addr: Box::new(addr),
+        width: 8,
+        signed: false,
+    };
+    let source = |second| {
+        synthetic_ir(
+            "aggregate_projection_load",
+            Vec::new(),
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::Apply {
+                    op: Operation::Results,
+                    args: vec![Expr::Const(7), second],
+                },
+            }],
+        )
+    };
+    let run = |ir: &FunctionIr, seed| {
+        eval::run(
+            ir,
+            &eval::Setup {
+                seed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: trials::STEP_LIMIT,
+            },
+        )
+    };
+    let address = REGION + 0x780;
+    let unknown = source(load(Expr::Const(address)));
+    let mut observed = Vec::new();
+    for selected in 0..2 {
+        let projected = project_result(&unknown, 2, selected, 8).unwrap();
+        let Stmt::Assign { value, .. } = &projected.blocks[0].stmts[1] else {
+            panic!("the later load must still be evaluated")
+        };
+        assert_eq!(value, &load(Expr::Const(address)));
+        for seed in [11, 12] {
+            let Outcome::Return { value, .. } = run(&projected, seed) else {
+                panic!("a hashed load still returns")
+            };
+            let expected = if selected == 0 {
+                7
+            } else {
+                (0..8).fold(0, |value, byte| {
+                    value | (eval::hash(seed, address + byte) & 0xff) << (8 * byte)
+                })
+            };
+            assert_eq!(value, expected);
+            if selected == 1 {
+                observed.push(value);
+            }
+        }
+    }
+    assert_ne!(observed[0], observed[1]);
+
+    let fault = source(load(Expr::bin(BinOp::DivU, Expr::Const(1), Expr::Const(0))));
+    assert_eq!(run(&fault, 1), Outcome::Unknown("division by zero"));
+    for selected in 0..2 {
+        let projected = project_result(&fault, 2, selected, 8).unwrap();
+        assert_eq!(run(&projected, 1), Outcome::Unknown("division by zero"));
+    }
+}
+
+#[test]
+fn aggregate_result_projection_validates_returns_and_tail_width() {
+    let mut ir = synthetic_ir(
+        "aggregate_projection_tail",
+        Vec::new(),
+        CType::U64,
+        vec![Stmt::Ret {
+            value: Expr::Const(0xfedc_ba98_7654_3210),
+        }],
+    );
+    for bytes in [1, 2, 3, 4, 5, 6, 7, 8] {
+        let projected = project_result(&ir, 1, 0, bytes).unwrap();
+        let outcome = eval::run(
+            &projected,
+            &eval::Setup {
+                seed: 0,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: trials::STEP_LIMIT,
+            },
+        );
+        let Outcome::Return { value, .. } = outcome else {
+            panic!("{outcome:?}")
+        };
+        let mask = u64::MAX >> (64 - u32::from(bytes) * 8);
+        assert_eq!(value, 0xfedc_ba98_7654_3210 & mask);
+    }
+    for (count, selected, bytes) in [(0, 0, 8), (1, 1, 8), (1, 0, 0), (1, 0, 9)] {
+        assert!(project_result(&ir, count, selected, bytes).is_err());
+    }
+    assert!(project_result(&ir, 2, 0, 8).is_err());
+    ir.blocks.push(Block {
+        start: 4,
+        stmts: vec![Stmt::Ret {
+            value: Expr::Apply {
+                op: Operation::Results,
+                args: vec![Expr::Const(1), Expr::Const(2)],
+            },
+        }],
+    });
+    assert!(project_result(&ir, 1, 0, 8).is_err());
+    ir.blocks.clear();
+    assert!(project_result(&ir, 1, 0, 8).is_err());
+}
+
+#[test]
 fn segment_provider_rebinding_preserves_other_c_tokens() {
     let code = "provider(); provider_more(); /* provider */\n// provider\n\"provider\\\"\" '\\'';";
     let expected =
@@ -1776,6 +3517,7 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
     FunctionIr {
         isa: Isa::X86_64,
         convention: Convention::SysV,
+        declared_signature: None,
         params,
         stack_params: Vec::new(),
         variadic: false,
@@ -1804,6 +3546,7 @@ fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
         segment_states()
     };
     Candidate {
+        marshalling: None,
         label: ir.name.clone().expect("a named synthetic function"),
         code: rendered.code,
         segment_bases: rendered.segment_bases,
@@ -1817,6 +3560,10 @@ fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
 
 fn check_candidates(name: &str, candidates: Vec<Candidate>, mode: Mode, compiler_args: &[&str]) {
     let count = candidates.len();
+    let runs = candidates
+        .iter()
+        .map(|candidate| candidate.inputs.len())
+        .sum();
     let fixture = Fixture {
         name: name.into(),
         convention: eval::Convention {
@@ -1831,17 +3578,21 @@ fn check_candidates(name: &str, candidates: Vec<Candidate>, mode: Mode, compiler
     };
     let scratch = scratch_dir(name);
     let results = check(&[fixture], &scratch, mode, compiler_args);
+    assert_comparison_runs(&results[0], count, runs);
     std::fs::remove_dir_all(&scratch).ok();
-    assert_comparisons(&results[0], count);
 }
 
 fn assert_comparisons(result: &Findings, count: usize) {
+    assert_comparison_runs(result, count, count * trials::TRIALS as usize);
+}
+
+fn assert_comparison_runs(result: &Findings, count: usize, runs: usize) {
     assert!(result.lines.is_empty(), "{}", result.lines.join("\n"));
     assert!(result.skipped.is_empty(), "{:?}", result.skipped);
     assert_eq!(result.compiled, count);
     assert_eq!(result.failed, 0);
     assert_eq!(result.compared, count);
-    assert_eq!(result.runs, count * trials::TRIALS as usize);
+    assert_eq!(result.runs, runs);
     assert_eq!(result.differing, 0);
 }
 
@@ -1927,12 +3678,30 @@ struct Candidate {
     code: String,
     segment_bases: Vec<SegmentBaseRead>,
     states: Vec<SegmentState>,
+    marshalling: Option<AggregateCall>,
     params: Vec<String>,
     /// Each trial's argument values, in parameter order.
     inputs: Vec<Vec<u64>>,
     /// It returns nothing, so only its effects compare.
     void: bool,
 }
+
+#[derive(Clone)]
+struct AggregateCall {
+    signature: DeclaredSignature,
+    result: ObjectSlice,
+    upper_bits: Vec<u64>,
+}
+
+#[derive(Clone, Copy)]
+struct ObjectSlice {
+    offset: u64,
+    bytes: u8,
+    mask: u64,
+}
+
+const AGGREGATE_STORAGE: u64 = eval::STACK_TOP - 0x10_0000;
+const AGGREGATE_RESULT: u64 = AGGREGATE_STORAGE + 0x2_0000;
 
 #[derive(Clone)]
 struct SegmentState {
@@ -2075,6 +3844,7 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
             })
             .collect();
         candidates.push(Candidate {
+            marshalling: None,
             label: format!(
                 "{} {} {}",
                 fixture.display(),
@@ -2132,8 +3902,11 @@ fn calls(image: &Image, function: &velk::loader::Function) -> bool {
 fn qualifies(ir: &FunctionIr, no_references: bool, mode: Mode) -> Result<(), &'static str> {
     let memory = mode == Mode::Memory;
     let value = |ty: &CType| integer(ty) || (memory && ty.is_pointer());
-    if !value(&ir.ret_type) && !(memory && ir.ret_type == CType::Void) {
-        return Err(if ir.ret_type == CType::Void {
+    if let Some(ret) = std::iter::once(&ir.ret_type)
+        .chain(ir.declared_signature.iter().map(|signature| &signature.ret))
+        .find(|ty| !value(ty) && !(memory && **ty == CType::Void))
+    {
+        return Err(if *ret == CType::Void {
             "returns nothing"
         } else {
             "returns no integer"
@@ -2142,7 +3915,17 @@ fn qualifies(ir: &FunctionIr, no_references: bool, mode: Mode) -> Result<(), &'s
     if !ir.stack_params.is_empty() || ir.variadic {
         return Err("takes arguments on the stack");
     }
-    if !ir.params.iter().all(|param| value(&param.ty)) {
+    if !ir
+        .params
+        .iter()
+        .map(|param| &param.ty)
+        .chain(
+            ir.declared_signature
+                .iter()
+                .flat_map(|signature| signature.params.iter().map(|(_, ty)| ty)),
+        )
+        .all(value)
+    {
         return Err("takes an argument that is no integer");
     }
     if ir.params.len() > 16 {
@@ -2299,7 +4082,7 @@ fn check(
         .map(|(fixture, _)| fixtures[*fixture].initial_memory.as_slice())
         .collect();
     for candidate in &candidates {
-        for trial in 0..trials::TRIALS {
+        for trial in 0..candidate.inputs.len() as u64 {
             segment_state(candidate, trial)
                 .unwrap_or_else(|reason| panic!("{}: {reason}", candidate.label));
         }
@@ -2349,7 +4132,7 @@ fn check(
     let mut expected = Vec::new();
     for &index in &alive {
         let (fixture, candidate) = all[index];
-        for trial in 0..trials::TRIALS {
+        for trial in 0..candidate.inputs.len() as u64 {
             let arguments = canonical.next().unwrap_or_default();
             // Another function's address differs between the binary and
             // the compiled program.
@@ -2455,6 +4238,402 @@ fn check(
     results
 }
 
+fn project_result(
+    ir: &FunctionIr,
+    count: usize,
+    selected: usize,
+    bytes: u8,
+) -> Result<FunctionIr, &'static str> {
+    if count == 0 || selected >= count || !(1..=8).contains(&bytes) {
+        return Err("invalid result projection");
+    }
+    let mut used: std::collections::HashSet<u16> =
+        ir.params.iter().map(|param| param.index).collect();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        used.extend(velk::ir::visit::statement_reads(stmt));
+        used.extend(stmt.call_clobbers());
+        match stmt {
+            Stmt::Assign { dest, .. } => {
+                used.insert(dest.index);
+            }
+            Stmt::Call {
+                result: Some(dest), ..
+            } => {
+                used.insert(dest.index);
+            }
+            Stmt::Unsupported { .. } => return Err("cannot project an unsupported statement"),
+            _ => {}
+        }
+    }
+    let temporaries: Vec<u16> = (0..=u16::MAX)
+        .rev()
+        .filter(|index| !used.contains(index))
+        .take(count)
+        .collect();
+    if temporaries.len() != count {
+        return Err("no registers remain for the result projection");
+    }
+    let mut projected = ir.clone();
+    projected.ret_type = CType::U64;
+    projected.declared_signature = None;
+    let mut returns = 0;
+    for block in &mut projected.blocks {
+        let mut statements = Vec::new();
+        for stmt in std::mem::take(&mut block.stmts) {
+            let Stmt::Ret { value } = stmt else {
+                statements.push(stmt);
+                continue;
+            };
+            let values = match value {
+                Expr::Apply {
+                    op: Operation::Results,
+                    args,
+                } => args,
+                value if count == 1 => vec![value],
+                _ => return Err("return does not hold all result pieces"),
+            };
+            if values.len() != count {
+                return Err("return has a different result piece count");
+            }
+            // Keep every operand evaluation, including faults in another piece.
+            for (index, value) in values.into_iter().enumerate() {
+                statements.push(Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: temporaries[index],
+                        width: 64,
+                    },
+                    value,
+                });
+            }
+            let value = Expr::reg(temporaries[selected], 64);
+            statements.push(Stmt::Ret {
+                value: if bytes == 8 {
+                    value
+                } else {
+                    Expr::bin(BinOp::And, value, Expr::Const((1u64 << (8 * bytes)) - 1))
+                },
+            });
+            returns += 1;
+        }
+        block.stmts = statements;
+    }
+    if returns == 0 {
+        return Err("result projection needs a return");
+    }
+    Ok(projected)
+}
+
+fn object_mask(value: &ValueAbi, offset: u64, bytes: u8) -> u64 {
+    (0..u64::from(bytes) * 8).fold(0, |mask, bit| {
+        let position = offset * 8 + bit;
+        if value
+            .defined_bits
+            .iter()
+            .any(|&(start, count)| (start..start + count).contains(&position))
+        {
+            mask | (1 << bit)
+        } else {
+            mask
+        }
+    })
+}
+
+fn aggregate_candidates(
+    ir: FunctionIr,
+    inputs: Vec<Vec<u64>>,
+    upper_bits: Vec<u64>,
+) -> Vec<Candidate> {
+    let signature = ir.declared_signature.as_ref().expect("a logical signature");
+    let abi = signature.abi.as_ref().expect("a supported ABI");
+    assert_eq!(signature.params.len(), abi.arguments.len());
+    assert!(!signature.variadic);
+    assert_eq!(inputs.len(), upper_bits.len());
+    let words: usize = abi
+        .arguments
+        .iter()
+        .map(|arg| arg.size.div_ceil(8) as usize)
+        .sum();
+    assert!(words <= 16);
+    assert!(inputs.iter().all(|input| input.len() == words));
+    for value in abi.arguments.iter().chain(abi.result.iter()) {
+        value.validate().expect("a valid object ABI");
+    }
+    for ((_, ty), value) in signature.params.iter().zip(&abi.arguments) {
+        assert_aggregate_definition(&ir, ty, value, abi.profile);
+    }
+    if let Some(result) = &abi.result {
+        assert_aggregate_definition(&ir, &signature.ret, result, abi.profile);
+    }
+    let result = abi.result.as_ref().expect("an observable returned object");
+    let direct = match &result.passing {
+        Passing::Direct(pieces) => Some(pieces),
+        Passing::Indirect { .. } => None,
+    };
+    let slices: Vec<ObjectSlice> = match direct {
+        Some(pieces) => pieces
+            .iter()
+            .map(|piece| {
+                assert!(matches!(piece.location, AbiLocation::Register(_)));
+                ObjectSlice {
+                    offset: piece.object_offset,
+                    bytes: u8::try_from(piece.bytes).expect("a register word"),
+                    mask: object_mask(result, piece.object_offset, piece.bytes as u8),
+                }
+            })
+            .collect(),
+        None => (0..result.size)
+            .step_by(8)
+            .map(|offset| {
+                let bytes = (result.size - offset).min(8) as u8;
+                ObjectSlice {
+                    offset,
+                    bytes,
+                    mask: object_mask(result, offset, bytes),
+                }
+            })
+            .collect(),
+    };
+    for &(start, count) in &result.defined_bits {
+        for bit in start..start + count {
+            assert!(slices.iter().any(|slice| {
+                (slice.offset * 8..slice.offset * 8 + u64::from(slice.bytes) * 8).contains(&bit)
+            }));
+        }
+    }
+    let rendered = velk::render::render_with_dependencies(&ir, &[], &Default::default(), &[]);
+    assert!(rendered.segment_bases.is_empty());
+    let count = match direct {
+        Some(pieces) => pieces.len(),
+        None => ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .find_map(|stmt| {
+                let Stmt::Ret { value } = stmt else {
+                    return None;
+                };
+                Some(match value {
+                    Expr::Apply {
+                        op: Operation::Results,
+                        args,
+                    } => args.len(),
+                    _ => 1,
+                })
+            })
+            .expect("a return"),
+    };
+    let mut candidates = Vec::new();
+    for (selected, slice) in slices.into_iter().enumerate() {
+        if slice.mask == 0 {
+            continue;
+        }
+        let mut projected = project_result(
+            &ir,
+            count,
+            if direct.is_some() { selected } else { 0 },
+            slice.bytes,
+        )
+        .expect("all return expressions retained");
+        for stmt in projected
+            .blocks
+            .iter_mut()
+            .flat_map(|block| &mut block.stmts)
+        {
+            if let Stmt::Ret { value } = stmt {
+                if direct.is_none() {
+                    *value = Expr::Load {
+                        addr: Box::new(Expr::Const(AGGREGATE_RESULT + slice.offset)),
+                        width: slice.bytes,
+                        signed: false,
+                    };
+                }
+                *value = Expr::bin(BinOp::And, value.clone(), Expr::Const(slice.mask));
+            }
+        }
+        candidates.push(Candidate {
+            label: format!(
+                "{} result {selected}",
+                ir.name.as_deref().expect("a named function")
+            ),
+            ir: projected,
+            code: rendered.code.clone(),
+            segment_bases: Vec::new(),
+            states: Vec::new(),
+            marshalling: Some(AggregateCall {
+                signature: signature.clone(),
+                result: slice,
+                upper_bits: upper_bits.clone(),
+            }),
+            params: vec!["uint64_t".to_owned(); words],
+            inputs: inputs.clone(),
+            void: false,
+        });
+    }
+    assert!(!candidates.is_empty(), "the result needs defined bits");
+    candidates
+}
+
+fn assert_aggregate_definition(ir: &FunctionIr, ty: &CType, value: &ValueAbi, profile: AbiProfile) {
+    if !value.aggregate {
+        return;
+    }
+    let name = ty.to_string();
+    let definition = ir
+        .definitions
+        .iter()
+        .find(|definition| definition.name == name)
+        .unwrap_or_else(|| panic!("missing definition for {name}"));
+    assert_eq!(definition.size, value.size, "{name}");
+    assert_eq!(definition.alignment, Some(value.alignment), "{name}");
+    let mut names = vec![name];
+    let mut seen = BTreeSet::new();
+    while let Some(name) = names.pop() {
+        if !seen.insert(name.clone()) {
+            continue;
+        }
+        let definition = ir
+            .definitions
+            .iter()
+            .find(|definition| definition.name == name)
+            .unwrap_or_else(|| panic!("missing nested definition for {name}"));
+        assert!(
+            definition.compatible_profiles.contains(&profile),
+            "{name}: {profile:?}"
+        );
+        names.extend(definition.contains.iter().cloned());
+    }
+}
+
+fn assert_aggregate_oracle(candidates: &[Candidate], oracle: impl Fn(&[u64], ObjectSlice) -> u64) {
+    let fixture = Fixture {
+        name: "aggregate oracle".into(),
+        convention: eval::Convention {
+            arguments: &[],
+            clobbered: &[],
+        },
+        entry_registers: Vec::new(),
+        initial_memory: Vec::new(),
+        functions: candidates.len(),
+        excluded: BTreeMap::new(),
+        candidates: Vec::new(),
+    };
+    for candidate in candidates {
+        let call = candidate.marshalling.as_ref().expect("an object call");
+        for (trial, input) in candidate.inputs.iter().enumerate() {
+            let outcome = interpret(&fixture, candidate, trial as u64, input, Mode::Registers)
+                .unwrap_or_else(|reason| panic!("{} trial {trial}: {reason}", candidate.label));
+            let Outcome::Return {
+                value,
+                calls,
+                memory,
+            } = outcome
+            else {
+                panic!("{} trial {trial}: {outcome:?}", candidate.label)
+            };
+            assert_eq!(
+                value,
+                oracle(input, call.result) & call.result.mask,
+                "{} trial {trial}",
+                candidate.label
+            );
+            assert!(calls.is_empty(), "{} trial {trial}", candidate.label);
+            assert!(memory.is_empty(), "{} trial {trial}", candidate.label);
+        }
+    }
+}
+
+type EntryState = (Vec<(u16, u64)>, Vec<(u64, u64)>);
+
+fn aggregate_state(call: &AggregateCall, arguments: &[u64], trial: u64) -> EntryState {
+    let abi = call.signature.abi.as_ref().expect("a supported ABI");
+    let upper = call.upper_bits[trial as usize];
+    let mut registers = Vec::new();
+    let mut memory = BTreeMap::new();
+    let mut cursor = 0;
+    let mut bind = |location, value, bytes| match location {
+        AbiLocation::Register(index) => registers.push((index, value)),
+        AbiLocation::Stack(offset) => {
+            let address = eval::STACK_TOP.wrapping_add_signed(offset);
+            for byte in 0..bytes {
+                memory.insert(address + byte, (value >> (8 * byte)) as u8);
+            }
+        }
+    };
+    let mut objects = BTreeMap::new();
+    for (position, value) in abi.arguments.iter().enumerate() {
+        let words = value.size.div_ceil(8) as usize;
+        let source = &arguments[cursor..cursor + words];
+        cursor += words;
+        let bytes: Vec<u8> = (0..value.size)
+            .map(|byte| (source[byte as usize / 8] >> (8 * (byte % 8))) as u8)
+            .collect();
+        let word = |offset: u64, size: u64| {
+            let count = size.min(8);
+            let mask = if count == 8 {
+                u64::MAX
+            } else {
+                (1 << (8 * count)) - 1
+            };
+            (0..count).fold(upper & !mask, |word, byte| {
+                word | u64::from(bytes[(offset + byte) as usize]) << (8 * byte)
+            })
+        };
+        match &value.passing {
+            Passing::Direct(pieces) => {
+                for piece in pieces {
+                    for part in (0..piece.bytes).step_by(8) {
+                        let location = match piece.location {
+                            AbiLocation::Register(index) => {
+                                assert_eq!(part, 0);
+                                AbiLocation::Register(index)
+                            }
+                            AbiLocation::Stack(offset) => AbiLocation::Stack(offset + part as i64),
+                        };
+                        let bytes = (piece.bytes - part).min(8);
+                        bind(location, word(piece.object_offset + part, bytes), bytes);
+                    }
+                }
+            }
+            Passing::Indirect { pointer, .. } => {
+                assert!(value.size <= 0x1000 && value.alignment <= 0x1000);
+                let address = AGGREGATE_STORAGE + position as u64 * 0x1000;
+                assert_eq!(address % value.alignment, 0);
+                bind(*pointer, address, 8);
+                for (offset, byte) in bytes.into_iter().enumerate() {
+                    objects.insert(address + offset as u64, byte);
+                }
+            }
+        }
+    }
+    assert_eq!(cursor, arguments.len());
+    if let Some(result) = &abi.result
+        && let Passing::Indirect { pointer, .. } = &result.passing
+    {
+        assert!(result.size <= 0x1000 && result.alignment <= 0x1000);
+        assert_eq!(AGGREGATE_RESULT % result.alignment, 0);
+        bind(*pointer, AGGREGATE_RESULT, 8);
+        objects.extend((0..result.size).map(|offset| {
+            (
+                AGGREGATE_RESULT + offset,
+                (upper >> (8 * (offset % 8))) as u8,
+            )
+        }));
+    }
+    memory.extend(objects);
+    let mut words = BTreeMap::new();
+    for (address, byte) in memory {
+        let base = address & !7;
+        let word = words.entry(base).or_insert_with(|| {
+            (0..8).fold(0, |word, offset| {
+                word | (eval::hash(trial, base + offset) & 0xff) << (8 * offset)
+            })
+        });
+        let shift = 8 * (address - base);
+        *word = (*word & !(0xff << shift)) | u64::from(byte) << shift;
+    }
+    (registers, words.into_iter().collect())
+}
+
 /// The interpreter's outcome of one trial, or why it cannot tell one.
 fn interpret(
     fixture: &Fixture,
@@ -2466,13 +4645,20 @@ fn interpret(
     if arguments.len() != candidate.params.len() {
         return Err("the driver gave no arguments");
     }
-    let mut registers: Vec<(u16, u64)> = candidate
-        .ir
-        .params
-        .iter()
-        .map(|param| param.index)
-        .zip(arguments.iter().copied())
-        .collect();
+    let (mut registers, aggregate_memory): EntryState = if let Some(call) = &candidate.marshalling {
+        aggregate_state(call, arguments, trial)
+    } else {
+        (
+            candidate
+                .ir
+                .params
+                .iter()
+                .map(|param| param.index)
+                .zip(arguments.iter().copied())
+                .collect(),
+            Vec::new(),
+        )
+    };
     registers.extend_from_slice(&fixture.entry_registers);
     let mut memory = Vec::new();
     // The region holds what the trial's seed hashes, whatever seed reads
@@ -2486,6 +4672,7 @@ fn interpret(
         }));
     }
     memory.extend_from_slice(&fixture.initial_memory);
+    memory.extend(aggregate_memory);
     if let Some(state) = segment_state(candidate, trial)
         .unwrap_or_else(|reason| panic!("{}: {reason}", candidate.label))
     {
@@ -2884,6 +5071,63 @@ fn segment_support(
 }
 
 /// The C program holding the functions in `alive`.
+fn aggregate_call(text: &mut String, candidate: &Candidate, index: usize, call: &AggregateCall) {
+    let abi = call.signature.abi.as_ref().expect("a supported ABI");
+    writeln!(text, "    case {index}: {{").unwrap();
+    let mut cursor = 0;
+    let mut arguments = Vec::new();
+    for (position, ((_, ty), value)) in call.signature.params.iter().zip(&abi.arguments).enumerate()
+    {
+        let ty = scoped_type(&ty.to_string(), &candidate.code, index);
+        let local = format!("velk_arg{position}");
+        writeln!(text, "        {ty} {local};").unwrap();
+        writeln!(
+            text,
+            "        _Static_assert(sizeof({local}) == {}, \"argument size\");",
+            value.size
+        )
+        .unwrap();
+        writeln!(
+            text,
+            "        _Static_assert(_Alignof({ty}) == {}, \"argument alignment\");",
+            value.alignment
+        )
+        .unwrap();
+        writeln!(text, "        for (unsigned byte = 0; byte < {}; byte++) ((unsigned char *)&{local})[byte] = (unsigned char)(a[{cursor} + byte / 8] >> (8 * (byte % 8)));", value.size).unwrap();
+        cursor += value.size.div_ceil(8) as usize;
+        arguments.push(local);
+    }
+    let result = abi.result.as_ref().expect("an observed result");
+    let ty = scoped_type(&call.signature.ret.to_string(), &candidate.code, index);
+    writeln!(
+        text,
+        "        {ty} velk_result = velk_f{index}({});",
+        arguments.join(", ")
+    )
+    .unwrap();
+    writeln!(
+        text,
+        "        _Static_assert(sizeof(velk_result) == {}, \"result size\");",
+        result.size
+    )
+    .unwrap();
+    writeln!(
+        text,
+        "        _Static_assert(_Alignof({ty}) == {}, \"result alignment\");",
+        result.alignment
+    )
+    .unwrap();
+    writeln!(text, "        uint64_t velk_word = 0;").unwrap();
+    writeln!(text, "        for (unsigned byte = 0; byte < {}; byte++) velk_word |= (uint64_t)((const unsigned char *)&velk_result)[{} + byte] << (8 * byte);", call.result.bytes, call.result.offset).unwrap();
+    writeln!(
+        text,
+        "        return velk_word & 0x{:x}ULL;\n    }}",
+        call.result.mask
+    )
+    .unwrap();
+}
+
+/// The C program holding the functions in `alive`.
 fn program(
     candidates: &[&Candidate],
     initial_memory: &[&[(u64, u64)]],
@@ -2931,6 +5175,10 @@ fn program(
     text.push_str("static uint64_t velk_call(int k, const uint64_t *a) {\n    switch (k) {\n");
     for &index in alive {
         let candidate = candidates[index];
+        if let Some(call) = &candidate.marshalling {
+            aggregate_call(&mut text, candidate, index, call);
+            continue;
+        }
         // The memory pass passes pointers, converted to their types.
         let arguments: Vec<String> = candidate
             .params
@@ -2955,6 +5203,13 @@ fn program(
     );
     for &index in alive {
         write!(text, "    case {index}:").expect("writing to a String");
+        if candidates[index].marshalling.is_some() {
+            for position in 0..candidates[index].params.len() {
+                write!(text, " c[{position}] = a[{position}];").unwrap();
+            }
+            text.push_str(" break;\n");
+            continue;
+        }
         for (position, ty) in candidates[index].params.iter().enumerate() {
             write!(
                 text,
@@ -3011,19 +5266,19 @@ fn declared_functions(code: &str) -> Vec<&str> {
 
 /// The printed function under the name `velk_f<index>`, so names cannot
 /// clash with each other or with the C library.
-fn renamed(code: &str, index: usize) -> String {
-    // Each function's own structures are its own, whatever another names
-    // the same.
-    let mut code = code.to_owned();
-    let defined: Vec<String> = code
-        .lines()
+fn defined_types(code: &str) -> Vec<String> {
+    code.lines()
         .filter_map(|line| {
-            let tag = line.strip_prefix("struct ")?.split_once(" {")?.0;
-            Some(tag.to_owned())
+            let declaration = line.split_once(" {")?.0;
+            (declaration.starts_with("struct ") || declaration.starts_with("union "))
+                .then(|| declaration.to_owned())
         })
-        .collect();
-    for tag in defined {
-        let from = format!("struct {tag}");
+        .collect()
+}
+
+fn scoped_type(ty: &str, source: &str, index: usize) -> String {
+    let mut code = ty.to_owned();
+    for from in defined_types(source) {
         let mut out = String::new();
         let mut rest = code.as_str();
         while let Some(at) = rest.find(&from) {
@@ -3038,6 +5293,11 @@ fn renamed(code: &str, index: usize) -> String {
         out.push_str(rest);
         code = out;
     }
+    code
+}
+
+fn renamed(code: &str, index: usize) -> String {
+    let code = scoped_type(code, code, index);
     let mut out = String::new();
     let mut done = false;
     for line in code.lines() {

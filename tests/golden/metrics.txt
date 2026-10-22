@@ -1,16 +1,16 @@
 # metric | config | correct/total
-functions found | aarch64.O0 | 151/151
-functions found | aarch64.O2 | 151/151
-functions found | x86_64.O0 | 151/151
-functions found | x86_64.O2 | 151/151
-extra functions | aarch64.O0 | 0/151
-extra functions | aarch64.O2 | 0/151
-extra functions | x86_64.O0 | 0/151
-extra functions | x86_64.O2 | 0/151
-parameter count | aarch64.O0 | 150/150
-parameter count | aarch64.O2 | 150/150
-parameter count | x86_64.O0 | 150/150
-parameter count | x86_64.O2 | 150/150
+functions found | aarch64.O0 | 162/162
+functions found | aarch64.O2 | 162/162
+functions found | x86_64.O0 | 162/162
+functions found | x86_64.O2 | 162/162
+extra functions | aarch64.O0 | 0/162
+extra functions | aarch64.O2 | 0/162
+extra functions | x86_64.O0 | 0/162
+extra functions | x86_64.O2 | 0/162
+parameter count | aarch64.O0 | 151/161
+parameter count | aarch64.O2 | 151/161
+parameter count | x86_64.O0 | 151/161
+parameter count | x86_64.O2 | 151/161
 parameter pointer | aarch64.O0 | 187/189
 parameter pointer | aarch64.O2 | 186/189
 parameter pointer | x86_64.O0 | 187/189
@@ -23,19 +23,63 @@ parameter sign | aarch64.O0 | 139/151
 parameter sign | aarch64.O2 | 139/151
 parameter sign | x86_64.O0 | 140/152
 parameter sign | x86_64.O2 | 140/152
-return void | aarch64.O0 | 145/151
-return void | aarch64.O2 | 145/151
-return void | x86_64.O0 | 144/151
-return void | x86_64.O2 | 147/151
-return width | aarch64.O0 | 118/122
-return width | aarch64.O2 | 117/122
-return width | x86_64.O0 | 118/122
-return width | x86_64.O2 | 118/122
-float type | aarch64.O0 | 10/10
-float type | aarch64.O2 | 10/10
-float type | x86_64.O0 | 10/10
-float type | x86_64.O2 | 10/10
+return void | aarch64.O0 | 156/162
+return void | aarch64.O2 | 156/162
+return void | x86_64.O0 | 155/162
+return void | x86_64.O2 | 157/162
+return width | aarch64.O0 | 122/126
+return width | aarch64.O2 | 121/126
+return width | x86_64.O0 | 122/126
+return width | x86_64.O2 | 122/126
+float type | aarch64.O0 | 11/15
+float type | aarch64.O2 | 11/12
+float type | x86_64.O0 | 11/15
+float type | x86_64.O2 | 11/14
 
+aggregate_abi.aarch64.O0 0x210244 abi_pair_adjust: 3 parameters, expected 2
+aggregate_abi.aarch64.O0 0x210284 abi_mixed_adjust: 4 parameters, expected 3
+aggregate_abi.aarch64.O0 0x2102c8 abi_hfa1_adjust: returns double, expected an aggregate
+aggregate_abi.aarch64.O0 0x2102f8 abi_hfa2_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.aarch64.O0 0x210330 abi_hfa3_adjust: 4 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.aarch64.O0 0x210378 abi_hfa4_adjust: 5 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.aarch64.O0 0x2103c8 abi_exhaust_five: 8 parameters, expected 7
+aggregate_abi.aarch64.O0 0x210468 abi_exhaust_seven: 7 parameters, expected 9
+aggregate_abi.aarch64.O0 0x21053c abi_indirect_make: 3 parameters, expected 2
+aggregate_abi.aarch64.O0 0x210588 abi_exhaust_five_aligned: 8 parameters, expected 7
+aggregate_abi.aarch64.O0 0x210628 abi_exhaust_seven_aligned: 7 parameters, expected 9
+aggregate_abi.aarch64.O2 0x210214 abi_pair_adjust: 3 parameters, expected 2
+aggregate_abi.aarch64.O2 0x210220 abi_mixed_adjust: 4 parameters, expected 3
+aggregate_abi.aarch64.O2 0x210234 abi_hfa1_adjust: returns double, expected an aggregate
+aggregate_abi.aarch64.O2 0x21023c abi_hfa2_adjust: 4 parameters, expected 2
+aggregate_abi.aarch64.O2 0x210244 abi_hfa3_adjust: 5 parameters, expected 2
+aggregate_abi.aarch64.O2 0x21024c abi_hfa4_adjust: 6 parameters, expected 2
+aggregate_abi.aarch64.O2 0x210254 abi_exhaust_five: 8 parameters, expected 7
+aggregate_abi.aarch64.O2 0x210290 abi_exhaust_seven: 7 parameters, expected 9
+aggregate_abi.aarch64.O2 0x2102e4 abi_indirect_make: 3 parameters, expected 2
+aggregate_abi.aarch64.O2 0x2102fc abi_exhaust_five_aligned: 8 parameters, expected 7
+aggregate_abi.aarch64.O2 0x210338 abi_exhaust_seven_aligned: 7 parameters, expected 9
+aggregate_abi.x86_64.O0 0x2012a0 abi_pair_adjust: 3 parameters, expected 2
+aggregate_abi.x86_64.O0 0x2012e0 abi_mixed_adjust: 4 parameters, expected 3
+aggregate_abi.x86_64.O0 0x201330 abi_hfa1_adjust: returns double, expected an aggregate
+aggregate_abi.x86_64.O0 0x201360 abi_hfa2_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.x86_64.O0 0x2013a0 abi_hfa3_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.x86_64.O0 0x2013e0 abi_hfa4_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.x86_64.O0 0x201420 abi_exhaust_five: 8 parameters, expected 7
+aggregate_abi.x86_64.O0 0x201480 abi_exhaust_seven: 10 parameters, expected 9
+aggregate_abi.x86_64.O0 0x201500 abi_indirect_make: 3 parameters, expected 2
+aggregate_abi.x86_64.O0 0x201540 abi_exhaust_five_aligned: 8 parameters, expected 7
+aggregate_abi.x86_64.O0 0x2015a0 abi_exhaust_seven_aligned: 10 parameters, expected 9
+aggregate_abi.x86_64.O2 0x201220 abi_pair_adjust: 3 parameters, expected 2
+aggregate_abi.x86_64.O2 0x201230 abi_mixed_adjust: 4 parameters, expected 3
+aggregate_abi.x86_64.O2 0x201240 abi_hfa1_adjust: returns double, expected an aggregate
+aggregate_abi.x86_64.O2 0x201250 abi_hfa2_adjust: 3 parameters, expected 2; returns void, expected an aggregate
+aggregate_abi.x86_64.O2 0x201260 abi_hfa3_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.x86_64.O2 0x201290 abi_hfa4_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.x86_64.O2 0x2012c0 abi_exhaust_five: 8 parameters, expected 7
+aggregate_abi.x86_64.O2 0x201320 abi_exhaust_seven: 10 parameters, expected 9
+aggregate_abi.x86_64.O2 0x2013a0 abi_indirect_make: 4 parameters, expected 2
+aggregate_abi.x86_64.O2 0x2013c0 abi_exhaust_five_aligned: 8 parameters, expected 7
+aggregate_abi.x86_64.O2 0x201420 abi_exhaust_seven_aligned: 10 parameters, expected 9
 alt_names.aarch64.O0 0x21016c alt_sum3: ok
 alt_names.aarch64.O0 0x210198 alt_helper: ok
 alt_names.aarch64.O2 0x210164 alt_sum3: ok

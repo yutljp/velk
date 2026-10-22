@@ -1,3 +1,4 @@
+pub(crate) mod abi;
 mod clobbers;
 mod indirect;
 mod jump_table;
@@ -764,6 +765,9 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
 /// first parameter is the result, no parameter of the source.
 fn name_indirect_result(ir: &mut FunctionIr) {
     use crate::ir::{Convention, Expr};
+    if ir.declared_signature.is_some() {
+        return;
+    }
     if !matches!(ir.convention, Convention::SysV | Convention::Win64) {
         return;
     }
@@ -978,6 +982,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     tail_calls_through_pointers(&mut blocks, &switched, image);
     indirect::resolve(&mut blocks, &landing_pads, image);
     let types = crate::loader::dwarf::function_types(image, function.addr);
+    let declared_signature = types.as_ref().and_then(abi::declaration);
     // A function returning a float returns it in xmm0 or v0.
     let declared = types.as_ref().and_then(|types| types.ret.as_ref());
     // A function of Go's assembly ABI returns what it writes past its
@@ -1038,6 +1043,39 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
                     op: crate::ir::Operation::Results,
                     args: returned.clone(),
                 };
+            }
+        }
+    }
+    if let Some(Ok(binding)) = declared_signature.as_ref().map(|signature| &signature.abi) {
+        let returned = match binding.result.as_ref().map(|value| &value.passing) {
+            Some(crate::ir::Passing::Direct(pieces)) => {
+                let values: Option<Vec<_>> = pieces
+                    .iter()
+                    .map(|piece| match piece.location {
+                        crate::ir::AbiLocation::Register(register) => {
+                            Some(crate::ir::Expr::reg(register, 64))
+                        }
+                        crate::ir::AbiLocation::Stack(_) => None,
+                    })
+                    .collect();
+                values.map(|args| crate::ir::Expr::Apply {
+                    op: crate::ir::Operation::Results,
+                    args,
+                })
+            }
+            Some(crate::ir::Passing::Indirect {
+                returned_pointer, ..
+            }) => Some(returned_pointer.map_or_else(
+                || crate::ir::Expr::constant(0),
+                |register| crate::ir::Expr::reg(register, 64),
+            )),
+            None => Some(crate::ir::Expr::constant(0)),
+        };
+        if let Some(returned) = returned {
+            for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+                if let crate::ir::Stmt::Ret { value } = stmt {
+                    *value = returned.clone();
+                }
             }
         }
     }
@@ -1125,10 +1163,11 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             })
             .collect(),
     };
-    let ir = FunctionIr {
+    let mut ir = FunctionIr {
         isa: image.isa,
         convention: image.convention_of(function.addr),
         params: signature.params,
+        declared_signature,
         stack_params,
         variadic: false,
         ret_type: match float_return {
@@ -1156,6 +1195,38 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         size,
         blocks,
     };
+    if let Some(Ok(binding)) = ir
+        .declared_signature
+        .as_ref()
+        .map(|signature| &signature.abi)
+        && let Some(crate::ir::ValueAbi {
+            passing:
+                crate::ir::Passing::Indirect {
+                    pointer: crate::ir::AbiLocation::Register(register),
+                    returned_pointer,
+                },
+            ..
+        }) = &binding.result
+    {
+        if !ir.params.iter().any(|param| param.index == *register) {
+            let mut position = ir.params.len();
+            while ir
+                .params
+                .iter()
+                .any(|param| param.name == format!("a{position}"))
+            {
+                position += 1;
+            }
+            ir.params.push(crate::ir::Param {
+                index: *register,
+                name: format!("a{position}"),
+                ty: crate::ir::CType::U64,
+            });
+        }
+        if returned_pointer.is_none() {
+            ir.ret_type = crate::ir::CType::Void;
+        }
+    }
     Ok(Lifted {
         ir,
         has_jump_tables: !tables.is_empty(),
@@ -1246,7 +1317,9 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     structures::recover(&mut ir);
     typing::apply_pointer_return(&mut ir);
     // It returns the pointer it wrote the result through.
-    if let Some(result) = ir.params.iter().find(|param| param.name == "result") {
+    if ir.declared_signature.is_none()
+        && let Some(result) = ir.params.iter().find(|param| param.name == "result")
+    {
         ir.ret_type = result.ty.clone();
     }
     let references = refs::collect(&ir, image);

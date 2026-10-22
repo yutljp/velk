@@ -492,7 +492,11 @@ pub fn propagate_constants(ir: &mut FunctionIr) {
 /// a store needs its width, a mask its bits, and the low bits of a sum, a
 /// product or a bitwise operation need only the operands' bits up to the
 /// highest one needed. Anything else needs every bit.
-fn demanded_bits(ssa: &Ssa) -> HashMap<u16, u64> {
+fn demanded_bits(
+    ssa: &Ssa,
+    returns: Option<&[u64]>,
+    stores: &HashMap<(usize, usize), u64>,
+) -> HashMap<u16, u64> {
     use crate::ir::BinOp;
     use crate::ir::semantics::mask;
     fn up_to_highest(bits: u64) -> u64 {
@@ -502,7 +506,7 @@ fn demanded_bits(ssa: &Ssa) -> HashMap<u16, u64> {
             mask(64 - bits.leading_zeros())
         }
     }
-    fn walk(expr: &Expr, needed: u64, demand: &mut HashMap<u16, u64>) {
+    fn walk(expr: &Expr, needed: u64, demand: &mut HashMap<u16, u64>, precise: bool) {
         match expr {
             Expr::Reg { index, width } => {
                 *demand.entry(*index).or_insert(0) |= needed & mask(u32::from(*width));
@@ -515,49 +519,108 @@ fn demanded_bits(ssa: &Ssa) -> HashMap<u16, u64> {
                         (Expr::Const(m), _) => (0, needed & m),
                         _ => (needed, needed),
                     };
-                    walk(lhs, left, demand);
-                    walk(rhs, right, demand);
+                    walk(lhs, left, demand, precise);
+                    walk(rhs, right, demand, precise);
                 }
                 BinOp::Or | BinOp::Xor => {
-                    walk(lhs, needed, demand);
-                    walk(rhs, needed, demand);
+                    walk(lhs, needed, demand, precise);
+                    walk(rhs, needed, demand, precise);
+                }
+                BinOp::Shr if precise && matches!(rhs.as_ref(), Expr::Const(_)) => {
+                    let Expr::Const(count) = rhs.as_ref() else {
+                        unreachable!()
+                    };
+                    walk(lhs, needed << (count & 63), demand, precise);
                 }
                 BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Shl => {
                     let low = up_to_highest(needed);
-                    walk(lhs, low, demand);
+                    walk(lhs, low, demand, precise);
                     // A shift amount is needed whole.
-                    walk(rhs, if *op == BinOp::Shl { u64::MAX } else { low }, demand);
+                    walk(
+                        rhs,
+                        if *op == BinOp::Shl { u64::MAX } else { low },
+                        demand,
+                        precise,
+                    );
                 }
                 _ => {
-                    walk(lhs, u64::MAX, demand);
-                    walk(rhs, u64::MAX, demand);
+                    walk(lhs, u64::MAX, demand, precise);
+                    walk(rhs, u64::MAX, demand, precise);
                 }
             },
+            Expr::SignExtend { value, width } if precise => {
+                walk(value, mask(u32::from(*width) * 8), demand, precise);
+            }
+            Expr::Select {
+                lhs,
+                rhs,
+                then,
+                els,
+                ..
+            } if precise => {
+                walk(lhs, u64::MAX, demand, precise);
+                walk(rhs, u64::MAX, demand, precise);
+                walk(then, needed, demand, precise);
+                walk(els, needed, demand, precise);
+            }
+            Expr::Apply { op, args } if precise && op.argument_precision().is_some() => {
+                let bits = op.argument_precision().expect("a floating operand").bits();
+                for arg in args {
+                    walk(arg, mask(u32::from(bits)), demand, precise);
+                }
+            }
             _ => {
                 for child in crate::ir::visit::children(expr) {
-                    walk(child, u64::MAX, demand);
+                    walk(child, u64::MAX, demand, precise);
                 }
             }
         }
     }
     // What an assignment or a φ needs of its operands is what its own uses
     // need of it, so the needs flow back from the uses until they settle.
+    let precise = returns.is_some();
     let mut demand: HashMap<u16, u64> = HashMap::new();
     loop {
         let mut next: HashMap<u16, u64> = HashMap::new();
-        for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+        for (position, stmt) in ssa.ir.blocks.iter().enumerate().flat_map(|(block, body)| {
+            body.stmts
+                .iter()
+                .enumerate()
+                .map(move |(at, stmt)| ((block, at), stmt))
+        }) {
             match stmt {
                 Stmt::Store { addr, value, width } => {
-                    walk(addr, u64::MAX, &mut next);
-                    walk(value, mask(u32::from(*width) * 8), &mut next);
+                    walk(addr, u64::MAX, &mut next, precise);
+                    let needed = stores
+                        .get(&position)
+                        .copied()
+                        .unwrap_or_else(|| mask(u32::from(*width) * 8));
+                    walk(value, needed, &mut next, precise);
                 }
                 Stmt::Assign { dest, value } => {
                     let needed = demand.get(&dest.index).copied().unwrap_or(0);
-                    walk(value, needed & mask(u32::from(dest.width)), &mut next);
+                    walk(
+                        value,
+                        needed & mask(u32::from(dest.width)),
+                        &mut next,
+                        precise,
+                    );
+                }
+                Stmt::Ret { value } if returns.is_some_and(|masks| !masks.is_empty()) => {
+                    let values = match value {
+                        Expr::Apply {
+                            op: crate::ir::Operation::Results,
+                            args,
+                        } => args.as_slice(),
+                        value => std::slice::from_ref(value),
+                    };
+                    for (value, needed) in values.iter().zip(returns.expect("return masks")) {
+                        walk(value, *needed, &mut next, precise);
+                    }
                 }
                 other => {
                     for expr in other.operands() {
-                        walk(expr, u64::MAX, &mut next);
+                        walk(expr, u64::MAX, &mut next, precise);
                     }
                 }
             }
@@ -578,6 +641,163 @@ fn demanded_bits(ssa: &Ssa) -> HashMap<u16, u64> {
     }
 }
 
+fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>> {
+    use crate::ir::BinOp;
+    let sp = crate::arch::stack_pointer(ir.isa);
+    if crate::passes::memory::frame_address_escapes(ir, sp)
+        || ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. }))
+    {
+        return None;
+    }
+    fn slot(addr: &Expr, frame: i64, sp: u16) -> Option<i64> {
+        let register = |expr: &Expr| matches!(expr, Expr::Reg { index, width: 64 } if *index == sp);
+        let delta = match addr {
+            value if register(value) => 0,
+            Expr::Bin {
+                op: BinOp::Add,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (base, Expr::Const(delta)) | (Expr::Const(delta), base) if register(base) => {
+                    i128::from(*delta as i64)
+                }
+                _ => return None,
+            },
+            Expr::Bin {
+                op: BinOp::Sub,
+                lhs,
+                rhs,
+            } if register(lhs) => {
+                let Expr::Const(delta) = rhs.as_ref() else {
+                    return None;
+                };
+                -i128::from(*delta as i64)
+            }
+            _ => return None,
+        };
+        i64::try_from(i128::from(frame) + delta).ok()
+    }
+    fn range(addr: &Expr, width: u8, frame: i64, sp: u16) -> Option<(i64, i64)> {
+        if !(1..=8).contains(&width) {
+            return None;
+        }
+        let start = slot(addr, frame, sp)?;
+        Some((start, start.checked_add(i64::from(width))?))
+    }
+    fn loads(expr: &Expr, frame: i64, sp: u16, read: &mut Vec<(i64, i64)>) -> Option<()> {
+        if let Expr::Load { addr, width, .. } = expr {
+            read.push(range(addr, *width, frame, sp)?);
+        }
+        for child in crate::ir::visit::children(expr) {
+            loads(child, frame, sp, read)?;
+        }
+        Some(())
+    }
+    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let mut read = Vec::new();
+    let mut stores = Vec::new();
+    for (block, body) in ir.blocks.iter().enumerate() {
+        let mut frame = frames[block]?;
+        for (at, stmt) in body.stmts.iter().enumerate() {
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.index == sp
+            {
+                if dest.width != 64 {
+                    return None;
+                }
+                frame = slot(value, frame, sp)?;
+                continue;
+            }
+            if let Stmt::Store { addr, width, .. } = stmt {
+                let (start, end) = range(addr, *width, frame, sp)?;
+                if start >= -(crate::ir::eval::STACK_SPAN as i64) && end <= 0 {
+                    stores.push(((block, at), start, end));
+                }
+            }
+            for operand in stmt.operands() {
+                loads(operand, frame, sp, &mut read)?;
+            }
+        }
+        for successor in crate::ir::cfg::block_successors(&ir.blocks, block) {
+            if frames[successor] != Some(frame) {
+                return None;
+            }
+        }
+    }
+    Some(
+        stores
+            .into_iter()
+            .map(|(position, start, end)| {
+                let mut bits = 0;
+                for byte in start..end {
+                    if read.iter().any(|(from, to)| *from <= byte && byte < *to) {
+                        bits |= 0xffu64 << ((byte - start) * 8);
+                    }
+                }
+                (position, bits)
+            })
+            .collect(),
+    )
+}
+
+/// The entry-register bits observed by effects and the requested result pieces.
+/// An empty result mask list keeps every returned bit observable.
+pub(crate) fn entry_demands(ir: &FunctionIr, returns: &[u64]) -> Option<HashMap<u16, u64>> {
+    if ir.blocks.is_empty() {
+        return None;
+    }
+    let starts: HashSet<_> = ir.blocks.iter().map(|block| block.start).collect();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        match stmt {
+            Stmt::Unsupported { .. }
+            | Stmt::BrIndirect { .. }
+            | Stmt::BrifFlags { .. }
+            | Stmt::Br { target: None } => return None,
+            Stmt::Br {
+                target: Some(target),
+            }
+            | Stmt::Brif { target, .. }
+                if !starts.contains(target) =>
+            {
+                return None;
+            }
+            Stmt::Switch { cases, default, .. }
+                if default.is_none()
+                    || cases.iter().any(|(_, target)| !starts.contains(target))
+                    || default.is_some_and(|target| !starts.contains(&target)) =>
+            {
+                return None;
+            }
+            Stmt::Ret { value } if !returns.is_empty() => {
+                let count = match value {
+                    Expr::Apply {
+                        op: crate::ir::Operation::Results,
+                        args,
+                    } => args.len(),
+                    _ => 1,
+                };
+                if count != returns.len() {
+                    return None;
+                }
+            }
+            _ => {}
+        }
+    }
+    let stores = private_store_demands(ir).unwrap_or_default();
+    let ssa = build(ir)?;
+    let demand = demanded_bits(&ssa, Some(returns), &stores);
+    Some(
+        ssa.entry
+            .iter()
+            .map(|(register, value)| (*register, demand.get(value).copied().unwrap_or(0)))
+            .collect(),
+    )
+}
+
 /// A partial write keeps the register's other bits: `v = (r & ~m) | x`.
 /// When no read of `v` looks at the kept bits, they never matter and the
 /// write is just `v = x`.
@@ -594,7 +814,7 @@ pub fn narrow_partial_writes(ir: &mut FunctionIr) {
     let Some(mut ssa) = build(ir) else {
         return;
     };
-    let demand = demanded_bits(&ssa);
+    let demand = demanded_bits(&ssa, None, &HashMap::new());
     let mut changed = false;
     for stmt in ssa.ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
         let Stmt::Assign { dest, value } = stmt else {
@@ -1380,8 +1600,8 @@ pub fn verify(ssa: &Ssa) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{build, lower, verify};
-    use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
+    use super::{build, entry_demands, lower, verify};
+    use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, Operation, Precision, RegRef, Stmt};
     use crate::loader::Isa;
 
     fn assign(index: u16, value: Expr) -> Stmt {
@@ -1389,6 +1609,480 @@ mod tests {
             dest: RegRef { index, width: 64 },
             value,
         }
+    }
+
+    #[test]
+    fn entry_demands_distinguish_each_result_piece_and_read_width() {
+        let ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::apply(Operation::Results, vec![Expr::reg(0, 64), Expr::reg(1, 16)]),
+            }],
+        );
+        let demand = entry_demands(&ir, &[0xffff_ffff, 0xff]).unwrap();
+        assert_eq!(demand[&0], 0xffff_ffff);
+        assert_eq!(demand[&1], 0xff);
+        let unknown = entry_demands(&ir, &[]).unwrap();
+        assert_eq!(unknown[&0], u64::MAX);
+        assert_eq!(unknown[&1], 0xffff);
+        assert!(entry_demands(&ir, &[u64::MAX]).is_none());
+        let scalar = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: Expr::reg(0, 64),
+            }],
+        );
+        assert!(entry_demands(&scalar, &[1, 1]).is_none());
+    }
+
+    #[test]
+    fn entry_demands_use_floating_operand_precision_without_changing_partial_writes() {
+        for (precision, expected) in [
+            (Precision::Single, 0xffff_ffff),
+            (Precision::Double, u64::MAX),
+        ] {
+            let ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: Expr::apply(Operation::FloatNegate(precision), vec![Expr::reg(0, 64)]),
+                }],
+            );
+            assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&0], expected);
+            let ssa = build(&ir).unwrap();
+            assert_eq!(
+                super::demanded_bits(&ssa, None, &Default::default())[&ssa.entry[&0]],
+                u64::MAX
+            );
+        }
+    }
+
+    #[test]
+    fn entry_demands_keep_raw_float_bits_and_sign_extension_distinct() {
+        let ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: Expr::Const(0x1000),
+                    value: Expr::reg(0, 64),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::SignExtend {
+                        value: Box::new(Expr::reg(1, 64)),
+                        width: 2,
+                    },
+                },
+            ],
+        );
+        let demand = entry_demands(&ir, &[u64::MAX]).unwrap();
+        assert_eq!(demand[&0], u64::MAX);
+        assert_eq!(demand[&1], 0xffff);
+    }
+
+    #[test]
+    fn entry_demands_follow_values_across_a_narrow_overwrite() {
+        let ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: Expr::Const(0x1000),
+                    value: Expr::reg(0, 64),
+                    width: 1,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 0,
+                        width: 32,
+                    },
+                    value: Expr::Const(0x1_0000_0005),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&0], 0xff);
+        let run = |value| {
+            crate::ir::eval::run(
+                &ir,
+                &crate::ir::eval::Setup {
+                    seed: 0,
+                    convention: crate::ir::eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &[(0, value)],
+                    memory: &[],
+                    step_limit: 10,
+                },
+            )
+        };
+        let original = run(0x12);
+        let crate::ir::eval::Outcome::Return {
+            value,
+            calls,
+            memory,
+        } = &original
+        else {
+            panic!("a return");
+        };
+        assert_eq!(*value, 5);
+        assert!(calls.is_empty());
+        assert_eq!(memory.get(&0x1000), Some(&0x12));
+        assert_eq!(original, run(0xffff_ffff_ffff_ff12));
+    }
+
+    #[test]
+    fn entry_demands_reject_unknown_effects_and_missing_jump_targets() {
+        for stmt in [
+            Stmt::Unsupported {
+                text: "unknown".to_owned(),
+                writes: Some(Vec::new()),
+            },
+            Stmt::Br { target: None },
+            Stmt::Br {
+                target: Some(0x1234),
+            },
+            Stmt::BrIndirect {
+                target: Expr::reg(0, 64),
+            },
+            Stmt::BrifFlags {
+                cond: Cond::Eq,
+                target: 0,
+            },
+            Stmt::Switch {
+                index: Expr::reg(0, 64),
+                cases: Vec::new(),
+                default: None,
+            },
+        ] {
+            assert!(
+                entry_demands(&FunctionIr::single_block(Isa::X86_64, vec![stmt]), &[]).is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn entry_demands_follow_loop_phis_without_requiring_unused_upper_bits() {
+        let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Br { target: Some(0x10) }]);
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: vec![
+                assign(0, Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1))),
+                Stmt::Brif {
+                    cond: Cond::Ne,
+                    lhs: Expr::reg(0, 8),
+                    rhs: Expr::reg(1, 8),
+                    target: 0x10,
+                },
+            ],
+        });
+        ir.blocks.push(Block {
+            start: 0x20,
+            stmts: vec![Stmt::Ret {
+                value: Expr::reg(0, 64),
+            }],
+        });
+        let demand = entry_demands(&ir, &[0xff]).unwrap();
+        assert_eq!(demand[&0], 0xff);
+        assert_eq!(demand[&1], 0xff);
+    }
+
+    #[test]
+    fn entry_demands_map_constant_right_shifts_and_select_arms() {
+        for count in [0, 1, 63, 64, 65, 127] {
+            let ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: Expr::Select {
+                        cond: Cond::Eq,
+                        lhs: Box::new(Expr::reg(1, 8)),
+                        rhs: Box::new(Expr::Const(0)),
+                        then: Box::new(Expr::bin(BinOp::Shr, Expr::reg(0, 64), Expr::Const(count))),
+                        els: Box::new(Expr::reg(2, 64)),
+                    },
+                }],
+            );
+            let demand = entry_demands(&ir, &[0xf]).unwrap();
+            assert_eq!(demand[&0], 0xfu64 << (count & 63));
+            assert_eq!(demand[&1], 0xff);
+            assert_eq!(demand[&2], 0xf);
+            let ssa = build(&ir).unwrap();
+            assert_eq!(
+                super::demanded_bits(&ssa, None, &Default::default())[&ssa.entry[&0]],
+                u64::MAX
+            );
+        }
+    }
+
+    fn stack_at(offset: i64) -> Expr {
+        Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset as u64))
+    }
+
+    fn stack_load(offset: i64, width: u8) -> Expr {
+        Expr::Load {
+            addr: Box::new(stack_at(offset)),
+            width,
+            signed: false,
+        }
+    }
+
+    fn spill_then(value: Expr) -> FunctionIr {
+        FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: stack_at(-8),
+                    value: Expr::reg(7, 64),
+                    width: 4,
+                },
+                Stmt::Ret { value },
+            ],
+        )
+    }
+
+    #[test]
+    fn entry_demands_limit_private_spills_to_read_bytes() {
+        for (value, expected) in [
+            (stack_load(-8, 1), 0xff),
+            (stack_load(-6, 2), 0xffff_0000),
+            (
+                Expr::bin(BinOp::Xor, stack_load(-9, 2), stack_load(-5, 2)),
+                0xff00_00ff,
+            ),
+            (Expr::Const(0), 0),
+        ] {
+            let ir = spill_then(value);
+            assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&7], expected);
+            let ssa = build(&ir).unwrap();
+            assert_eq!(
+                super::demanded_bits(&ssa, None, &Default::default())[&ssa.entry[&7]],
+                0xffff_ffff
+            );
+        }
+        let mut incoming = spill_then(stack_load(8, 1));
+        if let Stmt::Store { addr, .. } = &mut incoming.blocks[0].stmts[0] {
+            *addr = stack_at(8);
+        }
+        assert_eq!(
+            entry_demands(&incoming, &[u64::MAX]).unwrap()[&7],
+            0xffff_ffff
+        );
+    }
+
+    #[test]
+    fn entry_demands_match_spill_positions_across_frames_and_blocks() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(4, stack_at(-16)),
+                Stmt::Store {
+                    addr: stack_at(8),
+                    value: Expr::reg(7, 64),
+                    width: 4,
+                },
+                Stmt::Store {
+                    addr: stack_at(12),
+                    value: Expr::reg(6, 64),
+                    width: 4,
+                },
+                Stmt::Br { target: Some(0x10) },
+            ],
+        );
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: vec![
+                assign(4, stack_at(16)),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Or, stack_load(-7, 1), stack_load(-2, 1)),
+                },
+            ],
+        });
+        let ssa = build(&ir).unwrap();
+        for (original, renamed) in ir.blocks.iter().zip(&ssa.ir.blocks) {
+            assert_eq!(original.stmts.len(), renamed.stmts.len());
+            for (original, renamed) in original.stmts.iter().zip(&renamed.stmts) {
+                assert_eq!(
+                    std::mem::discriminant(original),
+                    std::mem::discriminant(renamed)
+                );
+            }
+        }
+        let demand = entry_demands(&ir, &[u64::MAX]).unwrap();
+        assert_eq!(demand[&7], 0xff00);
+        assert_eq!(demand[&6], 0xff_0000);
+    }
+
+    #[test]
+    fn entry_demands_keep_spills_whole_when_stack_addresses_are_unproven() {
+        let load = |addr| Expr::Load {
+            addr: Box::new(addr),
+            width: 1,
+            signed: false,
+        };
+        for value in [
+            load(Expr::reg(8, 64)),
+            load(Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::reg(8, 64))),
+            load(Expr::bin(
+                BinOp::Add,
+                Expr::reg(4, 32),
+                Expr::Const((-8i64) as u64),
+            )),
+            stack_load(i64::MAX, 1),
+        ] {
+            let ir = spill_then(value);
+            assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&7], 0xffff_ffff);
+        }
+        let mut escaped = spill_then(stack_load(-8, 1));
+        escaped.blocks[0].stmts.insert(1, assign(8, stack_at(-8)));
+        assert_eq!(
+            entry_demands(&escaped, &[u64::MAX]).unwrap()[&7],
+            0xffff_ffff
+        );
+        for value in [
+            Expr::bin(BinOp::Sub, Expr::reg(4, 64), Expr::Const(i64::MIN as u64)),
+            Expr::reg(8, 64),
+        ] {
+            let mut ir = spill_then(stack_load(-8, 1));
+            ir.blocks[0].stmts.insert(0, assign(4, value));
+            assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&7], 0xffff_ffff);
+        }
+    }
+
+    #[test]
+    fn entry_demands_keep_external_stores_and_unknown_frames_whole() {
+        let mut external = spill_then(stack_load(-8, 1));
+        external.blocks[0].stmts.insert(
+            1,
+            Stmt::Store {
+                addr: Expr::reg(8, 64),
+                value: Expr::reg(6, 64),
+                width: 8,
+            },
+        );
+        let demand = entry_demands(&external, &[u64::MAX]).unwrap();
+        assert_eq!(demand[&7], 0xffff_ffff);
+        assert_eq!(demand[&6], u64::MAX);
+        let mut ir = spill_then(stack_load(-8, 1));
+        ir.blocks[0].stmts[1] = Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(8, 64),
+            rhs: Expr::Const(0),
+            target: 0x20,
+        };
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: vec![assign(4, stack_at(-16)), Stmt::Br { target: Some(0x20) }],
+        });
+        ir.blocks.push(Block {
+            start: 0x20,
+            stmts: vec![Stmt::Ret {
+                value: stack_load(-8, 1),
+            }],
+        });
+        assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&7], 0xffff_ffff);
+    }
+
+    #[test]
+    fn entry_demands_keep_load_addresses_observable_in_unread_private_stores() {
+        let mut ir = spill_then(Expr::Const(0));
+        if let Stmt::Store { value, .. } = &mut ir.blocks[0].stmts[0] {
+            *value = stack_load(-16, 1);
+        }
+        assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&4], u64::MAX);
+    }
+
+    #[test]
+    fn entry_demands_keep_stores_outside_private_stack_memory_observable() {
+        let span = crate::ir::eval::STACK_SPAN as i64;
+        for (offset, width, expected) in [
+            (-span, 4, 0xff),
+            (-span - 4, 4, 0xffff_ffff),
+            (-span - 2, 4, 0xffff_ffff),
+            (-4, 8, u64::MAX),
+        ] {
+            let ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Store {
+                        addr: stack_at(offset),
+                        value: Expr::reg(7, 64),
+                        width,
+                    },
+                    Stmt::Ret {
+                        value: stack_load(offset, 1),
+                    },
+                ],
+            );
+            assert_eq!(entry_demands(&ir, &[0xff]).unwrap()[&7], expected);
+        }
+        let ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: stack_at(-2 * span),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(7, 8),
+                },
+            ],
+        );
+        assert_eq!(entry_demands(&ir, &[0xff]).unwrap()[&7], u64::MAX);
+        let run = |value| {
+            crate::ir::eval::run(
+                &ir,
+                &crate::ir::eval::Setup {
+                    seed: 0,
+                    convention: crate::ir::eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &[(7, value)],
+                    memory: &[],
+                    step_limit: 10,
+                },
+            )
+        };
+        let first = run(0x12);
+        let second = run(0xffff_ffff_ffff_ff12);
+        let (
+            crate::ir::eval::Outcome::Return {
+                value: left,
+                memory: before,
+                ..
+            },
+            crate::ir::eval::Outcome::Return {
+                value: right,
+                memory: after,
+                ..
+            },
+        ) = (&first, &second)
+        else {
+            panic!("two returns")
+        };
+        assert_eq!(left, right);
+        assert_ne!(before, after);
+    }
+
+    #[test]
+    fn entry_demands_keep_private_spills_whole_across_calls() {
+        let mut ir = spill_then(stack_load(-8, 1));
+        ir.blocks[0].stmts.insert(
+            1,
+            Stmt::Call {
+                target: Some(1),
+                through: None,
+                convention: crate::ir::Convention::SysV,
+                args: Some(Vec::new()),
+                floats_named: true,
+                result: None,
+                clobbers: None,
+                via: None,
+            },
+        );
+        assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&7], 0xffff_ffff);
     }
 
     /// `call; mov cl, 1; mov eax, ecx; ret` with the callee changing what

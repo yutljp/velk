@@ -642,6 +642,9 @@ mod tests {
             members: vec!["uint8_t gap_0x0[0x4];".to_owned()],
             fields: Vec::new(),
             contains: Vec::new(),
+            size: 4,
+            alignment: None,
+            compatible_profiles: Vec::new(),
         }];
         let text = rendered(&ir);
         assert!(text.contains("*(uint8_t *)(p) = 0x5;"), "{text}");
@@ -667,6 +670,9 @@ mod tests {
             ],
             fields: vec!["value".to_owned()],
             contains: Vec::new(),
+            size: 8,
+            alignment: None,
+            compatible_profiles: Vec::new(),
         }];
         ir.members = vec![Member {
             structure: "record".to_owned(),
@@ -730,6 +736,9 @@ mod tests {
             members: vec![declaration.to_owned()],
             fields: vec!["value".to_owned()],
             contains: Vec::new(),
+            size: 0,
+            alignment: None,
+            compatible_profiles: Vec::new(),
         }];
         ir
     }

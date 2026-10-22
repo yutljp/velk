@@ -2,8 +2,11 @@
 
 use gimli::{AttributeValue, Dwarf, EndianSlice, LittleEndian, SectionId, Unit};
 
-use crate::ir::{CType, Definition, Member};
+use crate::ir::abi::TypeLayout;
+use crate::ir::{AbiIssue, AbiProfile, CType, Definition, Member};
 use crate::loader::Image;
+
+mod layout;
 
 #[derive(Debug, Clone)]
 pub struct DwarfFunction {
@@ -28,6 +31,9 @@ pub struct FunctionTypes {
     pub members: Vec<Member>,
     /// The C definition of every named structure and union in the unit.
     pub definitions: Vec<Definition>,
+    pub(crate) param_layouts: Vec<Result<TypeLayout, AbiIssue>>,
+    pub(crate) ret_layout: Result<Option<TypeLayout>, AbiIssue>,
+    pub(crate) abi_profile: Result<AbiProfile, AbiIssue>,
 }
 
 fn attribute<'a>(
@@ -91,7 +97,9 @@ fn type_name(
         }
         gimli::DW_TAG_structure_type => Some(CType::Named(format!("struct {}", name?))),
         gimli::DW_TAG_union_type => Some(CType::Named(format!("union {}", name?))),
-        gimli::DW_TAG_enumeration_type => Some(CType::Named(format!("enum {}", name?))),
+        gimli::DW_TAG_enumeration_type => {
+            outer.and_then(|offset| type_name(dwarf, unit, offset, depth - 1))
+        }
         gimli::DW_TAG_array_type => {
             let element = outer.and_then(|offset| type_name(dwarf, unit, offset, depth - 1))?;
             Some(CType::Array(Box::new(element)))
@@ -154,6 +162,13 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 Some(AttributeValue::UnitRef(offset)) => aggregate_size(&unit, offset, 8),
                 _ => None,
             };
+            let ret_layout = match attribute(entry, gimli::DW_AT_type) {
+                None => Ok(None),
+                Some(AttributeValue::UnitRef(offset)) => layout::read(&unit, offset, 16).map(Some),
+                _ => Err(AbiIssue::UnknownLayout),
+            };
+            let abi_profile = crate::ir::abi::profile(image.isa, image.format)
+                .and_then(|profile| layout::function_profile(&unit, entry).map(|()| profile));
             // A subprogram without a type returns nothing.
             let ret = match attribute(entry, gimli::DW_AT_type) {
                 None => Some(crate::ir::CType::Void),
@@ -166,6 +181,7 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             let depth = entry.depth();
             let mut params = Vec::new();
             let mut param_aggregate_sizes = Vec::new();
+            let mut param_layouts = Vec::new();
             let mut variadic = false;
             while let Ok(Some(child)) = entries.next_dfs() {
                 if child.depth() <= depth {
@@ -182,6 +198,10 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                     Some(AttributeValue::UnitRef(offset)) => aggregate_size(&unit, offset, 8),
                     _ => None,
                 });
+                param_layouts.push(match attribute(child, gimli::DW_AT_type) {
+                    Some(AttributeValue::UnitRef(offset)) => layout::read(&unit, offset, 16),
+                    _ => Err(AbiIssue::UnknownLayout),
+                });
                 let name = attribute(child, gimli::DW_AT_name)
                     .and_then(|value| attribute_string(&dwarf, &unit, value));
                 let ty = attribute(child, gimli::DW_AT_type)
@@ -195,7 +215,7 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             if params.is_empty() && ret.is_none() {
                 continue;
             }
-            let definitions = definitions(&dwarf, &unit);
+            let definitions = definitions(&dwarf, &unit, abi_profile.ok());
             return Some(FunctionTypes {
                 params,
                 ret,
@@ -204,6 +224,9 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 variadic,
                 members: structure_members(&dwarf, &unit, &definitions),
                 definitions,
+                param_layouts,
+                ret_layout,
+                abi_profile,
             });
         }
     }
@@ -278,6 +301,7 @@ fn type_size(
 fn definitions(
     dwarf: &Dwarf<EndianSlice<'_, LittleEndian>>,
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
+    profile: Option<AbiProfile>,
 ) -> Vec<Definition> {
     let mut found = Vec::new();
     let mut entries = unit.entries();
@@ -345,21 +369,16 @@ fn definitions(
                 (Some(member_name), Some(ty))
                     if attribute(child, gimli::DW_AT_bit_size).is_none() =>
                 {
-                    let declaration = match &ty {
-                        CType::Array(element) => {
-                            let Some(element_size) = element_type_size(element) else {
-                                continue 'aggregates;
-                            };
-                            let separator = if element.is_pointer() { "" } else { " " };
-                            format!(
-                                "{element}{separator}{member_name}[{}];",
-                                width / element_size
-                            )
-                        }
-                        ty if ty.is_pointer() => format!("{ty}{member_name};"),
-                        ty => format!("{ty} {member_name};"),
+                    let Some(declaration) =
+                        layout::declaration(dwarf, unit, ty_offset, &member_name, 16)
+                    else {
+                        continue 'aggregates;
                     };
-                    if let CType::Named(named) = &ty
+                    let mut contained = &ty;
+                    while let CType::Array(element) = contained {
+                        contained = element;
+                    }
+                    if let CType::Named(named) = contained
                         && (named.starts_with("struct ") || named.starts_with("union "))
                     {
                         contains.push(named.clone());
@@ -376,33 +395,49 @@ fn definitions(
             if at > end {
                 members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", at - end));
             }
+            let width = if declared.is_none() {
+                width.min(size.saturating_sub(at))
+            } else {
+                width
+            };
+            if width == 0 {
+                continue;
+            }
             members.push(declared.unwrap_or_else(|| format!("uint8_t gap_0x{at:x}[0x{width:x}];")));
             end = at.saturating_add(width);
         }
         if !union && size > end {
             members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
         }
+        if union && members.is_empty() && size > 0 {
+            members.push(format!("uint8_t gap_0x0[0x{size:x}];"));
+        }
         if members.is_empty() {
             continue;
         }
+        let original = layout::read(unit, offset, 16);
+        let generated = layout::generated(dwarf, unit, offset, 16);
+        let alignment = generated.as_ref().ok().and_then(|layout| layout.alignment);
+        let compatible_profiles = profile
+            .filter(|profile| {
+                let (Ok(original), Ok(generated)) = (&original, &generated) else {
+                    return false;
+                };
+                crate::ir::abi::compatible(*profile, original, generated).is_ok()
+            })
+            .into_iter()
+            .collect();
         found.push(Definition {
             name: format!("{keyword} {name}"),
             members,
             fields,
             contains,
+            size,
+            alignment,
+            compatible_profiles,
         });
     }
     found
-}
-
-/// The size of an array's element, for the count of its elements.
-fn element_type_size(element: &CType) -> Option<u64> {
-    if element.is_pointer() {
-        return Some(8);
-    }
-    CType::pointer_to(element.clone())
-        .pointee_size()
-        .map(u64::from)
 }
 
 /// Each structure's name and direct fields: offset, name and type.

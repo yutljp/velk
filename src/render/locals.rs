@@ -21,6 +21,7 @@ pub(crate) struct Locals {
     pub(super) slots: HashMap<String, String>,
     pub(super) parts: HashMap<String, String>,
     pub(super) widths: HashMap<String, u8>,
+    pub(super) parameter_addresses: HashMap<(String, u8), String>,
     pub(super) decls: Vec<Local>,
 }
 
@@ -34,6 +35,7 @@ pub(crate) fn stack_locals(
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
+        abi: None,
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return: None,
@@ -41,6 +43,7 @@ pub(crate) fn stack_locals(
         landing_pads: HashMap::new(),
         strings: HashMap::new(),
         slots: HashMap::new(),
+        parameter_addresses: HashMap::new(),
         local_parts: HashMap::new(),
         local_widths: HashMap::new(),
         local_element_types: HashMap::new(),
@@ -218,7 +221,12 @@ pub(crate) fn stack_locals(
                 type_of(width, false),
                 param.name
             ),
-            None if within == 0 => param.name.clone(),
+            None if scalar_storage_size(&param.ty).is_some_and(|size| {
+                param.size >= u64::from(width) && within == 0 && width == size
+            }) =>
+            {
+                param.name.clone()
+            }
             None => continue,
         };
         let key = render_expr(&address, &base);
@@ -255,8 +263,131 @@ pub(crate) fn stack_locals(
         slots,
         parts,
         widths,
+        parameter_addresses: scalar_parameter_addresses(ir, sp, frames, &base),
         decls: slot_names.into_values().collect(),
     }
+}
+
+fn scalar_storage_size(ty: &CType) -> Option<u8> {
+    if ty.is_pointer() {
+        Some(8)
+    } else if ty.is_sse_float() {
+        Some(if ty.to_string().contains("double") {
+            8
+        } else {
+            4
+        })
+    } else {
+        ty.integer()
+            .and_then(|(bits, _)| matches!(bits, 8 | 16 | 32 | 64).then_some((bits / 8) as u8))
+    }
+}
+
+fn scalar_parameter_addresses(
+    ir: &FunctionIr,
+    sp: u16,
+    frames: &[Option<i64>],
+    ctx: &Ctx<'_>,
+) -> HashMap<(String, u8), String> {
+    fn offset(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
+        let register =
+            |value: &Expr| matches!(value, Expr::Reg { index, width: 64 } if *index == sp);
+        let delta = match expr {
+            value if register(value) => 0,
+            Expr::Bin {
+                op: BinOp::Add,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (value, Expr::Const(delta)) | (Expr::Const(delta), value) if register(value) => {
+                    i128::from(*delta as i64)
+                }
+                _ => return None,
+            },
+            Expr::Bin {
+                op: BinOp::Sub,
+                lhs,
+                rhs,
+            } if register(lhs) => {
+                let Expr::Const(delta) = rhs.as_ref() else {
+                    return None;
+                };
+                -i128::from(*delta as i64)
+            }
+            _ => return None,
+        };
+        i64::try_from(i128::from(frame) + delta).ok()
+    }
+    fn loads<'a>(expr: &'a Expr, out: &mut Vec<(&'a Expr, u8)>) {
+        if let Expr::Load { addr, width, .. } = expr {
+            out.push((addr, *width));
+        }
+        for child in crate::ir::visit::children(expr) {
+            loads(child, out);
+        }
+    }
+    let mut addresses: HashMap<(String, u8), Option<String>> = HashMap::new();
+    for (block, body) in ir.blocks.iter().enumerate() {
+        let mut frame = frames[block];
+        for stmt in &body.stmts {
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.index == sp
+            {
+                frame = frame
+                    .filter(|_| dest.width == 64)
+                    .and_then(|frame| offset(value, frame, sp));
+                continue;
+            }
+            let mut accesses = Vec::new();
+            if let Stmt::Store { addr, width, .. } = stmt {
+                accesses.push((addr, *width));
+            }
+            for value in stmt.operands() {
+                loads(value, &mut accesses);
+            }
+            for (addr, width) in accesses {
+                let source = (|| {
+                    if !matches!(width, 1 | 2 | 4 | 8) {
+                        return None;
+                    }
+                    let slot = offset(addr, frame?, sp)?;
+                    let mut parts = ir.stack_params.iter().filter_map(|param| {
+                        let size = scalar_storage_size(&param.ty)?;
+                        let extent = param.size.min(u64::from(size));
+                        let within = slot.checked_sub(param.offset)?;
+                        (within >= 0 && within.checked_add(i64::from(width))? <= extent as i64)
+                            .then_some((param, within, size))
+                    });
+                    let (param, within, size) = parts.next()?;
+                    if parts.next().is_some() || (within == 0 && width == size) {
+                        return None;
+                    }
+                    Some(format!("(uint8_t *)&{} + 0x{within:x}", param.name))
+                })();
+                let key = (render_expr(addr, ctx), width);
+                match addresses.entry(key) {
+                    std::collections::hash_map::Entry::Vacant(entry) => {
+                        entry.insert(source);
+                    }
+                    std::collections::hash_map::Entry::Occupied(mut entry) => {
+                        if entry.get() != &source {
+                            entry.insert(None);
+                        }
+                    }
+                }
+            }
+        }
+        if crate::ir::cfg::block_successors(&ir.blocks, block)
+            .iter()
+            .any(|next| frames[*next] != frame)
+        {
+            return HashMap::new();
+        }
+    }
+    addresses
+        .into_iter()
+        .filter_map(|(key, value)| Some((key, value?)))
+        .collect()
 }
 
 fn ty_width(ty: &CType) -> Option<u8> {

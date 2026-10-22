@@ -2,13 +2,13 @@
 #   branches on flags: 3
 #   calls: 3844
 #   computes on floats or vectors: 60
-#   computes on registers alone: 842
+#   computes on registers alone: 850
 #   has an unsupported instruction: 4
-#   reads a register that is not a parameter: 49
+#   reads a register that is not a parameter: 51
 #   refers to data: 330
-#   returns no integer: 40
-#   takes an argument that is no integer: 28
-#   takes arguments on the stack: 34
+#   returns no integer: 82
+#   takes an argument that is no integer: 44
+#   takes arguments on the stack: 50
 # runs left out:
 #   reaches memory no page can map: 267
 #   reads a register that is not a parameter: 622
@@ -37,6 +37,10 @@
 # l5_switch.o: 2 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
 # member_types_a64.elf: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
 # member_types_x64.elf: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
+# metrics/aggregate_abi.aarch64.O0.stripped.elf: 11 functions, 2 qualify, 0 compile, 2 do not, 0 compared (0 runs), 0 differ
+# metrics/aggregate_abi.aarch64.O2.stripped.elf: 11 functions, 2 qualify, 0 compile, 2 do not, 0 compared (0 runs), 0 differ
+# metrics/aggregate_abi.x86_64.O0.stripped.elf: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/aggregate_abi.x86_64.O2.stripped.elf: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/alt_names.aarch64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # metrics/alt_names.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # metrics/alt_names.x86_64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
@@ -117,9 +121,9 @@
 # metrics/structs.aarch64.O0.stripped.elf: 8 functions, 7 qualify, 7 compile, 0 do not, 7 compared (82 runs), 0 differ
 # metrics/structs.aarch64.O2.debug.elf: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # metrics/structs.aarch64.O2.stripped.elf: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
-# metrics/structs.x86_64.O0.debug.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (46 runs), 0 differ
+# metrics/structs.x86_64.O0.debug.elf: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
 # metrics/structs.x86_64.O0.stripped.elf: 8 functions, 7 qualify, 7 compile, 0 do not, 7 compared (82 runs), 0 differ
-# metrics/structs.x86_64.O2.debug.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (46 runs), 0 differ
+# metrics/structs.x86_64.O2.debug.elf: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
 # metrics/structs.x86_64.O2.stripped.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (46 runs), 0 differ
 # metrics/switch_value_table.aarch64.O0.debug.elf: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/switch_value_table.aarch64.O0.stripped.elf: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
@@ -138,3 +142,7 @@
 # switch_value_table.o: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # x64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+metrics/aggregate_abi.aarch64.O0.stripped.elf 0x210468 -: does not compile: use of undeclared identifier 'sp'
+metrics/aggregate_abi.aarch64.O0.stripped.elf 0x210628 -: does not compile: use of undeclared identifier 'sp'
+metrics/aggregate_abi.aarch64.O2.stripped.elf 0x210290 -: does not compile: use of undeclared identifier 'sp'
+metrics/aggregate_abi.aarch64.O2.stripped.elf 0x210338 -: does not compile: use of undeclared identifier 'sp'

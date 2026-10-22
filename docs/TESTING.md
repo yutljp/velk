@@ -36,6 +36,8 @@ running an already built velk binary.
 |---|---|---|
 | `src/lift/hardware/` | Lifted instructions, registers, conditions, and memory | Processor execution on supported hosts |
 | `src/analysis/semantics_tests.rs` | Optimization and structure lowering preserve behavior | Pre-transformation IR interpreter results |
+| `src/ir/abi.rs`, `src/analysis/abi.rs` units | Aggregate classification, register banks, stack alignment, indirect results | Structured type layouts and expected ABI locations |
+| `src/ssa/mod.rs` units | Entry-bit requirements, private spills, complete result dependencies | Explicit masks, frames, and observable memory effects |
 | `src/passes/copies.rs`, `read_once.rs` units | Assignment/read truncation and signed-operation/comparison widths | Full before/after interpreter outcomes |
 | `src/render/` units | Pointer/integer distinctions, real member access, truth values, floating mask preconditions, segment-base bindings | Expected typed pseudo-C and recognition controls |
 | `tests/loader.rs` | Section allocation, relocation, nested DWARF member type/width/ownership | Input metadata and declared layout |
@@ -117,26 +119,112 @@ arbitrary default FMA builtin lowering. This suite does not validate
 NaN payloads, exception state, partial masks, precision-mismatch
 reinterpretation, or the original floating-argument ABI.
 
+### Aggregate arguments and results
+
+Focused recompilation tests construct declared C objects from explicit
+bytes and call the generated function with those objects. The interpreter
+receives the corresponding register pieces, stack arguments, or indirect
+copies described by `DeclaredSignature`. The generic scalar fixture suites
+continue to exclude by-value aggregate parameters and results, including
+functions whose declared ABI cannot be classified.
+
+```bash
+CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release --test recompile aggregate
+CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release --test recompile scalar_stack
+```
+
+The focused suites cover integer objects, narrow register overwrites,
+mixed integer/floating pieces, homogeneous floating aggregates, register
+exhaustion, indirect arguments and results, and known signed/unsigned
+128-bit C integer results in functions with aggregate arguments. The
+128-bit checks observe both integer-register pieces; they do not establish
+general support for standalone wide-integer functions. Selected integer
+fixtures also use independent arithmetic expectations. Each logical input is tried
+with different non-object register bits. Accepting a partial entry capture
+requires those bits to be unobserved; object size alone does not establish
+that condition. Padding and unnamed bit-fields are excluded from the
+defined result masks.
+
+Every defined result piece is compared at `-O0` and `-O1`. For a result
+spread across registers, the test projects one piece at a time while still
+evaluating every return operand. A fault or unsupported read in another
+piece must not disappear. Indirect result comparisons read each defined
+part of the returned object. Indirect input copies occupy the interpreter's
+private stack area, while stores through a separate external pointer remain
+in the observed memory region and its checksum.
+
+Classifier and allocator units distinguish System V x86-64, base AAPCS64,
+and Windows x64 rules. Missing source alignment remains unknown. The
+classifier considers every power-of-two divisor of the type's size and
+bounded combinations of nested alignment candidates. Typed output requires
+classification, argument placement, and the allocation state for later
+arguments to agree across candidates. Differences or exhausted analysis
+limits require fallback. The alignment retained in `ValueAbi` describes
+the representative generated C layout, not necessarily the source type's
+exact alignment.
+
+Object-relative accesses use `__builtin_memcpy` for widths of one, two,
+four, or eight bytes. Tests include unaligned loads/stores, an under-aligned
+byte-array object, signed and floating reads, and overlapping source and
+destination bytes. The source of a store must be evaluated once before
+the copy. Other access widths are rejected by the object proof, and a
+diamond-shaped control-flow test requires output initialization on both
+paths.
+
+Entry captures copy exactly each piece's byte count into zero-initialized
+integer storage. Result assembly copies the same bounded lengths after
+evaluating every return operand. These byte/integer conversions assume a
+little-endian execution environment for the generated C.
+
+Scalar stack-parameter tests cover partial reads and writes bounded by both
+the argument slot and the declared C type's storage. Unknown frames,
+conflicting bindings for the same address, crossing accesses, and unknown
+storage sizes must prevent that substitution. Ordinary full-width accesses
+retain the parameter name.
+
+A host C call validates the generated logical C signature and body on that
+host; it does not independently validate the
+target machine's calling convention. Keep target instruction execution,
+layout classification, IR execution, and generated-C execution as separate
+boundaries.
+
+Negative controls reject observed non-object bits, incompatible generated
+definitions, address escapes, out-of-bounds accesses, and padding reads
+through stack or indirect arguments. An indirect result must be written on
+every return path before its defined bits are returned, with no reads of
+unwritten storage. Unknown layouts, unsupported ABI variants or languages,
+variadic signatures, and functions containing calls use the existing
+physical argument form instead of the declared aggregate signature.
+That fallback is not a C equivalence
+guarantee: multiple results can still be shown as a first return value with
+additional values in a comment.
+
 ## Fixture metrics
 
 The following table records the selected C metrics fixtures, not a general
-accuracy rate for arbitrary binaries. The fixtures contain 151 source
-functions across AArch64/x86-64 and O0/O2 configurations. Analysis uses
-stripped binaries and debug information supplies the reference. Each
-metric has its own eligible denominator. The recorded source is
+accuracy rate for arbitrary binaries. The dataset contains 162 source
+functions across AArch64/x86-64 and O0/O2 configurations: the original 151
+plus 11 aggregate ABI functions. This expanded dataset changes eligible
+denominators, so the totals are not a direct improvement comparison with
+the earlier results.
+
+Analysis uses stripped binaries; DWARF in the paired debug binaries supplies
+the reference only. These scores do not measure aggregate rendering with
+DWARF declarations, which the focused tests above cover. Each metric has
+its own eligible denominator. The recorded source is
 [`tests/golden/metrics.txt`](../tests/golden/metrics.txt).
 
 | Metric | AArch64 O0 | AArch64 O2 | x86-64 O0 | x86-64 O2 |
 |---|---|---|---|---|
-| Functions found | 151/151 | 151/151 | 151/151 | 151/151 |
-| Extra functions | 0 | 0 | 0 | 0 |
-| Parameter count | 150/150 | 150/150 | 150/150 | 150/150 |
+| Functions found | 162/162 | 162/162 | 162/162 | 162/162 |
+| Extra functions | 0/162 | 0/162 | 0/162 | 0/162 |
+| Parameter count | 151/161 | 151/161 | 151/161 | 151/161 |
 | Pointer parameters | 187/189 | 186/189 | 187/189 | 186/189 |
 | Parameter width | 151/157 | 151/157 | 152/157 | 152/157 |
 | Parameter signedness | 139/151 | 139/151 | 140/152 | 140/152 |
-| Return presence | 145/151 | 145/151 | 144/151 | 147/151 |
-| Return width | 118/122 | 117/122 | 118/122 | 118/122 |
-| Floating-point type | 10/10 | 10/10 | 10/10 | 10/10 |
+| Return presence | 156/162 | 156/162 | 155/162 | 157/162 |
+| Return width | 122/126 | 121/126 | 122/126 | 122/126 |
+| Floating-point type | 11/15 | 11/12 | 11/15 | 11/14 |
 
 Performance checks in `tests/bench.sh` time selected commands, with warmup
 and machine-dependent thresholds. They do not establish a general

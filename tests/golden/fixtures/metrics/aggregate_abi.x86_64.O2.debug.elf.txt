@@ -1,0 +1,373 @@
+# metrics/aggregate_abi.x86_64.O2.debug.elf: elf x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201220 8 abi_pair_adjust symtab,dwarf,unwind
+0x201230 11 abi_mixed_adjust symtab,dwarf,unwind
+0x201240 5 abi_hfa1_adjust symtab,dwarf,unwind
+0x201250 5 abi_hfa2_adjust symtab,dwarf,unwind
+0x201260 33 abi_hfa3_adjust symtab,dwarf,unwind
+0x201290 33 abi_hfa4_adjust symtab,dwarf,unwind
+0x2012c0 85 abi_exhaust_five symtab,dwarf,unwind
+0x201320 126 abi_exhaust_seven symtab,dwarf,unwind
+0x2013a0 25 abi_indirect_make symtab,dwarf,unwind
+0x2013c0 85 abi_exhaust_five_aligned symtab,dwarf,unwind
+0x201420 126 abi_exhaust_seven_aligned symtab,dwarf,unwind
+
+== 0x201220 abi_pair_adjust
+-- decompile
+/* velk pseudo-C: abi_pair_adjust @ 0x201220 */
+struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
+struct abi_pair abi_pair_adjust(struct abi_pair value, unsigned long long tail) {
+    struct abi_pair result = {0};
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
+    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
+
+    {
+        uint64_t result_bits = value_bits + tail_bits;
+        uint64_t result_bits_2 = tail_bits ^ value_bits_2;
+        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
+        return result;
+    }
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2)
+-- references
+
+-- ir
+fn abi_pair_adjust @ 0x201220 (size 8)
+  blk0 @ 0x201220:
+    ret results((rdi + rdx), (rdx ^ rsi))
+-- card
+{"addr":"0x201220","approxTokens":114,"blocks":1,"hardReasons":[],"name":"abi_pair_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x201230 abi_mixed_adjust
+-- decompile
+/* velk pseudo-C: abi_mixed_adjust @ 0x201230 */
+struct abi_mixed { _Alignas(8) double floating; unsigned long long integer; };
+struct abi_mixed abi_mixed_adjust(struct abi_mixed value, unsigned long long delta, double bias) {
+    struct abi_mixed result = {0};
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
+    uint64_t delta_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&delta + 0x0, 8);
+    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+
+    {
+        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        uint64_t result_bits_2 = value_bits_2 ^ delta_bits;
+        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
+        return result;
+    }
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, double a2, double a3)
+-- references
+
+-- ir
+fn abi_mixed_adjust @ 0x201230 (size 11)
+  blk0 @ 0x201230:
+    ret results(fadd.d(xmm0, xmm1), (rdi ^ rsi))
+-- card
+{"addr":"0x201230","approxTokens":120,"blocks":1,"hardReasons":[],"name":"abi_mixed_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":11,"unsupported":0}
+
+== 0x201240 abi_hfa1_adjust
+-- decompile
+/* velk pseudo-C: abi_hfa1_adjust @ 0x201240 */
+struct abi_hfa1 { _Alignas(8) double a; };
+struct abi_hfa1 abi_hfa1_adjust(struct abi_hfa1 value, double bias) {
+    struct abi_hfa1 result = {0};
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+
+    {
+        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        return result;
+    }
+}
+-- signature
+int64_t (double a0, double a1)
+-- references
+
+-- ir
+fn abi_hfa1_adjust @ 0x201240 (size 5)
+  blk0 @ 0x201240:
+    ret results(fadd.d(xmm0, xmm1))
+-- card
+{"addr":"0x201240","approxTokens":108,"blocks":1,"hardReasons":[],"name":"abi_hfa1_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":5,"unsupported":0}
+
+== 0x201250 abi_hfa2_adjust
+-- decompile
+/* velk pseudo-C: abi_hfa2_adjust @ 0x201250 */
+struct abi_hfa2 { _Alignas(8) double a; double b; };
+struct abi_hfa2 abi_hfa2_adjust(struct abi_hfa2 value, double bias) {
+    struct abi_hfa2 result = {0};
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
+    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+
+    {
+        uint64_t result_bits = value_bits;
+        uint64_t result_bits_2 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_2) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
+        return result;
+    }
+}
+-- signature
+int64_t (double a0, double a1, double a2)
+-- references
+
+-- ir
+fn abi_hfa2_adjust @ 0x201250 (size 5)
+  blk0 @ 0x201250:
+    ret results(xmm0, fadd.d(xmm1, xmm2))
+-- card
+{"addr":"0x201250","approxTokens":108,"blocks":1,"hardReasons":[],"name":"abi_hfa2_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":5,"unsupported":0}
+
+== 0x201260 abi_hfa3_adjust
+-- decompile
+/* velk pseudo-C: abi_hfa3_adjust @ 0x201260 */
+/* struct: rdi +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t */
+struct abi_hfa3 { _Alignas(8) double a; double b; double c; };
+struct abi_hfa3 abi_hfa3_adjust(struct abi_hfa3 value, double bias) {
+    struct abi_hfa3 result = {0};
+    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+    uint8_t *value_address = (uint8_t *)&value;
+    uint8_t *result_address = (uint8_t *)&result;
+
+    __builtin_memcpy(value_address + 0x10, &(uint64_t){((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x10, 8)) }).value }).bits}, 8);
+    __builtin_memcpy(result_address, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8)}, 8);
+    __builtin_memcpy(result_address + 0x8, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8)}, 8);
+    __builtin_memcpy(result_address + 0x10, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x10, 8)}, 8);
+    return result;
+}
+-- signature
+struct abi_hfa3_adjust_a0 * (struct abi_hfa3_adjust_a0 * a0, double a1)
+-- references
+
+-- ir
+fn abi_hfa3_adjust @ 0x201260 (size 33)
+  blk0 @ 0x201260:
+    store64(fadd.d(xmm0, load64((rsp + #0x18))), (rsp + #0x18))
+    store64(load64((rsp + #0x8)), rdi)
+    store64(load64((rsp + #0x10)), (rdi + #0x8))
+    store64(load64((rsp + #0x18)), (rdi + #0x10))
+    ret rdi
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201260","approxTokens":144,"blocks":1,"hardReasons":[],"name":"abi_hfa3_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}
+
+== 0x201290 abi_hfa4_adjust
+-- decompile
+/* velk pseudo-C: abi_hfa4_adjust @ 0x201290 */
+/* struct: rdi +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
+struct abi_hfa4 { _Alignas(8) double a; double b; double c; double d; };
+struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
+    struct abi_hfa4 result = {0};
+    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+    uint8_t *value_address = (uint8_t *)&value;
+    uint8_t *result_address = (uint8_t *)&result;
+
+    __builtin_memcpy(value_address + 0x18, &(uint64_t){((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x18, 8)) }).value }).bits}, 8);
+    __builtin_memcpy(result_address, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8)}, 8);
+    __builtin_memcpy(result_address + 0x8, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8)}, 8);
+    __builtin_memcpy(result_address + 0x10, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x10, 8)}, 8);
+    __builtin_memcpy(result_address + 0x18, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x18, 8)}, 8);
+    return result;
+}
+-- signature
+double * (double * a0, double a1)
+-- references
+
+-- ir
+fn abi_hfa4_adjust @ 0x201290 (size 33)
+  blk0 @ 0x201290:
+    store64(fadd.d(xmm0, load64((rsp + #0x20))), (rsp + #0x20))
+    store64(load64((rsp + #0x8)), rdi)
+    store64(load64((rsp + #0x10)), (rdi + #0x8))
+    store64(load64((rsp + #0x18)), (rdi + #0x10))
+    store64(load64((rsp + #0x20)), (rdi + #0x18))
+    ret rdi
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201290","approxTokens":144,"blocks":1,"hardReasons":[],"name":"abi_hfa4_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}
+
+== 0x2012c0 abi_exhaust_five
+-- decompile
+/* velk pseudo-C: abi_exhaust_five @ 0x2012c0 */
+struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
+unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair value, unsigned long long tail) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
+    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
+    uint8_t *value_address = (uint8_t *)&value;
+    int64_t v3;
+    int64_t v4;
+
+    v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
+    v4 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
+    return tail_bits + (tail_bits + tail_bits * 0x8) * 0x2 + (e_bits + (e_bits + e_bits * 0x4) * 0x2 + (d_bits * 0x8 - d_bits) + (c_bits + c_bits * 0x4 + (b_bits + b_bits * 0x2 + a_bits))) + (v3 + (v3 + v3 * 0x2) * 0x4) + (((uint64_t)v4 << 0x4) + v4);
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+-- references
+
+-- ir
+fn abi_exhaust_five @ 0x2012c0 (size 85)
+  blk0 @ 0x2012c0:
+    v3 = load64((rsp + #0x8))
+    v4 = load64((rsp + #0x10))
+    ret results(((((r9 + ((r9 + (r9 * #0x8)) * #0x2)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))) + (v3 + ((v3 + (v3 * #0x2)) * #0x4))) + ((v4 << #0x4) + v4)))
+-- card
+{"addr":"0x2012c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf","unwind"],"section":".text","size":85,"unsupported":0}
+
+== 0x201320 abi_exhaust_seven
+-- decompile
+/* velk pseudo-C: abi_exhaust_seven @ 0x201320 */
+int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
+    int64_t v1;
+    int64_t v2;
+    int64_t v10;
+    int64_t v11;
+    int64_t v12;
+
+    v1 = a9;
+    v2 = a6;
+    v10 = a7;
+    v11 = a8;
+    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 0x8) * 0x2);
+    v10 = v1 + v1 * 0x8 + (v1 + v1 * 0x8) * 0x2;
+    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (a5 + (a5 + a5 * 0x2) * 0x4 + (a4 + (a4 + a4 * 0x4) * 0x2 + (a3 * 0x8 - a3) + (a2 + a2 * 0x4 + (a1 + a1 * 0x2 + a0))))) + v12;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+-- references
+
+-- ir
+fn abi_exhaust_seven @ 0x201320 (size 126)
+  blk0 @ 0x201320:
+    v1 = load64((rsp + #0x20))
+    v2 = load64((rsp + #0x8))
+    v10 = load64((rsp + #0x10))
+    v11 = load64((rsp + #0x18))
+    v12 = ((((v11 + (v11 * #0x2)) << #0x3) - v11) + (v10 + ((v10 + (v10 * #0x8)) * #0x2)))
+    v10 = ((v1 + (v1 * #0x8)) + ((v1 + (v1 * #0x8)) * #0x2))
+    ret ((((v1 + v1) + v10) + (((v2 << #0x4) + v2) + ((r9 + ((r9 + (r9 * #0x2)) * #0x4)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))))) + v12)
+-- card
+{"addr":"0x201320","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf","unwind"],"section":".text","size":126,"unsupported":0}
+
+== 0x2013a0 abi_indirect_make
+-- decompile
+/* velk pseudo-C: abi_indirect_make @ 0x2013a0 */
+/* struct: rdi +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t */
+struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
+struct abi_triple {
+    _Alignas(8) unsigned long long first;
+    unsigned long long second;
+    unsigned long long third;
+};
+struct abi_triple abi_indirect_make(struct abi_pair value, unsigned long long delta) {
+    struct abi_triple result = {0};
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
+    uint64_t delta_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&delta + 0x0, 8);
+    uint8_t *result_address = (uint8_t *)&result;
+
+    __builtin_memcpy(result_address, &(uint64_t){delta_bits + value_bits}, 8);
+    __builtin_memcpy(result_address + 0x8, &(uint64_t){delta_bits ^ value_bits_2}, 8);
+    __builtin_memcpy(result_address + 0x10, &(uint64_t){value_bits - value_bits_2}, 8);
+    return result;
+}
+-- signature
+int64_t (uint64_t * a0, int64_t a1, int64_t a2, int64_t a3)
+-- references
+
+-- ir
+fn abi_indirect_make @ 0x2013a0 (size 25)
+  blk0 @ 0x2013a0:
+    v1 = rdi
+    store64((rcx + rsi), v1)
+    store64((rcx ^ rdx), (v1 + #0x8))
+    store64((rsi - rdx), (v1 + #0x10))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":25,"unsupported":0}
+
+== 0x2013c0 abi_exhaust_five_aligned
+-- decompile
+/* velk pseudo-C: abi_exhaust_five_aligned @ 0x2013c0 */
+struct abi_pair_aligned { _Alignas(8) unsigned long long low; unsigned long long high; };
+unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair_aligned value, unsigned long long tail) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
+    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
+    uint8_t *value_address = (uint8_t *)&value;
+    int64_t v3;
+    int64_t v4;
+
+    v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
+    v4 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
+    return tail_bits + (tail_bits + tail_bits * 0x8) * 0x2 + (e_bits + (e_bits + e_bits * 0x4) * 0x2 + (d_bits * 0x8 - d_bits) + (c_bits + c_bits * 0x4 + (b_bits + b_bits * 0x2 + a_bits))) + (v3 + (v3 + v3 * 0x2) * 0x4) + (((uint64_t)v4 << 0x4) + v4);
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+-- references
+
+-- ir
+fn abi_exhaust_five_aligned @ 0x2013c0 (size 85)
+  blk0 @ 0x2013c0:
+    v3 = load64((rsp + #0x8))
+    v4 = load64((rsp + #0x10))
+    ret results(((((r9 + ((r9 + (r9 * #0x8)) * #0x2)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))) + (v3 + ((v3 + (v3 * #0x2)) * #0x4))) + ((v4 << #0x4) + v4)))
+-- card
+{"addr":"0x2013c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","size":85,"unsupported":0}
+
+== 0x201420 abi_exhaust_seven_aligned
+-- decompile
+/* velk pseudo-C: abi_exhaust_seven_aligned @ 0x201420 */
+struct abi_pair_aligned { _Alignas(8) unsigned long long low; unsigned long long high; };
+unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, unsigned long long f, unsigned long long g, struct abi_pair_aligned value, unsigned long long tail) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
+    uint64_t f_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&f + 0x0, 8);
+    uint8_t *g_address = (uint8_t *)&g;
+    uint8_t *value_address = (uint8_t *)&value;
+    uint8_t *tail_address = (uint8_t *)&tail;
+    int64_t v1;
+    int64_t v2;
+    int64_t v10;
+    int64_t v11;
+    int64_t v12;
+
+    v1 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8);
+    v2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, g_address, 8);
+    v10 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
+    v11 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
+    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 0x8) * 0x2);
+    v10 = v1 + v1 * 0x8 + (v1 + v1 * 0x8) * 0x2;
+    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (f_bits + (f_bits + f_bits * 0x2) * 0x4 + (e_bits + (e_bits + e_bits * 0x4) * 0x2 + (d_bits * 0x8 - d_bits) + (c_bits + c_bits * 0x4 + (b_bits + b_bits * 0x2 + a_bits))))) + v12;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+-- references
+
+-- ir
+fn abi_exhaust_seven_aligned @ 0x201420 (size 126)
+  blk0 @ 0x201420:
+    v1 = load64((rsp + #0x20))
+    v2 = load64((rsp + #0x8))
+    v10 = load64((rsp + #0x10))
+    v11 = load64((rsp + #0x18))
+    v12 = ((((v11 + (v11 * #0x2)) << #0x3) - v11) + (v10 + ((v10 + (v10 * #0x8)) * #0x2)))
+    v10 = ((v1 + (v1 * #0x8)) + ((v1 + (v1 * #0x8)) * #0x2))
+    ret results(((((v1 + v1) + v10) + (((v2 << #0x4) + v2) + ((r9 + ((r9 + (r9 * #0x2)) * #0x4)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))))) + v12))
+-- card
+{"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","size":126,"unsupported":0}

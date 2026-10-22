@@ -1,5 +1,135 @@
 use std::fmt;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AbiProfile {
+    SysV,
+    Aapcs64,
+    Win64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AbiIssue {
+    UnknownLayout,
+    UnsupportedProfile,
+    UnsupportedType,
+    NonTrivial,
+    IncompatibleDefinition,
+}
+
+impl fmt::Display for AbiIssue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::UnknownLayout => "unknown object layout",
+            Self::UnsupportedProfile => "unsupported target ABI",
+            Self::UnsupportedType => "unsupported ABI type",
+            Self::NonTrivial => "unresolved or nontrivial call semantics",
+            Self::IncompatibleDefinition => "incompatible C object definition",
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RegisterClass {
+    Integer,
+    Simd,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AbiLocation {
+    Register(u16),
+    Stack(i64),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AbiPiece {
+    pub location: AbiLocation,
+    pub object_offset: u64,
+    pub bytes: u64,
+    pub class: Option<RegisterClass>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Passing {
+    Direct(Vec<AbiPiece>),
+    Indirect {
+        pointer: AbiLocation,
+        returned_pointer: Option<u16>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValueAbi {
+    pub aggregate: bool,
+    pub size: u64,
+    /// Alignment of the generated representative C object.
+    pub alignment: u64,
+    /// Object bit offset and bit count, excluding padding and unused bit-fields.
+    pub defined_bits: Vec<(u64, u64)>,
+    pub passing: Passing,
+}
+
+impl ValueAbi {
+    pub fn validate(&self) -> Result<(), AbiIssue> {
+        if self.size == 0
+            || !self.alignment.is_power_of_two()
+            || !self.size.is_multiple_of(self.alignment)
+        {
+            return Err(AbiIssue::UnknownLayout);
+        }
+        let bits = self.size.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?;
+        let mut end = 0;
+        for &(offset, count) in &self.defined_bits {
+            if count == 0 || offset < end {
+                return Err(AbiIssue::UnknownLayout);
+            }
+            end = offset.checked_add(count).ok_or(AbiIssue::UnknownLayout)?;
+            if end > bits {
+                return Err(AbiIssue::UnknownLayout);
+            }
+        }
+        if let Passing::Direct(pieces) = &self.passing {
+            let mut end = 0;
+            for piece in pieces {
+                if piece.bytes == 0 || piece.object_offset < end {
+                    return Err(AbiIssue::UnknownLayout);
+                }
+                end = piece
+                    .object_offset
+                    .checked_add(piece.bytes)
+                    .ok_or(AbiIssue::UnknownLayout)?;
+                if end > self.size
+                    || match piece.location {
+                        AbiLocation::Register(_) => piece.bytes > 8 || piece.class.is_none(),
+                        AbiLocation::Stack(_) => piece.class.is_some(),
+                    }
+                {
+                    return Err(AbiIssue::UnknownLayout);
+                }
+            }
+            if pieces.is_empty() {
+                return Err(AbiIssue::UnknownLayout);
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SignatureAbi {
+    pub profile: AbiProfile,
+    pub arguments: Vec<ValueAbi>,
+    pub result: Option<ValueAbi>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DeclaredSignature {
+    /// Source parameters in logical order; hidden result addresses are separate.
+    pub params: Vec<(String, CType)>,
+    pub ret: CType,
+    pub variadic: bool,
+    pub abi: Result<SignatureAbi, AbiIssue>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CType {
     Void,
@@ -271,6 +401,10 @@ pub struct Definition {
     pub fields: Vec<String>,
     /// The structures and unions it holds by value, which C defines first.
     pub contains: Vec<String>,
+    pub size: u64,
+    pub alignment: Option<u64>,
+    /// Profiles where the generated declaration preserves the source ABI layout.
+    pub compatible_profiles: Vec<AbiProfile>,
 }
 
 #[derive(Debug, Clone)]

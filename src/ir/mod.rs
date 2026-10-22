@@ -1,3 +1,4 @@
+pub(crate) mod abi;
 pub mod cfg;
 pub mod eval;
 pub(crate) mod semantics;
@@ -5,7 +6,10 @@ pub mod trials;
 mod types;
 pub mod visit;
 
-pub use types::{Access, CType, Definition, Member, Param, StackParam, Structure};
+pub use types::{
+    AbiIssue, AbiLocation, AbiPiece, AbiProfile, Access, CType, DeclaredSignature, Definition,
+    Member, Param, Passing, RegisterClass, SignatureAbi, StackParam, Structure, ValueAbi,
+};
 
 /// The integer calling convention a call follows: which registers carry
 /// its arguments and which it may overwrite.
@@ -1358,6 +1362,8 @@ pub struct FunctionIr {
     /// The calling convention the function itself follows.
     pub convention: Convention,
     pub params: Vec<Param>,
+    /// The source declaration and its ABI mapping, separate from physical inputs.
+    pub declared_signature: Option<DeclaredSignature>,
     /// Parameters the debug info places in the caller's stack frame.
     pub stack_params: Vec<StackParam>,
     /// The debug info declares further, variadic, parameters.
@@ -1395,6 +1401,7 @@ impl FunctionIr {
             isa,
             convention: Convention::of(isa, crate::loader::Format::Elf, false),
             params: Vec::new(),
+            declared_signature: None,
             stack_params: Vec::new(),
             variadic: false,
             ret_type: CType::U64,

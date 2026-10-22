@@ -183,7 +183,7 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
 /// the processor running velk would choose. The undefined value stays
 /// what it is.
 pub(crate) fn fold(op: Operation, args: &[u64]) -> Option<u64> {
-    if faults(op, args) || op == Operation::Undefined {
+    if faults(op, args) || matches!(op, Operation::Undefined | Operation::Results) {
         return None;
     }
     let value = apply(op, args);
@@ -684,8 +684,42 @@ fn aes_round(round: crate::ir::AesRound, state: u128) -> u128 {
 
 #[cfg(test)]
 mod tests {
-    use super::apply;
-    use crate::ir::{AesRound, Operation};
+    use super::{apply, fold};
+    use crate::ir::{AesRound, BinOp, Expr, FunctionIr, Operation, Stmt};
+
+    #[test]
+    fn result_groups_keep_every_value_when_their_children_fold() {
+        for last in [2, 3] {
+            assert_eq!(fold(Operation::Results, &[7, last]), None);
+            assert_eq!(apply(Operation::Results, &[7, last]), 7);
+            let mut ir = FunctionIr::single_block(
+                crate::loader::Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: Expr::apply(
+                        Operation::Results,
+                        vec![
+                            Expr::Const(7),
+                            Expr::Bin {
+                                op: BinOp::Add,
+                                lhs: Box::new(Expr::Const(last)),
+                                rhs: Box::new(Expr::Const(4)),
+                            },
+                        ],
+                    ),
+                }],
+            );
+            crate::passes::simplify::simplify(&mut ir);
+            assert!(
+                matches!(
+                    &ir.blocks[0].stmts[0],
+                    Stmt::Ret { value: Expr::Apply { op: Operation::Results, args } }
+                        if *args == vec![Expr::Const(7), Expr::Const(last + 4)]
+                ),
+                "{}",
+                ir.render()
+            );
+        }
+    }
 
     #[test]
     fn crc32_steps_give_the_check_values() {

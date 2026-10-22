@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 
 use super::Ssa;
 use crate::ir::semantics::{evaluate, holds, mask, operand_width};
-use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
+use crate::ir::{BinOp, Expr, FunctionIr, Operation, Stmt};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Lattice {
@@ -42,6 +42,15 @@ impl Solver<'_> {
 
     /// The expression's lattice value from the values it reads.
     fn expression(&self, expr: &Expr) -> Lattice {
+        if matches!(
+            expr,
+            Expr::Apply {
+                op: Operation::Results,
+                ..
+            }
+        ) {
+            return Lattice::Varying;
+        }
         let mut reads = HashSet::new();
         crate::ir::visit::expr_reads(expr, &mut reads);
         if reads
@@ -225,6 +234,16 @@ fn substitute(expr: &mut Expr, constants: &HashMap<u16, u64>, sensitive: bool) {
 /// Replaces a whole expression whose value is constant with the constant,
 /// or else the constant reads inside it.
 fn replace(expr: &mut Expr, constants: &HashMap<u16, u64>) {
+    if let Expr::Apply {
+        op: Operation::Results,
+        args,
+    } = expr
+    {
+        for arg in args {
+            replace(arg, constants);
+        }
+        return;
+    }
     if matches!(expr, Expr::Const(_)) {
         return;
     }
@@ -374,7 +393,7 @@ pub fn propagate(ssa: &mut Ssa) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
+    use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, Operation, RegRef, Stmt};
     use crate::loader::Isa;
     use crate::ssa::propagate_constants;
 
@@ -396,6 +415,82 @@ mod tests {
             })
             .collect();
         ir
+    }
+
+    #[test]
+    fn result_groups_preserve_later_pieces_and_propagate_each_constant() {
+        for last in [2, 3] {
+            let mut ir = function(vec![vec![
+                assign(0, Expr::Const(7)),
+                assign(1, Expr::Const(last)),
+                Stmt::Ret {
+                    value: Expr::apply(
+                        Operation::Results,
+                        vec![Expr::reg(0, 64), Expr::reg(1, 64)],
+                    ),
+                },
+            ]]);
+            propagate_constants(&mut ir);
+            assert!(
+                matches!(
+                    ir.blocks[0].stmts.last(),
+                    Some(Stmt::Ret { value: Expr::Apply { op: Operation::Results, args } })
+                        if *args == vec![Expr::Const(7), Expr::Const(last)]
+                ),
+                "{}",
+                ir.render()
+            );
+        }
+    }
+
+    #[test]
+    fn a_faulting_later_result_remains_observable() {
+        let mut ir = function(vec![vec![
+            assign(0, Expr::Const(7)),
+            assign(1, Expr::Const(0)),
+            Stmt::Ret {
+                value: Expr::apply(
+                    Operation::Results,
+                    vec![
+                        Expr::reg(0, 64),
+                        Expr::bin(BinOp::DivU, Expr::Const(1), Expr::reg(1, 64)),
+                    ],
+                ),
+            },
+        ]]);
+        let run = |ir: &FunctionIr| {
+            crate::ir::eval::run(
+                ir,
+                &crate::ir::eval::Setup {
+                    seed: 0,
+                    convention: crate::ir::eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &[],
+                    memory: &[],
+                    step_limit: 100,
+                },
+            )
+        };
+        assert!(matches!(
+            run(&ir),
+            crate::ir::eval::Outcome::Unknown("division by zero")
+        ));
+        propagate_constants(&mut ir);
+        crate::passes::simplify::simplify(&mut ir);
+        assert!(
+            matches!(
+                ir.blocks[0].stmts.last(),
+                Some(Stmt::Ret { value: Expr::Apply { op: Operation::Results, args } }) if args.len() == 2
+            ),
+            "{}",
+            ir.render()
+        );
+        assert!(matches!(
+            run(&ir),
+            crate::ir::eval::Outcome::Unknown("division by zero")
+        ));
     }
 
     #[test]

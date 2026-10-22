@@ -724,11 +724,7 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
     ir.ret_type = CType::int(bytes, false);
 }
 
-/// Where each declared parameter lives, as the calling convention places
-/// it: in registers (several for a structure up to 16 bytes) or in the
-/// caller's frame. The debug info's signature replaces the recovered one,
-/// unused parameters included; a parameter the convention does not
-/// describe here keeps the recovered placement.
+/// Places a scalar declaration without changing aggregate physical inputs.
 fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut FunctionIr) {
     use crate::ir::{Convention, StackParam};
     let convention = ir.convention;
@@ -752,98 +748,42 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
     };
     let mut params = Vec::new();
     let mut stack_params = Vec::new();
-    // A structure returned through memory comes back to the address the
-    // caller passes first, ahead of the declared parameters.
-    let hidden = types
-        .ret_aggregate_size
-        .is_some_and(|size| returned_in_memory(convention, size));
-    if let (true, Some(ret)) = (hidden, &types.ret) {
-        params.push(Param {
-            index: integers[0],
-            name: "result".to_owned(),
-            ty: CType::pointer_to(ret.clone()),
-        });
-        next_int = 1;
-    }
-    let round = |size: u64| size.div_ceil(8) * 8;
-    for (position, ((name, ty), size)) in types
-        .params
-        .iter()
-        .zip(
-            types
-                .param_aggregate_sizes
-                .iter()
-                .chain(std::iter::repeat(&None)),
-        )
-        .enumerate()
-    {
+    for (index, (name, ty)) in types.params.iter().enumerate() {
         let float = ty.as_ref().is_some_and(CType::is_sse_float);
-        // The parameter's place, counting a leading result pointer.
-        let index = position + usize::from(hidden);
         let name = name.clone().unwrap_or_else(|| format!("a{index}"));
         let ty = ty.clone().unwrap_or(CType::U64);
-        // The registers a parameter takes, or None for the stack.
-        let registers: Option<Vec<u16>> = match convention {
-            // Windows passes the first four by position, a structure that
-            // is not 1, 2, 4 or 8 bytes by reference.
+        let register = match convention {
             Convention::Win64 => (index < 4).then(|| {
-                vec![if float {
+                if float {
                     floats[index]
                 } else {
                     integers[index]
-                }]
+                }
             }),
-            _ => match size {
-                // Larger structures go in memory on System V and by
-                // reference on AArch64.
-                Some(size) if *size > 16 && convention == Convention::SysV => None,
-                Some(size) if *size > 16 => (next_int < integers.len()).then(|| {
-                    next_int += 1;
-                    vec![integers[next_int - 1]]
-                }),
-                Some(size) => {
-                    let needed = size.div_ceil(8) as usize;
-                    (next_int + needed <= integers.len()).then(|| {
-                        next_int += needed;
-                        integers[next_int - needed..next_int].to_vec()
-                    })
-                }
-                None if float => (next_float < floats.len()).then(|| {
-                    next_float += 1;
-                    vec![floats[next_float - 1]]
-                }),
-                None => (next_int < integers.len()).then(|| {
-                    next_int += 1;
-                    vec![integers[next_int - 1]]
-                }),
-            },
+            _ if float => (next_float < floats.len()).then(|| {
+                next_float += 1;
+                floats[next_float - 1]
+            }),
+            _ => (next_int < integers.len()).then(|| {
+                next_int += 1;
+                integers[next_int - 1]
+            }),
         };
-        match registers {
-            Some(registers) => {
-                for (part, register) in registers.iter().enumerate() {
-                    let ty = if part == 0 { ty.clone() } else { CType::U64 };
-                    let name = if part == 0 {
-                        name.clone()
-                    } else {
-                        format!("{name}_{part}")
-                    };
-                    params.push(Param {
-                        index: *register,
-                        name,
-                        ty,
-                    });
-                }
-            }
+        match register {
+            Some(register) => params.push(Param {
+                index: register,
+                name,
+                ty,
+            }),
             None => {
-                let bytes = size.unwrap_or(8);
                 stack_params.push(StackParam {
                     offset: stack,
-                    size: bytes,
+                    size: 8,
                     name,
                     ty,
                     position: index,
                 });
-                stack += round(bytes) as i64;
+                stack += 8;
             }
         }
     }
@@ -864,23 +804,6 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
     ir.stack_params = stack_params;
 }
 
-/// Whether a structure of `size` bytes is returned through memory the
-/// caller provides, at an address passed as the first argument.
-fn returned_in_memory(convention: crate::ir::Convention, size: u64) -> bool {
-    use crate::ir::Convention;
-    match convention {
-        Convention::SysV => size > 16,
-        Convention::Win64 => !matches!(size, 1 | 2 | 4 | 8),
-        // AArch64 passes that address in x8, which is no argument.
-        Convention::Aapcs64
-        | Convention::GoAmd64
-        | Convention::SyscallX86
-        | Convention::SyscallArm
-        | Convention::GoWriteBarrier
-        | Convention::GoAbi0 => false,
-    }
-}
-
 pub(crate) fn apply_dwarf_types(
     types: Option<crate::loader::dwarf::FunctionTypes>,
     ir: &mut FunctionIr,
@@ -890,6 +813,9 @@ pub(crate) fn apply_dwarf_types(
     };
     ir.members = types.members.clone();
     ir.definitions = types.definitions.clone();
+    if super::abi::has_aggregate(&types) {
+        return;
+    }
     // Only a declaration whose every parameter has a type the debug info
     // could read replaces the recovered signature; otherwise its names go
     // onto the recovered parameters in order.
