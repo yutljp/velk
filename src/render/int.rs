@@ -76,6 +76,7 @@ impl Int {
 #[derive(Clone, Debug)]
 pub(crate) struct Printed {
     pub(crate) text: String,
+    pub(crate) kind: ValueKind,
     /// The type of the text after the integer promotions.
     pub(crate) ty: Int,
     /// How many low bits of the printed value agree with the IR's value
@@ -86,6 +87,13 @@ pub(crate) struct Printed {
     pub(crate) strength: u8,
     /// What the printed value is known to fit in beyond its type.
     pub(crate) range: Range,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ValueKind {
+    Integer,
+    Pointer,
+    Opaque,
 }
 
 /// The values a printed expression can take, as the bits they fit in.
@@ -102,6 +110,7 @@ impl Printed {
     pub(crate) fn new(text: String, ty: Int, exact: u32, strength: u8) -> Printed {
         Printed {
             text,
+            kind: ValueKind::Integer,
             ty,
             exact,
             strength,
@@ -140,10 +149,38 @@ impl Printed {
         }
     }
 
-    /// Text whose type the printer does not follow, such as a pointer or a
-    /// float, taken to mean what the IR means.
+    /// Text whose scalar type the printer does not follow, such as a float.
     pub(crate) fn opaque(text: String, strength: u8) -> Printed {
-        Printed::new(text, Int::U64, ALL, strength)
+        Printed {
+            kind: ValueKind::Opaque,
+            ..Printed::new(text, Int::U64, ALL, strength)
+        }
+    }
+
+    pub(crate) fn pointer(text: String, strength: u8) -> Printed {
+        Printed {
+            kind: ValueKind::Pointer,
+            ..Printed::new(text, Int::U64, ALL, strength)
+        }
+    }
+
+    pub(crate) fn is_pointer(&self) -> bool {
+        self.kind == ValueKind::Pointer
+    }
+
+    /// A pointer used as machine bits, without C's element scaling or
+    /// pointer subtraction restrictions.
+    pub(crate) fn address_integer(self) -> Printed {
+        if self.is_pointer() {
+            Printed::new(
+                format!("(uintptr_t){}", self.within(12, false).text),
+                Int::U64,
+                ALL,
+                12,
+            )
+        } else {
+            self
+        }
     }
 
     /// The text as an operand of an operator binding with `parent`,
@@ -341,6 +378,9 @@ pub(crate) fn sign_bits(expr: &Expr) -> Option<u32> {
 /// type it is extended from. A value that needs a wider operation is the
 /// operation's to widen.
 pub(crate) fn fit(mut printed: Printed, expr: &Expr, bits: u32, ctx: &Ctx<'_>) -> Printed {
+    if printed.kind != ValueKind::Integer {
+        return printed;
+    }
     let zero = zero_bits(expr, ctx);
     // A value right in all the bits of its type is the IR's value when that
     // fits in fewer bits, or in as many without a sign.
@@ -369,6 +409,18 @@ pub(crate) fn fit(mut printed: Printed, expr: &Expr, bits: u32, ctx: &Ctx<'_>) -
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn address_conversion_only_changes_pointer_values() {
+        let pointer = Printed::pointer("p + 0x1".to_owned(), 10).address_integer();
+        assert_eq!(pointer.kind, ValueKind::Integer);
+        assert_eq!(pointer.text, "(uintptr_t)(p + 0x1)");
+        assert_eq!(pointer.ty, Int::U64);
+        assert_eq!(pointer.exact, ALL);
+        let opaque = Printed::opaque("sqrt(x)".to_owned(), 13).address_integer();
+        assert_eq!(opaque.kind, ValueKind::Opaque);
+        assert_eq!(opaque.text, "sqrt(x)");
+    }
 
     fn printed(ty: Int, exact: u32) -> Printed {
         Printed::new("x".to_owned(), ty, exact, 13)

@@ -5,6 +5,52 @@ mod common;
 
 use velk::service::Binary;
 
+#[test]
+fn file_metadata_does_not_occupy_virtual_memory() {
+    for (fixture, metadata) in [("go_probe", ".shstrtab"), ("rust_probe", ".debug_info")] {
+        let binary = Binary::open(&common::fixtures_dir().join(fixture))
+            .unwrap_or_else(|error| panic!("{error}"));
+        let image = binary.image();
+        let section = image
+            .sections
+            .iter()
+            .find(|section| section.name == metadata)
+            .expect("file metadata");
+        assert_eq!(section.vaddr, 0, "{fixture}");
+        assert!(section.size > 0, "{fixture}");
+        assert!(!section.loaded, "{fixture}");
+        assert!(image.section_data(metadata).is_some(), "{fixture}");
+        assert!(image.section_at(0).is_none(), "{fixture}");
+        assert!(image.read_vaddr(0, 1).is_none(), "{fixture}");
+        assert!(
+            velk::render::data_ranges(image)
+                .iter()
+                .all(|(start, _)| *start != 0),
+            "{fixture}"
+        );
+    }
+}
+
+#[test]
+fn relocated_objects_keep_their_loaded_sections_at_zero() {
+    for fixture in ["l4_memory_a64.o", "l4_memory_x64.o", "pe64.obj"] {
+        let binary = Binary::open(&common::fixtures_dir().join(fixture))
+            .unwrap_or_else(|error| panic!("{error}"));
+        let image = binary.image();
+        let text = image.section_at(0).expect("code mapped at zero");
+        assert_eq!(text.name, ".text", "{fixture}");
+        assert!(text.loaded, "{fixture}");
+        assert!(image.read_vaddr(0, 1).is_some(), "{fixture}");
+        let data = image
+            .sections
+            .iter()
+            .find(|section| section.name == ".data" && section.size > 0)
+            .expect("loaded data");
+        assert!(data.loaded, "{fixture}");
+        assert!(velk::render::data_ranges(image).contains(&(data.vaddr, data.size)));
+    }
+}
+
 /// Dynamic relocations name symbols by their place in the dynamic symbol
 /// table, which the full table, with static functions in it, numbers apart.
 #[test]

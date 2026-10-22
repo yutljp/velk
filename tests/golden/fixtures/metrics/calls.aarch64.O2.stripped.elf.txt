@@ -325,7 +325,7 @@ int32_t sub_210468(int32_t a0, ...) {
     local_0 = &local_1;
     local_2 = 0xffffff80ffffffc8;
     local_3 = &local_4;
-    local_4 = sp;
+    local_4 = (uint32_t *)sp;
     if (a0 < 0x1) {
         return 0x0;
     }
@@ -342,12 +342,12 @@ int32_t sub_210468(int32_t a0, ...) {
                 v1 = (uint32_t *)(v2 + (int32_t)(v4));
             } else {
                 v5 = (uintptr_t)(v1 + 0x2);
-                local_4 = v5;
+                local_4 = (uint32_t *)v5;
             }
         } else {
             v6 = v4;
             v5 = (uintptr_t)(v1 + 0x2);
-            local_4 = v5;
+            local_4 = (uint32_t *)v5;
         }
         a0 = a0 - 0x1;
         v4 = v6;

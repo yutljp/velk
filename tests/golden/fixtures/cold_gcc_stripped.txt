@@ -360,7 +360,7 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
         v5 = v8;
         v8 = v8 + 0x6;
         __fprintf_chk(stderr, 0x2, 0x201c, v5, v11);
-    } while (v8 != v4);
+    } while ((uintptr_t)v8 != v4);
     abort();
 }
 -- signature

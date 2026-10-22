@@ -1379,7 +1379,7 @@ fn main.sumSlice @ 0x466d00 (size 32)
 -- decompile
 /* velk pseudo-C: main.kindName @ 0x466d20 */
 /* ref: 0x46d1c0 .rodata */
-/* ref: 0x46d400 -> 0x8 "noptrdata" */
+/* ref: 0x46d400 .rodata */
 int32_t main_kindName(uint32_t *a0, int64_t a1) {
     int32_t v1;
 
@@ -1391,12 +1391,12 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
         if (v1 != 0xcb735792) {
             return 0x0;
         }
-        if (a0 != 0x46d400) {
+        if ((uintptr_t)a0 != 0x46d400) {
             return 0x0;
         }
         return 0x1;
     }
-    if (a0 != 0x46d1c0) {
+    if ((uintptr_t)a0 != 0x46d1c0) {
         return 0x0;
     }
     return 0x2;
@@ -1405,7 +1405,7 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
 int32_t (uint32_t * a0, int64_t a1)
 -- references
 0x46d1c0 .rodata
-0x46d400 -> 0x8 "noptrdata"
+0x46d400 .rodata
 -- ir
 fn main.kindName @ 0x466d20 (size 96)
   blk0 @ 0x466d20:
@@ -1426,13 +1426,13 @@ fn main.kindName @ 0x466d20 (size 96)
   blk7 @ 0x466d6b:
     ret #0x0
 -- card
-{"accesses":["a0 +0x10:uint32_t"],"addr":"0x466d20","approxTokens":168,"blocks":8,"hardReasons":[],"name":"main.kindName","nameHints":["noptrdata"],"nameSources":["pclntab"],"section":".text","size":96,"strings":["noptrdata"],"unsupported":0}
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x466d20","approxTokens":168,"blocks":8,"hardReasons":[],"name":"main.kindName","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}
 
 == 0x466d80 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d80 */
-/* ref: 0x46d400 -> 0x8 "noptrdata" */
-/* ref: 0x4967e8 -> 0x1 ".text" */
+/* ref: 0x46d400 .rodata */
+/* ref: 0x4967e8 .rodata */
 void main_main(void) {
     uint64_t rbx;
     int64_t v1;
@@ -1476,8 +1476,8 @@ void main_main(void) {
 -- signature
 void ()
 -- references
-0x46d400 -> 0x8 "noptrdata"
-0x4967e8 -> 0x1 ".text"
+0x46d400 .rodata
+0x4967e8 .rodata
 -- ir
 fn main.main @ 0x466d80 (size 256)
   blk0 @ 0x466d80:
@@ -1512,4 +1512,4 @@ fn main.main @ 0x466d80 (size 256)
     call 0x430600()
     ret #0x0
 -- card
-{"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameHints":["noptrdata","text"],"nameSources":["pclntab"],"section":".text","size":256,"strings":["noptrdata",".text"],"unsupported":0}
+{"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":256,"unsupported":0}

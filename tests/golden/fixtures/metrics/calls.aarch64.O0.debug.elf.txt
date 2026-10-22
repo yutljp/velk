@@ -51,7 +51,7 @@ fn square @ 0x210334 (size 28)
 void square(void);
 void twice(void);
 void *pick_op(int which) {
-    return (void *)(which != 0x0 ? square : twice);
+    return (which != 0x0 ? square : twice);
 }
 -- signature
 void * (int which)
@@ -312,7 +312,7 @@ int sum_varargs(int count, ...) {
         }
         v4 = local_7;
         local_7 = v4 + 0x8;
-        local_11 = v4;
+        local_11 = (uint32_t *)v4;
         local_8 += *local_11;
         local_6 += 0x1;
     }

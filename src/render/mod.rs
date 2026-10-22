@@ -29,13 +29,12 @@ use crate::render::naming::narrow_registers;
 use crate::render::naming::struct_fields;
 use crate::render::structure::{Node, structure_best};
 
-/// The non-executable section ranges, where a constant address names a
-/// global rather than a jump target.
+/// The loaded, non-executable ranges, where a constant address names data.
 pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
     image
         .sections
         .iter()
-        .filter(|section| !section.executable)
+        .filter(|section| section.loaded && !section.executable)
         .map(|section| (section.vaddr, section.size))
         .collect()
 }
@@ -269,6 +268,14 @@ fn render_with(
                 member.name.clone(),
             )
         })
+        .chain(ir.structures.iter().flat_map(|structure| {
+            structure.fields.iter().map(move |(offset, _)| {
+                (
+                    (structure.name.clone(), *offset as i64),
+                    format!("field_0x{offset:x}"),
+                )
+            })
+        }))
         .collect();
     // `struct pair *p` points at a `pair`, so `p->0x4` can take a name.
     let mut pointees: HashMap<u16, String> = ir
@@ -750,6 +757,7 @@ fn update_of_same_location<'e>(
     addr: &Expr,
     value: &'e Expr,
     width: u8,
+    ctx: &Ctx<'_>,
 ) -> Option<(&'static str, &'e Expr)> {
     // A mask to the stored width is the store's own truncation.
     let fits = |mask: &Expr| matches!(mask, Expr::Const(mask) if width < 8 && *mask == (1u64 << (u32::from(width) * 8)) - 1);
@@ -764,6 +772,10 @@ fn update_of_same_location<'e>(
     let Expr::Bin { op, lhs, rhs } = unmasked(value) else {
         return None;
     };
+    // Keep explicit address conversions and byte scaling on pointer updates.
+    if expr::print(lhs, ctx, 64).is_pointer() || expr::print(rhs, ctx, 64).is_pointer() {
+        return None;
+    }
     let symbol = match op {
         BinOp::Add => "+",
         BinOp::Sub => "-",
@@ -1120,7 +1132,12 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
         if let (
             Node::Stmt(Stmt::Assign {
                 dest,
-                value: loaded @ Expr::Load { addr, width, .. },
+                value:
+                    loaded @ Expr::Load {
+                        addr,
+                        width,
+                        signed: false,
+                    },
             }),
             Some(Node::Stmt(Stmt::Store {
                 addr: stored,
@@ -1137,16 +1154,35 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
         ) = (&nodes[index], nodes.get(index + 1))
             && stored == addr.as_ref()
             && stored_width == width
+            && expr::fits(expected, u32::from(*width) * 8, ctx)
             && matches!(lhs.as_ref(), Expr::Reg { index: read, .. } if *read == dest.index)
             && matches!(els.as_ref(), Expr::Reg { index: read, .. } if *read == dest.index)
         {
             indent(depth, out);
+            let address = format!(
+                "({} *){}",
+                type_of(*width, false),
+                expr::print_value_at(addr, ctx, 64, false)
+                    .within(12, false)
+                    .text
+            );
+            let bits = u32::from(*width) * 8;
+            let expected = expr::print_value_at(expected, ctx, bits, false).address_integer();
+            let replacement = expr::print_value_at(replacement, ctx, bits, false).address_integer();
+            let call = int::Printed::new(
+                format!(
+                    "__sync_val_compare_and_swap({address}, {}, {})",
+                    expected.text, replacement.text
+                ),
+                int::Int::promoted(bits, false),
+                int::ALL,
+                13,
+            );
+            let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
             out.push_str(&format!(
-                "{} = __sync_val_compare_and_swap(&{}, {}, {});\n",
+                "{} = {};\n",
                 ctx.register(dest.index, dest.width),
-                render_expr(loaded, ctx),
-                render_value(expected, ctx),
-                render_value(replacement, ctx)
+                conformed(loaded, call, pointer)
             ));
             index += 2;
             continue;
@@ -1608,47 +1644,35 @@ fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
 
 /// A returned value, of which the caller sees what the return type holds.
 fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
-    let text = render_value_at(
+    let printed = expr::print_value_at(
         value,
         ctx,
         ctx.returned.map_or(64, |returned| returned.bits),
         ctx.returned.is_some_and(|returned| returned.integer),
     );
-    conformed(value, text, ctx.ret_pointer.as_deref(), ctx)
+    conformed(value, printed, ctx.ret_pointer.as_deref())
 }
 
 /// The value as C takes it into a pointer of type `pointer`, or into an
 /// integer when that is None: C converts between the two only by a cast.
-fn conformed(value: &Expr, text: String, pointer: Option<&str>, ctx: &Ctx<'_>) -> String {
-    let is_pointer = expr::pointer_valued(value, ctx)
-        || ctx.local_pointer_types.contains_key(&text)
-        || text.starts_with('&')
-        || text.starts_with("(uint8_t *)");
-    // Printed with no space, or in its own parentheses, the value binds
-    // tighter than the cast.
-    let operand = |text: String| {
-        if !text.contains(char::is_whitespace) || expr::enclosed(&text) {
-            text
-        } else {
-            format!("({text})")
-        }
-    };
+fn conformed(value: &Expr, printed: int::Printed, pointer: Option<&str>) -> String {
     match pointer {
         // Memory read whole is read as the pointer it holds.
         Some(ty)
-            if !is_pointer
+            if !printed.is_pointer()
                 && matches!(value, Expr::Load { width: 8, .. })
-                && let Some(address) = text
+                && let Some(address) = printed
+                    .text
                     .strip_prefix("*(uint64_t *)")
-                    .or_else(|| text.strip_prefix("*(int64_t *)")) =>
+                    .or_else(|| printed.text.strip_prefix("*(int64_t *)")) =>
         {
             format!("*({ty}*){address}")
         }
-        Some(ty) if !is_pointer && !matches!(value, Expr::Const(0)) => {
-            format!("({ty}){}", operand(text))
+        Some(ty) if !printed.is_pointer() && !matches!(value, Expr::Const(0)) => {
+            format!("({ty}){}", printed.within(12, false).text)
         }
-        None if is_pointer => format!("(uintptr_t){}", operand(text)),
-        _ => text,
+        None => printed.address_integer().text,
+        _ => printed.text,
     }
 }
 
@@ -1677,14 +1701,14 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             }
             // C keeps of the value what the destination is declared to hold.
             let declared = ctx.declared.get(&dest.index);
-            let text = render_value_at(
+            let printed = expr::print_value_at(
                 value,
                 ctx,
                 declared.map_or(64, |declared| declared.bits),
                 declared.is_some_and(|declared| declared.integer),
             );
             let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
-            format!("{target} = {};", conformed(value, text, pointer, ctx))
+            format!("{target} = {};", conformed(value, printed, pointer))
         }
         Stmt::Store { addr, value, width } => {
             // Memory keeps of the value the bits stored.
@@ -1693,20 +1717,20 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 naming::array_access(addr, *width, ctx)
                     .or_else(|| naming::flat_array_access(addr, *width, ctx))
             }) {
-                return match update_of_same_location(addr, value, *width) {
+                return match update_of_same_location(addr, value, *width, ctx) {
                     Some((op, rhs)) => {
                         format!("{} {}= {};", member, op, render_at(rhs, ctx, stored))
                     }
                     None => {
-                        let text = render_value_at(value, ctx, stored, false);
+                        let printed = expr::print_value_at(value, ctx, stored, false);
                         // A field recovered from accesses, or an element of an
                         // integer type, holds an integer.
                         let text = if member.contains("field_0x")
                             || naming::element_is_integer(addr, ctx)
                         {
-                            conformed(value, text, None, ctx)
+                            conformed(value, printed, None)
                         } else {
-                            text
+                            printed.text
                         };
                         format!("{member} = {text};")
                     }
@@ -1722,31 +1746,35 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                             expr::float_operand(value, *precision, ctx, 0, false)
                         );
                     }
-                    match update_of_same_location(addr, value, *width) {
+                    match update_of_same_location(addr, value, *width, ctx) {
                         Some((op, rhs)) => {
                             format!("{} {}= {};", target, op, render_at(rhs, ctx, stored))
                         }
-                        None => format!(
-                            "{} = {};",
-                            target,
-                            render_value_at(value, ctx, stored, false)
-                        ),
+                        None => {
+                            let pointer = (target == *name)
+                                .then(|| ctx.local_pointer_types.get(name))
+                                .flatten()
+                                .map(String::as_str);
+                            let printed = expr::print_value_at(value, ctx, stored, false);
+                            format!("{target} = {};", conformed(value, printed, pointer))
+                        }
                     }
                 }
                 None => match global_name(addr, *width, ctx) {
-                    Some(name) => match update_of_same_location(addr, value, *width) {
+                    Some(name) => match update_of_same_location(addr, value, *width, ctx) {
                         Some((op, rhs)) => {
                             format!("{} {}= {};", name, op, render_at(rhs, ctx, stored))
                         }
                         None => {
-                            format!("{} = {};", name, render_value_at(value, ctx, stored, false))
+                            let printed = expr::print_value_at(value, ctx, stored, false);
+                            format!("{name} = {};", conformed(value, printed, None))
                         }
                     },
                     None => format!(
                         "*({} *)({}) = {};",
                         type_of(*width, false),
                         expr::local_plus_offset(addr, ctx).unwrap_or(address),
-                        conformed(value, render_value_at(value, ctx, stored, false), None, ctx)
+                        conformed(value, expr::print_value_at(value, ctx, stored, false), None)
                     ),
                 },
             }
@@ -2311,6 +2339,313 @@ mod tests {
         };
         assert_eq!(declared(false), "uint32_t local_0; /* [sp-10] */");
         assert_eq!(declared(true), "int32_t local_0; /* [sp-10] */");
+    }
+
+    #[test]
+    fn a_local_index_is_not_mistaken_for_a_pointer() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-16i64) as u64));
+        let index = load(slot.clone(), 8);
+        for address in [
+            Expr::bin(BinOp::Add, Expr::reg(7, 64), index.clone()),
+            Expr::bin(BinOp::Add, index.clone(), Expr::reg(7, 64)),
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(!7)),
+                index.clone(),
+            ),
+            Expr::bin(BinOp::Add, load(Expr::reg(7, 64), 8), index),
+        ] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Store {
+                        addr: slot.clone(),
+                        value: Expr::bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(1)),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: load(address, 1),
+                    },
+                ],
+            );
+            ir.params = vec![
+                Param {
+                    index: 7,
+                    name: "data".to_owned(),
+                    ty: CType::pointer_to(CType::int(1, false)),
+                },
+                Param {
+                    index: 6,
+                    name: "index".to_owned(),
+                    ty: CType::U64,
+                },
+            ];
+            let text = rendered(&ir);
+            assert!(text.contains("    int64_t local_0;"), "{text}");
+            assert!(!text.contains("*local_0;"), "{text}");
+        }
+    }
+
+    #[test]
+    fn a_local_pointer_with_only_offsets_keeps_its_pointer_type() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-16i64) as u64));
+        let pointer = load(slot.clone(), 8);
+        for address in [
+            pointer.clone(),
+            Expr::bin(BinOp::Add, pointer.clone(), Expr::Const(4)),
+            Expr::bin(BinOp::Sub, pointer.clone(), Expr::Const(4)),
+            Expr::bin(
+                BinOp::Add,
+                pointer,
+                Expr::bin(BinOp::Shl, Expr::reg(6, 64), Expr::Const(2)),
+            ),
+        ] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Store {
+                        addr: slot.clone(),
+                        value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: load(address, 1),
+                    },
+                ],
+            );
+            ir.params = vec![
+                Param {
+                    index: 7,
+                    name: "data".to_owned(),
+                    ty: CType::pointer_to(CType::int(1, false)),
+                },
+                Param {
+                    index: 6,
+                    name: "index".to_owned(),
+                    ty: CType::U64,
+                },
+            ];
+            let text = rendered(&ir);
+            assert!(text.contains("    uint8_t *local_0;"), "{text}");
+        }
+    }
+
+    #[test]
+    fn an_integer_local_takes_a_pointer_as_its_address() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-16i64) as u64));
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Shr, load(slot, 8), Expr::Const(1)),
+                },
+            ],
+        );
+        ir.params = vec![Param {
+            index: 7,
+            name: "data".to_owned(),
+            ty: CType::pointer_to(CType::int(1, false)),
+        }];
+        let text = rendered(&ir);
+        assert!(text.contains("    uint64_t local_0;"), "{text}");
+        assert!(
+            text.contains("local_0 = (uintptr_t)(data + 0x1);"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn a_pointer_local_takes_an_integer_with_a_cast() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-16i64) as u64));
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::Const(0x1000),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: load(load(slot, 8), 1),
+                },
+            ],
+        );
+        ir.ret_type = CType::U32;
+        let text = rendered(&ir);
+        assert!(text.contains("    uint8_t *local_0;"), "{text}");
+        assert!(text.contains("local_0 = (uint8_t *)0x1000;"), "{text}");
+    }
+
+    #[test]
+    fn an_integer_compare_exchange_takes_a_pointer_as_its_address() {
+        let old = VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(old, load(Expr::reg(7, 64), 8)),
+                Stmt::Store {
+                    addr: Expr::reg(7, 64),
+                    width: 8,
+                    value: Expr::Select {
+                        cond: crate::ir::Cond::Eq,
+                        lhs: Box::new(Expr::reg(old, 64)),
+                        rhs: Box::new(Expr::reg(6, 64)),
+                        then: Box::new(Expr::Const(1)),
+                        els: Box::new(Expr::reg(old, 64)),
+                    },
+                },
+                Stmt::Ret {
+                    value: Expr::reg(old, 64),
+                },
+            ],
+        );
+        ir.params = vec![
+            Param {
+                index: 7,
+                name: "cell".to_owned(),
+                ty: CType::pointer_to(CType::U64),
+            },
+            Param {
+                index: 6,
+                name: "expected".to_owned(),
+                ty: CType::pointer_to(CType::Void),
+            },
+        ];
+        let text = rendered(&ir);
+        assert!(
+            text.contains(
+                "__sync_val_compare_and_swap((uint64_t *)cell, (uintptr_t)expected, 0x1)"
+            ),
+            "{text}"
+        );
+        ir.params[0].ty = CType::pointer_to(CType::Named("struct record".to_owned()));
+        ir.members.push(crate::ir::Member {
+            structure: "record".to_owned(),
+            offset: 0,
+            name: "pointer".to_owned(),
+        });
+        let text = rendered(&ir);
+        assert!(
+            text.contains(
+                "__sync_val_compare_and_swap((uint64_t *)cell, (uintptr_t)expected, 0x1)"
+            ),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn a_pointer_local_update_keeps_the_machine_byte_offset() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-16i64) as u64));
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::bin(BinOp::Add, load(slot.clone(), 8), Expr::Const(1)),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: load(load(slot, 8), 4),
+                },
+            ],
+        );
+        ir.params = vec![Param {
+            index: 7,
+            name: "data".to_owned(),
+            ty: CType::pointer_to(CType::U32),
+        }];
+        let text = rendered(&ir);
+        assert!(text.contains("    uint32_t *local_0;"), "{text}");
+        assert!(
+            text.contains("local_0 = (uint8_t *)local_0 + 0x1;"),
+            "{text}"
+        );
+        assert!(!text.contains("local_0 += 0x1"), "{text}");
+    }
+
+    #[test]
+    fn an_integer_local_update_keeps_the_pointer_conversion() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-16i64) as u64));
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::Const(0),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::bin(BinOp::Add, load(slot.clone(), 8), Expr::reg(7, 64)),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Shr, load(slot, 8), Expr::Const(1)),
+                },
+            ],
+        );
+        ir.params = vec![Param {
+            index: 7,
+            name: "data".to_owned(),
+            ty: CType::pointer_to(CType::int(1, false)),
+        }];
+        let text = rendered(&ir);
+        assert!(
+            text.contains("local_0 = (uintptr_t)(data + local_0);"),
+            "{text}"
+        );
+        assert!(!text.contains("local_0 += data"), "{text}");
+    }
+
+    #[test]
+    fn compare_exchange_does_not_truncate_a_wider_comparison() {
+        let old = VARIABLE_BASE;
+        for signed in [false, true] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    assign(
+                        old,
+                        Expr::Load {
+                            addr: Box::new(Expr::reg(7, 64)),
+                            width: 1,
+                            signed,
+                        },
+                    ),
+                    Stmt::Store {
+                        addr: Expr::reg(7, 64),
+                        width: 1,
+                        value: Expr::Select {
+                            cond: crate::ir::Cond::Eq,
+                            lhs: Box::new(Expr::reg(old, 64)),
+                            rhs: Box::new(Expr::Const(0x101)),
+                            then: Box::new(Expr::Const(2)),
+                            els: Box::new(Expr::reg(old, 64)),
+                        },
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(old, 64),
+                    },
+                ],
+            );
+            ir.params = vec![Param {
+                index: 7,
+                name: "cell".to_owned(),
+                ty: CType::pointer_to(CType::int(1, signed)),
+            }];
+            let text = rendered(&ir);
+            assert!(!text.contains("__sync_val_compare_and_swap"), "{text}");
+        }
     }
 
     #[test]

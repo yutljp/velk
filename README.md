@@ -174,6 +174,8 @@ cargo test                # ユニットテストと結合テスト
 |---|---|---|
 | `src/lift/hardware/` | lift した命令が実機と同じ結果になる（AArch64 は arm64 の macOS、x86-64 は C コンパイラのある環境で実行） | 実機での実行 |
 | `src/analysis/semantics_tests.rs` | 最適化が関数の動作を変えていない（IR を実行して比べる） | 最適化前の IR |
+| `src/render/` の単体テスト | 添字とポインタの区別、番地の整数演算と保存、実在する構造体フィールドだけを使うこと | 型・アクセス幅ごとの期待する疑似 C |
+| `tests/loader.rs` | 実メモリを占めないセクションを番地解決から除き、動的リロケーションを適用すること | セクション属性とリロケーション先 |
 | `tests/recompile.rs` | 整数の計算だけの関数で、疑似 C をコンパイルして実行した結果が IR と同じになり、コンパイルできる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile.txt` |
 | `tests/recompile.rs` | メモリを読み書きする関数で、疑似 C を実行した後の戻り値とメモリの内容が IR と同じになる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile_memory.txt` |
 | `tests/invariants.rs` | 飛び先のない goto、代入されないレジスタの読み取り、疑似 C での文の欠落がない | 出力の性質 |

@@ -40,7 +40,7 @@ pub(super) fn layout(file: &ObjFile) -> HashMap<SectionIndex, u64> {
 
 /// Whether the section occupies memory: an ELF section says so with its
 /// flags, which also covers kinds such as unwind tables.
-fn allocated<'data>(section: &impl ObjectSection<'data>) -> bool {
+pub(super) fn allocated<'data>(section: &impl ObjectSection<'data>) -> bool {
     if let object::SectionFlags::Elf { sh_flags, .. } = section.flags() {
         return sh_flags.contains(object::elf::SHF_ALLOC);
     }

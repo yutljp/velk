@@ -500,8 +500,8 @@ impl Walk {
         }
     }
 
-    /// An address that adds offsets to a pointer loaded from a slot makes
-    /// that slot a pointer to `element`.
+    /// A slot is the base only when every other term is an offset. Another
+    /// register or load could be the base, leaving the slot an index.
     fn address(&mut self, addr: &Expr, element: CType) {
         let mut terms = vec![addr];
         let mut bases = Vec::new();
@@ -517,8 +517,15 @@ impl Walk {
                     lhs,
                     rhs,
                 } if matches!(rhs.as_ref(), Expr::Const(_)) => terms.push(lhs),
-                Expr::Load { width: 8, .. } => bases.extend(self.loaded(term)),
-                _ => {}
+                Expr::Load { width: 8, .. } if let Some(slot) = self.loaded(term) => {
+                    bases.push(slot);
+                }
+                Expr::Const(_)
+                | Expr::Bin {
+                    op: BinOp::Mul | BinOp::Shl,
+                    ..
+                } => {}
+                _ => return,
             }
         }
         if let [slot] = bases.as_slice() {

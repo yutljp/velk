@@ -32,7 +32,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     }
     v1 = 0x0;
     if (n >= 0x8) {
-        if (dst - src >= 0x20) {
+        if ((uintptr_t)dst - (uintptr_t)src >= 0x20) {
             if (n >= 0x20) {
                 v2 = src + 0x10;
                 v3 = dst + 0x10;
@@ -255,7 +255,7 @@ fn grid_set @ 0x210304 (size 28)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x210320 */
 long pointer_distance(int *begin, int *end) {
-    return (int64_t)((uint8_t *)end - (uint8_t *)begin) >> 0x2;
+    return (int64_t)((uintptr_t)end - (uintptr_t)begin) >> 0x2;
 }
 -- signature
 long (int * begin, int * end)

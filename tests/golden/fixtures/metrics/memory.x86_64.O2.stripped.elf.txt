@@ -27,7 +27,7 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
     }
     v1 = 0x0;
     if (a2 >= 0x8) {
-        if ((uint8_t *)a0 - (uint8_t *)a1 >= 0x20) {
+        if ((uintptr_t)a0 - (uintptr_t)a1 >= 0x20) {
             if (a2 >= 0x20) {
                 v1 = a2 & 0xffffffffffffffe0;
                 v2 = 0x0;

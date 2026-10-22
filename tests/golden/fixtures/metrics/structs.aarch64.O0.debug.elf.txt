@@ -232,8 +232,8 @@ fn flags_level @ 0x210384 (size 76)
 void flags_set_mode(struct flags *f, unsigned int mode) {
     uint8_t v2;
 
-    v2 = f->field_0x0;
-    f->field_0x0 = v2 & 0xfffffff1 | (mode & 0x7) << 0x1;
+    v2 = *(uint8_t *)(f);
+    *(uint8_t *)(f) = v2 & 0xfffffff1 | (mode & 0x7) << 0x1;
 }
 -- signature
 void (struct flags * f, unsigned int mode)

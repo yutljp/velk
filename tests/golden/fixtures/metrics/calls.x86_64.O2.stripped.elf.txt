@@ -377,7 +377,7 @@ int32_t sub_2014f0(int32_t a0, ...) {
     int64_t local_3; /* [sp-d8] */
 
     local_0 = &local_1;
-    local_2 = rsp + 0x8;
+    local_2 = (uint32_t *)(rsp + 0x8);
     local_3 = 0x3000000008;
     if (a0 <= 0x0) {
         return 0x0;

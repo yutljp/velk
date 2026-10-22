@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ir::{BinOp, Cond, Expr, Operation, Precision, Rounding, reg_name};
 use crate::loader::Isa;
-use crate::render::int::{ALL, Int, Printed, Range, converted, fit, wrapped, zero_bits};
+use crate::render::int::{ALL, Int, Printed, Range, ValueKind, converted, fit, wrapped, zero_bits};
 use crate::render::naming::array_access;
 use crate::render::naming::global_name;
 use crate::render::naming::member_access;
@@ -176,7 +176,7 @@ fn precedence(expr: &Expr) -> u8 {
 /// A pointer whose arithmetic C scales, cast to count bytes.
 fn byte_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     match expr {
-        Expr::Reg { index, .. } if ctx.scaled.contains(index) => {
+        Expr::Reg { index, width: 64 } if ctx.scaled.contains(index) => {
             Some(format!("(uint8_t *){}", ctx.register(*index, 64)))
         }
         Expr::Load { .. }
@@ -212,6 +212,13 @@ fn byte_sum(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     let at = terms
         .iter()
         .position(|(term, negative)| !negative && byte_pointer(term, ctx).is_some())?;
+    if terms
+        .iter()
+        .enumerate()
+        .any(|(index, (term, _))| index != at && print(term, ctx, 64).is_pointer())
+    {
+        return None;
+    }
     // On either side, the pointer is cast where it stands.
     if std::ptr::eq(terms[at].0, lhs.as_ref()) || std::ptr::eq(terms[at].0, rhs.as_ref()) {
         return None;
@@ -247,32 +254,48 @@ pub(crate) fn render_value(value: &Expr, ctx: &Ctx<'_>) -> String {
 /// A value whose reader looks at its low `bits` bits; `integer` marks a
 /// reader of an integer type, which takes a function's address as a number.
 pub(crate) fn render_value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> String {
+    print_value_at(value, ctx, bits, integer).text
+}
+
+/// A value after address names have been recovered, with the C category
+/// of the recovered expression kept alongside its text.
+pub(crate) fn print_value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
+    let printed = value_at(value, ctx, bits, integer);
+    if integer {
+        printed.address_integer()
+    } else {
+        printed
+    }
+}
+
+fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
     // The address of a stack local reads as that.
     if matches!(value, Expr::Bin { .. })
         && let Some(name) = ctx.slots.get(&render_expr(value, ctx))
     {
-        return format!("&{name}");
+        return Printed::pointer(format!("&{name}"), 12);
     }
     // So does it with an offset added, as an index into a local buffer.
     if let Some(text) = local_plus_offset(value, ctx) {
-        return text;
+        return Printed::pointer(text, 10);
     }
     // And the address of a field of an element of an array of structures.
     if matches!(value, Expr::Bin { op: BinOp::Add, .. })
         && let Some(text) = crate::render::naming::field_address(value, ctx)
     {
-        return text;
+        return Printed::pointer(text, 12);
     }
     match value {
         // A constant pointing at a string reads as the string.
-        Expr::Const(address) if let Some(text) = ctx.strings.get(address) => {
+        Expr::Const(address) if let Some(text) = ctx.strings.get(address) => Printed::pointer(
             format!(
                 "\"{}\"",
                 text.chars()
                     .flat_map(char::escape_default)
                     .collect::<String>()
-            )
-        }
+            ),
+            13,
+        ),
         // Only a top-level constant becomes a function name: an immediate
         // inside arithmetic can coincidentally equal a function address.
         // The function is declared ahead of the one printed, and an integer
@@ -288,11 +311,7 @@ pub(crate) fn render_value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: b
             } else {
                 name
             };
-            if integer {
-                format!("(uintptr_t){designator}")
-            } else {
-                designator
-            }
+            Printed::pointer(designator, 13)
         }
         // Each arm of a choice between addresses is a value of its own.
         Expr::Select {
@@ -302,14 +321,15 @@ pub(crate) fn render_value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: b
             then,
             els,
         } if matches!(then.as_ref(), Expr::Const(_)) && matches!(els.as_ref(), Expr::Const(_)) => {
-            format!(
-                "({} ? {} : {})",
-                condition(*cond, lhs, rhs, ctx),
-                render_value_at(then, ctx, bits, integer),
-                render_value_at(els, ctx, bits, integer)
+            selected(
+                (*cond, lhs, rhs),
+                (then, print_value_at(then, ctx, bits, integer)),
+                (els, print_value_at(els, ctx, bits, integer)),
+                ctx,
+                bits,
             )
         }
-        _ => render_at(value, ctx, bits),
+        _ => print(value, ctx, bits),
     }
 }
 
@@ -394,64 +414,10 @@ fn rounding_function(rounding: Rounding) -> &'static str {
     }
 }
 
-/// Whether C gives the printed value a pointer type: a pointer register,
-/// one moved by an offset, or a choice between pointers and null.
-pub(crate) fn pointer_valued(value: &Expr, ctx: &Ctx<'_>) -> bool {
-    match value {
-        Expr::Reg { index, .. } => ctx.pointer_types.contains_key(index),
-        Expr::Bin {
-            op: BinOp::Add,
-            lhs,
-            rhs,
-        } => pointer_valued(lhs, ctx) || pointer_valued(rhs, ctx),
-        // The difference of two pointers is a count, an integer.
-        Expr::Bin {
-            op: BinOp::Sub,
-            lhs,
-            rhs,
-        } => pointer_valued(lhs, ctx) && !pointer_valued(rhs, ctx),
-        Expr::Select { then, els, .. } => {
-            let null = |arm: &Expr| matches!(arm, Expr::Const(0));
-            (pointer_valued(then, ctx) || null(then))
-                && (pointer_valued(els, ctx) || null(els))
-                && !(null(then) && null(els))
-        }
-        _ => false,
-    }
-}
-
-/// Whether the text is one parenthesized whole, `(a ? b : c)`.
-pub(crate) fn enclosed(text: &str) -> bool {
-    let mut depth = 0;
-    for (at, c) in text.char_indices() {
-        match c {
-            '(' => depth += 1,
-            ')' => {
-                depth -= 1;
-                if depth == 0 {
-                    return at == text.len() - 1 && text.starts_with('(');
-                }
-            }
-            _ => {}
-        }
-    }
-    false
-}
-
 /// An operand of an operation C applies to integers only: a pointer is
 /// taken as its address, an integer.
 fn integral(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
-    let printed = print(expr, ctx, bits);
-    if pointer_valued(expr, ctx) {
-        Printed::new(
-            format!("(uintptr_t){}", printed.within(12, false).text),
-            Int::U64,
-            ALL,
-            12,
-        )
-    } else {
-        printed
-    }
+    print(expr, ctx, bits).address_integer()
 }
 
 /// `op` applied to `args`, as C.
@@ -468,7 +434,7 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
             .iter()
             .map(|arg| match precision {
                 Some(precision) => float_operand(arg, precision, ctx, 1, false),
-                None => render_expr(arg, ctx),
+                None => integral(arg, ctx, 64).text,
             })
             .collect();
         format!("{name}({})", parts.join(", "))
@@ -486,7 +452,10 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
     };
     let builtin = |name: &str, bits: u8| {
         let width = if bits == 64 { "ll" } else { "" };
-        format!("__builtin_{name}{width}({})", render_expr(&args[0], ctx))
+        format!(
+            "__builtin_{name}{width}({})",
+            integral(&args[0], ctx, u32::from(bits)).text
+        )
     };
     match op {
         Operation::FloatAdd(p) => infix(p, "+", 10),
@@ -502,7 +471,7 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         Operation::FloatNegate(p) => format!("-{}", float_operand(&args[0], p, ctx, 12, false)),
         Operation::FloatMulAdd(p) => call(&format!("fma{}", suffix(p)), Some(p)),
         Operation::IntToFloat { signed, bits, to } => {
-            let operand = print(&args[0], ctx, u32::from(bits));
+            let operand = integral(&args[0], ctx, u32::from(bits));
             // An operand already of the integer type converts as it is.
             let typed = operand.ty
                 == crate::render::int::Int {
@@ -574,7 +543,10 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         Operation::CountTrailingZeros(bits) => builtin("ctz", bits),
         Operation::PopCount(bits) => builtin("popcount", bits),
         Operation::ReverseBits(bits) => {
-            format!("__builtin_bitreverse{bits}({})", render_expr(&args[0], ctx))
+            format!(
+                "__builtin_bitreverse{bits}({})",
+                integral(&args[0], ctx, u32::from(bits)).text
+            )
         }
         // The halves joined into a dividend of twice the width.
         Operation::WideDivide {
@@ -596,10 +568,16 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
             };
             format!(
                 "({sign}{narrow})((({wide}){} << {bits} | {}) {} {})",
-                operand(&args[0], ctx, 12, false),
-                operand(&args[1], ctx, 9, true),
+                integral(&args[0], ctx, u32::from(bits))
+                    .within(12, false)
+                    .text,
+                integral(&args[1], ctx, u32::from(bits))
+                    .within(9, true)
+                    .text,
                 if remainder { "%" } else { "/" },
-                operand(&args[2], ctx, 11, true)
+                integral(&args[2], ctx, u32::from(bits))
+                    .within(11, true)
+                    .text
             )
         }
     }
@@ -641,7 +619,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                     wrapped(negated.exact, negated.ty)
                 }
             };
-            let negated = widened(print(rhs, ctx, bits), rhs, bits, keeps);
+            let negated = widened(integral(rhs, ctx, bits), rhs, bits, keeps);
             let exact = keeps(&negated);
             Printed::new(
                 format!("-{}", negated.within(12, false).text),
@@ -682,56 +660,11 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
         {
             masked(lhs, *mask, ctx, bits)
         }
-        // Arithmetic on a pointer to scalars counts elements, as C does.
         Expr::Bin {
-            op: BinOp::Add | BinOp::Sub,
-            ..
-        } if let Some((name, _, index)) = crate::render::naming::element_index(value, ctx) => {
-            match index {
-                Expr::Const(0) => Printed::opaque(name, 13),
-                Expr::Bin {
-                    op: BinOp::Sub,
-                    lhs,
-                    rhs,
-                } if matches!(lhs.as_ref(), Expr::Const(0)) => {
-                    Printed::opaque(format!("{name} - {}", operand(&rhs, ctx, 10, true)), 10)
-                }
-                index => {
-                    Printed::opaque(format!("{name} + {}", operand(&index, ctx, 10, true)), 10)
-                }
-            }
-        }
-        Expr::Bin {
-            op: BinOp::Add | BinOp::Sub,
-            ..
-        } if let Some(text) = byte_sum(value, ctx) => Printed::opaque(text, 10),
-        Expr::Bin {
-            op: BinOp::Add,
+            op: op @ (BinOp::Add | BinOp::Sub),
             lhs,
             rhs,
-        } => match rhs.as_ref() {
-            // A constant with the top bit set is a negative displacement.
-            Expr::Const(value) if *value >= 1 << 63 => {
-                let magnitude = value.wrapping_neg();
-                binary(
-                    BinOp::Sub,
-                    (pointer_side(lhs, ctx, bits), lhs),
-                    (
-                        Printed::new(format!("0x{magnitude:x}"), Int::literal(magnitude), ALL, 13),
-                        rhs,
-                    ),
-                    bits,
-                    ctx,
-                )
-            }
-            _ => binary(
-                BinOp::Add,
-                (pointer_side(lhs, ctx, bits), lhs),
-                (pointer_side(rhs, ctx, bits), rhs),
-                bits,
-                ctx,
-            ),
-        },
+        } => arithmetic(value, *op, lhs, rhs, ctx, bits),
         Expr::Bin {
             op: op @ (BinOp::MulHigh | BinOp::MulHighS),
             lhs,
@@ -745,8 +678,8 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 format!(
                     "{}({}, {})",
                     operator(*op),
-                    render_expr(lhs, ctx),
-                    render_expr(rhs, ctx)
+                    integral(lhs, ctx, 64).text,
+                    integral(rhs, ctx, 64).text
                 ),
                 ty,
                 wrapped(ALL, ty),
@@ -768,7 +701,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             let side = |side: &Expr| match side {
                 Expr::Const(value) => signed_constant(*value, width),
                 _ => {
-                    let printed = print(side, ctx, width);
+                    let printed = integral(side, ctx, width);
                     if printed.ty.signed
                         && (printed.ty.bits == width || (narrower && printed.ty.bits < width))
                         && printed.exact >= width
@@ -849,7 +782,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 format!(
                     "{} >> {}",
                     shifted.within(9, false).text,
-                    operand(rhs, ctx, 9, true)
+                    integral(rhs, ctx, 64).within(9, true).text
                 ),
                 shifted.ty,
                 width,
@@ -880,7 +813,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 format!(
                     "{} << {}",
                     shifted.within(9, false).text,
-                    operand(rhs, ctx, 9, true)
+                    integral(rhs, ctx, 64).within(9, true).text
                 ),
                 shifted.ty,
                 exact,
@@ -911,7 +844,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 format!(
                     "{} >> {}",
                     shifted.within(9, false).text,
-                    operand(rhs, ctx, 9, true)
+                    integral(rhs, ctx, 64).within(9, true).text
                 ),
                 shifted.ty,
                 exact,
@@ -924,7 +857,6 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 Expr::Const(value) if matches!(op, BinOp::And | BinOp::Or | BinOp::Xor) => {
                     Printed::new(format!("0x{value:x}"), Int::literal(*value), ALL, 13)
                 }
-                _ if matches!(op, BinOp::Sub) => pointer_side(side, ctx, bits),
                 _ => integral(side, ctx, bits),
             };
             binary(*op, (side(lhs), lhs), (side(rhs), rhs), bits, ctx)
@@ -938,7 +870,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
         // it, so only a value of another type is cast.
         Expr::SignExtend { value, width } => {
             let from = u32::from(*width) * 8;
-            let inner = print(value, ctx, from);
+            let inner = integral(value, ctx, from);
             if inner.ty.signed && inner.ty.bits == from && inner.exact >= from {
                 Printed { exact: 64, ..inner }.ranging(Range::Signed(from))
             } else {
@@ -960,33 +892,144 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             rhs,
             then,
             els,
-        } => {
-            let keeps = |then: &Printed, els: &Printed| {
-                let ty = then.ty.common(els.ty);
-                converted(then, ty).min(converted(els, ty))
-            };
-            let (mut chosen, mut other) = (print(then, ctx, bits), print(els, ctx, bits));
-            if keeps(&chosen, &other) < bits && chosen.ty.common(other.ty).bits < 64 {
-                if matches!(then.as_ref(), Expr::Const(_)) {
-                    other = widen(other, matches!(els.as_ref(), Expr::Const(_)), false);
-                } else {
-                    chosen = widen(chosen, false, false);
-                }
-            }
-            let exact = keeps(&chosen, &other);
-            let ty = chosen.ty.common(other.ty);
-            Printed::new(
-                format!(
-                    "({} ? {} : {})",
-                    condition(*cond, lhs, rhs, ctx),
-                    chosen.within(1, false).text,
-                    other.within(1, true).text
+        } => selected(
+            (*cond, lhs, rhs),
+            (then, print(then, ctx, bits)),
+            (els, print(els, ctx, bits)),
+            ctx,
+            bits,
+        ),
+    }
+}
+
+fn arithmetic(
+    value: &Expr,
+    op: BinOp,
+    lhs: &Expr,
+    rhs: &Expr,
+    ctx: &Ctx<'_>,
+    bits: u32,
+) -> Printed {
+    let (left, right) = (print(lhs, ctx, bits), print(rhs, ctx, bits));
+    // The IR subtracts addresses as bytes modulo the machine width. C's
+    // pointer difference also requires a shared allocation and ptrdiff_t fit.
+    if right.is_pointer() && (op == BinOp::Sub || left.is_pointer()) {
+        return binary(
+            op,
+            (left.address_integer(), lhs),
+            (right.address_integer(), rhs),
+            bits,
+            ctx,
+        );
+    }
+    if left.is_pointer() || right.is_pointer() {
+        if let Some((name, _, index)) = crate::render::naming::element_index(value, ctx) {
+            return match index {
+                Expr::Const(0) => Printed::pointer(name, 13),
+                Expr::Bin {
+                    op: BinOp::Sub,
+                    lhs,
+                    rhs,
+                } if matches!(lhs.as_ref(), Expr::Const(0)) => Printed::pointer(
+                    format!("{name} - {}", integral(&rhs, ctx, 64).within(10, true).text),
+                    10,
                 ),
-                ty,
-                exact,
-                13,
+                index => Printed::pointer(
+                    format!(
+                        "{name} + {}",
+                        integral(&index, ctx, 64).within(10, true).text
+                    ),
+                    10,
+                ),
+            };
+        }
+        if let Some(text) = byte_sum(value, ctx) {
+            return Printed::pointer(text, 10);
+        }
+    }
+    let bytes = |expr: &Expr, printed: Printed| {
+        if printed.is_pointer()
+            && let Some(text) = byte_pointer(expr, ctx)
+        {
+            Printed::pointer(text, 12)
+        } else {
+            printed
+        }
+    };
+    let left = bytes(lhs, left);
+    let right = bytes(rhs, right);
+    match (op, rhs) {
+        (BinOp::Add, Expr::Const(value)) if *value >= 1 << 63 => {
+            let magnitude = value.wrapping_neg();
+            binary(
+                BinOp::Sub,
+                (left, lhs),
+                (
+                    Printed::new(format!("0x{magnitude:x}"), Int::literal(magnitude), ALL, 13),
+                    rhs,
+                ),
+                bits,
+                ctx,
             )
         }
+        _ => binary(op, (left, lhs), (right, rhs), bits, ctx),
+    }
+}
+
+fn selected(
+    (cond, lhs, rhs): (Cond, &Expr, &Expr),
+    (then, mut chosen): (&Expr, Printed),
+    (els, mut other): (&Expr, Printed),
+    ctx: &Ctx<'_>,
+    bits: u32,
+) -> Printed {
+    let pointer = (chosen.is_pointer() || matches!(then, Expr::Const(0)))
+        && (other.is_pointer() || matches!(els, Expr::Const(0)))
+        && (chosen.is_pointer() || other.is_pointer());
+    if pointer {
+        return Printed::pointer(
+            format!(
+                "({} ? {} : {})",
+                condition(cond, lhs, rhs, ctx),
+                chosen.within(1, false).text,
+                other.within(1, true).text
+            ),
+            13,
+        );
+    }
+    chosen = chosen.address_integer();
+    other = other.address_integer();
+    let keeps = |then: &Printed, els: &Printed| {
+        let ty = then.ty.common(els.ty);
+        converted(then, ty).min(converted(els, ty))
+    };
+    if keeps(&chosen, &other) < bits && chosen.ty.common(other.ty).bits < 64 {
+        if matches!(then, Expr::Const(_)) {
+            other = widen(other, matches!(els, Expr::Const(_)), false);
+        } else {
+            chosen = widen(chosen, false, false);
+        }
+    }
+    let exact = keeps(&chosen, &other);
+    let ty = chosen.ty.common(other.ty);
+    let kind = if chosen.kind == ValueKind::Opaque || other.kind == ValueKind::Opaque {
+        ValueKind::Opaque
+    } else {
+        ValueKind::Integer
+    };
+    Printed {
+        kind,
+        ..Printed::new(
+            format!(
+                "({} ? {} : {})",
+                condition(cond, lhs, rhs, ctx),
+                chosen.within(1, false).text,
+                other.within(1, true).text
+            ),
+            ty,
+            exact,
+            13,
+        )
     }
 }
 
@@ -1001,6 +1044,17 @@ fn binary(
     ctx: &Ctx<'_>,
 ) -> Printed {
     let strength = binding(op);
+    if lhs.is_pointer() || rhs.is_pointer() {
+        return Printed::pointer(
+            format!(
+                "{} {} {}",
+                lhs.within(strength, false).text,
+                operator(op),
+                rhs.within(strength, true).text
+            ),
+            strength,
+        );
+    }
     let (zero_left, zero_right) = (zero_bits(left, ctx), zero_bits(right, ctx));
     let keeps = |lhs: &Printed, rhs: &Printed| {
         let ty = lhs.ty.common(rhs.ty);
@@ -1059,15 +1113,6 @@ fn binary(
     )
 }
 
-/// An operand of an addition or a subtraction, where a typed pointer the
-/// IR moves by bytes is counted as bytes.
-fn pointer_side(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
-    match byte_pointer(expr, ctx) {
-        Some(text) => Printed::opaque(text, 12),
-        None => print(expr, ctx, bits),
-    }
-}
-
 /// `printed` computed on at 64 bits when what `keeps` says the result
 /// keeps falls short of the reader's `bits`.
 fn widened(printed: Printed, expr: &Expr, bits: u32, keeps: impl Fn(&Printed) -> u32) -> Printed {
@@ -1101,6 +1146,14 @@ fn widen(printed: Printed, constant: bool, unsigned: bool) -> Printed {
 fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
     let text = ctx.register(index, width);
     let read = u32::from(width);
+    if ctx.pointer_types.contains_key(&index) {
+        let pointer = Printed::pointer(text, 13);
+        return if read < 64 {
+            pointer.address_integer().cast(read, false, ALL)
+        } else {
+            pointer
+        };
+    }
     let Some(declared) = ctx.declared.get(&index) else {
         let ty = if read <= 32 { Int::U32 } else { Int::U64 };
         return Printed::new(text, ty, ALL, 13);
@@ -1215,6 +1268,9 @@ fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
         match ctx.slots.get(&address) {
             Some(name) => {
                 let text = slot_access(name, width, signed, ctx);
+                if width == 8 && &text == name && ctx.local_pointer_types.contains_key(name) {
+                    return Printed::pointer(text, 13);
+                }
                 let declared = if &text == name {
                     ctx.signed_locals.contains(name)
                 } else {
@@ -1263,7 +1319,7 @@ fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>) -> Printe
         Printed::new(
             format!(
                 "__builtin_{name}{suffix}({})",
-                print(&args[0], ctx, width).text
+                integral(&args[0], ctx, width).text
             ),
             Int::INT,
             ALL,
@@ -1278,7 +1334,7 @@ fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>) -> Printe
         Operation::ReverseBits(bits) => Printed::new(
             format!(
                 "__builtin_bitreverse{bits}({})",
-                print(&args[0], ctx, u32::from(bits)).text
+                integral(&args[0], ctx, u32::from(bits)).text
             ),
             Int::promoted(u32::from(bits), false),
             ALL,
@@ -1462,7 +1518,7 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
 /// equality does.
 pub(crate) fn switch_index(index: &Expr, ctx: &Ctx<'_>) -> String {
     let [index, _] = compared(Cond::Eq, index, &Expr::Const(0), ctx);
-    index.text
+    index.address_integer().text
 }
 
 /// How a comparison reads its operands.
@@ -1507,6 +1563,17 @@ fn compared(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> [Printed; 2] {
     };
     let exprs = [lhs, rhs];
     let mut sides = [side(lhs), side(rhs)];
+    if reading == Reading::Equal
+        && bits == 64
+        && (sides[0].is_pointer() || sides[1].is_pointer())
+        && sides
+            .iter()
+            .zip(exprs)
+            .all(|(printed, expr)| printed.is_pointer() || matches!(expr, Expr::Const(0)))
+    {
+        return sides;
+    }
+    sides = sides.map(Printed::address_integer);
     // A cast changes the type the other operand is converted to.
     for _ in 0..2 {
         let ty = sides[0].ty.common(sides[1].ty);
@@ -1669,5 +1736,217 @@ fn logic(expr: &Expr, negate: bool, ctx: &Ctx<'_>) -> Option<(String, Joined)> {
         (Some(false), None) => join(test(false), els, Joined::And),
         (None, Some(true)) => join(test(false), then, Joined::Or),
         (None, None) => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use crate::ir::{BinOp, CType, Cond, Expr, FunctionIr, Operation, Param, Precision, Stmt};
+    use crate::loader::Isa;
+
+    fn rendered(stmts: Vec<Stmt>, params: &[CType]) -> String {
+        let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
+        ir.params = params
+            .iter()
+            .zip([7, 6, 2])
+            .enumerate()
+            .map(|(position, (ty, index))| Param {
+                index,
+                name: format!("a{position}"),
+                ty: ty.clone(),
+            })
+            .collect();
+        ir.ret_type = CType::U64;
+        crate::render::render(&ir, &[], &HashMap::new(), &[])
+    }
+
+    fn returned(value: Expr, params: &[CType]) -> String {
+        rendered(vec![Stmt::Ret { value }], params)
+    }
+
+    fn pointer() -> CType {
+        CType::pointer_to(CType::U32)
+    }
+
+    fn choice(then: Expr, els: Expr) -> Expr {
+        Expr::Select {
+            cond: Cond::Ne,
+            lhs: Box::new(Expr::reg(6, 64)),
+            rhs: Box::new(Expr::Const(0)),
+            then: Box::new(then),
+            els: Box::new(els),
+        }
+    }
+
+    #[test]
+    fn address_sums_and_differences_compute_on_unsigned_machine_addresses() {
+        for (op, lhs, rhs, expected) in [
+            (
+                BinOp::Add,
+                Expr::reg(7, 64),
+                Expr::reg(6, 64),
+                "return (uintptr_t)a0 + (uintptr_t)a1;",
+            ),
+            (
+                BinOp::Sub,
+                Expr::reg(7, 64),
+                Expr::reg(6, 64),
+                "return (uintptr_t)a0 - (uintptr_t)a1;",
+            ),
+            (
+                BinOp::Sub,
+                Expr::Const(0x1000),
+                Expr::reg(7, 64),
+                "return 0x1000 - (uintptr_t)a0;",
+            ),
+        ] {
+            let text = returned(Expr::bin(op, lhs, rhs), &[pointer(), pointer()]);
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn offsets_preserve_pointer_arithmetic_in_bytes() {
+        for (op, lhs, rhs, expected) in [
+            (
+                BinOp::Add,
+                Expr::reg(7, 64),
+                Expr::Const(4),
+                "return (uintptr_t)(a0 + 0x1);",
+            ),
+            (
+                BinOp::Sub,
+                Expr::reg(7, 64),
+                Expr::Const(4),
+                "return (uintptr_t)(a0 - 0x1);",
+            ),
+            (
+                BinOp::Add,
+                Expr::Const(4),
+                Expr::reg(7, 64),
+                "return (uintptr_t)(a0 + 0x1);",
+            ),
+            (
+                BinOp::Add,
+                Expr::reg(7, 64),
+                Expr::Const(1),
+                "return (uintptr_t)((uint8_t *)a0 + 0x1);",
+            ),
+        ] {
+            let text = returned(Expr::bin(op, lhs, rhs), &[pointer()]);
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn a_pointer_selected_with_a_nonzero_integer_has_integer_arms() {
+        for (value, expected) in [
+            (
+                choice(Expr::reg(7, 64), Expr::Const(1)),
+                "return (a1 != 0x0 ? (uintptr_t)a0 : 0x1);",
+            ),
+            (
+                choice(Expr::Const(1), Expr::reg(7, 64)),
+                "return (a1 != 0x0 ? 0x1 : (uintptr_t)a0);",
+            ),
+            (
+                choice(Expr::reg(7, 64), Expr::Const(0)),
+                "return (uintptr_t)(a1 != 0x0 ? a0 : 0x0);",
+            ),
+        ] {
+            let text = returned(value, &[pointer(), CType::U64]);
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn integer_operations_read_pointers_as_addresses() {
+        for (value, expected) in [
+            (
+                Expr::bin(BinOp::Sub, Expr::Const(0), Expr::reg(7, 64)),
+                "return -(uintptr_t)a0;",
+            ),
+            (
+                Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(7)),
+                "return (uintptr_t)a0 & 0x7;",
+            ),
+            (
+                Expr::bin(BinOp::Shl, Expr::Const(1), Expr::reg(7, 64)),
+                "<< (uintptr_t)a0;",
+            ),
+            (
+                Expr::Apply {
+                    op: Operation::PopCount(64),
+                    args: vec![Expr::reg(7, 64)],
+                },
+                "__builtin_popcountll((uintptr_t)a0)",
+            ),
+            (
+                Expr::Apply {
+                    op: Operation::IntToFloat {
+                        signed: false,
+                        bits: 64,
+                        to: Precision::Double,
+                    },
+                    args: vec![Expr::reg(7, 64)],
+                },
+                "(double)(uintptr_t)a0",
+            ),
+        ] {
+            let text = returned(value, &[pointer()]);
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn a_narrow_pointer_register_read_stays_integer_during_arithmetic() {
+        let text = returned(
+            Expr::bin(BinOp::Add, Expr::reg(7, 32), Expr::Const(1)),
+            &[pointer()],
+        );
+        assert!(text.contains("(uint32_t)(uintptr_t)a0"), "{text}");
+        assert!(!text.contains("(uint8_t *)a0"), "{text}");
+    }
+
+    #[test]
+    fn a_whole_pointer_local_load_is_an_address_but_a_partial_load_is_integer() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+        let loaded = |width| Expr::Load {
+            addr: Box::new(slot.clone()),
+            width,
+            signed: false,
+        };
+        let setup = || {
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::bin(BinOp::Add, loaded(8), Expr::Const(4)),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: loaded(8),
+                    value: Expr::Const(1),
+                    width: 1,
+                },
+            ]
+        };
+        let mut stmts = setup();
+        stmts.push(Stmt::Ret {
+            value: Expr::bin(BinOp::And, loaded(8), Expr::Const(7)),
+        });
+        let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);
+        assert!(text.contains("uint8_t *local_0;"), "{text}");
+        assert!(text.contains("return (uintptr_t)local_0 & 0x7;"), "{text}");
+        let mut stmts = setup();
+        stmts.push(Stmt::Ret { value: loaded(4) });
+        let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);
+        assert!(text.contains("return *(uint32_t *)&local_0;"), "{text}");
     }
 }

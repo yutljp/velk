@@ -73,6 +73,9 @@ pub struct Section {
     #[serde(skip)]
     pub file_offset: Option<u64>,
     pub executable: bool,
+    /// The section occupies memory when the image is loaded.
+    #[serde(skip)]
+    pub loaded: bool,
     /// Data the program does not write once loaded, relocated data included.
     #[serde(skip)]
     pub read_only: bool,
@@ -274,6 +277,7 @@ impl Image {
                 size: code.len() as u64,
                 file_offset: Some(0),
                 executable: true,
+                loaded: true,
                 read_only: false,
             }],
             bytes: code,
@@ -299,7 +303,7 @@ impl Image {
     pub fn section_at(&self, vaddr: u64) -> Option<&Section> {
         self.sections
             .iter()
-            .filter(|s| vaddr >= s.vaddr && vaddr < s.vaddr.saturating_add(s.size))
+            .filter(|s| s.loaded && vaddr >= s.vaddr && vaddr < s.vaddr.saturating_add(s.size))
             .min_by_key(|s| (!s.executable, s.size))
     }
 
@@ -611,6 +615,7 @@ pub fn load(path: &Path) -> Result<Image> {
             size: section.size(),
             file_offset: section.file_range().map(|(offset, _)| offset),
             executable: is_executable(section.kind()),
+            loaded: relocate::allocated(&section),
             read_only: is_read_only(section.kind(), section.name().unwrap_or("")),
         });
     }

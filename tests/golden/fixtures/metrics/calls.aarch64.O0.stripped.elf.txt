@@ -302,7 +302,7 @@ int32_t sub_2105b0(int32_t a0, ...) {
         }
         v4 = local_7;
         local_7 = v4 + 0x8;
-        local_11 = v4;
+        local_11 = (uint32_t *)v4;
         local_8 += *local_11;
         local_6 += 0x1;
     }

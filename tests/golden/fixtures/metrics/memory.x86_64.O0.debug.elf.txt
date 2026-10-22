@@ -13,11 +13,11 @@
 /* velk pseudo-C: copy_bytes @ 0x201280 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint8_t v1;
-    uint8_t *local_0; /* [sp-28] */
+    uint64_t local_0; /* [sp-28] */
 
     for (local_0 = 0x0; local_0 < n; local_0++) {
-        v1 = *(uint8_t *)(src + local_0);
-        *(uint8_t *)(dst + local_0) = v1;
+        v1 = src[local_0];
+        dst[local_0] = v1;
     }
 }
 -- signature
@@ -50,12 +50,12 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint64_t rax;
     uint8_t v1;
     uint8_t local_0; /* [sp-11] */
-    uint8_t *local_1; /* [sp-28] */
+    uint64_t local_1; /* [sp-28] */
 
     local_0 = rax & 0xffffffffffffff00 | value;
     for (local_1 = 0x0; local_1 < n; local_1++) {
         v1 = local_0;
-        *(uint8_t *)(dst + local_1) = v1;
+        dst[local_1] = v1;
     }
 }
 -- signature
@@ -85,11 +85,11 @@ fn fill_bytes @ 0x2012d0 (size 73)
 -- decompile
 /* velk pseudo-C: string_length @ 0x201320 */
 unsigned long string_length(char *s) {
-    uint8_t *local_0; /* [sp-18] */
+    int64_t local_0; /* [sp-18] */
 
-    for (local_0 = 0x0; *(uint8_t *)(s + local_0) != 0x0; local_0++) {
+    for (local_0 = 0x0; (uint8_t)s[local_0] != 0x0; local_0++) {
     }
-    return (uintptr_t)local_0;
+    return local_0;
 }
 -- signature
 unsigned long (char * s)
@@ -151,7 +151,7 @@ fn grid_set @ 0x201390 (size 53)
 -- decompile
 /* velk pseudo-C: pointer_distance @ 0x2013d0 */
 long pointer_distance(int *begin, int *end) {
-    return (int64_t)((uint8_t *)end - (uint8_t *)begin) >> 0x2;
+    return (int64_t)((uintptr_t)end - (uintptr_t)begin) >> 0x2;
 }
 -- signature
 long (int * begin, int * end)

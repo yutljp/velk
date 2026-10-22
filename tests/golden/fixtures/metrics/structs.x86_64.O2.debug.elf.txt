@@ -207,7 +207,7 @@ void flags_set_mode(struct flags *f, unsigned int mode) {
     uint8_t t1;
 
     t1 = mode;
-    f->field_0x0 = f->field_0x0 & 0xf1 | t1 + t1 & 0xe;
+    *(uint8_t *)(f) = *(uint8_t *)(f) & 0xf1 | t1 + t1 & 0xe;
 }
 -- signature
 void (struct flags * f, unsigned int mode)

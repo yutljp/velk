@@ -344,10 +344,8 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Str
     if field_width != width {
         return None;
     }
-    if let Some(name) = ctx.members.get(&(pointee.clone(), offset)) {
-        return Some(format!("{}->{}", ctx.register(base, 64), name));
-    }
-    Some(format!("{}->field_0x{:x}", ctx.register(base, 64), offset))
+    let name = ctx.members.get(&(pointee.clone(), offset))?;
+    Some(format!("{}->{}", ctx.register(base, 64), name))
 }
 
 /// An address inside an element of an array of structures, as the field
@@ -541,4 +539,128 @@ fn element_terms<'e>(addr: &'e Expr, ctx: &Ctx<'_>) -> Option<(String, u64, Expr
         (Some(index), steps) => Expr::bin(BinOp::Add, index, Expr::Const(steps as u64)),
     };
     Some((base, size, index, offset, found[base_at].0))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{CType, Definition, Member, Param, Structure};
+    use crate::loader::Isa;
+
+    fn address(offset: u64) -> Expr {
+        if offset == 0 {
+            Expr::reg(7, 64)
+        } else {
+            Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset))
+        }
+    }
+
+    fn load(offset: u64, width: u8) -> Expr {
+        Expr::Load {
+            addr: Box::new(address(offset)),
+            width,
+            signed: false,
+        }
+    }
+
+    fn function(stmts: Vec<Stmt>) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
+        ir.params = vec![Param {
+            index: 7,
+            name: "p".to_owned(),
+            ty: CType::pointer_to(CType::Named("struct record".to_owned())),
+        }];
+        ir
+    }
+
+    fn rendered(ir: &FunctionIr) -> String {
+        crate::render::render(ir, &[], &HashMap::new(), &[])
+    }
+
+    #[test]
+    fn debug_storage_without_named_fields_uses_raw_memory_accesses() {
+        let mut ir = function(vec![
+            Stmt::Store {
+                addr: address(0),
+                value: Expr::Const(5),
+                width: 1,
+            },
+            Stmt::Ret { value: load(0, 1) },
+        ]);
+        ir.definitions = vec![Definition {
+            name: "struct record".to_owned(),
+            members: vec!["uint8_t gap_0x0[0x4];".to_owned()],
+            fields: Vec::new(),
+            contains: Vec::new(),
+        }];
+        let text = rendered(&ir);
+        assert!(text.contains("*(uint8_t *)(p) = 0x5;"), "{text}");
+        assert!(text.contains("return *(uint8_t *)(p);"), "{text}");
+        assert!(!text.contains("field_0x"), "{text}");
+    }
+
+    #[test]
+    fn debug_named_fields_remain_named_beside_raw_storage() {
+        let mut ir = function(vec![
+            Stmt::Store {
+                addr: address(4),
+                value: Expr::Const(5),
+                width: 1,
+            },
+            Stmt::Ret { value: load(0, 4) },
+        ]);
+        ir.definitions = vec![Definition {
+            name: "struct record".to_owned(),
+            members: vec![
+                "uint32_t value;".to_owned(),
+                "uint8_t gap_0x4[0x4];".to_owned(),
+            ],
+            fields: vec!["value".to_owned()],
+            contains: Vec::new(),
+        }];
+        ir.members = vec![Member {
+            structure: "record".to_owned(),
+            offset: 0,
+            name: "value".to_owned(),
+        }];
+        let text = rendered(&ir);
+        assert!(text.contains("struct record { uint32_t value;"), "{text}");
+        assert!(text.contains("return p->value;"), "{text}");
+        assert!(
+            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 0x5;"),
+            "{text}"
+        );
+        assert!(!text.contains("field_0x"), "{text}");
+    }
+
+    #[test]
+    fn recovered_fields_remain_named_beside_raw_storage() {
+        let mut ir = function(vec![
+            Stmt::Store {
+                addr: address(8),
+                value: Expr::Const(5),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: address(4),
+                value: Expr::Const(6),
+                width: 1,
+            },
+            Stmt::Ret { value: load(0, 4) },
+        ]);
+        ir.structures = vec![Structure {
+            name: "record".to_owned(),
+            fields: vec![(0, CType::U32), (8, CType::U64)],
+            size: None,
+            elements: Vec::new(),
+        }];
+        let text = rendered(&ir);
+        assert!(text.contains("p->field_0x8 = 0x5;"), "{text}");
+        assert!(text.contains("return p->field_0x0;"), "{text}");
+        assert!(
+            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 0x6;"),
+            "{text}"
+        );
+        assert!(!text.contains("field_0x4"), "{text}");
+    }
 }
