@@ -144,26 +144,39 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
         let Stmt::Call {
             args: Some(args),
             target,
+            through,
             ..
         } = stmt
         else {
             continue;
         };
-        let pointers = target.map_or(0, |target| {
-            let named = image
-                .functions
-                .get(&target)
-                .and_then(|function| function.name.as_deref())
-                .and_then(|name| {
-                    crate::analysis::prototypes::of(
-                        name,
-                        image.format == crate::loader::Format::MachO,
-                    )
+        let prototype = target
+            .and_then(|target| image.functions.get(&target))
+            .and_then(|function| function.name.as_deref())
+            .or_else(|| crate::lift::import_name(image, through.as_ref()?))
+            .and_then(|name| {
+                crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
+            });
+        // A parameter the prototype declares a C string ends at its zero byte,
+        // whatever argument follows it.
+        let c_string = |position: usize| {
+            prototype.is_some_and(|prototype| {
+                prototype.params.get(position).is_some_and(|ty| {
+                    matches!(ty.to_string().trim_end(), "const char *" | "char *")
                 })
-                .and_then(|prototype| prototype.format)
-                .map_or(0, |format| 1u64 << format.min(63));
-            named | u64::from(crate::analysis::summary::summary(image, target).pointers)
-        });
+            })
+        };
+        let named = prototype
+            .and_then(|prototype| prototype.format)
+            .map_or(0, |format| 1u64 << format.min(63));
+        let strings = (0..64)
+            .filter(|position| c_string(*position))
+            .fold(0, |mask, position| mask | 1u64 << position);
+        let pointers = named
+            | strings
+            | target.map_or(0, |target| {
+                u64::from(crate::analysis::summary::summary(image, target).pointers)
+            });
         for (position, arg) in args.iter().enumerate().take(64) {
             let Expr::Const(addr) = arg else {
                 continue;
@@ -194,10 +207,13 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
                 });
             }
         }
-        for pair in args.windows(2) {
+        for (position, pair) in args.windows(2).enumerate() {
             let (Expr::Const(addr), Expr::Const(length)) = (&pair[0], &pair[1]) else {
                 continue;
             };
+            if c_string(position) {
+                continue;
+            }
             let known = references.iter().position(|known| known.addr == *addr);
             if known.is_some_and(|known| references[known].text.is_some()) {
                 continue;
