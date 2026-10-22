@@ -1,213 +1,127 @@
 # velk
 
-**LLM エージェントのためのバイナリ解析エンジン。**
-
-velk は ELF / PE / Mach-O の実行ファイルとオブジェクトを読み、関数ごとに疑似 C・中間表現・
-逆アセンブル・関数の要約（指定したトークン数に収まる JSON）を返します。エージェントは MCP 経由で
-JavaScript を実行して必要な結果だけを受け取り、人は CLI から使います。単一のバイナリで動き、
-起動から 1 関数の疑似 C を出すまで、小さなバイナリなら数ミリ秒です（`tests/bench.sh`）。
-
-シンボルもデバッグ情報もない、最適化なしの x86-64 の関数から（元は `double average(const double *values, int n)`）:
+ELF / PE / COFF / Mach-O を解析し、関数ごとの疑似 C・逆アセンブル・中間表現（IR）・要約を返すバイナリ解析エンジンです。
+x86-64 と AArch64 を扱い、コマンドラインと、エージェントからツールを呼ぶための MCP 接続で利用できます。
 
 ```c
-/* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
-double sub_2011f0(double *a0, int32_t a1) {
-    double local_0; /* [sp-20] */
-    int32_t local_1; /* [sp-24] */
-    double local_2; /* [sp-30] */
-
-    local_0 = 0.0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
-        local_0 = a0[local_1] + local_0;
-    }
-    if (a1 <= 0x0) {
-        local_2 = 0.0;
-        return local_2;
-    }
-    local_2 = local_0 / (double)a1;
-    return local_2;
+int32_t sum3(int32_t a0, int32_t a1, int32_t a2) {
+    return a1 + a0 + a2;
 }
 ```
-
-## 特長
-
-- **意味で検証された出力**: テスト用のすべてのバイナリのすべての関数について、最適化の前後の中間表現と、
-  構造化した結果をブロックに戻したものを、ランダムな入力で実行し、戻り値・呼び出し・メモリが一致することを
-  確かめています。見た目のきれいさのために意味を変える変換は入りません。
-- **シンボルのないバイナリに強い**: unwind 表から関数の正確な範囲を求め、コンパイラが関数から
-  分離したコールド部分（めったに通らない経路）を元の関数に戻します。共有ライブラリの関数を呼ぶ
-  PLT のスタブには、呼び先の関数名を付けます。
-- **LLM 向けの出力**: 関数の要約は、指定したトークン数に収まる内容と、解析が難しい理由を返します。
-  スクリプトの中で絞り込みや集計をすれば、結果だけがモデルに返ります。
-- **言語ごとのメタデータ**: Go の関数表（pclntab）、Rust と C++ のマングルされた名前の復元、DWARF の名前・型・構造体メンバ。
-- **関数の照合**: 関数の形を正規化したハッシュを集めたデータベースで、別のバイナリの同じ関数を見つけます。
-
-## 精度
-
-`tests/fixtures/metrics/` の C の関数 151 個を、シンボルとデバッグ情報を取り除いたバイナリから
-解析し、デバッグ情報を正解として測った値です（最適化レベルとアーキテクチャごと、`tests/golden/metrics.txt`）。
-
-| 指標 | AArch64 -O0 | AArch64 -O2 | x86-64 -O0 | x86-64 -O2 |
-|---|---|---|---|---|
-| 関数の発見 | 151/151 | 151/151 | 151/151 | 151/151 |
-| 余分な関数 | 0 | 0 | 0 | 0 |
-| 引数の個数 | 150/150 | 150/150 | 150/150 | 150/150 |
-| ポインタ引数 | 187/189 | 186/189 | 187/189 | 186/189 |
-| 引数の幅 | 151/157 | 151/157 | 152/157 | 152/157 |
-| 引数の符号 | 139/151 | 139/151 | 140/152 | 140/152 |
-| 戻り値の有無 | 145/151 | 145/151 | 144/151 | 147/151 |
-| 戻り値の幅 | 118/122 | 117/122 | 118/122 | 118/122 |
-| 浮動小数点の型 | 10/10 | 10/10 | 10/10 | 10/10 |
-
-シンボルを取り除いた Rust のバイナリ（`tests/fixtures/rust_probe_stripped`）では、
-543 個の関数をすべて見つけ、余分は PLT スタブの 2 個だけです。
 
 ## はじめかた
 
+Rust のツールチェーンと C コンパイラを用意し、ソースを取得したディレクトリでビルドします。
+
 ```bash
-cargo build --release
-./target/release/velk functions path/to/binary
-./target/release/velk decompile path/to/binary main
+cargo build --release --locked
+./target/release/velk functions tests/fixtures/arm64.o
+./target/release/velk decompile tests/fixtures/arm64.o sum3
 ```
 
-関数は名前かアドレス（`0x1e0` または 10 進）で指定します。名前は完全一致を優先し、
-部分一致が 1 つに絞れない場合は候補を示してエラーにします。
+上の例は、リポジトリに含まれるオブジェクトから関数を一覧し、`sum3` の疑似 C を表示します。
+自分のファイルを調べるときは、ファイルのパスと、一覧から選んだ関数名またはアドレスを指定します。
 
-| コマンド | 内容 |
-|---|---|
-| `velk functions <file> [--limit N] [--json]` | 関数の一覧と、それぞれを見つけた情報源 |
-| `velk sections <file>` | セクションの一覧 |
-| `velk card <file> <function> [--budget N] [--signatures db.json]` | 関数の要約（JSON） |
-| `velk decompile <file> <function> [--signatures db.json]` | 疑似 C |
-| `velk disasm <file> <function> [--limit N]` | 逆アセンブル |
-| `velk ir <file> <function>` | 最適化後の中間表現 |
-| `velk build-signatures <file> --output db.json` | 名前付きの関数からシグネチャ DB を作る |
-| `velk identify <file> --signatures db.json` | シグネチャ DB と形が一致する関数を探す |
-| `velk run <script.js>` | スクリプト API で JavaScript を実行する |
-| `velk mcp` | MCP サーバを標準入出力で起動する |
+```bash
+./target/release/velk functions path/to/binary
+./target/release/velk decompile path/to/binary 0x1e0
+```
+
+関数名は完全一致を優先します。部分一致が複数あるときは候補を示します。
+以降の `velk` は、ビルドした実行ファイルのパスに読み替えてください。
 
 ## エージェントから使う（MCP）
 
-`velk mcp` は次の 2 つのツールを公開します。
-
-- `velk_run_script`: JavaScript を内蔵のエンジンで実行し、`console.log` の出力と最後の式の値を返す
-- `velk_read_api`: API の目次、またはトピックごとの TypeScript 宣言を返す
-
-開いたバイナリと関数ごとの解析結果は、サーバが動いている間キャッシュされます。
-同じ API は `velk run` でも使えます。宣言は `src/script/api/` にあります。
-
-```js
-const b = velk.open("/path/to/binary");
-for (const f of b.functions({ named: false, minSize: 200 }).slice(0, 5)) {
-  console.log(f.addr, f.strings());
-}
-b.getFunction("main").decompile();
-```
-
-MCP クライアントには、実行ファイルを `mcp` 引数付きで登録します。
+MCP クライアントに実行ファイルを `mcp` 引数付きで登録します。通信は標準入出力を使います。
 
 ```json
-{ "mcpServers": { "velk": { "command": "/path/to/velk", "args": ["mcp"] } } }
+{
+  "mcpServers": {
+    "velk": { "command": "/absolute/path/to/velk", "args": ["mcp"] }
+  }
+}
 ```
+
+- `velk_run_script`: JavaScript を実行し、`console.log` の出力と最後の式の値を返します。
+- `velk_read_api`: API の概要、または `binary` / `func` / `types` の宣言を必要なときに読みます。
+
+スクリプト内で絞り込み、必要な結果だけ返します。開いたファイルと解析結果はサーバの実行中キャッシュされます。
+
+```js
+const b = velk.open("/absolute/path/to/binary");
+b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name }));
+```
+
+結果の本文は既定で 4,000 文字までです。`velk_run_script` の `max_output_chars` に 256〜20,000 を指定して変更できます。
+省略の通知が出たら、スクリプトの条件や `slice` で結果を絞るか、上限を明示して再実行します。
+`card({ budget })` は概算のトークン数に応じた要約で、厳密な出力上限ではありません。
+
+JavaScript は同期実行で、Node.js の API や `await`・`import` は使いません。
+同じ API は `velk run script.js` でも使えます。例と宣言は [API の概要](src/script/api/index.md) を参照してください。
+
+## CLI
+
+| コマンド | 用途 |
+|---|---|
+| `velk functions <file>` | 関数の一覧と発見元 |
+| `velk decompile <file> <function>` | 関数の疑似 C |
+| `velk card <file> <function>` | 関数の要約を JSON で表示 |
+| `velk disasm <file> <function>` | 逆アセンブル |
+| `velk ir <file> <function>` | 最適化後の中間表現 |
+| `velk sections <file>` | セクションの一覧 |
+| `velk build-signatures <file> --output db.json` | 名前付き関数からシグネチャ DB を作成 |
+| `velk identify <file> --signatures db.json` | 形が一致する関数を検索 |
+| `velk run <script.js>` | JavaScript API を実行 |
+| `velk mcp` | MCP サーバを起動 |
+
+細かなオプションは `velk <command> --help` で確認できます。
+
+```bash
+velk functions path/to/binary --json > functions.json
+velk decompile path/to/binary main > main.c
+```
+
+端末では見出し・色・余白で読みやすく表示し、パイプやファイルへ出すときは装飾しません。
+`NO_COLOR` に空でない値を設定した場合、または `TERM=dumb` の環境では色を使いません。JSON・スクリプト・MCP の出力にも装飾を加えません。
 
 ## 対応範囲
 
-- **形式**: ELF、PE、COFF、Mach-O（実行ファイルとリロケータブルオブジェクト）
-- **命令セット**: x86-64、AArch64
-- **関数の発見**: シンボル表、動的シンボル、PE のエクスポート、エントリポイント、DWARF、
-  Go の pclntab、unwind 表、PLT。どれにも覆われない隙間はプロローグの走査で補う
-- **解析**: 引数と戻り値の型、ポインタ引数の構造体（固定オフセットのアクセスから定義を復元）、
-  変数の型（幅・符号・浮動小数点・指す先の型を使われ方から決めて宣言する）、文字列とデータの参照、
-  ジャンプテーブル（範囲判定のない列挙型の分岐や、前のブロックで番地を置いたテーブルも）と比較の連鎖からの switch、
-  定数除算・剰余の復元、スタック変数、
-  ブロックをまたぐ定数伝播、レジスタから値ごとの変数への分離、戻らない関数の判定
-  （本体のどの経路も return に届かないことを、関数をまたいで繰り返し確かめる）、
-  呼び出しの引数と戻り値（呼び出し先が読む整数・浮動小数点の引数の数を関数間で求め、`v = f(a, b)` の形で出す。
-  2 つ目以降の戻り値も変数に移す）、GOT のスロットを通る取り込んだ関数の呼び出しを名前とプロトタイプで出す、
-  例外表からのランディングパッド（届く呼び出しの範囲を注記し、受け取る例外を `exception` と書く）、
-  呼び出しをまたいで退避した引数を引数のまま読む、Go の ABI（xmm15 のゼロ、書き込みバリア、スタック伸長の検査、
-  アセンブリ関数のスタック渡しの引数、複数の戻り値）、文字列をその場に `"..."` と書く（Go と Rust の長さ付きの文字列も）、
-  compare-and-exchange を `__sync_val_compare_and_swap` と書く
-- **疑似 C**: 支配木に基づいて if / else、while、do-while、for (;;)、switch、早期 return を構造化し、
-  構造化できない部分（還元不能なフローなど）だけをラベルと goto で出す。カウンタを初期化して比べ、最後に進める
-  while は for にする。型付きポインタの演算は
-  要素単位（`p[i]`、`p + 1`）で書き、C として読んで値が変わらない形を保つ
-- **命令**: 整数命令のほぼすべて（回転・バイト反転・交換・ビットテスト・2 倍幅の除算・CRC-32 を含む）と、
-  浮動小数点演算（四則・平方根・積和・整数との変換・比較、パックした形も）、SSE と AArch64 のベクトル演算の主なもの
-  （レーンごとの算術・飽和演算・比較・シフト・パック・ビット数え、AArch64 の 2 倍の幅に広げる加減算と乗算・積和、
-  半分の幅に狭める変換とシフト、レーンの並べ替え、浮動小数点のベクトル演算と整数との変換）、AES の 1 ラウンド、システムコール。
-  xmm と AArch64 のベクトルレジスタは 64 ビットの半分 2 つとして、ymm はさらに上位の 128 ビットを 2 つとして扱い、
-  AVX の転送・ビット演算・レーン演算を持ち上げる。どれも実機との比較テストで確かめている
+| 項目 | 内容 |
+|---|---|
+| 入力形式 | ELF、PE、COFF、Mach-O の実行ファイル・オブジェクト |
+| 命令セット | x86-64、AArch64 |
+| メタデータ | シンボル、デバッグ情報、Go の関数表、Rust / C++ の名前の復元 |
+| 解析結果 | 疑似 C、IR、逆アセンブル、引数と戻り値の推定、文字列・データ参照、関数の要約 |
+| 関数の照合 | 正規化した関数の形によるシグネチャ DB |
 
-## 既知の制限
+疑似 C の型や呼び出しは推定を含みます。対応する入力形式と、velk 自体を実行するホスト環境は別のものです。
 
-- 一部のベクトル演算（AArch64 の飽和するシフト、2 倍して飽和する乗算（`sqdmulh` など）、半精度の浮動小数点、
-  浮動小数点の最大・最小など）とシステム命令は未対応で、
-  出力に `unsupported` と明示します
-- 引数の数が分からない呼び出し（プロトタイプの表にない取り込んだ関数、呼び出し先の決まらない間接呼び出し）は、引数を出さず `f()` の形で出ます
-- 値で渡す構造体の引数は、スタックで渡すもの（x86-64）は 1 つの構造体の引数として出ますが、レジスタで渡す小さなものは
-  まだ 8 バイトごとの引数として出ます
-- デバッグ情報がない場合、構造体のフィールド名は `field_0x8` のようにオフセットで表します。
-  構造体の配列は、まだ要素の型を持つポインタとしてしか表せません
-- DWARF の引数は、宣言順が ABI のレジスタ順と一致する場合にだけ正しく対応づきます
+- 未対応の命令は出力に `unsupported` と表示します。
+- 引数が復元できない間接呼び出しなどは `f()` と表示します。
+- レジスタで値渡しする構造体や、引数・戻り値の受け渡し規約とデバッグ情報の対応には制限があります。
+- 名前を復元できないフィールドは `field_0x8` のようなオフセット名になることがあります。
 
-これらへの取り組みは [docs/ROADMAP.md](docs/ROADMAP.md) にあります。
+命令と解析の詳細は [アーキテクチャ](docs/ARCHITECTURE.md)、未対応の項目と今後の方針は
+[ロードマップ](docs/ROADMAP.md) にまとめています。
 
 ## ドキュメント
 
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): 解析の流れと各モジュールの責務
-- [docs/ROADMAP.md](docs/ROADMAP.md): 目指す設計と進める順序
+- [API の概要](src/script/api/index.md): スクリプトの書き方とトピック別の宣言
+- [アーキテクチャ](docs/ARCHITECTURE.md): 解析の流れと各モジュールの責務
+- [ロードマップ](docs/ROADMAP.md): 目指す設計と進める順序
+- [Testing](docs/TESTING.md): 検証方法、必要なツール、fixture の再生成、測定値とその範囲
 
-## テスト
-
-テストの入力は `tests/fixtures/` のバイナリです。`tests/cases/` のソースから、コンパイラの版を
-固定したコンテナ（版は `tests/fixtures/toolchain.txt`）で生成してリポジトリに含めているので、
-どのマシンでも同じバイト列をテストします。生成物にビルド環境のパスが残らないことは、生成時に確かめています。
+## 開発と検証
 
 ```bash
-cargo test                # ユニットテストと結合テスト
-./tests/smoke.sh          # CLI と MCP の出力、性能
-./tests/ladder.sh         # 難易度別の期待値
+CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release
+cargo fmt -- --check
+cargo clippy --release --all-targets -- -D warnings
 ```
 
-| テスト | 確かめること | 正解 |
-|---|---|---|
-| `src/lift/hardware/` | lift した命令が実機と同じ結果になる（AArch64 は arm64 の macOS、x86-64 は C コンパイラのある環境で実行） | 実機での実行 |
-| `src/analysis/semantics_tests.rs` | 最適化が関数の動作を変えていない（IR を実行して比べる） | 最適化前の IR |
-| `src/passes/copies.rs`・`read_once.rs` の単体テスト | コピーの展開で代入・読み取り時の切り詰めと、符号付き演算・比較の意味を保つ | 展開前の IR の実行結果 |
-| `src/render/` の単体テスト | 添字とポインタの区別、番地の整数演算と保存、実在する構造体フィールドだけを使うこと、真偽値の Select の比較式表示、精度が一致し全ビットを保つ浮動小数点マスクの省略 | 型・アクセス幅ごとの期待する疑似 C |
-| `tests/loader.rs` | セクション属性と動的リロケーション、入れ子を含む構造体メンバーの宣言型・幅・所属を保持すること | 入力バイナリの属性・リロケーション・デバッグ情報 |
-| `tests/recompile.rs` | 整数の計算だけの関数で、疑似 C をコンパイルして実行した結果が IR と同じになり、コンパイルできる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile.txt` |
-| `tests/recompile.rs` | メモリを読み書きする関数で、疑似 C を実行した後の戻り値とメモリの内容が IR と同じになる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile_memory.txt` |
-| `tests/recompile.rs` | 固定アドレスのグローバル参照で、符号拡張、添字、重なる読み書き、浮動小数点のビット列、名前の衝突を検証する（clang が必要） | 合成 IR の戻り値と領域全体のハッシュ |
-| `tests/recompile.rs` | 構造体メンバーの幅・符号・ポインタ・浮動小数点のビット列と部分読み書きを検証する（clang が必要） | 合成 IR の戻り値と領域全体のハッシュ |
-| `tests/recompile.rs` | シフト数の折り返し、整数拡張・符号・マスク・添字と部分幅更新を検証する（clang とシフトの sanitizer が必要） | 合成 IR の戻り値・領域全体のハッシュと未定義シフトの検出 |
-| `tests/recompile.rs` | 同じ精度で読む浮動小数点演算の全ビットを保つマスクについて、有限値と符号付きゼロの計算・FMA の結果を検証する（clang と数学ライブラリが必要） | 合成 IR の戻り値のビット列と領域全体のハッシュ |
-| `tests/invariants.rs` | 飛び先のない goto、代入されないレジスタの読み取り、疑似 C での文の欠落がない | 出力の性質 |
-| `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報（`*.debug.elf`） |
-| `tests/golden.rs` | 全テスト用バイナリの関数一覧、疑似 C、IR、シグネチャ、要約と、読みやすさの数（変数・キャスト・レジスタ名・goto など）が変わっていない | `tests/golden/fixtures/` と `tests/golden/readability.txt` に記録した出力 |
-| `tests/api.rs` | スクリプト API の戻り値が `.d.ts` の宣言と一致する | `src/script/api/` |
-| `tests/robustness.rs` など | 壊れたファイルやランダムな命令列で panic しない | なし |
-| `tests/smoke.sh` | CLI と MCP の出力の要所、性能 | 文字列の照合 |
-| `tests/ladder.sh` | 難易度 L0〜L7 の期待値（種別が `known_*` の行は、まだ満たせていない目標） | `tests/expect/ladder.tsv` |
-
-正解率、不変条件の違反、動作の違いは、今の値を `tests/golden/` に記録しています。値が変わると
-テストは失敗し、どの関数がどう変わったかを示します。意図した変更なら、環境変数 `VELK_BLESS=1` を付けて
-`cargo test` を実行すると記録が更新されるので、差分を確かめてからコミットします。
-
-### テスト用バイナリの再生成
-
-```bash
-docker compose run --rm fixtures   # tests/cases/ から tests/fixtures/ を作り直す
-docker compose run --rm check      # 同じコンテナでテストを回す
-```
-
-### LLM による意味の確認
-
-`uv run tests/review.py [REVISION]` は、指定したリビジョンから疑似 C が変わった関数について、
-元のソースと新旧の疑似 C を並べた `tests/out/review.md` を作ります（`--all` で全関数）。
-LLM がそれを読んで意味が同じかを判定し、結果を `tests/review/verdicts.tsv` に残します。
-判定は合否には使わず、ほかのテストでは見つからない誤りを探すために使います。
+命令の実機比較、最適化前後の中間表現の比較、疑似 C の再コンパイル比較、コマンドラインと MCP の検査を組み合わせています。
+再コンパイル比較には clang、性能確認には uv、fixture の再生成には Docker を使います。
+詳しい条件と実行手順は [Testing](docs/TESTING.md) を参照してください。
 
 ## ライセンス
 

@@ -1,8 +1,12 @@
+mod terminal;
+
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use serde_json::json;
+
+use terminal::{Language, Terminal};
 
 use velk::error::{Error, Result};
 use velk::service::{Binary, Failure};
@@ -13,7 +17,7 @@ use velk::{addr, card, mcp, script};
 #[command(
     name = "velk",
     version,
-    about = "Binary analysis engine for LLM agents"
+    about = "Binary analysis for terminals and agents"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -105,7 +109,7 @@ fn main() -> ExitCode {
     match run(Cli::parse().command) {
         Ok(code) => code,
         Err(error) => {
-            eprintln!("error: {error}");
+            eprintln!("{} {error}", Terminal::stderr().error("error:"));
             ExitCode::FAILURE
         }
     }
@@ -142,7 +146,8 @@ fn run(command: Command) -> Result<ExitCode> {
             let signatures = signatures.as_deref().map(Database::load).transpose()?;
             let mut binary = Binary::open(&path)?;
             let addr = binary.find(&function)?.addr;
-            print!("{}", binary.decompile(addr, signatures.as_ref())?);
+            let code = binary.decompile(addr, signatures.as_ref())?;
+            print_code(&binary, addr, &function, &code, Language::C);
         }
         Command::Disasm {
             path,
@@ -151,22 +156,32 @@ fn run(command: Command) -> Result<ExitCode> {
         } => {
             let binary = Binary::open(&path)?;
             let addr = binary.find(&function)?.addr;
-            for line in binary.disasm(addr, limit.unwrap_or(usize::MAX))? {
-                println!("{line}");
+            let listing = binary.disasm(addr, limit.unwrap_or(usize::MAX))?;
+            if Terminal::stdout().interactive() {
+                let code: String = listing.iter().map(|line| format!("{line}\n")).collect();
+                print_code(&binary, addr, &function, &code, Language::Disassembly);
+            } else {
+                for line in listing {
+                    println!("{line}");
+                }
             }
         }
         Command::Ir { path, function } => {
             let mut binary = Binary::open(&path)?;
             let addr = binary.find(&function)?.addr;
-            print!("{}", binary.analysis(addr)?.ir.render());
+            let code = binary.analysis(addr)?.ir.render();
+            print_code(&binary, addr, &function, &code, Language::Ir);
         }
         Command::BuildSignatures { path, output } => {
             let build = Binary::open(&path)?.build_signatures(None)?;
             write_json(&output, &json!(build.database))?;
             eprintln!(
-                "{} entries -> {}",
-                build.database.entries.len(),
-                output.display()
+                "{}",
+                Terminal::stderr().success(&format!(
+                    "{} entries -> {}",
+                    build.database.entries.len(),
+                    output.display(),
+                )),
             );
             report_failures(&build.failures);
         }
@@ -178,7 +193,40 @@ fn run(command: Command) -> Result<ExitCode> {
             let database = Database::load(&signatures)?;
             let mut binary = Binary::open(&path)?;
             let identification = binary.identify(&database, None)?;
+            let terminal = Terminal::stdout();
+            if terminal.interactive() {
+                println!(
+                    "{}  {}",
+                    terminal.heading("Identified functions"),
+                    binary.path().display()
+                );
+                println!(
+                    "{}\n",
+                    terminal.muted(&format!(
+                        "{} · {}",
+                        binary.image().format,
+                        binary.image().isa
+                    ))
+                );
+                println!(
+                    "{}",
+                    terminal.heading(&format!(
+                        "{:<18} {:>10}  Match (current name)",
+                        "Address", "Size"
+                    ))
+                );
+            }
             for hit in identification.matches.iter().take(limit) {
+                if terminal.interactive() {
+                    println!(
+                        "{} {:>10}  {}  (currently: {})",
+                        terminal.address(&format!("{:<18}", addr::format(hit.addr))),
+                        hit.size.map_or("?".to_owned(), |size| size.to_string()),
+                        hit.matched,
+                        hit.current.as_deref().unwrap_or("unnamed"),
+                    );
+                    continue;
+                }
                 println!(
                     "{:<14} {:>6}  {}  (currently: {})",
                     addr::format(hit.addr),
@@ -187,11 +235,17 @@ fn run(command: Command) -> Result<ExitCode> {
                     hit.current.as_deref().unwrap_or("unnamed")
                 );
             }
+            if terminal.interactive() {
+                println!();
+            }
             println!(
                 "identified {} of {} functions",
                 identification.matches.len(),
                 binary.image().functions.len()
             );
+            if terminal.interactive() {
+                println!();
+            }
             report_failures(&identification.failures);
         }
         Command::Run { script } => {
@@ -224,10 +278,152 @@ fn report_failures(failures: &[Failure]) {
     if failures.is_empty() {
         return;
     }
-    eprintln!("{} functions could not be lifted:", failures.len());
+    let terminal = Terminal::stderr();
+    eprintln!(
+        "{}",
+        terminal.warning(&format!(
+            "{} functions could not be lifted:",
+            failures.len()
+        ))
+    );
     for failure in failures {
-        eprintln!("  {}: {}", addr::format(failure.addr), failure.error);
+        eprintln!(
+            "  {}: {}",
+            terminal.address(&addr::format(failure.addr)),
+            failure.error
+        );
     }
+}
+
+fn print_code(binary: &Binary, addr: u64, requested: &str, code: &str, language: Language) {
+    let terminal = Terminal::stdout();
+    if !terminal.interactive() {
+        print!("{code}");
+        return;
+    }
+    let name = binary
+        .image()
+        .functions
+        .get(&addr)
+        .and_then(|function| function.name.as_deref())
+        .unwrap_or(requested);
+    let title = match language {
+        Language::C => "Pseudo-C",
+        Language::Ir => "IR",
+        Language::Disassembly => "Disassembly",
+    };
+    let metadata = format!(
+        "{} · {} · {}",
+        binary.path().display(),
+        binary.image().isa,
+        addr::format(addr),
+    );
+    print!(
+        "{}",
+        terminal.block(&format!("{title}  {name}"), &metadata, code, language)
+    );
+}
+
+fn print_functions_terminal(binary: &Binary, limit: usize, terminal: Terminal) {
+    let image = binary.image();
+    let named = image
+        .functions
+        .values()
+        .filter(|function| function.name.is_some())
+        .count();
+    println!(
+        "{}  {}",
+        terminal.heading("Functions"),
+        binary.path().display()
+    );
+    println!(
+        "{}",
+        terminal.muted(&format!(
+            "{} · {} · entry {} · {} sections",
+            image.format,
+            image.isa,
+            image.entry.map_or("-".to_owned(), addr::format),
+            image.sections.len(),
+        ))
+    );
+    println!(
+        "{}\n",
+        terminal.muted(&format!(
+            "{} functions · {named} named",
+            image.functions.len()
+        ))
+    );
+    println!(
+        "{}",
+        terminal.heading(&format!(
+            "{:<18} {:>10}  {:<22}  Name",
+            "Address", "Size", "Sources",
+        ))
+    );
+    for function in image.functions.values().take(limit) {
+        let sources = function
+            .sources
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+        println!(
+            "{} {:>10}  {}  {}",
+            terminal.address(&format!("{:<18}", addr::format(function.addr))),
+            function
+                .size
+                .map_or("?".to_owned(), |size| size.to_string()),
+            terminal.muted(&format!("{sources:<22}")),
+            function.name.as_deref().unwrap_or("<unnamed>"),
+        );
+    }
+    println!();
+    let shown = image.functions.len().min(limit);
+    if shown < image.functions.len() {
+        println!(
+            "{}\n",
+            terminal.muted(&format!(
+                "Showing {shown} of {} functions",
+                image.functions.len()
+            ))
+        );
+    }
+}
+
+fn print_sections_terminal(binary: &Binary, terminal: Terminal) {
+    let image = binary.image();
+    println!(
+        "{}  {}",
+        terminal.heading("Sections"),
+        binary.path().display()
+    );
+    println!(
+        "{}\n",
+        terminal.muted(&format!(
+            "{} · {} · {} sections",
+            image.format,
+            image.isa,
+            image.sections.len()
+        ))
+    );
+    println!(
+        "{}",
+        terminal.heading(&format!(
+            "{:<18} {:>10} {:>14}  {:<4} Section",
+            "Address", "Size", "File", "Exec",
+        ))
+    );
+    for section in &image.sections {
+        println!(
+            "{} {:>10} {:>14}  {:<4} {}",
+            terminal.address(&format!("{:<18}", addr::format(section.vaddr))),
+            section.size,
+            section.file_offset.map_or("-".to_owned(), addr::format),
+            if section.executable { "x" } else { "" },
+            section.name,
+        );
+    }
+    println!();
 }
 
 fn print_functions_json(binary: &Binary, limit: usize) {
@@ -244,6 +440,11 @@ fn print_functions_json(binary: &Binary, limit: usize) {
 }
 
 fn print_functions(binary: &Binary, limit: usize) {
+    let terminal = Terminal::stdout();
+    if terminal.interactive() {
+        print_functions_terminal(binary, limit, terminal);
+        return;
+    }
     let image = binary.image();
     println!(
         "format: {}, arch: {}, entry: {}, sections: {}, functions: {}, named: {}",
@@ -281,6 +482,11 @@ fn print_functions(binary: &Binary, limit: usize) {
 }
 
 fn print_sections(binary: &Binary) {
+    let terminal = Terminal::stdout();
+    if terminal.interactive() {
+        print_sections_terminal(binary, terminal);
+        return;
+    }
     println!(
         "{:<16} {:>12} {:>10} {:>12}  exec",
         "section", "addr", "size", "file"

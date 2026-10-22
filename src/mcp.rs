@@ -12,20 +12,22 @@ const PARSE_ERROR: RpcError = (-32700, "parse error");
 const INVALID_REQUEST: RpcError = (-32600, "invalid request");
 const METHOD_NOT_FOUND: RpcError = (-32601, "method not found");
 
+const MIN_OUTPUT_CHARS: usize = 256;
+const DEFAULT_OUTPUT_CHARS: usize = 4_000;
 const MAX_OUTPUT_CHARS: usize = 20_000;
 const MAX_ERROR_CHARS: usize = 2_000;
 const DEFAULT_TIMEOUT_MS: u64 = 10_000;
 const MAX_TIMEOUT_MS: u64 = 120_000;
 
-const RUN_DESCRIPTION: &str = "Run a JavaScript snippet against the velk binary-analysis API and \
-return what it prints with console.log, then the value of its last expression. Filter and \
-aggregate inside the script so only the answer comes back. Opened binaries stay cached across \
-calls. Call velk_read_api for the full API.\n\nExample:\nconst b = velk.open(\"/path/to/bin\");\n\
-b.functions({ named: false }).length;\nconst f = b.getFunction(\"main\");\nconsole.log(f.signature());\n\
-f.decompile();";
+const TRUNCATION_NOTICE: &str =
+    "\n[truncated; filter or slice inside the script, or raise max_output_chars]";
 
-const READ_DESCRIPTION: &str = "Read the velk script API. Without a topic, returns the overview \
-and the list of topics; with a topic, returns its TypeScript declarations.";
+const RUN_DESCRIPTION: &str = "Run synchronous JavaScript against the cached binary-analysis API. \
+Return console output, then the final value. Filter or slice to keep responses small. \
+Read velk_read_api for usage and types.";
+
+const READ_DESCRIPTION: &str =
+    "Read the API overview and topics, or one topic's TypeScript declarations.";
 
 const TOPICS: [(&str, &str); 3] = [
     ("binary", include_str!("script/api/binary.d.ts")),
@@ -94,6 +96,12 @@ fn tools() -> Value {
                 "type": "object",
                 "properties": {
                     "code": { "type": "string", "description": "JavaScript source" },
+                    "max_output_chars": {
+                        "type": "integer",
+                        "minimum": MIN_OUTPUT_CHARS,
+                        "maximum": MAX_OUTPUT_CHARS,
+                        "description": format!("Final text limit in Unicode characters; default {DEFAULT_OUTPUT_CHARS}")
+                    },
                     "timeout_ms": {
                         "type": "integer",
                         "minimum": 1,
@@ -142,22 +150,16 @@ fn run_script(engine: &Engine, arguments: &Value) -> (String, bool) {
         .and_then(Value::as_u64)
         .unwrap_or(DEFAULT_TIMEOUT_MS)
         .clamp(1, MAX_TIMEOUT_MS);
+    let limit = arguments
+        .get("max_output_chars")
+        .and_then(Value::as_u64)
+        .unwrap_or(DEFAULT_OUTPUT_CHARS as u64)
+        .clamp(MIN_OUTPUT_CHARS as u64, MAX_OUTPUT_CHARS as u64) as usize;
     let outcome = engine.run(code, Some(Duration::from_millis(millis)));
-    // The error is kept, within its own share of the limit; the output
-    // takes the rest.
-    let error = outcome
-        .error
-        .as_ref()
-        .map(|error| truncate(format!("error: {error}"), MAX_ERROR_CHARS));
-    let room = MAX_OUTPUT_CHARS - error.as_ref().map_or(0, |error| error.chars().count());
-    let mut text = truncate(outcome.output, room);
-    if let Some(error) = error {
-        if !text.is_empty() {
-            text.push('\n');
-        }
-        text.push_str(&error);
-    }
-    (text, outcome.error.is_some())
+    (
+        script_output(&outcome.output, outcome.error.as_deref(), limit),
+        outcome.error.is_some(),
+    )
 }
 
 fn read_api(arguments: &Value) -> (String, bool) {
@@ -170,15 +172,172 @@ fn read_api(arguments: &Value) -> (String, bool) {
     }
 }
 
-/// The text cut to `limit` characters and a note of how many went.
-fn truncate(mut text: String, limit: usize) -> String {
-    let Some((cut, _)) = text.char_indices().nth(limit) else {
-        return text;
+fn script_output(output: &str, error: Option<&str>, limit: usize) -> String {
+    let error = error
+        .map(|error| format!("error: {error}"))
+        .unwrap_or_default();
+    let output_chars = output.chars().count();
+    let error_chars = error.chars().count();
+    let separator = usize::from(output_chars > 0 && error_chars > 0);
+    let truncated = output_chars + error_chars + separator > limit || error_chars > MAX_ERROR_CHARS;
+    let body = limit.saturating_sub(if truncated {
+        TRUNCATION_NOTICE.chars().count()
+    } else {
+        0
+    });
+    let kept_error = error_chars.min(MAX_ERROR_CHARS).min(body);
+    let room = if kept_error > 0 {
+        body.saturating_sub(kept_error + 1)
+    } else {
+        body
     };
-    let dropped = text[cut..].chars().count();
-    text.truncate(cut);
-    text.push_str(&format!(
-        "\n[truncated {dropped} chars; filter or slice inside the script and run again]"
-    ));
+    let mut text: String = output.chars().take(room).collect();
+    if kept_error > 0 {
+        if !text.is_empty() {
+            text.push('\n');
+        }
+        text.extend(error.chars().take(kept_error));
+    }
+    if truncated {
+        text.push_str(TRUNCATION_NOTICE);
+    }
     text
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_short_script_keeps_the_text_only_protocol_response() {
+        let engine = Engine::new().expect("a script engine");
+        let response = handle(
+            &engine,
+            &json!({
+                "jsonrpc": "2.0",
+                "id": 42,
+                "method": "tools/call",
+                "params": {
+                    "name": "velk_run_script",
+                    "arguments": { "code": "console.log('progress'); ({answer: 42})" }
+                }
+            }),
+        )
+        .expect("a request receives a response");
+        assert_eq!(response["jsonrpc"], "2.0");
+        assert_eq!(response["id"], 42);
+        let result = &response["result"];
+        assert_eq!(result.as_object().expect("an object").len(), 2);
+        assert_eq!(result["isError"], false);
+        assert_eq!(
+            result["content"],
+            json!([{ "type": "text", "text": "progress\n{\"answer\":42}" }])
+        );
+    }
+
+    #[test]
+    fn script_output_limits_default_and_clamp_like_timeouts() {
+        let engine = Engine::new().expect("a script engine");
+        for (requested, expected) in [
+            (None, DEFAULT_OUTPUT_CHARS),
+            (Some(json!(MIN_OUTPUT_CHARS)), MIN_OUTPUT_CHARS),
+            (Some(json!(MAX_OUTPUT_CHARS)), MAX_OUTPUT_CHARS),
+            (Some(json!(0)), MIN_OUTPUT_CHARS),
+            (Some(json!(100_000)), MAX_OUTPUT_CHARS),
+            (Some(json!(-1)), DEFAULT_OUTPUT_CHARS),
+            (Some(json!("invalid")), DEFAULT_OUTPUT_CHARS),
+        ] {
+            let mut arguments = json!({ "code": "'x'.repeat(30000)" });
+            if let Some(requested) = requested {
+                arguments["max_output_chars"] = requested;
+            }
+            let (text, is_error) = run_script(&engine, &arguments);
+            assert!(!is_error, "{text}");
+            assert_eq!(text.chars().count(), expected);
+            assert!(text.ends_with(TRUNCATION_NOTICE), "{text}");
+        }
+    }
+
+    #[test]
+    fn unicode_output_keeps_a_safe_prefix_inside_the_complete_budget() {
+        let output = "あ🦀e\u{301}".repeat(500);
+        let text = script_output(&output, None, MIN_OUTPUT_CHARS);
+        let prefix = output
+            .chars()
+            .take(MIN_OUTPUT_CHARS - TRUNCATION_NOTICE.chars().count())
+            .collect::<String>();
+        assert_eq!(text, format!("{prefix}{TRUNCATION_NOTICE}"));
+        assert_eq!(text.chars().count(), MIN_OUTPUT_CHARS);
+        for output in ["x".repeat(MIN_OUTPUT_CHARS), "🦀".repeat(MIN_OUTPUT_CHARS)] {
+            assert_eq!(script_output(&output, None, MIN_OUTPUT_CHARS), output);
+        }
+    }
+
+    #[test]
+    fn short_output_and_error_separators_are_unchanged() {
+        for (output, error, expected) in [
+            ("", None, ""),
+            ("answer", None, "answer"),
+            ("progress", Some("boom"), "progress\nerror: boom"),
+            ("progress\n", Some("boom"), "progress\n\nerror: boom"),
+            ("", Some("boom"), "error: boom"),
+        ] {
+            assert_eq!(script_output(output, error, MIN_OUTPUT_CHARS), expected);
+        }
+    }
+
+    #[test]
+    fn an_error_survives_long_output_and_keeps_its_error_flag() {
+        let engine = Engine::new().expect("a script engine");
+        let (text, is_error) = run_script(
+            &engine,
+            &json!({
+                "code": "console.log('x'.repeat(2000)); throw new Error('boom')",
+                "max_output_chars": MIN_OUTPUT_CHARS,
+            }),
+        );
+        assert!(is_error);
+        assert!(text.contains("error: Error: boom"), "{text}");
+        assert!(text.ends_with(TRUNCATION_NOTICE), "{text}");
+        assert!(text.chars().count() <= MIN_OUTPUT_CHARS, "{text}");
+    }
+
+    #[test]
+    fn a_long_error_is_marked_when_either_limit_omits_it() {
+        let error = "失敗".repeat(3000);
+        for limit in [MIN_OUTPUT_CHARS, DEFAULT_OUTPUT_CHARS] {
+            let text = script_output("", Some(&error), limit);
+            assert!(text.starts_with("error: "), "{text}");
+            let prefix = text
+                .strip_suffix(TRUNCATION_NOTICE)
+                .expect("an omission notice");
+            assert_eq!(
+                prefix.chars().count(),
+                MAX_ERROR_CHARS.min(limit - TRUNCATION_NOTICE.chars().count())
+            );
+            assert!(text.chars().count() <= limit);
+        }
+    }
+
+    #[test]
+    fn discovery_and_tool_errors_keep_their_existing_shapes() {
+        let schema = tools();
+        let output = &schema[0]["inputSchema"]["properties"]["max_output_chars"];
+        assert_eq!(output["minimum"], MIN_OUTPUT_CHARS);
+        assert_eq!(output["maximum"], MAX_OUTPUT_CHARS);
+        assert_eq!(schema[0]["inputSchema"]["required"], json!(["code"]));
+        assert_eq!(
+            read_api(&json!({ "topic": "func" })),
+            (TOPICS[1].1.to_owned(), false)
+        );
+        let engine = Engine::new().expect("a script engine");
+        assert_eq!(
+            run_script(&engine, &json!({})),
+            ("missing code".to_owned(), true)
+        );
+        assert_eq!(
+            call_tool(&engine, &json!({ "params": { "name": "missing" } })),
+            Err((-32602, "unknown tool"))
+        );
+    }
 }
