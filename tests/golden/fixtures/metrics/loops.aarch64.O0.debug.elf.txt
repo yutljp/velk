@@ -15,7 +15,7 @@ int count_bits(unsigned int x) {
     local_1 = 0x0;
     while (local_0 != 0x0) {
         local_1 += local_0 & 0x1;
-        local_0 >>= 0x1;
+        local_0 = local_0 >> 0x1;
     }
     return local_1;
 }

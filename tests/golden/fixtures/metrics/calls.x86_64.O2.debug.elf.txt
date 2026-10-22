@@ -51,7 +51,7 @@ fn square @ 0x201300 (size 6)
 void square(void);
 void twice(void);
 void *pick_op(int which) {
-    return (which == 0x0 ? twice : square);
+    return (void *)(which == 0x0 ? twice : square);
 }
 -- signature
 void * (int which)
@@ -68,14 +68,15 @@ fn pick_op @ 0x201310 (size 21)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
-void table(void);
 int apply_table(unsigned int index, int x) {
+    uint8_t *const table = (uint8_t *)(uintptr_t)0x202610;
+    uint64_t *const table_u64 = (uint64_t *)(uintptr_t)0x202610;
     uint32_t v1;
     int64_t v2;
 
     v1 = 0xaaaaaaab * (uint64_t)index >> 0x21;
     v2 = index - (v1 + v1 * 0x2);
-    return ((uint64_t (*)())table[v2])(x, x, v1, &table);
+    return ((uint64_t (*)())table_u64[v2])(x, x, v1, table);
 }
 -- signature
 int (unsigned int index, int x)
@@ -124,6 +125,14 @@ fn apply_pointer @ 0x201360 (size 12)
 /* ref: 0x2001c0 .rodata */
 /* ref: 0x2001c8 .rodata */
 int factorial(int n) {
+    uint64_t *const qword_200190 = (uint64_t *)(uintptr_t)0x200190;
+    uint64_t *const qword_200198 = (uint64_t *)(uintptr_t)0x200198;
+    uint64_t *const qword_2001a0 = (uint64_t *)(uintptr_t)0x2001a0;
+    uint64_t *const qword_2001a8 = (uint64_t *)(uintptr_t)0x2001a8;
+    uint64_t *const qword_2001b0 = (uint64_t *)(uintptr_t)0x2001b0;
+    uint64_t *const qword_2001b8 = (uint64_t *)(uintptr_t)0x2001b8;
+    uint64_t *const qword_2001c0 = (uint64_t *)(uintptr_t)0x2001c0;
+    uint64_t *const qword_2001c8 = (uint64_t *)(uintptr_t)0x2001c8;
     int64_t t1;
     int32_t v1;
     int32_t v2;
@@ -159,16 +168,16 @@ int factorial(int n) {
         v3 = v2 & 0xfffffffffffffff8;
         v4 = (n & 0xffffffff);
         n = n - v3;
-        v6 = add_lanes32(v4 | v4 << 0x20, qword_200190);
-        v8 = add_lanes32(v4 | v4 << 0x20, qword_200198);
-        v11 = qword_2001c0;
-        v12 = qword_2001c8;
-        v13 = qword_2001b0;
-        v14 = qword_2001b8;
+        v6 = add_lanes32(v4 | v4 << 0x20, *qword_200190);
+        v8 = add_lanes32(v4 | v4 << 0x20, *qword_200198);
+        v11 = *qword_2001c0;
+        v12 = *qword_2001c8;
+        v13 = *qword_2001b0;
+        v14 = *qword_2001b8;
         v1 = v3;
-        v9 = qword_2001a0;
+        v9 = *qword_2001a0;
         v16 = v9;
-        v10 = qword_2001a8;
+        v10 = *qword_2001a8;
         v17 = v10;
         do {
             v18 = add_lanes32(v6, v11);

@@ -5,134 +5,135 @@
 -- decompile
 /* velk pseudo-C: d7 @ 0x0 */
 int32_t d7(int32_t a0) {
+    uint32_t *const g = (uint32_t *)(uintptr_t)0x2e0;
     int32_t v1;
 
     v1 = 0xffffffff;
     switch (a0) {
     case 0:
-        v1 = g;
+        v1 = *g;
         break;
     case 1:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
         break;
     case 2:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
         break;
     case 3:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x3;
         break;
     case 4:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x3;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x4;
         break;
     case 5:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x3;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x4;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x5;
         break;
     case 6:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x3;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x4;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x5;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x6;
         break;
     case 7:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x3;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x4;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x5;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x6;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x7;
         break;
     case 8:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x3;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x4;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x5;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x6;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x7;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x8;
         break;
     case 9:
-        v1 = g;
-        g = v1;
+        v1 = *g;
+        *g = v1;
         v1 = v1 + 0x1;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x2;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x3;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x4;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x5;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x6;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x7;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x8;
-        g = v1;
+        *g = v1;
         v1 = v1 + 0x9;
         break;
     default:
         break;
     }
-    g = v1;
+    *g = v1;
     return v1;
 }
 -- signature

@@ -75,7 +75,9 @@ fn array_sum @ 0x14 (size 48)
 -- decompile
 /* velk pseudo-C: bump @ 0x44 */
 void bump(void) {
-    g_counter += 0x1;
+    uint32_t *const g_counter = (uint32_t *)(uintptr_t)0x68;
+
+    *g_counter += 0x1;
 }
 -- signature
 void ()
@@ -93,7 +95,9 @@ fn bump @ 0x44 (size 20)
 -- decompile
 /* velk pseudo-C: banner_first @ 0x58 */
 int32_t banner_first(void) {
-    return *(uint8_t *)(banner);
+    uint64_t *const banner = (uint64_t *)(uintptr_t)0x78;
+
+    return *(uint8_t *)(*banner);
 }
 -- signature
 int32_t ()

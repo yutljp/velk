@@ -6,6 +6,7 @@
 /* velk pseudo-C: d7 @ 0x21018c */
 /* ref: 0x2204fc .bss */
 int d7(int x) {
+    uint32_t *const g = (uint32_t *)(uintptr_t)0x2204fc;
     int32_t v1;
     int32_t local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */
@@ -21,66 +22,66 @@ int d7(int x) {
     v1 = x;
     if (v1 == 0x0) {
         for (local_0 = 0x0; local_0 < 0x1; local_0++) {
-            g += local_0;
+            *g += local_0;
         }
-        return g;
+        return *g;
     }
     if (v1 == 0x1) {
         for (local_1 = 0x0; local_1 < 0x2; local_1++) {
-            g += local_1;
+            *g += local_1;
         }
-        return g;
+        return *g;
     }
     if (v1 == 0x2) {
         for (local_2 = 0x0; local_2 < 0x3; local_2++) {
-            g += local_2;
+            *g += local_2;
         }
-        return g;
+        return *g;
     }
     if (v1 - 0x3 == 0x0) {
         for (local_3 = 0x0; local_3 < 0x4; local_3++) {
-            g += local_3;
+            *g += local_3;
         }
-        return g;
+        return *g;
     }
     if (v1 - 0x4 == 0x0) {
         for (local_4 = 0x0; local_4 < 0x5; local_4++) {
-            g += local_4;
+            *g += local_4;
         }
-        return g;
+        return *g;
     }
     if (v1 - 0x5 == 0x0) {
         for (local_5 = 0x0; local_5 < 0x6; local_5++) {
-            g += local_5;
+            *g += local_5;
         }
-        return g;
+        return *g;
     }
     if (v1 - 0x6 == 0x0) {
         for (local_6 = 0x0; local_6 < 0x7; local_6++) {
-            g += local_6;
+            *g += local_6;
         }
-        return g;
+        return *g;
     }
     if (v1 - 0x7 == 0x0) {
         for (local_7 = 0x0; local_7 < 0x8; local_7++) {
-            g += local_7;
+            *g += local_7;
         }
-        return g;
+        return *g;
     }
     if (v1 - 0x8 == 0x0) {
         for (local_8 = 0x0; local_8 < 0x9; local_8++) {
-            g += local_8;
+            *g += local_8;
         }
-        return g;
+        return *g;
     }
     if (v1 - 0x9 == 0x0) {
         for (local_9 = 0x0; local_9 < 0xa; local_9++) {
-            g += local_9;
+            *g += local_9;
         }
-        return g;
+        return *g;
     }
-    g = 0xffffffff;
-    return g;
+    *g = 0xffffffff;
+    return *g;
 }
 -- signature
 int (int x)

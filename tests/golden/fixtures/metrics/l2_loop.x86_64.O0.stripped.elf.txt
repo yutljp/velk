@@ -9,6 +9,7 @@
 /* velk pseudo-C: sub_201200 @ 0x201200 */
 /* ref: 0x202350 .bss */
 int32_t sub_201200(int32_t a0) {
+    uint32_t *const dword_202350 = (uint32_t *)(uintptr_t)0x202350;
     int32_t v1;
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
@@ -17,7 +18,7 @@ int32_t sub_201200(int32_t a0) {
     for (local_1 = 0x0; local_1 < a0; local_1++) {
         v1 = local_1 + local_0;
         local_0 = v1;
-        dword_202350 = v1;
+        *dword_202350 = v1;
     }
     return local_0;
 }
@@ -49,6 +50,7 @@ fn <unnamed> @ 0x201200 (size 70)
 /* velk pseudo-C: sub_201250 @ 0x201250 */
 /* ref: 0x202350 .bss */
 int32_t sub_201250(int32_t a0) {
+    uint32_t *const dword_202350 = (uint32_t *)(uintptr_t)0x202350;
     int32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-10] */
 
@@ -57,7 +59,7 @@ int32_t sub_201250(int32_t a0) {
     do {
         local_1 += 0x1;
         local_0 += -0x1;
-        dword_202350 = local_1;
+        *dword_202350 = local_1;
     } while (local_0 > 0x0);
     return local_1;
 }
@@ -85,6 +87,7 @@ fn <unnamed> @ 0x201250 (size 56)
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 /* ref: 0x202350 .bss */
 int32_t sub_201290(int32_t a0) {
+    uint32_t *const dword_202350 = (uint32_t *)(uintptr_t)0x202350;
     int32_t v1;
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
@@ -94,7 +97,7 @@ int32_t sub_201290(int32_t a0) {
         if ((local_1 & 0x1) != 0x0) {
             v1 = local_1 + local_0;
             local_0 = v1;
-            dword_202350 = v1;
+            *dword_202350 = v1;
         }
     }
     return local_0;

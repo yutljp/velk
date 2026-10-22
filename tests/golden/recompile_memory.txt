@@ -10,9 +10,9 @@
 #   takes an argument that is no integer: 28
 #   takes arguments on the stack: 34
 # runs left out:
-#   reaches memory no page can map: 473
-#   reads a register that is not a parameter: 96
-#   step limit: 500
+#   reaches memory no page can map: 681
+#   reads a register that is not a parameter: 184
+#   step limit: 533
 #   switch without a matching case: 36
 # arm64.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # arm64_debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
@@ -30,11 +30,11 @@
 # cpp_virtual_x64_stripped.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # go_probe: 1275 functions, 41 qualify, 40 compile, 1 do not, 32 compared (368 runs), 0 differ
 # go_stripped: 1273 functions, 40 qualify, 39 compile, 1 do not, 31 compared (360 runs), 0 differ
-# l2_loop_a64.o: 4 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
-# l2_loop_x64.o: 4 functions, 4 qualify, 1 compile, 3 do not, 1 compared (10 runs), 0 differ
-# l4_memory_a64.o: 4 functions, 4 qualify, 2 compile, 2 do not, 2 compared (22 runs), 0 differ
-# l4_memory_x64.o: 4 functions, 4 qualify, 2 compile, 2 do not, 2 compared (22 runs), 0 differ
-# l5_switch.o: 2 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# l2_loop_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 3 compared (26 runs), 0 differ
+# l2_loop_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 3 compared (26 runs), 0 differ
+# l4_memory_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 2 compared (22 runs), 0 differ
+# l4_memory_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 2 compared (22 runs), 0 differ
+# l5_switch.o: 2 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
 # metrics/alt_names.aarch64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # metrics/alt_names.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # metrics/alt_names.x86_64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
@@ -126,49 +126,18 @@
 # metrics/tail_indirect.aarch64.O0.debug.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/tail_indirect.aarch64.O0.stripped.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # pe64.exe: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# pe64.obj: 10 functions, 2 qualify, 1 compile, 1 do not, 1 compared (12 runs), 0 differ
-# rust_demo: 545 functions, 36 qualify, 29 compile, 7 do not, 17 compared (152 runs), 0 differ
-# rust_probe: 545 functions, 36 qualify, 29 compile, 7 do not, 17 compared (152 runs), 0 differ
-# rust_probe_stripped: 545 functions, 32 qualify, 28 compile, 4 do not, 17 compared (152 runs), 0 differ
-# strings.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
-# switch_jumptable.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
-# switch_jumptable_x64.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
-# switch_value_table.o: 1 functions, 1 qualify, 0 compile, 1 do not, 0 compared (0 runs), 0 differ
+# pe64.obj: 10 functions, 2 qualify, 2 compile, 0 do not, 1 compared (12 runs), 0 differ
+# rust_demo: 545 functions, 36 qualify, 35 compile, 1 do not, 17 compared (152 runs), 0 differ
+# rust_probe: 545 functions, 36 qualify, 35 compile, 1 do not, 17 compared (152 runs), 0 differ
+# rust_probe_stripped: 545 functions, 32 qualify, 31 compile, 1 do not, 17 compared (152 runs), 0 differ
+# strings.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
+# switch_jumptable.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
+# switch_jumptable_x64.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
+# switch_value_table.o: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
 # x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # x64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 go_probe 0x460e80 setg_gcc: does not compile: use of undeclared identifier 'fs_base'
 go_stripped 0x460e80 setg_gcc: does not compile: use of undeclared identifier 'fs_base'
-l2_loop_a64.o 0x0 sum_while: does not compile: use of undeclared identifier 'sink'
-l2_loop_a64.o 0x3c count_down: does not compile: use of undeclared identifier 'sink'
-l2_loop_a64.o 0x60 sum_skip_odd: does not compile: use of undeclared identifier 'sink'
-l2_loop_x64.o 0x0 sum_while: does not compile: use of undeclared identifier 'sink'
-l2_loop_x64.o 0xf0 count_down: does not compile: use of undeclared identifier 'sink'
-l2_loop_x64.o 0x190 sum_skip_odd: does not compile: use of undeclared identifier 'sink'
-l4_memory_a64.o 0x44 bump: does not compile: use of undeclared identifier 'g_counter'
-l4_memory_a64.o 0x58 banner_first: does not compile: use of undeclared identifier 'banner'
-l4_memory_x64.o 0x30 bump: does not compile: use of undeclared identifier 'g_counter'
-l4_memory_x64.o 0x40 banner_first: does not compile: use of undeclared identifier 'banner'
-l5_switch.o 0x0 dense: does not compile: use of undeclared identifier 'g_sink'
-pe64.obj 0x60 msg_first: does not compile: use of undeclared identifier 'kMsg'
-rust_demo 0x31df0 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: use of undeclared identifier 'dword_7534'
 rust_demo 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: does not compile: use of undeclared identifier 'fs_base'
-rust_demo 0x3ea20 <alloc::string::String as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_70b8'
-rust_demo 0x3ea30 <&str as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_7118'
-rust_demo 0x428e0 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::type_id: does not compile: use of undeclared identifier 'qword_7158'
-rust_demo 0x508a0 core::unicode::unicode_data::cn_planes_0_3::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data13cn_planes_0_317SHORT_OFFSET_RUNS'
-rust_demo 0x50aa0 core::unicode::unicode_data::default_ignorable_code_point::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data28default_ignorable_code_point17SHORT_OFFSET_RUNS'
-rust_probe 0x31df0 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next: does not compile: use of undeclared identifier 'dword_7534'
 rust_probe 0x3b8e0 std::panicking::panic_count::is_zero_slow_path: does not compile: use of undeclared identifier 'fs_base'
-rust_probe 0x3ea20 <alloc::string::String as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_70b8'
-rust_probe 0x3ea30 <&str as core::any::Any>::type_id: does not compile: use of undeclared identifier 'qword_7118'
-rust_probe 0x428e0 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::type_id: does not compile: use of undeclared identifier 'qword_7158'
-rust_probe 0x508a0 core::unicode::unicode_data::cn_planes_0_3::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data13cn_planes_0_317SHORT_OFFSET_RUNS'
-rust_probe 0x50aa0 core::unicode::unicode_data::default_ignorable_code_point::lookup_slow: does not compile: use of undeclared identifier '_RNvNtNtNtCsgxBkk5gSRhY_4core7unicode12unicode_data28default_ignorable_code_point17SHORT_OFFSET_RUNS'
-rust_probe_stripped 0x31df0 -: does not compile: use of undeclared identifier 'dword_7534'
 rust_probe_stripped 0x3b8e0 -: does not compile: use of undeclared identifier 'fs_base'
-rust_probe_stripped 0x508a0 -: does not compile: use of undeclared identifier 'dword_a324'
-rust_probe_stripped 0x50aa0 -: does not compile: use of undeclared identifier 'dword_a480'
-strings.o 0x0 pick: does not compile: use of undeclared identifier 'kName'
-switch_jumptable.o 0x0 d7: does not compile: use of undeclared identifier 'g'
-switch_jumptable_x64.o 0x0 d7: does not compile: use of undeclared identifier 'g'
-switch_value_table.o 0x0 dispatch: does not compile: use of undeclared identifier 'dword_24'

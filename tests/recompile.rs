@@ -22,8 +22,10 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use velk::ir::eval::{self, Outcome};
-use velk::ir::{CType, Expr, FunctionIr, Operation, Stmt, trials};
-use velk::loader::Image;
+use velk::ir::{
+    BinOp, Block, CType, Convention, Expr, FunctionIr, Operation, Param, Precision, Stmt, trials,
+};
+use velk::loader::{Image, Isa};
 use velk::service::Binary;
 
 const COMPILER: &str = "clang";
@@ -259,6 +261,309 @@ fn printed_code_reads_and_writes_memory_as_the_ir_does() {
     compare(Mode::Memory, "tests/golden/recompile_memory.txt");
 }
 
+#[test]
+fn printed_global_views_preserve_addresses_and_memory() {
+    assert!(
+        Command::new(COMPILER)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success()),
+        "{COMPILER} is required to check global memory accesses"
+    );
+    let address = REGION + 0x1000;
+    let load = |addr, width, signed| Expr::Load {
+        addr: Box::new(addr),
+        width,
+        signed,
+    };
+    let store = |addr, width, value| Stmt::Store { addr, width, value };
+    let mut cases = vec![
+        (
+            "unsigned_read".to_owned(),
+            Vec::new(),
+            vec![Stmt::Ret {
+                value: load(Expr::Const(address), 8, false),
+            }],
+            CType::U64,
+        ),
+        (
+            "shared_symbol".to_owned(),
+            Vec::new(),
+            vec![
+                store(Expr::Const(address), 8, Expr::Const(0x1234)),
+                Stmt::Ret {
+                    value: load(Expr::Const(address), 8, false),
+                },
+            ],
+            CType::U64,
+        ),
+    ];
+    for width in [1, 2, 4, 8] {
+        cases.push((
+            format!("signed_{}", width * 8),
+            Vec::new(),
+            vec![
+                store(
+                    Expr::Const(address),
+                    width,
+                    Expr::Const((1 << (width * 8 - 1)) | 5),
+                ),
+                Stmt::Ret {
+                    value: load(Expr::Const(address), width, true),
+                },
+            ],
+            CType::U64,
+        ));
+    }
+    for (name, op, read_width, signed, write_width, rhs) in [
+        ("sar_unsigned_byte", BinOp::Sar, 1, false, 1, 1),
+        ("sar_signed_word", BinOp::Sar, 4, true, 4, 1),
+        ("shr_signed_word", BinOp::Shr, 4, true, 4, 1),
+        ("widening_add", BinOp::Add, 1, false, 8, 1),
+        ("narrowing_shift", BinOp::Shr, 8, false, 1, 8),
+    ] {
+        cases.push((
+            name.to_owned(),
+            Vec::new(),
+            vec![
+                store(Expr::Const(address), 8, Expr::Const(0xfedc_ba98_8765_4385)),
+                store(
+                    Expr::Const(address),
+                    write_width,
+                    Expr::bin(
+                        op,
+                        load(Expr::Const(address), read_width, signed),
+                        Expr::Const(rhs),
+                    ),
+                ),
+                Stmt::Ret {
+                    value: load(Expr::Const(address), 8, false),
+                },
+            ],
+            CType::U64,
+        ));
+    }
+    for (name, precision, width, store_width, initial, increment) in [
+        (
+            "float32_bits",
+            Precision::Single,
+            4,
+            4,
+            u64::from(1.25_f32.to_bits()),
+            u64::from(2.5_f32.to_bits()),
+        ),
+        (
+            "float64_bits",
+            Precision::Double,
+            8,
+            8,
+            1.25_f64.to_bits(),
+            2.5_f64.to_bits(),
+        ),
+        (
+            "float32_wide_store",
+            Precision::Single,
+            4,
+            8,
+            u64::from(1.25_f32.to_bits()),
+            u64::from(2.5_f32.to_bits()),
+        ),
+        (
+            "float64_narrow_store",
+            Precision::Double,
+            8,
+            4,
+            1.25_f64.to_bits(),
+            2.5_f64.to_bits(),
+        ),
+    ] {
+        cases.push((
+            name.to_owned(),
+            Vec::new(),
+            vec![
+                store(Expr::Const(address), width, Expr::Const(initial)),
+                store(
+                    Expr::Const(address),
+                    store_width,
+                    Expr::apply(
+                        Operation::FloatAdd(precision),
+                        vec![
+                            load(Expr::Const(address), width, false),
+                            Expr::Const(increment),
+                        ],
+                    ),
+                ),
+                Stmt::Ret {
+                    value: load(Expr::Const(address), 8, false),
+                },
+            ],
+            CType::U64,
+        ));
+    }
+    let parameter = |name: &str| Param {
+        index: 7,
+        name: name.to_owned(),
+        ty: CType::U64,
+    };
+    let indexed = Expr::bin(
+        BinOp::Add,
+        Expr::Const(address),
+        Expr::bin(BinOp::Shl, Expr::reg(7, 64), Expr::Const(2)),
+    );
+    cases.extend([
+        (
+            "table_read".to_owned(),
+            vec![parameter("index")],
+            vec![Stmt::Ret {
+                value: load(indexed.clone(), 4, false),
+            }],
+            CType::U64,
+        ),
+        (
+            "table_write".to_owned(),
+            vec![parameter("index")],
+            vec![
+                store(indexed.clone(), 4, Expr::Const(0x8123_4567)),
+                Stmt::Ret {
+                    value: load(indexed, 4, false),
+                },
+            ],
+            CType::U64,
+        ),
+        (
+            "overlapping_views".to_owned(),
+            Vec::new(),
+            vec![
+                store(Expr::Const(address), 8, Expr::Const(0x0123_4567_89ab_cdef)),
+                store(Expr::Const(address), 1, Expr::Const(0x80)),
+                store(Expr::Const(address + 2), 2, Expr::Const(0xdead)),
+                Stmt::Ret {
+                    value: load(Expr::Const(address), 8, false),
+                },
+            ],
+            CType::U64,
+        ),
+        (
+            "parameter_collision".to_owned(),
+            vec![parameter("counter")],
+            vec![Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Xor,
+                    load(Expr::Const(address), 8, false),
+                    Expr::reg(7, 64),
+                ),
+            }],
+            CType::U64,
+        ),
+        (
+            "integer_address".to_owned(),
+            Vec::new(),
+            vec![Stmt::Ret {
+                value: Expr::Const(address),
+            }],
+            CType::U64,
+        ),
+        (
+            "pointer_address".to_owned(),
+            Vec::new(),
+            vec![Stmt::Ret {
+                value: Expr::Const(address),
+            }],
+            CType::Pointer(Box::new(CType::Int {
+                bytes: 1,
+                signed: false,
+            })),
+        ),
+        (
+            "word_pointer_address".to_owned(),
+            Vec::new(),
+            vec![Stmt::Ret {
+                value: Expr::Const(address),
+            }],
+            CType::Pointer(Box::new(CType::Int {
+                bytes: 4,
+                signed: false,
+            })),
+        ),
+        (
+            "pointer_slot".to_owned(),
+            Vec::new(),
+            vec![
+                store(Expr::Const(address), 8, Expr::Const(address + 0x100)),
+                store(Expr::Const(address + 0x100), 1, Expr::Const(0xa5)),
+                Stmt::Ret {
+                    value: load(load(Expr::Const(address), 8, false), 1, false),
+                },
+            ],
+            CType::U64,
+        ),
+    ]);
+    let symbols = velk::render::Symbols {
+        data: [(address, "counter".to_owned())].into(),
+        ..Default::default()
+    };
+    let candidates = cases
+        .into_iter()
+        .map(|(name, params, stmts, ret_type)| {
+            let ir = FunctionIr {
+                isa: Isa::X86_64,
+                convention: Convention::SysV,
+                params,
+                stack_params: Vec::new(),
+                variadic: false,
+                ret_type,
+                accesses: Vec::new(),
+                members: Vec::new(),
+                definitions: Vec::new(),
+                structures: Vec::new(),
+                signed_params: Default::default(),
+                landing_pads: Vec::new(),
+                pointer_values: Vec::new(),
+                value_types: Default::default(),
+                variable_registers: Default::default(),
+                addr: 0,
+                name: Some(name.clone()),
+                size: 0,
+                blocks: vec![Block { start: 0, stmts }],
+            };
+            Candidate {
+                label: name,
+                code: velk::render::render(&ir, &[], &symbols, &[(REGION, REGION_SIZE)]),
+                params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
+                inputs: (0..trials::TRIALS)
+                    .map(|trial| ir.params.iter().map(|_| trial).collect())
+                    .collect(),
+                void: false,
+                ir,
+            }
+        })
+        .collect::<Vec<_>>();
+    let count = candidates.len();
+    let fixture = Fixture {
+        name: "globals".into(),
+        convention: eval::Convention {
+            arguments: Convention::SysV.arguments(),
+            clobbered: &[],
+        },
+        entry_registers: Vec::new(),
+        initial_memory: Vec::new(),
+        functions: count,
+        excluded: BTreeMap::new(),
+        candidates,
+    };
+    let scratch = scratch_dir("globals");
+    let results = check(&[fixture], &scratch, Mode::Memory);
+    std::fs::remove_dir_all(&scratch).ok();
+    let result = &results[0];
+    assert!(result.lines.is_empty(), "{}", result.lines.join("\n"));
+    assert!(result.skipped.is_empty(), "{:?}", result.skipped);
+    assert_eq!(result.compiled, count);
+    assert_eq!(result.failed, 0);
+    assert_eq!(result.compared, count);
+    assert_eq!(result.runs, count * trials::TRIALS as usize);
+    assert_eq!(result.differing, 0);
+}
+
 fn compare(mode: Mode, golden: &str) {
     if Command::new(COMPILER).arg("--version").output().is_err() {
         eprintln!("skipping: no `{COMPILER}` to compile the pseudo-C with");
@@ -266,7 +571,10 @@ fn compare(mode: Mode, golden: &str) {
     }
     let fixtures = common::fixtures();
     let prepared = common::in_parallel(&fixtures, |fixture| prepare(fixture, mode));
-    let scratch = scratch_dir(mode);
+    let scratch = scratch_dir(match mode {
+        Mode::Registers => "registers",
+        Mode::Memory => "memory",
+    });
     let results = check(&prepared, &scratch, mode);
     std::fs::remove_dir_all(&scratch).ok();
 
@@ -324,7 +632,9 @@ fn compare(mode: Mode, golden: &str) {
 /// A fixture's functions that qualify, printed, with their inputs.
 struct Fixture {
     name: PathBuf,
-    binary: Binary,
+    convention: eval::Convention<'static>,
+    entry_registers: Vec<(u16, u64)>,
+    initial_memory: Vec<(u64, u64)>,
     functions: usize,
     excluded: BTreeMap<&'static str, usize>,
     candidates: Vec<Candidate>,
@@ -412,7 +722,9 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
     }
     Fixture {
         name: fixture.to_owned(),
-        binary,
+        convention: trials::convention(binary.image()),
+        entry_registers: trials::entry_state(binary.image()),
+        initial_memory: trials::initial_memory(binary.image()),
         functions: functions.len(),
         excluded,
         candidates,
@@ -648,7 +960,6 @@ fn check(fixtures: &[Fixture], scratch: &Path, mode: Mode) -> Vec<Findings> {
     let mut expected = Vec::new();
     for &index in &alive {
         let (fixture, candidate) = all[index];
-        let image = fixtures[fixture].binary.image();
         for trial in 0..trials::TRIALS {
             let arguments = canonical.next().unwrap_or_default();
             // Another function's address differs between the binary and
@@ -660,7 +971,7 @@ fn check(fixtures: &[Fixture], scratch: &Path, mode: Mode) -> Vec<Findings> {
                     .or_default() += 1;
                 continue;
             }
-            match interpret(image, candidate, trial, &arguments, mode) {
+            match interpret(&fixtures[fixture], candidate, trial, &arguments, mode) {
                 Ok(outcome) => expected.push(Expected {
                     function: index,
                     trial,
@@ -757,7 +1068,7 @@ fn check(fixtures: &[Fixture], scratch: &Path, mode: Mode) -> Vec<Findings> {
 
 /// The interpreter's outcome of one trial, or why it cannot tell one.
 fn interpret(
-    image: &Image,
+    fixture: &Fixture,
     candidate: &Candidate,
     trial: u64,
     arguments: &[u64],
@@ -773,8 +1084,8 @@ fn interpret(
         .map(|param| param.index)
         .zip(arguments.iter().copied())
         .collect();
-    registers.extend(trials::entry_state(image));
-    let mut memory = trials::initial_memory(image);
+    registers.extend_from_slice(&fixture.entry_registers);
+    let mut memory = fixture.initial_memory.clone();
     // The region holds what the trial's seed hashes, whatever seed reads
     // the rest, so a second seed tells registers apart and not memory.
     if mode == Mode::Memory {
@@ -785,14 +1096,23 @@ fn interpret(
             (addr, word)
         }));
     }
-    let setup = trials::setup(image, trial, &registers, &memory);
+    let setup = eval::Setup {
+        seed: trial,
+        convention: eval::Convention {
+            arguments: fixture.convention.arguments,
+            clobbered: fixture.convention.clobbered,
+        },
+        registers: &registers,
+        memory: &memory,
+        step_limit: trials::STEP_LIMIT,
+    };
     let outcome = eval::run(&candidate.ir, &setup);
     if let Outcome::Unknown(reason) = outcome {
         return Err(reason);
     }
     let reseeded = eval::Setup {
         seed: OTHER_SEED + trial,
-        ..trials::setup(image, trial, &registers, &memory)
+        ..setup
     };
     if !same_outcome(&outcome, &eval::run(&candidate.ir, &reseeded), candidate) {
         return Err("reads a register that is not a parameter");
@@ -1138,11 +1458,7 @@ fn run(program: &Path, input: &str) -> String {
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
-fn scratch_dir(mode: Mode) -> PathBuf {
-    let pass = match mode {
-        Mode::Registers => "registers",
-        Mode::Memory => "memory",
-    };
+fn scratch_dir(pass: &str) -> PathBuf {
     let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
         .join(format!("recompile-{}-{pass}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap_or_else(|error| panic!("{}: {error}", dir.display()));

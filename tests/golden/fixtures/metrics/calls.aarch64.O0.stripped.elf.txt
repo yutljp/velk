@@ -67,6 +67,7 @@ fn <unnamed> @ 0x210350 (size 44)
 /* velk pseudo-C: sub_21037c @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int32_t sub_21037c(int32_t a0, int32_t a1) {
+    uint64_t *const qword_2206f0 = (uint64_t *)(uintptr_t)0x2206f0;
     int64_t v3;
 
     v3 = qword_2206f0[(uint32_t)a0 % 0x3];

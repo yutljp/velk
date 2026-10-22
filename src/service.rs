@@ -44,7 +44,7 @@ pub struct Binary {
     path: PathBuf,
     modified: SystemTime,
     image: Image,
-    callees: HashMap<u64, String>,
+    symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
     analyses: HashMap<u64, Result<Analysis, LiftError>>,
 }
@@ -82,7 +82,7 @@ impl Binary {
         Ok(Self {
             path: path.to_owned(),
             modified,
-            callees: render::callee_names(&image),
+            symbols: render::callee_names(&image),
             data_ranges: render::data_ranges(&image),
             image,
             analyses: HashMap::new(),
@@ -194,7 +194,7 @@ impl Binary {
         text.push_str(&render::render(
             &analysis.ir,
             &analysis.references,
-            &self.callees,
+            &self.symbols,
             &self.data_ranges,
         ));
         Ok(text)

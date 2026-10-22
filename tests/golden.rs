@@ -180,7 +180,7 @@ impl std::fmt::Display for Readability {
     }
 }
 
-/// A local declaration such as `int32_t v1;` or `uint8_t local_0[16];`.
+/// A recovered local or an initialized pointer to global storage.
 fn is_declaration(code: &str) -> bool {
     let Some(body) = code.strip_prefix("    ") else {
         return false;
@@ -188,7 +188,27 @@ fn is_declaration(code: &str) -> bool {
     let Some(body) = body.trim_end().strip_suffix(';') else {
         return false;
     };
-    if body.starts_with(' ') || body.contains(['=', '(']) {
+    if body.starts_with(' ') || body.starts_with("return ") || body.starts_with("goto ") {
+        return false;
+    }
+    if let Some((declaration, _)) = body.split_once('=') {
+        let Some((ty, name)) = declaration.trim_end().split_once('*') else {
+            return false;
+        };
+        let name = name.trim();
+        let name = name.strip_prefix("const ").unwrap_or(name);
+        return matches!(
+            ty.trim(),
+            "uint8_t" | "uint16_t" | "uint32_t" | "uint64_t" | "float" | "double"
+        ) && name
+            .bytes()
+            .next()
+            .is_some_and(|byte| byte.is_ascii_alphabetic() || byte == b'_')
+            && name
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_');
+    }
+    if body.contains('(') {
         return false;
     }
     let name = body
@@ -201,6 +221,45 @@ fn is_declaration(code: &str) -> bool {
     body.contains(' ')
         && (name.strip_prefix('v').or(name.strip_prefix("local_")))
             .is_some_and(|digits| !digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit()))
+}
+
+#[test]
+fn declarations_include_named_global_views() {
+    for code in [
+        "    int32_t v1;",
+        "    uint8_t local_0[16];",
+        "    struct pair *v2;",
+        "    uint32_t *const counter = (uint32_t *)(uintptr_t)0x1000;",
+        "    uint8_t *const bytes_u8 = (uint8_t *)(uintptr_t)0x1001;",
+        "    float *const samples = (float *)(uintptr_t)0x2000;",
+        "    double *values = (double *)(uintptr_t)0x3000;",
+    ] {
+        assert!(is_declaration(code), "{code}");
+    }
+    for code in [
+        "    uint64_t rax;",
+        "    *counter = 1;",
+        "    counter[0] = 1;",
+        "    counter = (uint32_t *)(uintptr_t)0x1000;",
+        "    counter *= 2;",
+        "    return *counter;",
+        "    return counter;",
+        "    return v1;",
+        "    goto L0;",
+        "    goto local_0;",
+        "    consume(counter);",
+        "uint32_t counter(void);",
+    ] {
+        assert!(!is_declaration(code), "{code}");
+    }
+    let mut counts = Readability::default();
+    counts.add(concat!(
+        "    uint32_t *const counter = (uint32_t *)(uintptr_t)0x1000;\n",
+        "    uint64_t rax;\n",
+        "    *counter = rax;\n",
+    ));
+    assert_eq!(counts.variables, 1);
+    assert_eq!(counts.registers, 2);
 }
 
 /// Casts to a scalar, pointer or structure type, such as `(int8_t)` or `(struct s1 *)`.

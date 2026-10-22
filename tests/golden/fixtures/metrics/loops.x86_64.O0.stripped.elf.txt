@@ -15,7 +15,7 @@ int32_t sub_2011c0(int32_t a0) {
     local_1 = 0x0;
     while (local_0 != 0x0) {
         local_1 += local_0 & 0x1;
-        local_0 >>= 0x1;
+        local_0 = local_0 >> 0x1;
     }
     return local_1;
 }

@@ -158,7 +158,7 @@ echo "$iz" | grep -q "return (a0 == 0x0);" || fail "cset as a truth value"
 ok "pow2 mod and cset"
 locals=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$locals" | grep -q "local_0 = a0"     || fail "stack local naming"
-echo "$locals" | grep -q "local_0 >>= 0x1"  || fail "stack local names one slot"
+echo "$locals" | grep -q "local_0 = local_0 >> 0x1" || fail "stack local names one slot"
 use_ir=$("$BIN" decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$use_ir" | grep -q "ns__mul(a0, 0x2)" || fail "C++ call relocation"
 echo "$use_ir" | grep -qE "(= x20|x20 =)" && fail "callee-save elision (x20)"
@@ -416,7 +416,7 @@ ok "named globals"
 bits_ir=$("$BIN" decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$bits_ir" | grep -Eq "local_[0-9]+ \+= (local_[0-9]+ & 0x1|w[0-9]+);" || fail "compound add"
 echo "$bits_ir" | grep -Eq "& 0x1;" || fail "compound add operand"
-echo "$bits_ir" | grep -Eq "local_[0-9]+ >>= 0x1;"            || fail "compound shift"
+echo "$bits_ir" | grep -Eq "local_[0-9]+ = local_[0-9]+ >> 0x1;" || fail "shift assignment"
 echo "$bits_ir" | grep -q "local_1 = (local_1" && fail "compound add kept the temp"
 ok "compound assignment"
 

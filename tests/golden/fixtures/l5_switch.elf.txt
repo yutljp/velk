@@ -8,6 +8,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2202e8 .bss */
 int32_t dense(int32_t a0) {
+    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x2202e8;
     int32_t v4;
     int32_t v8;
 
@@ -16,54 +17,54 @@ int32_t dense(int32_t a0) {
     } else {
         switch (a0) {
         case 10:
-            v4 = g_sink + 0xb;
+            v4 = *g_sink + 0xb;
             break;
         case 11:
-            v4 = g_sink ^ 0x12;
+            v4 = *g_sink ^ 0x12;
             break;
         case 12:
-            v4 = g_sink - 0x19;
+            v4 = *g_sink - 0x19;
             break;
         case 13:
-            v4 = g_sink | 0x20;
+            v4 = *g_sink | 0x20;
             break;
         case 14:
-            v4 = g_sink + 0x27;
+            v4 = *g_sink + 0x27;
             break;
         case 15:
-            v4 = g_sink ^ 0x2e;
+            v4 = *g_sink ^ 0x2e;
             break;
         case 16:
-            v4 = g_sink - 0x35;
+            v4 = *g_sink - 0x35;
             break;
         case 17:
-            v4 = g_sink | 0x3c;
+            v4 = *g_sink | 0x3c;
             break;
         case 18:
-            v4 = g_sink + 0x43;
+            v4 = *g_sink + 0x43;
             break;
         case 19:
-            v4 = g_sink ^ 0x4a;
+            v4 = *g_sink ^ 0x4a;
             break;
         case 20:
-            v4 = g_sink - 0x51;
+            v4 = *g_sink - 0x51;
             break;
         case 21:
-            v4 = g_sink;
+            v4 = *g_sink;
             v8 = 0x58;
             v4 = v4 | v8;
             break;
         case 22:
-            v4 = g_sink + 0x5f;
+            v4 = *g_sink + 0x5f;
             break;
         case 23:
-            v4 = g_sink ^ 0x66;
+            v4 = *g_sink ^ 0x66;
             break;
         case 24:
-            v4 = g_sink - 0x6d;
+            v4 = *g_sink - 0x6d;
             break;
         case 25:
-            v4 = g_sink;
+            v4 = *g_sink;
             v8 = 0x74;
             v4 = v4 | v8;
             break;
@@ -71,8 +72,8 @@ int32_t dense(int32_t a0) {
             __builtin_unreachable();
         }
     }
-    g_sink = v4;
-    return g_sink;
+    *g_sink = v4;
+    return *g_sink;
 }
 -- signature
 int32_t (int32_t a0)

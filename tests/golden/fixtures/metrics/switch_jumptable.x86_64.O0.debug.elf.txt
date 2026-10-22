@@ -7,6 +7,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202410 .bss */
 int d7(int x) {
+    uint32_t *const g = (uint32_t *)(uintptr_t)0x202410;
     uint32_t v1;
     uint32_t local_0; /* [sp-c] */
     int64_t local_1; /* [sp-40] */
@@ -28,60 +29,60 @@ int d7(int x) {
         switch (local_1) {
         case 0:
             for (local_2 = 0x0; local_2 < 0x1; local_2++) {
-                g += local_2;
+                *g += local_2;
             }
-            return g;
+            return *g;
         case 1:
             for (local_3 = 0x0; local_3 < 0x2; local_3++) {
-                g += local_3;
+                *g += local_3;
             }
-            return g;
+            return *g;
         case 2:
             for (local_4 = 0x0; local_4 < 0x3; local_4++) {
-                g += local_4;
+                *g += local_4;
             }
-            return g;
+            return *g;
         case 3:
             for (local_5 = 0x0; local_5 < 0x4; local_5++) {
-                g += local_5;
+                *g += local_5;
             }
-            return g;
+            return *g;
         case 4:
             for (local_6 = 0x0; local_6 < 0x5; local_6++) {
-                g += local_6;
+                *g += local_6;
             }
-            return g;
+            return *g;
         case 5:
             for (local_7 = 0x0; local_7 < 0x6; local_7++) {
-                g += local_7;
+                *g += local_7;
             }
-            return g;
+            return *g;
         case 6:
             for (local_8 = 0x0; local_8 < 0x7; local_8++) {
-                g += local_8;
+                *g += local_8;
             }
-            return g;
+            return *g;
         case 7:
             for (local_9 = 0x0; local_9 < 0x8; local_9++) {
-                g += local_9;
+                *g += local_9;
             }
-            return g;
+            return *g;
         case 8:
             for (local_10 = 0x0; local_10 < 0x9; local_10++) {
-                g += local_10;
+                *g += local_10;
             }
-            return g;
+            return *g;
         case 9:
             for (local_11 = 0x0; local_11 < 0xa; local_11++) {
-                g += local_11;
+                *g += local_11;
             }
-            return g;
+            return *g;
         default:
             break;
         }
     }
-    g = 0xffffffff;
-    return g;
+    *g = 0xffffffff;
+    return *g;
 }
 -- signature
 int (int x)

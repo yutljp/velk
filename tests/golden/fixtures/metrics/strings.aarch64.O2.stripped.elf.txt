@@ -6,7 +6,9 @@
 /* velk pseudo-C: sub_21019c @ 0x21019c */
 /* ref: 0x2201b0 -> 0x200158 "velk-aarch64-string" */
 int32_t sub_21019c(void) {
-    return *(uint8_t *)(qword_2201b0 + 0x2);
+    uint64_t *const qword_2201b0 = (uint64_t *)(uintptr_t)0x2201b0;
+
+    return *(uint8_t *)(*qword_2201b0 + 0x2);
 }
 -- signature
 int32_t ()

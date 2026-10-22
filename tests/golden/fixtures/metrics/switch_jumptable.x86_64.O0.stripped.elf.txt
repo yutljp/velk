@@ -7,6 +7,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202410 .bss */
 int32_t sub_2011c0(int32_t a0) {
+    uint32_t *const dword_202410 = (uint32_t *)(uintptr_t)0x202410;
     int32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
     int32_t local_2; /* [sp-18] */
@@ -22,60 +23,60 @@ int32_t sub_2011c0(int32_t a0) {
         switch (a0) {
         case 0:
             for (local_0 = 0x0; local_0 < 0x1; local_0++) {
-                dword_202410 += local_0;
+                *dword_202410 += local_0;
             }
-            return dword_202410;
+            return *dword_202410;
         case 1:
             for (local_1 = 0x0; local_1 < 0x2; local_1++) {
-                dword_202410 += local_1;
+                *dword_202410 += local_1;
             }
-            return dword_202410;
+            return *dword_202410;
         case 2:
             for (local_2 = 0x0; local_2 < 0x3; local_2++) {
-                dword_202410 += local_2;
+                *dword_202410 += local_2;
             }
-            return dword_202410;
+            return *dword_202410;
         case 3:
             for (local_3 = 0x0; local_3 < 0x4; local_3++) {
-                dword_202410 += local_3;
+                *dword_202410 += local_3;
             }
-            return dword_202410;
+            return *dword_202410;
         case 4:
             for (local_4 = 0x0; local_4 < 0x5; local_4++) {
-                dword_202410 += local_4;
+                *dword_202410 += local_4;
             }
-            return dword_202410;
+            return *dword_202410;
         case 5:
             for (local_5 = 0x0; local_5 < 0x6; local_5++) {
-                dword_202410 += local_5;
+                *dword_202410 += local_5;
             }
-            return dword_202410;
+            return *dword_202410;
         case 6:
             for (local_6 = 0x0; local_6 < 0x7; local_6++) {
-                dword_202410 += local_6;
+                *dword_202410 += local_6;
             }
-            return dword_202410;
+            return *dword_202410;
         case 7:
             for (local_7 = 0x0; local_7 < 0x8; local_7++) {
-                dword_202410 += local_7;
+                *dword_202410 += local_7;
             }
-            return dword_202410;
+            return *dword_202410;
         case 8:
             for (local_8 = 0x0; local_8 < 0x9; local_8++) {
-                dword_202410 += local_8;
+                *dword_202410 += local_8;
             }
-            return dword_202410;
+            return *dword_202410;
         case 9:
             for (local_9 = 0x0; local_9 < 0xa; local_9++) {
-                dword_202410 += local_9;
+                *dword_202410 += local_9;
             }
-            return dword_202410;
+            return *dword_202410;
         default:
             break;
         }
     }
-    dword_202410 = 0xffffffff;
-    return dword_202410;
+    *dword_202410 = 0xffffffff;
+    return *dword_202410;
 }
 -- signature
 int32_t (int32_t a0)

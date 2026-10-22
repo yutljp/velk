@@ -1,12 +1,16 @@
 mod calls;
 mod expr;
+mod globals;
 mod int;
 mod locals;
 mod naming;
 mod params;
 pub mod structure;
+mod symbols;
 mod variables;
 mod widths;
+
+pub use symbols::Symbols;
 
 use crate::arch::stack_pointer;
 use expr::condition;
@@ -23,7 +27,6 @@ use crate::render::expr::type_of;
 use crate::render::expr::{render_at, render_value_at};
 use crate::render::locals::Locals;
 use crate::render::locals::stack_locals;
-use crate::render::naming::global_name;
 use crate::render::naming::member_access;
 use crate::render::naming::narrow_registers;
 use crate::render::naming::struct_fields;
@@ -43,32 +46,46 @@ pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
 /// imports by the slots that hold them. A function goes by its name without
 /// the parameter list a demangled name ends in, when no other function has
 /// that name too.
-pub fn callee_names(image: &crate::loader::Image) -> HashMap<u64, String> {
+pub fn callee_names(image: &crate::loader::Image) -> Symbols {
     let mut bases: HashMap<String, usize> = HashMap::new();
     for function in image.functions.values() {
         if let Some(name) = &function.name {
-            *bases.entry(short_name(name)).or_default() += 1;
+            *bases.entry(sanitize(&short_name(name))).or_default() += 1;
         }
     }
-    image
-        .imports
+    let mut used = std::collections::HashSet::new();
+    let functions = image
+        .functions
         .iter()
-        .chain(&image.data_symbols)
-        .map(|(address, name)| (*address, name.clone()))
-        .chain(image.functions.iter().filter_map(|(address, function)| {
-            let name = function.name.as_ref()?;
-            let base = short_name(name);
-            // Names that would meet take the address after them.
-            Some((
-                *address,
-                if bases.get(&base) == Some(&1) {
-                    base
-                } else {
-                    format!("{base}_{address:x}")
-                },
-            ))
-        }))
-        .collect()
+        .filter_map(|(address, function)| {
+            let base = sanitize(&short_name(function.name.as_ref()?));
+            let mut name = base.clone();
+            if bases.get(&base) != Some(&1) {
+                let candidate = format!("{base}_{address:x}");
+                name = candidate.clone();
+                let mut suffix = 2;
+                while bases.contains_key(&name) || used.contains(&name) {
+                    name = format!("{candidate}_{suffix}");
+                    suffix += 1;
+                }
+            }
+            used.insert(name.clone());
+            Some((*address, name))
+        })
+        .collect();
+    Symbols {
+        functions,
+        import_slots: image
+            .imports
+            .iter()
+            .map(|(address, name)| (*address, name.clone()))
+            .collect(),
+        data: image
+            .data_symbols
+            .iter()
+            .map(|(address, name)| (*address, name.clone()))
+            .collect(),
+    }
 }
 
 /// A demangled name as callers read it: without its parameter list, its
@@ -171,7 +188,7 @@ const STRUCTURE_LINE: usize = 100;
 pub fn render(
     ir: &FunctionIr,
     references: &[Reference],
-    callees: &HashMap<u64, String>,
+    symbols: &Symbols,
     data_ranges: &[(u64, u64)],
 ) -> String {
     let mut folded = ir.clone();
@@ -184,7 +201,7 @@ pub fn render(
     let variable_types =
         variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
     let locals = stack_locals(ir, &frames, &variable_types);
-    render_with(ir, references, locals, callees, data_ranges)
+    render_with(ir, references, locals, symbols, data_ranges)
 }
 
 /// The precision of a float the function returns.
@@ -218,7 +235,7 @@ fn render_with(
     ir: &FunctionIr,
     references: &[Reference],
     locals: Locals,
-    callees: &HashMap<u64, String>,
+    symbols: &Symbols,
     data_ranges: &[(u64, u64)],
 ) -> String {
     let mut names: HashMap<u16, &str> = ir
@@ -403,6 +420,53 @@ fn render_with(
         .filter(|(_, ty)| scales(ty))
         .map(|(name, _)| name)
         .collect();
+    let mut reserved: Vec<String> = names
+        .values()
+        .map(|name| (*name).to_owned())
+        .chain(locals.decls.iter().map(|local| local.name.clone()))
+        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+        .chain(
+            variable_types
+                .keys()
+                .map(|index| crate::ir::reg_name(ir.isa, *index, 64)),
+        )
+        .chain(symbols.functions.values().map(|name| sanitize(name)))
+        .chain(symbols.import_slots.values().map(|name| sanitize(name)))
+        .collect();
+    reserved.push(sanitize(
+        &symbols
+            .functions
+            .get(&ir.addr)
+            .cloned()
+            .or_else(|| ir.name.clone())
+            .unwrap_or_else(|| format!("sub_{:x}", ir.addr)),
+    ));
+    reserved.extend(ir.blocks.iter().flat_map(|block| &block.stmts).filter_map(
+        |stmt| match stmt {
+            Stmt::Call {
+                target: Some(target),
+                through: None,
+                ..
+            } if !symbols.functions.contains_key(target) => Some(format!("sub_{target:x}")),
+            _ => None,
+        },
+    ));
+    for ty in ir
+        .params
+        .iter()
+        .map(|param| &param.ty)
+        .chain(ir.stack_params.iter().map(|param| &param.ty))
+        .chain(variable_types.values())
+        .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+        .chain(std::iter::once(&ir.ret_type))
+    {
+        reserved.extend(
+            ty.to_string()
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .filter(|name| !name.is_empty())
+                .map(str::to_owned),
+        );
+    }
     let mut ctx = Ctx {
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
@@ -451,7 +515,8 @@ fn render_with(
         local_scaled,
         wide_params,
         fields,
-        callees,
+        symbols,
+        globals: globals::Globals::new(symbols, reserved),
         data_ranges,
         members,
         pointees,
@@ -488,7 +553,7 @@ fn render_with(
         .unwrap_or_else(|| format!("sub_{:x}", ir.addr));
     out.push_str(&format!("/* velk pseudo-C: {name} @ 0x{:x} */\n", ir.addr));
     // The function goes by the name its callers use.
-    let name = callees.get(&ir.addr).cloned().unwrap_or(name);
+    let name = symbols.functions.get(&ir.addr).cloned().unwrap_or(name);
     for reference in references {
         out.push_str(&format!("/* ref: {} */\n", reference.describe()));
     }
@@ -571,6 +636,12 @@ fn render_with(
         .collect();
     out.insert_str(prototypes_at, &prototypes);
     let mut declared = 0;
+    for declaration in ctx.globals.declarations(&body) {
+        indent(1, &mut out);
+        out.push_str(&declaration);
+        out.push('\n');
+        declared += 1;
+    }
     // A register the body uses beyond the parameters holds what it holds
     // on entry until the body sets it.
     for (_, name) in &machine {
@@ -782,13 +853,10 @@ fn update_of_same_location<'e>(
         BinOp::And => "&",
         BinOp::Or => "|",
         BinOp::Xor => "^",
-        BinOp::Shl => "<<",
-        BinOp::Shr => ">>",
-        BinOp::Sar => ">>",
         BinOp::Mul => "*",
         _ => return None,
     };
-    let reads_place = |operand: &'e Expr| matches!(unmasked(operand), Expr::Load { addr: read, .. } if read.as_ref() == addr);
+    let reads_place = |operand: &'e Expr| matches!(unmasked(operand), Expr::Load { addr: read, width: read_width, .. } if read.as_ref() == addr && *read_width == width);
     if reads_place(lhs) {
         return Some((symbol, rhs));
     }
@@ -1410,7 +1478,8 @@ fn via_comment(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         return String::new();
     };
     let name = |addr: u64| {
-        ctx.callees
+        ctx.symbols
+            .functions
             .get(&addr)
             .map_or_else(|| format!("sub_{addr:x}"), |name| sanitize(name))
     };
@@ -1657,6 +1726,11 @@ fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
 /// integer when that is None: C converts between the two only by a cast.
 fn conformed(value: &Expr, printed: int::Printed, pointer: Option<&str>) -> String {
     match pointer {
+        Some(ty)
+            if printed.is_pointer() && matches!(value, Expr::Const(_) | Expr::Select { .. }) =>
+        {
+            format!("({ty}){}", printed.within(12, false).text)
+        }
         // Memory read whole is read as the pointer it holds.
         Some(ty)
             if !printed.is_pointer()
@@ -1713,10 +1787,48 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         Stmt::Store { addr, value, width } => {
             // Memory keeps of the value the bits stored.
             let stored = u32::from(*width) * 8;
-            if let Some(member) = member_access(addr, *width, ctx).or_else(|| {
-                naming::array_access(addr, *width, ctx)
-                    .or_else(|| naming::flat_array_access(addr, *width, ctx))
-            }) {
+            let precision = match value {
+                Expr::Apply { op, .. } => op.result_precision(),
+                Expr::Reg { index, .. } => ctx.floats.get(index).copied(),
+                Expr::Load {
+                    addr, width: read, ..
+                } if read == width => ctx
+                    .slots
+                    .get(&render_expr(addr, ctx))
+                    .and_then(|name| ctx.local_floats.get(name))
+                    .copied(),
+                _ => None,
+            };
+            let view = precision
+                .filter(|precision| u32::from(precision.bits()) == stored)
+                .map_or(globals::View::Unsigned(*width), globals::View::Float);
+            if let Some(target) = naming::global_access_as(addr, view, ctx)
+                .or_else(|| naming::array_access_as(addr, *width, view, ctx))
+                .or_else(|| naming::flat_array_access_as(addr, *width, view, ctx))
+            {
+                if let Some(precision) = precision {
+                    let text = expr::float_operand(value, precision, ctx, 0, false);
+                    if u32::from(precision.bits()) == stored {
+                        return format!("{target} = {text};");
+                    }
+                    let float = match precision {
+                        crate::ir::Precision::Single => "float",
+                        crate::ir::Precision::Double => "double",
+                    };
+                    let integer = type_of(precision.bits() / 8, false);
+                    return format!(
+                        "{target} = ((union {{ {float} value; {integer} bits; }}){{ .value = {text} }}).bits;"
+                    );
+                }
+                return match update_of_same_location(addr, value, *width, ctx) {
+                    Some((op, rhs)) => format!("{target} {op}= {};", render_at(rhs, ctx, stored)),
+                    None => {
+                        let printed = expr::print_value_at(value, ctx, stored, false);
+                        format!("{target} = {};", conformed(value, printed, None))
+                    }
+                };
+            }
+            if let Some(member) = member_access(addr, *width, ctx) {
                 return match update_of_same_location(addr, value, *width, ctx) {
                     Some((op, rhs)) => {
                         format!("{} {}= {};", member, op, render_at(rhs, ctx, stored))
@@ -1760,23 +1872,12 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                         }
                     }
                 }
-                None => match global_name(addr, *width, ctx) {
-                    Some(name) => match update_of_same_location(addr, value, *width, ctx) {
-                        Some((op, rhs)) => {
-                            format!("{} {}= {};", name, op, render_at(rhs, ctx, stored))
-                        }
-                        None => {
-                            let printed = expr::print_value_at(value, ctx, stored, false);
-                            format!("{name} = {};", conformed(value, printed, None))
-                        }
-                    },
-                    None => format!(
-                        "*({} *)({}) = {};",
-                        type_of(*width, false),
-                        expr::local_plus_offset(addr, ctx).unwrap_or(address),
-                        conformed(value, expr::print_value_at(value, ctx, stored, false), None)
-                    ),
-                },
+                None => format!(
+                    "*({} *)({}) = {};",
+                    type_of(*width, false),
+                    expr::local_plus_offset(addr, ctx).unwrap_or(address),
+                    conformed(value, expr::print_value_at(value, ctx, stored, false), None)
+                ),
             }
         }
         Stmt::Brif {
@@ -1857,7 +1958,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 // A named slot's function is called by its name.
                 (Some(Expr::Load { addr, width: 8, .. }), _)
                     if let Expr::Const(slot) = addr.as_ref()
-                        && let Some(name) = ctx.callees.get(slot) =>
+                        && let Some(name) = ctx.symbols.import_slots.get(slot) =>
                 {
                     sanitize(name)
                 }
@@ -1870,7 +1971,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                         format!("((uint64_t (*)()){text})")
                     }
                 }
-                (None, Some(target)) => match ctx.callees.get(target) {
+                (None, Some(target)) => match ctx.symbols.functions.get(target) {
                     Some(name) => sanitize(name),
                     None => format!("sub_{target:x}"),
                 },
@@ -1916,7 +2017,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::render;
+    use super::{Symbols, callee_names, render};
     use crate::ir::{
         BinOp, CType, Expr, FunctionIr, Operation, Param, Precision, RegRef, Stmt, VARIABLE_BASE,
     };
@@ -1924,7 +2025,7 @@ mod tests {
     use std::collections::HashMap;
 
     fn rendered(ir: &FunctionIr) -> String {
-        render(ir, &[], &HashMap::new(), &[])
+        render(ir, &[], &Symbols::default(), &[])
     }
 
     fn assign(index: u16, value: Expr) -> Stmt {
@@ -3055,9 +3156,137 @@ mod tests {
             }],
         );
         ir.ret_type = CType::I64;
-        let callees = HashMap::from([(0x40, "square".to_owned())]);
-        let text = render(&ir, &[], &callees, &[]);
+        let symbols = Symbols {
+            functions: HashMap::from([(0x40, "square".to_owned())]),
+            ..Symbols::default()
+        };
+        let text = render(&ir, &[], &symbols, &[]);
         assert!(text.contains("void square(void);\n"), "{text}");
         assert!(text.contains("    return (uintptr_t)square;\n"), "{text}");
+    }
+
+    #[test]
+    fn symbol_kinds_keep_names_at_the_same_address() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/alt.o");
+        let mut image = crate::loader::load(&path).unwrap();
+        image.functions.clear();
+        for (address, name) in [
+            (0x40, "owner::method"),
+            (0x80, "owner__method"),
+            (0xc0, "owner__method_40"),
+            (0x100, "owner__method_40_2"),
+        ] {
+            image.functions.insert(
+                address,
+                crate::loader::Function {
+                    addr: address,
+                    size: None,
+                    size_estimated: false,
+                    name: Some(name.to_owned()),
+                    aliases: Vec::new(),
+                    sources: Vec::new(),
+                },
+            );
+        }
+        image.imports.clear();
+        image.imports.insert(0x40, "imported_object".to_owned());
+        image.data_symbols.clear();
+        image.data_symbols.insert(0x40, "object".to_owned());
+        let symbols = callee_names(&image);
+        assert_eq!(symbols.functions[&0x40], "owner__method_40_3");
+        assert_eq!(symbols.functions[&0x80], "owner__method_80");
+        assert_eq!(symbols.functions[&0xc0], "owner__method_40");
+        assert_eq!(symbols.functions[&0x100], "owner__method_40_2");
+        assert_eq!(symbols.import_slots[&0x40], "imported_object");
+        assert_eq!(symbols.data[&0x40], "object");
+    }
+
+    #[test]
+    fn calls_distinguish_functions_from_import_slots() {
+        let call = |through| Stmt::Call {
+            target: Some(0x40),
+            through,
+            convention: crate::ir::Convention::SysV,
+            args: Some(Vec::new()),
+            floats_named: false,
+            result: None,
+            clobbers: None,
+            via: None,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                call(None),
+                call(Some(load(Expr::Const(0x40), 8))),
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        ir.ret_type = CType::Void;
+        let symbols = Symbols {
+            functions: HashMap::from([(0x40, "direct_function".to_owned())]),
+            import_slots: HashMap::from([(0x40, "imported_function".to_owned())]),
+            data: HashMap::from([(0x40, "data_object".to_owned())]),
+        };
+        let text = render(&ir, &[], &symbols, &[]);
+        assert!(text.contains("    direct_function();\n"), "{text}");
+        assert!(text.contains("    imported_function();\n"), "{text}");
+        assert!(!text.contains("data_object"), "{text}");
+    }
+
+    #[test]
+    fn a_data_address_has_no_function_prototype() {
+        let ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![Stmt::Ret {
+                value: Expr::Const(0x40),
+            }],
+        );
+        let symbols = Symbols {
+            import_slots: HashMap::from([(0x40, "imported_object".to_owned())]),
+            data: HashMap::from([(0x40, "data_object".to_owned())]),
+            ..Symbols::default()
+        };
+        let text = render(&ir, &[], &symbols, &[(0x40, 8)]);
+        assert!(!text.contains("void imported_object(void);"), "{text}");
+        assert!(!text.contains("void data_object(void);"), "{text}");
+    }
+
+    #[test]
+    fn global_views_do_not_shadow_unnamed_functions() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x40),
+                    through: None,
+                    convention: crate::ir::Convention::SysV,
+                    args: Some(Vec::new()),
+                    floats_named: false,
+                    result: None,
+                    clobbers: None,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Add,
+                        load(Expr::Const(0x1000), 4),
+                        load(Expr::Const(0x1004), 4),
+                    ),
+                },
+            ],
+        );
+        ir.addr = 0x80;
+        ir.ret_type = CType::U64;
+        let symbols = Symbols {
+            data: HashMap::from([(0x1000, "sub_40".to_owned()), (0x1004, "sub_80".to_owned())]),
+            ..Symbols::default()
+        };
+        let text = render(&ir, &[], &symbols, &[(0x1000, 8)]);
+        assert!(text.contains("uint64_t sub_80(void) {\n"), "{text}");
+        assert!(text.contains("    sub_40();\n"), "{text}");
+        assert!(text.contains("uint32_t *const sub_40_1000_u32 ="), "{text}");
+        assert!(text.contains("uint32_t *const sub_80_1004_u32 ="), "{text}");
     }
 }

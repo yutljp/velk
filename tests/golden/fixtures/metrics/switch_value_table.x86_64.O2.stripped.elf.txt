@@ -6,6 +6,7 @@
 /* velk pseudo-C: sub_201170 @ 0x201170 */
 /* ref: 0x200120 .rodata */
 int32_t sub_201170(int32_t a0) {
+    uint32_t *const dword_200120 = (uint32_t *)(uintptr_t)0x200120;
     uint32_t v1;
     int32_t v2;
 

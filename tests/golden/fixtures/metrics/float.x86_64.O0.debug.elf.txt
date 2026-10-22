@@ -95,7 +95,9 @@ fn truncate_to_int @ 0x2012c0 (size 16)
 /* velk pseudo-C: widen @ 0x2012d0 */
 /* ref: 0x200120 .rodata */
 double widen(float x) {
-    return (double)x * qword_200120;
+    double *const double_200120 = (double *)(uintptr_t)0x200120;
+
+    return (double)x * *double_200120;
 }
 -- signature
 double (float x)

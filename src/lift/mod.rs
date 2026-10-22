@@ -1237,7 +1237,7 @@ fn drop_unread_compare_operands(blocks: &mut [Block]) {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::collections::HashSet;
 
     use super::lift;
     use crate::analysis::analyze;
@@ -1661,7 +1661,12 @@ mod tests {
                 };
                 let image = Image::from_code(isa, 0, code);
                 if let Ok(analysis) = analyze(&image, &function) {
-                    crate::render::render(&analysis.ir, &analysis.references, &HashMap::new(), &[]);
+                    crate::render::render(
+                        &analysis.ir,
+                        &analysis.references,
+                        &crate::render::Symbols::default(),
+                        &[],
+                    );
                 }
             }
         }

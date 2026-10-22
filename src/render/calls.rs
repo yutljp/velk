@@ -203,7 +203,6 @@ fn only_word(line: &str, word: &str) -> Option<usize> {
 mod tests {
     use crate::ir::{CType, Convention, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE};
     use crate::loader::Isa;
-    use std::collections::HashMap;
 
     fn call(target: u64, args: Vec<Expr>, result: Option<u16>) -> Stmt {
         Stmt::Call {
@@ -242,7 +241,7 @@ mod tests {
                 ty: CType::pointer_to(CType::I64),
             },
         ];
-        crate::render::render(&ir, &[], &HashMap::new(), &[])
+        crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[])
     }
 
     #[test]

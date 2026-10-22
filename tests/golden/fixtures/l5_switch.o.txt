@@ -6,6 +6,7 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
+    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x14c;
     int32_t v5;
     int32_t v9;
 
@@ -14,54 +15,54 @@ int32_t dense(int32_t a0) {
     } else {
         switch (a0) {
         case 10:
-            v5 = g_sink + 0xb;
+            v5 = *g_sink + 0xb;
             break;
         case 11:
-            v5 = g_sink ^ 0x12;
+            v5 = *g_sink ^ 0x12;
             break;
         case 12:
-            v5 = g_sink - 0x19;
+            v5 = *g_sink - 0x19;
             break;
         case 13:
-            v5 = g_sink | 0x20;
+            v5 = *g_sink | 0x20;
             break;
         case 14:
-            v5 = g_sink + 0x27;
+            v5 = *g_sink + 0x27;
             break;
         case 15:
-            v5 = g_sink ^ 0x2e;
+            v5 = *g_sink ^ 0x2e;
             break;
         case 16:
-            v5 = g_sink - 0x35;
+            v5 = *g_sink - 0x35;
             break;
         case 17:
-            v5 = g_sink | 0x3c;
+            v5 = *g_sink | 0x3c;
             break;
         case 18:
-            v5 = g_sink + 0x43;
+            v5 = *g_sink + 0x43;
             break;
         case 19:
-            v5 = g_sink ^ 0x4a;
+            v5 = *g_sink ^ 0x4a;
             break;
         case 20:
-            v5 = g_sink - 0x51;
+            v5 = *g_sink - 0x51;
             break;
         case 21:
-            v5 = g_sink;
+            v5 = *g_sink;
             v9 = 0x58;
             v5 = v5 | v9;
             break;
         case 22:
-            v5 = g_sink + 0x5f;
+            v5 = *g_sink + 0x5f;
             break;
         case 23:
-            v5 = g_sink ^ 0x66;
+            v5 = *g_sink ^ 0x66;
             break;
         case 24:
-            v5 = g_sink - 0x6d;
+            v5 = *g_sink - 0x6d;
             break;
         case 25:
-            v5 = g_sink;
+            v5 = *g_sink;
             v9 = 0x74;
             v5 = v5 | v9;
             break;
@@ -69,8 +70,8 @@ int32_t dense(int32_t a0) {
             __builtin_unreachable();
         }
     }
-    g_sink = v5;
-    return g_sink;
+    *g_sink = v5;
+    return *g_sink;
 }
 -- signature
 int32_t (int32_t a0)

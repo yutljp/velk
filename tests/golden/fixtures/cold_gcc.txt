@@ -19,9 +19,10 @@
 -- decompile
 /* velk pseudo-C: _init @ 0x1000 */
 int64_t _init(void) {
+    uint64_t *const __gmon_start___3fe8_u64 = (uint64_t *)(uintptr_t)0x3fe8;
     int64_t v1;
 
-    v1 = __gmon_start__;
+    v1 = *__gmon_start___3fe8_u64;
     if (v1 == 0x0) {
         return v1;
     }
@@ -155,6 +156,8 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 -- decompile
 /* velk pseudo-C: main @ 0x1120 */
 int64_t main(int32_t a0) {
+    uint64_t *const qword_2028 = (uint64_t *)(uintptr_t)0x2028;
+    uint64_t *const qword_2030 = (uint64_t *)(uintptr_t)0x2030;
     int64_t v1;
     int64_t local_0; /* [sp-40] */
     int64_t local_1; /* [sp-38] */
@@ -163,11 +166,11 @@ int64_t main(int32_t a0) {
     int64_t local_4; /* [sp-30] */
     int64_t local_5; /* [sp-20] */
 
-    v1 = qword_2028;
+    v1 = *qword_2028;
     local_0 = 0x656e6f;
     local_1 = 0x0;
     local_2 = v1;
-    v1 = qword_2030;
+    v1 = *qword_2030;
     local_3 = 0x6f7774;
     local_4 = v1;
     local_5 = 0x0;
@@ -228,9 +231,8 @@ fn _start @ 0x11a0 (size 38)
 == 0x11d0 deregister_tm_clones
 -- decompile
 /* velk pseudo-C: deregister_tm_clones @ 0x11d0 */
-void __TMC_END__(void);
 int32_t deregister_tm_clones(void) {
-    return (uintptr_t)__TMC_END__;
+    return 0x4010;
 }
 -- signature
 int32_t ()
@@ -268,14 +270,18 @@ fn register_tm_clones @ 0x1200 (size 64)
 -- decompile
 /* velk pseudo-C: __do_global_dtors_aux @ 0x1240 */
 void __do_global_dtors_aux(void) {
-    if (completed_0 != 0x0) {
+    uint64_t *const __cxa_finalize_3ff8_u64 = (uint64_t *)(uintptr_t)0x3ff8;
+    uint64_t *const __dso_handle = (uint64_t *)(uintptr_t)0x4008;
+    uint8_t *const completed_0 = (uint8_t *)(uintptr_t)0x4028;
+
+    if (*completed_0 != 0x0) {
         return;
     }
-    if (__cxa_finalize != 0x0) {
-        __cxa_finalize(__dso_handle);
+    if (*__cxa_finalize_3ff8_u64 != 0x0) {
+        __cxa_finalize(*__dso_handle);
     }
     deregister_tm_clones();
-    completed_0 = 0x1;
+    *completed_0 = 0x1;
 }
 -- signature
 void ()
@@ -322,6 +328,7 @@ fn frame_dummy @ 0x1280 (size 16)
 /* ref: 0x2004 "missing key %d among %d" */
 struct lookup_a0 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t lookup(struct lookup_a0 *a0, int a1, int a2) {
+    uint64_t *const stderr_GLIBC_2_2_5 = (uint64_t *)(uintptr_t)0x4020;
     void *v2;
     struct lookup_a0 *v3;
     int64_t v4;
@@ -338,7 +345,7 @@ int32_t lookup(struct lookup_a0 *a0, int a1, int a2) {
         local_2 = 0x0;
         local_1 = a1;
         __snprintf_chk(v2, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
-        fputs(v2, stderr_GLIBC_2_2_5);
+        fputs(v2, *stderr_GLIBC_2_2_5);
         abort();
     }
     v2 = a0;
@@ -356,12 +363,12 @@ int32_t lookup(struct lookup_a0 *a0, int a1, int a2) {
     v8 = v2 + 0x8;
     v4 = (uintptr_t)(v4 + (uint8_t *)v8);
     __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
-    fputs(v7, stderr_GLIBC_2_2_5);
+    fputs(v7, *stderr_GLIBC_2_2_5);
     do {
         v11 = v8[-0x1];
         v5 = v8;
         v8 = v8 + 0x6;
-        __fprintf_chk(stderr_GLIBC_2_2_5, 0x2, 0x201c, v5, v11);
+        __fprintf_chk(*stderr_GLIBC_2_2_5, 0x2, 0x201c, v5, v11);
     } while ((uintptr_t)v8 != v4);
     abort();
 }

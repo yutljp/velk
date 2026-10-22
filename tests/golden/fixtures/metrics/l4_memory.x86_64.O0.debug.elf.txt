@@ -64,7 +64,9 @@ fn array_sum @ 0x201240 (size 73)
 /* velk pseudo-C: bump @ 0x201290 */
 /* ref: 0x2022c8 .bss */
 void bump(void) {
-    g_counter += 0x1;
+    uint32_t *const g_counter = (uint32_t *)(uintptr_t)0x2022c8;
+
+    *g_counter += 0x1;
 }
 -- signature
 void ()
@@ -83,7 +85,9 @@ fn bump @ 0x201290 (size 21)
 /* velk pseudo-C: banner_first @ 0x2012b0 */
 /* ref: 0x2022c0 -> 0x200158 "velk ladder" */
 int banner_first(void) {
-    return (int8_t)(*(uint8_t *)(banner));
+    uint64_t *const banner = (uint64_t *)(uintptr_t)0x2022c0;
+
+    return (int8_t)(*(uint8_t *)(*banner));
 }
 -- signature
 int ()

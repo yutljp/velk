@@ -24,6 +24,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2205e8 .bss */
 int32_t sub_210334(int32_t a0) {
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
     uint32_t v1;
     int64_t local_0; /* [sp-20] */
 
@@ -33,58 +34,58 @@ int32_t sub_210334(int32_t a0) {
         switch (local_0 + 0xa) {
         case 10:
             sub_210418();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 11:
             sub_21042c();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 12:
             sub_210444();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 13:
             sub_210458();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 14:
             sub_21046c();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 15:
             sub_210480();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 16:
             sub_210498();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 17:
             sub_2104ac();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 18:
             sub_2104c0();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 19:
             sub_2104d4();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 20:
             sub_2104ec();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 21:
             sub_210500();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 22:
             sub_210518();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 23:
             sub_21052c();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 24:
             sub_210544();
-            return dword_2205e8;
+            return *dword_2205e8;
         case 25:
             sub_210558();
-            return dword_2205e8;
+            return *dword_2205e8;
         default:
             break;
         }
     }
-    dword_2205e8 = 0x0;
-    return dword_2205e8;
+    *dword_2205e8 = 0x0;
+    return *dword_2205e8;
 }
 -- signature
 int32_t (int32_t a0)
@@ -161,7 +162,9 @@ fn <unnamed> @ 0x210334 (size 228)
 /* velk pseudo-C: sub_210418 @ 0x210418 */
 /* ref: 0x2205e8 .bss */
 void sub_210418(void) {
-    dword_2205e8 += 0xb;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 += 0xb;
 }
 -- signature
 void ()
@@ -180,7 +183,9 @@ fn <unnamed> @ 0x210418 (size 20)
 /* velk pseudo-C: sub_21042c @ 0x21042c */
 /* ref: 0x2205e8 .bss */
 void sub_21042c(void) {
-    dword_2205e8 ^= 0x12;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 ^= 0x12;
 }
 -- signature
 void ()
@@ -199,7 +204,9 @@ fn <unnamed> @ 0x21042c (size 24)
 /* velk pseudo-C: sub_210444 @ 0x210444 */
 /* ref: 0x2205e8 .bss */
 void sub_210444(void) {
-    dword_2205e8 -= 0x19;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 -= 0x19;
 }
 -- signature
 void ()
@@ -218,7 +225,9 @@ fn <unnamed> @ 0x210444 (size 20)
 /* velk pseudo-C: sub_210458 @ 0x210458 */
 /* ref: 0x2205e8 .bss */
 void sub_210458(void) {
-    dword_2205e8 |= 0x20;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 |= 0x20;
 }
 -- signature
 void ()
@@ -237,7 +246,9 @@ fn <unnamed> @ 0x210458 (size 20)
 /* velk pseudo-C: sub_21046c @ 0x21046c */
 /* ref: 0x2205e8 .bss */
 void sub_21046c(void) {
-    dword_2205e8 += 0x27;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 += 0x27;
 }
 -- signature
 void ()
@@ -256,7 +267,9 @@ fn <unnamed> @ 0x21046c (size 20)
 /* velk pseudo-C: sub_210480 @ 0x210480 */
 /* ref: 0x2205e8 .bss */
 void sub_210480(void) {
-    dword_2205e8 ^= 0x2e;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 ^= 0x2e;
 }
 -- signature
 void ()
@@ -275,7 +288,9 @@ fn <unnamed> @ 0x210480 (size 24)
 /* velk pseudo-C: sub_210498 @ 0x210498 */
 /* ref: 0x2205e8 .bss */
 void sub_210498(void) {
-    dword_2205e8 -= 0x35;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 -= 0x35;
 }
 -- signature
 void ()
@@ -294,7 +309,9 @@ fn <unnamed> @ 0x210498 (size 20)
 /* velk pseudo-C: sub_2104ac @ 0x2104ac */
 /* ref: 0x2205e8 .bss */
 void sub_2104ac(void) {
-    dword_2205e8 |= 0x3c;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 |= 0x3c;
 }
 -- signature
 void ()
@@ -313,7 +330,9 @@ fn <unnamed> @ 0x2104ac (size 20)
 /* velk pseudo-C: sub_2104c0 @ 0x2104c0 */
 /* ref: 0x2205e8 .bss */
 void sub_2104c0(void) {
-    dword_2205e8 += 0x43;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 += 0x43;
 }
 -- signature
 void ()
@@ -332,7 +351,9 @@ fn <unnamed> @ 0x2104c0 (size 20)
 /* velk pseudo-C: sub_2104d4 @ 0x2104d4 */
 /* ref: 0x2205e8 .bss */
 void sub_2104d4(void) {
-    dword_2205e8 ^= 0x4a;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 ^= 0x4a;
 }
 -- signature
 void ()
@@ -351,7 +372,9 @@ fn <unnamed> @ 0x2104d4 (size 24)
 /* velk pseudo-C: sub_2104ec @ 0x2104ec */
 /* ref: 0x2205e8 .bss */
 void sub_2104ec(void) {
-    dword_2205e8 -= 0x51;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 -= 0x51;
 }
 -- signature
 void ()
@@ -370,7 +393,9 @@ fn <unnamed> @ 0x2104ec (size 20)
 /* velk pseudo-C: sub_210500 @ 0x210500 */
 /* ref: 0x2205e8 .bss */
 void sub_210500(void) {
-    dword_2205e8 |= 0x58;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 |= 0x58;
 }
 -- signature
 void ()
@@ -389,7 +414,9 @@ fn <unnamed> @ 0x210500 (size 24)
 /* velk pseudo-C: sub_210518 @ 0x210518 */
 /* ref: 0x2205e8 .bss */
 void sub_210518(void) {
-    dword_2205e8 += 0x5f;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 += 0x5f;
 }
 -- signature
 void ()
@@ -408,7 +435,9 @@ fn <unnamed> @ 0x210518 (size 20)
 /* velk pseudo-C: sub_21052c @ 0x21052c */
 /* ref: 0x2205e8 .bss */
 void sub_21052c(void) {
-    dword_2205e8 ^= 0x66;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 ^= 0x66;
 }
 -- signature
 void ()
@@ -427,7 +456,9 @@ fn <unnamed> @ 0x21052c (size 24)
 /* velk pseudo-C: sub_210544 @ 0x210544 */
 /* ref: 0x2205e8 .bss */
 void sub_210544(void) {
-    dword_2205e8 -= 0x6d;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 -= 0x6d;
 }
 -- signature
 void ()
@@ -446,7 +477,9 @@ fn <unnamed> @ 0x210544 (size 20)
 /* velk pseudo-C: sub_210558 @ 0x210558 */
 /* ref: 0x2205e8 .bss */
 void sub_210558(void) {
-    dword_2205e8 |= 0x74;
+    uint32_t *const dword_2205e8 = (uint32_t *)(uintptr_t)0x2205e8;
+
+    *dword_2205e8 |= 0x74;
 }
 -- signature
 void ()

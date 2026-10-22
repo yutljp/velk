@@ -41,10 +41,11 @@ fn <unnamed> @ 0x2013a0 (size 2)
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
 int64_t sub_2013b0(int64_t a0) {
+    uint64_t *const qword_204610 = (uint64_t *)(uintptr_t)0x204610;
     int64_t v1;
 
-    v1 = qword_204610;
-    qword_204610 = (a0 + 0xf & 0xfffffffffffffff0) + v1;
+    v1 = *qword_204610;
+    *qword_204610 = (a0 + 0xf & 0xfffffffffffffff0) + v1;
     return 0x203610 + v1;
 }
 -- signature
@@ -246,13 +247,14 @@ fn <unnamed> @ 0x201470 (size 12)
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
 int32_t sub_201480(int32_t a0) {
+    uint64_t *const qword_204610 = (uint64_t *)(uintptr_t)0x204610;
     int64_t v1;
     void *v2;
     int32_t v3;
 
-    v1 = qword_204610;
+    v1 = *qword_204610;
     v2 = (void *)(0x203610 + v1);
-    qword_204610 = v1 + 0x10;
+    *qword_204610 = v1 + 0x10;
     sub_201420(v2, a0);
     v3 = sub_201430(v2); /* via vtable slot 2 */
     sub_201560(); /* via vtable slot 1 */
@@ -282,12 +284,13 @@ fn <unnamed> @ 0x201480 (size 81)
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
 int32_t sub_2014e0(int32_t a0, int32_t a1, int32_t a2) {
+    uint64_t *const qword_204610 = (uint64_t *)(uintptr_t)0x204610;
     int64_t v3;
     void *v4;
 
-    v3 = qword_204610;
+    v3 = *qword_204610;
     v4 = (void *)(0x203610 + v3);
-    qword_204610 = v3 + 0x10;
+    *qword_204610 = v3 + 0x10;
     sub_201440(v4, a0, a1);
     return sub_201470(v4, a2); /* via vtable slot 3 */
 }

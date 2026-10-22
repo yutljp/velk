@@ -106,6 +106,8 @@ fn <unnamed> @ 0x210238 (size 32)
 /* velk pseudo-C: sub_210258 @ 0x210258 */
 /* ref: 0x200120 .rodata */
 int32_t sub_210258(uint32_t a0) {
+    uint32_t *const dword_200120 = (uint32_t *)(uintptr_t)0x200120;
+
     if (a0 > 0x3) {
         return 0xffffffff;
     }

@@ -5,6 +5,7 @@
 -- decompile
 /* velk pseudo-C: d7 @ 0x0 */
 int32_t d7(int32_t a0) {
+    uint32_t *const g = (uint32_t *)(uintptr_t)0x238;
     int32_t v2;
 
     if ((uint32_t)a0 > 0x9) {
@@ -12,86 +13,86 @@ int32_t d7(int32_t a0) {
     } else {
         switch (a0) {
         case 0:
-            v2 = g;
+            v2 = *g;
             break;
         case 1:
-            g = g;
-            v2 = g + 0x1;
+            *g = *g;
+            v2 = *g + 0x1;
             break;
         case 2:
-            g = g;
-            g += 0x1;
-            v2 = g + 0x2;
+            *g = *g;
+            *g += 0x1;
+            v2 = *g + 0x2;
             break;
         case 3:
-            g = g;
-            g += 0x1;
-            g += 0x2;
-            v2 = g + 0x3;
+            *g = *g;
+            *g += 0x1;
+            *g += 0x2;
+            v2 = *g + 0x3;
             break;
         case 4:
-            g = g;
-            g += 0x1;
-            g += 0x2;
-            g += 0x3;
-            v2 = g + 0x4;
+            *g = *g;
+            *g += 0x1;
+            *g += 0x2;
+            *g += 0x3;
+            v2 = *g + 0x4;
             break;
         case 5:
-            g = g;
-            g += 0x1;
-            g += 0x2;
-            g += 0x3;
-            g += 0x4;
-            v2 = g + 0x5;
+            *g = *g;
+            *g += 0x1;
+            *g += 0x2;
+            *g += 0x3;
+            *g += 0x4;
+            v2 = *g + 0x5;
             break;
         case 6:
-            g = g;
-            g += 0x1;
-            g += 0x2;
-            g += 0x3;
-            g += 0x4;
-            g += 0x5;
-            v2 = g + 0x6;
+            *g = *g;
+            *g += 0x1;
+            *g += 0x2;
+            *g += 0x3;
+            *g += 0x4;
+            *g += 0x5;
+            v2 = *g + 0x6;
             break;
         case 7:
-            g = g;
-            g += 0x1;
-            g += 0x2;
-            g += 0x3;
-            g += 0x4;
-            g += 0x5;
-            g += 0x6;
-            v2 = g + 0x7;
+            *g = *g;
+            *g += 0x1;
+            *g += 0x2;
+            *g += 0x3;
+            *g += 0x4;
+            *g += 0x5;
+            *g += 0x6;
+            v2 = *g + 0x7;
             break;
         case 8:
-            g = g;
-            g += 0x1;
-            g += 0x2;
-            g += 0x3;
-            g += 0x4;
-            g += 0x5;
-            g += 0x6;
-            g += 0x7;
-            v2 = g + 0x8;
+            *g = *g;
+            *g += 0x1;
+            *g += 0x2;
+            *g += 0x3;
+            *g += 0x4;
+            *g += 0x5;
+            *g += 0x6;
+            *g += 0x7;
+            v2 = *g + 0x8;
             break;
         case 9:
-            g = g;
-            g += 0x1;
-            g += 0x2;
-            g += 0x3;
-            g += 0x4;
-            g += 0x5;
-            g += 0x6;
-            g += 0x7;
-            g += 0x8;
-            v2 = g + 0x9;
+            *g = *g;
+            *g += 0x1;
+            *g += 0x2;
+            *g += 0x3;
+            *g += 0x4;
+            *g += 0x5;
+            *g += 0x6;
+            *g += 0x7;
+            *g += 0x8;
+            v2 = *g + 0x9;
             break;
         default:
             __builtin_unreachable();
         }
     }
-    g = v2;
-    return g;
+    *g = v2;
+    return *g;
 }
 -- signature
 int32_t (int32_t a0)

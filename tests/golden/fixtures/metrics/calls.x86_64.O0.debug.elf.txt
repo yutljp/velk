@@ -51,7 +51,7 @@ fn square @ 0x201320 (size 16)
 void square(void);
 void twice(void);
 void *pick_op(int which) {
-    return (which != 0x0 ? square : twice);
+    return (void *)(which != 0x0 ? square : twice);
 }
 -- signature
 void * (int which)
@@ -69,6 +69,7 @@ fn pick_op @ 0x201330 (size 33)
 /* velk pseudo-C: apply_table @ 0x201360 */
 /* ref: 0x202670 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
+    uint64_t *const table = (uint64_t *)(uintptr_t)0x202670;
     int64_t v1;
     int64_t v3;
 

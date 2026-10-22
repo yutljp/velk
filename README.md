@@ -178,6 +178,7 @@ cargo test                # ユニットテストと結合テスト
 | `tests/loader.rs` | 実メモリを占めないセクションを番地解決から除き、動的リロケーションを適用すること | セクション属性とリロケーション先 |
 | `tests/recompile.rs` | 整数の計算だけの関数で、疑似 C をコンパイルして実行した結果が IR と同じになり、コンパイルできる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile.txt` |
 | `tests/recompile.rs` | メモリを読み書きする関数で、疑似 C を実行した後の戻り値とメモリの内容が IR と同じになる（clang がある環境で実行） | 最適化後の IR、`tests/golden/recompile_memory.txt` |
+| `tests/recompile.rs` | 固定アドレスのグローバル参照で、符号拡張、添字、重なる読み書き、浮動小数点のビット列、名前の衝突を検証する（clang が必要） | 合成 IR の戻り値と領域全体のハッシュ |
 | `tests/invariants.rs` | 飛び先のない goto、代入されないレジスタの読み取り、疑似 C での文の欠落がない | 出力の性質 |
 | `tests/metrics.rs` | 関数の発見、引数と戻り値の推定の正解率 | デバッグ情報（`*.debug.elf`） |
 | `tests/golden.rs` | 全テスト用バイナリの関数一覧、疑似 C、IR、シグネチャ、要約と、読みやすさの数（変数・キャスト・レジスタ名・goto など）が変わっていない | `tests/golden/fixtures/` と `tests/golden/readability.txt` に記録した出力 |

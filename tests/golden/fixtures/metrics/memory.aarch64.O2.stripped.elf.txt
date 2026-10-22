@@ -221,6 +221,8 @@ fn <unnamed> @ 0x2102d0 (size 24)
 /* velk pseudo-C: sub_2102e8 @ 0x2102e8 */
 /* ref: 0x220350 .bss */
 int32_t sub_2102e8(int32_t a0, int32_t a1) {
+    uint32_t *const dword_220350 = (uint32_t *)(uintptr_t)0x220350;
+
     return dword_220350[(a0 & 0x3) * 0x8 + (a1 & 0x7)];
 }
 -- signature
@@ -239,6 +241,8 @@ fn <unnamed> @ 0x2102e8 (size 28)
 /* velk pseudo-C: sub_210304 @ 0x210304 */
 /* ref: 0x220350 .bss */
 int64_t sub_210304(int64_t a0, int32_t a1, int32_t a2) {
+    uint32_t *const dword_220350 = (uint32_t *)(uintptr_t)0x220350;
+
     dword_220350[(a0 & 0x3) * 0x8 + (a1 & 0x7)] = a2;
     return a0;
 }

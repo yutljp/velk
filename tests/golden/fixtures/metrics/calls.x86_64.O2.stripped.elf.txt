@@ -67,6 +67,7 @@ fn <unnamed> @ 0x201310 (size 21)
 /* velk pseudo-C: sub_201330 @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
 int32_t sub_201330(uint32_t a0, int32_t a1) {
+    uint64_t *const qword_202610 = (uint64_t *)(uintptr_t)0x202610;
     uint32_t v1;
     int64_t v2;
 
@@ -121,6 +122,14 @@ fn <unnamed> @ 0x201360 (size 12)
 /* ref: 0x2001c0 .rodata */
 /* ref: 0x2001c8 .rodata */
 int32_t sub_201370(int32_t a0) {
+    uint64_t *const qword_200190 = (uint64_t *)(uintptr_t)0x200190;
+    uint64_t *const qword_200198 = (uint64_t *)(uintptr_t)0x200198;
+    uint64_t *const qword_2001a0 = (uint64_t *)(uintptr_t)0x2001a0;
+    uint64_t *const qword_2001a8 = (uint64_t *)(uintptr_t)0x2001a8;
+    uint64_t *const qword_2001b0 = (uint64_t *)(uintptr_t)0x2001b0;
+    uint64_t *const qword_2001b8 = (uint64_t *)(uintptr_t)0x2001b8;
+    uint64_t *const qword_2001c0 = (uint64_t *)(uintptr_t)0x2001c0;
+    uint64_t *const qword_2001c8 = (uint64_t *)(uintptr_t)0x2001c8;
     int64_t t1;
     int32_t v1;
     int32_t v2;
@@ -156,16 +165,16 @@ int32_t sub_201370(int32_t a0) {
         v3 = v2 & 0xfffffffffffffff8;
         v4 = (a0 & 0xffffffff);
         a0 = a0 - v3;
-        v6 = add_lanes32(v4 | v4 << 0x20, qword_200190);
-        v8 = add_lanes32(v4 | v4 << 0x20, qword_200198);
-        v11 = qword_2001c0;
-        v12 = qword_2001c8;
-        v13 = qword_2001b0;
-        v14 = qword_2001b8;
+        v6 = add_lanes32(v4 | v4 << 0x20, *qword_200190);
+        v8 = add_lanes32(v4 | v4 << 0x20, *qword_200198);
+        v11 = *qword_2001c0;
+        v12 = *qword_2001c8;
+        v13 = *qword_2001b0;
+        v14 = *qword_2001b8;
         v1 = v3;
-        v9 = qword_2001a0;
+        v9 = *qword_2001a0;
         v16 = v9;
-        v10 = qword_2001a8;
+        v10 = *qword_2001a8;
         v17 = v10;
         do {
             v18 = add_lanes32(v6, v11);

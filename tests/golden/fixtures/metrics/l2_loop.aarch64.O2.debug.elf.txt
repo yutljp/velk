@@ -9,6 +9,7 @@
 /* velk pseudo-C: sum_while @ 0x2101c4 */
 /* ref: 0x220298 .bss */
 int sum_while(int n) {
+    uint32_t *const sink = (uint32_t *)(uintptr_t)0x220298;
     int32_t v1;
     int32_t v2;
 
@@ -20,7 +21,7 @@ int sum_while(int n) {
     do {
         v2 = v1 + v2;
         v1 = v1 + 0x1;
-        sink = v2;
+        *sink = v2;
     } while (n != v1);
     return v2;
 }
@@ -52,6 +53,7 @@ fn sum_while @ 0x2101c4 (size 60)
 /* velk pseudo-C: count_down @ 0x210200 */
 /* ref: 0x220298 .bss */
 int count_down(int n) {
+    uint32_t *const sink = (uint32_t *)(uintptr_t)0x220298;
     int32_t v1;
     int32_t v2;
 
@@ -59,7 +61,7 @@ int count_down(int n) {
     v2 = (n > 0x1 ? n : 0x1);
     do {
         v1 = v1 + 0x1;
-        sink = v1;
+        *sink = v1;
     } while (v2 != v1);
     return v2;
 }
@@ -86,6 +88,7 @@ fn count_down @ 0x210200 (size 36)
 /* velk pseudo-C: sum_skip_odd @ 0x210224 */
 /* ref: 0x220298 .bss */
 int sum_skip_odd(int n) {
+    uint32_t *const sink = (uint32_t *)(uintptr_t)0x220298;
     int32_t v1;
     int32_t v2;
 
@@ -96,7 +99,7 @@ int sum_skip_odd(int n) {
     for (v1 = 0x0; v1 < n; v1++) {
         if ((v1 & 0x1) != 0x0) {
             v2 = v2 + v1;
-            sink = v2;
+            *sink = v2;
         }
     }
     return v2;

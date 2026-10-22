@@ -67,6 +67,7 @@ fn pick_op @ 0x10 (size 28)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x2c */
 int32_t apply_table(uint32_t a0, int32_t a1) {
+    uint64_t *const table = (uint64_t *)(uintptr_t)0x290;
     int64_t v1;
     int64_t v3;
 
@@ -113,6 +114,8 @@ fn apply_pointer @ 0x58 (size 32)
 -- decompile
 /* velk pseudo-C: factorial @ 0x78 */
 int32_t factorial(int32_t a0) {
+    uint64_t *const qword_280 = (uint64_t *)(uintptr_t)0x280;
+    uint64_t *const qword_288 = (uint64_t *)(uintptr_t)0x288;
     uint32_t v1;
     int32_t v2;
     uint64_t v3;
@@ -133,8 +136,8 @@ int32_t factorial(int32_t a0) {
             v4 = 0x100000001;
             v5 = a0 - 0x1;
             v6 = v5 & 0xfffffff8;
-            v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, qword_280);
-            v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, qword_288);
+            v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_280);
+            v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_288);
             v9 = 0x100000001;
             v10 = 0x100000001;
             v1 = a0 - v6;

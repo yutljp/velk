@@ -5,7 +5,9 @@
 -- decompile
 /* velk pseudo-C: pick @ 0x0 */
 int32_t pick(void) {
-    return *(uint8_t *)(kName + 0x2);
+    uint64_t *const kName = (uint64_t *)(uintptr_t)0x28;
+
+    return *(uint8_t *)(*kName + 0x2);
 }
 -- signature
 int32_t ()

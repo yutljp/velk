@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use crate::render::expr::Ctx;
 use crate::render::expr::render_expr;
+use crate::render::globals::View;
 
 /// Registers never read wider than 32 bits, so their zero extension can be
 /// left out.
@@ -95,6 +96,10 @@ pub(crate) fn scan_reads(
 
 /// `*(T *)(base + i * sizeof T)` indexes the table at `base`.
 pub(crate) fn array_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+    array_access_as(addr, width, View::Unsigned(width), ctx)
+}
+
+pub(super) fn array_access_as(addr: &Expr, width: u8, view: View, ctx: &Ctx<'_>) -> Option<String> {
     let span = u64::from(width);
     let Expr::Bin {
         op: BinOp::Add,
@@ -126,16 +131,32 @@ pub(crate) fn array_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Stri
             (Expr::Const(step), index) | (index, Expr::Const(step)) if *step == span => index,
             _ => return None,
         },
+        other if span == 1 => other,
         _ => return None,
     };
-    let name = global_name(&Expr::Const(base), width, ctx)?;
-    Some(format!("{}[{}]", name, render_expr(index, ctx)))
+    let name = global_pointer(&Expr::Const(base), view, ctx)?;
+    Some(format!(
+        "{}[{}]",
+        name,
+        crate::render::expr::print(index, ctx, 64)
+            .address_integer()
+            .text
+    ))
 }
 
 /// `*(T *)(base + a * k1 + b * k2)`, with each scale a multiple of the
 /// element size, indexes the table at `base` by `a * (k1 / size) + ...`:
 /// a two-dimensional array read as one row after another.
 pub(crate) fn flat_array_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+    flat_array_access_as(addr, width, View::Unsigned(width), ctx)
+}
+
+pub(super) fn flat_array_access_as(
+    addr: &Expr,
+    width: u8,
+    view: View,
+    ctx: &Ctx<'_>,
+) -> Option<String> {
     let size = u64::from(width);
     let mut terms = Vec::new();
     let mut base = None;
@@ -192,24 +213,31 @@ pub(crate) fn flat_array_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option
         (scale % size == 0).then_some((index, scale / size))
     };
     let parts: Vec<(Expr, u64)> = terms.into_iter().map(scaled).collect::<Option<_>>()?;
-    let name = global_name(&Expr::Const(base), width, ctx)?;
-    let index: Vec<String> = parts
+    let name = global_pointer(&Expr::Const(base), view, ctx)?;
+    let index = parts
         .iter()
         .rev()
         .map(|(index, step)| match step {
-            1 => crate::render::expr::operand(index, ctx, 10, false),
-            step => format!(
-                "{} * 0x{step:x}",
-                crate::render::expr::operand(index, ctx, 11, false)
-            ),
+            1 => index.clone(),
+            step => Expr::bin(BinOp::Mul, index.clone(), Expr::Const(*step)),
         })
-        .collect();
-    Some(format!("{}[{}]", name, index.join(" + ")))
+        .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))?;
+    Some(format!(
+        "{}[{}]",
+        name,
+        crate::render::expr::integer_sum(&index, ctx).text
+    ))
 }
 
-/// Names a constant address in a data section from the access width and the
-/// address: `*(uint64_t *)(0x140003000)` reads as `qword_140003000`.
-pub(crate) fn global_name(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+pub(super) fn global_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+    global_access_as(addr, View::Unsigned(width), ctx)
+}
+
+pub(super) fn global_access_as(addr: &Expr, view: View, ctx: &Ctx<'_>) -> Option<String> {
+    global_pointer(addr, view, ctx).map(|name| format!("*{name}"))
+}
+
+pub(super) fn global_pointer(addr: &Expr, view: View, ctx: &Ctx<'_>) -> Option<String> {
     let Expr::Const(address) = addr else {
         return None;
     };
@@ -220,16 +248,7 @@ pub(crate) fn global_name(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Strin
     {
         return None;
     }
-    if let Some(name) = ctx.callees.get(address) {
-        return Some(super::sanitize(name));
-    }
-    let kind = match width {
-        1 => "byte",
-        2 => "word",
-        4 => "dword",
-        _ => "qword",
-    };
-    Some(format!("{kind}_{address:x}"))
+    Some(ctx.globals.pointer(*address, view))
 }
 
 /// Every `register + offset` address a load inside `expr` reads through.
@@ -574,7 +593,7 @@ mod tests {
     }
 
     fn rendered(ir: &FunctionIr) -> String {
-        crate::render::render(ir, &[], &HashMap::new(), &[])
+        crate::render::render(ir, &[], &crate::render::Symbols::default(), &[])
     }
 
     #[test]

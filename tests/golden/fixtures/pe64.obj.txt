@@ -116,7 +116,9 @@ fn reg_abs @ 0x50 (size 16)
 -- decompile
 /* velk pseudo-C: msg_first @ 0x60 */
 int32_t msg_first(void) {
-    return (int8_t)(*(uint8_t *)(kMsg + 0x1));
+    uint64_t *const kMsg = (uint64_t *)(uintptr_t)0xb0;
+
+    return (int8_t)(*(uint8_t *)(*kMsg + 0x1));
 }
 -- signature
 int32_t ()

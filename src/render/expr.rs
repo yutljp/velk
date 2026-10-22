@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use crate::ir::{BinOp, Cond, Expr, Operation, Precision, Rounding, reg_name};
 use crate::loader::Isa;
+use crate::render::globals::View;
 use crate::render::int::{ALL, Int, Printed, Range, ValueKind, converted, fit, wrapped, zero_bits};
 use crate::render::naming::array_access;
-use crate::render::naming::global_name;
 use crate::render::naming::member_access;
+use crate::render::naming::{global_access, global_pointer};
 use crate::render::sanitize;
 
 /// How a parameter or variable is declared.
@@ -52,7 +53,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) wide_params: std::collections::HashSet<u16>,
     /// The fields the accesses through each pointer parameter name.
     pub(super) fields: HashMap<(u16, i64), (u8, bool)>,
-    pub(super) callees: &'a HashMap<u64, String>,
+    pub(super) symbols: &'a super::Symbols,
+    pub(super) globals: crate::render::globals::Globals,
     /// Non-executable `(start, size)` ranges: a constant address inside one is a global.
     pub(super) data_ranges: &'a [(u64, u64)],
     /// Structure fields the debug info names, by struct and byte offset.
@@ -296,22 +298,24 @@ fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
             ),
             13,
         ),
+        Expr::Const(address)
+            if (ctx.symbols.data.contains_key(address)
+                || ctx.symbols.import_slots.contains_key(address))
+                && let Some(name) = global_pointer(value, View::Unsigned(1), ctx) =>
+        {
+            Printed::pointer(name, 13)
+        }
         // Only a top-level constant becomes a function name: an immediate
         // inside arithmetic can coincidentally equal a function address.
         // The function is declared ahead of the one printed, and an integer
         // takes its address as a number.
         Expr::Const(address)
             if *address != 0
-                && let Some(name) = ctx.callees.get(address) =>
+                && let Some(name) = ctx.symbols.functions.get(address) =>
         {
             let name = sanitize(name);
             ctx.taken.borrow_mut().insert(name.clone());
-            let designator = if in_data(*address, ctx) {
-                format!("&{name}")
-            } else {
-                name
-            };
-            Printed::pointer(designator, 13)
+            Printed::pointer(name, 13)
         }
         // Each arm of a choice between addresses is a value of its own.
         Expr::Select {
@@ -331,12 +335,6 @@ fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
         }
         _ => print(value, ctx, bits),
     }
-}
-
-fn in_data(address: u64, ctx: &Ctx<'_>) -> bool {
-    ctx.data_ranges
-        .iter()
-        .any(|(start, size)| address >= *start && address < start.saturating_add(*size))
 }
 
 /// An argument of a floating-point operation: a constant reads as the
@@ -385,16 +383,17 @@ pub(crate) fn float_operand(
             if let Some(member) = member_access(addr, *width, ctx) {
                 return member;
             }
-            if let Some(indexed) = array_access(addr, *width, ctx)
-                .or_else(|| crate::render::naming::flat_array_access(addr, *width, ctx))
+            let view = View::Float(precision);
+            if let Some(indexed) = crate::render::naming::array_access_as(addr, *width, view, ctx)
+                .or_else(|| crate::render::naming::flat_array_access_as(addr, *width, view, ctx))
             {
                 return indexed;
             }
             let address = render_expr(addr, ctx);
             match ctx.slots.get(&address) {
                 Some(name) => name.clone(),
-                None => match global_name(addr, *width, ctx) {
-                    Some(name) => name,
+                None => match global_pointer(addr, view, ctx) {
+                    Some(name) => format!("*{name}"),
                     None => format!("*({float_type} *)({address})"),
                 },
             }
@@ -590,6 +589,23 @@ pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
 /// `value` as C for a reader that looks at its low `bits` bits.
 pub(crate) fn render_at(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> String {
     print(value, ctx, bits).text
+}
+
+pub(super) fn integer_sum(expr: &Expr, ctx: &Ctx<'_>) -> Printed {
+    match expr {
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } => binary(
+            BinOp::Add,
+            (integer_sum(lhs, ctx), lhs),
+            (integer_sum(rhs, ctx), rhs),
+            64,
+            ctx,
+        ),
+        _ => integral(expr, ctx, 64),
+    }
 }
 
 /// `expr` as C whose value agrees with the IR's in the low `bits` bits
@@ -1262,7 +1278,7 @@ fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
     } else if let Some(indexed) = array_access(addr, width, ctx)
         .or_else(|| crate::render::naming::flat_array_access(addr, width, ctx))
     {
-        (indexed, signed)
+        return global_load(indexed, width, signed, 13);
     } else {
         let address = render_expr(addr, ctx);
         match ctx.slots.get(&address) {
@@ -1278,8 +1294,8 @@ fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
                 };
                 (text, declared)
             }
-            None => match global_name(addr, width, ctx) {
-                Some(name) => (name, signed),
+            None => match global_access(addr, width, ctx) {
+                Some(name) => return global_load(name, width, signed, 12),
                 None => (
                     format!(
                         "*({} *)({})",
@@ -1309,6 +1325,17 @@ fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
             Range::Unsigned(bits)
         },
     )
+}
+
+fn global_load(text: String, width: u8, signed: bool, strength: u8) -> Printed {
+    let bits = u32::from(width) * 8;
+    let value = Printed::new(text, Int::promoted(bits, false), ALL, strength)
+        .ranging(Range::Unsigned(bits));
+    if signed {
+        value.cast(bits, true, 64)
+    } else {
+        value
+    }
 }
 
 /// `op` applied to `args`: the bit counts C has builtins for take their
@@ -1746,7 +1773,7 @@ mod tests {
     use crate::ir::{BinOp, CType, Cond, Expr, FunctionIr, Operation, Param, Precision, Stmt};
     use crate::loader::Isa;
 
-    fn rendered(stmts: Vec<Stmt>, params: &[CType]) -> String {
+    fn function(stmts: Vec<Stmt>, params: &[CType]) -> FunctionIr {
         let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
         ir.params = params
             .iter()
@@ -1759,7 +1786,26 @@ mod tests {
             })
             .collect();
         ir.ret_type = CType::U64;
-        crate::render::render(&ir, &[], &HashMap::new(), &[])
+        ir
+    }
+
+    fn rendered(stmts: Vec<Stmt>, params: &[CType]) -> String {
+        crate::render::render(
+            &function(stmts, params),
+            &[],
+            &crate::render::Symbols::default(),
+            &[],
+        )
+    }
+
+    fn global_returned(value: Expr, ty: CType, params: &[CType]) -> String {
+        let mut ir = function(vec![Stmt::Ret { value }], params);
+        ir.ret_type = ty;
+        let symbols = crate::render::Symbols {
+            data: HashMap::from([(0x1000, "counter".to_owned())]),
+            ..Default::default()
+        };
+        crate::render::render(&ir, &[], &symbols, &[(0x1000, 0x100)])
     }
 
     fn returned(value: Expr, params: &[CType]) -> String {
@@ -1777,6 +1823,167 @@ mod tests {
             rhs: Box::new(Expr::Const(0)),
             then: Box::new(then),
             els: Box::new(els),
+        }
+    }
+
+    #[test]
+    fn signed_global_reads_cast_the_unsigned_storage_at_the_access_width() {
+        for (width, ty) in [
+            (1, "int8_t"),
+            (2, "int16_t"),
+            (4, "int32_t"),
+            (8, "int64_t"),
+        ] {
+            for addr in [
+                Expr::Const(0x1000),
+                Expr::bin(
+                    BinOp::Add,
+                    Expr::Const(0x1000),
+                    Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(u64::from(width))),
+                ),
+            ] {
+                let value = Expr::Load {
+                    addr: Box::new(addr),
+                    width,
+                    signed: true,
+                };
+                let text = global_returned(value, CType::U64, &[CType::U64]);
+                assert!(text.contains(&format!("({ty})")), "{text}");
+                assert!(
+                    text.contains(&format!("uint{}_t *const counter", width * 8)),
+                    "{text}"
+                );
+                assert!(!text.contains(&format!("({ty})(uint64_t)")), "{text}");
+            }
+        }
+    }
+
+    #[test]
+    fn float_global_reads_use_float_views_for_scalar_and_indexed_addresses() {
+        for (precision, ty, one) in [
+            (Precision::Single, "float", u64::from(1.0f32.to_bits())),
+            (Precision::Double, "double", 1.0f64.to_bits()),
+        ] {
+            let width = precision.bits() / 8;
+            let scaled =
+                |index, factor| Expr::bin(BinOp::Mul, Expr::reg(index, 64), Expr::Const(factor));
+            for addr in [
+                Expr::Const(0x1000),
+                Expr::bin(BinOp::Add, Expr::Const(0x1000), scaled(7, u64::from(width))),
+                Expr::bin(
+                    BinOp::Add,
+                    Expr::bin(BinOp::Add, Expr::Const(0x1000), scaled(7, u64::from(width))),
+                    scaled(6, u64::from(width) * 2),
+                ),
+            ] {
+                let value = Expr::Apply {
+                    op: Operation::FloatAdd(precision),
+                    args: vec![
+                        Expr::Load {
+                            addr: Box::new(addr),
+                            width,
+                            signed: false,
+                        },
+                        Expr::Const(one),
+                    ],
+                };
+                let text = global_returned(
+                    value,
+                    CType::Named(ty.to_owned()),
+                    &[CType::U64, CType::U64],
+                );
+                assert!(text.contains(&format!("{ty} *const counter")), "{text}");
+                assert!(
+                    !text.contains(&format!("uint{}_t *const counter", width * 8)),
+                    "{text}"
+                );
+                assert!(
+                    text.contains("counter[") || text.contains("*counter +"),
+                    "{text}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn named_data_address_values_keep_the_address_and_arithmetic_immediates_stay_numeric() {
+        let address = global_returned(Expr::Const(0x1000), CType::U64, &[]);
+        assert!(address.contains("uint8_t *const counter"), "{address}");
+        assert!(address.contains("return (uintptr_t)counter;"), "{address}");
+        assert!(!address.contains("void counter(void);"), "{address}");
+
+        let arithmetic = global_returned(
+            Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(0x1000)),
+            CType::U64,
+            &[CType::U64],
+        );
+        assert!(arithmetic.contains("return a0 + 0x1000;"), "{arithmetic}");
+        assert!(!arithmetic.contains("counter"), "{arithmetic}");
+    }
+
+    #[test]
+    fn global_indices_take_pointer_values_as_integer_addresses() {
+        let scaled =
+            |index, factor| Expr::bin(BinOp::Mul, Expr::reg(index, 64), Expr::Const(factor));
+        for (addr, width, expected) in [
+            (
+                Expr::bin(BinOp::Add, Expr::Const(0x1000), Expr::reg(7, 64)),
+                1,
+                "counter[(uintptr_t)a0]",
+            ),
+            (
+                Expr::bin(BinOp::Add, Expr::Const(0x1000), scaled(7, 4)),
+                4,
+                "counter[(uintptr_t)a0]",
+            ),
+            (
+                Expr::bin(
+                    BinOp::Add,
+                    Expr::bin(BinOp::Add, Expr::Const(0x1000), scaled(7, 4)),
+                    scaled(6, 8),
+                ),
+                4,
+                "counter[(uintptr_t)a0 + (uintptr_t)a1 * 0x2]",
+            ),
+        ] {
+            let value = Expr::Load {
+                addr: Box::new(addr),
+                width,
+                signed: false,
+            };
+            let text = global_returned(value, CType::U64, &[pointer(), pointer()]);
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn flat_global_indices_keep_wide_products_and_sums_of_narrow_parameters() {
+        let scaled =
+            |index, factor| Expr::bin(BinOp::Mul, Expr::reg(index, 32), Expr::Const(factor));
+        for addr in [
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::Add, Expr::Const(0x1000), scaled(7, 8)),
+                scaled(6, 4),
+            ),
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(
+                    BinOp::Add,
+                    Expr::bin(BinOp::Add, Expr::Const(0x1000), scaled(7, 4)),
+                    scaled(6, 4),
+                ),
+                scaled(2, 4),
+            ),
+        ] {
+            let value = Expr::Load {
+                addr: Box::new(addr),
+                width: 4,
+                signed: false,
+            };
+            let text = global_returned(value, CType::U64, &[CType::U32, CType::U32, CType::U32]);
+            assert!(text.contains("counter["), "{text}");
+            assert!(text.contains("(uint64_t)a0"), "{text}");
         }
     }
 
