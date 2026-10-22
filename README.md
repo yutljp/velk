@@ -15,8 +15,8 @@ Rust のツールチェーンと C コンパイラを用意し、ソースを取
 
 ```bash
 cargo build --release --locked
-./target/release/velk functions tests/fixtures/arm64.o
-./target/release/velk decompile tests/fixtures/arm64.o sum3
+./target/release/velk --functions tests/fixtures/arm64.o
+./target/release/velk --decompile tests/fixtures/arm64.o sum3
 ./target/release/velk -d tests/fixtures/arm64.o sum3
 ```
 
@@ -24,8 +24,8 @@ cargo build --release --locked
 自分のファイルを調べるときは、ファイルのパスと、一覧から選んだ関数名またはアドレスを指定します。
 
 ```bash
-./target/release/velk functions path/to/binary
-./target/release/velk decompile path/to/binary 0x1e0
+./target/release/velk --functions path/to/binary
+./target/release/velk --decompile path/to/binary 0x1e0
 ```
 
 関数名は完全一致を優先します。部分一致が複数あるときは候補を示します。
@@ -33,12 +33,12 @@ cargo build --release --locked
 
 ## エージェントから使う（MCP）
 
-MCP クライアントに実行ファイルを `mcp` 引数付きで登録します。通信は標準入出力を使います。
+MCP クライアントに実行ファイルを `--mcp` 引数付きで登録します。通信は標準入出力を使います。
 
 ```json
 {
   "mcpServers": {
-    "velk": { "command": "/absolute/path/to/velk", "args": ["mcp"] }
+    "velk": { "command": "/absolute/path/to/velk", "args": ["--mcp"] }
   }
 }
 ```
@@ -58,29 +58,31 @@ b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name 
 `card({ budget })` は概算のトークン数に応じた要約で、厳密な出力上限ではありません。
 
 JavaScript は同期実行で、Node.js の API や `await`・`import` は使いません。
-同じ API は `velk run script.js` でも使えます。例と宣言は [API の概要](src/script/api/index.md) を参照してください。
+同じ API は `velk --run script.js` でも使えます。例と宣言は [API の概要](src/script/api/index.md) を参照してください。
 
 ## CLI
 
-| コマンド | 用途 |
-|---|---|
-| `velk functions <file>` | 関数の一覧と発見元 |
-| `velk decompile <file> <function>` | 関数の疑似 C |
-| `velk card <file> <function>` | 関数の要約を JSON で表示 |
-| `velk -d <file> <function>` | 逆アセンブル |
-| `velk ir <file> <function>` | 最適化後の中間表現 |
-| `velk sections <file>` | セクションの一覧 |
-| `velk build-signatures <file> --output db.json` | 名前付き関数からシグネチャ DB を作成 |
-| `velk identify <file> --signatures db.json` | 形が一致する関数を検索 |
-| `velk run <script.js>` | JavaScript API を実行 |
-| `velk mcp` | MCP サーバを起動 |
+操作を短いオプションか長いオプションで 1 つ選びます。
 
-`velk --disasm <file> <function>` と `velk disasm <file> <function>` も同じ処理です。
-細かなオプションは `velk -d --help` や `velk <command> --help` で確認できます。
+| オプション | 用途 |
+|---|---|
+| `-f`, `--functions` | 関数の一覧と発見元 |
+| `-s`, `--sections` | セクションの一覧 |
+| `-c`, `--card` | 関数の要約を JSON で表示 |
+| `-D`, `--decompile` | 関数の疑似 C |
+| `-d`, `--disasm` | 逆アセンブル |
+| `-i`, `--ir` | 最適化後の中間表現 |
+| `-b`, `--build-signatures` | 名前付き関数からシグネチャ DB を作成 |
+| `-I`, `--identify` | 形が一致する関数を検索 |
+| `-r`, `--run` | JavaScript API を実行 |
+| `-m`, `--mcp` | MCP サーバを起動 |
+
+引数と各操作で使えるオプション、実行例は `velk --help` で確認できます。
+以前の `velk decompile ...` などのサブコマンド形式は、`velk --decompile ...` に変更してください。
 
 ```bash
-velk functions path/to/binary --json > functions.json
-velk decompile path/to/binary main > main.c
+velk --functions path/to/binary --json > functions.json
+velk --decompile path/to/binary main > main.c
 ```
 
 端末では見出し・色・余白で読みやすく表示し、パイプやファイルへ出すときは装飾しません。

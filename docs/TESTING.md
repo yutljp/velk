@@ -52,8 +52,11 @@ running an already built velk binary.
 
 ### CLI and terminal output
 
-Compare `disasm`, `-d`, and `--disasm` with the same file, function, and
-options, including usage and runtime errors. Colored and uncolored terminal
+Compare each short and long operation flag with the same operands and
+options, including usage and runtime errors. Check that one operation is
+required, operation flags are mutually exclusive, and operands and options
+are accepted only by their applicable operations. Bare subcommand names
+are no longer accepted. Colored and uncolored terminal
 output should preserve every character, including whitespace, after
 removing only ANSI styling. Pseudoterminal (PTY) checks exercise terminal
 detection, color suppression, and stdout/stderr behavior. Compare piped

@@ -25,11 +25,11 @@ fix = sys.argv[3]
 big = sys.argv[4]
 
 cases = [
-    ("functions (small)", [binary, "functions", f"{fix}/pe64.exe"], 120.0),
-    ("ir (aarch64)", [binary, "ir", f"{fix}/arm64.o", "helper"], 120.0),
-    ("decompile (aarch64)", [binary, "decompile", f"{fix}/arm64.o", "helper"], 120.0),
-    ("functions (20 MB)", [binary, "functions", big], 300.0),
-    ("build-signatures (aarch64)", [binary, "build-signatures", f"{fix}/arm64.o", "--output", "tests/out/bench-sigs.json"], 120.0),
+    ("functions (small)", [binary, "--functions", f"{fix}/pe64.exe"], 120.0),
+    ("ir (aarch64)", [binary, "--ir", f"{fix}/arm64.o", "helper"], 120.0),
+    ("decompile (aarch64)", [binary, "--decompile", f"{fix}/arm64.o", "helper"], 120.0),
+    ("functions (20 MB)", [binary, "--functions", big], 300.0),
+    ("build-signatures (aarch64)", [binary, "--build-signatures", f"{fix}/arm64.o", "--output", "tests/out/bench-sigs.json"], 120.0),
 ]
 
 failed = False

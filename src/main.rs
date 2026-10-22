@@ -7,7 +7,7 @@ use clap::builder::{
     Styles,
     styling::{AnsiColor, Style},
 };
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser};
 use serde_json::json;
 
 use terminal::{Language, Terminal};
@@ -29,91 +29,230 @@ const HELP_STYLES: Styles = Styles::styled()
     version,
     about = "Binary analysis for terminals and agents",
     styles = HELP_STYLES,
-    after_help = "Examples:\n  velk functions app.elf\n  velk decompile app.elf main\n  velk -d app.elf main\n\nUse 'velk <COMMAND> --help' for command-specific options."
+    override_usage = "velk <OPERATION> [OPTIONS] [INPUT] [FUNCTION]",
+    group(ArgGroup::new("operation").required(true).multiple(false).args([
+        "functions", "sections", "card", "decompile", "disasm", "ir",
+        "build_signatures", "identify", "run", "mcp"
+    ])),
+    after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n\nChoose one operation. Use --help to list its arguments and options."
 )]
 struct Cli {
-    #[command(subcommand)]
-    command: Command,
+    /// List the discovered functions.
+    #[arg(short = 'f', long, help_heading = "Operations (choose one)")]
+    functions: bool,
+    /// List the sections.
+    #[arg(short = 's', long, help_heading = "Operations (choose one)")]
+    sections: bool,
+    /// Print a function card as JSON.
+    #[arg(short = 'c', long, help_heading = "Operations (choose one)")]
+    card: bool,
+    /// Print pseudo-C for one function.
+    #[arg(short = 'D', long, help_heading = "Operations (choose one)")]
+    decompile: bool,
+    /// Print the disassembly of one function.
+    #[arg(short = 'd', long, help_heading = "Operations (choose one)")]
+    disasm: bool,
+    /// Print the optimized IR of one function.
+    #[arg(short = 'i', long, help_heading = "Operations (choose one)")]
+    ir: bool,
+    /// Build a signature database from the named functions.
+    #[arg(short = 'b', long, help_heading = "Operations (choose one)")]
+    build_signatures: bool,
+    /// Match functions against a signature database.
+    #[arg(short = 'I', long, help_heading = "Operations (choose one)")]
+    identify: bool,
+    /// Run a JavaScript file against the script API.
+    #[arg(short = 'r', long, help_heading = "Operations (choose one)")]
+    run: bool,
+    /// Serve the script API over MCP on standard input and output.
+    #[arg(short = 'm', long, help_heading = "Operations (choose one)")]
+    mcp: bool,
+    /// Binary file, or JavaScript file with --run; required except with --mcp.
+    #[arg(
+        value_name = "INPUT",
+        required_unless_present = "mcp",
+        conflicts_with = "mcp"
+    )]
+    input: Option<PathBuf>,
+    /// Function name or address; required for --card, --decompile, --disasm, and --ir.
+    #[arg(
+        value_name = "FUNCTION",
+        required_if_eq_any([
+            ("card", "true"), ("decompile", "true"),
+            ("disasm", "true"), ("ir", "true")
+        ]),
+        conflicts_with_all = ["functions", "sections", "build_signatures", "identify", "run", "mcp"]
+    )]
+    function: Option<String>,
+    /// Maximum functions (default: 40), matches (default: 100), or instructions (default: all).
+    #[arg(
+        long,
+        value_name = "N",
+        conflicts_with_all = ["sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
+    )]
+    limit: Option<usize>,
+    #[arg(
+        long,
+        value_name = "TOKENS",
+        conflicts_with_all = ["functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
+        help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
+    )]
+    budget: Option<usize>,
+    /// Print the function list as JSON; only with --functions.
+    #[arg(
+        long,
+        conflicts_with_all = ["sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+    )]
+    json: bool,
+    /// Signature database; required for --identify, optional for --card and --decompile.
+    #[arg(
+        long,
+        value_name = "FILE",
+        required_if_eq("identify", "true"),
+        conflicts_with_all = ["functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+    )]
+    signatures: Option<PathBuf>,
+    /// Signature database to write; required with --build-signatures.
+    #[arg(
+        long,
+        value_name = "FILE",
+        required_if_eq("build_signatures", "true"),
+        conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
+    )]
+    output: Option<PathBuf>,
 }
 
-#[derive(Subcommand)]
+#[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 enum Command {
-    /// List the discovered functions.
-    #[command(after_help = "Example:\n  velk functions app.elf --limit 100")]
     Functions {
-        /// Binary file to analyze.
         path: PathBuf,
-        /// Maximum number of functions to show.
-        #[arg(long, default_value_t = 40)]
         limit: usize,
-        /// Print JSON instead of a table.
-        #[arg(long)]
         json: bool,
     },
-    /// List the sections.
-    Sections { path: PathBuf },
-    /// Print a function card as JSON.
+    Sections {
+        path: PathBuf,
+    },
     Card {
         path: PathBuf,
-        /// Name or address of the function.
         function: String,
-        /// Approximate size of the card in tokens.
-        #[arg(long, default_value_t = card::DEFAULT_BUDGET)]
         budget: usize,
-        #[arg(long)]
         signatures: Option<PathBuf>,
     },
-    /// Print pseudo-C for one function.
-    #[command(
-        after_help = "Examples:\n  velk decompile app.elf main\n  velk decompile app.elf 0x401000"
-    )]
     Decompile {
-        /// Binary file to analyze.
         path: PathBuf,
-        /// Name or address of the function.
         function: String,
-        #[arg(long)]
         signatures: Option<PathBuf>,
     },
-    /// Print the disassembly of one function.
-    #[command(
-        short_flag = 'd',
-        long_flag = "disasm",
-        after_help = "Examples:\n  velk -d app.elf main\n  velk --disasm app.elf 0x401000\n  velk disasm app.elf main --limit 20"
-    )]
     Disasm {
-        /// Binary file to analyze.
         path: PathBuf,
-        /// Name or address of the function.
         function: String,
-        /// Maximum number of disassembly lines to show.
-        #[arg(long)]
         limit: Option<usize>,
     },
-    /// Print the optimized IR of one function.
     Ir {
         path: PathBuf,
-        /// Name or address of the function.
         function: String,
     },
-    /// Build a signature database from the named functions.
     BuildSignatures {
         path: PathBuf,
-        #[arg(long)]
         output: PathBuf,
     },
-    /// Match functions against a signature database.
     Identify {
         path: PathBuf,
-        #[arg(long)]
         signatures: PathBuf,
-        #[arg(long, default_value_t = 100)]
         limit: usize,
     },
-    /// Run a JavaScript file against the script API.
-    Run { script: PathBuf },
-    /// Serve the script API over MCP on standard input and output.
+    Run {
+        script: PathBuf,
+    },
     Mcp,
+}
+
+impl Cli {
+    fn into_command(self) -> Command {
+        match self {
+            Self {
+                functions: true,
+                input: Some(path),
+                limit,
+                json,
+                ..
+            } => Command::Functions {
+                path,
+                limit: limit.unwrap_or(40),
+                json,
+            },
+            Self {
+                sections: true,
+                input: Some(path),
+                ..
+            } => Command::Sections { path },
+            Self {
+                card: true,
+                input: Some(path),
+                function: Some(function),
+                budget,
+                signatures,
+                ..
+            } => Command::Card {
+                path,
+                function,
+                budget: budget.unwrap_or(card::DEFAULT_BUDGET),
+                signatures,
+            },
+            Self {
+                decompile: true,
+                input: Some(path),
+                function: Some(function),
+                signatures,
+                ..
+            } => Command::Decompile {
+                path,
+                function,
+                signatures,
+            },
+            Self {
+                disasm: true,
+                input: Some(path),
+                function: Some(function),
+                limit,
+                ..
+            } => Command::Disasm {
+                path,
+                function,
+                limit,
+            },
+            Self {
+                ir: true,
+                input: Some(path),
+                function: Some(function),
+                ..
+            } => Command::Ir { path, function },
+            Self {
+                build_signatures: true,
+                input: Some(path),
+                output: Some(output),
+                ..
+            } => Command::BuildSignatures { path, output },
+            Self {
+                identify: true,
+                input: Some(path),
+                signatures: Some(signatures),
+                limit,
+                ..
+            } => Command::Identify {
+                path,
+                signatures,
+                limit: limit.unwrap_or(100),
+            },
+            Self {
+                run: true,
+                input: Some(script),
+                ..
+            } => Command::Run { script },
+            Self { mcp: true, .. } => Command::Mcp,
+            _ => unreachable!("clap validates the operation and its arguments"),
+        }
+    }
 }
 
 /// Lets a closed pipe end the process quietly, as for other command-line
@@ -132,7 +271,7 @@ fn exit_on_closed_pipe() {
 fn main() -> ExitCode {
     #[cfg(unix)]
     exit_on_closed_pipe();
-    match run(Cli::parse().command) {
+    match run(Cli::parse().into_command()) {
         Ok(code) => code,
         Err(error) => {
             eprintln!("{} {error}", Terminal::stderr().error("error:"));
@@ -534,60 +673,299 @@ mod tests {
     use super::{Cli, Command};
     use clap::Parser;
     use clap::error::ErrorKind;
-    use std::path::Path;
+    use std::path::PathBuf;
+    use velk::card;
+
+    const OPERATIONS: [(&str, &str); 10] = [
+        ("-f", "--functions"),
+        ("-s", "--sections"),
+        ("-c", "--card"),
+        ("-D", "--decompile"),
+        ("-d", "--disasm"),
+        ("-i", "--ir"),
+        ("-b", "--build-signatures"),
+        ("-I", "--identify"),
+        ("-r", "--run"),
+        ("-m", "--mcp"),
+    ];
+
+    fn parse(args: &[&str]) -> Command {
+        Cli::try_parse_from(std::iter::once("velk").chain(args.iter().copied()))
+            .unwrap()
+            .into_command()
+    }
+
+    fn error(args: &[&str]) -> clap::Error {
+        match Cli::try_parse_from(std::iter::once("velk").chain(args.iter().copied())) {
+            Ok(_) => panic!("expected invalid arguments: {args:?}"),
+            Err(error) => error,
+        }
+    }
 
     #[test]
-    fn disassembly_flag_names_select_the_existing_command() {
-        for selection in ["disasm", "-d", "--disasm"] {
-            for function in ["sum3", "0x1e0"] {
-                for limited in [false, true] {
-                    let mut args = vec!["velk", selection, "binary", function];
-                    if limited {
-                        args.extend(["--limit", "12"]);
-                    }
-                    let Command::Disasm {
-                        path,
-                        function: selected,
-                        limit,
-                    } = Cli::try_parse_from(args).unwrap().command
-                    else {
-                        panic!("expected disassembly command");
-                    };
-                    assert_eq!(path, Path::new("binary"));
-                    assert_eq!(selected, function);
-                    assert_eq!(limit, limited.then_some(12));
-                }
+    fn short_and_long_operations_select_the_same_command() {
+        let cases = [
+            (
+                vec!["binary", "--limit", "12", "--json"],
+                Command::Functions {
+                    path: PathBuf::from("binary"),
+                    limit: 12,
+                    json: true,
+                },
+            ),
+            (
+                vec!["binary"],
+                Command::Sections {
+                    path: PathBuf::from("binary"),
+                },
+            ),
+            (
+                vec![
+                    "binary",
+                    "sum3",
+                    "--budget",
+                    "360",
+                    "--signatures",
+                    "db.json",
+                ],
+                Command::Card {
+                    path: PathBuf::from("binary"),
+                    function: "sum3".into(),
+                    budget: 360,
+                    signatures: Some(PathBuf::from("db.json")),
+                },
+            ),
+            (
+                vec!["binary", "0x1e0", "--signatures", "db.json"],
+                Command::Decompile {
+                    path: PathBuf::from("binary"),
+                    function: "0x1e0".into(),
+                    signatures: Some(PathBuf::from("db.json")),
+                },
+            ),
+            (
+                vec!["binary", "sum3", "--limit", "12"],
+                Command::Disasm {
+                    path: PathBuf::from("binary"),
+                    function: "sum3".into(),
+                    limit: Some(12),
+                },
+            ),
+            (
+                vec!["binary", "sum3"],
+                Command::Ir {
+                    path: PathBuf::from("binary"),
+                    function: "sum3".into(),
+                },
+            ),
+            (
+                vec!["binary", "--output", "db.json"],
+                Command::BuildSignatures {
+                    path: PathBuf::from("binary"),
+                    output: PathBuf::from("db.json"),
+                },
+            ),
+            (
+                vec!["binary", "--signatures", "db.json", "--limit", "12"],
+                Command::Identify {
+                    path: PathBuf::from("binary"),
+                    signatures: PathBuf::from("db.json"),
+                    limit: 12,
+                },
+            ),
+            (
+                vec!["script.js"],
+                Command::Run {
+                    script: PathBuf::from("script.js"),
+                },
+            ),
+            (vec![], Command::Mcp),
+        ];
+        for ((short, long), (operands, expected)) in OPERATIONS.into_iter().zip(cases) {
+            for flag in [short, long] {
+                let args: Vec<_> = std::iter::once(flag)
+                    .chain(operands.iter().copied())
+                    .collect();
+                assert_eq!(parse(&args), expected, "{flag}");
             }
         }
     }
 
     #[test]
-    fn disassembly_flag_names_keep_required_operands() {
-        for selection in ["disasm", "-d", "--disasm"] {
-            for args in [vec!["velk", selection], vec!["velk", selection, "binary"]] {
-                let error = match Cli::try_parse_from(args) {
-                    Ok(_) => panic!("expected missing operands"),
-                    Err(error) => error,
-                };
-                assert_eq!(error.kind(), ErrorKind::MissingRequiredArgument);
+    fn operation_defaults_are_preserved() {
+        assert_eq!(
+            parse(&["-f", "binary"]),
+            Command::Functions {
+                path: PathBuf::from("binary"),
+                limit: 40,
+                json: false,
+            }
+        );
+        assert_eq!(
+            parse(&["-c", "binary", "sum3"]),
+            Command::Card {
+                path: PathBuf::from("binary"),
+                function: "sum3".into(),
+                budget: card::DEFAULT_BUDGET,
+                signatures: None,
+            }
+        );
+        assert_eq!(
+            parse(&["-d", "binary", "sum3"]),
+            Command::Disasm {
+                path: PathBuf::from("binary"),
+                function: "sum3".into(),
+                limit: None,
+            }
+        );
+        assert_eq!(
+            parse(&["-I", "binary", "--signatures", "db.json"]),
+            Command::Identify {
+                path: PathBuf::from("binary"),
+                signatures: PathBuf::from("db.json"),
+                limit: 100,
+            }
+        );
+    }
+
+    #[test]
+    fn every_pair_of_operations_conflicts() {
+        for (index, (short, _)) in OPERATIONS.iter().enumerate() {
+            for (_, long) in OPERATIONS.iter().skip(index + 1) {
+                assert_eq!(error(&[short, long]).kind(), ErrorKind::ArgumentConflict);
             }
         }
     }
 
     #[test]
-    fn disassembly_flag_names_are_not_global_options() {
+    fn operations_require_their_own_operands() {
+        for (_, flag) in OPERATIONS.into_iter().take(9) {
+            assert_eq!(error(&[flag]).kind(), ErrorKind::MissingRequiredArgument);
+        }
+        for flag in ["--card", "--decompile", "--disasm", "--ir"] {
+            assert_eq!(
+                error(&[flag, "binary"]).kind(),
+                ErrorKind::MissingRequiredArgument
+            );
+        }
+        for flag in ["--build-signatures", "--identify"] {
+            assert_eq!(
+                error(&[flag, "binary"]).kind(),
+                ErrorKind::MissingRequiredArgument
+            );
+        }
+    }
+
+    #[test]
+    fn local_options_and_extra_operands_are_rejected() {
         for args in [
-            vec!["velk", "mcp", "-d"],
-            vec!["velk", "run", "script.js", "--disasm"],
-            vec!["velk", "decompile", "binary", "sum3", "-d"],
-            vec!["velk", "-d", "binary", "sum3", "--json"],
-            vec!["velk", "-d", "--disasm", "binary", "sum3"],
+            vec!["-s", "binary", "--limit", "1"],
+            vec!["-d", "binary", "sum3", "--budget", "20"],
+            vec!["-D", "binary", "sum3", "--json"],
+            vec!["-d", "binary", "sum3", "--signatures", "db.json"],
+            vec!["-f", "binary", "--output", "db.json"],
+            vec!["-f", "binary", "sum3"],
+            vec!["-s", "binary", "sum3"],
+            vec!["-b", "binary", "sum3", "--output", "db.json"],
+            vec!["-I", "binary", "sum3", "--signatures", "db.json"],
+            vec!["-r", "script.js", "sum3"],
+            vec!["-m", "binary"],
+            vec!["-m", "--limit", "1"],
         ] {
-            let error = match Cli::try_parse_from(args) {
-                Ok(_) => panic!("expected unsupported option"),
-                Err(error) => error,
-            };
-            assert_eq!(error.kind(), ErrorKind::UnknownArgument);
+            error(&args);
+        }
+    }
+
+    #[test]
+    fn single_operation_options_conflict_with_every_other_operation() {
+        for (allowed, option) in [
+            ("--card", vec!["--budget", "20"]),
+            ("--functions", vec!["--json"]),
+            ("--build-signatures", vec!["--output", "db.json"]),
+        ] {
+            for (_, operation) in OPERATIONS {
+                if operation == allowed {
+                    continue;
+                }
+                let mut args = vec![operation];
+                if operation != "--mcp" {
+                    args.push("binary");
+                }
+                if matches!(operation, "--card" | "--decompile" | "--disasm" | "--ir") {
+                    args.push("sum3");
+                }
+                if operation == "--build-signatures" {
+                    args.extend(["--output", "db.json"]);
+                }
+                if operation == "--identify" {
+                    args.extend(["--signatures", "db.json"]);
+                }
+                args.extend(option.iter().copied());
+                assert_eq!(error(&args).kind(), ErrorKind::ArgumentConflict, "{args:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn an_operation_flag_is_required() {
+        assert_eq!(error(&[]).kind(), ErrorKind::MissingRequiredArgument);
+        assert_eq!(
+            error(&["binary", "sum3"]).kind(),
+            ErrorKind::MissingRequiredArgument
+        );
+        error(&["binary", "--json"]);
+        error(&["binary", "--budget", "20"]);
+        for (_, flag) in OPERATIONS {
+            assert!(Cli::try_parse_from(["velk", flag.trim_start_matches('-')]).is_err());
+        }
+        assert!(Cli::try_parse_from(["velk", "help"]).is_err());
+    }
+
+    #[test]
+    fn operation_flags_and_positional_delimiters_follow_standard_parsing() {
+        assert_eq!(
+            parse(&["binary", "--functions", "--limit", "2"]),
+            Command::Functions {
+                path: PathBuf::from("binary"),
+                limit: 2,
+                json: false,
+            }
+        );
+        assert_eq!(
+            parse(&["-f", "--", "functions"]),
+            Command::Functions {
+                path: PathBuf::from("functions"),
+                limit: 40,
+                json: false,
+            }
+        );
+        assert_eq!(
+            parse(&["-d", "--", "-binary", "-sum3"]),
+            Command::Disasm {
+                path: PathBuf::from("-binary"),
+                function: "-sum3".into(),
+                limit: None,
+            }
+        );
+    }
+
+    #[test]
+    fn help_is_available_for_every_operation() {
+        for args in std::iter::once(vec!["--help"])
+            .chain(OPERATIONS.into_iter().map(|(_, flag)| vec![flag, "--help"]))
+        {
+            let help = error(&args);
+            assert_eq!(help.kind(), ErrorKind::DisplayHelp);
+            let text = help.to_string();
+            assert!(text.contains("Operations (choose one)"));
+            assert!(text.contains("INPUT"));
+            assert!(text.contains("FUNCTION"));
+            assert!(text.contains("Examples:"));
+            assert!(text.contains(&format!("default: {}", card::DEFAULT_BUDGET)));
+        }
+        for flag in ["-V", "--version"] {
+            assert_eq!(error(&[flag]).kind(), ErrorKind::DisplayVersion);
+            assert_eq!(error(&["-m", flag]).kind(), ErrorKind::DisplayVersion);
         }
     }
 }

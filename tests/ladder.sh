@@ -30,9 +30,9 @@ cargo build --quiet || { echo "cargo build failed" >&2; exit 1; }
 rendered() {  # fixture function -> pseudo-C (function "-" gives the `functions` listing)
   local fixture=$1 function=$2
   if [ "$function" = "-" ]; then
-    "$BIN" functions "$FIX/$fixture" --limit 100000 2>/dev/null
+    "$BIN" --functions "$FIX/$fixture" --limit 100000 2>/dev/null
   else
-    "$BIN" decompile "$FIX/$fixture" "$function" 2>/dev/null
+    "$BIN" --decompile "$FIX/$fixture" "$function" 2>/dev/null
   fi
 }
 
