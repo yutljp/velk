@@ -50,6 +50,18 @@ running an already built velk binary.
 | `tests/smoke.sh` | CLI, MCP, selected output, and local performance | Output checks and benchmark thresholds |
 | `tests/ladder.sh` | Behavior by difficulty, including known unfinished targets | `tests/expect/ladder.tsv` |
 
+### CLI and terminal output
+
+Compare `disasm`, `-d`, and `--disasm` with the same file, function, and
+options, including usage and runtime errors. Colored and uncolored terminal
+output should preserve every character, including whitespace, after
+removing only ANSI styling. Pseudoterminal (PTY) checks exercise terminal
+detection, color suppression, and stdout/stderr behavior. Compare piped
+output, JSON, script results, and MCP messages separately, byte for byte,
+against their saved baseline. A passing terminal check does not establish
+that those outputs are unchanged. Individual command syntax and examples
+belong in `--help`.
+
 ### Hardware and IR
 
 Instruction checks compare processor execution with lifted IR using the

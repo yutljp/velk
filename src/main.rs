@@ -3,6 +3,10 @@ mod terminal;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use clap::builder::{
+    Styles,
+    styling::{AnsiColor, Style},
+};
 use clap::{Parser, Subcommand};
 use serde_json::json;
 
@@ -13,11 +17,19 @@ use velk::service::{Binary, Failure};
 use velk::sigs::Database;
 use velk::{addr, card, mcp, script};
 
+const HELP_STYLES: Styles = Styles::styled()
+    .header(Style::new().bold())
+    .usage(Style::new().bold())
+    .literal(AnsiColor::Cyan.on_default())
+    .placeholder(AnsiColor::Cyan.on_default());
+
 #[derive(Parser)]
 #[command(
     name = "velk",
     version,
-    about = "Binary analysis for terminals and agents"
+    about = "Binary analysis for terminals and agents",
+    styles = HELP_STYLES,
+    after_help = "Examples:\n  velk functions app.elf\n  velk decompile app.elf main\n  velk -d app.elf main\n\nUse 'velk <COMMAND> --help' for command-specific options."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -27,8 +39,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// List the discovered functions.
+    #[command(after_help = "Example:\n  velk functions app.elf --limit 100")]
     Functions {
+        /// Binary file to analyze.
         path: PathBuf,
+        /// Maximum number of functions to show.
         #[arg(long, default_value_t = 40)]
         limit: usize,
         /// Print JSON instead of a table.
@@ -49,7 +64,11 @@ enum Command {
         signatures: Option<PathBuf>,
     },
     /// Print pseudo-C for one function.
+    #[command(
+        after_help = "Examples:\n  velk decompile app.elf main\n  velk decompile app.elf 0x401000"
+    )]
     Decompile {
+        /// Binary file to analyze.
         path: PathBuf,
         /// Name or address of the function.
         function: String,
@@ -57,10 +76,17 @@ enum Command {
         signatures: Option<PathBuf>,
     },
     /// Print the disassembly of one function.
+    #[command(
+        short_flag = 'd',
+        long_flag = "disasm",
+        after_help = "Examples:\n  velk -d app.elf main\n  velk --disasm app.elf 0x401000\n  velk disasm app.elf main --limit 20"
+    )]
     Disasm {
+        /// Binary file to analyze.
         path: PathBuf,
         /// Name or address of the function.
         function: String,
+        /// Maximum number of disassembly lines to show.
         #[arg(long)]
         limit: Option<usize>,
     },
@@ -500,5 +526,68 @@ fn print_sections(binary: &Binary) {
             section.file_offset.map_or("-".to_owned(), addr::format),
             if section.executable { "x" } else { "" },
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Cli, Command};
+    use clap::Parser;
+    use clap::error::ErrorKind;
+    use std::path::Path;
+
+    #[test]
+    fn disassembly_flag_names_select_the_existing_command() {
+        for selection in ["disasm", "-d", "--disasm"] {
+            for function in ["sum3", "0x1e0"] {
+                for limited in [false, true] {
+                    let mut args = vec!["velk", selection, "binary", function];
+                    if limited {
+                        args.extend(["--limit", "12"]);
+                    }
+                    let Command::Disasm {
+                        path,
+                        function: selected,
+                        limit,
+                    } = Cli::try_parse_from(args).unwrap().command
+                    else {
+                        panic!("expected disassembly command");
+                    };
+                    assert_eq!(path, Path::new("binary"));
+                    assert_eq!(selected, function);
+                    assert_eq!(limit, limited.then_some(12));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn disassembly_flag_names_keep_required_operands() {
+        for selection in ["disasm", "-d", "--disasm"] {
+            for args in [vec!["velk", selection], vec!["velk", selection, "binary"]] {
+                let error = match Cli::try_parse_from(args) {
+                    Ok(_) => panic!("expected missing operands"),
+                    Err(error) => error,
+                };
+                assert_eq!(error.kind(), ErrorKind::MissingRequiredArgument);
+            }
+        }
+    }
+
+    #[test]
+    fn disassembly_flag_names_are_not_global_options() {
+        for args in [
+            vec!["velk", "mcp", "-d"],
+            vec!["velk", "run", "script.js", "--disasm"],
+            vec!["velk", "decompile", "binary", "sum3", "-d"],
+            vec!["velk", "-d", "binary", "sum3", "--json"],
+            vec!["velk", "-d", "--disasm", "binary", "sum3"],
+        ] {
+            let error = match Cli::try_parse_from(args) {
+                Ok(_) => panic!("expected unsupported option"),
+                Err(error) => error,
+            };
+            assert_eq!(error.kind(), ErrorKind::UnknownArgument);
+        }
     }
 }

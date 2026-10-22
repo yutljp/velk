@@ -17,9 +17,10 @@ Rust のツールチェーンと C コンパイラを用意し、ソースを取
 cargo build --release --locked
 ./target/release/velk functions tests/fixtures/arm64.o
 ./target/release/velk decompile tests/fixtures/arm64.o sum3
+./target/release/velk -d tests/fixtures/arm64.o sum3
 ```
 
-上の例は、リポジトリに含まれるオブジェクトから関数を一覧し、`sum3` の疑似 C を表示します。
+上の例は、リポジトリに含まれるオブジェクトから関数を一覧し、`sum3` の疑似 C と逆アセンブルを表示します。
 自分のファイルを調べるときは、ファイルのパスと、一覧から選んだ関数名またはアドレスを指定します。
 
 ```bash
@@ -66,7 +67,7 @@ JavaScript は同期実行で、Node.js の API や `await`・`import` は使い
 | `velk functions <file>` | 関数の一覧と発見元 |
 | `velk decompile <file> <function>` | 関数の疑似 C |
 | `velk card <file> <function>` | 関数の要約を JSON で表示 |
-| `velk disasm <file> <function>` | 逆アセンブル |
+| `velk -d <file> <function>` | 逆アセンブル |
 | `velk ir <file> <function>` | 最適化後の中間表現 |
 | `velk sections <file>` | セクションの一覧 |
 | `velk build-signatures <file> --output db.json` | 名前付き関数からシグネチャ DB を作成 |
@@ -74,7 +75,8 @@ JavaScript は同期実行で、Node.js の API や `await`・`import` は使い
 | `velk run <script.js>` | JavaScript API を実行 |
 | `velk mcp` | MCP サーバを起動 |
 
-細かなオプションは `velk <command> --help` で確認できます。
+`velk --disasm <file> <function>` と `velk disasm <file> <function>` も同じ処理です。
+細かなオプションは `velk -d --help` や `velk <command> --help` で確認できます。
 
 ```bash
 velk functions path/to/binary --json > functions.json
