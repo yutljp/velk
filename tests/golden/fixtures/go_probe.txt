@@ -1388,10 +1388,7 @@ int32_t main_kindName(uint32_t *a0, int64_t a1) {
     }
     v1 = a0[0x4];
     if (v1 != 0x778cdb8) {
-        if (v1 != 0xcb735792) {
-            return 0x0;
-        }
-        if ((uintptr_t)a0 != 0x46d400) {
+        if (v1 != 0xcb735792 || (uintptr_t)a0 != 0x46d400) {
             return 0x0;
         }
         return 0x1;

@@ -81,10 +81,7 @@ int cleanup_on_error(int a, int b, int *out) {
     int32_t v1;
 
     v1 = a;
-    if (((uint32_t)v1 & 0x80000000) != 0x0) {
-        return 0xffffffff;
-    }
-    if (b == 0x0) {
+    if (((uint32_t)v1 & 0x80000000) != 0x0 || b == 0x0) {
         return 0xffffffff;
     }
     *out = v1 / b;
@@ -195,10 +192,7 @@ int short_circuit(int *p, int n) {
     int32_t v2;
 
     v2 = 0x0;
-    if (p == 0x0) {
-        return 0x0;
-    }
-    if (n < 0x1) {
+    if (p == 0x0 || n < 0x1) {
         return 0x0;
     }
     if (*p != 0x1) {

@@ -159,10 +159,7 @@ fn matrix_trace @ 0x201220 (size 242)
 -- decompile
 /* velk pseudo-C: cleanup_on_error @ 0x201320 */
 int cleanup_on_error(int a, int b, int *out) {
-    if (a < 0x0) {
-        return 0xffffffff;
-    }
-    if (b == 0x0) {
+    if (a < 0x0 || b == 0x0) {
         return 0xffffffff;
     }
     *out = a / b;
@@ -275,10 +272,7 @@ int short_circuit(int *p, int n) {
     int32_t v1;
 
     v1 = 0x0;
-    if (p == 0x0) {
-        return 0x0;
-    }
-    if (n <= 0x0) {
+    if (p == 0x0 || n <= 0x0) {
         return 0x0;
     }
     v1 = 0x1;

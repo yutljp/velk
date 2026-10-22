@@ -26,40 +26,38 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         return;
     }
     v1 = 0x0;
-    if (n >= 0x8) {
-        if ((uintptr_t)dst - (uintptr_t)src >= 0x20) {
-            if (n >= 0x20) {
-                v1 = n & 0xffffffffffffffe0;
-                v2 = 0x0;
-                do {
-                    v3 = *(uint64_t *)(src + v2);
-                    v4 = *(uint64_t *)(src + (v2 + 0x8));
-                    v5 = *(uint64_t *)(src + (v2 + 0x10));
-                    v6 = *(uint64_t *)(src + (v2 + 0x18));
-                    *(uint64_t *)(dst + v2) = v3;
-                    *(uint64_t *)(dst + (v2 + 0x8)) = v4;
-                    *(uint64_t *)(dst + (v2 + 0x10)) = v5;
-                    *(uint64_t *)(dst + (v2 + 0x18)) = v6;
-                    v2 = v2 + 0x20;
-                } while (v1 != v2);
-                if (v1 == n) {
-                    return;
-                }
-                if ((n & 0x18) == 0x0) {
-                    goto L_2012a6;
-                }
-            } else {
-                v1 = 0x0;
-            }
-            v7 = v1;
-            v1 = n & 0xfffffffffffffff8;
+    if (n >= 0x8 && (uintptr_t)dst - (uintptr_t)src >= 0x20) {
+        if (n >= 0x20) {
+            v1 = n & 0xffffffffffffffe0;
+            v2 = 0x0;
             do {
-                *(uint64_t *)(dst + v7) = *(uint64_t *)(src + v7);
-                v7 = v7 + 0x8;
-            } while (v1 != v7);
+                v3 = *(uint64_t *)(src + v2);
+                v4 = *(uint64_t *)(src + (v2 + 0x8));
+                v5 = *(uint64_t *)(src + (v2 + 0x10));
+                v6 = *(uint64_t *)(src + (v2 + 0x18));
+                *(uint64_t *)(dst + v2) = v3;
+                *(uint64_t *)(dst + (v2 + 0x8)) = v4;
+                *(uint64_t *)(dst + (v2 + 0x10)) = v5;
+                *(uint64_t *)(dst + (v2 + 0x18)) = v6;
+                v2 = v2 + 0x20;
+            } while (v1 != v2);
             if (v1 == n) {
                 return;
             }
+            if ((n & 0x18) == 0x0) {
+                goto L_2012a6;
+            }
+        } else {
+            v1 = 0x0;
+        }
+        v7 = v1;
+        v1 = n & 0xfffffffffffffff8;
+        do {
+            *(uint64_t *)(dst + v7) = *(uint64_t *)(src + v7);
+            v7 = v7 + 0x8;
+        } while (v1 != v7);
+        if (v1 == n) {
+            return;
         }
     }
 L_2012a6:

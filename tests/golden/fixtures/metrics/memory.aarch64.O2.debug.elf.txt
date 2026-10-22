@@ -31,50 +31,48 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         return;
     }
     v1 = 0x0;
-    if (n >= 0x8) {
-        if ((uintptr_t)dst - (uintptr_t)src >= 0x20) {
-            if (n >= 0x20) {
-                v2 = src + 0x10;
-                v3 = dst + 0x10;
-                v1 = n & 0xffffffffffffffe0;
-                v4 = v1;
-                do {
-                    v5 = v2[-0x2];
-                    v6 = v2[-0x1];
-                    v7 = *v2;
-                    v8 = v2[0x1];
-                    v4 = v4 - 0x20;
-                    v2 = v2 + 0x4;
-                    v3[-0x2] = v5;
-                    v3[-0x1] = v6;
-                    *v3 = v7;
-                    v3[0x1] = v8;
-                    v3 = v3 + 0x4;
-                } while (v4 != 0x0);
-                if (v1 == n) {
-                    return;
-                }
-                if ((n & 0x18) == 0x0) {
-                    goto L_2102a4;
-                }
-            } else {
-                v1 = 0x0;
-            }
+    if (n >= 0x8 && (uintptr_t)dst - (uintptr_t)src >= 0x20) {
+        if (n >= 0x20) {
+            v2 = src + 0x10;
+            v3 = dst + 0x10;
+            v1 = n & 0xffffffffffffffe0;
             v4 = v1;
-            v1 = n & 0xfffffffffffffff8;
-            v10 = src + v4;
-            v11 = dst + v4;
-            v4 = v4 - v1;
             do {
-                v5 = *v10;
-                v10 = v10 + 0x1;
-                v4 = v4 + 0x8;
-                *v11 = v5;
-                v11 = v11 + 0x1;
+                v5 = v2[-0x2];
+                v6 = v2[-0x1];
+                v7 = *v2;
+                v8 = v2[0x1];
+                v4 = v4 - 0x20;
+                v2 = v2 + 0x4;
+                v3[-0x2] = v5;
+                v3[-0x1] = v6;
+                *v3 = v7;
+                v3[0x1] = v8;
+                v3 = v3 + 0x4;
             } while (v4 != 0x0);
             if (v1 == n) {
                 return;
             }
+            if ((n & 0x18) == 0x0) {
+                goto L_2102a4;
+            }
+        } else {
+            v1 = 0x0;
+        }
+        v4 = v1;
+        v1 = n & 0xfffffffffffffff8;
+        v10 = src + v4;
+        v11 = dst + v4;
+        v4 = v4 - v1;
+        do {
+            v5 = *v10;
+            v10 = v10 + 0x1;
+            v4 = v4 + 0x8;
+            *v11 = v5;
+            v11 = v11 + 0x1;
+        } while (v4 != 0x0);
+        if (v1 == n) {
+            return;
         }
     }
 L_2102a4:

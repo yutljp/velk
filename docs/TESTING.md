@@ -211,6 +211,28 @@ That fallback is not a C equivalence
 guarantee: multiple results can still be shown as a first return value with
 additional values in a comment.
 
+### Short-circuit conditions
+
+Structured condition tests compare lowered nodes before and after cleanup,
+including a separately written CFG reference. They check return/trap
+outcomes, ordered calls, and visible memory, while structural assertions
+check predicate identity, order, and occurrence count. Guarded division and
+loads below the test driver's recovery threshold distinguish lazy
+evaluation from an eager second test.
+Negative cases retain intervening effects, labels, different terminals,
+meaningful alternative branches, and nonterminal bodies that can run twice.
+Loop/switch scopes and the existing four-test bound remain part of the
+checks.
+
+The focused recompilation cases compare C and IR return values and region
+checksums. Independent scalar and forward-copy expectations also check the
+IR results, including every observed byte in fixtures with overlapping buffers.
+Native cases use memory counters to observe body effects; ordered calls
+are checked only in the node tests. Floating comparison cases include
+unordered inputs, without validating NaN payloads or floating exception
+state. These checks execute host C rather than original target instructions,
+and the interpreter has no volatile-load event trace.
+
 ## Fixture metrics
 
 The following table records the selected C metrics fixtures, not a general
