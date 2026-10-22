@@ -71,7 +71,7 @@ int32_t sub_21028c(int32_t a0, int32_t a1, int32_t a2) {
     if (a0 < a1) {
         return local_0 & 0x1;
     }
-    local_0 = (a0 - a2 + a2 <= a2 ? 0x1 : 0x0);
+    local_0 = (a0 - a2 + a2 <= a2);
     return local_0 & 0x1;
 }
 -- signature
@@ -109,7 +109,7 @@ uint32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2102e0 (size 64)
   blk0 @ 0x2102e0:
-    ret (((w0 << (w1 & #0x1f)) | (w0 >> ((#0x20 - w1) & #0x1f))) & #0xffffffff)
+    ret (((w0 << (w1 & #0x1f)) & #0xffffffff) | (w0 >> ((#0x20 - w1) & #0x1f)))
 -- card
 {"addr":"0x2102e0","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":64,"unsupported":0}
 

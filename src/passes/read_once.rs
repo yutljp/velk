@@ -7,7 +7,9 @@ use crate::ir::{
     BinOp, CType, Cond, Expr, FunctionIr, Operation, RegRef, Stmt, TEMP_BASE, VALUE_BASE,
     VARIABLE_BASE,
 };
-use crate::passes::copies::{left_by_call, reads_memory, substitute_reg_inner, truncated};
+use crate::passes::copies::{
+    comparison_preserved, left_by_call, reads_memory, substitute_reg_inner, truncated,
+};
 
 /// The most expression nodes a value may have to move into its reader.
 const VALUE_NODES: usize = 10;
@@ -215,6 +217,10 @@ fn count(expr: &Expr, register: u16) -> usize {
 /// Replaces the read of `dest` in the statement with the value; false when
 /// the read's width does not fit the value's.
 fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
+    let original_width = match stmt {
+        Stmt::Brif { lhs, rhs, .. } => Some(crate::ir::semantics::operand_width(lhs, rhs)),
+        _ => None,
+    };
     let width = expr_width(value).unwrap_or(64);
     if let Stmt::Brif {
         cond: Cond::Eq | Cond::Ne,
@@ -231,7 +237,12 @@ fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
         substitute_masked(operand, dest, value);
         substitute_reg_inner(operand, dest.index, width, value, &mut ok);
     }
-    ok
+    ok && match (&*stmt, original_width) {
+        (Stmt::Brif { cond, lhs, rhs, .. }, Some(width)) => {
+            comparison_preserved(*cond, width, lhs, rhs)
+        }
+        _ => true,
+    }
 }
 
 /// Replaces `dest & mask` compared for equality with a constant, when the
@@ -358,8 +369,9 @@ fn slot(expr: &Expr, sp: u16) -> bool {
 #[cfg(test)]
 mod tests {
     use super::fold_values_read_once;
+    use crate::ir::eval::{self, Outcome, Setup};
     use crate::ir::{
-        BinOp, Block, Cond, Convention, Expr, FunctionIr, RegRef, Stmt, VARIABLE_BASE,
+        BinOp, Block, CType, Cond, Convention, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE,
     };
     use crate::loader::Isa;
 
@@ -406,6 +418,24 @@ mod tests {
         let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
         fold_values_read_once(&mut ir);
         ir.blocks.remove(0).stmts
+    }
+
+    fn run(ir: &FunctionIr, registers: &[(u16, u64)], memory: &[(u64, u64)]) -> Outcome {
+        let outcome = eval::run(
+            ir,
+            &Setup {
+                seed: 0,
+                convention: eval::Convention {
+                    arguments: &[7, 6],
+                    clobbered: &[],
+                },
+                registers,
+                memory,
+                step_limit: 64,
+            },
+        );
+        assert!(matches!(&outcome, Outcome::Return { .. }), "{outcome:?}");
+        outcome
     }
 
     #[test]
@@ -488,6 +518,279 @@ mod tests {
             },
         ]);
         assert_eq!(stmts.len(), 3, "{stmts:?}");
+    }
+
+    #[test]
+    fn a_load_folded_into_a_wide_read_keeps_the_assignment_truncation() {
+        let address = 0x3000_0000_0000;
+        for signed in [false, true] {
+            let loaded = Expr::Load {
+                addr: Box::new(Expr::reg(7, 64)),
+                width: 4,
+                signed,
+            };
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: V1,
+                            width: 32,
+                        },
+                        value: loaded.clone(),
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(V1, 64),
+                    },
+                ],
+            );
+            ir.params = vec![Param {
+                index: 7,
+                name: "p".to_owned(),
+                ty: CType::pointer_to(CType::int(4, signed)),
+            }];
+            assert!(matches!(
+                crate::render::variable_types(&ir).get(&V1),
+                Some(CType::Int { .. })
+            ));
+            let original = ir.clone();
+
+            fold_values_read_once(&mut ir);
+
+            let expected = if signed {
+                Expr::bin(BinOp::And, loaded, Expr::Const(0xffff_ffff))
+            } else {
+                loaded
+            };
+            assert!(
+                matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value }] if *value == expected),
+                "{}",
+                ir.render()
+            );
+            for word in [0u32, 0x7fff_ffff, 0x8000_0080, 0xffff_ffff] {
+                let registers = [(7, address)];
+                let memory = [(address, 0x1234_5678_0000_0000 | u64::from(word))];
+                let setup = Setup {
+                    seed: 0,
+                    convention: eval::Convention {
+                        arguments: &[7],
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &memory,
+                    step_limit: 16,
+                };
+                let before = eval::run(&original, &setup);
+                assert!(
+                    matches!(&before, Outcome::Return { value, .. } if *value == u64::from(word)),
+                    "{before:?}"
+                );
+                assert_eq!(
+                    eval::run(&ir, &setup),
+                    before,
+                    "signed={signed}, word={word:#x}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_folded_wide_assignment_keeps_the_explicit_narrow_read() {
+        let address = 0x3000_0000_2000;
+        for (value, registers, memory, expected) in [
+            (
+                Expr::Load {
+                    addr: Box::new(Expr::reg(7, 64)),
+                    width: 4,
+                    signed: true,
+                },
+                vec![(7, address)],
+                vec![(address, 0x8000_0080)],
+                0x8000_0080,
+            ),
+            (
+                Expr::bin(BinOp::Add, Expr::reg(7, 32), Expr::reg(6, 32)),
+                vec![(7, 0x8000_0000), (6, 0x8000_0000)],
+                Vec::new(),
+                0,
+            ),
+        ] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    assign(V1, value.clone()),
+                    Stmt::Ret {
+                        value: Expr::reg(V1, 32),
+                    },
+                ],
+            );
+            let original = ir.clone();
+            let before = run(&original, &registers, &memory);
+            assert!(matches!(&before, Outcome::Return { value, .. } if *value == expected));
+
+            fold_values_read_once(&mut ir);
+
+            let masked = Expr::bin(BinOp::And, value, Expr::Const(0xffff_ffff));
+            assert!(
+                matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value }] if *value == masked),
+                "{}",
+                ir.render()
+            );
+            assert_eq!(run(&ir, &registers, &memory), before);
+        }
+    }
+
+    #[test]
+    fn a_fold_does_not_change_the_sign_width_of_an_arithmetic_shift() {
+        let address = 0x3000_0000_2000;
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: V1,
+                        width: 32,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(7, 64)),
+                        width: 1,
+                        signed: true,
+                    },
+                },
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Sar, Expr::reg(V1, 64), Expr::Const(1)),
+                },
+            ],
+        );
+        let original = ir.clone();
+
+        fold_values_read_once(&mut ir);
+
+        assert_eq!(ir.render(), original.render());
+        for byte in [5u8, 0x85, 0xff] {
+            let registers = [(7, address)];
+            let memory = [(address, u64::from(byte))];
+            let before = run(&original, &registers, &memory);
+            let expected = ((i64::from(byte as i8) as u64) & 0xffff_ffff) >> 1;
+            assert!(matches!(&before, Outcome::Return { value, .. } if *value == expected));
+            assert_eq!(run(&ir, &registers, &memory), before);
+        }
+    }
+
+    #[test]
+    fn a_fold_does_not_narrow_a_branch_comparison() {
+        let address = 0x3000_0000_2000;
+        for (cond, rhs, expected) in [
+            (Cond::Eq, 0xffff_ffff_ffff_ff85, 0),
+            (Cond::Ne, 0xffff_ffff_ffff_ff85, 1),
+            (Cond::Lt, 0, 0),
+            (Cond::Cs, 0x1_0000_0000, 0),
+        ] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: V1,
+                            width: 32,
+                        },
+                        value: Expr::Load {
+                            addr: Box::new(Expr::reg(7, 64)),
+                            width: 1,
+                            signed: true,
+                        },
+                    },
+                    Stmt::Brif {
+                        cond,
+                        lhs: Expr::reg(V1, 64),
+                        rhs: Expr::Const(rhs),
+                        target: 0x20,
+                    },
+                ],
+            );
+            ir.blocks.extend([
+                Block {
+                    start: 0x10,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(0),
+                    }],
+                },
+                Block {
+                    start: 0x20,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(1),
+                    }],
+                },
+            ]);
+            let original = ir.clone();
+            let registers = [(7, address)];
+            let memory = [(address, 0x85)];
+            let before = run(&original, &registers, &memory);
+            assert!(matches!(&before, Outcome::Return { value, .. } if *value == expected));
+
+            fold_values_read_once(&mut ir);
+
+            assert_eq!(ir.render(), original.render());
+            assert_eq!(run(&ir, &registers, &memory), before, "{cond:?}");
+        }
+    }
+
+    #[test]
+    fn a_masked_test_keeps_the_original_comparison_width() {
+        let address = 0x3000_0000_2000;
+        for rhs in [0, 256] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    assign(V1, load(Expr::reg(7, 64))),
+                    Stmt::Brif {
+                        cond: Cond::Eq,
+                        lhs: Expr::bin(BinOp::And, Expr::reg(V1, 8), Expr::Const(4)),
+                        rhs: Expr::Const(rhs),
+                        target: 0x20,
+                    },
+                ],
+            );
+            ir.blocks.extend([
+                Block {
+                    start: 0x10,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(0),
+                    }],
+                },
+                Block {
+                    start: 0x20,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(1),
+                    }],
+                },
+            ]);
+            let original = ir.clone();
+
+            fold_values_read_once(&mut ir);
+
+            if rhs == 0 {
+                assert!(
+                    matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Brif { .. }]),
+                    "{}",
+                    ir.render()
+                );
+            } else {
+                assert_eq!(ir.render(), original.render());
+            }
+            for word in [0, 4, 256] {
+                let registers = [(7, address)];
+                let memory = [(address, word)];
+                let before = run(&original, &registers, &memory);
+                let expected = u64::from(word & 4 == 0);
+                assert!(matches!(&before, Outcome::Return { value, .. } if *value == expected));
+                assert_eq!(
+                    run(&ir, &registers, &memory),
+                    before,
+                    "rhs={rhs}, word={word}"
+                );
+            }
+        }
     }
 
     #[test]

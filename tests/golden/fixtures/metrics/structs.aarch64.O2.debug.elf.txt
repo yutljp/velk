@@ -238,7 +238,7 @@ unsigned int (struct flags f)
 -- ir
 fn flags_level @ 0x2102d8 (size 20)
   blk0 @ 0x2102d8:
-    ret (select eq (w0 & #0x1), #0x0 ? ((w0 >> #0x1) & #0x7), ((w0 >> #0x4) & #0xf) & #0xffffffff)
+    ret select eq (w0 & #0x1), #0x0 ? ((w0 >> #0x1) & #0x7), ((w0 >> #0x4) & #0xf)
 -- card
 {"addr":"0x2102d8","approxTokens":126,"blocks":1,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 

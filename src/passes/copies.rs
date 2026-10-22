@@ -5,7 +5,7 @@ use crate::ir::visit::expr_reads;
 use crate::ir::visit::expr_width;
 use crate::ir::visit::statement_reads;
 use crate::ir::visit::statement_registers;
-use crate::ir::{Expr, FunctionIr, Stmt, VARIABLE_BASE};
+use crate::ir::{Cond, Expr, FunctionIr, Stmt, VARIABLE_BASE};
 use crate::passes::frame::reads_outside_frame;
 
 /// Folds a definition read exactly once before its register is written again
@@ -96,11 +96,13 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                 }
             }
             let mut ok = true;
-            substitute_in_statement(&mut block.stmts[use_at], dest, &value, &mut ok);
+            let mut folded = block.stmts[use_at].clone();
+            substitute_in_statement(&mut folded, dest, &value, &mut ok);
             if !ok {
                 index += 1;
                 continue;
             }
+            block.stmts[use_at] = folded;
             block.stmts.remove(index);
         }
     }
@@ -109,38 +111,24 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
 /// The value a register of `width` bits holds once it is assigned `value`:
 /// a narrow destination drops the high bits a sum or product may carry.
 pub(crate) fn truncated(value: &Expr, width: u8) -> Expr {
-    if width >= 64 || fits(value, width) {
+    let mask = crate::ir::semantics::mask(u32::from(width));
+    if width >= 64 || crate::ssa::ranges::of(value).hi <= mask {
         return value.clone();
     }
-    Expr::bin(
-        crate::ir::BinOp::And,
-        value.clone(),
-        Expr::Const((1u64 << width) - 1),
-    )
-}
-
-/// True when the value provably has no bits at or above `width`.
-fn fits(value: &Expr, width: u8) -> bool {
-    match value {
-        Expr::Reg { width: read, .. } => *read <= width,
-        Expr::Const(constant) => constant >> width == 0,
-        Expr::Load { width: bytes, .. } => u32::from(*bytes) * 8 <= u32::from(width),
-        Expr::Bin {
-            op: crate::ir::BinOp::And,
-            lhs,
-            rhs,
-        } => fits(lhs, width) || fits(rhs, width),
-        Expr::Bin {
-            op: crate::ir::BinOp::Shr,
-            lhs,
-            ..
-        } => fits(lhs, width),
-        _ => false,
-    }
+    Expr::bin(crate::ir::BinOp::And, value.clone(), Expr::Const(mask))
 }
 
 pub(crate) fn reads_memory(expr: &Expr) -> bool {
     matches!(expr, Expr::Load { .. }) || children(expr).into_iter().any(reads_memory)
+}
+
+pub(crate) fn comparison_preserved(cond: Cond, before: u32, lhs: &Expr, rhs: &Expr) -> bool {
+    let after = crate::ir::semantics::operand_width(lhs, rhs);
+    let mask = crate::ir::semantics::mask(before.min(after));
+    before == after
+        || (matches!(cond, Cond::Eq | Cond::Ne)
+            && crate::ssa::ranges::of(lhs).hi <= mask
+            && crate::ssa::ranges::of(rhs).hi <= mask)
 }
 
 /// Replaces every read of `dest` in one statement with the value; clears `ok`
@@ -157,9 +145,11 @@ fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bo
             substitute_reg_inner(addr, dest, width, value, ok);
             substitute_reg_inner(stored, dest, width, value, ok);
         }
-        Stmt::Brif { lhs, rhs, .. } => {
+        Stmt::Brif { cond, lhs, rhs, .. } => {
+            let comparison = crate::ir::semantics::operand_width(lhs, rhs);
             substitute_reg_inner(lhs, dest, width, value, ok);
             substitute_reg_inner(rhs, dest, width, value, ok);
+            *ok &= comparison_preserved(*cond, comparison, lhs, rhs);
         }
         Stmt::Ret { value: returned } => substitute_reg_inner(returned, dest, width, value, ok),
         Stmt::Switch { index, .. } => substitute_reg_inner(index, dest, width, value, ok),
@@ -446,16 +436,19 @@ pub(crate) fn expr_size(expr: &Expr) -> usize {
 }
 
 fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bool {
+    let mut folded = stmt.clone();
     let mut ok = true;
-    match stmt {
+    match &mut folded {
         Stmt::Assign { value, .. } => substitute_reg_inner(value, dest, width, template, &mut ok),
         Stmt::Store { addr, value, .. } => {
             substitute_reg_inner(addr, dest, width, template, &mut ok);
             substitute_reg_inner(value, dest, width, template, &mut ok);
         }
-        Stmt::Brif { lhs, rhs, .. } => {
+        Stmt::Brif { cond, lhs, rhs, .. } => {
+            let comparison = crate::ir::semantics::operand_width(lhs, rhs);
             substitute_reg_inner(lhs, dest, width, template, &mut ok);
             substitute_reg_inner(rhs, dest, width, template, &mut ok);
+            ok &= comparison_preserved(*cond, comparison, lhs, rhs);
         }
         Stmt::Ret { value } => substitute_reg_inner(value, dest, width, template, &mut ok),
         Stmt::BrIndirect { target } => substitute_reg_inner(target, dest, width, template, &mut ok),
@@ -473,6 +466,9 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
         }
         _ => ok = false,
     }
+    if ok {
+        *stmt = folded;
+    }
     ok
 }
 
@@ -488,19 +484,17 @@ pub(crate) fn substitute_reg_inner(
     }
     if let Expr::Reg { index, width: read } = expr {
         if *index == dest {
-            // A 32-bit value has a zero high half, so a wider read of the
-            // register can take it too.
-            let narrow_value = matches!(expr_width(template), Some(32));
-            if *read != width && !(narrow_value && *read > 32 && width <= 32) {
+            let narrow_expression = matches!(expr_width(template), Some(32));
+            if *read != width && !(narrow_expression && *read > 32 && width <= 32) {
                 *ok = false;
                 return;
             }
-            *expr = template.clone();
+            *expr = truncated(template, *read);
         }
         return;
     }
-    // A mask within 32 bits needs only the low bits, so a 32-bit value may
-    // replace the masked register whatever the read's width.
+    // A low-bit mask permits different expression widths, but the register
+    // read still truncates before that mask.
     if let Expr::Bin {
         op: crate::ir::BinOp::And,
         lhs,
@@ -513,34 +507,46 @@ pub(crate) fn substitute_reg_inner(
         };
         if let Some(mask) = mask
             && mask <= 0xffff_ffff
-            && matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == dest)
+            && let Expr::Reg { index, width: read } = lhs.as_ref()
+            && *index == dest
             && matches!(expr_width(template), Some(32))
         {
             let kept_mask = mask;
             *expr = Expr::bin(
                 crate::ir::BinOp::And,
-                template.clone(),
+                truncated(template, *read),
                 Expr::constant(kept_mask),
             );
             return;
         }
     }
     match expr {
-        Expr::Bin { lhs, rhs, .. } => {
+        Expr::Bin { op, lhs, rhs } => {
+            // The operands' width decides the sign of these operations.
+            let sensitive = matches!(
+                op,
+                crate::ir::BinOp::Sar | crate::ir::BinOp::DivS | crate::ir::BinOp::ModS
+            );
+            let before = crate::ir::semantics::operand_width(lhs, rhs);
             substitute_reg_inner(lhs, dest, width, template, ok);
             substitute_reg_inner(rhs, dest, width, template, ok);
+            if sensitive && before != crate::ir::semantics::operand_width(lhs, rhs) {
+                *ok = false;
+            }
         }
         Expr::Select {
+            cond,
             lhs,
             rhs,
             then,
             els,
-            ..
         } => {
+            let comparison = crate::ir::semantics::operand_width(lhs, rhs);
             substitute_reg_inner(lhs, dest, width, template, ok);
             substitute_reg_inner(rhs, dest, width, template, ok);
             substitute_reg_inner(then, dest, width, template, ok);
             substitute_reg_inner(els, dest, width, template, ok);
+            *ok &= comparison_preserved(*cond, comparison, lhs, rhs);
         }
         Expr::Load { addr, .. } => substitute_reg_inner(addr, dest, width, template, ok),
         Expr::SignExtend { value, .. } => substitute_reg_inner(value, dest, width, template, ok),
@@ -555,11 +561,442 @@ pub(crate) fn substitute_reg_inner(
 
 #[cfg(test)]
 mod tests {
-    use super::{copy_propagate, inline_local_copies};
+    use super::{copy_propagate, copy_propagate_guarded, inline_local_copies, truncated};
+    use crate::ir::eval::{self, Outcome};
     use crate::ir::{
-        BinOp, Block, CType, Cond, Convention, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE,
+        BinOp, Block, CType, Cond, Convention, Expr, FunctionIr, Operation, Param, Precision,
+        RegRef, Stmt, VARIABLE_BASE,
     };
     use crate::loader::Isa;
+
+    fn run(ir: &FunctionIr, address: u64, word: u64) -> Outcome {
+        let registers = [(7, 0x3000_0000_2000)];
+        let memory = [(address, word)];
+        let outcome = eval::run(
+            ir,
+            &eval::Setup {
+                seed: 0,
+                convention: eval::Convention {
+                    arguments: &[7],
+                    clobbered: &[],
+                },
+                registers: &registers,
+                memory: &memory,
+                step_limit: 100,
+            },
+        );
+        assert!(matches!(&outcome, Outcome::Return { .. }), "{outcome:?}");
+        outcome
+    }
+
+    fn copy_passes() -> [fn(&mut FunctionIr); 3] {
+        [inline_local_copies, copy_propagate, copy_propagate_guarded]
+    }
+
+    fn stack_load(bytes: u8, signed: bool) -> Expr {
+        Expr::Load {
+            addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(8))),
+            width: bytes,
+            signed,
+        }
+    }
+
+    fn with_copy(value: Expr, width: u8, consumer: Stmt) -> FunctionIr {
+        FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width,
+                    },
+                    value,
+                },
+                consumer,
+            ],
+        )
+    }
+
+    #[test]
+    fn folded_reads_keep_their_own_truncation() {
+        let cases = [
+            (
+                stack_load(4, true),
+                Expr::reg(VARIABLE_BASE, 32),
+                0x8000_0080,
+            ),
+            (
+                Expr::bin(BinOp::Add, stack_load(4, false), Expr::Const(1)),
+                Expr::reg(VARIABLE_BASE, 32),
+                0xffff_ffff,
+            ),
+            (
+                stack_load(4, true),
+                Expr::bin(BinOp::And, Expr::reg(VARIABLE_BASE, 8), Expr::Const(0xffff)),
+                0x8000_1280,
+            ),
+        ];
+        for (value, returned, word) in cases {
+            let before = with_copy(value, 64, Stmt::Ret { value: returned });
+            let expected = run(&before, eval::STACK_TOP + 8, word);
+            for pass in copy_passes() {
+                let mut after = before.clone();
+                pass(&mut after);
+                assert!(
+                    matches!(after.blocks[0].stmts.as_slice(), [Stmt::Ret { .. }]),
+                    "{}",
+                    after.render()
+                );
+                assert_eq!(
+                    run(&after, eval::STACK_TOP + 8, word),
+                    expected,
+                    "{}",
+                    after.render()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn copy_folding_preserves_signed_operation_and_comparison_widths() {
+        let check = |before: &FunctionIr| {
+            let expected = run(before, eval::STACK_TOP + 8, 0x80);
+            for pass in copy_passes() {
+                let mut after = before.clone();
+                pass(&mut after);
+                assert_eq!(
+                    run(&after, eval::STACK_TOP + 8, 0x80),
+                    expected,
+                    "{}",
+                    after.render()
+                );
+            }
+        };
+        for op in [BinOp::Sar, BinOp::DivS, BinOp::ModS] {
+            for rhs in [
+                Expr::Const(3),
+                Expr::bin(BinOp::Add, Expr::reg(7, 8), Expr::Const(3)),
+            ] {
+                let before = with_copy(
+                    stack_load(1, true),
+                    32,
+                    Stmt::Ret {
+                        value: Expr::bin(op, Expr::reg(VARIABLE_BASE, 64), rhs),
+                    },
+                );
+                check(&before);
+            }
+        }
+        for (cond, rhs) in [
+            (Cond::Lt, Expr::Const(0)),
+            (Cond::Eq, Expr::Const(0x1_ffff_ff80)),
+        ] {
+            let before = with_copy(
+                stack_load(1, true),
+                32,
+                Stmt::Ret {
+                    value: Expr::Select {
+                        cond,
+                        lhs: Box::new(Expr::reg(VARIABLE_BASE, 64)),
+                        rhs: Box::new(rhs.clone()),
+                        then: Box::new(Expr::Const(1)),
+                        els: Box::new(Expr::Const(2)),
+                    },
+                },
+            );
+            check(&before);
+            let mut branch = with_copy(
+                stack_load(1, true),
+                32,
+                Stmt::Brif {
+                    cond,
+                    lhs: Expr::reg(VARIABLE_BASE, 64),
+                    rhs,
+                    target: 0x20,
+                },
+            );
+            branch.blocks.extend([
+                Block {
+                    start: 0x10,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(2),
+                    }],
+                },
+                Block {
+                    start: 0x20,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(1),
+                    }],
+                },
+            ]);
+            check(&branch);
+        }
+    }
+
+    #[test]
+    fn equality_folds_when_both_values_fit_the_smaller_comparison_width() {
+        for cond in [Cond::Eq, Cond::Ne] {
+            let before = with_copy(
+                stack_load(1, true),
+                32,
+                Stmt::Ret {
+                    value: Expr::Select {
+                        cond,
+                        lhs: Box::new(Expr::bin(
+                            BinOp::And,
+                            Expr::reg(VARIABLE_BASE, 64),
+                            Expr::Const(4),
+                        )),
+                        rhs: Box::new(Expr::Const(0)),
+                        then: Box::new(Expr::Const(1)),
+                        els: Box::new(Expr::Const(2)),
+                    },
+                },
+            );
+            for word in [0x80, 0x84] {
+                let expected = run(&before, eval::STACK_TOP + 8, word);
+                for pass in copy_passes() {
+                    let mut after = before.clone();
+                    pass(&mut after);
+                    assert!(
+                        matches!(after.blocks[0].stmts.as_slice(), [Stmt::Ret { .. }]),
+                        "{}",
+                        after.render()
+                    );
+                    assert_eq!(
+                        run(&after, eval::STACK_TOP + 8, word),
+                        expected,
+                        "{}",
+                        after.render()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_rejected_substitution_leaves_the_consumer_unchanged() {
+        let before = with_copy(
+            Expr::reg(7, 32),
+            32,
+            Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::reg(VARIABLE_BASE, 64),
+                    Expr::reg(VARIABLE_BASE, 16),
+                ),
+            },
+        );
+        for pass in copy_passes() {
+            let mut after = before.clone();
+            pass(&mut after);
+            assert_eq!(after.render(), before.render());
+            assert_eq!(
+                run(&after, eval::STACK_TOP + 8, 0),
+                run(&before, eval::STACK_TOP + 8, 0)
+            );
+        }
+    }
+
+    #[test]
+    fn folded_signed_loads_keep_assignment_truncation() {
+        let passes = [
+            (
+                "local copies",
+                inline_local_copies as fn(&mut FunctionIr),
+                false,
+            ),
+            ("copy propagation", copy_propagate, true),
+            ("guarded copies", copy_propagate_guarded, true),
+        ];
+        for (name, pass, stack) in passes {
+            let (address, location) = if stack {
+                (
+                    Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(8)),
+                    eval::STACK_TOP + 8,
+                )
+            } else {
+                (Expr::reg(7, 64), 0x3000_0000_2000)
+            };
+            for bytes in [1u8, 2, 4] {
+                let sign = 1u64 << (bytes * 8 - 1);
+                let source_mask = (1u64 << (bytes * 8)) - 1;
+                for word in [5, sign | 5, source_mask] {
+                    let mut ir = FunctionIr::single_block(
+                        Isa::X86_64,
+                        vec![
+                            Stmt::Assign {
+                                dest: RegRef {
+                                    index: VARIABLE_BASE,
+                                    width: 32,
+                                },
+                                value: Expr::Load {
+                                    addr: Box::new(address.clone()),
+                                    width: bytes,
+                                    signed: true,
+                                },
+                            },
+                            Stmt::Ret {
+                                value: Expr::reg(VARIABLE_BASE, 64),
+                            },
+                        ],
+                    );
+                    if !stack {
+                        ir.params = vec![Param {
+                            index: 7,
+                            name: "p".to_owned(),
+                            ty: CType::pointer_to(CType::int(bytes, false)),
+                        }];
+                    }
+                    let before = run(&ir, location, word);
+                    let expected = if word & sign != 0 {
+                        (word | !source_mask) & 0xffff_ffff
+                    } else {
+                        word
+                    };
+                    assert!(matches!(&before, Outcome::Return { value, .. } if *value == expected));
+                    pass(&mut ir);
+                    assert!(
+                        matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { .. }]),
+                        "{name}: {}",
+                        ir.render()
+                    );
+                    assert_eq!(
+                        run(&ir, location, word),
+                        before,
+                        "{name}: signed {bytes}-byte load of {word:x}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_single_precision_result_needs_no_integer_mask() {
+        for bits in [
+            0,
+            0x8000_0000,
+            0x3f80_0000,
+            0xbf80_0000,
+            0x7f80_0000,
+            0x7fc0_0080,
+        ] {
+            let value = Expr::apply(
+                Operation::FloatAdd(Precision::Single),
+                vec![Expr::Const(bits), Expr::Const(0x3f00_0000)],
+            );
+            assert_eq!(truncated(&value, 32), value);
+            let mut before = with_copy(
+                value.clone(),
+                32,
+                Stmt::Ret {
+                    value: Expr::reg(VARIABLE_BASE, 32),
+                },
+            );
+            before.ret_type = CType::Named("float".to_owned());
+            let expected = run(&before, eval::STACK_TOP + 8, 0);
+            for pass in copy_passes() {
+                let mut after = before.clone();
+                pass(&mut after);
+                assert!(
+                    matches!(after.blocks[0].stmts.as_slice(), [Stmt::Ret { value: returned }] if *returned == value),
+                    "{}",
+                    after.render()
+                );
+                assert_eq!(run(&after, eval::STACK_TOP + 8, 0), expected);
+            }
+        }
+    }
+
+    #[test]
+    fn load_truncation_retains_bits_without_changing_full_width_values() {
+        let address = 0x3000_0000_2000;
+        for bytes in [1u8, 2, 4, 8] {
+            let source_bits = u32::from(bytes) * 8;
+            let source_mask = u64::MAX >> (64 - source_bits);
+            let sign = 1u64 << (source_bits - 1);
+            for signed in [false, true] {
+                let value = Expr::Load {
+                    addr: Box::new(Expr::Const(address)),
+                    width: bytes,
+                    signed,
+                };
+                for width in [8u8, 16, 32, 64] {
+                    let retained = truncated(&value, width);
+                    if width == 64 || (!signed && source_bits <= u32::from(width)) {
+                        assert_eq!(retained, value);
+                    } else {
+                        assert_ne!(retained, value);
+                    }
+                    for word in [5, sign | 5, source_mask] {
+                        let before = FunctionIr::single_block(
+                            Isa::X86_64,
+                            vec![
+                                Stmt::Assign {
+                                    dest: RegRef {
+                                        index: VARIABLE_BASE,
+                                        width,
+                                    },
+                                    value: value.clone(),
+                                },
+                                Stmt::Ret {
+                                    value: Expr::reg(VARIABLE_BASE, 64),
+                                },
+                            ],
+                        );
+                        let after = FunctionIr::single_block(
+                            Isa::X86_64,
+                            vec![Stmt::Ret {
+                                value: retained.clone(),
+                            }],
+                        );
+                        assert_eq!(run(&before, address, word), run(&after, address, word));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn shifted_signed_loads_still_need_the_assignment_mask() {
+        let address = 0x3000_0000_2000;
+        for bytes in [1u8, 2, 4] {
+            for count in [0, 1, 63, 64, 65] {
+                let value = Expr::bin(
+                    BinOp::Shr,
+                    Expr::Load {
+                        addr: Box::new(Expr::Const(address)),
+                        width: bytes,
+                        signed: true,
+                    },
+                    Expr::Const(count),
+                );
+                let before = FunctionIr::single_block(
+                    Isa::X86_64,
+                    vec![
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: VARIABLE_BASE,
+                                width: 32,
+                            },
+                            value: value.clone(),
+                        },
+                        Stmt::Ret {
+                            value: Expr::reg(VARIABLE_BASE, 64),
+                        },
+                    ],
+                );
+                let after = FunctionIr::single_block(
+                    Isa::X86_64,
+                    vec![Stmt::Ret {
+                        value: truncated(&value, 32),
+                    }],
+                );
+                let word = 1u64 << (bytes * 8 - 1);
+                assert_eq!(run(&before, address, word), run(&after, address, word));
+            }
+        }
+    }
 
     #[test]
     fn a_folded_narrow_sum_keeps_its_truncation() {

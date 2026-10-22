@@ -84,7 +84,7 @@ int32_t (double a0)
 -- ir
 fn <unnamed> @ 0x2012c0 (size 16)
   blk0 @ 0x2012c0:
-    ret (f.dtos32(xmm0) & #0xffffffff)
+    ret f.dtos32(xmm0)
 -- card
 {"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":0}
 
@@ -115,7 +115,7 @@ int32_t sub_2012f0(double a0, double a1) {
     uint32_t local_0; /* [sp-1c] */
 
     if (!(a0 < a1)) {
-        local_0 = (a1 < a0 ? 0x1 : 0x0);
+        local_0 = (a1 < a0);
         return local_0;
     }
     local_0 = 0xffffffff;

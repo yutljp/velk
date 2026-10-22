@@ -116,7 +116,7 @@ int (int x)
 -- ir
 fn sdiv16x @ 0x201340 (size 12)
   blk0 @ 0x201340:
-    ret (((rdi & #0xffffffff) / #0x10) & #0xffffffff)
+    ret ((rdi & #0xffffffff) / #0x10)
 -- card
 {"addr":"0x201340","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sdiv16x","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 
@@ -150,7 +150,7 @@ int (unsigned int x)
 -- ir
 fn umod3x @ 0x201360 (size 23)
   blk0 @ 0x201360:
-    ret ((edi % #0x3) & #0xffffffff)
+    ret (edi % #0x3)
 -- card
 {"addr":"0x201360","approxTokens":144,"blocks":1,"hardReasons":[],"name":"umod3x","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
 
@@ -290,7 +290,7 @@ int (int x)
 -- ir
 fn pdiv64 @ 0x201450 (size 12)
   blk0 @ 0x201450:
-    ret (((rdi & #0xffffffff) / #0x40) & #0xffffffff)
+    ret ((rdi & #0xffffffff) / #0x40)
 -- card
 {"addr":"0x201450","approxTokens":126,"blocks":1,"hardReasons":[],"name":"pdiv64","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 

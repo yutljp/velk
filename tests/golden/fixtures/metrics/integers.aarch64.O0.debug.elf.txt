@@ -77,7 +77,7 @@ _Bool in_range(int x, int lo, int hi) {
         return local_2 & 0x1;
     }
     v2 = local_1;
-    local_2 = (local_0 - v2 + v2 <= v2 ? 0x1 : 0x0);
+    local_2 = (local_0 - v2 + v2 <= v2);
     return local_2 & 0x1;
 }
 -- signature
@@ -115,7 +115,7 @@ unsigned int (unsigned int x, unsigned int k)
 -- ir
 fn rotate_left @ 0x2102e0 (size 64)
   blk0 @ 0x2102e0:
-    ret (((w0 << (w1 & #0x1f)) | (w0 >> ((#0x20 - w1) & #0x1f))) & #0xffffffff)
+    ret (((w0 << (w1 & #0x1f)) & #0xffffffff) | (w0 >> ((#0x20 - w1) & #0x1f)))
 -- card
 {"addr":"0x2102e0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf","unwind"],"section":".text","size":64,"unsupported":0}
 

@@ -132,7 +132,7 @@ int (double x)
 -- ir
 fn truncate_to_int @ 0x201270 (size 5)
   blk0 @ 0x201270:
-    ret (f.dtos32(xmm0) & #0xffffffff)
+    ret f.dtos32(xmm0)
 -- card
 {"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":5,"unsupported":0}
 

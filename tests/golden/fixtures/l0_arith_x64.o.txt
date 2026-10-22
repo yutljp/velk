@@ -51,7 +51,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn pick @ 0x20 (size 8)
   blk0 @ 0x20:
-    ret (select gt edi, esi ? edi, esi & #0xffffffff)
+    ret select gt edi, esi ? edi, esi
 -- card
 {"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
 

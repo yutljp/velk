@@ -2074,11 +2074,7 @@ mod tests {
         let text = rendered(&ir);
         let line = text
             .lines()
-            .find_map(|line| {
-                line.trim()
-                    .strip_prefix("return (")?
-                    .strip_suffix(" ? 0x1 : 0x0);")
-            })
+            .find_map(|line| line.trim().strip_prefix("return (")?.strip_suffix(");"))
             .unwrap_or_else(|| panic!("{text}"));
         line.to_owned()
     }

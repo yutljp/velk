@@ -196,7 +196,7 @@ unsigned int (struct flags f)
 -- ir
 fn flags_level @ 0x2012d0 (size 23)
   blk0 @ 0x2012d0:
-    ret (select eq (rdi & #0x1), #0x0 ? (((rdi & #0xffffffff) >> #0x1) & #0x7), (((rdi & #0xffffffff) >> #0x4) & #0xf) & #0xffffffff)
+    ret select eq (rdi & #0x1), #0x0 ? (((rdi & #0xffffffff) >> #0x1) & #0x7), (((rdi & #0xffffffff) >> #0x4) & #0xf)
 -- card
 {"addr":"0x2012d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
 

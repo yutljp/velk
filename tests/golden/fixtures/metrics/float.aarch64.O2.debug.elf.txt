@@ -106,7 +106,7 @@ fn average @ 0x21019c (size 144)
 -- decompile
 /* velk pseudo-C: lerp @ 0x21022c */
 float lerp(float a, float b, float t) {
-    return (fmaf(b - a, t, a) & 0xffffffff);
+    return fmaf(b - a, t, a);
 }
 -- signature
 float (float a, float b, float t)
@@ -115,7 +115,7 @@ float (float a, float b, float t)
 -- ir
 fn lerp @ 0x21022c (size 12)
   blk0 @ 0x21022c:
-    ret (fma.s(fsub.s(s1, s0), s2, s0) & #0xffffffff)
+    ret fma.s(fsub.s(s1, s0), s2, s0)
 -- card
 {"addr":"0x21022c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 
@@ -132,7 +132,7 @@ int (double x)
 -- ir
 fn truncate_to_int @ 0x210238 (size 8)
   blk0 @ 0x210238:
-    ret (f.dtos32.sat(d0) & #0xffffffff)
+    ret f.dtos32.sat(d0)
 -- card
 {"addr":"0x210238","approxTokens":108,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
 
@@ -170,6 +170,7 @@ int (double a, double b)
 -- ir
 fn compare_doubles @ 0x21024c (size 16)
   blk0 @ 0x21024c:
-    ret (select eq flt.d(d0, d1), #0x0 ? (select ne flt.d(d1, d0), #0x0 ? #0x1, #0x0 & #0xffffffff), #0xffffffff & #0xffffffff)
+    v1 = select eq flt.d(d0, d1), #0x0 ? select ne flt.d(d1, d0), #0x0 ? #0x1, #0x0, #0xffffffff
+    ret v1
 -- card
 {"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":0}

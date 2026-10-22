@@ -38,7 +38,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201460 (size 21)
   blk0 @ 0x201460:
-    ret ((edi / #0x3) & #0xffffffff)
+    ret (edi / #0x3)
 -- card
 {"addr":"0x201460","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -55,7 +55,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201480 (size 21)
   blk0 @ 0x201480:
-    ret ((edi / #0xa) & #0xffffffff)
+    ret (edi / #0xa)
 -- card
 {"addr":"0x201480","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
 
@@ -123,7 +123,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2014f0 (size 20)
   blk0 @ 0x2014f0:
-    ret ((edi / #0x3) & #0xffffffff)
+    ret (edi / #0x3)
 -- card
 {"addr":"0x2014f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -140,7 +140,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201510 (size 20)
   blk0 @ 0x201510:
-    ret ((edi / #0xa) & #0xffffffff)
+    ret (edi / #0xa)
 -- card
 {"addr":"0x201510","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -157,7 +157,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201530 (size 20)
   blk0 @ 0x201530:
-    ret ((edi / #0x10) & #0xffffffff)
+    ret (edi / #0x10)
 -- card
 {"addr":"0x201530","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -191,7 +191,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201570 (size 22)
   blk0 @ 0x201570:
-    ret ((edi % #0x3) & #0xffffffff)
+    ret (edi % #0x3)
 -- card
 {"addr":"0x201570","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
 
@@ -242,7 +242,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2015d0 (size 22)
   blk0 @ 0x2015d0:
-    ret ((edi % #0xa) & #0xffffffff)
+    ret (edi % #0xa)
 -- card
 {"addr":"0x2015d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
 
@@ -310,7 +310,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201650 (size 22)
   blk0 @ 0x201650:
-    ret ((edi % #0x4) & #0xffffffff)
+    ret (edi % #0x4)
 -- card
 {"addr":"0x201650","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
 
@@ -337,7 +337,7 @@ fn <unnamed> @ 0x201670 (size 14)
 int32_t sub_201680(int32_t a0) {
     uint8_t v2;
 
-    v2 = (a0 < 0x0 ? 0x1 : 0x0);
+    v2 = (a0 < 0x0);
     return v2;
 }
 -- signature
@@ -358,7 +358,7 @@ fn <unnamed> @ 0x201680 (size 21)
 int32_t sub_2016a0(int32_t a0) {
     uint8_t v2;
 
-    v2 = (a0 == 0x0 ? 0x1 : 0x0);
+    v2 = (a0 == 0x0);
     return v2;
 }
 -- signature
@@ -379,7 +379,7 @@ fn <unnamed> @ 0x2016a0 (size 21)
 int32_t sub_2016c0(int32_t a0) {
     uint8_t v2;
 
-    v2 = (a0 > 0x0 ? 0x1 : 0x0);
+    v2 = (a0 > 0x0);
     return v2;
 }
 -- signature

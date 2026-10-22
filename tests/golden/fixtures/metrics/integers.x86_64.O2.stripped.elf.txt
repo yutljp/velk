@@ -145,7 +145,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201280 (size 5)
   blk0 @ 0x201280:
-    ret ((((((edi & #0xff) << #0x18) | (((edi >> #0x8) & #0xff) << #0x10)) | (((edi >> #0x10) & #0xff) << #0x8)) | ((edi >> #0x18) & #0xff)) & #0xffffffff)
+    ret (((((edi & #0xff) << #0x18) | (((edi >> #0x8) & #0xff) << #0x10)) | (((edi >> #0x10) & #0xff) << #0x8)) | ((edi >> #0x18) & #0xff))
 -- card
 {"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":5,"unsupported":0}
 
@@ -166,7 +166,7 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 fn <unnamed> @ 0x201290 (size 13)
   blk0 @ 0x201290:
     v1 = select lt edi, esi ? edi, esi
-    ret (select ge v1, edx ? edx, v1 & #0xffffffff)
+    ret select ge v1, edx ? edx, v1
 -- card
 {"addr":"0x201290","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
 

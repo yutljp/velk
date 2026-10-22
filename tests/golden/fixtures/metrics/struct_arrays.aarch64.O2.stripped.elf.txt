@@ -14,11 +14,9 @@ struct sub_210174_a0 {
 };
 int32_t sub_210174(struct sub_210174_a0 *a0, int32_t a1) {
     struct sub_210174_a0 *v1;
-    int32_t v2;
 
     v1 = a0 + a1;
-    v2 = v1->field_0xc;
-    return v1->field_0x8 * v2;
+    return v1->field_0x8 * v1->field_0xc;
 }
 -- signature
 int32_t (struct sub_210174_a0 * a0, int32_t a1)
@@ -28,8 +26,7 @@ int32_t (struct sub_210174_a0 * a0, int32_t a1)
 fn <unnamed> @ 0x210174 (size 20)
   blk0 @ 0x210174:
     v1 = (x0 + (sext32(w1) << #0x4))
-    v2 = load16((v1 + #0xc))s
-    ret ((load32((v1 + #0x8)) * v2) & #0xffffffff)
+    ret ((load32((v1 + #0x8)) * load16((v1 + #0xc))s) & #0xffffffff)
 -- card
 {"addr":"0x210174","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 

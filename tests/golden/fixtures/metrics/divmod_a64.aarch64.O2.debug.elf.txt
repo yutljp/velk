@@ -123,7 +123,7 @@ int (int x)
 -- ir
 fn sdiv3 @ 0x210384 (size 28)
   blk0 @ 0x210384:
-    ret ((w0 / #0x3) & #0xffffffff)
+    ret (w0 / #0x3)
 -- card
 {"addr":"0x210384","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
@@ -140,7 +140,7 @@ int (int x)
 -- ir
 fn sdiv10 @ 0x2103a0 (size 28)
   blk0 @ 0x2103a0:
-    ret ((w0 / #0xa) & #0xffffffff)
+    ret (w0 / #0xa)
 -- card
 {"addr":"0x2103a0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
@@ -157,7 +157,7 @@ int (int x)
 -- ir
 fn sdiv16 @ 0x2103bc (size 20)
   blk0 @ 0x2103bc:
-    ret (((x0 & #0xffffffff) / #0x10) & #0xffffffff)
+    ret ((x0 & #0xffffffff) / #0x10)
 -- card
 {"addr":"0x2103bc","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
@@ -191,7 +191,7 @@ int (int x)
 -- ir
 fn smod3 @ 0x2103e4 (size 36)
   blk0 @ 0x2103e4:
-    ret ((w0 % #0x3) & #0xffffffff)
+    ret (w0 % #0x3)
 -- card
 {"addr":"0x2103e4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -208,7 +208,7 @@ unsigned int (unsigned int x)
 -- ir
 fn umod3 @ 0x210408 (size 28)
   blk0 @ 0x210408:
-    ret ((w0 % #0x3) & #0xffffffff)
+    ret (w0 % #0x3)
 -- card
 {"addr":"0x210408","approxTokens":138,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
@@ -225,7 +225,7 @@ unsigned int (unsigned int x)
 -- ir
 fn umod10 @ 0x210424 (size 28)
   blk0 @ 0x210424:
-    ret ((w0 % #0xa) & #0xffffffff)
+    ret (w0 % #0xa)
 -- card
 {"addr":"0x210424","approxTokens":138,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
 
@@ -242,7 +242,7 @@ int (int x)
 -- ir
 fn smod10 @ 0x210440 (size 36)
   blk0 @ 0x210440:
-    ret ((w0 % #0xa) & #0xffffffff)
+    ret (w0 % #0xa)
 -- card
 {"addr":"0x210440","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
 
@@ -310,7 +310,7 @@ int (int x)
 -- ir
 fn smod4 @ 0x2104b4 (size 20)
   blk0 @ 0x2104b4:
-    ret ((w0 % #0x4) & #0xffffffff)
+    ret (w0 % #0x4)
 -- card
 {"addr":"0x2104b4","approxTokens":126,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
 
@@ -361,7 +361,7 @@ int (int x)
 -- ir
 fn is_zero @ 0x2104d8 (size 12)
   blk0 @ 0x2104d8:
-    ret (select eq w0, #0x0 ? #0x1, #0x0 & #0xffffffff)
+    ret select eq w0, #0x0 ? #0x1, #0x0
 -- card
 {"addr":"0x2104d8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"is_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 
@@ -378,7 +378,7 @@ int (int x)
 -- ir
 fn is_pos @ 0x2104e4 (size 12)
   blk0 @ 0x2104e4:
-    ret (select gt w0, #0x0 ? #0x1, #0x0 & #0xffffffff)
+    ret select gt w0, #0x0 ? #0x1, #0x0
 -- card
 {"addr":"0x2104e4","approxTokens":114,"blocks":1,"hardReasons":[],"name":"is_pos","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
 

@@ -286,7 +286,7 @@ int short_circuit(int *p, int n) {
     v2 = *p - 0x1;
     local_2 = 0x1;
     if (v2 != 0x0) {
-        local_2 = (p[local_0 - 0x1] - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
+        local_2 = (p[local_0 - 0x1] - 0x1 + 0x1 == 0x1);
     }
     local_1 = local_2;
     return local_1 & 0x1;

@@ -86,7 +86,7 @@ int (double x)
 -- ir
 fn truncate_to_int @ 0x2012c0 (size 16)
   blk0 @ 0x2012c0:
-    ret (f.dtos32(xmm0) & #0xffffffff)
+    ret f.dtos32(xmm0)
 -- card
 {"addr":"0x2012c0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":0}
 
@@ -117,7 +117,7 @@ int compare_doubles(double a, double b) {
     uint32_t local_0; /* [sp-1c] */
 
     if (!(a < b)) {
-        local_0 = (b < a ? 0x1 : 0x0);
+        local_0 = (b < a);
         return local_0;
     }
     local_0 = 0xffffffff;

@@ -74,7 +74,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn reg_max @ 0x140001030 (size 16)
   blk0 @ 0x140001030:
-    ret (select gt ecx, edx ? ecx, edx & #0xffffffff)
+    ret select gt ecx, edx ? ecx, edx
 -- card
 {"addr":"0x140001030","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_max","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -108,7 +108,7 @@ int32_t (int32_t a0)
 -- ir
 fn reg_abs @ 0x140001050 (size 16)
   blk0 @ 0x140001050:
-    ret (select lt ((#0x0 - ecx) & #0xffffffff), #0x0 ? ecx, ((#0x0 - ecx) & #0xffffffff) & #0xffffffff)
+    ret select lt ((#0x0 - ecx) & #0xffffffff), #0x0 ? ecx, ((#0x0 - ecx) & #0xffffffff)
 -- card
 {"addr":"0x140001050","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -145,7 +145,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn reg_div @ 0x140001070 (size 16)
   blk0 @ 0x140001070:
-    ret ((ecx / edx) & #0xffffffff)
+    ret (ecx / edx)
 -- card
 {"addr":"0x140001070","approxTokens":126,"blocks":1,"hardReasons":[],"name":"reg_div","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -162,7 +162,7 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn reg_mod @ 0x140001080 (size 16)
   blk0 @ 0x140001080:
-    ret ((ecx % edx) & #0xffffffff)
+    ret (ecx % edx)
 -- card
 {"addr":"0x140001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":"reg_mod","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
 

@@ -274,7 +274,7 @@ int32_t sub_210434(uint32_t *a0, int32_t a1) {
     v2 = *a0 - 0x1;
     local_1 = 0x1;
     if (v2 != 0x0) {
-        local_1 = (a0[a1 - 0x1] - 0x1 + 0x1 == 0x1 ? 0x1 : 0x0);
+        local_1 = (a0[a1 - 0x1] - 0x1 + 0x1 == 0x1);
     }
     local_0 = local_1;
     return local_0 & 0x1;

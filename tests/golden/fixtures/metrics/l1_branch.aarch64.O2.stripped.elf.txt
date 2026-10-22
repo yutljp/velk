@@ -16,7 +16,8 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210174 (size 16)
   blk0 @ 0x210174:
-    ret (select ge w0, #0x0 ? (select ne w0, #0x0 ? #0x1, #0x0 & #0xffffffff), #0xffffffff & #0xffffffff)
+    v1 = select ge w0, #0x0 ? select ne w0, #0x0 ? #0x1, #0x0, #0xffffffff
+    ret v1
 -- card
 {"addr":"0x210174","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":0}
 
@@ -33,7 +34,7 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x210184 (size 20)
   blk0 @ 0x210184:
-    ret (select lt w0, w1 ? w1, select lt w0, w2 ? w0, w2 & #0xffffffff)
+    ret select lt w0, w1 ? w1, select lt w0, w2 ? w0, w2
 -- card
 {"addr":"0x210184","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
@@ -50,6 +51,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210198 (size 20)
   blk0 @ 0x210198:
-    ret (select lt w0, #0x1 ? (select ne w0, #0x0 ? #0xffffffff, #0x0 & #0xffffffff), #0x1 & #0xffffffff)
+    v1 = select lt w0, #0x1 ? select ne w0, #0x0 ? #0xffffffff, #0x0, #0x1
+    ret v1
 -- card
 {"addr":"0x210198","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}

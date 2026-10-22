@@ -111,7 +111,7 @@ uint32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201320 (size 43)
   blk0 @ 0x201320:
-    ret (((edi << (esi & #0x1f)) | (edi >> ((#0x20 - esi) & #0x1f))) & #0xffffffff)
+    ret (((edi << (esi & #0x1f)) & #0xffffffff) | (edi >> ((#0x20 - esi) & #0x1f)))
 -- card
 {"addr":"0x201320","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":43,"unsupported":0}
 
@@ -163,7 +163,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x201390 (size 51)
   blk0 @ 0x201390:
-    ret (((((edi >> #0x18) | ((edi >> #0x8) & #0xff00)) | ((edi << #0x8) & #0xff0000)) | (edi << #0x18)) & #0xffffffff)
+    ret ((((edi >> #0x18) | ((edi >> #0x8) & #0xff00)) | ((edi << #0x8) & #0xff0000)) | ((edi << #0x18) & #0xffffffff))
 -- card
 {"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":51,"unsupported":0}
 

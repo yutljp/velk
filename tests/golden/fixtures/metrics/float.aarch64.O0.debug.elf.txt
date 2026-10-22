@@ -67,7 +67,7 @@ fn average @ 0x2101b4 (size 160)
 -- decompile
 /* velk pseudo-C: lerp @ 0x210254 */
 float lerp(float a, float b, float t) {
-    return (fmaf(b - a, t, a) & 0xffffffff);
+    return fmaf(b - a, t, a);
 }
 -- signature
 float (float a, float b, float t)
@@ -76,7 +76,7 @@ float (float a, float b, float t)
 -- ir
 fn lerp @ 0x210254 (size 48)
   blk0 @ 0x210254:
-    ret (fma.s(fsub.s(s1, s0), s2, s0) & #0xffffffff)
+    ret fma.s(fsub.s(s1, s0), s2, s0)
 -- card
 {"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 
@@ -93,7 +93,7 @@ int (double x)
 -- ir
 fn truncate_to_int @ 0x210284 (size 24)
   blk0 @ 0x210284:
-    ret (f.dtos32.sat(d0) & #0xffffffff)
+    ret f.dtos32.sat(d0)
 -- card
 {"addr":"0x210284","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
@@ -121,7 +121,7 @@ int compare_doubles(double a, double b) {
     uint32_t local_0; /* [sp-14] */
 
     if (!(a < b)) {
-        local_0 = (!(b < a) ? 0x0 : 0x1);
+        local_0 = (b < a);
         return local_0;
     }
     local_0 = 0xffffffff;

@@ -322,7 +322,10 @@ fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
             rhs,
             then,
             els,
-        } if matches!(then.as_ref(), Expr::Const(_)) && matches!(els.as_ref(), Expr::Const(_)) => {
+        } if matches!(then.as_ref(), Expr::Const(_))
+            && matches!(els.as_ref(), Expr::Const(_))
+            && logic(value, false, ctx).is_none() =>
+        {
             selected(
                 (*cond, lhs, rhs),
                 (then, print_value_at(then, ctx, bits, integer)),
@@ -1820,6 +1823,46 @@ mod tests {
             then: Box::new(then),
             els: Box::new(els),
         }
+    }
+
+    #[test]
+    fn boolean_choices_render_as_truth_values_with_or_without_a_mask() {
+        for (then, els, expected) in [(1, 0, "a0 == 0x0"), (0, 1, "a0 != 0x0")] {
+            let choice = Expr::Select {
+                cond: Cond::Eq,
+                lhs: Box::new(Expr::reg(7, 32)),
+                rhs: Box::new(Expr::Const(0)),
+                then: Box::new(Expr::Const(then)),
+                els: Box::new(Expr::Const(els)),
+            };
+            for value in [
+                choice.clone(),
+                Expr::bin(BinOp::And, choice.clone(), Expr::Const(0xffff_ffff)),
+            ] {
+                let text = returned(value, &[CType::I32]);
+                assert!(text.contains(&format!("return ({expected});")), "{text}");
+                assert!(!text.contains(" ? "), "{text}");
+            }
+            let text = returned(Expr::bin(BinOp::Mul, choice, Expr::Const(2)), &[CType::I32]);
+            assert!(
+                text.contains(&format!("return ({expected}) * 0x2;")),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_address_choice_still_recovers_the_named_address() {
+        let text = global_returned(
+            choice(Expr::Const(0x1000), Expr::Const(0)),
+            CType::U64,
+            &[CType::U64, CType::U64],
+        );
+        assert!(text.contains("uint8_t *const counter"), "{text}");
+        assert!(
+            text.contains("return (a1 != 0x0 ? (uintptr_t)counter : 0x0);"),
+            "{text}"
+        );
     }
 
     #[test]

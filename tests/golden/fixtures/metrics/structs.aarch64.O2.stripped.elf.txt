@@ -243,7 +243,7 @@ uint32_t (uint32_t a0)
 -- ir
 fn <unnamed> @ 0x2102d8 (size 20)
   blk0 @ 0x2102d8:
-    ret (select eq (w0 & #0x1), #0x0 ? ((w0 >> #0x1) & #0x7), ((w0 >> #0x4) & #0xf) & #0xffffffff)
+    ret select eq (w0 & #0x1), #0x0 ? ((w0 >> #0x1) & #0x7), ((w0 >> #0x4) & #0xf)
 -- card
 {"addr":"0x2102d8","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
 
