@@ -181,9 +181,7 @@ fn <unnamed> @ 0x2013e0 (size 63)
 == 0x201420 -
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
-struct sub_201420_s1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_201420(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    struct sub_201420_s1 *v2;
     int64_t v3;
     int64_t v4;
     int64_t local_0; /* [sp-10] */
@@ -193,15 +191,14 @@ int64_t sub_201420(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t local_4; /* [sp-30] */
     int64_t local_5; /* [sp-38] */
 
-    v2 = (struct sub_201420_s1 *)(rsp + 0x8);
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v3 = v2->field_0x0 * 0xd;
-    v4 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + v3 + v2->field_0x8 * 0x11;
+    v3 = a6 * 0xd;
+    v4 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + v3 + a7 * 0x11;
     return v4 + a5 * 0x13;
 }
 -- signature
@@ -227,9 +224,7 @@ fn <unnamed> @ 0x201420 (size 96)
 == 0x201480 -
 -- decompile
 /* velk pseudo-C: sub_201480 @ 0x201480 */
-struct sub_201480_s1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_201480(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    struct sub_201480_s1 *v3;
     int64_t v5;
     int64_t v6;
     int64_t local_0; /* [sp-10] */
@@ -239,15 +234,14 @@ int64_t sub_201480(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t local_4; /* [sp-30] */
     int64_t local_5; /* [sp-38] */
 
-    v3 = (struct sub_201480_s1 *)(rsp + 0x10);
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v5 = v3->field_0x0 * 0x13;
-    v6 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + a5 * 0xd + a6 * 0x11 + v5 + v3->field_0x8 * 0x17;
+    v5 = a7 * 0x13;
+    v6 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + a5 * 0xd + a6 * 0x11 + v5 + a8 * 0x17;
     return v6 + a9 * 0x1d;
 }
 -- signature
@@ -300,9 +294,7 @@ fn <unnamed> @ 0x201500 (size 56)
 == 0x201540 -
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
-struct sub_201540_s1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_201540(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    struct sub_201540_s1 *v2;
     int64_t v3;
     int64_t v4;
     int64_t local_0; /* [sp-10] */
@@ -312,15 +304,14 @@ int64_t sub_201540(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t local_4; /* [sp-30] */
     int64_t local_5; /* [sp-38] */
 
-    v2 = (struct sub_201540_s1 *)(rsp + 0x8);
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v3 = v2->field_0x0 * 0xd;
-    v4 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + v3 + v2->field_0x8 * 0x11;
+    v3 = a6 * 0xd;
+    v4 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + v3 + a7 * 0x11;
     return v4 + a5 * 0x13;
 }
 -- signature
@@ -346,9 +337,7 @@ fn <unnamed> @ 0x201540 (size 96)
 == 0x2015a0 -
 -- decompile
 /* velk pseudo-C: sub_2015a0 @ 0x2015a0 */
-struct sub_2015a0_s1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_2015a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    struct sub_2015a0_s1 *v3;
     int64_t v5;
     int64_t v6;
     int64_t local_0; /* [sp-10] */
@@ -358,15 +347,14 @@ int64_t sub_2015a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     int64_t local_4; /* [sp-30] */
     int64_t local_5; /* [sp-38] */
 
-    v3 = (struct sub_2015a0_s1 *)(rsp + 0x10);
     local_0 = a0;
     local_1 = a1;
     local_2 = a2;
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v5 = v3->field_0x0 * 0x13;
-    v6 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + a5 * 0xd + a6 * 0x11 + v5 + v3->field_0x8 * 0x17;
+    v5 = a7 * 0x13;
+    v6 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + a5 * 0xd + a6 * 0x11 + v5 + a8 * 0x17;
     return v6 + a9 * 0x1d;
 }
 -- signature

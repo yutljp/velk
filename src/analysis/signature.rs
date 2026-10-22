@@ -153,13 +153,14 @@ pub type Callees<'a> = &'a dyn Fn(&Stmt) -> Option<&'static Prototype>;
 
 #[cfg(test)]
 fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> Signature {
-    recover_with(blocks, isa, convention, go, &|_| None)
+    recover_with(blocks, &[], isa, convention, go, &|_| None)
 }
 
 /// The signature, with each argument passed unchanged to a library function
 /// of the type that function's prototype gives it.
 pub fn recover_with(
     blocks: &[Block],
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
     isa: Isa,
     convention: Convention,
     go: bool,
@@ -723,21 +724,21 @@ pub fn recover_with(
         })
         .collect();
 
-    // Arguments go on the stack only once the integer registers run out.
     let registers_full = arguments
         .iter()
         .all(|register| params.iter().any(|param| param.index == *register));
-    // SysV passes a structure too large for registers in the caller's frame
-    // even while argument registers are free.
     let frame = match (registers_full, isa) {
-        (true, Isa::X86_64 | Isa::AArch64) => stack_arguments(blocks, isa, convention),
+        (_, Isa::AArch64) if convention == Convention::Aapcs64 => {
+            stack_arguments(blocks, landing_pads, isa, convention)
+        }
+        (true, Isa::X86_64) => stack_arguments(blocks, landing_pads, isa, convention),
         (false, Isa::X86_64) if convention == Convention::SysV => {
-            stack_arguments(blocks, isa, convention)
+            stack_arguments(blocks, landing_pads, isa, convention)
         }
         _ => StackFrame::default(),
     };
     let stack = frame.offsets;
-    let aggregate = !registers_full && !stack.is_empty();
+    let aggregate = convention == Convention::SysV && !registers_full && !stack.is_empty();
 
     Signature {
         params,
@@ -815,20 +816,29 @@ struct StackFrame {
 /// results that follow them: what the body writes past the last argument
 /// read, or the slot whose address it hands to a call. The arguments then
 /// run up to the first result.
-fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackFrame {
+fn stack_arguments(
+    blocks: &[Block],
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
+    isa: Isa,
+    convention: Convention,
+) -> StackFrame {
     let Some(start) = convention.stack_arguments() else {
         return StackFrame::default();
     };
     let sp = crate::arch::stack_pointer(isa);
     let fp = crate::arch::frame_pointer(isa);
     let results = convention == Convention::GoAbi0;
+    let incoming = convention == Convention::Aapcs64;
     // The registers holding a known offset from the stack pointer on entry,
     // as each block starts: the stack pointer and the frame pointer, and
     // under Go's assembly ABI, whose code may keep the stack pointer in
     // another register while it moves to another stack, any register.
+    const STACK_SLOTS: usize = 64;
     type Frame = std::collections::BTreeMap<u16, i64>;
+    type Written = [u8; STACK_SLOTS];
     let tracked = |register: u16| register == sp || register == fp || results;
     let mut entry: Vec<Option<Frame>> = vec![None; blocks.len()];
+    let mut written_entry = vec![[0; STACK_SLOTS]; blocks.len()];
     if blocks.is_empty() {
         return StackFrame::default();
     }
@@ -837,7 +847,7 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
     // adds its eight bytes.
     fn based(expr: &Expr) -> Option<(u16, i64)> {
         match expr {
-            Expr::Reg { index, .. } => Some((*index, 0)),
+            Expr::Reg { index, width: 64 } => Some((*index, 0)),
             Expr::Bin {
                 op: crate::ir::BinOp::Add,
                 lhs,
@@ -863,7 +873,7 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
                 lhs,
                 rhs,
             } => match (lhs.as_ref(), rhs.as_ref()) {
-                (Expr::Reg { index, .. }, Expr::Const(delta)) => {
+                (Expr::Reg { index, width: 64 }, Expr::Const(delta)) => {
                     (*index, (*delta as i64).wrapping_neg())
                 }
                 _ => return None,
@@ -875,48 +885,90 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
         }
         Some(frame.get(&base)?.wrapping_add(delta))
     };
-    let step = |stmt: &Stmt, frame: &mut Frame| {
-        if let Stmt::Assign { dest, value } = stmt
-            && tracked(dest.index)
-        {
-            match offset_of(value, frame) {
-                Some(at) => frame.insert(dest.index, at),
-                None => frame.remove(&dest.index),
-            };
-        } else if results {
-            for register in crate::ir::visit::statement_registers(stmt).0 {
-                frame.remove(&register);
-            }
-        }
+    let located = |addr: &Expr, frame: &Frame, held: &HashMap<u16, i64>| {
+        let through =
+            based(addr).and_then(|(base, delta)| Some(held.get(&base)?.wrapping_add(delta)));
+        offset_of(addr, frame)
+            .or(through)
+            .filter(|at| *at >= start && at - start < 8 * STACK_SLOTS as i64)
     };
+    let bounded_bytes = |at: i64, width: u8| {
+        matches!(width, 1 | 2 | 4 | 8).then_some(())?;
+        let end = at.checked_add(i64::from(width))?;
+        (end <= start + 8 * STACK_SLOTS as i64).then_some(at..end)
+    };
+    let step =
+        |stmt: &Stmt, frame: &mut Frame, held: &mut HashMap<u16, i64>, written: &mut Written| {
+            let assigned = match stmt {
+                Stmt::Assign { dest, value } if dest.width == 64 => offset_of(value, frame),
+                _ => None,
+            };
+            if incoming
+                && let Stmt::Store { addr, width, .. } = stmt
+                && let Some(at) = located(addr, frame, held)
+                && let Some(bytes) = bounded_bytes(at, *width)
+            {
+                for at in bytes {
+                    let byte = (at - start) as usize;
+                    written[byte / 8] |= 1 << (byte % 8);
+                }
+            }
+            for register in crate::ir::visit::statement_registers(stmt).0 {
+                held.remove(&register);
+                if tracked(register) {
+                    frame.remove(&register);
+                }
+            }
+            if let Stmt::Assign { dest, .. } = stmt
+                && let Some(at) = assigned
+            {
+                if tracked(dest.index) {
+                    frame.insert(dest.index, at);
+                }
+                if dest.index != sp && dest.index != fp && at >= start {
+                    held.insert(dest.index, at);
+                }
+            }
+        };
+    let graph: Vec<_> = (0..blocks.len())
+        .map(|index| crate::ir::cfg::block_successors_with_exceptions(blocks, index, landing_pads))
+        .collect();
+    let all: Vec<_> = (0..blocks.len()).collect();
+    let mut queued = vec![false; blocks.len()];
+    queued[0] = true;
     let mut work = vec![0];
     while let Some(index) = work.pop() {
+        queued[index] = false;
         let mut frame = entry[index].clone().expect("visited");
+        let mut held = HashMap::new();
+        let mut written = written_entry[index];
+        let edges = &graph[index];
+        let mut exceptional: Option<(Frame, Written)> = None;
         for stmt in &blocks[index].stmts {
-            step(stmt, &mut frame);
-        }
-        let mut targets = Vec::new();
-        if let Some(last) = blocks[index].stmts.last() {
-            match last {
-                Stmt::Br {
-                    target: Some(target),
-                } => targets.push(*target),
-                Stmt::Brif { target, .. } => targets.push(*target),
-                _ => {}
+            step(stmt, &mut frame, &mut held, &mut written);
+            if matches!(stmt, Stmt::Call { .. })
+                && (!edges.exceptional.is_empty() || edges.unknown_exceptional)
+            {
+                match &mut exceptional {
+                    None => exceptional = Some((frame.clone(), written)),
+                    Some((before, bytes)) => {
+                        before.retain(|register, at| frame.get(register) == Some(&*at));
+                        for (byte, after) in bytes.iter_mut().zip(written) {
+                            *byte &= after;
+                        }
+                    }
+                }
             }
         }
-        let mut next: Vec<usize> = targets
+        // An opaque instruction can unwind with unmodeled frame or memory effects.
+        if blocks[index]
+            .stmts
             .iter()
-            .filter_map(|target| blocks.iter().position(|block| block.start == *target))
-            .collect();
-        if !matches!(
-            blocks[index].stmts.last(),
-            Some(Stmt::Br { .. } | Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Trap)
-        ) && index + 1 < blocks.len()
+            .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }))
         {
-            next.push(index + 1);
+            exceptional = None;
         }
-        for next in next {
+        let mut offer = |next: usize, frame: &Frame, written: &Written| {
             let merged = match &entry[next] {
                 None => frame.clone(),
                 Some(old) => old
@@ -925,9 +977,36 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
                     .map(|(register, at)| (*register, *at))
                     .collect(),
             };
-            if entry[next].as_ref() != Some(&merged) {
+            let merged_written = if entry[next].is_none() {
+                *written
+            } else {
+                std::array::from_fn(|slot| written_entry[next][slot] & written[slot])
+            };
+            if entry[next].as_ref() != Some(&merged) || written_entry[next] != merged_written {
                 entry[next] = Some(merged);
-                work.push(next);
+                written_entry[next] = merged_written;
+                if !std::mem::replace(&mut queued[next], true) {
+                    work.push(next);
+                }
+            }
+        };
+        let normal = if edges.unknown_normal {
+            &all
+        } else {
+            &edges.normal
+        };
+        for &next in normal {
+            offer(next, &frame, &written);
+        }
+        let exceptional_targets = if edges.unknown_exceptional {
+            &all
+        } else {
+            &edges.exceptional
+        };
+        if !exceptional_targets.is_empty() {
+            let (frame, written) = exceptional.unwrap_or_else(|| (Frame::new(), [0; STACK_SLOTS]));
+            for &next in exceptional_targets {
+                offer(next, &frame, &written);
             }
         }
     }
@@ -938,10 +1017,7 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
     let mut extent: HashMap<i64, i64> = HashMap::new();
     let (mut written, mut handed): (Vec<(i64, i64)>, Vec<i64>) = (Vec::new(), Vec::new());
     let slot = |at: i64| at - (at - start).rem_euclid(8);
-    for (index, block) in blocks.iter().enumerate() {
-        let Some(mut frame) = entry[index].clone() else {
-            continue;
-        };
+    let mut scan = |block: &Block, mut frame: Frame, mut initialized: Written, effects: bool| {
         // Registers the block sets to an address in the caller's frame, as
         // an argument structure's address the body reads it through.
         let mut held: HashMap<u16, i64> = HashMap::new();
@@ -959,18 +1035,20 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
             for value in stmt.operands() {
                 all_loads(value, &mut loads);
             }
-            let located = |addr: &Expr, frame: &Frame, held: &HashMap<u16, i64>| {
-                let through = based(addr)
-                    .and_then(|(base, delta)| Some(held.get(&base)?.wrapping_add(delta)));
-                offset_of(addr, frame)
-                    .or(through)
-                    .filter(|at| *at >= start && at - start < 8 * 64)
-            };
             for (addr, width) in loads {
                 let Some(at) = located(addr, &frame, &held) else {
                     continue;
                 };
-                if (at - start) % 8 == 0 {
+                if incoming {
+                    if let Some(bytes) = bounded_bytes(at, width)
+                        && let Some(needed) = bytes.rev().find(|at| {
+                            let byte = (at - start) as usize;
+                            initialized[byte / 8] & (1 << (byte % 8)) == 0
+                        })
+                    {
+                        last = last.max(Some(slot(needed)));
+                    }
+                } else if (at - start) % 8 == 0 {
                     last = last.max(Some(at));
                 }
                 if results {
@@ -979,12 +1057,12 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
                 }
             }
             match stmt {
-                Stmt::Store { addr, width, .. } if results => {
+                Stmt::Store { addr, width, .. } if results && effects => {
                     if let Some(at) = located(addr, &frame, &held) {
                         written.push((at, i64::from(*width)));
                     }
                 }
-                Stmt::Call { .. } if results => {
+                Stmt::Call { .. } if results && effects => {
                     handed.extend(
                         crate::ir::visit::statement_registers(stmt)
                             .1
@@ -996,19 +1074,16 @@ fn stack_arguments(blocks: &[Block], isa: Isa, convention: Convention) -> StackF
                 }
                 _ => {}
             }
-            if let Stmt::Assign { dest, value } = stmt {
-                match offset_of(value, &frame).filter(|at| *at >= start) {
-                    Some(at) if dest.index != sp && dest.index != fp => {
-                        held.insert(dest.index, at);
-                    }
-                    _ => {
-                        held.remove(&dest.index);
-                    }
-                }
-            }
-            step(stmt, &mut frame);
+            step(stmt, &mut frame, &mut held, &mut initialized);
+        }
+    };
+    for (index, block) in blocks.iter().enumerate() {
+        if let Some(frame) = entry[index].clone() {
+            scan(block, frame, written_entry[index], true);
         }
     }
+    // Re-entry can erase the joined frame, but not a read on the first entry.
+    scan(&blocks[0], Frame::from([(sp, 0)]), [0; STACK_SLOTS], false);
     // A result follows every argument read. An address handed on may be
     // that of the arguments, unless some argument is read before it.
     let past = |at: i64| last.is_none_or(|last| at > last);
@@ -1345,7 +1420,7 @@ fn load_of(expr: &Expr) -> Option<(&Expr, u8)> {
 #[cfg(test)]
 mod tests {
     use super::recover;
-    use crate::ir::{Block, Convention, Expr, RegRef, Stmt};
+    use crate::ir::{BinOp, Block, Convention, Expr, RegRef, Stmt};
     use crate::loader::{Format, Isa};
 
     #[test]
@@ -1578,5 +1653,852 @@ mod tests {
             },
         ];
         assert_eq!(params_of(stmts, Isa::X86_64), vec![7]);
+    }
+
+    fn stack_address(base: u16, offset: i64) -> Expr {
+        Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(offset as u64))
+    }
+
+    fn stack_load(base: u16, offset: i64, width: u8) -> Expr {
+        Expr::Load {
+            addr: Box::new(stack_address(base, offset)),
+            width,
+            signed: false,
+        }
+    }
+
+    fn stack_assign(index: u16, value: Expr) -> Stmt {
+        Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        }
+    }
+
+    fn stack_store(base: u16, offset: i64, width: u8) -> Stmt {
+        Stmt::Store {
+            addr: stack_address(base, offset),
+            value: Expr::Const(7),
+            width,
+        }
+    }
+
+    fn recover_aapcs_stack(stmts: Vec<Stmt>) -> super::Signature {
+        recover(
+            &[Block { start: 0, stmts }],
+            Isa::AArch64,
+            Convention::Aapcs64,
+            false,
+        )
+    }
+
+    #[test]
+    fn incoming_stack_arguments_do_not_require_every_integer_register() {
+        let registers = (0..7)
+            .map(|index| Expr::reg(index, 64))
+            .reduce(|lhs, rhs| Expr::bin(BinOp::Add, lhs, rhs))
+            .unwrap();
+        for framed in [false, true] {
+            let mut stmts = Vec::new();
+            let (base, displacement) = if framed {
+                stmts.extend([
+                    stack_assign(
+                        31,
+                        Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::Const(48)),
+                    ),
+                    stack_store(31, 0, 8),
+                    stack_store(31, 8, 8),
+                    stack_assign(29, Expr::reg(31, 64)),
+                ]);
+                (29, 48)
+            } else {
+                (31, 0)
+            };
+            let value = [0, 8, 16]
+                .into_iter()
+                .fold(registers.clone(), |sum, offset| {
+                    Expr::bin(BinOp::Add, sum, stack_load(base, displacement + offset, 8))
+                });
+            stmts.push(stack_assign(12, value));
+            stmts.push(Stmt::Ret {
+                value: Expr::reg(12, 64),
+            });
+            let signature = recover_aapcs_stack(stmts);
+            assert_eq!(
+                signature
+                    .params
+                    .iter()
+                    .map(|param| param.index)
+                    .collect::<Vec<_>>(),
+                vec![0, 1, 2, 3, 4, 5, 6]
+            );
+            assert_eq!(signature.stack, vec![0, 8, 16]);
+            assert_eq!(signature.stack_widths, vec![8, 8, 8]);
+            assert!(!signature.aggregate);
+        }
+    }
+
+    #[test]
+    fn private_spills_saved_registers_and_return_addresses_are_not_arguments() {
+        let signature = recover_aapcs_stack(vec![
+            stack_assign(
+                31,
+                Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::Const(32)),
+            ),
+            Stmt::Store {
+                addr: stack_address(31, 0),
+                value: Expr::reg(29, 64),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: stack_address(31, 8),
+                value: Expr::reg(30, 64),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: stack_address(31, 16),
+                value: Expr::reg(0, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::bin(BinOp::Add, stack_load(31, 0, 8), stack_load(31, 8, 8)),
+                    stack_load(31, 16, 8),
+                ),
+            },
+        ]);
+        assert!(signature.stack.is_empty());
+        assert_eq!(
+            signature
+                .params
+                .iter()
+                .map(|param| param.index)
+                .collect::<Vec<_>>(),
+            vec![0]
+        );
+        let signature = recover(
+            &[Block {
+                start: 0,
+                stmts: vec![Stmt::Ret {
+                    value: stack_load(4, 0, 8),
+                }],
+            }],
+            Isa::X86_64,
+            Convention::SysV,
+            false,
+        );
+        assert!(signature.stack.is_empty());
+    }
+
+    #[test]
+    fn incoming_stack_bytes_written_before_their_first_read_are_not_inputs() {
+        for width in [1, 4, 8] {
+            let signature = recover_aapcs_stack(vec![
+                stack_store(31, 0, width),
+                Stmt::Ret {
+                    value: stack_load(31, 0, 8),
+                },
+            ]);
+            if width == 8 {
+                assert!(signature.stack.is_empty());
+            } else {
+                assert_eq!(signature.stack, vec![0]);
+            }
+            let signature = recover_aapcs_stack(vec![
+                stack_store(31, 0, width),
+                Stmt::Ret {
+                    value: stack_load(31, 0, width),
+                },
+            ]);
+            assert!(signature.stack.is_empty());
+        }
+        let signature = recover_aapcs_stack(vec![
+            stack_assign(9, stack_load(31, 0, 8)),
+            stack_store(31, 0, 8),
+            Stmt::Ret {
+                value: Expr::reg(9, 64),
+            },
+        ]);
+        assert_eq!(signature.stack, vec![0]);
+        let signature = recover_aapcs_stack(vec![
+            Stmt::Store {
+                addr: stack_address(31, 0),
+                value: stack_load(31, 0, 8),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ]);
+        assert_eq!(signature.stack, vec![0]);
+    }
+
+    #[test]
+    fn a_stack_write_must_cover_every_predecessor_to_remove_an_input() {
+        for both in [false, true] {
+            let mut left = Vec::new();
+            if both {
+                left.push(stack_store(31, 0, 8));
+            }
+            left.push(Stmt::Br { target: Some(24) });
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: vec![Stmt::Brif {
+                        cond: crate::ir::Cond::Eq,
+                        lhs: Expr::reg(0, 64),
+                        rhs: Expr::Const(0),
+                        target: 16,
+                    }],
+                },
+                Block {
+                    start: 8,
+                    stmts: left,
+                },
+                Block {
+                    start: 16,
+                    stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(24) }],
+                },
+                Block {
+                    start: 24,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+            ];
+            let signature = recover(&blocks, Isa::AArch64, Convention::Aapcs64, false);
+            assert_eq!(signature.stack, if both { vec![] } else { vec![0] });
+            assert!(!signature.aggregate);
+        }
+    }
+
+    #[test]
+    fn unknown_stack_adjustments_preserve_only_a_stable_frame_pointer() {
+        let dynamic = || {
+            stack_assign(
+                31,
+                Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::reg(0, 64)),
+            )
+        };
+        let signature = recover_aapcs_stack(vec![
+            dynamic(),
+            Stmt::Ret {
+                value: stack_load(31, 16, 8),
+            },
+        ]);
+        assert!(signature.stack.is_empty());
+        let signature = recover_aapcs_stack(vec![
+            stack_assign(
+                31,
+                Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::Const(32)),
+            ),
+            stack_assign(29, Expr::reg(31, 64)),
+            dynamic(),
+            Stmt::Ret {
+                value: stack_load(29, 32, 8),
+            },
+        ]);
+        assert_eq!(signature.stack, vec![0]);
+        let signature = recover_aapcs_stack(vec![Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::reg(1, 64))),
+                width: 8,
+                signed: false,
+            },
+        }]);
+        assert!(signature.stack.is_empty());
+    }
+
+    #[test]
+    fn only_surviving_stack_address_aliases_are_followed_across_calls() {
+        for index in [9, 19] {
+            let signature = recover_aapcs_stack(vec![
+                stack_assign(index, stack_address(31, 0)),
+                Stmt::Call {
+                    target: Some(0x2000),
+                    through: None,
+                    convention: Convention::Aapcs64,
+                    args: Some(vec![]),
+                    floats_named: false,
+                    clobbers: None,
+                    result: None,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: stack_load(index, 0, 8),
+                },
+            ]);
+            assert_eq!(signature.stack, if index == 19 { vec![0] } else { vec![] });
+        }
+    }
+
+    #[test]
+    fn incoming_stack_recovery_keeps_its_frame_bound() {
+        for offset in [-8, 512] {
+            let signature = recover_aapcs_stack(vec![Stmt::Ret {
+                value: stack_load(31, offset, 8),
+            }]);
+            assert!(signature.stack.is_empty());
+        }
+        let signature = recover_aapcs_stack(vec![Stmt::Ret {
+            value: stack_load(31, 504, 8),
+        }]);
+        assert_eq!(signature.stack.len(), 64);
+        assert_eq!(signature.stack.last(), Some(&504));
+    }
+
+    #[test]
+    fn incoming_stack_write_proofs_include_switch_and_flag_edges() {
+        for branch in [
+            Stmt::Switch {
+                index: Expr::reg(0, 64),
+                cases: vec![(0, 8)],
+                default: Some(16),
+            },
+            Stmt::BrifFlags {
+                cond: crate::ir::Cond::Eq,
+                target: 16,
+            },
+        ] {
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: vec![branch],
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(24) }],
+                },
+                Block {
+                    start: 16,
+                    stmts: vec![Stmt::Br { target: Some(24) }],
+                },
+                Block {
+                    start: 24,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+            ];
+            let signature = recover(&blocks, Isa::AArch64, Convention::Aapcs64, false);
+            assert_eq!(signature.stack, vec![0]);
+        }
+        let blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Br { target: None }],
+            },
+            Block {
+                start: 8,
+                stmts: vec![Stmt::Ret {
+                    value: stack_load(31, 0, 8),
+                }],
+            },
+        ];
+        assert_eq!(
+            recover(&blocks, Isa::AArch64, Convention::Aapcs64, false).stack,
+            vec![0]
+        );
+    }
+
+    #[test]
+    fn truncated_frame_addresses_and_overrunning_loads_remain_unknown() {
+        let signature = recover_aapcs_stack(vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: 29,
+                    width: 32,
+                },
+                value: Expr::reg(31, 64),
+            },
+            Stmt::Ret {
+                value: stack_load(29, 0, 8),
+            },
+        ]);
+        assert!(signature.stack.is_empty());
+        for (offset, width) in [(511, 2), (504, 16), (0, 0)] {
+            let signature = recover_aapcs_stack(vec![Stmt::Ret {
+                value: stack_load(31, offset, width),
+            }]);
+            assert!(signature.stack.is_empty());
+        }
+    }
+
+    #[test]
+    fn unsupported_stack_widths_do_not_establish_input_or_overwrite_proofs() {
+        let signature = recover_aapcs_stack(vec![Stmt::Ret {
+            value: stack_load(31, 0, 3),
+        }]);
+        assert!(signature.stack.is_empty());
+        let signature = recover_aapcs_stack(vec![
+            stack_store(31, 0, 3),
+            Stmt::Ret {
+                value: stack_load(31, 0, 2),
+            },
+        ]);
+        assert_eq!(signature.stack, vec![0]);
+    }
+
+    fn cfg_call() -> Stmt {
+        Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: true,
+            result: None,
+            clobbers: None,
+            via: None,
+        }
+    }
+
+    fn cfg_stack(blocks: &[Block], pads: &[(u64, Vec<(u64, u64)>)]) -> Vec<i64> {
+        super::stack_arguments(blocks, pads, Isa::AArch64, Convention::Aapcs64).offsets
+    }
+
+    #[test]
+    fn first_entry_reads_survive_unknown_backedges_without_adding_results() {
+        for (isa, convention, sp, start) in [
+            (Isa::AArch64, Convention::Aapcs64, 31, 0),
+            (Isa::X86_64, Convention::GoAbi0, 4, 8),
+        ] {
+            for width in [1, 8] {
+                let blocks = vec![
+                    Block {
+                        start: 0,
+                        stmts: vec![
+                            stack_assign(sp, stack_address(sp, -16)),
+                            stack_assign(12, stack_load(sp, start + 16, width)),
+                            stack_store(sp, start + 16, 8),
+                            stack_store(sp, start + 24, 8),
+                            Stmt::Br { target: Some(8) },
+                        ],
+                    },
+                    Block {
+                        start: 8,
+                        stmts: vec![
+                            stack_assign(sp, Expr::reg(0, 64)),
+                            Stmt::BrIndirect {
+                                target: Expr::reg(1, 64),
+                            },
+                        ],
+                    },
+                ];
+                let frame = super::stack_arguments(&blocks, &[], isa, convention);
+                assert_eq!(frame.offsets, vec![start]);
+                assert_eq!(
+                    frame.widths,
+                    vec![if convention == Convention::GoAbi0 {
+                        width
+                    } else {
+                        8
+                    }]
+                );
+                assert!(frame.results.is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn first_entry_overwrites_keep_their_byte_coverage() {
+        for (stored, loaded, needed) in [(8, 8, false), (4, 8, true), (1, 8, true), (8, 4, false)] {
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: vec![
+                        stack_store(31, 0, stored),
+                        stack_assign(12, stack_load(31, 0, loaded)),
+                        Stmt::Br { target: Some(8) },
+                    ],
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![
+                        stack_assign(31, Expr::reg(0, 64)),
+                        Stmt::BrIndirect {
+                            target: Expr::reg(1, 64),
+                        },
+                    ],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[]),
+                if needed { vec![0] } else { vec![] }
+            );
+        }
+    }
+
+    #[test]
+    fn first_entry_scan_keeps_reads_before_an_opaque_frame_change_only() {
+        for early in [false, true] {
+            let mut first = Vec::new();
+            if early {
+                first.push(stack_assign(12, stack_load(31, 0, 8)));
+            }
+            first.extend([
+                Stmt::Unsupported {
+                    text: "opaque frame change".to_owned(),
+                    writes: Some(vec![31]),
+                },
+                stack_assign(13, stack_load(31, 16, 8)),
+                Stmt::Br { target: Some(8) },
+            ]);
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: first,
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![Stmt::BrIndirect {
+                        target: Expr::reg(1, 64),
+                    }],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[]),
+                if early { vec![0] } else { vec![] }
+            );
+        }
+    }
+
+    #[test]
+    fn unknown_predecessors_meet_frame_and_written_facts() {
+        for indirect in [false, true] {
+            for changed_sp in [false, true] {
+                let mut unknown = Vec::new();
+                if changed_sp {
+                    unknown.push(stack_assign(31, stack_address(31, 16)));
+                }
+                unknown.push(if indirect {
+                    Stmt::BrIndirect {
+                        target: Expr::reg(1, 64),
+                    }
+                } else {
+                    Stmt::Br { target: None }
+                });
+                let blocks = vec![
+                    Block {
+                        start: 0,
+                        stmts: vec![Stmt::Brif {
+                            cond: crate::ir::Cond::Eq,
+                            lhs: Expr::reg(0, 64),
+                            rhs: Expr::Const(0),
+                            target: 16,
+                        }],
+                    },
+                    Block {
+                        start: 8,
+                        stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(24) }],
+                    },
+                    Block {
+                        start: 16,
+                        stmts: unknown,
+                    },
+                    Block {
+                        start: 24,
+                        stmts: vec![Stmt::Ret {
+                            value: stack_load(31, 0, 8),
+                        }],
+                    },
+                ];
+                assert_eq!(
+                    cfg_stack(&blocks, &[]),
+                    if changed_sp { vec![] } else { vec![0] }
+                );
+            }
+        }
+        for before in [false, true] {
+            let mut first = Vec::new();
+            if before {
+                first.push(stack_store(31, 0, 8));
+            }
+            first.push(Stmt::BrIndirect {
+                target: Expr::reg(1, 64),
+            });
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: first,
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[]),
+                if before { vec![] } else { vec![0] }
+            );
+        }
+    }
+
+    #[test]
+    fn normal_and_exception_predecessors_must_both_overwrite() {
+        for both in [false, true] {
+            let mut pad = Vec::new();
+            if both {
+                pad.push(stack_store(31, 0, 8));
+            }
+            pad.push(Stmt::Br { target: Some(12) });
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: vec![cfg_call()],
+                },
+                Block {
+                    start: 4,
+                    stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(12) }],
+                },
+                Block {
+                    start: 8,
+                    stmts: pad,
+                },
+                Block {
+                    start: 12,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[(8, vec![(0, 4)])]),
+                if both { vec![] } else { vec![0] }
+            );
+        }
+    }
+
+    #[test]
+    fn exception_states_meet_call_prefixes_instead_of_the_block_exit() {
+        for before in [false, true] {
+            for second_call in [false, true] {
+                let mut first = Vec::new();
+                if before {
+                    first.push(stack_store(31, 0, 8));
+                }
+                first.extend([cfg_call(), stack_store(31, 0, 8)]);
+                if second_call {
+                    first.push(cfg_call());
+                }
+                first.push(Stmt::Br { target: Some(16) });
+                let blocks = vec![
+                    Block {
+                        start: 0,
+                        stmts: first,
+                    },
+                    Block {
+                        start: 8,
+                        stmts: vec![Stmt::Br { target: Some(16) }],
+                    },
+                    Block {
+                        start: 16,
+                        stmts: vec![Stmt::Ret {
+                            value: stack_load(31, 0, 8),
+                        }],
+                    },
+                ];
+                assert_eq!(
+                    cfg_stack(&blocks, &[(8, vec![(0, 8)])]),
+                    if before { vec![] } else { vec![0] }
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn exception_frame_origins_use_the_call_point() {
+        for second_call in [false, true] {
+            let mut first = vec![cfg_call(), stack_assign(31, stack_address(31, 16))];
+            if second_call {
+                first.push(cfg_call());
+            }
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: first,
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![
+                        stack_assign(31, stack_address(31, -16)),
+                        Stmt::Br { target: Some(24) },
+                    ],
+                },
+                Block {
+                    start: 16,
+                    stmts: vec![Stmt::Br { target: Some(24) }],
+                },
+                Block {
+                    start: 24,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[(16, vec![(0, 8)])]),
+                if second_call { vec![] } else { vec![0] }
+            );
+        }
+    }
+
+    #[test]
+    fn missing_exception_targets_cannot_certify_the_normal_store() {
+        let blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![cfg_call(), stack_store(31, 0, 8)],
+            },
+            Block {
+                start: 8,
+                stmts: vec![Stmt::Ret {
+                    value: stack_load(31, 0, 8),
+                }],
+            },
+        ];
+        assert_eq!(cfg_stack(&blocks, &[(0x100, vec![(0, 8)])]), vec![0]);
+    }
+
+    #[test]
+    fn loop_backedges_do_not_replace_the_initial_unwritten_state() {
+        for before in [false, true] {
+            let mut first = Vec::new();
+            if before {
+                first.push(stack_store(31, 0, 8));
+            }
+            first.push(Stmt::Br { target: Some(8) });
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: first,
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![
+                        stack_assign(9, stack_load(31, 0, 8)),
+                        stack_store(31, 0, 8),
+                        Stmt::Brif {
+                            cond: crate::ir::Cond::Ne,
+                            lhs: Expr::reg(0, 64),
+                            rhs: Expr::Const(0),
+                            target: 8,
+                        },
+                    ],
+                },
+                Block {
+                    start: 16,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::reg(9, 64),
+                    }],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[]),
+                if before { vec![] } else { vec![0] }
+            );
+        }
+    }
+
+    #[test]
+    fn an_exception_range_spanning_call_blocks_keeps_the_earlier_call() {
+        for before in [false, true] {
+            let mut first = Vec::new();
+            if before {
+                first.push(stack_store(31, 0, 8));
+            }
+            first.push(cfg_call());
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: first,
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![stack_store(31, 0, 8)],
+                },
+                Block {
+                    start: 16,
+                    stmts: vec![cfg_call(), Stmt::Br { target: Some(32) }],
+                },
+                Block {
+                    start: 24,
+                    stmts: vec![Stmt::Br { target: Some(32) }],
+                },
+                Block {
+                    start: 32,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[(24, vec![(0, 24)])]),
+                if before { vec![] } else { vec![0] }
+            );
+        }
+    }
+
+    #[test]
+    fn an_entry_backedge_keeps_the_external_unwritten_root() {
+        let blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![
+                    stack_assign(9, stack_load(31, 0, 8)),
+                    stack_store(31, 0, 8),
+                    Stmt::Brif {
+                        cond: crate::ir::Cond::Ne,
+                        lhs: Expr::reg(0, 64),
+                        rhs: Expr::Const(0),
+                        target: 0,
+                    },
+                ],
+            },
+            Block {
+                start: 8,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::reg(9, 64),
+                }],
+            },
+        ];
+        assert_eq!(cfg_stack(&blocks, &[]), vec![0]);
+    }
+
+    #[test]
+    fn opaque_exception_effects_remove_the_call_prefix_origin() {
+        for opaque in [false, true] {
+            let mut first = vec![cfg_call()];
+            if opaque {
+                first.push(Stmt::Unsupported {
+                    text: "opaque".to_owned(),
+                    writes: Some(Vec::new()),
+                });
+            }
+            first.extend([stack_store(31, 0, 8), Stmt::Br { target: Some(16) }]);
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: first,
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+                Block {
+                    start: 16,
+                    stmts: vec![Stmt::Ret {
+                        value: stack_load(31, 0, 8),
+                    }],
+                },
+            ];
+            assert_eq!(
+                cfg_stack(&blocks, &[(8, vec![(0, 8)])]),
+                if opaque { vec![] } else { vec![0] }
+            );
+        }
     }
 }

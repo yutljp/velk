@@ -83,11 +83,14 @@ pub fn lift(
     lift_with(image, addr, size, extra_targets, &summaries)
 }
 
-/// The lifts made so far, by function start and size, each with what it
-/// asked of its callees. Lifting reads nothing else that changes, so a lift
-/// whose callees all still answer the same is the lift made again.
+/// The lifts made so far, by function start, size and extra block starts,
+/// each with what it asked of its callees. Lifting reads nothing else that
+/// changes, so a lift whose callees all still answer the same is the lift
+/// made again.
 #[derive(Debug, Default)]
-pub struct Lifts(Mutex<HashMap<(u64, u64), Kept>>);
+pub struct Lifts(Mutex<HashMap<LiftKey, Kept>>);
+
+type LiftKey = (u64, u64, Vec<u64>);
 
 /// The lifts kept of one function, oldest first.
 type Kept = Vec<Arc<Recorded>>;
@@ -110,7 +113,19 @@ pub fn lift_shared(
     size: u64,
     summaries: Summaries<'_>,
 ) -> Result<Arc<Vec<Block>>, LiftError> {
-    let key = (addr, size);
+    lift_shared_with_targets(image, addr, size, &HashSet::new(), summaries)
+}
+
+pub(crate) fn lift_shared_with_targets(
+    image: &Image,
+    addr: u64,
+    size: u64,
+    extra_targets: &HashSet<u64>,
+    summaries: Summaries<'_>,
+) -> Result<Arc<Vec<Block>>, LiftError> {
+    let mut targets: Vec<_> = extra_targets.iter().copied().collect();
+    targets.sort_unstable();
+    let key = (addr, size, targets);
     let kept = image
         .lifts
         .0
@@ -129,7 +144,7 @@ pub fn lift_shared(
         return found.blocks.clone();
     }
     let answers = std::cell::RefCell::new(Vec::new());
-    let blocks = lift_with(image, addr, size, &HashSet::new(), &|target| {
+    let blocks = lift_with(image, addr, size, extra_targets, &|target| {
         let summary = summaries(target);
         answers.borrow_mut().push((target, calling(summary)));
         summary
@@ -1670,5 +1685,62 @@ mod tests {
                 }
             }
         }
+    }
+    #[test]
+    fn shared_lifts_use_the_normalized_extra_target_set() {
+        let image = Image::from_code(Isa::X86_64, 0, vec![0x89, 0xf8, 0x01, 0xf0, 0xc3]);
+        let summaries = |_| crate::loader::Summary::default();
+        let plain = super::lift_shared(&image, 0, 5, &summaries).expect("plain lift");
+        let empty = super::lift_shared_with_targets(&image, 0, 5, &HashSet::new(), &summaries)
+            .expect("empty targets");
+        assert!(std::sync::Arc::ptr_eq(&plain, &empty));
+        let first =
+            super::lift_shared_with_targets(&image, 0, 5, &HashSet::from([2, 4]), &summaries)
+                .expect("first targets");
+        let reordered =
+            super::lift_shared_with_targets(&image, 0, 5, &HashSet::from([4, 2]), &summaries)
+                .expect("reordered targets");
+        let different =
+            super::lift_shared_with_targets(&image, 0, 5, &HashSet::from([4]), &summaries)
+                .expect("different targets");
+        assert!(std::sync::Arc::ptr_eq(&first, &reordered));
+        assert!(!std::sync::Arc::ptr_eq(&plain, &first));
+        assert!(!std::sync::Arc::ptr_eq(&first, &different));
+        assert!(first.iter().any(|block| block.start == 2));
+        assert!(!different.iter().any(|block| block.start == 2));
+        let again = super::lift_shared(&image, 0, 5, &summaries).expect("plain cached lift");
+        assert!(std::sync::Arc::ptr_eq(&plain, &again));
+    }
+
+    #[test]
+    fn shared_target_lifts_recheck_callees_outside_the_cache_lock() {
+        let image = Image::from_code(Isa::X86_64, 0, vec![0xe8, 0x1b, 0, 0, 0, 0xc3]);
+        let summaries = |_| {
+            let _lock = image
+                .lifts
+                .0
+                .try_lock()
+                .expect("summary requested outside cache lock");
+            crate::loader::Summary::default()
+        };
+        let targets = HashSet::from([5]);
+        let first = super::lift_shared_with_targets(&image, 0, 6, &targets, &summaries)
+            .expect("returning callee");
+        let changed =
+            super::lift_shared_with_targets(&image, 0, 6, &targets, &|_| crate::loader::Summary {
+                noreturn: true,
+                ..Default::default()
+            })
+            .expect("changed callee");
+        assert!(!std::sync::Arc::ptr_eq(&first, &changed));
+        assert!(
+            changed
+                .iter()
+                .flat_map(|block| &block.stmts)
+                .any(|stmt| matches!(stmt, Stmt::Trap))
+        );
+        let again = super::lift_shared_with_targets(&image, 0, 6, &targets, &summaries)
+            .expect("retained previous version");
+        assert!(std::sync::Arc::ptr_eq(&first, &again));
     }
 }

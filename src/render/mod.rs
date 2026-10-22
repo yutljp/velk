@@ -7,6 +7,7 @@ mod int;
 mod locals;
 mod naming;
 mod params;
+mod stack_bytes;
 pub mod structure;
 mod symbols;
 mod variables;
@@ -243,6 +244,11 @@ pub fn render_with_dependencies(
     // A saved parameter returned reads as the parameter now.
     crate::analysis::typing::apply_pointer_return(&mut folded);
     let mut logical = abi::prepare(&mut folded, symbols);
+    let mut incoming = if logical.is_none() {
+        stack_bytes::prepare(&mut folded)
+    } else {
+        None
+    };
     let ir = &folded;
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
@@ -277,6 +283,50 @@ pub fn render_with_dependencies(
                 .map(ToString::to_string),
         );
     }
+    if let Some(incoming) = &mut incoming {
+        let mut reserved: std::collections::HashSet<String> = ir
+            .params
+            .iter()
+            .map(|param| param.name.clone())
+            .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+            .chain(locals.decls.iter().map(|local| local.name.clone()))
+            .chain(symbols.functions.values().map(|name| sanitize(name)))
+            .chain(symbols.import_slots.values().map(|name| sanitize(name)))
+            .chain(symbols.data.values().map(|name| sanitize(name)))
+            .chain(symbols.reserved_names.iter().cloned())
+            .collect();
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+            reserved.extend(
+                writes
+                    .into_iter()
+                    .chain(reads)
+                    .map(|index| crate::ir::reg_name(ir.isa, index, 64)),
+            );
+        }
+        reserved.insert("__builtin_memcpy".to_owned());
+        if let Some(name) = &ir.name {
+            reserved.insert(sanitize(name));
+        }
+        for ty in ir
+            .params
+            .iter()
+            .map(|param| &param.ty)
+            .chain(ir.stack_params.iter().map(|param| &param.ty))
+            .chain(variable_types.values())
+            .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+            .chain(ir.members.iter().map(|member| &member.ty))
+            .chain(std::iter::once(&ir.ret_type))
+        {
+            reserved.extend(
+                ty.to_string()
+                    .split(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_')
+                    .filter(|part| !part.is_empty())
+                    .map(str::to_owned),
+            );
+        }
+        incoming.name = vacant_name("incoming_bytes", &mut reserved);
+    }
     render_with(
         ir,
         references,
@@ -284,6 +334,7 @@ pub fn render_with_dependencies(
         symbols,
         data_ranges,
         logical.as_ref(),
+        incoming.as_ref(),
     )
 }
 
@@ -321,12 +372,16 @@ fn render_with(
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
     logical: Option<&abi::Plan>,
+    incoming: Option<&stack_bytes::Plan>,
 ) -> Rendered {
     let mut names: HashMap<u16, &str> = ir
         .params
         .iter()
         .map(|param| (param.index, param.name.as_str()))
         .collect();
+    if let Some(incoming) = incoming {
+        names.insert(incoming.register, &incoming.name);
+    }
     // Any other general register the body uses is a variable of its own;
     // Go keeps the running goroutine in r14.
     let machine: Vec<(u16, String)> = general_registers(ir)
@@ -349,6 +404,9 @@ fn render_with(
     let narrow_regs = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
     let mut variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    if let Some(incoming) = incoming {
+        variable_types.remove(&incoming.register);
+    }
     if let Some(logical) = logical {
         for capture in &logical.captures {
             variable_types.remove(&capture.register);
@@ -635,6 +693,15 @@ fn render_with(
         read_once: Default::default(),
         taken: Default::default(),
     };
+    if let Some(incoming) = incoming {
+        ctx.pointer_types
+            .insert(incoming.register, "unsigned char *".to_owned());
+        for &(offset, width) in &incoming.accesses {
+            let address = render_expr(&incoming.address(offset), &ctx);
+            ctx.parameter_addresses
+                .insert((address.clone(), width), address);
+        }
+    }
 
     let mut out = String::new();
     let name = ir
@@ -743,6 +810,14 @@ fn render_with(
     let mut declared = 0;
     if let Some(logical) = logical {
         for declaration in logical.declarations() {
+            indent(1, &mut out);
+            out.push_str(&declaration);
+            out.push('\n');
+            declared += 1;
+        }
+    }
+    if let Some(incoming) = incoming {
+        for declaration in incoming.declarations() {
             indent(1, &mut out);
             out.push_str(&declaration);
             out.push('\n');
@@ -2568,6 +2643,47 @@ mod tests {
             })
             .collect();
         ir
+    }
+
+    #[test]
+    fn crossing_stack_bytes_share_backing_and_reserve_identifiers() {
+        let sp = crate::arch::stack_pointer(Isa::X86_64);
+        let at = |offset| Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset));
+        let mut ir = scalar_stack_ir(vec![
+            Stmt::Store {
+                addr: at(15),
+                value: load(at(12), 8),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::bin(BinOp::Xor, load(at(8), 8), load(at(16), 8)),
+            },
+        ]);
+        ir.stack_params[0].name = "incoming_bytes".to_owned();
+        ir.stack_params[1].name = "uint64_t".to_owned();
+        ir.stack_params[2].name = "__builtin_memcpy".to_owned();
+        let code = rendered(&ir);
+        assert!(
+            code.contains("unsigned char incoming_bytes_2[0x18];"),
+            "{code}"
+        );
+        assert!(code.contains("&(uint64_t){(uint64_t)uint64_t_2}"), "{code}");
+        assert!(
+            code.contains("&(uint64_t){(uint64_t)__builtin_memcpy_2}"),
+            "{code}"
+        );
+        assert!(!code.contains("rsp"), "{code}");
+        assert!(code.contains("incoming_bytes_2 + 0x4, 8)"), "{code}");
+        assert!(
+            code.contains("__builtin_memcpy(incoming_bytes_2 + 0x7,"),
+            "{code}"
+        );
+        let body = code
+            .split("&(uint64_t){(uint64_t)__builtin_memcpy_2}, 8);")
+            .nth(1)
+            .unwrap();
+        assert!(!body.contains("&uint64_t_2"), "{code}");
+        assert!(!body.contains("&incoming_bytes +"), "{code}");
     }
 
     #[test]

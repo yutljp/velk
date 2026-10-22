@@ -939,24 +939,38 @@ fn stack_results(image: &Image, addr: u64) -> Vec<crate::ir::Expr> {
         .collect()
 }
 
+fn landing_pads(image: &Image, extent: std::ops::Range<u64>) -> Vec<(u64, Vec<(u64, u64)>)> {
+    image
+        .landing_pads
+        .iter()
+        .filter(|(pad, sites)| {
+            extent.contains(*pad)
+                || sites
+                    .iter()
+                    .any(|(from, to)| from < to && extent.start < *to && *from < extent.end)
+        })
+        .map(|(&pad, sites)| (pad, sites.clone()))
+        .collect()
+}
+
+fn exception_starts(
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
+    extent: std::ops::Range<u64>,
+) -> HashSet<u64> {
+    landing_pads
+        .iter()
+        .flat_map(|(_, sites)| sites.iter().map(|(_, end)| *end))
+        .chain(landing_pads.iter().map(|(pad, _)| *pad))
+        .filter(|address| extent.contains(address))
+        .collect()
+}
+
 fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError> {
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
     let extent = function.addr..function.addr.saturating_add(size);
-    // Landing pads start blocks of their own, which exceptions enter.
-    let landing_pads: Vec<(u64, Vec<(u64, u64)>)> = image
-        .landing_pads
-        .range(extent.clone())
-        .map(|(pad, sites)| (*pad, sites.clone()))
-        .collect();
+    let landing_pads = landing_pads(image, extent.clone());
     let pads: HashSet<u64> = landing_pads.iter().map(|(pad, _)| *pad).collect();
-    // A block ends where the calls that unwind into a pad do, so the state
-    // after them is what the pad receives.
-    let starts: HashSet<u64> = landing_pads
-        .iter()
-        .flat_map(|(_, sites)| sites.iter().map(|(_, end)| *end))
-        .filter(|end| extent.contains(end))
-        .chain(pads.iter().copied())
-        .collect();
+    let starts = exception_starts(&landing_pads, extent.clone());
     let mut blocks = lift::lift(image, function.addr, size, &starts)?;
     let mut tables = jump_table::recover(&blocks, image, extent.clone());
     // Cases start blocks of their own, which may hold further tables.
@@ -1090,6 +1104,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     }
     let mut signature = signature::recover_with(
         &blocks,
+        &landing_pads,
         image.isa,
         image.convention_of(function.addr),
         image.go,

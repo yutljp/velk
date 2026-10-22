@@ -193,6 +193,28 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             }
         })
     };
+    // Incoming storage already holds a value independent of a later spill.
+    let separate_input = |slot: u64| {
+        let extent = accesses
+            .iter()
+            .filter(|(at, _, _)| *at == slot)
+            .map(|(_, width, _)| i64::from(*width))
+            .max()
+            .unwrap_or(0);
+        let start = slot as i64;
+        let Some(end) = start.checked_add(extent).filter(|_| extent > 0) else {
+            return false;
+        };
+        ir.stack_params.iter().all(|param| {
+            let Some(size) = i64::try_from(param.size).ok().filter(|size| *size > 0) else {
+                return false;
+            };
+            let Some(input_end) = param.offset.checked_add(size) else {
+                return false;
+            };
+            end <= param.offset || input_end <= start
+        })
+    };
     // The variables and slots holding nothing but the parameter's value.
     let origin = Source::Register(param);
     let mut aliases: HashSet<Source> = HashSet::new();
@@ -201,7 +223,7 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         for (place, sources) in &defined {
             let renamable = match place {
                 Source::Register(index) => *index >= VARIABLE_BASE,
-                Source::Slot(slot) => !mixed(*slot),
+                Source::Slot(slot) => !mixed(*slot) && separate_input(*slot),
             };
             if renamable
                 && !aliases.contains(place)
@@ -322,4 +344,196 @@ fn stack_only_as_slots(ir: &FunctionIr, sp: u16) -> bool {
             Stmt::Assign { dest, value } => dest.index != sp && ok(value, sp, false),
             other => other.operands().into_iter().all(|expr| ok(expr, sp, false)),
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{CType, Convention, Param, RegRef, StackParam, eval};
+    use crate::loader::Isa;
+
+    const OLD: u64 = 0x0706_0504_0302_0100;
+    const NEW: u64 = 0x96a5_3cc3_f00f_5a69;
+    const OTHER: u64 = 0xfedc_ba98_7654_3210;
+
+    fn address(offset: i64) -> Expr {
+        Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(offset as u64))
+    }
+
+    fn load(offset: i64) -> Expr {
+        Expr::Load {
+            addr: Box::new(address(offset)),
+            width: 8,
+            signed: false,
+        }
+    }
+
+    fn function(input: i64, stmts: Vec<Stmt>) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
+        ir.convention = Convention::Aapcs64;
+        ir.params = [0, 1]
+            .into_iter()
+            .map(|index| Param {
+                index,
+                name: format!("a{index}"),
+                ty: CType::U64,
+            })
+            .collect();
+        ir.stack_params = vec![StackParam {
+            offset: input,
+            size: 8,
+            name: "incoming".to_owned(),
+            ty: CType::U64,
+            position: 2,
+        }];
+        ir
+    }
+
+    fn outcome(ir: &FunctionIr, initialized: i64) -> eval::Outcome {
+        eval::run(
+            ir,
+            &eval::Setup {
+                seed: 29,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[(0, NEW), (1, OTHER)],
+                memory: &[(eval::STACK_TOP.wrapping_add_signed(initialized), OLD)],
+                step_limit: 1000,
+            },
+        )
+    }
+
+    #[test]
+    fn incoming_reads_before_spills_keep_the_original_value() {
+        for (input, slot) in [(0, 0), (8, 4), (8, 12), (-8, -4)] {
+            let mut ir = function(
+                input,
+                vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: VARIABLE_BASE,
+                            width: 64,
+                        },
+                        value: load(slot),
+                    },
+                    Stmt::Store {
+                        addr: address(slot),
+                        value: Expr::reg(0, 64),
+                        width: 8,
+                    },
+                    Stmt::Store {
+                        addr: Expr::Const(0x1000),
+                        value: load(slot),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(VARIABLE_BASE, 64),
+                    },
+                ],
+            );
+            let expected = eval::Outcome::Return {
+                value: OLD,
+                calls: Vec::new(),
+                memory: NEW
+                    .to_le_bytes()
+                    .into_iter()
+                    .enumerate()
+                    .map(|(byte, value)| (0x1000 + byte as u64, value))
+                    .collect(),
+            };
+            assert_eq!(outcome(&ir, slot), expected);
+            fold_saved_parameters(&mut ir);
+            assert_eq!(outcome(&ir, slot), expected);
+        }
+    }
+
+    #[test]
+    fn adjacent_private_spills_still_fold() {
+        for (input, slot) in [(8, 0), (8, 16), (0, -8)] {
+            let mut ir = function(
+                input,
+                vec![
+                    Stmt::Store {
+                        addr: address(slot),
+                        value: Expr::reg(0, 64),
+                        width: 8,
+                    },
+                    Stmt::Ret { value: load(slot) },
+                ],
+            );
+            let expected = eval::Outcome::Return {
+                value: NEW,
+                calls: Vec::new(),
+                memory: Default::default(),
+            };
+            assert_eq!(outcome(&ir, slot), expected);
+            fold_saved_parameters(&mut ir);
+            assert_eq!(outcome(&ir, slot), expected);
+            assert!(matches!(
+                ir.blocks[0].stmts.as_slice(),
+                [Stmt::Ret {
+                    value: Expr::Reg {
+                        index: 0,
+                        width: 64
+                    }
+                }]
+            ));
+        }
+    }
+
+    #[test]
+    fn overlapping_incoming_accesses_still_invalidate_adjacent_spills() {
+        let mut ir = function(
+            8,
+            vec![
+                Stmt::Store {
+                    addr: address(0),
+                    value: Expr::reg(0, 64),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: address(4),
+                    value: Expr::reg(1, 64),
+                    width: 8,
+                },
+                Stmt::Ret { value: load(0) },
+            ],
+        );
+        let expected = eval::Outcome::Return {
+            value: (NEW & 0xffff_ffff) | ((OTHER & 0xffff_ffff) << 32),
+            calls: Vec::new(),
+            memory: Default::default(),
+        };
+        assert_eq!(outcome(&ir, 0), expected);
+        fold_saved_parameters(&mut ir);
+        assert_eq!(outcome(&ir, 0), expected);
+    }
+
+    #[test]
+    fn unbounded_storage_does_not_become_a_spill_alias() {
+        for (input, size, slot) in [
+            (i64::MAX - 3, 8, -8),
+            (0, u64::MAX, -8),
+            (8, 0, 0),
+            (0, 8, i64::MAX - 3),
+        ] {
+            let mut ir = function(
+                input,
+                vec![
+                    Stmt::Store {
+                        addr: address(slot),
+                        value: Expr::reg(0, 64),
+                        width: 8,
+                    },
+                    Stmt::Ret { value: load(slot) },
+                ],
+            );
+            ir.stack_params[0].size = size;
+            let before = format!("{ir:?}");
+            fold_saved_parameters(&mut ir);
+            assert_eq!(format!("{ir:?}"), before);
+        }
+    }
 }

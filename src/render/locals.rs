@@ -176,7 +176,7 @@ pub(crate) fn stack_locals(
             local.name = format!("local_{number}");
         }
     }
-    let parts: HashMap<String, String> = rendered
+    let mut parts: HashMap<String, String> = rendered
         .iter()
         .filter_map(|(key, slot)| {
             let outer = within.get(&(*slot)?)?;
@@ -201,37 +201,105 @@ pub(crate) fn stack_locals(
         .values()
         .map(|local| (local.name.clone(), local.width))
         .collect();
-    // Aggregate parameters keep the width of each access through their storage.
-    for (address, slot, width) in stack_arguments(ir, sp, frames) {
-        let Some(param) = ir.stack_params.iter().find(|param| {
-            slot >= param.offset
-                && slot.saturating_add(i64::from(width))
-                    <= param.offset.saturating_add(param.size as i64)
-        }) else {
-            continue;
-        };
-        let within = slot - param.offset;
-        let structure = param.ty.to_string();
-        let structure = structure
-            .strip_prefix("struct ")
-            .or_else(|| structure.strip_prefix("union "));
-        let name = match structure {
-            Some(_) => format!(
-                "*({} *)((uint8_t *)&{} + 0x{within:x})",
-                type_of(width, false),
-                param.name
-            ),
-            None if scalar_storage_size(&param.ty).is_some_and(|size| {
-                param.size >= u64::from(width) && within == 0 && width == size
-            }) =>
-            {
-                param.name.clone()
+    let argument_accesses = stack_arguments(ir, sp, frames);
+    let parameter_addresses = scalar_parameter_addresses(ir, &argument_accesses, &base);
+    let mut origins: HashMap<String, Option<i64>> = HashMap::new();
+    let mut part_origins: HashMap<String, Option<i64>> = HashMap::new();
+    let mut access_widths: HashMap<String, Vec<u8>> = HashMap::new();
+    for (address, slot, width) in &argument_accesses {
+        let key = render_expr(address, &base);
+        // A register-valued address consults parts, but not whole-slot names.
+        if *width != 0 || !matches!(address, Expr::Reg { .. }) {
+            let origin = origins.entry(key.clone()).or_insert(*slot);
+            if *origin != *slot {
+                *origin = None;
             }
-            None => continue,
-        };
-        let key = render_expr(&address, &base);
-        widths.insert(name.clone(), width);
-        slots.insert(key, name);
+        }
+        let origin = part_origins.entry(key.clone()).or_insert(*slot);
+        if *origin != *slot {
+            *origin = None;
+        }
+        if *width != 0 {
+            let seen = access_widths.entry(key).or_default();
+            if !seen.contains(width) {
+                seen.push(*width);
+            }
+        }
+    }
+    parts.retain(|key, _| !matches!(part_origins.get(key), Some(None)));
+    for (key, slot) in &origins {
+        if slot.is_none()
+            || slot.is_some_and(|slot| {
+                ir.stack_params.iter().any(|param| {
+                    slot.checked_sub(param.offset)
+                        .is_some_and(|within| within >= 0 && (within as u64) < param.size)
+                })
+            })
+        {
+            slots.remove(key);
+            parts.remove(key);
+        }
+    }
+    let mut bindings: HashMap<String, Option<(String, u8)>> = HashMap::new();
+    for (address, slot, width) in &argument_accesses {
+        if *width == 0 {
+            continue;
+        }
+        let key = render_expr(address, &base);
+        let binding = (|| {
+            let slot = (*slot)?;
+            if origins.get(&key) != Some(&Some(slot)) || !matches!(*width, 1 | 2 | 4 | 8) {
+                return None;
+            }
+            let mut parameters = ir.stack_params.iter().filter(|param| {
+                slot.checked_sub(param.offset).is_some_and(|within| {
+                    within >= 0
+                        && (within as u64)
+                            .checked_add(u64::from(*width))
+                            .is_some_and(|end| end <= param.size)
+                })
+            });
+            let param = parameters.next()?;
+            if parameters.next().is_some() {
+                return None;
+            }
+            let within = slot.checked_sub(param.offset)?;
+            let spelling = param.ty.to_string();
+            let aggregate = spelling.starts_with("struct ") || spelling.starts_with("union ");
+            let name = if aggregate {
+                format!(
+                    "*({} *)((uint8_t *)&{} + 0x{within:x})",
+                    type_of(*width, false),
+                    param.name
+                )
+            } else if scalar_storage_size(&param.ty) == Some(*width) && within == 0 {
+                param.name.clone()
+            } else {
+                // Partial scalar accesses use the width-specific byte address below.
+                return None;
+            };
+            if access_widths[&key].iter().any(|other| {
+                other != width
+                    && (aggregate || !parameter_addresses.contains_key(&(key.clone(), *other)))
+            }) {
+                return None;
+            }
+            Some((name, *width))
+        })();
+        // A partial scalar view does not compete with its whole-storage name.
+        if binding.is_none() && parameter_addresses.contains_key(&(key.clone(), *width)) {
+            continue;
+        }
+        let entry = bindings.entry(key).or_insert_with(|| binding.clone());
+        if *entry != binding {
+            *entry = None;
+        }
+    }
+    for (key, binding) in bindings {
+        if let Some((name, width)) = binding {
+            widths.insert(name.clone(), width);
+            slots.insert(key, name);
+        }
     }
     let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables);
     // A local holding another's address points at what that one holds.
@@ -263,7 +331,7 @@ pub(crate) fn stack_locals(
         slots,
         parts,
         widths,
-        parameter_addresses: scalar_parameter_addresses(ir, sp, frames, &base),
+        parameter_addresses,
         decls: slot_names.into_values().collect(),
     }
 }
@@ -283,105 +351,64 @@ fn scalar_storage_size(ty: &CType) -> Option<u8> {
     }
 }
 
-fn scalar_parameter_addresses(
-    ir: &FunctionIr,
-    sp: u16,
-    frames: &[Option<i64>],
-    ctx: &Ctx<'_>,
-) -> HashMap<(String, u8), String> {
-    fn offset(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
-        let register =
-            |value: &Expr| matches!(value, Expr::Reg { index, width: 64 } if *index == sp);
-        let delta = match expr {
-            value if register(value) => 0,
-            Expr::Bin {
-                op: BinOp::Add,
-                lhs,
-                rhs,
-            } => match (lhs.as_ref(), rhs.as_ref()) {
-                (value, Expr::Const(delta)) | (Expr::Const(delta), value) if register(value) => {
-                    i128::from(*delta as i64)
-                }
-                _ => return None,
-            },
-            Expr::Bin {
-                op: BinOp::Sub,
-                lhs,
-                rhs,
-            } if register(lhs) => {
-                let Expr::Const(delta) = rhs.as_ref() else {
-                    return None;
-                };
-                -i128::from(*delta as i64)
+fn stack_offset(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
+    let register = |value: &Expr| matches!(value, Expr::Reg { index, width: 64 } if *index == sp);
+    let delta = match expr {
+        value if register(value) => 0,
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } => match (lhs.as_ref(), rhs.as_ref()) {
+            (value, Expr::Const(delta)) | (Expr::Const(delta), value) if register(value) => {
+                i128::from(*delta as i64)
             }
             _ => return None,
-        };
-        i64::try_from(i128::from(frame) + delta).ok()
-    }
-    fn loads<'a>(expr: &'a Expr, out: &mut Vec<(&'a Expr, u8)>) {
-        if let Expr::Load { addr, width, .. } = expr {
-            out.push((addr, *width));
+        },
+        Expr::Bin {
+            op: BinOp::Sub,
+            lhs,
+            rhs,
+        } if register(lhs) => {
+            let Expr::Const(delta) = rhs.as_ref() else {
+                return None;
+            };
+            -i128::from(*delta as i64)
         }
-        for child in crate::ir::visit::children(expr) {
-            loads(child, out);
-        }
-    }
+        _ => return None,
+    };
+    i64::try_from(i128::from(frame) + delta).ok()
+}
+
+fn scalar_parameter_addresses(
+    ir: &FunctionIr,
+    accesses: &[(Expr, Option<i64>, u8)],
+    ctx: &Ctx<'_>,
+) -> HashMap<(String, u8), String> {
     let mut addresses: HashMap<(String, u8), Option<String>> = HashMap::new();
-    for (block, body) in ir.blocks.iter().enumerate() {
-        let mut frame = frames[block];
-        for stmt in &body.stmts {
-            if let Stmt::Assign { dest, value } = stmt
-                && dest.index == sp
-            {
-                frame = frame
-                    .filter(|_| dest.width == 64)
-                    .and_then(|frame| offset(value, frame, sp));
-                continue;
+    for (addr, slot, width) in accesses {
+        let source = (|| {
+            if !matches!(*width, 1 | 2 | 4 | 8) {
+                return None;
             }
-            let mut accesses = Vec::new();
-            if let Stmt::Store { addr, width, .. } = stmt {
-                accesses.push((addr, *width));
+            let slot = (*slot)?;
+            let mut parts = ir.stack_params.iter().filter_map(|param| {
+                let size = scalar_storage_size(&param.ty)?;
+                let extent = param.size.min(u64::from(size));
+                let within = slot.checked_sub(param.offset)?;
+                (within >= 0 && within.checked_add(i64::from(*width))? <= extent as i64)
+                    .then_some((param, within, size))
+            });
+            let (param, within, size) = parts.next()?;
+            if parts.next().is_some() || (within == 0 && *width == size) {
+                return None;
             }
-            for value in stmt.operands() {
-                loads(value, &mut accesses);
-            }
-            for (addr, width) in accesses {
-                let source = (|| {
-                    if !matches!(width, 1 | 2 | 4 | 8) {
-                        return None;
-                    }
-                    let slot = offset(addr, frame?, sp)?;
-                    let mut parts = ir.stack_params.iter().filter_map(|param| {
-                        let size = scalar_storage_size(&param.ty)?;
-                        let extent = param.size.min(u64::from(size));
-                        let within = slot.checked_sub(param.offset)?;
-                        (within >= 0 && within.checked_add(i64::from(width))? <= extent as i64)
-                            .then_some((param, within, size))
-                    });
-                    let (param, within, size) = parts.next()?;
-                    if parts.next().is_some() || (within == 0 && width == size) {
-                        return None;
-                    }
-                    Some(format!("(uint8_t *)&{} + 0x{within:x}", param.name))
-                })();
-                let key = (render_expr(addr, ctx), width);
-                match addresses.entry(key) {
-                    std::collections::hash_map::Entry::Vacant(entry) => {
-                        entry.insert(source);
-                    }
-                    std::collections::hash_map::Entry::Occupied(mut entry) => {
-                        if entry.get() != &source {
-                            entry.insert(None);
-                        }
-                    }
-                }
-            }
-        }
-        if crate::ir::cfg::block_successors(&ir.blocks, block)
-            .iter()
-            .any(|next| frames[*next] != frame)
-        {
-            return HashMap::new();
+            Some(format!("(uint8_t *)&{} + 0x{within:x}", param.name))
+        })();
+        let key = (render_expr(addr, ctx), *width);
+        let entry = addresses.entry(key).or_insert_with(|| source.clone());
+        if *entry != source {
+            *entry = None;
         }
     }
     addresses
@@ -658,46 +685,115 @@ impl Walk {
     }
 }
 
-/// Every load and store anywhere in the function through the caller's
-/// frame: its address, its slot from the entry stack pointer, and its width.
-fn stack_arguments(ir: &FunctionIr, sp: u16, frames: &[Option<i64>]) -> Vec<(Expr, i64, u8)> {
-    fn visit(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, u8)>) {
-        if let Expr::Load { addr, width, .. } = expr
-            && let Some(slot) = frame_slot(addr, frame, sp)
-            && slot >= 0
+fn frame_after(stmt: &Stmt, frame: Option<i64>, sp: u16) -> Option<i64> {
+    if let Stmt::Assign { dest, value } = stmt
+        && dest.index == sp
+    {
+        frame
+            .filter(|_| dest.width == 64)
+            .and_then(|frame| stack_offset(value, frame, sp))
+    } else if crate::ir::visit::statement_registers(stmt).0.contains(&sp) {
+        None
+    } else {
+        frame
+    }
+}
+
+/// All memory accesses retain unknown frame origins as evidence against a global name.
+fn stack_arguments(
+    ir: &FunctionIr,
+    sp: u16,
+    frames: &[Option<i64>],
+) -> Vec<(Expr, Option<i64>, u8)> {
+    fn visit(expr: &Expr, frame: Option<i64>, sp: u16, out: &mut Vec<(Expr, Option<i64>, u8)>) {
+        if matches!(expr, Expr::Bin { .. })
+            || matches!(expr, Expr::Reg { index, .. } if *index == sp)
         {
-            out.push((addr.as_ref().clone(), slot, *width));
+            out.push((
+                expr.clone(),
+                frame.and_then(|frame| stack_offset(expr, frame, sp)),
+                0,
+            ));
+        }
+        if let Some((Expr::Bin { lhs, rhs, .. }, _)) = offset_local(expr, sp)
+            && let Expr::Const(offset) = rhs.as_ref()
+        {
+            for below in 0..BUFFER_REACH as u64 {
+                let base = Expr::bin(
+                    BinOp::Add,
+                    lhs.as_ref().clone(),
+                    Expr::Const(offset.wrapping_sub(below)),
+                );
+                let slot = frame.and_then(|frame| stack_offset(&base, frame, sp));
+                out.push((base, slot, 0));
+            }
+        }
+        if let Expr::Load { addr, width, .. } = expr {
+            out.push((
+                addr.as_ref().clone(),
+                frame.and_then(|frame| stack_offset(addr, frame, sp)),
+                *width,
+            ));
         }
         for child in crate::ir::visit::children(expr) {
             visit(child, frame, sp, out);
         }
     }
+    let invariant = frames.len() == ir.blocks.len()
+        && frames.first() == Some(&Some(0))
+        && frames
+            .iter()
+            .all(|frame| frame.is_none() || *frame == Some(0))
+        && ir.blocks.iter().all(|block| {
+            let mut frame = Some(0);
+            block.stmts.iter().all(|stmt| {
+                frame = frame_after(stmt, frame, sp);
+                !matches!(stmt, Stmt::Unsupported { .. }) && frame == Some(0)
+            })
+        });
+    let frame_at = |index: usize| {
+        if invariant {
+            Some(0)
+        } else {
+            frames.get(index).copied().flatten()
+        }
+    };
     let mut out = Vec::new();
+    let mut consistent = frames.first() == Some(&Some(0));
     for (position, block) in ir.blocks.iter().enumerate() {
-        let Some(mut frame) = frames[position] else {
-            continue;
-        };
+        let mut frame = frame_at(position);
+        let edges = crate::ir::cfg::block_successors_with_exceptions(
+            &ir.blocks,
+            position,
+            &ir.landing_pads,
+        );
+        consistent &= invariant || (!edges.unknown_normal && !edges.unknown_exceptional);
         for stmt in &block.stmts {
-            if let Stmt::Store { addr, width, .. } = stmt
-                && let Some(slot) = frame_slot(addr, frame, sp)
-                && slot >= 0
-            {
-                out.push((addr.clone(), slot, *width));
+            if let Stmt::Store { addr, width, .. } = stmt {
+                out.push((
+                    addr.clone(),
+                    frame.and_then(|frame| stack_offset(addr, frame, sp)),
+                    *width,
+                ));
             }
             for value in stmt.operands() {
                 visit(value, frame, sp, &mut out);
             }
-            if let Stmt::Assign { dest, value } = stmt
-                && dest.index == sp
-                && let Expr::Bin { op, rhs, .. } = value
-                && let Expr::Const(delta) = rhs.as_ref()
-            {
-                frame = match op {
-                    BinOp::Add => frame.wrapping_add(*delta as i64),
-                    BinOp::Sub => frame.wrapping_sub(*delta as i64),
-                    _ => frame,
-                };
+            frame = frame_after(stmt, frame, sp);
+            if matches!(stmt, Stmt::Call { .. }) {
+                consistent &= edges
+                    .exceptional
+                    .iter()
+                    .all(|next| frame_at(*next) == frame);
+            } else if matches!(stmt, Stmt::Unsupported { .. }) && !edges.exceptional.is_empty() {
+                consistent = false;
             }
+        }
+        consistent &= edges.normal.iter().all(|next| frame_at(*next) == frame);
+    }
+    if !consistent {
+        for (_, slot, _) in &mut out {
+            *slot = None;
         }
     }
     out
@@ -896,5 +992,321 @@ fn frame_addresses(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, b
                 frame_addresses(child, frame, sp, out);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::stack_locals;
+    use crate::ir::{
+        BinOp, CType, Convention, Expr, FunctionIr, Param, RegRef, StackParam, Stmt, VARIABLE_BASE,
+    };
+    use crate::loader::Isa;
+
+    fn scalar_stack_binding(adjustment: Option<Expr>, slots: i64) -> FunctionIr {
+        let loaded = || Expr::Load {
+            addr: Box::new(Expr::reg(31, 64)),
+            width: 8,
+            signed: false,
+        };
+        let mut stmts = vec![Stmt::Assign {
+            dest: RegRef {
+                index: VARIABLE_BASE,
+                width: 64,
+            },
+            value: loaded(),
+        }];
+        if let Some(value) = adjustment {
+            stmts.push(Stmt::Assign {
+                dest: RegRef {
+                    index: 31,
+                    width: 64,
+                },
+                value,
+            });
+        }
+        stmts.push(Stmt::Ret {
+            value: Expr::bin(BinOp::Xor, Expr::reg(VARIABLE_BASE, 64), loaded()),
+        });
+        let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
+        ir.convention = Convention::Aapcs64;
+        ir.ret_type = CType::U64;
+        ir.params = vec![Param {
+            index: 0,
+            name: "adjustment".to_owned(),
+            ty: CType::U64,
+        }];
+        ir.stack_params = (0..slots)
+            .map(|slot| StackParam {
+                offset: slot * 8,
+                size: 8,
+                name: format!("incoming_{slot}"),
+                ty: CType::U64,
+                position: slot as usize + 1,
+            })
+            .collect();
+        ir
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_a_dynamic_sp_origin() {
+        let ir = scalar_stack_binding(
+            Some(Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::reg(0, 64))),
+            1,
+        );
+        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        let locals = stack_locals(&ir, &frames, &Default::default());
+        assert!(locals.slots.is_empty(), "{:?}", locals.slots);
+        assert!(locals.parts.is_empty(), "{:?}", locals.parts);
+        assert!(locals.parameter_addresses.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_different_constant_sp_origins() {
+        let ir = scalar_stack_binding(
+            Some(Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(16))),
+            3,
+        );
+        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        let locals = stack_locals(&ir, &frames, &Default::default());
+        assert!(locals.slots.is_empty(), "{:?}", locals.slots);
+        assert!(locals.parts.is_empty(), "{:?}", locals.parts);
+        assert!(locals.parameter_addresses.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_keeps_a_stable_sp_origin() {
+        let ir = scalar_stack_binding(None, 1);
+        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        let locals = stack_locals(&ir, &frames, &Default::default());
+        assert_eq!(locals.slots.len(), 1);
+        assert!(
+            locals.slots.values().any(|name| name == "incoming_0"),
+            "{:?}",
+            locals.slots
+        );
+        assert!(locals.parameter_addresses.is_empty());
+    }
+    fn set_access_widths(ir: &mut FunctionIr, first: u8, second: u8) {
+        let Stmt::Assign {
+            value: Expr::Load { width, .. },
+            ..
+        } = &mut ir.blocks[0].stmts[0]
+        else {
+            panic!("expected initial load");
+        };
+        *width = first;
+        let Stmt::Ret {
+            value: Expr::Bin { rhs, .. },
+        } = ir.blocks[0].stmts.last_mut().unwrap()
+        else {
+            panic!("expected return expression");
+        };
+        let Expr::Load { width, .. } = rhs.as_mut() else {
+            panic!("expected final load");
+        };
+        *width = second;
+    }
+
+    #[test]
+    fn legacy_stack_binding_keeps_a_compatible_partial_view() {
+        let mut ir = scalar_stack_binding(None, 1);
+        set_access_widths(&mut ir, 8, 4);
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        assert!(locals.slots.values().any(|name| name == "incoming_0"));
+        assert_eq!(locals.widths.get("incoming_0"), Some(&8));
+        assert_eq!(locals.parameter_addresses.len(), 1);
+        assert!(
+            locals
+                .parameter_addresses
+                .keys()
+                .any(|(_, width)| *width == 4)
+        );
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_an_unsupported_same_address_width() {
+        let mut ir = scalar_stack_binding(None, 1);
+        set_access_widths(&mut ir, 8, 16);
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        assert!(locals.slots.is_empty(), "{:?}", locals.slots);
+        assert!(locals.parts.is_empty());
+        assert!(locals.parameter_addresses.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_access_past_actual_scalar_storage() {
+        let mut ir = scalar_stack_binding(None, 1);
+        ir.stack_params[0].ty = CType::U32;
+        set_access_widths(&mut ir, 4, 8);
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        assert!(locals.slots.is_empty(), "{:?}", locals.slots);
+        assert!(locals.parts.is_empty());
+        assert!(locals.parameter_addresses.is_empty());
+    }
+    fn address_value_binding(dynamic: bool, indexed: bool) -> super::Locals {
+        let mut ir = scalar_stack_binding(
+            dynamic.then(|| Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::reg(0, 64))),
+            3,
+        );
+        let Stmt::Assign {
+            value: Expr::Load { addr, .. },
+            ..
+        } = &mut ir.blocks[0].stmts[0]
+        else {
+            panic!("expected initial load");
+        };
+        **addr = Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(16));
+        let address = if indexed {
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(20)),
+                Expr::reg(0, 64),
+            )
+        } else {
+            Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(16))
+        };
+        *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret { value: address };
+        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        stack_locals(&ir, &frames, &Default::default())
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_a_dynamic_address_value_origin() {
+        let locals = address_value_binding(true, false);
+        assert!(locals.slots.is_empty(), "{:?}", locals.slots);
+        assert!(locals.parts.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_keeps_a_stable_address_value_origin() {
+        let locals = address_value_binding(false, false);
+        assert!(locals.slots.values().any(|name| name == "incoming_2"));
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_a_dynamic_indexed_address_origin() {
+        let locals = address_value_binding(true, true);
+        assert!(locals.slots.is_empty(), "{:?}", locals.slots);
+        assert!(locals.parts.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_keeps_a_stable_indexed_address_origin() {
+        let locals = address_value_binding(false, true);
+        assert!(locals.slots.values().any(|name| name == "incoming_2"));
+    }
+
+    #[test]
+    fn legacy_stack_binding_keeps_invariant_sp_with_an_indirect_exit() {
+        let mut ir = scalar_stack_binding(None, 1);
+        *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::BrIndirect {
+            target: Expr::reg(0, 64),
+        };
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        assert!(locals.slots.values().any(|name| name == "incoming_0"));
+    }
+    fn invariant_unknown_entry() -> FunctionIr {
+        let mut ir = scalar_stack_binding(None, 1);
+        *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::BrIndirect {
+            target: Expr::reg(0, 64),
+        };
+        ir.blocks.push(crate::ir::Block {
+            start: 8,
+            stmts: vec![Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::reg(31, 64)),
+                    width: 8,
+                    signed: false,
+                },
+            }],
+        });
+        ir
+    }
+
+    fn binding_call(clobbers: Option<crate::ir::Registers>) -> Stmt {
+        Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: false,
+            result: None,
+            clobbers,
+            via: None,
+        }
+    }
+
+    #[test]
+    fn legacy_stack_binding_derives_an_invariant_unknown_entry() {
+        let ir = invariant_unknown_entry();
+        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        assert!(locals.slots.values().any(|name| name == "incoming_0"));
+    }
+
+    #[test]
+    fn legacy_stack_binding_derives_an_invariant_exception_entry() {
+        let mut ir = invariant_unknown_entry();
+        ir.blocks[0].stmts.insert(1, binding_call(None));
+        *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret {
+            value: Expr::reg(VARIABLE_BASE, 64),
+        };
+        ir.landing_pads = vec![(8, vec![(0, 4)])];
+        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        assert!(locals.slots.values().any(|name| name == "incoming_0"));
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_a_contradictory_known_entry() {
+        let ir = invariant_unknown_entry();
+        let locals = stack_locals(&ir, &[Some(0), Some(16)], &Default::default());
+        assert!(locals.slots.is_empty());
+        assert!(locals.parts.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_an_opaque_unknown_entry() {
+        let mut ir = invariant_unknown_entry();
+        ir.blocks[1].stmts.insert(
+            0,
+            Stmt::Unsupported {
+                text: "opaque".to_owned(),
+                writes: Some(Vec::new()),
+            },
+        );
+        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        assert!(locals.slots.is_empty());
+        assert!(locals.parts.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_a_transient_unknown_entry_adjustment() {
+        let mut ir = invariant_unknown_entry();
+        for (position, op) in [BinOp::Sub, BinOp::Add].into_iter().enumerate() {
+            ir.blocks[1].stmts.insert(
+                position,
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 31,
+                        width: 64,
+                    },
+                    value: Expr::bin(op, Expr::reg(31, 64), Expr::Const(16)),
+                },
+            );
+        }
+        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        assert!(locals.slots.is_empty());
+        assert!(locals.parts.is_empty());
+    }
+
+    #[test]
+    fn legacy_stack_binding_rejects_a_call_that_clobbers_sp() {
+        let mut ir = invariant_unknown_entry();
+        ir.blocks[1]
+            .stmts
+            .insert(0, binding_call(Some([31].into_iter().collect())));
+        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        assert!(locals.slots.is_empty());
+        assert!(locals.parts.is_empty());
     }
 }

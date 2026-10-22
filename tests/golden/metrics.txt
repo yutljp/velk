@@ -43,10 +43,10 @@ aggregate_abi.aarch64.O0 0x2102f8 abi_hfa2_adjust: 3 parameters, expected 2; ret
 aggregate_abi.aarch64.O0 0x210330 abi_hfa3_adjust: 4 parameters, expected 2; returns double, expected an aggregate
 aggregate_abi.aarch64.O0 0x210378 abi_hfa4_adjust: 5 parameters, expected 2; returns double, expected an aggregate
 aggregate_abi.aarch64.O0 0x2103c8 abi_exhaust_five: 8 parameters, expected 7
-aggregate_abi.aarch64.O0 0x210468 abi_exhaust_seven: 7 parameters, expected 9
+aggregate_abi.aarch64.O0 0x210468 abi_exhaust_seven: 10 parameters, expected 9
 aggregate_abi.aarch64.O0 0x21053c abi_indirect_make: 3 parameters, expected 2
 aggregate_abi.aarch64.O0 0x210588 abi_exhaust_five_aligned: 8 parameters, expected 7
-aggregate_abi.aarch64.O0 0x210628 abi_exhaust_seven_aligned: 7 parameters, expected 9
+aggregate_abi.aarch64.O0 0x210628 abi_exhaust_seven_aligned: 10 parameters, expected 9
 aggregate_abi.aarch64.O2 0x210214 abi_pair_adjust: 3 parameters, expected 2
 aggregate_abi.aarch64.O2 0x210220 abi_mixed_adjust: 4 parameters, expected 3
 aggregate_abi.aarch64.O2 0x210234 abi_hfa1_adjust: returns double, expected an aggregate
@@ -54,10 +54,10 @@ aggregate_abi.aarch64.O2 0x21023c abi_hfa2_adjust: 4 parameters, expected 2
 aggregate_abi.aarch64.O2 0x210244 abi_hfa3_adjust: 5 parameters, expected 2
 aggregate_abi.aarch64.O2 0x21024c abi_hfa4_adjust: 6 parameters, expected 2
 aggregate_abi.aarch64.O2 0x210254 abi_exhaust_five: 8 parameters, expected 7
-aggregate_abi.aarch64.O2 0x210290 abi_exhaust_seven: 7 parameters, expected 9
+aggregate_abi.aarch64.O2 0x210290 abi_exhaust_seven: 10 parameters, expected 9
 aggregate_abi.aarch64.O2 0x2102e4 abi_indirect_make: 3 parameters, expected 2
 aggregate_abi.aarch64.O2 0x2102fc abi_exhaust_five_aligned: 8 parameters, expected 7
-aggregate_abi.aarch64.O2 0x210338 abi_exhaust_seven_aligned: 7 parameters, expected 9
+aggregate_abi.aarch64.O2 0x210338 abi_exhaust_seven_aligned: 10 parameters, expected 9
 aggregate_abi.x86_64.O0 0x2012a0 abi_pair_adjust: 3 parameters, expected 2
 aggregate_abi.x86_64.O0 0x2012e0 abi_mixed_adjust: 4 parameters, expected 3
 aggregate_abi.x86_64.O0 0x201330 abi_hfa1_adjust: returns double, expected an aggregate

@@ -37,11 +37,12 @@ running an already built velk binary.
 | `src/lift/hardware/` | Lifted instructions, registers, conditions, and memory | Processor execution on supported hosts |
 | `src/analysis/semantics_tests.rs` | Optimization and structure lowering preserve behavior | Pre-transformation IR interpreter results |
 | `src/ir/abi.rs`, `src/analysis/abi.rs` units | Aggregate classification, register banks, stack alignment, indirect results | Structured type layouts and expected ABI locations |
+| `src/analysis/signature.rs`, `summary.rs` units | Incoming physical stack slots, definite writes, normal and exceptional predecessors | Explicit frame offsets, byte dependencies, and CFG expectations |
 | `src/ssa/mod.rs` units | Entry-bit requirements, private spills, complete result dependencies | Explicit masks, frames, and observable memory effects |
 | `src/passes/copies.rs`, `read_once.rs` units | Assignment/read truncation and signed-operation/comparison widths | Full before/after interpreter outcomes |
-| `src/render/` units | Pointer/integer distinctions, real member access, truth values, floating mask preconditions, segment-base bindings | Expected typed pseudo-C and recognition controls |
+| `src/render/` units | Pointer/integer distinctions, real member access, truth values, floating mask preconditions, segment-base bindings, saved-parameter overlap and load/store order | Expected typed pseudo-C and recognition controls |
 | `tests/loader.rs` | Section allocation, relocation, nested DWARF member type/width/ownership | Input metadata and declared layout |
-| `tests/recompile.rs` | Generated C results and memory effects | Optimized IR interpreter outcomes |
+| `tests/recompile.rs` | Generated C results and memory effects | IR outcomes and independent scalar/byte expectations |
 | `tests/invariants.rs` | Missing destinations, undefined register reads, omitted statements | Recorded structural properties |
 | `tests/metrics.rs` | Function discovery and inferred parameter/return information | Debug information |
 | `tests/golden.rs` | Function lists, pseudo-C, IR, signatures, summaries, output metrics | Recorded golden files |
@@ -191,12 +192,6 @@ integer storage. Result assembly copies the same bounded lengths after
 evaluating every return operand. These byte/integer conversions assume a
 little-endian execution environment for the generated C.
 
-Scalar stack-parameter tests cover partial reads and writes bounded by both
-the argument slot and the declared C type's storage. Unknown frames,
-conflicting bindings for the same address, crossing accesses, and unknown
-storage sizes must prevent that substitution. Ordinary full-width accesses
-retain the parameter name.
-
 A host C call validates the generated logical C signature and body on that
 host; it does not independently validate the
 target machine's calling convention. Keep target instruction execution,
@@ -213,6 +208,65 @@ physical argument form instead of the declared aggregate signature.
 That fallback is not a C equivalence
 guarantee: multiple results can still be shown as a first return value with
 additional values in a comment.
+
+### Incoming physical stack inputs
+
+```bash
+CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release --lib analysis::signature::tests
+CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release --lib render::stack_bytes::tests
+CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release --test recompile stack
+```
+
+Recovery units check AAPCS64 stack inputs with unused argument registers,
+full and partial prior writes, load/store order, frame-pointer origins,
+call clobbers, and the incoming range and width limits. Normal, unknown,
+and exception predecessors must all contribute to frame and initialized-byte
+facts. Exception checks use the call-point state rather than a later block
+exit, including a store after a call that must not initialize an earlier
+exception path. Initial-entry controls retain required reads when unknown
+backedges erase the joined frame, preserve prior-write suppression, and
+keep that observation separate from joined CFG facts and result writes.
+Summary/lifting units check shared exception boundaries and cache inputs.
+
+Single-scalar stack views require each complete access to fit both the
+argument slot and its declared C storage. Whole-width names and partial
+byte views both require every occurrence of an address expression to have
+the same known incoming offset and compatible width/storage. Dynamic or
+differing origins prevent global names for affected slots and partial
+views; this does not reconstruct an arbitrary dynamic SP. Controls retain
+stable whole/partial views and reject unsupported widths or accesses past
+actual scalar storage. A crossing access uses
+a separate bounded byte array only if the renderer can redirect all
+accesses to the same storage and prove every read initialized. Controls
+include unsupported widths or storage, incomplete writes at joins, escaped
+frame addresses, and implicit call reads through physical or SSA registers.
+Saved-register folding tests distinguish access ranges overlapping known
+incoming storage from immediately adjacent private spills, and retain
+values read before a later store. Non-crossing cases also check normalization
+of held frame addresses to entry-SP offsets, without a byte array, only
+when each incoming access lies in a known complete eight-byte scalar slot
+and the same origin, call, initialization, and escape checks hold.
+
+Generated-C tests pass recovered physical words to the host as independent
+scalar parameters and provide the same words at explicit interpreter
+register/stack locations. They do not attach a source declaration to the
+stripped function or assume that C parameter objects are adjacent.
+Generic admission retains its convention, scalar-storage, ordered-slot,
+and existing call/operation restrictions. A recovered physical signature
+is not a claim of compatibility with the original source ABI.
+
+Real stripped AAPCS64 and System V inputs use independent wrapping
+arithmetic expectations, including accesses through held frame addresses.
+Synthetic cases use independent little-endian byte arrays for partial and
+cross-slot reads/writes, unchanged neighboring bytes, signed and floating
+views, and accesses at different frame heights. The native checks compare
+results and region checksums at both existing optimization levels, with
+alignment sanitization for the synthetic byte cases. Focused assertions
+require every candidate and input to compile and compare, no skipped or
+unknown rows, and no differing outcomes. Compilation failures and generic
+exclusions remain separate from successful comparisons. These checks
+execute generated host C and IR; they do not execute original target
+instructions or establish arbitrary pointer aliasing and callee effects.
 
 ### Short-circuit conditions
 

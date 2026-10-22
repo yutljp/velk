@@ -183,7 +183,14 @@ pub(super) fn body(
 ) -> Option<Arc<Vec<Block>>> {
     let function = image.functions.get(&addr)?;
     let size = function.size.unwrap_or(UNKNOWN_SIZE);
-    lift_shared(image, addr, size, summaries).ok()
+    let extent = addr..addr.saturating_add(size);
+    let landing_pads = super::landing_pads(image, extent.clone());
+    let starts = super::exception_starts(&landing_pads, extent);
+    if starts.is_empty() {
+        lift_shared(image, addr, size, summaries).ok()
+    } else {
+        crate::lift::lift_shared_with_targets(image, addr, size, &starts, summaries).ok()
+    }
 }
 
 /// The calls of every function reachable from `root` and not yet
@@ -721,9 +728,10 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
     }
 }
 
-/// A function's body as a pass found it, and the signature recovered from
-/// it, which the next pass keeps if the body is the same.
-type Seen = (Arc<Vec<Block>>, Arc<signature::Signature>);
+/// A body, its signature and exception ranges, kept when both inputs agree.
+type Seen = (Arc<Vec<Block>>, Arc<signature::Signature>, LandingPads);
+
+type LandingPads = Vec<(u64, Vec<(u64, u64)>)>;
 
 /// The summary of the function at `addr` from its body; the registers it
 /// changes are left unknown unless `with_clobbers`.
@@ -746,10 +754,17 @@ fn compute(
         return (named, None);
     };
     let convention = image.convention_of(addr);
+    let extent = addr..addr.saturating_add(function.size.unwrap_or(UNKNOWN_SIZE));
+    let landing_pads = super::landing_pads(image, extent);
     let signature = match seen {
-        Some((before, signature)) if Arc::ptr_eq(before, &blocks) => signature.clone(),
+        Some((before, signature, before_pads))
+            if Arc::ptr_eq(before, &blocks) && before_pads == &landing_pads =>
+        {
+            signature.clone()
+        }
         _ => Arc::new(signature::recover_with(
             &blocks,
+            &landing_pads,
             image.isa,
             convention,
             image.go,
@@ -808,7 +823,7 @@ fn compute(
             .then(|| clobbers_of(image, addr, &blocks))
             .flatten(),
     };
-    (summary, Some((blocks, signature)))
+    (summary, Some((blocks, signature, landing_pads)))
 }
 
 /// Whether some path from the entry reaches a return, an unknown jump, or
@@ -849,4 +864,201 @@ fn can_return(blocks: &[Block]) -> bool {
         }
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::loader::{Function, Image, Isa, Summary};
+    use std::sync::Arc;
+
+    fn image(words: &[u32]) -> Image {
+        let code: Vec<_> = words.iter().flat_map(|word| word.to_le_bytes()).collect();
+        let size = code.len() as u64;
+        let mut image = Image::from_code(Isa::AArch64, 0, code);
+        image.functions.insert(
+            0,
+            Function {
+                addr: 0,
+                size: Some(size),
+                size_estimated: false,
+                name: Some("exception_test".to_owned()),
+                aliases: Vec::new(),
+                sources: Vec::new(),
+            },
+        );
+        image
+    }
+
+    #[test]
+    fn summary_body_splits_exception_boundaries_and_agrees_with_main_stack_recovery() {
+        let mut image = image(&[
+            0x94000010, 0xf90003ff, 0x14000002, 0xd503201f, 0xf94003e0, 0xd65f03c0,
+        ]);
+        image.landing_pads.insert(12, vec![(0, 4)]);
+        let summaries = |_| Summary::default();
+        let blocks = super::body(&image, 0, &summaries).expect("summary body");
+        for start in [4, 12, 16] {
+            assert!(
+                blocks.iter().any(|block| block.start == start),
+                "{blocks:?}"
+            );
+        }
+        let first = &blocks[0];
+        assert!(matches!(
+            first.stmts.last(),
+            Some(crate::ir::Stmt::Call { .. })
+        ));
+        let (summary, seen) = super::compute(&image, 0, &summaries, None, false);
+        let seen = seen.expect("recovered summary");
+        let signature = &seen.1;
+        let repeated = super::body(&image, 0, &summaries).expect("cached exception body");
+        assert!(Arc::ptr_eq(&blocks, &repeated));
+        let (_, repeated_seen) = super::compute(&image, 0, &summaries, Some(&seen), false);
+        assert!(Arc::ptr_eq(
+            signature,
+            &repeated_seen.expect("cached signature").1
+        ));
+        assert_eq!(signature.stack, vec![0]);
+        assert_eq!(summary.stack, 1);
+        let main = super::super::lift_function(&image, &image.functions[&0]).expect("main lift");
+        assert_eq!(
+            main.ir
+                .stack_params
+                .iter()
+                .map(|param| param.offset)
+                .collect::<Vec<_>>(),
+            signature.stack
+        );
+        image.landing_pads.insert(12, vec![(0, 8)]);
+        let changed = super::body(&image, 0, &summaries).expect("different exception boundaries");
+        assert!(!Arc::ptr_eq(&blocks, &changed));
+        assert!(changed.iter().any(|block| block.start == 8));
+    }
+
+    #[test]
+    fn summary_body_without_exceptions_keeps_the_shared_lift() {
+        let image = image(&[0xd65f03c0]);
+        let summaries = |_| Summary::default();
+        let first = super::body(&image, 0, &summaries).expect("first body");
+        let second = super::body(&image, 0, &summaries).expect("second body");
+        assert!(Arc::ptr_eq(&first, &second));
+    }
+    #[test]
+    fn main_and_summary_keep_metadata_for_an_outside_landing_pad() {
+        let mut image = image(&[
+            0x94000010, 0xf90003ff, 0x14000002, 0xd503201f, 0xf94003e0, 0xd65f03c0,
+        ]);
+        image.landing_pads.insert(0x100, vec![(0, 4)]);
+        let pads = super::super::landing_pads(&image, 0..24);
+        assert_eq!(pads, vec![(0x100, vec![(0, 4)])]);
+        assert_eq!(
+            super::super::exception_starts(&pads, 0..24),
+            std::collections::HashSet::from([4])
+        );
+        let (_, seen) = super::compute(&image, 0, &|_| Summary::default(), None, false);
+        let signature = seen.expect("summary with missing pad").1;
+        assert_eq!(signature.stack, vec![0]);
+        let main = super::super::lift_function(&image, &image.functions[&0])
+            .expect("main with missing pad");
+        assert_eq!(
+            main.ir
+                .stack_params
+                .iter()
+                .map(|param| param.offset)
+                .collect::<Vec<_>>(),
+            signature.stack
+        );
+    }
+
+    #[test]
+    fn summary_signature_cache_checks_ranges_even_when_lift_targets_are_unchanged() {
+        let mut image = image(&[
+            0x94000020, 0xf90003ff, 0x14000001, 0x9400001d, 0x14000003, 0xd503201f, 0x14000001,
+            0xf94003e0, 0xd65f03c0,
+        ]);
+        image.landing_pads.insert(20, vec![(12, 16)]);
+        let summaries = |_| Summary::default();
+        let (_, before) = super::compute(&image, 0, &summaries, None, false);
+        let before = before.expect("late-call range");
+        assert!(before.1.stack.is_empty());
+        image.landing_pads.insert(20, vec![(0, 16)]);
+        let (_, after) = super::compute(&image, 0, &summaries, Some(&before), false);
+        let after = after.expect("expanded protected range");
+        assert!(Arc::ptr_eq(&before.0, &after.0));
+        assert!(!Arc::ptr_eq(&before.1, &after.1));
+        assert_eq!(after.1.stack, vec![0]);
+    }
+
+    #[test]
+    fn raw_stack_summary_agrees_with_callee_and_caller_inputs() {
+        use crate::ir::{BinOp, Convention, Expr, Stmt};
+
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe");
+        let mut binary = crate::service::Binary::open(&fixture).expect("fixture");
+        let callee = 0x461c80;
+        let caller = 0x403b40;
+        {
+            let image = binary.image();
+            assert_eq!(image.convention_of(callee), Convention::GoAbi0);
+            let summary = super::summary(image, callee);
+            assert_eq!(summary.stack, 1);
+            assert_eq!(summary.stack_widths[0], 0);
+            let lookup = |target| super::summary(image, target);
+            let raw = super::body(image, callee, &lookup).expect("raw callee");
+            assert!(
+                raw.iter()
+                    .any(|block| matches!(block.stmts.last(), Some(Stmt::BrIndirect { .. })))
+            );
+            let raw = super::body(image, caller, &lookup).expect("raw caller");
+            let arguments = raw
+                .iter()
+                .flat_map(|block| &block.stmts)
+                .find_map(|stmt| match stmt {
+                    Stmt::Call {
+                        target: Some(target),
+                        args: Some(args),
+                        ..
+                    } if *target == callee => Some(args),
+                    _ => None,
+                })
+                .expect("call arguments");
+            assert_eq!(
+                arguments,
+                &vec![Expr::Load {
+                    addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(0))),
+                    width: 8,
+                    signed: false,
+                }]
+            );
+        }
+        let full = binary.analysis(callee).expect("callee analysis");
+        assert_eq!(full.ir.stack_params.len(), 1);
+        assert_eq!(full.ir.stack_params[0].offset, 8);
+        assert_eq!(full.ir.stack_params[0].size, 8);
+        assert_eq!(super::summary(binary.image(), callee).stack, 1);
+        let caller = binary.analysis(caller).expect("caller analysis");
+        let arguments = caller
+            .ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .find_map(|stmt| match stmt {
+                Stmt::Call {
+                    target: Some(target),
+                    args: Some(args),
+                    ..
+                } if *target == callee => Some(args),
+                _ => None,
+            })
+            .expect("analyzed call arguments");
+        assert_eq!(
+            arguments.as_slice(),
+            &[Expr::bin(
+                BinOp::Add,
+                Expr::reg(4, 64),
+                Expr::Const((-24_i64) as u64),
+            )]
+        );
+    }
 }

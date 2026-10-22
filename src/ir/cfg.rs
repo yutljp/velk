@@ -3,26 +3,69 @@ use std::collections::HashSet;
 use crate::ir::visit::statement_registers;
 use crate::ir::{Block, Expr, FunctionIr, Stmt};
 
-/// The blocks control can go to from the end of block `index`, a landing
-/// pad included where the block ends with a call that unwinds into it.
+/// Normal successors and the landing pads of protected calls in the block.
+/// Unwinding can leave before the block's later statements execute.
 pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
-    let mut out = block_successors(&ir.blocks, index);
-    if ir.landing_pads.is_empty() {
-        return out;
-    }
-    let start = ir.blocks[index].start;
-    let end = ir.blocks.get(index + 1).map_or(u64::MAX, |next| next.start);
-    for (pad, sites) in &ir.landing_pads {
-        if sites
-            .iter()
-            .any(|(from, to)| start < *to && *to <= end && *from < end)
-            && let Some(position) = ir.blocks.iter().position(|block| block.start == *pad)
-            && !out.contains(&position)
-        {
-            out.push(position);
+    let edges = block_successors_with_exceptions(&ir.blocks, index, &ir.landing_pads);
+    let mut out = edges.normal;
+    for next in edges.exceptional {
+        if !out.contains(&next) {
+            out.push(next);
         }
     }
     out
+}
+
+pub(crate) struct BlockSuccessors {
+    pub normal: Vec<usize>,
+    pub exceptional: Vec<usize>,
+    pub unknown_normal: bool,
+    pub unknown_exceptional: bool,
+}
+
+pub(crate) fn block_successors_with_exceptions(
+    blocks: &[Block],
+    index: usize,
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
+) -> BlockSuccessors {
+    let block = &blocks[index];
+    let unknown_normal = matches!(
+        block.stmts.last(),
+        Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None })
+    );
+    let mut edges = BlockSuccessors {
+        normal: if unknown_normal {
+            Vec::new()
+        } else {
+            block_successors(blocks, index)
+        },
+        exceptional: Vec::new(),
+        unknown_normal,
+        unknown_exceptional: false,
+    };
+    if !block
+        .stmts
+        .iter()
+        .any(|stmt| matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. }))
+    {
+        return edges;
+    }
+    let start = block.start;
+    let end = blocks.get(index + 1).map_or(u64::MAX, |next| next.start);
+    for (pad, sites) in landing_pads {
+        if !sites
+            .iter()
+            .any(|(from, to)| from < to && start < *to && *from < end)
+        {
+            continue;
+        }
+        match blocks.iter().position(|block| block.start == *pad) {
+            Some(next) if !edges.exceptional.contains(&next) => edges.exceptional.push(next),
+            Some(_) => {}
+            None => edges.unknown_exceptional = true,
+        }
+    }
+    edges
 }
 
 /// The starts of the blocks some path from the entry reaches.
@@ -264,4 +307,112 @@ pub(crate) fn own_return(blocks: &[Block]) -> Option<&Expr> {
             [.., Stmt::Ret { value }] => Some(value),
             _ => None,
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{block_successors_with_exceptions, successors};
+    use crate::ir::{Block, Convention, Expr, FunctionIr, Stmt};
+    use crate::loader::Isa;
+
+    fn call() -> Stmt {
+        Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: true,
+            result: None,
+            clobbers: None,
+            via: None,
+        }
+    }
+
+    #[test]
+    fn protected_ranges_cover_each_call_block_and_have_half_open_ends() {
+        let blocks: Vec<_> = [0, 8, 16, 24, 32]
+            .into_iter()
+            .map(|start| Block {
+                start,
+                stmts: vec![call()],
+            })
+            .collect();
+        let pads = [(32, vec![(8, 24)])];
+        for (index, expected) in [(0, vec![]), (1, vec![4]), (2, vec![4]), (3, vec![])] {
+            let edges = block_successors_with_exceptions(&blocks, index, &pads);
+            assert_eq!(edges.exceptional, expected);
+            assert!(!edges.unknown_exceptional);
+        }
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks = blocks;
+        ir.landing_pads = pads.to_vec();
+        assert_eq!(successors(&ir, 1), vec![2, 4]);
+    }
+
+    #[test]
+    fn unknown_normal_and_exception_targets_are_independent() {
+        for branch in [
+            Stmt::Br { target: None },
+            Stmt::BrIndirect {
+                target: Expr::reg(1, 64),
+            },
+        ] {
+            let blocks = [
+                Block {
+                    start: 0,
+                    stmts: vec![branch],
+                },
+                Block {
+                    start: 8,
+                    stmts: Vec::new(),
+                },
+            ];
+            let edges = block_successors_with_exceptions(&blocks, 0, &[]);
+            assert!(edges.normal.is_empty());
+            assert!(edges.unknown_normal);
+            assert!(!edges.unknown_exceptional);
+        }
+        let blocks = [Block {
+            start: 0,
+            stmts: vec![call()],
+        }];
+        let edges = block_successors_with_exceptions(&blocks, 0, &[(16, vec![(0, 4)])]);
+        assert!(!edges.unknown_normal);
+        assert!(edges.unknown_exceptional);
+        assert!(edges.exceptional.is_empty());
+    }
+
+    #[test]
+    fn opaque_protected_blocks_keep_the_exception_edge() {
+        let blocks = [
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Unsupported {
+                    text: "opaque".to_owned(),
+                    writes: Some(Vec::new()),
+                }],
+            },
+            Block {
+                start: 8,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(0),
+                }],
+            },
+        ];
+        assert_eq!(
+            block_successors_with_exceptions(&blocks, 0, &[(8, vec![(0, 8)])]).exceptional,
+            vec![1]
+        );
+        let known = [Block {
+            start: 0,
+            stmts: vec![Stmt::Store {
+                addr: Expr::Const(0),
+                value: Expr::Const(0),
+                width: 8,
+            }],
+        }];
+        let edges = block_successors_with_exceptions(&known, 0, &[(8, vec![(0, 8)])]);
+        assert!(edges.exceptional.is_empty());
+        assert!(!edges.unknown_exceptional);
+    }
 }
