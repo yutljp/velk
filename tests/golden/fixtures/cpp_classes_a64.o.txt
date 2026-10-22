@@ -48,7 +48,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
     v4 = load64(v1)
     v1 = (v1 + #0x8)
     v5 = load64((load64(v4) + #0x10))
-    v6 = call *v5(v4)
+    v6:x0, x1, d0, d1 = call *v5(v4)
     v3 = (v3 - #0x1)
     v2 = (((v6 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
     brif ne v3, #0x0 -> 0x24

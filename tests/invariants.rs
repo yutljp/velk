@@ -323,17 +323,23 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
             Stmt::BrIndirect { target } => reads(target, &mut read),
             Stmt::Switch { index, .. } => reads(index, &mut read),
             Stmt::Ret { value } if ir.ret_type != CType::Void => reads(value, &mut read),
-            // A call leaves its results in the registers it may overwrite,
-            // and in the variable that takes its value; it reads its arguments.
             Stmt::Call {
-                convention,
                 through,
                 args,
-                result,
+                outputs,
                 ..
             } => {
-                written.extend(convention.clobbered());
-                written.extend(result.map(|result| result.index));
+                written.extend(outputs.iter().map(|output| output.dest.index));
+                written.extend(
+                    stmt.call_clobbers().into_iter().filter(|register| {
+                        !outputs.iter().any(|output| output.register == *register)
+                    }),
+                );
+                read.extend(
+                    stmt.preserved_output_sources()
+                        .into_iter()
+                        .map(|(_, register)| register),
+                );
                 for value in through.iter().chain(args.iter().flatten()) {
                     reads(value, &mut read);
                 }

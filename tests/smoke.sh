@@ -399,7 +399,7 @@ moved_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$moved_ir" | grep -q "x8 = 0x1;" && fail "dead store before the loop"
 echo "$moved_ir" | grep -q "local_1 = 0x1;" || fail "live store before the loop"
 live_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
-echo "$live_ir" | grep -q "ns__add(a0, v2);" || fail "definition kept across a call"
+echo "$live_ir" | grep -qF "ns__add((a0 & 0xffffffff), v2);" || fail "definition kept across a call"
 echo "$live_ir" | grep -q "v1 = a0;" && fail "saved value folded into the parameter"
 ok "flow-sensitive dead stores"
 
@@ -540,7 +540,7 @@ ok "string references"
 
 # A format's arguments past the registers are read from the stack
 fmt_c=$("$BIN" --decompile $FIX/cold_gcc lookup 2>/dev/null)
-echo "$fmt_c" | grep -q '"missing key %d among %d", a2, a1);' || fail "variadic stack argument"
+echo "$fmt_c" | grep -qF '"missing key %d among %d", (a2 & 0xffffffff), a1);' || fail "variadic stack argument"
 ok "variadic stack arguments"
 
 # 10) struct access recovery

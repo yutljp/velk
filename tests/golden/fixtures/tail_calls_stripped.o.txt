@@ -36,7 +36,7 @@ fn <unnamed> @ 0x1c (size 8)
   blk0 @ 0x1c:
     x0 = (((x0 & #0xffffffff) + #0x2) & #0xffffffff)
   blk1 @ 0x20:
-    call <dynamic>
+    v1:x0, x1, d0, d1 = call <dynamic>
     ret v1
 -- card
 {"addr":"0x1c","approxTokens":108,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}

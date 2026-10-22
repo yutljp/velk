@@ -1,4 +1,4 @@
-# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 125 gotos
+# go_probe: elf x86_64 0x4650a0, 1275 functions, 0 lift failures, 18 unsupported, 120 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1430,7 +1430,7 @@ fn main.kindName @ 0x466d20 (size 96)
 /* velk pseudo-C: main.main @ 0x466d80 */
 /* ref: 0x46d400 .rodata */
 /* ref: 0x4967e8 .rodata */
-void main_main(void) {
+int64_t main_main(void) {
     uint64_t rbx;
     int64_t v1;
     int64_t v2;
@@ -1442,8 +1442,13 @@ void main_main(void) {
     int64_t local_5; /* [sp-30] */
     int64_t local_6; /* [sp-10] */
 
-    v1 = main_divmod(0x7, 0x3);
-    v2 = rbx; /* also returned by the call */
+    {
+        uint64_t call_values[2];
+        call_values[0] = main_divmod(0x7, 0x3);
+        call_values[1] = rbx; /* also returned by the call */
+        v1 = call_values[0];
+        v2 = call_values[1];
+    }
     local_0 = v1;
     local_1 = v2;
     local_2 = 0x1;
@@ -1468,10 +1473,10 @@ void main_main(void) {
     runtime_printlock();
     runtime_printint(local_5);
     runtime_printnl();
-    runtime_printunlock();
+    return runtime_printunlock();
 }
 -- signature
-void ()
+int64_t ()
 -- references
 0x46d400 .rodata
 0x4967e8 .rodata
@@ -1480,33 +1485,32 @@ fn main.main @ 0x466d80 (size 256)
   blk0 @ 0x466d80:
     br 0x466d8a
   blk1 @ 0x466d8a:
-    v1 = call 0x466cc0(#0x7, #0x3)
-    v2 = rbx
+    v1:rax, v2:rbx = call 0x466cc0(#0x7, #0x3)
     store64(v1, (rsp + #0xffffffffffffffc8))
     store64(v2, (rsp + #0xffffffffffffffc0))
     store64(#0x1, (rsp + #0xffffffffffffffd8))
     store64(#0x2, (rsp + #0xffffffffffffffe0))
     store64(#0x3, (rsp + #0xffffffffffffffe8))
-    v1 = call 0x466d00((rsp + #0xffffffffffffffd8), #0x3)
+    v1:rax, rcx, rsi = call 0x466d00((rsp + #0xffffffffffffffd8), #0x3)
     store64(v1, (rsp + #0xffffffffffffffd0))
-    v1 = call 0x466ca0(#0x1, #0x2)
+    v1:rax = call 0x466ca0(#0x1, #0x2)
     store64(v1, (rsp + #0xfffffffffffffff0))
-    call 0x4305a0()
-    call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
-    call 0x4307a0()
-    call 0x430c40(load64((rsp + #0xfffffffffffffff0)))
-    call 0x4307a0()
-    call 0x430c40(load64((rsp + #0xffffffffffffffc8)))
-    call 0x4307a0()
-    call 0x430c40(load64((rsp + #0xffffffffffffffc0)))
-    call 0x4307e0()
-    call 0x430600()
-    v1 = call 0x466d20(#0x46d400, #0x4967e8)
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4305a0()
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307a0()
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(load64((rsp + #0xfffffffffffffff0)))
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307a0()
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(load64((rsp + #0xffffffffffffffc8)))
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307a0()
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(load64((rsp + #0xffffffffffffffc0)))
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307e0()
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430600()
+    v1:rax, rcx = call 0x466d20(#0x46d400, #0x4967e8)
     store64(v1, (rsp + #0xffffffffffffffd0))
-    call 0x4305a0()
-    call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
-    call 0x4307e0()
-    call 0x430600()
-    ret #0x0
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4305a0()
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307e0()
+    v1:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430600()
+    ret v1
 -- card
 {"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":256,"unsupported":0}

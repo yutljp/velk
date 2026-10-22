@@ -424,7 +424,7 @@ impl Machine<'_> {
                         target,
                         through,
                         args,
-                        result,
+                        outputs,
                         convention,
                         clobbers,
                         ..
@@ -452,18 +452,39 @@ impl Machine<'_> {
                         // value the caller cannot rely on, read as zero as
                         // the undefined value is.
                         let ordinal = self.calls.len() as u64;
-                        let results = convention.results();
-                        for index in convention.clobbered_by(*clobbers) {
-                            let value = if results.contains(&index) {
-                                hash(self.seed ^ ordinal, 0x2_0000 + u64::from(index))
-                            } else {
-                                0
-                            };
-                            self.registers.insert(index, value);
+                        let changed = convention.clobbered_by(*clobbers);
+                        let effects: Vec<(u16, u64)> = changed
+                            .iter()
+                            .map(|index| {
+                                let value =
+                                    if outputs.iter().any(|output| output.register == *index) {
+                                        hash(self.seed ^ ordinal, 0x2_0000 + u64::from(*index))
+                                    } else {
+                                        0
+                                    };
+                                (*index, value)
+                            })
+                            .collect();
+                        let values: Vec<_> = outputs
+                            .iter()
+                            .map(|output| {
+                                let value = effects
+                                    .iter()
+                                    .find(|(index, _)| *index == output.register)
+                                    .map_or_else(
+                                        || self.register(output.register),
+                                        |(_, value)| *value,
+                                    );
+                                (output.dest, value)
+                            })
+                            .collect();
+                        for (index, value) in effects {
+                            if !outputs.iter().any(|output| output.register == index) {
+                                self.registers.insert(index, value);
+                            }
                         }
-                        if let Some(result) = result {
-                            let value = self.register(results[0]);
-                            self.assign(*result, value);
+                        for (dest, value) in values {
+                            self.assign(dest, value);
                         }
                     }
                     Stmt::Ret { value } => return Ok(Some(self.eval(value)?)),

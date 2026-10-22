@@ -188,24 +188,31 @@ pub(crate) fn clobbers_knowing(
                 Stmt::Call {
                     target,
                     convention,
-                    result,
+                    outputs,
                     clobbers,
                     ..
                 } => {
-                    match target.and_then(known).unwrap_or(*clobbers) {
-                        Some(clobbers) => {
-                            for register in clobbers.iter() {
-                                state.set(register, Value::Other);
-                            }
-                        }
-                        None => {
-                            for register in convention.clobbered() {
-                                state.set(*register, Value::Other);
-                            }
-                        }
+                    let physical = target
+                        .and_then(known)
+                        .unwrap_or(*clobbers)
+                        .unwrap_or_else(|| convention.clobbered().iter().copied().collect());
+                    let values: Vec<_> = outputs
+                        .iter()
+                        .map(|output| {
+                            let value =
+                                if !physical.contains(output.register) && output.dest.width == 64 {
+                                    state.register(output.register)
+                                } else {
+                                    Value::Other
+                                };
+                            (output.dest.index, value)
+                        })
+                        .collect();
+                    for register in physical.iter() {
+                        state.set(register, Value::Other);
                     }
-                    if let Some(result) = result {
-                        state.set(result.index, Value::Other);
+                    for (destination, value) in values {
+                        state.set(destination, value);
                     }
                     // The callee's frame lies below the stack pointer.
                     match state.register(sp) {
@@ -336,7 +343,7 @@ mod tests {
             convention: Convention::SysV,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
             clobbers: None,
             via: None,
         }
@@ -402,12 +409,78 @@ mod tests {
             convention: Convention::SysV,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(
+                Convention::SysV,
+                Some([RBX].into_iter().collect()),
+            ),
             clobbers: Some([RBX].into_iter().collect()),
             via: None,
         };
         let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
         assert_eq!(changed.iter().collect::<Vec<_>>(), vec![RBX]);
+    }
+
+    #[test]
+    fn precise_callee_effects_override_stale_fallback_outputs() {
+        let blocks = [block(0x1000, vec![call(), ret()])];
+        let changed = super::clobbers_knowing(&blocks, Convention::SysV, RSP, &|_| {
+            Some(Some(Registers::default()))
+        })
+        .unwrap();
+        assert_eq!(changed, Registers::default());
+    }
+
+    #[test]
+    fn named_outputs_do_not_hide_physical_callee_effects() {
+        let mut called = call();
+        let Stmt::Call {
+            outputs, clobbers, ..
+        } = &mut called
+        else {
+            unreachable!()
+        };
+        *clobbers = Some([2].into_iter().collect());
+        *outputs = vec![crate::ir::CallOutput {
+            register: 2,
+            dest: RegRef {
+                index: crate::ir::VARIABLE_BASE,
+                width: 64,
+            },
+        }];
+        let changed =
+            super::clobbers(&[block(0x1000, vec![called, ret()])], Convention::SysV, RSP).unwrap();
+        assert_eq!(changed.iter().collect::<Vec<_>>(), vec![2]);
+    }
+
+    #[test]
+    fn preserved_output_destinations_use_one_pre_call_snapshot() {
+        let mut called = call();
+        let Stmt::Call {
+            outputs, clobbers, ..
+        } = &mut called
+        else {
+            unreachable!()
+        };
+        *clobbers = Some(Registers::default());
+        *outputs = vec![
+            crate::ir::CallOutput {
+                register: 0,
+                dest: RegRef {
+                    index: 2,
+                    width: 64,
+                },
+            },
+            crate::ir::CallOutput {
+                register: 2,
+                dest: RegRef {
+                    index: 0,
+                    width: 64,
+                },
+            },
+        ];
+        let changed =
+            super::clobbers(&[block(0x1000, vec![called, ret()])], Convention::SysV, RSP).unwrap();
+        assert_eq!(changed.iter().collect::<Vec<_>>(), vec![0, 2]);
     }
 
     #[test]

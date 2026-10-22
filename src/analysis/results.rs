@@ -423,11 +423,16 @@ fn event(stmt: &Stmt) -> Option<Fate> {
         // A call whose arguments are unknown may take the result as one,
         // where the return register is also the first argument.
         Stmt::Call { args: None, .. } if RETURN == first_argument(stmt) => Some(Fate::Read),
-        Stmt::Call { .. } => Some(if stmt.operands().into_iter().any(reads) {
-            Fate::Read
-        } else {
-            Fate::Unused
-        }),
+        Stmt::Call { .. } => {
+            let (written, read) = crate::ir::visit::statement_registers(stmt);
+            if read.contains(&RETURN) {
+                Some(Fate::Read)
+            } else if written.contains(&RETURN) {
+                Some(Fate::Unused)
+            } else {
+                None
+            }
+        }
         other => other
             .operands()
             .into_iter()
@@ -470,5 +475,53 @@ mod tests {
             Fate::Unused
         );
         assert_eq!(after_call(vec![ret]), Fate::Returned);
+    }
+
+    #[test]
+    fn result_liveness_distinguishes_preserving_calls_and_named_destinations() {
+        let mut call = Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::SysV,
+            args: Some(Vec::new()),
+            floats_named: true,
+            outputs: crate::ir::fallback_call_outputs(
+                crate::ir::Convention::SysV,
+                Some(Default::default()),
+            ),
+            clobbers: Some(Default::default()),
+            via: None,
+        };
+        assert_eq!(super::event(&call), None);
+        let Stmt::Call {
+            outputs, clobbers, ..
+        } = &mut call
+        else {
+            unreachable!()
+        };
+        *clobbers = Some([2].into_iter().collect());
+        *outputs = vec![crate::ir::CallOutput {
+            register: 2,
+            dest: RegRef {
+                index: 0,
+                width: 64,
+            },
+        }];
+        assert_eq!(super::event(&call), Some(Fate::Unused));
+        let Stmt::Call {
+            outputs, clobbers, ..
+        } = &mut call
+        else {
+            unreachable!()
+        };
+        *clobbers = Some(Default::default());
+        *outputs = vec![crate::ir::CallOutput {
+            register: 0,
+            dest: RegRef {
+                index: crate::ir::VARIABLE_BASE,
+                width: 64,
+            },
+        }];
+        assert_eq!(super::event(&call), Some(Fate::Read));
     }
 }

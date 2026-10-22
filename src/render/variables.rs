@@ -56,6 +56,10 @@ pub(crate) fn variable_types(
                     uses.float(source, precision);
                 }
             }
+            Stmt::Call { .. } => {
+                uses.seen
+                    .extend(stmt.call_outputs().iter().map(|output| output.dest.index));
+            }
             _ => {}
         }
         for value in stmt.operands() {

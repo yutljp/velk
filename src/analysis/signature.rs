@@ -231,8 +231,16 @@ pub fn recover_with(
     // really leaves there: a read of one is no argument either.
     let call_writes = |stmt: &Stmt| match stmt {
         Stmt::Call { convention, .. } => {
-            let mut written = stmt.call_clobbers();
-            written.extend(convention.clobbered());
+            let mut written: Vec<_> = crate::ir::visit::statement_registers(stmt)
+                .0
+                .into_iter()
+                .collect();
+            written.extend(convention.clobbered().iter().copied().filter(|register| {
+                !stmt
+                    .call_outputs()
+                    .iter()
+                    .any(|output| output.register == *register)
+            }));
             written
         }
         _ => Vec::new(),
@@ -323,6 +331,13 @@ pub fn recover_with(
                 Stmt::Call { through, args, .. } => {
                     for value in through.iter().chain(args.iter().flatten()) {
                         reads(value, &mut used);
+                    }
+                    for (output, source) in stmt.preserved_output_sources() {
+                        used.insert(source);
+                        if !written.contains(&source) && stmt.call_outputs()[output].dest.width > 32
+                        {
+                            wide_inputs.insert(source);
+                        }
                     }
                 }
                 _ => {}
@@ -438,7 +453,7 @@ pub fn recover_with(
         match stmt {
             Stmt::Assign { dest, .. } => *definitions.entry(dest.index).or_default() += 1,
             Stmt::Call { .. } => {
-                for register in stmt.call_clobbers() {
+                for register in crate::ir::visit::statement_registers(stmt).0 {
                     *definitions.entry(register).or_default() += 2;
                 }
             }
@@ -903,6 +918,20 @@ fn stack_arguments(
                 Stmt::Assign { dest, value } if dest.width == 64 => offset_of(value, frame),
                 _ => None,
             };
+            let preserved: Vec<_> = stmt
+                .preserved_output_sources()
+                .into_iter()
+                .filter_map(|(output, source)| {
+                    let dest = stmt.call_outputs()[output].dest;
+                    if dest.width != 64 {
+                        return None;
+                    }
+                    frame
+                        .get(&source)
+                        .or_else(|| held.get(&source))
+                        .map(|offset| (dest.index, *offset))
+                })
+                .collect();
             if incoming
                 && let Stmt::Store { addr, width, .. } = stmt
                 && let Some(at) = located(addr, frame, held)
@@ -927,6 +956,14 @@ fn stack_arguments(
                 }
                 if dest.index != sp && dest.index != fp && at >= start {
                     held.insert(dest.index, at);
+                }
+            }
+            for (destination, at) in preserved {
+                if tracked(destination) {
+                    frame.insert(destination, at);
+                }
+                if destination != sp && destination != fp && at >= start {
+                    held.insert(destination, at);
                 }
             }
         };
@@ -1300,9 +1337,21 @@ impl Origins {
                 }
             }
             Stmt::Call { .. } => {
-                for register in stmt.call_clobbers() {
+                let preserved: Vec<_> = stmt
+                    .preserved_output_sources()
+                    .into_iter()
+                    .filter_map(|(output, source)| {
+                        let dest = stmt.call_outputs()[output].dest;
+                        if dest.width != 64 {
+                            return None;
+                        }
+                        origin.get(&source).map(|source| (dest.index, *source))
+                    })
+                    .collect();
+                for register in crate::ir::visit::statement_registers(stmt).0 {
                     origin.remove(&register);
                 }
+                origin.extend(preserved);
             }
             _ => {}
         }
@@ -1593,7 +1642,7 @@ mod tests {
                     args: Some(vec![Expr::reg(3, 64), Expr::reg(8, 64)]),
                     floats_named: false,
                     clobbers: None,
-                    result: None,
+                    outputs: crate::ir::fallback_call_outputs(Convention::GoAmd64, None),
                     via: None,
                 },
                 Stmt::Ret {
@@ -1921,7 +1970,7 @@ mod tests {
                     args: Some(vec![]),
                     floats_named: false,
                     clobbers: None,
-                    result: None,
+                    outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                     via: None,
                 },
                 Stmt::Ret {
@@ -2046,7 +2095,7 @@ mod tests {
             convention: Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: true,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
             clobbers: None,
             via: None,
         }
@@ -2054,6 +2103,40 @@ mod tests {
 
     fn cfg_stack(blocks: &[Block], pads: &[(u64, Vec<(u64, u64)>)]) -> Vec<i64> {
         super::stack_arguments(blocks, pads, Isa::AArch64, Convention::Aapcs64).offsets
+    }
+
+    #[test]
+    fn preserved_output_addresses_keep_their_pre_call_origin() {
+        let destination = crate::ir::VARIABLE_BASE;
+        for preserved in [false, true] {
+            let mut call = cfg_call();
+            let Stmt::Call {
+                outputs, clobbers, ..
+            } = &mut call
+            else {
+                unreachable!()
+            };
+            *clobbers = Some(if preserved {
+                Default::default()
+            } else {
+                [0].into_iter().collect()
+            });
+            *outputs = vec![crate::ir::CallOutput {
+                register: 0,
+                dest: RegRef {
+                    index: destination,
+                    width: 64,
+                },
+            }];
+            let signature = recover_aapcs_stack(vec![
+                stack_assign(0, stack_address(31, 0)),
+                call,
+                Stmt::Ret {
+                    value: stack_load(destination, 0, 8),
+                },
+            ]);
+            assert_eq!(signature.stack, if preserved { vec![0] } else { vec![] });
+        }
     }
 
     #[test]

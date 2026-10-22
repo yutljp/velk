@@ -726,7 +726,7 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
         };

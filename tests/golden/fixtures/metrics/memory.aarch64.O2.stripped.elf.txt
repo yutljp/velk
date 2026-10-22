@@ -11,7 +11,7 @@
 == 0x210214 -
 -- decompile
 /* velk pseudo-C: sub_210214 @ 0x210214 */
-uint8_t *sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
+int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     int64_t v1;
     uint64_t *v2;
     uint64_t *v3;
@@ -28,7 +28,7 @@ uint8_t *sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     uint8_t v17;
 
     if (a2 == 0x0) {
-        return a0;
+        return (uintptr_t)a0;
     }
     v1 = 0x0;
     if (a2 >= 0x8 && (uintptr_t)a0 - (uintptr_t)a1 >= 0x20) {
@@ -51,7 +51,7 @@ uint8_t *sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
                 v3 = v3 + 0x4;
             } while (v4 != 0x0);
             if (v1 == a2) {
-                return a0;
+                return (uintptr_t)a0;
             }
             if ((a2 & 0x18) == 0x0) {
                 goto L_2102a4;
@@ -72,7 +72,7 @@ uint8_t *sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
             v11 = v11 + 0x1;
         } while (v4 != 0x0);
         if (v1 == a2) {
-            return a0;
+            return (uintptr_t)a0;
         }
     }
 L_2102a4:
@@ -86,10 +86,10 @@ L_2102a4:
         *v15 = v17;
         v15 = v15 + 0x1;
     } while (v14 != 0x0);
-    return a0;
+    return (uintptr_t)a0;
 }
 -- signature
-uint8_t * (uint8_t * a0, uint8_t * a1, uint64_t a2)
+int64_t (uint8_t * a0, uint8_t * a1, uint64_t a2)
 -- references
 
 -- ir

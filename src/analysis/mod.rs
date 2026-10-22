@@ -103,11 +103,15 @@ fn float_result(
                     state.precision = written_precision(value, slot);
                 }
                 Stmt::Call { .. } => {
-                    state = State {
-                        float: true,
-                        int: true,
-                        float_last: false,
-                        precision: None,
+                    let written = crate::ir::visit::statement_registers(stmt).0;
+                    if written.contains(&slot) {
+                        state.float = false;
+                        state.float_last = false;
+                        state.precision = None;
+                    }
+                    if written.contains(&crate::arch::RETURN) {
+                        state.int = true;
+                        state.float_last = false;
                     }
                 }
                 Stmt::Ret { .. } => returns.push(state),
@@ -229,7 +233,10 @@ fn tail_calls_through_pointers(
             args: None,
             floats_named: false,
             clobbers: None,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(
+                crate::ir::Convention::of(image.isa, image.format, image.go),
+                None,
+            ),
             via: None,
         });
         block.stmts.push(Stmt::Ret {
@@ -434,11 +441,7 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
     }
     let mut width = None;
     for block in &ir.blocks {
-        let [
-            ..,
-            call @ Stmt::Call { target, result, .. },
-            Stmt::Ret { value },
-        ] = block.stmts.as_slice()
+        let [.., call @ Stmt::Call { target, .. }, Stmt::Ret { value }] = block.stmts.as_slice()
         else {
             if matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
                 return;
@@ -462,7 +465,6 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
             }
             _ => return,
         };
-        let carried = result.map_or(crate::arch::RETURN, |result| result.index);
         let returned_type = match (prototype, target) {
             (Some(prototype), _) => prototype.ret.clone(),
             (None, Some(target)) => match returned_type(image, *target) {
@@ -470,6 +472,14 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
                 None => return,
             },
             (None, None) => return,
+        };
+        let output = if returned_type == CType::Void {
+            call.primary_call_output()
+        } else {
+            prototypes::scalar_call_output(call, &returned_type)
+        };
+        let Some(carried) = output.map(|output| output.dest.index) else {
+            return;
         };
         if returned != carried || width.as_ref().is_some_and(|width| *width != returned_type) {
             return;
@@ -481,10 +491,7 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
         (Some(CType::Void), _) => {
             ir.ret_type = CType::Void;
             for block in &mut ir.blocks {
-                if let [.., Stmt::Call { result, .. }, Stmt::Ret { value }] =
-                    block.stmts.as_mut_slice()
-                {
-                    *result = None;
+                if let [.., Stmt::Call { .. }, Stmt::Ret { value }] = block.stmts.as_mut_slice() {
                     *value = Expr::constant(0);
                 }
             }
@@ -1255,6 +1262,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
         has_jump_tables,
         types,
     } = lifted;
+    let declared_return = types.as_ref().is_some_and(|types| types.ret.is_some());
     let uniform_32 = passes::widths::specialize_widths(&mut ir, &|target| {
         summary::summary(image, target).narrow_return
     });
@@ -1330,7 +1338,9 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     passes::coalesce::coalesce_copies(&mut ir);
     name_indirect_result(&mut ir);
     structures::recover(&mut ir);
-    typing::apply_pointer_return(&mut ir);
+    if !declared_return {
+        typing::apply_pointer_return_with(&mut ir, &|stmt| prototypes::called(image, stmt));
+    }
     // It returns the pointer it wrote the result through.
     if ir.declared_signature.is_none()
         && let Some(result) = ir.params.iter().find(|param| param.name == "result")
@@ -1377,6 +1387,110 @@ mod tests {
     use crate::ir::Stmt;
     use crate::loader::{Image, Isa};
 
+    #[test]
+    fn explicit_scalar_return_types_take_precedence_over_pointer_producer_inference() {
+        use crate::ir::{
+            AbiProfile, CType, CallOutput, Convention, Expr, FunctionIr, Param, RegRef,
+            VARIABLE_BASE,
+        };
+        for ret in [Some(CType::U64), None] {
+            let mut image = Image::from_code(Isa::AArch64, 0, Vec::new());
+            image.imports.insert(0x1000, "memcpy".to_owned());
+            let mut ir = FunctionIr::single_block(
+                Isa::AArch64,
+                vec![
+                    Stmt::Call {
+                        target: None,
+                        through: Some(Expr::Load {
+                            addr: Box::new(Expr::Const(0x1000)),
+                            width: 8,
+                            signed: false,
+                        }),
+                        convention: Convention::Aapcs64,
+                        args: Some(vec![Expr::reg(0, 64), Expr::reg(1, 64), Expr::reg(2, 64)]),
+                        floats_named: true,
+                        outputs: vec![CallOutput {
+                            register: 0,
+                            dest: RegRef {
+                                index: VARIABLE_BASE,
+                                width: 64,
+                            },
+                        }],
+                        clobbers: Some([0].into_iter().collect()),
+                        via: None,
+                    },
+                    Stmt::Store {
+                        addr: Expr::reg(3, 64),
+                        value: Expr::reg(2, 64),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(VARIABLE_BASE, 64),
+                    },
+                ],
+            );
+            ir.name = Some("copy_and_note".to_owned());
+            ir.ret_type = CType::I64;
+            ir.params = vec![
+                Param {
+                    index: 0,
+                    name: "dst".to_owned(),
+                    ty: CType::pointer_to(CType::Void),
+                },
+                Param {
+                    index: 1,
+                    name: "src".to_owned(),
+                    ty: CType::pointer_to(CType::Void),
+                },
+                Param {
+                    index: 2,
+                    name: "n".to_owned(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 3,
+                    name: "count".to_owned(),
+                    ty: CType::pointer_to(CType::U64),
+                },
+            ];
+            let types = crate::loader::dwarf::FunctionTypes {
+                params: Vec::new(),
+                ret: ret.clone(),
+                ret_aggregate_size: None,
+                param_aggregate_sizes: Vec::new(),
+                variadic: false,
+                members: Vec::new(),
+                definitions: Vec::new(),
+                param_layouts: Vec::new(),
+                ret_layout: Ok(None),
+                abi_profile: Ok(AbiProfile::Aapcs64),
+            };
+            assert!(super::abi::declaration(&types).is_none());
+            let analyzed = super::optimize(
+                &image,
+                super::Lifted {
+                    ir,
+                    has_jump_tables: false,
+                    types: Some(types),
+                },
+            );
+            let expected = ret.unwrap_or_else(|| CType::pointer_to(CType::Void));
+            assert_eq!(analyzed.ir.ret_type, expected);
+            let mut symbols = crate::render::Symbols::default();
+            symbols.import_slots.insert(0x1000, "memcpy".to_owned());
+            symbols
+                .import_returns
+                .insert(0x1000, CType::pointer_to(CType::Void));
+            let rendered = crate::render::render(&analyzed.ir, &analyzed.references, &symbols, &[]);
+            let declaration = if expected.is_pointer() {
+                "void *copy_and_note("
+            } else {
+                "uint64_t copy_and_note("
+            };
+            assert!(rendered.contains(declaration), "{rendered}");
+        }
+    }
+
     fn ends_through_pointer(code: Vec<u8>) -> Option<Stmt> {
         let size = code.len() as u64;
         let image = Image::from_code(Isa::X86_64, 0, code);
@@ -1407,5 +1521,145 @@ mod tests {
             ends_through_pointer(vec![0x53, 0xff, 0xe0]),
             Some(Stmt::Call { .. })
         ));
+    }
+
+    #[test]
+    fn scalar_void_return_preserves_carrier_definitions() {
+        use crate::ir::{CType, Convention, Expr, FunctionIr};
+        let mut image = Image::from_code(Isa::X86_64, 0, Vec::new());
+        image.imports.insert(0x1000, "free".to_owned());
+        let mut outputs = crate::ir::fallback_call_outputs(Convention::SysV, None);
+        outputs.swap(0, 1);
+        let expected = outputs.clone();
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: None,
+                    through: Some(Expr::Load {
+                        addr: Box::new(Expr::Const(0x1000)),
+                        width: 8,
+                        signed: false,
+                    }),
+                    convention: Convention::SysV,
+                    args: Some(Vec::new()),
+                    floats_named: true,
+                    outputs,
+                    clobbers: None,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        ir.ret_type = CType::U64;
+        super::apply_call_return(&mut ir, &image);
+        assert_eq!(ir.ret_type, CType::Void);
+        assert_eq!(ir.blocks[0].stmts[0].call_outputs(), expected.as_slice());
+        assert!(matches!(
+            ir.blocks[0].stmts[1],
+            Stmt::Ret {
+                value: Expr::Const(0)
+            }
+        ));
+    }
+
+    #[test]
+    fn floating_return_evidence_survives_only_preserving_calls() {
+        use crate::ir::{Convention, Expr, Precision, RegRef};
+        for (isa, convention, slot) in [
+            (Isa::X86_64, Convention::SysV, crate::arch::x86::XMM0),
+            (Isa::AArch64, Convention::Aapcs64, crate::arch::aarch64::V0),
+        ] {
+            for changed in [false, true] {
+                let clobbers = Some(if changed {
+                    [slot].into_iter().collect()
+                } else {
+                    Default::default()
+                });
+                let blocks = [crate::ir::Block {
+                    start: 0,
+                    stmts: vec![
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: slot,
+                                width: 64,
+                            },
+                            value: Expr::Load {
+                                addr: Box::new(Expr::Const(0x1000)),
+                                width: 4,
+                                signed: false,
+                            },
+                        },
+                        Stmt::Call {
+                            target: Some(0x2000),
+                            through: None,
+                            convention,
+                            args: Some(Vec::new()),
+                            floats_named: true,
+                            outputs: crate::ir::fallback_call_outputs(convention, clobbers),
+                            clobbers,
+                            via: None,
+                        },
+                        Stmt::Ret {
+                            value: Expr::reg(slot, 32),
+                        },
+                    ],
+                }];
+                assert_eq!(
+                    super::float_result(&blocks, isa),
+                    (!changed).then_some(Precision::Single)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn known_float_forwarding_requires_the_fp_carrier() {
+        use crate::ir::{CType, Convention, Expr, FunctionIr, VARIABLE_BASE};
+        for present in [false, true] {
+            let mut image = Image::from_code(Isa::X86_64, 0, Vec::new());
+            image.imports.insert(0x1000, "strtod".to_owned());
+            let mut outputs = crate::ir::fallback_call_outputs(Convention::SysV, None);
+            outputs.retain(|output| present || output.register != crate::arch::x86::XMM0);
+            outputs.reverse();
+            for output in &mut outputs {
+                output.dest.index = VARIABLE_BASE + output.register;
+            }
+            let returned = VARIABLE_BASE + if present { crate::arch::x86::XMM0 } else { 0 };
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Call {
+                        target: None,
+                        through: Some(Expr::Load {
+                            addr: Box::new(Expr::Const(0x1000)),
+                            width: 8,
+                            signed: false,
+                        }),
+                        convention: Convention::SysV,
+                        args: Some(Vec::new()),
+                        floats_named: true,
+                        outputs,
+                        clobbers: None,
+                        via: None,
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(returned, 64),
+                    },
+                ],
+            );
+            ir.ret_type = CType::U64;
+            super::apply_call_return(&mut ir, &image);
+            assert_eq!(
+                ir.ret_type,
+                if present {
+                    CType::Named("double".to_owned())
+                } else {
+                    CType::U64
+                }
+            );
+        }
     }
 }

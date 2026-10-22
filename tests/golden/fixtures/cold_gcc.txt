@@ -38,7 +38,7 @@ fn _init @ 0x1000 (size 27)
     v1 = load64(#0x3fe8)
     brif eq v1, #0x0 -> 0x1016
   blk1 @ 0x1014:
-    call *load64(#0x3fe8)
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x3fe8)
   blk2 @ 0x1016:
     ret v1
 -- card
@@ -57,7 +57,7 @@ void (void * a0)
 -- ir
 fn __cxa_finalize @ 0x1080 (size 16)
   blk0 @ 0x1080:
-    call *load64(#0x3ff8)(rdi)
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x3ff8)(rdi)
     ret #0x0
 -- card
 {"addr":"0x1080","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt.got","size":16,"sizeEstimated":true,"unsupported":0}
@@ -75,7 +75,7 @@ int ()
 -- ir
 fn __snprintf_chk @ 0x1090 (size 16)
   blk0 @ 0x1090:
-    call *load64(#0x3fb0)
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x3fb0)
     ret v1
 -- card
 {"addr":"0x1090","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__snprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
@@ -93,7 +93,7 @@ int32_t ()
 -- ir
 fn abort @ 0x10a0 (size 16)
   blk0 @ 0x10a0:
-    call *load64(#0x3fb8)()
+    rax, rdx, xmm0, xmm1 = call *load64(#0x3fb8)()
     trap
 -- card
 {"addr":"0x10a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
@@ -111,7 +111,7 @@ int32_t ()
 -- ir
 fn __stack_chk_fail @ 0x10b0 (size 16)
   blk0 @ 0x10b0:
-    call *load64(#0x3fc0)()
+    rax, rdx, xmm0, xmm1 = call *load64(#0x3fc0)()
     trap
 -- card
 {"addr":"0x10b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__stack_chk_fail","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
@@ -129,7 +129,7 @@ int (const char * a0, FILE * a1)
 -- ir
 fn fputs @ 0x10c0 (size 16)
   blk0 @ 0x10c0:
-    v1 = call *load64(#0x3fc8)(rdi, rsi)
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x3fc8)(rdi, rsi)
     ret v1
 -- card
 {"addr":"0x10c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
@@ -147,7 +147,7 @@ int ()
 -- ir
 fn __fprintf_chk @ 0x10d0 (size 16)
   blk0 @ 0x10d0:
-    call *load64(#0x3fd0)
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x3fd0)
     ret v1
 -- card
 {"addr":"0x10d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__fprintf_chk","nameSources":["plt"],"section":".plt.sec","size":16,"sizeEstimated":true,"unsupported":0}
@@ -174,7 +174,7 @@ int64_t main(int32_t a0) {
     local_3 = 0x6f7774;
     local_4 = v1;
     local_5 = 0x0;
-    return lookup(&local_2, 0x2, a0);
+    return lookup(&local_2, 0x2, (a0 & 0xffffffff));
 }
 -- signature
 int64_t (int32_t a0)
@@ -191,7 +191,7 @@ fn main @ 0x1120 (size 124)
     store64(#0x6f7774, (rsp + #0xffffffffffffffd8))
     store64(v1, (rsp + #0xffffffffffffffd0))
     store64(#0x0, (rsp + #0xffffffffffffffe0))
-    v1 = call 0x1290((rsp + #0xffffffffffffffb8), #0x2, (rdi & #0xffffffff))
+    v1:rax, rdx = call 0x1290((rsp + #0xffffffffffffffb8), #0x2, (rdi & #0xffffffff))
     br 0x1192
   blk1 @ 0x1192:
     ret v1
@@ -223,7 +223,7 @@ fn _start @ 0x11a0 (size 38)
     v2 = load64(rsp)
     store64(rax, rsp)
     store64(rsp, (rsp + #0xfffffffffffffff8))
-    call *load64(#0x3fd8)(#0x1120, v2, (rsp + #0x8), #0x0, #0x0, rdx)
+    rax, rdx, xmm0, xmm1 = call *load64(#0x3fd8)(#0x1120, v2, (rsp + #0x8), #0x0, #0x0, rdx)
     trap
 -- card
 {"addr":"0x11a0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"_start","nameSources":["symtab","entry","unwind"],"section":".text","size":38,"unsupported":0}
@@ -294,9 +294,9 @@ fn __do_global_dtors_aux @ 0x1240 (size 64)
   blk1 @ 0x124d:
     brif eq load64(#0x3ff8), #0x0 -> 0x1267
   blk2 @ 0x125b:
-    call 0x1080(load64(#0x4008))
+    rax, rdx, xmm0, xmm1 = call 0x1080(load64(#0x4008))
   blk3 @ 0x1267:
-    call 0x11d0()
+    rax, rdx, xmm0, xmm1 = call 0x11d0()
     store8(#0x1, #0x4028)
     ret #0x0
   blk4 @ 0x1278:
@@ -317,7 +317,7 @@ int32_t ()
 -- ir
 fn frame_dummy @ 0x1280 (size 16)
   blk0 @ 0x1280:
-    v1 = call 0x1200()
+    v1:rax, rdx, xmm0, xmm1 = call 0x1200()
     ret v1
 -- card
 {"addr":"0x1280","approxTokens":108,"blocks":1,"hardReasons":[],"name":"frame_dummy","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
@@ -344,7 +344,7 @@ int32_t lookup(struct lookup_a0 *a0, int a1, int a2) {
         v2 = &local_0;
         local_2 = 0x0;
         local_1 = a1;
-        __snprintf_chk(v2, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
+        __snprintf_chk(v2, 0x40, 0x2, 0x40, "missing key %d among %d", (a2 & 0xffffffff), a1);
         fputs(v2, *stderr_GLIBC_2_2_5);
         abort();
     }
@@ -362,7 +362,7 @@ int32_t lookup(struct lookup_a0 *a0, int a1, int a2) {
     local_1 = a1;
     v8 = v2 + 0x8;
     v4 = (uintptr_t)(v4 + (uint8_t *)v8);
-    __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", a2, a1);
+    __snprintf_chk(v7, 0x40, 0x2, 0x40, "missing key %d among %d", (a2 & 0xffffffff), a1);
     fputs(v7, *stderr_GLIBC_2_2_5);
     do {
         v11 = v8[-0x1];
@@ -400,13 +400,13 @@ fn lookup @ 0x1290 (size 240)
     store64(rsi, (rsp + #0xffffffffffffff88))
     v8 = (v2 + #0x8)
     v4 = (v4 + v8)
-    call 0x1090(v7, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
-    call 0x10c0(v7, load64(#0x4020))
+    rax, rdx, xmm0, xmm1 = call 0x1090(v7, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
+    rax, rdx, xmm0, xmm1 = call 0x10c0(v7, load64(#0x4020))
   blk7 @ 0x1350:
     v11 = load32((v8 + #0xfffffffffffffffc))
     v5 = v8
     v8 = (v8 + #0x18)
-    call 0x10d0(load64(#0x4020), #0x2, #0x201c, v5, v11)
+    rax, rdx, xmm0, xmm1 = call 0x10d0(load64(#0x4020), #0x2, #0x201c, v5, v11)
     brif ne v8, v4 -> 0x1350
   blk8 @ 0x1376:
     br 0x111a
@@ -414,10 +414,10 @@ fn lookup @ 0x1290 (size 240)
     v2 = (rsp + #0xffffffffffffff98)
     store64(#0x0, (rsp + #0xffffffffffffff90))
     store64(rsi, (rsp + #0xffffffffffffff88))
-    call 0x1090(v2, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
-    call 0x10c0(v2, load64(#0x4020))
+    rax, rdx, xmm0, xmm1 = call 0x1090(v2, #0x40, #0x2, #0x40, #0x2004, (rdx & #0xffffffff), rsi)
+    rax, rdx, xmm0, xmm1 = call 0x10c0(v2, load64(#0x4020))
   blk10 @ 0x111a:
-    call 0x10a0()
+    rax, rdx, xmm0, xmm1 = call 0x10a0()
     trap
 -- card
 {"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":"lookup","nameHints":["missing_key__d_among__d"],"nameSources":["symtab","unwind"],"section":".text","size":240,"strings":["missing key %d among %d"],"unsupported":0}

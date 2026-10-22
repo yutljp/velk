@@ -428,7 +428,10 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: Some(vec![reg(0), reg(1)]),
             floats_named: true,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(
+                crate::ir::Convention::SysV,
+                Some(Registers(0)),
+            ),
             clobbers: Some(Registers(0)),
             via: None,
         })

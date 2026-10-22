@@ -456,6 +456,126 @@ fn lifted_instructions_match_the_processor() {
     findings.assert_agreement();
 }
 
+#[test]
+fn sqdmulh_vector_results_match_the_processor() {
+    struct RestoreFpsr(u64);
+    impl Drop for RestoreFpsr {
+        fn drop(&mut self) {
+            // SAFETY: restores only this thread's saved floating-point status.
+            unsafe {
+                std::arch::asm!("msr fpsr, {}", in(reg) self.0, options(nomem, nostack, preserves_flags))
+            };
+        }
+    }
+    let saved: u64;
+    // SAFETY: reads this thread's status without changing it.
+    unsafe {
+        std::arch::asm!("mrs {}, fpsr", out(reg) saved, options(nomem, nostack, preserves_flags))
+    };
+    let _restore = RestoreFpsr(saved);
+    let page = Page::new();
+    let mut checked = 0;
+    for (bits, full, base) in [
+        (16u32, false, 0x0e60_b400),
+        (16, true, 0x4e60_b400),
+        (32, false, 0x0ea0_b400),
+        (32, true, 0x4ea0_b400),
+    ] {
+        let limit = 1i64 << (bits - 1);
+        let edges = [
+            -limit,
+            -limit + 1,
+            -limit / 2,
+            -1,
+            0,
+            1,
+            limit / 2,
+            limit - 2,
+            limit - 1,
+        ];
+        for (d, n, m) in [
+            (0u16, 1u16, 2u16),
+            (1, 1, 2),
+            (2, 1, 2),
+            (0, 1, 1),
+            (1, 1, 1),
+        ] {
+            let word = base | u32::from(m) << 16 | u32::from(n) << 5 | u32::from(d);
+            let decoded = decode(word).expect("valid SQDMULH encoding");
+            assert_eq!(decoded.opcode, a64::Opcode::SQDMULH);
+            let ir = lift_words(&[word, RET]).expect("SQDMULH lift");
+            assert!(unsupported(&ir).is_none(), "{}", ir.render());
+            for row in 0..if n == m { 9 } else { 81 } {
+                let mut state: State = std::array::from_fn(|index| hash(0x5eed, index as u64));
+                state[NZCV] = (checked as u64 & 0xf) << 28;
+                let mut fill = |number: u16, second: bool| {
+                    for half in 0..if full { 2 } else { 1 } {
+                        let mut value = 0;
+                        for lane in 0..64 / bits as usize {
+                            let position = half * (64 / bits as usize) + lane;
+                            let index = if second {
+                                row / 9 + 3 * position
+                            } else {
+                                row % 9 + position
+                            };
+                            let element = edges[index % edges.len()] as u64 & ((1u64 << bits) - 1);
+                            value |= element << (lane * bits as usize);
+                        }
+                        state[VECTORS + 2 * usize::from(number) + half] = value;
+                    }
+                };
+                fill(n, false);
+                if n != m {
+                    fill(m, true);
+                }
+                let initial = state;
+                assert!(
+                    page.run(&[word], &mut state),
+                    "processor rejected {decoded} ({word:#010x})"
+                );
+                assert_eq!(state[NZCV], initial[NZCV], "{decoded}, row {row}: NZCV");
+                let registers: Vec<_> = (0..28u16)
+                    .filter(|index| usable(*index))
+                    .map(|index| (index, initial[usize::from(index)]))
+                    .chain((0..16).map(|half| {
+                        (
+                            crate::arch::aarch64::V0 + half as u16,
+                            initial[VECTORS + half],
+                        )
+                    }))
+                    .collect();
+                let setup = eval::Setup {
+                    seed: 0,
+                    convention: eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &[],
+                    step_limit: 100,
+                };
+                let (after, memory) =
+                    eval::state_after(&ir, &setup).expect("modeled SQDMULH result");
+                assert!(memory.is_empty());
+                for &(index, start) in &registers {
+                    let actual = match index.checked_sub(crate::arch::aarch64::V0) {
+                        Some(half) => state[VECTORS + usize::from(half)],
+                        None => state[usize::from(index)],
+                    };
+                    assert_eq!(
+                        after.get(&index).copied().unwrap_or(start),
+                        actual,
+                        "{decoded} ({word:#010x}), row {row}, register {index}"
+                    );
+                }
+                checked += 1;
+            }
+        }
+    }
+    assert_eq!(checked, 1044);
+    eprintln!("{checked} SQDMULH vector result cases agree; FPSR.QC is outside the IR comparison");
+}
+
 /// The pointer registers memory cases address through; they point into the
 /// middle of the buffer, and every other register holds a small value.
 const POINTERS: [u16; 4] = [1, 2, 3, 4];

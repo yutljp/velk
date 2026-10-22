@@ -73,7 +73,7 @@ int32_t ()
 fn use_ptr @ 0x1400 (size 9)
   blk0 @ 0x1400:
     v1 = load64(#0x24b0)
-    call *load64(v1)
+    v2:rax, rdx, xmm0, xmm1 = call *load64(v1)
     ret v2
 -- card
 {"addr":"0x1400","approxTokens":108,"blocks":1,"hardReasons":[],"name":"use_ptr","nameSources":["symtab","dynamic","unwind"],"section":".text","size":9,"unsupported":0}

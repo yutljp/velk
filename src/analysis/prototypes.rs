@@ -810,6 +810,29 @@ pub fn called(image: &Image, stmt: &Stmt) -> Option<&'static Prototype> {
     }
 }
 
+pub(crate) fn scalar_call_output<'a>(
+    stmt: &'a Stmt,
+    ret: &CType,
+) -> Option<&'a crate::ir::CallOutput> {
+    if ret.is_sse_float() {
+        let Stmt::Call { convention, .. } = stmt else {
+            return None;
+        };
+        let register = match convention {
+            crate::ir::Convention::SysV | crate::ir::Convention::Win64 => crate::arch::x86::XMM0,
+            crate::ir::Convention::Aapcs64 => crate::arch::aarch64::V0,
+            _ => return None,
+        };
+        stmt.call_outputs()
+            .iter()
+            .find(|output| output.register == register)
+    } else if ret.integer().is_some() || ret.is_pointer() {
+        stmt.primary_call_output()
+    } else {
+        None
+    }
+}
+
 /// The members of a structure whose layout is known, by offset.
 pub fn layout(structure: &str) -> Option<&'static [(i64, &'static str)]> {
     LAYOUTS

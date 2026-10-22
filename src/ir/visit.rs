@@ -174,6 +174,14 @@ pub fn statement_reads(stmt: &Stmt) -> std::collections::HashSet<u16> {
     statement_registers(stmt).1
 }
 
+pub fn statement_destinations_mut(stmt: &mut Stmt) -> Vec<&mut super::RegRef> {
+    match stmt {
+        Stmt::Assign { dest, .. } => vec![dest],
+        Stmt::Call { outputs, .. } => outputs.iter_mut().map(|output| &mut output.dest).collect(),
+        _ => Vec::new(),
+    }
+}
+
 pub(crate) fn statement_registers(
     stmt: &Stmt,
 ) -> (
@@ -201,12 +209,10 @@ pub(crate) fn statement_registers(
         Stmt::Call {
             through,
             args,
-            result,
+            outputs,
             ..
         } => {
-            if let Some(result) = result {
-                writes.insert(result.index);
-            }
+            writes.extend(outputs.iter().map(|output| output.dest.index));
             if let Some(through) = through {
                 expr_reads(through, &mut reads);
             }
@@ -214,7 +220,16 @@ pub(crate) fn statement_registers(
                 expr_reads(arg, &mut reads);
             }
             reads.extend(stmt.unnamed_call_reads());
-            writes.extend(stmt.call_clobbers());
+            reads.extend(
+                stmt.preserved_output_sources()
+                    .into_iter()
+                    .map(|(_, register)| register),
+            );
+            writes.extend(
+                stmt.call_clobbers()
+                    .into_iter()
+                    .filter(|register| !outputs.iter().any(|output| output.register == *register)),
+            );
         }
         // An unmodeled instruction may leave changed the registers it names,
         // or any machine register when they are not known.

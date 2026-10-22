@@ -36,6 +36,7 @@ pub(crate) fn stack_locals(
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
         abi: None,
+        call_outputs: Default::default(),
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return: None,
@@ -1231,7 +1232,7 @@ mod tests {
             convention: Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, clobbers),
             clobbers,
             via: None,
         }

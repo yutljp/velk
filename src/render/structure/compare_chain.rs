@@ -419,6 +419,91 @@ fn holds(cond: crate::ir::Cond, value: i64, k: i64, bits: u32) -> Option<bool> {
     })
 }
 
+/// Equality dispatch needs one entry per test, not one per intervening value.
+fn equality_chain(
+    ir: &FunctionIr,
+    head: usize,
+    positions: &std::collections::HashMap<u64, usize>,
+    predecessors: &std::collections::HashMap<u64, usize>,
+) -> Option<ChainSwitch> {
+    let Stmt::Brif { lhs, .. } = ir.blocks[head].stmts.last()? else {
+        return None;
+    };
+    let value = normalized(lhs);
+    let Expr::Reg { width: 32 | 64, .. } = value else {
+        return None;
+    };
+    let bits = expr_width(&value)?;
+    let mut at = head;
+    let mut blocks = Vec::new();
+    let mut cases = std::collections::BTreeMap::new();
+    let default = loop {
+        let block = &ir.blocks[at];
+        if blocks.contains(&block.start) {
+            return None;
+        }
+        let Some(Stmt::Brif {
+            cond,
+            lhs,
+            rhs: Expr::Const(k),
+            target,
+        }) = block.stmts.last()
+        else {
+            break block.start;
+        };
+        if !matches!(cond, crate::ir::Cond::Eq | crate::ir::Cond::Ne) || normalized(lhs) != value {
+            break block.start;
+        }
+        if blocks.len() == 256
+            || (at != head
+                && (at == 0
+                    || block.stmts.len() != 1
+                    || predecessors.get(&block.start) != Some(&1)))
+            || (bits == 32 && *k > i32::MAX as u64)
+        {
+            return None;
+        }
+        let fallthrough = ir.blocks.get(at + 1)?.start;
+        let (case, next) = if *cond == crate::ir::Cond::Eq {
+            (*target, fallthrough)
+        } else {
+            (fallthrough, *target)
+        };
+        positions.get(&case)?;
+        if cases.insert(*k as i64, case).is_some() {
+            return None;
+        }
+        blocks.push(block.start);
+        at = *positions.get(&next)?;
+    };
+    if cases.len() < 2
+        || cases.values().any(|target| blocks.contains(target))
+        || cases
+            .values()
+            .filter(|target| **target != default)
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            < 2
+    {
+        return None;
+    }
+    Some(ChainSwitch {
+        block_start: ir.blocks[head].start,
+        index: value,
+        cases: cases.into_iter().collect(),
+        default: Some(default),
+        blocks,
+    })
+}
+
+fn chain_is_available(blocks: &[u64], head: u64, entry: u64, accepted: &[ChainSwitch]) -> bool {
+    blocks.iter().all(|start| {
+        // The implicit function entry is absent from CFG predecessor counts.
+        (*start != entry || *start == head)
+            && !accepted.iter().any(|chain| chain.blocks.contains(start))
+    })
+}
+
 /// Rebuilds every compare tree that is a complete switch over one value.
 pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
     let position: std::collections::HashMap<u64, usize> = ir
@@ -437,6 +522,12 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
             continue;
         }
         if out.iter().any(|chain| chain.blocks.contains(&block.start)) {
+            continue;
+        }
+        if let Some(chain) = equality_chain(ir, block_index, &position, &preds) {
+            if chain_is_available(&chain.blocks, chain.block_start, ir.blocks[0].start, &out) {
+                out.push(chain);
+            }
             continue;
         }
         let mut walk = ChainWalk {
@@ -532,6 +623,9 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         {
             continue;
         }
+        if !chain_is_available(&walk.blocks, block.start, ir.blocks[0].start, &out) {
+            continue;
+        }
         out.push(ChainSwitch {
             block_start: block.start,
             index: normalized(lhs),
@@ -568,8 +662,8 @@ pub fn apply_chains(ir: &mut FunctionIr, chains: &[ChainSwitch]) {
 
 #[cfg(test)]
 mod tests {
-    use super::recover_chains;
-    use crate::ir::{Block, Cond, Expr, FunctionIr, Stmt};
+    use super::{apply_chains, chain_is_available, equality_chain, predecessors, recover_chains};
+    use crate::ir::{Block, Cond, Expr, FunctionIr, Stmt, eval};
     use crate::loader::Isa;
 
     /// `if (n <op> k) goto target; ...` over one 32-bit value, falling
@@ -614,5 +708,553 @@ mod tests {
         // `n <= 0` also takes every negative value, which no case covers.
         let ir = chain(&[(Cond::Le, 0, 0x100), (Cond::Ne, 1, 0x200)]);
         assert!(recover_chains(&ir).is_empty());
+    }
+
+    fn dispatch(values: &[u64], width: u8, mixed: bool) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks.clear();
+        let body = |position: usize| Block {
+            start: 0x10000 + position as u64 * 0x20,
+            stmts: vec![
+                Stmt::Store {
+                    addr: Expr::Const(0x1000),
+                    value: Expr::Const(position as u64 + 11),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::Const(position as u64 + 11),
+                },
+            ],
+        };
+        let mut later = Vec::new();
+        for (position, value) in values.iter().enumerate() {
+            let inverse = mixed && position % 2 == 1;
+            let next = if position + 1 == values.len() {
+                0x8000
+            } else {
+                (position as u64 + 1) * 0x20
+            };
+            ir.blocks.push(Block {
+                start: position as u64 * 0x20,
+                stmts: vec![Stmt::Brif {
+                    cond: if inverse { Cond::Ne } else { Cond::Eq },
+                    lhs: Expr::reg(0, width),
+                    rhs: Expr::Const(*value),
+                    target: if inverse { next } else { body(position).start },
+                }],
+            });
+            if inverse {
+                ir.blocks.push(body(position));
+            } else {
+                later.push(body(position));
+            }
+        }
+        ir.blocks.push(Block {
+            start: 0x8000,
+            stmts: vec![
+                Stmt::Store {
+                    addr: Expr::Const(0x1000),
+                    value: Expr::Const(99),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::Const(99),
+                },
+            ],
+        });
+        ir.blocks.extend(later);
+        ir
+    }
+
+    fn equality_only(ir: &FunctionIr) -> Option<super::ChainSwitch> {
+        let positions = ir
+            .blocks
+            .iter()
+            .enumerate()
+            .map(|(position, block)| (block.start, position))
+            .collect();
+        equality_chain(ir, 0, &positions, &predecessors(ir))
+    }
+
+    fn compare_dispatch(ir: &FunctionIr, values: &[u64], width: u8, inputs: &[u64]) {
+        let chains = recover_chains(ir);
+        assert_eq!(chains.len(), 1);
+        assert_eq!(chains[0].cases.len(), values.len());
+        let mut rewritten = ir.clone();
+        apply_chains(&mut rewritten, &chains);
+        let nodes = crate::render::structure::structure_best(ir);
+        let lowered = crate::render::structure::lower::lower(ir, &nodes);
+        for input in inputs {
+            let registers = [(0, *input), (1, 17)];
+            let setup = eval::Setup {
+                seed: 123,
+                convention: eval::Convention {
+                    arguments: &[0],
+                    clobbered: &[],
+                },
+                registers: &registers,
+                memory: &[(0x1000, 777), (0x1010, 888)],
+                step_limit: 4096,
+            };
+            let original = eval::run(ir, &setup);
+            let eval::Outcome::Return {
+                value,
+                calls,
+                memory,
+            } = &original
+            else {
+                panic!("{original:?}")
+            };
+            let discriminant = if width == 32 {
+                *input & 0xffff_ffff
+            } else {
+                *input
+            };
+            let expected = values
+                .iter()
+                .position(|value| *value == discriminant)
+                .map_or(99, |position| position as u64 + 11);
+            assert_eq!(*value, expected, "input {input:#x}");
+            for offset in 0..8 {
+                assert_eq!(memory[&(0x1000 + offset)], (expected >> (8 * offset)) as u8);
+            }
+            let head_call = matches!(ir.blocks[0].stmts.first(), Some(Stmt::Call { .. }));
+            assert_eq!(
+                calls,
+                &if head_call {
+                    vec![eval::Call {
+                        target: Some(0x123),
+                        arguments: vec![17],
+                    }]
+                } else {
+                    Vec::new()
+                }
+            );
+            for offset in 0..8 {
+                let expected = if head_call { 123_u64 } else { 888 };
+                assert_eq!(memory[&(0x1010 + offset)], (expected >> (8 * offset)) as u8);
+            }
+            assert_eq!(
+                eval::run(&rewritten, &setup),
+                original,
+                "rewritten {input:#x}"
+            );
+            assert_eq!(
+                eval::run(&lowered, &setup),
+                original,
+                "structured {input:#x}: {nodes:#?}"
+            );
+        }
+    }
+
+    #[test]
+    fn sparse_equality_dispatch_keeps_gaps_and_narrow_input_bits() {
+        let values = [1, 1000, 10000];
+        compare_dispatch(
+            &dispatch(&values, 32, false),
+            &values,
+            32,
+            &[
+                0,
+                1,
+                2,
+                999,
+                1000,
+                1001,
+                9999,
+                10000,
+                10001,
+                u64::MAX,
+                0x1234_5678_0000_03e8,
+            ],
+        );
+        let mut masked = dispatch(&values, 32, false);
+        for block in &mut masked.blocks {
+            if let Some(Stmt::Brif { lhs, .. }) = block.stmts.last_mut() {
+                *lhs = Expr::bin(
+                    crate::ir::BinOp::And,
+                    Expr::reg(0, 64),
+                    Expr::Const(0xffff_ffff),
+                );
+            }
+        }
+        compare_dispatch(
+            &masked,
+            &values,
+            32,
+            &[1, 1000, 10000, 0x1234_5678_0000_03e8, u64::MAX],
+        );
+    }
+
+    #[test]
+    fn sparse_inequality_continuations_keep_their_original_default() {
+        let values = [1, 1000, 10000, 100000];
+        compare_dispatch(
+            &dispatch(&values, 64, true),
+            &values,
+            64,
+            &[0, 1, 1000, 10000, 100000, 999, 1001, u64::MAX],
+        );
+        let values = [1000, 10000];
+        compare_dispatch(
+            &dispatch(&values, 32, true),
+            &values,
+            32,
+            &[0, 999, 1000, 1001, 9999, 10000, 10001],
+        );
+    }
+
+    #[test]
+    fn sparse_dispatch_preserves_all_head_effects() {
+        let values = [1, 1000, 10000];
+        let mut ir = dispatch(&values, 64, false);
+        ir.blocks[0].stmts.insert(
+            0,
+            Stmt::Store {
+                addr: Expr::Const(0x1010),
+                value: Expr::Const(123),
+                width: 8,
+            },
+        );
+        ir.blocks[0].stmts.insert(
+            0,
+            Stmt::Call {
+                target: Some(0x123),
+                through: None,
+                convention: crate::ir::Convention::Aapcs64,
+                args: Some(vec![Expr::reg(1, 64)]),
+                floats_named: false,
+                outputs: crate::ir::fallback_call_outputs(
+                    crate::ir::Convention::Aapcs64,
+                    Some(crate::ir::Registers(0)),
+                ),
+                clobbers: Some(crate::ir::Registers(0)),
+                via: None,
+            },
+        );
+        compare_dispatch(&ir, &values, 64, &[0, 1, 1000, 10000, u64::MAX]);
+        let mut after = ir.clone();
+        apply_chains(&mut after, &recover_chains(&ir));
+        assert_eq!(
+            format!("{:?}", &after.blocks[0].stmts[..2]),
+            format!("{:?}", &ir.blocks[0].stmts[..2])
+        );
+    }
+
+    #[test]
+    fn sparse_dispatch_keeps_all_64_bit_case_patterns() {
+        let values = [1, 1 << 63, u64::MAX];
+        compare_dispatch(
+            &dispatch(&values, 64, true),
+            &values,
+            64,
+            &[
+                0,
+                1,
+                2,
+                (1 << 63) - 1,
+                1 << 63,
+                (1 << 63) + 1,
+                u64::MAX - 1,
+                u64::MAX,
+            ],
+        );
+    }
+
+    #[test]
+    fn sparse_dispatch_keeps_shared_case_bodies() {
+        let mut ir = dispatch(&[1, 1000, 10000], 64, false);
+        let Stmt::Brif { target, .. } = &mut ir.blocks[1].stmts[0] else {
+            unreachable!()
+        };
+        *target = 0x10000;
+        let chains = recover_chains(&ir);
+        assert_eq!(chains.len(), 1);
+        assert_eq!(
+            chains[0].cases,
+            vec![(1, 0x10000), (1000, 0x10000), (10000, 0x10040)]
+        );
+        let mut after = ir.clone();
+        apply_chains(&mut after, &chains);
+        let nodes = crate::render::structure::structure_best(&ir);
+        let lowered = crate::render::structure::lower::lower(&ir, &nodes);
+        for input in [0, 1, 1000, 10000, u64::MAX] {
+            let registers = [(0, input)];
+            let setup = eval::Setup {
+                seed: 123,
+                convention: eval::Convention {
+                    arguments: &[0],
+                    clobbered: &[],
+                },
+                registers: &registers,
+                memory: &[],
+                step_limit: 1000,
+            };
+            let original = eval::run(&ir, &setup);
+            let eval::Outcome::Return { value, .. } = original else {
+                panic!("{original:?}")
+            };
+            assert_eq!(
+                value,
+                match input {
+                    1 | 1000 => 11,
+                    10000 => 13,
+                    _ => 99,
+                }
+            );
+            assert_eq!(eval::run(&after, &setup), original);
+            assert_eq!(eval::run(&lowered, &setup), original);
+        }
+    }
+
+    #[test]
+    fn sparse_dispatch_has_a_test_count_bound_instead_of_a_value_span_bound() {
+        for (count, accepted) in [(256, true), (257, false)] {
+            let values: Vec<_> = (0..count).map(|index| index * 1000).collect();
+            assert_eq!(
+                equality_only(&dispatch(&values, 64, false)).is_some(),
+                accepted
+            );
+        }
+    }
+
+    #[test]
+    fn sparse_dispatch_does_not_remove_effectful_or_shared_continuations() {
+        let original = dispatch(&[1, 1000, 10000], 64, false);
+        for effect in [
+            Stmt::Store {
+                addr: Expr::Const(0x1000),
+                value: Expr::Const(12),
+                width: 8,
+            },
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 0,
+                    width: 64,
+                },
+                value: Expr::Const(1000),
+            },
+            Stmt::Call {
+                target: Some(0x123),
+                through: None,
+                convention: crate::ir::Convention::Aapcs64,
+                args: Some(Vec::new()),
+                floats_named: false,
+                outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
+                clobbers: None,
+                via: None,
+            },
+        ] {
+            let mut ir = original.clone();
+            ir.blocks[1].stmts.insert(0, effect);
+            assert!(equality_only(&ir).is_none());
+        }
+        let mut ir = original.clone();
+        ir.blocks.push(Block {
+            start: 0x20000,
+            stmts: vec![Stmt::Br { target: Some(0x20) }],
+        });
+        assert!(equality_only(&ir).is_none());
+    }
+
+    #[test]
+    fn sparse_dispatch_rejects_cycles_duplicate_cases_and_missing_targets() {
+        let original = dispatch(&[1, 1000, 10000], 64, false);
+        for target in [0, 0x20, 0xdead] {
+            let mut ir = original.clone();
+            let Stmt::Brif {
+                target: destination,
+                ..
+            } = &mut ir.blocks[0].stmts[0]
+            else {
+                unreachable!()
+            };
+            *destination = target;
+            assert!(equality_only(&ir).is_none());
+        }
+        assert!(equality_only(&dispatch(&[1, 1, 10000], 64, false)).is_none());
+        let mut ir = dispatch(&[1, 1000], 64, true);
+        let Stmt::Brif { target, .. } = &mut ir.blocks[1].stmts[0] else {
+            unreachable!()
+        };
+        *target = 0;
+        assert!(equality_only(&ir).is_none());
+    }
+
+    #[test]
+    fn sparse_dispatch_requires_one_pure_integer_register() {
+        let original = dispatch(&[1, 1000, 10000], 32, false);
+        for lhs in [
+            Expr::reg(1, 32),
+            Expr::reg(0, 64),
+            Expr::Load {
+                addr: Box::new(Expr::reg(0, 64)),
+                width: 4,
+                signed: false,
+            },
+        ] {
+            let mut ir = original.clone();
+            for block in &mut ir.blocks {
+                if let Some(Stmt::Brif { lhs: value, .. }) = block.stmts.last_mut() {
+                    *value = lhs.clone();
+                }
+            }
+            if matches!(
+                lhs,
+                Expr::Reg { index: 1, .. } | Expr::Reg { width: 64, .. }
+            ) {
+                let Stmt::Brif { lhs, .. } = &mut ir.blocks[0].stmts[0] else {
+                    unreachable!()
+                };
+                *lhs = Expr::reg(0, 32);
+            }
+            assert!(equality_only(&ir).is_none());
+        }
+        assert!(equality_only(&dispatch(&[1, 0x8000_0000], 32, false)).is_none());
+        let mut ir = original;
+        let Stmt::Brif { cond, .. } = &mut ir.blocks[0].stmts[0] else {
+            unreachable!()
+        };
+        *cond = Cond::Gt;
+        assert!(equality_only(&ir).is_none());
+    }
+
+    #[test]
+    fn dispatch_recovery_keeps_the_implicit_entry_before_effectful_reentry() {
+        for terminate_default in [false, true] {
+            let test = |cond, value, target| Stmt::Brif {
+                cond,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(value),
+                target,
+            };
+            let finish = |start, value| Block {
+                start,
+                stmts: vec![
+                    Stmt::Store {
+                        addr: Expr::Const(0x1010),
+                        value: Expr::Const(value),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(value),
+                    },
+                ],
+            };
+            let mut effect = vec![Stmt::Store {
+                addr: Expr::Const(0x1000),
+                width: 8,
+                value: Expr::bin(
+                    crate::ir::BinOp::Add,
+                    Expr::Load {
+                        addr: Box::new(Expr::Const(0x1000)),
+                        width: 8,
+                        signed: false,
+                    },
+                    Expr::Const(1),
+                ),
+            }];
+            if terminate_default {
+                effect.push(Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: 0,
+                        width: 64,
+                    },
+                    value: Expr::Const(10000),
+                });
+            }
+            effect.push(Stmt::Br { target: Some(0x30) });
+            let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+            ir.blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: vec![test(Cond::Eq, 1, 0x50)],
+                },
+                Block {
+                    start: 0x10,
+                    stmts: vec![test(Cond::Eq, 1000, 0x60)],
+                },
+                Block {
+                    start: 0x20,
+                    stmts: effect,
+                },
+                Block {
+                    start: 0x30,
+                    stmts: vec![test(Cond::Ne, 10000, 0)],
+                },
+                finish(0x40, 13),
+                finish(0x50, 11),
+                finish(0x60, 12),
+            ];
+            assert_eq!(predecessors(&ir).get(&0), Some(&1));
+            let chains = recover_chains(&ir);
+            assert_eq!(chains.len(), 1);
+            assert_eq!(chains[0].blocks, [0, 0x10]);
+            let mut rewritten = ir.clone();
+            apply_chains(&mut rewritten, &chains);
+            assert_eq!(rewritten.blocks[0].start, 0);
+            let nodes = crate::render::structure::structure_best(&ir);
+            let lowered = crate::render::structure::lower::lower(&ir, &nodes);
+            let inputs: &[u64] = if terminate_default {
+                &[1, 1000, 10000, 7]
+            } else {
+                &[1, 1000, 10000]
+            };
+            for input in inputs {
+                let registers = [(0, *input)];
+                let setup = eval::Setup {
+                    seed: 123,
+                    convention: eval::Convention {
+                        arguments: &[0],
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &[(0x1000, 0), (0x1010, 0)],
+                    step_limit: 1000,
+                };
+                let value = match input {
+                    1 => 11,
+                    1000 => 12,
+                    _ => 13,
+                };
+                let count = u64::from(!matches!(input, 1 | 1000));
+                let memory = [(0x1000, count), (0x1010, value)]
+                    .into_iter()
+                    .flat_map(|(address, word)| {
+                        word.to_le_bytes()
+                            .into_iter()
+                            .enumerate()
+                            .map(move |(offset, byte)| (address + offset as u64, byte))
+                    })
+                    .collect();
+                let expected = eval::Outcome::Return {
+                    value,
+                    calls: Vec::new(),
+                    memory,
+                };
+                assert_eq!(eval::run(&ir, &setup), expected, "original {input}");
+                assert_eq!(eval::run(&rewritten, &setup), expected, "rewritten {input}");
+                assert_eq!(
+                    eval::run(&lowered, &setup),
+                    expected,
+                    "structured {input}: {nodes:#?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn dispatch_candidates_cannot_overlap_or_remove_the_entry() {
+        let accepted = super::ChainSwitch {
+            block_start: 0x20,
+            index: Expr::reg(0, 64),
+            cases: vec![(1, 0x100), (1000, 0x200)],
+            default: Some(0x300),
+            blocks: vec![0x20, 0x30],
+        };
+        assert!(!chain_is_available(&[0x40, 0x20], 0x40, 0, &[accepted]));
+        assert!(!chain_is_available(&[0x40, 0], 0x40, 0, &[]));
+        assert!(chain_is_available(&[0, 0x10], 0, 0, &[]));
+        assert!(chain_is_available(&[0x40, 0x50], 0x40, 0, &[]));
     }
 }

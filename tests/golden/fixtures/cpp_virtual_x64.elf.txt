@@ -131,7 +131,7 @@ fn Shape::scaled(int) const @ 0x201410 (size 14)
   blk0 @ 0x201410:
     v1 = (rsi & #0xffffffff)
     v2 = load64(rdi)
-    v3 = call *load64((v2 + #0x10))(rdi)
+    v3:rax, rdx, xmm0, xmm1 = call *load64((v2 + #0x10))(rdi)
     ret (((v3 & #0xffffffff) * (v1 & #0xffffffff)) & #0xffffffff)
 -- card
 {"accesses":["a0 +0x0:uint64_t"],"addr":"0x201410","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Shape::scaled(int) const","nameSources":["symtab","unwind"],"section":".text","size":14,"unsupported":0}
@@ -255,7 +255,7 @@ int32_t square_area(int32_t a0) {
     v1 = *_ZL4used;
     v2 = (void *)(0x203610 + v1);
     *_ZL4used = v1 + 0x10;
-    Square__Square(v2, a0);
+    Square__Square(v2, (a0 & 0xffffffff));
     v3 = Square__area(v2); /* via vtable slot 2 */
     Square___Square(); /* via vtable slot 1 */
     return v3;
@@ -271,8 +271,8 @@ fn square_area(int) @ 0x201480 (size 81)
     v1 = load64(#0x204610)
     v2 = (#0x203610 + v1)
     store64((v1 + #0x10), #0x204610)
-    call 0x201420(v2, (rdi & #0xffffffff))
-    v3 = call 0x201430(v2)
+    rax = call 0x201420(v2, (rdi & #0xffffffff))
+    v3:rax = call 0x201430(v2)
     call 0x201560()
     ret (v3 & #0xffffffff)
 -- card
@@ -291,8 +291,8 @@ int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
     v3 = *_ZL4used;
     v4 = (void *)(0x203610 + v3);
     *_ZL4used = v3 + 0x10;
-    Rect__Rect(v4, a0, a1);
-    return Rect__scaled(v4, a2); /* via vtable slot 3 */
+    Rect__Rect(v4, (a0 & 0xffffffff), (a1 & 0xffffffff));
+    return Rect__scaled(v4, (a2 & 0xffffffff)); /* via vtable slot 3 */
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -305,8 +305,8 @@ fn rect_scaled(int, int, int) @ 0x2014e0 (size 77)
     v3 = load64(#0x204610)
     v4 = (#0x203610 + v3)
     store64((v3 + #0x10), #0x204610)
-    call 0x201440(v4, (rdi & #0xffffffff), (rsi & #0xffffffff))
-    v5 = call 0x201470(v4, (rdx & #0xffffffff))
+    rax = call 0x201440(v4, (rdi & #0xffffffff), (rsi & #0xffffffff))
+    v5:rax = call 0x201470(v4, (rdx & #0xffffffff))
     ret v5
 -- card
 {"addr":"0x2014e0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"rect_scaled(int, int, int)","nameSources":["symtab","unwind"],"section":".text","size":77,"unsupported":0}
@@ -328,7 +328,7 @@ int32_t (uint64_t * a0)
 fn any_area(Shape const*) @ 0x201530 (size 6)
   blk0 @ 0x201530:
     v1 = load64(rdi)
-    v2 = call *load64((v1 + #0x10))(rdi)
+    v2:rax, rdx, xmm0, xmm1 = call *load64((v1 + #0x10))(rdi)
     ret v2
 -- card
 {"accesses":["a0 +0x0:uint64_t"],"addr":"0x201530","approxTokens":108,"blocks":1,"hardReasons":[],"name":"any_area(Shape const*)","nameSources":["symtab","unwind"],"section":".text","size":6,"unsupported":0}
@@ -350,7 +350,7 @@ int32_t (uint64_t * a0, int64_t a1)
 fn any_scaled(Shape const*, int) @ 0x201540 (size 9)
   blk0 @ 0x201540:
     v1 = load64((load64(rdi) + #0x18))
-    v1 = call *v1(rdi, rsi)
+    v1:rax, rdx, xmm0, xmm1 = call *v1(rdi, rsi)
     ret v1
 -- card
 {"accesses":["a0 +0x0:uint64_t"],"addr":"0x201540","approxTokens":114,"blocks":1,"hardReasons":[],"name":"any_scaled(Shape const*, int)","nameSources":["symtab","unwind"],"section":".text","size":9,"unsupported":0}

@@ -1417,6 +1417,25 @@ fn narrowed((low, high): (Expr, Expr), from: u8) -> Expr {
     Expr::apply(Operation::Narrow(from), vec![low, high])
 }
 
+fn doubling_mul_high(a: Expr, b: Expr, bits: u8) -> Expr {
+    let wide = bits * 2;
+    let a = widened((a, Expr::constant(0)), false, bits, true);
+    let b = widened((b, Expr::constant(0)), false, bits, true);
+    let limit = Expr::constant(replicated((1u64 << (bits - 1)) - 1, wide));
+    let product = |a, b| {
+        let multiplied = lanewise(LaneOp::Mul, wide, a, b);
+        // Shifting the undoubled product avoids a 64-bit overflow at MIN * MIN.
+        let high = lane_shift(
+            LaneOp::ShiftRightSigned,
+            wide,
+            multiplied,
+            u64::from(bits - 1),
+        );
+        lanewise(LaneOp::MinSigned, wide, high, limit.clone())
+    };
+    narrowed((product(a.0, b.0), product(a.1, b.1)), wide)
+}
+
 /// The even (or odd) lanes of `bits` of two vectors taken as one, the
 /// first's first.
 fn unzip(a: (Expr, Expr), b: (Expr, Expr), bits: u8, full: bool, odd: bool) -> (Expr, Expr) {
@@ -1605,6 +1624,20 @@ fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     let ops = ins.operands;
     let lanes = |op, bits, a: Expr, b: Expr| Expr::apply(Operation::Lanes(op, bits), vec![a, b]);
     match ins.opcode {
+        O::SQDMULH => {
+            let dest = vector(ops[0])?;
+            let a = vector(ops[1])?;
+            let b = vector(ops[2])?;
+            if !matches!(dest.2, 16 | 32)
+                || (a.1, a.2) != (dest.1, dest.2)
+                || (b.1, b.2) != (dest.1, dest.2)
+            {
+                return None;
+            }
+            let (low, high) =
+                by_halves(halves(a), halves(b), |a, b| doubling_mul_high(a, b, dest.2));
+            lifter.write_vector(dest, low, high);
+        }
         O::ADD
         | O::SUB
         | O::MUL
@@ -3244,7 +3277,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             // The kernel reads no floating-point register.
             floats_named: true,
             clobbers: None,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallArm, None),
             via: None,
         }),
         other => {
@@ -3348,5 +3381,270 @@ impl Machine for Lifter<'_> {
 
     fn flags_touched(&self) -> bool {
         self.flags_touched
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use crate::arch::aarch64::V0;
+    use crate::ir::eval::{self, Convention, Outcome, Setup};
+    use crate::ir::{FunctionIr, Stmt};
+    use crate::loader::{Image, Isa};
+
+    const RET: u32 = 0xd65f_03c0;
+
+    fn lifted(words: &[u32]) -> FunctionIr {
+        let code: Vec<_> = words.iter().flat_map(|word| word.to_le_bytes()).collect();
+        let size = code.len() as u64;
+        let image = Image::from_code(Isa::AArch64, 0, code);
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks = crate::lift::lift(&image, 0, size, &HashSet::new()).expect("decoded lift");
+        ir
+    }
+
+    fn setup(registers: &[(u16, u64)]) -> Setup<'_> {
+        Setup {
+            seed: 0,
+            convention: Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers,
+            memory: &[],
+            step_limit: 100,
+        }
+    }
+
+    fn edge(bits: u8, index: usize) -> u64 {
+        let limit = 1i64 << (bits - 1);
+        let values = [
+            -limit,
+            -limit + 1,
+            -limit / 2,
+            -1,
+            0,
+            1,
+            limit / 2,
+            limit - 2,
+            limit - 1,
+        ];
+        values[index % values.len()] as u64 & ((1u64 << bits) - 1)
+    }
+
+    fn fill(
+        registers: &mut [(u16, u64)],
+        number: u16,
+        bits: u8,
+        full: bool,
+        row: usize,
+        second: bool,
+    ) {
+        for half in 0..if full { 2 } else { 1 } {
+            let mut value = 0;
+            for lane in 0..64 / usize::from(bits) {
+                let position = half * (64 / usize::from(bits)) + lane;
+                let index = if second {
+                    row / 9 + position * 3
+                } else {
+                    row % 9 + position
+                };
+                value |= edge(bits, index) << (lane * usize::from(bits));
+            }
+            let slot = V0 + 2 * number + half as u16;
+            registers
+                .iter_mut()
+                .find(|(index, _)| *index == slot)
+                .expect("vector slot")
+                .1 = value;
+        }
+    }
+
+    fn product_reference(a: u64, b: u64, bits: u8) -> u64 {
+        let mask = (1u64 << bits) - 1;
+        let limit = 1i128 << (bits - 1);
+        let signed = |value: u64| {
+            let value = i128::from(value & mask);
+            if value >= limit {
+                value - 2 * limit
+            } else {
+                value
+            }
+        };
+        (0..64 / u32::from(bits)).fold(0, |out, lane| {
+            let shift = lane * u32::from(bits);
+            let product = 2 * signed(a >> shift) * signed(b >> shift);
+            let result = product.div_euclid(1i128 << bits).clamp(-limit, limit - 1);
+            out | (result as u64 & mask) << shift
+        })
+    }
+
+    #[test]
+    fn sqdmulh_vectors_match_signed_saturating_products() {
+        let mut checked = 0;
+        for (bits, full, base) in [
+            (16, false, 0x0e60_b400),
+            (16, true, 0x4e60_b400),
+            (32, false, 0x0ea0_b400),
+            (32, true, 0x4ea0_b400),
+        ] {
+            for (d, n, m) in [
+                (0u16, 1u16, 2u16),
+                (1, 1, 2),
+                (2, 1, 2),
+                (0, 1, 1),
+                (1, 1, 1),
+            ] {
+                let word = base | u32::from(m) << 16 | u32::from(n) << 5 | u32::from(d);
+                let decoded = super::decode(&word.to_le_bytes(), 0);
+                assert!(decoded.1.is_none() && decoded.0.len() == 1, "{word:#010x}");
+                assert_eq!(
+                    decoded.0[0].instruction.opcode,
+                    yaxpeax_arm::armv8::a64::Opcode::SQDMULH
+                );
+                let ir = lifted(&[word, RET]);
+                assert!(
+                    !ir.blocks
+                        .iter()
+                        .flat_map(|block| &block.stmts)
+                        .any(|stmt| matches!(stmt, Stmt::Unsupported { .. })),
+                    "{}",
+                    ir.render()
+                );
+                for row in 0..if n == m { 9 } else { 81 } {
+                    let mut registers: Vec<_> = (0..8u16)
+                        .chain(V0..V0 + 64)
+                        .map(|index| (index, 0x8877_6655_4433_2211 ^ (u64::from(index) << 32)))
+                        .collect();
+                    fill(&mut registers, n, bits, full, row, false);
+                    if n != m {
+                        fill(&mut registers, m, bits, full, row, true);
+                    }
+                    let before = |index| {
+                        registers
+                            .iter()
+                            .find(|(slot, _)| *slot == index)
+                            .expect("initial slot")
+                            .1
+                    };
+                    let low = product_reference(before(V0 + 2 * n), before(V0 + 2 * m), bits);
+                    let high = if full {
+                        product_reference(before(V0 + 2 * n + 1), before(V0 + 2 * m + 1), bits)
+                    } else {
+                        0
+                    };
+                    let (after, memory) =
+                        eval::state_after(&ir, &setup(&registers)).expect("modeled vector result");
+                    assert!(memory.is_empty());
+                    for &(index, initial) in &registers {
+                        let expected = if index == V0 + 2 * d {
+                            low
+                        } else if index == V0 + 2 * d + 1 {
+                            high
+                        } else {
+                            initial
+                        };
+                        assert_eq!(
+                            after.get(&index).copied().unwrap_or(initial),
+                            expected,
+                            "word {word:#010x}, row {row}, register {index}"
+                        );
+                    }
+                    checked += 1;
+                }
+            }
+        }
+        assert_eq!(checked, 1044);
+    }
+
+    #[test]
+    fn sqdmulh_status_accesses_stay_unsupported_after_optimization() {
+        const SQDMULH: u32 = 0x4ea2_b420;
+        const MRS: u32 = 0xd53b_4420;
+        const MSR: u32 = 0xd51b_4420;
+        for words in [
+            vec![0xd280_0aa0, SQDMULH, MRS, RET],
+            vec![MSR, SQDMULH, MRS, RET],
+            vec![SQDMULH, 0x1400_0002, 0xd503_201f, MRS, RET],
+        ] {
+            let mut ir = lifted(&words);
+            for optimized in [false, true] {
+                if optimized {
+                    crate::passes::optimize(&mut ir, false);
+                }
+                let statements: Vec<_> = ir.blocks.iter().flat_map(|block| &block.stmts).collect();
+                assert!(
+                    statements.iter().any(|stmt| matches!(stmt,
+                    Stmt::Unsupported { text, writes: Some(writes) }
+                    if text.starts_with("MRS") && writes.contains(&0))),
+                    "{}",
+                    ir.render()
+                );
+                if words.contains(&MSR) {
+                    assert!(statements.iter().any(|stmt| matches!(stmt,
+                        Stmt::Unsupported { text, .. } if text.starts_with("MSR"))));
+                }
+                assert!(statements.iter().any(|stmt| matches!(stmt,
+                    Stmt::Assign { dest, .. } if dest.index == V0)));
+                assert_eq!(
+                    eval::run(&ir, &setup(&[(0, 0x55)])),
+                    Outcome::Unknown("unsupported instruction")
+                );
+                assert!(crate::ssa::entry_demands(&ir, &[]).is_none());
+                let rendered =
+                    crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
+                assert!(rendered.contains("unsupported: MRS"), "{rendered}");
+            }
+        }
+    }
+
+    #[test]
+    fn sqdmulh_scalar_and_indexed_forms_stay_unsupported() {
+        for word in [0x5e62_b420, 0x5ea2_b420, 0x0f42_c020, 0x4fa2_c820] {
+            let ir = lifted(&[word, RET]);
+            assert!(
+                ir.blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| matches!(stmt,
+                Stmt::Unsupported { text, .. } if text.starts_with("SQDMULH"))),
+                "{}",
+                ir.render()
+            );
+            assert_eq!(
+                eval::run(&ir, &setup(&[])),
+                Outcome::Unknown("unsupported instruction")
+            );
+        }
+    }
+
+    #[test]
+    fn sqdmulh_preserves_a_retained_integer_comparison() {
+        for value in [0, 1, u64::MAX] {
+            // cmp x0, #0; sqdmulh v0.4s, v1.4s, v2.4s; b.eq true; return 0/1.
+            let ir = lifted(&[
+                0xf100_001f,
+                0x4ea2_b420,
+                0x5400_0060,
+                0xd280_0000,
+                RET,
+                0xd280_0020,
+                RET,
+            ]);
+            assert!(
+                !ir.blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| matches!(stmt, Stmt::Unsupported { .. } | Stmt::BrifFlags { .. }))
+            );
+            let Outcome::Return {
+                value: returned, ..
+            } = eval::run(&ir, &setup(&[(0, value)]))
+            else {
+                panic!("modeled comparison");
+            };
+            assert_eq!(returned, u64::from(value == 0));
+        }
     }
 }

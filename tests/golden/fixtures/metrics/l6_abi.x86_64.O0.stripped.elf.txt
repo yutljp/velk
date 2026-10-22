@@ -26,7 +26,7 @@ fn <unnamed> @ 0x2011e0 (size 22)
 -- decompile
 /* velk pseudo-C: sub_201200 @ 0x201200 */
 int32_t sub_201200(int32_t a0) {
-    return sub_2011e0(a0 + 0x2);
+    return sub_2011e0(((a0 + 0x2) & 0xffffffff));
 }
 -- signature
 int32_t (int32_t a0)
@@ -35,7 +35,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201200 (size 28)
   blk0 @ 0x201200:
-    v3 = call 0x2011e0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
+    v3:rax = call 0x2011e0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
     ret v3
 -- card
 {"addr":"0x201200","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
@@ -44,7 +44,7 @@ fn <unnamed> @ 0x201200 (size 28)
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
 int32_t sub_201220(void *a0, int32_t a1) {
-    return ((uint64_t (*)())a0)(a1 + 0x1);
+    return ((uint64_t (*)())a0)(((a1 + 0x1) & 0xffffffff));
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -53,7 +53,7 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x201220 (size 33)
   blk0 @ 0x201220:
-    v3 = call *rdi((((rsi & #0xffffffff) + #0x1) & #0xffffffff))
+    v3:rax, rdx, xmm0, xmm1 = call *rdi((((rsi & #0xffffffff) + #0x1) & #0xffffffff))
     ret v3
 -- card
 {"addr":"0x201220","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}

@@ -3558,6 +3558,137 @@ fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
     }
 }
 
+#[test]
+fn printed_physical_call_arguments_preserve_zero_extended_values() {
+    let mut text = String::from(HEADER);
+    text.push_str(
+        r#"
+#include <string.h>
+static uint64_t width_argument, width_calls;
+static __attribute__((noinline)) uint64_t width_callee(uint64_t value) {
+    width_argument = value;
+    ++width_calls;
+    return value ^ UINT64_C(0x8123456789abcdef);
+}
+"#,
+    );
+    let mut symbols = velk::render::Symbols::default();
+    symbols.functions.insert(0x1000, "width_callee".to_owned());
+    symbols.function_returns.insert(0x1000, CType::U64);
+    for (name, ty) in [
+        ("width_input_i32", CType::I32),
+        ("width_input_i64", CType::I64),
+    ] {
+        let mut ir = synthetic_ir(
+            name,
+            vec![Param {
+                index: 7,
+                name: "input".to_owned(),
+                ty,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::SysV,
+                    args: Some(vec![Expr::bin(
+                        BinOp::And,
+                        Expr::reg(7, 64),
+                        Expr::Const(0xffff_ffff),
+                    )]),
+                    floats_named: true,
+                    outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
+                    clobbers: None,
+                    via: None,
+                },
+                Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: velk::ir::VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::reg(0, 64),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(velk::ir::VARIABLE_BASE, 64),
+                },
+            ],
+        );
+        velk::ssa::take_results_directly(&mut ir);
+        text.push_str(&velk::render::render(&ir, &[], &symbols, &[]));
+    }
+    text.push_str(
+        r#"
+int main(void) {
+    unsigned which;
+    uint64_t raw;
+    while (scanf("%u %" SCNx64, &which, &raw) == 2) {
+        uint32_t low = (uint32_t)raw;
+        int32_t input32;
+        int64_t input64;
+        memcpy(&input32, &low, sizeof input32);
+        memcpy(&input64, &raw, sizeof input64);
+        width_argument = width_calls = 0;
+        uint64_t result = which == 0 ? width_input_i32(input32) : width_input_i64(input64);
+        printf("%" PRIx64 " %" PRIx64 " %" PRIx64 "\n", result, width_argument, width_calls);
+    }
+    return 0;
+}
+"#,
+    );
+    let inputs = [
+        0,
+        1,
+        0x7fff_ffff,
+        0x8000_0000,
+        0xffff_ffff,
+        0x1122_3344_0000_0000,
+        0x8123_4567_89ab_cdef,
+        u64::MAX,
+    ];
+    let mut rows = Vec::new();
+    let mut requests = String::new();
+    let mut changed = [false; 2];
+    for (which, differs) in changed.iter_mut().enumerate() {
+        for raw in inputs {
+            let entry = if which == 0 {
+                (raw as u32 as i32 as i64) as u64
+            } else {
+                raw
+            };
+            let projected = u64::from(raw as u32);
+            *differs |= entry != projected;
+            rows.push((which, raw, projected ^ 0x8123_4567_89ab_cdef, projected));
+            writeln!(requests, "{which} {raw:x}").unwrap();
+        }
+    }
+    assert_eq!(changed, [true, true]);
+    assert_eq!(rows.len(), 16);
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("call-argument-width");
+    for level in LEVELS {
+        let program = build(&source, &scratch, level, &[]);
+        let output = run(&program, &requests);
+        let lines: Vec<_> = output.lines().collect();
+        assert_eq!(lines.len(), rows.len(), "{level}: {output}");
+        for ((which, raw, result, argument), line) in rows.iter().zip(lines) {
+            let actual: Vec<_> = line
+                .split_whitespace()
+                .map(|word| u64::from_str_radix(word, 16).expect("a hexadecimal result"))
+                .collect();
+            assert_eq!(
+                actual,
+                vec![*result, *argument, 1],
+                "{level} input{which}({raw:#x}): {line}"
+            );
+        }
+    }
+    std::fs::remove_dir_all(&scratch).ok();
+}
+
 fn check_candidates(name: &str, candidates: Vec<Candidate>, mode: Mode, compiler_args: &[&str]) {
     let count = candidates.len();
     let runs = candidates
@@ -4275,10 +4406,8 @@ fn project_result(
             Stmt::Assign { dest, .. } => {
                 used.insert(dest.index);
             }
-            Stmt::Call {
-                result: Some(dest), ..
-            } => {
-                used.insert(dest.index);
+            Stmt::Call { outputs, .. } => {
+                used.extend(outputs.iter().map(|output| output.dest.index));
             }
             Stmt::Unsupported { .. } => return Err("cannot project an unsupported statement"),
             _ => {}
@@ -6856,4 +6985,190 @@ fn printed_stripped_x86_stack_fixtures_preserve_held_alias_inputs() {
         184
     );
     check_candidates("stripped-x86-stack-fixtures", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_sparse_equality_dispatch_preserves_cases_and_effects() {
+    let mut candidates = Vec::new();
+    for (name, width, mixed, effect) in [
+        ("sparse_eq32", 32, false, false),
+        ("sparse_ne64", 64, true, false),
+        ("sparse_effect64", 64, false, true),
+        ("sparse_high64", 64, true, false),
+    ] {
+        let high = name == "sparse_high64";
+        let values = if high {
+            [1, 1 << 63, u64::MAX]
+        } else {
+            [1, 1000, 10000]
+        };
+        let rows = if high {
+            [
+                0,
+                1,
+                2,
+                (1 << 63) - 1,
+                1 << 63,
+                (1 << 63) + 1,
+                u64::MAX - 1,
+                u64::MAX,
+                0x1_0000_0001,
+                1000,
+                10000,
+                0x1234,
+            ]
+        } else {
+            [
+                0,
+                1,
+                2,
+                999,
+                1000,
+                1001,
+                9999,
+                10000,
+                10001,
+                u64::MAX,
+                0x1234_5678_0000_03e8,
+                0x8000_0000,
+            ]
+        };
+        let body = |position: usize| Block {
+            start: 0x100 + position as u64 * 0x20,
+            stmts: vec![
+                sc_store(SC_COUNTER, Expr::Const(position as u64 + 11)),
+                Stmt::Ret {
+                    value: Expr::Const(position as u64 + 11),
+                },
+            ],
+        };
+        let mut blocks = Vec::new();
+        let mut later = Vec::new();
+        for (position, value) in values.iter().enumerate() {
+            let inverse = mixed && position == 1;
+            let next = if position == 2 {
+                0x80
+            } else {
+                (position as u64 + 1) * 0x20
+            };
+            let mut stmts = Vec::new();
+            if position == 0 && effect {
+                stmts.push(sc_store(
+                    SC_RIGHT,
+                    Expr::bin(BinOp::Add, sc_load(SC_RIGHT), Expr::Const(1)),
+                ));
+            }
+            stmts.push(Stmt::Brif {
+                cond: if inverse { Cond::Ne } else { Cond::Eq },
+                lhs: Expr::reg(7, width),
+                rhs: Expr::Const(*value),
+                target: if inverse { next } else { body(position).start },
+            });
+            blocks.push(Block {
+                start: position as u64 * 0x20,
+                stmts,
+            });
+            if inverse {
+                blocks.push(body(position));
+            } else {
+                later.push(body(position));
+            }
+        }
+        blocks.push(Block {
+            start: 0x80,
+            stmts: vec![
+                sc_store(SC_COUNTER, Expr::Const(99)),
+                Stmt::Ret {
+                    value: Expr::Const(99),
+                },
+            ],
+        });
+        blocks.extend(later);
+        let mut ir = sc_ir(
+            name,
+            vec![if width == 32 { CType::U32 } else { CType::U64 }],
+            blocks,
+        );
+        ir.ret_type = CType::U64;
+        let inputs = rows.into_iter().map(|value| vec![value]).collect();
+        let candidate = printed_candidate(ir, inputs);
+        for value in values {
+            assert!(
+                candidate.code.contains(&format!("case {}:", value as i64)),
+                "{}",
+                candidate.code
+            );
+        }
+        let fixture = Fixture {
+            name: "sparse dispatch oracle".into(),
+            convention: eval::Convention {
+                arguments: Convention::SysV.arguments(),
+                clobbered: &[],
+            },
+            entry_registers: Vec::new(),
+            initial_memory: Vec::new(),
+            functions: 1,
+            excluded: BTreeMap::new(),
+            candidates: Vec::new(),
+        };
+        for (trial, input) in candidate.inputs.iter().enumerate() {
+            let discriminant = if width == 32 {
+                input[0] & 0xffff_ffff
+            } else {
+                input[0]
+            };
+            let wanted = if high {
+                match discriminant {
+                    1 => 11,
+                    0x8000_0000_0000_0000 => 12,
+                    u64::MAX => 13,
+                    _ => 99,
+                }
+            } else {
+                match discriminant {
+                    1 => 11,
+                    1000 => 12,
+                    10000 => 13,
+                    _ => 99,
+                }
+            };
+            let mut expected: BTreeMap<u64, u8> = (REGION..REGION + REGION_SIZE)
+                .map(|address| (address, eval::hash(trial as u64, address) as u8))
+                .collect();
+            let mut updates = vec![(SC_COUNTER, wanted)];
+            if effect {
+                let original = u64::from_le_bytes(std::array::from_fn(|offset| {
+                    expected[&(SC_RIGHT + offset as u64)]
+                }));
+                updates.push((SC_RIGHT, original.wrapping_add(1)));
+            }
+            for (address, value) in updates {
+                for (offset, byte) in value.to_le_bytes().into_iter().enumerate() {
+                    expected.insert(address + offset as u64, byte);
+                }
+            }
+            let outcome = interpret(&fixture, &candidate, trial as u64, input, Mode::Memory)
+                .unwrap_or_else(|reason| panic!("{} trial {trial}: {reason}", candidate.label));
+            assert_eq!(
+                outcome,
+                Outcome::Return {
+                    value: wanted,
+                    calls: Vec::new(),
+                    memory: expected
+                },
+                "{} trial {trial}",
+                candidate.label
+            );
+        }
+        candidates.push(candidate);
+    }
+    assert_eq!(candidates.len(), 4);
+    assert_eq!(
+        candidates
+            .iter()
+            .map(|candidate| candidate.inputs.len())
+            .sum::<usize>(),
+        48
+    );
+    check_candidates("sparse-equality-dispatch", candidates, Mode::Memory, &[]);
 }

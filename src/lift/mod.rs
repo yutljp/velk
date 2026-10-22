@@ -475,7 +475,7 @@ pub(crate) fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>)
             args: Some(Vec::new()),
             floats_named: false,
             clobbers: None,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(Convention::GoWriteBarrier, None),
             via: None,
         };
     }
@@ -519,14 +519,15 @@ pub(crate) fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>)
                 .map(|register| Expr::reg(*register, 64)),
         );
     }
+    let clobbers = summary.and_then(|summary| summary.clobbers);
     Stmt::Call {
         target,
         through: None,
         convention,
         args,
         floats_named: floats.is_some(),
-        result: None,
-        clobbers: summary.and_then(|summary| summary.clobbers),
+        outputs: crate::ir::fallback_call_outputs(convention, clobbers),
+        clobbers,
         via: None,
     }
 }
@@ -883,7 +884,7 @@ pub(crate) fn call_through(image: &Image, through: Expr) -> Stmt {
         args: arguments(convention, image.isa, arity, 0),
         floats_named: false,
         clobbers: None,
-        result: None,
+        outputs: crate::ir::fallback_call_outputs(convention, None),
         via: None,
     }
 }

@@ -44,11 +44,11 @@ use crate::analysis::refs::Reference;
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
 use crate::passes::frame_slots::block_frames;
 use crate::render::expr::Ctx;
+use crate::render::expr::render_at;
 use crate::render::expr::render_expr;
 use crate::render::expr::render_value;
 use crate::render::expr::slot_access;
 use crate::render::expr::type_of;
-use crate::render::expr::{render_at, render_value_at};
 use crate::render::locals::Locals;
 use crate::render::locals::stack_locals;
 use crate::render::naming::member_access;
@@ -98,6 +98,33 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         .collect();
     let mut symbols = Symbols {
         functions,
+        function_returns: image
+            .functions
+            .iter()
+            .filter_map(|(address, function)| {
+                let name = function.name.as_deref()?;
+                let prototype = if function.sources.contains(&crate::loader::NameSource::Plt) {
+                    crate::analysis::prototypes::of(
+                        name,
+                        image.format == crate::loader::Format::MachO,
+                    )
+                } else {
+                    crate::analysis::prototypes::runtime(name)
+                }?;
+                Some((*address, prototype.ret.clone()))
+            })
+            .collect(),
+        import_returns: image
+            .imports
+            .iter()
+            .filter_map(|(address, name)| {
+                let prototype = crate::analysis::prototypes::of(
+                    name,
+                    image.format == crate::loader::Format::MachO,
+                )?;
+                Some((*address, prototype.ret.clone()))
+            })
+            .collect(),
         import_slots: image
             .imports
             .iter()
@@ -239,6 +266,14 @@ pub fn render_with_dependencies(
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
     let mut folded = ir.clone();
+    for block in &mut folded.blocks {
+        block.stmts.retain(|stmt| {
+            !matches!(stmt,
+                Stmt::Assign { dest, value: Expr::Reg { index, width: 64 } }
+                    if dest.width == 64 && dest.index == *index
+            )
+        });
+    }
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
     // A saved parameter returned reads as the parameter now.
@@ -382,19 +417,6 @@ fn render_with(
     if let Some(incoming) = incoming {
         names.insert(incoming.register, &incoming.name);
     }
-    // Any other general register the body uses is a variable of its own;
-    // Go keeps the running goroutine in r14.
-    let machine: Vec<(u16, String)> = general_registers(ir)
-        .into_iter()
-        .filter(|index| !names.contains_key(index))
-        .map(|index| match index {
-            14 if ir.convention == crate::ir::Convention::GoAmd64 => (index, "g".to_owned()),
-            _ => (index, crate::ir::reg_name(ir.isa, index, 64)),
-        })
-        .collect();
-    for (index, name) in &machine {
-        names.insert(*index, name);
-    }
     let wide_params: std::collections::HashSet<u16> = ir
         .params
         .iter()
@@ -414,6 +436,65 @@ fn render_with(
         for pointer in &logical.pointers {
             variable_types.remove(&pointer.register);
         }
+    }
+    let mut machine_reserved: std::collections::HashSet<String> = names
+        .values()
+        .map(|name| (*name).to_owned())
+        .chain(locals.decls.iter().map(|local| local.name.clone()))
+        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+        .chain(
+            variable_types
+                .keys()
+                .map(|index| crate::ir::reg_name(ir.isa, *index, 64)),
+        )
+        .chain(symbols.reserved_names.iter().cloned())
+        .chain(symbols.functions.values().map(|name| sanitize(name)))
+        .chain(symbols.import_slots.values().map(|name| sanitize(name)))
+        .chain(symbols.data.values().map(|name| sanitize(name)))
+        .collect();
+    if let Some(logical) = logical {
+        machine_reserved.extend(logical.reserved_names());
+    }
+    machine_reserved.insert(sanitize(
+        &symbols
+            .functions
+            .get(&ir.addr)
+            .cloned()
+            .or_else(|| ir.name.clone())
+            .unwrap_or_else(|| format!("sub_{:x}", ir.addr)),
+    ));
+    for ty in ir
+        .params
+        .iter()
+        .map(|param| &param.ty)
+        .chain(ir.stack_params.iter().map(|param| &param.ty))
+        .chain(variable_types.values())
+        .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+        .chain(std::iter::once(&ir.ret_type))
+    {
+        machine_reserved.extend(
+            ty.to_string()
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .filter(|name| !name.is_empty())
+                .map(str::to_owned),
+        );
+    }
+    // Any other general register the body uses is a variable of its own;
+    // Go keeps the running goroutine in r14.
+    let machine: Vec<(u16, String)> = general_registers(ir)
+        .into_iter()
+        .filter(|index| !names.contains_key(index))
+        .map(|index| {
+            let base = if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
+                "g".to_owned()
+            } else {
+                crate::ir::reg_name(ir.isa, index, 64)
+            };
+            (index, vacant_name(&base, &mut machine_reserved))
+        })
+        .collect();
+    for (index, name) in &machine {
+        names.insert(*index, name);
     }
     let mut declared_registers =
         declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
@@ -607,6 +688,17 @@ fn render_with(
     for (_, index, _, snapshot) in &segment_bases {
         names.insert(*index, snapshot);
     }
+    let mut call_reserved: std::collections::HashSet<String> = reserved
+        .iter()
+        .cloned()
+        .chain(symbols.reserved_names.iter().cloned())
+        .chain(symbols.data.values().map(|name| sanitize(name)))
+        .collect();
+    let call_outputs = calls::Outputs::new(ir, &machine, &mut call_reserved);
+    if !call_outputs.temporary.is_empty() {
+        reserved.push(call_outputs.temporary.clone());
+    }
+    reserved.extend(call_outputs.declarations.iter().cloned());
     let mut value_bits = int::value_bits(ir);
     if let Some(logical) = logical {
         for capture in &logical.captures {
@@ -619,6 +711,7 @@ fn render_with(
     }
     let mut ctx = Ctx {
         abi: logical,
+        call_outputs,
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return,
@@ -844,6 +937,13 @@ fn render_with(
             declared += 1;
         }
     }
+    for name in &ctx.call_outputs.declarations {
+        if variables::mentions(&body, name) {
+            indent(1, &mut out);
+            out.push_str(&format!("uint64_t {name};\n"));
+            declared += 1;
+        }
+    }
     for (index, ty) in &variable_types {
         let name = ctx.register(*index, 64);
         // What a landing pad receives is no variable of the function.
@@ -1043,15 +1143,10 @@ fn general_registers(ir: &FunctionIr) -> std::collections::BTreeSet<u16> {
         for value in stmt.operands() {
             crate::ir::visit::expr_reads(value, &mut used);
         }
-        match stmt {
-            Stmt::Assign { dest, .. }
-            | Stmt::Call {
-                result: Some(dest), ..
-            } => {
-                used.insert(dest.index);
-            }
-            _ => {}
+        if let Stmt::Assign { dest, .. } = stmt {
+            used.insert(dest.index);
         }
+        used.extend(stmt.call_outputs().iter().map(|output| output.dest.index));
     }
     used.into_iter()
         .filter(|index| general.contains(index) && *index != stack_pointer(ir.isa))
@@ -1639,103 +1734,47 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             index += 2;
             continue;
         }
-        // A further result a call before returned in another register, past
-        // the copies of its other results.
-        let further = |node: &Node| -> Option<u16> {
-            match node {
-                Node::Stmt(Stmt::Assign {
-                    value: Expr::Reg { index, .. },
-                    ..
-                }) => Some(*index),
-                _ => None,
-            }
-        };
-        let call_before = nodes[..index]
-            .iter()
-            .rev()
-            .find(|node| further(node).is_none())
-            .and_then(|node| match node {
-                Node::Stmt(Stmt::Call { convention, .. }) => Some(*convention),
-                _ => None,
-            });
-        if let (Some(convention), Node::Stmt(copy @ Stmt::Assign { .. })) =
-            (call_before, &nodes[index])
-            && let Some(register) = further(&nodes[index])
-            && convention.results().first() != Some(&register)
-            && convention.results().contains(&register)
-            && nodes[..index]
-                .iter()
-                .rev()
-                .take_while(|node| further(node).is_some())
-                .all(|node| {
-                    further(node).is_some_and(|other| {
-                        convention.results().first() != Some(&other)
-                            && convention.results().contains(&other)
-                    })
-                })
-        {
-            indent(depth, out);
-            // The register no longer holds the parameter it is named for.
-            match copy {
-                Stmt::Assign { dest, .. } if ctx.names.contains_key(&register) => {
-                    out.push_str(&format!(
-                        "{} = {};",
-                        ctx.register(dest.index, dest.width),
-                        crate::ir::reg_name(ctx.isa, register, 64)
-                    ));
-                }
-                _ => out.push_str(&render_stmt(copy, ctx)),
-            }
-            out.push_str(" /* also returned by the call */\n");
-            index += 1;
-            continue;
-        }
         render_node(&nodes[index], depth, out, ctx);
         index += 1;
-    }
-}
-
-/// Whether the expression reads only the return register, whole or masked.
-fn reads_return(value: &Expr) -> bool {
-    match value {
-        Expr::Reg { index, .. } => *index == crate::arch::RETURN,
-        Expr::Bin {
-            op: BinOp::And,
-            lhs,
-            rhs,
-        } => matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) && reads_return(lhs),
-        _ => false,
     }
 }
 
 /// `call` and the statement after it as one, when that statement only takes
 /// the call's result.
 fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
-    let Stmt::Call { result, .. } = call else {
-        return None;
-    };
-    // The call as an expression, without the variable that may take its value.
-    let mut bare = call.clone();
-    if let Stmt::Call { result, .. } = &mut bare {
-        *result = None;
+    if let Stmt::Ret { value } = next {
+        return calls::returned(call, value, ctx).map(|text| text + &via_comment(call, ctx));
     }
-    let call_text = render_stmt(&bare, ctx);
-    let call_text = call_text.strip_suffix(';')?;
+    let result = calls::scalar_fusion(call, ctx)?;
+    if result.width != 64
+        || ctx.floats.contains_key(&result.index)
+        || ctx
+            .declared
+            .get(&result.index)
+            .is_some_and(|declared| declared.bits < 64)
+    {
+        return None;
+    }
+    let call_text = calls::captured(call, ctx)?;
     let comment = via_comment(call, ctx);
-    let takes = |value: &Expr| match result {
-        Some(dest) => matches!(value, Expr::Reg { index, .. } if *index == dest.index),
-        None => reads_return(value),
-    };
+    let takes = |value: &Expr| *value == Expr::reg(result.index, result.width);
     match next {
-        Stmt::Ret { value } if takes(value) && !ctx.void_return => {
-            Some(format!("return {call_text};{comment}"))
-        }
-        Stmt::Store { value, .. } if result.is_none() && reads_return(value) => {
+        Stmt::Store {
+            value, width: 8, ..
+        } if result.index < crate::ir::VARIABLE_BASE
+            && ctx.read_once.contains(&result.index)
+            && takes(value) =>
+        {
             let stored = render_stmt(next, ctx);
             let (target, _) = stored.split_once(" = ")?;
             Some(format!("{target} = {call_text};{comment}"))
         }
-        Stmt::Assign { value, .. } if result.is_none() && reads_return(value) => {
+        Stmt::Assign { value, dest }
+            if result.index < crate::ir::VARIABLE_BASE
+                && ctx.read_once.contains(&result.index)
+                && dest.width == 64
+                && takes(value) =>
+        {
             let assigned = render_stmt(next, ctx);
             let (target, _) = assigned.split_once(" = ")?;
             Some(format!("{target} = {call_text};{comment}"))
@@ -1975,18 +2014,9 @@ pub(crate) fn sanitize(name: &str) -> String {
         .collect()
 }
 
-/// A call's argument. One the code zero-extends from 32 bits was set as a
-/// 32-bit register, which the callee reads as a 32-bit parameter.
+/// A call's argument as the complete value of its physical operand.
 fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
-    let bits = match value {
-        Expr::Bin {
-            op: BinOp::And,
-            rhs,
-            ..
-        } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => 32,
-        _ => 64,
-    };
-    render_value_at(value, ctx, bits, false)
+    render_value(value, ctx)
 }
 
 /// A returned value, of which the caller sees what the return type holds.
@@ -2308,62 +2338,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             text.push('}');
             text
         }
-        Stmt::Call {
-            target,
-            through,
-            args,
-            result,
-            convention,
-            ..
-        } => {
-            // A system call's number reads as the name the system gives it.
-            let number = match args.as_ref().and_then(|values| values.first()) {
-                Some(Expr::Const(number)) => system_call_name(*convention, *number),
-                _ => None,
-            };
-            let mut args: Vec<String> = args
-                .iter()
-                .flatten()
-                .map(|arg| argument(arg, ctx))
-                .collect();
-            if let (Some(name), Some(first)) = (number, args.first_mut()) {
-                *first = format!("SYS_{name}");
-            }
-            let callee = match (through, target) {
-                _ if matches!(
-                    convention,
-                    crate::ir::Convention::SyscallX86 | crate::ir::Convention::SyscallArm
-                ) =>
-                {
-                    "syscall".to_owned()
-                }
-                // A named slot's function is called by its name.
-                (Some(Expr::Load { addr, width: 8, .. }), _)
-                    if let Expr::Const(slot) = addr.as_ref()
-                        && let Some(name) = ctx.symbols.import_slots.get(slot) =>
-                {
-                    sanitize(name)
-                }
-                // C calls through a value only of a function's pointer type.
-                (Some(through), _) => {
-                    let text = render_value(through, ctx);
-                    if text.contains(char::is_whitespace) {
-                        format!("((uint64_t (*)())({text}))")
-                    } else {
-                        format!("((uint64_t (*)()){text})")
-                    }
-                }
-                (None, Some(target)) => match ctx.symbols.functions.get(target) {
-                    Some(name) => sanitize(name),
-                    None => format!("sub_{target:x}"),
-                },
-                (None, None) => "sub_<dynamic>".to_owned(),
-            };
-            let assigned = result.map_or(String::new(), |dest| {
-                format!("{} = ", ctx.register(dest.index, 64))
-            });
-            format!("{assigned}{callee}({});", args.join(", "))
-        }
+        Stmt::Call { .. } => calls::render(stmt, ctx),
         Stmt::Ret { value } if ctx.abi.is_some_and(|abi| abi.result.is_some()) => {
             aggregate_return(value, ctx).expect("validated aggregate result pieces")
         }
@@ -3466,7 +3441,7 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
         };
@@ -3577,12 +3552,10 @@ mod tests {
                     args: Some(vec![Expr::reg(0, 64), Expr::reg(3, 64)]),
                     floats_named: false,
                     clobbers: None,
-                    result: Some(RegRef {
-                        index: first,
-                        width: 64,
-                    }),
+                    outputs: crate::ir::fallback_call_outputs(convention, None),
                     via: None,
                 },
+                assign(first, Expr::reg(0, 64)),
                 assign(second, Expr::reg(3, 64)),
                 Stmt::Ret {
                     value: Expr::Apply {
@@ -3602,11 +3575,14 @@ mod tests {
                 ty: CType::I64,
             })
             .collect();
+        crate::ssa::split_variables(&mut ir, convention.results());
+        crate::ssa::take_results_directly(&mut ir);
         let text = rendered(&ir);
         assert!(
-            text.contains("v2 = rbx; /* also returned by the call */"),
+            text.contains("= rbx; /* also returned by the call */"),
             "{text}"
         );
+        assert!(text.contains("v2 = call_values[1];"), "{text}");
         assert!(text.contains("return v1; /* also returns v2 */"), "{text}");
     }
 
@@ -4087,7 +4063,7 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
         };
@@ -4147,7 +4123,7 @@ mod tests {
         );
         for text in [
             "    velk_x86_fs_base();\n",
-            "    velk_x86_gs_base();\n",
+            "fs_base = velk_x86_gs_base();",
             "    uint64_t fs_base_3 = velk_x86_fs_base_3();\n",
             "    uint64_t gs_base = velk_x86_gs_base_2();\n",
             "    uint64_t *const fs_base_2 = (uint64_t *)(uintptr_t)0x1000;\n",
@@ -4158,6 +4134,31 @@ mod tests {
                 rendered.code.contains(text),
                 "missing {text:?}: {}",
                 rendered.code
+            );
+        }
+        assert_eq!(
+            rendered.code.matches("velk_x86_fs_base();").count(),
+            1,
+            "{}",
+            rendered.code
+        );
+        assert_eq!(
+            rendered.code.matches("= velk_x86_gs_base();").count(),
+            1,
+            "{}",
+            rendered.code
+        );
+        assert!(!rendered.code.contains("call_values"), "{}", rendered.code);
+        assert!(
+            !rendered.code.contains("fs_base = velk_x86_fs_base();"),
+            "{}",
+            rendered.code
+        );
+        for call in &ir.blocks[0].stmts[..2] {
+            assert!(
+                call.call_outputs()
+                    .iter()
+                    .any(|output| output.register == crate::arch::x86::XMM0)
             );
         }
     }
@@ -4285,7 +4286,7 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
         };
@@ -4341,7 +4342,7 @@ mod tests {
                     convention: crate::ir::Convention::SysV,
                     args: Some(Vec::new()),
                     floats_named: false,
-                    result: None,
+                    outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
                     clobbers: None,
                     via: None,
                 },
@@ -4365,5 +4366,113 @@ mod tests {
         assert!(text.contains("    sub_40();\n"), "{text}");
         assert!(text.contains("uint32_t *const sub_40_1000_u32 ="), "{text}");
         assert!(text.contains("uint32_t *const sub_80_1004_u32 ="), "{text}");
+    }
+
+    #[test]
+    fn physical_call_arguments_keep_zero_extension_without_callee_width_evidence() {
+        let masked = |mask| Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(mask));
+        let cases = [
+            (
+                CType::I32,
+                masked(0xffff_ffff),
+                "sub_1000((a0 & 0xffffffff));",
+                0xffff_ffff,
+            ),
+            (
+                CType::I64,
+                masked(0xffff_ffff),
+                "sub_1000((a0 & 0xffffffff));",
+                0xffff_ffff,
+            ),
+            (
+                CType::I32,
+                Expr::reg(7, 32),
+                "sub_1000((uint32_t)a0);",
+                0xffff_ffff,
+            ),
+            (
+                CType::I64,
+                Expr::reg(7, 32),
+                "sub_1000((uint32_t)a0);",
+                0xffff_ffff,
+            ),
+            (
+                CType::U32,
+                masked(0xffff_ffff),
+                "sub_1000(a0);",
+                0xffff_ffff,
+            ),
+            (CType::U32, masked(0xff), "sub_1000(a0 & 0xff);", 0xff),
+            (CType::I32, Expr::reg(7, 64), "sub_1000(a0);", u64::MAX),
+        ];
+        for (ty, argument, expected, mask) in cases {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    Stmt::Call {
+                        target: Some(0x1000),
+                        through: None,
+                        convention: crate::ir::Convention::SysV,
+                        args: Some(vec![argument]),
+                        floats_named: true,
+                        outputs: crate::ir::fallback_call_outputs(
+                            crate::ir::Convention::SysV,
+                            None,
+                        ),
+                        clobbers: None,
+                        via: None,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            );
+            ir.params = vec![Param {
+                index: 7,
+                name: "a0".to_owned(),
+                ty: ty.clone(),
+            }];
+            ir.ret_type = CType::U64;
+            let text = rendered(&ir);
+            assert!(text.contains(expected), "{expected}: {text}");
+            for raw in [
+                0,
+                0x7fff_ffff,
+                0x8000_0000,
+                0xffff_ffff,
+                0x8123_4567_89ab_cdef,
+                u64::MAX,
+            ] {
+                let input = match ty.integer().unwrap() {
+                    (32, true) => (raw as u32 as i32 as i64) as u64,
+                    (32, false) => u64::from(raw as u32),
+                    _ => raw,
+                };
+                let outcome = crate::ir::eval::run(
+                    &ir,
+                    &crate::ir::eval::Setup {
+                        seed: 1,
+                        convention: crate::ir::eval::Convention {
+                            arguments: &[],
+                            clobbered: &[],
+                        },
+                        registers: &[(7, input)],
+                        memory: &[],
+                        step_limit: 100,
+                    },
+                );
+                assert_eq!(
+                    outcome,
+                    crate::ir::eval::Outcome::Return {
+                        value: 0,
+                        calls: vec![crate::ir::eval::Call {
+                            target: Some(0x1000),
+                            arguments: vec![input & mask]
+                        }],
+                        memory: Default::default(),
+                    }
+                );
+            }
+        }
     }
 }

@@ -322,7 +322,7 @@ mod tests {
             convention: Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: true,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
             clobbers: None,
             via: None,
         }

@@ -134,6 +134,14 @@ pub(crate) fn comparison_preserved(cond: Cond, before: u32, lhs: &Expr, rhs: &Ex
 /// Replaces every read of `dest` in one statement with the value; clears `ok`
 /// when a read's width does not fit the value's.
 fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bool) {
+    if stmt
+        .preserved_output_sources()
+        .iter()
+        .any(|(_, source)| *source == dest)
+    {
+        *ok = false;
+        return;
+    }
     let width = expr_width(value).unwrap_or(64);
     match stmt {
         Stmt::Assign { value: target, .. } => substitute_reg_inner(target, dest, width, value, ok),
@@ -399,7 +407,11 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
                 .sum(),
         }
     }
-    let mut total = 0;
+    let mut total = stmt
+        .preserved_output_sources()
+        .iter()
+        .filter(|(_, source)| *source == reg)
+        .count();
     match stmt {
         Stmt::Assign { value, .. } => total += count(value, reg),
         Stmt::Store { addr, value, .. } => {
@@ -436,6 +448,13 @@ pub(crate) fn expr_size(expr: &Expr) -> usize {
 }
 
 fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bool {
+    if stmt
+        .preserved_output_sources()
+        .iter()
+        .any(|(_, source)| *source == dest)
+    {
+        return false;
+    }
     let mut folded = stmt.clone();
     let mut ok = true;
     match &mut folded {
@@ -1042,11 +1061,15 @@ mod tests {
                     args: Some(vec![Expr::reg(3, 64)]),
                     floats_named: false,
                     clobbers: None,
-                    result: Some(RegRef {
+                    outputs: crate::ir::fallback_call_outputs(Convention::GoAmd64, None),
+                    via: None,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
                         index: first,
                         width: 64,
-                    }),
-                    via: None,
+                    },
+                    value: Expr::reg(0, 64),
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -1069,7 +1092,7 @@ mod tests {
         copy_propagate(&mut ir);
 
         assert!(
-            matches!(ir.blocks[0].stmts.as_slice(), [_, Stmt::Assign { .. }, Stmt::Ret { value }] if *value == Expr::reg(second, 64)),
+            matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Call { .. }, Stmt::Assign { dest, value: copied }, Stmt::Assign { .. }, Stmt::Ret { value }] if dest.index == first && *copied == Expr::reg(0, 64) && *value == Expr::reg(second, 64)),
             "{}",
             ir.render()
         );
@@ -1199,5 +1222,62 @@ mod tests {
             "the masked copy should inline: {:?}",
             ir.blocks[0].stmts
         );
+    }
+    #[test]
+    fn copies_keep_a_precise_calls_preserved_output_source() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 1,
+                        width: 64,
+                    },
+                    value: Expr::Const(17),
+                },
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::Aapcs64,
+                    args: Some(Vec::new()),
+                    floats_named: true,
+                    clobbers: Some(Default::default()),
+                    outputs: vec![crate::ir::CallOutput {
+                        register: 1,
+                        dest: RegRef {
+                            index: VARIABLE_BASE,
+                            width: 64,
+                        },
+                    }],
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(VARIABLE_BASE, 64),
+                },
+            ],
+        );
+        let before = ir.clone();
+        for pass in [copy_propagate, inline_local_copies] {
+            ir = before.clone();
+            pass(&mut ir);
+            assert!(
+                matches!(ir.blocks[0].stmts.first(), Some(Stmt::Assign { dest, value: Expr::Const(17) }) if dest.index == 1),
+                "{}",
+                ir.render()
+            );
+            let setup = eval::Setup {
+                seed: 5,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: 32,
+            };
+            let expected = eval::run(&before, &setup);
+            assert!(matches!(&expected, Outcome::Return { value: 17, .. }));
+            assert_eq!(eval::run(&ir, &setup), expected);
+        }
     }
 }

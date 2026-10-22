@@ -22,6 +22,7 @@ pub(crate) struct Declared {
 
 pub(crate) struct Ctx<'a> {
     pub(super) abi: Option<&'a super::abi::Plan>,
+    pub(super) call_outputs: super::calls::Outputs,
     pub(super) isa: Isa,
     /// The function returns nothing: a `return` carries no value.
     pub(super) void_return: bool,
@@ -90,7 +91,12 @@ impl Ctx<'_> {
     pub(super) fn register(&self, index: u16, width: u8) -> String {
         match self.names.get(&index) {
             Some(name) => (*name).to_owned(),
-            None => reg_name(self.isa, index, width),
+            None => self
+                .call_outputs
+                .sources
+                .get(&index)
+                .cloned()
+                .unwrap_or_else(|| reg_name(self.isa, index, width)),
         }
     }
 }
@@ -1524,7 +1530,7 @@ fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>) -> Printe
     }
 }
 
-fn float_bits(value: String, precision: Precision) -> Printed {
+pub(super) fn float_bits(value: String, precision: Precision) -> Printed {
     let (float, integer) = match precision {
         Precision::Single => ("float", "uint32_t"),
         Precision::Double => ("double", "uint64_t"),

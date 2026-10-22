@@ -219,21 +219,23 @@ fn fallthrough @ 0x201340 (size 23)
 /* velk pseudo-C: sparse @ 0x201360 */
 int sparse(int x) {
     if (x > 0x3e7) {
-        if (x == 0x3e8) {
+        switch (x) {
+        case 1000:
             return 0x1e;
-        }
-        if (x != 0x2710) {
+        case 10000:
+            return 0x28;
+        default:
             return 0x0;
         }
-        return 0x28;
-    }
-    switch (x) {
-    case 1:
-        return 0xa;
-    case 100:
-        return 0x14;
-    default:
-        return 0x0;
+    } else {
+        switch (x) {
+        case 1:
+            return 0xa;
+        case 100:
+            return 0x14;
+        default:
+            return 0x0;
+        }
     }
 }
 -- signature

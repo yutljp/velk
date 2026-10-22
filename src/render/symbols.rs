@@ -4,6 +4,8 @@ use std::collections::{HashMap, HashSet};
 pub struct Symbols {
     pub functions: HashMap<u64, String>,
     pub import_slots: HashMap<u64, String>,
+    pub function_returns: HashMap<u64, crate::ir::CType>,
+    pub import_returns: HashMap<u64, crate::ir::CType>,
     pub data: HashMap<u64, String>,
     /// Additional source names to keep generated identifiers distinct from.
     /// Only names supplied by the caller or retained by the loader are known.

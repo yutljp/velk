@@ -320,6 +320,9 @@ pub(crate) fn prune_unreachable(nodes: &mut Vec<Node>) {
             true
         }
         Node::Break | Node::Continue => {
+            if !reachable {
+                return false;
+            }
             reachable = false;
             true
         }
@@ -1415,7 +1418,7 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: None,
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
         })
@@ -1614,5 +1617,356 @@ mod tests {
         ];
         super::absorb_switch_tests(&mut nodes);
         assert_eq!(nodes.len(), 2);
+    }
+
+    #[test]
+    fn unreachable_exits_after_terminal_nested_switches_are_removed() {
+        use crate::ir::{Block, FunctionIr, Registers, eval};
+        use crate::loader::Isa;
+        let leaf = |value| {
+            vec![
+                Stmt::Store {
+                    addr: Expr::Const(0x1000),
+                    value: Expr::Const(value),
+                    width: 8,
+                },
+                Stmt::Call {
+                    target: Some(0x5000 + value),
+                    through: None,
+                    convention: crate::ir::Convention::Aapcs64,
+                    args: Some(vec![Expr::Const(value)]),
+                    floats_named: false,
+                    outputs: crate::ir::fallback_call_outputs(
+                        crate::ir::Convention::Aapcs64,
+                        Some(Registers(0)),
+                    ),
+                    clobbers: Some(Registers(0)),
+                    via: None,
+                },
+                Stmt::Trap,
+            ]
+        };
+        let test = |start, register, value, target| Block {
+            start,
+            stmts: vec![Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(register, 64),
+                rhs: Expr::Const(value),
+                target,
+            }],
+        };
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks = vec![
+            test(0, 0, 7, 0x70),
+            test(0x10, 0, 8, 0x80),
+            test(0x20, 0, 11, 0xb0),
+            Block {
+                start: 0x40,
+                stmts: leaf(0x40),
+            },
+            Block {
+                start: 0x70,
+                stmts: leaf(0x70),
+            },
+            test(0x80, 1, 1, 0x81),
+            test(0x84, 1, 2, 0x82),
+            Block {
+                start: 0x83,
+                stmts: leaf(0x83),
+            },
+            Block {
+                start: 0x81,
+                stmts: leaf(0x81),
+            },
+            Block {
+                start: 0x82,
+                stmts: leaf(0x82),
+            },
+            Block {
+                start: 0xb0,
+                stmts: leaf(0xb0),
+            },
+        ];
+        let nodes = |stmts: Vec<Stmt>| stmts.into_iter().map(Node::Stmt).collect::<Vec<_>>();
+        for exit in [Node::Break, Node::Continue] {
+            let inner = Node::Switch {
+                index: Expr::reg(1, 64),
+                arms: vec![(vec![1], nodes(leaf(0x81))), (vec![2], nodes(leaf(0x82)))],
+                default: Some(nodes(leaf(0x83))),
+            };
+            let before = vec![Node::Switch {
+                index: Expr::reg(0, 64),
+                arms: vec![
+                    (vec![7], nodes(leaf(0x70))),
+                    (vec![8], vec![inner, exit]),
+                    (vec![11], nodes(leaf(0xb0))),
+                ],
+                default: Some(nodes(leaf(0x40))),
+            }];
+            let mut after = before.clone();
+            super::prune_unreachable(&mut after);
+            let [Node::Switch { arms, .. }] = after.as_slice() else {
+                panic!("{after:?}")
+            };
+            assert!(matches!(arms[1].1.as_slice(), [Node::Switch { .. }]));
+            let before_ir = crate::render::structure::lower::lower(&ir, &before);
+            let after_ir = crate::render::structure::lower::lower(&ir, &after);
+            for outer in [0, 7, 8, 11] {
+                for inner in [0, 1, 2] {
+                    let registers = [(0, outer), (1, inner)];
+                    let setup = eval::Setup {
+                        seed: 1,
+                        convention: eval::Convention {
+                            arguments: &[0, 1],
+                            clobbered: &[],
+                        },
+                        registers: &registers,
+                        memory: &[],
+                        step_limit: 1000,
+                    };
+                    let value = match outer {
+                        7 => 0x70_u64,
+                        11 => 0xb0,
+                        8 => match inner {
+                            1 => 0x81,
+                            2 => 0x82,
+                            _ => 0x83,
+                        },
+                        _ => 0x40,
+                    };
+                    let memory = value
+                        .to_le_bytes()
+                        .into_iter()
+                        .enumerate()
+                        .map(|(offset, byte)| (0x1000 + offset as u64, byte))
+                        .collect();
+                    let expected = eval::Outcome::Trap {
+                        calls: vec![eval::Call {
+                            target: Some(0x5000 + value),
+                            arguments: vec![value],
+                        }],
+                        memory,
+                    };
+                    assert_eq!(eval::run(&ir, &setup), expected);
+                    assert_eq!(eval::run(&before_ir, &setup), expected);
+                    assert_eq!(eval::run(&after_ir, &setup), expected);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_reachable_break_after_a_nonterminal_nested_switch_stays() {
+        use crate::ir::{FunctionIr, eval};
+        use crate::loader::Isa;
+        let returning_call = Node::Stmt(Stmt::Call {
+            target: Some(0x123),
+            through: None,
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: false,
+            outputs: crate::ir::fallback_call_outputs(
+                crate::ir::Convention::Aapcs64,
+                Some(crate::ir::Registers(0)),
+            ),
+            clobbers: Some(crate::ir::Registers(0)),
+            via: None,
+        });
+        let before = vec![
+            Node::Switch {
+                index: Expr::reg(0, 64),
+                arms: vec![(
+                    vec![7],
+                    vec![
+                        Node::Switch {
+                            index: Expr::reg(1, 64),
+                            arms: vec![(vec![1], vec![returning_call, Node::Break])],
+                            default: Some(vec![Node::Stmt(Stmt::Trap)]),
+                        },
+                        Node::Break,
+                    ],
+                )],
+                default: Some(vec![Node::Stmt(Stmt::Trap)]),
+            },
+            Node::Stmt(Stmt::Ret {
+                value: Expr::Const(42),
+            }),
+        ];
+        let mut after = before.clone();
+        super::prune_unreachable(&mut after);
+        let [Node::Switch { arms, .. }, Node::Stmt(Stmt::Ret { .. })] = after.as_slice() else {
+            panic!("{after:?}")
+        };
+        assert!(matches!(
+            arms[0].1.as_slice(),
+            [Node::Switch { .. }, Node::Break]
+        ));
+        let ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        let original = crate::render::structure::lower::lower(&ir, &before);
+        let rewritten = crate::render::structure::lower::lower(&ir, &after);
+        for outer in [0, 7] {
+            for inner in [0, 1, 2] {
+                let registers = [(0, outer), (1, inner)];
+                let setup = eval::Setup {
+                    seed: 1,
+                    convention: eval::Convention {
+                        arguments: &[0, 1],
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &[],
+                    step_limit: 1000,
+                };
+                let expected = if outer == 7 && inner == 1 {
+                    eval::Outcome::Return {
+                        value: 42,
+                        calls: vec![eval::Call {
+                            target: Some(0x123),
+                            arguments: Vec::new(),
+                        }],
+                        memory: Default::default(),
+                    }
+                } else {
+                    eval::Outcome::Trap {
+                        calls: Vec::new(),
+                        memory: Default::default(),
+                    }
+                };
+                assert_eq!(eval::run(&original, &setup), expected);
+                assert_eq!(eval::run(&rewritten, &setup), expected);
+            }
+        }
+    }
+
+    #[test]
+    fn reachable_continues_and_label_entries_are_preserved() {
+        use crate::ir::{BinOp, FunctionIr, RegRef, eval};
+        use crate::loader::Isa;
+        let before = vec![
+            Node::Stmt(Stmt::Assign {
+                dest: RegRef {
+                    index: 2,
+                    width: 64,
+                },
+                value: Expr::Const(0),
+            }),
+            Node::Forever {
+                body: vec![
+                    Node::Stmt(Stmt::Assign {
+                        dest: RegRef {
+                            index: 2,
+                            width: 64,
+                        },
+                        value: Expr::bin(BinOp::Add, Expr::reg(2, 64), Expr::Const(1)),
+                    }),
+                    Node::If {
+                        cond: Cond::Cc,
+                        lhs: Expr::reg(2, 64),
+                        rhs: Expr::Const(3),
+                        then: vec![Node::Continue],
+                        els: vec![Node::Break],
+                    },
+                ],
+            },
+            Node::Stmt(Stmt::Ret {
+                value: Expr::reg(2, 64),
+            }),
+        ];
+        let mut after = before.clone();
+        super::prune_unreachable(&mut after);
+        let [_, Node::Forever { body }, _] = after.as_slice() else {
+            panic!("{after:?}")
+        };
+        assert!(
+            matches!(&body[1], Node::If { then, els, .. } if matches!(then.as_slice(), [Node::Continue]) && matches!(els.as_slice(), [Node::Break]))
+        );
+        let ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        let setup = eval::Setup {
+            seed: 1,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &[],
+            memory: &[],
+            step_limit: 1000,
+        };
+        let expected = eval::Outcome::Return {
+            value: 3,
+            calls: Vec::new(),
+            memory: Default::default(),
+        };
+        for nodes in [&before, &after] {
+            assert_eq!(
+                eval::run(&crate::render::structure::lower::lower(&ir, nodes), &setup),
+                expected
+            );
+        }
+        let before = vec![
+            Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(1),
+                then: vec![Node::Stmt(Stmt::Br {
+                    target: Some(0x100),
+                })],
+                els: vec![Node::Stmt(Stmt::Trap)],
+            },
+            Node::Break,
+            Node::Continue,
+            Node::Label(0x100),
+            Node::Stmt(Stmt::Store {
+                addr: Expr::Const(0x1000),
+                value: Expr::Const(99),
+                width: 8,
+            }),
+            Node::Stmt(Stmt::Ret {
+                value: Expr::Const(99),
+            }),
+        ];
+        let mut after = before.clone();
+        super::prune_unreachable(&mut after);
+        assert!(matches!(
+            after.as_slice(),
+            [
+                Node::If { .. },
+                Node::Label(0x100),
+                Node::Stmt(Stmt::Store { .. }),
+                Node::Stmt(Stmt::Ret { .. })
+            ]
+        ));
+        for input in [0, 1] {
+            let registers = [(0, input)];
+            let setup = eval::Setup {
+                seed: 1,
+                convention: eval::Convention {
+                    arguments: &[0],
+                    clobbered: &[],
+                },
+                registers: &registers,
+                memory: &[],
+                step_limit: 1000,
+            };
+            let expected = if input == 1 {
+                eval::Outcome::Return {
+                    value: 99,
+                    calls: Vec::new(),
+                    memory: (0..8)
+                        .map(|offset| (0x1000 + offset, if offset == 0 { 99 } else { 0 }))
+                        .collect(),
+                }
+            } else {
+                eval::Outcome::Trap {
+                    calls: Vec::new(),
+                    memory: Default::default(),
+                }
+            };
+            for nodes in [&before, &after] {
+                assert_eq!(
+                    eval::run(&crate::render::structure::lower::lower(&ir, nodes), &setup),
+                    expected
+                );
+            }
+        }
     }
 }

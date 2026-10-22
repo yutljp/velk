@@ -2,13 +2,15 @@ use crate::arch;
 use crate::ir::{CType, FunctionIr, Param};
 
 pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collections::HashSet<u16>) {
+    let outputs = live_call_outputs(ir);
+    let entry = call_output_entry_demands(ir, &outputs);
     // A register only ever written, or only ever read, at 32 bits holds a 32-bit value.
     let narrow = |ir: &FunctionIr, index: u16| -> bool {
-        uniform_32.contains(&index) || narrow_only(ir, index)
+        uniform_32.contains(&index) || narrow_only(ir, index, &outputs, entry.as_ref())
     };
     // The return type is re-decided from the optimized body, whose passes may
     // have removed or exposed the 32-bit writes the earlier guess relied on.
-    let ret_is_wide = returns_wide(ir);
+    let ret_is_wide = returns_wide(ir, &outputs, entry.as_ref());
     let narrow_return = !ret_is_wide && ir.ret_type == CType::U64;
     let widen_return = ret_is_wide && ir.ret_type.is_32_bit_int();
     let decided: Vec<bool> = ir
@@ -198,7 +200,11 @@ fn last_definition(ir: &FunctionIr, index: u16) -> Option<crate::ir::Expr> {
 
 /// True when the function's last return moves a value whose 64-bit inputs
 /// are not explained by any narrow use.
-fn returns_wide(ir: &FunctionIr) -> bool {
+fn returns_wide(
+    ir: &FunctionIr,
+    outputs: &LiveCallOutputs,
+    entry: Option<&std::collections::HashMap<u16, u64>>,
+) -> bool {
     let Some(value) = crate::ir::cfg::own_return(&ir.blocks) else {
         return false;
     };
@@ -214,7 +220,7 @@ fn returns_wide(ir: &FunctionIr) -> bool {
     let mut wide: Vec<u16> = Vec::new();
     collect_wide_regs(&resolved, false, &mut wide);
     wide.iter()
-        .any(|index| *index == WIDE_VALUE || !narrow_only(ir, *index))
+        .any(|index| *index == WIDE_VALUE || !narrow_only(ir, *index, outputs, entry))
 }
 
 /// A value that is wide on its own, without naming a register (an 8-byte
@@ -293,14 +299,115 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
     }
 }
 
-/// True when the register carries a 32-bit value: every write to it is
+type LiveCallOutputs = Option<std::collections::HashSet<(usize, usize, u16)>>;
+
+fn call_output_entry_demands(
+    ir: &FunctionIr,
+    outputs: &LiveCallOutputs,
+) -> Option<std::collections::HashMap<u16, u64>> {
+    let outputs = outputs.as_ref()?;
+    let excluded = ir.blocks.iter().enumerate().any(|(block, body)| {
+        body.stmts.iter().enumerate().any(|(position, stmt)| {
+            stmt.call_outputs().iter().any(|output| {
+                output.dest.width > 32 && !outputs.contains(&(block, position, output.dest.index))
+            })
+        })
+    });
+    if excluded {
+        crate::ssa::entry_demands(ir, &[])
+    } else {
+        None
+    }
+}
+
+fn live_call_outputs(ir: &FunctionIr) -> LiveCallOutputs {
+    use crate::ir::{Stmt, cfg, visit::statement_registers};
+    use std::collections::HashSet;
+    let mut outputs = HashSet::new();
+    if !ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| !stmt.call_outputs().is_empty())
+    {
+        return Some(outputs);
+    }
+    let starts: HashSet<_> = ir.blocks.iter().map(|block| block.start).collect();
+    for (at, block) in ir.blocks.iter().enumerate() {
+        let edges = cfg::block_successors_with_exceptions(&ir.blocks, at, &ir.landing_pads);
+        if cfg::opaque(block)
+            || edges.unknown_normal
+            || edges.unknown_exceptional
+            || !edges.exceptional.is_empty()
+        {
+            return None;
+        }
+        for stmt in &block.stmts {
+            match stmt {
+                Stmt::BrifFlags { .. } => return None,
+                Stmt::Br {
+                    target: Some(target),
+                }
+                | Stmt::Brif { target, .. }
+                    if !starts.contains(target) =>
+                {
+                    return None;
+                }
+                Stmt::Switch { cases, default, .. }
+                    if default.is_none()
+                        || cases.iter().any(|(_, target)| !starts.contains(target))
+                        || default.is_some_and(|target| !starts.contains(&target)) =>
+                {
+                    return None;
+                }
+                _ => {}
+            }
+        }
+        if at + 1 == ir.blocks.len()
+            && !matches!(
+                block.stmts.last(),
+                Some(
+                    Stmt::Ret { .. }
+                        | Stmt::Trap
+                        | Stmt::Br { target: Some(_) }
+                        | Stmt::Switch { .. }
+                )
+            )
+        {
+            return None;
+        }
+    }
+    let incoming = cfg::live_in(ir);
+    for (block, body) in ir.blocks.iter().enumerate() {
+        let mut live = cfg::live_out(ir, &incoming, block);
+        for (position, stmt) in body.stmts.iter().enumerate().rev() {
+            for output in stmt.call_outputs() {
+                if live.contains(&output.dest.index) {
+                    outputs.insert((block, position, output.dest.index));
+                }
+            }
+            let (writes, reads) = statement_registers(stmt);
+            live.retain(|register| !writes.contains(register));
+            live.extend(reads);
+        }
+    }
+    Some(outputs)
+}
+
+/// True when the register carries a 32-bit value: every observed write is
 /// narrow, or — when nothing writes it — every read is a 32-bit view.
-fn narrow_only(ir: &FunctionIr, register: u16) -> bool {
+fn narrow_only(
+    ir: &FunctionIr,
+    register: u16,
+    outputs: &LiveCallOutputs,
+    entry: Option<&std::collections::HashMap<u16, u64>>,
+) -> bool {
     let mut writes = false;
     let mut wide_write = false;
     let mut reads_narrow = true;
     let mut seen = false;
-    for block in &ir.blocks {
+    let mut excluded_wide = false;
+    for (block_index, block) in ir.blocks.iter().enumerate() {
         // A tail call's return reads the callee's result, not this register's value.
         let tail_call = matches!(
             block.stmts.as_slice(),
@@ -311,10 +418,19 @@ fn narrow_only(ir: &FunctionIr, register: u16) -> bool {
             ]
         );
         let own = block.stmts.len() - usize::from(tail_call);
-        for stmt in &block.stmts[..own] {
+        for (position, stmt) in block.stmts[..own].iter().enumerate() {
+            let output_live = outputs
+                .as_ref()
+                .is_none_or(|outputs| outputs.contains(&(block_index, position, register)));
+            excluded_wide |= !output_live
+                && stmt
+                    .call_outputs()
+                    .iter()
+                    .any(|output| output.dest.index == register && output.dest.width > 32);
             collect_uses(
                 stmt,
                 register,
+                output_live,
                 &mut writes,
                 &mut wide_write,
                 &mut reads_narrow,
@@ -325,12 +441,18 @@ fn narrow_only(ir: &FunctionIr, register: u16) -> bool {
     if !seen {
         return false;
     }
+    if excluded_wide
+        && entry.is_none_or(|entry| entry.get(&register).copied().unwrap_or(0) >> 32 != 0)
+    {
+        return false;
+    }
     if writes { !wide_write } else { reads_narrow }
 }
 
 fn collect_uses(
     stmt: &crate::ir::Stmt,
     register: u16,
+    output_live: bool,
     writes: &mut bool,
     wide_write: &mut bool,
     reads_narrow: &mut bool,
@@ -362,6 +484,13 @@ fn collect_uses(
         Stmt::Switch { index, .. } => scan_reads(index, register, false, reads_narrow, seen),
         // A register passed whole takes the width the callee gives it.
         Stmt::Call { .. } => {
+            for output in stmt.call_outputs() {
+                if output.dest.index == register && output_live {
+                    *writes = true;
+                    *seen = true;
+                    *wide_write |= output.dest.width > 32;
+                }
+            }
             for value in stmt.operands() {
                 if !matches!(value, crate::ir::Expr::Reg { .. }) {
                     scan_reads(value, register, false, reads_narrow, seen);
@@ -492,37 +621,151 @@ fn reads_register(expr: &crate::ir::Expr, register: u16) -> bool {
     }
 }
 
-/// Marks the function void when the return register is never written, the body
-/// has a side effect, and the register is used only by a bare return. Requiring
-/// a side effect keeps `int id(int x)` from being mistaken for a void function
-/// where the return register also carries the first argument; elsewhere a
-/// return register nothing writes holds no result.
-/// A function that returns the same pointer parameter on every path
-/// returns that parameter's type, not the 64-bit integer it was taken for.
 pub(crate) fn apply_pointer_return(ir: &mut FunctionIr) {
-    use crate::ir::{Expr, Stmt};
-    if !matches!(ir.ret_type, CType::Int { bytes: 8, .. }) {
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(stmt, crate::ir::Stmt::Ret { value } if !matches!(value,
+            crate::ir::Expr::Reg { index, width: 64 }
+            if ir.params.iter().any(|param| param.index == *index && param.ty.is_pointer())))
+    }) {
         return;
     }
+    apply_pointer_return_with(ir, &|_| None);
+}
+
+pub(crate) fn apply_pointer_return_with(
+    ir: &mut FunctionIr,
+    callees: super::signature::Callees<'_>,
+) {
+    use crate::ir::{Expr, Stmt};
+    use std::collections::{HashMap, HashSet};
+
+    fn known(value: &Expr, types: &HashMap<u16, CType>) -> Option<CType> {
+        match value {
+            Expr::Reg { index, width: 64 } => types.get(index).cloned(),
+            Expr::Select { then, els, .. } => {
+                let ty = known(then, types)?;
+                (known(els, types)? == ty).then_some(ty)
+            }
+            _ => None,
+        }
+    }
+
+    if ir.declared_signature.is_some()
+        || !matches!(ir.ret_type, CType::Int { bytes: 8, .. })
+        || ir.blocks.is_empty()
+    {
+        return;
+    }
+    let starts: HashSet<u64> = ir.blocks.iter().map(|block| block.start).collect();
+    for (at, block) in ir.blocks.iter().enumerate() {
+        let edges =
+            crate::ir::cfg::block_successors_with_exceptions(&ir.blocks, at, &ir.landing_pads);
+        if edges.unknown_normal || edges.unknown_exceptional || !edges.exceptional.is_empty() {
+            return;
+        }
+        for stmt in &block.stmts {
+            match stmt {
+                Stmt::Unsupported { .. }
+                | Stmt::BrIndirect { .. }
+                | Stmt::BrifFlags { .. }
+                | Stmt::Br { target: None } => return,
+                Stmt::Br {
+                    target: Some(target),
+                }
+                | Stmt::Brif { target, .. }
+                    if !starts.contains(target) =>
+                {
+                    return;
+                }
+                Stmt::Switch { cases, default, .. }
+                    if default.is_none()
+                        || cases.iter().any(|(_, target)| !starts.contains(target))
+                        || default.is_some_and(|target| !starts.contains(&target)) =>
+                {
+                    return;
+                }
+                _ => {}
+            }
+        }
+        if at + 1 == ir.blocks.len()
+            && !matches!(
+                block.stmts.last(),
+                Some(
+                    Stmt::Ret { .. }
+                        | Stmt::Trap
+                        | Stmt::Br { target: Some(_) }
+                        | Stmt::Switch { .. }
+                )
+            )
+        {
+            return;
+        }
+    }
+    if !crate::ir::cfg::cyclic_blocks(ir).is_empty() {
+        return;
+    }
+    let Some(ssa) = crate::ssa::build(ir) else {
+        return;
+    };
+    let mut types = HashMap::new();
+    for param in &ir.params {
+        if param.ty.is_pointer()
+            && let Some(value) = ssa.entry.get(&param.index)
+        {
+            if types.get(value).is_some_and(|ty| *ty != param.ty) {
+                return;
+            }
+            types.insert(*value, param.ty.clone());
+        }
+    }
+    for (original, renamed) in ir.blocks.iter().zip(&ssa.ir.blocks) {
+        for (stmt, renamed) in original.stmts.iter().zip(&renamed.stmts) {
+            let Some(prototype) = callees(stmt) else {
+                continue;
+            };
+            if prototype.ret.is_pointer()
+                && let Some(output) = super::prototypes::scalar_call_output(renamed, &prototype.ret)
+                && output.dest.width == 64
+            {
+                types.insert(output.dest.index, prototype.ret.clone());
+            }
+        }
+    }
+    loop {
+        let before = types.len();
+        for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let Stmt::Assign {
+                dest: crate::ir::RegRef { index, width: 64 },
+                value,
+            } = stmt
+                && let Some(ty) = known(value, &types)
+            {
+                types.insert(*index, ty);
+            }
+        }
+        for phi in ssa.phis.iter().flatten() {
+            if let Some(ty) = phi.args.first().and_then(|arg| types.get(arg)).cloned()
+                && phi.args.iter().all(|arg| types.get(arg) == Some(&ty))
+            {
+                types.insert(phi.value, ty);
+            }
+        }
+        if types.len() == before {
+            break;
+        }
+    }
     let mut returned: Option<CType> = None;
-    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+    for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
         let Stmt::Ret { value } = stmt else {
             continue;
         };
-        let Expr::Reg { index, width: 64 } = value else {
+        let Some(ty) = known(value, &types) else {
             return;
         };
-        let Some(param) = ir
-            .params
-            .iter()
-            .find(|param| param.index == *index && param.ty.is_pointer())
-        else {
-            return;
-        };
-        if returned.as_ref().is_some_and(|ty| *ty != param.ty) {
+        if returned.as_ref().is_some_and(|previous| *previous != ty) {
             return;
         }
-        returned = Some(param.ty.clone());
+        returned = Some(ty);
     }
     if let Some(ty) = returned {
         ir.ret_type = ty;
@@ -549,7 +792,12 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
                     used_elsewhere |= reads_register(addr, arch::RETURN);
                     used_elsewhere |= reads_register(value, arch::RETURN);
                 }
-                Stmt::Call { .. } => side_effect = true,
+                Stmt::Call { .. } => {
+                    side_effect = true;
+                    let (definitions, reads) = crate::ir::visit::statement_registers(stmt);
+                    written |= definitions.contains(&arch::RETURN);
+                    used_elsewhere |= reads.contains(&arch::RETURN);
+                }
                 Stmt::Ret { value } => {
                     saw_ret = true;
                     // Only a bare return of the register is allowed; returning
@@ -870,9 +1118,7 @@ pub(crate) fn apply_prototypes(ir: &mut FunctionIr, image: &crate::loader::Image
     let mut variadic = std::collections::BTreeMap::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         let Stmt::Call {
-            args: Some(args),
-            result,
-            ..
+            args: Some(args), ..
         } = stmt
         else {
             continue;
@@ -897,10 +1143,9 @@ pub(crate) fn apply_prototypes(ir: &mut FunctionIr, image: &crate::loader::Image
                 offer(&mut variadic, index, ty);
             }
         }
-        if let Some(dest) = result
-            && prototype.ret != CType::Void
+        if let Some(output) = crate::analysis::prototypes::scalar_call_output(stmt, &prototype.ret)
         {
-            offer(&mut values, dest.index, &prototype.ret);
+            offer(&mut values, output.dest.index, &prototype.ret);
         }
     }
     for param in &mut ir.params {
@@ -932,6 +1177,988 @@ mod tests {
     use super::{apply_partial_return, apply_void_return, apply_width_types};
     use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
     use crate::loader::Isa;
+
+    fn call_width_case() -> FunctionIr {
+        let mut outputs = crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None);
+        outputs[0].dest.index = crate::ir::VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: crate::ir::Convention::Aapcs64,
+                    args: Some(vec![Expr::bin(
+                        BinOp::And,
+                        Expr::reg(1, 64),
+                        Expr::Const(0xffff_ffff),
+                    )]),
+                    floats_named: true,
+                    outputs,
+                    clobbers: None,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::And,
+                        Expr::reg(crate::ir::VARIABLE_BASE, 64),
+                        Expr::Const(0xffff_ffff),
+                    ),
+                },
+            ],
+        );
+        ir.params = vec![crate::ir::Param {
+            index: 1,
+            name: "a1".to_owned(),
+            ty: CType::U64,
+        }];
+        ir
+    }
+
+    fn check_call_width(mut ir: FunctionIr, expected: CType) -> FunctionIr {
+        use crate::ir::eval::{self, Setup};
+        let original = ir.clone();
+        let blocks = format!("{:?}", ir.blocks);
+        apply_width_types(&mut ir, &Default::default());
+        assert_eq!(
+            ir.params.iter().find(|param| param.index == 1).unwrap().ty,
+            expected
+        );
+        assert_eq!(format!("{:?}", ir.blocks), blocks);
+        for (seed, value) in [(0, 0), (1, 0x8123_4567_89ab_cdef), (0x1234_5678, u64::MAX)] {
+            let setup = Setup {
+                seed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[(1, value), (2, 1)],
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(eval::run(&ir, &setup), eval::run(&original, &setup));
+        }
+        ir
+    }
+
+    #[test]
+    fn call_output_width_ignores_only_unused_secondary_writes() {
+        let ir = call_width_case();
+        let live = super::live_call_outputs(&ir).unwrap();
+        assert!(live.contains(&(0, 0, crate::ir::VARIABLE_BASE)));
+        assert!(!live.contains(&(0, 0, 1)));
+        let outputs = ir.blocks[0].stmts[0].call_outputs().to_vec();
+        let narrowed = check_call_width(ir, CType::I32);
+        assert_eq!(narrowed.blocks[0].stmts[0].call_outputs(), outputs);
+    }
+
+    #[test]
+    fn call_output_width_keeps_a_live_wide_store_and_unnamed_argument() {
+        use crate::ir::eval::{self, Outcome, Setup};
+        let mut stored = call_width_case();
+        stored.blocks[0].stmts.insert(
+            1,
+            Stmt::Store {
+                addr: Expr::Const(0x4000_0000),
+                value: Expr::reg(1, 64),
+                width: 8,
+            },
+        );
+        let stored = check_call_width(stored, CType::I64);
+        let mut unnamed = call_width_case();
+        unnamed.blocks[0].stmts.insert(
+            1,
+            Stmt::Call {
+                target: Some(0x2000),
+                through: None,
+                convention: crate::ir::Convention::Aapcs64,
+                args: None,
+                floats_named: true,
+                outputs: Vec::new(),
+                clobbers: Some(Default::default()),
+                via: None,
+            },
+        );
+        let unnamed = check_call_width(unnamed, CType::I64);
+        for seed in [0, 1, 0x1234_5678] {
+            let setup = Setup {
+                seed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[(1, 7)],
+                memory: &[],
+                step_limit: 100,
+            };
+            let expected = eval::hash(seed ^ 1, 0x2_0001);
+            assert_ne!(expected >> 32, 0);
+            let Outcome::Return { memory, .. } = eval::run(&stored, &setup) else {
+                unreachable!()
+            };
+            assert_eq!(
+                u64::from_le_bytes(std::array::from_fn(
+                    |byte| memory[&(0x4000_0000 + byte as u64)]
+                )),
+                expected
+            );
+            let Outcome::Return { calls, .. } = eval::run(&unnamed, &setup) else {
+                unreachable!()
+            };
+            assert_eq!(calls[1].arguments[1], expected);
+        }
+    }
+
+    #[test]
+    fn call_output_width_handles_successor_joins_and_loop_uses() {
+        use crate::ir::Block;
+        let mut joined = call_width_case();
+        let returned = joined.blocks[0].stmts.pop().unwrap();
+        joined.blocks[0].stmts.push(Stmt::Brif {
+            cond: crate::ir::Cond::Eq,
+            lhs: Expr::reg(2, 64),
+            rhs: Expr::Const(0),
+            target: 20,
+        });
+        joined.blocks.extend([
+            Block {
+                start: 10,
+                stmts: vec![Stmt::Br { target: Some(30) }],
+            },
+            Block {
+                start: 20,
+                stmts: vec![Stmt::Br { target: Some(30) }],
+            },
+            Block {
+                start: 30,
+                stmts: vec![
+                    Stmt::Store {
+                        addr: Expr::Const(0x4000_0000),
+                        value: Expr::reg(1, 64),
+                        width: 8,
+                    },
+                    returned.clone(),
+                ],
+            },
+        ]);
+        assert!(
+            super::live_call_outputs(&joined)
+                .unwrap()
+                .contains(&(0, 0, 1))
+        );
+        check_call_width(joined, CType::I64);
+        let mut looping = call_width_case();
+        looping.blocks[0].stmts.pop();
+        looping.blocks[0].stmts.push(Stmt::Br { target: Some(10) });
+        looping.blocks.extend([
+            Block {
+                start: 10,
+                stmts: vec![
+                    Stmt::Store {
+                        addr: Expr::Const(0x4000_0000),
+                        value: Expr::reg(1, 64),
+                        width: 8,
+                    },
+                    Stmt::Assign {
+                        dest: crate::ir::RegRef {
+                            index: 2,
+                            width: 64,
+                        },
+                        value: Expr::bin(BinOp::Sub, Expr::reg(2, 64), Expr::Const(1)),
+                    },
+                    Stmt::Brif {
+                        cond: crate::ir::Cond::Eq,
+                        lhs: Expr::reg(2, 64),
+                        rhs: Expr::Const(0),
+                        target: 10,
+                    },
+                ],
+            },
+            Block {
+                start: 20,
+                stmts: vec![returned],
+            },
+        ]);
+        assert!(
+            super::live_call_outputs(&looping)
+                .unwrap()
+                .contains(&(0, 0, 1))
+        );
+        check_call_width(looping, CType::I64);
+    }
+
+    #[test]
+    fn call_output_width_distinguishes_overwrites_and_pre_call_sources() {
+        let mut overwritten = call_width_case();
+        overwritten.blocks[0].stmts.insert(
+            1,
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 1,
+                    width: 32,
+                },
+                value: Expr::Const(7),
+            },
+        );
+        overwritten.blocks[0].stmts.insert(
+            2,
+            Stmt::Store {
+                addr: Expr::Const(0x4000_0000),
+                value: Expr::reg(1, 64),
+                width: 8,
+            },
+        );
+        assert!(
+            !super::live_call_outputs(&overwritten)
+                .unwrap()
+                .contains(&(0, 0, 1))
+        );
+        let live = super::live_call_outputs(&overwritten);
+        assert_eq!(
+            super::call_output_entry_demands(&overwritten, &live).unwrap()[&1],
+            0xffff_ffff
+        );
+        check_call_width(overwritten, CType::I32);
+        let mut preserved = call_width_case();
+        let Stmt::Call { clobbers, .. } = &mut preserved.blocks[0].stmts[0] else {
+            unreachable!()
+        };
+        *clobbers = Some([0].into_iter().collect());
+        assert!(
+            !super::live_call_outputs(&preserved)
+                .unwrap()
+                .contains(&(0, 0, 1))
+        );
+        check_call_width(preserved.clone(), CType::I32);
+        preserved.blocks[0].stmts.insert(
+            1,
+            Stmt::Store {
+                addr: Expr::Const(0x4000_0000),
+                value: Expr::reg(1, 64),
+                width: 8,
+            },
+        );
+        check_call_width(preserved, CType::I64);
+    }
+
+    #[test]
+    fn call_output_width_retains_entry_high_bits_before_a_later_narrow_write() {
+        let mut ir = call_width_case();
+        ir.blocks[0].stmts.insert(
+            0,
+            Stmt::Store {
+                addr: Expr::Const(0x4000_0000),
+                value: Expr::reg(1, 64),
+                width: 8,
+            },
+        );
+        ir.blocks[0].stmts.insert(
+            2,
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 1,
+                    width: 32,
+                },
+                value: Expr::Const(7),
+            },
+        );
+        ir.blocks[0].stmts.insert(
+            3,
+            Stmt::Store {
+                addr: Expr::Const(0x4000_0008),
+                value: Expr::reg(1, 64),
+                width: 8,
+            },
+        );
+        let live = super::live_call_outputs(&ir);
+        assert!(!live.as_ref().unwrap().contains(&(0, 1, 1)));
+        assert_eq!(
+            super::call_output_entry_demands(&ir, &live).unwrap()[&1],
+            u64::MAX
+        );
+        check_call_width(ir, CType::I64);
+    }
+
+    #[test]
+    fn call_output_width_entry_proof_includes_unnamed_bare_and_preserved_call_reads() {
+        for args in [None, Some(vec![Expr::reg(1, 64)])] {
+            let mut ir = call_width_case();
+            ir.blocks[0].stmts.insert(
+                0,
+                Stmt::Call {
+                    target: Some(0x2000),
+                    through: None,
+                    convention: crate::ir::Convention::Aapcs64,
+                    args,
+                    floats_named: true,
+                    outputs: Vec::new(),
+                    clobbers: Some(Default::default()),
+                    via: None,
+                },
+            );
+            ir.blocks[0].stmts.insert(
+                2,
+                Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: 1,
+                        width: 32,
+                    },
+                    value: Expr::Const(7),
+                },
+            );
+            let live = super::live_call_outputs(&ir);
+            assert_eq!(
+                super::call_output_entry_demands(&ir, &live).unwrap()[&1],
+                u64::MAX
+            );
+            check_call_width(ir, CType::I64);
+        }
+        let saved = crate::ir::VARIABLE_BASE + 1;
+        let mut ir = call_width_case();
+        ir.blocks[0].stmts.insert(
+            0,
+            Stmt::Call {
+                target: Some(0x2000),
+                through: None,
+                convention: crate::ir::Convention::Aapcs64,
+                args: Some(Vec::new()),
+                floats_named: true,
+                outputs: vec![crate::ir::CallOutput {
+                    register: 1,
+                    dest: crate::ir::RegRef {
+                        index: saved,
+                        width: 64,
+                    },
+                }],
+                clobbers: Some(Default::default()),
+                via: None,
+            },
+        );
+        ir.blocks[0].stmts.insert(
+            2,
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 1,
+                    width: 32,
+                },
+                value: Expr::Const(7),
+            },
+        );
+        ir.blocks[0].stmts.insert(
+            3,
+            Stmt::Store {
+                addr: Expr::Const(0x4000_0000),
+                value: Expr::reg(saved, 64),
+                width: 8,
+            },
+        );
+        let live = super::live_call_outputs(&ir);
+        assert_eq!(
+            super::call_output_entry_demands(&ir, &live).unwrap()[&1],
+            u64::MAX
+        );
+        check_call_width(ir, CType::I64);
+    }
+
+    #[test]
+    fn call_output_width_avoids_entry_solves_without_dead_wide_outputs() {
+        let mut ordinary = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: 1,
+                        width: 32,
+                    },
+                    value: Expr::Const(7),
+                },
+                Stmt::Store {
+                    addr: Expr::Const(0x4000_0000),
+                    value: Expr::reg(1, 64),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        ordinary.params = vec![crate::ir::Param {
+            index: 1,
+            name: "a1".to_owned(),
+            ty: CType::U64,
+        }];
+        let live = super::live_call_outputs(&ordinary);
+        assert!(super::call_output_entry_demands(&ordinary, &live).is_none());
+        check_call_width(ordinary, CType::I32);
+        let mut used = call_width_case();
+        let Stmt::Call { outputs, .. } = &mut used.blocks[0].stmts[0] else {
+            unreachable!()
+        };
+        outputs.retain(|output| output.register == 1);
+        used.blocks[0].stmts[1] = Stmt::Ret {
+            value: Expr::reg(1, 64),
+        };
+        let live = super::live_call_outputs(&used);
+        assert!(super::call_output_entry_demands(&used, &live).is_none());
+        check_call_width(used, CType::I64);
+    }
+
+    #[test]
+    fn call_output_width_uses_all_live_fallback_for_unresolved_control() {
+        use crate::ir::Block;
+        let mut controls = Vec::new();
+        let mut opaque = call_width_case();
+        opaque.blocks[0].stmts.insert(
+            1,
+            Stmt::Unsupported {
+                text: "unknown".to_owned(),
+                writes: Some(vec![1]),
+            },
+        );
+        controls.push(opaque);
+        let mut external = call_width_case();
+        external.blocks[0].stmts[1] = Stmt::Br {
+            target: Some(0xffff),
+        };
+        controls.push(external);
+        let mut indirect = call_width_case();
+        indirect.blocks[0].stmts[1] = Stmt::BrIndirect {
+            target: Expr::reg(2, 64),
+        };
+        controls.push(indirect);
+        let mut switched = call_width_case();
+        switched.blocks[0].stmts[1] = Stmt::Switch {
+            index: Expr::reg(2, 64),
+            cases: Vec::new(),
+            default: None,
+        };
+        controls.push(switched);
+        let mut exceptional = call_width_case();
+        exceptional.landing_pads.push((10, vec![(0, 1)]));
+        exceptional.blocks.push(Block {
+            start: 10,
+            stmts: vec![Stmt::Ret {
+                value: Expr::Const(0),
+            }],
+        });
+        controls.push(exceptional);
+        for ir in controls {
+            assert!(super::live_call_outputs(&ir).is_none());
+            check_call_width(ir, CType::I64);
+        }
+    }
+
+    #[test]
+    fn call_output_width_shares_live_output_facts_with_return_widths() {
+        let mut wide = call_width_case();
+        wide.ret_type = CType::U32;
+        wide.blocks[0].stmts[1] = Stmt::Ret {
+            value: Expr::reg(1, 64),
+        };
+        wide.blocks[0].stmts.insert(
+            1,
+            Stmt::Store {
+                addr: Expr::Const(0x4000_0000),
+                value: Expr::Const(0),
+                width: 8,
+            },
+        );
+        let live = super::live_call_outputs(&wide);
+        assert!(super::returns_wide(
+            &wide,
+            &live,
+            super::call_output_entry_demands(&wide, &live).as_ref()
+        ));
+        let wide = check_call_width(wide, CType::I64);
+        assert_eq!(wide.ret_type, CType::I64);
+        let mut narrow = call_width_case();
+        narrow.blocks[0].stmts[1] = Stmt::Ret {
+            value: Expr::reg(1, 64),
+        };
+        narrow.blocks[0].stmts.insert(
+            1,
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 1,
+                    width: 32,
+                },
+                value: Expr::Const(7),
+            },
+        );
+        let live = super::live_call_outputs(&narrow);
+        assert!(!super::returns_wide(
+            &narrow,
+            &live,
+            super::call_output_entry_demands(&narrow, &live).as_ref()
+        ));
+        let narrow = check_call_width(narrow, CType::I32);
+        assert_eq!(narrow.ret_type, CType::I32);
+    }
+
+    #[test]
+    fn call_output_width_restores_narrow_inputs_in_the_actual_call_fixture() {
+        let path =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/calls_a64.o");
+        let image = crate::loader::load(&path).unwrap();
+        for name in ["apply_table", "apply_pointer"] {
+            let function = image
+                .functions
+                .values()
+                .find(|function| function.name.as_deref() == Some(name))
+                .unwrap();
+            let analysis = crate::analysis::analyze(&image, function).unwrap();
+            assert_eq!(
+                analysis
+                    .ir
+                    .params
+                    .iter()
+                    .find(|param| param.index == 1)
+                    .unwrap()
+                    .ty,
+                CType::I32
+            );
+            assert!(
+                analysis
+                    .ir
+                    .blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .flat_map(Stmt::call_outputs)
+                    .any(|output| output.register == 1)
+            );
+        }
+    }
+
+    fn pointer_case(stmts: Vec<Stmt>) -> FunctionIr {
+        let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
+        ir.ret_type = CType::I64;
+        ir.params = vec![
+            crate::ir::Param {
+                index: 0,
+                name: "dst".to_owned(),
+                ty: CType::pointer_to(CType::Void),
+            },
+            crate::ir::Param {
+                index: 1,
+                name: "src".to_owned(),
+                ty: CType::pointer_to(CType::Void),
+            },
+            crate::ir::Param {
+                index: 2,
+                name: "n".to_owned(),
+                ty: CType::U64,
+            },
+            crate::ir::Param {
+                index: 3,
+                name: "count".to_owned(),
+                ty: CType::pointer_to(CType::U64),
+            },
+        ];
+        ir
+    }
+
+    fn pointer_copy(dest: u16, index: u16) -> Stmt {
+        Stmt::Assign {
+            dest: crate::ir::RegRef {
+                index: dest,
+                width: 64,
+            },
+            value: Expr::reg(index, 64),
+        }
+    }
+
+    fn pointer_import(dest: u16) -> Stmt {
+        Stmt::Call {
+            target: None,
+            through: Some(Expr::Load {
+                addr: Box::new(Expr::Const(0x1000)),
+                width: 8,
+                signed: false,
+            }),
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(vec![Expr::reg(0, 64), Expr::reg(1, 64), Expr::reg(2, 64)]),
+            floats_named: true,
+            outputs: vec![crate::ir::CallOutput {
+                register: 0,
+                dest: crate::ir::RegRef {
+                    index: dest,
+                    width: 64,
+                },
+            }],
+            clobbers: Some([0].into_iter().collect()),
+            via: None,
+        }
+    }
+
+    fn check_pointer_return(mut ir: FunctionIr, expected: CType) -> FunctionIr {
+        use crate::ir::eval::{self, Setup};
+        let mut image = crate::loader::Image::from_code(Isa::AArch64, 0, Vec::new());
+        image.imports.insert(0x1000, "memcpy".to_owned());
+        let before = ir.clone();
+        super::apply_pointer_return_with(&mut ir, &|stmt| {
+            crate::analysis::prototypes::called(&image, stmt)
+        });
+        assert_eq!(ir.ret_type, expected);
+        let mut restored = ir.clone();
+        restored.ret_type = before.ret_type.clone();
+        assert_eq!(format!("{restored:?}"), format!("{before:?}"));
+        for seed in [0, 1, 0x8123_4567_89ab_cdef] {
+            let setup = Setup {
+                seed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[
+                    (0, 0x4000_0000),
+                    (1, 0x4000_1000),
+                    (2, seed & 1),
+                    (3, 0x4000_2000),
+                ],
+                memory: &[(0x1000, 0x2000)],
+                step_limit: 100,
+            };
+            assert_eq!(eval::run(&ir, &setup), eval::run(&before, &setup));
+        }
+        ir
+    }
+
+    #[test]
+    fn pointer_returns_follow_parameter_copies_and_same_type_selects() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let ir = pointer_case(vec![
+            pointer_copy(variable, 0),
+            Stmt::Store {
+                addr: Expr::reg(3, 64),
+                value: Expr::reg(2, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::reg(variable, 64),
+            },
+        ]);
+        let inferred = check_pointer_return(ir, CType::pointer_to(CType::Void));
+        assert!(inferred.value_types.is_empty());
+        let selected = Expr::Select {
+            cond: crate::ir::Cond::Eq,
+            lhs: Box::new(Expr::reg(2, 64)),
+            rhs: Box::new(Expr::Const(0)),
+            then: Box::new(Expr::reg(0, 64)),
+            els: Box::new(Expr::reg(1, 64)),
+        };
+        check_pointer_return(
+            pointer_case(vec![Stmt::Ret { value: selected }]),
+            CType::pointer_to(CType::Void),
+        );
+    }
+
+    #[test]
+    fn renderer_pointer_inference_keeps_its_existing_bare_parameter_scope() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let mut copied = pointer_case(vec![
+            pointer_copy(variable, 0),
+            Stmt::Ret {
+                value: Expr::reg(variable, 64),
+            },
+        ]);
+        super::apply_pointer_return(&mut copied);
+        assert_eq!(copied.ret_type, CType::I64);
+        let mut bare = pointer_case(vec![Stmt::Ret {
+            value: Expr::reg(0, 64),
+        }]);
+        super::apply_pointer_return(&mut bare);
+        assert_eq!(bare.ret_type, CType::pointer_to(CType::Void));
+    }
+
+    fn pointer_join(second: CType) -> FunctionIr {
+        use crate::ir::Block;
+        let variable = crate::ir::VARIABLE_BASE;
+        let mut ir = pointer_case(Vec::new());
+        ir.params[0].ty = CType::pointer_to(CType::I32);
+        ir.params[1].ty = second;
+        ir.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Brif {
+                    cond: crate::ir::Cond::Eq,
+                    lhs: Expr::reg(2, 64),
+                    rhs: Expr::Const(0),
+                    target: 20,
+                }],
+            },
+            Block {
+                start: 10,
+                stmts: vec![pointer_copy(variable, 0), Stmt::Br { target: Some(30) }],
+            },
+            Block {
+                start: 20,
+                stmts: vec![pointer_copy(variable, 1), Stmt::Br { target: Some(30) }],
+            },
+            Block {
+                start: 30,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::reg(variable, 64),
+                }],
+            },
+        ];
+        ir
+    }
+
+    #[test]
+    fn pointer_return_phis_require_every_incoming_type_to_match() {
+        check_pointer_return(
+            pointer_join(CType::pointer_to(CType::I32)),
+            CType::pointer_to(CType::I32),
+        );
+        check_pointer_return(pointer_join(CType::pointer_to(CType::U64)), CType::I64);
+        check_pointer_return(pointer_join(CType::U64), CType::I64);
+        check_pointer_return(pointer_join(CType::Array(Box::new(CType::I32))), CType::I64);
+    }
+
+    #[test]
+    fn pointer_returns_follow_an_import_result_across_a_store_and_another_call() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let saved = variable + 1;
+        let mut other = pointer_import(variable + 2);
+        let Stmt::Call {
+            through,
+            args,
+            outputs,
+            clobbers,
+            ..
+        } = &mut other
+        else {
+            unreachable!()
+        };
+        *through = None;
+        *args = Some(Vec::new());
+        outputs.clear();
+        *clobbers = Some(Default::default());
+        let ir = pointer_case(vec![
+            pointer_import(variable),
+            pointer_copy(saved, variable),
+            other,
+            Stmt::Store {
+                addr: Expr::reg(3, 64),
+                value: Expr::reg(2, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::reg(saved, 64),
+            },
+        ]);
+        let inferred = check_pointer_return(ir, CType::pointer_to(CType::Void));
+        assert!(inferred.value_types.is_empty());
+    }
+
+    #[test]
+    fn pointer_return_inference_does_not_reuse_an_overwritten_type() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let constant = |index| Stmt::Assign {
+            dest: crate::ir::RegRef { index, width: 64 },
+            value: Expr::Const(7),
+        };
+        check_pointer_return(
+            pointer_case(vec![
+                constant(0),
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ]),
+            CType::I64,
+        );
+        let mut ir = pointer_case(vec![
+            pointer_import(variable),
+            constant(variable),
+            Stmt::Ret {
+                value: Expr::reg(variable, 64),
+            },
+        ]);
+        ir.value_types
+            .insert(variable, CType::pointer_to(CType::Void));
+        check_pointer_return(ir, CType::I64);
+        let mut unknown = pointer_import(variable);
+        let Stmt::Call {
+            through, target, ..
+        } = &mut unknown
+        else {
+            unreachable!()
+        };
+        *through = None;
+        *target = Some(0x3000);
+        check_pointer_return(
+            pointer_case(vec![
+                unknown,
+                Stmt::Ret {
+                    value: Expr::reg(variable, 64),
+                },
+            ]),
+            CType::I64,
+        );
+    }
+
+    #[test]
+    fn pointer_return_inference_rejects_truncation_arithmetic_and_missing_outputs() {
+        let variable = crate::ir::VARIABLE_BASE;
+        for (dest_width, read_width) in [(32, 64), (64, 32)] {
+            check_pointer_return(
+                pointer_case(vec![
+                    Stmt::Assign {
+                        dest: crate::ir::RegRef {
+                            index: variable,
+                            width: dest_width,
+                        },
+                        value: Expr::reg(0, read_width),
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(variable, 64),
+                    },
+                ]),
+                CType::I64,
+            );
+        }
+        check_pointer_return(
+            pointer_case(vec![Stmt::Ret {
+                value: Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1)),
+            }]),
+            CType::I64,
+        );
+        for missing in [false, true] {
+            let mut call = pointer_import(variable);
+            if missing {
+                call.call_outputs_mut()[0].register = 1;
+            } else {
+                call.call_outputs_mut()[0].dest.width = 32;
+            }
+            check_pointer_return(
+                pointer_case(vec![
+                    call,
+                    Stmt::Ret {
+                        value: Expr::reg(variable, 64),
+                    },
+                ]),
+                CType::I64,
+            );
+        }
+    }
+
+    #[test]
+    fn pointer_return_inference_respects_declarations_and_pointee_identity() {
+        let returned = Stmt::Ret {
+            value: Expr::reg(0, 64),
+        };
+        let mut declared = pointer_case(vec![returned.clone()]);
+        declared.declared_signature = Some(crate::ir::DeclaredSignature {
+            params: Vec::new(),
+            ret: CType::U64,
+            variadic: false,
+            abi: Err(crate::ir::AbiIssue::UnknownLayout),
+        });
+        check_pointer_return(declared, CType::I64);
+        let mut typed = pointer_case(vec![returned.clone()]);
+        typed.ret_type = CType::pointer_to(CType::U64);
+        check_pointer_return(typed, CType::pointer_to(CType::U64));
+        let mut structure = pointer_case(vec![returned.clone()]);
+        let pointer = CType::pointer_to(CType::Named("struct item".to_owned()));
+        structure.params[0].ty = pointer.clone();
+        check_pointer_return(structure, pointer);
+        let mut pointer_to_array = pointer_case(vec![returned.clone()]);
+        let pointer = CType::pointer_to(CType::Array(Box::new(CType::I32)));
+        pointer_to_array.params[0].ty = pointer.clone();
+        check_pointer_return(pointer_to_array, pointer);
+        let mut array = pointer_case(vec![returned]);
+        array.params[0].ty = CType::Array(Box::new(CType::I32));
+        check_pointer_return(array, CType::I64);
+    }
+
+    #[test]
+    fn pointer_return_inference_refuses_unknown_exceptional_and_cyclic_edges() {
+        use crate::ir::Block;
+        let returned = Stmt::Ret {
+            value: Expr::reg(0, 64),
+        };
+        check_pointer_return(
+            pointer_case(vec![Stmt::unsupported("unknown"), returned.clone()]),
+            CType::I64,
+        );
+        check_pointer_return(
+            pointer_case(vec![
+                Stmt::Brif {
+                    cond: crate::ir::Cond::Eq,
+                    lhs: Expr::reg(2, 64),
+                    rhs: Expr::Const(0),
+                    target: 0xffff,
+                },
+                returned.clone(),
+            ]),
+            CType::I64,
+        );
+        let mut exceptional = pointer_case(vec![
+            pointer_import(crate::ir::VARIABLE_BASE),
+            returned.clone(),
+        ]);
+        exceptional.landing_pads.push((10, vec![(0, 1)]));
+        exceptional.blocks.push(Block {
+            start: 10,
+            stmts: vec![returned.clone()],
+        });
+        check_pointer_return(exceptional, CType::I64);
+        let mut cyclic = pointer_case(Vec::new());
+        cyclic.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Brif {
+                    cond: crate::ir::Cond::Eq,
+                    lhs: Expr::reg(2, 64),
+                    rhs: Expr::Const(0),
+                    target: 20,
+                }],
+            },
+            Block {
+                start: 10,
+                stmts: vec![Stmt::Br { target: Some(0) }],
+            },
+            Block {
+                start: 20,
+                stmts: vec![returned],
+            },
+        ];
+        check_pointer_return(cyclic, CType::I64);
+    }
+
+    #[test]
+    fn inferred_pointer_returns_cast_integer_locals_in_generated_c() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let saved = variable + 1;
+        let mut ir = pointer_case(vec![
+            pointer_import(variable),
+            pointer_copy(saved, variable),
+            Stmt::Store {
+                addr: Expr::reg(3, 64),
+                value: Expr::reg(2, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::reg(saved, 64),
+            },
+        ]);
+        ir.name = Some("copy_and_note".to_owned());
+        let ir = check_pointer_return(ir, CType::pointer_to(CType::Void));
+        let mut symbols = crate::render::Symbols::default();
+        symbols.import_slots.insert(0x1000, "memcpy".to_owned());
+        symbols
+            .import_returns
+            .insert(0x1000, CType::pointer_to(CType::Void));
+        let rendered = crate::render::render(&ir, &[], &symbols, &[]);
+        assert!(rendered.contains("void *copy_and_note("), "{rendered}");
+        assert!(
+            rendered
+                .lines()
+                .any(|line| line.trim_start().starts_with("return (void *)")),
+            "{rendered}"
+        );
+        assert!(ir.value_types.is_empty());
+    }
 
     /// The type of a 32-bit parameter in rdi whose value is returned through `op`.
     fn parameter_through(op: BinOp) -> CType {
@@ -1057,6 +2284,81 @@ mod tests {
     fn a_return_register_that_carries_the_first_argument_may_return_it() {
         // AArch64 `int id(int x) { return x; }` is a bare `ret`.
         assert_ne!(returns_register(Isa::AArch64), CType::Void);
+    }
+
+    #[test]
+    fn scalar_float_prototypes_type_only_the_matching_fp_output() {
+        use crate::ir::{Convention, VARIABLE_BASE};
+        for (isa, convention, carrier) in [
+            (Isa::X86_64, Convention::SysV, crate::arch::x86::XMM0),
+            (Isa::X86_64, Convention::Win64, crate::arch::x86::XMM0),
+            (Isa::AArch64, Convention::Aapcs64, crate::arch::aarch64::V0),
+        ] {
+            for (name, ret) in [("strtof", "float"), ("strtod", "double")] {
+                for present in [false, true] {
+                    let mut image = crate::loader::Image::from_code(isa, 0, Vec::new());
+                    image.imports.insert(0x1000, name.to_owned());
+                    let mut outputs = crate::ir::fallback_call_outputs(convention, None);
+                    outputs.retain(|output| present || output.register != carrier);
+                    outputs.reverse();
+                    for output in &mut outputs {
+                        output.dest.index = VARIABLE_BASE + output.register;
+                    }
+                    let mut ir = FunctionIr::single_block(
+                        isa,
+                        vec![Stmt::Call {
+                            target: None,
+                            through: Some(Expr::Load {
+                                addr: Box::new(Expr::Const(0x1000)),
+                                width: 8,
+                                signed: false,
+                            }),
+                            convention,
+                            args: Some(Vec::new()),
+                            floats_named: true,
+                            outputs,
+                            clobbers: None,
+                            via: None,
+                        }],
+                    );
+                    super::apply_prototypes(&mut ir, &image);
+                    assert_eq!(
+                        ir.value_types.get(&(VARIABLE_BASE + carrier)),
+                        present.then(|| CType::Named(ret.to_owned())).as_ref()
+                    );
+                    assert!(!ir.value_types.contains_key(&VARIABLE_BASE));
+                    assert_eq!(ir.value_types.len(), usize::from(present));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_defined_call_output_keeps_an_integer_return_nonvoid() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: crate::ir::Convention::SysV,
+                    args: Some(Vec::new()),
+                    floats_named: true,
+                    outputs: crate::ir::fallback_call_outputs(
+                        crate::ir::Convention::SysV,
+                        Some([0].into_iter().collect()),
+                    ),
+                    clobbers: Some([0].into_iter().collect()),
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        ir.ret_type = CType::U64;
+        apply_void_return(&mut ir);
+        assert_eq!(ir.ret_type, CType::U64);
     }
 
     #[test]

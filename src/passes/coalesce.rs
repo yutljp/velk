@@ -18,19 +18,16 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
     // them all.
     let mut bits: HashMap<u16, u32> = HashMap::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        let (dest, held) = match stmt {
-            Stmt::Assign { dest, value } => {
-                let hi = crate::ssa::ranges::of(value).hi;
-                (*dest, (64 - hi.leading_zeros()).min(u32::from(dest.width)))
-            }
-            Stmt::Call {
-                result: Some(result),
-                ..
-            } => (*result, u32::from(result.width)),
-            _ => continue,
-        };
-        let most = bits.entry(dest.index).or_default();
-        *most = (*most).max(held);
+        if let Stmt::Assign { dest, value } = stmt {
+            let hi = crate::ssa::ranges::of(value).hi;
+            let held = (64 - hi.leading_zeros()).min(u32::from(dest.width));
+            let most = bits.entry(dest.index).or_default();
+            *most = (*most).max(held);
+        }
+        for output in stmt.call_outputs() {
+            let most = bits.entry(output.dest.index).or_default();
+            *most = (*most).max(u32::from(output.dest.width));
+        }
     }
     // A copy of another variable's value, as itself or masked to bits that
     // cover it.
@@ -273,16 +270,10 @@ fn rename(stmt: &mut Stmt, renamed: &HashMap<u16, u16>) {
             walk(child, renamed);
         }
     }
-    match stmt {
-        Stmt::Assign { dest, .. }
-        | Stmt::Call {
-            result: Some(dest), ..
-        } => {
-            if let Some(joined) = renamed.get(&dest.index) {
-                dest.index = *joined;
-            }
+    for dest in crate::ir::visit::statement_destinations_mut(stmt) {
+        if let Some(joined) = renamed.get(&dest.index) {
+            dest.index = *joined;
         }
-        _ => {}
     }
     for expr in stmt.operands_mut() {
         walk(expr, renamed);
@@ -477,5 +468,92 @@ mod tests {
             "{}",
             addressed.render()
         );
+    }
+    #[test]
+    fn coalesces_every_call_output_without_renaming_physical_sources() {
+        let carriers = [32, 34, 36, 38];
+        let mut outputs = crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None);
+        outputs.retain(|output| matches!(output.register, 32 | 34));
+        outputs.extend([36, 38].into_iter().map(|register| crate::ir::CallOutput {
+            register,
+            dest: RegRef {
+                index: register,
+                width: 64,
+            },
+        }));
+        for (index, output) in outputs.iter_mut().enumerate() {
+            output.dest.index = VARIABLE_BASE + 4 + index as u16;
+        }
+        let mut stmts = vec![Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: true,
+            clobbers: None,
+            outputs,
+            via: None,
+        }];
+        for index in 0..4u16 {
+            stmts.push(Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE + index,
+                    width: 64,
+                },
+                value: Expr::reg(VARIABLE_BASE + 4 + index, 64),
+            });
+        }
+        for index in 0..4u16 {
+            stmts.push(Stmt::Store {
+                addr: Expr::Const(0x1000 + u64::from(index) * 8),
+                value: Expr::reg(VARIABLE_BASE + index, 64),
+                width: 8,
+            });
+        }
+        stmts.push(Stmt::Ret {
+            value: Expr::Const(0),
+        });
+        let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
+        let before = ir.clone();
+        coalesce_copies(&mut ir);
+        assert_eq!(ir.blocks[0].stmts.len(), 6, "{}", ir.render());
+        assert_eq!(
+            ir.blocks[0].stmts[0]
+                .call_outputs()
+                .iter()
+                .map(|output| output.register)
+                .collect::<Vec<_>>(),
+            carriers
+        );
+        assert_eq!(
+            ir.blocks[0].stmts[0]
+                .call_outputs()
+                .iter()
+                .map(|output| output.dest.index)
+                .collect::<Vec<_>>(),
+            [
+                VARIABLE_BASE,
+                VARIABLE_BASE + 1,
+                VARIABLE_BASE + 2,
+                VARIABLE_BASE + 3
+            ]
+        );
+        for seed in [0, 1, 0x1234_5678] {
+            let setup = crate::ir::eval::Setup {
+                seed,
+                convention: crate::ir::eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: 64,
+            };
+            let expected = crate::ir::eval::run(&before, &setup);
+            assert!(
+                matches!(&expected, crate::ir::eval::Outcome::Return { memory, .. } if memory.len() == 32)
+            );
+            assert_eq!(crate::ir::eval::run(&ir, &setup), expected);
+        }
     }
 }

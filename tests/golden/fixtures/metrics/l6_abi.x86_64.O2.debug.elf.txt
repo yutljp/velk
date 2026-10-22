@@ -26,7 +26,7 @@ fn tail_target @ 0x2011b0 (size 14)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x2011c0 */
 int tail_direct(int x) {
-    return tail_target(x + 0x2);
+    return tail_target(((x + 0x2) & 0xffffffff));
 }
 -- signature
 int (int x)
@@ -35,7 +35,7 @@ int (int x)
 -- ir
 fn tail_direct @ 0x2011c0 (size 8)
   blk0 @ 0x2011c0:
-    v2 = call 0x2011b0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
+    v2:rax = call 0x2011b0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
     ret v2
 -- card
 {"addr":"0x2011c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}
@@ -44,7 +44,7 @@ fn tail_direct @ 0x2011c0 (size 8)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x2011d0 */
 int tail_indirect(void *f, int x) {
-    return ((uint64_t (*)())f)(x + 0x1);
+    return ((uint64_t (*)())f)(((x + 0x1) & 0xffffffff));
 }
 -- signature
 int (void * f, int x)
@@ -53,7 +53,7 @@ int (void * f, int x)
 -- ir
 fn tail_indirect @ 0x2011d0 (size 8)
   blk0 @ 0x2011d0:
-    v3 = call *rdi(((rsi + #0x1) & #0xffffffff))
+    v3:rax, rdx, xmm0, xmm1 = call *rdi(((rsi + #0x1) & #0xffffffff))
     ret v3
 -- card
 {"addr":"0x2011d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf","unwind"],"section":".text","size":8,"unsupported":0}

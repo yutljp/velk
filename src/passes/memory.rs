@@ -15,6 +15,8 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
     for block in &mut ir.blocks {
         let mut pending: Vec<(u8, Expr, Expr)> = Vec::new();
         for stmt in &mut block.stmts {
+            let call_writes =
+                matches!(stmt, Stmt::Call { .. }).then(|| statement_registers(stmt).0);
             match stmt {
                 Stmt::Store {
                     addr, value, width, ..
@@ -36,14 +38,9 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     through,
                     args,
                     convention,
-                    result,
-                    clobbers,
                     ..
                 } => {
-                    // What it leaves changed, the variable its result goes to
-                    // included.
-                    let mut clobbered = convention.clobbered_by(*clobbers);
-                    clobbered.extend(result.map(|result| result.index));
+                    let clobbered = call_writes.as_ref().expect("call definitions");
                     let mut passed = 0;
                     if let Some(through) = through {
                         forward_expr(through, &pending);
@@ -635,17 +632,14 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
                         .push((block, position));
                 }
                 Stmt::Call {
-                    args,
-                    convention,
-                    result,
-                    ..
+                    args, convention, ..
                 } => {
                     if go && args.is_none() {
                         unknown.push((block, position));
                     }
-                    if let Some(result) = result {
+                    for written in statement_registers(stmt).0 {
                         definitions
-                            .entry(result.index)
+                            .entry(written)
                             .or_default()
                             .push((block, position));
                     }
@@ -982,7 +976,7 @@ mod tests {
             convention: crate::ir::Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
             clobbers: None,
             via: None,
         };
@@ -1055,6 +1049,41 @@ mod tests {
                     value: Expr::Load { .. }
                 }
             ),
+            "{}",
+            ir.render()
+        );
+    }
+    #[test]
+    fn call_forwarding_uses_all_semantic_outputs_not_renamed_physical_carriers() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let mut outputs = crate::ir::fallback_call_outputs(
+            crate::ir::Convention::Aapcs64,
+            Some([1].into_iter().collect()),
+        );
+        outputs[0].dest.index = variable;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(16, Expr::reg(variable, 64), 8),
+                store(24, Expr::reg(1, 64), 8),
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: crate::ir::Convention::Aapcs64,
+                    args: Some(Vec::new()),
+                    floats_named: true,
+                    clobbers: Some([1].into_iter().collect()),
+                    outputs,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(crate::ir::BinOp::Xor, load(16, 8), load(24, 8)),
+                },
+            ],
+        );
+        forward_stored_values(&mut ir);
+        assert!(
+            matches!(ir.blocks[0].stmts.last(), Some(Stmt::Ret { value }) if *value == Expr::bin(crate::ir::BinOp::Xor, load(16, 8), Expr::reg(1, 64))),
             "{}",
             ir.render()
         );

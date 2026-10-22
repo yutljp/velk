@@ -161,7 +161,7 @@ mod tests {
                 args: None,
                 floats_named: false,
                 clobbers: None,
-                result: None,
+                outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                 via: None,
             },
             Stmt::Ret {

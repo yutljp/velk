@@ -265,10 +265,11 @@ pub(crate) fn value_bits(ir: &FunctionIr) -> HashMap<u16, u32> {
                 known.entry(dest.index).or_insert(0);
                 assigned.push((dest.index, value));
             }
-            Stmt::Call {
-                result: Some(dest), ..
-            } => {
-                known.insert(dest.index, 64);
+            Stmt::Call { .. } => {
+                for output in stmt.call_outputs() {
+                    let bits = known.entry(output.dest.index).or_insert(0);
+                    *bits = (*bits).max(u32::from(output.dest.width));
+                }
             }
             _ => {}
         }

@@ -139,13 +139,14 @@ fn fold(ir: &mut FunctionIr, param: u16) {
                         }
                     }
                 }
-                Stmt::Call {
-                    result: Some(result),
-                    ..
-                } => defined
-                    .entry(Source::Register(result.index))
-                    .or_default()
-                    .push(None),
+                Stmt::Call { .. } => {
+                    for output in stmt.call_outputs() {
+                        defined
+                            .entry(Source::Register(output.dest.index))
+                            .or_default()
+                            .push(None);
+                    }
+                }
                 _ => {}
             }
         }

@@ -152,7 +152,7 @@ struct abi_hfa3 abi_hfa3_adjust(struct abi_hfa3 value, double bias) {
     return result;
 }
 -- signature
-struct abi_hfa3_adjust_a0 * (struct abi_hfa3_adjust_a0 * a0, double a1)
+int64_t (struct abi_hfa3_adjust_a0 * a0, double a1)
 -- references
 
 -- ir
@@ -192,7 +192,7 @@ struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
     return result;
 }
 -- signature
-struct abi_hfa4_adjust_a0 * (struct abi_hfa4_adjust_a0 * a0, double a1)
+int64_t (struct abi_hfa4_adjust_a0 * a0, double a1)
 -- references
 
 -- ir
@@ -327,7 +327,7 @@ struct abi_triple abi_indirect_make(struct abi_pair value, unsigned long long de
     return result;
 }
 -- signature
-struct abi_indirect_make_a0 * (struct abi_indirect_make_a0 * a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (struct abi_indirect_make_a0 * a0, int64_t a1, int64_t a2, int64_t a3)
 -- references
 
 -- ir

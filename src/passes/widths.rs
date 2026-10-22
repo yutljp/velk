@@ -29,16 +29,15 @@ fn register_writes(blocks: &[Block], narrow_return: NarrowReturn<'_>) -> HashMap
                     };
                     writes.entry(dest.index).or_default().push(width);
                 }
-                Stmt::Call { target, result, .. } => {
+                Stmt::Call { target, .. } => {
                     let narrow = target.is_some_and(narrow_return);
-                    let returned = result.map_or(crate::arch::RETURN, |result| result.index);
+                    let returned = stmt.primary_call_output().map(|output| output.dest.index);
                     for written in crate::ir::visit::statement_registers(stmt).0 {
-                        let width =
-                            if narrow && (written == returned || written == crate::arch::RETURN) {
-                                32
-                            } else {
-                                64
-                            };
+                        let width = if narrow && Some(written) == returned {
+                            32
+                        } else {
+                            64
+                        };
                         writes.entry(written).or_default().push(width);
                     }
                 }
@@ -183,19 +182,21 @@ pub fn specialize_widths(
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {
             map_stmt(stmt, &mut |expr| rewrite_read_masks(expr, &uniform));
+            for dest in crate::ir::visit::statement_destinations_mut(stmt) {
+                if uniform.contains(&dest.index) {
+                    dest.width = 32;
+                }
+            }
             if let Stmt::Assign { dest, value } = stmt
                 && uniform.contains(&dest.index)
-            {
-                dest.width = 32;
-                if let Expr::Bin {
+                && let Expr::Bin {
                     op: BinOp::And,
                     lhs,
                     rhs,
                 } = value
-                    && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
-                {
-                    *value = (**lhs).clone();
-                }
+                && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+            {
+                *value = (**lhs).clone();
             }
         }
     }
@@ -283,5 +284,98 @@ fn map_stmt(stmt: &mut Stmt, map: &mut dyn FnMut(&Expr) -> Expr) {
             }
         }
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{register_writes, returns_32, specialize_widths};
+    use crate::ir::{Block, Convention, Expr, FunctionIr, Operation, Stmt, VARIABLE_BASE};
+    use crate::loader::Isa;
+
+    fn two_outputs() -> Stmt {
+        let mut outputs = crate::ir::fallback_call_outputs(
+            Convention::Aapcs64,
+            Some([0, 1].into_iter().collect()),
+        );
+        for (index, output) in outputs.iter_mut().enumerate() {
+            output.dest.index = VARIABLE_BASE + index as u16;
+        }
+        outputs.reverse();
+        Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: true,
+            clobbers: Some([0, 1].into_iter().collect()),
+            outputs,
+            via: None,
+        }
+    }
+
+    #[test]
+    fn narrow_call_return_applies_only_to_primary_provenance() {
+        let blocks = vec![Block {
+            start: 0,
+            stmts: vec![two_outputs()],
+        }];
+        let writes = register_writes(&blocks, &|_| true);
+        assert_eq!(writes[&VARIABLE_BASE], [32]);
+        assert_eq!(writes[&(VARIABLE_BASE + 1)], [64]);
+        assert!(!writes.contains_key(&0));
+        assert!(!writes.contains_key(&1));
+    }
+
+    #[test]
+    fn a_secondary_only_call_is_not_a_narrow_primary() {
+        let mut call = two_outputs();
+        if let Stmt::Call { outputs, .. } = &mut call {
+            outputs.retain(|output| output.register == 1);
+        }
+        let blocks = vec![Block {
+            start: 0,
+            stmts: vec![
+                call,
+                Stmt::Ret {
+                    value: Expr::reg(VARIABLE_BASE + 1, 64),
+                },
+            ],
+        }];
+        assert!(!returns_32(&blocks, &|_| true));
+    }
+
+    #[test]
+    fn specializing_a_primary_keeps_secondary_bits_and_provenance() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                two_outputs(),
+                Stmt::Ret {
+                    value: Expr::Apply {
+                        op: Operation::Results,
+                        args: vec![
+                            Expr::bin(
+                                crate::ir::BinOp::And,
+                                Expr::reg(VARIABLE_BASE, 64),
+                                Expr::Const(0xffff_ffff),
+                            ),
+                            Expr::reg(VARIABLE_BASE + 1, 64),
+                        ],
+                    },
+                },
+            ],
+        );
+        let uniform = specialize_widths(&mut ir, &|_| true);
+        assert!(uniform.contains(&VARIABLE_BASE));
+        assert!(!uniform.contains(&(VARIABLE_BASE + 1)));
+        let outputs = ir.blocks[0].stmts[0].call_outputs();
+        assert_eq!(
+            outputs
+                .iter()
+                .map(|output| (output.register, output.dest.index, output.dest.width))
+                .collect::<Vec<_>>(),
+            [(1, VARIABLE_BASE + 1, 64), (0, VARIABLE_BASE, 32),]
+        );
     }
 }

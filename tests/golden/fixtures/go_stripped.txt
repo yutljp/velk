@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 18 unsupported, 125 gotos
+# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 18 unsupported, 120 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1305,7 +1305,7 @@ fn main.twice @ 0x466cc0 (size 64)
   blk0 @ 0x466cc0:
     br 0x466cc6
   blk1 @ 0x466cc6:
-    v1 = call 0x466ca0(rax, rax)
+    v1:rax = call 0x466ca0(rax, rax)
     ret v1
 -- card
 {"addr":"0x466cc0","approxTokens":156,"blocks":2,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
@@ -1313,17 +1313,17 @@ fn main.twice @ 0x466cc0 (size 64)
 == 0x466d00 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d00 */
-void main_main(void) {
+int64_t main_main(void) {
     int64_t v1;
 
     v1 = main_twice(0x15);
     runtime_printlock();
     runtime_printint(v1);
     runtime_printnl();
-    runtime_printunlock();
+    return runtime_printunlock();
 }
 -- signature
-void ()
+int64_t ()
 -- references
 
 -- ir
@@ -1331,11 +1331,11 @@ fn main.main @ 0x466d00 (size 96)
   blk0 @ 0x466d00:
     br 0x466d06
   blk1 @ 0x466d06:
-    v1 = call 0x466cc0(#0x15)
-    call 0x4305a0()
-    call 0x430c40(v1)
-    call 0x4307e0()
-    call 0x430600()
-    ret #0x0
+    v1:rax, rbx = call 0x466cc0(#0x15)
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4305a0()
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(v1)
+    rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307e0()
+    v1:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430600()
+    ret v1
 -- card
 {"addr":"0x466d00","approxTokens":198,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}

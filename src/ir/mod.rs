@@ -1192,6 +1192,32 @@ pub struct RegRef {
     pub width: u8,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CallOutput {
+    pub register: u16,
+    pub dest: RegRef,
+}
+
+pub fn fallback_call_outputs(
+    convention: Convention,
+    clobbers: Option<Registers>,
+) -> Vec<CallOutput> {
+    let changed = convention.clobbered_by(clobbers);
+    convention
+        .results()
+        .iter()
+        .copied()
+        .filter(|register| changed.contains(register))
+        .map(|register| CallOutput {
+            register,
+            dest: RegRef {
+                index: register,
+                width: 64,
+            },
+        })
+        .collect()
+}
+
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Assign {
@@ -1235,9 +1261,7 @@ pub enum Stmt {
         /// `args` lists the floating-point arguments too, after the integer
         /// ones, so the call reads no other floating-point register.
         floats_named: bool,
-        /// Where the returned value goes besides the return register, when a
-        /// variable of its own holds it.
-        result: Option<RegRef>,
+        outputs: Vec<CallOutput>,
         /// The registers the callee may leave changed, when its summary
         /// knows them; else the call changes those its convention lets it.
         clobbers: Option<Registers>,
@@ -1260,6 +1284,43 @@ pub enum Stmt {
 }
 
 impl Stmt {
+    pub fn call_outputs(&self) -> &[CallOutput] {
+        match self {
+            Stmt::Call { outputs, .. } => outputs,
+            _ => &[],
+        }
+    }
+
+    pub fn call_outputs_mut(&mut self) -> &mut [CallOutput] {
+        match self {
+            Stmt::Call { outputs, .. } => outputs,
+            _ => &mut [],
+        }
+    }
+
+    pub fn primary_call_output(&self) -> Option<&CallOutput> {
+        let Stmt::Call {
+            convention,
+            outputs,
+            ..
+        } = self
+        else {
+            return None;
+        };
+        let primary = convention.results().first()?;
+        outputs.iter().find(|output| output.register == *primary)
+    }
+
+    pub fn preserved_output_sources(&self) -> Vec<(usize, u16)> {
+        let changed = self.call_clobbers();
+        self.call_outputs()
+            .iter()
+            .enumerate()
+            .filter(|(_, output)| !changed.contains(&output.register))
+            .map(|(index, output)| (index, output.register))
+            .collect()
+    }
+
     /// The registers a call may leave changed; none for another statement.
     pub fn call_clobbers(&self) -> Vec<u16> {
         match self {
@@ -1519,13 +1580,11 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
             target,
             through,
             args: Some(args),
-            result,
+            outputs,
             ..
         } => {
             let args: Vec<String> = args.iter().map(|arg| arg.render(isa)).collect();
-            let assigned = result.map_or(String::new(), |dest| {
-                format!("{} = ", reg_name(isa, dest.index, dest.width))
-            });
+            let assigned = render_call_outputs(isa, outputs);
             assigned
                 + &match (target, through) {
                     (Some(target), _) => format!("call 0x{target:x}({})", args.join(", ")),
@@ -1536,21 +1595,88 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
                 }
         }
         Stmt::Call {
-            target, through, ..
-        } => match (target, through) {
-            (Some(target), _) => format!("call 0x{target:x}"),
-            (None, Some(through)) => format!("call *{}", through.render(isa)),
-            (None, None) => "call <dynamic>".to_owned(),
-        },
+            target,
+            through,
+            outputs,
+            ..
+        } => {
+            render_call_outputs(isa, outputs)
+                + &match (target, through) {
+                    (Some(target), _) => format!("call 0x{target:x}"),
+                    (None, Some(through)) => format!("call *{}", through.render(isa)),
+                    (None, None) => "call <dynamic>".to_owned(),
+                }
+        }
         Stmt::Ret { value } => format!("ret {}", value.render(isa)),
         Stmt::Unsupported { text, .. } => format!("unsupported: {text}"),
         Stmt::Trap => "trap".to_owned(),
     }
 }
 
+fn render_call_outputs(isa: Isa, outputs: &[CallOutput]) -> String {
+    if outputs.is_empty() {
+        return String::new();
+    }
+    let names: Vec<String> = outputs
+        .iter()
+        .map(|output| {
+            let dest = reg_name(isa, output.dest.index, output.dest.width);
+            if output.dest.index == output.register {
+                dest
+            } else {
+                format!("{dest}:{}", reg_name(isa, output.register, 64))
+            }
+        })
+        .collect();
+    format!("{} = ", names.join(", "))
+}
+
 #[cfg(test)]
 mod tests {
     use super::{BinOp, Expr};
+
+    #[test]
+    fn fallback_outputs_use_precise_clobbers_and_primary_provenance() {
+        use super::{Convention, Registers, Stmt, fallback_call_outputs};
+        let mut call = Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: Convention::SysV,
+            args: Some(Vec::new()),
+            floats_named: true,
+            outputs: fallback_call_outputs(Convention::SysV, Some([2].into_iter().collect())),
+            clobbers: Some([2].into_iter().collect()),
+            via: None,
+        };
+        assert_eq!(
+            call.call_outputs()
+                .iter()
+                .map(|output| output.register)
+                .collect::<Vec<_>>(),
+            [2]
+        );
+        assert!(call.primary_call_output().is_none());
+        assert!(fallback_call_outputs(Convention::SysV, Some(Registers::default())).is_empty());
+        let outputs = fallback_call_outputs(Convention::Aapcs64, None);
+        assert_eq!(
+            outputs
+                .iter()
+                .map(|output| output.register)
+                .collect::<Vec<_>>(),
+            [0, 1, 32, 34]
+        );
+        assert!(
+            outputs
+                .iter()
+                .all(|output| output.dest.index == output.register && output.dest.width == 64)
+        );
+        for dest in super::visit::statement_destinations_mut(&mut call) {
+            dest.index = super::VARIABLE_BASE;
+        }
+        assert_eq!(call.call_outputs()[0].register, 2);
+        let (written, _) = super::visit::statement_registers(&call);
+        assert_eq!(written, [super::VARIABLE_BASE].into_iter().collect());
+    }
 
     #[test]
     fn constant_folding_wraps_like_the_hardware() {

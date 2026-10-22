@@ -120,6 +120,9 @@ impl Solver<'_> {
                         changed |= self.set(dest.index, lattice);
                     }
                 }
+                for output in stmt.call_outputs() {
+                    changed |= self.set(output.dest.index, Lattice::Varying);
+                }
                 for (_, value) in ssa
                     .implicit_writes
                     .get(&(block, position))

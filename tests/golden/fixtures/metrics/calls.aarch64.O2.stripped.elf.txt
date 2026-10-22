@@ -68,12 +68,10 @@ fn <unnamed> @ 0x2102d4 (size 28)
 /* ref: 0x220528 .data.rel.ro */
 int32_t sub_2102f0(uint32_t a0, int32_t a1) {
     uint64_t *const qword_220528 = (uint64_t *)(uintptr_t)0x220528;
-    int64_t v1;
     int64_t v3;
 
-    v1 = a0 % 0x3;
-    v3 = qword_220528[v1];
-    return ((uint64_t (*)())v3)(a1);
+    v3 = qword_220528[a0 % 0x3];
+    return ((uint64_t (*)())v3)((a1 & 0xffffffff));
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -82,9 +80,8 @@ int32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2102f0 (size 44)
   blk0 @ 0x2102f0:
-    v1 = (((x0 & #0xffffffff) % #0x3) & #0xffffffff)
-    v3 = load64((#0x220528 + ((v1 & #0xffffffff) << #0x3)))
-    v4 = call *v3((x1 & #0xffffffff))
+    v3 = load64((#0x220528 + (((x0 & #0xffffffff) % #0x3) << #0x3)))
+    v4:x0, x1, d0, d1 = call *v3((x1 & #0xffffffff))
     ret v4
 -- card
 {"addr":"0x2102f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
@@ -95,7 +92,7 @@ fn <unnamed> @ 0x2102f0 (size 44)
 int32_t sub_21031c(void *a0, int32_t a1) {
     int32_t v3;
 
-    v3 = ((uint64_t (*)())a0)(a1);
+    v3 = ((uint64_t (*)())a0)((a1 & 0xffffffff));
     return v3 + 0x1;
 }
 -- signature
@@ -105,7 +102,7 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x21031c (size 32)
   blk0 @ 0x21031c:
-    v3 = call *x0((x1 & #0xffffffff))
+    v3:x0, x1, d0, d1 = call *x0((x1 & #0xffffffff))
     ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x21031c","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}
@@ -230,10 +227,13 @@ fn <unnamed> @ 0x21033c (size 160)
 -- decompile
 /* velk pseudo-C: sub_2103dc @ 0x2103dc */
 int32_t sub_2103dc(int32_t a0) {
+    int32_t v2;
+
     if (a0 == 0x0) {
         return 0x0;
     }
-    return sub_2103ec(a0 - 0x1);
+    v2 = sub_2103ec(((a0 - 0x1) & 0xffffffff));
+    return v2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -244,7 +244,7 @@ fn <unnamed> @ 0x2103dc (size 16)
   blk0 @ 0x2103dc:
     brif eq (x0 & #0xffffffff), #0x0 -> 0x2103e8
   blk1 @ 0x2103e0:
-    v2 = call 0x2103ec((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
+    v2:x0 = call 0x2103ec((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
     ret v2
   blk2 @ 0x2103e8:
     ret #0x0
@@ -258,7 +258,7 @@ int32_t sub_2103ec(int32_t a0) {
     if (a0 == 0x0) {
         return 0x1;
     }
-    return sub_2103dc(a0 - 0x1);
+    return sub_2103dc(((a0 - 0x1) & 0xffffffff));
 }
 -- signature
 int32_t (int32_t a0)
@@ -269,7 +269,7 @@ fn <unnamed> @ 0x2103ec (size 20)
   blk0 @ 0x2103ec:
     brif eq (x0 & #0xffffffff), #0x0 -> 0x2103f8
   blk1 @ 0x2103f0:
-    v2 = call 0x2103dc((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
+    v2:x0 = call 0x2103dc((((x0 & #0xffffffff) - #0x1) & #0xffffffff))
     ret v2
   blk2 @ 0x2103f8:
     ret #0x1
@@ -306,7 +306,7 @@ int64_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x210428 (size 64)
   blk0 @ 0x210428:
-    v1 = call 0x210400(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
+    v1:x0 = call 0x210400(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v1
 -- card
 {"addr":"0x210428","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":64,"unsupported":0}

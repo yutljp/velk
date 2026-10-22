@@ -175,6 +175,13 @@ fn reader(
 /// How many times the expressions of `stmt` that a value may move into read
 /// `dest`: not the address an indirect call goes through.
 fn count_operands(stmt: &Stmt, dest: u16) -> usize {
+    if stmt
+        .preserved_output_sources()
+        .iter()
+        .any(|(_, source)| *source == dest)
+    {
+        return 0;
+    }
     match stmt {
         Stmt::Call {
             args: Some(args),
@@ -217,6 +224,13 @@ fn count(expr: &Expr, register: u16) -> usize {
 /// Replaces the read of `dest` in the statement with the value; false when
 /// the read's width does not fit the value's.
 fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
+    if stmt
+        .preserved_output_sources()
+        .iter()
+        .any(|(_, source)| *source == dest.index)
+    {
+        return false;
+    }
     let original_width = match stmt {
         Stmt::Brif { lhs, rhs, .. } => Some(crate::ir::semantics::operand_width(lhs, rhs)),
         _ => None,
@@ -400,7 +414,7 @@ mod tests {
             convention: Convention::SysV,
             args: Some(args),
             floats_named: false,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
             clobbers: None,
             via: None,
         }

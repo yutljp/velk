@@ -576,15 +576,15 @@ loops.x86_64.O2 0x201190 count_bits: parameter 0 signedness differs
 loops.x86_64.O2 0x2011c0 sum_until: ok
 loops.x86_64.O2 0x2011e0 sum_till_neg: ok
 loops.x86_64.O2 0x201210 sum_until_zero: ok
-memory.aarch64.O0 0x210234 copy_bytes: parameter 2 signedness differs; returns uint8_t *, expected void
-memory.aarch64.O0 0x21029c fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns uint8_t *, expected void
+memory.aarch64.O0 0x210234 copy_bytes: parameter 2 signedness differs; returns int64_t, expected void
+memory.aarch64.O0 0x21029c fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
 memory.aarch64.O0 0x2102f8 string_length: ok
 memory.aarch64.O0 0x21033c grid_get: ok
 memory.aarch64.O0 0x210378 grid_set: parameter 0 is 8 bytes, expected 4; returns int64_t, expected void
 memory.aarch64.O0 0x2103bc pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
 memory.aarch64.O0 0x2103e4 read_volatile: ok
 memory.aarch64.O0 0x210418 swap_ints: returns uint32_t *, expected void
-memory.aarch64.O2 0x210214 copy_bytes: returns uint8_t *, expected void
+memory.aarch64.O2 0x210214 copy_bytes: returns int64_t, expected void
 memory.aarch64.O2 0x2102c4 fill_bytes: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is 8 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
 memory.aarch64.O2 0x2102d0 string_length: ok
 memory.aarch64.O2 0x2102e8 grid_get: ok
@@ -647,7 +647,7 @@ structs.x86_64.O0 0x201310 big_make: ok
 structs.x86_64.O0 0x201350 big_sum: ok
 structs.x86_64.O0 0x201370 word_low_byte: returns 4 bytes, expected 1
 structs.x86_64.O0 0x201380 flags_level: ok
-structs.x86_64.O0 0x2013c0 flags_set_mode: parameter 1 signedness differs; returns int64_t, expected void
+structs.x86_64.O0 0x2013c0 flags_set_mode: parameter 1 signedness differs; returns uint8_t *, expected void
 structs.x86_64.O2 0x2011e0 rect_area: ok
 structs.x86_64.O2 0x2011f0 record_total: ok
 structs.x86_64.O2 0x201260 point_add: ok

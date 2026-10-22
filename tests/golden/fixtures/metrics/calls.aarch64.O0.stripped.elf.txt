@@ -71,7 +71,7 @@ int32_t sub_21037c(int32_t a0, int32_t a1) {
     int64_t v3;
 
     v3 = qword_2206f0[(uint32_t)a0 % 0x3];
-    return ((uint64_t (*)())v3)(a1);
+    return ((uint64_t (*)())v3)((a1 & 0xffffffff));
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -82,7 +82,7 @@ fn <unnamed> @ 0x21037c (size 72)
   blk0 @ 0x21037c:
     store32(x0, (sp + #0xffffffffffffffec))
     v3 = load64((#0x2206f0 + ((load32((sp + #0xffffffffffffffec)) % #0x3) << #0x3)))
-    v5 = call *v3((x1 & #0xffffffff))
+    v5:x0, x1, d0, d1 = call *v3((x1 & #0xffffffff))
     ret v5
 -- card
 {"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}
@@ -93,7 +93,7 @@ fn <unnamed> @ 0x21037c (size 72)
 int32_t sub_2103c4(void *a0, int32_t a1) {
     int32_t v3;
 
-    v3 = ((uint64_t (*)())a0)(a1);
+    v3 = ((uint64_t (*)())a0)((a1 & 0xffffffff));
     return v3 + 0x1;
 }
 -- signature
@@ -103,7 +103,7 @@ int32_t (void * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2103c4 (size 48)
   blk0 @ 0x2103c4:
-    v3 = call *x0((x1 & #0xffffffff))
+    v3:x0, x1, d0, d1 = call *x0((x1 & #0xffffffff))
     ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
@@ -118,7 +118,7 @@ int32_t sub_2103f4(int32_t a0) {
 
     if (a0 > 0x1) {
         local_1 = a0;
-        v3 = sub_2103f4(a0 - 0x1);
+        v3 = sub_2103f4(((a0 - 0x1) & 0xffffffff));
         local_0 = local_1 * v3;
         return local_0;
     }
@@ -141,7 +141,7 @@ fn <unnamed> @ 0x2103f4 (size 96)
     br 0x210444
   blk3 @ 0x210420:
     store32(load32((sp + #0xffffffffffffffec)), (sp + #0xffffffffffffffe4))
-    v3 = call 0x2103f4((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
+    v3:x0 = call 0x2103f4((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32((load32((sp + #0xffffffffffffffe4)) * (v3 & #0xffffffff)), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
@@ -153,12 +153,10 @@ fn <unnamed> @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210454 @ 0x210454 */
 int32_t sub_210454(int32_t a0) {
-    int32_t v3;
     uint32_t local_0; /* [sp-18] */
 
     if (a0 != 0x0) {
-        v3 = sub_2104a0(a0 - 0x1);
-        local_0 = v3;
+        local_0 = ((int32_t)(sub_2104a0(((a0 - 0x1) & 0xffffffff))));
         return local_0;
     }
     local_0 = 0x0;
@@ -179,7 +177,7 @@ fn <unnamed> @ 0x210454 (size 76)
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk3 @ 0x21047c:
-    v3 = call 0x2104a0((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
+    v3:x0 = call 0x2104a0((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32(v3, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
@@ -191,12 +189,10 @@ fn <unnamed> @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int32_t sub_2104a0(int32_t a0) {
-    int32_t v3;
     uint32_t local_0; /* [sp-18] */
 
     if (a0 != 0x0) {
-        v3 = sub_210454(a0 - 0x1);
-        local_0 = v3;
+        local_0 = ((int32_t)(sub_210454(((a0 - 0x1) & 0xffffffff))));
         return local_0;
     }
     local_0 = 0x1;
@@ -217,7 +213,7 @@ fn <unnamed> @ 0x2104a0 (size 76)
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk3 @ 0x2104c8:
-    v3 = call 0x210454((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
+    v3:x0 = call 0x210454((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32(v3, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:
@@ -255,7 +251,7 @@ int64_t (int64_t a0)
 -- ir
 fn <unnamed> @ 0x210564 (size 76)
   blk0 @ 0x210564:
-    v1 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
+    v1:x0 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v1
 -- card
 {"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}

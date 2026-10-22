@@ -169,6 +169,15 @@ impl Builder {
 /// Puts the function into SSA form, or None when it has more definitions
 /// than value indices.
 pub fn build(ir: &FunctionIr) -> Option<Ssa> {
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let mut destinations = HashSet::new();
+        let mut carriers = HashSet::new();
+        for output in stmt.call_outputs() {
+            if !destinations.insert(output.dest.index) || !carriers.insert(output.register) {
+                return None;
+            }
+        }
+    }
     let count = ir.blocks.len();
     let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();
     let mut predecessors = vec![Vec::new(); count];
@@ -270,7 +279,17 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                 // A call reads its argument registers whether or not it also
                 // names one, as the address it calls through.
                 let unnamed: Vec<u16> = match stmt {
-                    Stmt::Call { .. } => stmt.unnamed_call_reads(),
+                    Stmt::Call { .. } => {
+                        let mut sources = stmt.unnamed_call_reads();
+                        sources.extend(
+                            stmt.preserved_output_sources()
+                                .into_iter()
+                                .map(|(_, register)| register),
+                        );
+                        sources.sort_unstable();
+                        sources.dedup();
+                        sources
+                    }
                     _ => reads.difference(&explicit_reads(stmt)).copied().collect(),
                 };
                 let mut implicit: Vec<(u16, u16)> = unnamed
@@ -287,12 +306,13 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                     let value = builder.fresh(register);
                     builder.stacks.entry(register).or_default().push(value);
                     pushed.push(register);
-                    match stmt {
-                        Stmt::Assign { dest, .. } if dest.index == register => dest.index = value,
-                        Stmt::Call {
-                            result: Some(dest), ..
-                        } if dest.index == register => dest.index = value,
-                        _ => defined.push((register, value)),
+                    if let Some(dest) = crate::ir::visit::statement_destinations_mut(stmt)
+                        .into_iter()
+                        .find(|dest| dest.index == register)
+                    {
+                        dest.index = value;
+                    } else {
+                        defined.push((register, value));
                     }
                 }
                 if !defined.is_empty() {
@@ -361,10 +381,15 @@ pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
     };
     let mut undefined: HashSet<u16> = HashSet::new();
     for (&(block, position), defined) in &ssa.implicit_writes {
-        let Stmt::Call { convention, .. } = &ssa.ir.blocks[block].stmts[position] else {
+        let stmt = &ssa.ir.blocks[block].stmts[position];
+        let Stmt::Call { .. } = stmt else {
             continue;
         };
-        let results = convention.results();
+        let results: Vec<u16> = stmt
+            .call_outputs()
+            .iter()
+            .map(|output| output.register)
+            .collect();
         undefined.extend(
             defined
                 .iter()
@@ -631,8 +656,28 @@ fn demanded_bits(
                 *next.entry(*arg).or_insert(0) |= needed;
             }
         }
-        for (_, value) in ssa.implicit_reads.values().flatten() {
-            next.insert(*value, u64::MAX);
+        for (&(block, position), reads) in &ssa.implicit_reads {
+            let stmt = &ssa.ir.blocks[block].stmts[position];
+            let abi = stmt.unnamed_call_reads();
+            let sources = stmt.preserved_output_sources();
+            for (register, value) in reads {
+                let needed = if !matches!(stmt, Stmt::Call { .. }) || abi.contains(register) {
+                    u64::MAX
+                } else {
+                    sources
+                        .iter()
+                        .filter(|(_, source)| source == register)
+                        .fold(0, |needed, (index, _)| {
+                            needed
+                                | (demand
+                                    .get(&stmt.call_outputs()[*index].dest.index)
+                                    .copied()
+                                    .unwrap_or(0)
+                                    & mask(u32::from(stmt.call_outputs()[*index].dest.width)))
+                        })
+                };
+                *next.entry(*value).or_insert(0) |= needed;
+            }
         }
         if next == demand {
             return demand;
@@ -1092,7 +1137,9 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     let vectors = vector_values(&ssa);
     let mut implicit: HashSet<u16> = HashSet::new();
     for (&(block, position), reads) in &ssa.implicit_reads {
-        let (floats, extra) = match &ssa.ir.blocks[block].stmts[position] {
+        let stmt = &ssa.ir.blocks[block].stmts[position];
+        let preserved = stmt.preserved_output_sources();
+        let (floats, extra) = match stmt {
             Stmt::Call { convention, .. } => {
                 (convention.float_arguments(), convention.call_extra())
             }
@@ -1102,8 +1149,9 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             reads
                 .iter()
                 .filter(|(register, value)| {
-                    !(floats.contains(register) && vectors.contains(value))
-                        && !(extra.contains(register) && needed.contains(value))
+                    preserved.iter().any(|(_, source)| source == register)
+                        || (!(floats.contains(register) && vectors.contains(value))
+                            && !(extra.contains(register) && needed.contains(value)))
                 })
                 .map(|(_, value)| *value),
         );
@@ -1151,18 +1199,22 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     for arg in ssa.phis.iter().flatten().flat_map(|phi| &phi.args) {
         read.insert(class[usize::from(arg - VALUE_BASE)]);
     }
-    // Further results, as a second half in rdx or a Go function's later
-    // ones, move into their variables too.
-    for ((block, position), defined) in &ssa.implicit_writes {
-        let returns = match &ssa.ir.blocks[*block].stmts[*position] {
-            Stmt::Call { convention, .. } => convention.results(),
-            _ => &[crate::arch::RETURN],
-        };
-        for (register, value) in defined {
+    for defined in ssa.implicit_writes.values() {
+        for (_, value) in defined {
             let root = class[usize::from(value - VALUE_BASE)];
-            if !read.contains(&root) || !returns.contains(register) {
-                kept.insert(root);
-            }
+            kept.insert(root);
+        }
+    }
+    for output in ssa
+        .ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .flat_map(Stmt::call_outputs)
+    {
+        let root = class[usize::from(output.dest.index - VALUE_BASE)];
+        if !read.contains(&root) {
+            kept.insert(root);
         }
     }
     // Code no path reaches keeps its registers.
@@ -1172,7 +1224,8 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             continue;
         }
         for stmt in &contents.stmts {
-            if let Stmt::Assign { dest, .. } = stmt {
+            let mut stmt = stmt.clone();
+            for dest in crate::ir::visit::statement_destinations_mut(&mut stmt) {
                 kept.insert(class[usize::from(dest.index - VALUE_BASE)]);
             }
         }
@@ -1196,21 +1249,16 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             if let Stmt::Assign { dest, .. } = stmt {
                 note(dest.index, (block, position + 1, 0));
             }
-            let returns = match stmt {
-                Stmt::Call { convention, .. } => convention.results(),
-                _ => &[],
-            };
+            for (rank, output) in stmt.call_outputs().iter().enumerate() {
+                note(output.dest.index, (block, position + 1, rank as u16));
+            }
             for (register, value) in ssa
                 .implicit_writes
                 .get(&(block, position))
                 .into_iter()
                 .flatten()
             {
-                let rank = returns
-                    .iter()
-                    .position(|result| result == register)
-                    .map_or(*register, |rank| rank as u16);
-                note(*value, (block, position + 1, rank));
+                note(*value, (block, position + 1, *register));
             }
         }
     }
@@ -1239,52 +1287,6 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         })
         .collect();
     let mut lowered = lower_with(&ssa, &renames);
-    // A renamed value a call returns goes straight into its variable; one
-    // in another result register is copied out of it right after the call.
-    // (block, position, variable, register, the register's place among the
-    // call's results)
-    let mut copies: Vec<(usize, usize, u16, u16, usize)> = Vec::new();
-    for ((block, position), defined) in &ssa.implicit_writes {
-        for (register, value) in defined {
-            let Some(name) = renames.get(value) else {
-                continue;
-            };
-            match &mut lowered.blocks[*block].stmts[*position] {
-                Stmt::Call {
-                    result, convention, ..
-                } if convention.results().first() == Some(register) => {
-                    *result = Some(crate::ir::RegRef {
-                        index: *name,
-                        width: 64,
-                    });
-                }
-                Stmt::Call { convention, .. } => {
-                    let rank = convention
-                        .results()
-                        .iter()
-                        .position(|result| result == register)
-                        .unwrap_or(usize::MAX);
-                    copies.push((*block, *position, *name, *register, rank));
-                }
-                _ => {}
-            }
-        }
-    }
-    // Each goes right after the call, so the last inserted comes first: the
-    // results end up in the order the convention returns them.
-    copies.sort_by_key(|copy| std::cmp::Reverse((copy.0, copy.1, copy.4, copy.3)));
-    for (block, position, name, register, _) in copies {
-        lowered.blocks[block].stmts.insert(
-            position + 1,
-            Stmt::Assign {
-                dest: crate::ir::RegRef {
-                    index: name,
-                    width: 64,
-                },
-                value: Expr::reg(register, 64),
-            },
-        );
-    }
     // Code no path reaches, as a landing pad the unwinder enters, finds a
     // callee-saved register holding what it held across the calls: the
     // variable the register holds at every call, when that is one.
@@ -1323,7 +1325,7 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
 
 /// A call's result that only moves on into another variable right after the
 /// call goes there directly: `v1 = f(); v2 = v1;` becomes `v2 = f();`, and
-/// `v1 = f(); v3 = rbx; v2 = v1; v4 = v3;` becomes `v2 = f(); v4 = rbx;`.
+/// every other output retains its own destination.
 pub fn take_results_directly(ir: &mut FunctionIr) {
     let mut reads: HashMap<u16, usize> = HashMap::new();
     let mut definitions: HashMap<u16, usize> = HashMap::new();
@@ -1337,13 +1339,6 @@ pub fn take_results_directly(ir: &mut FunctionIr) {
         }
     }
     let variable = |index: u16| index >= crate::ir::VARIABLE_BASE;
-    // So do the further results copied out of their registers right after it.
-    let further = |stmt: &Stmt| {
-        matches!(stmt, Stmt::Assign {
-            dest,
-            value: Expr::Reg { index, .. },
-        } if variable(dest.index) && !variable(*index))
-    };
     for block in &mut ir.blocks {
         let mut position = 0;
         while position < block.stmts.len() {
@@ -1353,9 +1348,6 @@ pub fn take_results_directly(ir: &mut FunctionIr) {
             }
             let position = position - 1;
             let mut next = position + 1;
-            while block.stmts.get(next).is_some_and(further) {
-                next += 1;
-            }
             while let Some(Stmt::Assign {
                 dest,
                 value: Expr::Reg { index, width: 64 },
@@ -1363,34 +1355,27 @@ pub fn take_results_directly(ir: &mut FunctionIr) {
             {
                 let (dest, taken) = (*dest, *index);
                 let written = |stmt: &Stmt| statement_registers(stmt).0;
-                if !(variable(taken)
-                    && variable(dest.index)
+                if !(variable(dest.index)
                     && dest.width == 64
                     && reads.get(&taken) == Some(&1)
                     && definitions.get(&taken) == Some(&1)
                     && !block.stmts[position..next]
                         .iter()
-                        .any(|stmt| written(stmt).contains(&dest.index)))
+                        .any(|stmt| written(stmt).contains(&dest.index))
+                    && !block.stmts[position + 1..next]
+                        .iter()
+                        .any(|stmt| statement_registers(stmt).1.contains(&dest.index)))
                 {
-                    break;
+                    next += 1;
+                    continue;
                 }
-                let Some(definition) =
-                    block.stmts[position..next]
-                        .iter_mut()
-                        .find_map(|stmt| match stmt {
-                            Stmt::Call {
-                                result: Some(result),
-                                ..
-                            }
-                            | Stmt::Assign { dest: result, .. }
-                                if result.index == taken =>
-                            {
-                                Some(result)
-                            }
-                            _ => None,
-                        })
-                else {
-                    break;
+                let Some(definition) = block.stmts[position..next].iter_mut().find_map(|stmt| {
+                    crate::ir::visit::statement_destinations_mut(stmt)
+                        .into_iter()
+                        .find(|dest| dest.index == taken && dest.width == 64)
+                }) else {
+                    next += 1;
+                    continue;
                 };
                 *definition = dest;
                 block.stmts.remove(next);
@@ -1468,12 +1453,8 @@ fn lower_with(ssa: &Ssa, renames: &HashMap<u16, u16>) -> FunctionIr {
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {
             rename_reads(stmt, &mut back);
-            match stmt {
-                Stmt::Assign { dest, .. }
-                | Stmt::Call {
-                    result: Some(dest), ..
-                } => dest.index = back(dest.index),
-                _ => {}
+            for dest in crate::ir::visit::statement_destinations_mut(stmt) {
+                dest.index = back(dest.index);
             }
         }
     }
@@ -1507,11 +1488,8 @@ pub fn verify(ssa: &Ssa) -> Result<(), String> {
     }
     for (block, contents) in ssa.ir.blocks.iter().enumerate() {
         for (position, stmt) in contents.stmts.iter().enumerate() {
-            if let Stmt::Assign { dest, .. }
-            | Stmt::Call {
-                result: Some(dest), ..
-            } = stmt
-            {
+            let mut destinations = stmt.clone();
+            for dest in crate::ir::visit::statement_destinations_mut(&mut destinations) {
                 if !Ssa::is_value(dest.index) {
                     return Err(format!("block {block} assigns a register, not a value"));
                 }
@@ -1608,6 +1586,441 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+        }
+    }
+
+    fn output_call(carriers: &[u16], changed: &[u16]) -> Stmt {
+        Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: true,
+            outputs: carriers
+                .iter()
+                .map(|register| crate::ir::CallOutput {
+                    register: *register,
+                    dest: RegRef {
+                        index: *register,
+                        width: 64,
+                    },
+                })
+                .collect(),
+            clobbers: Some(changed.iter().copied().collect()),
+            via: None,
+        }
+    }
+
+    #[test]
+    fn all_call_outputs_keep_provenance_through_ssa_and_splitting() {
+        use crate::ir::eval::{self, Setup};
+        for carriers in [&[32, 34, 36, 38][..], &[0, 32], &[0, 1]] {
+            let sum = carriers
+                .iter()
+                .enumerate()
+                .fold(Expr::Const(0), |value, (at, register)| {
+                    Expr::bin(
+                        BinOp::Add,
+                        value,
+                        Expr::bin(
+                            BinOp::Mul,
+                            Expr::reg(*register, 64),
+                            Expr::Const(at as u64 + 1),
+                        ),
+                    )
+                });
+            let mut ir = FunctionIr::single_block(
+                Isa::AArch64,
+                vec![output_call(carriers, carriers), Stmt::Ret { value: sum }],
+            );
+            ir.convention = crate::ir::Convention::Aapcs64;
+            for seed in [0, 1, u64::MAX] {
+                let setup = Setup {
+                    seed,
+                    convention: eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &[],
+                    memory: &[],
+                    step_limit: 100,
+                };
+                let expected = carriers
+                    .iter()
+                    .enumerate()
+                    .fold(0_u64, |sum, (at, register)| {
+                        sum.wrapping_add(
+                            eval::hash(seed ^ 1, 0x2_0000 + u64::from(*register))
+                                .wrapping_mul(at as u64 + 1),
+                        )
+                    });
+                let before = eval::run(&ir, &setup);
+                assert!(matches!(before, eval::Outcome::Return { value, .. } if value == expected));
+                let mut defined = ir.clone();
+                super::undefine_clobbered_reads(&mut defined);
+                assert_eq!(eval::run(&defined, &setup), before);
+                let mut ssa = build(&ir).unwrap();
+                verify(&ssa).unwrap();
+                let constants = super::sccp::constants(&ssa);
+                let ranges = super::ranges::Ranges::solve(&ssa).unwrap();
+                for (output, register) in ssa.ir.blocks[0].stmts[0]
+                    .call_outputs()
+                    .iter()
+                    .zip(carriers)
+                {
+                    assert_eq!(output.register, *register);
+                    assert!(!constants.contains_key(&output.dest.index));
+                    assert_eq!(
+                        ranges.read(output.dest.index, 64, 0, 0),
+                        Some(super::ranges::Fact::TOP)
+                    );
+                    assert!(
+                        !ssa.implicit_writes
+                            .get(&(0, 0))
+                            .into_iter()
+                            .flatten()
+                            .any(|(physical, _)| physical == register)
+                    );
+                }
+                super::sccp::propagate(&mut ssa);
+                verify(&ssa).unwrap();
+                assert_eq!(eval::run(&lower(&ssa), &setup), before);
+                let mut renamed = ir.clone();
+                super::split_variables(&mut renamed, &(0..64).collect::<Vec<_>>());
+                assert_eq!(eval::run(&renamed, &setup), before);
+                let rebuilt = build(&renamed).unwrap();
+                verify(&rebuilt).unwrap();
+                for (output, register) in renamed.blocks[0].stmts[0]
+                    .call_outputs()
+                    .iter()
+                    .zip(carriers)
+                {
+                    assert_eq!(output.register, *register);
+                    assert!(output.dest.index >= crate::ir::VARIABLE_BASE);
+                    assert!(
+                        !rebuilt
+                            .implicit_writes
+                            .get(&(0, 0))
+                            .into_iter()
+                            .flatten()
+                            .any(|(physical, _)| physical == register)
+                    );
+                }
+                assert_eq!(eval::run(&lower(&rebuilt), &setup), before);
+                crate::passes::dce::dce_flow(&mut renamed);
+                assert_eq!(eval::run(&renamed, &setup), before);
+            }
+        }
+    }
+
+    #[test]
+    fn canonical_call_aliases_preserve_both_readers_and_unnamed_inputs() {
+        use crate::ir::eval::{self, Setup};
+        let named = crate::ir::VARIABLE_BASE + 100;
+        let observe = 0x4000_0080_0000;
+        for changed in [false, true] {
+            for unnamed in [false, true] {
+                for seed in [0, 1, 0x1234_5678] {
+                    for initial in [0, 0x8123_4567_ffff_0011, u64::MAX] {
+                        let mut ir = FunctionIr::single_block(
+                            Isa::AArch64,
+                            vec![
+                                assign(0, Expr::Const(initial)),
+                                output_call(
+                                    if changed { &[0] } else { &[] },
+                                    if changed { &[0] } else { &[] },
+                                ),
+                                assign(named, Expr::reg(0, 64)),
+                            ],
+                        );
+                        ir.convention = crate::ir::Convention::Aapcs64;
+                        if unnamed {
+                            let mut call = output_call(&[], &[]);
+                            let Stmt::Call {
+                                args,
+                                floats_named,
+                                target,
+                                ..
+                            } = &mut call
+                            else {
+                                unreachable!()
+                            };
+                            *args = None;
+                            *floats_named = false;
+                            *target = Some(0x2000);
+                            ir.blocks[0].stmts.push(call);
+                        }
+                        ir.blocks[0].stmts.extend([
+                            Stmt::Store {
+                                addr: Expr::Const(observe),
+                                value: Expr::reg(0, 64),
+                                width: 8,
+                            },
+                            Stmt::Store {
+                                addr: Expr::Const(observe + 8),
+                                value: Expr::reg(named, 64),
+                                width: 8,
+                            },
+                            Stmt::Ret {
+                                value: Expr::bin(
+                                    BinOp::Add,
+                                    Expr::bin(BinOp::Mul, Expr::reg(0, 64), Expr::Const(3)),
+                                    Expr::bin(BinOp::Mul, Expr::reg(named, 64), Expr::Const(5)),
+                                ),
+                            },
+                        ]);
+                        let setup = Setup {
+                            seed,
+                            convention: eval::Convention {
+                                arguments: &[],
+                                clobbered: &[],
+                            },
+                            registers: &[],
+                            memory: &[],
+                            step_limit: 100,
+                        };
+                        let expected = if changed {
+                            eval::hash(seed ^ 1, 0x2_0000)
+                        } else {
+                            initial
+                        };
+                        let before = eval::run(&ir, &setup);
+                        let eval::Outcome::Return {
+                            value,
+                            calls,
+                            memory,
+                        } = &before
+                        else {
+                            panic!("{before:?}")
+                        };
+                        assert_eq!(*value, expected.wrapping_mul(8));
+                        assert_eq!(calls.len(), if unnamed { 2 } else { 1 });
+                        if unnamed {
+                            assert_eq!(calls[1].arguments[0], expected);
+                        }
+                        for address in [observe, observe + 8] {
+                            let word = u64::from_le_bytes(std::array::from_fn(|byte| {
+                                memory[&(address + byte as u64)]
+                            }));
+                            assert_eq!(word, expected);
+                        }
+                        let ssa = build(&ir).unwrap();
+                        verify(&ssa).unwrap();
+                        let Stmt::Assign { dest: input, .. } = &ssa.ir.blocks[0].stmts[0] else {
+                            unreachable!()
+                        };
+                        let source = if changed {
+                            ssa.ir.blocks[0].stmts[1].call_outputs()[0].dest.index
+                        } else {
+                            input.index
+                        };
+                        let Stmt::Assign { dest: alias, value } = &ssa.ir.blocks[0].stmts[2] else {
+                            unreachable!()
+                        };
+                        assert_eq!(*value, Expr::reg(source, 64));
+                        assert_ne!(alias.index, source);
+                        assert_eq!(eval::run(&lower(&ssa), &setup), before);
+                        super::split_variables(&mut ir, &(0..31).collect::<Vec<_>>());
+                        super::take_results_directly(&mut ir);
+                        assert_eq!(eval::run(&ir, &setup), before);
+                        let rebuilt = build(&ir).unwrap();
+                        verify(&rebuilt).unwrap();
+                        let first = ir.blocks[0]
+                            .stmts
+                            .iter()
+                            .position(|stmt| {
+                                matches!(
+                                    stmt,
+                                    Stmt::Call {
+                                        target: Some(0x1000),
+                                        ..
+                                    }
+                                )
+                            })
+                            .unwrap();
+                        if changed && unnamed {
+                            assert_eq!(ir.blocks[0].stmts[first].call_outputs()[0].dest.index, 0);
+                            let physical = rebuilt.ir.blocks[0].stmts[first].call_outputs()[0]
+                                .dest
+                                .index;
+                            let next = ir.blocks[0]
+                                .stmts
+                                .iter()
+                                .position(|stmt| {
+                                    matches!(
+                                        stmt,
+                                        Stmt::Call {
+                                            target: Some(0x2000),
+                                            ..
+                                        }
+                                    )
+                                })
+                                .unwrap();
+                            assert!(rebuilt.implicit_reads[&(0, next)].contains(&(0, physical)));
+                        }
+                        assert_eq!(eval::run(&lower(&rebuilt), &setup), before);
+                        crate::passes::dce::dce_flow(&mut ir);
+                        assert_eq!(eval::run(&ir, &setup), before);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn preserved_call_outputs_transfer_only_demanded_bits_to_the_prevalue() {
+        for width in [32, 64] {
+            let mut call = output_call(&[32, 38], &[]);
+            for output in call.call_outputs_mut() {
+                output.dest.index = crate::ir::VARIABLE_BASE + output.register;
+            }
+            let needed = if width == 32 { 0xffff_ffff } else { u64::MAX };
+            let mut ir = FunctionIr::single_block(
+                Isa::AArch64,
+                vec![
+                    call,
+                    Stmt::Ret {
+                        value: Expr::reg(crate::ir::VARIABLE_BASE + 38, width),
+                    },
+                ],
+            );
+            ir.convention = crate::ir::Convention::Aapcs64;
+            let demand = entry_demands(&ir, &[u64::MAX]).unwrap();
+            assert_eq!(demand[&38], needed);
+            assert_eq!(demand[&32], 0);
+            let ssa = build(&ir).unwrap();
+            verify(&ssa).unwrap();
+            assert!(ssa.implicit_reads[&(0, 0)].contains(&(38, ssa.entry[&38])));
+            let Stmt::Call {
+                args, floats_named, ..
+            } = &mut ir.blocks[0].stmts[0]
+            else {
+                unreachable!()
+            };
+            *args = None;
+            *floats_named = false;
+            assert_eq!(entry_demands(&ir, &[needed]).unwrap()[&38], u64::MAX);
+        }
+        let mut call = output_call(&[38], &[]);
+        call.call_outputs_mut()[0].dest = RegRef {
+            index: crate::ir::VARIABLE_BASE,
+            width: 32,
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                call,
+                Stmt::Ret {
+                    value: Expr::reg(crate::ir::VARIABLE_BASE, 64),
+                },
+            ],
+        );
+        ir.convention = crate::ir::Convention::Aapcs64;
+        assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&38], 0xffff_ffff);
+    }
+
+    #[test]
+    fn preserved_call_output_keeps_its_producer_and_snapshots_crossed_destinations() {
+        use crate::ir::eval::{self, Setup};
+        let mut call = output_call(&[0, 1], &[]);
+        call.call_outputs_mut()[0].dest.index = 1;
+        call.call_outputs_mut()[1].dest.index = 0;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(0, Expr::Const(0x1234)),
+                assign(1, Expr::Const(0xabcd)),
+                call,
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Sub, Expr::reg(0, 64), Expr::reg(1, 64)),
+                },
+            ],
+        );
+        ir.convention = crate::ir::Convention::Aapcs64;
+        let setup = Setup {
+            seed: 1,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &[],
+            memory: &[],
+            step_limit: 100,
+        };
+        let before = eval::run(&ir, &setup);
+        assert!(matches!(before, eval::Outcome::Return { value, .. } if value == 0xabcd - 0x1234));
+        let ssa = build(&ir).unwrap();
+        verify(&ssa).unwrap();
+        assert_eq!(eval::run(&lower(&ssa), &setup), before);
+        super::split_variables(&mut ir, &[0, 1]);
+        assert_eq!(eval::run(&ir, &setup), before);
+        crate::passes::dce::dce_flow(&mut ir);
+        assert_eq!(eval::run(&ir, &setup), before);
+    }
+
+    #[test]
+    fn forwarding_one_output_cannot_overwrite_an_intervening_old_value_read() {
+        let named = crate::ir::VARIABLE_BASE;
+        let saved = named + 1;
+        let ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                output_call(&[0], &[0]),
+                assign(saved, Expr::reg(named, 64)),
+                assign(named, Expr::reg(0, 64)),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, Expr::reg(named, 64), Expr::reg(saved, 64)),
+                },
+            ],
+        );
+        let mut forwarded = ir.clone();
+        super::take_results_directly(&mut forwarded);
+        assert_eq!(forwarded.blocks[0].stmts[0].call_outputs()[0].dest.index, 0);
+        assert_eq!(forwarded.blocks[0].stmts.len(), 4);
+    }
+
+    #[test]
+    fn forwarding_a_call_output_cannot_widen_its_definition() {
+        use crate::ir::eval::{self, Setup};
+        let first = crate::ir::VARIABLE_BASE;
+        let second = first + 1;
+        let mut call = output_call(&[0], &[0]);
+        call.call_outputs_mut()[0].dest = RegRef {
+            index: first,
+            width: 32,
+        };
+        let ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                call,
+                assign(second, Expr::reg(first, 64)),
+                Stmt::Ret {
+                    value: Expr::reg(second, 64),
+                },
+            ],
+        );
+        let mut forwarded = ir.clone();
+        super::take_results_directly(&mut forwarded);
+        assert_eq!(forwarded.blocks[0].stmts.len(), 3);
+        assert_eq!(
+            forwarded.blocks[0].stmts[0].call_outputs()[0].dest.width,
+            32
+        );
+        for seed in [0, 1, 0x1234_5678] {
+            let setup = Setup {
+                seed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: 100,
+            };
+            let before = eval::run(&ir, &setup);
+            assert!(matches!(before, eval::Outcome::Return { value, .. }
+                if value == eval::hash(seed ^ 1, 0x2_0000) & 0xffff_ffff));
+            assert_eq!(eval::run(&forwarded, &setup), before);
         }
     }
 
@@ -2077,7 +2490,7 @@ mod tests {
                 convention: crate::ir::Convention::SysV,
                 args: Some(Vec::new()),
                 floats_named: true,
-                result: None,
+                outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
                 clobbers: None,
                 via: None,
             },
@@ -2098,7 +2511,10 @@ mod tests {
                     convention: crate::ir::Convention::SysV,
                     args: Some(Vec::new()),
                     floats_named: false,
-                    result: None,
+                    outputs: crate::ir::fallback_call_outputs(
+                        crate::ir::Convention::SysV,
+                        clobbers,
+                    ),
                     clobbers,
                     via: None,
                 },
@@ -2179,12 +2595,10 @@ mod tests {
                     args: Some(Vec::new()),
                     floats_named: false,
                     clobbers: None,
-                    result: Some(RegRef {
-                        index: first,
-                        width: 64,
-                    }),
+                    outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::GoAbi0, None),
                     via: None,
                 },
+                assign(first, Expr::reg(0, 64)),
                 assign(second, Expr::reg(first, 64)),
                 Stmt::Ret {
                     value: Expr::reg(second, 64),
@@ -2193,10 +2607,14 @@ mod tests {
         );
         super::take_results_directly(&mut ir);
         assert_eq!(ir.blocks[0].stmts.len(), 2);
-        assert!(matches!(
-            ir.blocks[0].stmts[0],
-            Stmt::Call { result: Some(RegRef { index, .. }), .. } if index == second
-        ));
+        assert_eq!(
+            ir.blocks[0].stmts[0]
+                .primary_call_output()
+                .unwrap()
+                .dest
+                .index,
+            second
+        );
     }
 
     #[test]
@@ -2214,12 +2632,10 @@ mod tests {
                     args: Some(Vec::new()),
                     floats_named: false,
                     clobbers: None,
-                    result: Some(RegRef {
-                        index: first,
-                        width: 64,
-                    }),
+                    outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::GoAmd64, None),
                     via: None,
                 },
+                assign(first, Expr::reg(0, 64)),
                 assign(third, Expr::reg(3, 64)),
                 assign(second, Expr::reg(first, 64)),
                 assign(fourth, Expr::reg(third, 64)),
@@ -2230,15 +2646,18 @@ mod tests {
         );
         super::take_results_directly(&mut ir);
         let stmts = &ir.blocks[0].stmts;
-        assert_eq!(stmts.len(), 3, "{}", ir.render());
-        assert!(matches!(
-            stmts[0],
-            Stmt::Call { result: Some(RegRef { index, .. }), .. } if index == second
-        ));
-        assert!(matches!(
-            &stmts[1],
-            Stmt::Assign { dest, value: Expr::Reg { index: 3, .. } } if dest.index == fourth
-        ));
+        assert_eq!(stmts.len(), 2, "{}", ir.render());
+        assert_eq!(stmts[0].primary_call_output().unwrap().dest.index, second);
+        assert_eq!(
+            stmts[0]
+                .call_outputs()
+                .iter()
+                .find(|output| output.register == 3)
+                .unwrap()
+                .dest
+                .index,
+            fourth
+        );
     }
 
     #[test]
@@ -2472,7 +2891,7 @@ mod split_tests {
             args: None,
             floats_named: false,
             clobbers: None,
-            result: None,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             via: None,
         });
         stmts.push(Stmt::Ret {

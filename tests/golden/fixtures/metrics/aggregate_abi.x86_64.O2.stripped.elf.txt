@@ -215,7 +215,7 @@ uint64_t *sub_2013a0(uint64_t *a0, int64_t a1, int64_t a2, int64_t a3) {
     return a0;
 }
 -- signature
-int64_t (uint64_t * a0, int64_t a1, int64_t a2, int64_t a3)
+uint64_t * (uint64_t * a0, int64_t a1, int64_t a2, int64_t a3)
 -- references
 
 -- ir

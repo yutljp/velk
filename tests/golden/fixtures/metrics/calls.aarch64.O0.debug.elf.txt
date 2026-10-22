@@ -75,7 +75,7 @@ int apply_table(unsigned int index, int x) {
 
     local_0 = index;
     v3 = table[local_0 % 0x3];
-    return ((uint64_t (*)())v3)(x);
+    return ((uint64_t (*)())v3)((x & 0xffffffff));
 }
 -- signature
 int (unsigned int index, int x)
@@ -86,7 +86,7 @@ fn apply_table @ 0x21037c (size 72)
   blk0 @ 0x21037c:
     store32(x0, (sp + #0xffffffffffffffec))
     v3 = load64((#0x2206f0 + ((load32((sp + #0xffffffffffffffec)) % #0x3) << #0x3)))
-    v5 = call *v3((x1 & #0xffffffff))
+    v5:x0, x1, d0, d1 = call *v3((x1 & #0xffffffff))
     ret v5
 -- card
 {"addr":"0x21037c","approxTokens":204,"blocks":1,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf","unwind"],"section":".text","size":72,"unsupported":0}
@@ -97,7 +97,7 @@ fn apply_table @ 0x21037c (size 72)
 int apply_pointer(void *f, int x) {
     int32_t v3;
 
-    v3 = ((uint64_t (*)())f)(x);
+    v3 = ((uint64_t (*)())f)((x & 0xffffffff));
     return v3 + 0x1;
 }
 -- signature
@@ -107,7 +107,7 @@ int (void * f, int x)
 -- ir
 fn apply_pointer @ 0x2103c4 (size 48)
   blk0 @ 0x2103c4:
-    v3 = call *x0((x1 & #0xffffffff))
+    v3:x0, x1, d0, d1 = call *x0((x1 & #0xffffffff))
     ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2103c4","approxTokens":168,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
@@ -147,7 +147,7 @@ fn factorial @ 0x2103f4 (size 96)
     br 0x210444
   blk3 @ 0x210420:
     store32(load32((sp + #0xffffffffffffffec)), (sp + #0xffffffffffffffe4))
-    v3 = call 0x2103f4((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
+    v3:x0 = call 0x2103f4((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32((load32((sp + #0xffffffffffffffe4)) * (v3 & #0xffffffff)), (sp + #0xffffffffffffffe8))
     br 0x210444
   blk4 @ 0x210444:
@@ -159,14 +159,12 @@ fn factorial @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x210454 */
 int is_odd(int n) {
-    int32_t v3;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
     local_0 = n;
     if (n != 0x0) {
-        v3 = is_even(local_0 - 0x1);
-        local_1 = v3;
+        local_1 = ((int32_t)(is_even(local_0 - 0x1)));
         return local_1;
     }
     local_1 = 0x0;
@@ -187,7 +185,7 @@ fn is_odd @ 0x210454 (size 76)
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk3 @ 0x21047c:
-    v3 = call 0x2104a0((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
+    v3:x0 = call 0x2104a0((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32(v3, (sp + #0xffffffffffffffe8))
     br 0x210490
   blk4 @ 0x210490:
@@ -199,14 +197,12 @@ fn is_odd @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: is_even @ 0x2104a0 */
 int is_even(int n) {
-    int32_t v3;
     uint32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
     local_0 = n;
     if (n != 0x0) {
-        v3 = is_odd(local_0 - 0x1);
-        local_1 = v3;
+        local_1 = ((int32_t)(is_odd(local_0 - 0x1)));
         return local_1;
     }
     local_1 = 0x1;
@@ -227,7 +223,7 @@ fn is_even @ 0x2104a0 (size 76)
     store32(#0x1, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk3 @ 0x2104c8:
-    v3 = call 0x210454((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
+    v3:x0 = call 0x210454((((load32((sp + #0xffffffffffffffec)) & #0xffffffff) - #0x1) & #0xffffffff))
     store32(v3, (sp + #0xffffffffffffffe8))
     br 0x2104dc
   blk4 @ 0x2104dc:
@@ -265,7 +261,7 @@ long (long x)
 -- ir
 fn call_sum9 @ 0x210564 (size 76)
   blk0 @ 0x210564:
-    v1 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
+    v1:x0 = call 0x2104ec(x0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v1
 -- card
 {"addr":"0x210564","approxTokens":210,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
