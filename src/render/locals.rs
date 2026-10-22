@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use crate::ir::CType;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use crate::passes::frame_slots::frame_slot;
-use crate::render::expr::Ctx;
 use crate::render::expr::render_expr;
+use crate::render::expr::{Ctx, type_of};
 
 /// A named frame slot, with the widest access it receives, and the float
 /// or pointer type its uses show.
@@ -43,20 +43,16 @@ pub(crate) fn stack_locals(
         slots: HashMap::new(),
         local_parts: HashMap::new(),
         local_widths: HashMap::new(),
-        local_elements: HashMap::new(),
-        local_pointees: HashMap::new(),
+        local_element_types: HashMap::new(),
         local_scaled: std::collections::HashSet::new(),
         local_floats: HashMap::new(),
         signed_locals: std::collections::HashSet::new(),
         wide_params: std::collections::HashSet::new(),
-        fields: HashMap::new(),
         symbols: &super::Symbols::default(),
         globals: Default::default(),
         data_ranges: &[],
         members: HashMap::new(),
-        pointees: HashMap::new(),
-        elements: HashMap::new(),
-        element_signs: HashMap::new(),
+        element_types: HashMap::new(),
         plain_chars: std::collections::HashSet::new(),
         arrays: HashMap::new(),
         narrow_regs: std::collections::HashSet::new(),
@@ -202,8 +198,7 @@ pub(crate) fn stack_locals(
         .values()
         .map(|local| (local.name.clone(), local.width))
         .collect();
-    // A parameter in the caller's frame reads by its name, a structure's
-    // part by its field.
+    // Aggregate parameters keep the width of each access through their storage.
     for (address, slot, width) in stack_arguments(ir, sp, frames) {
         let Some(param) = ir.stack_params.iter().find(|param| {
             slot >= param.offset
@@ -218,14 +213,11 @@ pub(crate) fn stack_locals(
             .strip_prefix("struct ")
             .or_else(|| structure.strip_prefix("union "));
         let name = match structure {
-            Some(structure) => match ir
-                .members
-                .iter()
-                .find(|member| member.structure == structure && member.offset == within)
-            {
-                Some(member) => format!("{}.{}", param.name, member.name),
-                None => format!("{}.field_0x{within:x}", param.name),
-            },
+            Some(_) => format!(
+                "*({} *)((uint8_t *)&{} + 0x{within:x})",
+                type_of(width, false),
+                param.name
+            ),
             None if within == 0 => param.name.clone(),
             None => continue,
         };

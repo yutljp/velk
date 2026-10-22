@@ -278,4 +278,6 @@ pub struct Member {
     pub structure: String,
     pub offset: i64,
     pub name: String,
+    pub ty: CType,
+    pub width: u64,
 }

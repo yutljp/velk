@@ -151,7 +151,7 @@ fn big_make @ 0x201280 (size 31)
 /* velk pseudo-C: big_sum @ 0x2012a0 */
 struct big { long a; long b; long c; long d; };
 long big_sum(struct big value) {
-    return value.b + value.d + (value.a + value.c);
+    return *(uint64_t *)((uint8_t *)&value + 0x8) + *(uint64_t *)((uint8_t *)&value + 0x18) + (*(uint64_t *)((uint8_t *)&value + 0x0) + *(uint64_t *)((uint8_t *)&value + 0x10));
 }
 -- signature
 long ()

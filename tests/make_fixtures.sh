@@ -76,6 +76,14 @@ ld.lld -m aarch64elf -e sum3 -o "$OUT/arm64_debug.elf" "$OUT/arm64_debug.o"
 llvm-objcopy --remove-section=.symtab --remove-section=.strtab \
   "$OUT/arm64_debug.elf" "$OUT/arm64_debug_stripped.elf"
 
+for isa in a64 x64; do
+  target=$A64; emulation=aarch64elf
+  [ "$isa" = x64 ] && target=$X64 && emulation=elf_x86_64
+  "${CC[@]}" -g $target -O0 -c "$CASES/dwarf/member_types.c" -o "$OUT/member_types_$isa.o"
+  ld.lld -m "$emulation" -e read_outer -o "$OUT/member_types_$isa.elf" "$OUT/member_types_$isa.o"
+  rm "$OUT/member_types_$isa.o"
+done
+
 # Stripped objects: function discovery after returns, tail calls and indirect tail calls.
 llvm-strip -s "$OUT/arm64_loops.o" -o "$OUT/arm64_loops_stripped.o"
 llvm-strip -s "$OUT/x64_loops.o" -o "$OUT/x64_loops_stripped.o"

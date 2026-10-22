@@ -6,6 +6,96 @@ mod common;
 use velk::service::Binary;
 
 #[test]
+fn debug_members_keep_their_declared_types_and_widths() {
+    for isa in ["aarch64", "x86_64"] {
+        for level in ["O0", "O2"] {
+            let fixture = format!("metrics/structs.{isa}.{level}.debug.elf");
+            let binary = Binary::open(&common::fixtures_dir().join(&fixture))
+                .unwrap_or_else(|error| panic!("{fixture}: {error}"));
+            let function = binary.find("rect_area").expect("rect_area");
+            let types = velk::loader::dwarf::function_types(binary.image(), function.addr)
+                .expect("debug types");
+            for (name, offset) in [("min.x", 0), ("min.y", 4), ("max.x", 8), ("max.y", 12)] {
+                let member = types
+                    .members
+                    .iter()
+                    .find(|member| member.structure == "rect" && member.name == name)
+                    .unwrap_or_else(|| panic!("{fixture}: rect.{name}"));
+                assert_eq!(member.offset, offset, "{fixture}: {name}");
+                assert_eq!(member.width, 4, "{fixture}: {name}");
+                assert_eq!(member.ty.integer(), Some((32, true)), "{fixture}: {name}");
+            }
+            let count = types
+                .members
+                .iter()
+                .find(|member| member.structure == "record" && member.name == "count")
+                .expect("record.count");
+            assert_eq!(count.offset, 16, "{fixture}");
+            assert_eq!(count.width, 2, "{fixture}");
+            assert_eq!(count.ty.integer(), Some((16, true)), "{fixture}");
+            let word = types
+                .members
+                .iter()
+                .find(|member| member.structure == "word")
+                .expect("word member");
+            assert_eq!(word.name, "u", "{fixture}");
+            assert_eq!(word.width, 4, "{fixture}");
+            assert_eq!(word.ty.integer(), Some((32, false)), "{fixture}");
+            assert!(
+                types
+                    .members
+                    .iter()
+                    .all(|member| member.structure != "flags"),
+                "{fixture}"
+            );
+        }
+    }
+}
+
+#[test]
+fn nested_debug_types_leave_later_members_with_their_parent() {
+    for isa in ["a64", "x64"] {
+        let fixture = format!("member_types_{isa}.elf");
+        let binary = Binary::open(&common::fixtures_dir().join(&fixture))
+            .unwrap_or_else(|error| panic!("{fixture}: {error}"));
+        let function = binary.find("read_outer").expect("read_outer");
+        let types = velk::loader::dwarf::function_types(binary.image(), function.addr)
+            .expect("debug types");
+        let member = |structure: &str, name: &str| {
+            types
+                .members
+                .iter()
+                .find(|member| member.structure == structure && member.name == name)
+                .unwrap_or_else(|| panic!("{fixture}: {structure}.{name}"))
+        };
+        let head = member("outer", "first.head");
+        assert_eq!(head.offset, 0, "{fixture}");
+        assert_eq!(head.width, 4, "{fixture}");
+        assert_eq!(head.ty.integer(), Some((32, false)), "{fixture}");
+        let next = member("outer", "next");
+        assert_eq!(next.offset, 8, "{fixture}");
+        assert_eq!(next.width, 8, "{fixture}");
+        let velk::ir::CType::Pointer(target) = &next.ty else {
+            panic!("{fixture}: next is not a pointer: {:?}", next.ty);
+        };
+        assert_eq!(target.integer(), Some((32, true)), "{fixture}");
+        let count = member("outer", "count");
+        assert_eq!(count.offset, 16, "{fixture}");
+        assert_eq!(count.width, 2, "{fixture}");
+        assert_eq!(count.ty.integer(), Some((16, true)), "{fixture}");
+        assert_eq!(member("inner", "head").width, 4, "{fixture}");
+        assert!(
+            types
+                .members
+                .iter()
+                .filter(|member| member.structure == "inner")
+                .all(|member| member.name == "head"),
+            "{fixture}"
+        );
+    }
+}
+
+#[test]
 fn file_metadata_does_not_occupy_virtual_memory() {
     for (fixture, metadata) in [("go_probe", ".shstrtab"), ("rust_probe", ".debug_info")] {
         let binary = Binary::open(&common::fixtures_dir().join(fixture))

@@ -195,14 +195,15 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             if params.is_empty() && ret.is_none() {
                 continue;
             }
+            let definitions = definitions(&dwarf, &unit);
             return Some(FunctionTypes {
                 params,
                 ret,
                 ret_aggregate_size,
                 param_aggregate_sizes,
                 variadic,
-                members: structure_members(&dwarf, &unit),
-                definitions: definitions(&dwarf, &unit),
+                members: structure_members(&dwarf, &unit, &definitions),
+                definitions,
             });
         }
     }
@@ -407,10 +408,7 @@ fn element_type_size(element: &CType) -> Option<u64> {
 /// Each structure's name and direct fields: offset, name and type.
 type StructureFields = std::collections::HashMap<
     gimli::UnitOffset,
-    (
-        Option<String>,
-        Vec<(u64, String, Option<gimli::UnitOffset>)>,
-    ),
+    (Option<String>, Vec<(u64, String, gimli::UnitOffset)>),
 >;
 
 /// The named fields of every structure in the unit, by byte offset. A field
@@ -419,13 +417,14 @@ type StructureFields = std::collections::HashMap<
 fn structure_members(
     dwarf: &Dwarf<EndianSlice<'_, LittleEndian>>,
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
+    definitions: &[Definition],
 ) -> Vec<Member> {
     use std::collections::HashMap;
-    // The direct fields of each structure, and what each type alias names.
     let mut fields: StructureFields = HashMap::new();
     let mut aliases: HashMap<gimli::UnitOffset, gimli::UnitOffset> = HashMap::new();
+    let mut declared = HashMap::new();
     let mut entries = unit.entries();
-    let mut current: Option<gimli::UnitOffset> = None;
+    let mut ancestors = Vec::new();
     let type_of =
         |entry: &gimli::DebuggingInformationEntry<EndianSlice<'_, LittleEndian>>| match attribute(
             entry,
@@ -435,36 +434,64 @@ fn structure_members(
             _ => None,
         };
     while let Ok(Some(entry)) = entries.next_dfs() {
+        while ancestors
+            .last()
+            .is_some_and(|(depth, _)| *depth >= entry.depth())
+        {
+            ancestors.pop();
+        }
         match entry.tag() {
             gimli::DW_TAG_structure_type | gimli::DW_TAG_union_type => {
                 let name = attribute(entry, gimli::DW_AT_name)
                     .and_then(|value| attribute_string(dwarf, unit, value));
+                let keyword = if entry.tag() == gimli::DW_TAG_union_type {
+                    "union"
+                } else {
+                    "struct"
+                };
+                if let Some(definition) = name.as_ref().and_then(|name| {
+                    definitions
+                        .iter()
+                        .find(|definition| definition.name == format!("{keyword} {name}"))
+                }) {
+                    declared.insert(entry.offset(), &definition.fields);
+                }
                 fields.insert(entry.offset(), (name, Vec::new()));
-                current = Some(entry.offset());
+                ancestors.push((entry.depth(), entry.offset()));
             }
-            gimli::DW_TAG_typedef | gimli::DW_TAG_const_type | gimli::DW_TAG_volatile_type => {
+            gimli::DW_TAG_typedef
+            | gimli::DW_TAG_const_type
+            | gimli::DW_TAG_volatile_type
+            | gimli::DW_TAG_restrict_type => {
                 if let Some(target) = type_of(entry) {
                     aliases.insert(entry.offset(), target);
                 }
             }
             gimli::DW_TAG_member => {
-                // A bit-field shares its word with others; no name covers the word.
-                let Some(structure) =
-                    current.filter(|_| attribute(entry, gimli::DW_AT_bit_size).is_none())
-                else {
+                let Some((depth, structure)) = ancestors.last() else {
                     continue;
                 };
+                if entry.depth() != depth + 1 || attribute(entry, gimli::DW_AT_bit_size).is_some() {
+                    continue;
+                }
                 let Some(name) = attribute(entry, gimli::DW_AT_name)
                     .and_then(|value| attribute_string(dwarf, unit, value))
                 else {
                     continue;
                 };
-                // A union's fields all start at its beginning.
+                if !declared
+                    .get(structure)
+                    .is_some_and(|names| names.contains(&name))
+                {
+                    continue;
+                }
+                let Some(ty) = type_of(entry) else {
+                    continue;
+                };
                 let offset = attribute(entry, gimli::DW_AT_data_member_location)
                     .and_then(|value| attribute_offset(dwarf, unit, value))
                     .unwrap_or(0);
-                let ty = type_of(entry);
-                if let Some((_, list)) = fields.get_mut(&structure) {
+                if let Some((_, list)) = fields.get_mut(structure) {
                     list.push((offset, name, ty));
                 }
             }
@@ -488,25 +515,29 @@ fn structure_members(
         depth: usize,
         fields: &StructureFields,
         resolve: &dyn Fn(gimli::UnitOffset) -> gimli::UnitOffset,
-        out: &mut Vec<(u64, String)>,
+        out: &mut Vec<(u64, String, gimli::UnitOffset)>,
     ) {
         let Some((_, list)) = fields.get(&structure) else {
             return;
         };
         for (offset, name, ty) in list {
+            let Some(at) = base.checked_add(*offset) else {
+                continue;
+            };
             let path = format!("{prefix}{name}");
-            let inner = ty.map(resolve).filter(|inner| fields.contains_key(inner));
-            match inner {
-                Some(inner) if depth < 4 => flatten(
+            let inner = resolve(*ty);
+            if fields.contains_key(&inner) && depth < 4 {
+                flatten(
                     inner,
-                    base + offset,
+                    at,
                     &format!("{path}."),
                     depth + 1,
                     fields,
                     resolve,
                     out,
-                ),
-                _ => out.push((base + offset, path)),
+                );
+            } else {
+                out.push((at, path, *ty));
             }
         }
     }
@@ -519,12 +550,23 @@ fn structure_members(
         flatten(*offset, 0, "", 0, &fields, &resolve, &mut flat);
         // Fields sharing an offset, as in a union, keep the first.
         let mut seen = std::collections::HashSet::new();
-        for (field_offset, path) in flat {
+        for (field_offset, path, ty_offset) in flat {
+            let Some(ty) = type_name(dwarf, unit, ty_offset, 8).filter(plausible_type) else {
+                continue;
+            };
+            let Some(width) = type_size(unit, ty_offset, 8).filter(|width| *width > 0) else {
+                continue;
+            };
+            let Ok(offset) = i64::try_from(field_offset) else {
+                continue;
+            };
             if seen.insert(field_offset) {
                 members.push(Member {
                     structure: structure.clone(),
-                    offset: field_offset as i64,
+                    offset,
                     name: path,
+                    ty,
+                    width,
                 });
             }
         }

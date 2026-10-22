@@ -11,12 +11,10 @@
 == 0x2101dc rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x2101dc */
-struct point { int x; int y; };
-struct rect { struct point min; struct point max; };
 int rect_area(struct rect *r) {
     uint64_t v1;
 
-    v1 = sub_lanes32(r->max.x, r->min.x);
+    v1 = sub_lanes32(*(uint64_t *)((uint8_t *)r + 0x8), *(uint64_t *)(r));
     return mul_lanes32(v1, (v1 >> 0x20) * 0x100000001);
 }
 -- signature

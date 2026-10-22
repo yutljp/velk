@@ -29,7 +29,6 @@ use crate::render::locals::Locals;
 use crate::render::locals::stack_locals;
 use crate::render::naming::member_access;
 use crate::render::naming::narrow_registers;
-use crate::render::naming::struct_fields;
 use crate::render::structure::{Node, structure_best};
 
 /// The loaded, non-executable ranges, where a constant address names data.
@@ -262,7 +261,6 @@ fn render_with(
         .filter(|param| !param.ty.is_narrow())
         .map(|param| param.index)
         .collect();
-    let fields = struct_fields(ir);
     let narrow_regs = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
     let variable_types = variables::variable_types(ir, &narrow_regs, float_return);
@@ -276,29 +274,26 @@ fn render_with(
             _ => None,
         })
         .collect();
-    let members: HashMap<(String, i64), String> = ir
+    let members: HashMap<(String, i64), crate::ir::Member> = ir
         .members
         .iter()
-        .map(|member| {
-            (
-                (member.structure.clone(), member.offset),
-                member.name.clone(),
-            )
-        })
+        .cloned()
         .chain(ir.structures.iter().flat_map(|structure| {
-            structure.fields.iter().map(move |(offset, _)| {
-                (
-                    (structure.name.clone(), *offset as i64),
-                    format!("field_0x{offset:x}"),
-                )
+            structure.fields.iter().filter_map(move |(offset, ty)| {
+                let width = match ty {
+                    CType::Pointer(_) => 8,
+                    _ => u64::from(CType::pointer_to(ty.clone()).pointee_size()?),
+                };
+                Some(crate::ir::Member {
+                    structure: structure.name.clone(),
+                    offset: i64::try_from(*offset).ok()?,
+                    name: format!("field_0x{offset:x}"),
+                    ty: ty.clone(),
+                    width,
+                })
             })
         }))
-        .collect();
-    // `struct pair *p` points at a `pair`, so `p->0x4` can take a name.
-    let mut pointees: HashMap<u16, String> = ir
-        .params
-        .iter()
-        .filter_map(|param| Some((param.index, param.ty.pointee_struct()?.to_owned())))
+        .map(|member| ((member.structure.clone(), member.offset), member))
         .collect();
     let arrays: HashMap<String, naming::Layout> = ir
         .structures
@@ -306,43 +301,9 @@ fn render_with(
         .filter_map(|structure| {
             let layout = naming::Layout {
                 size: structure.size?,
-                fields: structure
-                    .fields
-                    .iter()
-                    .filter_map(|(offset, ty)| match ty {
-                        CType::Int { bytes, .. } => Some((*offset, *bytes)),
-                        _ => None,
-                    })
-                    .collect(),
             };
             Some((structure.name.clone(), layout))
         })
-        .collect();
-    let element_size = |ty: &CType| {
-        ty.pointee_size()
-            .map(u64::from)
-            .or_else(|| Some(arrays.get(ty.pointee_struct()?)?.size))
-    };
-    // `int *p` points at ints, so `*(p + 4)` reads `p[1]`. A pointer whose
-    // type the debug info names is believed; one recovered from its
-    // accesses is taken for a scalar only when every access reads a whole
-    // element, and otherwise reads as a structure's fields.
-    let mut elements: HashMap<u16, u64> = ir
-        .params
-        .iter()
-        .filter(|param| match &param.ty {
-            CType::Pointer(target) if matches!(target.as_ref(), CType::Named(_)) => true,
-            _ => {
-                let size = param.ty.pointee_size().unwrap_or(0);
-                size > 0
-                    && fields.iter().all(|((base, offset), (width, _))| {
-                        *base != param.index
-                            || *offset == 0
-                            || (*width == size && offset % i64::from(size) == 0)
-                    })
-            }
-        })
-        .filter_map(|param| Some((param.index, element_size(&param.ty)?)))
         .collect();
     let scaled: std::collections::HashSet<u16> = ir
         .params
@@ -352,22 +313,13 @@ fn render_with(
         .filter(|(_, ty)| scales(ty))
         .map(|(index, _)| index)
         .collect();
-    // A pointer variable moves along its elements as a parameter does.
-    for (index, ty) in &variable_types {
-        if let Some(size) = element_size(ty) {
-            elements.insert(*index, size);
-        }
-        if let Some(structure) = ty.pointee_struct() {
-            pointees.insert(*index, structure.to_owned());
-        }
-    }
-    let element_signs: HashMap<u16, bool> = ir
+    let element_types = ir
         .params
         .iter()
         .map(|param| (param.index, &param.ty))
         .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
         .filter_map(|(index, ty)| match ty {
-            CType::Pointer(target) => Some((index, target.integer()?.1)),
+            CType::Pointer(target) => Some((index, target.as_ref().clone())),
             _ => None,
         })
         .collect();
@@ -410,11 +362,11 @@ fn render_with(
             .iter()
             .filter_map(|local| Some((local.name.clone(), local.ty.as_ref()?)))
     };
-    let local_elements = local_types()
-        .filter_map(|(name, ty)| Some((name, element_size(ty)?)))
-        .collect();
-    let local_pointees = local_types()
-        .filter_map(|(name, ty)| Some((name, ty.pointee_struct()?.to_owned())))
+    let local_element_types = local_types()
+        .filter_map(|(name, ty)| match ty {
+            CType::Pointer(target) => Some((name, target.as_ref().clone())),
+            _ => None,
+        })
         .collect();
     let local_scaled = local_types()
         .filter(|(_, ty)| scales(ty))
@@ -510,18 +462,14 @@ fn render_with(
             })
             .map(|local| local.name.clone())
             .collect(),
-        local_elements,
-        local_pointees,
+        local_element_types,
         local_scaled,
         wide_params,
-        fields,
         symbols,
         globals: globals::Globals::new(symbols, reserved),
         data_ranges,
         members,
-        pointees,
-        elements,
-        element_signs,
+        element_types,
         plain_chars,
         arrays,
         narrow_regs,
@@ -560,8 +508,10 @@ fn render_with(
     // A pointer read as one scalar is no structure, and one to a structure
     // the debug info names needs no note of its fields.
     for (access, line) in ir.accesses.iter().zip(ir.access_lines()) {
-        if !ctx.elements.contains_key(&access.register)
-            && !ctx.pointees.contains_key(&access.register)
+        if naming::scalar_pointer(&Expr::reg(access.register, 64), &ctx).is_none()
+            && !ctx.element_types.get(&access.register).is_some_and(
+                |target| matches!(target, CType::Named(name) if name.starts_with("struct ")),
+            )
         {
             out.push_str(&format!("/* struct: {line} */\n"));
         }
@@ -581,8 +531,10 @@ fn render_with(
             members.push(format!("{ty} field_0x{offset:x};"));
             end = offset
                 + match ty {
-                    CType::Int { bytes, .. } => u64::from(*bytes),
-                    _ => 0,
+                    CType::Pointer(_) => 8,
+                    _ => CType::pointer_to(ty.clone())
+                        .pointee_size()
+                        .map_or(0, u64::from),
                 };
         }
         if let Some(size) = structure.size
@@ -1250,7 +1202,7 @@ fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
             out.push_str(&format!(
                 "{} = {};\n",
                 ctx.register(dest.index, dest.width),
-                conformed(loaded, call, pointer)
+                conformed(loaded, call, pointer, ctx)
             ));
             index += 2;
             continue;
@@ -1719,15 +1671,19 @@ fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
         ctx.returned.map_or(64, |returned| returned.bits),
         ctx.returned.is_some_and(|returned| returned.integer),
     );
-    conformed(value, printed, ctx.ret_pointer.as_deref())
+    conformed(value, printed, ctx.ret_pointer.as_deref(), ctx)
 }
 
 /// The value as C takes it into a pointer of type `pointer`, or into an
 /// integer when that is None: C converts between the two only by a cast.
-fn conformed(value: &Expr, printed: int::Printed, pointer: Option<&str>) -> String {
+fn conformed(value: &Expr, printed: int::Printed, pointer: Option<&str>, ctx: &Ctx<'_>) -> String {
     match pointer {
         Some(ty)
-            if printed.is_pointer() && matches!(value, Expr::Const(_) | Expr::Select { .. }) =>
+            if printed.is_pointer()
+                && (matches!(value, Expr::Const(_) | Expr::Select { .. })
+                    || naming::pointer_target(value, ctx).is_some_and(|target| {
+                        CType::pointer_to(target).to_string().trim_end() != ty.trim_end()
+                    })) =>
         {
             format!("({ty}){}", printed.within(12, false).text)
         }
@@ -1748,6 +1704,39 @@ fn conformed(value: &Expr, printed: int::Printed, pointer: Option<&str>) -> Stri
         None => printed.address_integer().text,
         _ => printed.text,
     }
+}
+
+fn value_precision(value: &Expr, ctx: &Ctx<'_>) -> Option<crate::ir::Precision> {
+    match value {
+        Expr::Apply { op, .. } => op.result_precision(),
+        Expr::Reg { index, .. } => ctx.floats.get(index).copied(),
+        Expr::Load { addr, width, .. } => ctx
+            .slots
+            .get(&render_expr(addr, ctx))
+            .and_then(|name| ctx.local_floats.get(name))
+            .filter(|precision| precision.bits() / 8 == *width)
+            .copied(),
+        _ => None,
+    }
+}
+
+fn stored_value(value: &Expr, bits: u32, ctx: &Ctx<'_>) -> int::Printed {
+    let Some(precision) = value_precision(value, ctx) else {
+        return expr::print_value_at(value, ctx, bits, false);
+    };
+    let float = match precision {
+        crate::ir::Precision::Single => "float",
+        crate::ir::Precision::Double => "double",
+    };
+    let integer = type_of(precision.bits() / 8, false);
+    let value = expr::float_operand(value, precision, ctx, 0, false);
+    int::Printed::new(
+        format!("((union {{ {float} value; {integer} bits; }}){{ .value = {value} }}).bits"),
+        int::Int::promoted(u32::from(precision.bits()), false),
+        int::ALL,
+        13,
+    )
+    .ranging(int::Range::Unsigned(u32::from(precision.bits())))
 }
 
 pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
@@ -1782,23 +1771,12 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 declared.is_some_and(|declared| declared.integer),
             );
             let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
-            format!("{target} = {};", conformed(value, printed, pointer))
+            format!("{target} = {};", conformed(value, printed, pointer, ctx))
         }
         Stmt::Store { addr, value, width } => {
             // Memory keeps of the value the bits stored.
             let stored = u32::from(*width) * 8;
-            let precision = match value {
-                Expr::Apply { op, .. } => op.result_precision(),
-                Expr::Reg { index, .. } => ctx.floats.get(index).copied(),
-                Expr::Load {
-                    addr, width: read, ..
-                } if read == width => ctx
-                    .slots
-                    .get(&render_expr(addr, ctx))
-                    .and_then(|name| ctx.local_floats.get(name))
-                    .copied(),
-                _ => None,
-            };
+            let precision = value_precision(value, ctx);
             let view = precision
                 .filter(|precision| u32::from(precision.bits()) == stored)
                 .map_or(globals::View::Unsigned(*width), globals::View::Float);
@@ -1806,59 +1784,75 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 .or_else(|| naming::array_access_as(addr, *width, view, ctx))
                 .or_else(|| naming::flat_array_access_as(addr, *width, view, ctx))
             {
-                if let Some(precision) = precision {
-                    let text = expr::float_operand(value, precision, ctx, 0, false);
-                    if u32::from(precision.bits()) == stored {
-                        return format!("{target} = {text};");
-                    }
-                    let float = match precision {
-                        crate::ir::Precision::Single => "float",
-                        crate::ir::Precision::Double => "double",
-                    };
-                    let integer = type_of(precision.bits() / 8, false);
+                if let Some(precision) = precision
+                    && u32::from(precision.bits()) == stored
+                {
                     return format!(
-                        "{target} = ((union {{ {float} value; {integer} bits; }}){{ .value = {text} }}).bits;"
+                        "{target} = {};",
+                        expr::float_operand(value, precision, ctx, 0, false)
                     );
                 }
                 return match update_of_same_location(addr, value, *width, ctx) {
-                    Some((op, rhs)) => format!("{target} {op}= {};", render_at(rhs, ctx, stored)),
-                    None => {
-                        let printed = expr::print_value_at(value, ctx, stored, false);
-                        format!("{target} = {};", conformed(value, printed, None))
+                    Some((op, rhs)) if precision.is_none() => {
+                        format!("{target} {op}= {};", render_at(rhs, ctx, stored))
+                    }
+                    _ => {
+                        let printed = stored_value(value, stored, ctx);
+                        format!("{target} = {};", conformed(value, printed, None, ctx))
                     }
                 };
             }
             if let Some(member) = member_access(addr, *width, ctx) {
-                return match update_of_same_location(addr, value, *width, ctx) {
-                    Some((op, rhs)) => {
-                        format!("{} {}= {};", member, op, render_at(rhs, ctx, stored))
-                    }
-                    None => {
-                        let printed = expr::print_value_at(value, ctx, stored, false);
-                        // A field recovered from accesses, or an element of an
-                        // integer type, holds an integer.
-                        let text = if member.contains("field_0x")
-                            || naming::element_is_integer(addr, ctx)
-                        {
-                            conformed(value, printed, None)
-                        } else {
-                            printed.text
-                        };
-                        format!("{member} = {text};")
-                    }
-                };
+                if let Some(precision) = precision
+                    && member.precision() == Some(precision)
+                {
+                    return format!(
+                        "{} = {};",
+                        member.text,
+                        expr::float_operand(value, precision, ctx, 0, false)
+                    );
+                }
+                if member.precision().is_none() {
+                    return match update_of_same_location(addr, value, *width, ctx)
+                        .filter(|_| precision.is_none() && member.integer().is_some())
+                    {
+                        Some((op, rhs)) => {
+                            format!("{} {op}= {};", member.text, render_at(rhs, ctx, stored))
+                        }
+                        None => {
+                            let printed = stored_value(value, stored, ctx);
+                            let pointer = member.ty.is_pointer().then(|| member.ty.to_string());
+                            format!(
+                                "{} = {};",
+                                member.text,
+                                conformed(value, printed, pointer.as_deref(), ctx)
+                            )
+                        }
+                    };
+                }
             }
             let address = render_expr(addr, ctx);
             match ctx.slots.get(&address) {
                 Some(name) => {
-                    let target = slot_access(name, *width, false, ctx);
-                    if let Some(precision) = ctx.local_floats.get(name) {
+                    let mut target = slot_access(name, *width, false, ctx);
+                    if ctx
+                        .local_floats
+                        .get(name)
+                        .is_some_and(|local| precision.is_some_and(|source| source != *local))
+                    {
+                        target = format!("*({} *)&{name}", type_of(*width, false));
+                    }
+                    if let Some(precision) = ctx.local_floats.get(name)
+                        && target == *name
+                    {
                         return format!(
                             "{target} = {};",
                             expr::float_operand(value, *precision, ctx, 0, false)
                         );
                     }
-                    match update_of_same_location(addr, value, *width, ctx) {
+                    match update_of_same_location(addr, value, *width, ctx)
+                        .filter(|_| precision.is_none())
+                    {
                         Some((op, rhs)) => {
                             format!("{} {}= {};", target, op, render_at(rhs, ctx, stored))
                         }
@@ -1867,8 +1861,8 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                                 .then(|| ctx.local_pointer_types.get(name))
                                 .flatten()
                                 .map(String::as_str);
-                            let printed = expr::print_value_at(value, ctx, stored, false);
-                            format!("{target} = {};", conformed(value, printed, pointer))
+                            let printed = stored_value(value, stored, ctx);
+                            format!("{target} = {};", conformed(value, printed, pointer, ctx))
                         }
                     }
                 }
@@ -1876,7 +1870,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     "*({} *)({}) = {};",
                     type_of(*width, false),
                     expr::local_plus_offset(addr, ctx).unwrap_or(address),
-                    conformed(value, expr::print_value_at(value, ctx, stored, false), None)
+                    conformed(value, stored_value(value, stored, ctx), None, ctx)
                 ),
             }
         }
@@ -2629,6 +2623,8 @@ mod tests {
             structure: "record".to_owned(),
             offset: 0,
             name: "pointer".to_owned(),
+            ty: CType::pointer_to(CType::Void),
+            width: 8,
         });
         let text = rendered(&ir);
         assert!(

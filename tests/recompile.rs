@@ -23,7 +23,8 @@ use std::process::{Command, Stdio};
 
 use velk::ir::eval::{self, Outcome};
 use velk::ir::{
-    BinOp, Block, CType, Convention, Expr, FunctionIr, Operation, Param, Precision, Stmt, trials,
+    Access, BinOp, Block, CType, Convention, Definition, Expr, FunctionIr, Member, Operation,
+    Param, Precision, Stmt, trials,
 };
 use velk::loader::{Image, Isa};
 use velk::service::Binary;
@@ -505,27 +506,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
     let candidates = cases
         .into_iter()
         .map(|(name, params, stmts, ret_type)| {
-            let ir = FunctionIr {
-                isa: Isa::X86_64,
-                convention: Convention::SysV,
-                params,
-                stack_params: Vec::new(),
-                variadic: false,
-                ret_type,
-                accesses: Vec::new(),
-                members: Vec::new(),
-                definitions: Vec::new(),
-                structures: Vec::new(),
-                signed_params: Default::default(),
-                landing_pads: Vec::new(),
-                pointer_values: Vec::new(),
-                value_types: Default::default(),
-                variable_registers: Default::default(),
-                addr: 0,
-                name: Some(name.clone()),
-                size: 0,
-                blocks: vec![Block { start: 0, stmts }],
-            };
+            let ir = synthetic_ir(&name, params, ret_type, stmts);
             Candidate {
                 label: name,
                 code: velk::render::render(&ir, &[], &symbols, &[(REGION, REGION_SIZE)]),
@@ -538,9 +519,306 @@ fn printed_global_views_preserve_addresses_and_memory() {
             }
         })
         .collect::<Vec<_>>();
+    check_memory_candidates("globals", candidates);
+}
+
+#[test]
+fn printed_members_preserve_declared_types_and_access_widths() {
+    let address = |offset| Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset));
+    let load = |offset, width, signed| Expr::Load {
+        addr: Box::new(address(offset)),
+        width,
+        signed,
+    };
+    let store = |offset, width, value| Stmt::Store {
+        addr: address(offset),
+        width,
+        value,
+    };
+    let mut cases = Vec::new();
+    let mut case = |name: &str, mut stmts: Vec<Stmt>, value: Expr| {
+        stmts.push(Stmt::Ret { value });
+        cases.push((name.to_owned(), stmts));
+    };
+    case("adjacent_fields", Vec::new(), load(0, 8, false));
+    for (name, offset, width) in [("partial_byte", 8, 1), ("partial_word", 10, 2)] {
+        case(
+            name,
+            vec![
+                store(8, 8, Expr::Const(0x0123_4567_89ab_cdef)),
+                store(offset, width, Expr::Const(0xbeef)),
+            ],
+            load(8, 8, false),
+        );
+    }
+    for (name, offset, signed) in [
+        ("unsigned_from_signed", 16, false),
+        ("signed_from_signed", 16, true),
+        ("signed_from_unsigned", 20, true),
+    ] {
+        case(
+            name,
+            vec![store(offset, 4, Expr::Const(0x8123_4567))],
+            load(offset, 4, signed),
+        );
+    }
+    case(
+        "pointer_integer_bits",
+        vec![store(24, 8, Expr::Const(REGION + 0x4000))],
+        Expr::bin(BinOp::Xor, load(24, 8, false), Expr::Const(0x55)),
+    );
+    case(
+        "pointer_byte_arithmetic",
+        vec![store(24, 8, Expr::Const(REGION + 0x4000))],
+        Expr::bin(BinOp::Add, load(24, 8, false), Expr::Const(1)),
+    );
+    for (name, value) in [
+        ("pointer_integer_store", Expr::Const(0x8123_4567)),
+        ("pointer_null_store", Expr::Const(0)),
+        ("pointer_value_store", Expr::reg(6, 64)),
+    ] {
+        case(name, vec![store(24, 8, value)], load(24, 8, false));
+    }
+    case(
+        "pointer_partial_store",
+        vec![
+            store(24, 8, Expr::Const(REGION + 0x4000)),
+            store(25, 1, Expr::Const(0x80)),
+        ],
+        load(24, 8, false),
+    );
+    case(
+        "pointer_partial_read",
+        vec![store(24, 8, Expr::Const(REGION + 0x4234))],
+        load(24, 4, false),
+    );
+    case(
+        "float_integer_read",
+        vec![store(32, 4, Expr::Const(u64::from(1.25_f32.to_bits())))],
+        load(32, 4, false),
+    );
+    case(
+        "float_integer_write",
+        vec![store(32, 4, Expr::reg(0, 32))],
+        load(32, 4, false),
+    );
+    case(
+        "float_add_store",
+        vec![
+            store(32, 4, Expr::Const(u64::from(1.25_f32.to_bits()))),
+            store(
+                32,
+                4,
+                Expr::apply(
+                    Operation::FloatAdd(Precision::Single),
+                    vec![
+                        load(32, 4, false),
+                        Expr::Const(u64::from(2.5_f32.to_bits())),
+                    ],
+                ),
+            ),
+        ],
+        load(32, 4, false),
+    );
+    for (name, offset, width, precision) in [
+        ("wide_float32_bits", 8, 8, Precision::Single),
+        ("wide_float64_bits", 8, 8, Precision::Double),
+        ("float_narrow_double_bits", 32, 4, Precision::Double),
+        ("unknown_float32_bits", 56, 8, Precision::Single),
+    ] {
+        let (first, second) = match precision {
+            Precision::Single => (u64::from(1.25_f32.to_bits()), u64::from(2.5_f32.to_bits())),
+            Precision::Double => (1.1_f64.to_bits(), 2.2_f64.to_bits()),
+        };
+        case(
+            name,
+            vec![store(
+                offset,
+                width,
+                Expr::apply(
+                    Operation::FloatAdd(precision),
+                    vec![Expr::Const(first), Expr::Const(second)],
+                ),
+            )],
+            load(offset, width, false),
+        );
+    }
+    case(
+        "boolean_raw_byte",
+        vec![store(36, 1, Expr::Const(2))],
+        load(36, 1, false),
+    );
+    for (name, offset) in [
+        ("array_raw_storage", 40),
+        ("aggregate_raw_storage", 48),
+        ("unknown_raw_storage", 56),
+    ] {
+        case(
+            name,
+            vec![store(offset, 8, Expr::Const(0x8123_4567_89ab_cdef))],
+            load(offset, 8, false),
+        );
+    }
+    let fields = vec![
+        (0, "lo", CType::U32, 4),
+        (4, "hi", CType::U32, 4),
+        (8, "wide", CType::U64, 8),
+        (16, "signed_value", CType::I32, 4),
+        (20, "unsigned_value", CType::U32, 4),
+        (24, "pointer", CType::pointer_to(CType::U32), 8),
+        (32, "sample", CType::Named("float".to_owned()), 4),
+        (36, "flag", CType::Named("bool".to_owned()), 1),
+        (40, "array", CType::Array(Box::new(CType::U32)), 8),
+        (48, "aggregate", CType::Named("struct pair".to_owned()), 8),
+        (56, "unknown", CType::Void, 8),
+    ];
+    let candidates = cases
+        .into_iter()
+        .map(|(name, stmts)| {
+            let mut ir = synthetic_ir(
+                &name,
+                vec![
+                    Param {
+                        index: 7,
+                        name: "record".to_owned(),
+                        ty: CType::pointer_to(CType::Named("struct record".to_owned())),
+                    },
+                    Param {
+                        index: 6,
+                        name: "target".to_owned(),
+                        ty: CType::pointer_to(CType::int(1, false)),
+                    },
+                    Param {
+                        index: 0,
+                        name: "bits".to_owned(),
+                        ty: CType::U32,
+                    },
+                ],
+                CType::U64,
+                stmts,
+            );
+            ir.members = fields
+                .iter()
+                .map(|(offset, name, ty, width)| Member {
+                    structure: "record".to_owned(),
+                    offset: *offset,
+                    name: (*name).to_owned(),
+                    ty: ty.clone(),
+                    width: *width,
+                })
+                .collect();
+            ir.accesses = vec![Access {
+                register: 7,
+                fields: fields
+                    .iter()
+                    .map(|(offset, _, _, width)| {
+                        let width = if *offset == 0 { 8 } else { *width };
+                        (*offset as u64, CType::int(width as u8, false))
+                    })
+                    .collect(),
+            }];
+            ir.definitions = vec![
+                Definition {
+                    name: "struct pair".to_owned(),
+                    members: vec!["uint32_t lo;".to_owned(), "uint32_t hi;".to_owned()],
+                    fields: vec!["lo".to_owned(), "hi".to_owned()],
+                    contains: Vec::new(),
+                },
+                Definition {
+                    name: "struct record".to_owned(),
+                    members: [
+                        "uint32_t lo;",
+                        "uint32_t hi;",
+                        "uint64_t wide;",
+                        "int32_t signed_value;",
+                        "uint32_t unsigned_value;",
+                        "uint32_t *pointer;",
+                        "float sample;",
+                        "bool flag;",
+                        "uint8_t padding[3];",
+                        "uint32_t array[2];",
+                        "struct pair aggregate;",
+                        "uint64_t unknown;",
+                    ]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect(),
+                    fields: fields
+                        .iter()
+                        .map(|(_, name, _, _)| (*name).to_owned())
+                        .collect(),
+                    contains: vec!["struct pair".to_owned()],
+                },
+            ];
+            let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+            let named_return = match name.as_str() {
+                "unsigned_from_signed" | "signed_from_signed" => Some("->signed_value"),
+                "signed_from_unsigned" => Some("->unsigned_value"),
+                "wide_float32_bits" | "wide_float64_bits" => Some("->wide"),
+                "pointer_integer_bits"
+                | "pointer_byte_arithmetic"
+                | "pointer_integer_store"
+                | "pointer_null_store"
+                | "pointer_value_store" => Some("->pointer"),
+                _ => None,
+            };
+            if let Some(field) = named_return {
+                assert!(
+                    code.lines().any(|line| {
+                        line.trim_start().starts_with("return ") && line.contains(field)
+                    }),
+                    "{name}: {code}"
+                );
+            }
+            if name == "float_add_store" {
+                assert!(code.contains("->sample"), "{name}: {code}");
+            }
+            for field in ["array", "aggregate", "unknown", "flag"] {
+                assert!(!code.contains(&format!("->{}", field)), "{name}: {code}");
+            }
+            Candidate {
+                label: name,
+                params: ir.params.iter().map(|param| param.ty.to_string()).collect(),
+                inputs: (0..trials::TRIALS)
+                    .map(|trial| vec![REGION + 0x2000, REGION + 0x4000, eval::hash(trial, 0)])
+                    .collect(),
+                void: false,
+                ir,
+                code,
+            }
+        })
+        .collect();
+    check_memory_candidates("members", candidates);
+}
+
+fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt>) -> FunctionIr {
+    FunctionIr {
+        isa: Isa::X86_64,
+        convention: Convention::SysV,
+        params,
+        stack_params: Vec::new(),
+        variadic: false,
+        ret_type,
+        accesses: Vec::new(),
+        members: Vec::new(),
+        definitions: Vec::new(),
+        structures: Vec::new(),
+        signed_params: Default::default(),
+        landing_pads: Vec::new(),
+        pointer_values: Vec::new(),
+        value_types: Default::default(),
+        variable_registers: Default::default(),
+        addr: 0,
+        name: Some(name.to_owned()),
+        size: 0,
+        blocks: vec![Block { start: 0, stmts }],
+    }
+}
+
+fn check_memory_candidates(name: &str, candidates: Vec<Candidate>) {
     let count = candidates.len();
     let fixture = Fixture {
-        name: "globals".into(),
+        name: name.into(),
         convention: eval::Convention {
             arguments: Convention::SysV.arguments(),
             clobbered: &[],
@@ -551,7 +829,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
         excluded: BTreeMap::new(),
         candidates,
     };
-    let scratch = scratch_dir("globals");
+    let scratch = scratch_dir(name);
     let results = check(&[fixture], &scratch, Mode::Memory);
     std::fs::remove_dir_all(&scratch).ok();
     let result = &results[0];

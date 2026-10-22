@@ -1,0 +1,27 @@
+# member_types_a64.elf: elf aarch64 0x210154, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x210154 52 read_outer symtab,entry,dwarf,unwind
+
+== 0x210154 read_outer
+-- decompile
+/* velk pseudo-C: read_outer @ 0x210154 */
+struct inner { unsigned int head; };
+struct outer {
+    struct inner first;
+    uint8_t gap_0x4[0x4];
+    int *next;
+    short count;
+    uint8_t gap_0x12[0x6];
+};
+int read_outer(struct outer *p) {
+    return p->first.head + *p->next + p->count;
+}
+-- signature
+int (struct outer * p)
+-- references
+
+-- ir
+fn read_outer @ 0x210154 (size 52)
+  blk0 @ 0x210154:
+    ret (((load32(x0) + load32(load64((x0 + #0x8)))) + load16((x0 + #0x10))s) & #0xffffffff)
+-- card
+{"addr":"0x210154","approxTokens":174,"blocks":1,"hardReasons":[],"name":"read_outer","nameSources":["symtab","entry","dwarf","unwind"],"section":".text","size":52,"unsupported":0}

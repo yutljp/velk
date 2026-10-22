@@ -7,7 +7,7 @@
 #   refers to data: 136
 #   returns no integer: 75
 #   returns nothing: 369
-#   takes an argument that is no integer: 391
+#   takes an argument that is no integer: 393
 #   takes arguments on the stack: 28
 # runs left out:
 #   step limit: 14

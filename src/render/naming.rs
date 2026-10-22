@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
+use crate::ir::{BinOp, CType, Expr, FunctionIr, Precision, Stmt};
 use crate::render::expr::Ctx;
 use crate::render::expr::render_expr;
 use crate::render::globals::View;
@@ -251,70 +249,17 @@ pub(super) fn global_pointer(addr: &Expr, view: View, ctx: &Ctx<'_>) -> Option<S
     Some(ctx.globals.pointer(*address, view))
 }
 
-/// Every `register + offset` address a load inside `expr` reads through.
-/// `(pointer register, byte offset)` to the `(width, signed)` of the field there.
-pub(crate) type Fields = HashMap<(u16, i64), (u8, bool)>;
-
-/// The fields the accesses through pointers name, so a member
-/// reads as `p->field_0x4` instead of a cast.
-pub(crate) fn struct_fields(ir: &FunctionIr) -> Fields {
-    fn loads(expr: &Expr, out: &mut Vec<(Expr, u8, bool)>) {
-        if let Expr::Load {
-            addr,
-            width,
-            signed,
-        } = expr
-        {
-            out.push((addr.as_ref().clone(), *width, *signed));
-        }
-        for child in crate::ir::visit::children(expr) {
-            loads(child, out);
-        }
-    }
-    // Pointer parameters, and variables whose accesses made a structure.
-    let pointer_params: std::collections::HashSet<u16> = ir
-        .params
-        .iter()
-        .filter(|param| param.ty.is_pointer())
-        .map(|param| param.index)
-        .chain(
-            ir.value_types
-                .iter()
-                .filter(|(_, ty)| ty.pointee_struct().is_some())
-                .map(|(index, _)| *index),
-        )
-        .collect();
-    let mut accesses = Vec::new();
-    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let Stmt::Store { addr, width, value } = stmt {
-            accesses.push((addr.clone(), *width, matches!(value, Expr::Const(_))));
-        }
-        for value in stmt.operands() {
-            loads(value, &mut accesses);
-        }
-    }
-    let mut fields: Fields = HashMap::new();
-    for (addr, width, signed) in accesses {
-        if let Some((base, offset)) = member_address(&addr)
-            && pointer_params.contains(&base)
-        {
-            fields.entry((base, offset)).or_insert((width, signed));
-        }
-    }
-    fields
-}
-
 /// `p`, `p + k` or `p - k` as a register index and byte offset.
 fn member_address(addr: &Expr) -> Option<(u16, i64)> {
     match addr {
-        Expr::Reg { index, .. } => Some((*index, 0)),
+        Expr::Reg { index, width: 64 } => Some((*index, 0)),
         Expr::Bin {
             op: BinOp::Add,
             lhs,
             rhs,
         } => match (lhs.as_ref(), rhs.as_ref()) {
-            (Expr::Reg { index, .. }, Expr::Const(delta)) => Some((*index, *delta as i64)),
-            (Expr::Const(delta), Expr::Reg { index, .. }) => Some((*index, *delta as i64)),
+            (Expr::Reg { index, width: 64 }, Expr::Const(delta)) => Some((*index, *delta as i64)),
+            (Expr::Const(delta), Expr::Reg { index, width: 64 }) => Some((*index, *delta as i64)),
             _ => None,
         },
         Expr::Bin {
@@ -322,64 +267,131 @@ fn member_address(addr: &Expr) -> Option<(u16, i64)> {
             lhs,
             rhs,
         } => match (lhs.as_ref(), rhs.as_ref()) {
-            (Expr::Reg { index, .. }, Expr::Const(delta)) => Some((*index, -(*delta as i64))),
+            (Expr::Reg { index, width: 64 }, Expr::Const(delta)) => {
+                Some((*index, -(*delta as i64)))
+            }
             _ => None,
         },
         _ => None,
     }
 }
 
-/// A recovered structure that arrays are made of: its size and the width of
-/// the field at each offset.
+/// A recovered structure that arrays are made of, with its element size.
 pub(crate) struct Layout {
     pub(crate) size: u64,
-    pub(crate) fields: HashMap<u64, u8>,
+}
+
+pub(crate) struct Place {
+    pub(crate) text: String,
+    pub(crate) ty: CType,
+}
+
+impl Place {
+    pub(crate) fn integer(&self) -> Option<(u32, bool)> {
+        if let CType::Named(name) = &self.ty
+            && name
+                .split_whitespace()
+                .any(|word| matches!(word, "bool" | "_Bool"))
+        {
+            return None;
+        }
+        self.ty.integer()
+    }
+
+    pub(crate) fn precision(&self) -> Option<Precision> {
+        self.ty.is_sse_float().then(|| {
+            if self
+                .ty
+                .to_string()
+                .split_whitespace()
+                .any(|word| word == "float")
+            {
+                Precision::Single
+            } else {
+                Precision::Double
+            }
+        })
+    }
+
+    pub(crate) fn plain_char(&self) -> bool {
+        matches!(&self.ty, CType::Named(name) if name.split_whitespace()
+            .filter(|word| !matches!(*word, "const" | "volatile"))
+            .eq(["char"]))
+    }
+
+    fn scalar(self, width: u64) -> Option<Self> {
+        let bits = width * 8;
+        (self
+            .integer()
+            .is_some_and(|(declared, _)| u64::from(declared) == bits)
+            || (self.ty.is_pointer() && width == 8)
+            || self
+                .precision()
+                .is_some_and(|precision| u64::from(precision.bits()) == bits))
+        .then_some(self)
+    }
 }
 
 /// Renders a member access when the field table has that offset at the
 /// access's own width.
-pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
+pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
     // A pointer to scalars reads as one, or as an array of them.
     if let Some((name, element, index)) = element_index(addr, ctx)
         && element == u64::from(width)
     {
-        return Some(match index {
+        let (_, _, _, _, base) = element_terms(addr, ctx)?;
+        let ty = pointer_target(base, ctx)?;
+        let text = match index {
             Expr::Const(0) => format!("*{name}"),
-            index => format!("{name}[{}]", render_expr(&index, ctx)),
-        });
+            index => format!(
+                "{name}[{}]",
+                crate::render::expr::integer_sum(&index, ctx).text
+            ),
+        };
+        return Place { text, ty }.scalar(u64::from(width));
     }
     // An array of structures reads as an element's field.
-    if let Some((element, field)) = array_field(addr, ctx)
-        && field == width
+    if let Some((place, field)) = array_field(addr, ctx)
+        && field == u64::from(width)
     {
-        return Some(element);
+        return place.scalar(u64::from(width));
     }
     let (base, offset) = member_address(addr)?;
-    let pointee = ctx.pointees.get(&base)?;
-    if ctx.arrays.contains_key(pointee) {
+    let pointee = pointee_of(&Expr::reg(base, 64), ctx)?;
+    if ctx.arrays.contains_key(&pointee) {
         return None;
     }
-    let (field_width, _) = *ctx.fields.get(&(base, offset))?;
-    if field_width != width {
+    let member = ctx.members.get(&(pointee, offset))?;
+    if member.width != u64::from(width) {
         return None;
     }
-    let name = ctx.members.get(&(pointee.clone(), offset))?;
-    Some(format!("{}->{}", ctx.register(base, 64), name))
+    Place {
+        text: format!("{}->{}", ctx.register(base, 64), member.name),
+        ty: member.ty.clone(),
+    }
+    .scalar(u64::from(width))
 }
 
 /// An address inside an element of an array of structures, as the field
 /// there, `p[i].field_0x8` or `p->field_0x8`, and the field's width.
-fn array_field(addr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u8)> {
+fn array_field(addr: &Expr, ctx: &Ctx<'_>) -> Option<(Place, u64)> {
     let (name, _, index, offset, base) = element_terms(addr, ctx)?;
-    let layout = ctx.arrays.get(pointee_of(base, ctx)?)?;
-    let width = *layout.fields.get(&offset)?;
-    let field = format!("field_0x{offset:x}");
+    let structure = pointee_of(base, ctx)?;
+    ctx.arrays.get(&structure)?;
+    let member = ctx.members.get(&(structure, offset as i64))?;
     Some((
-        match index {
-            Expr::Const(0) => format!("{name}->{field}"),
-            index => format!("{name}[{}].{field}", render_expr(&index, ctx)),
+        Place {
+            text: match index {
+                Expr::Const(0) => format!("{name}->{}", member.name),
+                index => format!(
+                    "{name}[{}].{}",
+                    crate::render::expr::integer_sum(&index, ctx).text,
+                    member.name
+                ),
+            },
+            ty: member.ty.clone(),
         },
-        width,
+        member.width,
     ))
 }
 
@@ -390,18 +402,46 @@ pub(crate) fn field_address(addr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         return None;
     }
     let (field, _) = array_field(addr, ctx)?;
-    Some(format!("&{field}"))
+    Some(format!("&{}", field.text))
 }
 
 /// The structure the pointer `expr` points at: a register's, or a local's
 /// the frame holds it in.
-fn pointee_of<'c>(expr: &Expr, ctx: &'c Ctx<'_>) -> Option<&'c String> {
+fn pointee_of(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+    let CType::Named(name) = pointer_target(expr, ctx)? else {
+        return None;
+    };
+    name.strip_prefix("struct ").map(str::to_owned)
+}
+
+pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
     match expr {
-        Expr::Reg { index, .. } => ctx.pointees.get(index),
-        Expr::Load { addr, width: 8, .. } => ctx
-            .local_pointees
-            .get(ctx.slots.get(&render_expr(addr, ctx))?),
+        Expr::Reg { index, width: 64 } => ctx.element_types.get(index).cloned(),
+        Expr::Load { addr, width: 8, .. } => {
+            if let Some(ty) = ctx
+                .slots
+                .get(&render_expr(addr, ctx))
+                .and_then(|name| ctx.local_element_types.get(name))
+            {
+                return Some(ty.clone());
+            }
+            let CType::Pointer(target) = member_access(addr, 8, ctx)?.ty else {
+                return None;
+            };
+            Some(*target)
+        }
         _ => None,
+    }
+}
+
+fn size_of(ty: &CType, ctx: &Ctx<'_>) -> Option<u64> {
+    match ty {
+        CType::Pointer(_) => Some(8),
+        CType::Named(name) if name.starts_with("struct ") => ctx
+            .arrays
+            .get(name.strip_prefix("struct ")?)
+            .map(|layout| layout.size),
+        _ => CType::pointer_to(ty.clone()).pointee_size().map(u64::from),
     }
 }
 
@@ -409,10 +449,22 @@ fn pointee_of<'c>(expr: &Expr, ctx: &'c Ctx<'_>) -> Option<&'c String> {
 /// a local the frame holds it in.
 pub(crate) fn scalar_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64)> {
     match expr {
-        Expr::Reg { index, .. } => Some((ctx.register(*index, 64), *ctx.elements.get(index)?)),
+        Expr::Reg { index, width: 64 } => Some((
+            ctx.register(*index, 64),
+            size_of(&pointer_target(expr, ctx)?, ctx)?,
+        )),
         Expr::Load { addr, width: 8, .. } => {
-            let name = ctx.slots.get(&render_expr(addr, ctx))?;
-            Some((name.clone(), *ctx.local_elements.get(name)?))
+            let size = size_of(&pointer_target(expr, ctx)?, ctx)?;
+            if let Some(name) = ctx.slots.get(&render_expr(addr, ctx)) {
+                return Some((name.clone(), size));
+            }
+            let text = member_access(addr, 8, ctx)?.text;
+            let text = if text.starts_with('*') {
+                format!("({text})")
+            } else {
+                text
+            };
+            Some((text, size))
         }
         _ => None,
     }
@@ -425,27 +477,6 @@ pub(crate) fn element_index(addr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64, 
     match element_terms(addr, ctx)? {
         (name, size, index, 0, _) => Some((name, size, index)),
         _ => None,
-    }
-}
-
-/// Whether the element `addr` reads, `width` bytes wide, has a signed type,
-/// when the pointer's type says.
-pub(crate) fn element_signed(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<bool> {
-    let (_, size, _, offset, base) = element_terms(addr, ctx)?;
-    if size != u64::from(width) || offset != 0 || width >= 8 {
-        return None;
-    }
-    match base {
-        Expr::Reg { index, .. } => ctx.element_signs.get(index).copied(),
-        _ => None,
-    }
-}
-
-/// Whether the element `addr` reads through a pointer has an integer type.
-pub(crate) fn element_is_integer(addr: &Expr, ctx: &Ctx<'_>) -> bool {
-    match element_terms(addr, ctx) {
-        Some((_, _, _, 0, Expr::Reg { index, .. })) => ctx.element_signs.contains_key(index),
-        _ => false,
     }
 }
 
@@ -641,6 +672,8 @@ mod tests {
             structure: "record".to_owned(),
             offset: 0,
             name: "value".to_owned(),
+            ty: CType::U32,
+            width: 4,
         }];
         let text = rendered(&ir);
         assert!(text.contains("struct record { uint32_t value;"), "{text}");
@@ -681,5 +714,399 @@ mod tests {
             "{text}"
         );
         assert!(!text.contains("field_0x4"), "{text}");
+    }
+
+    fn declared_member(stmts: Vec<Stmt>, ty: CType, width: u64, declaration: &str) -> FunctionIr {
+        let mut ir = function(stmts);
+        ir.members = vec![Member {
+            structure: "record".to_owned(),
+            offset: 0,
+            name: "value".to_owned(),
+            ty,
+            width,
+        }];
+        ir.definitions = vec![Definition {
+            name: "struct record".to_owned(),
+            members: vec![declaration.to_owned()],
+            fields: vec!["value".to_owned()],
+            contains: Vec::new(),
+        }];
+        ir
+    }
+
+    #[test]
+    fn a_read_spanning_two_declared_fields_keeps_the_full_memory_width() {
+        let ir = declared_member(
+            vec![Stmt::Ret { value: load(0, 8) }],
+            CType::U32,
+            4,
+            "uint32_t value; uint32_t next;",
+        );
+        let text = rendered(&ir);
+        assert!(text.contains("return *(uint64_t *)(p);"), "{text}");
+        assert!(!text.contains("p->value"), "{text}");
+    }
+
+    #[test]
+    fn a_partial_field_store_does_not_replace_the_whole_declared_member() {
+        let ir = declared_member(
+            vec![
+                Stmt::Store {
+                    addr: address(0),
+                    width: 1,
+                    value: Expr::Const(5),
+                },
+                Stmt::Ret { value: load(0, 8) },
+            ],
+            CType::U64,
+            8,
+            "uint64_t value;",
+        );
+        let text = rendered(&ir);
+        assert!(text.contains("*(uint8_t *)(p) = 0x5;"), "{text}");
+        assert!(text.contains("return p->value;"), "{text}");
+        assert!(!text.contains("p->value ="), "{text}");
+    }
+
+    #[test]
+    fn member_load_extensions_use_the_declared_sign() {
+        for (ty, signed, declaration, expected) in [
+            (
+                CType::I32,
+                false,
+                "int32_t value;",
+                "return (uint32_t)p->value;",
+            ),
+            (
+                CType::U32,
+                true,
+                "uint32_t value;",
+                "return (int32_t)p->value;",
+            ),
+            (
+                CType::Named("char".to_owned()),
+                false,
+                "char value;",
+                "return (uint8_t)p->value;",
+            ),
+        ] {
+            let width = if declaration.starts_with("char") {
+                1
+            } else {
+                4
+            };
+            let ir = declared_member(
+                vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(address(0)),
+                        width,
+                        signed,
+                    },
+                }],
+                ty,
+                u64::from(width),
+                declaration,
+            );
+            let text = rendered(&ir);
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn pointer_members_keep_integer_uses_and_offsets_in_bytes() {
+        for (value, expected) in [
+            (load(0, 8), "return (uintptr_t)p->value;"),
+            (
+                Expr::bin(BinOp::Add, load(0, 8), Expr::Const(1)),
+                "return (uintptr_t)((uint8_t *)p->value + 0x1);",
+            ),
+        ] {
+            let ir = declared_member(
+                vec![Stmt::Ret { value }],
+                CType::pointer_to(CType::U32),
+                8,
+                "uint32_t *value;",
+            );
+            let text = rendered(&ir);
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn pointer_elements_preserve_dereference_grouping() {
+        let mut ir = function(vec![Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(load(0, 8)),
+                width: 4,
+                signed: false,
+            },
+        }]);
+        ir.params[0].ty = CType::pointer_to(CType::pointer_to(CType::U32));
+        let text = rendered(&ir);
+        assert!(text.contains("return *(*p);"), "{text}");
+    }
+
+    #[test]
+    fn an_unknown_pointee_size_keeps_pointer_member_offsets_in_bytes() {
+        let ir = declared_member(
+            vec![Stmt::Ret {
+                value: Expr::bin(BinOp::Add, load(0, 8), Expr::Const(1)),
+            }],
+            CType::pointer_to(CType::Named("struct unknown".to_owned())),
+            8,
+            "struct unknown *value;",
+        );
+        let text = rendered(&ir);
+        assert!(
+            text.contains("return (uintptr_t)((uint8_t *)p->value + 0x1);"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn float_fields_are_named_only_when_read_as_their_declared_precision() {
+        let mut ir = declared_member(
+            vec![Stmt::Ret { value: load(0, 4) }],
+            CType::Named("float".to_owned()),
+            4,
+            "float value;",
+        );
+        let integer = rendered(&ir);
+        assert!(integer.contains("return *(uint32_t *)(p);"), "{integer}");
+        ir.ret_type = CType::Named("float".to_owned());
+        let floating = rendered(&ir);
+        assert!(floating.contains("return p->value;"), "{floating}");
+    }
+
+    #[test]
+    fn boolean_array_and_aggregate_storage_keeps_raw_accesses() {
+        for (ty, width, declaration) in [
+            (CType::Named("_Bool".to_owned()), 1, "_Bool value;"),
+            (
+                CType::Array(Box::new(CType::int(1, false))),
+                4,
+                "uint8_t value[4];",
+            ),
+            (
+                CType::Named("struct inner".to_owned()),
+                4,
+                "struct inner value;",
+            ),
+        ] {
+            let ir = declared_member(
+                vec![
+                    Stmt::Store {
+                        addr: address(0),
+                        width,
+                        value: Expr::Const(2),
+                    },
+                    Stmt::Ret {
+                        value: load(0, width),
+                    },
+                ],
+                ty,
+                u64::from(width),
+                declaration,
+            );
+            let text = rendered(&ir);
+            assert!(!text.contains("p->value"), "{text}");
+            assert!(text.contains(" = 0x2;"), "{text}");
+        }
+    }
+
+    #[test]
+    fn float_locals_keep_the_bits_of_different_precision_and_partial_stores() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+        let float_sum = |precision, one| Expr::Apply {
+            op: crate::ir::Operation::FloatAdd(precision),
+            args: vec![Expr::Const(one), Expr::Const(0)],
+        };
+        for (width, value, expected) in [
+            (
+                4,
+                float_sum(Precision::Double, 0x3ff0_0000_8000_0000),
+                "*(uint32_t *)&local_0 = ((union { double value; uint64_t bits; })",
+            ),
+            (1, Expr::Const(5), "*(uint8_t *)&local_0 = 0x5;"),
+        ] {
+            let mut ir = function(vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    width: 4,
+                    value: float_sum(Precision::Single, u64::from(1.0f32.to_bits())),
+                },
+                Stmt::Store {
+                    addr: slot.clone(),
+                    width,
+                    value,
+                },
+                Stmt::Ret {
+                    value: Expr::Apply {
+                        op: crate::ir::Operation::FloatAdd(Precision::Single),
+                        args: vec![
+                            Expr::Load {
+                                addr: Box::new(slot.clone()),
+                                width: 4,
+                                signed: false,
+                            },
+                            Expr::Const(0),
+                        ],
+                    },
+                },
+            ]);
+            ir.params.clear();
+            ir.ret_type = CType::Named("float".to_owned());
+            let text = rendered(&ir);
+            assert!(text.contains("float local_0;"), "{text}");
+            assert!(text.contains(expected), "{expected:?} in {text}");
+        }
+    }
+
+    #[test]
+    fn aggregate_stack_parameters_keep_access_widths_and_unknown_offsets() {
+        let stack = |offset| Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset));
+        let mut ir = declared_member(
+            vec![
+                Stmt::Store {
+                    addr: stack(13),
+                    width: 1,
+                    value: Expr::Const(5),
+                },
+                Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(stack(8)),
+                        width: 8,
+                        signed: false,
+                    },
+                },
+            ],
+            CType::U32,
+            4,
+            "uint32_t value; uint32_t next;",
+        );
+        ir.params.clear();
+        ir.stack_params = vec![crate::ir::StackParam {
+            offset: 8,
+            size: 8,
+            name: "arg".to_owned(),
+            ty: CType::Named("struct record".to_owned()),
+            position: 0,
+        }];
+        let text = rendered(&ir);
+        assert!(
+            text.contains("*(uint8_t *)((uint8_t *)&arg + 0x5) = 0x5;"),
+            "{text}"
+        );
+        assert!(
+            text.contains("return *(uint64_t *)((uint8_t *)&arg + 0x0);"),
+            "{text}"
+        );
+        assert!(!text.contains("arg.value"), "{text}");
+        assert!(!text.contains("field_0x"), "{text}");
+    }
+
+    #[test]
+    fn a_float_read_of_aggregate_stack_storage_reinterprets_the_loaded_bits() {
+        let mut ir = declared_member(
+            vec![Stmt::Ret {
+                value: Expr::Apply {
+                    op: crate::ir::Operation::FloatAdd(Precision::Single),
+                    args: vec![
+                        Expr::Load {
+                            addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(8))),
+                            width: 4,
+                            signed: false,
+                        },
+                        Expr::Const(0),
+                    ],
+                },
+            }],
+            CType::U32,
+            4,
+            "uint32_t value;",
+        );
+        ir.params.clear();
+        ir.ret_type = CType::Named("float".to_owned());
+        ir.stack_params = vec![crate::ir::StackParam {
+            offset: 8,
+            size: 4,
+            name: "arg".to_owned(),
+            ty: CType::Named("struct record".to_owned()),
+            position: 0,
+        }];
+        let text = rendered(&ir);
+        assert!(
+            text.contains("*(float *)&(*(uint32_t *)((uint8_t *)&arg + 0x0))"),
+            "{text}"
+        );
+        assert!(!text.contains("arg.value"), "{text}");
+    }
+
+    #[test]
+    fn an_integer_read_of_a_float_local_uses_its_memory_bits() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+        let mut ir = function(vec![
+            Stmt::Store {
+                addr: slot.clone(),
+                width: 4,
+                value: Expr::Apply {
+                    op: crate::ir::Operation::FloatAdd(Precision::Single),
+                    args: vec![Expr::Const(u64::from(1.0f32.to_bits())), Expr::Const(0)],
+                },
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(slot),
+                    width: 4,
+                    signed: false,
+                },
+            },
+        ]);
+        ir.params.clear();
+        let text = rendered(&ir);
+        assert!(text.contains("float local_0;"), "{text}");
+        assert!(text.contains("return *(uint32_t *)&local_0;"), "{text}");
+    }
+
+    #[test]
+    fn truncated_pointer_addresses_do_not_become_whole_pointer_members() {
+        for addr in [
+            Expr::reg(7, 32),
+            Expr::bin(BinOp::Add, Expr::reg(7, 32), Expr::Const(4)),
+            Expr::bin(BinOp::Add, Expr::Const(4), Expr::reg(7, 32)),
+            Expr::bin(BinOp::Sub, Expr::reg(7, 32), Expr::Const(4)),
+        ] {
+            let mut ir = declared_member(
+                vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(addr),
+                        width: 4,
+                        signed: false,
+                    },
+                }],
+                CType::U32,
+                4,
+                "uint32_t value; uint32_t next;",
+            );
+            ir.members.extend([
+                Member {
+                    structure: "record".to_owned(),
+                    offset: 4,
+                    name: "next".to_owned(),
+                    ty: CType::U32,
+                    width: 4,
+                },
+                Member {
+                    structure: "record".to_owned(),
+                    offset: -4,
+                    name: "before".to_owned(),
+                    ty: CType::U32,
+                    width: 4,
+                },
+            ]);
+            let text = rendered(&ir);
+            assert!(text.contains("(uint32_t)(uintptr_t)p"), "{text}");
+            assert!(!text.contains("p->"), "{text}");
+        }
     }
 }

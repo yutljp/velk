@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::{BinOp, Cond, Expr, Operation, Precision, Rounding, reg_name};
+use crate::ir::{BinOp, CType, Cond, Expr, Member, Operation, Precision, Rounding, reg_name};
 use crate::loader::Isa;
 use crate::render::globals::View;
 use crate::render::int::{ALL, Int, Printed, Range, ValueKind, converted, fit, wrapped, zero_bits};
@@ -39,10 +39,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) local_parts: HashMap<String, String>,
     /// Declared width of each local, so a mask to that width can be dropped.
     pub(super) local_widths: HashMap<String, u8>,
-    /// The size of the elements each pointer local points at.
-    pub(super) local_elements: HashMap<String, u64>,
-    /// The structure each pointer local points at.
-    pub(super) local_pointees: HashMap<String, String>,
+    pub(super) local_element_types: HashMap<String, CType>,
     /// Pointer locals whose arithmetic C scales by a pointee wider than a byte.
     pub(super) local_scaled: std::collections::HashSet<String>,
     /// Locals holding floats, with their precision.
@@ -51,21 +48,13 @@ pub(crate) struct Ctx<'a> {
     pub(super) signed_locals: std::collections::HashSet<String>,
     /// Parameters wider than 32 bits: masking one is a real truncation.
     pub(super) wide_params: std::collections::HashSet<u16>,
-    /// The fields the accesses through each pointer parameter name.
-    pub(super) fields: HashMap<(u16, i64), (u8, bool)>,
     pub(super) symbols: &'a super::Symbols,
     pub(super) globals: crate::render::globals::Globals,
     /// Non-executable `(start, size)` ranges: a constant address inside one is a global.
     pub(super) data_ranges: &'a [(u64, u64)],
     /// Structure fields the debug info names, by struct and byte offset.
-    pub(super) members: HashMap<(String, i64), String>,
-    /// The struct type each pointer parameter or variable points at, when known.
-    pub(super) pointees: HashMap<u16, String>,
-    /// The size of the element each pointer parameter or variable points at.
-    pub(super) elements: HashMap<u16, u64>,
-    /// Whether the integer each pointer parameter or variable points at is
-    /// signed, when its type says.
-    pub(super) element_signs: HashMap<u16, bool>,
+    pub(super) members: HashMap<(String, i64), Member>,
+    pub(super) element_types: HashMap<u16, CType>,
     /// The pointers, by name, to `char`, whose sign the platform decides.
     pub(super) plain_chars: std::collections::HashSet<String>,
     /// The recovered structures arrays are made of, by name.
@@ -192,6 +181,15 @@ fn byte_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
                 && ctx.local_scaled.contains(name) =>
         {
             Some(format!("(uint8_t *){name}"))
+        }
+        Expr::Load { width: 8, .. }
+            if let Some(target) = crate::render::naming::pointer_target(expr, ctx)
+                && CType::pointer_to(target).pointee_size() != Some(1) =>
+        {
+            Some(format!(
+                "(uint8_t *){}",
+                print(expr, ctx, 64).within(12, false).text
+            ))
         }
         _ => None,
     }
@@ -380,8 +378,10 @@ pub(crate) fn float_operand(
                 Precision::Single => "float",
                 Precision::Double => "double",
             };
-            if let Some(member) = member_access(addr, *width, ctx) {
-                return member;
+            if let Some(member) = member_access(addr, *width, ctx)
+                && member.precision() == Some(precision)
+            {
+                return member.text;
             }
             let view = View::Float(precision);
             if let Some(indexed) = crate::render::naming::array_access_as(addr, *width, view, ctx)
@@ -391,7 +391,8 @@ pub(crate) fn float_operand(
             }
             let address = render_expr(addr, ctx);
             match ctx.slots.get(&address) {
-                Some(name) => name.clone(),
+                Some(name) if ctx.local_floats.get(name) == Some(&precision) => name.clone(),
+                Some(name) => format!("*({float_type} *)&({name})"),
                 None => match global_pointer(addr, view, ctx) {
                     Some(name) => format!("*{name}"),
                     None => format!("*({float_type} *)({address})"),
@@ -1272,9 +1273,17 @@ fn masked(lhs: &Expr, mask: u64, ctx: &Ctx<'_>, bits: u32) -> Printed {
 
 /// Memory read `width` bytes wide, by name where it has one.
 fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
-    let (text, declared_signed) = if let Some(member) = member_access(addr, width, ctx) {
-        let declared = crate::render::naming::element_signed(addr, width, ctx);
-        (member, declared.unwrap_or(signed))
+    let member = member_access(addr, width, ctx)
+        .filter(|member| member.integer().is_some() || member.ty.is_pointer());
+    let mut plain_char = false;
+    let (text, declared_signed) = if let Some(member) = member {
+        let strength = if member.text.starts_with('*') { 12 } else { 13 };
+        if member.ty.is_pointer() {
+            return Printed::pointer(member.text, strength);
+        }
+        plain_char = member.plain_char();
+        let (_, declared_signed) = member.integer().expect("an integer member");
+        (member.text, declared_signed)
     } else if let Some(indexed) = array_access(addr, width, ctx)
         .or_else(|| crate::render::naming::flat_array_access(addr, width, ctx))
     {
@@ -1283,7 +1292,10 @@ fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
         let address = render_expr(addr, ctx);
         match ctx.slots.get(&address) {
             Some(name) => {
-                let text = slot_access(name, width, signed, ctx);
+                let mut text = slot_access(name, width, signed, ctx);
+                if &text == name && ctx.local_floats.contains_key(name) {
+                    text = format!("*({} *)&{name}", type_of(width, signed));
+                }
                 if width == 8 && &text == name && ctx.local_pointer_types.contains_key(name) {
                     return Printed::pointer(text, 13);
                 }
@@ -1310,7 +1322,7 @@ fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
     let bits = u32::from(width) * 8;
     // A `char` extends with a sign on some platforms and not on others:
     // only its own bits are known.
-    if width == 1 && crate::render::naming::plain_char_access(addr, ctx) {
+    if width == 1 && (plain_char || crate::render::naming::plain_char_access(addr, ctx)) {
         return Printed::new(text, Int::INT, bits, 13).ranging(Range::Signed(bits + 1));
     }
     let exact = match (declared_signed, signed) {

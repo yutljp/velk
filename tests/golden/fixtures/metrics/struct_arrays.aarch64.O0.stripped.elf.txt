@@ -61,7 +61,7 @@ int64_t sub_210208(struct sub_210208_a0 *a0, int32_t a1) {
 
     local_0 = 0x0;
     for (local_1 = 0x0; local_1 < a1; local_1++) {
-        if ((int32_t)a0[local_1].field_0x8 > 0x0) {
+        if (a0[local_1].field_0x8 > 0x0) {
             local_0 = a0[local_1].field_0x0;
         }
     }
