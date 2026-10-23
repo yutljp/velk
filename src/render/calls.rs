@@ -760,6 +760,112 @@ fn only_word(line: &str, word: &str) -> Option<usize> {
     found.next().is_none().then_some(at)
 }
 
+/// The Linux name of a system call number, for the calls programs make
+/// most.
+pub(super) fn system_call_name(
+    convention: crate::ir::Convention,
+    number: u64,
+) -> Option<&'static str> {
+    const X86: &[(u64, &str)] = &[
+        (0, "read"),
+        (1, "write"),
+        (2, "open"),
+        (3, "close"),
+        (4, "stat"),
+        (5, "fstat"),
+        (8, "lseek"),
+        (9, "mmap"),
+        (10, "mprotect"),
+        (11, "munmap"),
+        (12, "brk"),
+        (13, "rt_sigaction"),
+        (14, "rt_sigprocmask"),
+        (15, "rt_sigreturn"),
+        (16, "ioctl"),
+        (20, "writev"),
+        (24, "sched_yield"),
+        (27, "mincore"),
+        (28, "madvise"),
+        (35, "nanosleep"),
+        (39, "getpid"),
+        (56, "clone"),
+        (57, "fork"),
+        (59, "execve"),
+        (60, "exit"),
+        (61, "wait4"),
+        (62, "kill"),
+        (63, "uname"),
+        (72, "fcntl"),
+        (131, "sigaltstack"),
+        (158, "arch_prctl"),
+        (186, "gettid"),
+        (200, "tkill"),
+        (202, "futex"),
+        (204, "sched_getaffinity"),
+        (228, "clock_gettime"),
+        (230, "clock_nanosleep"),
+        (231, "exit_group"),
+        (232, "epoll_wait"),
+        (233, "epoll_ctl"),
+        (234, "tgkill"),
+        (257, "openat"),
+        (281, "epoll_pwait"),
+        (291, "epoll_create1"),
+        (293, "pipe2"),
+        (302, "prlimit64"),
+        (318, "getrandom"),
+    ];
+    const ARM: &[(u64, &str)] = &[
+        (17, "getcwd"),
+        (25, "fcntl"),
+        (29, "ioctl"),
+        (56, "openat"),
+        (57, "close"),
+        (62, "lseek"),
+        (63, "read"),
+        (64, "write"),
+        (66, "writev"),
+        (93, "exit"),
+        (94, "exit_group"),
+        (98, "futex"),
+        (101, "nanosleep"),
+        (113, "clock_gettime"),
+        (115, "clock_nanosleep"),
+        (122, "sched_getaffinity"),
+        (124, "sched_yield"),
+        (129, "kill"),
+        (130, "tkill"),
+        (131, "tgkill"),
+        (132, "sigaltstack"),
+        (134, "rt_sigaction"),
+        (135, "rt_sigprocmask"),
+        (139, "rt_sigreturn"),
+        (160, "uname"),
+        (172, "getpid"),
+        (178, "gettid"),
+        (214, "brk"),
+        (215, "munmap"),
+        (220, "clone"),
+        (221, "execve"),
+        (222, "mmap"),
+        (226, "mprotect"),
+        (232, "mincore"),
+        (233, "madvise"),
+        (260, "wait4"),
+        (261, "prlimit64"),
+        (278, "getrandom"),
+    ];
+    let table = match convention {
+        crate::ir::Convention::SyscallX86 => X86,
+        crate::ir::Convention::SyscallArm => ARM,
+        _ => return None,
+    };
+    table
+        .iter()
+        .find(|(known, _)| *known == number)
+        .map(|(_, name)| *name)
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::{HashMap, HashSet};

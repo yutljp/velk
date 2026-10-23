@@ -1,0 +1,1083 @@
+use super::{
+    CType, Ctx, Expr, FunctionIr, HashMap, Locals, Node, Reference, Rendered, SegmentBase,
+    SegmentBaseRead, Stmt, Symbols, abi, block_frames, calls, expr, globals, indent, int, naming,
+    narrow_registers, params, render_expr, render_nodes, sanitize, stack_bytes, stack_locals,
+    stack_pointer, structure_best, type_of, variables,
+};
+
+pub fn render(
+    ir: &FunctionIr,
+    references: &[Reference],
+    symbols: &Symbols,
+    data_ranges: &[(u64, u64)],
+) -> String {
+    render_with_dependencies(ir, references, symbols, data_ranges).code
+}
+
+/// Print entry segment reads as external providers without choosing their values.
+pub fn render_with_dependencies(
+    ir: &FunctionIr,
+    references: &[Reference],
+    symbols: &Symbols,
+    data_ranges: &[(u64, u64)],
+) -> Rendered {
+    let mut folded = ir.clone();
+    for block in &mut folded.blocks {
+        block.stmts.retain(|stmt| {
+            !matches!(stmt,
+                Stmt::Assign { dest, value: Expr::Reg { index, width: 64 } }
+                    if dest.width == 64 && dest.index == *index
+            )
+        });
+    }
+    crate::analysis::variadic::drop_register_saves(&mut folded);
+    params::fold_saved_parameters(&mut folded);
+    // A saved parameter returned reads as the parameter now.
+    crate::analysis::typing::apply_pointer_return(&mut folded);
+    let float_entries = physical_float_parameters(&mut folded);
+    let mut logical = abi::prepare(&mut folded, symbols);
+    let mut incoming = if logical.is_none() {
+        stack_bytes::prepare(&mut folded)
+    } else {
+        None
+    };
+    let ir = &folded;
+    let frames = block_frames(ir, stack_pointer(ir.isa));
+    let variable_types =
+        variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
+    let locals = stack_locals(ir, &frames, &variable_types);
+    if let Some(logical) = &mut logical {
+        let params: std::collections::HashSet<_> =
+            ir.params.iter().map(|param| param.index).collect();
+        let mut reserved: std::collections::HashSet<String> = locals
+            .decls
+            .iter()
+            .map(|local| local.name.clone())
+            .collect();
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+            for register in writes
+                .into_iter()
+                .chain(reads)
+                .filter(|register| !params.contains(register))
+            {
+                reserved.insert(crate::ir::reg_name(ir.isa, register, 64));
+                reserved.insert(crate::ir::reg_name(ir.isa, register, 32));
+            }
+        }
+        logical.resolve_names(
+            reserved,
+            variable_types
+                .values()
+                .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+                .chain(ir.members.iter().map(|member| &member.ty))
+                .chain(std::iter::once(&ir.ret_type))
+                .map(ToString::to_string),
+        );
+    }
+    if let Some(incoming) = &mut incoming {
+        let mut reserved: std::collections::HashSet<String> = ir
+            .params
+            .iter()
+            .map(|param| param.name.clone())
+            .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+            .chain(locals.decls.iter().map(|local| local.name.clone()))
+            .chain(symbols.functions.values().map(|name| sanitize(name)))
+            .chain(symbols.import_slots.values().map(|name| sanitize(name)))
+            .chain(symbols.data.values().map(|name| sanitize(name)))
+            .chain(symbols.reserved_names.iter().cloned())
+            .collect();
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+            reserved.extend(
+                writes
+                    .into_iter()
+                    .chain(reads)
+                    .map(|index| crate::ir::reg_name(ir.isa, index, 64)),
+            );
+        }
+        reserved.insert("__builtin_memcpy".to_owned());
+        if let Some(name) = &ir.name {
+            reserved.insert(sanitize(name));
+        }
+        for ty in ir
+            .params
+            .iter()
+            .map(|param| &param.ty)
+            .chain(ir.stack_params.iter().map(|param| &param.ty))
+            .chain(variable_types.values())
+            .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+            .chain(ir.members.iter().map(|member| &member.ty))
+            .chain(std::iter::once(&ir.ret_type))
+        {
+            reserved.extend(
+                ty.to_string()
+                    .split(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_')
+                    .filter(|part| !part.is_empty())
+                    .map(str::to_owned),
+            );
+        }
+        incoming.name = vacant_name("incoming_bytes", &mut reserved);
+    }
+    render_with(
+        ir,
+        references,
+        locals,
+        symbols,
+        data_ranges,
+        EntryStorage {
+            logical: logical.as_ref(),
+            incoming: incoming.as_ref(),
+            float_entries,
+        },
+    )
+}
+
+/// The precision of a float the function returns.
+fn float_return(ty: &CType) -> Option<crate::ir::Precision> {
+    ty.is_sse_float().then(|| {
+        if ty.to_string().contains("double") {
+            crate::ir::Precision::Double
+        } else {
+            crate::ir::Precision::Single
+        }
+    })
+}
+
+/// The type the output declares each variable with.
+pub(crate) fn variable_types(ir: &FunctionIr) -> std::collections::BTreeMap<u16, CType> {
+    variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type))
+}
+
+/// Whether C scales arithmetic on a pointer of this type: it points at
+/// something wider than a byte.
+fn scales(ty: &CType) -> bool {
+    match ty {
+        CType::Pointer(target) => {
+            !matches!(target.as_ref(), CType::Void) && ty.pointee_size() != Some(1)
+        }
+        _ => false,
+    }
+}
+
+struct EntryStorage<'a> {
+    logical: Option<&'a abi::Plan>,
+    incoming: Option<&'a stack_bytes::Plan>,
+    float_entries: std::collections::HashSet<u16>,
+}
+
+fn render_with(
+    ir: &FunctionIr,
+    references: &[Reference],
+    locals: Locals,
+    symbols: &Symbols,
+    data_ranges: &[(u64, u64)],
+    entry: EntryStorage<'_>,
+) -> Rendered {
+    let EntryStorage {
+        logical,
+        incoming,
+        float_entries,
+    } = entry;
+    let mut names: HashMap<u16, &str> = ir
+        .params
+        .iter()
+        .filter(|param| {
+            !(param.ty.is_sse_float() && crate::arch::vector_half(ir.isa, param.index).is_some())
+        })
+        .map(|param| (param.index, param.name.as_str()))
+        .collect();
+    if let Some(incoming) = incoming {
+        names.insert(incoming.register, &incoming.name);
+    }
+    let wide_params: std::collections::HashSet<u16> = ir
+        .params
+        .iter()
+        .filter(|param| !param.ty.is_narrow())
+        .map(|param| param.index)
+        .collect();
+    let narrow_regs = narrow_registers(ir);
+    let float_return = float_return(&ir.ret_type);
+    let mut variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    if let Some(incoming) = incoming {
+        variable_types.remove(&incoming.register);
+    }
+    if let Some(logical) = logical {
+        for capture in &logical.captures {
+            variable_types.remove(&capture.register);
+        }
+        for pointer in &logical.pointers {
+            variable_types.remove(&pointer.register);
+        }
+    }
+    let mut machine_reserved: std::collections::HashSet<String> = names
+        .values()
+        .map(|name| (*name).to_owned())
+        .chain(ir.params.iter().map(|param| param.name.clone()))
+        .chain(locals.decls.iter().map(|local| local.name.clone()))
+        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+        .chain(
+            variable_types
+                .keys()
+                .map(|index| crate::ir::reg_name(ir.isa, *index, 64)),
+        )
+        .chain(symbols.reserved_names.iter().cloned())
+        .chain(symbols.functions.values().map(|name| sanitize(name)))
+        .chain(symbols.import_slots.values().map(|name| sanitize(name)))
+        .chain(symbols.data.values().map(|name| sanitize(name)))
+        .collect();
+    if let Some(logical) = logical {
+        machine_reserved.extend(logical.reserved_names());
+    }
+    machine_reserved.insert(sanitize(
+        &symbols
+            .functions
+            .get(&ir.addr)
+            .cloned()
+            .or_else(|| ir.name.clone())
+            .unwrap_or_else(|| format!("sub_{:x}", ir.addr)),
+    ));
+    for ty in ir
+        .params
+        .iter()
+        .map(|param| &param.ty)
+        .chain(ir.stack_params.iter().map(|param| &param.ty))
+        .chain(variable_types.values())
+        .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+        .chain(std::iter::once(&ir.ret_type))
+    {
+        machine_reserved.extend(
+            ty.to_string()
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .filter(|name| !name.is_empty())
+                .map(str::to_owned),
+        );
+    }
+    // Any other machine register the body uses is a variable of its own;
+    // Go keeps the running goroutine in r14.
+    let (used_registers, written_registers) = machine_registers(ir, !float_entries.is_empty());
+    let readonly_floats = ir.params.iter()
+        .filter(|param| float_entries.contains(&param.index) && !written_registers.contains(&param.index))
+        .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
+        .filter_map(|param| self::float_return(&param.ty).map(|precision| (param.index, (param.name.clone(), precision))))
+        .collect();
+    let machine: Vec<(u16, String)> = used_registers
+        .into_iter()
+        .filter(|index| !names.contains_key(index))
+        .map(|index| {
+            let base = if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
+                "g".to_owned()
+            } else {
+                crate::ir::reg_name(ir.isa, index, 64)
+            };
+            (index, vacant_name(&base, &mut machine_reserved))
+        })
+        .collect();
+    for (index, name) in &machine {
+        names.insert(*index, name);
+    }
+    let mut declared_registers =
+        declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
+    let floats: HashMap<u16, crate::ir::Precision> = variable_types
+        .iter()
+        .chain(
+            ir.params
+                .iter()
+                .filter(|param| crate::arch::vector_half(ir.isa, param.index).is_none())
+                .map(|param| (&param.index, &param.ty)),
+        )
+        .filter_map(|(index, ty)| match ty.to_string().as_str() {
+            "double" => Some((*index, crate::ir::Precision::Double)),
+            "float" => Some((*index, crate::ir::Precision::Single)),
+            _ => None,
+        })
+        .collect();
+    let members: HashMap<(String, i64), crate::ir::Member> = ir
+        .members
+        .iter()
+        .cloned()
+        .chain(ir.structures.iter().flat_map(|structure| {
+            structure.fields.iter().filter_map(move |(offset, ty)| {
+                let width = match ty {
+                    CType::Pointer(_) => 8,
+                    _ => u64::from(CType::pointer_to(ty.clone()).pointee_size()?),
+                };
+                Some(crate::ir::Member {
+                    structure: structure.name.clone(),
+                    offset: i64::try_from(*offset).ok()?,
+                    name: format!("field_0x{offset:x}"),
+                    ty: ty.clone(),
+                    width,
+                })
+            })
+        }))
+        .map(|member| ((member.structure.clone(), member.offset), member))
+        .collect();
+    let arrays: HashMap<String, naming::Layout> = ir
+        .structures
+        .iter()
+        .filter_map(|structure| {
+            let layout = naming::Layout {
+                size: structure.size?,
+            };
+            Some((structure.name.clone(), layout))
+        })
+        .collect();
+    let scaled: std::collections::HashSet<u16> = ir
+        .params
+        .iter()
+        .map(|param| (param.index, &param.ty))
+        .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
+        .filter(|(_, ty)| scales(ty))
+        .map(|(index, _)| index)
+        .collect();
+    let element_types = ir
+        .params
+        .iter()
+        .map(|param| (param.index, &param.ty))
+        .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
+        .filter_map(|(index, ty)| match ty {
+            CType::Pointer(target) => Some((index, target.as_ref().clone())),
+            _ => None,
+        })
+        .collect();
+    // `char` alone, which is neither `signed char` nor `unsigned char`.
+    let plain_char = |ty: &CType| match ty {
+        CType::Pointer(target) => match target.as_ref() {
+            CType::Named(name) => name
+                .split_whitespace()
+                .filter(|word| !matches!(*word, "const" | "volatile"))
+                .eq(["char"]),
+            _ => false,
+        },
+        _ => false,
+    };
+    let mut plain_chars: std::collections::HashSet<String> = ir
+        .params
+        .iter()
+        .filter(|param| plain_char(&param.ty))
+        .map(|param| param.name.clone())
+        .collect();
+    plain_chars.extend(
+        variable_types
+            .iter()
+            .filter(|(_, ty)| plain_char(ty))
+            .map(|(index, _)| match names.get(index) {
+                Some(name) => (*name).to_owned(),
+                None => crate::ir::reg_name(ir.isa, *index, 64),
+            }),
+    );
+    plain_chars.extend(
+        locals
+            .decls
+            .iter()
+            .filter(|local| local.ty.as_ref().is_some_and(plain_char))
+            .map(|local| local.name.clone()),
+    );
+    let local_types = || {
+        locals
+            .decls
+            .iter()
+            .filter_map(|local| Some((local.name.clone(), local.ty.as_ref()?)))
+    };
+    let local_element_types = local_types()
+        .filter_map(|(name, ty)| match ty {
+            CType::Pointer(target) => Some((name, target.as_ref().clone())),
+            _ => None,
+        })
+        .collect();
+    let local_scaled = local_types()
+        .filter(|(_, ty)| scales(ty))
+        .map(|(name, _)| name)
+        .collect();
+    let mut reserved: Vec<String> = names
+        .values()
+        .map(|name| (*name).to_owned())
+        .chain(locals.decls.iter().map(|local| local.name.clone()))
+        .chain(ir.stack_params.iter().map(|param| param.name.clone()))
+        .chain(
+            variable_types
+                .keys()
+                .map(|index| crate::ir::reg_name(ir.isa, *index, 64)),
+        )
+        .chain(symbols.functions.values().map(|name| sanitize(name)))
+        .chain(symbols.import_slots.values().map(|name| sanitize(name)))
+        .collect();
+    if let Some(logical) = logical {
+        reserved.extend(logical.reserved_names());
+    }
+    reserved.push(sanitize(
+        &symbols
+            .functions
+            .get(&ir.addr)
+            .cloned()
+            .or_else(|| ir.name.clone())
+            .unwrap_or_else(|| format!("sub_{:x}", ir.addr)),
+    ));
+    reserved.extend(ir.blocks.iter().flat_map(|block| &block.stmts).filter_map(
+        |stmt| match stmt {
+            Stmt::Call {
+                target: Some(target),
+                through: None,
+                ..
+            } if !symbols.functions.contains_key(target) => Some(format!("sub_{target:x}")),
+            _ => None,
+        },
+    ));
+    for ty in ir
+        .params
+        .iter()
+        .map(|param| &param.ty)
+        .chain(ir.stack_params.iter().map(|param| &param.ty))
+        .chain(variable_types.values())
+        .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+        .chain(std::iter::once(&ir.ret_type))
+    {
+        reserved.extend(
+            ty.to_string()
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .filter(|name| !name.is_empty())
+                .map(str::to_owned),
+        );
+    }
+    let mut reads = std::collections::HashSet::new();
+    if ir.isa == crate::loader::Isa::X86_64 {
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            for value in stmt.operands() {
+                crate::ir::visit::expr_reads(value, &mut reads);
+            }
+        }
+    }
+    let needed: Vec<_> = [
+        (SegmentBase::Fs, crate::arch::x86::FS_BASE, "fs"),
+        (SegmentBase::Gs, crate::arch::x86::GS_BASE, "gs"),
+    ]
+    .into_iter()
+    .filter(|(_, index, _)| reads.contains(index) && !names.contains_key(index))
+    .collect();
+    let mut segment_bases = Vec::new();
+    if !needed.is_empty() {
+        let mut segment_reserved: std::collections::HashSet<String> = reserved
+            .iter()
+            .cloned()
+            .chain(symbols.reserved_names.iter().cloned())
+            .chain(symbols.data.values().map(|name| sanitize(name)))
+            .collect();
+        for (segment, index, base) in needed {
+            let provider = vacant_name(&format!("velk_x86_{base}_base"), &mut segment_reserved);
+            let snapshot = vacant_name(&format!("{base}_base"), &mut segment_reserved);
+            reserved.extend([provider.clone(), snapshot.clone()]);
+            declared_registers.insert(index, declared(&CType::U64, false).expect("an integer"));
+            segment_bases.push((segment, index, provider, snapshot));
+        }
+    }
+    for (_, index, _, snapshot) in &segment_bases {
+        names.insert(*index, snapshot);
+    }
+    let mut call_reserved: std::collections::HashSet<String> = reserved
+        .iter()
+        .cloned()
+        .chain(symbols.reserved_names.iter().cloned())
+        .chain(symbols.data.values().map(|name| sanitize(name)))
+        .collect();
+    let call_outputs = calls::Outputs::new(ir, &machine, &mut call_reserved);
+    if !call_outputs.temporary.is_empty() {
+        reserved.push(call_outputs.temporary.clone());
+    }
+    reserved.extend(call_outputs.declarations.iter().cloned());
+    let mut value_bits = int::value_bits(ir);
+    for index in &float_entries {
+        value_bits.remove(index);
+    }
+    if let Some(logical) = logical {
+        for capture in &logical.captures {
+            declared_registers.insert(
+                capture.register,
+                declared(&CType::U64, false).expect("an integer"),
+            );
+            value_bits.remove(&capture.register);
+        }
+    }
+    let mut ctx = Ctx {
+        abi: logical,
+        call_outputs,
+        isa: ir.isa,
+        void_return: ir.ret_type == CType::Void,
+        float_return,
+        readonly_floats,
+        names,
+        landing_pads: ir.landing_pads.iter().cloned().collect(),
+        strings: references
+            .iter()
+            .filter(|reference| reference.pointer.is_none())
+            .filter_map(|reference| Some((reference.addr, reference.text.clone()?)))
+            .collect(),
+        slots: locals.slots,
+        parameter_addresses: locals.parameter_addresses,
+        local_parts: locals.parts,
+        local_widths: locals.widths,
+        local_pointer_types: locals
+            .decls
+            .iter()
+            .filter_map(|local| {
+                let ty = local.ty.as_ref().filter(|ty| ty.is_pointer())?;
+                Some((local.name.clone(), ty.to_string().trim_end().to_owned()))
+            })
+            .collect(),
+        local_floats: locals
+            .decls
+            .iter()
+            .filter_map(|local| {
+                let precision = match local.ty.as_ref()?.to_string().as_str() {
+                    "double" => crate::ir::Precision::Double,
+                    "float" => crate::ir::Precision::Single,
+                    _ => return None,
+                };
+                Some((local.name.clone(), precision))
+            })
+            .collect(),
+        signed_locals: locals
+            .decls
+            .iter()
+            .filter(|local| match &local.ty {
+                Some(ty) => matches!(ty, CType::Int { signed: true, .. }),
+                None => local.signed,
+            })
+            .map(|local| local.name.clone())
+            .collect(),
+        local_element_types,
+        local_scaled,
+        wide_params,
+        symbols,
+        globals: globals::Globals::new(symbols, reserved),
+        data_ranges,
+        members,
+        element_types,
+        plain_chars,
+        arrays,
+        narrow_regs,
+        floats,
+        scaled,
+        returned: declared(&ir.ret_type, false),
+        declared: declared_registers,
+        pointer_types: ir
+            .params
+            .iter()
+            .map(|param| (param.index, &param.ty))
+            .chain(variable_types.iter().map(|(index, ty)| (*index, ty)))
+            .filter(|(_, ty)| ty.is_pointer())
+            .map(|(index, ty)| (index, ty.to_string().trim_end().to_owned()))
+            .collect(),
+        ret_pointer: ir
+            .ret_type
+            .is_pointer()
+            .then(|| ir.ret_type.to_string().trim_end().to_owned()),
+        value_bits,
+        read_once: Default::default(),
+        taken: Default::default(),
+    };
+    if let Some(incoming) = incoming {
+        ctx.pointer_types
+            .insert(incoming.register, "unsigned char *".to_owned());
+        for &(offset, width) in &incoming.accesses {
+            let address = render_expr(&incoming.address(offset), &ctx);
+            ctx.parameter_addresses
+                .insert((address.clone(), width), address);
+        }
+    }
+
+    let mut out = String::new();
+    let name = ir
+        .name
+        .clone()
+        .unwrap_or_else(|| format!("sub_{:x}", ir.addr));
+    out.push_str(&format!("/* velk pseudo-C: {name} @ 0x{:x} */\n", ir.addr));
+    // The function goes by the name its callers use.
+    let name = symbols.functions.get(&ir.addr).cloned().unwrap_or(name);
+    for reference in references {
+        out.push_str(&format!("/* ref: {} */\n", reference.describe()));
+    }
+    // A pointer read as one scalar is no structure, and one to a structure
+    // the debug info names needs no note of its fields.
+    for (access, line) in ir.accesses.iter().zip(ir.access_lines()) {
+        if naming::scalar_pointer(&Expr::reg(access.register, 64), &ctx).is_none()
+            && !ctx.element_types.get(&access.register).is_some_and(
+                |target| matches!(target, CType::Named(name) if name.starts_with("struct ")),
+            )
+        {
+            out.push_str(&format!("/* struct: {line} */\n"));
+        }
+    }
+    // Each definition, to drop the ones nothing in the function names once
+    // it is written: folding values into their readers can leave a
+    // structure without its variable.
+    let mut definitions: Vec<(String, String)> = Vec::new();
+    let definitions_at = out.len();
+    for structure in &ir.structures {
+        let mut members = Vec::new();
+        let mut end = 0;
+        for (offset, ty) in &structure.fields {
+            if *offset > end {
+                members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", offset - end));
+            }
+            members.push(format!("{ty} field_0x{offset:x};"));
+            end = offset
+                + match ty {
+                    CType::Pointer(_) => 8,
+                    _ => CType::pointer_to(ty.clone())
+                        .pointee_size()
+                        .map_or(0, u64::from),
+                };
+        }
+        if let Some(size) = structure.size
+            && size > end
+        {
+            members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
+        }
+        let definition = defined(&format!("struct {}", structure.name), &members);
+        out.push_str(&definition);
+        definitions.push((structure.name.clone(), definition));
+    }
+    let prototypes_at = out.len();
+    out.push_str(&format!(
+        "{} {{\n",
+        declaration(
+            &ir.ret_type,
+            &format!(
+                "{}({})",
+                sanitize(&name),
+                logical.map_or_else(|| signature(ir), abi::Plan::signature)
+            )
+        )
+    ));
+    let mut decls = locals.decls;
+    // The numeric suffix of `local_N` is its order of first use.
+    decls.sort_by_key(|local| {
+        local
+            .name
+            .rsplit_once('_')
+            .and_then(|(_, index)| index.parse::<usize>().ok())
+            .unwrap_or(0)
+    });
+    // The body is rendered first so only slots it names get declared.
+    let mut body = String::new();
+    let mut nodes = structure_best(ir);
+    // A function that returns nothing needs no return at its end, unless a
+    // label stands before it.
+    if ctx.void_return
+        && matches!(nodes.last(), Some(Node::Stmt(Stmt::Ret { .. })))
+        && !matches!(nodes.iter().rev().nth(1), Some(Node::Label(_)))
+    {
+        nodes.pop();
+    }
+    ctx.read_once = calls::read_once(&nodes);
+    render_nodes(&nodes, 1, &mut body, &ctx);
+    let segment_bases: Vec<_> = segment_bases
+        .iter()
+        .filter(|(_, _, _, snapshot)| code_mentions(&body, snapshot))
+        .collect();
+    // A function whose address the body takes is declared ahead of it,
+    // with no type known for it.
+    let own = sanitize(&name);
+    let mut prototypes: String = ctx
+        .taken
+        .borrow()
+        .iter()
+        .filter(|taken| **taken != own)
+        .map(|taken| format!("void {taken}(void);\n"))
+        .collect();
+    for (_, _, provider, _) in &segment_bases {
+        prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
+    }
+    out.insert_str(prototypes_at, &prototypes);
+    let mut declared = 0;
+    if let Some(logical) = logical {
+        for declaration in logical.declarations() {
+            indent(1, &mut out);
+            out.push_str(&declaration);
+            out.push('\n');
+            declared += 1;
+        }
+    }
+    if let Some(incoming) = incoming {
+        for declaration in incoming.declarations() {
+            indent(1, &mut out);
+            out.push_str(&declaration);
+            out.push('\n');
+            declared += 1;
+        }
+    }
+    for (_, _, provider, snapshot) in &segment_bases {
+        indent(1, &mut out);
+        out.push_str(&format!("uint64_t {snapshot} = {provider}();\n"));
+        declared += 1;
+    }
+    for declaration in ctx.globals.declarations(&body) {
+        indent(1, &mut out);
+        out.push_str(&declaration);
+        out.push('\n');
+        declared += 1;
+    }
+    // A register the body uses beyond the parameters holds what it holds
+    // on entry until the body sets it.
+    for (index, name) in &machine {
+        if variables::mentions(&body, name) {
+            indent(1, &mut out);
+            if float_entries.contains(index) {
+                let param = ir
+                    .params
+                    .iter()
+                    .find(|param| param.index == *index)
+                    .expect("a floating formal");
+                let precision =
+                    self::float_return(&param.ty).expect("a floating entry representation");
+                let bits = expr::float_bits(param.name.clone(), precision).text;
+                out.push_str(&format!("uint64_t {name} = {bits};\n"));
+            } else {
+                out.push_str(&format!("uint64_t {name};\n"));
+            }
+            declared += 1;
+        }
+    }
+    for name in &ctx.call_outputs.declarations {
+        if variables::mentions(&body, name) {
+            indent(1, &mut out);
+            out.push_str(&format!("uint64_t {name};\n"));
+            declared += 1;
+        }
+    }
+    for (index, ty) in &variable_types {
+        let name = ctx.register(*index, 64);
+        // What a landing pad receives is no variable of the function.
+        if matches!(*index, crate::ir::EXCEPTION | crate::ir::SELECTOR)
+            || !variables::mentions(&body, &name)
+        {
+            continue;
+        }
+        indent(1, &mut out);
+        out.push_str(&format!("{};\n", declaration(ty, &name)));
+        declared += 1;
+    }
+    for local in &decls {
+        if local.width == 0 || !body.contains(&local.name) {
+            continue;
+        }
+        indent(1, &mut out);
+        out.push_str(&format!(
+            "{}; /* [sp{}{:x}] */\n",
+            match &local.ty {
+                Some(ty) => declaration(ty, &local.name),
+                None => format!("{} {}", type_of(local.width, local.signed), local.name),
+            },
+            if local.slot < 0 { "-" } else { "+" },
+            local.slot.unsigned_abs()
+        ));
+    }
+    declared += decls
+        .iter()
+        .filter(|local| local.width != 0 && body.contains(&local.name))
+        .count();
+    if declared > 0 {
+        out.push('\n');
+    }
+    out.push_str(&body);
+    out.push_str("}\n");
+    // The definition is the one place a structure nothing uses is named.
+    for (name, definition) in definitions {
+        if out.matches(&format!("struct {name} ")).count() == 1 {
+            out = out.replacen(&definition, "", 1);
+        }
+    }
+    let debug = debug_definitions(ir, &out);
+    out.insert_str(definitions_at, &debug);
+    Rendered {
+        code: out,
+        segment_bases: segment_bases
+            .into_iter()
+            .map(|(segment, _, provider, _)| SegmentBaseRead {
+                segment: *segment,
+                provider: provider.clone(),
+            })
+            .collect(),
+    }
+}
+
+pub(super) fn vacant_name(base: &str, reserved: &mut std::collections::HashSet<String>) -> String {
+    let mut name = base.to_owned();
+    let mut suffix = 2;
+    while !reserved.insert(name.clone()) {
+        name = format!("{base}_{suffix}");
+        suffix += 1;
+    }
+    name
+}
+
+pub(super) fn code_mentions(text: &str, name: &str) -> bool {
+    let bytes = text.as_bytes();
+    let mut at = 0;
+    let mut member = false;
+    while at < bytes.len() {
+        if bytes[at..].starts_with(b"//") {
+            while at < bytes.len() && bytes[at] != b'\n' {
+                at += 1;
+            }
+        } else if bytes[at..].starts_with(b"/*") {
+            at += 2;
+            while at < bytes.len() && !bytes[at..].starts_with(b"*/") {
+                at += 1;
+            }
+            at = (at + 2).min(bytes.len());
+        } else if matches!(bytes[at], b'\'' | b'"') {
+            member = false;
+            let quote = bytes[at];
+            at += 1;
+            while at < bytes.len() {
+                let next = bytes[at];
+                at += 1;
+                if next == b'\\' {
+                    at = (at + 1).min(bytes.len());
+                } else if next == quote {
+                    break;
+                }
+            }
+        } else if bytes[at..].starts_with(b"->") {
+            member = true;
+            at += 2;
+        } else if bytes[at].is_ascii_alphabetic() || bytes[at] == b'_' {
+            let start = at;
+            while at < bytes.len() && (bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_') {
+                at += 1;
+            }
+            if !member && &text[start..at] == name {
+                return true;
+            }
+            member = false;
+        } else {
+            if !bytes[at].is_ascii_whitespace() {
+                member = bytes[at] == b'.';
+            }
+            at += 1;
+        }
+    }
+    false
+}
+
+/// A structure's definition: on one line when short, else a member a line.
+fn defined(name: &str, members: &[String]) -> String {
+    let line = format!("{name} {{ {} }};", members.join(" "));
+    if line.len() <= STRUCTURE_LINE {
+        return line + "\n";
+    }
+    let mut text = format!("{name} {{\n");
+    for member in members {
+        text.push_str(&format!("    {member}\n"));
+    }
+    text + "};\n"
+}
+
+/// The definitions from the debug info that the printed code needs to
+/// compile: those of the structures and unions it reaches a member of or
+/// holds by value, after those they hold by value in turn.
+fn debug_definitions(ir: &FunctionIr, code: &str) -> String {
+    let named = |name: &str| {
+        code.match_indices(name).any(|(at, _)| {
+            !code[at + name.len()..].starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+        })
+    };
+    let needed = |definition: &crate::ir::Definition| {
+        named(&definition.name)
+            && (definition.fields.iter().any(|field| {
+                code.contains(&format!("->{field}")) || code.contains(&format!(".{field}"))
+            }) || code
+                .match_indices(&format!("{} ", definition.name))
+                .any(|(at, _)| !code[at + definition.name.len() + 1..].starts_with('*')))
+    };
+    let mut ordered: Vec<&crate::ir::Definition> = Vec::new();
+    fn place<'a>(
+        definition: &'a crate::ir::Definition,
+        all: &'a [crate::ir::Definition],
+        ordered: &mut Vec<&'a crate::ir::Definition>,
+        depth: usize,
+    ) {
+        if depth > 8 || ordered.iter().any(|placed| placed.name == definition.name) {
+            return;
+        }
+        for inner in &definition.contains {
+            if let Some(inner) = all.iter().find(|candidate| candidate.name == *inner) {
+                place(inner, all, ordered, depth + 1);
+            }
+        }
+        ordered.push(definition);
+    }
+    for definition in ir
+        .definitions
+        .iter()
+        .filter(|definition| needed(definition))
+    {
+        place(definition, &ir.definitions, &mut ordered, 0);
+    }
+    ordered
+        .iter()
+        .map(|definition| {
+            let mut members = definition.members.clone();
+            if let Some(alignment) = definition.alignment
+                && alignment.is_power_of_two()
+                && !definition.compatible_profiles.is_empty()
+                && let Some(first) = members.first_mut()
+            {
+                *first = format!("_Alignas({alignment}) {first}");
+            }
+            defined(&definition.name, &members)
+        })
+        .collect()
+}
+
+fn physical_float_parameters(ir: &mut FunctionIr) -> std::collections::HashSet<u16> {
+    let mut captured = std::collections::HashSet::new();
+    if !ir.params.iter().any(|param| {
+        param.ty.is_sse_float() && crate::arch::vector_half(ir.isa, param.index).is_some()
+    }) {
+        return captured;
+    }
+    let reads = if ir.landing_pads.is_empty() {
+        crate::ssa::entry_demands(ir, &[])
+    } else {
+        None
+    };
+    for param in &mut ir.params {
+        if crate::arch::vector_half(ir.isa, param.index).is_none() {
+            continue;
+        }
+        let Some(precision) = float_return(&param.ty) else {
+            continue;
+        };
+        let supplied = crate::ir::semantics::mask(u32::from(precision.bits()));
+        if reads
+            .as_ref()
+            .is_none_or(|reads| reads.get(&param.index).copied().unwrap_or(0) & !supplied != 0)
+        {
+            param.ty = CType::U64;
+        } else if reads
+            .as_ref()
+            .is_some_and(|reads| reads.contains_key(&param.index))
+        {
+            captured.insert(param.index);
+        }
+    }
+    captured
+}
+
+/// The general and vector slots the body reads or writes, except the stack pointer.
+fn machine_registers(
+    ir: &FunctionIr,
+    track_writes: bool,
+) -> (
+    std::collections::BTreeSet<u16>,
+    std::collections::HashSet<u16>,
+) {
+    let general = match ir.isa {
+        crate::loader::Isa::X86_64 => 0..16,
+        crate::loader::Isa::AArch64 => 0..31,
+        crate::loader::Isa::Unsupported => 0..0,
+    };
+    let mut used = std::collections::HashSet::new();
+    let mut written = std::collections::HashSet::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if track_writes {
+            written.extend(crate::ir::visit::statement_registers(stmt).0);
+        }
+        for value in stmt.operands() {
+            crate::ir::visit::expr_reads(value, &mut used);
+        }
+        if let Stmt::Assign { dest, .. } = stmt {
+            used.insert(dest.index);
+        }
+        used.extend(stmt.call_outputs().iter().map(|output| output.dest.index));
+    }
+    let used = used
+        .into_iter()
+        .filter(|index| {
+            (general.contains(index) || crate::arch::vector_half(ir.isa, *index).is_some())
+                && *index != stack_pointer(ir.isa)
+        })
+        .collect();
+    (used, written)
+}
+
+/// How each parameter, variable and register named for the body is
+/// declared, where its type is an integer or a pointer.
+fn declared_types(
+    ir: &FunctionIr,
+    variables: &std::collections::BTreeMap<u16, CType>,
+    machine: impl Iterator<Item = u16>,
+) -> HashMap<u16, expr::Declared> {
+    let mut types: HashMap<u16, expr::Declared> = machine
+        .map(|index| (index, declared(&CType::U64, false).expect("an integer")))
+        .collect();
+    for (index, ty) in variables {
+        types.extend(declared(ty, false).map(|declared| (*index, declared)));
+    }
+    for param in &ir.params {
+        types.extend(declared(&param.ty, true).map(|declared| (param.index, declared)));
+    }
+    types
+}
+
+/// How a value of type `ty` is declared, for an integer or a pointer.
+fn declared(ty: &CType, param: bool) -> Option<expr::Declared> {
+    match ty.integer() {
+        Some((bits, signed)) => Some(expr::Declared {
+            bits,
+            signed,
+            param,
+            integer: true,
+        }),
+        None => ty.is_pointer().then_some(expr::Declared {
+            bits: 64,
+            signed: false,
+            param,
+            integer: false,
+        }),
+    }
+}
+
+/// `name` declared as `ty`, the star of a pointer next to the name.
+pub(super) fn declaration(ty: &CType, name: &str) -> String {
+    if ty.is_pointer() {
+        format!("{ty}{name}")
+    } else {
+        format!("{ty} {name}")
+    }
+}
+
+fn signature(ir: &FunctionIr) -> String {
+    let declare = declaration;
+    // Parameters in the caller's frame take their declared places among the
+    // register ones.
+    let mut registers = ir.params.iter();
+    let mut parts = Vec::new();
+    for position in 0..ir.params.len() + ir.stack_params.len() {
+        match ir
+            .stack_params
+            .iter()
+            .find(|param| param.position == position)
+        {
+            Some(param) => parts.push(declare(&param.ty, &param.name)),
+            None => {
+                if let Some(param) = registers.next() {
+                    parts.push(declare(&param.ty, &param.name));
+                }
+            }
+        }
+    }
+    if ir.variadic {
+        parts.push("...".to_owned());
+    }
+    if parts.is_empty() {
+        return "void".to_owned();
+    }
+    parts.join(", ")
+}
+
+/// The longest structure definition written on one line.
+const STRUCTURE_LINE: usize = 100;
