@@ -171,9 +171,10 @@ impl Builder {
 pub fn build(ir: &FunctionIr) -> Option<Ssa> {
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         let mut destinations = HashSet::new();
-        let mut carriers = HashSet::new();
+        let mut output_registers = HashSet::new();
         for output in stmt.call_outputs() {
-            if !destinations.insert(output.dest.index) || !carriers.insert(output.register) {
+            if !destinations.insert(output.dest.index) || !output_registers.insert(output.register)
+            {
                 return None;
             }
         }
@@ -1589,14 +1590,14 @@ mod tests {
         }
     }
 
-    fn output_call(carriers: &[u16], changed: &[u16]) -> Stmt {
+    fn output_call(output_registers: &[u16], changed: &[u16]) -> Stmt {
         Stmt::Call {
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: true,
-            outputs: carriers
+            outputs: output_registers
                 .iter()
                 .map(|register| crate::ir::CallOutput {
                     register: *register,
@@ -1614,11 +1615,10 @@ mod tests {
     #[test]
     fn all_call_outputs_keep_provenance_through_ssa_and_splitting() {
         use crate::ir::eval::{self, Setup};
-        for carriers in [&[32, 34, 36, 38][..], &[0, 32], &[0, 1]] {
-            let sum = carriers
-                .iter()
-                .enumerate()
-                .fold(Expr::Const(0), |value, (at, register)| {
+        for output_registers in [&[32, 34, 36, 38][..], &[0, 32], &[0, 1]] {
+            let sum = output_registers.iter().enumerate().fold(
+                Expr::Const(0),
+                |value, (at, register)| {
                     Expr::bin(
                         BinOp::Add,
                         value,
@@ -1628,10 +1628,14 @@ mod tests {
                             Expr::Const(at as u64 + 1),
                         ),
                     )
-                });
+                },
+            );
             let mut ir = FunctionIr::single_block(
                 Isa::AArch64,
-                vec![output_call(carriers, carriers), Stmt::Ret { value: sum }],
+                vec![
+                    output_call(output_registers, output_registers),
+                    Stmt::Ret { value: sum },
+                ],
             );
             ir.convention = crate::ir::Convention::Aapcs64;
             for seed in [0, 1, u64::MAX] {
@@ -1645,15 +1649,16 @@ mod tests {
                     memory: &[],
                     step_limit: 100,
                 };
-                let expected = carriers
-                    .iter()
-                    .enumerate()
-                    .fold(0_u64, |sum, (at, register)| {
-                        sum.wrapping_add(
-                            eval::hash(seed ^ 1, 0x2_0000 + u64::from(*register))
-                                .wrapping_mul(at as u64 + 1),
-                        )
-                    });
+                let expected =
+                    output_registers
+                        .iter()
+                        .enumerate()
+                        .fold(0_u64, |sum, (at, register)| {
+                            sum.wrapping_add(
+                                eval::hash(seed ^ 1, 0x2_0000 + u64::from(*register))
+                                    .wrapping_mul(at as u64 + 1),
+                            )
+                        });
                 let before = eval::run(&ir, &setup);
                 assert!(matches!(before, eval::Outcome::Return { value, .. } if value == expected));
                 let mut defined = ir.clone();
@@ -1666,7 +1671,7 @@ mod tests {
                 for (output, register) in ssa.ir.blocks[0].stmts[0]
                     .call_outputs()
                     .iter()
-                    .zip(carriers)
+                    .zip(output_registers)
                 {
                     assert_eq!(output.register, *register);
                     assert!(!constants.contains_key(&output.dest.index));
@@ -1693,7 +1698,7 @@ mod tests {
                 for (output, register) in renamed.blocks[0].stmts[0]
                     .call_outputs()
                     .iter()
-                    .zip(carriers)
+                    .zip(output_registers)
                 {
                     assert_eq!(output.register, *register);
                     assert!(output.dest.index >= crate::ir::VARIABLE_BASE);

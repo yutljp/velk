@@ -838,7 +838,7 @@ mod tests {
     }
 
     #[test]
-    fn known_float_returns_use_the_recorded_carrier_without_guessing_from_names() {
+    fn known_float_returns_use_the_recorded_output_register_without_guessing_from_names() {
         let (integer, float) = (VARIABLE_BASE, VARIABLE_BASE + 1);
         let mut call = call(0x1000, vec![]);
         if let Stmt::Call { outputs, .. } = &mut call {

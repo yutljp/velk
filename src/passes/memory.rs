@@ -1054,7 +1054,7 @@ mod tests {
         );
     }
     #[test]
-    fn call_forwarding_uses_all_semantic_outputs_not_renamed_physical_carriers() {
+    fn call_forwarding_uses_all_semantic_outputs_not_renamed_physical_output_registers() {
         let variable = crate::ir::VARIABLE_BASE;
         let mut outputs = crate::ir::fallback_call_outputs(
             crate::ir::Convention::Aapcs64,

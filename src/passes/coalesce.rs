@@ -471,7 +471,7 @@ mod tests {
     }
     #[test]
     fn coalesces_every_call_output_without_renaming_physical_sources() {
-        let carriers = [32, 34, 36, 38];
+        let output_registers = [32, 34, 36, 38];
         let mut outputs = crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None);
         outputs.retain(|output| matches!(output.register, 32 | 34));
         outputs.extend([36, 38].into_iter().map(|register| crate::ir::CallOutput {
@@ -523,7 +523,7 @@ mod tests {
                 .iter()
                 .map(|output| output.register)
                 .collect::<Vec<_>>(),
-            carriers
+            output_registers
         );
         assert_eq!(
             ir.blocks[0].stmts[0]

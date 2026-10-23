@@ -1524,7 +1524,7 @@ mod tests {
     }
 
     #[test]
-    fn scalar_void_return_preserves_carrier_definitions() {
+    fn scalar_void_return_preserves_output_register_definitions() {
         use crate::ir::{CType, Convention, Expr, FunctionIr};
         let mut image = Image::from_code(Isa::X86_64, 0, Vec::new());
         image.imports.insert(0x1000, "free".to_owned());
@@ -1616,7 +1616,7 @@ mod tests {
     }
 
     #[test]
-    fn known_float_forwarding_requires_the_fp_carrier() {
+    fn known_float_forwarding_requires_the_fp_output_register() {
         use crate::ir::{CType, Convention, Expr, FunctionIr, VARIABLE_BASE};
         for present in [false, true] {
             let mut image = Image::from_code(Isa::X86_64, 0, Vec::new());

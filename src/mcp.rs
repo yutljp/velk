@@ -19,8 +19,7 @@ const MAX_ERROR_CHARS: usize = 2_000;
 const DEFAULT_TIMEOUT_MS: u64 = 10_000;
 const MAX_TIMEOUT_MS: u64 = 120_000;
 
-const TRUNCATION_NOTICE: &str =
-    "\n[truncated; filter or slice inside the script, or raise max_output_chars]";
+const TRUNCATION_NOTICE: &str = "\n[truncated; filter or slice inside the script]";
 
 const RUN_DESCRIPTION: &str = "Run synchronous JavaScript against the cached binary-analysis API. \
 Return console output, then the final value. Filter or slice to keep responses small. \

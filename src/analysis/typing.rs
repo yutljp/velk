@@ -2289,7 +2289,7 @@ mod tests {
     #[test]
     fn scalar_float_prototypes_type_only_the_matching_fp_output() {
         use crate::ir::{Convention, VARIABLE_BASE};
-        for (isa, convention, carrier) in [
+        for (isa, convention, output_register) in [
             (Isa::X86_64, Convention::SysV, crate::arch::x86::XMM0),
             (Isa::X86_64, Convention::Win64, crate::arch::x86::XMM0),
             (Isa::AArch64, Convention::Aapcs64, crate::arch::aarch64::V0),
@@ -2299,7 +2299,7 @@ mod tests {
                     let mut image = crate::loader::Image::from_code(isa, 0, Vec::new());
                     image.imports.insert(0x1000, name.to_owned());
                     let mut outputs = crate::ir::fallback_call_outputs(convention, None);
-                    outputs.retain(|output| present || output.register != carrier);
+                    outputs.retain(|output| present || output.register != output_register);
                     outputs.reverse();
                     for output in &mut outputs {
                         output.dest.index = VARIABLE_BASE + output.register;
@@ -2323,7 +2323,7 @@ mod tests {
                     );
                     super::apply_prototypes(&mut ir, &image);
                     assert_eq!(
-                        ir.value_types.get(&(VARIABLE_BASE + carrier)),
+                        ir.value_types.get(&(VARIABLE_BASE + output_register)),
                         present.then(|| CType::Named(ret.to_owned())).as_ref()
                     );
                     assert!(!ir.value_types.contains_key(&VARIABLE_BASE));

@@ -32,6 +32,9 @@ running an already built velk binary.
 
 ## Test layers
 
+Private spills and the private stack area refer to the function's own stack
+save area below the stack pointer at entry.
+
 | Test | What it checks | Reference |
 |---|---|---|
 | `src/lift/hardware/` | Lifted instructions, registers, conditions, and memory | Processor execution on supported hosts |
@@ -56,18 +59,15 @@ running an already built velk binary.
 
 ### CLI and terminal output
 
-Compare each short and long operation flag with the same operands and
-options, including usage and runtime errors. Check that one operation is
-required, operation flags are mutually exclusive, and operands and options
-are accepted only by their applicable operations. Bare subcommand names
-are no longer accepted. Colored and uncolored terminal
-output should preserve every character, including whitespace, after
-removing only ANSI styling. Pseudoterminal (PTY) checks exercise terminal
-detection, color suppression, and stdout/stderr behavior. Compare piped
-output, JSON, script results, and MCP messages separately, byte for byte,
-against their saved baseline. A passing terminal check does not establish
-that those outputs are unchanged. Individual command syntax and examples
-belong in `--help`.
+Parser tests in `src/main.rs` check short/long flag equivalence, the
+requirement for one mutually exclusive operation, and the scope of operands
+and options. They also check rejection of bare subcommand names.
+Terminal tests in `src/terminal.rs` check color suppression for a nonempty
+`NO_COLOR`, `TERM=dumb`, or output that is not a terminal. They verify that
+stripping ANSI styling preserves the text, including whitespace.
+`tests/smoke.sh` checks selected CLI output and CLI/MCP behavior, including
+JSON, script results, tool discovery, and script timeouts. Individual command
+syntax and examples belong in `--help`.
 
 ### Hardware and IR
 
@@ -152,7 +152,7 @@ Sparse equality-dispatch tests compare complete IR outcomes before recovery,
 after recovery and after structured lowering. Generated-C cases check case and
 default selection, low-bit normalization, high constants and a once-only head
 effect. An independent byte reference checks interpreter memory; host C is
-compared through return values and the existing region checksum. These checks
+compared through return values and the region checksum. These checks
 do not execute original target instructions.
 
 Segment-base comparisons require explicit target FS/GS values and memory
@@ -172,7 +172,7 @@ checks do not validate a target-native TLS adapter or concurrent threads.
 The floating mask suite uses explicit finite inputs and signed zeros,
 passed as integer bits through memory. It exercises masks preserving every
 bit of a floating result read at the same precision. An unmasked outer
-floating operation keeps raw result storage on the existing bit-extraction
+floating operation keeps raw result storage on the bit-extraction
 path. Returned raw bits and the entire region checksum compare at both
 optimization levels, including known fused-operation discriminators.
 
@@ -253,7 +253,7 @@ definitions, address escapes, out-of-bounds accesses, and padding reads
 through stack or indirect arguments. An indirect result must be written on
 every return path before its defined bits are returned, with no reads of
 unwritten storage. Unknown layouts, unsupported ABI variants or languages,
-variadic signatures, and functions containing calls use the existing
+variadic signatures, and functions containing calls use the
 physical argument form instead of the declared aggregate signature.
 That fallback is not a C equivalence
 guarantee: multiple results can still be shown as a first return value with
@@ -302,7 +302,7 @@ scalar parameters and provide the same words at explicit interpreter
 register/stack locations. They do not attach a source declaration to the
 stripped function or assume that C parameter objects are adjacent.
 Generic admission retains its convention, scalar-storage, ordered-slot,
-and existing call/operation restrictions. A recovered physical signature
+and call/operation restrictions. A recovered physical signature
 is not a claim of compatibility with the original source ABI.
 
 Real stripped AAPCS64 and System V inputs use independent wrapping
@@ -310,7 +310,7 @@ arithmetic expectations, including accesses through held frame addresses.
 Synthetic cases use independent little-endian byte arrays for partial and
 cross-slot reads/writes, unchanged neighboring bytes, signed and floating
 views, and accesses at different frame heights. The native checks compare
-results and region checksums at both existing optimization levels, with
+results and region checksums at `-O0` and `-O1`, with
 alignment sanitization for the synthetic byte cases. Focused assertions
 require every candidate and input to compile and compare, no skipped or
 unknown rows, and no differing outcomes. Compilation failures and generic
@@ -328,8 +328,7 @@ loads below the test driver's recovery threshold distinguish lazy
 evaluation from an eager second test.
 Negative cases retain intervening effects, labels, different terminals,
 meaningful alternative branches, and nonterminal bodies that can run twice.
-Loop/switch scopes and the existing four-test bound remain part of the
-checks.
+The checks cover loop/switch scopes and a bound of four tests per condition.
 
 The focused recompilation cases compare C and IR return values and region
 checksums. Independent scalar and forward-copy expectations also check the
@@ -344,10 +343,8 @@ and the interpreter has no volatile-load event trace.
 
 The following table records the selected C metrics fixtures, not a general
 accuracy rate for arbitrary binaries. The dataset contains 162 source
-functions across AArch64/x86-64 and O0/O2 configurations: the original 151
-plus 11 aggregate ABI functions. This expanded dataset changes eligible
-denominators, so the totals are not a direct improvement comparison with
-the earlier results.
+functions across AArch64/x86-64 and O0/O2 configurations, including 11
+aggregate ABI functions.
 
 Analysis uses stripped binaries; DWARF in the paired debug binaries supplies
 the reference only. These scores do not measure aggregate rendering with
