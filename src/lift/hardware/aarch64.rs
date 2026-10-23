@@ -770,3 +770,155 @@ fn lifted_memory_accesses_match_the_processor() {
     }
     findings.assert_agreement();
 }
+
+#[test]
+fn scalar_half_immediate_processor_probe() {
+    let page = Page::new();
+    let mut state: State = [u64::MAX; 46];
+    state[NZCV] = 0;
+    assert!(
+        page.run(&[0x1eee_1000], &mut state),
+        "scalar half immediate did not execute; processor support or FP access is unavailable"
+    );
+    assert_eq!(state[VECTORS], 0x3c00);
+    assert_eq!(state[VECTORS + 1], 0);
+    assert_eq!(state[NZCV], 0);
+}
+
+#[test]
+fn scalar_half_immediates_match_the_processor_without_status_changes() {
+    struct RestoreEnvironment {
+        control: u64,
+        status: u64,
+    }
+    impl Drop for RestoreEnvironment {
+        fn drop(&mut self) {
+            // SAFETY: restores this thread's original floating-point environment.
+            unsafe {
+                std::arch::asm!("msr fpcr, {control}", "msr fpsr, {status}",
+                    control = in(reg) self.control, status = in(reg) self.status,
+                    options(nomem, nostack, preserves_flags));
+            }
+        }
+    }
+    let control: u64;
+    let status: u64;
+    // SAFETY: reads only this thread's floating-point environment.
+    unsafe {
+        std::arch::asm!("mrs {control}, fpcr", "mrs {status}, fpsr",
+            control = out(reg) control, status = out(reg) status,
+            options(nomem, nostack, preserves_flags));
+    }
+    let _restore = RestoreEnvironment { control, status };
+    let modes = [
+        0,
+        1 << 22,
+        2 << 22,
+        3 << 22,
+        1 << 25,
+        1 << 19,
+        1 << 24,
+        1 << 26,
+    ];
+    let mode_mask = (3 << 22) | (1 << 25) | (1 << 19) | (1 << 24) | (1 << 26);
+    let page = Page::new();
+    let mut checked = 0;
+    let mut observed_modes = std::collections::BTreeSet::new();
+    for (profile, mode) in modes.into_iter().enumerate() {
+        let requested = (control & !mode_mask) | mode;
+        let actual_control: u64;
+        let requested_status =
+            (status & !0x0800_009f) | if profile % 2 == 0 { 0x0800_009f } else { 0 };
+        // SAFETY: changes only documented mode/status bits, restored on drop.
+        unsafe {
+            std::arch::asm!("msr fpcr, {requested}", "msr fpsr, {status}", "mrs {actual}, fpcr",
+                requested = in(reg) requested, status = in(reg) requested_status,
+                actual = out(reg) actual_control,
+                options(nomem, nostack, preserves_flags));
+        }
+        observed_modes.insert(actual_control & mode_mask);
+        for immediate in 0u32..256 {
+            let bit = u64::from(immediate >> 6 & 1);
+            let expected = u64::from(immediate >> 7) << 15
+                | (bit ^ 1) << 14
+                | (bit * 3) << 12
+                | u64::from(immediate & 63) << 6;
+            for destination in 0u16..8 {
+                let word = 0x1ee0_1000 | immediate << 13 | u32::from(destination);
+                let ir = lift_words(&[word, RET]).expect("a scalar half immediate move");
+                assert!(unsupported(&ir).is_none(), "{}", ir.render());
+                let mut state: State = std::array::from_fn(|index| hash(0x5eed, index as u64));
+                state[NZCV] = (checked as u64 & 15) << 28;
+                let initial = state;
+                let before_status: u64;
+                // SAFETY: reads this thread's status immediately before execution.
+                unsafe {
+                    std::arch::asm!("mrs {}, fpsr", out(reg) before_status,
+                        options(nomem, nostack, preserves_flags));
+                }
+                assert!(
+                    page.run(&[word], &mut state),
+                    "processor rejected {word:#010x}, FPCR={actual_control:#x}"
+                );
+                let after_status: u64;
+                let after_control: u64;
+                // SAFETY: reads this thread's environment after execution.
+                unsafe {
+                    std::arch::asm!("mrs {status}, fpsr", "mrs {control}, fpcr",
+                        status = out(reg) after_status, control = out(reg) after_control,
+                        options(nomem, nostack, preserves_flags));
+                }
+                assert_eq!(after_status, before_status, "{word:#010x}: FPSR");
+                assert_eq!(after_control, actual_control, "{word:#010x}: FPCR");
+                assert_eq!(state[NZCV], initial[NZCV], "{word:#010x}: NZCV");
+                let registers: Vec<_> = (0..28u16)
+                    .filter(|index| usable(*index))
+                    .map(|index| (index, initial[usize::from(index)]))
+                    .chain((0..16).map(|half| {
+                        (
+                            crate::arch::aarch64::V0 + half as u16,
+                            initial[VECTORS + half],
+                        )
+                    }))
+                    .collect();
+                let setup = super::setup(&registers);
+                let (after, memory) = eval::state_after(&ir, &setup).expect("a complete move");
+                assert!(memory.is_empty());
+                for &(index, start) in &registers {
+                    let processor = match index.checked_sub(crate::arch::aarch64::V0) {
+                        Some(half) => state[VECTORS + usize::from(half)],
+                        None => state[usize::from(index)],
+                    };
+                    let wanted = if index == crate::arch::aarch64::V0 + 2 * destination {
+                        expected
+                    } else if index == crate::arch::aarch64::V0 + 2 * destination + 1 {
+                        0
+                    } else {
+                        start
+                    };
+                    assert_eq!(
+                        processor, wanted,
+                        "{word:#010x}, FPCR={actual_control:#x}, register {index}: processor"
+                    );
+                    assert_eq!(
+                        after.get(&index).copied().unwrap_or(start),
+                        processor,
+                        "{word:#010x}, FPCR={actual_control:#x}, register {index}: IR"
+                    );
+                }
+                checked += 1;
+            }
+        }
+    }
+    assert_eq!(checked, 16384);
+    assert!(
+        observed_modes
+            .iter()
+            .filter(|mode| **mode & !(3 << 22) == 0)
+            .count()
+            >= 4
+    );
+    eprintln!(
+        "{checked} exact scalar half immediate cases; observed FPCR mode bits {observed_modes:x?}"
+    );
+}

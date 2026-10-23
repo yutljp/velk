@@ -67,6 +67,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) narrow_regs: std::collections::HashSet<u16>,
     /// Variables holding floats, with their precision.
     pub(super) floats: HashMap<u16, Precision>,
+    pub(super) readonly_floats: HashMap<u16, (String, Precision)>,
     /// Pointers whose arithmetic C scales by a pointee wider than a byte.
     pub(super) scaled: std::collections::HashSet<u16>,
     /// The integer or pointer type the function returns.
@@ -88,6 +89,23 @@ pub(crate) struct Ctx<'a> {
 }
 
 impl Ctx<'_> {
+    pub(super) fn raw_vector(&self, index: u16) -> bool {
+        crate::arch::vector_half(self.isa, index).is_some()
+            && self
+                .declared
+                .get(&index)
+                .is_some_and(|declared| declared.integer)
+    }
+
+    fn bit_values(&self) -> bool {
+        self.abi.is_some()
+            || self.declared.keys().any(|index| self.raw_vector(*index))
+            || self
+                .floats
+                .keys()
+                .any(|index| crate::arch::vector_half(self.isa, *index).is_some())
+    }
+
     pub(super) fn register(&self, index: u16, width: u8) -> String {
         match self.names.get(&index) {
             Some(name) => (*name).to_owned(),
@@ -394,9 +412,18 @@ pub(crate) fn float_operand(
                 text
             }
         }
+        Expr::Reg { index, width }
+            if ctx
+                .readonly_floats
+                .get(index)
+                .is_some_and(|(_, known)| *known == precision)
+                && *width >= precision.bits() =>
+        {
+            ctx.readonly_floats[index].0.clone()
+        }
         // A register, or its low half, holds the float itself.
         Expr::Reg { index, width }
-            if ctx.abi.is_some()
+            if ctx.bit_values()
                 && (ctx.floats.get(index) != Some(&precision)
                     || u32::from(*width) < u32::from(precision.bits())) =>
         {
@@ -405,9 +432,11 @@ pub(crate) fn float_operand(
         }
         Expr::Reg { index, .. } => ctx.register(*index, 64),
         Expr::Apply { op, args }
-            if ctx.abi.is_some() && op.result_precision() == Some(precision) =>
+            if ctx.bit_values() && op.result_precision() == Some(precision) =>
         {
-            render_operation(*op, args, ctx)
+            Printed::opaque(render_operation(*op, args, ctx), precedence(expr))
+                .within(parent, right)
+                .text
         }
         Expr::Bin {
             op: BinOp::And,
@@ -415,7 +444,7 @@ pub(crate) fn float_operand(
             rhs,
         } if matches!(lhs.as_ref(), Expr::Reg { .. })
             && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
-            && (precision == Precision::Single || ctx.abi.is_none()) =>
+            && (precision == Precision::Single || !ctx.bit_values()) =>
         {
             float_operand(lhs, precision, ctx, parent, right)
         }
@@ -449,7 +478,7 @@ pub(crate) fn float_operand(
                 },
             }
         }
-        _ if ctx.abi.is_some() => bits_float(print(expr, ctx, 64).text, precision),
+        _ if ctx.bit_values() => bits_float(print(expr, ctx, 64).text, precision),
         _ => operand(expr, ctx, parent, right),
     }
 }
@@ -622,7 +651,7 @@ fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
         Operation::FloatUnordered(p) => call("isunordered", Some(p)),
         Operation::FloatSqrt(p) => call(&format!("sqrt{}", suffix(p)), Some(p)),
         Operation::FloatAbs(p) => call(&format!("fabs{}", suffix(p)), Some(p)),
-        Operation::FloatNegate(p) => format!("-{}", float_operand(&args[0], p, ctx, 12, false)),
+        Operation::FloatNegate(p) => format!("-({})", float_operand(&args[0], p, ctx, 12, false)),
         Operation::FloatMulAdd(p) => call(&format!("fma{}", suffix(p)), Some(p)),
         Operation::IntToFloat { signed, bits, to } => {
             let operand = integral(&args[0], ctx, u32::from(bits));
@@ -1234,7 +1263,7 @@ fn widen(printed: Printed, constant: bool, unsigned: bool) -> Printed {
 fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
     let text = ctx.register(index, width);
     let read = u32::from(width);
-    if ctx.abi.is_some()
+    if ctx.bit_values()
         && let Some(precision) = ctx.floats.get(&index)
     {
         let bits = float_bits(text, *precision);
@@ -1481,7 +1510,7 @@ fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>) -> Printe
             ctx,
         );
     }
-    if ctx.abi.is_some()
+    if ctx.bit_values()
         && let Some(precision) = op.result_precision()
     {
         return float_bits(render_operation(op, args, ctx), precision);
@@ -2093,7 +2122,7 @@ mod tests {
             vec![masked(fused)],
         );
         let text = global_returned(negated, float, &params);
-        assert!(text.contains("return -fmaf(a0, a1, a2);"), "{text}");
+        assert!(text.contains("return -(fmaf(a0, a1, a2));"), "{text}");
     }
 
     #[test]

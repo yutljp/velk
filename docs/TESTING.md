@@ -88,6 +88,15 @@ with refusal checked before and after optimization. Scalar and indexed
 forms remain unsupported. These checks concern register results, not
 complete floating-status behavior or arbitrary external FPSR observers.
 
+The AArch64 half-precision immediate check covers `FMOV Hd, #imm` only.
+Decoder and IR checks cover every encoded immediate and all 32 destinations
+against independently specified bit patterns, including clearing the other
+112 destination bits. On supported hardware, a separate capability probe
+precedes processor comparisons using v0–v7, which also check unchanged FPCR,
+FPSR and NZCV. An unavailable probe is not a passing comparison. These checks
+do not cover half-precision arithmetic or conversions, NaN payloads, or general
+floating-environment behavior.
+
 Fixture semantics checks attempt the discovered functions on finite trial
 inputs, comparing return values, calls, and memory. Structured output is
 also lowered to blocks for comparison. Unknown or unsupported executions
@@ -121,6 +130,23 @@ A focused physical-call test uses a real host C callee to observe zero-extended
 argument bits, call count and the full-width returned value. It covers narrow
 and wide parameter storage at both optimization levels; it does not rely on
 the interpreter's synthetic call results as the callee oracle.
+
+Physical SIMD storage checks compare full return bits from the original IR and
+unedited generated C across 16/32/64-bit accesses, upper-half clearing, finite
+single/double computations, and reads before and after parameter overwrite.
+Read-only FP checks distinguish unchanged formal names from the raw capture
+needed by mixed FP/integer reads. Explicit writes, call clobbers, different
+precisions, and volatile or atomic qualifiers remain outside that name reuse.
+Generated-C comparisons include read-only sums and values saved before overwrite.
+
+Nested FP controls check multiplication/addition grouping, right operands of
+subtraction and division, negation, and precision conversions. Separate unary
+minus controls compare full bits for parameters and negative literals, including
+`+0.0` and `-0.0`; enclosing the operand preserves nested signs without forming
+a decrement token. These finite and signed-zero cases do not establish arbitrary
+NaN-payload or floating-environment equivalence. A physical `uint64_t` parameter
+used to preserve otherwise unrepresented entry bits does not establish the
+original floating-argument ABI.
 
 Sparse equality-dispatch tests compare complete IR outcomes before recovery,
 after recovery and after structured lowering. Generated-C cases check case and

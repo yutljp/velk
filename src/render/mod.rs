@@ -278,6 +278,7 @@ pub fn render_with_dependencies(
     params::fold_saved_parameters(&mut folded);
     // A saved parameter returned reads as the parameter now.
     crate::analysis::typing::apply_pointer_return(&mut folded);
+    let float_entries = physical_float_parameters(&mut folded);
     let mut logical = abi::prepare(&mut folded, symbols);
     let mut incoming = if logical.is_none() {
         stack_bytes::prepare(&mut folded)
@@ -368,8 +369,11 @@ pub fn render_with_dependencies(
         locals,
         symbols,
         data_ranges,
-        logical.as_ref(),
-        incoming.as_ref(),
+        EntryStorage {
+            logical: logical.as_ref(),
+            incoming: incoming.as_ref(),
+            float_entries,
+        },
     )
 }
 
@@ -400,18 +404,31 @@ fn scales(ty: &CType) -> bool {
     }
 }
 
+struct EntryStorage<'a> {
+    logical: Option<&'a abi::Plan>,
+    incoming: Option<&'a stack_bytes::Plan>,
+    float_entries: std::collections::HashSet<u16>,
+}
+
 fn render_with(
     ir: &FunctionIr,
     references: &[Reference],
     locals: Locals,
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
-    logical: Option<&abi::Plan>,
-    incoming: Option<&stack_bytes::Plan>,
+    entry: EntryStorage<'_>,
 ) -> Rendered {
+    let EntryStorage {
+        logical,
+        incoming,
+        float_entries,
+    } = entry;
     let mut names: HashMap<u16, &str> = ir
         .params
         .iter()
+        .filter(|param| {
+            !(param.ty.is_sse_float() && crate::arch::vector_half(ir.isa, param.index).is_some())
+        })
         .map(|param| (param.index, param.name.as_str()))
         .collect();
     if let Some(incoming) = incoming {
@@ -440,6 +457,7 @@ fn render_with(
     let mut machine_reserved: std::collections::HashSet<String> = names
         .values()
         .map(|name| (*name).to_owned())
+        .chain(ir.params.iter().map(|param| param.name.clone()))
         .chain(locals.decls.iter().map(|local| local.name.clone()))
         .chain(ir.stack_params.iter().map(|param| param.name.clone()))
         .chain(
@@ -479,9 +497,15 @@ fn render_with(
                 .map(str::to_owned),
         );
     }
-    // Any other general register the body uses is a variable of its own;
+    // Any other machine register the body uses is a variable of its own;
     // Go keeps the running goroutine in r14.
-    let machine: Vec<(u16, String)> = general_registers(ir)
+    let (used_registers, written_registers) = machine_registers(ir, !float_entries.is_empty());
+    let readonly_floats = ir.params.iter()
+        .filter(|param| float_entries.contains(&param.index) && !written_registers.contains(&param.index))
+        .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
+        .filter_map(|param| self::float_return(&param.ty).map(|precision| (param.index, (param.name.clone(), precision))))
+        .collect();
+    let machine: Vec<(u16, String)> = used_registers
         .into_iter()
         .filter(|index| !names.contains_key(index))
         .map(|index| {
@@ -500,6 +524,12 @@ fn render_with(
         declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
     let floats: HashMap<u16, crate::ir::Precision> = variable_types
         .iter()
+        .chain(
+            ir.params
+                .iter()
+                .filter(|param| crate::arch::vector_half(ir.isa, param.index).is_none())
+                .map(|param| (&param.index, &param.ty)),
+        )
         .filter_map(|(index, ty)| match ty.to_string().as_str() {
             "double" => Some((*index, crate::ir::Precision::Double)),
             "float" => Some((*index, crate::ir::Precision::Single)),
@@ -700,6 +730,9 @@ fn render_with(
     }
     reserved.extend(call_outputs.declarations.iter().cloned());
     let mut value_bits = int::value_bits(ir);
+    for index in &float_entries {
+        value_bits.remove(index);
+    }
     if let Some(logical) = logical {
         for capture in &logical.captures {
             declared_registers.insert(
@@ -715,6 +748,7 @@ fn render_with(
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return,
+        readonly_floats,
         names,
         landing_pads: ir.landing_pads.iter().cloned().collect(),
         strings: references
@@ -930,10 +964,22 @@ fn render_with(
     }
     // A register the body uses beyond the parameters holds what it holds
     // on entry until the body sets it.
-    for (_, name) in &machine {
+    for (index, name) in &machine {
         if variables::mentions(&body, name) {
             indent(1, &mut out);
-            out.push_str(&format!("uint64_t {name};\n"));
+            if float_entries.contains(index) {
+                let param = ir
+                    .params
+                    .iter()
+                    .find(|param| param.index == *index)
+                    .expect("a floating formal");
+                let precision =
+                    self::float_return(&param.ty).expect("a floating entry representation");
+                let bits = expr::float_bits(param.name.clone(), precision).text;
+                out.push_str(&format!("uint64_t {name} = {bits};\n"));
+            } else {
+                out.push_str(&format!("uint64_t {name};\n"));
+            }
             declared += 1;
         }
     }
@@ -1130,16 +1176,60 @@ fn debug_definitions(ir: &FunctionIr, code: &str) -> String {
         .collect()
 }
 
-/// The general registers other than the stack pointer that the body reads
-/// or writes.
-fn general_registers(ir: &FunctionIr) -> std::collections::BTreeSet<u16> {
+fn physical_float_parameters(ir: &mut FunctionIr) -> std::collections::HashSet<u16> {
+    let mut captured = std::collections::HashSet::new();
+    if !ir.params.iter().any(|param| {
+        param.ty.is_sse_float() && crate::arch::vector_half(ir.isa, param.index).is_some()
+    }) {
+        return captured;
+    }
+    let reads = if ir.landing_pads.is_empty() {
+        crate::ssa::entry_demands(ir, &[])
+    } else {
+        None
+    };
+    for param in &mut ir.params {
+        if crate::arch::vector_half(ir.isa, param.index).is_none() {
+            continue;
+        }
+        let Some(precision) = float_return(&param.ty) else {
+            continue;
+        };
+        let supplied = crate::ir::semantics::mask(u32::from(precision.bits()));
+        if reads
+            .as_ref()
+            .is_none_or(|reads| reads.get(&param.index).copied().unwrap_or(0) & !supplied != 0)
+        {
+            param.ty = CType::U64;
+        } else if reads
+            .as_ref()
+            .is_some_and(|reads| reads.contains_key(&param.index))
+        {
+            captured.insert(param.index);
+        }
+    }
+    captured
+}
+
+/// The general and vector slots the body reads or writes, except the stack pointer.
+fn machine_registers(
+    ir: &FunctionIr,
+    track_writes: bool,
+) -> (
+    std::collections::BTreeSet<u16>,
+    std::collections::HashSet<u16>,
+) {
     let general = match ir.isa {
         crate::loader::Isa::X86_64 => 0..16,
         crate::loader::Isa::AArch64 => 0..31,
         crate::loader::Isa::Unsupported => 0..0,
     };
     let mut used = std::collections::HashSet::new();
+    let mut written = std::collections::HashSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if track_writes {
+            written.extend(crate::ir::visit::statement_registers(stmt).0);
+        }
         for value in stmt.operands() {
             crate::ir::visit::expr_reads(value, &mut used);
         }
@@ -1148,9 +1238,14 @@ fn general_registers(ir: &FunctionIr) -> std::collections::BTreeSet<u16> {
         }
         used.extend(stmt.call_outputs().iter().map(|output| output.dest.index));
     }
-    used.into_iter()
-        .filter(|index| general.contains(index) && *index != stack_pointer(ir.isa))
-        .collect()
+    let used = used
+        .into_iter()
+        .filter(|index| {
+            (general.contains(index) || crate::arch::vector_half(ir.isa, *index).is_some())
+                && *index != stack_pointer(ir.isa)
+        })
+        .collect();
+    (used, written)
 }
 
 /// How each parameter, variable and register named for the body is
@@ -2164,6 +2259,18 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     "{target} = {};",
                     narrow_write(dest.index, dest.width, value, ctx)
                 );
+            }
+            if ctx.raw_vector(dest.index) {
+                let value = expr::print(value, ctx, 64).address_integer().text;
+                let value = if dest.width < 64 {
+                    format!(
+                        "(uint64_t)({value}) & 0x{:x}",
+                        crate::ir::semantics::mask(u32::from(dest.width))
+                    )
+                } else {
+                    value
+                };
+                return format!("{target} = {value};");
             }
             if let Some(precision) = ctx.floats.get(&dest.index) {
                 return format!(
@@ -4473,6 +4580,360 @@ mod tests {
                     }
                 );
             }
+        }
+    }
+
+    #[test]
+    fn physical_vector_widths_share_one_integer_storage_name() {
+        for isa in [Isa::AArch64, Isa::X86_64] {
+            let low = match isa {
+                Isa::AArch64 => crate::arch::aarch64::V0,
+                _ => crate::arch::x86::XMM0,
+            };
+            for width in [16, 32, 64] {
+                let ir = FunctionIr::single_block(
+                    isa,
+                    vec![
+                        assign(low, Expr::Const(0xfedc_ba98_7654_3210)),
+                        Stmt::Ret {
+                            value: Expr::reg(low, width),
+                        },
+                    ],
+                );
+                let code = rendered(&ir);
+                let name = crate::ir::reg_name(isa, low, 64);
+                assert!(code.contains(&format!("uint64_t {name};")), "{code}");
+                assert!(code.contains(&format!("{name} = ")), "{code}");
+                if isa == Isa::AArch64 {
+                    assert!(!code.contains("s0"), "{code}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn physical_vector_storage_preserves_upper_zero_and_name_collisions() {
+        let low = crate::arch::aarch64::V0;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(low + 1, Expr::Const(u64::MAX)),
+                assign(low, Expr::Const(0xbc00)),
+                assign(low + 1, Expr::Const(0)),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Xor, Expr::reg(low, 64), Expr::reg(low + 1, 64)),
+                },
+            ],
+        );
+        ir.params.push(Param {
+            index: 0,
+            name: "d0".to_owned(),
+            ty: CType::U64,
+        });
+        let code = rendered(&ir);
+        assert!(code.contains("uint64_t d0_2;"), "{code}");
+        assert!(code.contains("uint64_t v0_hi;"), "{code}");
+        assert!(code.contains("v0_hi = 0x0;"), "{code}");
+        assert!(!code.contains("s0"), "{code}");
+    }
+
+    #[test]
+    fn physical_vector_float_operations_use_representation_conversions() {
+        let low = crate::arch::aarch64::V0;
+        let operation = Expr::Apply {
+            op: Operation::FloatAdd(Precision::Single),
+            args: vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+        };
+        let ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(low, Expr::Const(0x3fc0_0000)),
+                assign(low + 2, Expr::Const(0x4010_0000)),
+                assign(
+                    low + 4,
+                    Expr::bin(BinOp::And, operation, Expr::Const(0xffff_ffff)),
+                ),
+                Stmt::Ret {
+                    value: Expr::reg(low + 4, 64),
+                },
+            ],
+        );
+        let code = rendered(&ir);
+        assert!(
+            code.contains("union { uint32_t bits; float value; }"),
+            "{code}"
+        );
+        assert!(
+            code.contains("union { float value; uint32_t bits; }"),
+            "{code}"
+        );
+        assert!(!code.contains("float d0"), "{code}");
+    }
+
+    #[test]
+    fn physical_float_formals_require_their_actual_entry_bits() {
+        let low = crate::arch::aarch64::V0;
+        for (width, ty) in [(32, "float"), (64, "uint64_t")] {
+            let mut ir = FunctionIr::single_block(
+                Isa::AArch64,
+                vec![Stmt::Ret {
+                    value: Expr::reg(low, width),
+                }],
+            );
+            ir.params.push(Param {
+                index: low,
+                name: "input".to_owned(),
+                ty: CType::Named("float".to_owned()),
+            });
+            let code = rendered(&ir);
+            assert!(code.contains(&format!("({ty} input)")), "{code}");
+            assert_eq!(ir.params[0].ty, CType::Named("float".to_owned()));
+        }
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::unsupported("opaque"),
+                Stmt::Ret {
+                    value: Expr::reg(low, 32),
+                },
+            ],
+        );
+        ir.params.push(Param {
+            index: low,
+            name: "input".to_owned(),
+            ty: CType::Named("float".to_owned()),
+        });
+        let code = rendered(&ir);
+        assert!(code.contains("(uint64_t input)"), "{code}");
+    }
+
+    #[test]
+    fn physical_vector_constants_remain_numeric_when_symbols_share_the_bits() {
+        let low = crate::arch::aarch64::V0;
+        let ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(low, Expr::Const(0x1000)),
+                Stmt::Ret {
+                    value: Expr::reg(low, 64),
+                },
+            ],
+        );
+        for function in [false, true] {
+            let mut symbols = Symbols::default();
+            if function {
+                symbols.functions.insert(0x1000, "raw_symbol".to_owned());
+            } else {
+                symbols.data.insert(0x1000, "raw_symbol".to_owned());
+            }
+            let code = render(&ir, &[], &symbols, &[]);
+            assert!(code.contains("d0 = 0x1000;"), "{code}");
+            assert!(!code.contains("raw_symbol"), "{code}");
+        }
+    }
+
+    #[test]
+    fn overwritten_float_formals_use_raw_storage_without_an_entry_capture() {
+        let low = crate::arch::aarch64::V0;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(low, Expr::Const(0x1234_5678_3fc0_0000)),
+                Stmt::Ret {
+                    value: Expr::reg(low, 64),
+                },
+            ],
+        );
+        ir.params.push(Param {
+            index: low,
+            name: "input".to_owned(),
+            ty: CType::Named("float".to_owned()),
+        });
+        let code = rendered(&ir);
+        assert!(code.contains("(float input)"), "{code}");
+        assert!(code.contains("uint64_t d0;"), "{code}");
+        assert!(!code.contains(".value = input"), "{code}");
+        assert!(code.contains("d0 = 0x123456783fc00000"), "{code}");
+        ir.landing_pads.push((0, vec![(0, 4)]));
+        let code = rendered(&ir);
+        assert!(code.contains("(uint64_t input)"), "{code}");
+    }
+
+    #[test]
+    fn floating_entry_is_captured_once_before_a_full_width_overwrite() {
+        let low = crate::arch::aarch64::V0;
+        let saved = crate::ir::VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: saved,
+                        width: 64,
+                    },
+                    value: Expr::reg(low, 32),
+                },
+                assign(low, Expr::Const(0x1234_5678_3fc0_0000)),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Xor, Expr::reg(low, 64), Expr::reg(saved, 32)),
+                },
+            ],
+        );
+        ir.params.push(Param {
+            index: low,
+            name: "input".to_owned(),
+            ty: CType::Named("const float".to_owned()),
+        });
+        let code = rendered(&ir);
+        assert!(code.contains("(const float input)"), "{code}");
+        assert_eq!(code.matches(".value = input").count(), 1, "{code}");
+        assert!(code.contains("uint64_t d0 ="), "{code}");
+        assert!(code.contains("d0 = 0x123456783fc00000"), "{code}");
+        assert!(!code.contains("float d0"), "{code}");
+    }
+
+    #[test]
+    fn readonly_floating_formals_use_their_original_operand_names() {
+        for isa in [Isa::AArch64, Isa::X86_64] {
+            let low = if isa == Isa::AArch64 {
+                crate::arch::aarch64::V0
+            } else {
+                crate::arch::x86::XMM0
+            };
+            for (precision, ty) in [(Precision::Single, "float"), (Precision::Double, "double")] {
+                let mut ir = FunctionIr::single_block(
+                    isa,
+                    vec![Stmt::Ret {
+                        value: Expr::apply(
+                            Operation::FloatAdd(precision),
+                            vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+                        ),
+                    }],
+                );
+                ir.params = [(low, "a"), (low + 2, "b")]
+                    .into_iter()
+                    .map(|(index, name)| Param {
+                        index,
+                        name: name.to_owned(),
+                        ty: CType::Named(ty.to_owned()),
+                    })
+                    .collect();
+                ir.ret_type = CType::Named(ty.to_owned());
+                let before = format!("{ir:?}");
+                let code = rendered(&ir);
+                assert!(code.contains("return a + b;"), "{code}");
+                assert!(!code.contains("uint64_t"), "{code}");
+                assert!(!code.contains("union"), "{code}");
+                assert_eq!(format!("{ir:?}"), before);
+            }
+        }
+    }
+
+    #[test]
+    fn readonly_floating_views_keep_a_capture_for_raw_integer_reads() {
+        let low = crate::arch::aarch64::V0;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Xor,
+                    Expr::apply(
+                        Operation::FloatAdd(Precision::Single),
+                        vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+                    ),
+                    Expr::reg(low, 32),
+                ),
+            }],
+        );
+        ir.params = [(low, "a"), (low + 2, "b")]
+            .into_iter()
+            .map(|(index, name)| Param {
+                index,
+                name: name.to_owned(),
+                ty: CType::Named("float".to_owned()),
+            })
+            .collect();
+        ir.ret_type = CType::U64;
+        let code = rendered(&ir);
+        assert!(code.contains(".value = a + b"), "{code}");
+        assert!(code.contains("uint64_t d0 ="), "{code}");
+        assert_eq!(code.matches("{ .value = a }").count(), 1, "{code}");
+        assert!(!code.contains("uint64_t d1"), "{code}");
+    }
+
+    #[test]
+    fn readonly_floating_views_reject_written_and_call_clobbered_formals() {
+        let low = crate::arch::aarch64::V0;
+        for clobber in [false, true] {
+            let mut stmts = vec![Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::apply(
+                    Operation::FloatAdd(Precision::Double),
+                    vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+                ),
+            }];
+            if clobber {
+                stmts.push(Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: crate::ir::Convention::Aapcs64,
+                    args: Some(Vec::new()),
+                    floats_named: true,
+                    outputs: Vec::new(),
+                    clobbers: Some([low].into_iter().collect()),
+                    via: None,
+                });
+            } else {
+                stmts.push(assign(low, Expr::Const(0x401e_0000_0000_0000)));
+            }
+            stmts.push(Stmt::Ret {
+                value: Expr::reg(VARIABLE_BASE, 64),
+            });
+            let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
+            ir.params = [(low, "a"), (low + 2, "b")]
+                .into_iter()
+                .map(|(index, name)| Param {
+                    index,
+                    name: name.to_owned(),
+                    ty: CType::Named("double".to_owned()),
+                })
+                .collect();
+            ir.ret_type = CType::Named("double".to_owned());
+            let before = format!("{ir:?}");
+            let code = rendered(&ir);
+            assert!(code.contains("uint64_t d0 ="), "{code}");
+            assert!(!code.contains(".value = a + b"), "{code}");
+            assert!(!code.contains("v1 = a + b"), "{code}");
+            assert_eq!(format!("{ir:?}"), before);
+        }
+    }
+
+    #[test]
+    fn readonly_floating_views_reject_mismatched_or_volatile_formals() {
+        let low = crate::arch::aarch64::V0;
+        for ty in ["double", "volatile float", "_Atomic float"] {
+            let mut ir = FunctionIr::single_block(
+                Isa::AArch64,
+                vec![Stmt::Ret {
+                    value: Expr::apply(
+                        Operation::FloatAdd(Precision::Single),
+                        vec![Expr::reg(low, 32), Expr::Const(0x4000_0000)],
+                    ),
+                }],
+            );
+            ir.params.push(Param {
+                index: low,
+                name: "a".to_owned(),
+                ty: CType::Named(ty.to_owned()),
+            });
+            ir.ret_type = CType::Named("float".to_owned());
+            let code = rendered(&ir);
+            assert!(code.contains("uint64_t d0 ="), "{code}");
+            assert!(!code.contains("return a +"), "{code}");
+            assert!(code.contains("uint32_t bits; float value"), "{code}");
         }
     }
 }

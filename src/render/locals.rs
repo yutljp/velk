@@ -61,6 +61,7 @@ pub(crate) fn stack_locals(
         arrays: HashMap::new(),
         narrow_regs: std::collections::HashSet::new(),
         floats: HashMap::new(),
+        readonly_floats: HashMap::new(),
         scaled: std::collections::HashSet::new(),
         returned: None,
         declared: HashMap::new(),

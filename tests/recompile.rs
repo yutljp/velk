@@ -7172,3 +7172,1383 @@ fn printed_sparse_equality_dispatch_preserves_cases_and_effects() {
     );
     check_candidates("sparse-equality-dispatch", candidates, Mode::Memory, &[]);
 }
+
+#[test]
+fn printed_scalar_half_immediate_wrappers_preserve_raw_patterns() {
+    let mut source = String::from(
+        "#include <stdint.h>\n#include <inttypes.h>\n#include <stdio.h>\n#include <stdbool.h>\n",
+    );
+    let native = cfg!(all(target_arch = "aarch64", target_os = "macos"));
+    let mut body = String::from("int main(void) {\n");
+    let scratch = scratch_dir("half-immediate");
+    for immediate in 0u32..256 {
+        let word = 0x1ee0_1000 | immediate << 13;
+        let words = [word, 0x0e02_3c00, 0xd65f_03c0];
+        let code: Vec<_> = words.into_iter().flat_map(u32::to_le_bytes).collect();
+        let size = code.len() as u64;
+        let mut object = object::write::Object::new(
+            object::BinaryFormat::Elf,
+            object::Architecture::Aarch64,
+            object::Endianness::Little,
+        );
+        let text = object.add_section(Vec::new(), b".text".to_vec(), object::SectionKind::Text);
+        object.append_section_data(text, &code, 4);
+        object.add_symbol(object::write::Symbol {
+            name: b"half_wrapper".to_vec(),
+            value: 0,
+            size,
+            kind: object::SymbolKind::Text,
+            scope: object::SymbolScope::Linkage,
+            weak: false,
+            section: object::write::SymbolSection::Section(text),
+            flags: object::SymbolFlags::None,
+        });
+        let wrapper = scratch.join("half-wrapper.o");
+        std::fs::write(&wrapper, object.write().expect("a tiny ELF object")).unwrap();
+        let image = velk::loader::load(&wrapper).expect("the original wrapper object");
+        assert_eq!(image.isa, Isa::AArch64);
+        assert_eq!(image.format, velk::loader::Format::Elf);
+        let function = image
+            .functions
+            .values()
+            .find(|function| function.name.as_deref() == Some("half_wrapper"))
+            .expect("the original wrapper symbol");
+        assert_eq!(function.size, Some(size));
+        assert_eq!(image.read_vaddr(function.addr, size), Some(code.as_slice()));
+        let mut ir = synthetic_ir("half_raw", Vec::new(), CType::U64, Vec::new());
+        ir.isa = Isa::AArch64;
+        ir.convention = Convention::Aapcs64;
+        ir.addr = function.addr;
+        ir.size = size;
+        ir.blocks = velk::lift::lift(&image, function.addr, size, &Default::default())
+            .expect("original wrapper lift");
+        for optimized in [false, true] {
+            if optimized {
+                velk::passes::optimize(&mut ir, false);
+            }
+            assert!(
+                !ir.blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| matches!(
+                        stmt,
+                        Stmt::Unsupported { .. } | Stmt::Call { .. } | Stmt::Store { .. }
+                    )),
+                "immediate {immediate}, optimized={optimized}: {}",
+                ir.render()
+            );
+            let bit = u64::from(immediate >> 6 & 1);
+            let expected = u64::from(immediate >> 7) << 15
+                | (bit ^ 1) << 14
+                | (bit * 3) << 12
+                | u64::from(immediate & 63) << 6;
+            let setup = eval::Setup {
+                seed: 0x5eed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(
+                eval::run(&ir, &setup),
+                Outcome::Return {
+                    value: expected,
+                    calls: Vec::new(),
+                    memory: BTreeMap::new(),
+                }
+            );
+            let suffix = if optimized { "optimized" } else { "raw" };
+            ir.name = Some(format!("half_{suffix}_{immediate}"));
+            source.push_str(&velk::render::render(&ir, &[], &Default::default(), &[]));
+            source.push('\n');
+        }
+        if native {
+            writeln!(source, "extern uint64_t half_original_{immediate}(void);").unwrap();
+            writeln!(source, "__asm__(\".text\\n.p2align 2\\n.globl _half_original_{immediate}\\n_half_original_{immediate}:\\n.long {word:#010x}\\n.long 0x0e023c00\\n.long 0xd65f03c0\\n\");").unwrap();
+            writeln!(body, "printf(\"{immediate} %\" PRIx64 \" %\" PRIx64 \" %\" PRIx64 \"\\n\", half_raw_{immediate}(), half_optimized_{immediate}(), half_original_{immediate}());").unwrap();
+        } else {
+            writeln!(body, "printf(\"{immediate} %\" PRIx64 \" %\" PRIx64 \"\\n\", half_raw_{immediate}(), half_optimized_{immediate}());").unwrap();
+        }
+    }
+    body.push_str("return 0;\n}\n");
+    source.push_str(&body);
+    let input = scratch.join("half.c");
+    std::fs::write(&input, source).unwrap();
+    let mut compared = 0;
+    let mut original_calls = 0;
+    for level in LEVELS {
+        let executable = scratch.join(format!("half{level}"));
+        let compiled = Command::new(COMPILER)
+            .arg("-std=c11")
+            .arg(level)
+            .args([
+                "-fwrapv",
+                "-fno-strict-aliasing",
+                "-Werror=implicit-function-declaration",
+                "-Werror=return-type",
+            ])
+            .arg(&input)
+            .arg("-o")
+            .arg(&executable)
+            .output()
+            .expect("a C compiler");
+        assert!(
+            compiled.status.success(),
+            "{level}: {}",
+            String::from_utf8_lossy(&compiled.stderr)
+        );
+        let output = run(&executable, "");
+        let rows: Vec<_> = output.lines().collect();
+        assert_eq!(rows.len(), 256, "{level}: {output}");
+        for (immediate, row) in rows.iter().enumerate() {
+            let mut words = row.split_whitespace();
+            assert_eq!(words.next().unwrap().parse::<usize>().unwrap(), immediate);
+            let bit = (immediate as u64 >> 6) & 1;
+            let expected = (immediate as u64 >> 7) << 15
+                | (bit ^ 1) << 14
+                | (bit * 3) << 12
+                | (immediate as u64 & 63) << 6;
+            let values: Vec<_> = words
+                .map(|value| u64::from_str_radix(value, 16).unwrap())
+                .collect();
+            assert_eq!(values.len(), if native { 3 } else { 2 });
+            for actual in values {
+                assert_eq!(actual, expected, "{level}, immediate {immediate}");
+            }
+            compared += 2;
+            original_calls += usize::from(native);
+        }
+    }
+    assert_eq!(compared, 1024);
+    assert_eq!(original_calls, if native { 512 } else { 0 });
+    eprintln!(
+        "{compared} generated-C calls and {original_calls} original-machine calls agree with exact immediate patterns"
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
+    let mut candidates = Vec::new();
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = match isa {
+            Isa::AArch64 => velk::arch::aarch64::V0,
+            _ => velk::arch::x86::XMM0,
+        };
+        let set = |index, width, value| Stmt::Assign {
+            dest: velk::ir::RegRef { index, width },
+            value,
+        };
+        let full = 0xfedc_ba98_7654_3210;
+        let mut cases = Vec::new();
+        for (width, expected) in [(16, 0x3210), (32, 0x7654_3210), (64, full)] {
+            cases.push((
+                format!("read{width}"),
+                vec![
+                    set(low, 64, Expr::Const(full)),
+                    Stmt::Ret {
+                        value: Expr::reg(low, width),
+                    },
+                ],
+                expected,
+            ));
+        }
+        for (width, expected) in [(16, 0x3210), (32, 0x7654_3210)] {
+            cases.push((
+                format!("write{width}"),
+                vec![
+                    set(low, 64, Expr::Const(u64::MAX)),
+                    set(low, width, Expr::Const(full)),
+                    Stmt::Ret {
+                        value: Expr::reg(low, 64),
+                    },
+                ],
+                expected,
+            ));
+        }
+        cases.push((
+            "upper_zero".to_owned(),
+            vec![
+                set(low + 1, 64, Expr::Const(u64::MAX)),
+                set(low, 64, Expr::Const(0xbc00)),
+                set(low + 1, 64, Expr::Const(0)),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Xor, Expr::reg(low, 64), Expr::reg(low + 1, 64)),
+                },
+            ],
+            0xbc00,
+        ));
+        for (precision, first, second, expected) in [
+            (Precision::Single, 0x3fc0_0000, 0x4010_0000, 0x4070_0000),
+            (
+                Precision::Double,
+                0x3ff8_0000_0000_0000,
+                0x4002_0000_0000_0000,
+                0x400e_0000_0000_0000,
+            ),
+        ] {
+            let sum = Expr::Apply {
+                op: Operation::FloatAdd(precision),
+                args: vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+            };
+            let sum = if precision == Precision::Single {
+                Expr::bin(BinOp::And, sum, Expr::Const(0xffff_ffff))
+            } else {
+                sum
+            };
+            cases.push((
+                format!("float{}", precision.bits()),
+                vec![
+                    set(low, 64, Expr::Const(first)),
+                    set(low + 2, 64, Expr::Const(second)),
+                    set(low + 4, 64, sum),
+                    Stmt::Ret {
+                        value: Expr::reg(low + 4, 64),
+                    },
+                ],
+                expected,
+            ));
+        }
+        cases.push((
+            "typed_float".to_owned(),
+            vec![
+                set(low, 64, Expr::Const(0x3fc0_0000)),
+                set(low + 2, 64, Expr::Const(0x4010_0000)),
+                set(
+                    velk::ir::VARIABLE_BASE,
+                    64,
+                    Expr::Apply {
+                        op: Operation::FloatAdd(Precision::Single),
+                        args: vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+                    },
+                ),
+                set(low + 4, 64, Expr::reg(velk::ir::VARIABLE_BASE, 64)),
+                Stmt::Ret {
+                    value: Expr::reg(low + 4, 64),
+                },
+            ],
+            0x4070_0000,
+        ));
+        cases.push((
+            "vector_lanes".to_owned(),
+            vec![
+                set(low, 64, Expr::Const(u64::MAX)),
+                set(low + 1, 64, Expr::Const(0x8123_4567_89ab_cdef)),
+                set(
+                    low + 2,
+                    64,
+                    Expr::Apply {
+                        op: Operation::Lanes(velk::ir::LaneOp::Add, 64),
+                        args: vec![Expr::reg(low, 64), Expr::Const(2)],
+                    },
+                ),
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Xor, Expr::reg(low + 2, 64), Expr::reg(low + 1, 64)),
+                },
+            ],
+            0x8123_4567_89ab_cdee,
+        ));
+        for (case, stmts, expected) in cases {
+            let mut ir = synthetic_ir(
+                &format!("physical_{isa:?}_{case}"),
+                Vec::new(),
+                CType::U64,
+                stmts,
+            );
+            ir.isa = isa;
+            ir.convention = if isa == Isa::AArch64 {
+                Convention::Aapcs64
+            } else {
+                Convention::SysV
+            };
+            let setup = eval::Setup {
+                seed: 0x5eed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(
+                eval::run(&ir, &setup),
+                Outcome::Return {
+                    value: expected,
+                    calls: Vec::new(),
+                    memory: BTreeMap::new()
+                },
+                "{isa:?}, {case}"
+            );
+            candidates.push(printed_candidate(ir, vec![Vec::new()]));
+        }
+    }
+    assert_eq!(candidates.len(), 20);
+    check_candidates("physical-vector-storage", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn printed_typed_float_parameters_interoperate_with_raw_vector_storage() {
+    let mut source = String::from(HEADER);
+    let mut body = String::from("int main(void) {\n");
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = match isa {
+            Isa::AArch64 => velk::arch::aarch64::V0,
+            _ => velk::arch::x86::XMM0,
+        };
+        for (precision, first, second, expected, ty, literal) in [
+            (
+                Precision::Single,
+                0x3fc0_0000,
+                0x4010_0000,
+                0x4070_0000,
+                "float",
+                "1.5f",
+            ),
+            (
+                Precision::Double,
+                0x3ff8_0000_0000_0000,
+                0x4002_0000_0000_0000,
+                0x400e_0000_0000_0000,
+                "double",
+                "1.5",
+            ),
+        ] {
+            let name = format!("typed_{isa:?}_{}", precision.bits());
+            let mut ir = synthetic_ir(
+                &name,
+                vec![Param {
+                    index: low,
+                    name: "input".to_owned(),
+                    ty: CType::Named(ty.to_owned()),
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: low + 2,
+                            width: 64,
+                        },
+                        value: Expr::Const(second),
+                    },
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: low + 4,
+                            width: 64,
+                        },
+                        value: Expr::Apply {
+                            op: Operation::FloatAdd(precision),
+                            args: vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+                        },
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(low + 4, 64),
+                    },
+                ],
+            );
+            ir.isa = isa;
+            ir.convention = if isa == Isa::AArch64 {
+                Convention::Aapcs64
+            } else {
+                Convention::SysV
+            };
+            let registers = [(low, first)];
+            let setup = eval::Setup {
+                seed: 0x5eed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &registers,
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(
+                eval::run(&ir, &setup),
+                Outcome::Return {
+                    value: expected,
+                    calls: Vec::new(),
+                    memory: BTreeMap::new()
+                },
+                "{name}"
+            );
+            source.push_str(&velk::render::render(&ir, &[], &Default::default(), &[]));
+            writeln!(
+                body,
+                "if ({name}({literal}) != UINT64_C({expected})) return 1;"
+            )
+            .unwrap();
+        }
+    }
+    body.push_str("puts(\"4 typed float parameter cases passed\");\nreturn 0;\n}\n");
+    source.push_str(&body);
+    let source = Program {
+        text: source,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("typed-float-vector-storage");
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(
+            run(&executable, ""),
+            "4 typed float parameter cases passed\n"
+        );
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_vector_entry_bits_and_numeric_patterns_do_not_acquire_new_meanings() {
+    let mut source = String::from(HEADER);
+    source.push_str("static uint64_t input_calls;\nstatic uint64_t raw_input(void) { ++input_calls; return UINT64_C(0x123456783fc00000); }\nvoid raw_symbol(void) {}\n");
+    let mut body = String::from("int main(void) {\n");
+    let mut cases = 0;
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = match isa {
+            Isa::AArch64 => velk::arch::aarch64::V0,
+            _ => velk::arch::x86::XMM0,
+        };
+        for (case, width, copied, expected) in [
+            ("full", 64, false, 0x1234_5678_3fc0_0000),
+            ("copied", 64, true, 0x1234_5678_3fc0_0000),
+            ("low", 32, false, 0x3fc0_0000),
+            ("overwritten", 64, false, 0x1234_5678_3fc0_0000),
+            ("read_then_overwritten", 64, false, 0x1234_5678_0000_0000),
+        ] {
+            let name = format!("entry_{isa:?}_{case}");
+            let mut stmts = vec![Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: low + 2,
+                    width: 64,
+                },
+                value: Expr::Const(0),
+            }];
+            let returned = if copied {
+                stmts.push(Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: velk::ir::VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::reg(low, 64),
+                });
+                velk::ir::VARIABLE_BASE
+            } else {
+                low
+            };
+            if case == "read_then_overwritten" {
+                stmts.push(Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: velk::ir::VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::reg(low, 32),
+                });
+            }
+            if matches!(case, "overwritten" | "read_then_overwritten") {
+                stmts.push(Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: low,
+                        width: 64,
+                    },
+                    value: Expr::Const(0x1234_5678_3fc0_0000),
+                });
+            }
+            let value = if case == "read_then_overwritten" {
+                Expr::bin(
+                    BinOp::Xor,
+                    Expr::reg(low, 64),
+                    Expr::reg(velk::ir::VARIABLE_BASE, 32),
+                )
+            } else {
+                Expr::reg(returned, width)
+            };
+            stmts.push(Stmt::Ret { value });
+            let mut ir = synthetic_ir(
+                &name,
+                vec![Param {
+                    index: low,
+                    name: "input".to_owned(),
+                    ty: CType::Named("float".to_owned()),
+                }],
+                CType::U64,
+                stmts,
+            );
+            ir.isa = isa;
+            ir.convention = if isa == Isa::AArch64 {
+                Convention::Aapcs64
+            } else {
+                Convention::SysV
+            };
+            let registers = [(low, 0x1234_5678_3fc0_0000)];
+            let setup = eval::Setup {
+                seed: 0x5eed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &registers,
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(
+                eval::run(&ir, &setup),
+                Outcome::Return {
+                    value: expected,
+                    calls: Vec::new(),
+                    memory: BTreeMap::new()
+                },
+                "{name}"
+            );
+            let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+            let physical = width == 64 && !matches!(case, "overwritten" | "read_then_overwritten");
+            let (ty, argument) = if physical {
+                ("uint64_t", "raw_input()")
+            } else {
+                ("float", "1.5f")
+            };
+            assert!(code.contains(&format!("{name}({ty} input)")), "{code}");
+            source.push_str(&code);
+            writeln!(
+                body,
+                "if ({name}({argument}) != UINT64_C({expected})) return 1;"
+            )
+            .unwrap();
+            cases += 1;
+        }
+        let name = format!("numeric_{isa:?}");
+        let mut ir = synthetic_ir(
+            &name,
+            Vec::new(),
+            CType::U64,
+            vec![
+                Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: low,
+                        width: 64,
+                    },
+                    value: Expr::Const(0x1000),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(low, 64),
+                },
+            ],
+        );
+        ir.isa = isa;
+        ir.convention = if isa == Isa::AArch64 {
+            Convention::Aapcs64
+        } else {
+            Convention::SysV
+        };
+        let setup = eval::Setup {
+            seed: 0x5eed,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &[],
+            memory: &[],
+            step_limit: 100,
+        };
+        assert_eq!(
+            eval::run(&ir, &setup),
+            Outcome::Return {
+                value: 0x1000,
+                calls: Vec::new(),
+                memory: BTreeMap::new()
+            }
+        );
+        let mut symbols = velk::render::Symbols::default();
+        symbols.functions.insert(0x1000, "raw_symbol".to_owned());
+        source.push_str(&velk::render::render(&ir, &[], &symbols, &[]));
+        writeln!(body, "if ({name}() != UINT64_C(0x1000)) return 1;").unwrap();
+        cases += 1;
+    }
+    assert_eq!(cases, 12);
+    body.push_str("if (input_calls != 4) return 2;\nputs(\"12 vector entry and numeric cases passed\");\nreturn 0;\n}\n");
+    source.push_str(&body);
+    let source = Program {
+        text: source,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("vector-entry-and-numeric");
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(
+            run(&executable, ""),
+            "12 vector entry and numeric cases passed\n"
+        );
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_floating_returns_read_the_mutable_raw_vector_slot() {
+    let mut source = String::from(HEADER);
+    source.push_str("#include <string.h>\n");
+    let mut body = String::from("int main(void) {\n");
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = match isa {
+            Isa::AArch64 => velk::arch::aarch64::V0,
+            _ => velk::arch::x86::XMM0,
+        };
+        for (width, bits, ty, input, expected, storage) in [
+            (32, 0x4070_0000, "float", "1.5f", 0x4070_0000, "uint32_t"),
+            (
+                64,
+                0x400e_0000_0000_0000,
+                "double",
+                "1.5",
+                0x400e_0000_0000_0000,
+                "uint64_t",
+            ),
+        ] {
+            let name = format!("return_{isa:?}_{width}");
+            let mut ir = synthetic_ir(
+                &name,
+                vec![Param {
+                    index: low,
+                    name: "input".to_owned(),
+                    ty: CType::Named(ty.to_owned()),
+                }],
+                CType::Named(ty.to_owned()),
+                vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: low,
+                            width: 64,
+                        },
+                        value: Expr::Const(bits),
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(low, width),
+                    },
+                ],
+            );
+            ir.isa = isa;
+            ir.convention = if isa == Isa::AArch64 {
+                Convention::Aapcs64
+            } else {
+                Convention::SysV
+            };
+            let setup = eval::Setup {
+                seed: 0x5eed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[],
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(
+                eval::run(&ir, &setup),
+                Outcome::Return {
+                    value: expected,
+                    calls: Vec::new(),
+                    memory: BTreeMap::new()
+                },
+                "{name}"
+            );
+            let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(code.contains(&format!("{name}({ty} input)")), "{code}");
+            source.push_str(&code);
+            writeln!(body, "{{ {ty} result = {name}({input}); {storage} bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C({expected})) return 1; }}").unwrap();
+        }
+    }
+    body.push_str("puts(\"4 floating return cases passed\");\nreturn 0;\n}\n");
+    source.push_str(&body);
+    let source = Program {
+        text: source,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("floating-return-vector-storage");
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(run(&executable, ""), "4 floating return cases passed\n");
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_nested_physical_floating_operations_preserve_grouping() {
+    let mut source = String::from(HEADER);
+    source.push_str("#include <string.h>\n");
+    let mut body = String::from("int main(void) {\n");
+    let mut checked = 0;
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = match isa {
+            Isa::AArch64 => velk::arch::aarch64::V0,
+            _ => velk::arch::x86::XMM0,
+        };
+        for precision in [Precision::Single, Precision::Double] {
+            let ty = if precision == Precision::Single {
+                "float"
+            } else {
+                "double"
+            };
+            let storage = if precision == Precision::Single {
+                "uint32_t"
+            } else {
+                "uint64_t"
+            };
+            let apply = |op, lhs, rhs| Expr::apply(op, vec![lhs, rhs]);
+            let a = Expr::reg(low, 64);
+            let b = Expr::reg(low + 2, 64);
+            let t = Expr::reg(low + 4, 64);
+            let add = Operation::FloatAdd(precision);
+            let sub = Operation::FloatSub(precision);
+            let mul = Operation::FloatMul(precision);
+            let div = Operation::FloatDiv(precision);
+            let large = if precision == Precision::Single {
+                16_777_216.0
+            } else {
+                9_007_199_254_740_992.0
+            };
+            let other = if precision == Precision::Single {
+                Precision::Double
+            } else {
+                Precision::Single
+            };
+            let cases: Vec<(&str, Expr, [f64; 3], f64)> = vec![
+                (
+                    "lerp",
+                    apply(
+                        add,
+                        a.clone(),
+                        apply(mul, apply(sub, b.clone(), a.clone()), t.clone()),
+                    ),
+                    [1.0, 3.0, 2.0],
+                    5.0,
+                ),
+                (
+                    "left_product",
+                    apply(mul, apply(sub, a.clone(), b.clone()), t.clone()),
+                    [16.0, 8.0, 2.0],
+                    16.0,
+                ),
+                (
+                    "subtract_sum",
+                    apply(sub, a.clone(), apply(add, b.clone(), t.clone())),
+                    [16.0, 8.0, 2.0],
+                    6.0,
+                ),
+                (
+                    "subtract_difference",
+                    apply(sub, a.clone(), apply(sub, b.clone(), t.clone())),
+                    [16.0, 8.0, 2.0],
+                    10.0,
+                ),
+                (
+                    "divide_quotient",
+                    apply(div, a.clone(), apply(div, b.clone(), t.clone())),
+                    [16.0, 8.0, 2.0],
+                    4.0,
+                ),
+                (
+                    "divide_product",
+                    apply(div, a.clone(), apply(mul, b.clone(), t.clone())),
+                    [16.0, 8.0, 2.0],
+                    1.0,
+                ),
+                (
+                    "negate_difference",
+                    Expr::apply(
+                        Operation::FloatNegate(precision),
+                        vec![apply(sub, a.clone(), b.clone())],
+                    ),
+                    [16.0, 8.0, 2.0],
+                    -8.0,
+                ),
+                (
+                    "rounded_right_sum",
+                    apply(add, a.clone(), apply(add, b.clone(), t.clone())),
+                    [large, -large, -1.0],
+                    0.0,
+                ),
+                (
+                    "converted_difference",
+                    Expr::apply(
+                        Operation::FloatConvert {
+                            from: other,
+                            to: precision,
+                        },
+                        vec![Expr::apply(
+                            Operation::FloatConvert {
+                                from: precision,
+                                to: other,
+                            },
+                            vec![apply(sub, a.clone(), b.clone())],
+                        )],
+                    ),
+                    [16.0, 8.0, 2.0],
+                    8.0,
+                ),
+            ];
+            for (case, value, inputs, expected) in cases {
+                let name = format!("group_{isa:?}_{}_{case}", precision.bits());
+                let params = [(low, "a"), (low + 2, "b"), (low + 4, "t")]
+                    .into_iter()
+                    .map(|(index, name)| Param {
+                        index,
+                        name: name.to_owned(),
+                        ty: CType::Named(ty.to_owned()),
+                    })
+                    .collect();
+                let mut ir = synthetic_ir(
+                    &name,
+                    params,
+                    CType::Named(ty.to_owned()),
+                    vec![Stmt::Ret { value }],
+                );
+                ir.isa = isa;
+                ir.convention = if isa == Isa::AArch64 {
+                    Convention::Aapcs64
+                } else {
+                    Convention::SysV
+                };
+                let bits = |value: f64| {
+                    if precision == Precision::Single {
+                        u64::from((value as f32).to_bits())
+                    } else {
+                        value.to_bits()
+                    }
+                };
+                let registers: Vec<_> = [low, low + 2, low + 4]
+                    .into_iter()
+                    .zip(inputs.map(bits))
+                    .collect();
+                let expected = bits(expected);
+                let setup = eval::Setup {
+                    seed: 0x5eed,
+                    convention: eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &[],
+                    step_limit: 100,
+                };
+                assert_eq!(
+                    eval::run(&ir, &setup),
+                    Outcome::Return {
+                        value: expected,
+                        calls: Vec::new(),
+                        memory: BTreeMap::new()
+                    },
+                    "{name}"
+                );
+                let text = velk::render::render(&ir, &[], &Default::default(), &[]);
+                assert!(
+                    text.contains(&format!("{name}({ty} a, {ty} b, {ty} t)")),
+                    "{text}"
+                );
+                source.push_str(&text);
+                let arguments = inputs
+                    .map(|value| {
+                        if precision == Precision::Single {
+                            format!("{value:.1}f")
+                        } else {
+                            format!("{value:.1}")
+                        }
+                    })
+                    .join(", ");
+                writeln!(body, "{{ {ty} result = {name}({arguments}); {storage} bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C({expected})) {{ fprintf(stderr, \"{name}: %\" PRIu64 \"\\n\", (uint64_t)bits); return 1; }} }}").unwrap();
+                checked += 1;
+            }
+        }
+    }
+    assert_eq!(checked, 36);
+    body.push_str("puts(\"36 nested physical floating cases passed\");\nreturn 0;\n}\n");
+    source.push_str(&body);
+    let source = Program {
+        text: source,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("nested-physical-float-grouping");
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(
+            run(&executable, ""),
+            "36 nested physical floating cases passed\n"
+        );
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+fn check_printed_unary_floating_negation(constants: bool) {
+    let mut source = String::from(HEADER);
+    source.push_str("#include <string.h>\n");
+    let mut body = String::from("int main(void) {\n");
+    let mut checked = 0;
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = match isa {
+            Isa::AArch64 => velk::arch::aarch64::V0,
+            _ => velk::arch::x86::XMM0,
+        };
+        for precision in [Precision::Single, Precision::Double] {
+            let (ty, storage, positive, negative, sign) = match precision {
+                Precision::Single => (
+                    "float",
+                    "uint32_t",
+                    0x3fa0_0000u64,
+                    0xbfa0_0000u64,
+                    0x8000_0000u64,
+                ),
+                Precision::Double => (
+                    "double",
+                    "uint64_t",
+                    0x3ff4_0000_0000_0000u64,
+                    0xbff4_0000_0000_0000u64,
+                    0x8000_0000_0000_0000u64,
+                ),
+            };
+            let negate = |value| Expr::apply(Operation::FloatNegate(precision), vec![value]);
+            let parameter = Expr::reg(low, 64);
+            let cases = if constants {
+                vec![
+                    (
+                        "negative_constant",
+                        negate(Expr::Const(negative)),
+                        positive,
+                        positive,
+                    ),
+                    (
+                        "double_negative_constant",
+                        negate(negate(Expr::Const(negative))),
+                        positive,
+                        negative,
+                    ),
+                    (
+                        "positive_zero_constant",
+                        negate(Expr::Const(0)),
+                        positive,
+                        sign,
+                    ),
+                    (
+                        "negative_zero_constant",
+                        negate(Expr::Const(sign)),
+                        positive,
+                        0,
+                    ),
+                    (
+                        "double_positive_zero_constant",
+                        negate(negate(Expr::Const(0))),
+                        positive,
+                        0,
+                    ),
+                    (
+                        "double_negative_zero_constant",
+                        negate(negate(Expr::Const(sign))),
+                        positive,
+                        sign,
+                    ),
+                ]
+            } else {
+                vec![
+                    (
+                        "positive_parameter",
+                        negate(negate(parameter.clone())),
+                        positive,
+                        positive,
+                    ),
+                    (
+                        "negative_parameter",
+                        negate(negate(parameter.clone())),
+                        negative,
+                        negative,
+                    ),
+                    (
+                        "positive_zero_parameter",
+                        negate(negate(parameter.clone())),
+                        0,
+                        0,
+                    ),
+                    (
+                        "negative_zero_parameter",
+                        negate(negate(parameter)),
+                        sign,
+                        sign,
+                    ),
+                ]
+            };
+            for (case, value, input, expected) in cases {
+                let name = format!("unary_{isa:?}_{}_{case}", precision.bits());
+                let mut ir = synthetic_ir(
+                    &name,
+                    vec![Param {
+                        index: low,
+                        name: "input".to_owned(),
+                        ty: CType::Named(ty.to_owned()),
+                    }],
+                    CType::Named(ty.to_owned()),
+                    vec![Stmt::Ret { value }],
+                );
+                ir.isa = isa;
+                ir.convention = if isa == Isa::AArch64 {
+                    Convention::Aapcs64
+                } else {
+                    Convention::SysV
+                };
+                let registers = [(low, input)];
+                let setup = eval::Setup {
+                    seed: 0x5eed,
+                    convention: eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &[],
+                    step_limit: 100,
+                };
+                assert_eq!(
+                    eval::run(&ir, &setup),
+                    Outcome::Return {
+                        value: expected,
+                        calls: Vec::new(),
+                        memory: BTreeMap::new()
+                    },
+                    "{name}",
+                );
+                let text = velk::render::render(&ir, &[], &Default::default(), &[]);
+                assert!(text.contains(&format!("{name}({ty} input)")), "{text}");
+                source.push_str(&text);
+                writeln!(body, "{{ {storage} raw = UINT64_C({input}); {ty} input; memcpy(&input, &raw, sizeof(input)); {ty} result = {name}(input); {storage} bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C({expected})) {{ fprintf(stderr, \"{name}: %\" PRIu64 \"\\n\", (uint64_t)bits); return 1; }} }}").unwrap();
+                checked += 1;
+            }
+        }
+    }
+    let expected_count = if constants { 24 } else { 16 };
+    assert_eq!(checked, expected_count);
+    println!("unary floating original IR cases: {checked}");
+    writeln!(
+        body,
+        "puts(\"{expected_count} unary floating cases passed\");\nreturn 0;\n}}"
+    )
+    .unwrap();
+    source.push_str(&body);
+    let source = Program {
+        text: source,
+        ranges: Vec::new(),
+    };
+    let pass = if constants {
+        "unary-floating-constants"
+    } else {
+        "unary-floating-parameters"
+    };
+    let scratch = scratch_dir(pass);
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(
+            run(&executable, ""),
+            format!("{expected_count} unary floating cases passed\n")
+        );
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_unary_floating_negation_parameters_preserve_literal_bits() {
+    check_printed_unary_floating_negation(false);
+}
+
+#[test]
+fn printed_unary_floating_negation_constants_preserve_literal_bits() {
+    check_printed_unary_floating_negation(true);
+}
+
+#[test]
+fn printed_readonly_floating_views_preserve_raw_reads_and_overwrites() {
+    let mut source = String::from(HEADER);
+    source.push_str("#include <string.h>\nstatic double hetero_input(void) { uint64_t bits = UINT64_C(0x3ff000003fc00000); double value; memcpy(&value, &bits, sizeof(value)); return value; }\n");
+    let mut body = String::from("int main(void) {\n");
+    let mut checked = 0;
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = if isa == Isa::AArch64 {
+            velk::arch::aarch64::V0
+        } else {
+            velk::arch::x86::XMM0
+        };
+        for (precision, first, second, written, sum, mixed, overwritten, ty, storage, a, b) in [
+            (
+                Precision::Single,
+                0x3fc0_0000,
+                0x4010_0000,
+                0x40f0_0000,
+                0x4070_0000,
+                0x7fb0_0000,
+                0x4134_0000,
+                "float",
+                "uint32_t",
+                "1.5f",
+                "2.25f",
+            ),
+            (
+                Precision::Double,
+                0x3ff8_0000_0000_0000,
+                0x4002_0000_0000_0000,
+                0x401e_0000_0000_0000,
+                0x400e_0000_0000_0000,
+                0x7ff6_0000_0000_0000,
+                0x4026_8000_0000_0000,
+                "double",
+                "uint64_t",
+                "1.5",
+                "2.25",
+            ),
+        ] {
+            for (case, expected) in [
+                ("readonly", sum),
+                ("mixed_raw", mixed),
+                ("overwritten", overwritten),
+            ] {
+                let name = format!("view_{isa:?}_{}_{case}", precision.bits());
+                let sum = Expr::apply(
+                    Operation::FloatAdd(precision),
+                    vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
+                );
+                let mut stmts = Vec::new();
+                let value = match case {
+                    "mixed_raw" => Expr::bin(BinOp::Xor, sum, Expr::reg(low, precision.bits())),
+                    "overwritten" => {
+                        stmts.push(Stmt::Assign {
+                            dest: velk::ir::RegRef {
+                                index: velk::ir::VARIABLE_BASE,
+                                width: 64,
+                            },
+                            value: sum,
+                        });
+                        stmts.push(Stmt::Assign {
+                            dest: velk::ir::RegRef {
+                                index: low,
+                                width: 64,
+                            },
+                            value: Expr::Const(written),
+                        });
+                        Expr::apply(
+                            Operation::FloatAdd(precision),
+                            vec![Expr::reg(low, 64), Expr::reg(velk::ir::VARIABLE_BASE, 64)],
+                        )
+                    }
+                    _ => sum,
+                };
+                stmts.push(Stmt::Ret { value });
+                let params = [(low, "a"), (low + 2, "b")]
+                    .into_iter()
+                    .map(|(index, name)| Param {
+                        index,
+                        name: name.to_owned(),
+                        ty: CType::Named(ty.to_owned()),
+                    })
+                    .collect();
+                let mut ir = synthetic_ir(
+                    &name,
+                    params,
+                    if case == "mixed_raw" {
+                        CType::U64
+                    } else {
+                        CType::Named(ty.to_owned())
+                    },
+                    stmts,
+                );
+                ir.isa = isa;
+                ir.convention = if isa == Isa::AArch64 {
+                    Convention::Aapcs64
+                } else {
+                    Convention::SysV
+                };
+                let registers = [(low, first), (low + 2, second)];
+                let setup = eval::Setup {
+                    seed: 0x5eed,
+                    convention: eval::Convention {
+                        arguments: &[],
+                        clobbered: &[],
+                    },
+                    registers: &registers,
+                    memory: &[],
+                    step_limit: 100,
+                };
+                assert_eq!(
+                    eval::run(&ir, &setup),
+                    Outcome::Return {
+                        value: expected,
+                        calls: Vec::new(),
+                        memory: BTreeMap::new()
+                    },
+                    "{name}"
+                );
+                let text = velk::render::render(&ir, &[], &Default::default(), &[]);
+                if case != "readonly" {
+                    let slot = if isa == Isa::AArch64 { "d0" } else { "xmm0" };
+                    assert!(text.contains(&format!("uint64_t {slot} =")), "{text}");
+                }
+                source.push_str(&text);
+                if case == "mixed_raw" {
+                    writeln!(
+                        body,
+                        "if ({name}({a}, {b}) != UINT64_C({expected})) return 1;"
+                    )
+                    .unwrap();
+                } else {
+                    writeln!(body, "{{ {ty} result = {name}({a}, {b}); {storage} bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C({expected})) return 1; }}").unwrap();
+                }
+                checked += 1;
+            }
+        }
+        let name = format!("view_{isa:?}_heterogeneous_precision");
+        let mut ir = synthetic_ir(
+            &name,
+            vec![Param {
+                index: low,
+                name: "a".to_owned(),
+                ty: CType::Named("double".to_owned()),
+            }],
+            CType::Named("float".to_owned()),
+            vec![Stmt::Ret {
+                value: Expr::apply(
+                    Operation::FloatAdd(Precision::Single),
+                    vec![Expr::reg(low, 32), Expr::Const(0x4000_0000)],
+                ),
+            }],
+        );
+        ir.isa = isa;
+        ir.convention = if isa == Isa::AArch64 {
+            Convention::Aapcs64
+        } else {
+            Convention::SysV
+        };
+        let registers = [(low, 0x3ff0_0000_3fc0_0000)];
+        let setup = eval::Setup {
+            seed: 0x5eed,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &registers,
+            memory: &[],
+            step_limit: 100,
+        };
+        assert_eq!(
+            eval::run(&ir, &setup),
+            Outcome::Return {
+                value: 0x4060_0000,
+                calls: Vec::new(),
+                memory: BTreeMap::new()
+            },
+            "{name}"
+        );
+        let text = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(!text.contains("return a +"), "{text}");
+        source.push_str(&text);
+        writeln!(body, "{{ float result = {name}(hetero_input()); uint32_t bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C(0x40600000)) return 1; }}").unwrap();
+        checked += 1;
+    }
+    assert_eq!(checked, 14);
+    body.push_str("puts(\"14 readonly floating view cases passed\");\nreturn 0;\n}\n");
+    source.push_str(&body);
+    let source = Program {
+        text: source,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("readonly-floating-views");
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(
+            run(&executable, ""),
+            "14 readonly floating view cases passed\n"
+        );
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_readonly_floating_views_keep_narrow_same_precision_reads_raw() {
+    let mut source = String::from(HEADER);
+    source.push_str("#include <string.h>\nstatic double narrow_double_input(void) { uint64_t bits = UINT64_C(0x3ff000003fc00000); double value; memcpy(&value, &bits, sizeof(value)); return value; }\n");
+    let mut body = String::from("int main(void) {\n");
+    let mut checked = 0;
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let low = if isa == Isa::AArch64 {
+            velk::arch::aarch64::V0
+        } else {
+            velk::arch::x86::XMM0
+        };
+        for (width, initial, expected, ty, storage, argument) in [
+            (16, 0x3fc0_0000, 0, "float", "uint32_t", "1.5f"),
+            (
+                32,
+                0x3ff0_0000_3fc0_0000,
+                0x3fc0_0000,
+                "double",
+                "uint64_t",
+                "narrow_double_input()",
+            ),
+        ] {
+            let name = format!("narrow_view_{isa:?}_{width}");
+            let mut ir = synthetic_ir(
+                &name,
+                vec![Param {
+                    index: low,
+                    name: "a".to_owned(),
+                    ty: CType::Named(ty.to_owned()),
+                }],
+                CType::Named(ty.to_owned()),
+                vec![Stmt::Ret {
+                    value: Expr::reg(low, width),
+                }],
+            );
+            ir.isa = isa;
+            ir.convention = if isa == Isa::AArch64 {
+                Convention::Aapcs64
+            } else {
+                Convention::SysV
+            };
+            let registers = [(low, initial)];
+            let setup = eval::Setup {
+                seed: 0x5eed,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &registers,
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(
+                eval::run(&ir, &setup),
+                Outcome::Return {
+                    value: expected,
+                    calls: Vec::new(),
+                    memory: BTreeMap::new()
+                },
+                "{name}"
+            );
+            let text = velk::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(text.contains(&format!("{name}({ty} a)")), "{text}");
+            let slot = if isa == Isa::AArch64 { "d0" } else { "xmm0" };
+            assert!(text.contains(&format!("uint64_t {slot} =")), "{text}");
+            assert!(!text.contains("return a;"), "{text}");
+            source.push_str(&text);
+            writeln!(body, "{{ {ty} result = {name}({argument}); {storage} bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C({expected})) return 1; }}").unwrap();
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 4);
+    body.push_str("puts(\"4 narrow floating read cases passed\");\nreturn 0;\n}\n");
+    source.push_str(&body);
+    let source = Program {
+        text: source,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("narrow-floating-views");
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(
+            run(&executable, ""),
+            "4 narrow floating read cases passed\n"
+        );
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}

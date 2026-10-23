@@ -1208,6 +1208,15 @@ fn precision(bits: u16) -> Option<Precision> {
     }
 }
 
+fn half_immediate(value: f64) -> Option<u64> {
+    let bits = value.to_bits();
+    let exponent = ((bits >> 52) & 0x7ff).checked_sub(1008)?;
+    if !(12..=19).contains(&exponent) || bits & ((1 << 48) - 1) != 0 {
+        return None;
+    }
+    Some(((bits >> 48) & 0x8000) | (exponent << 10) | ((bits >> 42) & 0x3ff))
+}
+
 /// The low and high halves `bits` of memory at `address` fill.
 fn simd_load(address: &Expr, bits: u16) -> (Expr, Expr) {
     let load = |addr: Expr, width: u8| Expr::Load {
@@ -2806,9 +2815,13 @@ fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             }
             (Operand::SIMDRegister(..), Operand::ImmediateDouble(value)) => {
                 let (slot, bits) = simd(ops[0])?;
-                let pattern = match precision(bits)? {
-                    Precision::Double => value.to_bits(),
-                    Precision::Single => u64::from((value as f32).to_bits()),
+                let pattern = if bits == 16 {
+                    half_immediate(value)?
+                } else {
+                    match precision(bits)? {
+                        Precision::Double => value.to_bits(),
+                        Precision::Single => u64::from((value as f32).to_bits()),
+                    }
                 };
                 lifter.write_simd(slot, bits, (Expr::constant(pattern), Expr::constant(0)));
             }
@@ -3645,6 +3658,159 @@ mod tests {
                 panic!("modeled comparison");
             };
             assert_eq!(returned, u64::from(value == 0));
+        }
+    }
+    #[test]
+    fn scalar_half_immediates_preserve_exact_bits_and_other_registers() {
+        let registers: Vec<_> = (0u16..96)
+            .map(|index| {
+                let value = if index == crate::arch::stack_pointer(Isa::AArch64) {
+                    eval::STACK_TOP
+                } else {
+                    eval::hash(0x5eed, u64::from(index))
+                };
+                (index, value)
+            })
+            .collect();
+        let mut checked = 0;
+        for immediate in 0u32..256 {
+            let bit = u64::from(immediate >> 6 & 1);
+            let expected = u64::from(immediate >> 7) << 15
+                | (bit ^ 1) << 14
+                | (bit * 3) << 12
+                | u64::from(immediate & 63) << 6;
+            for destination in 0u16..32 {
+                let word = 0x1ee0_1000 | immediate << 13 | u32::from(destination);
+                let ir = lifted(&[word, RET]);
+                assert!(
+                    !ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                        matches!(
+                            stmt,
+                            Stmt::Unsupported { .. } | Stmt::Call { .. } | Stmt::Store { .. }
+                        )
+                    }),
+                    "{word:#010x}: {}",
+                    ir.render()
+                );
+                let (after, memory) = eval::state_after(&ir, &setup(&registers))
+                    .expect("a scalar immediate move has complete integer semantics");
+                assert!(memory.is_empty());
+                let slot = V0 + 2 * destination;
+                for &(index, initial) in &registers {
+                    let wanted = if index == slot {
+                        expected
+                    } else if index == slot + 1 {
+                        0
+                    } else {
+                        initial
+                    };
+                    assert_eq!(
+                        after.get(&index).copied().unwrap_or(initial),
+                        wanted,
+                        "{word:#010x}, register {index}"
+                    );
+                }
+                checked += 1;
+            }
+        }
+        assert_eq!(checked, 8192);
+    }
+    #[test]
+    fn scalar_half_immediate_rejects_nonencodable_decoded_values() {
+        for value in [
+            0.0,
+            -0.0,
+            0.0625,
+            32.0,
+            1.03125,
+            1.1,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            f64::NAN,
+            f64::from_bits(1),
+        ] {
+            assert!(super::half_immediate(value).is_none(), "{value:?}");
+        }
+        for (value, bits) in [
+            (0.125, 0x3000),
+            (-0.125, 0xb000),
+            (1.0, 0x3c00),
+            (-1.0, 0xbc00),
+            (1.0625, 0x3c40),
+            (31.0, 0x4fc0),
+        ] {
+            assert_eq!(super::half_immediate(value), Some(bits), "{value:?}");
+        }
+    }
+
+    #[test]
+    fn scalar_half_immediate_does_not_enable_other_half_operations() {
+        use yaxpeax_arm::armv8::a64::Opcode;
+
+        for (word, opcode) in [
+            (0x1ee2_2820u32, Opcode::FADD),
+            (0x1ee2_4020, Opcode::FCVT),
+            (0x0f03_fe00, Opcode::FMOV),
+        ] {
+            let (decoded, issue) = super::decode(&word.to_le_bytes(), 0);
+            assert!(issue.is_none(), "{word:#010x}: {issue:?}");
+            assert_eq!(decoded.len(), 1);
+            assert_eq!(decoded[0].instruction.opcode, opcode, "{word:#010x}");
+            let mut ir = lifted(&[word, RET]);
+            for optimized in [false, true] {
+                if optimized {
+                    crate::passes::optimize(&mut ir, false);
+                }
+                assert!(
+                    ir.blocks
+                        .iter()
+                        .flat_map(|block| &block.stmts)
+                        .any(|stmt| matches!(stmt, Stmt::Unsupported { .. })),
+                    "{word:#010x}, optimized={optimized}: {}",
+                    ir.render()
+                );
+                assert!(matches!(eval::run(&ir, &setup(&[])), Outcome::Unknown(_)));
+            }
+        }
+    }
+
+    mod half_immediate_decoder {
+        use yaxpeax_arch::{Decoder, ReaderBuilder};
+        use yaxpeax_arm::armv8::a64::{InstDecoder, Opcode, Operand, SIMDSizeCode};
+
+        #[test]
+        fn scalar_half_immediate_decodes_every_constant_and_destination() {
+            let mut checked = 0;
+            for immediate in 0u32..256 {
+                let exponent = if immediate & 0x40 == 0 { 0x400 } else { 0x3fc }
+                    | u64::from(immediate >> 4 & 3);
+                let expected = u64::from(immediate >> 7) << 63
+                    | exponent << 52
+                    | u64::from(immediate & 15) << 48;
+                for destination in 0u16..32 {
+                    let word = 0x1ee0_1000 | immediate << 13 | u32::from(destination);
+                    let bytes = word.to_le_bytes();
+                    let mut reader = ReaderBuilder::<u64, u8>::read_from(&bytes[..]);
+                    let decoded = InstDecoder::default()
+                        .decode(&mut reader)
+                        .unwrap_or_else(|error| panic!("{word:#010x}: {error}"));
+                    assert_eq!(decoded.opcode, Opcode::FMOV, "{word:#010x}");
+                    assert!(
+                        matches!(decoded.operands[0], Operand::SIMDRegister(SIMDSizeCode::H, number) if number == destination)
+                    );
+                    let Operand::ImmediateDouble(value) = decoded.operands[1] else {
+                        panic!("{word:#010x}: {:?}", decoded.operands);
+                    };
+                    assert_eq!(value.to_bits(), expected, "{word:#010x}");
+                    assert!(
+                        decoded.operands[2..]
+                            .iter()
+                            .all(|operand| matches!(operand, Operand::Nothing))
+                    );
+                    checked += 1;
+                }
+            }
+            assert_eq!(checked, 8192);
         }
     }
 }
