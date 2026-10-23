@@ -90,32 +90,40 @@ fn vector_slots() -> impl Iterator<Item = u16> {
 }
 
 /// Builds the runner once for every test, or None when this machine has
-/// no compiler for it.
+/// no compiler for it. Test processes running at once each compile to a
+/// file of their own and rename it into place, so none runs a runner
+/// another is still writing.
 fn runner() -> Option<Command> {
     static BUILT: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
     let translated = cfg!(target_arch = "aarch64");
-    let binary = BUILT
-        .get_or_init(|| {
-            let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/hardware");
-            std::fs::create_dir_all(&dir).ok()?;
-            let source =
-                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lift/hardware/x86_64.c");
-            let binary = dir.join("x86_64_runner");
-            let mut compile = Command::new(if translated { "clang" } else { "cc" });
-            if translated {
-                compile.args(["-arch", "x86_64"]);
-            }
-            let built = compile
-                .arg("-O1")
-                .arg("-o")
-                .arg(&binary)
-                .arg(&source)
-                .status()
-                .ok()?
-                .success();
-            built.then_some(binary)
-        })
-        .clone()?;
+    let built = BUILT.get_or_init(|| {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/hardware");
+        if std::fs::create_dir_all(&dir).is_err() {
+            return None;
+        }
+        let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lift/hardware/x86_64.c");
+        let binary = dir.join("x86_64_runner");
+        let partial = dir.join(format!("x86_64_runner.{}", std::process::id()));
+        let mut compile = Command::new(if translated { "clang" } else { "cc" });
+        if translated {
+            compile.args(["-arch", "x86_64"]);
+        }
+        let compiled = compile
+            .arg("-O1")
+            .arg("-o")
+            .arg(&partial)
+            .arg(&source)
+            .status()
+            .is_ok_and(|status| status.success());
+        if !compiled || std::fs::rename(&partial, &binary).is_err() {
+            std::fs::remove_file(&partial).ok();
+            return None;
+        }
+        Some(binary)
+    });
+    let Some(binary) = built.clone() else {
+        return None;
+    };
     Some(if translated {
         let mut command = Command::new("arch");
         command.arg("-x86_64").arg(binary);
