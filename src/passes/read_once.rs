@@ -28,8 +28,8 @@ const OPERAND_DEPTH: usize = 5;
 /// value moves only where it computes the same: nothing between writes a
 /// register it reads, and a value that reads memory, or may fault, moves
 /// past no other memory access, call or unmodeled instruction. Values too
-/// large for their reader stay, as do floats and pointers to structures,
-/// which read better named.
+/// large for their reader stay, as do floats and structure pointers whose
+/// values read memory or may fault.
 pub fn fold_values_read_once(ir: &mut FunctionIr) {
     let types = crate::render::variable_types(ir);
     let sp = crate::arch::stack_pointer(ir.isa);
@@ -38,11 +38,13 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
         .map(|index| live_out(ir, &live_in, index))
         .collect();
     let chained = chained(ir);
-    let kept = |index: u16| {
+    let kept = |index: u16, value: &Expr| {
         !(VARIABLE_BASE..VALUE_BASE).contains(&index)
             || types.get(&index).is_none_or(|ty| match ty {
                 CType::Int { .. } => false,
-                CType::Pointer(_) => ty.pointee_struct().is_some(),
+                CType::Pointer(_) => {
+                    ty.pointee_struct().is_some() && (reads_memory(value) || faults(value))
+                }
                 _ => true,
             })
     };
@@ -56,7 +58,7 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
             let Stmt::Assign { dest, value } = &ir.blocks[block].stmts[index] else {
                 continue;
             };
-            if kept(dest.index) {
+            if kept(dest.index, value) {
                 continue;
             }
             let (dest, value) = (*dest, truncated(value, dest.width));

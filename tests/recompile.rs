@@ -4279,6 +4279,130 @@ int main(void) {
     std::fs::remove_dir_all(&scratch).ok();
 }
 
+#[test]
+fn single_use_structure_addresses_preserve_printed_memory_reads() {
+    let variable = velk::ir::VARIABLE_BASE;
+    let address = Expr::bin(
+        BinOp::Add,
+        Expr::reg(7, 64),
+        Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(24)),
+    );
+    let mut candidates = Vec::new();
+    for case in 0..6 {
+        let value = match case {
+            1 => Expr::Load {
+                addr: Box::new(address.clone()),
+                width: 8,
+                signed: false,
+            },
+            2 => Expr::bin(BinOp::DivU, address.clone(), Expr::reg(6, 64)),
+            _ => address.clone(),
+        };
+        let read = Expr::Load {
+            addr: Box::new(Expr::bin(
+                BinOp::Add,
+                Expr::reg(variable, 64),
+                Expr::Const(8),
+            )),
+            width: 8,
+            signed: false,
+        };
+        let mut stmts = vec![Stmt::Assign {
+            dest: velk::ir::RegRef {
+                index: variable,
+                width: 64,
+            },
+            value,
+        }];
+        if case == 4 {
+            stmts.push(Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: 6,
+                    width: 64,
+                },
+                value: Expr::Const(2),
+            });
+        }
+        stmts.push(Stmt::Ret {
+            value: if case == 3 {
+                Expr::bin(BinOp::Add, read.clone(), read)
+            } else {
+                read
+            },
+        });
+        let mut ir = synthetic_ir(
+            &format!("record_value_{case}"),
+            vec![
+                Param {
+                    index: 7,
+                    name: "items".into(),
+                    ty: CType::pointer_to(CType::Named("struct record".into())),
+                },
+                Param {
+                    index: 6,
+                    name: "index".into(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            stmts,
+        );
+        ir.structures.push(velk::ir::Structure {
+            name: "record".into(),
+            fields: vec![(0, CType::U64), (8, CType::U64), (16, CType::U64)],
+            size: Some(24),
+            elements: vec![variable],
+        });
+        ir.value_types.insert(
+            variable,
+            CType::pointer_to(CType::Named("struct record".into())),
+        );
+        if case == 5 {
+            let reader = ir.blocks[0].stmts.pop().expect("the return");
+            ir.blocks[0].stmts.push(Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(6, 64),
+                rhs: Expr::Const(0),
+                target: 0x20,
+            });
+            ir.blocks.extend([
+                Block {
+                    start: 0x10,
+                    stmts: vec![reader],
+                },
+                Block {
+                    start: 0x20,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(0),
+                    }],
+                },
+            ]);
+        }
+        let original = ir.clone();
+        velk::passes::read_once::fold_values_read_once(&mut ir);
+        let render = |ir: &FunctionIr| {
+            velk::render::render_with_dependencies(ir, &[], &Default::default(), &[]).code
+        };
+        let code = render(&ir);
+        if case == 0 {
+            assert!(!code.contains("*v1;"), "{code}");
+            assert!(code.contains("struct record {"), "{code}");
+            assert!(code.contains("items[index].field_0x8"), "{code}");
+        } else {
+            assert_eq!(code, render(&original));
+        }
+        if case == 0 || case >= 3 {
+            let mut candidate = printed_candidate(
+                ir,
+                vec![vec![0x3000_0000_0000, 0], vec![0x3000_0000_0000, 1]],
+            );
+            candidate.ir = original;
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("structure-addresses", candidates, Mode::Memory, &[]);
+}
+
 fn check_candidates(name: &str, candidates: Vec<Candidate>, mode: Mode, compiler_args: &[&str]) {
     let count = candidates.len();
     let runs = candidates
