@@ -12,7 +12,13 @@
 //! page the compiled code touches is mapped and filled the same way when
 //! it first faults; the region's bytes after the run are compared too, in
 //! tests/golden/recompile_memory.txt.
+//!
+//! Each fixture's compiler and driver results are cached under
+//! target/recompile-cache; IR expectations and comparisons are recomputed.
+//! Set VELK_RECOMPILE_NO_CACHE=1 to compile and run every fixture again.
 
+#[path = "recompile/cache.rs"]
+mod cache;
 mod common;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -30,6 +36,10 @@ use velk::ir::{
 use velk::loader::{Image, Isa};
 use velk::render::{SegmentBase, SegmentBaseRead};
 use velk::service::Binary;
+
+thread_local! {
+    static COMPILATIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
 
 const COMPILER: &str = "clang";
 const FLAGS: [&str; 3] = ["-fwrapv", "-fno-strict-aliasing", "-w"];
@@ -4798,51 +4808,67 @@ fn check(
     mode: Mode,
     compiler_args: &[&str],
 ) -> Vec<Findings> {
-    let mut results: Vec<Findings> = fixtures.iter().map(|_| Findings::default()).collect();
-    let all: Vec<(usize, &Candidate)> = fixtures
+    fixtures
         .iter()
-        .enumerate()
-        .flat_map(|(index, fixture)| fixture.candidates.iter().map(move |c| (index, c)))
-        .collect();
-    let candidates: Vec<&Candidate> = all.iter().map(|(_, candidate)| *candidate).collect();
-    let initial_memory: Vec<&[(u64, u64)]> = all
-        .iter()
-        .map(|(fixture, _)| fixtures[*fixture].initial_memory.as_slice())
-        .collect();
+        .map(|fixture| check_fixture(fixture, scratch, mode, compiler_args))
+        .collect()
+}
+
+fn check_fixture(
+    fixture: &Fixture,
+    scratch: &Path,
+    mode: Mode,
+    compiler_args: &[&str],
+) -> Findings {
+    let mut result = Findings::default();
+    let candidates: Vec<&Candidate> = fixture.candidates.iter().collect();
+    let initial_memory = vec![fixture.initial_memory.as_slice(); candidates.len()];
     for candidate in &candidates {
         for trial in 0..candidate.inputs.len() as u64 {
             segment_state(candidate, trial)
                 .unwrap_or_else(|reason| panic!("{}: {reason}", candidate.label));
         }
     }
-    let (alive, failures) = compiles(&candidates, &initial_memory, &scratch.join("check.c"), mode);
+    if candidates.is_empty() {
+        return result;
+    }
+    let source = program(
+        &candidates,
+        &initial_memory,
+        &(0..candidates.len()).collect::<Vec<_>>(),
+        mode,
+    );
+    let inputs: Vec<_> = candidates
+        .iter()
+        .map(|candidate| &candidate.inputs)
+        .collect();
+    let cache = cache::Cache::new(&source.text, &inputs, compiler_args);
+    let (alive, failures) = cache.get_or_compute("syntax", &(), || {
+        compiles(&candidates, &initial_memory, &scratch.join("check.c"), mode)
+    });
     for (index, message) in &failures {
-        let (fixture, candidate) = all[*index];
-        results[fixture].failed += 1;
-        results[fixture]
+        let candidate = candidates[*index];
+        result.failed += 1;
+        result
             .lines
             .push(format!("{}: does not compile: {message}", candidate.label));
     }
-    for &index in &alive {
-        results[all[index].0].compiled += 1;
-    }
+    result.compiled = alive.len();
     if alive.is_empty() {
-        return results;
+        return result;
     }
     let source = program(&candidates, &initial_memory, &alive, mode);
-    let programs: Vec<PathBuf> = std::thread::scope(|scope| {
-        let handles: Vec<_> = LEVELS
-            .iter()
-            .map(|level| {
-                let source = &source;
-                scope.spawn(move || build(source, scratch, level, compiler_args))
+    let mut programs = None;
+    let mut build_programs = || {
+        programs
+            .get_or_insert_with(|| {
+                LEVELS
+                    .iter()
+                    .map(|level| build(&source, scratch, level, compiler_args))
+                    .collect::<Vec<_>>()
             })
-            .collect();
-        handles
-            .into_iter()
-            .map(|handle| handle.join().expect("a compiler run"))
-            .collect()
-    });
+            .clone()
+    };
 
     // The arguments as the parameters' types hold them.
     let mut requests = String::new();
@@ -4851,7 +4877,9 @@ fn check(
             requests.push_str(&request('c', index, input));
         }
     }
-    let printed = run(&programs[0], &requests);
+    let printed = cache.get_or_compute("canonical", &(&source.text, &requests), || {
+        run(&build_programs()[0], &requests)
+    });
     let mut canonical = printed.lines().map(|line| {
         line.split_whitespace()
             .map(|word| u64::from_str_radix(word, 16).expect("a hex value"))
@@ -4859,19 +4887,19 @@ fn check(
     });
     let mut expected = Vec::new();
     for &index in &alive {
-        let (fixture, candidate) = all[index];
+        let candidate = candidates[index];
         for trial in 0..candidate.inputs.len() as u64 {
             let arguments = canonical.next().unwrap_or_default();
             // Another function's address differs between the binary and
             // the compiled program.
             if !declared_functions(&candidate.code).is_empty() {
-                *results[fixture]
+                *result
                     .skipped
                     .entry("takes a function's address")
                     .or_default() += 1;
                 continue;
             }
-            match interpret(&fixtures[fixture], candidate, trial, &arguments, mode) {
+            match interpret(fixture, candidate, trial, &arguments, mode) {
                 Ok(outcome) => expected.push(Expected {
                     function: index,
                     trial,
@@ -4879,7 +4907,7 @@ fn check(
                     checksum: (mode == Mode::Memory).then(|| region_checksum(&outcome, trial)),
                     outcome,
                 }),
-                Err(reason) => *results[fixture].skipped.entry(reason).or_default() += 1,
+                Err(reason) => *result.skipped.entry(reason).or_default() += 1,
             }
         }
     }
@@ -4889,40 +4917,46 @@ fn check(
         let seed = (mode == Mode::Memory).then_some(run.trial);
         requests.push_str(&request_run(run.function, seed, &run.arguments));
     }
-    let outputs: Vec<Vec<Ran>> = std::thread::scope(|scope| {
-        let handles: Vec<_> = programs
-            .iter()
-            .map(|program| {
-                let (requests, count) = (&requests, expected.len());
-                scope.spawn(move || {
-                    let mut ran: Vec<Ran> = run(program, requests).lines().map(parse_ran).collect();
-                    ran.resize(count, Ran::Other("the program stopped".to_owned()));
-                    ran
-                })
-            })
-            .collect();
-        handles
-            .into_iter()
-            .map(|handle| handle.join().expect("a run"))
-            .collect()
-    });
+    let expectations: Vec<_> = expected
+        .iter()
+        .map(|run| match &run.outcome {
+            Outcome::Return { value, .. } => format!("value {value:x} {:?}", run.checksum),
+            Outcome::Trap { .. } => "trap".to_owned(),
+            Outcome::Unknown(reason) => format!("unknown {reason}"),
+        })
+        .collect();
+    let printed: Vec<String> =
+        cache.get_or_compute("execute", &(&source.text, &requests, expectations), || {
+            build_programs()
+                .iter()
+                .map(|program| run(program, &requests))
+                .collect()
+        });
+    let outputs: Vec<Vec<Ran>> = printed
+        .iter()
+        .map(|output| {
+            let mut ran: Vec<Ran> = output.lines().map(parse_ran).collect();
+            ran.resize(expected.len(), Ran::Other("the program stopped".to_owned()));
+            ran
+        })
+        .collect();
 
     let mut agreeing: BTreeMap<usize, bool> = BTreeMap::new();
     for (position, run) in expected.iter().enumerate() {
-        let (fixture, candidate) = all[run.function];
+        let candidate = candidates[run.function];
         // An address no page can be mapped at, as one past the 48 bits of
         // addresses, leaves the compiled code nothing to read there.
         if outputs
             .iter()
             .any(|ran| ran[position] == Ran::Other("unreachable".to_owned()))
         {
-            *results[fixture]
+            *result
                 .skipped
                 .entry("reaches memory no page can map")
                 .or_default() += 1;
             continue;
         }
-        results[fixture].runs += 1;
+        result.runs += 1;
         let differing: Vec<(&str, &Ran)> = LEVELS
             .iter()
             .zip(&outputs)
@@ -4949,7 +4983,7 @@ fn check(
             }
             _ => "a trap".to_owned(),
         };
-        results[fixture].lines.push(format!(
+        result.lines.push(format!(
             "{}: trial {} ({}): pseudo-C gives {}, IR gives {wanted} ({})",
             candidate.label,
             run.trial,
@@ -4958,12 +4992,11 @@ fn check(
             candidate.ir.ret_type
         ));
     }
-    for (function, same) in agreeing {
-        let fixture = &mut results[all[function].0];
-        fixture.compared += 1;
-        fixture.differing += usize::from(!same);
+    for same in agreeing.into_values() {
+        result.compared += 1;
+        result.differing += usize::from(!same);
     }
-    results
+    result
 }
 
 fn project_result(
@@ -5557,6 +5590,7 @@ fn compiles(
     for _ in 0..COMPILE_ROUNDS {
         let text = program(candidates, initial_memory, &alive, mode);
         std::fs::write(source, &text.text).unwrap_or_else(|error| panic!("{error}"));
+        COMPILATIONS.set(COMPILATIONS.get() + 1);
         let checked = Command::new(COMPILER)
             .args(FLAGS)
             .args(["-fsyntax-only", "-ferror-limit=0"])
@@ -5611,6 +5645,7 @@ fn build(source: &Program, scratch: &Path, level: &str, compiler_args: &[&str]) 
     let path = scratch.join(format!("check{level}.c"));
     let output = scratch.join(format!("check{level}"));
     std::fs::write(&path, &source.text).unwrap_or_else(|error| panic!("{error}"));
+    COMPILATIONS.set(COMPILATIONS.get() + 1);
     let compiled = Command::new(COMPILER)
         .arg(level)
         .args(FLAGS)
