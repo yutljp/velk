@@ -18,7 +18,6 @@ double average(double *values, int n) {
     double v7;
     double v8;
     double v9;
-    double *v13;
     int64_t v14;
 
     if (n < 0x1) {
@@ -45,11 +44,11 @@ double average(double *values, int n) {
     } else {
         v3 = 0x0;
     }
-    v13 = values + v3;
+    v4 = values + v3;
     v14 = v2 - v3;
     do {
-        v6 = *v13;
-        v13 = v13 + 0x1;
+        v6 = *v4;
+        v4 = v4 + 0x1;
         v14 = v14 - 0x1;
         v1 = v1 + v6;
     } while (v14 != 0x0);
@@ -86,11 +85,11 @@ fn average @ 0x21019c (size 144)
   blk5 @ 0x2101f0:
     brif eq v3, v2 -> 0x210210
   blk6 @ 0x2101f8:
-    v13 = (x0 + (v3 << #0x3))
+    v4 = (x0 + (v3 << #0x3))
     v14 = (v2 - v3)
   blk7 @ 0x210200:
-    v6 = load64(v13)
-    v13 = (v13 + #0x8)
+    v6 = load64(v4)
+    v4 = (v4 + #0x8)
     v14 = (v14 - #0x1)
     v1 = fadd.d(v1, v6)
     brif ne v14, #0x0 -> 0x210200

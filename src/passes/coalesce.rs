@@ -9,6 +9,9 @@ use crate::ir::cfg::{live_in, live_out, opaque};
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, FunctionIr, Stmt, VARIABLE_BASE};
 
+mod pointers;
+pub(crate) use pointers::reuse_pointers;
+
 pub fn coalesce_copies(ir: &mut FunctionIr) {
     if ir.blocks.iter().any(opaque) {
         return;
@@ -62,36 +65,7 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
         sink_copied_definitions(&mut block.stmts, &same_value);
     }
 
-    // Two variables interfere where one is given a value while the other,
-    // holding another, is still to be read.
-    let live_in = live_in(ir);
-    let mut interferes: HashMap<u16, HashSet<u16>> = HashMap::new();
-    let mut copies = Vec::new();
-    for index in 0..ir.blocks.len() {
-        let mut live = live_out(ir, &live_in, index);
-        for stmt in ir.blocks[index].stmts.iter().rev() {
-            let (writes, reads) = statement_registers(stmt);
-            let copy = same_value(stmt);
-            if let Some(copy) = copy {
-                copies.push(copy);
-            }
-            for written in writes.iter().filter(|written| **written >= VARIABLE_BASE) {
-                for other in live.iter().filter(|other| **other >= VARIABLE_BASE) {
-                    if other != written && copy.is_none_or(|(_, source)| source != *other) {
-                        interferes.entry(*written).or_default().insert(*other);
-                        interferes.entry(*other).or_default().insert(*written);
-                    }
-                }
-            }
-            for written in &writes {
-                live.remove(written);
-            }
-            live.extend(reads);
-        }
-    }
-    // The variables live on entry hold what the caller left, which no copy
-    // gave them.
-    let entry: HashSet<u16> = live_in.first().cloned().unwrap_or_default();
+    let (interferes, copies, entry) = interference(ir, &same_value);
 
     let mut groups = Groups::default();
     let mut joined = false;
@@ -152,6 +126,41 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
     }
 }
 
+type Interference = HashMap<u16, HashSet<u16>>;
+
+fn interference(
+    ir: &FunctionIr,
+    same_value: &impl Fn(&Stmt) -> Option<(u16, u16)>,
+) -> (Interference, Vec<(u16, u16)>, HashSet<u16>) {
+    let live_in = live_in(ir);
+    let mut interferes: Interference = HashMap::new();
+    let mut copies = Vec::new();
+    for index in 0..ir.blocks.len() {
+        let mut live = live_out(ir, &live_in, index);
+        for stmt in ir.blocks[index].stmts.iter().rev() {
+            let (writes, reads) = statement_registers(stmt);
+            let copy = same_value(stmt);
+            if let Some(copy) = copy {
+                copies.push(copy);
+            }
+            for written in writes.iter().filter(|written| **written >= VARIABLE_BASE) {
+                for other in live.iter().filter(|other| **other >= VARIABLE_BASE) {
+                    if other != written && copy.is_none_or(|(_, source)| source != *other) {
+                        interferes.entry(*written).or_default().insert(*other);
+                        interferes.entry(*other).or_default().insert(*written);
+                    }
+                }
+            }
+            for written in &writes {
+                live.remove(written);
+            }
+            live.extend(reads);
+        }
+    }
+    let entry = live_in.first().cloned().unwrap_or_default();
+    (interferes, copies, entry)
+}
+
 /// Variables joined so far, each group named by its lowest variable.
 #[derive(Default)]
 struct Groups {
@@ -177,7 +186,7 @@ impl Groups {
         entry: &HashSet<u16>,
     ) -> bool {
         let (a, b) = (self.find(a), self.find(b));
-        if a == b || (entry.contains(&a) && entry.contains(&b)) {
+        if a == b {
             return false;
         }
         let group = |leader: u16| {
@@ -187,6 +196,9 @@ impl Groups {
                 .unwrap_or_else(|| vec![leader])
         };
         let (first, second) = (group(a), group(b));
+        if first.iter().any(|x| entry.contains(x)) && second.iter().any(|x| entry.contains(x)) {
+            return false;
+        }
         let clash = first.iter().any(|x| {
             interferes
                 .get(x)

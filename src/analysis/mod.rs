@@ -1377,6 +1377,7 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     ir.pointer_values = pointer_values;
     typing::apply_prototypes(&mut ir, image);
     variadic::mark_variadic(&mut ir);
+    passes::coalesce::reuse_pointers(&mut ir);
     Analysis { ir, references }
 }
 

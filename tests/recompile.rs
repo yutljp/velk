@@ -6590,14 +6590,33 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
             let mut initial_memory = Vec::new();
             let inputs = if name == "copy_bytes" {
                 let source = REGION + 0x400;
-                [0, 1, 7, 8, 31, 32, 33, 64]
+                [
+                    0, 1, 7, 8, 9, 15, 16, 17, 23, 24, 25, 31, 32, 33, 39, 40, 63, 64, 65, 95, 96,
+                    97,
+                ]
+                .into_iter()
+                .flat_map(|length| {
+                    [
+                        REGION + 0x800,
+                        source,
+                        source - 1,
+                        source - 8,
+                        source - 31,
+                        source - 32,
+                        source + 1,
+                        source + 7,
+                        source + 8,
+                        source + 15,
+                        source + 16,
+                        source + 31,
+                        source + 32,
+                        source + 33,
+                        source + 64,
+                    ]
                     .into_iter()
-                    .flat_map(|length| {
-                        [REGION + 0x800, source + 1, source + 31, source + 32]
-                            .into_iter()
-                            .map(move |destination| vec![destination, source, length])
-                    })
-                    .collect()
+                    .map(move |destination| vec![destination, source, length])
+                })
+                .collect()
             } else {
                 initial_memory = vec![
                     (REGION + 0x200, 1),
@@ -6621,6 +6640,32 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
             };
             let mut candidate = printed_candidate(ir, inputs);
             candidate.code = binary.decompile(address, None).unwrap();
+            if architecture == "aarch64" && name == "copy_bytes" {
+                let code = &candidate.code;
+                assert_eq!(
+                    code.lines()
+                        .filter(|line| line.trim_start().starts_with("uint64_t *v"))
+                        .count(),
+                    2,
+                    "{code}"
+                );
+                assert_eq!(
+                    code.lines()
+                        .filter(|line| line.trim_start().starts_with("uint8_t *v"))
+                        .count(),
+                    2,
+                    "{code}"
+                );
+                for pointer in ["v2", "v3"] {
+                    for step in ["0x4", "0x1"] {
+                        assert!(
+                            code.contains(&format!("{pointer} = {pointer} + {step};")),
+                            "{code}"
+                        );
+                    }
+                }
+                assert!(!code.contains("v10") && !code.contains("v11"), "{code}");
+            }
             candidate.label = format!("{architecture} {name}");
             let fixture = Fixture {
                 name: format!("{architecture} {name}").into(),
@@ -6688,7 +6733,10 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
     for (fixture, result) in fixtures.iter().zip(&findings) {
         assert_comparison_runs(result, 1, fixture.candidates[0].inputs.len());
     }
-    assert_eq!(findings.iter().map(|result| result.runs).sum::<usize>(), 88);
+    assert_eq!(
+        findings.iter().map(|result| result.runs).sum::<usize>(),
+        684
+    );
     std::fs::remove_dir_all(&scratch).ok();
 }
 
