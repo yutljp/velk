@@ -351,66 +351,6 @@ impl Plan {
         mut reserved: HashSet<String>,
         types: impl IntoIterator<Item = String>,
     ) {
-        reserved.extend(
-            [
-                "auto",
-                "break",
-                "case",
-                "char",
-                "const",
-                "continue",
-                "default",
-                "do",
-                "double",
-                "else",
-                "enum",
-                "extern",
-                "float",
-                "for",
-                "goto",
-                "if",
-                "inline",
-                "int",
-                "long",
-                "register",
-                "restrict",
-                "return",
-                "short",
-                "signed",
-                "sizeof",
-                "static",
-                "struct",
-                "switch",
-                "typedef",
-                "union",
-                "unsigned",
-                "void",
-                "volatile",
-                "while",
-                "_Alignas",
-                "_Alignof",
-                "_Atomic",
-                "_Bool",
-                "_Complex",
-                "_Generic",
-                "_Imaginary",
-                "_Noreturn",
-                "_Static_assert",
-                "_Thread_local",
-                "bool",
-                "uint8_t",
-                "uint16_t",
-                "uint32_t",
-                "uint64_t",
-                "int8_t",
-                "int16_t",
-                "int32_t",
-                "int64_t",
-                "uintptr_t",
-                "__builtin_memcpy",
-            ]
-            .map(str::to_owned),
-        );
         reserved.extend(self.captures.iter().map(|capture| capture.name.clone()));
         reserved.extend(self.pointers.iter().map(|binding| binding.name.clone()));
         reserved.extend(
@@ -444,7 +384,7 @@ impl Plan {
                 rename.push(position);
                 continue;
             }
-            if !reserved.insert(name.clone()) {
+            if !reserved.insert(name.clone()) || super::globals::reserved_identifier(name) {
                 rename.push(position);
             }
         }
@@ -750,6 +690,28 @@ mod tests {
             if floating_consumer {
                 assert!(output.contains(".value"), "{output}");
             }
+        }
+    }
+
+    #[test]
+    fn logical_parameter_names_avoid_c_keywords() {
+        for name in [
+            "true",
+            "false",
+            "nullptr",
+            "typeof",
+            "static_assert",
+            "thread_local",
+            "alignas",
+            "alignof",
+            "constexpr",
+        ] {
+            let mut ir = function(8, Expr::reg(7, 64));
+            ir.declared_signature.as_mut().unwrap().params[0].0 = name.to_owned();
+            let mut plan = prepare(&mut ir, &Symbols::default()).unwrap();
+            plan.resolve_names(HashSet::new(), Vec::new());
+            assert_eq!(plan.params[0].0, format!("{name}_2"));
+            assert_eq!(plan.captures[0].object, format!("{name}_2"));
         }
     }
 

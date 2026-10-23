@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use super::Node;
+use super::{Node, compare_chain::predecessors};
 use crate::ir::{Cond, Expr, FunctionIr, Stmt};
 
 /// The most tests one joined condition holds.
@@ -64,7 +64,7 @@ fn selected_guard(node: &Node) -> Option<(Expr, &[Node])> {
     else {
         return None;
     };
-    if matches!(cond, Cond::Mi | Cond::Pl | Cond::Vs | Cond::Vc) {
+    if !value_comparison(*cond) {
         return None;
     }
     let condition = truth(*cond, lhs, rhs);
@@ -142,14 +142,14 @@ pub(super) fn short_circuited(ir: &FunctionIr) -> Option<FunctionIr> {
     let mut ir = ir.clone();
     let mut changed = false;
     let mut block = 0;
-    let mut entries = entry_counts(&ir);
+    let mut entries = predecessors(&ir);
     let mut index = positions(&ir);
     while block < ir.blocks.len() {
         match join(&ir, &entries, &index, block) {
             Some((stmt, removed)) => {
                 *ir.blocks[block].stmts.last_mut().expect("a test") = stmt;
                 ir.blocks.remove(removed);
-                entries = entry_counts(&ir);
+                entries = predecessors(&ir);
                 index = positions(&ir);
                 changed = true;
                 // The joined test may complete the one before it in turn.
@@ -169,31 +169,9 @@ fn positions(ir: &FunctionIr) -> HashMap<u64, usize> {
         .collect()
 }
 
-/// How many edges enter each block, by its start.
-fn entry_counts(ir: &FunctionIr) -> HashMap<u64, usize> {
-    let mut counts: HashMap<u64, usize> = HashMap::new();
-    for (position, block) in ir.blocks.iter().enumerate() {
-        let next = ir.blocks.get(position + 1).map(|next| next.start);
-        let mut enter = |target: u64| *counts.entry(target).or_default() += 1;
-        match block.stmts.last() {
-            Some(Stmt::Br {
-                target: Some(target),
-            }) => enter(*target),
-            Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => {
-                enter(*target);
-                next.into_iter().for_each(&mut enter);
-            }
-            Some(Stmt::Switch { cases, default, .. }) => {
-                cases.iter().for_each(|(_, target)| enter(*target));
-                default.iter().for_each(|target| enter(*target));
-            }
-            Some(
-                Stmt::Ret { .. } | Stmt::Trap | Stmt::BrIndirect { .. } | Stmt::Br { target: None },
-            ) => {}
-            _ => next.into_iter().for_each(&mut enter),
-        }
-    }
-    counts
+// These conditions read processor flags rather than compare the two values.
+fn value_comparison(cond: Cond) -> bool {
+    !matches!(cond, Cond::Mi | Cond::Pl | Cond::Vs | Cond::Vc)
 }
 
 /// A test the condition can join: a comparison of values, not of flags.
@@ -204,9 +182,7 @@ fn test(stmt: Option<&Stmt>) -> Option<(Cond, &Expr, &Expr, u64)> {
             lhs,
             rhs,
             target,
-        }) if !matches!(cond, Cond::Mi | Cond::Pl | Cond::Vs | Cond::Vc) => {
-            Some((*cond, lhs, rhs, *target))
-        }
+        }) if value_comparison(*cond) => Some((*cond, lhs, rhs, *target)),
         _ => None,
     }
 }
@@ -226,7 +202,7 @@ fn join(
     let position = |start: u64| index.get(&start).copied();
     let same = |one: u64, other: u64| same_place(ir, index, one, other);
     let first_test = || (first, lhs.clone(), rhs.clone());
-    for second in [block + 1, position(taken)?] {
+    for second in [Some(block + 1), position(taken)].into_iter().flatten() {
         let candidate = &ir.blocks[second];
         if second == 0
             || second == block
@@ -544,6 +520,82 @@ mod tests {
             observed, expected,
             "each original predicate must occur once, left first"
         );
+    }
+
+    #[test]
+    fn exception_entries_prevent_absorbing_a_landing_pad() {
+        let branch = |position| Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: reg(position),
+            rhs: Expr::Const(0),
+            target: 0x30,
+        };
+        let Node::Stmt(call) = call(0x5000) else {
+            unreachable!()
+        };
+        let mut ir = template();
+        ir.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![call, branch(0)],
+            },
+            Block {
+                start: 0x10,
+                stmts: vec![branch(1)],
+            },
+            Block {
+                start: 0x20,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(1),
+                }],
+            },
+            Block {
+                start: 0x30,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(0),
+                }],
+            },
+        ];
+        assert!(super::short_circuited(&ir).is_some());
+        ir.landing_pads = vec![(0x10, vec![(0, 0x10)])];
+        assert!(super::short_circuited(&ir).is_none());
+    }
+
+    #[test]
+    fn an_external_target_does_not_hide_a_joinable_fallthrough() {
+        let mut ir = template();
+        ir.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: reg(0),
+                    rhs: Expr::Const(0),
+                    target: 0x1000,
+                }],
+            },
+            Block {
+                start: 0x10,
+                stmts: vec![Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: reg(1),
+                    rhs: Expr::Const(0),
+                    target: 0x1000,
+                }],
+            },
+            Block {
+                start: 0x20,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(1),
+                }],
+            },
+        ];
+        let after = super::short_circuited(&ir).unwrap();
+        assert_eq!(after.blocks.len(), 2);
+        assert!(matches!(
+            after.blocks[0].stmts.last(),
+            Some(Stmt::Brif { target: 0x1000, .. })
+        ));
     }
 
     #[test]

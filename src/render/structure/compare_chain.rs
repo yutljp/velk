@@ -76,7 +76,9 @@ pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
 pub(crate) fn predecessors(ir: &FunctionIr) -> std::collections::HashMap<u64, usize> {
     let mut counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
     for (index, _) in ir.blocks.iter().enumerate() {
-        for successor in successors(ir, index) {
+        let edges =
+            crate::ir::cfg::block_successors_with_exceptions(&ir.blocks, index, &ir.landing_pads);
+        for successor in edges.normal.into_iter().chain(edges.exceptional) {
             *counts.entry(ir.blocks[successor].start).or_default() += 1;
         }
     }
@@ -419,7 +421,7 @@ fn holds(cond: crate::ir::Cond, value: i64, k: i64, bits: u32) -> Option<bool> {
     })
 }
 
-/// Equality dispatch needs one entry per test, not one per intervening value.
+/// A chain of `==`/`!=` tests of one value against constants, as a switch.
 fn equality_chain(
     ir: &FunctionIr,
     head: usize,

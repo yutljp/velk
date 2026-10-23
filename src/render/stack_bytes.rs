@@ -208,26 +208,10 @@ fn restore_frame(expr: &mut Expr, root: &Origins, sp: u16) -> Option<()> {
 }
 
 fn protect_parameter_names(ir: &mut FunctionIr) {
-    let protected: BTreeSet<_> = [
-        "uint8_t",
-        "uint16_t",
-        "uint32_t",
-        "uint64_t",
-        "int8_t",
-        "int16_t",
-        "int32_t",
-        "int64_t",
-        "uintptr_t",
-        "bool",
-        "__builtin_memcpy",
-    ]
-    .into_iter()
-    .map(str::to_owned)
-    .collect();
-    let mut reserved: std::collections::HashSet<_> = protected
+    let mut reserved: std::collections::HashSet<_> = ir
+        .params
         .iter()
-        .cloned()
-        .chain(ir.params.iter().map(|param| super::sanitize(&param.name)))
+        .map(|param| super::sanitize(&param.name))
         .chain(
             ir.stack_params
                 .iter()
@@ -240,7 +224,7 @@ fn protect_parameter_names(ir: &mut FunctionIr) {
         .map(|param| &mut param.name)
         .chain(ir.stack_params.iter_mut().map(|param| &mut param.name))
     {
-        if protected.contains(name) {
+        if super::globals::reserved_identifier(name) {
             *name = super::vacant_name(name, &mut reserved);
         }
     }
@@ -509,6 +493,28 @@ mod tests {
                 step_limit: 1000,
             },
         )
+    }
+
+    #[test]
+    fn stack_parameter_names_avoid_c_keywords_and_existing_suffixes() {
+        for name in [
+            "true",
+            "false",
+            "nullptr",
+            "typeof",
+            "static_assert",
+            "thread_local",
+            "alignas",
+            "alignof",
+            "constexpr",
+        ] {
+            let mut ir = function(vec![Stmt::Ret { value: load(4, 8) }]);
+            ir.name = Some("stack_keyword".to_owned());
+            ir.stack_params[0].name = name.to_owned();
+            ir.stack_params[1].name = format!("{name}_2");
+            let code = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
+            assert!(code.contains(&format!("uint64_t {name}_3")), "{code}");
+        }
     }
 
     #[test]

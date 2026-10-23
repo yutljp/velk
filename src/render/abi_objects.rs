@@ -469,18 +469,7 @@ fn record_store(
         let end = start.checked_add(u64::from(*width) * 8)?;
         let ranges = &mut written[index];
         ranges.push((start, end - start));
-        ranges.sort_unstable();
-        let mut merged: Vec<(u64, u64)> = Vec::new();
-        for &(offset, count) in ranges.iter() {
-            if let Some((previous, length)) = merged.last_mut()
-                && offset <= *previous + *length
-            {
-                *length = (*previous + *length).max(offset + count) - *previous;
-            } else {
-                merged.push((offset, count));
-            }
-        }
-        *ranges = merged;
+        crate::ir::abi::merge_ranges(ranges);
     }
     Some(())
 }

@@ -142,80 +142,7 @@ fn identifier(name: &str) -> String {
     let name = super::sanitize(name);
     if name.is_empty()
         || name.starts_with(|c: char| c.is_ascii_digit())
-        || matches!(
-            name.as_str(),
-            "alignas"
-                | "alignof"
-                | "auto"
-                | "bool"
-                | "break"
-                | "case"
-                | "char"
-                | "const"
-                | "constexpr"
-                | "continue"
-                | "default"
-                | "do"
-                | "double"
-                | "else"
-                | "enum"
-                | "extern"
-                | "false"
-                | "float"
-                | "for"
-                | "goto"
-                | "if"
-                | "inline"
-                | "int"
-                | "long"
-                | "nullptr"
-                | "register"
-                | "restrict"
-                | "return"
-                | "short"
-                | "signed"
-                | "sizeof"
-                | "static"
-                | "static_assert"
-                | "struct"
-                | "switch"
-                | "thread_local"
-                | "true"
-                | "typedef"
-                | "typeof"
-                | "typeof_unqual"
-                | "union"
-                | "unsigned"
-                | "void"
-                | "volatile"
-                | "while"
-                | "_Alignas"
-                | "_Alignof"
-                | "_Atomic"
-                | "_BitInt"
-                | "_Bool"
-                | "_Complex"
-                | "_Decimal32"
-                | "_Decimal64"
-                | "_Decimal128"
-                | "_Generic"
-                | "_Imaginary"
-                | "_Noreturn"
-                | "_Static_assert"
-                | "_Thread_local"
-                | "int8_t"
-                | "int16_t"
-                | "int32_t"
-                | "int64_t"
-                | "uint8_t"
-                | "uint16_t"
-                | "uint32_t"
-                | "uint64_t"
-                | "intptr_t"
-                | "uintptr_t"
-                | "size_t"
-                | "ptrdiff_t"
-        )
+        || reserved_identifier(&name)
     {
         format!("data_{name}")
     } else {
@@ -223,9 +150,107 @@ fn identifier(name: &str) -> String {
     }
 }
 
+pub(super) fn reserved_identifier(name: &str) -> bool {
+    matches!(
+        name,
+        "alignas"
+            | "alignof"
+            | "auto"
+            | "bool"
+            | "break"
+            | "case"
+            | "char"
+            | "const"
+            | "constexpr"
+            | "continue"
+            | "default"
+            | "do"
+            | "double"
+            | "else"
+            | "enum"
+            | "extern"
+            | "false"
+            | "float"
+            | "for"
+            | "goto"
+            | "if"
+            | "inline"
+            | "int"
+            | "long"
+            | "nullptr"
+            | "register"
+            | "restrict"
+            | "return"
+            | "short"
+            | "signed"
+            | "sizeof"
+            | "static"
+            | "static_assert"
+            | "struct"
+            | "switch"
+            | "thread_local"
+            | "true"
+            | "typedef"
+            | "typeof"
+            | "typeof_unqual"
+            | "union"
+            | "unsigned"
+            | "void"
+            | "volatile"
+            | "while"
+            | "_Alignas"
+            | "_Alignof"
+            | "_Atomic"
+            | "_BitInt"
+            | "_Bool"
+            | "_Complex"
+            | "_Decimal32"
+            | "_Decimal64"
+            | "_Decimal128"
+            | "_Generic"
+            | "_Imaginary"
+            | "_Noreturn"
+            | "_Static_assert"
+            | "_Thread_local"
+            | "int8_t"
+            | "int16_t"
+            | "int32_t"
+            | "int64_t"
+            | "uint8_t"
+            | "uint16_t"
+            | "uint32_t"
+            | "uint64_t"
+            | "intptr_t"
+            | "uintptr_t"
+            | "size_t"
+            | "ptrdiff_t"
+            | "__builtin_memcpy"
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn c_keywords_are_not_global_identifiers() {
+        for name in [
+            "true",
+            "false",
+            "nullptr",
+            "typeof",
+            "typeof_unqual",
+            "static_assert",
+            "thread_local",
+            "alignas",
+            "alignof",
+            "constexpr",
+            "_BitInt",
+        ] {
+            assert_eq!(identifier(name), format!("data_{name}"));
+        }
+        assert_eq!(identifier("value"), "value");
+    }
 
     #[test]
     fn views_share_addresses_but_keep_their_storage_types() {

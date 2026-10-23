@@ -2406,7 +2406,16 @@ fn printed_aggregate_arguments_preserve_scalar_128_bit_results() {
 #[test]
 fn printed_aggregate_parameter_names_preserve_execution() {
     let mut candidates = Vec::new();
-    for case in ["stack", "typedef", "duplicates", "free", "builtin"] {
+    for case in [
+        "stack",
+        "typedef",
+        "duplicates",
+        "free",
+        "builtin",
+        "true",
+        "nullptr",
+        "constexpr",
+    ] {
         let mut ir = integer_object_ir(8, false);
         ir.name = Some(format!("aggregate_name_{case}"));
         let signature = ir.declared_signature.as_mut().unwrap();
@@ -2416,7 +2425,7 @@ fn printed_aggregate_parameter_names_preserve_execution() {
             "builtin" => "__builtin_memcpy",
             "duplicates" => "value.x",
             "free" => "bytes",
-            _ => unreachable!(),
+            _ => case,
         }
         .into();
         if case == "duplicates" {
@@ -2479,6 +2488,12 @@ fn printed_aggregate_parameter_names_preserve_execution() {
         } else if case == "stack" {
             assert!(
                 batch[0].code.contains("uint64_t local_0"),
+                "{}",
+                batch[0].code
+            );
+        } else if matches!(case, "true" | "nullptr" | "constexpr") {
+            assert!(
+                batch[0].code.contains(&format!("struct bytes {case}_2")),
                 "{}",
                 batch[0].code
             );
@@ -2757,38 +2772,34 @@ fn assert_struct_fixture_placement(name: &str, abi: &SignatureAbi) {
 }
 
 #[test]
-fn aggregate_unresolved_alignment_uses_whole_function_fallback() {
+fn sysv_unresolved_alignment_uses_whole_function_fallback() {
     let mut checked = 0;
-    for (isa, name) in [
-        ("x86_64", "abi_exhaust_seven"),
-        ("aarch64", "abi_exhaust_five"),
-    ] {
-        for optimization in ["O0", "O2"] {
-            let path = common::fixtures_dir().join(format!(
-                "metrics/aggregate_abi.{isa}.{optimization}.debug.elf"
-            ));
-            let mut binary = Binary::open(&path).unwrap();
-            let address = binary.find(name).unwrap().addr;
-            let ir = binary.analysis(address).unwrap().ir.clone();
-            let signature = ir
-                .declared_signature
-                .as_ref()
-                .expect("the source signature");
-            assert_eq!(
-                signature.abi,
-                Err(velk::ir::AbiIssue::UnknownLayout),
-                "{isa} {optimization} {name}"
-            );
-            let actual = velk::render::render_with_dependencies(&ir, &[], &Default::default(), &[]);
-            let mut physical = ir;
-            physical.declared_signature = None;
-            let expected =
-                velk::render::render_with_dependencies(&physical, &[], &Default::default(), &[]);
-            assert_eq!(actual, expected, "{isa} {optimization} {name}");
-            checked += 1;
-        }
+    let (isa, name) = ("x86_64", "abi_exhaust_seven");
+    for optimization in ["O0", "O2"] {
+        let path = common::fixtures_dir().join(format!(
+            "metrics/aggregate_abi.{isa}.{optimization}.debug.elf"
+        ));
+        let mut binary = Binary::open(&path).unwrap();
+        let address = binary.find(name).unwrap().addr;
+        let ir = binary.analysis(address).unwrap().ir.clone();
+        let signature = ir
+            .declared_signature
+            .as_ref()
+            .expect("the source signature");
+        assert_eq!(
+            signature.abi,
+            Err(velk::ir::AbiIssue::UnknownLayout),
+            "{isa} {optimization} {name}"
+        );
+        let actual = velk::render::render_with_dependencies(&ir, &[], &Default::default(), &[]);
+        let mut physical = ir;
+        physical.declared_signature = None;
+        let expected =
+            velk::render::render_with_dependencies(&physical, &[], &Default::default(), &[]);
+        assert_eq!(actual, expected, "{isa} {optimization} {name}");
+        checked += 1;
     }
-    assert_eq!(checked, 4);
+    assert_eq!(checked, 2);
 }
 
 #[test]
@@ -2815,10 +2826,7 @@ fn printed_aggregate_abi_fixtures_observe_every_result_piece() {
                 "abi_exhaust_five_aligned",
                 "abi_exhaust_seven_aligned",
             ] {
-                if matches!(
-                    (isa, name),
-                    ("x86_64", "abi_exhaust_seven") | ("aarch64", "abi_exhaust_five")
-                ) {
+                if (isa, name) == ("x86_64", "abi_exhaust_seven") {
                     continue;
                 }
                 let address = binary.find(name).unwrap().addr;
@@ -2896,9 +2904,9 @@ fn printed_aggregate_abi_fixtures_observe_every_result_piece() {
             }
         }
     }
-    assert_eq!(ordinary, 32);
+    assert_eq!(ordinary, 34);
     assert_eq!(aligned, 8);
-    assert_eq!(candidates.len(), 80);
+    assert_eq!(candidates.len(), 82);
     check_candidates("aggregate-abi-fixtures", candidates, Mode::Registers, &[]);
 }
 
@@ -6443,7 +6451,11 @@ fn printed_stack_bytes_preserve_read_write_order_and_slot_boundaries() {
             stmts.push(Stmt::Ret {
                 value: Expr::reg(result, 64),
             });
-            let ir = recovered_stack_test_ir(&format!("stack_bytes_{kind}_{width}"), stmts);
+            let mut ir = recovered_stack_test_ir(&format!("stack_bytes_{kind}_{width}"), stmts);
+            if kind == "cross_read" {
+                ir.params[0].name = "constexpr".to_owned();
+                ir.stack_params[0].name = "nullptr".to_owned();
+            }
             let mut inputs = Vec::new();
             for trial in 0..12u32 {
                 let mut row = vec![0; 10];
@@ -6454,6 +6466,18 @@ fn printed_stack_bytes_preserve_read_write_order_and_slot_boundaries() {
                 inputs.push(row);
             }
             let mut candidate = printed_candidate(ir, inputs);
+            if kind == "cross_read" {
+                assert!(
+                    candidate.code.contains("uint64_t constexpr_2"),
+                    "{}",
+                    candidate.code
+                );
+                assert!(
+                    candidate.code.contains("uint64_t nullptr_2"),
+                    "{}",
+                    candidate.code
+                );
+            }
             let call = physical_stack_call(&candidate.ir, 12).unwrap();
             candidate.params = call
                 .signature
@@ -6985,6 +7009,100 @@ fn printed_stripped_x86_stack_fixtures_preserve_held_alias_inputs() {
         184
     );
     check_candidates("stripped-x86-stack-fixtures", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_switch_ranges_preserve_cases_across_negative_one_and_zero() {
+    let mut candidates = Vec::new();
+    for signed in [false, true] {
+        for chained in [false, true] {
+            let name = format!("switch_zero_{}_{}", u8::from(signed), u8::from(chained));
+            let mut blocks = Vec::new();
+            if chained {
+                for (position, value) in [u64::MAX, 0, 1, 17].into_iter().enumerate() {
+                    blocks.push(Block {
+                        start: position as u64 * 0x10,
+                        stmts: vec![Stmt::Brif {
+                            cond: Cond::Eq,
+                            lhs: Expr::reg(7, 64),
+                            rhs: Expr::Const(value),
+                            target: if value == 17 { 0x120 } else { 0x100 },
+                        }],
+                    });
+                }
+            } else {
+                blocks.push(Block {
+                    start: 0,
+                    stmts: vec![Stmt::Switch {
+                        index: Expr::reg(7, 64),
+                        cases: vec![(-1, 0x100), (0, 0x100), (1, 0x100), (17, 0x120)],
+                        default: Some(0x40),
+                    }],
+                });
+            }
+            blocks.extend([
+                Block {
+                    start: 0x40,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(99),
+                    }],
+                },
+                Block {
+                    start: 0x100,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(11),
+                    }],
+                },
+                Block {
+                    start: 0x120,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(12),
+                    }],
+                },
+            ]);
+            let ir = sc_ir(
+                &name,
+                vec![if signed { CType::I64 } else { CType::U64 }],
+                blocks,
+            );
+            let rows = [
+                u64::MAX - 1,
+                u64::MAX,
+                0,
+                1,
+                2,
+                17,
+                18,
+                1 << 63,
+                (1 << 63) - 1,
+            ];
+            let candidate =
+                printed_candidate(ir, rows.into_iter().map(|value| vec![value]).collect());
+            assert!(candidate.code.contains("switch ("), "{}", candidate.code);
+            if signed {
+                assert!(
+                    candidate.code.contains("case -1 ... 1:"),
+                    "{}",
+                    candidate.code
+                );
+            } else {
+                assert!(
+                    !candidate.code.contains("case -1 ... 1:"),
+                    "{}",
+                    candidate.code
+                );
+                for value in [-1, 0, 1] {
+                    assert!(
+                        candidate.code.contains(&format!("case {value}:")),
+                        "{}",
+                        candidate.code
+                    );
+                }
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("switch-zero-ranges", candidates, Mode::Registers, &[]);
 }
 
 #[test]

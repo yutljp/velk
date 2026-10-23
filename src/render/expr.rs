@@ -1703,9 +1703,9 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
 
 /// The index a switch compares with its case values, which it reads as an
 /// equality does.
-pub(crate) fn switch_index(index: &Expr, ctx: &Ctx<'_>) -> String {
+pub(crate) fn switch_index(index: &Expr, ctx: &Ctx<'_>) -> Printed {
     let [index, _] = compared(Cond::Eq, index, &Expr::Const(0), ctx);
-    index.address_integer().text
+    index.address_integer()
 }
 
 /// How a comparison reads its operands.
