@@ -62,15 +62,24 @@ fn moduledata(image: &Image, pclntab: u64) -> Option<u64> {
         if section.executable || section.size < 8 {
             continue;
         }
-        let bytes = bytes_at(image, section.vaddr, section.size)?;
-        let mut offset = 0usize;
-        while offset + 8 <= bytes.len() {
-            let value = u64::from_le_bytes(bytes[offset..offset + 8].try_into().ok()?);
+        let Some(bytes) = bytes_at(image, section.vaddr, section.size) else {
+            continue;
+        };
+        for (index, word) in bytes.as_chunks::<8>().0.iter().enumerate() {
+            let value = u64::from_le_bytes(*word);
             if value == pclntab {
-                let candidate = section.vaddr + offset as u64;
+                let Some(candidate) = (index as u64)
+                    .checked_mul(8)
+                    .and_then(|offset| section.vaddr.checked_add(offset))
+                else {
+                    continue;
+                };
+                let Some(text_addr) = candidate.checked_add(176) else {
+                    continue;
+                };
                 let pclntable = slice_at(image, candidate + 104);
                 let ftab = slice_at(image, candidate + 128);
-                let text = u64_at(image, candidate + 176);
+                let text = u64_at(image, text_addr);
                 let funcnametab = slice_at(image, candidate + 8);
                 if let (
                     Some((table, _)),
@@ -94,7 +103,6 @@ fn moduledata(image: &Image, pclntab: u64) -> Option<u64> {
                     }
                 }
             }
-            offset += 8;
         }
     }
     None
@@ -145,4 +153,71 @@ pub fn functions(image: &Image) -> Vec<GoFunction> {
         });
     }
     functions
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ir::Convention;
+    use crate::loader::{Image, Isa, Section};
+
+    #[test]
+    fn discovers_functions_after_an_unreadable_section() {
+        for unreadable in [false, true] {
+            let mut image = Image::from_code(Isa::X86_64, 0x1000, vec![0xc3; 64]);
+            if unreadable {
+                image.sections.insert(
+                    0,
+                    Section {
+                        name: ".bss".into(),
+                        vaddr: 0x8000,
+                        size: 8,
+                        file_offset: None,
+                        executable: false,
+                        loaded: true,
+                        read_only: false,
+                    },
+                );
+            }
+            let mut data = vec![0; 184];
+            for (offset, value) in [
+                (0, 0x4000u64),
+                (8, 0x5000),
+                (16, 128),
+                (104, 0x6000),
+                (112, 256),
+                (128, 0x7000),
+                (136, 2),
+                (176, 0x1000),
+            ] {
+                data[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+            }
+            let mut names = vec![0; 128];
+            names[..10].copy_from_slice(b"main.work\0");
+            let mut table = vec![0; 16];
+            table[..4].copy_from_slice(&0x20u32.to_le_bytes());
+            for (name, vaddr, bytes) in [
+                (".data", 0x2000, data),
+                (".gopclntab", 0x4000, vec![0; 8]),
+                (".names", 0x5000, names),
+                (".funcdata", 0x6000, vec![0; 256]),
+                (".functab", 0x7000, table),
+            ] {
+                image.sections.push(Section {
+                    name: name.into(),
+                    vaddr,
+                    size: bytes.len() as u64,
+                    file_offset: Some(image.bytes.len() as u64),
+                    executable: false,
+                    loaded: true,
+                    read_only: false,
+                });
+                image.bytes.extend(bytes);
+            }
+            image.add_go_functions();
+            assert!(image.go, "unreadable section: {unreadable}");
+            assert_eq!(image.functions.len(), 1);
+            assert_eq!(image.functions[&0x1020].name.as_deref(), Some("main.work"));
+            assert_eq!(image.convention_of(0x1020), Convention::GoAmd64);
+        }
+    }
 }

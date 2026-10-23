@@ -230,14 +230,20 @@ pub(crate) fn signed_select_mod_chain(
         // The adjusted branch may be a register defined just before the select.
         let mut adjusted_def = None;
         let adjusted = match strip_and_mask(adjusted) {
-            Expr::Reg { index, .. } => (0..select_index).rev().take(4).find_map(|position| {
-                assign_of(&statements[position]).and_then(|(dest, value)| {
-                    (dest.index == *index).then(|| {
-                        adjusted_def = Some(position);
-                        strip_and_mask(value)
+            Expr::Reg { index, .. } => {
+                let resolved = (0..select_index).rev().take(4).find_map(|position| {
+                    assign_of(&statements[position]).and_then(|(dest, value)| {
+                        (dest.index == *index).then(|| {
+                            adjusted_def = Some(position);
+                            strip_and_mask(value)
+                        })
                     })
-                })
-            })?,
+                });
+                let Some(adjusted) = resolved else {
+                    continue;
+                };
+                adjusted
+            }
             adjusted => adjusted,
         };
         let Expr::Bin {
@@ -309,9 +315,11 @@ pub(crate) fn signed_select_chain(
         if *shift == 0 || *shift >= 64 {
             continue;
         }
-        let select_index = (0..sar_index).rev().take(4).find(|position| {
+        let Some(select_index) = (0..sar_index).rev().take(4).find(|position| {
             assign_of(&statements[*position]).is_some_and(|(dest, _)| dest.index == *src)
-        })?;
+        }) else {
+            continue;
+        };
         let Some((_, select_value)) = assign_of(&statements[select_index]) else {
             continue;
         };

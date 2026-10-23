@@ -3567,6 +3567,132 @@ fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
 }
 
 #[test]
+fn printed_signed_division_skips_an_unrelated_shift() {
+    check_signed_select_search(false);
+}
+
+#[test]
+fn printed_signed_remainder_skips_an_unresolved_select_arm() {
+    check_signed_select_search(true);
+}
+
+fn check_signed_select_search(remainder: bool) {
+    let assign = |index, value| Stmt::Assign {
+        dest: velk::ir::RegRef { index, width: 64 },
+        value,
+    };
+    let select = |adjusted| Expr::Select {
+        cond: Cond::Ge,
+        lhs: Box::new(Expr::reg(7, 64)),
+        rhs: Box::new(Expr::Const(0)),
+        then: Box::new(Expr::reg(7, 64)),
+        els: Box::new(Expr::reg(adjusted, 64)),
+    };
+    let name = if remainder {
+        "remainder_after_unresolved_arm"
+    } else {
+        "division_after_unrelated_shift"
+    };
+    let mut candidates = Vec::new();
+    for blocked in [false, true] {
+        let mut stmts = if !blocked {
+            Vec::new()
+        } else if remainder {
+            vec![
+                assign(40, select(6)),
+                assign(
+                    41,
+                    Expr::bin(BinOp::And, Expr::reg(40, 64), Expr::Const(!7)),
+                ),
+                assign(
+                    42,
+                    Expr::bin(BinOp::Sub, Expr::reg(7, 64), Expr::reg(41, 64)),
+                ),
+            ]
+        } else {
+            vec![assign(
+                42,
+                Expr::bin(BinOp::Sar, Expr::reg(6, 64), Expr::Const(1)),
+            )]
+        };
+        stmts.extend([
+            assign(43, Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(7))),
+            assign(44, select(43)),
+        ]);
+        if remainder {
+            stmts.extend([
+                assign(
+                    45,
+                    Expr::bin(BinOp::And, Expr::reg(44, 64), Expr::Const(!7)),
+                ),
+                assign(
+                    46,
+                    Expr::bin(BinOp::Sub, Expr::reg(7, 64), Expr::reg(45, 64)),
+                ),
+            ]);
+        } else {
+            stmts.push(assign(
+                46,
+                Expr::bin(BinOp::Sar, Expr::reg(44, 64), Expr::Const(3)),
+            ));
+        }
+        stmts.push(Stmt::Ret {
+            value: if blocked {
+                Expr::bin(BinOp::Xor, Expr::reg(42, 64), Expr::reg(46, 64))
+            } else {
+                Expr::reg(46, 64)
+            },
+        });
+        let original = synthetic_ir(
+            &format!("{name}_{blocked}"),
+            vec![
+                Param {
+                    index: 7,
+                    name: "x".into(),
+                    ty: CType::I64,
+                },
+                Param {
+                    index: 6,
+                    name: "y".into(),
+                    ty: CType::I64,
+                },
+            ],
+            CType::I64,
+            stmts,
+        );
+        let mut ir = original.clone();
+        velk::passes::division::recover_divisions(&mut ir);
+        velk::passes::dce::dce(&mut ir);
+        let values = [
+            i64::MIN,
+            i64::MIN + 7,
+            -17,
+            -9,
+            -8,
+            -7,
+            -1,
+            0,
+            1,
+            7,
+            8,
+            9,
+            17,
+            i64::MAX,
+        ];
+        let inputs = values
+            .iter()
+            .flat_map(|x| values.iter().map(move |y| vec![*x as u64, *y as u64]))
+            .collect();
+        let mut candidate = printed_candidate(ir, inputs);
+        let operator = if remainder { "x % 0x8" } else { "x / 0x8" };
+        assert!(candidate.code.contains(operator), "{}", candidate.code);
+        candidate.ir = original;
+        candidates.push(candidate);
+    }
+    check_candidates(name, candidates, Mode::Registers, &[]);
+}
+
+#[test]
 fn printed_call_outputs_preserve_dependencies_and_run_once() {
     use velk::ir::{CallOutput, RegRef, Registers, VARIABLE_BASE};
 
