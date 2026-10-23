@@ -11,7 +11,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 FIX=tests/fixtures
 
-BIN=${BIN:-${CARGO_TARGET_DIR:-target}/debug/velk}
+BIN=${BIN:-}
 EXPECT=tests/expect/ladder.tsv
 ONLY=
 
@@ -24,7 +24,11 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-cargo build --quiet || { echo "cargo build failed" >&2; exit 1; }
+# A binary given in BIN is checked as built; otherwise the debug build is.
+if [ -z "$BIN" ]; then
+  BIN=${CARGO_TARGET_DIR:-target}/debug/velk
+  cargo build --quiet || { echo "cargo build failed" >&2; exit 1; }
+fi
 [ -x "$BIN" ] || { echo "missing $BIN" >&2; exit 1; }
 
 rendered() {  # fixture function -> pseudo-C (function "-" gives the `functions` listing)

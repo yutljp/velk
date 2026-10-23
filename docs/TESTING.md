@@ -13,12 +13,13 @@ From the repository root:
 CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 cargo test --release
 cargo fmt -- --check
 CARGO_BUILD_JOBS=2 cargo clippy --release --all-targets -- -D warnings
-CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 ./tests/smoke.sh
-CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=1 ./tests/ladder.sh
+BIN=target/release/velk ./tests/smoke.sh
+BIN=target/release/velk ./tests/ladder.sh
 ```
 
-The smoke script also builds and runs debug tests, exercises CLI/MCP, and
-runs the local performance check. The ladder checks expected behavior at
+The smoke script exercises the CLI and MCP and runs the local performance
+check; it does not run the unit tests again. Both scripts check the binary
+given in `BIN`, or build and check the debug binary when `BIN` is not set. The ladder checks expected behavior at
 several difficulty levels; `known_*` entries are explicitly unfinished
 targets. Run test functions serially: one recompilation test already
 compiles the two optimization levels in parallel.

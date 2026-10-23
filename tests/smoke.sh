@@ -10,10 +10,11 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 ok()   { echo "ok: $*"; }
 
 command -v cargo >/dev/null 2>&1 || fail "cargo not found"
-BIN=${BIN:-${CARGO_TARGET_DIR:-target}/debug/velk}
-
-cargo build --quiet
-cargo test --quiet 2>/dev/null || fail "unit tests"
+# A binary given in BIN is checked as built; otherwise the debug build is.
+if [ -z "${BIN:-}" ]; then
+  BIN=${CARGO_TARGET_DIR:-target}/debug/velk
+  cargo build --quiet
+fi
 [ -x "$BIN" ] || fail "binary not built"
 
 # 1) PE64: format, ISA, function count
