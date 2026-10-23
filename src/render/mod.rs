@@ -3694,7 +3694,7 @@ mod tests {
             text.contains("= rbx; /* also returned by the call */"),
             "{text}"
         );
-        assert!(text.contains("v2 = call_values[1];"), "{text}");
+        assert!(text.contains("v2 = rbx;"), "{text}");
         assert!(text.contains("return v1; /* also returns v2 */"), "{text}");
     }
 
@@ -4238,7 +4238,7 @@ mod tests {
             "fs_base = velk_x86_gs_base();",
             "    uint64_t fs_base_3 = velk_x86_fs_base_3();\n",
             "    uint64_t gs_base = velk_x86_gs_base_2();\n",
-            "    uint64_t *const fs_base_2 = (uint64_t *)(uintptr_t)0x1000;\n",
+            "    uint64_t *const fs_base_2 = (uint64_t *)0x1000ULL;\n",
             "fs_base_3 + fs_base",
             "gs_base + *fs_base_2",
         ] {

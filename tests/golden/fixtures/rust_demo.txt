@@ -550,7 +550,7 @@
 /* velk pseudo-C: rust_demo::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
 void rust_demo__main(void) {
-    uint64_t *const qword_55aa8 = (uint64_t *)(uintptr_t)0x55aa8;
+    uint64_t *const qword_55aa8 = (uint64_t *)0x55aa8ULL;
     uint32_t local_0; /* [sp-14] */
     uint32_t *local_1; /* [sp-10] */
     int64_t local_2; /* [sp-8] */

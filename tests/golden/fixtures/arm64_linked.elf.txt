@@ -6,7 +6,7 @@
 /* velk pseudo-C: pick @ 0x21019c */
 /* ref: 0x2201b0 -> 0x200158 "velk-aarch64-string" */
 int32_t pick(void) {
-    uint64_t *const kName = (uint64_t *)(uintptr_t)0x2201b0;
+    uint64_t *const kName = (uint64_t *)0x2201b0ULL;
 
     return *(uint8_t *)(*kName + 0x2);
 }

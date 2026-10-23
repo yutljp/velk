@@ -8,7 +8,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2202e8 .bss */
 int32_t dense(int32_t a0) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x2202e8;
+    uint32_t *const g_sink = (uint32_t *)0x2202e8ULL;
     int32_t v4;
     int32_t v8;
 

@@ -6,7 +6,7 @@
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
 int32_t dense(int32_t a0) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x14c;
+    uint32_t *const g_sink = (uint32_t *)0x14cULL;
     int32_t v5;
     int32_t v9;
 

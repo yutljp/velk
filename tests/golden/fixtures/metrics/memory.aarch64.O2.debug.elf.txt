@@ -217,7 +217,7 @@ fn string_length @ 0x2102d0 (size 24)
 /* velk pseudo-C: grid_get @ 0x2102e8 */
 /* ref: 0x220350 .bss */
 int grid_get(int row, int col) {
-    uint32_t *const grid = (uint32_t *)(uintptr_t)0x220350;
+    uint32_t *const grid = (uint32_t *)0x220350ULL;
 
     return grid[(row & 0x3) * 0x8 + (col & 0x7)];
 }
@@ -237,7 +237,7 @@ fn grid_get @ 0x2102e8 (size 28)
 /* velk pseudo-C: grid_set @ 0x210304 */
 /* ref: 0x220350 .bss */
 void grid_set(int row, int col, int value) {
-    uint32_t *const grid = (uint32_t *)(uintptr_t)0x220350;
+    uint32_t *const grid = (uint32_t *)0x220350ULL;
 
     grid[(row & 0x3) * 0x8 + (col & 0x7)] = value;
 }

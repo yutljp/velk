@@ -3567,6 +3567,450 @@ fn printed_candidate(ir: FunctionIr, inputs: Vec<Vec<u64>>) -> Candidate {
 }
 
 #[test]
+fn printed_call_outputs_preserve_dependencies_and_run_once() {
+    use velk::ir::{CallOutput, RegRef, Registers, VARIABLE_BASE};
+
+    let (first, second) = (VARIABLE_BASE, VARIABLE_BASE + 1);
+    let output = |register, index, width| CallOutput {
+        register,
+        dest: RegRef { index, width },
+    };
+    let mut text = String::from(HEADER);
+    text.push_str(
+        r#"
+static uint64_t output_calls, output_argument;
+static uint64_t output_callee(uint64_t value) {
+    ++output_calls;
+    output_argument = value;
+    return value ^ UINT64_C(0x8123456789abcdef);
+}
+"#,
+    );
+    let symbols = velk::render::Symbols {
+        functions: [(0x1000, "output_callee".to_owned())].into(),
+        function_returns: [(0x1000, CType::U64)].into(),
+        ..Default::default()
+    };
+    for (name, outputs, argument, direct) in [
+        (
+            "independent_outputs",
+            vec![output(2, second, 32), output(0, first, 64)],
+            Expr::reg(7, 64),
+            true,
+        ),
+        (
+            "swapped_outputs",
+            vec![output(7, 6, 64), output(6, 7, 64)],
+            Expr::reg(7, 64),
+            false,
+        ),
+        (
+            "later_source",
+            vec![output(0, 7, 64), output(7, second, 64)],
+            Expr::reg(6, 64),
+            false,
+        ),
+        (
+            "destination_argument",
+            vec![output(0, first, 64), output(6, second, 32)],
+            Expr::bin(BinOp::Add, Expr::reg(first, 64), Expr::Const(1)),
+            false,
+        ),
+    ] {
+        let (returned_first, returned_second) = match name {
+            "swapped_outputs" => (7, 6),
+            "later_source" => (7, second),
+            _ => (first, second),
+        };
+        let ir = synthetic_ir(
+            name,
+            vec![
+                Param {
+                    index: 7,
+                    name: "left".to_owned(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 6,
+                    name: "right".to_owned(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: first,
+                        width: 64,
+                    },
+                    value: Expr::reg(7, 64),
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: second,
+                        width: 64,
+                    },
+                    value: Expr::reg(6, 64),
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 2,
+                        width: 64,
+                    },
+                    value: Expr::reg(6, 64),
+                },
+                Stmt::Call {
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::SysV,
+                    args: Some(vec![argument]),
+                    floats_named: true,
+                    outputs,
+                    clobbers: Some(Registers(if direct { 5 } else { 1 })),
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(
+                        if name == "swapped_outputs" {
+                            BinOp::Sub
+                        } else {
+                            BinOp::Xor
+                        },
+                        Expr::reg(returned_first, 64),
+                        Expr::reg(returned_second, 64),
+                    ),
+                },
+            ],
+        );
+        let printed = velk::render::render(&ir, &[], &symbols, &[]);
+        assert_eq!(!printed.contains("call_values"), direct, "{printed}");
+        assert_eq!(printed.matches("output_callee(").count(), 1, "{printed}");
+        if direct {
+            assert!(printed.contains("v1 = output_callee(left);"), "{printed}");
+            assert!(
+                printed.contains("v2 = (uint32_t)(rdx); /* also returned by the call */"),
+                "{printed}"
+            );
+        }
+        text.push_str(&printed);
+    }
+    text.push_str(
+        r#"
+int main(void) {
+    uint64_t left, right;
+    while (scanf("%" SCNx64 " %" SCNx64, &left, &right) == 2) {
+        uint64_t expected[] = {
+            (left ^ UINT64_C(0x8123456789abcdef)) ^ (uint32_t)right,
+            right - left,
+            (right ^ UINT64_C(0x8123456789abcdef)) ^ left,
+            ((left + 1) ^ UINT64_C(0x8123456789abcdef)) ^ (uint32_t)right
+        };
+        uint64_t arguments[] = {left, left, right, left + 1};
+        uint64_t (*functions[])(uint64_t, uint64_t) = {
+            independent_outputs, swapped_outputs, later_source, destination_argument
+        };
+        for (unsigned i = 0; i < 4; ++i) {
+            output_calls = 0;
+            uint64_t actual = functions[i](left, right);
+            if (actual != expected[i] || output_calls != 1 || output_argument != arguments[i]) return 1;
+        }
+    }
+    puts("ok");
+    return 0;
+}
+"#,
+    );
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("call-outputs");
+    for level in LEVELS {
+        let program = build(&source, &scratch, level, &["-Werror=int-conversion"]);
+        assert_eq!(
+            run(
+                &program,
+                "0 100000005\nffffffffffffffff 8123456789abcdef\n31 17\n"
+            ),
+            "ok\n"
+        );
+    }
+    std::fs::remove_dir_all(&scratch).ok();
+}
+
+#[test]
+fn printed_address_literals_preserve_all_bits() {
+    let mut text = String::from(
+        "typedef __UINT64_TYPE__ uint64_t;\ntypedef __UINTPTR_TYPE__ uintptr_t;\n_Static_assert(sizeof(uint64_t) == 8 && sizeof(uintptr_t) == 8, \"64-bit addresses\");\nint main(void) {\n",
+    );
+    for address in [
+        0,
+        0x7fff_ffff,
+        0x8000_0000,
+        0xffff_ffff,
+        0x1_0000_0000,
+        0x8000_0000_0000_0000,
+        u64::MAX - 1,
+    ] {
+        let ir = synthetic_ir(
+            "address_literal",
+            Vec::new(),
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::Const(address)),
+                    width: 8,
+                    signed: false,
+                },
+            }],
+        );
+        let printed = velk::render::render(&ir, &[], &Default::default(), &[(address, 1)]);
+        let declaration = printed
+            .lines()
+            .find(|line| line.contains("*const "))
+            .unwrap_or_else(|| panic!("{printed}"));
+        assert!(
+            declaration.contains(&format!("(uint64_t *)0x{address:x}ULL")),
+            "{printed}"
+        );
+        let name = declaration
+            .split("*const ")
+            .nth(1)
+            .unwrap()
+            .split_whitespace()
+            .next()
+            .unwrap();
+        writeln!(text, "{{\n{declaration}\nif ((uint64_t){name} != 0x{address:x}ULL || {name} != (uint64_t *)(uintptr_t)0x{address:x}) return 1;\n}}").unwrap();
+    }
+    text.push_str("return 0;\n}\n");
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("address-literals");
+    for level in LEVELS {
+        let program = build(&source, &scratch, level, &["-Wall", "-Wextra", "-Werror"]);
+        assert_eq!(run(&program, ""), "");
+        let cross = Command::new(COMPILER)
+            .args([
+                "-target",
+                "aarch64-none-elf",
+                "-ffreestanding",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                level,
+                "-c",
+            ])
+            .arg(scratch.join(format!("check{level}.c")))
+            .arg("-o")
+            .arg(scratch.join(format!("address{level}.o")))
+            .output()
+            .expect("a C compiler");
+        assert!(
+            cross.status.success(),
+            "{}",
+            String::from_utf8_lossy(&cross.stderr)
+        );
+    }
+    std::fs::remove_dir_all(&scratch).ok();
+}
+
+#[test]
+fn printed_call_address_conversions_preserve_types_and_widths() {
+    use velk::ir::{CallOutput, RegRef, Registers, VARIABLE_BASE};
+
+    let dest = VARIABLE_BASE;
+    let pointer = CType::pointer_to(CType::U64);
+    let mut text = String::from(HEADER);
+    text.push_str(
+        r#"
+static uint64_t address_calls, address_object = UINT64_C(0x123456789abcdef);
+static uint64_t address_integer(uint64_t value) { ++address_calls; return value; }
+static uint64_t *address_pointer(uint64_t value) { ++address_calls; return (uint64_t *)value; }
+static uint64_t *address_allocate(uint64_t value) { ++address_calls; (void)value; return &address_object; }
+static uint32_t address_unsigned(uint64_t value) { ++address_calls; return (uint32_t)value; }
+static int32_t address_signed(uint64_t value) { ++address_calls; return (int32_t)value; }
+"#,
+    );
+    let symbols = velk::render::Symbols {
+        functions: [
+            (0x1000, "address_integer".to_owned()),
+            (0x2000, "address_pointer".to_owned()),
+            (0x3000, "address_allocate".to_owned()),
+            (0x4000, "address_unsigned".to_owned()),
+            (0x5000, "address_signed".to_owned()),
+        ]
+        .into(),
+        function_returns: [
+            (0x1000, CType::U64),
+            (0x2000, pointer.clone()),
+            (0x3000, pointer.clone()),
+            (0x4000, CType::U32),
+            (0x5000, CType::I32),
+        ]
+        .into(),
+        ..Default::default()
+    };
+    for (name, target, width, stored, returned) in [
+        (
+            "integer_to_pointer",
+            0x1000,
+            64,
+            pointer.clone(),
+            pointer.clone(),
+        ),
+        (
+            "pointer_to_pointer",
+            0x2000,
+            64,
+            pointer.clone(),
+            pointer.clone(),
+        ),
+        ("pointer_to_integer", 0x2000, 64, CType::U64, CType::U64),
+        ("narrow_pointer", 0x2000, 32, CType::U64, CType::U64),
+        ("unsigned_integer", 0x4000, 32, CType::U32, CType::U32),
+        ("signed_integer", 0x5000, 32, CType::I32, CType::I32),
+        (
+            "allocated_pointer",
+            0x3000,
+            64,
+            pointer.clone(),
+            pointer.clone(),
+        ),
+    ] {
+        for mode in ["scalar", "direct", "snapshot"] {
+            let second = if mode == "snapshot" { 2 } else { dest + 1 };
+            let mut outputs = vec![CallOutput {
+                register: 0,
+                dest: RegRef { index: dest, width },
+            }];
+            if mode != "scalar" {
+                outputs.push(CallOutput {
+                    register: 2,
+                    dest: RegRef {
+                        index: second,
+                        width: 32,
+                    },
+                });
+            }
+            let mut stmts = vec![Stmt::Call {
+                target: Some(target),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![Expr::reg(7, 64)]),
+                floats_named: true,
+                outputs,
+                clobbers: Some(Registers(1)),
+                via: None,
+            }];
+            if mode != "scalar" {
+                stmts.push(Stmt::Store {
+                    addr: Expr::reg(6, 64),
+                    value: Expr::reg(second, 64),
+                    width: 8,
+                });
+            }
+            stmts.push(Stmt::Ret {
+                value: Expr::reg(dest, width),
+            });
+            let mut ir = synthetic_ir(
+                &format!("{name}_{mode}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "value".to_owned(),
+                        ty: CType::U64,
+                    },
+                    Param {
+                        index: 2,
+                        name: "saved".to_owned(),
+                        ty: CType::U64,
+                    },
+                    Param {
+                        index: 6,
+                        name: "sink".to_owned(),
+                        ty: pointer.clone(),
+                    },
+                ],
+                returned.clone(),
+                stmts,
+            );
+            ir.value_types.insert(dest, stored.clone());
+            let printed = velk::render::render(&ir, &[], &symbols, &[]);
+            assert!(!printed.contains("uintptr_t"), "{printed}");
+            assert_eq!(
+                printed.contains("call_values"),
+                mode == "snapshot",
+                "{printed}"
+            );
+            if matches!(name, "pointer_to_pointer" | "allocated_pointer") && mode != "snapshot" {
+                let callee = &symbols.functions[&target];
+                let assignment = if mode == "scalar" { "return" } else { "v1 =" };
+                assert!(
+                    printed.contains(&format!("{assignment} {callee}(value);")),
+                    "{printed}"
+                );
+            }
+            if matches!(name, "unsigned_integer" | "signed_integer") && mode == "direct" {
+                assert!(
+                    printed.contains(&format!("v1 = {}(value);", symbols.functions[&target])),
+                    "{printed}"
+                );
+            }
+            text.push_str(&printed);
+        }
+    }
+    text.push_str(
+        r#"
+int main(void) {
+    uint64_t value;
+    while (scanf("%" SCNx64, &value) == 1) {
+"#,
+    );
+    for mode in ["scalar", "direct", "snapshot"] {
+        writeln!(text, r#"{{
+        uint64_t sink = 0;
+        address_calls = 0;
+        if ((uint64_t)integer_to_pointer_{mode}(value, value, &sink) != value) return 1;
+        if ((uint64_t)pointer_to_pointer_{mode}(value, value, &sink) != value) return 2;
+        if (pointer_to_integer_{mode}(value, value, &sink) != value) return 3;
+        if (narrow_pointer_{mode}(value, value, &sink) != (uint32_t)value) return 4;
+        if (unsigned_integer_{mode}(value, value, &sink) != (uint32_t)value) return 7;
+        if ((uint32_t)signed_integer_{mode}(value, value, &sink) != (uint32_t)value) return 8;
+        uint64_t *allocated = allocated_pointer_{mode}(value, value, &sink);
+        if (allocated != &address_object || *allocated != address_object || address_calls != 7) return 5;
+        if (sink != {}) return 6;
+        }}"#, if mode == "scalar" { "0" } else { "(uint32_t)value" }).unwrap();
+    }
+    text.push_str("}\nputs(\"ok\");\nreturn 0;\n}\n");
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("call-addresses");
+    for level in LEVELS {
+        let program = build(
+            &source,
+            &scratch,
+            level,
+            &[
+                "-Werror=int-conversion",
+                "-Werror=incompatible-pointer-types",
+            ],
+        );
+        assert_eq!(
+            run(
+                &program,
+                "0\n7fffffff\n80000000\nffffffff\n100000000\n8123456789abcdef\nffffffffffffffff\n"
+            ),
+            "ok\n"
+        );
+    }
+    std::fs::remove_dir_all(&scratch).ok();
+}
+
+#[test]
 fn printed_physical_call_arguments_preserve_zero_extended_values() {
     let mut text = String::from(HEADER);
     text.push_str(

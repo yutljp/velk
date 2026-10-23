@@ -261,17 +261,55 @@ fn precision(ty: Option<&crate::ir::CType>) -> Option<crate::ir::Precision> {
     }
 }
 
-fn bits(text: String, index: u16, ctx: &Ctx<'_>) -> String {
-    if let Some(precision) = ctx.floats.get(&index) {
-        super::expr::float_bits(text, *precision).text
-    } else if ctx.pointer_types.contains_key(&index) {
-        format!("(uint64_t)(uintptr_t){text}")
-    } else {
-        text
+enum ValueType {
+    Integer(u32, bool),
+    Pointer(String),
+    Float(crate::ir::Precision),
+}
+
+impl ValueType {
+    fn returned(call: &Stmt, ctx: &Ctx<'_>) -> Self {
+        let ty = return_type(call, ctx);
+        if let Some(precision) = precision(ty) {
+            Self::Float(precision)
+        } else if let Some(ty) = ty.filter(|ty| ty.is_pointer()) {
+            Self::Pointer(ty.to_string().trim_end().to_owned())
+        } else {
+            let (bits, signed) = ty
+                .and_then(crate::ir::CType::integer)
+                .unwrap_or((64, false));
+            Self::Integer(bits, signed)
+        }
+    }
+
+    fn register(index: u16, ctx: &Ctx<'_>) -> Self {
+        if let Some(precision) = ctx.floats.get(&index) {
+            Self::Float(*precision)
+        } else if let Some(ty) = ctx.pointer_types.get(&index) {
+            Self::Pointer(ty.clone())
+        } else {
+            let declared = ctx.declared.get(&index);
+            Self::Integer(
+                declared.map_or(64, |ty| ty.bits),
+                declared.is_some_and(|ty| ty.signed),
+            )
+        }
     }
 }
 
-fn projected(value: String, width: u8) -> String {
+fn bits(text: String, ty: &ValueType) -> String {
+    match ty {
+        ValueType::Float(precision) => super::expr::float_bits(text, *precision).text,
+        ValueType::Pointer(_) => format!("(uint64_t){text}"),
+        ValueType::Integer(_, _) => text,
+    }
+}
+
+fn projected(value: String, width: u8, ty: &ValueType) -> String {
+    let value = bits(value, ty);
+    if matches!(ty, ValueType::Integer(bits, false) if *bits == u32::from(width)) {
+        return value;
+    }
     match width {
         64 => value,
         width @ (8 | 16 | 32) => format!("({})({value})", super::type_of(width / 8, false)),
@@ -282,23 +320,54 @@ fn projected(value: String, width: u8) -> String {
     }
 }
 
-fn assigned_value(output: &CallOutput, value: String, ctx: &Ctx<'_>) -> String {
-    let value = projected(value, output.dest.width);
+fn assigned_value(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<'_>) -> String {
+    if let ValueType::Integer(bits, signed) = ty
+        && u32::from(output.dest.width) >= *bits
+        && ctx.declared.get(&output.dest.index).is_some_and(|stored| {
+            stored.integer && stored.bits == *bits && stored.signed == *signed
+        })
+    {
+        return value;
+    }
+    if let ValueType::Float(precision) = ty
+        && output.dest.width >= precision.bits()
+        && ctx.floats.get(&output.dest.index) == Some(precision)
+    {
+        return value;
+    }
+    if output.dest.width == 64
+        && let ValueType::Pointer(source) = ty
+        && let Some(target) = ctx.pointer_types.get(&output.dest.index)
+    {
+        return if source == target {
+            value
+        } else {
+            format!("({target})({value})")
+        };
+    }
+    let value = projected(value, output.dest.width, ty);
     if let Some(precision) = ctx.floats.get(&output.dest.index) {
         let (float, integer) = match precision {
             crate::ir::Precision::Single => ("float", "uint32_t"),
             crate::ir::Precision::Double => ("double", "uint64_t"),
         };
         format!("((union {{ {integer} bits; {float} value; }}){{ .bits = {value} }}).value")
-    } else if let Some(ty) = ctx.pointer_types.get(&output.dest.index) {
-        format!("({ty})(uintptr_t)({value})")
+    } else if let Some(target) = ctx.pointer_types.get(&output.dest.index) {
+        if matches!(output.dest.width, 8 | 16 | 32)
+            || matches!(ty, ValueType::Integer(bits, _) if *bits < 64)
+            || matches!(ty, ValueType::Float(crate::ir::Precision::Single))
+        {
+            format!("({target})(uintptr_t)({value})")
+        } else {
+            format!("({target})({value})")
+        }
     } else {
         value
     }
 }
 
-fn commit(output: &CallOutput, value: String, ctx: &Ctx<'_>) -> String {
-    let value = assigned_value(output, value, ctx);
+fn commit(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<'_>) -> String {
+    let value = assigned_value(output, value, ty, ctx);
     format!(
         "{} = {value};",
         ctx.register(output.dest.index, output.dest.width)
@@ -312,26 +381,27 @@ pub(super) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
     }
     let output = scalar_output(call, ctx)?;
     let value = expression(call, ctx);
-    let value = if return_type(call, ctx).is_some_and(crate::ir::CType::is_pointer) {
-        format!("(uint64_t)(uintptr_t){value}")
-    } else {
-        value
-    };
+    let ty = ValueType::returned(call, ctx);
     if let Some(declared) = ctx.declared.get(&dest.index)
         && declared.integer
         && (declared.bits < 64 || dest.width < 64)
     {
         let value = if declared.bits <= u32::from(dest.width) {
-            value
+            bits(value, &ty)
         } else {
-            projected(value, dest.width)
+            projected(value, dest.width, &ty)
         };
+        if u32::from(dest.width) >= declared.bits
+            && matches!(ty, ValueType::Integer(bits, signed) if bits == declared.bits && signed == declared.signed)
+        {
+            return Some(value);
+        }
         return Some(format!(
             "({})({value})",
             super::type_of((declared.bits / 8) as u8, declared.signed)
         ));
     }
-    Some(assigned_value(output, value, ctx))
+    Some(assigned_value(output, value, &ty, ctx))
 }
 
 pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
@@ -340,6 +410,12 @@ pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<Strin
     {
         return None;
     }
+    if dest.width == 64
+        && let Some(pointer) = &ctx.ret_pointer
+        && ctx.pointer_types.get(&dest.index) == Some(pointer)
+    {
+        return Some(format!("return {};", captured(call, ctx)?));
+    }
     if let (Some(returned), Some(stored)) = (ctx.returned, ctx.declared.get(&dest.index))
         && returned.integer
         && stored.integer
@@ -347,7 +423,10 @@ pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<Strin
         && u32::from(dest.width) >= returned.bits
         && stored.bits >= returned.bits
     {
-        return Some(format!("return {};", expression(call, ctx)));
+        return Some(format!(
+            "return {};",
+            bits(expression(call, ctx), &ValueType::returned(call, ctx))
+        ));
     }
     if let (Some(returned), Some(stored)) = (ctx.returned, ctx.declared.get(&dest.index))
         && returned.integer
@@ -358,7 +437,11 @@ pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<Strin
     {
         return Some(format!(
             "return {};",
-            projected(expression(call, ctx), dest.width)
+            projected(
+                expression(call, ctx),
+                dest.width,
+                &ValueType::returned(call, ctx)
+            )
         ));
     }
     let text = super::returned(value, ctx);
@@ -387,28 +470,61 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     }
     let scalar = scalar_output(call, ctx);
     let preserved = call.preserved_output_sources();
-    let scalar_bits = || match precision(return_type(call, ctx)) {
-        Some(precision) => super::expr::float_bits(text.clone(), precision).text,
-        None if return_type(call, ctx).is_some_and(crate::ir::CType::is_pointer) => {
-            format!("(uint64_t)(uintptr_t){text}")
-        }
-        None => text.clone(),
-    };
+    let scalar_type = ValueType::returned(call, ctx);
     if let [(index, output)] = used.as_slice()
         && scalar == Some(*output)
         && !preserved.iter().any(|(preserved, _)| preserved == index)
     {
-        if precision(return_type(call, ctx)) == ctx.floats.get(&output.dest.index).copied()
-            && return_type(call, ctx).is_some_and(crate::ir::CType::is_pointer)
-                == ctx.pointer_types.contains_key(&output.dest.index)
-            && output.dest.width == 64
-        {
-            return format!(
-                "{} = {text};",
-                ctx.register(output.dest.index, output.dest.width)
-            );
+        return commit(output, text, &scalar_type, ctx);
+    }
+    let (_, mut reads) = crate::ir::visit::statement_registers(call);
+    reads.extend(
+        call.call_outputs()
+            .iter()
+            .filter_map(|output| (scalar != Some(output)).then_some(output.register)),
+    );
+    let mut destinations = HashSet::new();
+    if used.iter().all(|(_, output)| {
+        output.dest.index >= VARIABLE_BASE
+            && !ctx
+                .declared
+                .get(&output.dest.index)
+                .is_some_and(|ty| ty.param)
+            && destinations.insert(output.dest.index)
+            && !reads.contains(&output.dest.index)
+    }) {
+        let primary = scalar.filter(|output| {
+            used.iter()
+                .any(|(index, used)| used == output && !preserved.iter().any(|(at, _)| at == index))
+        });
+        let mut lines = match primary {
+            Some(output) => vec![commit(output, text, &scalar_type, ctx)],
+            None => vec![format!("{text};")],
+        };
+        for (index, output) in &used {
+            if primary == Some(*output) {
+                continue;
+            }
+            let (source, ty) = match preserved.iter().find(|(at, _)| at == index) {
+                Some((_, source)) if ctx.names.contains_key(source) => {
+                    (ctx.register(*source, 64), ValueType::register(*source, ctx))
+                }
+                _ => (
+                    ctx.call_outputs.sources[&output.register].clone(),
+                    ValueType::Integer(64, false),
+                ),
+            };
+            lines.push(format!(
+                "{}{}",
+                commit(output, source, &ty, ctx),
+                if preserved.iter().any(|(at, _)| at == index) {
+                    ""
+                } else {
+                    " /* also returned by the call */"
+                },
+            ));
         }
-        return commit(output, scalar_bits(), ctx);
+        return lines.join("\n");
     }
     let temporary = &ctx.call_outputs.temporary;
     let mut lines = vec![
@@ -418,7 +534,10 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     for (at, (index, _)) in used.iter().enumerate() {
         if let Some((_, source)) = preserved.iter().find(|(preserved, _)| preserved == index) {
             let value = match ctx.names.get(source) {
-                Some(_) => bits(ctx.register(*source, 64), *source, ctx),
+                Some(_) => bits(
+                    ctx.register(*source, 64),
+                    &ValueType::register(*source, ctx),
+                ),
                 None => ctx.call_outputs.sources[source].clone(),
             };
             lines.push(format!("    {temporary}[{at}] = {value};"));
@@ -428,7 +547,10 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
         scalar == Some(*output) && !preserved.iter().any(|(preserved, _)| preserved == index)
     });
     match scalar_at {
-        Some((at, _)) => lines.push(format!("    {temporary}[{at}] = {};", scalar_bits())),
+        Some((at, _)) => lines.push(format!(
+            "    {temporary}[{at}] = {};",
+            bits(text.clone(), &scalar_type)
+        )),
         None => lines.push(format!("    {text};")),
     }
     for (at, (index, output)) in used.iter().enumerate() {
@@ -443,7 +565,12 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     for (at, (_, output)) in used.iter().enumerate() {
         lines.push(format!(
             "    {}",
-            commit(output, format!("{temporary}[{at}]"), ctx)
+            commit(
+                output,
+                format!("{temporary}[{at}]"),
+                &ValueType::Integer(64, false),
+                ctx
+            )
         ));
     }
     lines.push("}".to_owned());
@@ -739,10 +866,8 @@ mod tests {
             " v1;",
             " v2;",
             "uint64_t rdx;",
-            "call_values[1] = sub_1000();",
-            "call_values[0] = rdx;",
-            "v2 = (uint32_t)(call_values[0]);",
-            "v1 = call_values[1];",
+            "v1 = sub_1000();",
+            "v2 = (uint32_t)(rdx); /* also returned by the call */",
         ] {
             assert!(text.contains(expected), "{expected}: {text}");
         }
@@ -900,7 +1025,7 @@ mod tests {
         }];
         let text = crate::render::render(&ir, &[], &Default::default(), &[]);
         assert!(text.contains("uint64_t rdx_2;"), "{text}");
-        assert!(text.contains("call_values[0] = rdx_2;"), "{text}");
+        assert!(text.contains("v1 = rdx_2;"), "{text}");
         assert!(!text.contains("call_values[0] = rdx;"), "{text}");
     }
 

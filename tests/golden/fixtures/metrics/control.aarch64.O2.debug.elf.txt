@@ -112,7 +112,7 @@ fn cleanup_on_error @ 0x210238 (size 32)
 /* velk pseudo-C: fallthrough @ 0x210258 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
-    uint32_t *const dword_200120 = (uint32_t *)(uintptr_t)0x200120;
+    uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
 
     if ((uint32_t)x > 0x3) {
         return 0xffffffff;

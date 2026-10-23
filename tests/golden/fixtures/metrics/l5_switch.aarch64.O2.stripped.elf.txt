@@ -24,7 +24,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
 int32_t sub_210304(int32_t a0) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     if ((uint32_t)(a0 - 0xa) > 0xf) {
         *dword_220554 = 0x0;
@@ -155,7 +155,7 @@ fn <unnamed> @ 0x210304 (size 200)
 /* velk pseudo-C: sub_2103cc @ 0x2103cc */
 /* ref: 0x220554 .bss */
 void sub_2103cc(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 += 0xb;
 }
@@ -176,7 +176,7 @@ fn <unnamed> @ 0x2103cc (size 20)
 /* velk pseudo-C: sub_2103e0 @ 0x2103e0 */
 /* ref: 0x220554 .bss */
 void sub_2103e0(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 ^= 0x12;
 }
@@ -197,7 +197,7 @@ fn <unnamed> @ 0x2103e0 (size 24)
 /* velk pseudo-C: sub_2103f8 @ 0x2103f8 */
 /* ref: 0x220554 .bss */
 void sub_2103f8(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 -= 0x19;
 }
@@ -218,7 +218,7 @@ fn <unnamed> @ 0x2103f8 (size 20)
 /* velk pseudo-C: sub_21040c @ 0x21040c */
 /* ref: 0x220554 .bss */
 void sub_21040c(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 |= 0x20;
 }
@@ -239,7 +239,7 @@ fn <unnamed> @ 0x21040c (size 20)
 /* velk pseudo-C: sub_210420 @ 0x210420 */
 /* ref: 0x220554 .bss */
 void sub_210420(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 += 0x27;
 }
@@ -260,7 +260,7 @@ fn <unnamed> @ 0x210420 (size 20)
 /* velk pseudo-C: sub_210434 @ 0x210434 */
 /* ref: 0x220554 .bss */
 void sub_210434(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 ^= 0x2e;
 }
@@ -281,7 +281,7 @@ fn <unnamed> @ 0x210434 (size 24)
 /* velk pseudo-C: sub_21044c @ 0x21044c */
 /* ref: 0x220554 .bss */
 void sub_21044c(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 -= 0x35;
 }
@@ -302,7 +302,7 @@ fn <unnamed> @ 0x21044c (size 20)
 /* velk pseudo-C: sub_210460 @ 0x210460 */
 /* ref: 0x220554 .bss */
 void sub_210460(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 |= 0x3c;
 }
@@ -323,7 +323,7 @@ fn <unnamed> @ 0x210460 (size 20)
 /* velk pseudo-C: sub_210474 @ 0x210474 */
 /* ref: 0x220554 .bss */
 void sub_210474(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 += 0x43;
 }
@@ -344,7 +344,7 @@ fn <unnamed> @ 0x210474 (size 20)
 /* velk pseudo-C: sub_210488 @ 0x210488 */
 /* ref: 0x220554 .bss */
 void sub_210488(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 ^= 0x4a;
 }
@@ -365,7 +365,7 @@ fn <unnamed> @ 0x210488 (size 24)
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 /* ref: 0x220554 .bss */
 void sub_2104a0(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 -= 0x51;
 }
@@ -386,7 +386,7 @@ fn <unnamed> @ 0x2104a0 (size 20)
 /* velk pseudo-C: sub_2104b4 @ 0x2104b4 */
 /* ref: 0x220554 .bss */
 void sub_2104b4(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 |= 0x58;
 }
@@ -407,7 +407,7 @@ fn <unnamed> @ 0x2104b4 (size 24)
 /* velk pseudo-C: sub_2104cc @ 0x2104cc */
 /* ref: 0x220554 .bss */
 void sub_2104cc(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 += 0x5f;
 }
@@ -428,7 +428,7 @@ fn <unnamed> @ 0x2104cc (size 20)
 /* velk pseudo-C: sub_2104e0 @ 0x2104e0 */
 /* ref: 0x220554 .bss */
 void sub_2104e0(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 ^= 0x66;
 }
@@ -449,7 +449,7 @@ fn <unnamed> @ 0x2104e0 (size 24)
 /* velk pseudo-C: sub_2104f8 @ 0x2104f8 */
 /* ref: 0x220554 .bss */
 void sub_2104f8(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 -= 0x6d;
 }
@@ -470,7 +470,7 @@ fn <unnamed> @ 0x2104f8 (size 20)
 /* velk pseudo-C: sub_21050c @ 0x21050c */
 /* ref: 0x220554 .bss */
 void sub_21050c(void) {
-    uint32_t *const dword_220554 = (uint32_t *)(uintptr_t)0x220554;
+    uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
     *dword_220554 |= 0x74;
 }

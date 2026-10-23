@@ -9,7 +9,7 @@
 /* velk pseudo-C: sub_2101c4 @ 0x2101c4 */
 /* ref: 0x220298 .bss */
 int32_t sub_2101c4(int32_t a0) {
-    uint32_t *const dword_220298 = (uint32_t *)(uintptr_t)0x220298;
+    uint32_t *const dword_220298 = (uint32_t *)0x220298ULL;
     int32_t v1;
     int32_t v2;
 
@@ -53,7 +53,7 @@ fn <unnamed> @ 0x2101c4 (size 60)
 /* velk pseudo-C: sub_210200 @ 0x210200 */
 /* ref: 0x220298 .bss */
 int32_t sub_210200(int32_t a0) {
-    uint32_t *const dword_220298 = (uint32_t *)(uintptr_t)0x220298;
+    uint32_t *const dword_220298 = (uint32_t *)0x220298ULL;
     int32_t v1;
     int32_t v2;
 
@@ -88,7 +88,7 @@ fn <unnamed> @ 0x210200 (size 36)
 /* velk pseudo-C: sub_210224 @ 0x210224 */
 /* ref: 0x220298 .bss */
 int32_t sub_210224(int32_t a0) {
-    uint32_t *const dword_220298 = (uint32_t *)(uintptr_t)0x220298;
+    uint32_t *const dword_220298 = (uint32_t *)0x220298ULL;
     int32_t v1;
     int32_t v2;
 

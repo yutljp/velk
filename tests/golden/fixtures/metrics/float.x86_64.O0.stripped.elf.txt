@@ -93,7 +93,7 @@ fn <unnamed> @ 0x2012c0 (size 16)
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
 /* ref: 0x200120 .rodata */
 double sub_2012d0(float a0) {
-    double *const double_200120 = (double *)(uintptr_t)0x200120;
+    double *const double_200120 = (double *)0x200120ULL;
 
     return (double)a0 * *double_200120;
 }

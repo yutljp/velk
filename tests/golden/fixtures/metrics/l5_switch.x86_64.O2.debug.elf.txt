@@ -24,7 +24,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x20250c .bss */
 int dense(int x) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
     uint64_t v1;
 
     v1 = ((x - 0xa) & 0xffffffff);
@@ -158,7 +158,7 @@ fn dense @ 0x201330 (size 167)
 /* velk pseudo-C: c0 @ 0x2013e0 */
 /* ref: 0x20250c .bss */
 void c0(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += 0xb;
 }
@@ -179,7 +179,7 @@ fn c0 @ 0x2013e0 (size 8)
 /* velk pseudo-C: c1 @ 0x2013f0 */
 /* ref: 0x20250c .bss */
 void c1(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink ^= 0x12;
 }
@@ -200,7 +200,7 @@ fn c1 @ 0x2013f0 (size 8)
 /* velk pseudo-C: c2 @ 0x201400 */
 /* ref: 0x20250c .bss */
 void c2(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += -0x19;
 }
@@ -221,7 +221,7 @@ fn c2 @ 0x201400 (size 8)
 /* velk pseudo-C: c3 @ 0x201410 */
 /* ref: 0x20250c .bss */
 void c3(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink |= 0x20;
 }
@@ -242,7 +242,7 @@ fn c3 @ 0x201410 (size 8)
 /* velk pseudo-C: c4 @ 0x201420 */
 /* ref: 0x20250c .bss */
 void c4(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += 0x27;
 }
@@ -263,7 +263,7 @@ fn c4 @ 0x201420 (size 8)
 /* velk pseudo-C: c5 @ 0x201430 */
 /* ref: 0x20250c .bss */
 void c5(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink ^= 0x2e;
 }
@@ -284,7 +284,7 @@ fn c5 @ 0x201430 (size 8)
 /* velk pseudo-C: c6 @ 0x201440 */
 /* ref: 0x20250c .bss */
 void c6(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += -0x35;
 }
@@ -305,7 +305,7 @@ fn c6 @ 0x201440 (size 8)
 /* velk pseudo-C: c7 @ 0x201450 */
 /* ref: 0x20250c .bss */
 void c7(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink |= 0x3c;
 }
@@ -326,7 +326,7 @@ fn c7 @ 0x201450 (size 8)
 /* velk pseudo-C: c8 @ 0x201460 */
 /* ref: 0x20250c .bss */
 void c8(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += 0x43;
 }
@@ -347,7 +347,7 @@ fn c8 @ 0x201460 (size 8)
 /* velk pseudo-C: c9 @ 0x201470 */
 /* ref: 0x20250c .bss */
 void c9(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink ^= 0x4a;
 }
@@ -368,7 +368,7 @@ fn c9 @ 0x201470 (size 8)
 /* velk pseudo-C: c10 @ 0x201480 */
 /* ref: 0x20250c .bss */
 void c10(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += -0x51;
 }
@@ -389,7 +389,7 @@ fn c10 @ 0x201480 (size 8)
 /* velk pseudo-C: c11 @ 0x201490 */
 /* ref: 0x20250c .bss */
 void c11(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink |= 0x58;
 }
@@ -410,7 +410,7 @@ fn c11 @ 0x201490 (size 8)
 /* velk pseudo-C: c12 @ 0x2014a0 */
 /* ref: 0x20250c .bss */
 void c12(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += 0x5f;
 }
@@ -431,7 +431,7 @@ fn c12 @ 0x2014a0 (size 8)
 /* velk pseudo-C: c13 @ 0x2014b0 */
 /* ref: 0x20250c .bss */
 void c13(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink ^= 0x66;
 }
@@ -452,7 +452,7 @@ fn c13 @ 0x2014b0 (size 8)
 /* velk pseudo-C: c14 @ 0x2014c0 */
 /* ref: 0x20250c .bss */
 void c14(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink += -0x6d;
 }
@@ -473,7 +473,7 @@ fn c14 @ 0x2014c0 (size 8)
 /* velk pseudo-C: c15 @ 0x2014d0 */
 /* ref: 0x20250c .bss */
 void c15(void) {
-    uint32_t *const g_sink = (uint32_t *)(uintptr_t)0x20250c;
+    uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
     *g_sink |= 0x74;
 }

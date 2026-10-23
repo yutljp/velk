@@ -129,10 +129,7 @@ impl Globals {
             .filter(|(_, global)| super::variables::mentions(body, &global.name))
             .map(|((address, _), global)| {
                 let ty = global.view.ty();
-                format!(
-                    "{ty} *const {} = ({ty} *)(uintptr_t)0x{address:x};",
-                    global.name
-                )
+                format!("{ty} *const {} = ({ty} *)0x{address:x}ULL;", global.name)
             })
             .collect()
     }
@@ -266,17 +263,11 @@ mod tests {
         assert_eq!(wide, globals.pointer(0x1000, View::Unsigned(8)));
         let declarations = globals.declarations(&format!("{wide} {byte} {float} {adjacent}"));
         assert_eq!(declarations.len(), 4);
+        assert!(declarations.contains(&format!("uint64_t *const {wide} = (uint64_t *)0x1000ULL;")));
+        assert!(declarations.contains(&format!("uint8_t *const {byte} = (uint8_t *)0x1000ULL;")));
+        assert!(declarations.contains(&format!("float *const {float} = (float *)0x1000ULL;")));
         assert!(declarations.contains(&format!(
-            "uint64_t *const {wide} = (uint64_t *)(uintptr_t)0x1000;"
-        )));
-        assert!(declarations.contains(&format!(
-            "uint8_t *const {byte} = (uint8_t *)(uintptr_t)0x1000;"
-        )));
-        assert!(declarations.contains(&format!(
-            "float *const {float} = (float *)(uintptr_t)0x1000;"
-        )));
-        assert!(declarations.contains(&format!(
-            "uint8_t *const {adjacent} = (uint8_t *)(uintptr_t)0x1001;"
+            "uint8_t *const {adjacent} = (uint8_t *)0x1001ULL;"
         )));
     }
 

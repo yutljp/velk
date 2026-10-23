@@ -69,7 +69,7 @@ fn pick_op @ 0x2102d4 (size 28)
 /* velk pseudo-C: apply_table @ 0x2102f0 */
 /* ref: 0x220528 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
-    uint64_t *const table = (uint64_t *)(uintptr_t)0x220528;
+    uint64_t *const table = (uint64_t *)0x220528ULL;
     int64_t v3;
 
     v3 = table[index % 0x3];
@@ -115,8 +115,8 @@ fn apply_pointer @ 0x21031c (size 32)
 /* ref: 0x200190 .rodata */
 /* ref: 0x200198 .rodata */
 int factorial(int n) {
-    uint64_t *const qword_200190 = (uint64_t *)(uintptr_t)0x200190;
-    uint64_t *const qword_200198 = (uint64_t *)(uintptr_t)0x200198;
+    uint64_t *const qword_200190 = (uint64_t *)0x200190ULL;
+    uint64_t *const qword_200198 = (uint64_t *)0x200198ULL;
     uint32_t v1;
     int32_t v2;
     uint64_t v3;

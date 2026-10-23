@@ -144,7 +144,7 @@ fn <unnamed> @ 0x2101f0 (size 140)
 /* velk pseudo-C: sub_21027c @ 0x21027c */
 /* ref: 0x2202a8 .bss */
 void sub_21027c(void) {
-    uint32_t *const dword_2202a8 = (uint32_t *)(uintptr_t)0x2202a8;
+    uint32_t *const dword_2202a8 = (uint32_t *)0x2202a8ULL;
 
     *dword_2202a8 += 0x1;
 }
@@ -165,7 +165,7 @@ fn <unnamed> @ 0x21027c (size 20)
 /* velk pseudo-C: sub_210290 @ 0x210290 */
 /* ref: 0x2202a0 -> 0x200158 "velk ladder" */
 int32_t sub_210290(void) {
-    uint64_t *const qword_2202a0 = (uint64_t *)(uintptr_t)0x2202a0;
+    uint64_t *const qword_2202a0 = (uint64_t *)0x2202a0ULL;
 
     return *(uint8_t *)(*qword_2202a0);
 }

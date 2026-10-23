@@ -69,8 +69,8 @@ fn pick_op @ 0x201310 (size 21)
 /* velk pseudo-C: apply_table @ 0x201330 */
 /* ref: 0x202610 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
-    uint8_t *const table = (uint8_t *)(uintptr_t)0x202610;
-    uint64_t *const table_u64 = (uint64_t *)(uintptr_t)0x202610;
+    uint8_t *const table = (uint8_t *)0x202610ULL;
+    uint64_t *const table_u64 = (uint64_t *)0x202610ULL;
     uint32_t v1;
     int64_t v2;
 
@@ -125,14 +125,14 @@ fn apply_pointer @ 0x201360 (size 12)
 /* ref: 0x2001c0 .rodata */
 /* ref: 0x2001c8 .rodata */
 int factorial(int n) {
-    uint64_t *const qword_200190 = (uint64_t *)(uintptr_t)0x200190;
-    uint64_t *const qword_200198 = (uint64_t *)(uintptr_t)0x200198;
-    uint64_t *const qword_2001a0 = (uint64_t *)(uintptr_t)0x2001a0;
-    uint64_t *const qword_2001a8 = (uint64_t *)(uintptr_t)0x2001a8;
-    uint64_t *const qword_2001b0 = (uint64_t *)(uintptr_t)0x2001b0;
-    uint64_t *const qword_2001b8 = (uint64_t *)(uintptr_t)0x2001b8;
-    uint64_t *const qword_2001c0 = (uint64_t *)(uintptr_t)0x2001c0;
-    uint64_t *const qword_2001c8 = (uint64_t *)(uintptr_t)0x2001c8;
+    uint64_t *const qword_200190 = (uint64_t *)0x200190ULL;
+    uint64_t *const qword_200198 = (uint64_t *)0x200198ULL;
+    uint64_t *const qword_2001a0 = (uint64_t *)0x2001a0ULL;
+    uint64_t *const qword_2001a8 = (uint64_t *)0x2001a8ULL;
+    uint64_t *const qword_2001b0 = (uint64_t *)0x2001b0ULL;
+    uint64_t *const qword_2001b8 = (uint64_t *)0x2001b8ULL;
+    uint64_t *const qword_2001c0 = (uint64_t *)0x2001c0ULL;
+    uint64_t *const qword_2001c8 = (uint64_t *)0x2001c8ULL;
     int64_t t1;
     int32_t v1;
     int32_t v2;

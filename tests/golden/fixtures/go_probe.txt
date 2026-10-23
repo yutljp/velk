@@ -1442,13 +1442,8 @@ int64_t main_main(void) {
     int64_t local_5; /* [sp-30] */
     int64_t local_6; /* [sp-10] */
 
-    {
-        uint64_t call_values[2];
-        call_values[0] = main_divmod(0x7, 0x3);
-        call_values[1] = rbx; /* also returned by the call */
-        v1 = call_values[0];
-        v2 = call_values[1];
-    }
+    v1 = main_divmod(0x7, 0x3);
+    v2 = rbx; /* also returned by the call */
     local_0 = v1;
     local_1 = v2;
     local_2 = 0x1;

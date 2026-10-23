@@ -6,7 +6,7 @@
 /* velk pseudo-C: dispatch @ 0x210164 */
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
-    uint32_t *const dword_200120 = (uint32_t *)(uintptr_t)0x200120;
+    uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
     uint32_t v1;
 
     v1 = x - 0xa;

@@ -7,7 +7,7 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202410 .bss */
 int32_t sub_2011c0(int32_t a0) {
-    uint32_t *const dword_202410 = (uint32_t *)(uintptr_t)0x202410;
+    uint32_t *const dword_202410 = (uint32_t *)0x202410ULL;
     int32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
     int32_t local_2; /* [sp-18] */

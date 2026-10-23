@@ -6,7 +6,7 @@
 /* velk pseudo-C: d7 @ 0x21018c */
 /* ref: 0x2204fc .bss */
 int d7(int x) {
-    uint32_t *const g = (uint32_t *)(uintptr_t)0x2204fc;
+    uint32_t *const g = (uint32_t *)0x2204fcULL;
     int32_t v1;
     int32_t local_0; /* [sp-8] */
     int32_t local_1; /* [sp-c] */

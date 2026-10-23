@@ -5,7 +5,7 @@
 -- decompile
 /* velk pseudo-C: d7 @ 0x0 */
 int32_t d7(int32_t a0) {
-    uint32_t *const g = (uint32_t *)(uintptr_t)0x238;
+    uint32_t *const g = (uint32_t *)0x238ULL;
     int32_t v2;
 
     if ((uint32_t)a0 > 0x9) {

@@ -41,7 +41,7 @@ fn <unnamed> @ 0x210394 (size 4)
 /* ref: 0x2305c8 .bss */
 /* ref: 0x2315c8 .bss */
 int64_t sub_210398(int64_t a0) {
-    uint64_t *const qword_2315c8 = (uint64_t *)(uintptr_t)0x2315c8;
+    uint64_t *const qword_2315c8 = (uint64_t *)0x2315c8ULL;
     int64_t v1;
 
     v1 = *qword_2315c8;
@@ -249,7 +249,7 @@ fn <unnamed> @ 0x210438 (size 20)
 /* ref: 0x2305c8 .bss */
 /* ref: 0x2315c8 .bss */
 int32_t sub_21044c(int32_t a0) {
-    uint64_t *const qword_2315c8 = (uint64_t *)(uintptr_t)0x2315c8;
+    uint64_t *const qword_2315c8 = (uint64_t *)0x2315c8ULL;
     int64_t v1;
     int32_t v4;
 
@@ -283,7 +283,7 @@ fn <unnamed> @ 0x21044c (size 108)
 /* ref: 0x2305c8 .bss */
 /* ref: 0x2315c8 .bss */
 int32_t sub_2104b8(int32_t a0, int32_t a1, int32_t a2) {
-    uint64_t *const qword_2315c8 = (uint64_t *)(uintptr_t)0x2315c8;
+    uint64_t *const qword_2315c8 = (uint64_t *)0x2315c8ULL;
     int64_t v1;
 
     v1 = *qword_2315c8;

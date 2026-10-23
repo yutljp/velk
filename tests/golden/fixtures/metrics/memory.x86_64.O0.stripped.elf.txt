@@ -129,7 +129,7 @@ fn <unnamed> @ 0x201320 (size 57)
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x202450 .bss */
 int32_t sub_201360(int32_t a0, int32_t a1) {
-    uint32_t *const dword_202450 = (uint32_t *)(uintptr_t)0x202450;
+    uint32_t *const dword_202450 = (uint32_t *)0x202450ULL;
 
     return dword_202450[(int64_t)(a0 & 0x3) * 0x8 + (a1 & 0x7)];
 }

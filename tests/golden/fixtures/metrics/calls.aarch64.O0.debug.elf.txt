@@ -69,7 +69,7 @@ fn pick_op @ 0x210350 (size 44)
 /* velk pseudo-C: apply_table @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
-    uint64_t *const table = (uint64_t *)(uintptr_t)0x2206f0;
+    uint64_t *const table = (uint64_t *)0x2206f0ULL;
     int64_t v3;
     uint32_t local_0; /* [sp-14] */
 

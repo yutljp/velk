@@ -19,7 +19,7 @@
 -- decompile
 /* velk pseudo-C: sub_1000 @ 0x1000 */
 int64_t sub_1000(void) {
-    uint64_t *const __gmon_start___3fe8_u64 = (uint64_t *)(uintptr_t)0x3fe8;
+    uint64_t *const __gmon_start___3fe8_u64 = (uint64_t *)0x3fe8ULL;
     int64_t v1;
 
     v1 = *__gmon_start___3fe8_u64;
@@ -156,8 +156,8 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1120 @ 0x1120 */
 int64_t sub_1120(int32_t a0) {
-    uint64_t *const qword_2028 = (uint64_t *)(uintptr_t)0x2028;
-    uint64_t *const qword_2030 = (uint64_t *)(uintptr_t)0x2030;
+    uint64_t *const qword_2028 = (uint64_t *)0x2028ULL;
+    uint64_t *const qword_2030 = (uint64_t *)0x2030ULL;
     int64_t v1;
     int64_t local_0; /* [sp-40] */
     int64_t local_1; /* [sp-38] */
@@ -269,9 +269,9 @@ fn <unnamed> @ 0x1200 (size 64)
 -- decompile
 /* velk pseudo-C: sub_1240 @ 0x1240 */
 void sub_1240(void) {
-    uint64_t *const __cxa_finalize_3ff8_u64 = (uint64_t *)(uintptr_t)0x3ff8;
-    uint64_t *const qword_4008 = (uint64_t *)(uintptr_t)0x4008;
-    uint8_t *const byte_4028 = (uint8_t *)(uintptr_t)0x4028;
+    uint64_t *const __cxa_finalize_3ff8_u64 = (uint64_t *)0x3ff8ULL;
+    uint64_t *const qword_4008 = (uint64_t *)0x4008ULL;
+    uint8_t *const byte_4028 = (uint8_t *)0x4028ULL;
 
     if (*byte_4028 != 0x0) {
         return;
@@ -327,7 +327,7 @@ fn <unnamed> @ 0x1280 (size 16)
 /* ref: 0x2004 "missing key %d among %d" */
 struct sub_1290_a0 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
-    uint64_t *const stderr = (uint64_t *)(uintptr_t)0x4020;
+    uint64_t *const stderr = (uint64_t *)0x4020ULL;
     void *v2;
     struct sub_1290_a0 *v3;
     int64_t v4;

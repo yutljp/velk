@@ -6,7 +6,7 @@
 /* velk pseudo-C: sub_210184 @ 0x210184 */
 /* ref: 0x220464 .bss */
 int32_t sub_210184(int32_t a0) {
-    uint32_t *const dword_220464 = (uint32_t *)(uintptr_t)0x220464;
+    uint32_t *const dword_220464 = (uint32_t *)0x220464ULL;
     int32_t v1;
 
     v1 = 0xffffffff;

@@ -8,7 +8,7 @@
 -- decompile
 /* velk pseudo-C: sum_while @ 0x0 */
 int32_t sum_while(int32_t a0) {
-    uint32_t *const sink = (uint32_t *)(uintptr_t)0xd4;
+    uint32_t *const sink = (uint32_t *)0xd4ULL;
     int32_t v1;
     int32_t v2;
 
@@ -51,7 +51,7 @@ fn sum_while @ 0x0 (size 60)
 -- decompile
 /* velk pseudo-C: count_down @ 0x3c */
 int32_t count_down(int32_t a0) {
-    uint32_t *const sink = (uint32_t *)(uintptr_t)0xd4;
+    uint32_t *const sink = (uint32_t *)0xd4ULL;
     int32_t v1;
     int32_t v2;
 
@@ -85,7 +85,7 @@ fn count_down @ 0x3c (size 36)
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x60 */
 int32_t sum_skip_odd(int32_t a0) {
-    uint32_t *const sink = (uint32_t *)(uintptr_t)0xd4;
+    uint32_t *const sink = (uint32_t *)0xd4ULL;
     int32_t v1;
     int32_t v2;
 
