@@ -35,6 +35,7 @@ pub(crate) struct ClassifiedValue {
     pub aggregate: bool,
     pub size: u64,
     pub alignment: u64,
+    pub natural_alignment: u64,
     pub defined_bits: Vec<(u64, u64)>,
     pub passing: ValueClass,
 }
@@ -279,9 +280,30 @@ pub(crate) fn classify(
         aggregate,
         size: layout.size,
         alignment,
+        natural_alignment: if profile == AbiProfile::Aapcs64 {
+            natural_alignment(layout)?
+        } else {
+            alignment
+        },
         defined_bits,
         passing,
     })
+}
+
+fn natural_alignment(layout: &TypeLayout) -> Result<u64, AbiIssue> {
+    match &layout.kind {
+        LayoutKind::Array { element, .. } => {
+            Ok(element.alignment.ok_or(AbiIssue::UnknownLayout)?.min(16))
+        }
+        LayoutKind::Struct(fields) | LayoutKind::Union(fields) => {
+            fields.iter().try_fold(1, |alignment, field| {
+                Ok(alignment
+                    .max(field.layout.alignment.ok_or(AbiIssue::UnknownLayout)?)
+                    .min(16))
+            })
+        }
+        _ => Ok(layout.size.min(16)),
+    }
 }
 
 pub(crate) fn compatible(
@@ -471,14 +493,17 @@ fn mark(slots: &mut [Option<RegisterClass>; 2], offset: u64, bits: u64, class: R
     }
 }
 
-fn merge_ranges(ranges: &mut Vec<(u64, u64)>) {
+pub(crate) fn merge_ranges(ranges: &mut Vec<(u64, u64)>) {
     ranges.sort_unstable();
     let mut merged: Vec<(u64, u64)> = Vec::new();
     for &(offset, bits) in ranges.iter() {
         if let Some((previous, count)) = merged.last_mut()
-            && offset <= *previous + *count
+            && offset <= previous.saturating_add(*count)
         {
-            *count = (*previous + *count).max(offset + bits) - *previous;
+            *count = previous
+                .saturating_add(*count)
+                .max(offset.saturating_add(bits))
+                - *previous;
         } else {
             merged.push((offset, bits));
         }
@@ -513,10 +538,11 @@ fn homogeneous(layout: &TypeLayout) -> Option<Vec<ClassPiece>> {
     members(layout, 0, &mut found)?;
     let precision = found.first()?.1;
     let bytes = u64::from(precision.bits()) / 8;
-    if found
-        .iter()
-        .enumerate()
-        .any(|(index, &(offset, member))| member != precision || offset != index as u64 * bytes)
+    if (found.len() as u64).checked_mul(bytes) != Some(layout.size)
+        || found
+            .iter()
+            .enumerate()
+            .any(|(index, &(offset, member))| member != precision || offset != index as u64 * bytes)
     {
         return None;
     }

@@ -195,8 +195,18 @@ fn abi_hfa4_adjust @ 0x21024c (size 8)
 == 0x210254 abi_exhaust_five
 -- decompile
 /* velk pseudo-C: abi_exhaust_five @ 0x210254 */
-int64_t abi_exhaust_five(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return a7 * 0x13 + (a5 * 0xd + (a4 * 0xb + (a1 + ((uint64_t)a1 << 0x1) + a0 + (a2 + ((uint64_t)a2 << 0x2)) - a3 + ((uint64_t)a3 << 0x3))) + (a6 + ((uint64_t)a6 << 0x4)));
+struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
+unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair value, unsigned long long tail) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
+    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
+
+    return tail_bits * 0x13 + (value_bits * 0xd + (e_bits * 0xb + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (value_bits_2 + (value_bits_2 << 0x4)));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -205,7 +215,7 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5,
 -- ir
 fn abi_exhaust_five @ 0x210254 (size 60)
   blk0 @ 0x210254:
-    ret ((x7 * #0x13) + (((x5 * #0xd) + ((x4 * #0xb) + (((((x1 + (x1 << #0x1)) + x0) + (x2 + (x2 << #0x2))) - x3) + (x3 << #0x3)))) + (x6 + (x6 << #0x4))))
+    ret results(((x7 * #0x13) + (((x5 * #0xd) + ((x4 * #0xb) + (((((x1 + (x1 << #0x1)) + x0) + (x2 + (x2 << #0x2))) - x3) + (x3 << #0x3)))) + (x6 + (x6 << #0x4)))))
 -- card
 {"addr":"0x210254","approxTokens":186,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf","unwind"],"section":".text","size":60,"unsupported":0}
 

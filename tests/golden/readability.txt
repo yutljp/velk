@@ -39,9 +39,9 @@ l6_abi_a64.o: 23 lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 
 l6_abi_x64.o: 20 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 member_types_a64.elf: 12 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 member_types_x64.elf: 12 lines, 0 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/aggregate_abi.aarch64.O0.debug.elf: 180 lines, 55 variables, 81 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/aggregate_abi.aarch64.O0.debug.elf: 190 lines, 63 variables, 89 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/aggregate_abi.aarch64.O0.stripped.elf: 66 lines, 5 variables, 2 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/aggregate_abi.aarch64.O2.debug.elf: 170 lines, 51 variables, 81 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/aggregate_abi.aarch64.O2.debug.elf: 180 lines, 59 variables, 85 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/aggregate_abi.aarch64.O2.stripped.elf: 49 lines, 0 variables, 20 casts, 4 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/aggregate_abi.x86_64.O0.debug.elf: 234 lines, 82 variables, 91 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/aggregate_abi.x86_64.O0.stripped.elf: 164 lines, 39 variables, 9 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

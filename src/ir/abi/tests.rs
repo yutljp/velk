@@ -141,6 +141,55 @@ fn aapcs_hfa_uses_one_simd_piece_per_element_before_large_object_rule() {
 }
 
 #[test]
+fn aapcs_overaligned_float_aggregates_with_tail_padding_are_not_hfas() {
+    for fields in [
+        vec![
+            field(0, float(Precision::Single)),
+            field(4, float(Precision::Single)),
+        ],
+        vec![field(0, array(float(Precision::Single), 3))],
+    ] {
+        let value = classify(AbiProfile::Aapcs64, &structure(16, 16, fields)).unwrap();
+        assert_eq!(value.alignment, 16);
+        assert_eq!(value.natural_alignment, 4);
+        assert_eq!(
+            value.passing,
+            ValueClass::Registers(vec![piece(0, 8, Integer), piece(8, 8, Integer)])
+        );
+    }
+}
+
+#[test]
+fn aapcs_natural_alignment_follows_nested_members_and_elements() {
+    let mut layout = structure(16, 16, vec![field(0, array(integer(8), 2))]);
+    assert_eq!(
+        classify(AbiProfile::Aapcs64, &layout)
+            .unwrap()
+            .natural_alignment,
+        8
+    );
+    assert_eq!(
+        classify(AbiProfile::Aapcs64, &array(layout.clone(), 1))
+            .unwrap()
+            .natural_alignment,
+        16
+    );
+    layout.kind = LayoutKind::Union(vec![field(0, layout.clone())]);
+    assert_eq!(
+        classify(AbiProfile::Aapcs64, &layout)
+            .unwrap()
+            .natural_alignment,
+        16
+    );
+    assert_eq!(
+        classify(AbiProfile::Aapcs64, &array(layout, 1))
+            .unwrap()
+            .natural_alignment,
+        16
+    );
+}
+
+#[test]
 fn aapcs_nested_hfa_preserves_element_offsets() {
     let pair = structure(
         16,

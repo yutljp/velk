@@ -201,13 +201,18 @@ impl Allocation {
         if self.profile == AbiProfile::Win64 {
             return self.windows(classified);
         }
+        let alignment = if self.profile == AbiProfile::Aapcs64 {
+            classified.natural_alignment
+        } else {
+            classified.alignment
+        };
         let passing = match &classified.passing {
             ValueClass::Indirect => Passing::Indirect {
                 pointer: self.pointer()?,
                 returned_pointer: None,
             },
             ValueClass::Memory => Passing::Direct(vec![AbiPiece {
-                location: self.stack(classified.size, classified.alignment)?,
+                location: self.stack(classified.size, alignment)?,
                 object_offset: 0,
                 bytes: classified.size,
                 class: None,
@@ -222,7 +227,7 @@ impl Allocation {
                 let float_count = pieces.len() - integer_count;
                 let next_integer = if self.profile == AbiProfile::Aapcs64
                     && integer_count > 0
-                    && classified.alignment >= 16
+                    && alignment >= 16
                 {
                     self.integer.next_multiple_of(2)
                 } else {
@@ -267,7 +272,7 @@ impl Allocation {
                         }
                     }
                     Passing::Direct(vec![AbiPiece {
-                        location: self.stack(classified.size, classified.alignment)?,
+                        location: self.stack(classified.size, alignment)?,
                         object_offset: 0,
                         bytes: classified.size,
                         class: None,
@@ -522,7 +527,10 @@ mod tests {
 
     #[test]
     fn aapcs_alignment_rounds_register_and_stack_cursors() {
-        let mut aligned = object(vec![integer(), integer()]);
+        let mut member = integer();
+        member.size = 16;
+        member.alignment = Some(16);
+        let mut aligned = object(vec![member]);
         aligned.alignment = Some(16);
         let abi = allocate(
             AbiProfile::Aapcs64,
@@ -549,6 +557,33 @@ mod tests {
         assert_eq!(
             locations(&abi.arguments[9].passing),
             [AbiLocation::Stack(16)]
+        );
+    }
+
+    #[test]
+    fn aapcs_aggregate_alignment_attribute_does_not_skip_registers_or_stack_slots() {
+        let mut aligned = object(vec![integer(), integer()]);
+        aligned.alignment = Some(16);
+        let abi = allocate(
+            AbiProfile::Aapcs64,
+            &[integer(), aligned.clone(), integer()],
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            locations(&abi.arguments[1].passing),
+            [AbiLocation::Register(1), AbiLocation::Register(2)]
+        );
+        assert_eq!(
+            locations(&abi.arguments[2].passing),
+            [AbiLocation::Register(3)]
+        );
+        let mut arguments = vec![integer(); 9];
+        arguments.push(aligned);
+        let abi = allocate(AbiProfile::Aapcs64, &arguments, None).unwrap();
+        assert_eq!(
+            locations(&abi.arguments[9].passing),
+            [AbiLocation::Stack(8)]
         );
     }
 
@@ -707,12 +742,24 @@ mod tests {
     }
 
     #[test]
-    fn unknown_alignment_is_rejected_when_the_following_register_changes() {
+    fn aapcs_unknown_aggregate_alignment_uses_member_alignment() {
         let mut pair = object(vec![integer(), integer()]);
         pair.alignment = None;
+        let abi = allocate(AbiProfile::Aapcs64, &[integer(), pair, integer()], None).unwrap();
         assert_eq!(
-            allocate(AbiProfile::Aapcs64, &[integer(), pair, integer()], None),
-            Err(AbiIssue::UnknownLayout)
+            locations(&abi.arguments[1].passing),
+            [AbiLocation::Register(1), AbiLocation::Register(2)]
+        );
+        assert_eq!(
+            locations(&abi.arguments[2].passing),
+            [AbiLocation::Register(3)]
+        );
+        let mut arguments = vec![integer(); 9];
+        arguments.push(byte_object(None));
+        let abi = allocate(AbiProfile::Aapcs64, &arguments, None).unwrap();
+        assert_eq!(
+            locations(&abi.arguments[9].passing),
+            [AbiLocation::Stack(8)]
         );
     }
 

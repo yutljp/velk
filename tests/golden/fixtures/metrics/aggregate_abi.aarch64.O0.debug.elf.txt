@@ -221,8 +221,18 @@ fn abi_hfa4_adjust @ 0x210378 (size 80)
 == 0x2103c8 abi_exhaust_five
 -- decompile
 /* velk pseudo-C: abi_exhaust_five @ 0x2103c8 */
-int64_t abi_exhaust_five(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return a0 + 0x3 * a1 + 0x5 * a2 + 0x7 * a3 + 0xb * a4 + 0xd * a5 + 0x11 * a6 + 0x13 * a7;
+struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
+unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair value, unsigned long long tail) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
+    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
+
+    return a_bits + 0x3 * b_bits + 0x5 * c_bits + 0x7 * d_bits + 0xb * e_bits + 0xd * value_bits + 0x11 * value_bits_2 + 0x13 * tail_bits;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -231,7 +241,7 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5,
 -- ir
 fn abi_exhaust_five @ 0x2103c8 (size 160)
   blk0 @ 0x2103c8:
-    ret (((((((x0 + (#0x3 * x1)) + (#0x5 * x2)) + (#0x7 * x3)) + (#0xb * x4)) + (#0xd * x5)) + (#0x11 * x6)) + (#0x13 * x7))
+    ret results((((((((x0 + (#0x3 * x1)) + (#0x5 * x2)) + (#0x7 * x3)) + (#0xb * x4)) + (#0xd * x5)) + (#0x11 * x6)) + (#0x13 * x7)))
 -- card
 {"addr":"0x2103c8","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":0}
 
