@@ -1787,6 +1787,79 @@ mod tests {
     }
 
     #[test]
+    fn byte_division_uses_ax_and_writes_al_and_ah() {
+        // mov ax, 0x0107; mov bh, 3; div bh; ret
+        let unsigned = vec![0x66, 0xb8, 0x07, 0x01, 0xb7, 0x03, 0xf6, 0xf7, 0xc3];
+        assert_eq!(
+            returns(Isa::X86_64, unsigned, &[(0, 0x1234_5678_9abc_0000)]),
+            0x1234_5678_9abc_0257
+        );
+        // mov ax, -263; mov bh, -3; idiv bh; ret
+        let signed = vec![0x66, 0xb8, 0xf9, 0xfe, 0xb7, 0xfd, 0xf6, 0xff, 0xc3];
+        assert_eq!(
+            returns(Isa::X86_64, signed, &[(0, 0x1234_5678_9abc_0000)]),
+            0x1234_5678_9abc_fe57
+        );
+    }
+
+    #[test]
+    fn signed_division_requires_a_matching_extension_width() {
+        // cdq; idiv rcx: edx becomes 0xffffffff, leaving a positive 128-bit dividend.
+        let code = [0x99, 0x48, 0xf7, 0xf9];
+        for (result, expected) in [
+            (vec![0xc3], 0x7fff_ffff_8000_0000),
+            (vec![0x48, 0x89, 0xd0, 0xc3], 0x8000_0000),
+        ] {
+            assert_eq!(
+                returns(
+                    Isa::X86_64,
+                    [code.to_vec(), result].concat(),
+                    &[(0, 0x8000_0000), (1, 0x2_0000_0000)]
+                ),
+                expected
+            );
+        }
+        // cqo; idiv ecx: rax is positive, so edx:eax holds positive 0x80000000.
+        let code = [0x48, 0x99, 0xf7, 0xf9];
+        for (result, expected) in [(vec![0xc3], 715_827_882), (vec![0x89, 0xd0, 0xc3], 2)] {
+            assert_eq!(
+                returns(
+                    Isa::X86_64,
+                    [code.to_vec(), result].concat(),
+                    &[(0, 0x8000_0000), (1, 3)]
+                ),
+                expected
+            );
+        }
+        // cwd; idiv bl: byte division still uses ax, independently of dx.
+        assert_eq!(
+            returns(
+                Isa::X86_64,
+                vec![0x66, 0x99, 0xf6, 0xfb, 0xc3],
+                &[(0, 0x0107), (3, 3)]
+            ),
+            0x0257
+        );
+    }
+
+    #[test]
+    fn unsigned_division_preserves_high_dividend_bits_after_partial_zeroing() {
+        for zero in [vec![0x66, 0x31, 0xd2], vec![0x30, 0xd2]] {
+            // xor dx, dx (or xor dl, dl); div ecx
+            for (result, expected) in [(vec![0xc3], 0x8000_0000), (vec![0x89, 0xd0, 0xc3], 7)] {
+                assert_eq!(
+                    returns(
+                        Isa::X86_64,
+                        [zero.clone(), vec![0xf7, 0xf1], result].concat(),
+                        &[(0, 7), (1, 0x2_0000), (2, 0x1_00ff)]
+                    ),
+                    expected
+                );
+            }
+        }
+    }
+
+    #[test]
     fn pop_reads_the_slot_push_wrote() {
         // push rbx; pop rax; ret
         assert_eq!(returns(Isa::X86_64, vec![0x53, 0x58, 0xc3], &[(3, 7)]), 7);

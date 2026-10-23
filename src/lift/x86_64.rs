@@ -1480,8 +1480,6 @@ fn operand_width(ins: &Instruction, index: u32) -> Option<u8> {
     }
 }
 
-/// Copies `value` into the exchange register, for an instruction that
-/// overwrites what it read before writing it elsewhere.
 /// A division of the dividend in rdx:rax (or ah:al for bytes) by `divisor`
 /// of `width` bits: the quotient into rax (al) and the remainder into rdx
 /// (ah).
@@ -2399,7 +2397,7 @@ fn lift_instruction(
             if ins.op0_kind() == OpKind::Register
                 && ins.op1_kind() == OpKind::Register
                 && ins.op0_register() == ins.op1_register()
-                && let Some((2, _)) = gpr(ins.op0_register())
+                && let Some((RDX, 32 | 64)) = gpr(ins.op0_register())
             {
                 // `xor edx, edx` clears all of rdx.
                 lifter.zeroed_dividend = Some(64);
@@ -2531,12 +2529,8 @@ fn lift_instruction(
             let Some(divisor) = operand(lifter, ins, 0) else {
                 return false;
             };
-            let width = match ins.op0_kind() {
-                OpKind::Memory => memory_width(ins).unwrap_or(8) * 8,
-                OpKind::Register => gpr(ins.op0_register()).map(|(_, w)| w).unwrap_or(64),
-                _ => 64,
-            };
-            if was_extended != Some(width.min(64)) && was_extended.is_none() {
+            let width = operand_width(ins, 0).unwrap_or(64);
+            if was_extended != Some(width) || width == 8 {
                 wide_divide(lifter, true, width, divisor);
                 return false;
             }
@@ -2551,16 +2545,12 @@ fn lift_instruction(
             lifter.assign(RAX, width, quotient);
         }
         // An unsigned division whose high half rdx was just cleared divides
-        // rax alone; otherwise the 128-bit dividend is not modeled.
+        // rax alone.
         Mnemonic::Div => {
             let Some(divisor) = operand(lifter, ins, 0) else {
                 return false;
             };
-            let width = match ins.op0_kind() {
-                OpKind::Memory => memory_width(ins).unwrap_or(8) * 8,
-                OpKind::Register => gpr(ins.op0_register()).map(|(_, w)| w).unwrap_or(64),
-                _ => 64,
-            };
+            let width = operand_width(ins, 0).unwrap_or(64);
             if was_zeroed.is_none() || !matches!(width, 32 | 64) {
                 wide_divide(lifter, false, width, divisor);
                 return false;
