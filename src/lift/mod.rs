@@ -1298,6 +1298,189 @@ mod tests {
     }
 
     #[test]
+    fn x86_zero_extension_preserves_each_high_byte_source() {
+        let originals = [
+            (0, 0xfedcba9876543210),
+            (1, 0x0123456789abcdef),
+            (2, 0x800000007fffffff),
+            (3, 0x7fffffff80000000),
+        ];
+        for source in 0..4u8 {
+            for byte in 0..=255u64 {
+                let mut registers = originals;
+                registers[usize::from(source)].1 =
+                    (registers[usize::from(source)].1 & !0xff00) | (byte << 8);
+                for word_destination in [false, true] {
+                    let mut code = if word_destination {
+                        vec![0x66]
+                    } else {
+                        Vec::new()
+                    };
+                    code.extend([0x0f, 0xb6, 0xc4 + source, 0xc3]);
+                    let expected = if word_destination {
+                        (registers[0].1 & !0xffff) | byte
+                    } else {
+                        byte
+                    };
+                    assert_eq!(
+                        returns(Isa::X86_64, code, &registers),
+                        expected,
+                        "source={source}, byte={byte}, word_destination={word_destination}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn x86_zero_extension_keeps_low_byte_word_and_rex_sources() {
+        let registers = [
+            (0, 0xfedcba9876543210),
+            (1, 0x0123456789abcdef),
+            (2, 0x800000007fffffff),
+            (3, 0x7fffffff80000000),
+            (8, 0x80000000000000a5),
+        ];
+        for source in 0..4u8 {
+            for (opcode, bits) in [(0xb6, 8), (0xb7, 16)] {
+                let expected = registers[usize::from(source)].1 & ((1u64 << bits) - 1);
+                let code = vec![0x0f, opcode, 0xc0 + source, 0xc3];
+                assert_eq!(returns(Isa::X86_64, code, &registers), expected);
+            }
+        }
+        assert_eq!(
+            returns(
+                Isa::X86_64,
+                vec![0x40, 0xb4, 0x5a, 0x40, 0x0f, 0xb6, 0xc4, 0xc3],
+                &registers
+            ),
+            0x5a
+        );
+        assert_eq!(
+            returns(Isa::X86_64, vec![0x41, 0x0f, 0xb6, 0xc0, 0xc3], &registers),
+            0xa5
+        );
+        assert_eq!(
+            returns(Isa::X86_64, vec![0x48, 0x0f, 0xb7, 0xc1, 0xc3], &registers),
+            0xcdef
+        );
+    }
+
+    #[test]
+    fn x86_sign_extension_preserves_each_high_byte_sign() {
+        let originals = [
+            (0, 0xfedcba9876543210),
+            (1, 0x0123456789abcdef),
+            (2, 0x800000007fffffff),
+            (3, 0x7fffffff80000000),
+        ];
+        for source in 0..4u8 {
+            for byte in 0..=255u64 {
+                let mut registers = originals;
+                registers[usize::from(source)].1 =
+                    (registers[usize::from(source)].1 & !0xff00) | (byte << 8);
+                let extended = byte as u8 as i8 as i64 as u64;
+                for word_destination in [false, true] {
+                    let mut code = if word_destination {
+                        vec![0x66]
+                    } else {
+                        Vec::new()
+                    };
+                    code.extend([0x0f, 0xbe, 0xc4 + source, 0xc3]);
+                    let expected = if word_destination {
+                        (registers[0].1 & !0xffff) | (extended & 0xffff)
+                    } else {
+                        extended & 0xffffffff
+                    };
+                    assert_eq!(
+                        returns(Isa::X86_64, code, &registers),
+                        expected,
+                        "source={source}, byte={byte}, word_destination={word_destination}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn x86_sign_extension_keeps_low_word_dword_rex_and_memory_widths() {
+        for input in [
+            0,
+            0x7f,
+            0x80,
+            0xff,
+            0x7fff,
+            0x8000,
+            0xffff,
+            0x7fffffff,
+            0x80000000,
+            u64::MAX,
+        ] {
+            let registers = [(0, 0xfedcba9876543210), (1, input), (7, 0x100), (8, input)];
+            for wide in [false, true] {
+                for (opcode, extended) in [
+                    (0xbe, input as u8 as i8 as i64 as u64),
+                    (0xbf, input as u16 as i16 as i64 as u64),
+                ] {
+                    let mut code = if wide { vec![0x48] } else { Vec::new() };
+                    code.extend([0x0f, opcode, 0xc1, 0xc3]);
+                    let expected = if wide {
+                        extended
+                    } else {
+                        extended & 0xffffffff
+                    };
+                    assert_eq!(returns(Isa::X86_64, code, &registers), expected);
+                }
+            }
+            let dword = input as u32 as i32 as i64 as u64;
+            assert_eq!(
+                returns(Isa::X86_64, vec![0x48, 0x63, 0xc1, 0xc3], &registers),
+                dword
+            );
+            for (code, expected) in [
+                (
+                    vec![0x41, 0x0f, 0xbe, 0xc0, 0xc3],
+                    input as u8 as i8 as u32 as u64,
+                ),
+                (
+                    vec![0x49, 0x0f, 0xbe, 0xc0, 0xc3],
+                    input as u8 as i8 as i64 as u64,
+                ),
+            ] {
+                assert_eq!(returns(Isa::X86_64, code, &registers), expected);
+            }
+            for (code, expected) in [
+                (
+                    vec![0x0f, 0xbe, 0x07, 0xc3],
+                    input as u8 as i8 as u32 as u64,
+                ),
+                (
+                    vec![0x48, 0x0f, 0xbe, 0x07, 0xc3],
+                    input as u8 as i8 as i64 as u64,
+                ),
+                (
+                    vec![0x48, 0x0f, 0xbf, 0x07, 0xc3],
+                    input as u16 as i16 as i64 as u64,
+                ),
+                (vec![0x48, 0x63, 0x07, 0xc3], dword),
+            ] {
+                assert_eq!(
+                    returns_with(Isa::X86_64, code, &registers, &[(0x100, input)]),
+                    expected
+                );
+            }
+        }
+        assert_eq!(
+            returns(
+                Isa::X86_64,
+                vec![0x40, 0xb4, 0x80, 0x40, 0x0f, 0xbe, 0xc4, 0xc3],
+                &[]
+            ),
+            0xffffff80
+        );
+    }
+
+    #[test]
     fn a_branch_tests_the_operands_a_flag_setting_write_replaced() {
         // subs w8, w8, w9; b.gt +12; mov w0, #0; ret; mov w0, #1; ret
         let code = words(&[

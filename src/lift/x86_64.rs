@@ -2441,11 +2441,7 @@ fn lift_instruction(
         Mnemonic::Sar => shift(lifter, ins, BinOp::Sar),
         Mnemonic::Movsx | Mnemonic::Movsxd => {
             if let Some(value) = operand(lifter, ins, 1) {
-                let source_width = match ins.op1_kind() {
-                    OpKind::Memory => memory_width(ins).unwrap_or(4),
-                    OpKind::Register => gpr(ins.op1_register()).map(|(_, w)| w).unwrap_or(32) / 8,
-                    _ => 4,
-                };
+                let source_width = operand_width(ins, 1).unwrap_or(32) / 8;
                 let value = Expr::SignExtend {
                     value: Box::new(value),
                     width: source_width,
@@ -2590,16 +2586,8 @@ fn lift_instruction(
         }
         Mnemonic::Movzx => {
             if let Some(value) = operand(lifter, ins, 1) {
-                let width = match ins.op1_kind() {
-                    OpKind::Memory => memory_width(ins).unwrap_or(1),
-                    OpKind::Register => gpr(ins.op1_register()).map(|(_, w)| w).unwrap_or(4) / 8,
-                    _ => 1,
-                };
-                let mask = if width >= 8 {
-                    u64::MAX
-                } else {
-                    (1u64 << (width * 8)) - 1
-                };
+                let width = operand_width(ins, 1).unwrap_or(8);
+                let mask = crate::ir::semantics::mask(u32::from(width));
                 let value = Expr::bin(BinOp::And, value, Expr::constant(mask));
                 write_destination(lifter, ins, value);
             }
