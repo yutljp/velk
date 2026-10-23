@@ -283,6 +283,16 @@ pub(crate) fn signed_select_mod_chain(
         } else {
             chain_dividend_domain(statements, select_index, &leaf)
         };
+        let Some(Expr::Bin { lhs, .. }) = super::proof::checked(
+            statements,
+            select_index,
+            sub_index,
+            super::remainder(leaf.clone(), step, false),
+        ) else {
+            continue;
+        };
+        let leaf = *lhs;
+        let domain = domain.min(super::leaf_domain(&leaf).unwrap_or(domain));
         return Some((sub_index, select_index, adjusted_def, step, leaf, domain));
     }
     None
@@ -390,7 +400,7 @@ pub(crate) fn signed_select_chain(
             continue;
         }
         let shift_delta = delta.wrapping_add(1);
-        if shift_delta == 0 || !shift_delta.is_power_of_two() {
+        if shift_delta != 1u64 << shift {
             continue;
         }
         // The shift runs at the dividend's width, so a 32-bit source or
@@ -406,6 +416,16 @@ pub(crate) fn signed_select_chain(
                 _ => chain_dividend_domain(statements, select_index, leaf),
             }
         };
+        let Some(Expr::Bin { lhs, .. }) = super::proof::checked(
+            statements,
+            select_index,
+            sar_index,
+            super::division(leaf.clone(), 1u64 << shift),
+        ) else {
+            continue;
+        };
+        let leaf = *lhs;
+        let domain = domain.min(super::leaf_domain(&leaf).unwrap_or(domain));
         return Some((
             sar_index,
             select_index,

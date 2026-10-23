@@ -20,6 +20,8 @@
 #[path = "recompile/cache.rs"]
 mod cache;
 mod common;
+#[path = "recompile/division.rs"]
+mod division;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;

@@ -167,7 +167,7 @@ int32_t (int32_t a0)
 -- ir
 fn _smod3x @ 0x110 (size 34)
   blk0 @ 0x110:
-    ret (sext32(edi) % #0x3)
+    ret (edi % #0x3)
 -- card
 {"addr":"0x110","approxTokens":168,"blocks":1,"hardReasons":[],"name":"_smod3x","nameSources":["symtab","dynamic","unwind"],"section":"__text","size":34,"unsupported":0}
 
@@ -324,6 +324,6 @@ int32_t (int32_t a0)
 -- ir
 fn _pdiv10 @ 0x260 (size 29)
   blk0 @ 0x260:
-    ret (sext32(edi) / #0xa)
+    ret (edi / #0xa)
 -- card
 {"addr":"0x260","approxTokens":156,"blocks":1,"hardReasons":[],"name":"_pdiv10","nameSources":["symtab","dynamic","unwind"],"section":"__text","size":29,"unsupported":0}

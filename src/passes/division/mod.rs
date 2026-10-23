@@ -1,5 +1,6 @@
 mod chains;
 mod divisor;
+mod proof;
 mod remainder;
 mod select;
 mod widened;
@@ -35,14 +36,9 @@ pub fn recover_divisions(ir: &mut FunctionIr) {
     // Signed 64-bit chains prove an int64 dividend, so these widen instead.
     let mut wide_signed: std::collections::HashSet<u16> = std::collections::HashSet::new();
     let mut wide_signed_ret: Vec<u16> = Vec::new();
-    let live_in = crate::ir::cfg::live_in(ir);
-    let live_out: Vec<_> = (0..ir.blocks.len())
-        .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
-        .collect();
-    for (block, live_out) in ir.blocks.iter_mut().zip(&live_out) {
+    for block in &mut ir.blocks {
         magic_block(
             block,
-            live_out,
             &mut domains,
             &mut narrowed,
             &mut wide_signed,
@@ -96,7 +92,6 @@ fn sar_dst_of(block: &crate::ir::Block, index: usize) -> u16 {
 
 fn magic_block(
     block: &mut crate::ir::Block,
-    live_out: &std::collections::HashSet<u16>,
     domains: &mut std::collections::HashSet<(u16, bool)>,
     narrowed: &mut Vec<(u16, bool)>,
     wide_signed: &mut std::collections::HashSet<u16>,
@@ -189,6 +184,13 @@ fn magic_block(
         else {
             continue;
         };
+        if !proof::equivalent(
+            &block.stmts,
+            probe,
+            &remainder(Expr::reg(dividend, width), divisor, false),
+        ) {
+            continue;
+        }
         // Every register the chain drops must be dead afterwards: only the
         // select (rewritten in place) and the chain's own steps may read it.
         let safe = steps.iter().all(|step| {
@@ -283,6 +285,7 @@ fn magic_block(
         if let Some((sub_position, chain_steps, divisor, signed, width)) =
             remainder_scan(block.stmts.as_slice(), index, dest.index)
             && magic_matches(magic, divisor, domain_bits, signed)
+            && let Some(replacement) = proof::checked(&block.stmts, index, sub_position, remainder(remainder_leaf(&block.stmts[sub_position]), divisor, !signed))
             && single_use(block.stmts.as_slice(), index, sub_position, dest.index)
             // `x - q * d` is a remainder only of the value `q` divided.
             && remainder::same_value(
@@ -323,11 +326,7 @@ fn magic_block(
                 for step in chain_steps {
                     consumed.insert(step);
                 }
-                let leaf = block
-                    .stmts
-                    .get(sub_position)
-                    .map_or(Expr::Const(0), remainder_leaf);
-                replacements.push((sub_position, remainder(leaf, divisor, !signed)));
+                replacements.push((sub_position, replacement));
                 index = sub_position + 1;
                 continue;
             }
@@ -359,12 +358,21 @@ fn magic_block(
                         } else {
                             (shift, domain_bits)
                         };
-                        let divisor = magic_divisor(magic, total, domain)
-                            .or_else(|| magic_divisor(magic, shift, 32))?;
+                        let Some(divisor) = magic_divisor(magic, total, domain)
+                            .or_else(|| magic_divisor(magic, shift, 32))
+                        else {
+                            return None;
+                        };
                         Some((divisor, index + 1))
                     }
                     _ => None,
                 })
+            && let Some(replacement) = proof::checked(
+                &block.stmts,
+                index,
+                shift_index,
+                division_unsigned(operand.clone(), divisor),
+            )
         {
             if !single_use(block.stmts.as_slice(), index, shift_index, dest.index) {
                 index += 1;
@@ -380,7 +388,7 @@ fn magic_block(
                 }
             }
             consumed.insert(index);
-            replacements.push((shift_index, division_unsigned(operand.clone(), divisor)));
+            replacements.push((shift_index, replacement));
             index = shift_index + 1;
             continue;
         }
@@ -394,6 +402,12 @@ fn magic_block(
                 dest.index,
                 magic,
                 domain_bits,
+            )
+            && let Some(replacement) = proof::checked(
+                &block.stmts,
+                index,
+                shift_index,
+                division_unsigned(operand.clone(), divisor),
             )
         {
             if !single_use(block.stmts.as_slice(), index, shift_index, dest.index) {
@@ -411,7 +425,7 @@ fn magic_block(
                 consumed.insert(*step);
             }
             consumed.insert(index);
-            replacements.push((shift_index, division_unsigned(operand.clone(), divisor)));
+            replacements.push((shift_index, replacement));
             index = shift_index + 1;
             continue;
         }
@@ -426,6 +440,11 @@ fn magic_block(
             magic,
             effective_domain,
             high_part_product,
+        ) && let Some(replacement) = proof::checked(
+            &block.stmts,
+            index,
+            sum_position,
+            division(operand.clone(), divisor),
         ) {
             if !single_use(block.stmts.as_slice(), index, sum_position, dest.index) {
                 index += 1;
@@ -459,7 +478,7 @@ fn magic_block(
                     wide_signed_ret.push(sum_dst.index);
                 }
             }
-            replacements.push((sum_position, division(operand.clone(), divisor)));
+            replacements.push((sum_position, replacement));
             index = sum_position + 1;
             continue;
         }
@@ -472,6 +491,11 @@ fn magic_block(
             dest.index,
             magic,
             domain_bits,
+        ) && let Some(replacement) = proof::checked(
+            &block.stmts,
+            index,
+            sum_position,
+            division(operand.clone(), divisor),
         ) {
             if !single_use(block.stmts.as_slice(), index, sum_position, dest.index) {
                 index += 1;
@@ -496,7 +520,7 @@ fn magic_block(
             {
                 narrowed.push((sum_dst.index, true));
             }
-            replacements.push((sum_position, division(operand.clone(), divisor)));
+            replacements.push((sum_position, replacement));
             index = sum_position + 1;
             continue;
         }
@@ -517,17 +541,6 @@ fn magic_block(
     if consumed.is_empty() {
         return;
     }
-    let mut last_writes: std::collections::HashMap<u16, usize> = std::collections::HashMap::new();
-    for (position, stmt) in block.stmts.iter().enumerate() {
-        for written in crate::ir::visit::statement_registers(stmt).0 {
-            last_writes.insert(written, position);
-        }
-    }
-    // When a step's value leaves the block, as an argument an indirect tail
-    // call may read, every step stays: the last one reads the others.
-    let keep_steps = consumed
-        .iter()
-        .any(|position| leaves_block(&block.stmts[*position], *position, &last_writes, live_out));
     let mut kept: Vec<Stmt> = Vec::with_capacity(block.stmts.len());
     let mut pending = replacements;
     for (position, stmt) in block.stmts.drain(..).enumerate() {
@@ -543,24 +556,11 @@ fn magic_block(
             kept.push(node);
             continue;
         }
-        if consumed.contains(&position) && !keep_steps {
-            continue;
-        }
+        // Keep reaching definitions until dead-code elimination: a candidate
+        // may have other live outputs besides the quotient it replaces.
         kept.push(stmt);
     }
     block.stmts = kept;
-}
-
-/// True when the statement is the block's last write of a register live
-/// after the block.
-fn leaves_block(
-    stmt: &Stmt,
-    position: usize,
-    last_writes: &std::collections::HashMap<u16, usize>,
-    live_out: &std::collections::HashSet<u16>,
-) -> bool {
-    matches!(stmt, Stmt::Assign { dest, .. }
-        if live_out.contains(&dest.index) && last_writes.get(&dest.index) == Some(&position))
 }
 
 fn operand_index(operand: &Expr) -> Option<u16> {
@@ -612,6 +612,9 @@ pub(crate) fn shift_of(value: &Expr) -> Option<(u16, u64)> {
     let Expr::Const(shift) = rhs.as_ref() else {
         return None;
     };
+    if *shift >= 64 {
+        return None;
+    }
     let Some(source) = unwrap_leaf(lhs.as_ref()) else {
         return None;
     };

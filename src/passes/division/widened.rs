@@ -87,6 +87,11 @@ pub(crate) fn widened_signed_site(stmts: &[crate::ir::Stmt]) -> Option<(usize, E
             };
             if high >= 32
                 && let Some(found) = widened_product(stmts, probe, left_source, high)
+                && super::proof::equivalent(
+                    stmts,
+                    probe,
+                    &super::division(found.0.clone(), found.1),
+                )
             {
                 return Some((probe, found.0, found.1));
             }
@@ -107,6 +112,7 @@ pub(crate) fn widened_signed_site(stmts: &[crate::ir::Stmt]) -> Option<(usize, E
         let narrow_hit = narrow(lhs, rhs).or_else(|| narrow(rhs, lhs));
         if let Some((source, high, high_at)) = narrow_hit
             && let Some(found) = widened_product(stmts, high_at, source, high)
+            && super::proof::equivalent(stmts, probe, &super::division(found.0.clone(), found.1))
         {
             return Some((probe, found.0, found.1));
         }

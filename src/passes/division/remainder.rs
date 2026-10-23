@@ -138,7 +138,7 @@ pub(crate) fn remainder_scan(
                     Expr::Reg { index, .. },
                     Expr::Const(k),
                 ) if aliases.contains(index) || dividend_reg == Some(*index) || !half_seen => {
-                    if *k + 1 == u64::from(width) {
+                    if k.checked_add(1) == Some(u64::from(width)) {
                         signed = true;
                         if dest != *index {
                             aliases.push(dest);
@@ -161,7 +161,7 @@ pub(crate) fn remainder_scan(
                             return aliases.contains(&index);
                         }
                         if let Some((index, bits)) = shift_leaf(expr) {
-                            if bits + 1 == u64::from(width) {
+                            if bits.checked_add(1) == Some(u64::from(width)) {
                                 signed = true;
                             }
                             return aliases.contains(&index);
@@ -178,11 +178,17 @@ pub(crate) fn remainder_scan(
                     // by `1 + 2^k` / `1 + c`.
                     if let Some((identity, factor_term)) = multiplier_step(lhs, rhs, &aliases) {
                         let factor_step = if identity {
-                            1 + factor_term
+                            let Some(step) = factor_term.checked_add(1) else {
+                                return None;
+                            };
+                            step
                         } else {
                             factor_term
                         };
-                        factor = factor.checked_mul(factor_step)?;
+                        let Some(next_factor) = factor.checked_mul(factor_step) else {
+                            return None;
+                        };
+                        factor = next_factor;
                         aliases.retain(|other| other != &dest);
                         aliases.push(dest);
                         consumed.push(position);
@@ -193,7 +199,10 @@ pub(crate) fn remainder_scan(
                         && a == b
                         && aliases.contains(&a)
                     {
-                        factor = factor.checked_mul(2)?;
+                        let Some(next_factor) = factor.checked_mul(2) else {
+                            return None;
+                        };
+                        factor = next_factor;
                         aliases.retain(|other| other != &dest);
                         aliases.push(dest);
                         consumed.push(position);
@@ -211,7 +220,10 @@ pub(crate) fn remainder_scan(
                     if !aliases.contains(index) {
                         return None;
                     }
-                    factor = factor.checked_mul(*d)?;
+                    let Some(next_factor) = factor.checked_mul(*d) else {
+                        return None;
+                    };
+                    factor = next_factor;
                     aliases.retain(|other| other != &dest);
                     aliases.push(dest);
                     consumed.push(position);
@@ -309,8 +321,13 @@ fn multiplier_step(lhs: &Expr, rhs: &Expr, aliases: &[u16]) -> Option<(bool, u64
                 let Expr::Const(bits) = rhs.as_ref() else {
                     return None;
                 };
-                let leaf = unwrap_leaf(strip_and_mask(base))?;
-                Some((leaf, 1u64 << bits))
+                let Some(leaf) = unwrap_leaf(strip_and_mask(base)) else {
+                    return None;
+                };
+                let Ok(bits) = u32::try_from(*bits) else {
+                    return None;
+                };
+                1u64.checked_shl(bits).map(|factor| (leaf, factor))
             }
             Expr::Bin {
                 op: crate::ir::BinOp::Mul,
@@ -320,7 +337,9 @@ fn multiplier_step(lhs: &Expr, rhs: &Expr, aliases: &[u16]) -> Option<(bool, u64
                 let Expr::Const(value) = rhs.as_ref() else {
                     return None;
                 };
-                let leaf = unwrap_leaf(strip_and_mask(base))?;
+                let Some(leaf) = unwrap_leaf(strip_and_mask(base)) else {
+                    return None;
+                };
                 Some((leaf, *value))
             }
             _ => None,
@@ -334,7 +353,9 @@ fn multiplier_step(lhs: &Expr, rhs: &Expr, aliases: &[u16]) -> Option<(bool, u64
             .filter(|(leaf, _)| unwrap_leaf(strip_and_mask(rhs)) == Some(*leaf))
             .map(|(leaf, value)| (leaf, value, true)),
     };
-    let copy = copy?;
+    let Some(copy) = copy else {
+        return None;
+    };
     let (leaf, value, _) = copy;
     if !aliases.contains(&leaf) {
         return None;
@@ -393,6 +414,14 @@ pub(crate) fn apply_remainder_follows(
         if !same_value(statements, div_position, &dividend, sub_position, &leaf) {
             continue;
         }
+        let Some(replacement) = super::proof::checked(
+            statements,
+            div_position,
+            sub_position,
+            remainder(leaf.clone(), divisor, unsigned),
+        ) else {
+            continue;
+        };
         consumed.insert(mult_position);
         // Retype the signature as for the chains `remainder_scan` matches.
         if let (Expr::Reg { width, .. }, Some((sub_dest, _))) =
@@ -406,7 +435,7 @@ pub(crate) fn apply_remainder_follows(
                 wide_signed_ret.push(sub_dest.index);
             }
         }
-        replacements.push((sub_position, remainder(leaf, divisor, unsigned)));
+        replacements.push((sub_position, replacement));
     }
 }
 
@@ -596,7 +625,14 @@ fn single_mult_follow(
     if plain_leaf != div_dest || shift_leaf != div_dest {
         return None;
     }
-    if 1 + (1u64 << bits) != divisor {
+    let Ok(bits) = u32::try_from(*bits) else {
+        return None;
+    };
+    if 1u64
+        .checked_shl(bits)
+        .and_then(|factor| factor.checked_add(1))
+        != Some(divisor)
+    {
         return None;
     }
     let sub_position = mult_position + 1;

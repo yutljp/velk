@@ -123,7 +123,7 @@ int (int x)
 -- ir
 fn sdiv3 @ 0x2013b0 (size 24)
   blk0 @ 0x2013b0:
-    ret (sext32(edi) / #0x3)
+    ret (edi / #0x3)
 -- card
 {"addr":"0x2013b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
@@ -140,7 +140,7 @@ int (int x)
 -- ir
 fn sdiv10 @ 0x2013d0 (size 24)
   blk0 @ 0x2013d0:
-    ret (sext32(edi) / #0xa)
+    ret (edi / #0xa)
 -- card
 {"addr":"0x2013d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
 
@@ -191,7 +191,7 @@ int (int x)
 -- ir
 fn smod3 @ 0x201410 (size 29)
   blk0 @ 0x201410:
-    ret (sext32(edi) % #0x3)
+    ret (edi % #0x3)
 -- card
 {"addr":"0x201410","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":29,"unsupported":0}
 
@@ -242,7 +242,7 @@ int (int x)
 -- ir
 fn smod10 @ 0x201470 (size 31)
   blk0 @ 0x201470:
-    ret (sext32(edi) % #0xa)
+    ret (edi % #0xa)
 -- card
 {"addr":"0x201470","approxTokens":156,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"unsupported":0}
 

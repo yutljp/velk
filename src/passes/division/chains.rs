@@ -91,7 +91,9 @@ pub(crate) fn signed64_chain(
                     crate::ir::BinOp::Shr | crate::ir::BinOp::Sar,
                     Expr::Reg { index, .. },
                     Expr::Const(shift),
-                ) if matches!(*shift, 63 | 31) || *shift + 1 == u64::from(dest_ref.width) => {
+                ) if matches!(*shift, 63 | 31)
+                    || shift.checked_add(1) == Some(u64::from(dest_ref.width)) =>
+                {
                     if p_aliases.contains(index) && sign_alias.is_none() {
                         sign_alias = Some(dest);
                         p_aliases.retain(|other| other != &dest);
@@ -101,7 +103,7 @@ pub(crate) fn signed64_chain(
                     return None;
                 }
                 (crate::ir::BinOp::Sar, Expr::Reg { index, .. }, Expr::Const(k)) => {
-                    if *k != 63 && p_aliases.contains(index) && main_alias.is_none() {
+                    if *k < 63 && p_aliases.contains(index) && main_alias.is_none() {
                         main_alias = Some(dest);
                         extra_shift = Some(*k);
                         p_aliases.retain(|other| other != &dest);
@@ -126,7 +128,9 @@ pub(crate) fn signed64_chain(
                     } else {
                         extra_shift.unwrap_or(0)
                     };
-                    let divisor = magic_divisor_signed64(magic, total, domain_bits)?;
+                    let Some(divisor) = magic_divisor_signed64(magic, total, domain_bits) else {
+                        return None;
+                    };
                     return Some((position, steps, divisor));
                 }
                 _ => return None,
@@ -258,7 +262,9 @@ pub(crate) fn unsigned64_chain(
                         return None;
                     }
                     let total = 64 + shift;
-                    let divisor = magic_divisor(magic, total, domain_bits)?;
+                    let Some(divisor) = magic_divisor(magic, total, domain_bits) else {
+                        return None;
+                    };
                     return Some((position, steps, divisor));
                 }
                 (crate::ir::BinOp::Sar, _, _) | (crate::ir::BinOp::Add, _, _) => return None,
@@ -309,8 +315,11 @@ pub(crate) fn signed_chain(
                     aliases.remove(&source);
                 }
                 steps.push(position);
-                let divisor = magic_divisor_signed(magic, domain_bits)
-                    .or_else(|| magic_divisor_signed(magic, 32))?;
+                let Some(divisor) = magic_divisor_signed(magic, domain_bits)
+                    .or_else(|| magic_divisor_signed(magic, 32))
+                else {
+                    return None;
+                };
                 // The sum must be the very next statement.
                 let mut probe = statements.iter().skip(position + 1).enumerate();
                 if let Some((_, next)) = probe.next()
