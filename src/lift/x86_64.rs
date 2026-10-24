@@ -1,3 +1,4 @@
+mod atomic;
 mod float;
 mod integer;
 mod machine;
@@ -235,6 +236,9 @@ fn lift_instruction(
 ) -> bool {
     let was_extended = lifter.extended_dividend.take();
     let was_zeroed = lifter.zeroed_dividend.take();
+    if atomic::lift(lifter, ins) {
+        return false;
+    }
     if is_cmov(ins.mnemonic()) {
         let Some(source) = operand(lifter, ins, 1) else {
             return false;

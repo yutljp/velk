@@ -3,8 +3,8 @@ use super::{
     register_width, simd,
 };
 
-struct Memory {
-    address: Expr,
+pub(super) struct Memory {
+    pub(super) address: Expr,
     writeback: Option<(RegRef, Expr)>,
 }
 
@@ -16,7 +16,7 @@ fn read_base(operand: u16) -> Expr {
     }
 }
 
-fn memory(_lifter: &mut Lifter, operand: Operand, width: u8) -> Option<Memory> {
+pub(super) fn memory(_lifter: &mut Lifter, operand: Operand, width: u8) -> Option<Memory> {
     match operand {
         Operand::RegPreIndex(reg, offset, writeback) => {
             let base = read_base(reg);

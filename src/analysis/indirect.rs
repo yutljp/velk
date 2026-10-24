@@ -273,7 +273,14 @@ impl Tracker<'_> {
     fn step(&self, state: &mut State, stmt: &Stmt, site: (u32, u32)) {
         let mut loads = 0;
         match stmt {
-            Stmt::Machine { outputs, .. } => {
+            Stmt::Machine {
+                instruction,
+                outputs,
+                ..
+            } => {
+                if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
+                    state.memory.clear();
+                }
                 for output in outputs {
                     state.regs.insert(output.index, Value::Unknown);
                 }

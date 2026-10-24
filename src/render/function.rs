@@ -779,7 +779,7 @@ fn render_with(
         .blocks
         .iter()
         .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::Machine { .. }))
+        .any(|stmt| matches!(stmt, Stmt::Machine { instruction, .. } if !matches!(instruction, crate::ir::MachineInstruction::Atomic { .. })))
     {
         out.push_str("#include <cpuid.h>\n#include <x86intrin.h>\n");
     }

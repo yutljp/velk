@@ -592,6 +592,17 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
             .collect(),
         definitions: BTreeMap::new(),
     };
+    if stmts().any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Atomic { .. },
+                ..
+            }
+        )
+    }) {
+        holders.slots.clear();
+    }
     // Every register some definition of which adds to a holder, and then
     // only those every definition of which splits, stepping themselves or
     // each other as loops do.
@@ -792,7 +803,10 @@ fn inline_indexes(ir: &FunctionIr, param: u16, direct: bool) -> Option<Vec<crate
                     && !(memory
                         && matches!(
                             stmt,
-                            Stmt::Store { .. } | Stmt::Call { .. } | Stmt::Unsupported { .. }
+                            Stmt::Store { .. }
+                                | Stmt::Call { .. }
+                                | Stmt::Unsupported { .. }
+                                | Stmt::Machine { .. }
                         ))
             });
         }

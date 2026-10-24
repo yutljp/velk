@@ -5325,6 +5325,14 @@ fn qualifies(ir: &FunctionIr, no_references: bool, mode: Mode) -> Result<(), &'s
             Stmt::Store { .. } => {}
             Stmt::Call { .. } => return Err("calls"),
             Stmt::BrIndirect { .. } => return Err("jumps indirectly"),
+            Stmt::Machine {
+                instruction: velk::ir::MachineInstruction::Atomic { .. },
+                ..
+            } if !memory => return Err("accesses memory"),
+            Stmt::Machine {
+                instruction: velk::ir::MachineInstruction::Atomic { .. },
+                ..
+            } => {}
             Stmt::Machine { .. } => return Err("requires an external machine-state source"),
             Stmt::Unsupported { .. } => return Err("has an unsupported instruction"),
             Stmt::BrifFlags { .. } => return Err("branches on flags"),
@@ -5336,7 +5344,9 @@ fn qualifies(ir: &FunctionIr, no_references: bool, mode: Mode) -> Result<(), &'s
             | Stmt::Trap => {}
         }
         for operand in stmt.operands() {
-            pure(operand, memory)?;
+            if let Err(reason) = pure(operand, memory) {
+                return Err(reason);
+            }
         }
     }
     // The other pass takes what this one leaves to memory.
@@ -5369,7 +5379,15 @@ fn touches_memory(stmt: &Stmt) -> bool {
             Expr::Apply { args, .. } => args.iter().any(loads),
         }
     }
-    matches!(stmt, Stmt::Store { .. }) || stmt.operands().into_iter().any(loads)
+    matches!(stmt, Stmt::Store { .. })
+        || matches!(
+            stmt,
+            Stmt::Machine {
+                instruction: velk::ir::MachineInstruction::Atomic { .. },
+                ..
+            }
+        )
+        || stmt.operands().into_iter().any(loads)
 }
 
 fn pure(expr: &Expr, memory: bool) -> Result<(), &'static str> {

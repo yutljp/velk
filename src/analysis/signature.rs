@@ -299,10 +299,16 @@ pub fn recover_with(
     }
 
     let returns_argument = arguments.contains(&crate::arch::RETURN);
-    let effects = blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::Store { .. } | Stmt::Call { .. }));
+    let effects = blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(stmt, Stmt::Store { .. } | Stmt::Call { .. })
+            || matches!(
+                stmt,
+                Stmt::Machine {
+                    instruction: crate::ir::MachineInstruction::Atomic { .. },
+                    ..
+                }
+            )
+    });
     let mut inputs: HashSet<u16> = HashSet::new();
     // Inputs some read takes more than the low 32 bits of.
     let mut wide_inputs: HashSet<u16> = HashSet::new();
@@ -1317,6 +1323,17 @@ impl Origins {
                 visit(stmt, &origin);
                 self.step(stmt, &mut origin, Some(&mut found));
             }
+        }
+        if blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            matches!(
+                stmt,
+                Stmt::Machine {
+                    instruction: crate::ir::MachineInstruction::Atomic { .. },
+                    ..
+                }
+            )
+        }) {
+            found.1.clear();
         }
         found
     }

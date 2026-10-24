@@ -1,9 +1,11 @@
+mod atomic;
 mod float;
 mod integer;
 mod lanes;
 mod memory;
 mod vector;
 
+pub(super) use atomic::recover_atomic_loops;
 #[cfg(test)]
 use float::half_immediate;
 use float::{lift_float, lift_vector_float};
@@ -395,6 +397,9 @@ fn lift_test_branch(lifter: &mut Lifter, ops: [Operand; 4], pc: u64, non_zero: b
 }
 
 fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
+    if atomic::lift(lifter, ins) {
+        return false;
+    }
     use a64::Opcode as O;
     let ops = ins.operands;
     if lift_float(lifter, ins).is_some()

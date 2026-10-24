@@ -562,6 +562,53 @@ impl Machine<'_> {
                         inputs,
                         outputs,
                     } => {
+                        if let super::MachineInstruction::Atomic { op, width, .. } = instruction {
+                            use super::AtomicOp;
+                            let mut args = Vec::new();
+                            for input in inputs {
+                                match self.eval(input) {
+                                    Ok(value) => args.push(value),
+                                    Err(reason) => return Err(reason),
+                                }
+                            }
+                            if outputs.len() == 2 {
+                                let half = *width / 2;
+                                let upper = args[0].wrapping_add(u64::from(half));
+                                let low = self.load(args[0], half);
+                                let high = self.load(upper, half);
+                                let bits = u32::from(half) * 8;
+                                if low == args[2] & mask(bits) && high == args[4] & mask(bits) {
+                                    self.store(args[0], args[1], half);
+                                    self.store(upper, args[3], half);
+                                }
+                                self.assign(outputs[0], low);
+                                self.assign(outputs[1], high);
+                                continue;
+                            }
+                            let old = self.load(args[0], *width);
+                            let operand = args.get(1).copied().unwrap_or(0);
+                            let value = match op {
+                                AtomicOp::Add => old.wrapping_add(operand),
+                                AtomicOp::Sub => old.wrapping_sub(operand),
+                                AtomicOp::And => old & operand,
+                                AtomicOp::Or => old | operand,
+                                AtomicOp::Xor => old ^ operand,
+                                AtomicOp::Exchange | AtomicOp::Store => operand,
+                                AtomicOp::CompareExchange
+                                    if old == args[2] & mask(u32::from(*width) * 8) =>
+                                {
+                                    operand
+                                }
+                                AtomicOp::CompareExchange | AtomicOp::Load => old,
+                            };
+                            if *op != AtomicOp::Load {
+                                self.store(args[0], value, *width);
+                            }
+                            if let Some(dest) = outputs.first() {
+                                self.assign(*dest, old);
+                            }
+                            continue;
+                        }
                         let Some(source) = self.source else {
                             return Err("machine state unavailable");
                         };

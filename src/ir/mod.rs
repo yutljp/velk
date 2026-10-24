@@ -584,6 +584,15 @@ pub fn fallback_call_outputs(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MachineInstruction {
+    /// Atomic memory access, with width in bytes. Inputs are address, operand
+    /// (except for loads), and expected value (for compare-exchange). The
+    /// output is the observed value; stores have no output. A wide comparison
+    /// appends the operand and expected high halves and returns both halves.
+    Atomic {
+        op: AtomicOp,
+        width: u8,
+        ordering: Ordering,
+    },
     /// EAX and ECX inputs; EAX, EBX, ECX and EDX outputs, in that order.
     Cpuid,
     /// ECX input; one 64-bit extended-control-register output.
@@ -598,9 +607,43 @@ pub enum MachineInstruction {
     WriteFlags,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum AtomicOp {
+    Add,
+    Sub,
+    And,
+    Or,
+    Xor,
+    Exchange,
+    CompareExchange,
+    Load,
+    Store,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Ordering {
+    Relaxed,
+    Acquire,
+    Release,
+    AcqRel,
+    SeqCst,
+}
+
+impl Ordering {
+    pub(crate) fn builtin(self) -> &'static str {
+        match self {
+            Self::Relaxed => "__ATOMIC_RELAXED",
+            Self::Acquire => "__ATOMIC_ACQUIRE",
+            Self::Release => "__ATOMIC_RELEASE",
+            Self::AcqRel => "__ATOMIC_ACQ_REL",
+            Self::SeqCst => "__ATOMIC_SEQ_CST",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Stmt {
-    /// An external machine-state operation. Outputs are simultaneous writes.
+    /// An indivisible machine operation. Outputs are simultaneous writes.
     Machine {
         instruction: MachineInstruction,
         inputs: Vec<Expr>,

@@ -165,8 +165,14 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     forward_expr(rhs, &pending);
                 }
                 Stmt::Machine {
-                    inputs, outputs, ..
+                    instruction,
+                    inputs,
+                    outputs,
                 } => {
+                    if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
+                        pending.clear();
+                        continue;
+                    }
                     for input in inputs {
                         forward_expr(input, &pending);
                     }
@@ -324,6 +330,17 @@ fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
 /// Fuses `t = *p; t = op(t, x); *p = t` into `*p = op(*p, x)` when the
 /// temporary is read nowhere else in the block.
 pub fn fuse_load_op_store(ir: &mut FunctionIr) {
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Atomic { .. },
+                ..
+            }
+        )
+    }) {
+        return;
+    }
     let live_in = crate::ir::cfg::live_in(ir);
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
@@ -583,6 +600,17 @@ pub(crate) fn strip_mask(expr: &Expr) -> &Expr {
 /// apart by their offset from the stack pointer on entry, which tracks the
 /// stack pointer's moves.
 pub fn forward_spilled_variables(ir: &mut FunctionIr) {
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Atomic { .. },
+                ..
+            }
+        )
+    }) {
+        return;
+    }
     use std::collections::HashMap;
     let sp = stack_pointer(ir.isa);
     let go = ir.convention == crate::ir::Convention::GoAmd64;

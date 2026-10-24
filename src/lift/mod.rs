@@ -1,4 +1,6 @@
 mod aarch64;
+#[cfg(test)]
+mod atomic_tests;
 mod exits;
 mod flags;
 #[cfg(test)]
@@ -190,15 +192,22 @@ pub fn lift_with(
         return Err(LiftError::Unreadable);
     };
     match image.isa {
-        Isa::AArch64 => lift_continuing(
-            image,
-            summaries,
-            || aarch64::Lifter::new(image, summaries),
-            addr,
-            bytes,
-            aarch64::decode,
-            extra_targets,
-        ),
+        Isa::AArch64 => {
+            let mut blocks = match lift_continuing(
+                image,
+                summaries,
+                || aarch64::Lifter::new(image, summaries),
+                addr,
+                bytes,
+                aarch64::decode,
+                extra_targets,
+            ) {
+                Ok(blocks) => blocks,
+                Err(error) => return Err(error),
+            };
+            aarch64::recover_atomic_loops(image, summaries, &mut blocks);
+            Ok(blocks)
+        }
         Isa::X86_64 => {
             let mut blocks = match lift_continuing(
                 image,

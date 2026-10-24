@@ -70,6 +70,7 @@ pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
     });
     let output = |offset| Expr::reg(OUTPUT + offset, 64);
     match instruction {
+        MachineInstruction::Atomic { .. } => unreachable!(),
         MachineInstruction::Cpuid => {
             for (offset, register) in [RAX, 3, 1, RDX].into_iter().enumerate() {
                 lifter.assign(register, 32, output(offset as u16));

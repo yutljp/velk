@@ -47,7 +47,10 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                     && loads
                     && matches!(
                         stmt,
-                        Stmt::Store { .. } | Stmt::Call { .. } | Stmt::Unsupported { .. }
+                        Stmt::Store { .. }
+                            | Stmt::Call { .. }
+                            | Stmt::Unsupported { .. }
+                            | Stmt::Machine { .. }
                     )
                     && !statement_reads(stmt).contains(&dest)
                 {
@@ -323,6 +326,18 @@ fn copy_propagate_block(
         let mut consumer = None;
         let mut foldable = true;
         for later in index + 1..block.stmts.len() {
+            if reads_memory(&template)
+                && matches!(
+                    &block.stmts[later],
+                    Stmt::Machine {
+                        instruction: crate::ir::MachineInstruction::Atomic { .. },
+                        ..
+                    }
+                )
+            {
+                foldable = false;
+                break;
+            }
             let (writes, reads) = statement_registers(&block.stmts[later]);
             let reads_dest = reads.contains(&dest);
             // The consumer may rewrite a source: it reads before it writes.

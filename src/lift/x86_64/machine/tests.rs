@@ -65,6 +65,7 @@ fn source(instruction: MachineInstruction, inputs: &[u64]) -> Result<Vec<u64>, &
         MachineInstruction::Rdtscp => vec![0x9876_5432_fedc_ba98, 0xffff_ffff_8123_4567],
         MachineInstruction::ReadFlags => vec![0x30002],
         MachineInstruction::WriteFlags => vec![inputs[0] & 0xcd5 | 0x202],
+        MachineInstruction::Atomic { .. } => panic!("atomic access does not use external state"),
     })
 }
 

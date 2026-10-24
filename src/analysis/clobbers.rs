@@ -168,7 +168,14 @@ pub(crate) fn clobbers_knowing(
         let mut ended = false;
         for stmt in &blocks[index].stmts {
             match stmt {
-                Stmt::Machine { outputs, .. } => {
+                Stmt::Machine {
+                    instruction,
+                    outputs,
+                    ..
+                } => {
+                    if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
+                        state.slots.clear();
+                    }
                     for output in outputs {
                         state.set(output.index, Value::Other);
                     }

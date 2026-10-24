@@ -20,6 +20,72 @@ pub(super) fn render(
         );
     }
     match instruction {
+        MachineInstruction::Atomic {
+            op,
+            width,
+            ordering,
+        } => {
+            use crate::ir::{AtomicOp, Ordering};
+            let ty = match width {
+                1 => "uint8_t",
+                2 => "uint16_t",
+                4 => "uint32_t",
+                8 => "uint64_t",
+                _ => "unsigned __int128",
+            };
+            let ptr = format!("({ty} *)({})", input(0));
+            let order = ordering.builtin();
+            if op == AtomicOp::CompareExchange && outputs.len() == 2 {
+                let expected = super::vacant_name("expected", &mut reserved);
+                let half = u32::from(width) * 4;
+                let lo_ty = if width == 16 { "uint64_t" } else { "uint32_t" };
+                return format!(
+                    "{{ {ty} {expected} = ({ty})({lo_ty})({}) | (({ty})({lo_ty})({}) << {half}); __atomic_compare_exchange_n({ptr}, &{expected}, ({ty})({lo_ty})({}) | (({ty})({lo_ty})({}) << {half}), 0, {order}, {order}); {} = ({lo_ty}){expected}; {} = ({lo_ty})({expected} >> {half}); }}",
+                    input(2),
+                    input(4),
+                    input(1),
+                    input(3),
+                    output(0),
+                    output(1)
+                );
+            }
+            match op {
+                AtomicOp::Load => format!("{} = __atomic_load_n({ptr}, {order});", output(0)),
+                AtomicOp::Store => {
+                    format!("__atomic_store_n({ptr}, ({ty})({}), {order});", input(1))
+                }
+                AtomicOp::CompareExchange => {
+                    let expected = super::vacant_name("expected", &mut reserved);
+                    let failure = match ordering {
+                        Ordering::Release => Ordering::Relaxed,
+                        Ordering::AcqRel => Ordering::Acquire,
+                        other => other,
+                    }
+                    .builtin();
+                    format!(
+                        "{{ {ty} {expected} = ({ty})({}); __atomic_compare_exchange_n({ptr}, &{expected}, ({ty})({}), 0, {order}, {failure}); {} = {expected}; }}",
+                        input(2),
+                        input(1),
+                        output(0)
+                    )
+                }
+                _ => {
+                    let name = match op {
+                        AtomicOp::Add => "fetch_add",
+                        AtomicOp::Sub => "fetch_sub",
+                        AtomicOp::And => "fetch_and",
+                        AtomicOp::Or => "fetch_or",
+                        AtomicOp::Xor => "fetch_xor",
+                        _ => "exchange_n",
+                    };
+                    format!(
+                        "{} = __atomic_{name}({ptr}, ({ty})({}), {order});",
+                        output(0),
+                        input(1)
+                    )
+                }
+            }
+        }
         MachineInstruction::Cpuid => {
             let a = super::vacant_name("a", &mut reserved);
             let b = super::vacant_name("b", &mut reserved);

@@ -63,6 +63,17 @@ fn process(
     promoted: &mut bool,
     call_frames: &[Vec<Option<i64>>],
 ) {
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Atomic { .. },
+                ..
+            }
+        )
+    }) {
+        return;
+    }
     let sp = crate::arch::stack_pointer(ir.isa);
     if ir.blocks.is_empty() || super::frame_address_escapes(ir, sp) {
         return;
