@@ -177,6 +177,9 @@ fn aggregate_size(
 }
 
 pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
+    if let Some(types) = image.codeview.function_types(image, addr) {
+        return Some(types);
+    }
     if image.byte_order() != Some(object::Endianness::Little) {
         return None;
     }

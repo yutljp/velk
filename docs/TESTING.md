@@ -520,3 +520,12 @@ It does not implement Windows exception dispatch in standard C. Catch types,
 C++ cleanup maps, FrameHandler4 compressed tables, chained unwind records,
 and relocatable COFF exception tables are not decoded. No executable
 `__try` syntax is emitted, so these annotations need no MSVC extensions.
+CodeView fixtures under `tests/fixtures/codeview` are built from `loops.c`,
+`structs.c`, and `l4_memory.c` by `sh tests/make_codeview.sh` using clang and
+lld-link. Each source has O0/O2 COFF objects with embedded records, PE DLLs with
+matching PDBs, and DLLs without debug information. Machine-specific build
+directories are replaced without changing record lengths. PDBs are sidecars,
+not executable fixtures. `tests/codeview.rs` compiles the printed C at O0/O2 and
+checks source results for fourteen functions, including structure values and
+pointer fields; the two functions that access globals are compiled separately. Loader unit tests cover truncated streams, cyclic types, invalid symbol
+records, fixed frame locations, and missing or mismatched sidecars.

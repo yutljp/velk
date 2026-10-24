@@ -1,7 +1,7 @@
-# 6504 functions, 72762 compared runs
+# 6600 functions, 73875 compared runs
 # runs left unfinished:
 #   machine state unavailable (Go): 120
-#   step limit (C and C++): 520
+#   step limit (C and C++): 559
 #   step limit (Go): 2810
 #   step limit (Rust): 1692
 #   switch without a matching case (Rust): 144

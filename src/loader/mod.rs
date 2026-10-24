@@ -1,3 +1,4 @@
+mod codeview;
 mod discover;
 pub mod dwarf;
 pub mod go;
@@ -91,6 +92,7 @@ pub enum NameSource {
     Entry,
     Pclntab,
     Dwarf,
+    CodeView,
     Unwind,
     Plt,
     Prologue,
@@ -104,6 +106,7 @@ impl fmt::Display for NameSource {
             NameSource::Entry => "entry",
             NameSource::Pclntab => "pclntab",
             NameSource::Dwarf => "dwarf",
+            NameSource::CodeView => "codeview",
             NameSource::Unwind => "unwind",
             NameSource::Plt => "plt",
             NameSource::Prologue => "prologue",
@@ -181,6 +184,7 @@ pub struct Summary {
 
 #[derive(Debug)]
 pub struct Image {
+    codeview: codeview::Data,
     pub format: Format,
     pub isa: Isa,
     /// The byte order of the file's data, which its debug information
@@ -328,6 +332,7 @@ impl Image {
     #[cfg(test)]
     pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
         Self {
+            codeview: Default::default(),
             format: Format::Elf,
             isa,
             byte_order: match isa {
@@ -847,7 +852,9 @@ pub fn load(path: &Path) -> Result<Image> {
     });
     estimate_sizes(&sections, &mut functions);
 
+    let codeview = codeview::read(path, &file, &bases);
     let mut image = Image {
+        codeview,
         format: format_of(kind),
         isa: isa_of(file.architecture()),
         byte_order: Some(if file.is_little_endian() {
@@ -882,6 +889,21 @@ pub fn load(path: &Path) -> Result<Image> {
     };
     image.add_go_functions();
     image.add_dwarf_functions();
+    for function in image.codeview.functions() {
+        if let Some(existing) = image.functions.get_mut(&function.addr)
+            && existing.size_estimated
+        {
+            existing.size = None;
+            existing.size_estimated = false;
+        }
+        upsert(
+            &mut image.functions,
+            function.addr,
+            Some(function.name),
+            Some(function.size),
+            NameSource::CodeView,
+        );
+    }
     image.add_unwind_functions();
     image.exception_handlers = seh::read(&image);
     seh::discover(&mut image);

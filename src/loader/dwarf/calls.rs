@@ -254,6 +254,19 @@ fn call_function_types(
 }
 
 pub(crate) fn call_index(image: &Image) -> Result<CallIndex, AbiIssue> {
+    let codeview = crate::loader::codeview::call_index(image);
+    let mut found = match dwarf_call_index(image) {
+        Ok(found) => found,
+        Err(issue) if codeview.addresses.is_empty() => return Err(issue),
+        Err(_) => return Ok(codeview),
+    };
+    for (address, sources) in codeview.addresses {
+        found.addresses.entry(address).or_default().extend(sources);
+    }
+    Ok(found)
+}
+
+fn dwarf_call_index(image: &Image) -> Result<CallIndex, AbiIssue> {
     let dwarf = call_dwarf(image)?;
     let mut found = CallIndex::default();
     let mut units = dwarf.units();
@@ -408,6 +421,13 @@ fn call_enumerators(
 }
 
 pub(crate) fn call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue> {
+    if source == crate::loader::codeview::SOURCE {
+        return Ok(crate::loader::codeview::call_unit(image));
+    }
+    dwarf_call_unit(image, source)
+}
+
+fn dwarf_call_unit(image: &Image, source: u64) -> Result<CallUnit, AbiIssue> {
     let dwarf = call_dwarf(image)?;
     let mut units = dwarf.units();
     while let Some(header) = units.next().map_err(|_| AbiIssue::UnknownLayout)? {

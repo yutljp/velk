@@ -1,0 +1,282 @@
+# codeview/structs.O2.dll: pe x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 15 rect_area dynamic,codeview
+0x180001010 169 record_total dynamic,codeview
+0x1800010c0 26 point_add dynamic,codeview
+0x1800010e0 24 big_make dynamic,codeview
+0x180001100 27 big_sum dynamic,codeview
+0x180001120 3 word_low_byte dynamic,codeview
+0x180001130 22 flags_level dynamic,codeview
+0x180001150 14 flags_set_mode dynamic,codeview
+/* velk prelude */
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+/* end velk prelude */
+
+== 0x180001000 rect_area
+-- decompile
+/* velk pseudo-C: rect_area @ 0x180001000 */
+struct point { _Alignas(4) int32_t x; int32_t y; };
+struct rect { _Alignas(4) struct point min; struct point max; };
+int32_t rect_area(struct rect *r) {
+    return (r->max.y - r->min.y) * (r->max.x - r->min.x);
+}
+-- signature
+int32_t (struct rect * r)
+-- references
+
+-- ir
+fn rect_area @ 0x180001000 (size 15)
+  blk0 @ 0x180001000:
+    ret (((load32((rcx + #0xc)) - load32((rcx + #0x4))) * (load32((rcx + #0x8)) - load32(rcx))) & #0xffffffff)
+-- card
+{"accesses":["r +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x180001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["dynamic","codeview"],"section":".text","size":15,"unsupported":0}
+
+== 0x180001010 record_total
+-- decompile
+/* velk pseudo-C: record_total @ 0x180001010 */
+struct record {
+    _Alignas(4) int8_t tag;
+    uint8_t gap_0x1[0x3];
+    int32_t value;
+    int16_t count;
+    uint8_t gap_0xa[0x2];
+};
+int32_t record_total(struct record *items, int32_t n) {
+    uint32_t v1;
+    uint64_t v2;
+    int64_t v3;
+    int32_t v4;
+    void *v6;
+    int32_t v7;
+    int32_t v8;
+    int64_t v10;
+    int64_t i;
+
+    if (n <= 0) {
+        return 0;
+    }
+    v1 = n;
+    v2 = v1 & 0x3;
+    if ((uint32_t)n >= 4) {
+        v1 &= 0x7ffffffc;
+        v6 = (void *)&items[3].count;
+        v3 = 0;
+        v4 = 0;
+        do {
+            v7 = (int16_t)*(uint16_t *)(v6 - 0x18) * *(uint32_t *)(v6 - 0x1c);
+            v8 = (int16_t)*(uint16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + (int16_t)*(uint16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
+            v4 = (int16_t)*(uint16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
+            v3 += 4;
+            v6 = v6 + 0x30;
+        } while (v1 != v3);
+        if (v2 == 0) {
+            return v4;
+        }
+    } else {
+        v3 = 0;
+        v4 = 0;
+    }
+    v10 = (uintptr_t)((uint8_t *)items + (v3 + v3 * 0x2) * 0x4 + 0x8);
+    v2 = (v2 << 2) & 0xffffffff;
+    v3 = v2 + v2 * 2;
+    i = 0;
+    do {
+        v1 = (int16_t)*(uint16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
+        v4 += v1;
+        i += 12;
+    } while (v3 != i);
+    return v4;
+}
+-- signature
+int32_t (struct record * items, int32_t n)
+-- references
+
+-- ir
+fn record_total @ 0x180001010 (size 169)
+  blk0 @ 0x180001010:
+    brif le (rdx & #0xffffffff), #0x0 -> 0x18000102a
+  blk1 @ 0x180001015:
+    v1 = (rdx & #0xffffffff)
+    v2 = (v1 & #0x3)
+    brif cs (rdx & #0xffffffff), #0x4 -> 0x18000102e
+  blk2 @ 0x180001024:
+    v3 = #0x0
+    v4 = #0x0
+    br 0x180001083
+  blk3 @ 0x18000102a:
+    ret #0x0
+  blk4 @ 0x18000102e:
+    v1 = (v1 & #0x7ffffffc)
+    v6 = (rcx + #0x2c)
+    v3 = #0x0
+    v4 = #0x0
+  blk5 @ 0x180001040:
+    v7 = ((sext16(load16((v6 + #0xffffffffffffffe8))) & #0xffffffff) * load32((v6 + #0xffffffffffffffe4)))
+    v8 = ((((sext16(load16((v6 + #0xfffffffffffffff4))) * load32((v6 + #0xfffffffffffffff0))) + v7) + ((v4 & #0xffffffff) + (sext16(load16((v6 + #0xffffffffffffffdc))) * load32((v6 + #0xffffffffffffffd8))))) & #0xffffffff)
+    v4 = (((sext16(load16(v6)) * load32((v6 + #0xfffffffffffffffc))) + (v8 & #0xffffffff)) & #0xffffffff)
+    v3 = (v3 + #0x4)
+    v6 = (v6 + #0x30)
+    brif ne v1, v3 -> 0x180001040
+  blk6 @ 0x18000107e:
+    brif eq v2, #0x0 -> 0x1800010b7
+  blk7 @ 0x180001083:
+    v10 = ((rcx + ((v3 + (v3 * #0x2)) * #0x4)) + #0x8)
+    v2 = (((v2 & #0xffffffff) << #0x2) & #0xffffffff)
+    v3 = (v2 + (v2 * #0x2))
+    v13 = #0x0
+  blk8 @ 0x1800010a0:
+    v1 = ((sext16(load16((v10 + v13))) * load32(((v10 + v13) + #0xfffffffffffffffc))) & #0xffffffff)
+    v4 = (((v4 & #0xffffffff) + (v1 & #0xffffffff)) & #0xffffffff)
+    v13 = (v13 + #0xc)
+    brif ne v3, v13 -> 0x1800010a0
+  blk9 @ 0x1800010b7:
+    ret v4
+-- card
+{"addr":"0x180001010","approxTokens":162,"blocks":10,"hardReasons":[],"name":"record_total","nameSources":["dynamic","codeview"],"section":".text","size":169,"unsupported":0}
+
+== 0x1800010c0 point_add
+-- decompile
+/* velk pseudo-C: point_add @ 0x1800010c0 */
+struct point { _Alignas(4) int32_t x; int32_t y; };
+struct point point_add(struct point a, struct point b) {
+    struct point result = {0};
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
+
+    {
+        uint64_t result_bits = (a_bits + b_bits) & 0xffffffff | (b_bits & 0xffffffff00000000) + a_bits & 0xffffffff00000000;
+        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        return result;
+    }
+}
+-- signature
+int64_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn point_add @ 0x1800010c0 (size 26)
+  blk0 @ 0x1800010c0:
+    ret results((((rcx + rdx) & #0xffffffff) | (((rdx & #0xffffffff00000000) + rcx) & #0xffffffff00000000)))
+-- card
+{"addr":"0x1800010c0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["dynamic","codeview"],"section":".text","size":26,"unsupported":0}
+
+== 0x1800010e0 big_make
+-- decompile
+/* velk pseudo-C: big_make @ 0x1800010e0 */
+/* struct: rcx +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t */
+struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
+struct big big_make(int32_t seed) {
+    struct big result = {0};
+    uint64_t seed_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&seed + 0x0, 4);
+    uint8_t *result_address = (uint8_t *)&result;
+
+    __builtin_memcpy(result_address, &(uint32_t){seed_bits}, 4);
+    __builtin_memcpy(result_address + 0x4, &(uint32_t){seed_bits + 1}, 4);
+    __builtin_memcpy(result_address + 0x8, &(uint32_t){seed_bits + seed_bits}, 4);
+    __builtin_memcpy(result_address + 0xc, &(uint32_t){seed_bits + seed_bits * 2}, 4);
+    return result;
+}
+-- signature
+int64_t (struct S1 * a0, int32_t a1)
+-- references
+
+-- ir
+fn big_make @ 0x1800010e0 (size 24)
+  blk0 @ 0x1800010e0:
+    v1 = rcx
+    store32(rdx, rcx)
+    store32((rdx + #0x1), (v1 + #0x4))
+    store32((rdx + rdx), (v1 + #0x8))
+    store32((rdx + (rdx * #0x2)), (v1 + #0xc))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x1800010e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["dynamic","codeview"],"section":".text","size":24,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+
+== 0x180001100 big_sum
+-- decompile
+/* velk pseudo-C: big_sum @ 0x180001100 */
+/* struct: rcx +0x0:uint64_t, +0x8:uint64_t */
+struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
+int32_t big_sum(struct big value) {
+    uint8_t *value_address = (uint8_t *)&value;
+    uint64_t v1;
+
+    v1 = add_lanes32(*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8), *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8));
+    return add_lanes32(v1 >> 32 | v1 >> 32 << 32, v1);
+}
+-- signature
+uint64_t (struct S1 * a0)
+-- references
+
+-- ir
+fn big_sum @ 0x180001100 (size 27)
+  blk0 @ 0x180001100:
+    v1 = add_lanes32(load64((rcx + #0x8)), load64(rcx))
+    ret results((add_lanes32((((v1 >> #0x20) & #0xffffffff) | (((v1 >> #0x20) & #0xffffffff) << #0x20)), v1) & #0xffffffff))
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x180001100","approxTokens":138,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["dynamic","codeview"],"section":".text","size":27,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x180001120 word_low_byte
+-- decompile
+/* velk pseudo-C: word_low_byte @ 0x180001120 */
+uint8_t word_low_byte(int32_t w) {
+    return w;
+}
+-- signature
+uint8_t (int32_t w)
+-- references
+
+-- ir
+fn word_low_byte @ 0x180001120 (size 3)
+  blk0 @ 0x180001120:
+    ret ecx
+-- card
+{"addr":"0x180001120","approxTokens":108,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["dynamic","codeview"],"section":".text","size":3,"unsupported":0}
+
+== 0x180001130 flags_level
+-- decompile
+/* velk pseudo-C: flags_level @ 0x180001130 */
+uint32_t flags_level(uint32_t a0) {
+    return ((a0 & 0x1) == 0 ? a0 >> 1 & 0x7 : a0 >> 4 & 0xf);
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn flags_level @ 0x180001130 (size 22)
+  blk0 @ 0x180001130:
+    ret select eq (ecx & #0x1), #0x0 ? ((ecx >> #0x1) & #0x7), ((ecx >> #0x4) & #0xf)
+-- card
+{"addr":"0x180001130","approxTokens":150,"blocks":1,"hardReasons":[],"name":"flags_level","nameSources":["dynamic","codeview"],"section":".text","size":22,"unsupported":0}
+
+== 0x180001150 flags_set_mode
+-- decompile
+/* velk pseudo-C: flags_set_mode @ 0x180001150 */
+/* struct: f +0x0:uint32_t */
+void flags_set_mode(void *f, uint32_t mode) {
+    *(uint32_t *)(f) = (*(uint32_t *)(f) & 0xfffffff1) + (mode & 0x7) * 2;
+}
+-- signature
+void (void * f, uint32_t mode)
+-- references
+
+-- ir
+fn flags_set_mode @ 0x180001150 (size 14)
+  blk0 @ 0x180001150:
+    store32(((load32(rcx) & #0xfffffff1) + ((rdx & #0x7) * #0x2)), rcx)
+    ret #0x0
+-- card
+{"accesses":["f +0x0:uint32_t"],"addr":"0x180001150","approxTokens":132,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["dynamic","codeview"],"section":".text","size":14,"unsupported":0}

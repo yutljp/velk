@@ -1,18 +1,18 @@
 # functions left out:
 #   branches on flags: 3
 #   calls: 3912
-#   computes on floats or vectors: 70
-#   computes on registers alone: 1230
-#   reads a register that is not a parameter: 61
-#   refers to data: 440
+#   computes on floats or vectors: 74
+#   computes on registers alone: 1247
+#   reads a register that is not a parameter: 65
+#   refers to data: 448
 #   requires an external machine-state source: 2
-#   returns no integer: 120
-#   takes an argument that is no integer: 58
+#   returns no integer: 128
+#   takes an argument that is no integer: 66
 #   takes arguments on the stack: 62
 # runs left out:
 #   reaches memory no page can map: 267
-#   reads a register that is not a parameter: 772
-#   step limit: 637
+#   reads a register that is not a parameter: 832
+#   step limit: 667
 #   switch without a matching case: 36
 # arm64.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # arm64_debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
@@ -24,6 +24,24 @@
 # arm64_macho.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # calls_a64.elf: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # calls_a64.o: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# codeview/l4_memory.O0.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/l4_memory.O0.obj: 4 functions, 4 qualify, 4 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/l4_memory.O0.stripped.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/l4_memory.O2.dll: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# codeview/l4_memory.O2.obj: 4 functions, 3 qualify, 3 compile, 0 do not, 1 compared (12 runs), 0 differ
+# codeview/l4_memory.O2.stripped.dll: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# codeview/loops.O0.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/loops.O0.obj: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/loops.O0.stripped.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/loops.O2.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/loops.O2.obj: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/loops.O2.stripped.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# codeview/structs.O0.dll: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
+# codeview/structs.O0.obj: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
+# codeview/structs.O0.stripped.dll: 8 functions, 6 qualify, 6 compile, 0 do not, 5 compared (58 runs), 0 differ
+# codeview/structs.O2.dll: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
+# codeview/structs.O2.obj: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
+# codeview/structs.O2.stripped.dll: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (46 runs), 0 differ
 # cpp_classes_a64.o: 5 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # cpp_classes_x64.o: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_virtual_a64.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ

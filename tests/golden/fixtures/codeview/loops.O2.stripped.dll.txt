@@ -1,0 +1,171 @@
+# codeview/loops.O2.stripped.dll: pe x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 32 count_bits dynamic
+0x180001020 64 sum_until dynamic
+0x180001060 48 sum_till_neg dynamic
+0x180001090 44 sum_until_zero dynamic
+
+== 0x180001000 count_bits
+-- decompile
+/* velk pseudo-C: count_bits @ 0x180001000 */
+int32_t count_bits(uint32_t a0) {
+    int32_t result;
+
+    result = 0;
+    if (a0 == 0) {
+        return 0;
+    }
+    do {
+        result += (a0 & 0x1);
+        a0 >>= 1;
+    } while (a0 != 0);
+    return result;
+}
+-- signature
+int32_t (uint32_t a0)
+-- references
+
+-- ir
+fn count_bits @ 0x180001000 (size 32)
+  blk0 @ 0x180001000:
+    v1 = #0x0
+    brif eq ecx, #0x0 -> 0x18000101b
+  blk1 @ 0x180001010:
+    v1 = (((v1 & #0xffffffff) + (ecx & #0x1)) & #0xffffffff)
+    ecx = (ecx >> #0x1)
+    brif ne ecx, #0x0 -> 0x180001010
+  blk2 @ 0x18000101b:
+    ret v1
+-- card
+{"addr":"0x180001000","approxTokens":156,"blocks":3,"hardReasons":[],"name":"count_bits","nameSources":["dynamic"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001020 sum_until
+-- decompile
+/* velk pseudo-C: sum_until @ 0x180001020 */
+int32_t sum_until(int32_t a0) {
+    int32_t v1;
+    uint64_t v2;
+    int32_t v4;
+
+    if (a0 <= 0) {
+        return 0;
+    }
+    v1 = a0 + 1;
+    v2 = (v1 >= 3 ? v1 : 2) & 0xffffffff;
+    v4 = ((v2 - 3) & 0xffffffff) * (0x1fffffffe + v2) >> 1;
+    return v4 + v2 * 2 - 3;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn sum_until @ 0x180001020 (size 64)
+  blk0 @ 0x180001020:
+    brif le (rcx & #0xffffffff), #0x0 -> 0x18000104f
+  blk1 @ 0x180001024:
+    v1 = (((rcx & #0xffffffff) + #0x1) & #0xffffffff)
+    v2 = (select ge (v1 & #0xffffffff), #0x3 ? (v1 & #0xffffffff), #0x2 & #0xffffffff)
+    v4 = ((((v2 + #0xfffffffffffffffd) & #0xffffffff) * (#0x1fffffffe + v2)) >> #0x1)
+    ret (((v4 + (v2 * #0x2)) + #0xfffffffffffffffd) & #0xffffffff)
+  blk2 @ 0x18000104f:
+    ret #0x0
+-- card
+{"addr":"0x180001020","approxTokens":180,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["dynamic"],"section":".text","size":64,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001060 sum_till_neg
+-- decompile
+/* velk pseudo-C: sum_till_neg @ 0x180001060 */
+int32_t sum_till_neg(uint32_t *a0, int32_t a1) {
+    int32_t result;
+    uint32_t v3;
+    int64_t i;
+    int32_t v5;
+
+    result = 0;
+    v3 = (a1 <= 0 ? 0 : a1);
+    if (a1 <= 0) {
+        return 0;
+    }
+    result = 0;
+    i = 0;
+    do {
+        v5 = a0[i];
+        if (v5 < 0) {
+            break;
+        }
+        result += v5;
+        ++i;
+    } while (v3 != i);
+    return result;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn sum_till_neg @ 0x180001060 (size 48)
+  blk0 @ 0x180001060:
+    v1 = #0x0
+    v3 = (select le (rdx & #0xffffffff), #0x0 ? #0x0, (rdx & #0xffffffff) & #0xffffffff)
+    brif le (rdx & #0xffffffff), #0x0 -> 0x180001084
+  blk1 @ 0x180001069:
+    v1 = #0x0
+    v4 = #0x0
+  blk2 @ 0x180001070:
+    v5 = load32((rcx + (v4 * #0x4)))
+    brif lt v5, #0x0 -> 0x180001084
+  blk3 @ 0x180001079:
+    v1 = (((v1 & #0xffffffff) + v5) & #0xffffffff)
+    v4 = (v4 + #0x1)
+    brif ne v3, v4 -> 0x180001070
+  blk4 @ 0x180001084:
+    ret v1
+-- card
+{"addr":"0x180001060","approxTokens":186,"blocks":5,"hardReasons":[],"name":"sum_till_neg","nameSources":["dynamic"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001090 sum_until_zero
+-- decompile
+/* velk pseudo-C: sum_until_zero @ 0x180001090 */
+int32_t sum_until_zero(uint32_t *a0, int32_t a1) {
+    int64_t i;
+    int32_t v3;
+    int32_t v4;
+
+    if (a1 <= 0) {
+        return 0;
+    }
+    v3 = 0;
+    for (i = 0; i < (uint32_t)a1; i++) {
+        v4 = a0[i];
+        if (v4 == 0) {
+            break;
+        }
+        v3 += (v4 <= 0 ? 0 : v4);
+    }
+    return v3;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn sum_until_zero @ 0x180001090 (size 44)
+  blk0 @ 0x180001090:
+    brif le (rdx & #0xffffffff), #0x0 -> 0x1800010b9
+  blk1 @ 0x180001094:
+    v1 = (rdx & #0xffffffff)
+    v2 = #0x0
+    v3 = #0x0
+  blk2 @ 0x1800010a0:
+    v4 = load32((rcx + (v2 * #0x4)))
+    brif eq v4, #0x0 -> 0x1800010b8
+  blk3 @ 0x1800010a9:
+    v3 = (((v3 & #0xffffffff) + select le v4, #0x0 ? #0x0, v4) & #0xffffffff)
+    v2 = (v2 + #0x1)
+    brif ne v1, v2 -> 0x1800010a0
+  blk4 @ 0x1800010b8:
+    ret v3
+  blk5 @ 0x1800010b9:
+    ret #0x0
+-- card
+{"addr":"0x180001090","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["dynamic"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
