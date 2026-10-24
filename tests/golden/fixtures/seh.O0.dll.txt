@@ -1,0 +1,297 @@
+# seh.O0.dll: pe x86_64 no entry, 10 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 14 choose_filter dynamic,unwind
+0x180001010 68 seh_except dynamic,unwind
+0x180001060 50 seh_except__except_filter_0 unwind
+0x1800010a0 64 seh_finally dynamic,unwind
+0x1800010e0 31 seh_finally__finally_0 unwind
+0x180001100 33 - unwind
+0x180001130 94 seh_nested dynamic,unwind
+0x180001190 33 seh_nested__finally_0 unwind
+0x1800011c0 30 - unwind
+0x1800011e0 6 __C_specific_handler plt
+
+== 0x180001000 choose_filter
+-- decompile
+/* velk pseudo-C: choose_filter @ 0x180001000 */
+int32_t choose_filter(int32_t a0) {
+    return a0 & 0x1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn choose_filter @ 0x180001000 (size 14)
+  blk0 @ 0x180001000:
+    ret (rcx & #0x1)
+-- card
+{"addr":"0x180001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"choose_filter","nameSources":["dynamic","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x180001010 seh_except
+-- decompile
+/* Windows x64 exception handler: __C_specific_handler at 0x1800011e0, data at 0x180002154. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* __try [0x180001020, 0x18000102a): __except (filter at 0x180001060); handler block at 0x18000102f. */
+/* velk pseudo-C: seh_except @ 0x180001010 */
+/* ref: 0x1800020f0 .rdata */
+int32_t seh_except(int32_t a0) {
+    uint64_t v1;
+    uint64_t v3;
+    uint32_t local_0; /* [sp-18] */
+    uint32_t local_1; /* [sp-c] */
+
+    local_0 = ((int32_t)(imported_value(a0 & 0xffffffff)));
+    local_1 = local_0;
+    return local_1;
+L_18000102f:
+    *(uint64_t *)(v3 - 0x18) = v1;
+    *(uint32_t *)(v3 - 0xc) = *(uint64_t *)(v3 - 0x18);
+    *(uint32_t *)(v3 - 0x4) = 0xfffffff9;
+    return local_1;
+L_18000104b:
+    return local_1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+0x1800020f0 .rdata
+-- ir
+fn seh_except @ 0x180001010 (size 68)
+  blk0 @ 0x180001010:
+    v2:rax, xmm0 = call *load64(#0x1800020f0)((rcx & #0xffffffff))
+    store32(v2, (rsp + #0xffffffffffffffe8))
+    br 0x180001045
+  blk1 @ 0x18000102f:
+    store64(rax, (rbp + #0xffffffffffffffe8))
+    br 0x180001035
+  blk2 @ 0x180001035:
+    store32(load64((rbp + #0xffffffffffffffe8)), (rbp + #0xfffffffffffffff4))
+    store32(#0xfffffff9, (rbp + #0xfffffffffffffffc))
+    br 0x18000104b
+  blk3 @ 0x180001045:
+    store32(load32((rsp + #0xffffffffffffffe8)), (rsp + #0xfffffffffffffff4))
+  blk4 @ 0x18000104b:
+    ret load32((rsp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x180001010","approxTokens":156,"blocks":5,"hardReasons":[],"name":"seh_except","nameSources":["dynamic","unwind"],"section":".text","size":68,"unsupported":0}
+
+== 0x180001060 seh_except__except_filter_0
+-- decompile
+/* velk pseudo-C: seh_except__except_filter_0 @ 0x180001060 */
+int32_t seh_except__except_filter_0(uint64_t *a0, uint32_t *a1) {
+    int32_t v1;
+
+    v1 = *a0;
+    return choose_filter(a1[14]);
+}
+-- signature
+int32_t (uint64_t * a0, uint32_t * a1)
+-- references
+
+-- ir
+fn seh_except__except_filter_0 @ 0x180001060 (size 50)
+  blk0 @ 0x180001060:
+    v1 = load64(rcx)
+    v3:rax = call 0x180001000(load32((rdx + #0x38)))
+    ret v3
+-- card
+{"addr":"0x180001060","approxTokens":174,"blocks":1,"hardReasons":[],"name":"seh_except__except_filter_0","nameSources":["unwind"],"section":".text","size":50,"unsupported":0}
+
+== 0x1800010a0 seh_finally
+-- decompile
+/* Windows x64 exception handler: __C_specific_handler at 0x1800011e0, data at 0x180002180. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* __try [0x1800010b6, 0x1800010c0): __finally (termination handler at 0x1800010e0). */
+/* velk pseudo-C: seh_finally @ 0x1800010a0 */
+/* ref: 0x1800020f0 .rdata */
+int32_t seh_finally(int32_t a0) {
+    uint32_t local_0; /* [sp-c] */
+    uint32_t result; /* [sp-10] */
+    uint32_t local_2; /* [sp-14] */
+    _Alignas(16) uint8_t local_3[0x8]; /* [sp-8] */
+
+    local_0 = a0;
+    result = a0;
+    local_2 = ((int32_t)(imported_value(a0 & 0xffffffff)));
+    result = local_2;
+    sub_180001100(0, local_3);
+    return result;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+0x1800020f0 .rdata
+-- ir
+fn seh_finally @ 0x1800010a0 (size 64)
+  blk0 @ 0x1800010a0:
+    store32(rcx, (rsp + #0xfffffffffffffff4))
+    store32((rcx & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    v3:rax, xmm0 = call *load64(#0x1800020f0)((rcx & #0xffffffff))
+    store32(v3, (rsp + #0xffffffffffffffec))
+    br 0x1800010c5
+  blk1 @ 0x1800010c5:
+    store32(load32((rsp + #0xffffffffffffffec)), (rsp + #0xfffffffffffffff0))
+    rax = call 0x180001100(#0x0, (rsp + #0xfffffffffffffff8))
+    ret load32((rsp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x1800010a0","approxTokens":168,"blocks":2,"hardReasons":[],"name":"seh_finally","nameSources":["dynamic","unwind"],"section":".text","size":64,"unsupported":0}
+
+== 0x1800010e0 seh_finally__finally_0
+-- decompile
+/* velk pseudo-C: seh_finally__finally_0 @ 0x1800010e0 */
+int32_t seh_finally__finally_0(int64_t a0, int64_t a1) {
+    return sub_180001100(a0 & 0xffffffffffffff00 | 0x1, a1 + 48);
+}
+-- signature
+int32_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn seh_finally__finally_0 @ 0x1800010e0 (size 31)
+  blk0 @ 0x1800010e0:
+    v3:rax = call 0x180001100(((rcx & #0xffffffffffffff00) | #0x1), (rdx + #0x30))
+    ret v3
+-- card
+{"addr":"0x1800010e0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"seh_finally__finally_0","nameSources":["unwind"],"section":".text","size":31,"unsupported":0}
+
+== 0x180001100 -
+-- decompile
+/* velk pseudo-C: sub_180001100 @ 0x180001100 */
+int32_t sub_180001100(int32_t a0, uint32_t *a1) {
+    int32_t v1;
+
+    v1 = a1[-2] + 3;
+    a1[-2] = v1;
+    return v1;
+}
+-- signature
+int32_t (int32_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001100 (size 33)
+  blk0 @ 0x180001100:
+    v1 = (load32((rdx + #0xfffffffffffffff8)) + #0x3)
+    store32(v1, (rdx + #0xfffffffffffffff8))
+    ret v1
+-- card
+{"accesses":["a1 +0xfffffffffffffff8:uint32_t"],"addr":"0x180001100","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":33,"unsupported":0}
+
+== 0x180001130 seh_nested
+-- decompile
+/* Windows x64 exception handler: __C_specific_handler at 0x1800011e0, data at 0x1800021b4. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* __try [0x180001140, 0x18000114a): __finally (termination handler at 0x180001190). */
+/* __try [0x180001140, 0x18000114a): __except (1); handler block at 0x180001171. */
+/* __try [0x180001167, 0x18000116d): __except (1); handler block at 0x180001171. */
+/* velk pseudo-C: seh_nested @ 0x180001130 */
+/* ref: 0x1800020f0 .rdata */
+int32_t seh_nested(int32_t a0) {
+    uint64_t v1;
+    uint64_t v3;
+    uint32_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-1c] */
+    uint32_t local_2; /* [sp-c] */
+    uint32_t local_3; /* [sp-18] */
+    _Alignas(16) uint8_t local_4[0x8]; /* [sp-8] */
+
+    local_0 = a0;
+    local_1 = ((int32_t)(imported_value(a0 & 0xffffffff)));
+    local_2 = local_1;
+    local_3 = 1;
+    sub_1800011c0(1, local_4);
+    return local_2;
+L_180001171:
+    *(uint64_t *)(v3 - 0x20) = v1;
+    *(uint32_t *)(v3 - 0xc) = *(uint64_t *)(v3 - 0x20);
+    *(uint32_t *)(v3 - 0x4) = 0xfffffff7;
+    return local_2;
+L_180001185:
+    return local_2;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+0x1800020f0 .rdata
+-- ir
+fn seh_nested @ 0x180001130 (size 94)
+  blk0 @ 0x180001130:
+    store32(rcx, (rsp + #0xfffffffffffffff0))
+    v2:rax, xmm0 = call *load64(#0x1800020f0)((rcx & #0xffffffff))
+    store32(v2, (rsp + #0xffffffffffffffe4))
+    br 0x18000114f
+  blk1 @ 0x18000114f:
+    store32(load32((rsp + #0xffffffffffffffe4)), (rsp + #0xfffffffffffffff4))
+    store32(#0x1, (rsp + #0xffffffffffffffe8))
+    rax, xmm0 = call 0x1800011c0(#0x1, (rsp + #0xfffffffffffffff8))
+    br 0x18000116f
+  blk2 @ 0x18000116f:
+    br 0x180001185
+  blk3 @ 0x180001171:
+    store64(rax, (rbp + #0xffffffffffffffe0))
+    br 0x180001177
+  blk4 @ 0x180001177:
+    store32(load64((rbp + #0xffffffffffffffe0)), (rbp + #0xfffffffffffffff4))
+    store32(#0xfffffff7, (rbp + #0xfffffffffffffffc))
+  blk5 @ 0x180001185:
+    ret load32((rsp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x180001130","approxTokens":156,"blocks":6,"hardReasons":[],"name":"seh_nested","nameSources":["dynamic","unwind"],"section":".text","size":94,"unsupported":0}
+
+== 0x180001190 seh_nested__finally_0
+-- decompile
+/* velk pseudo-C: seh_nested__finally_0 @ 0x180001190 */
+int64_t seh_nested__finally_0(int64_t a0, int64_t a1) {
+    return sub_1800011c0(a0 & 0xffffffffffffff00 | 0x1, a1 + 64);
+}
+-- signature
+int64_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn seh_nested__finally_0 @ 0x180001190 (size 33)
+  blk0 @ 0x180001190:
+    v2:rax, xmm0 = call 0x1800011c0(((rcx & #0xffffffffffffff00) | #0x1), (rdx + #0x40))
+    br 0x1800011ab
+  blk1 @ 0x1800011ab:
+    ret v2
+-- card
+{"addr":"0x180001190","approxTokens":150,"blocks":2,"hardReasons":[],"name":"seh_nested__finally_0","nameSources":["unwind"],"section":".text","size":33,"unsupported":0}
+
+== 0x1800011c0 -
+-- decompile
+/* velk pseudo-C: sub_1800011c0 @ 0x1800011c0 */
+/* ref: 0x1800020f0 .rdata */
+int32_t sub_1800011c0(int32_t a0, int64_t a1) {
+    return imported_value(9);
+}
+-- signature
+int32_t (int32_t a0, int64_t a1)
+-- references
+0x1800020f0 .rdata
+-- ir
+fn <unnamed> @ 0x1800011c0 (size 30)
+  blk0 @ 0x1800011c0:
+    v2:rax, xmm0 = call *load64(#0x1800020f0)(#0x9)
+    ret v2
+-- card
+{"addr":"0x1800011c0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":30,"unsupported":0}
+
+== 0x1800011e0 __C_specific_handler
+-- decompile
+/* velk pseudo-C: __C_specific_handler @ 0x1800011e0 */
+/* ref: 0x1800020e8 .rdata */
+int32_t __C_specific_handler(void) {
+    return __C_specific_handler();
+}
+-- signature
+int32_t ()
+-- references
+0x1800020e8 .rdata
+-- ir
+fn __C_specific_handler @ 0x1800011e0 (size 6)
+  blk0 @ 0x1800011e0:
+    v1:rax, xmm0 = call *load64(#0x1800020e8)
+    ret v1
+-- card
+{"addr":"0x1800011e0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"__C_specific_handler","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}

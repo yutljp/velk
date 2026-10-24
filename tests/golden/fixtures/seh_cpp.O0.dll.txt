@@ -1,0 +1,84 @@
+# seh_cpp.O0.dll: pe x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 58 cpp_catch dynamic,unwind
+0x180001040 34 cpp_catch__catch_0 unwind
+0x180001070 6 __CxxFrameHandler3 plt
+
+== 0x180001000 cpp_catch
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001070, data at 0x180002124. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001040. */
+/* velk pseudo-C: cpp_catch @ 0x180001000 */
+/* ref: 0x1800020a8 .rdata */
+int32_t cpp_catch(int32_t a0) {
+    uint32_t local_0; /* [sp-1c] */
+    uint32_t local_1; /* [sp-14] */
+
+    local_0 = ((int32_t)(_imported_value__YAHH_Z(a0 & 0xffffffff)));
+    local_1 = local_0;
+    return local_1;
+L_18000102f:
+    return local_1;
+L_180001031:
+    return local_1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+0x1800020a8 .rdata
+-- ir
+fn cpp_catch @ 0x180001000 (size 58)
+  blk0 @ 0x180001000:
+    v2:rax, xmm0 = call *load64(#0x1800020a8)((rcx & #0xffffffff))
+    store32(v2, (rsp + #0xffffffffffffffe4))
+    br 0x180001027
+  blk1 @ 0x180001027:
+    store32(load32((rsp + #0xffffffffffffffe4)), (rsp + #0xffffffffffffffec))
+    br 0x180001031
+  blk2 @ 0x18000102f:
+    br 0x180001031
+  blk3 @ 0x180001031:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x180001000","approxTokens":162,"blocks":4,"hardReasons":[],"name":"cpp_catch","nameSources":["dynamic","unwind"],"section":".text","size":58,"unsupported":0}
+
+== 0x180001040 cpp_catch__catch_0
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001070, data at 0x180002124. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001040. */
+/* velk pseudo-C: cpp_catch__catch_0 @ 0x180001040 */
+int32_t cpp_catch__catch_0(int64_t a0, uint32_t *a1) {
+    a1[13] = 0xfffffff5;
+    return -2147479505;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn cpp_catch__catch_0 @ 0x180001040 (size 34)
+  blk0 @ 0x180001040:
+    store32(#0xfffffff5, (rdx + #0x34))
+    ret #0x18000102f
+-- card
+{"addr":"0x180001040","approxTokens":150,"blocks":1,"hardReasons":[],"name":"cpp_catch__catch_0","nameSources":["unwind"],"section":".text","size":34,"unsupported":0}
+
+== 0x180001070 __CxxFrameHandler3
+-- decompile
+/* velk pseudo-C: __CxxFrameHandler3 @ 0x180001070 */
+/* ref: 0x1800020b0 .rdata */
+int32_t __CxxFrameHandler3(void) {
+    return __CxxFrameHandler3();
+}
+-- signature
+int32_t ()
+-- references
+0x1800020b0 .rdata
+-- ir
+fn __CxxFrameHandler3 @ 0x180001070 (size 6)
+  blk0 @ 0x180001070:
+    v1:rax, xmm0 = call *load64(#0x1800020b0)
+    ret v1
+-- card
+{"addr":"0x180001070","approxTokens":102,"blocks":1,"hardReasons":[],"name":"__CxxFrameHandler3","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}

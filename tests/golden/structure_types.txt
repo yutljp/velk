@@ -336,6 +336,10 @@ pe64.obj: 0
 rust_demo: 347
 rust_probe: 347
 rust_probe_stripped: 277
+seh.O0.dll: 0
+seh.O2.dll: 0
+seh_cpp.O0.dll: 0
+seh_cpp.O2.dll: 0
 shared_pointers_x64.so: 0
 strings.o: 0
 switch_jumptable.o: 0

@@ -505,3 +505,18 @@ standard integer types and allows undeclared external calls during syntax
 checking; it does not link or execute those calls. Per-fixture syntax
 counts are in `tests/golden/pe_syntax.txt`. The regular recompile goldens
 record compile, comparison, exclusion, and difference counts separately.
+
+`bash tests/make_seh_fixtures.sh` builds SDK-free x64 SEH and C++ catch-all
+DLLs at O0 and O2. `pe_seh` checks printed guarded ranges, filter and
+termination-handler discovery, nested scopes, and FrameHandler3 catch
+states and function names. The PE syntax test also compiles these functions.
+Loader unit tests reject invalid scope rows, oversized tables, and unknown
+personalities; only the catch-all sentinel is treated as a constant filter.
+
+Exception information is printed as comments. The output identifies the
+personality, metadata addresses, half-open SEH instruction ranges, filters,
+handler blocks, termination functions, and FrameHandler3 catch state ranges.
+It does not implement Windows exception dispatch in standard C. Catch types,
+C++ cleanup maps, FrameHandler4 compressed tables, chained unwind records,
+and relocatable COFF exception tables are not decoded. No executable
+`__try` syntax is emitted, so these annotations need no MSVC extensions.

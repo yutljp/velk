@@ -1,4 +1,4 @@
-# 6480 functions, 72474 compared runs
+# 6504 functions, 72762 compared runs
 # runs left unfinished:
 #   machine state unavailable (Go): 120
 #   step limit (C and C++): 520

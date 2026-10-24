@@ -1,0 +1,6 @@
+LIBRARY pe_helpers.dll
+EXPORTS
+    imported_value
+    ?imported_value@@YAHH@Z
+    __C_specific_handler
+    __CxxFrameHandler3

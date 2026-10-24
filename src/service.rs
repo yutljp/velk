@@ -247,6 +247,10 @@ impl Binary {
             &self.symbols,
             &self.data_ranges,
         );
+        rendered.code.insert_str(
+            0,
+            &render::seh::comments(&self.image.exception_handlers, addr),
+        );
         if let Some(name) = identify(signatures, Ok(analysis)) {
             rendered
                 .code

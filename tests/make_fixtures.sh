@@ -150,6 +150,7 @@ for source in "$CASES"/c/*.c; do
 done
 
 bash tests/make_pe_fixtures.sh
+bash tests/make_seh_fixtures.sh
 
 {
   echo "uname: $(uname -srm)"

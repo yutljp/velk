@@ -15,6 +15,7 @@ mod naming;
 mod params;
 mod prelude;
 mod provenance;
+pub(crate) mod seh;
 mod stack_bytes;
 mod stmt;
 mod string_loops;

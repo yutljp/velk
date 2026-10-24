@@ -3,6 +3,7 @@ pub mod dwarf;
 pub mod go;
 mod plt;
 mod relocate;
+pub(crate) mod seh;
 mod symbols;
 mod unwind;
 
@@ -227,6 +228,7 @@ pub struct Image {
     /// The landing pads of the exception tables, each with the code ranges
     /// whose calls unwind into it.
     pub landing_pads: BTreeMap<u64, Vec<(u64, u64)>>,
+    pub(crate) exception_handlers: Vec<seh::Handler>,
     /// The image carries a Go pclntab, so its functions follow the Go ABI.
     pub go: bool,
     /// The C++ virtual tables, by address point. Built on first use.
@@ -354,6 +356,7 @@ impl Image {
             stack_rows: Default::default(),
             imports: BTreeMap::new(),
             landing_pads: BTreeMap::new(),
+            exception_handlers: Vec::new(),
             result_reads: Default::default(),
             lifts: Default::default(),
             relocations: BTreeMap::new(),
@@ -869,6 +872,7 @@ pub fn load(path: &Path) -> Result<Image> {
         relocatable: file.kind() == object::ObjectKind::Relocatable,
         imports: plt::imports(&file).into_iter().collect(),
         landing_pads: BTreeMap::new(),
+        exception_handlers: Vec::new(),
         go: false,
         vtables: Default::default(),
         installs: Default::default(),
@@ -876,6 +880,8 @@ pub fn load(path: &Path) -> Result<Image> {
     image.add_go_functions();
     image.add_dwarf_functions();
     image.add_unwind_functions();
+    image.exception_handlers = seh::read(&image);
+    seh::discover(&mut image);
     image.landing_pads = unwind::landing_pads(&image);
     // Only an image without symbols, debug info or a Go pclntab needs the
     // prologue scan, and only for the code no unwind entry covers.

@@ -4,7 +4,13 @@ use super::*;
 fn every_pe_function_compiles() {
     let fixtures: Vec<_> = common::fixtures()
         .into_iter()
-        .filter(|path| path.to_string_lossy().contains(".win64."))
+        .filter(|path| {
+            path.to_string_lossy().contains(".win64.")
+                || path.file_name().is_some_and(|name| {
+                    name.to_string_lossy().starts_with("seh.")
+                        || name.to_string_lossy().starts_with("seh_cpp.")
+                })
+        })
         .collect();
     assert!(!fixtures.is_empty());
     let scratch = scratch_dir("pe-syntax");

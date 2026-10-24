@@ -336,6 +336,10 @@ pe64.obj: 46 lines, 0 prelude lines, 2 variables, 9 casts, 0 registers, 0 unsign
 rust_demo: 60669 lines, 254 prelude lines, 6190 variables, 9453 casts, 12 registers, 0 unsigned, 30 traps, 1402 gotos, 130 indirect calls
 rust_probe: 60669 lines, 254 prelude lines, 6190 variables, 9453 casts, 12 registers, 0 unsigned, 30 traps, 1402 gotos, 130 indirect calls
 rust_probe_stripped: 60639 lines, 212 prelude lines, 6254 variables, 9479 casts, 12 registers, 0 unsigned, 31 traps, 1404 gotos, 126 indirect calls
+seh.O0.dll: 107 lines, 0 prelude lines, 15 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+seh.O2.dll: 73 lines, 0 prelude lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+seh_cpp.O0.dll: 30 lines, 0 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+seh_cpp.O2.dll: 28 lines, 0 prelude lines, 3 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 shared_pointers_x64.so: 20 lines, 0 prelude lines, 2 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 strings.o: 6 lines, 0 prelude lines, 1 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 switch_jumptable.o: 133 lines, 0 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
