@@ -23,8 +23,8 @@ cpp_virtual_a64.elf: 123 lines, 13 variables, 10 casts, 0 registers, 0 unsigned,
 cpp_virtual_a64_stripped.elf: 123 lines, 13 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 cpp_virtual_x64.elf: 122 lines, 14 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 cpp_virtual_x64_stripped.elf: 122 lines, 14 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
-go_probe: 79158 lines, 13098 variables, 12950 casts, 190 registers, 0 unsigned, 19 traps, 114 gotos, 121 indirect calls
-go_stripped: 79078 lines, 13087 variables, 12948 casts, 190 registers, 0 unsigned, 19 traps, 114 gotos, 121 indirect calls
+go_probe: 78710 lines, 12695 variables, 13021 casts, 190 registers, 0 unsigned, 18 traps, 112 gotos, 121 indirect calls
+go_stripped: 78630 lines, 12684 variables, 13019 casts, 190 registers, 0 unsigned, 18 traps, 112 gotos, 121 indirect calls
 l0_arith_a64.o: 16 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_x64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l1_branch_a64.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -233,9 +233,9 @@ metrics/tail_indirect.x86_64.O2.debug.elf: 8 lines, 0 variables, 0 casts, 0 regi
 metrics/tail_indirect.x86_64.O2.stripped.elf: 8 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 pe64.exe: 47 lines, 2 variables, 9 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.obj: 46 lines, 2 variables, 9 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-rust_demo: 62475 lines, 7010 variables, 11887 casts, 10 registers, 0 unsigned, 30 traps, 1500 gotos, 130 indirect calls
-rust_probe: 62475 lines, 7010 variables, 11887 casts, 10 registers, 0 unsigned, 30 traps, 1500 gotos, 130 indirect calls
-rust_probe_stripped: 62637 lines, 7062 variables, 12018 casts, 10 registers, 0 unsigned, 31 traps, 1502 gotos, 126 indirect calls
+rust_demo: 62506 lines, 6993 variables, 12234 casts, 10 registers, 0 unsigned, 30 traps, 1500 gotos, 130 indirect calls
+rust_probe: 62506 lines, 6993 variables, 12234 casts, 10 registers, 0 unsigned, 30 traps, 1500 gotos, 130 indirect calls
+rust_probe_stripped: 62676 lines, 7047 variables, 12382 casts, 10 registers, 0 unsigned, 31 traps, 1502 gotos, 126 indirect calls
 shared_pointers_x64.so: 20 lines, 2 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 strings.o: 6 lines, 1 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 switch_jumptable.o: 133 lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

@@ -23,7 +23,7 @@ pub(super) fn string_size(ins: &Instruction) -> Option<u8> {
 }
 
 /// `movs`, `stos` and `lods`: one element moved, and the pointers past it,
-/// with the direction flag clear. With `rep`, a loop: the instruction's own
+/// following the direction flag. With `rep`, a loop: the instruction's own
 /// block tests the count and leaves when it is zero, and a body after it
 /// moves one element, counts it, and goes back to the test.
 pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
@@ -41,13 +41,16 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
             &mut lifter.stmts,
         );
     }
+    let increment = Expr::Select {
+        cond: Cond::Eq,
+        lhs: Box::new(Expr::reg(super::DIRECTION, 64)),
+        rhs: Box::new(Expr::constant(0)),
+        then: Box::new(Expr::constant(u64::from(size))),
+        els: Box::new(Expr::constant(0u64.wrapping_sub(u64::from(size)))),
+    };
     let advance = |index: u16| Stmt::Assign {
         dest: RegRef { index, width: 64 },
-        value: Expr::bin(
-            BinOp::Add,
-            Expr::reg(index, 64),
-            Expr::constant(u64::from(size)),
-        ),
+        value: Expr::bin(BinOp::Add, Expr::reg(index, 64), increment.clone()),
     };
     let mut step = Vec::new();
     match ins.mnemonic() {

@@ -1,6 +1,6 @@
 use super::{
     BinOp, Cond, Expr, Instruction, LaneOp, Lifter, Mnemonic, OpKind, Operation, Precision,
-    Rounding, gpr, hold, load_at, memory_address, xmm,
+    Rounding, gpr, hold, load_at, memory_address, operand, xmm,
 };
 
 /// 64 bits of `parts` (halves, lowest first) starting at bit `start`, with
@@ -111,6 +111,72 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         }
     };
     match ins.mnemonic() {
+        Pshufb => {
+            let Some(source) = halves(0) else {
+                return None;
+            };
+            let Some(control) = halves(1) else {
+                return None;
+            };
+            let shuffle = |mask: Expr| {
+                let bytes = (0..8)
+                    .map(|index| {
+                        let byte = Expr::bin(BinOp::Shr, mask.clone(), Expr::constant(index * 8));
+                        let shift = Expr::bin(
+                            BinOp::Mul,
+                            Expr::bin(BinOp::And, byte.clone(), Expr::constant(7)),
+                            Expr::constant(8),
+                        );
+                        let half = Expr::Select {
+                            cond: Cond::Eq,
+                            lhs: Box::new(Expr::bin(BinOp::And, byte.clone(), Expr::constant(8))),
+                            rhs: Box::new(Expr::constant(0)),
+                            then: Box::new(source.0.clone()),
+                            els: Box::new(source.1.clone()),
+                        };
+                        Expr::Select {
+                            cond: Cond::Eq,
+                            lhs: Box::new(Expr::bin(BinOp::And, byte, Expr::constant(128))),
+                            rhs: Box::new(Expr::constant(0)),
+                            then: Box::new(Expr::bin(
+                                BinOp::And,
+                                Expr::bin(BinOp::Shr, half, shift),
+                                Expr::constant(255),
+                            )),
+                            els: Box::new(Expr::constant(0)),
+                        }
+                    })
+                    .collect();
+                pack(bytes, 8)
+            };
+            return write(lifter, (shuffle(control.0), shuffle(control.1)));
+        }
+        Pinsrd => {
+            let Some(slot) = destination else {
+                return None;
+            };
+            let Some(value) = operand(lifter, ins, 1) else {
+                return None;
+            };
+            let lane = u64::from(ins.immediate8() & 3);
+            let slot = slot + (lane / 2) as u16;
+            let shift = (lane % 2) * 32;
+            let value = Expr::bin(BinOp::And, value, Expr::constant(0xffff_ffff));
+            lifter.assign(
+                slot,
+                64,
+                Expr::bin(
+                    BinOp::Or,
+                    Expr::bin(
+                        BinOp::And,
+                        Expr::reg(slot, 64),
+                        Expr::constant(!(0xffff_ffffu64 << shift)),
+                    ),
+                    Expr::bin(BinOp::Shl, value, Expr::constant(shift)),
+                ),
+            );
+            return Some(());
+        }
         _ if lane_op.is_some() => {
             let op = lane_op?;
             let bits = lane_bits(ins.mnemonic());

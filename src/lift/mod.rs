@@ -60,7 +60,10 @@ struct Exit {
 struct CarriedFlags {
     entry: HashMap<u64, flags::Flags>,
     exporters: HashSet<u64>,
+    zero_exporters: HashSet<u64>,
 }
+
+const ZERO_CARRIED: u16 = crate::ir::TEMP_BASE + 0x4c;
 
 /// What lifting needs to know of the functions a body calls.
 pub type Summaries<'a> = &'a dyn Fn(u64) -> Summary;
@@ -209,6 +212,29 @@ pub fn lift_with(
                 Ok(result) => result,
                 Err(error) => return Err(error),
             };
+            let direction = blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                matches!(stmt, Stmt::Assign { dest, value: Expr::Const(1) } if dest.index == x86_64::DIRECTION)
+            });
+            if !direction {
+                for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+                    crate::ir::visit::replace_reads(
+                        stmt,
+                        &[(x86_64::DIRECTION, Expr::constant(0))],
+                    );
+                }
+            }
+            if direction && let Some(entry) = blocks.first_mut() {
+                entry.stmts.insert(
+                    0,
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: x86_64::DIRECTION,
+                            width: 64,
+                        },
+                        value: Expr::constant(0),
+                    },
+                );
+            }
             if image.go {
                 take_stack_results(&mut blocks, image, summaries);
             }
@@ -959,7 +985,8 @@ fn build_carrying<M: Machine>(
         Ok(result) => result,
         Err(error) => return Err(error),
     };
-    let carried = carry_flags(&blocks, &exits, extra_targets);
+    let mut carried = carry_flags(&blocks, &exits, extra_targets);
+    carry_zero(image.isa, &blocks, &exits, extra_targets, &mut carried);
     if carried.entry.is_empty() {
         return Ok((blocks, pulled));
     }
@@ -1076,6 +1103,100 @@ fn carry_flags(
     carried
 }
 
+/// An x86 join may have a known zero flag even when its predecessors set it
+/// with different operations or widths.
+fn carry_zero(
+    isa: Isa,
+    blocks: &[Block],
+    exits: &HashMap<u64, Exit>,
+    extra_targets: &HashSet<u64>,
+    carried: &mut CarriedFlags,
+) {
+    if isa != Isa::X86_64 {
+        return;
+    }
+    let mut predecessors = vec![Vec::new(); blocks.len()];
+    for index in 0..blocks.len() {
+        for next in crate::ir::cfg::block_successors(blocks, index) {
+            predecessors[next].push(index);
+        }
+    }
+    let zero = |exit: &Exit| {
+        exit.flags.as_ref().and_then(|flags| {
+            flags
+                .test(crate::ir::Cond::Eq, isa)
+                .select(Expr::constant(1), Expr::constant(0))
+        })
+    };
+    let mut reachable = vec![false; blocks.len()];
+    let mut work = if blocks.is_empty() {
+        Vec::new()
+    } else {
+        vec![0]
+    };
+    while let Some(index) = work.pop() {
+        if reachable[index] {
+            continue;
+        }
+        reachable[index] = true;
+        work.extend(crate::ir::cfg::block_successors(blocks, index));
+    }
+    let mut known: Vec<_> = blocks
+        .iter()
+        .enumerate()
+        .map(|(index, block)| {
+            reachable[index]
+                && index != 0
+                && !extra_targets.contains(&block.start)
+                && !predecessors[index].is_empty()
+        })
+        .collect();
+    loop {
+        let mut changed = false;
+        for index in 1..blocks.len() {
+            if !known[index] {
+                continue;
+            }
+            if !predecessors[index]
+                .iter()
+                .all(|pred| match exits.get(&blocks[*pred].start) {
+                    Some(exit) if exit.touched => zero(exit).is_some(),
+                    Some(_) => known[*pred],
+                    None => false,
+                })
+            {
+                known[index] = false;
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    for (index, block) in blocks.iter().enumerate() {
+        if !known[index] || !reads_unknown_flags(block) || carried.entry.contains_key(&block.start)
+        {
+            continue;
+        }
+        carried
+            .entry
+            .insert(block.start, flags::Flags::zero(Expr::reg(ZERO_CARRIED, 64)));
+        let mut work = predecessors[index].clone();
+        let mut seen = HashSet::new();
+        while let Some(pred) = work.pop() {
+            if !seen.insert(pred) {
+                continue;
+            }
+            match exits.get(&blocks[pred].start) {
+                Some(exit) if exit.touched => {
+                    carried.zero_exporters.insert(blocks[pred].start);
+                }
+                _ => work.extend(predecessors[pred].iter().copied()),
+            }
+        }
+    }
+}
+
 /// Ends a block: a block whose flags carry on passes their operands, before
 /// the branch that leaves it.
 fn finish_block<M: Machine>(
@@ -1113,11 +1234,42 @@ fn finish_block<M: Machine>(
             });
         stmts.splice(at..at, passes);
     }
+    if carried.zero_exporters.contains(&start)
+        && let Some(flags) = &exit
+        && let Some(value) = flags
+            .test(crate::ir::Cond::Eq, Isa::X86_64)
+            .select(Expr::constant(1), Expr::constant(0))
+    {
+        let at = stmts
+            .iter()
+            .position(|stmt| {
+                matches!(
+                    stmt,
+                    Stmt::Br { .. }
+                        | Stmt::Brif { .. }
+                        | Stmt::BrifFlags { .. }
+                        | Stmt::Switch { .. }
+                        | Stmt::BrIndirect { .. }
+                )
+            })
+            .unwrap_or(stmts.len());
+        stmts.insert(
+            at,
+            Stmt::Assign {
+                dest: RegRef {
+                    index: ZERO_CARRIED,
+                    width: 64,
+                },
+                value,
+            },
+        );
+    }
     exits.insert(
         start,
         Exit {
             flags: exit,
-            touched: machine.flags_touched(),
+            touched: machine.flags_touched()
+                || stmts.iter().any(|stmt| matches!(stmt, Stmt::Call { .. })),
         },
     );
     Block { start, stmts }

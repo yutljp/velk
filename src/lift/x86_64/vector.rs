@@ -39,6 +39,7 @@ pub(super) fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
     }
     lift_xmm(lifter, ins)?;
     if ins.encoding() != EncodingKind::Legacy
+        && ins.mnemonic() != Mnemonic::Vptest
         && ins.op0_kind() == OpKind::Register
         && let Some(slot) = xmm(ins.op0_register())
     {
@@ -86,6 +87,15 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         Some(())
     };
     match ins.mnemonic() {
+        Vptest => {
+            let Some(a) = quarters(0) else {
+                return None;
+            };
+            let Some(b) = quarters(1) else {
+                return None;
+            };
+            test_bits(lifter, &a, &b);
+        }
         Vmovdqu | Vmovdqu8 | Vmovdqu16 | Vmovdqu32 | Vmovdqu64 | Vmovdqa | Vmovdqa32
         | Vmovdqa64 | Vmovntdq | Vmovups | Vmovaps | Vmovupd | Vmovapd | Vmovntps | Vmovntpd
         | Vlddqu => match ins.op0_kind() {
@@ -191,6 +201,37 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     Some(())
 }
 
+fn test_bits(lifter: &mut Lifter, a: &[Expr], b: &[Expr]) {
+    let test = |invert| {
+        let value = a
+            .iter()
+            .zip(b)
+            .map(|(a, b)| {
+                let a = if invert {
+                    Expr::bin(BinOp::Xor, a.clone(), Expr::constant(u64::MAX))
+                } else {
+                    a.clone()
+                };
+                Expr::bin(BinOp::And, a, b.clone())
+            })
+            .reduce(|a, b| Expr::bin(BinOp::Or, a, b))
+            .unwrap_or(Expr::constant(0));
+        Expr::Select {
+            cond: super::Cond::Eq,
+            lhs: Box::new(value),
+            rhs: Box::new(Expr::constant(0)),
+            then: Box::new(Expr::constant(1)),
+            els: Box::new(Expr::constant(0)),
+        }
+    };
+    let byte = Expr::bin(
+        BinOp::Or,
+        test(true),
+        Expr::bin(BinOp::Shl, test(false), Expr::constant(6)),
+    );
+    lifter.set_flags(super::Flags::stored(byte, Some(Expr::constant(0))));
+}
+
 /// The SSE moves and bitwise operations, on the 64-bit halves of each xmm
 /// register. None, with nothing lifted, for any other instruction.
 fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
@@ -200,6 +241,28 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     let address = || memory_address(ins);
     let offset = |addr: Expr| Expr::bin(BinOp::Add, addr, Expr::constant(8));
     let low = |slot: u16| Lifter::read_reg(slot, 64);
+    if matches!(ins.mnemonic(), Ptest | Vptest) {
+        let Some(a) = destination else {
+            return None;
+        };
+        let b = match ins.op1_kind() {
+            OpKind::Register => {
+                let Some(b) = source else {
+                    return None;
+                };
+                [low(b), low(b + 1)]
+            }
+            OpKind::Memory => {
+                let Some(addr) = address() else {
+                    return None;
+                };
+                [load_at(addr.clone(), 8), load_at(offset(addr), 8)]
+            }
+            _ => return None,
+        };
+        test_bits(lifter, &[low(a), low(a + 1)], &b);
+        return Some(());
+    }
     let store = |lifter: &mut Lifter, addr: Expr, value: Expr, width: u8| {
         preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
         lifter.stmts.push(Stmt::Store { addr, value, width });

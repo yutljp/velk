@@ -494,7 +494,41 @@ pub(super) fn shift(lifter: &mut Lifter, ins: &Instruction, op: BinOp) {
             lifter.set_flags(Flags::shift(shifted.clone(), carry));
         }
         Expr::Const(count) if count != 0 => lifter.set_flags(Flags::result(shifted.clone())),
-        _ => {}
+        Expr::Const(_) => {
+            if let Some(flags) = lifter.last_compare.clone() {
+                lifter.set_flags(flags);
+            }
+        }
+        amount => {
+            if let Some(old) = lifter
+                .test(Cond::Eq)
+                .select(Expr::constant(1), Expr::constant(0))
+            {
+                let result = if width < 64 {
+                    Expr::bin(
+                        BinOp::And,
+                        shifted.clone(),
+                        Expr::constant((1u64 << width) - 1),
+                    )
+                } else {
+                    shifted.clone()
+                };
+                let zero = Expr::Select {
+                    cond: Cond::Eq,
+                    lhs: Box::new(result),
+                    rhs: Box::new(Expr::constant(0)),
+                    then: Box::new(Expr::constant(1)),
+                    els: Box::new(Expr::constant(0)),
+                };
+                lifter.set_flags(Flags::zero(Expr::Select {
+                    cond: Cond::Eq,
+                    lhs: Box::new(amount),
+                    rhs: Box::new(Expr::constant(0)),
+                    then: Box::new(old),
+                    els: Box::new(zero),
+                }));
+            }
+        }
     }
     write_destination(lifter, ins, shifted);
 }

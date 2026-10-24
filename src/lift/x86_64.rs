@@ -43,6 +43,8 @@ const CONDITION_FLAGS: u32 = RflagsBits::CF
     | RflagsBits::SF
     | RflagsBits::OF;
 
+pub(super) const DIRECTION: u16 = crate::ir::TEMP_BASE + 0x4d;
+
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
     last_compare: Option<Flags>,
@@ -668,7 +670,6 @@ fn lift_instruction(
         | Mnemonic::Reservednop
         | Mnemonic::Pause
         | Mnemonic::Wait
-        | Mnemonic::Cld
         | Mnemonic::Prefetchnta
         | Mnemonic::Prefetcht0
         | Mnemonic::Prefetcht1
@@ -677,6 +678,13 @@ fn lift_instruction(
         | Mnemonic::Sfence
         | Mnemonic::Lfence
         | Mnemonic::Mfence => {}
+        Mnemonic::Std | Mnemonic::Cld => {
+            lifter.assign(
+                DIRECTION,
+                64,
+                Expr::constant(u64::from(ins.mnemonic() == Mnemonic::Std)),
+            );
+        }
         Mnemonic::Adc => with_carry(lifter, ins, false),
         Mnemonic::Sbb => with_carry(lifter, ins, true),
         Mnemonic::Lahf => lift_lahf(lifter, ins),
@@ -713,6 +721,10 @@ fn lift_instruction(
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallX86, None),
             via: None,
         }),
+        Mnemonic::Int if ins.immediate8() == 3 => {
+            lifter.stmts.push(Stmt::Trap);
+            return true;
+        }
         Mnemonic::Int3 | Mnemonic::Ud2 | Mnemonic::Hlt => {
             lifter.stmts.push(Stmt::Trap);
             return true;

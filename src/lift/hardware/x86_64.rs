@@ -900,3 +900,171 @@ fn lifted_memory_operands_match_the_processor() {
     }
     findings.assert_agreement();
 }
+
+#[test]
+fn fixture_simd_flags_and_reverse_strings_match_the_processor() {
+    let runner = runner().expect("an x86-64 compiler is required");
+    let mut codes = vec![
+        vec![0x66, 0x0f, 0x38, 0x00, 0xc1], // pshufb xmm0, xmm1
+        vec![0x66, 0x0f, 0x38, 0x00, 0x03], // pshufb xmm0, [rbx]
+        vec![0x66, 0x0f, 0x38, 0x17, 0xc1], // ptest xmm0, xmm1
+        vec![0xc4, 0xe2, 0x79, 0x17, 0xc1], // vptest xmm0, xmm1
+        vec![0xc4, 0xe2, 0x7d, 0x17, 0xc1], // vptest ymm0, ymm1
+        vec![0xc4, 0xe2, 0x7d, 0x17, 0x03], // vptest ymm0, [rbx]
+        vec![0x66, 0x0f, 0x38, 0x00, 0xc0], // pshufb xmm0, xmm0
+    ];
+    for lane in 0..4 {
+        for source in [0xc1, 0x03] {
+            codes.push(vec![0x66, 0x0f, 0x3a, 0x22, source, 0xfc | lane]);
+        }
+    }
+    // Record the condition flags in registers for comparison.
+    for (kind, code) in codes.iter_mut().enumerate() {
+        code.splice(0..0, [0x48, 0x39, 0xd0]); // cmp rax, rdx
+        if cfg!(target_arch = "aarch64") && (2..=5).contains(&kind) {
+            // Translation leaves some flags that PTEST specifies as zero
+            // unchanged. Compare CF and ZF here; native x86 checks all six.
+            code.extend([0x0f, 0x92, 0xc0, 0x0f, 0x94, 0xc1]);
+        } else {
+            code.extend([0x9f, 0x0f, 0x90, 0xc1]); // lahf; seto cl
+        }
+    }
+    codes.extend([
+        // Different-width compares meet at sete al.
+        vec![
+            0x48, 0x85, 0xd2, 0x74, 5, 0x48, 0x39, 0xd8, 0xeb, 2, 0x39, 0xd8, 0x0f, 0x94, 0xc0,
+        ],
+        // A variable shift preserves ZF for an effective count of zero.
+        vec![0x48, 0x39, 0xd8, 0x48, 0xd3, 0xe0, 0x0f, 0x94, 0xc2],
+        vec![0x48, 0x39, 0xd8, 0xd3, 0xe0, 0x0f, 0x94, 0xc2],
+        vec![0x48, 0x39, 0xd8, 0x66, 0xd3, 0xe0, 0x0f, 0x94, 0xc2],
+        vec![0x48, 0x39, 0xd8, 0xd2, 0xe0, 0x0f, 0x94, 0xc2],
+        // Direction set in another block, then restored after the copy.
+        vec![0xfd, 0xeb, 0, 0xf3, 0xa4, 0xfc],
+        vec![0xfd, 0xeb, 0, 0xf3, 0x48, 0xa5, 0xfc],
+        vec![0xfd, 0xeb, 0, 0xf3, 0xaa, 0xfc],
+        vec![0xfd, 0xeb, 0, 0xf3, 0xac, 0xfc],
+    ]);
+    let mut cases = Vec::new();
+    for (kind, code) in codes.iter().enumerate() {
+        for seed in 0..256 {
+            let mut registers = std::array::from_fn(|index| value(seed, index as u64));
+            registers[3] = BUFFER + 4096;
+            registers[6] = BUFFER + 5000;
+            registers[7] = BUFFER + 6000;
+            registers[1] = seed % 80;
+            registers[2] = seed % 3;
+            let mut vectors = std::array::from_fn(|index| hash(seed, index as u64));
+            if seed % 4 == 0 {
+                vectors.fill(0);
+            }
+            if seed % 4 == 1 {
+                vectors.fill(u64::MAX);
+            }
+            let memory = (0..BUFFER_SIZE)
+                .map(|index| hash(seed, index as u64) as u8)
+                .collect();
+            cases.push((
+                kind,
+                Case {
+                    code: code.clone(),
+                    registers,
+                    vectors,
+                    flags: 0x202 | (hash(seed, 42) & ARITHMETIC_FLAGS),
+                    memory: Some(memory),
+                },
+            ));
+        }
+    }
+    let outcomes = run(
+        runner,
+        &cases
+            .iter()
+            .map(|(_, case)| Case {
+                code: case.code.clone(),
+                registers: case.registers,
+                vectors: case.vectors,
+                flags: case.flags,
+                memory: case.memory.clone(),
+            })
+            .collect::<Vec<_>>(),
+    );
+    for ((kind, case), outcome) in cases.iter().zip(outcomes) {
+        assert_eq!(outcome.signal, 0, "instruction case {kind}");
+        let ir = lifted(Isa::X86_64, [case.code.as_slice(), &[0xc3]].concat()).expect("lifted");
+        assert!(unsupported(&ir).is_none(), "{}", ir.render());
+        let registers: Vec<_> = (0..16u16)
+            .filter(|index| usable(*index))
+            .map(|index| (index, case.registers[usize::from(index)]))
+            .chain(vector_slots().map(|index| (index, case.vectors[vector_word(index).unwrap()])))
+            .collect();
+        let before = case.memory.as_ref().unwrap();
+        let words: Vec<_> = before
+            .chunks(8)
+            .enumerate()
+            .map(|(index, bytes)| {
+                (
+                    BUFFER + index as u64 * 8,
+                    u64::from_le_bytes(bytes.try_into().unwrap()),
+                )
+            })
+            .collect();
+        let setup = eval::Setup {
+            seed: 0,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &registers,
+            memory: &words,
+            step_limit: 1000,
+        };
+        let (after, memory) = eval::state_after(&ir, &setup).expect("interpreted");
+        for (index, initial) in &registers {
+            let actual = match vector_word(*index) {
+                Some(word) => outcome.vectors[word],
+                None => outcome.registers[usize::from(*index)],
+            };
+            assert_eq!(
+                after.get(index).unwrap_or(initial),
+                &actual,
+                "case {kind}, register {}\n{}",
+                name(*index),
+                ir.render()
+            );
+        }
+        for (offset, actual) in outcome.memory.as_ref().unwrap().iter().enumerate() {
+            assert_eq!(
+                *memory
+                    .get(&(BUFFER + offset as u64))
+                    .unwrap_or(&before[offset]),
+                *actual,
+                "case {kind}, byte {offset}"
+            );
+        }
+    }
+}
+
+#[test]
+fn explicit_breakpoint_interrupt_matches_the_processor() {
+    let runner = runner().expect("an x86-64 compiler is required");
+    let cases: Vec<_> = [vec![0xcc], vec![0xcd, 3]]
+        .into_iter()
+        .map(|code| Case {
+            code,
+            registers: [0; 16],
+            flags: 0x202,
+            vectors: [0; 32],
+            memory: None,
+        })
+        .collect();
+    for (case, outcome) in cases.iter().zip(run(runner, &cases)) {
+        assert_eq!(outcome.signal, 5);
+        let ir = lifted(Isa::X86_64, case.code.clone()).expect("lifted");
+        assert!(unsupported(&ir).is_none());
+        assert!(matches!(
+            eval::run(&ir, &super::setup(&[])),
+            eval::Outcome::Trap { .. }
+        ));
+    }
+}

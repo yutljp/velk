@@ -2,8 +2,8 @@
 #   branches on flags: 3
 #   calls: 3842
 #   computes on floats or vectors: 60
-#   computes on registers alone: 920
-#   has an unsupported instruction: 4
+#   computes on registers alone: 922
+#   has an unsupported instruction: 2
 #   reads a register that is not a parameter: 49
 #   refers to data: 330
 #   returns no integer: 82

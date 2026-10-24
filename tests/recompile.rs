@@ -44,6 +44,8 @@ mod pointer_assignments;
 mod register_locals;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
+#[path = "recompile/unsupported.rs"]
+mod unsupported;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;

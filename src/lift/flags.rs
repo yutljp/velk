@@ -22,6 +22,8 @@ pub(super) enum Source {
     /// Only zero and sign follow the result `lhs`; carry and overflow mean
     /// something else (an x86 shift by its width or more, `bsf`).
     Result,
+    /// Only the zero flag, as a bit in `lhs`.
+    Zero,
     /// An x86 shift's result `lhs`, with the carry the bit `rhs` it shifted
     /// out last; overflow is unknown.
     Shift,
@@ -100,6 +102,10 @@ impl Flags {
 
     pub fn result(result: Expr) -> Self {
         Self::new(Source::Result, result, Expr::constant(0))
+    }
+
+    pub fn zero(bit: Expr) -> Self {
+        Self::new(Source::Zero, bit, Expr::constant(0))
     }
 
     pub fn shift(result: Expr, carry: Expr) -> Self {
@@ -289,6 +295,11 @@ impl Flags {
         let compare = |cond, lhs: &Expr, rhs: &Expr| Test::Compare(cond, lhs.clone(), rhs.clone());
         let zero = Expr::constant(0);
         match self.source {
+            Source::Zero => match cond {
+                Cond::Eq => compare(Cond::Ne, a, &zero),
+                Cond::Ne => compare(Cond::Eq, a, &zero),
+                _ => Test::Unknown,
+            },
             Source::CarryOverflow => match cond {
                 Cond::Cc | Cond::Vs => compare(Cond::Ne, a, &zero),
                 Cond::Cs | Cond::Vc => compare(Cond::Eq, a, &zero),
