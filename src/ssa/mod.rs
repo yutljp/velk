@@ -1339,8 +1339,6 @@ mod tests {
             Stmt::Unsupported {
                 text: "unknown".to_owned(),
                 writes: Some(Vec::new()),
-                reads: None,
-                writes_memory: None,
             },
             Stmt::Br { target: None },
             Stmt::Br {

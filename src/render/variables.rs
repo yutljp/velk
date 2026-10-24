@@ -42,15 +42,6 @@ pub(crate) fn variable_types(
         match stmt {
             Stmt::Assign { dest, value } => {
                 uses.seen.insert(dest.index);
-                if matches!(
-                    value,
-                    Expr::Bin {
-                        op: BinOp::Mul | BinOp::Shl,
-                        ..
-                    }
-                ) {
-                    uses.arithmetic.insert(dest.index);
-                }
                 if dest.width == 64
                     && let Expr::Reg { index, width: 64 } = value
                 {

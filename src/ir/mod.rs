@@ -714,10 +714,6 @@ pub enum Stmt {
     Unsupported {
         text: String,
         writes: Option<Vec<u16>>,
-        /// The registers read, when known, including memory address registers.
-        reads: Option<Vec<u16>>,
-        /// Whether the instruction may write memory, when its effects are known.
-        writes_memory: Option<bool>,
     },
     /// A trap the CPU cannot return from (`int3`, `ud2`, `brk`).
     Trap,
@@ -831,8 +827,6 @@ impl Stmt {
         Stmt::Unsupported {
             text: text.into(),
             writes: None,
-            reads: None,
-            writes_memory: None,
         }
     }
 
@@ -927,6 +921,10 @@ pub struct FunctionIr {
     /// The lowest offset from the stack pointer on entry that the stack
     /// pointer reaches once its adjustments are gone; 0 while they remain.
     pub frame_bottom: i64,
+    /// The declarations of functions called directly or addressed, from
+    /// their debug information, where every parameter and the result is an
+    /// integer or a pointer passed whole as the convention orders.
+    pub callee_signatures: std::collections::BTreeMap<u64, DeclaredSignature>,
     /// The types the prototypes of the library functions the body calls
     /// give the variables it passes them and those holding their results.
     pub value_types: std::collections::BTreeMap<u16, CType>,
@@ -961,6 +959,7 @@ impl FunctionIr {
             pointer_values: Vec::new(),
             saved_slots: Vec::new(),
             frame_bottom: 0,
+            callee_signatures: Default::default(),
             value_types: std::collections::BTreeMap::new(),
             variable_registers: std::collections::BTreeMap::new(),
             addr: 0,

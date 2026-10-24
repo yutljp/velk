@@ -878,7 +878,6 @@ fn source_id(
     })
 }
 
-#[cfg(test)]
 pub(crate) mod calls;
 #[cfg(test)]
 mod tests;

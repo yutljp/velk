@@ -607,6 +607,38 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
         }
         // A call whose returned value the next statement takes reads as one
         // expression: `x = f(a)` or `return f(a)`.
+        if let (
+            Some(Node::Stmt(
+                call @ Stmt::Call {
+                    target: Some(target),
+                    through: None,
+                    ..
+                },
+            )),
+            Some(Node::Stmt(Stmt::Assign { dest, value })),
+            Some(Node::Stmt(Stmt::Ret { value: returned })),
+        ) = (nodes.get(index), nodes.get(index + 1), nodes.get(index + 2))
+            && ctx.callee_signatures.contains_key(target)
+            && dest.index >= crate::ir::VARIABLE_BASE
+            && *returned == Expr::reg(dest.index, dest.width)
+            && let (Some(stored), Some(result)) = (ctx.declared.get(&dest.index), ctx.returned)
+            && stored.integer
+            && result.integer
+            && stored.bits == result.bits
+            && u32::from(dest.width) >= stored.bits
+            && let Some(text) = calls::call_in_reader(
+                call,
+                &Node::Stmt(Stmt::Ret {
+                    value: value.clone(),
+                }),
+                depth,
+                ctx,
+            )
+        {
+            out.push_str(&text);
+            index += 3;
+            continue;
+        }
         if let (Some(Node::Stmt(call @ Stmt::Call { .. })), Some(Node::Stmt(next))) =
             (nodes.get(index), nodes.get(index + 1))
             && let Some(text) = fused_call(call, next, ctx)

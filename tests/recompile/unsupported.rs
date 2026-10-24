@@ -111,7 +111,7 @@ fn printed_reverse_string_copies_preserve_memory() {
     check_candidates("reverse_strings", candidates, Mode::Memory, &[]);
 }
 
-pub(super) fn code_image(code: &[u8]) -> Image {
+fn code_image(code: &[u8]) -> Image {
     static COUNTER: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let counter = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let scratch = scratch_dir(&format!("fixture_instruction_code_{counter}"));

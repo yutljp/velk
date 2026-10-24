@@ -52,11 +52,17 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
 }
 #endif
 
+int is_even(int);
+
+int is_odd(int);
+
+int square(int);
+
+int twice(int);
+
+int32_t sum9(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
+
 uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
-
-void square(void);
-
-void twice(void);
 /* end velk prelude */
 
 == 0x180001000 twice
@@ -123,10 +129,10 @@ int apply_table(unsigned int index, int x) {
     v2 = v1 + v1 * 2;
     v3 = index - v2;
     if (v3 + v2 != v2 && v3 == 1) {
-        v5 = square((uint32_t)x);
+        v5 = square(x);
         return v5;
     }
-    v5 = twice((uint32_t)x);
+    v5 = twice(x);
     return v5;
 }
 -- signature
@@ -357,7 +363,7 @@ int is_odd(int n) {
     if (n == 0) {
         return 0;
     }
-    return is_even((n - 1) & 0xffffffff);
+    return is_even(n - 1);
 }
 -- signature
 int (int n)
@@ -382,7 +388,7 @@ int is_even(int n) {
     if (n == 0) {
         return 1;
     }
-    return is_odd((n - 1) & 0xffffffff);
+    return is_odd(n - 1);
 }
 -- signature
 int (int n)

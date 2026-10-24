@@ -27,13 +27,8 @@ mod atomic_values;
 mod cache;
 #[path = "recompile/call_arithmetic.rs"]
 mod call_arithmetic;
-#[path = "recompile/carry_conditions.rs"]
-mod carry_conditions;
 #[path = "recompile/compile_fail.rs"]
 mod compile_fail;
-
-#[path = "recompile/compare_negative.rs"]
-mod compare_negative;
 
 #[path = "recompile/constants.rs"]
 mod constants;
@@ -3878,6 +3873,7 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
         pointer_values: Vec::new(),
         saved_slots: Vec::new(),
         frame_bottom: 0,
+        callee_signatures: Default::default(),
         value_types: Default::default(),
         variable_registers: Default::default(),
         addr: 0,

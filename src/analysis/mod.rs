@@ -1,5 +1,4 @@
 pub(crate) mod abi;
-#[cfg(test)]
 pub(crate) mod calls;
 mod clobbers;
 mod go_types;
@@ -1290,6 +1289,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         pointer_values: Vec::new(),
         saved_slots: Vec::new(),
         frame_bottom: 0,
+        callee_signatures: Default::default(),
         value_types: std::collections::BTreeMap::new(),
         variable_registers: std::collections::BTreeMap::new(),
         addr: function.addr,
@@ -1544,6 +1544,7 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     passes::coalesce::reuse_pointers(&mut ir);
     passed(deadline)?;
     go_types::apply(&mut ir, image);
+    ir.callee_signatures = crate::analysis::calls::printable_signatures(image, &ir);
     Ok(Analysis { ir, references })
 }
 

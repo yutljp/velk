@@ -609,7 +609,7 @@ pub(super) fn lift_count(lifter: &mut Lifter, ins: &Instruction) {
 }
 
 /// `adc` and `sbb`: a sum with the carry, or a difference less it. The
-/// flags describe the final result, including the incoming carry or borrow.
+/// flags keep only the carry out.
 pub(super) fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool) {
     let (Some(a), Some(b), Some(width)) = (
         operand(lifter, ins, 0),
@@ -629,9 +629,18 @@ pub(super) fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool)
     // The carry may read registers that keep the earlier flags' operands,
     // which keeping the new flags' operands overwrites.
     let carry = hold(lifter, carry);
-    let op = if subtract { BinOp::Sub } else { BinOp::Add };
-    let value = Expr::bin(op, Expr::bin(op, a.clone(), b.clone()), carry.clone());
-    lifter.set_flags(Flags::with_carry(a, b, carry, subtract, u32::from(width)));
+    let (out, value) = if subtract {
+        (
+            super::flags::borrow_out(&a, &b, carry.clone()),
+            Expr::bin(BinOp::Sub, Expr::bin(BinOp::Sub, a, b), carry),
+        )
+    } else {
+        (
+            super::flags::carry_out(&a, &b, carry.clone(), u32::from(width)),
+            Expr::bin(BinOp::Add, Expr::bin(BinOp::Add, a, b), carry),
+        )
+    };
+    lifter.set_flags(Flags::carry(out));
     write_destination(lifter, ins, value);
 }
 

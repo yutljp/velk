@@ -2,6 +2,9 @@
 0x201180 14 tail_one symtab,dwarf,unwind
 0x201190 8 tail_two symtab,dwarf,unwind
 0x2011a0 12 tail_three symtab,dwarf,unwind
+/* velk prelude */
+int tail_one(int);
+/* end velk prelude */
 
 == 0x201180 tail_one
 -- decompile
@@ -24,7 +27,7 @@ fn tail_one @ 0x201180 (size 14)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x201190 */
 int tail_two(int x) {
-    return tail_one((x + 2) & 0xffffffff);
+    return tail_one(x + 2);
 }
 -- signature
 int (int x)

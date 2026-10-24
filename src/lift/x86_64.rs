@@ -28,7 +28,8 @@ use iced_x86::{
 
 use super::flags::{Flags, Test};
 use super::{
-    Decoded, Machine, Write, call, call_through, preserve_compare, reverse_bytes, rotate, tail_call,
+    Decoded, Machine, Write, call, call_through, flags, preserve_compare, reverse_bytes, rotate,
+    tail_call,
 };
 use crate::ir::{
     BinOp, Block, CallKind, Cond, EXCHANGE, Expr, LaneOp, Operation, Precision, RegRef, Rounding,
@@ -153,22 +154,15 @@ impl<'a> Lifter<'a> {
     }
 }
 
-/// The registers, as the IR numbers them, an instruction may read or write.
-fn accessed_registers(
-    info: &mut iced_x86::InstructionInfoFactory,
-    ins: &Instruction,
-    write: bool,
-) -> Vec<u16> {
+/// The registers, as the IR numbers them, an instruction may write.
+fn written_registers(info: &mut iced_x86::InstructionInfoFactory, ins: &Instruction) -> Vec<u16> {
     use iced_x86::OpAccess;
     let mut out = Vec::new();
     for used in info.info(ins).used_registers() {
-        let accessed = match used.access() {
-            OpAccess::Read | OpAccess::CondRead => !write,
-            OpAccess::Write | OpAccess::CondWrite => write,
-            OpAccess::ReadWrite | OpAccess::ReadCondWrite => true,
-            _ => false,
-        };
-        if !accessed {
+        if !matches!(
+            used.access(),
+            OpAccess::Write | OpAccess::ReadWrite | OpAccess::CondWrite | OpAccess::ReadCondWrite
+        ) {
             continue;
         }
         let register = used.register();
@@ -770,8 +764,6 @@ fn lift_instruction(
             lifter.stmts.push(Stmt::Unsupported {
                 text: format!("{other:?} at 0x{:x}", ins.ip()),
                 writes,
-                reads: None,
-                writes_memory: None,
             });
         }
     }
@@ -827,38 +819,14 @@ impl Machine for Lifter<'_> {
         }
         if self.stmts[first..]
             .iter()
-            .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }))
+            .any(|stmt| matches!(stmt, Stmt::Unsupported { writes: None, .. }))
         {
-            let changed = accessed_registers(&mut self.info, instruction, true);
-            let read = accessed_registers(&mut self.info, instruction, false);
-            let writes_memory = instruction.is_invalid()
-                || self
-                    .info
-                    .info(instruction)
-                    .used_memory()
-                    .iter()
-                    .any(|memory| {
-                        matches!(
-                            memory.access(),
-                            iced_x86::OpAccess::Write
-                                | iced_x86::OpAccess::CondWrite
-                                | iced_x86::OpAccess::ReadWrite
-                                | iced_x86::OpAccess::ReadCondWrite
-                        )
-                    });
+            let changed = written_registers(&mut self.info, instruction);
             for stmt in &mut self.stmts[first..] {
-                if let Stmt::Unsupported {
-                    writes,
-                    reads,
-                    writes_memory: memory,
-                    ..
-                } = stmt
+                if let Stmt::Unsupported { writes, .. } = stmt
+                    && writes.is_none()
                 {
-                    if writes.is_none() {
-                        *writes = Some(changed.clone());
-                    }
-                    *reads = Some(read.clone());
-                    *memory = Some(writes_memory);
+                    *writes = Some(changed.clone());
                 }
             }
         }

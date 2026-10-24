@@ -208,7 +208,6 @@ pub struct Image {
     /// What is known of each function as a callee, filled on demand.
     pub summaries: std::sync::RwLock<HashMap<u64, Summary>>,
     /// The debug-information declarations of callees, read on demand.
-    #[cfg(test)]
     pub(crate) call_declarations: crate::analysis::calls::Declarations,
     /// The direct calls and jumps the code makes, by target: the address of
     /// each instruction. Built on first use.
@@ -360,7 +359,6 @@ impl Image {
             data_symbols: BTreeMap::new(),
             fragments: BTreeMap::new(),
             summaries: Default::default(),
-            #[cfg(test)]
             call_declarations: Default::default(),
             branches_to: Default::default(),
             addressed: Default::default(),
@@ -875,7 +873,6 @@ pub fn load(path: &Path) -> Result<Image> {
         data_symbols,
         fragments: BTreeMap::new(),
         summaries: Default::default(),
-        #[cfg(test)]
         call_declarations: Default::default(),
         branches_to: Default::default(),
         addressed: Default::default(),

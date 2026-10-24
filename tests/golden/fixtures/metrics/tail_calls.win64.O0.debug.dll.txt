@@ -2,6 +2,9 @@
 0x180001000 25 tail_one symtab,dwarf,unwind
 0x180001020 26 tail_two symtab,dwarf,unwind
 0x180001040 20 tail_three symtab,dwarf,unwind
+/* velk prelude */
+int tail_one(int);
+/* end velk prelude */
 
 == 0x180001000 tail_one
 -- decompile
@@ -24,7 +27,7 @@ fn tail_one @ 0x180001000 (size 25)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x180001020 */
 int tail_two(int x) {
-    return tail_one((x + 2) & 0xffffffff);
+    return tail_one(x + 2);
 }
 -- signature
 int (int x)

@@ -197,7 +197,15 @@ fn return_type<'a>(call: &Stmt, ctx: &'a Ctx<'_>) -> Option<&'a crate::ir::CType
             ctx.symbols.import_returns.get(slot)
         }
         Some(_) => None,
-        None => ctx.symbols.function_returns.get(&(*target)?),
+        None => {
+            let Some(target) = target else {
+                return None;
+            };
+            match ctx.callee_signatures.get(target) {
+                Some(signature) => Some(&signature.ret),
+                None => ctx.symbols.function_returns.get(target),
+            }
+        }
     }
 }
 
@@ -316,7 +324,44 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             ctx.call_outputs.dynamic_target
         ),
     };
-    if let Some(prototype) = crate::analysis::prototypes::of(&callee, false) {
+    // A callee whose declaration is known takes each argument as the type
+    // it declares: an integer converts to its parameter's width as C
+    // converts it, and a pointer is passed as one.
+    if through.is_none()
+        && let Some(signature) = target.and_then(|target| ctx.callee_signatures.get(&target))
+        && signature.params.len() == args.len()
+    {
+        for ((text, value), (_, ty)) in args
+            .iter_mut()
+            .zip(values.iter().flatten())
+            .zip(&signature.params)
+        {
+            *text = match ty.integer() {
+                Some((bits, signed)) if !ty.is_pointer() => {
+                    super::expr::print_declared_value(
+                        value,
+                        ctx,
+                        Some(super::expr::Declared {
+                            bits,
+                            signed,
+                            param: false,
+                            integer: true,
+                        }),
+                    )
+                    .text
+                }
+                _ => {
+                    let pointer = ty.to_string();
+                    super::conformed(
+                        value,
+                        super::expr::print_value_at(value, ctx, 64, false),
+                        Some(&pointer),
+                        ctx,
+                    )
+                }
+            };
+        }
+    } else if let Some(prototype) = crate::analysis::prototypes::of(&callee, false) {
         for ((text, value), ty) in args
             .iter_mut()
             .zip(values.iter().flatten())
@@ -346,7 +391,11 @@ fn precision(ty: Option<&crate::ir::CType>) -> Option<crate::ir::Precision> {
 }
 
 enum ValueType {
-    Integer(u32, bool),
+    Integer {
+        bits: u32,
+        signed: bool,
+        zero_extended: bool,
+    },
     Pointer(String),
     Float(crate::ir::Precision),
 }
@@ -362,7 +411,11 @@ impl ValueType {
             let (bits, signed) = ty
                 .and_then(crate::ir::CType::integer)
                 .unwrap_or((64, false));
-            Self::Integer(bits, signed)
+            Self::Integer {
+                bits,
+                signed,
+                zero_extended: matches!(call, Stmt::Call { target: Some(target), through: None, .. } if ctx.callee_signatures.contains_key(target)),
+            }
         }
     }
 
@@ -373,10 +426,11 @@ impl ValueType {
             Self::Pointer(ty.clone())
         } else {
             let declared = ctx.declared.get(&index);
-            Self::Integer(
-                declared.map_or(64, |ty| ty.bits),
-                declared.is_some_and(|ty| ty.signed),
-            )
+            Self::Integer {
+                bits: declared.map_or(64, |ty| ty.bits),
+                signed: declared.is_some_and(|ty| ty.signed),
+                zero_extended: false,
+            }
         }
     }
 }
@@ -385,13 +439,22 @@ fn bits(text: String, ty: &ValueType) -> String {
     match ty {
         ValueType::Float(precision) => super::expr::float_bits(text, *precision).text,
         ValueType::Pointer(_) => format!("(uint64_t){text}"),
-        ValueType::Integer(_, _) => text,
+        ValueType::Integer { .. } => text,
     }
 }
 
 fn projected(value: String, width: u8, ty: &ValueType) -> String {
     let value = bits(value, ty);
-    if matches!(ty, ValueType::Integer(bits, false) if *bits == u32::from(width)) {
+    if let ValueType::Integer {
+        bits: 32,
+        signed: true,
+        zero_extended: true,
+    } = ty
+        && width == 64
+    {
+        return format!("(uint32_t)({value})");
+    }
+    if matches!(ty, ValueType::Integer { bits, signed: false, .. } if *bits == u32::from(width)) {
         return value;
     }
     match width {
@@ -405,7 +468,7 @@ fn projected(value: String, width: u8, ty: &ValueType) -> String {
 }
 
 fn assigned_value(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<'_>) -> String {
-    if let ValueType::Integer(bits, signed) = ty
+    if let ValueType::Integer { bits, signed, .. } = ty
         && u32::from(output.dest.width) >= *bits
         && ctx.declared.get(&output.dest.index).is_some_and(|stored| {
             stored.integer && stored.bits == *bits && stored.signed == *signed
@@ -438,7 +501,7 @@ fn assigned_value(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<
         format!("((union {{ {integer} bits; {float} value; }}){{ .bits = {value} }}).value")
     } else if let Some(target) = ctx.pointer_types.get(&output.dest.index) {
         if matches!(output.dest.width, 8 | 16 | 32)
-            || matches!(ty, ValueType::Integer(bits, _) if *bits < 64)
+            || matches!(ty, ValueType::Integer { bits, .. } if *bits < 64)
             || matches!(ty, ValueType::Float(crate::ir::Precision::Single))
         {
             format!("({target})(uintptr_t)({value})")
@@ -480,7 +543,7 @@ pub(super) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
             projected(value, dest.width, &ty)
         };
         if u32::from(dest.width) >= declared.bits
-            && matches!(ty, ValueType::Integer(bits, signed) if bits == declared.bits && signed == declared.signed)
+            && matches!(ty, ValueType::Integer { bits, signed, .. } if bits == declared.bits && signed == declared.signed)
         {
             return Some(value);
         }
@@ -516,10 +579,14 @@ pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<Strin
         && u32::from(dest.width) >= returned.bits
         && stored.bits >= returned.bits
     {
-        return Some(format!(
-            "return {};",
-            bits(expression(call, ctx), &ValueType::returned(call, ctx))
-        ));
+        let value = expression(call, ctx);
+        let ty = ValueType::returned(call, ctx);
+        let value = if returned.bits == 64 {
+            projected(value, 64, &ty)
+        } else {
+            bits(value, &ty)
+        };
+        return Some(format!("return {value};"));
     }
     if let (Some(returned), Some(stored)) = (ctx.returned, ctx.declared.get(&dest.index))
         && returned.integer
@@ -608,12 +675,21 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 Some((_, source)) if ctx.names.contains_key(source) => {
                     (ctx.register(*source, 64), ValueType::register(*source, ctx))
                 }
-                _ if void && !preserved.iter().any(|(at, _)| at == index) => {
-                    (undefined.clone(), ValueType::Integer(64, false))
-                }
+                _ if void && !preserved.iter().any(|(at, _)| at == index) => (
+                    undefined.clone(),
+                    ValueType::Integer {
+                        bits: 64,
+                        signed: false,
+                        zero_extended: false,
+                    },
+                ),
                 _ => (
                     ctx.call_outputs.sources[&output.register].clone(),
-                    ValueType::Integer(64, false),
+                    ValueType::Integer {
+                        bits: 64,
+                        signed: false,
+                        zero_extended: false,
+                    },
                 ),
             };
             lines.push(format!(
@@ -679,7 +755,11 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
             commit(
                 output,
                 format!("{temporary}[{at}]"),
-                &ValueType::Integer(64, false),
+                &ValueType::Integer {
+                    bits: 64,
+                    signed: false,
+                    zero_extended: false
+                },
                 ctx
             )
         ));

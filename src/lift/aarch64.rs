@@ -945,7 +945,7 @@ mod tests {
                 let statements: Vec<_> = ir.blocks.iter().flat_map(|block| &block.stmts).collect();
                 assert!(
                     statements.iter().any(|stmt| matches!(stmt,
-                    Stmt::Unsupported { text, writes: Some(writes), .. }
+                    Stmt::Unsupported { text, writes: Some(writes) }
                     if text.starts_with("MRS") && writes.contains(&0))),
                     "{}",
                     ir.render()

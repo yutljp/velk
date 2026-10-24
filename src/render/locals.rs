@@ -148,6 +148,7 @@ pub(super) fn stack_locals_with_roles(
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
         go_word_types: Default::default(),
+        callee_signatures: Default::default(),
         abi: None,
         call_outputs: Default::default(),
         block_addresses: Default::default(),
@@ -2277,8 +2278,6 @@ mod tests {
             Stmt::Unsupported {
                 text: "opaque".to_owned(),
                 writes: Some(Vec::new()),
-                reads: None,
-                writes_memory: None,
             },
         );
         let locals = stack_locals(

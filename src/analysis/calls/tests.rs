@@ -24,6 +24,119 @@ fn declaration_for(profile: AbiProfile, count: usize) -> Arc<CallDeclaration> {
     })
 }
 
+#[test]
+fn printable_signatures_require_whole_scalars_in_argument_order() {
+    for (profile, convention, count) in [
+        (AbiProfile::SysV, Convention::SysV, 6),
+        (AbiProfile::Win64, Convention::Win64, 4),
+        (AbiProfile::Aapcs64, Convention::Aapcs64, 8),
+    ] {
+        let declaration = declaration_for(profile, count);
+        assert!(printable(&declaration.signature, convention));
+        assert!(printable(
+            &declaration_for(profile, count + 1).signature,
+            convention
+        ));
+        let mut signature = declaration.signature.clone();
+        signature.variadic = true;
+        assert!(!printable(&signature, convention));
+        signature.variadic = false;
+        signature.ret = CType::int(1, false);
+        assert!(!printable(&signature, convention));
+        signature.ret = CType::Void;
+        assert!(!printable(&signature, convention));
+        signature.ret = CType::U64;
+        signature.params[0].1 = CType::pointer_to(CType::Named("struct item".into()));
+        assert!(!printable(&signature, convention));
+        signature.params[0].1 = CType::pointer_to(CType::Void);
+        assert!(printable(&signature, convention));
+        let abi = signature.abi.as_mut().unwrap();
+        let crate::ir::Passing::Direct(pieces) = &mut abi.arguments[0].passing else {
+            panic!("direct scalar");
+        };
+        pieces[0].bytes = 4;
+        assert!(!printable(&signature, convention));
+    }
+}
+
+#[test]
+fn a_shared_prototype_requires_every_call_to_fit() {
+    let image = Image::from_code(Isa::AArch64, 0, Vec::new());
+    let cell = Arc::new(OnceLock::new());
+    cell.set(Ok(Some(declaration_for(AbiProfile::Aapcs64, 1))))
+        .unwrap();
+    image
+        .call_declarations
+        .addresses
+        .lock()
+        .unwrap()
+        .insert(0x1000, cell);
+    let mut good = call(Vec::new(), false);
+    if let Stmt::Call { args, abi, .. } = &mut good {
+        *args = Some(vec![Expr::Const(1)]);
+        *abi = None;
+    }
+    let ir = FunctionIr::single_block(Isa::AArch64, vec![good.clone()]);
+    assert_eq!(printable_signatures(&image, &ir).len(), 1);
+    for args in [
+        None,
+        Some(Vec::new()),
+        Some(vec![Expr::Const(1), Expr::Const(2)]),
+    ] {
+        let mut bad = good.clone();
+        if let Stmt::Call { args: values, .. } = &mut bad {
+            *values = args;
+        }
+        for stmts in [vec![good.clone(), bad.clone()], vec![bad, good.clone()]] {
+            let ir = FunctionIr::single_block(Isa::AArch64, stmts);
+            assert!(printable_signatures(&image, &ir).is_empty());
+        }
+    }
+}
+
+#[test]
+fn a_declared_32_bit_result_requires_a_proven_32_bit_machine_result() {
+    let image = Image::from_code(Isa::AArch64, 0, Vec::new());
+    let mut declaration = declaration_for(AbiProfile::Aapcs64, 1);
+    let signature = &mut Arc::get_mut(&mut declaration).unwrap().signature;
+    signature.ret = CType::I32;
+    let result = signature.abi.as_mut().unwrap().result.as_mut().unwrap();
+    result.size = 4;
+    result.alignment = 4;
+    result.defined_bits = vec![(0, 32)];
+    if let crate::ir::Passing::Direct(pieces) = &mut result.passing {
+        pieces[0].bytes = 4;
+    }
+    let cell = Arc::new(OnceLock::new());
+    cell.set(Ok(Some(declaration))).unwrap();
+    image
+        .call_declarations
+        .addresses
+        .lock()
+        .unwrap()
+        .insert(0x1000, cell);
+    let mut stmt = call(Vec::new(), false);
+    if let Stmt::Call { args, abi, .. } = &mut stmt {
+        *args = Some(vec![Expr::Const(1)]);
+        *abi = None;
+    }
+    let ir = FunctionIr::single_block(Isa::AArch64, vec![stmt]);
+    image
+        .summaries
+        .write()
+        .unwrap()
+        .insert(0x1000, Default::default());
+    assert!(printable_signatures(&image, &ir).is_empty());
+    image
+        .summaries
+        .write()
+        .unwrap()
+        .get_mut(&0x1000)
+        .unwrap()
+        .narrow_return = true;
+    assert_eq!(printable_signatures(&image, &ir).len(), 1);
+}
+
 fn call(dependencies: Vec<u16>, memory: bool) -> Stmt {
     Stmt::Call {
         kind: CallKind::Invoke,

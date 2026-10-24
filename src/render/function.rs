@@ -767,6 +767,7 @@ fn render_with(
         }
     }
     let mut ctx = Ctx {
+        callee_signatures: ir.callee_signatures.clone(),
         go_word_types: go_groups
             .iter()
             .flat_map(|group| &group.fields)
@@ -994,11 +995,38 @@ fn render_with(
     let stack_provider = (!ctx.names.contains_key(&stack_pointer(ir.isa))
         && variables::mentions(&body, &stack_name))
     .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));
+    // The callees whose calls are printed with their declarations are
+    // declared as their debug information declares them.
+    let declared_callees: HashMap<String, String> = ir
+        .callee_signatures
+        .iter()
+        .filter_map(|(target, signature)| {
+            let callee = symbols
+                .functions
+                .get(target)
+                .map_or_else(|| format!("sub_{target:x}"), |name| sanitize(name));
+            if callee == own || !variables::mentions(&body, &callee) {
+                return None;
+            }
+            let params = if signature.params.is_empty() {
+                "void".to_owned()
+            } else {
+                signature
+                    .params
+                    .iter()
+                    .map(|(_, ty)| ty.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            let prototype = declaration(&signature.ret, &format!("{callee}({params})"));
+            Some((callee, format!("{prototype};\n")))
+        })
+        .collect();
     let mut prototypes: String = ctx
         .taken
         .borrow()
         .iter()
-        .filter(|taken| **taken != own)
+        .filter(|taken| **taken != own && !declared_callees.contains_key(*taken))
         .map(|taken| {
             if body.contains(&format!("{taken}(")) {
                 let ty = symbols
@@ -1017,6 +1045,11 @@ fn render_with(
             }
         })
         .collect();
+    let mut declared_callees: Vec<(String, String)> = declared_callees.into_iter().collect();
+    declared_callees.sort();
+    for (_, prototype) in declared_callees {
+        prototypes.push_str(&prototype);
+    }
     if let Some(provider) = &stack_provider {
         prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
     }

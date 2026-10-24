@@ -1,14 +1,14 @@
 //! Resolving a callee's declaration and binding it to a call's registers
 //! and stack slots.
-// Not yet run on lifted functions outside tests.
+// Declarations are looked up for printing; binding them to calls runs in
+// tests only.
 
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::{Arc, Mutex, OnceLock};
 
-use crate::ir::calls::{
-    CallAbi, CallDeclaration, CallFallback, CallInput, CallInputPiece, CallMember, CallSource,
-    CallTransport, FunctionSource, TypeSource,
-};
+#[cfg(test)]
+use crate::ir::calls::{CallAbi, CallFallback, CallInput, CallInputPiece, CallTransport};
+use crate::ir::calls::{CallDeclaration, CallMember, CallSource, FunctionSource, TypeSource};
 use crate::ir::{AbiIssue, AbiProfile, CType, DeclaredSignature, Definition};
 use crate::loader::Image;
 use crate::loader::dwarf::calls::{self as dwarf, CallIndex, CallUnit};
@@ -36,6 +36,7 @@ pub(crate) fn declaration(image: &Image, address: u64) -> Answer {
     cell.get_or_init(|| resolve(image, address)).clone()
 }
 
+#[cfg(test)]
 pub(crate) fn attach_outputs(image: &Image, blocks: &mut [crate::ir::Block]) {
     if image.go {
         return;
@@ -98,6 +99,7 @@ pub(crate) fn attach_outputs(image: &Image, blocks: &mut [crate::ir::Block]) {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn attach_inputs(image: &Image, blocks: &mut [crate::ir::Block]) {
     if image.go {
         return;
@@ -173,6 +175,7 @@ pub(crate) fn attach_inputs(image: &Image, blocks: &mut [crate::ir::Block]) {
     }
 }
 
+#[cfg(test)]
 fn input_binding(
     declaration: Arc<CallDeclaration>,
     target: u64,
@@ -328,6 +331,7 @@ fn input_binding(
     })
 }
 
+#[cfg(test)]
 fn result_registers(value: &crate::ir::ValueAbi) -> Option<Vec<u16>> {
     value.validate().ok()?;
     let candidates = match &value.passing {
@@ -350,6 +354,181 @@ fn result_registers(value: &crate::ir::ValueAbi) -> Option<Vec<u16>> {
         registers.push(register);
     }
     Some(registers)
+}
+
+/// Declarations usable for direct calls and function addresses: nonvariadic,
+/// with whole scalar parameters in the named arguments' order and a scalar
+/// result in the first result register under the call's convention.
+pub(crate) fn printable_signatures(
+    image: &Image,
+    ir: &crate::ir::FunctionIr,
+) -> std::collections::BTreeMap<u64, DeclaredSignature> {
+    let mut found = std::collections::BTreeMap::new();
+    if image.go {
+        return found;
+    }
+    let mut refused = HashSet::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let crate::ir::Stmt::Call {
+            target: Some(target),
+            through: None,
+            convention,
+            args,
+            ..
+        } = stmt
+        else {
+            continue;
+        };
+        if refused.contains(target) {
+            continue;
+        }
+        let Ok(Some(declaration)) = declaration(image, *target) else {
+            continue;
+        };
+        let signature = &declaration.signature;
+        // A call of the function itself is printed with the types its
+        // definition is printed with, when those are the declared ones.
+        let own = *target != ir.addr
+            || (ir.ret_type == signature.ret
+                && ir.params.len() == signature.params.len()
+                && ir
+                    .params
+                    .iter()
+                    .zip(&signature.params)
+                    .all(|(param, (_, ty))| param.ty == *ty));
+        if own
+            && args
+                .as_ref()
+                .is_some_and(|args| args.len() == signature.params.len())
+            && printable(signature, *convention)
+            // A 32-bit declaration alone says nothing about the upper
+            // return-register bits that the caller may still read.
+            && (!signature.ret.integer().is_some_and(|(bits, _)| bits == 32)
+                || super::summary::summary(image, *target).narrow_return)
+        {
+            found.insert(*target, signature.clone());
+        } else {
+            // Every call sharing the prototype must fit it.
+            found.remove(target);
+            refused.insert(*target);
+        }
+    }
+    // An address of the same function needs the same prototype when
+    // standalone outputs are combined.
+    let mut pending: Vec<_> = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .flat_map(crate::ir::Stmt::operands)
+        .collect();
+    while let Some(value) = pending.pop() {
+        pending.extend(crate::ir::visit::children(value));
+        let crate::ir::Expr::Const(target) = value else {
+            continue;
+        };
+        if *target == 0
+            || *target == ir.addr
+            || found.contains_key(target)
+            || refused.contains(target)
+            || !image.functions.contains_key(target)
+        {
+            continue;
+        }
+        let Ok(Some(declaration)) = declaration(image, *target) else {
+            continue;
+        };
+        if printable(&declaration.signature, image.convention_of(*target)) {
+            found.insert(*target, declaration.signature.clone());
+        }
+    }
+    found
+}
+
+fn printable(signature: &DeclaredSignature, convention: crate::ir::Convention) -> bool {
+    use crate::ir::{AbiLocation, Passing, RegisterClass};
+    let Ok(abi) = &signature.abi else {
+        return false;
+    };
+    // A void prototype cannot represent a live return-register value.
+    if signature.ret == CType::Void {
+        return false;
+    }
+    if signature.variadic || super::abi::convention(abi.profile) != convention {
+        return false;
+    }
+    let scalar = |ty: &CType| {
+        let mut target = ty;
+        while let CType::Pointer(inner) = target {
+            target = inner;
+        }
+        (*target == CType::Void && ty.is_pointer())
+            || target
+                .integer()
+                .is_some_and(|(bits, _)| matches!(bits, 8 | 16 | 32 | 64))
+    };
+    let size_matches = |ty: &CType, value: &crate::ir::ValueAbi| {
+        let bytes = if ty.is_pointer() {
+            Some(8)
+        } else {
+            ty.integer().map(|(bits, _)| u64::from(bits / 8))
+        };
+        bytes == Some(value.size)
+            && !matches!(ty, CType::Named(name) if name.split_whitespace().any(|word| matches!(word, "bool" | "_Bool")))
+    };
+    let location = |value: &crate::ir::ValueAbi| match &value.passing {
+        Passing::Direct(pieces) if !value.aggregate => match pieces.as_slice() {
+            [piece]
+                if value.validate().is_ok()
+                    && piece.object_offset == 0
+                    && piece.bytes == value.size
+                    && match piece.location {
+                        AbiLocation::Register(_) => piece.class == Some(RegisterClass::Integer),
+                        AbiLocation::Stack(_) => piece.class.is_none(),
+                    } =>
+            {
+                Some(piece.location)
+            }
+            _ => None,
+        },
+        _ => None,
+    };
+    let arguments = convention.arguments();
+    let params = signature.params.len() == abi.arguments.len()
+        && signature.params.iter().zip(&abi.arguments).enumerate().all(
+            |(position, ((_, ty), value))| {
+                scalar(ty)
+                    && size_matches(ty, value)
+                    && location(value).is_some_and(|at| {
+                        if let Some(register) = arguments.get(position) {
+                            return at == AbiLocation::Register(*register);
+                        }
+                        let offset = i64::try_from(position - arguments.len())
+                            .ok()
+                            .and_then(|slot| slot.checked_mul(8))
+                            .and_then(|offset| {
+                                convention
+                                    .stack_arguments()
+                                    .and_then(|start| start.checked_add(offset))
+                            });
+                        offset.is_some_and(|offset| at == AbiLocation::Stack(offset))
+                    })
+            },
+        );
+    let result = match (&abi.result, &signature.ret) {
+        (Some(value), ty) => {
+            scalar(ty)
+                && size_matches(ty, value)
+                && (ty.is_pointer() || ty.integer().is_some_and(|(bits, _)| bits >= 32))
+                && location(value).is_some_and(|at| {
+                    convention
+                        .results()
+                        .first()
+                        .is_some_and(|register| at == AbiLocation::Register(*register))
+                })
+        }
+        _ => false,
+    };
+    params && result
 }
 
 fn unit(image: &Image, source: u64) -> Result<Arc<CallUnit>, AbiIssue> {

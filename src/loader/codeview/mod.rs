@@ -1,6 +1,5 @@
 //! Windows debug declarations shared with the other debug-information consumers.
 
-#[cfg(test)]
 mod graph;
 mod locations;
 mod msf;
@@ -11,7 +10,6 @@ mod types;
 use crate::loader::{Image, dwarf::FunctionTypes};
 use object::{Object, ObjectSection, ObjectSymbol, SectionIndex};
 use records::{Reader, u32_at};
-#[cfg(test)]
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::path::Path;
@@ -282,7 +280,6 @@ pub(super) fn read(
     data
 }
 
-#[cfg(test)]
 pub(crate) fn call_index(image: &Image) -> super::dwarf::calls::CallIndex {
     let mut addresses = BTreeMap::new();
     for function in &image.codeview.procedures {
@@ -299,7 +296,6 @@ pub(crate) fn call_index(image: &Image) -> super::dwarf::calls::CallIndex {
     }
 }
 
-#[cfg(test)]
 pub(crate) fn call_unit(image: &Image) -> super::dwarf::calls::CallUnit {
     let mut unit = super::dwarf::calls::CallUnit::default();
     for function in &image.codeview.procedures {

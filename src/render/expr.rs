@@ -55,6 +55,8 @@ pub(crate) struct Ctx<'a> {
     pub(super) float_return: Option<Precision>,
     pub(super) names: HashMap<u16, &'a str>,
     pub(super) go_word_types: HashMap<u16, CType>,
+    /// The declarations used to print calls and function addresses.
+    pub(super) callee_signatures: std::collections::BTreeMap<u64, crate::ir::DeclaredSignature>,
     /// The landing pads, with the code ranges whose calls unwind into each.
     pub(super) landing_pads: HashMap<u64, Vec<(u64, u64)>>,
     /// The strings constants point at.

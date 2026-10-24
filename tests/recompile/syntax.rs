@@ -992,3 +992,118 @@ fn scan(fixtures: &[PathBuf], name: &str) {
     assert_eq!(unavailable_total, 0, "{report}");
     assert_eq!(failed, 0, "{report}");
 }
+
+#[test]
+fn calls_to_declared_callees_pass_and_return_declared_types() {
+    let mut binary =
+        Binary::open(&common::fixtures_dir().join("metrics/calls.x86_64.O0.debug.elf")).unwrap();
+    let mut prelude = velk::render::Prelude::default();
+    let mut bodies = String::new();
+    for name in [
+        "is_even",
+        "is_odd",
+        "factorial",
+        "sum9",
+        "call_sum9",
+        "twice",
+        "square",
+        "pick_op",
+    ] {
+        let addr = binary.find(name).expect("a function").addr;
+        let code = binary.decompile(addr, None, None).unwrap();
+        // The callee is declared as its debug information declares it, and
+        // its result needs no conversion.
+        assert!(!code.contains("((int32_t)("), "{code}");
+        assert!(!code.contains("result ="), "{code}");
+        bodies.push_str(&prelude.extract(&code));
+    }
+    assert!(
+        prelude.render().contains("int is_odd(int);"),
+        "{}",
+        prelude.render()
+    );
+    assert!(
+        prelude.render().contains("int is_even(int);"),
+        "{}",
+        prelude.render()
+    );
+    run_printed(
+        &format!("{}{bodies}", prelude.render()),
+        "",
+        "return !(is_even(10) == 1 && is_odd(7) == 1 && is_even(7) == 0 && factorial(5) == 120 && call_sum9(6) == 42 && pick_op(0) == (void *)twice && pick_op(1) == (void *)square);",
+    );
+}
+
+#[test]
+fn declared_calls_convert_arguments_and_zero_extend_integer_results() {
+    for (isa, convention) in [
+        (Isa::X86_64, Convention::SysV),
+        (Isa::AArch64, Convention::Aapcs64),
+    ] {
+        let result = convention.results()[0];
+        let mut ir = synthetic_ir(
+            "call_declared",
+            vec![Param {
+                index: convention.arguments()[0],
+                name: "x".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Call {
+                    abi: None,
+                    kind: velk::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention,
+                    args: Some(vec![Expr::reg(convention.arguments()[0], 64)]),
+                    floats_named: false,
+                    outputs: vec![velk::ir::CallOutput {
+                        register: result,
+                        dest: velk::ir::RegRef {
+                            index: result,
+                            width: 64,
+                        },
+                    }],
+                    clobbers: None,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(result, 64),
+                },
+            ],
+        );
+        ir.isa = isa;
+        ir.convention = convention;
+        ir.callee_signatures.insert(
+            0x1000,
+            velk::ir::DeclaredSignature {
+                params: vec![("x".into(), CType::I32)],
+                ret: CType::I32,
+                variadic: false,
+                abi: Err(velk::ir::AbiIssue::UnknownLayout),
+            },
+        );
+        let symbols = velk::render::Symbols {
+            functions: [(0x1000, "callee".into())].into(),
+            ..Default::default()
+        };
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("int32_t callee(int32_t);"), "{code}");
+        run_printed(
+            &code,
+            "int32_t callee(int32_t x) { return x; }",
+            "return call_declared(0x1234567880000001ULL) != 0x80000001ULL || call_declared(0xffffffffffffffffULL) != 0xffffffffULL;",
+        );
+        let signature = ir.callee_signatures.get_mut(&0x1000).unwrap();
+        signature.params[0].1 = CType::pointer_to(CType::I32);
+        signature.ret = CType::pointer_to(CType::I32);
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("int32_t *callee(int32_t *);"), "{code}");
+        run_printed(
+            &code,
+            "int32_t *callee(int32_t *x) { return x; }",
+            "int32_t x = 7; return call_declared((uintptr_t)&x) != (uintptr_t)&x;",
+        );
+    }
+}

@@ -4,6 +4,9 @@
 0x2101c8 12 tail_indirect symtab,dwarf,unwind
 0x2101d4 24 six_args symtab,dwarf,unwind
 0x2101ec 8 wide_add symtab,dwarf,unwind
+/* velk prelude */
+int tail_target(int);
+/* end velk prelude */
 
 == 0x2101a4 tail_target
 -- decompile
@@ -26,7 +29,7 @@ fn tail_target @ 0x2101a4 (size 28)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x2101c0 */
 int tail_direct(int x) {
-    return ((int32_t)(tail_target((x + 2) & 0xffffffff)));
+    return tail_target(x + 2);
 }
 -- signature
 int (int x)

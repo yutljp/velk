@@ -11,11 +11,17 @@
 0x210564 76 call_sum9 symtab,dwarf,unwind
 0x2105b0 316 sum_varargs symtab,dwarf,unwind
 /* velk prelude */
+int is_even(int);
+
+int is_odd(int);
+
+int square(int);
+
+int twice(int);
+
+long sum9(long, long, long, long, long, long, long, long, long);
+
 uint64_t velk_entry_stack_pointer(void);
-
-void square(void);
-
-void twice(void);
 /* end velk prelude */
 
 == 0x21031c twice
@@ -117,12 +123,10 @@ fn apply_pointer @ 0x2103c4 (size 48)
 /* velk pseudo-C: factorial @ 0x2103f4 */
 int factorial(int n) {
     uint32_t v4;
-    uint32_t result;
 
     v4 = n;
     if (n > 1) {
-        result = v4 * ((int32_t)(factorial(v4 - 1)));
-        return result;
+        return v4 * factorial(v4 - 1);
     }
     return 1;
 }
@@ -154,12 +158,10 @@ fn factorial @ 0x2103f4 (size 96)
 /* velk pseudo-C: is_odd @ 0x210454 */
 int is_odd(int n) {
     uint32_t v4;
-    uint32_t result;
 
     v4 = n;
     if (n != 0) {
-        result = ((int32_t)(is_even(v4 - 1)));
-        return result;
+        return is_even(v4 - 1);
     }
     return 0;
 }
@@ -191,12 +193,10 @@ fn is_odd @ 0x210454 (size 76)
 /* velk pseudo-C: is_even @ 0x2104a0 */
 int is_even(int n) {
     uint32_t v4;
-    uint32_t result;
 
     v4 = n;
     if (n != 0) {
-        result = ((int32_t)(is_odd(v4 - 1)));
-        return result;
+        return is_odd(v4 - 1);
     }
     return 1;
 }

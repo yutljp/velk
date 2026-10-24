@@ -2,6 +2,9 @@
 0x21017c 28 tail_one symtab,dwarf,unwind
 0x210198 8 tail_two symtab,dwarf,unwind
 0x2101a0 24 tail_three symtab,dwarf,unwind
+/* velk prelude */
+int tail_one(int);
+/* end velk prelude */
 
 == 0x21017c tail_one
 -- decompile
@@ -24,7 +27,7 @@ fn tail_one @ 0x21017c (size 28)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x210198 */
 int tail_two(int x) {
-    return ((int32_t)(tail_one((x + 2) & 0xffffffff)));
+    return tail_one(x + 2);
 }
 -- signature
 int (int x)
