@@ -256,6 +256,7 @@ impl Binary {
     }
 
     fn prepare_structures(&mut self, addr: u64, deadline: Option<Instant>) -> Result<()> {
+        crate::timing::scope!("service::prepare_structures");
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
@@ -266,11 +267,11 @@ impl Binary {
             return Err(Error::NoFunctionAt(addr));
         };
         let root = match cached(&mut self.analyses, &self.image, function, deadline) {
-            Ok(result) => result.clone(),
+            Ok(result) => result,
             Err(error) => return Err(error),
         };
-        let Ok(root_analysis) = &root else {
-            self.shared_analyses.insert(addr, root);
+        let Ok(root_analysis) = root else {
+            self.shared_analyses.insert(addr, root.clone());
             return Ok(());
         };
         let ir = &root_analysis.ir;

@@ -385,6 +385,23 @@ and machine-dependent thresholds. They do not establish a general
 per-function latency guarantee. `tests/golden/readability.txt` records
 output counts; fewer lines or casts are not themselves correctness checks.
 
+Whole-binary throughput can be measured in one script session per fixture:
+
+```bash
+uv run python tests/throughput.py target/release/velk tests/fixtures/go_probe
+uv run python tests/throughput.py target/release/velk tests/fixtures/rust_probe
+```
+
+The script reports discovered functions, decompilation failures, wall time,
+peak child-process RSS in bytes, and a SHA-256 digest of the complete output.
+Run each command in a fresh process without concurrent builds. Compare the
+digests as well as timings when checking an optimization.
+
+For timing inside the service and renderer, build with `--features timing`
+and set `VELK_TIMING=1`. Stderr records tab-separated `timing`, scope name,
+and elapsed nanoseconds. Scope times include nested calls; do not add them
+together. Normal builds compile these hooks out.
+
 ## Golden changes
 
 Golden files retain observed output and classified findings. Updating a

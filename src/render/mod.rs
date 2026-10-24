@@ -70,6 +70,7 @@ use crate::render::expr::render_value;
 use crate::render::expr::slot_access;
 use crate::render::expr::type_of;
 use crate::render::locals::Locals;
+#[cfg(test)]
 use crate::render::locals::stack_locals;
 use crate::render::naming::member_access;
 use crate::render::naming::narrow_registers;

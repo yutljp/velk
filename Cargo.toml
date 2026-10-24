@@ -3,6 +3,9 @@ name = "velk"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+timing = []
+
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
 cpp_demangle = "0.5.1"

@@ -114,11 +114,23 @@ impl Locals {
 /// Names frame slots in order of first use. Accesses to one slot
 /// share the name even when the stack pointer moved between them; a rendered
 /// address that maps to two different slots stays unnamed.
+#[cfg(test)]
 pub(crate) fn stack_locals(
     ir: &FunctionIr,
     frames: &[Option<i64>],
     variables: &std::collections::BTreeMap<u16, CType>,
     symbols: &super::Symbols,
+) -> Locals {
+    let roles = super::naming::roles::infer(ir, symbols);
+    stack_locals_with_roles(ir, frames, variables, symbols, &roles)
+}
+
+pub(super) fn stack_locals_with_roles(
+    ir: &FunctionIr,
+    frames: &[Option<i64>],
+    variables: &std::collections::BTreeMap<u16, CType>,
+    symbols: &super::Symbols,
+    roles: &super::naming::roles::Roles,
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
@@ -165,7 +177,6 @@ pub(crate) fn stack_locals(
         taken: Default::default(),
     };
     let (accesses, elements) = frame_accesses(ir, sp, frames);
-    let roles = super::naming::roles::infer(ir, symbols);
     let mut reserved = super::naming::roles::reserved(ir, symbols);
     reserved.extend((0..accesses.len()).map(|index| format!("local_{index}")));
     let mut slot_names: HashMap<i64, Local> = HashMap::new();

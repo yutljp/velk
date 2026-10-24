@@ -1,8 +1,8 @@
 use super::{
     CType, Ctx, Expr, FunctionIr, HashMap, Locals, Node, Reference, Rendered, SegmentBase,
     SegmentBaseRead, Stmt, Symbols, abi, block_frames, calls, expr, globals, indent, int, naming,
-    narrow_registers, params, render_expr, render_nodes, sanitize, stack_bytes, stack_locals,
-    stack_pointer, structure_best, type_of, variables,
+    narrow_registers, params, render_expr, render_nodes, sanitize, stack_bytes, stack_pointer,
+    structure_best, type_of, variables,
 };
 
 pub fn render(
@@ -21,6 +21,7 @@ pub fn render_with_dependencies(
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
+    crate::timing::scope!("render/function::render_with_dependencies");
     let original = render_unmerged(ir, references, symbols, data_ranges);
     let Some(merged) = super::structure::merge_exits::merged(ir) else {
         return original;
@@ -73,7 +74,10 @@ fn render_unmerged(
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
         variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
-    let mut locals = stack_locals(ir, &frames, &variable_types, symbols);
+    let nodes = structure_best(ir);
+    let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
+    let mut locals =
+        super::locals::stack_locals_with_roles(ir, &frames, &variable_types, symbols, &roles);
     locals.bind_register_tops(original);
     if let Some(logical) = &mut logical {
         let params: std::collections::HashSet<_> =
@@ -178,6 +182,7 @@ fn render_unmerged(
             incoming: incoming.as_ref(),
             float_entries,
         },
+        PreparedBody { nodes, roles },
     )
 }
 
@@ -214,6 +219,11 @@ struct EntryStorage<'a> {
     float_entries: std::collections::HashSet<u16>,
 }
 
+struct PreparedBody {
+    nodes: Vec<Node>,
+    roles: naming::roles::Roles,
+}
+
 fn render_with(
     ir: &FunctionIr,
     references: &[Reference],
@@ -221,7 +231,9 @@ fn render_with(
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
     entry: EntryStorage<'_>,
+    body: PreparedBody,
 ) -> Rendered {
+    let PreparedBody { mut nodes, roles } = body;
     let EntryStorage {
         logical,
         incoming,
@@ -351,7 +363,6 @@ fn render_with(
     for (index, name) in &debug_names {
         names.insert(*index, name);
     }
-    let roles = naming::roles::infer(ir, symbols);
     let role_names: Vec<_> = variable_types
         .keys()
         .copied()
@@ -838,7 +849,6 @@ fn render_with(
     let decls = locals.decls;
     // The body is rendered first so only slots it names get declared.
     let mut body = String::new();
-    let mut nodes = structure_best(ir);
     // A function that returns nothing needs no return at its end, unless a
     // label stands before it.
     if ctx.void_return

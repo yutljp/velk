@@ -71,6 +71,7 @@ pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
 /// The same, with the function as the chosen structure reads it: the
 /// variant whose blocks were structured.
 pub(crate) fn best_structure(ir: &FunctionIr) -> (Vec<Node>, Cow<'_, FunctionIr>) {
+    crate::timing::scope!("render/structure/mod::best_structure");
     let mut best = structure_variants(Cow::Borrowed(ir));
     if label_count(&best.0) == 0 {
         return best;

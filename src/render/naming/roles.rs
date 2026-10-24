@@ -147,6 +147,14 @@ fn loops(nodes: &[Node], depth: usize, roles: &mut Roles) {
 }
 
 pub(in crate::render) fn infer(ir: &FunctionIr, symbols: &Symbols) -> Roles {
+    infer_with_nodes(ir, symbols, &crate::render::structure_best(ir))
+}
+
+pub(in crate::render) fn infer_with_nodes(
+    ir: &FunctionIr,
+    symbols: &Symbols,
+    nodes: &[Node],
+) -> Roles {
     let mut roles = Roles::default();
     let mut call_results = Roles::default();
     let mut writes = BTreeMap::<u16, usize>::new();
@@ -241,7 +249,7 @@ pub(in crate::render) fn infer(ir: &FunctionIr, symbols: &Symbols) -> Roles {
         }
     }
     let mut counters = Roles::default();
-    loops(&crate::render::structure_best(ir), 0, &mut counters);
+    loops(nodes, 0, &mut counters);
     roles.prefer(counters);
     roles
 }
@@ -312,7 +320,13 @@ pub(in crate::render) fn reserved(ir: &FunctionIr, symbols: &Symbols) -> HashSet
 
 pub(in crate::render) fn name_parameters(ir: &mut FunctionIr, symbols: &Symbols) {
     // A source declaration owns its parameter names, including names like a0.
-    if ir.declared_signature.is_some() {
+    if ir.declared_signature.is_some()
+        || !ir
+            .params
+            .iter()
+            .enumerate()
+            .any(|(position, param)| param.name == format!("a{position}"))
+    {
         return;
     }
     let roles = infer(ir, symbols);
