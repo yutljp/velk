@@ -185,8 +185,12 @@ pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Print
                 if width == 8 && &text == name && ctx.local_pointer_types.contains_key(name) {
                     return Printed::pointer(text, 13);
                 }
-                let declared = if &text == name {
-                    ctx.signed_locals.contains(name)
+                let viewed = ctx
+                    .local_views
+                    .get(name)
+                    .is_some_and(|views| views.iter().any(|(_, view)| *view == text));
+                let declared = if &text == name || viewed {
+                    ctx.signed_locals.contains(&text)
                 } else {
                     signed
                 };
@@ -298,9 +302,14 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
 
 pub(crate) fn slot_access(name: &str, width: u8, signed: bool, ctx: &Ctx<'_>) -> String {
     match ctx.local_widths.get(name) {
-        Some(declared) if *declared != width => {
-            format!("*({} *)&{name}", type_of(width, signed))
-        }
+        Some(declared) if *declared != width => match ctx
+            .local_views
+            .get(name)
+            .and_then(|views| views.iter().find(|(view, _)| *view == width))
+        {
+            Some((_, view)) => view.clone(),
+            None => format!("*({} *)&{name}", type_of(width, signed)),
+        },
         _ => name.to_owned(),
     }
 }

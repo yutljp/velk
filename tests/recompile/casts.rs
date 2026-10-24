@@ -309,10 +309,9 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
         symbols.functions.insert(0x1000, "memset".into());
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(!code.contains("*(uint8_t *)(local_"), "{code}");
-        assert!(code.contains("*(local_"), "{code}");
-        if width == 2 {
-            assert!(code.contains("*(uint16_t *)"), "{code}");
-        }
+        // The bytes read and written at more than one width share a union.
+        assert!(code.contains("local_0.f_0."), "{code}");
+        assert!(!code.contains("*(uint16_t *)"), "{code}");
         ir.blocks[0].stmts = (0..16)
             .map(|offset| Stmt::Store {
                 addr: slot(offset),

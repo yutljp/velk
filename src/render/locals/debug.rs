@@ -90,6 +90,7 @@ pub(super) fn extend(ir: &FunctionIr, slots: &mut HashMap<i64, Local>) {
                 signed: false,
                 ty: None,
                 fields: Vec::new(),
+                views: Vec::new(),
             })
             .size = size;
     }
@@ -252,6 +253,7 @@ pub(super) fn apply(
                     signed: false,
                     ty: Some(ty),
                     fields: Vec::new(),
+                    views: Vec::new(),
                 });
             }
             local.fields.sort_by_key(|field| field.slot);

@@ -73,6 +73,9 @@ pub(crate) struct Ctx<'a> {
     pub(super) frame_addresses: Vec<(Expr, String)>,
     /// Declared width of each local, so a mask to that width can be dropped.
     pub(super) local_widths: HashMap<String, u8>,
+    /// For a union member of a local, the other members at its address,
+    /// by width.
+    pub(super) local_views: HashMap<String, Vec<(u8, String)>>,
     pub(super) local_element_types: HashMap<String, CType>,
     /// Pointer locals whose arithmetic C scales by a pointee wider than a byte.
     pub(super) local_scaled: std::collections::HashSet<String>,

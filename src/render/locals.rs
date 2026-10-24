@@ -18,9 +18,19 @@ pub(super) struct Local {
     pub(super) signed: bool,
     pub(super) ty: Option<CType>,
     pub(super) fields: Vec<Local>,
+    /// For a field the overlapping accesses of a region share: its union's
+    /// members, one per slot and width read or written there.
+    pub(super) views: Vec<Local>,
 }
 
 impl Local {
+    /// The local, its fields and their union members.
+    pub(super) fn named(&self) -> impl Iterator<Item = &Local> {
+        std::iter::once(self)
+            .chain(&self.fields)
+            .chain(self.fields.iter().flat_map(|field| &field.views))
+    }
+
     fn byte_address(&self, slot: i64) -> String {
         let offset = slot.saturating_sub(self.slot);
         if self.size > 0 && self.ty.is_some() {
@@ -61,6 +71,9 @@ pub(crate) struct Locals {
     pub(super) parts: HashMap<String, String>,
     pub(super) transfer_addresses: HashMap<String, (String, u64)>,
     pub(super) widths: HashMap<String, u8>,
+    /// For a union member named at an address, the other members there,
+    /// by width.
+    pub(super) views: HashMap<String, Vec<(u8, String)>>,
     pub(super) parameter_addresses: HashMap<(String, u8), String>,
     pub(super) parameter_reads: HashMap<(String, u8), super::expr::ParameterRead>,
     pub(super) decls: Vec<Local>,
@@ -152,6 +165,7 @@ pub(super) fn stack_locals_with_roles(
         frame_origins: HashMap::new(),
         frame_addresses: Vec::new(),
         local_widths: HashMap::new(),
+        local_views: HashMap::new(),
         local_element_types: HashMap::new(),
         local_scaled: std::collections::HashSet::new(),
         local_floats: HashMap::new(),
@@ -203,6 +217,7 @@ pub(super) fn stack_locals_with_roles(
                     signed: true,
                     ty: None,
                     fields: Vec::new(),
+                    views: Vec::new(),
                 },
             );
         }
@@ -366,53 +381,55 @@ pub(super) fn stack_locals_with_roles(
             local.signed = signed;
         }
     }
-    let mut members: HashMap<i64, Vec<Local>> = HashMap::new();
-    for local in slot_names.values() {
-        let outer = within.get(&local.slot).copied().unwrap_or(local.slot);
-        if slot_names[&outer].size == 0 {
+    // The fields of each region. An access no other overlaps is a field of
+    // its own. Accesses that overlap one another become the members of one
+    // union when they fill an aligned cell of two, four or eight bytes, each
+    // a whole number of its widths into it; otherwise their bytes stay
+    // bytes. A region read at an index has no fields: an element may be any
+    // of its bytes.
+    let regions: Vec<(i64, i64)> = slot_names
+        .values()
+        .filter(|local| local.size > 0 && !within.contains_key(&local.slot))
+        .map(|local| (local.slot, local.size))
+        .collect();
+    for (outer, size) in regions {
+        let Some(end) = outer.checked_add(size) else {
             continue;
-        }
-        let variable = accesses.iter().any(|(slot, _, width, signed)| {
-            *width == 0
-                && *signed == Some(false)
-                && slot.is_some_and(|slot| {
-                    slot >= outer && slot < outer.saturating_add(slot_names[&outer].size)
-                })
-        });
-        let distinct_widths = accesses.iter().any(|(slot, _, width, _)| {
-            *slot == Some(local.slot) && *width != 0 && *width != local.width
-        });
-        if variable || distinct_widths || !matches!(local.width, 1 | 2 | 4 | 8) {
-            continue;
-        }
-        if !accesses
+        };
+        let inside = |slot: &Option<i64>| slot.is_some_and(|slot| slot >= outer && slot < end);
+        if accesses
             .iter()
-            .any(|(slot, _, width, _)| *slot == Some(local.slot) && *width > 0)
+            .any(|(slot, _, width, signed)| *width == 0 && *signed == Some(false) && inside(slot))
         {
             continue;
         }
-        members.entry(outer).or_default().push(Local {
-            name: format!("f_{:x}", local.slot.saturating_sub(outer)),
-            slot: local.slot,
-            width: local.width,
-            size: 0,
-            signed: local.signed,
-            ty: local.ty.clone(),
-            fields: Vec::new(),
-        });
-    }
-    for (outer, mut fields) in members {
-        fields.sort_by_key(|field| field.slot);
-        fields.retain(|field| {
-            !accesses.iter().any(|(slot, _, width, _)| {
-                *width > 0
-                    && slot.is_some_and(|slot| {
-                        slot != field.slot
-                            && slot < field.slot.saturating_add(i64::from(field.width))
-                            && slot.saturating_add(i64::from(*width)) > field.slot
-                    })
-            })
-        });
+        let mut placed: Vec<(i64, u8)> = accesses
+            .iter()
+            .filter(|(slot, _, width, _)| *width > 0 && inside(slot))
+            .filter_map(|(slot, _, width, _)| slot.map(|slot| (slot, *width)))
+            .collect();
+        placed.sort_unstable();
+        placed.dedup();
+        let mut fields = Vec::new();
+        let mut first = 0;
+        while first < placed.len() {
+            let (start, width) = placed[first];
+            let mut stop = start.saturating_add(i64::from(width));
+            let mut next = first + 1;
+            while let Some((slot, width)) = placed.get(next).copied()
+                && slot < stop
+            {
+                stop = stop.max(slot.saturating_add(i64::from(width)));
+                next += 1;
+            }
+            if stop <= end
+                && let Some(field) =
+                    region_field(outer, &placed[first..next], &slot_names, &accesses)
+            {
+                fields.push(field);
+            }
+            first = next;
+        }
         if let Some(local) = slot_names.get_mut(&outer) {
             local.fields = fields;
         }
@@ -485,23 +502,6 @@ pub(super) fn stack_locals_with_roles(
         .values()
         .map(|local| (local.name.clone(), local.width))
         .collect();
-    for (key, slot) in &rendered {
-        let Some(slot) = slot else { continue };
-        let outer = within.get(slot).copied().unwrap_or(*slot);
-        let Some(local) = slot_names.get(&outer) else {
-            continue;
-        };
-        if let Some(field) = local.fields.iter().find(|field| field.slot == *slot) {
-            let name = if field.name.starts_with('[') {
-                format!("{}{}", local.name, field.name)
-            } else {
-                format!("{}.{}", local.name, field.name)
-            };
-            slots.insert(key.clone(), name.clone());
-            widths.insert(name.clone(), field.width);
-            parts.insert(key.clone(), format!("&{name}"));
-        }
-    }
     for local in slot_names.values_mut() {
         for field in &mut local.fields {
             field.name = if field.name.starts_with('[') {
@@ -509,6 +509,47 @@ pub(super) fn stack_locals_with_roles(
             } else {
                 format!("{}.{}", local.name, field.name)
             };
+            for view in &mut field.views {
+                view.name = format!("{}.{}", field.name, view.name);
+            }
+        }
+    }
+    // An address names the field there, or the widest union member there,
+    // whose other members of the same address are its views.
+    let mut views: HashMap<String, Vec<(u8, String)>> = HashMap::new();
+    for (key, slot) in &rendered {
+        let Some(slot) = slot else { continue };
+        let outer = within.get(slot).copied().unwrap_or(*slot);
+        let Some(local) = slot_names.get(&outer) else {
+            continue;
+        };
+        let Some(field) = local
+            .fields
+            .iter()
+            .find(|field| field.slot == *slot || field.views.iter().any(|view| view.slot == *slot))
+        else {
+            continue;
+        };
+        let at: Vec<&Local> = field
+            .views
+            .iter()
+            .filter(|view| view.slot == *slot)
+            .collect();
+        let named = at
+            .iter()
+            .copied()
+            .max_by_key(|view| view.width)
+            .unwrap_or(field);
+        slots.insert(key.clone(), named.name.clone());
+        widths.insert(named.name.clone(), named.width);
+        parts.insert(key.clone(), format!("&{}", named.name));
+        if at.len() > 1 {
+            views.insert(
+                named.name.clone(),
+                at.iter()
+                    .map(|view| (view.width, view.name.clone()))
+                    .collect(),
+            );
         }
     }
     let argument_accesses = stack_arguments(ir, sp, frames);
@@ -650,6 +691,7 @@ pub(super) fn stack_locals_with_roles(
         parts,
         transfer_addresses,
         widths,
+        views,
         parameter_addresses,
         parameter_reads,
         decls: order
@@ -657,6 +699,108 @@ pub(super) fn stack_locals_with_roles(
             .filter_map(|slot| slot_names.remove(&slot))
             .collect(),
     }
+}
+
+/// The field of the region at `outer` that the overlapping accesses `group`
+/// (slot and width, sorted) make: a plain one for a single access, or a
+/// union whose members are the accesses' views of one aligned cell.
+fn region_field(
+    outer: i64,
+    group: &[(i64, u8)],
+    slot_names: &HashMap<i64, Local>,
+    accesses: &[FrameAccess],
+) -> Option<Local> {
+    let natural = |slot: i64, width: u8| {
+        matches!(width, 1 | 2 | 4 | 8) && (slot - outer) % i64::from(width) == 0
+    };
+    let Some(&(start, _)) = group.first() else {
+        return None;
+    };
+    let name = format!("f_{:x}", start.saturating_sub(outer));
+    if let [(slot, width)] = group {
+        let Some(local) = slot_names.get(slot) else {
+            return None;
+        };
+        if !matches!(width, 1 | 2 | 4 | 8) {
+            return None;
+        }
+        return Some(Local {
+            name,
+            slot: *slot,
+            width: *width,
+            size: 0,
+            signed: local.signed,
+            ty: local.ty.clone(),
+            fields: Vec::new(),
+            views: Vec::new(),
+        });
+    }
+    let Some(stop) = group
+        .iter()
+        .map(|(slot, width)| slot.saturating_add(i64::from(*width)))
+        .max()
+    else {
+        return None;
+    };
+    let Ok(cell) = u8::try_from(stop - start) else {
+        return None;
+    };
+    if !natural(start, cell) || group.iter().any(|(slot, width)| !natural(*slot, *width)) {
+        return None;
+    }
+    // One member per width, signed when a load of that width extends a
+    // sign; an array of them when one is read past the cell's start.
+    let signed = |width: u8| {
+        if width == 8 {
+            return slot_names
+                .get(&start)
+                .is_none_or(|local| local.width != 8 || local.signed);
+        }
+        accesses.iter().any(|(slot, _, at, sign)| {
+            *at == width
+                && *sign == Some(true)
+                && slot.is_some_and(|slot| slot >= start && slot < stop)
+        })
+    };
+    let views = group
+        .iter()
+        .map(|(slot, width)| {
+            let signed = signed(*width);
+            let member = format!(
+                "as_{}{}",
+                if signed { "i" } else { "u" },
+                u32::from(*width) * 8
+            );
+            let name = if group
+                .iter()
+                .any(|(other, size)| size == width && *other != start)
+            {
+                format!("{member}[{}]", (slot - start) / i64::from(*width))
+            } else {
+                member
+            };
+            Local {
+                name,
+                slot: *slot,
+                width: *width,
+                size: 0,
+                signed,
+                ty: None,
+                fields: Vec::new(),
+                views: Vec::new(),
+            }
+        })
+        .collect();
+    Some(Local {
+        name,
+        slot: start,
+        width: cell,
+        size: 0,
+        signed: false,
+        ty: None,
+        fields: Vec::new(),
+        views,
+    })
 }
 
 /// Where the reach of an index into the buffer at `slot` ends. Slots read

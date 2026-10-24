@@ -90,7 +90,7 @@ fn render_unmerged(
         let mut reserved: std::collections::HashSet<String> = locals
             .decls
             .iter()
-            .flat_map(|local| std::iter::once(local).chain(&local.fields))
+            .flat_map(|local| local.named())
             .map(|local| local.name.clone())
             .collect();
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -112,7 +112,7 @@ fn render_unmerged(
                     locals
                         .decls
                         .iter()
-                        .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                        .flat_map(|local| local.named())
                         .filter_map(|local| local.ty.as_ref()),
                 )
                 .chain(ir.members.iter().map(|member| &member.ty))
@@ -130,7 +130,7 @@ fn render_unmerged(
                 locals
                     .decls
                     .iter()
-                    .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                    .flat_map(|local| local.named())
                     .map(|local| local.name.clone()),
             )
             .chain(symbols.functions.values().map(|name| sanitize(name)))
@@ -161,7 +161,7 @@ fn render_unmerged(
                 locals
                     .decls
                     .iter()
-                    .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                    .flat_map(|local| local.named())
                     .filter_map(|local| local.ty.as_ref()),
             )
             .chain(ir.members.iter().map(|member| &member.ty))
@@ -292,7 +292,7 @@ fn render_with(
             locals
                 .decls
                 .iter()
-                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .flat_map(|local| local.named())
                 .map(|local| local.name.clone()),
         )
         .chain(ir.stack_params.iter().map(|param| param.name.clone()))
@@ -327,7 +327,7 @@ fn render_with(
             locals
                 .decls
                 .iter()
-                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .flat_map(|local| local.named())
                 .filter_map(|local| local.ty.as_ref()),
         )
         .chain(std::iter::once(&ir.ret_type))
@@ -535,7 +535,7 @@ fn render_with(
         locals
             .decls
             .iter()
-            .flat_map(|local| std::iter::once(local).chain(&local.fields))
+            .flat_map(|local| local.named())
             .filter(|local| local.ty.as_ref().is_some_and(plain_char))
             .map(|local| local.name.clone()),
     );
@@ -543,7 +543,7 @@ fn render_with(
         locals
             .decls
             .iter()
-            .flat_map(|local| std::iter::once(local).chain(&local.fields))
+            .flat_map(|local| local.named())
             .filter_map(|local| local.ty.as_ref().map(|ty| (local.name.clone(), ty)))
     };
     let local_element_types = local_types()
@@ -563,7 +563,7 @@ fn render_with(
             locals
                 .decls
                 .iter()
-                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .flat_map(|local| local.named())
                 .map(|local| local.name.clone()),
         )
         .chain(ir.stack_params.iter().map(|param| param.name.clone()))
@@ -606,7 +606,7 @@ fn render_with(
             locals
                 .decls
                 .iter()
-                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .flat_map(|local| local.named())
                 .filter_map(|local| local.ty.as_ref()),
         )
         .chain(std::iter::once(&ir.ret_type))
@@ -732,10 +732,11 @@ fn render_with(
         frame_origins: super::provenance::frame_origins(ir),
         frame_addresses: Vec::new(),
         local_widths: locals.widths,
+        local_views: locals.views,
         local_pointer_types: locals
             .decls
             .iter()
-            .flat_map(|local| std::iter::once(local).chain(&local.fields))
+            .flat_map(|local| local.named())
             .filter_map(|local| {
                 let Some(ty) = local.ty.as_ref().filter(|ty| ty.is_pointer()) else {
                     return None;
@@ -746,7 +747,7 @@ fn render_with(
         local_floats: locals
             .decls
             .iter()
-            .flat_map(|local| std::iter::once(local).chain(&local.fields))
+            .flat_map(|local| local.named())
             .filter_map(|local| {
                 let Some(ty) = &local.ty else {
                     return None;
@@ -762,7 +763,7 @@ fn render_with(
         signed_locals: locals
             .decls
             .iter()
-            .flat_map(|local| std::iter::once(local).chain(&local.fields))
+            .flat_map(|local| local.named())
             .filter(|local| match &local.ty {
                 Some(ty) => matches!(ty, CType::Int { signed: true, .. }),
                 None => local.signed,
@@ -1060,6 +1061,7 @@ fn render_with(
                         fields.push(format!(
                             "{};",
                             match &field.ty {
+                                _ if !field.views.is_empty() => union_declaration(field, name),
                                 Some(ty) => declaration(ty, name),
                                 None => format!("{} {name}", type_of(field.width, field.signed)),
                             }
@@ -1405,6 +1407,34 @@ fn declared(ty: &CType, param: bool) -> Option<expr::Declared> {
 }
 
 /// `name` declared as `ty`, the star of a pointer next to the name.
+/// The union a field of a local declares for the accesses that share it,
+/// one member per width from the widest: `union { int64_t as_i64; uint32_t as_u32[2]; } f_8`.
+fn union_declaration(field: &super::locals::Local, name: &str) -> String {
+    let mut members: Vec<(u8, String)> = Vec::new();
+    for view in &field.views {
+        let Some(member) = view.name.rsplit('.').next() else {
+            continue;
+        };
+        let member = match member.split_once('[') {
+            Some((base, _)) => format!(
+                "{} {base}[{}]",
+                type_of(view.width, view.signed),
+                field.width / view.width
+            ),
+            None => format!("{} {member}", type_of(view.width, view.signed)),
+        };
+        if !members.iter().any(|(_, known)| *known == member) {
+            members.push((view.width, member));
+        }
+    }
+    members.sort_by_key(|(width, _)| std::cmp::Reverse(*width));
+    let members: Vec<String> = members
+        .into_iter()
+        .map(|(_, member)| format!("{member};"))
+        .collect();
+    format!("union {{ {} }} {name}", members.join(" "))
+}
+
 pub(super) fn declaration(ty: &CType, name: &str) -> String {
     if ty.is_pointer() {
         format!("{ty}{name}")

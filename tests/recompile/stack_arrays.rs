@@ -198,7 +198,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
 }
 
 #[test]
-fn printed_stack_struct_keeps_overlapping_bytes_separate_from_fields() {
+fn printed_stack_struct_shares_overlapping_accesses_in_a_union() {
     let mut ir = synthetic_ir(
         "frame_mixed_fields",
         vec![],
@@ -229,7 +229,7 @@ fn printed_stack_struct_keeps_overlapping_bytes_separate_from_fields() {
     let code = velk::render::render(&ir, &[], &symbols, &[]);
     assert!(code.contains("uint32_t f_10;"), "{code}");
     assert!(code.contains("local_0.f_10 = 0x13579bdf;"), "{code}");
-    assert!(code.contains("local_0.gap_0 + 0x1"), "{code}");
+    assert!(code.contains("local_0.f_0.as_u8[1] = 170;"), "{code}");
     assert!(!code.contains("(uint8_t *)&local_0"), "{code}");
     ir.blocks[0].stmts.remove(0);
     for offset in (0..32).rev() {
@@ -346,4 +346,86 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
     let mut candidate = printed_candidate(ir, vec![vec![0]]);
     candidate.code = format!("#include <string.h>\n{code}");
     check_candidates("stack-register-top", vec![candidate], Mode::Registers, &[]);
+}
+
+#[test]
+fn printed_stack_unions_read_each_width_as_the_machine_does() {
+    let read = |offset: i64, width: u8, signed: bool| Expr::Load {
+        addr: Box::new(slot(offset)),
+        width,
+        signed,
+    };
+    let value = [
+        read(-60, 4, true),
+        read(-60, 2, true),
+        read(-57, 1, true),
+        read(-62, 2, false),
+        read(-45, 8, false),
+        read(-48, 4, false),
+    ]
+    .into_iter()
+    .fold(read(-64, 8, false), |sum, term| {
+        Expr::bin(BinOp::Xor, sum, term)
+    });
+    let mut ir = synthetic_ir(
+        "frame_views",
+        vec![Param {
+            index: 7,
+            name: "x".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            Stmt::Call {
+                abi: None,
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![slot(-64), Expr::Const(0x5a), Expr::Const(32)]),
+                floats_named: false,
+                outputs: Vec::new(),
+                clobbers: Some(Default::default()),
+                via: None,
+            },
+            Stmt::Store {
+                addr: slot(-64),
+                value: Expr::reg(7, 64),
+                width: 8,
+            },
+            store(-60, 0x8001, 2),
+            store(-57, 0x80, 1),
+            // Eight bytes across two cells stay bytes.
+            Stmt::Store {
+                addr: slot(-45),
+                value: Expr::reg(7, 64),
+                width: 8,
+            },
+            Stmt::Ret { value },
+        ],
+    );
+    let mut symbols = velk::render::Symbols::default();
+    symbols.functions.insert(0x1000, "memset".into());
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    assert!(code.contains("union {"), "{code}");
+    assert!(code.contains("local_0.f_0.as_i32[1]"), "{code}");
+    assert!(!code.contains("*(int16_t *)"), "{code}");
+    assert!(code.contains("*(uint64_t *)"), "{code}");
+    ir.blocks[0].stmts.remove(0);
+    for offset in (0..32).rev() {
+        ir.blocks[0].stmts.insert(0, store(-64 + offset, 0x5a, 1));
+    }
+    let inputs = [
+        0,
+        1,
+        0x8000_0000,
+        0xffff_ffff_ffff_ffff,
+        0x0123_4567_89ab_cdef,
+    ]
+    .into_iter()
+    .map(|value| vec![value])
+    .collect();
+    let mut candidate = printed_candidate(ir, inputs);
+    candidate.code = format!("#include <string.h>\n{code}");
+    check_candidates("stack-unions", vec![candidate], Mode::Registers, &[]);
 }
