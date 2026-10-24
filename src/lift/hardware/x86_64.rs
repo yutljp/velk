@@ -479,6 +479,105 @@ fn prepare(seed: u64, info: &mut InstructionInfoFactory) -> Option<Prepared> {
 }
 
 #[test]
+fn carry_chain_conditions_match_the_processor() {
+    let runner = runner().expect("a compiler for the x86-64 flag checks");
+    let mut cases = Vec::new();
+    for (prefix, opcodes) in [
+        (vec![], [0x10, 0x18]),
+        (vec![0x66], [0x11, 0x19]),
+        (vec![], [0x11, 0x19]),
+        (vec![0x48], [0x11, 0x19]),
+    ] {
+        for opcode in opcodes {
+            for chain in [false, true] {
+                for seed in 0..128 {
+                    // cmp/add/sub rcx, rdx; adc/sbb rax, rbx, optionally twice.
+                    let first = [0x39, 0x01, 0x29][seed as usize % 3];
+                    let mut code = vec![0x48, first, 0xd1];
+                    code.extend(&prefix);
+                    code.extend([opcode, 0xd8]);
+                    if chain {
+                        code.extend(&prefix);
+                        code.extend([opcode, 0xd8]);
+                    }
+                    let mut registers = [0; 16];
+                    for index in [0, 1, 2, 3] {
+                        registers[index] = value(seed, index as u64);
+                    }
+                    cases.push(Case {
+                        code,
+                        registers,
+                        flags: 2,
+                        vectors: [0; 32],
+                        memory: None,
+                    });
+                }
+            }
+        }
+    }
+    let outcomes = run(runner, &cases);
+    for (case, outcome) in cases.iter().zip(outcomes) {
+        assert_eq!(outcome.signal, 0);
+        let registers: Vec<_> = [0, 1, 2, 3]
+            .into_iter()
+            .map(|index| (index as u16, case.registers[index]))
+            .collect();
+        for code in 0..16 {
+            let (_, expected) = condition(code, outcome.flags);
+            for tail in [
+                vec![
+                    0x70 | code,
+                    6,
+                    0xb8,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0xc3,
+                    0xb8,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0xc3,
+                ],
+                vec![0x0f, 0x90 | code, 0xc0, 0x0f, 0xb6, 0xc0, 0xc3],
+                // mov eax, 0; mov ebx, 1; cmovcc rax, rbx; ret
+                vec![
+                    0xb8,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0xbb,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0x48,
+                    0x0f,
+                    0x40 | code,
+                    0xc3,
+                    0xc3,
+                ],
+            ] {
+                let ir =
+                    lifted(Isa::X86_64, [case.code.as_slice(), &tail].concat()).expect("lifted");
+                assert!(unsupported(&ir).is_none(), "{}", ir.render());
+                assert!(!branches_on_unknown_flags(&ir), "{}", ir.render());
+                assert!(
+                    condition_differs(&ir, &registers, expected).is_none(),
+                    "code {:?}, registers {registers:?}, condition {code}, flags {:#x}\n{}",
+                    case.code,
+                    outcome.flags,
+                    ir.render()
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn lifted_instructions_match_the_processor() {
     let Some(runner) = runner() else {
         eprintln!("no compiler for x86-64 here; the comparison did not run");

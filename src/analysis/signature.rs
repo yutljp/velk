@@ -2428,6 +2428,8 @@ mod tests {
                 Stmt::Unsupported {
                     text: "opaque frame change".to_owned(),
                     writes: Some(vec![31]),
+                    reads: None,
+                    writes_memory: None,
                 },
                 stack_assign(13, stack_load(31, 16, 8)),
                 Stmt::Br { target: Some(8) },
@@ -2763,6 +2765,8 @@ mod tests {
                 first.push(Stmt::Unsupported {
                     text: "opaque".to_owned(),
                     writes: Some(Vec::new()),
+                    reads: None,
+                    writes_memory: None,
                 });
             }
             first.extend([stack_store(31, 0, 8), Stmt::Br { target: Some(16) }]);

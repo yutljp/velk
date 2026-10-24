@@ -714,6 +714,10 @@ pub enum Stmt {
     Unsupported {
         text: String,
         writes: Option<Vec<u16>>,
+        /// The registers read, when known, including memory address registers.
+        reads: Option<Vec<u16>>,
+        /// Whether the instruction may write memory, when its effects are known.
+        writes_memory: Option<bool>,
     },
     /// A trap the CPU cannot return from (`int3`, `ud2`, `brk`).
     Trap,
@@ -827,6 +831,8 @@ impl Stmt {
         Stmt::Unsupported {
             text: text.into(),
             writes: None,
+            reads: None,
+            writes_memory: None,
         }
     }
 

@@ -124,3 +124,60 @@ fn printed_variables_at_and_above_ssa_boundary_are_declared() {
     }
     check_candidates("many-variables", vec![candidate], Mode::Registers, &[]);
 }
+
+#[test]
+fn printed_absolute_array_bases_stay_outside_the_index() {
+    let offset = Expr::reg(VARIABLE_BASE, 64);
+    let address = |field| Expr::bin(BinOp::Add, offset.clone(), Expr::Const(REGION + field));
+    let ir = synthetic_ir(
+        "absolute_array_base",
+        vec![Param {
+            index: 7,
+            name: "index".into(),
+            ty: CType::I32,
+        }],
+        CType::U32,
+        vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::bin(
+                    BinOp::Mul,
+                    Expr::SignExtend {
+                        value: Box::new(Expr::reg(7, 32)),
+                        width: 4,
+                    },
+                    Expr::Const(112),
+                ),
+            },
+            Stmt::Store {
+                addr: address(12),
+                value: Expr::Const(1),
+                width: 4,
+            },
+            Stmt::Store {
+                addr: address(40),
+                value: Expr::Const(7),
+                width: 4,
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(address(12)),
+                    width: 4,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let candidate = printed_candidate(ir, (0..8).map(|index| vec![index]).collect());
+    assert!(
+        !candidate.code.contains("uint32_t *v1"),
+        "{}",
+        candidate.code
+    );
+    assert!(!candidate.code.contains("v1["), "{}", candidate.code);
+    assert!(candidate.code.contains("v1 + 0x"), "{}", candidate.code);
+    check_candidates("absolute_array_base", vec![candidate], Mode::Memory, &[]);
+}

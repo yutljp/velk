@@ -292,6 +292,8 @@ fn temporary_slots_exclude_all_fixed_roles_and_actual_register_uses() {
             Stmt::Unsupported {
                 text: String::new(),
                 writes: Some(vec![TEMP_BASE + 2]),
+                reads: None,
+                writes_memory: None,
             },
             Stmt::Ret {
                 value: Expr::reg(TEMP_BASE + 3, 64),

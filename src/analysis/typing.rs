@@ -542,6 +542,11 @@ pub(crate) fn scan_reads(
                 scan_reads(lhs, register, true, reads_narrow, seen);
                 return;
             }
+            if matches!(op, crate::ir::BinOp::Shr | crate::ir::BinOp::Sar) {
+                scan_reads(lhs, register, false, reads_narrow, seen);
+                scan_reads(rhs, register, false, reads_narrow, seen);
+                return;
+            }
             scan_reads(lhs, register, narrow, reads_narrow, seen);
             scan_reads(rhs, register, narrow, reads_narrow, seen);
         }
@@ -555,8 +560,8 @@ pub(crate) fn scan_reads(
             els,
             ..
         } => {
-            scan_reads(lhs, register, narrow, reads_narrow, seen);
-            scan_reads(rhs, register, narrow, reads_narrow, seen);
+            scan_reads(lhs, register, false, reads_narrow, seen);
+            scan_reads(rhs, register, false, reads_narrow, seen);
             scan_reads(then, register, narrow, reads_narrow, seen);
             scan_reads(els, register, narrow, reads_narrow, seen);
         }
@@ -1639,6 +1644,8 @@ mod tests {
             Stmt::Unsupported {
                 text: "unknown".to_owned(),
                 writes: Some(vec![1]),
+                reads: None,
+                writes_memory: None,
             },
         );
         controls.push(opaque);

@@ -418,12 +418,33 @@ pub(crate) fn clobbers_knowing(
                         _ => state.slots.clear(),
                     }
                 }
-                Stmt::Unsupported { writes, .. } => {
-                    state.lost = true;
+                Stmt::Unsupported {
+                    writes,
+                    reads,
+                    writes_memory,
+                    ..
+                } => {
+                    if *writes_memory == Some(true) {
+                        state.slots.clear();
+                        state.lost = true;
+                    }
+                    if writes_memory.is_none() || reads.is_none() {
+                        state.lost = true;
+                    }
+                    let derives_frame = reads.as_ref().is_some_and(|reads| {
+                        reads.iter().any(|register| {
+                            matches!(state.register(*register), Value::Frame(_) | Value::Derived)
+                        })
+                    });
+                    let value = if derives_frame {
+                        Value::Derived
+                    } else {
+                        Value::Other
+                    };
                     match writes {
                         Some(writes) => {
                             for register in writes {
-                                state.set(*register, Value::Other);
+                                state.set(*register, value);
                             }
                         }
                         None => state.machine = [Value::Other; MACHINE],
@@ -863,6 +884,70 @@ mod tests {
                 .unwrap()
                 .contains(RBX)
         );
+    }
+
+    #[test]
+    fn unsupported_register_writes_keep_saves_but_memory_writes_invalidate_them() {
+        for writes_memory in [false, true] {
+            let mut stmts: Vec<_> = push(RBP).into();
+            stmts.push(assign(RBP, reg(RSP)));
+            stmts.push(Stmt::Unsupported {
+                text: "unknown instruction".into(),
+                writes: Some(vec![0, RBP]),
+                reads: Some(Vec::new()),
+                writes_memory: Some(writes_memory),
+            });
+            stmts.extend(pop(RBP));
+            stmts.push(ret());
+            let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+            assert_eq!(changed.contains(RBP), writes_memory);
+            assert!(changed.contains(0));
+        }
+    }
+
+    #[test]
+    fn unsupported_results_reading_frame_addresses_can_overwrite_saves() {
+        for input in [7, RSP] {
+            let mut stmts: Vec<_> = push(RBP).into();
+            stmts.push(Stmt::Unsupported {
+                text: "unknown register operation".into(),
+                writes: Some(vec![0]),
+                reads: Some(vec![input]),
+                writes_memory: Some(false),
+            });
+            stmts.push(Stmt::Store {
+                addr: reg(0),
+                value: Expr::Const(0),
+                width: 8,
+            });
+            stmts.extend(pop(RBP));
+            stmts.push(ret());
+            let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+            assert_eq!(changed.contains(RBP), input == RSP);
+        }
+    }
+
+    #[test]
+    fn unsupported_instruction_memory_effects_reach_the_callee_summary() {
+        for (instruction, writes_memory) in [
+            (vec![0x0f, 0x33], false),      // rdpmc
+            (vec![0x0f, 0xae, 0x07], true), // fxsave [rdi]
+        ] {
+            let code = [vec![0x55, 0x48, 0x89, 0xe5], instruction, vec![0x5d, 0xc3]].concat();
+            let image =
+                crate::loader::Image::from_code(crate::loader::Isa::X86_64, 0, code.clone());
+            let blocks =
+                crate::lift::lift(&image, 0, code.len() as u64, &Default::default()).unwrap();
+            assert!(
+                blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| matches!(stmt,
+                Stmt::Unsupported { writes_memory: Some(actual), .. } if *actual == writes_memory))
+            );
+            let changed = clobbers(&blocks, Convention::SysV, RSP).unwrap();
+            assert_eq!(changed.contains(RBP), writes_memory);
+        }
     }
 
     #[test]

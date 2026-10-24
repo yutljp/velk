@@ -392,6 +392,8 @@ mod tests {
                 stmts: vec![Stmt::Unsupported {
                     text: "opaque".to_owned(),
                     writes: Some(Vec::new()),
+                    reads: None,
+                    writes_memory: None,
                 }],
             },
             Block {

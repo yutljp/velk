@@ -17,6 +17,8 @@ pub(super) enum Source {
     Difference,
     /// `lhs + rhs`.
     Sum,
+    /// An x86 sum or difference including the incoming carry or borrow.
+    WithCarry { subtract: bool },
     /// A logical result `lhs`, with carry and overflow cleared.
     Logic,
     /// Only zero and sign follow the result `lhs`; carry and overflow mean
@@ -48,6 +50,7 @@ pub(super) struct Flags {
     pub source: Source,
     pub lhs: Expr,
     pub rhs: Expr,
+    input_carry: Option<Expr>,
     /// False when the instruction left the carry as it was (x86 `inc`, `dec`).
     pub carry: bool,
     /// Whether the x86 parity and adjust flags are clear whatever the
@@ -86,6 +89,14 @@ impl Flags {
 
     pub fn sum(lhs: Expr, rhs: Expr) -> Self {
         Self::new(Source::Sum, lhs, rhs)
+    }
+
+    pub fn with_carry(lhs: Expr, rhs: Expr, carry: Expr, subtract: bool, bits: u32) -> Self {
+        Self {
+            input_carry: Some(carry),
+            width: Some(bits),
+            ..Self::new(Source::WithCarry { subtract }, lhs, rhs)
+        }
     }
 
     pub fn logic(result: Expr) -> Self {
@@ -127,7 +138,11 @@ impl Flags {
             }
             _ if self.low_cleared => Test::Never,
             Source::Stored { .. } => bit_set(&self.lhs, 2),
-            Source::Difference | Source::Sum | Source::Logic | Source::Shift => {
+            Source::Difference
+            | Source::Sum
+            | Source::WithCarry { .. }
+            | Source::Logic
+            | Source::Shift => {
                 let low = Expr::bin(BinOp::And, self.value(), Expr::constant(0xff));
                 let folded = Expr::bin(
                     BinOp::And,
@@ -154,7 +169,7 @@ impl Flags {
             Source::FloatCompare(_) => Test::Never,
             _ if self.low_cleared => Test::Never,
             Source::Stored { .. } => bit_set(&self.lhs, 4),
-            Source::Difference | Source::Sum => {
+            Source::Difference | Source::Sum | Source::WithCarry { .. } => {
                 let operands = Expr::bin(BinOp::Xor, self.lhs.clone(), self.rhs.clone());
                 bit_set(&Expr::bin(BinOp::Xor, operands, self.value()), 4)
             }
@@ -164,6 +179,20 @@ impl Flags {
 
     /// The value whose low bits set parity and adjust.
     fn value(&self) -> Expr {
+        if let Source::WithCarry { subtract } = self.source {
+            let op = if subtract { BinOp::Sub } else { BinOp::Add };
+            return Expr::bin(
+                BinOp::And,
+                Expr::bin(
+                    op,
+                    Expr::bin(op, self.lhs.clone(), self.rhs.clone()),
+                    self.input_carry
+                        .clone()
+                        .expect("carry arithmetic has an input"),
+                ),
+                Expr::constant(mask(self.width.expect("carry arithmetic has a width"))),
+            );
+        }
         let op = match self.source {
             Source::Difference => BinOp::Sub,
             Source::Sum => BinOp::Add,
@@ -208,6 +237,7 @@ impl Flags {
             source,
             lhs,
             rhs,
+            input_carry: None,
             carry: true,
             low_cleared: false,
             chosen: None,
@@ -255,6 +285,9 @@ impl Flags {
     /// Every expression the flags read, in the order of `FLAG_OPERANDS`.
     pub fn operands_mut(&mut self) -> Vec<&mut Expr> {
         let mut operands = vec![&mut self.lhs, &mut self.rhs];
+        if let Some(carry) = &mut self.input_carry {
+            operands.push(carry);
+        }
         if let Some(choice) = &mut self.chosen {
             operands.push(&mut choice.lhs);
             operands.push(&mut choice.rhs);
@@ -403,6 +436,53 @@ impl Flags {
                 }
             }
             Source::Sum => sum(a, b, bits, cond, isa),
+            Source::WithCarry { subtract } => {
+                let bits = self.width.expect("carry arithmetic has a width");
+                let result = self.value();
+                let input = self
+                    .input_carry
+                    .clone()
+                    .expect("carry arithmetic has an input");
+                let carry = if subtract {
+                    borrow_out(a, b, input)
+                } else {
+                    carry_out(a, b, input, bits)
+                };
+                let changed = Expr::bin(BinOp::Xor, a.clone(), result.clone());
+                let signs = Expr::bin(BinOp::Xor, a.clone(), b.clone());
+                let signs = if subtract {
+                    signs
+                } else {
+                    Expr::bin(BinOp::Xor, signs, Expr::constant(mask(bits)))
+                };
+                let overflow = Expr::bin(BinOp::And, signs, changed);
+                let negative = bit_set(&result, u64::from(bits - 1));
+                let overflow_set = bit_set(&overflow, u64::from(bits - 1));
+                let signed_less = bit_set(
+                    &Expr::bin(BinOp::Xor, result.clone(), overflow),
+                    u64::from(bits - 1),
+                );
+                let carry_set = compare(Cond::Ne, &carry, &zero);
+                let zero = compare(Cond::Eq, &result, &zero);
+                let above = both(not(carry_set.clone()), not(zero.clone()));
+                let greater = both(not(zero.clone()), not(signed_less.clone()));
+                match cond {
+                    Cond::Eq => zero,
+                    Cond::Ne => not(zero),
+                    Cond::Cc => carry_set,
+                    Cond::Cs => not(carry_set),
+                    Cond::Mi => negative,
+                    Cond::Pl => not(negative),
+                    Cond::Vs => overflow_set,
+                    Cond::Vc => not(overflow_set),
+                    Cond::Hi => above,
+                    Cond::Ls => not(above),
+                    Cond::Lt => signed_less,
+                    Cond::Ge => not(signed_less),
+                    Cond::Gt => greater,
+                    Cond::Le => not(greater),
+                }
+            }
         }
     }
 }
@@ -828,6 +908,73 @@ mod tests {
                                 );
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn carry_arithmetic_decides_all_conditions_at_each_width() {
+        for bits in [8, 16, 32, 64] {
+            for subtract in [false, true] {
+                for carry in [0, 1] {
+                    for seed in 0..600 {
+                        let edges = [0, 1, mask(bits), 1 << (bits - 1), (1 << (bits - 1)) - 1];
+                        let a = if seed < 25 {
+                            edges[seed as usize % 5]
+                        } else {
+                            hash(seed, 0) & mask(bits)
+                        };
+                        let b = if seed < 25 {
+                            edges[seed as usize / 5]
+                        } else {
+                            hash(seed, 1) & mask(bits)
+                        };
+                        let signed_a = i128::from(sign_extend(a, bits));
+                        let signed_b = i128::from(sign_extend(b, bits));
+                        let (result, borrowed, signed) = if subtract {
+                            (
+                                a.wrapping_sub(b).wrapping_sub(carry) & mask(bits),
+                                u128::from(a) < u128::from(b) + u128::from(carry),
+                                signed_a - signed_b - i128::from(carry),
+                            )
+                        } else {
+                            (
+                                a.wrapping_add(b).wrapping_add(carry) & mask(bits),
+                                u128::from(a) + u128::from(b) + u128::from(carry)
+                                    > u128::from(mask(bits)),
+                                signed_a + signed_b + i128::from(carry),
+                            )
+                        };
+                        let limit = 1i128 << (bits - 1);
+                        let overflow = signed < -limit || signed >= limit;
+                        let nzcv = u8::from(result >> (bits - 1) != 0) << 3
+                            | u8::from(result == 0) << 2
+                            | u8::from(!borrowed) << 1
+                            | u8::from(overflow);
+                        let flags = Flags::with_carry(
+                            Expr::reg(0, bits as u8),
+                            Expr::reg(1, bits as u8),
+                            Expr::constant(carry),
+                            subtract,
+                            bits,
+                        );
+                        for cond in CONDITIONS {
+                            assert_eq!(
+                                decided(&flags.test(cond, Isa::X86_64), &[a, b]),
+                                Some(fixed_holds(cond, nzcv)),
+                                "{bits} bits, subtract {subtract}, carry {carry}, a {a:#x}, b {b:#x}, {cond:?}"
+                            );
+                        }
+                        assert_eq!(
+                            decided(&flags.parity(true), &[a, b]),
+                            Some((result as u8).count_ones().is_multiple_of(2))
+                        );
+                        assert_eq!(
+                            decided(&flags.adjust(), &[a, b]),
+                            Some((a ^ b ^ result) & 16 != 0)
+                        );
                     }
                 }
             }

@@ -27,6 +27,8 @@ mod atomic_values;
 mod cache;
 #[path = "recompile/call_arithmetic.rs"]
 mod call_arithmetic;
+#[path = "recompile/carry_conditions.rs"]
+mod carry_conditions;
 #[path = "recompile/compile_fail.rs"]
 mod compile_fail;
 

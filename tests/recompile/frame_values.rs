@@ -236,6 +236,8 @@ fn printed_frame_join_values_keep_uncertain_reads() {
                 Stmt::Unsupported {
                     text: "opaque".into(),
                     writes: Some(Vec::new()),
+                    reads: None,
+                    writes_memory: None,
                 },
             ),
             "exception" | "unknown_exception" => {
