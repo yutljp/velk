@@ -159,6 +159,7 @@ struct Readability {
 impl Readability {
     fn add(&mut self, decompiled: &str) {
         let mut definition = None;
+        let mut in_function = false;
         for line in decompiled.lines() {
             if let Some(definition) = &mut definition {
                 *definition += line;
@@ -175,9 +176,16 @@ impl Readability {
             {
                 self.structures.insert(definition);
             }
+            if !line.starts_with(char::is_whitespace) {
+                if line.ends_with(") {") {
+                    in_function = true;
+                } else if line == "}" {
+                    in_function = false;
+                }
+            }
             self.lines += 1;
             let code = line.split("/*").next().unwrap_or("");
-            if is_declaration(code) {
+            if in_function && is_declaration(code) {
                 self.variables += 1;
             }
             self.casts += casts(code);
@@ -254,14 +262,30 @@ fn is_declaration(code: &str) -> bool {
         .next()
         .unwrap_or("");
     body.contains(' ')
-        && (name.strip_prefix('v').or(name.strip_prefix("local_")))
-            .is_some_and(|digits| !digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit()))
+        && !is_register(name)
+        && name
+            .bytes()
+            .next()
+            .is_some_and(|byte| byte.is_ascii_alphabetic() || byte == b'_')
+        && name
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+}
+
+#[test]
+fn named_variable_counts_exclude_structure_fields() {
+    let mut counts = Readability::default();
+    counts.add("struct item {\n    int field;\n};\nint f(void) {\n    int result;\n    result = 1;\n    return result;\n}\n");
+    assert_eq!(counts.variables, 1);
 }
 
 #[test]
 fn declarations_include_named_global_views() {
     for code in [
         "    int32_t v1;",
+        "    int32_t i;",
+        "    uint64_t result;",
+        "    char *buf_2;",
         "    uint8_t local_0[16];",
         "    struct pair *v2;",
         "    uint32_t *const counter = (uint32_t *)(uintptr_t)0x1000;",
@@ -300,11 +324,13 @@ fn declarations_include_named_global_views() {
     }
     let mut counts = Readability::default();
     counts.add(concat!(
+        "void f(void) {\n",
         "    uint32_t *const counter = (uint32_t *)(uintptr_t)0x1000;\n",
         "    uint64_t fs_base = velk_x86_fs_base();\n",
         "    float gain = 1.0f;\n",
         "    uint64_t rax;\n",
         "    *counter = rax;\n",
+        "}\n",
     ));
     assert_eq!(counts.variables, 3);
     assert_eq!(counts.registers, 2);

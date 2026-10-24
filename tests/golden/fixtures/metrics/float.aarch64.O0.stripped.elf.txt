@@ -10,19 +10,19 @@
 /* velk pseudo-C: sub_2101b4 @ 0x2101b4 */
 double sub_2101b4(double *a0, int32_t a1) {
     double local_0; /* [sp-18] */
-    int32_t local_1; /* [sp-1c] */
-    double local_2; /* [sp-28] */
+    int32_t i; /* [sp-1c] */
+    double result; /* [sp-28] */
 
     local_0 = 0.0;
-    for (local_1 = 0; local_1 < a1; local_1++) {
-        local_0 = local_0 + a0[local_1];
+    for (i = 0; i < a1; i++) {
+        local_0 = local_0 + a0[i];
     }
     if (a1 <= 0) {
-        local_2 = 0.0;
-        return local_2;
+        result = 0.0;
+        return result;
     }
-    local_2 = local_0 / (double)a1;
-    return local_2;
+    result = local_0 / (double)a1;
+    return result;
 }
 -- signature
 double (double * a0, int32_t a1)

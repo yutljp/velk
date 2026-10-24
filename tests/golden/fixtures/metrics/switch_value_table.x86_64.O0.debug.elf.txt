@@ -9,7 +9,7 @@ int dispatch(int x) {
     uint32_t v1;
     uint32_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
-    uint32_t local_2; /* [sp-c] */
+    uint32_t result; /* [sp-c] */
 
     local_0 = x;
     v1 = local_0 - 10;
@@ -17,26 +17,26 @@ int dispatch(int x) {
     if (v1 <= 4) {
         switch (local_1 - 4) {
         case -4:
-            local_2 = 1;
-            return local_2;
+            result = 1;
+            return result;
         case -3:
-            local_2 = 3;
-            return local_2;
+            result = 3;
+            return result;
         case -2:
-            local_2 = 7;
-            return local_2;
+            result = 7;
+            return result;
         case -1:
-            local_2 = 9;
-            return local_2;
+            result = 9;
+            return result;
         case 0:
-            local_2 = 11;
-            return local_2;
+            result = 11;
+            return result;
         default:
             break;
         }
     }
-    local_2 = 0;
-    return local_2;
+    result = 0;
+    return result;
 }
 -- signature
 int (int x)

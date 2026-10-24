@@ -21,7 +21,7 @@ int matrix_trace(int *m, int n) {
     int64_t v8;
     int *v9;
     int64_t v10;
-    int64_t v11;
+    int64_t j;
 
     if (n <= 0) {
         return 0;
@@ -37,39 +37,39 @@ int matrix_trace(int *m, int n) {
         v8 = ((v6 * n) & 0xffffffff);
         v9 = m + v6;
         if ((uint32_t)n >= 4) {
-            v11 = 0;
+            j = 0;
             do {
-                v10 = v11;
-                if (v6 == v11) {
+                v10 = j;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                v11 = v10 + 1;
-                if (v6 == v11) {
+                j = v10 + 1;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                ++v11;
-                if (v6 == v11) {
+                ++j;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                ++v11;
-                if (v6 == v11) {
+                ++j;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                ++v11;
-            } while (v11 != v3);
+                ++j;
+            } while (j != v3);
             v10 += 4;
         } else {
             v10 = 0;
         }
         if (v2 != 0) {
             v10 += v5;
-            v11 = 0;
+            j = 0;
             do {
-                if (v10 == v11) {
+                if (v10 == j) {
                     v7 += v9[v8];
                 }
-                --v11;
-            } while (v4 != v11);
+                --j;
+            } while (v4 != j);
         }
         ++v6;
         --v5;
@@ -190,9 +190,9 @@ fn cleanup_on_error @ 0x201320 (size 26)
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
-    int32_t v1;
+    int32_t result;
 
-    v1 = -1;
+    result = -1;
     if ((uint32_t)x > 3) {
         return -1;
     }
@@ -271,13 +271,13 @@ fn sparse @ 0x201360 (size 61)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x2013a0 */
 int short_circuit(int *p, int n) {
-    int32_t v1;
+    int32_t result;
 
-    v1 = 0;
+    result = 0;
     if (p == 0 || n <= 0) {
         return 0;
     }
-    v1 = 1;
+    result = 1;
     if (*p == 1) {
         return 1;
     }
@@ -417,7 +417,7 @@ fn skip_negatives @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x201490 */
 int find_pair(int *p, int n, int target) {
-    int32_t v1;
+    int32_t result;
     uint64_t v2;
     int32_t v3;
     int *v4;
@@ -426,9 +426,9 @@ int find_pair(int *p, int n, int target) {
     uint64_t v7;
     int64_t v8;
     int32_t v9;
-    int64_t v10;
+    int64_t j;
 
-    v1 = -1;
+    result = -1;
     if (n <= 0) {
         return -1;
     }
@@ -443,19 +443,19 @@ int find_pair(int *p, int n, int target) {
         ++v7;
         if (v7 < v2) {
             v9 = p[v8];
-            v10 = 0;
+            j = 0;
             do {
-                if (v4[v10] + v9 == target) {
-                    return v10 - v6;
+                if (v4[j] + v9 == target) {
+                    return j - v6;
                 }
-                ++v10;
-            } while (v5 != v10);
+                ++j;
+            } while (v5 != j);
         }
         v6 += v3;
         v4 = v4 + 0x1;
         --v5;
     } while (v7 != v2);
-    return v1;
+    return result;
 }
 -- signature
 int (int * p, int n, int target)

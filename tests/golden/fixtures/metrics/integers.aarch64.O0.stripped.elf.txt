@@ -65,11 +65,11 @@ fn <unnamed> @ 0x21026c (size 32)
 -- decompile
 /* velk pseudo-C: sub_21028c @ 0x21028c */
 int32_t sub_21028c(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t v1;
+    int32_t result;
 
-    v1 = 0;
+    result = 0;
     if (a0 < a1) {
-        return v1;
+        return result;
     }
     return (a0 - a2 + a2 <= a2);
 }
@@ -114,15 +114,15 @@ fn <unnamed> @ 0x2102e0 (size 64)
 /* velk pseudo-C: sub_210320 @ 0x210320 */
 int32_t sub_210320(int32_t a0) {
     int32_t v1;
-    int32_t v2;
+    int32_t result;
 
     v1 = a0;
-    v2 = 0;
+    result = 0;
     while (v1 != 0) {
         v1 &= v1 - 1;
-        ++v2;
+        ++result;
     }
-    return v2;
+    return result;
 }
 -- signature
 int32_t (int32_t a0)
@@ -168,17 +168,17 @@ fn <unnamed> @ 0x21036c (size 60)
 -- decompile
 /* velk pseudo-C: sub_2103a8 @ 0x2103a8 */
 int32_t sub_2103a8(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t v2;
+    int32_t result;
 
     if (a0 >= a1) {
-        v2 = a1;
+        result = a1;
     } else {
-        v2 = a0;
+        result = a0;
     }
-    if (v2 >= a2) {
+    if (result >= a2) {
         return a2;
     }
-    return v2;
+    return result;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

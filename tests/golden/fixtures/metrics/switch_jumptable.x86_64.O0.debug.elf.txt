@@ -11,16 +11,16 @@ int d7(int x) {
     uint32_t v1;
     uint32_t local_0; /* [sp-c] */
     int64_t local_1; /* [sp-40] */
-    int32_t local_2; /* [sp-10] */
-    int32_t local_3; /* [sp-14] */
-    int32_t local_4; /* [sp-18] */
-    int32_t local_5; /* [sp-1c] */
-    int32_t local_6; /* [sp-20] */
-    int32_t local_7; /* [sp-24] */
-    int32_t local_8; /* [sp-28] */
-    int32_t local_9; /* [sp-2c] */
-    int32_t local_10; /* [sp-30] */
-    int32_t local_11; /* [sp-34] */
+    int32_t i; /* [sp-10] */
+    int32_t i_2; /* [sp-14] */
+    int32_t i_3; /* [sp-18] */
+    int32_t i_4; /* [sp-1c] */
+    int32_t i_5; /* [sp-20] */
+    int32_t i_6; /* [sp-24] */
+    int32_t i_7; /* [sp-28] */
+    int32_t i_8; /* [sp-2c] */
+    int32_t i_9; /* [sp-30] */
+    int32_t i_10; /* [sp-34] */
 
     local_0 = x;
     v1 = local_0;
@@ -28,53 +28,53 @@ int d7(int x) {
     if (v1 <= 9) {
         switch (local_1) {
         case 0:
-            for (local_2 = 0; local_2 < 1; local_2++) {
-                *g += local_2;
+            for (i = 0; i < 1; i++) {
+                *g += i;
             }
             return *g;
         case 1:
-            for (local_3 = 0; local_3 < 2; local_3++) {
-                *g += local_3;
+            for (i_2 = 0; i_2 < 2; i_2++) {
+                *g += i_2;
             }
             return *g;
         case 2:
-            for (local_4 = 0; local_4 < 3; local_4++) {
-                *g += local_4;
+            for (i_3 = 0; i_3 < 3; i_3++) {
+                *g += i_3;
             }
             return *g;
         case 3:
-            for (local_5 = 0; local_5 < 4; local_5++) {
-                *g += local_5;
+            for (i_4 = 0; i_4 < 4; i_4++) {
+                *g += i_4;
             }
             return *g;
         case 4:
-            for (local_6 = 0; local_6 < 5; local_6++) {
-                *g += local_6;
+            for (i_5 = 0; i_5 < 5; i_5++) {
+                *g += i_5;
             }
             return *g;
         case 5:
-            for (local_7 = 0; local_7 < 6; local_7++) {
-                *g += local_7;
+            for (i_6 = 0; i_6 < 6; i_6++) {
+                *g += i_6;
             }
             return *g;
         case 6:
-            for (local_8 = 0; local_8 < 7; local_8++) {
-                *g += local_8;
+            for (i_7 = 0; i_7 < 7; i_7++) {
+                *g += i_7;
             }
             return *g;
         case 7:
-            for (local_9 = 0; local_9 < 8; local_9++) {
-                *g += local_9;
+            for (i_8 = 0; i_8 < 8; i_8++) {
+                *g += i_8;
             }
             return *g;
         case 8:
-            for (local_10 = 0; local_10 < 9; local_10++) {
-                *g += local_10;
+            for (i_9 = 0; i_9 < 9; i_9++) {
+                *g += i_9;
             }
             return *g;
         case 9:
-            for (local_11 = 0; local_11 < 10; local_11++) {
-                *g += local_11;
+            for (i_10 = 0; i_10 < 10; i_10++) {
+                *g += i_10;
             }
             return *g;
         default:

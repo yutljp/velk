@@ -231,27 +231,27 @@ fn factorial @ 0x21032c (size 160)
 int32_t is_odd(int32_t a0) {
     uint32_t v1;
     int32_t v4;
-    int32_t v5;
-    uint32_t v6;
+    int32_t i;
+    uint32_t i_2;
 
     v1 = a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
         v1 = (v1 >> 0x1) + 1;
         v4 = v1 & 0xfffffffe;
         a0 -= ((uint64_t)v4 << 0x1);
-        v5 = v4;
+        i = v4;
         do {
-            v5 -= 2;
-        } while (v5 != 0);
+            i -= 2;
+        } while (i != 0);
         if (v1 == v4) {
             return a0 + 2;
         }
     }
-    v6 = a0 + 2;
+    i_2 = a0 + 2;
     do {
-        v6 -= 2;
-    } while (v6 > 1);
-    return v6;
+        i_2 -= 2;
+    } while (i_2 > 1);
+    return i_2;
 }
 -- signature
 int32_t (int32_t a0)

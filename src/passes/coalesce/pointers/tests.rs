@@ -78,7 +78,10 @@ fn assert_separate(mut ir: FunctionIr) {
         crate::render::render(&ir, &[], &Default::default(), &[]),
         before
     );
-    assert!(before.contains("v2"), "{before}");
+    assert!(
+        before.contains("v2") || before.contains("result"),
+        "{before}"
+    );
     assert_eq!(ir.variable_registers, origins);
 }
 

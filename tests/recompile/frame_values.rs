@@ -104,11 +104,30 @@ fn printed(ir: &FunctionIr) -> String {
     velk::render::render(ir, &[], &Default::default(), &[])
 }
 
+fn returns_frame_value(text: &str) -> bool {
+    let names: Vec<_> = text
+        .lines()
+        .filter_map(|line| {
+            let Some((declaration, _)) = line.split_once("; /* [sp") else {
+                return None;
+            };
+            declaration
+                .rsplit([' ', '*'])
+                .next()
+                .and_then(|name| name.split('[').next())
+        })
+        .collect();
+    text.lines()
+        .filter(|line| line.contains("return "))
+        .any(|line| {
+            line.split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .any(|word| word == "rsp" || names.contains(&word))
+        })
+}
+
 fn assert_forwarded(ir: &FunctionIr, expected: bool) {
     let text = printed(&forward(ir));
-    let returns_slot = text
-        .lines()
-        .any(|line| line.contains("return ") && (line.contains("local_") || line.contains("rsp")));
+    let returns_slot = returns_frame_value(&text);
     assert_eq!(returns_slot, !expected, "{text}");
     if expected {
         assert!(text.contains("return ") && text.contains("a ^"), "{text}");
@@ -285,10 +304,7 @@ fn printed_frame_join_values_keep_uncertain_reads() {
         velk::passes::memory::forward_stored_values(&mut optimized);
         let text = printed(&optimized);
         assert!(
-            text.lines().any(|line| line.contains("return ")
-                && (line.contains("local_")
-                    || line.contains("rsp")
-                    || line.contains("*(uint64_t *)"))),
+            returns_frame_value(&text) || text.contains("*(uint64_t *)"),
             "{case}: {text}"
         );
     }
@@ -309,7 +325,7 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
             for block in &mut register.blocks[1..3] {
                 block.stmts[0] = store(-8, Expr::reg(a, 64), width);
             }
-            assert!(!printed(&forward(&register)).contains("local_"));
+            assert!(!printed(&forward(&register)).contains("/* [sp"));
             cases.push(register);
             cases.push(ir);
         }
@@ -396,7 +412,7 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
             }
             let text = printed(&forward(&ir));
             if width < 8 {
-                assert!(text.contains("local_"), "{text}");
+                assert!(text.contains("/* [sp"), "{text}");
             }
             cases.push(ir);
         }
@@ -414,7 +430,7 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
             els: Box::new(Expr::Const(0)),
         },
     };
-    assert!(printed(&forward(&narrow)).contains("local_"));
+    assert!(printed(&forward(&narrow)).contains("/* [sp"));
     cases.push(narrow);
     let mut inputs = Vec::new();
     for value in [
@@ -565,7 +581,7 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
             _ => ir.blocks[3].stmts = vec![Stmt::Trap],
         }
         velk::passes::memory::promote_frame_slots(&mut ir);
-        assert!(printed(&ir).contains("local_"), "{case}: {}", printed(&ir));
+        assert!(printed(&ir).contains("/* [sp"), "{case}: {}", printed(&ir));
     }
     let mut cases = Vec::new();
     for width in [1, 2, 4, 8] {
@@ -636,7 +652,7 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
         velk::passes::memory::promote_frame_slots(&mut optimized);
         let text = printed(&optimized);
         assert_eq!(
-            !text.contains("local_") && !text.contains("rsp"),
+            !text.contains("/* [sp") && !text.contains("rsp"),
             promoted,
             "{text}"
         );
@@ -700,7 +716,7 @@ fn printed_promoted_slots_survive_recursive_calls() {
         ..Default::default()
     };
     let code = velk::render::render(&ir, &[], &symbols, &[]);
-    assert!(!code.contains("local_"), "{code}");
+    assert!(!code.contains("/* [sp"), "{code}");
     let mut text = String::from(HEADER);
     text.push_str("static uint64_t frame_recursive(uint64_t);\nstatic uint64_t frame_helper(uint64_t n) { return n ? frame_recursive(n) : 0; }\n");
     text.push_str(&code);
@@ -789,8 +805,7 @@ fn printed_call_slot_promotion_excludes_argument_and_escaping_slots() {
         velk::passes::memory::promote_frame_slots(&mut ir);
         let code = printed(&ir);
         assert_eq!(
-            code.lines().any(|line| line.contains("return ")
-                && (line.contains("local_") || line.contains("rsp"))),
+            returns_frame_value(&code),
             case != "known",
             "{case}: {code}"
         );
@@ -858,7 +873,7 @@ fn printed_call_slots_execute_stack_arguments_and_address_writes() {
             ..Default::default()
         };
         let code = velk::render::render(&ir, &[], &symbols, &[]);
-        assert!(code.contains("local_"), "{code}");
+        assert!(code.contains("/* [sp"), "{code}");
         if !address {
             assert!(code.contains("return 11 +"), "{code}");
         }
@@ -917,7 +932,7 @@ fn printed_context_saving_calls_keep_frame_storage() {
         .decompile(address, None, None)
         .expect("decompile context function");
     assert!(code.contains("setjmp("), "{code}");
-    assert!(code.contains("local_"), "{code}");
+    assert!(code.contains("/* [sp"), "{code}");
     std::fs::remove_dir_all(scratch).ok();
 }
 
@@ -945,7 +960,7 @@ fn printed_promoted_recursive_products_preserve_wrapping_arithmetic() {
                 .decompile(address, None, None)
                 .expect("decompile recursive function");
             assert!(code.contains("uint32_t"), "{code}");
-            assert!(!code.contains("local_"), "{code}");
+            assert!(!code.contains("/* [sp"), "{code}");
             let mut text = String::from(HEADER);
             text.push_str(&code);
             text.push_str(&format!("int main(void) {{ uint32_t want = 1; for (int n = 1; n <= 20; ++n) {{ want *= (uint32_t)n; if ((uint32_t){name}(n) != want) return 1; }} return 0; }}\n"));

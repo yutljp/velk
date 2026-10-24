@@ -13,7 +13,7 @@
 /* velk pseudo-C: copy_bytes @ 0x201220 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint64_t v1;
-    int64_t v2;
+    int64_t i;
     int64_t v3;
     int64_t v4;
     int64_t v5;
@@ -29,18 +29,18 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     if (n >= 8 && (uintptr_t)dst - (uintptr_t)src >= 32) {
         if (n >= 32) {
             v1 = n & 0xffffffffffffffe0;
-            v2 = 0;
+            i = 0;
             do {
-                v3 = *(uint64_t *)(src + v2);
-                v4 = *(uint64_t *)(src + (v2 + 0x8));
-                v5 = *(uint64_t *)(src + (v2 + 0x10));
-                v6 = *(uint64_t *)(src + (v2 + 0x18));
-                *(uint64_t *)(dst + v2) = v3;
-                *(uint64_t *)(dst + (v2 + 0x8)) = v4;
-                *(uint64_t *)(dst + (v2 + 0x10)) = v5;
-                *(uint64_t *)(dst + (v2 + 0x18)) = v6;
-                v2 += 32;
-            } while (v1 != v2);
+                v3 = *(uint64_t *)(src + i);
+                v4 = *(uint64_t *)(src + (i + 0x8));
+                v5 = *(uint64_t *)(src + (i + 0x10));
+                v6 = *(uint64_t *)(src + (i + 0x18));
+                *(uint64_t *)(dst + i) = v3;
+                *(uint64_t *)(dst + (i + 0x8)) = v4;
+                *(uint64_t *)(dst + (i + 0x10)) = v5;
+                *(uint64_t *)(dst + (i + 0x18)) = v6;
+                i += 32;
+            } while (v1 != i);
             if (v1 == n) {
                 return;
             }
@@ -181,15 +181,15 @@ fn fill_bytes @ 0x201310 (size 15)
 -- decompile
 /* velk pseudo-C: string_length @ 0x201320 */
 unsigned long string_length(char *s) {
-    int64_t v1;
+    int64_t result;
     uint8_t v2;
 
-    v1 = -1;
+    result = -1;
     do {
-        v2 = s[v1 + 1];
-        ++v1;
+        v2 = s[result + 1];
+        ++result;
     } while (v2 != 0);
-    return v1;
+    return result;
 }
 -- signature
 unsigned long (char * s)

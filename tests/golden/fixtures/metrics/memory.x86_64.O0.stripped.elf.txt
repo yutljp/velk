@@ -98,11 +98,11 @@ fn <unnamed> @ 0x2012d0 (size 73)
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 int64_t sub_201320(uint8_t *a0) {
-    int64_t local_0; /* [sp-18] */
+    int64_t i; /* [sp-18] */
 
-    for (local_0 = 0; a0[local_0] != 0; local_0++) {
+    for (i = 0; a0[i] != 0; i++) {
     }
-    return local_0;
+    return i;
 }
 -- signature
 int64_t (uint8_t * a0)

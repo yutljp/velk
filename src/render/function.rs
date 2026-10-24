@@ -35,6 +35,7 @@ pub fn render_with_dependencies(
     params::fold_saved_parameters(&mut folded);
     // A saved parameter returned reads as the parameter now.
     crate::analysis::typing::apply_pointer_return(&mut folded);
+    naming::roles::name_parameters(&mut folded, symbols);
     let float_entries = physical_float_parameters(&mut folded);
     let mut logical = abi::prepare(&mut folded, symbols);
     let mut incoming = if logical.is_none() {
@@ -294,12 +295,28 @@ fn render_with(
         .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
         .filter_map(|param| self::float_return(&param.ty).map(|precision| (param.index, (param.name.clone(), precision))))
         .collect();
+    let roles = naming::roles::infer(ir, symbols);
+    let role_names: Vec<_> = variable_types
+        .keys()
+        .copied()
+        .filter(|index| !names.contains_key(index))
+        .filter_map(|index| {
+            roles
+                .register(index)
+                .map(|role| (index, vacant_name(role, &mut machine_reserved)))
+        })
+        .collect();
+    for (index, name) in &role_names {
+        names.insert(*index, name);
+    }
     let machine: Vec<(u16, String)> = used_registers
         .into_iter()
         .filter(|index| !names.contains_key(index))
         .map(|index| {
             let name = if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
                 vacant_name("g", &mut machine_reserved)
+            } else if let Some(role) = roles.register(index) {
+                vacant_name(role, &mut machine_reserved)
             } else {
                 variable_name(&mut machine_reserved)
             };
@@ -758,15 +775,7 @@ fn render_with(
             )
         )
     ));
-    let mut decls = locals.decls;
-    // The numeric suffix of `local_N` is its order of first use.
-    decls.sort_by_key(|local| {
-        local
-            .name
-            .rsplit_once('_')
-            .and_then(|(_, index)| index.parse::<usize>().ok())
-            .unwrap_or(0)
-    });
+    let decls = locals.decls;
     // The body is rendered first so only slots it names get declared.
     let mut body = String::new();
     let mut nodes = structure_best(ir);

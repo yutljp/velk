@@ -113,43 +113,9 @@ fn for_loop(
     let Some((Node::Stmt(step), rest)) = body.split_last() else {
         return None;
     };
-    // What the counter is: a register or a frame slot's address.
-    enum Counter<'e> {
-        Register(u16),
-        Slot(&'e Expr),
-    }
-    let counter = match init {
-        Stmt::Assign { dest, .. } => Counter::Register(dest.index),
-        Stmt::Store { addr, .. } => Counter::Slot(addr),
-        _ => return None,
-    };
-    let reads = |expr: &Expr| -> bool {
-        match &counter {
-            Counter::Register(index) => {
-                let mut read = std::collections::HashSet::new();
-                crate::ir::visit::collect_reads(expr, &mut read);
-                read.contains(index)
-            }
-            Counter::Slot(addr) => loads_from(expr, addr),
-        }
-    };
-    let steps = match (&counter, step) {
-        (Counter::Register(index), Stmt::Assign { dest, value }) => {
-            dest.index == *index && reads(value)
-        }
-        (
-            Counter::Slot(addr),
-            Stmt::Store {
-                addr: written,
-                value,
-                ..
-            },
-        ) => written == *addr && reads(value),
-        _ => false,
-    };
-    if !steps || !(reads(lhs) || reads(rhs)) {
+    let Some(counter) = super::naming::roles::counted(init, lhs, rhs, body) else {
         return None;
-    }
+    };
     let mut continued;
     let rest = if continues(rest) {
         continued = rest.to_vec();
@@ -160,8 +126,8 @@ fn for_loop(
     } else {
         rest
     };
-    if let Counter::Slot(addr) = counter
-        && !ctx.slots.contains_key(&render_expr(addr, ctx))
+    if let super::naming::roles::Counter::Slot(addr) = counter
+        && !ctx.slots.contains_key(&render_expr(&addr, ctx))
     {
         return None;
     }
@@ -393,14 +359,6 @@ fn move_continue_steps(nodes: &mut Vec<Node>, step: &Stmt) -> bool {
         index += 1;
     }
     true
-}
-
-/// Whether a load from `addr` appears in `expr`.
-fn loads_from(expr: &Expr, addr: &Expr) -> bool {
-    matches!(expr, Expr::Load { addr: read, .. } if read.as_ref() == addr)
-        || crate::ir::visit::children(expr)
-            .into_iter()
-            .any(|child| loads_from(child, addr))
 }
 
 /// Whether a `continue` in `nodes` goes to the loop they are the body of,

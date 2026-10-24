@@ -89,16 +89,16 @@ fn <unnamed> @ 0x210200 (size 36)
 /* ref: 0x220298 .bss */
 int32_t sub_210224(int32_t a0) {
     uint32_t *const dword_220298 = (uint32_t *)0x220298ULL;
-    int32_t v1;
+    int32_t i;
     int32_t v2;
 
     if (a0 < 1) {
         return 0;
     }
     v2 = 0;
-    for (v1 = 0; v1 < a0; v1++) {
-        if ((v1 & 0x1) != 0) {
-            v2 += v1;
+    for (i = 0; i < a0; i++) {
+        if ((i & 0x1) != 0) {
+            v2 += i;
             *dword_220298 = v2;
         }
     }
@@ -136,16 +136,16 @@ fn <unnamed> @ 0x210224 (size 64)
 -- decompile
 /* velk pseudo-C: sub_210264 @ 0x210264 */
 int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
-    int64_t v2;
+    int64_t i;
 
     if (a1 >= 1) {
-        v2 = 0;
+        i = 0;
         do {
-            if (a0[v2] == a2) {
-                return v2;
+            if (a0[i] == a2) {
+                return i;
             }
-            ++v2;
-        } while ((uint32_t)a1 != v2);
+            ++i;
+        } while ((uint32_t)a1 != i);
     }
     return -1;
 }

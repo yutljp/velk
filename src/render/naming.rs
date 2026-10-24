@@ -1,3 +1,5 @@
+pub(super) mod roles;
+
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Precision, Stmt};
 use crate::render::expr::Ctx;
 use crate::render::expr::render_expr;

@@ -645,9 +645,9 @@ fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
         ty: CType::pointer_to(CType::I64),
     }];
     let text = rendered(&ir);
-    assert!(text.contains("    int32_t v1;\n"), "{text}");
-    assert!(text.contains("++v1;"), "{text}");
-    assert!(text.contains("*a0 = v1;"), "{text}");
+    assert!(text.contains("    int32_t result;\n"), "{text}");
+    assert!(text.contains("++result;"), "{text}");
+    assert!(text.contains("*a0 = result;"), "{text}");
 }
 
 #[test]

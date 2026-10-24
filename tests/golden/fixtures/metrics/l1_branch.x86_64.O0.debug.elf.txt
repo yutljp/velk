@@ -47,11 +47,11 @@ fn classify @ 0x2011a0 (size 63)
 /* velk pseudo-C: clamp @ 0x2011e0 */
 int clamp(int x, int lo, int hi) {
     int32_t v1;
-    int32_t v2;
+    int32_t result;
     int32_t v3;
 
     v1 = x;
-    v2 = lo;
+    result = lo;
     v3 = hi;
     if (x >= lo) {
         if (v1 <= v3) {
@@ -59,7 +59,7 @@ int clamp(int x, int lo, int hi) {
         }
         return v3;
     }
-    return v2;
+    return result;
 }
 -- signature
 int (int x, int lo, int hi)

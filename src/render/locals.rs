@@ -99,7 +99,7 @@ impl Locals {
     }
 }
 
-/// Names frame slots `local_N` in order of first use. Accesses to one slot
+/// Names frame slots in order of first use. Accesses to one slot
 /// share the name even when the stack pointer moved between them; a rendered
 /// address that maps to two different slots stays unnamed.
 pub(crate) fn stack_locals(
@@ -149,6 +149,9 @@ pub(crate) fn stack_locals(
         taken: Default::default(),
     };
     let accesses = frame_accesses(ir, sp, frames);
+    let roles = super::naming::roles::infer(ir, symbols);
+    let mut reserved = super::naming::roles::reserved(ir, symbols);
+    reserved.extend((0..accesses.len()).map(|index| format!("local_{index}")));
     let mut slot_names: HashMap<i64, Local> = HashMap::new();
     let mut rendered: HashMap<String, Option<i64>> = HashMap::new();
     // The slots some load extends with zeros below 32 bits, or takes as a
@@ -374,7 +377,16 @@ pub(crate) fn stack_locals(
     }
     for (number, slot) in order.iter().enumerate() {
         if let Some(local) = slot_names.get_mut(slot) {
-            local.name = format!("local_{number}");
+            let role = accesses
+                .iter()
+                .filter(|(at, ..)| at == &Some(*slot))
+                .find_map(|(_, address, ..)| roles.slot(address));
+            local.name = match role {
+                Some(role) if local.fields.is_empty() && local.size == 0 => {
+                    super::vacant_name(role, &mut reserved)
+                }
+                _ => format!("local_{number}"),
+            };
         }
     }
     let mut parts: HashMap<String, String> = rendered
@@ -541,7 +553,10 @@ pub(crate) fn stack_locals(
         parts,
         widths,
         parameter_addresses,
-        decls: slot_names.into_values().collect(),
+        decls: order
+            .into_iter()
+            .filter_map(|slot| slot_names.remove(&slot))
+            .collect(),
     }
 }
 

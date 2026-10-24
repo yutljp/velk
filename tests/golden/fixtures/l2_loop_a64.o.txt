@@ -86,16 +86,16 @@ fn count_down @ 0x3c (size 36)
 /* velk pseudo-C: sum_skip_odd @ 0x60 */
 int32_t sum_skip_odd(int32_t a0) {
     uint32_t *const sink = (uint32_t *)0xd4ULL;
-    int32_t v1;
+    int32_t i;
     int32_t v2;
 
     if (a0 < 1) {
         return 0;
     }
     v2 = 0;
-    for (v1 = 0; v1 < a0; v1++) {
-        if ((v1 & 0x1) != 0) {
-            v2 += v1;
+    for (i = 0; i < a0; i++) {
+        if ((i & 0x1) != 0) {
+            v2 += i;
             *sink = v2;
         }
     }
@@ -133,16 +133,16 @@ fn sum_skip_odd @ 0x60 (size 64)
 -- decompile
 /* velk pseudo-C: find_first @ 0xa0 */
 int32_t find_first(uint32_t *a0, int32_t a1, int32_t a2) {
-    int64_t v2;
+    int64_t i;
 
     if (a1 >= 1) {
-        v2 = 0;
+        i = 0;
         do {
-            if (a0[v2] == a2) {
-                return v2;
+            if (a0[i] == a2) {
+                return i;
             }
-            ++v2;
-        } while ((uint32_t)a1 != v2);
+            ++i;
+        } while ((uint32_t)a1 != i);
     }
     return -1;
 }

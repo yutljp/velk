@@ -1703,7 +1703,7 @@ mod tests {
         let mut stmts = setup();
         stmts.push(Stmt::Ret { value: loaded(4) });
         let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);
-        assert!(text.contains("return *(uint32_t *)&local_0;"), "{text}");
+        assert!(text.contains("return *(uint32_t *)&result;"), "{text}");
     }
 
     #[test]

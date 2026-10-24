@@ -65,18 +65,18 @@ fn mixed_sign @ 0x2012c0 (size 22)
 -- decompile
 /* velk pseudo-C: in_range @ 0x2012e0 */
 _Bool in_range(int x, int lo, int hi) {
-    uint8_t v5;
+    uint8_t result;
     int32_t v6;
     int32_t v7;
 
     v6 = x;
     v7 = hi;
-    v5 = 0;
+    result = 0;
     if (x < lo) {
-        return v5;
+        return result;
     }
-    v5 = (v6 <= v7);
-    return v5;
+    result = (v6 <= v7);
+    return result;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -118,15 +118,15 @@ fn rotate_left @ 0x201320 (size 43)
 /* velk pseudo-C: popcount @ 0x201350 */
 int popcount(unsigned int x) {
     int32_t v1;
-    int32_t v2;
+    int32_t result;
 
     v1 = x;
-    v2 = 0;
+    result = 0;
     while (v1 != 0) {
         v1 = v1 - 1 & v1;
-        ++v2;
+        ++result;
     }
-    return v2;
+    return result;
 }
 -- signature
 int (unsigned int x)
@@ -169,20 +169,20 @@ fn byte_swap @ 0x201390 (size 51)
 -- decompile
 /* velk pseudo-C: min3 @ 0x2013d0 */
 int min3(int a, int b, int c) {
-    int32_t v1;
+    int32_t result;
     int32_t v3;
     int32_t v4;
 
-    v1 = a;
+    result = a;
     v3 = b;
     v4 = c;
     if (a >= b) {
-        v1 = v3;
+        result = v3;
     }
-    if (v1 >= v4) {
+    if (result >= v4) {
         return v4;
     }
-    return v1;
+    return result;
 }
 -- signature
 int (int a, int b, int c)
@@ -214,13 +214,13 @@ fn min3 @ 0x2013d0 (size 82)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x201430 */
 long labs_value(long x) {
-    int64_t v1;
+    int64_t result;
 
-    v1 = x;
+    result = x;
     if (x >= 0) {
-        return v1;
+        return result;
     }
-    return -v1;
+    return -result;
 }
 -- signature
 long (long x)

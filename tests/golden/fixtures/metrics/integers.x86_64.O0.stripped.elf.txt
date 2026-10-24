@@ -65,14 +65,14 @@ fn <unnamed> @ 0x2012c0 (size 22)
 -- decompile
 /* velk pseudo-C: sub_2012e0 @ 0x2012e0 */
 int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t v5;
+    int32_t result;
 
-    v5 = 0;
+    result = 0;
     if (a0 < a1) {
-        return v5;
+        return result;
     }
-    v5 = (a0 <= a2);
-    return v5;
+    result = (a0 <= a2);
+    return result;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -114,15 +114,15 @@ fn <unnamed> @ 0x201320 (size 43)
 /* velk pseudo-C: sub_201350 @ 0x201350 */
 int32_t sub_201350(int32_t a0) {
     int32_t v1;
-    int32_t v2;
+    int32_t result;
 
     v1 = a0;
-    v2 = 0;
+    result = 0;
     while (v1 != 0) {
         v1 = v1 - 1 & v1;
-        ++v2;
+        ++result;
     }
-    return v2;
+    return result;
 }
 -- signature
 int32_t (int32_t a0)
@@ -165,16 +165,16 @@ fn <unnamed> @ 0x201390 (size 51)
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int32_t sub_2013d0(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t v1;
+    int32_t result;
 
-    v1 = a0;
+    result = a0;
     if (a0 >= a1) {
-        v1 = a1;
+        result = a1;
     }
-    if (v1 >= a2) {
+    if (result >= a2) {
         return a2;
     }
-    return v1;
+    return result;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -206,13 +206,13 @@ fn <unnamed> @ 0x2013d0 (size 82)
 -- decompile
 /* velk pseudo-C: sub_201430 @ 0x201430 */
 int64_t sub_201430(int64_t a0) {
-    int64_t v1;
+    int64_t result;
 
-    v1 = a0;
+    result = a0;
     if (a0 >= 0) {
-        return v1;
+        return result;
     }
-    return -v1;
+    return -result;
 }
 -- signature
 int64_t (int64_t a0)

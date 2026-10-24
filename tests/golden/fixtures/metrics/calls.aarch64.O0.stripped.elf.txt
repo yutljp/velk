@@ -150,12 +150,12 @@ fn <unnamed> @ 0x2103f4 (size 96)
 /* velk pseudo-C: sub_210454 @ 0x210454 */
 int32_t sub_210454(int32_t a0) {
     uint32_t v4;
-    uint32_t v5;
+    uint32_t result;
 
     v4 = a0;
     if (a0 != 0) {
-        v5 = ((int32_t)(sub_2104a0(v4 - 1)));
-        return v5;
+        result = ((int32_t)(sub_2104a0(v4 - 1)));
+        return result;
     }
     return 0;
 }
@@ -187,12 +187,12 @@ fn <unnamed> @ 0x210454 (size 76)
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int32_t sub_2104a0(int32_t a0) {
     uint32_t v4;
-    uint32_t v5;
+    uint32_t result;
 
     v4 = a0;
     if (a0 != 0) {
-        v5 = ((int32_t)(sub_210454(v4 - 1)));
-        return v5;
+        result = ((int32_t)(sub_210454(v4 - 1)));
+        return result;
     }
     return 1;
 }
@@ -266,9 +266,9 @@ int32_t sub_2105b0(int32_t a0, ...) {
     uint8_t *local_3; /* [sp-28] */
     _Alignas(16) uint8_t local_4[0x40]; /* [sp-80] */
     uint32_t *local_5; /* [sp-30] */
-    int32_t local_6; /* [sp-40] */
+    int32_t i; /* [sp-40] */
     int64_t local_7; /* [sp-38] */
-    uint32_t local_8; /* [sp-3c] */
+    uint32_t result; /* [sp-3c] */
     uint32_t *local_9; /* [sp-110] */
     int32_t local_10; /* [sp-104] */
     uint32_t *local_11; /* [sp-118] */
@@ -279,9 +279,9 @@ int32_t sub_2105b0(int32_t a0, ...) {
     local_3 = local_4;
     local_5 = (uint32_t *)(local_4 + 0x40);
     local_7 = sp;
-    local_8 = 0;
-    local_6 = 0;
-    while (local_6 < local_0) {
+    result = 0;
+    i = 0;
+    while (i < local_0) {
         local_9 = &local_2;
         v2 = local_2;
         local_10 = v2;
@@ -290,18 +290,18 @@ int32_t sub_2105b0(int32_t a0, ...) {
             *local_9 = v2;
             if (v2 <= 0) {
                 local_11 = (uint32_t *)((uint8_t *)local_5 + local_10);
-                local_8 += *local_11;
-                local_6 += 1;
+                result += *local_11;
+                i += 1;
                 continue;
             }
         }
         v4 = local_7;
         local_7 = v4 + 8;
         local_11 = (uint32_t *)v4;
-        local_8 += *local_11;
-        local_6 += 1;
+        result += *local_11;
+        i += 1;
     }
-    return local_8;
+    return result;
 }
 -- signature
 int32_t (int32_t a0)

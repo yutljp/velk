@@ -20,7 +20,7 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
     int64_t v8;
     uint32_t *v9;
     int64_t v10;
-    int64_t v11;
+    int64_t j;
 
     if (a1 <= 0) {
         return 0;
@@ -35,39 +35,39 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
         v8 = ((v6 * a1) & 0xffffffff);
         v9 = a0 + v6;
         if ((uint32_t)a1 >= 4) {
-            v11 = 0;
+            j = 0;
             do {
-                v10 = v11;
-                if (v6 == v11) {
+                v10 = j;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                v11 = v10 + 1;
-                if (v6 == v11) {
+                j = v10 + 1;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                ++v11;
-                if (v6 == v11) {
+                ++j;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                ++v11;
-                if (v6 == v11) {
+                ++j;
+                if (v6 == j) {
                     v7 += v9[v8];
                 }
-                ++v11;
-            } while (v11 != v3);
+                ++j;
+            } while (j != v3);
             v10 += 4;
         } else {
             v10 = 0;
         }
         if (v2 != 0) {
             v10 += v5;
-            v11 = 0;
+            j = 0;
             do {
-                if (v10 == v11) {
+                if (v10 == j) {
                     v7 += v9[v8];
                 }
-                --v11;
-            } while (v4 != v11);
+                --j;
+            } while (v4 != j);
         }
         ++v6;
         --v5;
@@ -188,9 +188,9 @@ fn <unnamed> @ 0x201320 (size 26)
 /* ref: 0x200120 .rodata */
 int32_t sub_201340(uint32_t a0) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
-    int32_t v1;
+    int32_t result;
 
-    v1 = -1;
+    result = -1;
     if (a0 > 3) {
         return -1;
     }
@@ -269,13 +269,13 @@ fn <unnamed> @ 0x201360 (size 61)
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
 int32_t sub_2013a0(uint32_t *a0, int32_t a1) {
-    int32_t v1;
+    int32_t result;
 
-    v1 = 0;
+    result = 0;
     if (a0 == 0 || a1 <= 0) {
         return 0;
     }
-    v1 = 1;
+    result = 1;
     if (*a0 == 1) {
         return 1;
     }
@@ -413,7 +413,7 @@ fn <unnamed> @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
-    int32_t v1;
+    int32_t result;
     int32_t v3;
     uint32_t *v4;
     int64_t v5;
@@ -421,9 +421,9 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
     uint64_t v7;
     int64_t v8;
     int32_t v9;
-    int64_t v10;
+    int64_t j;
 
-    v1 = -1;
+    result = -1;
     if (a1 <= 0) {
         return -1;
     }
@@ -437,19 +437,19 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
         ++v7;
         if (v7 < (uint32_t)a1) {
             v9 = a0[v8];
-            v10 = 0;
+            j = 0;
             do {
-                if (v4[v10] + v9 == a2) {
-                    return v10 - v6;
+                if (v4[j] + v9 == a2) {
+                    return j - v6;
                 }
-                ++v10;
-            } while (v5 != v10);
+                ++j;
+            } while (v5 != j);
         }
         v6 += v3;
         v4 = v4 + 0x1;
         --v5;
     } while (v7 != (uint32_t)a1);
-    return v1;
+    return result;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, int32_t a2)

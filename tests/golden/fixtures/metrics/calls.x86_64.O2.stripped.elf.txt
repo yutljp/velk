@@ -131,7 +131,7 @@ int32_t sub_201370(int32_t a0) {
     uint64_t *const qword_2001c0 = (uint64_t *)0x2001c0ULL;
     uint64_t *const qword_2001c8 = (uint64_t *)0x2001c8ULL;
     int32_t t1;
-    int32_t v1;
+    int32_t result;
     int32_t v2;
     int32_t v3;
     int64_t v4;
@@ -156,7 +156,7 @@ int32_t sub_201370(int32_t a0) {
     uint64_t v36;
     uint32_t v46;
 
-    v1 = 1;
+    result = 1;
     if (a0 < 2) {
         return 1;
     }
@@ -171,7 +171,7 @@ int32_t sub_201370(int32_t a0) {
         v12 = *qword_2001c8;
         v13 = *qword_2001b0;
         v14 = *qword_2001b8;
-        v1 = v3;
+        result = v3;
         v9 = *qword_2001a0;
         v16 = v9;
         v10 = *qword_2001a8;
@@ -199,19 +199,19 @@ int32_t sub_201370(int32_t a0) {
             v17 = interleave_high32(v36, v20);
             v6 = add_lanes32(v6, v13);
             v8 = add_lanes32(v8, v14);
-            v1 = v1 - 8;
-        } while (v1 != 0);
-        v1 = (v17 >> 0x20) * (v10 >> 0x20) * ((v16 >> 0x20) * (v9 >> 0x20)) * (v17 * v10 * (v16 * v9));
+            result = result - 8;
+        } while (result != 0);
+        result = (v17 >> 0x20) * (v10 >> 0x20) * ((v16 >> 0x20) * (v9 >> 0x20)) * (v17 * v10 * (v16 * v9));
         if (v2 == v3) {
-            return v1;
+            return result;
         }
     }
     do {
-        v1 *= a0;
+        result *= a0;
         v46 = a0;
         a0 = a0 - 1;
     } while (v46 > 2);
-    return v1;
+    return result;
 }
 -- signature
 int32_t (int32_t a0)

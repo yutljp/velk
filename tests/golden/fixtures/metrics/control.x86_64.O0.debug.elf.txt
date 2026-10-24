@@ -12,20 +12,20 @@
 /* velk pseudo-C: matrix_trace @ 0x201230 */
 int matrix_trace(int *m, int n) {
     int32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
-    int32_t local_2; /* [sp-1c] */
-    int32_t local_3; /* [sp-20] */
+    uint32_t result; /* [sp-18] */
+    int32_t i; /* [sp-1c] */
+    int32_t j; /* [sp-20] */
 
     local_0 = n;
-    local_1 = 0;
-    for (local_2 = 0; local_2 < local_0; local_2++) {
-        for (local_3 = 0; local_3 < local_0; local_3++) {
-            if (local_2 == local_3) {
-                local_1 += m[local_2 * local_0 + local_3];
+    result = 0;
+    for (i = 0; i < local_0; i++) {
+        for (j = 0; j < local_0; j++) {
+            if (i == j) {
+                result += m[i * local_0 + j];
             }
         }
     }
-    return local_1;
+    return result;
 }
 -- signature
 int (int * m, int n)
@@ -69,20 +69,20 @@ fn matrix_trace @ 0x201230 (size 137)
 int cleanup_on_error(int a, int b, int *out) {
     int32_t local_0; /* [sp-c] */
     int32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-1c] */
+    uint32_t result; /* [sp-1c] */
 
     local_0 = a;
     local_1 = b;
-    local_2 = 0xffffffff;
+    result = 0xffffffff;
     if (a >= 0) {
         if (local_1 != 0) {
             *out = local_0 / local_1;
-            local_2 = 0;
-            return local_2;
+            result = 0;
+            return result;
         }
-        return local_2;
+        return result;
     }
-    return local_2;
+    return result;
 }
 -- signature
 int (int a, int b, int * out)
@@ -117,36 +117,36 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
 int fallthrough(int x) {
     uint32_t v1;
     uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    uint32_t result; /* [sp-10] */
     int64_t local_2; /* [sp-18] */
 
     local_0 = x;
-    local_1 = 0;
+    result = 0;
     v1 = local_0;
     local_2 = v1;
     if (v1 <= 3) {
         switch (local_2) {
         case 0:
-            local_1 += 1;
+            result += 1;
             break;
         case 1:
             break;
         case 2:
-            local_1 += 4;
-            return local_1;
+            result += 4;
+            return result;
         case 3:
-            local_1 = 8;
-            return local_1;
+            result = 8;
+            return result;
         default:
-            local_1 = 0xffffffff;
-            return local_1;
+            result = 0xffffffff;
+            return result;
         }
-        local_1 += 2;
-        local_1 += 4;
-        return local_1;
+        result += 2;
+        result += 4;
+        return result;
     }
-    local_1 = 0xffffffff;
-    return local_1;
+    result = 0xffffffff;
+    return result;
 }
 -- signature
 int (int x)
@@ -317,17 +317,17 @@ fn short_circuit @ 0x201410 (size 99)
 /* velk pseudo-C: skip_negatives @ 0x201480 */
 int skip_negatives(int *p, int n) {
     int32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
-    int32_t local_2; /* [sp-1c] */
+    uint32_t result; /* [sp-18] */
+    int32_t i; /* [sp-1c] */
 
     local_0 = n;
-    local_1 = 0;
-    for (local_2 = 0; local_2 < local_0; local_2++) {
-        if (p[local_2] >= 0) {
-            local_1 += p[local_2];
+    result = 0;
+    for (i = 0; i < local_0; i++) {
+        if (p[i] >= 0) {
+            result += p[i];
         }
     }
-    return local_1;
+    return result;
 }
 -- signature
 int (int * p, int n)
@@ -362,22 +362,22 @@ fn skip_negatives @ 0x201480 (size 96)
 int find_pair(int *p, int n, int target) {
     int32_t local_0; /* [sp-1c] */
     uint32_t local_1; /* [sp-20] */
-    int32_t local_2; /* [sp-24] */
-    int32_t local_3; /* [sp-28] */
-    uint32_t local_4; /* [sp-c] */
+    int32_t i; /* [sp-24] */
+    int32_t j; /* [sp-28] */
+    uint32_t result; /* [sp-c] */
 
     local_0 = n;
     local_1 = target;
-    for (local_2 = 0; local_2 < local_0; local_2++) {
-        for (local_3 = local_2 + 1; local_3 < local_0; local_3++) {
-            if (p[local_2] + p[local_3] == local_1) {
-                local_4 = local_2 * local_0 + local_3;
-                return local_4;
+    for (i = 0; i < local_0; i++) {
+        for (j = i + 1; j < local_0; j++) {
+            if (p[i] + p[j] == local_1) {
+                result = i * local_0 + j;
+                return result;
             }
         }
     }
-    local_4 = 0xffffffff;
-    return local_4;
+    result = 0xffffffff;
+    return result;
 }
 -- signature
 int (int * p, int n, int target)

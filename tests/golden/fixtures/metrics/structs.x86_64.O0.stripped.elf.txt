@@ -31,14 +31,14 @@ fn <unnamed> @ 0x201240 (size 40)
 /* velk pseudo-C: sub_201270 @ 0x201270 */
 struct S1 { uint8_t gap_0x0[0x8]; int64_t field_0x8; uint16_t field_0x10; uint8_t gap_0x12[0x6]; };
 int64_t sub_201270(struct S1 *a0, int32_t a1) {
-    int64_t local_0; /* [sp-20] */
-    int32_t local_1; /* [sp-24] */
+    int64_t result; /* [sp-20] */
+    int32_t i; /* [sp-24] */
 
-    local_0 = 0;
-    for (local_1 = 0; local_1 < a1; local_1++) {
-        local_0 += a0[local_1].field_0x8 * (int16_t)a0[local_1].field_0x10;
+    result = 0;
+    for (i = 0; i < a1; i++) {
+        result += a0[i].field_0x8 * (int16_t)a0[i].field_0x10;
     }
-    return local_0;
+    return result;
 }
 -- signature
 int64_t (struct S1 * a0, int32_t a1)

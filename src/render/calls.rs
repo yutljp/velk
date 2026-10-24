@@ -1380,8 +1380,8 @@ mod tests {
             }
         );
         let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-        assert!(!text.contains("v1 = v1;"), "{text}");
-        assert!(text.contains("v1 = (uint32_t)v1;"), "{text}");
+        assert!(!text.contains("result = result;"), "{text}");
+        assert!(text.contains("result = (uint32_t)result;"), "{text}");
     }
 
     #[test]

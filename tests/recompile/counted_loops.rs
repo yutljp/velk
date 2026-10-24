@@ -480,7 +480,7 @@ fn printed_stack_shifts_keep_the_stored_width() {
             );
             if width == 8 && op == BinOp::Shl {
                 assert!(
-                    candidate.code.contains("(uint64_t)local_0"),
+                    candidate.code.contains("(uint64_t)result"),
                     "{}",
                     candidate.code
                 );
