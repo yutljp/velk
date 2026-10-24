@@ -25,6 +25,8 @@ mod casts;
 mod common;
 #[path = "recompile/division.rs"]
 mod division;
+#[path = "recompile/forward_exits.rs"]
+mod forward_exits;
 #[path = "recompile/frame_values.rs"]
 mod frame_values;
 #[path = "recompile/go_stack.rs"]

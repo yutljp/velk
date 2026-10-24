@@ -66,9 +66,12 @@ pub(crate) fn flatten_early_returns(nodes: &mut Vec<Node>) {
 pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
     fn jumps(nodes: &[Node], counts: &mut HashMap<u64, usize>) {
         for node in nodes {
-            if let Node::Stmt(Stmt::Br {
-                target: Some(target),
-            }) = node
+            if let Node::Stmt(
+                Stmt::Br {
+                    target: Some(target),
+                }
+                | Stmt::Brif { target, .. },
+            ) = node
             {
                 *counts.entry(*target).or_default() += 1;
             }
@@ -77,25 +80,47 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
             }
         }
     }
+    fn bounded(nodes: &[Node], remaining: &mut usize) -> bool {
+        for node in nodes {
+            let Some(left) = remaining.checked_sub(1) else {
+                return false;
+            };
+            *remaining = left;
+            match node {
+                Node::Stmt(
+                    Stmt::Assign { .. }
+                    | Stmt::Store { .. }
+                    | Stmt::Call { .. }
+                    | Stmt::Unsupported { .. }
+                    | Stmt::Ret { .. }
+                    | Stmt::Trap,
+                ) => {}
+                Node::If { then, els, .. } => {
+                    if !bounded(then, remaining) || !bounded(els, remaining) {
+                        return false;
+                    }
+                }
+                _ => return false,
+            }
+        }
+        true
+    }
     fn collect(nodes: &mut [Node], tails: &mut HashMap<u64, Vec<Node>>) {
         for index in 0..nodes.len() {
             if let Node::Label(label) = nodes[index] {
                 let mut tail = Vec::new();
+                let mut remaining = TAIL_STATEMENTS + 1;
                 for next in &nodes[index + 1..] {
-                    match next {
-                        Node::Label(_) => {}
-                        Node::Stmt(
-                            stmt @ (Stmt::Assign { .. }
-                            | Stmt::Store { .. }
-                            | Stmt::Call { .. }
-                            | Stmt::Unsupported { .. }),
-                        ) if tail.len() < TAIL_STATEMENTS => tail.push(Node::Stmt(stmt.clone())),
-                        Node::Stmt(stmt @ (Stmt::Ret { .. } | Stmt::Trap)) => {
-                            tail.push(Node::Stmt(stmt.clone()));
-                            tails.insert(label, tail);
-                            break;
-                        }
-                        _ => break,
+                    if matches!(next, Node::Label(_)) {
+                        continue;
+                    }
+                    if !bounded(std::slice::from_ref(next), &mut remaining) {
+                        break;
+                    }
+                    tail.push(next.clone());
+                    if super::ends(&tail, false) {
+                        tails.insert(label, tail);
+                        break;
                     }
                 }
             }
@@ -107,6 +132,24 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
     fn replace(nodes: &mut Vec<Node>, tails: &HashMap<u64, Vec<Node>>) {
         let mut index = 0;
         while index < nodes.len() {
+            if let Node::Stmt(Stmt::Brif {
+                cond,
+                lhs,
+                rhs,
+                target,
+            }) = &nodes[index]
+                && let Some(tail) = tails.get(target)
+            {
+                nodes[index] = Node::If {
+                    cond: *cond,
+                    lhs: lhs.clone(),
+                    rhs: rhs.clone(),
+                    then: tail.clone(),
+                    els: Vec::new(),
+                };
+                index += 1;
+                continue;
+            }
             if let Node::Stmt(Stmt::Br {
                 target: Some(target),
             }) = &nodes[index]
@@ -130,7 +173,7 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
     jumps(nodes, &mut counts);
     tails.retain(|label, tail| {
         let added = added_lines(tail);
-        added == 0 || added * counts.get(label).copied().unwrap_or(0) <= TAIL_LINES
+        added.saturating_mul(counts.get(label).copied().unwrap_or(0)) <= TAIL_LINES
     });
     if !tails.is_empty() {
         replace(nodes, &tails);
@@ -149,7 +192,22 @@ fn added_lines(tail: &[Node]) -> usize {
             Node::Stmt(Stmt::Ret { .. })
         ]
     );
-    tail.len() - 1 - usize::from(fused)
+    let lines: usize = tail
+        .iter()
+        .map(|node| match node {
+            Node::If { then, els, .. } => {
+                2 + added_lines(then)
+                    + usize::from(!then.is_empty())
+                    + if els.is_empty() {
+                        0
+                    } else {
+                        1 + added_lines(els) + 1
+                    }
+            }
+            _ => 1,
+        })
+        .sum();
+    lines.saturating_sub(1 + usize::from(fused))
 }
 
 /// Returns the constant a variable holds on each path to a return, where
@@ -159,6 +217,10 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
     type Known = std::collections::HashMap<u16, u64>;
     fn walk(nodes: &mut [Node], known: &mut Known) {
         for node in nodes.iter_mut() {
+            // A jump into a nested body can bypass the assignments before it.
+            if super::super::label_count(std::slice::from_ref(node)) != 0 {
+                known.clear();
+            }
             match node {
                 Node::Stmt(Stmt::Ret { value }) => {
                     let replaced = match value {
@@ -307,5 +369,88 @@ fn drop_unread(nodes: &mut Vec<Node>, read: &std::collections::HashSet<u16>) {
         for child in children_mut(node) {
             drop_unread(child, read);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{Cond, Expr};
+
+    #[test]
+    fn nested_label_invalidates_constants_after_the_branch() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let mut nodes = vec![
+            Node::Stmt(Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: variable,
+                    width: 64,
+                },
+                value: Expr::Const(7),
+            }),
+            Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                then: vec![Node::Label(10)],
+                els: Vec::new(),
+            },
+            Node::Stmt(Stmt::Ret {
+                value: Expr::reg(variable, 64),
+            }),
+        ];
+        return_known_constants(&mut nodes);
+        assert!(matches!(nodes.last(), Some(Node::Stmt(Stmt::Ret {
+            value: Expr::Reg { index, .. }
+        })) if *index == variable));
+    }
+
+    #[test]
+    fn conditional_jump_inlines_a_closed_return_tree() {
+        let ret = || {
+            Node::Stmt(Stmt::Ret {
+                value: Expr::Const(1),
+            })
+        };
+        let mut nodes = vec![
+            Node::Stmt(Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                target: 10,
+            }),
+            ret(),
+            Node::Label(10),
+            Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::reg(1, 64),
+                rhs: Expr::Const(0),
+                then: vec![ret()],
+                els: vec![ret()],
+            },
+        ];
+        inline_return_tails(&mut nodes);
+        assert!(matches!(&nodes[0], Node::If { then, .. }
+            if matches!(then.as_slice(), [Node::If { .. }])));
+    }
+
+    #[test]
+    fn return_tree_with_an_internal_label_is_not_copied() {
+        let mut nodes = vec![
+            Node::Stmt(Stmt::Br { target: Some(10) }),
+            Node::Label(10),
+            Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                then: vec![Node::Label(20)],
+                els: Vec::new(),
+            },
+            Node::Stmt(Stmt::Ret {
+                value: Expr::Const(1),
+            }),
+        ];
+        inline_return_tails(&mut nodes);
+        assert!(matches!(nodes[0], Node::Stmt(Stmt::Br { .. })));
     }
 }

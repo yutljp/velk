@@ -82,6 +82,56 @@ fn terminates(nodes: &[Node]) -> bool {
     )
 }
 
+/// Moves the statements skipped by one arm into the other arm, so the
+/// skipping arm can fall through to the shared label without a jump.
+pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
+    let mut index = nodes.len();
+    while let Some(position) = index.checked_sub(1) {
+        index = position;
+        let Node::If { then, els, .. } = &nodes[position] else {
+            continue;
+        };
+        let destination = [then, els].into_iter().enumerate().find_map(|(arm, body)| {
+            let Some(Node::Stmt(Stmt::Br {
+                target: Some(target),
+            })) = body.last()
+            else {
+                return None;
+            };
+            nodes[position + 1..]
+                .iter()
+                .position(|node| matches!(node, Node::Label(label) if label == target))
+                .map(|offset| (arm, position + 1 + offset))
+        });
+        let Some((arm, destination)) = destination else {
+            continue;
+        };
+        let skipped: Vec<Node> = nodes.drain(position + 1..destination).collect();
+        let Node::If {
+            cond, then, els, ..
+        } = &mut nodes[position]
+        else {
+            unreachable!("the branch remains in place");
+        };
+        if arm == 0 {
+            then.pop();
+            els.extend(skipped);
+        } else {
+            els.pop();
+            then.extend(skipped);
+        }
+        if then.is_empty() && !els.is_empty() {
+            *cond = cond.invert();
+            std::mem::swap(then, els);
+        }
+    }
+    for node in nodes.iter_mut() {
+        for child in children_mut(node) {
+            fold_forward_exits(child);
+        }
+    }
+}
+
 /// Folds a loop header's temporary reads into the exit test, so
 /// `x8 = local_0; if (x8 == 0) break;` reads as `while (local_0 != 0)`.
 /// Only values that merely move a register or read memory fold, only when
@@ -813,6 +863,56 @@ mod tests {
     use super::fold_exit_branches;
     use crate::ir::{Cond, Expr, Stmt};
     use crate::render::structure::Node;
+
+    #[test]
+    fn forward_exit_moves_only_the_skipped_path() {
+        for reverse in [false, true] {
+            let jump = vec![Node::Stmt(Stmt::Br { target: Some(20) })];
+            let mut nodes = vec![
+                Node::If {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(0, 64),
+                    rhs: Expr::Const(0),
+                    then: if reverse { Vec::new() } else { jump.clone() },
+                    els: if reverse { jump } else { Vec::new() },
+                },
+                Node::Continue,
+                Node::Label(20),
+            ];
+            super::fold_forward_exits(&mut nodes);
+            assert_eq!(nodes.len(), 2);
+            let Node::If {
+                cond, then, els, ..
+            } = &nodes[0]
+            else {
+                panic!("expected if");
+            };
+            assert_eq!(*cond, if reverse { Cond::Eq } else { Cond::Ne });
+            assert!(els.is_empty());
+            assert!(matches!(then.as_slice(), [Node::Continue]));
+            assert!(matches!(nodes[1], Node::Label(20)));
+        }
+    }
+
+    #[test]
+    fn forward_exit_preserves_another_entry() {
+        let mut nodes = vec![
+            Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                then: vec![Node::Stmt(Stmt::Br { target: Some(20) })],
+                els: Vec::new(),
+            },
+            Node::Label(10),
+            Node::Continue,
+            Node::Label(20),
+        ];
+        super::fold_forward_exits(&mut nodes);
+        assert_eq!(nodes.len(), 2);
+        assert!(matches!(&nodes[0], Node::If { then, .. }
+            if matches!(then.as_slice(), [Node::Label(10), Node::Continue])));
+    }
 
     fn branch(target: u64) -> Node {
         Node::Stmt(Stmt::Brif {
