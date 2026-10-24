@@ -26,9 +26,31 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
         Stmt::Store { addr, value, width } => {
             *addr = simplify_expr(addr.clone(), constants);
             *value = simplify_expr(value.clone(), constants);
+            let kept = crate::ir::semantics::mask(u32::from(*width) * 8);
+            // A partial register write merges the bits it keeps of the
+            // register; none of them lies in the stored bytes.
+            if let Expr::Bin {
+                op: BinOp::Or,
+                lhs,
+                rhs,
+            } = value
+            {
+                let register_bits = |part: &Expr| {
+                    matches!(part,
+                    Expr::Bin { op: BinOp::And, lhs, rhs }
+                        if matches!(lhs.as_ref(), Expr::Reg { .. })
+                            && matches!(rhs.as_ref(), Expr::Const(_)))
+                };
+                if let Some(low) = outside_mask(lhs, rhs, kept)
+                    .filter(|_| register_bits(lhs))
+                    .or_else(|| outside_mask(rhs, lhs, kept).filter(|_| register_bits(rhs)))
+                    .cloned()
+                {
+                    *value = low;
+                }
+            }
             // A store keeps only its low bytes, which a mask covering them
             // does not change.
-            let kept = crate::ir::semantics::mask(u32::from(*width) * 8);
             while let Expr::Bin {
                 op: crate::ir::BinOp::And,
                 lhs,
@@ -753,6 +775,118 @@ mod tests {
     use super::simplify;
     use crate::ir::{BinOp, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn stores_discard_preserved_register_bits_outside_the_access() {
+        for width in [1, 2, 4, 8] {
+            let low = crate::ir::semantics::mask(u32::from(width) * 8);
+            for overlap in [false, true] {
+                for reversed in [false, true] {
+                    let preserved = Expr::bin(
+                        BinOp::And,
+                        Expr::reg(3, 64),
+                        Expr::Const(!low | u64::from(overlap)),
+                    );
+                    let incoming = Expr::reg(7, 64);
+                    let value = if reversed {
+                        Expr::bin(BinOp::Or, incoming, preserved)
+                    } else {
+                        Expr::bin(BinOp::Or, preserved, incoming)
+                    };
+                    let original = FunctionIr::single_block(
+                        Isa::X86_64,
+                        vec![
+                            Stmt::Store {
+                                addr: Expr::Const(0x1000),
+                                value,
+                                width,
+                            },
+                            Stmt::Ret {
+                                value: Expr::Load {
+                                    addr: Box::new(Expr::Const(0x1000)),
+                                    width,
+                                    signed: false,
+                                },
+                            },
+                        ],
+                    );
+                    let mut simplified = original.clone();
+                    simplify(&mut simplified);
+                    let Stmt::Store { value, .. } = &simplified.blocks[0].stmts[0] else {
+                        panic!("the store remains");
+                    };
+                    let mut reads = std::collections::HashSet::new();
+                    crate::ir::visit::collect_reads(value, &mut reads);
+                    assert_eq!(
+                        reads.contains(&3),
+                        overlap,
+                        "{width} {overlap} {reversed}: {}",
+                        simplified.render()
+                    );
+                    for seed in 0..16 {
+                        let setup = crate::ir::eval::Setup {
+                            seed,
+                            convention: crate::ir::eval::Convention {
+                                arguments: &[],
+                                clobbered: &[],
+                            },
+                            registers: &[],
+                            memory: &[],
+                            step_limit: 16,
+                        };
+                        assert_eq!(
+                            crate::ir::eval::run(&original, &setup),
+                            crate::ir::eval::run(&simplified, &setup),
+                            "{width} {overlap} {reversed} {seed}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_store_does_not_discard_a_real_wide_load_of_preserved_bits() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Store {
+                addr: Expr::Const(0x1000),
+                width: 1,
+                value: Expr::bin(
+                    BinOp::Or,
+                    Expr::bin(
+                        BinOp::And,
+                        Expr::Load {
+                            addr: Box::new(Expr::Const(0x2000)),
+                            width: 8,
+                            signed: false,
+                        },
+                        Expr::Const(!0xff),
+                    ),
+                    Expr::reg(7, 64),
+                ),
+            }],
+        );
+        simplify(&mut ir);
+        let Stmt::Store { value, .. } = &ir.blocks[0].stmts[0] else {
+            panic!("the store remains");
+        };
+        let Expr::Bin {
+            op: BinOp::Or, lhs, ..
+        } = value
+        else {
+            panic!("the real load remains in its merge");
+        };
+        let Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            ..
+        } = lhs.as_ref()
+        else {
+            panic!("the real load keeps its mask");
+        };
+        assert!(matches!(lhs.as_ref(), Expr::Load { width: 8, .. }));
+    }
 
     #[test]
     fn a_mask_drops_the_bits_a_partial_write_kept() {
