@@ -6,12 +6,15 @@ use crate::ir::{
 
 use super::{Symbols, abi_objects, declaration, sanitize, vacant_name};
 
+mod fields;
+
 pub(super) struct Capture {
     pub register: u16,
     pub name: String,
     pub object: String,
     pub piece: AbiPiece,
     parameter: usize,
+    field: Option<String>,
 }
 
 pub(super) struct ResultObject {
@@ -19,6 +22,7 @@ pub(super) struct ResultObject {
     pub ty: CType,
     pub pieces: Vec<(AbiPiece, String)>,
     pub indirect: bool,
+    pub fields: Vec<String>,
 }
 
 pub(super) struct Plan {
@@ -110,8 +114,12 @@ fn logical_type(ty: &CType, value: &ValueAbi, returned: bool) -> Option<CType> {
 }
 
 pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
-    let signature = ir.declared_signature.as_ref()?;
-    let abi = signature.abi.as_ref().ok()?;
+    let Some(signature) = ir.declared_signature.as_ref() else {
+        return None;
+    };
+    let Ok(abi) = signature.abi.as_ref() else {
+        return None;
+    };
     if signature.params.len() != abi.arguments.len()
         || !abi
             .arguments
@@ -134,12 +142,17 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
         .zip(&abi.arguments)
         .chain(abi.result.iter().map(|value| (&signature.ret, value)))
     {
-        value.validate().ok()?;
+        if value.validate().is_err() {
+            return None;
+        }
         if value.aggregate {
-            let definition = ir
+            let Some(definition) = ir
                 .definitions
                 .iter()
-                .find(|definition| definition.name == ty.to_string())?;
+                .find(|definition| definition.name == ty.to_string())
+            else {
+                return None;
+            };
             if definition.size != value.size
                 || definition.alignment != Some(value.alignment)
                 || !definition.compatible_profiles.contains(&abi.profile)
@@ -152,11 +165,14 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
         .params
         .iter()
         .zip(&abi.arguments)
-        .map(|((name, ty), value)| Some((sanitize(name), logical_type(ty, value, false)?)))
+        .map(|((name, ty), value)| logical_type(ty, value, false).map(|ty| (sanitize(name), ty)))
         .collect();
-    let params = params?;
+    let Some(params) = params else { return None };
     let ret = match &abi.result {
-        Some(value) => logical_type(&signature.ret, value, true)?,
+        Some(value) => match logical_type(&signature.ret, value, true) {
+            Some(ty) => ty,
+            None => return None,
+        },
         None => signature.ret.clone(),
     };
     if abi.result.as_ref().is_some_and(|value| matches!(&value.passing, Passing::Direct(pieces) if pieces.iter().any(|piece| !matches!(piece.location, AbiLocation::Register(_))))) {
@@ -168,7 +184,9 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
         }
         _ => vec![0],
     };
-    let demanded = crate::ssa::entry_demands(ir, &return_masks)?;
+    let Some(demanded) = crate::ssa::entry_demands(ir, &return_masks) else {
+        return None;
+    };
     let mut captured = HashSet::new();
     for value in &abi.arguments {
         if let Passing::Direct(pieces) = &value.passing {
@@ -217,10 +235,15 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                             object: object.clone(),
                             piece: piece.clone(),
                             parameter,
+                            field: None,
                         }),
                         AbiLocation::Stack(offset) => {
-                            let base =
-                                offset.checked_sub(i64::try_from(piece.object_offset).ok()?)?;
+                            let Ok(object_offset) = i64::try_from(piece.object_offset) else {
+                                return None;
+                            };
+                            let Some(base) = offset.checked_sub(object_offset) else {
+                                return None;
+                            };
                             if stack_base
                                 .replace(base)
                                 .is_some_and(|previous| previous != base)
@@ -294,13 +317,16 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                 ty: ret.clone(),
                 pieces,
                 indirect,
+                fields: Vec::new(),
             })
         }
         _ => None,
     };
     let variadic = signature.variadic;
     let mut rewritten = ir.clone();
-    let pointers = abi_objects::prepare(&mut rewritten, &objects)?;
+    let Some(pointers) = abi_objects::prepare(&mut rewritten, &objects) else {
+        return None;
+    };
     if pointers.iter().any(|binding| {
         symbols.reserved_names.contains(&binding.name)
             || symbols
@@ -334,15 +360,17 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
         .collect();
     rewritten.stack_params.clear();
     rewritten.ret_type = ret;
-    *ir = rewritten;
-    Some(Plan {
+    let mut plan = Plan {
         params,
         variadic,
         captures,
         pointers,
         result,
         pointer_parameters,
-    })
+    };
+    fields::project(&mut rewritten, &mut plan, reserved);
+    *ir = rewritten;
+    Some(plan)
 }
 
 impl Plan {
@@ -448,6 +476,13 @@ impl Plan {
             ));
         }
         for capture in &self.captures {
+            if let Some(field) = &capture.field {
+                declarations.push(format!(
+                    "uint64_t {} = (uint32_t){}.{};",
+                    capture.name, capture.object, field
+                ));
+                continue;
+            }
             declarations.push(format!(
                 "uint64_t {} = *(uint64_t *)__builtin_memcpy((uint64_t[1]){{0}}, (unsigned char *)&{} + 0x{:x}, {});",
                 capture.name,

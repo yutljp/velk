@@ -161,6 +161,22 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         } => args,
         value => std::slice::from_ref(value),
     };
+    if !result.fields.is_empty() {
+        if values.len() != result.fields.len() {
+            return None;
+        }
+        let mut lines = vec!["{".to_owned()];
+        for (field, value) in result.fields.iter().zip(values) {
+            lines.push(format!(
+                "    {}.{field} = (uint32_t)({});",
+                result.name,
+                stored_value(value, 32, ctx).text
+            ));
+        }
+        lines.push(format!("    return {};", result.name));
+        lines.push("}".to_owned());
+        return Some(lines.join("\n"));
+    }
     if values.len() != result.pieces.len() {
         return None;
     }

@@ -191,11 +191,11 @@ metrics/struct_arrays.x86_64.O0.debug.elf: 34 lines, 6 variables, 10 casts, 0 re
 metrics/struct_arrays.x86_64.O0.stripped.elf: 34 lines, 3 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/struct_arrays.x86_64.O2.debug.elf: 59 lines, 8 variables, 22 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/struct_arrays.x86_64.O2.stripped.elf: 56 lines, 5 variables, 12 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/structs.aarch64.O0.debug.elf: 95 lines, 16 variables, 35 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.aarch64.O0.debug.elf: 90 lines, 15 variables, 30 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.aarch64.O0.stripped.elf: 94 lines, 10 variables, 18 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.aarch64.O2.debug.elf: 127 lines, 24 variables, 33 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.aarch64.O2.stripped.elf: 110 lines, 16 variables, 17 casts, 5 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/structs.x86_64.O0.debug.elf: 98 lines, 17 variables, 39 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.x86_64.O0.debug.elf: 93 lines, 16 variables, 34 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.x86_64.O0.stripped.elf: 95 lines, 8 variables, 17 casts, 1 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.x86_64.O2.debug.elf: 103 lines, 14 variables, 34 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.x86_64.O2.stripped.elf: 93 lines, 6 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

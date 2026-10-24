@@ -2686,7 +2686,28 @@ fn printed_aggregate_struct_fixtures_match_independent_oracles() {
                 } else {
                     12
                 };
-                let (inputs, upper) = aggregate_inputs(&sizes, rows);
+                let (mut inputs, mut upper) = aggregate_inputs(&sizes, rows);
+                if name == "point_add" {
+                    for (a, b) in [
+                        (0, 0),
+                        (u64::MAX, u64::MAX),
+                        (0x7fff_ffff_7fff_ffff, 0x0000_0001_0000_0001),
+                        (0x8000_0000_8000_0000, u64::MAX),
+                        (0xffff_ffff_0000_0000, 0x0000_0001_ffff_ffff),
+                    ] {
+                        inputs.push(vec![a, b]);
+                        upper.push(0);
+                    }
+                    if optimization == "O0" {
+                        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+                        for field in ["a.x", "a.y", "b.x", "b.y", "result.x", "result.y"] {
+                            assert!(code.contains(field), "{isa}: {code}");
+                        }
+                        assert!(!code.contains("__builtin_memcpy"), "{code}");
+                        assert!(!code.contains("*(uint32_t *)"), "{code}");
+                        assert!(!code.contains("local_"), "{code}");
+                    }
+                }
                 ir.name = Some(name.into());
                 let mut batch = aggregate_candidates(ir, inputs, upper);
                 assert_aggregate_oracle(&batch, |input, _| match name {
@@ -9678,6 +9699,296 @@ fn printed_readonly_floating_views_keep_narrow_same_precision_reads_raw() {
             run(&executable, ""),
             "4 narrow floating read cases passed\n"
         );
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn aggregate_field_projection_rejects_unverified_objects() {
+    let path = common::fixtures_dir().join("metrics/structs.x86_64.O0.debug.elf");
+    let mut binary = Binary::open(&path).unwrap();
+    let address = binary.find("point_add").unwrap().addr;
+    let original = binary.analysis(address, None).unwrap().ir.clone();
+    for case in 0..23 {
+        let mut ir = original.clone();
+        match case {
+            0 => ir
+                .members
+                .iter_mut()
+                .filter(|m| m.structure == "point")
+                .for_each(|m| m.width = 2),
+            1 => ir
+                .members
+                .iter_mut()
+                .filter(|m| m.structure == "point")
+                .for_each(|m| m.offset = 0),
+            2 | 3 => ir
+                .definitions
+                .iter_mut()
+                .filter(|d| d.name == "struct point")
+                .for_each(|d| d.alignment = Some(if case == 2 { 1 } else { 16 })),
+            4 => {
+                ir.declared_signature.as_mut().unwrap().params[0].1 =
+                    CType::Named("struct other".into());
+                let mut other = ir
+                    .definitions
+                    .iter()
+                    .find(|d| d.name == "struct point")
+                    .unwrap()
+                    .clone();
+                other.name = "struct other".into();
+                ir.definitions.push(other);
+            }
+            5 => {
+                if let Stmt::Store { width, .. } = &mut ir.blocks[0].stmts[0] {
+                    *width = 4;
+                }
+            }
+            6 => {
+                let addr = match &ir.blocks[0].stmts[0] {
+                    Stmt::Store { addr, .. } => addr.clone(),
+                    _ => panic!(),
+                };
+                if let Stmt::Store { addr: target, .. } = &mut ir.blocks[0].stmts[1] {
+                    *target = addr;
+                }
+            }
+            7..=9 => {
+                let abi = ir
+                    .declared_signature
+                    .as_mut()
+                    .unwrap()
+                    .abi
+                    .as_mut()
+                    .unwrap();
+                if case == 7 {
+                    abi.arguments[0].defined_bits = vec![(0, 32)];
+                }
+                if case == 8 {
+                    abi.arguments[0].size = u64::MAX;
+                }
+                if case == 9 {
+                    abi.arguments[0].size = 0;
+                }
+            }
+            10 => {
+                let signature = ir.declared_signature.as_mut().unwrap();
+                signature.ret = CType::Named("union point".into());
+                for (_, ty) in &mut signature.params {
+                    *ty = CType::Named("union point".into());
+                }
+                for definition in &mut ir.definitions {
+                    if definition.name == "struct point" {
+                        definition.name = "union point".into();
+                    }
+                }
+            }
+            11 => {
+                if let Stmt::Store { width, .. } = &mut ir.blocks[0].stmts[2] {
+                    *width = 2;
+                }
+            }
+            12 => {
+                let addr = match &ir.blocks[0].stmts[2] {
+                    Stmt::Store { addr, .. } => addr.clone(),
+                    _ => panic!(),
+                };
+                if let Stmt::Store { addr: target, .. } = &mut ir.blocks[0].stmts[3] {
+                    *target = addr;
+                }
+            }
+            13 => {
+                let abi = ir
+                    .declared_signature
+                    .as_mut()
+                    .unwrap()
+                    .abi
+                    .as_mut()
+                    .unwrap();
+                if let Passing::Direct(pieces) = &mut abi.arguments[0].passing {
+                    pieces[0].class = Some(RegisterClass::Simd);
+                }
+            }
+            14 | 15 | 19 => {
+                let sp = if let Stmt::Store { addr, .. } = &ir.blocks[0].stmts[0] {
+                    match addr {
+                        Expr::Bin { lhs, .. } => lhs.as_ref().clone(),
+                        _ => panic!("expected frame address"),
+                    }
+                } else {
+                    panic!("expected aggregate copy");
+                };
+                if let Stmt::Store { addr, .. } = &mut ir.blocks[0].stmts[0] {
+                    *addr = Expr::bin(
+                        BinOp::Add,
+                        sp,
+                        Expr::Const(match case {
+                            14 => 8,
+                            15 => i64::MAX as u64,
+                            _ => i64::MIN as u64,
+                        }),
+                    );
+                }
+            }
+            16 => {
+                let address = match &ir.blocks[0].stmts[0] {
+                    Stmt::Store { addr, .. } => addr.clone(),
+                    _ => panic!("expected aggregate copy"),
+                };
+                if let Stmt::Store { value, .. } = &mut ir.blocks[0].stmts[2] {
+                    *value = address;
+                }
+            }
+            17 => {
+                let extra = ir.blocks[0].stmts[0].clone();
+                ir.blocks[0].stmts.insert(2, extra);
+            }
+            18 => {
+                for definition in &mut ir.definitions {
+                    if definition.name == "struct point" {
+                        definition.size = u64::MAX;
+                    }
+                }
+            }
+            20 => {
+                if let Stmt::Store { value, .. } = &mut ir.blocks[0].stmts[2] {
+                    *value = Expr::Load {
+                        addr: Box::new(Expr::reg(7, 64)),
+                        width: 2,
+                        signed: false,
+                    };
+                }
+            }
+            21 => {
+                if let Stmt::Store { addr, .. } = &mut ir.blocks[0].stmts[3] {
+                    *addr = Expr::reg(7, 64);
+                }
+            }
+            22 => {
+                let signature = ir.declared_signature.as_mut().unwrap();
+                signature
+                    .abi
+                    .as_mut()
+                    .unwrap()
+                    .result
+                    .as_mut()
+                    .unwrap()
+                    .defined_bits = vec![(0, 32)];
+            }
+            _ => unreachable!(),
+        }
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(!code.contains("result.x ="), "case {case}: {code}");
+    }
+}
+
+#[test]
+fn aggregate_field_names_preserve_c_type_names() {
+    let path = common::fixtures_dir().join("metrics/structs.x86_64.O0.debug.elf");
+    let mut binary = Binary::open(&path).unwrap();
+    let address = binary.find("point_add").unwrap().addr;
+    let mut ir = binary.analysis(address, None).unwrap().ir.clone();
+    ir.declared_signature.as_mut().unwrap().params[0].0 = "uint64".into();
+    for member in &mut ir.members {
+        if member.structure == "point" && member.name == "x" {
+            member.name = "t".into();
+        }
+    }
+    let definition = ir
+        .definitions
+        .iter_mut()
+        .find(|d| d.name == "struct point")
+        .unwrap();
+    definition.fields[0] = "t".into();
+    definition.members[0] = definition.members[0].replace(" x;", " t;");
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(
+        code.contains("uint64_t uint64_t_2 = (uint32_t)uint64.t;"),
+        "{code}"
+    );
+    let (inputs, upper) = aggregate_inputs(&[8, 8], 12);
+    let candidates = aggregate_candidates(ir, inputs, upper);
+    check_candidates("aggregate-field-names", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn printed_point_fields_match_original_machine_code() {
+    let isa = if cfg!(target_arch = "aarch64") {
+        "aarch64"
+    } else if cfg!(target_arch = "x86_64") {
+        "x86_64"
+    } else {
+        return;
+    };
+    let prefix = if cfg!(target_os = "macos") { "_" } else { "" };
+    let scratch = scratch_dir("point-fields-machine");
+    let mut architectures = vec![isa];
+    if cfg!(all(target_os = "macos", target_arch = "aarch64"))
+        && Command::new("arch")
+            .args(["-x86_64", "true"])
+            .output()
+            .is_ok_and(|output| output.status.success())
+    {
+        architectures.push("x86_64");
+    }
+    for isa in architectures {
+        for optimization in ["O0", "O2"] {
+            let path = common::fixtures_dir()
+                .join(format!("metrics/structs.{isa}.{optimization}.debug.elf"));
+            let mut binary = Binary::open(&path).unwrap();
+            let function = binary.find("point_add").unwrap().clone();
+            let mut ir = binary.analysis(function.addr, None).unwrap().ir.clone();
+            ir.name = Some("projected_point".into());
+            let bytes = binary
+                .image()
+                .read_vaddr(function.addr, function.size.expect("fixture function size"))
+                .unwrap();
+            let encoded = bytes
+                .iter()
+                .map(|byte| byte.to_string())
+                .collect::<Vec<_>>()
+                .join(",");
+            let mut source = String::from("#include <stdint.h>\n#include <stdbool.h>\n");
+            source.push_str(&velk::render::render(&ir, &[], &Default::default(), &[]));
+            writeln!(
+                source,
+                "extern struct point original_point(struct point, struct point);"
+            )
+            .unwrap();
+            writeln!(source, "__asm__(\".text\\n.p2align 2\\n.globl {prefix}original_point\\n{prefix}original_point:\\n.byte {encoded}\\n\");").unwrap();
+            source.push_str(
+            "int main(void) {\nuint32_t values[] = {0, 1, 0x7fffffff, 0x80000000, 0xffffffff};\n",
+        );
+            source.push_str("for (unsigned a = 0; a < 5; ++a) for (unsigned b = 0; b < 5; ++b) for (unsigned c = 0; c < 5; ++c) for (unsigned d = 0; d < 5; ++d) {\n");
+            source.push_str("struct point x = {(int32_t)values[a], (int32_t)values[b]}, y = {(int32_t)values[c], (int32_t)values[d]};\nstruct point expected = original_point(x, y), actual = projected_point(x, y);\nif (actual.x != expected.x || actual.y != expected.y) return 1;\n}\nreturn 0;\n}\n");
+            let input = scratch.join(format!("point-{isa}-{optimization}.c"));
+            std::fs::write(&input, source).unwrap();
+            for level in LEVELS {
+                let executable = scratch.join(format!("point-{isa}-{optimization}-{level}"));
+                let mut compiler = Command::new(COMPILER);
+                if cfg!(target_os = "macos") {
+                    compiler.args(["-arch", if isa == "aarch64" { "arm64" } else { "x86_64" }]);
+                }
+                let compiled = compiler
+                    .args(["-std=c11", level])
+                    .args(FLAGS)
+                    .arg(&input)
+                    .arg("-o")
+                    .arg(&executable)
+                    .output()
+                    .unwrap();
+                assert!(
+                    compiled.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&compiled.stderr)
+                );
+                let output = Command::new(&executable).output().unwrap();
+                assert!(
+                    output.status.success(),
+                    "{isa} {optimization} {level}: {output:?}"
+                );
+            }
+        }
     }
     std::fs::remove_dir_all(scratch).ok();
 }

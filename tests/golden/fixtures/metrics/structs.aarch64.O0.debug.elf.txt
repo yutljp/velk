@@ -81,19 +81,14 @@ fn record_total @ 0x210238 (size 136)
 struct point { _Alignas(4) int x; int y; };
 struct point point_add(struct point a, struct point b) {
     struct point result = {0};
-    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
-    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
-    int64_t local_2; /* [sp-8] */
+    uint64_t a_x = (uint32_t)a.x;
+    uint64_t a_y = (uint32_t)a.y;
+    uint64_t b_x = (uint32_t)b.x;
+    uint64_t b_y = (uint32_t)b.y;
 
-    local_0 = a_bits;
-    local_1 = b_bits;
-    *(uint32_t *)&local_2 = *(uint32_t *)&local_0 + *(uint32_t *)&local_1;
-    *(uint32_t *)((uint8_t *)&local_2 + 0x4) = *(uint32_t *)((uint8_t *)&local_0 + 0x4) + *(uint32_t *)((uint8_t *)&local_1 + 0x4);
     {
-        uint64_t result_bits = local_2;
-        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        result.x = (uint32_t)(a_x + b_x);
+        result.y = (uint32_t)(a_y + b_y);
         return result;
     }
 }
