@@ -12,8 +12,8 @@ arm64_loops0.o: 56 lines, 0 prelude lines, 9 variables, 0 casts, 0 registers, 0 
 arm64_loops_stripped.o: 74 lines, 0 prelude lines, 12 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm64_macho.o: 102 lines, 27 prelude lines, 25 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm64_switch.elf: 12 lines, 0 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-calls_a64.elf: 176 lines, 37 prelude lines, 32 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
-calls_a64.o: 173 lines, 35 prelude lines, 32 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+calls_a64.elf: 144 lines, 37 prelude lines, 23 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+calls_a64.o: 141 lines, 35 prelude lines, 23 variables, 7 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 codeview/l4_memory.O0.dll: 30 lines, 0 prelude lines, 4 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 codeview/l4_memory.O0.obj: 28 lines, 0 prelude lines, 4 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 codeview/l4_memory.O0.stripped.dll: 34 lines, 0 prelude lines, 5 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -97,8 +97,8 @@ metrics/arith_mixed.x86_64.O2.debug.elf: 66 lines, 16 prelude lines, 10 variable
 metrics/arith_mixed.x86_64.O2.stripped.elf: 66 lines, 16 prelude lines, 10 variables, 14 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/calls.aarch64.O0.debug.elf: 76 lines, 13 prelude lines, 8 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.aarch64.O0.stripped.elf: 82 lines, 3 prelude lines, 11 variables, 7 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
-metrics/calls.aarch64.O2.debug.elf: 161 lines, 43 prelude lines, 24 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
-metrics/calls.aarch64.O2.stripped.elf: 157 lines, 33 prelude lines, 28 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.aarch64.O2.debug.elf: 125 lines, 43 prelude lines, 19 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.aarch64.O2.stripped.elf: 125 lines, 33 prelude lines, 19 variables, 7 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.win64.O0.debug.dll: 94 lines, 13 prelude lines, 17 variables, 16 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.win64.O0.stripped.dll: 99 lines, 3 prelude lines, 17 variables, 30 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.win64.O2.debug.dll: 272 lines, 54 prelude lines, 63 variables, 39 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls

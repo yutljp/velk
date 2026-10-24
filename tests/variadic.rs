@@ -17,18 +17,25 @@ int sum(int count, ...) {
 
 #[test]
 fn integer_lists_recompile_across_target_abis() {
-    let dir = common::root().join("target/variadic-tests");
+    integer_lists_recompile(
+        "variadic-tests",
+        &[
+            ("sysv", "x86_64-unknown-linux-gnu", "-O0"),
+            ("aapcs", "aarch64-unknown-linux-gnu", "-O0"),
+            ("apple", "arm64-apple-macos11", "-O0"),
+        ],
+    );
+}
+
+fn integer_lists_recompile(directory: &str, targets: &[(&str, &str, &str)]) {
+    let dir = common::root().join("target").join(directory);
     fs::create_dir_all(&dir).unwrap();
     let source = dir.join("input.c");
     fs::write(&source, SOURCE).unwrap();
-    for (name, target) in [
-        ("sysv", "x86_64-unknown-linux-gnu"),
-        ("aapcs", "aarch64-unknown-linux-gnu"),
-        ("apple", "arm64-apple-macos11"),
-    ] {
+    for &(name, target, optimization) in targets {
         let object = dir.join(format!("{name}.o"));
         let output = Command::new("clang")
-            .args(["-target", target, "-O0", "-g", "-c"])
+            .args(["-target", target, optimization, "-g", "-c"])
             .arg(&source)
             .arg("-o")
             .arg(&object)
@@ -54,6 +61,7 @@ fn integer_lists_recompile_across_target_abis() {
         let driver = format!(
             r#"
 #include <stdint.h>
+#include <stdbool.h>
 {code}
 #define sum expected
 {SOURCE}
@@ -100,8 +108,12 @@ int main(void) {{
 }
 
 #[test]
-fn unoptimized_metrics_lists_use_stdarg() {
-    for fixture in ["calls.x86_64.O0.debug.elf", "calls.aarch64.O0.debug.elf"] {
+fn metrics_lists_use_stdarg() {
+    for fixture in [
+        "calls.x86_64.O0.debug.elf",
+        "calls.aarch64.O0.debug.elf",
+        "calls.aarch64.O2.debug.elf",
+    ] {
         let mut binary =
             Binary::open(&common::fixtures_dir().join("metrics").join(fixture)).unwrap();
         let address = binary.find("sum_varargs").unwrap().addr;
@@ -251,17 +263,27 @@ long long aligned_values(int count, ...) {
     __builtin_va_end(ap);
     return (long long)total;
 }
+unsigned long long widened_values(int count, ...) {
+    __builtin_va_list ap;
+    __builtin_va_start(ap, count);
+    unsigned long long total = 0;
+    for (int i = 0; i < count; ++i) total += __builtin_va_arg(ap, unsigned int);
+    __builtin_va_end(ap);
+    return total;
+}
+
 "#,
     )
     .unwrap();
-    for (name, target) in [
-        ("sysv", "x86_64-unknown-linux-gnu"),
-        ("aapcs", "aarch64-unknown-linux-gnu"),
-        ("apple", "arm64-apple-macos11"),
+    for (name, target, optimization) in [
+        ("sysv", "x86_64-unknown-linux-gnu", "-O0"),
+        ("aapcs", "aarch64-unknown-linux-gnu", "-O0"),
+        ("aapcs-o2", "aarch64-unknown-linux-gnu", "-O2"),
+        ("apple", "arm64-apple-macos11", "-O0"),
     ] {
         let object = dir.join(format!("{name}.o"));
         let output = Command::new("clang")
-            .args(["-target", target, "-O0", "-g", "-c"])
+            .args(["-target", target, optimization, "-g", "-c"])
             .arg(&source)
             .arg("-o")
             .arg(&object)
@@ -273,6 +295,16 @@ long long aligned_values(int count, ...) {
             String::from_utf8_lossy(&output.stderr)
         );
         let mut binary = Binary::open(&object).unwrap();
+        if optimization == "-O2" {
+            let widened = binary
+                .find("widened_values")
+                .or_else(|_| binary.find("_widened_values"))
+                .unwrap()
+                .addr;
+            let code = binary.decompile(widened, None, None).unwrap();
+            assert!(!code.contains("va_arg("), "{name}: {code}");
+            assert!(!code.contains("va_start("), "{name}: {code}");
+        }
         let address = binary
             .find("aligned_values")
             .or_else(|_| binary.find("_aligned_values"))
@@ -493,4 +525,107 @@ int main(void) {{
             );
         }
     }
+}
+
+#[test]
+fn optimized_integer_loops_require_exact_offset_and_stack_updates() {
+    use velk::ir::{Cond, Expr, Stmt};
+    let mut binary =
+        Binary::open(&common::fixtures_dir().join("metrics/calls.aarch64.O2.debug.elf")).unwrap();
+    let address = binary.find("sum_varargs").unwrap().addr;
+    let original = binary.analysis(address, None).unwrap().ir.clone();
+    let symbols = velk::render::callee_names(binary.image());
+    assert!(velk::render::render(&original, &[], &symbols, &[]).contains("va_arg("));
+    for mutation in 0..9 {
+        let mut ir = original.clone();
+        let exit_target = ir.blocks[9].start;
+        match mutation {
+            0 => {
+                let Stmt::Assign {
+                    value: Expr::Load { width, .. },
+                    ..
+                } = &mut ir.blocks[1].stmts[3]
+                else {
+                    panic!("offset load")
+                };
+                *width = 8;
+            }
+            1 => {
+                let Stmt::Assign { value, .. } = &mut ir.blocks[2].stmts[0] else {
+                    panic!("stack copy")
+                };
+                *value = Expr::Const(0);
+            }
+            2 => {
+                let Stmt::Brif { rhs, .. } = &mut ir.blocks[4].stmts[0] else {
+                    panic!("sign test")
+                };
+                *rhs = Expr::Const(1);
+            }
+            3 => {
+                let Stmt::Assign { value, .. } = &mut ir.blocks[5].stmts[0] else {
+                    panic!("exhausted offset")
+                };
+                *value = Expr::Const(8);
+            }
+            4 => {
+                let Stmt::Assign {
+                    value: Expr::Bin { rhs, .. },
+                    ..
+                } = &mut ir.blocks[6].stmts[0]
+                else {
+                    panic!("offset step")
+                };
+                **rhs = Expr::Const(16);
+            }
+            5 => {
+                let Stmt::Brif { rhs, .. } = &mut ir.blocks[6].stmts[2] else {
+                    panic!("register limit")
+                };
+                *rhs = Expr::Const(0xffff_fff0);
+            }
+            6 => {
+                let Stmt::Assign {
+                    value: Expr::Bin { rhs, .. },
+                    ..
+                } = &mut ir.blocks[7].stmts[0]
+                else {
+                    panic!("stack step")
+                };
+                **rhs = Expr::Const(16);
+            }
+            7 => {
+                let Stmt::Br { target } = &mut ir.blocks[7].stmts[2] else {
+                    panic!("stack edge")
+                };
+                *target = Some(exit_target);
+            }
+            _ => {
+                let Stmt::Assign { value, .. } = &mut ir.blocks[3].stmts[2] else {
+                    panic!("argument use")
+                };
+                *value = Expr::Select {
+                    cond: Cond::Eq,
+                    lhs: Box::new(Expr::Const(0)),
+                    rhs: Box::new(Expr::Const(1)),
+                    then: Box::new(value.clone()),
+                    els: Box::new(Expr::Const(0)),
+                };
+            }
+        }
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(!code.contains("va_arg("), "mutation {mutation}: {code}");
+        assert!(!code.contains("va_start("), "mutation {mutation}: {code}");
+        assert!(
+            code.contains("velk_entry_stack_pointer"),
+            "mutation {mutation}: {code}"
+        );
+    }
+}
+#[test]
+fn optimized_integer_lists_recompile() {
+    integer_lists_recompile(
+        "variadic-optimized-tests",
+        &[("aapcs-o2", "aarch64-unknown-linux-gnu", "-O2")],
+    );
 }

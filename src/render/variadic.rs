@@ -5,6 +5,8 @@ use crate::loader::{Format, Isa};
 
 use super::Symbols;
 
+mod optimized;
+
 const TOP: u16 = u16::MAX;
 const STACK: u16 = u16::MAX - 1;
 
@@ -550,7 +552,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                 continue;
             }
             let mut rewritten = candidate.clone();
-            let mut count = 0;
+            let mut count = usize::from(optimized::recover(&mut rewritten, &list, register));
             loop {
                 let mut found = false;
                 for start in init_blocks..rewritten.blocks.len() {
