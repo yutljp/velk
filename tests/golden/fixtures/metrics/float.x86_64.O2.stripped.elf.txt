@@ -23,7 +23,7 @@ double sub_2011b0(double *a0, int32_t a1) {
         v3 = a1;
         v4 = v3 & 0x7;
         if ((uint32_t)a1 >= 8) {
-            v3 = v3 & 0x7ffffff8;
+            v3 &= 0x7ffffff8;
             v5 = 0;
             do {
                 v2 = v2 + a0[v5];
@@ -34,7 +34,7 @@ double sub_2011b0(double *a0, int32_t a1) {
                 v2 = v2 + a0[v5 + 5];
                 v2 = v2 + a0[v5 + 6];
                 v2 = v2 + a0[v5 + 7];
-                v5 = v5 + 8;
+                v5 += 8;
             } while (v3 != v5);
         } else {
             v5 = 0;
@@ -44,7 +44,7 @@ double sub_2011b0(double *a0, int32_t a1) {
             v15 = 0;
             do {
                 v2 = v2 + v14[v15];
-                v15 = v15 + 1;
+                ++v15;
             } while (v4 != v15);
         }
     }

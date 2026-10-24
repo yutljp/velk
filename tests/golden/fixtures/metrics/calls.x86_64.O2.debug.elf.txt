@@ -167,7 +167,7 @@ int factorial(int n) {
         v2 = n - 1;
         v3 = v2 & 0xfffffffffffffff8;
         v4 = (n & 0xffffffff);
-        n = n - v3;
+        n -= v3;
         v6 = add_lanes32(v4 | (uint64_t)v4 << 0x20, *qword_200190);
         v8 = add_lanes32(v4 | (uint64_t)v4 << 0x20, *qword_200198);
         v11 = *qword_2001c0;
@@ -210,7 +210,7 @@ int factorial(int n) {
         }
     }
     do {
-        v1 = v1 * n;
+        v1 *= n;
         v46 = n;
         n = n - 1;
     } while (v46 > 2);
@@ -410,7 +410,7 @@ int sum_varargs(int count, ...) {
                 v1 = ((v1 + 8) & 0xffffffff);
                 *(uint32_t *)&local_3 = v1;
             }
-            v4 = v4 + *v3;
+            v4 += *v3;
             if (v1 < 41) {
                 v3 = v7;
                 v7 = (uint32_t *)(v1 + v2);
@@ -420,7 +420,7 @@ int sum_varargs(int count, ...) {
                 v3 = v7 + 0x2;
                 local_2 = v3;
             }
-            v4 = v4 + *v7;
+            v4 += *v7;
             v6 = v6 - 2;
         } while (v6 != 0);
     } else {

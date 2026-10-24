@@ -52,7 +52,7 @@ int32_t dense(int32_t a0) {
         case 21:
             v4 = *g_sink;
             v8 = 88;
-            v4 = v4 | v8;
+            v4 |= v8;
             break;
         case 22:
             v4 = *g_sink + 95;
@@ -66,7 +66,7 @@ int32_t dense(int32_t a0) {
         case 25:
             v4 = *g_sink;
             v8 = 116;
-            v4 = v4 | v8;
+            v4 |= v8;
             break;
         default:
             __builtin_unreachable();

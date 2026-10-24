@@ -20,7 +20,7 @@ int32_t sub_2101c4(int32_t a0) {
     v2 = 0;
     do {
         v2 = v1 + v2;
-        v1 = v1 + 1;
+        ++v1;
         *dword_220298 = v2;
     } while (a0 != v1);
     return v2;
@@ -60,7 +60,7 @@ int32_t sub_210200(int32_t a0) {
     v1 = 0;
     v2 = (a0 > 1 ? a0 : 1);
     do {
-        v1 = v1 + 1;
+        ++v1;
         *dword_220298 = v1;
     } while (v2 != v1);
     return v2;
@@ -98,7 +98,7 @@ int32_t sub_210224(int32_t a0) {
     v2 = 0;
     for (v1 = 0; v1 < a0; v1++) {
         if ((v1 & 0x1) != 0) {
-            v2 = v2 + v1;
+            v2 += v1;
             *dword_220298 = v2;
         }
     }
@@ -144,7 +144,7 @@ int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
             if (a0[v2] == a2) {
                 return v2;
             }
-            v2 = v2 + 1;
+            ++v2;
         } while ((uint32_t)a1 != v2);
     }
     return -1;

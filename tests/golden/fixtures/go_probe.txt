@@ -1349,8 +1349,8 @@ int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
     v2 = 0;
     while (a1 > v1) {
         v3 = a0[v1];
-        v1 = v1 + 1;
-        v2 = v2 + v3;
+        ++v1;
+        v2 += v3;
     }
     return v2;
 }

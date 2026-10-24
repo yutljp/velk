@@ -40,7 +40,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
                 v6 = v2[-1];
                 v7 = *v2;
                 v8 = v2[1];
-                v4 = v4 - 32;
+                v4 -= 32;
                 v2 = v2 + 0x4;
                 v3[-2] = v5;
                 v3[-1] = v6;
@@ -61,11 +61,11 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         v1 = n & 0xfffffffffffffff8;
         v2 = (uint64_t *)(src + v4);
         v3 = (uint64_t *)(dst + v4);
-        v4 = v4 - v1;
+        v4 -= v1;
         do {
             v5 = *v2;
             v2 = v2 + 0x1;
-            v4 = v4 + 8;
+            v4 += 8;
             *v3 = v5;
             v3 = v3 + 0x1;
         } while (v4 != 0);
@@ -80,7 +80,7 @@ L_2102a4:
     do {
         v17 = *v16;
         v16 = v16 + 0x1;
-        v14 = v14 - 1;
+        --v14;
         *v15 = v17;
         v15 = v15 + 0x1;
     } while (v14 != 0);
@@ -189,7 +189,7 @@ unsigned long string_length(char *s) {
     v1 = 0;
     do {
         v2 = (uint8_t)s[v1];
-        v1 = v1 + 1;
+        ++v1;
     } while (v2 != 0);
     return v1 - 1;
 }

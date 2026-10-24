@@ -22,6 +22,8 @@ mod cache;
 
 #[path = "recompile/constants.rs"]
 mod constants;
+#[path = "recompile/counted_loops.rs"]
+mod counted_loops;
 
 #[path = "recompile/casts.rs"]
 mod casts;

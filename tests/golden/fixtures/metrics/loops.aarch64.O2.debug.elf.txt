@@ -17,9 +17,9 @@ int count_bits(unsigned int x) {
     v1 = x;
     x = 0;
     do {
-        x = x + (v1 & 0x1);
+        x += (v1 & 0x1);
         v3 = v1;
-        v1 = v1 >> 0x1;
+        v1 >>= 0x1;
     } while (v3 > 1);
     return x;
 }
@@ -93,7 +93,7 @@ int sum_till_neg(int *p, int n) {
         }
         v4 = *p;
         p = p + 0x1;
-        v1 = v1 - 1;
+        --v1;
         v2 = v4 + v3;
     } while ((v4 & 0x80000000) == 0);
     return v3;
@@ -142,7 +142,7 @@ int sum_until_zero(int *p, int n) {
         if (v4 == 0) {
             break;
         }
-        v3 = v3 - 1;
+        --v3;
         v2 = (v4 & ~(v4 >> 0x1f)) + v2;
     } while (v3 != 0);
     return v2;

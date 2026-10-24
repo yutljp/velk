@@ -58,7 +58,7 @@ int64_t sub_2011f0(struct sub_2011f0_a0 *a0, int32_t a1) {
         do {
             v6 = (int16_t)*(uint16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
             v3 = (int16_t)*(uint16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
-            v2 = v2 + 2;
+            v2 += 2;
             v5 = v5 + 0x30;
         } while (v4 != v2);
     } else {

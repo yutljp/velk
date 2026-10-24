@@ -41,7 +41,7 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
     do {
         v4 = *v1;
         v1 = v1 + 0x1;
-        v3 = v3 - 1;
+        --v3;
         v2 = v4 + v2;
     } while (v3 != 0);
     return v2;

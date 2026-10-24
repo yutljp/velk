@@ -39,7 +39,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
                 *(uint64_t *)(dst + (v2 + 0x8)) = v4;
                 *(uint64_t *)(dst + (v2 + 0x10)) = v5;
                 *(uint64_t *)(dst + (v2 + 0x18)) = v6;
-                v2 = v2 + 32;
+                v2 += 32;
             } while (v1 != v2);
             if (v1 == n) {
                 return;
@@ -54,7 +54,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         v1 = n & 0xfffffffffffffff8;
         do {
             *(uint64_t *)(dst + v7) = *(uint64_t *)(src + v7);
-            v7 = v7 + 8;
+            v7 += 8;
         } while (v1 != v7);
         if (v1 == n) {
             return;
@@ -67,8 +67,8 @@ L_2012a6:
         v9 = v1;
         do {
             dst[v9] = src[v9];
-            v9 = v9 + 1;
-            v8 = v8 - 1;
+            ++v9;
+            --v8;
         } while (v8 != 0);
     }
     if (v1 - n > -4) {
@@ -79,7 +79,7 @@ L_2012a6:
         dst[v9 + 1] = src[v9 + 1];
         dst[v9 + 2] = src[v9 + 2];
         dst[v9 + 3] = src[v9 + 3];
-        v9 = v9 + 4;
+        v9 += 4;
     } while (n != v9);
 }
 -- signature
@@ -187,7 +187,7 @@ unsigned long string_length(char *s) {
     v1 = -1;
     do {
         v2 = s[v1 + 1];
-        v1 = v1 + 1;
+        ++v1;
     } while (v2 != 0);
     return v1;
 }

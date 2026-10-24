@@ -78,7 +78,7 @@ long item_last_key(struct item *items, int n) {
             if (*(int32_t *)(v6) > 0) {
                 v3 = *(uint64_t *)(v6 - 0x8);
             }
-            v2 = v2 + 2;
+            v2 += 2;
             v6 = v6 + 0x20;
         } while (v5 != v2);
     } else {

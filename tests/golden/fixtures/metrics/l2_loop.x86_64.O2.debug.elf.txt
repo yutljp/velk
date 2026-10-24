@@ -42,7 +42,7 @@ int sum_while(int n) {
             *sink = v8 + v3 - 3;
             v3 = v8 + (v8 + v3 - 2) - 1;
             *sink = v3;
-            v2 = v2 + 8;
+            v2 += 8;
         } while (v8 + v5 + 8 != 7);
         v2 = v2 - 7;
         if (v1 == 0) {
@@ -56,10 +56,10 @@ int sum_while(int n) {
         }
     }
     do {
-        v3 = v3 + v2;
+        v3 += v2;
         *sink = v3;
-        v2 = v2 + 1;
-        v1 = v1 - 1;
+        ++v2;
+        --v1;
     } while (v1 != 0);
     return v3;
 }
@@ -147,18 +147,18 @@ int count_down(int n) {
             *sink = v3 + 3;
             *sink = v3 + 4;
             v6 = v3;
-            v3 = v3 + 8;
+            v3 += 8;
         } while (v6 + v4 + 8 != 4);
         v3 = v3 - 4;
     }
     if (v2 == 0) {
         return v1;
     }
-    v3 = v3 + 1;
+    ++v3;
     do {
         *sink = v3;
-        v3 = v3 + 1;
-        v2 = v2 - 1;
+        ++v3;
+        --v2;
     } while (v2 != 0);
     return v1;
 }
@@ -222,10 +222,10 @@ int sum_skip_odd(int n) {
         v4 = 0;
         v2 = 0;
         do {
-            v2 = v2 + v4;
-            v2 = v2 + 1;
+            v2 += v4;
+            ++v2;
             *sink = v2;
-            v4 = v4 + 2;
+            v4 += 2;
         } while (v3 != v4);
     } else {
         v2 = 0;
@@ -282,7 +282,7 @@ int find_first(int *p, int n, int v) {
     v1 = n;
     v2 = 0;
     while (p[v2] != v) {
-        v2 = v2 + 1;
+        ++v2;
         if (v1 == v2) {
             return -1;
         }

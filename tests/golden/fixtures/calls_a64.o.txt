@@ -144,7 +144,7 @@ int32_t factorial(int32_t a0) {
                 v13 = add_lanes32(v8, 0xfffffffcfffffffc);
                 v9 = mul_lanes32(v7, v9);
                 v10 = mul_lanes32(v8, v10);
-                v11 = v11 - 8;
+                v11 -= 8;
                 v7 = add_lanes32(v7, 0xfffffff8fffffff8);
                 v8 = add_lanes32(v8, 0xfffffff8fffffff8);
                 v3 = mul_lanes32(v12, v3);
@@ -162,7 +162,7 @@ int32_t factorial(int32_t a0) {
         }
         do {
             v2 = v1 * v2;
-            v1 = v1 - 1;
+            --v1;
         } while (v1 + 1 > 2);
         return v2;
     }
@@ -233,10 +233,10 @@ int32_t is_odd(int32_t a0) {
     if (v1 >= 2) {
         v1 = (v1 >> 0x1) + 1;
         v4 = v1 & 0xfffffffe;
-        a0 = a0 - ((uint64_t)v4 << 0x1);
+        a0 -= ((uint64_t)v4 << 0x1);
         v5 = v4;
         do {
-            v5 = v5 - 2;
+            v5 -= 2;
         } while (v5 != 0);
         if (v1 == v4) {
             return a0 + 2;
@@ -244,7 +244,7 @@ int32_t is_odd(int32_t a0) {
     }
     v6 = a0 + 2;
     do {
-        v6 = v6 - 2;
+        v6 -= 2;
     } while (v6 > 1);
     return v6;
 }
@@ -380,7 +380,7 @@ int32_t sum_varargs(int32_t a0, ...) {
             v5 = (uintptr_t)(v1 + 0x2);
             local_4 = (uint32_t *)v5;
         }
-        a0 = a0 - 1;
+        --a0;
         v4 = v6;
         v3 = *v1 + v3;
         v1 = (uint32_t *)v5;

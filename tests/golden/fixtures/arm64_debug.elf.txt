@@ -35,7 +35,7 @@ int helper(int x) {
     }
     v2 = (uint64_t)v1 * ((x - 2) & 0xffffffff);
     v3 = v2 * ((x - 3) & 0xffffffff);
-    v2 = v2 >> 0x1;
+    v2 >>= 0x1;
     return (v3 >> 0x1) * 0x55555556 + x + (v2 + (v2 << 0x1)) - 1;
 }
 -- signature
@@ -112,7 +112,7 @@ int sum_arr(int *p, int n) {
             v11 = v8[-1];
             v12 = *v8;
             v13 = v8[1];
-            v9 = v9 - 8;
+            v9 -= 8;
             v8 = v8 + 0x4;
             v4 = add_lanes32(v10, v4);
             v5 = add_lanes32(v11, v5);
@@ -132,7 +132,7 @@ int sum_arr(int *p, int n) {
     do {
         v2 = (uint32_t)*v15;
         v15 = v15 + 0x1;
-        v16 = v16 - 1;
+        --v16;
         v3 = v2 + v3;
     } while (v16 != 0);
     return v3;

@@ -50,6 +50,21 @@ fn update_of_same_location<'e>(
     (commutes && reads_place(rhs)).then_some((symbol, lhs))
 }
 
+fn without_update_mask(value: &Expr, bits: u32) -> &Expr {
+    match value {
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(mask)
+                if *mask == crate::ir::semantics::mask(bits)) =>
+        {
+            lhs
+        }
+        value => value,
+    }
+}
+
 /// A call's argument as the complete value of its physical operand.
 pub(super) fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
     render_value(value, ctx)
@@ -249,6 +264,31 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             let declared = ctx.declared.get(&dest.index);
             let printed = expr::print_declared_value(value, ctx, declared.copied());
             let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
+            let bits = declared.map_or(64, |declared| declared.bits);
+            if pointer.is_none()
+                && let Expr::Bin { op, lhs, .. } = without_update_mask(value, bits)
+                && matches!(without_update_mask(lhs, bits), Expr::Reg { index, .. } if *index == dest.index)
+                && let Some((symbol, strength)) = match op {
+                    BinOp::Add => Some(("+", 10)),
+                    BinOp::Sub => Some(("-", 10)),
+                    BinOp::Mul => Some(("*", 11)),
+                    BinOp::And => Some(("&", 6)),
+                    BinOp::Or => Some(("|", 4)),
+                    BinOp::Xor => Some(("^", 5)),
+                    BinOp::Shl => Some(("<<", 9)),
+                    BinOp::Shr | BinOp::Sar => Some((">>", 9)),
+                    _ => None,
+                }
+                && printed.strength == strength
+                && let Some(rhs) = printed.text.strip_prefix(&format!("{target} {symbol} "))
+            {
+                // Keep the arithmetic printer's casts, masks and parentheses.
+                return match (symbol, rhs) {
+                    ("+", "1") => format!("++{target};"),
+                    ("-", "1") => format!("--{target};"),
+                    _ => format!("{target} {symbol}= {rhs};"),
+                };
+            }
             format!("{target} = {};", conformed(value, printed, pointer, ctx))
         }
         Stmt::Store { addr, value, width } => {
@@ -345,6 +385,28 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                                 .flatten()
                                 .map(String::as_str);
                             let printed = stored_value(value, stored, ctx);
+                            if pointer.is_none()
+                                && target == *name
+                                && let Expr::Bin { op, lhs, .. } =
+                                    without_update_mask(value, stored)
+                                && let Expr::Load {
+                                    addr: read,
+                                    width: read_width,
+                                    ..
+                                } = without_update_mask(lhs, stored)
+                                && read.as_ref() == addr
+                                && read_width == width
+                                && let Some(symbol) = match op {
+                                    BinOp::Shl => Some("<<"),
+                                    BinOp::Shr | BinOp::Sar => Some(">>"),
+                                    _ => None,
+                                }
+                                && printed.strength == 9
+                                && let Some(rhs) =
+                                    printed.text.strip_prefix(&format!("{target} {symbol} "))
+                            {
+                                return format!("{target} {symbol}= {rhs};");
+                            }
                             format!("{target} = {};", conformed(value, printed, pointer, ctx))
                         }
                     }

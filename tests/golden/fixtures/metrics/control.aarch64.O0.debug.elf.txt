@@ -133,7 +133,7 @@ int fallthrough(int x) {
         }
         return -1;
     }
-    v2 = v2 + 2;
+    v2 += 2;
     return v2 + 4;
 }
 -- signature

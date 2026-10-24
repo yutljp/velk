@@ -34,7 +34,7 @@ double average(double *values, int n) {
             v7 = v4[-1];
             v8 = *v4;
             v9 = v4[1];
-            v5 = v5 - 4;
+            v5 -= 4;
             v4 = v4 + 0x4;
             v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0);
@@ -49,7 +49,7 @@ double average(double *values, int n) {
     do {
         v6 = *v4;
         v4 = v4 + 0x1;
-        v14 = v14 - 1;
+        --v14;
         v1 = v1 + v6;
     } while (v14 != 0);
     return v1 / (double)n;

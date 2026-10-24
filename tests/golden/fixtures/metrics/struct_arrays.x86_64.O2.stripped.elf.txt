@@ -73,7 +73,7 @@ int32_t sub_2011b0(uint32_t *a0, int32_t a1) {
             if (*(int32_t *)(v6) > 0) {
                 v3 = *(uint64_t *)(v6 - 0x8);
             }
-            v2 = v2 + 2;
+            v2 += 2;
             v6 = v6 + 0x20;
         } while (v5 != v2);
     } else {

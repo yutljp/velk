@@ -30,7 +30,7 @@ int helper(int x) {
 
     v1 = 0;
     for (v2 = 0; v2 < x; v2++) {
-        v1 = v1 + v2 * v2;
+        v1 += v2 * v2;
     }
     return v1;
 }

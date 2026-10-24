@@ -33,7 +33,7 @@ int alt_helper(int x) {
     }
     v2 = (uint64_t)v1 * ((x - 2) & 0xffffffff);
     v3 = v2 * ((x - 3) & 0xffffffff);
-    v2 = v2 >> 0x1;
+    v2 >>= 0x1;
     return (v3 >> 0x1) * 0x55555556 + x + (v2 + (v2 << 0x1)) - 1;
 }
 -- signature

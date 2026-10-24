@@ -23,7 +23,7 @@ double average(double *values, int n) {
         v3 = n;
         v4 = v3 & 0x7;
         if ((uint32_t)n >= 8) {
-            v3 = v3 & 0x7ffffff8;
+            v3 &= 0x7ffffff8;
             v5 = 0;
             do {
                 v2 = v2 + values[v5];
@@ -34,7 +34,7 @@ double average(double *values, int n) {
                 v2 = v2 + values[v5 + 5];
                 v2 = v2 + values[v5 + 6];
                 v2 = v2 + values[v5 + 7];
-                v5 = v5 + 8;
+                v5 += 8;
             } while (v3 != v5);
         } else {
             v5 = 0;
@@ -44,7 +44,7 @@ double average(double *values, int n) {
             v15 = 0;
             do {
                 v2 = v2 + v14[v15];
-                v15 = v15 + 1;
+                ++v15;
             } while (v4 != v15);
         }
     }

@@ -111,7 +111,7 @@ int popcount(unsigned int x) {
         return 0;
     }
     do {
-        v1 = v1 + 1;
+        ++v1;
         v2 = x - 1 & x;
         x = v2;
     } while (v2 != 0);

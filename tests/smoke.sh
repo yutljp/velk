@@ -135,7 +135,7 @@ echo "$x64_selq" | grep -q "a0 / 64"   || fail "x64 signed select 64bit div"
 x64_sel10=$("$BIN" --decompile $FIX/x64_div.o pdiv10 2>/dev/null)
 echo "$x64_sel10" | grep -q "/ 10"      || fail "x64 signed sext div10"
 helper_cs=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$helper_cs" | grep -q "v2 = v2 >> 0x1;"    || fail "shift kept in its variable"
+echo "$helper_cs" | grep -q "v2 >>= 0x1;"    || fail "shift kept in its variable"
 echo "$helper_cs" | grep -q "(v2 + (v2 << 0x1))" || fail "32-bit read shared without a temporary"
 ok "cse temps"
 x64_fold=$("$BIN" --decompile $FIX/x64_div.o l3 2>/dev/null)
@@ -159,7 +159,7 @@ echo "$iz" | grep -q "return (a0 == 0);" || fail "cset as a truth value"
 ok "pow2 mod and cset"
 locals=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$locals" | grep -q "v1 = a0"     || fail "stack local naming"
-echo "$locals" | grep -q "v1 = v1 >> 0x1" || fail "stack local names one slot"
+echo "$locals" | grep -q "v1 >>= 0x1" || fail "stack local names one slot"
 use_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$use_ir" | grep -q "ns__mul(a0, 2)" || fail "C++ call relocation"
 echo "$use_ir" | grep -qE "(= x20|x20 =)" && fail "callee-save elision (x20)"
@@ -190,7 +190,7 @@ echo "$mod_ir" | grep -qF "a0 % a1" || fail "idiv remainder dividend"
 ok "runtime division and remainder"
 stack_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$stack_ir" | grep -q "v2"        || fail "stack locals named"
-echo "$stack_ir" | grep -q "v1 = v1 + v2;" || fail "stack local accumulation"
+echo "$stack_ir" | grep -q "v1 += v2;" || fail "stack local accumulation"
 echo "$stack_ir" | grep -q "sp + 0x4" && fail "stack address left raw"
 ok "stack locals"
 decl_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
@@ -227,7 +227,7 @@ echo "$mask_ir" | grep -qF "v2 = (uint64_t)v1 * ((a0 - 2) & 0xffffffff);" || fai
 echo "$mask_ir" | grep -q "v1 = a0 - 1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$narrow_ir" | grep -q "for (v2 = 1; v2 <= a0; v2++)" || fail "32-bit comparison kept"
-echo "$narrow_ir" | grep -q "v1 = v1 + v2;"   || fail "compound store in a loop"
+echo "$narrow_ir" | grep -q "v1 += v2;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$narrow_dest" | grep -q "+ (v2 << 0x1)) - 1;" || fail "mask implied by the return type"
@@ -415,9 +415,9 @@ echo "$msg_ir" | grep -q "qword_140003000" || fail "global named by width and ad
 echo "$msg_ir" | grep -q "(0x140003000)" && fail "global name replaces the address"
 ok "named globals"
 bits_ir=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
-echo "$bits_ir" | grep -qF "v2 = v2 + (v1 & 0x1);" || fail "promoted add"
+echo "$bits_ir" | grep -qF "v2 += (v1 & 0x1);" || fail "promoted add"
 echo "$bits_ir" | grep -qF "& 0x1)" || fail "promoted add operand"
-echo "$bits_ir" | grep -qF "v1 = v1 >> 0x1;" || fail "shift assignment"
+echo "$bits_ir" | grep -qF "v1 >>= 0x1;" || fail "shift assignment"
 echo "$bits_ir" | grep -q "v2 = (v2" && fail "compound add kept the temp"
 ok "compound assignment"
 

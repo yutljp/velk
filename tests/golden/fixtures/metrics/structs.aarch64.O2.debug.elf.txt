@@ -68,7 +68,7 @@ long record_total(struct record *items, int n) {
         do {
             v8 = *(uint64_t *)(v6 - 0x18);
             v9 = *(int16_t *)(v6 - 0x10);
-            v7 = v7 - 2;
+            v7 -= 2;
             v10 = *(uint64_t *)(v6);
             v11 = *(int16_t *)(v6 + 0x8);
             v6 = v6 + 0x30;
@@ -88,7 +88,7 @@ long record_total(struct record *items, int n) {
     do {
         v14 = *(uint64_t *)(v13 - 0x8);
         v15 = *(int16_t *)(v13);
-        v12 = v12 - 1;
+        --v12;
         v13 = v13 + 0x18;
         v3 = v14 * v15 + v3;
     } while (v12 != 0);

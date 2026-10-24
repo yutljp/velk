@@ -33,7 +33,7 @@ int helper(int x) {
     }
     v1 = (uint64_t)((x - 2) & 0xffffffff) * ((x - 1) & 0xffffffff);
     v2 = ((x - 3) & 0xffffffff) * v1 >> 0x1;
-    v1 = v1 >> 0x1;
+    v1 >>= 0x1;
     return v2 * 0x55555556 + x + (v1 + v1 * 2) - 1;
 }
 -- signature
@@ -103,7 +103,7 @@ int sum_arr(int *p, int n) {
             v6 = add_lanes32(v6, *(uint64_t *)((uint8_t *)p + v7 + 0x8));
             v8 = add_lanes32(v8, *(uint64_t *)((uint8_t *)p + v7 + 0x10));
             v9 = add_lanes32(v9, *(uint64_t *)((uint8_t *)p + v7 + 0x18));
-            v7 = v7 + 32;
+            v7 += 32;
         } while (v4 != v7);
         v5 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
         v3 = add_lanes32(v5 >> 0x20 | v5 >> 0x20 << 0x20, v5);
@@ -115,8 +115,8 @@ int sum_arr(int *p, int n) {
         v3 = 0;
     }
     do {
-        v3 = v3 + p[v2];
-        v2 = v2 + 1;
+        v3 += p[v2];
+        ++v2;
     } while (v1 != v2);
     return v3;
 }
