@@ -327,19 +327,18 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     struct S1 *v3;
     int64_t v4;
     const char *v5;
-    void *v7;
     uint32_t *v8;
     uint32_t v11;
-    _Alignas(16) uint8_t local_0[0x68]; /* [sp-68] */
-    int64_t local_1; /* [sp-78] */
+    int64_t local_0; /* [sp-78] */
+    _Alignas(16) uint8_t local_1[0x68]; /* [sp-68] */
     int64_t local_2; /* [sp-70] */
 
     if (a1 <= 0) {
-        v2 = (void *)(local_0);
+        v2 = (void *)(local_1);
         local_2 = 0;
-        local_1 = a1;
-        __snprintf_chk(v2, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
-        fputs(v2, *stderr);
+        local_0 = a1;
+        __snprintf_chk(local_1, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
+        fputs(local_1, *stderr);
         abort();
     }
     v2 = (void *)a0;
@@ -352,12 +351,11 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
         }
         v3 = v3 + 0x1;
     } while (v3 != v5);
-    v7 = (void *)(local_0);
-    local_1 = a1;
+    local_0 = a1;
     v8 = v2 + 0x8;
     v4 = (uintptr_t)(v4 + (uint8_t *)v8);
-    __snprintf_chk(v7, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
-    fputs(v7, *stderr);
+    __snprintf_chk(local_1, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
+    fputs(local_1, *stderr);
     do {
         v11 = v8[-1];
         v5 = (const char *)v8;

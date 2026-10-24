@@ -68,6 +68,7 @@ fn render_unmerged(
     } else {
         None
     };
+    super::frame_registers::rebase(&mut folded);
     let ir = &folded;
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =

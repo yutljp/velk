@@ -126,7 +126,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
         candidate.code = format!(
             "#include <string.h>\n{}\n{code}",
             if unknown {
-                "static void sub_1000(uintptr_t destination, const void *source, size_t size) { memcpy((void *)destination, source, size); }"
+                "static void sub_1000(void *destination, const void *source, size_t size) { memcpy(destination, source, size); }"
             } else {
                 ""
             }

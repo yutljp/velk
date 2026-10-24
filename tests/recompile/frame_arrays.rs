@@ -5,7 +5,12 @@ use super::*;
 /// interpreter on the IR where it makes no call, must return the same
 /// 32-bit value. Each function
 /// takes one 32-bit argument; calls in the printed C reach the originals.
-pub(crate) fn check_against_original(pass: &str, source: &str, functions: &[&str], inputs: &[u32]) {
+pub(crate) fn check_against_original(
+    pass: &str,
+    source: &str,
+    functions: &[&str],
+    inputs: &[u32],
+) -> Vec<String> {
     let scratch = scratch_dir(pass);
     let original = scratch.join("original.c");
     let executable = scratch.join("original");
@@ -23,6 +28,7 @@ pub(crate) fn check_against_original(pass: &str, source: &str, functions: &[&str
     let mut text = String::from(HEADER);
     text.push_str(&source.replace("int main(", "int original_main("));
     let mut checks = String::new();
+    let mut printed_code = Vec::new();
     let addresses: Vec<u64> = functions
         .iter()
         .map(|function| binary.find(&format!("{prefix}{function}")).unwrap().addr)
@@ -40,6 +46,7 @@ pub(crate) fn check_against_original(pass: &str, source: &str, functions: &[&str
         }
         let code = velk::render::render(&ir, &[], &others, &[]);
         text.push_str(&code);
+        printed_code.push(code.clone());
         for input in inputs {
             let registers: Vec<(u16, u64)> = ir
                 .params
@@ -92,6 +99,7 @@ pub(crate) fn check_against_original(pass: &str, source: &str, functions: &[&str
         assert_eq!(run(&executable, ""), "", "{}", program.text);
     }
     std::fs::remove_dir_all(scratch).ok();
+    printed_code
 }
 
 #[test]
@@ -112,4 +120,20 @@ fn printed_large_frames_keep_arguments_across_the_stack_probe() {
         &["large_frame", "calls_large_frame"],
         &[0, 1, 0x55, 0x1234_5678, 0xffff_fffe],
     );
+}
+
+#[test]
+fn printed_frame_addresses_held_in_registers_reach_their_locals() {
+    let printed = check_against_original(
+        "frame-pointers",
+        include_str!("frame_pointers.c"),
+        &["far_locals"],
+        &[0, 1, 0x55, 0x1234_5678, 0xffff_fffe],
+    );
+    // Run as it was laid out by chance, a pointer to one local that reaches
+    // others still computes the right result; it must not be printed.
+    for code in printed {
+        assert!(!code.contains("void *local_"), "{code}");
+        assert!(!code.contains("_s1 *"), "{code}");
+    }
 }

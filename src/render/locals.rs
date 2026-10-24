@@ -226,20 +226,25 @@ pub(crate) fn stack_locals(
         if *slot >= 0 || *width != 0 {
             continue;
         }
-        let next = if *signed == Some(false) {
-            indexed_end(
+        // An address taken as a value may reach anything up to another
+        // buffer or the top of the frame: what is done through it is not
+        // seen here. An index reaches its elements too. In a variadic
+        // function an address may be the end of the register save area,
+        // which reaches below it instead.
+        let next = match signed {
+            Some(false) => indexed_end(
                 *slot,
                 elements.get(slot).copied().flatten(),
                 &accesses,
                 &buffers,
-            )
-        } else {
-            slot_names
+            ),
+            _ if !ir.variadic => indexed_end(*slot, None, &accesses, &buffers),
+            _ => slot_names
                 .keys()
                 .copied()
                 .filter(|next| next > slot)
                 .min()
-                .unwrap_or(0)
+                .unwrap_or(0),
         };
         let proven = extents
             .iter()
@@ -637,8 +642,9 @@ pub(crate) fn stack_locals(
 }
 
 /// Where the reach of an index into the buffer at `slot` ends. Slots read
-/// at fixed offsets above it may be its own elements: one accessed only at
-/// the element width, a whole number of elements away, is taken as one.
+/// at fixed offsets above it may be its own elements: one a whole number
+/// of elements away and accessed only at the element width, or eight or
+/// sixteen bytes at a time as an initializer is copied, is taken as one.
 /// The first other slot, another buffer or the top of the frame ends it;
 /// with no known element width, only another buffer or the top of the frame.
 fn indexed_end(
@@ -664,7 +670,10 @@ fn indexed_end(
         let element = i64::from(element);
         let foreign = (other - slot) % element != 0
             || accesses.iter().any(|(at, _, width, _)| {
-                *at == Some(other) && *width != 0 && i64::from(*width) != element
+                *at == Some(other)
+                    && *width != 0
+                    && i64::from(*width) != element
+                    && !(matches!(width, 8 | 16) && i64::from(*width) % element == 0)
             });
         if foreign {
             return other;

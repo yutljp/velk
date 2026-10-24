@@ -3,6 +3,7 @@ mod abi_objects;
 mod body;
 mod calls;
 mod expr;
+mod frame_registers;
 mod function;
 mod globals;
 mod int;

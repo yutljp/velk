@@ -233,9 +233,9 @@ metrics/tail_indirect.x86_64.O2.debug.elf: 0
 metrics/tail_indirect.x86_64.O2.stripped.elf: 0
 pe64.exe: 0
 pe64.obj: 0
-rust_demo: 354
-rust_probe: 354
-rust_probe_stripped: 289
+rust_demo: 343
+rust_probe: 343
+rust_probe_stripped: 276
 shared_pointers_x64.so: 0
 strings.o: 0
 switch_jumptable.o: 0
