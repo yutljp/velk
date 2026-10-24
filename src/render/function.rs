@@ -784,6 +784,7 @@ fn render_with(
         super::locals::bind_return_slot(ir, provider, &mut ctx);
     }
     let mut out = String::new();
+    out.push_str(&super::vector_helpers::definitions(ir));
     let name = ir
         .name
         .clone()

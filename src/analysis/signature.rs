@@ -241,6 +241,12 @@ pub fn recover_with(
                     .iter()
                     .any(|output| output.register == *register)
             }));
+            for (output, source) in stmt.preserved_output_sources() {
+                let dest = stmt.call_outputs()[output].dest;
+                if dest.index == source && dest.width == 64 {
+                    written.retain(|register| *register != source);
+                }
+            }
             written
         }
         _ => Vec::new(),
@@ -347,9 +353,12 @@ pub fn recover_with(
                         reads(value, &mut used);
                     }
                     for (output, source) in stmt.preserved_output_sources() {
+                        let dest = stmt.call_outputs()[output].dest;
+                        if dest.index == source && dest.width == 64 {
+                            continue;
+                        }
                         used.insert(source);
-                        if !written.contains(&source) && stmt.call_outputs()[output].dest.width > 32
-                        {
+                        if !written.contains(&source) && dest.width > 32 {
                             wide_inputs.insert(source);
                         }
                     }
@@ -1763,6 +1772,56 @@ mod tests {
             },
         ];
         assert_eq!(params_of(stmts, Isa::AArch64), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn preserved_tail_call_outputs_are_inputs_only_when_read() {
+        use crate::ir::{CallKind, CallOutput, Registers};
+        for read in [None, Some(3)] {
+            let mut stmts = vec![
+                Stmt::Call {
+                    kind: if read.is_some() {
+                        CallKind::Invoke
+                    } else {
+                        CallKind::Tail
+                    },
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::Aapcs64,
+                    args: Some(vec![Expr::reg(0, 64)]),
+                    floats_named: true,
+                    clobbers: Some(Registers(1)),
+                    outputs: (0..4)
+                        .map(|index| CallOutput {
+                            register: index,
+                            dest: RegRef { index, width: 64 },
+                        })
+                        .collect(),
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ];
+            if let Some(index) = read {
+                stmts.insert(
+                    1,
+                    Stmt::Store {
+                        addr: Expr::Const(0x2000),
+                        value: Expr::reg(index, 64),
+                        width: 8,
+                    },
+                );
+            }
+            assert_eq!(
+                params_of(stmts, Isa::AArch64),
+                if read.is_some() {
+                    vec![0, 1, 2, 3]
+                } else {
+                    vec![0]
+                }
+            );
+        }
     }
 
     #[test]

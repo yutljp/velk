@@ -20,6 +20,7 @@ pub mod structure;
 mod symbols;
 mod transfers;
 mod variables;
+mod vector_helpers;
 mod widths;
 
 use body::{indent, render_node, render_nodes, via_comment};

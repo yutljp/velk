@@ -77,6 +77,32 @@ fn <unnamed> @ 0x2101dc (size 12)
 
 == 0x2101e8 -
 -- decompile
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_sum_lanes32
+#define VELK_sum_lanes32
+static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) out += ((a >> i) & mask) + ((b >> i) & mask);
+    out &= mask;
+    return out;
+}
+#endif
+
 /* velk pseudo-C: sub_2101e8 @ 0x2101e8 */
 int32_t sub_2101e8(uint32_t *a0, int32_t a1) {
     uint64_t v2;

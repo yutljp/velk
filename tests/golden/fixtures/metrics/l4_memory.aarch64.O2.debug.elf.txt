@@ -6,6 +6,36 @@
 
 == 0x2101d4 point_dot
 -- decompile
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_mul_lanes32
+#define VELK_mul_lanes32
+static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x * y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
 /* velk pseudo-C: point_dot @ 0x2101d4 */
 struct point { _Alignas(4) int x; int y; };
 int point_dot(struct point *a, struct point *b) {
@@ -28,6 +58,32 @@ fn point_dot @ 0x2101d4 (size 28)
 
 == 0x2101f0 array_sum
 -- decompile
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_sum_lanes32
+#define VELK_sum_lanes32
+static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) out += ((a >> i) & mask) + ((b >> i) & mask);
+    out &= mask;
+    return out;
+}
+#endif
+
 /* velk pseudo-C: array_sum @ 0x2101f0 */
 int array_sum(int *a, int n) {
     uint64_t v2;

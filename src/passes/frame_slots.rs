@@ -444,6 +444,20 @@ fn frame_address(sp: u16, slot: i64) -> Expr {
 /// frame displacement at that point.
 pub(crate) fn frame_slot(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
     match expr {
+        Expr::Bin {
+            op: BinOp::Or,
+            lhs,
+            rhs,
+        } if sp == crate::arch::aarch64::SP => {
+            let (base, mask) = match (lhs.as_ref(), rhs.as_ref()) {
+                (base, Expr::Const(mask)) | (Expr::Const(mask), base) if *mask < 16 => {
+                    (base, *mask)
+                }
+                _ => return None,
+            };
+            // AAPCS64 aligns the entry stack pointer to sixteen bytes.
+            frame_slot(base, frame, sp).map(|offset| offset | mask as i64)
+        }
         Expr::Reg { index, .. } if *index == sp => Some(frame),
         Expr::Bin {
             op: BinOp::Add,

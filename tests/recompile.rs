@@ -27,6 +27,8 @@ mod atomic_values;
 mod cache;
 #[path = "recompile/call_arithmetic.rs"]
 mod call_arithmetic;
+#[path = "recompile/compile_fail.rs"]
+mod compile_fail;
 
 #[path = "recompile/constants.rs"]
 mod constants;
@@ -6744,6 +6746,7 @@ fn renamed(code: &str, index: usize) -> String {
     for line in code.lines() {
         if !done
             && !line.starts_with([' ', '/'])
+            && !line.starts_with("static inline ")
             && line.trim_end().ends_with('{')
             && let Some(open) = line.find('(')
         {
