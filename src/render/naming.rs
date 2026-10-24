@@ -492,7 +492,7 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
             if ctx
                 .local_parts
                 .get(&key)
-                .is_some_and(|part| !part.contains('&'))
+                .is_some_and(|part| !part.contains('&') || part.starts_with("(uint8_t *)&"))
             {
                 return Some(CType::int(1, false));
             }
@@ -503,13 +503,6 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
                 if let Some(width) = ctx.local_widths.get(name) {
                     return Some(CType::int(*width, ctx.signed_locals.contains(name)));
                 }
-            }
-            if ctx
-                .local_parts
-                .get(&key)
-                .is_some_and(|part| !part.contains('&') || part.starts_with("(uint8_t *)&"))
-            {
-                return Some(CType::int(1, false));
             }
             // Indexed frame addresses are printed as offsets into byte arrays.
             if super::expr::local_plus_offset(expr, ctx).is_some() {

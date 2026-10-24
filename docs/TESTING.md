@@ -31,6 +31,16 @@ Docker and the toolchains in the reference image; it is not required for
 an ordinary checkout test run. These development tools are separate from
 running an already built velk binary.
 
+`bash tests/make_arm64_lang_fixtures.sh` rebuilds only the AArch64 Rust and
+Go fixtures. Go uses `GOOS=linux GOARCH=arm64 CGO_ENABLED=0`, `-trimpath`,
+and `-ldflags "-s -w"`. Rust uses `-O` and the AArch64 Linux GNU target
+when `aarch64-linux-gnu-gcc` is installed (the Rust target must also be
+installed); on AArch64 macOS it falls back to native Mach-O. The checked-in
+Rust AArch64 executables are Mach-O; their toolchain versions and the Go
+version are recorded in `tests/fixtures/arm64_lang_toolchain.txt`.
+Mach-O debug-map paths are removed while function symbols are retained;
+`rust_probe_arm64_stripped` also removes those symbols.
+
 ## Test layers
 
 Private spills and the private stack area refer to the function's own stack
@@ -63,6 +73,7 @@ The exhaustive syntax scan is ignored by default. Run it with:
 
 ```bash
 CARGO_BUILD_JOBS=2 CARGO_PROFILE_RELEASE_INCREMENTAL=true cargo test --release --test recompile syntax::every_fixture_function_compiles -- --ignored --test-threads 3
+CARGO_BUILD_JOBS=2 CARGO_PROFILE_RELEASE_INCREMENTAL=true cargo test --release --test recompile syntax::arm64_language_fixture_functions_compile -- --ignored --test-threads 3
 ```
 
 It checks each function separately with `-fsyntax-only` and

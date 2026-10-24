@@ -1,6 +1,29 @@
 use super::*;
 
 #[test]
+fn recompile_binds_the_target_entry_stack_pointer() {
+    for isa in [Isa::AArch64, Isa::X86_64] {
+        let mut ir = synthetic_ir(
+            "entry_address",
+            vec![],
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::reg(velk::arch::stack_pointer(isa), 64),
+                    Expr::Const(24),
+                ),
+            }],
+        );
+        ir.isa = isa;
+        ir.convention = Convention::of(isa, velk::loader::Format::Elf, false);
+        let candidate = printed_candidate(ir, vec![vec![]]);
+        assert!(candidate.code.contains("= velk_entry_stack_pointer();"));
+        check_candidates("entry-stack-pointer", vec![candidate], Mode::Registers, &[]);
+    }
+}
+
+#[test]
 fn nested_negation_preserves_tokens_and_values() {
     let value = Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(4));
     let negate = |value| Expr::bin(BinOp::Sub, Expr::Const(0), value);
@@ -505,7 +528,7 @@ fn check(code: &str, path: &Path, returns: &BTreeMap<String, CType>) -> Option<S
             })
             .map(|line| format!("{line}\n"))
             .collect::<String>();
-        source.push_str("#include <stdlib.h>\ntypedef struct syntax_file FILE;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
+        source.push_str("#include <stdlib.h>\ntypedef struct syntax_file FILE;\ntypedef struct syntax_directory DIR;\ntypedef struct syntax_mutex pthread_mutex_t;\ntypedef struct syntax_mutex_attributes pthread_mutexattr_t;\ntypedef intptr_t off_t;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
         for name in &declarations {
             let ty = returns.get(name).cloned().unwrap_or(CType::U64);
             writeln!(source, "{ty} {name}();").unwrap();
@@ -568,6 +591,21 @@ fn library_allocation_calls_have_pointer_prototypes() {
 }
 
 #[test]
+fn structure_pointer_returns_do_not_define_structure_tags() {
+    let code =
+        "struct dirent *read_directory(DIR *directory) {\n    return readdir(directory);\n}\n";
+    assert!(defined_types(code).is_empty());
+    assert!(renamed(code, 7).contains("struct dirent *velk_f7(DIR *directory) {"));
+    let scratch = scratch_dir("syntax-structure-return");
+    let returns = [(
+        "readdir".into(),
+        CType::pointer_to(CType::Named("struct dirent".into())),
+    )]
+    .into();
+    assert_eq!(check(code, &scratch.join("function.c"), &returns), None);
+}
+
+#[test]
 fn library_pointer_arguments_preserve_address_bits() {
     let ir = synthetic_ir(
         "parse_integer",
@@ -620,6 +658,21 @@ fn every_fixture_function_compiles() {
 }
 
 #[test]
+#[ignore = "decompiles and syntax-checks every AArch64 language fixture function"]
+fn arm64_language_fixture_functions_compile() {
+    scan(
+        &[
+            PathBuf::from("go_probe_arm64"),
+            PathBuf::from("go_stripped_arm64"),
+            PathBuf::from("rust_demo_arm64"),
+            PathBuf::from("rust_probe_arm64"),
+            PathBuf::from("rust_probe_arm64_stripped"),
+        ],
+        "arm64-language-syntax",
+    );
+}
+
+#[test]
 fn small_fixture_functions_compile() {
     scan(
         &[
@@ -657,6 +710,37 @@ fn large_fixture_syntax_regressions() {
             let error = check(&code, &scratch.join("function.c"), &returns);
             assert!(error.is_none(), "{fixture} 0x{address:x}: {error:?}");
         }
+    }
+}
+
+#[test]
+fn arm64_language_atomic_addresses_compile() {
+    for fixture in ["go_probe_arm64", "go_stripped_arm64"] {
+        let mut binary = Binary::open(&common::fixtures_dir().join(fixture)).unwrap();
+        let symbols = velk::render::callee_names(binary.image());
+        let scratch = scratch_dir(&format!("syntax-atomic-{fixture}"));
+        let code = binary.decompile(0x527d0, None, None).unwrap();
+        let error = check(&code, &scratch.join("function.c"), &return_types(&symbols));
+        assert!(error.is_none(), "{fixture}: {error:?}");
+    }
+}
+
+#[test]
+fn arm64_language_library_types_and_stack_addresses_compile() {
+    let mut binary = Binary::open(&common::fixtures_dir().join("rust_probe_arm64")).unwrap();
+    let symbols = velk::render::callee_names(binary.image());
+    let scratch = scratch_dir("syntax-arm64-rust");
+    for address in [
+        0x100001b30,
+        0x1000037cc,
+        0x100005bb0,
+        0x100019894,
+        0x1000358c4,
+        0x1000359b4,
+    ] {
+        let code = binary.decompile(address, None, None).unwrap();
+        let error = check(&code, &scratch.join("function.c"), &return_types(&symbols));
+        assert!(error.is_none(), "0x{address:x}: {error:?}");
     }
 }
 

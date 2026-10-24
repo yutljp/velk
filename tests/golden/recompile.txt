@@ -1,14 +1,15 @@
 # functions left out:
-#   accesses memory: 128
-#   calls: 3865
+#   accesses memory: 187
+#   calls: 7670
 #   computes on floats or vectors: 1
-#   reads a register that is not a parameter: 3
-#   refers to data: 184
+#   has an unsupported instruction: 2
+#   reads a register that is not a parameter: 5
+#   refers to data: 346
 #   requires an external machine-state source: 2
-#   returns no integer: 166
-#   returns nothing: 466
-#   takes an argument that is no integer: 560
-#   takes arguments on the stack: 56
+#   returns no integer: 243
+#   returns nothing: 577
+#   takes an argument that is no integer: 793
+#   takes arguments on the stack: 67
 # runs left out:
 #   step limit: 43
 #   takes a function's address: 24
@@ -43,7 +44,9 @@
 # cpp_virtual_x64.elf: 18 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_virtual_x64_stripped.elf: 18 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # go_probe: 1275 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
+# go_probe_arm64: 1271 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
 # go_stripped: 1273 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
+# go_stripped_arm64: 1269 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
 # l0_arith_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # l0_arith_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # l1_branch_a64.o: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
@@ -236,7 +239,10 @@
 # pe64.exe: 10 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # pe64.obj: 10 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # rust_demo: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# rust_demo_arm64: 670 functions, 22 qualify, 22 compile, 0 do not, 22 compared (264 runs), 0 differ
 # rust_probe: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# rust_probe_arm64: 670 functions, 22 qualify, 22 compile, 0 do not, 22 compared (264 runs), 0 differ
+# rust_probe_arm64_stripped: 670 functions, 22 qualify, 22 compile, 0 do not, 22 compared (264 runs), 0 differ
 # rust_probe_stripped: 545 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
 # seh.O0.dll: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # seh.O2.dll: 8 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ

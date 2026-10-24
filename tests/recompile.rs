@@ -6175,6 +6175,7 @@ fn interpret(
     if candidate
         .code
         .contains("/* target frame's return-address slot */")
+        || candidate.code.contains("= velk_entry_stack_pointer();")
     {
         let sp = velk::arch::stack_pointer(candidate.ir.isa);
         if candidate.marshalling.is_some()
@@ -6640,6 +6641,17 @@ fn program(
 ) -> Program {
     assert_eq!(candidates.len(), initial_memory.len());
     let mut text = String::from(HEADER);
+    if alive.iter().any(|&index| {
+        candidates[index]
+            .code
+            .contains("= velk_entry_stack_pointer();")
+    }) {
+        writeln!(
+            text,
+            "uint64_t velk_entry_stack_pointer(void) {{ return 0x{FRAME_BASE:x}ULL; }}"
+        )
+        .unwrap();
+    }
     let frame_providers: BTreeSet<_> = alive
         .iter()
         .flat_map(|&index| {
@@ -6788,14 +6800,24 @@ fn declared_functions(code: &str) -> Vec<&str> {
         .collect()
 }
 
-/// The printed function under the name `velk_f<index>`, so names cannot
-/// clash with each other or with the C library.
+/// Structure and union definitions whose tags need a distinct name per function.
 fn defined_types(code: &str) -> Vec<String> {
     code.lines()
         .filter_map(|line| {
-            let declaration = line.split_once(" {")?.0;
-            (declaration.starts_with("struct ") || declaration.starts_with("union "))
-                .then(|| declaration.to_owned())
+            let Some((declaration, _)) = line.split_once(" {") else {
+                return None;
+            };
+            let Some(name) = declaration
+                .strip_prefix("struct ")
+                .or_else(|| declaration.strip_prefix("union "))
+            else {
+                return None;
+            };
+            (!name.is_empty()
+                && name
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_'))
+            .then(|| declaration.to_owned())
         })
         .collect()
 }

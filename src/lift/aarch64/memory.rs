@@ -84,9 +84,30 @@ fn write_back(lifter: &mut Lifter, writeback: Option<(RegRef, Expr)>) {
     }
 }
 
-pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
+pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode, pc: u64) {
+    let literal = if let Operand::PCOffset(offset) = ops[1] {
+        let Some(address) = pc.checked_add_signed(offset) else {
+            lifter
+                .stmts
+                .push(Stmt::unsupported("literal load address overflow"));
+            return;
+        };
+        Some(address)
+    } else {
+        None
+    };
+    let load_memory = |lifter: &mut Lifter, width| {
+        if let Some(address) = literal {
+            Some(Memory {
+                address: Expr::constant(address),
+                writeback: None,
+            })
+        } else {
+            memory(lifter, ops[1], width)
+        }
+    };
     if let Some((slot, bits)) = simd(ops[0]) {
-        let Some(mem) = memory(lifter, ops[1], (bits / 8) as u8) else {
+        let Some(mem) = load_memory(lifter, (bits / 8) as u8) else {
             lifter
                 .stmts
                 .push(Stmt::unsupported("load address".to_owned()));
@@ -101,7 +122,7 @@ pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opc
     // back its base.
     let Some(dest) = destination(ops[0]) else {
         let bytes = register_width(ops[0]).map_or(8, |bits| bits / 8);
-        if let Some(mem) = memory(lifter, ops[1], bytes) {
+        if let Some(mem) = load_memory(lifter, bytes) {
             write_back(lifter, mem.writeback);
         }
         return;
@@ -115,7 +136,7 @@ pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opc
         a64::Opcode::LDRSW => (4, true),
         _ => (4, false),
     };
-    let Some(mem) = memory(lifter, ops[1], dest.width / 8) else {
+    let Some(mem) = load_memory(lifter, dest.width / 8) else {
         lifter
             .stmts
             .push(Stmt::unsupported("load address".to_owned()));

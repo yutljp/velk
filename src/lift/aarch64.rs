@@ -477,22 +477,22 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::CLZ | O::CLS | O::RBIT => lift_count(lifter, ops, ins.opcode),
         O::REV16 => lift_reverse(lifter, ops, Some(2)),
         O::REV32 => lift_reverse(lifter, ops, Some(4)),
-        O::LDR => lift_load(lifter, ops, O::LDR),
-        O::LDRB => lift_load(lifter, ops, O::LDRB),
-        O::LDRH => lift_load(lifter, ops, O::LDRH),
-        O::LDRSB => lift_load(lifter, ops, O::LDRSB),
-        O::LDRSH => lift_load(lifter, ops, O::LDRSH),
-        O::LDRSW => lift_load(lifter, ops, O::LDRSW),
+        O::LDR => lift_load(lifter, ops, O::LDR, pc),
+        O::LDRB => lift_load(lifter, ops, O::LDRB, pc),
+        O::LDRH => lift_load(lifter, ops, O::LDRH, pc),
+        O::LDRSB => lift_load(lifter, ops, O::LDRSB, pc),
+        O::LDRSH => lift_load(lifter, ops, O::LDRSH, pc),
+        O::LDRSW => lift_load(lifter, ops, O::LDRSW, pc),
         O::STR => lift_store(lifter, ops, O::STR),
         O::STRB => lift_store(lifter, ops, O::STRB),
         O::STRH => lift_store(lifter, ops, O::STRH),
         // The unscaled forms differ only in how the offset is encoded.
-        O::LDUR => lift_load(lifter, ops, O::LDR),
-        O::LDURB => lift_load(lifter, ops, O::LDRB),
-        O::LDURH => lift_load(lifter, ops, O::LDRH),
-        O::LDURSB => lift_load(lifter, ops, O::LDRSB),
-        O::LDURSH => lift_load(lifter, ops, O::LDRSH),
-        O::LDURSW => lift_load(lifter, ops, O::LDRSW),
+        O::LDUR => lift_load(lifter, ops, O::LDR, pc),
+        O::LDURB => lift_load(lifter, ops, O::LDRB, pc),
+        O::LDURH => lift_load(lifter, ops, O::LDRH, pc),
+        O::LDURSB => lift_load(lifter, ops, O::LDRSB, pc),
+        O::LDURSH => lift_load(lifter, ops, O::LDRSH, pc),
+        O::LDURSW => lift_load(lifter, ops, O::LDRSW, pc),
         O::STUR => lift_store(lifter, ops, O::STR),
         O::STURB => lift_store(lifter, ops, O::STRB),
         O::STURH => lift_store(lifter, ops, O::STRH),
@@ -746,6 +746,31 @@ mod tests {
         let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
         ir.blocks = crate::lift::lift(&image, 0, size, &HashSet::new()).expect("decoded lift");
         ir
+    }
+
+    #[test]
+    fn arm64_literal_loads_use_the_instruction_address_and_load_width() {
+        const REGION: u64 = 0x3000_0000_0000;
+        for (word, expected) in [
+            (0x18000040u32, 0x80000001u64),
+            (0x58000040, 0x1234567880000001),
+            (0x98000040, 0xffffffff80000001),
+        ] {
+            let bytes = [word.to_le_bytes(), 0xd65f03c0u32.to_le_bytes()].concat();
+            let image = Image::from_code(Isa::AArch64, REGION, bytes);
+            let mut ir = FunctionIr::single_block(Isa::AArch64, vec![]);
+            ir.name = Some("literal_load".into());
+            ir.blocks = crate::lift::lift(&image, REGION, 8, &Default::default()).unwrap();
+            let code = crate::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(!code.contains("unsupported"), "{code}");
+            assert!(code.contains("0x300000000008"), "{code}");
+            crate::lift::atomic_tests::compile_run(
+                &format!(
+                    "#define _GNU_SOURCE\n#include <stdint.h>\n#include <sys/mman.h>\n{code}\nint main(void) {{ void *p = mmap((void *)0x{REGION:x}ULL, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0); if (p == MAP_FAILED) return 2; *(uint64_t *)((char *)p + 8) = 0x1234567880000001ULL; return literal_load() != 0x{expected:x}ULL; }}"
+                ),
+                &format!("literal_{word:x}"),
+            );
+        }
     }
 
     fn setup(registers: &[(u16, u64)]) -> Setup<'_> {

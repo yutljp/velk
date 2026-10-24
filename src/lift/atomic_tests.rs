@@ -70,7 +70,7 @@ fn check(
     printed
 }
 
-fn compile_run(code: &str, name: &str) {
+pub(super) fn compile_run(code: &str, name: &str) {
     let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/atomic-tests");
     std::fs::create_dir_all(&dir).unwrap();
     let source = dir.join(format!("{name}.c"));
@@ -354,5 +354,33 @@ fn exclusive_retry_loop_becomes_one_atomic_update() {
             + &printed
             + "\nint main(void) { uint64_t v = 5; return exclusive_loop((uint64_t)&v, 3, 5) != 8 || v != 8; }\n"),
         "exclusive",
+    );
+}
+
+#[test]
+fn exclusive_retry_can_test_the_zero_extended_status_register() {
+    let bytes: Vec<u8> = [
+        0xc85ffc02u32, // ldaxr x2, [x0]
+        0x8b010042,    // add x2, x2, x1
+        0xc804fc02,    // stlxr w4, x2, [x0]
+        0xb5ffffa4,    // cbnz x4, retry
+        0xd65f03c0,
+    ]
+    .into_iter()
+    .flat_map(u32::to_le_bytes)
+    .collect();
+    let ir = lifted(Isa::AArch64, &bytes, Expr::reg(2, 64));
+    let printed = check(ir, &[0, 1, 2], 5, 3, 8, "wide_status_loop");
+    assert_eq!(
+        printed.matches("__atomic_fetch_add").count(),
+        1,
+        "{printed}"
+    );
+    assert!(printed.contains("__ATOMIC_ACQ_REL"), "{printed}");
+    compile_run(
+        &(String::from("#include <stdint.h>\n")
+            + &printed
+            + "\nint main(void) { uint64_t v = 5; return wide_status_loop((uint64_t)&v, 3, 5) != 8 || v != 8; }\n"),
+        "wide_status_exclusive",
     );
 }

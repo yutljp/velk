@@ -65,8 +65,9 @@ fn render_inner(
                 8 => "uint64_t",
                 _ => "unsigned __int128",
             };
-            let ptr = if crate::render::naming::pointer_target(&inputs[0], ctx)
-                == Some(crate::ir::CType::int(width, false))
+            let ptr = if super::expr::print(&inputs[0], ctx, 64).is_pointer()
+                && crate::render::naming::pointer_target(&inputs[0], ctx)
+                    == Some(crate::ir::CType::int(width, false))
             {
                 input(0)
             } else if let Some(member) =

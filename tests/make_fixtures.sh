@@ -117,6 +117,7 @@ strip -s "$OUT/cold_gcc" -o "$OUT/cold_gcc_stripped"
 
 "${RUSTC[@]}" -O --crate-name rust_probe -o "$OUT/rust_probe" "$CASES/rust/probe.rs"
 llvm-strip -s "$OUT/rust_probe" -o "$OUT/rust_probe_stripped"
+bash tests/make_arm64_lang_fixtures.sh
 "${CXX[@]}" $A64 -O2 -c "$CASES/cpp/namespace.cpp" -o "$OUT/cpp_demo.o"
 "${CXX[@]}" $A64 -O2 -c "$CASES/cpp/classes.cpp" -o "$OUT/cpp_classes_a64.o"
 "${CXX[@]}" $X64 -O2 -c "$CASES/cpp/classes.cpp" -o "$OUT/cpp_classes_x64.o"

@@ -2,6 +2,7 @@ mod codeview;
 mod discover;
 pub mod dwarf;
 pub mod go;
+mod macho;
 mod plt;
 mod relocate;
 pub(crate) mod seh;
@@ -94,6 +95,8 @@ pub enum NameSource {
     Dwarf,
     CodeView,
     Unwind,
+    #[serde(rename = "function-starts")]
+    FunctionStarts,
     Plt,
     Prologue,
 }
@@ -108,6 +111,7 @@ impl fmt::Display for NameSource {
             NameSource::Dwarf => "dwarf",
             NameSource::CodeView => "codeview",
             NameSource::Unwind => "unwind",
+            NameSource::FunctionStarts => "function-starts",
             NameSource::Plt => "plt",
             NameSource::Prologue => "prologue",
         })
@@ -905,6 +909,7 @@ pub fn load(path: &Path) -> Result<Image> {
         );
     }
     image.add_unwind_functions();
+    macho::add_functions(&file, &mut image);
     image.exception_handlers = seh::read(&image);
     seh::discover(&mut image);
     image.landing_pads = unwind::landing_pads(&image);

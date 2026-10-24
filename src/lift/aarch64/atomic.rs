@@ -54,7 +54,10 @@ pub(in crate::lift) fn recover_atomic_loops(
         if width != store_width
             || load.operands[1] != store.operands[2]
             || retry.opcode != O::CBNZ
-            || retry.operands[0] != store.operands[0]
+            || destination(retry.operands[0]).is_none_or(|retry| {
+                destination(store.operands[0])
+                    .is_none_or(|status| retry.index != status.index || retry.width < status.width)
+            })
             || relative_target(retry.operands[1], decoded[3].pc) != Some(block.start)
             || !matches!(block.stmts.last(), Some(Stmt::Brif { target, .. }) if *target == block.start)
         {

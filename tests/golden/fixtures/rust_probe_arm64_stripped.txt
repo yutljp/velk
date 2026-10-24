@@ -1,0 +1,671 @@
+# rust_probe_arm64_stripped: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 171 unsupported, 1269 gotos
+0x1000008c0 20 - unwind,function-starts
+0x1000008d4 28 - unwind,function-starts
+0x1000008f0 28 - unwind,function-starts
+0x10000090c 64 - unwind,function-starts
+0x10000094c 64 _main dynamic,entry,function-starts
+0x10000098c 4 __rustc::__rust_alloc dynamic,function-starts
+0x100000990 4 __rustc::__rust_dealloc dynamic,function-starts
+0x100000994 4 __rustc::__rust_realloc dynamic,function-starts
+0x100000998 4 __rustc::__rust_alloc_zeroed dynamic,function-starts
+0x10000099c 24 __rustc::__rust_no_alloc_shim_is_unstable_v2 dynamic,function-starts
+0x1000009b4 220 <core::io::error::Error>::new::<&str> dynamic,unwind,function-starts
+0x100000a90 1472 - unwind,function-starts
+0x100001050 644 - unwind,function-starts
+0x1000012d4 720 - unwind,function-starts
+0x1000015a4 876 - unwind,function-starts
+0x100001910 432 - unwind,function-starts
+0x100001ac0 112 - unwind,function-starts
+0x100001b30 92 - unwind,function-starts
+0x100001b8c 204 - unwind,function-starts
+0x100001c58 96 - unwind,function-starts
+0x100001cb8 128 - unwind,function-starts
+0x100001d38 216 - unwind,function-starts
+0x100001e10 216 - unwind,function-starts
+0x100001ee8 116 - unwind,function-starts
+0x100001f5c 188 - unwind,function-starts
+0x100002018 252 - unwind,function-starts
+0x100002114 80 - unwind,function-starts
+0x100002164 20 - function-starts
+0x100002178 100 - unwind,function-starts
+0x1000021dc 16 - function-starts
+0x1000021ec 16 - function-starts
+0x1000021fc 72 - function-starts
+0x100002244 80 - unwind,function-starts
+0x100002294 168 - unwind,function-starts
+0x10000233c 212 - unwind,function-starts
+0x100002410 272 - unwind,function-starts
+0x100002520 172 - unwind,function-starts
+0x1000025cc 128 - unwind,function-starts
+0x10000264c 152 - unwind,function-starts
+0x1000026e4 24 - function-starts
+0x1000026fc 64 - function-starts
+0x10000273c 92 - unwind,function-starts
+0x100002798 132 - unwind,function-starts
+0x10000281c 240 - unwind,function-starts
+0x10000290c 156 - unwind,function-starts
+0x1000029a8 112 - unwind,function-starts
+0x100002a18 228 - unwind,function-starts
+0x100002afc 84 - unwind,function-starts
+0x100002b50 224 - unwind,function-starts
+0x100002c30 256 - unwind,function-starts
+0x100002d30 156 - unwind,function-starts
+0x100002dcc 136 - unwind,function-starts
+0x100002e54 84 - unwind,function-starts
+0x100002ea8 152 - unwind,function-starts
+0x100002f40 84 - unwind,function-starts
+0x100002f94 92 - function-starts
+0x100002ff0 156 - unwind,function-starts
+0x10000308c 84 - unwind,function-starts
+0x1000030e0 132 - unwind,function-starts
+0x100003164 64 - function-starts
+0x1000031a4 132 - unwind,function-starts
+0x100003228 24 - function-starts
+0x100003240 92 - unwind,function-starts
+0x10000329c 24 - function-starts
+0x1000032b4 280 - unwind,function-starts
+0x1000033cc 204 - unwind,function-starts
+0x100003498 88 - unwind,function-starts
+0x1000034f0 40 - function-starts
+0x100003518 236 - unwind,function-starts
+0x100003604 212 - unwind,function-starts
+0x1000036d8 244 - unwind,function-starts
+0x1000037cc 80 - unwind,function-starts
+0x10000381c 24 - function-starts
+0x100003834 268 - unwind,function-starts
+0x100003940 72 std::sys::backtrace::__rust_end_short_backtrace::<std::panicking::panic_handler::{closure#0}, !> dynamic,function-starts
+0x100003988 704 - unwind,function-starts
+0x100003c48 1732 - unwind,function-starts
+0x10000430c 244 - unwind,function-starts
+0x100004400 1252 - unwind,function-starts
+0x1000048e4 224 core::slice::sort::unstable::ipnsort::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> dynamic,function-starts
+0x1000049c4 276 core::slice::sort::unstable::ipnsort::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_unstable_by_key<(u64, usize), <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}> dynamic,function-starts
+0x100004ad8 236 core::slice::sort::unstable::ipnsort::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_unstable_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}> dynamic,function-starts
+0x100004bc4 284 core::slice::sort::unstable::ipnsort::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> dynamic,function-starts
+0x100004ce0 376 core::slice::sort::unstable::ipnsort::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_unstable_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> dynamic,function-starts
+0x100004e58 424 core::slice::sort::unstable::ipnsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> dynamic,unwind,function-starts
+0x100005000 236 core::slice::sort::unstable::ipnsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#2}>::{closure#0}> dynamic,function-starts
+0x1000050ec 48 - function-starts
+0x10000511c 204 - unwind,function-starts
+0x1000051e8 236 - unwind,function-starts
+0x1000052d4 208 - unwind,function-starts
+0x1000053a4 260 - unwind,function-starts
+0x1000054a8 204 - unwind,function-starts
+0x100005574 308 - unwind,function-starts
+0x1000056a8 208 - unwind,function-starts
+0x100005778 384 - unwind,function-starts
+0x1000058f8 696 - function-starts
+0x100005bb0 1048 - unwind,function-starts
+0x100005fc8 1344 - unwind,function-starts
+0x100006508 1256 - unwind,function-starts
+0x1000069f0 1512 - unwind,function-starts
+0x100006fd8 1104 - unwind,function-starts
+0x100007428 1224 - unwind,function-starts
+0x1000078f0 180 - unwind,function-starts
+0x1000079a4 196 - function-starts
+0x100007a68 288 - unwind,function-starts
+0x100007b88 240 core::slice::sort::unstable::heapsort::heapsort::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> dynamic,unwind,function-starts
+0x100007c78 248 core::slice::sort::unstable::heapsort::heapsort::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_unstable_by_key<(u64, usize), <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}> dynamic,unwind,function-starts
+0x100007d70 256 core::slice::sort::unstable::heapsort::heapsort::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_unstable_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}> dynamic,unwind,function-starts
+0x100007e70 260 core::slice::sort::unstable::heapsort::heapsort::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> dynamic,unwind,function-starts
+0x100007f74 224 core::slice::sort::unstable::heapsort::heapsort::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_unstable_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> dynamic,unwind,function-starts
+0x100008054 352 core::slice::sort::unstable::heapsort::heapsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> dynamic,unwind,function-starts
+0x1000081b4 256 core::slice::sort::unstable::heapsort::heapsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#2}>::{closure#0}> dynamic,unwind,function-starts
+0x1000082b4 800 - unwind,function-starts
+0x1000085d4 916 - unwind,function-starts
+0x100008968 1000 - unwind,function-starts
+0x100008d50 992 - unwind,function-starts
+0x100009130 1884 - unwind,function-starts
+0x10000988c 1300 - unwind,function-starts
+0x100009da0 1032 - unwind,function-starts
+0x10000a1a8 112 - unwind,function-starts
+0x10000a218 144 - unwind,function-starts
+0x10000a2a8 576 - unwind,function-starts
+0x10000a4e8 760 - unwind,function-starts
+0x10000a7e0 648 - unwind,function-starts
+0x10000aa68 840 - unwind,function-starts
+0x10000adb0 56 - function-starts
+0x10000ade8 280 - unwind,function-starts
+0x10000af00 164 - unwind,function-starts
+0x10000afa4 32 - function-starts
+0x10000afc4 312 - unwind,function-starts
+0x10000b0fc 12 - function-starts
+0x10000b108 40 - function-starts
+0x10000b130 328 - unwind,function-starts
+0x10000b278 112 - unwind,function-starts
+0x10000b2e8 116 - unwind,function-starts
+0x10000b35c 40 - unwind,function-starts
+0x10000b384 4 - function-starts
+0x10000b388 172 - unwind,function-starts
+0x10000b434 4 - function-starts
+0x10000b438 12 - function-starts
+0x10000b444 44 - function-starts
+0x10000b470 116 __rustc::__rdl_alloc dynamic,unwind,function-starts
+0x10000b4e4 4 __rustc::__rdl_dealloc dynamic,function-starts
+0x10000b4e8 172 __rustc::__rdl_realloc dynamic,unwind,function-starts
+0x10000b594 92 __rustc::__rust_drop_panic dynamic,unwind,function-starts
+0x10000b5f0 32 __rustc::rust_begin_unwind dynamic,function-starts
+0x10000b610 140 __rustc::__rdl_alloc_zeroed dynamic,unwind,function-starts
+0x10000b69c 144 __rustc::__rust_foreign_exception dynamic,unwind,function-starts
+0x10000b72c 1236 - unwind,function-starts
+0x10000bc00 768 - unwind,function-starts
+0x10000bf00 572 <std::sys::pal::unix::sync::mutex::Mutex>::init dynamic,unwind,function-starts
+0x10000c13c 400 - function-starts
+0x10000c2cc 628 - function-starts
+0x10000c540 580 <std::path::Path>::_strip_prefix dynamic,unwind,function-starts
+0x10000c784 416 <std::path::Path>::_join dynamic,unwind,function-starts
+0x10000c924 3464 - unwind,function-starts
+0x10000d6ac 480 - unwind,function-starts
+0x10000d88c 1124 - unwind,function-starts
+0x10000dcf0 6736 - unwind,function-starts
+0x10000f740 708 - function-starts
+0x10000fa04 172 - unwind,function-starts
+0x10000fab0 1144 - function-starts
+0x10000ff28 408 - unwind,function-starts
+0x1000100c0 592 <std::path::Components>::as_path dynamic,unwind,function-starts
+0x100010310 2028 - unwind,function-starts
+0x100010afc 268 <std::io::stdio::Stdout>::lock dynamic,unwind,function-starts
+0x100010c08 940 - unwind,function-starts
+0x100010fb4 244 <std::backtrace_rs::symbolize::Symbol>::name dynamic,unwind,function-starts
+0x1000110a8 428 <std::thread::thread::Thread>::new dynamic,unwind,function-starts
+0x100011254 836 - unwind,function-starts
+0x100011598 8464 - unwind,function-starts
+0x1000136a8 372 - unwind,function-starts
+0x10001381c 3120 - unwind,function-starts
+0x10001444c 332 - unwind,function-starts
+0x100014598 216 - unwind,function-starts
+0x100014670 2888 - unwind,function-starts
+0x1000151b8 1608 - unwind,function-starts
+0x100015800 148 - function-starts
+0x100015894 192 - function-starts
+0x100015954 3400 <gimli::read::unit::EntriesRaw<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::read_attribute dynamic,unwind,function-starts
+0x10001669c 4880 - unwind,function-starts
+0x1000179ac 568 - unwind,function-starts
+0x100017be4 208 <alloc::sync::Arc<gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::drop_slow dynamic,unwind,function-starts
+0x100017cb4 44 <alloc::sync::Arc<core::mem::maybe_uninit::MaybeUninit<std::thread::thread::Inner>, std::alloc::System>>::drop_slow dynamic,function-starts
+0x100017ce0 160 <alloc::sync::Arc<std::sync::poison::mutex::Mutex<alloc::vec::Vec<u8>>>>::drop_slow dynamic,unwind,function-starts
+0x100017d80 136 <alloc::sync::Arc<std::thread::thread::Inner, std::alloc::System>>::drop_slow dynamic,unwind,function-starts
+0x100017e08 152 <alloc::sync::Arc<gimli::read::abbrev::Abbreviations>>::drop_slow dynamic,unwind,function-starts
+0x100017ea0 196 <alloc::sync::Arc<std::sys::fs::unix::InnerReadDir>>::drop_slow dynamic,unwind,function-starts
+0x100017f64 508 - unwind,function-starts
+0x100018160 552 - unwind,function-starts
+0x100018388 1652 std::rt::lang_start_internal dynamic,unwind,function-starts
+0x1000189fc 484 std::env::current_dir dynamic,unwind,function-starts
+0x100018be0 268 std::alloc::default_alloc_error_hook dynamic,unwind,function-starts
+0x100018cec 460 std::panic::get_backtrace_style dynamic,unwind,function-starts
+0x100018eb8 320 std::panicking::default_hook dynamic,unwind,function-starts
+0x100018ff8 208 std::panicking::payload_as_str dynamic,unwind,function-starts
+0x1000190c8 936 std::panicking::panic_with_hook dynamic,unwind,function-starts
+0x100019470 72 - unwind,function-starts
+0x1000194b8 244 std::io::stdio::try_set_output_capture dynamic,unwind,function-starts
+0x1000195ac 512 - unwind,function-starts
+0x1000197ac 232 std::io::stdio::_print dynamic,unwind,function-starts
+0x100019894 428 std::sys::fs::read_dir dynamic,unwind,function-starts
+0x100019a40 232 - unwind,function-starts
+0x100019b28 132 std::sys::backtrace::lock dynamic,unwind,function-starts
+0x100019bac 136 std::panicking::panic_count::increase dynamic,unwind,function-starts
+0x100019c34 468 - unwind,function-starts
+0x100019e08 9584 std::backtrace_rs::symbolize::gimli::resolve dynamic,unwind,function-starts
+0x10001c378 568 - unwind,function-starts
+0x10001c5b0 500 - function-starts
+0x10001c7a4 328 - function-starts
+0x10001c8ec 288 std::sys::thread_local::destructors::list::register dynamic,unwind,function-starts
+0x10001ca0c 12 - function-starts
+0x10001ca18 36 - function-starts
+0x10001ca3c 388 - unwind,function-starts
+0x10001cbc0 3316 - unwind,function-starts
+0x10001d8b4 492 - unwind,function-starts
+0x10001daa0 544 - unwind,function-starts
+0x10001dcc0 120 - unwind,function-starts
+0x10001dd38 252 - unwind,function-starts
+0x10001de34 20 - function-starts
+0x10001de48 20 - function-starts
+0x10001de5c 284 <std::thread::thread::thread_name_string::ThreadNameString as core::convert::From<alloc::string::String>>::from dynamic,unwind,function-starts
+0x10001df78 500 <<std::sys::backtrace::BacktraceLock>::print::DisplayBacktrace as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10001e16c 208 - unwind,function-starts
+0x10001e23c 176 - unwind,function-starts
+0x10001e2ec 128 - unwind,function-starts
+0x10001e36c 148 - unwind,function-starts
+0x10001e400 256 <std::sys::sync::once::queue::WaiterQueue as core::ops::drop::Drop>::drop dynamic,unwind,function-starts
+0x10001e500 76 <std::panicking::panic_handler::FormatStringPayload as core::fmt::Display>::fmt dynamic,function-starts
+0x10001e54c 308 - unwind,function-starts
+0x10001e680 12 - function-starts
+0x10001e68c 12 - function-starts
+0x10001e698 96 <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::take_box dynamic,unwind,function-starts
+0x10001e6f8 116 - unwind,function-starts
+0x10001e76c 28 - function-starts
+0x10001e788 76 - function-starts
+0x10001e7d4 96 - unwind,function-starts
+0x10001e834 16 - function-starts
+0x10001e844 40 - function-starts
+0x10001e86c 268 <std::backtrace_rs::symbolize::SymbolName as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10001e978 40 <std::panicking::panic_handler::StaticStrPayload as core::fmt::Display>::fmt dynamic,function-starts
+0x10001e9a0 128 <std::sys::stdio::unix::Stderr as core::io::write::Write>::write_vectored dynamic,unwind,function-starts
+0x10001ea20 8 - function-starts
+0x10001ea28 8 - function-starts
+0x10001ea30 172 <std::sys::stdio::unix::Stderr as core::io::write::Write>::write dynamic,unwind,function-starts
+0x10001eadc 416 - unwind,function-starts
+0x10001ec7c 8 - function-starts
+0x10001ec84 400 - unwind,function-starts
+0x10001ee14 8 - function-starts
+0x10001ee1c 136 - unwind,function-starts
+0x10001eea4 184 - unwind,function-starts
+0x10001ef5c 164 - function-starts
+0x10001f000 100 - unwind,function-starts
+0x10001f064 280 - unwind,function-starts
+0x10001f17c 132 - unwind,function-starts
+0x10001f200 24 - function-starts
+0x10001f218 156 <std::panicking::panic_handler::FormatStringPayload as core::panic::PanicPayload>::get dynamic,unwind,function-starts
+0x10001f2b4 280 <std::panicking::panic_handler::FormatStringPayload as core::panic::PanicPayload>::take_box dynamic,unwind,function-starts
+0x10001f3cc 324 <std::sys::fs::unix::ReadDir as core::iter::traits::iterator::Iterator>::next dynamic,unwind,function-starts
+0x10001f510 292 <std::sys::fs::unix::DirStream as core::ops::drop::Drop>::drop dynamic,unwind,function-starts
+0x10001f634 348 <&std::io::stdio::Stdout as core::io::write::Write>::write_fmt dynamic,unwind,function-starts
+0x10001f790 432 <std::io::stdio::StdoutLock as core::io::write::Write>::write_all dynamic,unwind,function-starts
+0x10001f940 808 <std::path::Components as core::iter::traits::iterator::Iterator>::next dynamic,unwind,function-starts
+0x10001fc68 1040 <std::path::Components as core::iter::traits::double_ended::DoubleEndedIterator>::next_back dynamic,unwind,function-starts
+0x100020078 52 - function-starts
+0x1000200ac 1928 - unwind,function-starts
+0x100020834 184 - unwind,function-starts
+0x1000208ec 136 - function-starts
+0x100020974 476 - function-starts
+0x100020b50 556 - function-starts
+0x100020d7c 288 - function-starts
+0x100020e9c 184 - unwind,function-starts
+0x100020f54 8 - function-starts
+0x100020f5c 352 - unwind,function-starts
+0x1000210bc 20 - function-starts
+0x1000210d0 272 - unwind,function-starts
+0x1000211e0 24 - function-starts
+0x1000211f8 336 - unwind,function-starts
+0x100021348 20 - function-starts
+0x10002135c 320 - unwind,function-starts
+0x10002149c 40 - function-starts
+0x1000214c4 208 - unwind,function-starts
+0x100021594 68 - function-starts
+0x1000215d8 516 - unwind,function-starts
+0x1000217dc 300 - unwind,function-starts
+0x100021908 184 - unwind,function-starts
+0x1000219c0 300 - unwind,function-starts
+0x100021aec 16 - function-starts
+0x100021afc 8 - function-starts
+0x100021b04 4 - function-starts
+0x100021b08 60 - function-starts
+0x100021b44 884 _rust_eh_personality dynamic,unwind,function-starts
+0x100021eb8 12 - function-starts
+0x100021ec4 16 - function-starts
+0x100021ed4 16 - function-starts
+0x100021ee4 12 - function-starts
+0x100021ef0 12 - function-starts
+0x100021efc 12 - function-starts
+0x100021f08 12 - function-starts
+0x100021f14 12 - function-starts
+0x100021f20 8 - function-starts
+0x100021f28 8 - function-starts
+0x100021f30 8 - function-starts
+0x100021f38 8 - function-starts
+0x100021f40 8 - function-starts
+0x100021f48 8 - function-starts
+0x100021f50 12 - function-starts
+0x100021f5c 8 - function-starts
+0x100021f64 20 - function-starts
+0x100021f78 8 - function-starts
+0x100021f80 8 - function-starts
+0x100021f88 16 - function-starts
+0x100021f98 16 - function-starts
+0x100021fa8 16 - function-starts
+0x100021fb8 24 - function-starts
+0x100021fd0 24 - function-starts
+0x100021fe8 12 - function-starts
+0x100021ff4 12 - function-starts
+0x100022000 8 - function-starts
+0x100022008 8 - function-starts
+0x100022010 12 - function-starts
+0x10002201c 8 - function-starts
+0x100022024 12 - function-starts
+0x100022030 12 - function-starts
+0x10002203c 12 - function-starts
+0x100022048 8 - function-starts
+0x100022050 8 - function-starts
+0x100022058 20 - function-starts
+0x10002206c 12 - function-starts
+0x100022078 12 - function-starts
+0x100022084 12 - function-starts
+0x100022090 12 - function-starts
+0x10002209c 20 - function-starts
+0x1000220b0 20 - function-starts
+0x1000220c4 20 - function-starts
+0x1000220d8 12 - function-starts
+0x1000220e4 20 - function-starts
+0x1000220f8 12 - function-starts
+0x100022104 140 - unwind,function-starts
+0x100022190 120 - unwind,function-starts
+0x100022208 160 __rustc::__rust_start_panic dynamic,unwind,function-starts
+0x1000222a8 104 __rustc::__rust_panic_cleanup dynamic,unwind,function-starts
+0x100022310 48 - unwind,function-starts
+0x100022340 328 core::slice::sort::stable::driftsort_main::<object::read::symbol_map::ObjectMapEntry, <[object::read::symbol_map::ObjectMapEntry]>::sort_by_key<u64, <object::read::symbol_map::SymbolMap<object::read::symbol_map::ObjectMapEntry>>::new::{closure#0}>::{closure#0}, alloc::vec::Vec<object::read::symbol_map::ObjectMapEntry>> dynamic,unwind,function-starts
+0x100022488 208 - unwind,function-starts
+0x100022558 216 - unwind,function-starts
+0x100022630 1328 - unwind,function-starts
+0x100022b60 2140 core::slice::sort::stable::quicksort::quicksort::<object::read::symbol_map::ObjectMapEntry, <[object::read::symbol_map::ObjectMapEntry]>::sort_by_key<u64, <object::read::symbol_map::SymbolMap<object::read::symbol_map::ObjectMapEntry>>::new::{closure#0}>::{closure#0}> dynamic,unwind,function-starts
+0x1000233bc 152 <object::read::symbol_map::ObjectMap>::get dynamic,function-starts
+0x100023454 220 <object::read::symbol_map::ObjectMap>::new dynamic,unwind,function-starts
+0x100023530 332 object::read::archive::parse_u64_digits dynamic,unwind,function-starts
+0x10002367c 620 object::read::archive::parse_sysv_extended_name dynamic,function-starts
+0x1000238e8 700 <&[u8] as object::read::read_ref::ReadRef>::read_bytes_at_until dynamic,function-starts
+0x100023ba4 60 - unwind,function-starts
+0x100023be0 332 <addr2line::line::Lines>::find_location dynamic,unwind,function-starts
+0x100023d2c 92 - function-starts
+0x100023d88 452 addr2line::line::path_push dynamic,unwind,function-starts
+0x100023f4c 124 <alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>>::new_internal::<alloc::alloc::Global> dynamic,unwind,function-starts
+0x100023fc8 396 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert::<alloc::alloc::Global> dynamic,unwind,function-starts
+0x100024154 412 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::insert::<alloc::alloc::Global> dynamic,unwind,function-starts
+0x1000242f0 484 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_recursing::<alloc::alloc::Global, <alloc::collections::btree::map::entry::VacantEntry<u64, gimli::read::abbrev::Abbreviation>>::insert_entry::{closure#0}> dynamic,unwind,function-starts
+0x1000244d4 172 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::split::<alloc::alloc::Global> dynamic,unwind,function-starts
+0x100024580 364 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::KV>>::split::<alloc::alloc::Global> dynamic,unwind,function-starts
+0x1000246ec 124 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::get::<u64> dynamic,function-starts
+0x100024768 80 <alloc::raw_vec::RawVecInner>::deallocate dynamic,unwind,function-starts
+0x1000247b8 48 <alloc::raw_vec::RawVec<gimli::read::abbrev::Abbreviation>>::grow_one dynamic,unwind,function-starts
+0x1000247e8 48 <alloc::raw_vec::RawVec<gimli::read::abbrev::AttributeSpecification>>::grow_one dynamic,unwind,function-starts
+0x100024818 280 <gimli::read::abbrev::Abbreviations>::insert dynamic,unwind,function-starts
+0x100024930 196 <alloc::collections::btree::map::entry::VacantEntry<u64, gimli::read::abbrev::Abbreviation>>::insert_entry dynamic,unwind,function-starts
+0x1000249f4 156 <alloc::raw_vec::RawVecInner>::grow_amortized dynamic,unwind,function-starts
+0x100024a90 164 <alloc::raw_vec::RawVecInner>::try_allocate_in dynamic,unwind,function-starts
+0x100024b34 152 <gimli::read::abbrev::Abbreviation>::new dynamic,unwind,function-starts
+0x100024bcc 308 <gimli::read::abbrev::Attributes>::push dynamic,unwind,function-starts
+0x100024d00 288 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_fit dynamic,unwind,function-starts
+0x100024e20 364 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::insert_fit dynamic,unwind,function-starts
+0x100024f8c 308 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::split_leaf_data dynamic,unwind,function-starts
+0x1000250c0 48 <alloc::boxed::Box<alloc::collections::btree::node::InternalNode<u64, gimli::read::abbrev::Abbreviation>>>::new_uninit_in dynamic,unwind,function-starts
+0x1000250f0 48 <alloc::boxed::Box<alloc::collections::btree::node::LeafNode<u64, gimli::read::abbrev::Abbreviation>>>::new_uninit_in dynamic,unwind,function-starts
+0x100025120 144 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::entry dynamic,function-starts
+0x1000251b0 176 <alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>>::push_with_handle dynamic,unwind,function-starts
+0x100025260 224 <alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>>::push dynamic,unwind,function-starts
+0x100025340 12 <alloc::raw_vec::RawVec<u8> as core::ops::drop::Drop>::drop dynamic,function-starts
+0x10002534c 68 <gimli::read::abbrev::Attributes as core::ops::deref::Deref>::deref dynamic,function-starts
+0x100025390 4 <alloc::vec::Vec<gimli::read::abbrev::AttributeSpecification> as core::ops::drop::Drop>::drop dynamic,function-starts
+0x100025394 96 <str>::trim_start_matches::<&str> dynamic,unwind,function-starts
+0x1000253f4 236 - unwind,function-starts
+0x1000254e0 236 - unwind,function-starts
+0x1000255cc 228 - unwind,function-starts
+0x1000256b0 164 - unwind,function-starts
+0x100025754 176 - unwind,function-starts
+0x100025804 464 - unwind,function-starts
+0x1000259d4 172 - unwind,function-starts
+0x100025a80 624 - unwind,function-starts
+0x100025cf0 368 - unwind,function-starts
+0x100025e60 96 - unwind,function-starts
+0x100025ec0 248 - unwind,function-starts
+0x100025fb8 416 - unwind,function-starts
+0x100026158 408 - unwind,function-starts
+0x1000262f0 1236 - unwind,function-starts
+0x1000267c4 80 rustc_demangle::try_demangle dynamic,unwind,function-starts
+0x100026814 2488 rustc_demangle::demangle dynamic,unwind,function-starts
+0x1000271cc 124 - unwind,function-starts
+0x100027248 584 - unwind,function-starts
+0x100027490 260 - unwind,function-starts
+0x100027594 220 - function-starts
+0x100027670 192 - unwind,function-starts
+0x100027730 152 - unwind,function-starts
+0x1000277c8 604 - unwind,function-starts
+0x100027a24 148 - unwind,function-starts
+0x100027ab8 1592 - unwind,function-starts
+0x1000280f0 1304 - unwind,function-starts
+0x100028608 1576 - unwind,function-starts
+0x100028c30 352 - unwind,function-starts
+0x100028d90 548 - unwind,function-starts
+0x100028fb4 276 - unwind,function-starts
+0x1000290c8 336 - unwind,function-starts
+0x100029218 448 - unwind,function-starts
+0x1000293d8 56 - function-starts
+0x100029410 112 - function-starts
+0x100029480 2944 <rustc_demangle::legacy::Demangle as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002a000 20 - function-starts
+0x10002a014 676 - unwind,function-starts
+0x10002a2b8 40 <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_str dynamic,function-starts
+0x10002a2e0 1064 <rustc_demangle::v0::Ident as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002a708 272 <rustc_demangle::Demangle as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002a818 44 <&core::num::error::IntErrorKind as core::fmt::Debug>::fmt dynamic,function-starts
+0x10002a844 16 <&str as core::fmt::Debug>::fmt dynamic,function-starts
+0x10002a854 28 <&u8 as core::fmt::Debug>::fmt dynamic,function-starts
+0x10002a870 16 <&mut [u8] as core::fmt::Debug>::fmt dynamic,function-starts
+0x10002a880 8 <&rustc_demangle::DemangleStyle as core::fmt::Display>::fmt dynamic,function-starts
+0x10002a888 20 - function-starts
+0x10002a89c 20 - function-starts
+0x10002a8b0 72 <rustc_demangle::DemangleStyle as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002a8f8 76 - unwind,function-starts
+0x10002a944 112 <[u8] as core::fmt::Debug>::fmt dynamic,unwind,function-starts
+0x10002a9b4 20 - function-starts
+0x10002a9c8 796 - unwind,function-starts
+0x10002ace4 176 <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_char dynamic,unwind,function-starts
+0x10002ad94 20 <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_fmt dynamic,function-starts
+0x10002ada8 120 - unwind,function-starts
+0x10002ae20 72 - unwind,function-starts
+0x10002ae68 560 <alloc::string::String>::from_utf8_lossy dynamic,unwind,function-starts
+0x10002b098 56 <<alloc::io::buffered::bufwriter::BufWriter<_>>::flush_buf::BufGuard>::remaining dynamic,function-starts
+0x10002b0d0 276 <alloc::ffi::c_str::CString>::_from_vec_unchecked dynamic,unwind,function-starts
+0x10002b1e4 100 alloc::sync::arcinner_layout_for_value_layout dynamic,function-starts
+0x10002b248 140 alloc::io::error::custom_owner_from_box dynamic,unwind,function-starts
+0x10002b2d4 16 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::fmt::Debug>::fmt dynamic,function-starts
+0x10002b2e4 148 <alloc::string::String as core::convert::From<alloc::borrow::Cow<str>>>::from dynamic,unwind,function-starts
+0x10002b378 256 <&[u8] as <alloc::ffi::c_str::CString>::new::SpecNewImpl>::spec_new_impl dynamic,unwind,function-starts
+0x10002b478 104 <<alloc::io::buffered::bufwriter::BufWriter<_>>::flush_buf::BufGuard as core::ops::drop::Drop>::drop dynamic,unwind,function-starts
+0x10002b4e0 16 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::fmt::Display>::fmt dynamic,function-starts
+0x10002b4f0 116 <core::ffi::c_str::CStr as alloc::borrow::ToOwned>::to_owned dynamic,unwind,function-starts
+0x10002b564 124 - unwind,function-starts
+0x10002b5e0 840 - unwind,function-starts
+0x10002b928 8 <core::io::error::repr::Repr>::new_custom dynamic,function-starts
+0x10002b930 436 <core::fmt::builders::DebugStruct>::field dynamic,unwind,function-starts
+0x10002bae4 284 <core::ffi::c_str::CStr>::from_bytes_with_nul dynamic,function-starts
+0x10002bc00 336 <core::fmt::builders::DebugSet>::entry dynamic,unwind,function-starts
+0x10002bd50 76 <core::fmt::builders::DebugList>::finish dynamic,unwind,function-starts
+0x10002bd9c 100 <core::fmt::Formatter>::debug_list dynamic,unwind,function-starts
+0x10002be00 1076 <core::fmt::Formatter>::pad_integral dynamic,unwind,function-starts
+0x10002c234 524 <core::fmt::Formatter>::debug_tuple_field2_finish dynamic,unwind,function-starts
+0x10002c440 256 <core::fmt::Formatter>::debug_struct_field1_finish dynamic,unwind,function-starts
+0x10002c540 868 <core::fmt::Formatter>::pad dynamic,unwind,function-starts
+0x10002c8a4 28 <core::fmt::Formatter>::write_str dynamic,function-starts
+0x10002c8c0 2176 <core::str::pattern::StrSearcher>::new dynamic,unwind,function-starts
+0x10002d140 232 core::fmt::pointer_fmt_inner dynamic,unwind,function-starts
+0x10002d228 464 core::fmt::write dynamic,unwind,function-starts
+0x10002d3f8 964 core::str::slice_error_fail_rt dynamic,function-starts
+0x10002d7bc 1808 core::str::count::do_count_chars dynamic,unwind,function-starts
+0x10002decc 728 core::str::count::char_count_general_case dynamic,function-starts
+0x10002e1a4 648 core::str::converts::from_utf8 dynamic,function-starts
+0x10002e42c 220 core::slice::memchr::memchr_aligned dynamic,function-starts
+0x10002e508 336 core::slice::memchr::memrchr_aligned dynamic,unwind,function-starts
+0x10002e658 20 core::io::error::os_functions::get_os_functions dynamic,function-starts
+0x10002e66c 128 - function-starts
+0x10002e6ec 308 core::unicode::unicode_data::cn_planes_0_3::lookup_slow dynamic,function-starts
+0x10002e820 304 core::unicode::unicode_data::grapheme_extend::lookup_slow dynamic,function-starts
+0x10002e950 236 core::unicode::unicode_data::default_ignorable_code_point::lookup_slow dynamic,function-starts
+0x10002ea3c 272 core::unicode::unicode_data::cf::lookup_slow dynamic,function-starts
+0x10002eb4c 48 core::slice::sort::stable::drift::sqrt_approx dynamic,function-starts
+0x10002eb7c 140 - unwind,function-starts
+0x10002ec08 28 <core::io::error::Error as core::fmt::Debug>::fmt dynamic,function-starts
+0x10002ec24 172 <u8 as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002ecd0 128 <core::fmt::builders::PadAdapter as core::fmt::Write>::write_char dynamic,unwind,function-starts
+0x10002ed50 612 <core::fmt::builders::PadAdapter as core::fmt::Write>::write_str dynamic,unwind,function-starts
+0x10002efb4 48 - function-starts
+0x10002efe4 16 - function-starts
+0x10002eff4 28 - function-starts
+0x10002f010 76 - function-starts
+0x10002f05c 792 <core::io::error::repr::Repr as core::fmt::Debug>::fmt dynamic,unwind,function-starts
+0x10002f374 460 <core::str::lossy::Utf8Chunks as core::iter::traits::iterator::Iterator>::next dynamic,function-starts
+0x10002f540 1276 <core::bstr::ByteStr as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002fa3c 216 <core::io::error::Error as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002fb14 116 <usize as core::fmt::LowerHex>::fmt dynamic,unwind,function-starts
+0x10002fb88 72 <core::fmt::Arguments as core::fmt::Display>::fmt dynamic,function-starts
+0x10002fbd0 220 <core::io::error::Custom as core::fmt::Debug>::fmt dynamic,unwind,function-starts
+0x10002fcac 164 <usize as core::fmt::UpperHex>::fmt dynamic,unwind,function-starts
+0x10002fd50 88 - unwind,function-starts
+0x10002fda8 356 <u32 as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10002ff0c 52 <core::io::error::Custom as core::ops::drop::Drop>::drop dynamic,function-starts
+0x10002ff40 52 - function-starts
+0x10002ff74 324 <i32 as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x1000300b8 216 - unwind,function-starts
+0x100030190 460 - unwind,function-starts
+0x10003035c 140 - unwind,function-starts
+0x1000303e8 36 <core::fmt::Formatter as core::fmt::Write>::write_char dynamic,function-starts
+0x10003040c 60 <core::io::error::CustomOwner as core::ops::drop::Drop>::drop dynamic,function-starts
+0x100030448 324 <u64 as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x10003058c 132 <u8 as core::fmt::LowerHex>::fmt dynamic,unwind,function-starts
+0x100030610 116 <u8 as core::fmt::UpperHex>::fmt dynamic,unwind,function-starts
+0x100030684 912 <str as core::fmt::Debug>::fmt dynamic,unwind,function-starts
+0x100030a14 72 <str as core::fmt::Display>::fmt dynamic,function-starts
+0x100030a5c 224 <char as core::fmt::Debug>::fmt dynamic,unwind,function-starts
+0x100030b3c 264 <char as core::fmt::Display>::fmt dynamic,unwind,function-starts
+0x100030c44 60 - function-starts
+0x100030c80 36 <core::cell::BorrowMutError as core::fmt::Display>::fmt dynamic,function-starts
+0x100030ca4 172 <i32 as core::fmt::LowerHex>::fmt dynamic,unwind,function-starts
+0x100030d50 120 <i32 as core::fmt::UpperHex>::fmt dynamic,unwind,function-starts
+0x100030dc8 8 - function-starts
+0x100030dd0 8 - function-starts
+0x100030dd8 48 - function-starts
+0x100030e08 28 - function-starts
+0x100030e24 28 - function-starts
+0x100030e40 96 - function-starts
+0x100030ea0 108 - function-starts
+0x100030f0c 72 - function-starts
+0x100030f54 104 - function-starts
+0x100030fbc 1500 - unwind,function-starts
+0x100031598 3456 - unwind,function-starts
+0x100032318 5796 - unwind,function-starts
+0x1000339bc 252 - unwind,function-starts
+0x100033ab8 280 - unwind,function-starts
+0x100033bd0 48 - function-starts
+0x100033c00 52 core::panicking::assert_failed::<i32, i32> dynamic,function-starts
+0x100033c34 32 std::sys::backtrace::__rust_end_short_backtrace::<std::alloc::rust_oom::{closure#0}, !> dynamic,function-starts
+0x100033c54 252 - unwind,function-starts
+0x100033d50 168 - unwind,function-starts
+0x100033df8 176 - unwind,function-starts
+0x100033ea8 76 - function-starts
+0x100033ef4 68 - function-starts
+0x100033f38 304 - function-starts
+0x100034068 72 - function-starts
+0x1000340b0 72 __rustc::rust_panic dynamic,function-starts
+0x1000340f8 44 __rustc::__rust_alloc_error_handler dynamic,function-starts
+0x100034124 512 <std::sys::sync::once::queue::Once>::call dynamic,unwind,function-starts
+0x100034324 64 <std::sys::sync::rwlock::queue::RwLock>::unlock_contended dynamic,function-starts
+0x100034364 64 <std::sys::sync::rwlock::queue::RwLock>::read_unlock_contended dynamic,function-starts
+0x1000343a4 100 <alloc::raw_vec::RawVec<alloc::boxed::Box<dyn core::ops::function::FnMut<(), Output = core::result::Result<(), core::io::error::Error>> + core::marker::Send + core::marker::Sync>>>::grow_one dynamic,unwind,function-starts
+0x100034408 100 <alloc::raw_vec::RawVec<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one dynamic,unwind,function-starts
+0x10003446c 100 <alloc::raw_vec::RawVec<addr2line::unit::SupUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one dynamic,unwind,function-starts
+0x1000344d0 100 <alloc::raw_vec::RawVec<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one dynamic,unwind,function-starts
+0x100034534 100 <alloc::raw_vec::RawVec<addr2line::function::InlinedFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one dynamic,unwind,function-starts
+0x100034598 100 <alloc::raw_vec::RawVec<gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>>::grow_one dynamic,unwind,function-starts
+0x1000345fc 100 <alloc::raw_vec::RawVec<gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>>::grow_one dynamic,unwind,function-starts
+0x100034660 100 <alloc::raw_vec::RawVec<gimli::read::unit::Attribute<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one dynamic,unwind,function-starts
+0x1000346c4 136 <alloc::raw_vec::RawVec<alloc::string::String>>::grow_one dynamic,unwind,function-starts
+0x10003474c 100 <alloc::raw_vec::RawVec<addr2line::line::LineSequence>>::grow_one dynamic,unwind,function-starts
+0x1000347b0 100 <alloc::raw_vec::RawVec<gimli::read::line::FileEntryFormat>>::grow_one dynamic,unwind,function-starts
+0x100034814 100 <alloc::raw_vec::RawVec<object::read::symbol_map::ObjectMapEntry>>::grow_one dynamic,unwind,function-starts
+0x100034878 100 <alloc::raw_vec::RawVec<*const i8>>::grow_one dynamic,unwind,function-starts
+0x1000348dc 96 <alloc::raw_vec::RawVec<(*mut u8, unsafe extern "C" fn(*mut u8)), std::alloc::System>>::grow_one dynamic,unwind,function-starts
+0x10003493c 148 - unwind,function-starts
+0x1000349d0 112 - unwind,function-starts
+0x100034a40 176 - unwind,function-starts
+0x100034af0 216 <alloc::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutRaw>>::write_all_cold dynamic,unwind,function-starts
+0x100034bc8 36 std::alloc::rust_oom dynamic,function-starts
+0x100034bec 60 std::process::abort dynamic,function-starts
+0x100034c28 308 - unwind,function-starts
+0x100034d5c 52 std::panicking::panic_count::is_zero_slow_path dynamic,unwind,function-starts
+0x100034d90 72 - function-starts
+0x100034dd8 32 - function-starts
+0x100034df8 228 - unwind,function-starts
+0x100034edc 40 <std::sys::sync::rwlock::queue::PanicGuard as core::ops::drop::Drop>::drop dynamic,function-starts
+0x100034f04 32 <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global> dynamic,unwind,function-starts
+0x100034f24 248 <alloc::raw_vec::RawVecInner>::finish_grow dynamic,unwind,function-starts
+0x10003501c 116 - unwind,function-starts
+0x100035090 140 - unwind,function-starts
+0x10003511c 24 alloc::alloc::handle_alloc_error dynamic,function-starts
+0x100035134 20 alloc::raw_vec::handle_error dynamic,function-starts
+0x100035148 32 alloc::raw_vec::capacity_overflow dynamic,function-starts
+0x100035168 40 core::panicking::assert_failed::<usize, usize> dynamic,function-starts
+0x100035190 64 core::panicking::assert_failed::<u64, u64> dynamic,function-starts
+0x1000351d0 72 core::str::slice_error_fail dynamic,function-starts
+0x100035218 56 core::cell::panic_already_borrowed dynamic,function-starts
+0x100035250 48 core::option::expect_failed dynamic,function-starts
+0x100035280 60 core::option::unwrap_failed dynamic,function-starts
+0x1000352bc 72 core::result::unwrap_failed dynamic,function-starts
+0x100035304 92 core::panicking::panic_nounwind dynamic,function-starts
+0x100035360 24 core::panicking::panic_in_cleanup dynamic,function-starts
+0x100035378 56 core::panicking::panic_bounds_check dynamic,function-starts
+0x1000353b0 48 core::panicking::panic_nounwind_fmt dynamic,unwind,function-starts
+0x1000353e0 188 core::panicking::assert_failed_inner dynamic,function-starts
+0x10003549c 24 core::panicking::panic_cannot_unwind dynamic,function-starts
+0x1000354b4 72 core::panicking::panic_nounwind_nobacktrace dynamic,function-starts
+0x1000354fc 20 core::panicking::panic dynamic,function-starts
+0x100035510 104 core::panicking::panic_fmt dynamic,function-starts
+0x100035578 184 core::slice::index::slice_index_fail dynamic,function-starts
+0x100035630 56 core::panicking::panic_const::panic_const_div_by_zero dynamic,function-starts
+0x100035668 68 core::panicking::panic_const::panic_const_rem_by_zero dynamic,function-starts
+0x1000356ac 68 core::slice::sort::shared::smallsort::panic_on_ord_violation dynamic,function-starts
+0x1000356f0 12 core::io::error::os_functions::set_functions::set_functions_inner dynamic,function-starts
+0x1000356fc 12 __Unwind_Backtrace plt
+0x100035708 12 __Unwind_DeleteException plt
+0x100035714 12 __Unwind_GetDataRelBase plt
+0x100035720 12 __Unwind_GetIP plt
+0x10003572c 12 __Unwind_GetIPInfo plt
+0x100035738 12 __Unwind_GetLanguageSpecificData plt
+0x100035744 12 __Unwind_GetRegionStart plt
+0x100035750 12 __Unwind_GetTextRelBase plt
+0x10003575c 12 __Unwind_RaiseException plt
+0x100035768 12 __Unwind_Resume plt
+0x100035774 12 __Unwind_SetGR plt
+0x100035780 12 __Unwind_SetIP plt
+0x10003578c 12 ___error plt
+0x100035798 12 __dyld_get_image_header plt
+0x1000357a4 12 __dyld_get_image_name plt
+0x1000357b0 12 __dyld_get_image_vmaddr_slide plt
+0x1000357bc 12 __dyld_image_count plt
+0x1000357c8 12 __tlv_atexit plt
+0x1000357d4 12 _abort plt
+0x1000357e0 12 _bzero plt
+0x1000357ec 12 _calloc plt
+0x1000357f8 12 _close plt
+0x100035804 12 _closedir plt
+0x100035810 12 _dirfd plt
+0x10003581c 12 _dispatch_release plt
+0x100035828 12 _dispatch_semaphore_create plt
+0x100035834 12 _dispatch_semaphore_signal plt
+0x100035840 12 _dispatch_semaphore_wait plt
+0x10003584c 12 _dup plt
+0x100035858 12 _fcntl plt
+0x100035864 12 _free plt
+0x100035870 12 _fstat plt
+0x10003587c 12 _getcwd plt
+0x100035888 12 _getenv plt
+0x100035894 12 _malloc plt
+0x1000358a0 12 _memcmp plt
+0x1000358ac 12 _memcpy plt
+0x1000358b8 12 _memmove plt
+0x1000358c4 12 _mmap plt
+0x1000358d0 12 _mprotect plt
+0x1000358dc 12 _munmap plt
+0x1000358e8 12 _open plt
+0x1000358f4 12 _opendir plt
+0x100035900 12 _pause plt
+0x10003590c 12 _posix_memalign plt
+0x100035918 12 _pthread_get_stackaddr_np plt
+0x100035924 12 _pthread_get_stacksize_np plt
+0x100035930 12 _pthread_mutex_destroy plt
+0x10003593c 12 _pthread_mutex_init plt
+0x100035948 12 _pthread_mutex_lock plt
+0x100035954 12 _pthread_mutex_trylock plt
+0x100035960 12 _pthread_mutex_unlock plt
+0x10003596c 12 _pthread_mutexattr_destroy plt
+0x100035978 12 _pthread_mutexattr_init plt
+0x100035984 12 _pthread_mutexattr_settype plt
+0x100035990 12 _pthread_self plt
+0x10003599c 12 _pthread_setname_np plt
+0x1000359a8 12 _pthread_threadid_np plt
+0x1000359b4 12 _readdir plt
+0x1000359c0 12 _realloc plt
+0x1000359cc 12 _sigaction plt
+0x1000359d8 12 _sigaltstack plt
+0x1000359e4 12 _signal plt
+0x1000359f0 12 _strerror_r plt
+0x1000359fc 12 _strlen plt
+0x100035a08 12 _sysconf plt
+0x100035a14 12 _write plt
+0x100035a20 12 _writev plt

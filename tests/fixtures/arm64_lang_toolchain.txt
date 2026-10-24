@@ -1,0 +1,7 @@
+rustc 1.99.0 (b940084d7 2026-09-28)
+go version go1.23.4 darwin/arm64
+tests/fixtures/go_probe_arm64:            ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=mVgtOfzvSITr0JlSsXPU/Nhk2zRdq51qUEJ2lBthZ/7nEMIZDPvlm2gwDwF2yc/ztRVb0fuuploHfR7LpXA, stripped
+tests/fixtures/go_stripped_arm64:         ELF 64-bit LSB executable, ARM aarch64, version 1 (SYSV), statically linked, Go BuildID=SYJwYhQr7Y5cDfO2CTKp/0wniFOLt_52c8HfHQpXJ/2bp61YwLpYwRTHNgyGAS/KbyZZAdQ5rnk9JTedlTl, stripped
+tests/fixtures/rust_demo_arm64:           Mach-O 64-bit executable arm64
+tests/fixtures/rust_probe_arm64:          Mach-O 64-bit executable arm64
+tests/fixtures/rust_probe_arm64_stripped: Mach-O 64-bit executable arm64

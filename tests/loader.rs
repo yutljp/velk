@@ -6,6 +6,52 @@ mod common;
 use velk::service::Binary;
 
 #[test]
+fn macho_function_starts_separate_adjacent_leaf_functions() {
+    for fixture in ["rust_probe_arm64", "rust_probe_arm64_stripped"] {
+        let mut binary = Binary::open(&common::fixtures_dir().join(fixture)).unwrap();
+        assert_eq!(binary.image().entry, Some(0x10000094c), "{fixture}");
+        let first = &binary.image().functions[&0x10002e658];
+        assert_eq!(first.size, Some(20), "{fixture}");
+        assert!(
+            first
+                .sources
+                .contains(&velk::loader::NameSource::FunctionStarts)
+        );
+        assert!(binary.image().functions.contains_key(&0x10002e66c));
+        let code = binary.decompile(0x10002e658, None, None).unwrap();
+        assert!(!code.contains("L_10002e66c"), "{code}");
+        let next = binary.decompile(0x10002e66c, None, None).unwrap();
+        assert!(next.contains("a0"), "{next}");
+    }
+}
+
+#[test]
+fn malformed_macho_function_start_deltas_do_not_panic() {
+    let mut bytes =
+        std::fs::read(common::fixtures_dir().join("rust_probe_arm64_stripped")).unwrap();
+    let object::File::MachO64(file) = object::File::parse(bytes.as_slice()).unwrap() else {
+        panic!("Mach-O fixture");
+    };
+    let mut commands = file.macho_load_commands().unwrap();
+    let mut range = None;
+    while let Some(command) = commands.next().unwrap() {
+        if let object::read::macho::LoadCommandVariant::LinkeditData(command) =
+            command.variant().unwrap()
+            && command.cmd.get(file.endian()) == object::macho::LC_FUNCTION_STARTS
+        {
+            let start = command.dataoff.get(file.endian()) as usize;
+            range = Some(start..start + command.datasize.get(file.endian()) as usize);
+            break;
+        }
+    }
+    bytes[range.expect("function starts")].fill(0xff);
+    let path = common::root().join("target/malformed-macho-starts");
+    std::fs::write(&path, bytes).unwrap();
+    Binary::open(&path).expect("damaged start deltas leave other function sources usable");
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
 fn debug_members_keep_their_declared_types_and_widths() {
     for isa in ["aarch64", "x86_64"] {
         for level in ["O0", "O2"] {

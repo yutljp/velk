@@ -1,0 +1,706 @@
+# rust_probe_arm64: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 171 unsupported, 1269 gotos
+0x1000008c0 20 std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()> symtab,unwind,function-starts
+0x1000008d4 28 std::rt::lang_start::<()>::{closure#0} symtab,unwind,function-starts
+0x1000008f0 28 <std::rt::lang_start<()>::{closure#0} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} symtab,unwind,function-starts
+0x10000090c 64 rust_probe::main symtab,unwind,function-starts
+0x10000094c 64 _main symtab,dynamic,entry,function-starts
+0x10000098c 4 __rustc::__rust_alloc symtab,dynamic,function-starts
+0x100000990 4 __rustc::__rust_dealloc symtab,dynamic,function-starts
+0x100000994 4 __rustc::__rust_realloc symtab,dynamic,function-starts
+0x100000998 4 __rustc::__rust_alloc_zeroed symtab,dynamic,function-starts
+0x10000099c 24 __rustc::__rust_no_alloc_shim_is_unstable_v2 symtab,dynamic,function-starts
+0x1000009b4 220 <core::io::error::Error>::new::<&str> symtab,dynamic,unwind,function-starts
+0x100000a90 1472 <object::read::archive::ArchiveMember>::parse::<&[u8]> symtab,unwind,function-starts
+0x100001050 644 <gimli::read::line::FileEntryFormat>::parse::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x1000012d4 720 addr2line::line::render_file::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x1000015a4 876 addr2line::function::name_entry::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x100001910 432 addr2line::function::name_attr::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x100001ac0 112 core::ptr::drop_glue::<addr2line::Context<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>> symtab,unwind,function-starts
+0x100001b30 92 core::ptr::drop_glue::<core::pin::Pin<alloc::boxed::Box<std::sys::pal::unix::sync::mutex::Mutex>>> symtab,unwind,function-starts
+0x100001b8c 204 core::ptr::drop_glue::<core::option::Option<gimli::read::line::IncompleteLineProgram<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>> symtab,unwind,function-starts
+0x100001c58 96 core::ptr::drop_glue::<core::option::Option<object::read::symbol_map::ObjectMap>> symtab,unwind,function-starts
+0x100001cb8 128 core::ptr::drop_glue::<core::option::Option<std::backtrace_rs::symbolize::gimli::Mapping>> symtab,unwind,function-starts
+0x100001d38 216 core::ptr::drop_glue::<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>> symtab,unwind,function-starts
+0x100001e10 216 core::ptr::drop_glue::<core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>> symtab,unwind,function-starts
+0x100001ee8 116 core::ptr::drop_glue::<core::result::Result<std::sync::poison::mutex::MutexGuard<()>, std::sync::poison::PoisonError<std::sync::poison::mutex::MutexGuard<()>>>> symtab,unwind,function-starts
+0x100001f5c 188 core::ptr::drop_glue::<core::result::Result<std::fs::DirEntry, core::io::error::Error>> symtab,unwind,function-starts
+0x100002018 252 core::ptr::drop_glue::<core::result::Result<addr2line::line::Lines, gimli::read::Error>> symtab,unwind,function-starts
+0x100002114 80 core::ptr::drop_glue::<core::result::Result<std::os::unix::net::addr::SocketAddr, core::io::error::Error>> symtab,unwind,function-starts
+0x100002164 20 core::ptr::drop_glue::<core::result::Result<&core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>, (&core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>, core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>)>> symtab,function-starts
+0x100002178 100 core::ptr::drop_glue::<core::result::Result<&core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, (&core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>)>> symtab,unwind,function-starts
+0x1000021dc 16 core::ptr::drop_glue::<core::result::Result<&core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, (&core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>)>> symtab,function-starts
+0x1000021ec 16 core::ptr::drop_glue::<core::result::Result<&core::result::Result<addr2line::line::Lines, gimli::read::Error>, (&core::result::Result<addr2line::line::Lines, gimli::read::Error>, core::result::Result<addr2line::line::Lines, gimli::read::Error>)>> symtab,function-starts
+0x1000021fc 72 core::ptr::drop_glue::<core::result::Result<&std::thread::thread::Thread, (&std::thread::thread::Thread, std::thread::thread::Thread)>> symtab,function-starts
+0x100002244 80 core::ptr::drop_glue::<core::result::Result<(), core::io::error::Error>> symtab,unwind,function-starts
+0x100002294 168 core::ptr::drop_glue::<alloc::vec::Vec<core::option::Option<core::option::Option<std::backtrace_rs::symbolize::gimli::Mapping>>>> symtab,unwind,function-starts
+0x10000233c 212 core::ptr::drop_glue::<alloc::vec::Vec<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>> symtab,unwind,function-starts
+0x100002410 272 core::ptr::drop_glue::<alloc::vec::Vec<addr2line::unit::SupUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>> symtab,unwind,function-starts
+0x100002520 172 core::ptr::drop_glue::<alloc::vec::Vec<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>> symtab,unwind,function-starts
+0x1000025cc 128 core::ptr::drop_glue::<alloc::vec::Vec<alloc::string::String>> symtab,unwind,function-starts
+0x10000264c 152 core::ptr::drop_glue::<alloc::vec::Vec<addr2line::line::LineSequence>> symtab,unwind,function-starts
+0x1000026e4 24 core::ptr::drop_glue::<alloc::vec::Vec<u8>> symtab,function-starts
+0x1000026fc 64 core::ptr::drop_glue::<alloc::sync::Arc<std::sync::poison::mutex::Mutex<alloc::vec::Vec<u8>>>> symtab,function-starts
+0x10000273c 92 core::ptr::drop_glue::<alloc::sync::ArcInner<gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>> symtab,unwind,function-starts
+0x100002798 132 core::ptr::drop_glue::<alloc::sync::ArcInner<std::sys::fs::unix::InnerReadDir>> symtab,unwind,function-starts
+0x10000281c 240 core::ptr::drop_glue::<alloc::boxed::Box<[core::option::Option<core::option::Option<std::backtrace_rs::symbolize::gimli::Mapping>>]>> symtab,unwind,function-starts
+0x10000290c 156 core::ptr::drop_glue::<alloc::boxed::Box<[addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>]>> symtab,unwind,function-starts
+0x1000029a8 112 core::ptr::drop_glue::<alloc::boxed::Box<[alloc::string::String]>> symtab,unwind,function-starts
+0x100002a18 228 core::ptr::drop_glue::<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>> symtab,unwind,function-starts
+0x100002afc 84 core::ptr::drop_glue::<addr2line::unit::SupUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>> symtab,unwind,function-starts
+0x100002b50 224 core::ptr::drop_glue::<addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>> symtab,unwind,function-starts
+0x100002c30 256 core::ptr::drop_glue::<addr2line::unit::SupUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>> symtab,unwind,function-starts
+0x100002d30 156 core::ptr::drop_glue::<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>> symtab,unwind,function-starts
+0x100002dcc 136 core::ptr::drop_glue::<gimli::read::line::LineRows<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, gimli::read::line::IncompleteLineProgram<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>, usize>> symtab,unwind,function-starts
+0x100002e54 84 core::ptr::drop_glue::<gimli::read::dwarf::Unit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>> symtab,unwind,function-starts
+0x100002ea8 152 core::ptr::drop_glue::<gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>> symtab,unwind,function-starts
+0x100002f40 84 core::ptr::drop_glue::<std::sync::poison::mutex::MutexGuard<alloc::vec::Vec<u8>>> symtab,unwind,function-starts
+0x100002f94 92 core::ptr::drop_glue::<std::sync::poison::rwlock::RwLockReadGuard<()>> symtab,function-starts
+0x100002ff0 156 core::ptr::drop_glue::<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>> symtab,unwind,function-starts
+0x10000308c 84 core::ptr::drop_glue::<core::io::write::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>>> symtab,unwind,function-starts
+0x1000030e0 132 core::ptr::drop_glue::<<alloc::collections::btree::map::IntoIter<_, _, _> as core::ops::drop::Drop>::drop::DropGuard<u64, core::result::Result<alloc::sync::Arc<gimli::read::abbrev::Abbreviations>, gimli::read::Error>, alloc::alloc::Global>> symtab,unwind,function-starts
+0x100003164 64 core::ptr::drop_glue::<std::sys::backtrace::_print_fmt::{closure#0}> symtab,function-starts
+0x1000031a4 132 core::ptr::drop_glue::<std::fs::DirEntry> symtab,unwind,function-starts
+0x100003228 24 core::ptr::drop_glue::<alloc::string::String> symtab,function-starts
+0x100003240 92 core::ptr::drop_glue::<core::io::error::Error> symtab,unwind,function-starts
+0x10000329c 24 core::ptr::drop_glue::<alloc::ffi::c_str::NulError> symtab,function-starts
+0x1000032b4 280 core::ptr::drop_glue::<gimli::read::abbrev::Abbreviations> symtab,unwind,function-starts
+0x1000033cc 204 core::ptr::drop_glue::<gimli::read::abbrev::AbbreviationsCache> symtab,unwind,function-starts
+0x100003498 88 core::ptr::drop_glue::<object::read::symbol_map::ObjectMap> symtab,unwind,function-starts
+0x1000034f0 40 core::ptr::drop_glue::<std::backtrace_rs::backtrace::libunwind::Bomb> symtab,function-starts
+0x100003518 236 core::ptr::drop_glue::<std::backtrace_rs::symbolize::gimli::Context> symtab,unwind,function-starts
+0x100003604 212 core::ptr::drop_glue::<std::backtrace_rs::symbolize::gimli::macho::Object> symtab,unwind,function-starts
+0x1000036d8 244 core::ptr::drop_glue::<std::backtrace_rs::symbolize::gimli::stash::Stash> symtab,unwind,function-starts
+0x1000037cc 80 core::ptr::drop_glue::<std::sys::pal::unix::sync::mutex::AttrGuard> symtab,unwind,function-starts
+0x10000381c 24 core::ptr::drop_glue::<<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError> symtab,function-starts
+0x100003834 268 core::ptr::drop_glue::<[core::option::Option<core::option::Option<std::backtrace_rs::symbolize::gimli::Mapping>>]> symtab,unwind,function-starts
+0x100003940 72 std::sys::backtrace::__rust_end_short_backtrace::<std::panicking::panic_handler::{closure#0}, !> symtab,dynamic,function-starts
+0x100003988 704 gimli::read::line::parse_file_v5::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x100003c48 1732 gimli::read::line::parse_attribute::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x10000430c 244 gimli::read::line::parse_directory_v5::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x100004400 1252 gimli::read::unit::skip_attributes::<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>> symtab,unwind,function-starts
+0x1000048e4 224 core::slice::sort::unstable::ipnsort::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> symtab,dynamic,function-starts
+0x1000049c4 276 core::slice::sort::unstable::ipnsort::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_unstable_by_key<(u64, usize), <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}> symtab,dynamic,function-starts
+0x100004ad8 236 core::slice::sort::unstable::ipnsort::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_unstable_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}> symtab,dynamic,function-starts
+0x100004bc4 284 core::slice::sort::unstable::ipnsort::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,dynamic,function-starts
+0x100004ce0 376 core::slice::sort::unstable::ipnsort::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_unstable_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,dynamic,function-starts
+0x100004e58 424 core::slice::sort::unstable::ipnsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x100005000 236 core::slice::sort::unstable::ipnsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#2}>::{closure#0}> symtab,dynamic,function-starts
+0x1000050ec 48 std::sys::thread_local::native::eager::destroy::<core::cell::Cell<core::option::Option<alloc::sync::Arc<std::sync::poison::mutex::Mutex<alloc::vec::Vec<u8>>>>>> symtab,function-starts
+0x10000511c 204 core::slice::sort::shared::pivot::median3_rec::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x1000051e8 236 core::slice::sort::shared::pivot::median3_rec::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_unstable_by_key<(u64, usize), <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}> symtab,unwind,function-starts
+0x1000052d4 208 core::slice::sort::shared::pivot::median3_rec::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_unstable_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x1000053a4 260 core::slice::sort::shared::pivot::median3_rec::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x1000054a8 204 core::slice::sort::shared::pivot::median3_rec::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_unstable_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x100005574 308 core::slice::sort::shared::pivot::median3_rec::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x1000056a8 208 core::slice::sort::shared::pivot::median3_rec::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#2}>::{closure#0}> symtab,unwind,function-starts
+0x100005778 384 core::slice::sort::shared::smallsort::sort4_stable::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x1000058f8 696 core::slice::sort::shared::smallsort::sort8_stable::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_unstable_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,function-starts
+0x100005bb0 1048 core::slice::sort::shared::smallsort::small_sort_general::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x100005fc8 1344 core::slice::sort::shared::smallsort::small_sort_general::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_unstable_by_key<(u64, usize), <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}> symtab,unwind,function-starts
+0x100006508 1256 core::slice::sort::shared::smallsort::small_sort_general::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_unstable_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x1000069f0 1512 core::slice::sort::shared::smallsort::small_sort_general::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x100006fd8 1104 core::slice::sort::shared::smallsort::small_sort_general::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x100007428 1224 core::slice::sort::shared::smallsort::small_sort_general::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#2}>::{closure#0}> symtab,unwind,function-starts
+0x1000078f0 180 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x1000079a4 196 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,function-starts
+0x100007a68 288 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x100007b88 240 core::slice::sort::unstable::heapsort::heapsort::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x100007c78 248 core::slice::sort::unstable::heapsort::heapsort::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_unstable_by_key<(u64, usize), <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x100007d70 256 core::slice::sort::unstable::heapsort::heapsort::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_unstable_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x100007e70 260 core::slice::sort::unstable::heapsort::heapsort::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x100007f74 224 core::slice::sort::unstable::heapsort::heapsort::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_unstable_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x100008054 352 core::slice::sort::unstable::heapsort::heapsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x1000081b4 256 core::slice::sort::unstable::heapsort::heapsort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#2}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x1000082b4 800 core::slice::sort::unstable::quicksort::quicksort::<addr2line::line::LineSequence, <[addr2line::line::LineSequence]>::sort_unstable_by_key<u64, <addr2line::line::Lines>::parse<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x1000085d4 916 core::slice::sort::unstable::quicksort::quicksort::<addr2line::unit::UnitRange, <[addr2line::unit::UnitRange]>::sort_unstable_by_key<(u64, usize), <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#4}>::{closure#0}> symtab,unwind,function-starts
+0x100008968 1000 core::slice::sort::unstable::quicksort::quicksort::<addr2line::function::FunctionAddress, <[addr2line::function::FunctionAddress]>::sort_unstable_by_key<u64, <addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x100008d50 992 core::slice::sort::unstable::quicksort::quicksort::<addr2line::function::InlinedFunctionAddress, <[addr2line::function::InlinedFunctionAddress]>::sort_unstable_by<<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x100009130 1884 core::slice::sort::unstable::quicksort::quicksort::<(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset), <[(gimli::common::DebugInfoOffset, gimli::common::DebugArangesOffset)]>::sort_unstable_by_key<gimli::common::DebugInfoOffset, <addr2line::unit::ResUnits<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x10000988c 1300 core::slice::sort::unstable::quicksort::quicksort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<&[u8], <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#1}>::{closure#0}> symtab,unwind,function-starts
+0x100009da0 1032 core::slice::sort::unstable::quicksort::quicksort::<(&[u8], u64), <[(&[u8], u64)]>::sort_unstable_by_key<u64, <std::backtrace_rs::symbolize::gimli::macho::Object>::parse::{closure#2}>::{closure#0}> symtab,unwind,function-starts
+0x10000a1a8 112 <std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::stdout::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0} symtab,unwind,function-starts
+0x10000a218 144 <std::sync::once::Once>::call_once_force::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::cleanup::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0} symtab,unwind,function-starts
+0x10000a2a8 576 <std::sync::once::Once>::call_once::<std::rt::cleanup::{closure#0}>::{closure#0} symtab,unwind,function-starts
+0x10000a4e8 760 std::thread::current::with_current_name::<std::panicking::default_hook::{closure#0}::{closure#0}, ()>::{closure#0} symtab,unwind,function-starts
+0x10000a7e0 648 std::sys::backtrace::_print_fmt::{closure#1}::{closure#0} symtab,unwind,function-starts
+0x10000aa68 840 <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_function_or_location::{closure#0} symtab,unwind,function-starts
+0x10000adb0 56 <std::sys::fs::unix::File>::open::{closure#0} symtab,function-starts
+0x10000ade8 280 std::panicking::default_hook::{closure#0} symtab,unwind,function-starts
+0x10000af00 164 std::panicking::panic_handler::{closure#0} symtab,unwind,function-starts
+0x10000afa4 32 std::sys::backtrace::_print_fmt::{closure#0} symtab,function-starts
+0x10000afc4 312 std::sys::backtrace::_print_fmt::{closure#1} symtab,unwind,function-starts
+0x10000b0fc 12 std::sys::personality::gcc::find_eh_action::{closure#0} symtab,function-starts
+0x10000b108 40 std::sys::personality::gcc::find_eh_action::{closure#1} symtab,function-starts
+0x10000b130 328 std::sys::env::unix::getenv::{closure#0} symtab,unwind,function-starts
+0x10000b278 112 <<std::sync::once::Once>::call_once_force<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::stdout::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0} as core::ops::function::FnOnce<(&std::sync::once::OnceState,)>>::call_once::{shim:vtable#0} symtab,unwind,function-starts
+0x10000b2e8 116 <<std::sync::once::Once>::call_once_force<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::cleanup::{closure#0}>::{closure#0}, !>::{closure#0}>::{closure#0} as core::ops::function::FnOnce<(&std::sync::once::OnceState,)>>::call_once::{shim:vtable#0} symtab,unwind,function-starts
+0x10000b35c 40 <<std::sync::once::Once>::call_once<std::rt::cleanup::{closure#0}>::{closure#0} as core::ops::function::FnOnce<(&std::sync::once::OnceState,)>>::call_once::{shim:vtable#0} symtab,unwind,function-starts
+0x10000b384 4 <std::sys::backtrace::_print_fmt::{closure#1}::{closure#0} as core::ops::function::FnOnce<(&std::backtrace_rs::symbolize::Symbol,)>>::call_once::{shim:vtable#0} symtab,function-starts
+0x10000b388 172 <std::sys::backtrace::_print_fmt::{closure#0} as core::ops::function::FnOnce<(&mut core::fmt::Formatter, std::backtrace_rs::types::BytesOrWideString)>>::call_once::{shim:vtable#0} symtab,unwind,function-starts
+0x10000b434 4 <std::sys::backtrace::_print_fmt::{closure#1} as core::ops::function::FnOnce<(&std::backtrace_rs::backtrace::Frame,)>>::call_once::{shim:vtable#0} symtab,function-starts
+0x10000b438 12 <std::sys::personality::gcc::find_eh_action::{closure#0} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} symtab,function-starts
+0x10000b444 44 <std::sys::personality::gcc::find_eh_action::{closure#1} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} symtab,function-starts
+0x10000b470 116 __rustc::__rdl_alloc symtab,dynamic,unwind,function-starts
+0x10000b4e4 4 __rustc::__rdl_dealloc symtab,dynamic,function-starts
+0x10000b4e8 172 __rustc::__rdl_realloc symtab,dynamic,unwind,function-starts
+0x10000b594 92 __rustc::__rust_drop_panic symtab,dynamic,unwind,function-starts
+0x10000b5f0 32 __rustc::rust_begin_unwind symtab,dynamic,function-starts
+0x10000b610 140 __rustc::__rdl_alloc_zeroed symtab,dynamic,unwind,function-starts
+0x10000b69c 144 __rustc::__rust_foreign_exception symtab,dynamic,unwind,function-starts
+0x10000b72c 1236 <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_function_or_location symtab,unwind,function-starts
+0x10000bc00 768 <addr2line::frame::FrameIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next symtab,unwind,function-starts
+0x10000bf00 572 <std::sys::pal::unix::sync::mutex::Mutex>::init symtab,dynamic,unwind,function-starts
+0x10000c13c 400 <addr2line::Context<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_unit symtab,function-starts
+0x10000c2cc 628 <gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::attr_string symtab,function-starts
+0x10000c540 580 <std::path::Path>::_strip_prefix symtab,dynamic,unwind,function-starts
+0x10000c784 416 <std::path::Path>::_join symtab,dynamic,unwind,function-starts
+0x10000c924 3464 <addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse_children symtab,unwind,function-starts
+0x10000d6ac 480 <std::sys::sync::rwlock::queue::RwLock>::unlock_queue symtab,unwind,function-starts
+0x10000d88c 1124 <addr2line::lookup::LoopingLookup<core::result::Result<addr2line::frame::FrameIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>, addr2line::lookup::MappedLookup<core::result::Result<(core::option::Option<&addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>, core::option::Option<addr2line::frame::Location>), gimli::read::Error>, addr2line::lookup::SimpleLookup<core::result::Result<(addr2line::DebugFile, gimli::read::dwarf::UnitRef<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>), gimli::read::Error>, gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::dwarf_and_unit::{closure#6}>, <addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_function_or_location::{closure#0}>, <addr2line::Context<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::find_frames::{closure#0}>>::new_lookup symtab,unwind,function-starts
+0x10000dcf0 6736 <gimli::read::dwarf::Unit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::new symtab,unwind,function-starts
+0x10000f740 708 <gimli::read::aranges::ArangeHeader<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse symtab,function-starts
+0x10000fa04 172 <std::sync::poison::mutex::Mutex<alloc::vec::Vec<u8>>>::lock symtab,unwind,function-starts
+0x10000fab0 1144 <gimli::read::unit::DebugInfoUnitHeadersIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next symtab,function-starts
+0x10000ff28 408 <std::path::Components>::parse_next_component_back symtab,unwind,function-starts
+0x1000100c0 592 <std::path::Components>::as_path symtab,dynamic,unwind,function-starts
+0x100010310 2028 <gimli::read::index::UnitIndex<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::parse symtab,unwind,function-starts
+0x100010afc 268 <std::io::stdio::Stdout>::lock symtab,dynamic,unwind,function-starts
+0x100010c08 940 <std::backtrace_rs::print::BacktraceFrameFmt>::print_raw_with_column symtab,unwind,function-starts
+0x100010fb4 244 <std::backtrace_rs::symbolize::Symbol>::name symtab,dynamic,unwind,function-starts
+0x1000110a8 428 <std::thread::thread::Thread>::new symtab,dynamic,unwind,function-starts
+0x100011254 836 <std::backtrace_rs::symbolize::gimli::Context>::find_frames symtab,unwind,function-starts
+0x100011598 8464 <std::backtrace_rs::symbolize::gimli::Context>::new symtab,unwind,function-starts
+0x1000136a8 372 <alloc::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutRaw>>::flush_buf symtab,unwind,function-starts
+0x10001381c 3120 <std::backtrace_rs::symbolize::gimli::macho::Object>::parse symtab,unwind,function-starts
+0x10001444c 332 <std::backtrace_rs::symbolize::gimli::macho::Object>::section symtab,unwind,function-starts
+0x100014598 216 <gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::parse symtab,unwind,function-starts
+0x100014670 2888 <gimli::read::rnglists::RngListIter<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next symtab,unwind,function-starts
+0x1000151b8 1608 <gimli::read::unit::Attribute<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::value symtab,unwind,function-starts
+0x100015800 148 <gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::u8_value symtab,function-starts
+0x100015894 192 <gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>::u16_value symtab,function-starts
+0x100015954 3400 <gimli::read::unit::EntriesRaw<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::read_attribute symtab,dynamic,unwind,function-starts
+0x10001669c 4880 <gimli::read::unit::EntriesCursor<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::next_entry symtab,unwind,function-starts
+0x1000179ac 568 <std::sys::fs::unix::File>::open_c symtab,unwind,function-starts
+0x100017be4 208 <alloc::sync::Arc<gimli::read::dwarf::Dwarf<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::drop_slow symtab,dynamic,unwind,function-starts
+0x100017cb4 44 <alloc::sync::Arc<core::mem::maybe_uninit::MaybeUninit<std::thread::thread::Inner>, std::alloc::System>>::drop_slow symtab,dynamic,function-starts
+0x100017ce0 160 <alloc::sync::Arc<std::sync::poison::mutex::Mutex<alloc::vec::Vec<u8>>>>::drop_slow symtab,dynamic,unwind,function-starts
+0x100017d80 136 <alloc::sync::Arc<std::thread::thread::Inner, std::alloc::System>>::drop_slow symtab,dynamic,unwind,function-starts
+0x100017e08 152 <alloc::sync::Arc<gimli::read::abbrev::Abbreviations>>::drop_slow symtab,dynamic,unwind,function-starts
+0x100017ea0 196 <alloc::sync::Arc<std::sys::fs::unix::InnerReadDir>>::drop_slow symtab,dynamic,unwind,function-starts
+0x100017f64 508 <alloc::collections::btree::map::IntoIter<u64, core::result::Result<alloc::sync::Arc<gimli::read::abbrev::Abbreviations>, gimli::read::Error>>>::dying_next symtab,unwind,function-starts
+0x100018160 552 <alloc::collections::btree::map::IntoIter<u64, gimli::read::abbrev::Abbreviation>>::dying_next symtab,unwind,function-starts
+0x100018388 1652 std::rt::lang_start_internal symtab,dynamic,unwind,function-starts
+0x1000189fc 484 std::env::current_dir symtab,dynamic,unwind,function-starts
+0x100018be0 268 std::alloc::default_alloc_error_hook symtab,dynamic,unwind,function-starts
+0x100018cec 460 std::panic::get_backtrace_style symtab,dynamic,unwind,function-starts
+0x100018eb8 320 std::panicking::default_hook symtab,dynamic,unwind,function-starts
+0x100018ff8 208 std::panicking::payload_as_str symtab,dynamic,unwind,function-starts
+0x1000190c8 936 std::panicking::panic_with_hook symtab,dynamic,unwind,function-starts
+0x100019470 72 alloc::boxed::box_new_uninit symtab,unwind,function-starts
+0x1000194b8 244 std::io::stdio::try_set_output_capture symtab,dynamic,unwind,function-starts
+0x1000195ac 512 std::io::stdio::print_to_buffer_if_capture_used symtab,unwind,function-starts
+0x1000197ac 232 std::io::stdio::_print symtab,dynamic,unwind,function-starts
+0x100019894 428 std::sys::fs::read_dir symtab,dynamic,unwind,function-starts
+0x100019a40 232 std::sys::backtrace::output_filename symtab,unwind,function-starts
+0x100019b28 132 std::sys::backtrace::lock symtab,dynamic,unwind,function-starts
+0x100019bac 136 std::panicking::panic_count::increase symtab,dynamic,unwind,function-starts
+0x100019c34 468 std::backtrace_rs::symbolize::gimli::mmap symtab,unwind,function-starts
+0x100019e08 9584 std::backtrace_rs::symbolize::gimli::resolve symtab,dynamic,unwind,function-starts
+0x10001c378 568 std::sys::env::unix::env_read_lock symtab,unwind,function-starts
+0x10001c5b0 500 std::backtrace_rs::symbolize::gimli::macho::find_header symtab,function-starts
+0x10001c7a4 328 std::sys::personality::dwarf::eh::read_encoded_offset symtab,function-starts
+0x10001c8ec 288 std::sys::thread_local::destructors::list::register symtab,dynamic,unwind,function-starts
+0x10001ca0c 12 std::sys::io::error::unix::is_interrupted symtab,function-starts
+0x10001ca18 36 std::sys::io::error::unix::decode_error_kind symtab,function-starts
+0x10001ca3c 388 std::sys::sync::once::queue::wait symtab,unwind,function-starts
+0x10001cbc0 3316 std::sys::pal::unix::stack_overflow::thread_info::set_current_info symtab,unwind,function-starts
+0x10001d8b4 492 std::sys::pal::unix::stack_overflow::imp::make_handler symtab,unwind,function-starts
+0x10001daa0 544 std::sys::pal::unix::stack_overflow::imp::signal_handler symtab,unwind,function-starts
+0x10001dcc0 120 std::backtrace_rs::backtrace::libunwind::trace::trace_fn symtab,unwind,function-starts
+0x10001dd38 252 std::sys::thread_local::guard::apple::enable::run_dtors symtab,unwind,function-starts
+0x10001de34 20 <alloc::string::String as core::any::Any>::type_id symtab,function-starts
+0x10001de48 20 <&str as core::any::Any>::type_id symtab,function-starts
+0x10001de5c 284 <std::thread::thread::thread_name_string::ThreadNameString as core::convert::From<alloc::string::String>>::from symtab,dynamic,unwind,function-starts
+0x10001df78 500 <<std::sys::backtrace::BacktraceLock>::print::DisplayBacktrace as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10001e16c 208 <core::io::write::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>> as core::fmt::Write>::write_str symtab,unwind,function-starts
+0x10001e23c 176 <core::io::write::default_write_fmt::Adapter<alloc::vec::Vec<u8>> as core::fmt::Write>::write_str symtab,unwind,function-starts
+0x10001e2ec 128 <core::io::write::default_write_fmt::Adapter<std::io::stdio::StdoutLock> as core::fmt::Write>::write_str symtab,unwind,function-starts
+0x10001e36c 148 <core::io::write::default_write_fmt::Adapter<std::sys::stdio::unix::Stderr> as core::fmt::Write>::write_str symtab,unwind,function-starts
+0x10001e400 256 <std::sys::sync::once::queue::WaiterQueue as core::ops::drop::Drop>::drop symtab,dynamic,unwind,function-starts
+0x10001e500 76 <std::panicking::panic_handler::FormatStringPayload as core::fmt::Display>::fmt symtab,dynamic,function-starts
+0x10001e54c 308 <std::path::Component as core::cmp::PartialEq>::eq symtab,unwind,function-starts
+0x10001e680 12 <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::get symtab,function-starts
+0x10001e68c 12 <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::as_str symtab,function-starts
+0x10001e698 96 <std::panicking::panic_handler::StaticStrPayload as core::panic::PanicPayload>::take_box symtab,dynamic,unwind,function-starts
+0x10001e6f8 116 <&alloc::vec::Vec<u8> as core::fmt::Debug>::fmt symtab,unwind,function-starts
+0x10001e76c 28 <&u8 as core::fmt::Debug>::fmt symtab,function-starts
+0x10001e788 76 <&i32 as core::fmt::Debug>::fmt symtab,function-starts
+0x10001e7d4 96 <&core::panic::location::Location as core::fmt::Display>::fmt symtab,unwind,function-starts
+0x10001e834 16 <&str as core::fmt::Display>::fmt symtab,function-starts
+0x10001e844 40 <&mut dyn core::panic::PanicPayload as core::fmt::Display>::fmt symtab,function-starts
+0x10001e86c 268 <std::backtrace_rs::symbolize::SymbolName as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10001e978 40 <std::panicking::panic_handler::StaticStrPayload as core::fmt::Display>::fmt symtab,dynamic,function-starts
+0x10001e9a0 128 <std::sys::stdio::unix::Stderr as core::io::write::Write>::write_vectored symtab,dynamic,unwind,function-starts
+0x10001ea20 8 <std::sys::stdio::unix::Stderr as core::io::write::Write>::is_write_vectored symtab,function-starts
+0x10001ea28 8 <std::sys::stdio::unix::Stderr as core::io::write::Write>::flush symtab,function-starts
+0x10001ea30 172 <std::sys::stdio::unix::Stderr as core::io::write::Write>::write symtab,dynamic,unwind,function-starts
+0x10001eadc 416 <alloc::vec::Vec<u8> as core::io::write::Write>::write_vectored symtab,unwind,function-starts
+0x10001ec7c 8 <alloc::vec::Vec<u8> as core::io::write::Write>::is_write_vectored symtab,function-starts
+0x10001ec84 400 <alloc::vec::Vec<u8> as core::io::write::Write>::write_all_vectored symtab,unwind,function-starts
+0x10001ee14 8 <alloc::vec::Vec<u8> as core::io::write::Write>::flush symtab,function-starts
+0x10001ee1c 136 <alloc::vec::Vec<u8> as core::io::write::Write>::write symtab,unwind,function-starts
+0x10001eea4 184 <alloc::vec::Vec<u8> as core::io::write::Write>::write_all symtab,unwind,function-starts
+0x10001ef5c 164 <gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize> as core::clone::Clone>::clone symtab,function-starts
+0x10001f000 100 <alloc::ffi::c_str::NulError as core::fmt::Debug>::fmt symtab,unwind,function-starts
+0x10001f064 280 <alloc::string::String as core::fmt::Write>::write_char symtab,unwind,function-starts
+0x10001f17c 132 <alloc::string::String as core::fmt::Write>::write_str symtab,unwind,function-starts
+0x10001f200 24 <usize as core::fmt::Debug>::fmt symtab,function-starts
+0x10001f218 156 <std::panicking::panic_handler::FormatStringPayload as core::panic::PanicPayload>::get symtab,dynamic,unwind,function-starts
+0x10001f2b4 280 <std::panicking::panic_handler::FormatStringPayload as core::panic::PanicPayload>::take_box symtab,dynamic,unwind,function-starts
+0x10001f3cc 324 <std::sys::fs::unix::ReadDir as core::iter::traits::iterator::Iterator>::next symtab,dynamic,unwind,function-starts
+0x10001f510 292 <std::sys::fs::unix::DirStream as core::ops::drop::Drop>::drop symtab,dynamic,unwind,function-starts
+0x10001f634 348 <&std::io::stdio::Stdout as core::io::write::Write>::write_fmt symtab,dynamic,unwind,function-starts
+0x10001f790 432 <std::io::stdio::StdoutLock as core::io::write::Write>::write_all symtab,dynamic,unwind,function-starts
+0x10001f940 808 <std::path::Components as core::iter::traits::iterator::Iterator>::next symtab,dynamic,unwind,function-starts
+0x10001fc68 1040 <std::path::Components as core::iter::traits::double_ended::DoubleEndedIterator>::next_back symtab,dynamic,unwind,function-starts
+0x100020078 52 <*mut core::ffi::c_void as core::fmt::Debug>::fmt symtab,function-starts
+0x1000200ac 1928 <&str as core::str::pattern::Pattern>::is_contained_in symtab,unwind,function-starts
+0x100020834 184 <alloc::vec::Vec<u8> as core::io::write::Write>::write_fmt symtab,unwind,function-starts
+0x1000208ec 136 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_offset symtab,function-starts
+0x100020974 476 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_sleb128 symtab,function-starts
+0x100020b50 556 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_uleb128 symtab,function-starts
+0x100020d7c 288 <gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian> as gimli::read::reader::Reader>::read_sized_offset symtab,function-starts
+0x100020e9c 184 <core::io::cursor::Cursor<&mut [u8]> as core::io::write::Write>::write_fmt symtab,unwind,function-starts
+0x100020f54 8 <std::panicking::begin_panic::Payload<&str> as core::panic::PanicPayload>::as_str symtab,function-starts
+0x100020f5c 352 <core::io::write::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>> as core::fmt::Write>::write_char symtab,unwind,function-starts
+0x1000210bc 20 <core::io::write::default_write_fmt::Adapter<core::io::cursor::Cursor<&mut [u8]>> as core::fmt::Write>::write_fmt symtab,function-starts
+0x1000210d0 272 <core::io::write::default_write_fmt::Adapter<alloc::vec::Vec<u8>> as core::fmt::Write>::write_char symtab,unwind,function-starts
+0x1000211e0 24 <core::io::write::default_write_fmt::Adapter<alloc::vec::Vec<u8>> as core::fmt::Write>::write_fmt symtab,function-starts
+0x1000211f8 336 <core::io::write::default_write_fmt::Adapter<std::io::stdio::StdoutLock> as core::fmt::Write>::write_char symtab,unwind,function-starts
+0x100021348 20 <core::io::write::default_write_fmt::Adapter<std::io::stdio::StdoutLock> as core::fmt::Write>::write_fmt symtab,function-starts
+0x10002135c 320 <core::io::write::default_write_fmt::Adapter<std::sys::stdio::unix::Stderr> as core::fmt::Write>::write_char symtab,unwind,function-starts
+0x10002149c 40 <core::io::write::default_write_fmt::Adapter<std::sys::stdio::unix::Stderr> as core::fmt::Write>::write_fmt symtab,function-starts
+0x1000214c4 208 <<core::io::error::Error>::from_raw_os_error::FUNCTIONS::{closure#0} as core::ops::function::FnOnce<(i32, &mut core::fmt::Formatter)>>::call_once symtab,unwind,function-starts
+0x100021594 68 <alloc::string::String as core::fmt::Write>::write_fmt symtab,function-starts
+0x1000215d8 516 <std::sys::stdio::unix::Stderr as core::io::write::Write>::write_all_vectored symtab,unwind,function-starts
+0x1000217dc 300 <std::sys::stdio::unix::Stderr as core::io::write::Write>::write_all symtab,unwind,function-starts
+0x100021908 184 <std::sys::stdio::unix::Stderr as core::io::write::Write>::write_fmt symtab,unwind,function-starts
+0x1000219c0 300 <std::sys::stdio::unix::Stdout as core::io::write::Write>::write_all symtab,unwind,function-starts
+0x100021aec 16 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::description symtab,function-starts
+0x100021afc 8 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::cause symtab,function-starts
+0x100021b04 4 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::provide symtab,function-starts
+0x100021b08 60 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::error::Error>::type_id symtab,function-starts
+0x100021b44 884 _rust_eh_personality symtab,dynamic,unwind,function-starts
+0x100021eb8 12 _OUTLINED_FUNCTION_0 symtab,function-starts
+0x100021ec4 16 _OUTLINED_FUNCTION_1 symtab,function-starts
+0x100021ed4 16 _OUTLINED_FUNCTION_2 symtab,function-starts
+0x100021ee4 12 _OUTLINED_FUNCTION_3 symtab,function-starts
+0x100021ef0 12 _OUTLINED_FUNCTION_4 symtab,function-starts
+0x100021efc 12 _OUTLINED_FUNCTION_5 symtab,function-starts
+0x100021f08 12 _OUTLINED_FUNCTION_6 symtab,function-starts
+0x100021f14 12 _OUTLINED_FUNCTION_7 symtab,function-starts
+0x100021f20 8 _OUTLINED_FUNCTION_8 symtab,function-starts
+0x100021f28 8 _OUTLINED_FUNCTION_9 symtab,function-starts
+0x100021f30 8 _OUTLINED_FUNCTION_10 symtab,function-starts
+0x100021f38 8 _OUTLINED_FUNCTION_11 symtab,function-starts
+0x100021f40 8 _OUTLINED_FUNCTION_12 symtab,function-starts
+0x100021f48 8 _OUTLINED_FUNCTION_13 symtab,function-starts
+0x100021f50 12 _OUTLINED_FUNCTION_14 symtab,function-starts
+0x100021f5c 8 _OUTLINED_FUNCTION_15 symtab,function-starts
+0x100021f64 20 _OUTLINED_FUNCTION_16 symtab,function-starts
+0x100021f78 8 _OUTLINED_FUNCTION_17 symtab,function-starts
+0x100021f80 8 _OUTLINED_FUNCTION_18 symtab,function-starts
+0x100021f88 16 _OUTLINED_FUNCTION_19 symtab,function-starts
+0x100021f98 16 _OUTLINED_FUNCTION_20 symtab,function-starts
+0x100021fa8 16 _OUTLINED_FUNCTION_21 symtab,function-starts
+0x100021fb8 24 _OUTLINED_FUNCTION_22 symtab,function-starts
+0x100021fd0 24 _OUTLINED_FUNCTION_23 symtab,function-starts
+0x100021fe8 12 _OUTLINED_FUNCTION_24 symtab,function-starts
+0x100021ff4 12 _OUTLINED_FUNCTION_25 symtab,function-starts
+0x100022000 8 _OUTLINED_FUNCTION_26 symtab,function-starts
+0x100022008 8 _OUTLINED_FUNCTION_27 symtab,function-starts
+0x100022010 12 _OUTLINED_FUNCTION_28 symtab,function-starts
+0x10002201c 8 _OUTLINED_FUNCTION_29 symtab,function-starts
+0x100022024 12 _OUTLINED_FUNCTION_30 symtab,function-starts
+0x100022030 12 _OUTLINED_FUNCTION_31 symtab,function-starts
+0x10002203c 12 _OUTLINED_FUNCTION_32 symtab,function-starts
+0x100022048 8 _OUTLINED_FUNCTION_33 symtab,function-starts
+0x100022050 8 _OUTLINED_FUNCTION_34 symtab,function-starts
+0x100022058 20 _OUTLINED_FUNCTION_35 symtab,function-starts
+0x10002206c 12 _OUTLINED_FUNCTION_36 symtab,function-starts
+0x100022078 12 _OUTLINED_FUNCTION_37 symtab,function-starts
+0x100022084 12 _OUTLINED_FUNCTION_38 symtab,function-starts
+0x100022090 12 _OUTLINED_FUNCTION_39 symtab,function-starts
+0x10002209c 20 _OUTLINED_FUNCTION_40 symtab,function-starts
+0x1000220b0 20 _OUTLINED_FUNCTION_41 symtab,function-starts
+0x1000220c4 20 _OUTLINED_FUNCTION_42 symtab,function-starts
+0x1000220d8 12 _OUTLINED_FUNCTION_43 symtab,function-starts
+0x1000220e4 20 _OUTLINED_FUNCTION_44 symtab,function-starts
+0x1000220f8 12 _OUTLINED_FUNCTION_45 symtab,function-starts
+0x100022104 140 core::ptr::drop_glue::<alloc::boxed::Box<panic_unwind::imp::Exception>> symtab,unwind,function-starts
+0x100022190 120 core::ptr::drop_glue::<panic_unwind::imp::Exception> symtab,unwind,function-starts
+0x100022208 160 __rustc::__rust_start_panic symtab,dynamic,unwind,function-starts
+0x1000222a8 104 __rustc::__rust_panic_cleanup symtab,dynamic,unwind,function-starts
+0x100022310 48 panic_unwind::imp::panic::exception_cleanup symtab,unwind,function-starts
+0x100022340 328 core::slice::sort::stable::driftsort_main::<object::read::symbol_map::ObjectMapEntry, <[object::read::symbol_map::ObjectMapEntry]>::sort_by_key<u64, <object::read::symbol_map::SymbolMap<object::read::symbol_map::ObjectMapEntry>>::new::{closure#0}>::{closure#0}, alloc::vec::Vec<object::read::symbol_map::ObjectMapEntry>> symtab,dynamic,unwind,function-starts
+0x100022488 208 core::slice::sort::shared::pivot::median3_rec::<object::read::symbol_map::ObjectMapEntry, <[object::read::symbol_map::ObjectMapEntry]>::sort_by_key<u64, <object::read::symbol_map::SymbolMap<object::read::symbol_map::ObjectMapEntry>>::new::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x100022558 216 core::slice::sort::shared::smallsort::insertion_sort_shift_left::<object::read::symbol_map::ObjectMapEntry, <[object::read::symbol_map::ObjectMapEntry]>::sort_by_key<u64, <object::read::symbol_map::SymbolMap<object::read::symbol_map::ObjectMapEntry>>::new::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x100022630 1328 core::slice::sort::stable::drift::sort::<object::read::symbol_map::ObjectMapEntry, <[object::read::symbol_map::ObjectMapEntry]>::sort_by_key<u64, <object::read::symbol_map::SymbolMap<object::read::symbol_map::ObjectMapEntry>>::new::{closure#0}>::{closure#0}> symtab,unwind,function-starts
+0x100022b60 2140 core::slice::sort::stable::quicksort::quicksort::<object::read::symbol_map::ObjectMapEntry, <[object::read::symbol_map::ObjectMapEntry]>::sort_by_key<u64, <object::read::symbol_map::SymbolMap<object::read::symbol_map::ObjectMapEntry>>::new::{closure#0}>::{closure#0}> symtab,dynamic,unwind,function-starts
+0x1000233bc 152 <object::read::symbol_map::ObjectMap>::get symtab,dynamic,function-starts
+0x100023454 220 <object::read::symbol_map::ObjectMap>::new symtab,dynamic,unwind,function-starts
+0x100023530 332 object::read::archive::parse_u64_digits symtab,dynamic,unwind,function-starts
+0x10002367c 620 object::read::archive::parse_sysv_extended_name symtab,dynamic,function-starts
+0x1000238e8 700 <&[u8] as object::read::read_ref::ReadRef>::read_bytes_at_until symtab,dynamic,function-starts
+0x100023ba4 60 core::ptr::drop_glue::<alloc::string::String> symtab,unwind,function-starts
+0x100023be0 332 <addr2line::line::Lines>::find_location symtab,dynamic,unwind,function-starts
+0x100023d2c 92 addr2line::line::has_backward_slash_root symtab,function-starts
+0x100023d88 452 addr2line::line::path_push symtab,dynamic,unwind,function-starts
+0x100023f4c 124 <alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Owned, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>>::new_internal::<alloc::alloc::Global> symtab,dynamic,unwind,function-starts
+0x100023fc8 396 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert::<alloc::alloc::Global> symtab,dynamic,unwind,function-starts
+0x100024154 412 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::insert::<alloc::alloc::Global> symtab,dynamic,unwind,function-starts
+0x1000242f0 484 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_recursing::<alloc::alloc::Global, <alloc::collections::btree::map::entry::VacantEntry<u64, gimli::read::abbrev::Abbreviation>>::insert_entry::{closure#0}> symtab,dynamic,unwind,function-starts
+0x1000244d4 172 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::split::<alloc::alloc::Global> symtab,dynamic,unwind,function-starts
+0x100024580 364 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::KV>>::split::<alloc::alloc::Global> symtab,dynamic,unwind,function-starts
+0x1000246ec 124 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::get::<u64> symtab,dynamic,function-starts
+0x100024768 80 <alloc::raw_vec::RawVecInner>::deallocate symtab,dynamic,unwind,function-starts
+0x1000247b8 48 <alloc::raw_vec::RawVec<gimli::read::abbrev::Abbreviation>>::grow_one symtab,dynamic,unwind,function-starts
+0x1000247e8 48 <alloc::raw_vec::RawVec<gimli::read::abbrev::AttributeSpecification>>::grow_one symtab,dynamic,unwind,function-starts
+0x100024818 280 <gimli::read::abbrev::Abbreviations>::insert symtab,dynamic,unwind,function-starts
+0x100024930 196 <alloc::collections::btree::map::entry::VacantEntry<u64, gimli::read::abbrev::Abbreviation>>::insert_entry symtab,dynamic,unwind,function-starts
+0x1000249f4 156 <alloc::raw_vec::RawVecInner>::grow_amortized symtab,dynamic,unwind,function-starts
+0x100024a90 164 <alloc::raw_vec::RawVecInner>::try_allocate_in symtab,dynamic,unwind,function-starts
+0x100024b34 152 <gimli::read::abbrev::Abbreviation>::new symtab,dynamic,unwind,function-starts
+0x100024bcc 308 <gimli::read::abbrev::Attributes>::push symtab,dynamic,unwind,function-starts
+0x100024d00 288 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::Edge>>::insert_fit symtab,dynamic,unwind,function-starts
+0x100024e20 364 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>, alloc::collections::btree::node::marker::Edge>>::insert_fit symtab,dynamic,unwind,function-starts
+0x100024f8c 308 <alloc::collections::btree::node::Handle<alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>, alloc::collections::btree::node::marker::KV>>::split_leaf_data symtab,dynamic,unwind,function-starts
+0x1000250c0 48 <alloc::boxed::Box<alloc::collections::btree::node::InternalNode<u64, gimli::read::abbrev::Abbreviation>>>::new_uninit_in symtab,dynamic,unwind,function-starts
+0x1000250f0 48 <alloc::boxed::Box<alloc::collections::btree::node::LeafNode<u64, gimli::read::abbrev::Abbreviation>>>::new_uninit_in symtab,dynamic,unwind,function-starts
+0x100025120 144 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::entry symtab,dynamic,function-starts
+0x1000251b0 176 <alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Leaf>>::push_with_handle symtab,dynamic,unwind,function-starts
+0x100025260 224 <alloc::collections::btree::node::NodeRef<alloc::collections::btree::node::marker::Mut, u64, gimli::read::abbrev::Abbreviation, alloc::collections::btree::node::marker::Internal>>::push symtab,dynamic,unwind,function-starts
+0x100025340 12 <alloc::raw_vec::RawVec<u8> as core::ops::drop::Drop>::drop symtab,dynamic,function-starts
+0x10002534c 68 <gimli::read::abbrev::Attributes as core::ops::deref::Deref>::deref symtab,dynamic,function-starts
+0x100025390 4 <alloc::vec::Vec<gimli::read::abbrev::AttributeSpecification> as core::ops::drop::Drop>::drop symtab,dynamic,function-starts
+0x100025394 96 <str>::trim_start_matches::<&str> symtab,dynamic,unwind,function-starts
+0x1000253f4 236 <rustc_demangle::v0::Printer>::print_backref::<<rustc_demangle::v0::Printer>::print_path::{closure#1}> symtab,unwind,function-starts
+0x1000254e0 236 <rustc_demangle::v0::Printer>::print_backref::<<rustc_demangle::v0::Printer>::print_const::{closure#6}> symtab,unwind,function-starts
+0x1000255cc 228 <rustc_demangle::v0::Printer>::print_backref::<<rustc_demangle::v0::Printer>::print_type> symtab,unwind,function-starts
+0x1000256b0 164 <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_const::{closure#2}> symtab,unwind,function-starts
+0x100025754 176 <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_const::{closure#3}> symtab,unwind,function-starts
+0x100025804 464 <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_const::{closure#5}> symtab,unwind,function-starts
+0x1000259d4 172 <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_type> symtab,unwind,function-starts
+0x100025a80 624 <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_dyn_trait> symtab,unwind,function-starts
+0x100025cf0 368 <rustc_demangle::v0::Printer>::print_sep_list::<<rustc_demangle::v0::Printer>::print_generic_arg> symtab,unwind,function-starts
+0x100025e60 96 <rustc_demangle::v0::Printer>::skipping_printing::<<rustc_demangle::v0::Printer>::print_path::{closure#0}> symtab,unwind,function-starts
+0x100025ec0 248 <rustc_demangle::v0::Printer>::print_quoted_escaped_chars::<core::iter::sources::once::Once<char>> symtab,unwind,function-starts
+0x100025fb8 416 <rustc_demangle::v0::Printer>::in_binder::<<rustc_demangle::v0::Printer>::print_type::{closure#0}> symtab,unwind,function-starts
+0x100026158 408 <rustc_demangle::v0::Printer>::in_binder::<<rustc_demangle::v0::Printer>::print_type::{closure#1}> symtab,unwind,function-starts
+0x1000262f0 1236 <rustc_demangle::v0::Printer>::print_type::{closure#0} symtab,unwind,function-starts
+0x1000267c4 80 rustc_demangle::try_demangle symtab,dynamic,unwind,function-starts
+0x100026814 2488 rustc_demangle::demangle symtab,dynamic,unwind,function-starts
+0x1000271cc 124 <char>::is_assigned symtab,unwind,function-starts
+0x100027248 584 <char>::escape_debug_ext symtab,unwind,function-starts
+0x100027490 260 <rustc_demangle::v0::HexNibbles>::try_parse_uint symtab,unwind,function-starts
+0x100027594 220 <rustc_demangle::v0::Parser>::integer_62 symtab,function-starts
+0x100027670 192 <rustc_demangle::v0::Parser>::hex_nibbles symtab,unwind,function-starts
+0x100027730 152 <rustc_demangle::v0::Parser>::opt_integer_62 symtab,unwind,function-starts
+0x1000277c8 604 <rustc_demangle::v0::Parser>::ident symtab,unwind,function-starts
+0x100027a24 148 <rustc_demangle::v0::Parser>::backref symtab,unwind,function-starts
+0x100027ab8 1592 <rustc_demangle::v0::Printer>::print_path symtab,unwind,function-starts
+0x1000280f0 1304 <rustc_demangle::v0::Printer>::print_type symtab,unwind,function-starts
+0x100028608 1576 <rustc_demangle::v0::Printer>::print_const symtab,unwind,function-starts
+0x100028c30 352 <rustc_demangle::v0::Printer>::print_const_uint symtab,unwind,function-starts
+0x100028d90 548 <rustc_demangle::v0::Printer>::print_const_str_literal symtab,unwind,function-starts
+0x100028fb4 276 <rustc_demangle::v0::Printer>::print_lifetime_from_index symtab,unwind,function-starts
+0x1000290c8 336 <rustc_demangle::v0::Printer>::print_path_maybe_open_generics symtab,unwind,function-starts
+0x100029218 448 <rustc_demangle::v0::Printer>::print_pat symtab,unwind,function-starts
+0x1000293d8 56 rustc_demangle::v0::basic_type symtab,function-starts
+0x100029410 112 core::unicode::unicode_data::white_space::lookup symtab,function-starts
+0x100029480 2944 <rustc_demangle::legacy::Demangle as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002a000 20 <core::str::iter::Chars as core::iter::traits::iterator::Iterator>::count symtab,function-starts
+0x10002a014 676 <core::iter::sources::from_fn::FromFn<<rustc_demangle::v0::HexNibbles>::try_parse_str_chars::{closure#2}> as core::iter::traits::iterator::Iterator>::next symtab,unwind,function-starts
+0x10002a2b8 40 <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_str symtab,dynamic,function-starts
+0x10002a2e0 1064 <rustc_demangle::v0::Ident as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002a708 272 <rustc_demangle::Demangle as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002a818 44 <&core::num::error::IntErrorKind as core::fmt::Debug>::fmt symtab,dynamic,function-starts
+0x10002a844 16 <&str as core::fmt::Debug>::fmt symtab,dynamic,function-starts
+0x10002a854 28 <&u8 as core::fmt::Debug>::fmt symtab,dynamic,function-starts
+0x10002a870 16 <&mut [u8] as core::fmt::Debug>::fmt symtab,dynamic,function-starts
+0x10002a880 8 <&rustc_demangle::DemangleStyle as core::fmt::Display>::fmt symtab,dynamic,function-starts
+0x10002a888 20 <rustc_demangle::SizeLimitExhausted as core::fmt::Debug>::fmt symtab,function-starts
+0x10002a89c 20 <core::fmt::Error as core::fmt::Debug>::fmt symtab,function-starts
+0x10002a8b0 72 <rustc_demangle::DemangleStyle as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002a8f8 76 <core::num::error::ParseIntError as core::fmt::Debug>::fmt symtab,unwind,function-starts
+0x10002a944 112 <[u8] as core::fmt::Debug>::fmt symtab,dynamic,unwind,function-starts
+0x10002a9b4 20 <() as core::fmt::Debug>::fmt symtab,function-starts
+0x10002a9c8 796 <core::str::pattern::StrSearcher as core::str::pattern::Searcher>::next symtab,unwind,function-starts
+0x10002ace4 176 <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_char symtab,dynamic,unwind,function-starts
+0x10002ad94 20 <rustc_demangle::SizeLimitedFmtAdapter<&mut core::fmt::Formatter> as core::fmt::Write>::write_fmt symtab,dynamic,function-starts
+0x10002ada8 120 alloc::io::error::custom_owner_from_box::drop_box_raw::<dyn core::error::Error + core::marker::Send + core::marker::Sync> symtab,unwind,function-starts
+0x10002ae20 72 alloc::io::error::custom_owner_from_box::drop_box_raw::<core::io::error::Custom> symtab,unwind,function-starts
+0x10002ae68 560 <alloc::string::String>::from_utf8_lossy symtab,dynamic,unwind,function-starts
+0x10002b098 56 <<alloc::io::buffered::bufwriter::BufWriter<_>>::flush_buf::BufGuard>::remaining symtab,dynamic,function-starts
+0x10002b0d0 276 <alloc::ffi::c_str::CString>::_from_vec_unchecked symtab,dynamic,unwind,function-starts
+0x10002b1e4 100 alloc::sync::arcinner_layout_for_value_layout symtab,dynamic,function-starts
+0x10002b248 140 alloc::io::error::custom_owner_from_box symtab,dynamic,unwind,function-starts
+0x10002b2d4 16 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::fmt::Debug>::fmt symtab,dynamic,function-starts
+0x10002b2e4 148 <alloc::string::String as core::convert::From<alloc::borrow::Cow<str>>>::from symtab,dynamic,unwind,function-starts
+0x10002b378 256 <&[u8] as <alloc::ffi::c_str::CString>::new::SpecNewImpl>::spec_new_impl symtab,dynamic,unwind,function-starts
+0x10002b478 104 <<alloc::io::buffered::bufwriter::BufWriter<_>>::flush_buf::BufGuard as core::ops::drop::Drop>::drop symtab,dynamic,unwind,function-starts
+0x10002b4e0 16 <<alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync> as core::convert::From<alloc::string::String>>::from::StringError as core::fmt::Display>::fmt symtab,dynamic,function-starts
+0x10002b4f0 116 <core::ffi::c_str::CStr as alloc::borrow::ToOwned>::to_owned symtab,dynamic,unwind,function-starts
+0x10002b564 124 <char>::is_assigned symtab,unwind,function-starts
+0x10002b5e0 840 <char>::escape_debug_ext symtab,unwind,function-starts
+0x10002b928 8 <core::io::error::repr::Repr>::new_custom symtab,dynamic,function-starts
+0x10002b930 436 <core::fmt::builders::DebugStruct>::field symtab,dynamic,unwind,function-starts
+0x10002bae4 284 <core::ffi::c_str::CStr>::from_bytes_with_nul symtab,dynamic,function-starts
+0x10002bc00 336 <core::fmt::builders::DebugSet>::entry symtab,dynamic,unwind,function-starts
+0x10002bd50 76 <core::fmt::builders::DebugList>::finish symtab,dynamic,unwind,function-starts
+0x10002bd9c 100 <core::fmt::Formatter>::debug_list symtab,dynamic,unwind,function-starts
+0x10002be00 1076 <core::fmt::Formatter>::pad_integral symtab,dynamic,unwind,function-starts
+0x10002c234 524 <core::fmt::Formatter>::debug_tuple_field2_finish symtab,dynamic,unwind,function-starts
+0x10002c440 256 <core::fmt::Formatter>::debug_struct_field1_finish symtab,dynamic,unwind,function-starts
+0x10002c540 868 <core::fmt::Formatter>::pad symtab,dynamic,unwind,function-starts
+0x10002c8a4 28 <core::fmt::Formatter>::write_str symtab,dynamic,function-starts
+0x10002c8c0 2176 <core::str::pattern::StrSearcher>::new symtab,dynamic,unwind,function-starts
+0x10002d140 232 core::fmt::pointer_fmt_inner symtab,dynamic,unwind,function-starts
+0x10002d228 464 core::fmt::write symtab,dynamic,unwind,function-starts
+0x10002d3f8 964 core::str::slice_error_fail_rt symtab,dynamic,function-starts
+0x10002d7bc 1808 core::str::count::do_count_chars symtab,dynamic,unwind,function-starts
+0x10002decc 728 core::str::count::char_count_general_case symtab,dynamic,function-starts
+0x10002e1a4 648 core::str::converts::from_utf8 symtab,dynamic,function-starts
+0x10002e42c 220 core::slice::memchr::memchr_aligned symtab,dynamic,function-starts
+0x10002e508 336 core::slice::memchr::memrchr_aligned symtab,dynamic,unwind,function-starts
+0x10002e658 20 core::io::error::os_functions::get_os_functions symtab,dynamic,function-starts
+0x10002e66c 128 core::unicode::unicode_data::white_space::lookup symtab,function-starts
+0x10002e6ec 308 core::unicode::unicode_data::cn_planes_0_3::lookup_slow symtab,dynamic,function-starts
+0x10002e820 304 core::unicode::unicode_data::grapheme_extend::lookup_slow symtab,dynamic,function-starts
+0x10002e950 236 core::unicode::unicode_data::default_ignorable_code_point::lookup_slow symtab,dynamic,function-starts
+0x10002ea3c 272 core::unicode::unicode_data::cf::lookup_slow symtab,dynamic,function-starts
+0x10002eb4c 48 core::slice::sort::stable::drift::sqrt_approx symtab,dynamic,function-starts
+0x10002eb7c 140 <core::fmt::Formatter>::pad_integral::write_prefix symtab,unwind,function-starts
+0x10002ec08 28 <core::io::error::Error as core::fmt::Debug>::fmt symtab,dynamic,function-starts
+0x10002ec24 172 <u8 as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002ecd0 128 <core::fmt::builders::PadAdapter as core::fmt::Write>::write_char symtab,dynamic,unwind,function-starts
+0x10002ed50 612 <core::fmt::builders::PadAdapter as core::fmt::Write>::write_str symtab,dynamic,unwind,function-starts
+0x10002efb4 48 <&dyn core::fmt::Debug as core::fmt::Debug>::fmt symtab,function-starts
+0x10002efe4 16 <&str as core::fmt::Debug>::fmt symtab,function-starts
+0x10002eff4 28 <&usize as core::fmt::Debug>::fmt symtab,function-starts
+0x10002f010 76 <&str as core::fmt::Display>::fmt symtab,function-starts
+0x10002f05c 792 <core::io::error::repr::Repr as core::fmt::Debug>::fmt symtab,dynamic,unwind,function-starts
+0x10002f374 460 <core::str::lossy::Utf8Chunks as core::iter::traits::iterator::Iterator>::next symtab,dynamic,function-starts
+0x10002f540 1276 <core::bstr::ByteStr as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002fa3c 216 <core::io::error::Error as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002fb14 116 <usize as core::fmt::LowerHex>::fmt symtab,dynamic,unwind,function-starts
+0x10002fb88 72 <core::fmt::Arguments as core::fmt::Display>::fmt symtab,dynamic,function-starts
+0x10002fbd0 220 <core::io::error::Custom as core::fmt::Debug>::fmt symtab,dynamic,unwind,function-starts
+0x10002fcac 164 <usize as core::fmt::UpperHex>::fmt symtab,dynamic,unwind,function-starts
+0x10002fd50 88 <core::fmt::builders::FromFn<<core::io::error::repr::Repr as core::fmt::Debug>::fmt::{closure#0}> as core::fmt::Debug>::fmt symtab,unwind,function-starts
+0x10002fda8 356 <u32 as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10002ff0c 52 <core::io::error::Custom as core::ops::drop::Drop>::drop symtab,dynamic,function-starts
+0x10002ff40 52 <core::fmt::builders::FromFn<<core::io::error::repr::Repr as core::fmt::Debug>::fmt::{closure#0}::{closure#0}> as core::fmt::Display>::fmt symtab,function-starts
+0x10002ff74 324 <i32 as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x1000300b8 216 <i32 as core::fmt::Debug>::fmt symtab,unwind,function-starts
+0x100030190 460 <u64 as core::fmt::Debug>::fmt symtab,unwind,function-starts
+0x10003035c 140 <core::ops::range::Range<usize> as core::fmt::Debug>::fmt symtab,unwind,function-starts
+0x1000303e8 36 <core::fmt::Formatter as core::fmt::Write>::write_char symtab,dynamic,function-starts
+0x10003040c 60 <core::io::error::CustomOwner as core::ops::drop::Drop>::drop symtab,dynamic,function-starts
+0x100030448 324 <u64 as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x10003058c 132 <u8 as core::fmt::LowerHex>::fmt symtab,dynamic,unwind,function-starts
+0x100030610 116 <u8 as core::fmt::UpperHex>::fmt symtab,dynamic,unwind,function-starts
+0x100030684 912 <str as core::fmt::Debug>::fmt symtab,dynamic,unwind,function-starts
+0x100030a14 72 <str as core::fmt::Display>::fmt symtab,dynamic,function-starts
+0x100030a5c 224 <char as core::fmt::Debug>::fmt symtab,dynamic,unwind,function-starts
+0x100030b3c 264 <char as core::fmt::Display>::fmt symtab,dynamic,unwind,function-starts
+0x100030c44 60 <core::io::error::ErrorKind as core::fmt::Debug>::fmt symtab,function-starts
+0x100030c80 36 <core::cell::BorrowMutError as core::fmt::Display>::fmt symtab,dynamic,function-starts
+0x100030ca4 172 <i32 as core::fmt::LowerHex>::fmt symtab,dynamic,unwind,function-starts
+0x100030d50 120 <i32 as core::fmt::UpperHex>::fmt symtab,dynamic,unwind,function-starts
+0x100030dc8 8 <<core::io::error::OsFunctions>::DEFAULT::{closure#0} as core::ops::function::FnOnce<(i32, &mut core::fmt::Formatter)>>::call_once symtab,function-starts
+0x100030dd0 8 <<core::io::error::OsFunctions>::DEFAULT::{closure#2} as core::ops::function::FnOnce<(i32,)>>::call_once symtab,function-starts
+0x100030dd8 48 <<core::io::error::OsFunctions>::DEFAULT::{closure#1} as core::ops::function::FnOnce<(i32,)>>::call_once symtab,function-starts
+0x100030e08 28 <core::fmt::builders::PadAdapter as core::fmt::Write>::write_fmt symtab,function-starts
+0x100030e24 28 _OUTLINED_FUNCTION_0 symtab,function-starts
+0x100030e40 96 <std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::stdout::{closure#0}>::{closure#0}, !> symtab,function-starts
+0x100030ea0 108 <std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::initialize::<<std::sync::once_lock::OnceLock<std::sync::reentrant_lock::ReentrantLock<core::cell::RefCell<alloc::io::buffered::linewriter::LineWriter<std::io::stdio::StdoutRaw>>>>>::get_or_init<std::io::stdio::cleanup::{closure#0}>::{closure#0}, !> symtab,function-starts
+0x100030f0c 72 <core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::get_or_init<<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::dwarf_and_unit::{closure#6}::{closure#0}>::{closure#0}, !> symtab,function-starts
+0x100030f54 104 <core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<core::option::Option<alloc::boxed::Box<addr2line::unit::DwoUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>, gimli::read::Error>>>::get_or_init<<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::dwarf_and_unit::{closure#4}>::{closure#0}, !> symtab,function-starts
+0x100030fbc 1500 <core::cell::once::OnceCell<core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::function::Function<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::get_or_init<<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::borrow::{closure#0}>::{closure#0}, !> symtab,unwind,function-starts
+0x100031598 3456 <core::cell::once::OnceCell<core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::function::Functions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>, gimli::read::Error>>>::get_or_init<<addr2line::function::LazyFunctions<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>::borrow::{closure#0}>::{closure#0}, !> symtab,unwind,function-starts
+0x100032318 5796 <core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::try_init::<<core::cell::once::OnceCell<core::result::Result<addr2line::line::Lines, gimli::read::Error>>>::get_or_init<<addr2line::line::LazyLines>::borrow<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>::{closure#0}>::{closure#0}, !> symtab,unwind,function-starts
+0x1000339bc 252 <core::cell::once::OnceCell<std::thread::thread::Thread>>::try_init::<<core::cell::once::OnceCell<std::thread::thread::Thread>>::get_or_init<std::thread::current::current_or_unnamed>::{closure#0}, !> symtab,unwind,function-starts
+0x100033ab8 280 <std::sys::sync::once_box::OnceBox<std::sys::pal::unix::sync::mutex::Mutex>>::initialize::<<std::sys::sync::mutex::pthread::Mutex>::get::{closure#0}> symtab,unwind,function-starts
+0x100033bd0 48 std::rt::handle_rt_panic::<isize> symtab,function-starts
+0x100033c00 52 core::panicking::assert_failed::<i32, i32> symtab,dynamic,function-starts
+0x100033c34 32 std::sys::backtrace::__rust_end_short_backtrace::<std::alloc::rust_oom::{closure#0}, !> symtab,dynamic,function-starts
+0x100033c54 252 std::sys::helpers::small_c_string::run_with_cstr_allocating::<std::sys::fs::unix::File> symtab,unwind,function-starts
+0x100033d50 168 std::sys::helpers::small_c_string::run_with_cstr_allocating::<*mut libc::unix::DIR> symtab,unwind,function-starts
+0x100033df8 176 <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global> symtab,unwind,function-starts
+0x100033ea8 76 std::rt::lang_start_internal::{closure#0}::{closure#0}::{closure#1} symtab,function-starts
+0x100033ef4 68 std::alloc::rust_oom::{closure#0} symtab,function-starts
+0x100033f38 304 core::str::pattern::simd_contains::{closure#2} symtab,function-starts
+0x100034068 72 std::sys::thread_local::destructors::list::register::{closure#0} symtab,function-starts
+0x1000340b0 72 __rustc::rust_panic symtab,dynamic,function-starts
+0x1000340f8 44 __rustc::__rust_alloc_error_handler symtab,dynamic,function-starts
+0x100034124 512 <std::sys::sync::once::queue::Once>::call symtab,dynamic,unwind,function-starts
+0x100034324 64 <std::sys::sync::rwlock::queue::RwLock>::unlock_contended symtab,dynamic,function-starts
+0x100034364 64 <std::sys::sync::rwlock::queue::RwLock>::read_unlock_contended symtab,dynamic,function-starts
+0x1000343a4 100 <alloc::raw_vec::RawVec<alloc::boxed::Box<dyn core::ops::function::FnMut<(), Output = core::result::Result<(), core::io::error::Error>> + core::marker::Send + core::marker::Sync>>>::grow_one symtab,dynamic,unwind,function-starts
+0x100034408 100 <alloc::raw_vec::RawVec<addr2line::unit::ResUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one symtab,dynamic,unwind,function-starts
+0x10003446c 100 <alloc::raw_vec::RawVec<addr2line::unit::SupUnit<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one symtab,dynamic,unwind,function-starts
+0x1000344d0 100 <alloc::raw_vec::RawVec<addr2line::function::LazyFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one symtab,dynamic,unwind,function-starts
+0x100034534 100 <alloc::raw_vec::RawVec<addr2line::function::InlinedFunction<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one symtab,dynamic,unwind,function-starts
+0x100034598 100 <alloc::raw_vec::RawVec<gimli::read::line::FileEntry<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>>::grow_one symtab,dynamic,unwind,function-starts
+0x1000345fc 100 <alloc::raw_vec::RawVec<gimli::read::unit::AttributeValue<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>, usize>>>::grow_one symtab,dynamic,unwind,function-starts
+0x100034660 100 <alloc::raw_vec::RawVec<gimli::read::unit::Attribute<gimli::read::endian_slice::EndianSlice<gimli::endianity::LittleEndian>>>>::grow_one symtab,dynamic,unwind,function-starts
+0x1000346c4 136 <alloc::raw_vec::RawVec<alloc::string::String>>::grow_one symtab,dynamic,unwind,function-starts
+0x10003474c 100 <alloc::raw_vec::RawVec<addr2line::line::LineSequence>>::grow_one symtab,dynamic,unwind,function-starts
+0x1000347b0 100 <alloc::raw_vec::RawVec<gimli::read::line::FileEntryFormat>>::grow_one symtab,dynamic,unwind,function-starts
+0x100034814 100 <alloc::raw_vec::RawVec<object::read::symbol_map::ObjectMapEntry>>::grow_one symtab,dynamic,unwind,function-starts
+0x100034878 100 <alloc::raw_vec::RawVec<*const i8>>::grow_one symtab,dynamic,unwind,function-starts
+0x1000348dc 96 <alloc::raw_vec::RawVec<(*mut u8, unsafe extern "C" fn(*mut u8)), std::alloc::System>>::grow_one symtab,dynamic,unwind,function-starts
+0x10003493c 148 <alloc::raw_vec::RawVecInner<std::alloc::System>>::finish_grow symtab,unwind,function-starts
+0x1000349d0 112 <alloc::raw_vec::RawVecInner<std::alloc::System>>::grow_amortized symtab,unwind,function-starts
+0x100034a40 176 <alloc::raw_vec::RawVecInner>::finish_grow symtab,unwind,function-starts
+0x100034af0 216 <alloc::io::buffered::bufwriter::BufWriter<std::io::stdio::StdoutRaw>>::write_all_cold symtab,dynamic,unwind,function-starts
+0x100034bc8 36 std::alloc::rust_oom symtab,dynamic,function-starts
+0x100034bec 60 std::process::abort symtab,dynamic,function-starts
+0x100034c28 308 std::thread::current::init_current symtab,unwind,function-starts
+0x100034d5c 52 std::panicking::panic_count::is_zero_slow_path symtab,dynamic,unwind,function-starts
+0x100034d90 72 std::sys::pal::unix::abort_internal symtab,function-starts
+0x100034dd8 32 <std::thread::id::ThreadId>::new::exhausted symtab,function-starts
+0x100034df8 228 <std::sys::pal::unix::sync::mutex::Mutex>::lock::fail symtab,unwind,function-starts
+0x100034edc 40 <std::sys::sync::rwlock::queue::PanicGuard as core::ops::drop::Drop>::drop symtab,dynamic,function-starts
+0x100034f04 32 <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global> symtab,dynamic,unwind,function-starts
+0x100034f24 248 <alloc::raw_vec::RawVecInner>::finish_grow symtab,dynamic,unwind,function-starts
+0x10003501c 116 <alloc::raw_vec::RawVecInner<_>>::reserve::do_reserve_and_handle::<alloc::alloc::Global> symtab,unwind,function-starts
+0x100035090 140 <alloc::raw_vec::RawVecInner>::finish_grow symtab,unwind,function-starts
+0x10003511c 24 alloc::alloc::handle_alloc_error symtab,dynamic,function-starts
+0x100035134 20 alloc::raw_vec::handle_error symtab,dynamic,function-starts
+0x100035148 32 alloc::raw_vec::capacity_overflow symtab,dynamic,function-starts
+0x100035168 40 core::panicking::assert_failed::<usize, usize> symtab,dynamic,function-starts
+0x100035190 64 core::panicking::assert_failed::<u64, u64> symtab,dynamic,function-starts
+0x1000351d0 72 core::str::slice_error_fail symtab,dynamic,function-starts
+0x100035218 56 core::cell::panic_already_borrowed symtab,dynamic,function-starts
+0x100035250 48 core::option::expect_failed symtab,dynamic,function-starts
+0x100035280 60 core::option::unwrap_failed symtab,dynamic,function-starts
+0x1000352bc 72 core::result::unwrap_failed symtab,dynamic,function-starts
+0x100035304 92 core::panicking::panic_nounwind symtab,dynamic,function-starts
+0x100035360 24 core::panicking::panic_in_cleanup symtab,dynamic,function-starts
+0x100035378 56 core::panicking::panic_bounds_check symtab,dynamic,function-starts
+0x1000353b0 48 core::panicking::panic_nounwind_fmt symtab,dynamic,unwind,function-starts
+0x1000353e0 188 core::panicking::assert_failed_inner symtab,dynamic,function-starts
+0x10003549c 24 core::panicking::panic_cannot_unwind symtab,dynamic,function-starts
+0x1000354b4 72 core::panicking::panic_nounwind_nobacktrace symtab,dynamic,function-starts
+0x1000354fc 20 core::panicking::panic symtab,dynamic,function-starts
+0x100035510 104 core::panicking::panic_fmt symtab,dynamic,function-starts
+0x100035578 184 core::slice::index::slice_index_fail symtab,dynamic,function-starts
+0x100035630 56 core::panicking::panic_const::panic_const_div_by_zero symtab,dynamic,function-starts
+0x100035668 68 core::panicking::panic_const::panic_const_rem_by_zero symtab,dynamic,function-starts
+0x1000356ac 68 core::slice::sort::shared::smallsort::panic_on_ord_violation symtab,dynamic,function-starts
+0x1000356f0 12 core::io::error::os_functions::set_functions::set_functions_inner symtab,dynamic,function-starts
+0x1000356fc 12 __Unwind_Backtrace plt
+0x100035708 12 __Unwind_DeleteException plt
+0x100035714 12 __Unwind_GetDataRelBase plt
+0x100035720 12 __Unwind_GetIP plt
+0x10003572c 12 __Unwind_GetIPInfo plt
+0x100035738 12 __Unwind_GetLanguageSpecificData plt
+0x100035744 12 __Unwind_GetRegionStart plt
+0x100035750 12 __Unwind_GetTextRelBase plt
+0x10003575c 12 __Unwind_RaiseException plt
+0x100035768 12 __Unwind_Resume plt
+0x100035774 12 __Unwind_SetGR plt
+0x100035780 12 __Unwind_SetIP plt
+0x10003578c 12 ___error plt
+0x100035798 12 __dyld_get_image_header plt
+0x1000357a4 12 __dyld_get_image_name plt
+0x1000357b0 12 __dyld_get_image_vmaddr_slide plt
+0x1000357bc 12 __dyld_image_count plt
+0x1000357c8 12 __tlv_atexit plt
+0x1000357d4 12 _abort plt
+0x1000357e0 12 _bzero plt
+0x1000357ec 12 _calloc plt
+0x1000357f8 12 _close plt
+0x100035804 12 _closedir plt
+0x100035810 12 _dirfd plt
+0x10003581c 12 _dispatch_release plt
+0x100035828 12 _dispatch_semaphore_create plt
+0x100035834 12 _dispatch_semaphore_signal plt
+0x100035840 12 _dispatch_semaphore_wait plt
+0x10003584c 12 _dup plt
+0x100035858 12 _fcntl plt
+0x100035864 12 _free plt
+0x100035870 12 _fstat plt
+0x10003587c 12 _getcwd plt
+0x100035888 12 _getenv plt
+0x100035894 12 _malloc plt
+0x1000358a0 12 _memcmp plt
+0x1000358ac 12 _memcpy plt
+0x1000358b8 12 _memmove plt
+0x1000358c4 12 _mmap plt
+0x1000358d0 12 _mprotect plt
+0x1000358dc 12 _munmap plt
+0x1000358e8 12 _open plt
+0x1000358f4 12 _opendir plt
+0x100035900 12 _pause plt
+0x10003590c 12 _posix_memalign plt
+0x100035918 12 _pthread_get_stackaddr_np plt
+0x100035924 12 _pthread_get_stacksize_np plt
+0x100035930 12 _pthread_mutex_destroy plt
+0x10003593c 12 _pthread_mutex_init plt
+0x100035948 12 _pthread_mutex_lock plt
+0x100035954 12 _pthread_mutex_trylock plt
+0x100035960 12 _pthread_mutex_unlock plt
+0x10003596c 12 _pthread_mutexattr_destroy plt
+0x100035978 12 _pthread_mutexattr_init plt
+0x100035984 12 _pthread_mutexattr_settype plt
+0x100035990 12 _pthread_self plt
+0x10003599c 12 _pthread_setname_np plt
+0x1000359a8 12 _pthread_threadid_np plt
+0x1000359b4 12 _readdir plt
+0x1000359c0 12 _realloc plt
+0x1000359cc 12 _sigaction plt
+0x1000359d8 12 _sigaltstack plt
+0x1000359e4 12 _signal plt
+0x1000359f0 12 _strerror_r plt
+0x1000359fc 12 _strlen plt
+0x100035a08 12 _sysconf plt
+0x100035a14 12 _write plt
+0x100035a20 12 _writev plt
+/* velk prelude */
+void i32__fmt_10002ff74(void);
+/* end velk prelude */
+
+== 0x10000090c rust_probe::main
+-- decompile
+/* velk pseudo-C: rust_probe::main @ 0x10000090c */
+/* ref: 0x100035d74 __cstring */
+int64_t rust_probe__main(void) {
+    uint64_t v3;
+    int64_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-24] */
+    _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; int64_t f_8; } local_2; /* [sp-20] */
+
+    local_0 = v3;
+    local_1 = 3;
+    local_2.f_0 = &local_1;
+    local_2.f_8 = (uintptr_t)i32__fmt_10002ff74;
+    return stdio___print(0x100035d74, &local_2.f_0);
+}
+-- signature
+int64_t ()
+-- references
+0x100035d74 __cstring
+-- ir
+fn rust_probe::main @ 0x10000090c (size 64)
+  blk0 @ 0x10000090c:
+    store64(x30, (sp + #0xfffffffffffffff8))
+    store32(#0x3, (sp + #0xffffffffffffffdc))
+    store64((sp + #0xffffffffffffffdc), (sp + #0xffffffffffffffe0))
+    store64(#0x10002ff74, (sp + #0xffffffffffffffe8))
+    v2:x0, x1, d0, d1 = call 0x1000197ac(#0x100035d74, (sp + #0xffffffffffffffe0))
+    ret v2
+-- card
+{"addr":"0x10000090c","approxTokens":192,"blocks":1,"hardReasons":[],"name":"rust_probe::main","nameSources":["symtab","unwind","function-starts"],"section":"__text","size":64,"unsupported":0}

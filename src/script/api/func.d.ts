@@ -7,7 +7,7 @@ interface Func {
   size: number | null;
   /** The size was guessed from the next function's start. */
   sizeEstimated?: true;
-  /** Where the function was found: "symtab", "dynamic", "entry", "pclntab", "dwarf", "prologue". */
+  /** Where the function was found: "symtab", "dynamic", "entry", "pclntab", "dwarf", "codeview", "unwind", "function-starts", "plt", "prologue". */
   nameSources: string[];
 
   /** Summary sized to roughly `budget` tokens (default 240); a larger budget adds disassembly lines. */
