@@ -363,10 +363,24 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         .filter(|(root, _)| registers.contains(&ssa.origin[*root]) && !kept.contains(root))
         .collect();
     order.sort_by_key(|(root, at)| (*at, *root));
+    let next = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .flat_map(|stmt| {
+            let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+            writes.into_iter().chain(reads)
+        })
+        .filter(|index| (crate::ir::VARIABLE_BASE..VALUE_BASE).contains(index))
+        .max()
+        .map_or(crate::ir::VARIABLE_BASE, |index| index.saturating_add(1));
+    if order.len() > usize::from(VALUE_BASE.saturating_sub(next)) {
+        return;
+    }
     let names: HashMap<usize, u16> = order
         .into_iter()
         .enumerate()
-        .map(|(index, (root, _))| (root, crate::ir::VARIABLE_BASE + index as u16))
+        .map(|(index, (root, _))| (root, next + index as u16))
         .collect();
     if names.is_empty() {
         return;

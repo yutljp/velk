@@ -114,14 +114,10 @@ fn widen @ 0x2012d0 (size 32)
 -- decompile
 /* velk pseudo-C: compare_doubles @ 0x2012f0 */
 int compare_doubles(double a, double b) {
-    uint32_t local_0; /* [sp-1c] */
-
     if (!(a < b)) {
-        local_0 = (b < a);
-        return local_0;
+        return (b < a);
     }
-    local_0 = 0xffffffff;
-    return local_0;
+    return 0xffffffff;
 }
 -- signature
 int (double a, double b)
@@ -130,15 +126,15 @@ int (double a, double b)
 -- ir
 fn compare_doubles @ 0x2012f0 (size 79)
   blk0 @ 0x2012f0:
-    store64(xmm0, (rsp + #0xfffffffffffffff0))
-    store64(xmm1, (rsp + #0xffffffffffffffe8))
+    v1 = xmm0
+    v2 = xmm1
     brif eq flt.d(xmm0, xmm1), #0x0 -> 0x20131f
   blk1 @ 0x201312:
-    store32(#0xffffffff, (rsp + #0xffffffffffffffe4))
+    v3 = #0xffffffff
     br 0x20133a
   blk2 @ 0x20131f:
-    store32(select ne flt.d(load64((rsp + #0xffffffffffffffe8)), load64((rsp + #0xfffffffffffffff0))), #0x0 ? #0x1, #0x0, (rsp + #0xffffffffffffffe4))
+    v3 = select ne flt.d(v2, v1), #0x0 ? #0x1, #0x0
   blk3 @ 0x20133a:
-    ret load32((rsp + #0xffffffffffffffe4))
+    ret v3
 -- card
 {"addr":"0x2012f0","approxTokens":162,"blocks":4,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":79,"unsupported":0}

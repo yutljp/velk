@@ -5,6 +5,10 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 
 mod frame_values;
 
+pub fn promote_frame_slots(ir: &mut FunctionIr) {
+    frame_values::promote(ir);
+}
+
 /// Replaces a load with the value stored to the same address earlier in the
 /// block: `*(u32 *)&local_3 = w8; x8 = *(u32 *)&local_3;` leaves `x8 = w8;`.
 pub fn forward_stored_values(ir: &mut FunctionIr) {

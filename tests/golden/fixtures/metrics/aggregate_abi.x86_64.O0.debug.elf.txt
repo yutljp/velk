@@ -105,13 +105,10 @@ struct abi_hfa2 abi_hfa2_adjust(struct abi_hfa2 value, double bias) {
     uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
     uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
-    double local_0; /* [sp-20] */
 
-    local_0 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_2) }).value;
-    local_0 = local_0 + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value;
     {
         uint64_t result_bits = value_bits;
-        uint64_t result_bits_2 = ((union { double value; uint64_t bits; }){ .value = local_0 }).bits;
+        uint64_t result_bits_2 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_2) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
         return result;
@@ -124,9 +121,7 @@ int64_t (double a0, double a1, double a2)
 -- ir
 fn abi_hfa2_adjust @ 0x201360 (size 58)
   blk0 @ 0x201360:
-    store64(xmm1, (rsp + #0xffffffffffffffe0))
-    store64(fadd.d(load64((rsp + #0xffffffffffffffe0)), xmm2), (rsp + #0xffffffffffffffe0))
-    ret results(xmm0, load64((rsp + #0xffffffffffffffe0)))
+    ret results(xmm0, fadd.d(xmm1, xmm2))
 -- card
 {"addr":"0x201360","approxTokens":186,"blocks":1,"hardReasons":[],"name":"abi_hfa2_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":58,"unsupported":0}
 

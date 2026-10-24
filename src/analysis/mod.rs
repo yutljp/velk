@@ -1360,6 +1360,7 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
         passes::memory::forward_stored_values(&mut ir);
         passed(deadline)?;
         passes::memory::forward_spilled_variables(&mut ir);
+        passes::memory::promote_frame_slots(&mut ir);
     }
     passed(deadline)?;
     passes::dce::dce(&mut ir);

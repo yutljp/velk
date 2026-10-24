@@ -158,8 +158,8 @@ echo "$ip" | grep -q "a0 > 0x0"         || fail "cset gt compare"
 echo "$iz" | grep -q "return (a0 == 0x0);" || fail "cset as a truth value"
 ok "pow2 mod and cset"
 locals=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
-echo "$locals" | grep -q "local_0 = a0"     || fail "stack local naming"
-echo "$locals" | grep -q "local_0 = local_0 >> 0x1" || fail "stack local names one slot"
+echo "$locals" | grep -q "v1 = a0"     || fail "stack local naming"
+echo "$locals" | grep -q "v1 = v1 >> 0x1" || fail "stack local names one slot"
 use_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$use_ir" | grep -q "ns__mul(a0, 0x2)" || fail "C++ call relocation"
 echo "$use_ir" | grep -qE "(= x20|x20 =)" && fail "callee-save elision (x20)"
@@ -189,13 +189,13 @@ mod_ir=$("$BIN" --decompile $FIX/pe64.exe reg_mod 2>/dev/null)
 echo "$mod_ir" | grep -qF "a0 % a1" || fail "idiv remainder dividend"
 ok "runtime division and remainder"
 stack_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$stack_ir" | grep -q "local_1"        || fail "stack locals named"
-echo "$stack_ir" | grep -q "local_0 += local_1;" || fail "stack local accumulation"
+echo "$stack_ir" | grep -q "v2"        || fail "stack locals named"
+echo "$stack_ir" | grep -q "v1 = v1 + v2;" || fail "stack local accumulation"
 echo "$stack_ir" | grep -q "sp + 0x4" && fail "stack address left raw"
 ok "stack locals"
 decl_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$decl_ir" | grep -qF "int32_t local_1; /* [sp-c] */" || fail "stack local declaration"
-echo "$decl_ir" | grep -q "(local_1 & 0xffffffff)" && fail "local mask elided"
+echo "$decl_ir" | grep -qF "int32_t v2;" || fail "stack local declaration"
+echo "$decl_ir" | grep -q "(v2 & 0xffffffff)" && fail "local mask elided"
 echo "$decl_ir" | grep -q "w9" && fail "32-bit register left between two locals"
 ok "stack local declarations"
 frame_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
@@ -226,8 +226,8 @@ echo "$mask_ir" | grep -qF "return (v3 >> 0x1) * 0x55555556 + a0" || fail "mask 
 echo "$mask_ir" | grep -qF "v2 = (uint64_t)v1 * ((a0 - 0x2) & 0xffffffff);" || fail "64-bit product of 32-bit values"
 echo "$mask_ir" | grep -q "v1 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$narrow_ir" | grep -q "for (local_1 = 0x1; local_1 <= a0; local_1++)" || fail "32-bit comparison kept"
-echo "$narrow_ir" | grep -q "local_0 += local_1;"   || fail "compound store in a loop"
+echo "$narrow_ir" | grep -q "for (v2 = 0x1; v2 <= a0; v2++)" || fail "32-bit comparison kept"
+echo "$narrow_ir" | grep -q "v1 = v1 + v2;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$narrow_dest" | grep -q "+ (v2 << 0x1)) - 0x1;" || fail "mask implied by the return type"
@@ -398,7 +398,7 @@ echo "$entry_ir" | grep -q "local_2" && fail "spurious slot after settling"
 ok "dead frame loads"
 moved_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$moved_ir" | grep -q "x8 = 0x1;" && fail "dead store before the loop"
-echo "$moved_ir" | grep -q "local_1 = 0x1;" || fail "live store before the loop"
+echo "$moved_ir" | grep -q "v2 = 0x1;" || fail "live store before the loop"
 live_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$live_ir" | grep -qF "ns__add((a0 & 0xffffffff), v2);" || fail "definition kept across a call"
 echo "$live_ir" | grep -q "v1 = a0;" && fail "saved value folded into the parameter"
@@ -415,10 +415,10 @@ echo "$msg_ir" | grep -q "qword_140003000" || fail "global named by width and ad
 echo "$msg_ir" | grep -q "(0x140003000)" && fail "global name replaces the address"
 ok "named globals"
 bits_ir=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
-echo "$bits_ir" | grep -Eq "local_[0-9]+ \+= (local_[0-9]+ & 0x1|w[0-9]+);" || fail "compound add"
-echo "$bits_ir" | grep -Eq "& 0x1;" || fail "compound add operand"
-echo "$bits_ir" | grep -Eq "local_[0-9]+ = local_[0-9]+ >> 0x1;" || fail "shift assignment"
-echo "$bits_ir" | grep -q "local_1 = (local_1" && fail "compound add kept the temp"
+echo "$bits_ir" | grep -qF "v2 = v2 + (v1 & 0x1);" || fail "promoted add"
+echo "$bits_ir" | grep -qF "& 0x1)" || fail "promoted add operand"
+echo "$bits_ir" | grep -qF "v1 = v1 >> 0x1;" || fail "shift assignment"
+echo "$bits_ir" | grep -q "v2 = (v2" && fail "compound add kept the temp"
 ok "compound assignment"
 
 
@@ -525,10 +525,10 @@ ok "build-signatures / identify"
 
 # 8) while structuring (header condition and back edge)
 loop_pc=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
-echo "$loop_pc" | grep -Eq "while \(local_[0-9]+ != 0x0\)" || fail "while structuring"
+echo "$loop_pc" | grep -qF "while (v1 != 0x0)" || fail "while structuring"
 echo "$loop_pc" | grep -q "if (x8 == 0x0) break;" && fail "while header folded"
 loop_break=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$loop_break" | grep -q "local_1 <= a0;" || fail "while break condition"
+echo "$loop_break" | grep -q "v2 <= a0;" || fail "while break condition"
 ok "while structuring"
 
 # 9) data (string) reference recovery

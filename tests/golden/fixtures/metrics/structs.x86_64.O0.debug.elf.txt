@@ -189,14 +189,14 @@ fn word_low_byte @ 0x201370 (size 13)
 struct flags { _Alignas(4) uint8_t gap_0x0[0x4]; };
 unsigned int flags_level(struct flags f) {
     uint64_t f_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&f + 0x0, 4);
-    uint32_t local_0; /* [sp-10] */
+    uint32_t v7;
 
     if ((f_bits & 0x1) == 0x0) {
-        local_0 = (f_bits & 0xff) >> 0x1 & 0x7;
-        return local_0;
+        v7 = (f_bits & 0xff) >> 0x1 & 0x7;
+        return v7;
     }
-    local_0 = (f_bits & 0xff) >> 0x4;
-    return local_0;
+    v7 = (f_bits & 0xff) >> 0x4;
+    return v7;
 }
 -- signature
 int64_t (int32_t a0)
@@ -208,12 +208,12 @@ fn flags_level @ 0x201380 (size 59)
     store32(edi, (rsp + #0xfffffffffffffff4))
     brif eq (load8((rsp + #0xfffffffffffffff4)) & #0x1), #0x0 -> 0x2013a9
   blk1 @ 0x201398:
-    store32(((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x4), (rsp + #0xfffffffffffffff0))
+    v7 = (((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x4) & #0xff)
     br 0x2013b6
   blk2 @ 0x2013a9:
-    store32((((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x1) & #0x7), (rsp + #0xfffffffffffffff0))
+    v7 = (((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x1) & #0x7)
   blk3 @ 0x2013b6:
-    ret results(load32((rsp + #0xfffffffffffffff0)))
+    ret results(v7)
 -- card
 {"addr":"0x201380","approxTokens":174,"blocks":4,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf","unwind"],"section":".text","size":59,"unsupported":0}
 

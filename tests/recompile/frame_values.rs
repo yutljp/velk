@@ -550,3 +550,107 @@ fn printed_local_offsets_preserve_operator_precedence() {
     }
     check_candidates("local-offset-precedence", candidates, Mode::Registers, &[]);
 }
+
+#[test]
+fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
+    let a = Convention::SysV.arguments()[0];
+    let b = Convention::SysV.arguments()[1];
+    for case in ["uninitialized", "call", "trap"] {
+        let mut ir = diamond("promotion_fallback", 8, false);
+        match case {
+            "uninitialized" => {
+                ir.blocks[1].stmts.remove(0);
+            }
+            "call" => ir.blocks[3].stmts.insert(0, call()),
+            _ => ir.blocks[3].stmts = vec![Stmt::Trap],
+        }
+        velk::passes::memory::promote_frame_slots(&mut ir);
+        assert!(printed(&ir).contains("local_"), "{case}: {}", printed(&ir));
+    }
+    let mut cases = Vec::new();
+    for width in [1, 2, 4, 8] {
+        for signed in [false, true] {
+            let mut ir = diamond(&format!("promoted_join_{width}_{signed}"), width, signed);
+            ir.blocks[1].stmts[0] = store(-8, Expr::reg(b, 64), width);
+            cases.push((ir, true));
+        }
+    }
+    let mut looping = diamond("promoted_loop", 8, false);
+    looping.blocks[0]
+        .stmts
+        .insert(0, store(-8, Expr::reg(a, 64), 8));
+    let condition = looping.blocks[0].stmts.pop().unwrap();
+    looping.blocks.insert(
+        1,
+        Block {
+            start: 8,
+            stmts: vec![condition],
+        },
+    );
+    looping.blocks[2].stmts = vec![
+        store(
+            -8,
+            Expr::bin(BinOp::Add, load(-8, 8, false), Expr::Const(7)),
+            8,
+        ),
+        assign(b, 64, Expr::Const(0)),
+        Stmt::Br { target: Some(8) },
+    ];
+    looping.blocks[3].stmts = vec![Stmt::Br { target: Some(0x30) }];
+    cases.push((looping, true));
+    let mut snapshot = diamond("promoted_frame_snapshot", 8, false);
+    let saved = velk::ir::TEMP_BASE + 51;
+    snapshot.blocks[0].stmts.splice(
+        0..0,
+        [
+            store(0, Expr::Const(11), 8),
+            assign(saved, 64, load(0, 8, false)),
+            store(0, Expr::Const(22), 8),
+        ],
+    );
+    snapshot.blocks[3].stmts[0] = Stmt::Ret {
+        value: Expr::bin(BinOp::Add, Expr::reg(saved, 64), load(-8, 8, false)),
+    };
+    cases.push((snapshot, false));
+    let mut narrow = diamond("promoted_narrow_fallback", 8, false);
+    narrow.blocks[3].stmts[0] = Stmt::Ret {
+        value: load(-8, 1, true),
+    };
+    cases.push((narrow, false));
+    let mut escaped = diamond("promoted_escape_fallback", 8, false);
+    escaped.blocks[0]
+        .stmts
+        .insert(0, assign(velk::ir::TEMP_BASE + 50, 64, slot(-8)));
+    escaped.blocks[3].stmts.insert(
+        0,
+        Stmt::Store {
+            addr: Expr::reg(velk::ir::TEMP_BASE + 50, 64),
+            value: Expr::reg(b, 64),
+            width: 8,
+        },
+    );
+    cases.push((escaped, false));
+    let mut candidates = Vec::new();
+    for (ir, promoted) in cases {
+        let mut optimized = ir.clone();
+        velk::passes::memory::promote_frame_slots(&mut optimized);
+        let text = printed(&optimized);
+        assert_eq!(
+            !text.contains("local_") && !text.contains("rsp"),
+            promoted,
+            "{text}"
+        );
+        velk::passes::copies::copy_propagate_guarded(&mut optimized);
+        velk::passes::simplify::simplify(&mut optimized);
+        velk::passes::dce::dce(&mut optimized);
+        velk::passes::frame_slots::settle(&mut optimized);
+        let inputs = [0, 1, 0x80, 0x8000, 0x8000_0000, u64::MAX]
+            .into_iter()
+            .flat_map(|a| [vec![a, 0], vec![a, 1]])
+            .collect();
+        let mut candidate = printed_candidate(optimized, inputs);
+        candidate.ir = ir;
+        candidates.push(candidate);
+    }
+    check_candidates("promoted-frame-slots", candidates, Mode::Registers, &[]);
+}

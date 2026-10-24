@@ -16,7 +16,6 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210194 (size 40)
   blk0 @ 0x210194:
-    store32(w0, (sp + #0xfffffffffffffffc))
     ret (((w0 * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x210194","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":40,"unsupported":0}
@@ -55,7 +54,6 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101e4 (size 32)
   blk0 @ 0x2101e4:
-    store32(w0, (sp + #0xfffffffffffffffc))
     ret ((w0 - #0x7) & #0xffffffff)
 -- card
 {"addr":"0x2101e4","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":32,"unsupported":0}

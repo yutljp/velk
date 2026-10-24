@@ -114,14 +114,10 @@ fn <unnamed> @ 0x21029c (size 32)
 -- decompile
 /* velk pseudo-C: sub_2102bc @ 0x2102bc */
 int32_t sub_2102bc(double a0, double a1) {
-    uint32_t local_0; /* [sp-14] */
-
     if (!(a0 < a1)) {
-        local_0 = (a1 < a0);
-        return local_0;
+        return (a1 < a0);
     }
-    local_0 = 0xffffffff;
-    return local_0;
+    return 0xffffffff;
 }
 -- signature
 int32_t (double a0, double a1)
@@ -134,12 +130,12 @@ fn <unnamed> @ 0x2102bc (size 84)
   blk1 @ 0x2102d8:
     br 0x2102dc
   blk2 @ 0x2102dc:
-    store32(#0xffffffff, (sp + #0xffffffffffffffec))
+    v1 = #0xffffffff
     br 0x210304
   blk3 @ 0x2102e8:
-    store32(select eq flt.d(d1, d0), #0x0 ? #0x0, #0x1, (sp + #0xffffffffffffffec))
+    v1 = select eq flt.d(d1, d0), #0x0 ? #0x0, #0x1
     br 0x210304
   blk4 @ 0x210304:
-    ret load32((sp + #0xffffffffffffffec))
+    ret v1
 -- card
 {"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":84,"unsupported":0}

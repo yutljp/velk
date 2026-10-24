@@ -171,26 +171,19 @@ fn <unnamed> @ 0x201310 (size 107)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
-    uint32_t local_0; /* [sp-c] */
-
     if (a0 - 0x1 == 0x0) {
-        local_0 = 0xa;
-        return local_0;
+        return 0xa;
     }
     if (a0 - 0x64 == 0x0) {
-        local_0 = 0x14;
-        return local_0;
+        return 0x14;
     }
     if (a0 - 0x3e8 == 0x0) {
-        local_0 = 0x1e;
-        return local_0;
+        return 0x1e;
     }
     if (a0 - 0x2710 == 0x0) {
-        local_0 = 0x28;
-        return local_0;
+        return 0x28;
     }
-    local_0 = 0x0;
-    return local_0;
+    return 0x0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -200,38 +193,37 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x201380 (size 142)
   blk0 @ 0x201380:
     v1 = edi
-    store32(v1, (rsp + #0xffffffffffffffec))
     brif eq ((v1 - #0x1) & #0xffffffff), #0x0 -> 0x2013d2
   blk1 @ 0x201396:
     br 0x20139b
   blk2 @ 0x20139b:
-    brif eq ((load32((rsp + #0xffffffffffffffec)) - #0x64) & #0xffffffff), #0x0 -> 0x2013de
+    brif eq ((v1 - #0x64) & #0xffffffff), #0x0 -> 0x2013de
   blk3 @ 0x2013a7:
     br 0x2013ac
   blk4 @ 0x2013ac:
-    brif eq ((load32((rsp + #0xffffffffffffffec)) - #0x3e8) & #0xffffffff), #0x0 -> 0x2013ea
+    brif eq ((v1 - #0x3e8) & #0xffffffff), #0x0 -> 0x2013ea
   blk5 @ 0x2013ba:
     br 0x2013bf
   blk6 @ 0x2013bf:
-    brif eq ((load32((rsp + #0xffffffffffffffec)) - #0x2710) & #0xffffffff), #0x0 -> 0x2013f6
+    brif eq ((v1 - #0x2710) & #0xffffffff), #0x0 -> 0x2013f6
   blk7 @ 0x2013cd:
     br 0x201402
   blk8 @ 0x2013d2:
-    store32(#0xa, (rsp + #0xfffffffffffffff4))
+    v3 = #0xa
     br 0x201409
   blk9 @ 0x2013de:
-    store32(#0x14, (rsp + #0xfffffffffffffff4))
+    v3 = #0x14
     br 0x201409
   blk10 @ 0x2013ea:
-    store32(#0x1e, (rsp + #0xfffffffffffffff4))
+    v3 = #0x1e
     br 0x201409
   blk11 @ 0x2013f6:
-    store32(#0x28, (rsp + #0xfffffffffffffff4))
+    v3 = #0x28
     br 0x201409
   blk12 @ 0x201402:
-    store32(#0x0, (rsp + #0xfffffffffffffff4))
+    v3 = #0x0
   blk13 @ 0x201409:
-    ret load32((rsp + #0xfffffffffffffff4))
+    ret v3
 -- card
 {"addr":"0x201380","approxTokens":144,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":142,"unsupported":0}
 

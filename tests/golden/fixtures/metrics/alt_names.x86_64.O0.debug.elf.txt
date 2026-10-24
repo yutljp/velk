@@ -23,16 +23,16 @@ fn alt_sum3 @ 0x201180 (size 24)
 -- decompile
 /* velk pseudo-C: alt_helper @ 0x2011a0 */
 int alt_helper(int x) {
-    int32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
+    int32_t v1;
+    int32_t v2;
+    int32_t v3;
 
-    local_0 = x;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        local_1 += local_2 * local_2;
+    v1 = x;
+    v2 = 0x0;
+    for (v3 = 0x0; v3 < v1; v3++) {
+        v2 = v3 * v3 + v2;
     }
-    return local_1;
+    return v2;
 }
 -- signature
 int (int x)
@@ -41,16 +41,16 @@ int (int x)
 -- ir
 fn alt_helper @ 0x2011a0 (size 65)
   blk0 @ 0x2011a0:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    store32(#0x0, (rsp + #0xfffffffffffffff0))
-    store32(#0x0, (rsp + #0xffffffffffffffec))
+    v1 = edi
+    v2 = #0x0
+    v3 = #0x0
   blk1 @ 0x2011b5:
-    brif ge load32((rsp + #0xffffffffffffffec)), load32((rsp + #0xfffffffffffffff4)) -> 0x2011dc
+    brif ge v3, v1 -> 0x2011dc
   blk2 @ 0x2011c1:
-    store32(((load32((rsp + #0xffffffffffffffec)) * load32((rsp + #0xffffffffffffffec))) + load32((rsp + #0xfffffffffffffff0))), (rsp + #0xfffffffffffffff0))
-    store32((load32((rsp + #0xffffffffffffffec)) + #0x1), (rsp + #0xffffffffffffffec))
+    v2 = (((v3 * v3) + v2) & #0xffffffff)
+    v3 = ((v3 + #0x1) & #0xffffffff)
     br 0x2011b5
   blk3 @ 0x2011dc:
-    ret load32((rsp + #0xfffffffffffffff0))
+    ret v2
 -- card
 {"addr":"0x2011a0","approxTokens":192,"blocks":4,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf","unwind"],"section":".text","size":65,"unsupported":0}

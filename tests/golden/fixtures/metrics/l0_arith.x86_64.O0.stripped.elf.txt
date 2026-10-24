@@ -42,14 +42,13 @@ fn <unnamed> @ 0x2011e0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 int32_t sub_2011f0(int32_t a0, int32_t a1) {
-    uint32_t local_0; /* [sp-14] */
+    int32_t v1;
 
+    v1 = a0;
     if (a0 <= a1) {
-        local_0 = a1;
-        return local_0;
+        return a1;
     }
-    local_0 = a0;
-    return local_0;
+    return v1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -58,16 +57,15 @@ int32_t (int32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x2011f0 (size 44)
   blk0 @ 0x2011f0:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    store32(esi, (rsp + #0xfffffffffffffff0))
+    v1 = edi
+    v2 = esi
     brif le edi, esi -> 0x201211
   blk1 @ 0x201206:
-    store32(load32((rsp + #0xfffffffffffffff4)), (rsp + #0xffffffffffffffec))
     br 0x201217
   blk2 @ 0x201211:
-    store32(load32((rsp + #0xfffffffffffffff0)), (rsp + #0xffffffffffffffec))
+    v1 = v2
   blk3 @ 0x201217:
-    ret load32((rsp + #0xffffffffffffffec))
+    ret v1
 -- card
 {"addr":"0x2011f0","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
 

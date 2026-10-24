@@ -8,16 +8,16 @@
 -- decompile
 /* velk pseudo-C: count_bits @ 0x21019c */
 int count_bits(unsigned int x) {
-    uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
+    uint32_t v1;
+    int32_t v2;
 
-    local_0 = x;
-    local_1 = 0x0;
-    while (local_0 != 0x0) {
-        local_1 += local_0 & 0x1;
-        local_0 = local_0 >> 0x1;
+    v1 = x;
+    v2 = 0x0;
+    while (v1 != 0x0) {
+        v2 = v2 + (v1 & 0x1);
+        v1 = v1 >> 0x1;
     }
-    return local_1;
+    return v2;
 }
 -- signature
 int (unsigned int x)
@@ -26,19 +26,19 @@ int (unsigned int x)
 -- ir
 fn count_bits @ 0x21019c (size 76)
   blk0 @ 0x21019c:
-    store32(w0, (sp + #0xfffffffffffffffc))
-    store32(#0x0, (sp + #0xfffffffffffffff8))
+    v1 = w0
+    v2 = #0x0
     br 0x2101ac
   blk1 @ 0x2101ac:
-    brif eq load32((sp + #0xfffffffffffffffc)), #0x0 -> 0x2101dc
+    brif eq v1, #0x0 -> 0x2101dc
   blk2 @ 0x2101b4:
     br 0x2101b8
   blk3 @ 0x2101b8:
-    store32((load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffffc)) & #0x1)), (sp + #0xfffffffffffffff8))
-    store32((load32((sp + #0xfffffffffffffffc)) >> #0x1), (sp + #0xfffffffffffffffc))
+    v2 = ((v2 + (v1 & #0x1)) & #0xffffffff)
+    v1 = (v1 >> #0x1)
     br 0x2101ac
   blk4 @ 0x2101dc:
-    ret load32((sp + #0xfffffffffffffff8))
+    ret v2
 -- card
 {"addr":"0x21019c","approxTokens":210,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 
@@ -46,14 +46,14 @@ fn count_bits @ 0x21019c (size 76)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x2101e8 */
 int sum_until(int limit) {
-    uint32_t local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
+    int32_t v1;
+    int32_t v2;
 
-    local_0 = 0x0;
-    for (local_1 = 0x1; local_1 <= limit; local_1++) {
-        local_0 += local_1;
+    v1 = 0x0;
+    for (v2 = 0x1; v2 <= limit; v2++) {
+        v1 = v1 + v2;
     }
-    return local_0;
+    return v1;
 }
 -- signature
 int (int limit)
@@ -62,21 +62,21 @@ int (int limit)
 -- ir
 fn sum_until @ 0x2101e8 (size 92)
   blk0 @ 0x2101e8:
-    store32(#0x0, (sp + #0xfffffffffffffff8))
-    store32(#0x1, (sp + #0xfffffffffffffff4))
+    v1 = #0x0
+    v2 = #0x1
     br 0x210200
   blk1 @ 0x210200:
-    brif gt load32((sp + #0xfffffffffffffff4)), w0 -> 0x210238
+    brif gt v2, w0 -> 0x210238
   blk2 @ 0x210210:
     br 0x210214
   blk3 @ 0x210214:
-    store32((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))), (sp + #0xfffffffffffffff8))
+    v1 = ((v1 + v2) & #0xffffffff)
     br 0x210228
   blk4 @ 0x210228:
-    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
+    v2 = ((v2 + #0x1) & #0xffffffff)
     br 0x210200
   blk5 @ 0x210238:
-    ret load32((sp + #0xfffffffffffffff8))
+    ret v1
 -- card
 {"addr":"0x2101e8","approxTokens":234,"blocks":6,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf","unwind"],"section":".text","size":92,"unsupported":0}
 

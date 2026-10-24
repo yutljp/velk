@@ -499,25 +499,18 @@ fn c15 @ 0x2016d0 (size 21)
 /* velk pseudo-C: sparse @ 0x2016f0 */
 int sparse(int x) {
     int32_t v1;
-    uint32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-c] */
 
     v1 = x;
-    local_0 = v1;
     if (v1 - 0x1 == 0x0) {
-        local_1 = 0x64;
-        return local_1;
+        return 0x64;
     }
-    if (local_0 - 0x32 == 0x0) {
-        local_1 = 0x7;
-        return local_1;
+    if (v1 - 0x32 == 0x0) {
+        return 0x7;
     }
-    if (local_0 - 0x12c == 0x0) {
-        local_1 = 0x12c;
-        return local_1;
+    if (v1 - 0x12c == 0x0) {
+        return 0x12c;
     }
-    local_1 = 0xffffffff;
-    return local_1;
+    return 0xffffffff;
 }
 -- signature
 int (int x)
@@ -527,30 +520,29 @@ int (int x)
 fn sparse @ 0x2016f0 (size 111)
   blk0 @ 0x2016f0:
     v1 = edi
-    store32(v1, (rsp + #0xffffffffffffffec))
     brif eq ((v1 - #0x1) & #0xffffffff), #0x0 -> 0x20172f
   blk1 @ 0x201706:
     br 0x20170b
   blk2 @ 0x20170b:
-    brif eq ((load32((rsp + #0xffffffffffffffec)) - #0x32) & #0xffffffff), #0x0 -> 0x20173b
+    brif eq ((v1 - #0x32) & #0xffffffff), #0x0 -> 0x20173b
   blk3 @ 0x201717:
     br 0x20171c
   blk4 @ 0x20171c:
-    brif eq ((load32((rsp + #0xffffffffffffffec)) - #0x12c) & #0xffffffff), #0x0 -> 0x201747
+    brif eq ((v1 - #0x12c) & #0xffffffff), #0x0 -> 0x201747
   blk5 @ 0x20172a:
     br 0x201753
   blk6 @ 0x20172f:
-    store32(#0x64, (rsp + #0xfffffffffffffff4))
+    v3 = #0x64
     br 0x20175a
   blk7 @ 0x20173b:
-    store32(#0x7, (rsp + #0xfffffffffffffff4))
+    v3 = #0x7
     br 0x20175a
   blk8 @ 0x201747:
-    store32(#0x12c, (rsp + #0xfffffffffffffff4))
+    v3 = #0x12c
     br 0x20175a
   blk9 @ 0x201753:
-    store32(#0xffffffff, (rsp + #0xfffffffffffffff4))
+    v3 = #0xffffffff
   blk10 @ 0x20175a:
-    ret load32((rsp + #0xfffffffffffffff4))
+    ret v3
 -- card
 {"addr":"0x2016f0","approxTokens":144,"blocks":11,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","size":111,"unsupported":0}

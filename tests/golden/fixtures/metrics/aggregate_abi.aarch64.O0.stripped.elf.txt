@@ -41,8 +41,6 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, double a3)
 -- ir
 fn <unnamed> @ 0x210284 (size 68)
   blk0 @ 0x210284:
-    store64(x0, (sp + #0xffffffffffffffe0))
-    store64(d0, (sp + #0xffffffffffffffd0))
     ret fadd.d(x0, d0)
 -- card
 {"addr":"0x210284","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":68,"unsupported":0}
@@ -51,11 +49,7 @@ fn <unnamed> @ 0x210284 (size 68)
 -- decompile
 /* velk pseudo-C: sub_2102c8 @ 0x2102c8 */
 double sub_2102c8(double a0, double a1) {
-    double local_0; /* [sp-10] */
-
-    local_0 = a0;
-    local_0 = local_0 + a1;
-    return local_0;
+    return a0 + a1;
 }
 -- signature
 double (double a0, double a1)
@@ -64,10 +58,7 @@ double (double a0, double a1)
 -- ir
 fn <unnamed> @ 0x2102c8 (size 48)
   blk0 @ 0x2102c8:
-    store64(d0, (sp + #0xfffffffffffffff0))
-    store64(d1, (sp + #0xffffffffffffffe8))
-    store64(fadd.d(load64((sp + #0xfffffffffffffff0)), load64((sp + #0xffffffffffffffe8))), (sp + #0xfffffffffffffff0))
-    ret load64((sp + #0xfffffffffffffff0))
+    ret fadd.d(d0, d1)
 -- card
 {"addr":"0x2102c8","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
 
@@ -75,9 +66,6 @@ fn <unnamed> @ 0x2102c8 (size 48)
 -- decompile
 /* velk pseudo-C: sub_2102f8 @ 0x2102f8 */
 double sub_2102f8(double a0, double a1, double a2) {
-    double local_0; /* [sp-18] */
-
-    local_0 = a1 + a2;
     return a0;
 }
 -- signature
@@ -87,8 +75,6 @@ double (double a0, double a1, double a2)
 -- ir
 fn <unnamed> @ 0x2102f8 (size 56)
   blk0 @ 0x2102f8:
-    store64(d0, (sp + #0xffffffffffffffe0))
-    store64(fadd.d(d1, d2), (sp + #0xffffffffffffffe8))
     ret d0
 -- card
 {"addr":"0x2102f8","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":56,"unsupported":0}
@@ -97,10 +83,6 @@ fn <unnamed> @ 0x2102f8 (size 56)
 -- decompile
 /* velk pseudo-C: sub_210330 @ 0x210330 */
 double sub_210330(double a0, double a1, double a2, double a3) {
-    double local_0; /* [sp-28] */
-
-    local_0 = a2;
-    local_0 = local_0 + a3;
     return a0;
 }
 -- signature
@@ -110,11 +92,6 @@ double (double a0, double a1, double a2, double a3)
 -- ir
 fn <unnamed> @ 0x210330 (size 72)
   blk0 @ 0x210330:
-    store64(d0, (sp + #0xffffffffffffffc8))
-    store64(d1, (sp + #0xffffffffffffffd0))
-    store64(d2, (sp + #0xffffffffffffffd8))
-    store64(d3, (sp + #0xffffffffffffffc0))
-    store64(fadd.d(load64((sp + #0xffffffffffffffd8)), load64((sp + #0xffffffffffffffc0))), (sp + #0xffffffffffffffd8))
     ret d0
 -- card
 {"addr":"0x210330","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}
@@ -123,9 +100,6 @@ fn <unnamed> @ 0x210330 (size 72)
 -- decompile
 /* velk pseudo-C: sub_210378 @ 0x210378 */
 double sub_210378(double a0, double a1, double a2, double a3, double a4) {
-    double local_0; /* [sp-28] */
-
-    local_0 = a3 + a4;
     return a0;
 }
 -- signature
@@ -135,10 +109,6 @@ double (double a0, double a1, double a2, double a3, double a4)
 -- ir
 fn <unnamed> @ 0x210378 (size 80)
   blk0 @ 0x210378:
-    store64(d0, (sp + #0xffffffffffffffc0))
-    store64(d1, (sp + #0xffffffffffffffc8))
-    store64(d2, (sp + #0xffffffffffffffd0))
-    store64(fadd.d(d3, d4), (sp + #0xffffffffffffffd8))
     ret d0
 -- card
 {"addr":"0x210378","approxTokens":216,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":80,"unsupported":0}

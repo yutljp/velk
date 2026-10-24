@@ -7,18 +7,13 @@
 -- decompile
 /* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
 int32_t sub_2011a0(int32_t a0) {
-    uint32_t local_0; /* [sp-c] */
-
     if (a0 >= 0x0) {
         if (a0 != 0x0) {
-            local_0 = 0x1;
-            return local_0;
+            return 0x1;
         }
-        local_0 = 0x0;
-        return local_0;
+        return 0x0;
     }
-    local_0 = 0xffffffff;
-    return local_0;
+    return 0xffffffff;
 }
 -- signature
 int32_t (int32_t a0)
@@ -27,20 +22,20 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2011a0 (size 63)
   blk0 @ 0x2011a0:
-    store32(edi, (rsp + #0xfffffffffffffff0))
+    v1 = edi
     brif ge edi, #0x0 -> 0x2011bd
   blk1 @ 0x2011b1:
-    store32(#0xffffffff, (rsp + #0xfffffffffffffff4))
+    v2 = #0xffffffff
     br 0x2011da
   blk2 @ 0x2011bd:
-    brif ne load32((rsp + #0xfffffffffffffff0)), #0x0 -> 0x2011d3
+    brif ne v1, #0x0 -> 0x2011d3
   blk3 @ 0x2011c7:
-    store32(#0x0, (rsp + #0xfffffffffffffff4))
+    v2 = #0x0
     br 0x2011da
   blk4 @ 0x2011d3:
-    store32(#0x1, (rsp + #0xfffffffffffffff4))
+    v2 = #0x1
   blk5 @ 0x2011da:
-    ret load32((rsp + #0xfffffffffffffff4))
+    ret v2
 -- card
 {"addr":"0x2011a0","approxTokens":138,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":63,"unsupported":0}
 
@@ -48,18 +43,16 @@ fn <unnamed> @ 0x2011a0 (size 63)
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 int32_t sub_2011e0(int32_t a0, int32_t a1, int32_t a2) {
-    uint32_t local_0; /* [sp-c] */
+    int32_t v2;
 
+    v2 = a1;
     if (a0 >= a1) {
         if (a0 <= a2) {
-            local_0 = a0;
-            return local_0;
+            return a0;
         }
-        local_0 = a2;
-        return local_0;
+        return a2;
     }
-    local_0 = a1;
-    return local_0;
+    return v2;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -68,22 +61,21 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x2011e0 (size 70)
   blk0 @ 0x2011e0:
-    store32(edi, (rsp + #0xfffffffffffffff0))
-    store32(esi, (rsp + #0xffffffffffffffec))
-    store32(edx, (rsp + #0xffffffffffffffe8))
+    v1 = edi
+    v2 = esi
+    v3 = edx
     brif ge edi, esi -> 0x201204
   blk1 @ 0x2011f9:
-    store32(load32((rsp + #0xffffffffffffffec)), (rsp + #0xfffffffffffffff4))
     br 0x201221
   blk2 @ 0x201204:
-    brif le load32((rsp + #0xfffffffffffffff0)), load32((rsp + #0xffffffffffffffe8)) -> 0x20121b
+    brif le v1, v3 -> 0x20121b
   blk3 @ 0x201210:
-    store32(load32((rsp + #0xffffffffffffffe8)), (rsp + #0xfffffffffffffff4))
+    v2 = v3
     br 0x201221
   blk4 @ 0x20121b:
-    store32(load32((rsp + #0xfffffffffffffff0)), (rsp + #0xfffffffffffffff4))
+    v2 = v1
   blk5 @ 0x201221:
-    ret load32((rsp + #0xfffffffffffffff4))
+    ret v2
 -- card
 {"addr":"0x2011e0","approxTokens":162,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":70,"unsupported":0}
 
@@ -91,14 +83,10 @@ fn <unnamed> @ 0x2011e0 (size 70)
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
 int32_t sub_201230(int32_t a0) {
-    uint32_t local_0; /* [sp-10] */
-
     if (a0 <= 0x0) {
-        local_0 = (a0 < 0x0 ? 0xffffffff : 0x0);
-        return local_0;
+        return (a0 < 0x0 ? 0xffffffff : 0x0);
     }
-    local_0 = 0x1;
-    return local_0;
+    return 0x1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -107,14 +95,14 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201230 (size 54)
   blk0 @ 0x201230:
-    store32(edi, (rsp + #0xfffffffffffffff4))
+    v1 = edi
     brif le edi, #0x0 -> 0x20124e
   blk1 @ 0x201241:
-    store32(#0x1, (rsp + #0xfffffffffffffff0))
+    v2 = #0x1
     br 0x201261
   blk2 @ 0x20124e:
-    store32(select lt load32((rsp + #0xfffffffffffffff4)), #0x0 ? #0xffffffff, #0x0, (rsp + #0xfffffffffffffff0))
+    v2 = select lt v1, #0x0 ? #0xffffffff, #0x0
   blk3 @ 0x201261:
-    ret load32((rsp + #0xfffffffffffffff0))
+    ret v2
 -- card
 {"addr":"0x201230","approxTokens":144,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":54,"unsupported":0}

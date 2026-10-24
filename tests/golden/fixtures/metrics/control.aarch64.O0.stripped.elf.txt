@@ -117,26 +117,22 @@ fn <unnamed> @ 0x2102a0 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210300 @ 0x210300 */
 int32_t sub_210300(int32_t a0) {
-    uint32_t local_0; /* [sp-8] */
+    int32_t v2;
 
-    local_0 = 0x0;
+    v2 = 0x0;
     if (a0 == 0x0) {
-        local_0 = 0x1;
+        v2 = 0x1;
     } else if (a0 != 0x1) {
         if (a0 == 0x2) {
-            local_0 += 0x4;
-            return local_0;
+            return v2 + 0x4;
         }
         if (a0 - 0x3 == 0x0) {
-            local_0 = 0x8;
-            return local_0;
+            return 0x8;
         }
-        local_0 = 0xffffffff;
-        return local_0;
+        return 0xffffffff;
     }
-    local_0 += 0x2;
-    local_0 += 0x4;
-    return local_0;
+    v2 = v2 + 0x2;
+    return v2 + 0x4;
 }
 -- signature
 int32_t (int32_t a0)
@@ -145,7 +141,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210300 (size 160)
   blk0 @ 0x210300:
-    store32(#0x0, (sp + #0xfffffffffffffff8))
+    v2 = #0x0
     v1 = w0
     brif eq (v1 & #0xffffffff), #0x0 -> 0x21034c
   blk1 @ 0x210318:
@@ -163,22 +159,22 @@ fn <unnamed> @ 0x210300 (size 160)
   blk7 @ 0x210348:
     br 0x210388
   blk8 @ 0x21034c:
-    store32(#0x1, (sp + #0xfffffffffffffff8))
+    v2 = #0x1
     br 0x21035c
   blk9 @ 0x21035c:
-    store32((load32((sp + #0xfffffffffffffff8)) + #0x2), (sp + #0xfffffffffffffff8))
+    v2 = ((v2 + #0x2) & #0xffffffff)
     br 0x21036c
   blk10 @ 0x21036c:
-    store32((load32((sp + #0xfffffffffffffff8)) + #0x4), (sp + #0xfffffffffffffff8))
+    v2 = ((v2 + #0x4) & #0xffffffff)
     br 0x210394
   blk11 @ 0x21037c:
-    store32(#0x8, (sp + #0xfffffffffffffff8))
+    v2 = #0x8
     br 0x210394
   blk12 @ 0x210388:
-    store32(#0xffffffff, (sp + #0xfffffffffffffff8))
+    v2 = #0xffffffff
     br 0x210394
   blk13 @ 0x210394:
-    ret load32((sp + #0xfffffffffffffff8))
+    ret v2
 -- card
 {"addr":"0x210300","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":160,"unsupported":0}
 
@@ -186,26 +182,19 @@ fn <unnamed> @ 0x210300 (size 160)
 -- decompile
 /* velk pseudo-C: sub_2103a0 @ 0x2103a0 */
 int32_t sub_2103a0(int32_t a0) {
-    uint32_t local_0; /* [sp-4] */
-
     if (a0 - 0x1 == 0x0) {
-        local_0 = 0xa;
-        return local_0;
+        return 0xa;
     }
     if (a0 - 0x64 == 0x0) {
-        local_0 = 0x14;
-        return local_0;
+        return 0x14;
     }
     if (a0 - 0x3e8 == 0x0) {
-        local_0 = 0x1e;
-        return local_0;
+        return 0x1e;
     }
     if (a0 - 0x2710 == 0x0) {
-        local_0 = 0x28;
-        return local_0;
+        return 0x28;
     }
-    local_0 = 0x0;
-    return local_0;
+    return 0x0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -231,22 +220,22 @@ fn <unnamed> @ 0x2103a0 (size 148)
   blk7 @ 0x2103ec:
     br 0x210420
   blk8 @ 0x2103f0:
-    store32(#0xa, (sp + #0xfffffffffffffffc))
+    v2 = #0xa
     br 0x210428
   blk9 @ 0x2103fc:
-    store32(#0x14, (sp + #0xfffffffffffffffc))
+    v2 = #0x14
     br 0x210428
   blk10 @ 0x210408:
-    store32(#0x1e, (sp + #0xfffffffffffffffc))
+    v2 = #0x1e
     br 0x210428
   blk11 @ 0x210414:
-    store32(#0x28, (sp + #0xfffffffffffffffc))
+    v2 = #0x28
     br 0x210428
   blk12 @ 0x210420:
-    store32(#0x0, (sp + #0xfffffffffffffffc))
+    v2 = #0x0
     br 0x210428
   blk13 @ 0x210428:
-    ret load32((sp + #0xfffffffffffffffc))
+    ret v2
 -- card
 {"addr":"0x2103a0","approxTokens":240,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":148,"unsupported":0}
 

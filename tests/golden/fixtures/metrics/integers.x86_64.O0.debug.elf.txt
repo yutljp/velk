@@ -65,22 +65,18 @@ fn mixed_sign @ 0x2012c0 (size 22)
 -- decompile
 /* velk pseudo-C: in_range @ 0x2012e0 */
 _Bool in_range(int x, int lo, int hi) {
-    uint8_t v2;
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-14] */
-    uint8_t local_2; /* [sp-15] */
+    uint8_t v5;
+    int32_t v6;
+    int32_t v7;
 
-    local_0 = x;
-    local_1 = hi;
-    local_2 = 0x0;
+    v6 = x;
+    v7 = hi;
+    v5 = 0x0;
     if (x < lo) {
-        v2 = local_2;
-        return v2 & 0x1;
+        return v5;
     }
-    v2 = (local_0 <= local_1);
-    local_2 = v2;
-    v2 = local_2;
-    return v2 & 0x1;
+    v5 = (v6 <= v7);
+    return v5;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -89,16 +85,14 @@ _Bool (int x, int lo, int hi)
 -- ir
 fn in_range @ 0x2012e0 (size 52)
   blk0 @ 0x2012e0:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    store32(edx, (rsp + #0xffffffffffffffec))
-    store8(#0x0, (rsp + #0xffffffffffffffeb))
+    v6 = edi
+    v7 = edx
+    v5 = #0x0
     brif lt edi, esi -> 0x20130a
   blk1 @ 0x2012fe:
-    v2 = (select le load32((rsp + #0xfffffffffffffff4)), load32((rsp + #0xffffffffffffffec)) ? #0x1, #0x0 & #0xff)
-    store8(v2, (rsp + #0xffffffffffffffeb))
+    v5 = (select le v6, v7 ? #0x1, #0x0 & #0xff)
   blk2 @ 0x20130a:
-    v2 = load8((rsp + #0xffffffffffffffeb))
-    ret (v2 & #0x1)
+    ret v5
 -- card
 {"addr":"0x2012e0","approxTokens":210,"blocks":3,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
 
@@ -123,16 +117,16 @@ fn rotate_left @ 0x201320 (size 43)
 -- decompile
 /* velk pseudo-C: popcount @ 0x201350 */
 int popcount(unsigned int x) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    int32_t v1;
+    int32_t v2;
 
-    local_0 = x;
-    local_1 = 0x0;
-    while (local_0 != 0x0) {
-        local_0 &= local_0 - 0x1;
-        local_1 += 0x1;
+    v1 = x;
+    v2 = 0x0;
+    while (v1 != 0x0) {
+        v1 = v1 - 0x1 & v1;
+        v2 = v2 + 0x1;
     }
-    return local_1;
+    return v2;
 }
 -- signature
 int (unsigned int x)
@@ -141,16 +135,16 @@ int (unsigned int x)
 -- ir
 fn popcount @ 0x201350 (size 55)
   blk0 @ 0x201350:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    store32(#0x0, (rsp + #0xfffffffffffffff0))
+    v1 = edi
+    v2 = #0x0
   blk1 @ 0x20135e:
-    brif eq load32((rsp + #0xfffffffffffffff4)), #0x0 -> 0x201382
+    brif eq v1, #0x0 -> 0x201382
   blk2 @ 0x201368:
-    store32((((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff) & load32((rsp + #0xfffffffffffffff4))), (rsp + #0xfffffffffffffff4))
-    store32((load32((rsp + #0xfffffffffffffff0)) + #0x1), (rsp + #0xfffffffffffffff0))
+    v1 = ((v1 - #0x1) & v1)
+    v2 = ((v2 + #0x1) & #0xffffffff)
     br 0x20135e
   blk3 @ 0x201382:
-    ret load32((rsp + #0xfffffffffffffff0))
+    ret v2
 -- card
 {"addr":"0x201350","approxTokens":180,"blocks":4,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":55,"unsupported":0}
 
@@ -176,29 +170,19 @@ fn byte_swap @ 0x201390 (size 51)
 /* velk pseudo-C: min3 @ 0x2013d0 */
 int min3(int a, int b, int c) {
     int32_t v1;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
-    uint32_t local_3; /* [sp-1c] */
-    uint32_t local_4; /* [sp-18] */
-    uint32_t local_5; /* [sp-20] */
+    int32_t v3;
+    int32_t v4;
 
-    local_0 = a;
-    local_1 = b;
-    local_2 = c;
+    v1 = a;
+    v3 = b;
+    v4 = c;
     if (a >= b) {
-        local_3 = local_1;
-    } else {
-        local_3 = local_0;
+        v1 = v3;
     }
-    v1 = local_3;
-    local_4 = v1;
-    if (v1 >= local_2) {
-        local_5 = local_2;
-        return local_5;
+    if (v1 >= v4) {
+        return v4;
     }
-    local_5 = local_4;
-    return local_5;
+    return v1;
 }
 -- signature
 int (int a, int b, int c)
@@ -207,26 +191,22 @@ int (int a, int b, int c)
 -- ir
 fn min3 @ 0x2013d0 (size 82)
   blk0 @ 0x2013d0:
-    store32(edi, (rsp + #0xfffffffffffffff4))
-    store32(esi, (rsp + #0xfffffffffffffff0))
-    store32(edx, (rsp + #0xffffffffffffffec))
+    v1 = edi
+    v3 = esi
+    v4 = edx
     brif ge edi, esi -> 0x2013f4
   blk1 @ 0x2013e9:
-    store32(load32((rsp + #0xfffffffffffffff4)), (rsp + #0xffffffffffffffe4))
     br 0x2013fa
   blk2 @ 0x2013f4:
-    store32(load32((rsp + #0xfffffffffffffff0)), (rsp + #0xffffffffffffffe4))
+    v1 = v3
   blk3 @ 0x2013fa:
-    v1 = load32((rsp + #0xffffffffffffffe4))
-    store32(v1, (rsp + #0xffffffffffffffe8))
-    brif ge v1, load32((rsp + #0xffffffffffffffec)) -> 0x201417
+    brif ge v1, v4 -> 0x201417
   blk4 @ 0x20140c:
-    store32(load32((rsp + #0xffffffffffffffe8)), (rsp + #0xffffffffffffffe0))
     br 0x20141d
   blk5 @ 0x201417:
-    store32(load32((rsp + #0xffffffffffffffec)), (rsp + #0xffffffffffffffe0))
+    v1 = v4
   blk6 @ 0x20141d:
-    ret load32((rsp + #0xffffffffffffffe0))
+    ret v1
 -- card
 {"addr":"0x2013d0","approxTokens":162,"blocks":7,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":82,"unsupported":0}
 
@@ -234,14 +214,13 @@ fn min3 @ 0x2013d0 (size 82)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x201430 */
 long labs_value(long x) {
-    int64_t local_0; /* [sp-18] */
+    int64_t v1;
 
+    v1 = x;
     if (x >= 0x0) {
-        local_0 = x;
-        return local_0;
+        return v1;
     }
-    local_0 = -x;
-    return local_0;
+    return -v1;
 }
 -- signature
 long (long x)
@@ -250,15 +229,14 @@ long (long x)
 -- ir
 fn labs_value @ 0x201430 (size 48)
   blk0 @ 0x201430:
-    store64(rdi, (rsp + #0xfffffffffffffff0))
+    v1 = rdi
     brif ge rdi, #0x0 -> 0x201452
   blk1 @ 0x201443:
-    store64((#0x0 - load64((rsp + #0xfffffffffffffff0))), (rsp + #0xffffffffffffffe8))
+    v1 = (#0x0 - v1)
     br 0x20145a
   blk2 @ 0x201452:
-    store64(load64((rsp + #0xfffffffffffffff0)), (rsp + #0xffffffffffffffe8))
   blk3 @ 0x20145a:
-    ret load64((rsp + #0xffffffffffffffe8))
+    ret v1
 -- card
 {"addr":"0x201430","approxTokens":150,"blocks":4,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 

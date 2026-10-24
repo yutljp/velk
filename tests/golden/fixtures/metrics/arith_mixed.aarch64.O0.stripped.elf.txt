@@ -25,14 +25,14 @@ fn <unnamed> @ 0x21019c (size 44)
 -- decompile
 /* velk pseudo-C: sub_2101c8 @ 0x2101c8 */
 int32_t sub_2101c8(int32_t a0) {
-    uint32_t local_0; /* [sp-8] */
-    int32_t local_1; /* [sp-c] */
+    int32_t v1;
+    int32_t v2;
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a0; local_1++) {
-        local_0 += local_1 * local_1;
+    v1 = 0x0;
+    for (v2 = 0x0; v2 < a0; v2++) {
+        v1 = v1 + v2 * v2;
     }
-    return local_0;
+    return v1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -41,21 +41,21 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101c8 (size 96)
   blk0 @ 0x2101c8:
-    store32(#0x0, (sp + #0xfffffffffffffff8))
-    store32(#0x0, (sp + #0xfffffffffffffff4))
+    v1 = #0x0
+    v2 = #0x0
     br 0x2101dc
   blk1 @ 0x2101dc:
-    brif ge load32((sp + #0xfffffffffffffff4)), w0 -> 0x21021c
+    brif ge v2, w0 -> 0x21021c
   blk2 @ 0x2101ec:
     br 0x2101f0
   blk3 @ 0x2101f0:
-    store32((load32((sp + #0xfffffffffffffff8)) + (load32((sp + #0xfffffffffffffff4)) * load32((sp + #0xfffffffffffffff4)))), (sp + #0xfffffffffffffff8))
+    v1 = ((v1 + (v2 * v2)) & #0xffffffff)
     br 0x21020c
   blk4 @ 0x21020c:
-    store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
+    v2 = ((v2 + #0x1) & #0xffffffff)
     br 0x2101dc
   blk5 @ 0x21021c:
-    ret load32((sp + #0xfffffffffffffff8))
+    ret v1
 -- card
 {"addr":"0x2101c8","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"unsupported":0}
 

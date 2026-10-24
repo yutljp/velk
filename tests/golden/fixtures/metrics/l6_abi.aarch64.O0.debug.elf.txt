@@ -9,9 +9,6 @@
 -- decompile
 /* velk pseudo-C: tail_target @ 0x2101d4 */
 int tail_target(int x) {
-    uint32_t local_0; /* [sp-4] */
-
-    local_0 = x;
     return x * 0x3 + 0x1;
 }
 -- signature
@@ -21,7 +18,6 @@ int (int x)
 -- ir
 fn tail_target @ 0x2101d4 (size 40)
   blk0 @ 0x2101d4:
-    store32(w0, (sp + #0xfffffffffffffffc))
     ret (((w0 * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x2101d4","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}

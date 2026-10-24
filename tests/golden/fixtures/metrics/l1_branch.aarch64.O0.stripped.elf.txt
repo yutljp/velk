@@ -7,18 +7,13 @@
 -- decompile
 /* velk pseudo-C: sub_210184 @ 0x210184 */
 int32_t sub_210184(int32_t a0) {
-    uint32_t local_0; /* [sp-4] */
-
     if ((a0 & 0x80000000) == 0x0) {
         if (a0 != 0x0) {
-            local_0 = 0x1;
-            return local_0;
+            return 0x1;
         }
-        local_0 = 0x0;
-        return local_0;
+        return 0x0;
     }
-    local_0 = 0xffffffff;
-    return local_0;
+    return 0xffffffff;
 }
 -- signature
 int32_t (int32_t a0)
@@ -31,20 +26,20 @@ fn <unnamed> @ 0x210184 (size 76)
   blk1 @ 0x210194:
     br 0x210198
   blk2 @ 0x210198:
-    store32(#0xffffffff, (sp + #0xfffffffffffffffc))
+    v1 = #0xffffffff
     br 0x2101c4
   blk3 @ 0x2101a4:
     brif ne w0, #0x0 -> 0x2101b8
   blk4 @ 0x2101ac:
     br 0x2101b0
   blk5 @ 0x2101b0:
-    store32(#0x0, (sp + #0xfffffffffffffffc))
+    v1 = #0x0
     br 0x2101c4
   blk6 @ 0x2101b8:
-    store32(#0x1, (sp + #0xfffffffffffffffc))
+    v1 = #0x1
     br 0x2101c4
   blk7 @ 0x2101c4:
-    ret load32((sp + #0xfffffffffffffffc))
+    ret v1
 -- card
 {"addr":"0x210184","approxTokens":210,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 
@@ -92,14 +87,10 @@ fn <unnamed> @ 0x2101d0 (size 104)
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 int32_t sub_210238(int32_t a0) {
-    uint32_t local_0; /* [sp-8] */
-
     if (a0 <= 0x0) {
-        local_0 = (a0 >= 0x0 ? 0x0 : 0xffffffff);
-        return local_0;
+        return (a0 >= 0x0 ? 0x0 : 0xffffffff);
     }
-    local_0 = 0x1;
-    return local_0;
+    return 0x1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -112,12 +103,12 @@ fn <unnamed> @ 0x210238 (size 72)
   blk1 @ 0x21024c:
     br 0x210250
   blk2 @ 0x210250:
-    store32(#0x1, (sp + #0xfffffffffffffff8))
+    v1 = #0x1
     br 0x210274
   blk3 @ 0x21025c:
-    store32(select ge w0, #0x0 ? #0x0, #0xffffffff, (sp + #0xfffffffffffffff8))
+    v1 = select ge w0, #0x0 ? #0x0, #0xffffffff
     br 0x210274
   blk4 @ 0x210274:
-    ret load32((sp + #0xfffffffffffffff8))
+    ret v1
 -- card
 {"addr":"0x210238","approxTokens":204,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}

@@ -66,8 +66,6 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, double a3)
 -- ir
 fn abi_mixed_adjust @ 0x210284 (size 68)
   blk0 @ 0x210284:
-    store64(x0, (sp + #0xffffffffffffffe0))
-    store64(d0, (sp + #0xffffffffffffffd0))
     ret results(fadd.d(x0, d0), (x1 ^ x2))
 -- card
 {"addr":"0x210284","approxTokens":198,"blocks":1,"hardReasons":[],"name":"abi_mixed_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}
@@ -80,12 +78,9 @@ struct abi_hfa1 abi_hfa1_adjust(struct abi_hfa1 value, double bias) {
     struct abi_hfa1 result = {0};
     uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
-    double local_0; /* [sp-10] */
 
-    local_0 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits) }).value;
-    local_0 = local_0 + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value;
     {
-        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = local_0 }).bits;
+        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         return result;
     }
@@ -97,10 +92,7 @@ int64_t (double a0, double a1)
 -- ir
 fn abi_hfa1_adjust @ 0x2102c8 (size 48)
   blk0 @ 0x2102c8:
-    store64(d0, (sp + #0xfffffffffffffff0))
-    store64(d1, (sp + #0xffffffffffffffe8))
-    store64(fadd.d(load64((sp + #0xfffffffffffffff0)), load64((sp + #0xffffffffffffffe8))), (sp + #0xfffffffffffffff0))
-    ret results(load64((sp + #0xfffffffffffffff0)))
+    ret results(fadd.d(d0, d1))
 -- card
 {"addr":"0x2102c8","approxTokens":168,"blocks":1,"hardReasons":[],"name":"abi_hfa1_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 
@@ -113,9 +105,7 @@ struct abi_hfa2 abi_hfa2_adjust(struct abi_hfa2 value, double bias) {
     uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
     uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
-    double local_0; /* [sp-18] */
 
-    local_0 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_2) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value;
     {
         uint64_t result_bits = value_bits;
         uint64_t result_bits_2 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_2) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
@@ -131,8 +121,6 @@ int64_t (double a0, double a1, double a2)
 -- ir
 fn abi_hfa2_adjust @ 0x2102f8 (size 56)
   blk0 @ 0x2102f8:
-    store64(d0, (sp + #0xffffffffffffffe0))
-    store64(fadd.d(d1, d2), (sp + #0xffffffffffffffe8))
     ret results(d0, fadd.d(d1, d2))
 -- card
 {"addr":"0x2102f8","approxTokens":180,"blocks":1,"hardReasons":[],"name":"abi_hfa2_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":56,"unsupported":0}
@@ -147,14 +135,11 @@ struct abi_hfa3 abi_hfa3_adjust(struct abi_hfa3 value, double bias) {
     uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
     uint64_t value_bits_3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x10, 8);
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
-    double local_0; /* [sp-28] */
 
-    local_0 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_3) }).value;
-    local_0 = local_0 + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value;
     {
         uint64_t result_bits = value_bits;
         uint64_t result_bits_2 = value_bits_2;
-        uint64_t result_bits_3 = ((union { double value; uint64_t bits; }){ .value = local_0 }).bits;
+        uint64_t result_bits_3 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_3) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
         __builtin_memcpy((unsigned char *)&result + 0x10, &result_bits_3, 8);
@@ -168,12 +153,7 @@ int64_t (double a0, double a1, double a2, double a3)
 -- ir
 fn abi_hfa3_adjust @ 0x210330 (size 72)
   blk0 @ 0x210330:
-    store64(d0, (sp + #0xffffffffffffffc8))
-    store64(d1, (sp + #0xffffffffffffffd0))
-    store64(d2, (sp + #0xffffffffffffffd8))
-    store64(d3, (sp + #0xffffffffffffffc0))
-    store64(fadd.d(load64((sp + #0xffffffffffffffd8)), load64((sp + #0xffffffffffffffc0))), (sp + #0xffffffffffffffd8))
-    ret results(d0, d1, load64((sp + #0xffffffffffffffd8)))
+    ret results(d0, d1, fadd.d(d2, d3))
 -- card
 {"addr":"0x210330","approxTokens":204,"blocks":1,"hardReasons":[],"name":"abi_hfa3_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":72,"unsupported":0}
 
@@ -188,9 +168,7 @@ struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
     uint64_t value_bits_3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x10, 8);
     uint64_t value_bits_4 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x18, 8);
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
-    double local_0; /* [sp-28] */
 
-    local_0 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_4) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value;
     {
         uint64_t result_bits = value_bits;
         uint64_t result_bits_2 = value_bits_2;
@@ -210,10 +188,6 @@ int64_t (double a0, double a1, double a2, double a3, double a4)
 -- ir
 fn abi_hfa4_adjust @ 0x210378 (size 80)
   blk0 @ 0x210378:
-    store64(d0, (sp + #0xffffffffffffffc0))
-    store64(d1, (sp + #0xffffffffffffffc8))
-    store64(d2, (sp + #0xffffffffffffffd0))
-    store64(fadd.d(d3, d4), (sp + #0xffffffffffffffd8))
     ret results(d0, d1, d2, fadd.d(d3, d4))
 -- card
 {"addr":"0x210378","approxTokens":216,"blocks":1,"hardReasons":[],"name":"abi_hfa4_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","size":80,"unsupported":0}

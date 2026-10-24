@@ -7,6 +7,28 @@ type Values = Vec<(i64, u8, Expr)>;
 
 /// Forwards only exact scalar slots whose incoming values agree on every path.
 pub(super) fn forward(ir: &mut FunctionIr) {
+    process(ir, false, &mut false);
+}
+
+pub(super) fn promote(ir: &mut FunctionIr) {
+    if ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::Trap))
+    {
+        return;
+    }
+    let mut normalized = ir.clone();
+    crate::passes::frame_slots::settle(&mut normalized);
+    let mut promoted = false;
+    process(&mut normalized, true, &mut promoted);
+    if promoted {
+        *ir = normalized;
+    }
+}
+
+fn process(ir: &mut FunctionIr, promotion: bool, promoted: &mut bool) {
     let sp = crate::arch::stack_pointer(ir.isa);
     if ir.blocks.is_empty() || super::frame_address_escapes(ir, sp) {
         return;
@@ -120,6 +142,10 @@ pub(super) fn forward(ir: &mut FunctionIr) {
     if slots.is_empty() {
         return;
     }
+    if promotion {
+        *promoted = promote_slots(ir, sp, &positions, &incoming, &reached, &slots);
+        return;
+    }
     // None is the as-yet unconstrained state. The empty entry state forces
     // every retained value, including a loop invariant, to be initialized.
     let mut exits: Vec<Option<Values>> = vec![None; ir.blocks.len()];
@@ -214,6 +240,160 @@ pub(super) fn forward(ir: &mut FunctionIr) {
             invalidate(stmt, *frame, sp, &mut values);
         }
     }
+}
+
+fn promote_slots(
+    ir: &mut FunctionIr,
+    sp: u16,
+    positions: &[Vec<i64>],
+    incoming: &[Vec<usize>],
+    reached: &HashSet<u64>,
+    slots: &HashSet<(i64, u8)>,
+) -> bool {
+    // Calls can access outgoing stack arguments without explicit memory operands.
+    // Unknown writes may reach the frame through an address we cannot resolve.
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        let mut loads = Vec::new();
+        for operand in stmt.operands() {
+            super::collect_loads(operand, &mut loads);
+        }
+        matches!(stmt, Stmt::Unsupported { .. } | Stmt::Call { .. })
+            || matches!(stmt, Stmt::Store { addr, .. } if frame_slot(addr, 0, sp).is_none())
+            || loads
+                .iter()
+                .any(|(addr, _)| frame_slot(addr, 0, sp).is_none())
+    }) {
+        return false;
+    }
+    let mut used = HashSet::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+        used.extend(writes);
+        used.extend(reads);
+    }
+    let mut free =
+        (crate::ir::TEMP_BASE..crate::ir::VARIABLE_BASE).filter(|index| !used.contains(index));
+    let mut selected = Vec::new();
+    let mut ordered: Vec<_> = slots.iter().copied().collect();
+    ordered.sort_unstable();
+    for (offset, width) in ordered {
+        // Incoming stack arguments belong to the caller.
+        if offset >= 0
+            || offset
+                .checked_add(i64::from(width))
+                .is_none_or(|end| end > 0)
+        {
+            continue;
+        }
+        let mut initialized = vec![true; ir.blocks.len()];
+        loop {
+            let mut changed = false;
+            for (index, block) in ir.blocks.iter().enumerate() {
+                if !reached.contains(&block.start) {
+                    continue;
+                }
+                let entry = index != 0
+                    && !incoming[index].is_empty()
+                    && incoming[index].iter().all(|from| initialized[*from]);
+                let stored = block
+                    .stmts
+                    .iter()
+                    .zip(&positions[index])
+                    .any(|(stmt, frame)| {
+                        matches!(stmt, Stmt::Store { addr, width: bytes, .. }
+                        if *bytes == width && frame_slot(addr, *frame, sp) == Some(offset))
+                    });
+                let exit = entry || stored;
+                changed |= initialized[index] != exit;
+                initialized[index] = exit;
+            }
+            if !changed {
+                break;
+            }
+        }
+        let safe = ir.blocks.iter().enumerate().all(|(index, block)| {
+            if !reached.contains(&block.start) {
+                return true;
+            }
+            let mut defined = index != 0
+                && !incoming[index].is_empty()
+                && incoming[index].iter().all(|from| initialized[*from]);
+            for (stmt, frame) in block.stmts.iter().zip(&positions[index]) {
+                let mut loads = Vec::new();
+                for operand in stmt.operands() {
+                    super::collect_loads(operand, &mut loads);
+                }
+                if !defined
+                    && loads.iter().any(|(addr, bytes)| {
+                        *bytes == width && frame_slot(addr, *frame, sp) == Some(offset)
+                    })
+                {
+                    return false;
+                }
+                if matches!(stmt, Stmt::Store { addr, width: bytes, .. }
+                    if *bytes == width && frame_slot(addr, *frame, sp) == Some(offset))
+                {
+                    defined = true;
+                }
+            }
+            true
+        });
+        if safe {
+            let Some(register) = free.next() else {
+                break;
+            };
+            selected.push((offset, width, register));
+        }
+    }
+    if selected.is_empty() {
+        return false;
+    }
+    for (index, block) in ir.blocks.iter_mut().enumerate() {
+        for (stmt, frame) in block.stmts.iter_mut().zip(&positions[index]) {
+            let mut loads = Vec::new();
+            for operand in stmt.operands() {
+                super::collect_loads(operand, &mut loads);
+            }
+            let pending: Vec<_> = loads
+                .iter()
+                .filter_map(|(addr, width)| {
+                    let offset = match frame_slot(addr, *frame, sp) {
+                        Some(offset) => offset,
+                        None => return None,
+                    };
+                    selected
+                        .iter()
+                        .find(|(slot, bytes, _)| *slot == offset && bytes == width)
+                        .map(|(_, _, register)| {
+                            (
+                                *width,
+                                (*addr).clone(),
+                                Expr::reg(*register, width.saturating_mul(8)),
+                            )
+                        })
+                })
+                .collect();
+            for operand in stmt.operands_mut() {
+                super::forward_expr(operand, &pending);
+            }
+            if let Stmt::Store { addr, value, width } = stmt
+                && let Some((_, _, register)) = selected.iter().find(|(offset, bytes, _)| {
+                    bytes == width && frame_slot(addr, *frame, sp) == Some(*offset)
+                })
+            {
+                *stmt = Stmt::Assign {
+                    dest: crate::ir::RegRef {
+                        index: *register,
+                        width: width.saturating_mul(8),
+                    },
+                    value: crate::passes::copies::truncated(value, width.saturating_mul(8)),
+                };
+            }
+        }
+    }
+    let registers: Vec<_> = selected.iter().map(|(_, _, register)| *register).collect();
+    crate::ssa::split_variables(ir, &registers);
+    true
 }
 
 fn forward_value(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
