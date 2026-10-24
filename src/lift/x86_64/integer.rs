@@ -609,7 +609,7 @@ pub(super) fn lift_count(lifter: &mut Lifter, ins: &Instruction) {
 }
 
 /// `adc` and `sbb`: a sum with the carry, or a difference less it. The
-/// flags keep only the carry out.
+/// flags include the carry out and the truncated result.
 pub(super) fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool) {
     let (Some(a), Some(b), Some(width)) = (
         operand(lifter, ins, 0),
@@ -632,15 +632,70 @@ pub(super) fn with_carry(lifter: &mut Lifter, ins: &Instruction, subtract: bool)
     let (out, value) = if subtract {
         (
             super::flags::borrow_out(&a, &b, carry.clone()),
-            Expr::bin(BinOp::Sub, Expr::bin(BinOp::Sub, a, b), carry),
+            Expr::bin(
+                BinOp::Sub,
+                Expr::bin(BinOp::Sub, a.clone(), b.clone()),
+                carry,
+            ),
         )
     } else {
         (
             super::flags::carry_out(&a, &b, carry.clone(), u32::from(width)),
-            Expr::bin(BinOp::Add, Expr::bin(BinOp::Add, a, b), carry),
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::Add, a.clone(), b.clone()),
+                carry,
+            ),
         )
     };
-    lifter.set_flags(Flags::carry(out));
+    let result = Expr::bin(
+        BinOp::And,
+        value.clone(),
+        Expr::constant(crate::ir::semantics::mask(u32::from(width))),
+    );
+    let bit = |value, shift| Expr::bin(BinOp::Shl, value, Expr::constant(shift));
+    let truth = |cond, lhs, rhs| Expr::Select {
+        cond,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+        then: Box::new(Expr::constant(1)),
+        els: Box::new(Expr::constant(0)),
+    };
+    let sign = |value| {
+        Expr::bin(
+            BinOp::And,
+            Expr::bin(BinOp::Shr, value, Expr::constant(u64::from(width - 1))),
+            Expr::constant(1),
+        )
+    };
+    let zero = truth(Cond::Eq, result.clone(), Expr::constant(0));
+    let adjust = Expr::bin(
+        BinOp::And,
+        Expr::bin(
+            BinOp::Xor,
+            Expr::bin(BinOp::Xor, a.clone(), b.clone()),
+            result.clone(),
+        ),
+        Expr::constant(0x10),
+    );
+    let parity = Flags::logic(result.clone())
+        .parity(true)
+        .select(Expr::constant(4), Expr::constant(0))
+        .expect("logical results define parity");
+    let different = Expr::bin(BinOp::Xor, a.clone(), b);
+    let overflow = sign(Expr::bin(
+        BinOp::And,
+        if subtract {
+            different
+        } else {
+            Expr::bin(BinOp::Xor, different, Expr::constant(u64::MAX))
+        },
+        Expr::bin(BinOp::Xor, a, result.clone()),
+    ));
+    let byte = [bit(sign(result), 7), bit(zero, 6), adjust, parity]
+        .into_iter()
+        .fold(out, |byte, part| Expr::bin(BinOp::Or, byte, part));
+    lifter.set_flags(Flags::stored(byte, Some(overflow)));
     write_destination(lifter, ins, value);
 }
 

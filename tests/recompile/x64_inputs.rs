@@ -29,6 +29,18 @@ fn printed_x64_inputs_exclude_dead_reads_and_unused_call_positions() {
             "calls_partial",
             "pushq %rbp\nmovq %rsp, %rbp\ncall partial_input\npopq %rbp\nret",
         ),
+        (
+            "partial_word_address",
+            "movabsq $0x400000000, %rax\nmovw (%rdi), %ax\naddw $1, %ax\nmovzwl %ax, %eax\nret",
+        ),
+        (
+            "absolute_word_loop",
+            "testl %edi, %edi\njz 2f\npushq %rbx\nmovabsq $0x400000000, %rbx\nxorl %eax, %eax\n1: movzwl (%rax,%rbx), %edx\naddl $6, %edx\nmovw %dx, (%rax,%rbx)\naddq $2, %rax\ncmpq $12, %rax\njne 1b\npopq %rbx\n2: movl $111, %eax\nret",
+        ),
+        (
+            "absolute_stride",
+            "imulq $112, %rdi, %rax\nmovabsq $0x400000000, %rdx\nmovl $1, (%rax,%rdx)\nret",
+        ),
     ] {
         writeln!(
             source,
@@ -57,6 +69,7 @@ fn printed_x64_inputs_exclude_dead_reads_and_unused_call_positions() {
         ..Default::default()
     };
     let mut text = String::from(HEADER);
+    text.push_str("#include <sys/mman.h>\n");
     text.push_str("static uint64_t last_input(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e) { (void)a; (void)b; (void)c; (void)d; return e; }\nstatic uint64_t partial_input(uint64_t x) { return ((x & ~UINT64_C(255)) | 7) + 256; }\n");
     for name in [
         "sets_inputs",
@@ -64,6 +77,9 @@ fn printed_x64_inputs_exclude_dead_reads_and_unused_call_positions() {
         "overwritten_inputs",
         "inline_probe",
         "calls_partial",
+        "partial_word_address",
+        "absolute_word_loop",
+        "absolute_stride",
     ] {
         let address = binary.find(name).unwrap().addr;
         let ir = &binary.analysis(address, None).unwrap().ir;
@@ -73,15 +89,23 @@ fn printed_x64_inputs_exclude_dead_reads_and_unused_call_positions() {
             assert!(!code.contains("undefined"), "{code}");
         } else if name == "calls_partial" {
             assert!(code.contains("partial_input(a0)"), "{code}");
-        } else {
+        } else if matches!(name, "sets_inputs" | "dead_inputs" | "overwritten_inputs") {
             assert!(code.contains(&format!("{name}(void)")), "{code}");
         }
         if name == "sets_inputs" {
             assert!(code.contains("last_input(0, 0, 0, 0, 8)"), "{code}");
         }
+        if name == "absolute_word_loop" {
+            assert!(
+                !code
+                    .lines()
+                    .any(|line| line.trim_start().starts_with("uint16_t *")),
+                "{code}"
+            );
+        }
         text.push_str(&code);
     }
-    text.push_str("int main(void) { if (sets_inputs() != 8 || dead_inputs() != 7 || overwritten_inputs() != 19) return 1; for (uint64_t x = 0; x < 65536; ++x) { if (calls_partial(x) != (((x & ~UINT64_C(255)) | 7) + 256)) return 2; if ((uint32_t)inline_probe(x, UINT32_MAX) != (uint32_t)(x + UINT32_MAX)) return 3; } return 0; }\n");
+    text.push_str("int main(void) { if (sets_inputs() != 8 || dead_inputs() != 7 || overwritten_inputs() != 19) return 1; for (uint64_t x = 0; x < 65536; ++x) { if (calls_partial(x) != (((x & ~UINT64_C(255)) | 7) + 256)) return 2; if ((uint32_t)inline_probe(x, UINT32_MAX) != (uint32_t)(x + UINT32_MAX)) return 3; uint16_t word = x; if (partial_word_address(&word) != (uint16_t)(word + 1)) return 4; } void *p = mmap((void *)UINT64_C(0x400000000), 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0); if (p == MAP_FAILED) return 5; volatile unsigned enter = 1; if (absolute_word_loop(enter) != 111) return 8; for (unsigned i = 0; i < 6; ++i) if (((uint16_t *)p)[i] != 6) return 6; for (unsigned i = 0; i < 4; ++i) absolute_stride(i); for (unsigned i = 0; i < 4; ++i) if (*(uint32_t *)((uint8_t *)p + i * 112) != 1) return 7; munmap(p, 4096); return 0; }\n");
     let program = Program {
         text,
         ranges: Vec::new(),

@@ -16,6 +16,8 @@ pub(crate) fn variable_types(
     let mut uses = Uses::default();
     let mut pointer_copies = Vec::new();
     let mut integer_copies = HashSet::new();
+    let mut zero_based = HashSet::new();
+    let mut other_origins = HashSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
             Stmt::Assign {
@@ -42,6 +44,11 @@ pub(crate) fn variable_types(
         match stmt {
             Stmt::Assign { dest, value } => {
                 uses.seen.insert(dest.index);
+                if matches!(value, Expr::Const(0)) {
+                    zero_based.insert(dest.index);
+                } else if base(value) != Some(dest.index) {
+                    other_origins.insert(dest.index);
+                }
                 if dest.width == 64
                     && let Expr::Reg { index, width: 64 } = value
                 {
@@ -103,6 +110,7 @@ pub(crate) fn variable_types(
                 }
             }
             Stmt::Call { .. } => {
+                other_origins.extend(stmt.call_outputs().iter().map(|output| output.dest.index));
                 uses.seen
                     .extend(stmt.call_outputs().iter().map(|output| output.dest.index));
             }
@@ -113,6 +121,14 @@ pub(crate) fn variable_types(
         }
     }
     uses.spread_floats();
+    // Offsets counted from zero are integers, even when an access adds a
+    // constant address to them. Pointer arithmetic from null is undefined in C.
+    for index in zero_based.difference(&other_origins) {
+        if uses.addresses.contains_key(index) {
+            uses.arithmetic.insert(*index);
+            uses.bits.insert(*index);
+        }
+    }
     loop {
         let mut changed = false;
         for &(dest, source) in &pointer_copies {

@@ -78,6 +78,8 @@ mod switches;
 mod syntax;
 #[path = "recompile/unsupported.rs"]
 mod unsupported;
+#[path = "recompile/x64_flags.rs"]
+mod x64_flags;
 #[path = "recompile/x64_inputs.rs"]
 mod x64_inputs;
 

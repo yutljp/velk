@@ -167,9 +167,8 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                         !reads.contains(&dest.index)
                     });
                 }
-                Stmt::Brif { lhs, rhs, .. } => {
-                    forward_expr(lhs, &pending);
-                    forward_expr(rhs, &pending);
+                Stmt::Brif { cond, lhs, rhs, .. } => {
+                    forward_comparison(*cond, lhs, rhs, &pending);
                 }
                 Stmt::Machine {
                     instruction,
@@ -353,6 +352,21 @@ pub(crate) fn split_offset(addr: &Expr) -> (&Expr, i64) {
     }
 }
 
+fn forward_comparison(
+    cond: crate::ir::Cond,
+    lhs: &mut Expr,
+    rhs: &mut Expr,
+    pending: &[(u8, Expr, Expr)],
+) {
+    let bits = crate::ir::semantics::operand_width(lhs, rhs);
+    let original = (lhs.clone(), rhs.clone());
+    forward_expr(lhs, pending);
+    forward_expr(rhs, pending);
+    if !super::copies::comparison_preserved(cond, bits, lhs, rhs) {
+        (*lhs, *rhs) = original;
+    }
+}
+
 fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
     match expr {
         Expr::Load {
@@ -393,14 +407,13 @@ fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
         }
         Expr::SignExtend { value, .. } => forward_expr(value, pending),
         Expr::Select {
+            cond,
             lhs,
             rhs,
             then,
             els,
-            ..
         } => {
-            forward_expr(lhs, pending);
-            forward_expr(rhs, pending);
+            forward_comparison(*cond, lhs, rhs, pending);
             forward_expr(then, pending);
             forward_expr(els, pending);
         }
