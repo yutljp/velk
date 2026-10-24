@@ -460,6 +460,10 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
             {
                 return Some(CType::int(1, false));
             }
+            // Indexed frame addresses are printed as offsets into byte arrays.
+            if super::expr::local_plus_offset(expr, ctx).is_some() {
+                return Some(CType::int(1, false));
+            }
             if let Some((_, _, _, 0, base)) = element_terms(expr, ctx) {
                 return pointer_target(base, ctx);
             }

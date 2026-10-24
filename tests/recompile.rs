@@ -30,6 +30,8 @@ mod ignored_result;
 mod long_branches;
 #[path = "recompile/register_locals.rs"]
 mod register_locals;
+#[path = "recompile/pointer_assignments.rs"]
+mod pointer_assignments;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
 

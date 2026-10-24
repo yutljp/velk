@@ -77,7 +77,7 @@ pub(crate) fn variable_types(
     let mut types = BTreeMap::new();
     let mut ints = HashSet::new();
     for index in uses.seen.clone() {
-        if !(crate::ir::TEMP_BASE..crate::ir::VALUE_BASE).contains(&index) {
+        if !crate::ir::is_temp(index) {
             continue;
         }
         let ty = if let Some(Some(precision)) = uses.floats.get(&index) {
