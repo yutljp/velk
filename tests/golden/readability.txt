@@ -23,8 +23,8 @@ cpp_virtual_a64.elf: 123 lines, 13 variables, 10 casts, 0 registers, 0 unsigned,
 cpp_virtual_a64_stripped.elf: 123 lines, 13 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 cpp_virtual_x64.elf: 122 lines, 14 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 cpp_virtual_x64_stripped.elf: 122 lines, 14 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
-go_probe: 79120 lines, 13179 variables, 12783 casts, 336 registers, 0 unsigned, 19 traps, 120 gotos, 121 indirect calls
-go_stripped: 79040 lines, 13168 variables, 12781 casts, 336 registers, 0 unsigned, 19 traps, 120 gotos, 121 indirect calls
+go_probe: 79136 lines, 13098 variables, 12941 casts, 190 registers, 0 unsigned, 19 traps, 120 gotos, 121 indirect calls
+go_stripped: 79056 lines, 13087 variables, 12939 casts, 190 registers, 0 unsigned, 19 traps, 120 gotos, 121 indirect calls
 l0_arith_a64.o: 16 lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_x64.o: 16 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l1_branch_a64.o: 12 lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

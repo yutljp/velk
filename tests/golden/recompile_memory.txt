@@ -1,6 +1,6 @@
 # functions left out:
 #   branches on flags: 3
-#   calls: 3844
+#   calls: 3842
 #   computes on floats or vectors: 60
 #   computes on registers alone: 920
 #   has an unsupported instruction: 4
@@ -8,7 +8,7 @@
 #   refers to data: 330
 #   returns no integer: 82
 #   takes an argument that is no integer: 40
-#   takes arguments on the stack: 40
+#   takes arguments on the stack: 42
 # runs left out:
 #   reaches memory no page can map: 267
 #   reads a register that is not a parameter: 622

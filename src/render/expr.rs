@@ -55,6 +55,7 @@ pub(crate) struct Ctx<'a> {
     /// Rendered stack address within a wider local to that address as bytes
     /// into the local.
     pub(super) local_parts: HashMap<String, String>,
+    pub(super) frame_addresses: Vec<(Expr, String)>,
     /// Declared width of each local, so a mask to that width can be dropped.
     pub(super) local_widths: HashMap<String, u8>,
     pub(super) local_element_types: HashMap<String, CType>,
@@ -432,6 +433,18 @@ pub(super) fn integer_sum(expr: &Expr, ctx: &Ctx<'_>) -> Printed {
 /// wherever C's types allow it: operations C would compute narrower are
 /// widened, and values C would extend otherwise are cast.
 pub(crate) fn print(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
+    if let Some((_, text)) = ctx
+        .frame_addresses
+        .iter()
+        .find(|(address, _)| address == expr)
+    {
+        return fit(
+            Printed::pointer(text.clone(), 13).address_integer(),
+            expr,
+            bits,
+            ctx,
+        );
+    }
     fit(unfitted(expr, ctx, bits), expr, bits, ctx)
 }
 

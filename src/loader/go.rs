@@ -161,6 +161,32 @@ mod tests {
     use crate::loader::{Image, Isa, Section};
 
     #[test]
+    fn abi0_wrappers_initialize_fixed_registers_before_the_call() {
+        let code = vec![
+            0x45, 0x0f, 0x57, 0xff, 0x64, 0x4c, 0x8b, 0x34, 0x25, 0xf8, 0xff, 0xff, 0xff, 0xe8, 0,
+            0, 0, 0, 0xc3,
+        ];
+        for (bytes, expected) in [
+            (code.clone(), Convention::GoAbi0),
+            (code[..14].to_vec(), Convention::GoAmd64),
+            ([vec![0xb8], code.clone()].concat(), Convention::GoAmd64),
+            ([vec![0xc3], code].concat(), Convention::GoAmd64),
+        ] {
+            let length = bytes.len();
+            let mut image = Image::from_code(Isa::X86_64, 0x1000, bytes);
+            image.go = true;
+            crate::loader::upsert(
+                &mut image.functions,
+                0x1000,
+                Some("wrapper".into()),
+                Some(length as u64),
+                crate::loader::NameSource::Pclntab,
+            );
+            assert_eq!(image.convention_of(0x1000), expected);
+        }
+    }
+
+    #[test]
     fn discovers_functions_after_an_unreadable_section() {
         for unreadable in [false, true] {
             let mut image = Image::from_code(Isa::X86_64, 0x1000, vec![0xc3; 64]);

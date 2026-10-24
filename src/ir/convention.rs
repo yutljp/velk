@@ -56,8 +56,8 @@ impl Convention {
             Self::SysV => Some(8),
             Self::Win64 => Some(40),
             Self::Aapcs64 => Some(0),
-            Self::GoAbi0 => Some(8),
-            Self::GoAmd64 | Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => None,
+            Self::GoAbi0 | Self::GoAmd64 => Some(8),
+            Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => None,
         }
     }
 

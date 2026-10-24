@@ -356,11 +356,19 @@ fn render_with(
             structure.fields.iter().filter_map(move |(offset, ty)| {
                 let width = match ty {
                     CType::Pointer(_) => 8,
-                    _ => u64::from(CType::pointer_to(ty.clone()).pointee_size()?),
+                    _ => {
+                        let Some(size) = CType::pointer_to(ty.clone()).pointee_size() else {
+                            return None;
+                        };
+                        u64::from(size)
+                    }
+                };
+                let Ok(offset) = i64::try_from(*offset) else {
+                    return None;
                 };
                 Some(crate::ir::Member {
                     structure: structure.name.clone(),
-                    offset: i64::try_from(*offset).ok()?,
+                    offset,
                     name: format!("field_0x{offset:x}"),
                     ty: ty.clone(),
                     width,
@@ -373,9 +381,10 @@ fn render_with(
         .structures
         .iter()
         .filter_map(|structure| {
-            let layout = naming::Layout {
-                size: structure.size?,
+            let Some(size) = structure.size else {
+                return None;
             };
+            let layout = naming::Layout { size };
             Some((structure.name.clone(), layout))
         })
         .collect();
@@ -437,7 +446,7 @@ fn render_with(
             .decls
             .iter()
             .flat_map(|local| std::iter::once(local).chain(&local.fields))
-            .filter_map(|local| Some((local.name.clone(), local.ty.as_ref()?)))
+            .filter_map(|local| local.ty.as_ref().map(|ty| (local.name.clone(), ty)))
     };
     let local_element_types = local_types()
         .filter_map(|(name, ty)| match ty {
@@ -511,6 +520,23 @@ fn render_with(
                 .map(str::to_owned),
         );
     }
+    let return_slot = if ir.isa == crate::loader::Isa::X86_64
+        && matches!(
+            ir.convention,
+            crate::ir::Convention::GoAmd64 | crate::ir::Convention::GoAbi0
+        ) {
+        let mut used = reserved
+            .iter()
+            .cloned()
+            .chain(symbols.reserved_names.iter().cloned())
+            .chain(symbols.data.values().map(|name| sanitize(name)))
+            .collect();
+        let provider = vacant_name("velk_return_address_slot", &mut used);
+        reserved.push(provider.clone());
+        Some(provider)
+    } else {
+        None
+    };
     let mut reads = std::collections::HashSet::new();
     if ir.isa == crate::loader::Isa::X86_64 {
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -581,18 +607,21 @@ fn render_with(
         strings: references
             .iter()
             .filter(|reference| reference.pointer.is_none())
-            .filter_map(|reference| Some((reference.addr, reference.text.clone()?)))
+            .filter_map(|reference| reference.text.clone().map(|text| (reference.addr, text)))
             .collect(),
         slots: locals.slots,
         parameter_addresses: locals.parameter_addresses,
         local_parts: locals.parts,
+        frame_addresses: Vec::new(),
         local_widths: locals.widths,
         local_pointer_types: locals
             .decls
             .iter()
             .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .filter_map(|local| {
-                let ty = local.ty.as_ref().filter(|ty| ty.is_pointer())?;
+                let Some(ty) = local.ty.as_ref().filter(|ty| ty.is_pointer()) else {
+                    return None;
+                };
                 Some((local.name.clone(), ty.to_string().trim_end().to_owned()))
             })
             .collect(),
@@ -601,7 +630,10 @@ fn render_with(
             .iter()
             .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .filter_map(|local| {
-                let precision = match local.ty.as_ref()?.to_string().as_str() {
+                let Some(ty) = &local.ty else {
+                    return None;
+                };
+                let precision = match ty.to_string().as_str() {
                     "double" => crate::ir::Precision::Double,
                     "float" => crate::ir::Precision::Single,
                     _ => return None,
@@ -660,6 +692,9 @@ fn render_with(
         }
     }
 
+    if let Some(provider) = &return_slot {
+        super::locals::bind_return_slot(ir, provider, &mut ctx);
+    }
     let mut out = String::new();
     let name = ir
         .name
@@ -763,6 +798,11 @@ fn render_with(
         .collect();
     for (_, _, provider, _) in &segment_bases {
         prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
+    }
+    if let Some(provider) = return_slot.filter(|provider| code_mentions(&body, provider)) {
+        prototypes.push_str(&format!(
+            "uint64_t *{provider}(void); /* target frame's return-address slot */\n"
+        ));
     }
     out.insert_str(prototypes_at, &prototypes);
     let mut declared = 0;

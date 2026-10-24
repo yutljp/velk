@@ -249,6 +249,49 @@ impl Image {
     /// zeroes xmm15 again after calling into the assembly ABI, which uses it.
     fn assembly_callees(&self) -> std::collections::HashSet<u64> {
         let mut out = std::collections::HashSet::new();
+        // ABI0-to-register wrappers initialize the fixed registers before
+        // their call, rather than restoring them after an assembly call.
+        for function in self.functions.values() {
+            let Some(size) = function.size else {
+                continue;
+            };
+            let Some(bytes) = self.read_vaddr(function.addr, size.min(128)) else {
+                continue;
+            };
+            let mut decoder = iced_x86::Decoder::with_ip(
+                64,
+                bytes,
+                function.addr,
+                iced_x86::DecoderOptions::NONE,
+            );
+            while decoder.can_decode() {
+                let at = decoder.position();
+                let instruction = decoder.decode();
+                if instruction.is_invalid() {
+                    break;
+                }
+                if bytes.get(at..at.saturating_add(18)).is_some_and(|window| {
+                    window[..14]
+                        == [
+                            0x45, 0x0f, 0x57, 0xff, // xorps xmm15, xmm15
+                            0x64, 0x4c, 0x8b, 0x34, 0x25, 0xf8, 0xff, 0xff,
+                            0xff, // mov r14, fs:[-8]
+                            0xe8,
+                        ]
+                }) {
+                    out.insert(function.addr);
+                    break;
+                }
+                if matches!(
+                    instruction.flow_control(),
+                    iced_x86::FlowControl::Return
+                        | iced_x86::FlowControl::UnconditionalBranch
+                        | iced_x86::FlowControl::IndirectBranch
+                ) {
+                    break;
+                }
+            }
+        }
         for section in self.sections.iter().filter(|section| section.executable) {
             let Some(bytes) = self.read_vaddr(section.vaddr, section.size) else {
                 continue;

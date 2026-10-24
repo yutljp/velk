@@ -691,7 +691,9 @@ pub fn recover_with(
         .flat_map(|block| &block.stmts)
         .filter_map(|stmt| match stmt {
             Stmt::Assign { dest, value } if !matches!(value, Expr::Reg { .. }) => {
-                let param = copies.get(&dest.index)?;
+                let Some(param) = copies.get(&dest.index) else {
+                    return None;
+                };
                 let mut read = HashSet::new();
                 reads(value, &mut read);
                 read.iter()
@@ -728,7 +730,9 @@ pub fn recover_with(
     let accesses = params
         .iter()
         .filter_map(|param| {
-            let fields = offsets.get(&param.index)?;
+            let Some(fields) = offsets.get(&param.index) else {
+                return None;
+            };
             Some(Access {
                 register: param.index,
                 fields: fields
@@ -747,7 +751,7 @@ pub fn recover_with(
             stack_arguments(blocks, landing_pads, isa, convention)
         }
         (true, Isa::X86_64) => stack_arguments(blocks, landing_pads, isa, convention),
-        (false, Isa::X86_64) if convention == Convention::SysV => {
+        (false, Isa::X86_64) if matches!(convention, Convention::SysV | Convention::GoAmd64) => {
             stack_arguments(blocks, landing_pads, isa, convention)
         }
         _ => StackFrame::default(),
@@ -843,7 +847,7 @@ fn stack_arguments(
     let sp = crate::arch::stack_pointer(isa);
     let fp = crate::arch::frame_pointer(isa);
     let results = convention == Convention::GoAbi0;
-    let incoming = convention == Convention::Aapcs64;
+    let incoming = matches!(convention, Convention::Aapcs64 | Convention::GoAmd64);
     // The registers holding a known offset from the stack pointer on entry,
     // as each block starts: the stack pointer and the frame pointer, and
     // under Go's assembly ABI, whose code may keep the stack pointer in
@@ -868,9 +872,9 @@ fn stack_arguments(
                 lhs,
                 rhs,
             } => match rhs.as_ref() {
-                Expr::Const(delta) => {
-                    based(lhs).map(|(base, inner)| (base, inner.wrapping_add(*delta as i64)))
-                }
+                Expr::Const(delta) => based(lhs).and_then(|(base, inner)| {
+                    inner.checked_add(*delta as i64).map(|at| (base, at))
+                }),
                 _ => None,
             },
             _ => None,
@@ -882,14 +886,22 @@ fn stack_arguments(
             | Expr::Bin {
                 op: crate::ir::BinOp::Add,
                 ..
-            } => based(expr)?,
+            } => {
+                let Some(base) = based(expr) else {
+                    return None;
+                };
+                base
+            }
             Expr::Bin {
                 op: crate::ir::BinOp::Sub,
                 lhs,
                 rhs,
             } => match (lhs.as_ref(), rhs.as_ref()) {
                 (Expr::Reg { index, width: 64 }, Expr::Const(delta)) => {
-                    (*index, (*delta as i64).wrapping_neg())
+                    let Some(delta) = (*delta as i64).checked_neg() else {
+                        return None;
+                    };
+                    (*index, delta)
                 }
                 _ => return None,
             },
@@ -898,18 +910,22 @@ fn stack_arguments(
         if !tracked(base) {
             return None;
         }
-        Some(frame.get(&base)?.wrapping_add(delta))
+        frame.get(&base).and_then(|at| at.checked_add(delta))
     };
     let located = |addr: &Expr, frame: &Frame, held: &HashMap<u16, i64>| {
-        let through =
-            based(addr).and_then(|(base, delta)| Some(held.get(&base)?.wrapping_add(delta)));
+        let through = based(addr)
+            .and_then(|(base, delta)| held.get(&base).and_then(|at| at.checked_add(delta)));
         offset_of(addr, frame)
             .or(through)
             .filter(|at| *at >= start && at - start < 8 * STACK_SLOTS as i64)
     };
     let bounded_bytes = |at: i64, width: u8| {
-        matches!(width, 1 | 2 | 4 | 8).then_some(())?;
-        let end = at.checked_add(i64::from(width))?;
+        if !matches!(width, 1 | 2 | 4 | 8) {
+            return None;
+        }
+        let Some(end) = at.checked_add(i64::from(width)) else {
+            return None;
+        };
         (end <= start + 8 * STACK_SLOTS as i64).then_some(at..end)
     };
     let step =
@@ -1739,6 +1755,35 @@ mod tests {
             Convention::Aapcs64,
             false,
         )
+    }
+
+    #[test]
+    fn go_stack_arguments_exclude_register_spills() {
+        let signature = recover(
+            &[Block {
+                start: 0,
+                stmts: vec![
+                    stack_store(4, 16, 8),
+                    stack_assign(
+                        12,
+                        Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(0, 64),
+                            Expr::bin(BinOp::Add, stack_load(4, 8, 8), stack_load(4, 16, 8)),
+                        ),
+                    ),
+                    Stmt::Ret {
+                        value: Expr::reg(12, 64),
+                    },
+                ],
+            }],
+            Isa::X86_64,
+            Convention::GoAmd64,
+            true,
+        );
+        assert_eq!(signature.stack, vec![8]);
+        assert!(signature.stack_results.is_empty());
+        assert!(signature.params.iter().any(|param| param.index == 0));
     }
 
     #[test]

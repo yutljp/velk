@@ -2437,3 +2437,40 @@ fn readonly_floating_views_reject_mismatched_or_volatile_formals() {
         assert!(code.contains("uint32_t bits; float value"), "{code}");
     }
 }
+
+#[test]
+fn go_return_address_and_argument_frame_have_explicit_meanings() {
+    let sp = crate::arch::stack_pointer(Isa::X86_64);
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![Stmt::Ret {
+            value: load(Expr::reg(sp, 64), 8),
+        }],
+    );
+    ir.convention = crate::ir::Convention::GoAmd64;
+    let code = rendered(&ir);
+    assert!(
+        code.contains("return *velk_return_address_slot();"),
+        "{code}"
+    );
+    assert!(!code.contains("rsp"), "{code}");
+    ir.blocks[0].stmts = vec![Stmt::Ret {
+        value: Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(8)),
+    }];
+    let code = rendered(&ir);
+    assert!(code.contains("velk_return_address_slot() + 1"), "{code}");
+    assert!(!code.contains("rsp"), "{code}");
+    ir.blocks[0].stmts.insert(
+        0,
+        Stmt::Assign {
+            dest: crate::ir::RegRef {
+                index: sp,
+                width: 64,
+            },
+            value: Expr::reg(0, 64),
+        },
+    );
+    let code = rendered(&ir);
+    assert!(code.contains("rsp"), "{code}");
+    assert!(!code.contains("velk_return_address_slot"), "{code}");
+}

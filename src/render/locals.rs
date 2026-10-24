@@ -121,6 +121,7 @@ pub(crate) fn stack_locals(
         slots: HashMap::new(),
         parameter_addresses: HashMap::new(),
         local_parts: HashMap::new(),
+        frame_addresses: Vec::new(),
         local_widths: HashMap::new(),
         local_element_types: HashMap::new(),
         local_scaled: std::collections::HashSet::new(),
@@ -1291,6 +1292,60 @@ fn frame_addresses(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, b
         other => {
             for child in crate::ir::visit::children(other) {
                 frame_addresses(child, frame, sp, out);
+            }
+        }
+    }
+}
+
+pub(super) fn bind_return_slot(ir: &FunctionIr, provider: &str, ctx: &mut Ctx<'_>) {
+    let sp = stack_pointer(ir.isa);
+    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let accesses: Vec<_> = stack_arguments(ir, sp, &frames)
+        .into_iter()
+        .map(|(address, slot, width)| {
+            let key = render_expr(&address, ctx);
+            (address, key, slot, width)
+        })
+        .collect();
+    let mut origins = HashMap::new();
+    for (_, key, slot, _) in &accesses {
+        let origin = origins.entry(key.clone()).or_insert(*slot);
+        if *origin != *slot {
+            *origin = None;
+        }
+    }
+    for (address, key, slot, width) in &accesses {
+        if origins.get(key) != Some(slot) {
+            continue;
+        }
+        match (slot, width) {
+            (Some(0), 8) => {
+                let name = format!("*{provider}()");
+                ctx.local_widths.insert(name.clone(), 8);
+                ctx.slots.entry(key.clone()).or_insert(name);
+                ctx.local_parts
+                    .entry(key.clone())
+                    .or_insert_with(|| format!("{provider}()"));
+            }
+            (Some(8), 0) => {
+                ctx.frame_addresses
+                    .push((address.clone(), format!("({provider}() + 1)")));
+            }
+            _ => {}
+        }
+    }
+    for (address, key, _, _) in accesses {
+        let renamed = render_expr(&address, ctx);
+        if let Some(name) = ctx.slots.get(&key).cloned() {
+            ctx.slots.insert(renamed.clone(), name);
+        }
+        if let Some(part) = ctx.local_parts.get(&key).cloned() {
+            ctx.local_parts.insert(renamed.clone(), part);
+        }
+        for width in [1, 2, 4, 8] {
+            if let Some(part) = ctx.parameter_addresses.get(&(key.clone(), width)).cloned() {
+                ctx.parameter_addresses
+                    .insert((renamed.clone(), width), part);
             }
         }
     }

@@ -27,6 +27,8 @@ mod common;
 mod division;
 #[path = "recompile/frame_values.rs"]
 mod frame_values;
+#[path = "recompile/go_stack.rs"]
+mod go_stack;
 #[path = "recompile/ignored_result.rs"]
 mod ignored_result;
 #[path = "recompile/long_branches.rs"]
