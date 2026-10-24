@@ -429,3 +429,42 @@ fn printed_stack_unions_read_each_width_as_the_machine_does() {
     candidate.code = format!("#include <string.h>\n{code}");
     check_candidates("stack-unions", vec![candidate], Mode::Registers, &[]);
 }
+
+#[test]
+fn printed_stack_index_held_in_a_pointer_variable_adds_as_an_integer() {
+    let index = Expr::reg(7, 64);
+    let ir = synthetic_ir(
+        "frame_pointer_index",
+        vec![Param {
+            index: 7,
+            name: "x".into(),
+            ty: CType::pointer_to(CType::int(8, false)),
+        }],
+        CType::U64,
+        vec![
+            Stmt::Call {
+                abi: None,
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![slot(-64), Expr::Const(0x5a), Expr::Const(32)]),
+                floats_named: false,
+                outputs: Vec::new(),
+                clobbers: Some(Default::default()),
+                via: None,
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::bin(BinOp::Add, slot(-58), index)),
+                    width: 1,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let mut symbols = velk::render::Symbols::default();
+    symbols.functions.insert(0x1000, "memset".into());
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    assert!(code.contains("local_0 + 0x6 + (uintptr_t)x"), "{code}");
+}
