@@ -860,7 +860,7 @@ fn printed_call_slots_execute_stack_arguments_and_address_writes() {
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(code.contains("local_"), "{code}");
         if !address {
-            assert!(code.contains("return 0xb +"), "{code}");
+            assert!(code.contains("return 11 +"), "{code}");
         }
         text.push_str(&code);
     }
