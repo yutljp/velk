@@ -8,7 +8,7 @@
 int32_t sub_180001000(void) {
     uint64_t *const qword_180003000 = (uint64_t *)0x180003000ULL;
 
-    return (int8_t)*(uint8_t *)(*qword_180003000 + 0x2);
+    return *(int8_t *)(*qword_180003000 + 0x2);
 }
 -- signature
 int32_t ()

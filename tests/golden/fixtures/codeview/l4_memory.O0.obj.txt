@@ -81,7 +81,7 @@ fn bump @ 0x90 (size 16)
 int32_t banner_first(void) {
     uint64_t *const banner = (uint64_t *)0xb0ULL;
 
-    return (int8_t)*(uint8_t *)(*banner);
+    return *(int8_t *)(*banner);
 }
 -- signature
 int32_t ()

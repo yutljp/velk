@@ -158,7 +158,7 @@ fn bump @ 0x1800010b0 (size 16)
 int32_t banner_first(void) {
     uint64_t *const qword_180003000 = (uint64_t *)0x180003000ULL;
 
-    return (int8_t)*(uint8_t *)(*qword_180003000);
+    return *(int8_t *)(*qword_180003000);
 }
 -- signature
 int32_t ()

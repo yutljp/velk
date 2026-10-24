@@ -75,9 +75,9 @@ int32_t record_total(struct record *items, int32_t n) {
         v3 = 0;
         v4 = 0;
         do {
-            v7 = (int16_t)*(uint16_t *)(v6 - 0x18) * *(uint32_t *)(v6 - 0x1c);
-            v8 = (int16_t)*(uint16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + (int16_t)*(uint16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
-            v4 = (int16_t)*(uint16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
+            v7 = *(int16_t *)(v6 - 0x18) * *(uint32_t *)(v6 - 0x1c);
+            v8 = *(int16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + *(int16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
+            v4 = *(int16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
             v3 += 4;
             v6 = v6 + 0x30;
         } while (v1 != v3);
@@ -92,7 +92,7 @@ int32_t record_total(struct record *items, int32_t n) {
     v3 = (v2 << 2) * 3;
     i = 0;
     do {
-        v1 = (int16_t)*(uint16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
+        v1 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
         v4 += v1;
         i += 12;
     } while (v3 != i);

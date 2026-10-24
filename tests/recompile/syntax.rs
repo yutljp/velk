@@ -1115,8 +1115,11 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
             "complete",
             "padding",
             "overlap",
-            "partial",
+            "reordered",
+            "reversed",
+            "copy",
             "dependent",
+            "adjusted_dependent",
             "division",
             "union_first",
             "union_middle",
@@ -1137,6 +1140,22 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                 vec![(-16, 1), (-15, 1), (-14, 2), (-12, 4), (-8, 8)]
             };
             let mut stmts = Vec::new();
+            if case == "adjusted_dependent" {
+                stmts.push(Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: sp,
+                        width: 64,
+                    },
+                    value: at(-32),
+                });
+            }
+            if case == "copy" {
+                stmts.push(Stmt::Store {
+                    addr: at(-64),
+                    width: 8,
+                    value: Expr::reg(argument, 64),
+                });
+            }
             for (part, &(offset, width)) in fields.iter().enumerate() {
                 if case == "padding" && part == 1 {
                     continue;
@@ -1144,7 +1163,9 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                 stmts.push(Stmt::Store {
                     addr: at(offset),
                     width,
-                    value: if case == "dependent" && part == 1 {
+                    value: if case == "copy" {
+                        load(-64, width)
+                    } else if matches!(case, "dependent" | "adjusted_dependent") && part == 1 {
                         load(-16, 1)
                     } else if case == "division" && part == 1 {
                         Expr::bin(BinOp::DivU, Expr::reg(argument, 64), Expr::Const(2))
@@ -1160,7 +1181,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                     value: Expr::Const(7),
                 });
             }
-            if case == "partial" {
+            if case == "reordered" {
                 stmts.remove(1);
                 stmts.insert(
                     0,
@@ -1170,6 +1191,9 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                         value: Expr::Const(9),
                     },
                 );
+            }
+            if case == "reversed" {
+                stmts.reverse();
             }
             let union_read = match case {
                 "union_first" => Some((-16, 1)),
@@ -1213,7 +1237,10 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
             let code = velk::render::render(&ir, &[], &symbols, &[]);
             assert_eq!(
                 code.contains("__typeof__"),
-                matches!(case, "complete" | "overlap") || union_read.is_some(),
+                matches!(
+                    case,
+                    "complete" | "overlap" | "reordered" | "reversed" | "copy"
+                ) || union_read.is_some(),
                 "{code}"
             );
             if case == "overlap" {
@@ -1226,7 +1253,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                 if case == "padding" && part == 1 {
                     continue;
                 }
-                let expected = if case == "partial" && part == 1 {
+                let expected = if case == "reordered" && part == 1 {
                     "9".to_owned()
                 } else if case == "division" && part == 1 {
                     "(x / 2)".to_owned()
@@ -1239,6 +1266,11 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                 support.push_str(&format!("got = 0; __builtin_memcpy(&got, b + {}, {width}); if (got != (({expected}) & UINT64_C({mask}))) __builtin_trap(); ", offset + 16));
             }
             support.push_str("return 0; }");
+            if case == "adjusted_dependent" {
+                support.push_str(
+                    "uint64_t velk_entry_stack_pointer(void) { return UINT64_C(0x100000); }",
+                );
+            }
             let code = format!("int64_t inspect_bytes(void *, uint64_t);\n{code}");
             let assertions = [0, 1, 0x80ff_ffff_8765_4321u64, u64::MAX]
                 .into_iter()

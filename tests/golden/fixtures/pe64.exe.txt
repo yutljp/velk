@@ -119,7 +119,7 @@ fn reg_abs @ 0x140001050 (size 16)
 int32_t msg_first(void) {
     uint64_t *const qword_140003000 = (uint64_t *)0x140003000ULL;
 
-    return (int8_t)*(uint8_t *)(*qword_140003000 + 0x1);
+    return *(int8_t *)(*qword_140003000 + 0x1);
 }
 -- signature
 int32_t ()

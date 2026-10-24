@@ -1,6 +1,75 @@
 use super::*;
 
 #[test]
+fn printed_signed_loads_preserve_extension_widths() {
+    let mut candidates = Vec::new();
+    for loaded in [1, 2, 4, 8] {
+        for extended in [1, 2, 4, 8] {
+            let ir = synthetic_ir(
+                &format!("extend_load_{loaded}_{extended}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::int(1, false)),
+                    },
+                    Param {
+                        index: 6,
+                        name: "x".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                CType::U64,
+                vec![
+                    Stmt::Store {
+                        addr: Expr::reg(7, 64),
+                        value: Expr::reg(6, 64),
+                        width: loaded,
+                    },
+                    Stmt::Ret {
+                        value: Expr::SignExtend {
+                            value: Box::new(Expr::Load {
+                                addr: Box::new(Expr::reg(7, 64)),
+                                width: loaded,
+                                signed: false,
+                            }),
+                            width: extended,
+                        },
+                    },
+                ],
+            );
+            let candidate = printed_candidate(
+                ir,
+                [
+                    0,
+                    1,
+                    0x7f,
+                    0x80,
+                    0x7fff,
+                    0x8000,
+                    0x7fff_ffff,
+                    0x8000_0000,
+                    1 << 63,
+                    u64::MAX,
+                ]
+                .into_iter()
+                .map(|x| vec![REGION + 1, x])
+                .collect(),
+            );
+            if loaded == extended && loaded > 1 {
+                assert!(
+                    !candidate.code.contains(&format!("(int{}_t)*", loaded * 8)),
+                    "{}",
+                    candidate.code
+                );
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("signed-load-widths", candidates, Mode::Memory, &[]);
+}
+
+#[test]
 fn printed_local_types_preserve_byte_values_and_integer_uses() {
     use velk::ir::{RegRef, VARIABLE_BASE};
 

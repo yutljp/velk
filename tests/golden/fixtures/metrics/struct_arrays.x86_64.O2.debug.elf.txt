@@ -11,7 +11,7 @@ int item_weight(struct item *items, int i) {
     int64_t v1;
 
     v1 = (uint64_t)i << 4;
-    return (int16_t)*(uint16_t *)((uint8_t *)items + v1 + 0xc) * *(uint32_t *)((uint8_t *)items + v1 + 0x8);
+    return *(int16_t *)((uint8_t *)items + v1 + 0xc) * *(uint32_t *)((uint8_t *)items + v1 + 0x8);
 }
 -- signature
 int (struct item * items, int i)

@@ -702,7 +702,14 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
         // it, so only a value of another type is cast.
         Expr::SignExtend { value, width } => {
             let from = u32::from(*width) * 8;
-            let inner = integral(value, ctx, from);
+            let inner = match value.as_ref() {
+                Expr::Load {
+                    addr,
+                    width: loaded,
+                    ..
+                } if loaded == width => load(addr, *width, true, ctx).address_integer(),
+                _ => integral(value, ctx, from),
+            };
             if inner.ty.signed && inner.signed_bits() <= from && inner.exact >= from {
                 Printed { exact: 64, ..inner }.ranging(Range::Signed(from))
             } else {
