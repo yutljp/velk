@@ -2,6 +2,7 @@ pub(crate) mod abi;
 #[cfg(test)]
 pub(crate) mod calls;
 mod clobbers;
+mod go_types;
 mod indirect;
 mod jump_table;
 pub mod prototypes;
@@ -1538,6 +1539,7 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     passed(deadline)?;
     passes::coalesce::reuse_pointers(&mut ir);
     passed(deadline)?;
+    go_types::apply(&mut ir, image);
     Ok(Analysis { ir, references })
 }
 

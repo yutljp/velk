@@ -1274,6 +1274,32 @@
 0x467180 64 internal/runtime/exithook.Run.deferwrap2 pclntab
 0x4671c0 64 internal/runtime/exithook.Run.deferwrap1 pclntab
 0x467200 72 internal/runtime/exithook.Run.func1 pclntab
+/* velk prelude */
+struct go_string { uint8_t * ptr; int64_t len; };
+/* end velk prelude */
+
+== 0x430e20 runtime.printstring
+-- decompile
+/* velk pseudo-C: runtime.printstring @ 0x430e20 */
+int64_t runtime_printstring(int64_t a0, int64_t a1) {
+    struct go_string string = { .ptr = (uint8_t *)(uintptr_t)a0, .len = (int64_t)a1 };
+
+    return runtime_gwrite((uintptr_t)string.ptr, string.len, string.len);
+}
+-- signature
+int64_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn runtime.printstring @ 0x430e20 (size 128)
+  blk0 @ 0x430e20:
+    br 0x430e26
+  blk1 @ 0x430e26:
+    store64(rax, (rsp + #0xffffffffffffffd0))
+    v3:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430660(rax, rbx, rbx)
+    ret v3
+-- card
+{"addr":"0x430e20","approxTokens":222,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","size":128,"unsupported":0}
 
 == 0x466ca0 main.add
 -- decompile

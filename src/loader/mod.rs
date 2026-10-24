@@ -231,6 +231,7 @@ pub struct Image {
     pub(crate) exception_handlers: Vec<seh::Handler>,
     /// The image carries a Go pclntab, so its functions follow the Go ABI.
     pub go: bool,
+    pub(crate) go_types: std::sync::OnceLock<go::types::Types>,
     /// The C++ virtual tables, by address point. Built on first use.
     pub vtables: std::sync::OnceLock<std::collections::BTreeSet<u64>>,
     /// The table each function leaves at the start of the object its first
@@ -352,6 +353,7 @@ impl Image {
             call_declarations: Default::default(),
             branches_to: Default::default(),
             addressed: Default::default(),
+            go_types: Default::default(),
             go_abi0: Default::default(),
             stack_rows: Default::default(),
             imports: BTreeMap::new(),
@@ -864,6 +866,7 @@ pub fn load(path: &Path) -> Result<Image> {
         call_declarations: Default::default(),
         branches_to: Default::default(),
         addressed: Default::default(),
+        go_types: Default::default(),
         go_abi0: Default::default(),
         stack_rows: Default::default(),
         result_reads: Default::default(),

@@ -6,6 +6,7 @@ mod expr;
 mod frame_registers;
 mod function;
 mod globals;
+mod go_values;
 mod int;
 mod jumps;
 mod layouts;
@@ -127,6 +128,16 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         .collect();
     let mut symbols = Symbols {
         functions,
+        go_value_shapes: image
+            .functions
+            .iter()
+            .filter_map(|(addr, function)| {
+                let Some(name) = function.name.as_deref() else {
+                    return None;
+                };
+                go_values::shape(name).map(|_| (*addr, name.to_owned()))
+            })
+            .collect(),
         allocator_names: image
             .functions
             .iter()

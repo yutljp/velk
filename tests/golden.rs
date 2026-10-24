@@ -452,13 +452,13 @@ fn is_register(word: &str) -> bool {
         || numbered("w", 0..31)
 }
 
-/// Go and Rust executables carry thousands of runtime functions; only the
-/// test program's own functions are recorded in full.
+/// Go and Rust executables carry thousands of runtime functions; the test
+/// program's functions and selected runtime examples are recorded in full.
 fn recorded(fixture: &Path, function: &Function) -> bool {
     let name = fixture.to_string_lossy();
     let symbol = function.name.as_deref().unwrap_or("");
     if name.starts_with("go_") {
-        symbol.starts_with("main.")
+        symbol.starts_with("main.") || symbol == "runtime.printstring"
     } else if name.starts_with("rust_") {
         symbol.contains("rust_demo::") || symbol.contains("rust_probe::")
     } else {

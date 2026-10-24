@@ -54,6 +54,7 @@ pub(crate) struct Ctx<'a> {
     /// The precision of a float the function returns.
     pub(super) float_return: Option<Precision>,
     pub(super) names: HashMap<u16, &'a str>,
+    pub(super) go_word_types: HashMap<u16, CType>,
     /// The landing pads, with the code ranges whose calls unwind into each.
     pub(super) landing_pads: HashMap<u64, Vec<(u64, u64)>>,
     /// The strings constants point at.

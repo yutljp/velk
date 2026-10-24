@@ -35,14 +35,17 @@ impl Prelude {
         if self.definitions.is_empty() {
             return String::new();
         }
-        format!(
-            "{START}{}\n{END}",
-            self.definitions
-                .iter()
-                .cloned()
-                .collect::<Vec<_>>()
-                .join("\n\n")
-        )
+        let mut definitions: Vec<_> = self.definitions.iter().cloned().collect();
+        definitions.sort_by_key(|definition| {
+            ![
+                "struct go_string {",
+                "struct go_slice {",
+                "struct go_iface {",
+            ]
+            .iter()
+            .any(|prefix| definition.starts_with(prefix))
+        });
+        format!("{START}{}\n{END}", definitions.join("\n\n"))
     }
 }
 

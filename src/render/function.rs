@@ -430,8 +430,31 @@ fn render_with(
     for (index, width) in machine_widths {
         variable_types.insert(index, CType::int((width.bits().max(32) / 8) as u8, false));
     }
+    let original_word_types = variable_types
+        .iter()
+        .map(|(index, ty)| (*index, ty.clone()))
+        .chain(
+            ir.params
+                .iter()
+                .map(|param| (param.index, param.ty.clone())),
+        )
+        .collect::<HashMap<_, _>>();
+    let go_groups =
+        super::go_values::groups(ir, symbols, &mut variable_types, &mut machine_reserved);
+    for group in &go_groups {
+        for (index, name, _) in &group.fields {
+            names.insert(*index, name);
+        }
+    }
     let mut declared_registers =
         declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
+    for group in &go_groups {
+        for (index, _, ty) in &group.fields {
+            if let Some(ty) = declared(ty, false) {
+                declared_registers.insert(*index, ty);
+            }
+        }
+    }
     let floats: HashMap<u16, crate::ir::Precision> = variable_types
         .iter()
         .chain(
@@ -487,7 +510,7 @@ fn render_with(
         })
         .collect();
     super::layouts::add_debug(ir, &mut arrays);
-    let scaled: std::collections::HashSet<u16> = ir
+    let mut scaled: std::collections::HashSet<u16> = ir
         .params
         .iter()
         .map(|param| (param.index, &param.ty))
@@ -495,6 +518,13 @@ fn render_with(
         .filter(|(_, ty)| scales(ty))
         .map(|(index, _)| index)
         .collect();
+    for group in &go_groups {
+        for (index, _, ty) in &group.fields {
+            if !scales(ty) {
+                scaled.remove(index);
+            }
+        }
+    }
     let element_types = ir
         .params
         .iter()
@@ -709,6 +739,15 @@ fn render_with(
         }
     }
     let mut ctx = Ctx {
+        go_word_types: go_groups
+            .iter()
+            .flat_map(|group| &group.fields)
+            .filter_map(|(index, _, _)| {
+                original_word_types
+                    .get(index)
+                    .map(|ty| (*index, ty.clone()))
+            })
+            .collect(),
         abi: logical,
         call_outputs,
         block_addresses,
@@ -802,6 +841,7 @@ fn render_with(
         transfer_values: super::transfers::single_use_loads(ir),
         taken: Default::default(),
     };
+    super::go_values::bind_stack(&go_groups, &mut ctx);
     for index in [crate::ir::EXCEPTION, crate::ir::SELECTOR] {
         ctx.pointer_types.remove(&index);
         ctx.element_types.remove(&index);
@@ -823,6 +863,9 @@ fn render_with(
         super::locals::bind_return_slot(ir, provider, &mut ctx);
     }
     let mut out = String::new();
+    out.push_str(&super::prelude::section(&super::go_values::definitions(
+        &go_groups,
+    )));
     out.push_str(&super::prelude::section(
         &super::vector_helpers::definitions(ir),
     ));
@@ -1029,7 +1072,27 @@ fn render_with(
             declared += 1;
         }
     }
+    for group in &go_groups {
+        indent(1, &mut out);
+        if group.initial.is_empty() {
+            out.push_str(&format!("{} {};\n", group.ty, group.name));
+        } else {
+            out.push_str(&format!(
+                "{} {} = {{ {} }};\n",
+                group.ty,
+                group.name,
+                group.initial.join(", ")
+            ));
+        }
+        declared += 1;
+    }
     for (index, ty) in &variable_types {
+        if go_groups
+            .iter()
+            .any(|group| group.fields.iter().any(|(field, _, _)| field == index))
+        {
+            continue;
+        }
         let name = ctx.register(*index, 64);
         // What a landing pad receives is no variable of the function.
         if matches!(*index, crate::ir::EXCEPTION | crate::ir::SELECTOR)
@@ -1292,7 +1355,12 @@ fn debug_definitions(
             {
                 *first = format!("_Alignas({alignment}) {first}");
             }
-            defined(&definition.name, &members)
+            let text = defined(&definition.name, &members);
+            if definition.name.starts_with("struct go_") {
+                super::prelude::section(&(text + "\n"))
+            } else {
+                text
+            }
         })
         .collect()
 }

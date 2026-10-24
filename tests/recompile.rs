@@ -50,6 +50,8 @@ mod frame_arrays;
 mod frame_values;
 #[path = "recompile/go_stack.rs"]
 mod go_stack;
+#[path = "recompile/go_values.rs"]
+mod go_values;
 #[path = "recompile/identical_exits.rs"]
 mod identical_exits;
 #[path = "recompile/ignored_result.rs"]

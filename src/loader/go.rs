@@ -2,6 +2,8 @@
 
 use crate::loader::Image;
 
+pub(crate) mod types;
+
 #[derive(Debug, Clone)]
 pub struct GoFunction {
     pub addr: u64,
@@ -29,7 +31,13 @@ fn u64_at(image: &Image, addr: u64) -> Option<u64> {
 }
 
 fn slice_at(image: &Image, addr: u64) -> Option<(u64, u64)> {
-    Some((u64_at(image, addr)?, u64_at(image, addr + 8)?))
+    let Some(length) = addr.checked_add(8) else {
+        return None;
+    };
+    match (u64_at(image, addr), u64_at(image, length)) {
+        (Some(pointer), Some(length)) => Some((pointer, length)),
+        _ => None,
+    }
 }
 
 fn c_string(image: &Image, addr: u64) -> Option<String> {
@@ -74,6 +82,9 @@ fn moduledata(image: &Image, pclntab: u64) -> Option<u64> {
                 else {
                     continue;
                 };
+                if candidate.checked_add(184).is_none() {
+                    continue;
+                }
                 let Some(text_addr) = candidate.checked_add(176) else {
                     continue;
                 };

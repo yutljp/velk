@@ -3,6 +3,8 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub struct Symbols {
     pub functions: HashMap<u64, String>,
+    /// Original runtime helper names that establish Go value shapes.
+    pub go_value_shapes: HashMap<u64, String>,
     /// Original names of known allocators, before conversion to C identifiers.
     pub allocator_names: HashMap<u64, String>,
     pub import_slots: HashMap<u64, String>,

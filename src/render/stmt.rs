@@ -67,6 +67,17 @@ fn without_update_mask(value: &Expr, bits: u32) -> &Expr {
 
 /// A call's argument as the complete value of its physical operand.
 pub(super) fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
+    if let Expr::Reg { index, .. } = value
+        && let Some(original) = ctx.go_word_types.get(index)
+    {
+        let pointer = original.is_pointer().then(|| original.to_string());
+        return conformed(
+            value,
+            expr::print_value_at(value, ctx, 64, false),
+            pointer.as_deref(),
+            ctx,
+        );
+    }
     render_value(value, ctx)
 }
 
