@@ -1,4 +1,5 @@
 # velk
+<img width="534" height="534" alt="image" src="https://github.com/user-attachments/assets/31a1c0c1-3ca4-4d9f-8d88-917cc43bd49e" />
 
 ELF / PE / COFF / Mach-O を解析し、関数ごとの疑似 C・逆アセンブル・中間表現（IR）・要約を返すバイナリ解析エンジンです。
 x86-64 と AArch64 を扱い、コマンドラインと、エージェントからツールを呼ぶための MCP 接続で利用できます。
