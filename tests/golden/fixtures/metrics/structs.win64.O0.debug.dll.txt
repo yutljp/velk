@@ -1,0 +1,233 @@
+# metrics/structs.win64.O0.debug.dll: pe x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 37 rect_area symtab,dwarf,unwind
+0x180001030 107 record_total symtab,dwarf,unwind
+0x1800010a0 46 point_add symtab,dwarf,unwind
+0x1800010d0 54 big_make symtab,dwarf,unwind
+0x180001110 18 big_sum symtab,dwarf,unwind
+0x180001130 11 word_low_byte symtab,dwarf,unwind
+0x180001140 49 flags_level symtab,dwarf,unwind
+0x180001180 39 flags_set_mode symtab,dwarf,unwind
+
+== 0x180001000 rect_area
+-- decompile
+/* velk pseudo-C: rect_area @ 0x180001000 */
+struct point { _Alignas(4) int x; int y; };
+struct rect { _Alignas(4) struct point min; struct point max; };
+int rect_area(struct rect *r) {
+    return (r->max.x - r->min.x) * (r->max.y - r->min.y);
+}
+-- signature
+int (struct rect * r)
+-- references
+
+-- ir
+fn rect_area @ 0x180001000 (size 37)
+  blk0 @ 0x180001000:
+    ret (((load32((rcx + #0x8)) - load32(rcx)) * (load32((rcx + #0xc)) - load32((rcx + #0x4)))) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":174,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf","unwind"],"section":".text","size":37,"unsupported":0}
+
+== 0x180001030 record_total
+-- decompile
+/* velk pseudo-C: record_total @ 0x180001030 */
+struct record {
+    _Alignas(4) char tag;
+    uint8_t gap_0x1[0x3];
+    int32_t value;
+    short count;
+    uint8_t gap_0xa[0x2];
+};
+int32_t record_total(struct record *items, int n) {
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        result += items[i].value * items[i].count;
+    }
+    return result;
+}
+-- signature
+int32_t (struct record * items, int n)
+-- references
+
+-- ir
+fn record_total @ 0x180001030 (size 107)
+  blk0 @ 0x180001030:
+    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+  blk1 @ 0x18000104c:
+    brif ge load32((rsp + #0xffffffffffffffe8)), edx -> 0x180001092
+  blk2 @ 0x180001055:
+    store32(((load32(((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0xc)) + #0x4)) * sext16(load16(((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0xc)) + #0x8)))) + load32((rsp + #0xffffffffffffffec))), (rsp + #0xffffffffffffffec))
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    br 0x18000104c
+  blk3 @ 0x180001092:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x180001030","approxTokens":240,"blocks":4,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf","unwind"],"section":".text","size":107,"unsupported":0}
+
+== 0x1800010a0 point_add
+-- decompile
+/* velk pseudo-C: point_add @ 0x1800010a0 */
+struct point { _Alignas(4) int x; int y; };
+struct point point_add(struct point a, struct point b) {
+    struct point result = {0};
+    uint64_t a_x = (uint32_t)a.x;
+    uint64_t a_y = (uint32_t)a.y;
+    uint64_t b_x = (uint32_t)b.x;
+    uint64_t b_y = (uint32_t)b.y;
+
+    {
+        result.x = (uint32_t)(a_x + b_x);
+        result.y = (uint32_t)(a_y + b_y);
+        return result;
+    }
+}
+-- signature
+int64_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn point_add @ 0x1800010a0 (size 46)
+  blk0 @ 0x1800010a0:
+    store64(rcx, (rsp + #0xfffffffffffffff0))
+    store64(rdx, (rsp + #0xffffffffffffffe8))
+    store32((load32((rsp + #0xfffffffffffffff0)) + load32((rsp + #0xffffffffffffffe8))), (rsp + #0xfffffffffffffff8))
+    store32((load32((rsp + #0xfffffffffffffff4)) + load32((rsp + #0xffffffffffffffec))), (rsp + #0xfffffffffffffffc))
+    ret results(load64((rsp + #0xfffffffffffffff8)))
+-- card
+{"addr":"0x1800010a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":46,"unsupported":0}
+
+== 0x1800010d0 big_make
+-- decompile
+/* velk pseudo-C: big_make @ 0x1800010d0 */
+/* struct: rcx +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t */
+struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
+struct big big_make(int32_t seed) {
+    struct big result = {0};
+    uint64_t seed_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&seed + 0x0, 4);
+    uint8_t *result_address = (uint8_t *)&result;
+
+    __builtin_memcpy(result_address, &(uint32_t){seed_bits}, 4);
+    __builtin_memcpy(result_address + 0x4, &(uint32_t){seed_bits + 1}, 4);
+    __builtin_memcpy(result_address + 0x8, &(uint32_t){seed_bits << 1}, 4);
+    __builtin_memcpy(result_address + 0xc, &(uint32_t){seed_bits * 3}, 4);
+    return result;
+}
+-- signature
+int64_t (struct S1 * a0, int32_t a1)
+-- references
+
+-- ir
+fn big_make @ 0x1800010d0 (size 54)
+  blk0 @ 0x1800010d0:
+    store32(edx, (rsp + #0xfffffffffffffff4))
+    store32(load32((rsp + #0xfffffffffffffff4)), rcx)
+    store32((load32((rsp + #0xfffffffffffffff4)) + #0x1), (rcx + #0x4))
+    store32((load32((rsp + #0xfffffffffffffff4)) << #0x1), (rcx + #0x8))
+    store32((load32((rsp + #0xfffffffffffffff4)) * #0x3), (rcx + #0xc))
+    ret rcx
+-- card
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x1800010d0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":54,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+
+== 0x180001110 big_sum
+-- decompile
+/* velk pseudo-C: big_sum @ 0x180001110 */
+/* struct: rcx +0x0:uint32_t */
+struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
+int32_t big_sum(struct big value) {
+    uint8_t *value_address = (uint8_t *)&value;
+
+    return *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address, 4) + *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address + 0x4, 4) + *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address + 0x8, 4) + *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address + 0xc, 4);
+}
+-- signature
+int64_t (struct S1 * a0)
+-- references
+
+-- ir
+fn big_sum @ 0x180001110 (size 18)
+  blk0 @ 0x180001110:
+    ret results(((((load32(rcx) + load32((rcx + #0x4))) + load32((rcx + #0x8))) + load32((rcx + #0xc))) & #0xffffffff))
+-- card
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x180001110","approxTokens":144,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":18,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+
+== 0x180001130 word_low_byte
+-- decompile
+/* velk pseudo-C: word_low_byte @ 0x180001130 */
+union word { _Alignas(4) unsigned int u; float f; unsigned char bytes[4]; };
+unsigned char word_low_byte(union word w) {
+    uint64_t w_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&w + 0x0, 4);
+    uint64_t v1;
+    int64_t local_0; /* [sp-8] */
+
+    local_0 = v1;
+    *(uint32_t *)((uint8_t *)&local_0 + 0x4) = w_bits;
+    return v1 & 0xffffffffffffff00 | *(uint8_t *)((uint8_t *)&local_0 + 0x4);
+}
+-- signature
+int64_t (int32_t a0)
+-- references
+
+-- ir
+fn word_low_byte @ 0x180001130 (size 11)
+  blk0 @ 0x180001130:
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    store32(rcx, (rsp + #0xfffffffffffffffc))
+    ret results(((rax & #0xffffffffffffff00) | load8((rsp + #0xfffffffffffffffc))))
+-- card
+{"addr":"0x180001130","approxTokens":126,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf","unwind"],"section":".text","size":11,"unsupported":0}
+
+== 0x180001140 flags_level
+-- decompile
+/* velk pseudo-C: flags_level @ 0x180001140 */
+int64_t flags_level(int32_t a0) {
+    uint64_t v1;
+    int64_t local_0; /* [sp-8] */
+
+    local_0 = v1;
+    *(uint32_t *)((uint8_t *)&local_0 + 0x4) = a0;
+    if ((a0 & 0x1) == 0) {
+        *(uint32_t *)&local_0 = *(uint32_t *)((uint8_t *)&local_0 + 0x4) >> 1 & 0x7;
+        return *(uint32_t *)&local_0; /* also returns  */
+    }
+    *(uint32_t *)&local_0 = *(uint32_t *)((uint8_t *)&local_0 + 0x4) >> 4 & 0xf;
+    return *(uint32_t *)&local_0; /* also returns  */
+}
+-- signature
+int64_t (int32_t a0)
+-- references
+
+-- ir
+fn flags_level @ 0x180001140 (size 49)
+  blk0 @ 0x180001140:
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    store32(rcx, (rsp + #0xfffffffffffffffc))
+    brif eq (rcx & #0x1), #0x0 -> 0x180001160
+  blk1 @ 0x180001151:
+    store32(((load32((rsp + #0xfffffffffffffffc)) >> #0x4) & #0xf), (rsp + #0xfffffffffffffff8))
+    br 0x18000116c
+  blk2 @ 0x180001160:
+    store32(((load32((rsp + #0xfffffffffffffffc)) >> #0x1) & #0x7), (rsp + #0xfffffffffffffff8))
+  blk3 @ 0x18000116c:
+    ret results(load32((rsp + #0xfffffffffffffff8)))
+-- card
+{"addr":"0x180001140","approxTokens":162,"blocks":4,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf","unwind"],"section":".text","size":49,"unsupported":0}
+
+== 0x180001180 flags_set_mode
+-- decompile
+/* velk pseudo-C: flags_set_mode @ 0x180001180 */
+void flags_set_mode(struct flags *f, unsigned int mode) {
+    *(uint32_t *)(f) = *(uint32_t *)(f) & 0xfffffff1 | (mode & 0x7) << 1;
+}
+-- signature
+void (struct flags * f, unsigned int mode)
+-- references
+
+-- ir
+fn flags_set_mode @ 0x180001180 (size 39)
+  blk0 @ 0x180001180:
+    store32(((load32(rcx) & #0xfffffff1) | ((edx & #0x7) << #0x1)), rcx)
+    ret #0x0
+-- card
+{"addr":"0x180001180","approxTokens":174,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":39,"unsupported":0}

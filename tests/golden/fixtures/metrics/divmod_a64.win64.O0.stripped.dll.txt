@@ -1,0 +1,454 @@
+# metrics/divmod_a64.win64.O0.stripped.dll: pe x86_64 no entry, 25 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 20 - unwind,prologue
+0x180001020 20 - unwind,prologue
+0x180001040 14 - unwind,prologue
+0x180001050 21 - unwind,prologue
+0x180001070 21 - unwind,prologue
+0x180001090 19 - unwind,prologue
+0x1800010b0 19 - unwind,prologue
+0x1800010d0 19 - unwind,prologue
+0x1800010f0 21 - unwind,prologue
+0x180001110 21 - unwind,prologue
+0x180001130 22 - unwind,prologue
+0x180001150 22 - unwind,prologue
+0x180001170 21 - unwind,prologue
+0x180001190 24 - unwind,prologue
+0x1800011b0 24 - unwind,prologue
+0x1800011d0 24 - unwind,prologue
+0x1800011f0 21 - unwind,prologue
+0x180001210 13 - unwind,prologue
+0x180001220 20 - unwind,prologue
+0x180001240 20 - unwind,prologue
+0x180001260 20 - unwind,prologue
+0x180001280 13 - unwind,prologue
+0x180001290 24 - unwind,prologue
+0x1800012b0 21 - unwind,prologue
+0x1800012d0 21 - unwind,prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+uint32_t sub_180001000(uint32_t a0) {
+    return a0 / 3;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 20)
+  blk0 @ 0x180001000:
+    ret (((rcx & #0xffffffff) / #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001020 -
+-- decompile
+/* velk pseudo-C: sub_180001020 @ 0x180001020 */
+uint32_t sub_180001020(uint32_t a0) {
+    return a0 / 10;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001020 (size 20)
+  blk0 @ 0x180001020:
+    ret (((rcx & #0xffffffff) / #0xa) & #0xffffffff)
+-- card
+{"addr":"0x180001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001040 -
+-- decompile
+/* velk pseudo-C: sub_180001040 @ 0x180001040 */
+uint32_t sub_180001040(uint32_t a0) {
+    return a0 >> 6;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001040 (size 14)
+  blk0 @ 0x180001040:
+    ret (((rcx & #0xffffffff) >> #0x6) & #0xffffffff)
+-- card
+{"addr":"0x180001040","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":14,"unsupported":0}
+
+== 0x180001050 -
+-- decompile
+/* velk pseudo-C: sub_180001050 @ 0x180001050 */
+uint64_t sub_180001050(uint64_t a0) {
+    return a0 / 3;
+}
+-- signature
+uint64_t (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001050 (size 21)
+  blk0 @ 0x180001050:
+    ret (rcx / #0x3)
+-- card
+{"addr":"0x180001050","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001070 -
+-- decompile
+/* velk pseudo-C: sub_180001070 @ 0x180001070 */
+uint64_t sub_180001070(uint64_t a0) {
+    return a0 / 10;
+}
+-- signature
+uint64_t (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001070 (size 21)
+  blk0 @ 0x180001070:
+    ret (rcx / #0xa)
+-- card
+{"addr":"0x180001070","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001090 -
+-- decompile
+/* velk pseudo-C: sub_180001090 @ 0x180001090 */
+int32_t sub_180001090(int32_t a0) {
+    return a0 / 3;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001090 (size 19)
+  blk0 @ 0x180001090:
+    ret (((rcx & #0xffffffff) / #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001090","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":19,"unsupported":0}
+
+== 0x1800010b0 -
+-- decompile
+/* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
+int32_t sub_1800010b0(int32_t a0) {
+    return a0 / 10;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800010b0 (size 19)
+  blk0 @ 0x1800010b0:
+    ret (((rcx & #0xffffffff) / #0xa) & #0xffffffff)
+-- card
+{"addr":"0x1800010b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":19,"unsupported":0}
+
+== 0x1800010d0 -
+-- decompile
+/* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
+int32_t sub_1800010d0(int32_t a0) {
+    return a0 / 16;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800010d0 (size 19)
+  blk0 @ 0x1800010d0:
+    ret (((rcx & #0xffffffff) / #0x10) & #0xffffffff)
+-- card
+{"addr":"0x1800010d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":19,"unsupported":0}
+
+== 0x1800010f0 -
+-- decompile
+/* velk pseudo-C: sub_1800010f0 @ 0x1800010f0 */
+int64_t sub_1800010f0(int64_t a0) {
+    return a0 / 16;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800010f0 (size 21)
+  blk0 @ 0x1800010f0:
+    ret (rcx / #0x10)
+-- card
+{"addr":"0x1800010f0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001110 -
+-- decompile
+/* velk pseudo-C: sub_180001110 @ 0x180001110 */
+int32_t sub_180001110(int32_t a0) {
+    return a0 % 3;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001110 (size 21)
+  blk0 @ 0x180001110:
+    ret ((rcx & #0xffffffff) % #0x3)
+-- card
+{"addr":"0x180001110","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001130 -
+-- decompile
+/* velk pseudo-C: sub_180001130 @ 0x180001130 */
+uint32_t sub_180001130(uint32_t a0) {
+    return a0 % 3;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001130 (size 22)
+  blk0 @ 0x180001130:
+    ret (((rcx & #0xffffffff) % #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001130","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
+
+== 0x180001150 -
+-- decompile
+/* velk pseudo-C: sub_180001150 @ 0x180001150 */
+uint32_t sub_180001150(uint32_t a0) {
+    return a0 % 10;
+}
+-- signature
+uint32_t (uint32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001150 (size 22)
+  blk0 @ 0x180001150:
+    ret (((rcx & #0xffffffff) % #0xa) & #0xffffffff)
+-- card
+{"addr":"0x180001150","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
+
+== 0x180001170 -
+-- decompile
+/* velk pseudo-C: sub_180001170 @ 0x180001170 */
+int32_t sub_180001170(int32_t a0) {
+    return a0 % 10;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001170 (size 21)
+  blk0 @ 0x180001170:
+    ret ((rcx & #0xffffffff) % #0xa)
+-- card
+{"addr":"0x180001170","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001190 -
+-- decompile
+/* velk pseudo-C: sub_180001190 @ 0x180001190 */
+int64_t sub_180001190(int64_t a0) {
+    return a0 % 10;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001190 (size 24)
+  blk0 @ 0x180001190:
+    ret (rcx % #0xa)
+-- card
+{"addr":"0x180001190","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800011b0 -
+-- decompile
+/* velk pseudo-C: sub_1800011b0 @ 0x1800011b0 */
+uint64_t sub_1800011b0(uint64_t a0) {
+    return a0 % 10;
+}
+-- signature
+uint64_t (uint64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800011b0 (size 24)
+  blk0 @ 0x1800011b0:
+    ret (rcx % #0xa)
+-- card
+{"addr":"0x1800011b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800011d0 -
+-- decompile
+/* velk pseudo-C: sub_1800011d0 @ 0x1800011d0 */
+int64_t sub_1800011d0(int64_t a0) {
+    return a0 % 16;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800011d0 (size 24)
+  blk0 @ 0x1800011d0:
+    ret (rcx % #0x10)
+-- card
+{"addr":"0x1800011d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800011f0 -
+-- decompile
+/* velk pseudo-C: sub_1800011f0 @ 0x1800011f0 */
+int32_t sub_1800011f0(int32_t a0) {
+    return a0 % 4;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800011f0 (size 21)
+  blk0 @ 0x1800011f0:
+    ret ((rcx & #0xffffffff) % #0x4)
+-- card
+{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001210 -
+-- decompile
+/* velk pseudo-C: sub_180001210 @ 0x180001210 */
+int32_t sub_180001210(int32_t a0) {
+    return -a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001210 (size 13)
+  blk0 @ 0x180001210:
+    ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x180001210","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
+
+== 0x180001220 -
+-- decompile
+/* velk pseudo-C: sub_180001220 @ 0x180001220 */
+int32_t sub_180001220(int32_t a0) {
+    return a0 < 0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001220 (size 20)
+  blk0 @ 0x180001220:
+    v1 = (select lt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret v1
+-- card
+{"addr":"0x180001220","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001240 -
+-- decompile
+/* velk pseudo-C: sub_180001240 @ 0x180001240 */
+int32_t sub_180001240(int32_t a0) {
+    return a0 == 0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001240 (size 20)
+  blk0 @ 0x180001240:
+    v1 = (select eq (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret v1
+-- card
+{"addr":"0x180001240","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001260 -
+-- decompile
+/* velk pseudo-C: sub_180001260 @ 0x180001260 */
+int32_t sub_180001260(int32_t a0) {
+    return a0 > 0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001260 (size 20)
+  blk0 @ 0x180001260:
+    v1 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret v1
+-- card
+{"addr":"0x180001260","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001280 -
+-- decompile
+/* velk pseudo-C: sub_180001280 @ 0x180001280 */
+int32_t sub_180001280(int32_t a0) {
+    return -a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001280 (size 13)
+  blk0 @ 0x180001280:
+    ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x180001280","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
+
+== 0x180001290 -
+-- decompile
+/* velk pseudo-C: sub_180001290 @ 0x180001290 */
+int64_t sub_180001290(int64_t a0) {
+    return a0 % 3;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001290 (size 24)
+  blk0 @ 0x180001290:
+    ret (rcx % #0x3)
+-- card
+{"addr":"0x180001290","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800012b0 -
+-- decompile
+/* velk pseudo-C: sub_1800012b0 @ 0x1800012b0 */
+int64_t sub_1800012b0(int64_t a0) {
+    return a0 / 3;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800012b0 (size 21)
+  blk0 @ 0x1800012b0:
+    ret (rcx / #0x3)
+-- card
+{"addr":"0x1800012b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+
+== 0x1800012d0 -
+-- decompile
+/* velk pseudo-C: sub_1800012d0 @ 0x1800012d0 */
+int64_t sub_1800012d0(int64_t a0) {
+    return a0 / 10;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800012d0 (size 21)
+  blk0 @ 0x1800012d0:
+    ret (rcx / #0xa)
+-- card
+{"addr":"0x1800012d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}

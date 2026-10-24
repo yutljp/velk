@@ -1,0 +1,163 @@
+# metrics/loops.win64.O0.debug.dll: pe x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 49 count_bits symtab,dwarf,unwind
+0x180001040 68 sum_until symtab,dwarf,unwind
+0x180001090 99 sum_till_neg symtab,dwarf,unwind
+0x180001100 111 sum_until_zero symtab,dwarf,unwind
+
+== 0x180001000 count_bits
+-- decompile
+/* velk pseudo-C: count_bits @ 0x180001000 */
+int count_bits(unsigned int x) {
+    uint32_t v1;
+    int32_t result;
+
+    v1 = x;
+    result = 0;
+    while (v1 != 0) {
+        result = (v1 & 0x1) + result;
+        v1 >>= 1;
+    }
+    return result;
+}
+-- signature
+int (unsigned int x)
+-- references
+
+-- ir
+fn count_bits @ 0x180001000 (size 49)
+  blk0 @ 0x180001000:
+    v1 = (rcx & #0xffffffff)
+    v2 = #0x0
+  blk1 @ 0x18000100c:
+    brif eq v1, #0x0 -> 0x18000102c
+  blk2 @ 0x180001013:
+    v2 = (((v1 & #0x1) + v2) & #0xffffffff)
+    v1 = (v1 >> #0x1)
+    br 0x18000100c
+  blk3 @ 0x18000102c:
+    ret v2
+-- card
+{"addr":"0x180001000","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf","unwind"],"section":".text","size":49,"unsupported":0}
+
+== 0x180001040 sum_until
+-- decompile
+/* velk pseudo-C: sum_until @ 0x180001040 */
+int sum_until(int limit) {
+    int32_t result;
+    int32_t i;
+
+    result = 0;
+    for (i = 1; i <= limit; i++) {
+        result = i + result;
+    }
+    return result;
+}
+-- signature
+int (int limit)
+-- references
+
+-- ir
+fn sum_until @ 0x180001040 (size 68)
+  blk0 @ 0x180001040:
+    v1 = #0x0
+    v2 = #0x1
+  blk1 @ 0x180001058:
+    brif gt v2, ecx -> 0x18000107b
+  blk2 @ 0x180001062:
+    v1 = ((v2 + v1) & #0xffffffff)
+    v2 = ((v2 + #0x1) & #0xffffffff)
+    br 0x180001058
+  blk3 @ 0x18000107b:
+    ret v1
+-- card
+{"addr":"0x180001040","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}
+
+== 0x180001090 sum_till_neg
+-- decompile
+/* velk pseudo-C: sum_till_neg @ 0x180001090 */
+int sum_till_neg(int *p, int n) {
+    int32_t v2;
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        v2 = p[i];
+        if (v2 < 0) {
+            return result;
+        }
+        result += v2;
+    }
+    return result;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_till_neg @ 0x180001090 (size 99)
+  blk0 @ 0x180001090:
+    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+  blk1 @ 0x1800010ad:
+    brif ge load32((rsp + #0xffffffffffffffe8)), edx -> 0x1800010ea
+  blk2 @ 0x1800010b7:
+    v2 = load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0x4)))
+    brif ge (v2 & #0xffffffff), #0x0 -> 0x1800010d1
+  blk3 @ 0x1800010cf:
+    br 0x1800010ea
+  blk4 @ 0x1800010d1:
+    store32((v2 + load32((rsp + #0xffffffffffffffec))), (rsp + #0xffffffffffffffec))
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    br 0x1800010ad
+  blk5 @ 0x1800010ea:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x180001090","approxTokens":186,"blocks":6,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":99,"unsupported":0}
+
+== 0x180001100 sum_until_zero
+-- decompile
+/* velk pseudo-C: sum_until_zero @ 0x180001100 */
+int sum_until_zero(int *p, int n) {
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        if (p[i] == 0) {
+            return result;
+        }
+        if (p[i] >= 0) {
+            result += p[i];
+        }
+    }
+    return result;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_until_zero @ 0x180001100 (size 111)
+  blk0 @ 0x180001100:
+    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+  blk1 @ 0x18000111c:
+    brif ge load32((rsp + #0xffffffffffffffe8)), edx -> 0x180001166
+  blk2 @ 0x180001125:
+    brif ne load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0x4))), #0x0 -> 0x180001136
+  blk3 @ 0x180001134:
+    br 0x180001166
+  blk4 @ 0x180001136:
+    brif ge load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0x4))), #0x0 -> 0x180001147
+  blk5 @ 0x180001145:
+    br 0x18000115b
+  blk6 @ 0x180001147:
+    store32((load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0x4))) + load32((rsp + #0xffffffffffffffec))), (rsp + #0xffffffffffffffec))
+  blk7 @ 0x18000115b:
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    br 0x18000111c
+  blk8 @ 0x180001166:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x180001100","approxTokens":174,"blocks":9,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":111,"unsupported":0}

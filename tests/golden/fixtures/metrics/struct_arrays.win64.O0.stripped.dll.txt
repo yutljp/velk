@@ -1,0 +1,92 @@
+# metrics/struct_arrays.win64.O0.stripped.dll: pe x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 57 - unwind,prologue
+0x180001040 70 - unwind,prologue
+0x180001090 103 - unwind,prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };
+int32_t sub_180001000(struct S1 *a0, int32_t a1) {
+    return (int16_t)a0[a1].field_0x8 * a0[a1].field_0x4;
+}
+-- signature
+int32_t (struct S1 * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 57)
+  blk0 @ 0x180001000:
+    ret ((sext16(load16(((rcx + (sext32(rdx) * #0xc)) + #0x8))) * load32(((rcx + (sext32(rdx) * #0xc)) + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":57,"structures":["struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };"],"unsupported":0}
+
+== 0x180001040 -
+-- decompile
+/* velk pseudo-C: sub_180001040 @ 0x180001040 */
+struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
+int64_t sub_180001040(struct S1 *a0, int32_t a1, int32_t a2) {
+    struct S1 *v1;
+
+    a0[a1].field_0x0 = a2;
+    v1 = a0 + a1;
+    v1->field_0x8 = a2 + 1;
+    return (uintptr_t)v1;
+}
+-- signature
+int64_t (struct S1 * a0, int32_t a1, int32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001040 (size 70)
+  blk0 @ 0x180001040:
+    store32(r8d, (rsp + #0xfffffffffffffffc))
+    store32(rdx, (rsp + #0xfffffffffffffff8))
+    store64(rcx, (rsp + #0xfffffffffffffff0))
+    store32(load32((rsp + #0xfffffffffffffffc)), (rcx + (sext32(rdx) * #0xc)))
+    v1 = (load64((rsp + #0xfffffffffffffff0)) + (sext32(load32((rsp + #0xfffffffffffffff8))) * #0xc))
+    store32((load32((rsp + #0xfffffffffffffffc)) + #0x1), (v1 + #0x8))
+    ret v1
+-- card
+{"addr":"0x180001040","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":70,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+
+== 0x180001090 -
+-- decompile
+/* velk pseudo-C: sub_180001090 @ 0x180001090 */
+struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x4]; };
+int32_t sub_180001090(struct S1 *a0, int32_t a1) {
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    result = 0;
+    for (i = 0; i < a1; i++) {
+        if (a0[i].field_0x4 > 0) {
+            result = a0[i].field_0x0;
+        }
+    }
+    return result;
+}
+-- signature
+int32_t (struct S1 * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001090 (size 103)
+  blk0 @ 0x180001090:
+    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+  blk1 @ 0x1800010ac:
+    brif ge load32((rsp + #0xffffffffffffffe8)), edx -> 0x1800010ee
+  blk2 @ 0x1800010b5:
+    brif le load32(((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0xc)) + #0x4)), #0x0 -> 0x1800010e1
+  blk3 @ 0x1800010cb:
+    store32(load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0xc))), (rsp + #0xffffffffffffffec))
+  blk4 @ 0x1800010e1:
+    br 0x1800010e3
+  blk5 @ 0x1800010e3:
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    br 0x1800010ac
+  blk6 @ 0x1800010ee:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x180001090","approxTokens":222,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":103,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x4]; };"],"unsupported":0}

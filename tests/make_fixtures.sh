@@ -149,6 +149,8 @@ for source in "$CASES"/c/*.c; do
   done
 done
 
+bash tests/make_pe_fixtures.sh
+
 {
   echo "uname: $(uname -srm)"
   clang --version | head -1

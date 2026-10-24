@@ -1,0 +1,97 @@
+# metrics/l4_memory.win64.O0.debug.dll: pe x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 50 point_dot symtab,dwarf,unwind
+0x180001040 77 array_sum symtab,dwarf,unwind
+0x180001090 16 bump symtab,dwarf
+0x1800010a0 11 banner_first symtab,dwarf
+
+== 0x180001000 point_dot
+-- decompile
+/* velk pseudo-C: point_dot @ 0x180001000 */
+struct point { _Alignas(4) int x; int y; };
+int point_dot(struct point *a, struct point *b) {
+    return a->x * b->x + a->y * b->y;
+}
+-- signature
+int (struct point * a, struct point * b)
+-- references
+
+-- ir
+fn point_dot @ 0x180001000 (size 50)
+  blk0 @ 0x180001000:
+    ret (((load32(rcx) * load32(rdx)) + (load32((rcx + #0x4)) * load32((rdx + #0x4)))) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":180,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf","unwind"],"section":".text","size":50,"unsupported":0}
+
+== 0x180001040 array_sum
+-- decompile
+/* velk pseudo-C: array_sum @ 0x180001040 */
+int array_sum(int *a, int n) {
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        result += a[i];
+    }
+    return result;
+}
+-- signature
+int (int * a, int n)
+-- references
+
+-- ir
+fn array_sum @ 0x180001040 (size 77)
+  blk0 @ 0x180001040:
+    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+  blk1 @ 0x18000105c:
+    brif ge load32((rsp + #0xffffffffffffffe8)), edx -> 0x180001084
+  blk2 @ 0x180001065:
+    store32((load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0x4))) + load32((rsp + #0xffffffffffffffec))), (rsp + #0xffffffffffffffec))
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    br 0x18000105c
+  blk3 @ 0x180001084:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x180001040","approxTokens":198,"blocks":4,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":77,"unsupported":0}
+
+== 0x180001090 bump
+-- decompile
+/* velk pseudo-C: bump @ 0x180001090 */
+/* ref: 0x180003008 .data */
+void bump(void) {
+    uint32_t *const g_counter = (uint32_t *)0x180003008ULL;
+
+    *g_counter += 1;
+}
+-- signature
+void ()
+-- references
+0x180003008 .data
+-- ir
+fn bump @ 0x180001090 (size 16)
+  blk0 @ 0x180001090:
+    store32((load32(#0x180003008) + #0x1), #0x180003008)
+    ret #0x0
+-- card
+{"addr":"0x180001090","approxTokens":120,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x1800010a0 banner_first
+-- decompile
+/* velk pseudo-C: banner_first @ 0x1800010a0 */
+/* ref: 0x180003000 -> 0x180002000 "velk ladder" */
+int banner_first(void) {
+    uint64_t *const banner = (uint64_t *)0x180003000ULL;
+
+    return (int8_t)*(uint8_t *)(*banner);
+}
+-- signature
+int ()
+-- references
+0x180003000 -> 0x180002000 "velk ladder"
+-- ir
+fn banner_first @ 0x1800010a0 (size 11)
+  blk0 @ 0x1800010a0:
+    ret (sext8(load8(load64(#0x180003000))) & #0xffffffff)
+-- card
+{"addr":"0x1800010a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"banner_first","nameHints":["velk_ladder"],"nameSources":["symtab","dwarf"],"section":".text","size":11,"strings":["velk ladder"],"unsupported":0}

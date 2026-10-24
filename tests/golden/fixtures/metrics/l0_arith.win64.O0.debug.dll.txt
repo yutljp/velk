@@ -1,0 +1,83 @@
+# metrics/l0_arith.win64.O0.debug.dll: pe x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 34 add3 symtab,dwarf,unwind
+0x180001030 15 scale symtab,dwarf,unwind
+0x180001040 49 pick symtab,dwarf,unwind
+0x180001080 13 negate symtab,dwarf,unwind
+
+== 0x180001000 add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x180001000 */
+int add3(int a, int b, int c) {
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn add3 @ 0x180001000 (size 34)
+  blk0 @ 0x180001000:
+    ret (((ecx + edx) + r8d) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":150,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":34,"unsupported":0}
+
+== 0x180001030 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x180001030 */
+int scale(int x) {
+    return x * 7 + 3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn scale @ 0x180001030 (size 15)
+  blk0 @ 0x180001030:
+    ret ((((rcx & #0xffffffff) * #0x7) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001030","approxTokens":132,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x180001040 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x180001040 */
+int pick(int a, int b) {
+    if (a <= b) {
+        return b;
+    }
+    return a;
+}
+-- signature
+int (int a, int b)
+-- references
+
+-- ir
+fn pick @ 0x180001040 (size 49)
+  blk0 @ 0x180001040:
+    brif le ecx, edx -> 0x180001060
+  blk1 @ 0x180001056:
+    v1 = ecx
+    br 0x180001068
+  blk2 @ 0x180001060:
+    v1 = edx
+  blk3 @ 0x180001068:
+    ret v1
+-- card
+{"addr":"0x180001040","approxTokens":150,"blocks":4,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf","unwind"],"section":".text","size":49,"unsupported":0}
+
+== 0x180001080 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x180001080 */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x180001080 (size 13)
+  blk0 @ 0x180001080:
+    ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x180001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf","unwind"],"section":".text","size":13,"unsupported":0}

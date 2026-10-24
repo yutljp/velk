@@ -74,14 +74,15 @@ fn type_name(
     if depth == 0 {
         return None;
     }
-    let entry = unit.entry(offset).ok()?;
+    let Ok(entry) = unit.entry(offset) else {
+        return None;
+    };
     // A base type's name may have several words (`unsigned char`).
     let name = attribute(&entry, gimli::DW_AT_name).and_then(|value| {
-        let text = dwarf
-            .attr_string(unit, value)
-            .ok()?
-            .to_string_lossy()
-            .into_owned();
+        let Ok(text) = dwarf.attr_string(unit, value) else {
+            return None;
+        };
+        let text = text.to_string_lossy().into_owned();
         text.split(' ').all(plausible_name).then_some(text)
     });
     let outer = attribute(&entry, gimli::DW_AT_type).and_then(|value| match value {
@@ -101,14 +102,44 @@ fn type_name(
         | gimli::DW_TAG_typedef => {
             outer.and_then(|offset| type_name(dwarf, unit, offset, depth - 1))
         }
-        gimli::DW_TAG_structure_type => Some(CType::Named(format!("struct {}", name?))),
-        gimli::DW_TAG_union_type => Some(CType::Named(format!("union {}", name?))),
+        gimli::DW_TAG_structure_type => name.map(|name| CType::Named(format!("struct {name}"))),
+        gimli::DW_TAG_union_type => name.map(|name| CType::Named(format!("union {name}"))),
         gimli::DW_TAG_enumeration_type => {
             outer.and_then(|offset| type_name(dwarf, unit, offset, depth - 1))
         }
         gimli::DW_TAG_array_type => {
-            let element = outer.and_then(|offset| type_name(dwarf, unit, offset, depth - 1))?;
+            let Some(element) = outer.and_then(|offset| type_name(dwarf, unit, offset, depth - 1))
+            else {
+                return None;
+            };
             Some(CType::Array(Box::new(element)))
+        }
+        gimli::DW_TAG_base_type => {
+            let ty = CType::Named(match name {
+                Some(name) => name,
+                None => return None,
+            });
+            let size = attribute(&entry, gimli::DW_AT_byte_size).and_then(byte_count);
+            if let (Some((bits, _)), Some(bytes)) = (ty.integer(), size)
+                && u64::from(bits) != bytes.saturating_mul(8)
+            {
+                if !matches!(bytes, 1 | 2 | 4 | 8) {
+                    return None;
+                }
+                let signed = match attribute(&entry, gimli::DW_AT_encoding) {
+                    Some(AttributeValue::Encoding(
+                        gimli::DW_ATE_signed | gimli::DW_ATE_signed_char,
+                    )) => true,
+                    Some(AttributeValue::Encoding(
+                        gimli::DW_ATE_unsigned
+                        | gimli::DW_ATE_unsigned_char
+                        | gimli::DW_ATE_boolean,
+                    )) => false,
+                    _ => return None,
+                };
+                return Some(CType::int(bytes as u8, signed));
+            }
+            Some(ty)
         }
         _ => name.map(CType::Named),
     }

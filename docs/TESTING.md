@@ -447,3 +447,32 @@ This prepares changed pseudo-C alongside source and previous output in
 `tests/out/review.md` (`--all` includes every function). Review verdicts in
 `tests/review/verdicts.tsv` are additional investigation evidence, not a
 pass/fail gate.
+
+## Windows x64 PE coverage
+
+`bash tests/make_pe_fixtures.sh` builds the metrics C sources as CRT-free
+DLLs with clang's Microsoft x64 target and `lld-link`, at O0 and O2. Each
+has a relocated DWARF copy and a stripped copy under `tests/fixtures/metrics`.
+DWARF supplies the metrics ground truth; the loader does not read PDB files.
+The script is also called by `tests/make_fixtures.sh`; compiler and linker
+versions are recorded in `tests/fixtures/pe_toolchain.txt`.
+
+`tests/cases/pe/windows.c` additionally exercises IAT calls, an 8 KB stack
+probe, XMM6 preservation across a call, six integer arguments, and a
+structure returned through a hidden pointer. Its imports are described by
+`imports.def`; no Windows runtime is needed to build or analyze the DLL.
+Focused recompile tests supply an import implementation and compare the
+printed C with independent result calculations, including every field of
+the returned structure. Windows `long` is printed with its recorded 32-bit
+width. When code walks the argument home area, its accesses use the target
+frame provider instead of separate C locals. The recompile harness chooses
+a frame address the host can map and uses that address for both C and IR.
+Loader tests corrupt unwind records and import
+names to check that later valid entries remain available.
+
+`pe::every_pe_function_compiles` checks every discovered PE function,
+including functions excluded from execution comparisons. It supplies the
+standard integer types and allows undeclared external calls during syntax
+checking; it does not link or execute those calls. Per-fixture syntax
+counts are in `tests/golden/pe_syntax.txt`. The regular recompile goldens
+record compile, comparison, exclusion, and difference counts separately.

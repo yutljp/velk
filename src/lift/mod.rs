@@ -267,7 +267,10 @@ pub fn lift_with(
 /// cover and keeps the registers the code around it uses, the arguments
 /// included, which a call would leave unknown.
 fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
-    if image.format != crate::loader::Format::MachO {
+    if !matches!(
+        image.format,
+        crate::loader::Format::MachO | crate::loader::Format::Pe
+    ) {
         return;
     }
     let sp = crate::arch::stack_pointer(image.isa);
@@ -301,7 +304,14 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
                     .and_then(|function| function.name.as_deref()),
                 _ => None,
             };
-            if name == Some("___chkstk_darwin") {
+            let probe = match image.format {
+                crate::loader::Format::MachO => name == Some("___chkstk_darwin"),
+                crate::loader::Format::Pe if image.isa == crate::loader::Isa::X86_64 => {
+                    name == Some("__chkstk")
+                }
+                _ => false,
+            };
+            if probe {
                 probes.push(position);
             }
             let mut slot = None;
@@ -347,7 +357,18 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
         dropped.sort_unstable();
         dropped.dedup();
         for position in dropped.into_iter().rev() {
-            block.stmts.remove(position);
+            if image.format == crate::loader::Format::Pe {
+                // The Windows helper may clobber these scratch registers.
+                block.stmts.splice(
+                    position..=position,
+                    [10, 11].map(|index| Stmt::Assign {
+                        dest: crate::ir::RegRef { index, width: 64 },
+                        value: Expr::apply(crate::ir::Operation::Undefined, Vec::new()),
+                    }),
+                );
+            } else {
+                block.stmts.remove(position);
+            }
         }
     }
 }

@@ -1,0 +1,104 @@
+# metrics/l4_memory.win64.O0.stripped.dll: pe x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 50 - unwind,prologue
+0x180001040 77 - unwind,prologue
+0x180001090 16 - prologue
+0x1800010a0 12 - prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+struct S1 { int32_t field_0x0; int32_t field_0x4; };
+struct S2 { int32_t field_0x0; int32_t field_0x4; };
+int32_t sub_180001000(struct S1 *a0, struct S2 *a1) {
+    return a0->field_0x0 * a1->field_0x0 + a0->field_0x4 * a1->field_0x4;
+}
+-- signature
+int32_t (struct S1 * a0, struct S2 * a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 50)
+  blk0 @ 0x180001000:
+    ret (((load32(rcx) * load32(rdx)) + (load32((rcx + #0x4)) * load32((rdx + #0x4)))) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":50,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };","struct S2 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+
+== 0x180001040 -
+-- decompile
+/* velk pseudo-C: sub_180001040 @ 0x180001040 */
+int32_t sub_180001040(uint32_t *a0, int32_t a1) {
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    result = 0;
+    for (i = 0; i < a1; i++) {
+        result += a0[i];
+    }
+    return result;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001040 (size 77)
+  blk0 @ 0x180001040:
+    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+  blk1 @ 0x18000105c:
+    brif ge load32((rsp + #0xffffffffffffffe8)), edx -> 0x180001084
+  blk2 @ 0x180001065:
+    store32((load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0x4))) + load32((rsp + #0xffffffffffffffec))), (rsp + #0xffffffffffffffec))
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    br 0x18000105c
+  blk3 @ 0x180001084:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x180001040","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":77,"unsupported":0}
+
+== 0x180001090 -
+-- decompile
+/* velk pseudo-C: sub_180001090 @ 0x180001090 */
+/* ref: 0x180003008 .data */
+int32_t sub_180001090(void) {
+    uint32_t *const dword_180003008 = (uint32_t *)0x180003008ULL;
+    int32_t v1;
+
+    v1 = *dword_180003008 + 1;
+    *dword_180003008 = v1;
+    return v1;
+}
+-- signature
+int32_t ()
+-- references
+0x180003008 .data
+-- ir
+fn <unnamed> @ 0x180001090 (size 16)
+  blk0 @ 0x180001090:
+    v1 = (load32(#0x180003008) + #0x1)
+    store32(v1, #0x180003008)
+    ret v1
+-- card
+{"addr":"0x180001090","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1800010a0 -
+-- decompile
+/* velk pseudo-C: sub_1800010a0 @ 0x1800010a0 */
+/* ref: 0x180003000 -> 0x180002000 "velk ladder" */
+int32_t sub_1800010a0(void) {
+    uint64_t *const qword_180003000 = (uint64_t *)0x180003000ULL;
+
+    return (int8_t)*(uint8_t *)(*qword_180003000);
+}
+-- signature
+int32_t ()
+-- references
+0x180003000 -> 0x180002000 "velk ladder"
+-- ir
+fn <unnamed> @ 0x1800010a0 (size 12)
+  blk0 @ 0x1800010a0:
+    ret (sext8(load8(load64(#0x180003000))) & #0xffffffff)
+  blk1 @ 0x1800010ab:
+    trap
+-- card
+{"addr":"0x1800010a0","approxTokens":114,"blocks":2,"hardReasons":[],"name":null,"nameHints":["velk_ladder"],"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"strings":["velk ladder"],"unsupported":0}

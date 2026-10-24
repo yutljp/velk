@@ -457,13 +457,31 @@ pub fn recover_with(
     } else {
         float_count
     };
-    for register in &float_arguments[..float_count] {
+    if convention == Convention::Win64 {
+        for (position, register) in arguments.iter().enumerate().take(float_count).skip(count) {
+            params.push(Param {
+                index: *register,
+                name: format!("a{position}"),
+                ty: CType::U64,
+            });
+        }
+    }
+    for (position, register) in float_arguments[..float_count].iter().enumerate() {
+        if convention == Convention::Win64 && !inputs.contains(register) {
+            continue;
+        }
         let narrow = !wide_inputs.contains(register);
-        params.push(Param {
+        let shared = convention == Convention::Win64 && !inputs.contains(&arguments[position]);
+        let param = Param {
             index: *register,
-            name: format!("a{}", params.len()),
+            name: format!("a{}", if shared { position } else { params.len() }),
             ty: CType::Named(if narrow { "float" } else { "double" }.to_owned()),
-        });
+        };
+        if shared {
+            params[position] = param;
+        } else {
+            params.push(param);
+        }
     }
     // A Go function value's code reads its closure's context.
     if go && isa == Isa::X86_64 && inputs.contains(&GO_CLOSURE) {

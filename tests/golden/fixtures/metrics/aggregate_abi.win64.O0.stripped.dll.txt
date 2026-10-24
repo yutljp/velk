@@ -1,0 +1,294 @@
+# metrics/aggregate_abi.win64.O0.stripped.dll: pe x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 50 - unwind,prologue
+0x180001040 59 - unwind,prologue
+0x180001080 51 - unwind,prologue
+0x1800010c0 57 - unwind,prologue
+0x180001100 65 - unwind,prologue
+0x180001150 73 - unwind,prologue
+0x1800011a0 110 - unwind,prologue
+0x180001210 138 - unwind,prologue
+0x1800012a0 73 - unwind,prologue
+0x1800012f0 110 - unwind,prologue
+0x180001360 138 - unwind,prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; };
+struct S2 { int64_t field_0x0; int64_t field_0x8; };
+struct S1 *sub_180001000(struct S1 *result, struct S2 *a1, int64_t a2) {
+    result->field_0x0 = a1->field_0x0 + a2;
+    result->field_0x8 = a1->field_0x8 ^ a2;
+    return result;
+}
+-- signature
+struct S1 * (struct S1 * result, struct S2 * a1, int64_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 50)
+  blk0 @ 0x180001000:
+    store64(r8, (rsp + #0xfffffffffffffff0))
+    store64((load64(rdx) + r8), rcx)
+    store64((load64((rdx + #0x8)) ^ load64((rsp + #0xfffffffffffffff0))), (rcx + #0x8))
+    ret rcx
+-- card
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x180001000","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":50,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };","struct S2 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x180001040 -
+-- decompile
+/* velk pseudo-C: sub_180001040 @ 0x180001040 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; };
+struct S2 { int64_t field_0x0; int64_t field_0x8; };
+double sub_180001040(struct S1 *a0, struct S2 *a1, int64_t a2, double a3) {
+    double v1;
+
+    v1 = *(double *)(a1) + a3;
+    a0->field_0x0 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
+    a0->field_0x8 = a1->field_0x8 ^ a2;
+    return v1;
+}
+-- signature
+double (struct S1 * a0, struct S2 * a1, int64_t a2, double a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001040 (size 59)
+  blk0 @ 0x180001040:
+    store64(r8, (rsp + #0xffffffffffffffe8))
+    v1 = fadd.d(load64(rdx), xmm3)
+    store64(v1, rcx)
+    store64((load64((rdx + #0x8)) ^ load64((rsp + #0xffffffffffffffe8))), (rcx + #0x8))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x180001040","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":59,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };","struct S2 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x180001080 -
+-- decompile
+/* velk pseudo-C: sub_180001080 @ 0x180001080 */
+int64_t sub_180001080(int64_t a0, double a1) {
+    return ((union { double value; uint64_t bits; }){ .value = a1 + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)a0 }).value }).bits;
+}
+-- signature
+int64_t (int64_t a0, double a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001080 (size 51)
+  blk0 @ 0x180001080:
+    ret fadd.d(xmm1, rcx)
+-- card
+{"addr":"0x180001080","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":51,"unsupported":0}
+
+== 0x1800010c0 -
+-- decompile
+/* velk pseudo-C: sub_1800010c0 @ 0x1800010c0 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; };
+struct S2 { int64_t field_0x0; int64_t field_0x8; };
+double sub_1800010c0(struct S1 *a0, struct S2 *a1, double a2) {
+    double v1;
+
+    v1 = a2 + *(double *)((uint8_t *)a1 + 0x8);
+    a1->field_0x8 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
+    a0->field_0x0 = a1->field_0x0;
+    a0->field_0x8 = a1->field_0x8;
+    return v1;
+}
+-- signature
+double (struct S1 * a0, struct S2 * a1, double a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800010c0 (size 57)
+  blk0 @ 0x1800010c0:
+    v1 = fadd.d(xmm2, load64((rdx + #0x8)))
+    store64(v1, (rdx + #0x8))
+    store64(load64(rdx), rcx)
+    store64(load64((rdx + #0x8)), (rcx + #0x8))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x1800010c0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":57,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };","struct S2 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x180001100 -
+-- decompile
+/* velk pseudo-C: sub_180001100 @ 0x180001100 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
+struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
+double sub_180001100(struct S1 *a0, struct S2 *a1, double a2) {
+    double v1;
+
+    v1 = a2 + *(double *)((uint8_t *)a1 + 0x10);
+    a1->field_0x10 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
+    a0->field_0x0 = a1->field_0x0;
+    a0->field_0x8 = a1->field_0x8;
+    a0->field_0x10 = a1->field_0x10;
+    return v1;
+}
+-- signature
+double (struct S1 * a0, struct S2 * a1, double a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001100 (size 65)
+  blk0 @ 0x180001100:
+    v1 = fadd.d(xmm2, load64((rdx + #0x10)))
+    store64(v1, (rdx + #0x10))
+    store64(load64(rdx), rcx)
+    store64(load64((rdx + #0x8)), (rcx + #0x8))
+    store64(load64((rdx + #0x10)), (rcx + #0x10))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x180001100","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":65,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x180001150 -
+-- decompile
+/* velk pseudo-C: sub_180001150 @ 0x180001150 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
+struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
+double sub_180001150(struct S1 *a0, struct S2 *a1, double a2) {
+    double v1;
+
+    v1 = a2 + *(double *)((uint8_t *)a1 + 0x18);
+    a1->field_0x18 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
+    a0->field_0x0 = a1->field_0x0;
+    a0->field_0x8 = a1->field_0x8;
+    a0->field_0x10 = a1->field_0x10;
+    a0->field_0x18 = a1->field_0x18;
+    return v1;
+}
+-- signature
+double (struct S1 * a0, struct S2 * a1, double a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001150 (size 73)
+  blk0 @ 0x180001150:
+    v1 = fadd.d(xmm2, load64((rdx + #0x18)))
+    store64(v1, (rdx + #0x18))
+    store64(load64(rdx), rcx)
+    store64(load64((rdx + #0x8)), (rcx + #0x8))
+    store64(load64((rdx + #0x10)), (rcx + #0x10))
+    store64(load64((rdx + #0x18)), (rcx + #0x18))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x180001150","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":73,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };","struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
+
+== 0x1800011a0 -
+-- decompile
+/* velk pseudo-C: sub_1800011a0 @ 0x1800011a0 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; };
+int64_t sub_1800011a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+    struct S1 *v2;
+
+    v2 = (struct S1 *)a5;
+    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800011a0 (size 110)
+  blk0 @ 0x1800011a0:
+    v2 = load64((rsp + #0x30))
+    ret (((((((rcx + (rdx * #0x3)) + (r8 * #0x5)) + (r9 * #0x7)) + (load64((rsp + #0x28)) * #0xb)) + (load64(v2) * #0xd)) + (load64((v2 + #0x8)) * #0x11)) + (load64((rsp + #0x38)) * #0x13))
+-- card
+{"addr":"0x1800011a0","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":110,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x180001210 -
+-- decompile
+/* velk pseudo-C: sub_180001210 @ 0x180001210 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; };
+int64_t sub_180001210(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+    struct S1 *v2;
+
+    v2 = (struct S1 *)a7;
+    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001210 (size 138)
+  blk0 @ 0x180001210:
+    v2 = load64((rsp + #0x40))
+    ret (((((((((rcx + (rdx * #0x3)) + (r8 * #0x5)) + (r9 * #0x7)) + (load64((rsp + #0x28)) * #0xb)) + (load64((rsp + #0x30)) * #0xd)) + (load64((rsp + #0x38)) * #0x11)) + (load64(v2) * #0x13)) + (load64((v2 + #0x8)) * #0x17)) + (load64((rsp + #0x48)) * #0x1d))
+-- card
+{"addr":"0x180001210","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":138,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x1800012a0 -
+-- decompile
+/* velk pseudo-C: sub_1800012a0 @ 0x1800012a0 */
+/* struct: a2 +0x0:uint64_t, +0x8:uint64_t */
+struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
+struct S2 { int64_t field_0x0; int64_t field_0x8; };
+struct S1 *sub_1800012a0(struct S1 *result, struct S2 *a1, int64_t a2) {
+    int64_t local_0; /* [sp-10] */
+
+    local_0 = a2;
+    result->field_0x0 = a1->field_0x0 + a2;
+    result->field_0x8 = a1->field_0x8 ^ local_0;
+    result->field_0x10 = a1->field_0x0 - a1->field_0x8;
+    return result;
+}
+-- signature
+struct S1 * (struct S1 * result, struct S2 * a1, int64_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800012a0 (size 73)
+  blk0 @ 0x1800012a0:
+    store64(r8, (rsp + #0xffffffffffffffe0))
+    v1 = rdx
+    store64(load64((rsp + #0xffffffffffffffe0)), (rsp + #0xfffffffffffffff0))
+    store64((load64(v1) + load64((rsp + #0xffffffffffffffe0))), rcx)
+    store64((load64((v1 + #0x8)) ^ load64((rsp + #0xfffffffffffffff0))), (rcx + #0x8))
+    store64((load64(v1) - load64((v1 + #0x8))), (rcx + #0x10))
+    ret rcx
+-- card
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t","a2 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x1800012a0","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":73,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S2 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x1800012f0 -
+-- decompile
+/* velk pseudo-C: sub_1800012f0 @ 0x1800012f0 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; };
+int64_t sub_1800012f0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+    struct S1 *v2;
+
+    v2 = (struct S1 *)a5;
+    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800012f0 (size 110)
+  blk0 @ 0x1800012f0:
+    v2 = load64((rsp + #0x30))
+    ret (((((((rcx + (rdx * #0x3)) + (r8 * #0x5)) + (r9 * #0x7)) + (load64((rsp + #0x28)) * #0xb)) + (load64(v2) * #0xd)) + (load64((v2 + #0x8)) * #0x11)) + (load64((rsp + #0x38)) * #0x13))
+-- card
+{"addr":"0x1800012f0","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":110,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x180001360 -
+-- decompile
+/* velk pseudo-C: sub_180001360 @ 0x180001360 */
+struct S1 { int64_t field_0x0; int64_t field_0x8; };
+int64_t sub_180001360(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+    struct S1 *v2;
+
+    v2 = (struct S1 *)a7;
+    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001360 (size 138)
+  blk0 @ 0x180001360:
+    v2 = load64((rsp + #0x40))
+    ret (((((((((rcx + (rdx * #0x3)) + (r8 * #0x5)) + (r9 * #0x7)) + (load64((rsp + #0x28)) * #0xb)) + (load64((rsp + #0x30)) * #0xd)) + (load64((rsp + #0x38)) * #0x11)) + (load64(v2) * #0x13)) + (load64((v2 + #0x8)) * #0x17)) + (load64((rsp + #0x48)) * #0x1d))
+-- card
+{"addr":"0x180001360","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":138,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}

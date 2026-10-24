@@ -1,0 +1,53 @@
+# metrics/alt_names.win64.O2.debug.dll: pe x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 7 alt_sum3 symtab,dwarf
+0x180001010 44 alt_helper symtab,dwarf
+
+== 0x180001000 alt_sum3
+-- decompile
+/* velk pseudo-C: alt_sum3 @ 0x180001000 */
+int alt_sum3(int a, int b, int c) {
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn alt_sum3 @ 0x180001000 (size 7)
+  blk0 @ 0x180001000:
+    ret (((rcx + rdx) + r8d) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf"],"section":".text","size":7,"unsupported":0}
+
+== 0x180001010 alt_helper
+-- decompile
+/* velk pseudo-C: alt_helper @ 0x180001010 */
+int alt_helper(int x) {
+    uint64_t v1;
+    int32_t v2;
+
+    if (x <= 0) {
+        return 0;
+    }
+    v1 = (uint64_t)((x - 2) & 0xffffffff) * ((x - 1) & 0xffffffff);
+    v2 = ((((x - 3) * v1) & 0xffffffff) >> 1) * 0x55555556 + x;
+    v1 >>= 1;
+    return v2 + (v1 + v1 * 2) - 1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn alt_helper @ 0x180001010 (size 44)
+  blk0 @ 0x180001010:
+    brif le (rcx & #0xffffffff), #0x0 -> 0x180001039
+  blk1 @ 0x180001014:
+    v1 = (((rcx + #0xfffffffffffffffe) & #0xffffffff) * ((rcx + #0xffffffffffffffff) & #0xffffffff))
+    v2 = (((((((rcx + #0xfffffffffffffffd) * (v1 & #0xffffffff)) & #0xffffffff) >> #0x1) * #0x55555556) + (rcx & #0xffffffff)) & #0xffffffff)
+    v1 = (v1 >> #0x1)
+    ret ((((v2 & #0xffffffff) + (v1 + (v1 * #0x2))) - #0x1) & #0xffffffff)
+  blk2 @ 0x180001039:
+    ret #0x0
+-- card
+{"addr":"0x180001010","approxTokens":186,"blocks":3,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}

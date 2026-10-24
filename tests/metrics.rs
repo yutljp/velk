@@ -1,5 +1,5 @@
 //! Recovery accuracy against debug information. Each case in tests/fixtures/metrics
-//! comes as `*.debug.elf` (symbols and DWARF, the ground truth) and `*.stripped.elf`
+//! comes as `*.debug.elf` / `*.debug.dll` (DWARF, the ground truth) and a stripped copy
 //! (neither, what velk analyzes). The scores and per-function results are kept in
 //! tests/golden/metrics.txt; any change fails until blessed with `VELK_BLESS=1`.
 
@@ -67,8 +67,13 @@ fn recovery_metrics_match_the_recorded_scores() {
     let mut cases: Vec<String> = std::fs::read_dir(&dir)
         .unwrap_or_else(|error| panic!("{}: {error}", dir.display()))
         .filter_map(|entry| {
-            let name = entry.ok()?.file_name().into_string().ok()?;
-            name.strip_suffix(".debug.elf").map(str::to_owned)
+            let Ok(entry) = entry else { return None };
+            let Ok(name) = entry.file_name().into_string() else {
+                return None;
+            };
+            name.strip_suffix(".debug.elf")
+                .or_else(|| name.strip_suffix(".debug.dll"))
+                .map(str::to_owned)
         })
         .collect();
     cases.sort();
@@ -170,8 +175,14 @@ fn summary_changes(before: &str, after: &str) -> String {
 }
 
 fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) {
-    let truth = truth(&dir.join(format!("{case}.debug.elf")));
-    let mut binary = Binary::open(&dir.join(format!("{case}.stripped.elf")))
+    let extension = if case.contains(".win64.") {
+        "dll"
+    } else {
+        "elf"
+    };
+    let truth = truth(&dir.join(format!("{case}.debug.{extension}")));
+    assert!(!truth.is_empty(), "{case}: no DWARF functions");
+    let mut binary = Binary::open(&dir.join(format!("{case}.stripped.{extension}")))
         .unwrap_or_else(|error| panic!("{error}"));
     let found: Vec<u64> = binary.image().functions.keys().copied().collect();
 
@@ -398,7 +409,10 @@ fn truth(path: &Path) -> BTreeMap<u64, Truth> {
     let symbols: HashMap<u64, String> = file
         .symbols()
         .filter(|symbol| symbol.kind() == object::SymbolKind::Text && symbol.size() > 0)
-        .filter_map(|symbol| Some((symbol.address(), symbol.name().ok()?.to_owned())))
+        .filter_map(|symbol| {
+            let Ok(name) = symbol.name() else { return None };
+            Some((symbol.address(), name.to_owned()))
+        })
         .collect();
     let dwarf = gimli::Dwarf::load(|id| -> Result<Slice<'_>, gimli::Error> {
         let bytes = file
@@ -426,9 +440,17 @@ fn truth(path: &Path) -> BTreeMap<u64, Truth> {
             let addr = entry
                 .attr_value(gimli::DW_AT_low_pc)
                 .and_then(|low| dwarf.attr_address(&unit, low).ok().flatten());
-            let Some(name) = addr.and_then(|addr| symbols.get(&addr)) else {
-                continue;
-            };
+            let Some(addr) = addr else { continue };
+            let name = symbols.get(&addr).cloned().or_else(|| {
+                let Some(value) = entry.attr_value(gimli::DW_AT_name) else {
+                    return None;
+                };
+                let Ok(name) = dwarf.attr_string(&unit, value) else {
+                    return None;
+                };
+                Some(name.to_string_lossy().into_owned())
+            });
+            let Some(name) = name else { continue };
             let ret = type_kind(&unit, entry.attr_value(gimli::DW_AT_type));
             let mut params = Vec::new();
             let mut variadic = false;
@@ -446,9 +468,9 @@ fn truth(path: &Path) -> BTreeMap<u64, Truth> {
                 }
             }
             found.insert(
-                addr.expect("checked above"),
+                addr,
                 Truth {
-                    name: name.clone(),
+                    name,
                     params,
                     variadic,
                     ret,

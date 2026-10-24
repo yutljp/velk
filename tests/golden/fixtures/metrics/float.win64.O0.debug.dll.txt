@@ -1,0 +1,134 @@
+# metrics/float.win64.O0.debug.dll: pe x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 130 average symtab,dwarf,unwind
+0x180001090 59 lerp symtab,dwarf,unwind
+0x1800010d0 13 truncate_to_int symtab,dwarf,unwind
+0x1800010e0 31 widen symtab,dwarf,unwind
+0x180001100 84 compare_doubles symtab,dwarf,unwind
+
+== 0x180001000 average
+-- decompile
+/* velk pseudo-C: average @ 0x180001000 */
+double average(double *values, int n) {
+    double local_0; /* [sp-18] */
+    int32_t i; /* [sp-1c] */
+    double result; /* [sp-28] */
+
+    local_0 = 0.0;
+    for (i = 0; i < n; i++) {
+        local_0 = values[i] + local_0;
+    }
+    if (n <= 0) {
+        result = 0.0;
+        return result;
+    }
+    result = local_0 / (double)n;
+    return result;
+}
+-- signature
+double (double * values, int n)
+-- references
+
+-- ir
+fn average @ 0x180001000 (size 130)
+  blk0 @ 0x180001000:
+    store64(#0x0, (rsp + #0xffffffffffffffe8))
+    store32(#0x0, (rsp + #0xffffffffffffffe4))
+  blk1 @ 0x18000101e:
+    brif ge load32((rsp + #0xffffffffffffffe4)), edx -> 0x180001050
+  blk2 @ 0x180001028:
+    store64(fadd.d(load64((rcx + (sext32(load32((rsp + #0xffffffffffffffe4))) * #0x8))), load64((rsp + #0xffffffffffffffe8))), (rsp + #0xffffffffffffffe8))
+    store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
+    br 0x18000101e
+  blk3 @ 0x180001050:
+    brif le edx, #0x0 -> 0x18000106e
+  blk4 @ 0x180001057:
+    store64(fdiv.d(load64((rsp + #0xffffffffffffffe8)), s32tof.d(edx)), (rsp + #0xffffffffffffffd8))
+    br 0x180001078
+  blk5 @ 0x18000106e:
+    store64(#0x0, (rsp + #0xffffffffffffffd8))
+    br 0x180001078
+  blk6 @ 0x180001078:
+    ret load64((rsp + #0xffffffffffffffd8))
+-- card
+{"addr":"0x180001000","approxTokens":204,"blocks":7,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf","unwind"],"section":".text","size":130,"unsupported":0}
+
+== 0x180001090 lerp
+-- decompile
+/* velk pseudo-C: lerp @ 0x180001090 */
+float lerp(float a, float b, float t) {
+    return (b - a) * t + a;
+}
+-- signature
+float (float a, float b, float t)
+-- references
+
+-- ir
+fn lerp @ 0x180001090 (size 59)
+  blk0 @ 0x180001090:
+    ret fadd.s((fmul.s(fsub.s((xmm1 & #0xffffffff), (xmm0 & #0xffffffff)), (xmm2 & #0xffffffff)) & #0xffffffff), (xmm0 & #0xffffffff))
+-- card
+{"addr":"0x180001090","approxTokens":168,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":59,"unsupported":0}
+
+== 0x1800010d0 truncate_to_int
+-- decompile
+/* velk pseudo-C: truncate_to_int @ 0x1800010d0 */
+int truncate_to_int(double x) {
+    return (int32_t)x;
+}
+-- signature
+int (double x)
+-- references
+
+-- ir
+fn truncate_to_int @ 0x1800010d0 (size 13)
+  blk0 @ 0x1800010d0:
+    ret (f.dtos32(xmm0) & #0xffffffff)
+-- card
+{"addr":"0x1800010d0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":13,"unsupported":0}
+
+== 0x1800010e0 widen
+-- decompile
+/* velk pseudo-C: widen @ 0x1800010e0 */
+/* ref: 0x180002000 .rdata */
+double widen(float x) {
+    double *const __real_4000000000000000 = (double *)0x180002000ULL;
+
+    return (double)x * *__real_4000000000000000;
+}
+-- signature
+double (float x)
+-- references
+0x180002000 .rdata
+-- ir
+fn widen @ 0x1800010e0 (size 31)
+  blk0 @ 0x1800010e0:
+    ret fmul.d(f.stof.d((xmm0 & #0xffffffff)), load64(#0x180002000))
+-- card
+{"addr":"0x1800010e0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"unsupported":0}
+
+== 0x180001100 compare_doubles
+-- decompile
+/* velk pseudo-C: compare_doubles @ 0x180001100 */
+int compare_doubles(double a, double b) {
+    if (!(a < b)) {
+        return b < a;
+    }
+    return -1;
+}
+-- signature
+int (double a, double b)
+-- references
+
+-- ir
+fn compare_doubles @ 0x180001100 (size 84)
+  blk0 @ 0x180001100:
+    brif eq flt.d(xmm0, xmm1), #0x0 -> 0x18000112d
+  blk1 @ 0x180001122:
+    v1 = #0xffffffff
+    br 0x18000114b
+  blk2 @ 0x18000112d:
+    v1 = select ne flt.d(xmm1, xmm0), #0x0 ? #0x1, #0x0
+  blk3 @ 0x18000114b:
+    ret v1
+-- card
+{"addr":"0x180001100","approxTokens":156,"blocks":4,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":0}

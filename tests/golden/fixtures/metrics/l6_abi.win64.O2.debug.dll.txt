@@ -1,0 +1,93 @@
+# metrics/l6_abi.win64.O2.debug.dll: pe x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 16 tail_target symtab,dwarf,unwind
+0x180001010 8 tail_direct symtab,dwarf
+0x180001020 9 tail_indirect symtab,dwarf
+0x180001030 17 six_args symtab,dwarf
+0x180001050 5 wide_add symtab,dwarf
+
+== 0x180001000 tail_target
+-- decompile
+/* velk pseudo-C: tail_target @ 0x180001000 */
+int tail_target(int x) {
+    return x + x * 2 + 1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_target @ 0x180001000 (size 16)
+  blk0 @ 0x180001000:
+    ret (((rcx + (rcx * #0x2)) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":0}
+
+== 0x180001010 tail_direct
+-- decompile
+/* velk pseudo-C: tail_direct @ 0x180001010 */
+int tail_direct(int x) {
+    return tail_target((x + 2) & 0xffffffff);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_direct @ 0x180001010 (size 8)
+  blk0 @ 0x180001010:
+    v2:rax = call 0x180001000((((rcx & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v2
+-- card
+{"addr":"0x180001010","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x180001020 tail_indirect
+-- decompile
+/* velk pseudo-C: tail_indirect @ 0x180001020 */
+int tail_indirect(void *f, int x) {
+    return ((uint64_t (*)())f)((x + 1) & 0xffffffff);
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn tail_indirect @ 0x180001020 (size 9)
+  blk0 @ 0x180001020:
+    v3:rax, xmm0 = call *rcx(((rdx + #0x1) & #0xffffffff))
+    ret v3
+-- card
+{"addr":"0x180001020","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":9,"unsupported":0}
+
+== 0x180001030 six_args
+-- decompile
+/* velk pseudo-C: six_args @ 0x180001030 */
+int six_args(int a, int b, int c, int d, int e, int f) {
+    return c + d + (a + b) + e + f;
+}
+-- signature
+int (int a, int b, int c, int d)
+-- references
+
+-- ir
+fn six_args @ 0x180001030 (size 17)
+  blk0 @ 0x180001030:
+    ret (((((r8 + r9) + (ecx + edx)) + load32((rsp + #0x28))) + load32((rsp + #0x30))) & #0xffffffff)
+-- card
+{"addr":"0x180001030","approxTokens":132,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","size":17,"unsupported":0}
+
+== 0x180001050 wide_add
+-- decompile
+/* velk pseudo-C: wide_add @ 0x180001050 */
+unsigned long long wide_add(unsigned long long a, unsigned long long b) {
+    return a + b;
+}
+-- signature
+unsigned long long (unsigned long long a, unsigned long long b)
+-- references
+
+-- ir
+fn wide_add @ 0x180001050 (size 5)
+  blk0 @ 0x180001050:
+    ret (rcx + rdx)
+-- card
+{"addr":"0x180001050","approxTokens":108,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":0}

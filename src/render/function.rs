@@ -607,7 +607,9 @@ fn render_with(
     let return_slot = if ir.isa == crate::loader::Isa::X86_64
         && matches!(
             ir.convention,
-            crate::ir::Convention::GoAmd64 | crate::ir::Convention::GoAbi0
+            crate::ir::Convention::GoAmd64
+                | crate::ir::Convention::GoAbi0
+                | crate::ir::Convention::Win64
         ) {
         let mut used = reserved
             .iter()

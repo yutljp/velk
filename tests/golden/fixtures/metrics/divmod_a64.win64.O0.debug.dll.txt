@@ -1,0 +1,454 @@
+# metrics/divmod_a64.win64.O0.debug.dll: pe x86_64 no entry, 25 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 20 udiv3 symtab,dwarf,unwind
+0x180001020 20 udiv10 symtab,dwarf,unwind
+0x180001040 14 udiv64 symtab,dwarf,unwind
+0x180001050 21 hdiv3 symtab,dwarf,unwind
+0x180001070 21 hdiv10 symtab,dwarf,unwind
+0x180001090 19 sdiv3 symtab,dwarf,unwind
+0x1800010b0 19 sdiv10 symtab,dwarf,unwind
+0x1800010d0 19 sdiv16 symtab,dwarf,unwind
+0x1800010f0 21 ldiv16 symtab,dwarf,unwind
+0x180001110 21 smod3 symtab,dwarf,unwind
+0x180001130 22 umod3 symtab,dwarf,unwind
+0x180001150 22 umod10 symtab,dwarf,unwind
+0x180001170 21 smod10 symtab,dwarf,unwind
+0x180001190 24 lmod10 symtab,dwarf,unwind
+0x1800011b0 24 umod10b symtab,dwarf,unwind
+0x1800011d0 24 lmod16 symtab,dwarf,unwind
+0x1800011f0 21 smod4 symtab,dwarf,unwind
+0x180001210 13 negate symtab,dwarf,unwind
+0x180001220 20 is_neg symtab,dwarf,unwind
+0x180001240 20 is_zero symtab,dwarf,unwind
+0x180001260 20 is_pos symtab,dwarf,unwind
+0x180001280 13 lnegate symtab,dwarf,unwind
+0x180001290 24 lmod3 symtab,dwarf,unwind
+0x1800012b0 21 ldiv3 symtab,dwarf,unwind
+0x1800012d0 21 ldiv10 symtab,dwarf,unwind
+
+== 0x180001000 udiv3
+-- decompile
+/* velk pseudo-C: udiv3 @ 0x180001000 */
+unsigned int udiv3(unsigned int x) {
+    return x / 3;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn udiv3 @ 0x180001000 (size 20)
+  blk0 @ 0x180001000:
+    ret (((rcx & #0xffffffff) / #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":144,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001020 udiv10
+-- decompile
+/* velk pseudo-C: udiv10 @ 0x180001020 */
+unsigned int udiv10(unsigned int x) {
+    return x / 10;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn udiv10 @ 0x180001020 (size 20)
+  blk0 @ 0x180001020:
+    ret (((rcx & #0xffffffff) / #0xa) & #0xffffffff)
+-- card
+{"addr":"0x180001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001040 udiv64
+-- decompile
+/* velk pseudo-C: udiv64 @ 0x180001040 */
+unsigned int udiv64(unsigned int x) {
+    return x >> 6;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn udiv64 @ 0x180001040 (size 14)
+  blk0 @ 0x180001040:
+    ret (((rcx & #0xffffffff) >> #0x6) & #0xffffffff)
+-- card
+{"addr":"0x180001040","approxTokens":132,"blocks":1,"hardReasons":[],"name":"udiv64","nameSources":["symtab","dwarf","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x180001050 hdiv3
+-- decompile
+/* velk pseudo-C: hdiv3 @ 0x180001050 */
+unsigned long long hdiv3(unsigned long long x) {
+    return x / 3;
+}
+-- signature
+unsigned long long (unsigned long long x)
+-- references
+
+-- ir
+fn hdiv3 @ 0x180001050 (size 21)
+  blk0 @ 0x180001050:
+    ret (rcx / #0x3)
+-- card
+{"addr":"0x180001050","approxTokens":144,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001070 hdiv10
+-- decompile
+/* velk pseudo-C: hdiv10 @ 0x180001070 */
+unsigned long long hdiv10(unsigned long long x) {
+    return x / 10;
+}
+-- signature
+unsigned long long (unsigned long long x)
+-- references
+
+-- ir
+fn hdiv10 @ 0x180001070 (size 21)
+  blk0 @ 0x180001070:
+    ret (rcx / #0xa)
+-- card
+{"addr":"0x180001070","approxTokens":144,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001090 sdiv3
+-- decompile
+/* velk pseudo-C: sdiv3 @ 0x180001090 */
+int sdiv3(int x) {
+    return x / 3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sdiv3 @ 0x180001090 (size 19)
+  blk0 @ 0x180001090:
+    ret (((rcx & #0xffffffff) / #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001090","approxTokens":144,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":19,"unsupported":0}
+
+== 0x1800010b0 sdiv10
+-- decompile
+/* velk pseudo-C: sdiv10 @ 0x1800010b0 */
+int sdiv10(int x) {
+    return x / 10;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sdiv10 @ 0x1800010b0 (size 19)
+  blk0 @ 0x1800010b0:
+    ret (((rcx & #0xffffffff) / #0xa) & #0xffffffff)
+-- card
+{"addr":"0x1800010b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":19,"unsupported":0}
+
+== 0x1800010d0 sdiv16
+-- decompile
+/* velk pseudo-C: sdiv16 @ 0x1800010d0 */
+int sdiv16(int x) {
+    return x / 16;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sdiv16 @ 0x1800010d0 (size 19)
+  blk0 @ 0x1800010d0:
+    ret (((rcx & #0xffffffff) / #0x10) & #0xffffffff)
+-- card
+{"addr":"0x1800010d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab","dwarf","unwind"],"section":".text","size":19,"unsupported":0}
+
+== 0x1800010f0 ldiv16
+-- decompile
+/* velk pseudo-C: ldiv16 @ 0x1800010f0 */
+long long ldiv16(long long x) {
+    return x / 16;
+}
+-- signature
+long long (long long x)
+-- references
+
+-- ir
+fn ldiv16 @ 0x1800010f0 (size 21)
+  blk0 @ 0x1800010f0:
+    ret (rcx / #0x10)
+-- card
+{"addr":"0x1800010f0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"ldiv16","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001110 smod3
+-- decompile
+/* velk pseudo-C: smod3 @ 0x180001110 */
+int smod3(int x) {
+    return x % 3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn smod3 @ 0x180001110 (size 21)
+  blk0 @ 0x180001110:
+    ret ((rcx & #0xffffffff) % #0x3)
+-- card
+{"addr":"0x180001110","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001130 umod3
+-- decompile
+/* velk pseudo-C: umod3 @ 0x180001130 */
+unsigned int umod3(unsigned int x) {
+    return x % 3;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn umod3 @ 0x180001130 (size 22)
+  blk0 @ 0x180001130:
+    ret (((rcx & #0xffffffff) % #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001130","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":22,"unsupported":0}
+
+== 0x180001150 umod10
+-- decompile
+/* velk pseudo-C: umod10 @ 0x180001150 */
+unsigned int umod10(unsigned int x) {
+    return x % 10;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn umod10 @ 0x180001150 (size 22)
+  blk0 @ 0x180001150:
+    ret (((rcx & #0xffffffff) % #0xa) & #0xffffffff)
+-- card
+{"addr":"0x180001150","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":22,"unsupported":0}
+
+== 0x180001170 smod10
+-- decompile
+/* velk pseudo-C: smod10 @ 0x180001170 */
+int smod10(int x) {
+    return x % 10;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn smod10 @ 0x180001170 (size 21)
+  blk0 @ 0x180001170:
+    ret ((rcx & #0xffffffff) % #0xa)
+-- card
+{"addr":"0x180001170","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001190 lmod10
+-- decompile
+/* velk pseudo-C: lmod10 @ 0x180001190 */
+long long lmod10(long long x) {
+    return x % 10;
+}
+-- signature
+long long (long long x)
+-- references
+
+-- ir
+fn lmod10 @ 0x180001190 (size 24)
+  blk0 @ 0x180001190:
+    ret (rcx % #0xa)
+-- card
+{"addr":"0x180001190","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800011b0 umod10b
+-- decompile
+/* velk pseudo-C: umod10b @ 0x1800011b0 */
+unsigned long long umod10b(unsigned long long x) {
+    return x % 10;
+}
+-- signature
+unsigned long long (unsigned long long x)
+-- references
+
+-- ir
+fn umod10b @ 0x1800011b0 (size 24)
+  blk0 @ 0x1800011b0:
+    ret (rcx % #0xa)
+-- card
+{"addr":"0x1800011b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800011d0 lmod16
+-- decompile
+/* velk pseudo-C: lmod16 @ 0x1800011d0 */
+long long lmod16(long long x) {
+    return x % 16;
+}
+-- signature
+long long (long long x)
+-- references
+
+-- ir
+fn lmod16 @ 0x1800011d0 (size 24)
+  blk0 @ 0x1800011d0:
+    ret (rcx % #0x10)
+-- card
+{"addr":"0x1800011d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod16","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800011f0 smod4
+-- decompile
+/* velk pseudo-C: smod4 @ 0x1800011f0 */
+int smod4(int x) {
+    return x % 4;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn smod4 @ 0x1800011f0 (size 21)
+  blk0 @ 0x1800011f0:
+    ret ((rcx & #0xffffffff) % #0x4)
+-- card
+{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001210 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x180001210 */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x180001210 (size 13)
+  blk0 @ 0x180001210:
+    ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x180001210","approxTokens":132,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf","unwind"],"section":".text","size":13,"unsupported":0}
+
+== 0x180001220 is_neg
+-- decompile
+/* velk pseudo-C: is_neg @ 0x180001220 */
+int is_neg(int x) {
+    return x < 0;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn is_neg @ 0x180001220 (size 20)
+  blk0 @ 0x180001220:
+    v1 = (select lt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret v1
+-- card
+{"addr":"0x180001220","approxTokens":144,"blocks":1,"hardReasons":[],"name":"is_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001240 is_zero
+-- decompile
+/* velk pseudo-C: is_zero @ 0x180001240 */
+int is_zero(int x) {
+    return x == 0;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn is_zero @ 0x180001240 (size 20)
+  blk0 @ 0x180001240:
+    v1 = (select eq (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret v1
+-- card
+{"addr":"0x180001240","approxTokens":144,"blocks":1,"hardReasons":[],"name":"is_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001260 is_pos
+-- decompile
+/* velk pseudo-C: is_pos @ 0x180001260 */
+int is_pos(int x) {
+    return x > 0;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn is_pos @ 0x180001260 (size 20)
+  blk0 @ 0x180001260:
+    v1 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret v1
+-- card
+{"addr":"0x180001260","approxTokens":144,"blocks":1,"hardReasons":[],"name":"is_pos","nameSources":["symtab","dwarf","unwind"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001280 lnegate
+-- decompile
+/* velk pseudo-C: lnegate @ 0x180001280 */
+int32_t lnegate(int32_t x) {
+    return -x;
+}
+-- signature
+int32_t (int32_t x)
+-- references
+
+-- ir
+fn lnegate @ 0x180001280 (size 13)
+  blk0 @ 0x180001280:
+    ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x180001280","approxTokens":132,"blocks":1,"hardReasons":[],"name":"lnegate","nameSources":["symtab","dwarf","unwind"],"section":".text","size":13,"unsupported":0}
+
+== 0x180001290 lmod3
+-- decompile
+/* velk pseudo-C: lmod3 @ 0x180001290 */
+long long lmod3(long long x) {
+    return x % 3;
+}
+-- signature
+long long (long long x)
+-- references
+
+-- ir
+fn lmod3 @ 0x180001290 (size 24)
+  blk0 @ 0x180001290:
+    ret (rcx % #0x3)
+-- card
+{"addr":"0x180001290","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+
+== 0x1800012b0 ldiv3
+-- decompile
+/* velk pseudo-C: ldiv3 @ 0x1800012b0 */
+long long ldiv3(long long x) {
+    return x / 3;
+}
+-- signature
+long long (long long x)
+-- references
+
+-- ir
+fn ldiv3 @ 0x1800012b0 (size 21)
+  blk0 @ 0x1800012b0:
+    ret (rcx / #0x3)
+-- card
+{"addr":"0x1800012b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"ldiv3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x1800012d0 ldiv10
+-- decompile
+/* velk pseudo-C: ldiv10 @ 0x1800012d0 */
+long long ldiv10(long long x) {
+    return x / 10;
+}
+-- signature
+long long (long long x)
+-- references
+
+-- ir
+fn ldiv10 @ 0x1800012d0 (size 21)
+  blk0 @ 0x1800012d0:
+    ret (rcx / #0xa)
+-- card
+{"addr":"0x1800012d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"ldiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}

@@ -1,0 +1,141 @@
+# metrics/struct_arrays.win64.O2.debug.dll: pe x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 18 item_weight symtab,dwarf
+0x180001020 20 cell_set symtab,dwarf
+0x180001040 108 item_last_key symtab,dwarf
+
+== 0x180001000 item_weight
+-- decompile
+/* velk pseudo-C: item_weight @ 0x180001000 */
+struct item { _Alignas(4) int32_t key; int count; short kind; uint8_t gap_0xa[0x2]; };
+int item_weight(struct item *items, int i) {
+    int64_t v1;
+
+    v1 = i + (int64_t)i * 2;
+    return (int16_t)*(uint16_t *)((uint8_t *)items + v1 * 0x4 + 0x8) * *(uint32_t *)((uint8_t *)items + v1 * 0x4 + 0x4);
+}
+-- signature
+int (struct item * items, int i)
+-- references
+
+-- ir
+fn item_weight @ 0x180001000 (size 18)
+  blk0 @ 0x180001000:
+    v1 = (sext32(rdx) + (sext32(rdx) * #0x2))
+    ret ((sext16(load16(((rcx + (v1 * #0x4)) + #0x8))) * load32(((rcx + (v1 * #0x4)) + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf"],"section":".text","size":18,"unsupported":0}
+
+== 0x180001020 cell_set
+-- decompile
+/* velk pseudo-C: cell_set @ 0x180001020 */
+struct cell { _Alignas(4) int x; int y; int z; };
+void cell_set(struct cell *cells, int32_t i, int v) {
+    int64_t v1;
+
+    v1 = i + (int64_t)i * 2;
+    *(uint32_t *)((uint8_t *)cells + v1 * 0x4) = v;
+    *(uint32_t *)((uint8_t *)cells + v1 * 0x4 + 0x8) = v + 1;
+}
+-- signature
+void (struct cell * cells, int32_t i, int v)
+-- references
+
+-- ir
+fn cell_set @ 0x180001020 (size 20)
+  blk0 @ 0x180001020:
+    v1 = (sext32(edx) + (sext32(edx) * #0x2))
+    store32(r8d, (rcx + (v1 * #0x4)))
+    store32((r8d + #0x1), ((rcx + (v1 * #0x4)) + #0x8))
+    ret #0x0
+-- card
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x180001040 item_last_key
+-- decompile
+/* velk pseudo-C: item_last_key @ 0x180001040 */
+struct item { _Alignas(4) int32_t key; int count; short kind; uint8_t gap_0xa[0x2]; };
+int32_t item_last_key(struct item *items, int n) {
+    int64_t v1;
+    int32_t v2;
+    uint32_t v4;
+    uint32_t *v5;
+    int64_t v6;
+
+    if (n <= 0) {
+        return 0;
+    }
+    if (n != 1) {
+        v4 = n & 0x7ffffffe;
+        v5 = (uint32_t *)&items[1].count;
+        v1 = 0;
+        v2 = 0;
+        do {
+            if ((int32_t)v5[-3] > 0) {
+                v2 = v5[-4];
+            }
+            if ((int32_t)*v5 > 0) {
+                v2 = v5[-1];
+            }
+            v1 += 2;
+            v5 = v5 + 0x6;
+        } while (v4 != v1);
+        if ((n & 0x1) == 0) {
+            return v2;
+        }
+    } else {
+        v1 = 0;
+        v2 = 0;
+    }
+    v6 = v1 + v1 * 2;
+    if (*(int32_t *)((uint8_t *)items + v6 * 0x4 + 0x4) <= 0) {
+        return v2;
+    }
+    return *(uint32_t *)((uint8_t *)items + v6 * 0x4);
+}
+-- signature
+int32_t (struct item * items, int n)
+-- references
+
+-- ir
+fn item_last_key @ 0x180001040 (size 108)
+  blk0 @ 0x180001040:
+    brif le (rdx & #0xffffffff), #0x0 -> 0x18000104f
+  blk1 @ 0x180001044:
+    brif ne (rdx & #0xffffffff), #0x1 -> 0x180001052
+  blk2 @ 0x180001049:
+    v1 = #0x0
+    v2 = #0x0
+    br 0x18000109a
+  blk3 @ 0x18000104f:
+    ret #0x0
+  blk4 @ 0x180001052:
+    v3 = (rdx & #0xffffffff)
+    v4 = (v3 & #0x7ffffffe)
+    v5 = (rcx + #0x10)
+    v1 = #0x0
+    v2 = #0x0
+    br 0x18000107d
+  blk5 @ 0x180001070:
+    v1 = (v1 + #0x2)
+    v5 = (v5 + #0x18)
+    brif eq v4, v1 -> 0x180001094
+  blk6 @ 0x18000107d:
+    brif le load32((v5 + #0xfffffffffffffff4)), #0x0 -> 0x180001088
+  blk7 @ 0x180001084:
+    v2 = load32((v5 + #0xfffffffffffffff0))
+  blk8 @ 0x180001088:
+    brif le load32(v5), #0x0 -> 0x180001070
+  blk9 @ 0x18000108e:
+    v2 = load32((v5 + #0xfffffffffffffffc))
+    br 0x180001070
+  blk10 @ 0x180001094:
+    brif eq (v3 & #0x1), #0x0 -> 0x1800010ab
+  blk11 @ 0x18000109a:
+    v6 = (v1 + (v1 * #0x2))
+    brif le load32(((rcx + (v6 * #0x4)) + #0x4)), #0x0 -> 0x1800010ab
+  blk12 @ 0x1800010a5:
+    v2 = load32((rcx + (v6 * #0x4)))
+  blk13 @ 0x1800010ab:
+    ret v2
+-- card
+{"addr":"0x180001040","approxTokens":138,"blocks":14,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf"],"section":".text","size":108,"unsupported":0}

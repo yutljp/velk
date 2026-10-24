@@ -4,6 +4,8 @@
 //! return address is saved, from a fragment split off a function, such as
 //! its cold part, which starts inside the parent's frame.
 
+mod pe;
+
 use gimli::{
     BaseAddresses, CfaRule, CieOrFde, EhFrame, LittleEndian, Register, UnwindContext, UnwindSection,
 };
@@ -30,6 +32,9 @@ pub(crate) enum FrameKind {
 }
 
 pub(crate) fn frames(image: &Image) -> Vec<Frame> {
+    if image.format == crate::loader::Format::Pe {
+        return pe::frames(image);
+    }
     let Some(section) = image
         .sections
         .iter()

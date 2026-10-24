@@ -1,0 +1,183 @@
+# metrics/float.win64.O2.debug.dll: pe x86_64 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 162 average symtab,dwarf
+0x1800010b0 13 lerp symtab,dwarf
+0x1800010c0 5 truncate_to_int symtab,dwarf
+0x1800010d0 9 widen symtab,dwarf
+0x1800010e0 22 compare_doubles symtab,dwarf
+
+== 0x180001000 average
+-- decompile
+/* velk pseudo-C: average @ 0x180001000 */
+double average(double *values, int n) {
+    double result;
+    double v2;
+    uint32_t v3;
+    uint8_t v4;
+    int64_t i;
+    double *v14;
+    int64_t i_2;
+
+    result = 0.0;
+    v2 = 0.0;
+    if (n > 0) {
+        v3 = n;
+        v4 = v3 & 0x7;
+        if ((uint32_t)n >= 8) {
+            v3 &= 0x7ffffff8;
+            i = 0;
+            do {
+                v2 = v2 + values[i];
+                v2 = v2 + values[i + 1];
+                v2 = v2 + values[i + 2];
+                v2 = v2 + values[i + 3];
+                v2 = v2 + values[i + 4];
+                v2 = v2 + values[i + 5];
+                v2 = v2 + values[i + 6];
+                v2 = v2 + values[i + 7];
+                i += 8;
+            } while (v3 != i);
+            if (v4 == 0) {
+                if (n <= 0) {
+                    return 0.0;
+                }
+                return v2 / (double)n;
+            }
+        } else {
+            i = 0;
+        }
+        v14 = values + i;
+        i_2 = 0;
+        do {
+            v2 = v2 + v14[i_2];
+            ++i_2;
+        } while (v4 != i_2);
+    }
+    if (n <= 0) {
+        return result;
+    }
+    return v2 / (double)n;
+}
+-- signature
+double (double * values, int n)
+-- references
+
+-- ir
+fn average @ 0x180001000 (size 162)
+  blk0 @ 0x180001000:
+    v1 = #0x0
+    v2 = #0x0
+    brif le edx, #0x0 -> 0x18000108e
+  blk1 @ 0x180001010:
+    v3 = edx
+    v4 = (v3 & #0x7)
+    brif cs edx, #0x8 -> 0x180001023
+  blk2 @ 0x18000101e:
+    v5 = #0x0
+    br 0x180001075
+  blk3 @ 0x180001023:
+    v3 = (v3 & #0x7ffffff8)
+    v5 = #0x0
+  blk4 @ 0x180001030:
+    v2 = fadd.d(v2, load64((rcx + (v5 * #0x8))))
+    v2 = fadd.d(v2, load64(((rcx + (v5 * #0x8)) + #0x8)))
+    v2 = fadd.d(v2, load64(((rcx + (v5 * #0x8)) + #0x10)))
+    v2 = fadd.d(v2, load64(((rcx + (v5 * #0x8)) + #0x18)))
+    v2 = fadd.d(v2, load64(((rcx + (v5 * #0x8)) + #0x20)))
+    v2 = fadd.d(v2, load64(((rcx + (v5 * #0x8)) + #0x28)))
+    v2 = fadd.d(v2, load64(((rcx + (v5 * #0x8)) + #0x30)))
+    v2 = fadd.d(v2, load64(((rcx + (v5 * #0x8)) + #0x38)))
+    v5 = (v5 + #0x8)
+    brif ne v3, v5 -> 0x180001030
+  blk5 @ 0x180001070:
+    brif eq v4, #0x0 -> 0x18000108e
+  blk6 @ 0x180001075:
+    v14 = (rcx + (v5 * #0x8))
+    v15 = #0x0
+  blk7 @ 0x180001080:
+    v2 = fadd.d(v2, load64((v14 + (v15 * #0x8))))
+    v15 = (v15 + #0x1)
+    brif ne v4, v15 -> 0x180001080
+  blk8 @ 0x18000108e:
+    brif le edx, #0x0 -> 0x1800010a1
+  blk9 @ 0x180001092:
+    v1 = fdiv.d(v2, s32tof.d(edx))
+  blk10 @ 0x1800010a1:
+    ret v1
+-- card
+{"addr":"0x180001000","approxTokens":162,"blocks":11,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":162,"unsupported":0}
+
+== 0x1800010b0 lerp
+-- decompile
+/* velk pseudo-C: lerp @ 0x1800010b0 */
+float lerp(float a, float b, float t) {
+    return a + (b - a) * t;
+}
+-- signature
+float (float a, float b, float t)
+-- references
+
+-- ir
+fn lerp @ 0x1800010b0 (size 13)
+  blk0 @ 0x1800010b0:
+    ret fadd.s((xmm0 & #0xffffffff), (fmul.s(fsub.s((xmm1 & #0xffffffff), (xmm0 & #0xffffffff)), (uint32_t)xmm2) & #0xffffffff))
+-- card
+{"addr":"0x1800010b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":13,"unsupported":0}
+
+== 0x1800010c0 truncate_to_int
+-- decompile
+/* velk pseudo-C: truncate_to_int @ 0x1800010c0 */
+int truncate_to_int(double x) {
+    return (int32_t)x;
+}
+-- signature
+int (double x)
+-- references
+
+-- ir
+fn truncate_to_int @ 0x1800010c0 (size 5)
+  blk0 @ 0x1800010c0:
+    ret f.dtos32(xmm0)
+-- card
+{"addr":"0x1800010c0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":5,"unsupported":0}
+
+== 0x1800010d0 widen
+-- decompile
+/* velk pseudo-C: widen @ 0x1800010d0 */
+double widen(float x) {
+    double v1;
+
+    v1 = (double)x;
+    return v1 + v1;
+}
+-- signature
+double (float x)
+-- references
+
+-- ir
+fn widen @ 0x1800010d0 (size 9)
+  blk0 @ 0x1800010d0:
+    v1 = f.stof.d((xmm0 & #0xffffffff))
+    ret fadd.d(v1, v1)
+-- card
+{"addr":"0x1800010d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":9,"unsupported":0}
+
+== 0x1800010e0 compare_doubles
+-- decompile
+/* velk pseudo-C: compare_doubles @ 0x1800010e0 */
+int compare_doubles(double a, double b) {
+    int32_t v1;
+
+    v1 = b < a;
+    return (!(a < b) ? v1 : 0xffffffff);
+}
+-- signature
+int (double a, double b)
+-- references
+
+-- ir
+fn compare_doubles @ 0x1800010e0 (size 22)
+  blk0 @ 0x1800010e0:
+    v1 = (select ne flt.d(xmm1, xmm0), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (select eq flt.d(xmm0, xmm1), #0x0 ? (v1 & #0xffffffff), #0xffffffff & #0xffffffff)
+-- card
+{"addr":"0x1800010e0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":22,"unsupported":0}

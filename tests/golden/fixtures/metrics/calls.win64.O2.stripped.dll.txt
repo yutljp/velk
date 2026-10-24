@@ -1,0 +1,627 @@
+# metrics/calls.win64.O2.stripped.dll: pe x86_64 no entry, 10 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 16 - prologue
+0x180001010 16 - prologue
+0x180001020 32 - prologue
+0x180001040 48 - prologue
+0x180001070 18 - unwind
+0x180001090 297 - unwind,prologue
+0x1800011c0 48 - prologue
+0x1800011f0 32 - prologue
+0x180001210 72 - unwind,prologue
+0x180001260 322 - unwind,prologue
+/* velk prelude */
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_interleave_high32
+#define VELK_interleave_high32
+static inline uint64_t interleave_high32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 32 / 32; ++i) {
+        out |= ((a >> (32 + i * 32)) & mask) << (2 * i * 32);
+        out |= ((b >> (32 + i * 32)) & mask) << ((2 * i + 1) * 32);
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_interleave_low32
+#define VELK_interleave_low32
+static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 32 / 32; ++i) {
+        out |= ((a >> (0 + i * 32)) & mask) << (2 * i * 32);
+        out |= ((b >> (0 + i * 32)) & mask) << ((2 * i + 1) * 32);
+    }
+    return out;
+}
+#endif
+
+uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
+/* end velk prelude */
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+int32_t sub_180001000(int32_t a0) {
+    return a0 + a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 16)
+  blk0 @ 0x180001000:
+    ret ((rcx + rcx) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001010 -
+-- decompile
+/* velk pseudo-C: sub_180001010 @ 0x180001010 */
+int32_t sub_180001010(int32_t a0) {
+    return a0 * a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001010 (size 16)
+  blk0 @ 0x180001010:
+    ret ((ecx * ecx) & #0xffffffff)
+-- card
+{"addr":"0x180001010","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001020 -
+-- decompile
+/* velk pseudo-C: sub_180001020 @ 0x180001020 */
+int32_t sub_180001020(int32_t a0) {
+    return (a0 == 0 ? 0x180001000 : 0x180001010);
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001020 (size 32)
+  blk0 @ 0x180001020:
+    ret select eq (rcx & #0xffffffff), #0x0 ? #0x180001000, #0x180001010
+-- card
+{"addr":"0x180001020","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001040 -
+-- decompile
+/* velk pseudo-C: sub_180001040 @ 0x180001040 */
+int32_t sub_180001040(uint32_t a0, int32_t a1) {
+    int32_t v1;
+    int32_t v2;
+    int32_t v3;
+    int32_t v5;
+
+    v1 = 0xaaaaaaab * (uint64_t)a0 >> 33;
+    v2 = v1 + v1 * 2;
+    v3 = a0 - v2;
+    if (v3 + v2 != v2 && v3 == 1) {
+        v5 = sub_180001010((uint32_t)a1);
+        return v5;
+    }
+    v5 = sub_180001000((uint32_t)a1);
+    return v5;
+}
+-- signature
+int32_t (uint32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001040 (size 48)
+  blk0 @ 0x180001040:
+    v1 = ((#0xaaaaaaab * (rcx & #0xffffffff)) >> #0x21)
+    v2 = ((v1 + (v1 * #0x2)) & #0xffffffff)
+    v3 = (((rcx & #0xffffffff) - (v2 & #0xffffffff)) & #0xffffffff)
+    brif eq (v3 + (v2 & #0xffffffff)), (v2 & #0xffffffff) -> 0x180001064
+  blk1 @ 0x180001058:
+    brif ne (v3 & #0xffffffff), #0x1 -> 0x180001064
+  blk2 @ 0x18000105d:
+    v5:rax = call 0x180001010(edx)
+    ret v5
+  blk3 @ 0x180001064:
+    v5:rax = call 0x180001000(edx)
+    ret v5
+-- card
+{"addr":"0x180001040","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001070 -
+-- decompile
+/* velk pseudo-C: sub_180001070 @ 0x180001070 */
+int32_t sub_180001070(void *a0, int32_t a1) {
+    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+}
+-- signature
+int32_t (void * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001070 (size 18)
+  blk0 @ 0x180001070:
+    v3:rax, xmm0 = call *rcx((rdx & #0xffffffff))
+    ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x180001070","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":18,"unsupported":0}
+
+== 0x180001090 -
+-- decompile
+/* velk pseudo-C: sub_180001090 @ 0x180001090 */
+/* ref: 0x180002000 .rdata */
+/* ref: 0x180002008 .rdata */
+/* ref: 0x180002010 .rdata */
+/* ref: 0x180002018 .rdata */
+/* ref: 0x180002020 .rdata */
+/* ref: 0x180002028 .rdata */
+/* ref: 0x180002030 .rdata */
+/* ref: 0x180002038 .rdata */
+int32_t sub_180001090(int32_t a0) {
+    uint64_t *const qword_180002000 = (uint64_t *)0x180002000ULL;
+    uint64_t *const qword_180002008 = (uint64_t *)0x180002008ULL;
+    uint64_t *const qword_180002010 = (uint64_t *)0x180002010ULL;
+    uint64_t *const qword_180002018 = (uint64_t *)0x180002018ULL;
+    uint64_t *const qword_180002020 = (uint64_t *)0x180002020ULL;
+    uint64_t *const qword_180002028 = (uint64_t *)0x180002028ULL;
+    uint64_t *const qword_180002030 = (uint64_t *)0x180002030ULL;
+    uint64_t *const qword_180002038 = (uint64_t *)0x180002038ULL;
+    uint32_t t1;
+    int32_t result;
+    int32_t v2;
+    int32_t v3;
+    uint64_t v4;
+    uint32_t v5;
+    uint64_t v6;
+    uint64_t v8;
+    uint64_t v9;
+    uint64_t v10;
+    uint64_t v11;
+    uint64_t v12;
+    uint64_t v13;
+    uint64_t v14;
+    uint64_t v16;
+    uint64_t v17;
+    uint64_t v18;
+    uint64_t v19;
+    uint64_t v20;
+    uint64_t v24;
+    uint64_t v25;
+    uint64_t v26;
+    uint32_t v33;
+    uint64_t v36;
+    uint32_t v52;
+
+    result = 1;
+    if (a0 < 2) {
+        return 1;
+    }
+    if ((uint32_t)a0 >= 9) {
+        v2 = a0 - 1;
+        v3 = v2 & 0xfffffffffffffff8;
+        v4 = a0 & 0xffffffff;
+        a0 -= v3;
+        v6 = add_lanes32(v4 | v4 << 32, *qword_180002000);
+        v8 = add_lanes32(v4 | v4 << 32, *qword_180002008);
+        v11 = *qword_180002020;
+        v12 = *qword_180002028;
+        v13 = *qword_180002030;
+        v14 = *qword_180002038;
+        result = v3;
+        v9 = *qword_180002010;
+        v16 = v9;
+        v10 = *qword_180002018;
+        v17 = v10;
+        do {
+            v18 = add_lanes32(v6, v11);
+            v19 = add_lanes32(v8, v12);
+            v20 = (v6 & 0xffffffff) * (v9 & 0xffffffff);
+            v5 = v10 >> 32 | v10 >> 32 << 32;
+            v24 = (v8 >> 32) * v5;
+            v25 = ((v6 >> 32) * (v9 >> 32)) & 0xffffffff | v24 << 32;
+            v26 = v20 & 0xffffffff | v8 * v10 << 32;
+            v9 = interleave_low32(v26, v25);
+            v10 = interleave_high32(v26, v25);
+            v5 = v19 >> 32 | v19 >> 32 << 32;
+            t1 = v18 >> 32;
+            v20 = t1 | (uint64_t)t1 << 32;
+            v18 = (v18 & 0xffffffff) * (v16 & 0xffffffff);
+            v19 = (v19 & 0xffffffff) * (v17 & 0xffffffff);
+            v33 = v17 >> 32 | v17 >> 32 << 32;
+            t1 = v16 >> 32;
+            v20 = (t1 * v20) & 0xffffffff | (uint64_t)(v33 * v5) << 32;
+            v36 = v18 & 0xffffffff | v19 << 32;
+            v16 = interleave_low32(v36, v20);
+            v17 = interleave_high32(v36, v20);
+            v6 = add_lanes32(v6, v13);
+            v8 = add_lanes32(v8, v14);
+            result = result - 8;
+        } while (result != 0);
+        t1 = v16 >> 32;
+        v11 = (v9 >> 32) * t1;
+        v12 = (v10 >> 32) * (v17 >> 32);
+        result = v11 * v12 * (interleave_low32((v17 & 0xffffffff) * (v10 & 0xffffffff), v12) * interleave_low32((v16 & 0xffffffff) * (v9 & 0xffffffff), v11));
+        if (v2 == v3) {
+            return result;
+        }
+    }
+    do {
+        result *= a0;
+        v52 = a0;
+        a0 = a0 - 1;
+    } while (v52 > 2);
+    return result;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+0x180002000 .rdata
+0x180002008 .rdata
+0x180002010 .rdata
+0x180002018 .rdata
+0x180002020 .rdata
+0x180002028 .rdata
+0x180002030 .rdata
+0x180002038 .rdata
+-- ir
+fn <unnamed> @ 0x180001090 (size 297)
+  blk0 @ 0x180001090:
+    v1 = #0x1
+    brif lt (rcx & #0xffffffff), #0x2 -> 0x1800011ab
+  blk1 @ 0x1800010ad:
+    brif cc (rcx & #0xffffffff), #0x9 -> 0x1800011a0
+  blk2 @ 0x1800010b6:
+    v2 = (rcx + #0xffffffffffffffff)
+    v3 = (v2 & #0xfffffffffffffff8)
+    v4 = (rcx & #0xffffffff)
+    rcx = (((rcx & #0xffffffff) - v3) & #0xffffffff)
+    v6 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x180002000))
+    v8 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x180002008))
+    v11 = load64(#0x180002020)
+    v12 = load64(#0x180002028)
+    v13 = load64(#0x180002030)
+    v14 = load64(#0x180002038)
+    v1 = v3
+    v9 = load64(#0x180002010)
+    v16 = v9
+    v10 = load64(#0x180002018)
+    v17 = v10
+  blk3 @ 0x180001100:
+    v18 = add_lanes32(v6, v11)
+    v19 = add_lanes32(v8, v12)
+    v20 = ((v6 & #0xffffffff) * (v9 & #0xffffffff))
+    v5 = (((v10 >> #0x20) & #0xffffffff) | (((v10 >> #0x20) & #0xffffffff) << #0x20))
+    v24 = (((v8 >> #0x20) & #0xffffffff) * (v5 & #0xffffffff))
+    v25 = ((((v6 >> #0x20) * (v9 >> #0x20)) & #0xffffffff) | ((v24 & #0xffffffff) << #0x20))
+    v26 = ((v20 & #0xffffffff) | ((((v8 & #0xffffffff) * (v10 & #0xffffffff)) & #0xffffffff) << #0x20))
+    v9 = interleave_low32(v26, v25)
+    v10 = interleave_high32(v26, v25)
+    v5 = (((v19 >> #0x20) & #0xffffffff) | (((v19 >> #0x20) & #0xffffffff) << #0x20))
+    t1 = ((v18 >> #0x20) & #0xffffffff)
+    v20 = (t1 | (t1 << #0x20))
+    v18 = ((v18 & #0xffffffff) * (v16 & #0xffffffff))
+    v19 = ((v19 & #0xffffffff) * (v17 & #0xffffffff))
+    v33 = (((v17 >> #0x20) & #0xffffffff) | (((v17 >> #0x20) & #0xffffffff) << #0x20))
+    t1 = ((v16 >> #0x20) & #0xffffffff)
+    v20 = (((t1 * (v20 & #0xffffffff)) & #0xffffffff) | ((((v33 & #0xffffffff) * (v5 & #0xffffffff)) & #0xffffffff) << #0x20))
+    v36 = ((v18 & #0xffffffff) | ((v19 & #0xffffffff) << #0x20))
+    v16 = interleave_low32(v36, v20)
+    v17 = interleave_high32(v36, v20)
+    v6 = add_lanes32(v6, v13)
+    v8 = add_lanes32(v8, v14)
+    v1 = (((v1 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
+    brif ne v1, #0x0 -> 0x180001100
+  blk4 @ 0x18000115d:
+    t1 = ((v16 >> #0x20) & #0xffffffff)
+    v11 = (((v9 >> #0x20) & #0xffffffff) * t1)
+    v12 = (((v10 >> #0x20) & #0xffffffff) * ((v17 >> #0x20) & #0xffffffff))
+    v1 = ((((v11 & #0xffffffff) * (v12 & #0xffffffff)) * (interleave_low32(((v17 & #0xffffffff) * (v10 & #0xffffffff)), v12) * interleave_low32(((v16 & #0xffffffff) * (v9 & #0xffffffff)), v11))) & #0xffffffff)
+    brif eq v2, v3 -> 0x1800011ab
+  blk5 @ 0x1800011a0:
+    v1 = (((v1 & #0xffffffff) * (rcx & #0xffffffff)) & #0xffffffff)
+    v52 = (rcx & #0xffffffff)
+    rcx = ((rcx + #0xffffffffffffffff) & #0xffffffff)
+    brif hi v52, #0x2 -> 0x1800011a0
+  blk6 @ 0x1800011ab:
+    ret v1
+-- card
+{"addr":"0x180001090","approxTokens":240,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":297,"unsupported":0}
+
+== 0x1800011c0 -
+-- decompile
+/* velk pseudo-C: sub_1800011c0 @ 0x1800011c0 */
+int32_t sub_1800011c0(int32_t a0) {
+    int32_t v1;
+
+    while (a0 != 0) {
+        v1 = a0 - 1;
+        if (v1 == 0) {
+            return 1;
+        }
+        a0 = v1 - 1;
+    }
+    return 0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800011c0 (size 48)
+  blk0 @ 0x1800011c0:
+    brif eq ecx, #0x0 -> 0x1800011cb
+  blk1 @ 0x1800011c4:
+    v1 = (ecx - #0x1)
+    br 0x1800011d0
+  blk2 @ 0x1800011cb:
+    ret #0x0
+  blk3 @ 0x1800011d0:
+    brif eq v1, #0x0 -> 0x1800011db
+  blk4 @ 0x1800011d4:
+    ecx = (v1 - #0x1)
+    br 0x1800011c0
+  blk5 @ 0x1800011db:
+    ret #0x1
+-- card
+{"addr":"0x1800011c0","approxTokens":120,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+
+== 0x1800011f0 -
+-- decompile
+/* velk pseudo-C: sub_1800011f0 @ 0x1800011f0 */
+int32_t sub_1800011f0(int32_t a0, int32_t a1, int32_t a2, int32_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+    return a2 + a3 + (a0 + a1) + (uint32_t)a4 + (uint32_t)a5 + (uint32_t)a6 + (uint32_t)a7 + (uint32_t)a8;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800011f0 (size 32)
+  blk0 @ 0x1800011f0:
+    ret ((((((((r8 + r9) + (ecx + edx)) + load32((rsp + #0x28))) + load32((rsp + #0x30))) + load32((rsp + #0x38))) + load32((rsp + #0x40))) + load32((rsp + #0x48))) & #0xffffffff)
+-- card
+{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001210 -
+-- decompile
+/* velk pseudo-C: sub_180001210 @ 0x180001210 */
+int32_t sub_180001210(int64_t a0) {
+    int64_t local_0; /* [sp-8] */
+    int64_t local_1; /* [sp-10] */
+    int64_t local_2; /* [sp-18] */
+    int64_t local_3; /* [sp-20] */
+    int64_t local_4; /* [sp-28] */
+
+    *(uint32_t *)&local_0 = 8;
+    *(uint32_t *)&local_1 = 7;
+    *(uint32_t *)&local_2 = 6;
+    *(uint32_t *)&local_3 = 5;
+    *(uint32_t *)&local_4 = 4;
+    return sub_1800011f0(a0, 1, 2, 3, local_4, local_3, local_2, local_1, local_0);
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001210 (size 72)
+  blk0 @ 0x180001210:
+    store32(#0x8, (rsp + #0xfffffffffffffff8))
+    store32(#0x7, (rsp + #0xfffffffffffffff0))
+    store32(#0x6, (rsp + #0xffffffffffffffe8))
+    store32(#0x5, (rsp + #0xffffffffffffffe0))
+    store32(#0x4, (rsp + #0xffffffffffffffd8))
+    v1:rax = call 0x1800011f0(rcx, #0x1, #0x2, #0x3, load64((rsp + #0xffffffffffffffd8)), load64((rsp + #0xffffffffffffffe0)), load64((rsp + #0xffffffffffffffe8)), load64((rsp + #0xfffffffffffffff0)), load64((rsp + #0xfffffffffffffff8)))
+    ret v1
+-- card
+{"addr":"0x180001210","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}
+
+== 0x180001260 -
+-- decompile
+/* velk pseudo-C: sub_180001260 @ 0x180001260 */
+int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
+    uint64_t v4;
+    uint64_t *v1;
+    uint64_t v2;
+    uint64_t v3;
+    uint32_t v5;
+    uint64_t v9;
+    uint64_t v10;
+    int64_t v11;
+    uint64_t v12;
+    uint64_t v13;
+    uint64_t v14;
+    uint32_t v15;
+    uint64_t v16;
+    int32_t v18;
+    int32_t i;
+    uint32_t *v21;
+    int32_t v23;
+    uint32_t *v24;
+    void *local_0; /* [sp-8] */
+
+    local_0 = (void *)v4;
+    *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x10) = a1;
+    *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x18) = a2;
+    *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x20) = a3;
+    local_0 = (void *)(((uint8_t *)velk_return_address_slot() + 0x10));
+    if (a0 <= 0) {
+        return 0;
+    }
+    v1 = (uint64_t *)local_0;
+    v2 = 0;
+    if ((uint32_t)a0 < 13) {
+        v5 = 0;
+        v3 = (uintptr_t)v1;
+    } else {
+        v3 = (uintptr_t)(v1 + ((a0 - 1) & 0xffffffff));
+        if ((((uintptr_t)velk_return_address_slot() - 8 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)velk_return_address_slot())) == 0) {
+            v5 = a0 & 0x3;
+            v2 = (uint64_t)(uint32_t)a0 - (v5 != 0 ? v5 : 4);
+            v3 = (uintptr_t)(v1 + v2);
+            v9 = 0;
+            v10 = 0;
+            v11 = v2;
+            v12 = 0;
+            v13 = 0;
+            do {
+                v14 = v1[1];
+                v15 = v1[2];
+                v16 = v1[3];
+                v12 = add_lanes32(v12, *v1 & 0xffffffff | v14 << 32);
+                v13 = add_lanes32(v13, v14);
+                v9 = add_lanes32(v9, v15 | v16 << 32);
+                v10 = add_lanes32(v10, v16);
+                v1 = v1 + 0x4;
+                v11 = v11 - 4;
+            } while (v11 != 0);
+            local_0 = (void *)v1;
+            v9 = add_lanes32(v9, v12);
+            v5 = add_lanes32(v9 >> 32 | v9 >> 32 << 32, v9);
+        } else {
+            v5 = 0;
+            v3 = (uintptr_t)v1;
+        }
+    }
+    v18 = a0 - v2 & 0x3;
+    if (v18 == 0) {
+        v18 = v2;
+    } else {
+        v18 = -v18;
+        i = 0;
+        do {
+            v21 = (uint32_t *)v3;
+            v3 += 8;
+            local_0 = (void *)v3;
+            v5 += *v21;
+            --i;
+        } while (v18 != i);
+        v18 = v2 - i;
+    }
+    if ((uint32_t)(v2 - a0) > 0xfffffffc) {
+        return v5;
+    }
+    v23 = a0 - v18;
+    v24 = (uint32_t *)(v3 + 16);
+    do {
+        local_0 = (void *)(v24 - 0x2);
+        v5 += v24[-4];
+        local_0 = (void *)v24;
+        v5 += v24[-2];
+        local_0 = (void *)(v24 + 0x2);
+        v5 += *v24;
+        local_0 = (void *)(v24 + 0x4);
+        v5 += v24[2];
+        v24 = v24 + 0x8;
+        v23 = v23 - 4;
+    } while (v23 != 0);
+    return v5;
+}
+-- signature
+int32_t (int32_t a0, int64_t a1, int64_t a2, int64_t a3)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001260 (size 322)
+  blk0 @ 0x180001260:
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    store64(rdx, (rsp + #0x10))
+    store64(r8, (rsp + #0x18))
+    store64(r9, (rsp + #0x20))
+    store64((rsp + #0x10), (rsp + #0xfffffffffffffff8))
+    brif le (rcx & #0xffffffff), #0x0 -> 0x1800012b3
+  blk1 @ 0x18000127d:
+    v1 = load64((rsp + #0xfffffffffffffff8))
+    v2 = #0x0
+    brif cc (rcx & #0xffffffff), #0xd -> 0x1800012ac
+  blk2 @ 0x180001289:
+    v3 = (v1 + (((rcx + #0xffffffffffffffff) & #0xffffffff) * #0x8))
+    brif eq ((select cc (rsp + #0xfffffffffffffff8), (v3 + #0x4) ? #0x1, #0x0 & #0xff) & (select cc v1, rsp ? #0x1, #0x0 & #0xff)), #0x0 -> 0x1800012b7
+  blk3 @ 0x1800012ac:
+    v5 = #0x0
+    v3 = v1
+    br 0x18000131c
+  blk4 @ 0x1800012b3:
+    ret #0x0
+  blk5 @ 0x1800012b7:
+    v7 = (rcx & #0xffffffff)
+    v5 = (v7 & #0x3)
+    v2 = (v7 - select ne v5, #0x0 ? v5, #0x4)
+    v3 = (v1 + (v2 * #0x8))
+    v9 = #0x0
+    v10 = #0x0
+    v11 = v2
+    v12 = #0x0
+    v13 = #0x0
+  blk6 @ 0x1800012e0:
+    v14 = load64((v1 + #0x8))
+    v15 = load64((v1 + #0x10))
+    v16 = load64((v1 + #0x18))
+    v12 = add_lanes32(v12, ((load64(v1) & #0xffffffff) | ((v14 & #0xffffffff) << #0x20)))
+    v13 = add_lanes32(v13, v14)
+    v9 = add_lanes32(v9, ((v15 & #0xffffffff) | ((v16 & #0xffffffff) << #0x20)))
+    v10 = add_lanes32(v10, v16)
+    v1 = (v1 + #0x20)
+    v11 = (v11 + #0xfffffffffffffffc)
+    brif ne v11, #0x0 -> 0x1800012e0
+  blk7 @ 0x180001307:
+    store64(v1, (rsp + #0xfffffffffffffff8))
+    v9 = add_lanes32(v9, v12)
+    v5 = (add_lanes32((((v9 >> #0x20) & #0xffffffff) | (((v9 >> #0x20) & #0xffffffff) << #0x20)), v9) & #0xffffffff)
+  blk8 @ 0x18000131c:
+    v18 = (((rcx & #0xffffffff) - (v2 & #0xffffffff)) & #0x3)
+    brif eq v18, #0x0 -> 0x18000134e
+  blk9 @ 0x180001328:
+    v18 = ((#0x0 - (v18 & #0xffffffff)) & #0xffffffff)
+    v20 = #0x0
+  blk10 @ 0x180001330:
+    v21 = v3
+    v3 = (v3 + #0x8)
+    store64(v3, (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32(v21)) & #0xffffffff)
+    v20 = (((v20 & #0xffffffff) - #0x1) & #0xffffffff)
+    brif ne (v18 & #0xffffffff), (v20 & #0xffffffff) -> 0x180001330
+  blk11 @ 0x180001346:
+    v18 = (((v2 & #0xffffffff) - (v20 & #0xffffffff)) & #0xffffffff)
+    br 0x180001351
+  blk12 @ 0x18000134e:
+    v18 = (v2 & #0xffffffff)
+  blk13 @ 0x180001351:
+    brif hi (((v2 & #0xffffffff) - (rcx & #0xffffffff)) & #0xffffffff), #0xfffffffc -> 0x1800013a0
+  blk14 @ 0x18000135a:
+    v23 = (((rcx & #0xffffffff) - (v18 & #0xffffffff)) & #0xffffffff)
+    v24 = (v3 + #0x10)
+  blk15 @ 0x180001370:
+    store64((v24 + #0xfffffffffffffff8), (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32((v24 + #0xfffffffffffffff0))) & #0xffffffff)
+    store64(v24, (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32((v24 + #0xfffffffffffffff8))) & #0xffffffff)
+    store64((v24 + #0x8), (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32(v24)) & #0xffffffff)
+    store64((v24 + #0x10), (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32((v24 + #0x8))) & #0xffffffff)
+    v24 = (v24 + #0x20)
+    v23 = (((v23 & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
+    brif ne v23, #0x0 -> 0x180001370
+  blk16 @ 0x1800013a0:
+    ret v5
+-- card
+{"addr":"0x180001260","approxTokens":240,"blocks":17,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":322,"unsupported":0}

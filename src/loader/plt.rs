@@ -1,6 +1,8 @@
 //! The stubs of the procedure linkage table, named after the imported
 //! function each one jumps to through its slot in the global offset table.
 
+mod pe;
+
 use std::collections::HashMap;
 
 use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol, ObjectSymbolTable};
@@ -16,6 +18,9 @@ pub(super) fn is_stub_section(name: &str) -> bool {
 /// with the address of a symbol another module defines, by the symbol's
 /// name.
 pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
+    if let ObjFile::Pe64(pe) = file {
+        return self::pe::imports(pe);
+    }
     let (Some(relocations), Some(symbols)) =
         (file.dynamic_relocations(), file.dynamic_symbol_table())
     else {
@@ -36,6 +41,9 @@ pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
 /// `(stub address, imported name)` for every stub that jumps through a slot
 /// a dynamic relocation names, or that Mach-O's indirect symbol table names.
 pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
+    if let ObjFile::Pe64(pe) = file {
+        return self::pe::stubs(pe);
+    }
     let (Some(relocations), Some(symbols)) =
         (file.dynamic_relocations(), file.dynamic_symbol_table())
     else {

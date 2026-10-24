@@ -56,6 +56,8 @@ mod identical_exits;
 mod ignored_result;
 #[path = "recompile/long_branches.rs"]
 mod long_branches;
+#[path = "recompile/pe.rs"]
+mod pe;
 #[path = "recompile/pointer_assignments.rs"]
 mod pointer_assignments;
 #[path = "recompile/prelude.rs"]
@@ -102,6 +104,7 @@ const COMPILE_ROUNDS: usize = 8;
 /// The region pointer arguments point into, and its size.
 const REGION: u64 = 0x3000_0000_0000;
 const REGION_SIZE: u64 = 0x1_0000;
+const FRAME_BASE: u64 = 0x3100_0000_0000;
 
 /// Which functions a pass compares: those computing on registers alone, or
 /// those reading and writing memory too.
@@ -4994,6 +4997,22 @@ fn compare(mode: Mode, golden: &str) {
     let mut header = String::new();
     let mut lines = Vec::new();
     for (fixture, result) in prepared.iter().zip(&results) {
+        if fixture.name.to_string_lossy().contains(".win64.") {
+            assert_eq!(
+                result.failed,
+                0,
+                "{}: {:?}",
+                fixture.name.display(),
+                result.lines
+            );
+            assert_eq!(
+                result.differing,
+                0,
+                "{}: {:?}",
+                fixture.name.display(),
+                result.lines
+            );
+        }
         for (reason, count) in &fixture.excluded {
             *excluded.entry(reason).or_default() += count;
         }
@@ -6144,7 +6163,36 @@ fn interpret(
         memory: &memory,
         step_limit: trials::STEP_LIMIT,
     };
-    let outcome = eval::run(&candidate.ir, &setup);
+    let mut relocated = None;
+    if candidate
+        .code
+        .contains("/* target frame's return-address slot */")
+    {
+        let sp = velk::arch::stack_pointer(candidate.ir.isa);
+        if candidate.marshalling.is_some()
+            || candidate
+                .ir
+                .blocks
+                .iter()
+                .flat_map(|block| &block.stmts)
+                .any(|stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == sp))
+        {
+            return Err("requires an unnormalized target frame");
+        }
+        // Use a frame address the host can map for both C and IR execution.
+        let mut ir = candidate.ir.clone();
+        for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            for value in stmt.operands_mut() {
+                *value = velk::ir::visit::substitute_values(
+                    value.clone(),
+                    &[(sp, Expr::Const(FRAME_BASE))],
+                );
+            }
+        }
+        relocated = Some(ir);
+    }
+    let ir = relocated.as_ref().unwrap_or(&candidate.ir);
+    let outcome = eval::run(ir, &setup);
     if let Outcome::Unknown(reason) = outcome {
         return Err(reason);
     }
@@ -6152,7 +6200,7 @@ fn interpret(
         seed: OTHER_SEED + trial,
         ..setup
     };
-    if !same_outcome(&outcome, &eval::run(&candidate.ir, &reseeded), candidate) {
+    if !same_outcome(&outcome, &eval::run(ir, &reseeded), candidate) {
         return Err("reads a register that is not a parameter");
     }
     Ok(outcome)
@@ -6584,6 +6632,24 @@ fn program(
 ) -> Program {
     assert_eq!(candidates.len(), initial_memory.len());
     let mut text = String::from(HEADER);
+    let frame_providers: BTreeSet<_> = alive
+        .iter()
+        .flat_map(|&index| {
+            candidates[index].code.lines().filter_map(|line| {
+                line.strip_prefix("uint64_t *").and_then(|line| {
+                    line.strip_suffix("(void); /* target frame's return-address slot */")
+                })
+            })
+        })
+        .collect();
+    for provider in frame_providers {
+        writeln!(
+            text,
+            "uint64_t *{provider}(void) {{ return (uint64_t *)(uintptr_t)0x{:x}ULL; }}",
+            FRAME_BASE
+        )
+        .unwrap();
+    }
     if mode == Mode::Memory {
         writeln!(
             text,
@@ -7432,6 +7498,7 @@ fn physical_stack_signature(ir: &FunctionIr) -> Option<DeclaredSignature> {
     let profile = match (ir.isa, ir.convention) {
         (Isa::AArch64, Convention::Aapcs64) => AbiProfile::Aapcs64,
         (Isa::X86_64, Convention::SysV) => AbiProfile::SysV,
+        (Isa::X86_64, Convention::Win64) => AbiProfile::Win64,
         _ => return None,
     };
     let scalar64 = |ty: &CType| matches!(ty, CType::Int { bytes: 8, .. });
@@ -7452,7 +7519,9 @@ fn physical_stack_signature(ir: &FunctionIr) -> Option<DeclaredSignature> {
     }) {
         return None;
     }
-    let start = ir.convention.stack_arguments()?;
+    let Some(start) = ir.convention.stack_arguments() else {
+        return None;
+    };
     if !ir.stack_params.iter().enumerate().all(|(slot, param)| {
         param.offset == start + slot as i64 * 8
             && param.size == 8

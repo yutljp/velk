@@ -1,0 +1,38 @@
+# metrics/tail_indirect.win64.O2.debug.dll: pe x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 9 via_ptr symtab,dwarf
+0x180001010 14 after_ptr symtab,dwarf,unwind
+
+== 0x180001000 via_ptr
+-- decompile
+/* velk pseudo-C: via_ptr @ 0x180001000 */
+int via_ptr(void *f, int x) {
+    return ((uint64_t (*)())f)((x + 1) & 0xffffffff);
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn via_ptr @ 0x180001000 (size 9)
+  blk0 @ 0x180001000:
+    v3:rax, xmm0 = call *rcx(((rdx + #0x1) & #0xffffffff))
+    ret v3
+-- card
+{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf"],"section":".text","size":9,"unsupported":0}
+
+== 0x180001010 after_ptr
+-- decompile
+/* velk pseudo-C: after_ptr @ 0x180001010 */
+int after_ptr(int x) {
+    return x + 5;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn after_ptr @ 0x180001010 (size 14)
+  blk0 @ 0x180001010:
+    ret (((rcx & #0xffffffff) + #0x5) & #0xffffffff)
+-- card
+{"addr":"0x180001010","approxTokens":132,"blocks":1,"hardReasons":[],"name":"after_ptr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":14,"unsupported":0}

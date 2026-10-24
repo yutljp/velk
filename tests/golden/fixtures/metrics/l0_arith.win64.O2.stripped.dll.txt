@@ -1,0 +1,79 @@
+# metrics/l0_arith.win64.O2.stripped.dll: pe x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 16 - prologue
+0x180001010 16 - prologue
+0x180001020 16 - prologue
+0x180001030 8 - prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+int32_t sub_180001000(int32_t a0, int32_t a1, int32_t a2) {
+    return a0 + a1 + a2;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 16)
+  blk0 @ 0x180001000:
+    ret (((rcx + rdx) + r8d) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001010 -
+-- decompile
+/* velk pseudo-C: sub_180001010 @ 0x180001010 */
+int32_t sub_180001010(int32_t a0) {
+    return a0 * 8 - a0 + 3;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001010 (size 16)
+  blk0 @ 0x180001010:
+    ret ((((rcx * #0x8) - (rcx & #0xffffffff)) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001010","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001020 -
+-- decompile
+/* velk pseudo-C: sub_180001020 @ 0x180001020 */
+int32_t sub_180001020(int32_t a0, int32_t a1) {
+    return (a0 > a1 ? a0 : a1);
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001020 (size 16)
+  blk0 @ 0x180001020:
+    ret select gt ecx, edx ? ecx, edx
+-- card
+{"addr":"0x180001020","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001030 -
+-- decompile
+/* velk pseudo-C: sub_180001030 @ 0x180001030 */
+int32_t sub_180001030(int32_t a0) {
+    return -a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001030 (size 8)
+  blk0 @ 0x180001030:
+    ret ((#0x0 - ecx) & #0xffffffff)
+  blk1 @ 0x180001035:
+    trap
+  blk2 @ 0x180001036:
+    trap
+  blk3 @ 0x180001037:
+    trap
+-- card
+{"addr":"0x180001030","approxTokens":114,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}

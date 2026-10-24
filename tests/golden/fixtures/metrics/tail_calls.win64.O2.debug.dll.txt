@@ -1,0 +1,56 @@
+# metrics/tail_calls.win64.O2.debug.dll: pe x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 16 tail_one symtab,dwarf,unwind
+0x180001010 8 tail_two symtab,dwarf
+0x180001020 14 tail_three symtab,dwarf,unwind
+
+== 0x180001000 tail_one
+-- decompile
+/* velk pseudo-C: tail_one @ 0x180001000 */
+int tail_one(int x) {
+    return x + x * 2 + 1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_one @ 0x180001000 (size 16)
+  blk0 @ 0x180001000:
+    ret (((rcx + (rcx * #0x2)) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf","unwind"],"section":".text","size":16,"unsupported":0}
+
+== 0x180001010 tail_two
+-- decompile
+/* velk pseudo-C: tail_two @ 0x180001010 */
+int tail_two(int x) {
+    return tail_one((x + 2) & 0xffffffff);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_two @ 0x180001010 (size 8)
+  blk0 @ 0x180001010:
+    v2:rax = call 0x180001000((((rcx & #0xffffffff) + #0x2) & #0xffffffff))
+    ret v2
+-- card
+{"addr":"0x180001010","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x180001020 tail_three
+-- decompile
+/* velk pseudo-C: tail_three @ 0x180001020 */
+int tail_three(int x) {
+    return x - 7;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_three @ 0x180001020 (size 14)
+  blk0 @ 0x180001020:
+    ret (((rcx & #0xffffffff) + #0xfffffffffffffff9) & #0xffffffff)
+-- card
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","dwarf","unwind"],"section":".text","size":14,"unsupported":0}

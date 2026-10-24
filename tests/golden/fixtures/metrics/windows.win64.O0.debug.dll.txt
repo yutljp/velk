@@ -1,0 +1,163 @@
+# metrics/windows.win64.O0.debug.dll: pe x86_64 no entry, 7 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 26 call_import symtab,dwarf,unwind
+0x180001020 65 large_frame symtab,dwarf,unwind
+0x180001070 52 saved_xmm symtab,dwarf,unwind
+0x1800010b0 52 make_triple symtab,dwarf,unwind
+0x1800010f0 87 stack_arguments symtab,dwarf,unwind
+0x180001150 16 __chkstk symtab,plt
+0x180001160 6 imported_value plt
+
+== 0x180001000 call_import
+-- decompile
+/* velk pseudo-C: call_import @ 0x180001000 */
+/* ref: 0x1800020a0 .rdata */
+int call_import(int value) {
+    return ((int32_t)(imported_value(value & 0xffffffff))) + 3;
+}
+-- signature
+int (int value)
+-- references
+0x1800020a0 .rdata
+-- ir
+fn call_import @ 0x180001000 (size 26)
+  blk0 @ 0x180001000:
+    v2:rax, xmm0 = call *load64(#0x1800020a0)((rcx & #0xffffffff))
+    ret (((v2 & #0xffffffff) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":138,"blocks":1,"hardReasons":[],"name":"call_import","nameSources":["symtab","dwarf","unwind"],"section":".text","size":26,"unsupported":0}
+
+== 0x180001020 large_frame
+-- decompile
+/* velk pseudo-C: large_frame @ 0x180001020 */
+int large_frame(int index) {
+    int8_t v3;
+    uint32_t local_0; /* [sp-4] */
+    _Alignas(16) uint8_t local_1[0x2000]; /* [sp-2004] */
+
+    local_0 = index;
+    *(uint8_t *)(local_1 + (index & 0x1fff)) = index;
+    v3 = local_0 & 0x1f00 | *(uint8_t *)(local_1 + (local_0 & 0x1fff));
+    return v3;
+}
+-- signature
+int (int index)
+-- references
+
+-- ir
+fn large_frame @ 0x180001020 (size 65)
+  blk0 @ 0x180001020:
+    store32(rcx, (rsp + #0xfffffffffffffffc))
+    v1 = (rcx & #0xffffffff)
+    store8(v1, (((rsp + #0xffffffffffffdff8) + (v1 & #0x1fff)) + #0x4))
+    v3 = ((load32((rsp + #0xfffffffffffffffc)) & #0x1f00) | load8((((rsp + #0xffffffffffffdff8) + (load32((rsp + #0xfffffffffffffffc)) & #0x1fff)) + #0x4)))
+    ret (sext8(v3) & #0xffffffff)
+-- card
+{"addr":"0x180001020","approxTokens":180,"blocks":1,"hardReasons":[],"name":"large_frame","nameSources":["symtab","dwarf","unwind"],"section":".text","size":65,"unsupported":0}
+
+== 0x180001070 saved_xmm
+-- decompile
+/* velk pseudo-C: saved_xmm @ 0x180001070 */
+/* ref: 0x1800020a0 .rdata */
+double saved_xmm(double value) {
+    uint64_t v1 = ((union { double value; uint64_t bits; }){ .value = value }).bits;
+    uint32_t v2;
+    double local_0; /* [sp-10] */
+
+    local_0 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)v1 }).value;
+    v2 = imported_value(7);
+    return local_0 + (double)(int32_t)v2;
+}
+-- signature
+double (double value)
+-- references
+0x1800020a0 .rdata
+-- ir
+fn saved_xmm @ 0x180001070 (size 52)
+  blk0 @ 0x180001070:
+    store64(xmm0, (rsp + #0xfffffffffffffff0))
+    v2:rax, xmm0 = call *load64(#0x1800020a0)(#0x7)
+    ret fadd.d(load64((rsp + #0xfffffffffffffff0)), s32tof.d((v2 & #0xffffffff)))
+-- card
+{"addr":"0x180001070","approxTokens":162,"blocks":1,"hardReasons":[],"name":"saved_xmm","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
+
+== 0x1800010b0 make_triple
+-- decompile
+/* velk pseudo-C: make_triple @ 0x1800010b0 */
+/* struct: rcx +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t */
+struct triple { _Alignas(8) unsigned long long a; unsigned long long b; unsigned long long c; };
+struct triple make_triple(unsigned long long value) {
+    struct triple result = {0};
+    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
+    uint8_t *result_address = (uint8_t *)&result;
+
+    __builtin_memcpy(result_address, &(uint64_t){value_bits}, 8);
+    __builtin_memcpy(result_address + 0x8, &(uint64_t){value_bits + 1}, 8);
+    __builtin_memcpy(result_address + 0x10, &(uint64_t){value_bits ^ 0x9}, 8);
+    return result;
+}
+-- signature
+int64_t (struct S1 * a0, int64_t a1)
+-- references
+
+-- ir
+fn make_triple @ 0x1800010b0 (size 52)
+  blk0 @ 0x1800010b0:
+    store64(rdx, (rsp + #0xfffffffffffffff0))
+    store64(load64((rsp + #0xfffffffffffffff0)), rcx)
+    store64((load64((rsp + #0xfffffffffffffff0)) + #0x1), (rcx + #0x8))
+    store64((load64((rsp + #0xfffffffffffffff0)) ^ #0x9), (rcx + #0x10))
+    ret rcx
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"make_triple","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x1800010f0 stack_arguments
+-- decompile
+/* velk pseudo-C: stack_arguments @ 0x1800010f0 */
+unsigned long long stack_arguments(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, unsigned long long f) {
+    return a + b * 3 + c * 5 + d * 7 + e * 11 + f * 13;
+}
+-- signature
+unsigned long long (unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d)
+-- references
+
+-- ir
+fn stack_arguments @ 0x1800010f0 (size 87)
+  blk0 @ 0x1800010f0:
+    ret (((((rcx + (rdx * #0x3)) + (r8 * #0x5)) + (r9 * #0x7)) + (load64((rsp + #0x28)) * #0xb)) + (load64((rsp + #0x30)) * #0xd))
+-- card
+{"addr":"0x1800010f0","approxTokens":216,"blocks":1,"hardReasons":[],"name":"stack_arguments","nameSources":["symtab","dwarf","unwind"],"section":".text","size":87,"unsupported":0}
+
+== 0x180001150 __chkstk
+-- decompile
+/* velk pseudo-C: __chkstk @ 0x180001150 */
+void __chkstk(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn __chkstk @ 0x180001150 (size 16)
+  blk0 @ 0x180001150:
+    ret rax
+-- card
+{"addr":"0x180001150","approxTokens":108,"blocks":1,"hardReasons":[],"name":"__chkstk","nameSources":["symtab","plt"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001160 imported_value
+-- decompile
+/* velk pseudo-C: imported_value @ 0x180001160 */
+/* ref: 0x1800020a0 .rdata */
+int32_t imported_value(void) {
+    return imported_value();
+}
+-- signature
+int32_t ()
+-- references
+0x1800020a0 .rdata
+-- ir
+fn imported_value @ 0x180001160 (size 6)
+  blk0 @ 0x180001160:
+    v1:rax, xmm0 = call *load64(#0x1800020a0)
+    ret v1
+-- card
+{"addr":"0x180001160","approxTokens":102,"blocks":1,"hardReasons":[],"name":"imported_value","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}

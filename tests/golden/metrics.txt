@@ -1,38 +1,56 @@
 # metric | config | correct/total
 functions found | aarch64.O0 | 162/162
 functions found | aarch64.O2 | 162/162
+functions found | win64.O0 | 167/167
+functions found | win64.O2 | 165/167
 functions found | x86_64.O0 | 162/162
 functions found | x86_64.O2 | 162/162
 extra functions | aarch64.O0 | 0/162
 extra functions | aarch64.O2 | 0/162
+extra functions | win64.O0 | 2/169
+extra functions | win64.O2 | 2/167
 extra functions | x86_64.O0 | 0/162
 extra functions | x86_64.O2 | 0/162
 parameter count | aarch64.O0 | 151/161
 parameter count | aarch64.O2 | 151/161
+parameter count | win64.O0 | 162/166
+parameter count | win64.O2 | 156/164
 parameter count | x86_64.O0 | 151/161
 parameter count | x86_64.O2 | 151/161
 parameter pointer | aarch64.O0 | 187/189
 parameter pointer | aarch64.O2 | 186/189
+parameter pointer | win64.O0 | 224/228
+parameter pointer | win64.O2 | 219/221
 parameter pointer | x86_64.O0 | 187/189
 parameter pointer | x86_64.O2 | 186/189
 parameter width | aarch64.O0 | 151/157
 parameter width | aarch64.O2 | 151/157
+parameter width | win64.O0 | 184/196
+parameter width | win64.O2 | 176/190
 parameter width | x86_64.O0 | 152/157
 parameter width | x86_64.O2 | 152/157
 parameter sign | aarch64.O0 | 139/151
 parameter sign | aarch64.O2 | 139/151
+parameter sign | win64.O0 | 135/184
+parameter sign | win64.O2 | 127/176
 parameter sign | x86_64.O0 | 140/152
 parameter sign | x86_64.O2 | 140/152
 return void | aarch64.O0 | 156/162
 return void | aarch64.O2 | 156/162
+return void | win64.O0 | 160/167
+return void | win64.O2 | 161/165
 return void | x86_64.O0 | 155/162
 return void | x86_64.O2 | 157/162
 return width | aarch64.O0 | 122/126
 return width | aarch64.O2 | 121/126
+return width | win64.O0 | 126/129
+return width | win64.O2 | 123/127
 return width | x86_64.O0 | 122/126
 return width | x86_64.O2 | 122/126
 float type | aarch64.O0 | 11/15
 float type | aarch64.O2 | 11/12
+float type | win64.O0 | 12/17
+float type | win64.O2 | 14/17
 float type | x86_64.O0 | 11/15
 float type | x86_64.O2 | 11/14
 
@@ -58,6 +76,28 @@ aggregate_abi.aarch64.O2 0x210290 abi_exhaust_seven: 10 parameters, expected 9
 aggregate_abi.aarch64.O2 0x2102e4 abi_indirect_make: 3 parameters, expected 2
 aggregate_abi.aarch64.O2 0x2102fc abi_exhaust_five_aligned: 8 parameters, expected 7
 aggregate_abi.aarch64.O2 0x210338 abi_exhaust_seven_aligned: 10 parameters, expected 9
+aggregate_abi.win64.O0 0x180001000 abi_pair_adjust: parameter 1 signedness differs
+aggregate_abi.win64.O0 0x180001040 abi_mixed_adjust: 4 parameters, expected 3; returns double, expected an aggregate
+aggregate_abi.win64.O0 0x180001080 abi_hfa1_adjust: ok
+aggregate_abi.win64.O0 0x1800010c0 abi_hfa2_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.win64.O0 0x180001100 abi_hfa3_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.win64.O0 0x180001150 abi_hfa4_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.win64.O0 0x1800011a0 abi_exhaust_five: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 6 signedness differs
+aggregate_abi.win64.O0 0x180001210 abi_exhaust_seven: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 5 signedness differs; parameter 6 signedness differs; parameter 8 signedness differs
+aggregate_abi.win64.O0 0x1800012a0 abi_indirect_make: parameter 1 signedness differs
+aggregate_abi.win64.O0 0x1800012f0 abi_exhaust_five_aligned: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 6 signedness differs
+aggregate_abi.win64.O0 0x180001360 abi_exhaust_seven_aligned: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 5 signedness differs; parameter 6 signedness differs; parameter 8 signedness differs
+aggregate_abi.win64.O2 0x180001000 abi_pair_adjust: 3 parameters, expected 2
+aggregate_abi.win64.O2 0x180001020 abi_mixed_adjust: parameter 1 signedness differs
+aggregate_abi.win64.O2 0x180001040 abi_hfa1_adjust: ok
+aggregate_abi.win64.O2 0x180001050 abi_hfa2_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.win64.O2 0x180001070 abi_hfa3_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.win64.O2 0x180001090 abi_hfa4_adjust: 3 parameters, expected 2; returns double, expected an aggregate
+aggregate_abi.win64.O2 0x1800010b0 abi_exhaust_five: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 6 signedness differs
+aggregate_abi.win64.O2 0x180001110 abi_exhaust_seven: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 5 signedness differs; parameter 6 signedness differs; parameter 8 signedness differs
+aggregate_abi.win64.O2 0x1800011a0 abi_indirect_make: 3 parameters, expected 2
+aggregate_abi.win64.O2 0x1800011c0 abi_exhaust_five_aligned: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 6 signedness differs
+aggregate_abi.win64.O2 0x180001220 abi_exhaust_seven_aligned: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 5 signedness differs; parameter 6 signedness differs; parameter 8 signedness differs
 aggregate_abi.x86_64.O0 0x2012a0 abi_pair_adjust: 3 parameters, expected 2
 aggregate_abi.x86_64.O0 0x2012e0 abi_mixed_adjust: 4 parameters, expected 3
 aggregate_abi.x86_64.O0 0x201330 abi_hfa1_adjust: returns double, expected an aggregate
@@ -84,6 +124,10 @@ alt_names.aarch64.O0 0x21016c alt_sum3: ok
 alt_names.aarch64.O0 0x210198 alt_helper: ok
 alt_names.aarch64.O2 0x210164 alt_sum3: ok
 alt_names.aarch64.O2 0x210170 alt_helper: ok
+alt_names.win64.O0 0x180001000 alt_sum3: ok
+alt_names.win64.O0 0x180001030 alt_helper: ok
+alt_names.win64.O2 0x180001000 alt_sum3: ok
+alt_names.win64.O2 0x180001010 alt_helper: ok
 alt_names.x86_64.O0 0x201180 alt_sum3: ok
 alt_names.x86_64.O0 0x2011a0 alt_helper: ok
 alt_names.x86_64.O2 0x201170 alt_sum3: ok
@@ -96,6 +140,14 @@ arith_mixed.aarch64.O2 0x21018c sum3: ok
 arith_mixed.aarch64.O2 0x210198 helper: ok
 arith_mixed.aarch64.O2 0x2101dc pair_sum: ok
 arith_mixed.aarch64.O2 0x2101e8 sum_arr: ok
+arith_mixed.win64.O0 0x180001000 sum3: ok
+arith_mixed.win64.O0 0x180001030 helper: ok
+arith_mixed.win64.O0 0x180001080 pair_sum: parameter 0 is a signed 8-byte integer, expected a pointer
+arith_mixed.win64.O0 0x1800010a0 sum_arr: ok
+arith_mixed.win64.O2 0x180001000 sum3: ok
+arith_mixed.win64.O2 0x180001010 helper: ok
+arith_mixed.win64.O2 0x180001040 pair_sum: ok
+arith_mixed.win64.O2 0x180001050 sum_arr: ok
 arith_mixed.x86_64.O0 0x2011c0 sum3: ok
 arith_mixed.x86_64.O0 0x2011e0 helper: ok
 arith_mixed.x86_64.O0 0x201230 pair_sum: ok
@@ -126,6 +178,28 @@ calls.aarch64.O2 0x2103ec is_even: ok
 calls.aarch64.O2 0x210400 sum9: ok
 calls.aarch64.O2 0x210428 call_sum9: ok
 calls.aarch64.O2 0x210468 sum_varargs: ok
+calls.win64.O0 0x180001000 twice: ok
+calls.win64.O0 0x180001010 square: ok
+calls.win64.O0 0x180001020 pick_op: ok
+calls.win64.O0 0x180001040 apply_table: ok
+calls.win64.O0 0x180001080 apply_pointer: ok
+calls.win64.O0 0x1800010a0 factorial: ok
+calls.win64.O0 0x1800010f0 is_odd: ok
+calls.win64.O0 0x180001120 is_even: ok
+calls.win64.O0 0x180001160 sum9: parameter 4 is 8 bytes, expected 4; parameter 5 is 8 bytes, expected 4; parameter 6 is 8 bytes, expected 4; parameter 7 is 8 bytes, expected 4; parameter 8 is 8 bytes, expected 4
+calls.win64.O0 0x1800011c0 call_sum9: ok
+calls.win64.O0 0x180001210 sum_varargs: ok
+calls.win64.O2 0x180001000 twice: ok
+calls.win64.O2 0x180001010 square: ok
+calls.win64.O2 0x180001020 pick_op: ok
+calls.win64.O2 0x180001040 apply_table: ok
+calls.win64.O2 0x180001070 apply_pointer: ok
+calls.win64.O2 0x180001090 factorial: ok
+calls.win64.O2 0x1800011c0 is_odd: ok
+calls.win64.O2 0x1800011d0 is_even: not found
+calls.win64.O2 0x1800011f0 sum9: parameter 4 is 8 bytes, expected 4; parameter 5 is 8 bytes, expected 4; parameter 6 is 8 bytes, expected 4; parameter 7 is 8 bytes, expected 4; parameter 8 is 8 bytes, expected 4
+calls.win64.O2 0x180001210 call_sum9: parameter 0 is 8 bytes, expected 4
+calls.win64.O2 0x180001260 sum_varargs: ok
 calls.x86_64.O0 0x201310 twice: ok
 calls.x86_64.O0 0x201320 square: ok
 calls.x86_64.O0 0x201330 pick_op: ok
@@ -162,6 +236,20 @@ control.aarch64.O2 0x210278 sparse: ok
 control.aarch64.O2 0x2102cc short_circuit: ok
 control.aarch64.O2 0x210308 skip_negatives: ok
 control.aarch64.O2 0x2103a4 find_pair: ok
+control.win64.O0 0x180001000 matrix_trace: ok
+control.win64.O0 0x180001090 cleanup_on_error: ok
+control.win64.O0 0x1800010e0 fallthrough: ok
+control.win64.O0 0x180001150 sparse: ok
+control.win64.O0 0x1800011d0 short_circuit: ok
+control.win64.O0 0x180001240 skip_negatives: ok
+control.win64.O0 0x1800012a0 find_pair: ok
+control.win64.O2 0x180001000 matrix_trace: ok
+control.win64.O2 0x180001110 cleanup_on_error: ok
+control.win64.O2 0x180001140 fallthrough: parameter 0 signedness differs
+control.win64.O2 0x180001160 sparse: ok
+control.win64.O2 0x1800011a0 short_circuit: ok
+control.win64.O2 0x1800011d0 skip_negatives: ok
+control.win64.O2 0x1800012a0 find_pair: ok
 control.x86_64.O0 0x201230 matrix_trace: ok
 control.x86_64.O0 0x2012c0 cleanup_on_error: ok
 control.x86_64.O0 0x201310 fallthrough: ok
@@ -226,6 +314,56 @@ divmod_a64.aarch64.O2 0x2104f0 lnegate: ok
 divmod_a64.aarch64.O2 0x2104f8 lmod3: ok
 divmod_a64.aarch64.O2 0x210514 ldiv3: ok
 divmod_a64.aarch64.O2 0x210528 ldiv10: ok
+divmod_a64.win64.O0 0x180001000 udiv3: ok
+divmod_a64.win64.O0 0x180001020 udiv10: ok
+divmod_a64.win64.O0 0x180001040 udiv64: ok
+divmod_a64.win64.O0 0x180001050 hdiv3: ok
+divmod_a64.win64.O0 0x180001070 hdiv10: ok
+divmod_a64.win64.O0 0x180001090 sdiv3: ok
+divmod_a64.win64.O0 0x1800010b0 sdiv10: ok
+divmod_a64.win64.O0 0x1800010d0 sdiv16: ok
+divmod_a64.win64.O0 0x1800010f0 ldiv16: ok
+divmod_a64.win64.O0 0x180001110 smod3: ok
+divmod_a64.win64.O0 0x180001130 umod3: ok
+divmod_a64.win64.O0 0x180001150 umod10: ok
+divmod_a64.win64.O0 0x180001170 smod10: ok
+divmod_a64.win64.O0 0x180001190 lmod10: ok
+divmod_a64.win64.O0 0x1800011b0 umod10b: ok
+divmod_a64.win64.O0 0x1800011d0 lmod16: ok
+divmod_a64.win64.O0 0x1800011f0 smod4: ok
+divmod_a64.win64.O0 0x180001210 negate: ok
+divmod_a64.win64.O0 0x180001220 is_neg: ok
+divmod_a64.win64.O0 0x180001240 is_zero: ok
+divmod_a64.win64.O0 0x180001260 is_pos: ok
+divmod_a64.win64.O0 0x180001280 lnegate: ok
+divmod_a64.win64.O0 0x180001290 lmod3: ok
+divmod_a64.win64.O0 0x1800012b0 ldiv3: ok
+divmod_a64.win64.O0 0x1800012d0 ldiv10: ok
+divmod_a64.win64.O2 0x180001000 udiv3: ok
+divmod_a64.win64.O2 0x180001010 udiv10: ok
+divmod_a64.win64.O2 0x180001020 udiv64: ok
+divmod_a64.win64.O2 0x180001030 hdiv3: ok
+divmod_a64.win64.O2 0x180001050 hdiv10: ok
+divmod_a64.win64.O2 0x180001070 sdiv3: ok
+divmod_a64.win64.O2 0x180001090 sdiv10: ok
+divmod_a64.win64.O2 0x1800010b0 sdiv16: ok
+divmod_a64.win64.O2 0x1800010c0 ldiv16: ok
+divmod_a64.win64.O2 0x1800010d0 smod3: ok
+divmod_a64.win64.O2 0x1800010f0 umod3: parameter 0 signedness differs
+divmod_a64.win64.O2 0x180001110 umod10: parameter 0 signedness differs
+divmod_a64.win64.O2 0x180001130 smod10: ok
+divmod_a64.win64.O2 0x180001150 lmod10: ok
+divmod_a64.win64.O2 0x180001180 umod10b: ok
+divmod_a64.win64.O2 0x1800011b0 lmod16: ok
+divmod_a64.win64.O2 0x1800011d0 smod4: ok
+divmod_a64.win64.O2 0x1800011e0 negate: ok
+divmod_a64.win64.O2 0x1800011f0 is_neg: ok
+divmod_a64.win64.O2 0x180001200 is_zero: ok
+divmod_a64.win64.O2 0x180001210 is_pos: ok
+divmod_a64.win64.O2 0x180001220 lnegate: ok
+divmod_a64.win64.O2 0x180001230 lmod3: ok
+divmod_a64.win64.O2 0x180001260 ldiv3: ok
+divmod_a64.win64.O2 0x180001280 ldiv10: ok
 divmod_a64.x86_64.O0 0x201460 udiv3: ok
 divmod_a64.x86_64.O0 0x201480 udiv10: ok
 divmod_a64.x86_64.O0 0x2014a0 udiv64: ok
@@ -312,6 +450,42 @@ divmod_x64.aarch64.O2 0x2103d8 umod10x: ok
 divmod_x64.aarch64.O2 0x2103f4 pdiv64: ok
 divmod_x64.aarch64.O2 0x210408 qdiv64: ok
 divmod_x64.aarch64.O2 0x21041c pdiv10: ok
+divmod_x64.win64.O0 0x180001000 l3: ok
+divmod_x64.win64.O0 0x180001020 l10: ok
+divmod_x64.win64.O0 0x180001040 h3: ok
+divmod_x64.win64.O0 0x180001060 h10: ok
+divmod_x64.win64.O0 0x180001080 u64: ok
+divmod_x64.win64.O0 0x1800010a0 sdiv16x: ok
+divmod_x64.win64.O0 0x1800010c0 ldiv16x: ok
+divmod_x64.win64.O0 0x1800010e0 umod3x: ok
+divmod_x64.win64.O0 0x180001100 smod3x: ok
+divmod_x64.win64.O0 0x180001120 pmod8x: parameter 0 signedness differs
+divmod_x64.win64.O0 0x180001130 pmod8s: ok
+divmod_x64.win64.O0 0x180001150 pmod16l: ok
+divmod_x64.win64.O0 0x180001170 pdiv16l: ok
+divmod_x64.win64.O0 0x180001190 lmod10x: ok
+divmod_x64.win64.O0 0x1800011b0 umod10x: ok
+divmod_x64.win64.O0 0x1800011d0 pdiv64: ok
+divmod_x64.win64.O0 0x1800011f0 qdiv64: ok
+divmod_x64.win64.O0 0x180001210 pdiv10: ok
+divmod_x64.win64.O2 0x180001000 l3: ok
+divmod_x64.win64.O2 0x180001020 l10: ok
+divmod_x64.win64.O2 0x180001040 h3: ok
+divmod_x64.win64.O2 0x180001060 h10: ok
+divmod_x64.win64.O2 0x180001080 u64: ok
+divmod_x64.win64.O2 0x180001090 sdiv16x: ok
+divmod_x64.win64.O2 0x1800010a0 ldiv16x: ok
+divmod_x64.win64.O2 0x1800010b0 umod3x: parameter 0 signedness differs
+divmod_x64.win64.O2 0x1800010d0 smod3x: ok
+divmod_x64.win64.O2 0x1800010f0 pmod8x: parameter 0 signedness differs
+divmod_x64.win64.O2 0x180001100 pmod8s: ok
+divmod_x64.win64.O2 0x180001110 pmod16l: ok
+divmod_x64.win64.O2 0x180001130 pdiv16l: ok
+divmod_x64.win64.O2 0x180001140 lmod10x: ok
+divmod_x64.win64.O2 0x180001170 umod10x: ok
+divmod_x64.win64.O2 0x1800011a0 pdiv64: ok
+divmod_x64.win64.O2 0x1800011b0 qdiv64: ok
+divmod_x64.win64.O2 0x1800011c0 pdiv10: ok
 divmod_x64.x86_64.O0 0x201380 l3: ok
 divmod_x64.x86_64.O0 0x2013a0 l10: ok
 divmod_x64.x86_64.O0 0x2013c0 h3: ok
@@ -358,6 +532,16 @@ float.aarch64.O2 0x21022c lerp: ok
 float.aarch64.O2 0x210238 truncate_to_int: ok
 float.aarch64.O2 0x210240 widen: ok
 float.aarch64.O2 0x21024c compare_doubles: ok
+float.win64.O0 0x180001000 average: ok
+float.win64.O0 0x180001090 lerp: ok
+float.win64.O0 0x1800010d0 truncate_to_int: ok
+float.win64.O0 0x1800010e0 widen: returns int64_t, expected a 8-byte float
+float.win64.O0 0x180001100 compare_doubles: ok
+float.win64.O2 0x180001000 average: ok
+float.win64.O2 0x1800010b0 lerp: ok
+float.win64.O2 0x1800010c0 truncate_to_int: ok
+float.win64.O2 0x1800010d0 widen: ok
+float.win64.O2 0x1800010e0 compare_doubles: ok
 float.x86_64.O0 0x2011f0 average: ok
 float.x86_64.O0 0x201280 lerp: ok
 float.x86_64.O0 0x2012c0 truncate_to_int: ok
@@ -388,6 +572,26 @@ integers.aarch64.O2 0x210258 byte_swap: ok
 integers.aarch64.O2 0x210260 min3: ok
 integers.aarch64.O2 0x210274 labs_value: ok
 integers.aarch64.O2 0x210280 mul_high: parameter 0 signedness differs; parameter 1 signedness differs
+integers.win64.O0 0x180001000 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
+integers.win64.O0 0x180001020 widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
+integers.win64.O0 0x180001040 mixed_sign: parameter 1 signedness differs
+integers.win64.O0 0x180001060 in_range: ok
+integers.win64.O0 0x1800010a0 rotate_left: parameter 1 signedness differs
+integers.win64.O0 0x1800010d0 popcount: parameter 0 signedness differs
+integers.win64.O0 0x180001110 byte_swap: ok
+integers.win64.O0 0x180001150 min3: ok
+integers.win64.O0 0x1800011b0 labs_value: ok
+integers.win64.O0 0x1800011e0 mul_high: parameter 0 signedness differs; parameter 1 signedness differs
+integers.win64.O2 0x180001000 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
+integers.win64.O2 0x180001010 widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
+integers.win64.O2 0x180001020 mixed_sign: parameter 1 signedness differs
+integers.win64.O2 0x180001030 in_range: ok
+integers.win64.O2 0x180001040 rotate_left: parameter 0 signedness differs; parameter 1 signedness differs
+integers.win64.O2 0x180001050 popcount: parameter 0 signedness differs
+integers.win64.O2 0x180001070 byte_swap: ok
+integers.win64.O2 0x180001080 min3: ok
+integers.win64.O2 0x180001090 labs_value: ok
+integers.win64.O2 0x1800010a0 mul_high: parameter 0 signedness differs; parameter 1 signedness differs
 integers.x86_64.O0 0x201280 narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.x86_64.O0 0x2012a0 widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.x86_64.O0 0x2012c0 mixed_sign: parameter 1 signedness differs
@@ -416,6 +620,14 @@ l0_arith.aarch64.O2 0x21018c add3: ok
 l0_arith.aarch64.O2 0x210198 scale: ok
 l0_arith.aarch64.O2 0x2101a8 pick: ok
 l0_arith.aarch64.O2 0x2101b4 negate: ok
+l0_arith.win64.O0 0x180001000 add3: ok
+l0_arith.win64.O0 0x180001030 scale: ok
+l0_arith.win64.O0 0x180001040 pick: ok
+l0_arith.win64.O0 0x180001080 negate: ok
+l0_arith.win64.O2 0x180001000 add3: ok
+l0_arith.win64.O2 0x180001010 scale: ok
+l0_arith.win64.O2 0x180001020 pick: ok
+l0_arith.win64.O2 0x180001030 negate: ok
 l0_arith.x86_64.O0 0x2011c0 add3: ok
 l0_arith.x86_64.O0 0x2011e0 scale: ok
 l0_arith.x86_64.O0 0x2011f0 pick: ok
@@ -430,6 +642,12 @@ l1_branch.aarch64.O0 0x210238 sign_of: ok
 l1_branch.aarch64.O2 0x210174 classify: ok
 l1_branch.aarch64.O2 0x210184 clamp: ok
 l1_branch.aarch64.O2 0x210198 sign_of: ok
+l1_branch.win64.O0 0x180001000 classify: ok
+l1_branch.win64.O0 0x180001040 clamp: ok
+l1_branch.win64.O0 0x180001090 sign_of: ok
+l1_branch.win64.O2 0x180001000 classify: ok
+l1_branch.win64.O2 0x180001010 clamp: ok
+l1_branch.win64.O2 0x180001020 sign_of: ok
 l1_branch.x86_64.O0 0x2011a0 classify: ok
 l1_branch.x86_64.O0 0x2011e0 clamp: ok
 l1_branch.x86_64.O0 0x201230 sign_of: ok
@@ -444,6 +662,14 @@ l2_loop.aarch64.O2 0x2101c4 sum_while: ok
 l2_loop.aarch64.O2 0x210200 count_down: ok
 l2_loop.aarch64.O2 0x210224 sum_skip_odd: ok
 l2_loop.aarch64.O2 0x210264 find_first: ok
+l2_loop.win64.O0 0x180001000 sum_while: ok
+l2_loop.win64.O0 0x180001050 count_down: ok
+l2_loop.win64.O0 0x180001090 sum_skip_odd: ok
+l2_loop.win64.O0 0x1800010f0 find_first: ok
+l2_loop.win64.O2 0x180001000 sum_while: ok
+l2_loop.win64.O2 0x1800010f0 count_down: ok
+l2_loop.win64.O2 0x180001110 sum_skip_odd: ok
+l2_loop.win64.O2 0x180001160 find_first: ok
 l2_loop.x86_64.O0 0x201200 sum_while: ok
 l2_loop.x86_64.O0 0x201250 count_down: ok
 l2_loop.x86_64.O0 0x201290 sum_skip_odd: ok
@@ -460,6 +686,14 @@ l4_memory.aarch64.O2 0x2101d4 point_dot: ok
 l4_memory.aarch64.O2 0x2101f0 array_sum: ok
 l4_memory.aarch64.O2 0x21027c bump: ok
 l4_memory.aarch64.O2 0x210290 banner_first: ok
+l4_memory.win64.O0 0x180001000 point_dot: ok
+l4_memory.win64.O0 0x180001040 array_sum: ok
+l4_memory.win64.O0 0x180001090 bump: returns int32_t, expected void
+l4_memory.win64.O0 0x1800010a0 banner_first: ok
+l4_memory.win64.O2 0x180001000 point_dot: ok
+l4_memory.win64.O2 0x180001020 array_sum: ok
+l4_memory.win64.O2 0x1800010b0 bump: ok
+l4_memory.win64.O2 0x1800010c0 banner_first: ok
 l4_memory.x86_64.O0 0x201210 point_dot: ok
 l4_memory.x86_64.O0 0x201240 array_sum: ok
 l4_memory.x86_64.O0 0x201290 bump: returns int32_t, expected void
@@ -504,6 +738,42 @@ l5_switch.aarch64.O2 0x2104e0 c13: ok
 l5_switch.aarch64.O2 0x2104f8 c14: ok
 l5_switch.aarch64.O2 0x21050c c15: ok
 l5_switch.aarch64.O2 0x210524 sparse: ok
+l5_switch.win64.O0 0x180001000 dense: ok
+l5_switch.win64.O0 0x1800010c0 c0: ok
+l5_switch.win64.O0 0x1800010d0 c1: ok
+l5_switch.win64.O0 0x1800010e0 c2: ok
+l5_switch.win64.O0 0x1800010f0 c3: ok
+l5_switch.win64.O0 0x180001100 c4: ok
+l5_switch.win64.O0 0x180001110 c5: ok
+l5_switch.win64.O0 0x180001120 c6: ok
+l5_switch.win64.O0 0x180001130 c7: ok
+l5_switch.win64.O0 0x180001140 c8: ok
+l5_switch.win64.O0 0x180001150 c9: ok
+l5_switch.win64.O0 0x180001160 c10: ok
+l5_switch.win64.O0 0x180001170 c11: ok
+l5_switch.win64.O0 0x180001180 c12: ok
+l5_switch.win64.O0 0x180001190 c13: ok
+l5_switch.win64.O0 0x1800011a0 c14: ok
+l5_switch.win64.O0 0x1800011b0 c15: ok
+l5_switch.win64.O0 0x1800011c0 sparse: ok
+l5_switch.win64.O2 0x180001000 dense: ok
+l5_switch.win64.O2 0x1800010b0 c0: ok
+l5_switch.win64.O2 0x1800010c0 c1: ok
+l5_switch.win64.O2 0x1800010d0 c2: ok
+l5_switch.win64.O2 0x1800010e0 c3: ok
+l5_switch.win64.O2 0x1800010f0 c4: ok
+l5_switch.win64.O2 0x180001100 c5: ok
+l5_switch.win64.O2 0x180001110 c6: ok
+l5_switch.win64.O2 0x180001120 c7: ok
+l5_switch.win64.O2 0x180001130 c8: ok
+l5_switch.win64.O2 0x180001140 c9: ok
+l5_switch.win64.O2 0x180001150 c10: ok
+l5_switch.win64.O2 0x180001160 c11: ok
+l5_switch.win64.O2 0x180001170 c12: ok
+l5_switch.win64.O2 0x180001180 c13: ok
+l5_switch.win64.O2 0x180001190 c14: ok
+l5_switch.win64.O2 0x1800011a0 c15: ok
+l5_switch.win64.O2 0x1800011b0 sparse: ok
 l5_switch.x86_64.O0 0x201400 dense: ok
 l5_switch.x86_64.O0 0x2014f0 c0: ok
 l5_switch.x86_64.O0 0x201510 c1: ok
@@ -550,6 +820,16 @@ l6_abi.aarch64.O2 0x2101c0 tail_direct: ok
 l6_abi.aarch64.O2 0x2101c8 tail_indirect: ok
 l6_abi.aarch64.O2 0x2101d4 six_args: ok
 l6_abi.aarch64.O2 0x2101ec wide_add: parameter 0 signedness differs; parameter 1 signedness differs
+l6_abi.win64.O0 0x180001000 tail_target: ok
+l6_abi.win64.O0 0x180001020 tail_direct: ok
+l6_abi.win64.O0 0x180001040 tail_indirect: ok
+l6_abi.win64.O0 0x180001070 six_args: parameter 4 is 8 bytes, expected 4; parameter 5 is 8 bytes, expected 4
+l6_abi.win64.O0 0x1800010b0 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
+l6_abi.win64.O2 0x180001000 tail_target: ok
+l6_abi.win64.O2 0x180001010 tail_direct: parameter 0 is 8 bytes, expected 4
+l6_abi.win64.O2 0x180001020 tail_indirect: not found
+l6_abi.win64.O2 0x180001030 six_args: parameter 4 is 8 bytes, expected 4; parameter 5 is 8 bytes, expected 4
+l6_abi.win64.O2 0x180001050 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 l6_abi.x86_64.O0 0x2011e0 tail_target: ok
 l6_abi.x86_64.O0 0x201200 tail_direct: ok
 l6_abi.x86_64.O0 0x201220 tail_indirect: ok
@@ -568,6 +848,14 @@ loops.aarch64.O2 0x21018c count_bits: parameter 0 signedness differs
 loops.aarch64.O2 0x2101b4 sum_until: ok
 loops.aarch64.O2 0x2101dc sum_till_neg: ok
 loops.aarch64.O2 0x210204 sum_until_zero: ok
+loops.win64.O0 0x180001000 count_bits: parameter 0 signedness differs
+loops.win64.O0 0x180001040 sum_until: ok
+loops.win64.O0 0x180001090 sum_till_neg: ok
+loops.win64.O0 0x180001100 sum_until_zero: ok
+loops.win64.O2 0x180001000 count_bits: ok
+loops.win64.O2 0x180001020 sum_until: ok
+loops.win64.O2 0x180001060 sum_till_neg: ok
+loops.win64.O2 0x180001090 sum_until_zero: ok
 loops.x86_64.O0 0x2011c0 count_bits: parameter 0 signedness differs
 loops.x86_64.O0 0x201200 sum_until: ok
 loops.x86_64.O0 0x201240 sum_till_neg: ok
@@ -592,6 +880,22 @@ memory.aarch64.O2 0x210304 grid_set: parameter 0 is 8 bytes, expected 4; returns
 memory.aarch64.O2 0x210320 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
 memory.aarch64.O2 0x21032c read_volatile: ok
 memory.aarch64.O2 0x21033c swap_ints: returns uint32_t *, expected void
+memory.win64.O0 0x180001000 copy_bytes: parameter 2 signedness differs; returns int32_t, expected void
+memory.win64.O0 0x180001050 fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int32_t, expected void
+memory.win64.O0 0x1800010a0 string_length: ok
+memory.win64.O0 0x1800010e0 grid_get: ok
+memory.win64.O0 0x180001110 grid_set: returns int32_t, expected void
+memory.win64.O0 0x180001150 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer; returns 8 bytes, expected 4
+memory.win64.O0 0x180001180 read_volatile: ok
+memory.win64.O0 0x1800011b0 swap_ints: returns int64_t, expected void
+memory.win64.O2 0x180001000 copy_bytes: ok
+memory.win64.O2 0x180001120 fill_bytes: parameter 1 is 4 bytes, expected 1
+memory.win64.O2 0x1800011e0 string_length: ok
+memory.win64.O2 0x180001200 grid_get: ok
+memory.win64.O2 0x180001220 grid_set: returns int32_t, expected void
+memory.win64.O2 0x180001240 pointer_distance: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer; returns 8 bytes, expected 4
+memory.win64.O2 0x180001250 read_volatile: ok
+memory.win64.O2 0x180001260 swap_ints: returns int32_t, expected void
 memory.x86_64.O0 0x201280 copy_bytes: parameter 2 signedness differs; returns int64_t, expected void
 memory.x86_64.O0 0x2012d0 fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int64_t, expected void
 memory.x86_64.O0 0x201320 string_length: ok
@@ -610,6 +914,8 @@ memory.x86_64.O2 0x201390 read_volatile: ok
 memory.x86_64.O2 0x2013a0 swap_ints: returns int32_t, expected void
 strings.aarch64.O0 0x21019c pick: ok
 strings.aarch64.O2 0x21019c pick: ok
+strings.win64.O0 0x180001000 pick: ok
+strings.win64.O2 0x180001000 pick: ok
 strings.x86_64.O0 0x2011b0 pick: ok
 strings.x86_64.O2 0x2011b0 pick: ok
 struct_arrays.aarch64.O0 0x210184 item_weight: ok
@@ -618,6 +924,12 @@ struct_arrays.aarch64.O0 0x210208 item_last_key: ok
 struct_arrays.aarch64.O2 0x210174 item_weight: ok
 struct_arrays.aarch64.O2 0x210188 cell_set: returns struct S1 *, expected void
 struct_arrays.aarch64.O2 0x2101a0 item_last_key: returns 4 bytes, expected 8
+struct_arrays.win64.O0 0x180001000 item_weight: ok
+struct_arrays.win64.O0 0x180001040 cell_set: returns int64_t, expected void
+struct_arrays.win64.O0 0x180001090 item_last_key: ok
+struct_arrays.win64.O2 0x180001000 item_weight: ok
+struct_arrays.win64.O2 0x180001020 cell_set: returns int64_t, expected void
+struct_arrays.win64.O2 0x180001040 item_last_key: ok
 struct_arrays.x86_64.O0 0x2011a0 item_weight: ok
 struct_arrays.x86_64.O0 0x2011e0 cell_set: returns int64_t, expected void
 struct_arrays.x86_64.O0 0x201220 item_last_key: ok
@@ -640,6 +952,22 @@ structs.aarch64.O2 0x2102c0 big_sum: ok
 structs.aarch64.O2 0x2102d4 word_low_byte: returns 8 bytes, expected 1
 structs.aarch64.O2 0x2102d8 flags_level: ok
 structs.aarch64.O2 0x2102ec flags_set_mode: parameter 1 signedness differs; returns uint8_t *, expected void
+structs.win64.O0 0x180001000 rect_area: parameter 0 is a signed 8-byte integer, expected a pointer
+structs.win64.O0 0x180001030 record_total: ok
+structs.win64.O0 0x1800010a0 point_add: ok
+structs.win64.O0 0x1800010d0 big_make: ok
+structs.win64.O0 0x180001110 big_sum: ok
+structs.win64.O0 0x180001130 word_low_byte: ok
+structs.win64.O0 0x180001140 flags_level: ok
+structs.win64.O0 0x180001180 flags_set_mode: parameter 1 signedness differs; returns uint32_t *, expected void
+structs.win64.O2 0x180001000 rect_area: ok
+structs.win64.O2 0x180001010 record_total: ok
+structs.win64.O2 0x1800010c0 point_add: ok
+structs.win64.O2 0x1800010e0 big_make: 2 parameters, expected 1
+structs.win64.O2 0x180001100 big_sum: ok
+structs.win64.O2 0x180001120 word_low_byte: returns 4 bytes, expected 1
+structs.win64.O2 0x180001130 flags_level: ok
+structs.win64.O2 0x180001150 flags_set_mode: parameter 1 signedness differs; returns int32_t, expected void
 structs.x86_64.O0 0x201240 rect_area: ok
 structs.x86_64.O0 0x201270 record_total: ok
 structs.x86_64.O0 0x2012e0 point_add: ok
@@ -658,10 +986,14 @@ structs.x86_64.O2 0x2012d0 flags_level: ok
 structs.x86_64.O2 0x2012f0 flags_set_mode: parameter 1 signedness differs; returns uint8_t, expected void
 switch_jumptable.aarch64.O0 0x21018c d7: ok
 switch_jumptable.aarch64.O2 0x210184 d7: ok
+switch_jumptable.win64.O0 0x180001000 d7: ok
+switch_jumptable.win64.O2 0x180001000 d7: ok
 switch_jumptable.x86_64.O0 0x2011c0 d7: ok
 switch_jumptable.x86_64.O2 0x2011c0 d7: ok
 switch_value_table.aarch64.O0 0x210154 dispatch: ok
 switch_value_table.aarch64.O2 0x210164 dispatch: ok
+switch_value_table.win64.O0 0x180001000 dispatch: ok
+switch_value_table.win64.O2 0x180001000 dispatch: ok
 switch_value_table.x86_64.O0 0x201180 dispatch: ok
 switch_value_table.x86_64.O2 0x201170 dispatch: ok
 tail_calls.aarch64.O0 0x210194 tail_one: ok
@@ -670,6 +1002,12 @@ tail_calls.aarch64.O0 0x2101e4 tail_three: ok
 tail_calls.aarch64.O2 0x21017c tail_one: ok
 tail_calls.aarch64.O2 0x210198 tail_two: ok
 tail_calls.aarch64.O2 0x2101a0 tail_three: ok
+tail_calls.win64.O0 0x180001000 tail_one: ok
+tail_calls.win64.O0 0x180001020 tail_two: ok
+tail_calls.win64.O0 0x180001040 tail_three: ok
+tail_calls.win64.O2 0x180001000 tail_one: ok
+tail_calls.win64.O2 0x180001010 tail_two: ok
+tail_calls.win64.O2 0x180001020 tail_three: ok
 tail_calls.x86_64.O0 0x2011a0 tail_one: ok
 tail_calls.x86_64.O0 0x2011c0 tail_two: ok
 tail_calls.x86_64.O0 0x2011e0 tail_three: ok
@@ -680,7 +1018,25 @@ tail_indirect.aarch64.O0 0x21017c via_ptr: ok
 tail_indirect.aarch64.O0 0x2101ac after_ptr: ok
 tail_indirect.aarch64.O2 0x210164 via_ptr: ok
 tail_indirect.aarch64.O2 0x210170 after_ptr: ok
+tail_indirect.win64.O0 0x180001000 via_ptr: ok
+tail_indirect.win64.O0 0x180001030 after_ptr: ok
+tail_indirect.win64.O2 0x180001000 via_ptr: ok
+tail_indirect.win64.O2 0x180001010 after_ptr: ok
 tail_indirect.x86_64.O0 0x201180 via_ptr: ok
 tail_indirect.x86_64.O0 0x2011b0 after_ptr: ok
 tail_indirect.x86_64.O2 0x201170 via_ptr: ok
 tail_indirect.x86_64.O2 0x201180 after_ptr: ok
+windows.win64.O0 0x180001150 extra function
+windows.win64.O0 0x180001160 extra function
+windows.win64.O0 0x180001000 call_import: ok
+windows.win64.O0 0x180001020 large_frame: ok
+windows.win64.O0 0x180001070 saved_xmm: ok
+windows.win64.O0 0x1800010b0 make_triple: parameter 0 signedness differs
+windows.win64.O0 0x1800010f0 stack_arguments: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 5 signedness differs
+windows.win64.O2 0x1800010f0 extra function
+windows.win64.O2 0x180001100 extra function
+windows.win64.O2 0x180001000 call_import: 0 parameters, expected 1
+windows.win64.O2 0x180001020 large_frame: ok
+windows.win64.O2 0x180001050 saved_xmm: ok
+windows.win64.O2 0x180001090 make_triple: 2 parameters, expected 1
+windows.win64.O2 0x1800010b0 stack_arguments: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs; parameter 3 signedness differs; parameter 4 signedness differs; parameter 5 signedness differs

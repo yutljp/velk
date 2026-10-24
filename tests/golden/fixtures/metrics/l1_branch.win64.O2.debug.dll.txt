@@ -1,0 +1,69 @@
+# metrics/l1_branch.win64.O2.debug.dll: pe x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 14 classify symtab,dwarf
+0x180001010 15 clamp symtab,dwarf
+0x180001020 14 sign_of symtab,dwarf
+
+== 0x180001000 classify
+-- decompile
+/* velk pseudo-C: classify @ 0x180001000 */
+int classify(int x) {
+    int8_t v1;
+    int8_t v2;
+
+    v1 = x < 0;
+    v2 = x > 0;
+    return (int8_t)(v2 - v1);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn classify @ 0x180001000 (size 14)
+  blk0 @ 0x180001000:
+    v1 = (select lt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    v2 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (sext8(((v2 & #0xff) - (v1 & #0xff))) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
+
+== 0x180001010 clamp
+-- decompile
+/* velk pseudo-C: clamp @ 0x180001010 */
+int clamp(int x, int lo, int hi) {
+    return (x < lo ? lo : (x < hi ? x : hi));
+}
+-- signature
+int (int x, int lo, int hi)
+-- references
+
+-- ir
+fn clamp @ 0x180001010 (size 15)
+  blk0 @ 0x180001010:
+    ret select lt ecx, edx ? edx, select lt ecx, r8d ? ecx, r8d
+-- card
+{"addr":"0x180001010","approxTokens":132,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":15,"unsupported":0}
+
+== 0x180001020 sign_of
+-- decompile
+/* velk pseudo-C: sign_of @ 0x180001020 */
+int sign_of(int x) {
+    int8_t v1;
+    int8_t v2;
+
+    v1 = x < 0;
+    v2 = x > 0;
+    return (int8_t)(v2 - v1);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sign_of @ 0x180001020 (size 14)
+  blk0 @ 0x180001020:
+    v1 = (select lt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    v2 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (sext8(((v2 & #0xff) - (v1 & #0xff))) & #0xffffffff)
+-- card
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}

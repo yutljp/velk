@@ -1,0 +1,137 @@
+# metrics/struct_arrays.win64.O2.stripped.dll: pe x86_64 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 32 - prologue
+0x180001020 32 - prologue
+0x180001040 108 - prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };
+int32_t sub_180001000(struct S1 *a0, int32_t a1) {
+    return (int16_t)a0[a1].field_0x8 * a0[a1].field_0x4;
+}
+-- signature
+int32_t (struct S1 * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 32)
+  blk0 @ 0x180001000:
+    ret ((sext16(load16(((rcx + (sext32(rdx) * #0xc)) + #0x8))) * load32(((rcx + (sext32(rdx) * #0xc)) + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"structures":["struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };"],"unsupported":0}
+
+== 0x180001020 -
+-- decompile
+/* velk pseudo-C: sub_180001020 @ 0x180001020 */
+struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
+int64_t sub_180001020(struct S1 *a0, int32_t a1, int32_t a2) {
+    int64_t v1;
+
+    v1 = a1 + (int64_t)a1 * 2;
+    a0[a1].field_0x0 = a2;
+    a0[a1].field_0x8 = a2 + 1;
+    return v1;
+}
+-- signature
+int64_t (struct S1 * a0, int32_t a1, int32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001020 (size 32)
+  blk0 @ 0x180001020:
+    v1 = (sext32(edx) + (sext32(edx) * #0x2))
+    store32(r8d, (rcx + (sext32(edx) * #0xc)))
+    store32((r8d + #0x1), ((rcx + (sext32(edx) * #0xc)) + #0x8))
+    ret v1
+-- card
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+
+== 0x180001040 -
+-- decompile
+/* velk pseudo-C: sub_180001040 @ 0x180001040 */
+int32_t sub_180001040(uint32_t *a0, int32_t a1) {
+    int64_t v1;
+    int32_t v2;
+    uint32_t v4;
+    uint32_t *v5;
+    int64_t v6;
+
+    if (a1 <= 0) {
+        return 0;
+    }
+    if (a1 != 1) {
+        v4 = a1 & 0x7ffffffe;
+        v5 = a0 + 0x4;
+        v1 = 0;
+        v2 = 0;
+        do {
+            if ((int32_t)v5[-3] > 0) {
+                v2 = v5[-4];
+            }
+            if ((int32_t)*v5 > 0) {
+                v2 = v5[-1];
+            }
+            v1 += 2;
+            v5 = v5 + 0x6;
+        } while (v4 != v1);
+        if ((a1 & 0x1) == 0) {
+            return v2;
+        }
+    } else {
+        v1 = 0;
+        v2 = 0;
+    }
+    v6 = v1 + v1 * 2;
+    if ((int32_t)a0[v6 + 1] <= 0) {
+        return v2;
+    }
+    return a0[v6];
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001040 (size 108)
+  blk0 @ 0x180001040:
+    brif le (rdx & #0xffffffff), #0x0 -> 0x18000104f
+  blk1 @ 0x180001044:
+    brif ne (rdx & #0xffffffff), #0x1 -> 0x180001052
+  blk2 @ 0x180001049:
+    v1 = #0x0
+    v2 = #0x0
+    br 0x18000109a
+  blk3 @ 0x18000104f:
+    ret #0x0
+  blk4 @ 0x180001052:
+    v3 = (rdx & #0xffffffff)
+    v4 = (v3 & #0x7ffffffe)
+    v5 = (rcx + #0x10)
+    v1 = #0x0
+    v2 = #0x0
+    br 0x18000107d
+  blk5 @ 0x180001070:
+    v1 = (v1 + #0x2)
+    v5 = (v5 + #0x18)
+    brif eq v4, v1 -> 0x180001094
+  blk6 @ 0x18000107d:
+    brif le load32((v5 + #0xfffffffffffffff4)), #0x0 -> 0x180001088
+  blk7 @ 0x180001084:
+    v2 = load32((v5 + #0xfffffffffffffff0))
+  blk8 @ 0x180001088:
+    brif le load32(v5), #0x0 -> 0x180001070
+  blk9 @ 0x18000108e:
+    v2 = load32((v5 + #0xfffffffffffffffc))
+    br 0x180001070
+  blk10 @ 0x180001094:
+    brif eq (v3 & #0x1), #0x0 -> 0x1800010ab
+  blk11 @ 0x18000109a:
+    v6 = (v1 + (v1 * #0x2))
+    brif le load32(((rcx + (v6 * #0x4)) + #0x4)), #0x0 -> 0x1800010ab
+  blk12 @ 0x1800010a5:
+    v2 = load32((rcx + (v6 * #0x4)))
+  blk13 @ 0x1800010ab:
+    ret v2
+-- card
+{"addr":"0x180001040","approxTokens":138,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":108,"sizeEstimated":true,"unsupported":0}

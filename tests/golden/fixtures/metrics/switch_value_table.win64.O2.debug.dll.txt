@@ -1,0 +1,35 @@
+# metrics/switch_value_table.win64.O2.debug.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 24 dispatch symtab,dwarf
+
+== 0x180001000 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x180001000 */
+/* ref: 0x180002000 .rdata */
+int dispatch(int x) {
+    uint8_t *const byte_180002000 = (uint8_t *)0x180002000ULL;
+    uint64_t v1;
+    int32_t result;
+
+    v1 = (x - 10) & 0xffffffff;
+    result = 0;
+    if (v1 > 4) {
+        return 0;
+    }
+    return byte_180002000[v1];
+}
+-- signature
+int (int x)
+-- references
+0x180002000 .rdata
+-- ir
+fn dispatch @ 0x180001000 (size 24)
+  blk0 @ 0x180001000:
+    v1 = (((rcx & #0xffffffff) + #0xfffffffffffffff6) & #0xffffffff)
+    v2 = #0x0
+    brif hi (v1 & #0xffffffff), #0x4 -> 0x180001017
+  blk1 @ 0x18000100a:
+    v2 = (load8(((v1 & #0xffffffff) + #0x180002000)) & #0xffffffff)
+  blk2 @ 0x180001017:
+    ret v2
+-- card
+{"addr":"0x180001000","approxTokens":144,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}

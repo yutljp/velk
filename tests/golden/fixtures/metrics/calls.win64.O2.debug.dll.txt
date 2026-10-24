@@ -1,0 +1,647 @@
+# metrics/calls.win64.O2.debug.dll: pe x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 4 twice symtab,dwarf
+0x180001010 6 square symtab,dwarf
+0x180001020 21 pick_op symtab,dwarf
+0x180001040 43 apply_table symtab,dwarf
+0x180001070 18 apply_pointer symtab,dwarf,unwind
+0x180001090 297 factorial symtab,dwarf,unwind
+0x1800011c0 14 is_odd symtab,dwarf
+0x1800011d0 17 is_even symtab,dwarf
+0x1800011f0 29 sum9 symtab,dwarf
+0x180001210 72 call_sum9 symtab,dwarf,unwind
+0x180001260 322 sum_varargs symtab,dwarf,unwind
+/* velk prelude */
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_interleave_high32
+#define VELK_interleave_high32
+static inline uint64_t interleave_high32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 32 / 32; ++i) {
+        out |= ((a >> (32 + i * 32)) & mask) << (2 * i * 32);
+        out |= ((b >> (32 + i * 32)) & mask) << ((2 * i + 1) * 32);
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_interleave_low32
+#define VELK_interleave_low32
+static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 32 / 32; ++i) {
+        out |= ((a >> (0 + i * 32)) & mask) << (2 * i * 32);
+        out |= ((b >> (0 + i * 32)) & mask) << ((2 * i + 1) * 32);
+    }
+    return out;
+}
+#endif
+
+uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
+
+void square(void);
+
+void twice(void);
+/* end velk prelude */
+
+== 0x180001000 twice
+-- decompile
+/* velk pseudo-C: twice @ 0x180001000 */
+int twice(int x) {
+    return x + x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn twice @ 0x180001000 (size 4)
+  blk0 @ 0x180001000:
+    ret ((rcx + rcx) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
+
+== 0x180001010 square
+-- decompile
+/* velk pseudo-C: square @ 0x180001010 */
+int square(int x) {
+    return x * x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn square @ 0x180001010 (size 6)
+  blk0 @ 0x180001010:
+    ret ((ecx * ecx) & #0xffffffff)
+-- card
+{"addr":"0x180001010","approxTokens":114,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x180001020 pick_op
+-- decompile
+/* velk pseudo-C: pick_op @ 0x180001020 */
+void *pick_op(int which) {
+    return (void *)(which == 0 ? twice : square);
+}
+-- signature
+void * (int which)
+-- references
+
+-- ir
+fn pick_op @ 0x180001020 (size 21)
+  blk0 @ 0x180001020:
+    ret select eq (rcx & #0xffffffff), #0x0 ? #0x180001000, #0x180001010
+-- card
+{"addr":"0x180001020","approxTokens":126,"blocks":1,"hardReasons":[],"name":"pick_op","nameSources":["symtab","dwarf"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001040 apply_table
+-- decompile
+/* velk pseudo-C: apply_table @ 0x180001040 */
+int apply_table(unsigned int index, int x) {
+    int32_t v1;
+    int32_t v2;
+    int32_t v3;
+    int32_t v5;
+
+    v1 = 0xaaaaaaab * (uint64_t)index >> 33;
+    v2 = v1 + v1 * 2;
+    v3 = index - v2;
+    if (v3 + v2 != v2 && v3 == 1) {
+        v5 = square((uint32_t)x);
+        return v5;
+    }
+    v5 = twice((uint32_t)x);
+    return v5;
+}
+-- signature
+int (unsigned int index, int x)
+-- references
+
+-- ir
+fn apply_table @ 0x180001040 (size 43)
+  blk0 @ 0x180001040:
+    v1 = ((#0xaaaaaaab * (rcx & #0xffffffff)) >> #0x21)
+    v2 = ((v1 + (v1 * #0x2)) & #0xffffffff)
+    v3 = (((rcx & #0xffffffff) - (v2 & #0xffffffff)) & #0xffffffff)
+    brif eq (v3 + (v2 & #0xffffffff)), (v2 & #0xffffffff) -> 0x180001064
+  blk1 @ 0x180001058:
+    brif ne (v3 & #0xffffffff), #0x1 -> 0x180001064
+  blk2 @ 0x18000105d:
+    v5:rax = call 0x180001010(edx)
+    ret v5
+  blk3 @ 0x180001064:
+    v5:rax = call 0x180001000(edx)
+    ret v5
+-- card
+{"addr":"0x180001040","approxTokens":162,"blocks":4,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":43,"unsupported":0}
+
+== 0x180001070 apply_pointer
+-- decompile
+/* velk pseudo-C: apply_pointer @ 0x180001070 */
+int apply_pointer(void *f, int x) {
+    return ((int32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn apply_pointer @ 0x180001070 (size 18)
+  blk0 @ 0x180001070:
+    v3:rax, xmm0 = call *rcx((rdx & #0xffffffff))
+    ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x180001070","approxTokens":138,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf","unwind"],"section":".text","size":18,"unsupported":0}
+
+== 0x180001090 factorial
+-- decompile
+/* velk pseudo-C: factorial @ 0x180001090 */
+/* ref: 0x180002000 .rdata */
+/* ref: 0x180002008 .rdata */
+/* ref: 0x180002010 .rdata */
+/* ref: 0x180002018 .rdata */
+/* ref: 0x180002020 .rdata */
+/* ref: 0x180002028 .rdata */
+/* ref: 0x180002030 .rdata */
+/* ref: 0x180002038 .rdata */
+int factorial(int n) {
+    uint64_t *const __xmm_fffffffdfffffffeffffffff00000000 = (uint64_t *)0x180002000ULL;
+    uint64_t *const qword_180002008 = (uint64_t *)0x180002008ULL;
+    uint64_t *const __xmm_00000001000000010000000100000001 = (uint64_t *)0x180002010ULL;
+    uint64_t *const qword_180002018 = (uint64_t *)0x180002018ULL;
+    uint64_t *const __xmm_fffffffcfffffffcfffffffcfffffffc = (uint64_t *)0x180002020ULL;
+    uint64_t *const qword_180002028 = (uint64_t *)0x180002028ULL;
+    uint64_t *const __xmm_fffffff8fffffff8fffffff8fffffff8 = (uint64_t *)0x180002030ULL;
+    uint64_t *const qword_180002038 = (uint64_t *)0x180002038ULL;
+    uint32_t t1;
+    int32_t result;
+    int32_t v2;
+    int32_t v3;
+    uint64_t v4;
+    uint32_t v5;
+    uint64_t v6;
+    uint64_t v8;
+    uint64_t v9;
+    uint64_t v10;
+    uint64_t v11;
+    uint64_t v12;
+    uint64_t v13;
+    uint64_t v14;
+    uint64_t v16;
+    uint64_t v17;
+    uint64_t v18;
+    uint64_t v19;
+    uint64_t v20;
+    uint64_t v24;
+    uint64_t v25;
+    uint64_t v26;
+    uint32_t v33;
+    uint64_t v36;
+    uint32_t v52;
+
+    result = 1;
+    if (n < 2) {
+        return 1;
+    }
+    if ((uint32_t)n >= 9) {
+        v2 = n - 1;
+        v3 = v2 & 0xfffffffffffffff8;
+        v4 = n & 0xffffffff;
+        n -= v3;
+        v6 = add_lanes32(v4 | v4 << 32, *__xmm_fffffffdfffffffeffffffff00000000);
+        v8 = add_lanes32(v4 | v4 << 32, *qword_180002008);
+        v11 = *__xmm_fffffffcfffffffcfffffffcfffffffc;
+        v12 = *qword_180002028;
+        v13 = *__xmm_fffffff8fffffff8fffffff8fffffff8;
+        v14 = *qword_180002038;
+        result = v3;
+        v9 = *__xmm_00000001000000010000000100000001;
+        v16 = v9;
+        v10 = *qword_180002018;
+        v17 = v10;
+        do {
+            v18 = add_lanes32(v6, v11);
+            v19 = add_lanes32(v8, v12);
+            v20 = (v6 & 0xffffffff) * (v9 & 0xffffffff);
+            v5 = v10 >> 32 | v10 >> 32 << 32;
+            v24 = (v8 >> 32) * v5;
+            v25 = ((v6 >> 32) * (v9 >> 32)) & 0xffffffff | v24 << 32;
+            v26 = v20 & 0xffffffff | v8 * v10 << 32;
+            v9 = interleave_low32(v26, v25);
+            v10 = interleave_high32(v26, v25);
+            v5 = v19 >> 32 | v19 >> 32 << 32;
+            t1 = v18 >> 32;
+            v20 = t1 | (uint64_t)t1 << 32;
+            v18 = (v18 & 0xffffffff) * (v16 & 0xffffffff);
+            v19 = (v19 & 0xffffffff) * (v17 & 0xffffffff);
+            v33 = v17 >> 32 | v17 >> 32 << 32;
+            t1 = v16 >> 32;
+            v20 = (t1 * v20) & 0xffffffff | (uint64_t)(v33 * v5) << 32;
+            v36 = v18 & 0xffffffff | v19 << 32;
+            v16 = interleave_low32(v36, v20);
+            v17 = interleave_high32(v36, v20);
+            v6 = add_lanes32(v6, v13);
+            v8 = add_lanes32(v8, v14);
+            result = result - 8;
+        } while (result != 0);
+        t1 = v16 >> 32;
+        v11 = (v9 >> 32) * t1;
+        v12 = (v10 >> 32) * (v17 >> 32);
+        result = v11 * v12 * (interleave_low32((v17 & 0xffffffff) * (v10 & 0xffffffff), v12) * interleave_low32((v16 & 0xffffffff) * (v9 & 0xffffffff), v11));
+        if (v2 == v3) {
+            return result;
+        }
+    }
+    do {
+        result *= n;
+        v52 = n;
+        n = n - 1;
+    } while (v52 > 2);
+    return result;
+}
+-- signature
+int (int n)
+-- references
+0x180002000 .rdata
+0x180002008 .rdata
+0x180002010 .rdata
+0x180002018 .rdata
+0x180002020 .rdata
+0x180002028 .rdata
+0x180002030 .rdata
+0x180002038 .rdata
+-- ir
+fn factorial @ 0x180001090 (size 297)
+  blk0 @ 0x180001090:
+    v1 = #0x1
+    brif lt (rcx & #0xffffffff), #0x2 -> 0x1800011ab
+  blk1 @ 0x1800010ad:
+    brif cc (rcx & #0xffffffff), #0x9 -> 0x1800011a0
+  blk2 @ 0x1800010b6:
+    v2 = (rcx + #0xffffffffffffffff)
+    v3 = (v2 & #0xfffffffffffffff8)
+    v4 = (rcx & #0xffffffff)
+    rcx = (((rcx & #0xffffffff) - v3) & #0xffffffff)
+    v6 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x180002000))
+    v8 = add_lanes32(((v4 & #0xffffffff) | ((v4 & #0xffffffff) << #0x20)), load64(#0x180002008))
+    v11 = load64(#0x180002020)
+    v12 = load64(#0x180002028)
+    v13 = load64(#0x180002030)
+    v14 = load64(#0x180002038)
+    v1 = v3
+    v9 = load64(#0x180002010)
+    v16 = v9
+    v10 = load64(#0x180002018)
+    v17 = v10
+  blk3 @ 0x180001100:
+    v18 = add_lanes32(v6, v11)
+    v19 = add_lanes32(v8, v12)
+    v20 = ((v6 & #0xffffffff) * (v9 & #0xffffffff))
+    v5 = (((v10 >> #0x20) & #0xffffffff) | (((v10 >> #0x20) & #0xffffffff) << #0x20))
+    v24 = (((v8 >> #0x20) & #0xffffffff) * (v5 & #0xffffffff))
+    v25 = ((((v6 >> #0x20) * (v9 >> #0x20)) & #0xffffffff) | ((v24 & #0xffffffff) << #0x20))
+    v26 = ((v20 & #0xffffffff) | ((((v8 & #0xffffffff) * (v10 & #0xffffffff)) & #0xffffffff) << #0x20))
+    v9 = interleave_low32(v26, v25)
+    v10 = interleave_high32(v26, v25)
+    v5 = (((v19 >> #0x20) & #0xffffffff) | (((v19 >> #0x20) & #0xffffffff) << #0x20))
+    t1 = ((v18 >> #0x20) & #0xffffffff)
+    v20 = (t1 | (t1 << #0x20))
+    v18 = ((v18 & #0xffffffff) * (v16 & #0xffffffff))
+    v19 = ((v19 & #0xffffffff) * (v17 & #0xffffffff))
+    v33 = (((v17 >> #0x20) & #0xffffffff) | (((v17 >> #0x20) & #0xffffffff) << #0x20))
+    t1 = ((v16 >> #0x20) & #0xffffffff)
+    v20 = (((t1 * (v20 & #0xffffffff)) & #0xffffffff) | ((((v33 & #0xffffffff) * (v5 & #0xffffffff)) & #0xffffffff) << #0x20))
+    v36 = ((v18 & #0xffffffff) | ((v19 & #0xffffffff) << #0x20))
+    v16 = interleave_low32(v36, v20)
+    v17 = interleave_high32(v36, v20)
+    v6 = add_lanes32(v6, v13)
+    v8 = add_lanes32(v8, v14)
+    v1 = (((v1 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
+    brif ne v1, #0x0 -> 0x180001100
+  blk4 @ 0x18000115d:
+    t1 = ((v16 >> #0x20) & #0xffffffff)
+    v11 = (((v9 >> #0x20) & #0xffffffff) * t1)
+    v12 = (((v10 >> #0x20) & #0xffffffff) * ((v17 >> #0x20) & #0xffffffff))
+    v1 = ((((v11 & #0xffffffff) * (v12 & #0xffffffff)) * (interleave_low32(((v17 & #0xffffffff) * (v10 & #0xffffffff)), v12) * interleave_low32(((v16 & #0xffffffff) * (v9 & #0xffffffff)), v11))) & #0xffffffff)
+    brif eq v2, v3 -> 0x1800011ab
+  blk5 @ 0x1800011a0:
+    v1 = (((v1 & #0xffffffff) * (rcx & #0xffffffff)) & #0xffffffff)
+    v52 = (rcx & #0xffffffff)
+    rcx = ((rcx + #0xffffffffffffffff) & #0xffffffff)
+    brif hi v52, #0x2 -> 0x1800011a0
+  blk6 @ 0x1800011ab:
+    ret v1
+-- card
+{"addr":"0x180001090","approxTokens":240,"blocks":7,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":297,"unsupported":0}
+
+== 0x1800011c0 is_odd
+-- decompile
+/* velk pseudo-C: is_odd @ 0x1800011c0 */
+int is_odd(int n) {
+    if (n == 0) {
+        return 0;
+    }
+    return is_even((n - 1) & 0xffffffff);
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn is_odd @ 0x1800011c0 (size 14)
+  blk0 @ 0x1800011c0:
+    brif eq (rcx & #0xffffffff), #0x0 -> 0x1800011cb
+  blk1 @ 0x1800011c4:
+    v2:rax = call 0x1800011d0((((rcx & #0xffffffff) - #0x1) & #0xffffffff))
+    ret v2
+  blk2 @ 0x1800011cb:
+    ret #0x0
+-- card
+{"addr":"0x1800011c0","approxTokens":120,"blocks":3,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
+
+== 0x1800011d0 is_even
+-- decompile
+/* velk pseudo-C: is_even @ 0x1800011d0 */
+int is_even(int n) {
+    if (n == 0) {
+        return 1;
+    }
+    return is_odd((n - 1) & 0xffffffff);
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn is_even @ 0x1800011d0 (size 17)
+  blk0 @ 0x1800011d0:
+    brif eq (rcx & #0xffffffff), #0x0 -> 0x1800011db
+  blk1 @ 0x1800011d4:
+    v2:rax = call 0x1800011c0((((rcx & #0xffffffff) - #0x1) & #0xffffffff))
+    ret v2
+  blk2 @ 0x1800011db:
+    ret #0x1
+-- card
+{"addr":"0x1800011d0","approxTokens":120,"blocks":3,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf"],"section":".text","size":17,"unsupported":0}
+
+== 0x1800011f0 sum9
+-- decompile
+/* velk pseudo-C: sum9 @ 0x1800011f0 */
+int32_t sum9(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, int32_t g, int32_t h, int32_t i) {
+    return c + d + (a + b) + e + f + g + h + i;
+}
+-- signature
+int32_t (int32_t a, int32_t b, int32_t c, int32_t d)
+-- references
+
+-- ir
+fn sum9 @ 0x1800011f0 (size 29)
+  blk0 @ 0x1800011f0:
+    ret ((((((((r8 + r9) + (ecx + edx)) + load32((rsp + #0x28))) + load32((rsp + #0x30))) + load32((rsp + #0x38))) + load32((rsp + #0x40))) + load32((rsp + #0x48))) & #0xffffffff)
+-- card
+{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf"],"section":".text","size":29,"unsupported":0}
+
+== 0x180001210 call_sum9
+-- decompile
+/* velk pseudo-C: call_sum9 @ 0x180001210 */
+int32_t call_sum9(int32_t x) {
+    int64_t local_0; /* [sp-8] */
+    int64_t local_1; /* [sp-10] */
+    int64_t local_2; /* [sp-18] */
+    int64_t local_3; /* [sp-20] */
+    int64_t local_4; /* [sp-28] */
+
+    *(uint32_t *)&local_0 = 8;
+    *(uint32_t *)&local_1 = 7;
+    *(uint32_t *)&local_2 = 6;
+    *(uint32_t *)&local_3 = 5;
+    *(uint32_t *)&local_4 = 4;
+    return sum9(x, 1, 2, 3, local_4, local_3, local_2, local_1, local_0);
+}
+-- signature
+int32_t (int32_t x)
+-- references
+
+-- ir
+fn call_sum9 @ 0x180001210 (size 72)
+  blk0 @ 0x180001210:
+    store32(#0x8, (rsp + #0xfffffffffffffff8))
+    store32(#0x7, (rsp + #0xfffffffffffffff0))
+    store32(#0x6, (rsp + #0xffffffffffffffe8))
+    store32(#0x5, (rsp + #0xffffffffffffffe0))
+    store32(#0x4, (rsp + #0xffffffffffffffd8))
+    v1:rax = call 0x1800011f0(rcx, #0x1, #0x2, #0x3, load64((rsp + #0xffffffffffffffd8)), load64((rsp + #0xffffffffffffffe0)), load64((rsp + #0xffffffffffffffe8)), load64((rsp + #0xfffffffffffffff0)), load64((rsp + #0xfffffffffffffff8)))
+    ret v1
+-- card
+{"addr":"0x180001210","approxTokens":174,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf","unwind"],"section":".text","size":72,"unsupported":0}
+
+== 0x180001260 sum_varargs
+-- decompile
+/* velk pseudo-C: sum_varargs @ 0x180001260 */
+int sum_varargs(int count, ...) {
+    uint64_t v4;
+    uint64_t v6;
+    uint64_t v7;
+    uint64_t v8;
+    uint64_t *v1;
+    uint64_t v2;
+    uint64_t v3;
+    uint32_t v5;
+    uint64_t v9;
+    uint64_t v10;
+    int64_t v11;
+    uint64_t v12;
+    uint64_t v13;
+    uint64_t v14;
+    uint32_t v15;
+    uint64_t v16;
+    int32_t v18;
+    int32_t i;
+    uint32_t *v21;
+    int32_t v23;
+    uint32_t *v24;
+    _Alignas(16) struct __attribute__((packed)) { void *f_0; uint8_t gap_8[0x10]; } local_0; /* [sp-8] */
+
+    local_0.f_0 = (void *)v4;
+    *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x10) = v6;
+    *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x18) = v7;
+    *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x20) = v8;
+    local_0.f_0 = (void *)(((uint8_t *)velk_return_address_slot() + 0x10));
+    if (count <= 0) {
+        return 0;
+    }
+    v1 = (uint64_t *)local_0.f_0;
+    v2 = 0;
+    if ((uint32_t)count < 13) {
+        v5 = 0;
+        v3 = (uintptr_t)v1;
+    } else {
+        v3 = (uintptr_t)(v1 + ((count - 1) & 0xffffffff));
+        if ((((uintptr_t)velk_return_address_slot() - 8 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)velk_return_address_slot())) == 0) {
+            v5 = count & 0x3;
+            v2 = (uint64_t)(uint32_t)count - (v5 != 0 ? v5 : 4);
+            v3 = (uintptr_t)(v1 + v2);
+            v9 = 0;
+            v10 = 0;
+            v11 = v2;
+            v12 = 0;
+            v13 = 0;
+            do {
+                v14 = v1[1];
+                v15 = v1[2];
+                v16 = v1[3];
+                v12 = add_lanes32(v12, *v1 & 0xffffffff | v14 << 32);
+                v13 = add_lanes32(v13, v14);
+                v9 = add_lanes32(v9, v15 | v16 << 32);
+                v10 = add_lanes32(v10, v16);
+                v1 = v1 + 0x4;
+                v11 = v11 - 4;
+            } while (v11 != 0);
+            local_0.f_0 = (void *)v1;
+            v9 = add_lanes32(v9, v12);
+            v5 = add_lanes32(v9 >> 32 | v9 >> 32 << 32, v9);
+        } else {
+            v5 = 0;
+            v3 = (uintptr_t)v1;
+        }
+    }
+    v18 = count - v2 & 0x3;
+    if (v18 == 0) {
+        v18 = v2;
+    } else {
+        v18 = -v18;
+        i = 0;
+        do {
+            v21 = (uint32_t *)v3;
+            v3 += 8;
+            local_0.f_0 = (void *)v3;
+            v5 += *v21;
+            --i;
+        } while (v18 != i);
+        v18 = v2 - i;
+    }
+    if ((uint32_t)(v2 - count) > 0xfffffffc) {
+        return v5;
+    }
+    v23 = count - v18;
+    v24 = (uint32_t *)(v3 + 16);
+    do {
+        local_0.f_0 = (void *)(v24 - 0x2);
+        v5 += v24[-4];
+        local_0.f_0 = (void *)v24;
+        v5 += v24[-2];
+        local_0.f_0 = (void *)(v24 + 0x2);
+        v5 += *v24;
+        local_0.f_0 = (void *)(v24 + 0x4);
+        v5 += v24[2];
+        v24 = v24 + 0x8;
+        v23 = v23 - 4;
+    } while (v23 != 0);
+    return v5;
+}
+-- signature
+int (int count)
+-- references
+
+-- ir
+fn sum_varargs @ 0x180001260 (size 322)
+  blk0 @ 0x180001260:
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    store64(rdx, (rsp + #0x10))
+    store64(r8, (rsp + #0x18))
+    store64(r9, (rsp + #0x20))
+    store64((rsp + #0x10), (rsp + #0xfffffffffffffff8))
+    brif le (rcx & #0xffffffff), #0x0 -> 0x1800012b3
+  blk1 @ 0x18000127d:
+    v1 = load64((rsp + #0xfffffffffffffff8))
+    v2 = #0x0
+    brif cc (rcx & #0xffffffff), #0xd -> 0x1800012ac
+  blk2 @ 0x180001289:
+    v3 = (v1 + (((rcx + #0xffffffffffffffff) & #0xffffffff) * #0x8))
+    brif eq ((select cc (rsp + #0xfffffffffffffff8), (v3 + #0x4) ? #0x1, #0x0 & #0xff) & (select cc v1, rsp ? #0x1, #0x0 & #0xff)), #0x0 -> 0x1800012b7
+  blk3 @ 0x1800012ac:
+    v5 = #0x0
+    v3 = v1
+    br 0x18000131c
+  blk4 @ 0x1800012b3:
+    ret #0x0
+  blk5 @ 0x1800012b7:
+    v7 = (rcx & #0xffffffff)
+    v5 = (v7 & #0x3)
+    v2 = (v7 - select ne v5, #0x0 ? v5, #0x4)
+    v3 = (v1 + (v2 * #0x8))
+    v9 = #0x0
+    v10 = #0x0
+    v11 = v2
+    v12 = #0x0
+    v13 = #0x0
+  blk6 @ 0x1800012e0:
+    v14 = load64((v1 + #0x8))
+    v15 = load64((v1 + #0x10))
+    v16 = load64((v1 + #0x18))
+    v12 = add_lanes32(v12, ((load64(v1) & #0xffffffff) | ((v14 & #0xffffffff) << #0x20)))
+    v13 = add_lanes32(v13, v14)
+    v9 = add_lanes32(v9, ((v15 & #0xffffffff) | ((v16 & #0xffffffff) << #0x20)))
+    v10 = add_lanes32(v10, v16)
+    v1 = (v1 + #0x20)
+    v11 = (v11 + #0xfffffffffffffffc)
+    brif ne v11, #0x0 -> 0x1800012e0
+  blk7 @ 0x180001307:
+    store64(v1, (rsp + #0xfffffffffffffff8))
+    v9 = add_lanes32(v9, v12)
+    v5 = (add_lanes32((((v9 >> #0x20) & #0xffffffff) | (((v9 >> #0x20) & #0xffffffff) << #0x20)), v9) & #0xffffffff)
+  blk8 @ 0x18000131c:
+    v18 = (((rcx & #0xffffffff) - (v2 & #0xffffffff)) & #0x3)
+    brif eq v18, #0x0 -> 0x18000134e
+  blk9 @ 0x180001328:
+    v18 = ((#0x0 - (v18 & #0xffffffff)) & #0xffffffff)
+    v20 = #0x0
+  blk10 @ 0x180001330:
+    v21 = v3
+    v3 = (v3 + #0x8)
+    store64(v3, (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32(v21)) & #0xffffffff)
+    v20 = (((v20 & #0xffffffff) - #0x1) & #0xffffffff)
+    brif ne (v18 & #0xffffffff), (v20 & #0xffffffff) -> 0x180001330
+  blk11 @ 0x180001346:
+    v18 = (((v2 & #0xffffffff) - (v20 & #0xffffffff)) & #0xffffffff)
+    br 0x180001351
+  blk12 @ 0x18000134e:
+    v18 = (v2 & #0xffffffff)
+  blk13 @ 0x180001351:
+    brif hi (((v2 & #0xffffffff) - (rcx & #0xffffffff)) & #0xffffffff), #0xfffffffc -> 0x1800013a0
+  blk14 @ 0x18000135a:
+    v23 = (((rcx & #0xffffffff) - (v18 & #0xffffffff)) & #0xffffffff)
+    v24 = (v3 + #0x10)
+  blk15 @ 0x180001370:
+    store64((v24 + #0xfffffffffffffff8), (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32((v24 + #0xfffffffffffffff0))) & #0xffffffff)
+    store64(v24, (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32((v24 + #0xfffffffffffffff8))) & #0xffffffff)
+    store64((v24 + #0x8), (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32(v24)) & #0xffffffff)
+    store64((v24 + #0x10), (rsp + #0xfffffffffffffff8))
+    v5 = (((v5 & #0xffffffff) + load32((v24 + #0x8))) & #0xffffffff)
+    v24 = (v24 + #0x20)
+    v23 = (((v23 & #0xffffffff) + #0xfffffffffffffffc) & #0xffffffff)
+    brif ne v23, #0x0 -> 0x180001370
+  blk16 @ 0x1800013a0:
+    ret v5
+-- card
+{"addr":"0x180001260","approxTokens":240,"blocks":17,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":322,"unsupported":0}

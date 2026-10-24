@@ -1,0 +1,105 @@
+# metrics/arith_mixed.win64.O0.stripped.dll: pe x86_64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 34 - unwind,prologue
+0x180001030 73 - unwind,prologue
+0x180001080 20 - unwind,prologue
+0x1800010a0 77 - unwind,prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+int32_t sub_180001000(int32_t a0, int32_t a1, int32_t a2) {
+    return a0 + a1 + a2;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001000 (size 34)
+  blk0 @ 0x180001000:
+    ret (((ecx + edx) + r8d) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":34,"unsupported":0}
+
+== 0x180001030 -
+-- decompile
+/* velk pseudo-C: sub_180001030 @ 0x180001030 */
+int32_t sub_180001030(int32_t a0) {
+    int32_t result;
+    int32_t i;
+
+    result = 0;
+    for (i = 0; i < a0; i++) {
+        result = i * i + result;
+    }
+    return result;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001030 (size 73)
+  blk0 @ 0x180001030:
+    v1 = #0x0
+    v2 = #0x0
+  blk1 @ 0x180001048:
+    brif ge v2, ecx -> 0x180001070
+  blk2 @ 0x180001052:
+    v1 = (((v2 * v2) + v1) & #0xffffffff)
+    v2 = ((v2 + #0x1) & #0xffffffff)
+    br 0x180001048
+  blk3 @ 0x180001070:
+    ret v1
+-- card
+{"addr":"0x180001030","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":73,"unsupported":0}
+
+== 0x180001080 -
+-- decompile
+/* velk pseudo-C: sub_180001080 @ 0x180001080 */
+int32_t sub_180001080(int64_t a0) {
+    return *(uint32_t *)(a0) + *(uint32_t *)(a0 + 0x4);
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001080 (size 20)
+  blk0 @ 0x180001080:
+    ret ((load32(rcx) + load32((rcx + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x180001080","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+
+== 0x1800010a0 -
+-- decompile
+/* velk pseudo-C: sub_1800010a0 @ 0x1800010a0 */
+int32_t sub_1800010a0(uint32_t *a0, int32_t a1) {
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    result = 0;
+    for (i = 0; i < a1; i++) {
+        result += a0[i];
+    }
+    return result;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800010a0 (size 77)
+  blk0 @ 0x1800010a0:
+    store32(#0x0, (rsp + #0xffffffffffffffec))
+    store32(#0x0, (rsp + #0xffffffffffffffe8))
+  blk1 @ 0x1800010bc:
+    brif ge load32((rsp + #0xffffffffffffffe8)), edx -> 0x1800010e4
+  blk2 @ 0x1800010c5:
+    store32((load32((rcx + (sext32(load32((rsp + #0xffffffffffffffe8))) * #0x4))) + load32((rsp + #0xffffffffffffffec))), (rsp + #0xffffffffffffffec))
+    store32((load32((rsp + #0xffffffffffffffe8)) + #0x1), (rsp + #0xffffffffffffffe8))
+    br 0x1800010bc
+  blk3 @ 0x1800010e4:
+    ret load32((rsp + #0xffffffffffffffec))
+-- card
+{"addr":"0x1800010a0","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":77,"unsupported":0}

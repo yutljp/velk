@@ -554,7 +554,7 @@ fn returned_type(image: &Image, addr: u64) -> Option<crate::ir::CType> {
 /// one written since the block's previous call and not used again before
 /// the call, as a register holding scratch is. Loading through a register,
 /// as a virtual call loads its table through the object, is no such use.
-fn set_up_arguments(ir: &mut FunctionIr) {
+fn set_up_arguments(ir: &mut FunctionIr, types: Option<&crate::loader::dwarf::FunctionTypes>) {
     // The registers an expression reads other than as the base of a load.
     fn used(expr: &crate::ir::Expr, out: &mut HashSet<u16>) {
         use crate::ir::{BinOp, Expr};
@@ -579,8 +579,30 @@ fn set_up_arguments(ir: &mut FunctionIr) {
             }
         }
     }
-    for block in &mut ir.blocks {
-        let mut written: HashSet<u16> = HashSet::new();
+    let mut incoming: HashSet<u16> = ir.params.iter().map(|param| param.index).collect();
+    if ir.convention == crate::ir::Convention::Win64
+        && let Some(types) = types.filter(|types| !abi::has_aggregate(types))
+    {
+        for (register, layout) in ir.convention.arguments().iter().zip(&types.param_layouts) {
+            if layout.as_ref().is_ok_and(|layout| {
+                matches!(layout.size, 1 | 2 | 4 | 8)
+                    && matches!(
+                        layout.kind,
+                        crate::ir::abi::LayoutKind::Integer
+                            | crate::ir::abi::LayoutKind::Boolean
+                            | crate::ir::abi::LayoutKind::Pointer
+                    )
+            }) {
+                incoming.insert(*register);
+            }
+        }
+    }
+    for (position, block) in ir.blocks.iter_mut().enumerate() {
+        let mut written = if position == 0 && ir.convention == crate::ir::Convention::Win64 {
+            incoming.clone()
+        } else {
+            HashSet::new()
+        };
         for stmt in &mut block.stmts {
             // A declared call names what it reads; it keeps no argument
             // guessed from the writes before it.
@@ -1370,7 +1392,7 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
         })
     });
     passed(deadline)?;
-    set_up_arguments(&mut ir);
+    set_up_arguments(&mut ir, types.as_ref());
     passed(deadline)?;
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the

@@ -1,0 +1,253 @@
+# metrics/integers.win64.O0.debug.dll: pe x86_64 no entry, 10 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 23 narrow_add symtab,dwarf,unwind
+0x180001020 24 widen_mul symtab,dwarf,unwind
+0x180001040 21 mixed_sign symtab,dwarf,unwind
+0x180001060 59 in_range symtab,dwarf,unwind
+0x1800010a0 43 rotate_left symtab,dwarf,unwind
+0x1800010d0 50 popcount symtab,dwarf,unwind
+0x180001110 53 byte_swap symtab,dwarf,unwind
+0x180001150 87 min3 symtab,dwarf,unwind
+0x1800011b0 35 labs_value symtab,dwarf,unwind
+0x1800011e0 33 mul_high symtab,dwarf,unwind
+
+== 0x180001000 narrow_add
+-- decompile
+/* velk pseudo-C: narrow_add @ 0x180001000 */
+signed char narrow_add(signed char a, signed char b) {
+    return a + b;
+}
+-- signature
+signed char (signed char a, signed char b)
+-- references
+
+-- ir
+fn narrow_add @ 0x180001000 (size 23)
+  blk0 @ 0x180001000:
+    ret ((sext8(rcx) + sext8(rdx)) & #0xffffffff)
+-- card
+{"addr":"0x180001000","approxTokens":144,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
+
+== 0x180001020 widen_mul
+-- decompile
+/* velk pseudo-C: widen_mul @ 0x180001020 */
+unsigned short widen_mul(unsigned char a, unsigned char b) {
+    return a * b;
+}
+-- signature
+unsigned short (unsigned char a, unsigned char b)
+-- references
+
+-- ir
+fn widen_mul @ 0x180001020 (size 24)
+  blk0 @ 0x180001020:
+    ret (((rcx & #0xff) * (rdx & #0xff)) & #0xffffffff)
+-- card
+{"addr":"0x180001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+
+== 0x180001040 mixed_sign
+-- decompile
+/* velk pseudo-C: mixed_sign @ 0x180001040 */
+long long mixed_sign(int a, unsigned int b) {
+    return (int64_t)a - b;
+}
+-- signature
+long long (int a, unsigned int b)
+-- references
+
+-- ir
+fn mixed_sign @ 0x180001040 (size 21)
+  blk0 @ 0x180001040:
+    ret (sext32(rcx) - edx)
+-- card
+{"addr":"0x180001040","approxTokens":144,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x180001060 in_range
+-- decompile
+/* velk pseudo-C: in_range @ 0x180001060 */
+_Bool in_range(int x, int lo, int hi) {
+    uint8_t result;
+
+    result = 0;
+    if (x < lo) {
+        return result;
+    }
+    result = x <= hi;
+    return result;
+}
+-- signature
+_Bool (int x, int lo, int hi)
+-- references
+
+-- ir
+fn in_range @ 0x180001060 (size 59)
+  blk0 @ 0x180001060:
+    v3 = #0x0
+    brif lt ecx, edx -> 0x180001090
+  blk1 @ 0x180001081:
+    v3 = select le ecx, r8d ? #0x1, #0x0
+  blk2 @ 0x180001090:
+    ret v3
+-- card
+{"addr":"0x180001060","approxTokens":198,"blocks":3,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf","unwind"],"section":".text","size":59,"unsupported":0}
+
+== 0x1800010a0 rotate_left
+-- decompile
+/* velk pseudo-C: rotate_left @ 0x1800010a0 */
+unsigned int rotate_left(unsigned int x, unsigned int k) {
+    return x << (k & 0x1f) | x >> (32 - k & 0x1f);
+}
+-- signature
+unsigned int (unsigned int x, unsigned int k)
+-- references
+
+-- ir
+fn rotate_left @ 0x1800010a0 (size 43)
+  blk0 @ 0x1800010a0:
+    ret ((((rcx & #0xffffffff) << (edx & #0x1f)) | ((rcx & #0xffffffff) >> ((#0x20 - edx) & #0x1f))) & #0xffffffff)
+-- card
+{"addr":"0x1800010a0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf","unwind"],"section":".text","size":43,"unsupported":0}
+
+== 0x1800010d0 popcount
+-- decompile
+/* velk pseudo-C: popcount @ 0x1800010d0 */
+int popcount(unsigned int x) {
+    int32_t v1;
+    int32_t result;
+
+    v1 = x;
+    result = 0;
+    while (v1 != 0) {
+        v1 = v1 - 1 & v1;
+        ++result;
+    }
+    return result;
+}
+-- signature
+int (unsigned int x)
+-- references
+
+-- ir
+fn popcount @ 0x1800010d0 (size 50)
+  blk0 @ 0x1800010d0:
+    v1 = (rcx & #0xffffffff)
+    v2 = #0x0
+  blk1 @ 0x1800010dc:
+    brif eq v1, #0x0 -> 0x1800010fd
+  blk2 @ 0x1800010e3:
+    v1 = ((v1 - #0x1) & v1)
+    v2 = ((v2 + #0x1) & #0xffffffff)
+    br 0x1800010dc
+  blk3 @ 0x1800010fd:
+    ret v2
+-- card
+{"addr":"0x1800010d0","approxTokens":174,"blocks":4,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":50,"unsupported":0}
+
+== 0x180001110 byte_swap
+-- decompile
+/* velk pseudo-C: byte_swap @ 0x180001110 */
+unsigned int byte_swap(unsigned int x) {
+    return x >> 24 | x >> 8 & 0xff00 | x << 8 & 0xff0000 | x << 24;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn byte_swap @ 0x180001110 (size 53)
+  blk0 @ 0x180001110:
+    ret ((((((rcx & #0xffffffff) >> #0x18) | (((rcx & #0xffffffff) >> #0x8) & #0xff00)) | (((rcx & #0xffffffff) << #0x8) & #0xff0000)) | ((rcx & #0xffffffff) << #0x18)) & #0xffffffff)
+-- card
+{"addr":"0x180001110","approxTokens":198,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf","unwind"],"section":".text","size":53,"unsupported":0}
+
+== 0x180001150 min3
+-- decompile
+/* velk pseudo-C: min3 @ 0x180001150 */
+int min3(int a, int b, int c) {
+    int32_t result;
+
+    if (a >= b) {
+        result = b;
+    } else {
+        result = a;
+    }
+    if (result >= c) {
+        return c;
+    }
+    return result;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn min3 @ 0x180001150 (size 87)
+  blk0 @ 0x180001150:
+    brif ge ecx, edx -> 0x180001175
+  blk1 @ 0x18000116b:
+    v1 = ecx
+    br 0x18000117d
+  blk2 @ 0x180001175:
+    v1 = edx
+  blk3 @ 0x18000117d:
+    brif ge v1, r8d -> 0x180001198
+  blk4 @ 0x18000118f:
+    br 0x18000119f
+  blk5 @ 0x180001198:
+    v1 = r8d
+  blk6 @ 0x18000119f:
+    ret v1
+-- card
+{"addr":"0x180001150","approxTokens":156,"blocks":7,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":87,"unsupported":0}
+
+== 0x1800011b0 labs_value
+-- decompile
+/* velk pseudo-C: labs_value @ 0x1800011b0 */
+int32_t labs_value(int32_t x) {
+    uint64_t v1;
+    int64_t result; /* [sp-8] */
+
+    result = v1;
+    *(uint32_t *)((uint8_t *)&result + 0x4) = x;
+    if (x >= 0) {
+        *(uint32_t *)&result = *(uint32_t *)((uint8_t *)&result + 0x4);
+        return *(uint32_t *)&result;
+    }
+    *(uint32_t *)&result = -*(uint32_t *)((uint8_t *)&result + 0x4);
+    return *(uint32_t *)&result;
+}
+-- signature
+int32_t (int32_t x)
+-- references
+
+-- ir
+fn labs_value @ 0x1800011b0 (size 35)
+  blk0 @ 0x1800011b0:
+    store64(rax, (rsp + #0xfffffffffffffff8))
+    store32(rcx, (rsp + #0xfffffffffffffffc))
+    brif ge (rcx & #0xffffffff), #0x0 -> 0x1800011c7
+  blk1 @ 0x1800011bc:
+    store32((#0x0 - load32((rsp + #0xfffffffffffffffc))), (rsp + #0xfffffffffffffff8))
+    br 0x1800011ce
+  blk2 @ 0x1800011c7:
+    store32(load32((rsp + #0xfffffffffffffffc)), (rsp + #0xfffffffffffffff8))
+  blk3 @ 0x1800011ce:
+    ret load32((rsp + #0xfffffffffffffff8))
+-- card
+{"addr":"0x1800011b0","approxTokens":144,"blocks":4,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf","unwind"],"section":".text","size":35,"unsupported":0}
+
+== 0x1800011e0 mul_high
+-- decompile
+/* velk pseudo-C: mul_high @ 0x1800011e0 */
+unsigned long long mul_high(unsigned long long a, unsigned long long b) {
+    return __umulh(a, b);
+}
+-- signature
+unsigned long long (unsigned long long a, unsigned long long b)
+-- references
+
+-- ir
+fn mul_high @ 0x1800011e0 (size 33)
+  blk0 @ 0x1800011e0:
+    ret (rcx hi128 rdx)
+-- card
+{"addr":"0x1800011e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"mul_high","nameSources":["symtab","dwarf","unwind"],"section":".text","size":33,"unsupported":0}

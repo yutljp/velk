@@ -825,7 +825,10 @@ pub fn load(path: &Path) -> Result<Image> {
         }
     }
 
-    let entry = (file.entry() != 0).then(|| file.entry());
+    let address = file.entry();
+    let entry = (address != 0
+        && !(format_of(kind) == Format::Pe && address == file.relative_address_base()))
+    .then_some(address);
     if let Some(entry) = entry {
         upsert(&mut functions, entry, None, None, NameSource::Entry);
     }

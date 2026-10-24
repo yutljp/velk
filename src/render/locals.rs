@@ -1399,7 +1399,14 @@ fn frame_accesses(
                     _ => (value, None),
                 };
                 frame_loads(value, frame, sp, &mut found);
-                frame_addresses(value, frame, sp, access, &mut taken);
+                frame_addresses(
+                    value,
+                    frame,
+                    sp,
+                    access,
+                    ir.convention == crate::ir::Convention::Win64,
+                    &mut taken,
+                );
             }
             for (addr, slot, width, signed) in found {
                 accesses.push((Some(slot), addr, width, Some(signed)));
@@ -1482,10 +1489,11 @@ fn frame_addresses(
     frame: i64,
     sp: u16,
     access: Option<u8>,
+    home: bool,
     out: &mut Vec<(Expr, i64, bool, Option<u8>)>,
 ) {
     if let Some(slot) = frame_slot(expr, frame, sp) {
-        if slot < 0 {
+        if slot < 0 || (home && (8..40).contains(&slot)) {
             out.push((expr.clone(), slot, false, None));
         }
         return;
@@ -1498,16 +1506,16 @@ fn frame_addresses(
             out.push((base, slot, true, access));
         }
         for term in rest {
-            frame_addresses(term, frame, sp, None, out);
+            frame_addresses(term, frame, sp, None, home, out);
         }
         return;
     }
     match expr {
         Expr::Load { addr, .. } if frame_slot(addr, frame, sp).is_some() => {}
-        Expr::Load { addr, width, .. } => frame_addresses(addr, frame, sp, Some(*width), out),
+        Expr::Load { addr, width, .. } => frame_addresses(addr, frame, sp, Some(*width), home, out),
         other => {
             for child in crate::ir::visit::children(other) {
-                frame_addresses(child, frame, sp, None, out);
+                frame_addresses(child, frame, sp, None, home, out);
             }
         }
     }
@@ -1516,6 +1524,14 @@ fn frame_addresses(
 pub(super) fn bind_return_slot(ir: &FunctionIr, provider: &str, ctx: &mut Ctx<'_>) {
     let sp = stack_pointer(ir.isa);
     let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let home = ir.convention == crate::ir::Convention::Win64
+        && ir.stack_params.is_empty()
+        && frame_accesses(ir, sp, &frames)
+            .0
+            .iter()
+            .any(|(slot, _, width, _)| {
+                *width == 0 && slot.is_some_and(|slot| (8..40).contains(&slot))
+            });
     let accesses: Vec<_> = stack_arguments(ir, sp, &frames)
         .into_iter()
         .map(|(address, slot, width)| {
@@ -1535,6 +1551,17 @@ pub(super) fn bind_return_slot(ir: &FunctionIr, provider: &str, ctx: &mut Ctx<'_
             continue;
         }
         match (slot, width) {
+            (Some(offset), width) if home && (8..40).contains(offset) => {
+                let pointer = format!("((uint8_t *){provider}() + 0x{offset:x})");
+                ctx.local_parts.insert(key.clone(), pointer.clone());
+                if *width == 0 {
+                    ctx.frame_addresses.push((address.clone(), pointer));
+                } else if matches!(*width, 1 | 2 | 4 | 8) {
+                    let name = format!("*({} *){pointer}", type_of(*width, false));
+                    ctx.local_widths.insert(name.clone(), *width);
+                    ctx.slots.insert(key.clone(), name);
+                }
+            }
             (Some(0), 8) => {
                 let name = format!("*{provider}()");
                 ctx.local_widths.insert(name.clone(), 8);
@@ -1542,6 +1569,10 @@ pub(super) fn bind_return_slot(ir: &FunctionIr, provider: &str, ctx: &mut Ctx<'_
                 ctx.local_parts
                     .entry(key.clone())
                     .or_insert_with(|| format!("{provider}()"));
+            }
+            (Some(0), 0) if ir.convention == crate::ir::Convention::Win64 => {
+                ctx.frame_addresses
+                    .push((address.clone(), format!("{provider}()")));
             }
             (Some(8), 0) => {
                 ctx.frame_addresses

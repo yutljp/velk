@@ -1,0 +1,72 @@
+# metrics/switch_value_table.win64.O0.debug.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 113 dispatch symtab,dwarf,unwind
+
+== 0x180001000 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x180001000 */
+/* ref: 0x180002000 .rdata */
+int dispatch(int x) {
+    uint32_t v1;
+    int64_t local_0; /* [sp-10] */
+    uint32_t result; /* [sp-4] */
+
+    v1 = x - 10;
+    local_0 = v1;
+    if (v1 <= 4) {
+        switch (local_0 - 4) {
+        case -4:
+            result = 1;
+            return result;
+        case -3:
+            result = 3;
+            return result;
+        case -2:
+            result = 7;
+            return result;
+        case -1:
+            result = 9;
+            return result;
+        case 0:
+            result = 11;
+            return result;
+        default:
+            break;
+        }
+    }
+    result = 0;
+    return result;
+}
+-- signature
+int (int x)
+-- references
+0x180002000 .rdata
+-- ir
+fn dispatch @ 0x180001000 (size 113)
+  blk0 @ 0x180001000:
+    store32(rcx, (rsp + #0xfffffffffffffff8))
+    v1 = ((load32((rsp + #0xfffffffffffffff8)) + #0xfffffffffffffff6) & #0xffffffff)
+    store64((v1 & #0xffffffff), (rsp + #0xfffffffffffffff0))
+    brif hi (v1 & #0xffffffff), #0x4 -> 0x180001060
+  blk1 @ 0x18000101a:
+    switch (load64((rsp + #0xfffffffffffffff0)) + #0xfffffffffffffffc) [-4->0x18000102e, -3->0x180001038, -2->0x180001042, -1->0x18000104c, 0->0x180001056] default 0x180001060
+  blk2 @ 0x18000102e:
+    store32(#0x1, (rsp + #0xfffffffffffffffc))
+    br 0x180001068
+  blk3 @ 0x180001038:
+    store32(#0x3, (rsp + #0xfffffffffffffffc))
+    br 0x180001068
+  blk4 @ 0x180001042:
+    store32(#0x7, (rsp + #0xfffffffffffffffc))
+    br 0x180001068
+  blk5 @ 0x18000104c:
+    store32(#0x9, (rsp + #0xfffffffffffffffc))
+    br 0x180001068
+  blk6 @ 0x180001056:
+    store32(#0xb, (rsp + #0xfffffffffffffffc))
+    br 0x180001068
+  blk7 @ 0x180001060:
+    store32(#0x0, (rsp + #0xfffffffffffffffc))
+  blk8 @ 0x180001068:
+    ret load32((rsp + #0xfffffffffffffffc))
+-- card
+{"addr":"0x180001000","approxTokens":186,"blocks":9,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","size":113,"unsupported":0}

@@ -1,0 +1,194 @@
+# metrics/switch_jumptable.win64.O2.stripped.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 528 - prologue
+
+== 0x180001000 -
+-- decompile
+/* velk pseudo-C: sub_180001000 @ 0x180001000 */
+/* ref: 0x180002000 .rdata */
+/* ref: 0x180003000 .data */
+int32_t sub_180001000(int32_t a0) {
+    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
+    int32_t v6;
+
+    if ((uint32_t)a0 > 9) {
+        v6 = -1;
+    } else {
+        switch (a0) {
+        case 0:
+            v6 = *dword_180003000;
+            break;
+        case 1:
+            *dword_180003000 = *dword_180003000;
+            v6 = *dword_180003000 + 1;
+            break;
+        case 2:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            v6 = *dword_180003000 + 2;
+            break;
+        case 3:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            *dword_180003000 += 2;
+            v6 = *dword_180003000 + 3;
+            break;
+        case 4:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            *dword_180003000 += 2;
+            *dword_180003000 += 3;
+            v6 = *dword_180003000 + 4;
+            break;
+        case 5:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            *dword_180003000 += 2;
+            *dword_180003000 += 3;
+            *dword_180003000 += 4;
+            v6 = *dword_180003000 + 5;
+            break;
+        case 6:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            *dword_180003000 += 2;
+            *dword_180003000 += 3;
+            *dword_180003000 += 4;
+            *dword_180003000 += 5;
+            v6 = *dword_180003000 + 6;
+            break;
+        case 7:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            *dword_180003000 += 2;
+            *dword_180003000 += 3;
+            *dword_180003000 += 4;
+            *dword_180003000 += 5;
+            *dword_180003000 += 6;
+            v6 = *dword_180003000 + 7;
+            break;
+        case 8:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            *dword_180003000 += 2;
+            *dword_180003000 += 3;
+            *dword_180003000 += 4;
+            *dword_180003000 += 5;
+            *dword_180003000 += 6;
+            *dword_180003000 += 7;
+            v6 = *dword_180003000 + 8;
+            break;
+        case 9:
+            *dword_180003000 = *dword_180003000;
+            *dword_180003000 += 1;
+            *dword_180003000 += 2;
+            *dword_180003000 += 3;
+            *dword_180003000 += 4;
+            *dword_180003000 += 5;
+            *dword_180003000 += 6;
+            *dword_180003000 += 7;
+            *dword_180003000 += 8;
+            v6 = *dword_180003000 + 9;
+            break;
+        default:
+            v6 = -1;
+            break;
+        }
+    }
+    *dword_180003000 = v6;
+    return *dword_180003000;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+0x180002000 .rdata
+0x180003000 .data
+-- ir
+fn <unnamed> @ 0x180001000 (size 528)
+  blk0 @ 0x180001000:
+    brif hi (rcx & #0xffffffff), #0x9 -> 0x1800011b6
+  blk1 @ 0x180001009:
+    switch (rcx & #0xffffffff) [0->0x18000101b, 1->0x18000112f, 2->0x1800010a5, 3->0x1800010c5, 4->0x180001026, 5->0x180001148, 6->0x18000117d, 7->0x1800010ec, 8->0x1800011bd, 9->0x180001054] default 0x1800011b6
+  blk2 @ 0x18000101b:
+    v6 = load32(#0x180003000)
+    br 0x180001202
+  blk3 @ 0x180001026:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    store32((load32(#0x180003000) + #0x2), #0x180003000)
+    store32((load32(#0x180003000) + #0x3), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x4) & #0xffffffff)
+    br 0x180001202
+  blk4 @ 0x180001054:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    store32((load32(#0x180003000) + #0x2), #0x180003000)
+    store32((load32(#0x180003000) + #0x3), #0x180003000)
+    store32((load32(#0x180003000) + #0x4), #0x180003000)
+    store32((load32(#0x180003000) + #0x5), #0x180003000)
+    store32((load32(#0x180003000) + #0x6), #0x180003000)
+    store32((load32(#0x180003000) + #0x7), #0x180003000)
+    store32((load32(#0x180003000) + #0x8), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x9) & #0xffffffff)
+    br 0x180001202
+  blk5 @ 0x1800010a5:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x2) & #0xffffffff)
+    br 0x180001202
+  blk6 @ 0x1800010c5:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    store32((load32(#0x180003000) + #0x2), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x3) & #0xffffffff)
+    br 0x180001202
+  blk7 @ 0x1800010ec:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    store32((load32(#0x180003000) + #0x2), #0x180003000)
+    store32((load32(#0x180003000) + #0x3), #0x180003000)
+    store32((load32(#0x180003000) + #0x4), #0x180003000)
+    store32((load32(#0x180003000) + #0x5), #0x180003000)
+    store32((load32(#0x180003000) + #0x6), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x7) & #0xffffffff)
+    br 0x180001202
+  blk8 @ 0x18000112f:
+    store32(load32(#0x180003000), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x1) & #0xffffffff)
+    br 0x180001202
+  blk9 @ 0x180001148:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    store32((load32(#0x180003000) + #0x2), #0x180003000)
+    store32((load32(#0x180003000) + #0x3), #0x180003000)
+    store32((load32(#0x180003000) + #0x4), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x5) & #0xffffffff)
+    br 0x180001202
+  blk10 @ 0x18000117d:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    store32((load32(#0x180003000) + #0x2), #0x180003000)
+    store32((load32(#0x180003000) + #0x3), #0x180003000)
+    store32((load32(#0x180003000) + #0x4), #0x180003000)
+    store32((load32(#0x180003000) + #0x5), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x6) & #0xffffffff)
+    br 0x180001202
+  blk11 @ 0x1800011b6:
+    v6 = #0xffffffff
+    br 0x180001202
+  blk12 @ 0x1800011bd:
+    store32(load32(#0x180003000), #0x180003000)
+    store32((load32(#0x180003000) + #0x1), #0x180003000)
+    store32((load32(#0x180003000) + #0x2), #0x180003000)
+    store32((load32(#0x180003000) + #0x3), #0x180003000)
+    store32((load32(#0x180003000) + #0x4), #0x180003000)
+    store32((load32(#0x180003000) + #0x5), #0x180003000)
+    store32((load32(#0x180003000) + #0x6), #0x180003000)
+    store32((load32(#0x180003000) + #0x7), #0x180003000)
+    v6 = ((load32(#0x180003000) + #0x8) & #0xffffffff)
+  blk13 @ 0x180001202:
+    store32(v6, #0x180003000)
+    ret load32(#0x180003000)
+  blk14 @ 0x18000120f:
+    trap
+-- card
+{"addr":"0x180001000","approxTokens":150,"blocks":15,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":528,"sizeEstimated":true,"unsupported":0}
