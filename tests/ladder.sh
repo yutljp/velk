@@ -64,7 +64,7 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
       detail="function count $got (expected >= $pattern)"
       ;;
     has|known_has)
-      printf '%s' "$out" | grep -qF "$pattern" && ok=1 || ok=0
+      grep -qF "$pattern" <<<"$out" && ok=1 || ok=0
       detail="contains '$pattern'"
       ;;
     has_any|known_has_any)
@@ -73,14 +73,14 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
       old_ifs=$IFS; IFS='|'
       for candidate in $pattern; do
         IFS=$old_ifs
-        printf '%s' "$out" | grep -qF "$candidate" && ok=1
+        grep -qF "$candidate" <<<"$out" && ok=1
         IFS='|'
       done
       IFS=$old_ifs
       detail="contains one of '$pattern'"
       ;;
     nothas|known_nothas)
-      printf '%s' "$out" | grep -qF "$pattern" && ok=0 || ok=1
+      grep -qF "$pattern" <<<"$out" && ok=0 || ok=1
       detail="does not contain '$pattern'"
       ;;
     *) ok=0; detail="unknown kind: $kind" ;;
