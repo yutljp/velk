@@ -22,9 +22,11 @@ use body::{indent, render_node, render_nodes, via_comment};
 use calls::system_call_name;
 #[cfg(test)]
 use function::code_mentions;
+pub(crate) use function::structure_definition;
 pub(crate) use function::variable_types;
 use function::{declaration, vacant_name, variable_name};
 pub use function::{render, render_with_dependencies};
+pub(crate) use globals::reserved_identifier;
 pub(crate) use stmt::render_stmt;
 use stmt::{argument, conformed, narrow_write, returned};
 pub use symbols::Symbols;

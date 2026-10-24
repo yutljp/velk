@@ -613,10 +613,10 @@ strings.aarch64.O2 0x21019c pick: ok
 strings.x86_64.O0 0x2011b0 pick: ok
 strings.x86_64.O2 0x2011b0 pick: ok
 struct_arrays.aarch64.O0 0x210184 item_weight: ok
-struct_arrays.aarch64.O0 0x2101bc cell_set: returns struct sub_2101bc_a0 *, expected void
+struct_arrays.aarch64.O0 0x2101bc cell_set: returns struct S2 *, expected void
 struct_arrays.aarch64.O0 0x210208 item_last_key: ok
 struct_arrays.aarch64.O2 0x210174 item_weight: ok
-struct_arrays.aarch64.O2 0x210188 cell_set: returns struct sub_210188_a0 *, expected void
+struct_arrays.aarch64.O2 0x210188 cell_set: returns struct S3 *, expected void
 struct_arrays.aarch64.O2 0x2101a0 item_last_key: returns 4 bytes, expected 8
 struct_arrays.x86_64.O0 0x2011a0 item_weight: ok
 struct_arrays.x86_64.O0 0x2011e0 cell_set: returns int64_t, expected void

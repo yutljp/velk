@@ -4,7 +4,7 @@ use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt, Structure};
 
 /// A load or store: its address, its width, and for a load whether it
 /// sign-extends.
-struct Touch {
+pub(super) struct Touch {
     addr: Expr,
     width: u8,
     signed: Option<bool>,
@@ -174,7 +174,7 @@ fn only_offset(ir: &FunctionIr, register: u16) -> bool {
 }
 
 /// Every load and store of the function.
-fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
+pub(super) fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
     let mut touches = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Store { addr, width, .. } = stmt {
@@ -194,6 +194,14 @@ fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
 /// The fields at the fixed offsets `base` is accessed at, or `None` when it
 /// is accessed at one offset only, indexed, or inconsistently.
 fn layout(base: u16, touches: &[Touch]) -> Option<Vec<(u64, CType)>> {
+    layout_at_least(base, touches, 2)
+}
+
+pub(super) fn layout_at_least(
+    base: u16,
+    touches: &[Touch],
+    minimum: usize,
+) -> Option<Vec<(u64, CType)>> {
     let mut fields: BTreeMap<u64, (u8, bool)> = BTreeMap::new();
     for touch in touches {
         let mut read = HashSet::new();
@@ -225,7 +233,7 @@ fn layout(base: u16, touches: &[Touch]) -> Option<Vec<(u64, CType)>> {
         }
         field.1 |= signed;
     }
-    if fields.len() < 2 {
+    if fields.len() < minimum {
         return None;
     }
     let mut end = 0;

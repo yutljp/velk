@@ -48,6 +48,7 @@ pub struct Binary {
     symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
     analyses: HashMap<u64, Result<Analysis, LiftError>>,
+    shared_structures: bool,
 }
 
 pub struct Failure {
@@ -87,6 +88,7 @@ impl Binary {
             data_ranges: render::data_ranges(&image),
             image,
             analyses: HashMap::new(),
+            shared_structures: false,
         })
     }
 
@@ -148,17 +150,23 @@ impl Binary {
     }
 
     pub fn analysis(&mut self, addr: u64, deadline: Option<Instant>) -> Result<&Analysis> {
-        let function = self
-            .image
-            .functions
-            .get(&addr)
-            .ok_or(Error::NoFunctionAt(addr))?;
-        cached(&mut self.analyses, &self.image, function, deadline)?
-            .as_ref()
-            .map_err(|source| Error::Lift {
-                addr,
-                source: source.clone(),
-            })
+        if !self.image.functions.contains_key(&addr) {
+            return Err(Error::NoFunctionAt(addr));
+        }
+        if let Err(error) = self.prepare_structures(deadline) {
+            return Err(error);
+        }
+        let Some(function) = self.image.functions.get(&addr) else {
+            return Err(Error::NoFunctionAt(addr));
+        };
+        let analyzed = match cached(&mut self.analyses, &self.image, function, deadline) {
+            Ok(analyzed) => analyzed,
+            Err(error) => return Err(error),
+        };
+        analyzed.as_ref().map_err(|source| Error::Lift {
+            addr,
+            source: source.clone(),
+        })
     }
 
     pub fn card(
@@ -168,14 +176,23 @@ impl Binary {
         signatures: Option<&Database>,
         deadline: Option<Instant>,
     ) -> Result<Card> {
-        let function = self
-            .image
-            .functions
-            .get(&addr)
-            .ok_or(Error::NoFunctionAt(addr))?;
-        let analysis = cached(&mut self.analyses, &self.image, function, deadline)?.as_ref();
+        if !self.image.functions.contains_key(&addr) {
+            return Err(Error::NoFunctionAt(addr));
+        }
+        if let Err(error) = self.prepare_structures(deadline) {
+            return Err(error);
+        }
+        let Some(function) = self.image.functions.get(&addr) else {
+            return Err(Error::NoFunctionAt(addr));
+        };
+        let analysis = match cached(&mut self.analyses, &self.image, function, deadline) {
+            Ok(analyzed) => analyzed.as_ref(),
+            Err(error) => return Err(error),
+        };
         let identified = identify(signatures, analysis);
-        passed(deadline)?;
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
         Ok(card::build(
             &self.image,
             function,
@@ -202,18 +219,28 @@ impl Binary {
         signatures: Option<&Database>,
         deadline: Option<Instant>,
     ) -> Result<render::Rendered> {
-        let function = self
-            .image
-            .functions
-            .get(&addr)
-            .ok_or(Error::NoFunctionAt(addr))?;
-        let analysis = cached(&mut self.analyses, &self.image, function, deadline)?
-            .as_ref()
-            .map_err(|source| Error::Lift {
-                addr,
-                source: source.clone(),
-            })?;
-        passed(deadline)?;
+        if !self.image.functions.contains_key(&addr) {
+            return Err(Error::NoFunctionAt(addr));
+        }
+        if let Err(error) = self.prepare_structures(deadline) {
+            return Err(error);
+        }
+        let Some(function) = self.image.functions.get(&addr) else {
+            return Err(Error::NoFunctionAt(addr));
+        };
+        let analysis = match cached(&mut self.analyses, &self.image, function, deadline) {
+            Ok(Ok(analysis)) => analysis,
+            Ok(Err(source)) => {
+                return Err(Error::Lift {
+                    addr,
+                    source: source.clone(),
+                });
+            }
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
         let mut rendered = render::render_with_dependencies(
             &analysis.ir,
             &analysis.references,
@@ -226,6 +253,29 @@ impl Binary {
                 .insert_str(0, &format!("/* identified: {name} */\n"));
         }
         Ok(rendered)
+    }
+
+    fn prepare_structures(&mut self, deadline: Option<Instant>) -> Result<()> {
+        if self.shared_structures {
+            return Ok(());
+        }
+        for function in self.image.functions.values() {
+            if let Err(error) = cached(&mut self.analyses, &self.image, function, deadline) {
+                return Err(error);
+            }
+        }
+        let mut functions: Vec<_> = self
+            .analyses
+            .values_mut()
+            .filter_map(|result| match result {
+                Ok(analysis) => Some(&mut analysis.ir),
+                Err(_) => None,
+            })
+            .collect();
+        functions.sort_by_key(|ir| ir.addr);
+        analysis::shared_structures::share(&mut functions, &self.data_ranges);
+        self.shared_structures = true;
+        Ok(())
     }
 
     pub fn disasm(&self, addr: u64, max_lines: usize) -> Result<Vec<String>> {

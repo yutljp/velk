@@ -82,8 +82,8 @@ fn <unnamed> @ 0x201250 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 struct sub_201260_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
-struct sub_201260_a0 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
-double sub_201260(struct sub_201260_a0 *a0, double a1, struct sub_201260_a2 a2) {
+struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
+double sub_201260(struct S1 *a0, double a1, struct sub_201260_a2 a2) {
     double v1;
 
     *(uint64_t *)((uint8_t *)&a2 + 0x10) = ((union { double value; uint64_t bits; }){ .value = a1 + *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10)) }).bits;
@@ -94,7 +94,7 @@ double sub_201260(struct sub_201260_a0 *a0, double a1, struct sub_201260_a2 a2) 
     return v1;
 }
 -- signature
-double (struct sub_201260_a0 * a0, double a1)
+double (struct S1 * a0, double a1)
 -- references
 
 -- ir
@@ -107,7 +107,7 @@ fn <unnamed> @ 0x201260 (size 33)
     store64(load64((rsp + #0x18)), (rdi + #0x10))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201260","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201260","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"structures":["struct sub_201260_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x201290 -
 -- decompile
@@ -144,7 +144,7 @@ fn <unnamed> @ 0x201290 (size 33)
     store64(load64((rsp + #0x20)), (rdi + #0x18))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201290","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201290","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"structures":["struct sub_201290_a2 {\n    int64_t field_0x0;\n    int64_t field_0x8;\n    int64_t field_0x10;\n    int64_t field_0x18;\n};"],"unsupported":0}
 
 == 0x2012c0 -
 -- decompile
@@ -208,14 +208,15 @@ fn <unnamed> @ 0x201320 (size 126)
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-uint64_t *sub_2013a0(uint64_t *a0, int64_t a1, int64_t a2, int64_t a3) {
-    *a0 = a3 + a1;
-    a0[1] = a3 ^ a2;
-    a0[2] = a1 - a2;
+struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
+struct S2 *sub_2013a0(struct S2 *a0, int64_t a1, int64_t a2, int64_t a3) {
+    a0->field_0x0 = a3 + a1;
+    a0->field_0x8 = a3 ^ a2;
+    a0->field_0x10 = a1 - a2;
     return a0;
 }
 -- signature
-uint64_t * (uint64_t * a0, int64_t a1, int64_t a2, int64_t a3)
+struct S2 * (struct S2 * a0, int64_t a1, int64_t a2, int64_t a3)
 -- references
 
 -- ir
@@ -227,7 +228,7 @@ fn <unnamed> @ 0x2013a0 (size 25)
     store64((rsi - rdx), (v1 + #0x10))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":25,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":25,"structures":["struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x2013c0 -
 -- decompile

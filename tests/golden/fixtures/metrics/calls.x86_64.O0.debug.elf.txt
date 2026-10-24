@@ -252,17 +252,12 @@ fn call_sum9 @ 0x2014f0 (size 80)
 == 0x201540 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x201540 */
-struct sum_varargs_s1 {
-    int32_t field_0x0;
-    int32_t field_0x4;
-    int64_t field_0x8;
-    int64_t field_0x10;
-};
-struct sum_varargs_s2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };
+struct S1 { int32_t field_0x0; int32_t field_0x4; int64_t field_0x8; int64_t field_0x10; };
+struct S2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };
 int sum_varargs(int count, ...) {
-    struct sum_varargs_s1 *v1;
+    struct S1 *v1;
     uint32_t v2;
-    struct sum_varargs_s2 *v3;
+    struct S2 *v3;
     int32_t v4;
     int64_t v5;
     uint64_t *v6;
@@ -276,7 +271,7 @@ int sum_varargs(int count, ...) {
     uint32_t *local_7; /* [sp-100] */
 
     local_0 = count;
-    v1 = (struct sum_varargs_s1 *)(&local_1.f_0);
+    v1 = (struct S1 *)(&local_1.f_0);
     v1->field_0x10 = (uintptr_t)(local_2);
     v1->field_0x8 = rsp + 8;
     v1->field_0x4 = 48;
@@ -292,7 +287,7 @@ int sum_varargs(int count, ...) {
             v6[1] = v5 + 8;
             local_7 = (uint32_t *)v5;
         } else {
-            v3 = (struct sum_varargs_s2 *)local_5;
+            v3 = (struct S2 *)local_5;
             v4 = local_6;
             v5 = v4 + v3->field_0x10;
             v3->field_0x0 = v4 + 8;
@@ -367,4 +362,4 @@ fn sum_varargs @ 0x201540 (size 296)
   blk8 @ 0x20165c:
     ret load32((rsp + #0xffffffffffffffd4))
 -- card
-{"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":296,"unsupported":0}
+{"addr":"0x201540","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf","unwind"],"section":".text","size":296,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int64_t field_0x8; int64_t field_0x10; };","struct S2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };"],"unsupported":0}

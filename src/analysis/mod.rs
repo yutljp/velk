@@ -7,6 +7,7 @@ pub mod refs;
 mod results;
 #[cfg(test)]
 mod semantics_tests;
+pub(crate) mod shared_structures;
 mod signature;
 mod structures;
 pub(crate) mod summary;

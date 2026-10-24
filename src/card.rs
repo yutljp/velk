@@ -43,6 +43,8 @@ pub struct Card {
     pub name_hints: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub accesses: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub structures: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identified: Option<String>,
     pub disasm_preview: Vec<String>,
@@ -97,6 +99,18 @@ pub fn build(
         name_hints: refs::name_hints(&strings),
         strings,
         accesses: analysis.map(|a| a.ir.access_lines()).unwrap_or_default(),
+        structures: analysis
+            .map(|a| {
+                a.ir.structures
+                    .iter()
+                    .map(|layout| {
+                        crate::render::structure_definition(layout)
+                            .trim_end()
+                            .to_owned()
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
         identified,
         approx_tokens: disasm_preview.len() * TOKENS_PER_LINE + BASE_TOKENS,
         disasm_preview,

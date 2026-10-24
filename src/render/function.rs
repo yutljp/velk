@@ -723,27 +723,7 @@ fn render_with(
     let mut definitions: Vec<(String, String)> = Vec::new();
     let definitions_at = out.len();
     for structure in &ir.structures {
-        let mut members = Vec::new();
-        let mut end = 0;
-        for (offset, ty) in &structure.fields {
-            if *offset > end {
-                members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", offset - end));
-            }
-            members.push(format!("{ty} field_0x{offset:x};"));
-            end = offset
-                + match ty {
-                    CType::Pointer(_) => 8,
-                    _ => CType::pointer_to(ty.clone())
-                        .pointee_size()
-                        .map_or(0, u64::from),
-                };
-        }
-        if let Some(size) = structure.size
-            && size > end
-        {
-            members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
-        }
-        let definition = defined(&format!("struct {}", structure.name), &members);
+        let definition = structure_definition(structure);
         out.push_str(&definition);
         definitions.push((structure.name.clone(), definition));
     }
@@ -1041,6 +1021,29 @@ pub(super) fn code_mentions(text: &str, name: &str) -> bool {
 }
 
 /// A structure's definition: on one line when short, else a member a line.
+pub(crate) fn structure_definition(structure: &crate::ir::Structure) -> String {
+    let mut members = Vec::new();
+    let mut end = 0;
+    for (offset, ty) in &structure.fields {
+        if *offset > end {
+            members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", offset - end));
+        }
+        members.push(format!("{ty} field_0x{offset:x};"));
+        end = offset.saturating_add(match ty {
+            CType::Pointer(_) => 8,
+            _ => CType::pointer_to(ty.clone())
+                .pointee_size()
+                .map_or(0, u64::from),
+        });
+    }
+    if let Some(size) = structure.size
+        && size > end
+    {
+        members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
+    }
+    defined(&format!("struct {}", structure.name), &members)
+}
+
 fn defined(name: &str, members: &[String]) -> String {
     let line = format!("{name} {{ {} }};", members.join(" "));
     if line.len() <= STRUCTURE_LINE {

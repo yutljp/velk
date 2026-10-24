@@ -147,7 +147,7 @@ fn identifier(name: &str) -> String {
     }
 }
 
-pub(super) fn reserved_identifier(name: &str) -> bool {
+pub(crate) fn reserved_identifier(name: &str) -> bool {
     matches!(
         name,
         "alignas"

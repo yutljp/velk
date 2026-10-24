@@ -320,11 +320,11 @@ fn <unnamed> @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1290 @ 0x1290 */
 /* ref: 0x2004 "missing key %d among %d" */
-struct sub_1290_a0 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
-int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
+struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
+int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     uint64_t *const stderr = (uint64_t *)0x4020ULL;
     void *v2;
-    struct sub_1290_a0 *v3;
+    struct S1 *v3;
     int64_t v4;
     const char *v5;
     void *v7;
@@ -367,7 +367,7 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
     abort();
 }
 -- signature
-int32_t (struct sub_1290_a0 * a0, int a1, int a2)
+int32_t (struct S1 * a0, int a1, int a2)
 -- references
 0x2004 "missing key %d among %d"
 -- ir
@@ -414,7 +414,7 @@ fn <unnamed> @ 0x1290 (size 240)
     rax, rdx, xmm0, xmm1 = call 0x10a0()
     trap
 -- card
-{"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":null,"nameHints":["missing_key__d_among__d"],"nameSources":["unwind"],"section":".text","size":240,"strings":["missing key %d among %d"],"unsupported":0}
+{"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":null,"nameHints":["missing_key__d_among__d"],"nameSources":["unwind"],"section":".text","size":240,"strings":["missing key %d among %d"],"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };"],"unsupported":0}
 
 == 0x1380 -
 -- decompile

@@ -119,7 +119,10 @@ pub(crate) fn variable_types(
             && !narrow.contains(&index)
         {
             // A callee takes it as a pointer.
-            CType::pointer_to(CType::Void)
+            match ir.value_types.get(&index) {
+                Some(given) if given.pointee_struct().is_some() => given.clone(),
+                _ => CType::pointer_to(CType::Void),
+            }
         } else {
             ints.insert(index);
             continue;

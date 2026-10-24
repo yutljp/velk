@@ -284,7 +284,7 @@ fn abi_indirect_make @ 0x21053c (size 76)
     store64((load64((sp + #0xfffffffffffffff0)) - load64((sp + #0xfffffffffffffff8))), (v1 + #0x10))
     ret #0x0
 -- card
-{"addr":"0x21053c","approxTokens":210,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
+{"addr":"0x21053c","approxTokens":210,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x210588 abi_exhaust_five_aligned
 -- decompile

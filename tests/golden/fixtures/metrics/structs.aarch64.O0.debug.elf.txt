@@ -137,7 +137,7 @@ fn big_make @ 0x2102f8 (size 68)
     store64((load64((sp + #0xfffffffffffffff8)) * #0x3), (v1 + #0x18))
     ret #0x0
 -- card
-{"addr":"0x2102f8","approxTokens":198,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}
+{"addr":"0x2102f8","approxTokens":198,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
 
 == 0x21033c big_sum
 -- decompile
@@ -149,7 +149,7 @@ long big_sum(struct big value) {
     return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x10, 8) + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x18, 8);
 }
 -- signature
-int64_t (struct big_sum_a0 * a0)
+int64_t (struct S2 * a0)
 -- references
 
 -- ir
@@ -157,7 +157,7 @@ fn big_sum @ 0x21033c (size 48)
   blk0 @ 0x21033c:
     ret results((((load64(x0) + load64((x0 + #0x8))) + load64((x0 + #0x10))) + load64((x0 + #0x18))))
 -- card
-{"addr":"0x21033c","approxTokens":168,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x21033c","approxTokens":168,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"structures":["struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
 
 == 0x21036c word_low_byte
 -- decompile

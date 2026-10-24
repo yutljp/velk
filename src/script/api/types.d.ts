@@ -28,6 +28,8 @@ interface Card {
   nameHints?: string[];
   /** Fields read through pointer parameters, as "param +offset:type". */
   accesses?: string[];
+  /** Recovered structure declarations shared across direct pointer flows. */
+  structures?: string[];
   disasmPreview: string[];
   approxTokens: number;
 }

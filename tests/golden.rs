@@ -5,6 +5,7 @@
 
 mod common;
 
+use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::path::Path;
 
@@ -24,8 +25,17 @@ fn analysis_output_matches_golden_files() {
         "# fixture: output lines, declared variables, casts, register names, \
          unsigned comments, traps, gotos, indirect calls\n",
     );
+    let mut structure_types =
+        String::from("# fixture: distinct printed structure types across all functions\n");
     for (fixture, (actual, counts)) in fixtures.iter().zip(rendered) {
         writeln!(readability, "{}: {counts}", fixture.display()).expect("writing to a String");
+        writeln!(
+            structure_types,
+            "{}: {}",
+            fixture.display(),
+            counts.structures.len()
+        )
+        .expect("writing to a String");
         let golden = golden_dir.join(format!("{}.txt", fixture.display()));
         if let Some(difference) = common::check_expected(&golden, &actual) {
             failures.push(difference);
@@ -36,6 +46,10 @@ fn analysis_output_matches_golden_files() {
     failures.extend(common::check_expected(
         &common::root().join("tests/golden/readability.txt"),
         &readability,
+    ));
+    failures.extend(common::check_expected(
+        &common::root().join("tests/golden/structure_types.txt"),
+        &structure_types,
     ));
     assert!(
         failures.is_empty(),
@@ -131,6 +145,7 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
 /// What makes pseudo-C harder to read, counted over a fixture's functions.
 #[derive(Default)]
 struct Readability {
+    structures: BTreeSet<String>,
     lines: usize,
     variables: usize,
     casts: usize,
@@ -144,6 +159,13 @@ struct Readability {
 impl Readability {
     fn add(&mut self, decompiled: &str) {
         for line in decompiled.lines() {
+            if let Some((name, _)) = line
+                .strip_prefix("struct ")
+                .and_then(|line| line.split_once(" {"))
+                && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+            {
+                self.structures.insert(name.to_owned());
+            }
             self.lines += 1;
             let code = line.split("/*").next().unwrap_or("");
             if is_declaration(code) {

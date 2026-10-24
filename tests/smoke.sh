@@ -546,9 +546,9 @@ ok "variadic stack arguments"
 
 # 10) struct access recovery
 pair=$("$BIN" --decompile $FIX/arm64.o pair_sum 2>/dev/null)
-echo "$pair" | grep -q "struct pair_sum_a0 {"  || fail "struct definition"
+echo "$pair" | grep -q "struct S1 {"  || fail "struct definition"
 echo "$pair" | grep -q " int32_t field_0x4; " || fail "struct access offsets"
-echo "$pair" | grep -q "pair_sum(struct pair_sum_a0 \*a0)" || fail "struct parameter type"
+echo "$pair" | grep -q "pair_sum(struct S1 \*a0)" || fail "struct parameter type"
 pair_card=$("$BIN" --card $FIX/arm64.o pair_sum 2>/dev/null)
 echo "$pair_card" | grep -q '"accesses"'    || fail "card struct accesses"
 ok "struct access recovery"
@@ -568,7 +568,7 @@ ok "signature application"
 
 # 13) typed pointer parameters and the script API (shape hash, signature)
 pair_c=$("$BIN" --decompile $FIX/arm64.o pair_sum 2>/dev/null)
-echo "$pair_c" | grep -q 'struct pair_sum_a0 \*a0'  || fail "typed pointer parameter"
+echo "$pair_c" | grep -q 'struct S1 \*a0'  || fail "typed pointer parameter"
 script=$(mktemp)
 printf '%s\n' "const f = velk.open('$FIX/arm64.o').getFunction('pair_sum');" \
   'console.log(f.shapeHash().length, f.signature().params.length);' > "$script"
