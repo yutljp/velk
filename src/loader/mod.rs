@@ -312,8 +312,15 @@ impl Image {
     }
 
     pub fn virtual_offset(&self, vaddr: u64) -> Option<u64> {
-        let section = self.section_at(vaddr)?;
-        let offset = section.file_offset?.checked_add(vaddr - section.vaddr)?;
+        let Some(section) = self.section_at(vaddr) else {
+            return None;
+        };
+        let Some(start) = section.file_offset else {
+            return None;
+        };
+        let Some(offset) = start.checked_add(vaddr - section.vaddr) else {
+            return None;
+        };
         (offset < self.bytes.len() as u64).then_some(offset)
     }
 
@@ -418,9 +425,15 @@ impl Image {
     }
 
     pub fn section_data(&self, name: &str) -> Option<&[u8]> {
-        let section = self.sections.iter().find(|section| section.name == name)?;
-        let start = section.file_offset?;
-        let end = start.checked_add(section.size)?;
+        let Some(section) = self.sections.iter().find(|section| section.name == name) else {
+            return None;
+        };
+        let Some(start) = section.file_offset else {
+            return None;
+        };
+        let Some(end) = start.checked_add(section.size) else {
+            return None;
+        };
         self.bytes.get(start as usize..end as usize)
     }
 
@@ -493,7 +506,9 @@ impl Image {
     /// function's entry at `pc`; `None` where no table covers `pc`.
     pub(crate) fn stack_at_entry(&self, pc: u64) -> Option<bool> {
         let rows = self.stack_rows.get_or_init(|| unwind::stack_rows(self));
-        let index = rows.partition_point(|row| row.start <= pc).checked_sub(1)?;
+        let Some(index) = rows.partition_point(|row| row.start <= pc).checked_sub(1) else {
+            return None;
+        };
         let row = rows[index];
         (pc < row.end).then_some(row.at_entry)
     }
@@ -587,16 +602,27 @@ fn symbol_name<'data, S: ObjectSymbol<'data>>(sym: &S) -> Option<String> {
 }
 
 pub fn load(path: &Path) -> Result<Image> {
-    let bytes = std::fs::read(path).map_err(|source| Error::Io {
-        path: path.to_owned(),
-        source,
-    })?;
+    let bytes = match std::fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(source) => {
+            return Err(Error::Io {
+                path: path.to_owned(),
+                source,
+            });
+        }
+    };
     let object_error = |source| Error::Object {
         path: path.to_owned(),
         source,
     };
-    let kind = object::FileKind::parse(&bytes[..]).map_err(object_error)?;
-    let file = ObjFile::parse(&bytes[..]).map_err(object_error)?;
+    let kind = match object::FileKind::parse(&bytes[..]) {
+        Ok(kind) => kind,
+        Err(source) => return Err(object_error(source)),
+    };
+    let file = match ObjFile::parse(&bytes[..]) {
+        Ok(file) => file,
+        Err(source) => return Err(object_error(source)),
+    };
     let bases = relocate::layout(&file);
     let mut relocated = bytes.clone();
     relocate::apply(&file, &bases, &mut relocated);
