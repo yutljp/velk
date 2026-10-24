@@ -162,7 +162,7 @@ pub(crate) fn stack_locals(
         transfer_values: Default::default(),
         taken: Default::default(),
     };
-    let accesses = frame_accesses(ir, sp, frames);
+    let (accesses, elements) = frame_accesses(ir, sp, frames);
     let roles = super::naming::roles::infer(ir, symbols);
     let mut reserved = super::naming::roles::reserved(ir, symbols);
     reserved.extend((0..accesses.len()).map(|index| format!("local_{index}")));
@@ -216,17 +216,31 @@ pub(crate) fn stack_locals(
     }
     debug::extend(ir, &mut slot_names);
     let extents = buffer_extents(ir, sp, symbols, &accesses);
+    let buffers: std::collections::HashSet<i64> = accesses
+        .iter()
+        .filter(|(_, _, width, _)| *width == 0)
+        .filter_map(|(slot, ..)| *slot)
+        .collect();
     for (slot, _, width, signed) in &accesses {
         let Some(slot) = slot else { continue };
         if *slot >= 0 || *width != 0 {
             continue;
         }
-        let next = slot_names
-            .keys()
-            .copied()
-            .filter(|next| next > slot)
-            .min()
-            .unwrap_or(0);
+        let next = if *signed == Some(false) {
+            indexed_end(
+                *slot,
+                elements.get(slot).copied().flatten(),
+                &accesses,
+                &buffers,
+            )
+        } else {
+            slot_names
+                .keys()
+                .copied()
+                .filter(|next| next > slot)
+                .min()
+                .unwrap_or(0)
+        };
         let proven = extents
             .iter()
             .filter(|(start, _)| **start >= *slot && (**start < next || **start == *slot))
@@ -622,11 +636,48 @@ pub(crate) fn stack_locals(
     }
 }
 
+/// Where the reach of an index into the buffer at `slot` ends. Slots read
+/// at fixed offsets above it may be its own elements: one accessed only at
+/// the element width, a whole number of elements away, is taken as one.
+/// The first other slot, another buffer or the top of the frame ends it;
+/// with no known element width, only another buffer or the top of the frame.
+fn indexed_end(
+    slot: i64,
+    element: Option<u8>,
+    accesses: &[FrameAccess],
+    buffers: &std::collections::HashSet<i64>,
+) -> i64 {
+    let mut above: Vec<i64> = accesses
+        .iter()
+        .filter_map(|(other, ..)| *other)
+        .filter(|other| *other > slot && *other < 0)
+        .collect();
+    above.sort_unstable();
+    above.dedup();
+    for other in above {
+        if buffers.contains(&other) {
+            return other;
+        }
+        let Some(element) = element.filter(|element| *element > 0) else {
+            continue;
+        };
+        let element = i64::from(element);
+        let foreign = (other - slot) % element != 0
+            || accesses.iter().any(|(at, _, width, _)| {
+                *at == Some(other) && *width != 0 && i64::from(*width) != element
+            });
+        if foreign {
+            return other;
+        }
+    }
+    0
+}
+
 fn buffer_extents(
     ir: &FunctionIr,
     sp: u16,
     symbols: &super::Symbols,
-    accesses: &[(Option<i64>, Expr, u8, Option<bool>)],
+    accesses: &[FrameAccess],
 ) -> HashMap<i64, i64> {
     use super::stack_bytes::{origin, origins, transfer};
     let mut extents = HashMap::new();
@@ -1217,16 +1268,23 @@ fn frame_loads(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, u8, b
     }
 }
 
+/// A frame access: its slot, when known, the address as written, its width,
+/// and for a load whether it extends the value with its sign.
+type FrameAccess = (Option<i64>, Expr, u8, Option<bool>);
+
 /// Every frame-relative store and load, with its slot (when known), the
 /// address expression as written, its width, and for a load whether it
 /// extends the value with its sign; a buffer whose address is taken counts
-/// as a load of no width extended with zeros.
+/// as a load of no width extended with zeros. Also the width of the
+/// elements read or written at an index from each indexed buffer, when all
+/// such accesses agree on one.
 fn frame_accesses(
     ir: &FunctionIr,
     sp: u16,
     frames: &[Option<i64>],
-) -> Vec<(Option<i64>, Expr, u8, Option<bool>)> {
+) -> (Vec<FrameAccess>, HashMap<i64, Option<u8>>) {
     let mut accesses = Vec::new();
+    let mut elements: HashMap<i64, Option<u8>> = HashMap::new();
     for (position, block) in ir.blocks.iter().enumerate() {
         let Some(frame) = frames[position] else {
             continue;
@@ -1273,29 +1331,39 @@ fn frame_accesses(
             let mut found = Vec::new();
             let mut taken = Vec::new();
             for value in stmt.operands() {
-                let value = match stmt {
-                    Stmt::Store { addr, .. } if std::ptr::eq(value, addr) => {
+                let (value, access) = match stmt {
+                    Stmt::Store { addr, width, .. } if std::ptr::eq(value, addr) => {
                         // The address a store writes is its access already;
                         // only what it is computed from counts here.
                         if frame_slot(addr, frame, sp).is_some() {
                             continue;
                         }
-                        value
+                        (value, Some(*width))
                     }
-                    _ => value,
+                    _ => (value, None),
                 };
                 frame_loads(value, frame, sp, &mut found);
-                frame_addresses(value, frame, sp, &mut taken);
+                frame_addresses(value, frame, sp, access, &mut taken);
             }
             for (addr, slot, width, signed) in found {
                 accesses.push((Some(slot), addr, width, Some(signed)));
             }
-            for (addr, slot, buffer) in taken {
+            for (addr, slot, buffer, element) in taken {
+                if buffer {
+                    elements
+                        .entry(slot)
+                        .and_modify(|seen| {
+                            if *seen != element {
+                                *seen = None;
+                            }
+                        })
+                        .or_insert(element);
+                }
                 accesses.push((Some(slot), addr, 0, buffer.then_some(false)));
             }
         }
     }
-    accesses
+    (accesses, elements)
 }
 
 /// How far above a buffer's start another indexed place still counts as
@@ -1343,11 +1411,18 @@ pub(crate) fn offset_local(expr: &Expr, sp: u16) -> Option<(Expr, Vec<&Expr>)> {
 }
 
 /// The local slots an expression takes the address of as a value, not to
-/// load through.
-fn frame_addresses(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, bool)>) {
+/// load through, whether each is indexed as a buffer, and the width of the
+/// access made at an indexed address when the expression is that address.
+fn frame_addresses(
+    expr: &Expr,
+    frame: i64,
+    sp: u16,
+    access: Option<u8>,
+    out: &mut Vec<(Expr, i64, bool, Option<u8>)>,
+) {
     if let Some(slot) = frame_slot(expr, frame, sp) {
         if slot < 0 {
-            out.push((expr.clone(), slot, false));
+            out.push((expr.clone(), slot, false, None));
         }
         return;
     }
@@ -1356,19 +1431,19 @@ fn frame_addresses(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, b
     if let Some((base, rest)) = offset_local(expr, sp) {
         let slot = frame_slot(&base, frame, sp).unwrap_or(0);
         if slot < 0 {
-            out.push((base, slot, true));
+            out.push((base, slot, true, access));
         }
         for term in rest {
-            frame_addresses(term, frame, sp, out);
+            frame_addresses(term, frame, sp, None, out);
         }
         return;
     }
     match expr {
         Expr::Load { addr, .. } if frame_slot(addr, frame, sp).is_some() => {}
-        Expr::Load { addr, .. } => frame_addresses(addr, frame, sp, out),
+        Expr::Load { addr, width, .. } => frame_addresses(addr, frame, sp, Some(*width), out),
         other => {
             for child in crate::ir::visit::children(other) {
-                frame_addresses(child, frame, sp, out);
+                frame_addresses(child, frame, sp, None, out);
             }
         }
     }

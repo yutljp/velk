@@ -168,7 +168,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
         ],
     );
     let candidate = printed_candidate(ir, (0..38).map(|index| vec![index]).collect());
-    assert!(candidate.code.contains("[0x98]"), "{}", candidate.code);
+    assert!(candidate.code.contains("[0xa0]"), "{}", candidate.code);
     candidates.push(candidate);
     // The two stores overlap without either access containing the other.
     let ir = synthetic_ir(

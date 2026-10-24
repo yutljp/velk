@@ -40,6 +40,8 @@ mod debug_locals;
 mod division;
 #[path = "recompile/forward_exits.rs"]
 mod forward_exits;
+#[path = "recompile/frame_arrays.rs"]
+mod frame_arrays;
 #[path = "recompile/frame_values.rs"]
 mod frame_values;
 #[path = "recompile/go_stack.rs"]
