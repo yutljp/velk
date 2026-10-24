@@ -632,7 +632,10 @@ echo "$macho_json" | grep -q '"format": "macho"'   || fail "Mach-O format detect
 macho_c=$("$BIN" --decompile $FIX/x64_div_macho.o _umod3x 2>/dev/null)
 echo "$macho_c" | grep -q "return a0 % 0x3;"     || fail "Mach-O x86-64 decompile"
 macho_a64=$("$BIN" --decompile $FIX/arm64_macho.o _sum3 2>/dev/null)
-echo "$macho_a64" | grep -q "_sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "Mach-O AArch64 decompile"
+echo "$macho_a64" | grep -q "sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "Mach-O AArch64 decompile"
+macho_c_name=$("$BIN" --decompile $FIX/arm64_macho.o sum3 2>/dev/null)
+[ "$macho_a64" = "$macho_c_name" ] || fail "Mach-O C name lookup"
+echo "$macho_json" | grep -q '"name": "_umod3x"' || fail "Mach-O listing link name"
 ok "Mach-O objects"
 
 # 18b) landing pads from the exception tables

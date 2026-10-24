@@ -108,6 +108,13 @@ impl Binary {
         if let Some(found) = functions.clone().find(|f| names(f).any(|n| n == target)) {
             return Ok(found);
         }
+        if self.image.format == loader::Format::MachO
+            && let Some(found) = functions
+                .clone()
+                .find(|f| names(f).any(|n| n.strip_prefix('_') == Some(target)))
+        {
+            return Ok(found);
+        }
         let needle = target.to_lowercase();
         let partial: Vec<&Function> = functions
             .filter(|f| names(f).any(|n| n.to_lowercase().contains(&needle)))

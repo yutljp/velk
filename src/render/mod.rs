@@ -94,7 +94,10 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         .functions
         .iter()
         .filter_map(|(address, function)| {
-            let base = sanitize(&short_name(function.name.as_ref()?));
+            let Some(name) = function.name.as_ref() else {
+                return None;
+            };
+            let base = sanitize(&short_name(name));
             let mut name = base.clone();
             if bases.get(&base) != Some(&1) {
                 let candidate = format!("{base}_{address:x}");
@@ -115,7 +118,9 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .functions
             .iter()
             .filter_map(|(address, function)| {
-                let name = function.name.as_deref()?;
+                let Some(name) = function.name.as_deref() else {
+                    return None;
+                };
                 let prototype = if function.sources.contains(&crate::loader::NameSource::Plt) {
                     crate::analysis::prototypes::of(
                         name,
@@ -123,7 +128,10 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                     )
                 } else {
                     crate::analysis::prototypes::runtime(name)
-                }?;
+                };
+                let Some(prototype) = prototype else {
+                    return None;
+                };
                 Some((*address, prototype.ret.clone()))
             })
             .collect(),
@@ -134,7 +142,10 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                 let prototype = crate::analysis::prototypes::of(
                     name,
                     image.format == crate::loader::Format::MachO,
-                )?;
+                );
+                let Some(prototype) = prototype else {
+                    return None;
+                };
                 Some((*address, prototype.ret.clone()))
             })
             .collect(),
@@ -159,7 +170,17 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
     {
         symbols.reserve_name(name);
     }
-    for name in symbols.functions.values().cloned().collect::<Vec<_>>() {
+    if image.format == crate::loader::Format::MachO {
+        symbols.use_macho_c_names();
+    }
+    for name in symbols
+        .functions
+        .values()
+        .chain(symbols.import_slots.values())
+        .chain(symbols.data.values())
+        .cloned()
+        .collect::<Vec<_>>()
+    {
         symbols.reserve_name(&name);
     }
     symbols

@@ -763,26 +763,34 @@ fn parse_type(text: &str) -> CType {
 }
 
 /// The name a library function goes by without the decorations its
-/// symbol carries: `@plt` or a version, Mach-O's leading underscore and
-/// its `$` variants.
+/// symbol carries: `@plt` or a version, and Mach-O's `$` variants.
 fn undecorated(name: &str, macho: bool) -> &str {
     let name = name.split('@').next().unwrap_or(name);
     if !macho {
         return name;
     }
-    let name = name.split('$').next().unwrap_or(name);
-    name.strip_prefix('_').unwrap_or(name)
+    name.split('$').next().unwrap_or(name)
 }
 
 /// The prototype a library function's name gives, whatever symbol
 /// decorations it carries.
 pub fn of(name: &str, macho: bool) -> Option<&'static Prototype> {
     let name = undecorated(name, macho);
-    let name = DEMANGLED
-        .iter()
-        .find(|(demangled, _)| *demangled == name)
-        .map_or(name, |(_, mangled)| mangled);
-    library().get(name)
+    let c_name = if macho {
+        name.strip_prefix('_').unwrap_or(name)
+    } else {
+        name
+    };
+    for candidate in [c_name, name] {
+        let candidate = DEMANGLED
+            .iter()
+            .find(|(demangled, _)| *demangled == candidate)
+            .map_or(candidate, |(_, mangled)| mangled);
+        if let Some(prototype) = library().get(candidate) {
+            return Some(prototype);
+        }
+    }
+    None
 }
 
 /// The prototype of a function of the Go or Rust runtime, by its name.
@@ -979,6 +987,15 @@ mod tests {
         assert_eq!(of("fputs", false).map(|p| p.fixed()), Some(2));
         assert_eq!(of("memcpy@GLIBC_2.14", false).map(|p| p.fixed()), Some(3));
         assert_eq!(of("_strlen", true).map(|p| p.fixed()), Some(1));
+        for name in ["memcpy", "_memcpy", "memset", "_memset"] {
+            assert_eq!(of(name, true).map(|p| p.fixed()), Some(3));
+        }
+        for name in ["__memcpy_chk", "___memcpy_chk"] {
+            assert_eq!(of(name, true).map(|p| p.fixed()), Some(4));
+        }
+        for name in ["_Unwind_Resume", "__Unwind_Resume"] {
+            assert_eq!(of(name, true).map(|p| p.fixed()), Some(1));
+        }
         let printf = of("__printf_chk", false).expect("known");
         assert_eq!((printf.fixed(), printf.format), (2, Some(1)));
         let open = of("open", false).expect("known");

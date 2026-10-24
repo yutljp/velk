@@ -243,7 +243,7 @@ const MACHO_GOT: u64 = MACHO_STUBS + 0xc;
 /// A linked arm64 Mach-O executable: `_f` calls `memset_pattern16` through
 /// its stub, `_loop` is `b .`, `_large` is larger than 16 KB and returns 1
 /// from its end, and `_caller` keeps its result in its frame.
-fn macho_executable() -> Vec<u8> {
+fn macho_executable(import: &str) -> Vec<u8> {
     let at = |offset: u64| MACHO_BASE + MACHO_TEXT + offset;
     let bl = |from: u64, to: u64| {
         0x9400_0000 | ((at(to).wrapping_sub(at(from)) >> 2) as u32 & 0x03ff_ffff)
@@ -290,7 +290,7 @@ fn macho_executable() -> Vec<u8> {
     assert_eq!(code.len() as u64 * 4, MACHO_GOT + 8);
 
     let symbols: [(&str, u8, u8, u64); 5] = [
-        ("_memset_pattern16", 0x01, 0, 0),
+        (import, 0x01, 0, 0),
         ("_f", 0x0f, 1, at(MACHO_F)),
         ("_loop", 0x0f, 1, at(MACHO_LOOP)),
         ("_large", 0x0f, 1, at(MACHO_LARGE)),
@@ -383,7 +383,7 @@ fn macho_executable() -> Vec<u8> {
 fn open_macho(test: &str) -> Binary {
     let path = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
         .join(format!("macho-{}-{test}", std::process::id()));
-    std::fs::write(&path, macho_executable()).expect("a scratch file");
+    std::fs::write(&path, macho_executable("_memset_pattern16")).expect("a scratch file");
     let binary = Binary::open(&path).unwrap_or_else(|error| panic!("{error}"));
     std::fs::remove_file(&path).ok();
     binary
@@ -406,8 +406,8 @@ fn compiles(code: &str) -> bool {
         .spawn()
         .expect("clang");
     let prelude = "#include <stdint.h>\n\
-                   void _memset_pattern16(void *, const void *, unsigned long);\n\
-                   int32_t _large(void);\n";
+                   void memset_pattern16(void *, const void *, unsigned long);\n\
+                   int32_t large(void);\n";
     compiler
         .stdin
         .take()
@@ -438,11 +438,84 @@ fn macho_stubs_name_their_imports() {
         Some("_memset_pattern16")
     );
     let code = decompiled(&mut binary, "_f");
-    assert!(code.contains("void _f("), "{code}");
-    assert!(code.contains("    _memset_pattern16(local_"), "{code}");
-    assert!(!code.contains("= _memset_pattern16"), "{code}");
-    assert!(!code.contains("return _memset_pattern16"), "{code}");
+    assert!(code.contains("void f("), "{code}");
+    assert!(code.contains("    memset_pattern16(local_"), "{code}");
+    assert!(!code.contains("= memset_pattern16"), "{code}");
+    assert!(!code.contains("return memset_pattern16"), "{code}");
     assert!(compiles(&code));
+}
+
+#[test]
+fn c_symbol_prefixes_depend_on_the_binary_format() {
+    let path = common::fixtures_dir().join("arm64_macho.o");
+    let mut image = velk::loader::load(&path).unwrap();
+    let address = image
+        .functions
+        .values()
+        .find(|f| f.name.as_deref() == Some("_sum3"))
+        .unwrap()
+        .addr;
+    image.imports.insert(0x10000, "_memcpy".to_owned());
+    image.data_symbols.insert(0x20000, "_object".to_owned());
+    for (format, prefix) in [
+        (velk::loader::Format::MachO, ""),
+        (velk::loader::Format::Elf, "_"),
+        (velk::loader::Format::Pe, "_"),
+    ] {
+        image.format = format;
+        let symbols = velk::render::callee_names(&image);
+        assert_eq!(symbols.functions[&address], format!("{prefix}sum3"));
+        assert_eq!(symbols.import_slots[&0x10000], format!("{prefix}memcpy"));
+        assert_eq!(symbols.data[&0x20000], format!("{prefix}object"));
+    }
+}
+
+#[test]
+fn macho_library_calls_compile_with_c_headers() {
+    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("macho-c-names-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let executable = dir.join("calls");
+    for call in ["memcpy", "memset"] {
+        std::fs::write(&executable, macho_executable(&format!("_{call}"))).unwrap();
+        let mut binary = Binary::open(&executable).unwrap();
+        let name = "f";
+        let address = binary.find(name).unwrap().addr;
+        assert_eq!(binary.find(&format!("_{name}")).unwrap().addr, address);
+        assert_eq!(
+            binary.image().functions[&address].name.as_deref(),
+            Some(format!("_{name}").as_str())
+        );
+        let code = decompiled(&mut binary, name);
+        assert!(code.contains(&format!("{call}(")), "{code}");
+        assert!(!code.contains(&format!("_{call}(")), "{code}");
+        use std::io::Write as _;
+        let mut compiler = std::process::Command::new("clang")
+            .args([
+                "-fsyntax-only",
+                "-Werror=implicit-function-declaration",
+                "-x",
+                "c",
+                "-",
+            ])
+            .stdin(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        compiler
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(format!("#include <stdint.h>\n#include <string.h>\n{code}").as_bytes())
+            .unwrap();
+        let output = compiler.wait_with_output().unwrap();
+        assert!(
+            output.status.success(),
+            "{code}\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    std::fs::remove_dir_all(dir).unwrap();
 }
 
 /// A branch to itself in a linked image is an endless loop.
@@ -474,6 +547,6 @@ fn a_large_function_between_symbols_returns() {
             .any(|word| word == "sp"),
         "{code}"
     );
-    assert!(code.contains("_large()"), "{code}");
+    assert!(code.contains("large()"), "{code}");
     assert!(compiles(&code));
 }

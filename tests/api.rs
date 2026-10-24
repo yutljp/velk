@@ -9,6 +9,28 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde_json::Value;
 use velk::script::Engine;
 
+#[test]
+fn macho_lookup_accepts_c_and_link_names() {
+    let path = common::fixtures_dir().join("arm64_macho.o");
+    let script = format!(
+        r#"
+const b = velk.open({path:?});
+const link = b.getFunction("_sum3");
+const c = b.getFunction("sum3");
+JSON.stringify([link.name, c.name, link.decompile(), c.decompile(), c.card().name])
+"#,
+        path = path.display().to_string()
+    );
+    let outcome = Engine::new().unwrap().run(&script, None);
+    assert!(outcome.error.is_none(), "{:?}", outcome.error);
+    let values: Vec<String> = serde_json::from_str(&outcome.output).unwrap();
+    assert_eq!(values[0], "_sum3");
+    assert_eq!(values[1], "_sum3");
+    assert_eq!(values[2], values[3]);
+    assert_eq!(values[4], "_sum3");
+    assert!(values[2].contains("sum3(int32_t"), "{}", values[2]);
+}
+
 /// Field names per interface, split into required and optional (`name?:`).
 fn declarations() -> BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)> {
     let mut interfaces = BTreeMap::new();
