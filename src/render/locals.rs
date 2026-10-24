@@ -168,6 +168,7 @@ pub(super) fn stack_locals_with_roles(
         frame_origins: HashMap::new(),
         frame_addresses: Vec::new(),
         local_widths: HashMap::new(),
+        local_aggregates: HashMap::new(),
         local_views: HashMap::new(),
         local_element_types: HashMap::new(),
         local_scaled: std::collections::HashSet::new(),

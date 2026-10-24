@@ -1107,3 +1107,124 @@ fn declared_calls_convert_arguments_and_zero_extend_integer_results() {
         );
     }
 }
+
+#[test]
+fn printed_stack_aggregate_initializers_preserve_every_byte() {
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        for case in [
+            "complete",
+            "padding",
+            "overlap",
+            "partial",
+            "dependent",
+            "division",
+        ] {
+            let sp = velk::arch::stack_pointer(isa);
+            let at =
+                |offset: i64| Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64));
+            let load = |offset, width| Expr::Load {
+                addr: Box::new(at(offset)),
+                width,
+                signed: false,
+            };
+            let argument = Convention::of(isa, velk::loader::Format::Elf, false).arguments()[0];
+            let fields = [(-16, 1), (-15, 1), (-14, 2), (-12, 4), (-8, 8)];
+            let mut stmts = Vec::new();
+            for (part, &(offset, width)) in fields.iter().enumerate() {
+                if case == "padding" && part == 1 {
+                    continue;
+                }
+                stmts.push(Stmt::Store {
+                    addr: at(offset),
+                    width,
+                    value: if case == "dependent" && part == 1 {
+                        load(-16, 1)
+                    } else if case == "division" && part == 1 {
+                        Expr::bin(BinOp::DivU, Expr::reg(argument, 64), Expr::Const(2))
+                    } else {
+                        Expr::reg(argument, 64)
+                    },
+                });
+            }
+            if case == "overlap" {
+                stmts.push(Stmt::Store {
+                    addr: at(-8),
+                    width: 1,
+                    value: Expr::Const(7),
+                });
+            }
+            if case == "partial" {
+                stmts.remove(1);
+                stmts.insert(
+                    0,
+                    Stmt::Store {
+                        addr: at(-15),
+                        width: 1,
+                        value: Expr::Const(9),
+                    },
+                );
+            }
+            let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+            stmts.push(Stmt::Call {
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention,
+                args: Some(vec![at(-16), Expr::reg(argument, 64)]),
+                floats_named: false,
+                abi: None,
+                outputs: velk::ir::fallback_call_outputs(convention, None),
+                clobbers: None,
+                via: None,
+            });
+            stmts.push(Stmt::Ret {
+                value: Expr::Const(0),
+            });
+            let mut ir = synthetic_ir(
+                &format!(
+                    "stack_initializer_{}_{case}",
+                    if isa == Isa::X86_64 { "x64" } else { "arm64" }
+                ),
+                vec![Param {
+                    index: argument,
+                    name: "x".into(),
+                    ty: CType::U64,
+                }],
+                CType::U64,
+                stmts,
+            );
+            ir.isa = isa;
+            ir.convention = Convention::of(isa, velk::loader::Format::Elf, false);
+            let mut symbols = velk::render::Symbols::default();
+            symbols.functions.insert(0x1000, "inspect_bytes".into());
+            let code = velk::render::render(&ir, &[], &symbols, &[]);
+            assert_eq!(code.contains("__typeof__"), case == "complete", "{code}");
+            let mut support = String::from(
+                "int64_t inspect_bytes(void *p, uint64_t x) { uint8_t *b = p; uint64_t got; ",
+            );
+            for (part, &(offset, width)) in fields.iter().enumerate() {
+                if case == "padding" && part == 1 {
+                    continue;
+                }
+                let expected = if case == "partial" && part == 1 {
+                    "9".to_owned()
+                } else if case == "division" && part == 1 {
+                    "(x / 2)".to_owned()
+                } else if case == "overlap" && part == 4 {
+                    "((x & ~UINT64_C(255)) | 7)".to_owned()
+                } else {
+                    "x".to_owned()
+                };
+                let mask = u64::MAX >> (64 - u32::from(width) * 8);
+                support.push_str(&format!("got = 0; __builtin_memcpy(&got, b + {}, {width}); if (got != (({expected}) & UINT64_C({mask}))) __builtin_trap(); ", offset + 16));
+            }
+            support.push_str("return 0; }");
+            let code = format!("int64_t inspect_bytes(void *, uint64_t);\n{code}");
+            let assertions = [0, 1, 0x80ff_ffff_8765_4321u64, u64::MAX]
+                .into_iter()
+                .map(|x| format!("{}(UINT64_C({x}));", ir.name.as_ref().unwrap()))
+                .collect::<String>();
+            run_printed(&code, &support, &assertions);
+        }
+    }
+}

@@ -426,7 +426,9 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
             index += 2;
             continue;
         }
-        if let Some((count, text)) = super::transfers::render(&nodes[index..], ctx) {
+        if let Some((count, text)) = super::aggregates::render(&nodes[index..], ctx)
+            .or_else(|| super::transfers::render(&nodes[index..], ctx))
+        {
             for line in text.lines() {
                 indent(depth, out);
                 out.push_str(line);

@@ -1,5 +1,6 @@
 mod abi;
 mod abi_objects;
+mod aggregates;
 mod body;
 mod calls;
 mod expr;

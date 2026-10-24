@@ -805,6 +805,7 @@ fn render_with(
         frame_origins: super::provenance::frame_origins(ir),
         frame_addresses: Vec::new(),
         local_widths: locals.widths,
+        local_aggregates: super::aggregates::layouts(&locals.decls),
         local_views: locals.views,
         local_pointer_types: locals
             .decls
