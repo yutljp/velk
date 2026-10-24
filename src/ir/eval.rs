@@ -562,6 +562,26 @@ impl Machine<'_> {
                         inputs,
                         outputs,
                     } => {
+                        if *instruction == super::MachineInstruction::ArmCacheZero {
+                            return Err("cache maintenance requires external memory state");
+                        }
+                        if matches!(instruction, super::MachineInstruction::ArmExclusive { .. }) {
+                            return Err("exclusive access requires an external memory monitor");
+                        }
+                        if let super::MachineInstruction::ArmLoadAcquire { width } = instruction {
+                            let Some(input) = inputs.first() else {
+                                return Err("missing acquire-load address");
+                            };
+                            let address = match self.eval(input) {
+                                Ok(address) => address,
+                                Err(reason) => return Err(reason),
+                            };
+                            let value = self.load(address, *width);
+                            for output in outputs {
+                                self.assign(*output, value);
+                            }
+                            continue;
+                        }
                         if let super::MachineInstruction::Atomic { op, width, .. } = instruction {
                             use super::AtomicOp;
                             let mut args = Vec::new();

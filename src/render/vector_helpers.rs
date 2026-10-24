@@ -2,6 +2,7 @@
 
 use crate::ir::{Expr, FunctionIr, LaneOp, Operation};
 use std::collections::BTreeMap;
+mod aes;
 
 pub(super) fn definitions(ir: &FunctionIr) -> String {
     fn collect(expr: &Expr, found: &mut BTreeMap<String, String>) {
@@ -24,6 +25,9 @@ pub(super) fn definitions(ir: &FunctionIr) -> String {
 }
 
 fn definition(op: Operation) -> Option<String> {
+    if let Operation::Aes { round, high } = op {
+        return Some(aes::definition(round, high));
+    }
     let name = crate::ir::operation_name(op);
     let (bits, body) = match op {
         Operation::Lanes(LaneOp::Add, 64) => return None,
@@ -44,6 +48,7 @@ fn definition(op: Operation) -> Option<String> {
                 LaneOp::ShiftLeft => "b < BITS ? x << b : 0",
                 LaneOp::ShiftRight => "b < BITS ? x >> b : 0",
                 LaneOp::ShiftRightSigned => "sx >> (b < BITS ? b : BITS - 1)",
+                LaneOp::ShiftVariableUnsigned => "(int8_t)y >= BITS || (int8_t)y <= -BITS ? 0 : ((int8_t)y >= 0 ? x << (int8_t)y : x >> -(int8_t)y)",
                 LaneOp::AddSaturatingSigned => "sx + sy < low ? low : (sx + sy > high ? high : sx + sy)",
                 LaneOp::SubSaturatingSigned => "sx - sy < low ? low : (sx - sy > high ? high : sx - sy)",
                 LaneOp::AddSaturatingUnsigned => "(unsigned __int128)x + y > mask ? mask : x + y",

@@ -41,7 +41,7 @@ static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
 }
 #endif
 
-uint64_t velk_entry_stack_pointer(void);
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 
 void square(void);
 /* end velk prelude */

@@ -17,7 +17,7 @@
 /* velk prelude */
 uint64_t main();
 
-uint64_t velk_entry_stack_pointer(void);
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x1000 _init

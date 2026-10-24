@@ -6197,7 +6197,7 @@ fn interpret(
     if candidate
         .code
         .contains("/* target frame's return-address slot */")
-        || candidate.code.contains("= velk_entry_stack_pointer();")
+        || candidate.code.contains("/* target entry stack pointer */")
     {
         let sp = velk::arch::stack_pointer(candidate.ir.isa);
         if candidate.marshalling.is_some()
@@ -6666,17 +6666,6 @@ fn program(
 ) -> Program {
     assert_eq!(candidates.len(), initial_memory.len());
     let mut text = String::from(HEADER);
-    if alive.iter().any(|&index| {
-        candidates[index]
-            .code
-            .contains("= velk_entry_stack_pointer();")
-    }) {
-        writeln!(
-            text,
-            "uint64_t velk_entry_stack_pointer(void) {{ return 0x{FRAME_BASE:x}ULL; }}"
-        )
-        .unwrap();
-    }
     let frame_providers: BTreeSet<_> = alive
         .iter()
         .flat_map(|&index| {
@@ -6692,6 +6681,22 @@ fn program(
             text,
             "uint64_t *{provider}(void) {{ return (uint64_t *)(uintptr_t)0x{:x}ULL; }}",
             FRAME_BASE
+        )
+        .unwrap();
+    }
+    let stack_providers: BTreeSet<_> = alive
+        .iter()
+        .flat_map(|&index| {
+            candidates[index].code.lines().filter_map(|line| {
+                line.strip_prefix("uint64_t ")
+                    .and_then(|line| line.strip_suffix("(void); /* target entry stack pointer */"))
+            })
+        })
+        .collect();
+    for provider in stack_providers {
+        writeln!(
+            text,
+            "uint64_t {provider}(void) {{ return 0x{FRAME_BASE:x}ULL; }}"
         )
         .unwrap();
     }

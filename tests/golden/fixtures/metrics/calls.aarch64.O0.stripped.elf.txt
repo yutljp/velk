@@ -11,7 +11,7 @@
 0x210564 76 - unwind,prologue
 0x2105b0 316 - unwind,prologue
 /* velk prelude */
-uint64_t velk_entry_stack_pointer(void);
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x21031c -

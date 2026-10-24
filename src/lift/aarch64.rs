@@ -1,8 +1,12 @@
 mod atomic;
+mod exclusive;
 mod float;
 mod integer;
 mod lanes;
 mod memory;
+mod simd;
+mod structures;
+mod system;
 mod vector;
 
 pub(super) use atomic::recover_atomic_loops;
@@ -397,7 +401,12 @@ fn lift_test_branch(lifter: &mut Lifter, ops: [Operand; 4], pc: u64, non_zero: b
 }
 
 fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
-    if atomic::lift(lifter, ins) {
+    if atomic::lift(lifter, ins)
+        || exclusive::lift(lifter, ins)
+        || structures::lift(lifter, ins)
+        || simd::lift(lifter, ins)
+        || system::lift(lifter, ins)
+    {
         return false;
     }
     use a64::Opcode as O;

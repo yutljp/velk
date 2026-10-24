@@ -593,6 +593,12 @@ fn transfer(stmt: &Stmt, frame: i64, sp: u16, slots: &HashSet<(i64, u8)>, values
 
 fn invalidate(stmt: &Stmt, frame: i64, sp: u16, values: &mut Values) {
     match stmt {
+        Stmt::Machine {
+            instruction:
+                crate::ir::MachineInstruction::ArmCacheZero
+                | crate::ir::MachineInstruction::ArmExclusive { .. },
+            ..
+        } => values.clear(),
         Stmt::Call { .. } | Stmt::Unsupported { .. } => values.clear(),
         Stmt::Store { addr, .. } => {
             let Some(offset) = frame_slot(addr, frame, sp) else {

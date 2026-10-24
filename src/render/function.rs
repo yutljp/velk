@@ -939,13 +939,15 @@ fn render_with(
         out.push_str(&definition);
         definitions.push((structure.name.clone(), definition));
     }
-    if ir
-        .blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::Machine { instruction, .. } if !matches!(instruction, crate::ir::MachineInstruction::Atomic { .. })))
-    {
-        out.push_str(&super::prelude::section("#include <cpuid.h>\n\n#include <x86intrin.h>\n\n"));
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(stmt, Stmt::Machine { instruction, .. } if matches!(instruction,
+            crate::ir::MachineInstruction::Cpuid | crate::ir::MachineInstruction::Xgetbv
+            | crate::ir::MachineInstruction::Rdtsc | crate::ir::MachineInstruction::Rdtscp
+            | crate::ir::MachineInstruction::ReadFlags | crate::ir::MachineInstruction::WriteFlags))
+    }) {
+        out.push_str(&super::prelude::section(
+            "#include <cpuid.h>\n\n#include <x86intrin.h>\n\n",
+        ));
     }
     let prototypes_at = out.len();
     if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
@@ -1051,7 +1053,9 @@ fn render_with(
         prototypes.push_str(&prototype);
     }
     if let Some(provider) = &stack_provider {
-        prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
+        prototypes.push_str(&format!(
+            "uint64_t {provider}(void); /* target entry stack pointer */\n"
+        ));
     }
     for (_, _, provider) in &exception_providers {
         if code_mentions(&body, provider) {

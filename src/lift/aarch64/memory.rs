@@ -5,7 +5,7 @@ use super::{
 
 pub(super) struct Memory {
     pub(super) address: Expr,
-    writeback: Option<(RegRef, Expr)>,
+    pub(super) writeback: Option<(RegRef, Expr)>,
 }
 
 fn read_base(operand: u16) -> Expr {
@@ -56,11 +56,26 @@ pub(super) fn memory(_lifter: &mut Lifter, operand: Operand, width: u8) -> Optio
                 )),
             })
         }
+        Operand::RegPostIndexReg(reg, increment) => {
+            let base = read_base(reg);
+            Some(Memory {
+                address: base.clone(),
+                writeback: Some((
+                    RegRef {
+                        index: reg,
+                        width: 64,
+                    },
+                    Expr::bin(BinOp::Add, base, Lifter::read_reg(increment, 64)),
+                )),
+            })
+        }
         Operand::RegRegOffset(base_reg, index_reg, size, style, amount) => {
             let base = read_base(base_reg);
             let index_width = if size == SizeCode::X { 64 } else { 32 };
             let index = Lifter::read_reg(index_reg, index_width);
-            let index = extend_shift(style, amount as u64, index, size)?;
+            let Some(index) = extend_shift(style, amount as u64, index, size) else {
+                return None;
+            };
             Some(Memory {
                 address: Expr::bin(BinOp::Add, base, index),
                 writeback: None,
@@ -78,7 +93,7 @@ pub(super) fn memory(_lifter: &mut Lifter, operand: Operand, width: u8) -> Optio
     }
 }
 
-fn write_back(lifter: &mut Lifter, writeback: Option<(RegRef, Expr)>) {
+pub(super) fn write_back(lifter: &mut Lifter, writeback: Option<(RegRef, Expr)>) {
     if let Some((dest, value)) = writeback {
         lifter.assign(dest, value);
     }

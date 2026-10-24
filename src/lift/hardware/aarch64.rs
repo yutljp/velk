@@ -612,6 +612,18 @@ fn buffer_access(instruction: &a64::Instruction) -> bool {
             | O::LDPSW
             | O::LDNP
             | O::STNP
+            | O::LD1
+            | O::LD2
+            | O::LD3
+            | O::LD4
+            | O::ST1
+            | O::ST2
+            | O::ST3
+            | O::ST4
+            | O::LD1R
+            | O::LD2R
+            | O::LD3R
+            | O::LD4R
     );
     let mut base = None;
     let mut writeback = false;
@@ -623,6 +635,8 @@ fn buffer_access(instruction: &a64::Instruction) -> bool {
             index == 31 || usable(index) && !POINTERS.contains(&index)
         }
         Operand::SIMDRegister(_, number) => number < 8,
+        Operand::SIMDRegisterGroup(_, number, _, count)
+        | Operand::SIMDRegisterGroupLane(number, _, count, _) => number + u16::from(count) <= 8,
         Operand::RegPreIndex(reg, offset, back) => {
             base = Some(reg);
             writeback = back;
@@ -632,6 +646,11 @@ fn buffer_access(instruction: &a64::Instruction) -> bool {
             base = Some(reg);
             writeback = true;
             offset.unsigned_abs() <= 2048
+        }
+        Operand::RegPostIndexReg(reg, index) => {
+            base = Some(reg);
+            writeback = true;
+            usable(index) && !POINTERS.contains(&index) && index != 31
         }
         Operand::RegRegOffset(reg, index, ..) => {
             base = Some(reg);
@@ -650,6 +669,21 @@ fn buffer_access(instruction: &a64::Instruction) -> bool {
 }
 
 fn memory_instruction(seed: u64) -> Option<(u32, a64::Instruction)> {
+    let structures = [
+        0x4cdf_a140u32,
+        0x4dcb_8540,
+        0x4d9f_8540,
+        0x4cdf_0d40,
+        0x4dff_e940,
+        0x0d40_c140,
+    ];
+    if let Some(word) = structures.get(seed as usize) {
+        let word = (word & !(31 << 5)) | (u32::from(POINTERS[0]) << 5);
+        let Some(decoded) = decode(word) else {
+            return None;
+        };
+        return buffer_access(&decoded).then_some((word, decoded));
+    }
     // Loads and stores: bit 27 set and bit 25 clear, with a pointer register
     // as the base every form names in bits 5 to 9.
     let base = POINTERS[(hash(seed, 2) % 4) as usize] as u32;
@@ -921,4 +955,73 @@ fn scalar_half_immediates_match_the_processor_without_status_changes() {
     eprintln!(
         "{checked} exact scalar half immediate cases; observed FPCR mode bits {observed_modes:x?}"
     );
+}
+
+#[test]
+fn table_shift_and_aes_results_match_the_processor() {
+    let page = Page::new();
+    for word in [
+        0x6ee2_4420,
+        0x6e22_4420,
+        0x4e00_2000,
+        0x0e00_7020,
+        0x4e28_4820,
+        0x4e28_6800,
+    ] {
+        let ir = lift_words(&[word, RET]).expect("SIMD lift");
+        assert!(unsupported(&ir).is_none(), "{}", ir.render());
+        for seed in 0..256 {
+            let mut state = [0; 46];
+            for half in 0..16 {
+                state[VECTORS + half] = match seed {
+                    0 => 0,
+                    1 => u64::MAX,
+                    2 => 0x807f_403f_201f_100f,
+                    _ => hash(seed, half as u64),
+                };
+            }
+            let registers: Vec<_> = (0..16)
+                .map(|half| {
+                    (
+                        crate::arch::aarch64::V0 + half as u16,
+                        state[VECTORS + half],
+                    )
+                })
+                .collect();
+            assert!(page.run(&[word], &mut state), "{word:08x}");
+            let (after, _) =
+                eval::state_after(&ir, &super::setup(&registers)).expect("SIMD evaluation");
+            for (index, initial) in registers {
+                assert_eq!(
+                    after.get(&index).copied().unwrap_or(initial),
+                    state[VECTORS + usize::from(index - crate::arch::aarch64::V0)],
+                    "{word:08x}, seed {seed}, register {index}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn literal_loads_match_the_processor() {
+    let page = Page::new();
+    for (word, expected) in [
+        (0x1800_0040, 0xd503_201fu64),
+        (0x5800_0040, 0xd503_201f_d503_201f),
+        (0x9800_0040, 0xffff_ffff_d503_201f),
+    ] {
+        let body = [word, 0x1400_0003, 0xd503_201f, 0xd503_201f];
+        let ir = lift_words(&[body.as_slice(), &[RET]].concat()).expect("literal load lift");
+        assert!(unsupported(&ir).is_none(), "{}", ir.render());
+        let mut state = [0; 46];
+        assert!(page.run(&body, &mut state));
+        assert_eq!(state[0], expected);
+        let memory = [(8, 0xd503_201f_d503_201f)];
+        let setup = eval::Setup {
+            memory: &memory,
+            ..super::setup(&[])
+        };
+        let (after, _) = eval::state_after(&ir, &setup).expect("literal load evaluation");
+        assert_eq!(after.get(&0), Some(&expected));
+    }
 }

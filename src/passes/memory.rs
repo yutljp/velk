@@ -176,7 +176,16 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     inputs,
                     outputs,
                 } => {
-                    if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
+                    if matches!(
+                        instruction,
+                        crate::ir::MachineInstruction::ArmSystem { .. }
+                            | crate::ir::MachineInstruction::ArmBarrier { .. }
+                            | crate::ir::MachineInstruction::ArmLoadAcquire { .. }
+                            | crate::ir::MachineInstruction::ArmExclusive { .. }
+                            | crate::ir::MachineInstruction::ArmCacheZero
+                    ) {
+                        pending.clear();
+                    } else if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
                         pending.retain(|(width, addr, stored)| {
                             atomic_private_frame
                                 && private_address(addr, *width, sp)
@@ -204,7 +213,12 @@ pub(crate) fn atomic(stmt: &Stmt) -> bool {
     matches!(
         stmt,
         Stmt::Machine {
-            instruction: crate::ir::MachineInstruction::Atomic { .. },
+            instruction: crate::ir::MachineInstruction::Atomic { .. }
+                | crate::ir::MachineInstruction::ArmSystem { .. }
+                | crate::ir::MachineInstruction::ArmBarrier { .. }
+                | crate::ir::MachineInstruction::ArmLoadAcquire { .. }
+                | crate::ir::MachineInstruction::ArmExclusive { .. }
+                | crate::ir::MachineInstruction::ArmCacheZero,
             ..
         }
     )
@@ -212,6 +226,16 @@ pub(crate) fn atomic(stmt: &Stmt) -> bool {
 
 pub(crate) fn fixed_private_frame(ir: &FunctionIr, sp: u16) -> bool {
     !frame_address_escapes(ir, sp)
+        && !ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            matches!(
+                stmt,
+                Stmt::Machine {
+                    instruction: crate::ir::MachineInstruction::ArmCacheZero
+                        | crate::ir::MachineInstruction::ArmExclusive { .. },
+                    ..
+                }
+            )
+        })
         && !ir
             .blocks
             .iter()

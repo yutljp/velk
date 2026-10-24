@@ -163,6 +163,7 @@ pub enum AesRound {
     EncryptLast,
     Decrypt,
     DecryptLast,
+    MixColumns,
 }
 
 /// An operation on each pair of lanes of two vectors' halves.
@@ -188,6 +189,9 @@ pub enum LaneOp {
     ShiftLeft,
     ShiftRight,
     ShiftRightSigned,
+    /// Signed low byte of each second-source lane: left if positive,
+    /// logical right if negative; shifts beyond the lane produce zero.
+    ShiftVariableUnsigned,
     /// Sums and differences held at the lane's limits instead of wrapping.
     AddSaturatingSigned,
     AddSaturatingUnsigned,
@@ -586,6 +590,22 @@ pub fn fallback_call_outputs(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MachineInstruction {
+    /// AArch64 system register encoded as o0:op1:CRn:CRm:op2.
+    ArmSystem { register: u16, write: bool },
+    /// AArch64 DMB (0), DSB (1), or ISB (2), with its domain/type option.
+    ArmBarrier { kind: u8, option: u8 },
+    /// DC ZVA: zero the cache block containing the input address.
+    ArmCacheZero,
+    /// RCpc acquire load: address input, zero-extended value output.
+    ArmLoadAcquire { width: u8 },
+    /// Exclusive-monitor memory access. Loads return one or two values;
+    /// stores take address and values, and return the architectural status.
+    ArmExclusive {
+        load: bool,
+        width: u8,
+        pair: bool,
+        ordered: bool,
+    },
     /// Atomic memory access, with width in bytes. Inputs are address, operand
     /// (except for loads), and expected value (for compare-exchange). The
     /// output is the observed value; stores have no output. A wide comparison

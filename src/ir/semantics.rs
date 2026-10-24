@@ -242,6 +242,16 @@ fn lanes(op: LaneOp, bits: u32, a: u64, b: u64) -> u64 {
             LaneOp::ShiftRight if b < u64::from(bits) => x >> b,
             LaneOp::ShiftLeft | LaneOp::ShiftRight => 0,
             LaneOp::ShiftRightSigned => (sx >> b.min(u64::from(bits) - 1)) as u64,
+            LaneOp::ShiftVariableUnsigned => {
+                let shift = y as i8;
+                if u32::from(shift.unsigned_abs()) >= bits {
+                    0
+                } else if shift >= 0 {
+                    x << shift as u32
+                } else {
+                    x >> u32::from(shift.unsigned_abs())
+                }
+            }
             LaneOp::AddSaturatingSigned => clamp_signed(sx.saturating_add(sy), bits),
             LaneOp::SubSaturatingSigned => clamp_signed(sx.saturating_sub(sy), bits),
             LaneOp::AddSaturatingUnsigned => x.saturating_add(y).min(ones),
@@ -657,6 +667,9 @@ fn aes_round(round: crate::ir::AesRound, state: u128) -> u128 {
             };
             shifted[row + 4 * column] = sbox[usize::from(bytes[row + 4 * from])];
         }
+    }
+    if round == AesRound::MixColumns {
+        shifted = bytes;
     }
     if matches!(round, AesRound::EncryptLast | AesRound::DecryptLast) {
         return u128::from_le_bytes(shifted);

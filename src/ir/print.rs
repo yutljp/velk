@@ -22,6 +22,7 @@ pub(crate) fn lane_op_name(op: LaneOp) -> &'static str {
         LaneOp::ShiftLeft => "shift_left_lanes",
         LaneOp::ShiftRight => "shift_right_lanes",
         LaneOp::ShiftRightSigned => "shift_right_lanes_s",
+        LaneOp::ShiftVariableUnsigned => "shift_variable_lanes_u",
         LaneOp::AddSaturatingSigned => "add_saturating_lanes",
         LaneOp::AddSaturatingUnsigned => "add_saturating_lanes_u",
         LaneOp::SubSaturatingSigned => "sub_saturating_lanes",
@@ -129,6 +130,7 @@ pub(crate) fn operation_name(op: Operation) -> String {
                 AesRound::EncryptLast => "aesenclast",
                 AesRound::Decrypt => "aesdec",
                 AesRound::DecryptLast => "aesdeclast",
+                AesRound::MixColumns => "aesmc",
             },
             if high { "high" } else { "low" }
         ),

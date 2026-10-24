@@ -40,6 +40,11 @@ fn render_inner(
     tested: bool,
 ) -> String {
     let input = |index| render_expr(&inputs[index], ctx);
+    let address = || match &inputs[0] {
+        // Keep fixed memory addresses even when they name strings or functions.
+        Expr::Const(_) | Expr::Select { .. } => input(0),
+        _ => super::expr::render_value_at(&inputs[0], ctx, 64, false),
+    };
     let output = |index: usize| ctx.register(outputs[index].index, outputs[index].width);
     let mut reserved = std::collections::HashSet::new();
     for text in (0..inputs.len())
@@ -52,6 +57,107 @@ fn render_inner(
         );
     }
     match instruction {
+        MachineInstruction::ArmExclusive {
+            load,
+            width,
+            pair,
+            ordered,
+        } => {
+            let suffix = if pair {
+                "p"
+            } else {
+                match width {
+                    1 => "rb",
+                    2 => "rh",
+                    _ => "r",
+                }
+            };
+            let mnemonic = format!(
+                "{}{}x{suffix}",
+                if load { "ld" } else { "st" },
+                if ordered {
+                    if load { "a" } else { "l" }
+                } else {
+                    ""
+                }
+            );
+            let reg = if width == 8 { "%x" } else { "%w" };
+            if load && pair {
+                format!(
+                    "__asm__ volatile (\"{mnemonic} {reg}0, {reg}1, [%2]\" : \"=&r\"({}), \"=&r\"({}) : \"r\"((uint64_t)({})) : \"memory\");",
+                    output(0),
+                    output(1),
+                    address()
+                )
+            } else if load {
+                format!(
+                    "__asm__ volatile (\"{mnemonic} {reg}0, [%1]\" : \"=&r\"({}) : \"r\"((uint64_t)({})) : \"memory\");",
+                    output(0),
+                    address()
+                )
+            } else if pair {
+                format!(
+                    "__asm__ volatile (\"{mnemonic} %w0, {reg}2, {reg}3, [%1]\" : \"=&r\"({}) : \"r\"((uint64_t)({})), \"r\"((uint64_t)({})), \"r\"((uint64_t)({})) : \"memory\");",
+                    output(0),
+                    address(),
+                    input(1),
+                    input(2)
+                )
+            } else {
+                format!(
+                    "__asm__ volatile (\"{mnemonic} %w0, {reg}2, [%1]\" : \"=&r\"({}) : \"r\"((uint64_t)({})), \"r\"((uint64_t)({})) : \"memory\");",
+                    output(0),
+                    address(),
+                    input(1)
+                )
+            }
+        }
+        MachineInstruction::ArmSystem { register, write } => {
+            let name = format!(
+                "s{}_{}_c{}_c{}_{}",
+                2 + ((register >> 14) & 1),
+                (register >> 11) & 7,
+                (register >> 7) & 15,
+                (register >> 3) & 15,
+                register & 7
+            );
+            if write {
+                format!(
+                    "__asm__ volatile (\"msr {name}, %0\" : : \"r\"((uint64_t)({})) : \"memory\");",
+                    input(0)
+                )
+            } else {
+                format!(
+                    "__asm__ volatile (\"mrs %x0, {name}\" : \"=r\"({}) : : \"memory\");",
+                    output(0)
+                )
+            }
+        }
+        MachineInstruction::ArmBarrier { kind, option } => {
+            let name = match kind {
+                0 => "dmb",
+                1 => "dsb",
+                _ => "isb",
+            };
+            format!("__asm__ volatile (\"{name} #{option}\" : : : \"memory\");")
+        }
+        MachineInstruction::ArmCacheZero => format!(
+            "__asm__ volatile (\"dc zva, %0\" : : \"r\"((uint64_t)({})) : \"memory\");",
+            address()
+        ),
+        MachineInstruction::ArmLoadAcquire { width } => {
+            let suffix = match width {
+                1 => "b",
+                2 => "h",
+                _ => "",
+            };
+            let register = if width == 8 { "%x0" } else { "%w0" };
+            format!(
+                "__asm__ volatile (\"ldapr{suffix} {register}, [%1]\" : \"=r\"({}) : \"r\"((uint64_t)({})) : \"memory\");",
+                output(0),
+                address()
+            )
+        }
         MachineInstruction::Atomic {
             op,
             width,

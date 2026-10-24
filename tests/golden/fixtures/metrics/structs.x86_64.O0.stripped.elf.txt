@@ -8,7 +8,7 @@
 0x201380 59 - unwind,prologue
 0x2013c0 36 - unwind,prologue
 /* velk prelude */
-uint64_t velk_entry_stack_pointer(void);
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x201240 -

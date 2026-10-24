@@ -54,7 +54,7 @@ fn nested_negation_preserves_tokens_and_values() {
     check_candidates("nested-negation", vec![candidate], Mode::Registers, &[]);
 }
 
-fn run_printed(code: &str, support: &str, assertions: &str) {
+pub(super) fn run_printed(code: &str, support: &str, assertions: &str) {
     use std::hash::{Hash, Hasher};
     let mut hash = std::hash::DefaultHasher::new();
     code.hash(&mut hash);
@@ -655,7 +655,7 @@ fn unknown_call_targets_have_explicit_bindings() {
     );
 }
 
-fn return_types(symbols: &velk::render::Symbols) -> BTreeMap<String, CType> {
+pub(super) fn return_types(symbols: &velk::render::Symbols) -> BTreeMap<String, CType> {
     symbols
         .function_returns
         .iter()
@@ -674,7 +674,7 @@ fn return_types(symbols: &velk::render::Symbols) -> BTreeMap<String, CType> {
         .collect()
 }
 
-fn check(code: &str, path: &Path, returns: &BTreeMap<String, CType>) -> Option<String> {
+pub(super) fn check(code: &str, path: &Path, returns: &BTreeMap<String, CType>) -> Option<String> {
     check_with_compiler(code, path, returns, &compiler())
 }
 

@@ -3,7 +3,7 @@ use crate::ir::{AtomicOp, MachineInstruction, Ordering};
 
 /// A retry loop containing only a load, pure update, exclusive store and
 /// retry has the same observable memory effect as one atomic update.
-/// Other exclusive sequences retain their unsupported instructions.
+/// Other exclusive sequences retain their monitor operations.
 pub(in crate::lift) fn recover_atomic_loops(
     image: &crate::loader::Image,
     summaries: super::super::Summaries<'_>,
@@ -12,8 +12,13 @@ pub(in crate::lift) fn recover_atomic_loops(
     use a64::Opcode as O;
     let starts: std::collections::HashSet<_> = blocks.iter().map(|block| block.start).collect();
     for block in blocks {
-        if !matches!(block.stmts.first(), Some(Stmt::Unsupported { text, .. }) if text.starts_with("LDXR") || text.starts_with("LDAXR"))
-        {
+        if !matches!(
+            block.stmts.first(),
+            Some(Stmt::Machine {
+                instruction: MachineInstruction::ArmExclusive { load: true, .. },
+                ..
+            })
+        ) {
             continue;
         }
         let Some(next) = block.start.checked_add(16) else {
@@ -155,9 +160,9 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         O::LDAR => (AtomicOp::Load, 0, 2),
         O::LDARB => (AtomicOp::Load, 1, 2),
         O::LDARH => (AtomicOp::Load, 2, 2),
-        O::STLR => (AtomicOp::Store, 0, 1),
-        O::STLRB => (AtomicOp::Store, 1, 1),
-        O::STLRH => (AtomicOp::Store, 2, 1),
+        O::STLR | O::STLUR => (AtomicOp::Store, 0, 1),
+        O::STLRB | O::STLURB => (AtomicOp::Store, 1, 1),
+        O::STLRH | O::STLURH => (AtomicOp::Store, 2, 1),
         _ => return false,
     };
     let ops = ins.operands;

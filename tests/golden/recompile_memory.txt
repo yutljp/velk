@@ -1,12 +1,12 @@
 # functions left out:
 #   branches on flags: 3
 #   calls: 7738
-#   computes on floats or vectors: 95
+#   computes on floats or vectors: 102
 #   computes on registers alone: 1350
-#   has an unsupported instruction: 13
+#   has an unsupported instruction: 4
 #   reads a register that is not a parameter: 126
 #   refers to data: 766
-#   requires an external machine-state source: 2
+#   requires an external machine-state source: 4
 #   returns no integer: 141
 #   takes an argument that is no integer: 71
 #   takes arguments on the stack: 80

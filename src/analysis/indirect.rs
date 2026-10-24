@@ -278,7 +278,14 @@ impl Tracker<'_> {
                 outputs,
                 ..
             } => {
-                if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
+                if matches!(
+                    instruction,
+                    crate::ir::MachineInstruction::Atomic { .. }
+                        | crate::ir::MachineInstruction::ArmBarrier { .. }
+                        | crate::ir::MachineInstruction::ArmLoadAcquire { .. }
+                        | crate::ir::MachineInstruction::ArmExclusive { .. }
+                        | crate::ir::MachineInstruction::ArmCacheZero
+                ) {
                     state.memory.clear();
                 }
                 for output in outputs {

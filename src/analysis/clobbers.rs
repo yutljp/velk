@@ -327,6 +327,28 @@ pub(crate) fn clobbers_knowing(
                     inputs,
                     outputs,
                 } => {
+                    if *instruction == crate::ir::MachineInstruction::ArmCacheZero {
+                        state.slots.clear();
+                    }
+                    if let crate::ir::MachineInstruction::ArmExclusive {
+                        load: false,
+                        width,
+                        pair,
+                        ..
+                    } = instruction
+                    {
+                        for value in inputs.iter().skip(1) {
+                            state.expose(value);
+                        }
+                        match inputs.first() {
+                            Some(addr) => state.write_through(
+                                addr,
+                                width.saturating_mul(if *pair { 2 } else { 1 }),
+                                clobbered,
+                            ),
+                            None => state.slots.clear(),
+                        }
+                    }
                     if let crate::ir::MachineInstruction::Atomic { width, .. } = instruction {
                         for value in inputs.iter().skip(1) {
                             state.expose(value);
@@ -347,6 +369,16 @@ pub(crate) fn clobbers_knowing(
                     } else {
                         for value in inputs {
                             state.expose(value);
+                        }
+                        if matches!(
+                            instruction,
+                            crate::ir::MachineInstruction::ArmBarrier { .. }
+                                | crate::ir::MachineInstruction::ArmLoadAcquire { .. }
+                                | crate::ir::MachineInstruction::ArmExclusive { .. }
+                        ) {
+                            state
+                                .slots
+                                .retain(|slot, _| slot.checked_add(8).is_some_and(|end| end <= 0));
                         }
                     }
                     for output in outputs {
@@ -626,6 +658,20 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn cache_zeroing_invalidates_saved_registers_in_the_same_block() {
+        let mut stmts = Vec::from(push(RBX));
+        stmts.push(Stmt::Machine {
+            instruction: crate::ir::MachineInstruction::ArmCacheZero,
+            inputs: vec![Expr::bin(BinOp::Add, reg(RSP), Expr::Const(8))],
+            outputs: vec![],
+        });
+        stmts.extend(pop(RBX));
+        stmts.push(ret());
+        let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+        assert!(changed.contains(RBX));
     }
 
     fn atomic_add(addr: Expr) -> Stmt {

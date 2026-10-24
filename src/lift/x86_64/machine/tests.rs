@@ -66,6 +66,11 @@ fn source(instruction: MachineInstruction, inputs: &[u64]) -> Result<Vec<u64>, &
         MachineInstruction::ReadFlags => vec![0x30002],
         MachineInstruction::WriteFlags => vec![inputs[0] & 0xcd5 | 0x202],
         MachineInstruction::Atomic { .. } => panic!("atomic access does not use external state"),
+        MachineInstruction::ArmSystem { .. }
+        | MachineInstruction::ArmBarrier { .. }
+        | MachineInstruction::ArmLoadAcquire { .. }
+        | MachineInstruction::ArmExclusive { .. }
+        | MachineInstruction::ArmCacheZero => panic!("AArch64 instruction in x86 test"),
     })
 }
 

@@ -62,7 +62,7 @@ int twice(int);
 
 long sum9(long, long, long, long, long, long, long, long, long);
 
-uint64_t velk_entry_stack_pointer(void);
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x2012f0 twice
