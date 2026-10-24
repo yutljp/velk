@@ -58,6 +58,8 @@ mod ignored_result;
 mod long_branches;
 #[path = "recompile/pointer_assignments.rs"]
 mod pointer_assignments;
+#[path = "recompile/prelude.rs"]
+mod prelude;
 #[path = "recompile/record_transfers.rs"]
 mod record_transfers;
 #[path = "recompile/register_locals.rs"]

@@ -66,6 +66,7 @@ impl Engine {
             let millis = timeout.unwrap_or_default().as_millis();
             outcome.error = Some(format!("timed out after {millis} ms"));
         }
+        outcome.output = crate::render::combine(&outcome.output);
         outcome
     }
 

@@ -7,9 +7,7 @@
 0x2102d4 4 - unwind,prologue
 0x2102d8 20 - unwind,prologue
 0x2102ec 24 - unwind,prologue
-
-== 0x2101dc -
--- decompile
+/* velk prelude */
 #ifndef VELK_mul_lanes32
 #define VELK_mul_lanes32
 static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
@@ -39,7 +37,10 @@ static inline uint64_t sub_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+/* end velk prelude */
 
+== 0x2101dc -
+-- decompile
 /* velk pseudo-C: sub_2101dc @ 0x2101dc */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 uint32_t sub_2101dc(struct S1 *a0) {

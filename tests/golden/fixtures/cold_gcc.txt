@@ -14,6 +14,9 @@
 0x1280 16 frame_dummy symtab
 0x1290 240 lookup symtab,unwind
 0x1380 13 _fini symtab
+/* velk prelude */
+void main(void);
+/* end velk prelude */
 
 == 0x1000 _init
 -- decompile
@@ -196,7 +199,6 @@ fn main @ 0x1120 (size 124)
 == 0x11a0 _start
 -- decompile
 /* velk pseudo-C: _start @ 0x11a0 */
-void main(void);
 int32_t _start(int64_t a0, int64_t a1, void *a2) {
     uint64_t v1;
     int64_t v2;

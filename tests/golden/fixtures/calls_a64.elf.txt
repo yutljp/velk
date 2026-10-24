@@ -10,6 +10,41 @@
 0x210448 40 sum9 symtab,unwind
 0x210470 8 call_sum9 symtab,unwind
 0x210478 188 sum_varargs symtab,unwind
+/* velk prelude */
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_mul_lanes32
+#define VELK_mul_lanes32
+static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x * y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+void square(void);
+
+void twice(void);
+/* end velk prelude */
 
 == 0x2102b4 twice
 -- decompile
@@ -48,8 +83,6 @@ fn square @ 0x2102bc (size 8)
 == 0x2102c4 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x2102c4 */
-void square(void);
-void twice(void);
 int32_t pick_op(int32_t a0) {
     return (a0 == 0 ? (uintptr_t)twice : (uintptr_t)square);
 }
@@ -108,36 +141,6 @@ fn apply_pointer @ 0x21030c (size 32)
 
 == 0x21032c factorial
 -- decompile
-#ifndef VELK_add_lanes32
-#define VELK_add_lanes32
-static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 64; i += 32) {
-        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
-        __int128 sx = (int32_t)x, sy = (int32_t)y;
-        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
-        out |= ((uint64_t)(x + y) & mask) << i;
-    }
-    return out;
-}
-#endif
-
-#ifndef VELK_mul_lanes32
-#define VELK_mul_lanes32
-static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 64; i += 32) {
-        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
-        __int128 sx = (int32_t)x, sy = (int32_t)y;
-        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
-        out |= ((uint64_t)(x * y) & mask) << i;
-    }
-    return out;
-}
-#endif
-
 /* velk pseudo-C: factorial @ 0x21032c */
 /* ref: 0x200190 .rodata */
 /* ref: 0x200198 .rodata */

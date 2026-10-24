@@ -6,6 +6,48 @@
 0x2102cc 60 short_circuit symtab,dwarf,unwind
 0x210308 156 skip_negatives symtab,dwarf,unwind
 0x2103a4 136 find_pair symtab,dwarf,unwind
+/* velk prelude */
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_max_lanes32
+#define VELK_max_lanes32
+static inline uint64_t max_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(sx >= sy ? x : y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_sum_lanes32
+#define VELK_sum_lanes32
+static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) out += ((a >> i) & mask) + ((b >> i) & mask);
+    out &= mask;
+    return out;
+}
+#endif
+/* end velk prelude */
 
 == 0x2101d4 matrix_trace
 -- decompile
@@ -218,47 +260,6 @@ fn short_circuit @ 0x2102cc (size 60)
 
 == 0x210308 skip_negatives
 -- decompile
-#ifndef VELK_add_lanes32
-#define VELK_add_lanes32
-static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 64; i += 32) {
-        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
-        __int128 sx = (int32_t)x, sy = (int32_t)y;
-        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
-        out |= ((uint64_t)(x + y) & mask) << i;
-    }
-    return out;
-}
-#endif
-
-#ifndef VELK_max_lanes32
-#define VELK_max_lanes32
-static inline uint64_t max_lanes32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 64; i += 32) {
-        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
-        __int128 sx = (int32_t)x, sy = (int32_t)y;
-        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
-        out |= ((uint64_t)(sx >= sy ? x : y) & mask) << i;
-    }
-    return out;
-}
-#endif
-
-#ifndef VELK_sum_lanes32
-#define VELK_sum_lanes32
-static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 64; i += 32) out += ((a >> i) & mask) + ((b >> i) & mask);
-    out &= mask;
-    return out;
-}
-#endif
-
 /* velk pseudo-C: skip_negatives @ 0x210308 */
 int skip_negatives(int *p, int n) {
     int64_t v2;

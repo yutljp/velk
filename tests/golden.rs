@@ -22,7 +22,7 @@ fn analysis_output_matches_golden_files() {
     let mut failures = Vec::new();
     let mut expected_files = Vec::new();
     let mut readability = String::from(
-        "# fixture: output lines, declared variables, casts, register names, \
+        "# fixture: function lines, prelude lines, declared variables, casts, register names, \
          unsigned comments, traps, gotos, indirect calls\n",
     );
     let mut cast_counts = String::from(
@@ -108,6 +108,8 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
     let mut gotos = 0;
     let mut readability = Readability::default();
     let mut details = String::new();
+    let mut prelude = velk::render::Prelude::default();
+    let mut details_prelude = velk::render::Prelude::default();
     for function in &functions {
         let decompiled = match binary.decompile(function.addr, None, None) {
             Ok(text) => text,
@@ -116,10 +118,13 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
                 format!("error: {error}\n")
             }
         };
+        let standalone = decompiled;
+        let decompiled = prelude.extract(&standalone);
         unsupported += decompiled.matches("/* unsupported").count();
         gotos += decompiled.matches("goto ").count();
         readability.add(&decompiled);
         if recorded(fixture, function) {
+            let decompiled = details_prelude.extract(&standalone);
             details.push_str(&render_function(&mut binary, function, &decompiled));
         }
     }
@@ -153,6 +158,9 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
         )
         .expect("writing to a String");
     }
+    let prelude = prelude.render();
+    readability.prelude_lines = prelude.lines().count();
+    out.push_str(&details_prelude.render());
     out.push_str(&details);
     (out, readability)
 }
@@ -162,6 +170,7 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
 struct Readability {
     structures: BTreeSet<String>,
     lines: usize,
+    prelude_lines: usize,
     variables: usize,
     casts: usize,
     cast_classes: [usize; 5],
@@ -226,9 +235,10 @@ impl std::fmt::Display for Readability {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "{} lines, {} variables, {} casts, {} registers, {} unsigned, {} traps, {} gotos, \
+            "{} lines, {} prelude lines, {} variables, {} casts, {} registers, {} unsigned, {} traps, {} gotos, \
              {} indirect calls",
             self.lines,
+            self.prelude_lines,
             self.variables,
             self.casts,
             self.registers,

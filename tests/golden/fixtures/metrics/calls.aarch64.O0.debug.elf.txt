@@ -10,6 +10,11 @@
 0x2104ec 120 sum9 symtab,dwarf,unwind
 0x210564 76 call_sum9 symtab,dwarf,unwind
 0x2105b0 316 sum_varargs symtab,dwarf,unwind
+/* velk prelude */
+void square(void);
+
+void twice(void);
+/* end velk prelude */
 
 == 0x21031c twice
 -- decompile
@@ -48,8 +53,6 @@ fn square @ 0x210334 (size 28)
 == 0x210350 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x210350 */
-void square(void);
-void twice(void);
 void *pick_op(int which) {
     return (void *)(which != 0 ? square : twice);
 }

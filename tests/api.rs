@@ -370,3 +370,25 @@ fn a_timeout_stops_one_function_analysis() {
     assert_eq!(retry.error, None);
     assert_eq!(retry.output, unlimited.output);
 }
+
+#[test]
+fn batch_decompilation_prints_one_prelude() {
+    let path = common::fixtures_dir().join("arm64.o");
+    let script = format!(
+        "const b = velk.open({:?}); for (const f of b.functions()) console.log(f.decompile());",
+        path.display().to_string()
+    );
+    let outcome = Engine::new().unwrap().run(&script, None);
+    assert!(outcome.error.is_none(), "{:?}", outcome.error);
+    assert!(outcome.output.starts_with("/* velk prelude */\n"));
+    assert_eq!(outcome.output.matches("/* velk prelude */").count(), 1);
+    assert_eq!(
+        outcome
+            .output
+            .matches("static inline uint64_t add_lanes32")
+            .count(),
+        1
+    );
+    let end = outcome.output.find("/* end velk prelude */").unwrap();
+    assert!(end < outcome.output.find("/* velk pseudo-C:").unwrap());
+}

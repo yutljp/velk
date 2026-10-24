@@ -2,6 +2,7 @@
 
 Scripts are plain synchronous JavaScript: no `await`, no imports, no file system.
 The output is everything passed to `console.log`, followed by the value of the last expression.
+When several decompiled functions are logged as C text, their support definitions and declarations are collected into one marked prelude at the top of the output. Each `decompile()` result includes its own prelude for standalone use.
 Opened binaries and per-function analysis stay cached between runs.
 
 MCP script responses default to 4,000 Unicode characters, including errors and any truncation notice.

@@ -10,6 +10,52 @@
 0x201490 32 sum9 symtab,dwarf,unwind
 0x2014b0 49 call_sum9 symtab,dwarf,unwind
 0x2014f0 283 sum_varargs symtab,dwarf,unwind
+/* velk prelude */
+#ifndef VELK_add_lanes32
+#define VELK_add_lanes32
+static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 32) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int32_t)x, sy = (int32_t)y;
+        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x + y) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_interleave_high32
+#define VELK_interleave_high32
+static inline uint64_t interleave_high32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 32 / 32; ++i) {
+        out |= ((a >> (32 + i * 32)) & mask) << (2 * i * 32);
+        out |= ((b >> (32 + i * 32)) & mask) << ((2 * i + 1) * 32);
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_interleave_low32
+#define VELK_interleave_low32
+static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 32;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 32 / 32; ++i) {
+        out |= ((a >> (0 + i * 32)) & mask) << (2 * i * 32);
+        out |= ((b >> (0 + i * 32)) & mask) << ((2 * i + 1) * 32);
+    }
+    return out;
+}
+#endif
+
+void square(void);
+
+void twice(void);
+/* end velk prelude */
 
 == 0x2012f0 twice
 -- decompile
@@ -48,8 +94,6 @@ fn square @ 0x201300 (size 6)
 == 0x201310 pick_op
 -- decompile
 /* velk pseudo-C: pick_op @ 0x201310 */
-void square(void);
-void twice(void);
 void *pick_op(int which) {
     return (void *)(which == 0 ? twice : square);
 }
@@ -112,47 +156,6 @@ fn apply_pointer @ 0x201360 (size 12)
 
 == 0x201370 factorial
 -- decompile
-#ifndef VELK_add_lanes32
-#define VELK_add_lanes32
-static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 64; i += 32) {
-        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
-        __int128 sx = (int32_t)x, sy = (int32_t)y;
-        __int128 low = -((__int128)1 << (32 - 1)), high = -low - 1;
-        out |= ((uint64_t)(x + y) & mask) << i;
-    }
-    return out;
-}
-#endif
-
-#ifndef VELK_interleave_high32
-#define VELK_interleave_high32
-static inline uint64_t interleave_high32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 32 / 32; ++i) {
-        out |= ((a >> (32 + i * 32)) & mask) << (2 * i * 32);
-        out |= ((b >> (32 + i * 32)) & mask) << ((2 * i + 1) * 32);
-    }
-    return out;
-}
-#endif
-
-#ifndef VELK_interleave_low32
-#define VELK_interleave_low32
-static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
-    const uint64_t mask = UINT64_MAX >> 32;
-    uint64_t out = 0;
-    for (unsigned i = 0; i < 32 / 32; ++i) {
-        out |= ((a >> (0 + i * 32)) & mask) << (2 * i * 32);
-        out |= ((b >> (0 + i * 32)) & mask) << ((2 * i + 1) * 32);
-    }
-    return out;
-}
-#endif
-
 /* velk pseudo-C: factorial @ 0x201370 */
 /* ref: 0x200190 .rodata */
 /* ref: 0x200198 .rodata */

@@ -784,7 +784,9 @@ fn render_with(
         super::locals::bind_return_slot(ir, provider, &mut ctx);
     }
     let mut out = String::new();
-    out.push_str(&super::vector_helpers::definitions(ir));
+    out.push_str(&super::prelude::section(
+        &super::vector_helpers::definitions(ir),
+    ));
     let name = ir
         .name
         .clone()
@@ -822,7 +824,7 @@ fn render_with(
         .flat_map(|block| &block.stmts)
         .any(|stmt| matches!(stmt, Stmt::Machine { instruction, .. } if !matches!(instruction, crate::ir::MachineInstruction::Atomic { .. })))
     {
-        out.push_str("#include <cpuid.h>\n#include <x86intrin.h>\n");
+        out.push_str(&super::prelude::section("#include <cpuid.h>\n\n#include <x86intrin.h>\n\n"));
     }
     let prototypes_at = out.len();
     if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
@@ -883,7 +885,10 @@ fn render_with(
             "uint64_t *{provider}(void); /* target frame's return-address slot */\n"
         ));
     }
-    out.insert_str(prototypes_at, &prototypes);
+    out.insert_str(
+        prototypes_at,
+        &super::prelude::section(&prototypes.replace("\n", "\n\n")),
+    );
     let mut declared = 0;
     if let Some(logical) = logical {
         for declaration in logical.declarations() {
@@ -1029,7 +1034,7 @@ fn render_with(
     let debug = debug_definitions(ir, &out, &ctx.arrays);
     out.insert_str(definitions_at, &debug);
     Rendered {
-        code: out,
+        code: super::prelude::combine(&out),
         segment_bases: segment_bases
             .into_iter()
             .map(|(segment, _, provider, _)| SegmentBaseRead {

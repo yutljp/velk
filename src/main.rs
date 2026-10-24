@@ -84,6 +84,9 @@ struct Cli {
         conflicts_with_all = ["functions", "sections", "build_signatures", "identify", "run", "mcp"]
     )]
     function: Option<String>,
+    /// Additional functions to decompile; use '*' for all functions.
+    #[arg(value_name = "FUNCTION", requires = "decompile")]
+    additional_functions: Vec<String>,
     /// Maximum functions (default: 40), matches (default: 100), or instructions (default: all).
     #[arg(
         long,
@@ -140,7 +143,7 @@ enum Command {
     },
     Decompile {
         path: PathBuf,
-        function: String,
+        functions: Vec<String>,
         signatures: Option<PathBuf>,
     },
     Disasm {
@@ -203,11 +206,14 @@ impl Cli {
                 decompile: true,
                 input: Some(path),
                 function: Some(function),
+                additional_functions,
                 signatures,
                 ..
             } => Command::Decompile {
                 path,
-                function,
+                functions: std::iter::once(function)
+                    .chain(additional_functions)
+                    .collect(),
                 signatures,
             },
             Self {
@@ -305,14 +311,39 @@ fn run(command: Command) -> Result<ExitCode> {
         }
         Command::Decompile {
             path,
-            function,
+            functions,
             signatures,
         } => {
-            let signatures = signatures.as_deref().map(Database::load).transpose()?;
-            let mut binary = Binary::open(&path)?;
-            let addr = binary.find(&function)?.addr;
-            let code = binary.decompile(addr, signatures.as_ref(), None)?;
-            print_code(&binary, addr, &function, &code, Language::C);
+            let signatures = match signatures.as_deref().map(Database::load).transpose() {
+                Ok(signatures) => signatures,
+                Err(error) => return Err(error),
+            };
+            let mut binary = match Binary::open(&path) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            let addresses = if functions.iter().any(|function| function == "*") {
+                binary.image().functions.keys().copied().collect::<Vec<_>>()
+            } else {
+                let mut addresses = Vec::new();
+                for target in &functions {
+                    match binary.find(target) {
+                        Ok(found) => addresses.push(found.addr),
+                        Err(error) => return Err(error),
+                    }
+                }
+                addresses
+            };
+            let mut code = String::new();
+            for &addr in &addresses {
+                match binary.decompile(addr, signatures.as_ref(), None) {
+                    Ok(text) => code.push_str(&text),
+                    Err(error) => return Err(error),
+                }
+            }
+            let code = velk::render::combine(&code);
+            let addr = addresses.first().copied().unwrap_or(0);
+            print_code(&binary, addr, &functions.join(", "), &code, Language::C);
         }
         Command::Disasm {
             path,
@@ -739,7 +770,7 @@ mod tests {
                 vec!["binary", "0x1e0", "--signatures", "db.json"],
                 Command::Decompile {
                     path: PathBuf::from("binary"),
-                    function: "0x1e0".into(),
+                    functions: vec!["0x1e0".into()],
                     signatures: Some(PathBuf::from("db.json")),
                 },
             ),
