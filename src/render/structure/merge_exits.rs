@@ -40,6 +40,8 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
     {
         return None;
     }
+    let shared = super::motion::shared(ir);
+    let ir = shared.as_ref().unwrap_or(ir);
     // Intern suffixes from the end, so each statement is visited once.
     let mut suffixes = HashMap::new();
     let mut occurrences: Vec<Vec<(usize, usize)>> = Vec::new();
@@ -79,7 +81,7 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
         )
     });
     if groups.is_empty() {
-        return None;
+        return shared;
     }
     let mut merged = ir.clone();
     let mut used = vec![false; ir.blocks.len()];
@@ -132,7 +134,7 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
         changed = true;
     }
     if !changed {
-        return None;
+        return shared;
     }
     Some(super::duplicate::threaded(&merged).unwrap_or(merged))
 }

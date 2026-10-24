@@ -19,6 +19,12 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
         let block = &ir.blocks[candidate];
         let short = block.stmts.len() <= 3
             && block.start < COPIES
+            // Keep shared constant setup together instead of repeating it in each arm.
+            && !(block.stmts.iter().filter(|stmt| matches!(stmt, Stmt::Assign { .. })).count() >= 2
+                && block.stmts.iter().all(|stmt| {
+                    matches!(stmt, Stmt::Assign { value: crate::ir::Expr::Const(_), .. }
+                        | Stmt::Br { target: Some(_) })
+                }))
             && block.stmts.iter().enumerate().all(|(position, stmt)| {
                 straight(stmt)
                     || (position + 1 == block.stmts.len()

@@ -529,6 +529,9 @@ pub(crate) fn fold_trailing_continues(nodes: &mut [Node]) {
 /// ways end so. A `break` leaves too where `break_leaves` says, as it does
 /// out of a loop, but not out of a `switch`, after which it carries on.
 pub(super) fn ends(nodes: &[Node], break_leaves: bool) -> bool {
+    if !break_leaves && breaks_out(nodes) {
+        return false;
+    }
     match nodes.last() {
         Some(Node::Stmt(stmt)) => matches!(
             stmt,
@@ -1306,6 +1309,39 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn conditional_switch_breaks_keep_the_continuation_reachable() {
+        let mut nodes = vec![
+            Node::Switch {
+                index: Expr::reg(0, 64),
+                arms: vec![(
+                    vec![1],
+                    vec![
+                        Node::If {
+                            cond: crate::ir::Cond::Eq,
+                            lhs: Expr::reg(1, 64),
+                            rhs: Expr::Const(0),
+                            then: vec![Node::Break],
+                            els: Vec::new(),
+                        },
+                        Node::Stmt(Stmt::Ret {
+                            value: Expr::Const(0),
+                        }),
+                    ],
+                )],
+                default: Some(vec![Node::Stmt(Stmt::Ret {
+                    value: Expr::Const(20),
+                })]),
+            },
+            Node::Stmt(Stmt::Ret {
+                value: Expr::Const(19),
+            }),
+        ];
+        assert!(!super::ends(&nodes[..1], true));
+        super::prune_unreachable(&mut nodes);
+        assert_eq!(nodes.len(), 2);
     }
 
     #[test]

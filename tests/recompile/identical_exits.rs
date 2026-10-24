@@ -127,3 +127,278 @@ fn printed_identical_exits_preserve_constants_and_store_order() {
         );
     }
 }
+
+#[test]
+fn shared_width_errors_preserve_cursor_and_truncation() {
+    let arguments = Convention::SysV.arguments();
+    let variable = velk::ir::VARIABLE_BASE;
+    let pointer = Expr::reg(arguments[0], 64);
+    let width = Expr::reg(arguments[1], 64);
+    let length = Expr::reg(arguments[2], 64);
+    let assign = |index, value| Stmt::Assign {
+        dest: RegRef { index, width: 64 },
+        value,
+    };
+    let mut ir = synthetic_ir(
+        "width_errors",
+        vec![
+            Param {
+                index: arguments[0],
+                name: "cursor".into(),
+                ty: CType::pointer_to(CType::U64),
+            },
+            Param {
+                index: arguments[1],
+                name: "width".into(),
+                ty: CType::U64,
+            },
+            Param {
+                index: arguments[2],
+                name: "length".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        Vec::new(),
+    );
+    ir.blocks.clear();
+    ir.blocks.push(Block {
+        start: 0,
+        stmts: vec![Stmt::Switch {
+            index: width,
+            cases: vec![(1, 10), (2, 20), (4, 30), (8, 40)],
+            default: Some(50),
+        }],
+    });
+    for (start, bytes) in [(10, 1), (20, 2), (30, 4), (40, 8), (50, 255)] {
+        ir.blocks.push(Block {
+            start,
+            stmts: vec![
+                assign(variable, Expr::Const(19)),
+                assign(variable + 1, Expr::Const(bytes)),
+                Stmt::Br { target: Some(100) },
+            ],
+        });
+    }
+    ir.blocks.push(Block {
+        start: 100,
+        stmts: vec![Stmt::Brif {
+            cond: Cond::Cc,
+            lhs: length,
+            rhs: Expr::reg(variable + 1, 64),
+            target: 200,
+        }],
+    });
+    ir.blocks.push(Block {
+        start: 110,
+        stmts: vec![
+            Stmt::Store {
+                addr: pointer.clone(),
+                value: Expr::reg(variable + 1, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 200,
+        stmts: vec![
+            Stmt::Store {
+                addr: pointer,
+                value: Expr::reg(variable + 1, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::reg(variable, 64),
+            },
+        ],
+    });
+    let inputs = [0, 1, 2, 4, 8, 255]
+        .into_iter()
+        .flat_map(|width| {
+            [0, 1, 2, 3, 4, 7, 8, 9, u64::MAX]
+                .into_iter()
+                .map(move |length| vec![REGION, width, length])
+        })
+        .collect();
+    let candidate = printed_candidate(ir, inputs);
+    assert_eq!(
+        candidate.code.matches("19;").count(),
+        1,
+        "{}",
+        candidate.code
+    );
+    check_candidates("width-errors", vec![candidate], Mode::Memory, &[]);
+}
+
+#[test]
+fn shared_prefix_preserves_branch_input() {
+    let argument = Convention::SysV.arguments()[0];
+    let variable = velk::ir::VARIABLE_BASE;
+    for destination in [variable, argument] {
+        let mut ir = synthetic_ir(
+            "shared_prefix",
+            vec![Param {
+                index: argument,
+                name: "input".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            Vec::new(),
+        );
+        ir.blocks.clear();
+        ir.blocks.push(Block {
+            start: 0,
+            stmts: vec![Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(argument, 64),
+                rhs: Expr::Const(0),
+                target: 20,
+            }],
+        });
+        for (start, add) in [(10, 1), (20, 2)] {
+            ir.blocks.push(Block {
+                start,
+                stmts: vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: destination,
+                            width: 64,
+                        },
+                        value: Expr::Const(19),
+                    },
+                    Stmt::Ret {
+                        value: Expr::bin(BinOp::Add, Expr::reg(destination, 64), Expr::Const(add)),
+                    },
+                ],
+            });
+        }
+        let candidate = printed_candidate(
+            ir,
+            [0, 1, 2, u64::MAX].into_iter().map(|n| vec![n]).collect(),
+        );
+        assert!(candidate.code.contains("19"), "{}", candidate.code);
+        if destination == variable {
+            assert_eq!(
+                candidate.code.matches("19;").count(),
+                1,
+                "{}",
+                candidate.code
+            );
+        }
+        check_candidates("shared-prefix", vec![candidate], Mode::Registers, &[]);
+    }
+}
+
+#[test]
+fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
+    let arguments = Convention::SysV.arguments();
+    let error = velk::ir::VARIABLE_BASE;
+    let detail = error + 1;
+    let pointer = Expr::reg(arguments[0], 64);
+    let mut ir = synthetic_ir(
+        "shared_decoder_error",
+        vec![
+            Param {
+                index: arguments[0],
+                name: "cursor".into(),
+                ty: CType::pointer_to(CType::U64),
+            },
+            Param {
+                index: arguments[1],
+                name: "width".into(),
+                ty: CType::U64,
+            },
+            Param {
+                index: arguments[2],
+                name: "length".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        Vec::new(),
+    );
+    let assign = |index, value| Stmt::Assign {
+        dest: RegRef { index, width: 64 },
+        value: Expr::Const(value),
+    };
+    ir.blocks = vec![Block {
+        start: 0,
+        stmts: vec![Stmt::Switch {
+            index: Expr::reg(arguments[1], 64),
+            cases: vec![(1, 10), (2, 20), (4, 30), (8, 40)],
+            default: Some(50),
+        }],
+    }];
+    for (start, bytes) in [(10, 1), (20, 2), (30, 4), (40, 8)] {
+        ir.blocks.push(Block {
+            start,
+            stmts: vec![Stmt::Brif {
+                cond: Cond::Cc,
+                lhs: Expr::reg(arguments[2], 64),
+                rhs: Expr::Const(bytes),
+                target: 100,
+            }],
+        });
+        ir.blocks.push(Block {
+            start: start + 1,
+            stmts: vec![
+                Stmt::Store {
+                    addr: pointer.clone(),
+                    value: Expr::Const(bytes),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        });
+    }
+    ir.blocks.push(Block {
+        start: 50,
+        stmts: vec![
+            assign(error, 20),
+            assign(detail, 255),
+            Stmt::Br { target: Some(200) },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 100,
+        stmts: vec![
+            assign(error, 19),
+            assign(detail, 0),
+            Stmt::Br { target: Some(200) },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 200,
+        stmts: vec![
+            Stmt::Store {
+                addr: pointer,
+                value: Expr::reg(detail, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::reg(error, 64),
+            },
+        ],
+    });
+    let inputs = [0, 1, 2, 4, 8, 255]
+        .into_iter()
+        .flat_map(|width| {
+            [0, 1, 2, 3, 4, 7, 8, 9, u64::MAX]
+                .into_iter()
+                .map(move |length| vec![REGION, width, length])
+        })
+        .collect();
+    let candidate = printed_candidate(ir, inputs);
+    assert_eq!(
+        candidate.code.matches("19;").count(),
+        1,
+        "{}",
+        candidate.code
+    );
+    check_candidates("shared-decoder-error", vec![candidate], Mode::Memory, &[]);
+}
