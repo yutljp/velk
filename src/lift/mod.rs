@@ -222,6 +222,11 @@ pub fn lift_with(
                         &[(x86_64::DIRECTION, Expr::constant(0))],
                     );
                 }
+                for block in &mut blocks {
+                    block.stmts.retain(|stmt| {
+                        !matches!(stmt, Stmt::Assign { dest, .. } if dest.index == x86_64::DIRECTION)
+                    });
+                }
             }
             if direction && let Some(entry) = blocks.first_mut() {
                 entry.stmts.insert(

@@ -31,6 +31,21 @@ fn setup(registers: &[(u16, u64)]) -> eval::Setup<'_> {
     }
 }
 
+#[test]
+fn direction_is_clear_at_entry_and_after_a_returning_call() {
+    for code in [
+        vec![0x48, 0xa5, 0xc3],
+        vec![0xfd, 0xe8, 0, 0, 0, 0, 0x48, 0xa5, 0xc3],
+    ] {
+        let mut ir = lift(&code, Expr::reg(7, 64));
+        crate::passes::optimize(&mut ir, false);
+        let code = crate::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(!code.contains(" ? "), "{code}");
+        assert!(!code.contains("-0x8"), "{code}");
+        assert!(code.contains("+ 8") || code.contains("+ 0x8"), "{code}");
+    }
+}
+
 fn source(instruction: MachineInstruction, inputs: &[u64]) -> Result<Vec<u64>, &'static str> {
     Ok(match instruction {
         MachineInstruction::Cpuid => {

@@ -543,6 +543,7 @@ fn lift_instruction(
                 let made = call(CallKind::Invoke, lifter.image, lifter.summaries, None);
                 lifter.stmts.push(made);
             }
+            lifter.assign(DIRECTION, 64, Expr::constant(0));
         }
         Mnemonic::Jmp => {
             if ins.op0_kind() == OpKind::NearBranch64 {

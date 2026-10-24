@@ -113,6 +113,11 @@ fn for_loop(
     let Some((Node::Stmt(step), rest)) = body.split_last() else {
         return None;
     };
+    if let Some(text) =
+        super::string_loops::render(init, (*cond, lhs, rhs), body, preceding, depth, ctx)
+    {
+        return Some(text);
+    }
     let Some(counter) = super::naming::roles::counted(init, lhs, rhs, body) else {
         return None;
     };

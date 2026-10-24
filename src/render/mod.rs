@@ -13,6 +13,7 @@ mod naming;
 mod params;
 mod stack_bytes;
 mod stmt;
+mod string_loops;
 pub mod structure;
 mod symbols;
 mod transfers;

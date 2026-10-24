@@ -263,13 +263,33 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
             rhs,
             then,
             els,
-        } => Expr::Select {
-            cond,
-            lhs: Box::new(simplify_expr(*lhs, constants)),
-            rhs: Box::new(simplify_expr(*rhs, constants)),
-            then: Box::new(simplify_expr(*then, constants)),
-            els: Box::new(simplify_expr(*els, constants)),
-        },
+        } => {
+            let bits = crate::ir::semantics::operand_width(&lhs, &rhs);
+            let lhs = simplify_expr(*lhs, constants);
+            let rhs = simplify_expr(*rhs, constants);
+            let then = simplify_expr(*then, constants);
+            let els = simplify_expr(*els, constants);
+            let known = match (&lhs, &rhs) {
+                (Expr::Const(a), Expr::Const(b)) => {
+                    Some(crate::ir::semantics::holds(cond, *a, *b, bits))
+                }
+                _ if lhs == rhs && matches!(lhs, Expr::Reg { .. }) => {
+                    Some(crate::ir::semantics::holds(cond, 0, 0, bits))
+                }
+                _ => None,
+            };
+            match known {
+                Some(true) => then,
+                Some(false) => els,
+                None => Expr::Select {
+                    cond,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                    then: Box::new(then),
+                    els: Box::new(els),
+                },
+            }
+        }
         Expr::Apply { op, args } => {
             let args: Vec<Expr> = args
                 .into_iter()
@@ -1043,6 +1063,59 @@ mod magic_tests {
                 0xffff_ffff,
             ] {
                 assert_eq!((x * magic) >> shift, x / divisor, "{x} / {divisor}");
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod select_tests {
+    use super::*;
+    use crate::ir::Cond;
+
+    #[test]
+    fn selects_fold_constant_and_identical_comparisons_at_the_original_width() {
+        for cond in [
+            Cond::Eq,
+            Cond::Ne,
+            Cond::Cs,
+            Cond::Cc,
+            Cond::Hi,
+            Cond::Ls,
+            Cond::Ge,
+            Cond::Lt,
+            Cond::Gt,
+            Cond::Le,
+            Cond::Mi,
+            Cond::Pl,
+            Cond::Vs,
+            Cond::Vc,
+        ] {
+            for (lhs, rhs, constants, a, b, bits) in [
+                (Expr::Const(1), Expr::Const(2), HashMap::new(), 1, 2, 64),
+                (
+                    Expr::reg(0, 8),
+                    Expr::Const(255),
+                    HashMap::from([(0, 127)]),
+                    127,
+                    255,
+                    8,
+                ),
+                (Expr::reg(0, 32), Expr::reg(0, 32), HashMap::new(), 0, 0, 32),
+            ] {
+                let value = Expr::Select {
+                    cond,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                    then: Box::new(Expr::Const(11)),
+                    els: Box::new(Expr::Const(22)),
+                };
+                let expected = if crate::ir::semantics::holds(cond, a, b, bits) {
+                    11
+                } else {
+                    22
+                };
+                assert_eq!(simplify_expr(value, &constants), Expr::Const(expected));
             }
         }
     }
