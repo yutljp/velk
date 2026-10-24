@@ -83,10 +83,7 @@ fn <unnamed> @ 0x210228 (size 16)
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 uint32_t sub_210238(uint32_t a0, int32_t a1) {
-    int32_t t1;
-
-    t1 = -a1 & 0x1f;
-    return a0 >> t1 | a0 << (0x20 - t1 & 0x1f);
+    return a0 >> (-a1 & 0x1f) | a0 << (0x20 - -a1 & 0x1f);
 }
 -- signature
 uint32_t (uint32_t a0, int32_t a1)
@@ -95,8 +92,7 @@ uint32_t (uint32_t a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x210238 (size 12)
   blk0 @ 0x210238:
-    t1 = ((#0x0 - w1) & #0x1f)
-    ret (((w0 >> t1) | (w0 << ((#0x20 - t1) & #0x1f))) & #0xffffffff)
+    ret (((w0 >> ((#0x0 - w1) & #0x1f)) | (w0 << ((#0x20 - ((#0x0 - w1) & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x210238","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":0}
 

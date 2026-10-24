@@ -82,7 +82,10 @@ fn in_range @ 0x201240 (size 13)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x201250 */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
-    return x << (k & 0x1f) | x >> (0x20 - k & 0x1f);
+    uint8_t t1;
+
+    t1 = k & 0x1f;
+    return x << t1 | x >> (0x20 - t1 & 0x1f);
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)
@@ -91,7 +94,8 @@ unsigned int (unsigned int x, unsigned int k)
 -- ir
 fn rotate_left @ 0x201250 (size 7)
   blk0 @ 0x201250:
-    ret (((edi << (esi & #0x1f)) | (edi >> ((#0x20 - (esi & #0x1f)) & #0x1f))) & #0xffffffff)
+    t1 = (esi & #0x1f)
+    ret (((edi << t1) | (edi >> ((#0x20 - t1) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x201250","approxTokens":120,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf","unwind"],"section":".text","size":7,"unsupported":0}
 

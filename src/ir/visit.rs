@@ -242,6 +242,41 @@ pub(crate) fn statement_registers(
     (writes, reads)
 }
 
+/// The temporaries no statement and no annotation of the function names,
+/// nor any with a fixed role, in ascending order.
+pub(crate) fn unused_temporaries(ir: &super::FunctionIr) -> Vec<u16> {
+    let mut used = std::collections::HashSet::new();
+    used.extend(super::FLAG_OPERANDS);
+    used.extend(super::FLAG_CARRIED);
+    used.extend([
+        super::EXCHANGE,
+        super::SWITCH_INDEX,
+        super::EXCEPTION,
+        super::SELECTOR,
+    ]);
+    used.extend(ir.params.iter().map(|param| param.index));
+    used.extend(ir.signed_params.iter().copied());
+    used.extend(ir.pointer_values.iter().copied());
+    used.extend(ir.value_types.keys().copied());
+    used.extend(ir.variable_registers.keys().copied());
+    used.extend(ir.variable_registers.values().copied());
+    used.extend(ir.accesses.iter().map(|access| access.register));
+    used.extend(
+        ir.structures
+            .iter()
+            .flat_map(|structure| structure.elements.iter().copied()),
+    );
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let (writes, reads) = statement_registers(stmt);
+        used.extend(writes);
+        used.extend(reads);
+        used.extend(stmt.call_outputs().iter().map(|output| output.register));
+    }
+    (super::TEMP_BASE..super::VARIABLE_BASE)
+        .filter(|register| !used.contains(register))
+        .collect()
+}
+
 pub(crate) fn expr_reads(expr: &Expr, reads: &mut std::collections::HashSet<u16>) {
     match expr {
         Expr::Reg { index, .. } => {

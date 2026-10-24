@@ -230,10 +230,7 @@ fn flags_level @ 0x2012d0 (size 23)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2012f0 */
 void flags_set_mode(struct flags *f, unsigned int mode) {
-    uint8_t t1;
-
-    t1 = mode;
-    *(uint8_t *)(f) = *(uint8_t *)(f) & 0xf1 | t1 + t1 & 0xe;
+    *(uint8_t *)(f) = *(uint8_t *)(f) & 0xf1 | mode + mode & 0xe;
 }
 -- signature
 void (struct flags * f, unsigned int mode)
@@ -242,8 +239,7 @@ void (struct flags * f, unsigned int mode)
 -- ir
 fn flags_set_mode @ 0x2012f0 (size 18)
   blk0 @ 0x2012f0:
-    t1 = (rsi & #0xff)
-    store8(((load8(rdi) & #0xf1) | ((t1 + t1) & #0xe)), rdi)
+    store8(((load8(rdi) & #0xf1) | (((rsi & #0xff) + (rsi & #0xff)) & #0xe)), rdi)
     ret #0x0
 -- card
 {"accesses":["f +0x0:uint8_t"],"addr":"0x2012f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf","unwind"],"section":".text","size":18,"unsupported":0}

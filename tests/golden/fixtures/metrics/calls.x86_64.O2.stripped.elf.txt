@@ -130,7 +130,7 @@ int32_t sub_201370(int32_t a0) {
     uint64_t *const qword_2001b8 = (uint64_t *)0x2001b8ULL;
     uint64_t *const qword_2001c0 = (uint64_t *)0x2001c0ULL;
     uint64_t *const qword_2001c8 = (uint64_t *)0x2001c8ULL;
-    int64_t t1;
+    int32_t t1;
     int32_t v1;
     int32_t v2;
     int32_t v3;
@@ -153,8 +153,8 @@ int32_t sub_201370(int32_t a0) {
     uint64_t v25;
     uint64_t v26;
     int32_t v33;
-    uint64_t v37;
-    uint32_t v47;
+    uint64_t v36;
+    uint32_t v46;
 
     v1 = 0x1;
     if (a0 < 0x2) {
@@ -188,15 +188,15 @@ int32_t sub_201370(int32_t a0) {
             v10 = interleave_high32(v26, v25);
             v5 = v19 >> 0x20 | v19 >> 0x20 << 0x20;
             t1 = v18 >> 0x20;
-            v20 = t1 | (uint64_t)t1 << 0x20;
+            v20 = (uint32_t)t1 | (uint64_t)t1 << 0x20;
             v18 = (v18 & 0xffffffff) * (v16 & 0xffffffff);
             v19 = (v19 & 0xffffffff) * (v17 & 0xffffffff);
             v33 = v17 >> 0x20 | v17 >> 0x20 << 0x20;
             t1 = v16 >> 0x20;
             v20 = ((t1 * v20) & 0xffffffff) | (uint64_t)(v33 * v5) << 0x20;
-            v37 = (v18 & 0xffffffff) | v19 << 0x20;
-            v16 = interleave_low32(v37, v20);
-            v17 = interleave_high32(v37, v20);
+            v36 = (v18 & 0xffffffff) | v19 << 0x20;
+            v16 = interleave_low32(v36, v20);
+            v17 = interleave_high32(v36, v20);
             v6 = add_lanes32(v6, v13);
             v8 = add_lanes32(v8, v14);
             v1 = v1 - 0x8;
@@ -208,9 +208,9 @@ int32_t sub_201370(int32_t a0) {
     }
     do {
         v1 = v1 * a0;
-        v47 = a0;
+        v46 = a0;
         a0 = a0 - 0x1;
-    } while (v47 > 0x2);
+    } while (v46 > 0x2);
     return v1;
 }
 -- signature
@@ -258,16 +258,16 @@ fn <unnamed> @ 0x201370 (size 238)
     v9 = interleave_low32(v26, v25)
     v10 = interleave_high32(v26, v25)
     v5 = (((v19 >> #0x20) & #0xffffffff) | (((v19 >> #0x20) & #0xffffffff) << #0x20))
-    t1 = (v18 >> #0x20)
-    v20 = ((t1 & #0xffffffff) | ((t1 & #0xffffffff) << #0x20))
+    t1 = ((v18 >> #0x20) & #0xffffffff)
+    v20 = (t1 | (t1 << #0x20))
     v18 = ((v18 & #0xffffffff) * (v16 & #0xffffffff))
     v19 = ((v19 & #0xffffffff) * (v17 & #0xffffffff))
     v33 = (((v17 >> #0x20) & #0xffffffff) | (((v17 >> #0x20) & #0xffffffff) << #0x20))
-    t1 = (v16 >> #0x20)
-    v20 = ((((t1 & #0xffffffff) * (v20 & #0xffffffff)) & #0xffffffff) | ((((v33 & #0xffffffff) * (v5 & #0xffffffff)) & #0xffffffff) << #0x20))
-    v37 = ((v18 & #0xffffffff) | ((v19 & #0xffffffff) << #0x20))
-    v16 = interleave_low32(v37, v20)
-    v17 = interleave_high32(v37, v20)
+    t1 = ((v16 >> #0x20) & #0xffffffff)
+    v20 = (((t1 * (v20 & #0xffffffff)) & #0xffffffff) | ((((v33 & #0xffffffff) * (v5 & #0xffffffff)) & #0xffffffff) << #0x20))
+    v36 = ((v18 & #0xffffffff) | ((v19 & #0xffffffff) << #0x20))
+    v16 = interleave_low32(v36, v20)
+    v17 = interleave_high32(v36, v20)
     v6 = add_lanes32(v6, v13)
     v8 = add_lanes32(v8, v14)
     v1 = (((v1 & #0xffffffff) + #0xfffffffffffffff8) & #0xffffffff)
@@ -277,9 +277,9 @@ fn <unnamed> @ 0x201370 (size 238)
     brif eq v2, v3 -> 0x20145d
   blk5 @ 0x201450:
     v1 = (((v1 & #0xffffffff) * (rdi & #0xffffffff)) & #0xffffffff)
-    v47 = (rdi & #0xffffffff)
+    v46 = (rdi & #0xffffffff)
     rdi = ((rdi + #0xffffffffffffffff) & #0xffffffff)
-    brif hi v47, #0x2 -> 0x201450
+    brif hi v46, #0x2 -> 0x201450
   blk6 @ 0x20145d:
     ret v1
 -- card

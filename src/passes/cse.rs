@@ -1,36 +1,49 @@
 use std::collections::HashMap;
 
 use crate::ir::visit::children;
-use crate::ir::visit::expr_width;
-use crate::ir::{Expr, FunctionIr, Stmt};
+use crate::ir::visit::unused_temporaries;
+use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
+
+#[cfg(test)]
+mod tests;
 
 /// Common-subexpression elimination within each statement: a pure subtree
 /// repeated in one statement is bound once to a `t<n>` temporary.
 pub fn cse(ir: &mut FunctionIr) {
+    // Indices no statement or annotation names, so a binding never takes
+    // a temporary that is live elsewhere or has a fixed role.
+    let temporaries = unused_temporaries(ir);
     for block in &mut ir.blocks {
-        for stmt_index in 0..block.stmts.len() {
+        for stmt in std::mem::take(&mut block.stmts) {
             let mut counts: HashMap<Expr, usize> = HashMap::new();
-            let snapshot = block.stmts[stmt_index].clone();
-            count_stmt(&snapshot, &mut counts);
+            count_stmt(&stmt, &mut counts);
             if counts.values().all(|count| *count <= 1) {
+                block.stmts.push(stmt);
                 continue;
             }
 
             let mut bound: HashMap<Expr, u16> = HashMap::new();
-            let mut next_id = crate::ir::TEMP_BASE;
+            let mut available = temporaries.iter().copied();
             let mut pending: Vec<Stmt> = Vec::new();
-            let stmt = std::mem::replace(
-                &mut block.stmts[stmt_index],
-                Stmt::unsupported(String::new()),
-            );
+            let mut share = |expr| {
+                bind(
+                    expr,
+                    &counts,
+                    &mut bound,
+                    &mut pending,
+                    &mut available,
+                    false,
+                    0,
+                )
+            };
             let rewritten = match stmt {
                 Stmt::Assign { dest, value } => Stmt::Assign {
                     dest,
-                    value: bind(value, &counts, &mut bound, &mut pending, &mut next_id),
+                    value: share(value),
                 },
                 Stmt::Store { addr, value, width } => {
-                    let addr = bind(addr, &counts, &mut bound, &mut pending, &mut next_id);
-                    let value = bind(value, &counts, &mut bound, &mut pending, &mut next_id);
+                    let addr = share(addr);
+                    let value = share(value);
                     Stmt::Store { addr, value, width }
                 }
                 Stmt::Brif {
@@ -40,60 +53,85 @@ pub fn cse(ir: &mut FunctionIr) {
                     target,
                 } => Stmt::Brif {
                     cond,
-                    lhs: bind(lhs, &counts, &mut bound, &mut pending, &mut next_id),
-                    rhs: bind(rhs, &counts, &mut bound, &mut pending, &mut next_id),
+                    lhs: share(lhs),
+                    rhs: share(rhs),
                     target,
                 },
                 Stmt::Ret { value } => Stmt::Ret {
-                    value: bind(value, &counts, &mut bound, &mut pending, &mut next_id),
+                    value: share(value),
                 },
                 Stmt::BrIndirect { target } => Stmt::BrIndirect {
-                    target: bind(target, &counts, &mut bound, &mut pending, &mut next_id),
+                    target: share(target),
                 },
                 Stmt::Switch {
                     index,
                     cases,
                     default,
                 } => Stmt::Switch {
-                    index: bind(index, &counts, &mut bound, &mut pending, &mut next_id),
+                    index: share(index),
                     cases,
                     default,
                 },
                 other => other,
             };
-            block.stmts[stmt_index] = rewritten;
-            for (insert_position, definition) in pending.into_iter().enumerate() {
-                block.stmts.insert(stmt_index + insert_position, definition);
-            }
+            block.stmts.extend(pending);
+            block.stmts.push(rewritten);
         }
     }
 }
 
 /// Works bottom-up; only subtrees that contain an operator are bound.
+/// `conditional` holds inside an arm of a select, which runs only when
+/// chosen; `outer` is how often the subtree being bound around `expr`
+/// occurs.
 fn bind(
     expr: Expr,
     counts: &HashMap<Expr, usize>,
     bound: &mut HashMap<Expr, u16>,
     pending: &mut Vec<Stmt>,
-    next_id: &mut u16,
+    available: &mut impl Iterator<Item = u16>,
+    conditional: bool,
+    outer: usize,
 ) -> Expr {
+    let count = counts.get(&expr).copied().unwrap_or(0);
+    // A part repeated only as often as the subtree around it is shared
+    // through that subtree's temporary.
+    let width = if count > 1 && count > outer {
+        binding_width(&expr)
+    } else {
+        None
+    };
+    // A binding runs before the statement, whichever arm a select chooses.
+    let binds = width.is_some() && (!conditional || safe_to_speculate(&expr));
+    let enclosing = if binds { count } else { outer };
+    let mut inner = |expr: Box<Expr>, conditional| {
+        Box::new(bind(
+            *expr,
+            counts,
+            bound,
+            pending,
+            available,
+            conditional,
+            enclosing,
+        ))
+    };
     let rewritten = match expr {
         Expr::Bin { op, lhs, rhs } => Expr::Bin {
             op,
-            lhs: Box::new(bind(*lhs, counts, bound, pending, next_id)),
-            rhs: Box::new(bind(*rhs, counts, bound, pending, next_id)),
+            lhs: inner(lhs, conditional),
+            rhs: inner(rhs, conditional),
         },
         Expr::Load {
             addr,
             width,
             signed,
         } => Expr::Load {
-            addr: Box::new(bind(*addr, counts, bound, pending, next_id)),
+            addr: inner(addr, conditional),
             width,
             signed,
         },
         Expr::SignExtend { value, width } => Expr::SignExtend {
-            value: Box::new(bind(*value, counts, bound, pending, next_id)),
+            value: inner(value, conditional),
             width,
         },
         Expr::Select {
@@ -104,50 +142,105 @@ fn bind(
             els,
         } => Expr::Select {
             cond,
-            lhs: Box::new(bind(*lhs, counts, bound, pending, next_id)),
-            rhs: Box::new(bind(*rhs, counts, bound, pending, next_id)),
-            then: Box::new(bind(*then, counts, bound, pending, next_id)),
-            els: Box::new(bind(*els, counts, bound, pending, next_id)),
+            lhs: inner(lhs, conditional),
+            rhs: inner(rhs, conditional),
+            then: inner(then, true),
+            els: inner(els, true),
         },
         Expr::Apply { op, args } => Expr::Apply {
             op,
             args: args
                 .into_iter()
-                .map(|arg| bind(arg, counts, bound, pending, next_id))
+                .map(|arg| *inner(Box::new(arg), conditional))
                 .collect(),
         },
         other => other,
     };
-
-    let operator = matches!(
-        rewritten,
-        Expr::Bin { .. } | Expr::Select { .. } | Expr::SignExtend { .. } | Expr::Apply { .. }
-    );
-    // A 32-bit read of a register is as cheap as the register.
-    let narrow_read = matches!(
-        &rewritten,
-        Expr::Bin { op: crate::ir::BinOp::And, lhs, rhs }
-            if matches!(lhs.as_ref(), Expr::Reg { .. }) && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
-    );
-    if !operator || narrow_read {
+    let Some(width) = width else {
         return rewritten;
-    }
-    if !load_free(&rewritten) || counts.get(&rewritten).copied().unwrap_or(0) <= 1 {
-        return rewritten;
-    }
-    // The temporary takes its value's width so a 32-bit value stays 32-bit.
-    let width = expr_width(&rewritten).unwrap_or(64);
+    };
     if let Some(index) = bound.get(&rewritten).copied() {
         return Expr::Reg { index, width };
     }
-    let index = *next_id;
-    *next_id += 1;
+    if !binds {
+        return rewritten;
+    }
+    let Some(index) = available.next() else {
+        return rewritten;
+    };
     bound.insert(rewritten.clone(), index);
     pending.push(Stmt::Assign {
         dest: crate::ir::RegRef { index, width },
         value: rewritten,
     });
     Expr::Reg { index, width }
+}
+
+/// The width of a temporary for `expr`, when one is worth having: `expr`
+/// has an operator, is not a read of a register's low part, which is as
+/// cheap as the register, and its value fits the width it is meaningful at.
+fn binding_width(expr: &Expr) -> Option<u8> {
+    match expr {
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(lhs.as_ref(), Expr::Reg { .. })
+            && matches!(rhs.as_ref(), Expr::Const(0xff | 0xffff | 0xffff_ffff)) =>
+        {
+            return None;
+        }
+        Expr::Bin { .. } | Expr::Select { .. } | Expr::SignExtend { .. } | Expr::Apply { .. } => {}
+        _ => return None,
+    }
+    // A constant expression has no width of its own.
+    let bits = crate::ir::semantics::width(expr);
+    if !(1..=64).contains(&bits) {
+        return None;
+    }
+    // A narrow temporary keeps only its low bits.
+    if bits < 64 && crate::ssa::ranges::of(expr).hi > crate::ir::semantics::mask(bits) {
+        return None;
+    }
+    u8::try_from(bits).ok()
+}
+
+/// Whether `expr` can be computed where its select does not choose it:
+/// integer arithmetic that cannot fault.
+fn safe_to_speculate(expr: &Expr) -> bool {
+    match expr {
+        Expr::Reg { width: 1..=64, .. } | Expr::Const(_) => true,
+        Expr::SignExtend {
+            width: 1..=8,
+            value,
+        } => safe_to_speculate(value),
+        Expr::Bin {
+            op:
+                BinOp::Add
+                | BinOp::Sub
+                | BinOp::Mul
+                | BinOp::MulHigh
+                | BinOp::MulHighS
+                | BinOp::And
+                | BinOp::Or
+                | BinOp::Xor
+                | BinOp::Shl
+                | BinOp::Shr
+                | BinOp::Sar,
+            lhs,
+            rhs,
+        } => safe_to_speculate(lhs) && safe_to_speculate(rhs),
+        Expr::Select {
+            lhs,
+            rhs,
+            then,
+            els,
+            ..
+        } => [lhs, rhs, then, els]
+            .into_iter()
+            .all(|value| safe_to_speculate(value)),
+        _ => false,
+    }
 }
 
 fn count_stmt(stmt: &Stmt, counts: &mut std::collections::HashMap<Expr, usize>) {
