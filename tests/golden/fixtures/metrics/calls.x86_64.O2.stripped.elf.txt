@@ -49,7 +49,7 @@ fn <unnamed> @ 0x201300 (size 6)
 -- decompile
 /* velk pseudo-C: sub_201310 @ 0x201310 */
 int32_t sub_201310(int32_t a0) {
-    return (a0 == 0x0 ? 0x2012f0 : 0x201300);
+    return (a0 == 0 ? 2102000 : 0x201300);
 }
 -- signature
 int32_t (int32_t a0)
@@ -72,7 +72,7 @@ int32_t sub_201330(uint32_t a0, int32_t a1) {
     int64_t v2;
 
     v1 = 0xaaaaaaab * (uint64_t)a0 >> 0x21;
-    v2 = a0 - (v1 + v1 * 0x2);
+    v2 = a0 - (v1 + v1 * 2);
     return ((uint64_t (*)())qword_202610[v2])((a1 & 0xffffffff), a1, v1, 0x202610);
 }
 -- signature
@@ -96,7 +96,7 @@ int32_t sub_201360(void *a0, int32_t a1) {
     int32_t v3;
 
     v3 = ((uint64_t (*)())a0)((a1 & 0xffffffff));
-    return v3 + 0x1;
+    return v3 + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -156,12 +156,12 @@ int32_t sub_201370(int32_t a0) {
     uint64_t v36;
     uint32_t v46;
 
-    v1 = 0x1;
-    if (a0 < 0x2) {
-        return 0x1;
+    v1 = 1;
+    if (a0 < 2) {
+        return 1;
     }
-    if ((uint32_t)a0 >= 0x9) {
-        v2 = a0 - 0x1;
+    if ((uint32_t)a0 >= 9) {
+        v2 = a0 - 1;
         v3 = v2 & 0xfffffffffffffff8;
         v4 = (a0 & 0xffffffff);
         a0 = a0 - v3;
@@ -199,8 +199,8 @@ int32_t sub_201370(int32_t a0) {
             v17 = interleave_high32(v36, v20);
             v6 = add_lanes32(v6, v13);
             v8 = add_lanes32(v8, v14);
-            v1 = v1 - 0x8;
-        } while (v1 != 0x0);
+            v1 = v1 - 8;
+        } while (v1 != 0);
         v1 = (v17 >> 0x20) * (v10 >> 0x20) * ((v16 >> 0x20) * (v9 >> 0x20)) * (v17 * v10 * (v16 * v9));
         if (v2 == v3) {
             return v1;
@@ -209,8 +209,8 @@ int32_t sub_201370(int32_t a0) {
     do {
         v1 = v1 * a0;
         v46 = a0;
-        a0 = a0 - 0x1;
-    } while (v46 > 0x2);
+        a0 = a0 - 1;
+    } while (v46 > 2);
     return v1;
 }
 -- signature
@@ -289,10 +289,10 @@ fn <unnamed> @ 0x201370 (size 238)
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 int32_t sub_201460(int32_t a0) {
-    if (a0 == 0x0) {
-        return 0x0;
+    if (a0 == 0) {
+        return 0;
     }
-    return sub_201470(((a0 - 0x1) & 0xffffffff));
+    return sub_201470(((a0 - 1) & 0xffffffff));
 }
 -- signature
 int32_t (int32_t a0)
@@ -314,10 +314,10 @@ fn <unnamed> @ 0x201460 (size 14)
 -- decompile
 /* velk pseudo-C: sub_201470 @ 0x201470 */
 int32_t sub_201470(int32_t a0) {
-    if (a0 == 0x0) {
-        return 0x1;
+    if (a0 == 0) {
+        return 1;
     }
-    return sub_201460(((a0 - 0x1) & 0xffffffff));
+    return sub_201460(((a0 - 1) & 0xffffffff));
 }
 -- signature
 int32_t (int32_t a0)
@@ -356,7 +356,7 @@ fn <unnamed> @ 0x201490 (size 32)
 -- decompile
 /* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
 int64_t sub_2014b0(int64_t a0) {
-    return sub_201490(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
+    return sub_201490(a0, 1, 2, 3, 4, 5, 6, 7, 8);
 }
 -- signature
 int64_t (int64_t a0)
@@ -386,50 +386,50 @@ int32_t sub_2014f0(int32_t a0, ...) {
     int64_t local_3; /* [sp-d8] */
 
     local_0 = local_1;
-    local_2 = (uint32_t *)(rsp + 0x8);
+    local_2 = (uint32_t *)(rsp + 8);
     local_3 = 0x3000000008;
-    if (a0 <= 0x0) {
-        return 0x0;
+    if (a0 <= 0) {
+        return 0;
     }
     v1 = *(uint32_t *)&local_3;
     v2 = (uintptr_t)local_0;
     v3 = local_2;
-    if (a0 != 0x1) {
+    if (a0 != 1) {
         v6 = a0 & 0x7ffffffe;
-        v4 = 0x0;
+        v4 = 0;
         do {
-            if (v1 > 0x28) {
+            if (v1 > 40) {
                 v7 = v3 + 0x2;
                 local_2 = v7;
             } else {
                 v7 = v3;
                 v3 = (uint32_t *)(v1 + v2);
-                v1 = ((v1 + 0x8) & 0xffffffff);
+                v1 = ((v1 + 8) & 0xffffffff);
                 *(uint32_t *)&local_3 = v1;
             }
             v4 = v4 + *v3;
-            if (v1 < 0x29) {
+            if (v1 < 41) {
                 v3 = v7;
                 v7 = (uint32_t *)(v1 + v2);
-                v1 = ((v1 + 0x8) & 0xffffffff);
+                v1 = ((v1 + 8) & 0xffffffff);
                 *(uint32_t *)&local_3 = v1;
             } else {
                 v3 = v7 + 0x2;
                 local_2 = v3;
             }
             v4 = v4 + *v7;
-            v6 = v6 - 0x2;
-        } while (v6 != 0x0);
+            v6 = v6 - 2;
+        } while (v6 != 0);
     } else {
-        v4 = 0x0;
+        v4 = 0;
     }
-    if ((a0 & 0x1) == 0x0) {
+    if ((a0 & 0x1) == 0) {
         return v4;
     }
-    if (v1 >= 0x29) {
+    if (v1 >= 41) {
         local_2 = v3 + 0x2;
     } else {
-        *(uint32_t *)&local_3 = v1 + 0x8;
+        *(uint32_t *)&local_3 = v1 + 8;
         v3 = (uint32_t *)(v2 + v1);
     }
     return v4 + *v3;

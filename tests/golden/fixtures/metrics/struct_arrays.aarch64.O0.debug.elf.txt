@@ -30,7 +30,7 @@ void cell_set(struct cell *cells, long i, int v) {
 
     local_0 = v;
     cells[i].x = local_0;
-    cells[i].z = local_0 + 0x1;
+    cells[i].z = local_0 + 1;
 }
 -- signature
 void (struct cell * cells, long i, int v)
@@ -56,9 +56,9 @@ long item_last_key(struct item *items, int n) {
     int64_t local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < n; local_1++) {
-        if (items[local_1].count > 0x0) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < n; local_1++) {
+        if (items[local_1].count > 0) {
             local_0 = items[local_1].key;
         }
     }

@@ -26,8 +26,8 @@
 int32_t sub_210304(int32_t a0) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    if ((uint32_t)(a0 - 0xa) > 0xf) {
-        *dword_220554 = 0x0;
+    if ((uint32_t)(a0 - 10) > 15) {
+        *dword_220554 = 0;
         return *dword_220554;
     }
     switch (a0) {
@@ -157,7 +157,7 @@ fn <unnamed> @ 0x210304 (size 200)
 void sub_2103cc(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 += 0xb;
+    *dword_220554 += 11;
 }
 -- signature
 void ()
@@ -178,7 +178,7 @@ fn <unnamed> @ 0x2103cc (size 20)
 void sub_2103e0(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 ^= 0x12;
+    *dword_220554 ^= 18;
 }
 -- signature
 void ()
@@ -199,7 +199,7 @@ fn <unnamed> @ 0x2103e0 (size 24)
 void sub_2103f8(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 -= 0x19;
+    *dword_220554 -= 25;
 }
 -- signature
 void ()
@@ -220,7 +220,7 @@ fn <unnamed> @ 0x2103f8 (size 20)
 void sub_21040c(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 |= 0x20;
+    *dword_220554 |= 32;
 }
 -- signature
 void ()
@@ -241,7 +241,7 @@ fn <unnamed> @ 0x21040c (size 20)
 void sub_210420(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 += 0x27;
+    *dword_220554 += 39;
 }
 -- signature
 void ()
@@ -262,7 +262,7 @@ fn <unnamed> @ 0x210420 (size 20)
 void sub_210434(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 ^= 0x2e;
+    *dword_220554 ^= 46;
 }
 -- signature
 void ()
@@ -283,7 +283,7 @@ fn <unnamed> @ 0x210434 (size 24)
 void sub_21044c(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 -= 0x35;
+    *dword_220554 -= 53;
 }
 -- signature
 void ()
@@ -304,7 +304,7 @@ fn <unnamed> @ 0x21044c (size 20)
 void sub_210460(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 |= 0x3c;
+    *dword_220554 |= 60;
 }
 -- signature
 void ()
@@ -325,7 +325,7 @@ fn <unnamed> @ 0x210460 (size 20)
 void sub_210474(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 += 0x43;
+    *dword_220554 += 67;
 }
 -- signature
 void ()
@@ -346,7 +346,7 @@ fn <unnamed> @ 0x210474 (size 20)
 void sub_210488(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 ^= 0x4a;
+    *dword_220554 ^= 74;
 }
 -- signature
 void ()
@@ -367,7 +367,7 @@ fn <unnamed> @ 0x210488 (size 24)
 void sub_2104a0(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 -= 0x51;
+    *dword_220554 -= 81;
 }
 -- signature
 void ()
@@ -388,7 +388,7 @@ fn <unnamed> @ 0x2104a0 (size 20)
 void sub_2104b4(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 |= 0x58;
+    *dword_220554 |= 88;
 }
 -- signature
 void ()
@@ -409,7 +409,7 @@ fn <unnamed> @ 0x2104b4 (size 24)
 void sub_2104cc(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 += 0x5f;
+    *dword_220554 += 95;
 }
 -- signature
 void ()
@@ -430,7 +430,7 @@ fn <unnamed> @ 0x2104cc (size 20)
 void sub_2104e0(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 ^= 0x66;
+    *dword_220554 ^= 102;
 }
 -- signature
 void ()
@@ -451,7 +451,7 @@ fn <unnamed> @ 0x2104e0 (size 24)
 void sub_2104f8(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 -= 0x6d;
+    *dword_220554 -= 109;
 }
 -- signature
 void ()
@@ -472,7 +472,7 @@ fn <unnamed> @ 0x2104f8 (size 20)
 void sub_21050c(void) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    *dword_220554 |= 0x74;
+    *dword_220554 |= 116;
 }
 -- signature
 void ()
@@ -492,13 +492,13 @@ fn <unnamed> @ 0x21050c (size 24)
 int32_t sub_210524(int32_t a0) {
     switch (a0) {
     case 1:
-        return 0x64;
+        return 100;
     case 50:
-        return 0x7;
+        return 7;
     case 300:
         return a0;
     default:
-        a0 = 0xffffffff;
+        a0 = -1;
         return a0;
     }
 }

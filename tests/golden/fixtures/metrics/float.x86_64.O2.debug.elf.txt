@@ -19,36 +19,36 @@ double average(double *values, int n) {
 
     v1 = 0.0;
     v2 = 0.0;
-    if (n > 0x0) {
+    if (n > 0) {
         v3 = n;
         v4 = v3 & 0x7;
-        if ((uint32_t)n >= 0x8) {
+        if ((uint32_t)n >= 8) {
             v3 = v3 & 0x7ffffff8;
-            v5 = 0x0;
+            v5 = 0;
             do {
                 v2 = v2 + values[v5];
-                v2 = v2 + values[v5 + 0x1];
-                v2 = v2 + values[v5 + 0x2];
-                v2 = v2 + values[v5 + 0x3];
-                v2 = v2 + values[v5 + 0x4];
-                v2 = v2 + values[v5 + 0x5];
-                v2 = v2 + values[v5 + 0x6];
-                v2 = v2 + values[v5 + 0x7];
-                v5 = v5 + 0x8;
+                v2 = v2 + values[v5 + 1];
+                v2 = v2 + values[v5 + 2];
+                v2 = v2 + values[v5 + 3];
+                v2 = v2 + values[v5 + 4];
+                v2 = v2 + values[v5 + 5];
+                v2 = v2 + values[v5 + 6];
+                v2 = v2 + values[v5 + 7];
+                v5 = v5 + 8;
             } while (v3 != v5);
         } else {
-            v5 = 0x0;
+            v5 = 0;
         }
-        if (v4 != 0x0) {
+        if (v4 != 0) {
             v14 = values + v5;
-            v15 = 0x0;
+            v15 = 0;
             do {
                 v2 = v2 + v14[v15];
-                v15 = v15 + 0x1;
+                v15 = v15 + 1;
             } while (v4 != v15);
         }
     }
-    if (n <= 0x0) {
+    if (n <= 0) {
         return 0.0;
     }
     return v2 / (double)n;

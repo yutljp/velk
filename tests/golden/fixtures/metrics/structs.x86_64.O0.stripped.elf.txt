@@ -44,8 +44,8 @@ int64_t sub_201270(struct sub_201270_a0 *a0, int32_t a1) {
     int64_t local_0; /* [sp-20] */
     int32_t local_1; /* [sp-24] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a1; local_1++) {
         local_0 += a0[local_1].field_0x8 * (int16_t)a0[local_1].field_0x10;
     }
     return local_0;
@@ -112,9 +112,9 @@ struct sub_201310_result {
 };
 struct sub_201310_result *sub_201310(struct sub_201310_result *result, int64_t a1) {
     result->field_0x0 = a1;
-    result->field_0x8 = a1 + 0x1;
+    result->field_0x8 = a1 + 1;
     result->field_0x10 = (uint64_t)a1 << 0x1;
-    result->field_0x18 = a1 * 0x3;
+    result->field_0x18 = a1 * 3;
     return result;
 }
 -- signature
@@ -151,7 +151,7 @@ struct sub_201350_s1 {
 int64_t sub_201350(struct sub_201350_a0 a0) {
     struct sub_201350_s1 *v1;
 
-    v1 = (struct sub_201350_s1 *)(rsp + 0x8);
+    v1 = (struct sub_201350_s1 *)(rsp + 8);
     return v1->field_0x0 + v1->field_0x8 + v1->field_0x10 + v1->field_0x18;
 }
 -- signature
@@ -189,7 +189,7 @@ fn <unnamed> @ 0x201370 (size 13)
 -- decompile
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
-    if ((a0 & 0x1) == 0x0) {
+    if ((a0 & 0x1) == 0) {
         return (a0 & 0xff) >> 0x1 & 0x7;
     }
     return (a0 & 0xff) >> 0x4;

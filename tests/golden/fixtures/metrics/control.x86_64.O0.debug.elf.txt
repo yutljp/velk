@@ -17,9 +17,9 @@ int matrix_trace(int *m, int n) {
     int32_t local_3; /* [sp-20] */
 
     local_0 = n;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        for (local_3 = 0x0; local_3 < local_0; local_3++) {
+    local_1 = 0;
+    for (local_2 = 0; local_2 < local_0; local_2++) {
+        for (local_3 = 0; local_3 < local_0; local_3++) {
             if (local_2 == local_3) {
                 local_1 += m[local_2 * local_0 + local_3];
             }
@@ -74,10 +74,10 @@ int cleanup_on_error(int a, int b, int *out) {
     local_0 = a;
     local_1 = b;
     local_2 = 0xffffffff;
-    if (a >= 0x0) {
-        if (local_1 != 0x0) {
+    if (a >= 0) {
+        if (local_1 != 0) {
             *out = local_0 / local_1;
-            local_2 = 0x0;
+            local_2 = 0;
             return local_2;
         }
         return local_2;
@@ -121,28 +121,28 @@ int fallthrough(int x) {
     int64_t local_2; /* [sp-18] */
 
     local_0 = x;
-    local_1 = 0x0;
+    local_1 = 0;
     v1 = local_0;
     local_2 = v1;
-    if (v1 <= 0x3) {
+    if (v1 <= 3) {
         switch (local_2) {
         case 0:
-            local_1 += 0x1;
+            local_1 += 1;
             break;
         case 1:
             break;
         case 2:
-            local_1 += 0x4;
+            local_1 += 4;
             return local_1;
         case 3:
-            local_1 = 0x8;
+            local_1 = 8;
             return local_1;
         default:
             local_1 = 0xffffffff;
             return local_1;
         }
-        local_1 += 0x2;
-        local_1 += 0x4;
+        local_1 += 2;
+        local_1 += 4;
         return local_1;
     }
     local_1 = 0xffffffff;
@@ -186,19 +186,19 @@ int sparse(int x) {
     int32_t v1;
 
     v1 = x;
-    if (v1 - 0x1 == 0x0) {
-        return 0xa;
+    if (v1 - 1 == 0) {
+        return 10;
     }
-    if (v1 - 0x64 == 0x0) {
-        return 0x14;
+    if (v1 - 100 == 0) {
+        return 20;
     }
-    if (v1 - 0x3e8 == 0x0) {
-        return 0x1e;
+    if (v1 - 1000 == 0) {
+        return 30;
     }
-    if (v1 - 0x2710 == 0x0) {
-        return 0x28;
+    if (v1 - 10000 == 0) {
+        return 40;
     }
-    return 0x0;
+    return 0;
 }
 -- signature
 int (int x)
@@ -254,23 +254,23 @@ int short_circuit(int *p, int n) {
     uint8_t local_2; /* [sp-16] */
 
     local_0 = n;
-    local_1 = 0x0;
-    if (p == 0x0) {
+    local_1 = 0;
+    if (p == 0) {
         v9 = local_1;
         return v9 & 0x1;
     }
     v3 = local_0;
-    local_1 = 0x0;
-    if (v3 <= 0x0) {
+    local_1 = 0;
+    if (v3 <= 0) {
         v9 = local_1;
         return v9 & 0x1;
     }
     v3 = *p;
-    local_2 = 0x1;
-    if (v3 != 0x1) {
-        v7 = local_0 - 0x1;
+    local_2 = 1;
+    if (v3 != 1) {
+        v7 = local_0 - 1;
         v3 = p[v7];
-        v9 = (p[v7] == 0x1);
+        v9 = (p[v7] == 1);
         local_2 = v9;
     }
     v9 = local_2;
@@ -321,9 +321,9 @@ int skip_negatives(int *p, int n) {
     int32_t local_2; /* [sp-1c] */
 
     local_0 = n;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        if (p[local_2] >= 0x0) {
+    local_1 = 0;
+    for (local_2 = 0; local_2 < local_0; local_2++) {
+        if (p[local_2] >= 0) {
             local_1 += p[local_2];
         }
     }
@@ -368,8 +368,8 @@ int find_pair(int *p, int n, int target) {
 
     local_0 = n;
     local_1 = target;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        for (local_3 = local_2 + 0x1; local_3 < local_0; local_3++) {
+    for (local_2 = 0; local_2 < local_0; local_2++) {
+        for (local_3 = local_2 + 1; local_3 < local_0; local_3++) {
             if (p[local_2] + p[local_3] == local_1) {
                 local_4 = local_2 * local_0 + local_3;
                 return local_4;

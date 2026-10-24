@@ -26,8 +26,8 @@ int alt_helper(int x) {
     int32_t v1;
     int32_t v2;
 
-    v1 = 0x0;
-    for (v2 = 0x0; v2 < x; v2++) {
+    v1 = 0;
+    for (v2 = 0; v2 < x; v2++) {
         v1 = v1 + v2 * v2;
     }
     return v1;

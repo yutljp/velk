@@ -14,10 +14,10 @@ double sub_2011f0(double *a0, int32_t a1) {
     double local_2; /* [sp-30] */
 
     local_0 = 0.0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
+    for (local_1 = 0; local_1 < a1; local_1++) {
         local_0 = a0[local_1] + local_0;
     }
-    if (a1 <= 0x0) {
+    if (a1 <= 0) {
         local_2 = 0.0;
         return local_2;
     }
@@ -115,7 +115,7 @@ int32_t sub_2012f0(double a0, double a1) {
     if (!(a0 < a1)) {
         return (a1 < a0);
     }
-    return 0xffffffff;
+    return -1;
 }
 -- signature
 int32_t (double a0, double a1)

@@ -46,29 +46,29 @@ long record_total(struct record *items, int n) {
     int64_t v6;
     int64_t v7;
 
-    if (n <= 0x0) {
-        return 0x0;
+    if (n <= 0) {
+        return 0;
     }
     v1 = n;
-    if (n != 0x1) {
+    if (n != 1) {
         v4 = v1 & 0x7ffffffe;
-        v5 = (void *)&items[0x1].count;
-        v2 = 0x0;
-        v3 = 0x0;
+        v5 = (void *)&items[1].count;
+        v2 = 0;
+        v3 = 0;
         do {
             v6 = (int16_t)*(uint16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
             v3 = (int16_t)*(uint16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
-            v2 = v2 + 0x2;
+            v2 = v2 + 2;
             v5 = v5 + 0x30;
         } while (v4 != v2);
     } else {
-        v2 = 0x0;
-        v3 = 0x0;
+        v2 = 0;
+        v3 = 0;
     }
-    if ((v1 & 0x1) == 0x0) {
+    if ((v1 & 0x1) == 0) {
         return v3;
     }
-    v7 = v2 + v2 * 0x2;
+    v7 = v2 + v2 * 2;
     return v3 + (int16_t)*(uint16_t *)((uint8_t *)items + v7 * 0x8 + 0x10) * *(uint64_t *)((uint8_t *)items + v7 * 0x8 + 0x8);
 }
 -- signature
@@ -146,9 +146,9 @@ struct big big_make(long seed) {
     uint8_t *result_address = (uint8_t *)&result;
 
     __builtin_memcpy(result_address, &(uint64_t){seed_bits}, 8);
-    __builtin_memcpy(result_address + 0x8, &(uint64_t){seed_bits + 0x1}, 8);
+    __builtin_memcpy(result_address + 0x8, &(uint64_t){seed_bits + 1}, 8);
     __builtin_memcpy(result_address + 0x10, &(uint64_t){seed_bits + seed_bits}, 8);
-    __builtin_memcpy(result_address + 0x18, &(uint64_t){seed_bits + seed_bits * 0x2}, 8);
+    __builtin_memcpy(result_address + 0x18, &(uint64_t){seed_bits + seed_bits * 2}, 8);
     return result;
 }
 -- signature
@@ -213,7 +213,7 @@ struct flags { _Alignas(4) uint8_t gap_0x0[0x4]; };
 unsigned int flags_level(struct flags f) {
     uint64_t f_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&f + 0x0, 4);
 
-    return ((f_bits & 0x1) == 0x0 ? (f_bits & 0xffffffff) >> 0x1 & 0x7 : (f_bits & 0xffffffff) >> 0x4 & 0xf);
+    return ((f_bits & 0x1) == 0 ? (f_bits & 0xffffffff) >> 0x1 & 0x7 : (f_bits & 0xffffffff) >> 0x4 & 0xf);
 }
 -- signature
 uint64_t (uint32_t a0)

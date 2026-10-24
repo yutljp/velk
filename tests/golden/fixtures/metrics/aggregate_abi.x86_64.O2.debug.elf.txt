@@ -208,7 +208,7 @@ unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, 
 
     v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
     v4 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    return tail_bits + (tail_bits + tail_bits * 0x8) * 0x2 + (e_bits + (e_bits + e_bits * 0x4) * 0x2 + (d_bits * 0x8 - d_bits) + (c_bits + c_bits * 0x4 + (b_bits + b_bits * 0x2 + a_bits))) + (v3 + (v3 + v3 * 0x2) * 0x4) + (((uint64_t)v4 << 0x4) + v4);
+    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 0x4) + v4);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -237,9 +237,9 @@ int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_
     v2 = a6;
     v10 = a7;
     v11 = a8;
-    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 0x8) * 0x2);
-    v10 = v1 + v1 * 0x8 + (v1 + v1 * 0x8) * 0x2;
-    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (a5 + (a5 + a5 * 0x2) * 0x4 + (a4 + (a4 + a4 * 0x4) * 0x2 + (a3 * 0x8 - a3) + (a2 + a2 * 0x4 + (a1 + a1 * 0x2 + a0))))) + v12;
+    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 8) * 2);
+    v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
+    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -312,7 +312,7 @@ unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long 
 
     v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
     v4 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    return tail_bits + (tail_bits + tail_bits * 0x8) * 0x2 + (e_bits + (e_bits + e_bits * 0x4) * 0x2 + (d_bits * 0x8 - d_bits) + (c_bits + c_bits * 0x4 + (b_bits + b_bits * 0x2 + a_bits))) + (v3 + (v3 + v3 * 0x2) * 0x4) + (((uint64_t)v4 << 0x4) + v4);
+    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 0x4) + v4);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -351,9 +351,9 @@ unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long
     v2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, g_address, 8);
     v10 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
     v11 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 0x8) * 0x2);
-    v10 = v1 + v1 * 0x8 + (v1 + v1 * 0x8) * 0x2;
-    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (f_bits + (f_bits + f_bits * 0x2) * 0x4 + (e_bits + (e_bits + e_bits * 0x4) * 0x2 + (d_bits * 0x8 - d_bits) + (c_bits + c_bits * 0x4 + (b_bits + b_bits * 0x2 + a_bits))))) + v12;
+    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 8) * 2);
+    v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
+    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (f_bits + (f_bits + f_bits * 2) * 4 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))))) + v12;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)

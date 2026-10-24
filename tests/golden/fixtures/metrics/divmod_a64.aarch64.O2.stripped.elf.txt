@@ -29,7 +29,7 @@
 -- decompile
 /* velk pseudo-C: sub_21032c @ 0x21032c */
 uint32_t sub_21032c(uint32_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -46,7 +46,7 @@ fn <unnamed> @ 0x21032c (size 20)
 -- decompile
 /* velk pseudo-C: sub_210340 @ 0x210340 */
 uint32_t sub_210340(uint32_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -80,7 +80,7 @@ fn <unnamed> @ 0x210354 (size 8)
 -- decompile
 /* velk pseudo-C: sub_21035c @ 0x21035c */
 uint64_t sub_21035c(uint64_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -97,7 +97,7 @@ fn <unnamed> @ 0x21035c (size 20)
 -- decompile
 /* velk pseudo-C: sub_210370 @ 0x210370 */
 uint64_t sub_210370(uint64_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -114,7 +114,7 @@ fn <unnamed> @ 0x210370 (size 20)
 -- decompile
 /* velk pseudo-C: sub_210384 @ 0x210384 */
 int32_t sub_210384(int32_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -131,7 +131,7 @@ fn <unnamed> @ 0x210384 (size 28)
 -- decompile
 /* velk pseudo-C: sub_2103a0 @ 0x2103a0 */
 int32_t sub_2103a0(int32_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 int32_t (int32_t a0)
@@ -148,7 +148,7 @@ fn <unnamed> @ 0x2103a0 (size 28)
 -- decompile
 /* velk pseudo-C: sub_2103bc @ 0x2103bc */
 int32_t sub_2103bc(int32_t a0) {
-    return a0 / 0x10;
+    return a0 / 16;
 }
 -- signature
 int32_t (int32_t a0)
@@ -165,7 +165,7 @@ fn <unnamed> @ 0x2103bc (size 20)
 -- decompile
 /* velk pseudo-C: sub_2103d0 @ 0x2103d0 */
 int64_t sub_2103d0(int64_t a0) {
-    return a0 / 0x10;
+    return a0 / 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -182,7 +182,7 @@ fn <unnamed> @ 0x2103d0 (size 20)
 -- decompile
 /* velk pseudo-C: sub_2103e4 @ 0x2103e4 */
 int32_t sub_2103e4(int32_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -199,7 +199,7 @@ fn <unnamed> @ 0x2103e4 (size 36)
 -- decompile
 /* velk pseudo-C: sub_210408 @ 0x210408 */
 uint32_t sub_210408(uint32_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -216,7 +216,7 @@ fn <unnamed> @ 0x210408 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210424 @ 0x210424 */
 uint32_t sub_210424(uint32_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -233,7 +233,7 @@ fn <unnamed> @ 0x210424 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210440 @ 0x210440 */
 int32_t sub_210440(int32_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 int32_t (int32_t a0)
@@ -250,7 +250,7 @@ fn <unnamed> @ 0x210440 (size 36)
 -- decompile
 /* velk pseudo-C: sub_210464 @ 0x210464 */
 int64_t sub_210464(int64_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 int64_t (int64_t a0)
@@ -267,7 +267,7 @@ fn <unnamed> @ 0x210464 (size 32)
 -- decompile
 /* velk pseudo-C: sub_210484 @ 0x210484 */
 uint64_t sub_210484(uint64_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -284,7 +284,7 @@ fn <unnamed> @ 0x210484 (size 28)
 -- decompile
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int64_t sub_2104a0(int64_t a0) {
-    return a0 % 0x10;
+    return a0 % 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -301,7 +301,7 @@ fn <unnamed> @ 0x2104a0 (size 20)
 -- decompile
 /* velk pseudo-C: sub_2104b4 @ 0x2104b4 */
 int32_t sub_2104b4(int32_t a0) {
-    return a0 % 0x4;
+    return a0 % 4;
 }
 -- signature
 int32_t (int32_t a0)
@@ -352,7 +352,7 @@ fn <unnamed> @ 0x2104d0 (size 8)
 -- decompile
 /* velk pseudo-C: sub_2104d8 @ 0x2104d8 */
 int32_t sub_2104d8(int32_t a0) {
-    return (a0 == 0x0);
+    return (a0 == 0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -369,7 +369,7 @@ fn <unnamed> @ 0x2104d8 (size 12)
 -- decompile
 /* velk pseudo-C: sub_2104e4 @ 0x2104e4 */
 int32_t sub_2104e4(int32_t a0) {
-    return (a0 > 0x0);
+    return (a0 > 0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -403,7 +403,7 @@ fn <unnamed> @ 0x2104f0 (size 8)
 -- decompile
 /* velk pseudo-C: sub_2104f8 @ 0x2104f8 */
 int64_t sub_2104f8(int64_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 int64_t (int64_t a0)
@@ -420,7 +420,7 @@ fn <unnamed> @ 0x2104f8 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210514 @ 0x210514 */
 int64_t sub_210514(int64_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 int64_t (int64_t a0)
@@ -437,7 +437,7 @@ fn <unnamed> @ 0x210514 (size 20)
 -- decompile
 /* velk pseudo-C: sub_210528 @ 0x210528 */
 int64_t sub_210528(int64_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 int64_t (int64_t a0)

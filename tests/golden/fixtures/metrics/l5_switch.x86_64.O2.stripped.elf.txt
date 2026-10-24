@@ -27,12 +27,12 @@ int32_t sub_201330(int32_t a0) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
     uint64_t v1;
 
-    v1 = ((a0 - 0xa) & 0xffffffff);
-    if (v1 > 0xf) {
-        *dword_20250c = 0x0;
+    v1 = ((a0 - 10) & 0xffffffff);
+    if (v1 > 15) {
+        *dword_20250c = 0;
         return *dword_20250c;
     }
-    switch (v1 + 0xa) {
+    switch (v1 + 10) {
     case 10:
         sub_2013e0();
         return *dword_20250c;
@@ -160,7 +160,7 @@ fn <unnamed> @ 0x201330 (size 167)
 void sub_2013e0(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += 0xb;
+    *dword_20250c += 11;
 }
 -- signature
 void ()
@@ -181,7 +181,7 @@ fn <unnamed> @ 0x2013e0 (size 8)
 void sub_2013f0(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c ^= 0x12;
+    *dword_20250c ^= 18;
 }
 -- signature
 void ()
@@ -202,7 +202,7 @@ fn <unnamed> @ 0x2013f0 (size 8)
 void sub_201400(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += -0x19;
+    *dword_20250c += -25;
 }
 -- signature
 void ()
@@ -223,7 +223,7 @@ fn <unnamed> @ 0x201400 (size 8)
 void sub_201410(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c |= 0x20;
+    *dword_20250c |= 32;
 }
 -- signature
 void ()
@@ -244,7 +244,7 @@ fn <unnamed> @ 0x201410 (size 8)
 void sub_201420(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += 0x27;
+    *dword_20250c += 39;
 }
 -- signature
 void ()
@@ -265,7 +265,7 @@ fn <unnamed> @ 0x201420 (size 8)
 void sub_201430(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c ^= 0x2e;
+    *dword_20250c ^= 46;
 }
 -- signature
 void ()
@@ -286,7 +286,7 @@ fn <unnamed> @ 0x201430 (size 8)
 void sub_201440(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += -0x35;
+    *dword_20250c += -53;
 }
 -- signature
 void ()
@@ -307,7 +307,7 @@ fn <unnamed> @ 0x201440 (size 8)
 void sub_201450(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c |= 0x3c;
+    *dword_20250c |= 60;
 }
 -- signature
 void ()
@@ -328,7 +328,7 @@ fn <unnamed> @ 0x201450 (size 8)
 void sub_201460(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += 0x43;
+    *dword_20250c += 67;
 }
 -- signature
 void ()
@@ -349,7 +349,7 @@ fn <unnamed> @ 0x201460 (size 8)
 void sub_201470(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c ^= 0x4a;
+    *dword_20250c ^= 74;
 }
 -- signature
 void ()
@@ -370,7 +370,7 @@ fn <unnamed> @ 0x201470 (size 8)
 void sub_201480(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += -0x51;
+    *dword_20250c += -81;
 }
 -- signature
 void ()
@@ -391,7 +391,7 @@ fn <unnamed> @ 0x201480 (size 8)
 void sub_201490(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c |= 0x58;
+    *dword_20250c |= 88;
 }
 -- signature
 void ()
@@ -412,7 +412,7 @@ fn <unnamed> @ 0x201490 (size 8)
 void sub_2014a0(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += 0x5f;
+    *dword_20250c += 95;
 }
 -- signature
 void ()
@@ -433,7 +433,7 @@ fn <unnamed> @ 0x2014a0 (size 8)
 void sub_2014b0(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c ^= 0x66;
+    *dword_20250c ^= 102;
 }
 -- signature
 void ()
@@ -454,7 +454,7 @@ fn <unnamed> @ 0x2014b0 (size 8)
 void sub_2014c0(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c += -0x6d;
+    *dword_20250c += -109;
 }
 -- signature
 void ()
@@ -475,7 +475,7 @@ fn <unnamed> @ 0x2014c0 (size 8)
 void sub_2014d0(void) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
 
-    *dword_20250c |= 0x74;
+    *dword_20250c |= 116;
 }
 -- signature
 void ()
@@ -495,13 +495,13 @@ fn <unnamed> @ 0x2014d0 (size 8)
 int32_t sub_2014e0(int32_t a0) {
     switch (a0) {
     case 1:
-        return 0x64;
+        return 100;
     case 50:
-        return 0x7;
+        return 7;
     case 300:
-        return 0x12c;
+        return 300;
     default:
-        return 0xffffffff;
+        return -1;
     }
 }
 -- signature

@@ -206,7 +206,7 @@ unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, 
     uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
     uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
 
-    return tail_bits * 0x13 + (value_bits * 0xd + (e_bits * 0xb + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (value_bits_2 + (value_bits_2 << 0x4)));
+    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (value_bits_2 + (value_bits_2 << 0x4)));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -234,7 +234,7 @@ unsigned long long abi_exhaust_seven(unsigned long long a, unsigned long long b,
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *tail_address = (uint8_t *)&tail;
 
-    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 0x1d + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 0x17 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 0x13 + (f_bits * 0xd + (e_bits * 0xb + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (g_bits + (g_bits << 0x4)))));
+    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 29 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 23 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (g_bits + (g_bits << 0x4)))));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
@@ -296,7 +296,7 @@ unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long 
     uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
     uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
 
-    return tail_bits * 0x13 + (value_bits * 0xd + (e_bits * 0xb + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (value_bits_2 + (value_bits_2 << 0x4)));
+    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (value_bits_2 + (value_bits_2 << 0x4)));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -324,7 +324,7 @@ unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *tail_address = (uint8_t *)&tail;
 
-    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 0x1d + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 0x17 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 0x13 + (f_bits * 0xd + (e_bits * 0xb + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (g_bits + (g_bits << 0x4)))));
+    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 29 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 23 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (g_bits + (g_bits << 0x4)))));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)

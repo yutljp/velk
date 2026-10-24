@@ -8,9 +8,9 @@ int32_t dispatch(int32_t a0) {
     uint32_t *const dword_24 = (uint32_t *)0x24ULL;
     uint32_t v1;
 
-    v1 = a0 - 0xa;
-    if (v1 > 0x4) {
-        return 0x0;
+    v1 = a0 - 10;
+    if (v1 > 4) {
+        return 0;
     }
     return dword_24[v1];
 }

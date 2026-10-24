@@ -15,7 +15,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint8_t v1;
     uint64_t local_0; /* [sp-28] */
 
-    for (local_0 = 0x0; local_0 < n; local_0++) {
+    for (local_0 = 0; local_0 < n; local_0++) {
         v1 = src[local_0];
         dst[local_0] = v1;
     }
@@ -52,7 +52,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint64_t local_1; /* [sp-28] */
 
     local_0 = value;
-    for (local_1 = 0x0; local_1 < n; local_1++) {
+    for (local_1 = 0; local_1 < n; local_1++) {
         v1 = local_0;
         dst[local_1] = v1;
     }
@@ -86,7 +86,7 @@ fn fill_bytes @ 0x2012d0 (size 73)
 unsigned long string_length(char *s) {
     int64_t local_0; /* [sp-18] */
 
-    for (local_0 = 0x0; (uint8_t)s[local_0] != 0x0; local_0++) {
+    for (local_0 = 0; (uint8_t)s[local_0] != 0; local_0++) {
     }
     return local_0;
 }
@@ -116,7 +116,7 @@ fn string_length @ 0x201320 (size 57)
 int grid_get(int row, int col) {
     uint32_t *const grid = (uint32_t *)0x202450ULL;
 
-    return grid[(int64_t)(row & 0x3) * 0x8 + (col & 0x7)];
+    return grid[(int64_t)(row & 0x3) * 8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
@@ -136,7 +136,7 @@ fn grid_get @ 0x201360 (size 47)
 void grid_set(int row, int col, int value) {
     uint32_t *const grid = (uint32_t *)0x202450ULL;
 
-    grid[(int64_t)(row & 0x3) * 0x8 + (col & 0x7)] = value;
+    grid[(int64_t)(row & 0x3) * 8 + (col & 0x7)] = value;
 }
 -- signature
 void (int row, int col, int value)

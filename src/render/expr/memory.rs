@@ -1,4 +1,4 @@
-use super::{Ctx, operand, print, render_expr, type_of};
+use super::{ConstantUse, Ctx, print, print_in, render_expr, type_of};
 use crate::ir::{BinOp, CType, Expr};
 use crate::render::int::{ALL, Int, Printed, Range};
 use crate::render::naming::{array_access, global_access, member_access};
@@ -48,9 +48,12 @@ pub(super) fn byte_sum(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     };
     let mut terms = Vec::new();
     crate::render::naming::sum_terms(value, false, &mut terms);
-    let at = terms
+    let Some(at) = terms
         .iter()
-        .position(|(term, negative)| !negative && byte_pointer(term, ctx).is_some())?;
+        .position(|(term, negative)| !negative && byte_pointer(term, ctx).is_some())
+    else {
+        return None;
+    };
     if terms
         .iter()
         .enumerate()
@@ -62,7 +65,9 @@ pub(super) fn byte_sum(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     if std::ptr::eq(terms[at].0, lhs.as_ref()) || std::ptr::eq(terms[at].0, rhs.as_ref()) {
         return None;
     }
-    let mut text = byte_pointer(terms[at].0, ctx)?;
+    let Some(mut text) = byte_pointer(terms[at].0, ctx) else {
+        return None;
+    };
     for (term, negative) in terms
         .iter()
         .enumerate()
@@ -74,7 +79,12 @@ pub(super) fn byte_sum(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
             (Expr::Const(value), false) if *value >= 1 << 63 => {
                 format!(" - 0x{:x}", value.wrapping_neg())
             }
-            _ => format!(" + {}", operand(term, ctx, 10, true)),
+            _ => format!(
+                " + {}",
+                print_in(term, ctx, 64, ConstantUse::Hex)
+                    .within(10, true)
+                    .text
+            ),
         });
     }
     Some(text)
@@ -250,7 +260,7 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     }
     Some(format!(
         "{address} + {}",
-        print(&rest, ctx, 64)
+        print_in(&rest, ctx, 64, ConstantUse::Hex)
             .within(super::binding(BinOp::Add), true)
             .text
     ))

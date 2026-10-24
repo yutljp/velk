@@ -12,30 +12,30 @@ int dispatch(int x) {
     uint32_t local_2; /* [sp-c] */
 
     local_0 = x;
-    v1 = local_0 - 0xa;
+    v1 = local_0 - 10;
     local_1 = v1;
-    if (v1 <= 0x4) {
-        switch (local_1 - 0x4) {
+    if (v1 <= 4) {
+        switch (local_1 - 4) {
         case -4:
-            local_2 = 0x1;
+            local_2 = 1;
             return local_2;
         case -3:
-            local_2 = 0x3;
+            local_2 = 3;
             return local_2;
         case -2:
-            local_2 = 0x7;
+            local_2 = 7;
             return local_2;
         case -1:
-            local_2 = 0x9;
+            local_2 = 9;
             return local_2;
         case 0:
-            local_2 = 0xb;
+            local_2 = 11;
             return local_2;
         default:
             break;
         }
     }
-    local_2 = 0x0;
+    local_2 = 0;
     return local_2;
 }
 -- signature

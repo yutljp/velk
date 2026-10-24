@@ -83,7 +83,7 @@ fn in_range @ 0x210228 (size 16)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x210238 */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
-    return x >> (-k & 0x1f) | x << (0x20 - -k & 0x1f);
+    return x >> (-k & 0x1f) | x << (32 - -k & 0x1f);
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)
@@ -155,7 +155,7 @@ fn min3 @ 0x210260 (size 20)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x210274 */
 long labs_value(long x) {
-    return (x >= 0x0 ? x : -x);
+    return (x >= 0 ? x : -x);
 }
 -- signature
 long (long x)

@@ -47,25 +47,25 @@ int64_t sub_2011f0(struct sub_2011f0_a0 *a0, int32_t a1) {
     void *v5;
     int64_t v6;
 
-    if (a1 <= 0x0) {
-        return 0x0;
+    if (a1 <= 0) {
+        return 0;
     }
-    if (a1 != 0x1) {
+    if (a1 != 1) {
         v4 = a1 & 0x7ffffffe;
-        v5 = (void *)&a0[0x1].field_0x10;
-        v2 = 0x0;
-        v3 = 0x0;
+        v5 = (void *)&a0[1].field_0x10;
+        v2 = 0;
+        v3 = 0;
         do {
             v6 = (int16_t)*(uint16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
             v3 = (int16_t)*(uint16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
-            v2 = v2 + 0x2;
+            v2 = v2 + 2;
             v5 = v5 + 0x30;
         } while (v4 != v2);
     } else {
-        v2 = 0x0;
-        v3 = 0x0;
+        v2 = 0;
+        v3 = 0;
     }
-    if ((a1 & 0x1) == 0x0) {
+    if ((a1 & 0x1) == 0) {
         return v3;
     }
     return v3 + (int16_t)a0[v2].field_0x10 * a0[v2].field_0x8;
@@ -135,9 +135,9 @@ struct sub_201280_result {
 };
 struct sub_201280_result *sub_201280(struct sub_201280_result *result, int64_t a1) {
     result->field_0x0 = a1;
-    result->field_0x8 = a1 + 0x1;
+    result->field_0x8 = a1 + 1;
     result->field_0x10 = a1 + a1;
-    result->field_0x18 = a1 + a1 * 0x2;
+    result->field_0x18 = a1 + a1 * 2;
     return result;
 }
 -- signature
@@ -199,7 +199,7 @@ fn <unnamed> @ 0x2012c0 (size 3)
 -- decompile
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
 uint32_t sub_2012d0(uint32_t a0) {
-    return ((a0 & 0x1) == 0x0 ? a0 >> 0x1 & 0x7 : a0 >> 0x4 & 0xf);
+    return ((a0 & 0x1) == 0 ? a0 >> 0x1 & 0x7 : a0 >> 0x4 & 0xf);
 }
 -- signature
 uint32_t (uint32_t a0)

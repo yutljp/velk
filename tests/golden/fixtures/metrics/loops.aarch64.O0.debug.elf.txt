@@ -12,8 +12,8 @@ int count_bits(unsigned int x) {
     int32_t v2;
 
     v1 = x;
-    v2 = 0x0;
-    while (v1 != 0x0) {
+    v2 = 0;
+    while (v1 != 0) {
         v2 = v2 + (v1 & 0x1);
         v1 = v1 >> 0x1;
     }
@@ -49,8 +49,8 @@ int sum_until(int limit) {
     int32_t v1;
     int32_t v2;
 
-    v1 = 0x0;
-    for (v2 = 0x1; v2 <= limit; v2++) {
+    v1 = 0;
+    for (v2 = 1; v2 <= limit; v2++) {
         v1 = v1 + v2;
     }
     return v1;
@@ -88,10 +88,10 @@ int sum_till_neg(int *p, int n) {
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < n; local_1++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < n; local_1++) {
         v1 = p[local_1];
-        if ((v1 & 0x80000000) != 0x0) {
+        if ((v1 & 0x80000000) != 0) {
             return local_0;
         }
         local_0 += v1;
@@ -135,12 +135,12 @@ int sum_until_zero(int *p, int n) {
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < n; local_1++) {
-        if (p[local_1] == 0x0) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < n; local_1++) {
+        if (p[local_1] == 0) {
             return local_0;
         }
-        if ((p[local_1] & 0x80000000) == 0x0) {
+        if ((p[local_1] & 0x80000000) == 0) {
             local_0 += p[local_1];
         }
     }

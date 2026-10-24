@@ -20,62 +20,62 @@ int d7(int x) {
     int32_t local_9; /* [sp-2c] */
 
     v1 = x;
-    if (v1 == 0x0) {
-        for (local_0 = 0x0; local_0 < 0x1; local_0++) {
+    if (v1 == 0) {
+        for (local_0 = 0; local_0 < 1; local_0++) {
             *g += local_0;
         }
         return *g;
     }
-    if (v1 == 0x1) {
-        for (local_1 = 0x0; local_1 < 0x2; local_1++) {
+    if (v1 == 1) {
+        for (local_1 = 0; local_1 < 2; local_1++) {
             *g += local_1;
         }
         return *g;
     }
-    if (v1 == 0x2) {
-        for (local_2 = 0x0; local_2 < 0x3; local_2++) {
+    if (v1 == 2) {
+        for (local_2 = 0; local_2 < 3; local_2++) {
             *g += local_2;
         }
         return *g;
     }
-    if (v1 - 0x3 == 0x0) {
-        for (local_3 = 0x0; local_3 < 0x4; local_3++) {
+    if (v1 - 3 == 0) {
+        for (local_3 = 0; local_3 < 4; local_3++) {
             *g += local_3;
         }
         return *g;
     }
-    if (v1 - 0x4 == 0x0) {
-        for (local_4 = 0x0; local_4 < 0x5; local_4++) {
+    if (v1 - 4 == 0) {
+        for (local_4 = 0; local_4 < 5; local_4++) {
             *g += local_4;
         }
         return *g;
     }
-    if (v1 - 0x5 == 0x0) {
-        for (local_5 = 0x0; local_5 < 0x6; local_5++) {
+    if (v1 - 5 == 0) {
+        for (local_5 = 0; local_5 < 6; local_5++) {
             *g += local_5;
         }
         return *g;
     }
-    if (v1 - 0x6 == 0x0) {
-        for (local_6 = 0x0; local_6 < 0x7; local_6++) {
+    if (v1 - 6 == 0) {
+        for (local_6 = 0; local_6 < 7; local_6++) {
             *g += local_6;
         }
         return *g;
     }
-    if (v1 - 0x7 == 0x0) {
-        for (local_7 = 0x0; local_7 < 0x8; local_7++) {
+    if (v1 - 7 == 0) {
+        for (local_7 = 0; local_7 < 8; local_7++) {
             *g += local_7;
         }
         return *g;
     }
-    if (v1 - 0x8 == 0x0) {
-        for (local_8 = 0x0; local_8 < 0x9; local_8++) {
+    if (v1 - 8 == 0) {
+        for (local_8 = 0; local_8 < 9; local_8++) {
             *g += local_8;
         }
         return *g;
     }
-    if (v1 - 0x9 == 0x0) {
-        for (local_9 = 0x0; local_9 < 0xa; local_9++) {
+    if (v1 - 9 == 0) {
+        for (local_9 = 0; local_9 < 10; local_9++) {
             *g += local_9;
         }
         return *g;

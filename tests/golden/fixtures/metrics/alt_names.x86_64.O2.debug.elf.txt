@@ -26,13 +26,13 @@ int alt_helper(int x) {
     uint64_t v1;
     int32_t v2;
 
-    if (x <= 0x0) {
-        return 0x0;
+    if (x <= 0) {
+        return 0;
     }
-    v1 = (uint64_t)((x - 0x2) & 0xffffffff) * ((x - 0x1) & 0xffffffff);
-    v2 = ((x - 0x3) & 0xffffffff) * v1 >> 0x1;
+    v1 = (uint64_t)((x - 2) & 0xffffffff) * ((x - 1) & 0xffffffff);
+    v2 = ((x - 3) & 0xffffffff) * v1 >> 0x1;
     v1 = v1 >> 0x1;
-    return v2 * 0x55555556 + x + (v1 + v1 * 0x2) - 0x1;
+    return v2 * 0x55555556 + x + (v1 + v1 * 2) - 1;
 }
 -- signature
 int (int x)

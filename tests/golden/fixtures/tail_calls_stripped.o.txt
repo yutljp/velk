@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: sub_0 @ 0x0 */
 int32_t sub_0(int32_t a0) {
-    return a0 + ((uint64_t)a0 << 0x1) + 0x1;
+    return a0 + ((uint64_t)a0 << 0x1) + 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -24,7 +24,7 @@ fn <unnamed> @ 0x0 (size 28)
 -- decompile
 /* velk pseudo-C: sub_1c @ 0x1c */
 int32_t sub_1c(int32_t a0) {
-    a0 = a0 + 0x2;
+    a0 = a0 + 2;
     return sub_<dynamic>();
 }
 -- signature
@@ -45,7 +45,7 @@ fn <unnamed> @ 0x1c (size 8)
 -- decompile
 /* velk pseudo-C: sub_24 @ 0x24 */
 int32_t sub_24(int32_t a0) {
-    return a0 - 0x7;
+    return a0 - 7;
 }
 -- signature
 int32_t (int32_t a0)

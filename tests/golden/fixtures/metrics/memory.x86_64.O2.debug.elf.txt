@@ -22,14 +22,14 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     int64_t v8;
     int64_t v9;
 
-    if (n == 0x0) {
+    if (n == 0) {
         return;
     }
-    v1 = 0x0;
-    if (n >= 0x8 && (uintptr_t)dst - (uintptr_t)src >= 0x20) {
-        if (n >= 0x20) {
+    v1 = 0;
+    if (n >= 8 && (uintptr_t)dst - (uintptr_t)src >= 32) {
+        if (n >= 32) {
             v1 = n & 0xffffffffffffffe0;
-            v2 = 0x0;
+            v2 = 0;
             do {
                 v3 = *(uint64_t *)(src + v2);
                 v4 = *(uint64_t *)(src + (v2 + 0x8));
@@ -39,22 +39,22 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
                 *(uint64_t *)(dst + (v2 + 0x8)) = v4;
                 *(uint64_t *)(dst + (v2 + 0x10)) = v5;
                 *(uint64_t *)(dst + (v2 + 0x18)) = v6;
-                v2 = v2 + 0x20;
+                v2 = v2 + 32;
             } while (v1 != v2);
             if (v1 == n) {
                 return;
             }
-            if ((n & 0x18) == 0x0) {
+            if ((n & 0x18) == 0) {
                 goto L_2012a6;
             }
         } else {
-            v1 = 0x0;
+            v1 = 0;
         }
         v7 = v1;
         v1 = n & 0xfffffffffffffff8;
         do {
             *(uint64_t *)(dst + v7) = *(uint64_t *)(src + v7);
-            v7 = v7 + 0x8;
+            v7 = v7 + 8;
         } while (v1 != v7);
         if (v1 == n) {
             return;
@@ -63,23 +63,23 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
 L_2012a6:
     v9 = v1;
     v8 = n & 0x3;
-    if (v8 != 0x0) {
+    if (v8 != 0) {
         v9 = v1;
         do {
             dst[v9] = src[v9];
-            v9 = v9 + 0x1;
-            v8 = v8 - 0x1;
-        } while (v8 != 0x0);
+            v9 = v9 + 1;
+            v8 = v8 - 1;
+        } while (v8 != 0);
     }
-    if (v1 - n > -0x4) {
+    if (v1 - n > -4) {
         return;
     }
     do {
         dst[v9] = src[v9];
-        dst[v9 + 0x1] = src[v9 + 0x1];
-        dst[v9 + 0x2] = src[v9 + 0x2];
-        dst[v9 + 0x3] = src[v9 + 0x3];
-        v9 = v9 + 0x4;
+        dst[v9 + 1] = src[v9 + 1];
+        dst[v9 + 2] = src[v9 + 2];
+        dst[v9 + 3] = src[v9 + 3];
+        v9 = v9 + 4;
     } while (n != v9);
 }
 -- signature
@@ -156,7 +156,7 @@ fn copy_bytes @ 0x201220 (size 236)
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x201310 */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
-    if (n == 0x0) {
+    if (n == 0) {
         return;
     }
     sub_0(dst, value);
@@ -184,11 +184,11 @@ unsigned long string_length(char *s) {
     int64_t v1;
     uint8_t v2;
 
-    v1 = -0x1;
+    v1 = -1;
     do {
-        v2 = s[v1 + 0x1];
-        v1 = v1 + 0x1;
-    } while (v2 != 0x0);
+        v2 = s[v1 + 1];
+        v1 = v1 + 1;
+    } while (v2 != 0);
     return v1;
 }
 -- signature
@@ -215,7 +215,7 @@ fn string_length @ 0x201320 (size 28)
 int grid_get(int row, int col) {
     uint32_t *const grid = (uint32_t *)0x2023b0ULL;
 
-    return grid[(row & 0x3) * 0x8 + (col & 0x7)];
+    return grid[(row & 0x3) * 8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
@@ -235,7 +235,7 @@ fn grid_get @ 0x201340 (size 23)
 void grid_set(int row, int col, int value) {
     uint32_t *const grid = (uint32_t *)0x2023b0ULL;
 
-    grid[(row & 0x3) * 0x8 + (col & 0x7)] = value;
+    grid[(row & 0x3) * 8 + (col & 0x7)] = value;
 }
 -- signature
 void (int row, int col, int value)

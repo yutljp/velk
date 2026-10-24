@@ -90,7 +90,7 @@ double sub_2013a0(struct sub_2013a0_a0 *a0, double a1, struct sub_2013a0_a2 a2) 
     double v2;
     double local_0; /* [sp-10] */
 
-    v1 = (struct sub_2013a0_s1 *)(rsp + 0x8);
+    v1 = (struct sub_2013a0_s1 *)(rsp + 8);
     local_0 = a1;
     v2 = a1 + *(double *)((uint8_t *)v1 + 0x10);
     v1->field_0x10 = ((union { double value; uint64_t bits; }){ .value = v2 }).bits;
@@ -143,7 +143,7 @@ double sub_2013e0(struct sub_2013e0_a0 *a0, double a1, struct sub_2013e0_a2 a2) 
     double v2;
     double local_0; /* [sp-10] */
 
-    v1 = (struct sub_2013e0_s1 *)(rsp + 0x8);
+    v1 = (struct sub_2013e0_s1 *)(rsp + 8);
     local_0 = a1;
     v2 = a1 + *(double *)((uint8_t *)v1 + 0x18);
     v1->field_0x18 = ((union { double value; uint64_t bits; }){ .value = v2 }).bits;
@@ -191,9 +191,9 @@ int64_t sub_201420(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v3 = a6 * 0xd;
-    v4 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + v3 + a7 * 0x11;
-    return v4 + a5 * 0x13;
+    v3 = a6 * 13;
+    v4 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v3 + a7 * 17;
+    return v4 + a5 * 19;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -234,9 +234,9 @@ int64_t sub_201480(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v5 = a7 * 0x13;
-    v6 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + a5 * 0xd + a6 * 0x11 + v5 + a8 * 0x17;
-    return v6 + a9 * 0x1d;
+    v5 = a7 * 19;
+    v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
+    return v6 + a9 * 29;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -304,9 +304,9 @@ int64_t sub_201540(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v3 = a6 * 0xd;
-    v4 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + v3 + a7 * 0x11;
-    return v4 + a5 * 0x13;
+    v3 = a6 * 13;
+    v4 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v3 + a7 * 17;
+    return v4 + a5 * 19;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -347,9 +347,9 @@ int64_t sub_2015a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v5 = a7 * 0x13;
-    v6 = a0 + a1 * 0x3 + a2 * 0x5 + a3 * 0x7 + a4 * 0xb + a5 * 0xd + a6 * 0x11 + v5 + a8 * 0x17;
-    return v6 + a9 * 0x1d;
+    v5 = a7 * 19;
+    v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
+    return v6 + a9 * 29;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)

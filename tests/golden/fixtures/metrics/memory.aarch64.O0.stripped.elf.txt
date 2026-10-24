@@ -14,7 +14,7 @@
 int64_t sub_210234(uint8_t *a0, uint8_t *a1, int64_t a2) {
     uint64_t local_0; /* [sp-20] */
 
-    for (local_0 = 0x0; local_0 < a2; local_0++) {
+    for (local_0 = 0; local_0 < a2; local_0++) {
         a0[local_0] = a1[local_0];
     }
     return (uintptr_t)a0;
@@ -54,7 +54,7 @@ int64_t sub_21029c(uint8_t *a0, int32_t a1, int64_t a2) {
     uint64_t local_1; /* [sp-20] */
 
     local_0 = a1;
-    for (local_1 = 0x0; local_1 < a2; local_1++) {
+    for (local_1 = 0; local_1 < a2; local_1++) {
         a0[local_1] = local_0;
     }
     return (uintptr_t)a0;
@@ -92,7 +92,7 @@ fn <unnamed> @ 0x21029c (size 92)
 int64_t sub_2102f8(uint8_t *a0) {
     int64_t local_0; /* [sp-10] */
 
-    for (local_0 = 0x0; a0[local_0] != 0x0; local_0++) {
+    for (local_0 = 0; a0[local_0] != 0; local_0++) {
     }
     return local_0;
 }
@@ -124,7 +124,7 @@ fn <unnamed> @ 0x2102f8 (size 68)
 int32_t sub_21033c(int32_t a0, int32_t a1) {
     uint32_t *const dword_220454 = (uint32_t *)0x220454ULL;
 
-    return dword_220454[(int64_t)(a0 & 0x3) * 0x8 + (a1 & 0x7)];
+    return dword_220454[(int64_t)(a0 & 0x3) * 8 + (a1 & 0x7)];
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -146,7 +146,7 @@ int64_t sub_210378(int64_t a0, int32_t a1, int32_t a2) {
     int32_t local_0; /* [sp-4] */
 
     local_0 = a0;
-    dword_220454[(int64_t)(local_0 & 0x3) * 0x8 + (a1 & 0x7)] = a2;
+    dword_220454[(int64_t)(local_0 & 0x3) * 8 + (a1 & 0x7)] = a2;
     return a0;
 }
 -- signature
@@ -168,7 +168,7 @@ fn <unnamed> @ 0x210378 (size 68)
 -- decompile
 /* velk pseudo-C: sub_2103bc @ 0x2103bc */
 int64_t sub_2103bc(int64_t a0, int64_t a1) {
-    return (a1 - a0) / 0x4;
+    return (a1 - a0) / 4;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

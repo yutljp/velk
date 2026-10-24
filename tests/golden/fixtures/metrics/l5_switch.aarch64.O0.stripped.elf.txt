@@ -28,10 +28,10 @@ int32_t sub_210334(int32_t a0) {
     uint32_t v1;
     int64_t local_0; /* [sp-20] */
 
-    v1 = a0 - 0xa;
+    v1 = a0 - 10;
     local_0 = v1;
-    if (v1 <= 0xf) {
-        switch (local_0 + 0xa) {
+    if (v1 <= 15) {
+        switch (local_0 + 10) {
         case 10:
             sub_210418();
             return *dword_2205e8;
@@ -84,7 +84,7 @@ int32_t sub_210334(int32_t a0) {
             break;
         }
     }
-    *dword_2205e8 = 0x0;
+    *dword_2205e8 = 0;
     return *dword_2205e8;
 }
 -- signature
@@ -164,7 +164,7 @@ fn <unnamed> @ 0x210334 (size 228)
 void sub_210418(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 += 0xb;
+    *dword_2205e8 += 11;
 }
 -- signature
 void ()
@@ -185,7 +185,7 @@ fn <unnamed> @ 0x210418 (size 20)
 void sub_21042c(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 ^= 0x12;
+    *dword_2205e8 ^= 18;
 }
 -- signature
 void ()
@@ -206,7 +206,7 @@ fn <unnamed> @ 0x21042c (size 24)
 void sub_210444(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 -= 0x19;
+    *dword_2205e8 -= 25;
 }
 -- signature
 void ()
@@ -227,7 +227,7 @@ fn <unnamed> @ 0x210444 (size 20)
 void sub_210458(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 |= 0x20;
+    *dword_2205e8 |= 32;
 }
 -- signature
 void ()
@@ -248,7 +248,7 @@ fn <unnamed> @ 0x210458 (size 20)
 void sub_21046c(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 += 0x27;
+    *dword_2205e8 += 39;
 }
 -- signature
 void ()
@@ -269,7 +269,7 @@ fn <unnamed> @ 0x21046c (size 20)
 void sub_210480(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 ^= 0x2e;
+    *dword_2205e8 ^= 46;
 }
 -- signature
 void ()
@@ -290,7 +290,7 @@ fn <unnamed> @ 0x210480 (size 24)
 void sub_210498(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 -= 0x35;
+    *dword_2205e8 -= 53;
 }
 -- signature
 void ()
@@ -311,7 +311,7 @@ fn <unnamed> @ 0x210498 (size 20)
 void sub_2104ac(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 |= 0x3c;
+    *dword_2205e8 |= 60;
 }
 -- signature
 void ()
@@ -332,7 +332,7 @@ fn <unnamed> @ 0x2104ac (size 20)
 void sub_2104c0(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 += 0x43;
+    *dword_2205e8 += 67;
 }
 -- signature
 void ()
@@ -353,7 +353,7 @@ fn <unnamed> @ 0x2104c0 (size 20)
 void sub_2104d4(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 ^= 0x4a;
+    *dword_2205e8 ^= 74;
 }
 -- signature
 void ()
@@ -374,7 +374,7 @@ fn <unnamed> @ 0x2104d4 (size 24)
 void sub_2104ec(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 -= 0x51;
+    *dword_2205e8 -= 81;
 }
 -- signature
 void ()
@@ -395,7 +395,7 @@ fn <unnamed> @ 0x2104ec (size 20)
 void sub_210500(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 |= 0x58;
+    *dword_2205e8 |= 88;
 }
 -- signature
 void ()
@@ -416,7 +416,7 @@ fn <unnamed> @ 0x210500 (size 24)
 void sub_210518(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 += 0x5f;
+    *dword_2205e8 += 95;
 }
 -- signature
 void ()
@@ -437,7 +437,7 @@ fn <unnamed> @ 0x210518 (size 20)
 void sub_21052c(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 ^= 0x66;
+    *dword_2205e8 ^= 102;
 }
 -- signature
 void ()
@@ -458,7 +458,7 @@ fn <unnamed> @ 0x21052c (size 24)
 void sub_210544(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 -= 0x6d;
+    *dword_2205e8 -= 109;
 }
 -- signature
 void ()
@@ -479,7 +479,7 @@ fn <unnamed> @ 0x210544 (size 20)
 void sub_210558(void) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
 
-    *dword_2205e8 |= 0x74;
+    *dword_2205e8 |= 116;
 }
 -- signature
 void ()
@@ -497,16 +497,16 @@ fn <unnamed> @ 0x210558 (size 24)
 -- decompile
 /* velk pseudo-C: sub_210570 @ 0x210570 */
 int32_t sub_210570(int32_t a0) {
-    if (a0 - 0x1 == 0x0) {
-        return 0x64;
+    if (a0 - 1 == 0) {
+        return 100;
     }
-    if (a0 - 0x32 == 0x0) {
-        return 0x7;
+    if (a0 - 50 == 0) {
+        return 7;
     }
-    if (a0 - 0x12c == 0x0) {
-        return 0x12c;
+    if (a0 - 300 == 0) {
+        return 300;
     }
-    return 0xffffffff;
+    return -1;
 }
 -- signature
 int32_t (int32_t a0)

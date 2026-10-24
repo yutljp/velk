@@ -20,6 +20,9 @@
 #[path = "recompile/cache.rs"]
 mod cache;
 
+#[path = "recompile/constants.rs"]
+mod constants;
+
 #[path = "recompile/casts.rs"]
 mod casts;
 mod common;
@@ -3960,7 +3963,7 @@ fn check_signed_select_search(remainder: bool) {
             .flat_map(|x| values.iter().map(move |y| vec![*x as u64, *y as u64]))
             .collect();
         let mut candidate = printed_candidate(ir, inputs);
-        let operator = if remainder { "x % 0x8" } else { "x / 0x8" };
+        let operator = if remainder { "x % 8" } else { "x / 8" };
         assert!(candidate.code.contains(operator), "{}", candidate.code);
         candidate.ir = original;
         candidates.push(candidate);

@@ -10,8 +10,8 @@ int32_t sub_2011c0(int32_t a0) {
     uint32_t *const dword_2023d0 = (uint32_t *)0x2023d0ULL;
     int32_t v2;
 
-    if ((uint32_t)a0 > 0x9) {
-        v2 = 0xffffffff;
+    if ((uint32_t)a0 > 9) {
+        v2 = -1;
     } else {
         switch (a0) {
         case 0:
@@ -19,75 +19,75 @@ int32_t sub_2011c0(int32_t a0) {
             break;
         case 1:
             *dword_2023d0 = *dword_2023d0;
-            v2 = *dword_2023d0 + 0x1;
+            v2 = *dword_2023d0 + 1;
             break;
         case 2:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            v2 = *dword_2023d0 + 0x2;
+            *dword_2023d0 += 1;
+            v2 = *dword_2023d0 + 2;
             break;
         case 3:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            *dword_2023d0 += 0x2;
-            v2 = *dword_2023d0 + 0x3;
+            *dword_2023d0 += 1;
+            *dword_2023d0 += 2;
+            v2 = *dword_2023d0 + 3;
             break;
         case 4:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            *dword_2023d0 += 0x2;
-            *dword_2023d0 += 0x3;
-            v2 = *dword_2023d0 + 0x4;
+            *dword_2023d0 += 1;
+            *dword_2023d0 += 2;
+            *dword_2023d0 += 3;
+            v2 = *dword_2023d0 + 4;
             break;
         case 5:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            *dword_2023d0 += 0x2;
-            *dword_2023d0 += 0x3;
-            *dword_2023d0 += 0x4;
-            v2 = *dword_2023d0 + 0x5;
+            *dword_2023d0 += 1;
+            *dword_2023d0 += 2;
+            *dword_2023d0 += 3;
+            *dword_2023d0 += 4;
+            v2 = *dword_2023d0 + 5;
             break;
         case 6:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            *dword_2023d0 += 0x2;
-            *dword_2023d0 += 0x3;
-            *dword_2023d0 += 0x4;
-            *dword_2023d0 += 0x5;
-            v2 = *dword_2023d0 + 0x6;
+            *dword_2023d0 += 1;
+            *dword_2023d0 += 2;
+            *dword_2023d0 += 3;
+            *dword_2023d0 += 4;
+            *dword_2023d0 += 5;
+            v2 = *dword_2023d0 + 6;
             break;
         case 7:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            *dword_2023d0 += 0x2;
-            *dword_2023d0 += 0x3;
-            *dword_2023d0 += 0x4;
-            *dword_2023d0 += 0x5;
-            *dword_2023d0 += 0x6;
-            v2 = *dword_2023d0 + 0x7;
+            *dword_2023d0 += 1;
+            *dword_2023d0 += 2;
+            *dword_2023d0 += 3;
+            *dword_2023d0 += 4;
+            *dword_2023d0 += 5;
+            *dword_2023d0 += 6;
+            v2 = *dword_2023d0 + 7;
             break;
         case 8:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            *dword_2023d0 += 0x2;
-            *dword_2023d0 += 0x3;
-            *dword_2023d0 += 0x4;
-            *dword_2023d0 += 0x5;
-            *dword_2023d0 += 0x6;
-            *dword_2023d0 += 0x7;
-            v2 = *dword_2023d0 + 0x8;
+            *dword_2023d0 += 1;
+            *dword_2023d0 += 2;
+            *dword_2023d0 += 3;
+            *dword_2023d0 += 4;
+            *dword_2023d0 += 5;
+            *dword_2023d0 += 6;
+            *dword_2023d0 += 7;
+            v2 = *dword_2023d0 + 8;
             break;
         case 9:
             *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 0x1;
-            *dword_2023d0 += 0x2;
-            *dword_2023d0 += 0x3;
-            *dword_2023d0 += 0x4;
-            *dword_2023d0 += 0x5;
-            *dword_2023d0 += 0x6;
-            *dword_2023d0 += 0x7;
-            *dword_2023d0 += 0x8;
-            v2 = *dword_2023d0 + 0x9;
+            *dword_2023d0 += 1;
+            *dword_2023d0 += 2;
+            *dword_2023d0 += 3;
+            *dword_2023d0 += 4;
+            *dword_2023d0 += 5;
+            *dword_2023d0 += 6;
+            *dword_2023d0 += 7;
+            *dword_2023d0 += 8;
+            v2 = *dword_2023d0 + 9;
             break;
         default:
             __builtin_unreachable();

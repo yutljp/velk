@@ -22,7 +22,7 @@
 -- decompile
 /* velk pseudo-C: _l3 @ 0x0 */
 int64_t l3(int64_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 int64_t (int64_t a0)
@@ -39,7 +39,7 @@ fn _l3 @ 0x0 (size 32)
 -- decompile
 /* velk pseudo-C: _l10 @ 0x20 */
 int64_t l10(int64_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 int64_t (int64_t a0)
@@ -56,7 +56,7 @@ fn _l10 @ 0x20 (size 36)
 -- decompile
 /* velk pseudo-C: _h3 @ 0x50 */
 uint64_t h3(uint64_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -73,7 +73,7 @@ fn _h3 @ 0x50 (size 28)
 -- decompile
 /* velk pseudo-C: _h10 @ 0x70 */
 uint64_t h10(uint64_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -90,7 +90,7 @@ fn _h10 @ 0x70 (size 29)
 -- decompile
 /* velk pseudo-C: _u64 @ 0x90 */
 uint32_t u64(uint32_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -107,7 +107,7 @@ fn _u64 @ 0x90 (size 21)
 -- decompile
 /* velk pseudo-C: _sdiv16x @ 0xb0 */
 int32_t sdiv16x(int32_t a0) {
-    return a0 / 0x10;
+    return a0 / 16;
 }
 -- signature
 int32_t (int32_t a0)
@@ -124,7 +124,7 @@ fn _sdiv16x @ 0xb0 (size 17)
 -- decompile
 /* velk pseudo-C: _ldiv16x @ 0xd0 */
 int64_t ldiv16x(int64_t a0) {
-    return a0 / 0x10;
+    return a0 / 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -141,7 +141,7 @@ fn _ldiv16x @ 0xd0 (size 21)
 -- decompile
 /* velk pseudo-C: _umod3x @ 0xf0 */
 uint32_t umod3x(uint32_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -158,7 +158,7 @@ fn _umod3x @ 0xf0 (size 28)
 -- decompile
 /* velk pseudo-C: _smod3x @ 0x110 */
 int32_t smod3x(int32_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -192,7 +192,7 @@ fn _pmod8x @ 0x140 (size 11)
 -- decompile
 /* velk pseudo-C: _pmod8s @ 0x150 */
 int32_t pmod8s(int32_t a0) {
-    return a0 % 0x8;
+    return a0 % 8;
 }
 -- signature
 int32_t (int32_t a0)
@@ -209,7 +209,7 @@ fn _pmod8s @ 0x150 (size 21)
 -- decompile
 /* velk pseudo-C: _pmod16l @ 0x170 */
 int64_t pmod16l(int64_t a0) {
-    return a0 % 0x10;
+    return a0 % 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -226,7 +226,7 @@ fn _pmod16l @ 0x170 (size 27)
 -- decompile
 /* velk pseudo-C: _pdiv16l @ 0x190 */
 int64_t pdiv16l(int64_t a0) {
-    return a0 / 0x10;
+    return a0 / 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -243,7 +243,7 @@ fn _pdiv16l @ 0x190 (size 21)
 -- decompile
 /* velk pseudo-C: _lmod10x @ 0x1b0 */
 int64_t lmod10x(int64_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 int64_t (int64_t a0)
@@ -263,7 +263,7 @@ int64_t umod10x(uint64_t a0) {
     int64_t v1;
 
     v1 = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
-    return a0 - (v1 + v1 * 0x4);
+    return a0 - (v1 + v1 * 4);
 }
 -- signature
 int64_t (uint64_t a0)
@@ -281,7 +281,7 @@ fn _umod10x @ 0x1f0 (size 40)
 -- decompile
 /* velk pseudo-C: _pdiv64 @ 0x220 */
 int32_t pdiv64(int32_t a0) {
-    return a0 / 0x40;
+    return a0 / 64;
 }
 -- signature
 int32_t (int32_t a0)
@@ -298,7 +298,7 @@ fn _pdiv64 @ 0x220 (size 17)
 -- decompile
 /* velk pseudo-C: _qdiv64 @ 0x240 */
 int64_t qdiv64(int64_t a0) {
-    return a0 / 0x40;
+    return a0 / 64;
 }
 -- signature
 int64_t (int64_t a0)
@@ -315,7 +315,7 @@ fn _qdiv64 @ 0x240 (size 21)
 -- decompile
 /* velk pseudo-C: _pdiv10 @ 0x260 */
 int32_t pdiv10(int32_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 int32_t (int32_t a0)

@@ -57,12 +57,7 @@ pub(super) fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
 
 /// A returned value, of which the caller sees what the return type holds.
 pub(super) fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
-    let printed = expr::print_value_at(
-        value,
-        ctx,
-        ctx.returned.map_or(64, |returned| returned.bits),
-        ctx.returned.is_some_and(|returned| returned.integer),
-    );
+    let printed = expr::print_declared_value(value, ctx, ctx.returned);
     conformed(value, printed, ctx.ret_pointer.as_deref(), ctx)
 }
 
@@ -74,6 +69,11 @@ pub(super) fn conformed(
     pointer: Option<&str>,
     ctx: &Ctx<'_>,
 ) -> String {
+    let printed = if pointer.is_some() && matches!(value, Expr::Const(_)) && !printed.is_pointer() {
+        expr::print_address(value, ctx)
+    } else {
+        printed
+    };
     match pointer {
         Some(ty)
             if printed.is_pointer()
@@ -247,12 +247,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             }
             // C keeps of the value what the destination is declared to hold.
             let declared = ctx.declared.get(&dest.index);
-            let printed = expr::print_value_at(
-                value,
-                ctx,
-                declared.map_or(64, |declared| declared.bits),
-                declared.is_some_and(|declared| declared.integer),
-            );
+            let printed = expr::print_declared_value(value, ctx, declared.copied());
             let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
             format!("{target} = {};", conformed(value, printed, pointer, ctx))
         }

@@ -36,24 +36,24 @@ int array_sum(int *a, int n) {
     uint64_t v8;
     uint64_t v9;
 
-    if (n <= 0x0) {
-        return 0x0;
+    if (n <= 0) {
+        return 0;
     }
     v1 = (n & 0xffffffff);
-    if ((uint32_t)n >= 0x8) {
+    if ((uint32_t)n >= 8) {
         v2 = v1 & 0x7ffffff8;
         v4 = v1 >> 0x3 << 0x5;
-        v5 = 0x0;
-        v6 = 0x0;
-        v7 = 0x0;
-        v8 = 0x0;
-        v9 = 0x0;
+        v5 = 0;
+        v6 = 0;
+        v7 = 0;
+        v8 = 0;
+        v9 = 0;
         do {
             v5 = add_lanes32(v5, *(uint64_t *)((uint8_t *)a + v7));
             v6 = add_lanes32(v6, *(uint64_t *)((uint8_t *)a + v7 + 0x8));
             v8 = add_lanes32(v8, *(uint64_t *)((uint8_t *)a + v7 + 0x10));
             v9 = add_lanes32(v9, *(uint64_t *)((uint8_t *)a + v7 + 0x18));
-            v7 = v7 + 0x20;
+            v7 = v7 + 32;
         } while (v4 != v7);
         v5 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
         v3 = add_lanes32(v5 >> 0x20 | v5 >> 0x20 << 0x20, v5);
@@ -61,12 +61,12 @@ int array_sum(int *a, int n) {
             return v3;
         }
     } else {
-        v2 = 0x0;
-        v3 = 0x0;
+        v2 = 0;
+        v3 = 0;
     }
     do {
         v3 = v3 + a[v2];
-        v2 = v2 + 0x1;
+        v2 = v2 + 1;
     } while (v1 != v2);
     return v3;
 }
@@ -122,7 +122,7 @@ fn array_sum @ 0x2011f0 (size 140)
 void bump(void) {
     uint32_t *const g_counter = (uint32_t *)0x2022a8ULL;
 
-    *g_counter += 0x1;
+    *g_counter += 1;
 }
 -- signature
 void ()

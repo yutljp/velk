@@ -45,7 +45,7 @@ int64_t operator_new(int64_t a0) {
     int64_t v1;
 
     v1 = *_ZL4used;
-    *_ZL4used = v1 + (a0 + 0xf & 0xfffffffffffffff0);
+    *_ZL4used = v1 + (a0 + 15 & 0xfffffffffffffff0);
     return 0x2305c8 + v1;
 }
 -- signature
@@ -168,7 +168,7 @@ fn Square::Square(int) @ 0x2103f8 (size 20)
 int32_t Square__area(uint32_t *a0) {
     int32_t v1;
 
-    v1 = a0[0x2];
+    v1 = a0[2];
     return v1 * v1;
 }
 -- signature
@@ -230,7 +230,7 @@ fn Rect::area() const @ 0x21042c (size 12)
 /* velk pseudo-C: Rect::scaled(int) const @ 0x210438 */
 struct Rect__scaled_a0 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t Rect__scaled(struct Rect__scaled_a0 *a0, int32_t a1) {
-    return a0->field_0x8 * a1 * a0->field_0xc + 0x1;
+    return a0->field_0x8 * a1 * a0->field_0xc + 1;
 }
 -- signature
 int32_t (struct Rect__scaled_a0 * a0, int32_t a1)
@@ -254,7 +254,7 @@ int32_t square_area(int32_t a0) {
     int32_t v4;
 
     v1 = *_ZL4used;
-    *_ZL4used = v1 + 0x10;
+    *_ZL4used = v1 + 16;
     Square__Square(0x2305c8 + v1, (a0 & 0xffffffff));
     v4 = Square__area(0x2305c8 + v1); /* via vtable slot 2 */
     Square___Square(0x2305c8 + v1); /* via vtable slot 1 */
@@ -287,7 +287,7 @@ int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
     int64_t v1;
 
     v1 = *_ZL4used;
-    *_ZL4used = v1 + 0x10;
+    *_ZL4used = v1 + 16;
     Rect__Rect(0x2305c8 + v1, (a0 & 0xffffffff), (a1 & 0xffffffff));
     return Rect__scaled(0x2305c8 + v1, (a2 & 0xffffffff)); /* via vtable slot 3 */
 }

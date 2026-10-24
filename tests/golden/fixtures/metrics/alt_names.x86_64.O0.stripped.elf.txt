@@ -26,8 +26,8 @@ int32_t sub_2011a0(int32_t a0) {
     int32_t v2;
     int32_t v3;
 
-    v2 = 0x0;
-    for (v3 = 0x0; v3 < a0; v3++) {
+    v2 = 0;
+    for (v3 = 0; v3 < a0; v3++) {
         v2 = v3 * v3 + v2;
     }
     return v2;

@@ -28,8 +28,8 @@ int helper(int x) {
     int32_t v1;
     int32_t v2;
 
-    v1 = 0x0;
-    for (v2 = 0x0; v2 < x; v2++) {
+    v1 = 0;
+    for (v2 = 0; v2 < x; v2++) {
         v1 = v1 + v2 * v2;
     }
     return v1;
@@ -84,8 +84,8 @@ int sum_arr(int *p, int n) {
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < n; local_1++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < n; local_1++) {
         local_0 += p[local_1];
     }
     return local_0;

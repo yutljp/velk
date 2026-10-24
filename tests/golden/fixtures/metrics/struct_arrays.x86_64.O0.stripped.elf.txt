@@ -35,7 +35,7 @@ int64_t sub_2011e0(struct sub_2011e0_a0 *a0, int64_t a1, int32_t a2) {
 
     a0[a1].field_0x0 = a2;
     v1 = a0 + a1;
-    v1->field_0x8 = a2 + 0x1;
+    v1->field_0x8 = a2 + 1;
     return (uintptr_t)v1;
 }
 -- signature
@@ -63,9 +63,9 @@ int64_t sub_201220(struct sub_201220_a0 *a0, int32_t a1) {
     int64_t local_0; /* [sp-20] */
     int32_t local_1; /* [sp-24] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
-        if (a0[local_1].field_0x8 > 0x0) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a1; local_1++) {
+        if (a0[local_1].field_0x8 > 0) {
             local_0 = a0[local_1].field_0x0;
         }
     }

@@ -51,7 +51,7 @@ fn square @ 0x210334 (size 28)
 void square(void);
 void twice(void);
 void *pick_op(int which) {
-    return (void *)(which != 0x0 ? square : twice);
+    return (void *)(which != 0 ? square : twice);
 }
 -- signature
 void * (int which)
@@ -74,7 +74,7 @@ int apply_table(unsigned int index, int x) {
     uint32_t local_0; /* [sp-14] */
 
     local_0 = index;
-    v3 = table[local_0 % 0x3];
+    v3 = table[local_0 % 3];
     return ((uint64_t (*)())v3)((x & 0xffffffff));
 }
 -- signature
@@ -98,7 +98,7 @@ int apply_pointer(void *f, int x) {
     int32_t v3;
 
     v3 = ((uint64_t (*)())f)((x & 0xffffffff));
-    return v3 + 0x1;
+    return v3 + 1;
 }
 -- signature
 int (void * f, int x)
@@ -120,11 +120,11 @@ int factorial(int n) {
     uint32_t v4;
 
     v4 = n;
-    if (n > 0x1) {
-        v3 = factorial(v4 - 0x1);
+    if (n > 1) {
+        v3 = factorial(v4 - 1);
         return v4 * v3;
     }
-    return 0x1;
+    return 1;
 }
 -- signature
 int (int n)
@@ -157,11 +157,11 @@ int is_odd(int n) {
     uint32_t v5;
 
     v4 = n;
-    if (n != 0x0) {
-        v5 = ((int32_t)(is_even(v4 - 0x1)));
+    if (n != 0) {
+        v5 = ((int32_t)(is_even(v4 - 1)));
         return v5;
     }
-    return 0x0;
+    return 0;
 }
 -- signature
 int (int n)
@@ -194,11 +194,11 @@ int is_even(int n) {
     uint32_t v5;
 
     v4 = n;
-    if (n != 0x0) {
-        v5 = ((int32_t)(is_odd(v4 - 0x1)));
+    if (n != 0) {
+        v5 = ((int32_t)(is_odd(v4 - 1)));
         return v5;
     }
-    return 0x1;
+    return 1;
 }
 -- signature
 int (int n)
@@ -244,7 +244,7 @@ fn sum9 @ 0x2104ec (size 120)
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x210564 */
 long call_sum9(long x) {
-    return sum9(x, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
+    return sum9(x, 1, 2, 3, 4, 5, 6, 7, 8);
 }
 -- signature
 long (long x)
@@ -283,27 +283,27 @@ int sum_varargs(int count, ...) {
     local_3 = local_4;
     local_5 = (uint32_t *)(local_4 + 0x40);
     local_7 = sp;
-    local_8 = 0x0;
-    local_6 = 0x0;
+    local_8 = 0;
+    local_6 = 0;
     while (local_6 < local_0) {
         local_9 = &local_2;
         v2 = local_2;
         local_10 = v2;
-        if (((uint32_t)v2 & 0x80000000) != 0x0) {
-            v2 = local_10 + 0x8;
+        if (((uint32_t)v2 & 0x80000000) != 0) {
+            v2 = local_10 + 8;
             *local_9 = v2;
-            if (v2 <= 0x0) {
+            if (v2 <= 0) {
                 local_11 = (uint32_t *)((uint8_t *)local_5 + local_10);
                 local_8 += *local_11;
-                local_6 += 0x1;
+                local_6 += 1;
                 continue;
             }
         }
         v4 = local_7;
-        local_7 = v4 + 0x8;
+        local_7 = v4 + 8;
         local_11 = (uint32_t *)v4;
         local_8 += *local_11;
-        local_6 += 0x1;
+        local_6 += 1;
     }
     return local_8;
 }

@@ -10,30 +10,30 @@ int32_t sub_201180(int32_t a0) {
     int64_t local_0; /* [sp-18] */
     uint32_t local_1; /* [sp-c] */
 
-    v1 = a0 - 0xa;
+    v1 = a0 - 10;
     local_0 = v1;
-    if (v1 <= 0x4) {
-        switch (local_0 - 0x4) {
+    if (v1 <= 4) {
+        switch (local_0 - 4) {
         case -4:
-            local_1 = 0x1;
+            local_1 = 1;
             return local_1;
         case -3:
-            local_1 = 0x3;
+            local_1 = 3;
             return local_1;
         case -2:
-            local_1 = 0x7;
+            local_1 = 7;
             return local_1;
         case -1:
-            local_1 = 0x9;
+            local_1 = 9;
             return local_1;
         case 0:
-            local_1 = 0xb;
+            local_1 = 11;
             return local_1;
         default:
             break;
         }
     }
-    local_1 = 0x0;
+    local_1 = 0;
     return local_1;
 }
 -- signature

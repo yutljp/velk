@@ -85,7 +85,7 @@ unsigned int rotate_left(unsigned int x, unsigned int k) {
     uint8_t t1;
 
     t1 = k & 0x1f;
-    return x << t1 | x >> (0x20 - t1 & 0x1f);
+    return x << t1 | x >> (32 - t1 & 0x1f);
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)
@@ -106,15 +106,15 @@ int popcount(unsigned int x) {
     int32_t v1;
     int32_t v2;
 
-    v1 = 0x0;
-    if (x == 0x0) {
-        return 0x0;
+    v1 = 0;
+    if (x == 0) {
+        return 0;
     }
     do {
-        v1 = v1 + 0x1;
-        v2 = x - 0x1 & x;
+        v1 = v1 + 1;
+        v2 = x - 1 & x;
         x = v2;
-    } while (v2 != 0x0);
+    } while (v2 != 0);
     return v1;
 }
 -- signature
@@ -178,7 +178,7 @@ fn min3 @ 0x201290 (size 13)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x2012a0 */
 long labs_value(long x) {
-    return (-x < 0x0 ? x : -x);
+    return (-x < 0 ? x : -x);
 }
 -- signature
 long (long x)

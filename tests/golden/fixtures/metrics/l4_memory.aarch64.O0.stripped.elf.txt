@@ -30,8 +30,8 @@ int32_t sub_21021c(uint32_t *a0, int32_t a1) {
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a1; local_1++) {
         local_0 += a0[local_1];
     }
     return local_0;
@@ -68,7 +68,7 @@ fn <unnamed> @ 0x21021c (size 100)
 void sub_210280(void) {
     uint32_t *const dword_2202b0 = (uint32_t *)0x2202b0ULL;
 
-    *dword_2202b0 += 0x1;
+    *dword_2202b0 += 1;
 }
 -- signature
 void ()

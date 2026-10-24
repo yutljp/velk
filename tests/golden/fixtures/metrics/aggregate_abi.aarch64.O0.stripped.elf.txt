@@ -117,7 +117,7 @@ fn <unnamed> @ 0x210378 (size 80)
 -- decompile
 /* velk pseudo-C: sub_2103c8 @ 0x2103c8 */
 int64_t sub_2103c8(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return a0 + 0x3 * a1 + 0x5 * a2 + 0x7 * a3 + 0xb * a4 + 0xd * a5 + 0x11 * a6 + 0x13 * a7;
+    return a0 + 3 * a1 + 5 * a2 + 7 * a3 + 11 * a4 + 13 * a5 + 17 * a6 + 19 * a7;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -134,7 +134,7 @@ fn <unnamed> @ 0x2103c8 (size 160)
 -- decompile
 /* velk pseudo-C: sub_210468 @ 0x210468 */
 int64_t sub_210468(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    return a0 + 0x3 * a1 + 0x5 * a2 + 0x7 * a3 + 0xb * a4 + 0xd * a5 + 0x11 * a6 + 0x13 * a7 + 0x17 * a8 + 0x1d * a9;
+    return a0 + 3 * a1 + 5 * a2 + 7 * a3 + 11 * a4 + 13 * a5 + 17 * a6 + 19 * a7 + 23 * a8 + 29 * a9;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
@@ -183,7 +183,7 @@ fn <unnamed> @ 0x21053c (size 76)
 -- decompile
 /* velk pseudo-C: sub_210588 @ 0x210588 */
 int64_t sub_210588(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return a0 + 0x3 * a1 + 0x5 * a2 + 0x7 * a3 + 0xb * a4 + 0xd * a5 + 0x11 * a6 + 0x13 * a7;
+    return a0 + 3 * a1 + 5 * a2 + 7 * a3 + 11 * a4 + 13 * a5 + 17 * a6 + 19 * a7;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -200,7 +200,7 @@ fn <unnamed> @ 0x210588 (size 160)
 -- decompile
 /* velk pseudo-C: sub_210628 @ 0x210628 */
 int64_t sub_210628(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    return a0 + 0x3 * a1 + 0x5 * a2 + 0x7 * a3 + 0xb * a4 + 0xd * a5 + 0x11 * a6 + 0x13 * a7 + 0x17 * a8 + 0x1d * a9;
+    return a0 + 3 * a1 + 5 * a2 + 7 * a3 + 11 * a4 + 13 * a5 + 17 * a6 + 19 * a7 + 23 * a8 + 29 * a9;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)

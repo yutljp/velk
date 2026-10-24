@@ -10,13 +10,13 @@ int classify(int x) {
     int32_t v1;
 
     v1 = x;
-    if (x >= 0x0) {
-        if (v1 != 0x0) {
-            return 0x1;
+    if (x >= 0) {
+        if (v1 != 0) {
+            return 1;
         }
-        return 0x0;
+        return 0;
     }
-    return 0xffffffff;
+    return -1;
 }
 -- signature
 int (int x)
@@ -93,10 +93,10 @@ int sign_of(int x) {
     int32_t v1;
 
     v1 = x;
-    if (x <= 0x0) {
-        return (v1 < 0x0 ? 0xffffffff : 0x0);
+    if (x <= 0) {
+        return (v1 < 0 ? 0xffffffff : 0);
     }
-    return 0x1;
+    return 1;
 }
 -- signature
 int (int x)

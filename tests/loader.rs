@@ -554,7 +554,7 @@ fn a_large_function_between_symbols_returns() {
     let large = binary.find("_large").expect("a function");
     assert_eq!(large.size, Some(MACHO_LARGE_SIZE));
     let code = decompiled(&mut binary, "_large");
-    assert!(code.contains("return 0x1;"), "{code}");
+    assert!(code.contains("return 1;"), "{code}");
     let code = decompiled(&mut binary, "_caller");
     let statements: String = code
         .lines()

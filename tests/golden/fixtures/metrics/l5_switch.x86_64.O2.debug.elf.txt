@@ -27,12 +27,12 @@ int dense(int x) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
     uint64_t v1;
 
-    v1 = ((x - 0xa) & 0xffffffff);
-    if (v1 > 0xf) {
-        *g_sink = 0x0;
+    v1 = ((x - 10) & 0xffffffff);
+    if (v1 > 15) {
+        *g_sink = 0;
         return *g_sink;
     }
-    switch (v1 + 0xa) {
+    switch (v1 + 10) {
     case 10:
         c0();
         return *g_sink;
@@ -160,7 +160,7 @@ fn dense @ 0x201330 (size 167)
 void c0(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += 0xb;
+    *g_sink += 11;
 }
 -- signature
 void ()
@@ -181,7 +181,7 @@ fn c0 @ 0x2013e0 (size 8)
 void c1(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink ^= 0x12;
+    *g_sink ^= 18;
 }
 -- signature
 void ()
@@ -202,7 +202,7 @@ fn c1 @ 0x2013f0 (size 8)
 void c2(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += -0x19;
+    *g_sink += -25;
 }
 -- signature
 void ()
@@ -223,7 +223,7 @@ fn c2 @ 0x201400 (size 8)
 void c3(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink |= 0x20;
+    *g_sink |= 32;
 }
 -- signature
 void ()
@@ -244,7 +244,7 @@ fn c3 @ 0x201410 (size 8)
 void c4(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += 0x27;
+    *g_sink += 39;
 }
 -- signature
 void ()
@@ -265,7 +265,7 @@ fn c4 @ 0x201420 (size 8)
 void c5(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink ^= 0x2e;
+    *g_sink ^= 46;
 }
 -- signature
 void ()
@@ -286,7 +286,7 @@ fn c5 @ 0x201430 (size 8)
 void c6(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += -0x35;
+    *g_sink += -53;
 }
 -- signature
 void ()
@@ -307,7 +307,7 @@ fn c6 @ 0x201440 (size 8)
 void c7(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink |= 0x3c;
+    *g_sink |= 60;
 }
 -- signature
 void ()
@@ -328,7 +328,7 @@ fn c7 @ 0x201450 (size 8)
 void c8(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += 0x43;
+    *g_sink += 67;
 }
 -- signature
 void ()
@@ -349,7 +349,7 @@ fn c8 @ 0x201460 (size 8)
 void c9(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink ^= 0x4a;
+    *g_sink ^= 74;
 }
 -- signature
 void ()
@@ -370,7 +370,7 @@ fn c9 @ 0x201470 (size 8)
 void c10(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += -0x51;
+    *g_sink += -81;
 }
 -- signature
 void ()
@@ -391,7 +391,7 @@ fn c10 @ 0x201480 (size 8)
 void c11(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink |= 0x58;
+    *g_sink |= 88;
 }
 -- signature
 void ()
@@ -412,7 +412,7 @@ fn c11 @ 0x201490 (size 8)
 void c12(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += 0x5f;
+    *g_sink += 95;
 }
 -- signature
 void ()
@@ -433,7 +433,7 @@ fn c12 @ 0x2014a0 (size 8)
 void c13(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink ^= 0x66;
+    *g_sink ^= 102;
 }
 -- signature
 void ()
@@ -454,7 +454,7 @@ fn c13 @ 0x2014b0 (size 8)
 void c14(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink += -0x6d;
+    *g_sink += -109;
 }
 -- signature
 void ()
@@ -475,7 +475,7 @@ fn c14 @ 0x2014c0 (size 8)
 void c15(void) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
 
-    *g_sink |= 0x74;
+    *g_sink |= 116;
 }
 -- signature
 void ()
@@ -495,13 +495,13 @@ fn c15 @ 0x2014d0 (size 8)
 int sparse(int x) {
     switch (x) {
     case 1:
-        return 0x64;
+        return 100;
     case 50:
-        return 0x7;
+        return 7;
     case 300:
-        return 0x12c;
+        return 300;
     default:
-        return 0xffffffff;
+        return -1;
     }
 }
 -- signature

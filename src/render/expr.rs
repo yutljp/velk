@@ -311,7 +311,7 @@ fn integral(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
 fn shift_count(expr: &Expr, ctx: &Ctx<'_>) -> (Printed, u32) {
     if let Expr::Const(amount) = expr {
         let amount = (amount & 63) as u32;
-        return (constant(u64::from(amount)), amount);
+        return (constant(u64::from(amount), ConstantUse::Hex), amount);
     }
     if let Some(range) = value_range(expr, ctx)
         && range.hi <= 63
@@ -362,7 +362,7 @@ fn shift(op: BinOp, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed
     } else {
         64
     };
-    let mut value = integral(lhs, ctx, read);
+    let mut value = print_in(lhs, ctx, read, ConstantUse::Hex).address_integer();
     let value_bits = value.unsigned_bits().min(if value.exact == ALL {
         zero_bits(lhs, ctx)
     } else {
@@ -403,8 +403,12 @@ fn shift(op: BinOp, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed
     )
 }
 
+pub(super) fn print_address(value: &Expr, ctx: &Ctx<'_>) -> Printed {
+    print_in(value, ctx, 64, ConstantUse::Hex)
+}
+
 pub(crate) fn render_expr(value: &Expr, ctx: &Ctx<'_>) -> String {
-    print(value, ctx, 64).text
+    print_in(value, ctx, 64, ConstantUse::Hex).text
 }
 
 /// `value` as C for a reader that looks at its low `bits` bits.
@@ -433,6 +437,17 @@ pub(super) fn integer_sum(expr: &Expr, ctx: &Ctx<'_>) -> Printed {
 /// wherever C's types allow it: operations C would compute narrower are
 /// widened, and values C would extend otherwise are cast.
 pub(crate) fn print(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
+    print_in(expr, ctx, bits, ConstantUse::Number)
+}
+
+#[derive(Clone, Copy)]
+enum ConstantUse {
+    Number,
+    Hex,
+    Bits,
+}
+
+fn print_in(expr: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Printed {
     if let Some((_, text)) = ctx
         .frame_addresses
         .iter()
@@ -445,14 +460,14 @@ pub(crate) fn print(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             ctx,
         );
     }
-    fit(unfitted(expr, ctx, bits), expr, bits, ctx)
+    fit(unfitted(expr, ctx, bits, usage), expr, bits, ctx)
 }
 
-fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
+fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Printed {
     match value {
         Expr::Apply { op, args } => operation(*op, args, value, ctx),
         Expr::Reg { index, width } => register(*index, *width, ctx),
-        Expr::Const(value) => constant(*value),
+        Expr::Const(value) => constant(*value, usage),
         Expr::Bin {
             op: BinOp::Sub,
             lhs,
@@ -490,7 +505,12 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                     wrapped(inverted.exact, inverted.ty)
                 }
             };
-            let inverted = widened(integral(lhs, ctx, bits), lhs, bits, keeps);
+            let inverted = widened(
+                print_in(lhs, ctx, bits, ConstantUse::Bits).address_integer(),
+                lhs,
+                bits,
+                keeps,
+            );
             let exact = keeps(&inverted);
             Printed::new(
                 format!("~{}", inverted.within(12, false).text),
@@ -513,7 +533,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             op: op @ (BinOp::Add | BinOp::Sub),
             lhs,
             rhs,
-        } => arithmetic(value, *op, lhs, rhs, ctx, bits),
+        } => arithmetic(value, *op, (lhs, rhs), ctx, bits, usage),
         Expr::Bin {
             op: op @ (BinOp::MulHigh | BinOp::MulHighS),
             lhs,
@@ -621,9 +641,9 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             let side = |side: &Expr| match side {
                 // A bitwise operation reads a constant as its bits.
                 Expr::Const(value) if matches!(op, BinOp::And | BinOp::Or | BinOp::Xor) => {
-                    Printed::new(format!("0x{value:x}"), Int::literal(*value), ALL, 13)
+                    constant(*value, ConstantUse::Bits)
                 }
-                _ => integral(side, ctx, bits),
+                _ => print_in(side, ctx, bits, usage).address_integer(),
             };
             binary(*op, (side(lhs), lhs), (side(rhs), rhs), bits, ctx)
         }
@@ -664,8 +684,8 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
             els,
         } => selected(
             (*cond, lhs, rhs),
-            (then, print(then, ctx, bits)),
-            (els, print(els, ctx, bits)),
+            (then, print_in(then, ctx, bits, usage)),
+            (els, print_in(els, ctx, bits, usage)),
             ctx,
             bits,
         ),
@@ -675,12 +695,15 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
 fn arithmetic(
     value: &Expr,
     op: BinOp,
-    lhs: &Expr,
-    rhs: &Expr,
+    (lhs, rhs): (&Expr, &Expr),
     ctx: &Ctx<'_>,
     bits: u32,
+    usage: ConstantUse,
 ) -> Printed {
-    let (left, right) = (print(lhs, ctx, bits), print(rhs, ctx, bits));
+    let (left, right) = (
+        print_in(lhs, ctx, bits, usage),
+        print_in(rhs, ctx, bits, usage),
+    );
     // The IR subtracts addresses as bytes modulo the machine width. C's
     // pointer difference also requires a shared allocation and ptrdiff_t fit.
     if right.is_pointer() && (op == BinOp::Sub || left.is_pointer()) {
@@ -701,13 +724,22 @@ fn arithmetic(
                     lhs,
                     rhs,
                 } if matches!(lhs.as_ref(), Expr::Const(0)) => Printed::pointer(
-                    format!("{name} - {}", integral(&rhs, ctx, 64).within(10, true).text),
+                    format!(
+                        "{name} - {}",
+                        print_in(&rhs, ctx, 64, ConstantUse::Hex)
+                            .address_integer()
+                            .within(10, true)
+                            .text
+                    ),
                     10,
                 ),
                 index => Printed::pointer(
                     format!(
                         "{name} + {}",
-                        integral(&index, ctx, 64).within(10, true).text
+                        print_in(&index, ctx, 64, ConstantUse::Hex)
+                            .address_integer()
+                            .within(10, true)
+                            .text
                     ),
                     10,
                 ),
@@ -717,27 +749,28 @@ fn arithmetic(
             return Printed::pointer(text, 10);
         }
     }
+    let pointer = left.is_pointer() || right.is_pointer();
     let bytes = |expr: &Expr, printed: Printed| {
         if printed.is_pointer()
             && let Some(text) = byte_pointer(expr, ctx)
         {
             Printed::pointer(text, 12)
+        } else if pointer && matches!(expr, Expr::Const(_)) {
+            print_in(expr, ctx, bits, ConstantUse::Hex)
         } else {
             printed
         }
     };
     let left = bytes(lhs, left);
     let right = bytes(rhs, right);
+    let usage = if pointer { ConstantUse::Hex } else { usage };
     match (op, rhs) {
         (BinOp::Add, Expr::Const(value)) if *value >= 1 << 63 => {
             let magnitude = value.wrapping_neg();
             binary(
                 BinOp::Sub,
                 (left, lhs),
-                (
-                    Printed::new(format!("0x{magnitude:x}"), Int::literal(magnitude), ALL, 13),
-                    rhs,
-                ),
+                (constant(magnitude, usage), rhs),
                 bits,
                 ctx,
             )
@@ -966,14 +999,87 @@ fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
     })
 }
 
-fn constant(value: u64) -> Printed {
-    // A 64-bit constant just below zero is a small negative number.
-    if value >= 1 << 63 && value.wrapping_neg() < 1 << 31 {
-        Printed::new(format!("-0x{:x}", value.wrapping_neg()), Int::INT, 64, 13)
-            .ranging(Range::Signed(32))
+fn literal(value: u64, usage: ConstantUse) -> String {
+    let decimal = value.to_string();
+    if matches!(usage, ConstantUse::Number)
+        && (value < 256
+            || value.is_multiple_of(1000)
+            || (value.is_multiple_of(100) && decimal.len() < format!("0x{value:x}").len()))
+    {
+        // Decimal spelling must keep the hexadecimal literal's width and sign.
+        let suffix = match Int::literal(value) {
+            Int {
+                bits: 32,
+                signed: false,
+            } => "U",
+            Int {
+                bits: 64,
+                signed: false,
+            } => "ULL",
+            Int {
+                bits: 64,
+                signed: true,
+            } => "LL",
+            _ => "",
+        };
+        format!("{decimal}{suffix}")
     } else {
-        Printed::new(format!("0x{value:x}"), Int::literal(value), ALL, 13)
+        format!("0x{value:x}")
     }
+}
+
+fn constant(value: u64, usage: ConstantUse) -> Printed {
+    // A 64-bit constant just below zero is a small negative number.
+    if !matches!(usage, ConstantUse::Bits) && value >= 1 << 63 && value.wrapping_neg() < 1 << 31 {
+        Printed::new(
+            format!(
+                "-{}",
+                if matches!(usage, ConstantUse::Number) {
+                    value.wrapping_neg().to_string()
+                } else {
+                    literal(value.wrapping_neg(), usage)
+                }
+            ),
+            Int::INT,
+            64,
+            13,
+        )
+        .ranging(Range::Signed(32))
+    } else {
+        Printed::new(literal(value, usage), Int::literal(value), ALL, 13)
+    }
+}
+
+pub(super) fn print_declared_value(
+    value: &Expr,
+    ctx: &Ctx<'_>,
+    declared: Option<Declared>,
+) -> Printed {
+    let integer = declared.is_some_and(|declared| declared.integer);
+    let printed = value_at(
+        value,
+        ctx,
+        declared.map_or(64, |declared| declared.bits),
+        integer,
+    );
+    let printed = declared_constant(value, printed, declared);
+    if integer {
+        printed.address_integer()
+    } else {
+        printed
+    }
+}
+
+fn declared_constant(value: &Expr, printed: Printed, declared: Option<Declared>) -> Printed {
+    if let Expr::Const(value) = value
+        && let Some(declared) = declared
+        && !printed.is_pointer()
+        && declared.integer
+        && declared.signed
+    {
+        return signed_constant(*value, declared.bits);
+    }
+    printed
 }
 
 /// A constant operand of a signed operation `width` bits wide, as the
@@ -985,13 +1091,17 @@ fn signed_constant(value: u64, width: u32) -> Printed {
         bits: 64,
         signed: true,
     };
-    let (text, ty) = if number >= 0 || Int::literal(magnitude).signed {
-        let sign = if number < 0 { "-" } else { "" };
-        (format!("{sign}0x{magnitude:x}"), Int::literal(magnitude))
-    } else if magnitude <= 0xffff_ffff {
-        (format!("-0x{magnitude:x}LL"), long)
+    let (text, ty) = if number >= 0 {
+        (
+            literal(magnitude, ConstantUse::Number),
+            Int::literal(magnitude),
+        )
+    } else if magnitude < 1 << 31 {
+        (format!("-{magnitude}"), Int::INT)
+    } else if magnitude < 1 << 63 {
+        (format!("-{magnitude}LL"), long)
     } else {
-        (format!("(int64_t)0x{:x}", number as u64), long)
+        ("(-9223372036854775807LL - 1)".to_owned(), long)
     };
     Printed::new(text, ty, width, 13).ranging(Range::Signed(width))
 }
@@ -1116,7 +1226,7 @@ mod tests {
 
     #[test]
     fn boolean_choices_render_as_truth_values_with_or_without_a_mask() {
-        for (then, els, expected) in [(1, 0, "a0 == 0x0"), (0, 1, "a0 != 0x0")] {
+        for (then, els, expected) in [(1, 0, "a0 == 0"), (0, 1, "a0 != 0")] {
             let choice = Expr::Select {
                 cond: Cond::Eq,
                 lhs: Box::new(Expr::reg(7, 32)),
@@ -1134,7 +1244,7 @@ mod tests {
             }
             let text = returned(Expr::bin(BinOp::Mul, choice, Expr::Const(2)), &[CType::I32]);
             assert!(
-                text.contains(&format!("return ({expected}) * 0x2;")),
+                text.contains(&format!("return ({expected}) * 2;")),
                 "{text}"
             );
         }
@@ -1149,7 +1259,7 @@ mod tests {
         );
         assert!(text.contains("uint8_t *const counter"), "{text}");
         assert!(
-            text.contains("return (a1 != 0x0 ? (uintptr_t)counter : 0x0);"),
+            text.contains("return (a1 != 0 ? (uintptr_t)counter : 0);"),
             "{text}"
         );
     }
@@ -1376,7 +1486,7 @@ mod tests {
                     scaled(6, 8),
                 ),
                 4,
-                "counter[(uintptr_t)a0 + (uintptr_t)a1 * 0x2]",
+                "counter[(uintptr_t)a0 + (uintptr_t)a1 * 2]",
             ),
         ] {
             let value = Expr::Load {
@@ -1474,6 +1584,12 @@ mod tests {
                 Expr::Const(1),
                 "return (uintptr_t)((uint8_t *)a0 + 0x1);",
             ),
+            (
+                BinOp::Add,
+                Expr::reg(7, 64),
+                Expr::Const(u64::MAX),
+                "return (uintptr_t)((uint8_t *)a0 - 0x1);",
+            ),
         ] {
             let text = returned(Expr::bin(op, lhs, rhs), &[pointer()]);
             assert!(text.contains(expected), "{expected:?} in {text}");
@@ -1485,15 +1601,15 @@ mod tests {
         for (value, expected) in [
             (
                 choice(Expr::reg(7, 64), Expr::Const(1)),
-                "return (a1 != 0x0 ? (uintptr_t)a0 : 0x1);",
+                "return (a1 != 0 ? (uintptr_t)a0 : 1);",
             ),
             (
                 choice(Expr::Const(1), Expr::reg(7, 64)),
-                "return (a1 != 0x0 ? 0x1 : (uintptr_t)a0);",
+                "return (a1 != 0 ? 1 : (uintptr_t)a0);",
             ),
             (
                 choice(Expr::reg(7, 64), Expr::Const(0)),
-                "return (uintptr_t)(a1 != 0x0 ? a0 : 0x0);",
+                "return (uintptr_t)(a1 != 0 ? a0 : 0);",
             ),
         ] {
             let text = returned(value, &[pointer(), CType::U64]);

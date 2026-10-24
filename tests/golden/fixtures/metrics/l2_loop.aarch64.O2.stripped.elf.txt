@@ -13,14 +13,14 @@ int32_t sub_2101c4(int32_t a0) {
     int32_t v1;
     int32_t v2;
 
-    if (a0 < 0x1) {
-        return 0x0;
+    if (a0 < 1) {
+        return 0;
     }
-    v1 = 0x0;
-    v2 = 0x0;
+    v1 = 0;
+    v2 = 0;
     do {
         v2 = v1 + v2;
-        v1 = v1 + 0x1;
+        v1 = v1 + 1;
         *dword_220298 = v2;
     } while (a0 != v1);
     return v2;
@@ -57,10 +57,10 @@ int32_t sub_210200(int32_t a0) {
     int32_t v1;
     int32_t v2;
 
-    v1 = 0x0;
-    v2 = (a0 > 0x1 ? a0 : 0x1);
+    v1 = 0;
+    v2 = (a0 > 1 ? a0 : 1);
     do {
-        v1 = v1 + 0x1;
+        v1 = v1 + 1;
         *dword_220298 = v1;
     } while (v2 != v1);
     return v2;
@@ -92,12 +92,12 @@ int32_t sub_210224(int32_t a0) {
     int32_t v1;
     int32_t v2;
 
-    if (a0 < 0x1) {
-        return 0x0;
+    if (a0 < 1) {
+        return 0;
     }
-    v2 = 0x0;
-    for (v1 = 0x0; v1 < a0; v1++) {
-        if ((v1 & 0x1) != 0x0) {
+    v2 = 0;
+    for (v1 = 0; v1 < a0; v1++) {
+        if ((v1 & 0x1) != 0) {
             v2 = v2 + v1;
             *dword_220298 = v2;
         }
@@ -138,16 +138,16 @@ fn <unnamed> @ 0x210224 (size 64)
 int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
     int64_t v2;
 
-    if (a1 >= 0x1) {
-        v2 = 0x0;
+    if (a1 >= 1) {
+        v2 = 0;
         do {
             if (a0[v2] == a2) {
                 return v2;
             }
-            v2 = v2 + 0x1;
+            v2 = v2 + 1;
         } while ((uint32_t)a1 != v2);
     }
-    return 0xffffffff;
+    return -1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, int32_t a2)

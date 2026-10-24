@@ -8,22 +8,22 @@ int dispatch(int x) {
     int32_t v1;
 
     v1 = x;
-    if (v1 - 0xa == 0x0) {
-        return 0x1;
+    if (v1 - 10 == 0) {
+        return 1;
     }
-    if (v1 - 0xb == 0x0) {
-        return 0x3;
+    if (v1 - 11 == 0) {
+        return 3;
     }
-    if (v1 - 0xc == 0x0) {
-        return 0x7;
+    if (v1 - 12 == 0) {
+        return 7;
     }
-    if (v1 - 0xd == 0x0) {
-        return 0x9;
+    if (v1 - 13 == 0) {
+        return 9;
     }
-    if (v1 - 0xe == 0x0) {
-        return 0xb;
+    if (v1 - 14 == 0) {
+        return 11;
     }
-    return 0x0;
+    return 0;
 }
 -- signature
 int (int x)

@@ -54,42 +54,42 @@ int64_t sub_2101f0(struct sub_2101f0_a0 *a0, int32_t a1) {
     int64_t v14;
     int64_t v15;
 
-    if (a1 < 0x1) {
-        return 0x0;
+    if (a1 < 1) {
+        return 0;
     }
-    if (a1 != 0x1) {
-        v3 = 0x0;
-        v5 = 0x0;
-        v6 = (void *)&a0[0x1].field_0x8;
+    if (a1 != 1) {
+        v3 = 0;
+        v5 = 0;
+        v6 = (void *)&a0[1].field_0x8;
         v2 = (uint32_t)a1 & 0x7ffffffe;
         v7 = v2;
         do {
             v8 = *(uint64_t *)(v6 - 0x18);
             v9 = *(int16_t *)(v6 - 0x10);
-            v7 = v7 - 0x2;
+            v7 = v7 - 2;
             v10 = *(uint64_t *)(v6);
             v11 = *(int16_t *)(v6 + 0x8);
             v6 = v6 + 0x30;
             v3 = v8 * v9 + v3;
             v5 = v10 * v11 + v5;
-        } while (v7 != 0x0);
+        } while (v7 != 0);
         v3 = v5 + v3;
         if (v2 == (uint32_t)a1) {
             return v3;
         }
     } else {
-        v2 = 0x0;
-        v3 = 0x0;
+        v2 = 0;
+        v3 = 0;
     }
     v12 = (uint32_t)a1 - v2;
     v13 = (void *)&a0[v2].field_0x10;
     do {
         v14 = *(uint64_t *)(v13 - 0x8);
         v15 = *(int16_t *)(v13);
-        v12 = v12 - 0x1;
+        v12 = v12 - 1;
         v13 = v13 + 0x18;
         v3 = v14 * v15 + v3;
-    } while (v12 != 0x0);
+    } while (v12 != 0);
     return v3;
 }
 -- signature
@@ -169,7 +169,7 @@ int64_t sub_2102a8(int64_t a0) {
 
     v1 = (uint64_t)a0 << 0x1;
     *(uint64_t *)(v2) = a0;
-    *(uint64_t *)(v2 + 0x8) = a0 + 0x1;
+    *(uint64_t *)(v2 + 0x8) = a0 + 1;
     *(uint64_t *)(v2 + 0x10) = v1;
     *(uint64_t *)(v2 + 0x18) = v1 + a0;
     return a0;
@@ -234,7 +234,7 @@ fn <unnamed> @ 0x2102d4 (size 4)
 -- decompile
 /* velk pseudo-C: sub_2102d8 @ 0x2102d8 */
 uint32_t sub_2102d8(uint32_t a0) {
-    return ((a0 & 0x1) == 0x0 ? a0 >> 0x1 & 0x7 : a0 >> 0x4 & 0xf);
+    return ((a0 & 0x1) == 0 ? a0 >> 0x1 & 0x7 : a0 >> 0x4 & 0xf);
 }
 -- signature
 uint32_t (uint32_t a0)

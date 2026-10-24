@@ -49,7 +49,7 @@ fn <unnamed> @ 0x210334 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210350 @ 0x210350 */
 int32_t sub_210350(int32_t a0) {
-    return (a0 != 0x0 ? 0x210334 : 0x21031c);
+    return (a0 != 0 ? 0x210334 : 0x21031c);
 }
 -- signature
 int32_t (int32_t a0)
@@ -70,7 +70,7 @@ int32_t sub_21037c(int32_t a0, int32_t a1) {
     uint64_t *const qword_2206f0 = (uint64_t *)0x2206f0ULL;
     int64_t v3;
 
-    v3 = qword_2206f0[(uint32_t)a0 % 0x3];
+    v3 = qword_2206f0[(uint32_t)a0 % 3];
     return ((uint64_t (*)())v3)((a1 & 0xffffffff));
 }
 -- signature
@@ -94,7 +94,7 @@ int32_t sub_2103c4(void *a0, int32_t a1) {
     int32_t v3;
 
     v3 = ((uint64_t (*)())a0)((a1 & 0xffffffff));
-    return v3 + 0x1;
+    return v3 + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -116,11 +116,11 @@ int32_t sub_2103f4(int32_t a0) {
     uint32_t v4;
 
     v4 = a0;
-    if (a0 > 0x1) {
-        v3 = sub_2103f4(v4 - 0x1);
+    if (a0 > 1) {
+        v3 = sub_2103f4(v4 - 1);
         return v4 * v3;
     }
-    return 0x1;
+    return 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -153,11 +153,11 @@ int32_t sub_210454(int32_t a0) {
     uint32_t v5;
 
     v4 = a0;
-    if (a0 != 0x0) {
-        v5 = ((int32_t)(sub_2104a0(v4 - 0x1)));
+    if (a0 != 0) {
+        v5 = ((int32_t)(sub_2104a0(v4 - 1)));
         return v5;
     }
-    return 0x0;
+    return 0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -190,11 +190,11 @@ int32_t sub_2104a0(int32_t a0) {
     uint32_t v5;
 
     v4 = a0;
-    if (a0 != 0x0) {
-        v5 = ((int32_t)(sub_210454(v4 - 0x1)));
+    if (a0 != 0) {
+        v5 = ((int32_t)(sub_210454(v4 - 1)));
         return v5;
     }
-    return 0x1;
+    return 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -240,7 +240,7 @@ fn <unnamed> @ 0x2104ec (size 120)
 -- decompile
 /* velk pseudo-C: sub_210564 @ 0x210564 */
 int64_t sub_210564(int64_t a0) {
-    return sub_2104ec(a0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8);
+    return sub_2104ec(a0, 1, 2, 3, 4, 5, 6, 7, 8);
 }
 -- signature
 int64_t (int64_t a0)
@@ -279,27 +279,27 @@ int32_t sub_2105b0(int32_t a0, ...) {
     local_3 = local_4;
     local_5 = (uint32_t *)(local_4 + 0x40);
     local_7 = sp;
-    local_8 = 0x0;
-    local_6 = 0x0;
+    local_8 = 0;
+    local_6 = 0;
     while (local_6 < local_0) {
         local_9 = &local_2;
         v2 = local_2;
         local_10 = v2;
-        if (((uint32_t)v2 & 0x80000000) != 0x0) {
-            v2 = local_10 + 0x8;
+        if (((uint32_t)v2 & 0x80000000) != 0) {
+            v2 = local_10 + 8;
             *local_9 = v2;
-            if (v2 <= 0x0) {
+            if (v2 <= 0) {
                 local_11 = (uint32_t *)((uint8_t *)local_5 + local_10);
                 local_8 += *local_11;
-                local_6 += 0x1;
+                local_6 += 1;
                 continue;
             }
         }
         v4 = local_7;
-        local_7 = v4 + 0x8;
+        local_7 = v4 + 8;
         local_11 = (uint32_t *)v4;
         local_8 += *local_11;
-        local_6 += 0x1;
+        local_6 += 1;
     }
     return local_8;
 }

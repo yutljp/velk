@@ -10,8 +10,8 @@ int d7(int x) {
     uint32_t *const g = (uint32_t *)0x2023d0ULL;
     int32_t v2;
 
-    if ((uint32_t)x > 0x9) {
-        v2 = 0xffffffff;
+    if ((uint32_t)x > 9) {
+        v2 = -1;
     } else {
         switch (x) {
         case 0:
@@ -19,75 +19,75 @@ int d7(int x) {
             break;
         case 1:
             *g = *g;
-            v2 = *g + 0x1;
+            v2 = *g + 1;
             break;
         case 2:
             *g = *g;
-            *g += 0x1;
-            v2 = *g + 0x2;
+            *g += 1;
+            v2 = *g + 2;
             break;
         case 3:
             *g = *g;
-            *g += 0x1;
-            *g += 0x2;
-            v2 = *g + 0x3;
+            *g += 1;
+            *g += 2;
+            v2 = *g + 3;
             break;
         case 4:
             *g = *g;
-            *g += 0x1;
-            *g += 0x2;
-            *g += 0x3;
-            v2 = *g + 0x4;
+            *g += 1;
+            *g += 2;
+            *g += 3;
+            v2 = *g + 4;
             break;
         case 5:
             *g = *g;
-            *g += 0x1;
-            *g += 0x2;
-            *g += 0x3;
-            *g += 0x4;
-            v2 = *g + 0x5;
+            *g += 1;
+            *g += 2;
+            *g += 3;
+            *g += 4;
+            v2 = *g + 5;
             break;
         case 6:
             *g = *g;
-            *g += 0x1;
-            *g += 0x2;
-            *g += 0x3;
-            *g += 0x4;
-            *g += 0x5;
-            v2 = *g + 0x6;
+            *g += 1;
+            *g += 2;
+            *g += 3;
+            *g += 4;
+            *g += 5;
+            v2 = *g + 6;
             break;
         case 7:
             *g = *g;
-            *g += 0x1;
-            *g += 0x2;
-            *g += 0x3;
-            *g += 0x4;
-            *g += 0x5;
-            *g += 0x6;
-            v2 = *g + 0x7;
+            *g += 1;
+            *g += 2;
+            *g += 3;
+            *g += 4;
+            *g += 5;
+            *g += 6;
+            v2 = *g + 7;
             break;
         case 8:
             *g = *g;
-            *g += 0x1;
-            *g += 0x2;
-            *g += 0x3;
-            *g += 0x4;
-            *g += 0x5;
-            *g += 0x6;
-            *g += 0x7;
-            v2 = *g + 0x8;
+            *g += 1;
+            *g += 2;
+            *g += 3;
+            *g += 4;
+            *g += 5;
+            *g += 6;
+            *g += 7;
+            v2 = *g + 8;
             break;
         case 9:
             *g = *g;
-            *g += 0x1;
-            *g += 0x2;
-            *g += 0x3;
-            *g += 0x4;
-            *g += 0x5;
-            *g += 0x6;
-            *g += 0x7;
-            *g += 0x8;
-            v2 = *g + 0x9;
+            *g += 1;
+            *g += 2;
+            *g += 3;
+            *g += 4;
+            *g += 5;
+            *g += 6;
+            *g += 7;
+            *g += 8;
+            v2 = *g + 9;
             break;
         default:
             __builtin_unreachable();

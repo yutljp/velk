@@ -394,7 +394,7 @@ fn a_signed_comparison_of_a_masked_byte_reads_the_byte_as_signed() {
         Expr::Const(0),
     );
     // Only ever read as a signed byte, the variable is one.
-    assert_eq!(text, "v1 < 0x0");
+    assert_eq!(text, "v1 < 0");
     // An unsigned comparison of the same byte needs no mask, as the
     // variable holds only the byte.
     let text = compared(
@@ -405,7 +405,7 @@ fn a_signed_comparison_of_a_masked_byte_reads_the_byte_as_signed() {
         mask(Expr::reg(byte, 64), 0xff),
         Expr::Const(0xf0),
     );
-    assert_eq!(text, "v1 < 0xf0");
+    assert_eq!(text, "v1 < 240");
     // Of a wider value, read whole elsewhere, it keeps the mask.
     let text = compared(
         Isa::X86_64,
@@ -415,7 +415,7 @@ fn a_signed_comparison_of_a_masked_byte_reads_the_byte_as_signed() {
         mask(Expr::reg(byte, 64), 0xff),
         Expr::Const(0xf0),
     );
-    assert_eq!(text, "(v1 & 0xff) < 0xf0");
+    assert_eq!(text, "(v1 & 0xff) < 240");
 }
 
 #[test]
@@ -432,9 +432,9 @@ fn an_unsigned_comparison_of_a_signed_parameter_reads_it_unsigned() {
             Expr::Const(1),
         )
     };
-    assert_eq!(test(Cond::Gt), "a0 > 0x1");
-    assert_eq!(test(Cond::Hi), "(uint64_t)a0 > 0x1");
-    assert_eq!(test(Cond::Cc), "(uint64_t)a0 < 0x1");
+    assert_eq!(test(Cond::Gt), "a0 > 1");
+    assert_eq!(test(Cond::Hi), "(uint64_t)a0 > 1");
+    assert_eq!(test(Cond::Cc), "(uint64_t)a0 < 1");
 }
 
 #[test]
@@ -448,7 +448,7 @@ fn a_signed_comparison_of_unsigned_memory_reads_it_as_signed() {
         load(Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(8)), 2),
         Expr::Const(5),
     );
-    assert_eq!(text, "*(int16_t *)(a0 + 0x8) > 0x5");
+    assert_eq!(text, "*(int16_t *)(a0 + 0x8) > 5");
 }
 
 #[test]
@@ -466,7 +466,7 @@ fn both_operands_of_a_signed_32_bit_comparison_are_read_as_signed() {
             0xffff_ffff,
         ),
     );
-    assert_eq!(text, "(int32_t)a0 <= (int32_t)(a1 - 0x2)");
+    assert_eq!(text, "(int32_t)a0 <= (int32_t)(a1 - 2)");
     // A 32-bit signed parameter needs no cast.
     let text = compared(
         Isa::X86_64,
@@ -482,7 +482,7 @@ fn both_operands_of_a_signed_32_bit_comparison_are_read_as_signed() {
         Expr::reg(7, 32),
         Expr::Const(5),
     );
-    assert_eq!(text, "a0 < 0x5");
+    assert_eq!(text, "a0 < 5");
     // Nor does one whose register is masked to its width.
     let text = compared(
         Isa::AArch64,
@@ -498,7 +498,7 @@ fn both_operands_of_a_signed_32_bit_comparison_are_read_as_signed() {
         mask(Expr::reg(0, 64), 0xffff_ffff),
         Expr::Const(1),
     );
-    assert_eq!(text, "a0 < 0x1");
+    assert_eq!(text, "a0 < 1");
 }
 
 #[test]
@@ -521,7 +521,7 @@ fn a_narrow_sum_compared_signed_wraps_at_its_width() {
     );
     assert_eq!(
         text,
-        "(int8_t)(*(uint8_t *)(a0) + *(uint8_t *)(a0 + 0x1)) >= 0x0"
+        "(int8_t)(*(uint8_t *)(a0) + *(uint8_t *)(a0 + 0x1)) >= 0"
     );
 }
 
@@ -539,7 +539,7 @@ fn an_unsigned_comparison_of_a_sign_extended_value_reads_all_64_bits() {
         },
         Expr::Const(0x80),
     );
-    assert_eq!(text, "(uint64_t)(int8_t)a0 < 0x80");
+    assert_eq!(text, "(uint64_t)(int8_t)a0 < 128");
 }
 
 #[test]
@@ -558,7 +558,7 @@ fn a_variable_read_narrower_than_declared_is_compared_by_that_part() {
         Expr::reg(value, 32),
         Expr::Const(5),
     );
-    assert_eq!(text, "(uint32_t)v1 == 0x5");
+    assert_eq!(text, "(uint32_t)v1 == 5");
     let text = compared(
         Isa::X86_64,
         &[(7, CType::U64)],
@@ -567,7 +567,7 @@ fn a_variable_read_narrower_than_declared_is_compared_by_that_part() {
         Expr::reg(value, 32),
         Expr::Const(5),
     );
-    assert_eq!(text, "(int32_t)v1 < 0x5");
+    assert_eq!(text, "(int32_t)v1 < 5");
 }
 
 #[test]
@@ -646,7 +646,7 @@ fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
     }];
     let text = rendered(&ir);
     assert!(text.contains("    int32_t v1;\n"), "{text}");
-    assert!(text.contains("v1 = v1 + 0x1;"), "{text}");
+    assert!(text.contains("v1 = v1 + 1;"), "{text}");
     assert!(text.contains("*a0 = v1;"), "{text}");
 }
 
@@ -909,7 +909,7 @@ fn an_integer_compare_exchange_takes_a_pointer_as_its_address() {
     ];
     let text = rendered(&ir);
     assert!(
-        text.contains("__sync_val_compare_and_swap((uint64_t *)cell, (uintptr_t)expected, 0x1)"),
+        text.contains("__sync_val_compare_and_swap((uint64_t *)cell, (uintptr_t)expected, 1)"),
         "{text}"
     );
     ir.params[0].ty = CType::pointer_to(CType::Named("struct record".to_owned()));
@@ -922,7 +922,7 @@ fn an_integer_compare_exchange_takes_a_pointer_as_its_address() {
     });
     let text = rendered(&ir);
     assert!(
-        text.contains("__sync_val_compare_and_swap((uint64_t *)cell, (uintptr_t)expected, 0x1)"),
+        text.contains("__sync_val_compare_and_swap((uint64_t *)cell, (uintptr_t)expected, 1)"),
         "{text}"
     );
 }
@@ -1139,7 +1139,7 @@ fn a_pointer_to_scalars_is_indexed_by_elements() {
         },
     ];
     let text = rendered(&ir);
-    assert!(text.contains("return a0[a1 + 0x2];"), "{text}");
+    assert!(text.contains("return a0[a1 + 2];"), "{text}");
 }
 
 #[test]
@@ -1221,7 +1221,7 @@ fn a_pointer_taken_as_an_integer_is_cast() {
     let text = rendered(&ir);
     for line in [
         "    v1 = (uintptr_t)a0 & 0x7;\n",
-        "    return (uintptr_t)(v1 != 0x0 ? a0 : 0x0);\n",
+        "    return (uintptr_t)(v1 != 0 ? a0 : 0);\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
     }
@@ -1293,11 +1293,11 @@ fn an_array_of_structures_is_indexed_by_elements() {
     for line in [
         "uint8_t gap_0xc[0x4]; };\n",
         "    struct sub_0_a0 *v1;\n",
-        "    a0[a1].field_0x8 = 0x0;\n",
-        "    a0[0x2].field_0x8 = 0x0;\n",
-        "    a0->field_0x8 = 0x0;\n",
+        "    a0[a1].field_0x8 = 0;\n",
+        "    a0[2].field_0x8 = 0;\n",
+        "    a0->field_0x8 = 0;\n",
         "    v1 = a0 + a1;\n",
-        "    v1->field_0x0 = 0x0;\n",
+        "    v1->field_0x0 = 0;\n",
         "    v1 = v1 + 0x2;\n",
         "    v2 = (uintptr_t)&a0[a1].field_0x8;\n",
         "    return *(uint32_t *)((uint8_t *)a0 + ((uint64_t)a1 << 0x4) + 0xc);\n",
@@ -1649,7 +1649,7 @@ fn a_member_name_does_not_retain_an_unused_segment_snapshot() {
     });
     let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
     assert!(
-        rendered.code.contains("p->fs_base = 0x0;"),
+        rendered.code.contains("p->fs_base = 0;"),
         "{}",
         rendered.code
     );
@@ -2133,7 +2133,7 @@ fn physical_vector_storage_preserves_upper_zero_and_name_collisions() {
     let code = rendered(&ir);
     assert!(code.contains("uint64_t v1;"), "{code}");
     assert!(code.contains("uint64_t v2;"), "{code}");
-    assert!(code.contains("v2 = 0x0;"), "{code}");
+    assert!(code.contains("v2 = 0;"), "{code}");
     assert!(!code.contains("s0"), "{code}");
 }
 

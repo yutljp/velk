@@ -8,7 +8,7 @@
 -- decompile
 /* velk pseudo-C: helper_one @ 0x13d0 */
 int32_t helper_one(int32_t a0) {
-    return a0 - 0x2;
+    return a0 - 2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -42,7 +42,7 @@ fn helper_two @ 0x13e0 (size 7)
 -- decompile
 /* velk pseudo-C: target @ 0x13f0 */
 int32_t target(int32_t a0) {
-    return a0 * 0x8 - a0;
+    return a0 * 8 - a0;
 }
 -- signature
 int32_t (int32_t a0)

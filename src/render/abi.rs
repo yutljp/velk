@@ -634,8 +634,8 @@ mod tests {
         });
         ir.params.clear();
         let output = super::super::render(&ir, &[], &Symbols::default(), &[]);
-        assert!(output.contains("result_bits = 0x1"), "{output}");
-        assert!(output.contains("result_bits_2 = 0x2"), "{output}");
+        assert!(output.contains("result_bits = 1"), "{output}");
+        assert!(output.contains("result_bits_2 = 2"), "{output}");
         assert!(
             output.contains("__builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);"),
             "{output}"
@@ -882,8 +882,8 @@ mod tests {
                 output.contains(&format!("{expected} result = {{0}};")),
                 "{output}"
             );
-            assert!(output.contains("result_bits = 0x1"), "{output}");
-            assert!(output.contains("result_bits_2 = 0x2"), "{output}");
+            assert!(output.contains("result_bits = 1"), "{output}");
+            assert!(output.contains("result_bits_2 = 2"), "{output}");
             assert!(
                 output
                     .contains("__builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);"),

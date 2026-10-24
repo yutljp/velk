@@ -42,8 +42,8 @@ long record_total(struct record *items, int n) {
     int64_t local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < n; local_1++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < n; local_1++) {
         v2 = items[local_1].count;
         local_0 += items[local_1].value * v2;
     }
@@ -117,9 +117,9 @@ struct big big_make(long seed) {
     uint8_t *result_address = (uint8_t *)&result;
 
     __builtin_memcpy(result_address, &(uint64_t){seed_bits}, 8);
-    __builtin_memcpy(result_address + 0x8, &(uint64_t){seed_bits + 0x1}, 8);
+    __builtin_memcpy(result_address + 0x8, &(uint64_t){seed_bits + 1}, 8);
     __builtin_memcpy(result_address + 0x10, &(uint64_t){seed_bits << 0x1}, 8);
-    __builtin_memcpy(result_address + 0x18, &(uint64_t){seed_bits * 0x3}, 8);
+    __builtin_memcpy(result_address + 0x18, &(uint64_t){seed_bits * 3}, 8);
     return result;
 }
 -- signature
@@ -190,7 +190,7 @@ unsigned int flags_level(struct flags f) {
     uint32_t local_0; /* [sp-4] */
 
     local_0 = f_bits;
-    if ((*(uint8_t *)&local_0 & 0x1) == 0x0) {
+    if ((*(uint8_t *)&local_0 & 0x1) == 0) {
         v1 = *(uint8_t *)&local_0 >> 0x1 & 0x7;
         return v1;
     }

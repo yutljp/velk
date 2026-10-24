@@ -14,10 +14,10 @@ double average(double *values, int n) {
     double local_2; /* [sp-28] */
 
     local_0 = 0.0;
-    for (local_1 = 0x0; local_1 < n; local_1++) {
+    for (local_1 = 0; local_1 < n; local_1++) {
         local_0 = local_0 + values[local_1];
     }
-    if (n <= 0x0) {
+    if (n <= 0) {
         local_2 = 0.0;
         return local_2;
     }
@@ -117,7 +117,7 @@ int compare_doubles(double a, double b) {
     if (!(a < b)) {
         return (b < a);
     }
-    return 0xffffffff;
+    return -1;
 }
 -- signature
 int (double a, double b)

@@ -1056,7 +1056,7 @@ mod tests {
     #[test]
     fn a_result_read_once_reads_as_the_call() {
         let text = rendered(Expr::Const(1));
-        assert!(text.contains("sub_2000(sub_1000(a0), 0x1);"), "{text}");
+        assert!(text.contains("sub_2000(sub_1000(a0), 1);"), "{text}");
         assert!(!text.contains("v1"), "{text}");
     }
 

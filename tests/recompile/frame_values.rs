@@ -144,7 +144,7 @@ fn printed_frame_join_values_keep_uncertain_reads() {
         value: Expr::bin(BinOp::And, load(-8, 1, false), Expr::Const(1)),
     };
     let text = printed(&forward(&constant));
-    assert!(text.contains("return 0x1;"), "{text}");
+    assert!(text.contains("return 1;"), "{text}");
     let mut unreachable = base.clone();
     unreachable.blocks.push(Block {
         start: 0x40,
@@ -476,9 +476,9 @@ fn printed_frame_branch_comparisons_keep_direct_constants() {
     let text = binary
         .decompile(address, None, None)
         .expect("printed branch comparisons");
-    assert!(text.contains("!= 0x1"), "{text}");
-    assert!(text.contains("== 0x2"), "{text}");
-    assert!(!text.contains("- 0x1 != 0x0"), "{text}");
+    assert!(text.contains("!= 1"), "{text}");
+    assert!(text.contains("== 2"), "{text}");
+    assert!(!text.contains("- 1 != 0"), "{text}");
 }
 
 #[test]
@@ -503,11 +503,11 @@ fn printed_local_offsets_preserve_operator_precedence() {
         ("shift", shift, " + (a << 0x2)"),
         ("and", and, " + (a & 0x1)"),
         ("or", or, " + (a | 0x1)"),
-        ("select", select, " + (a == 0x0 ? 0x2 : 0x0)"),
+        ("select", select, " + (a == 0 ? 0x2 : 0x0)"),
         (
             "sum",
             sum,
-            " + ((a << 0x2) + (a & 0x1) + (a | 0x1) + (a == 0x0 ? 0x2 : 0x0))",
+            " + ((a << 0x2) + (a & 0x1) + (a | 0x1) + (a == 0 ? 0x2 : 0x0))",
         ),
     ] {
         let address = Expr::bin(BinOp::Add, slot(-8), offset);

@@ -32,9 +32,9 @@ struct cell { _Alignas(4) int x; int y; int z; };
 void cell_set(struct cell *cells, long i, int v) {
     int64_t v1;
 
-    v1 = i + i * 0x2;
+    v1 = i + i * 2;
     *(uint32_t *)((uint8_t *)cells + v1 * 0x4) = v;
-    *(uint32_t *)((uint8_t *)cells + v1 * 0x4 + 0x8) = v + 0x1;
+    *(uint32_t *)((uint8_t *)cells + v1 * 0x4 + 0x8) = v + 1;
 }
 -- signature
 void (struct cell * cells, long i, int v)
@@ -62,34 +62,34 @@ long item_last_key(struct item *items, int n) {
     uint32_t v5;
     void *v6;
 
-    if (n <= 0x0) {
-        return 0x0;
+    if (n <= 0) {
+        return 0;
     }
     v1 = n;
-    if (n != 0x1) {
+    if (n != 1) {
         v5 = v1 & 0x7ffffffe;
-        v6 = (void *)&items[0x1].count;
-        v2 = 0x0;
-        v3 = 0x0;
+        v6 = (void *)&items[1].count;
+        v2 = 0;
+        v3 = 0;
         do {
-            if (*(int32_t *)(v6 - 0x10) > 0x0) {
+            if (*(int32_t *)(v6 - 0x10) > 0) {
                 v3 = *(uint64_t *)(v6 - 0x18);
             }
-            if (*(int32_t *)(v6) > 0x0) {
+            if (*(int32_t *)(v6) > 0) {
                 v3 = *(uint64_t *)(v6 - 0x8);
             }
-            v2 = v2 + 0x2;
+            v2 = v2 + 2;
             v6 = v6 + 0x20;
         } while (v5 != v2);
     } else {
-        v2 = 0x0;
-        v3 = 0x0;
+        v2 = 0;
+        v3 = 0;
     }
-    if ((v1 & 0x1) == 0x0) {
+    if ((v1 & 0x1) == 0) {
         return v3;
     }
     v4 = (uint64_t)v2 << 0x4;
-    if (*(int32_t *)((uint8_t *)items + v4 + 0x8) <= 0x0) {
+    if (*(int32_t *)((uint8_t *)items + v4 + 0x8) <= 0) {
         return v3;
     }
     return *(uint64_t *)((uint8_t *)items + v4);

@@ -29,7 +29,7 @@
 -- decompile
 /* velk pseudo-C: udiv3 @ 0x201460 */
 unsigned int udiv3(unsigned int x) {
-    return x / 0x3;
+    return x / 3;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -46,7 +46,7 @@ fn udiv3 @ 0x201460 (size 21)
 -- decompile
 /* velk pseudo-C: udiv10 @ 0x201480 */
 unsigned int udiv10(unsigned int x) {
-    return x / 0xa;
+    return x / 10;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -80,7 +80,7 @@ fn udiv64 @ 0x2014a0 (size 15)
 -- decompile
 /* velk pseudo-C: hdiv3 @ 0x2014b0 */
 unsigned long long hdiv3(unsigned long long x) {
-    return x / 0x3;
+    return x / 3;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -97,7 +97,7 @@ fn hdiv3 @ 0x2014b0 (size 24)
 -- decompile
 /* velk pseudo-C: hdiv10 @ 0x2014d0 */
 unsigned long long hdiv10(unsigned long long x) {
-    return x / 0xa;
+    return x / 10;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -114,7 +114,7 @@ fn hdiv10 @ 0x2014d0 (size 24)
 -- decompile
 /* velk pseudo-C: sdiv3 @ 0x2014f0 */
 int sdiv3(int x) {
-    return x / 0x3;
+    return x / 3;
 }
 -- signature
 int (int x)
@@ -131,7 +131,7 @@ fn sdiv3 @ 0x2014f0 (size 20)
 -- decompile
 /* velk pseudo-C: sdiv10 @ 0x201510 */
 int sdiv10(int x) {
-    return x / 0xa;
+    return x / 10;
 }
 -- signature
 int (int x)
@@ -148,7 +148,7 @@ fn sdiv10 @ 0x201510 (size 20)
 -- decompile
 /* velk pseudo-C: sdiv16 @ 0x201530 */
 int sdiv16(int x) {
-    return x / 0x10;
+    return x / 16;
 }
 -- signature
 int (int x)
@@ -165,7 +165,7 @@ fn sdiv16 @ 0x201530 (size 20)
 -- decompile
 /* velk pseudo-C: ldiv16 @ 0x201550 */
 long long ldiv16(long long x) {
-    return x / 0x10;
+    return x / 16;
 }
 -- signature
 long long (long long x)
@@ -182,7 +182,7 @@ fn ldiv16 @ 0x201550 (size 24)
 -- decompile
 /* velk pseudo-C: smod3 @ 0x201570 */
 int smod3(int x) {
-    return x % 0x3;
+    return x % 3;
 }
 -- signature
 int (int x)
@@ -199,7 +199,7 @@ fn smod3 @ 0x201570 (size 22)
 -- decompile
 /* velk pseudo-C: umod3 @ 0x201590 */
 unsigned int umod3(unsigned int x) {
-    return x % 0x3;
+    return x % 3;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -216,7 +216,7 @@ fn umod3 @ 0x201590 (size 23)
 -- decompile
 /* velk pseudo-C: umod10 @ 0x2015b0 */
 unsigned int umod10(unsigned int x) {
-    return x % 0xa;
+    return x % 10;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -233,7 +233,7 @@ fn umod10 @ 0x2015b0 (size 23)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x2015d0 */
 int smod10(int x) {
-    return x % 0xa;
+    return x % 10;
 }
 -- signature
 int (int x)
@@ -250,7 +250,7 @@ fn smod10 @ 0x2015d0 (size 22)
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x2015f0 */
 long long lmod10(long long x) {
-    return x % 0xa;
+    return x % 10;
 }
 -- signature
 long long (long long x)
@@ -267,7 +267,7 @@ fn lmod10 @ 0x2015f0 (size 27)
 -- decompile
 /* velk pseudo-C: umod10b @ 0x201610 */
 unsigned long long umod10b(unsigned long long x) {
-    return x % 0xa;
+    return x % 10;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -284,7 +284,7 @@ fn umod10b @ 0x201610 (size 27)
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x201630 */
 long long lmod16(long long x) {
-    return x % 0x10;
+    return x % 16;
 }
 -- signature
 long long (long long x)
@@ -301,7 +301,7 @@ fn lmod16 @ 0x201630 (size 27)
 -- decompile
 /* velk pseudo-C: smod4 @ 0x201650 */
 int smod4(int x) {
-    return x % 0x4;
+    return x % 4;
 }
 -- signature
 int (int x)
@@ -337,7 +337,7 @@ fn negate @ 0x201670 (size 14)
 int is_neg(int x) {
     uint8_t v2;
 
-    v2 = (x < 0x0);
+    v2 = (x < 0);
     return v2;
 }
 -- signature
@@ -358,7 +358,7 @@ fn is_neg @ 0x201680 (size 21)
 int is_zero(int x) {
     uint8_t v2;
 
-    v2 = (x == 0x0);
+    v2 = (x == 0);
     return v2;
 }
 -- signature
@@ -379,7 +379,7 @@ fn is_zero @ 0x2016a0 (size 21)
 int is_pos(int x) {
     uint8_t v2;
 
-    v2 = (x > 0x0);
+    v2 = (x > 0);
     return v2;
 }
 -- signature
@@ -415,7 +415,7 @@ fn lnegate @ 0x2016e0 (size 16)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x2016f0 */
 long long lmod3(long long x) {
-    return x % 0x3;
+    return x % 3;
 }
 -- signature
 long long (long long x)
@@ -432,7 +432,7 @@ fn lmod3 @ 0x2016f0 (size 27)
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x201710 */
 long long ldiv3(long long x) {
-    return x / 0x3;
+    return x / 3;
 }
 -- signature
 long long (long long x)
@@ -449,7 +449,7 @@ fn ldiv3 @ 0x201710 (size 24)
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x201730 */
 long long ldiv10(long long x) {
-    return x / 0xa;
+    return x / 10;
 }
 -- signature
 long long (long long x)

@@ -1316,7 +1316,7 @@ fn main.twice @ 0x466cc0 (size 64)
 int64_t main_main(void) {
     int64_t v1;
 
-    v1 = main_twice(0x15);
+    v1 = main_twice(21);
     runtime_printlock();
     runtime_printint(v1);
     runtime_printnl();

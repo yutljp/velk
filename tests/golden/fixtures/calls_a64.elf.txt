@@ -51,7 +51,7 @@ fn square @ 0x2102bc (size 8)
 void square(void);
 void twice(void);
 int32_t pick_op(int32_t a0) {
-    return (a0 == 0x0 ? (uintptr_t)twice : (uintptr_t)square);
+    return (a0 == 0 ? (uintptr_t)twice : (uintptr_t)square);
 }
 -- signature
 int32_t (int32_t a0)
@@ -72,7 +72,7 @@ int32_t apply_table(uint32_t a0, int32_t a1) {
     uint64_t *const table = (uint64_t *)0x220538ULL;
     int64_t v3;
 
-    v3 = table[a0 % 0x3];
+    v3 = table[a0 % 3];
     return ((uint64_t (*)())v3)((a1 & 0xffffffff));
 }
 -- signature
@@ -95,7 +95,7 @@ int32_t apply_pointer(void *a0, int32_t a1) {
     int32_t v3;
 
     v3 = ((uint64_t (*)())a0)((a1 & 0xffffffff));
-    return v3 + 0x1;
+    return v3 + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -131,11 +131,11 @@ int32_t factorial(int32_t a0) {
     uint64_t v12;
     uint64_t v13;
 
-    if (a0 >= 0x2) {
-        if ((uint32_t)a0 >= 0x9) {
+    if (a0 >= 2) {
+        if ((uint32_t)a0 >= 9) {
             v3 = 0x100000001;
             v4 = 0x100000001;
-            v5 = a0 - 0x1;
+            v5 = a0 - 1;
             v6 = v5 & 0xfffffff8;
             v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_200190);
             v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_200198);
@@ -148,12 +148,12 @@ int32_t factorial(int32_t a0) {
                 v13 = add_lanes32(v8, 0xfffffffcfffffffc);
                 v9 = mul_lanes32(v7, v9);
                 v10 = mul_lanes32(v8, v10);
-                v11 = v11 - 0x8;
+                v11 = v11 - 8;
                 v7 = add_lanes32(v7, 0xfffffff8fffffff8);
                 v8 = add_lanes32(v8, 0xfffffff8fffffff8);
                 v3 = mul_lanes32(v12, v3);
                 v4 = mul_lanes32(v13, v4);
-            } while (v11 != 0x0);
+            } while (v11 != 0);
             v9 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10));
             v11 = v9 >> 0x20;
             v2 = v9 * v11;
@@ -162,15 +162,15 @@ int32_t factorial(int32_t a0) {
             }
         } else {
             v1 = a0;
-            v2 = 0x1;
+            v2 = 1;
         }
         do {
             v2 = v1 * v2;
-            v1 = v1 - 0x1;
-        } while (v1 + 0x1 > 0x2);
+            v1 = v1 - 1;
+        } while (v1 + 1 > 2);
         return v2;
     }
-    return 0x1;
+    return 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -234,23 +234,23 @@ int32_t is_odd(int32_t a0) {
     int32_t v5;
     uint32_t v6;
 
-    v1 = a0 - (a0 != 0x0) + 0x1;
-    if (v1 >= 0x2) {
-        v1 = (v1 >> 0x1) + 0x1;
+    v1 = a0 - (a0 != 0) + 1;
+    if (v1 >= 2) {
+        v1 = (v1 >> 0x1) + 1;
         v4 = v1 & 0xfffffffe;
         a0 = a0 - ((uint64_t)v4 << 0x1);
         v5 = v4;
         do {
-            v5 = v5 - 0x2;
-        } while (v5 != 0x0);
+            v5 = v5 - 2;
+        } while (v5 != 0);
         if (v1 == v4) {
-            return a0 + 0x2;
+            return a0 + 2;
         }
     }
-    v6 = a0 + 0x2;
+    v6 = a0 + 2;
     do {
-        v6 = v6 - 0x2;
-    } while (v6 > 0x1);
+        v6 = v6 - 2;
+    } while (v6 > 1);
     return v6;
 }
 -- signature
@@ -288,10 +288,10 @@ fn is_odd @ 0x2103cc (size 88)
 -- decompile
 /* velk pseudo-C: is_even @ 0x210424 */
 int32_t is_even(int32_t a0) {
-    if (a0 == 0x0) {
-        return 0x1;
+    if (a0 == 0) {
+        return 1;
     }
-    return a0 - 0x1 - (a0 - (a0 != 0x1) & 0xfffffffe);
+    return a0 - 1 - (a0 - (a0 != 1) & 0xfffffffe);
 }
 -- signature
 int32_t (int32_t a0)
@@ -329,7 +329,7 @@ fn sum9 @ 0x210448 (size 40)
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x210470 */
 int64_t call_sum9(int64_t a0) {
-    return a0 + 0x24;
+    return a0 + 36;
 }
 -- signature
 int64_t (int64_t a0)
@@ -362,16 +362,16 @@ int32_t sum_varargs(int32_t a0, ...) {
     local_2 = 0xffffff80ffffffc8;
     local_3 = (int64_t *)(local_1 + 0x40);
     local_4 = (uint32_t *)sp;
-    if (a0 < 0x1) {
-        return 0x0;
+    if (a0 < 1) {
+        return 0;
     }
     v1 = local_4;
     v2 = (uintptr_t)local_3;
-    v3 = 0x0;
+    v3 = 0;
     v4 = *(uint32_t *)&local_2;
     do {
-        if (((uint32_t)v4 & 0x80000000) != 0x0) {
-            v6 = v4 + 0x8;
+        if (((uint32_t)v4 & 0x80000000) != 0) {
+            v6 = v4 + 8;
             *(uint32_t *)&local_2 = v6;
             if (v4 <= 0xfffffff8) {
                 v5 = (uintptr_t)v1;
@@ -385,11 +385,11 @@ int32_t sum_varargs(int32_t a0, ...) {
             v5 = (uintptr_t)(v1 + 0x2);
             local_4 = (uint32_t *)v5;
         }
-        a0 = a0 - 0x1;
+        a0 = a0 - 1;
         v4 = v6;
         v3 = *v1 + v3;
         v1 = (uint32_t *)v5;
-    } while (a0 != 0x0);
+    } while (a0 != 0);
     return v3;
 }
 -- signature

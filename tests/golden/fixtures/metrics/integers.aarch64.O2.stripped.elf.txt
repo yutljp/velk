@@ -83,7 +83,7 @@ fn <unnamed> @ 0x210228 (size 16)
 -- decompile
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 uint32_t sub_210238(uint32_t a0, int32_t a1) {
-    return a0 >> (-a1 & 0x1f) | a0 << (0x20 - -a1 & 0x1f);
+    return a0 >> (-a1 & 0x1f) | a0 << (32 - -a1 & 0x1f);
 }
 -- signature
 uint32_t (uint32_t a0, int32_t a1)
@@ -155,7 +155,7 @@ fn <unnamed> @ 0x210260 (size 20)
 -- decompile
 /* velk pseudo-C: sub_210274 @ 0x210274 */
 int64_t sub_210274(int64_t a0) {
-    return (a0 >= 0x0 ? a0 : -a0);
+    return (a0 >= 0 ? a0 : -a0);
 }
 -- signature
 int64_t (int64_t a0)

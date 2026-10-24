@@ -15,9 +15,9 @@ int32_t sub_2101e4(uint32_t *a0, int32_t a1) {
     int32_t local_1; /* [sp-14] */
     int32_t local_2; /* [sp-18] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
-        for (local_2 = 0x0; local_2 < a1; local_2++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a1; local_1++) {
+        for (local_2 = 0; local_2 < a1; local_2++) {
             if (local_1 == local_2) {
                 local_0 += a0[local_1 * a1 + local_2];
             }
@@ -75,10 +75,10 @@ int32_t sub_2102a0(int32_t a0, int32_t a1, uint32_t *a2) {
     uint32_t local_0; /* [sp-14] */
 
     local_0 = 0xffffffff;
-    if ((a0 & 0x80000000) == 0x0) {
-        if (a1 != 0x0) {
+    if ((a0 & 0x80000000) == 0) {
+        if (a1 != 0) {
             *a2 = a0 / a1;
-            local_0 = 0x0;
+            local_0 = 0;
             return local_0;
         }
         return local_0;
@@ -119,20 +119,20 @@ fn <unnamed> @ 0x2102a0 (size 96)
 int32_t sub_210300(int32_t a0) {
     int32_t v2;
 
-    v2 = 0x0;
-    if (a0 == 0x0) {
-        v2 = 0x1;
-    } else if (a0 != 0x1) {
-        if (a0 == 0x2) {
-            return v2 + 0x4;
+    v2 = 0;
+    if (a0 == 0) {
+        v2 = 1;
+    } else if (a0 != 1) {
+        if (a0 == 2) {
+            return v2 + 4;
         }
-        if (a0 - 0x3 == 0x0) {
-            return 0x8;
+        if (a0 - 3 == 0) {
+            return 8;
         }
-        return 0xffffffff;
+        return -1;
     }
-    v2 = v2 + 0x2;
-    return v2 + 0x4;
+    v2 = v2 + 2;
+    return v2 + 4;
 }
 -- signature
 int32_t (int32_t a0)
@@ -182,19 +182,19 @@ fn <unnamed> @ 0x210300 (size 160)
 -- decompile
 /* velk pseudo-C: sub_2103a0 @ 0x2103a0 */
 int32_t sub_2103a0(int32_t a0) {
-    if (a0 - 0x1 == 0x0) {
-        return 0xa;
+    if (a0 - 1 == 0) {
+        return 10;
     }
-    if (a0 - 0x64 == 0x0) {
-        return 0x14;
+    if (a0 - 100 == 0) {
+        return 20;
     }
-    if (a0 - 0x3e8 == 0x0) {
-        return 0x1e;
+    if (a0 - 1000 == 0) {
+        return 30;
     }
-    if (a0 - 0x2710 == 0x0) {
-        return 0x28;
+    if (a0 - 10000 == 0) {
+        return 40;
     }
-    return 0x0;
+    return 0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -247,18 +247,18 @@ int32_t sub_210434(uint32_t *a0, int32_t a1) {
     uint32_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    if (a0 == 0x0) {
+    local_0 = 0;
+    if (a0 == 0) {
         return local_0 & 0x1;
     }
-    local_0 = 0x0;
-    if (a1 <= 0x0) {
+    local_0 = 0;
+    if (a1 <= 0) {
         return local_0 & 0x1;
     }
-    v1 = *a0 - 0x1;
-    local_1 = 0x1;
-    if (v1 != 0x0) {
-        local_1 = (a0[a1 - 0x1] - 0x1 + 0x1 == 0x1);
+    v1 = *a0 - 1;
+    local_1 = 1;
+    if (v1 != 0) {
+        local_1 = (a0[a1 - 1] - 1 + 1 == 1);
     }
     local_0 = local_1;
     return local_0 & 0x1;
@@ -303,9 +303,9 @@ int32_t sub_2104c4(uint32_t *a0, int32_t a1) {
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
-        if ((a0[local_1] & 0x80000000) == 0x0) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a1; local_1++) {
+        if ((a0[local_1] & 0x80000000) == 0) {
             local_0 += a0[local_1];
         }
     }
@@ -350,8 +350,8 @@ int32_t sub_210540(uint32_t *a0, int32_t a1, int32_t a2) {
     int32_t local_0; /* [sp-1c] */
     uint32_t local_1; /* [sp-4] */
 
-    for (local_0 = 0x0; local_0 < a1; local_0++) {
-        for (v2 = local_0 + 0x1; v2 < a1; v2++) {
+    for (local_0 = 0; local_0 < a1; local_0++) {
+        for (v2 = local_0 + 1; v2 < a1; v2++) {
             if (a0[local_0] + a0[v2] == a2) {
                 local_1 = local_0 * a1 + v2;
                 return local_1;

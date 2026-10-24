@@ -99,7 +99,7 @@ fn reg_negative @ 0x140001040 (size 16)
 -- decompile
 /* velk pseudo-C: reg_abs @ 0x140001050 */
 int32_t reg_abs(int32_t a0) {
-    return (-a0 < 0x0 ? a0 : -a0);
+    return (-a0 < 0 ? a0 : -a0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -172,8 +172,8 @@ fn reg_mod @ 0x140001080 (size 16)
 int64_t sub_140001090(void) {
     int64_t local_0; /* [sp-8] */
 
-    *(uint32_t *)((uint8_t *)&local_0 + 0x4) = 0x5;
-    *(uint32_t *)&local_0 = 0x23;
+    *(uint32_t *)((uint8_t *)&local_0 + 0x4) = 5;
+    *(uint32_t *)&local_0 = 35;
     return local_0;
 }
 -- signature

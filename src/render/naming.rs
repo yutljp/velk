@@ -727,7 +727,7 @@ mod tests {
             compatible_profiles: Vec::new(),
         }];
         let text = rendered(&ir);
-        assert!(text.contains("*(uint8_t *)(p) = 0x5;"), "{text}");
+        assert!(text.contains("*(uint8_t *)(p) = 5;"), "{text}");
         assert!(text.contains("return *(uint8_t *)(p);"), "{text}");
         assert!(!text.contains("field_0x"), "{text}");
     }
@@ -765,7 +765,7 @@ mod tests {
         assert!(text.contains("struct record { uint32_t value;"), "{text}");
         assert!(text.contains("return p->value;"), "{text}");
         assert!(
-            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 0x5;"),
+            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 5;"),
             "{text}"
         );
         assert!(!text.contains("field_0x"), "{text}");
@@ -793,10 +793,10 @@ mod tests {
             elements: Vec::new(),
         }];
         let text = rendered(&ir);
-        assert!(text.contains("p->field_0x8 = 0x5;"), "{text}");
+        assert!(text.contains("p->field_0x8 = 5;"), "{text}");
         assert!(text.contains("return p->field_0x0;"), "{text}");
         assert!(
-            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 0x6;"),
+            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 6;"),
             "{text}"
         );
         assert!(!text.contains("field_0x4"), "{text}");
@@ -852,7 +852,7 @@ mod tests {
             "uint64_t value;",
         );
         let text = rendered(&ir);
-        assert!(text.contains("*(uint8_t *)(p) = 0x5;"), "{text}");
+        assert!(text.contains("*(uint8_t *)(p) = 5;"), "{text}");
         assert!(text.contains("return p->value;"), "{text}");
         assert!(!text.contains("p->value ="), "{text}");
     }
@@ -999,7 +999,7 @@ mod tests {
             );
             let text = rendered(&ir);
             assert!(!text.contains("p->value"), "{text}");
-            assert!(text.contains(" = 0x2;"), "{text}");
+            assert!(text.contains(" = 2;"), "{text}");
         }
     }
 
@@ -1016,7 +1016,7 @@ mod tests {
                 float_sum(Precision::Double, 0x3ff0_0000_8000_0000),
                 "*(uint32_t *)&local_0 = ((union { double value; uint64_t bits; })",
             ),
-            (1, Expr::Const(5), "*(uint8_t *)&local_0 = 0x5;"),
+            (1, Expr::Const(5), "*(uint8_t *)&local_0 = 5;"),
         ] {
             let mut ir = function(vec![
                 Stmt::Store {
@@ -1083,7 +1083,7 @@ mod tests {
         }];
         let text = rendered(&ir);
         assert!(
-            text.contains("*(uint8_t *)((uint8_t *)&arg + 0x5) = 0x5;"),
+            text.contains("*(uint8_t *)((uint8_t *)&arg + 0x5) = 5;"),
             "{text}"
         );
         assert!(

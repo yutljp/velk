@@ -7,13 +7,13 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x210184 */
 int classify(int x) {
-    if ((x & 0x80000000) == 0x0) {
-        if (x != 0x0) {
-            return 0x1;
+    if ((x & 0x80000000) == 0) {
+        if (x != 0) {
+            return 1;
         }
-        return 0x0;
+        return 0;
     }
-    return 0xffffffff;
+    return -1;
 }
 -- signature
 int (int x)
@@ -87,10 +87,10 @@ fn clamp @ 0x2101d0 (size 104)
 -- decompile
 /* velk pseudo-C: sign_of @ 0x210238 */
 int sign_of(int x) {
-    if (x <= 0x0) {
-        return (x >= 0x0 ? 0x0 : 0xffffffff);
+    if (x <= 0) {
+        return (x >= 0 ? 0 : 0xffffffff);
     }
-    return 0x1;
+    return 1;
 }
 -- signature
 int (int x)

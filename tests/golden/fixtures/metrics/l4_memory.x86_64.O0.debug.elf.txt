@@ -31,8 +31,8 @@ int array_sum(int *a, int n) {
     int32_t local_2; /* [sp-1c] */
 
     local_0 = n;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+    local_1 = 0;
+    for (local_2 = 0; local_2 < local_0; local_2++) {
         local_1 += a[local_2];
     }
     return local_1;
@@ -66,7 +66,7 @@ fn array_sum @ 0x201240 (size 73)
 void bump(void) {
     uint32_t *const g_counter = (uint32_t *)0x2022c8ULL;
 
-    *g_counter += 0x1;
+    *g_counter += 1;
 }
 -- signature
 void ()

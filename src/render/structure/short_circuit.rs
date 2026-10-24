@@ -1090,15 +1090,15 @@ mod tests {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metrics");
         for architecture in ["x86_64", "aarch64"] {
             let short_guard = if architecture == "aarch64" {
-                "p == 0x0 || n < 0x1"
+                "p == 0 || n < 1"
             } else {
-                "p == 0x0 || n <= 0x0"
+                "p == 0 || n <= 0"
             };
             for (fixture, function, joined_guard) in [
                 (
                     "memory",
                     "copy_bytes",
-                    "n >= 0x8 && (uintptr_t)dst - (uintptr_t)src >= 0x20",
+                    "n >= 8 && (uintptr_t)dst - (uintptr_t)src >= 32",
                 ),
                 ("control", "short_circuit", short_guard),
             ] {

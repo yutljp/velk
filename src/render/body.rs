@@ -109,9 +109,20 @@ fn for_loop(init: &Stmt, looped: &Node, depth: usize, ctx: &Ctx<'_>) -> Option<S
     let step_text = {
         let text = clause(step);
         match text.split_once(" = ") {
-            Some((name, value)) if value == format!("{name} + 0x1") => format!("{name}++"),
-            Some((name, value)) if value == format!("{name} - 0x1") => format!("{name}--"),
-            _ => match text.strip_suffix(" += 0x1") {
+            Some((name, value))
+                if value == format!("{name} + 1") || value == format!("{name} + 0x1") =>
+            {
+                format!("{name}++")
+            }
+            Some((name, value))
+                if value == format!("{name} - 1") || value == format!("{name} - 0x1") =>
+            {
+                format!("{name}--")
+            }
+            _ => match text
+                .strip_suffix(" += 1")
+                .or_else(|| text.strip_suffix(" += 0x1"))
+            {
                 Some(name) => format!("{name}++"),
                 None => text,
             },

@@ -29,7 +29,7 @@
 -- decompile
 /* velk pseudo-C: udiv3 @ 0x0 */
 uint32_t udiv3(uint32_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -46,7 +46,7 @@ fn udiv3 @ 0x0 (size 20)
 -- decompile
 /* velk pseudo-C: udiv10 @ 0x14 */
 uint32_t udiv10(uint32_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -80,7 +80,7 @@ fn udiv64 @ 0x28 (size 8)
 -- decompile
 /* velk pseudo-C: hdiv3 @ 0x30 */
 uint64_t hdiv3(uint64_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -97,7 +97,7 @@ fn hdiv3 @ 0x30 (size 20)
 -- decompile
 /* velk pseudo-C: hdiv10 @ 0x44 */
 uint64_t hdiv10(uint64_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -114,7 +114,7 @@ fn hdiv10 @ 0x44 (size 20)
 -- decompile
 /* velk pseudo-C: sdiv3 @ 0x58 */
 int32_t sdiv3(int32_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -131,7 +131,7 @@ fn sdiv3 @ 0x58 (size 28)
 -- decompile
 /* velk pseudo-C: sdiv10 @ 0x74 */
 int32_t sdiv10(int32_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 int32_t (int32_t a0)
@@ -148,7 +148,7 @@ fn sdiv10 @ 0x74 (size 28)
 -- decompile
 /* velk pseudo-C: sdiv16 @ 0x90 */
 int32_t sdiv16(int32_t a0) {
-    return a0 / 0x10;
+    return a0 / 16;
 }
 -- signature
 int32_t (int32_t a0)
@@ -165,7 +165,7 @@ fn sdiv16 @ 0x90 (size 20)
 -- decompile
 /* velk pseudo-C: ldiv16 @ 0xa4 */
 int64_t ldiv16(int64_t a0) {
-    return a0 / 0x10;
+    return a0 / 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -182,7 +182,7 @@ fn ldiv16 @ 0xa4 (size 20)
 -- decompile
 /* velk pseudo-C: smod3 @ 0xb8 */
 int32_t smod3(int32_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -199,7 +199,7 @@ fn smod3 @ 0xb8 (size 36)
 -- decompile
 /* velk pseudo-C: umod3 @ 0xdc */
 uint32_t umod3(uint32_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -216,7 +216,7 @@ fn umod3 @ 0xdc (size 28)
 -- decompile
 /* velk pseudo-C: umod10 @ 0xf8 */
 uint32_t umod10(uint32_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -233,7 +233,7 @@ fn umod10 @ 0xf8 (size 28)
 -- decompile
 /* velk pseudo-C: smod10 @ 0x114 */
 int32_t smod10(int32_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 int32_t (int32_t a0)
@@ -250,7 +250,7 @@ fn smod10 @ 0x114 (size 36)
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x138 */
 int64_t lmod10(int64_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 int64_t (int64_t a0)
@@ -267,7 +267,7 @@ fn lmod10 @ 0x138 (size 32)
 -- decompile
 /* velk pseudo-C: umod10b @ 0x158 */
 uint64_t umod10b(uint64_t a0) {
-    return a0 % 0xa;
+    return a0 % 10;
 }
 -- signature
 uint64_t (uint64_t a0)
@@ -284,7 +284,7 @@ fn umod10b @ 0x158 (size 28)
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x174 */
 int64_t lmod16(int64_t a0) {
-    return a0 % 0x10;
+    return a0 % 16;
 }
 -- signature
 int64_t (int64_t a0)
@@ -301,7 +301,7 @@ fn lmod16 @ 0x174 (size 20)
 -- decompile
 /* velk pseudo-C: smod4 @ 0x188 */
 int32_t smod4(int32_t a0) {
-    return a0 % 0x4;
+    return a0 % 4;
 }
 -- signature
 int32_t (int32_t a0)
@@ -352,7 +352,7 @@ fn is_neg @ 0x1a4 (size 8)
 -- decompile
 /* velk pseudo-C: is_zero @ 0x1ac */
 int32_t is_zero(int32_t a0) {
-    return (a0 == 0x0);
+    return (a0 == 0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -369,7 +369,7 @@ fn is_zero @ 0x1ac (size 12)
 -- decompile
 /* velk pseudo-C: is_pos @ 0x1b8 */
 int32_t is_pos(int32_t a0) {
-    return (a0 > 0x0);
+    return (a0 > 0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -403,7 +403,7 @@ fn lnegate @ 0x1c4 (size 8)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x1cc */
 int64_t lmod3(int64_t a0) {
-    return a0 % 0x3;
+    return a0 % 3;
 }
 -- signature
 int64_t (int64_t a0)
@@ -420,7 +420,7 @@ fn lmod3 @ 0x1cc (size 28)
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x1e8 */
 int64_t ldiv3(int64_t a0) {
-    return a0 / 0x3;
+    return a0 / 3;
 }
 -- signature
 int64_t (int64_t a0)
@@ -437,7 +437,7 @@ fn ldiv3 @ 0x1e8 (size 20)
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x1fc */
 int64_t ldiv10(int64_t a0) {
-    return a0 / 0xa;
+    return a0 / 10;
 }
 -- signature
 int64_t (int64_t a0)

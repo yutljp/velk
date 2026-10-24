@@ -30,11 +30,11 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
     int64_t v2;
     int32_t v3;
 
-    if (a1 <= 0x0) {
-        return 0x0;
+    if (a1 <= 0) {
+        return 0;
     }
-    v3 = 0x0;
-    for (v2 = 0x0; v2 < (uint32_t)a1; v2++) {
+    v3 = 0;
+    for (v2 = 0; v2 < (uint32_t)a1; v2++) {
         v3 = v3 + a0[v2];
     }
     return v3;
@@ -68,7 +68,7 @@ fn array_sum @ 0x10 (size 31)
 void bump(void) {
     uint32_t *const g_counter = (uint32_t *)0x4cULL;
 
-    *g_counter += 0x1;
+    *g_counter += 1;
 }
 -- signature
 void ()

@@ -1,7 +1,7 @@
 use super::operation::{is_comparison, render_operation};
 use super::{Ctx, load, print};
 use crate::ir::{BinOp, Cond, Expr};
-use crate::render::int::{ALL, Int, Printed, Range, converted, zero_bits};
+use crate::render::int::{ALL, Int, Printed, converted, zero_bits};
 
 pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> String {
     // A truth value tested against zero reads as the truth value itself.
@@ -103,12 +103,7 @@ fn compared(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> [Printed; 2] {
                 && *value & crate::ir::semantics::mask(bits) == *value
                 && (*value >> (bits - 1)) & 1 == 1 =>
         {
-            let magnitude = crate::ir::semantics::sign_extend(*value, bits).unsigned_abs();
-            match Int::literal(magnitude) {
-                ty if ty.signed => Printed::new(format!("-0x{magnitude:x}"), ty, bits, 13)
-                    .ranging(Range::Signed(bits)),
-                _ => print(side, ctx, bits),
-            }
+            super::signed_constant(*value, bits)
         }
         _ => print(side, ctx, bits),
     };

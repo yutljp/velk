@@ -45,8 +45,8 @@ int64_t sub_210238(struct sub_210238_a0 *a0, int32_t a1) {
     int64_t local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a1; local_1++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a1; local_1++) {
         v2 = a0[local_1].field_0x10;
         local_0 += a0[local_1].field_0x8 * v2;
     }
@@ -122,9 +122,9 @@ int64_t sub_2102f8(int64_t a0) {
 
     v1 = (struct sub_2102f8_s1 *)v2;
     v1->field_0x0 = a0;
-    v1->field_0x8 = a0 + 0x1;
+    v1->field_0x8 = a0 + 1;
     v1->field_0x10 = (uint64_t)a0 << 0x1;
-    v1->field_0x18 = a0 * 0x3;
+    v1->field_0x18 = a0 * 3;
     return a0;
 }
 -- signature
@@ -194,7 +194,7 @@ int32_t sub_210384(int64_t a0) {
     uint32_t local_0; /* [sp-4] */
 
     local_0 = a0;
-    if ((*(uint8_t *)&local_0 & 0x1) == 0x0) {
+    if ((*(uint8_t *)&local_0 & 0x1) == 0) {
         v1 = *(uint8_t *)&local_0 >> 0x1 & 0x7;
         return v1;
     }

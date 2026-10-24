@@ -14,8 +14,8 @@ int32_t sub_201200(int32_t a0) {
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a0; local_1++) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a0; local_1++) {
         v1 = local_1 + local_0;
         local_0 = v1;
         *dword_202350 = v1;
@@ -55,12 +55,12 @@ int32_t sub_201250(int32_t a0) {
     uint32_t local_1; /* [sp-10] */
 
     local_0 = a0;
-    local_1 = 0x0;
+    local_1 = 0;
     do {
-        local_1 += 0x1;
-        local_0 += -0x1;
+        local_1 += 1;
+        local_0 += -1;
         *dword_202350 = local_1;
-    } while (local_0 > 0x0);
+    } while (local_0 > 0);
     return local_1;
 }
 -- signature
@@ -92,9 +92,9 @@ int32_t sub_201290(int32_t a0) {
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
-    local_0 = 0x0;
-    for (local_1 = 0x0; local_1 < a0; local_1++) {
-        if ((local_1 & 0x1) != 0x0) {
+    local_0 = 0;
+    for (local_1 = 0; local_1 < a0; local_1++) {
+        if ((local_1 & 0x1) != 0) {
             v1 = local_1 + local_0;
             local_0 = v1;
             *dword_202350 = v1;
@@ -137,7 +137,7 @@ int32_t sub_2012f0(uint32_t *a0, int32_t a1, int32_t a2) {
     int32_t local_0; /* [sp-24] */
     uint32_t local_1; /* [sp-c] */
 
-    for (local_0 = 0x0; local_0 < a1; local_0++) {
+    for (local_0 = 0; local_0 < a1; local_0++) {
         if (a0[local_0] == a2) {
             local_1 = local_0;
             return local_1;

@@ -15,17 +15,17 @@ int32_t total_area(uint64_t *a0, int32_t a1) {
     uint64_t *v6;
     int32_t v7;
 
-    if (a1 <= 0x0) {
-        return 0x0;
+    if (a1 <= 0) {
+        return 0;
     }
-    v3 = 0x0;
-    v4 = 0x0;
+    v3 = 0;
+    v4 = 0;
     do {
         v5 = (uint64_t *)a0[v3];
         v6 = (uint64_t *)*v5;
-        v7 = ((uint64_t (*)())v6[0x2])(v5);
+        v7 = ((uint64_t (*)())v6[2])(v5);
         v4 = v4 + v7;
-        v3 = v3 + 0x1;
+        v3 = v3 + 1;
     } while ((uint32_t)a1 != v3);
     return v4;
 }
@@ -64,8 +64,8 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
 int32_t clamp_int(int32_t a0) {
     int32_t v1;
 
-    v1 = (a0 < 0xff ? a0 : 0xff);
-    return (v1 > 0x0 ? v1 : 0x0);
+    v1 = (a0 < 255 ? a0 : 255);
+    return (v1 > 0 ? v1 : 0);
 }
 -- signature
 int32_t (int32_t a0)
@@ -85,8 +85,8 @@ fn clamp_int(int) @ 0x50 (size 22)
 int64_t clamp_long(int64_t a0) {
     int64_t v1;
 
-    v1 = (a0 < 0x3e8 ? a0 : 0x3e8);
-    return (v1 >= -0x3e7 ? v1 : -0x3e8);
+    v1 = (a0 < 1000 ? a0 : 1000);
+    return (v1 >= -999 ? v1 : -1000);
 }
 -- signature
 int64_t (int64_t a0)
@@ -123,7 +123,7 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 (size 14)
 -- decompile
 /* velk pseudo-C: increment(int&) @ 0xb0 */
 void increment(uint32_t *a0) {
-    *a0 += 0x1;
+    *a0 += 1;
 }
 -- signature
 void (uint32_t * a0)

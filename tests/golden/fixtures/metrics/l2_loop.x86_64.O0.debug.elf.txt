@@ -16,8 +16,8 @@ int sum_while(int n) {
     int32_t local_2; /* [sp-14] */
 
     local_0 = n;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+    local_1 = 0;
+    for (local_2 = 0; local_2 < local_0; local_2++) {
         v1 = local_2 + local_1;
         local_1 = v1;
         *sink = v1;
@@ -57,12 +57,12 @@ int count_down(int n) {
     uint32_t local_1; /* [sp-10] */
 
     local_0 = n;
-    local_1 = 0x0;
+    local_1 = 0;
     do {
-        local_1 += 0x1;
-        local_0 += -0x1;
+        local_1 += 1;
+        local_0 += -1;
         *sink = local_1;
-    } while (local_0 > 0x0);
+    } while (local_0 > 0);
     return local_1;
 }
 -- signature
@@ -96,9 +96,9 @@ int sum_skip_odd(int n) {
     int32_t local_2; /* [sp-14] */
 
     local_0 = n;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        if ((local_2 & 0x1) != 0x0) {
+    local_1 = 0;
+    for (local_2 = 0; local_2 < local_0; local_2++) {
+        if ((local_2 & 0x1) != 0) {
             v1 = local_2 + local_1;
             local_1 = v1;
             *sink = v1;
@@ -145,7 +145,7 @@ int find_first(int *p, int n, int v) {
 
     local_0 = n;
     local_1 = v;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
+    for (local_2 = 0; local_2 < local_0; local_2++) {
         if (p[local_2] == local_1) {
             local_3 = local_2;
             return local_3;

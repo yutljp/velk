@@ -68,41 +68,41 @@ echo "$c3" | grep -q "return a1 + a0 + a2;"   || fail "decompile sum3 fold"
 echo "$c3" | grep -q "return "               || fail "decompile sum3 return"
 echo "$sum3_ir" | grep -qF "ret (((w1 + w0) + w2) & #0xffffffff)" || fail "ir sum3 width"
 div_ir=$("$BIN" --decompile $FIX/arm64_div.o udiv3 2>/dev/null)
-echo "$div_ir" | grep -q "a0 / 0x3"       || fail "magic unsigned div"
+echo "$div_ir" | grep -q "a0 / 3"       || fail "magic unsigned div"
 sd_ir=$("$BIN" --decompile $FIX/arm64_div.o sdiv3 2>/dev/null)
 echo "$sd_ir" | grep -q "int32_t"        || fail "magic signed type"
-echo "$sd_ir" | grep -q "a0 / 0x3"       || fail "magic signed div"
+echo "$sd_ir" | grep -q "a0 / 3"       || fail "magic signed div"
 hd_ir=$("$BIN" --decompile $FIX/arm64_div.o hdiv3 2>/dev/null)
-echo "$hd_ir" | grep -q "a0 / 0x3"        || fail "magic 64bit div"
+echo "$hd_ir" | grep -q "a0 / 3"        || fail "magic 64bit div"
 echo "$hd_ir" | grep -q "uint64_t"       || fail "magic 64bit width"
 sd_ir=$("$BIN" --decompile $FIX/arm64_div.o sdiv10 2>/dev/null)
-echo "$sd_ir" | grep -q "a0 / 0xa"        || fail "magic signed scaled div10"
+echo "$sd_ir" | grep -q "a0 / 10"        || fail "magic signed scaled div10"
 echo "$sd_ir" | grep -q "int32_t"        || fail "magic signed scaled width"
 sl_ir=$("$BIN" --decompile $FIX/arm64_div.o sdiv16 2>/dev/null)
-echo "$sl_ir" | grep -q "a0 / 0x10"      || fail "csel select signed div16"
+echo "$sl_ir" | grep -q "a0 / 16"      || fail "csel select signed div16"
 ll_ir=$("$BIN" --decompile $FIX/arm64_div.o ldiv16 2>/dev/null)
-echo "$ll_ir" | grep -q "a0 / 0x10"      || fail "csel select signed div16 long"
+echo "$ll_ir" | grep -q "a0 / 16"      || fail "csel select signed div16 long"
 um_ir=$("$BIN" --decompile $FIX/arm64_div.o umod3 2>/dev/null)
-echo "$um_ir" | grep -q "a0 % 0x3"       || fail "multiplier unwind mod u32"
+echo "$um_ir" | grep -q "a0 % 3"       || fail "multiplier unwind mod u32"
 sm_ir=$("$BIN" --decompile $FIX/arm64_div.o smod3 2>/dev/null)
-echo "$sm_ir" | grep -q "a0 % 0x3"     || fail "multiplier unwind mod s32"
+echo "$sm_ir" | grep -q "a0 % 3"     || fail "multiplier unwind mod s32"
 echo "$sm_ir" | grep -q "int32_t"        || fail "multiplier unwind width"
 lm_ir=$("$BIN" --decompile $FIX/arm64_div.o lmod3 2>/dev/null)
-echo "$lm_ir" | grep -q "a0 % 0x3"       || fail "multiplier unwind mod s64"
+echo "$lm_ir" | grep -q "a0 % 3"       || fail "multiplier unwind mod s64"
 echo "$lm_ir" | grep -q "int64_t"        || fail "multiplier unwind width 64"
 um10=$("$BIN" --decompile $FIX/arm64_div.o umod10 2>/dev/null)
-echo "$um10" | grep -q "a0 % 0xa"      || fail "multiplier unwind mod u32 10"
+echo "$um10" | grep -q "a0 % 10"      || fail "multiplier unwind mod u32 10"
 lm10=$("$BIN" --decompile $FIX/arm64_div.o lmod10 2>/dev/null)
-echo "$lm10" | grep -q "a0 % 0xa"        || fail "msub unwind mod s64 10"
+echo "$lm10" | grep -q "a0 % 10"        || fail "msub unwind mod s64 10"
 um10b=$("$BIN" --decompile $FIX/arm64_div.o umod10b 2>/dev/null)
-echo "$um10b" | grep -q "a0 % 0xa"       || fail "msub unwind mod u64 10"
+echo "$um10b" | grep -q "a0 % 10"       || fail "msub unwind mod u64 10"
 umx=$("$BIN" --decompile $FIX/x64_div.o umod3x 2>/dev/null)
-echo "$umx" | grep -q "% 0x3"            || fail "x86 lea unwind mod u32"
+echo "$umx" | grep -q "% 3"            || fail "x86 lea unwind mod u32"
 smx=$("$BIN" --decompile $FIX/x64_div.o smod3x 2>/dev/null)
-echo "$smx" | grep -q "% 0x3"            || fail "x86 lea unwind mod s32"
+echo "$smx" | grep -q "% 3"            || fail "x86 lea unwind mod s32"
 lmx=$("$BIN" --decompile $FIX/x64_div.o lmod10x 2>/dev/null)
 lm16=$("$BIN" --decompile $FIX/arm64_div.o lmod16 2>/dev/null)
-echo "$lm16" | grep -q "% 0x10"         || fail "cset-pow2 mod s64"
+echo "$lm16" | grep -q "% 16"         || fail "cset-pow2 mod s64"
 echo "$lm16" | grep -q "int64_t"        || fail "cset-pow2 width 64"
 sm4=$("$BIN" --decompile $FIX/arm64_div.o smod4 2>/dev/null)
 sd16=$("$BIN" --decompile $FIX/arm64_div.o sdiv16 2>/dev/null)
@@ -112,28 +112,28 @@ echo "$sm10" | grep -q "int32_t smod10" || fail "msub mod10 signed width"
 sm3x=$("$BIN" --decompile $FIX/x64_div.o smod3x 2>/dev/null)
 ng=$("$BIN" --decompile $FIX/arm64_div.o negate 2>/dev/null)
 echo "$ng" | grep -q "return -a0;"      || fail "negate render"
-echo "$ng" | grep -q "0x0 -" && fail "negate render kept 0 - x"
+echo "$ng" | grep -q "0 -" && fail "negate render kept 0 - x"
 echo "$sm3x" | grep -q "int32_t smod3x(" || fail "x86 lea mod3 signed width"
-echo "$sm4" | grep -q "% 0x4"           || fail "cset-pow2 mod s32"
+echo "$sm4" | grep -q "% 4"           || fail "cset-pow2 mod s32"
 echo "$sm4" | grep -q "int32_t"         || fail "cset-pow2 width 32"
-echo "$lmx" | grep -q "% 0xa"            || fail "x64 lea unwind mod s64"
+echo "$lmx" | grep -q "% 10"            || fail "x64 lea unwind mod s64"
 ld_ir=$("$BIN" --decompile $FIX/arm64_div.o ldiv3 2>/dev/null)
-echo "$ld_ir" | grep -q "a0 / 0x3"        || fail "magic signed 64bit div"
+echo "$ld_ir" | grep -q "a0 / 3"        || fail "magic signed 64bit div"
 echo "$ld_ir" | grep -q "int64_t"        || fail "magic signed 64bit width"
 l10_ir=$("$BIN" --decompile $FIX/arm64_div.o ldiv10 2>/dev/null)
-echo "$l10_ir" | grep -q "a0 / 0xa"      || fail "magic signed 64bit div10"
+echo "$l10_ir" | grep -q "a0 / 10"      || fail "magic signed 64bit div10"
 x64_l3=$("$BIN" --decompile $FIX/x64_div.o l3 2>/dev/null)
-echo "$x64_l3" | grep -q "/ 0x3"         || fail "x64 signed 64bit div"
+echo "$x64_l3" | grep -q "/ 3"         || fail "x64 signed 64bit div"
 echo "$x64_l3" | grep -q "int64_t"       || fail "x64 signed 64bit width"
 x64_h3=$("$BIN" --decompile $FIX/x64_div.o h3 2>/dev/null)
-echo "$x64_h3" | grep -q "/ 0x3"         || fail "x64 unsigned 64bit div"
+echo "$x64_h3" | grep -q "/ 3"         || fail "x64 unsigned 64bit div"
 x64_sel=$("$BIN" --decompile $FIX/x64_div.o pdiv64 2>/dev/null)
-echo "$x64_sel" | grep -q "/ 0x40"        || fail "x64 signed select div"
+echo "$x64_sel" | grep -q "/ 64"        || fail "x64 signed select div"
 echo "$x64_sel" | grep -q "int32_t"      || fail "x64 signed select width"
 x64_selq=$("$BIN" --decompile $FIX/x64_div.o qdiv64 2>/dev/null)
-echo "$x64_selq" | grep -q "a0 / 0x40"   || fail "x64 signed select 64bit div"
+echo "$x64_selq" | grep -q "a0 / 64"   || fail "x64 signed select 64bit div"
 x64_sel10=$("$BIN" --decompile $FIX/x64_div.o pdiv10 2>/dev/null)
-echo "$x64_sel10" | grep -q "/ 0xa"      || fail "x64 signed sext div10"
+echo "$x64_sel10" | grep -q "/ 10"      || fail "x64 signed sext div10"
 helper_cs=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cs" | grep -q "v2 = v2 >> 0x1;"    || fail "shift kept in its variable"
 echo "$helper_cs" | grep -q "(v2 + (v2 << 0x1))" || fail "32-bit read shared without a temporary"
@@ -141,45 +141,45 @@ ok "cse temps"
 x64_fold=$("$BIN" --decompile $FIX/x64_div.o l3 2>/dev/null)
 echo "$x64_fold" | grep -q "0xfffffffffffffff8" && fail "frame prologue elision"
 echo "$x64_fold" | grep -q "rbp"                && fail "frame register elision"
-echo "$x64_fold" | grep -q "a0 / 0x3"           || fail "copy propagation into division"
+echo "$x64_fold" | grep -q "a0 / 3"           || fail "copy propagation into division"
 x64_mod=$("$BIN" --decompile $FIX/x64_div.o umod3x 2>/dev/null)
 echo "$x64_mod" | grep -q "rcx"                 && fail "dead copy removal"
 ok "x86 cleanup"
 p8s=$("$BIN" --decompile $FIX/x64_div.o pmod8s 2>/dev/null)
-echo "$p8s" | grep -q "a0 % 0x8"        || fail "x86 signed pow2 mod"
+echo "$p8s" | grep -q "a0 % 8"        || fail "x86 signed pow2 mod"
 p16l=$("$BIN" --decompile $FIX/x64_div.o pmod16l 2>/dev/null)
-echo "$p16l" | grep -q "a0 % 0x10"      || fail "x64 signed pow2 mod"
+echo "$p16l" | grep -q "a0 % 16"      || fail "x64 signed pow2 mod"
 p8u=$("$BIN" --decompile $FIX/x64_div.o pmod8x 2>/dev/null)
 echo "$p8u" | grep -q "a0 & 0x7"        || fail "x86 unsigned pow2 mask"
 iz=$("$BIN" --decompile $FIX/arm64_div.o is_zero 2>/dev/null)
-echo "$iz" | grep -q "a0 == 0x0"        || fail "cset eq compare"
+echo "$iz" | grep -q "a0 == 0"        || fail "cset eq compare"
 ip=$("$BIN" --decompile $FIX/arm64_div.o is_pos 2>/dev/null)
-echo "$ip" | grep -q "a0 > 0x0"         || fail "cset gt compare"
-echo "$iz" | grep -q "return (a0 == 0x0);" || fail "cset as a truth value"
+echo "$ip" | grep -q "a0 > 0"         || fail "cset gt compare"
+echo "$iz" | grep -q "return (a0 == 0);" || fail "cset as a truth value"
 ok "pow2 mod and cset"
 locals=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$locals" | grep -q "v1 = a0"     || fail "stack local naming"
 echo "$locals" | grep -q "v1 = v1 >> 0x1" || fail "stack local names one slot"
 use_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
-echo "$use_ir" | grep -q "ns__mul(a0, 0x2)" || fail "C++ call relocation"
+echo "$use_ir" | grep -q "ns__mul(a0, 2)" || fail "C++ call relocation"
 echo "$use_ir" | grep -qE "(= x20|x20 =)" && fail "callee-save elision (x20)"
 echo "$use_ir" | grep -qE "(= x30|x30 =)" && fail "callee-save elision (x30)"
 echo "$use_ir" | grep -qE "(= x29|x29 =)" && fail "frame setup elision"
 ok "callee-save elision"
 fold_ret=$("$BIN" --decompile $FIX/x64_div.o umod3x 2>/dev/null)
-echo "$fold_ret" | grep -q "return a0 % 0x3;"  || fail "temporary inlining into ret"
+echo "$fold_ret" | grep -q "return a0 % 3;"  || fail "temporary inlining into ret"
 sum3_ir2=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
 echo "$sum3_ir2" | grep -q "w8" && fail "temporary inlining (sum3)"
 ok "temporary inlining"
 abs_ir=$("$BIN" --decompile $FIX/pe64.exe reg_abs 2>/dev/null)
-echo "$abs_ir" | grep -q "(-a0 < 0x0 ? a0 : -a0)" || fail "neg and cmovs absolute value"
+echo "$abs_ir" | grep -q "(-a0 < 0 ? a0 : -a0)" || fail "neg and cmovs absolute value"
 echo "$abs_ir" | grep -q -- "-(-" && fail "double negation kept"
 sign_ir=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
 echo "$sign_ir" | grep -q "(int8_t)a0"   || fail "sign-extend mask fold"
 echo "$sign_ir" | grep -q "0x1f" && fail "sign-extend artifact"
 ok "algebraic cleanup"
 abs_ret=$("$BIN" --decompile $FIX/pe64.exe reg_abs 2>/dev/null)
-echo "$abs_ret" | grep -q "return (-a0 < 0x0 ? a0 : -a0);"     || fail "abs folds into the return"
+echo "$abs_ret" | grep -q "return (-a0 < 0 ? a0 : -a0);"     || fail "abs folds into the return"
 helper_cse=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cse" | grep -q "t1" && fail "temporary for a 32-bit register read"
 ok "two-round inlining"
@@ -210,7 +210,7 @@ echo "$arr_ir" | grep -q "goto L_" && fail "sum_arr has no gotos"
 echo "$arr_ir" | grep -q "} else {"   || fail "if/else across a skipped block"
 echo "$arr_ir" | grep -qF "v2 = (uint32_t)a1 & 0x7ffffff8;"   || fail "branch block prefix kept"
 helper_pre=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$helper_pre" | grep -q "v1 = a0 - 0x1;"  || fail "prefix before early return"
+echo "$helper_pre" | grep -q "v1 = a0 - 1;"  || fail "prefix before early return"
 ok "if/else structuring"
 sig_zero=$("$BIN" --decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$sig_zero" | grep -q "int32_t is_zero(int32_t a0)" || fail "boolean signature by usage"
@@ -223,14 +223,14 @@ echo "$sig_helper" | grep -q "int32_t helper(int32_t a0)"    || fail "loop signa
 ok "types by usage"
 mask_ir=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$mask_ir" | grep -qF "return (v3 >> 0x1) * 0x55555556 + a0" || fail "mask implied by 32-bit arithmetic"
-echo "$mask_ir" | grep -qF "v2 = (uint64_t)v1 * ((a0 - 0x2) & 0xffffffff);" || fail "64-bit product of 32-bit values"
-echo "$mask_ir" | grep -q "v1 = a0 - 0x1;"          || fail "mask implied by a 32-bit parameter"
+echo "$mask_ir" | grep -qF "v2 = (uint64_t)v1 * ((a0 - 2) & 0xffffffff);" || fail "64-bit product of 32-bit values"
+echo "$mask_ir" | grep -q "v1 = a0 - 1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$narrow_ir" | grep -q "for (v2 = 0x1; v2 <= a0; v2++)" || fail "32-bit comparison kept"
+echo "$narrow_ir" | grep -q "for (v2 = 1; v2 <= a0; v2++)" || fail "32-bit comparison kept"
 echo "$narrow_ir" | grep -q "v1 = v1 + v2;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$narrow_dest" | grep -q "+ (v2 << 0x1)) - 0x1;" || fail "mask implied by the return type"
+echo "$narrow_dest" | grep -q "+ (v2 << 0x1)) - 1;" || fail "mask implied by the return type"
 echo "$narrow_dest" | grep -q "a0 = .*0xffffffff" && fail "return mask kept"
 ok "masks implied by the destination"
 masked_ir=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
@@ -238,7 +238,7 @@ echo "$masked_ir" | grep -qE "v3 = v[0-9]+ \+ v3;" || fail "mask bounded by its 
 echo "$masked_ir" | grep -q "w10 + w8) & 0xffffffff" && fail "bounded mask kept"
 ok "mask bounded by the constant"
 dwarf_ir=$("$BIN" --decompile $FIX/arm64_debug.elf helper 2>/dev/null)
-echo "$dwarf_ir" | grep -q "v1 = x - 0x1;"      || fail "narrow DWARF type read without a mask"
+echo "$dwarf_ir" | grep -q "v1 = x - 1;"      || fail "narrow DWARF type read without a mask"
 echo "$dwarf_ir" | grep -q "(x & 0xffffffff)" && fail "narrow DWARF type keeps the mask"
 ok "narrow DWARF types"
 sign_ir2=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
@@ -255,7 +255,7 @@ echo "$field_ir" | grep -q "p->b"   || fail "DWARF field name for the second mem
 echo "$field_ir" | grep -q "field_0x" && fail "member kept its offset name"
 ok "DWARF member names"
 zero_ir=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$zero_ir" | grep -q "return 0x0;" || fail "zero stays a constant"
+echo "$zero_ir" | grep -q "return 0;" || fail "zero stays a constant"
 brk_ir=$("$BIN" --decompile $FIX/arm64_loops.o sum_until_zero 2>/dev/null)
 echo "$brk_ir" | grep -q "do {"            || fail "bottom-tested loop formed"
 echo "$brk_ir" | grep -q "break;"          || fail "loop exit reads as break"
@@ -271,8 +271,8 @@ echo "$neg_ir" | grep -q " a1)" || fail "fall-through scalar parameter kept"
 echo "$neg_ir" | grep -q "break;"   || fail "top-tested break kept"
 ok "fall-through predecessors"
 simd_ir=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
-echo "$simd_ir" | grep -A1 "if (a1 < 0x1) {" | grep -q "x8 = 0x0;" && fail "dead store before return in a SIMD function"
-echo "$simd_ir" | grep -q "return 0x0;" || fail "early return kept"
+echo "$simd_ir" | grep -A1 "if (a1 < 1) {" | grep -q "x8 = 0;" && fail "dead store before return in a SIMD function"
+echo "$simd_ir" | grep -q "return 0;" || fail "early return kept"
 ok "dead stores beside unmodeled code"
 wide_ir=$("$BIN" --decompile $FIX/x64_div.o umod10x 2>/dev/null)
 echo "$wide_ir" | grep -q "__umulh(a0, 0xcccccccccccccccd)"  || fail "wide multiply reads as its intrinsic"
@@ -287,7 +287,7 @@ echo "$narrow_dst" | grep -q "v3 = v2;" || fail "loop result variable"
 echo "$narrow_dst" | grep -q "return v3;" || fail "loop result read back"
 ok "narrow destination names"
 trap_ir=$("$BIN" --decompile $FIX/go_stripped internal/abi.Kind.String 2>/dev/null)
-echo "$trap_ir" | grep -q "runtime_panicIndex(0x0, a1, 0x0);" || fail "call that never returns kept"
+echo "$trap_ir" | grep -q "runtime_panicIndex(0, a1, 0);" || fail "call that never returns kept"
 echo "$trap_ir" | grep -q "__builtin_trap();" && fail "trap after a call that never returns"
 pure_virtual=$("$BIN" --decompile $FIX/cpp_virtual_x64.elf __cxa_pure_virtual 2>/dev/null)
 echo "$pure_virtual" | grep -q "__builtin_trap();" || fail "trap rendered"
@@ -296,7 +296,7 @@ echo "$trap_ir" | grep -q "Int3" && fail "int3 note kept"
 echo "$trap_ir" | grep -q "local_0;" && fail "unused local declared"
 ok "trap padding and unused locals"
 back_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
-echo "$back_ir" | grep -q "for (local_1 = 0x0; local_1 < a1; local_1++) {" || fail "unconditional back edge structured"
+echo "$back_ir" | grep -q "for (local_1 = 0; local_1 < a1; local_1++) {" || fail "unconditional back edge structured"
 echo "$back_ir" | grep -q "goto " && fail "early exit as a return"
 echo "$back_ir" | grep -q "^L_c0:"         && fail "loop header kept as a label"
 uv run python - "$back_ir" <<'PY'
@@ -346,7 +346,7 @@ echo "$fwd" | grep -q "x8 = local_1;" && fail "store not forwarded"
 echo "$fwd" | grep -qE 'local_0 \+= v[0-9]+;' || fail "forwarded value missing"
 pe_entry=$("$BIN" --functions $FIX/pe64.exe --json 2>/dev/null | sed -n 's/.*"entry": "\(0x[0-9a-f]*\)".*/\1/p')
 entry_fwd=$("$BIN" --decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
-echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_0 = 0x23;" || fail "partial store into a wider local"
+echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_0 = 35;" || fail "partial store into a wider local"
 echo "$entry_fwd" | grep -q "return local_0;" || fail "pop reads the pushed slot"
 echo "$entry_fwd" | grep -q "= rax;" && fail "overwritten push kept"
 ok "stored values forwarded"
@@ -397,8 +397,8 @@ echo "$entry_ir" | grep -q "rax = local_0;" && fail "dead frame load removed"
 echo "$entry_ir" | grep -q "local_2" && fail "spurious slot after settling"
 ok "dead frame loads"
 moved_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$moved_ir" | grep -q "x8 = 0x1;" && fail "dead store before the loop"
-echo "$moved_ir" | grep -q "v2 = 0x1;" || fail "live store before the loop"
+echo "$moved_ir" | grep -q "x8 = 1;" && fail "dead store before the loop"
+echo "$moved_ir" | grep -q "v2 = 1;" || fail "live store before the loop"
 live_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$live_ir" | grep -qF "ns__add((a0 & 0xffffffff), v2);" || fail "definition kept across a call"
 echo "$live_ir" | grep -q "v1 = a0;" && fail "saved value folded into the parameter"
@@ -458,7 +458,7 @@ ok "compound assignment"
 ok "decompile sum3"
 
 ch=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$ch" | grep -q "if (a0 < 0x1)"         || fail "decompile helper branch"
+echo "$ch" | grep -q "if (a0 < 1)"         || fail "decompile helper branch"
 echo "$ch" | grep -q "return "               || fail "decompile helper return"
 ok "decompile helper"
 
@@ -466,7 +466,7 @@ ca=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$ca" | grep -q "uint32_t \*a0"         || fail "pointer parameter typing"
 echo "$ca" | grep -q "sum_lanes32("            || fail "decompile sum_arr vector sum"
 echo "$ca" | grep -q "uint64_t \*v[0-9]*;" || fail "decompile sum_arr vector pair load"
-echo "$ca" | grep -q "return 0x0;"           || fail "decompile sum_arr early return"
+echo "$ca" | grep -q "return 0;"           || fail "decompile sum_arr early return"
 echo "$ca" | grep -q "do {"                  || fail "decompile sum_arr loop"
 echo "$ca" | grep -q "} while ("             || fail "decompile sum_arr loop condition"
 ok "decompile sum_arr"
@@ -525,8 +525,8 @@ ok "build-signatures / identify"
 
 # 8) while structuring (header condition and back edge)
 loop_pc=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
-echo "$loop_pc" | grep -qF "while (v1 != 0x0)" || fail "while structuring"
-echo "$loop_pc" | grep -q "if (x8 == 0x0) break;" && fail "while header folded"
+echo "$loop_pc" | grep -qF "while (v1 != 0)" || fail "while structuring"
+echo "$loop_pc" | grep -q "if (x8 == 0) break;" && fail "while header folded"
 loop_break=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$loop_break" | grep -q "v2 <= a0;" || fail "while break condition"
 ok "while structuring"
@@ -630,7 +630,7 @@ ok "c++ demangling"
 macho_json=$("$BIN" --functions $FIX/x64_div_macho.o --json 2>/dev/null)
 echo "$macho_json" | grep -q '"format": "macho"'   || fail "Mach-O format detect"
 macho_c=$("$BIN" --decompile $FIX/x64_div_macho.o _umod3x 2>/dev/null)
-echo "$macho_c" | grep -q "return a0 % 0x3;"     || fail "Mach-O x86-64 decompile"
+echo "$macho_c" | grep -q "return a0 % 3;"     || fail "Mach-O x86-64 decompile"
 macho_a64=$("$BIN" --decompile $FIX/arm64_macho.o _sum3 2>/dev/null)
 echo "$macho_a64" | grep -q "sum3(int32_t a0, int32_t a1, int32_t a2)" || fail "Mach-O AArch64 decompile"
 macho_c_name=$("$BIN" --decompile $FIX/arm64_macho.o sum3 2>/dev/null)
