@@ -1062,6 +1062,7 @@ mod tests {
             convention: Convention::SysV,
             args: Some(args),
             floats_named: true,
+            abi: None,
             outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
             clobbers: None,
             via: None,

@@ -33,6 +33,7 @@ fn call_results_stay_before_memory_and_conditional_reads() {
             CType::U64,
             vec![
                 Stmt::Call {
+                    abi: None,
                     kind: velk::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
@@ -195,6 +196,7 @@ fn printed_single_use_call_arithmetic_keeps_width_and_effects() {
                 CType::U64,
                 vec![
                     Stmt::Call {
+                        abi: None,
                         kind: velk::ir::CallKind::Invoke,
                         target: Some(0x1000),
                         through: None,

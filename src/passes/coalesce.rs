@@ -503,6 +503,7 @@ mod tests {
             convention: crate::ir::Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: true,
+            abi: None,
             clobbers: None,
             outputs,
             via: None,

@@ -498,6 +498,7 @@ mod tests {
         ])));
         assert!(!super::returns_value(&block(vec![ret.clone()])));
         let call = Stmt::Call {
+            abi: None,
             kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
@@ -541,6 +542,7 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: Some(Vec::new()),
             floats_named: true,
+            abi: None,
             outputs: crate::ir::fallback_call_outputs(
                 crate::ir::Convention::SysV,
                 Some(Default::default()),

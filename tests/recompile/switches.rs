@@ -167,6 +167,7 @@ fn printed_switch_default_traps() {
             start: 30,
             stmts: vec![
                 Stmt::Call {
+                    abi: None,
                     kind: velk::ir::CallKind::Invoke,
                     target: Some(0x200),
                     through: None,

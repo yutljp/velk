@@ -35,6 +35,7 @@ fn function(addr: u64, fields: &[(u64, u8)]) -> FunctionIr {
 
 fn call(target: u64, arg: Expr) -> Stmt {
     Stmt::Call {
+        abi: None,
         kind: CallKind::Invoke,
         target: Some(target),
         through: None,

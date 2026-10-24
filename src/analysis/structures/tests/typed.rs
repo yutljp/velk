@@ -185,6 +185,7 @@ fn call_result_and_copy_use_fixed_fields() {
         Isa::X86_64,
         vec![
             Stmt::Call {
+                abi: None,
                 kind: CallKind::Invoke,
                 target: Some(0x1000),
                 through: None,

@@ -7,6 +7,15 @@ use crate::passes::{copies, frame};
 /// Rewrites every stack access against the entry frame and drops the
 /// adjustments, when the stack pointer is only ever a frame base.
 pub fn settle(ir: &mut FunctionIr) {
+    // A declared call reads the stack pointer as it stands at the call.
+    if ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(Stmt::has_declared_call)
+    {
+        return;
+    }
     let frames = block_frames(ir, stack_pointer(ir.isa));
     if substitute_frame_pointer(ir, &frames) {
         crate::passes::simplify::simplify(ir);
@@ -751,6 +760,7 @@ mod tests {
             convention: crate::ir::Convention::SysV,
             args: Some(Vec::new()),
             floats_named: false,
+            abi: None,
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
@@ -808,5 +818,88 @@ mod tests {
             .iter()
             .any(|stmt| crate::ir::visit::statement_registers(stmt).1.contains(&RBP));
         assert!(!reads_rbp, "{}", ir.render());
+    }
+    #[test]
+    fn deferred_call_memory_keeps_the_current_stack_frame() {
+        let adjustment = |delta: i64| Stmt::Assign {
+            dest: RegRef {
+                index: 4,
+                width: 64,
+            },
+            value: Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(delta as u64)),
+        };
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                adjustment(-16),
+                Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention: crate::ir::Convention::SysV,
+                    args: Some(Vec::new()),
+                    floats_named: true,
+                    clobbers: Some(Default::default()),
+                    outputs: Vec::new(),
+                    abi: Some(crate::ir::calls::test_call_abi(vec![4], true)),
+                    via: None,
+                },
+                adjustment(16),
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        let original = ir.blocks[0].stmts.clone();
+        settle(&mut ir);
+        assert_eq!(format!("{:?}", ir.blocks[0].stmts), format!("{original:?}"));
+    }
+
+    #[test]
+    fn direct_register_calls_keep_the_current_stack_frame() {
+        for declared in [false, true] {
+            let adjustment = |delta: i64| Stmt::Assign {
+                dest: RegRef {
+                    index: 31,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(delta as u64)),
+            };
+            let mut ir = FunctionIr::single_block(
+                Isa::AArch64,
+                vec![
+                    adjustment(-16),
+                    Stmt::Store {
+                        addr: Expr::reg(31, 64),
+                        value: Expr::Const(42),
+                        width: 8,
+                    },
+                    Stmt::Call {
+                        kind: crate::ir::CallKind::Invoke,
+                        target: Some(0x1000),
+                        through: None,
+                        convention: crate::ir::Convention::Aapcs64,
+                        args: Some(Vec::new()),
+                        floats_named: true,
+                        clobbers: Some(Default::default()),
+                        outputs: Vec::new(),
+                        abi: declared.then(|| crate::ir::calls::test_call_abi(Vec::new(), false)),
+                        via: None,
+                    },
+                    adjustment(16),
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            );
+            let before = format!("{ir:?}");
+            settle(&mut ir);
+            if declared {
+                assert_eq!(format!("{ir:?}"), before);
+            } else {
+                assert!(!ir.blocks[0].stmts.iter().any(|stmt| matches!(stmt,
+                    Stmt::Assign { dest, .. } if dest.index == 31)));
+            }
+        }
     }
 }

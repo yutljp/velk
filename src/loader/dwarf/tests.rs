@@ -146,3 +146,36 @@ fn invalid_local_location_does_not_hide_the_next_variable() {
     assert_eq!(types.locals[0].slot, -8);
     assert_eq!(types.locals[0].size, 4);
 }
+
+#[test]
+fn malformed_call_address_does_not_hide_other_declarations() {
+    // The first subprogram has an invalid indexed address; the second has an address.
+    let abbrev = [
+        1, 0x11, 1, 0, 0, 2, 0x2e, 0, 0x11, 0x1b, 0, 0, 3, 0x2e, 0, 0x11, 0x01, 0x27, 0x19, 0, 0, 0,
+    ];
+    let mut dies = vec![1, 2, 0, 3];
+    dies.extend(0x1000u64.to_le_bytes());
+    dies.push(0);
+    let image = image(&information(&dies), &abbrev);
+    let index = super::calls::call_index(&image).unwrap();
+    assert_eq!(index.addresses.len(), 1);
+    let source = index.addresses[&0x1000][0];
+    let unit = super::calls::call_unit(&image, source.unit).unwrap();
+    assert!(unit.functions.contains_key(&source));
+    assert_eq!(unit.functions.len(), 1);
+}
+
+#[test]
+fn call_index_keeps_duplicate_addresses_for_compatibility_checks() {
+    let abbrev = [1, 0x11, 1, 0, 0, 2, 0x2e, 0, 0x11, 0x01, 0, 0, 0];
+    let mut dies = vec![1];
+    for _ in 0..2 {
+        dies.push(2);
+        dies.extend(0x1000u64.to_le_bytes());
+    }
+    dies.push(0);
+    let image = image(&information(&dies), &abbrev);
+    let index = super::calls::call_index(&image).unwrap();
+    assert_eq!(index.addresses[&0x1000].len(), 2);
+    assert_ne!(index.addresses[&0x1000][0], index.addresses[&0x1000][1]);
+}

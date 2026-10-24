@@ -152,11 +152,15 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     let reads_elsewhere = ir.blocks.iter().enumerate().any(|(block, contents)| {
         contents.stmts.iter().enumerate().any(|(position, stmt)| {
             !stores.contains(&(block, position))
-                && stmt.operands().into_iter().any(|operand| {
-                    let mut read = HashSet::new();
-                    crate::ir::visit::collect_reads(operand, &mut read);
-                    unnamed.iter().any(|register| read.contains(register))
-                })
+                && (stmt
+                    .declared_call_reads()
+                    .iter()
+                    .any(|register| unnamed.contains(register))
+                    || stmt.operands().into_iter().any(|operand| {
+                        let mut read = HashSet::new();
+                        crate::ir::visit::collect_reads(operand, &mut read);
+                        unnamed.iter().any(|register| read.contains(register))
+                    }))
         })
     });
     if reads_elsewhere {
@@ -264,5 +268,35 @@ mod tests {
         super::mark_variadic(&mut ir);
         assert!(!ir.variadic);
         assert_eq!(ir.params.len(), 8);
+    }
+    #[test]
+    fn declared_input_reads_keep_saved_registers_as_parameters() {
+        let image = crate::loader::Image::from_code(Isa::AArch64, 0, Vec::new());
+        for attached in [false, true] {
+            let mut ir = saving_from(1);
+            let mut call = crate::lift::call(
+                crate::ir::CallKind::Invoke,
+                &image,
+                &|_| Default::default(),
+                Some(0x1000),
+            );
+            let Stmt::Call {
+                args,
+                floats_named,
+                abi,
+                ..
+            } = &mut call
+            else {
+                unreachable!()
+            };
+            *args = Some(vec![Expr::reg(0, 64)]);
+            *floats_named = true;
+            *abi = attached.then(|| crate::ir::calls::test_call_abi(vec![3], false));
+            let position = ir.blocks[0].stmts.len() - 1;
+            ir.blocks[0].stmts.insert(position, call);
+            super::mark_variadic(&mut ir);
+            assert_eq!(ir.variadic, !attached);
+            assert_eq!(ir.params.len(), if attached { 8 } else { 1 });
+        }
     }
 }

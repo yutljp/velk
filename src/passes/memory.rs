@@ -23,6 +23,12 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
     for block in &mut ir.blocks {
         let mut pending: Vec<(u8, Expr, Expr)> = Vec::new();
         for stmt in &mut block.stmts {
+            // A declared call reads memory its declaration names, which
+            // no earlier store can be forwarded past.
+            if stmt.has_deferred_call_memory() {
+                pending.clear();
+                continue;
+            }
             let call_writes =
                 matches!(stmt, Stmt::Call { .. }).then(|| statement_registers(stmt).0);
             match stmt {
@@ -457,9 +463,10 @@ fn fuse_block(
         let mut op_at = None;
         let mut clean = true;
         for probe in index + 1..block.stmts.len().min(index + 8) {
-            if atomic(&block.stmts[probe])
-                && (!crosses_atomic(&load, sp, private_frame)
-                    || !statement_registers(&block.stmts[probe]).0.is_empty())
+            if block.stmts[probe].has_deferred_call_memory()
+                || atomic(&block.stmts[probe])
+                    && (!crosses_atomic(&load, sp, private_frame)
+                        || !statement_registers(&block.stmts[probe]).0.is_empty())
             {
                 clean = false;
                 break;
@@ -490,10 +497,11 @@ fn fuse_block(
         let mut store_at = None;
         let mut blocked = false;
         for probe in op_at + 1..block.stmts.len().min(op_at + 8) {
-            if atomic(&block.stmts[probe])
-                && (!crosses_atomic(&load, sp, private_frame)
-                    || !crosses_atomic(&rhs, sp, private_frame)
-                    || !statement_registers(&block.stmts[probe]).0.is_empty())
+            if block.stmts[probe].has_deferred_call_memory()
+                || atomic(&block.stmts[probe])
+                    && (!crosses_atomic(&load, sp, private_frame)
+                        || !crosses_atomic(&rhs, sp, private_frame)
+                        || !statement_registers(&block.stmts[probe]).0.is_empty())
             {
                 blocked = true;
                 break;
@@ -613,7 +621,9 @@ fn store_back(
 ) -> Option<usize> {
     let mut store_at = None;
     for (probe, stmt) in stmts.iter().enumerate().take(index + 8).skip(index + 1) {
-        if atomic(stmt) && (!crosses || !statement_registers(stmt).0.is_empty()) {
+        if stmt.has_deferred_call_memory()
+            || atomic(stmt) && (!crosses || !statement_registers(stmt).0.is_empty())
+        {
             return None;
         }
         let (writes, reads) = statement_registers(stmt);
@@ -686,7 +696,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
             .blocks
             .iter()
             .flat_map(|block| &block.stmts)
-            .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }))
+            .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }) || stmt.has_deferred_call_memory())
     {
         return;
     }
@@ -1111,6 +1121,7 @@ mod tests {
             convention: crate::ir::Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: false,
+            abi: None,
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
             clobbers: None,
             via: None,
@@ -1208,6 +1219,7 @@ mod tests {
                     convention: crate::ir::Convention::Aapcs64,
                     args: Some(Vec::new()),
                     floats_named: true,
+                    abi: None,
                     clobbers: Some([1].into_iter().collect()),
                     outputs,
                     via: None,
@@ -1223,5 +1235,109 @@ mod tests {
             "{}",
             ir.render()
         );
+    }
+    fn deferred_call(args: Vec<Expr>) -> Stmt {
+        Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(args),
+            floats_named: true,
+            clobbers: Some(Default::default()),
+            outputs: Vec::new(),
+            abi: Some(crate::ir::calls::test_call_abi(vec![31], true)),
+            via: None,
+        }
+    }
+
+    #[test]
+    fn deferred_call_memory_blocks_forwarding_and_keeps_fallback_loads() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(16, Expr::Const(9), 8),
+                deferred_call(vec![load(16, 8)]),
+                Stmt::Ret { value: load(16, 8) },
+            ],
+        );
+        let original = ir.blocks[0].stmts.clone();
+        forward_stored_values(&mut ir);
+        assert_eq!(format!("{:?}", ir.blocks[0].stmts), format!("{original:?}"));
+
+        if let Stmt::Call { abi, .. } = &mut ir.blocks[0].stmts[1] {
+            *abi = None;
+        }
+        forward_stored_values(&mut ir);
+        assert!(
+            matches!(&ir.blocks[0].stmts[1], Stmt::Call { args: Some(args), .. } if args == &[Expr::Const(9)])
+        );
+        assert!(matches!(
+            ir.blocks[0].stmts[2],
+            Stmt::Ret {
+                value: Expr::Const(9)
+            }
+        ));
+    }
+
+    #[test]
+    fn deferred_call_memory_keeps_a_spilled_variable_store() {
+        let variable = crate::ir::VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: variable,
+                        width: 64,
+                    },
+                    value: Expr::Const(9),
+                },
+                store(16, Expr::reg(variable, 64), 8),
+                deferred_call(Vec::new()),
+                Stmt::Ret { value: load(16, 8) },
+            ],
+        );
+        let original = ir.blocks[0].stmts.clone();
+        super::forward_spilled_variables(&mut ir);
+        assert_eq!(format!("{:?}", ir.blocks[0].stmts), format!("{original:?}"));
+    }
+
+    #[test]
+    fn deferred_call_memory_blocks_a_load_update_store_fusion() {
+        let temporary = crate::ir::VARIABLE_BASE;
+        let assign = |value| Stmt::Assign {
+            dest: RegRef {
+                index: temporary,
+                width: 64,
+            },
+            value,
+        };
+        let update = || {
+            assign(Expr::bin(
+                BinOp::Add,
+                Expr::reg(temporary, 64),
+                Expr::Const(1),
+            ))
+        };
+        let write = || store(16, Expr::reg(temporary, 64), 8);
+        let call = || deferred_call(Vec::new());
+        for mut stmts in [
+            vec![assign(load(16, 8)), call(), update(), write()],
+            vec![assign(load(16, 8)), update(), call(), write()],
+            vec![
+                assign(Expr::bin(BinOp::Add, load(16, 8), Expr::Const(1))),
+                call(),
+                write(),
+            ],
+        ] {
+            stmts.push(Stmt::Ret {
+                value: Expr::Const(0),
+            });
+            let original = format!("{stmts:?}");
+            let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
+            fuse_load_op_store(&mut ir);
+            assert_eq!(format!("{:?}", ir.blocks[0].stmts), original);
+        }
     }
 }

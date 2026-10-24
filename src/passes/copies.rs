@@ -147,10 +147,11 @@ pub(crate) fn comparison_preserved(cond: Cond, before: u32, lhs: &Expr, rhs: &Ex
 /// Replaces every read of `dest` in one statement with the value; clears `ok`
 /// when a read's width does not fit the value's.
 fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bool) {
-    if stmt
-        .preserved_output_sources()
-        .iter()
-        .any(|(_, source)| *source == dest)
+    if stmt.declared_call_reads().contains(&dest)
+        || stmt
+            .preserved_output_sources()
+            .iter()
+            .any(|(_, source)| *source == dest)
     {
         *ok = false;
         return;
@@ -440,6 +441,7 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
         .iter()
         .filter(|(_, source)| *source == reg)
         .count();
+    total += usize::from(stmt.declared_call_reads().contains(&reg));
     match stmt {
         Stmt::Machine { inputs, .. } => {
             total += inputs.iter().map(|input| count(input, reg)).sum::<usize>()
@@ -479,10 +481,11 @@ pub(crate) fn expr_size(expr: &Expr) -> usize {
 }
 
 fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bool {
-    if stmt
-        .preserved_output_sources()
-        .iter()
-        .any(|(_, source)| *source == dest)
+    if stmt.declared_call_reads().contains(&dest)
+        || stmt
+            .preserved_output_sources()
+            .iter()
+            .any(|(_, source)| *source == dest)
     {
         return false;
     }
@@ -1097,6 +1100,7 @@ mod tests {
                     convention: Convention::GoAmd64,
                     args: Some(vec![Expr::reg(3, 64)]),
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::GoAmd64, None),
                     via: None,
@@ -1279,6 +1283,7 @@ mod tests {
                     convention: Convention::Aapcs64,
                     args: Some(Vec::new()),
                     floats_named: true,
+                    abi: None,
                     clobbers: Some(Default::default()),
                     outputs: vec![crate::ir::CallOutput {
                         register: 1,
@@ -1317,5 +1322,79 @@ mod tests {
             assert!(matches!(&expected, Outcome::Return { value: 17, .. }));
             assert_eq!(eval::run(&ir, &setup), expected);
         }
+    }
+    #[test]
+    fn declared_inputs_keep_their_load_producer_and_fallback_arguments() {
+        for arguments in [Vec::new(), vec![Expr::reg(7, 64)]] {
+            let call = Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(arguments),
+                floats_named: true,
+                clobbers: Some(Default::default()),
+                outputs: Vec::new(),
+                abi: Some(crate::ir::calls::test_call_abi(vec![7], false)),
+                via: None,
+            };
+            let load = Expr::Load {
+                addr: Box::new(Expr::reg(2, 64)),
+                width: 8,
+                signed: false,
+            };
+            let producer = Stmt::Assign {
+                dest: RegRef {
+                    index: 7,
+                    width: 64,
+                },
+                value: load.clone(),
+            };
+            let before = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    producer.clone(),
+                    call.clone(),
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            );
+            for pass in copy_passes() {
+                let mut ir = before.clone();
+                pass(&mut ir);
+                assert!(
+                    matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, value }
+                    if dest.index == 7 && *value == load)
+                );
+                assert_eq!(format!("{:?}", ir.blocks[0].stmts[1]), format!("{call:?}"));
+            }
+        }
+    }
+
+    #[test]
+    fn declared_reads_refuse_substitution_but_unattached_calls_allow_it() {
+        let mut call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
+            target: Some(0x1000),
+            through: None,
+            convention: Convention::SysV,
+            args: Some(vec![Expr::reg(7, 64)]),
+            floats_named: true,
+            clobbers: Some(Default::default()),
+            outputs: Vec::new(),
+            abi: Some(crate::ir::calls::test_call_abi(vec![7], false)),
+            via: None,
+        };
+        assert_eq!(super::count_reg(&call, 7), 2);
+        let original = call.clone();
+        assert!(!super::substitute_stmt(&mut call, 7, 64, &Expr::Const(9)));
+        assert_eq!(format!("{call:?}"), format!("{original:?}"));
+        if let Stmt::Call { abi, .. } = &mut call {
+            *abi = None;
+        }
+        assert_eq!(super::count_reg(&call, 7), 1);
+        assert!(super::substitute_stmt(&mut call, 7, 64, &Expr::Const(9)));
+        assert!(matches!(call, Stmt::Call { args: Some(args), .. } if args == [Expr::Const(9)]));
     }
 }

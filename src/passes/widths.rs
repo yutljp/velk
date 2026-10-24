@@ -30,7 +30,7 @@ fn register_writes(blocks: &[Block], narrow_return: NarrowReturn<'_>) -> HashMap
                     writes.entry(dest.index).or_default().push(width);
                 }
                 Stmt::Call { target, .. } => {
-                    let narrow = target.is_some_and(narrow_return);
+                    let narrow = !stmt.has_declared_call() && target.is_some_and(narrow_return);
                     let returned = stmt.primary_call_output().map(|output| output.dest.index);
                     for written in crate::ir::visit::statement_registers(stmt).0 {
                         let width = if narrow && Some(written) == returned {
@@ -309,6 +309,7 @@ mod tests {
             convention: Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: true,
+            abi: None,
             clobbers: Some([0, 1].into_iter().collect()),
             outputs,
             via: None,
@@ -378,5 +379,37 @@ mod tests {
                 .collect::<Vec<_>>(),
             [(1, VARIABLE_BASE + 1, 64), (0, VARIABLE_BASE, 32),]
         );
+    }
+    #[test]
+    fn pending_call_boundary_keeps_full_physical_output_width() {
+        let mut call = two_outputs();
+        if let Stmt::Call { abi, .. } = &mut call {
+            *abi = Some(crate::ir::calls::test_call_abi(Vec::new(), false));
+        }
+        let register = call.primary_call_output().unwrap().dest.index;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                call,
+                Stmt::Ret {
+                    value: Expr::reg(register, 64),
+                },
+            ],
+        );
+        specialize_widths(&mut ir, &|_| true);
+        assert_eq!(
+            ir.blocks[0].stmts[0]
+                .primary_call_output()
+                .unwrap()
+                .dest
+                .width,
+            64
+        );
+        assert!(matches!(
+            ir.blocks[0].stmts[1],
+            Stmt::Ret {
+                value: Expr::Reg { width: 64, .. }
+            }
+        ));
     }
 }

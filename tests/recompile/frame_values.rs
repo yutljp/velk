@@ -142,6 +142,7 @@ fn call() -> Stmt {
         convention: Convention::SysV,
         args: None,
         floats_named: false,
+        abi: None,
         outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
         clobbers: None,
         via: None,

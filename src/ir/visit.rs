@@ -230,6 +230,7 @@ pub(crate) fn statement_registers(
                 expr_reads(arg, &mut reads);
             }
             reads.extend(stmt.unnamed_call_reads());
+            reads.extend(stmt.declared_call_reads());
             reads.extend(
                 stmt.preserved_output_sources()
                     .into_iter()

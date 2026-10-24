@@ -4021,6 +4021,7 @@ fn printed_void_calls_keep_existing_values_in_both_output_paths() {
             CType::U64,
             vec![
                 Stmt::Call {
+                    abi: None,
                     kind: velk::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
@@ -4169,6 +4170,7 @@ static uint64_t output_callee(uint64_t value) {
                     convention: Convention::SysV,
                     args: Some(vec![argument]),
                     floats_named: true,
+                    abi: None,
                     outputs,
                     clobbers: Some(Registers(if direct { 5 } else { 1 })),
                     via: None,
@@ -4257,6 +4259,7 @@ fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
         convention: Convention::SysV,
         args: Some(vec![Expr::reg(7, 64), Expr::reg(6, 64), Expr::reg(2, 64)]),
         floats_named: true,
+        abi: None,
         outputs: if wide {
             vec![output(7, 6, 64), output(6, 7, 32), output(0, 2, 64)]
         } else {
@@ -4566,6 +4569,7 @@ static int32_t address_signed(uint64_t value) { ++address_calls; return (int32_t
                 convention: Convention::SysV,
                 args: Some(vec![Expr::reg(7, 64)]),
                 floats_named: true,
+                abi: None,
                 outputs,
                 clobbers: Some(Registers(1)),
                 via: None,
@@ -4717,6 +4721,7 @@ static __attribute__((noinline)) uint64_t width_callee(uint64_t value) {
                         Expr::Const(0xffff_ffff),
                     )]),
                     floats_named: true,
+                    abi: None,
                     outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                     clobbers: None,
                     via: None,

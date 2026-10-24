@@ -161,6 +161,7 @@ mod tests {
                 convention: Convention::Aapcs64,
                 args: None,
                 floats_named: false,
+                abi: None,
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                 via: None,

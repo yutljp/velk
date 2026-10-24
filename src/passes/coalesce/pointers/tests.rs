@@ -64,6 +64,7 @@ fn call(args: Option<Vec<Expr>>) -> Stmt {
         convention: Convention::Aapcs64,
         args,
         floats_named: true,
+        abi: None,
         clobbers: None,
         outputs: Vec::new(),
         via: None,

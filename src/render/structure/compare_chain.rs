@@ -960,6 +960,7 @@ mod tests {
                 convention: crate::ir::Convention::Aapcs64,
                 args: Some(vec![Expr::reg(1, 64)]),
                 floats_named: false,
+                abi: None,
                 outputs: crate::ir::fallback_call_outputs(
                     crate::ir::Convention::Aapcs64,
                     Some(crate::ir::Registers(0)),
@@ -1077,6 +1078,7 @@ mod tests {
                 convention: crate::ir::Convention::Aapcs64,
                 args: Some(Vec::new()),
                 floats_named: false,
+                abi: None,
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
                 clobbers: None,
                 via: None,

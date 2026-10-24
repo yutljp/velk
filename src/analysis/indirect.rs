@@ -736,7 +736,8 @@ fn closed_normal_flow(blocks: &[Block], forward_only: bool) -> bool {
 pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], image: &Image) {
     let indirect = |stmt: &Stmt| {
         matches!(stmt, Stmt::Call { target: None, through: Some(through), convention, .. }
-            if !matches!(convention, Convention::SyscallX86 | Convention::SyscallArm)
+            if !stmt.has_declared_call()
+                && !matches!(convention, Convention::SyscallX86 | Convention::SyscallArm)
                 && crate::lift::import_name(image, through).is_none())
     };
     if !blocks.iter().flat_map(|block| &block.stmts).any(indirect) {
@@ -1403,6 +1404,7 @@ mod tests {
             convention: Convention::SysV,
             args: Some(vec![Expr::reg(7, 64)]),
             floats_named: true,
+            abi: None,
             outputs: vec![
                 CallOutput {
                     register: 2,
@@ -1763,6 +1765,7 @@ mod tests {
             convention: Convention::SysV,
             args: Some(Vec::new()),
             floats_named: true,
+            abi: None,
             outputs: crate::ir::fallback_call_outputs(Convention::SysV, changed),
             clobbers: changed,
             via: None,
@@ -1803,5 +1806,48 @@ mod tests {
         tracker.step(&mut state, &call, (0, 3));
         assert_eq!(state.reg(0), Value::Sym(Base::Def(0, 3, u32::MAX - 2), 0));
         assert_eq!(state.reg(VARIABLE_BASE), Value::Const(0x1111, None));
+    }
+    #[test]
+    fn declared_calls_are_not_replaced_by_indirect_resolution() {
+        for attached in [false, true] {
+            let (image, mut blocks) =
+                pointer_factory(Isa::X86_64, false, constant_factory(Isa::X86_64, 0x80));
+            let call = blocks
+                .iter_mut()
+                .flat_map(|block| &mut block.stmts)
+                .find(|stmt| {
+                    matches!(
+                        stmt,
+                        Stmt::Call {
+                            target: None,
+                            through: Some(_),
+                            ..
+                        }
+                    )
+                })
+                .expect("indirect call");
+            if let Stmt::Call { abi, .. } = call {
+                *abi = attached.then(|| crate::ir::calls::test_call_abi(vec![7], false));
+            }
+            let before = format!("{blocks:?}");
+            resolve(&mut blocks, &[], &image);
+            if attached {
+                assert_eq!(format!("{blocks:?}"), before);
+            } else {
+                assert!(
+                    blocks
+                        .iter()
+                        .flat_map(|block| &block.stmts)
+                        .any(|stmt| matches!(
+                            stmt,
+                            Stmt::Call {
+                                target: Some(0x80),
+                                through: None,
+                                ..
+                            }
+                        ))
+                );
+            }
+        }
     }
 }

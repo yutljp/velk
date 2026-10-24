@@ -182,6 +182,9 @@ pub struct Summary {
 pub struct Image {
     pub format: Format,
     pub isa: Isa,
+    /// The byte order of the file's data, which its debug information
+    /// is read in; None when unknown.
+    byte_order: Option<object::Endianness>,
     pub entry: Option<u64>,
     bytes: Vec<u8>,
     pub sections: Vec<Section>,
@@ -193,6 +196,9 @@ pub struct Image {
     pub fragments: BTreeMap<u64, u64>,
     /// What is known of each function as a callee, filled on demand.
     pub summaries: std::sync::RwLock<HashMap<u64, Summary>>,
+    /// The debug-information declarations of callees, read on demand.
+    #[cfg(test)]
+    pub(crate) call_declarations: crate::analysis::calls::Declarations,
     /// The direct calls and jumps the code makes, by target: the address of
     /// each instruction. Built on first use.
     pub branches_to: std::sync::OnceLock<HashMap<u64, Vec<u64>>>,
@@ -231,6 +237,10 @@ pub struct Image {
 }
 
 impl Image {
+    pub(crate) fn byte_order(&self) -> Option<object::Endianness> {
+        self.byte_order
+    }
+
     /// The calling convention the function at `addr` follows.
     pub fn convention_of(&self, addr: u64) -> crate::ir::Convention {
         if self.go
@@ -310,12 +320,17 @@ impl Image {
         out
     }
 
-    /// An image holding only `code`, mapped executable at `addr`.
+    /// An image holding only little-endian `code`, mapped executable at
+    /// `addr`.
     #[cfg(test)]
     pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
         Self {
             format: Format::Elf,
             isa,
+            byte_order: match isa {
+                Isa::X86_64 | Isa::AArch64 => Some(object::Endianness::Little),
+                Isa::Unsupported => None,
+            },
             entry: None,
             sections: vec![Section {
                 name: ".text".to_owned(),
@@ -331,6 +346,8 @@ impl Image {
             data_symbols: BTreeMap::new(),
             fragments: BTreeMap::new(),
             summaries: Default::default(),
+            #[cfg(test)]
+            call_declarations: Default::default(),
             branches_to: Default::default(),
             addressed: Default::default(),
             go_abi0: Default::default(),
@@ -825,6 +842,11 @@ pub fn load(path: &Path) -> Result<Image> {
     let mut image = Image {
         format: format_of(kind),
         isa: isa_of(file.architecture()),
+        byte_order: Some(if file.is_little_endian() {
+            object::Endianness::Little
+        } else {
+            object::Endianness::Big
+        }),
         entry,
         bytes: relocated,
         sections,
@@ -832,6 +854,8 @@ pub fn load(path: &Path) -> Result<Image> {
         data_symbols,
         fragments: BTreeMap::new(),
         summaries: Default::default(),
+        #[cfg(test)]
+        call_declarations: Default::default(),
         branches_to: Default::default(),
         addressed: Default::default(),
         go_abi0: Default::default(),
@@ -882,4 +906,83 @@ pub fn load(path: &Path) -> Result<Image> {
     }
     estimate_sizes(&image.sections, &mut image.functions);
     Ok(image)
+}
+
+#[cfg(test)]
+mod byte_order_tests {
+    use super::*;
+    use object::Endianness;
+
+    fn parsed_elf(byte_order: Endianness) -> Image {
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let object = object::write::Object::new(
+            object::BinaryFormat::Elf,
+            object::Architecture::Aarch64,
+            byte_order,
+        );
+        let bytes = object.write().expect("ELF object");
+        let sequence = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!(
+            "velk-byte-order-{}-{sequence}.o",
+            std::process::id()
+        ));
+        std::fs::write(&path, bytes).expect("scratch object");
+        let image = load(&path);
+        std::fs::remove_file(&path).expect("remove scratch object");
+        image.expect("parsed ELF object")
+    }
+
+    #[test]
+    fn byte_order_raw_code_has_the_explicit_ir_contract() {
+        for isa in [Isa::X86_64, Isa::AArch64] {
+            assert_eq!(
+                Image::from_code(isa, 0, Vec::new()).byte_order(),
+                Some(Endianness::Little)
+            );
+        }
+        assert_eq!(
+            Image::from_code(Isa::Unsupported, 0, Vec::new()).byte_order(),
+            None
+        );
+    }
+
+    #[test]
+    fn byte_order_elf_comes_from_the_object_reader() {
+        for order in [Endianness::Little, Endianness::Big] {
+            let image = parsed_elf(order);
+            assert_eq!(image.format, Format::Elf);
+            assert_eq!(image.isa, Isa::AArch64);
+            assert_eq!(image.byte_order(), Some(order));
+        }
+    }
+
+    #[test]
+    fn byte_order_existing_pe_coff_and_macho_are_preserved() {
+        let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        for (name, format) in [
+            ("pe64.exe", Format::Pe),
+            ("pe64.obj", Format::Coff),
+            ("arm64_macho.o", Format::MachO),
+        ] {
+            let image =
+                load(&fixtures.join(name)).unwrap_or_else(|error| panic!("{name}: {error}"));
+            assert_eq!(image.format, format, "{name}");
+            assert_eq!(image.byte_order(), Some(Endianness::Little), "{name}");
+        }
+    }
+
+    #[test]
+    fn byte_order_nonlittle_dwarf_is_not_read_as_little() {
+        let big = parsed_elf(Endianness::Big);
+        let unknown = Image::from_code(Isa::Unsupported, 0, Vec::new());
+        for image in [&big, &unknown] {
+            assert!(dwarf::function_types(image, 0).is_none());
+            assert!(dwarf::functions(image).is_empty());
+            assert!(matches!(
+                dwarf::calls::call_index(image),
+                Err(crate::ir::AbiIssue::UnsupportedProfile)
+            ));
+        }
+        assert!(dwarf::calls::call_index(&parsed_elf(Endianness::Little)).is_ok());
+    }
 }

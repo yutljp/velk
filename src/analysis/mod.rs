@@ -1,4 +1,6 @@
 pub(crate) mod abi;
+#[cfg(test)]
+pub(crate) mod calls;
 mod clobbers;
 mod indirect;
 mod jump_table;
@@ -251,6 +253,7 @@ fn tail_calls_through_pointers(
             convention: crate::ir::Convention::of(image.isa, image.format, image.go),
             args: None,
             floats_named: false,
+            abi: None,
             clobbers: None,
             outputs: crate::ir::fallback_call_outputs(
                 crate::ir::Convention::of(image.isa, image.format, image.go),
@@ -579,6 +582,12 @@ fn set_up_arguments(ir: &mut FunctionIr) {
     for block in &mut ir.blocks {
         let mut written: HashSet<u16> = HashSet::new();
         for stmt in &mut block.stmts {
+            // A declared call names what it reads; it keeps no argument
+            // guessed from the writes before it.
+            if stmt.has_declared_call() {
+                written.clear();
+                continue;
+            }
             let Stmt::Call {
                 convention,
                 args,
@@ -847,9 +856,15 @@ fn drop_unread_indirect_result(ir: &mut FunctionIr, image: &Image) {
     // reads it only where its expressions name it.
     let before = |stmt: &Stmt, after: bool| match stmt {
         _ if stmt.operands().into_iter().any(reads) => true,
+        // A declared call reads x8 only for the result its declaration
+        // returns through memory.
+        Stmt::Call { abi: Some(_), .. } if !stmt.declared_call_reads().contains(&INDIRECT) => {
+            after && !stmt.call_clobbers().contains(&INDIRECT)
+        }
         Stmt::Call {
             target: Some(target),
             args: Some(_),
+            abi: None,
             ..
         } if !summary::summary(image, *target).indirect_result => {
             after && !stmt.call_clobbers().contains(&INDIRECT)
@@ -1471,6 +1486,9 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     // A variable passed where a callee takes a pointer holds one.
     let mut pointer_values = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if stmt.has_declared_call() {
+            continue;
+        }
         if let Stmt::Call {
             target: Some(target),
             args: Some(args),
@@ -1529,6 +1547,7 @@ mod tests {
                         convention: Convention::Aapcs64,
                         args: Some(vec![Expr::reg(0, 64), Expr::reg(1, 64), Expr::reg(2, 64)]),
                         floats_named: true,
+                        abi: None,
                         outputs: vec![CallOutput {
                             register: 0,
                             dest: RegRef {
@@ -1586,6 +1605,11 @@ mod tests {
                 param_layouts: Vec::new(),
                 ret_layout: Ok(None),
                 abi_profile: Ok(AbiProfile::Aapcs64),
+                source: crate::ir::calls::FunctionSource {
+                    function: crate::ir::calls::TypeSource { unit: 0, die: 0 },
+                    parameters: Vec::new(),
+                    result: None,
+                },
             };
             assert!(super::abi::declaration(&types).is_none());
             let analyzed = super::optimize(
@@ -1669,6 +1693,7 @@ mod tests {
                     convention: Convention::SysV,
                     args: Some(Vec::new()),
                     floats_named: true,
+                    abi: None,
                     outputs,
                     clobbers: None,
                     via: None,
@@ -1724,6 +1749,7 @@ mod tests {
                             convention,
                             args: Some(Vec::new()),
                             floats_named: true,
+                            abi: None,
                             outputs: crate::ir::fallback_call_outputs(convention, clobbers),
                             clobbers,
                             via: None,
@@ -1768,6 +1794,7 @@ mod tests {
                         convention: Convention::SysV,
                         args: Some(Vec::new()),
                         floats_named: true,
+                        abi: None,
                         outputs,
                         clobbers: None,
                         via: None,

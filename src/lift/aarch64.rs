@@ -614,6 +614,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             args: None,
             // The kernel reads no floating-point register.
             floats_named: true,
+            abi: None,
             clobbers: None,
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallArm, None),
             via: None,

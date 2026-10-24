@@ -281,6 +281,7 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
             CType::U64,
             vec![
                 Stmt::Call {
+                    abi: None,
                     kind: velk::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,

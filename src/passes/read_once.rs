@@ -177,10 +177,11 @@ fn reader(
 /// How many times the expressions of `stmt` that a value may move into read
 /// `dest`: not the address an indirect call goes through.
 fn count_operands(stmt: &Stmt, dest: u16) -> usize {
-    if stmt
-        .preserved_output_sources()
-        .iter()
-        .any(|(_, source)| *source == dest)
+    if stmt.declared_call_reads().contains(&dest)
+        || stmt
+            .preserved_output_sources()
+            .iter()
+            .any(|(_, source)| *source == dest)
     {
         return 0;
     }
@@ -226,10 +227,11 @@ fn count(expr: &Expr, register: u16) -> usize {
 /// Replaces the read of `dest` in the statement with the value; false when
 /// the read's width does not fit the value's.
 fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
-    if stmt
-        .preserved_output_sources()
-        .iter()
-        .any(|(_, source)| *source == dest.index)
+    if stmt.declared_call_reads().contains(&dest.index)
+        || stmt
+            .preserved_output_sources()
+            .iter()
+            .any(|(_, source)| *source == dest.index)
     {
         return false;
     }
@@ -417,6 +419,7 @@ mod tests {
             convention: Convention::SysV,
             args: Some(args),
             floats_named: false,
+            abi: None,
             outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
             clobbers: None,
             via: None,
@@ -847,5 +850,25 @@ mod tests {
             "{}",
             ir.render()
         );
+    }
+    #[test]
+    fn declared_reads_cannot_receive_an_inlined_load() {
+        let mut attached = call(vec![Expr::reg(7, 64)]);
+        if let Stmt::Call { abi, .. } = &mut attached {
+            *abi = Some(crate::ir::calls::test_call_abi(vec![7], false));
+        }
+        let original = attached.clone();
+        let register = RegRef {
+            index: 7,
+            width: 64,
+        };
+        assert_eq!(super::count_operands(&attached, 7), 0);
+        assert!(!super::substitute(&mut attached, register, &field(6, 8)));
+        assert_eq!(format!("{attached:?}"), format!("{original:?}"));
+
+        let mut unattached = call(vec![Expr::reg(7, 64)]);
+        assert_eq!(super::count_operands(&unattached, 7), 1);
+        assert!(super::substitute(&mut unattached, register, &field(6, 8)));
+        assert!(matches!(unattached, Stmt::Call { args: Some(args), .. } if args == [field(6, 8)]));
     }
 }

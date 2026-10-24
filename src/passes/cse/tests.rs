@@ -763,6 +763,7 @@ fn temporary_slots_exclude_function_annotations_and_call_registers() {
         convention: Convention::SysV,
         args: Some(vec![Expr::reg(at(9), 64)]),
         floats_named: true,
+        abi: None,
         outputs: vec![CallOutput {
             register: at(10),
             dest: RegRef {

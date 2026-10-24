@@ -2,6 +2,7 @@ mod convention;
 mod print;
 mod registers;
 
+pub use calls::CallAbi;
 pub use convention::{CallKind, Convention};
 pub(crate) use print::*;
 pub use registers::{
@@ -10,6 +11,7 @@ pub use registers::{
 };
 
 pub(crate) mod abi;
+pub(crate) mod calls;
 pub mod cfg;
 pub mod eval;
 pub(crate) mod semantics;
@@ -691,6 +693,10 @@ pub enum Stmt {
         /// `args` lists the floating-point arguments too, after the integer
         /// ones, so the call reads no other floating-point register.
         floats_named: bool,
+        /// How the callee's debug-information declaration says this call
+        /// passes its parameters and result, when there is one. The
+        /// registers it names are read by the call besides `args`.
+        abi: Option<std::sync::Arc<CallAbi>>,
         outputs: Vec<CallOutput>,
         /// The registers the callee may leave changed, when its summary
         /// knows them; else the call changes those its convention lets it.
@@ -714,6 +720,25 @@ pub enum Stmt {
 }
 
 impl Stmt {
+    /// The registers a call's declaration reads besides its arguments: its
+    /// parameters' registers and the stack pointer.
+    pub fn declared_call_reads(&self) -> &[u16] {
+        match self {
+            Stmt::Call { abi: Some(abi), .. } => &abi.dependencies,
+            _ => &[],
+        }
+    }
+
+    pub fn has_declared_call(&self) -> bool {
+        matches!(self, Stmt::Call { abi: Some(_), .. })
+    }
+
+    /// Whether a declared call passes something through memory: a stack
+    /// argument, or an object or result by address.
+    pub fn has_deferred_call_memory(&self) -> bool {
+        matches!(self, Stmt::Call { abi: Some(abi), .. } if abi.deferred_memory)
+    }
+
     pub fn call_outputs(&self) -> &[CallOutput] {
         match self {
             Stmt::Call { outputs, .. } => outputs,
@@ -942,6 +967,7 @@ mod tests {
             convention: Convention::SysV,
             args: Some(Vec::new()),
             floats_named: true,
+            abi: None,
             outputs: fallback_call_outputs(Convention::SysV, Some([2].into_iter().collect())),
             clobbers: Some([2].into_iter().collect()),
             via: None,

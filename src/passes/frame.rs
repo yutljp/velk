@@ -14,6 +14,10 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
     let mut stores: Vec<(usize, usize, u64, u8)> = Vec::new();
     for (position, block) in ir.blocks.iter().enumerate() {
         for (index, stmt) in block.stmts.iter().enumerate() {
+            // A declared call may read any frame slot through memory.
+            if stmt.has_deferred_call_memory() {
+                return;
+            }
             match stmt {
                 Stmt::Store { addr, value, width } => {
                     if let Some(slot) = frame_slot_of(addr, sp) {
@@ -263,6 +267,14 @@ fn address_uses_frame(expr: &Expr, sp: u16) -> bool {
 /// so the save and the restores resolve to the same slot across blocks and
 /// stack adjustments.
 pub fn elide_callee_saves(ir: &mut FunctionIr) {
+    if ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(Stmt::has_deferred_call_memory)
+    {
+        return;
+    }
     let sp = stack_pointer(ir.isa);
     let mut accesses: Vec<Access> = Vec::new();
     let frames = crate::passes::frame_slots::block_frames(ir, sp);
@@ -449,6 +461,14 @@ struct Access {
 /// argument there, and no load reads the slot.
 pub fn drop_alignment_pushes(ir: &mut FunctionIr) {
     use crate::ir::Convention;
+    if ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(Stmt::has_deferred_call_memory)
+    {
+        return;
+    }
     if !matches!(ir.convention, Convention::SysV | Convention::Win64) {
         return;
     }
@@ -897,6 +917,7 @@ mod tests {
                     convention: Convention::SysV,
                     args: None,
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
                     via: None,
@@ -975,6 +996,7 @@ mod tests {
                     convention: Convention::SysV,
                     args: None,
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
                     via: None,
@@ -1010,6 +1032,7 @@ mod tests {
                 convention: Convention::SysV,
                 args: None,
                 floats_named: false,
+                abi: None,
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
                 via: None,
@@ -1110,6 +1133,7 @@ mod tests {
                     convention: Convention::Aapcs64,
                     args: None,
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                     via: None,
@@ -1121,5 +1145,97 @@ mod tests {
         );
         drop_dead_frame_stores(&mut ir);
         assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
+    }
+    #[test]
+    fn declared_register_calls_preserve_stack_height_after_save_elimination() {
+        for declared in [false, true] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    adjust(-16),
+                    Stmt::Store {
+                        addr: Expr::reg(RSP, 64),
+                        value: Expr::reg(3, 64),
+                        width: 8,
+                    },
+                    Stmt::Call {
+                        kind: crate::ir::CallKind::Invoke,
+                        target: Some(0x1000),
+                        through: None,
+                        convention: Convention::SysV,
+                        args: Some(Vec::new()),
+                        floats_named: true,
+                        clobbers: Some(Default::default()),
+                        outputs: Vec::new(),
+                        abi: declared.then(|| crate::ir::calls::test_call_abi(vec![RSP], false)),
+                        via: None,
+                    },
+                    assign(
+                        3,
+                        Expr::Load {
+                            addr: Box::new(Expr::reg(RSP, 64)),
+                            width: 8,
+                            signed: false,
+                        },
+                    ),
+                    adjust(16),
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            );
+            elide_callee_saves(&mut ir);
+            assert!(!ir.blocks[0].stmts.iter().any(|stmt| matches!(
+                stmt,
+                Stmt::Store { .. }
+                    | Stmt::Assign {
+                        dest: RegRef { index: 3, .. },
+                        ..
+                    }
+            )));
+            assert_eq!(
+                ir.blocks[0]
+                    .stmts
+                    .iter()
+                    .filter(|stmt| matches!(stmt,
+                Stmt::Assign { dest, .. } if dest.index == RSP))
+                    .count(),
+                if declared { 2 } else { 0 }
+            );
+        }
+    }
+
+    #[test]
+    fn deferred_call_memory_keeps_an_otherwise_dead_frame_store() {
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                store(0, Expr::Const(9), 8),
+                Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::Aapcs64,
+                    args: Some(Vec::new()),
+                    floats_named: true,
+                    clobbers: Some(Default::default()),
+                    outputs: Vec::new(),
+                    abi: Some(crate::ir::calls::test_call_abi(vec![31], true)),
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        let original = ir.blocks[0].stmts.clone();
+        drop_dead_frame_stores(&mut ir);
+        assert_eq!(format!("{:?}", ir.blocks[0].stmts), format!("{original:?}"));
+        if let Stmt::Call { abi, .. } = &mut ir.blocks[0].stmts[1] {
+            *abi = None;
+        }
+        drop_dead_frame_stores(&mut ir);
+        assert_eq!(ir.blocks[0].stmts.len(), 2);
+        assert!(matches!(ir.blocks[0].stmts[0], Stmt::Call { .. }));
     }
 }

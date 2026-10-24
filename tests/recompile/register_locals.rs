@@ -116,6 +116,7 @@ fn printed_implicit_call_output_keeps_its_high_bits() {
                 value: Expr::reg(7, 64),
             },
             Stmt::Call {
+                abi: None,
                 kind: velk::ir::CallKind::Invoke,
                 target: Some(0x1000),
                 through: None,

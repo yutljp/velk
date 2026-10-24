@@ -1131,6 +1131,9 @@ pub(crate) fn apply_prototypes(ir: &mut FunctionIr, image: &crate::loader::Image
     let mut values = std::collections::BTreeMap::new();
     let mut variadic = std::collections::BTreeMap::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if stmt.has_declared_call() {
+            continue;
+        }
         let Stmt::Call {
             args: Some(args), ..
         } = stmt
@@ -1209,6 +1212,7 @@ mod tests {
                         Expr::Const(0xffff_ffff),
                     )]),
                     floats_named: true,
+                    abi: None,
                     outputs,
                     clobbers: None,
                     via: None,
@@ -1290,6 +1294,7 @@ mod tests {
                 convention: crate::ir::Convention::Aapcs64,
                 args: None,
                 floats_named: true,
+                abi: None,
                 outputs: Vec::new(),
                 clobbers: Some(Default::default()),
                 via: None,
@@ -1508,6 +1513,7 @@ mod tests {
                     convention: crate::ir::Convention::Aapcs64,
                     args,
                     floats_named: true,
+                    abi: None,
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
@@ -1541,6 +1547,7 @@ mod tests {
                 convention: crate::ir::Convention::Aapcs64,
                 args: Some(Vec::new()),
                 floats_named: true,
+                abi: None,
                 outputs: vec![crate::ir::CallOutput {
                     register: 1,
                     dest: crate::ir::RegRef {
@@ -1797,6 +1804,7 @@ mod tests {
             convention: crate::ir::Convention::Aapcs64,
             args: Some(vec![Expr::reg(0, 64), Expr::reg(1, 64), Expr::reg(2, 64)]),
             floats_named: true,
+            abi: None,
             outputs: vec![crate::ir::CallOutput {
                 register: 0,
                 dest: crate::ir::RegRef {
@@ -2336,6 +2344,7 @@ mod tests {
                             convention,
                             args: Some(Vec::new()),
                             floats_named: true,
+                            abi: None,
                             outputs,
                             clobbers: None,
                             via: None,
@@ -2365,6 +2374,7 @@ mod tests {
                     convention: crate::ir::Convention::SysV,
                     args: Some(Vec::new()),
                     floats_named: true,
+                    abi: None,
                     outputs: crate::ir::fallback_call_outputs(
                         crate::ir::Convention::SysV,
                         Some([0].into_iter().collect()),
@@ -2401,5 +2411,36 @@ mod tests {
         assert!(evidence(&[]));
         assert!(evidence(&[Cond::Lt, Cond::Cc]));
         assert!(!evidence(&[Cond::Lt, Cond::Cc, Cond::Hi]));
+    }
+    #[test]
+    fn declared_calls_do_not_offer_positional_library_argument_types() {
+        use crate::ir::{Convention, VARIABLE_BASE};
+        let mut image = crate::loader::Image::from_code(Isa::AArch64, 0, Vec::new());
+        image.imports.insert(0x1000, "free".to_owned());
+        for attached in [false, true] {
+            let mut call = crate::lift::call_through(
+                crate::ir::CallKind::Invoke,
+                &image,
+                Expr::Load {
+                    addr: Box::new(Expr::Const(0x1000)),
+                    width: 8,
+                    signed: false,
+                },
+            );
+            let Stmt::Call { args, abi, .. } = &mut call else {
+                unreachable!()
+            };
+            *args = Some(vec![Expr::reg(VARIABLE_BASE, 64)]);
+            *abi = attached.then(|| crate::ir::calls::test_call_abi(vec![0], false));
+            let mut ir = FunctionIr::single_block(Isa::AArch64, vec![call]);
+            ir.convention = Convention::Aapcs64;
+            let before = format!("{:?}", ir.blocks);
+            super::apply_prototypes(&mut ir, &image);
+            assert_eq!(
+                ir.value_types.get(&VARIABLE_BASE),
+                (!attached).then(|| CType::pointer_to(CType::Void)).as_ref()
+            );
+            assert_eq!(format!("{:?}", ir.blocks), before);
+        }
     }
 }

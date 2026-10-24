@@ -150,7 +150,10 @@ pub(super) fn demanded_bits(
             let abi = stmt.unnamed_call_reads();
             let sources = stmt.preserved_output_sources();
             for (register, value) in reads {
-                let needed = if !matches!(stmt, Stmt::Call { .. }) || abi.contains(register) {
+                let needed = if !matches!(stmt, Stmt::Call { .. })
+                    || abi.contains(register)
+                    || stmt.declared_call_reads().contains(register)
+                {
                     u64::MAX
                 } else {
                     sources

@@ -3,6 +3,7 @@
 use gimli::{AttributeValue, Dwarf, EndianSlice, LittleEndian, SectionId, Unit};
 
 use crate::ir::abi::TypeLayout;
+use crate::ir::calls::{CallMember, FunctionSource, TypeSource};
 use crate::ir::{AbiIssue, AbiProfile, CType, Definition, Member};
 use crate::loader::Image;
 
@@ -37,6 +38,8 @@ pub struct FunctionTypes {
     pub(crate) param_layouts: Vec<Result<TypeLayout, AbiIssue>>,
     pub(crate) ret_layout: Result<Option<TypeLayout>, AbiIssue>,
     pub(crate) abi_profile: Result<AbiProfile, AbiIssue>,
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) source: FunctionSource,
 }
 
 fn attribute<'a>(
@@ -143,6 +146,9 @@ fn aggregate_size(
 }
 
 pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
+    if image.byte_order() != Some(object::Endianness::Little) {
+        return None;
+    }
     let dwarf = Dwarf::load(|id| -> Result<EndianSlice<'_, LittleEndian>, ()> {
         Ok(EndianSlice::new(section(image, id), LittleEndian))
     });
@@ -183,10 +189,18 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             };
             let mut registers = Vec::new();
             let locals = locals::read(image, &dwarf, &unit, entry, &mut registers);
+            let Some(function) = source_id(&unit, entry.offset()) else {
+                continue;
+            };
+            let result = match attribute(entry, gimli::DW_AT_type) {
+                Some(AttributeValue::UnitRef(offset)) => source_id(&unit, offset),
+                _ => None,
+            };
             let depth = entry.depth();
             let mut params = Vec::new();
             let mut param_aggregate_sizes = Vec::new();
             let mut param_layouts = Vec::new();
+            let mut parameters = Vec::new();
             let mut variadic = false;
             while let Ok(Some(child)) = entries.next_dfs() {
                 if child.depth() <= depth {
@@ -199,6 +213,10 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 if child.depth() != depth + 1 || child.tag() != gimli::DW_TAG_formal_parameter {
                     continue;
                 }
+                parameters.push(match attribute(child, gimli::DW_AT_type) {
+                    Some(AttributeValue::UnitRef(offset)) => source_id(&unit, offset),
+                    _ => None,
+                });
                 param_aggregate_sizes.push(match attribute(child, gimli::DW_AT_type) {
                     Some(AttributeValue::UnitRef(offset)) => aggregate_size(&unit, offset, 8),
                     _ => None,
@@ -234,6 +252,11 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 param_layouts,
                 ret_layout,
                 abi_profile,
+                source: FunctionSource {
+                    function,
+                    parameters,
+                    result,
+                },
             });
         }
     }
@@ -310,6 +333,17 @@ fn definitions(
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
     profile: Option<AbiProfile>,
 ) -> Vec<Definition> {
+    definitions_with_sources(dwarf, unit, profile)
+        .into_iter()
+        .map(|(_, definition, _)| definition)
+        .collect()
+}
+
+fn definitions_with_sources(
+    dwarf: &Dwarf<EndianSlice<'_, LittleEndian>>,
+    unit: &Unit<EndianSlice<'_, LittleEndian>>,
+    profile: Option<AbiProfile>,
+) -> Vec<(gimli::UnitOffset<usize>, Definition, Vec<CallMember>)> {
     let mut found = Vec::new();
     let mut entries = unit.entries();
     let mut aggregates = Vec::new();
@@ -336,6 +370,7 @@ fn definitions(
     'aggregates: for (offset, name, union, size) in aggregates {
         let keyword = if union { "union" } else { "struct" };
         let mut members = Vec::new();
+        let mut generated_members = Vec::new();
         let mut fields = Vec::new();
         let mut contains = Vec::new();
         let mut end = 0u64;
@@ -390,17 +425,35 @@ fn definitions(
                     {
                         contains.push(named.clone());
                     }
-                    fields.push(member_name);
-                    Some(declaration)
+                    fields.push(member_name.clone());
+                    let Some(ty) = source_id(unit, ty_offset) else {
+                        continue 'aggregates;
+                    };
+                    Some((
+                        declaration,
+                        CallMember::Field {
+                            name: member_name,
+                            ty,
+                            offset: at,
+                            bytes: width,
+                        },
+                    ))
                 }
                 _ => None,
             };
             if union {
-                members.extend(declared);
+                if let Some((declaration, member)) = declared {
+                    members.push(declaration);
+                    generated_members.push(member);
+                }
                 continue;
             }
             if at > end {
                 members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", at - end));
+                generated_members.push(CallMember::Bytes {
+                    offset: end,
+                    bytes: at - end,
+                });
             }
             let width = if declared.is_none() {
                 width.min(size.saturating_sub(at))
@@ -410,14 +463,34 @@ fn definitions(
             if width == 0 {
                 continue;
             }
-            members.push(declared.unwrap_or_else(|| format!("uint8_t gap_0x{at:x}[0x{width:x}];")));
+            match declared {
+                Some((declaration, member)) => {
+                    members.push(declaration);
+                    generated_members.push(member);
+                }
+                None => {
+                    members.push(format!("uint8_t gap_0x{at:x}[0x{width:x}];"));
+                    generated_members.push(CallMember::Bytes {
+                        offset: at,
+                        bytes: width,
+                    });
+                }
+            }
             end = at.saturating_add(width);
         }
         if !union && size > end {
             members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
+            generated_members.push(CallMember::Bytes {
+                offset: end,
+                bytes: size - end,
+            });
         }
         if union && members.is_empty() && size > 0 {
             members.push(format!("uint8_t gap_0x0[0x{size:x}];"));
+            generated_members.push(CallMember::Bytes {
+                offset: 0,
+                bytes: size,
+            });
         }
         if members.is_empty() {
             continue;
@@ -434,15 +507,19 @@ fn definitions(
             })
             .into_iter()
             .collect();
-        found.push(Definition {
-            name: format!("{keyword} {name}"),
-            members,
-            fields,
-            contains,
-            size,
-            alignment,
-            compatible_profiles,
-        });
+        found.push((
+            offset,
+            Definition {
+                name: format!("{keyword} {name}"),
+                members,
+                fields,
+                contains,
+                size,
+                alignment,
+                compatible_profiles,
+            },
+            generated_members,
+        ));
     }
     found
 }
@@ -670,6 +747,9 @@ fn attribute_offset(
 }
 
 pub fn functions(image: &Image) -> Vec<DwarfFunction> {
+    if image.byte_order() != Some(object::Endianness::Little) {
+        return Vec::new();
+    }
     let dwarf = Dwarf::load(|id| -> Result<EndianSlice<'_, LittleEndian>, ()> {
         Ok(EndianSlice::new(section(image, id), LittleEndian))
     });
@@ -745,5 +825,23 @@ pub fn functions(image: &Image) -> Vec<DwarfFunction> {
     functions
 }
 
+fn source_id(
+    unit: &Unit<EndianSlice<'_, LittleEndian>>,
+    offset: gimli::UnitOffset<usize>,
+) -> Option<TypeSource> {
+    Some(TypeSource {
+        unit: unit
+            .header
+            .offset()
+            .to_debug_info_offset(&unit.header)?
+            .0
+            .try_into()
+            .ok()?,
+        die: offset.0,
+    })
+}
+
+#[cfg(test)]
+pub(crate) mod calls;
 #[cfg(test)]
 mod tests;

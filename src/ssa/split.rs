@@ -245,7 +245,8 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             reads
                 .iter()
                 .filter(|(register, value)| {
-                    preserved.iter().any(|(_, source)| source == register)
+                    stmt.declared_call_reads().contains(register)
+                        || preserved.iter().any(|(_, source)| source == register)
                         || (!(floats.contains(register) && vectors.contains(value))
                             && !(extra.contains(register) && needed.contains(value)))
                 })
@@ -597,6 +598,7 @@ mod split_tests {
             convention: crate::ir::Convention::SysV,
             args: None,
             floats_named: false,
+            abi: None,
             clobbers: None,
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             via: None,

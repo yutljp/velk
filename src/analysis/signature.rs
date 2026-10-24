@@ -352,6 +352,12 @@ pub fn recover_with(
                     for value in through.iter().chain(args.iter().flatten()) {
                         reads(value, &mut used);
                     }
+                    for &source in stmt.declared_call_reads() {
+                        used.insert(source);
+                        if !written.contains(&source) {
+                            wide_inputs.insert(source);
+                        }
+                    }
                     for (output, source) in stmt.preserved_output_sources() {
                         let dest = stmt.call_outputs()[output].dest;
                         if dest.index == source && dest.width == 64 {
@@ -817,6 +823,11 @@ fn prototype_types(
 ) -> HashMap<u16, CType> {
     let mut offered: HashMap<u16, CType> = HashMap::new();
     origins.walk(blocks, &mut |stmt, origin| {
+        // A declared call's parameters are typed by its declaration, not
+        // by their position.
+        if stmt.has_declared_call() {
+            return;
+        }
         let Stmt::Call {
             args, convention, ..
         } = stmt
@@ -1733,6 +1744,7 @@ mod tests {
                     convention: Convention::GoAmd64,
                     args: Some(vec![Expr::reg(3, 64), Expr::reg(8, 64)]),
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::GoAmd64, None),
                     via: None,
@@ -1780,6 +1792,7 @@ mod tests {
         for read in [None, Some(3)] {
             let mut stmts = vec![
                 Stmt::Call {
+                    abi: None,
                     kind: if read.is_some() {
                         CallKind::Invoke
                     } else {
@@ -2141,6 +2154,7 @@ mod tests {
                     convention: Convention::Aapcs64,
                     args: Some(vec![]),
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                     via: None,
@@ -2268,6 +2282,7 @@ mod tests {
             convention: Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: true,
+            abi: None,
             outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
             clobbers: None,
             via: None,
@@ -2755,6 +2770,47 @@ mod tests {
                 cfg_stack(&blocks, &[(8, vec![(0, 8)])]),
                 if opaque { vec![] } else { vec![0] }
             );
+        }
+    }
+    #[test]
+    fn declared_calls_do_not_offer_positional_parameter_types() {
+        let image = crate::loader::Image::from_code(Isa::AArch64, 0, Vec::new());
+        for attached in [false, true] {
+            let mut call = crate::lift::call(
+                crate::ir::CallKind::Invoke,
+                &image,
+                &|_| Default::default(),
+                Some(0x1000),
+            );
+            let Stmt::Call {
+                args,
+                floats_named,
+                abi,
+                ..
+            } = &mut call
+            else {
+                unreachable!()
+            };
+            *args = Some(vec![Expr::reg(0, 64)]);
+            *floats_named = true;
+            *abi = attached.then(|| crate::ir::calls::test_call_abi(vec![0], false));
+            let signature = super::recover_with(
+                &[Block {
+                    start: 0,
+                    stmts: vec![call],
+                }],
+                &[],
+                Isa::AArch64,
+                Convention::Aapcs64,
+                false,
+                &|_| crate::analysis::prototypes::of("free", false),
+            );
+            let param = signature
+                .params
+                .iter()
+                .find(|param| param.index == 0)
+                .expect("forwarded parameter");
+            assert_eq!(param.ty.is_pointer(), !attached);
         }
     }
 }

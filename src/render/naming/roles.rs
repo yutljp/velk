@@ -355,6 +355,7 @@ mod tests {
 
     fn call(ir: &FunctionIr, target: u64, args: Vec<Expr>, dest: u16) -> Stmt {
         Stmt::Call {
+            abi: None,
             kind: CallKind::Invoke,
             target: Some(target),
             through: None,

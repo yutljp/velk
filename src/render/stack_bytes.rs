@@ -982,6 +982,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
             clobbers: None,
             floats_named: false,
+            abi: None,
             via: None,
         };
         let original = function(vec![call(load(4, 8)), Stmt::Ret { value: load(8, 8) }]);
@@ -1022,6 +1023,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
             clobbers: None,
             floats_named,
+            abi: None,
             via: None,
         };
         for (register, floats_named) in [(8, true), (32, false)] {
@@ -1080,6 +1082,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
             clobbers: None,
             floats_named,
+            abi: None,
             via: None,
         };
         for (physical, floats_named) in [(8, true), (32, false)] {

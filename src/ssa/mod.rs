@@ -301,6 +301,7 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                 let unnamed: Vec<u16> = match stmt {
                     Stmt::Call { .. } => {
                         let mut sources = stmt.unnamed_call_reads();
+                        sources.extend_from_slice(stmt.declared_call_reads());
                         sources.extend(
                             stmt.preserved_output_sources()
                                 .into_iter()
@@ -451,13 +452,26 @@ pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
 /// string's conversions take, where a constant format reaches the call.
 pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Image) {
     let variadic = |target: u64| {
-        let name = image.functions.get(&target)?.name.as_deref()?;
-        let prototype =
-            crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)?;
-        Some((prototype.fixed(), prototype.format?, prototype.scans))
+        let Some(name) = image
+            .functions
+            .get(&target)
+            .and_then(|function| function.name.as_deref())
+        else {
+            return None;
+        };
+        let Some(prototype) =
+            crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
+        else {
+            return None;
+        };
+        let Some(format) = prototype.format else {
+            return None;
+        };
+        Some((prototype.fixed(), format, prototype.scans))
     };
     let pending = ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-        matches!(stmt, Stmt::Call { target: Some(target), args: None, .. } if variadic(*target).is_some())
+        !stmt.has_declared_call()
+            && matches!(stmt, Stmt::Call { target: Some(target), args: None, .. } if variadic(*target).is_some())
     });
     if !pending {
         return;
@@ -468,6 +482,9 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
     let constants = sccp::constants(&ssa);
     for (block, contents) in ir.blocks.iter_mut().enumerate() {
         for (position, stmt) in contents.stmts.iter_mut().enumerate() {
+            if stmt.has_declared_call() {
+                continue;
+            }
             let Stmt::Call {
                 kind,
                 target: Some(target),
@@ -762,6 +779,7 @@ mod tests {
             convention: crate::ir::Convention::Aapcs64,
             args: Some(Vec::new()),
             floats_named: true,
+            abi: None,
             outputs: output_registers
                 .iter()
                 .map(|register| crate::ir::CallOutput {
@@ -1661,6 +1679,7 @@ mod tests {
                 convention: crate::ir::Convention::SysV,
                 args: Some(Vec::new()),
                 floats_named: true,
+                abi: None,
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
                 clobbers: None,
                 via: None,
@@ -1683,6 +1702,7 @@ mod tests {
                     convention: crate::ir::Convention::SysV,
                     args: Some(Vec::new()),
                     floats_named: false,
+                    abi: None,
                     outputs: crate::ir::fallback_call_outputs(
                         crate::ir::Convention::SysV,
                         clobbers,
@@ -1767,6 +1787,7 @@ mod tests {
                     convention: crate::ir::Convention::GoAbi0,
                     args: Some(Vec::new()),
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::GoAbi0, None),
                     via: None,
@@ -1805,6 +1826,7 @@ mod tests {
                     convention: crate::ir::Convention::GoAmd64,
                     args: Some(Vec::new()),
                     floats_named: false,
+                    abi: None,
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::GoAmd64, None),
                     via: None,
@@ -1987,6 +2009,7 @@ mod tests {
                         convention: crate::ir::Convention::SysV,
                         args: None,
                         floats_named: false,
+                        abi: None,
                         clobbers: None,
                         outputs: crate::ir::fallback_call_outputs(
                             crate::ir::Convention::SysV,
@@ -2015,5 +2038,328 @@ mod tests {
             };
             assert_eq!(args.last(), Some(&wanted), "{kind:?}");
         }
+    }
+    fn declared_call(dependencies: &[u16], deferred_memory: bool) -> Stmt {
+        let mut call = output_call(&[], &[]);
+        let Stmt::Call { abi, .. } = &mut call else {
+            unreachable!()
+        };
+        *abi = Some(crate::ir::calls::test_call_abi(
+            dependencies.to_vec(),
+            deferred_memory,
+        ));
+        call
+    }
+
+    #[test]
+    fn declared_inputs_are_strong_roots_without_new_operands() {
+        let mut call = output_call(&[38], &[]);
+        let Stmt::Call { abi, .. } = &mut call else {
+            unreachable!()
+        };
+        *abi = Some(crate::ir::calls::test_call_abi(vec![31, 38], true));
+        assert!(call.has_declared_call());
+        assert!(call.has_deferred_call_memory());
+        assert_eq!(call.declared_call_reads(), &[31, 38]);
+        assert!(call.operands().is_empty());
+        assert!(!call.unnamed_call_reads().contains(&38));
+        let (_, reads) = crate::ir::visit::statement_registers(&call);
+        assert!(reads.contains(&31) && reads.contains(&38));
+        let ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                call,
+                Stmt::Ret {
+                    value: Expr::Const(7),
+                },
+            ],
+        );
+        let ssa = build(&ir).unwrap();
+        verify(&ssa).unwrap();
+        for register in [31, 38] {
+            assert!(ssa.implicit_reads[&(0, 0)].contains(&(register, ssa.entry[&register])));
+            assert_eq!(entry_demands(&ir, &[]).unwrap()[&register], u64::MAX);
+        }
+        let mut fallback = ir.clone();
+        let Stmt::Call { abi, .. } = &mut fallback.blocks[0].stmts[0] else {
+            unreachable!()
+        };
+        *abi = None;
+        assert_eq!(entry_demands(&fallback, &[]).unwrap()[&38], 0);
+        let lowered = lower(&ssa);
+        assert_eq!(lowered.blocks[0].stmts[0].declared_call_reads(), &[31, 38]);
+        assert!(lowered.blocks[0].stmts[0].operands().is_empty());
+    }
+
+    #[test]
+    fn declared_inputs_capture_each_calls_current_value() {
+        let call = declared_call(&[38], false);
+        let ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(38, Expr::Const(0x1122_3344_5566_7788)),
+                call.clone(),
+                assign(38, Expr::Const(0x8877_6655_4433_2211)),
+                call,
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        let ssa = build(&ir).unwrap();
+        verify(&ssa).unwrap();
+        let captured = |position| {
+            ssa.implicit_reads[&(0, position)]
+                .iter()
+                .find(|(register, _)| *register == 38)
+                .unwrap()
+                .1
+        };
+        let first = captured(1);
+        let second = captured(3);
+        assert_ne!(first, second);
+        let constants = super::sccp::constants(&ssa);
+        assert_eq!(constants[&first], 0x1122_3344_5566_7788);
+        assert_eq!(constants[&second], 0x8877_6655_4433_2211);
+        for stmt in ssa.ir.blocks[0]
+            .stmts
+            .iter()
+            .filter(|stmt| stmt.has_declared_call())
+        {
+            assert_eq!(stmt.declared_call_reads(), &[38]);
+            assert!(!stmt.has_deferred_call_memory());
+        }
+    }
+
+    #[test]
+    fn declared_vector_and_extra_inputs_keep_their_physical_storage() {
+        let load = |offset: u64| Expr::Load {
+            addr: Box::new(Expr::Const(0x4000 + offset)),
+            width: 8,
+            signed: false,
+        };
+        let mut call = declared_call(&[8, 36], false);
+        let Stmt::Call { floats_named, .. } = &mut call else {
+            unreachable!()
+        };
+        *floats_named = false;
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(8, Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1))),
+                assign(36, load(0)),
+                assign(37, load(8)),
+                call,
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, Expr::reg(8, 64), Expr::reg(36, 64)),
+                },
+            ],
+        );
+        let setup = crate::ir::eval::Setup {
+            seed: 1,
+            convention: crate::ir::eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &[(0, 0x1234)],
+            memory: &[
+                (0x4000, 0x89ab_cdef_0123_4567),
+                (0x4008, 0xfedc_ba98_7654_3210),
+            ],
+            step_limit: 100,
+        };
+        let before = crate::ir::eval::run(&ir, &setup);
+        super::split_variables(&mut ir, &[8, 36, 37]);
+        for register in [8, 36] {
+            assert!(
+                ir.blocks[0].stmts.iter().any(
+                    |stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == register)
+                )
+            );
+        }
+        let call = ir.blocks[0]
+            .stmts
+            .iter()
+            .find(|stmt| stmt.has_declared_call())
+            .unwrap();
+        assert_eq!(call.declared_call_reads(), &[8, 36]);
+        assert_eq!(crate::ir::eval::run(&ir, &setup), before);
+    }
+
+    #[test]
+    fn declared_inputs_keep_all_phi_predecessors_in_the_required_register() {
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(0, 64),
+                    rhs: Expr::Const(0),
+                    target: 20,
+                }],
+            },
+            Block {
+                start: 10,
+                stmts: vec![
+                    assign(38, Expr::Const(0x1111)),
+                    Stmt::Br { target: Some(30) },
+                ],
+            },
+            Block {
+                start: 20,
+                stmts: vec![
+                    assign(38, Expr::Const(0x2222)),
+                    Stmt::Br { target: Some(30) },
+                ],
+            },
+            Block {
+                start: 30,
+                stmts: vec![
+                    declared_call(&[38], false),
+                    Stmt::Ret {
+                        value: Expr::Const(7),
+                    },
+                ],
+            },
+        ];
+        let before = ir.clone();
+        let ssa = build(&ir).unwrap();
+        verify(&ssa).unwrap();
+        let phi = ssa.phis[3]
+            .iter()
+            .find(|phi| ssa.register_of(phi.value) == 38)
+            .unwrap();
+        assert_eq!(phi.args.len(), 2);
+        assert_ne!(phi.args[0], phi.args[1]);
+        assert!(ssa.implicit_reads[&(3, 0)].contains(&(38, phi.value)));
+        super::split_variables(&mut ir, &[38]);
+        for block in [1, 2] {
+            assert!(
+                matches!(&ir.blocks[block].stmts[0], Stmt::Assign { dest, .. } if dest.index == 38)
+            );
+        }
+        for selected in [0, 1] {
+            let setup = crate::ir::eval::Setup {
+                seed: 2,
+                convention: crate::ir::eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[(0, selected)],
+                memory: &[],
+                step_limit: 100,
+            };
+            assert_eq!(
+                crate::ir::eval::run(&ir, &setup),
+                crate::ir::eval::run(&before, &setup)
+            );
+        }
+    }
+
+    #[test]
+    fn declared_input_load_producers_survive_dce_without_fallback_evaluation() {
+        let call = declared_call(&[38], true);
+        let mut fallback = call.clone();
+        let Stmt::Call { abi, .. } = &mut fallback else {
+            unreachable!()
+        };
+        *abi = None;
+        let load = assign(
+            38,
+            Expr::Load {
+                addr: Box::new(Expr::Const(0x4000)),
+                width: 8,
+                signed: false,
+            },
+        );
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                load,
+                call,
+                Stmt::Ret {
+                    value: Expr::Const(7),
+                },
+            ],
+        );
+        let fallback = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                fallback,
+                Stmt::Ret {
+                    value: Expr::Const(7),
+                },
+            ],
+        );
+        let setup = crate::ir::eval::Setup {
+            seed: 3,
+            convention: crate::ir::eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &[],
+            memory: &[(0x4000, 0x8123_4567_89ab_cdef)],
+            step_limit: 100,
+        };
+        let expected = crate::ir::eval::Outcome::Return {
+            value: 7,
+            calls: vec![crate::ir::eval::Call {
+                target: Some(0x1000),
+                arguments: Vec::new(),
+            }],
+            memory: (0x4000..0x4008)
+                .zip(0x8123_4567_89ab_cdefu64.to_le_bytes())
+                .collect(),
+        };
+        assert_eq!(crate::ir::eval::run(&fallback, &setup), expected);
+        assert_eq!(crate::ir::eval::run(&ir, &setup), expected);
+        crate::passes::dce::dce_flow(&mut ir);
+        assert!(
+            matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, value: Expr::Load { width: 8, .. } } if dest.index == 38)
+        );
+        assert!(ir.blocks[0].stmts[1].operands().is_empty());
+        assert_eq!(crate::ir::eval::run(&ir, &setup), expected);
+    }
+
+    #[test]
+    fn declared_calls_do_not_reconstruct_variadic_fallback_arguments() {
+        let mut image = crate::loader::Image::from_code(Isa::AArch64, 0x4000, b"%d\0".to_vec());
+        image.functions.insert(
+            0x1000,
+            crate::loader::Function {
+                addr: 0x1000,
+                size: None,
+                size_estimated: false,
+                name: Some("printf".to_owned()),
+                aliases: Vec::new(),
+                sources: Vec::new(),
+            },
+        );
+        let mut attached = declared_call(&[0], false);
+        let mut fallback = output_call(&[], &[]);
+        for call in [&mut attached, &mut fallback] {
+            let Stmt::Call { args, .. } = call else {
+                unreachable!()
+            };
+            *args = None;
+        }
+        let before = format!("{attached:?}");
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![
+                assign(0, Expr::Const(0x4000)),
+                attached,
+                fallback,
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        super::count_variadic_arguments(&mut ir, &image);
+        assert_eq!(format!("{:?}", ir.blocks[0].stmts[1]), before);
+        assert!(
+            matches!(&ir.blocks[0].stmts[2], Stmt::Call { args: Some(args), .. } if args.len() == 2)
+        );
     }
 }

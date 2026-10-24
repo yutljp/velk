@@ -314,6 +314,7 @@ fn object_provenance_preserves_printed_copy_behavior() {
                 ir.pointer_values.push(crate::ir::VARIABLE_BASE);
                 ir.value_types.insert(7, pointer);
                 prefix.push(Stmt::Call {
+                    abi: None,
                     kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
@@ -434,6 +435,7 @@ fn allocation_ranges_and_pointer_age_limit_copy_folding() {
             },
         );
         let call = Stmt::Call {
+            abi: None,
             kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
@@ -469,6 +471,7 @@ fn allocation_ranges_and_pointer_age_limit_copy_folding() {
             prefix.insert(
                 1,
                 Stmt::Call {
+                    abi: None,
                     kind: crate::ir::CallKind::Invoke,
                     target: Some(0x2000),
                     through: None,

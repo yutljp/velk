@@ -729,6 +729,7 @@ fn lift_instruction(
             args: None,
             // The kernel reads no floating-point register.
             floats_named: true,
+            abi: None,
             clobbers: None,
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallX86, None),
             via: None,

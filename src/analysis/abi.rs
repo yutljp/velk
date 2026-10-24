@@ -40,6 +40,12 @@ pub(crate) fn declaration(types: &FunctionTypes) -> Option<DeclaredSignature> {
     if !has_aggregate(types) {
         return None;
     }
+    Some(callee_declaration(types))
+}
+
+/// The declaration `types` give a function, whether or not it passes an
+/// aggregate.
+pub(crate) fn callee_declaration(types: &FunctionTypes) -> DeclaredSignature {
     let abi = (|| {
         let profile = types.abi_profile?;
         if types.variadic {
@@ -57,7 +63,7 @@ pub(crate) fn declaration(types: &FunctionTypes) -> Option<DeclaredSignature> {
         }
         allocate(profile, &arguments?, result.as_ref())
     })();
-    Some(DeclaredSignature {
+    DeclaredSignature {
         params: types
             .params
             .iter()
@@ -72,10 +78,10 @@ pub(crate) fn declaration(types: &FunctionTypes) -> Option<DeclaredSignature> {
         ret: types.ret.clone().unwrap_or(CType::Void),
         variadic: types.variadic,
         abi,
-    })
+    }
 }
 
-fn convention(profile: AbiProfile) -> Convention {
+pub(crate) fn convention(profile: AbiProfile) -> Convention {
     match profile {
         AbiProfile::SysV => Convention::SysV,
         AbiProfile::Aapcs64 => Convention::Aapcs64,
