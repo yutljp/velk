@@ -273,3 +273,44 @@ int main(void) {
 "#,
     );
 }
+
+#[test]
+fn a_pointer_followed_through_its_own_field_points_at_a_structure() {
+    // p = *a0; total = p->next_value; p = p->link; return total + p->value,
+    // as a walk along a list does.
+    let pointer = VARIABLE_BASE;
+    let total = VARIABLE_BASE + 1;
+    let mut ir = pointer_function(vec![
+        assign(pointer, load(Expr::reg(7, 64), 8, false)),
+        assign(total, load(at(pointer, 8), 8, false)),
+        assign(pointer, load(at(pointer, 0), 8, false)),
+        Stmt::Ret {
+            value: Expr::bin(
+                BinOp::Add,
+                Expr::reg(total, 64),
+                load(at(pointer, 8), 8, false),
+            ),
+        },
+    ]);
+    ir.name = Some("list_walk".into());
+    ir.ret_type = CType::U64;
+    recover(&mut ir);
+    let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(text.contains("->field_0x8"), "{text}");
+    assert!(!text.contains("*(uint64_t *)("), "{text}");
+    compile_and_run(
+        "list_walk",
+        &text,
+        r#"
+int main(void) {
+    _Static_assert(offsetof(struct list_walk_s1, field_0x8) == 8, "offset");
+    struct list_walk_s1 second = {0}, first = {0};
+    second.field_0x8 = 5;
+    first.field_0x0 = &second;
+    first.field_0x8 = 7;
+    uintptr_t head = (uintptr_t)&first;
+    return list_walk((void *)&head) != 12;
+}
+"#,
+    );
+}

@@ -90,7 +90,8 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
     // structure as a parameter does: a pointer a call returns, or one the
     // code loads from another structure.
     // One stepped by a constant walks an array instead, as a copy loop's
-    // pointer does.
+    // pointer does; one loaded from its own field, as a walk along a list
+    // is, still points at a structure each time.
     let stepped: HashSet<u16> = ir
         .blocks
         .iter()
@@ -101,7 +102,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
             };
             let mut reads = HashSet::new();
             crate::ir::visit::collect_reads(value, &mut reads);
-            (reads.contains(&dest.index) && !matches!(value, Expr::Reg { .. }))
+            (reads.contains(&dest.index) && !matches!(value, Expr::Reg { .. } | Expr::Load { .. }))
                 .then_some(dest.index)
         })
         .collect();
