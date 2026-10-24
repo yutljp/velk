@@ -314,3 +314,58 @@ int main(void) {
 "#,
     );
 }
+
+#[test]
+fn a_local_array_indexed_through_a_scaled_register_uses_its_elements() {
+    // p = *a0; offset = index << 4; p[offset].0 = 91; return p[offset].8,
+    // with the offset in a register of its own.
+    let pointer = VARIABLE_BASE;
+    let offset = VARIABLE_BASE + 1;
+    let field = |constant: u64| {
+        Expr::bin(
+            BinOp::Add,
+            Expr::bin(BinOp::Add, Expr::reg(pointer, 64), Expr::reg(offset, 64)),
+            Expr::Const(constant),
+        )
+    };
+    let mut ir = pointer_function(vec![
+        assign(pointer, load(Expr::reg(7, 64), 8, false)),
+        assign(
+            offset,
+            Expr::bin(BinOp::Shl, Expr::reg(6, 64), Expr::Const(4)),
+        ),
+        Stmt::Store {
+            addr: field(0),
+            value: Expr::Const(91),
+            width: 8,
+        },
+        Stmt::Ret {
+            value: load(field(8), 4, true),
+        },
+    ]);
+    ir.params.push(Param {
+        index: 6,
+        name: "index".into(),
+        ty: CType::U64,
+    });
+    ir.name = Some("scaled_array".into());
+    ir.ret_type = CType::U64;
+    recover(&mut ir);
+    let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(text.contains("[index].field_0x0 = 91;"), "{text}");
+    assert!(text.contains("[index].field_0x8"), "{text}");
+    compile_and_run(
+        "scaled_array",
+        &text,
+        r#"
+int main(void) {
+    _Static_assert(sizeof(struct scaled_array_s1) == 16, "stride");
+    struct scaled_array_s1 values[3] = {0};
+    values[2].field_0x8 = -17;
+    uintptr_t pointer = (uintptr_t)values;
+    if (scaled_array((void *)&pointer, 2) != (uint64_t)-17) return 1;
+    return values[0].field_0x0 != 0 || values[2].field_0x0 != 91;
+}
+"#,
+    );
+}

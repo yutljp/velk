@@ -106,7 +106,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
                 .then_some(dest.index)
         })
         .collect();
-    let touches = touches_of(ir);
+    let mut touches = touches_of(ir);
     let mut variables: Vec<u16> = touches
         .iter()
         .flat_map(|touch| {
@@ -149,7 +149,22 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         {
             continue;
         }
-        let (fields, size, aliases) = match array(ir, variable, true, &touches) {
+        let mut found = array(ir, variable, true, &touches);
+        // As for a parameter, an index scaled into a register of its own
+        // is put back into the addresses, where it shows the size.
+        if found.is_none()
+            && let Some(blocks) = inline_indexes(ir, variable, true)
+        {
+            let original = std::mem::replace(&mut ir.blocks, blocks);
+            let inlined = touches_of(ir);
+            found = array(ir, variable, true, &inlined);
+            if found.is_none() {
+                ir.blocks = original;
+            } else {
+                touches = inlined;
+            }
+        }
+        let (fields, size, aliases) = match found {
             Some(array) => {
                 let mut aliases = array.elements;
                 aliases.push(variable);
