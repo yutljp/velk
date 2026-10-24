@@ -38,6 +38,8 @@ mod forward_exits;
 mod frame_values;
 #[path = "recompile/go_stack.rs"]
 mod go_stack;
+#[path = "recompile/identical_exits.rs"]
+mod identical_exits;
 #[path = "recompile/ignored_result.rs"]
 mod ignored_result;
 #[path = "recompile/long_branches.rs"]

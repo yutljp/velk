@@ -21,6 +21,31 @@ pub fn render_with_dependencies(
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
+    let original = render_unmerged(ir, references, symbols, data_ranges);
+    let Some(merged) = super::structure::merge_exits::merged(ir) else {
+        return original;
+    };
+    let candidate = render_unmerged(&merged, references, symbols, data_ranges);
+    let lines = candidate.code.lines().count();
+    let gotos = candidate.code.matches("goto ").count();
+    let original_lines = original.code.lines().count();
+    let original_gotos = original.code.matches("goto ").count();
+    if lines <= original_lines
+        && gotos <= original_gotos
+        && (lines < original_lines || gotos < original_gotos)
+    {
+        candidate
+    } else {
+        original
+    }
+}
+
+fn render_unmerged(
+    ir: &FunctionIr,
+    references: &[Reference],
+    symbols: &Symbols,
+    data_ranges: &[(u64, u64)],
+) -> Rendered {
     let original = ir;
     let mut folded = ir.clone();
     for block in &mut folded.blocks {

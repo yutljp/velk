@@ -7,6 +7,7 @@ mod dominance;
 mod duplicate;
 #[cfg(test)]
 pub(crate) mod lower;
+pub(super) mod merge_exits;
 mod short_circuit;
 
 use std::borrow::Cow;
