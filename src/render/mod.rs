@@ -6,6 +6,7 @@ mod expr;
 mod function;
 mod globals;
 mod int;
+mod layouts;
 mod locals;
 mod naming;
 mod params;

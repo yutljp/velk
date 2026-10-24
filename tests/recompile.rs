@@ -3535,6 +3535,230 @@ fn segment_providers_need_an_adapter_and_do_not_replace_function_addresses() {
     std::fs::remove_dir_all(&scratch).ok();
 }
 
+#[test]
+fn printed_debug_structure_arrays_preserve_indices_and_widths() {
+    let mut candidates = Vec::new();
+    for case in 0..16 {
+        let name = format!("debug_array_{case}");
+        let index = if matches!(case, 2 | 14) {
+            Expr::SignExtend {
+                value: Box::new(Expr::reg(6, 32)),
+                width: 4,
+            }
+        } else {
+            Expr::reg(6, 64)
+        };
+        let stride = if case == 3 { 12 } else { 8 };
+        let product = Expr::bin(BinOp::Mul, index, Expr::Const(stride));
+        let product = if case == 2 {
+            Expr::SignExtend {
+                value: Box::new(Expr::bin(BinOp::And, product, Expr::Const(0xffff_ffff))),
+                width: 4,
+            }
+        } else {
+            product
+        };
+        let addr = Expr::bin(
+            BinOp::Add,
+            Expr::reg(7, 64),
+            Expr::bin(
+                BinOp::Add,
+                product,
+                Expr::Const(if case == 5 { 3 } else { 4 }),
+            ),
+        );
+        let mut ir = synthetic_ir(
+            &name,
+            vec![
+                Param {
+                    index: 7,
+                    name: "items".into(),
+                    ty: CType::pointer_to(CType::Named("struct item".into())),
+                },
+                Param {
+                    index: 6,
+                    name: "i".into(),
+                    ty: match case {
+                        1 => CType::I64,
+                        14 => CType::I32,
+                        _ => CType::U64,
+                    },
+                },
+            ],
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(addr),
+                    width: if case == 4 { 1 } else { 2 },
+                    signed: true,
+                },
+            }],
+        );
+        ir.definitions = vec![Definition {
+            name: "struct item".into(),
+            members: vec![
+                "int32_t count;".into(),
+                "int16_t kind;".into(),
+                "uint8_t gap_0x6[0x2];".into(),
+            ],
+            fields: vec!["count".into(), "kind".into()],
+            contains: vec![],
+            size: 8,
+            alignment: Some(4),
+            compatible_profiles: vec![AbiProfile::SysV],
+        }];
+        ir.members = vec![
+            Member {
+                structure: "item".into(),
+                offset: 0,
+                name: "count".into(),
+                ty: CType::I32,
+                width: 4,
+            },
+            Member {
+                structure: "item".into(),
+                offset: 4,
+                name: "kind".into(),
+                ty: CType::int(2, true),
+                width: 2,
+            },
+        ];
+        match case {
+            6 => ir.definitions[0].size = 0,
+            7 => ir.definitions[0].alignment = Some(1),
+            8 => ir.definitions[0].compatible_profiles.clear(),
+            9 => ir.members[1].offset = 3,
+            10 => ir.members[1].width = 1,
+            11 => ir.definitions.push(ir.definitions[0].clone()),
+            12 => ir.definitions[0].members[1] = "int16_t kind : 8;".into(),
+            13 => {
+                ir.definitions[0].name = "union choice".into();
+                ir.params[0].ty = CType::pointer_to(CType::Named("union choice".into()));
+            }
+            _ => {}
+        }
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        if !(2..14).contains(&case) {
+            assert!(code.contains("struct item {"), "{code}");
+        }
+        assert_eq!(
+            code.contains("].kind"),
+            !(2..14).contains(&case),
+            "{name}: {code}"
+        );
+        ir.params.push(Param {
+            index: 2,
+            name: "value".into(),
+            ty: CType::U64,
+        });
+        let Stmt::Ret {
+            value: Expr::Load { addr, .. },
+        } = &ir.blocks[0].stmts[0]
+        else {
+            unreachable!()
+        };
+        let addr = *addr.clone();
+        ir.blocks[0].stmts.insert(
+            0,
+            Stmt::Store {
+                addr,
+                value: Expr::reg(2, 64),
+                width: 2,
+            },
+        );
+        if case == 15 {
+            ir.params.push(Param {
+                index: 1,
+                name: "count".into(),
+                ty: CType::I32,
+            });
+            let count_addr = Expr::bin(
+                BinOp::Add,
+                Expr::reg(7, 64),
+                Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(8)),
+            );
+            ir.blocks[0].stmts.insert(
+                0,
+                Stmt::Store {
+                    addr: count_addr.clone(),
+                    value: Expr::reg(1, 32),
+                    width: 4,
+                },
+            );
+            let Some(Stmt::Ret { value }) = ir.blocks[0].stmts.last_mut() else {
+                unreachable!()
+            };
+            *value = Expr::bin(
+                BinOp::And,
+                Expr::bin(
+                    BinOp::Mul,
+                    value.clone(),
+                    Expr::Load {
+                        addr: Box::new(count_addr),
+                        width: 4,
+                        signed: false,
+                    },
+                ),
+                Expr::Const(0xffff_ffff),
+            );
+        }
+        let mut inputs = Vec::new();
+        for index in [0u64, 1, 2, u64::MAX, u64::MAX - 1] {
+            let index = if case == 2 {
+                index & 0xffff_ffff
+            } else {
+                index
+            };
+            for short in [0u64, 0x7fff, 0x8000, 0xffff] {
+                if case == 15 {
+                    for count in [0x7fff_ffff, 0x8000_0000, 0xffff_ffff] {
+                        inputs.push(vec![REGION + 0x8000, index, short, count]);
+                    }
+                } else {
+                    inputs.push(vec![REGION + 0x8000, index, short]);
+                }
+            }
+        }
+        if case == 2 {
+            inputs.push(vec![REGION + 0x8000, 0x2000_0001, 0x8000]);
+        }
+        if case < 2 {
+            for index in [0x1_0000_0001u64, 0xffff_fffe_ffff_ffff] {
+                inputs.push(vec![
+                    (REGION + 0x8000).wrapping_sub(index.wrapping_mul(8)),
+                    index,
+                    0x8000,
+                ]);
+            }
+        }
+        if case == 0 {
+            let mut address_ir = ir.clone();
+            address_ir.name = Some("debug_array_address".into());
+            address_ir.blocks[0].stmts = vec![Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::reg(7, 64),
+                    Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(8)),
+                ),
+            }];
+            let candidate = printed_candidate(address_ir, inputs.clone());
+            assert!(
+                candidate.code.contains("struct item {"),
+                "{}",
+                candidate.code
+            );
+            assert!(candidate.code.contains("items + i"), "{}", candidate.code);
+            candidates.push(candidate);
+        }
+        let mut candidate = printed_candidate(ir, inputs);
+        if !(2..14).contains(&case) {
+            candidate.code.push_str("\n_Static_assert(sizeof(struct item) == 8, \"size\");\n_Static_assert(offsetof(struct item, kind) == 4, \"offset\");\n");
+        }
+        candidates.push(candidate);
+    }
+    check_candidates("debug_arrays", candidates, Mode::Memory, &[]);
+}
+
 fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt>) -> FunctionIr {
     FunctionIr {
         isa: Isa::X86_64,

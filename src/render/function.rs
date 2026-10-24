@@ -313,7 +313,7 @@ fn render_with(
         }))
         .map(|member| ((member.structure.clone(), member.offset), member))
         .collect();
-    let arrays: HashMap<String, naming::Layout> = ir
+    let mut arrays: HashMap<String, naming::Layout> = ir
         .structures
         .iter()
         .filter_map(|structure| {
@@ -323,6 +323,7 @@ fn render_with(
             Some((structure.name.clone(), layout))
         })
         .collect();
+    super::layouts::add_debug(ir, &mut arrays);
     let scaled: std::collections::HashSet<u16> = ir
         .params
         .iter()
@@ -788,7 +789,7 @@ fn render_with(
             out = out.replacen(&definition, "", 1);
         }
     }
-    let debug = debug_definitions(ir, &out);
+    let debug = debug_definitions(ir, &out, &ctx.arrays);
     out.insert_str(definitions_at, &debug);
     Rendered {
         code: out,
@@ -876,9 +877,13 @@ fn defined(name: &str, members: &[String]) -> String {
 }
 
 /// The definitions from the debug info that the printed code needs to
-/// compile: those of the structures and unions it reaches a member of or
-/// holds by value, after those they hold by value in turn.
-fn debug_definitions(ir: &FunctionIr, code: &str) -> String {
+/// compile: those reached by member access, held by value, or sized for
+/// pointer arithmetic, after those they hold by value in turn.
+fn debug_definitions(
+    ir: &FunctionIr,
+    code: &str,
+    arrays: &HashMap<String, naming::Layout>,
+) -> String {
     let named = |name: &str| {
         code.match_indices(name).any(|(at, _)| {
             !code[at + name.len()..].starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
@@ -886,11 +891,16 @@ fn debug_definitions(ir: &FunctionIr, code: &str) -> String {
     };
     let needed = |definition: &crate::ir::Definition| {
         named(&definition.name)
-            && (definition.fields.iter().any(|field| {
-                code.contains(&format!("->{field}")) || code.contains(&format!(".{field}"))
-            }) || code
-                .match_indices(&format!("{} ", definition.name))
-                .any(|(at, _)| !code[at + definition.name.len() + 1..].starts_with('*')))
+            && (definition
+                .name
+                .strip_prefix("struct ")
+                .is_some_and(|name| arrays.contains_key(name))
+                || definition.fields.iter().any(|field| {
+                    code.contains(&format!("->{field}")) || code.contains(&format!(".{field}"))
+                })
+                || code
+                    .match_indices(&format!("{} ", definition.name))
+                    .any(|(at, _)| !code[at + definition.name.len() + 1..].starts_with('*')))
     };
     let mut ordered: Vec<&crate::ir::Definition> = Vec::new();
     fn place<'a>(

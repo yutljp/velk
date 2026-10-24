@@ -7,6 +7,7 @@
 == 0x2101d4 point_dot
 -- decompile
 /* velk pseudo-C: point_dot @ 0x2101d4 */
+struct point { _Alignas(4) int x; int y; };
 int point_dot(struct point *a, struct point *b) {
     uint64_t v1;
 

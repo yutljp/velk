@@ -30,6 +30,13 @@ fn rect_area @ 0x201240 (size 40)
 == 0x201270 record_total
 -- decompile
 /* velk pseudo-C: record_total @ 0x201270 */
+struct record {
+    _Alignas(8) char tag;
+    uint8_t gap_0x1[0x7];
+    long value;
+    short count;
+    uint8_t gap_0x12[0x6];
+};
 long record_total(struct record *items, int n) {
     int64_t v1;
     int64_t v3;

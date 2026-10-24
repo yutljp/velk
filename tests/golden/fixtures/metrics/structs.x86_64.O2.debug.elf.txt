@@ -30,6 +30,13 @@ fn rect_area @ 0x2011e0 (size 15)
 == 0x2011f0 record_total
 -- decompile
 /* velk pseudo-C: record_total @ 0x2011f0 */
+struct record {
+    _Alignas(8) char tag;
+    uint8_t gap_0x1[0x7];
+    long value;
+    short count;
+    uint8_t gap_0x12[0x6];
+};
 long record_total(struct record *items, int n) {
     int32_t v1;
     int64_t v2;
@@ -45,7 +52,7 @@ long record_total(struct record *items, int n) {
     v1 = n;
     if (n != 0x1) {
         v4 = v1 & 0x7ffffffe;
-        v5 = (uint8_t *)items + 0x28;
+        v5 = &items[0x1].count;
         v2 = 0x0;
         v3 = 0x0;
         do {
