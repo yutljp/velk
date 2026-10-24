@@ -290,6 +290,7 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     Some(format!(
         "{address} + {}",
         print_in(&rest, ctx, 64, ConstantUse::Hex)
+            .address_integer()
             .within(super::binding(BinOp::Add), true)
             .text
     ))

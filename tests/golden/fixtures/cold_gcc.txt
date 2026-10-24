@@ -15,7 +15,9 @@
 0x1290 240 lookup symtab,unwind
 0x1380 13 _fini symtab
 /* velk prelude */
-void main(void);
+uint64_t main();
+
+uint64_t velk_entry_stack_pointer(void);
 /* end velk prelude */
 
 == 0x1000 _init
@@ -200,6 +202,7 @@ fn main @ 0x1120 (size 124)
 -- decompile
 /* velk pseudo-C: _start @ 0x11a0 */
 int32_t _start(int64_t a0, int64_t a1, void *a2) {
+    uint64_t rsp = velk_entry_stack_pointer();
     uint64_t v1;
     int64_t v2;
     int64_t local_0; /* [sp+0] */
@@ -208,7 +211,7 @@ int32_t _start(int64_t a0, int64_t a1, void *a2) {
     v2 = local_0;
     local_0 = v1;
     local_1 = rsp;
-    __libc_start_main(main, v2, rsp + 8, 0, 0, a2);
+    __libc_start_main((void *)main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, void * a2)
@@ -275,7 +278,7 @@ void __do_global_dtors_aux(void) {
         return;
     }
     if (*__cxa_finalize_3ff8_u64 != 0) {
-        __cxa_finalize(*__dso_handle);
+        __cxa_finalize((void *)*__dso_handle);
     }
     deregister_tm_clones();
     *completed_0 = 1;
@@ -340,8 +343,8 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
         v2 = (void *)(local_1);
         local_2 = 0;
         local_0 = a1;
-        __snprintf_chk(local_1, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
-        fputs(local_1, *stderr_GLIBC_2_2_5);
+        __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
+        fputs((const char *)(local_1), (FILE *)*stderr_GLIBC_2_2_5);
         abort();
     }
     v2 = (void *)a0;
@@ -355,15 +358,15 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
         v3 = v3 + 0x1;
     } while (v3 != v5);
     local_0 = a1;
-    v8 = v2 + 0x8;
+    v8 = (uint32_t *)(v2 + 0x8);
     v4 = (uintptr_t)(v4 + (uint8_t *)v8);
-    __snprintf_chk(local_1, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
-    fputs(local_1, *stderr_GLIBC_2_2_5);
+    __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
+    fputs((const char *)(local_1), (FILE *)*stderr_GLIBC_2_2_5);
     do {
         v11 = v8[-1];
         v5 = (const char *)v8;
         v8 = v8 + 0x6;
-        __fprintf_chk(*stderr_GLIBC_2_2_5, 2, 0x201c, v5, v11);
+        __fprintf_chk((FILE *)*stderr_GLIBC_2_2_5, 2, (const char *)0x201c, v5, v11);
     } while ((uintptr_t)v8 != v4);
     abort();
 }

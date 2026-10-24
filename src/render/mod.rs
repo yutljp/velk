@@ -7,6 +7,7 @@ mod frame_registers;
 mod function;
 mod globals;
 mod int;
+mod jumps;
 mod layouts;
 mod locals;
 mod machine;

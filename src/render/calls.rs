@@ -33,6 +33,7 @@ pub(super) struct Outputs {
     pub(super) sources: HashMap<u16, String>,
     pub(super) declarations: Vec<String>,
     pub(super) temporary: String,
+    pub(super) dynamic_target: String,
     snapshot_sizes: std::cell::RefCell<HashSet<usize>>,
 }
 
@@ -118,6 +119,18 @@ impl Outputs {
             return outputs;
         }
         outputs.temporary = super::vacant_name("call_values", reserved);
+        if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            matches!(
+                stmt,
+                Stmt::Call {
+                    target: None,
+                    through: None,
+                    ..
+                }
+            )
+        }) {
+            outputs.dynamic_target = super::vacant_name("velk_dynamic_call_target", reserved);
+        }
         let incoming = crate::ir::cfg::live_in(ir);
         for (index, block) in ir.blocks.iter().enumerate() {
             let mut live = crate::ir::cfg::live_out(ir, &incoming, index);
@@ -262,13 +275,14 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         Some(Expr::Const(number)) => super::system_call_name(*convention, *number),
         _ => None,
     };
+    let values = args;
     let mut args: Vec<String> = args
         .iter()
         .flatten()
         .map(|arg| super::argument(arg, ctx))
         .collect();
     if let (Some(name), Some(first)) = (number, args.first_mut()) {
-        *first = format!("SYS_{name}");
+        *first = format!("{first} /* SYS_{name} */");
     }
     let callee = match (through, target) {
         _ if matches!(
@@ -297,8 +311,29 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             .functions
             .get(target)
             .map_or_else(|| format!("sub_{target:x}"), |name| super::sanitize(name)),
-        (None, None) => "sub_<dynamic>".to_owned(),
+        (None, None) => format!(
+            "((uint64_t (*)())(uintptr_t){}())",
+            ctx.call_outputs.dynamic_target
+        ),
     };
+    if let Some(prototype) = crate::analysis::prototypes::of(&callee, false) {
+        for ((text, value), ty) in args
+            .iter_mut()
+            .zip(values.iter().flatten())
+            .zip(&prototype.params)
+        {
+            if ty.is_sse_float() {
+                continue;
+            }
+            let pointer = ty.is_pointer().then(|| ty.to_string());
+            *text = super::conformed(
+                value,
+                super::expr::print_value_at(value, ctx, 64, false),
+                pointer.as_deref(),
+                ctx,
+            );
+        }
+    }
     format!("{callee}({})", args.join(", "))
 }
 

@@ -136,6 +136,8 @@ pub(super) fn stack_locals_with_roles(
     let base = Ctx {
         abi: None,
         call_outputs: Default::default(),
+        block_addresses: Default::default(),
+        jump_provider: String::new(),
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return: None,

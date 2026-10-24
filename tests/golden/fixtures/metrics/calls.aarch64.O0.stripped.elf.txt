@@ -10,6 +10,9 @@
 0x2104ec 120 - unwind,prologue
 0x210564 76 - unwind,prologue
 0x2105b0 316 - unwind,prologue
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void);
+/* end velk prelude */
 
 == 0x21031c -
 -- decompile
@@ -255,6 +258,7 @@ fn <unnamed> @ 0x210564 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2105b0 @ 0x2105b0 */
 int32_t sub_2105b0(int32_t a0, ...) {
+    uint64_t sp = velk_entry_stack_pointer();
     int32_t v2;
     int64_t v4;
     int32_t local_0; /* [sp-14] */

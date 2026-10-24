@@ -2,7 +2,7 @@ use super::{
     CType, Ctx, Expr, FunctionIr, HashMap, Locals, Node, Reference, Rendered, SegmentBase,
     SegmentBaseRead, Stmt, Symbols, abi, block_frames, calls, expr, globals, indent, int, naming,
     narrow_registers, params, render_expr, render_nodes, sanitize, stack_bytes, stack_pointer,
-    structure_best, type_of, variables,
+    type_of, variables,
 };
 
 pub fn render(
@@ -74,7 +74,12 @@ fn render_unmerged(
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
         variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
-    let nodes = structure_best(ir);
+    let (nodes, structured_ir) = super::structure::best_structure(ir);
+    let block_addresses = structured_ir
+        .blocks
+        .iter()
+        .map(|block| block.start)
+        .collect();
     let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
     let mut locals =
         super::locals::stack_locals_with_roles(ir, &frames, &variable_types, symbols, &roles);
@@ -182,7 +187,11 @@ fn render_unmerged(
             incoming: incoming.as_ref(),
             float_entries,
         },
-        PreparedBody { nodes, roles },
+        PreparedBody {
+            nodes,
+            roles,
+            block_addresses,
+        },
     )
 }
 
@@ -221,6 +230,7 @@ struct EntryStorage<'a> {
 
 struct PreparedBody {
     nodes: Vec<Node>,
+    block_addresses: std::collections::HashSet<u64>,
     roles: naming::roles::Roles,
 }
 
@@ -233,7 +243,11 @@ fn render_with(
     entry: EntryStorage<'_>,
     body: PreparedBody,
 ) -> Rendered {
-    let PreparedBody { mut nodes, roles } = body;
+    let PreparedBody {
+        mut nodes,
+        roles,
+        block_addresses,
+    } = body;
     let EntryStorage {
         logical,
         incoming,
@@ -668,6 +682,19 @@ fn render_with(
         reserved.push(call_outputs.temporary.clone());
     }
     reserved.extend(call_outputs.declarations.iter().cloned());
+    let exception_providers: Vec<_> = [
+        (crate::ir::EXCEPTION, "velk_exception_value"),
+        (crate::ir::SELECTOR, "velk_exception_selector"),
+    ]
+    .into_iter()
+    .map(|(index, base)| {
+        let provider = vacant_name(base, &mut call_reserved);
+        (index, format!("{provider}()"), provider)
+    })
+    .collect();
+    for (index, expression, _) in &exception_providers {
+        names.insert(*index, expression);
+    }
     let mut value_bits = int::value_bits(ir);
     for index in &float_entries {
         value_bits.remove(index);
@@ -684,6 +711,8 @@ fn render_with(
     let mut ctx = Ctx {
         abi: logical,
         call_outputs,
+        block_addresses,
+        jump_provider: vacant_name("velk_jump_target", &mut call_reserved),
         isa: ir.isa,
         void_return: ir.ret_type == CType::Void,
         float_return,
@@ -772,6 +801,13 @@ fn render_with(
         transfer_values: super::transfers::single_use_loads(ir),
         taken: Default::default(),
     };
+    for index in [crate::ir::EXCEPTION, crate::ir::SELECTOR] {
+        ctx.pointer_types.remove(&index);
+        ctx.element_types.remove(&index);
+        ctx.floats.remove(&index);
+        ctx.declared
+            .insert(index, declared(&CType::U64, false).expect("an integer"));
+    }
     if let Some(incoming) = incoming {
         ctx.pointer_types
             .insert(incoming.register, "unsigned char *".to_owned());
@@ -872,13 +908,48 @@ fn render_with(
     // A function whose address the body takes is declared ahead of it,
     // with no type known for it.
     let own = sanitize(&name);
+    let stack_name = crate::ir::reg_name(ir.isa, stack_pointer(ir.isa), 64);
+    let stack_provider = (!ctx.names.contains_key(&stack_pointer(ir.isa))
+        && variables::mentions(&body, &stack_name))
+    .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));
     let mut prototypes: String = ctx
         .taken
         .borrow()
         .iter()
         .filter(|taken| **taken != own)
-        .map(|taken| format!("void {taken}(void);\n"))
+        .map(|taken| {
+            if body.contains(&format!("{taken}(")) {
+                let ty = symbols
+                    .functions
+                    .iter()
+                    .find_map(|(address, name)| {
+                        (sanitize(name) == *taken)
+                            .then(|| symbols.function_returns.get(address))
+                            .flatten()
+                    })
+                    .cloned()
+                    .unwrap_or(CType::U64);
+                format!("{ty} {taken}();\n")
+            } else {
+                format!("void {taken}(void);\n")
+            }
+        })
         .collect();
+    if let Some(provider) = &stack_provider {
+        prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
+    }
+    for (_, _, provider) in &exception_providers {
+        if code_mentions(&body, provider) {
+            prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
+        }
+    }
+    let provider = &ctx.call_outputs.dynamic_target;
+    if !provider.is_empty() && code_mentions(&body, provider) {
+        prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
+    }
+    if code_mentions(&body, &ctx.jump_provider) {
+        prototypes.push_str(&format!("uint64_t {}(uint64_t);\n", ctx.jump_provider));
+    }
     for (_, _, provider, _) in &segment_bases {
         prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
     }
@@ -892,6 +963,11 @@ fn render_with(
         &super::prelude::section(&prototypes.replace("\n", "\n\n")),
     );
     let mut declared = 0;
+    if let Some(provider) = &stack_provider {
+        indent(1, &mut out);
+        out.push_str(&format!("uint64_t {stack_name} = {provider}();\n"));
+        declared += 1;
+    }
     if let Some(logical) = logical {
         for declaration in logical.declarations() {
             indent(1, &mut out);

@@ -70,6 +70,8 @@ mod register_locals;
 mod stack_arrays;
 #[path = "recompile/switches.rs"]
 mod switches;
+#[path = "recompile/syntax.rs"]
+mod syntax;
 #[path = "recompile/unsupported.rs"]
 mod unsupported;
 

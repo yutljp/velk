@@ -41,6 +41,8 @@ static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
 }
 #endif
 
+uint64_t velk_entry_stack_pointer(void);
+
 void square(void);
 
 void twice(void);
@@ -376,6 +378,7 @@ fn call_sum9 @ 0x210470 (size 8)
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x210478 */
 int32_t sum_varargs(int32_t a0, ...) {
+    uint64_t sp = velk_entry_stack_pointer();
     uint32_t *v1;
     int64_t v2;
     int32_t v3;

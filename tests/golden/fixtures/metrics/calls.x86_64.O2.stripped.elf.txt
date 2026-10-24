@@ -51,6 +51,8 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+
+uint64_t velk_entry_stack_pointer(void);
 /* end velk prelude */
 
 == 0x2012f0 -
@@ -413,6 +415,7 @@ fn <unnamed> @ 0x2014b0 (size 49)
 -- decompile
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
 int32_t sub_2014f0(int32_t a0, ...) {
+    uint64_t rsp = velk_entry_stack_pointer();
     uint64_t v1;
     int64_t v2;
     uint32_t *v3;

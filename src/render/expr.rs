@@ -10,6 +10,7 @@ pub(super) use memory::byte_pointer;
 pub(super) use memory::copy_address;
 use memory::{byte_sum, load};
 pub(crate) use memory::{local_plus_offset, slot_access};
+pub(super) use operation::bits_float;
 pub(super) use operation::float_bits;
 pub(crate) use operation::float_operand;
 use operation::operation;
@@ -45,6 +46,8 @@ pub(super) struct ParameterRead {
 pub(crate) struct Ctx<'a> {
     pub(super) abi: Option<&'a super::abi::Plan>,
     pub(super) call_outputs: super::calls::Outputs,
+    pub(super) block_addresses: std::collections::HashSet<u64>,
+    pub(super) jump_provider: String,
     pub(super) isa: Isa,
     /// The function returns nothing: a `return` carries no value.
     pub(super) void_return: bool,
@@ -142,7 +145,14 @@ impl Ctx<'_> {
                 .sources
                 .get(&index)
                 .cloned()
-                .unwrap_or_else(|| reg_name(self.isa, index, width)),
+                .unwrap_or_else(|| {
+                    let width = if index == crate::arch::stack_pointer(self.isa) {
+                        64
+                    } else {
+                        width
+                    };
+                    reg_name(self.isa, index, width)
+                }),
         }
     }
 }
@@ -512,12 +522,9 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
             };
             let negated = widened(integral(rhs, ctx, bits), rhs, bits, keeps);
             let exact = keeps(&negated);
-            Printed::new(
-                format!("-{}", negated.within(12, false).text),
-                negated.ty,
-                exact,
-                12,
-            )
+            let operand = negated.within(12, false).text;
+            let separator = if operand.starts_with('-') { " " } else { "" };
+            Printed::new(format!("-{separator}{operand}"), negated.ty, exact, 12)
         }
         Expr::Bin {
             op: BinOp::Xor,
@@ -984,9 +991,7 @@ fn widen(printed: Printed, constant: bool, unsigned: bool) -> Printed {
 fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
     let text = ctx.register(index, width);
     let read = u32::from(width);
-    if ctx.bit_values()
-        && let Some(precision) = ctx.floats.get(&index)
-    {
+    if let Some(precision) = ctx.floats.get(&index) {
         let bits = float_bits(text, *precision);
         return if read < u32::from(precision.bits()) {
             bits.cast(read, false, ALL)

@@ -439,7 +439,10 @@ fn macho_stubs_name_their_imports() {
     );
     let code = decompiled(&mut binary, "_f");
     assert!(code.contains("void f("), "{code}");
-    assert!(code.contains("    memset_pattern16(local_"), "{code}");
+    assert!(
+        code.contains("    memset_pattern16((void *)(local_"),
+        "{code}"
+    );
     assert!(!code.contains("= memset_pattern16"), "{code}");
     assert!(!code.contains("return memset_pattern16"), "{code}");
     assert!(compiles(&code));

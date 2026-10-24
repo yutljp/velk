@@ -40,6 +40,8 @@ static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+
+uint64_t velk_entry_stack_pointer(void);
 /* end velk prelude */
 
 == 0x2102c4 -
@@ -340,6 +342,7 @@ fn <unnamed> @ 0x210428 (size 64)
 -- decompile
 /* velk pseudo-C: sub_210468 @ 0x210468 */
 int32_t sub_210468(int32_t a0, ...) {
+    uint64_t sp = velk_entry_stack_pointer();
     uint32_t *v1;
     int64_t v2;
     int32_t v3;

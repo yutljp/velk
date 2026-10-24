@@ -10,6 +10,9 @@
 0x2014a0 78 - unwind,prologue
 0x2014f0 80 - unwind,prologue
 0x201540 296 - unwind,prologue
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void);
+/* end velk prelude */
 
 == 0x201310 -
 -- decompile
@@ -250,6 +253,7 @@ fn <unnamed> @ 0x2014f0 (size 80)
 struct S1 { int32_t field_0x0; int32_t field_0x4; int64_t field_0x8; int64_t field_0x10; };
 struct S2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };
 int32_t sub_201540(int32_t a0, ...) {
+    uint64_t rsp = velk_entry_stack_pointer();
     struct S1 *v1;
     uint32_t v2;
     struct S2 *v3;

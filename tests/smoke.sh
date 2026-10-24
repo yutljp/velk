@@ -641,7 +641,7 @@ ok "Mach-O objects"
 # 18b) landing pads from the exception tables
 pad=$($BIN --decompile tests/fixtures/rust_probe_stripped 0x4d240)
 echo "$pad" | grep -q 'landing pad: an exception thrown by a call at 0x4d24a-0x4d250' || fail "landing pad note"
-echo "$pad" | grep -q '_Unwind_Resume(exception);' || fail "landing pad exception"
+echo "$pad" | grep -Fq '_Unwind_Resume((void *)velk_exception_value());' || fail "landing pad exception"
 ok "landing pads"
 
 # 18c) indirect calls whose callee read-only tables fix

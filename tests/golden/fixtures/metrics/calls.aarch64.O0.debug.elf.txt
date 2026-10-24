@@ -11,6 +11,8 @@
 0x210564 76 call_sum9 symtab,dwarf,unwind
 0x2105b0 316 sum_varargs symtab,dwarf,unwind
 /* velk prelude */
+uint64_t velk_entry_stack_pointer(void);
+
 void square(void);
 
 void twice(void);
@@ -267,6 +269,7 @@ struct __va_list {
     int __vr_offs;
 };
 int sum_varargs(int count, ...) {
+    uint64_t sp = velk_entry_stack_pointer();
     int32_t v2;
     int64_t v4;
     int32_t count_2; /* [sp-14] */

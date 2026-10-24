@@ -2,6 +2,9 @@
 0x0 28 - prologue
 0x1c 8 - prologue
 0x24 24 - prologue
+/* velk prelude */
+uint64_t velk_dynamic_call_target(void);
+/* end velk prelude */
 
 == 0x0 -
 -- decompile
@@ -25,7 +28,7 @@ fn <unnamed> @ 0x0 (size 28)
 /* velk pseudo-C: sub_1c @ 0x1c */
 int32_t sub_1c(int32_t a0) {
     a0 += 2;
-    return sub_<dynamic>();
+    return ((uint64_t (*)())(uintptr_t)velk_dynamic_call_target())();
 }
 -- signature
 int32_t (int32_t a0)

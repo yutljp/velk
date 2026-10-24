@@ -50,6 +50,7 @@ save area below the stack pointer at entry.
 | `src/render/` units | Pointer/integer distinctions, real member access, truth values, floating mask preconditions, segment-base bindings, saved-parameter overlap and load/store order | Expected typed pseudo-C and recognition controls |
 | `tests/loader.rs` | Section allocation, relocation, nested DWARF member type/width/ownership | Input metadata and declared layout |
 | `tests/recompile.rs` | Generated C results and memory effects | IR outcomes and independent scalar/byte expectations |
+| `tests/recompile/syntax.rs` | Syntax of every discovered fixture function, including functions excluded from execution tests | Clang syntax checks and focused compiled examples |
 | `tests/invariants.rs` | Missing destinations, undefined register reads, omitted statements | Recorded structural properties |
 | `tests/metrics.rs` | Function discovery and inferred parameter/return information | Debug information |
 | `tests/golden.rs` | Function lists, pseudo-C, IR, signatures, summaries, output metrics | Recorded golden files |
@@ -57,6 +58,34 @@ save area below the stack pointer at entry.
 | `tests/robustness.rs` and related units | Damaged inputs do not panic | Runtime checks |
 | `tests/smoke.sh` | CLI, MCP, selected output, and local performance | Output checks and benchmark thresholds |
 | `tests/ladder.sh` | Behavior by difficulty, including known unfinished targets | `tests/expect/ladder.tsv` |
+
+The exhaustive syntax scan is ignored by default. Run it with:
+
+```bash
+CARGO_BUILD_JOBS=2 CARGO_PROFILE_RELEASE_INCREMENTAL=true cargo test --release --test recompile syntax::every_fixture_function_compiles -- --ignored --test-threads 3
+```
+
+It checks each function separately with `-fsyntax-only` and
+`-Werror=implicit-function-declaration`. The wrapper supplies integer types,
+opaque library types, and external callee declarations. Known callees retain
+their recorded return types; unknown callees use an unspecified parameter
+list and a 64-bit integer result. The wrapper includes `<stdlib.h>` so
+allocation calls use the library's pointer-returning prototypes instead of
+declarations inferred from compiler diagnostics. Host compiler builtins are disabled so
+library names do not impose the host's signatures on the target. On macOS,
+Clang uses the x86-64 target to support the emitted x86 intrinsic headers.
+The scan reports compilation counts per fixture, the first error for every
+failure, and functions that could not be decompiled. Reports and rejected C
+sources are saved below the test's temporary directory in `target/`.
+Small fixtures and selected large-function regressions run in the normal suite.
+
+Syntax checks do not validate unknown callee signatures or execute the
+functions. Unresolved stack, exception, call-target, and jump state uses
+explicit external bindings. These bindings must implement the target's
+execution context. The jump adapter executes the supplied destination in
+that context and returns its raw result bits; it does not infer a C calling
+convention for the destination. Focused execution tests supply controlled
+bindings, while whole-fixture syntax checks only require their declarations.
 
 `tests/golden/casts.txt` records output lines and five disjoint cast counts
 over every function in each fixture, including runtime functions. It uses

@@ -398,11 +398,11 @@ mod tests {
         symbols.data.insert(99, "len".into());
         let text = crate::render::render(&ir, &[], &symbols, &[]);
         assert!(text.contains("*s)"), "{text}");
-        assert!(text.contains("len_2 = strlen(s);"), "{text}");
+        assert!(text.contains("len_2 = strlen((const char *)s);"), "{text}");
         assert!(text.contains("len_2 +"), "{text}");
         ir.params[0].name = "text".into();
         let text = crate::render::render(&ir, &[], &symbols, &[]);
-        assert!(text.contains("strlen(text)"), "{text}");
+        assert!(text.contains("strlen((const char *)text)"), "{text}");
     }
 
     #[test]

@@ -92,7 +92,8 @@ pub(super) fn conformed(
     match pointer {
         Some(ty)
             if printed.is_pointer()
-                && ((matches!(value, Expr::Const(_) | Expr::Select { .. })
+                && (((matches!(value, Expr::Const(_) | Expr::Select { .. })
+                    || (matches!(value, Expr::Bin { .. }) && ty.trim_end() != "void *"))
                     && naming::pointer_target(value, ctx).is_none())
                     || naming::pointer_target(value, ctx).is_some_and(|target| {
                         CType::pointer_to(target).to_string().trim_end() != ty.trim_end()
@@ -263,7 +264,10 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             }
             // The stack pointer moving reads as arithmetic, not a local's address.
             if dest.index == crate::arch::stack_pointer(ctx.isa) {
-                return format!("{target} = {};", render_expr(value, ctx));
+                return format!(
+                    "{target} = {};",
+                    expr::print_address(value, ctx).address_integer().text
+                );
             }
             // C keeps of the value what the destination is declared to hold.
             let declared = ctx.declared.get(&dest.index);
@@ -430,21 +434,22 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             rhs,
             target,
         } => format!(
-            "if ({}) {{ goto L_{:x}; }}",
+            "if ({}) {{ {} }}",
             condition(*cond, lhs, rhs, ctx),
-            target
+            super::jumps::branch(*target, ctx)
         ),
         Stmt::BrifFlags { cond, target } => {
-            format!("if (/* {} */ true) {{ goto L_{:x}; }}", cond.text(), target)
+            format!(
+                "if (/* {} */ true) {{ {} }}",
+                cond.text(),
+                super::jumps::branch(*target, ctx)
+            )
         }
         Stmt::Br { target } => match target {
-            Some(target) => format!("goto L_{target:x};"),
+            Some(target) => super::jumps::branch(*target, ctx),
             None => "goto <dynamic>;".to_owned(),
         },
-        Stmt::BrIndirect { target } => {
-            let target = render_value(target, ctx);
-            format!("goto *({target});")
-        }
+        Stmt::BrIndirect { target } => super::jumps::indirect(target, ctx),
         Stmt::Switch {
             index,
             cases,
@@ -461,12 +466,18 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 }
                 let values: Vec<i64> = cases[start..end].iter().map(|(value, _)| *value).collect();
                 for label in case_labels(&values, printed.ty.signed) {
-                    text.push_str(&format!("    {label}: goto L_{target:x};\n"));
+                    text.push_str(&format!(
+                        "    {label}: {}\n",
+                        super::jumps::branch(target, ctx)
+                    ));
                 }
                 start = end;
             }
             if let Some(target) = default {
-                text.push_str(&format!("    default: goto L_{target:x};\n"));
+                text.push_str(&format!(
+                    "    default: {}\n",
+                    super::jumps::branch(*target, ctx)
+                ));
             }
             text.push('}');
             text

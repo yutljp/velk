@@ -41,6 +41,9 @@ pub(crate) fn float_operand(
                 Precision::Double => f64::from_bits(*bits),
                 Precision::Single => f64::from(f32::from_bits(*bits as u32)),
             };
+            if !value.is_finite() {
+                return bits_float(print(expr, ctx, 64), precision);
+            }
             let text = if value.is_finite() && value == value.trunc() && value.abs() < 1e15 {
                 format!("{value:.1}")
             } else {
@@ -123,7 +126,7 @@ pub(crate) fn float_operand(
     }
 }
 
-pub(super) fn bits_float(bits: Printed, precision: Precision) -> String {
+pub(in crate::render) fn bits_float(bits: Printed, precision: Precision) -> String {
     let (float, integer) = match precision {
         Precision::Single => ("float", "uint32_t"),
         Precision::Double => ("double", "uint64_t"),

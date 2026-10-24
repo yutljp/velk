@@ -52,6 +52,8 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
 }
 #endif
 
+uint64_t velk_entry_stack_pointer(void);
+
 void square(void);
 
 void twice(void);
@@ -418,6 +420,7 @@ fn call_sum9 @ 0x2014b0 (size 49)
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x2014f0 */
 int sum_varargs(int count, ...) {
+    uint64_t rsp = velk_entry_stack_pointer();
     uint64_t v1;
     int64_t v2;
     uint32_t *v3;

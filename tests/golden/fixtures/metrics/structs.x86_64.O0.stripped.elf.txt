@@ -7,6 +7,9 @@
 0x201370 13 - unwind,prologue
 0x201380 59 - unwind,prologue
 0x2013c0 36 - unwind,prologue
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void);
+/* end velk prelude */
 
 == 0x201240 -
 -- decompile
@@ -129,6 +132,7 @@ struct sub_201350_a0 {
 };
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 int64_t sub_201350(struct sub_201350_a0 a0) {
+    uint64_t rsp = velk_entry_stack_pointer();
     struct S1 *v1;
 
     v1 = (struct S1 *)(rsp + 8);
