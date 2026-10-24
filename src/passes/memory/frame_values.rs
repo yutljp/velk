@@ -63,17 +63,6 @@ fn process(
     promoted: &mut bool,
     call_frames: &[Vec<Option<i64>>],
 ) {
-    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-        matches!(
-            stmt,
-            Stmt::Machine {
-                instruction: crate::ir::MachineInstruction::Atomic { .. },
-                ..
-            }
-        )
-    }) {
-        return;
-    }
     let sp = crate::arch::stack_pointer(ir.isa);
     if ir.blocks.is_empty() || super::frame_address_escapes(ir, sp) {
         return;
@@ -574,7 +563,7 @@ fn forward_value(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
     }
 }
 
-fn full_frame_register(expr: &Expr, sp: u16) -> bool {
+pub(super) fn full_frame_register(expr: &Expr, sp: u16) -> bool {
     match expr {
         Expr::Reg { index, width } if *index == sp => *width == 64,
         _ => crate::ir::visit::children(expr)
@@ -613,6 +602,13 @@ fn invalidate(stmt: &Stmt, frame: i64, sp: u16, values: &mut Values) {
             values.retain(|(stored, _, _)| *stored != offset);
         }
         _ => {
+            if super::atomic(stmt) {
+                values.retain(|(offset, width, _)| {
+                    offset
+                        .checked_add(i64::from(*width))
+                        .is_some_and(|end| end <= 0)
+                });
+            }
             let writes = crate::ir::visit::statement_registers(stmt).0;
             values.retain(|(_, _, value)| {
                 let mut reads = HashSet::new();

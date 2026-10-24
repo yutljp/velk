@@ -33,7 +33,21 @@ pub(super) fn render(
                 8 => "uint64_t",
                 _ => "unsigned __int128",
             };
-            let ptr = format!("({ty} *)({})", input(0));
+            let ptr = if crate::render::naming::pointer_target(&inputs[0], ctx)
+                == Some(crate::ir::CType::int(width, false))
+            {
+                input(0)
+            } else {
+                format!("({ty} *)({})", input(0))
+            };
+            let operand = || {
+                let value = super::expr::print(&inputs[1], ctx, 64);
+                if value.is_pointer() {
+                    value.address_integer().text
+                } else {
+                    input(1)
+                }
+            };
             let order = ordering.builtin();
             if op == AtomicOp::CompareExchange && outputs.len() == 2 {
                 let expected = super::vacant_name("expected", &mut reserved);
@@ -52,7 +66,7 @@ pub(super) fn render(
             match op {
                 AtomicOp::Load => format!("{} = __atomic_load_n({ptr}, {order});", output(0)),
                 AtomicOp::Store => {
-                    format!("__atomic_store_n({ptr}, ({ty})({}), {order});", input(1))
+                    format!("__atomic_store_n({ptr}, {}, {order});", operand())
                 }
                 AtomicOp::CompareExchange => {
                     let expected = super::vacant_name("expected", &mut reserved);
@@ -79,9 +93,9 @@ pub(super) fn render(
                         _ => "exchange_n",
                     };
                     format!(
-                        "{} = __atomic_{name}({ptr}, ({ty})({}), {order});",
+                        "{} = __atomic_{name}({ptr}, {}, {order});",
                         output(0),
-                        input(1)
+                        operand()
                     )
                 }
             }

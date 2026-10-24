@@ -23,8 +23,8 @@ cpp_virtual_a64.elf: 3
 cpp_virtual_a64_stripped.elf: 3
 cpp_virtual_x64.elf: 3
 cpp_virtual_x64_stripped.elf: 3
-go_probe: 671
-go_stripped: 671
+go_probe: 676
+go_stripped: 676
 l0_arith_a64.o: 0
 l0_arith_x64.o: 0
 l1_branch_a64.o: 0

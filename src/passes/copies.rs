@@ -17,6 +17,8 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
         .map(|index| live_out(ir, &live_in, index))
         .collect();
     let params = parameters(ir);
+    let sp = crate::arch::stack_pointer(ir.isa);
+    let private_frame = super::memory::fixed_private_frame(ir, sp);
     for (position, block) in ir.blocks.iter_mut().enumerate() {
         let mut index = 0;
         while index < block.stmts.len() {
@@ -44,6 +46,13 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
             for position in index + 1..block.stmts.len() {
                 let stmt = &block.stmts[position];
                 if use_at.is_none()
+                    && super::memory::atomic(stmt)
+                    && !super::memory::crosses_atomic(&value, sp, private_frame)
+                {
+                    clobbered = true;
+                    break;
+                }
+                if use_at.is_none()
                     && loads
                     && matches!(
                         stmt,
@@ -52,6 +61,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                             | Stmt::Unsupported { .. }
                             | Stmt::Machine { .. }
                     )
+                    && !super::memory::atomic(stmt)
                     && !statement_reads(stmt).contains(&dest)
                 {
                     clobbered = true;
@@ -224,13 +234,15 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
         .map(|index| live_out(ir, &live_in, index))
         .collect();
     let params = parameters(ir);
+    let sp = crate::arch::stack_pointer(ir.isa);
+    let private_frame = super::memory::fixed_private_frame(ir, sp);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
         if opaque(block) {
             continue;
         }
         let mut outer = reads_elsewhere(&reads, index);
         outer.extend(live_out[index].iter().copied());
-        copy_propagate_block(block, &outer, &params, avoid_duplication);
+        copy_propagate_block(block, &outer, &params, avoid_duplication, sp, private_frame);
     }
 }
 
@@ -281,6 +293,8 @@ fn copy_propagate_block(
     outer_reads: &std::collections::HashSet<u16>,
     params: &std::collections::HashSet<u16>,
     avoid_duplication: bool,
+    sp: u16,
+    private_frame: bool,
 ) {
     let mut index = 0;
     while index < block.stmts.len() {
@@ -326,14 +340,8 @@ fn copy_propagate_block(
         let mut consumer = None;
         let mut foldable = true;
         for later in index + 1..block.stmts.len() {
-            if reads_memory(&template)
-                && matches!(
-                    &block.stmts[later],
-                    Stmt::Machine {
-                        instruction: crate::ir::MachineInstruction::Atomic { .. },
-                        ..
-                    }
-                )
+            if super::memory::atomic(&block.stmts[later])
+                && !super::memory::crosses_atomic(&template, sp, private_frame)
             {
                 foldable = false;
                 break;

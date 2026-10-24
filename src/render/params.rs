@@ -27,6 +27,12 @@ enum Source {
 
 fn fold(ir: &mut FunctionIr, param: u16) {
     let sp = stack_pointer(ir.isa);
+    let atomics = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(crate::passes::memory::atomic);
+    let private_frame = crate::passes::memory::fixed_private_frame(ir, sp);
     // A slot whose address the code uses for anything but its own loads and
     // stores may change unseen, and a call of unknown arguments may read one
     // as an argument, so then only registers count.
@@ -37,7 +43,12 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             .flat_map(|block| &block.stmts)
             .any(|stmt| matches!(stmt, Stmt::Call { args: None, .. }));
     let slot_of = |addr: &Expr| match addr {
-        _ if !slots => None,
+        _ if !slots
+            || (atomics
+                && (!private_frame || !crate::passes::memory::private_address(addr, 8, sp))) =>
+        {
+            None
+        }
         Expr::Reg { index, .. } if *index == sp => Some(0),
         Expr::Bin {
             op: BinOp::Add,
@@ -137,6 +148,14 @@ fn fold(ir: &mut FunctionIr, param: u16) {
                         if *width != 8 && !(narrow && *width == 4) {
                             defined.entry(Source::Slot(slot)).or_default().push(None);
                         }
+                    }
+                }
+                Stmt::Machine { outputs, .. } => {
+                    for output in outputs {
+                        defined
+                            .entry(Source::Register(output.index))
+                            .or_default()
+                            .push(None);
                     }
                 }
                 Stmt::Call { .. } => {

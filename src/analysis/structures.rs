@@ -601,7 +601,22 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
             }
         )
     }) {
-        holders.slots.clear();
+        let sp = crate::arch::stack_pointer(ir.isa);
+        if !crate::passes::memory::fixed_private_frame(ir, sp) {
+            holders.slots.clear();
+        } else {
+            let private: HashSet<_> = stmts()
+                .filter_map(|stmt| match stmt {
+                    Stmt::Store { addr, .. }
+                        if crate::passes::memory::private_address(addr, 8, sp) =>
+                    {
+                        Some(format!("{addr:?}"))
+                    }
+                    _ => None,
+                })
+                .collect();
+            holders.slots.retain(|slot| private.contains(slot));
+        }
     }
     // Every register some definition of which adds to a holder, and then
     // only those every definition of which splits, stepping themselves or

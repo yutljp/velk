@@ -23,6 +23,15 @@ pub(crate) fn variable_types(
                 value: Expr::Reg { width: 64, .. },
             } if dest.width == 64 => {}
             Stmt::Store { value, .. } => integer_reads(value, &mut integer_copies),
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Atomic { .. },
+                inputs,
+                ..
+            } => {
+                for value in inputs.iter().skip(1) {
+                    integer_reads(value, &mut integer_copies);
+                }
+            }
             Stmt::Ret { .. } if ir.ret_type.is_pointer() => {}
             other => {
                 for value in other.operands() {
@@ -76,7 +85,16 @@ pub(crate) fn variable_types(
                     uses.float(source, precision);
                 }
             }
-            Stmt::Machine { outputs, .. } => {
+            Stmt::Machine {
+                instruction,
+                inputs,
+                outputs,
+            } => {
+                if let crate::ir::MachineInstruction::Atomic { width, .. } = instruction
+                    && let Some(addr) = inputs.first()
+                {
+                    uses.address(addr, *width);
+                }
                 for output in outputs {
                     uses.seen.insert(output.index);
                     uses.bits.insert(output.index);

@@ -4,14 +4,14 @@
 #   computes on floats or vectors: 60
 #   computes on registers alone: 922
 #   reads a register that is not a parameter: 49
-#   refers to data: 325
+#   refers to data: 330
 #   requires an external machine-state source: 2
 #   returns no integer: 82
 #   takes an argument that is no integer: 40
 #   takes arguments on the stack: 42
 # runs left out:
-#   reaches memory no page can map: 315
-#   reads a register that is not a parameter: 658
+#   reaches memory no page can map: 267
+#   reads a register that is not a parameter: 622
 #   step limit: 534
 #   switch without a matching case: 36
 # arm64.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
@@ -30,8 +30,8 @@
 # cpp_virtual_a64_stripped.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # cpp_virtual_x64.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # cpp_virtual_x64_stripped.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
-# go_probe: 1275 functions, 42 qualify, 42 compile, 0 do not, 32 compared (368 runs), 0 differ
-# go_stripped: 1273 functions, 41 qualify, 41 compile, 0 do not, 31 compared (360 runs), 0 differ
+# go_probe: 1275 functions, 41 qualify, 41 compile, 0 do not, 33 compared (380 runs), 0 differ
+# go_stripped: 1273 functions, 40 qualify, 40 compile, 0 do not, 32 compared (372 runs), 0 differ
 # l2_loop_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 3 compared (26 runs), 0 differ
 # l2_loop_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 3 compared (26 runs), 0 differ
 # l4_memory_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 2 compared (22 runs), 0 differ
@@ -111,9 +111,9 @@
 # metrics/structs.x86_64.O2.stripped.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (46 runs), 0 differ
 # pe64.exe: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # pe64.obj: 10 functions, 2 qualify, 2 compile, 0 do not, 1 compared (12 runs), 0 differ
-# rust_demo: 545 functions, 37 qualify, 37 compile, 0 do not, 18 compared (164 runs), 0 differ
-# rust_probe: 545 functions, 37 qualify, 37 compile, 0 do not, 18 compared (164 runs), 0 differ
-# rust_probe_stripped: 545 functions, 33 qualify, 33 compile, 0 do not, 18 compared (164 runs), 0 differ
+# rust_demo: 545 functions, 36 qualify, 36 compile, 0 do not, 18 compared (164 runs), 0 differ
+# rust_probe: 545 functions, 36 qualify, 36 compile, 0 do not, 18 compared (164 runs), 0 differ
+# rust_probe_stripped: 545 functions, 32 qualify, 32 compile, 0 do not, 18 compared (164 runs), 0 differ
 # strings.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
 # switch_jumptable.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
 # switch_jumptable_x64.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ

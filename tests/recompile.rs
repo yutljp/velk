@@ -17,6 +17,8 @@
 //! target/recompile-cache; IR expectations and comparisons are recomputed.
 //! Set VELK_RECOMPILE_NO_CACHE=1 to compile and run every fixture again.
 
+#[path = "recompile/atomic_values.rs"]
+mod atomic_values;
 #[path = "recompile/cache.rs"]
 mod cache;
 

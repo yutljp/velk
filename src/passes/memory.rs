@@ -18,6 +18,7 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
     // code hands out, and the outgoing arguments it may write: Go's callee
     // spills its register arguments to the bottom of the caller's frame.
     let private_frame = !frame_address_escapes(ir, sp);
+    let atomic_private_frame = fixed_private_frame(ir, sp);
     let spills = ir.convention == crate::ir::Convention::GoAmd64;
     for block in &mut ir.blocks {
         let mut pending: Vec<(u8, Expr, Expr)> = Vec::new();
@@ -170,8 +171,11 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     outputs,
                 } => {
                     if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
-                        pending.clear();
-                        continue;
+                        pending.retain(|(width, addr, stored)| {
+                            atomic_private_frame
+                                && private_address(addr, *width, sp)
+                                && private_loads(stored, sp)
+                        });
                     }
                     for input in inputs {
                         forward_expr(input, &pending);
@@ -190,9 +194,61 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
     }
 }
 
+pub(crate) fn atomic(stmt: &Stmt) -> bool {
+    matches!(
+        stmt,
+        Stmt::Machine {
+            instruction: crate::ir::MachineInstruction::Atomic { .. },
+            ..
+        }
+    )
+}
+
+pub(crate) fn fixed_private_frame(ir: &FunctionIr, sp: u16) -> bool {
+    !frame_address_escapes(ir, sp)
+        && !ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| statement_registers(stmt).0.contains(&sp))
+}
+
+pub(crate) fn private_address(addr: &Expr, width: u8, sp: u16) -> bool {
+    if !frame_values::full_frame_register(addr, sp) {
+        return false;
+    }
+    crate::passes::frame_slots::frame_slot(addr, 0, sp)
+        .and_then(|offset| offset.checked_add(i64::from(width)))
+        .is_some_and(|end| end <= 0)
+}
+
+fn private_loads(value: &Expr, sp: u16) -> bool {
+    match value {
+        Expr::Load { addr, width, .. } => {
+            private_address(addr, *width, sp) && private_loads(addr, sp)
+        }
+        _ => crate::ir::visit::children(value)
+            .into_iter()
+            .all(|child| private_loads(child, sp)),
+    }
+}
+
+/// Atomics order potentially shared memory, even when its address is disjoint.
+/// Only register expressions and loads from an unescaped frame may cross one.
+/// A frame address used as an atomic operand counts as escaping, so these
+/// retained slots cannot overlap the atomic access, for any memory ordering.
+/// Incoming stack arguments remain potentially shared with the caller.
+pub(crate) fn crosses_atomic(value: &Expr, sp: u16, private_frame: bool) -> bool {
+    !crate::passes::copies::reads_memory(value) || (private_frame && private_loads(value, sp))
+}
+
 /// Whether an address in the frame is used as a value: stored, passed, or
 /// computed with, rather than only loaded and stored through.
 pub(crate) fn frame_address_escapes(ir: &FunctionIr, sp: u16) -> bool {
+    frame_addresses_escape(&ir.blocks, sp)
+}
+
+pub(crate) fn frame_addresses_escape(blocks: &[crate::ir::Block], sp: u16) -> bool {
     fn escapes(expr: &Expr, sp: u16) -> bool {
         match expr {
             Expr::Reg { index, .. } => *index == sp,
@@ -209,7 +265,7 @@ pub(crate) fn frame_address_escapes(ir: &FunctionIr, sp: u16) -> bool {
                 .any(|child| escapes(child, sp)),
         }
     }
-    ir.blocks
+    blocks
         .iter()
         .flat_map(|block| &block.stmts)
         .any(|stmt| match stmt {
@@ -330,23 +386,14 @@ fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
 /// Fuses `t = *p; t = op(t, x); *p = t` into `*p = op(*p, x)` when the
 /// temporary is read nowhere else in the block.
 pub fn fuse_load_op_store(ir: &mut FunctionIr) {
-    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-        matches!(
-            stmt,
-            Stmt::Machine {
-                instruction: crate::ir::MachineInstruction::Atomic { .. },
-                ..
-            }
-        )
-    }) {
-        return;
-    }
     let live_in = crate::ir::cfg::live_in(ir);
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
         .collect();
+    let sp = stack_pointer(ir.isa);
+    let private_frame = fixed_private_frame(ir, sp);
     for (block, live_out) in ir.blocks.iter_mut().zip(&live_out) {
-        fuse_block(block, live_out);
+        fuse_block(block, live_out, sp, private_frame);
     }
 }
 
@@ -370,7 +417,12 @@ fn read_later(
     live_out.contains(&dest)
 }
 
-fn fuse_block(block: &mut crate::ir::Block, live_out: &std::collections::HashSet<u16>) {
+fn fuse_block(
+    block: &mut crate::ir::Block,
+    live_out: &std::collections::HashSet<u16>,
+    sp: u16,
+    private_frame: bool,
+) {
     let mut fused: Vec<usize> = Vec::new();
     let mut index = 0;
     while index < block.stmts.len() {
@@ -380,7 +432,14 @@ fn fuse_block(block: &mut crate::ir::Block, live_out: &std::collections::HashSet
         }
         // The update may already carry its load: `t = op(*p, x); *p = t`.
         if let Some((dest, address, update)) = inline_update(&block.stmts[index])
-            && let Some(store_at) = store_back(&block.stmts, index, dest, &address, live_out)
+            && let Some(store_at) = store_back(
+                &block.stmts,
+                index,
+                dest,
+                &address,
+                live_out,
+                crosses_atomic(&update, sp, private_frame),
+            )
         {
             if let Stmt::Store { value, .. } = &mut block.stmts[store_at] {
                 *value = update;
@@ -398,6 +457,13 @@ fn fuse_block(block: &mut crate::ir::Block, live_out: &std::collections::HashSet
         let mut op_at = None;
         let mut clean = true;
         for probe in index + 1..block.stmts.len().min(index + 8) {
+            if atomic(&block.stmts[probe])
+                && (!crosses_atomic(&load, sp, private_frame)
+                    || !statement_registers(&block.stmts[probe]).0.is_empty())
+            {
+                clean = false;
+                break;
+            }
             let (writes, reads) = statement_registers(&block.stmts[probe]);
             if writes.contains(&dest) {
                 op_at = Some(probe);
@@ -424,6 +490,14 @@ fn fuse_block(block: &mut crate::ir::Block, live_out: &std::collections::HashSet
         let mut store_at = None;
         let mut blocked = false;
         for probe in op_at + 1..block.stmts.len().min(op_at + 8) {
+            if atomic(&block.stmts[probe])
+                && (!crosses_atomic(&load, sp, private_frame)
+                    || !crosses_atomic(&rhs, sp, private_frame)
+                    || !statement_registers(&block.stmts[probe]).0.is_empty())
+            {
+                blocked = true;
+                break;
+            }
             let (writes, reads) = statement_registers(&block.stmts[probe]);
             if let Some((addr, value)) = store_pair(&block.stmts[probe])
                 && addr == &address
@@ -535,9 +609,13 @@ fn store_back(
     dest: u16,
     address: &Expr,
     live_out: &std::collections::HashSet<u16>,
+    crosses: bool,
 ) -> Option<usize> {
     let mut store_at = None;
     for (probe, stmt) in stmts.iter().enumerate().take(index + 8).skip(index + 1) {
+        if atomic(stmt) && (!crosses || !statement_registers(stmt).0.is_empty()) {
+            return None;
+        }
         let (writes, reads) = statement_registers(stmt);
         if let Some((addr, value)) = store_pair(stmt)
             && addr == address
@@ -600,17 +678,6 @@ pub(crate) fn strip_mask(expr: &Expr) -> &Expr {
 /// apart by their offset from the stack pointer on entry, which tracks the
 /// stack pointer's moves.
 pub fn forward_spilled_variables(ir: &mut FunctionIr) {
-    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-        matches!(
-            stmt,
-            Stmt::Machine {
-                instruction: crate::ir::MachineInstruction::Atomic { .. },
-                ..
-            }
-        )
-    }) {
-        return;
-    }
     use std::collections::HashMap;
     let sp = stack_pointer(ir.isa);
     let go = ir.convention == crate::ir::Convention::GoAmd64;
@@ -688,6 +755,14 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
                         .or_default()
                         .push((block, position));
                 }
+                Stmt::Machine { outputs, .. } => {
+                    for output in outputs {
+                        definitions
+                            .entry(output.index)
+                            .or_default()
+                            .push((block, position));
+                    }
+                }
                 Stmt::Call {
                     args, convention, ..
                 } => {
@@ -726,6 +801,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
         }
     };
     let cyclic = crate::ir::cfg::cyclic_blocks(ir);
+    let atomics = ir.blocks.iter().flat_map(|block| &block.stmts).any(atomic);
     let mut forwarded: Vec<(i64, u8, u16)> = Vec::new();
     let mut dropped: Vec<(usize, usize)> = Vec::new();
     for (offset, uses) in &accesses {
@@ -736,6 +812,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
         };
         let (store_block, store_at, width) = (*store_block, *store_at, *width);
         if !matches!(width, 4 | 8)
+            || (atomics && offset.checked_add(i64::from(width)).is_none_or(|end| end > 0))
             || passed.contains(offset)
             || uses.iter().any(|(.., used, _)| *used != width)
             // Another access reaching into the slot from elsewhere.

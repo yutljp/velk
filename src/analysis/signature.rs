@@ -491,6 +491,7 @@ pub fn recover_with(
                 .collect(),
             slots: HashMap::new(),
             definitions: definitions.clone(),
+            sp: crate::arch::stack_pointer(isa),
             exact,
         };
         loop {
@@ -589,6 +590,15 @@ pub fn recover_with(
                         );
                     }
                 }
+            }
+        }
+        Stmt::Machine {
+            instruction: crate::ir::MachineInstruction::Atomic { width, .. },
+            inputs,
+            ..
+        } => {
+            if let Some(addr) = inputs.first() {
+                note(addr, *width, None, None, origin, &mut pointer_elements);
             }
         }
         Stmt::Store { addr, width, value } => {
@@ -1265,6 +1275,7 @@ type Found = (HashMap<u16, u16>, HashMap<String, Option<u16>>);
 
 /// The arguments registers and stack slots hold, as `recover` follows them.
 struct Origins {
+    sp: u16,
     /// The argument registers on entry.
     entry: HashMap<u16, u16>,
     /// Registers written at most once, with the argument they hold.
@@ -1333,7 +1344,29 @@ impl Origins {
                 }
             )
         }) {
-            found.1.clear();
+            if crate::passes::memory::frame_addresses_escape(blocks, self.sp)
+                || blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                    crate::ir::visit::statement_registers(stmt)
+                        .0
+                        .contains(&self.sp)
+                })
+            {
+                found.1.clear();
+            } else {
+                let private: HashSet<_> = blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .filter_map(|stmt| match stmt {
+                        Stmt::Store { addr, .. }
+                            if crate::passes::memory::private_address(addr, 8, self.sp) =>
+                        {
+                            Some(format!("{addr:?}"))
+                        }
+                        _ => None,
+                    })
+                    .collect();
+                found.1.retain(|slot, _| private.contains(slot));
+            }
         }
         found
     }
