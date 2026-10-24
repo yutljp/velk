@@ -261,23 +261,23 @@ int sum_varargs(int count, ...) {
     int32_t v4;
     int64_t v5;
     uint64_t *v6;
-    int32_t local_0; /* [sp-c] */
+    int32_t count_2; /* [sp-c] */
     _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint8_t gap_4[0x18]; } local_1; /* [sp-28] */
     _Alignas(16) uint8_t local_2[0xb8]; /* [sp-e8] */
-    uint32_t result; /* [sp-2c] */
+    uint32_t total; /* [sp-2c] */
     int32_t i; /* [sp-30] */
     void *local_5; /* [sp-f8] */
     uint32_t local_6; /* [sp-ec] */
     uint32_t *local_7; /* [sp-100] */
 
-    local_0 = count;
+    count_2 = count;
     v1 = (struct S1 *)(&local_1.f_0);
     v1->field_0x10 = (uintptr_t)(local_2);
     v1->field_0x8 = rsp + 8;
     v1->field_0x4 = 48;
     v1->field_0x0 = 8;
-    result = 0;
-    for (i = 0; i < local_0; i++) {
+    total = 0;
+    for (i = 0; i < count_2; i++) {
         local_5 = (void *)(&local_1.f_0);
         v2 = local_1.f_0;
         local_6 = v2;
@@ -293,9 +293,9 @@ int sum_varargs(int count, ...) {
             v3->field_0x0 = v4 + 8;
             local_7 = (uint32_t *)v5;
         }
-        result += *local_7;
+        total += *local_7;
     }
-    return result;
+    return total;
 }
 -- signature
 int (int count)

@@ -66,16 +66,12 @@ fn mixed_sign @ 0x2012c0 (size 22)
 /* velk pseudo-C: in_range @ 0x2012e0 */
 _Bool in_range(int x, int lo, int hi) {
     uint8_t result;
-    int32_t v6;
-    int32_t v7;
 
-    v6 = x;
-    v7 = hi;
     result = 0;
     if (x < lo) {
         return result;
     }
-    result = (v6 <= v7);
+    result = (x <= hi);
     return result;
 }
 -- signature
@@ -170,17 +166,13 @@ fn byte_swap @ 0x201390 (size 51)
 /* velk pseudo-C: min3 @ 0x2013d0 */
 int min3(int a, int b, int c) {
     int32_t result;
-    int32_t v3;
-    int32_t v4;
 
     result = a;
-    v3 = b;
-    v4 = c;
     if (a >= b) {
-        result = v3;
+        result = b;
     }
-    if (result >= v4) {
-        return v4;
+    if (result >= c) {
+        return c;
     }
     return result;
 }

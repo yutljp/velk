@@ -1219,6 +1219,14 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         params: signature.params,
         declared_signature,
         stack_params,
+        debug_registers: types
+            .as_ref()
+            .map(|types| types.registers.clone())
+            .unwrap_or_default(),
+        debug_locals: types
+            .as_ref()
+            .map(|types| types.locals.clone())
+            .unwrap_or_default(),
         variadic: false,
         ret_type: match float_return {
             _ if ignored => crate::ir::CType::Void,
@@ -1573,6 +1581,8 @@ mod tests {
                 variadic: false,
                 members: Vec::new(),
                 definitions: Vec::new(),
+                locals: Vec::new(),
+                registers: Vec::new(),
                 param_layouts: Vec::new(),
                 ret_layout: Ok(None),
                 abi_profile: Ok(AbiProfile::Aapcs64),

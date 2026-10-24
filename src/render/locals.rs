@@ -1,3 +1,5 @@
+mod debug;
+
 use crate::arch::stack_pointer;
 use std::collections::HashMap;
 
@@ -21,8 +23,16 @@ pub(super) struct Local {
 impl Local {
     fn byte_address(&self, slot: i64) -> String {
         let offset = slot.saturating_sub(self.slot);
+        if self.size > 0 && self.ty.is_some() {
+            return if offset == 0 {
+                format!("(uint8_t *)&{}", self.name)
+            } else {
+                format!("(uint8_t *)&{} + 0x{offset:x}", self.name)
+            };
+        }
         let mut start = 0;
-        let mut gap = (self.size > 0 && self.fields.is_empty()).then_some(self.name.clone());
+        let mut gap = (self.size > 0 && self.fields.is_empty() && self.ty.is_none())
+            .then_some(self.name.clone());
         for field in &self.fields {
             let field_offset = field.slot.saturating_sub(self.slot);
             if offset >= start && offset < field_offset {
@@ -31,7 +41,7 @@ impl Local {
             }
             start = field_offset.saturating_add(i64::from(field.width));
         }
-        if gap.is_none() && offset >= start && offset < self.size {
+        if gap.is_none() && !self.fields.is_empty() && offset >= start && offset < self.size {
             gap = Some(format!("{}.gap_{start:x}", self.name));
         }
         let (base, delta) = match gap {
@@ -200,6 +210,7 @@ pub(crate) fn stack_locals(
             }
         }
     }
+    debug::extend(ir, &mut slot_names);
     let extents = buffer_extents(ir, sp, symbols, &accesses);
     for (slot, _, width, signed) in &accesses {
         let Some(slot) = slot else { continue };
@@ -371,22 +382,37 @@ pub(crate) fn stack_locals(
     slot_names.retain(|slot, _| !within.contains_key(slot));
     let mut order: Vec<i64> = Vec::new();
     for slot in accesses.iter().filter_map(|(slot, ..)| *slot) {
+        let slot = within.get(&slot).copied().unwrap_or(slot);
         if slot_names.contains_key(&slot) && !order.contains(&slot) {
             order.push(slot);
         }
     }
     for (number, slot) in order.iter().enumerate() {
         if let Some(local) = slot_names.get_mut(slot) {
-            let role = accesses
-                .iter()
-                .filter(|(at, ..)| at == &Some(*slot))
-                .find_map(|(_, address, ..)| roles.slot(address));
-            local.name = match role {
-                Some(role) if local.fields.is_empty() && local.size == 0 => {
-                    super::vacant_name(role, &mut reserved)
-                }
-                _ => format!("local_{number}"),
-            };
+            local.name = format!("local_{number}");
+        }
+    }
+    for local in slot_names.values_mut() {
+        if local.size > 0 {
+            local.ty = None;
+        }
+    }
+    let debug_slots = debug::apply(ir, symbols, &mut slot_names, &accesses);
+    reserved.extend(slot_names.values().map(|local| local.name.clone()));
+    for slot in &order {
+        if debug_slots.contains(slot) {
+            continue;
+        }
+        let role = accesses
+            .iter()
+            .filter(|(at, ..)| at == &Some(*slot))
+            .find_map(|(_, address, ..)| roles.slot(address));
+        if let Some(local) = slot_names.get_mut(slot)
+            && local.fields.is_empty()
+            && local.size == 0
+            && let Some(role) = role
+        {
+            local.name = super::vacant_name(role, &mut reserved);
         }
     }
     let mut parts: HashMap<String, String> = rendered
@@ -428,7 +454,11 @@ pub(crate) fn stack_locals(
             continue;
         };
         if let Some(field) = local.fields.iter().find(|field| field.slot == *slot) {
-            let name = format!("{}.{}", local.name, field.name);
+            let name = if field.name.starts_with('[') {
+                format!("{}{}", local.name, field.name)
+            } else {
+                format!("{}.{}", local.name, field.name)
+            };
             slots.insert(key.clone(), name.clone());
             widths.insert(name.clone(), field.width);
             parts.insert(key.clone(), format!("&{name}"));
@@ -436,10 +466,11 @@ pub(crate) fn stack_locals(
     }
     for local in slot_names.values_mut() {
         for field in &mut local.fields {
-            field.name = format!("{}.{}", local.name, field.name);
-        }
-        if local.size > 0 {
-            local.ty = None;
+            field.name = if field.name.starts_with('[') {
+                format!("{}{}", local.name, field.name)
+            } else {
+                format!("{}.{}", local.name, field.name)
+            };
         }
     }
     let argument_accesses = stack_arguments(ir, sp, frames);
@@ -653,7 +684,7 @@ fn buffer_extents(
     extents
 }
 
-fn scalar_storage_size(ty: &CType) -> Option<u8> {
+pub(super) fn scalar_storage_size(ty: &CType) -> Option<u8> {
     if ty.is_pointer() {
         Some(8)
     } else if ty.is_sse_float() {

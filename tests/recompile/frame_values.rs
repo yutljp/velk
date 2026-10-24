@@ -932,7 +932,7 @@ fn printed_context_saving_calls_keep_frame_storage() {
         .decompile(address, None, None)
         .expect("decompile context function");
     assert!(code.contains("setjmp("), "{code}");
-    assert!(code.contains("/* [sp"), "{code}");
+    assert!(code.contains("saved; /* [sp"), "{code}");
     std::fs::remove_dir_all(scratch).ok();
 }
 

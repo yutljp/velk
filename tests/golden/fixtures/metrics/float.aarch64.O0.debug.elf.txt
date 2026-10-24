@@ -9,19 +9,19 @@
 -- decompile
 /* velk pseudo-C: average @ 0x2101b4 */
 double average(double *values, int n) {
-    double local_0; /* [sp-18] */
+    double total; /* [sp-18] */
     int32_t i; /* [sp-1c] */
     double result; /* [sp-28] */
 
-    local_0 = 0.0;
+    total = 0.0;
     for (i = 0; i < n; i++) {
-        local_0 = local_0 + values[i];
+        total = total + values[i];
     }
     if (n <= 0) {
         result = 0.0;
         return result;
     }
-    result = local_0 / (double)n;
+    result = total / (double)n;
     return result;
 }
 -- signature

@@ -7,15 +7,13 @@
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
     uint32_t v1;
-    uint32_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
+    int64_t local_0; /* [sp-18] */
     uint32_t result; /* [sp-c] */
 
-    local_0 = x;
-    v1 = local_0 - 10;
-    local_1 = v1;
+    v1 = x - 10;
+    local_0 = v1;
     if (v1 <= 4) {
-        switch (local_1 - 4) {
+        switch (local_0 - 4) {
         case -4:
             result = 1;
             return result;

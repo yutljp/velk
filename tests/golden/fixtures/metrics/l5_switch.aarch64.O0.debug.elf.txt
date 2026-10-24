@@ -26,14 +26,12 @@
 int dense(int x) {
     uint32_t *const g_sink = (uint32_t *)0x2205e8ULL;
     uint32_t v1;
-    uint32_t local_0; /* [sp-14] */
-    int64_t local_1; /* [sp-20] */
+    int64_t local_0; /* [sp-20] */
 
-    local_0 = x;
-    v1 = local_0 - 10;
-    local_1 = v1;
+    v1 = x - 10;
+    local_0 = v1;
     if (v1 <= 15) {
-        switch (local_1 + 10) {
+        switch (local_0 + 10) {
         case 10:
             c0();
             return *g_sink;
@@ -499,16 +497,13 @@ fn c15 @ 0x210558 (size 24)
 -- decompile
 /* velk pseudo-C: sparse @ 0x210570 */
 int sparse(int x) {
-    int32_t v1;
-
-    v1 = x;
-    if (v1 - 1 == 0) {
+    if (x - 1 == 0) {
         return 100;
     }
-    if (v1 - 50 == 0) {
+    if (x - 50 == 0) {
         return 7;
     }
-    if (v1 - 300 == 0) {
+    if (x - 300 == 0) {
         return 300;
     }
     return -1;

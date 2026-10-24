@@ -209,29 +209,29 @@ fn abi_hfa4_adjust @ 0x2013e0 (size 63)
 -- decompile
 /* velk pseudo-C: abi_exhaust_five @ 0x201420 */
 struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
-unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair value, unsigned long long tail) {
-    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
-    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
-    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
-    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
-    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
-    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
+unsigned long long abi_exhaust_five(unsigned long long a_2, unsigned long long b_2, unsigned long long c_2, unsigned long long d_2, unsigned long long e_2, struct abi_pair value, unsigned long long tail_2) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a_2 + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b_2 + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c_2 + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d_2 + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e_2 + 0x0, 8);
+    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail_2 + 0x0, 8);
     uint8_t *value_address = (uint8_t *)&value;
     int64_t v3;
     int64_t v4;
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
-    int64_t local_2; /* [sp-20] */
-    int64_t local_3; /* [sp-28] */
-    int64_t local_4; /* [sp-30] */
-    int64_t local_5; /* [sp-38] */
+    uint64_t a; /* [sp-10] */
+    uint64_t b; /* [sp-18] */
+    uint64_t c; /* [sp-20] */
+    uint64_t d; /* [sp-28] */
+    uint64_t e; /* [sp-30] */
+    uint64_t tail; /* [sp-38] */
 
-    local_0 = a_bits;
-    local_1 = b_bits;
-    local_2 = c_bits;
-    local_3 = d_bits;
-    local_4 = e_bits;
-    local_5 = tail_bits;
+    a = a_bits;
+    b = b_bits;
+    c = c_bits;
+    d = d_bits;
+    e = e_bits;
+    tail = tail_bits;
     v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 13;
     v4 = a_bits + b_bits * 3 + c_bits * 5 + d_bits * 7 + e_bits * 11 + v3 + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 17;
     return v4 + tail_bits * 19;
@@ -262,19 +262,19 @@ fn abi_exhaust_five @ 0x201420 (size 96)
 int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
     int64_t v5;
     int64_t v6;
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
-    int64_t local_2; /* [sp-20] */
-    int64_t local_3; /* [sp-28] */
-    int64_t local_4; /* [sp-30] */
-    int64_t local_5; /* [sp-38] */
+    uint64_t a; /* [sp-10] */
+    uint64_t b; /* [sp-18] */
+    uint64_t c; /* [sp-20] */
+    uint64_t d; /* [sp-28] */
+    uint64_t e; /* [sp-30] */
+    uint64_t f; /* [sp-38] */
 
-    local_0 = a0;
-    local_1 = a1;
-    local_2 = a2;
-    local_3 = a3;
-    local_4 = a4;
-    local_5 = a5;
+    a = a0;
+    b = a1;
+    c = a2;
+    d = a3;
+    e = a4;
+    f = a5;
     v5 = a7 * 19;
     v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
     return v6 + a9 * 29;
@@ -342,29 +342,29 @@ fn abi_indirect_make @ 0x201500 (size 56)
 -- decompile
 /* velk pseudo-C: abi_exhaust_five_aligned @ 0x201540 */
 struct abi_pair_aligned { _Alignas(8) unsigned long long low; unsigned long long high; };
-unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair_aligned value, unsigned long long tail) {
-    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
-    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
-    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
-    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
-    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
-    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
+unsigned long long abi_exhaust_five_aligned(unsigned long long a_2, unsigned long long b_2, unsigned long long c_2, unsigned long long d_2, unsigned long long e_2, struct abi_pair_aligned value, unsigned long long tail_2) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a_2 + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b_2 + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c_2 + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d_2 + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e_2 + 0x0, 8);
+    uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail_2 + 0x0, 8);
     uint8_t *value_address = (uint8_t *)&value;
     int64_t v3;
     int64_t v4;
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
-    int64_t local_2; /* [sp-20] */
-    int64_t local_3; /* [sp-28] */
-    int64_t local_4; /* [sp-30] */
-    int64_t local_5; /* [sp-38] */
+    uint64_t a; /* [sp-10] */
+    uint64_t b; /* [sp-18] */
+    uint64_t c; /* [sp-20] */
+    uint64_t d; /* [sp-28] */
+    uint64_t e; /* [sp-30] */
+    uint64_t tail; /* [sp-38] */
 
-    local_0 = a_bits;
-    local_1 = b_bits;
-    local_2 = c_bits;
-    local_3 = d_bits;
-    local_4 = e_bits;
-    local_5 = tail_bits;
+    a = a_bits;
+    b = b_bits;
+    c = c_bits;
+    d = d_bits;
+    e = e_bits;
+    tail = tail_bits;
     v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 13;
     v4 = a_bits + b_bits * 3 + c_bits * 5 + d_bits * 7 + e_bits * 11 + v3 + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 17;
     return v4 + tail_bits * 19;
@@ -393,31 +393,31 @@ fn abi_exhaust_five_aligned @ 0x201540 (size 96)
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x2015a0 */
 struct abi_pair_aligned { _Alignas(8) unsigned long long low; unsigned long long high; };
-unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, unsigned long long f, unsigned long long g, struct abi_pair_aligned value, unsigned long long tail) {
-    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a + 0x0, 8);
-    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b + 0x0, 8);
-    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c + 0x0, 8);
-    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d + 0x0, 8);
-    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e + 0x0, 8);
-    uint64_t f_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&f + 0x0, 8);
+unsigned long long abi_exhaust_seven_aligned(unsigned long long a_2, unsigned long long b_2, unsigned long long c_2, unsigned long long d_2, unsigned long long e_2, unsigned long long f_2, unsigned long long g, struct abi_pair_aligned value, unsigned long long tail) {
+    uint64_t a_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&a_2 + 0x0, 8);
+    uint64_t b_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&b_2 + 0x0, 8);
+    uint64_t c_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&c_2 + 0x0, 8);
+    uint64_t d_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&d_2 + 0x0, 8);
+    uint64_t e_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&e_2 + 0x0, 8);
+    uint64_t f_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&f_2 + 0x0, 8);
     uint8_t *g_address = (uint8_t *)&g;
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *tail_address = (uint8_t *)&tail;
     int64_t v5;
     int64_t v6;
-    int64_t local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-18] */
-    int64_t local_2; /* [sp-20] */
-    int64_t local_3; /* [sp-28] */
-    int64_t local_4; /* [sp-30] */
-    int64_t local_5; /* [sp-38] */
+    uint64_t a; /* [sp-10] */
+    uint64_t b; /* [sp-18] */
+    uint64_t c; /* [sp-20] */
+    uint64_t d; /* [sp-28] */
+    uint64_t e; /* [sp-30] */
+    uint64_t f; /* [sp-38] */
 
-    local_0 = a_bits;
-    local_1 = b_bits;
-    local_2 = c_bits;
-    local_3 = d_bits;
-    local_4 = e_bits;
-    local_5 = f_bits;
+    a = a_bits;
+    b = b_bits;
+    c = c_bits;
+    d = d_bits;
+    e = e_bits;
+    f = f_bits;
     v5 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 19;
     v6 = a_bits + b_bits * 3 + c_bits * 5 + d_bits * 7 + e_bits * 11 + f_bits * 13 + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, g_address, 8) * 17 + v5 + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 23;
     return v6 + *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 29;

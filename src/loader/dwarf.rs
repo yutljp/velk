@@ -7,6 +7,7 @@ use crate::ir::{AbiIssue, AbiProfile, CType, Definition, Member};
 use crate::loader::Image;
 
 mod layout;
+mod locals;
 
 #[derive(Debug, Clone)]
 pub struct DwarfFunction {
@@ -17,6 +18,8 @@ pub struct DwarfFunction {
 
 #[derive(Debug, Clone)]
 pub struct FunctionTypes {
+    pub locals: Vec<crate::ir::DebugLocal>,
+    pub registers: Vec<(u16, String)>,
     /// Parameter names and types; either may be absent from the debug info.
     pub params: Vec<(Option<String>, Option<CType>)>,
     pub ret: Option<CType>,
@@ -142,8 +145,8 @@ fn aggregate_size(
 pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
     let dwarf = Dwarf::load(|id| -> Result<EndianSlice<'_, LittleEndian>, ()> {
         Ok(EndianSlice::new(section(image, id), LittleEndian))
-    })
-    .ok()?;
+    });
+    let Ok(dwarf) = dwarf else { return None };
 
     let mut units = dwarf.units();
     while let Ok(Some(header)) = units.next() {
@@ -178,6 +181,8 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 }
                 .filter(plausible_type),
             };
+            let mut registers = Vec::new();
+            let locals = locals::read(image, &dwarf, &unit, entry, &mut registers);
             let depth = entry.depth();
             let mut params = Vec::new();
             let mut param_aggregate_sizes = Vec::new();
@@ -217,6 +222,8 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             }
             let definitions = definitions(&dwarf, &unit, abi_profile.ok());
             return Some(FunctionTypes {
+                locals,
+                registers,
                 params,
                 ret,
                 ret_aggregate_size,

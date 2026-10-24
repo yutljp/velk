@@ -10,7 +10,6 @@
 /* velk pseudo-C: average @ 0x21019c */
 double average(double *values, int n) {
     double v1;
-    int64_t v2;
     int64_t v3;
     double *v4;
     int64_t v5;
@@ -24,10 +23,9 @@ double average(double *values, int n) {
         return 0.0;
     }
     v1 = 0.0;
-    v2 = (uint32_t)n;
     if ((uint32_t)n >= 4) {
         v4 = values + 0x2;
-        v3 = v2 & 0x7ffffffc;
+        v3 = (uint32_t)n & 0x7ffffffc;
         v5 = v3;
         do {
             v6 = v4[-2];
@@ -38,14 +36,14 @@ double average(double *values, int n) {
             v4 = v4 + 0x4;
             v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0);
-        if (v3 == v2) {
+        if (v3 == (uint32_t)n) {
             return v1 / (double)n;
         }
     } else {
         v3 = 0;
     }
     v4 = values + v3;
-    v14 = v2 - v3;
+    v14 = (uint32_t)n - v3;
     do {
         v6 = *v4;
         v4 = v4 + 0x1;

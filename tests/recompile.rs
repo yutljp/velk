@@ -28,6 +28,8 @@ mod counted_loops;
 #[path = "recompile/casts.rs"]
 mod casts;
 mod common;
+#[path = "recompile/debug_locals.rs"]
+mod debug_locals;
 #[path = "recompile/division.rs"]
 mod division;
 #[path = "recompile/forward_exits.rs"]
@@ -3811,6 +3813,8 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
         declared_signature: None,
         params,
         stack_params: Vec::new(),
+        debug_locals: Vec::new(),
+        debug_registers: Vec::new(),
         variadic: false,
         ret_type,
         accesses: Vec::new(),

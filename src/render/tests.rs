@@ -648,6 +648,12 @@ fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
     assert!(text.contains("    int32_t result;\n"), "{text}");
     assert!(text.contains("++result;"), "{text}");
     assert!(text.contains("*a0 = result;"), "{text}");
+    ir.variable_registers.insert(counter, 0);
+    ir.debug_registers.push((0, "total".to_owned()));
+    let text = rendered(&ir);
+    assert!(text.contains("    int32_t total;\n"), "{text}");
+    assert!(text.contains("++total;"), "{text}");
+    assert!(text.contains("*a0 = total;"), "{text}");
 }
 
 #[test]
@@ -2473,4 +2479,22 @@ fn go_return_address_and_argument_frame_have_explicit_meanings() {
     let code = rendered(&ir);
     assert!(code.contains("rsp"), "{code}");
     assert!(!code.contains("velk_return_address_slot"), "{code}");
+}
+
+#[test]
+fn debug_stack_names_take_precedence_over_roles() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/metrics/arith_mixed.x86_64.O0.debug.elf");
+    let mut binary = crate::service::Binary::open(&path).expect("debug fixture");
+    let address = binary
+        .image()
+        .functions
+        .values()
+        .find(|function| function.name.as_deref() == Some("sum_arr"))
+        .expect("array sum")
+        .addr;
+    let text = binary.decompile(address, None, None).expect("decompile");
+    assert!(text.contains("uint32_t total;"), "{text}");
+    assert!(text.contains("int32_t i;"), "{text}");
+    assert!(text.contains("for (i = 0; i < n; i++)"), "{text}");
 }

@@ -40,18 +40,16 @@ struct record {
 long record_total(struct record *items, int n) {
     int64_t v1;
     int64_t v3;
-    int32_t local_0; /* [sp-14] */
-    int64_t result; /* [sp-20] */
+    int64_t total; /* [sp-20] */
     int32_t i; /* [sp-24] */
 
-    local_0 = n;
-    result = 0;
-    for (i = 0; i < local_0; i++) {
+    total = 0;
+    for (i = 0; i < n; i++) {
         v1 = (int64_t)i * 24;
         v3 = (int64_t)i * 24;
-        result += *(uint64_t *)((uint8_t *)items + v1 + 0x8) * (int16_t)*(uint16_t *)((uint8_t *)items + v3 + 0x10);
+        total += *(uint64_t *)((uint8_t *)items + v1 + 0x8) * (int16_t)*(uint16_t *)((uint8_t *)items + v3 + 0x10);
     }
-    return result;
+    return total;
 }
 -- signature
 long (struct record * items, int n)

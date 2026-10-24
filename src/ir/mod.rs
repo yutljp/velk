@@ -806,6 +806,15 @@ pub struct Block {
     pub stmts: Vec<Stmt>,
 }
 
+/// A source variable whose storage has a fixed entry-stack offset.
+#[derive(Debug, Clone)]
+pub struct DebugLocal {
+    pub name: String,
+    pub ty: CType,
+    pub slot: i64,
+    pub size: u64,
+}
+
 #[derive(Debug, Clone)]
 pub struct FunctionIr {
     pub isa: Isa,
@@ -816,6 +825,8 @@ pub struct FunctionIr {
     pub declared_signature: Option<DeclaredSignature>,
     /// Parameters the debug info places in the caller's stack frame.
     pub stack_params: Vec<StackParam>,
+    pub debug_locals: Vec<DebugLocal>,
+    pub debug_registers: Vec<(u16, String)>,
     /// The debug info declares further, variadic, parameters.
     pub variadic: bool,
     pub ret_type: CType,
@@ -853,6 +864,8 @@ impl FunctionIr {
             params: Vec::new(),
             declared_signature: None,
             stack_params: Vec::new(),
+            debug_locals: Vec::new(),
+            debug_registers: Vec::new(),
             variadic: false,
             ret_type: CType::U64,
             accesses: Vec::new(),

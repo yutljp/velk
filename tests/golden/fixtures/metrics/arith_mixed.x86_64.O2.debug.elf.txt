@@ -76,7 +76,6 @@ fn pair_sum @ 0x2011d0 (size 6)
 -- decompile
 /* velk pseudo-C: sum_arr @ 0x2011e0 */
 int sum_arr(int *p, int n) {
-    uint64_t v1;
     int64_t v2;
     int32_t v3;
     int64_t v4;
@@ -89,10 +88,9 @@ int sum_arr(int *p, int n) {
     if (n <= 0) {
         return 0;
     }
-    v1 = (n & 0xffffffff);
     if ((uint32_t)n >= 8) {
-        v2 = v1 & 0x7ffffff8;
-        v4 = v1 >> 0x3 << 0x5;
+        v2 = (uint32_t)n & 0x7ffffff8;
+        v4 = (uint64_t)((n & 0xffffffff) >> 0x3) << 0x5;
         v5 = 0;
         v6 = 0;
         v7 = 0;
@@ -107,7 +105,7 @@ int sum_arr(int *p, int n) {
         } while (v4 != v7);
         v5 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
         v3 = add_lanes32(v5 >> 0x20 | v5 >> 0x20 << 0x20, v5);
-        if (v2 == v1) {
+        if (v2 == (uint32_t)n) {
             return v3;
         }
     } else {
@@ -117,7 +115,7 @@ int sum_arr(int *p, int n) {
     do {
         v3 += p[v2];
         ++v2;
-    } while (v1 != v2);
+    } while ((uint32_t)n != v2);
     return v3;
 }
 -- signature

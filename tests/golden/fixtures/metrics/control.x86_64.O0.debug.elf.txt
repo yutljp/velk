@@ -11,21 +11,19 @@
 -- decompile
 /* velk pseudo-C: matrix_trace @ 0x201230 */
 int matrix_trace(int *m, int n) {
-    int32_t local_0; /* [sp-14] */
-    uint32_t result; /* [sp-18] */
+    uint32_t total; /* [sp-18] */
     int32_t i; /* [sp-1c] */
     int32_t j; /* [sp-20] */
 
-    local_0 = n;
-    result = 0;
-    for (i = 0; i < local_0; i++) {
-        for (j = 0; j < local_0; j++) {
+    total = 0;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
             if (i == j) {
-                result += m[i * local_0 + j];
+                total += m[i * n + j];
             }
         }
     }
-    return result;
+    return total;
 }
 -- signature
 int (int * m, int n)
@@ -67,22 +65,18 @@ fn matrix_trace @ 0x201230 (size 137)
 -- decompile
 /* velk pseudo-C: cleanup_on_error @ 0x2012c0 */
 int cleanup_on_error(int a, int b, int *out) {
-    int32_t local_0; /* [sp-c] */
-    int32_t local_1; /* [sp-10] */
-    uint32_t result; /* [sp-1c] */
+    uint32_t status; /* [sp-1c] */
 
-    local_0 = a;
-    local_1 = b;
-    result = 0xffffffff;
+    status = 0xffffffff;
     if (a >= 0) {
-        if (local_1 != 0) {
-            *out = local_0 / local_1;
-            result = 0;
-            return result;
+        if (b != 0) {
+            *out = a / b;
+            status = 0;
+            return status;
         }
-        return result;
+        return status;
     }
-    return result;
+    return status;
 }
 -- signature
 int (int a, int b, int * out)
@@ -115,38 +109,32 @@ fn cleanup_on_error @ 0x2012c0 (size 78)
 /* velk pseudo-C: fallthrough @ 0x201310 */
 /* ref: 0x200120 .rodata */
 int fallthrough(int x) {
-    uint32_t v1;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t result; /* [sp-10] */
-    int64_t local_2; /* [sp-18] */
+    uint32_t total; /* [sp-10] */
 
-    local_0 = x;
-    result = 0;
-    v1 = local_0;
-    local_2 = v1;
-    if (v1 <= 3) {
-        switch (local_2) {
+    total = 0;
+    if ((uint32_t)x <= 3) {
+        switch (x) {
         case 0:
-            result += 1;
+            total += 1;
             break;
         case 1:
             break;
         case 2:
-            result += 4;
-            return result;
+            total += 4;
+            return total;
         case 3:
-            result = 8;
-            return result;
+            total = 8;
+            return total;
         default:
-            result = 0xffffffff;
-            return result;
+            total = 0xffffffff;
+            return total;
         }
-        result += 2;
-        result += 4;
-        return result;
+        total += 2;
+        total += 4;
+        return total;
     }
-    result = 0xffffffff;
-    return result;
+    total = 0xffffffff;
+    return total;
 }
 -- signature
 int (int x)
@@ -183,19 +171,16 @@ fn fallthrough @ 0x201310 (size 107)
 -- decompile
 /* velk pseudo-C: sparse @ 0x201380 */
 int sparse(int x) {
-    int32_t v1;
-
-    v1 = x;
-    if (v1 - 1 == 0) {
+    if (x - 1 == 0) {
         return 10;
     }
-    if (v1 - 100 == 0) {
+    if (x - 100 == 0) {
         return 20;
     }
-    if (v1 - 1000 == 0) {
+    if (x - 1000 == 0) {
         return 30;
     }
-    if (v1 - 10000 == 0) {
+    if (x - 10000 == 0) {
         return 40;
     }
     return 0;
@@ -249,33 +234,31 @@ int short_circuit(int *p, int n) {
     int32_t v3;
     int64_t v7;
     uint8_t v9;
-    int32_t local_0; /* [sp-14] */
-    uint8_t local_1; /* [sp-15] */
-    uint8_t local_2; /* [sp-16] */
+    uint8_t local_0; /* [sp-15] */
+    uint8_t local_1; /* [sp-16] */
 
-    local_0 = n;
-    local_1 = 0;
+    local_0 = 0;
     if (p == 0) {
-        v9 = local_1;
+        v9 = local_0;
         return v9 & 0x1;
     }
-    v3 = local_0;
-    local_1 = 0;
+    v3 = n;
+    local_0 = 0;
     if (v3 <= 0) {
-        v9 = local_1;
+        v9 = local_0;
         return v9 & 0x1;
     }
     v3 = *p;
-    local_2 = 1;
+    local_1 = 1;
     if (v3 != 1) {
-        v7 = local_0 - 1;
+        v7 = n - 1;
         v3 = p[v7];
         v9 = (p[v7] == 1);
-        local_2 = v9;
+        local_1 = v9;
     }
-    v9 = local_2;
-    local_1 = v9;
     v9 = local_1;
+    local_0 = v9;
+    v9 = local_0;
     return v9 & 0x1;
 }
 -- signature
@@ -316,18 +299,16 @@ fn short_circuit @ 0x201410 (size 99)
 -- decompile
 /* velk pseudo-C: skip_negatives @ 0x201480 */
 int skip_negatives(int *p, int n) {
-    int32_t local_0; /* [sp-14] */
-    uint32_t result; /* [sp-18] */
+    uint32_t total; /* [sp-18] */
     int32_t i; /* [sp-1c] */
 
-    local_0 = n;
-    result = 0;
-    for (i = 0; i < local_0; i++) {
+    total = 0;
+    for (i = 0; i < n; i++) {
         if (p[i] >= 0) {
-            result += p[i];
+            total += p[i];
         }
     }
-    return result;
+    return total;
 }
 -- signature
 int (int * p, int n)
@@ -360,18 +341,14 @@ fn skip_negatives @ 0x201480 (size 96)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x2014e0 */
 int find_pair(int *p, int n, int target) {
-    int32_t local_0; /* [sp-1c] */
-    uint32_t local_1; /* [sp-20] */
     int32_t i; /* [sp-24] */
     int32_t j; /* [sp-28] */
     uint32_t result; /* [sp-c] */
 
-    local_0 = n;
-    local_1 = target;
-    for (i = 0; i < local_0; i++) {
-        for (j = i + 1; j < local_0; j++) {
-            if (p[i] + p[j] == local_1) {
-                result = i * local_0 + j;
+    for (i = 0; i < n; i++) {
+        for (j = i + 1; j < n; j++) {
+            if (p[i] + p[j] == target) {
+                result = i * n + j;
                 return result;
             }
         }

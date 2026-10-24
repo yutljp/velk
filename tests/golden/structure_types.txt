@@ -63,9 +63,9 @@ metrics/arith_mixed.x86_64.O0.debug.elf: 1
 metrics/arith_mixed.x86_64.O0.stripped.elf: 1
 metrics/arith_mixed.x86_64.O2.debug.elf: 1
 metrics/arith_mixed.x86_64.O2.stripped.elf: 1
-metrics/calls.aarch64.O0.debug.elf: 0
+metrics/calls.aarch64.O0.debug.elf: 1
 metrics/calls.aarch64.O0.stripped.elf: 0
-metrics/calls.aarch64.O2.debug.elf: 0
+metrics/calls.aarch64.O2.debug.elf: 1
 metrics/calls.aarch64.O2.stripped.elf: 0
 metrics/calls.x86_64.O0.debug.elf: 2
 metrics/calls.x86_64.O0.stripped.elf: 2

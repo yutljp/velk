@@ -38,7 +38,6 @@ struct record {
     uint8_t gap_0x12[0x6];
 };
 long record_total(struct record *items, int n) {
-    int32_t v1;
     int64_t v2;
     int64_t v3;
     uint32_t v4;
@@ -49,9 +48,8 @@ long record_total(struct record *items, int n) {
     if (n <= 0) {
         return 0;
     }
-    v1 = n;
     if (n != 1) {
-        v4 = v1 & 0x7ffffffe;
+        v4 = n & 0x7ffffffe;
         v5 = (void *)&items[1].count;
         v2 = 0;
         v3 = 0;
@@ -65,7 +63,7 @@ long record_total(struct record *items, int n) {
         v2 = 0;
         v3 = 0;
     }
-    if ((v1 & 0x1) == 0) {
+    if ((n & 0x1) == 0) {
         return v3;
     }
     v7 = v2 + v2 * 2;

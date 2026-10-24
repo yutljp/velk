@@ -71,10 +71,8 @@ fn pick_op @ 0x210350 (size 44)
 int apply_table(unsigned int index, int x) {
     uint64_t *const table = (uint64_t *)0x2206f0ULL;
     int64_t v3;
-    uint32_t local_0; /* [sp-14] */
 
-    local_0 = index;
-    v3 = table[local_0 % 3];
+    v3 = table[index % 3];
     return ((uint64_t (*)())v3)((x & 0xffffffff));
 }
 -- signature
@@ -261,51 +259,54 @@ fn call_sum9 @ 0x210564 (size 76)
 == 0x2105b0 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x2105b0 */
+struct __va_list {
+    _Alignas(8) void *__stack;
+    void *__gr_top;
+    void *__vr_top;
+    int __gr_offs;
+    int __vr_offs;
+};
 int sum_varargs(int count, ...) {
     int32_t v2;
     int64_t v4;
-    int32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-1c] */
-    uint32_t local_2; /* [sp-20] */
-    uint8_t *local_3; /* [sp-28] */
-    _Alignas(16) uint8_t local_4[0x40]; /* [sp-80] */
-    uint32_t *local_5; /* [sp-30] */
+    int32_t count_2; /* [sp-14] */
+    _Alignas(16) struct __va_list args; /* [sp-38] */
+    _Alignas(16) uint8_t local_2[0x40]; /* [sp-80] */
     int32_t i; /* [sp-40] */
-    int64_t local_7; /* [sp-38] */
-    uint32_t result; /* [sp-3c] */
-    uint32_t *local_9; /* [sp-110] */
-    int32_t local_10; /* [sp-104] */
-    uint32_t *local_11; /* [sp-118] */
+    uint32_t total; /* [sp-3c] */
+    uint32_t *local_5; /* [sp-110] */
+    int32_t local_6; /* [sp-104] */
+    uint32_t *local_7; /* [sp-118] */
 
-    local_0 = count;
-    local_1 = 0xffffff80;
-    local_2 = 0xffffffc8;
-    local_3 = local_4;
-    local_5 = (uint32_t *)(local_4 + 0x40);
-    local_7 = sp;
-    result = 0;
+    count_2 = count;
+    args.__vr_offs = 0xffffff80;
+    *(uint32_t *)((uint8_t *)&args + 0x18) = 0xffffffc8;
+    args.__vr_top = (void *)(local_2);
+    args.__gr_top = (void *)(local_2 + 0x40);
+    args.__stack = (void *)sp;
+    total = 0;
     i = 0;
-    while (i < local_0) {
-        local_9 = &local_2;
-        v2 = local_2;
-        local_10 = v2;
+    while (i < count_2) {
+        local_5 = (uint32_t *)((uint8_t *)&args + 0x18);
+        v2 = *(uint32_t *)((uint8_t *)&args + 0x18);
+        local_6 = v2;
         if (((uint32_t)v2 & 0x80000000) != 0) {
-            v2 = local_10 + 8;
-            *local_9 = v2;
+            v2 = local_6 + 8;
+            *local_5 = v2;
             if (v2 <= 0) {
-                local_11 = (uint32_t *)((uint8_t *)local_5 + local_10);
-                result += *local_11;
+                local_7 = (uint32_t *)((uint8_t *)args.__gr_top + local_6);
+                total += *local_7;
                 i += 1;
                 continue;
             }
         }
-        v4 = local_7;
-        local_7 = v4 + 8;
-        local_11 = (uint32_t *)v4;
-        result += *local_11;
+        v4 = (uintptr_t)args.__stack;
+        args.__stack = (void *)(v4 + 8);
+        local_7 = (uint32_t *)v4;
+        total += *local_7;
         i += 1;
     }
-    return result;
+    return total;
 }
 -- signature
 int (int count)

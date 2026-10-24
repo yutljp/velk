@@ -105,6 +105,7 @@ pub(crate) struct StackRow {
     /// The stack pointer is where it was on entry: only the return address
     /// is on the stack, as at the first instruction.
     pub at_entry: bool,
+    pub cfa: (Register, i64),
 }
 
 /// Every row of every frame description, by address. A frame address kept
@@ -153,6 +154,10 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
                 start: row.start_address(),
                 end: row.end_address(),
                 at_entry,
+                cfa: match row.cfa() {
+                    CfaRule::RegisterAndOffset { register, offset } => (*register, *offset),
+                    CfaRule::Expression(_) => continue,
+                },
             });
         }
     }

@@ -316,6 +316,13 @@ fn call_sum9 @ 0x210428 (size 64)
 == 0x210468 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x210468 */
+struct __va_list {
+    _Alignas(8) void *__stack;
+    void *__gr_top;
+    void *__vr_top;
+    int __gr_offs;
+    int __vr_offs;
+};
 int sum_varargs(int count, ...) {
     uint32_t *v1;
     int64_t v2;
@@ -323,38 +330,35 @@ int sum_varargs(int count, ...) {
     int32_t v4;
     int64_t v5;
     int32_t v6;
-    uint8_t *local_0; /* [sp-10] */
+    _Alignas(16) struct __va_list args; /* [sp-20] */
     _Alignas(16) uint8_t local_1[0x40]; /* [sp-60] */
-    int64_t local_2; /* [sp-8] */
-    int64_t *local_3; /* [sp-18] */
-    uint32_t *local_4; /* [sp-20] */
 
-    local_0 = local_1;
-    local_2 = 0xffffff80ffffffc8;
-    local_3 = (int64_t *)(local_1 + 0x40);
-    local_4 = (uint32_t *)sp;
+    args.__vr_top = (void *)(local_1);
+    *(uint64_t *)((uint8_t *)&args + 0x18) = 0xffffff80ffffffc8;
+    args.__gr_top = (void *)(&args.__stack);
+    args.__stack = (void *)sp;
     if (count < 1) {
         return 0;
     }
-    v1 = local_4;
-    v2 = (uintptr_t)local_3;
+    v1 = (uint32_t *)args.__stack;
+    v2 = (uintptr_t)args.__gr_top;
     v3 = 0;
-    v4 = *(uint32_t *)&local_2;
+    v4 = *(uint32_t *)((uint8_t *)&args + 0x18);
     do {
         if (((uint32_t)v4 & 0x80000000) != 0) {
             v6 = v4 + 8;
-            *(uint32_t *)&local_2 = v6;
+            *(uint32_t *)((uint8_t *)&args + 0x18) = v6;
             if (v4 <= 0xfffffff8) {
                 v5 = (uintptr_t)v1;
                 v1 = (uint32_t *)(v2 + v4);
             } else {
                 v5 = (uintptr_t)(v1 + 0x2);
-                local_4 = (uint32_t *)v5;
+                args.__stack = (void *)v5;
             }
         } else {
             v6 = v4;
             v5 = (uintptr_t)(v1 + 0x2);
-            local_4 = (uint32_t *)v5;
+            args.__stack = (void *)v5;
         }
         --count;
         v4 = v6;

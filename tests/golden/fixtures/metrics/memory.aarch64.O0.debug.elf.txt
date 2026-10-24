@@ -49,12 +49,12 @@ fn copy_bytes @ 0x210234 (size 104)
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x21029c */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
-    uint8_t local_0; /* [sp-9] */
+    uint8_t value_2; /* [sp-9] */
     uint64_t i; /* [sp-20] */
 
-    local_0 = value;
+    value_2 = value;
     for (i = 0; i < n; i++) {
-        dst[i] = local_0;
+        dst[i] = value_2;
     }
 }
 -- signature
@@ -88,11 +88,11 @@ fn fill_bytes @ 0x21029c (size 92)
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102f8 */
 unsigned long string_length(char *s) {
-    int64_t i; /* [sp-10] */
+    uint64_t n; /* [sp-10] */
 
-    for (i = 0; (uint8_t)s[i] != 0; i++) {
+    for (n = 0; (uint8_t)s[n] != 0; n++) {
     }
-    return i;
+    return n;
 }
 -- signature
 unsigned long (char * s)
@@ -141,14 +141,8 @@ fn grid_get @ 0x21033c (size 60)
 /* ref: 0x220454 .bss */
 void grid_set(int row, int col, int value) {
     uint32_t *const grid = (uint32_t *)0x220454ULL;
-    int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
-    uint32_t local_2; /* [sp-c] */
 
-    local_0 = row;
-    local_1 = col;
-    local_2 = value;
-    grid[(int64_t)(local_0 & 0x3) * 8 + (local_1 & 0x7)] = local_2;
+    grid[(int64_t)(row & 0x3) * 8 + (col & 0x7)] = value;
 }
 -- signature
 void (int row, int col, int value)
@@ -186,10 +180,10 @@ fn pointer_distance @ 0x2103bc (size 40)
 -- decompile
 /* velk pseudo-C: read_volatile @ 0x2103e4 */
 int read_volatile(int *p) {
-    uint32_t local_0; /* [sp-c] */
+    uint32_t a; /* [sp-c] */
 
-    local_0 = *p;
-    return local_0 + *p;
+    a = *p;
+    return a + *p;
 }
 -- signature
 int (int * p)
@@ -207,11 +201,11 @@ fn read_volatile @ 0x2103e4 (size 52)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x210418 */
 void swap_ints(int *a, int *b) {
-    uint32_t local_0; /* [sp-14] */
+    uint32_t t; /* [sp-14] */
 
-    local_0 = *a;
+    t = *a;
     *a = *b;
-    *b = local_0;
+    *b = t;
 }
 -- signature
 void (int * a, int * b)

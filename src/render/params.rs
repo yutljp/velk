@@ -53,7 +53,7 @@ fn fold(ir: &mut FunctionIr, param: u16) {
     let narrow = ir
         .params
         .iter()
-        .any(|held| held.index == param && held.ty.is_32_bit_int());
+        .any(|held| held.index == param && held.ty.integer().is_some_and(|(bits, _)| bits == 32));
     let source_of = |value: &Expr| match value {
         Expr::Reg { index, width: 64 } => Some(Source::Register(*index)),
         Expr::Reg { index, width: 32 } if narrow => Some(Source::Register(*index)),
@@ -175,7 +175,7 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         accesses.extend(
             loaded
                 .iter()
-                .filter_map(|(addr, width)| Some((slot_of(addr)?, *width, false))),
+                .filter_map(|(addr, width)| slot_of(addr).map(|slot| (slot, *width, false))),
         );
     }
     let mixed = |slot: u64| {

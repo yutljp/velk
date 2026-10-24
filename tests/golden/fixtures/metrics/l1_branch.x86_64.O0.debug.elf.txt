@@ -7,11 +7,8 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x2011a0 */
 int classify(int x) {
-    int32_t v1;
-
-    v1 = x;
     if (x >= 0) {
-        if (v1 != 0) {
+        if (x != 0) {
             return 1;
         }
         return 0;
@@ -46,18 +43,14 @@ fn classify @ 0x2011a0 (size 63)
 -- decompile
 /* velk pseudo-C: clamp @ 0x2011e0 */
 int clamp(int x, int lo, int hi) {
-    int32_t v1;
     int32_t result;
-    int32_t v3;
 
-    v1 = x;
     result = lo;
-    v3 = hi;
     if (x >= lo) {
-        if (v1 <= v3) {
-            return v1;
+        if (x <= hi) {
+            return x;
         }
-        return v3;
+        return hi;
     }
     return result;
 }
@@ -90,11 +83,8 @@ fn clamp @ 0x2011e0 (size 70)
 -- decompile
 /* velk pseudo-C: sign_of @ 0x201230 */
 int sign_of(int x) {
-    int32_t v1;
-
-    v1 = x;
     if (x <= 0) {
-        return (v1 < 0 ? 0xffffffff : 0);
+        return (x < 0 ? 0xffffffff : 0);
     }
     return 1;
 }

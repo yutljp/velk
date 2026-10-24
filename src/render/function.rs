@@ -295,6 +295,36 @@ fn render_with(
         .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
         .filter_map(|param| self::float_return(&param.ty).map(|precision| (param.index, (param.name.clone(), precision))))
         .collect();
+    let mut debug_names = Vec::new();
+    for (register, source_name) in &ir.debug_registers {
+        if ir
+            .debug_registers
+            .iter()
+            .filter(|(other, _)| other == register)
+            .count()
+            != 1
+        {
+            continue;
+        }
+        let mut candidates = variable_types.keys().copied().filter(|index| {
+            ir.variable_registers.get(index) == Some(register) && !names.contains_key(index)
+        });
+        let Some(index) = candidates.next() else {
+            continue;
+        };
+        if candidates.next().is_some() {
+            continue;
+        }
+        let base = if globals::reserved_identifier(source_name) {
+            format!("{source_name}_2")
+        } else {
+            source_name.clone()
+        };
+        debug_names.push((index, vacant_name(&base, &mut machine_reserved)));
+    }
+    for (index, name) in &debug_names {
+        names.insert(*index, name);
+    }
     let roles = naming::roles::infer(ir, symbols);
     let role_names: Vec<_> = variable_types
         .keys()
@@ -894,7 +924,7 @@ fn render_with(
         out.push_str(&format!(
             "{}; /* [sp{}{:x}] */\n",
             match &local.ty {
-                _ if !local.fields.is_empty() => {
+                _ if !local.fields.is_empty() && local.ty.is_none() => {
                     let mut fields = Vec::new();
                     let mut end = 0;
                     for field in &local.fields {
@@ -921,6 +951,16 @@ fn render_with(
                         local.name
                     )
                 }
+                Some(CType::Array(element)) if local.size > 0 => {
+                    let size = super::locals::scalar_storage_size(element).unwrap_or(1);
+                    format!(
+                        "_Alignas(16) {}[0x{:x}]",
+                        declaration(element, &local.name),
+                        local.size / i64::from(size)
+                    )
+                }
+                Some(ty) if local.size > 0 =>
+                    format!("_Alignas(16) {}", declaration(ty, &local.name)),
                 _ if local.size > 0 =>
                     format!("_Alignas(16) uint8_t {}[0x{:x}]", local.name, local.size),
                 Some(ty) => declaration(ty, &local.name),

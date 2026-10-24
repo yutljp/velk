@@ -11,9 +11,8 @@
 -- decompile
 /* velk pseudo-C: matrix_trace @ 0x2101d4 */
 int matrix_trace(int *m, int n) {
-    int64_t v1;
+    int64_t i;
     int32_t v2;
-    uint32_t v3;
     int32_t v4;
     int *v5;
     int64_t j;
@@ -21,21 +20,16 @@ int matrix_trace(int *m, int n) {
     if (n < 1) {
         return 0;
     }
-    v1 = 0;
     v2 = 0;
-    v3 = n;
-    do {
-        v4 = v1 * n;
-        v5 = m + v1;
-        j = 0;
-        do {
-            if (v1 == j) {
+    for (i = 0; i < (uint32_t)n; i++) {
+        v4 = i * n;
+        v5 = m + i;
+        for (j = 0; j < (uint32_t)n; j++) {
+            if (i == j) {
                 v2 = v5[(uint32_t)v4] + v2;
             }
-            ++j;
-        } while (v3 != j);
-        ++v1;
-    } while (v1 != v3);
+        }
+    }
     return v2;
 }
 -- signature
@@ -78,13 +72,10 @@ fn matrix_trace @ 0x2101d4 (size 100)
 -- decompile
 /* velk pseudo-C: cleanup_on_error @ 0x210238 */
 int cleanup_on_error(int a, int b, int *out) {
-    int32_t v1;
-
-    v1 = a;
-    if (((uint32_t)v1 & 0x80000000) != 0 || b == 0) {
+    if ((a & 0x80000000) != 0 || b == 0) {
         return -1;
     }
-    *out = v1 / b;
+    *out = a / b;
     return 0;
 }
 -- signature
@@ -229,7 +220,6 @@ fn short_circuit @ 0x2102cc (size 60)
 -- decompile
 /* velk pseudo-C: skip_negatives @ 0x210308 */
 int skip_negatives(int *p, int n) {
-    int64_t v1;
     int64_t v2;
     int32_t v3;
     uint64_t v4;
@@ -248,14 +238,13 @@ int skip_negatives(int *p, int n) {
     if (n < 1) {
         return 0;
     }
-    v1 = (uint32_t)n;
     if ((uint32_t)n >= 8) {
         v4 = 0;
         v5 = 0;
         v6 = 0;
         v7 = 0;
         v8 = (uint64_t *)(p + 0x4);
-        v2 = v1 & 0x7ffffff8;
+        v2 = (uint32_t)n & 0x7ffffff8;
         v9 = v2;
         do {
             v10 = v8[-2];
@@ -270,7 +259,7 @@ int skip_negatives(int *p, int n) {
             v7 = add_lanes32(max_lanes32(v13, 0), v7);
         } while (v9 != 0);
         v3 = sum_lanes32(add_lanes32(v6, v4), add_lanes32(v7, v5));
-        if (v2 == v1) {
+        if (v2 == (uint32_t)n) {
             return v3;
         }
     } else {
@@ -278,7 +267,7 @@ int skip_negatives(int *p, int n) {
         v3 = 0;
     }
     v14 = p + v2;
-    v15 = v1 - v2;
+    v15 = (uint32_t)n - v2;
     do {
         v2 = (uint32_t)*v14;
         v14 = v14 + 0x1;
@@ -346,7 +335,6 @@ fn skip_negatives @ 0x210308 (size 156)
 /* velk pseudo-C: find_pair @ 0x2103a4 */
 int find_pair(int *p, int n, int target) {
     int64_t v1;
-    uint32_t v2;
     int32_t v3;
     int64_t v4;
     int32_t v5;
@@ -360,16 +348,15 @@ int find_pair(int *p, int n, int target) {
 
     if (n >= 1) {
         v1 = 0;
-        v2 = n;
         v3 = n + 1;
         v4 = (uintptr_t)(p + 0x1);
         v5 = 1;
         v6 = 1;
         do {
             v7 = v1 + 1;
-            if (v7 < v2) {
+            if (v7 < (uint32_t)n) {
                 v8 = p[v1];
-                v9 = v2;
+                v9 = (uint32_t)n;
                 v10 = (uint32_t *)v4;
                 v11 = v5;
                 do {
@@ -386,7 +373,7 @@ int find_pair(int *p, int n, int target) {
             v5 += v3;
             v4 += 4;
             v1 = v7;
-        } while (v7 != v2);
+        } while (v7 != (uint32_t)n);
     }
     return -1;
 }

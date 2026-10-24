@@ -201,7 +201,9 @@ impl Readability {
             }
             self.lines += 1;
             let code = line.split("/*").next().unwrap_or("");
-            if in_function && is_declaration(code) {
+            if in_function
+                && (is_declaration(code) || (line.contains("; /* [sp") && !code.contains('(')))
+            {
                 self.variables += 1;
             }
             self.casts += casts(code);
