@@ -673,6 +673,7 @@ fn render_with(
     }
     ctx.read_once = calls::read_once(&nodes);
     render_nodes(&nodes, 1, &mut body, &ctx);
+    let shared_call_values = ctx.call_outputs.shared_declaration(&mut body);
     let segment_bases: Vec<_> = segment_bases
         .iter()
         .filter(|(_, _, _, snapshot)| code_mentions(&body, snapshot))
@@ -739,6 +740,11 @@ fn render_with(
             }
             declared += 1;
         }
+    }
+    if let Some(declaration) = shared_call_values {
+        indent(1, &mut out);
+        out.push_str(&declaration);
+        declared += 1;
     }
     for name in &ctx.call_outputs.declarations {
         if variables::mentions(&body, name) {

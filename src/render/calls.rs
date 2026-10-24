@@ -33,6 +33,7 @@ pub(super) struct Outputs {
     pub(super) sources: HashMap<u16, String>,
     pub(super) declarations: Vec<String>,
     pub(super) temporary: String,
+    snapshot_sizes: std::cell::RefCell<HashSet<usize>>,
 }
 
 fn key(stmt: &Stmt) -> CallKey {
@@ -65,6 +66,43 @@ fn key(stmt: &Stmt) -> CallKey {
 }
 
 impl Outputs {
+    pub(super) fn shared_declaration(&self, body: &mut String) -> Option<String> {
+        // Rendering may try alternatives; only declarations in the final body count.
+        let declarations: Vec<_> = self
+            .snapshot_sizes
+            .borrow()
+            .iter()
+            .map(|size| (*size, format!("uint64_t {}[{size}];\n", self.temporary)))
+            .filter(|(_, declaration)| body.lines().any(|line| line.trim() == declaration.trim()))
+            .collect();
+        let count: usize = declarations
+            .iter()
+            .map(|(_, declaration)| {
+                body.lines()
+                    .filter(|line| line.trim() == declaration.trim())
+                    .count()
+            })
+            .sum();
+        if count <= 1 {
+            return None;
+        }
+        let size = declarations
+            .iter()
+            .map(|(size, _)| *size)
+            .max()
+            .unwrap_or(0);
+        *body = body
+            .lines()
+            .filter(|line| {
+                !declarations
+                    .iter()
+                    .any(|(_, declaration)| line.trim() == declaration.trim())
+            })
+            .map(|line| format!("{line}\n"))
+            .collect();
+        Some(format!("uint64_t {}[{size}];\n", self.temporary))
+    }
+
     pub(super) fn new(
         ir: &FunctionIr,
         machine: &[(u16, String)],
@@ -527,6 +565,10 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
         return lines.join("\n");
     }
     let temporary = &ctx.call_outputs.temporary;
+    ctx.call_outputs
+        .snapshot_sizes
+        .borrow_mut()
+        .insert(used.len());
     let mut lines = vec![
         "{".to_owned(),
         format!("    uint64_t {temporary}[{}];", used.len()),
@@ -872,6 +914,31 @@ mod tests {
 
     use crate::ir::{CType, Convention, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE};
     use crate::loader::Isa;
+
+    #[test]
+    fn shared_snapshot_declaration_uses_only_final_blocks() {
+        let outputs = super::Outputs {
+            temporary: "call_values".into(),
+            snapshot_sizes: std::cell::RefCell::new([2, 3, 9].into()),
+            ..Default::default()
+        };
+        let single =
+            "    {\n        uint64_t call_values[2];\n        call_values[0] = left;\n    }\n";
+        let mut body = single.to_owned();
+        assert_eq!(outputs.shared_declaration(&mut body), None);
+        assert_eq!(body, single);
+        body.push_str(
+            "    {\n        uint64_t call_values[3];\n        right = call_values[2];\n    }\n",
+        );
+        assert_eq!(
+            outputs.shared_declaration(&mut body).as_deref(),
+            Some("uint64_t call_values[3];\n")
+        );
+        assert_eq!(
+            body,
+            "    {\n        call_values[0] = left;\n    }\n    {\n        right = call_values[2];\n    }\n"
+        );
+    }
 
     fn call(target: u64, args: Vec<Expr>) -> Stmt {
         Stmt::Call {

@@ -4124,6 +4124,166 @@ int main(void) {
 }
 
 #[test]
+fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
+    use velk::ir::{CallOutput, RegRef, Registers};
+
+    let output = |register, index, width| CallOutput {
+        register,
+        dest: RegRef { index, width },
+    };
+    let call = |target, wide| Stmt::Call {
+        target: Some(target),
+        through: None,
+        convention: Convention::SysV,
+        args: Some(vec![Expr::reg(7, 64), Expr::reg(6, 64), Expr::reg(2, 64)]),
+        floats_named: true,
+        outputs: if wide {
+            vec![output(7, 6, 64), output(6, 7, 32), output(0, 2, 64)]
+        } else {
+            vec![output(7, 6, 64), output(6, 7, 64)]
+        },
+        clobbers: Some(Registers(1)),
+        via: None,
+    };
+    let returned = Stmt::Ret {
+        value: Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::reg(6, 64)),
+    };
+    let mut text = String::from(HEADER);
+    text.push_str("static uint64_t recurse(uint64_t, uint64_t, uint64_t);\n");
+    text.push_str("static uint64_t helper(uint64_t a, uint64_t b, uint64_t depth) { return depth ? recurse(a, b, depth - 1) : a + b; }\n");
+    for name in ["sequential", "branches", "loops", "recurse"] {
+        let mut ir = synthetic_ir(
+            name,
+            [(7, "left"), (6, "right"), (2, "depth")]
+                .into_iter()
+                .map(|(index, name)| Param {
+                    index,
+                    name: name.into(),
+                    ty: CType::U64,
+                })
+                .collect(),
+            CType::U64,
+            vec![call(0x1000, false), call(0x1000, true), returned.clone()],
+        );
+        if name == "branches" {
+            ir.blocks[0].stmts = vec![Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(2, 64),
+                rhs: Expr::Const(0),
+                target: 0x20,
+            }];
+            ir.blocks.extend([
+                Block {
+                    start: 0x10,
+                    stmts: vec![call(0x1000, false), returned.clone()],
+                },
+                Block {
+                    start: 0x20,
+                    stmts: vec![call(0x1000, true), returned.clone()],
+                },
+            ]);
+        } else if name == "loops" {
+            let counter = velk::ir::VARIABLE_BASE;
+            ir.blocks[0].stmts = vec![
+                call(0x1000, false),
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: counter,
+                        width: 64,
+                    },
+                    value: Expr::Const(2),
+                },
+            ];
+            ir.blocks.extend([
+                Block {
+                    start: 0x10,
+                    stmts: vec![
+                        call(0x1000, true),
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: counter,
+                                width: 64,
+                            },
+                            value: Expr::bin(BinOp::Sub, Expr::reg(counter, 64), Expr::Const(1)),
+                        },
+                        Stmt::Brif {
+                            cond: Cond::Ne,
+                            lhs: Expr::reg(counter, 64),
+                            rhs: Expr::Const(0),
+                            target: 0x10,
+                        },
+                    ],
+                },
+                Block {
+                    start: 0x20,
+                    stmts: vec![returned.clone()],
+                },
+            ]);
+        }
+        // Keep the scalar result live so the larger block needs all three slots.
+        for block in &mut ir.blocks {
+            if matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
+                block.stmts.pop();
+                block.stmts.push(Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Xor,
+                        Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::reg(6, 64)),
+                        Expr::reg(2, 64),
+                    ),
+                });
+            }
+        }
+        let symbols = velk::render::Symbols {
+            functions: [(0x1000, "helper".to_owned())].into(),
+            function_returns: [(0x1000, CType::U64)].into(),
+            ..Default::default()
+        };
+        let printed = velk::render::render(&ir, &[], &symbols, &[]);
+        assert_eq!(
+            printed.matches("uint64_t call_values[").count(),
+            1,
+            "{printed}"
+        );
+        assert!(printed.contains("uint64_t call_values[3];"), "{printed}");
+        text.push_str(&printed);
+    }
+    text.push_str(
+        r#"
+static uint64_t expected(uint64_t a, uint64_t b, uint64_t d) {
+    uint64_t value = d ? expected(b, a, d - 1) : b + a;
+    return b ^ (uint32_t)a ^ value;
+}
+int main(void) {
+    uint64_t values[] = {0, 1, UINT64_C(0x8123456789abcdef), UINT64_MAX};
+    for (unsigned i = 0; i < 4; ++i) for (unsigned j = 0; j < 4; ++j) {
+        uint64_t a = values[i], b = values[j];
+        for (uint64_t d = 0; d < 4; ++d) {
+            uint64_t want = expected(a, b, d);
+            if (sequential(a, b, d) != want || recurse(a, b, d) != want) return 1;
+        }
+        if (branches(a, b, 0) != (a ^ (uint32_t)b ^ (a + b))) return 2;
+        if (branches(a, b, 1) != (a ^ b ^ 1)) return 3;
+    }
+    if (loops(0, 0, 0) != 0) return 4;
+    if (loops(UINT64_MAX, 1, 0) != UINT64_C(0x1fffffffe)) return 5;
+    puts("ok");
+    return 0;
+}
+"#,
+    );
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("shared-call-results");
+    for level in LEVELS {
+        let program = build(&source, &scratch, level, &[]);
+        assert_eq!(run(&program, ""), "ok\n");
+    }
+    std::fs::remove_dir_all(&scratch).ok();
+}
+
+#[test]
 fn printed_address_literals_preserve_all_bits() {
     let mut text = String::from(
         "typedef __UINT64_TYPE__ uint64_t;\ntypedef __UINTPTR_TYPE__ uintptr_t;\n_Static_assert(sizeof(uint64_t) == 8 && sizeof(uintptr_t) == 8, \"64-bit addresses\");\nint main(void) {\n",
