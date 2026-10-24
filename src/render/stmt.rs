@@ -248,6 +248,23 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
 }
 
 pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
+    if let (Stmt::Ret { value }, Some(plan)) = (stmt, ctx.variadic) {
+        let (ty, value) = match ctx.float_return {
+            Some(precision) => (
+                if precision == crate::ir::Precision::Double {
+                    "double"
+                } else {
+                    "float"
+                },
+                expr::float_operand(value, precision, ctx, 0, false),
+            ),
+            None => ("uint64_t", returned(value, ctx)),
+        };
+        return format!(
+            "{{ {ty} {} = {value}; va_end({}); return {}; }}",
+            plan.result, plan.name, plan.result
+        );
+    }
     match stmt {
         Stmt::Assign { dest, value } => {
             // A destination whose readers only use the low 32 bits takes its

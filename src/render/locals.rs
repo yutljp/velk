@@ -147,6 +147,7 @@ pub(super) fn stack_locals_with_roles(
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
+        variadic: None,
         go_word_types: Default::default(),
         callee_signatures: Default::default(),
         abi: None,

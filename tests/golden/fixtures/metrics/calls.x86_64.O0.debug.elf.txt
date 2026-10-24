@@ -11,6 +11,8 @@
 0x2014f0 80 call_sum9 symtab,dwarf,unwind
 0x201540 296 sum_varargs symtab,dwarf,unwind
 /* velk prelude */
+#include <stdarg.h>
+
 int is_even(int);
 
 int is_odd(int);
@@ -20,8 +22,6 @@ int square(int);
 int twice(int);
 
 long sum9(long, long, long, long, long, long, long, long, long);
-
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x201310 twice
@@ -254,51 +254,17 @@ fn call_sum9 @ 0x2014f0 (size 80)
 == 0x201540 sum_varargs
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x201540 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; int64_t field_0x8; int64_t field_0x10; };
-struct S2 { int32_t field_0x0; uint8_t gap_0x4[0xc]; int64_t field_0x10; };
 int sum_varargs(int count, ...) {
-    uint64_t rsp = velk_entry_stack_pointer();
-    struct S1 *v1;
-    uint32_t v2;
-    struct S2 *v3;
-    int32_t v4;
-    int64_t v5;
-    uint64_t *v6;
-    int32_t count_2; /* [sp-c] */
-    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint8_t gap_4[0x18]; } local_1; /* [sp-28] */
-    _Alignas(16) uint8_t local_2[0xb8]; /* [sp-e8] */
+    va_list varargs;
+    va_start(varargs, count);
     uint32_t total; /* [sp-2c] */
     int32_t i; /* [sp-30] */
-    void *local_5; /* [sp-f8] */
-    uint32_t local_6; /* [sp-ec] */
-    uint32_t *local_7; /* [sp-100] */
 
-    count_2 = count;
-    v1 = (struct S1 *)(&local_1.f_0);
-    v1->field_0x10 = (uintptr_t)(local_2);
-    v1->field_0x8 = rsp + 8;
-    v1->field_0x4 = 48;
-    v1->field_0x0 = 8;
     total = 0;
-    for (i = 0; i < count_2; i++) {
-        local_5 = (void *)(&local_1.f_0);
-        v2 = local_1.f_0;
-        local_6 = v2;
-        if (v2 > 40) {
-            v6 = (uint64_t *)local_5;
-            v5 = v6[1];
-            v6[1] = v5 + 8;
-            local_7 = (uint32_t *)v5;
-        } else {
-            v3 = (struct S2 *)local_5;
-            v4 = local_6;
-            v5 = v4 + v3->field_0x10;
-            v3->field_0x0 = v4 + 8;
-            local_7 = (uint32_t *)v5;
-        }
-        total += *local_7;
+    for (i = 0; i < count; i++) {
+        total += va_arg(varargs, int);
     }
-    return total;
+    { uint64_t variadic_result = total; va_end(varargs); return variadic_result; }
 }
 -- signature
 int (int count)

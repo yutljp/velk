@@ -129,6 +129,24 @@ pub(super) fn copied_load(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Strin
 
 /// Memory read `width` bytes wide, by name where it has one.
 pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
+    if let Some(plan) = ctx.variadic
+        && matches!(addr, Expr::Reg { index, .. } if *index == plan.register)
+    {
+        if plan.floating {
+            return super::operation::float_bits(
+                format!("va_arg({}, double)", plan.name),
+                crate::ir::Precision::Double,
+            );
+        }
+        let ty = if width == 4 { "int" } else { "long long" };
+        let bits = u32::from(width) * 8;
+        return Printed::new(
+            format!("va_arg({}, {ty})", plan.name),
+            Int::promoted(bits, true),
+            bits,
+            13,
+        );
+    }
     if !ctx.parameter_reads.is_empty()
         && let Some(read) = ctx.parameter_reads.get(&(render_expr(addr, ctx), width))
     {

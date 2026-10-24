@@ -25,6 +25,7 @@ mod symbols;
 mod transfers;
 pub(crate) mod unions;
 mod variables;
+mod variadic;
 mod vector_helpers;
 mod widths;
 
@@ -128,6 +129,9 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         })
         .collect();
     let mut symbols = Symbols {
+        target_format: (image.byte_order() == Some(object::Endianness::Little))
+            .then_some(image.format),
+        variadic_functions: crate::loader::dwarf::variadic::functions(image),
         functions,
         go_value_shapes: image
             .functions

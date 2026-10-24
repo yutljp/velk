@@ -32,6 +32,13 @@ pub(crate) fn float_operand(
     parent: u8,
     right: bool,
 ) -> String {
+    if let Some(plan) = ctx.variadic
+        && plan.floating
+        && precision == Precision::Double
+        && matches!(expr, Expr::Load { addr, width: 8, .. } if matches!(addr.as_ref(), Expr::Reg { index, .. } if *index == plan.register))
+    {
+        return format!("va_arg({}, double)", plan.name);
+    }
     if let Some(value) = unmasked_float(expr, precision) {
         return float_operand(value, precision, ctx, parent, right);
     }

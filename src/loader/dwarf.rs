@@ -10,6 +10,7 @@ use crate::loader::Image;
 mod globals;
 mod layout;
 mod locals;
+pub(crate) mod variadic;
 
 #[derive(Debug, Clone)]
 pub struct DwarfFunction {

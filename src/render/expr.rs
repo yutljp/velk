@@ -44,6 +44,7 @@ pub(super) struct ParameterRead {
 }
 
 pub(crate) struct Ctx<'a> {
+    pub(super) variadic: Option<&'a super::variadic::Plan>,
     pub(super) abi: Option<&'a super::abi::Plan>,
     pub(super) call_outputs: super::calls::Outputs,
     pub(super) block_addresses: std::collections::HashSet<u64>,

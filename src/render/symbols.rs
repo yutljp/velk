@@ -2,6 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub struct Symbols {
+    /// Named parameter counts for functions declared variadic in debug information.
+    pub variadic_functions: HashMap<u64, usize>,
+    /// The object format of a known little-endian target.
+    pub target_format: Option<crate::loader::Format>,
     pub functions: HashMap<u64, String>,
     /// Original runtime helper names that establish Go value shapes.
     pub go_value_shapes: HashMap<u64, String>,

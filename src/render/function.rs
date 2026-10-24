@@ -57,6 +57,7 @@ fn render_unmerged(
             )
         });
     }
+    let variadic = super::variadic::prepare(&mut folded, symbols);
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
     // A saved parameter returned reads as the parameter now.
@@ -189,6 +190,7 @@ fn render_unmerged(
         symbols,
         data_ranges,
         EntryStorage {
+            variadic: variadic.as_ref(),
             logical: logical.as_ref(),
             incoming: incoming.as_ref(),
             float_entries,
@@ -229,6 +231,7 @@ fn scales(ty: &CType) -> bool {
 }
 
 struct EntryStorage<'a> {
+    variadic: Option<&'a super::variadic::Plan>,
     logical: Option<&'a abi::Plan>,
     incoming: Option<&'a stack_bytes::Plan>,
     float_entries: std::collections::HashSet<u16>,
@@ -255,6 +258,7 @@ fn render_with(
         block_addresses,
     } = body;
     let EntryStorage {
+        variadic,
         logical,
         incoming,
         float_entries,
@@ -767,6 +771,7 @@ fn render_with(
         }
     }
     let mut ctx = Ctx {
+        variadic,
         callee_signatures: ir.callee_signatures.clone(),
         go_word_types: go_groups
             .iter()
@@ -1082,6 +1087,18 @@ fn render_with(
         &super::prelude::section(&prototypes.replace("\n", "\n\n")),
     );
     let mut declared = 0;
+    if let Some(plan) = variadic {
+        out.push_str(&format!(
+            "    va_list {};\n    va_start({}, {});\n",
+            plan.name,
+            plan.name,
+            ir.params
+                .last()
+                .map(|param| param.name.as_str())
+                .unwrap_or(&plan.last)
+        ));
+        declared += 1;
+    }
     if let Some(provider) = &stack_provider {
         indent(1, &mut out);
         out.push_str(&format!("uint64_t {stack_name} = {provider}();\n"));
@@ -1259,7 +1276,11 @@ fn render_with(
     let debug = debug_definitions(ir, &out, &ctx.arrays);
     out.insert_str(definitions_at, &debug);
     Rendered {
-        code: super::prelude::combine(&out),
+        code: super::prelude::combine(&if variadic.is_some() {
+            format!("{}{out}", super::prelude::section("#include <stdarg.h>\n"))
+        } else {
+            out
+        }),
         segment_bases: segment_bases
             .into_iter()
             .map(|(segment, _, provider, _)| SegmentBaseRead {
