@@ -26,8 +26,8 @@ use iced_x86::{
 
 use super::flags::{Flags, Test};
 use super::{
-    Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, flags, preserve_compare,
-    reverse_bytes, rotate, tail_call,
+    Decoded, Machine, Write, call, call_through, flags, preserve_compare, reverse_bytes, rotate,
+    tail_call,
 };
 use crate::ir::{
     BinOp, Block, CallKind, Cond, EXCHANGE, Expr, LaneOp, Operation, Precision, RegRef, Rounding,
@@ -762,12 +762,6 @@ pub(super) fn decode(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Opt
     let mut decoder = Decoder::with_ip(64, bytes, addr, DecoderOptions::NONE);
     let mut decoded = Vec::new();
     while decoder.can_decode() {
-        if decoded.len() == MAX_INSTRUCTIONS {
-            return (
-                decoded,
-                Some(format!("stopped after {MAX_INSTRUCTIONS} instructions")),
-            );
-        }
         let instruction = decoder.decode();
         decoded.push(Decoded {
             pc: instruction.ip(),

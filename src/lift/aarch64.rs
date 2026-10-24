@@ -26,8 +26,8 @@ use yaxpeax_arm::armv8::a64::{self, Instruction, Operand, SizeCode};
 
 use super::flags::{Flags, Test};
 use super::{
-    Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, flags, preserve_compare,
-    reverse_bytes, rotate, tail_call,
+    Decoded, Machine, Write, call, call_through, flags, preserve_compare, reverse_bytes, rotate,
+    tail_call,
 };
 use crate::arch::aarch64::LR;
 use crate::ir::{
@@ -637,12 +637,18 @@ pub(super) fn decode(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Opt
     let decoder = a64::InstDecoder::default();
     let count = bytes.len() / 4;
     let mut decoded = Vec::new();
-    for index in 0..count.min(MAX_INSTRUCTIONS) {
-        let pc = addr + 4 * index as u64;
+    let mut pc = addr;
+    for _ in 0..count {
+        let Some(next) = pc.checked_add(4) else {
+            return (
+                decoded,
+                Some(format!("instruction address overflows at 0x{pc:x}")),
+            );
+        };
         match decoder.decode(&mut reader) {
             Ok(instruction) => decoded.push(Decoded {
                 pc,
-                next: pc + 4,
+                next,
                 instruction,
             }),
             Err(error) => {
@@ -652,10 +658,9 @@ pub(super) fn decode(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Opt
                 );
             }
         }
+        pc = next;
     }
-    let stop = (count > MAX_INSTRUCTIONS)
-        .then(|| format!("stopped after {MAX_INSTRUCTIONS} instructions"));
-    (decoded, stop)
+    (decoded, None)
 }
 
 impl Machine for Lifter<'_> {

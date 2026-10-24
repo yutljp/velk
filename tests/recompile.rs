@@ -26,6 +26,8 @@ mod division;
 mod frame_values;
 #[path = "recompile/ignored_result.rs"]
 mod ignored_result;
+#[path = "recompile/long_branches.rs"]
+mod long_branches;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
 

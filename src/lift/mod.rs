@@ -15,8 +15,6 @@ use crate::ir::visit::{children, expr_reads};
 use crate::ir::{Block, CallKind, Convention, Expr, FLAG_OPERANDS, RegRef, Stmt};
 use crate::loader::{Image, Isa, Summary};
 
-const MAX_INSTRUCTIONS: usize = 8192;
-
 struct Decoded<I> {
     pc: u64,
     next: u64,
