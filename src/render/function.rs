@@ -747,7 +747,26 @@ fn render_with(
         out.push_str(&definition);
         definitions.push((structure.name.clone(), definition));
     }
+    if ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::Machine { .. }))
+    {
+        out.push_str("#include <cpuid.h>\n#include <x86intrin.h>\n");
+    }
     let prototypes_at = out.len();
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Xgetbv,
+                ..
+            }
+        )
+    }) {
+        out.push_str("__attribute__((target(\"xsave\")))\n");
+    }
     out.push_str(&format!(
         "{} {{\n",
         declaration(

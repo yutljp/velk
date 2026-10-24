@@ -119,6 +119,7 @@ fn tokens(ir: &FunctionIr) -> Vec<String> {
                     out.push("ret".to_owned());
                 }
                 Stmt::Trap => out.push("trap".to_owned()),
+                Stmt::Machine { instruction, .. } => out.push(format!("machine:{instruction:?}")),
                 Stmt::Unsupported { .. } => out.push("unsupported".to_owned()),
             }
             if out.len() >= TOKEN_LIMIT {

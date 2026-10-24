@@ -164,6 +164,19 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     forward_expr(lhs, &pending);
                     forward_expr(rhs, &pending);
                 }
+                Stmt::Machine {
+                    inputs, outputs, ..
+                } => {
+                    for input in inputs {
+                        forward_expr(input, &pending);
+                    }
+                    pending.retain(|(_, addr, stored)| {
+                        let mut reads = std::collections::HashSet::new();
+                        crate::ir::visit::collect_reads(addr, &mut reads);
+                        crate::ir::visit::collect_reads(stored, &mut reads);
+                        !outputs.iter().any(|output| reads.contains(&output.index))
+                    });
+                }
                 Stmt::Ret { value } => forward_expr(value, &pending),
                 _ => {}
             }

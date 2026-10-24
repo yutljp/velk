@@ -792,7 +792,7 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
                     used_elsewhere |= reads_register(addr, arch::RETURN);
                     used_elsewhere |= reads_register(value, arch::RETURN);
                 }
-                Stmt::Call { .. } => {
+                Stmt::Call { .. } | Stmt::Machine { .. } => {
                     side_effect = true;
                     let (definitions, reads) = crate::ir::visit::statement_registers(stmt);
                     written |= definitions.contains(&arch::RETURN);

@@ -168,6 +168,11 @@ pub(crate) fn clobbers_knowing(
         let mut ended = false;
         for stmt in &blocks[index].stmts {
             match stmt {
+                Stmt::Machine { outputs, .. } => {
+                    for output in outputs {
+                        state.set(output.index, Value::Other);
+                    }
+                }
                 Stmt::Assign { dest, value } => {
                     let value = if dest.width == 64 {
                         state.value(value)

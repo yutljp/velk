@@ -58,6 +58,7 @@ enum Flow {
 }
 
 struct Machine<'a> {
+    source: Option<&'a MachineSource<'a>>,
     isa: crate::loader::Isa,
     convention: &'a Convention<'a>,
     seed: u64,
@@ -68,8 +69,18 @@ struct Machine<'a> {
     starts: HashMap<u64, usize>,
 }
 
+/// Supplies raw instruction outputs in their declared order. For WriteFlags,
+/// return the effective flags after privilege and reserved-bit restrictions.
+pub type MachineSource<'a> =
+    dyn Fn(super::MachineInstruction, &[u64]) -> Result<Vec<u64>, &'static str> + 'a;
+
 pub fn run(ir: &FunctionIr, setup: &Setup<'_>) -> Outcome {
+    run_with_machine(ir, setup, &|_, _| Err("machine state unavailable"))
+}
+
+pub fn run_with_machine(ir: &FunctionIr, setup: &Setup<'_>, source: &MachineSource<'_>) -> Outcome {
     let mut machine = Machine::new(ir, setup);
+    machine.source = Some(source);
     match machine.execute(setup.step_limit) {
         Ok(Some(value)) => Outcome::Return {
             value,
@@ -99,14 +110,26 @@ pub type State = (HashMap<u16, u64>, HashMap<u64, u8>);
 /// The registers and every byte of memory the run wrote, or that the setup
 /// gave, after running `ir`.
 pub fn state_after(ir: &FunctionIr, setup: &Setup<'_>) -> Result<State, &'static str> {
+    state_after_with_machine(ir, setup, &|_, _| Err("machine state unavailable"))
+}
+
+pub fn state_after_with_machine(
+    ir: &FunctionIr,
+    setup: &Setup<'_>,
+    source: &MachineSource<'_>,
+) -> Result<State, &'static str> {
     let mut machine = Machine::new(ir, setup);
-    machine.execute(setup.step_limit)?;
+    machine.source = Some(source);
+    if let Err(reason) = machine.execute(setup.step_limit) {
+        return Err(reason);
+    }
     Ok((machine.registers, machine.memory))
 }
 
 impl<'a> Machine<'a> {
     fn new(ir: &'a FunctionIr, setup: &'a Setup<'a>) -> Self {
         let mut machine = Machine {
+            source: None,
             isa: ir.isa,
             convention: &setup.convention,
             seed: setup.seed,
@@ -534,6 +557,35 @@ impl Machine<'_> {
                         }));
                     }
                     Stmt::Trap => return Ok(None),
+                    Stmt::Machine {
+                        instruction,
+                        inputs,
+                        outputs,
+                    } => {
+                        let Some(source) = self.source else {
+                            return Err("machine state unavailable");
+                        };
+                        let mut arguments = Vec::new();
+                        for input in inputs {
+                            match self.eval(input) {
+                                Ok(value) => arguments.push(value),
+                                Err(reason) => return Err(reason),
+                            }
+                        }
+                        let mut values = match source(*instruction, &arguments) {
+                            Ok(values) => values,
+                            Err(reason) => return Err(reason),
+                        };
+                        if values.len() != outputs.len() {
+                            return Err("invalid machine-state output count");
+                        }
+                        if *instruction == super::MachineInstruction::ReadFlags {
+                            values[0] = (values[0] & !(arguments[0] | 0x30000)) | arguments[1];
+                        }
+                        for (dest, value) in outputs.iter().zip(values) {
+                            self.assign(*dest, value);
+                        }
+                    }
                     Stmt::Unsupported { .. } => return Err("unsupported instruction"),
                 }
             }

@@ -272,6 +272,11 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
                 Stmt::Ret { value } if !frame_only(value, frame, sp) => {
                     return false;
                 }
+                Stmt::Machine { inputs, .. }
+                    if inputs.iter().any(|expr| !frame_only(expr, frame, sp)) =>
+                {
+                    return false;
+                }
                 Stmt::Call { through, args, .. }
                     if through
                         .iter()
@@ -363,6 +368,11 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
                 Stmt::Switch { index: value, .. }
                 | Stmt::BrIndirect { target: value }
                 | Stmt::Ret { value } => rewrite_expr_frame(value, frame, sp),
+                Stmt::Machine { inputs, .. } => {
+                    for value in inputs {
+                        rewrite_expr_frame(value, frame, sp);
+                    }
+                }
                 Stmt::Call { through, args, .. } => {
                     for value in through.iter_mut().chain(args.iter_mut().flatten()) {
                         rewrite_expr_frame(value, frame, sp);

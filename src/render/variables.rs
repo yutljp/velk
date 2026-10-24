@@ -56,6 +56,14 @@ pub(crate) fn variable_types(
                     uses.float(source, precision);
                 }
             }
+            Stmt::Machine { outputs, .. } => {
+                for output in outputs {
+                    uses.seen.insert(output.index);
+                    uses.bits.insert(output.index);
+                    uses.arithmetic.insert(output.index);
+                    uses.floats.insert(output.index, None);
+                }
+            }
             Stmt::Call { .. } => {
                 uses.seen
                     .extend(stmt.call_outputs().iter().map(|output| output.dest.index));

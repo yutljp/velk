@@ -1,5 +1,6 @@
 mod float;
 mod integer;
+mod machine;
 mod operands;
 mod packed;
 mod string;
@@ -581,6 +582,12 @@ fn lift_instruction(
             });
             return true;
         }
+        Mnemonic::Cpuid
+        | Mnemonic::Xgetbv
+        | Mnemonic::Rdtsc
+        | Mnemonic::Rdtscp
+        | Mnemonic::Pushfq
+        | Mnemonic::Popfq => machine::lift(lifter, ins.mnemonic()),
         Mnemonic::Push => {
             let Some(value) = operand(lifter, ins, 0) else {
                 return false;

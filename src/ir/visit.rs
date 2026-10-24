@@ -99,6 +99,7 @@ pub fn collect_reads(expr: &Expr, out: &mut std::collections::HashSet<u16>) {
 pub(crate) fn replace_reads(stmt: &mut Stmt, values: &[(u16, Expr)]) {
     let replace = |expr: &mut Expr| *expr = substitute_values(expr.clone(), values);
     match stmt {
+        Stmt::Machine { inputs, .. } => inputs.iter_mut().for_each(replace),
         Stmt::Assign { value, .. } | Stmt::Ret { value } => replace(value),
         Stmt::Store { addr, value, .. } => {
             replace(addr);
@@ -176,6 +177,7 @@ pub fn statement_reads(stmt: &Stmt) -> std::collections::HashSet<u16> {
 
 pub fn statement_destinations_mut(stmt: &mut Stmt) -> Vec<&mut super::RegRef> {
     match stmt {
+        Stmt::Machine { outputs, .. } => outputs.iter_mut().collect(),
         Stmt::Assign { dest, .. } => vec![dest],
         Stmt::Call { outputs, .. } => outputs.iter_mut().map(|output| &mut output.dest).collect(),
         _ => Vec::new(),
@@ -191,6 +193,14 @@ pub(crate) fn statement_registers(
     let mut writes = std::collections::HashSet::new();
     let mut reads = std::collections::HashSet::new();
     match stmt {
+        Stmt::Machine {
+            inputs, outputs, ..
+        } => {
+            writes.extend(outputs.iter().map(|dest| dest.index));
+            for input in inputs {
+                expr_reads(input, &mut reads);
+            }
+        }
         Stmt::Assign { dest, value } => {
             writes.insert(dest.index);
             expr_reads(value, &mut reads);

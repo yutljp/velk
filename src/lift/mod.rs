@@ -213,7 +213,7 @@ pub fn lift_with(
                 Err(error) => return Err(error),
             };
             let direction = blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-                matches!(stmt, Stmt::Assign { dest, value: Expr::Const(1) } if dest.index == x86_64::DIRECTION)
+                matches!(stmt, Stmt::Assign { dest, value } if dest.index == x86_64::DIRECTION && *value != Expr::constant(0))
             });
             if !direction {
                 for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
@@ -1010,7 +1010,11 @@ fn build_carrying<M: Machine>(
 /// or a select, setcc or carry left unsupported for want of them.
 fn reads_unknown_flags(block: &Block) -> bool {
     block.stmts.iter().any(|stmt| match stmt {
-        Stmt::BrifFlags { .. } => true,
+        Stmt::BrifFlags { .. }
+        | Stmt::Machine {
+            instruction: crate::ir::MachineInstruction::ReadFlags,
+            ..
+        } => true,
         Stmt::Unsupported { text, .. } => {
             text.contains("without compare") || text.contains("not modelled")
         }

@@ -102,6 +102,16 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             // A call may clobber registers.
             constants.clear();
         }
+        Stmt::Machine {
+            inputs, outputs, ..
+        } => {
+            for input in inputs {
+                *input = simplify_expr(input.clone(), constants);
+            }
+            for output in outputs {
+                constants.remove(&output.index);
+            }
+        }
         Stmt::Unsupported { .. } => {
             // Unknown effects may clobber registers.
             constants.clear();

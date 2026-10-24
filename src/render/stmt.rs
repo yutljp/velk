@@ -514,6 +514,11 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 format!("return {};", returned(value, ctx))
             }
         }
+        Stmt::Machine {
+            instruction,
+            inputs,
+            outputs,
+        } => super::machine::render(*instruction, inputs, outputs, ctx),
         Stmt::Unsupported { text, .. } => format!("/* unsupported: {text} */"),
         Stmt::Trap => "__builtin_trap();".to_owned(),
     }

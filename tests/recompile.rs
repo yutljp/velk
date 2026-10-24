@@ -5317,6 +5317,7 @@ fn qualifies(ir: &FunctionIr, no_references: bool, mode: Mode) -> Result<(), &'s
             Stmt::Store { .. } => {}
             Stmt::Call { .. } => return Err("calls"),
             Stmt::BrIndirect { .. } => return Err("jumps indirectly"),
+            Stmt::Machine { .. } => return Err("requires an external machine-state source"),
             Stmt::Unsupported { .. } => return Err("has an unsupported instruction"),
             Stmt::BrifFlags { .. } => return Err("branches on flags"),
             Stmt::Assign { .. }

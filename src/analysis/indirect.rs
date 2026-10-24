@@ -273,6 +273,11 @@ impl Tracker<'_> {
     fn step(&self, state: &mut State, stmt: &Stmt, site: (u32, u32)) {
         let mut loads = 0;
         match stmt {
+            Stmt::Machine { outputs, .. } => {
+                for output in outputs {
+                    state.regs.insert(output.index, Value::Unknown);
+                }
+            }
             Stmt::Assign { dest, value } => {
                 let value = match (self.eval(state, value, site, &mut loads), dest.width) {
                     (value, 64) => value,
@@ -623,7 +628,10 @@ fn returned_from(
                 || block.stmts.iter().any(|stmt| {
                     matches!(
                         stmt,
-                        Stmt::Call { .. } | Stmt::Store { .. } | Stmt::Unsupported { .. }
+                        Stmt::Call { .. }
+                            | Stmt::Store { .. }
+                            | Stmt::Machine { .. }
+                            | Stmt::Unsupported { .. }
                     )
                 })
         })
@@ -709,6 +717,7 @@ fn closed_normal_flow(blocks: &[Block], forward_only: bool) -> bool {
                 Stmt::Assign { .. }
                 | Stmt::Store { .. }
                 | Stmt::Call { .. }
+                | Stmt::Machine { .. }
                 | Stmt::Unsupported { .. } => index + 1 < blocks.len(),
                 _ => false,
             }

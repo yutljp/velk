@@ -1,7 +1,7 @@
 # 5806 functions, 64553 compared runs
 # runs left unfinished:
+#   machine state unavailable (Go): 120
 #   step limit (C and C++): 353
 #   step limit (Go): 2810
 #   step limit (Rust): 1692
 #   switch without a matching case (Rust): 144
-#   unsupported instruction (Go): 120

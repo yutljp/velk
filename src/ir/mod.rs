@@ -582,8 +582,30 @@ pub fn fallback_call_outputs(
         .collect()
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MachineInstruction {
+    /// EAX and ECX inputs; EAX, EBX, ECX and EDX outputs, in that order.
+    Cpuid,
+    /// ECX input; one 64-bit extended-control-register output.
+    Xgetbv,
+    /// One 64-bit timestamp output.
+    Rdtsc,
+    /// A 64-bit timestamp and the 32-bit IA32_TSC_AUX value.
+    Rdtscp,
+    /// Mask and replacement-bit inputs; an RFLAGS output with RF and VM clear.
+    ReadFlags,
+    /// Requested RFLAGS input; the effective flags after the write as output.
+    WriteFlags,
+}
+
 #[derive(Debug, Clone)]
 pub enum Stmt {
+    /// An external machine-state operation. Outputs are simultaneous writes.
+    Machine {
+        instruction: MachineInstruction,
+        inputs: Vec<Expr>,
+        outputs: Vec<RegRef>,
+    },
     Assign {
         dest: RegRef,
         value: Expr,
@@ -743,6 +765,7 @@ impl Stmt {
     /// Every expression the statement reads, in order.
     pub fn operands(&self) -> Vec<&Expr> {
         match self {
+            Stmt::Machine { inputs, .. } => inputs.iter().collect(),
             Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
             Stmt::Store { addr, value, .. } => vec![addr, value],
             Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],
@@ -760,6 +783,7 @@ impl Stmt {
     /// The same, to change.
     pub fn operands_mut(&mut self) -> Vec<&mut Expr> {
         match self {
+            Stmt::Machine { inputs, .. } => inputs.iter_mut().collect(),
             Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
             Stmt::Store { addr, value, .. } => vec![addr, value],
             Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],

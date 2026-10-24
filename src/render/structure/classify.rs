@@ -701,6 +701,7 @@ fn stmt_kind(stmt: &Stmt) -> &'static str {
         Stmt::Switch { .. } => "switch goto",
         Stmt::BrIndirect { .. } => "goto *",
         Stmt::Br { .. } => "goto ?",
+        Stmt::Machine { .. } => "machine",
         Stmt::Unsupported { .. } => "unsupported",
     }
 }

@@ -144,6 +144,11 @@ fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bo
     }
     let width = expr_width(value).unwrap_or(64);
     match stmt {
+        Stmt::Machine { inputs, .. } => {
+            for input in inputs {
+                substitute_reg_inner(input, dest, width, value, ok);
+            }
+        }
         Stmt::Assign { value: target, .. } => substitute_reg_inner(target, dest, width, value, ok),
         Stmt::Store {
             addr,
@@ -413,6 +418,9 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
         .filter(|(_, source)| *source == reg)
         .count();
     match stmt {
+        Stmt::Machine { inputs, .. } => {
+            total += inputs.iter().map(|input| count(input, reg)).sum::<usize>()
+        }
         Stmt::Assign { value, .. } => total += count(value, reg),
         Stmt::Store { addr, value, .. } => {
             total += count(addr, reg) + count(value, reg);
@@ -458,6 +466,11 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
     let mut folded = stmt.clone();
     let mut ok = true;
     match &mut folded {
+        Stmt::Machine { inputs, .. } => {
+            for input in inputs {
+                substitute_reg_inner(input, dest, width, template, &mut ok);
+            }
+        }
         Stmt::Assign { value, .. } => substitute_reg_inner(value, dest, width, template, &mut ok),
         Stmt::Store { addr, value, .. } => {
             substitute_reg_inner(addr, dest, width, template, &mut ok);

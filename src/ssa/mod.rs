@@ -75,6 +75,11 @@ fn named(expr: &Expr, out: &mut HashSet<u16>) {
 fn explicit_reads(stmt: &Stmt) -> HashSet<u16> {
     let mut out = HashSet::new();
     match stmt {
+        Stmt::Machine { inputs, .. } => {
+            for input in inputs {
+                named(input, &mut out);
+            }
+        }
         Stmt::Assign { value, .. } | Stmt::Ret { value } => named(value, &mut out),
         Stmt::Store { addr, value, .. } => {
             named(addr, &mut out);
@@ -129,6 +134,11 @@ fn rename_expr(expr: &mut Expr, rename: &mut dyn FnMut(u16) -> u16) {
 /// Renames the registers a statement reads, not the one it assigns.
 fn rename_reads(stmt: &mut Stmt, rename: &mut dyn FnMut(u16) -> u16) {
     match stmt {
+        Stmt::Machine { inputs, .. } => {
+            for input in inputs {
+                rename_expr(input, rename);
+            }
+        }
         Stmt::Assign { value, .. } | Stmt::Ret { value } => rename_expr(value, rename),
         Stmt::Store { addr, value, .. } => {
             rename_expr(addr, rename);

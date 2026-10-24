@@ -8,6 +8,7 @@ mod globals;
 mod int;
 mod layouts;
 mod locals;
+mod machine;
 mod naming;
 mod params;
 mod stack_bytes;

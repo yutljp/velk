@@ -125,6 +125,11 @@ impl Solver<'_> {
                         changed |= self.set(dest.index, lattice);
                     }
                 }
+                if let Stmt::Machine { outputs, .. } = stmt {
+                    for output in outputs {
+                        changed |= self.set(output.index, Lattice::Varying);
+                    }
+                }
                 for output in stmt.call_outputs() {
                     changed |= self.set(output.dest.index, Lattice::Varying);
                 }

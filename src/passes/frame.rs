@@ -76,6 +76,14 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                         }
                     }
                 }
+                Stmt::Machine { inputs, .. } => {
+                    for value in inputs {
+                        collect_frame_reads(value, sp, &mut read);
+                        if address_uses_frame(value, sp) {
+                            escaped = true;
+                        }
+                    }
+                }
                 Stmt::Call { .. } => escaped = true,
                 _ => {}
             }

@@ -3,9 +3,9 @@
 #   calls: 3842
 #   computes on floats or vectors: 60
 #   computes on registers alone: 922
-#   has an unsupported instruction: 2
 #   reads a register that is not a parameter: 49
 #   refers to data: 330
+#   requires an external machine-state source: 2
 #   returns no integer: 82
 #   takes an argument that is no integer: 40
 #   takes arguments on the stack: 42

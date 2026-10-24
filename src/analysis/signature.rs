@@ -253,6 +253,9 @@ pub fn recover_with(
                 .iter()
                 .flat_map(|stmt| match stmt {
                     Stmt::Assign { dest, .. } => vec![dest.index],
+                    Stmt::Machine { outputs, .. } => {
+                        outputs.iter().map(|output| output.index).collect()
+                    }
                     Stmt::Call { .. } => call_writes(stmt),
                     // Unsupported instructions are mostly vector ones, which
                     // may write any floating-point register.
@@ -308,6 +311,11 @@ pub fn recover_with(
         for stmt in &block.stmts {
             let mut used = HashSet::new();
             match stmt {
+                Stmt::Machine { inputs, .. } => {
+                    for input in inputs {
+                        reads(input, &mut used);
+                    }
+                }
                 Stmt::Assign { dest, value } => {
                     reads(partial_write_source(value, dest.index), &mut used)
                 }
@@ -370,6 +378,9 @@ pub fn recover_with(
             match stmt {
                 Stmt::Assign { dest, .. } => {
                     written.insert(dest.index);
+                }
+                Stmt::Machine { outputs, .. } => {
+                    written.extend(outputs.iter().map(|output| output.index))
                 }
                 Stmt::Call { .. } => written.extend(call_writes(stmt)),
                 Stmt::Unsupported { .. } => written.extend(float_arguments),
@@ -452,7 +463,7 @@ pub fn recover_with(
     for stmt in blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
             Stmt::Assign { dest, .. } => *definitions.entry(dest.index).or_default() += 1,
-            Stmt::Call { .. } => {
+            Stmt::Call { .. } | Stmt::Machine { .. } => {
                 for register in crate::ir::visit::statement_registers(stmt).0 {
                     *definitions.entry(register).or_default() += 2;
                 }
@@ -1350,6 +1361,11 @@ impl Origins {
                     None => {
                         origin.remove(&dest.index);
                     }
+                }
+            }
+            Stmt::Machine { outputs, .. } => {
+                for output in outputs {
+                    origin.remove(&output.index);
                 }
             }
             Stmt::Call { .. } => {

@@ -3,10 +3,11 @@
 #   calls: 3798
 #   computes on floats or vectors: 1
 #   reads a register that is not a parameter: 3
-#   refers to data: 136
+#   refers to data: 138
+#   requires an external machine-state source: 2
 #   returns no integer: 105
 #   returns nothing: 372
-#   takes an argument that is no integer: 414
+#   takes an argument that is no integer: 410
 #   takes arguments on the stack: 36
 # runs left out:
 #   step limit: 27

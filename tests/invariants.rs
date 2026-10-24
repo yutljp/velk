@@ -239,6 +239,7 @@ fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
                 stmt,
                 Stmt::Store { .. }
                     | Stmt::Call { .. }
+                    | Stmt::Machine { .. }
                     | Stmt::Unsupported { .. }
                     | Stmt::Trap
                     | Stmt::Ret { .. }
@@ -308,6 +309,14 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
     let mut read = HashSet::new();
     for stmt in stmts() {
         match stmt {
+            Stmt::Machine {
+                inputs, outputs, ..
+            } => {
+                written.extend(outputs.iter().map(|output| output.index));
+                for input in inputs {
+                    reads(input, &mut read);
+                }
+            }
             Stmt::Assign { dest, value } => {
                 written.insert(dest.index);
                 reads(value, &mut read);

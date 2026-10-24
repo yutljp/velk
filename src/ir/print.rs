@@ -239,6 +239,20 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
                 }
         }
         Stmt::Ret { value } => format!("ret {}", value.render(isa)),
+        Stmt::Machine {
+            instruction,
+            inputs,
+            outputs,
+        } => format!(
+            "{:?} {:?} ({})",
+            instruction,
+            outputs,
+            inputs
+                .iter()
+                .map(|input| input.render(isa))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ),
         Stmt::Unsupported { text, .. } => format!("unsupported: {text}"),
         Stmt::Trap => "trap".to_owned(),
     }

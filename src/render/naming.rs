@@ -11,6 +11,11 @@ pub(crate) fn narrow_registers(ir: &FunctionIr) -> std::collections::HashSet<u16
     for block in &ir.blocks {
         for stmt in &block.stmts {
             match stmt {
+                Stmt::Machine { inputs, .. } => {
+                    for input in inputs {
+                        scan_reads(input, &mut seen, &mut wide);
+                    }
+                }
                 Stmt::Assign { value, .. } => scan_reads(value, &mut seen, &mut wide),
                 Stmt::Store { addr, value, .. } => {
                     scan_reads(addr, &mut seen, &mut wide);
