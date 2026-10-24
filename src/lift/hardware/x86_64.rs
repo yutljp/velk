@@ -2,6 +2,8 @@
 //! flags, run by a small program built for x86-64 (`x86_64.c`). On an
 //! AArch64 Mac the system runs that program by translation.
 
+mod compare;
+
 use std::io::Write as _;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};

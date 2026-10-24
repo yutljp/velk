@@ -167,9 +167,19 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                         !reads.contains(&dest.index)
                     });
                 }
-                Stmt::Brif { lhs, rhs, .. } => {
+                Stmt::Brif { cond, lhs, rhs, .. } => {
+                    let bits = crate::ir::semantics::operand_width(lhs, rhs);
+                    let original = (lhs.clone(), rhs.clone());
                     forward_expr(lhs, &pending);
                     forward_expr(rhs, &pending);
+                    if let (Expr::Const(a), Expr::Const(b)) = (&*lhs, &*rhs) {
+                        let taken = crate::ir::semantics::holds(*cond, *a, *b, bits);
+                        *cond = crate::ir::Cond::Ne;
+                        *lhs = Expr::Const(u64::from(taken));
+                        *rhs = Expr::Const(0);
+                    } else if !crate::passes::copies::comparison_preserved(*cond, bits, lhs, rhs) {
+                        (*lhs, *rhs) = original;
+                    }
                 }
                 Stmt::Machine {
                     instruction,
