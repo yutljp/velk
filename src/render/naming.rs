@@ -425,10 +425,64 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
             {
                 return Some(ty.clone());
             }
-            let CType::Pointer(target) = member_access(addr, 8, ctx)?.ty else {
+            let Some(member) = member_access(addr, 8, ctx) else {
+                return None;
+            };
+            let CType::Pointer(target) = member.ty else {
                 return None;
             };
             Some(*target)
+        }
+        Expr::Bin {
+            op: BinOp::Add | BinOp::Sub,
+            ..
+        } => {
+            let key = render_expr(expr, ctx);
+            if ctx
+                .local_parts
+                .get(&key)
+                .is_some_and(|part| !part.contains('&'))
+            {
+                return Some(CType::int(1, false));
+            }
+            if let Some(name) = ctx.slots.get(&key) {
+                if let Some(target) = ctx.local_element_types.get(name) {
+                    return Some(CType::pointer_to(target.clone()));
+                }
+                if let Some(width) = ctx.local_widths.get(name) {
+                    return Some(CType::int(*width, ctx.signed_locals.contains(name)));
+                }
+            }
+            if ctx
+                .local_parts
+                .get(&key)
+                .is_some_and(|part| !part.contains('&') || part.starts_with("(uint8_t *)&"))
+            {
+                return Some(CType::int(1, false));
+            }
+            if let Some((_, _, _, 0, base)) = element_terms(expr, ctx) {
+                return pointer_target(base, ctx);
+            }
+            let mut terms = Vec::new();
+            sum_terms(expr, false, &mut terms);
+            let mut bases = terms.iter().filter_map(|(term, negative)| {
+                if super::expr::byte_pointer(term, ctx).is_some() {
+                    Some((*term, *negative, 0))
+                } else {
+                    scalar_pointer(term, ctx).map(|(_, size)| (*term, *negative, size))
+                }
+            });
+            let Some((base, false, size)) = bases.next() else {
+                return None;
+            };
+            if bases.next().is_some() {
+                return None;
+            }
+            if size == 1 {
+                pointer_target(base, ctx)
+            } else {
+                Some(CType::int(1, false))
+            }
         }
         _ => None,
     }

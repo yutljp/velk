@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
 
 const LIMIT: usize = 64 * 8;
-type Origins = BTreeMap<u16, Option<i64>>;
+pub(super) type Origins = BTreeMap<u16, Option<i64>>;
 type Written = [bool; LIMIT];
 
 #[derive(Clone, Copy)]
@@ -230,7 +230,7 @@ fn protect_parameter_names(ir: &mut FunctionIr) {
     }
 }
 
-fn origin(expr: &Expr, state: &Origins) -> Option<Option<i64>> {
+pub(super) fn origin(expr: &Expr, state: &Origins) -> Option<Option<i64>> {
     match expr {
         Expr::Reg { index, width: 64 } => state.get(index).copied(),
         Expr::Bin {
@@ -265,7 +265,7 @@ fn contains_origin(expr: &Expr, state: &Origins) -> bool {
     }
 }
 
-fn transfer(stmt: &Stmt, state: &mut Origins) {
+pub(super) fn transfer(stmt: &Stmt, state: &mut Origins) {
     let assigned = match stmt {
         Stmt::Assign { dest, value } if dest.width == 64 => origin(value, state),
         Stmt::Assign { value, .. } if contains_origin(value, state) => Some(None),
@@ -285,7 +285,7 @@ fn transfer(stmt: &Stmt, state: &mut Origins) {
     }
 }
 
-fn origins(ir: &FunctionIr, entry: &Origins) -> Option<Vec<Option<Origins>>> {
+pub(super) fn origins(ir: &FunctionIr, entry: &Origins) -> Option<Vec<Option<Origins>>> {
     let mut entries = vec![None; ir.blocks.len()];
     entries[0] = Some(entry.clone());
     let mut pending = VecDeque::from([0]);

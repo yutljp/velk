@@ -63,7 +63,7 @@ int32_t sub_2011b0(uint32_t *a0, int32_t a1) {
     }
     if (a1 != 0x1) {
         v5 = a1 & 0x7ffffffe;
-        v6 = a0 + 0x6;
+        v6 = (void *)(a0 + 0x6);
         v2 = 0x0;
         v3 = 0x0;
         do {

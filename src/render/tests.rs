@@ -330,7 +330,7 @@ fn scalar_stack_parameter_parts_reject_ambiguous_frame_addresses() {
         },
     ]);
     let frames = super::block_frames(&ir, sp);
-    let locals = super::stack_locals(&ir, &frames, &Default::default());
+    let locals = super::stack_locals(&ir, &frames, &Default::default(), &Default::default());
     assert!(locals.parameter_addresses.is_empty());
 }
 
@@ -603,7 +603,10 @@ fn variables_are_declared_with_the_types_their_uses_give() {
     assert!(text.contains("    double *v2;\n"), "{text}");
     assert!(text.contains("    int64_t v3;\n"), "{text}");
     // The pointer moved by bytes moves by bytes in C too.
-    assert!(text.contains("v2 = (uint8_t *)v2 + v3;"), "{text}");
+    assert!(
+        text.contains("v2 = (double *)((uint8_t *)v2 + v3);"),
+        "{text}"
+    );
 }
 
 #[test]
@@ -953,7 +956,7 @@ fn a_pointer_local_update_keeps_the_machine_byte_offset() {
     let text = rendered(&ir);
     assert!(text.contains("    uint32_t *local_0;"), "{text}");
     assert!(
-        text.contains("local_0 = (uint8_t *)local_0 + 0x1;"),
+        text.contains("local_0 = (uint32_t *)((uint8_t *)local_0 + 0x1);"),
         "{text}"
     );
     assert!(!text.contains("local_0 += 0x1"), "{text}");

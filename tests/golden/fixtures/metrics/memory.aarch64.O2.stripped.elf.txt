@@ -31,8 +31,8 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
     v1 = 0x0;
     if (a2 >= 0x8 && (uintptr_t)a0 - (uintptr_t)a1 >= 0x20) {
         if (a2 >= 0x20) {
-            v2 = a1 + 0x10;
-            v3 = a0 + 0x10;
+            v2 = (uint64_t *)(a1 + 0x10);
+            v3 = (uint64_t *)(a0 + 0x10);
             v1 = a2 & 0xffffffffffffffe0;
             v4 = v1;
             do {
@@ -59,8 +59,8 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
         }
         v4 = v1;
         v1 = a2 & 0xfffffffffffffff8;
-        v2 = a1 + v4;
-        v3 = a0 + v4;
+        v2 = (uint64_t *)(a1 + v4);
+        v3 = (uint64_t *)(a0 + v4);
         v4 = v4 - v1;
         do {
             v5 = *v2;

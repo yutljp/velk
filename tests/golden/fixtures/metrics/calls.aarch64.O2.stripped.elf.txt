@@ -321,15 +321,15 @@ int32_t sub_210468(int32_t a0, ...) {
     uint32_t v4;
     int64_t v5;
     int32_t v6;
-    int64_t *local_0; /* [sp-10] */
-    int64_t local_1; /* [sp-60] */
+    uint8_t *local_0; /* [sp-10] */
+    _Alignas(16) uint8_t local_1[0x40]; /* [sp-60] */
     int64_t local_2; /* [sp-8] */
     int64_t *local_3; /* [sp-18] */
     uint32_t *local_4; /* [sp-20] */
 
-    local_0 = &local_1;
+    local_0 = local_1;
     local_2 = 0xffffff80ffffffc8;
-    local_3 = &local_4;
+    local_3 = (int64_t *)(local_1 + 0x40);
     local_4 = (uint32_t *)sp;
     if (a0 < 0x1) {
         return 0x0;

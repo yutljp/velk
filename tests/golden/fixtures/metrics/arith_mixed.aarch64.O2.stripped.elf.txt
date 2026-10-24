@@ -102,7 +102,7 @@ int32_t sub_2101e8(uint32_t *a0, int32_t a1) {
         v5 = 0x0;
         v6 = 0x0;
         v7 = 0x0;
-        v8 = a0 + 0x4;
+        v8 = (uint64_t *)(a0 + 0x4);
         v2 = (uint32_t)a1 & 0x7ffffff8;
         v9 = v2;
         do {

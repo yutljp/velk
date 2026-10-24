@@ -7,14 +7,43 @@ use crate::passes::frame_slots::frame_slot;
 use crate::render::expr::render_expr;
 use crate::render::expr::{Ctx, type_of};
 
-/// A named frame slot, with the widest access it receives, and the float
-/// or pointer type its uses show.
+/// A named frame slot with its access type and byte-array extent.
 pub(super) struct Local {
     pub(super) name: String,
     pub(super) slot: i64,
     pub(super) width: u8,
+    pub(super) size: i64,
     pub(super) signed: bool,
     pub(super) ty: Option<CType>,
+    pub(super) fields: Vec<Local>,
+}
+
+impl Local {
+    fn byte_address(&self, slot: i64) -> String {
+        let offset = slot.saturating_sub(self.slot);
+        let mut start = 0;
+        let mut gap = (self.size > 0 && self.fields.is_empty()).then_some(self.name.clone());
+        for field in &self.fields {
+            let field_offset = field.slot.saturating_sub(self.slot);
+            if offset >= start && offset < field_offset {
+                gap = Some(format!("{}.gap_{start:x}", self.name));
+                break;
+            }
+            start = field_offset.saturating_add(i64::from(field.width));
+        }
+        if gap.is_none() && offset >= start && offset < self.size {
+            gap = Some(format!("{}.gap_{start:x}", self.name));
+        }
+        let (base, delta) = match gap {
+            Some(base) => (base, offset.saturating_sub(start)),
+            None => (format!("(uint8_t *)&{}", self.name), offset),
+        };
+        if delta == 0 {
+            base
+        } else {
+            format!("{base} + 0x{delta:x}")
+        }
+    }
 }
 
 pub(crate) struct Locals {
@@ -25,6 +54,51 @@ pub(crate) struct Locals {
     pub(super) decls: Vec<Local>,
 }
 
+impl Locals {
+    pub(super) fn bind_register_tops(&mut self, ir: &FunctionIr) {
+        let Some(saves) = crate::analysis::variadic::register_saves(ir) else {
+            return;
+        };
+        let sp = stack_pointer(ir.isa);
+        let frames = crate::passes::frame_slots::block_frames(ir, sp);
+        let mut starts = std::collections::HashSet::new();
+        let mut ends = std::collections::HashSet::new();
+        for (position, block) in ir.blocks.iter().enumerate() {
+            let mut frame = frames.get(position).copied().flatten();
+            for (index, stmt) in block.stmts.iter().enumerate() {
+                if saves.stores.contains(&(position, index))
+                    && let Stmt::Store { addr, width, .. } = stmt
+                    && let Some(slot) = frame.and_then(|frame| frame_slot(addr, frame, sp))
+                    && let Some(end) = slot.checked_add(i64::from(*width))
+                {
+                    starts.insert(slot);
+                    ends.insert(end);
+                }
+                frame = frame_after(stmt, frame, sp);
+            }
+        }
+        ends.retain(|end| !starts.contains(end));
+        for local in &self.decls {
+            if local.size == 0 {
+                continue;
+            }
+            let Some(end) = local.slot.checked_add(local.size) else {
+                continue;
+            };
+            if !ends.contains(&end) {
+                continue;
+            }
+            for next in self.decls.iter().filter(|next| next.slot == end) {
+                for (key, name) in &self.slots {
+                    if *name == next.name {
+                        self.parts.insert(key.clone(), local.byte_address(end));
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Names frame slots `local_N` in order of first use. Accesses to one slot
 /// share the name even when the stack pointer moved between them; a rendered
 /// address that maps to two different slots stays unnamed.
@@ -32,6 +106,7 @@ pub(crate) fn stack_locals(
     ir: &FunctionIr,
     frames: &[Option<i64>],
     variables: &std::collections::BTreeMap<u16, CType>,
+    symbols: &super::Symbols,
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
@@ -72,23 +147,7 @@ pub(crate) fn stack_locals(
         read_once: Default::default(),
         taken: Default::default(),
     };
-    let mut accesses = frame_accesses(ir, sp, frames);
-    // A buffer indexed from several nearby places is one local, from the
-    // lowest of them.
-    let buffers: Vec<i64> = accesses
-        .iter()
-        .filter(|(_, _, width, signed)| *width == 0 && *signed == Some(false))
-        .filter_map(|(slot, ..)| *slot)
-        .collect();
-    accesses.retain(|(slot, _, width, signed)| {
-        !(*width == 0
-            && *signed == Some(false)
-            && slot.is_some_and(|slot| {
-                buffers
-                    .iter()
-                    .any(|lower| *lower < slot && slot - *lower < BUFFER_REACH)
-            }))
-    });
+    let accesses = frame_accesses(ir, sp, frames);
     let mut slot_names: HashMap<i64, Local> = HashMap::new();
     let mut rendered: HashMap<String, Option<i64>> = HashMap::new();
     // The slots some load extends with zeros below 32 bits, or takes as a
@@ -107,8 +166,10 @@ pub(crate) fn stack_locals(
                     name,
                     slot: *slot,
                     width: 0,
+                    size: 0,
                     signed: true,
                     ty: None,
+                    fields: Vec::new(),
                 },
             );
         }
@@ -135,11 +196,37 @@ pub(crate) fn stack_locals(
             }
         }
     }
-    // A local only ever pointed at, as a buffer a callee fills, has no
-    // width of its own to read: it is declared as a 64-bit one.
+    let extents = buffer_extents(ir, sp, symbols, &accesses);
+    for (slot, _, width, signed) in &accesses {
+        let Some(slot) = slot else { continue };
+        if *slot >= 0 || *width != 0 {
+            continue;
+        }
+        let next = slot_names
+            .keys()
+            .copied()
+            .filter(|next| next > slot)
+            .min()
+            .unwrap_or(0);
+        let proven = extents
+            .iter()
+            .filter(|(start, _)| **start >= *slot && (**start < next || **start == *slot))
+            .map(|(_, end)| *end)
+            .max();
+        let end = proven.unwrap_or(next);
+        if let Some(size) = end.checked_sub(*slot)
+            && size >= i64::from(slot_names[slot].width)
+            && (size > 8 || *signed == Some(false) || proven.is_some())
+            && size > 0
+            && let Some(local) = slot_names.get_mut(slot)
+        {
+            local.size = size;
+        }
+    }
+    // An untyped address still needs scalar storage when no extent is known.
     for local in slot_names.values_mut() {
         if local.width == 0 {
-            local.width = 8;
+            local.width = if local.size > 0 { 1 } else { 8 };
         }
         // Only a load's extension says how the value is signed: one of 32
         // bits or fewer that no load extends with its sign is read whole
@@ -150,22 +237,133 @@ pub(crate) fn stack_locals(
             !zero_loads.contains(&local.slot)
         };
     }
+    let mut ordered: Vec<_> = slot_names.keys().copied().collect();
+    ordered.sort_unstable();
+    let mut outer: Option<i64> = None;
+    for slot in ordered {
+        if let Some(start) = outer {
+            let end = start.saturating_add(
+                slot_names[&start]
+                    .size
+                    .max(i64::from(slot_names[&start].width)),
+            );
+            if slot < end {
+                let next_end = slot.saturating_add(
+                    slot_names[&slot]
+                        .size
+                        .max(i64::from(slot_names[&slot].width)),
+                );
+                if (next_end > end || slot_names[&start].size > 0 || slot_names[&slot].size > 0)
+                    && let Some(local) = slot_names.get_mut(&start)
+                {
+                    local.size = end.max(next_end).saturating_sub(start);
+                }
+                continue;
+            }
+        }
+        outer = Some(slot);
+    }
     // A slot that lies within a wider local is part of it: as a local of its
     // own, the wider one would not see what is written there.
     let within: HashMap<i64, i64> = slot_names
         .keys()
         .filter_map(|inner| {
-            let end = inner.saturating_add(i64::from(slot_names[inner].width));
+            let end = inner.saturating_add(
+                slot_names[inner]
+                    .size
+                    .max(i64::from(slot_names[inner].width)),
+            );
             slot_names
                 .values()
                 .filter(|outer| {
-                    outer.slot < *inner && end <= outer.slot.saturating_add(i64::from(outer.width))
+                    outer.slot < *inner
+                        && end
+                            <= outer
+                                .slot
+                                .saturating_add(outer.size.max(i64::from(outer.width)))
                 })
                 .map(|outer| outer.slot)
                 .min()
                 .map(|outer| (*inner, outer))
         })
         .collect();
+    let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables);
+    // A local holding another's address points at what that one holds.
+    for (slot, target) in points_to {
+        let Some(target) = slot_names.get(&target) else {
+            continue;
+        };
+        let element = target
+            .ty
+            .clone()
+            .unwrap_or_else(|| CType::int(target.width, target.signed));
+        types.entry(slot).or_insert(CType::pointer_to(element));
+    }
+    for (slot, ty) in types {
+        if let Some(local) = slot_names.get_mut(&slot)
+            && ty_width(&ty) == Some(local.width)
+        {
+            local.ty = Some(ty);
+        }
+    }
+    // A signed operation on a local makes it signed, and an unsigned one
+    // unsigned unless a signed one reads it too.
+    for (slot, signed) in signs {
+        if let Some(local) = slot_names.get_mut(&slot) {
+            local.signed = signed;
+        }
+    }
+    let mut members: HashMap<i64, Vec<Local>> = HashMap::new();
+    for local in slot_names.values() {
+        let outer = within.get(&local.slot).copied().unwrap_or(local.slot);
+        if slot_names[&outer].size == 0 {
+            continue;
+        }
+        let variable = accesses.iter().any(|(slot, _, width, signed)| {
+            *width == 0
+                && *signed == Some(false)
+                && slot.is_some_and(|slot| {
+                    slot >= outer && slot < outer.saturating_add(slot_names[&outer].size)
+                })
+        });
+        let distinct_widths = accesses.iter().any(|(slot, _, width, _)| {
+            *slot == Some(local.slot) && *width != 0 && *width != local.width
+        });
+        if variable || distinct_widths || !matches!(local.width, 1 | 2 | 4 | 8) {
+            continue;
+        }
+        if !accesses
+            .iter()
+            .any(|(slot, _, width, _)| *slot == Some(local.slot) && *width > 0)
+        {
+            continue;
+        }
+        members.entry(outer).or_default().push(Local {
+            name: format!("f_{:x}", local.slot.saturating_sub(outer)),
+            slot: local.slot,
+            width: local.width,
+            size: 0,
+            signed: local.signed,
+            ty: local.ty.clone(),
+            fields: Vec::new(),
+        });
+    }
+    for (outer, mut fields) in members {
+        fields.sort_by_key(|field| field.slot);
+        fields.retain(|field| {
+            !accesses.iter().any(|(slot, _, width, _)| {
+                *width > 0
+                    && slot.is_some_and(|slot| {
+                        slot != field.slot
+                            && slot < field.slot.saturating_add(i64::from(field.width))
+                            && slot.saturating_add(i64::from(*width)) > field.slot
+                    })
+            })
+        });
+        if let Some(local) = slot_names.get_mut(&outer) {
+            local.fields = fields;
+        }
+    }
     slot_names.retain(|slot, _| !within.contains_key(slot));
     let mut order: Vec<i64> = Vec::new();
     for slot in accesses.iter().filter_map(|(slot, ..)| *slot) {
@@ -181,28 +379,56 @@ pub(crate) fn stack_locals(
     let mut parts: HashMap<String, String> = rendered
         .iter()
         .filter_map(|(key, slot)| {
-            let outer = within.get(&(*slot)?)?;
-            Some((
-                key.clone(),
-                format!(
-                    "(uint8_t *)&{} + 0x{:x}",
-                    slot_names[outer].name,
-                    (*slot)? - outer
-                ),
-            ))
+            let Some(slot) = slot else {
+                return None;
+            };
+            let outer = within.get(slot).copied().unwrap_or(*slot);
+            let Some(local) = slot_names.get(&outer) else {
+                return None;
+            };
+            if outer == *slot && local.size == 0 {
+                return None;
+            }
+            Some((key.clone(), local.byte_address(*slot)))
         })
         .collect();
     let mut slots: HashMap<String, String> = rendered
-        .into_iter()
+        .iter()
         .filter_map(|(key, slot)| {
-            let slot = slot?;
-            slot_names.get(&slot).map(|local| (key, local.name.clone()))
+            let Some(slot) = slot else {
+                return None;
+            };
+            slot_names
+                .get(slot)
+                .filter(|local| local.size == 0)
+                .map(|local| (key.clone(), local.name.clone()))
         })
         .collect();
     let mut widths: HashMap<String, u8> = slot_names
         .values()
         .map(|local| (local.name.clone(), local.width))
         .collect();
+    for (key, slot) in &rendered {
+        let Some(slot) = slot else { continue };
+        let outer = within.get(slot).copied().unwrap_or(*slot);
+        let Some(local) = slot_names.get(&outer) else {
+            continue;
+        };
+        if let Some(field) = local.fields.iter().find(|field| field.slot == *slot) {
+            let name = format!("{}.{}", local.name, field.name);
+            slots.insert(key.clone(), name.clone());
+            widths.insert(name.clone(), field.width);
+            parts.insert(key.clone(), format!("&{name}"));
+        }
+    }
+    for local in slot_names.values_mut() {
+        for field in &mut local.fields {
+            field.name = format!("{}.{}", local.name, field.name);
+        }
+        if local.size > 0 {
+            local.ty = None;
+        }
+    }
     let argument_accesses = stack_arguments(ir, sp, frames);
     let parameter_addresses = scalar_parameter_addresses(ir, &argument_accesses, &base);
     let mut origins: HashMap<String, Option<i64>> = HashMap::new();
@@ -249,7 +475,9 @@ pub(crate) fn stack_locals(
         }
         let key = render_expr(address, &base);
         let binding = (|| {
-            let slot = (*slot)?;
+            let Some(slot) = *slot else {
+                return None;
+            };
             if origins.get(&key) != Some(&Some(slot)) || !matches!(*width, 1 | 2 | 4 | 8) {
                 return None;
             }
@@ -261,11 +489,15 @@ pub(crate) fn stack_locals(
                             .is_some_and(|end| end <= param.size)
                 })
             });
-            let param = parameters.next()?;
+            let Some(param) = parameters.next() else {
+                return None;
+            };
             if parameters.next().is_some() {
                 return None;
             }
-            let within = slot.checked_sub(param.offset)?;
+            let Some(within) = slot.checked_sub(param.offset) else {
+                return None;
+            };
             let spelling = param.ty.to_string();
             let aggregate = spelling.starts_with("struct ") || spelling.starts_with("union ");
             let name = if aggregate {
@@ -303,32 +535,6 @@ pub(crate) fn stack_locals(
             slots.insert(key, name);
         }
     }
-    let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables);
-    // A local holding another's address points at what that one holds.
-    for (slot, target) in points_to {
-        let Some(target) = slot_names.get(&target) else {
-            continue;
-        };
-        let element = target
-            .ty
-            .clone()
-            .unwrap_or_else(|| CType::int(target.width, target.signed));
-        types.entry(slot).or_insert(CType::pointer_to(element));
-    }
-    for (slot, ty) in types {
-        if let Some(local) = slot_names.get_mut(&slot)
-            && ty_width(&ty) == Some(local.width)
-        {
-            local.ty = Some(ty);
-        }
-    }
-    // A signed operation on a local makes it signed, and an unsigned one
-    // unsigned unless a signed one reads it too.
-    for (slot, signed) in signs {
-        if let Some(local) = slot_names.get_mut(&slot) {
-            local.signed = signed;
-        }
-    }
     Locals {
         slots,
         parts,
@@ -336,6 +542,99 @@ pub(crate) fn stack_locals(
         parameter_addresses,
         decls: slot_names.into_values().collect(),
     }
+}
+
+fn buffer_extents(
+    ir: &FunctionIr,
+    sp: u16,
+    symbols: &super::Symbols,
+    accesses: &[(Option<i64>, Expr, u8, Option<bool>)],
+) -> HashMap<i64, i64> {
+    use super::stack_bytes::{origin, origins, transfer};
+    let mut extents = HashMap::new();
+    if ir.blocks.is_empty() {
+        return extents;
+    }
+    let Some(entries) = origins(ir, &std::collections::BTreeMap::from([(sp, Some(0))])) else {
+        return extents;
+    };
+    for (position, block) in ir.blocks.iter().enumerate() {
+        let Some(mut state) = entries.get(position).cloned().flatten() else {
+            continue;
+        };
+        for stmt in &block.stmts {
+            if let Stmt::Call {
+                target,
+                through,
+                args: Some(args),
+                ..
+            } = stmt
+            {
+                let name = match through {
+                    Some(Expr::Load { addr, width: 8, .. })
+                        if let Expr::Const(slot) = addr.as_ref() =>
+                    {
+                        symbols.import_slots.get(slot)
+                    }
+                    None => target.and_then(|target| symbols.functions.get(&target)),
+                    _ => None,
+                };
+                let name = name.map(|name| name.trim_start_matches('_'));
+                let size = if matches!(
+                    name,
+                    Some(
+                        "memset"
+                            | "memcpy"
+                            | "memmove"
+                            | "memset_pattern16"
+                            | "memset_pattern8"
+                            | "memset_pattern4"
+                    )
+                ) {
+                    match args.get(2) {
+                        Some(Expr::Const(size)) => i64::try_from(*size).ok(),
+                        _ => None,
+                    }
+                } else {
+                    None
+                };
+                for (index, arg) in args.iter().enumerate() {
+                    let Some(Some(slot)) = origin(arg, &state) else {
+                        continue;
+                    };
+                    if slot >= 0 {
+                        continue;
+                    }
+                    let end = match size {
+                        Some(size)
+                            if index == 0
+                                || (index == 1 && matches!(name, Some("memcpy" | "memmove"))) =>
+                        {
+                            slot.checked_add(size).filter(|end| *end <= 0)
+                        }
+                        _ => {
+                            let boundary = accesses
+                                .iter()
+                                .filter_map(|(offset, _, width, _)| {
+                                    let Some(offset) = offset else { return None };
+                                    (*offset > slot && *width == 0).then_some(*offset)
+                                })
+                                .min();
+                            boundary.or(Some(0))
+                        }
+                    };
+                    if let Some(end) = end {
+                        extents
+                            .entry(slot)
+                            .and_modify(|old: &mut i64| *old = (*old).max(end))
+                            .or_insert(end);
+                    }
+                }
+            }
+            transfer(stmt, &mut state);
+        }
+    }
+    extents
 }
 
 fn scalar_storage_size(ty: &CType) -> Option<u8> {
@@ -1057,7 +1356,7 @@ mod tests {
             1,
         );
         let frames = crate::passes::frame_slots::block_frames(&ir, 31);
-        let locals = stack_locals(&ir, &frames, &Default::default());
+        let locals = stack_locals(&ir, &frames, &Default::default(), &Default::default());
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty(), "{:?}", locals.parts);
         assert!(locals.parameter_addresses.is_empty());
@@ -1070,7 +1369,7 @@ mod tests {
             3,
         );
         let frames = crate::passes::frame_slots::block_frames(&ir, 31);
-        let locals = stack_locals(&ir, &frames, &Default::default());
+        let locals = stack_locals(&ir, &frames, &Default::default(), &Default::default());
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty(), "{:?}", locals.parts);
         assert!(locals.parameter_addresses.is_empty());
@@ -1080,7 +1379,7 @@ mod tests {
     fn legacy_stack_binding_keeps_a_stable_sp_origin() {
         let ir = scalar_stack_binding(None, 1);
         let frames = crate::passes::frame_slots::block_frames(&ir, 31);
-        let locals = stack_locals(&ir, &frames, &Default::default());
+        let locals = stack_locals(&ir, &frames, &Default::default(), &Default::default());
         assert_eq!(locals.slots.len(), 1);
         assert!(
             locals.slots.values().any(|name| name == "incoming_0"),
@@ -1114,7 +1413,7 @@ mod tests {
     fn legacy_stack_binding_keeps_a_compatible_partial_view() {
         let mut ir = scalar_stack_binding(None, 1);
         set_access_widths(&mut ir, 8, 4);
-        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default(), &Default::default());
         assert!(locals.slots.values().any(|name| name == "incoming_0"));
         assert_eq!(locals.widths.get("incoming_0"), Some(&8));
         assert_eq!(locals.parameter_addresses.len(), 1);
@@ -1130,7 +1429,7 @@ mod tests {
     fn legacy_stack_binding_rejects_an_unsupported_same_address_width() {
         let mut ir = scalar_stack_binding(None, 1);
         set_access_widths(&mut ir, 8, 16);
-        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default(), &Default::default());
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty());
         assert!(locals.parameter_addresses.is_empty());
@@ -1141,7 +1440,7 @@ mod tests {
         let mut ir = scalar_stack_binding(None, 1);
         ir.stack_params[0].ty = CType::U32;
         set_access_widths(&mut ir, 4, 8);
-        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default(), &Default::default());
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty());
         assert!(locals.parameter_addresses.is_empty());
@@ -1170,7 +1469,7 @@ mod tests {
         };
         *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret { value: address };
         let frames = crate::passes::frame_slots::block_frames(&ir, 31);
-        stack_locals(&ir, &frames, &Default::default())
+        stack_locals(&ir, &frames, &Default::default(), &Default::default())
     }
 
     #[test]
@@ -1205,7 +1504,7 @@ mod tests {
         *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::BrIndirect {
             target: Expr::reg(0, 64),
         };
-        let locals = stack_locals(&ir, &[Some(0)], &Default::default());
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default(), &Default::default());
         assert!(locals.slots.values().any(|name| name == "incoming_0"));
     }
     fn invariant_unknown_entry() -> FunctionIr {
@@ -1242,7 +1541,12 @@ mod tests {
     #[test]
     fn legacy_stack_binding_derives_an_invariant_unknown_entry() {
         let ir = invariant_unknown_entry();
-        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        let locals = stack_locals(
+            &ir,
+            &[Some(0), None],
+            &Default::default(),
+            &Default::default(),
+        );
         assert!(locals.slots.values().any(|name| name == "incoming_0"));
     }
 
@@ -1254,14 +1558,24 @@ mod tests {
             value: Expr::reg(VARIABLE_BASE, 64),
         };
         ir.landing_pads = vec![(8, vec![(0, 4)])];
-        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        let locals = stack_locals(
+            &ir,
+            &[Some(0), None],
+            &Default::default(),
+            &Default::default(),
+        );
         assert!(locals.slots.values().any(|name| name == "incoming_0"));
     }
 
     #[test]
     fn legacy_stack_binding_rejects_a_contradictory_known_entry() {
         let ir = invariant_unknown_entry();
-        let locals = stack_locals(&ir, &[Some(0), Some(16)], &Default::default());
+        let locals = stack_locals(
+            &ir,
+            &[Some(0), Some(16)],
+            &Default::default(),
+            &Default::default(),
+        );
         assert!(locals.slots.is_empty());
         assert!(locals.parts.is_empty());
     }
@@ -1276,7 +1590,12 @@ mod tests {
                 writes: Some(Vec::new()),
             },
         );
-        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        let locals = stack_locals(
+            &ir,
+            &[Some(0), None],
+            &Default::default(),
+            &Default::default(),
+        );
         assert!(locals.slots.is_empty());
         assert!(locals.parts.is_empty());
     }
@@ -1296,7 +1615,12 @@ mod tests {
                 },
             );
         }
-        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        let locals = stack_locals(
+            &ir,
+            &[Some(0), None],
+            &Default::default(),
+            &Default::default(),
+        );
         assert!(locals.slots.is_empty());
         assert!(locals.parts.is_empty());
     }
@@ -1307,7 +1631,12 @@ mod tests {
         ir.blocks[1]
             .stmts
             .insert(0, binding_call(Some([31].into_iter().collect())));
-        let locals = stack_locals(&ir, &[Some(0), None], &Default::default());
+        let locals = stack_locals(
+            &ir,
+            &[Some(0), None],
+            &Default::default(),
+            &Default::default(),
+        );
         assert!(locals.slots.is_empty());
         assert!(locals.parts.is_empty());
     }

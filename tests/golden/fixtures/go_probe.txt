@@ -1436,27 +1436,24 @@ int64_t main_main(void) {
     int64_t v2;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
-    int64_t local_2; /* [sp-28] */
-    int64_t local_3; /* [sp-20] */
-    int64_t local_4; /* [sp-18] */
-    int64_t local_5; /* [sp-30] */
-    int64_t local_6; /* [sp-10] */
+    _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; uint8_t gap_20[0x8]; } local_2; /* [sp-28] */
+    int64_t local_3; /* [sp-30] */
 
     v1 = main_divmod(0x7, 0x3);
     v2 = rbx; /* also returned by the call */
     local_0 = v1;
     local_1 = v2;
-    local_2 = 0x1;
-    local_3 = 0x2;
-    local_4 = 0x3;
-    v1 = main_sumSlice(&local_2, 0x3);
-    local_5 = v1;
+    local_2.f_0 = 0x1;
+    local_2.f_8 = 0x2;
+    local_2.f_10 = 0x3;
+    v1 = main_sumSlice(&local_2.f_0, 0x3);
+    local_3 = v1;
     v1 = main_add(0x1, 0x2);
-    local_6 = v1;
+    local_2.f_18 = v1;
     runtime_printlock();
-    runtime_printint(local_5);
+    runtime_printint(local_3);
     runtime_printsp();
-    runtime_printint(local_6);
+    runtime_printint(local_2.f_18);
     runtime_printsp();
     runtime_printint(local_0);
     runtime_printsp();
@@ -1464,9 +1461,9 @@ int64_t main_main(void) {
     runtime_printnl();
     runtime_printunlock();
     v1 = main_kindName(0x46d400, 0x4967e8);
-    local_5 = v1;
+    local_3 = v1;
     runtime_printlock();
-    runtime_printint(local_5);
+    runtime_printint(local_3);
     runtime_printnl();
     return runtime_printunlock();
 }

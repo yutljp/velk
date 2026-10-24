@@ -4,7 +4,7 @@ use crate::render::int::{ALL, Int, Printed, Range};
 use crate::render::naming::{array_access, global_access, member_access};
 
 /// A pointer whose arithmetic C scales, cast to count bytes.
-pub(super) fn byte_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
+pub(in crate::render) fn byte_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     match expr {
         Expr::Reg { index, width: 64 } if ctx.scaled.contains(index) => {
             Some(format!("(uint8_t *){}", ctx.register(*index, 64)))
@@ -217,16 +217,25 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         return None;
     };
     // The buffer starts at the slot or a little below it.
-    let Some((name, below)) = (0..crate::render::locals::BUFFER_REACH as u64).find_map(|below| {
-        let start = Expr::bin(
-            BinOp::Add,
-            base.as_ref().clone(),
-            Expr::Const(offset.wrapping_sub(below)),
-        );
-        ctx.slots
-            .get(&render_expr(&start, ctx))
-            .map(|name| (name, below))
-    }) else {
+    let Some((address, below)) =
+        (0..crate::render::locals::BUFFER_REACH as u64).find_map(|below| {
+            let start = Expr::bin(
+                BinOp::Add,
+                base.as_ref().clone(),
+                Expr::Const(offset.wrapping_sub(below)),
+            );
+            let key = render_expr(&start, ctx);
+            ctx.local_parts
+                .get(&key)
+                .cloned()
+                .or_else(|| {
+                    ctx.slots
+                        .get(&key)
+                        .map(|name| format!("(uint8_t *)&{name}"))
+                })
+                .map(|address| (address, below))
+        })
+    else {
         return None;
     };
     let Some(mut rest) = rest
@@ -240,8 +249,10 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         rest = Expr::bin(BinOp::Add, rest, Expr::Const(below));
     }
     Some(format!(
-        "(uint8_t *)&{name} + {}",
-        operand(&rest, ctx, 10, true)
+        "{address} + {}",
+        print(&rest, ctx, 64)
+            .within(super::binding(BinOp::Add), true)
+            .text
     ))
 }
 

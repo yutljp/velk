@@ -52,7 +52,7 @@ int64_t sub_2011f0(struct sub_2011f0_a0 *a0, int32_t a1) {
     }
     if (a1 != 0x1) {
         v4 = a1 & 0x7ffffffe;
-        v5 = &a0[0x1].field_0x10;
+        v5 = (void *)&a0[0x1].field_0x10;
         v2 = 0x0;
         v3 = 0x0;
         do {

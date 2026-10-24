@@ -552,13 +552,12 @@
 void rust_probe__main(void) {
     uint64_t *const qword_55aa8 = (uint64_t *)0x55aa8ULL;
     uint32_t local_0; /* [sp-14] */
-    uint32_t *local_1; /* [sp-10] */
-    int64_t local_2; /* [sp-8] */
+    _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; int64_t f_8; } local_1; /* [sp-10] */
 
     local_0 = 0x3;
-    local_1 = &local_0;
-    local_2 = *qword_55aa8;
-    stdio___print(0x5091, &local_1);
+    local_1.f_0 = &local_0;
+    local_1.f_8 = *qword_55aa8;
+    stdio___print(0x5091, &local_1.f_0);
 }
 -- signature
 void ()

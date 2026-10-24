@@ -267,8 +267,8 @@ int32_t sub_201540(int32_t a0, ...) {
     int64_t v5;
     uint64_t *v6;
     int32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-28] */
-    int64_t local_2; /* [sp-e8] */
+    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint8_t gap_4[0x18]; } local_1; /* [sp-28] */
+    _Alignas(16) uint8_t local_2[0xb8]; /* [sp-e8] */
     uint32_t local_3; /* [sp-2c] */
     int32_t local_4; /* [sp-30] */
     void *local_5; /* [sp-f8] */
@@ -276,15 +276,15 @@ int32_t sub_201540(int32_t a0, ...) {
     uint32_t *local_7; /* [sp-100] */
 
     local_0 = a0;
-    v1 = &local_1;
-    v1->field_0x10 = (uintptr_t)&local_2;
+    v1 = (struct sub_201540_s1 *)(&local_1.f_0);
+    v1->field_0x10 = (uintptr_t)(local_2);
     v1->field_0x8 = rsp + 0x8;
     v1->field_0x4 = 0x30;
     v1->field_0x0 = 0x8;
     local_3 = 0x0;
     for (local_4 = 0x0; local_4 < local_0; local_4++) {
-        local_5 = &local_1;
-        v2 = local_1;
+        local_5 = (void *)(&local_1.f_0);
+        v2 = local_1.f_0;
         local_6 = v2;
         if (v2 > 0x28) {
             v6 = (uint64_t *)local_5;

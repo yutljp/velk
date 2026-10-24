@@ -380,12 +380,12 @@ int32_t sub_2014f0(int32_t a0, ...) {
     int32_t v4;
     int32_t v6;
     uint32_t *v7;
-    int64_t *local_0; /* [sp-c8] */
-    int64_t local_1; /* [sp-b8] */
+    uint8_t *local_0; /* [sp-c8] */
+    _Alignas(16) uint8_t local_1[0xb8]; /* [sp-b8] */
     uint32_t *local_2; /* [sp-d0] */
     int64_t local_3; /* [sp-d8] */
 
-    local_0 = &local_1;
+    local_0 = local_1;
     local_2 = (uint32_t *)(rsp + 0x8);
     local_3 = 0x3000000008;
     if (a0 <= 0x0) {

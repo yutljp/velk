@@ -52,7 +52,7 @@ long record_total(struct record *items, int n) {
     v1 = n;
     if (n != 0x1) {
         v4 = v1 & 0x7ffffffe;
-        v5 = &items[0x1].count;
+        v5 = (void *)&items[0x1].count;
         v2 = 0x0;
         v3 = 0x0;
         do {

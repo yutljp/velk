@@ -68,7 +68,7 @@ long item_last_key(struct item *items, int n) {
     v1 = n;
     if (n != 0x1) {
         v5 = v1 & 0x7ffffffe;
-        v6 = &items[0x1].count;
+        v6 = (void *)&items[0x1].count;
         v2 = 0x0;
         v3 = 0x0;
         do {

@@ -275,8 +275,8 @@ int sum_varargs(int count, ...) {
     int32_t local_0; /* [sp-14] */
     uint32_t local_1; /* [sp-1c] */
     uint32_t local_2; /* [sp-20] */
-    int64_t *local_3; /* [sp-28] */
-    int64_t local_4; /* [sp-80] */
+    uint8_t *local_3; /* [sp-28] */
+    _Alignas(16) uint8_t local_4[0x40]; /* [sp-80] */
     uint32_t *local_5; /* [sp-30] */
     int32_t local_6; /* [sp-40] */
     int64_t local_7; /* [sp-38] */
@@ -288,8 +288,8 @@ int sum_varargs(int count, ...) {
     local_0 = count;
     local_1 = 0xffffff80;
     local_2 = 0xffffffc8;
-    local_3 = &local_4;
-    local_5 = &local_6;
+    local_3 = local_4;
+    local_5 = (uint32_t *)(local_4 + 0x40);
     local_7 = sp;
     local_8 = 0x0;
     local_6 = 0x0;
@@ -301,7 +301,7 @@ int sum_varargs(int count, ...) {
             v2 = local_10 + 0x8;
             *local_9 = v2;
             if ((int32_t)v2 <= 0x0) {
-                local_11 = (uint8_t *)local_5 + local_10;
+                local_11 = (uint32_t *)((uint8_t *)local_5 + local_10);
                 local_8 += *local_11;
                 local_6 += 0x1;
                 continue;

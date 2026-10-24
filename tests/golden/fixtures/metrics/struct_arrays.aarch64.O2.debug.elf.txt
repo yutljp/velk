@@ -11,7 +11,7 @@ struct item_weight_s1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0
 int item_weight(struct item *items, int i) {
     struct item_weight_s1 *v1;
 
-    v1 = items + i;
+    v1 = (struct item_weight_s1 *)(items + i);
     return v1->field_0x8 * v1->field_0xc;
 }
 -- signature
@@ -34,7 +34,7 @@ struct cell_set_s1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8;
 void cell_set(struct cell *cells, long i, int v) {
     struct cell_set_s1 *v1;
 
-    v1 = cells + i;
+    v1 = (struct cell_set_s1 *)(cells + i);
     v1->field_0x0 = v;
     v1->field_0x8 = v + 0x1;
 }
@@ -66,7 +66,7 @@ long item_last_key(struct item *items, int n) {
     }
     v2 = 0x0;
     v3 = (uint32_t)n;
-    v4 = &items->count;
+    v4 = (void *)&items->count;
     do {
         if (*(int32_t *)(v4) >= 0x1) {
             v2 = *(uint64_t *)(v4 - 0x8);

@@ -62,7 +62,7 @@ long record_total(struct record *items, int n) {
     if (n != 0x1) {
         v3 = 0x0;
         v5 = 0x0;
-        v6 = &items[0x1].value;
+        v6 = (void *)&items[0x1].value;
         v2 = v1 & 0x7ffffffe;
         v7 = v2;
         do {
@@ -84,7 +84,7 @@ long record_total(struct record *items, int n) {
         v3 = 0x0;
     }
     v12 = v1 - v2;
-    v13 = &items[v2].count;
+    v13 = (void *)&items[v2].count;
     do {
         v14 = *(uint64_t *)(v13 - 0x8);
         v15 = *(int16_t *)(v13);

@@ -159,22 +159,17 @@ int64_t sub_1120(int32_t a0) {
     uint64_t *const qword_2028 = (uint64_t *)0x2028ULL;
     uint64_t *const qword_2030 = (uint64_t *)0x2030ULL;
     int64_t v1;
-    int64_t local_0; /* [sp-40] */
-    int64_t local_1; /* [sp-38] */
-    int64_t local_2; /* [sp-48] */
-    int64_t local_3; /* [sp-28] */
-    int64_t local_4; /* [sp-30] */
-    int64_t local_5; /* [sp-20] */
+    _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; int64_t f_20; int64_t f_28; uint8_t gap_30[0x18]; } local_0; /* [sp-48] */
 
     v1 = *qword_2028;
-    local_0 = 0x656e6f;
-    local_1 = 0x0;
-    local_2 = v1;
+    local_0.f_8 = 0x656e6f;
+    local_0.f_10 = 0x0;
+    local_0.f_0 = v1;
     v1 = *qword_2030;
-    local_3 = 0x6f7774;
-    local_4 = v1;
-    local_5 = 0x0;
-    return sub_1290(&local_2, 0x2, (a0 & 0xffffffff));
+    local_0.f_20 = 0x6f7774;
+    local_0.f_18 = v1;
+    local_0.f_28 = 0x0;
+    return sub_1290(&local_0.f_0, 0x2, (a0 & 0xffffffff));
 }
 -- signature
 int64_t (int32_t a0)
@@ -335,12 +330,12 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
     void *v7;
     uint32_t *v8;
     uint32_t v11;
-    int64_t local_0; /* [sp-68] */
+    _Alignas(16) uint8_t local_0[0x68]; /* [sp-68] */
     int64_t local_1; /* [sp-78] */
     int64_t local_2; /* [sp-70] */
 
     if (a1 <= 0x0) {
-        v2 = &local_0;
+        v2 = (void *)(local_0);
         local_2 = 0x0;
         local_1 = a1;
         __snprintf_chk(v2, 0x40, 0x2, 0x40, "missing key %d among %d", (a2 & 0xffffffff), a1);
@@ -350,14 +345,14 @@ int32_t sub_1290(struct sub_1290_a0 *a0, int a1, int a2) {
     v2 = (void *)a0;
     v3 = a0;
     v4 = (uint64_t)(a1 + (int64_t)a1 * 0x2) << 0x3;
-    v5 = (uint8_t *)a0 + v4;
+    v5 = (const char *)((uint8_t *)a0 + v4);
     do {
         if (v3->field_0x0 == a2) {
             return v3->field_0x4;
         }
         v3 = v3 + 0x1;
     } while (v3 != v5);
-    v7 = &local_0;
+    v7 = (void *)(local_0);
     local_1 = a1;
     v8 = v2 + 0x8;
     v4 = (uintptr_t)(v4 + (uint8_t *)v8);

@@ -21,6 +21,7 @@ pub fn render_with_dependencies(
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
+    let original = ir;
     let mut folded = ir.clone();
     for block in &mut folded.blocks {
         block.stmts.retain(|stmt| {
@@ -45,13 +46,15 @@ pub fn render_with_dependencies(
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
         variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
-    let locals = stack_locals(ir, &frames, &variable_types);
+    let mut locals = stack_locals(ir, &frames, &variable_types, symbols);
+    locals.bind_register_tops(original);
     if let Some(logical) = &mut logical {
         let params: std::collections::HashSet<_> =
             ir.params.iter().map(|param| param.index).collect();
         let mut reserved: std::collections::HashSet<String> = locals
             .decls
             .iter()
+            .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .map(|local| local.name.clone())
             .collect();
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -69,7 +72,13 @@ pub fn render_with_dependencies(
             reserved,
             variable_types
                 .values()
-                .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+                .chain(
+                    locals
+                        .decls
+                        .iter()
+                        .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                        .filter_map(|local| local.ty.as_ref()),
+                )
                 .chain(ir.members.iter().map(|member| &member.ty))
                 .chain(std::iter::once(&ir.ret_type))
                 .map(ToString::to_string),
@@ -81,7 +90,13 @@ pub fn render_with_dependencies(
             .iter()
             .map(|param| param.name.clone())
             .chain(ir.stack_params.iter().map(|param| param.name.clone()))
-            .chain(locals.decls.iter().map(|local| local.name.clone()))
+            .chain(
+                locals
+                    .decls
+                    .iter()
+                    .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                    .map(|local| local.name.clone()),
+            )
             .chain(symbols.functions.values().map(|name| sanitize(name)))
             .chain(symbols.import_slots.values().map(|name| sanitize(name)))
             .chain(symbols.data.values().map(|name| sanitize(name)))
@@ -106,7 +121,13 @@ pub fn render_with_dependencies(
             .map(|param| &param.ty)
             .chain(ir.stack_params.iter().map(|param| &param.ty))
             .chain(variable_types.values())
-            .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+            .chain(
+                locals
+                    .decls
+                    .iter()
+                    .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                    .filter_map(|local| local.ty.as_ref()),
+            )
             .chain(ir.members.iter().map(|member| &member.ty))
             .chain(std::iter::once(&ir.ret_type))
         {
@@ -214,7 +235,13 @@ fn render_with(
         .values()
         .map(|name| (*name).to_owned())
         .chain(ir.params.iter().map(|param| param.name.clone()))
-        .chain(locals.decls.iter().map(|local| local.name.clone()))
+        .chain(
+            locals
+                .decls
+                .iter()
+                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .map(|local| local.name.clone()),
+        )
         .chain(ir.stack_params.iter().map(|param| param.name.clone()))
         .chain(
             variable_types
@@ -243,7 +270,13 @@ fn render_with(
         .map(|param| &param.ty)
         .chain(ir.stack_params.iter().map(|param| &param.ty))
         .chain(variable_types.values())
-        .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+        .chain(
+            locals
+                .decls
+                .iter()
+                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .filter_map(|local| local.ty.as_ref()),
+        )
         .chain(std::iter::once(&ir.ret_type))
     {
         machine_reserved.extend(
@@ -372,6 +405,7 @@ fn render_with(
         locals
             .decls
             .iter()
+            .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .filter(|local| local.ty.as_ref().is_some_and(plain_char))
             .map(|local| local.name.clone()),
     );
@@ -379,6 +413,7 @@ fn render_with(
         locals
             .decls
             .iter()
+            .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .filter_map(|local| Some((local.name.clone(), local.ty.as_ref()?)))
     };
     let local_element_types = local_types()
@@ -394,7 +429,13 @@ fn render_with(
     let mut reserved: Vec<String> = names
         .values()
         .map(|name| (*name).to_owned())
-        .chain(locals.decls.iter().map(|local| local.name.clone()))
+        .chain(
+            locals
+                .decls
+                .iter()
+                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .map(|local| local.name.clone()),
+        )
         .chain(ir.stack_params.iter().map(|param| param.name.clone()))
         .chain(
             variable_types
@@ -431,7 +472,13 @@ fn render_with(
         .map(|param| &param.ty)
         .chain(ir.stack_params.iter().map(|param| &param.ty))
         .chain(variable_types.values())
-        .chain(locals.decls.iter().filter_map(|local| local.ty.as_ref()))
+        .chain(
+            locals
+                .decls
+                .iter()
+                .flat_map(|local| std::iter::once(local).chain(&local.fields))
+                .filter_map(|local| local.ty.as_ref()),
+        )
         .chain(std::iter::once(&ir.ret_type))
     {
         reserved.extend(
@@ -520,6 +567,7 @@ fn render_with(
         local_pointer_types: locals
             .decls
             .iter()
+            .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .filter_map(|local| {
                 let ty = local.ty.as_ref().filter(|ty| ty.is_pointer())?;
                 Some((local.name.clone(), ty.to_string().trim_end().to_owned()))
@@ -528,6 +576,7 @@ fn render_with(
         local_floats: locals
             .decls
             .iter()
+            .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .filter_map(|local| {
                 let precision = match local.ty.as_ref()?.to_string().as_str() {
                     "double" => crate::ir::Precision::Double,
@@ -540,6 +589,7 @@ fn render_with(
         signed_locals: locals
             .decls
             .iter()
+            .flat_map(|local| std::iter::once(local).chain(&local.fields))
             .filter(|local| match &local.ty {
                 Some(ty) => matches!(ty, CType::Int { signed: true, .. }),
                 None => local.signed,
@@ -773,6 +823,35 @@ fn render_with(
         out.push_str(&format!(
             "{}; /* [sp{}{:x}] */\n",
             match &local.ty {
+                _ if !local.fields.is_empty() => {
+                    let mut fields = Vec::new();
+                    let mut end = 0;
+                    for field in &local.fields {
+                        let offset = field.slot.saturating_sub(local.slot);
+                        if offset > end {
+                            fields.push(format!("uint8_t gap_{end:x}[0x{:x}];", offset - end));
+                        }
+                        let name = field.name.rsplit('.').next().unwrap();
+                        fields.push(format!(
+                            "{};",
+                            match &field.ty {
+                                Some(ty) => declaration(ty, name),
+                                None => format!("{} {name}", type_of(field.width, field.signed)),
+                            }
+                        ));
+                        end = offset.saturating_add(i64::from(field.width));
+                    }
+                    if local.size > end {
+                        fields.push(format!("uint8_t gap_{end:x}[0x{:x}];", local.size - end));
+                    }
+                    format!(
+                        "_Alignas(16) struct __attribute__((packed)) {{ {} }} {}",
+                        fields.join(" "),
+                        local.name
+                    )
+                }
+                _ if local.size > 0 =>
+                    format!("_Alignas(16) uint8_t {}[0x{:x}]", local.name, local.size),
                 Some(ty) => declaration(ty, &local.name),
                 None => format!("{} {}", type_of(local.width, local.signed), local.name),
             },

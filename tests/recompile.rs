@@ -26,6 +26,8 @@ mod division;
 mod frame_values;
 #[path = "recompile/ignored_result.rs"]
 mod ignored_result;
+#[path = "recompile/stack_arrays.rs"]
+mod stack_arrays;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
@@ -6482,6 +6484,9 @@ fn program(
             .enumerate()
             .map(|(position, ty)| match mode {
                 Mode::Registers => format!("a[{position}]"),
+                Mode::Memory if ty.trim_end().ends_with('*') => {
+                    format!("(void *)(uintptr_t)a[{position}]")
+                }
                 Mode::Memory => format!("({ty})a[{position}]"),
             })
             .collect();

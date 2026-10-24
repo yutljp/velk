@@ -6,8 +6,9 @@ use crate::render::globals::View;
 use crate::render::naming::global_pointer;
 use condition::logic;
 pub(crate) use condition::{condition, switch_index};
+pub(super) use memory::byte_pointer;
 pub(super) use memory::copy_address;
-use memory::{byte_pointer, byte_sum, load};
+use memory::{byte_sum, load};
 pub(crate) use memory::{local_plus_offset, slot_access};
 pub(super) use operation::float_bits;
 pub(crate) use operation::float_operand;
@@ -232,15 +233,14 @@ pub(crate) fn print_value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bo
 }
 
 fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
+    if let Some(text) = local_plus_offset(value, ctx) {
+        return Printed::pointer(text, 10);
+    }
     // The address of a stack local reads as that.
     if matches!(value, Expr::Bin { .. })
         && let Some(name) = ctx.slots.get(&render_expr(value, ctx))
     {
         return Printed::pointer(format!("&{name}"), 12);
-    }
-    // So does it with an offset added, as an index into a local buffer.
-    if let Some(text) = local_plus_offset(value, ctx) {
-        return Printed::pointer(text, 10);
     }
     // And the address of a field of an element of an array of structures.
     if matches!(value, Expr::Bin { op: BinOp::Add, .. })
