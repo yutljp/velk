@@ -798,9 +798,6 @@ fn region_field(
     slot_names: &HashMap<i64, Local>,
     accesses: &[FrameAccess],
 ) -> Option<Local> {
-    let natural = |slot: i64, width: u8| {
-        matches!(width, 1 | 2 | 4 | 8) && (slot - outer) % i64::from(width) == 0
-    };
     let Some(&(start, _)) = group.first() else {
         return None;
     };
@@ -830,12 +827,16 @@ fn region_field(
     else {
         return None;
     };
-    let Ok(cell) = u8::try_from(stop - start) else {
-        return None;
+    let relative: Vec<(i64, u8)> = group
+        .iter()
+        .map(|(slot, width)| (slot.saturating_sub(outer), *width))
+        .collect();
+    let Some(cell) = super::unions::cell(&relative) else {
+        let Ok(span) = u8::try_from(stop - start) else {
+            return None;
+        };
+        return layered_field(outer, group, span, slot_names, accesses);
     };
-    if !natural(start, cell) || group.iter().any(|(slot, width)| !natural(*slot, *width)) {
-        return layered_field(outer, group, cell, slot_names, accesses);
-    }
     // One member per width, signed when a load of that width extends a
     // sign; an array of them when one is read past the cell's start.
     let signed = |width: u8| {
@@ -854,19 +855,10 @@ fn region_field(
         .iter()
         .map(|(slot, width)| {
             let signed = signed(*width);
-            let member = format!(
-                "as_{}{}",
-                if signed { "i" } else { "u" },
-                u32::from(*width) * 8
-            );
-            let name = if group
+            let indexed = group
                 .iter()
-                .any(|(other, size)| size == width && *other != start)
-            {
-                format!("{member}[{}]", (slot - start) / i64::from(*width))
-            } else {
-                member
-            };
+                .any(|(other, size)| size == width && *other != start);
+            let name = super::unions::member(*width, signed, slot - start, indexed);
             Local {
                 name,
                 slot: *slot,

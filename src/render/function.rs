@@ -1504,7 +1504,7 @@ fn declared(ty: &CType, param: bool) -> Option<expr::Declared> {
 /// as_u32[2]; } f_8`, and one packed structure per layer of accesses that
 /// do not overlap one another.
 fn union_declaration(field: &super::locals::Local, name: &str) -> String {
-    let mut members: Vec<(u8, String)> = Vec::new();
+    let mut views: Vec<(i64, u8, bool)> = Vec::new();
     let mut layers: std::collections::BTreeMap<&str, Vec<&super::locals::Local>> =
         std::collections::BTreeMap::new();
     for view in &field.views {
@@ -1519,23 +1519,13 @@ fn union_declaration(field: &super::locals::Local, name: &str) -> String {
             layers.entry(layer).or_default().push(view);
             continue;
         }
-        let member = match path.split_once('[') {
-            Some((base, _)) => format!(
-                "{} {base}[{}]",
-                type_of(view.width, view.signed),
-                field.width / view.width
-            ),
-            None => format!("{} {path}", type_of(view.width, view.signed)),
-        };
-        if !members.iter().any(|(_, known)| *known == member) {
-            members.push((view.width, member));
-        }
+        views.push((
+            view.slot.saturating_sub(field.slot),
+            view.width,
+            view.signed,
+        ));
     }
-    members.sort_by_key(|(width, _)| std::cmp::Reverse(*width));
-    let mut members: Vec<String> = members
-        .into_iter()
-        .map(|(_, member)| format!("{member};"))
-        .collect();
+    let mut members = super::unions::members(field.width, &views);
     for (layer, mut fields) in layers {
         fields.sort_by_key(|view| view.slot);
         let mut parts = Vec::new();

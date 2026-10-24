@@ -23,6 +23,7 @@ mod string_loops;
 pub mod structure;
 mod symbols;
 mod transfers;
+pub(crate) mod unions;
 mod variables;
 mod vector_helpers;
 mod widths;
