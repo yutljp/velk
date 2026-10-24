@@ -41,8 +41,8 @@ cpp_virtual_a64.elf: 3
 cpp_virtual_a64_stripped.elf: 3
 cpp_virtual_x64.elf: 3
 cpp_virtual_x64_stripped.elf: 3
-go_probe: 728
-go_stripped: 728
+go_probe: 788
+go_stripped: 788
 l0_arith_a64.o: 0
 l0_arith_x64.o: 0
 l1_branch_a64.o: 0
@@ -351,9 +351,9 @@ metrics/windows.win64.O2.debug.dll: 1
 metrics/windows.win64.O2.stripped.dll: 1
 pe64.exe: 0
 pe64.obj: 0
-rust_demo: 347
-rust_probe: 347
-rust_probe_stripped: 277
+rust_demo: 375
+rust_probe: 375
+rust_probe_stripped: 315
 seh.O0.dll: 0
 seh.O2.dll: 0
 seh_cpp.O0.dll: 0

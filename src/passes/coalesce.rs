@@ -99,6 +99,16 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
     for kind in kinds {
         for (at, variable) in kind.iter().enumerate() {
             for earlier in &kind[..at] {
+                // Nor through a copy already joined to one.
+                let addressed = |member: u16| {
+                    groups
+                        .group(member)
+                        .iter()
+                        .any(|other| addresses.contains(other))
+                };
+                if addressed(*earlier) || addressed(*variable) {
+                    continue;
+                }
                 if groups.join(*earlier, *variable, &interferes, &entry) {
                     joined = true;
                     break;
@@ -169,6 +179,15 @@ struct Groups {
 }
 
 impl Groups {
+    /// The members of the group `variable` is in.
+    fn group(&self, variable: u16) -> Vec<u16> {
+        let leader = self.find(variable);
+        self.members
+            .get(&leader)
+            .cloned()
+            .unwrap_or_else(|| vec![leader])
+    }
+
     fn find(&self, mut variable: u16) -> u16 {
         while let Some(next) = self.leader.get(&variable) {
             variable = *next;
@@ -480,6 +499,50 @@ mod tests {
             "{}",
             addressed.render()
         );
+    }
+
+    #[test]
+    fn a_register_reused_for_a_pointer_copy_keeps_the_values_apart() {
+        // v1 = a0 + 1; v2 = v1 * 2; v3 = a1 + 3; v4 = v3; return *v4 + v2,
+        // with v1 and v3 from one register: v3 moves on to an address, so
+        // the integer before it in the register stays its own variable.
+        let (v1, v2, v3, v4) = (
+            VARIABLE_BASE,
+            VARIABLE_BASE + 1,
+            VARIABLE_BASE + 2,
+            VARIABLE_BASE + 3,
+        );
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(v1, Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1))),
+                assign(v2, Expr::bin(BinOp::Mul, Expr::reg(v1, 64), Expr::Const(2))),
+                assign(v3, Expr::bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(3))),
+                assign(v4, Expr::reg(v3, 64)),
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Add,
+                        Expr::Load {
+                            addr: Box::new(Expr::reg(v4, 64)),
+                            width: 8,
+                            signed: false,
+                        },
+                        Expr::reg(v2, 64),
+                    ),
+                },
+            ],
+        );
+        ir.variable_registers = [(v1, 0), (v2, 1), (v3, 0), (v4, 2)].into_iter().collect();
+        coalesce_copies(&mut ir);
+        let written: Vec<u16> = ir.blocks[0]
+            .stmts
+            .iter()
+            .filter_map(|stmt| match stmt {
+                Stmt::Assign { dest, .. } => Some(dest.index),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(written, [v1, v2, v3], "{}", ir.render());
     }
     #[test]
     fn coalesces_every_call_output_without_renaming_physical_sources() {
