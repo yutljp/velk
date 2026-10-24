@@ -77,7 +77,8 @@ pub(super) fn conformed(
     match pointer {
         Some(ty)
             if printed.is_pointer()
-                && (matches!(value, Expr::Const(_) | Expr::Select { .. })
+                && ((matches!(value, Expr::Const(_) | Expr::Select { .. })
+                    && naming::pointer_target(value, ctx).is_none())
                     || naming::pointer_target(value, ctx).is_some_and(|target| {
                         CType::pointer_to(target).to_string().trim_end() != ty.trim_end()
                     })) =>

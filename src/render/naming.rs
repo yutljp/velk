@@ -335,6 +335,15 @@ impl Place {
 /// Renders a member access when the field table has that offset at the
 /// access's own width.
 pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
+    if width == 1
+        && let Some(part) = ctx.local_parts.get(&render_expr(addr, ctx))
+        && !part.contains('&')
+    {
+        return Some(Place {
+            text: format!("*({part})"),
+            ty: CType::int(1, false),
+        });
+    }
     // A pointer to scalars reads as one, or as an array of them.
     if let Some((name, element, index)) = element_index(addr, ctx)
         && element == u64::from(width)
@@ -416,6 +425,19 @@ fn pointee_of(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
 
 pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
     match expr {
+        Expr::Select { then, els, .. } => {
+            let target = match (then.as_ref(), els.as_ref()) {
+                (Expr::Const(0), other) | (other, Expr::Const(0)) => {
+                    return pointer_target(other, ctx);
+                }
+                _ => pointer_target(then, ctx),
+            };
+            if target == pointer_target(els, ctx) {
+                target
+            } else {
+                None
+            }
+        }
         Expr::Reg { index, width: 64 } => ctx.element_types.get(index).cloned(),
         Expr::Load { addr, width: 8, .. } => {
             if let Some(ty) = ctx

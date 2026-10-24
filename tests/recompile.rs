@@ -19,6 +19,9 @@
 
 #[path = "recompile/cache.rs"]
 mod cache;
+
+#[path = "recompile/casts.rs"]
+mod casts;
 mod common;
 #[path = "recompile/division.rs"]
 mod division;

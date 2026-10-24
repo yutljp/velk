@@ -202,6 +202,9 @@ impl Printed {
     /// The value cast to the `bits`-bit type of the given sign, which then
     /// agrees with the IR's in `exact` bits.
     pub(crate) fn cast(self, bits: u32, signed: bool, exact: u32) -> Printed {
+        if self.kind == ValueKind::Integer && bits >= 32 && self.ty == Int::promoted(bits, signed) {
+            return Printed { exact, ..self };
+        }
         Printed::new(
             format!(
                 "({}){}",
