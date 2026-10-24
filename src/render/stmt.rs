@@ -95,7 +95,13 @@ pub(super) fn conformed(
     pointer: Option<&str>,
     ctx: &Ctx<'_>,
 ) -> String {
-    let printed = if pointer.is_some() && matches!(value, Expr::Const(_)) && !printed.is_pointer() {
+    // Untyped memory may extend beyond the first string terminator.
+    let raw_memory = pointer.is_some_and(|ty| matches!(ty.trim(), "void *" | "const void *"))
+        && matches!(value, Expr::Const(addr) if ctx.strings.contains_key(addr));
+    let printed = if pointer.is_some()
+        && matches!(value, Expr::Const(_))
+        && (!printed.is_pointer() || raw_memory)
+    {
         expr::print_address(value, ctx)
     } else {
         printed

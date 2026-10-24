@@ -384,6 +384,20 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             store(lifter, addr.clone(), low(from), 8);
             store(lifter, offset(addr), low(from + 1), 8);
         }
+        (Movlps | Movlpd | Movhps | Movhpd, OpKind::Register, OpKind::Memory) => {
+            let (Some(to), Some(addr)) = (destination, address()) else {
+                return None;
+            };
+            let high = u16::from(matches!(ins.mnemonic(), Movhps | Movhpd));
+            lifter.assign(to + high, 64, load_at(addr, 8));
+        }
+        (Movlps | Movlpd | Movhps | Movhpd, OpKind::Memory, OpKind::Register) => {
+            let (Some(from), Some(addr)) = (source, address()) else {
+                return None;
+            };
+            let high = u16::from(matches!(ins.mnemonic(), Movhps | Movhpd));
+            store(lifter, addr, low(from + high), 8);
+        }
         (Xorps | Xorpd | Pxor | Andps | Andpd | Pand | Orps | Orpd | Por, OpKind::Register, _) => {
             let to = destination?;
             let op = match ins.mnemonic() {

@@ -159,3 +159,91 @@ fn scaled_register_sums_keep_distinct_values_and_memory_reads() {
         assert_eq!(*value, original);
     }
 }
+
+#[test]
+fn spilled_absolute_offsets_use_integer_arithmetic_through_zero() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+    let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+    let load = Expr::Load {
+        addr: Box::new(slot.clone()),
+        width: 8,
+        signed: false,
+    };
+    let mut candidates = Vec::new();
+    for spilled_register in [false, true] {
+        let offset = if spilled_register {
+            Expr::reg(VARIABLE_BASE, 64)
+        } else {
+            load.clone()
+        };
+        let mut body = vec![Stmt::Store {
+            addr: Expr::bin(BinOp::Add, Expr::Const(REGION), offset.clone()),
+            value: Expr::Const(19),
+            width: 1,
+        }];
+        if spilled_register {
+            body.push(Stmt::Store {
+                addr: slot.clone(),
+                value: offset.clone(),
+                width: 8,
+            });
+            body.push(Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Add, load.clone(), Expr::Const(1)),
+            });
+        } else {
+            body.push(Stmt::Store {
+                addr: slot.clone(),
+                value: Expr::bin(BinOp::Sub, load.clone(), Expr::Const(1)),
+                width: 8,
+            });
+        }
+        body.push(Stmt::Brif {
+            cond: if spilled_register { Cond::Cc } else { Cond::Hi },
+            lhs: offset,
+            rhs: Expr::Const(if spilled_register { 4 } else { 0 }),
+            target: 0x10,
+        });
+        let initial = if spilled_register {
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::Const(0),
+            }
+        } else {
+            Stmt::Store {
+                addr: slot.clone(),
+                value: Expr::Const(7),
+                width: 8,
+            }
+        };
+        let mut ir = synthetic_ir(
+            &format!("spilled_absolute_offset_{spilled_register}"),
+            vec![],
+            CType::U64,
+            vec![initial],
+        );
+        ir.blocks.push(Block {
+            start: 0x10,
+            stmts: body,
+        });
+        ir.blocks.push(Block {
+            start: 0x20,
+            stmts: vec![Stmt::Ret {
+                value: Expr::Const(7),
+            }],
+        });
+        candidates.push(printed_candidate(ir, vec![vec![]]));
+    }
+    check_candidates(
+        "spilled-absolute-offsets",
+        candidates,
+        Mode::Memory,
+        &["-fsanitize=undefined", "-fno-sanitize-recover=all"],
+    );
+}

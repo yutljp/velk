@@ -729,3 +729,70 @@ fn simplified_branches_keep_zero_extended_bytes_positive() {
     }
     check_candidates("zero_extended_branches", candidates, Mode::Registers, &[]);
 }
+
+#[test]
+fn signed_comparisons_keep_their_sign_with_unsigned_positive_operands() {
+    let mut candidates = Vec::new();
+    let edges = [0, 1, 127, 128, 255, 256, 0x7fff_ffff, 0x8000_0000, u64::MAX];
+    let inputs: Vec<_> = edges
+        .iter()
+        .flat_map(|x| edges.iter().map(move |y| vec![*x, *y]))
+        .collect();
+    for bits in [32, 64] {
+        for byte in [false, true] {
+            for reversed in [false, true] {
+                for (at, cond) in [Cond::Lt, Cond::Ge, Cond::Gt, Cond::Le]
+                    .into_iter()
+                    .enumerate()
+                {
+                    let negative = if byte {
+                        Expr::SignExtend {
+                            value: Box::new(Expr::reg(7, bits)),
+                            width: 1,
+                        }
+                    } else {
+                        Expr::reg(7, bits)
+                    };
+                    let positive = Expr::bin(BinOp::And, Expr::reg(6, bits), Expr::Const(255));
+                    let (lhs, rhs) = if reversed {
+                        (positive, negative)
+                    } else {
+                        (negative, positive)
+                    };
+                    let ir = synthetic_ir(
+                        &format!("signed_positive_{bits}_{byte}_{reversed}_{at}"),
+                        vec![
+                            Param {
+                                index: 7,
+                                name: "x".into(),
+                                ty: CType::int(bits / 8, true),
+                            },
+                            Param {
+                                index: 6,
+                                name: "y".into(),
+                                ty: CType::int(bits / 8, false),
+                            },
+                        ],
+                        CType::U64,
+                        vec![Stmt::Ret {
+                            value: Expr::Select {
+                                cond,
+                                lhs: Box::new(lhs),
+                                rhs: Box::new(rhs),
+                                then: Box::new(Expr::Const(1)),
+                                els: Box::new(Expr::Const(0)),
+                            },
+                        }],
+                    );
+                    candidates.push(printed_candidate(ir, inputs.clone()));
+                }
+            }
+        }
+    }
+    check_candidates(
+        "signed-positive-comparisons",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}

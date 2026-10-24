@@ -70,6 +70,16 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
             a = a.clone().cast(common.bits, false, a.exact);
         }
     }
+    // A bounded unsigned operand can keep C's common type unsigned even
+    // after the other operand has been reread as signed.
+    if matches!(cond, Cond::Lt | Cond::Ge | Cond::Gt | Cond::Le)
+        && !common.signed
+        && !(below_sign(&a, lhs) && below_sign(&b, rhs))
+    {
+        let bits = crate::ir::semantics::operand_width(lhs, rhs);
+        a = a.cast(bits, true, bits);
+        b = b.cast(bits, true, bits);
+    }
     let a = a.within(strength, false).text;
     let b = b.within(strength, true).text;
     match cond {

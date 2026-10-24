@@ -1327,8 +1327,10 @@ fn slot_types(
         strong: Vec::new(),
         weak: Vec::new(),
         signs: Vec::new(),
+        offsets: std::collections::HashSet::new(),
     };
     let mut points_to: HashMap<i64, Option<i64>> = HashMap::new();
+    let mut constant_slots = std::collections::HashSet::new();
     for (position, block) in ir.blocks.iter().enumerate() {
         let Some(frame) = frames[position] else {
             continue;
@@ -1338,6 +1340,9 @@ fn slot_types(
             match stmt {
                 Stmt::Store { addr, value, width } => {
                     if let Some(slot) = walk.local(addr) {
+                        if *width == 8 && matches!(value, Expr::Const(_)) {
+                            constant_slots.insert(slot);
+                        }
                         let ty = match value {
                             Expr::Reg { index, .. } => typed(*index),
                             Expr::Apply { op, .. } => op.result_precision().map(float_type),
@@ -1421,6 +1426,8 @@ fn slot_types(
             }
         }
     }
+    constant_slots.retain(|slot| walk.offsets.contains(slot));
+    types.retain(|slot, ty| !constant_slots.contains(slot) || !ty.is_pointer());
     let mut signs: HashMap<i64, bool> = HashMap::new();
     for (slot, signed) in walk.signs {
         *signs.entry(slot).or_insert(signed) |= signed;
@@ -1428,7 +1435,7 @@ fn slot_types(
     let points_to = points_to
         .into_iter()
         .filter_map(|(slot, target)| Some((slot, target?)))
-        .filter(|(slot, _)| !types.contains_key(slot))
+        .filter(|(slot, _)| !types.contains_key(slot) && !constant_slots.contains(slot))
         .collect();
     (types, signs, points_to)
 }
@@ -1442,6 +1449,7 @@ struct Walk {
     weak: Vec<(i64, CType)>,
     /// The slots signed (`true`) and unsigned operations read.
     signs: Vec<(i64, bool)>,
+    offsets: std::collections::HashSet<i64>,
 }
 
 impl Walk {
@@ -1507,6 +1515,13 @@ impl Walk {
             }
             Expr::Load { addr, width, .. } => self.address(addr, CType::int(*width, false)),
             Expr::Bin { op, lhs, rhs } => match op {
+                BinOp::Add | BinOp::Sub => {
+                    for operand in [lhs, rhs] {
+                        if let Some(slot) = self.loaded(operand) {
+                            self.offsets.insert(slot);
+                        }
+                    }
+                }
                 BinOp::DivS | BinOp::ModS => self.sign(true, &[lhs, rhs]),
                 BinOp::DivU | BinOp::ModU => self.sign(false, &[lhs, rhs]),
                 BinOp::Sar => self.sign(true, &[lhs]),

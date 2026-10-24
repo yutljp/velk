@@ -423,3 +423,55 @@ fn printed_frame_buffer_transfers_use_one_object_extent() {
     );
     check_candidates("frame-buffer-record", vec![candidate], Mode::Registers, &[]);
 }
+
+#[test]
+fn raw_memory_calls_preserve_bytes_past_a_string_terminator() {
+    let ir = synthetic_ir(
+        "copy_raw_bytes",
+        vec![Param {
+            index: 7,
+            name: "out".into(),
+            ty: CType::pointer_to(CType::int(1, false)),
+        }],
+        CType::U64,
+        vec![
+            Stmt::Call {
+                abi: None,
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![Expr::reg(7, 64), Expr::Const(0x2000), Expr::Const(32)]),
+                floats_named: false,
+                outputs: vec![],
+                clobbers: Some(Default::default()),
+                via: None,
+            },
+            Stmt::Ret {
+                value: Expr::Const(7),
+            },
+        ],
+    );
+    let references = [velk::analysis::refs::Reference {
+        addr: 0x2000,
+        section: ".rodata".into(),
+        text: Some("ABC".into()),
+        pointer: None,
+    }];
+    let symbols = velk::render::Symbols {
+        functions: [(0x1000, "memcpy".into())].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &references, &symbols, &[]);
+    assert!(!code.contains("(const void *)\"ABC\""), "{code}");
+    assert!(code.contains("0x2000"), "{code}");
+    let code = code.replace("0x2000", "(uintptr_t)bytes");
+    let code = format!(
+        "#include <string.h>\nstatic unsigned char bytes[32] = {{65,66,67,0,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118}};\n{code}"
+    );
+    syntax::run_printed(
+        &code,
+        "",
+        "unsigned char out[32] = {0}; if (copy_raw_bytes(out) != 7 || memcmp(out, bytes, sizeof out)) return 1;",
+    );
+}

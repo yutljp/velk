@@ -82,6 +82,8 @@ mod syntax;
 mod unsupported;
 #[path = "recompile/x64_flags.rs"]
 mod x64_flags;
+#[path = "recompile/x64_half_moves.rs"]
+mod x64_half_moves;
 #[path = "recompile/x64_inputs.rs"]
 mod x64_inputs;
 
