@@ -65,6 +65,16 @@ fn fold(ir: &mut FunctionIr, param: u16) {
         .params
         .iter()
         .any(|held| held.index == param && held.ty.integer().is_some_and(|(bits, _)| bits == 32));
+    let small_spill = ir
+        .params
+        .iter()
+        .find(|held| held.index == param)
+        .and_then(|held| {
+            held.ty.integer().and_then(|(bits, _)| match bits {
+                8 | 16 => Some((bits / 8) as u8),
+                _ => None,
+            })
+        });
     let source_of = |value: &Expr| match value {
         Expr::Reg { index, width: 64 } => Some(Source::Register(*index)),
         Expr::Reg { index, width: 32 } if narrow => Some(Source::Register(*index)),
@@ -139,13 +149,19 @@ fn fold(ir: &mut FunctionIr, param: u16) {
                                         index,
                                         width: 32 | 64,
                                     } if narrow && *width == 4 => Some(Source::Register(*index)),
+                                    Expr::Reg {
+                                        index,
+                                        width: 32 | 64,
+                                    } if small_spill == Some(*width) && *index == param => {
+                                        Some(Source::Register(*index))
+                                    }
                                     _ => None,
                                 },
                             ));
                         let narrowest = stored.entry(slot).or_insert(*width);
                         *narrowest = (*narrowest).min(*width);
                         // A narrower store over part of a slot changes it too.
-                        if *width != 8 && !(narrow && *width == 4) {
+                        if *width != 8 && !(narrow && *width == 4) && small_spill != Some(*width) {
                             defined.entry(Source::Slot(slot)).or_default().push(None);
                         }
                     }
@@ -205,11 +221,19 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             .map(|(_, width, _)| u64::from(*width))
             .max()
             .unwrap_or(8);
+        let start = slot as i64;
+        let Some(end) = start.checked_add(extent as i64) else {
+            return true;
+        };
         accesses.iter().any(|(at, width, store)| {
             if *at == slot {
                 !store && *width > narrowest
             } else {
-                *at < slot.wrapping_add(extent) && slot < at.wrapping_add(u64::from(*width))
+                let other = *at as i64;
+                let Some(other_end) = other.checked_add(i64::from(*width)) else {
+                    return true;
+                };
+                other < end && start < other_end
             }
         })
     };

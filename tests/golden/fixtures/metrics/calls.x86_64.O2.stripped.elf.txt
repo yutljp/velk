@@ -93,10 +93,7 @@ fn <unnamed> @ 0x201330 (size 34)
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 int32_t sub_201360(void *a0, int32_t a1) {
-    int32_t v3;
-
-    v3 = ((uint64_t (*)())a0)(a1 & 0xffffffff);
-    return v3 + 1;
+    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)

@@ -25,6 +25,8 @@ mod atomic_spelling;
 mod atomic_values;
 #[path = "recompile/cache.rs"]
 mod cache;
+#[path = "recompile/call_arithmetic.rs"]
+mod call_arithmetic;
 
 #[path = "recompile/constants.rs"]
 mod constants;

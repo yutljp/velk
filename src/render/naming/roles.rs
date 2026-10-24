@@ -372,7 +372,7 @@ mod tests {
             call(&ir, 42, vec![Expr::reg(7, 64)], index),
             assign(
                 index + 1,
-                Expr::bin(BinOp::Add, Expr::reg(index, 64), Expr::Const(1)),
+                Expr::bin(BinOp::Add, Expr::reg(index, 64), Expr::reg(index, 64)),
             ),
             Stmt::Ret {
                 value: Expr::reg(index + 1, 64),

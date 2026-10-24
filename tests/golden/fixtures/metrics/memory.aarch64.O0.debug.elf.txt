@@ -49,12 +49,10 @@ fn copy_bytes @ 0x210234 (size 104)
 -- decompile
 /* velk pseudo-C: fill_bytes @ 0x21029c */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
-    uint8_t value_2; /* [sp-9] */
     uint64_t i; /* [sp-20] */
 
-    value_2 = value;
     for (i = 0; i < n; i++) {
-        dst[i] = value_2;
+        dst[i] = value;
     }
 }
 -- signature

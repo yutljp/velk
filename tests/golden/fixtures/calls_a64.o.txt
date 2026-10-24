@@ -90,10 +90,7 @@ fn apply_table @ 0x2c (size 44)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x58 */
 int32_t apply_pointer(void *a0, int32_t a1) {
-    int32_t v3;
-
-    v3 = ((uint64_t (*)())a0)(a1 & 0xffffffff);
-    return v3 + 1;
+    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)

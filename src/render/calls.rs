@@ -735,7 +735,7 @@ fn count_expr(expr: &Expr, counts: &mut HashMap<u16, usize>) {
 }
 
 /// `call` written into `next`, the node after it, when `next` is the one
-/// reader of the call's result and takes it whole, as an argument, a stored
+/// reader of the call's result, as an argument, a stored
 /// or returned value, or one side of an equality test. No other part of
 /// `next` reads memory, which the call may change, so the order C leaves
 /// open among them does not matter.
@@ -772,6 +772,24 @@ pub(super) fn call_in_reader(
         _ => *expr == Expr::reg(dest, result.width),
     };
     let apart = |exprs: &[&Expr]| exprs.iter().all(|expr| !reads_memory(expr));
+    // All operands are evaluated, and none can access memory or fault before
+    // the call. Keep conditional evaluation and unmodeled operations separate.
+    fn arithmetic(expr: &Expr) -> bool {
+        match expr {
+            Expr::Reg { .. } | Expr::Const(_) => true,
+            Expr::Bin { op, lhs, rhs }
+                if !matches!(op, BinOp::DivS | BinOp::DivU | BinOp::ModS | BinOp::ModU) =>
+            {
+                arithmetic(lhs) && arithmetic(rhs)
+            }
+            _ => false,
+        }
+    }
+    let reads_result = |expr: &Expr| {
+        let mut counts = HashMap::new();
+        count_expr(expr, &mut counts);
+        counts.get(&dest) == Some(&1) && arithmetic(expr)
+    };
     let condition = match next {
         Node::Stmt(Stmt::Call {
             through,
@@ -796,7 +814,11 @@ pub(super) fn call_in_reader(
             false
         }
         Node::Stmt(Stmt::Store { addr, value, .. }) if whole(value) && apart(&[addr]) => false,
-        Node::Stmt(Stmt::Assign { value, .. } | Stmt::Ret { value }) if whole(value) => false,
+        Node::Stmt(Stmt::Assign { value, .. } | Stmt::Ret { value })
+            if whole(value) || reads_result(value) =>
+        {
+            false
+        }
         Node::If {
             cond: Cond::Eq | Cond::Ne,
             lhs,
@@ -1604,7 +1626,7 @@ mod tests {
             };
             ir.ret_type = CType::U64;
             let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-            assert!(text.contains("= (uint32_t)(sub_1000());"), "{text}");
+            assert!(text.contains("return ((uint32_t)(sub_1000()));"), "{text}");
             assert!(!text.contains("return sub_1000();"), "{text}");
         }
     }

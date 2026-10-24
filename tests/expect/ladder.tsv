@@ -71,8 +71,8 @@
 6	l6_abi_a64.o	six_args	has	a4 + a5
 6	l6_abi_a64.o	wide_add	has	int64_t wide_add(
 6	l6_abi_a64.o	wide_add	known_has	uint64_t wide_add(uint64_t a0, uint64_t a1)
-6	l6_abi_a64.o	tail_direct	has	v2 = tail_target((a0 + 2) & 0xffffffff);
-6	l6_abi_a64.o	tail_direct	has	return v2;
+6	l6_abi_a64.o	tail_direct	has	return ((int32_t)(tail_target((a0 + 2) & 0xffffffff)));
+6	l6_abi_a64.o	tail_direct	nothas	return v2;
 6	l6_abi_a64.o	tail_indirect	has	return ((uint64_t (*)())a0)((a1 + 1) & 0xffffffff);
 
 # ---- L7 language runtimes: Go pclntab / Rust demangling / stripped ----
