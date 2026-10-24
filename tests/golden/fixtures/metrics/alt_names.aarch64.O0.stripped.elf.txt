@@ -39,12 +39,11 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210198 (size 96)
   blk0 @ 0x210198:
-    store32(w0, (sp + #0xfffffffffffffffc))
     store32(#0x0, (sp + #0xfffffffffffffff8))
     store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2101ac
   blk1 @ 0x2101ac:
-    brif ge load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffffc)) -> 0x2101ec
+    brif ge load32((sp + #0xfffffffffffffff4)), w0 -> 0x2101ec
   blk2 @ 0x2101bc:
     br 0x2101c0
   blk3 @ 0x2101c0:

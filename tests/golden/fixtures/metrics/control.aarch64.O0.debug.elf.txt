@@ -11,21 +11,19 @@
 -- decompile
 /* velk pseudo-C: matrix_trace @ 0x2101e4 */
 int matrix_trace(int *m, int n) {
-    int32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
-    int32_t local_3; /* [sp-18] */
+    uint32_t local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
+    int32_t local_2; /* [sp-18] */
 
-    local_0 = n;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        for (local_3 = 0x0; local_3 < local_0; local_3++) {
-            if (local_2 == local_3) {
-                local_1 += m[local_2 * local_0 + local_3];
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < n; local_1++) {
+        for (local_2 = 0x0; local_2 < n; local_2++) {
+            if (local_1 == local_2) {
+                local_0 += m[local_1 * n + local_2];
             }
         }
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 int (int * m, int n)
@@ -34,20 +32,18 @@ int (int * m, int n)
 -- ir
 fn matrix_trace @ 0x2101e4 (size 188)
   blk0 @ 0x2101e4:
-    store64(x0, (sp + #0xfffffffffffffff8))
-    store32(w1, (sp + #0xfffffffffffffff4))
     store32(#0x0, (sp + #0xfffffffffffffff0))
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x2101fc
   blk1 @ 0x2101fc:
-    brif ge load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x210294
+    brif ge load32((sp + #0xffffffffffffffec)), w1 -> 0x210294
   blk2 @ 0x21020c:
     br 0x210210
   blk3 @ 0x210210:
     store32(#0x0, (sp + #0xffffffffffffffe8))
     br 0x210218
   blk4 @ 0x210218:
-    brif ge load32((sp + #0xffffffffffffffe8)), load32((sp + #0xfffffffffffffff4)) -> 0x210280
+    brif ge load32((sp + #0xffffffffffffffe8)), w1 -> 0x210280
   blk5 @ 0x210228:
     br 0x21022c
   blk6 @ 0x21022c:
@@ -55,7 +51,7 @@ fn matrix_trace @ 0x2101e4 (size 188)
   blk7 @ 0x21023c:
     br 0x210240
   blk8 @ 0x210240:
-    store32((load32((sp + #0xfffffffffffffff0)) + load32((load64((sp + #0xfffffffffffffff8)) + (sext32(((load32((sp + #0xffffffffffffffec)) * load32((sp + #0xfffffffffffffff4))) + load32((sp + #0xffffffffffffffe8)))) << #0x2)))), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((x0 + (sext32(((load32((sp + #0xffffffffffffffec)) * w1) + load32((sp + #0xffffffffffffffe8)))) << #0x2)))), (sp + #0xfffffffffffffff0))
     br 0x21026c
   blk9 @ 0x21026c:
     br 0x210270
@@ -76,22 +72,18 @@ fn matrix_trace @ 0x2101e4 (size 188)
 -- decompile
 /* velk pseudo-C: cleanup_on_error @ 0x2102a0 */
 int cleanup_on_error(int a, int b, int *out) {
-    int32_t local_0; /* [sp-4] */
-    int32_t local_1; /* [sp-8] */
-    uint32_t local_2; /* [sp-14] */
+    uint32_t local_0; /* [sp-14] */
 
-    local_0 = a;
-    local_1 = b;
-    local_2 = 0xffffffff;
+    local_0 = 0xffffffff;
     if ((a & 0x80000000) == 0x0) {
-        if (local_1 != 0x0) {
-            *out = local_0 / local_1;
-            local_2 = 0x0;
-            return local_2;
+        if (b != 0x0) {
+            *out = a / b;
+            local_0 = 0x0;
+            return local_0;
         }
-        return local_2;
+        return local_0;
     }
-    return local_2;
+    return local_0;
 }
 -- signature
 int (int a, int b, int * out)
@@ -100,9 +92,6 @@ int (int a, int b, int * out)
 -- ir
 fn cleanup_on_error @ 0x2102a0 (size 96)
   blk0 @ 0x2102a0:
-    store32(w0, (sp + #0xfffffffffffffffc))
-    store32(w1, (sp + #0xfffffffffffffff8))
-    store64(x2, (sp + #0xfffffffffffffff0))
     store32(#0xffffffff, (sp + #0xffffffffffffffec))
     brif eq (w0 & #0x80000000), #0x0 -> 0x2102c8
   blk1 @ 0x2102c0:
@@ -110,13 +99,13 @@ fn cleanup_on_error @ 0x2102a0 (size 96)
   blk2 @ 0x2102c4:
     br 0x2102f4
   blk3 @ 0x2102c8:
-    brif ne load32((sp + #0xfffffffffffffff8)), #0x0 -> 0x2102d8
+    brif ne w1, #0x0 -> 0x2102d8
   blk4 @ 0x2102d0:
     br 0x2102d4
   blk5 @ 0x2102d4:
     br 0x2102f4
   blk6 @ 0x2102d8:
-    store32((load32((sp + #0xfffffffffffffffc)) / load32((sp + #0xfffffffffffffff8))), load64((sp + #0xfffffffffffffff0)))
+    store32((w0 / w1), x2)
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x2102f4
   blk7 @ 0x2102f4:
@@ -134,7 +123,7 @@ int fallthrough(int x) {
     local_0 = 0x0;
     v1 = x;
     if (v1 == 0x0) {
-        local_0 += 0x1;
+        local_0 = 0x1;
     } else if (v1 != 0x1) {
         if (v1 == 0x2) {
             local_0 += 0x4;
@@ -159,7 +148,7 @@ int (int x)
 fn fallthrough @ 0x210300 (size 160)
   blk0 @ 0x210300:
     store32(#0x0, (sp + #0xfffffffffffffff8))
-    v1 = (w0 & #0xffffffff)
+    v1 = w0
     brif eq (v1 & #0xffffffff), #0x0 -> 0x21034c
   blk1 @ 0x210318:
     br 0x21031c
@@ -176,7 +165,7 @@ fn fallthrough @ 0x210300 (size 160)
   blk7 @ 0x210348:
     br 0x210388
   blk8 @ 0x21034c:
-    store32((load32((sp + #0xfffffffffffffff8)) + #0x1), (sp + #0xfffffffffffffff8))
+    store32(#0x1, (sp + #0xfffffffffffffff8))
     br 0x21035c
   blk9 @ 0x21035c:
     store32((load32((sp + #0xfffffffffffffff8)) + #0x2), (sp + #0xfffffffffffffff8))
@@ -229,7 +218,7 @@ int (int x)
 -- ir
 fn sparse @ 0x2103a0 (size 148)
   blk0 @ 0x2103a0:
-    v1 = (w0 & #0xffffffff)
+    v1 = w0
     brif eq (((v1 & #0xffffffff) - #0x1) & #0xffffffff), #0x0 -> 0x2103f0
   blk1 @ 0x2103b8:
     br 0x2103bc
@@ -269,27 +258,25 @@ fn sparse @ 0x2103a0 (size 148)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x210434 */
 int short_circuit(int *p, int n) {
-    int32_t v2;
-    int32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    int32_t v1;
+    uint32_t local_0; /* [sp-10] */
+    uint32_t local_1; /* [sp-14] */
 
-    local_0 = n;
-    local_1 = 0x0;
+    local_0 = 0x0;
     if (p == 0x0) {
-        return local_1 & 0x1;
+        return local_0 & 0x1;
     }
-    local_1 = 0x0;
-    if (local_0 <= 0x0) {
-        return local_1 & 0x1;
+    local_0 = 0x0;
+    if (n <= 0x0) {
+        return local_0 & 0x1;
     }
-    v2 = *p - 0x1;
-    local_2 = 0x1;
-    if (v2 != 0x0) {
-        local_2 = (p[local_0 - 0x1] - 0x1 + 0x1 == 0x1);
+    v1 = *p - 0x1;
+    local_1 = 0x1;
+    if (v1 != 0x0) {
+        local_1 = (p[n - 0x1] - 0x1 + 0x1 == 0x1);
     }
-    local_1 = local_2;
-    return local_1 & 0x1;
+    local_0 = local_1;
+    return local_0 & 0x1;
 }
 -- signature
 int (int * p, int n)
@@ -298,25 +285,23 @@ int (int * p, int n)
 -- ir
 fn short_circuit @ 0x210434 (size 144)
   blk0 @ 0x210434:
-    store64(x0, (sp + #0xfffffffffffffff8))
-    store32(w1, (sp + #0xfffffffffffffff4))
     store32(#0x0, (sp + #0xfffffffffffffff0))
     brif eq x0, #0x0 -> 0x2104b4
   blk1 @ 0x210450:
     br 0x210454
   blk2 @ 0x210454:
     store32(#0x0, (sp + #0xfffffffffffffff0))
-    brif le load32((sp + #0xfffffffffffffff4)), #0x0 -> 0x2104b4
+    brif le w1, #0x0 -> 0x2104b4
   blk3 @ 0x210468:
     br 0x21046c
   blk4 @ 0x21046c:
-    v2 = ((load32(load64((sp + #0xfffffffffffffff8))) - #0x1) & #0xffffffff)
+    v1 = ((load32(x0) - #0x1) & #0xffffffff)
     store32(#0x1, (sp + #0xffffffffffffffec))
-    brif eq v2, #0x0 -> 0x2104a8
+    brif eq v1, #0x0 -> 0x2104a8
   blk5 @ 0x210484:
     br 0x210488
   blk6 @ 0x210488:
-    store32(select eq (((load32((load64((sp + #0xfffffffffffffff8)) + (sext32((load32((sp + #0xfffffffffffffff4)) - #0x1)) << #0x2))) - #0x1) & #0xffffffff) + #0x1), #0x1 ? #0x1, #0x0, (sp + #0xffffffffffffffec))
+    store32(select eq (((load32((x0 + (sext32((w1 - #0x1)) << #0x2))) - #0x1) & #0xffffffff) + #0x1), #0x1 ? #0x1, #0x0, (sp + #0xffffffffffffffec))
     br 0x2104a8
   blk7 @ 0x2104a8:
     store32(load32((sp + #0xffffffffffffffec)), (sp + #0xfffffffffffffff0))
@@ -330,18 +315,16 @@ fn short_circuit @ 0x210434 (size 144)
 -- decompile
 /* velk pseudo-C: skip_negatives @ 0x2104c4 */
 int skip_negatives(int *p, int n) {
-    int32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    int32_t local_2; /* [sp-14] */
+    uint32_t local_0; /* [sp-10] */
+    int32_t local_1; /* [sp-14] */
 
-    local_0 = n;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        if ((p[local_2] & 0x80000000) == 0x0) {
-            local_1 += p[local_2];
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < n; local_1++) {
+        if ((p[local_1] & 0x80000000) == 0x0) {
+            local_0 += p[local_1];
         }
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 int (int * p, int n)
@@ -350,23 +333,21 @@ int (int * p, int n)
 -- ir
 fn skip_negatives @ 0x2104c4 (size 124)
   blk0 @ 0x2104c4:
-    store64(x0, (sp + #0xfffffffffffffff8))
-    store32(w1, (sp + #0xfffffffffffffff4))
     store32(#0x0, (sp + #0xfffffffffffffff0))
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x2104dc
   blk1 @ 0x2104dc:
-    brif ge load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x210534
+    brif ge load32((sp + #0xffffffffffffffec)), w1 -> 0x210534
   blk2 @ 0x2104ec:
     br 0x2104f0
   blk3 @ 0x2104f0:
-    brif eq (load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0x80000000), #0x0 -> 0x210508
+    brif eq (load32((x0 + (load32((sp + #0xffffffffffffffec))s << #0x2))) & #0x80000000), #0x0 -> 0x210508
   blk4 @ 0x210500:
     br 0x210504
   blk5 @ 0x210504:
     br 0x210524
   blk6 @ 0x210508:
-    store32((load32((sp + #0xfffffffffffffff0)) + load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2)))), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((x0 + (load32((sp + #0xffffffffffffffec))s << #0x2)))), (sp + #0xfffffffffffffff0))
     br 0x210524
   blk7 @ 0x210524:
     store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
@@ -380,24 +361,20 @@ fn skip_negatives @ 0x2104c4 (size 124)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x210540 */
 int find_pair(int *p, int n, int target) {
-    int32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
-    int32_t local_2; /* [sp-1c] */
-    int32_t local_3; /* [sp-20] */
-    uint32_t local_4; /* [sp-4] */
+    int32_t v2;
+    int32_t local_0; /* [sp-1c] */
+    uint32_t local_1; /* [sp-4] */
 
-    local_0 = n;
-    local_1 = target;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        for (local_3 = local_2 + 0x1; local_3 < local_0; local_3++) {
-            if (p[local_2] + p[local_3] == local_1) {
-                local_4 = local_2 * local_0 + local_3;
-                return local_4;
+    for (local_0 = 0x0; local_0 < n; local_0++) {
+        for (v2 = local_0 + 0x1; v2 < n; v2++) {
+            if (p[local_0] + p[v2] == target) {
+                local_1 = local_0 * n + v2;
+                return local_1;
             }
         }
     }
-    local_4 = 0xffffffff;
-    return local_4;
+    local_1 = 0xffffffff;
+    return local_1;
 }
 -- signature
 int (int * p, int n, int target)
@@ -406,33 +383,30 @@ int (int * p, int n, int target)
 -- ir
 fn find_pair @ 0x210540 (size 216)
   blk0 @ 0x210540:
-    store64(x0, (sp + #0xfffffffffffffff0))
-    store32(w1, (sp + #0xffffffffffffffec))
-    store32(w2, (sp + #0xffffffffffffffe8))
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210558
   blk1 @ 0x210558:
-    brif ge load32((sp + #0xffffffffffffffe4)), load32((sp + #0xffffffffffffffec)) -> 0x210600
+    brif ge load32((sp + #0xffffffffffffffe4)), w1 -> 0x210600
   blk2 @ 0x210568:
     br 0x21056c
   blk3 @ 0x21056c:
-    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe0))
+    v2 = ((load32((sp + #0xffffffffffffffe4)) + #0x1) & #0xffffffff)
     br 0x21057c
   blk4 @ 0x21057c:
-    brif ge load32((sp + #0xffffffffffffffe0)), load32((sp + #0xffffffffffffffec)) -> 0x2105ec
+    brif ge v2, w1 -> 0x2105ec
   blk5 @ 0x21058c:
     br 0x210590
   blk6 @ 0x210590:
-    brif ne (load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4))s << #0x2))) + load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe0))s << #0x2)))), load32((sp + #0xffffffffffffffe8)) -> 0x2105d8
+    brif ne (load32((x0 + (load32((sp + #0xffffffffffffffe4))s << #0x2))) + load32((x0 + (sext32(v2) << #0x2)))), w2 -> 0x2105d8
   blk7 @ 0x2105b8:
     br 0x2105bc
   blk8 @ 0x2105bc:
-    store32(((load32((sp + #0xffffffffffffffe4)) * load32((sp + #0xffffffffffffffec))) + load32((sp + #0xffffffffffffffe0))), (sp + #0xfffffffffffffffc))
+    store32(((load32((sp + #0xffffffffffffffe4)) * w1) + v2), (sp + #0xfffffffffffffffc))
     br 0x21060c
   blk9 @ 0x2105d8:
     br 0x2105dc
   blk10 @ 0x2105dc:
-    store32((load32((sp + #0xffffffffffffffe0)) + #0x1), (sp + #0xffffffffffffffe0))
+    v2 = ((v2 + #0x1) & #0xffffffff)
     br 0x21057c
   blk11 @ 0x2105ec:
     br 0x2105f0

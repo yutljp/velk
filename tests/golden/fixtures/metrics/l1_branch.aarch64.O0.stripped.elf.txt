@@ -27,7 +27,6 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210184 (size 76)
   blk0 @ 0x210184:
-    store32(w0, (sp + #0xfffffffffffffff8))
     brif eq (w0 & #0x80000000), #0x0 -> 0x2101a4
   blk1 @ 0x210194:
     br 0x210198
@@ -35,7 +34,7 @@ fn <unnamed> @ 0x210184 (size 76)
     store32(#0xffffffff, (sp + #0xfffffffffffffffc))
     br 0x2101c4
   blk3 @ 0x2101a4:
-    brif ne load32((sp + #0xfffffffffffffff8)), #0x0 -> 0x2101b8
+    brif ne w0, #0x0 -> 0x2101b8
   blk4 @ 0x2101ac:
     br 0x2101b0
   blk5 @ 0x2101b0:
@@ -53,18 +52,13 @@ fn <unnamed> @ 0x210184 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2101d0 @ 0x2101d0 */
 int32_t sub_2101d0(int32_t a0, int32_t a1, int32_t a2) {
-    uint32_t local_0; /* [sp-4] */
-
     if (a0 >= a1) {
         if (a0 <= a2) {
-            local_0 = a0;
-            return local_0;
+            return a0;
         }
-        local_0 = a2;
-        return local_0;
+        return a2;
     }
-    local_0 = a1;
-    return local_0;
+    return a1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -73,27 +67,24 @@ int32_t (int32_t a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x2101d0 (size 104)
   blk0 @ 0x2101d0:
-    store32(w0, (sp + #0xfffffffffffffff8))
-    store32(w1, (sp + #0xfffffffffffffff4))
-    store32(w2, (sp + #0xfffffffffffffff0))
     brif ge w0, w1 -> 0x210200
   blk1 @ 0x2101f0:
     br 0x2101f4
   blk2 @ 0x2101f4:
-    store32(load32((sp + #0xfffffffffffffff4)), (sp + #0xfffffffffffffffc))
+    v2 = w1
     br 0x21022c
   blk3 @ 0x210200:
-    brif le load32((sp + #0xfffffffffffffff8)), load32((sp + #0xfffffffffffffff0)) -> 0x210220
+    brif le w0, w2 -> 0x210220
   blk4 @ 0x210210:
     br 0x210214
   blk5 @ 0x210214:
-    store32(load32((sp + #0xfffffffffffffff0)), (sp + #0xfffffffffffffffc))
+    v2 = w2
     br 0x21022c
   blk6 @ 0x210220:
-    store32(load32((sp + #0xfffffffffffffff8)), (sp + #0xfffffffffffffffc))
+    v2 = w0
     br 0x21022c
   blk7 @ 0x21022c:
-    ret load32((sp + #0xfffffffffffffffc))
+    ret v2
 -- card
 {"addr":"0x2101d0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":104,"unsupported":0}
 
@@ -117,7 +108,6 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210238 (size 72)
   blk0 @ 0x210238:
-    store32(w0, (sp + #0xfffffffffffffffc))
     brif le w0, #0x0 -> 0x21025c
   blk1 @ 0x21024c:
     br 0x210250
@@ -125,7 +115,7 @@ fn <unnamed> @ 0x210238 (size 72)
     store32(#0x1, (sp + #0xfffffffffffffff8))
     br 0x210274
   blk3 @ 0x21025c:
-    store32(select ge load32((sp + #0xfffffffffffffffc)), #0x0 ? #0x0, #0xffffffff, (sp + #0xfffffffffffffff8))
+    store32(select ge w0, #0x0 ? #0x0, #0xffffffff, (sp + #0xfffffffffffffff8))
     br 0x210274
   blk4 @ 0x210274:
     ret load32((sp + #0xfffffffffffffff8))

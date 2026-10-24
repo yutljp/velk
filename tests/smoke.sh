@@ -279,7 +279,7 @@ echo "$wide_ir" | grep -q "__umulh(a0, 0xcccccccccccccccd)"  || fail "wide multi
 echo "$wide_ir" | grep -q " hi128 " && fail "wide multiply kept the infix"
 ok "wide multiply intrinsic"
 settled=$("$BIN" --decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
-echo "$settled" | grep -qF "v2 = a0[local_1];" || fail "frame settled past a pointer load"
+echo "$settled" | grep -qF " = a0[local_1];" || fail "frame settled past a pointer load"
 echo "$settled" | grep -q "sp = sp"           && fail "stack adjustments kept"
 ok "frame settling past pointer bases"
 narrow_dst=$("$BIN" --decompile $FIX/arm64_loops.o sum_till_neg 2>/dev/null)
@@ -343,7 +343,7 @@ ok "indirect tail calls"
 # A value just stored into a slot feeds its reader directly.
 fwd=$("$BIN" --decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
 echo "$fwd" | grep -q "x8 = local_1;" && fail "store not forwarded"
-echo "$fwd" | grep -q "local_0 += v2;" || fail "forwarded value missing"
+echo "$fwd" | grep -qE 'local_0 \+= v[0-9]+;' || fail "forwarded value missing"
 pe_entry=$("$BIN" --functions $FIX/pe64.exe --json 2>/dev/null | sed -n 's/.*"entry": "\(0x[0-9a-f]*\)".*/\1/p')
 entry_fwd=$("$BIN" --decompile $FIX/pe64.exe "$pe_entry" 2>/dev/null)
 echo "$entry_fwd" | grep -qF "*(uint32_t *)&local_0 = 0x23;" || fail "partial store into a wider local"

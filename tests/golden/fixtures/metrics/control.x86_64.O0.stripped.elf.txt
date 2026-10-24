@@ -199,7 +199,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x201380 (size 142)
   blk0 @ 0x201380:
-    v1 = (edi & #0xffffffff)
+    v1 = edi
     store32(v1, (rsp + #0xffffffffffffffec))
     brif eq ((v1 - #0x1) & #0xffffffff), #0x0 -> 0x2013d2
   blk1 @ 0x201396:

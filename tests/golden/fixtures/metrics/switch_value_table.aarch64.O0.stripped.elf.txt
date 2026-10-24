@@ -37,7 +37,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210154 (size 172)
   blk0 @ 0x210154:
-    v1 = (w0 & #0xffffffff)
+    v1 = w0
     brif eq (((v1 & #0xffffffff) - #0xa) & #0xffffffff), #0x0 -> 0x2101b0
   blk1 @ 0x21016c:
     br 0x210170

@@ -154,21 +154,17 @@ fn sum_skip_odd @ 0x21028c (size 116)
 -- decompile
 /* velk pseudo-C: find_first @ 0x210300 */
 int find_first(int *p, int n, int v) {
-    int32_t local_0; /* [sp-14] */
-    uint32_t local_1; /* [sp-18] */
-    int32_t local_2; /* [sp-1c] */
-    uint32_t local_3; /* [sp-4] */
+    int32_t local_0; /* [sp-1c] */
+    uint32_t local_1; /* [sp-4] */
 
-    local_0 = n;
-    local_1 = v;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        if (p[local_2] == local_1) {
-            local_3 = local_2;
-            return local_3;
+    for (local_0 = 0x0; local_0 < n; local_0++) {
+        if (p[local_0] == v) {
+            local_1 = local_0;
+            return local_1;
         }
     }
-    local_3 = 0xffffffff;
-    return local_3;
+    local_1 = 0xffffffff;
+    return local_1;
 }
 -- signature
 int (int * p, int n, int v)
@@ -177,17 +173,14 @@ int (int * p, int n, int v)
 -- ir
 fn find_first @ 0x210300 (size 128)
   blk0 @ 0x210300:
-    store64(x0, (sp + #0xfffffffffffffff0))
-    store32(w1, (sp + #0xffffffffffffffec))
-    store32(w2, (sp + #0xffffffffffffffe8))
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210318
   blk1 @ 0x210318:
-    brif ge load32((sp + #0xffffffffffffffe4)), load32((sp + #0xffffffffffffffec)) -> 0x210368
+    brif ge load32((sp + #0xffffffffffffffe4)), w1 -> 0x210368
   blk2 @ 0x210328:
     br 0x21032c
   blk3 @ 0x21032c:
-    brif ne load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4))s << #0x2))), load32((sp + #0xffffffffffffffe8)) -> 0x210354
+    brif ne load32((x0 + (load32((sp + #0xffffffffffffffe4))s << #0x2))), w2 -> 0x210354
   blk4 @ 0x210344:
     br 0x210348
   blk5 @ 0x210348:

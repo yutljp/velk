@@ -191,8 +191,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210490 (size 36)
   blk0 @ 0x210490:
-    v1 = (w0 & #0xffffffff)
-    ret ((v1 - ((v1 / #0x3) * #0x3)) & #0xffffffff)
+    ret ((w0 - ((w0 / #0x3) * #0x3)) & #0xffffffff)
 -- card
 {"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
@@ -243,8 +242,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2104fc (size 36)
   blk0 @ 0x2104fc:
-    v1 = (w0 & #0xffffffff)
-    ret ((v1 - ((v1 / #0xa) * #0xa)) & #0xffffffff)
+    ret ((w0 - ((w0 / #0xa) * #0xa)) & #0xffffffff)
 -- card
 {"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
@@ -312,8 +310,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x21058c (size 36)
   blk0 @ 0x21058c:
-    v1 = (w0 & #0xffffffff)
-    ret ((v1 - ((v1 / #0x4) * #0x4)) & #0xffffffff)
+    ret ((w0 - ((w0 / #0x4) * #0x4)) & #0xffffffff)
 -- card
 {"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 

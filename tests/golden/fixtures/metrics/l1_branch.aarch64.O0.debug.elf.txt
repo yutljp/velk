@@ -7,20 +7,18 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x210184 */
 int classify(int x) {
-    uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
+    uint32_t local_0; /* [sp-4] */
 
-    local_0 = x;
     if ((x & 0x80000000) == 0x0) {
-        if (local_0 != 0x0) {
-            local_1 = 0x1;
-            return local_1;
+        if (x != 0x0) {
+            local_0 = 0x1;
+            return local_0;
         }
-        local_1 = 0x0;
-        return local_1;
+        local_0 = 0x0;
+        return local_0;
     }
-    local_1 = 0xffffffff;
-    return local_1;
+    local_0 = 0xffffffff;
+    return local_0;
 }
 -- signature
 int (int x)
@@ -29,7 +27,6 @@ int (int x)
 -- ir
 fn classify @ 0x210184 (size 76)
   blk0 @ 0x210184:
-    store32(w0, (sp + #0xfffffffffffffff8))
     brif eq (w0 & #0x80000000), #0x0 -> 0x2101a4
   blk1 @ 0x210194:
     br 0x210198
@@ -37,7 +34,7 @@ fn classify @ 0x210184 (size 76)
     store32(#0xffffffff, (sp + #0xfffffffffffffffc))
     br 0x2101c4
   blk3 @ 0x2101a4:
-    brif ne load32((sp + #0xfffffffffffffff8)), #0x0 -> 0x2101b8
+    brif ne w0, #0x0 -> 0x2101b8
   blk4 @ 0x2101ac:
     br 0x2101b0
   blk5 @ 0x2101b0:
@@ -55,24 +52,13 @@ fn classify @ 0x210184 (size 76)
 -- decompile
 /* velk pseudo-C: clamp @ 0x2101d0 */
 int clamp(int x, int lo, int hi) {
-    int32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-c] */
-    int32_t local_2; /* [sp-10] */
-    uint32_t local_3; /* [sp-4] */
-
-    local_0 = x;
-    local_1 = lo;
-    local_2 = hi;
     if (x >= lo) {
-        if (local_0 <= local_2) {
-            local_3 = local_0;
-            return local_3;
+        if (x <= hi) {
+            return x;
         }
-        local_3 = local_2;
-        return local_3;
+        return hi;
     }
-    local_3 = local_1;
-    return local_3;
+    return lo;
 }
 -- signature
 int (int x, int lo, int hi)
@@ -81,27 +67,24 @@ int (int x, int lo, int hi)
 -- ir
 fn clamp @ 0x2101d0 (size 104)
   blk0 @ 0x2101d0:
-    store32(w0, (sp + #0xfffffffffffffff8))
-    store32(w1, (sp + #0xfffffffffffffff4))
-    store32(w2, (sp + #0xfffffffffffffff0))
     brif ge w0, w1 -> 0x210200
   blk1 @ 0x2101f0:
     br 0x2101f4
   blk2 @ 0x2101f4:
-    store32(load32((sp + #0xfffffffffffffff4)), (sp + #0xfffffffffffffffc))
+    v2 = w1
     br 0x21022c
   blk3 @ 0x210200:
-    brif le load32((sp + #0xfffffffffffffff8)), load32((sp + #0xfffffffffffffff0)) -> 0x210220
+    brif le w0, w2 -> 0x210220
   blk4 @ 0x210210:
     br 0x210214
   blk5 @ 0x210214:
-    store32(load32((sp + #0xfffffffffffffff0)), (sp + #0xfffffffffffffffc))
+    v2 = w2
     br 0x21022c
   blk6 @ 0x210220:
-    store32(load32((sp + #0xfffffffffffffff8)), (sp + #0xfffffffffffffffc))
+    v2 = w0
     br 0x21022c
   blk7 @ 0x21022c:
-    ret load32((sp + #0xfffffffffffffffc))
+    ret v2
 -- card
 {"addr":"0x2101d0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":104,"unsupported":0}
 
@@ -109,16 +92,14 @@ fn clamp @ 0x2101d0 (size 104)
 -- decompile
 /* velk pseudo-C: sign_of @ 0x210238 */
 int sign_of(int x) {
-    int32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
+    uint32_t local_0; /* [sp-8] */
 
-    local_0 = x;
     if (x <= 0x0) {
-        local_1 = (local_0 >= 0x0 ? 0x0 : 0xffffffff);
-        return local_1;
+        local_0 = (x >= 0x0 ? 0x0 : 0xffffffff);
+        return local_0;
     }
-    local_1 = 0x1;
-    return local_1;
+    local_0 = 0x1;
+    return local_0;
 }
 -- signature
 int (int x)
@@ -127,7 +108,6 @@ int (int x)
 -- ir
 fn sign_of @ 0x210238 (size 72)
   blk0 @ 0x210238:
-    store32(w0, (sp + #0xfffffffffffffffc))
     brif le w0, #0x0 -> 0x21025c
   blk1 @ 0x21024c:
     br 0x210250
@@ -135,7 +115,7 @@ fn sign_of @ 0x210238 (size 72)
     store32(#0x1, (sp + #0xfffffffffffffff8))
     br 0x210274
   blk3 @ 0x21025c:
-    store32(select ge load32((sp + #0xfffffffffffffffc)), #0x0 ? #0x0, #0xffffffff, (sp + #0xfffffffffffffff8))
+    store32(select ge w0, #0x0 ? #0x0, #0xffffffff, (sp + #0xfffffffffffffff8))
     br 0x210274
   blk4 @ 0x210274:
     ret load32((sp + #0xfffffffffffffff8))

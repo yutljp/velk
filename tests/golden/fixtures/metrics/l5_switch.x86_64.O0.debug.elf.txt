@@ -526,7 +526,7 @@ int (int x)
 -- ir
 fn sparse @ 0x2016f0 (size 111)
   blk0 @ 0x2016f0:
-    v1 = (edi & #0xffffffff)
+    v1 = edi
     store32(v1, (rsp + #0xffffffffffffffec))
     brif eq ((v1 - #0x1) & #0xffffffff), #0x0 -> 0x20172f
   blk1 @ 0x201706:

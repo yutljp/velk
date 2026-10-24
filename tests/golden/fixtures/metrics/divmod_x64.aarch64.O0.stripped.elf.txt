@@ -167,8 +167,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2103d4 (size 36)
   blk0 @ 0x2103d4:
-    v1 = (w0 & #0xffffffff)
-    ret ((v1 - ((v1 / #0x3) * #0x3)) & #0xffffffff)
+    ret ((w0 - ((w0 / #0x3) * #0x3)) & #0xffffffff)
 -- card
 {"addr":"0x2103d4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 
@@ -202,8 +201,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x21041c (size 36)
   blk0 @ 0x21041c:
-    v1 = (w0 & #0xffffffff)
-    ret ((v1 - ((v1 / #0x8) * #0x8)) & #0xffffffff)
+    ret ((w0 - ((w0 / #0x8) * #0x8)) & #0xffffffff)
 -- card
 {"addr":"0x21041c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
 

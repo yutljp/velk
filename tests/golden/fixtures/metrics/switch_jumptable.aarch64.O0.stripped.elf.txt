@@ -88,7 +88,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x21018c (size 880)
   blk0 @ 0x21018c:
-    v1 = (w0 & #0xffffffff)
+    v1 = w0
     brif eq (v1 & #0xffffffff), #0x0 -> 0x210234
   blk1 @ 0x2101a0:
     br 0x2101a4

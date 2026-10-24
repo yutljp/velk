@@ -22,6 +22,8 @@ mod cache;
 mod common;
 #[path = "recompile/division.rs"]
 mod division;
+#[path = "recompile/frame_values.rs"]
+mod frame_values;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;

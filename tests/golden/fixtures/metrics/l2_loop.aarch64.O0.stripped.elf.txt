@@ -169,17 +169,14 @@ int32_t (uint32_t * a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x210300 (size 128)
   blk0 @ 0x210300:
-    store64(x0, (sp + #0xfffffffffffffff0))
-    store32(w1, (sp + #0xffffffffffffffec))
-    store32(w2, (sp + #0xffffffffffffffe8))
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210318
   blk1 @ 0x210318:
-    brif ge load32((sp + #0xffffffffffffffe4)), load32((sp + #0xffffffffffffffec)) -> 0x210368
+    brif ge load32((sp + #0xffffffffffffffe4)), w1 -> 0x210368
   blk2 @ 0x210328:
     br 0x21032c
   blk3 @ 0x21032c:
-    brif ne load32((load64((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4))s << #0x2))), load32((sp + #0xffffffffffffffe8)) -> 0x210354
+    brif ne load32((x0 + (load32((sp + #0xffffffffffffffe4))s << #0x2))), w2 -> 0x210354
   blk4 @ 0x210344:
     br 0x210348
   blk5 @ 0x210348:

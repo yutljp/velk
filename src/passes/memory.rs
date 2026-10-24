@@ -3,9 +3,12 @@ use crate::arch::stack_pointer;
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, FunctionIr, Stmt};
 
+mod frame_values;
+
 /// Replaces a load with the value stored to the same address earlier in the
 /// block: `*(u32 *)&local_3 = w8; x8 = *(u32 *)&local_3;` leaves `x8 = w8;`.
 pub fn forward_stored_values(ir: &mut FunctionIr) {
+    frame_values::forward(ir);
     let sp = stack_pointer(ir.isa);
     // A callee can reach the caller's frame only through an address the
     // code hands out, and the outgoing arguments it may write: Go's callee
@@ -258,11 +261,18 @@ fn forward_expr(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {
                         value: Box::new(value.clone()),
                         width,
                     },
-                    (width, false) => Expr::bin(
-                        crate::ir::BinOp::And,
-                        value.clone(),
-                        Expr::Const((1u64 << (u32::from(width) * 8)) - 1),
-                    ),
+                    (width, false) => {
+                        let bits = width.saturating_mul(8);
+                        if crate::ir::semantics::width(value) == u32::from(bits) {
+                            crate::passes::copies::truncated(value, bits)
+                        } else {
+                            Expr::bin(
+                                crate::ir::BinOp::And,
+                                value.clone(),
+                                Expr::Const(crate::ir::semantics::mask(u32::from(bits))),
+                            )
+                        }
+                    }
                 };
                 return;
             }

@@ -103,11 +103,10 @@ int64_t (uint8_t * a0)
 -- ir
 fn <unnamed> @ 0x2102f8 (size 68)
   blk0 @ 0x2102f8:
-    store64(x0, (sp + #0xfffffffffffffff8))
     store64(#0x0, (sp + #0xfffffffffffffff0))
     br 0x210308
   blk1 @ 0x210308:
-    brif eq (load8((load64((sp + #0xfffffffffffffff8)) + load64((sp + #0xfffffffffffffff0)))) & #0xffffffff), #0x0 -> 0x210330
+    brif eq (load8((x0 + load64((sp + #0xfffffffffffffff0)))) & #0xffffffff), #0x0 -> 0x210330
   blk2 @ 0x21031c:
     br 0x210320
   blk3 @ 0x210320:

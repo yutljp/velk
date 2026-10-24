@@ -23,16 +23,14 @@ fn alt_sum3 @ 0x21016c (size 44)
 -- decompile
 /* velk pseudo-C: alt_helper @ 0x210198 */
 int alt_helper(int x) {
-    int32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-8] */
-    int32_t local_2; /* [sp-c] */
+    uint32_t local_0; /* [sp-8] */
+    int32_t local_1; /* [sp-c] */
 
-    local_0 = x;
-    local_1 = 0x0;
-    for (local_2 = 0x0; local_2 < local_0; local_2++) {
-        local_1 += local_2 * local_2;
+    local_0 = 0x0;
+    for (local_1 = 0x0; local_1 < x; local_1++) {
+        local_0 += local_1 * local_1;
     }
-    return local_1;
+    return local_0;
 }
 -- signature
 int (int x)
@@ -41,12 +39,11 @@ int (int x)
 -- ir
 fn alt_helper @ 0x210198 (size 96)
   blk0 @ 0x210198:
-    store32(w0, (sp + #0xfffffffffffffffc))
     store32(#0x0, (sp + #0xfffffffffffffff8))
     store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2101ac
   blk1 @ 0x2101ac:
-    brif ge load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffffc)) -> 0x2101ec
+    brif ge load32((sp + #0xfffffffffffffff4)), w0 -> 0x2101ec
   blk2 @ 0x2101bc:
     br 0x2101c0
   blk3 @ 0x2101c0:

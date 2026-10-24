@@ -41,18 +41,14 @@ struct sub_210238_a0 {
     uint8_t gap_0x12[0x6];
 };
 int64_t sub_210238(struct sub_210238_a0 *a0, int32_t a1) {
-    struct sub_210238_a0 *v2;
-    struct sub_210238_a0 *v3;
-    int64_t v4;
+    int64_t v2;
     int64_t local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
 
     local_0 = 0x0;
     for (local_1 = 0x0; local_1 < a1; local_1++) {
-        v2 = a0 + local_1;
-        v3 = a0 + local_1;
-        v4 = v3->field_0x10;
-        local_0 += v2->field_0x8 * v4;
+        v2 = a0[local_1].field_0x10;
+        local_0 += a0[local_1].field_0x8 * v2;
     }
     return local_0;
 }
@@ -63,20 +59,16 @@ int64_t (struct sub_210238_a0 * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x210238 (size 136)
   blk0 @ 0x210238:
-    store64(x0, (sp + #0xfffffffffffffff8))
-    store32(w1, (sp + #0xfffffffffffffff4))
     store64(#0x0, (sp + #0xffffffffffffffe8))
     store32(#0x0, (sp + #0xffffffffffffffe4))
     br 0x210250
   blk1 @ 0x210250:
-    brif ge load32((sp + #0xffffffffffffffe4)), load32((sp + #0xfffffffffffffff4)) -> 0x2102b4
+    brif ge load32((sp + #0xffffffffffffffe4)), w1 -> 0x2102b4
   blk2 @ 0x210260:
     br 0x210264
   blk3 @ 0x210264:
-    v2 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
-    v3 = (load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffe4))s * #0x18))
-    v4 = load16((v3 + #0x10))s
-    store64((load64((sp + #0xffffffffffffffe8)) + (load64((v2 + #0x8)) * v4)), (sp + #0xffffffffffffffe8))
+    v2 = load16(((x0 + (load32((sp + #0xffffffffffffffe4))s * #0x18)) + #0x10))s
+    store64((load64((sp + #0xffffffffffffffe8)) + (load64(((x0 + (load32((sp + #0xffffffffffffffe4))s * #0x18)) + #0x8)) * v2)), (sp + #0xffffffffffffffe8))
     br 0x2102a4
   blk4 @ 0x2102a4:
     store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
@@ -198,16 +190,16 @@ fn <unnamed> @ 0x21036c (size 24)
 -- decompile
 /* velk pseudo-C: sub_210384 @ 0x210384 */
 int32_t sub_210384(int64_t a0) {
+    int32_t v1;
     uint32_t local_0; /* [sp-4] */
-    uint32_t local_1; /* [sp-14] */
 
     local_0 = a0;
     if ((*(uint8_t *)&local_0 & 0x1) == 0x0) {
-        local_1 = *(uint8_t *)&local_0 >> 0x1 & 0x7;
-        return local_1;
+        v1 = *(uint8_t *)&local_0 >> 0x1 & 0x7;
+        return v1;
     }
-    local_1 = *(uint8_t *)&local_0 >> 0x4;
-    return local_1;
+    v1 = *(uint8_t *)&local_0 >> 0x4;
+    return v1;
 }
 -- signature
 int32_t (int64_t a0)
@@ -222,13 +214,13 @@ fn <unnamed> @ 0x210384 (size 76)
   blk1 @ 0x21039c:
     br 0x2103a0
   blk2 @ 0x2103a0:
-    store32(((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x4), (sp + #0xffffffffffffffec))
+    v1 = (((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x4) & #0xffffffff)
     br 0x2103c4
   blk3 @ 0x2103b0:
-    store32((((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x1) & #0x7), (sp + #0xffffffffffffffec))
+    v1 = (((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x1) & #0x7)
     br 0x2103c4
   blk4 @ 0x2103c4:
-    ret load32((sp + #0xffffffffffffffec))
+    ret v1
 -- card
 {"addr":"0x210384","approxTokens":210,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"unsupported":0}
 

@@ -41,12 +41,11 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x2101c8 (size 96)
   blk0 @ 0x2101c8:
-    store32(w0, (sp + #0xfffffffffffffffc))
     store32(#0x0, (sp + #0xfffffffffffffff8))
     store32(#0x0, (sp + #0xfffffffffffffff4))
     br 0x2101dc
   blk1 @ 0x2101dc:
-    brif ge load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffffc)) -> 0x21021c
+    brif ge load32((sp + #0xfffffffffffffff4)), w0 -> 0x21021c
   blk2 @ 0x2101ec:
     br 0x2101f0
   blk3 @ 0x2101f0:
@@ -98,17 +97,15 @@ int32_t (uint32_t * a0, int32_t a1)
 -- ir
 fn <unnamed> @ 0x21024c (size 100)
   blk0 @ 0x21024c:
-    store64(x0, (sp + #0xfffffffffffffff8))
-    store32(w1, (sp + #0xfffffffffffffff4))
     store32(#0x0, (sp + #0xfffffffffffffff0))
     store32(#0x0, (sp + #0xffffffffffffffec))
     br 0x210264
   blk1 @ 0x210264:
-    brif ge load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x2102a4
+    brif ge load32((sp + #0xffffffffffffffec)), w1 -> 0x2102a4
   blk2 @ 0x210274:
     br 0x210278
   blk3 @ 0x210278:
-    store32((load32((sp + #0xfffffffffffffff0)) + load32((load64((sp + #0xfffffffffffffff8)) + (load32((sp + #0xffffffffffffffec))s << #0x2)))), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((x0 + (load32((sp + #0xffffffffffffffec))s << #0x2)))), (sp + #0xfffffffffffffff0))
     br 0x210294
   blk4 @ 0x210294:
     store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
