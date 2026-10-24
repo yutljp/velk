@@ -303,6 +303,7 @@ mod tests {
         }
         outputs.reverse();
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::Aapcs64,

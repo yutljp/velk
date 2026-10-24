@@ -317,6 +317,7 @@ mod tests {
 
     fn call() -> Stmt {
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::Aapcs64,

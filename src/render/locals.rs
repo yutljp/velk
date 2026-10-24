@@ -1527,6 +1527,7 @@ mod tests {
 
     fn binding_call(clobbers: Option<crate::ir::Registers>) -> Stmt {
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::Aapcs64,

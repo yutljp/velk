@@ -497,6 +497,7 @@ mod tests {
             output.dest.index = VARIABLE_BASE + 4 + index as u16;
         }
         let mut stmts = vec![Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::Aapcs64,

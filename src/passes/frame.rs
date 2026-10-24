@@ -883,6 +883,7 @@ mod tests {
                 },
                 assign(RBX, Expr::reg(7, 64)),
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x100),
                     through: None,
                     convention: Convention::SysV,
@@ -960,6 +961,7 @@ mod tests {
             start: 0x18,
             stmts: vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x100),
                     through: None,
                     convention: Convention::SysV,
@@ -994,6 +996,7 @@ mod tests {
         let mut ir = frame_pointer_function(vec![
             assign(7, Expr::reg(RBP, 64)),
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x100),
                 through: None,
                 convention: Convention::SysV,
@@ -1093,6 +1096,7 @@ mod tests {
             vec![
                 store(0, Expr::Const(9), 8),
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x100),
                     through: None,
                     convention: Convention::Aapcs64,

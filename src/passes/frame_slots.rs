@@ -721,6 +721,7 @@ mod tests {
             value,
         };
         let call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::SysV,

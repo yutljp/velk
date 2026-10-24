@@ -862,6 +862,7 @@ mod tests {
 
     fn call() -> Node {
         Node::Stmt(Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::SysV,
@@ -1080,6 +1081,7 @@ mod tests {
                     width: 8,
                 },
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x5000 + value),
                     through: None,
                     convention: crate::ir::Convention::Aapcs64,
@@ -1209,6 +1211,7 @@ mod tests {
         use crate::ir::{FunctionIr, eval};
         use crate::loader::Isa;
         let returning_call = Node::Stmt(Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x123),
             through: None,
             convention: crate::ir::Convention::Aapcs64,

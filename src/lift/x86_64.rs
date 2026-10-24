@@ -30,7 +30,8 @@ use super::{
     reverse_bytes, rotate, tail_call,
 };
 use crate::ir::{
-    BinOp, Block, Cond, EXCHANGE, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt,
+    BinOp, Block, CallKind, Cond, EXCHANGE, Expr, LaneOp, Operation, Precision, RegRef, Rounding,
+    Stmt,
 };
 use crate::loader::Image;
 
@@ -492,7 +493,12 @@ fn lift_instruction(
                 OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64
             ) {
                 let target = resolved_target(ins, relocation_target);
-                let made = call(lifter.image, lifter.summaries, Some(target));
+                let made = call(
+                    CallKind::Invoke,
+                    lifter.image,
+                    lifter.summaries,
+                    Some(target),
+                );
                 lifter.stmts.push(made);
                 if (lifter.summaries)(target).noreturn {
                     lifter.stmts.push(Stmt::Trap);
@@ -504,9 +510,12 @@ fn lift_instruction(
             } else if let Some(through) = operand(lifter, ins, 0) {
                 // A pointer the image fills itself is a call to its function.
                 if let Some(target) = super::pointer_target(lifter.image, &through) {
-                    lifter
-                        .stmts
-                        .push(call(lifter.image, lifter.summaries, Some(target)));
+                    lifter.stmts.push(call(
+                        CallKind::Invoke,
+                        lifter.image,
+                        lifter.summaries,
+                        Some(target),
+                    ));
                     if (lifter.summaries)(target).noreturn {
                         lifter.stmts.push(Stmt::Trap);
                         return true;
@@ -519,14 +528,16 @@ fn lift_instruction(
                 } else {
                     let noreturn = super::import_called(lifter.image, &through)
                         .is_some_and(|summary| summary.noreturn);
-                    lifter.stmts.push(call_through(lifter.image, through));
+                    lifter
+                        .stmts
+                        .push(call_through(CallKind::Invoke, lifter.image, through));
                     if noreturn {
                         lifter.stmts.push(Stmt::Trap);
                         return true;
                     }
                 }
             } else {
-                let made = call(lifter.image, lifter.summaries, None);
+                let made = call(CallKind::Invoke, lifter.image, lifter.summaries, None);
                 lifter.stmts.push(made);
             }
         }
@@ -546,7 +557,9 @@ fn lift_instruction(
                     )),
                     // A jump through an import's slot calls it for the result.
                     None if let Some(summary) = super::import_called(lifter.image, &target) => {
-                        lifter.stmts.push(call_through(lifter.image, target));
+                        lifter
+                            .stmts
+                            .push(call_through(CallKind::Tail, lifter.image, target));
                         lifter.stmts.push(if summary.noreturn {
                             Stmt::Trap
                         } else {
@@ -689,6 +702,7 @@ fn lift_instruction(
         }
         // The kernel's call: its number and arguments in registers.
         Mnemonic::Syscall => lifter.stmts.push(Stmt::Call {
+            kind: CallKind::Syscall,
             target: None,
             through: None,
             convention: crate::ir::Convention::SyscallX86,

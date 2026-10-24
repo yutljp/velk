@@ -338,6 +338,7 @@ mod tests {
 
     fn call() -> Stmt {
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x2000),
             through: None,
             convention: Convention::SysV,
@@ -404,6 +405,7 @@ mod tests {
         assert!(changed.contains(0) && changed.contains(11));
         // A callee known to change only rbx changes only rbx.
         stmts[2] = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x2000),
             through: None,
             convention: Convention::SysV,

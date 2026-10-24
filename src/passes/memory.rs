@@ -983,6 +983,7 @@ mod tests {
         // v1 = *x0; *(sp - 8) = v1; f(); if (x2 != 0) { return *(sp - 8) }.
         let v1 = crate::ir::VARIABLE_BASE;
         let call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::Aapcs64,
@@ -1079,6 +1080,7 @@ mod tests {
                 store(16, Expr::reg(variable, 64), 8),
                 store(24, Expr::reg(1, 64), 8),
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: crate::ir::Convention::Aapcs64,

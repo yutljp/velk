@@ -1185,6 +1185,7 @@ mod tests {
             Isa::AArch64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: crate::ir::Convention::Aapcs64,
@@ -1269,6 +1270,7 @@ mod tests {
         unnamed.blocks[0].stmts.insert(
             1,
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x2000),
                 through: None,
                 convention: crate::ir::Convention::Aapcs64,
@@ -1486,6 +1488,7 @@ mod tests {
             ir.blocks[0].stmts.insert(
                 0,
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x2000),
                     through: None,
                     convention: crate::ir::Convention::Aapcs64,
@@ -1518,6 +1521,7 @@ mod tests {
         ir.blocks[0].stmts.insert(
             0,
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x2000),
                 through: None,
                 convention: crate::ir::Convention::Aapcs64,
@@ -1769,6 +1773,7 @@ mod tests {
 
     fn pointer_import(dest: u16) -> Stmt {
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: None,
             through: Some(Expr::Load {
                 addr: Box::new(Expr::Const(0x1000)),
@@ -2307,6 +2312,7 @@ mod tests {
                     let mut ir = FunctionIr::single_block(
                         isa,
                         vec![Stmt::Call {
+                            kind: crate::ir::CallKind::Invoke,
                             target: None,
                             through: Some(Expr::Load {
                                 addr: Box::new(Expr::Const(0x1000)),
@@ -2339,6 +2345,7 @@ mod tests {
             Isa::X86_64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: crate::ir::Convention::SysV,

@@ -49,6 +49,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
             });
         }
         statements.push(Stmt::Call {
+            kind: velk::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::SysV,
@@ -203,6 +204,7 @@ fn printed_stack_struct_keeps_overlapping_bytes_separate_from_fields() {
         CType::U32,
         vec![
             Stmt::Call {
+                kind: velk::ir::CallKind::Invoke,
                 target: Some(0x1000),
                 through: None,
                 convention: Convention::SysV,
@@ -260,6 +262,7 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
     let prefix = saves.len();
     saves.extend([
         Stmt::Call {
+            kind: velk::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::Aapcs64,

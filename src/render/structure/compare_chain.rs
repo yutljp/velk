@@ -921,6 +921,7 @@ mod tests {
         ir.blocks[0].stmts.insert(
             0,
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x123),
                 through: None,
                 convention: crate::ir::Convention::Aapcs64,
@@ -1037,6 +1038,7 @@ mod tests {
                 value: Expr::Const(1000),
             },
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x123),
                 through: None,
                 convention: crate::ir::Convention::Aapcs64,

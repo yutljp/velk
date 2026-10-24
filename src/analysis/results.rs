@@ -496,6 +496,7 @@ mod tests {
         ])));
         assert!(!super::returns_value(&block(vec![ret.clone()])));
         let call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::Aapcs64,
@@ -532,6 +533,7 @@ mod tests {
     #[test]
     fn result_liveness_distinguishes_preserving_calls_and_named_destinations() {
         let mut call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::SysV,

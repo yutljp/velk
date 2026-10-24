@@ -1636,6 +1636,7 @@ mod tests {
                     Expr::bin(crate::ir::BinOp::Add, Expr::reg(4, 64), Expr::Const(0x20)),
                 ),
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x2000),
                     through: None,
                     convention: Convention::GoAmd64,
@@ -1964,6 +1965,7 @@ mod tests {
             let signature = recover_aapcs_stack(vec![
                 stack_assign(index, stack_address(31, 0)),
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x2000),
                     through: None,
                     convention: Convention::Aapcs64,
@@ -2090,6 +2092,7 @@ mod tests {
 
     fn cfg_call() -> Stmt {
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::Aapcs64,

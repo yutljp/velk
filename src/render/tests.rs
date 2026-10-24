@@ -1040,6 +1040,7 @@ fn compare_exchange_does_not_truncate_a_wider_comparison() {
 #[test]
 fn a_trap_after_a_call_is_left_out_and_one_alone_is_kept() {
     let call = Stmt::Call {
+        kind: crate::ir::CallKind::Invoke,
         target: Some(0x1000),
         through: None,
         convention: crate::ir::Convention::SysV,
@@ -1150,6 +1151,7 @@ fn a_further_result_in_a_parameter_register_is_no_parameter() {
         Isa::X86_64,
         vec![
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x1000),
                 through: None,
                 convention,
@@ -1662,6 +1664,7 @@ fn a_member_name_does_not_retain_an_unused_segment_snapshot() {
 #[test]
 fn segment_bindings_keep_real_calls_parameters_and_data_distinct() {
     let call = |target, through| Stmt::Call {
+        kind: crate::ir::CallKind::Invoke,
         target: Some(target),
         through,
         convention: crate::ir::Convention::SysV,
@@ -1885,6 +1888,7 @@ fn symbol_kinds_keep_names_at_the_same_address() {
 #[test]
 fn calls_distinguish_functions_from_import_slots() {
     let call = |through| Stmt::Call {
+        kind: crate::ir::CallKind::Invoke,
         target: Some(0x40),
         through,
         convention: crate::ir::Convention::SysV,
@@ -1941,6 +1945,7 @@ fn global_views_do_not_shadow_unnamed_functions() {
         Isa::X86_64,
         vec![
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x40),
                 through: None,
                 convention: crate::ir::Convention::SysV,
@@ -2014,6 +2019,7 @@ fn physical_call_arguments_keep_zero_extension_without_callee_width_evidence() {
             Isa::X86_64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: crate::ir::Convention::SysV,
@@ -2371,6 +2377,7 @@ fn readonly_floating_views_reject_written_and_call_clobbered_formals() {
         }];
         if clobber {
             stmts.push(Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x1000),
                 through: None,
                 convention: crate::ir::Convention::Aapcs64,

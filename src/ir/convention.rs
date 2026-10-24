@@ -227,3 +227,125 @@ impl Convention {
         }
     }
 }
+
+/// How control reaches a callee, which decides what the transfer pushes
+/// on the stack before the callee's first instruction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallKind {
+    /// A call that returns here.
+    Invoke,
+    /// A jump to the callee in place of this function's return: the callee
+    /// finds the stack as this function found it.
+    Tail,
+    /// A system call, which takes nothing on the stack.
+    Syscall,
+}
+
+impl CallKind {
+    /// Bytes the transfer pushes before the callee runs; None when the kind
+    /// does not go with the ISA and convention.
+    pub fn push_bytes(self, isa: crate::loader::Isa, convention: Convention) -> Option<i64> {
+        use crate::loader::Isa;
+        let syscall = match (isa, convention) {
+            (Isa::AArch64, Convention::Aapcs64) => false,
+            (
+                Isa::X86_64,
+                Convention::SysV
+                | Convention::Win64
+                | Convention::GoAmd64
+                | Convention::GoWriteBarrier
+                | Convention::GoAbi0,
+            ) => false,
+            (Isa::AArch64, Convention::SyscallArm) | (Isa::X86_64, Convention::SyscallX86) => true,
+            _ => return None,
+        };
+        match (self, syscall) {
+            (Self::Invoke, false) => Some(convention.pushed_by_call()),
+            (Self::Tail, false) | (Self::Syscall, true) => Some(0),
+            _ => None,
+        }
+    }
+
+    /// Where the stack slot the callee finds at `callee_offset` from its
+    /// entry stack pointer lies from the stack pointer at the transfer;
+    /// None for a system call, a kind that does not fit, or an overflow.
+    pub fn stack_offset(
+        self,
+        isa: crate::loader::Isa,
+        convention: Convention,
+        callee_offset: i64,
+    ) -> Option<i64> {
+        if self == Self::Syscall {
+            return None;
+        }
+        let Some(pushed) = self.push_bytes(isa, convention) else {
+            return None;
+        };
+        callee_offset.checked_sub(pushed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CallKind, Convention};
+    use crate::loader::Isa;
+
+    #[test]
+    fn call_stack_coordinates_distinguish_invoke_tail_and_syscall() {
+        for (isa, convention, entry, invoke) in [
+            (Isa::X86_64, Convention::SysV, 8, 0),
+            (Isa::X86_64, Convention::Win64, 40, 32),
+            (Isa::X86_64, Convention::GoAbi0, 8, 0),
+            (Isa::AArch64, Convention::Aapcs64, 0, 0),
+        ] {
+            assert_eq!(
+                CallKind::Invoke.stack_offset(isa, convention, entry),
+                Some(invoke)
+            );
+            assert_eq!(
+                CallKind::Tail.stack_offset(isa, convention, entry),
+                Some(entry)
+            );
+            assert_eq!(CallKind::Tail.push_bytes(isa, convention), Some(0));
+        }
+        for (isa, convention) in [
+            (Isa::X86_64, Convention::SyscallX86),
+            (Isa::AArch64, Convention::SyscallArm),
+        ] {
+            assert_eq!(CallKind::Syscall.push_bytes(isa, convention), Some(0));
+            assert_eq!(CallKind::Syscall.stack_offset(isa, convention, 0), None);
+            assert_eq!(CallKind::Invoke.push_bytes(isa, convention), None);
+            assert_eq!(CallKind::Tail.push_bytes(isa, convention), None);
+        }
+    }
+
+    #[test]
+    fn call_stack_coordinates_refuse_a_mismatch_and_an_overflow() {
+        for convention in [
+            Convention::SysV,
+            Convention::Win64,
+            Convention::GoAmd64,
+            Convention::GoAbi0,
+            Convention::GoWriteBarrier,
+        ] {
+            assert_eq!(CallKind::Invoke.push_bytes(Isa::AArch64, convention), None);
+        }
+        for (kind, isa, convention) in [
+            (CallKind::Invoke, Isa::X86_64, Convention::Aapcs64),
+            (CallKind::Syscall, Isa::X86_64, Convention::SyscallArm),
+            (CallKind::Syscall, Isa::AArch64, Convention::SyscallX86),
+            (CallKind::Invoke, Isa::Unsupported, Convention::SysV),
+            (CallKind::Syscall, Isa::X86_64, Convention::SysV),
+        ] {
+            assert_eq!(kind.push_bytes(isa, convention), None);
+        }
+        assert_eq!(
+            CallKind::Invoke.stack_offset(Isa::X86_64, Convention::SysV, i64::MIN),
+            None
+        );
+        assert_eq!(
+            CallKind::Tail.stack_offset(Isa::X86_64, Convention::SysV, i64::MIN),
+            Some(i64::MIN)
+        );
+    }
+}

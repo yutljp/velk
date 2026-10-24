@@ -244,6 +244,7 @@ fn tail_calls_through_pointers(
         let through = target.clone();
         block.stmts.pop();
         block.stmts.push(Stmt::Call {
+            kind: crate::ir::CallKind::Tail,
             target: None,
             through: Some(through),
             convention: crate::ir::Convention::of(image.isa, image.format, image.go),
@@ -1457,6 +1458,7 @@ mod tests {
                 Isa::AArch64,
                 vec![
                     Stmt::Call {
+                        kind: crate::ir::CallKind::Invoke,
                         target: None,
                         through: Some(Expr::Load {
                             addr: Box::new(Expr::Const(0x1000)),
@@ -1594,6 +1596,7 @@ mod tests {
             Isa::X86_64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: None,
                     through: Some(Expr::Load {
                         addr: Box::new(Expr::Const(0x1000)),
@@ -1652,6 +1655,7 @@ mod tests {
                             },
                         },
                         Stmt::Call {
+                            kind: crate::ir::CallKind::Invoke,
                             target: Some(0x2000),
                             through: None,
                             convention,
@@ -1691,6 +1695,7 @@ mod tests {
                 Isa::X86_64,
                 vec![
                     Stmt::Call {
+                        kind: crate::ir::CallKind::Invoke,
                         target: None,
                         through: Some(Expr::Load {
                             addr: Box::new(Expr::Const(0x1000)),

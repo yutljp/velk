@@ -906,6 +906,7 @@ mod tests {
     #[test]
     fn known_value_only_calls_survive_but_frame_arguments_do_not() {
         let call = |argument| Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x4000),
             through: None,
             convention: Convention::Aapcs64,
@@ -945,6 +946,7 @@ mod tests {
     #[test]
     fn hidden_call_reads_reject_frame_addresses_and_unknown_origins() {
         let call = |floats_named| Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x4000),
             through: None,
             convention: Convention::Aapcs64,
@@ -1002,6 +1004,7 @@ mod tests {
     fn hidden_call_reads_also_reject_mapped_frame_origins() {
         let variable = crate::ir::VARIABLE_BASE;
         let call = |floats_named| Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x4000),
             through: None,
             convention: Convention::Aapcs64,

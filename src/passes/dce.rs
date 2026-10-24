@@ -155,6 +155,7 @@ mod tests {
                 value: Expr::Const(5),
             },
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(0x100),
                 through: None,
                 convention: Convention::Aapcs64,

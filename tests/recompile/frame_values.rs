@@ -117,6 +117,7 @@ fn assert_forwarded(ir: &FunctionIr, expected: bool) {
 
 fn call() -> Stmt {
     Stmt::Call {
+        kind: velk::ir::CallKind::Invoke,
         target: Some(0x1000),
         through: None,
         convention: Convention::SysV,

@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::error::LiftError;
 use crate::ir::visit::{children, expr_reads};
-use crate::ir::{Block, Convention, Expr, FLAG_OPERANDS, RegRef, Stmt};
+use crate::ir::{Block, CallKind, Convention, Expr, FLAG_OPERANDS, RegRef, Stmt};
 use crate::loader::{Image, Isa, Summary};
 
 const MAX_INSTRUCTIONS: usize = 8192;
@@ -433,12 +433,18 @@ fn reads_memory(expr: &Expr) -> bool {
 /// The arguments of a call reading `count` registers and `stack` slots
 /// past them, as they stand at the call.
 pub(crate) fn arguments(
+    kind: CallKind,
     convention: Convention,
     isa: crate::loader::Isa,
     count: Option<usize>,
     stack: usize,
 ) -> Option<Vec<Expr>> {
-    let count = count?;
+    let Some(count) = count else {
+        return None;
+    };
+    if kind.push_bytes(isa, convention).is_none() {
+        return None;
+    }
     let mut args: Vec<Expr> = convention.arguments()[..count.min(convention.arguments().len())]
         .iter()
         .map(|register| Expr::reg(*register, 64))
@@ -446,7 +452,16 @@ pub(crate) fn arguments(
     if let Some(start) = convention.stack_arguments() {
         let sp = crate::arch::stack_pointer(isa);
         for slot in 0..stack {
-            let offset = start - convention.pushed_by_call() + 8 * slot as i64;
+            // The slot the callee reads, as it lies from the stack pointer
+            // at the call or jump.
+            let Some(offset) = i64::try_from(slot)
+                .ok()
+                .and_then(|slot| slot.checked_mul(8))
+                .and_then(|slot| start.checked_add(slot))
+                .and_then(|callee| kind.stack_offset(isa, convention, callee))
+            else {
+                return None;
+            };
             args.push(Expr::Load {
                 addr: Box::new(Expr::bin(
                     crate::ir::BinOp::Add,
@@ -463,12 +478,18 @@ pub(crate) fn arguments(
 
 /// A call to `target`. A variadic library function's arguments are left to
 /// the analysis, which counts them from its format string.
-pub(crate) fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> Stmt {
+pub(crate) fn call(
+    kind: CallKind,
+    image: &Image,
+    summaries: Summaries<'_>,
+    target: Option<u64>,
+) -> Stmt {
     let name = target
         .and_then(|target| image.functions.get(&target))
         .and_then(|function| function.name.as_deref());
     if image.go && name.is_some_and(|name| name.starts_with("runtime.gcWriteBarrier")) {
         return Stmt::Call {
+            kind,
             target,
             through: None,
             convention: Convention::GoWriteBarrier,
@@ -496,7 +517,7 @@ pub(crate) fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>)
     let summary = target.filter(|_| !variadic).map(summaries);
     let arity = summary.and_then(|summary| summary.arity);
     let stack = summary.map_or(0, |summary| summary.stack);
-    let mut args = arguments(convention, image.isa, arity, stack);
+    let mut args = arguments(kind, convention, image.isa, arity, stack);
     // Go's assembly ABI packs its arguments: the callee may read only the
     // low bytes of a slot.
     if let (Convention::GoAbi0, Some(args), Some(summary)) = (convention, &mut args, summary) {
@@ -521,6 +542,7 @@ pub(crate) fn call(image: &Image, summaries: Summaries<'_>, target: Option<u64>)
     }
     let clobbers = summary.and_then(|summary| summary.clobbers);
     Stmt::Call {
+        kind,
         target,
         through: None,
         convention,
@@ -867,7 +889,7 @@ pub(crate) fn import_called(image: &Image, through: &Expr) -> Option<crate::load
 
 /// A call to the address `through` computes. One through an import's slot
 /// passes the arguments its prototype takes.
-pub(crate) fn call_through(image: &Image, through: Expr) -> Stmt {
+pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt {
     let convention = Convention::of(image.isa, image.format, image.go);
     let variadic = crate::lift::import_name(image, &through)
         .and_then(|name| {
@@ -878,10 +900,11 @@ pub(crate) fn call_through(image: &Image, through: Expr) -> Stmt {
         .filter(|_| !variadic)
         .and_then(|summary| summary.arity);
     Stmt::Call {
+        kind,
         target: None,
         through: Some(through),
         convention,
-        args: arguments(convention, image.isa, arity, 0),
+        args: arguments(kind, convention, image.isa, arity, 0),
         floats_named: false,
         clobbers: None,
         outputs: crate::ir::fallback_call_outputs(convention, None),
@@ -893,10 +916,10 @@ pub(crate) fn call_through(image: &Image, through: Expr) -> Stmt {
 /// unless the callee never returns.
 fn tail_call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> [Stmt; 2] {
     if target.is_some_and(|target| summaries(target).noreturn) {
-        return [call(image, summaries, target), Stmt::Trap];
+        return [call(CallKind::Tail, image, summaries, target), Stmt::Trap];
     }
     [
-        call(image, summaries, target),
+        call(CallKind::Tail, image, summaries, target),
         Stmt::Ret {
             value: Expr::reg(crate::arch::RETURN, 64),
         },
@@ -1999,5 +2022,80 @@ mod tests {
         let again = super::lift_shared_with_targets(&image, 0, 6, &targets, &summaries)
             .expect("retained previous version");
         assert!(std::sync::Arc::ptr_eq(&first, &again));
+    }
+
+    /// The kind and arguments of the first call lifted from `bytes`.
+    fn first_call(
+        bytes: Vec<u8>,
+        format: crate::loader::Format,
+        summary: crate::loader::Summary,
+    ) -> (crate::ir::CallKind, Option<Vec<Expr>>) {
+        let len = bytes.len() as u64;
+        let mut image = Image::from_code(Isa::X86_64, 0, bytes);
+        image.format = format;
+        image.functions.insert(
+            32,
+            Function {
+                addr: 32,
+                size: None,
+                size_estimated: false,
+                name: None,
+                aliases: Vec::new(),
+                sources: Vec::new(),
+            },
+        );
+        let blocks = super::lift_shared(&image, 0, len, &|_| summary).unwrap();
+        let Some(Stmt::Call { kind, args, .. }) = blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .find(|stmt| matches!(stmt, Stmt::Call { .. }))
+        else {
+            panic!("a call");
+        };
+        (*kind, args.clone())
+    }
+
+    #[test]
+    fn x86_calls_jumps_and_syscalls_keep_their_kind() {
+        use crate::ir::CallKind;
+        for (bytes, expected) in [
+            (vec![0xe8, 0x1b, 0, 0, 0, 0xc3], CallKind::Invoke),
+            (vec![0xe9, 0x1b, 0, 0, 0], CallKind::Tail),
+            (vec![0x0f, 0x05, 0xc3], CallKind::Syscall),
+        ] {
+            let (kind, _) = first_call(bytes, crate::loader::Format::Elf, Default::default());
+            assert_eq!(kind, expected);
+        }
+    }
+
+    #[test]
+    fn tail_call_stack_arguments_are_read_past_the_return_address() {
+        // A jump pushes nothing: the callee's first stack argument lies
+        // where it lay on this function's entry.
+        for (format, count, invoke_offset, tail_offset) in [
+            (crate::loader::Format::Elf, 6, 0, 8),
+            (crate::loader::Format::Pe, 4, 32, 40),
+        ] {
+            for (opcode, expected) in [(0xe8, invoke_offset), (0xe9, tail_offset)] {
+                let summary = crate::loader::Summary {
+                    arity: Some(count),
+                    stack: 1,
+                    ..Default::default()
+                };
+                let (_, args) = first_call(vec![opcode, 0x1b, 0, 0, 0, 0xc3], format, summary);
+                let args = args.expect("known arguments");
+                assert_eq!(args.len(), count + 1);
+                let wanted = Expr::Load {
+                    addr: Box::new(Expr::bin(
+                        crate::ir::BinOp::Add,
+                        Expr::reg(4, 64),
+                        Expr::Const(expected),
+                    )),
+                    width: 8,
+                    signed: false,
+                };
+                assert_eq!(args.last(), Some(&wanted), "{opcode:#x}");
+            }
+        }
     }
 }

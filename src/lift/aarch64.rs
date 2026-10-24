@@ -29,7 +29,9 @@ use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, flags, preserve_compare,
     reverse_bytes, rotate, tail_call,
 };
-use crate::ir::{BinOp, Cond, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt};
+use crate::ir::{
+    BinOp, CallKind, Cond, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt,
+};
 
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
@@ -515,13 +517,15 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             // A call leaves the flags undefined.
             lifter.last_compare = None;
             if let Some(through) = lifter.operand(ops[0], 64) {
-                lifter.stmts.push(call_through(lifter.image, through));
+                lifter
+                    .stmts
+                    .push(call_through(CallKind::Invoke, lifter.image, through));
             }
         }
         O::BL => {
             lifter.last_compare = None;
             let target = lifter.target_of(ops[0], pc);
-            let made = call(lifter.image, lifter.summaries, target);
+            let made = call(CallKind::Invoke, lifter.image, lifter.summaries, target);
             lifter.stmts.push(made);
             if target.is_some_and(|target| (lifter.summaries)(target).noreturn) {
                 lifter.stmts.push(Stmt::Trap);
@@ -580,6 +584,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         }
         // The kernel's call: its number and arguments in registers.
         O::SVC => lifter.stmts.push(Stmt::Call {
+            kind: CallKind::Syscall,
             target: None,
             through: None,
             convention: crate::ir::Convention::SyscallArm,

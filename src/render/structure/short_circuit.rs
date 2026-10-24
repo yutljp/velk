@@ -399,6 +399,7 @@ mod tests {
 
     fn call(target: u64) -> Node {
         Node::Stmt(Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(target),
             through: None,
             convention: crate::ir::Convention::SysV,

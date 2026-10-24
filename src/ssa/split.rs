@@ -577,6 +577,7 @@ mod split_tests {
             stmts.push(store(Expr::reg(XMM0 + 1, 64), at(RSI, 8)));
         }
         stmts.push(Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: None,
             through: Some(Expr::reg(0, 64)),
             convention: crate::ir::Convention::SysV,

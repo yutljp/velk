@@ -4049,6 +4049,7 @@ static uint64_t output_callee(uint64_t value) {
                     value: Expr::reg(6, 64),
                 },
                 Stmt::Call {
+                    kind: velk::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: Convention::SysV,
@@ -4136,6 +4137,7 @@ fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
         dest: RegRef { index, width },
     };
     let call = |target, wide| Stmt::Call {
+        kind: velk::ir::CallKind::Invoke,
         target: Some(target),
         through: None,
         convention: Convention::SysV,
@@ -4444,6 +4446,7 @@ static int32_t address_signed(uint64_t value) { ++address_calls; return (int32_t
                 });
             }
             let mut stmts = vec![Stmt::Call {
+                kind: velk::ir::CallKind::Invoke,
                 target: Some(target),
                 through: None,
                 convention: Convention::SysV,
@@ -4590,6 +4593,7 @@ static __attribute__((noinline)) uint64_t width_callee(uint64_t value) {
             CType::U64,
             vec![
                 Stmt::Call {
+                    kind: velk::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: Convention::SysV,

@@ -1055,6 +1055,7 @@ mod tests {
             Isa::X86_64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: Convention::GoAmd64,
@@ -1236,6 +1237,7 @@ mod tests {
                     value: Expr::Const(17),
                 },
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: Convention::Aapcs64,

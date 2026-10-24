@@ -2,7 +2,7 @@ mod convention;
 mod print;
 mod registers;
 
-pub use convention::Convention;
+pub use convention::{CallKind, Convention};
 pub(crate) use print::*;
 pub use registers::{
     EXCEPTION, EXCHANGE, FLAG_CARRIED, FLAG_OPERANDS, Registers, SELECTOR, SWITCH_INDEX, TEMP_BASE,
@@ -615,6 +615,7 @@ pub enum Stmt {
         default: Option<u64>,
     },
     Call {
+        kind: CallKind,
         target: Option<u64>,
         /// The address an indirect call computes, when `target` is unknown.
         through: Option<Expr>,
@@ -855,6 +856,7 @@ mod tests {
     fn fallback_outputs_use_precise_clobbers_and_primary_provenance() {
         use super::{Convention, Registers, Stmt, fallback_call_outputs};
         let mut call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::SysV,

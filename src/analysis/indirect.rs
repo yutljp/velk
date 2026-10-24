@@ -750,22 +750,27 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
     for (index, position, decision) in decisions.into_iter().rev() {
         let stmts = &mut blocks[index].stmts;
         let Stmt::Call {
+            kind,
             through: Some(through),
             ..
         } = &stmts[position]
         else {
             continue;
         };
+        let kind = *kind;
         let through = through.clone();
         match decision {
             Decision::Direct(target, found) => {
-                let mut call = crate::lift::call(image, &summaries, Some(target));
+                let mut call = crate::lift::call(kind, image, &summaries, Some(target));
                 if let Stmt::Call { via, .. } = &mut call {
                     *via = Some(Box::new(found));
                 }
                 stmts[position] = call;
-                let results = crate::lift::stack_results(image, &summaries, target);
-                stmts.splice(position + 1..position + 1, results);
+                // A tail call's results go to this function's caller.
+                if kind == crate::ir::CallKind::Invoke {
+                    let results = crate::lift::stack_results(image, &summaries, target);
+                    stmts.splice(position + 1..position + 1, results);
+                }
                 drop_feeding(stmts, position, &through);
             }
             Decision::Import(slot) => {
@@ -774,7 +779,7 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
                     width: 8,
                     signed: false,
                 };
-                stmts[position] = crate::lift::call_through(image, through.clone());
+                stmts[position] = crate::lift::call_through(kind, image, through.clone());
                 drop_feeding(stmts, position, &through);
             }
             Decision::Slot(found) => {
@@ -787,7 +792,7 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
                 } = &mut stmts[position]
                 {
                     if args.is_none() && arity.is_some() {
-                        *args = crate::lift::arguments(*convention, image.isa, arity, 0);
+                        *args = crate::lift::arguments(kind, *convention, image.isa, arity, 0);
                     }
                     *via = Some(Box::new(found));
                 }
@@ -1000,6 +1005,41 @@ mod tests {
                 .collect(),
             Isa::Unsupported => unreachable!(),
         }
+    }
+
+    #[test]
+    fn a_resolved_tail_call_stays_a_tail_call() {
+        let (image, mut blocks) =
+            pointer_factory(Isa::X86_64, false, constant_factory(Isa::X86_64, 0x80));
+        let Some(Stmt::Call { kind, .. }) = blocks
+            .iter_mut()
+            .flat_map(|block| &mut block.stmts)
+            .find(|stmt| {
+                matches!(
+                    stmt,
+                    Stmt::Call {
+                        through: Some(_),
+                        ..
+                    }
+                )
+            })
+        else {
+            panic!("an indirect call");
+        };
+        *kind = crate::ir::CallKind::Tail;
+        resolve(&mut blocks, &[], &image);
+        let resolved = blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .find_map(|stmt| match stmt {
+                Stmt::Call {
+                    kind,
+                    target: Some(0x80),
+                    ..
+                } => Some(*kind),
+                _ => None,
+            });
+        assert_eq!(resolved, Some(crate::ir::CallKind::Tail));
     }
 
     #[test]
@@ -1334,6 +1374,7 @@ mod tests {
         };
         let changed = Some([0, 2].into_iter().collect());
         let mut call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x40),
             through: None,
             convention: Convention::SysV,
@@ -1433,7 +1474,12 @@ mod tests {
             constructors: false,
             returns: Some(Default::default()),
         };
-        let factory = crate::lift::call(&image, &|_| Default::default(), Some(0x40));
+        let factory = crate::lift::call(
+            crate::ir::CallKind::Invoke,
+            &image,
+            &|_| Default::default(),
+            Some(0x40),
+        );
         let mut state = State::entry();
         tracker.step(&mut state, &factory, (0, 0));
         let load = |register| Expr::Load {
@@ -1469,7 +1515,12 @@ mod tests {
             },
             (0, 1),
         );
-        let unknown = crate::lift::call(&image, &|_| Default::default(), None);
+        let unknown = crate::lift::call(
+            crate::ir::CallKind::Invoke,
+            &image,
+            &|_| Default::default(),
+            None,
+        );
         tracker.step(&mut state, &unknown, (0, 2));
         assert!(decide(&tracker, &state, &load(0), (0, 3)).is_none());
         assert!(matches!(
@@ -1482,8 +1533,14 @@ mod tests {
     fn returned_pointer_facts_require_a_closed_caller_cfg() {
         use crate::ir::Cond;
         let (image, _) = pointer_factory(Isa::X86_64, false, constant_factory(Isa::X86_64, 0x80));
-        let factory = crate::lift::call(&image, &|_| Default::default(), Some(0x40));
-        let indirect = crate::lift::call_through(&image, Expr::reg(0, 64));
+        let factory = crate::lift::call(
+            crate::ir::CallKind::Invoke,
+            &image,
+            &|_| Default::default(),
+            Some(0x40),
+        );
+        let indirect =
+            crate::lift::call_through(crate::ir::CallKind::Invoke, &image, Expr::reg(0, 64));
         let ret = Stmt::Ret {
             value: Expr::reg(0, 64),
         };
@@ -1617,14 +1674,23 @@ mod tests {
             Block {
                 start: 0,
                 stmts: vec![
-                    crate::lift::call(&image, &|_| Default::default(), Some(0x40)),
+                    crate::lift::call(
+                        crate::ir::CallKind::Invoke,
+                        &image,
+                        &|_| Default::default(),
+                        Some(0x40),
+                    ),
                     Stmt::Br { target: Some(16) },
                 ],
             },
             Block {
                 start: 8,
                 stmts: vec![
-                    crate::lift::call_through(&image, Expr::reg(0, 64)),
+                    crate::lift::call_through(
+                        crate::ir::CallKind::Invoke,
+                        &image,
+                        Expr::reg(0, 64),
+                    ),
                     ret.clone(),
                 ],
             },
@@ -1644,7 +1710,8 @@ mod tests {
                 ..
             }
         ));
-        blocks[1].stmts[0] = crate::lift::call_through(&image, Expr::Const(0x80));
+        blocks[1].stmts[0] =
+            crate::lift::call_through(crate::ir::CallKind::Invoke, &image, Expr::Const(0x80));
         resolve(&mut blocks, &pads, &image);
         assert!(matches!(
             blocks[1].stmts[0],
@@ -1667,6 +1734,7 @@ mod tests {
         };
         let changed = Some([2].into_iter().collect());
         let mut call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: Convention::SysV,

@@ -942,6 +942,7 @@ mod tests {
 
     fn call(target: u64, args: Vec<Expr>) -> Stmt {
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(target),
             through: None,
             convention: Convention::SysV,

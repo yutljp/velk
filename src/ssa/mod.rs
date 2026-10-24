@@ -459,6 +459,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
     for (block, contents) in ir.blocks.iter_mut().enumerate() {
         for (position, stmt) in contents.stmts.iter_mut().enumerate() {
             let Stmt::Call {
+                kind,
                 target: Some(target),
                 args: args @ None,
                 convention,
@@ -489,6 +490,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
             let count = fixed + crate::analysis::prototypes::conversion_types(&format, scans).len();
             // The rest are read from the stack, where the call finds them.
             *args = crate::lift::arguments(
+                *kind,
                 *convention,
                 ir.isa,
                 Some(count),
@@ -744,6 +746,7 @@ mod tests {
 
     fn output_call(output_registers: &[u16], changed: &[u16]) -> Stmt {
         Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
             target: Some(0x1000),
             through: None,
             convention: crate::ir::Convention::Aapcs64,
@@ -1642,6 +1645,7 @@ mod tests {
         ir.blocks[0].stmts.insert(
             1,
             Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
                 target: Some(1),
                 through: None,
                 convention: crate::ir::Convention::SysV,
@@ -1663,6 +1667,7 @@ mod tests {
             Isa::X86_64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x2000),
                     through: None,
                     convention: crate::ir::Convention::SysV,
@@ -1746,6 +1751,7 @@ mod tests {
             Isa::X86_64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: crate::ir::Convention::GoAbi0,
@@ -1783,6 +1789,7 @@ mod tests {
             Isa::X86_64,
             vec![
                 Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),
                     through: None,
                     convention: crate::ir::Convention::GoAmd64,
@@ -1935,5 +1942,68 @@ mod tests {
         let ssa = build(&ir).expect("builds");
         assert_ne!(ssa.ir.render(), ir.render());
         assert_eq!(lower(&ssa).render(), ir.render());
+    }
+
+    #[test]
+    fn variadic_stack_arguments_follow_the_call_kind() {
+        let mut image =
+            crate::loader::Image::from_code(Isa::X86_64, 0x4000, b"%d%d%d%d%d%d\0".to_vec());
+        image.functions.insert(
+            0x1000,
+            crate::loader::Function {
+                addr: 0x1000,
+                size: None,
+                size_estimated: false,
+                name: Some("printf".to_owned()),
+                aliases: Vec::new(),
+                sources: Vec::new(),
+            },
+        );
+        // The seventh argument is the first on the stack: at the call it
+        // lies just above the stack pointer; at a jump, past the return
+        // address the caller pushed.
+        for (kind, expected) in [
+            (crate::ir::CallKind::Invoke, 0),
+            (crate::ir::CallKind::Tail, 8),
+        ] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    assign(7, Expr::Const(0x4000)),
+                    Stmt::Call {
+                        kind,
+                        target: Some(0x1000),
+                        through: None,
+                        convention: crate::ir::Convention::SysV,
+                        args: None,
+                        floats_named: false,
+                        clobbers: None,
+                        outputs: crate::ir::fallback_call_outputs(
+                            crate::ir::Convention::SysV,
+                            None,
+                        ),
+                        via: None,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            );
+            super::count_variadic_arguments(&mut ir, &image);
+            let Stmt::Call {
+                args: Some(args), ..
+            } = &ir.blocks[0].stmts[1]
+            else {
+                panic!("format arguments");
+            };
+            assert_eq!(args.len(), 7);
+            let stack = Expr::reg(4, 64);
+            let wanted = Expr::Load {
+                addr: Box::new(Expr::bin(BinOp::Add, stack, Expr::Const(expected))),
+                width: 8,
+                signed: false,
+            };
+            assert_eq!(args.last(), Some(&wanted), "{kind:?}");
+        }
     }
 }
