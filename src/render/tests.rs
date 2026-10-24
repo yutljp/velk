@@ -371,7 +371,12 @@ fn compared(
     let text = rendered(&ir);
     let line = text
         .lines()
-        .find_map(|line| line.trim().strip_prefix("return (")?.strip_suffix(");"))
+        .find_map(|line| {
+            let Some(value) = line.trim().strip_prefix("return ") else {
+                return None;
+            };
+            value.strip_suffix(';')
+        })
         .unwrap_or_else(|| panic!("{text}"));
     line.to_owned()
 }
@@ -1306,7 +1311,7 @@ fn an_array_of_structures_is_indexed_by_elements() {
         "    v1->field_0x0 = 0;\n",
         "    v1 = v1 + 0x2;\n",
         "    v2 = (uintptr_t)&a0[a1].field_0x8;\n",
-        "    return *(uint32_t *)((uint8_t *)a0 + ((uint64_t)a1 << 0x4) + 0xc);\n",
+        "    return *(uint32_t *)((uint8_t *)a0 + ((uint64_t)a1 << 4) + 0xc);\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
     }
@@ -1345,14 +1350,14 @@ fn a_logical_shift_of_a_signed_value_shifts_it_without_its_sign() {
         CType::I32,
         Expr::bin(BinOp::Shr, Expr::reg(0, 32), Expr::Const(31)),
     );
-    assert_eq!(text, "(uint32_t)a0 >> 0x1f");
+    assert_eq!(text, "(uint32_t)a0 >> 31");
     // An unsigned one needs no cast.
     let text = returned(
         &[(0, CType::U32)],
         CType::I32,
         Expr::bin(BinOp::Shr, Expr::reg(0, 32), Expr::Const(31)),
     );
-    assert_eq!(text, "a0 >> 0x1f");
+    assert_eq!(text, "a0 >> 31");
 }
 
 #[test]
@@ -1366,7 +1371,7 @@ fn a_product_whose_high_bits_are_read_is_computed_at_64_bits() {
             0xffff_ffff,
         ),
     );
-    assert_eq!(text, "(uint64_t)a0 * a1 >> 0x1");
+    assert_eq!(text, "(uint64_t)a0 * a1 >> 1");
     // Read only in its low 32 bits, it stays as C computes it.
     let text = returned(
         &[(0, CType::U32), (1, CType::U32)],
@@ -1414,7 +1419,7 @@ fn a_mask_stays_on_a_sum_that_can_carry_out_of_it() {
         CType::I64,
         mask(Expr::bin(BinOp::Add, low(1), low(0)), 0xffff_ffff),
     );
-    assert_eq!(text, "((a1 + a0) & 0xffffffff)");
+    assert_eq!(text, "(a1 + a0) & 0xffffffff");
     // Read in its low 32 bits only, it goes.
     let text = returned(
         &[(0, CType::I64), (1, CType::I64)],
@@ -1990,13 +1995,13 @@ fn physical_call_arguments_keep_zero_extension_without_callee_width_evidence() {
         (
             CType::I32,
             masked(0xffff_ffff),
-            "sub_1000((a0 & 0xffffffff));",
+            "sub_1000(a0 & 0xffffffff);",
             0xffff_ffff,
         ),
         (
             CType::I64,
             masked(0xffff_ffff),
-            "sub_1000((a0 & 0xffffffff));",
+            "sub_1000(a0 & 0xffffffff);",
             0xffff_ffff,
         ),
         (

@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: twice @ 0x2102b4 */
 int32_t twice(int32_t a0) {
-    return (uint64_t)a0 << 0x1;
+    return (uint64_t)a0 << 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -73,7 +73,7 @@ int32_t apply_table(uint32_t a0, int32_t a1) {
     int64_t v3;
 
     v3 = table[a0 % 3];
-    return ((uint64_t (*)())v3)((a1 & 0xffffffff));
+    return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -94,7 +94,7 @@ fn apply_table @ 0x2102e0 (size 44)
 int32_t apply_pointer(void *a0, int32_t a1) {
     int32_t v3;
 
-    v3 = ((uint64_t (*)())a0)((a1 & 0xffffffff));
+    v3 = ((uint64_t (*)())a0)(a1 & 0xffffffff);
     return v3 + 1;
 }
 -- signature
@@ -155,7 +155,7 @@ int32_t factorial(int32_t a0) {
                 v4 = mul_lanes32(v13, v4);
             } while (v11 != 0);
             v9 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10));
-            v11 = v9 >> 0x20;
+            v11 = v9 >> 32;
             v2 = v9 * v11;
             if (v5 == v6) {
                 return v2;
@@ -236,9 +236,9 @@ int32_t is_odd(int32_t a0) {
 
     v1 = a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
-        v1 = (v1 >> 0x1) + 1;
+        v1 = (v1 >> 1) + 1;
         v4 = v1 & 0xfffffffe;
-        a0 -= ((uint64_t)v4 << 0x1);
+        a0 -= ((uint64_t)v4 << 1);
         i = v4;
         do {
             i -= 2;

@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x201180 */
 int classify(int x) {
-    return (x >= 0 ? (x != 0) : 0xffffffff);
+    return (x >= 0 ? x != 0 : 0xffffffff);
 }
 -- signature
 int (int x)

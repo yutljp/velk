@@ -10,7 +10,7 @@ struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2];
 int item_weight(struct item *items, int i) {
     int64_t v1;
 
-    v1 = (uint64_t)i << 0x4;
+    v1 = (uint64_t)i << 4;
     return (int16_t)*(uint16_t *)((uint8_t *)items + v1 + 0xc) * *(uint32_t *)((uint8_t *)items + v1 + 0x8);
 }
 -- signature
@@ -86,7 +86,7 @@ long item_last_key(struct item *items, int n) {
     if ((n & 0x1) == 0) {
         return v3;
     }
-    v4 = (uint64_t)v2 << 0x4;
+    v4 = (uint64_t)v2 << 4;
     if (*(int32_t *)((uint8_t *)items + v4 + 0x8) <= 0) {
         return v3;
     }

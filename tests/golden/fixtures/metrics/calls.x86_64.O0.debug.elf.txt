@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: twice @ 0x201310 */
 int twice(int x) {
-    return (uint64_t)x << 0x1;
+    return (uint64_t)x << 1;
 }
 -- signature
 int (int x)
@@ -75,7 +75,7 @@ int apply_table(unsigned int index, int x) {
 
     v1 = index % 3;
     v3 = table[v1];
-    return ((uint64_t (*)())v3)((x & 0xffffffff));
+    return ((uint64_t (*)())v3)(x & 0xffffffff);
 }
 -- signature
 int (unsigned int index, int x)
@@ -97,7 +97,7 @@ fn apply_table @ 0x201360 (size 52)
 int apply_pointer(void *f, int x) {
     int32_t v3;
 
-    v3 = ((uint64_t (*)())f)((x & 0xffffffff));
+    v3 = ((uint64_t (*)())f)(x & 0xffffffff);
     return v3 + 1;
 }
 -- signature

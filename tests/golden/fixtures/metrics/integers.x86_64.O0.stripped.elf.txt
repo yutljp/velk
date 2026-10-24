@@ -71,7 +71,7 @@ int32_t sub_2012e0(int32_t a0, int32_t a1, int32_t a2) {
     if (a0 < a1) {
         return result;
     }
-    result = (a0 <= a2);
+    result = a0 <= a2;
     return result;
 }
 -- signature
@@ -148,7 +148,7 @@ fn <unnamed> @ 0x201350 (size 55)
 -- decompile
 /* velk pseudo-C: sub_201390 @ 0x201390 */
 uint32_t sub_201390(uint32_t a0) {
-    return a0 >> 0x18 | a0 >> 0x8 & 0xff00 | a0 << 0x8 & 0xff0000 | a0 << 0x18;
+    return a0 >> 24 | a0 >> 8 & 0xff00 | a0 << 8 & 0xff0000 | a0 << 24;
 }
 -- signature
 uint32_t (uint32_t a0)

@@ -41,7 +41,7 @@ int32_t sub_2011f0(uint32_t *a0, int32_t a1) {
     }
     if ((uint32_t)a1 >= 8) {
         v2 = (uint32_t)a1 & 0x7ffffff8;
-        v4 = (uint64_t)((a1 & 0xffffffff) >> 0x3) << 0x5;
+        v4 = (uint64_t)((a1 & 0xffffffff) >> 3) << 5;
         v5 = 0;
         v6 = 0;
         v7 = 0;
@@ -55,7 +55,7 @@ int32_t sub_2011f0(uint32_t *a0, int32_t a1) {
             v7 += 32;
         } while (v4 != v7);
         v5 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
-        v3 = add_lanes32(v5 >> 0x20 | v5 >> 0x20 << 0x20, v5);
+        v3 = add_lanes32(v5 >> 32 | v5 >> 32 << 32, v5);
         if (v2 == (uint32_t)a1) {
             return v3;
         }

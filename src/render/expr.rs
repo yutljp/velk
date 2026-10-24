@@ -311,7 +311,7 @@ fn integral(expr: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
 fn shift_count(expr: &Expr, ctx: &Ctx<'_>) -> (Printed, u32) {
     if let Expr::Const(amount) = expr {
         let amount = (amount & 63) as u32;
-        return (constant(u64::from(amount), ConstantUse::Hex), amount);
+        return (constant(u64::from(amount), ConstantUse::Number), amount);
     }
     if let Some(range) = value_range(expr, ctx)
         && range.hi <= 63
@@ -673,9 +673,17 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
                 .ranging(Range::Signed(from))
             }
         }
-        Expr::Select { .. } if let Some((text, _)) = logic(value, false, ctx) => {
-            Printed::new(format!("({text})"), Int::INT, ALL, 13).ranging(Range::Unsigned(1))
-        }
+        Expr::Select { .. } if let Some((text, joined)) = logic(value, false, ctx) => Printed::new(
+            text,
+            Int::INT,
+            ALL,
+            match joined {
+                condition::Joined::Single => 7,
+                condition::Joined::And => 3,
+                condition::Joined::Or => 2,
+            },
+        )
+        .ranging(Range::Unsigned(1)),
         Expr::Select {
             cond,
             lhs,
@@ -1137,7 +1145,7 @@ fn masked(lhs: &Expr, mask: u64, ctx: &Ctx<'_>, bits: u32) -> Printed {
         } else {
             inner.within(6, false).text
         };
-        (format!("({left} & 0xffffffff)"), 13)
+        (format!("{left} & 0xffffffff"), 6)
     } else {
         (format!("{} & 0x{mask:x}", inner.within(6, false).text), 6)
     };
@@ -1239,7 +1247,7 @@ mod tests {
                 Expr::bin(BinOp::And, choice.clone(), Expr::Const(0xffff_ffff)),
             ] {
                 let text = returned(value, &[CType::I32]);
-                assert!(text.contains(&format!("return ({expected});")), "{text}");
+                assert!(text.contains(&format!("return {expected};")), "{text}");
                 assert!(!text.contains(" ? "), "{text}");
             }
             let text = returned(Expr::bin(BinOp::Mul, choice, Expr::Const(2)), &[CType::I32]);
@@ -1248,6 +1256,114 @@ mod tests {
                 "{text}"
             );
         }
+    }
+
+    #[test]
+    fn operands_only_group_when_precedence_or_readability_needs_it() {
+        let product = Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::reg(6, 64));
+        let sum = Expr::bin(BinOp::Add, product, Expr::reg(2, 64));
+        let text = returned(sum, &[CType::U64, CType::U64, CType::U64]);
+        assert!(text.contains("return a0 * a1 + a2;"), "{text}");
+        let sum = Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1));
+        let text = returned(Expr::bin(BinOp::Shr, sum, Expr::Const(3)), &[CType::U64]);
+        assert!(text.contains("return (a0 + 0x1) >> 3;"), "{text}");
+        let text = returned(
+            Expr::SignExtend {
+                value: Box::new(Expr::reg(7, 64)),
+                width: 1,
+            },
+            &[CType::U64],
+        );
+        assert!(text.contains("return (int8_t)a0;"), "{text}");
+    }
+
+    #[test]
+    fn bitwise_operands_keep_comparisons_grouped() {
+        for (op, symbol) in [(BinOp::And, "&"), (BinOp::Or, "|"), (BinOp::Xor, "^")] {
+            let value = Expr::bin(op, choice(Expr::Const(1), Expr::Const(0)), Expr::reg(7, 64));
+            let text = returned(value, &[CType::U64, CType::U64]);
+            assert!(
+                text.contains(&format!("return (a1 != 0) {symbol} a0;")),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn float_bit_casts_only_group_compound_operands() {
+        use crate::render::int::{ALL, Int, Printed};
+        for (text, strength, expected) in [
+            ("x", 13, "(uint64_t)x"),
+            ("f()", 13, "(uint64_t)f()"),
+            ("a + b", 10, "(uint64_t)(a + b)"),
+        ] {
+            let value = Printed::new(text.to_owned(), Int::U64, ALL, strength);
+            let text = super::operation::bits_float(value, Precision::Double);
+            assert!(text.contains(expected), "{text}");
+        }
+    }
+
+    #[test]
+    fn shift_update_uses_a_decimal_count() {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+        let load = Expr::Load {
+            addr: Box::new(slot.clone()),
+            width: 8,
+            signed: false,
+        };
+        let text = rendered(
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::bin(BinOp::Sar, load.clone(), Expr::Const(3)),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: load.clone(),
+                },
+            ],
+            &[CType::U64],
+        );
+        assert!(text.contains("result >>= 3;"), "{text}");
+    }
+
+    #[test]
+    fn boolean_zero_tests_simplify_on_either_side() {
+        let boolean = choice(Expr::Const(1), Expr::Const(0));
+        for (cond, expected) in [(Cond::Ne, "a1 != 0"), (Cond::Eq, "a1 == 0")] {
+            for (lhs, rhs) in [
+                (boolean.clone(), Expr::Const(0)),
+                (Expr::Const(0), boolean.clone()),
+            ] {
+                let value = Expr::Select {
+                    cond,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                    then: Box::new(Expr::Const(1)),
+                    els: Box::new(Expr::Const(0)),
+                };
+                let text = returned(value, &[CType::U64, CType::U64]);
+                assert!(text.contains(&format!("return {expected};")), "{text}");
+            }
+        }
+    }
+
+    #[test]
+    fn a_zero_left_relational_test_keeps_its_direction() {
+        let value = Expr::Select {
+            cond: Cond::Lt,
+            lhs: Box::new(Expr::Const(0)),
+            rhs: Box::new(Expr::reg(7, 64)),
+            then: Box::new(Expr::Const(1)),
+            els: Box::new(Expr::Const(0)),
+        };
+        let text = returned(value, &[CType::I64]);
+        assert!(text.contains("return 0 < a0;"), "{text}");
     }
 
     #[test]
@@ -1738,16 +1854,13 @@ mod tests {
             Expr::bin(BinOp::Shr, Expr::reg(7, 32), Expr::Const(40)),
             &[CType::U32],
         );
-        assert!(
-            logical.contains("return (uint64_t)a0 >> 0x28;"),
-            "{logical}"
-        );
+        assert!(logical.contains("return (uint64_t)a0 >> 40;"), "{logical}");
         let arithmetic = returned(
             Expr::bin(BinOp::Sar, Expr::reg(7, 32), Expr::Const(40)),
             &[CType::U32],
         );
         assert!(
-            arithmetic.contains("(int64_t)(int32_t)a0 >> 0x28"),
+            arithmetic.contains("(int64_t)(int32_t)a0 >> 40"),
             "{arithmetic}"
         );
         assert!(arithmetic.contains("return (uint32_t)"), "{arithmetic}");
@@ -1759,7 +1872,7 @@ mod tests {
             Expr::bin(BinOp::Shl, Expr::reg(7, 64), Expr::Const(1)),
             &[CType::I64],
         );
-        assert!(signed.contains("return (uint64_t)a0 << 0x1;"), "{signed}");
+        assert!(signed.contains("return (uint64_t)a0 << 1;"), "{signed}");
         let mut ir = function(
             vec![Stmt::Ret {
                 value: Expr::bin(BinOp::Shl, Expr::reg(7, 8), Expr::Const(24)),
@@ -1769,7 +1882,7 @@ mod tests {
         ir.ret_type = CType::U32;
         let promoted = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
         assert!(
-            promoted.contains("return (uint64_t)a0 << 0x18;"),
+            promoted.contains("return (uint64_t)a0 << 24;"),
             "{promoted}"
         );
     }
@@ -1780,7 +1893,7 @@ mod tests {
         let mut ir = function(vec![Stmt::Ret { value }], &[CType::U64]);
         ir.ret_type = CType::U32;
         let narrow = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
-        assert!(narrow.contains("return a0 << 0x1;"), "{narrow}");
+        assert!(narrow.contains("return a0 << 1;"), "{narrow}");
         ir.ret_type = CType::U64;
         let wide = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
         assert!(wide.contains("(uint32_t)a0"), "{wide}");

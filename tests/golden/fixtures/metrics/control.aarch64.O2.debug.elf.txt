@@ -108,7 +108,7 @@ int fallthrough(int x) {
     if ((uint32_t)x > 3) {
         return -1;
     }
-    return dword_200120[(x & 0xffffffff)];
+    return dword_200120[x & 0xffffffff];
 }
 -- signature
 int (int x)
@@ -189,7 +189,7 @@ int short_circuit(int *p, int n) {
         return 0;
     }
     if (*p != 1) {
-        return (p[(uint64_t)(uint32_t)n - 1] == 1);
+        return p[(uint64_t)(uint32_t)n - 1] == 1;
     }
     return 1;
 }
@@ -272,7 +272,7 @@ int skip_negatives(int *p, int n) {
         v2 = (uint32_t)*v14;
         v14 = v14 + 0x1;
         --v15;
-        v3 = (v2 & ~((int32_t)v2 >> 0x1f)) + v3;
+        v3 = (v2 & ~((int32_t)v2 >> 31)) + v3;
     } while (v15 != 0);
     return v3;
 }

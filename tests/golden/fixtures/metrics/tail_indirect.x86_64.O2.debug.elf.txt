@@ -6,7 +6,7 @@
 -- decompile
 /* velk pseudo-C: via_ptr @ 0x201170 */
 int via_ptr(void *f, int x) {
-    return ((uint64_t (*)())f)(((x + 1) & 0xffffffff));
+    return ((uint64_t (*)())f)((x + 1) & 0xffffffff);
 }
 -- signature
 int (void * f, int x)

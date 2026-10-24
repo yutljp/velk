@@ -65,7 +65,7 @@ fn mixed_sign @ 0x21021c (size 12)
 -- decompile
 /* velk pseudo-C: in_range @ 0x210228 */
 _Bool in_range(int x, int lo, int hi) {
-    return (x >= lo && x <= hi);
+    return x >= lo && x <= hi;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -117,7 +117,7 @@ fn popcount @ 0x210244 (size 20)
 -- decompile
 /* velk pseudo-C: byte_swap @ 0x210258 */
 unsigned int byte_swap(unsigned int x) {
-    return x << 0x18 | (x >> 0x8 & 0xff) << 0x10 | (x >> 0x10 & 0xff) << 0x8 | x >> 0x18;
+    return x << 24 | (x >> 8 & 0xff) << 16 | (x >> 16 & 0xff) << 8 | x >> 24;
 }
 -- signature
 unsigned int (unsigned int x)

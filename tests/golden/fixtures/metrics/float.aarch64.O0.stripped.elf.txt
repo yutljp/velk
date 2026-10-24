@@ -115,7 +115,7 @@ fn <unnamed> @ 0x21029c (size 32)
 /* velk pseudo-C: sub_2102bc @ 0x2102bc */
 int32_t sub_2102bc(double a0, double a1) {
     if (!(a0 < a1)) {
-        return (a1 < a0);
+        return a1 < a0;
     }
     return -1;
 }

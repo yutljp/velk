@@ -63,7 +63,7 @@ fn <unnamed> @ 0x201350 (size 16)
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 uint32_t sub_201360(uint32_t a0) {
-    return a0 >> 0x6;
+    return a0 >> 6;
 }
 -- signature
 uint32_t (uint32_t a0)
@@ -269,7 +269,7 @@ fn <unnamed> @ 0x201490 (size 44)
 int64_t sub_2014c0(uint64_t a0) {
     int64_t v1;
 
-    v1 = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
+    v1 = __umulh(a0, 0xcccccccccccccccd) >> 2 & 0xfffffffffffffffe;
     return a0 - (v1 + v1 * 4);
 }
 -- signature
@@ -339,7 +339,7 @@ fn <unnamed> @ 0x201520 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201530 @ 0x201530 */
 int32_t sub_201530(int32_t a0) {
-    return (uint32_t)a0 >> 0x1f;
+    return (uint32_t)a0 >> 31;
 }
 -- signature
 int32_t (int32_t a0)
@@ -356,7 +356,7 @@ fn <unnamed> @ 0x201530 (size 6)
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
 int32_t sub_201540(int32_t a0) {
-    return (a0 == 0);
+    return a0 == 0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -373,7 +373,7 @@ fn <unnamed> @ 0x201540 (size 8)
 -- decompile
 /* velk pseudo-C: sub_201550 @ 0x201550 */
 int32_t sub_201550(int32_t a0) {
-    return (a0 > 0);
+    return a0 > 0;
 }
 -- signature
 int32_t (int32_t a0)

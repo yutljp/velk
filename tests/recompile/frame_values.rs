@@ -516,14 +516,14 @@ fn printed_local_offsets_preserve_operator_precedence() {
         .unwrap();
     let mut candidates = Vec::new();
     for (case, offset, expected) in [
-        ("shift", shift, " + (a << 0x2)"),
+        ("shift", shift, " + (a << 2)"),
         ("and", and, " + (a & 0x1)"),
         ("or", or, " + (a | 0x1)"),
         ("select", select, " + (a == 0 ? 0x2 : 0x0)"),
         (
             "sum",
             sum,
-            " + ((a << 0x2) + (a & 0x1) + (a | 0x1) + (a == 0 ? 0x2 : 0x0))",
+            " + ((a << 2) + (a & 0x1) + (a | 0x1) + (a == 0 ? 0x2 : 0x0))",
         ),
     ] {
         let address = Expr::bin(BinOp::Add, slot(-8), offset);

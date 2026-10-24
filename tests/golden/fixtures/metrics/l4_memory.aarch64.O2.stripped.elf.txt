@@ -11,7 +11,7 @@ uint32_t sub_2101d4(uint32_t *a0, uint32_t *a1) {
     uint64_t v1;
 
     v1 = mul_lanes32(*(uint64_t *)(a1), *(uint64_t *)(a0));
-    return add_lanes32((v1 >> 0x20) * 0x100000001, v1);
+    return add_lanes32((v1 >> 32) * 0x100000001, v1);
 }
 -- signature
 uint32_t (uint32_t * a0, uint32_t * a1)

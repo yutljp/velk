@@ -28,7 +28,7 @@ fn tail_target @ 0x2101d4 (size 40)
 int tail_direct(int x) {
     int32_t v3;
 
-    v3 = tail_target(((x + 2) & 0xffffffff));
+    v3 = tail_target((x + 2) & 0xffffffff);
     return v3;
 }
 -- signature
@@ -47,7 +47,7 @@ fn tail_direct @ 0x2101fc (size 40)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x210224 */
 int tail_indirect(void *f, int x) {
-    return ((uint64_t (*)())f)(((x + 1) & 0xffffffff));
+    return ((uint64_t (*)())f)((x + 1) & 0xffffffff);
 }
 -- signature
 int (void * f, int x)

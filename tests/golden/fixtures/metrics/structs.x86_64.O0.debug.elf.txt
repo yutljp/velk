@@ -119,7 +119,7 @@ struct big big_make(long seed) {
 
     __builtin_memcpy(result_address, &(uint64_t){seed_bits}, 8);
     __builtin_memcpy(result_address + 0x8, &(uint64_t){seed_bits + 1}, 8);
-    __builtin_memcpy(result_address + 0x10, &(uint64_t){seed_bits << 0x1}, 8);
+    __builtin_memcpy(result_address + 0x10, &(uint64_t){seed_bits << 1}, 8);
     __builtin_memcpy(result_address + 0x18, &(uint64_t){seed_bits * 3}, 8);
     return result;
 }
@@ -190,10 +190,10 @@ unsigned int flags_level(struct flags f) {
     uint32_t v7;
 
     if ((f_bits & 0x1) == 0) {
-        v7 = (f_bits & 0xff) >> 0x1 & 0x7;
+        v7 = (f_bits & 0xff) >> 1 & 0x7;
         return v7;
     }
-    v7 = (f_bits & 0xff) >> 0x4;
+    v7 = (f_bits & 0xff) >> 4;
     return v7;
 }
 -- signature
@@ -222,7 +222,7 @@ void flags_set_mode(struct flags *f, unsigned int mode) {
     uint8_t v4;
 
     v4 = *(uint8_t *)(f);
-    *(uint8_t *)(f) = v4 & 0xf1 | (mode & 0x7) << 0x1;
+    *(uint8_t *)(f) = v4 & 0xf1 | (mode & 0x7) << 1;
 }
 -- signature
 void (struct flags * f, unsigned int mode)

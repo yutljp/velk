@@ -169,7 +169,7 @@ int64_t main(int32_t a0) {
     local_0.f_20 = 0x6f7774;
     local_0.f_18 = v1;
     local_0.f_28 = 0;
-    return lookup(&local_0.f_0, 2, (a0 & 0xffffffff));
+    return lookup(&local_0.f_0, 2, a0 & 0xffffffff);
 }
 -- signature
 int64_t (int32_t a0)
@@ -339,13 +339,13 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
         v2 = (void *)(local_0);
         local_2 = 0;
         local_1 = a1;
-        __snprintf_chk(v2, 64, 2, 64, "missing key %d among %d", (a2 & 0xffffffff), a1);
+        __snprintf_chk(v2, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
         fputs(v2, *stderr_GLIBC_2_2_5);
         abort();
     }
     v2 = (void *)a0;
     v3 = a0;
-    v4 = (uint64_t)(a1 + (int64_t)a1 * 0x2) << 0x3;
+    v4 = (uint64_t)(a1 + (int64_t)a1 * 0x2) << 3;
     v5 = (const char *)((uint8_t *)a0 + v4);
     do {
         if (v3->field_0x0 == a2) {
@@ -357,7 +357,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
     local_1 = a1;
     v8 = v2 + 0x8;
     v4 = (uintptr_t)(v4 + (uint8_t *)v8);
-    __snprintf_chk(v7, 64, 2, 64, "missing key %d among %d", (a2 & 0xffffffff), a1);
+    __snprintf_chk(v7, 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
     fputs(v7, *stderr_GLIBC_2_2_5);
     do {
         v11 = v8[-1];

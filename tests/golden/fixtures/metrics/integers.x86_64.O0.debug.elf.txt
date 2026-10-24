@@ -71,7 +71,7 @@ _Bool in_range(int x, int lo, int hi) {
     if (x < lo) {
         return result;
     }
-    result = (x <= hi);
+    result = x <= hi;
     return result;
 }
 -- signature
@@ -148,7 +148,7 @@ fn popcount @ 0x201350 (size 55)
 -- decompile
 /* velk pseudo-C: byte_swap @ 0x201390 */
 unsigned int byte_swap(unsigned int x) {
-    return x >> 0x18 | x >> 0x8 & 0xff00 | x << 0x8 & 0xff0000 | x << 0x18;
+    return x >> 24 | x >> 8 & 0xff00 | x << 8 & 0xff0000 | x << 24;
 }
 -- signature
 unsigned int (unsigned int x)

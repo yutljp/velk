@@ -52,7 +52,7 @@ struct abi_mixed abi_mixed_adjust(struct abi_mixed value, unsigned long long del
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
 
     {
-        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)value_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value }).bits;
         uint64_t result_bits_2 = value_bits_2 ^ delta_bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
@@ -80,7 +80,7 @@ struct abi_hfa1 abi_hfa1_adjust(struct abi_hfa1 value, double bias) {
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
 
     {
-        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)value_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value }).bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         return result;
     }
@@ -108,7 +108,7 @@ struct abi_hfa2 abi_hfa2_adjust(struct abi_hfa2 value, double bias) {
 
     {
         uint64_t result_bits = value_bits;
-        uint64_t result_bits_2 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_2) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        uint64_t result_bits_2 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)value_bits_2 }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value }).bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
         return result;
@@ -139,7 +139,7 @@ struct abi_hfa3 abi_hfa3_adjust(struct abi_hfa3 value, double bias) {
     {
         uint64_t result_bits = value_bits;
         uint64_t result_bits_2 = value_bits_2;
-        uint64_t result_bits_3 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_3) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        uint64_t result_bits_3 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)value_bits_3 }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value }).bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
         __builtin_memcpy((unsigned char *)&result + 0x10, &result_bits_3, 8);
@@ -173,7 +173,7 @@ struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
         uint64_t result_bits = value_bits;
         uint64_t result_bits_2 = value_bits_2;
         uint64_t result_bits_3 = value_bits_3;
-        uint64_t result_bits_4 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(value_bits_4) }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)(bias_bits) }).value }).bits;
+        uint64_t result_bits_4 = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)value_bits_4 }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value }).bits;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         __builtin_memcpy((unsigned char *)&result + 0x8, &result_bits_2, 8);
         __builtin_memcpy((unsigned char *)&result + 0x10, &result_bits_3, 8);
@@ -206,7 +206,7 @@ unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, 
     uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
     uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
 
-    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (value_bits_2 + (value_bits_2 << 0x4)));
+    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 1) + a_bits + (c_bits + (c_bits << 2)) - d_bits + (d_bits << 3))) + (value_bits_2 + (value_bits_2 << 4)));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -234,7 +234,7 @@ unsigned long long abi_exhaust_seven(unsigned long long a, unsigned long long b,
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *tail_address = (uint8_t *)&tail;
 
-    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 29 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 23 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (g_bits + (g_bits << 0x4)))));
+    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 29 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 23 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 1) + a_bits + (c_bits + (c_bits << 2)) - d_bits + (d_bits << 3))) + (g_bits + (g_bits << 4)))));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
@@ -296,7 +296,7 @@ unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long 
     uint64_t value_bits_2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x8, 8);
     uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
 
-    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (value_bits_2 + (value_bits_2 << 0x4)));
+    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 1) + a_bits + (c_bits + (c_bits << 2)) - d_bits + (d_bits << 3))) + (value_bits_2 + (value_bits_2 << 4)));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -324,7 +324,7 @@ unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *tail_address = (uint8_t *)&tail;
 
-    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 29 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 23 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 0x1) + a_bits + (c_bits + (c_bits << 0x2)) - d_bits + (d_bits << 0x3))) + (g_bits + (g_bits << 0x4)))));
+    return *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8) * 29 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) * 23 + (*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits + (b_bits << 1) + a_bits + (c_bits + (c_bits << 2)) - d_bits + (d_bits << 3))) + (g_bits + (g_bits << 4)))));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)

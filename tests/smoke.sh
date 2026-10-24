@@ -135,8 +135,8 @@ echo "$x64_selq" | grep -q "a0 / 64"   || fail "x64 signed select 64bit div"
 x64_sel10=$("$BIN" --decompile $FIX/x64_div.o pdiv10 2>/dev/null)
 echo "$x64_sel10" | grep -q "/ 10"      || fail "x64 signed sext div10"
 helper_cs=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$helper_cs" | grep -q "v2 >>= 0x1;"    || fail "shift kept in its variable"
-echo "$helper_cs" | grep -q "(v2 + (v2 << 0x1))" || fail "32-bit read shared without a temporary"
+echo "$helper_cs" | grep -q "v2 >>= 1;"    || fail "shift kept in its variable"
+echo "$helper_cs" | grep -q "(v2 + (v2 << 1))" || fail "32-bit read shared without a temporary"
 ok "cse temps"
 x64_fold=$("$BIN" --decompile $FIX/x64_div.o l3 2>/dev/null)
 echo "$x64_fold" | grep -q "0xfffffffffffffff8" && fail "frame prologue elision"
@@ -155,11 +155,11 @@ iz=$("$BIN" --decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$iz" | grep -q "a0 == 0"        || fail "cset eq compare"
 ip=$("$BIN" --decompile $FIX/arm64_div.o is_pos 2>/dev/null)
 echo "$ip" | grep -q "a0 > 0"         || fail "cset gt compare"
-echo "$iz" | grep -q "return (a0 == 0);" || fail "cset as a truth value"
+echo "$iz" | grep -q "return a0 == 0;" || fail "cset as a truth value"
 ok "pow2 mod and cset"
 locals=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$locals" | grep -q "v1 = a0"     || fail "stack local naming"
-echo "$locals" | grep -q "v1 >>= 0x1" || fail "stack local names one slot"
+echo "$locals" | grep -q "v1 >>= 1" || fail "stack local names one slot"
 use_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
 echo "$use_ir" | grep -q "ns__mul(a0, 2)" || fail "C++ call relocation"
 echo "$use_ir" | grep -qE "(= x20|x20 =)" && fail "callee-save elision (x20)"
@@ -222,7 +222,7 @@ sig_helper=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$sig_helper" | grep -q "int32_t helper(int32_t a0)"    || fail "loop signature by usage"
 ok "types by usage"
 mask_ir=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$mask_ir" | grep -qF "return (v3 >> 0x1) * 0x55555556 + a0" || fail "mask implied by 32-bit arithmetic"
+echo "$mask_ir" | grep -qF "return (v3 >> 1) * 0x55555556 + a0" || fail "mask implied by 32-bit arithmetic"
 echo "$mask_ir" | grep -qF "v2 = (uint64_t)v1 * ((a0 - 2) & 0xffffffff);" || fail "64-bit product of 32-bit values"
 echo "$mask_ir" | grep -q "v1 = a0 - 1;"          || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
@@ -230,7 +230,7 @@ echo "$narrow_ir" | grep -q "for (i = 1; i <= a0; i++)" || fail "32-bit comparis
 echo "$narrow_ir" | grep -q "result += i;"   || fail "compound store in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$narrow_dest" | grep -q "+ (v2 << 0x1)) - 1;" || fail "mask implied by the return type"
+echo "$narrow_dest" | grep -q "+ (v2 << 1)) - 1;" || fail "mask implied by the return type"
 echo "$narrow_dest" | grep -q "a0 = .*0xffffffff" && fail "return mask kept"
 ok "masks implied by the destination"
 masked_ir=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
@@ -400,7 +400,7 @@ moved_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$moved_ir" | grep -q "x8 = 1;" && fail "dead store before the loop"
 echo "$moved_ir" | grep -q "i = 1;" || fail "live store before the loop"
 live_ir=$("$BIN" --decompile $FIX/cpp_demo.o "use(int)" 2>/dev/null)
-echo "$live_ir" | grep -qF "ns__add((a0 & 0xffffffff), v2);" || fail "definition kept across a call"
+echo "$live_ir" | grep -qF "ns__add(a0 & 0xffffffff, v2);" || fail "definition kept across a call"
 echo "$live_ir" | grep -q "v1 = a0;" && fail "saved value folded into the parameter"
 ok "flow-sensitive dead stores"
 
@@ -417,7 +417,7 @@ ok "named globals"
 bits_ir=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
 echo "$bits_ir" | grep -qF "result += (v1 & 0x1);" || fail "promoted add"
 echo "$bits_ir" | grep -qF "& 0x1)" || fail "promoted add operand"
-echo "$bits_ir" | grep -qF "v1 >>= 0x1;" || fail "shift assignment"
+echo "$bits_ir" | grep -qF "v1 >>= 1;" || fail "shift assignment"
 echo "$bits_ir" | grep -q "result = (result" && fail "compound add kept the temp"
 ok "compound assignment"
 
@@ -541,7 +541,7 @@ ok "string references"
 
 # A format's arguments past the registers are read from the stack
 fmt_c=$("$BIN" --decompile $FIX/cold_gcc lookup 2>/dev/null)
-echo "$fmt_c" | grep -qF '"missing key %d among %d", (a2 & 0xffffffff), a1);' || fail "variadic stack argument"
+echo "$fmt_c" | grep -qF '"missing key %d among %d", a2 & 0xffffffff, a1);' || fail "variadic stack argument"
 ok "variadic stack arguments"
 
 # 10) struct access recovery

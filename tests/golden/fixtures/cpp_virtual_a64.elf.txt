@@ -255,7 +255,7 @@ int32_t square_area(int32_t a0) {
 
     v1 = *_ZL4used;
     *_ZL4used = v1 + 16;
-    Square__Square(0x2305c8 + v1, (a0 & 0xffffffff));
+    Square__Square(0x2305c8 + v1, a0 & 0xffffffff);
     v4 = Square__area(0x2305c8 + v1); /* via vtable slot 2 */
     Square___Square(0x2305c8 + v1); /* via vtable slot 1 */
     return v4;
@@ -288,8 +288,8 @@ int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
 
     v1 = *_ZL4used;
     *_ZL4used = v1 + 16;
-    Rect__Rect(0x2305c8 + v1, (a0 & 0xffffffff), (a1 & 0xffffffff));
-    return Rect__scaled(0x2305c8 + v1, (a2 & 0xffffffff)); /* via vtable slot 3 */
+    Rect__Rect(0x2305c8 + v1, a0 & 0xffffffff, a1 & 0xffffffff);
+    return Rect__scaled(0x2305c8 + v1, a2 & 0xffffffff); /* via vtable slot 3 */
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

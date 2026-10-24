@@ -253,7 +253,7 @@ int short_circuit(int *p, int n) {
     if (v3 != 1) {
         v7 = n - 1;
         v3 = p[v7];
-        v9 = (p[v7] == 1);
+        v9 = p[v7] == 1;
         local_1 = v9;
     }
     v9 = local_1;

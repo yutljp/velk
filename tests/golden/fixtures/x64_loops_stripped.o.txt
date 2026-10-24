@@ -19,7 +19,7 @@ int32_t sub_0(int32_t a0) {
     v2 = a0;
     do {
         result += (a0 & 0x1);
-        v2 >>= 0x1;
+        v2 >>= 1;
         v4 = a0;
         a0 = v2;
     } while (v4 > 1);
@@ -54,7 +54,7 @@ int32_t sub_30(int32_t a0) {
     if (a0 <= 0) {
         return 0;
     }
-    return ((uint64_t)((a0 - 2) & 0xffffffff) * ((a0 - 1) & 0xffffffff) >> 0x1) + a0 * 2 - 1;
+    return ((uint64_t)((a0 - 2) & 0xffffffff) * ((a0 - 1) & 0xffffffff) >> 1) + a0 * 2 - 1;
 }
 -- signature
 int32_t (int32_t a0)

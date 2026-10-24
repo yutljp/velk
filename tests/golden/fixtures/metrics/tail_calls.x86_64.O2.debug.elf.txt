@@ -24,7 +24,7 @@ fn tail_one @ 0x201180 (size 14)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x201190 */
 int tail_two(int x) {
-    return tail_one(((x + 2) & 0xffffffff));
+    return tail_one((x + 2) & 0xffffffff);
 }
 -- signature
 int (int x)

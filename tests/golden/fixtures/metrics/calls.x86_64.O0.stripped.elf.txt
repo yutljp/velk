@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: sub_201310 @ 0x201310 */
 int32_t sub_201310(int32_t a0) {
-    return (uint64_t)a0 << 0x1;
+    return (uint64_t)a0 << 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -73,7 +73,7 @@ int32_t sub_201360(uint32_t a0, int32_t a1) {
 
     v1 = a0 % 3;
     v3 = qword_202670[v1];
-    return ((uint64_t (*)())v3)((a1 & 0xffffffff));
+    return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature
 int32_t (uint32_t a0, int32_t a1)
@@ -95,7 +95,7 @@ fn <unnamed> @ 0x201360 (size 52)
 int32_t sub_2013a0(void *a0, int32_t a1) {
     int32_t v3;
 
-    v3 = ((uint64_t (*)())a0)((a1 & 0xffffffff));
+    v3 = ((uint64_t (*)())a0)(a1 & 0xffffffff);
     return v3 + 1;
 }
 -- signature

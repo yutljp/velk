@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: twice @ 0x2102c4 */
 int twice(int x) {
-    return (uint64_t)x << 0x1;
+    return (uint64_t)x << 1;
 }
 -- signature
 int (int x)
@@ -73,7 +73,7 @@ int apply_table(unsigned int index, int x) {
     int64_t v3;
 
     v3 = table[index % 3];
-    return ((uint64_t (*)())v3)((x & 0xffffffff));
+    return ((uint64_t (*)())v3)(x & 0xffffffff);
 }
 -- signature
 int (unsigned int index, int x)
@@ -94,7 +94,7 @@ fn apply_table @ 0x2102f0 (size 44)
 int apply_pointer(void *f, int x) {
     int32_t v3;
 
-    v3 = ((uint64_t (*)())f)((x & 0xffffffff));
+    v3 = ((uint64_t (*)())f)(x & 0xffffffff);
     return v3 + 1;
 }
 -- signature
@@ -155,7 +155,7 @@ int factorial(int n) {
                 v4 = mul_lanes32(v13, v4);
             } while (v11 != 0);
             v9 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10));
-            v11 = v9 >> 0x20;
+            v11 = v9 >> 32;
             v2 = v9 * v11;
             if (v5 == v6) {
                 return v2;
@@ -234,7 +234,7 @@ int is_odd(int n) {
     if (n == 0) {
         return 0;
     }
-    v2 = is_even(((n - 1) & 0xffffffff));
+    v2 = is_even((n - 1) & 0xffffffff);
     return v2;
 }
 -- signature
@@ -260,7 +260,7 @@ int is_even(int n) {
     if (n == 0) {
         return 1;
     }
-    return is_odd(((n - 1) & 0xffffffff));
+    return is_odd((n - 1) & 0xffffffff);
 }
 -- signature
 int (int n)

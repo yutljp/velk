@@ -256,7 +256,7 @@ int32_t sub_201480(int32_t a0) {
     v1 = *qword_204610;
     v2 = (struct S1 *)(0x203610 + v1);
     *qword_204610 = v1 + 16;
-    sub_201420(v2, (a0 & 0xffffffff));
+    sub_201420(v2, a0 & 0xffffffff);
     v3 = sub_201430(v2); /* via vtable slot 2 */
     sub_201560(); /* via vtable slot 1 */
     return v3;
@@ -293,8 +293,8 @@ int32_t sub_2014e0(int32_t a0, int32_t a1, int32_t a2) {
     v3 = *qword_204610;
     v4 = (struct S1 *)(0x203610 + v3);
     *qword_204610 = v3 + 16;
-    sub_201440(v4, (a0 & 0xffffffff), (a1 & 0xffffffff));
-    return sub_201470(v4, (a2 & 0xffffffff)); /* via vtable slot 3 */
+    sub_201440(v4, a0 & 0xffffffff, a1 & 0xffffffff);
+    return sub_201470(v4, a2 & 0xffffffff); /* via vtable slot 3 */
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

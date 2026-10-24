@@ -335,7 +335,7 @@ fn <unnamed> @ 0x2105b0 (size 28)
 -- decompile
 /* velk pseudo-C: sub_2105cc @ 0x2105cc */
 int32_t sub_2105cc(int32_t a0) {
-    return (a0 < 0);
+    return a0 < 0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -352,7 +352,7 @@ fn <unnamed> @ 0x2105cc (size 28)
 -- decompile
 /* velk pseudo-C: sub_2105e8 @ 0x2105e8 */
 int32_t sub_2105e8(int32_t a0) {
-    return (a0 == 0);
+    return a0 == 0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -369,7 +369,7 @@ fn <unnamed> @ 0x2105e8 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210604 @ 0x210604 */
 int32_t sub_210604(int32_t a0) {
-    return (a0 > 0);
+    return a0 > 0;
 }
 -- signature
 int32_t (int32_t a0)

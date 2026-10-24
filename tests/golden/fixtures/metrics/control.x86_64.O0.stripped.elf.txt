@@ -253,7 +253,7 @@ int32_t sub_201410(uint32_t *a0, int32_t a1) {
     if (v3 != 1) {
         v7 = a1 - 1;
         v3 = a0[v7];
-        v9 = (a0[v7] == 1);
+        v9 = a0[v7] == 1;
         local_1 = v9;
     }
     v9 = local_1;

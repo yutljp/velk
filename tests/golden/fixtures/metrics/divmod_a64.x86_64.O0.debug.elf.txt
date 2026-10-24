@@ -63,7 +63,7 @@ fn udiv10 @ 0x201480 (size 21)
 -- decompile
 /* velk pseudo-C: udiv64 @ 0x2014a0 */
 unsigned int udiv64(unsigned int x) {
-    return x >> 0x6;
+    return x >> 6;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -337,7 +337,7 @@ fn negate @ 0x201670 (size 14)
 int is_neg(int x) {
     uint8_t v2;
 
-    v2 = (x < 0);
+    v2 = x < 0;
     return v2;
 }
 -- signature
@@ -358,7 +358,7 @@ fn is_neg @ 0x201680 (size 21)
 int is_zero(int x) {
     uint8_t v2;
 
-    v2 = (x == 0);
+    v2 = x == 0;
     return v2;
 }
 -- signature
@@ -379,7 +379,7 @@ fn is_zero @ 0x2016a0 (size 21)
 int is_pos(int x) {
     uint8_t v2;
 
-    v2 = (x > 0);
+    v2 = x > 0;
     return v2;
 }
 -- signature

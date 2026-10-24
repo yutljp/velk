@@ -26,7 +26,7 @@ fn tail_one @ 0x210194 (size 40)
 int tail_two(int x) {
     int32_t v3;
 
-    v3 = tail_one(((x + 2) & 0xffffffff));
+    v3 = tail_one((x + 2) & 0xffffffff);
     return v3;
 }
 -- signature

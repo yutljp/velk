@@ -67,7 +67,7 @@ pub(crate) fn float_operand(
                 && (ctx.floats.get(index) != Some(&precision)
                     || u32::from(*width) < u32::from(precision.bits())) =>
         {
-            let bits = print(&Expr::reg(*index, *width), ctx, 64).text;
+            let bits = print(&Expr::reg(*index, *width), ctx, 64);
             bits_float(bits, precision)
         }
         Expr::Reg { index, .. } => ctx.register(*index, 64),
@@ -91,7 +91,7 @@ pub(crate) fn float_operand(
         // Memory read as a float names the float type.
         Expr::Load { addr, width, .. } if u32::from(*width) * 8 == u32::from(precision.bits()) => {
             if let Some(bits) = copied_load(addr, *width, ctx) {
-                return bits_float(bits, precision);
+                return bits_float(Printed::opaque(bits, 12), precision);
             }
             let float_type = match precision {
                 Precision::Single => "float",
@@ -118,17 +118,18 @@ pub(crate) fn float_operand(
                 },
             }
         }
-        _ if ctx.bit_values() => bits_float(print(expr, ctx, 64).text, precision),
+        _ if ctx.bit_values() => bits_float(print(expr, ctx, 64), precision),
         _ => operand(expr, ctx, parent, right),
     }
 }
 
-fn bits_float(bits: String, precision: Precision) -> String {
+pub(super) fn bits_float(bits: Printed, precision: Precision) -> String {
     let (float, integer) = match precision {
         Precision::Single => ("float", "uint32_t"),
         Precision::Double => ("double", "uint64_t"),
     };
-    format!("((union {{ {integer} bits; {float} value; }}){{ .bits = ({integer})({bits}) }}).value")
+    let bits = bits.within(12, false).text;
+    format!("((union {{ {integer} bits; {float} value; }}){{ .bits = ({integer}){bits} }}).value")
 }
 
 /// The C function that rounds a float to an integral value this way.

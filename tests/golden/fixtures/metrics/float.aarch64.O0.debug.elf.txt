@@ -115,7 +115,7 @@ fn widen @ 0x21029c (size 32)
 /* velk pseudo-C: compare_doubles @ 0x2102bc */
 int compare_doubles(double a, double b) {
     if (!(a < b)) {
-        return (b < a);
+        return b < a;
     }
     return -1;
 }

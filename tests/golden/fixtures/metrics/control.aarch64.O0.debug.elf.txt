@@ -258,7 +258,7 @@ int short_circuit(int *p, int n) {
     v1 = *p - 1;
     local_1 = 1;
     if (v1 != 0) {
-        local_1 = (p[n - 1] - 1 + 1 == 1);
+        local_1 = p[n - 1] - 1 + 1 == 1;
     }
     local_0 = local_1;
     return local_0 & 0x1;

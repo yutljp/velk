@@ -26,7 +26,7 @@
 
 # ---- L1 branches: readable as ternaries/if, no leftover goto ----
 1	l1_branch_a64.o	classify	has	int32_t classify(int32_t a0)
-1	l1_branch_a64.o	classify	has	? (a0 != 0) :
+1	l1_branch_a64.o	classify	has	? a0 != 0 :
 1	l1_branch_a64.o	classify	nothas	goto
 1	l1_branch_a64.o	clamp	has	? a1 :
 1	l1_branch_a64.o	sign_of	has	0xffffffff
@@ -71,9 +71,9 @@
 6	l6_abi_a64.o	six_args	has	a4 + a5
 6	l6_abi_a64.o	wide_add	has	int64_t wide_add(
 6	l6_abi_a64.o	wide_add	known_has	uint64_t wide_add(uint64_t a0, uint64_t a1)
-6	l6_abi_a64.o	tail_direct	has	v2 = tail_target(((a0 + 2) & 0xffffffff));
+6	l6_abi_a64.o	tail_direct	has	v2 = tail_target((a0 + 2) & 0xffffffff);
 6	l6_abi_a64.o	tail_direct	has	return v2;
-6	l6_abi_a64.o	tail_indirect	has	return ((uint64_t (*)())a0)(((a1 + 1) & 0xffffffff));
+6	l6_abi_a64.o	tail_indirect	has	return ((uint64_t (*)())a0)((a1 + 1) & 0xffffffff);
 
 # ---- L7 language runtimes: Go pclntab / Rust demangling / stripped ----
 7	go_stripped	-	has	main.add

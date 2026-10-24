@@ -63,7 +63,7 @@ fn udiv10 @ 0x201350 (size 16)
 -- decompile
 /* velk pseudo-C: udiv64 @ 0x201360 */
 unsigned int udiv64(unsigned int x) {
-    return x >> 0x6;
+    return x >> 6;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -269,7 +269,7 @@ fn lmod10 @ 0x201490 (size 44)
 unsigned long long umod10b(unsigned long long x) {
     int64_t v1;
 
-    v1 = __umulh(x, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
+    v1 = __umulh(x, 0xcccccccccccccccd) >> 2 & 0xfffffffffffffffe;
     return x - (v1 + v1 * 4);
 }
 -- signature
@@ -339,7 +339,7 @@ fn negate @ 0x201520 (size 5)
 -- decompile
 /* velk pseudo-C: is_neg @ 0x201530 */
 int is_neg(int x) {
-    return (uint32_t)x >> 0x1f;
+    return (uint32_t)x >> 31;
 }
 -- signature
 int (int x)
@@ -356,7 +356,7 @@ fn is_neg @ 0x201530 (size 6)
 -- decompile
 /* velk pseudo-C: is_zero @ 0x201540 */
 int is_zero(int x) {
-    return (x == 0);
+    return x == 0;
 }
 -- signature
 int (int x)
@@ -373,7 +373,7 @@ fn is_zero @ 0x201540 (size 8)
 -- decompile
 /* velk pseudo-C: is_pos @ 0x201550 */
 int is_pos(int x) {
-    return (x > 0);
+    return x > 0;
 }
 -- signature
 int (int x)

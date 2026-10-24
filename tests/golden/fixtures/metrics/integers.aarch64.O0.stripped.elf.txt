@@ -71,7 +71,7 @@ int32_t sub_21028c(int32_t a0, int32_t a1, int32_t a2) {
     if (a0 < a1) {
         return result;
     }
-    return (a0 - a2 + a2 <= a2);
+    return a0 - a2 + a2 <= a2;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -151,7 +151,7 @@ fn <unnamed> @ 0x210320 (size 76)
 -- decompile
 /* velk pseudo-C: sub_21036c @ 0x21036c */
 uint32_t sub_21036c(uint32_t a0) {
-    return a0 >> 0x8 & 0xff00 | a0 >> 0x18 | a0 << 0x8 & 0xff0000 | a0 << 0x18;
+    return a0 >> 8 & 0xff00 | a0 >> 24 | a0 << 8 & 0xff0000 | a0 << 24;
 }
 -- signature
 uint32_t (uint32_t a0)

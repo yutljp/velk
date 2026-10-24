@@ -98,7 +98,7 @@ struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t fi
 struct S1 *sub_201310(struct S1 *result, int64_t a1) {
     result->field_0x0 = a1;
     result->field_0x8 = a1 + 1;
-    result->field_0x10 = (uint64_t)a1 << 0x1;
+    result->field_0x10 = (uint64_t)a1 << 1;
     result->field_0x18 = a1 * 3;
     return result;
 }
@@ -170,9 +170,9 @@ fn <unnamed> @ 0x201370 (size 13)
 /* velk pseudo-C: sub_201380 @ 0x201380 */
 int32_t sub_201380(int32_t a0) {
     if ((a0 & 0x1) == 0) {
-        return (a0 & 0xff) >> 0x1 & 0x7;
+        return (a0 & 0xff) >> 1 & 0x7;
     }
-    return (a0 & 0xff) >> 0x4;
+    return (a0 & 0xff) >> 4;
 }
 -- signature
 int32_t (int32_t a0)
@@ -200,7 +200,7 @@ uint8_t *sub_2013c0(uint8_t *a0, int32_t a1) {
     uint8_t v4;
 
     v4 = *a0;
-    *a0 = v4 & 0xf1 | (a1 & 0x7) << 0x1;
+    *a0 = v4 & 0xf1 | (a1 & 0x7) << 1;
     return a0;
 }
 -- signature

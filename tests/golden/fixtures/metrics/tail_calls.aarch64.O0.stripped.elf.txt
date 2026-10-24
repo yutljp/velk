@@ -26,7 +26,7 @@ fn <unnamed> @ 0x210194 (size 40)
 int32_t sub_2101bc(int32_t a0) {
     int32_t v3;
 
-    v3 = sub_210194(((a0 + 2) & 0xffffffff));
+    v3 = sub_210194((a0 + 2) & 0xffffffff);
     return v3;
 }
 -- signature

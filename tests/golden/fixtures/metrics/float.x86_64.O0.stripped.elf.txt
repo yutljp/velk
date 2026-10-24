@@ -113,7 +113,7 @@ fn <unnamed> @ 0x2012d0 (size 32)
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 int32_t sub_2012f0(double a0, double a1) {
     if (!(a0 < a1)) {
-        return (a1 < a0);
+        return a1 < a0;
     }
     return -1;
 }

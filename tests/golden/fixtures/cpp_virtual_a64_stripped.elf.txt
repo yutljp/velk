@@ -255,7 +255,7 @@ int32_t sub_21044c(int32_t a0) {
 
     v1 = *qword_2315c8;
     *qword_2315c8 = v1 + 16;
-    sub_2103f8(0x2305c8 + v1, (a0 & 0xffffffff));
+    sub_2103f8(0x2305c8 + v1, a0 & 0xffffffff);
     v4 = sub_21040c(0x2305c8 + v1); /* via vtable slot 2 */
     sub_210530(0x2305c8 + v1); /* via vtable slot 1 */
     return v4;
@@ -288,8 +288,8 @@ int32_t sub_2104b8(int32_t a0, int32_t a1, int32_t a2) {
 
     v1 = *qword_2315c8;
     *qword_2315c8 = v1 + 16;
-    sub_210418(0x2305c8 + v1, (a0 & 0xffffffff), (a1 & 0xffffffff));
-    return sub_210438(0x2305c8 + v1, (a2 & 0xffffffff)); /* via vtable slot 3 */
+    sub_210418(0x2305c8 + v1, a0 & 0xffffffff, a1 & 0xffffffff);
+    return sub_210438(0x2305c8 + v1, a2 & 0xffffffff); /* via vtable slot 3 */
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

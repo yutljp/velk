@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: tail_target @ 0x0 */
 int32_t tail_target(int32_t a0) {
-    return a0 + ((uint64_t)a0 << 0x1) + 1;
+    return a0 + ((uint64_t)a0 << 1) + 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -28,7 +28,7 @@ fn tail_target @ 0x0 (size 28)
 int32_t tail_direct(int32_t a0) {
     int32_t v2;
 
-    v2 = tail_target(((a0 + 2) & 0xffffffff));
+    v2 = tail_target((a0 + 2) & 0xffffffff);
     return v2;
 }
 -- signature
@@ -47,7 +47,7 @@ fn tail_direct @ 0x1c (size 8)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x24 */
 int32_t tail_indirect(void *a0, int32_t a1) {
-    return ((uint64_t (*)())a0)(((a1 + 1) & 0xffffffff));
+    return ((uint64_t (*)())a0)((a1 + 1) & 0xffffffff);
 }
 -- signature
 int32_t (void * a0, int32_t a1)

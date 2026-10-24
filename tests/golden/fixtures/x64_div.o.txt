@@ -262,7 +262,7 @@ fn lmod10x @ 0x140 (size 44)
 int64_t umod10x(uint64_t a0) {
     int64_t v1;
 
-    v1 = __umulh(a0, 0xcccccccccccccccd) >> 0x2 & 0xfffffffffffffffe;
+    v1 = __umulh(a0, 0xcccccccccccccccd) >> 2 & 0xfffffffffffffffe;
     return a0 - (v1 + v1 * 4);
 }
 -- signature

@@ -30,8 +30,8 @@ int alt_helper(int x) {
         return 0;
     }
     v1 = (uint64_t)((x - 2) & 0xffffffff) * ((x - 1) & 0xffffffff);
-    v2 = ((x - 3) & 0xffffffff) * v1 >> 0x1;
-    v1 >>= 0x1;
+    v2 = ((x - 3) & 0xffffffff) * v1 >> 1;
+    v1 >>= 1;
     return v2 * 0x55555556 + x + (v1 + v1 * 2) - 1;
 }
 -- signature

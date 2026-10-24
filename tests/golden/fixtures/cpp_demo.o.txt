@@ -44,7 +44,7 @@ int32_t use(int32_t a0) {
     uint32_t v2;
 
     v2 = ns__mul(a0, 2);
-    v2 = ns__add((a0 & 0xffffffff), v2);
+    v2 = ns__add(a0 & 0xffffffff, v2);
     return v2;
 }
 -- signature

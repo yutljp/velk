@@ -19,7 +19,7 @@ int count_bits(unsigned int x) {
     v2 = x;
     do {
         result += (x & 0x1);
-        v2 >>= 0x1;
+        v2 >>= 1;
         v4 = x;
         x = v2;
     } while (v4 > 1);
@@ -54,7 +54,7 @@ int sum_until(int limit) {
     if (limit <= 0) {
         return 0;
     }
-    return ((uint64_t)((limit - 2) & 0xffffffff) * ((limit - 1) & 0xffffffff) >> 0x1) + limit * 2 - 1;
+    return ((uint64_t)((limit - 2) & 0xffffffff) * ((limit - 1) & 0xffffffff) >> 1) + limit * 2 - 1;
 }
 -- signature
 int (int limit)

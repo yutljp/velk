@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: sub_201180 @ 0x201180 */
 int32_t sub_201180(int32_t a0) {
-    return (a0 >= 0 ? (a0 != 0) : 0xffffffff);
+    return (a0 >= 0 ? a0 != 0 : 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)

@@ -155,7 +155,7 @@ int64_t sub_2012c0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
 
     v3 = a6;
     v4 = a7;
-    return a5 + (a5 + a5 * 8) * 2 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 0x4) + v4);
+    return a5 + (a5 + a5 * 8) * 2 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 4) + v4);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -184,9 +184,9 @@ int64_t sub_201320(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     v2 = a6;
     v10 = a7;
     v11 = a8;
-    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 8) * 2);
+    v12 = ((uint64_t)(v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
     v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
-    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
+    return v1 + v1 + v10 + (((uint64_t)v2 << 4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -239,7 +239,7 @@ int64_t sub_2013c0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
 
     v3 = a6;
     v4 = a7;
-    return a5 + (a5 + a5 * 8) * 2 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 0x4) + v4);
+    return a5 + (a5 + a5 * 8) * 2 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 4) + v4);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -268,9 +268,9 @@ int64_t sub_201420(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     v2 = a6;
     v10 = a7;
     v11 = a8;
-    v12 = ((uint64_t)(v11 + v11 * 0x2) << 0x3) - v11 + (v10 + (v10 + v10 * 8) * 2);
+    v12 = ((uint64_t)(v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
     v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
-    return v1 + v1 + v10 + (((uint64_t)v2 << 0x4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
+    return v1 + v1 + v10 + (((uint64_t)v2 << 4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)

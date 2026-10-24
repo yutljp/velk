@@ -101,7 +101,7 @@ fn <unnamed> @ 0x2011f0 (size 111)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 int64_t sub_201260(int64_t a0, int64_t a1) {
-    return ((a0 + a1) & 0xffffffff) | (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000;
+    return (a0 + a1) & 0xffffffff | (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -184,7 +184,7 @@ fn <unnamed> @ 0x2012c0 (size 3)
 -- decompile
 /* velk pseudo-C: sub_2012d0 @ 0x2012d0 */
 uint32_t sub_2012d0(uint32_t a0) {
-    return ((a0 & 0x1) == 0 ? a0 >> 0x1 & 0x7 : a0 >> 0x4 & 0xf);
+    return ((a0 & 0x1) == 0 ? a0 >> 1 & 0x7 : a0 >> 4 & 0xf);
 }
 -- signature
 uint32_t (uint32_t a0)

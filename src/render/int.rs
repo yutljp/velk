@@ -187,7 +187,9 @@ impl Printed {
     /// parenthesized when it binds more loosely; `right` marks the right
     /// operand.
     pub(crate) fn within(&self, parent: u8, right: bool) -> Printed {
-        let binds = self.strength > parent || (self.strength == parent && !right);
+        let binds = (self.strength > parent || (self.strength == parent && !right))
+            && !(parent == 9 && self.strength == 10)
+            && !(matches!(parent, 4..=6) && matches!(self.strength, 7 | 8));
         if binds || self.strength >= 12 {
             self.clone()
         } else {

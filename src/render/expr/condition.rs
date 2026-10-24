@@ -4,6 +4,12 @@ use crate::ir::{BinOp, Cond, Expr};
 use crate::render::int::{ALL, Int, Printed, converted, zero_bits};
 
 pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> String {
+    if matches!(cond, Cond::Eq | Cond::Ne)
+        && matches!(lhs, Expr::Const(0))
+        && !matches!(rhs, Expr::Const(0))
+    {
+        return condition(cond, rhs, lhs, ctx);
+    }
     // A truth value tested against zero reads as the truth value itself.
     if let (Cond::Ne | Cond::Eq, Expr::Const(0)) = (cond, rhs)
         && let Some((text, _)) = logic(lhs, cond == Cond::Eq, ctx)
@@ -241,7 +247,13 @@ pub(super) fn logic(expr: &Expr, negate: bool, ctx: &Ctx<'_>) -> Option<(String,
     // The select's own condition, itself perhaps a truth value against zero.
     let test = |holds: bool| -> (String, Joined) {
         let cond = if holds { *cond } else { cond.invert() };
-        if let (Cond::Ne | Cond::Eq, Expr::Const(0)) = (cond, rhs.as_ref())
+        let (lhs, rhs) =
+            if matches!(cond, Cond::Eq | Cond::Ne) && matches!(lhs.as_ref(), Expr::Const(0)) {
+                (rhs.as_ref(), lhs.as_ref())
+            } else {
+                (lhs.as_ref(), rhs.as_ref())
+            };
+        if let (Cond::Ne | Cond::Eq, Expr::Const(0)) = (cond, rhs)
             && let Some(joined) = logic(lhs, cond == Cond::Eq, ctx)
         {
             return joined;
@@ -256,7 +268,9 @@ pub(super) fn logic(expr: &Expr, negate: bool, ctx: &Ctx<'_>) -> Option<(String,
         }
     };
     let join = |first: (String, Joined), rest: &Expr, join: Joined| -> Option<(String, Joined)> {
-        let rest = logic(rest, negate, ctx)?;
+        let Some(rest) = logic(rest, negate, ctx) else {
+            return None;
+        };
         let operator = if join == Joined::And { "&&" } else { "||" };
         Some((
             format!("{} {operator} {}", within(first, join), within(rest, join)),

@@ -158,7 +158,7 @@ fn widen @ 0x210240 (size 12)
 -- decompile
 /* velk pseudo-C: compare_doubles @ 0x21024c */
 int compare_doubles(double a, double b) {
-    return (!(a < b) ? (b < a) : 0xffffffff);
+    return (!(a < b) ? b < a : 0xffffffff);
 }
 -- signature
 int (double a, double b)
