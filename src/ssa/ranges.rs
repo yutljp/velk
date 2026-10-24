@@ -374,7 +374,9 @@ pub fn expression(expr: &Expr, read: &dyn Fn(u16, u32) -> Option<Fact>) -> Optio
         }
         Expr::Apply { op, args } => {
             for arg in args {
-                expression(arg, read)?;
+                if expression(arg, read).is_none() {
+                    return None;
+                }
             }
             applied(*op)
         }
@@ -601,7 +603,10 @@ impl<'a> Ranges<'a> {
     /// What a read of `bits` of `value` may hold in `block`, narrowed by the
     /// branches on the way there.
     pub fn read(&self, value: u16, bits: u32, block: usize, depth: usize) -> Option<Fact> {
-        let mut fact = self.fact(value)?.truncate(bits);
+        let Some(fact) = self.fact(value) else {
+            return None;
+        };
+        let mut fact = fact.truncate(bits);
         if depth == 0 {
             return Some(fact);
         }
@@ -610,8 +615,14 @@ impl<'a> Ranges<'a> {
                 continue;
             }
             let from = self.ssa.predecessors[*guard][0];
-            for (low, constraint) in self.edge(from, *guard, value, depth - 1)? {
-                fact = constrained(fact, bits, low, constraint)?;
+            let Some(constraints) = self.edge(from, *guard, value, depth - 1) else {
+                return None;
+            };
+            for (low, constraint) in constraints {
+                let Some(narrowed) = constrained(fact, bits, low, constraint) else {
+                    return None;
+                };
+                fact = narrowed;
             }
         }
         Some(fact)
@@ -652,12 +663,26 @@ impl<'a> Ranges<'a> {
                 }
                 let cond = if taken { *cond } else { cond.invert() };
                 let bits = operand_width(lhs, rhs);
-                let (a, b) = (self.eval(lhs, from, depth)?, self.eval(rhs, from, depth)?);
-                let left = refine(cond, a, b, bits)?;
-                self.constrain(lhs, bits, left, value, DEFINITIONS, &mut out)?;
+                let Some(a) = self.eval(lhs, from, depth) else {
+                    return None;
+                };
+                let Some(b) = self.eval(rhs, from, depth) else {
+                    return None;
+                };
+                let Some(left) = refine(cond, a, b, bits) else {
+                    return None;
+                };
+                let Some(()) = self.constrain(lhs, bits, left, value, DEFINITIONS, &mut out) else {
+                    return None;
+                };
                 if let Some(cond) = swapped(cond) {
-                    let right = refine(cond, b, a, bits)?;
-                    self.constrain(rhs, bits, right, value, DEFINITIONS, &mut out)?;
+                    let Some(right) = refine(cond, b, a, bits) else {
+                        return None;
+                    };
+                    let Some(()) = self.constrain(rhs, bits, right, value, DEFINITIONS, &mut out)
+                    else {
+                        return None;
+                    };
                 }
             }
             Some(Stmt::Switch {
@@ -674,7 +699,10 @@ impl<'a> Ranges<'a> {
                     .map(|(case, _)| Fact::constant(*case as u64))
                     .reduce(Fact::join);
                 if let Some(fact) = fact {
-                    self.constrain(index, 64, fact, value, DEFINITIONS, &mut out)?;
+                    let Some(()) = self.constrain(index, 64, fact, value, DEFINITIONS, &mut out)
+                    else {
+                        return None;
+                    };
                 }
             }
             _ => {}
@@ -696,7 +724,9 @@ impl<'a> Ranges<'a> {
         match expr {
             Expr::Reg { index, width } => {
                 let low = bits.min(u32::from(*width));
-                let constraint = constraint.meet(Fact::width(low))?;
+                let Some(constraint) = constraint.meet(Fact::width(low)) else {
+                    return None;
+                };
                 if *index == value {
                     out.push((low, constraint));
                 } else if definitions > 0
@@ -704,7 +734,11 @@ impl<'a> Ranges<'a> {
                 {
                     let low = low.min(*assigned);
                     let constraint = constraint.truncate(low);
-                    self.constrain(defined, low, constraint, value, definitions - 1, out)?;
+                    let Some(()) =
+                        self.constrain(defined, low, constraint, value, definitions - 1, out)
+                    else {
+                        return None;
+                    };
                 }
             }
             Expr::Bin {
@@ -718,11 +752,21 @@ impl<'a> Ranges<'a> {
                 let kept = kept & mask(bits);
                 if kept != 0 && kept.wrapping_add(1).is_power_of_two() {
                     let low = kept.count_ones();
-                    let constraint = constraint.meet(Fact::width(low))?;
-                    self.constrain(lhs, low, constraint, value, definitions, out)?;
+                    let Some(constraint) = constraint.meet(Fact::width(low)) else {
+                        return None;
+                    };
+                    let Some(()) = self.constrain(lhs, low, constraint, value, definitions, out)
+                    else {
+                        return None;
+                    };
                 } else {
-                    let known = Fact::bits(constraint.zeros & kept, constraint.ones & kept)?;
-                    self.constrain(lhs, bits, known, value, definitions, out)?;
+                    let Some(known) = Fact::bits(constraint.zeros & kept, constraint.ones & kept)
+                    else {
+                        return None;
+                    };
+                    let Some(()) = self.constrain(lhs, bits, known, value, definitions, out) else {
+                        return None;
+                    };
                 }
             }
             Expr::Bin {
@@ -743,7 +787,12 @@ impl<'a> Ranges<'a> {
                 };
                 let (lo, hi) = (back(constraint.lo), back(constraint.hi));
                 if lo <= hi && hi - lo == constraint.hi - constraint.lo {
-                    self.constrain(lhs, bits, Fact::range(lo, hi)?, value, definitions, out)?;
+                    let Some(range) = Fact::range(lo, hi) else {
+                        return None;
+                    };
+                    let Some(()) = self.constrain(lhs, bits, range, value, definitions, out) else {
+                        return None;
+                    };
                 }
             }
             _ => {}
@@ -918,9 +967,17 @@ impl<'a> Ranges<'a> {
 
     /// What `arg` holds as it reaches a φ along the edge from `from` to `to`.
     fn incoming(&self, from: usize, to: usize, arg: u16) -> Option<Fact> {
-        let mut fact = self.read(arg, 64, from, DEPTH)?;
-        for (low, constraint) in self.edge(from, to, arg, DEPTH - 1)? {
-            fact = constrained(fact, 64, low, constraint)?;
+        let Some(mut fact) = self.read(arg, 64, from, DEPTH) else {
+            return None;
+        };
+        let Some(constraints) = self.edge(from, to, arg, DEPTH - 1) else {
+            return None;
+        };
+        for (low, constraint) in constraints {
+            let Some(narrowed) = constrained(fact, 64, low, constraint) else {
+                return None;
+            };
+            fact = narrowed;
         }
         Some(fact)
     }

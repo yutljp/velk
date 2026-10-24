@@ -224,10 +224,15 @@ fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>
     }
     fn loads(expr: &Expr, frame: i64, sp: u16, read: &mut Vec<(i64, i64)>) -> Option<()> {
         if let Expr::Load { addr, width, .. } = expr {
-            read.push(range(addr, *width, frame, sp)?);
+            let Some(range) = range(addr, *width, frame, sp) else {
+                return None;
+            };
+            read.push(range);
         }
         for child in crate::ir::visit::children(expr) {
-            loads(child, frame, sp, read)?;
+            let Some(()) = loads(child, frame, sp, read) else {
+                return None;
+            };
         }
         Some(())
     }
@@ -235,7 +240,9 @@ fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>
     let mut read = Vec::new();
     let mut stores = Vec::new();
     for (block, body) in ir.blocks.iter().enumerate() {
-        let mut frame = frames[block]?;
+        let Some(mut frame) = frames[block] else {
+            return None;
+        };
         for (at, stmt) in body.stmts.iter().enumerate() {
             if let Stmt::Assign { dest, value } = stmt
                 && dest.index == sp
@@ -243,17 +250,24 @@ fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>
                 if dest.width != 64 {
                     return None;
                 }
-                frame = slot(value, frame, sp)?;
+                let Some(next) = slot(value, frame, sp) else {
+                    return None;
+                };
+                frame = next;
                 continue;
             }
             if let Stmt::Store { addr, width, .. } = stmt {
-                let (start, end) = range(addr, *width, frame, sp)?;
+                let Some((start, end)) = range(addr, *width, frame, sp) else {
+                    return None;
+                };
                 if start >= -(crate::ir::eval::STACK_SPAN as i64) && end <= 0 {
                     stores.push(((block, at), start, end));
                 }
             }
             for operand in stmt.operands() {
-                loads(operand, frame, sp, &mut read)?;
+                let Some(()) = loads(operand, frame, sp, &mut read) else {
+                    return None;
+                };
             }
         }
         for successor in crate::ir::cfg::block_successors(&ir.blocks, block) {
@@ -322,7 +336,9 @@ pub(crate) fn entry_demands(ir: &FunctionIr, returns: &[u64]) -> Option<HashMap<
         }
     }
     let stores = private_store_demands(ir).unwrap_or_default();
-    let ssa = build(ir)?;
+    let Some(ssa) = build(ir) else {
+        return None;
+    };
     let demand = demanded_bits(&ssa, Some(returns), &stores);
     Some(
         ssa.entry
