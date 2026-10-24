@@ -251,6 +251,13 @@ pub(super) fn stack_locals_with_roles(
         .filter(|(_, _, width, _)| *width == 0)
         .filter_map(|(slot, ..)| *slot)
         .collect();
+    // Buffers read at an index may reach one another, as the fields of an
+    // array of records each indexed from their own address do.
+    let indexed: std::collections::HashSet<i64> = accesses
+        .iter()
+        .filter(|(_, _, width, signed)| *width == 0 && *signed == Some(false))
+        .filter_map(|(slot, ..)| *slot)
+        .collect();
     for (slot, _, width, signed) in &accesses {
         let Some(slot) = slot else { continue };
         if *slot >= 0 || *width != 0 {
@@ -267,8 +274,9 @@ pub(super) fn stack_locals_with_roles(
                 elements.get(slot).copied().flatten(),
                 &accesses,
                 &buffers,
+                &indexed,
             ),
-            _ if !ir.variadic => indexed_end(*slot, None, &accesses, &buffers),
+            _ if !ir.variadic => indexed_end(*slot, None, &accesses, &buffers, &Default::default()),
             _ => slot_names
                 .keys()
                 .copied()
@@ -872,11 +880,13 @@ fn layered_field(
 /// sixteen bytes at a time as an initializer is copied, is taken as one.
 /// The first other slot, another buffer or the top of the frame ends it;
 /// with no known element width, only another buffer or the top of the frame.
+/// A buffer in `crossed` does not end it: the index may reach into it.
 fn indexed_end(
     slot: i64,
     element: Option<u8>,
     accesses: &[FrameAccess],
     buffers: &std::collections::HashSet<i64>,
+    crossed: &std::collections::HashSet<i64>,
 ) -> i64 {
     let mut above: Vec<i64> = accesses
         .iter()
@@ -886,7 +896,7 @@ fn indexed_end(
     above.sort_unstable();
     above.dedup();
     for other in above {
-        if buffers.contains(&other) {
+        if buffers.contains(&other) && !crossed.contains(&other) {
             return other;
         }
         let Some(element) = element.filter(|element| *element > 0) else {

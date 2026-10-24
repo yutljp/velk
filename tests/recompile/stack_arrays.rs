@@ -473,3 +473,48 @@ fn printed_stack_index_held_in_a_pointer_variable_adds_as_an_integer() {
     let code = velk::render::render(&ir, &[], &symbols, &[]);
     assert!(code.contains("local_0 + 0x6 + (uintptr_t)x"), "{code}");
 }
+
+#[test]
+fn printed_stack_records_indexed_through_each_field_are_one_array() {
+    // Two fields of a sixteen-byte record written at an index, and the
+    // first read back through the second's address and another index.
+    let scaled = Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(16));
+    let at = |offset: i64, index: Expr| Expr::bin(BinOp::Add, slot(offset), index);
+    let ir = synthetic_ir(
+        "frame_records",
+        vec![Param {
+            index: 7,
+            name: "x".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            Stmt::Store {
+                addr: at(-64, scaled.clone()),
+                value: Expr::Const(0x1111),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: at(-56, scaled.clone()),
+                value: Expr::Const(0x2222),
+                width: 8,
+            },
+            Stmt::Assign {
+                dest: RegRef {
+                    index: 6,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Sub, scaled, Expr::Const(8)),
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(at(-56, Expr::reg(6, 64))),
+                    width: 8,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let candidate = printed_candidate(ir, (0..4).map(|value| vec![value]).collect());
+    check_candidates("stack-records", vec![candidate], Mode::Registers, &[]);
+}
