@@ -267,7 +267,7 @@ fn crossing_stack_bytes_share_backing_and_reserve_identifiers() {
 }
 
 #[test]
-fn scalar_stack_parameter_parts_use_bounded_byte_copies() {
+fn scalar_stack_parameter_parts_use_numeric_reads_or_bounded_byte_copies() {
     let sp = crate::arch::stack_pointer(Isa::X86_64);
     let at = |offset| Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset));
     let ir = scalar_stack_ir(vec![Stmt::Ret {
@@ -278,9 +278,20 @@ fn scalar_stack_parameter_parts_use_bounded_byte_copies() {
         ),
     }]);
     let code = rendered(&ir);
-    assert!(code.contains("(uint8_t *)&a8 + 0x7, 1)"), "{code}");
-    assert!(code.contains("(uint8_t *)&a8 + 0x0, 4)"), "{code}");
-    assert_eq!(code.matches("__builtin_memcpy").count(), 2, "{code}");
+    assert!(code.contains("(uint8_t)(a8 >> 56)"), "{code}");
+    assert!(code.contains("(uint32_t)a8"), "{code}");
+    assert!(!code.contains("__builtin_memcpy"), "{code}");
+    for ty in [
+        CType::pointer_to(CType::int(1, false)),
+        CType::Named("double".to_owned()),
+    ] {
+        let mut object = ir.clone();
+        object.stack_params[2].ty = ty;
+        let copied = rendered(&object);
+        assert!(copied.contains("(uint8_t *)&a8 + 0x7, 1)"), "{copied}");
+        assert!(copied.contains("(uint8_t *)&a8 + 0x0, 4)"), "{copied}");
+        assert_eq!(copied.matches("__builtin_memcpy").count(), 2, "{copied}");
+    }
     assert!(!code.contains("rsp"), "{code}");
     let full = rendered(&scalar_stack_ir(vec![Stmt::Ret {
         value: load(at(24), 8),
@@ -312,10 +323,12 @@ fn scalar_stack_parameter_parts_reject_unknown_or_incompatible_storage() {
     let mut ir = scalar_stack_ir(vec![Stmt::Ret {
         value: load(Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(25)), 1),
     }]);
-    ir.stack_params[2].ty = CType::U32;
-    let code = rendered(&ir);
-    assert!(code.contains("(uint8_t *)&a8 + 0x1, 1)"), "{code}");
-    assert!(!code.contains("rsp"), "{code}");
+    for ty in [CType::int(2, false), CType::U32] {
+        ir.stack_params[2].ty = ty;
+        let code = rendered(&ir);
+        assert!(code.contains("return (uint8_t)(a8 >> 8);"), "{code}");
+        assert!(!code.contains("rsp"), "{code}");
+    }
 }
 
 #[test]

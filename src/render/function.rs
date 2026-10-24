@@ -684,6 +684,7 @@ fn render_with(
             .collect(),
         slots: locals.slots,
         parameter_addresses: locals.parameter_addresses,
+        parameter_reads: locals.parameter_reads,
         local_parts: locals.parts,
         transfer_addresses: locals.transfer_addresses,
         frame_origins: super::provenance::frame_origins(ir),

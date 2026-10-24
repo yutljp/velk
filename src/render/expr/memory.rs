@@ -118,7 +118,9 @@ pub(in crate::render) fn copy_address(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> 
 }
 
 pub(super) fn copied_load(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<String> {
-    let address = copy_address(addr, width, ctx)?;
+    let Some(address) = copy_address(addr, width, ctx) else {
+        return None;
+    };
     let ty = type_of(width, false);
     Some(format!(
         "*({ty} *)__builtin_memcpy(({ty}[1]){{0}}, {address}, {width})"
@@ -127,6 +129,33 @@ pub(super) fn copied_load(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Strin
 
 /// Memory read `width` bytes wide, by name where it has one.
 pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Printed {
+    if !ctx.parameter_reads.is_empty()
+        && let Some(read) = ctx.parameter_reads.get(&(render_expr(addr, ctx), width))
+    {
+        let bits = u32::from(width) * 8;
+        let mut value = Printed::new(
+            read.name.clone(),
+            Int::promoted(u32::from(read.size) * 8, read.signed),
+            ALL,
+            13,
+        )
+        .ranging(if read.signed {
+            Range::Signed(u32::from(read.size) * 8)
+        } else {
+            Range::Unsigned(u32::from(read.size) * 8)
+        });
+        // Convert before shifting so a signed argument shifts without its sign.
+        if read.shift != 0 {
+            value = value.cast(u32::from(read.size) * 8, false, ALL);
+            value = Printed::new(
+                format!("{} >> {}", value.within(9, false).text, read.shift),
+                value.ty,
+                ALL,
+                9,
+            );
+        }
+        return value.cast(bits, signed, if signed { 64 } else { ALL });
+    }
     if let Some(text) = copied_load(addr, width, ctx) {
         return global_load(text, width, signed, 12);
     }

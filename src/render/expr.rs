@@ -34,6 +34,14 @@ pub(crate) struct Declared {
     pub(crate) integer: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct ParameterRead {
+    pub(super) name: String,
+    pub(super) size: u8,
+    pub(super) shift: u32,
+    pub(super) signed: bool,
+}
+
 pub(crate) struct Ctx<'a> {
     pub(super) abi: Option<&'a super::abi::Plan>,
     pub(super) call_outputs: super::calls::Outputs,
@@ -52,6 +60,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) slots: HashMap<String, String>,
     /// Byte addresses proven to fit a scalar stack parameter at this access width.
     pub(super) parameter_addresses: HashMap<(String, u8), String>,
+    pub(super) parameter_reads: HashMap<(String, u8), ParameterRead>,
     /// Rendered stack address within a wider local to that address as bytes
     /// into the local.
     pub(super) local_parts: HashMap<String, String>,
@@ -1020,7 +1029,9 @@ fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
         exact,
         13,
     )
-    .ranging(if declared.signed {
+    .ranging(if fits {
+        Range::Unsigned(ctx.value_bits[&index])
+    } else if declared.signed {
         Range::Signed(declared.bits)
     } else {
         Range::Unsigned(declared.bits)

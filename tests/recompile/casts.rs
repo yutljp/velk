@@ -444,3 +444,167 @@ fn plain_char_zero_tests_preserve_both_char_signs() {
         check_candidates("plain-char-zero", candidates, Mode::Memory, &[sign]);
     }
 }
+
+#[test]
+fn printed_bitstream_ranges_preserve_bytes_shifts_and_wrapping() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+
+    let mut candidates = Vec::new();
+    let counts = [0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65, u64::MAX];
+    let inputs: Vec<Vec<u64>> = (0..256)
+        .map(|value| vec![value, 8])
+        .chain(
+            [
+                0,
+                1,
+                127,
+                128,
+                255,
+                256,
+                65535,
+                65536,
+                0xffff_ffff,
+                u64::MAX,
+            ]
+            .into_iter()
+            .flat_map(|value| counts.iter().map(move |count| vec![value, *count])),
+        )
+        .collect();
+    for width in [1, 2, 4] {
+        let local = Expr::reg(VARIABLE_BASE, 64);
+        let mask = (1u64 << (width * 8)) - 1;
+        let mut ir = synthetic_ir(
+            &format!("bitstream_range_{width}"),
+            vec![
+                Param {
+                    index: 7,
+                    name: "x".into(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 6,
+                    name: "count".into(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(mask)),
+                },
+                Stmt::Store {
+                    addr: Expr::Const(REGION),
+                    width,
+                    value: Expr::bin(BinOp::Add, local.clone(), Expr::Const(1)),
+                },
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(BinOp::Shl, local.clone(), Expr::reg(6, 64)),
+                        Expr::Select {
+                            cond: Cond::Hi,
+                            lhs: Box::new(local),
+                            rhs: Box::new(Expr::Const(0x7f)),
+                            then: Box::new(Expr::Const(1)),
+                            els: Box::new(Expr::Const(0)),
+                        },
+                    ),
+                },
+            ],
+        );
+        ir.value_types.insert(VARIABLE_BASE, CType::int(8, true));
+        let candidate = printed_candidate(ir, inputs.clone());
+        assert!(
+            candidate.code.contains("\n    int64_t v1;"),
+            "{}",
+            candidate.code
+        );
+        assert!(candidate.code.contains("& 0x3f"), "{}", candidate.code);
+        assert!(
+            !candidate.code.contains("(uint64_t)v1 >"),
+            "{}",
+            candidate.code
+        );
+        assert!(!candidate.code.contains("(uint8_t)"), "{}", candidate.code);
+        assert!(!candidate.code.contains("(uint16_t)"), "{}", candidate.code);
+        candidates.push(candidate);
+    }
+    check_candidates(
+        "bitstream_ranges",
+        candidates,
+        Mode::Memory,
+        &["-fsanitize=undefined", "-fno-sanitize-recover=all"],
+    );
+}
+
+#[test]
+fn printed_integer_argument_parts_preserve_every_byte_and_sign() {
+    let mut candidates = Vec::new();
+    for argument_signed in [false, true] {
+        for signed in [false, true] {
+            for (offset, width) in [(0, 1), (7, 1), (1, 2), (0, 4), (3, 4)] {
+                let mut ir = scalar_stack_ir(
+                    &format!("argument_part_{argument_signed}_{signed}_{offset}_{width}"),
+                    3,
+                    vec![Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(Expr::bin(
+                                BinOp::Add,
+                                Expr::reg(4, 64),
+                                Expr::Const(24 + offset),
+                            )),
+                            width,
+                            signed,
+                        },
+                    }],
+                );
+                if argument_signed {
+                    ir.stack_params[2].ty = CType::int(8, true);
+                    ir.declared_signature.as_mut().unwrap().params[8].1 = CType::int(8, true);
+                }
+                let inputs: Vec<Vec<u64>> = (0..256u64)
+                    .chain([256, 65535, 65536, 0x7fff_ffff, 0x8000_0000, u64::MAX])
+                    .map(|value| {
+                        let mut input = vec![0; 9];
+                        input[8] = value.wrapping_mul(0x0101_0101_0101_0101);
+                        input
+                    })
+                    .collect();
+                let upper = vec![0; inputs.len()];
+                let batch = aggregate_candidates(ir, inputs, upper);
+                for candidate in &batch {
+                    assert!(
+                        !candidate.code.contains("__builtin_memcpy"),
+                        "{}",
+                        candidate.code
+                    );
+                    assert!(candidate.code.contains("stack2"), "{}", candidate.code);
+                }
+                assert_aggregate_oracle(&batch, |input, _| {
+                    let raw = (input[8] >> (8 * offset)) & byte_mask(width);
+                    if signed {
+                        match width {
+                            1 => raw as i8 as i64 as u64,
+                            2 => raw as i16 as i64 as u64,
+                            4 => raw as i32 as i64 as u64,
+                            _ => unreachable!(),
+                        }
+                    } else {
+                        raw
+                    }
+                });
+                candidates.extend(batch);
+            }
+        }
+    }
+    check_candidates(
+        "integer_argument_parts",
+        candidates,
+        Mode::Registers,
+        &["-fsanitize=undefined", "-fno-sanitize-recover=all"],
+    );
+}

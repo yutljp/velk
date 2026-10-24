@@ -62,6 +62,7 @@ pub(crate) struct Locals {
     pub(super) transfer_addresses: HashMap<String, (String, u64)>,
     pub(super) widths: HashMap<String, u8>,
     pub(super) parameter_addresses: HashMap<(String, u8), String>,
+    pub(super) parameter_reads: HashMap<(String, u8), super::expr::ParameterRead>,
     pub(super) decls: Vec<Local>,
 }
 
@@ -131,6 +132,7 @@ pub(crate) fn stack_locals(
         strings: HashMap::new(),
         slots: HashMap::new(),
         parameter_addresses: HashMap::new(),
+        parameter_reads: HashMap::new(),
         local_parts: HashMap::new(),
         transfer_addresses: HashMap::new(),
         frame_origins: HashMap::new(),
@@ -497,7 +499,9 @@ pub(crate) fn stack_locals(
         }
     }
     let argument_accesses = stack_arguments(ir, sp, frames);
-    let parameter_addresses = scalar_parameter_addresses(ir, &argument_accesses, &base);
+    let mut parameter_reads = HashMap::new();
+    let parameter_addresses =
+        scalar_parameter_addresses(ir, &argument_accesses, &base, &mut parameter_reads);
     let mut origins: HashMap<String, Option<i64>> = HashMap::new();
     let mut part_origins: HashMap<String, Option<i64>> = HashMap::new();
     let mut access_widths: HashMap<String, Vec<u8>> = HashMap::new();
@@ -634,6 +638,7 @@ pub(crate) fn stack_locals(
         transfer_addresses,
         widths,
         parameter_addresses,
+        parameter_reads,
         decls: order
             .into_iter()
             .filter_map(|slot| slot_names.remove(&slot))
@@ -823,8 +828,10 @@ fn scalar_parameter_addresses(
     ir: &FunctionIr,
     accesses: &[(Expr, Option<i64>, u8)],
     ctx: &Ctx<'_>,
+    reads: &mut HashMap<(String, u8), super::expr::ParameterRead>,
 ) -> HashMap<(String, u8), String> {
-    let mut addresses: HashMap<(String, u8), Option<String>> = HashMap::new();
+    type Source = (String, Option<super::expr::ParameterRead>);
+    let mut addresses: HashMap<(String, u8), Option<Source>> = HashMap::new();
     for (addr, slot, width) in accesses {
         let source = (|| {
             if !matches!(*width, 1 | 2 | 4 | 8) {
@@ -834,11 +841,17 @@ fn scalar_parameter_addresses(
                 return None;
             };
             let mut parts = ir.stack_params.iter().filter_map(|param| {
-                let size = scalar_storage_size(&param.ty)?;
+                let Some(size) = scalar_storage_size(&param.ty) else {
+                    return None;
+                };
                 let extent = param.size.min(u64::from(size));
-                let within = slot.checked_sub(param.offset)?;
-                (within >= 0 && within.checked_add(i64::from(*width))? <= extent as i64)
-                    .then_some((param, within, size))
+                let Some(within) = slot.checked_sub(param.offset) else {
+                    return None;
+                };
+                let Some(end) = within.checked_add(i64::from(*width)) else {
+                    return None;
+                };
+                (within >= 0 && end <= extent as i64).then_some((param, within, size))
             });
             let Some((param, within, size)) = parts.next() else {
                 return None;
@@ -846,7 +859,17 @@ fn scalar_parameter_addresses(
             if parts.next().is_some() || (within == 0 && *width == size) {
                 return None;
             }
-            Some(format!("(uint8_t *)&{} + 0x{within:x}", param.name))
+            // Extract bytes in the IR's little-endian order.
+            let read = param
+                .ty
+                .integer()
+                .map(|(_, signed)| super::expr::ParameterRead {
+                    name: param.name.clone(),
+                    size,
+                    shift: within as u32 * 8,
+                    signed,
+                });
+            Some((format!("(uint8_t *)&{} + 0x{within:x}", param.name), read))
         })();
         let key = (render_expr(addr, ctx), *width);
         let entry = addresses.entry(key).or_insert_with(|| source.clone());
@@ -854,10 +877,17 @@ fn scalar_parameter_addresses(
             *entry = None;
         }
     }
-    addresses
-        .into_iter()
-        .filter_map(|(key, value)| Some((key, value?)))
-        .collect()
+    let mut result = HashMap::new();
+    for (key, source) in addresses {
+        let Some((address, read)) = source else {
+            continue;
+        };
+        if let Some(read) = read {
+            reads.insert(key.clone(), read);
+        }
+        result.insert(key, address);
+    }
+    result
 }
 
 fn ty_width(ty: &CType) -> Option<u8> {
@@ -1518,6 +1548,9 @@ pub(super) fn bind_return_slot(ir: &FunctionIr, provider: &str, ctx: &mut Ctx<'_
             ctx.local_parts.insert(renamed.clone(), part);
         }
         for width in [1, 2, 4, 8] {
+            if let Some(read) = ctx.parameter_reads.get(&(key.clone(), width)).cloned() {
+                ctx.parameter_reads.insert((renamed.clone(), width), read);
+            }
             if let Some(part) = ctx.parameter_addresses.get(&(key.clone(), width)).cloned() {
                 ctx.parameter_addresses
                     .insert((renamed.clone(), width), part);
