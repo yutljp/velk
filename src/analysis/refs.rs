@@ -33,12 +33,18 @@ fn escape(text: &str) -> String {
 }
 
 fn strings_at(image: &Image, addr: u64) -> Option<String> {
-    let section = image.section_at(addr)?;
-    if section.executable {
+    let Some(section) = image.section_at(addr) else {
+        return None;
+    };
+    if section.executable || !section.read_only {
         return None;
     }
-    let bytes = image.read_vaddr(addr, MAX_STRING)?;
-    let end = bytes.iter().position(|b| *b == 0)?;
+    let Some(bytes) = image.read_vaddr(addr, MAX_STRING) else {
+        return None;
+    };
+    let Some(end) = bytes.iter().position(|b| *b == 0) else {
+        return None;
+    };
     if end < 3 {
         return None;
     }

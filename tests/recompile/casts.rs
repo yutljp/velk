@@ -608,3 +608,124 @@ fn printed_integer_argument_parts_preserve_every_byte_and_sign() {
         &["-fsanitize=undefined", "-fno-sanitize-recover=all"],
     );
 }
+
+#[test]
+fn simplified_selections_keep_the_comparison_width() {
+    let mut candidates = Vec::new();
+    for (at, (cond, mask, add)) in [
+        (Cond::Lt, 0xaa4c_90f6, 0),
+        (Cond::Ge, 0xaa4c_90f6, 0),
+        (Cond::Gt, 0xaa4c_90f6, 0),
+        (Cond::Le, 0xaa4c_90f6, 0),
+        (Cond::Cs, 0xffff_fffe, 2),
+        (Cond::Cc, 0xffff_fffe, 2),
+        (Cond::Hi, 0xffff_fffe, 2),
+        (Cond::Ls, 0xffff_fffe, 2),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let masked = Expr::bin(
+            BinOp::And,
+            Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(mask)),
+            Expr::Const(0xffff_ffff),
+        );
+        let ir = synthetic_ir(
+            &format!("masked_selection_{at}"),
+            vec![Param {
+                index: 7,
+                name: "x".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::Select {
+                    cond,
+                    lhs: Box::new(if add == 0 {
+                        masked
+                    } else {
+                        Expr::bin(BinOp::Add, masked, Expr::Const(add))
+                    }),
+                    rhs: Box::new(Expr::Const(112)),
+                    then: Box::new(Expr::Const(1)),
+                    els: Box::new(Expr::Const(0)),
+                },
+            }],
+        );
+        let mut simplified = ir.clone();
+        velk::passes::simplify::simplify(&mut simplified);
+        let mut candidate = printed_candidate(
+            ir,
+            [0, 112, 0x8000_0000, 0xaa4c_90f6, u64::MAX]
+                .into_iter()
+                .map(|x| vec![x])
+                .collect(),
+        );
+        candidate.code = velk::render::render(&simplified, &[], &Default::default(), &[]);
+        assert!(candidate.code.contains("int32_t"), "{}", candidate.code);
+        candidates.push(candidate);
+    }
+    check_candidates("masked_selections", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn simplified_branches_keep_zero_extended_bytes_positive() {
+    let mut candidates = Vec::new();
+    for width in [1, 2] {
+        let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+        let mut ir = synthetic_ir(
+            &format!("zero_extended_branch_{width}"),
+            vec![Param {
+                index: 7,
+                name: "x".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::reg(7, 64),
+                    width,
+                },
+                Stmt::Brif {
+                    cond: Cond::Lt,
+                    lhs: Expr::bin(
+                        BinOp::And,
+                        Expr::bin(
+                            BinOp::And,
+                            Expr::Load {
+                                addr: Box::new(slot),
+                                width,
+                                signed: false,
+                            },
+                            Expr::Const(if width == 1 { 0xff } else { 0xffff }),
+                        ),
+                        Expr::Const(0xffff_ffff),
+                    ),
+                    rhs: Expr::Const(35),
+                    target: 0x20,
+                },
+            ],
+        );
+        for (start, value) in [(0x10, 1), (0x20, 2)] {
+            ir.blocks.push(Block {
+                start,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(value),
+                }],
+            });
+        }
+        let mut simplified = ir.clone();
+        velk::passes::simplify::simplify(&mut simplified);
+        let mut candidate = printed_candidate(
+            ir,
+            [0, 34, 35, 127, 128, 251, 32768, 65535]
+                .into_iter()
+                .map(|x| vec![x])
+                .collect(),
+        );
+        candidate.code = velk::render::render(&simplified, &[], &Default::default(), &[]);
+        candidates.push(candidate);
+    }
+    check_candidates("zero_extended_branches", candidates, Mode::Registers, &[]);
+}

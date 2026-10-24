@@ -73,11 +73,10 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
                 cancel_round_trip(lhs, width);
                 cancel_round_trip(rhs, width);
             }
-            // Dropping a mask can leave a sign-extended value compared at
-            // all 64 bits where it was compared at fewer: unless the result
-            // stays the same, the constant it is compared with is extended
-            // the same way, or the comparison stays as it was.
-            if crate::ir::semantics::operand_width(lhs, rhs) > before
+            // Dropping a mask can change which bit supplies the sign.
+            // Keep the comparison unless its result is unchanged or its
+            // constant can be extended to match the wider operand.
+            if crate::ir::semantics::operand_width(lhs, rhs) != before
                 && !super::copies::comparison_preserved(*cond, before, lhs, rhs)
                 && !widen_compared_constant(lhs, rhs, before)
                 && !widen_compared_constant(rhs, lhs, before)
@@ -279,8 +278,9 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
             els,
         } => {
             let bits = crate::ir::semantics::operand_width(&lhs, &rhs);
-            let lhs = simplify_expr(*lhs, constants);
-            let rhs = simplify_expr(*rhs, constants);
+            let original = (*lhs.clone(), *rhs.clone());
+            let mut lhs = simplify_expr(*lhs, constants);
+            let mut rhs = simplify_expr(*rhs, constants);
             let then = simplify_expr(*then, constants);
             let els = simplify_expr(*els, constants);
             let known = match (&lhs, &rhs) {
@@ -292,6 +292,13 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
                 }
                 _ => None,
             };
+            if known.is_none()
+                && !super::copies::comparison_preserved(cond, bits, &lhs, &rhs)
+                && !widen_compared_constant(&lhs, &mut rhs, bits)
+                && !widen_compared_constant(&rhs, &mut lhs, bits)
+            {
+                (lhs, rhs) = original;
+            }
             match known {
                 Some(true) => then,
                 Some(false) => els,

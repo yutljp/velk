@@ -109,3 +109,54 @@ fn printed_constants_preserve_promotions_and_signed_values() {
     }
     check_candidates("constant_bases", candidates, Mode::Registers, &[]);
 }
+
+#[test]
+fn writable_printable_bytes_keep_their_storage() {
+    let scratch = scratch_dir("writable-printable-bytes");
+    let original = scratch.join("original.c");
+    let executable = scratch.join("original");
+    let source = "unsigned char buffer[128] = \"hhhhhhhh\";\n__attribute__((noinline)) unsigned update(unsigned index) { unsigned char *volatile p = buffer; p[index & 7] = 17; return p[index & 7]; }\nint main(void) { return update(4) != 17; }\n";
+    std::fs::write(&original, source).unwrap();
+    let compiled = Command::new(compiler())
+        .args(["-O0", "-fno-stack-protector"])
+        .arg(&original)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&executable).unwrap();
+    let prefix = if cfg!(target_os = "macos") { "_" } else { "" };
+    let address = binary.find(&format!("{prefix}update")).unwrap().addr;
+    let buffer = *binary
+        .image()
+        .data_symbols
+        .iter()
+        .find(|(_, name)| *name == &format!("{prefix}buffer"))
+        .unwrap()
+        .0;
+    let mut analysis = binary.analysis(address, None).unwrap().clone();
+    analysis.ir.name = Some("printed_update".into());
+    let code = velk::render::render(&analysis.ir, &analysis.references, &Default::default(), &[]);
+    assert!(!code.contains("\"hhhhhhhh\""), "{code}");
+    let mut code = code;
+    for offset in 0..128 {
+        for suffix in ["ULL", ""] {
+            code = code.replace(
+                &format!("0x{:x}{suffix}", buffer + offset),
+                &format!("(uintptr_t)(buffer + {offset})"),
+            );
+        }
+    }
+    let program = Program {
+        text: format!(
+            "{HEADER}\nunsigned char buffer[128] = \"hhhhhhhh\";\n{code}\nint main(void) {{ return printed_update(4) != 17 || buffer[4] != 17; }}\n"
+        ),
+        ranges: Vec::new(),
+    };
+    for level in LEVELS {
+        let executable = build(&program, &scratch, level, &[]);
+        assert_eq!(run(&executable, ""), "", "{}", program.text);
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
