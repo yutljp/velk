@@ -79,7 +79,7 @@ fn <unnamed> @ 0x2101dc (size 12)
 -- decompile
 /* velk pseudo-C: sub_2101e8 @ 0x2101e8 */
 int32_t sub_2101e8(uint32_t *a0, int32_t a1) {
-    int64_t v2;
+    uint64_t v2;
     int32_t v3;
     uint64_t v4;
     uint64_t v5;

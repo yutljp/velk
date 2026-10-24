@@ -124,7 +124,7 @@ pub(crate) fn variable_types(
             uses.float_elements.insert(base, precision);
         }
     }
-    let signs = SignEvidence::of(ir);
+    let signs = SignEvidence::of_variables(ir);
     let mut types = BTreeMap::new();
     let mut ints = HashSet::new();
     for index in uses.seen.clone() {
@@ -194,8 +194,8 @@ pub(crate) fn variable_types(
                 bytes: (bits / 8) as u8,
                 signed: signed && ((!extended && *bits == 32) || signs.signed.contains(&index)),
             },
-            Some(Narrow::Held) => CType::Int {
-                bytes: 4,
+            Some(Narrow::Held { bits }) => CType::Int {
+                bytes: (bits / 8) as u8,
                 signed: false,
             },
             None => CType::Int { bytes: 8, signed },

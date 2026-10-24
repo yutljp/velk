@@ -986,7 +986,9 @@ fn register(index: u16, width: u8, ctx: &Ctx<'_>) -> Printed {
         && ctx.value_bits.get(&index).is_some_and(|bits| {
             *bits < declared.bits || (*bits == declared.bits && !declared.signed)
         });
-    let exact = if read < declared.bits {
+    let truncated = read < declared.bits
+        && !(fits && ctx.value_bits.get(&index).is_some_and(|bits| *bits <= read));
+    let exact = if truncated {
         read
     } else if fits || (!declared.signed && (declared.param || read == declared.bits)) {
         ALL

@@ -10,7 +10,7 @@
 /* velk pseudo-C: sub_21019c @ 0x21019c */
 double sub_21019c(double *a0, int32_t a1) {
     double v1;
-    int64_t v3;
+    uint64_t v3;
     double *v4;
     int64_t v5;
     double v6;

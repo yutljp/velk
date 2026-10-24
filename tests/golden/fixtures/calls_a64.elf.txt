@@ -230,7 +230,7 @@ fn factorial @ 0x21032c (size 160)
 /* velk pseudo-C: is_odd @ 0x2103cc */
 int32_t is_odd(int32_t a0) {
     uint32_t v1;
-    int32_t v4;
+    uint32_t v4;
     int32_t i;
     uint32_t i_2;
 
@@ -238,7 +238,7 @@ int32_t is_odd(int32_t a0) {
     if (v1 >= 2) {
         v1 = (v1 >> 1) + 1;
         v4 = v1 & 0xfffffffe;
-        a0 -= ((uint64_t)v4 << 1);
+        a0 -= (v4 << 1);
         i = v4;
         do {
             i -= 2;

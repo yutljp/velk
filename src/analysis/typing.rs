@@ -91,34 +91,47 @@ pub(crate) struct SignEvidence {
     pub(crate) counts: std::collections::HashMap<u16, (usize, usize)>,
     /// Some unsigned operation was seen, whatever it read.
     any_unsigned: bool,
+    /// Local C declarations also account for left shifts.
+    variables: bool,
 }
 
 impl SignEvidence {
     pub(crate) fn of(ir: &FunctionIr) -> Self {
+        Self::default().collect(ir)
+    }
+
+    pub(crate) fn of_variables(ir: &FunctionIr) -> Self {
+        Self {
+            variables: true,
+            ..Self::default()
+        }
+        .collect(ir)
+    }
+
+    fn collect(mut self, ir: &FunctionIr) -> Self {
         use crate::ir::Stmt;
-        let mut evidence = Self::default();
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
             match stmt {
-                Stmt::Assign { value, .. } | Stmt::Ret { value } => evidence.walk(value),
+                Stmt::Assign { value, .. } | Stmt::Ret { value } => self.walk(value),
                 Stmt::Store { addr, value, .. } => {
-                    evidence.walk(addr);
-                    evidence.walk(value);
+                    self.walk(addr);
+                    self.walk(value);
                 }
                 Stmt::Brif { cond, lhs, rhs, .. } => {
-                    evidence.compare(*cond, lhs, rhs);
-                    evidence.walk(lhs);
-                    evidence.walk(rhs);
+                    self.compare(*cond, lhs, rhs);
+                    self.walk(lhs);
+                    self.walk(rhs);
                 }
-                Stmt::Switch { index, .. } => evidence.walk(index),
+                Stmt::Switch { index, .. } => self.walk(index),
                 Stmt::Call { .. } => {
                     for value in stmt.operands() {
-                        evidence.walk(value);
+                        self.walk(value);
                     }
                 }
                 _ => {}
             }
         }
-        evidence
+        self
     }
 
     fn note(&mut self, signed: bool, operands: &[&crate::ir::Expr]) {
@@ -167,10 +180,11 @@ impl SignEvidence {
                 BinOp::DivU | BinOp::ModU => self.note(false, &[lhs, rhs]),
                 BinOp::Sar => self.note(true, &[lhs]),
                 // Shifting the top bit down tests the sign.
-                BinOp::Shr if matches!(rhs.as_ref(), Expr::Const(31 | 63)) => {
+                BinOp::Shr if !self.variables && matches!(rhs.as_ref(), Expr::Const(31 | 63)) => {
                     self.note(true, &[lhs])
                 }
                 BinOp::Shr => self.note(false, &[lhs]),
+                BinOp::Shl if self.variables => self.note(false, &[lhs]),
                 _ => {}
             },
             Expr::SignExtend { value, .. } => self.note(true, &[value]),

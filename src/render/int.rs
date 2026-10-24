@@ -320,7 +320,7 @@ fn range_bits(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
     crate::ssa::ranges::expression(expr, &read).map_or(64, |fact| 64 - fact.hi.leading_zeros())
 }
 
-fn zero_bits_in(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
+pub(super) fn zero_bits_in(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
     let bits = |expr| zero_bits_in(expr, known);
     match expr {
         Expr::Reg { index, width } => {

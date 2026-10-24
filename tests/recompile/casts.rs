@@ -1,6 +1,164 @@
 use super::*;
 
 #[test]
+fn printed_local_types_preserve_byte_values_and_integer_uses() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+
+    let local = Expr::reg(VARIABLE_BASE, 64);
+    let mut candidates = Vec::new();
+    let edges = [0, 1, 127, 128, 255, 256, 0x8000_0000, u64::MAX];
+    let counts = [0, 1, 7, 8, 31, 32, 63, 64, 65, u64::MAX];
+    let inputs: Vec<Vec<u64>> = edges
+        .iter()
+        .flat_map(|value| counts.iter().map(move |count| vec![*value, *count]))
+        .collect();
+    for (name, definition, result) in [
+        (
+            "byte_local",
+            Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(255)),
+            local.clone(),
+        ),
+        (
+            "shift_local",
+            Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::Const(1)),
+            Expr::bin(BinOp::Shl, local.clone(), Expr::reg(6, 64)),
+        ),
+        (
+            "logical_shift_local",
+            Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::Const(1)),
+            Expr::bin(BinOp::Shr, local.clone(), Expr::Const(63)),
+        ),
+        (
+            "narrow_read_wide_local",
+            Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(255)),
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::Shl, local.clone(), Expr::reg(6, 64)),
+                Expr::reg(VARIABLE_BASE, 8),
+            ),
+        ),
+        (
+            "wrapping_local",
+            Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(0xffff_ffff)),
+            Expr::bin(BinOp::Add, local.clone(), Expr::Const(1)),
+        ),
+        (
+            "mixed_sign_local",
+            Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::Const(1)),
+            Expr::Select {
+                cond: Cond::Lt,
+                lhs: Box::new(local.clone()),
+                rhs: Box::new(Expr::reg(6, 64)),
+                then: Box::new(Expr::bin(BinOp::Shr, local.clone(), Expr::Const(1))),
+                els: Box::new(Expr::bin(BinOp::Shl, local.clone(), Expr::Const(1))),
+            },
+        ),
+    ] {
+        let ir = synthetic_ir(
+            name,
+            vec![
+                Param {
+                    index: 7,
+                    name: "x".into(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 6,
+                    name: "count".into(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: definition,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, result, local.clone()),
+                },
+            ],
+        );
+        let candidate = printed_candidate(ir, inputs.clone());
+        if name == "byte_local" {
+            assert!(candidate.code.contains("uint8_t v1;"), "{}", candidate.code);
+        }
+        if matches!(
+            name,
+            "shift_local" | "logical_shift_local" | "narrow_read_wide_local"
+        ) {
+            assert!(
+                candidate.code.contains("uint64_t v1;"),
+                "{}",
+                candidate.code
+            );
+            assert!(!candidate.code.contains("(uint64_t)"), "{}", candidate.code);
+            assert!(!candidate.code.contains("(uint8_t)"), "{}", candidate.code);
+        }
+        candidates.push(candidate);
+    }
+    check_candidates(
+        "local_integer_types",
+        candidates,
+        Mode::Registers,
+        &["-fsanitize=undefined", "-fno-sanitize-recover=all"],
+    );
+}
+
+#[test]
+fn printed_byte_load_locals_extend_every_value_exactly() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+
+    let mut candidates = Vec::new();
+    for signed in [false, true] {
+        let local = Expr::reg(VARIABLE_BASE, 64);
+        let ir = synthetic_ir(
+            if signed {
+                "signed_byte_local"
+            } else {
+                "loaded_byte_local"
+            },
+            vec![Param {
+                index: 7,
+                name: "x".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: Expr::Const(REGION),
+                    value: Expr::reg(7, 64),
+                    width: 1,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(Expr::Const(REGION)),
+                        width: 1,
+                        signed,
+                    },
+                },
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, local.clone(), local),
+                },
+            ],
+        );
+        let candidate = printed_candidate(ir, (0..256).map(|value| vec![value]).collect());
+        if !signed {
+            assert!(candidate.code.contains("uint8_t v1;"), "{}", candidate.code);
+        }
+        candidates.push(candidate);
+    }
+    check_candidates("loaded_byte_locals", candidates, Mode::Memory, &[]);
+}
+
+#[test]
 fn printed_integer_shifts_and_pointer_choices_avoid_identity_casts() {
     let mut candidates = Vec::new();
     let edges = [

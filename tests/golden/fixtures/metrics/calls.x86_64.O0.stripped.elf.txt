@@ -68,7 +68,7 @@ fn <unnamed> @ 0x201330 (size 33)
 /* ref: 0x202670 .data.rel.ro */
 int32_t sub_201360(uint32_t a0, int32_t a1) {
     uint64_t *const qword_202670 = (uint64_t *)0x202670ULL;
-    int64_t v1;
+    uint32_t v1;
     int64_t v3;
 
     v1 = a0 % 3;

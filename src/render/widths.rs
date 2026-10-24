@@ -16,16 +16,16 @@ pub(crate) enum Narrow {
     /// may take either sign; `extended` when some reader extends them with
     /// zeros, as a variable of no sign does by itself.
     Read { bits: u32, extended: bool },
-    /// Every value assigned fits in 32 bits, which only a 32-bit variable
-    /// of no sign gives back whole to a reader that looks further.
-    Held,
+    /// Every value assigned fits in `bits`, and must extend with zeros
+    /// when a reader looks further.
+    Held { bits: u32 },
 }
 
 impl Narrow {
     pub(crate) fn bits(self) -> u32 {
         match self {
             Narrow::Read { bits, .. } => bits,
-            Narrow::Held => 32,
+            Narrow::Held { bits } => bits,
         }
     }
 }
@@ -41,18 +41,13 @@ pub(crate) fn narrow_variables(
     pointers: &HashSet<u16>,
 ) -> HashMap<u16, Narrow> {
     let held = crate::render::int::value_bits(ir);
-    let holds_32 = |index: u16| held.get(&index).is_some_and(|bits| *bits <= 32);
-    let saved = saved(ir);
+    let saved = saved(ir, &held);
     let decide = |readers: &Readers| -> HashMap<u16, Narrow> {
         ints.iter()
             .filter_map(|index| {
                 // A narrow variable saves a cast or a mask where the body
                 // takes or reads a narrow part of it, and costs a cast where
                 // C would compute on it narrower than the reader looks.
-                let widened = readers.widened.get(index).copied().unwrap_or(0);
-                if widened > 0 && widened >= saved.get(index).copied().unwrap_or(0) {
-                    return None;
-                }
                 // One nothing reads is as wide as an `int`; one the body
                 // reads at no more than 32 bits, but for a whole register
                 // a callee takes at its own width, is 32 bits wide.
@@ -66,11 +61,23 @@ pub(crate) fn narrow_variables(
                         bits,
                         extended: readers.extended.contains(&(*index, bits)),
                     }
-                } else if holds_32(*index) {
-                    Narrow::Held
+                } else if let Some(bits) = held
+                    .get(index)
+                    .and_then(|held| [8, 16, 32].into_iter().find(|bits| held <= bits))
+                {
+                    Narrow::Held { bits }
                 } else {
                     return None;
                 };
+                let widened = readers.widened.get(index).copied().unwrap_or(0);
+                let saved: usize = [8, 16, 32]
+                    .into_iter()
+                    .filter(|bits| *bits >= kind.bits())
+                    .map(|bits| saved.get(&(*index, bits)).copied().unwrap_or(0))
+                    .sum();
+                if widened > 0 && widened >= saved {
+                    return None;
+                }
                 Some((*index, kind))
             })
             .collect()
@@ -79,7 +86,7 @@ pub(crate) fn narrow_variables(
     // their destinations, which only grow, until they no longer change.
     let mut decided = decide(&Readers::default());
     for _ in 0..=ints.len() + 1 {
-        let next = decide(&read_bits(ir, &decided, ints, pointers));
+        let next = decide(&read_bits(ir, &decided, ints, pointers, &held));
         if next == decided {
             return decided;
         }
@@ -92,39 +99,49 @@ pub(crate) fn narrow_variables(
 /// or a cast to fewer bits and a narrow one would not: an assignment of a
 /// value masked to them or of a register read narrower, and a narrower
 /// read of the register itself.
-fn saved(ir: &FunctionIr) -> HashMap<u16, usize> {
-    fn reads(expr: &Expr, counts: &mut HashMap<u16, usize>) {
+fn saved(ir: &FunctionIr, held: &HashMap<u16, u32>) -> HashMap<(u16, u32), usize> {
+    fn reads(expr: &Expr, held: &HashMap<u16, u32>, counts: &mut HashMap<(u16, u32), usize>) {
         match expr {
-            Expr::Reg { index, width } if *width < 64 => *counts.entry(*index).or_insert(0) += 1,
-            Expr::SignExtend { value, .. }
+            Expr::Reg { index, width }
+                if *width < 64 && held.get(index).is_none_or(|bits| *bits > u32::from(*width)) =>
+            {
+                *counts.entry((*index, u32::from(*width))).or_insert(0) += 1;
+            }
+            Expr::SignExtend { value, width }
                 if let Expr::Reg { index, width: 64 } = value.as_ref() =>
             {
-                *counts.entry(*index).or_insert(0) += 1;
+                *counts.entry((*index, u32::from(*width) * 8)).or_insert(0) += 1;
             }
             _ => {
                 for child in crate::ir::visit::children(expr) {
-                    reads(child, counts);
+                    reads(child, held, counts);
                 }
             }
         }
     }
     let mut counts = HashMap::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let Stmt::Assign { dest, value } = stmt
-            && match value {
+        if let Stmt::Assign { dest, value } = stmt {
+            let bits = match value {
                 Expr::Bin {
                     op: BinOp::And,
                     rhs,
                     ..
-                } => matches!(rhs.as_ref(), Expr::Const(0xff | 0xffff | 0xffff_ffff)),
-                Expr::Reg { width, .. } => *width < 64,
-                _ => false,
+                } => match rhs.as_ref() {
+                    Expr::Const(mask @ (0xff | 0xffff | 0xffff_ffff)) => {
+                        Some(64 - mask.leading_zeros())
+                    }
+                    _ => None,
+                },
+                Expr::Reg { width, .. } if *width < 64 => Some(u32::from(*width)),
+                _ => None,
+            };
+            if let Some(bits) = bits {
+                *counts.entry((dest.index, bits)).or_insert(0) += 1;
             }
-        {
-            *counts.entry(dest.index).or_insert(0) += 1;
         }
         for value in stmt.operands() {
-            reads(value, &mut counts);
+            reads(value, held, &mut counts);
         }
     }
     counts
@@ -153,11 +170,13 @@ pub(crate) fn read_bits(
     narrow: &HashMap<u16, Narrow>,
     ints: &HashSet<u16>,
     pointers: &HashSet<u16>,
+    held: &HashMap<u16, u32>,
 ) -> Readers {
     let mut reads = Reads {
         readers: Readers::default(),
         ints,
         pointers,
+        held,
         narrow_params: ir
             .params
             .iter()
@@ -224,6 +243,7 @@ struct Reads<'a> {
     readers: Readers,
     ints: &'a HashSet<u16>,
     pointers: &'a HashSet<u16>,
+    held: &'a HashMap<u16, u32>,
     /// The parameters of integer types no wider than 32 bits.
     narrow_params: HashSet<u16>,
 }
@@ -345,8 +365,10 @@ impl Reads<'_> {
                     self.expr(lhs, bits);
                 }
                 BinOp::Add | BinOp::Sub | BinOp::Mul => {
-                    self.widens(lhs, Some(rhs), bits);
-                    self.widens(rhs, Some(lhs), bits);
+                    if crate::render::int::zero_bits_in(expr, self.held) > 31 {
+                        self.widens(lhs, Some(rhs), bits);
+                        self.widens(rhs, Some(lhs), bits);
+                    }
                     self.expr(lhs, bits);
                     self.expr(rhs, bits);
                 }
@@ -355,7 +377,9 @@ impl Reads<'_> {
                     self.expr(rhs, bits);
                 }
                 BinOp::Shl => {
-                    self.widens(lhs, None, bits);
+                    if crate::render::int::zero_bits_in(expr, self.held) > 31 {
+                        self.widens(lhs, None, bits);
+                    }
                     let kept = match rhs.as_ref() {
                         Expr::Const(amount) if *amount < 64 => bits.saturating_sub(*amount as u32),
                         _ => bits,
@@ -477,7 +501,7 @@ mod tests {
                 target: 0x1000,
             },
         ]);
-        assert_eq!(narrow(&ir).get(&V1), Some(&Narrow::Held));
+        assert_eq!(narrow(&ir).get(&V1), Some(&Narrow::Held { bits: 32 }));
     }
 
     #[test]
@@ -527,7 +551,13 @@ mod tests {
             Expr::Const(0xffff_ffff),
         );
         let ir = function(vec![Stmt::Ret { value: sum }]);
-        let readers = read_bits(&ir, &HashMap::new(), &HashSet::new(), &pointers);
+        let readers = read_bits(
+            &ir,
+            &HashMap::new(),
+            &HashSet::new(),
+            &pointers,
+            &HashMap::new(),
+        );
         assert_eq!(readers.bits.get(&V1), Some(&64));
     }
 

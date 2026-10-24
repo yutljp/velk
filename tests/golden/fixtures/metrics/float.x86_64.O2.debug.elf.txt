@@ -12,7 +12,7 @@ double average(double *values, int n) {
     double result;
     double v2;
     uint32_t v3;
-    uint32_t v4;
+    uint8_t v4;
     int64_t i;
     double *v14;
     int64_t i_2;

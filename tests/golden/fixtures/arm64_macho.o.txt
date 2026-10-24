@@ -79,7 +79,7 @@ fn _pair_sum @ 0x50 (size 12)
 -- decompile
 /* velk pseudo-C: _sum_arr @ 0x5c */
 int32_t sum_arr(uint32_t *a0, int32_t a1) {
-    int64_t v2;
+    uint64_t v2;
     int32_t v3;
     uint64_t *v4;
     uint64_t v5;

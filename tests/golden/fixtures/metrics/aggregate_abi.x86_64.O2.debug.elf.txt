@@ -204,11 +204,11 @@ unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, 
     uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
     uint8_t *value_address = (uint8_t *)&value;
     int64_t v3;
-    int64_t v4;
+    uint64_t v4;
 
     v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
     v4 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 4) + v4);
+    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + ((v4 << 4) + v4);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -228,18 +228,18 @@ fn abi_exhaust_five @ 0x2012c0 (size 85)
 /* velk pseudo-C: abi_exhaust_seven @ 0x201320 */
 int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
     int64_t v1;
-    int64_t v2;
+    uint64_t v2;
     int64_t v10;
-    int64_t v11;
+    uint64_t v11;
     int64_t v12;
 
     v1 = a9;
     v2 = a6;
     v10 = a7;
     v11 = a8;
-    v12 = ((uint64_t)(v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
+    v12 = ((v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
     v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
-    return v1 + v1 + v10 + (((uint64_t)v2 << 4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
+    return v1 + v1 + v10 + ((v2 << 4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -308,11 +308,11 @@ unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long 
     uint64_t tail_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&tail + 0x0, 8);
     uint8_t *value_address = (uint8_t *)&value;
     int64_t v3;
-    int64_t v4;
+    uint64_t v4;
 
     v3 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
     v4 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + (((uint64_t)v4 << 4) + v4);
+    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + ((v4 << 4) + v4);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -342,18 +342,18 @@ unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *tail_address = (uint8_t *)&tail;
     int64_t v1;
-    int64_t v2;
+    uint64_t v2;
     int64_t v10;
-    int64_t v11;
+    uint64_t v11;
     int64_t v12;
 
     v1 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, tail_address, 8);
     v2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, g_address, 8);
     v10 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8);
     v11 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    v12 = ((uint64_t)(v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
+    v12 = ((v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
     v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
-    return v1 + v1 + v10 + (((uint64_t)v2 << 4) + v2 + (f_bits + (f_bits + f_bits * 2) * 4 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))))) + v12;
+    return v1 + v1 + v10 + ((v2 << 4) + v2 + (f_bits + (f_bits + f_bits * 2) * 4 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))))) + v12;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
