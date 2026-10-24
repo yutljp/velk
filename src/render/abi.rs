@@ -64,7 +64,9 @@ fn logical_type(ty: &CType, value: &ValueAbi, returned: bool) -> Option<CType> {
         _ => None,
     };
     if value.size > 8 || wide_signed.is_some() {
-        let signed = wide_signed?;
+        let Some(signed) = wide_signed else {
+            return None;
+        };
         if value.size != 16
             || value.alignment != 16
             || !matches!(value.defined_bits.as_slice(), [(0, 128)])

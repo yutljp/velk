@@ -319,9 +319,14 @@ impl<'a> Graph<'a> {
             }
         }
         let mut out = vec![Node::Label(start)];
-        let mut code = self.code(block, depth)?;
+        let Some(mut code) = self.code(block, depth) else {
+            return None;
+        };
         for child in inside {
-            code.extend(self.tree(child, depth + 1)?);
+            code.extend(match self.tree(child, depth + 1) {
+                Some(value) => value,
+                None => return None,
+            });
         }
         if header {
             // Falling off the end of the body leaves the loop.
@@ -331,7 +336,10 @@ impl<'a> Graph<'a> {
             out.extend(code);
         }
         for child in after {
-            out.extend(self.tree(child, depth + 1)?);
+            out.extend(match self.tree(child, depth + 1) {
+                Some(value) => value,
+                None => return None,
+            });
         }
         // Blocks deeper in the tree that leave this loop follow it too.
         if header {
@@ -347,7 +355,10 @@ impl<'a> Graph<'a> {
                 .collect();
             leaving.sort_by_key(|other| self.order[*other]);
             for other in leaving {
-                out.extend(self.tree(other, depth + 1)?);
+                out.extend(match self.tree(other, depth + 1) {
+                    Some(value) => value,
+                    None => return None,
+                });
             }
         }
         Some(out)
@@ -369,9 +380,18 @@ impl<'a> Graph<'a> {
                 rhs,
                 target,
             }) => {
-                let then = self.branch(block, self.index.get(target).copied(), *target, depth)?;
+                let Some(then) =
+                    self.branch(block, self.index.get(target).copied(), *target, depth)
+                else {
+                    return None;
+                };
                 let els = match fallthrough {
-                    Some(next) => self.branch(block, Some(next), self.blocks[next].start, depth)?,
+                    Some(next) => {
+                        match self.branch(block, Some(next), self.blocks[next].start, depth) {
+                            Some(value) => value,
+                            None => return None,
+                        }
+                    }
                     None => Vec::new(),
                 };
                 out.push(Node::If {
@@ -384,9 +404,12 @@ impl<'a> Graph<'a> {
             }
             Some(Stmt::Br {
                 target: Some(target),
-            }) => {
-                out.extend(self.branch(block, self.index.get(target).copied(), *target, depth)?)
-            }
+            }) => out.extend(
+                match self.branch(block, self.index.get(target).copied(), *target, depth) {
+                    Some(value) => value,
+                    None => return None,
+                },
+            ),
             Some(Stmt::Switch {
                 index,
                 cases,
@@ -405,16 +428,22 @@ impl<'a> Graph<'a> {
                 }
                 let mut nodes = Vec::new();
                 for (values, target) in arms {
-                    let mut body =
-                        self.branch(block, self.index.get(&target).copied(), target, depth)?;
+                    let Some(mut body) =
+                        self.branch(block, self.index.get(&target).copied(), target, depth)
+                    else {
+                        return None;
+                    };
                     // A case never falls into the next.
                     body.push(Node::Break);
                     nodes.push((values, body));
                 }
                 let default = match default {
                     Some(target) => {
-                        let mut body =
-                            self.branch(block, self.index.get(target).copied(), *target, depth)?;
+                        let Some(mut body) =
+                            self.branch(block, self.index.get(target).copied(), *target, depth)
+                        else {
+                            return None;
+                        };
                         body.push(Node::Break);
                         Some(body)
                     }
@@ -436,13 +465,23 @@ impl<'a> Graph<'a> {
                 // Flags the lifter could not tie to a compare keep their jump.
                 out.push(Node::Stmt(stmt.clone()));
                 if let Some(next) = fallthrough {
-                    out.extend(self.branch(block, Some(next), self.blocks[next].start, depth)?);
+                    out.extend(
+                        match self.branch(block, Some(next), self.blocks[next].start, depth) {
+                            Some(value) => value,
+                            None => return None,
+                        },
+                    );
                 }
             }
             other => {
                 out.extend(other.cloned().map(Node::Stmt));
                 if let Some(next) = fallthrough {
-                    out.extend(self.branch(block, Some(next), self.blocks[next].start, depth)?);
+                    out.extend(
+                        match self.branch(block, Some(next), self.blocks[next].start, depth) {
+                            Some(value) => value,
+                            None => return None,
+                        },
+                    );
                 }
             }
         }
@@ -467,7 +506,12 @@ impl<'a> Graph<'a> {
                     Stmt::Br {
                         target: Some(target),
                     },
-                ] => block = *self.index.get(target)?,
+                ] => {
+                    block = *(match self.index.get(target) {
+                        Some(value) => value,
+                        None => return None,
+                    })
+                }
                 _ => return Some(block),
             }
         }
@@ -753,9 +797,12 @@ fn leave_by_break(
     }
     // A jump to code inside the construct stays where it is.
     counts.retain(|target, _| !inside.contains(target));
-    let (target, _) = counts
+    let Some((target, _)) = counts
         .into_iter()
-        .max_by_key(|(target, count)| (*count, std::cmp::Reverse(*target)))?;
+        .max_by_key(|(target, count)| (*count, std::cmp::Reverse(*target)))
+    else {
+        return None;
+    };
     for body in bodies.iter_mut() {
         replace(body, target);
     }
@@ -1053,11 +1100,16 @@ fn do_while(body: &[Node]) -> Option<Node> {
 /// `while (c) { body }`: after statements that only compute, the body tests
 /// once whether to leave.
 fn while_loop(body: &[Node]) -> Option<Node> {
-    let start = body
+    let Some(start) = body
         .iter()
-        .position(|node| !matches!(node, Node::Stmt(Stmt::Assign { .. } | Stmt::Store { .. })))?;
+        .position(|node| !matches!(node, Node::Stmt(Stmt::Assign { .. } | Stmt::Store { .. })))
+    else {
+        return None;
+    };
     let (prefix, rest) = body.split_at(start);
-    let (test, rest) = rest.split_first()?;
+    let Some((test, rest)) = rest.split_first() else {
+        return None;
+    };
     let Node::If {
         cond,
         lhs,

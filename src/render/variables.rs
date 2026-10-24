@@ -467,7 +467,9 @@ fn base(addr: &Expr) -> Option<u16> {
         Expr::Reg { index, width: 64 } => Some(*index),
         _ => None,
     });
-    let register = registers.next()?;
+    let Some(register) = registers.next() else {
+        return None;
+    };
     let rest_are_offsets = found.iter().all(|term| match term {
         Expr::Reg { index, .. } => *index == register,
         Expr::Const(_) => true,

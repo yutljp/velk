@@ -830,7 +830,9 @@ fn scalar_parameter_addresses(
             if !matches!(*width, 1 | 2 | 4 | 8) {
                 return None;
             }
-            let slot = (*slot)?;
+            let Some(slot) = *slot else {
+                return None;
+            };
             let mut parts = ir.stack_params.iter().filter_map(|param| {
                 let size = scalar_storage_size(&param.ty)?;
                 let extent = param.size.min(u64::from(size));
@@ -838,7 +840,9 @@ fn scalar_parameter_addresses(
                 (within >= 0 && within.checked_add(i64::from(*width))? <= extent as i64)
                     .then_some((param, within, size))
             });
-            let (param, within, size) = parts.next()?;
+            let Some((param, within, size)) = parts.next() else {
+                return None;
+            };
             if parts.next().is_some() || (within == 0 && *width == size) {
                 return None;
             }
@@ -888,12 +892,14 @@ fn slot_types(
     variables: &std::collections::BTreeMap<u16, CType>,
 ) -> (HashMap<i64, CType>, HashMap<i64, bool>, HashMap<i64, i64>) {
     let typed = |index: u16| -> Option<CType> {
-        let ty = variables.get(&index).cloned().or_else(|| {
+        let Some(ty) = variables.get(&index).cloned().or_else(|| {
             ir.params
                 .iter()
                 .find(|param| param.index == index)
                 .map(|param| param.ty.clone())
-        })?;
+        }) else {
+            return None;
+        };
         ty_width(&ty).map(|_| ty)
     };
     let mut walk = Walk {
@@ -1414,7 +1420,15 @@ pub(crate) fn offset_local(expr: &Expr, sp: u16) -> Option<(Expr, Vec<&Expr>)> {
         return None;
     }
     Some((
-        Expr::bin(BinOp::Add, base?.clone(), Expr::Const(offset)),
+        Expr::bin(
+            BinOp::Add,
+            (match base {
+                Some(value) => value,
+                None => return None,
+            })
+            .clone(),
+            Expr::Const(offset),
+        ),
         rest,
     ))
 }

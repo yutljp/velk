@@ -139,7 +139,9 @@ pub(super) fn array_access_as(addr: &Expr, width: u8, view: View, ctx: &Ctx<'_>)
         other if span == 1 => other,
         _ => return None,
     };
-    let name = global_pointer(&Expr::Const(base), view, ctx)?;
+    let Some(name) = global_pointer(&Expr::Const(base), view, ctx) else {
+        return None;
+    };
     Some(format!(
         "{}[{}]",
         name,
@@ -177,7 +179,9 @@ pub(super) fn flat_array_access_as(
             other => terms.push(other),
         }
     }
-    let base = base?;
+    let Some(base) = base else {
+        return None;
+    };
     if terms.len() < 2 {
         return None;
     }
@@ -217,16 +221,24 @@ pub(super) fn flat_array_access_as(
         };
         (scale % size == 0).then_some((index, scale / size))
     };
-    let parts: Vec<(Expr, u64)> = terms.into_iter().map(scaled).collect::<Option<_>>()?;
-    let name = global_pointer(&Expr::Const(base), view, ctx)?;
-    let index = parts
+    let parts: Vec<(Expr, u64)> = match terms.into_iter().map(scaled).collect::<Option<_>>() {
+        Some(value) => value,
+        None => return None,
+    };
+    let Some(name) = global_pointer(&Expr::Const(base), view, ctx) else {
+        return None;
+    };
+    let Some(index) = parts
         .iter()
         .rev()
         .map(|(index, step)| match step {
             1 => index.clone(),
             step => Expr::bin(BinOp::Mul, index.clone(), Expr::Const(*step)),
         })
-        .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))?;
+        .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))
+    else {
+        return None;
+    };
     Some(format!(
         "{}[{}]",
         name,
@@ -355,8 +367,12 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
     if let Some((name, element, index)) = element_index(addr, ctx)
         && element == u64::from(width)
     {
-        let (_, _, _, _, base) = element_terms(addr, ctx)?;
-        let ty = pointer_target(base, ctx)?;
+        let Some((_, _, _, _, base)) = element_terms(addr, ctx) else {
+            return None;
+        };
+        let Some(ty) = pointer_target(base, ctx) else {
+            return None;
+        };
         let text = match index {
             Expr::Const(0) => format!("*{name}"),
             index => format!(
@@ -372,12 +388,18 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
     {
         return place.scalar(u64::from(width));
     }
-    let (base, offset) = member_address(addr)?;
-    let pointee = pointee_of(&Expr::reg(base, 64), ctx)?;
+    let Some((base, offset)) = member_address(addr) else {
+        return None;
+    };
+    let Some(pointee) = pointee_of(&Expr::reg(base, 64), ctx) else {
+        return None;
+    };
     if ctx.arrays.contains_key(&pointee) {
         return None;
     }
-    let member = ctx.members.get(&(pointee, offset))?;
+    let Some(member) = ctx.members.get(&(pointee, offset)) else {
+        return None;
+    };
     if member.width != u64::from(width) {
         return None;
     }
@@ -536,16 +558,30 @@ fn size_of(ty: &CType, ctx: &Ctx<'_>) -> Option<u64> {
 /// a local the frame holds it in.
 pub(crate) fn scalar_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64)> {
     match expr {
-        Expr::Reg { index, width: 64 } => Some((
-            ctx.register(*index, 64),
-            size_of(&pointer_target(expr, ctx)?, ctx)?,
-        )),
+        Expr::Reg { index, width: 64 } => {
+            let name = ctx.register(*index, 64);
+            let Some(target) = pointer_target(expr, ctx) else {
+                return None;
+            };
+            let Some(size) = size_of(&target, ctx) else {
+                return None;
+            };
+            Some((name, size))
+        }
         Expr::Load { addr, width: 8, .. } => {
-            let size = size_of(&pointer_target(expr, ctx)?, ctx)?;
+            let Some(target) = pointer_target(expr, ctx) else {
+                return None;
+            };
+            let Some(size) = size_of(&target, ctx) else {
+                return None;
+            };
             if let Some(name) = ctx.slots.get(&render_expr(addr, ctx)) {
                 return Some((name.clone(), size));
             }
-            let text = member_access(addr, 8, ctx)?.text;
+            let Some(place) = member_access(addr, 8, ctx) else {
+                return None;
+            };
+            let text = place.text;
             let text = if text.starts_with('*') {
                 format!("({text})")
             } else {
@@ -609,7 +645,9 @@ fn element_terms<'e>(addr: &'e Expr, ctx: &Ctx<'_>) -> Option<(String, u64, Expr
         .enumerate()
         .filter(|(_, (_, negative))| !negative)
         .filter_map(|(at, (term, _))| Some((at, scalar_pointer(term, ctx)?)));
-    let (base_at, (base, size)) = bases.next()?;
+    let Some((base_at, (base, size))) = bases.next() else {
+        return None;
+    };
     if bases.next().is_some() {
         return None;
     }
@@ -659,7 +697,9 @@ fn element_terms<'e>(addr: &'e Expr, ctx: &Ctx<'_>) -> Option<(String, u64, Expr
             }
         }
     }
-    let size_signed = i64::try_from(size).ok()?;
+    let Some(size_signed) = i64::try_from(size).ok() else {
+        return None;
+    };
     let offset = (constant as i64).rem_euclid(size_signed) as u64;
     let steps = (constant as i64).div_euclid(size_signed);
     let index = match (index, steps) {

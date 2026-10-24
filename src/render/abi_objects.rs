@@ -36,7 +36,9 @@ pub(super) fn prepare(ir: &mut FunctionIr, objects: &[Object]) -> Option<Vec<Bin
         return Some(Vec::new());
     }
     let mut prepared = ir.clone();
-    let bindings = prepare_inner(&mut prepared, objects)?;
+    let Some(bindings) = prepare_inner(&mut prepared, objects) else {
+        return None;
+    };
     *ir = prepared;
     Some(bindings)
 }
@@ -58,7 +60,9 @@ fn prepare_inner(ir: &mut FunctionIr, objects: &[Object]) -> Option<Vec<Binding>
             return None;
         }
         if let Source::Stack(offset) = object.source {
-            let end = offset.checked_add(object.size as i64)?;
+            let Some(end) = offset.checked_add(object.size as i64) else {
+                return None;
+            };
             if objects[..index].iter().any(|other| match other.source {
                 Source::Stack(start) => {
                     start < end && offset < start.saturating_add(other.size as i64)
@@ -74,8 +78,12 @@ fn prepare_inner(ir: &mut FunctionIr, objects: &[Object]) -> Option<Vec<Binding>
             entry.insert(*variable, Origin::Unknown);
         }
     }
-    let entries = block_entries(ir, &entry)?;
-    initialized_objects(ir, objects, &entries, &entry)?;
+    let Some(entries) = block_entries(ir, &entry) else {
+        return None;
+    };
+    let Some(_) = initialized_objects(ir, objects, &entries, &entry) else {
+        return None;
+    };
     let mut used: BTreeSet<u16> = ir.params.iter().map(|param| param.index).collect();
     used.extend(ir.variable_registers.keys());
     used.extend(ir.variable_registers.values());
@@ -95,7 +103,10 @@ fn prepare_inner(ir: &mut FunctionIr, objects: &[Object]) -> Option<Vec<Binding>
         .max(crate::ir::VARIABLE_BASE);
     let mut bindings = Vec::new();
     for object in objects {
-        next = next.checked_add(1)?;
+        next = match next.checked_add(1) {
+            Some(value) => value,
+            None => return None,
+        };
         let base = format!("{}_address", object.name);
         let mut name = base.clone();
         let mut suffix = 1;
@@ -114,7 +125,9 @@ fn prepare_inner(ir: &mut FunctionIr, objects: &[Object]) -> Option<Vec<Binding>
         let mut state = entries[index].clone().unwrap_or_else(|| entry.clone());
         let mut stmts = Vec::new();
         for mut stmt in std::mem::take(&mut block.stmts) {
-            let remove = rewrite_statement(&mut stmt, &state, sp, objects, &bindings)?;
+            let Some(remove) = rewrite_statement(&mut stmt, &state, sp, objects, &bindings) else {
+                return None;
+            };
             transfer(&stmt, &mut state);
             if !remove {
                 stmts.push(stmt);
@@ -140,7 +153,9 @@ fn block_entries(ir: &FunctionIr, entry: &State) -> Option<Vec<Option<State>>> {
     entries[0] = Some(entry.clone());
     let mut pending = VecDeque::from([0]);
     while let Some(index) = pending.pop_front() {
-        let mut state = entries[index].clone()?;
+        let Some(mut state) = entries[index].clone() else {
+            return None;
+        };
         for stmt in &ir.blocks[index].stmts {
             if matches!(
                 stmt,
@@ -264,11 +279,17 @@ fn rewrite_statement(
                 }
                 return Some(true);
             }
-            rewrite_value(value, state, sp, objects, bindings)?;
+            let Some(_) = rewrite_value(value, state, sp, objects, bindings) else {
+                return None;
+            };
         }
         Stmt::Store { addr, value, width } => {
-            rewrite_address(addr, *width, state, sp, objects, bindings)?;
-            rewrite_value(value, state, sp, objects, bindings)?;
+            let Some(_) = rewrite_address(addr, *width, state, sp, objects, bindings) else {
+                return None;
+            };
+            let Some(_) = rewrite_value(value, state, sp, objects, bindings) else {
+                return None;
+            };
         }
         Stmt::Ret { value } => {
             if let Some(Origin::Object(index, 0)) = origin(value, state)
@@ -276,7 +297,9 @@ fn rewrite_statement(
             {
                 *value = Expr::Const(0);
             } else {
-                rewrite_value(value, state, sp, objects, bindings)?;
+                let Some(_) = rewrite_value(value, state, sp, objects, bindings) else {
+                    return None;
+                };
             }
         }
         Stmt::Call { .. }
@@ -285,7 +308,9 @@ fn rewrite_statement(
         | Stmt::Br { target: None } => return None,
         _ => {
             for value in stmt.operands_mut() {
-                rewrite_value(value, state, sp, objects, bindings)?;
+                let Some(_) = rewrite_value(value, state, sp, objects, bindings) else {
+                    return None;
+                };
             }
         }
     }
@@ -308,7 +333,9 @@ fn rewrite_value(
         return None;
     }
     for child in crate::ir::visit::children_mut(expr) {
-        rewrite_value(child, state, sp, objects, bindings)?;
+        let Some(_) = rewrite_value(child, state, sp, objects, bindings) else {
+            return None;
+        };
     }
     Some(())
 }
@@ -321,16 +348,25 @@ fn rewrite_address(
     objects: &[Object],
     bindings: &[Binding],
 ) -> Option<()> {
-    if let Some((index, offset)) = object_access(expr, width, state, objects)? {
+    if let Some((index, offset)) = match object_access(expr, width, state, objects) {
+        Some(value) => value,
+        None => return None,
+    } {
         *expr = address_at(bindings[index].register, offset as i64);
         return Some(());
     }
     match origin(expr, state) {
         Some(Origin::Stack(offset)) => {
-            let Origin::Stack(frame) = state.get(&sp)? else {
+            let Some(Origin::Stack(frame)) = state.get(&sp) else {
                 return None;
             };
-            *expr = address_at(sp, offset.checked_sub(*frame)?);
+            *expr = address_at(
+                sp,
+                match offset.checked_sub(*frame) {
+                    Some(value) => value,
+                    None => return None,
+                },
+            );
             Some(())
         }
         None => rewrite_value(expr, state, sp, objects, bindings),
@@ -359,13 +395,18 @@ fn initialized_objects(
     entry: &State,
 ) -> Option<()> {
     for object in objects {
-        let bits = object.size.checked_mul(8)?;
+        let Some(bits) = object.size.checked_mul(8) else {
+            return None;
+        };
         let mut end = 0;
         for &(offset, count) in &object.defined_bits {
             if count == 0 || offset < end {
                 return None;
             }
-            end = offset.checked_add(count)?;
+            end = match offset.checked_add(count) {
+                Some(value) => value,
+                None => return None,
+            };
             if end > bits {
                 return None;
             }
@@ -376,10 +417,16 @@ fn initialized_objects(
     entries[0] = Some(empty.clone());
     let mut pending = VecDeque::from([0]);
     while let Some(index) = pending.pop_front() {
-        let mut written = entries[index].clone()?;
-        let mut state = origins[index].clone()?;
+        let Some(mut written) = entries[index].clone() else {
+            return None;
+        };
+        let Some(mut state) = origins[index].clone() else {
+            return None;
+        };
         for stmt in &ir.blocks[index].stmts {
-            record_store(stmt, &state, objects, &mut written)?;
+            let Some(_) = record_store(stmt, &state, objects, &mut written) else {
+                return None;
+            };
             transfer(stmt, &mut state);
         }
         for successor in crate::ir::cfg::successors(ir, index) {
@@ -404,7 +451,9 @@ fn initialized_objects(
         let mut written = entries[index].clone().unwrap_or_else(|| empty.clone());
         for stmt in &block.stmts {
             for value in stmt.operands() {
-                initialized_loads(value, &state, objects, &written)?;
+                let Some(_) = initialized_loads(value, &state, objects, &written) else {
+                    return None;
+                };
             }
             if matches!(stmt, Stmt::Ret { .. }) {
                 for (index, object) in objects
@@ -421,7 +470,9 @@ fn initialized_objects(
                     }
                 }
             }
-            record_store(stmt, &state, objects, &mut written)?;
+            let Some(_) = record_store(stmt, &state, objects, &mut written) else {
+                return None;
+            };
             transfer(stmt, &mut state);
         }
     }
@@ -435,9 +486,14 @@ fn initialized_loads(
     written: &Written,
 ) -> Option<()> {
     if let Expr::Load { addr, width, .. } = expr
-        && let Some((index, offset)) = object_access(addr, *width, state, objects)?
+        && let Some((index, offset)) = (match object_access(addr, *width, state, objects) {
+            Some(value) => value,
+            None => return None,
+        })
     {
-        let offset = offset.checked_mul(8)?;
+        let Some(offset) = offset.checked_mul(8) else {
+            return None;
+        };
         let count = u64::from(*width) * 8;
         let object = &objects[index];
         let ranges = if object.output {
@@ -450,7 +506,9 @@ fn initialized_loads(
         }
     }
     for child in crate::ir::visit::children(expr) {
-        initialized_loads(child, state, objects, written)?;
+        let Some(_) = initialized_loads(child, state, objects, written) else {
+            return None;
+        };
     }
     Some(())
 }
@@ -462,11 +520,18 @@ fn record_store(
     written: &mut Written,
 ) -> Option<()> {
     if let Stmt::Store { addr, width, .. } = stmt
-        && let Some((index, offset)) = object_access(addr, *width, state, objects)?
+        && let Some((index, offset)) = (match object_access(addr, *width, state, objects) {
+            Some(value) => value,
+            None => return None,
+        })
         && objects[index].output
     {
-        let start = offset.checked_mul(8)?;
-        let end = start.checked_add(u64::from(*width) * 8)?;
+        let Some(start) = offset.checked_mul(8) else {
+            return None;
+        };
+        let Some(end) = start.checked_add(u64::from(*width) * 8) else {
+            return None;
+        };
         let ranges = &mut written[index];
         ranges.push((start, end - start));
         crate::ir::abi::merge_ranges(ranges);
@@ -514,17 +579,29 @@ fn object_access(
     let (index, offset) = match origin(expr, state) {
         Some(Origin::Object(index, offset)) => (index, offset),
         Some(Origin::Stack(offset)) => {
-            let end = offset.checked_add(i64::from(width))?;
+            let Some(end) = offset.checked_add(i64::from(width)) else {
+                return None;
+            };
             let mut found = None;
             for (index, object) in objects.iter().enumerate() {
                 if let Source::Stack(start) = object.source
                     && start < end
-                    && offset < start.checked_add(object.size as i64)?
+                    && offset
+                        < (match start.checked_add(object.size as i64) {
+                            Some(value) => value,
+                            None => return None,
+                        })
                 {
                     if found.is_some() {
                         return None;
                     }
-                    found = Some((index, offset.checked_sub(start)?));
+                    found = Some((
+                        index,
+                        (match offset.checked_sub(start) {
+                            Some(value) => value,
+                            None => return None,
+                        }),
+                    ));
                 }
             }
             let Some(found) = found else {
@@ -537,7 +614,10 @@ fn object_access(
     };
     if !matches!(width, 1 | 2 | 4 | 8)
         || offset < 0
-        || (offset as u64).checked_add(u64::from(width))? > objects[index].size
+        || (match (offset as u64).checked_add(u64::from(width)) {
+            Some(value) => value,
+            None => return None,
+        }) > objects[index].size
     {
         return None;
     }

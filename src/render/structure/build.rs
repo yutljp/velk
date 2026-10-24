@@ -26,7 +26,9 @@ impl Structurer<'_> {
     fn bottom_latch(&self, index: usize, to: usize) -> Option<(usize, Cond, Expr, Expr)> {
         let mut latch: Option<(usize, Cond, Expr, Expr)> = None;
         for position in index + 1..to {
-            let block = self.blocks.get(position)?;
+            let Some(block) = self.blocks.get(position) else {
+                return None;
+            };
             match block.stmts.last() {
                 Some(Stmt::Brif {
                     cond,
@@ -43,7 +45,9 @@ impl Structurer<'_> {
                 return None;
             }
         }
-        let (position, cond, lhs, rhs) = latch?;
+        let Some((position, cond, lhs, rhs)) = latch else {
+            return None;
+        };
         let region = index..=position;
         for (other, block) in self.blocks.iter().enumerate() {
             if region.contains(&other) {
@@ -61,9 +65,14 @@ impl Structurer<'_> {
     /// The first later block that closes a loop with an unconditional branch
     /// back to this block.
     fn back_edge_latch(&self, index: usize, to: usize) -> Option<usize> {
-        let header = self.blocks.get(index)?.start;
+        let Some(block) = self.blocks.get(index) else {
+            return None;
+        };
+        let header = block.start;
         for position in index + 1..to {
-            let block = self.blocks.get(position)?;
+            let Some(block) = self.blocks.get(position) else {
+                return None;
+            };
             if let Some(Stmt::Br {
                 target: Some(target),
             }) = block.stmts.last()
@@ -85,7 +94,9 @@ impl Structurer<'_> {
     fn latch(&self, from: usize, to: usize, header: u64) -> Option<usize> {
         let mut latch = None;
         for position in from..to {
-            let block = self.blocks.get(position)?;
+            let Some(block) = self.blocks.get(position) else {
+                return None;
+            };
             for stmt in &block.stmts {
                 if let Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. } = stmt
                     && *target != header
@@ -105,7 +116,10 @@ impl Structurer<'_> {
                 Some(Stmt::Br {
                     target: Some(target),
                 }) => {
-                    if self.target(*target)? >= to {
+                    let Some(target) = self.target(*target) else {
+                        return None;
+                    };
+                    if target >= to {
                         return None;
                     }
                 }
@@ -120,7 +134,9 @@ impl Structurer<'_> {
     /// fallthrough into the epilogue, so a jump there can be inlined as an
     /// early return instead of a `goto`.
     fn return_block(&self, index: usize) -> Option<Vec<Stmt>> {
-        let block = self.blocks.get(index)?;
+        let Some(block) = self.blocks.get(index) else {
+            return None;
+        };
         if block.stmts.is_empty() {
             return None;
         }
@@ -138,7 +154,12 @@ impl Structurer<'_> {
             else {
                 return None;
             };
-            let rest = self.blocks.get(self.target(target)?)?;
+            let Some(target) = self.target(target) else {
+                return None;
+            };
+            let Some(rest) = self.blocks.get(target) else {
+                return None;
+            };
             if !matches!(rest.stmts.last(), Some(Stmt::Ret { .. })) {
                 return None;
             }
@@ -156,7 +177,9 @@ impl Structurer<'_> {
             return Some(block.stmts.clone());
         }
         // Falling through into the epilogue counts too.
-        let next = self.blocks.get(index + 1)?;
+        let Some(next) = self.blocks.get(index + 1) else {
+            return None;
+        };
         if !matches!(next.stmts.last(), Some(Stmt::Ret { .. })) {
             return None;
         }

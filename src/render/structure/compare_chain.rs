@@ -95,7 +95,11 @@ fn incoming_interval(
     lo: i64,
     hi: i64,
 ) -> Option<(i64, i64)> {
-    let destination_start = ir.blocks.get(destination)?.start;
+    let destination_start = (match ir.blocks.get(destination) {
+        Some(value) => value,
+        None => return None,
+    })
+    .start;
     if predecessors.get(&destination_start).copied().unwrap_or(0) != 1 {
         return None;
     }
@@ -242,11 +246,19 @@ impl ChainWalk<'_> {
             if !self.blocks.contains(&at) {
                 return Some(at);
             }
-            let (cond, k, target) = self.compare_at(at)?;
-            at = if holds(cond, value, k, bits)? {
+            let Some((cond, k, target)) = self.compare_at(at) else {
+                return None;
+            };
+            at = if match holds(cond, value, k, bits) {
+                Some(value) => value,
+                None => return None,
+            } {
                 target
             } else {
-                self.next_start(at)?
+                match self.next_start(at) {
+                    Some(value) => value,
+                    None => return None,
+                }
             };
         }
         None
@@ -258,7 +270,9 @@ impl ChainWalk<'_> {
     /// on each side or at the extremes, to the default. Without a default from
     /// the walk, it is where the values outside the range go.
     fn verified_default(&self, head: u64, lo: i64, hi: i64) -> Option<u64> {
-        let bits = self.width(head)?;
+        let Some(bits) = self.width(head) else {
+            return None;
+        };
         if self.blocks.iter().any(|at| self.width(*at) != Some(bits)) {
             return None;
         }
@@ -280,7 +294,15 @@ impl ChainWalk<'_> {
         .collect();
         let default = match self.default {
             Some(default) => default,
-            None => self.route(head, *outside.first()?, bits)?,
+            None => {
+                let Some(value) = outside.first() else {
+                    return None;
+                };
+                let Some(default) = self.route(head, *value, bits) else {
+                    return None;
+                };
+                default
+            }
         };
         let in_range = (lo..=hi).all(|value| {
             self.route(head, value, bits)
@@ -428,14 +450,16 @@ fn equality_chain(
     positions: &std::collections::HashMap<u64, usize>,
     predecessors: &std::collections::HashMap<u64, usize>,
 ) -> Option<ChainSwitch> {
-    let Stmt::Brif { lhs, .. } = ir.blocks[head].stmts.last()? else {
+    let Some(Stmt::Brif { lhs, .. }) = ir.blocks[head].stmts.last() else {
         return None;
     };
     let value = normalized(lhs);
     let Expr::Reg { width: 32 | 64, .. } = value else {
         return None;
     };
-    let bits = expr_width(&value)?;
+    let Some(bits) = expr_width(&value) else {
+        return None;
+    };
     let mut at = head;
     let mut blocks = Vec::new();
     let mut cases = std::collections::BTreeMap::new();
@@ -465,18 +489,27 @@ fn equality_chain(
         {
             return None;
         }
-        let fallthrough = ir.blocks.get(at + 1)?.start;
+        let fallthrough = (match ir.blocks.get(at + 1) {
+            Some(value) => value,
+            None => return None,
+        })
+        .start;
         let (case, next) = if *cond == crate::ir::Cond::Eq {
             (*target, fallthrough)
         } else {
             (fallthrough, *target)
         };
-        positions.get(&case)?;
+        let Some(_) = positions.get(&case) else {
+            return None;
+        };
         if cases.insert(*k as i64, case).is_some() {
             return None;
         }
         blocks.push(block.start);
-        at = *positions.get(&next)?;
+        at = *(match positions.get(&next) {
+            Some(value) => value,
+            None => return None,
+        });
     };
     if cases.len() < 2
         || cases.values().any(|target| blocks.contains(target))

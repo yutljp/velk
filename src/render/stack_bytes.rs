@@ -41,7 +41,9 @@ impl Plan {
 /// Normalize proven frame addresses, adding storage only for crossing accesses.
 pub(super) fn prepare(ir: &mut FunctionIr) -> Option<Plan> {
     let mut rewritten = ir.clone();
-    let plan = prepare_inner(&mut rewritten)?;
+    let Some(plan) = prepare_inner(&mut rewritten) else {
+        return None;
+    };
     *ir = rewritten;
     plan
 }
@@ -50,8 +52,12 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
     if ir.blocks.is_empty() || !ir.landing_pads.is_empty() || ir.variadic {
         return None;
     }
-    let start = ir.convention.stack_arguments()?;
-    let limit = start.checked_add(LIMIT as i64)?;
+    let Some(start) = ir.convention.stack_arguments() else {
+        return None;
+    };
+    let Some(limit) = start.checked_add(LIMIT as i64) else {
+        return None;
+    };
     let sp = crate::arch::stack_pointer(ir.isa);
     let frame = Frame { sp, start, limit };
     let mut entry = Origins::from([(sp, Some(0))]);
@@ -60,7 +66,9 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
             entry.insert(variable, None);
         }
     }
-    let entries = origins(ir, &entry)?;
+    let Some(entries) = origins(ir, &entry) else {
+        return None;
+    };
     let mut seeds = Vec::new();
     let mut initialized = [false; LIMIT];
     let mut size = 0;
@@ -68,8 +76,15 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
         if param.size != 8 || !matches!(param.ty, CType::Int { bytes: 8, .. }) {
             return None;
         }
-        let offset = usize::try_from(param.offset.checked_sub(start)?).ok()?;
-        let end = offset.checked_add(8)?;
+        let Some(offset) = param.offset.checked_sub(start) else {
+            return None;
+        };
+        let Ok(offset) = usize::try_from(offset) else {
+            return None;
+        };
+        let Some(end) = offset.checked_add(8) else {
+            return None;
+        };
         if offset % 8 != 0 || end > LIMIT || initialized[offset..end].iter().any(|bit| *bit) {
             return None;
         }
@@ -87,11 +102,12 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
         used.extend(writes);
         used.extend(reads);
     }
-    let register = used
-        .last()
-        .copied()?
-        .max(crate::ir::VARIABLE_BASE)
-        .checked_add(1)?;
+    let Some(register) = used.last().copied() else {
+        return None;
+    };
+    let Some(register) = register.max(crate::ir::VARIABLE_BASE).checked_add(1) else {
+        return None;
+    };
     if register >= crate::ir::VALUE_BASE {
         return None;
     }
@@ -106,7 +122,9 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
     let mut facts = Vec::new();
     let variable_registers = &ir.variable_registers;
     for (block, body) in ir.blocks.iter_mut().enumerate() {
-        let mut state = entries[block].clone()?;
+        let Some(mut state) = entries[block].clone() else {
+            return None;
+        };
         let mut rewritten = Vec::new();
         let mut block_facts = Vec::new();
         for mut stmt in std::mem::take(&mut body.stmts) {
@@ -134,10 +152,21 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
             if !remove {
                 match &mut stmt {
                     Stmt::Store { addr, value, width } => {
-                        rewrite_value(value, &state, frame, &mut plan, &mut accesses)?;
-                        if let Some(offset) =
-                            rewrite_address(addr, *width, &state, frame, &mut plan, &mut accesses)?
-                        {
+                        let Some(_) = rewrite_value(value, &state, frame, &mut plan, &mut accesses)
+                        else {
+                            return None;
+                        };
+                        if let Some(offset) = match rewrite_address(
+                            addr,
+                            *width,
+                            &state,
+                            frame,
+                            &mut plan,
+                            &mut accesses,
+                        ) {
+                            Some(value) => value,
+                            None => return None,
+                        } {
                             accesses.push((offset, *width, true));
                         }
                     }
@@ -147,7 +176,11 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
                     | Stmt::Br { target: None } => return None,
                     _ => {
                         for value in stmt.operands_mut() {
-                            rewrite_value(value, &state, frame, &mut plan, &mut accesses)?;
+                            let Some(_) =
+                                rewrite_value(value, &state, frame, &mut plan, &mut accesses)
+                            else {
+                                return None;
+                            };
                         }
                     }
                 }
@@ -162,7 +195,9 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
         body.stmts = rewritten;
         facts.push(block_facts);
     }
-    initialized_reads(ir, &facts, initialized)?;
+    let Some(_) = initialized_reads(ir, &facts, initialized) else {
+        return None;
+    };
     if !crossing {
         if plan.accesses.is_empty()
             || plan.accesses.iter().any(|&(offset, width)| {
@@ -177,7 +212,9 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
         let root = Origins::from([(plan.register, Some(start))]);
         for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
             for value in stmt.operands_mut() {
-                restore_frame(value, &root, sp)?;
+                let Some(_) = restore_frame(value, &root, sp) else {
+                    return None;
+                };
             }
         }
         return Some(None);
@@ -198,11 +235,19 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
 
 fn restore_frame(expr: &mut Expr, root: &Origins, sp: u16) -> Option<()> {
     if let Some(offset) = origin(expr, root) {
-        *expr = address(sp, offset?);
+        *expr = address(
+            sp,
+            match offset {
+                Some(value) => value,
+                None => return None,
+            },
+        );
         return Some(());
     }
     for child in crate::ir::visit::children_mut(expr) {
-        restore_frame(child, root, sp)?;
+        let Some(_) = restore_frame(child, root, sp) else {
+            return None;
+        };
     }
     Some(())
 }
@@ -290,7 +335,9 @@ pub(super) fn origins(ir: &FunctionIr, entry: &Origins) -> Option<Vec<Option<Ori
     entries[0] = Some(entry.clone());
     let mut pending = VecDeque::from([0]);
     while let Some(block) = pending.pop_front() {
-        let mut state = entries[block].clone()?;
+        let Some(mut state) = entries[block].clone() else {
+            return None;
+        };
         for stmt in &ir.blocks[block].stmts {
             transfer(stmt, &mut state);
         }
@@ -330,7 +377,10 @@ fn rewrite_value(
     facts: &mut Vec<(usize, u8, bool)>,
 ) -> Option<()> {
     if let Expr::Load { addr, width, .. } = expr {
-        if let Some(offset) = rewrite_address(addr, *width, state, frame, plan, facts)? {
+        if let Some(offset) = match rewrite_address(addr, *width, state, frame, plan, facts) {
+            Some(value) => value,
+            None => return None,
+        } {
             facts.push((offset, *width, false));
         }
         return Some(());
@@ -339,7 +389,9 @@ fn rewrite_value(
         return None;
     }
     for child in crate::ir::visit::children_mut(expr) {
-        rewrite_value(child, state, frame, plan, facts)?;
+        let Some(_) = rewrite_value(child, state, frame, plan, facts) else {
+            return None;
+        };
     }
     Some(())
 }
@@ -357,7 +409,9 @@ fn rewrite_address(
             if !matches!(width, 1 | 2 | 4 | 8) {
                 return None;
             }
-            let end = offset.checked_add(i64::from(width))?;
+            let Some(end) = offset.checked_add(i64::from(width)) else {
+                return None;
+            };
             if offset < frame.start {
                 if end > frame.start {
                     return None;
@@ -368,8 +422,16 @@ fn rewrite_address(
             if end > frame.limit {
                 return None;
             }
-            let offset = usize::try_from(offset.checked_sub(frame.start)?).ok()?;
-            plan.size = plan.size.max(offset.checked_add(usize::from(width))?);
+            let Some(offset) = offset.checked_sub(frame.start) else {
+                return None;
+            };
+            let Ok(offset) = usize::try_from(offset) else {
+                return None;
+            };
+            plan.size = plan.size.max(match offset.checked_add(usize::from(width)) {
+                Some(value) => value,
+                None => return None,
+            });
             plan.accesses.insert((offset, width));
             *expr = plan.address(offset);
             Some(Some(offset))
@@ -377,7 +439,9 @@ fn rewrite_address(
         Some(None) => None,
         None => {
             // A non-frame address may itself be loaded from the incoming frame.
-            rewrite_value(expr, state, frame, plan, facts)?;
+            let Some(_) = rewrite_value(expr, state, frame, plan, facts) else {
+                return None;
+            };
             Some(None)
         }
     }
@@ -404,7 +468,9 @@ fn initialized_reads(
     entries[0] = Some(seeded);
     let mut pending = VecDeque::from([0]);
     while let Some(block) = pending.pop_front() {
-        let mut written = entries[block]?;
+        let Some(mut written) = entries[block] else {
+            return None;
+        };
         for &(offset, width, store) in &facts[block] {
             if store {
                 written[offset..offset + usize::from(width)].fill(true);
@@ -422,7 +488,9 @@ fn initialized_reads(
         }
     }
     for (block, accesses) in facts.iter().enumerate() {
-        let mut written = entries[block]?;
+        let Some(mut written) = entries[block] else {
+            return None;
+        };
         for &(offset, width, store) in accesses {
             let bytes = &mut written[offset..offset + usize::from(width)];
             if store {

@@ -636,7 +636,9 @@ fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
     if let Stmt::Ret { value } = next {
         return calls::returned(call, value, ctx).map(|text| text + &via_comment(call, ctx));
     }
-    let result = calls::scalar_fusion(call, ctx)?;
+    let Some(result) = calls::scalar_fusion(call, ctx) else {
+        return None;
+    };
     if result.width != 64
         || ctx.floats.contains_key(&result.index)
         || ctx
@@ -646,7 +648,9 @@ fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
     {
         return None;
     }
-    let call_text = calls::captured(call, ctx)?;
+    let Some(call_text) = calls::captured(call, ctx) else {
+        return None;
+    };
     let comment = via_comment(call, ctx);
     let takes = |value: &Expr| *value == Expr::reg(result.index, result.width);
     match next {
@@ -657,7 +661,9 @@ fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
             && takes(value) =>
         {
             let stored = render_stmt(next, ctx);
-            let (target, _) = stored.split_once(" = ")?;
+            let Some((target, _)) = stored.split_once(" = ") else {
+                return None;
+            };
             Some(format!("{target} = {call_text};{comment}"))
         }
         Stmt::Assign { value, dest }
@@ -667,7 +673,9 @@ fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
                 && takes(value) =>
         {
             let assigned = render_stmt(next, ctx);
-            let (target, _) = assigned.split_once(" = ")?;
+            let Some((target, _)) = assigned.split_once(" = ") else {
+                return None;
+            };
             Some(format!("{target} = {call_text};{comment}"))
         }
         _ => None,

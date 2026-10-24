@@ -166,7 +166,12 @@ pub(super) fn narrow_write(index: u16, width: u8, value: String, ctx: &Ctx<'_>) 
 }
 
 fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
-    let result = ctx.abi?.result.as_ref()?;
+    let Some(abi) = ctx.abi else {
+        return None;
+    };
+    let Some(result) = abi.result.as_ref() else {
+        return None;
+    };
     if result.indirect {
         return Some(format!("return {};", result.name));
     }

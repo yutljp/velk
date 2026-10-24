@@ -189,7 +189,9 @@ fn return_type<'a>(call: &Stmt, ctx: &'a Ctx<'_>) -> Option<&'a crate::ir::CType
 }
 
 pub(super) fn scalar_fusion(call: &Stmt, ctx: &Ctx<'_>) -> Option<crate::ir::RegRef> {
-    let output = scalar_output(call, ctx)?;
+    let Some(output) = scalar_output(call, ctx) else {
+        return None;
+    };
     if !matches!(output.dest.width, 32 | 64)
         || ctx
             .declared
@@ -422,11 +424,15 @@ fn commit(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<'_>) -> 
 }
 
 pub(super) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
-    let dest = scalar_fusion(call, ctx)?;
+    let Some(dest) = scalar_fusion(call, ctx) else {
+        return None;
+    };
     if ctx.floats.contains_key(&dest.index) {
         return None;
     }
-    let output = scalar_output(call, ctx)?;
+    let Some(output) = scalar_output(call, ctx) else {
+        return None;
+    };
     let value = expression(call, ctx);
     let ty = ValueType::returned(call, ctx);
     if let Some(declared) = ctx.declared.get(&dest.index)
@@ -452,7 +458,9 @@ pub(super) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
 }
 
 pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
-    let dest = scalar_fusion(call, ctx)?;
+    let Some(dest) = scalar_fusion(call, ctx) else {
+        return None;
+    };
     if *value != Expr::reg(dest.index, dest.width) || ctx.void_return || ctx.float_return.is_some()
     {
         return None;
@@ -461,7 +469,10 @@ pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<Strin
         && let Some(pointer) = &ctx.ret_pointer
         && ctx.pointer_types.get(&dest.index) == Some(pointer)
     {
-        return Some(format!("return {};", captured(call, ctx)?));
+        let Some(value) = captured(call, ctx) else {
+            return None;
+        };
+        return Some(format!("return {value};"));
     }
     if let (Some(returned), Some(stored)) = (ctx.returned, ctx.declared.get(&dest.index))
         && returned.integer
@@ -493,8 +504,12 @@ pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<Strin
     }
     let text = super::returned(value, ctx);
     let name = ctx.register(dest.index, dest.width);
-    let at = only_word(&text, &name)?;
-    let value = captured(call, ctx)?;
+    let Some(at) = only_word(&text, &name) else {
+        return None;
+    };
+    let Some(value) = captured(call, ctx) else {
+        return None;
+    };
     Some(format!(
         "return {}({value}){};",
         &text[..at],
@@ -733,12 +748,16 @@ pub(super) fn call_in_reader(
     if !matches!(call, Stmt::Call { args: Some(_), .. }) {
         return None;
     }
-    let result = scalar_fusion(call, ctx)?;
+    let Some(result) = scalar_fusion(call, ctx) else {
+        return None;
+    };
     let dest = result.index;
     if dest < VARIABLE_BASE || !ctx.read_once.contains(&dest) {
         return None;
     }
-    let declared = ctx.declared.get(&dest)?;
+    let Some(declared) = ctx.declared.get(&dest) else {
+        return None;
+    };
     if !declared.integer {
         return None;
     }
@@ -759,7 +778,9 @@ pub(super) fn call_in_reader(
             args: Some(args),
             ..
         }) => {
-            let at = args.iter().position(whole)?;
+            let Some(at) = args.iter().position(whole) else {
+                return None;
+            };
             let others: Vec<&Expr> = through
                 .iter()
                 .chain(
@@ -787,18 +808,24 @@ pub(super) fn call_in_reader(
     if !super::via_comment(call, ctx).is_empty() {
         return None;
     }
-    let text = captured(call, ctx)?;
+    let Some(text) = captured(call, ctx) else {
+        return None;
+    };
     if condition && text.len() > CONDITION_CALL {
         return None;
     }
     let mut rendered = String::new();
     super::render_node(next, depth, &mut rendered, ctx);
-    let (first, rest) = rendered.split_once('\n')?;
+    let Some((first, rest)) = rendered.split_once('\n') else {
+        return None;
+    };
     if !condition && !rest.is_empty() {
         return None;
     }
     let name = ctx.register(dest, 64);
-    let at = only_word(first, &name)?;
+    let Some(at) = only_word(first, &name) else {
+        return None;
+    };
     let text = if text.starts_with('(') {
         format!("({text})")
     } else {
@@ -817,7 +844,9 @@ pub(super) fn only_word(line: &str, word: &str) -> Option<usize> {
     let mut found = line.match_indices(word).filter(|(at, _)| {
         !line[..*at].ends_with(part) && !line[at + word.len()..].starts_with(part)
     });
-    let (at, _) = found.next()?;
+    let Some((at, _)) = found.next() else {
+        return None;
+    };
     found.next().is_none().then_some(at)
 }
 

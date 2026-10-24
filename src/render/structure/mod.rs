@@ -196,7 +196,9 @@ pub(super) fn case_falls_through(nodes: &[Node]) -> bool {
 }
 
 fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
-    let mut nodes = dominance::structure(ir)?;
+    let Some(mut nodes) = dominance::structure(ir) else {
+        return None;
+    };
     // Code the entry does not reach keeps its label, which names where it starts.
     let entries: std::collections::HashSet<u64> = dominance::entries(ir).into_iter().collect();
     tidy(&mut nodes, entries.clone());

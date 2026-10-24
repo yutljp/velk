@@ -196,9 +196,13 @@ fn join(
     index: &HashMap<u64, usize>,
     block: usize,
 ) -> Option<(Stmt, usize)> {
-    let (first, lhs, rhs, taken) = test(ir.blocks[block].stmts.last())?;
+    let Some((first, lhs, rhs, taken)) = test(ir.blocks[block].stmts.last()) else {
+        return None;
+    };
     let starts = |position: usize| ir.blocks.get(position).map(|block| block.start);
-    let fallthrough = starts(block + 1)?;
+    let Some(fallthrough) = starts(block + 1) else {
+        return None;
+    };
     let position = |start: u64| index.get(&start).copied();
     let same = |one: u64, other: u64| same_place(ir, index, one, other);
     let first_test = || (first, lhs.clone(), rhs.clone());
