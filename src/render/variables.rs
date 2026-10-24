@@ -232,6 +232,123 @@ pub(crate) fn variable_types(
     types
 }
 
+/// Gives each field of a recovered structure that only ever holds pointers
+/// a pointer type: every eight-byte value stored there and every variable
+/// loaded from there is a pointer under `types`, so neither needs a
+/// conversion. Fields holding pointers of more than one type are `void *`.
+pub(crate) fn pointer_fields(ir: &mut FunctionIr, types: &BTreeMap<u16, CType>) {
+    let type_of = |index: u16| {
+        types.get(&index).cloned().or_else(|| {
+            ir.params
+                .iter()
+                .find(|param| param.index == index)
+                .map(|param| param.ty.clone())
+        })
+    };
+    // The structure and offset an address names a field at.
+    let field = |addr: &Expr| -> Option<(String, u64)> {
+        let (index, offset) = match addr {
+            Expr::Reg { index, width: 64 } => (*index, 0),
+            Expr::Bin {
+                op: BinOp::Add,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Reg { index, width: 64 }, Expr::Const(offset)) => (*index, *offset),
+                _ => return None,
+            },
+            _ => return None,
+        };
+        let Some(ty) = type_of(index) else {
+            return None;
+        };
+        ty.pointee_struct().map(|name| (name.to_owned(), offset))
+    };
+    // What each field holds: the pointer types seen, or None once anything
+    // else is.
+    let mut held: HashMap<(String, u64), Option<Vec<CType>>> = HashMap::new();
+    let mut note = |key: (String, u64), ty: Option<CType>| {
+        let entry = held.entry(key).or_insert_with(|| Some(Vec::new()));
+        match (entry.as_mut(), ty) {
+            (Some(seen), Some(ty)) if ty.is_pointer() => seen.push(ty),
+            _ => *entry = None,
+        }
+    };
+    // Loads of each field, and those a variable takes whole.
+    let mut loads: HashMap<(String, u64), usize> = HashMap::new();
+    let mut whole: HashMap<(String, u64), usize> = HashMap::new();
+    fn count_loads(
+        expr: &Expr,
+        field: &dyn Fn(&Expr) -> Option<(String, u64)>,
+        loads: &mut HashMap<(String, u64), usize>,
+    ) {
+        if let Expr::Load { addr, .. } = expr
+            && let Some(key) = field(addr)
+        {
+            *loads.entry(key).or_default() += 1;
+        }
+        for child in crate::ir::visit::children(expr) {
+            count_loads(child, field, loads);
+        }
+    }
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        for value in stmt.operands() {
+            count_loads(value, &field, &mut loads);
+        }
+        match stmt {
+            Stmt::Store { addr, value, width } => {
+                if let Some(key) = field(addr) {
+                    match (width, value) {
+                        (8, Expr::Reg { index, width: 64 }) => note(key, type_of(*index)),
+                        // A null pointer is any pointer.
+                        (8, Expr::Const(0)) => {}
+                        _ => note(key, None),
+                    }
+                }
+            }
+            Stmt::Assign { dest, value } => {
+                if let Expr::Load { addr, width: 8, .. } = value
+                    && dest.width == 64
+                    && let Some(key) = field(addr)
+                {
+                    note(key.clone(), type_of(dest.index));
+                    *whole.entry(key).or_default() += 1;
+                }
+            }
+            Stmt::Machine { inputs, .. } => {
+                if let Some(key) = inputs.first().and_then(field) {
+                    note(key, None);
+                }
+            }
+            _ => {}
+        }
+    }
+    // A field read any other way holds a value used otherwise.
+    for (key, count) in loads {
+        if whole.get(&key).copied().unwrap_or(0) < count {
+            note(key, None);
+        }
+    }
+    for structure in &mut ir.structures {
+        for (offset, ty) in &mut structure.fields {
+            if ty.integer().map(|(bits, _)| bits) != Some(64) {
+                continue;
+            }
+            let Some(Some(seen)) = held.get(&(structure.name.clone(), *offset)) else {
+                continue;
+            };
+            let Some(first) = seen.first() else {
+                continue;
+            };
+            *ty = if seen.iter().all(|other| other == first) {
+                first.clone()
+            } else {
+                CType::pointer_to(CType::Void)
+            };
+        }
+    }
+}
+
 /// Reads of a value rather than of the memory it addresses.
 fn integer_reads(expr: &Expr, reads: &mut HashSet<u16>) {
     match expr {

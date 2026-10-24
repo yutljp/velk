@@ -2592,3 +2592,60 @@ fn an_indexed_sum_from_a_local_address_stays_an_integer() {
     let text = render(&ir, &[], &Symbols::default(), &[]);
     assert!(!text.contains("(local_0 + "), "{text}");
 }
+
+#[test]
+fn a_structure_field_that_only_holds_pointers_is_a_pointer() {
+    let held = VARIABLE_BASE;
+    let field = Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8));
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![
+            Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: Expr::Const(0),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: field.clone(),
+                value: Expr::reg(6, 64),
+                width: 8,
+            },
+            assign(held, load(field, 8)),
+            Stmt::Store {
+                addr: Expr::reg(held, 64),
+                value: Expr::Const(0),
+                width: 1,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ],
+    );
+    let name = "sub_0_a0".to_owned();
+    ir.params = vec![
+        Param {
+            index: 7,
+            name: "a0".to_owned(),
+            ty: CType::pointer_to(CType::Named(format!("struct {name}"))),
+        },
+        Param {
+            index: 6,
+            name: "a1".to_owned(),
+            ty: CType::pointer_to(CType::int(1, false)),
+        },
+    ];
+    ir.structures = vec![crate::ir::Structure {
+        name,
+        fields: vec![(0, CType::I64), (8, CType::I64)],
+        size: None,
+        elements: Vec::new(),
+    }];
+    let text = rendered(&ir);
+    for line in [
+        "int64_t field_0x0; uint8_t *field_0x8;",
+        "    a0->field_0x8 = a1;\n",
+        "    v1 = a0->field_0x8;\n",
+    ] {
+        assert!(text.contains(line), "{line:?} in {text}");
+    }
+}

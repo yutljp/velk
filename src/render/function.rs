@@ -70,6 +70,12 @@ fn render_unmerged(
         None
     };
     super::frame_registers::rebase(&mut folded);
+    let types = variables::variable_types(
+        &folded,
+        &narrow_registers(&folded),
+        float_return(&folded.ret_type),
+    );
+    variables::pointer_fields(&mut folded, &types);
     let ir = &folded;
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
@@ -1266,7 +1272,10 @@ pub(crate) fn structure_definition(structure: &crate::ir::Structure) -> String {
         if *offset > end {
             members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", offset - end));
         }
-        members.push(format!("{ty} field_0x{offset:x};"));
+        members.push(format!(
+            "{};",
+            declaration(ty, &format!("field_0x{offset:x}"))
+        ));
         end = offset.saturating_add(match ty {
             CType::Pointer(_) => 8,
             _ => CType::pointer_to(ty.clone())
