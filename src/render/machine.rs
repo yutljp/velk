@@ -1,11 +1,43 @@
 use super::expr::{Ctx, render_expr};
 use crate::ir::{Expr, MachineInstruction, RegRef};
 
+fn expected_in_output(inputs: &[Expr], outputs: &[RegRef], width: u8, ctx: &Ctx<'_>) -> bool {
+    let [result] = outputs else {
+        return false;
+    };
+    let Some(declared) = ctx.declared.get(&result.index) else {
+        return false;
+    };
+    if !crate::ir::is_temp(result.index)
+        || result.width != width.saturating_mul(8)
+        || !declared.integer
+        || declared.signed
+        || declared.bits != u32::from(width) * 8
+    {
+        return false;
+    }
+    let mut reads = std::collections::HashSet::new();
+    for input in inputs {
+        crate::ir::visit::collect_reads(input, &mut reads);
+    }
+    !reads.contains(&result.index)
+}
+
 pub(super) fn render(
     instruction: MachineInstruction,
     inputs: &[Expr],
     outputs: &[RegRef],
     ctx: &Ctx<'_>,
+) -> String {
+    render_inner(instruction, inputs, outputs, ctx, false)
+}
+
+fn render_inner(
+    instruction: MachineInstruction,
+    inputs: &[Expr],
+    outputs: &[RegRef],
+    ctx: &Ctx<'_>,
+    tested: bool,
 ) -> String {
     let input = |index| render_expr(&inputs[index], ctx);
     let output = |index: usize| ctx.register(outputs[index].index, outputs[index].width);
@@ -88,6 +120,31 @@ pub(super) fn render(
                         other => other,
                     }
                     .builtin();
+                    if tested {
+                        if ctx.read_once.contains(&outputs[0].index) {
+                            return format!(
+                                "__atomic_compare_exchange_n({ptr}, ({ty}[1]){{{}}}, {}, 0, {order}, {failure})",
+                                operand(2),
+                                operand(1)
+                            );
+                        }
+                        return format!(
+                            "({} = {}, __atomic_compare_exchange_n({ptr}, &{}, {}, 0, {order}, {failure}))",
+                            output(0),
+                            operand(2),
+                            output(0),
+                            operand(1)
+                        );
+                    }
+                    if expected_in_output(inputs, outputs, width, ctx) {
+                        return format!(
+                            "{{ {} = {}; __atomic_compare_exchange_n({ptr}, &{}, {}, 0, {order}, {failure}); }}",
+                            output(0),
+                            operand(2),
+                            output(0),
+                            operand(1)
+                        );
+                    }
                     format!(
                         "{{ {ty} {expected} = {}; __atomic_compare_exchange_n({ptr}, &{expected}, {}, 0, {order}, {failure}); {} = {expected}; }}",
                         operand(2),
@@ -149,4 +206,121 @@ pub(super) fn render(
             output(0)
         ),
     }
+}
+
+pub(super) fn in_condition(
+    stmt: &crate::ir::Stmt,
+    next: &super::Node,
+    depth: usize,
+    ctx: &Ctx<'_>,
+) -> Option<String> {
+    use crate::ir::{AtomicOp, Cond, MachineInstruction, Stmt};
+    let Stmt::Machine {
+        instruction: instruction @ MachineInstruction::Atomic { op, width, .. },
+        inputs,
+        outputs,
+    } = stmt
+    else {
+        return None;
+    };
+    let [result] = outputs.as_slice() else {
+        return None;
+    };
+    if !crate::ir::is_temp(result.index) {
+        return None;
+    }
+    let super::Node::If {
+        cond: Cond::Eq | Cond::Ne,
+        lhs,
+        rhs,
+        ..
+    } = next
+    else {
+        return None;
+    };
+    let whole = |value: &Expr| matches!(value, Expr::Reg { index, width } if *index == result.index && *width >= result.width);
+    let other = if whole(lhs) {
+        rhs
+    } else if whole(rhs) {
+        lhs
+    } else {
+        return None;
+    };
+    // Moving the operation into the test must not reorder another load.
+    if !matches!(other, Expr::Const(_) | Expr::Reg { .. }) {
+        return None;
+    }
+    let Some(declared) = ctx.declared.get(&result.index) else {
+        return None;
+    };
+    if !declared.integer || declared.signed || declared.bits < u32::from(*width) * 8 {
+        return None;
+    }
+    if *op == AtomicOp::CompareExchange {
+        // Success compares the width-truncated expected value. Only a
+        // fitting constant makes that identical to the original test.
+        let Some(Expr::Const(expected)) = inputs.get(2) else {
+            return None;
+        };
+        if other != &Expr::Const(*expected)
+            || (*width < 8 && *expected >> (u32::from(*width) * 8) != 0)
+            || (!expected_in_output(inputs, outputs, *width, ctx)
+                && !ctx.read_once.contains(&result.index))
+            || result.width != width.saturating_mul(8)
+        {
+            return None;
+        }
+        let super::Node::If { cond, .. } = next else {
+            return None;
+        };
+        let expression = render_inner(*instruction, inputs, outputs, ctx, true);
+        let negate = if *cond == Cond::Ne { "!" } else { "" };
+        let mut rendered = String::new();
+        super::render_node(next, depth, &mut rendered, ctx);
+        let Some((_, rest)) = rendered.split_once('\n') else {
+            return None;
+        };
+        return Some(format!(
+            "{}if ({negate}{expression}) {{\n{rest}",
+            "    ".repeat(depth)
+        ));
+    }
+    if *op == AtomicOp::Store || result.width != width.saturating_mul(8) {
+        return None;
+    }
+    let statement = render(*instruction, inputs, outputs, ctx);
+    let name = ctx.register(result.index, result.width);
+    let prefix = format!("{name} = ");
+    let Some(expression) = statement
+        .strip_prefix(&prefix)
+        .and_then(|text| text.strip_suffix(';'))
+    else {
+        return None;
+    };
+    let super::Node::If { cond, .. } = next else {
+        return None;
+    };
+    let first = format!(
+        "{}if ({}) {{",
+        "    ".repeat(depth),
+        super::condition(*cond, lhs, rhs, ctx)
+    );
+    let Some(at) = super::calls::only_word(&first, &name) else {
+        return None;
+    };
+    let expression = if ctx.read_once.contains(&result.index) {
+        expression.to_owned()
+    } else {
+        format!("({name} = {expression})")
+    };
+    let mut rendered = String::new();
+    super::render_node(next, depth, &mut rendered, ctx);
+    let Some((_, rest)) = rendered.split_once('\n') else {
+        return None;
+    };
+    Some(format!(
+        "{}{expression}{}\n{rest}",
+        &first[..at],
+        &first[at + name.len()..]
+    ))
 }

@@ -419,6 +419,13 @@ fn only_vector_count(rest: &[Node]) -> bool {
 pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     let mut index = 0;
     while index < nodes.len() {
+        if let (Node::Stmt(stmt), Some(next)) = (&nodes[index], nodes.get(index + 1))
+            && let Some(text) = super::machine::in_condition(stmt, next, depth, ctx)
+        {
+            out.push_str(&text);
+            index += 2;
+            continue;
+        }
         if let Some((count, text)) = super::transfers::render(&nodes[index..], ctx) {
             for line in text.lines() {
                 indent(depth, out);

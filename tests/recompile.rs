@@ -19,6 +19,8 @@
 
 #[path = "recompile/atomic_layouts.rs"]
 mod atomic_layouts;
+#[path = "recompile/atomic_spelling.rs"]
+mod atomic_spelling;
 #[path = "recompile/atomic_values.rs"]
 mod atomic_values;
 #[path = "recompile/cache.rs"]

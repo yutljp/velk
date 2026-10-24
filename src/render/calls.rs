@@ -812,7 +812,7 @@ pub(super) fn call_in_reader(
 }
 
 /// Where `word` stands in `line` as a whole word, when it does just once.
-fn only_word(line: &str, word: &str) -> Option<usize> {
+pub(super) fn only_word(line: &str, word: &str) -> Option<usize> {
     let part = |c: char| c.is_ascii_alphanumeric() || c == '_';
     let mut found = line.match_indices(word).filter(|(at, _)| {
         !line[..*at].ends_with(part) && !line[at + word.len()..].starts_with(part)
