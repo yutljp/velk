@@ -7,28 +7,62 @@ type Values = Vec<(i64, u8, Expr)>;
 
 /// Forwards only exact scalar slots whose incoming values agree on every path.
 pub(super) fn forward(ir: &mut FunctionIr) {
-    process(ir, false, &mut false);
+    process(ir, false, &mut false, &[]);
 }
 
 pub(super) fn promote(ir: &mut FunctionIr) {
+    let sp = crate::arch::stack_pointer(ir.isa);
     if ir
         .blocks
         .iter()
         .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::Trap))
+        .any(|stmt| {
+            matches!(stmt, Stmt::Trap)
+                || matches!(stmt, Stmt::Assign { dest, value } if dest.index == sp
+                    && (dest.width != 64 || !full_frame_register(value, sp) || super::moved(value, sp).is_none()))
+        })
     {
         return;
     }
+    // Settling removes stack adjustments, so retain each call's actual frame.
+    let frames = block_frames(ir, sp);
+    let call_frames: Vec<Vec<Option<i64>>> = ir
+        .blocks
+        .iter()
+        .zip(frames)
+        .map(|(block, mut frame)| {
+            let mut calls = Vec::new();
+            for stmt in &block.stmts {
+                if matches!(stmt, Stmt::Call { .. }) {
+                    calls.push(frame);
+                }
+                if let Stmt::Assign { dest, value } = stmt
+                    && dest.index == sp
+                {
+                    frame = match (frame, super::moved(value, sp)) {
+                        (Some(frame), Some(delta)) => frame.checked_add(delta),
+                        _ => None,
+                    };
+                }
+            }
+            calls
+        })
+        .collect();
     let mut normalized = ir.clone();
     crate::passes::frame_slots::settle(&mut normalized);
     let mut promoted = false;
-    process(&mut normalized, true, &mut promoted);
+    process(&mut normalized, true, &mut promoted, &call_frames);
     if promoted {
         *ir = normalized;
     }
 }
 
-fn process(ir: &mut FunctionIr, promotion: bool, promoted: &mut bool) {
+fn process(
+    ir: &mut FunctionIr,
+    promotion: bool,
+    promoted: &mut bool,
+    call_frames: &[Vec<Option<i64>>],
+) {
     let sp = crate::arch::stack_pointer(ir.isa);
     if ir.blocks.is_empty() || super::frame_address_escapes(ir, sp) {
         return;
@@ -143,7 +177,7 @@ fn process(ir: &mut FunctionIr, promotion: bool, promoted: &mut bool) {
         return;
     }
     if promotion {
-        *promoted = promote_slots(ir, sp, &positions, &incoming, &reached, &slots);
+        *promoted = promote_slots(ir, &positions, &incoming, &reached, &slots, call_frames);
         return;
     }
     // None is the as-yet unconstrained state. The empty entry state forces
@@ -244,20 +278,20 @@ fn process(ir: &mut FunctionIr, promotion: bool, promoted: &mut bool) {
 
 fn promote_slots(
     ir: &mut FunctionIr,
-    sp: u16,
     positions: &[Vec<i64>],
     incoming: &[Vec<usize>],
     reached: &HashSet<u64>,
     slots: &HashSet<(i64, u8)>,
+    call_frames: &[Vec<Option<i64>>],
 ) -> bool {
-    // Calls can access outgoing stack arguments without explicit memory operands.
+    let sp = crate::arch::stack_pointer(ir.isa);
     // Unknown writes may reach the frame through an address we cannot resolve.
     if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         let mut loads = Vec::new();
         for operand in stmt.operands() {
             super::collect_loads(operand, &mut loads);
         }
-        matches!(stmt, Stmt::Unsupported { .. } | Stmt::Call { .. })
+        matches!(stmt, Stmt::Unsupported { .. })
             || matches!(stmt, Stmt::Store { addr, .. } if frame_slot(addr, 0, sp).is_none())
             || loads
                 .iter()
@@ -283,6 +317,18 @@ fn promote_slots(
                 .checked_add(i64::from(width))
                 .is_none_or(|end| end > 0)
         {
+            continue;
+        }
+        if ir.blocks.iter().enumerate().any(|(index, block)| {
+            block
+                .stmts
+                .iter()
+                .filter(|stmt| matches!(stmt, Stmt::Call { .. }))
+                .zip(&call_frames[index])
+                .any(|(stmt, frame)| {
+                    frame.is_none_or(|frame| !call_preserves_slot(ir, stmt, frame, offset, sp))
+                })
+        }) {
             continue;
         }
         let mut initialized = vec![true; ir.blocks.len()];
@@ -393,7 +439,75 @@ fn promote_slots(
     }
     let registers: Vec<_> = selected.iter().map(|(_, _, register)| *register).collect();
     crate::ssa::split_variables(ir, &registers);
+    if call_frames.iter().any(|calls| !calls.is_empty()) {
+        for (variable, source) in &ir.variable_registers {
+            if let Some((_, width, _)) = selected.iter().find(|(_, _, register)| register == source)
+            {
+                ir.value_types.insert(
+                    *variable,
+                    crate::ir::CType::Int {
+                        bytes: *width,
+                        signed: false,
+                    },
+                );
+            }
+        }
+    }
     true
+}
+
+fn call_preserves_slot(ir: &FunctionIr, stmt: &Stmt, frame: i64, offset: i64, sp: u16) -> bool {
+    use crate::ir::{CallKind, Convention};
+    let Stmt::Call {
+        kind,
+        convention,
+        args,
+        ..
+    } = stmt
+    else {
+        return true;
+    };
+    if kind.push_bytes(ir.isa, *convention).is_none() {
+        return false;
+    }
+    if *kind == CallKind::Syscall {
+        return true;
+    }
+    // The call and callee may overwrite memory below the caller's stack
+    // pointer, including this function's red zone.
+    let Some(relative) = offset.checked_sub(frame) else {
+        return false;
+    };
+    if relative < 0 {
+        return false;
+    }
+    let Some(args) = args else {
+        return false;
+    };
+    let start = match convention {
+        Convention::SysV | Convention::Aapcs64 | Convention::Win64 => convention.stack_arguments(),
+        _ => return false,
+    };
+    let Some(mut reserved) = start.and_then(|start| kind.stack_offset(ir.isa, *convention, start))
+    else {
+        return false;
+    };
+    for argument in args.iter().skip(convention.arguments().len()) {
+        let Expr::Load { addr, width, .. } = argument else {
+            return false;
+        };
+        if !matches!(width, 1 | 2 | 4 | 8) {
+            return false;
+        }
+        let Some(start) = frame_slot(addr, 0, sp) else {
+            return false;
+        };
+        let Some(end) = start.checked_add(8).and_then(|end| end.checked_sub(frame)) else {
+            return false;
+        };
+        reserved = reserved.max(end);
+    }
+    relative >= reserved
 }
 
 fn forward_value(expr: &mut Expr, pending: &[(u8, Expr, Expr)]) {

@@ -654,3 +654,316 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
     }
     check_candidates("promoted-frame-slots", candidates, Mode::Registers, &[]);
 }
+
+#[test]
+fn printed_promoted_slots_survive_recursive_calls() {
+    let sp = velk::arch::stack_pointer(Isa::X86_64);
+    let mut invocation = call();
+    if let Stmt::Call {
+        args, floats_named, ..
+    } = &mut invocation
+    {
+        *args = Some(vec![Expr::bin(
+            BinOp::Sub,
+            Expr::reg(7, 64),
+            Expr::Const(1),
+        )]);
+        *floats_named = true;
+    }
+    let mut ir = synthetic_ir(
+        "frame_recursive",
+        vec![Param {
+            index: 7,
+            name: "a".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            assign(
+                sp,
+                64,
+                Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(32)),
+            ),
+            store(16, Expr::reg(7, 64), 8),
+            invocation,
+            Stmt::Ret {
+                value: Expr::bin(BinOp::Add, load(16, 8, false), Expr::reg(0, 64)),
+            },
+        ],
+    );
+    velk::passes::memory::promote_frame_slots(&mut ir);
+    velk::passes::copies::copy_propagate_guarded(&mut ir);
+    velk::passes::dce::dce(&mut ir);
+    let symbols = velk::render::Symbols {
+        functions: [(0x1000, "frame_helper".into())].into(),
+        function_returns: [(0x1000, CType::U64)].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    assert!(!code.contains("local_"), "{code}");
+    let mut text = String::from(HEADER);
+    text.push_str("static uint64_t frame_recursive(uint64_t);\nstatic uint64_t frame_helper(uint64_t n) { return n ? frame_recursive(n) : 0; }\n");
+    text.push_str(&code);
+    text.push_str("int main(void) { for (uint64_t n = 1; n < 12; ++n) if (frame_recursive(n) != n * (n + 1) / 2) return 1; return 0; }\n");
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("frame-recursive");
+    for level in LEVELS {
+        let program = build(&source, &scratch, level, &[]);
+        assert_eq!(run(&program, ""), "");
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_call_slot_promotion_excludes_argument_and_escaping_slots() {
+    let sp = velk::arch::stack_pointer(Isa::X86_64);
+    for case in [
+        "known",
+        "unknown",
+        "stack",
+        "padding",
+        "address",
+        "register",
+        "global",
+        "red_zone",
+        "shadow",
+        "go",
+        "narrow_sp",
+    ] {
+        let mut invocation = call();
+        if let Stmt::Call {
+            args, convention, ..
+        } = &mut invocation
+        {
+            *args = Some(Vec::new());
+            match case {
+                "unknown" => *args = None,
+                "stack" | "padding" => {
+                    *args = Some(
+                        (0..6)
+                            .map(|_| Expr::Const(0))
+                            .chain([load(16, if case == "padding" { 4 } else { 8 }, false)])
+                            .collect(),
+                    )
+                }
+                "address" => *args = Some(vec![slot(16)]),
+                "shadow" => *convention = Convention::Win64,
+                "go" => *convention = Convention::GoAmd64,
+                _ => {}
+            }
+        }
+        let mut stmts = vec![assign(
+            sp,
+            if case == "narrow_sp" { 32 } else { 64 },
+            Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(32)),
+        )];
+        let offset = match case {
+            "red_zone" => -8,
+            "padding" => 20,
+            _ => 16,
+        };
+        let width = if case == "padding" { 4 } else { 8 };
+        if case == "padding" {
+            stmts.push(store(16, Expr::Const(3), 4));
+        }
+        stmts.push(store(offset, Expr::Const(7), width));
+        if case == "register" {
+            stmts.push(assign(3, 64, slot(offset)));
+        } else if case == "global" {
+            stmts.push(Stmt::Store {
+                addr: Expr::Const(0x8000),
+                value: slot(offset),
+                width: 8,
+            });
+        }
+        stmts.extend([
+            invocation,
+            Stmt::Ret {
+                value: load(offset, width, false),
+            },
+        ]);
+        let mut ir = synthetic_ir("frame_call_slot", Vec::new(), CType::U64, stmts);
+        velk::passes::memory::promote_frame_slots(&mut ir);
+        let code = printed(&ir);
+        assert_eq!(
+            code.lines().any(|line| line.contains("return ")
+                && (line.contains("local_") || line.contains("rsp"))),
+            case != "known",
+            "{case}: {code}"
+        );
+    }
+}
+
+#[test]
+fn printed_call_slots_execute_stack_arguments_and_address_writes() {
+    let sp = velk::arch::stack_pointer(Isa::X86_64);
+    let mut text = String::from(HEADER);
+    text.push_str("static uint64_t frame_write(int64_t *p) { *p = 19; return 3; }\nstatic uint64_t frame_seven(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e, uint64_t f, uint64_t g) { return a + b + c + d + e + f + g; }\n");
+    for address in [false, true] {
+        let mut invocation = call();
+        if let Stmt::Call {
+            args, floats_named, ..
+        } = &mut invocation
+        {
+            *args = Some(if address {
+                vec![slot(16)]
+            } else {
+                (1..=6)
+                    .map(Expr::Const)
+                    .chain([load(0, 8, false)])
+                    .collect()
+            });
+            *floats_named = true;
+        }
+        let mut ir = synthetic_ir(
+            if address {
+                "frame_address_call"
+            } else {
+                "frame_stack_call"
+            },
+            Vec::new(),
+            CType::U64,
+            vec![
+                assign(
+                    sp,
+                    64,
+                    Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(32)),
+                ),
+                store(0, Expr::Const(7), 8),
+                store(16, Expr::Const(11), 8),
+                invocation,
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, load(16, 8, false), Expr::reg(0, 64)),
+                },
+            ],
+        );
+        velk::passes::memory::promote_frame_slots(&mut ir);
+        velk::passes::frame_slots::settle(&mut ir);
+        velk::passes::copies::copy_propagate_guarded(&mut ir);
+        velk::passes::dce::dce(&mut ir);
+        let symbols = velk::render::Symbols {
+            functions: [(
+                0x1000,
+                if address {
+                    "frame_write".into()
+                } else {
+                    "frame_seven".into()
+                },
+            )]
+            .into(),
+            function_returns: [(0x1000, CType::U64)].into(),
+            ..Default::default()
+        };
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("local_"), "{code}");
+        if !address {
+            assert!(code.contains("return 0xb +"), "{code}");
+        }
+        text.push_str(&code);
+    }
+    text.push_str(
+        "int main(void) { return frame_address_call() != 22 || frame_stack_call() != 39; }\n",
+    );
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("frame-call-memory");
+    for level in LEVELS {
+        let program = build(&source, &scratch, level, &[]);
+        assert_eq!(run(&program, ""), "");
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_context_saving_calls_keep_frame_storage() {
+    let scratch = scratch_dir("context-frame-slots");
+    std::fs::create_dir_all(&scratch).expect("create source directory");
+    let source = scratch.join("context.c");
+    let object = scratch.join("context.o");
+    std::fs::write(&source, "__attribute__((noinline)) unsigned long setjmp(unsigned long n) { return n; }\nunsigned long context_value(unsigned long n) { unsigned long saved; if (n & 1) saved = 7; else saved = 11; setjmp(n); return saved; }\n").expect("write context source");
+    let output = Command::new(COMPILER)
+        .args([
+            "-target",
+            "x86_64-unknown-linux-gnu",
+            "-O0",
+            "-g",
+            "-fno-builtin",
+            "-c",
+        ])
+        .arg(&source)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .expect("compile context source");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let mut binary = Binary::open(&object).expect("open context object");
+    let address = binary
+        .image()
+        .functions
+        .values()
+        .find(|function| function.name.as_deref() == Some("context_value"))
+        .expect("context function")
+        .addr;
+    let code = binary
+        .decompile(address, None, None)
+        .expect("decompile context function");
+    assert!(code.contains("setjmp("), "{code}");
+    assert!(code.contains("local_"), "{code}");
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_promoted_recursive_products_preserve_wrapping_arithmetic() {
+    for isa in ["aarch64", "x86_64"] {
+        let path = common::fixtures_dir().join(format!("metrics/calls.{isa}.O0.debug.elf"));
+        let binary = Binary::open(&path).expect("open recursive fixture");
+        let address = binary
+            .image()
+            .functions
+            .values()
+            .find(|function| function.name.as_deref() == Some("factorial"))
+            .expect("recursive function")
+            .addr;
+        for kind in ["debug", "stripped"] {
+            let path = common::fixtures_dir().join(format!("metrics/calls.{isa}.O0.{kind}.elf"));
+            let mut binary = Binary::open(&path).expect("open recursive fixture");
+            let name = if kind == "debug" {
+                "factorial".to_owned()
+            } else {
+                format!("sub_{address:x}")
+            };
+            let code = binary
+                .decompile(address, None, None)
+                .expect("decompile recursive function");
+            assert!(code.contains("uint32_t"), "{code}");
+            assert!(!code.contains("local_"), "{code}");
+            let mut text = String::from(HEADER);
+            text.push_str(&code);
+            text.push_str(&format!("int main(void) {{ uint32_t want = 1; for (int n = 1; n <= 20; ++n) {{ want *= (uint32_t)n; if ((uint32_t){name}(n) != want) return 1; }} return 0; }}\n"));
+            let source = Program {
+                text,
+                ranges: Vec::new(),
+            };
+            let scratch = scratch_dir(&format!("frame-product-{isa}-{kind}"));
+            for level in LEVELS {
+                let program = build(
+                    &source,
+                    &scratch,
+                    level,
+                    &["-fsanitize=undefined", "-fno-sanitize-recover=undefined"],
+                );
+                assert_eq!(run(&program, ""), "");
+            }
+            std::fs::remove_dir_all(scratch).ok();
+        }
+    }
+}

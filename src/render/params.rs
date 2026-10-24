@@ -218,12 +218,22 @@ fn fold(ir: &mut FunctionIr, param: u16) {
     };
     // The variables and slots holding nothing but the parameter's value.
     let origin = Source::Register(param);
+    let parameter_integer = ir
+        .params
+        .iter()
+        .find(|held| held.index == param)
+        .and_then(|held| held.ty.integer());
     let mut aliases: HashSet<Source> = HashSet::new();
     loop {
         let before = aliases.len();
         for (place, sources) in &defined {
             let renamable = match place {
-                Source::Register(index) => *index >= VARIABLE_BASE,
+                Source::Register(index) => {
+                    *index >= VARIABLE_BASE
+                        && ir.value_types.get(index).is_none_or(|ty| {
+                            ty.integer().is_none() || ty.integer() == parameter_integer
+                        })
+                }
                 Source::Slot(slot) => !mixed(*slot) && separate_input(*slot),
             };
             if renamable

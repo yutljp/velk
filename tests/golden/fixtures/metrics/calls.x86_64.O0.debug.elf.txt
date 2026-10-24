@@ -117,19 +117,14 @@ fn apply_pointer @ 0x2013a0 (size 33)
 /* velk pseudo-C: factorial @ 0x2013d0 */
 int factorial(int n) {
     int32_t v2;
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
-    uint32_t local_2; /* [sp-14] */
+    uint32_t v3;
 
-    local_0 = n;
+    v3 = n;
     if (n > 0x1) {
-        local_2 = local_0;
-        v2 = factorial(local_0 - 0x1);
-        local_1 = local_2 * v2;
-        return local_1;
+        v2 = factorial(v3 - 0x1);
+        return v3 * v2;
     }
-    local_1 = 0x1;
-    return local_1;
+    return 0x1;
 }
 -- signature
 int (int n)
@@ -138,17 +133,16 @@ int (int n)
 -- ir
 fn factorial @ 0x2013d0 (size 71)
   blk0 @ 0x2013d0:
-    store32(rdi, (rsp + #0xfffffffffffffff4))
+    v3 = (rdi & #0xffffffff)
     brif gt (rdi & #0xffffffff), #0x1 -> 0x2013f2
   blk1 @ 0x2013e5:
-    store32(#0x1, (rsp + #0xfffffffffffffff0))
+    v4 = #0x1
     br 0x20140e
   blk2 @ 0x2013f2:
-    store32(load32((rsp + #0xfffffffffffffff4)), (rsp + #0xffffffffffffffec))
-    v2:rax = call 0x2013d0(((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff))
-    store32((load32((rsp + #0xffffffffffffffec)) * (v2 & #0xffffffff)), (rsp + #0xfffffffffffffff0))
+    v2:rax = call 0x2013d0(((v3 - #0x1) & #0xffffffff))
+    v4 = ((v3 * (v2 & #0xffffffff)) & #0xffffffff)
   blk3 @ 0x20140e:
-    ret load32((rsp + #0xfffffffffffffff0))
+    ret v4
 -- card
 {"addr":"0x2013d0","approxTokens":150,"blocks":4,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":71,"unsupported":0}
 
@@ -156,16 +150,15 @@ fn factorial @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x201420 */
 int is_odd(int n) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    uint32_t v3;
+    uint32_t v4;
 
-    local_0 = n;
+    v3 = n;
     if (n != 0x0) {
-        local_1 = ((int32_t)(is_even(local_0 - 0x1)));
-        return local_1;
+        v4 = ((int32_t)(is_even(v3 - 0x1)));
+        return v4;
     }
-    local_1 = 0x0;
-    return local_1;
+    return 0x0;
 }
 -- signature
 int (int n)
@@ -174,16 +167,16 @@ int (int n)
 -- ir
 fn is_odd @ 0x201420 (size 54)
   blk0 @ 0x201420:
-    store32(rdi, (rsp + #0xfffffffffffffff4))
+    v3 = (rdi & #0xffffffff)
     brif ne (rdi & #0xffffffff), #0x0 -> 0x20143f
   blk1 @ 0x201435:
-    store32(#0x0, (rsp + #0xfffffffffffffff0))
+    v4 = #0x0
     br 0x20144d
   blk2 @ 0x20143f:
-    v2:rax = call 0x201460(((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff))
-    store32(v2, (rsp + #0xfffffffffffffff0))
+    v2:rax = call 0x201460(((v3 - #0x1) & #0xffffffff))
+    v4 = (v2 & #0xffffffff)
   blk3 @ 0x20144d:
-    ret load32((rsp + #0xfffffffffffffff0))
+    ret v4
 -- card
 {"addr":"0x201420","approxTokens":150,"blocks":4,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":54,"unsupported":0}
 
@@ -191,16 +184,15 @@ fn is_odd @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: is_even @ 0x201460 */
 int is_even(int n) {
-    uint32_t local_0; /* [sp-c] */
-    uint32_t local_1; /* [sp-10] */
+    uint32_t v3;
+    uint32_t v4;
 
-    local_0 = n;
+    v3 = n;
     if (n != 0x0) {
-        local_1 = ((int32_t)(is_odd(local_0 - 0x1)));
-        return local_1;
+        v4 = ((int32_t)(is_odd(v3 - 0x1)));
+        return v4;
     }
-    local_1 = 0x1;
-    return local_1;
+    return 0x1;
 }
 -- signature
 int (int n)
@@ -209,16 +201,16 @@ int (int n)
 -- ir
 fn is_even @ 0x201460 (size 57)
   blk0 @ 0x201460:
-    store32(rdi, (rsp + #0xfffffffffffffff4))
+    v3 = (rdi & #0xffffffff)
     brif ne (rdi & #0xffffffff), #0x0 -> 0x201482
   blk1 @ 0x201475:
-    store32(#0x1, (rsp + #0xfffffffffffffff0))
+    v4 = #0x1
     br 0x201490
   blk2 @ 0x201482:
-    v2:rax = call 0x201420(((load32((rsp + #0xfffffffffffffff4)) - #0x1) & #0xffffffff))
-    store32(v2, (rsp + #0xfffffffffffffff0))
+    v2:rax = call 0x201420(((v3 - #0x1) & #0xffffffff))
+    v4 = (v2 & #0xffffffff)
   blk3 @ 0x201490:
-    ret load32((rsp + #0xfffffffffffffff0))
+    ret v4
 -- card
 {"addr":"0x201460","approxTokens":150,"blocks":4,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf","unwind"],"section":".text","size":57,"unsupported":0}
 

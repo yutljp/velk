@@ -1305,6 +1305,46 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     passes::optimize(&mut ir, has_jump_tables);
     passed(deadline)?;
     drop_folded_away(&mut ir, &reached);
+    // Guessed register arguments do not bound a callee's stack arguments.
+    // Calls that save execution state can also reach the frame implicitly.
+    let promote_slots = ir.blocks.iter().flat_map(|block| &block.stmts).all(|stmt| {
+        let Stmt::Call {
+            kind,
+            target,
+            through,
+            args,
+            ..
+        } = stmt
+        else {
+            return true;
+        };
+        if *kind == crate::ir::CallKind::Syscall {
+            return true;
+        }
+        if args.is_none() {
+            return false;
+        }
+        let name = target
+            .and_then(|target| image.functions.get(&target))
+            .and_then(|function| function.name.as_deref())
+            .or_else(|| match through {
+                Some(through) => crate::lift::import_name(image, through),
+                None => None,
+            });
+        !name.is_some_and(|name| {
+            matches!(
+                name.trim_start_matches('_'),
+                "setjmp"
+                    | "sigsetjmp"
+                    | "longjmp"
+                    | "siglongjmp"
+                    | "longjmp_chk"
+                    | "savectx"
+                    | "getcontext"
+                    | "swapcontext"
+            )
+        })
+    });
     passed(deadline)?;
     set_up_arguments(&mut ir);
     passed(deadline)?;
@@ -1360,7 +1400,9 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
         passes::memory::forward_stored_values(&mut ir);
         passed(deadline)?;
         passes::memory::forward_spilled_variables(&mut ir);
-        passes::memory::promote_frame_slots(&mut ir);
+        if promote_slots {
+            passes::memory::promote_frame_slots(&mut ir);
+        }
     }
     passed(deadline)?;
     passes::dce::dce(&mut ir);
