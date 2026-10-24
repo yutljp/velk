@@ -80,8 +80,13 @@ pub(crate) fn cs_neg_chain(
         None
     };
     let masked = |index: u16| -> Option<(usize, u64, u16)> {
-        let probe = defining(index)?;
-        let value = strip_and_mask(assignment_at(statements, probe)?.1);
+        let Some(probe) = defining(index) else {
+            return None;
+        };
+        let Some((_, value)) = assignment_at(statements, probe) else {
+            return None;
+        };
+        let value = strip_and_mask(value);
         let Expr::Bin {
             op: crate::ir::BinOp::And,
             lhs,
@@ -98,8 +103,12 @@ pub(crate) fn cs_neg_chain(
         };
         Some((probe, *mask, *source))
     };
-    let (plain_pos, plain_mask, plain_source) = masked(plain_leaf)?;
-    let (negated_pos, negated_mask, negated_source) = masked(negated_leaf)?;
+    let Some((plain_pos, plain_mask, plain_source)) = masked(plain_leaf) else {
+        return None;
+    };
+    let Some((negated_pos, negated_mask, negated_source)) = masked(negated_leaf) else {
+        return None;
+    };
     if plain_mask != negated_mask {
         return None;
     }
@@ -109,8 +118,10 @@ pub(crate) fn cs_neg_chain(
     }
     // The negated branch's mask source may itself be re-masked; find the
     // `0 - x` that defines it.
-    let (neg_pos, neg_source) = (0..negated_pos).rev().find_map(|probe| {
-        let (dest, value) = assignment_at(statements, probe)?;
+    let Some((neg_pos, neg_source)) = (0..negated_pos).rev().find_map(|probe| {
+        let Some((dest, value)) = assignment_at(statements, probe) else {
+            return None;
+        };
         if dest.index != negated_source {
             return None;
         }
@@ -120,12 +131,16 @@ pub(crate) fn cs_neg_chain(
                 lhs,
                 rhs,
             } if matches!(lhs.as_ref(), Expr::Const(0)) => {
-                let source = unwrap_leaf(strip_and_mask(rhs))?;
+                let Some(source) = unwrap_leaf(strip_and_mask(rhs)) else {
+                    return None;
+                };
                 Some((probe, source))
             }
             _ => None,
         }
-    })?;
+    }) else {
+        return None;
+    };
     let root_plain = dividend_parameter(statements, select_index, plain_source);
     let root_neg = dividend_parameter(statements, select_index, neg_source);
     if root_plain != dividend || root_neg != dividend {

@@ -317,7 +317,9 @@ fn reassembled(expr: &Expr) -> Option<Expr> {
                 let Expr::Const(mask) = rhs.as_ref() else {
                     return None;
                 };
-                let (low, ones) = run(*mask)?;
+                let Some((low, ones)) = run(*mask) else {
+                    return None;
+                };
                 Some((lhs.as_ref().clone(), low, ones))
             }
             Expr::Bin {
@@ -347,7 +349,7 @@ fn reassembled(expr: &Expr) -> Option<Expr> {
                 else {
                     return None;
                 };
-                let (0, ones) = run(*mask)? else {
+                let Some((0, ones)) = run(*mask) else {
                     return None;
                 };
                 (matches!(down.as_ref(), Expr::Const(down) if down == up) && *up < 64).then(|| {
@@ -361,7 +363,13 @@ fn reassembled(expr: &Expr) -> Option<Expr> {
             _ => None,
         }
     };
-    let fields: Vec<(Expr, u32, u32)> = terms.into_iter().map(field).collect::<Option<_>>()?;
+    let Some(fields) = terms
+        .into_iter()
+        .map(field)
+        .collect::<Option<Vec<(Expr, u32, u32)>>>()
+    else {
+        return None;
+    };
     let source = fields[0].0.clone();
     if fields.iter().any(|(value, ..)| *value != source) {
         return None;

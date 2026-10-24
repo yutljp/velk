@@ -442,7 +442,9 @@ pub(crate) fn apply_remainder_follows(
 /// The register holding `expr` at `position`, followed back through plain
 /// copies, with the statement that last defined it (`None` for the entry).
 fn origin(statements: &[Stmt], position: usize, expr: &Expr) -> Option<(u16, Option<usize>)> {
-    let mut register = unwrap_leaf(strip_and_mask(expr))?;
+    let Some(mut register) = unwrap_leaf(strip_and_mask(expr)) else {
+        return None;
+    };
     let mut position = position;
     loop {
         let defined = statements[..position]

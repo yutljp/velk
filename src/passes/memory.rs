@@ -516,7 +516,9 @@ fn store_back(
             return None;
         }
     }
-    let store_at = store_at?;
+    let Some(store_at) = store_at else {
+        return None;
+    };
     (!read_later(stmts, store_at + 1, dest, live_out)).then_some(store_at)
 }
 
