@@ -2665,7 +2665,7 @@ fn printed_aggregate_struct_fixtures_match_independent_oracles() {
             let mut binary = Binary::open(&path).unwrap();
             for name in ["flags_level", "word_low_byte", "point_add", "big_sum"] {
                 let address = binary.find(name).unwrap().addr;
-                let mut ir = binary.analysis(address).unwrap().ir.clone();
+                let mut ir = binary.analysis(address, None).unwrap().ir.clone();
                 let signature = ir
                     .declared_signature
                     .as_ref()
@@ -2795,7 +2795,7 @@ fn sysv_unresolved_alignment_uses_whole_function_fallback() {
         ));
         let mut binary = Binary::open(&path).unwrap();
         let address = binary.find(name).unwrap().addr;
-        let ir = binary.analysis(address).unwrap().ir.clone();
+        let ir = binary.analysis(address, None).unwrap().ir.clone();
         let signature = ir
             .declared_signature
             .as_ref()
@@ -2844,7 +2844,7 @@ fn printed_aggregate_abi_fixtures_observe_every_result_piece() {
                     continue;
                 }
                 let address = binary.find(name).unwrap().addr;
-                let mut ir = binary.analysis(address).unwrap().ir.clone();
+                let mut ir = binary.analysis(address, None).unwrap().ir.clone();
                 let signature = ir
                     .declared_signature
                     .as_ref()
@@ -4641,7 +4641,7 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
             *excluded.entry("calls").or_default() += 1;
             continue;
         }
-        let Ok(analysis) = binary.analysis(function.addr) else {
+        let Ok(analysis) = binary.analysis(function.addr, None) else {
             *excluded.entry("does not lift").or_default() += 1;
             continue;
         };
@@ -4651,7 +4651,7 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
         }
         let ir = analysis.ir.clone();
         let rendered = binary
-            .decompile_with_dependencies(function.addr, None)
+            .decompile_with_dependencies(function.addr, None, None)
             .unwrap_or_else(|error| panic!("{error}"));
         if mode == Mode::Registers && !rendered.segment_bases.is_empty() {
             *excluded.entry("requires segment state").or_default() += 1;
@@ -6712,7 +6712,7 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
                 .join(format!("{case}.{architecture}.O2.debug.elf"));
             let mut binary = Binary::open(&path).unwrap();
             let address = binary.find(name).unwrap().addr;
-            let ir = binary.analysis(address).unwrap().ir.clone();
+            let ir = binary.analysis(address, None).unwrap().ir.clone();
             let mut initial_memory = Vec::new();
             let inputs = if name == "copy_bytes" {
                 let source = REGION + 0x400;
@@ -6765,7 +6765,7 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
                 ]
             };
             let mut candidate = printed_candidate(ir, inputs);
-            candidate.code = binary.decompile(address, None).unwrap();
+            candidate.code = binary.decompile(address, None, None).unwrap();
             if architecture == "aarch64" && name == "copy_bytes" {
                 let code = &candidate.code;
                 assert_eq!(
@@ -7058,7 +7058,7 @@ fn printed_stripped_stack_fixtures_preserve_all_physical_inputs() {
         for address in addresses {
             let path = common::fixtures_dir().join(&fixture);
             let mut binary = Binary::open(&path).unwrap();
-            let analysis = binary.analysis(address).unwrap();
+            let analysis = binary.analysis(address, None).unwrap();
             assert!(analysis.references.is_empty());
             let ir = analysis.ir.clone();
             assert_eq!(
@@ -7126,7 +7126,10 @@ fn printed_stripped_stack_fixtures_preserve_all_physical_inputs() {
                         sum.wrapping_add(value.wrapping_mul(coefficient))
                     })
             });
-            assert_eq!(candidate.code, binary.decompile(address, None).unwrap());
+            assert_eq!(
+                candidate.code,
+                binary.decompile(address, None, None).unwrap()
+            );
             candidates.push(candidate);
         }
     }
@@ -7654,7 +7657,7 @@ fn printed_stripped_x86_stack_fixtures_preserve_held_alias_inputs() {
         .zip(addresses)
         {
             assert_eq!(debug.find(name).unwrap().addr, address);
-            let analysis = binary.analysis(address).unwrap();
+            let analysis = binary.analysis(address, None).unwrap();
             assert!(analysis.references.is_empty());
             let ir = analysis.ir.clone();
             assert_eq!(ir.isa, Isa::X86_64);
@@ -7776,7 +7779,10 @@ fn printed_stripped_x86_stack_fixtures_preserve_held_alias_inputs() {
                         .wrapping_add(19u64.wrapping_mul(input[5]))
                 }
             });
-            assert_eq!(candidate.code, binary.decompile(address, None).unwrap());
+            assert_eq!(
+                candidate.code,
+                binary.decompile(address, None, None).unwrap()
+            );
             assert!(candidate.ir.declared_signature.is_none());
             candidates.push(candidate);
         }

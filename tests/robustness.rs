@@ -48,8 +48,8 @@ fn damaged_fixtures_never_panic() {
             };
             let addrs: Vec<u64> = binary.image().functions.keys().copied().take(200).collect();
             for addr in addrs {
-                let _ = binary.decompile(addr, None);
-                let _ = binary.card(addr, 240, None);
+                let _ = binary.decompile(addr, None, None);
+                let _ = binary.card(addr, 240, None, None);
             }
         }
     });

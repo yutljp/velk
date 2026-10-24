@@ -201,7 +201,7 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
             lines.push(format!("{label}: not found"));
             continue;
         }
-        let Ok(analysis) = binary.analysis(*addr) else {
+        let Ok(analysis) = binary.analysis(*addr, None) else {
             lines.push(format!("{label}: lift failed"));
             continue;
         };

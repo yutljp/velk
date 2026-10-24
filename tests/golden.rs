@@ -80,7 +80,7 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
     let mut readability = Readability::default();
     let mut details = String::new();
     for function in &functions {
-        let decompiled = match binary.decompile(function.addr, None) {
+        let decompiled = match binary.decompile(function.addr, None, None) {
             Ok(text) => text,
             Err(error) => {
                 lift_failures += 1;
@@ -343,7 +343,7 @@ fn render_function(binary: &mut Binary, function: &Function, decompiled: &str) -
         velk::addr::format(function.addr),
         function.name.as_deref().unwrap_or("-")
     );
-    if let Ok(analysis) = binary.analysis(function.addr) {
+    if let Ok(analysis) = binary.analysis(function.addr, None) {
         let ir = &analysis.ir;
         let params: Vec<String> = ir
             .params
@@ -363,7 +363,7 @@ fn render_function(binary: &mut Binary, function: &Function, decompiled: &str) -
     }
     let mut card = serde_json::to_value(
         binary
-            .card(function.addr, velk::card::DEFAULT_BUDGET, None)
+            .card(function.addr, velk::card::DEFAULT_BUDGET, None, None)
             .unwrap_or_else(|error| panic!("{error}")),
     )
     .expect("a card serializes");

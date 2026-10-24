@@ -471,7 +471,7 @@ fn printed_frame_branch_comparisons_keep_direct_constants() {
         .expect("the branch function")
         .addr;
     let text = binary
-        .decompile(address, None)
+        .decompile(address, None, None)
         .expect("printed branch comparisons");
     assert!(text.contains("!= 0x1"), "{text}");
     assert!(text.contains("== 0x2"), "{text}");

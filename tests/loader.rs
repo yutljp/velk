@@ -222,7 +222,7 @@ fn a_section_past_the_address_space_is_left_out() {
         if let Ok(mut binary) = Binary::open(&path) {
             let addrs: Vec<u64> = binary.image().functions.keys().copied().collect();
             for addr in addrs {
-                let _ = binary.decompile(addr, None);
+                let _ = binary.decompile(addr, None, None);
             }
         }
         std::fs::remove_file(&path).ok();

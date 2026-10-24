@@ -812,7 +812,7 @@ mod tests {
             sources: Vec::new(),
         };
         let image = Image::from_code(isa, 0, code);
-        analyze(&image, &function)
+        analyze(&image, &function, None)
             .expect("the code lifts")
             .ir
             .render()
@@ -860,7 +860,7 @@ mod tests {
             sources: Vec::new(),
         };
         let image = Image::from_code(Isa::AArch64, 0, code);
-        analyze(&image, &function)
+        analyze(&image, &function, None)
             .expect("the code lifts")
             .ir
             .render()

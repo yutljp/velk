@@ -316,3 +316,35 @@ fn a_timeout_stops_an_operation_over_the_binary() {
     assert!(outcome.error.is_some(), "{:?}", outcome.output);
     assert!(started.elapsed() < std::time::Duration::from_secs(10));
 }
+
+#[test]
+fn a_timeout_stops_one_function_analysis() {
+    let path = common::fixtures_dir().join("go_probe");
+    let script = format!("velk.open({path:?}).getFunction('main.main').decompile()");
+    let open = format!("velk.open({path:?}); null");
+    let unlimited_engine = Engine::new().expect("an engine");
+    assert_eq!(unlimited_engine.run(&open, None).error, None);
+    let started = std::time::Instant::now();
+    let unlimited = unlimited_engine.run(&script, None);
+    let unlimited_time = started.elapsed();
+    assert_eq!(unlimited.error, None);
+    assert!(unlimited.output.contains("main"), "{}", unlimited.output);
+
+    let engine = Engine::new().expect("an engine");
+    assert_eq!(engine.run(&open, None).error, None);
+    let started = std::time::Instant::now();
+    let limited = engine.run(&script, Some(std::time::Duration::from_millis(100)));
+    let limited_time = started.elapsed();
+    eprintln!("function decompilation: limited={limited_time:?}, unlimited={unlimited_time:?}");
+    assert!(
+        limited
+            .error
+            .as_deref()
+            .is_some_and(|error| error.contains("timed out")),
+        "{:?}",
+        limited.error
+    );
+    let retry = engine.run(&script, None);
+    assert_eq!(retry.error, None);
+    assert_eq!(retry.output, unlimited.output);
+}

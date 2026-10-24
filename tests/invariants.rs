@@ -45,7 +45,7 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
         );
         for budget in BUDGETS {
             let card = binary
-                .card(function.addr, budget, None)
+                .card(function.addr, budget, None, None)
                 .unwrap_or_else(|error| panic!("{label}: {error}"));
             if card.approx_tokens > budget.max(96) {
                 found.push(format!(
@@ -54,7 +54,7 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
                 ));
             }
         }
-        let Ok(text) = binary.decompile(function.addr, None) else {
+        let Ok(text) = binary.decompile(function.addr, None, None) else {
             continue;
         };
         // A jump out of the function has no label to find; it is a tail call
@@ -75,7 +75,7 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
             found.push(format!("{label}: unbalanced braces"));
         }
         let analysis = binary
-            .analysis(function.addr)
+            .analysis(function.addr, None)
             .unwrap_or_else(|error| panic!("{label}: {error}"));
         for effect in dropped_effects(&analysis.ir) {
             found.push(format!("{label}: the pseudo-C drops `{effect}`"));

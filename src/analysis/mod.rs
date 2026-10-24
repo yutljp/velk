@@ -14,8 +14,10 @@ pub(crate) mod typing;
 pub(crate) mod variadic;
 
 use std::collections::HashSet;
+use std::time::Instant;
 
-use crate::error::LiftError;
+use crate::deadline::passed;
+use crate::error::{Error, LiftError};
 use crate::ir::{FunctionIr, Stmt};
 use crate::loader::{Function, Image};
 use crate::{lift, passes};
@@ -40,9 +42,24 @@ impl Analysis {
     }
 }
 
-pub fn analyze(image: &Image, function: &Function) -> Result<Analysis, LiftError> {
-    let lifted = lift_function(image, function)?;
-    Ok(optimize(image, lifted))
+pub fn analyze(
+    image: &Image,
+    function: &Function,
+    deadline: Option<Instant>,
+) -> Result<Analysis, Error> {
+    passed(deadline)?;
+    let lifted = lift_function(image, function);
+    passed(deadline)?;
+    let lifted = match lifted {
+        Ok(lifted) => lifted,
+        Err(source) => {
+            return Err(Error::Lift {
+                addr: function.addr,
+                source,
+            });
+        }
+    };
+    optimize(image, lifted, deadline)
 }
 
 fn float_return_slot(isa: crate::loader::Isa) -> Option<u16> {
@@ -515,7 +532,7 @@ fn returned_type(image: &Image, addr: u64) -> Option<crate::ir::CType> {
     if !UNDER_WAY.with(|under_way| under_way.borrow_mut().insert(addr)) {
         return None;
     }
-    let analysis = analyze(image, function);
+    let analysis = analyze(image, function, None);
     UNDER_WAY.with(|under_way| under_way.borrow_mut().remove(&addr));
     match analysis.ok()?.ir.ret_type {
         crate::ir::CType::Int { bytes, .. } => Some(crate::ir::CType::int(bytes, false)),
@@ -1256,7 +1273,8 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     })
 }
 
-fn optimize(image: &Image, lifted: Lifted) -> Analysis {
+fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<Analysis, Error> {
+    passed(deadline)?;
     let Lifted {
         mut ir,
         has_jump_tables,
@@ -1268,12 +1286,18 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     });
     // Before the stack adjustments a call reads unseen, such as the push
     // of an argument, are dropped as dead.
+    passed(deadline)?;
     crate::ssa::count_variadic_arguments(&mut ir, image);
+    passed(deadline)?;
     crate::ssa::undefine_clobbered_reads(&mut ir);
     let reached = crate::ir::cfg::reached(&ir);
+    passed(deadline)?;
     passes::optimize(&mut ir, has_jump_tables);
+    passed(deadline)?;
     drop_folded_away(&mut ir, &reached);
+    passed(deadline)?;
     set_up_arguments(&mut ir);
+    passed(deadline)?;
     passes::dce::dce(&mut ir);
     // Every general register becomes the variables it holds, apart from the
     // stack pointer, and the frame pointer while it addresses the frame.
@@ -1309,35 +1333,57 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     .collect();
     // Bits no read looks at go first, so the variables they tied split apart;
     // a narrow return reads fewer of them.
+    passed(deadline)?;
     typing::apply_partial_return(&mut ir);
+    passed(deadline)?;
     crate::ssa::narrow_partial_writes(&mut ir);
+    passed(deadline)?;
     drop_unread_indirect_result(&mut ir, image);
+    passed(deadline)?;
     crate::ssa::split_variables(&mut ir, &general);
     // The new variables leave copies between them to fold away, and values
     // spilled across calls that now survive them in their variables.
+    passed(deadline)?;
     passes::copies::copy_propagate_guarded(&mut ir);
     if !has_jump_tables {
+        passed(deadline)?;
         passes::memory::forward_stored_values(&mut ir);
+        passed(deadline)?;
         passes::memory::forward_spilled_variables(&mut ir);
     }
+    passed(deadline)?;
     passes::dce::dce(&mut ir);
+    passed(deadline)?;
     typing::apply_width_types(&mut ir, &uniform_32);
+    passed(deadline)?;
     typing::apply_void_return(&mut ir);
+    passed(deadline)?;
     typing::apply_partial_return(&mut ir);
+    passed(deadline)?;
     apply_call_return(&mut ir, image);
+    passed(deadline)?;
     typing::apply_dwarf_types(types, &mut ir);
     // A narrower return reads fewer bits, which may leave more of a
     // partial write unread.
+    passed(deadline)?;
     crate::ssa::narrow_partial_writes(&mut ir);
+    passed(deadline)?;
     passes::copies::copy_propagate_guarded(&mut ir);
+    passed(deadline)?;
     passes::simplify::simplify(&mut ir);
     // With the variables split, what they hold narrows again.
+    passed(deadline)?;
     crate::ssa::ranges::simplify(&mut ir);
     // Simplifying can fold a variable's value into its readers.
+    passed(deadline)?;
     passes::dce::dce(&mut ir);
+    passed(deadline)?;
     passes::coalesce::coalesce_copies(&mut ir);
+    passed(deadline)?;
     name_indirect_result(&mut ir);
+    passed(deadline)?;
     structures::recover(&mut ir);
+    passed(deadline)?;
     if !declared_return {
         typing::apply_pointer_return_with(&mut ir, &|stmt| prototypes::called(image, stmt));
     }
@@ -1347,12 +1393,18 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
     {
         ir.ret_type = result.ty.clone();
     }
+    passed(deadline)?;
     let references = refs::collect(&ir, image);
+    passed(deadline)?;
     passes::frame_slots::settle(&mut ir);
+    passed(deadline)?;
     drop_stack_protector(&mut ir, image);
     // Settling simplifies again, which can leave a table read unused.
+    passed(deadline)?;
     drop_dead_constant_reads(&mut ir, image);
+    passed(deadline)?;
     crate::ssa::take_results_directly(&mut ir);
+    passed(deadline)?;
     passes::read_once::fold_values_read_once(&mut ir);
     // A variable passed where a callee takes a pointer holds one.
     let mut pointer_values = Vec::new();
@@ -1375,10 +1427,14 @@ fn optimize(image: &Image, lifted: Lifted) -> Analysis {
         }
     }
     ir.pointer_values = pointer_values;
+    passed(deadline)?;
     typing::apply_prototypes(&mut ir, image);
+    passed(deadline)?;
     variadic::mark_variadic(&mut ir);
+    passed(deadline)?;
     passes::coalesce::reuse_pointers(&mut ir);
-    Analysis { ir, references }
+    passed(deadline)?;
+    Ok(Analysis { ir, references })
 }
 
 #[cfg(test)]
@@ -1474,7 +1530,9 @@ mod tests {
                     has_jump_tables: false,
                     types: Some(types),
                 },
-            );
+                None,
+            )
+            .unwrap();
             let expected = ret.unwrap_or_else(|| CType::pointer_to(CType::Void));
             assert_eq!(analyzed.ir.ret_type, expected);
             let mut symbols = crate::render::Symbols::default();

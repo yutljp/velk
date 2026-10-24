@@ -1706,7 +1706,7 @@ mod tests {
                 .values()
                 .find(|function| function.name.as_deref() == Some(name))
                 .unwrap();
-            let analysis = crate::analysis::analyze(&image, function).unwrap();
+            let analysis = crate::analysis::analyze(&image, function, None).unwrap();
             assert_eq!(
                 analysis
                     .ir

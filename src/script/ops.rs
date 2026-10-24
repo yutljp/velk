@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 
 use crate::addr;
 use crate::card::DEFAULT_BUDGET;
+use crate::deadline::passed;
 use crate::error::{Error, Result};
 use crate::service::{Binary, Failure, Session};
 use crate::sigs::Database;
@@ -69,8 +70,7 @@ pub enum Request {
     },
 }
 
-/// Answers `request`; an operation over the whole binary stops with an
-/// error once `deadline` passes.
+/// Answers `request`; analysis stops at pass boundaries once `deadline` passes.
 pub fn handle(
     session: &mut Session,
     request: Request,
@@ -99,29 +99,37 @@ pub fn handle(
         )),
         Request::Find { bin, target } => Ok(json!(session.open(&bin)?.find(&target)?)),
         Request::Card { bin, addr, budget } => {
-            let card =
-                session
-                    .open(&bin)?
-                    .card(parse(&addr)?, budget.unwrap_or(DEFAULT_BUDGET), None)?;
+            let card = session.open(&bin)?.card(
+                parse(&addr)?,
+                budget.unwrap_or(DEFAULT_BUDGET),
+                None,
+                deadline,
+            )?;
             Ok(json!(card))
         }
-        Request::Decompile { bin, addr } => {
-            Ok(json!(session.open(&bin)?.decompile(parse(&addr)?, None)?))
-        }
+        Request::Decompile { bin, addr } => Ok(json!(session.open(&bin)?.decompile(
+            parse(&addr)?,
+            None,
+            deadline
+        )?)),
         Request::Disasm { bin, addr, limit } => Ok(json!(
             session
                 .open(&bin)?
                 .disasm(parse(&addr)?, limit.unwrap_or(usize::MAX))?
         )),
-        Request::Ir { bin, addr } => Ok(json!(analysis(session, &bin, &addr)?.ir.render())),
+        Request::Ir { bin, addr } => {
+            let analysis = analysis(session, &bin, &addr, deadline)?;
+            passed(deadline)?;
+            Ok(json!(analysis.ir.render()))
+        }
         Request::Signature { bin, addr } => {
-            let ir = &analysis(session, &bin, &addr)?.ir;
+            let ir = &analysis(session, &bin, &addr, deadline)?.ir;
             Ok(json!({
                 "return": ir.ret_type.to_string(),
                 "params": ir.params.iter().map(|p| json!({ "name": p.name, "type": p.ty.to_string() })).collect::<Vec<_>>(),
             }))
         }
-        Request::References { bin, addr } => Ok(analysis(session, &bin, &addr)?
+        Request::References { bin, addr } => Ok(analysis(session, &bin, &addr, deadline)?
             .references
             .iter()
             .map(|reference| {
@@ -133,10 +141,12 @@ pub fn handle(
                 })
             })
             .collect()),
-        Request::Strings { bin, addr } => Ok(json!(analysis(session, &bin, &addr)?.strings())),
-        Request::ShapeHash { bin, addr } => {
-            Ok(json!(session.open(&bin)?.shape_hash(parse(&addr)?)?))
+        Request::Strings { bin, addr } => {
+            Ok(json!(analysis(session, &bin, &addr, deadline)?.strings()))
         }
+        Request::ShapeHash { bin, addr } => Ok(json!(
+            session.open(&bin)?.shape_hash(parse(&addr)?, deadline)?
+        )),
         Request::BuildSignatures { bin } => {
             let build = session.open(&bin)?.build_signatures(deadline)?;
             Ok(json!({ "database": build.database, "failures": failures(&build.failures) }))
@@ -164,10 +174,11 @@ fn analysis<'a>(
     session: &'a mut Session,
     bin: &std::path::Path,
     text: &str,
+    deadline: Option<std::time::Instant>,
 ) -> Result<&'a crate::analysis::Analysis> {
     let addr = parse(text)?;
     let binary: &'a mut Binary = session.open(bin)?;
-    binary.analysis(addr)
+    binary.analysis(addr, deadline)
 }
 
 fn parse(text: &str) -> Result<u64> {

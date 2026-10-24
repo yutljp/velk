@@ -300,7 +300,7 @@ fn run(command: Command) -> Result<ExitCode> {
             let signatures = signatures.as_deref().map(Database::load).transpose()?;
             let mut binary = Binary::open(&path)?;
             let addr = binary.find(&function)?.addr;
-            let card = binary.card(addr, budget, signatures.as_ref())?;
+            let card = binary.card(addr, budget, signatures.as_ref(), None)?;
             println!("{:#}", json!(card));
         }
         Command::Decompile {
@@ -311,7 +311,7 @@ fn run(command: Command) -> Result<ExitCode> {
             let signatures = signatures.as_deref().map(Database::load).transpose()?;
             let mut binary = Binary::open(&path)?;
             let addr = binary.find(&function)?.addr;
-            let code = binary.decompile(addr, signatures.as_ref())?;
+            let code = binary.decompile(addr, signatures.as_ref(), None)?;
             print_code(&binary, addr, &function, &code, Language::C);
         }
         Command::Disasm {
@@ -334,7 +334,7 @@ fn run(command: Command) -> Result<ExitCode> {
         Command::Ir { path, function } => {
             let mut binary = Binary::open(&path)?;
             let addr = binary.find(&function)?.addr;
-            let code = binary.analysis(addr)?.ir.render();
+            let code = binary.analysis(addr, None)?.ir.render();
             print_code(&binary, addr, &function, &code, Language::Ir);
         }
         Command::BuildSignatures { path, output } => {

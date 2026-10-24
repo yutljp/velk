@@ -1932,7 +1932,7 @@ mod tests {
                     sources: Vec::new(),
                 };
                 let image = Image::from_code(isa, 0, code);
-                if let Ok(analysis) = analyze(&image, &function) {
+                if let Ok(analysis) = analyze(&image, &function, None) {
                     crate::render::render(
                         &analysis.ir,
                         &analysis.references,

@@ -5,6 +5,7 @@ use std::time::{Instant, SystemTime};
 
 use crate::analysis::{self, Analysis};
 use crate::card::{self, Card};
+use crate::deadline::passed;
 use crate::error::{Error, LiftError, Result};
 use crate::loader::{self, Function, Image};
 use crate::sigs::{self, Database};
@@ -139,13 +140,13 @@ impl Binary {
             .ok_or(Error::NoFunctionAt(addr))
     }
 
-    pub fn analysis(&mut self, addr: u64) -> Result<&Analysis> {
+    pub fn analysis(&mut self, addr: u64, deadline: Option<Instant>) -> Result<&Analysis> {
         let function = self
             .image
             .functions
             .get(&addr)
             .ok_or(Error::NoFunctionAt(addr))?;
-        cached(&mut self.analyses, &self.image, function)
+        cached(&mut self.analyses, &self.image, function, deadline)?
             .as_ref()
             .map_err(|source| Error::Lift {
                 addr,
@@ -158,14 +159,16 @@ impl Binary {
         addr: u64,
         budget: usize,
         signatures: Option<&Database>,
+        deadline: Option<Instant>,
     ) -> Result<Card> {
         let function = self
             .image
             .functions
             .get(&addr)
             .ok_or(Error::NoFunctionAt(addr))?;
-        let analysis = cached(&mut self.analyses, &self.image, function).as_ref();
+        let analysis = cached(&mut self.analyses, &self.image, function, deadline)?.as_ref();
         let identified = identify(signatures, analysis);
+        passed(deadline)?;
         Ok(card::build(
             &self.image,
             function,
@@ -175,8 +178,13 @@ impl Binary {
         ))
     }
 
-    pub fn decompile(&mut self, addr: u64, signatures: Option<&Database>) -> Result<String> {
-        self.decompile_with_dependencies(addr, signatures)
+    pub fn decompile(
+        &mut self,
+        addr: u64,
+        signatures: Option<&Database>,
+        deadline: Option<Instant>,
+    ) -> Result<String> {
+        self.decompile_with_dependencies(addr, signatures, deadline)
             .map(|rendered| rendered.code)
     }
 
@@ -185,18 +193,20 @@ impl Binary {
         &mut self,
         addr: u64,
         signatures: Option<&Database>,
+        deadline: Option<Instant>,
     ) -> Result<render::Rendered> {
         let function = self
             .image
             .functions
             .get(&addr)
             .ok_or(Error::NoFunctionAt(addr))?;
-        let analysis = cached(&mut self.analyses, &self.image, function)
+        let analysis = cached(&mut self.analyses, &self.image, function, deadline)?
             .as_ref()
             .map_err(|source| Error::Lift {
                 addr,
                 source: source.clone(),
             })?;
+        passed(deadline)?;
         let mut rendered = render::render_with_dependencies(
             &analysis.ir,
             &analysis.references,
@@ -218,8 +228,8 @@ impl Binary {
             .map_err(|source| Error::Lift { addr, source })
     }
 
-    pub fn shape_hash(&mut self, addr: u64) -> Result<String> {
-        Ok(sigs::shape_hash(&self.analysis(addr)?.ir))
+    pub fn shape_hash(&mut self, addr: u64, deadline: Option<Instant>) -> Result<String> {
+        Ok(sigs::shape_hash(&self.analysis(addr, deadline)?.ir))
     }
 
     /// Signatures of the named functions; Err once `deadline` passes.
@@ -231,7 +241,7 @@ impl Binary {
                 continue;
             };
             passed(deadline)?;
-            match cached(&mut self.analyses, &self.image, function) {
+            match cached(&mut self.analyses, &self.image, function, deadline)? {
                 Ok(analysis) => entries.extend(sigs::entry(name, function.size, &analysis.ir)),
                 Err(error) => failures.push(Failure {
                     addr: function.addr,
@@ -255,7 +265,7 @@ impl Binary {
         let mut failures = Vec::new();
         for function in self.image.functions.values() {
             passed(deadline)?;
-            match cached(&mut self.analyses, &self.image, function) {
+            match cached(&mut self.analyses, &self.image, function, deadline)? {
                 Ok(analysis) => {
                     if let Some(entry) = database.lookup(&analysis.ir) {
                         matches.push(Match {
@@ -276,22 +286,23 @@ impl Binary {
     }
 }
 
-/// Err once `deadline` has passed.
-fn passed(deadline: Option<Instant>) -> Result<()> {
-    match deadline {
-        Some(deadline) if Instant::now() > deadline => Err(Error::TimedOut),
-        _ => Ok(()),
-    }
-}
-
 fn cached<'a>(
     analyses: &'a mut HashMap<u64, Result<Analysis, LiftError>>,
     image: &Image,
     function: &Function,
-) -> &'a Result<Analysis, LiftError> {
-    analyses
-        .entry(function.addr)
-        .or_insert_with(|| analysis::analyze(image, function))
+    deadline: Option<Instant>,
+) -> Result<&'a Result<Analysis, LiftError>> {
+    passed(deadline)?;
+    if let Entry::Vacant(entry) = analyses.entry(function.addr) {
+        let analyzed = match analysis::analyze(image, function, deadline) {
+            Ok(analysis) => Ok(analysis),
+            Err(Error::Lift { source, .. }) => Err(source),
+            Err(error) => return Err(error),
+        };
+        passed(deadline)?;
+        entry.insert(analyzed);
+    }
+    Ok(analyses.get(&function.addr).expect("analysis was inserted"))
 }
 
 fn names(function: &Function) -> impl Iterator<Item = &str> {
@@ -334,16 +345,33 @@ mod tests {
     }
 
     #[test]
+    fn timed_out_analysis_is_not_cached() {
+        let mut binary = fixture("arm64.o");
+        let addr = binary.find("pair_sum").expect("fixture function").addr;
+        assert!(matches!(
+            binary.analysis(addr, Some(Instant::now())),
+            Err(Error::TimedOut)
+        ));
+        assert!(!binary.analyses.contains_key(&addr));
+        let code = binary
+            .decompile(addr, None, None)
+            .expect("unlimited analysis");
+        assert!(code.contains("pair_sum"));
+        assert!(matches!(binary.analyses.get(&addr), Some(Ok(_))));
+        assert_eq!(binary.decompile(addr, None, None).unwrap(), code);
+    }
+
+    #[test]
     fn decompile_string_wrapper_preserves_dependency_free_output() {
         let mut binary = fixture("arm64.o");
         let addr = binary.find("pair_sum").expect("fixture function").addr;
         let rendered = binary
-            .decompile_with_dependencies(addr, None)
+            .decompile_with_dependencies(addr, None, None)
             .expect("typed decompilation");
         assert!(rendered.segment_bases.is_empty());
-        assert_eq!(binary.decompile(addr, None).unwrap(), rendered.code);
+        assert_eq!(binary.decompile(addr, None, None).unwrap(), rendered.code);
         assert!(matches!(
-            binary.decompile_with_dependencies(u64::MAX, None),
+            binary.decompile_with_dependencies(u64::MAX, None, None),
             Err(Error::NoFunctionAt(u64::MAX))
         ));
     }
@@ -372,7 +400,7 @@ mod tests {
             }),
         );
         let rendered = binary
-            .decompile_with_dependencies(addr, Some(&signatures))
+            .decompile_with_dependencies(addr, Some(&signatures), None)
             .expect("typed decompilation");
         assert_eq!(rendered.segment_bases.len(), 1);
         let dependency = &rendered.segment_bases[0];
@@ -388,7 +416,7 @@ mod tests {
                 .starts_with("/* identified: segment_reader */\n")
         );
         assert_eq!(
-            binary.decompile(addr, Some(&signatures)).unwrap(),
+            binary.decompile(addr, Some(&signatures), None).unwrap(),
             rendered.code
         );
     }

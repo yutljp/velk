@@ -1032,12 +1032,12 @@ mod tests {
                 }]
             );
         }
-        let full = binary.analysis(callee).expect("callee analysis");
+        let full = binary.analysis(callee, None).expect("callee analysis");
         assert_eq!(full.ir.stack_params.len(), 1);
         assert_eq!(full.ir.stack_params[0].offset, 8);
         assert_eq!(full.ir.stack_params[0].size, 8);
         assert_eq!(super::summary(binary.image(), callee).stack, 1);
-        let caller = binary.analysis(caller).expect("caller analysis");
+        let caller = binary.analysis(caller, None).expect("caller analysis");
         let arguments = caller
             .ir
             .blocks

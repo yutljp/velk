@@ -212,7 +212,7 @@ fn check(fixture: &Path, image: &Image, function: &Function) -> Check {
     };
     result.lifted = true;
     let before = lifted.ir.clone();
-    let after = optimize(image, lifted).ir;
+    let after = optimize(image, lifted, None).unwrap().ir;
     // Both versions go into SSA form and back unchanged.
     for ir in [&before, &after] {
         let Some(ssa) = crate::ssa::build(ir) else {
@@ -341,7 +341,7 @@ fn explain_function() {
         .expect("a function at that address");
     let lifted = lift_function(&image, function).unwrap_or_else(|error| panic!("{error}"));
     let before = lifted.ir.clone();
-    let after = optimize(&image, lifted).ir;
+    let after = optimize(&image, lifted, None).unwrap().ir;
     let structured = crate::render::structure::lower::lower(
         &after,
         &crate::render::structure::structure_best(&after),

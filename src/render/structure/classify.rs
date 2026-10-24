@@ -532,7 +532,7 @@ fn goto_causes() {
         let (mut lines, mut printed) = (0, 0);
         let mut heaviest: Vec<(usize, String)> = Vec::new();
         for addr in addresses {
-            let Ok(text) = binary.decompile(addr, None) else {
+            let Ok(text) = binary.decompile(addr, None, None) else {
                 continue;
             };
             lines += text.lines().count();
@@ -547,7 +547,7 @@ fn goto_causes() {
                 write!(texts, "==== {fixture} {name}\n{text}\n").expect("writing to a String");
                 heaviest.push((gotos, format!("{name} ({} lines)", text.lines().count())));
             }
-            let Ok(analysis) = binary.analysis(addr) else {
+            let Ok(analysis) = binary.analysis(addr, None) else {
                 continue;
             };
             let mut ir = analysis.ir.clone();
@@ -717,7 +717,7 @@ fn structure_sketch() {
     let addr = crate::addr::parse(&addr).expect("VELK_FUNCTION is an address");
     let mut binary = crate::service::Binary::open(&root.join("tests/fixtures").join(fixture))
         .unwrap_or_else(|error| panic!("{error}"));
-    let mut ir = binary.analysis(addr).expect("lifts").ir.clone();
+    let mut ir = binary.analysis(addr, None).expect("lifts").ir.clone();
     crate::render::params::fold_saved_parameters(&mut ir);
     let mut out = String::new();
     let raw = super::dominance::structure(&ir).expect("structures");

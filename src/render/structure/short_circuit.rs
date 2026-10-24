@@ -1104,7 +1104,7 @@ mod tests {
                 let path = root.join(format!("{fixture}.{architecture}.O2.debug.elf"));
                 let mut binary = crate::service::Binary::open(&path).unwrap();
                 let address = binary.find(function).unwrap().addr;
-                let code = binary.decompile(address, None).unwrap();
+                let code = binary.decompile(address, None, None).unwrap();
                 assert!(
                     code.contains(joined_guard),
                     "{} {function}: {code}",
