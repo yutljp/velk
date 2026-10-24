@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use crate::ir::Precision;
+use crate::ir::{CType, Precision};
 
 #[derive(Clone, Copy)]
 pub(super) enum View {
@@ -40,12 +40,16 @@ struct Global {
 
 #[derive(Default)]
 struct Used {
+    objects: BTreeMap<u64, String>,
     views: BTreeMap<(u64, u8), Global>,
     names: HashSet<String>,
 }
 
 #[derive(Default)]
 pub(super) struct Globals {
+    linkable: HashSet<u64>,
+    types: HashMap<u64, CType>,
+    sizes: HashMap<u64, u64>,
     names: HashMap<u64, String>,
     repeated: HashSet<String>,
     used: RefCell<Used>,
@@ -72,6 +76,14 @@ impl Globals {
             .map(|(name, _)| name.to_owned())
             .collect();
         Self {
+            linkable: symbols
+                .data
+                .iter()
+                .filter(|(_, name)| identifier(name) == **name)
+                .map(|(address, _)| *address)
+                .collect(),
+            types: HashMap::new(),
+            sizes: HashMap::new(),
             names,
             repeated,
             used: RefCell::new(Used {
@@ -82,6 +94,17 @@ impl Globals {
     }
 
     pub(super) fn pointer(&self, address: u64, view: View) -> String {
+        if let Some(ty) = self.target(address)
+            && match view {
+                View::Unsigned(width) => ty
+                    .integer()
+                    .is_some_and(|(bits, _)| bits == u32::from(width) * 8),
+                View::Float(_) => ty.to_string() == view.ty(),
+            }
+            && let Some(pointer) = self.object_pointer(address)
+        {
+            return pointer;
+        }
         let key = (address, view.key());
         let mut used = self.used.borrow_mut();
         if let Some(global) = used.views.get(&key) {
@@ -119,6 +142,123 @@ impl Globals {
             },
         );
         name
+    }
+
+    pub(super) fn add_types(
+        &mut self,
+        ir: &crate::ir::FunctionIr,
+        layouts: &HashMap<String, super::naming::Layout>,
+    ) {
+        for (address, ty, size) in &ir.debug_globals {
+            let Some(name) = self.names.get(address) else {
+                continue;
+            };
+            if !self.linkable.contains(address)
+                || self.repeated.contains(name)
+                || self.used.borrow().names.contains(name)
+                || !ir
+                    .definitions
+                    .iter()
+                    .all(|definition| !definition.fields.contains(name))
+                || ir
+                    .debug_globals
+                    .iter()
+                    .any(|(other, other_ty, other_size)| {
+                        other == address && (other_ty != ty || other_size != size)
+                    })
+            {
+                continue;
+            }
+            let element = match ty {
+                CType::Array(element) => element.as_ref(),
+                ty => ty,
+            };
+            if matches!(element, CType::Named(name) if name.split_whitespace().any(|word| matches!(word, "bool" | "_Bool")))
+            {
+                continue;
+            }
+            let width = match element {
+                CType::Named(name) if name.starts_with("struct ") => {
+                    layouts.get(&name[7..]).map(|layout| layout.size)
+                }
+                ty if ty.integer().is_some() || ty.is_sse_float() => {
+                    CType::pointer_to(ty.clone()).pointee_size().map(u64::from)
+                }
+                _ => None,
+            };
+            if let Some(width) = width.filter(|width| *width != 0)
+                && (if matches!(ty, CType::Array(_)) {
+                    size.is_multiple_of(width)
+                } else {
+                    *size == width
+                })
+                && *size != 0
+                && address.checked_add(*size).is_some()
+            {
+                self.types.insert(*address, ty.clone());
+                self.sizes.insert(*address, *size);
+            }
+        }
+        self.used.borrow_mut().names.extend(
+            self.types
+                .keys()
+                .filter_map(|address| self.names.get(address))
+                .cloned(),
+        );
+    }
+
+    pub(super) fn target(&self, address: u64) -> Option<CType> {
+        self.types.get(&address).map(|ty| match ty {
+            CType::Array(element) => element.as_ref().clone(),
+            ty => ty.clone(),
+        })
+    }
+
+    pub(super) fn containing(&self, address: u64) -> Option<(u64, u64)> {
+        let mut found = self
+            .sizes
+            .iter()
+            .filter(|(start, size)| address >= **start && address - **start < **size);
+        let Some((start, _)) = found.next() else {
+            return None;
+        };
+        if found.next().is_some() {
+            return None;
+        }
+        Some((*start, address - *start))
+    }
+
+    pub(super) fn object_pointer(&self, address: u64) -> Option<String> {
+        let Some(ty) = self.types.get(&address) else {
+            return None;
+        };
+        let Some(name) = self.names.get(&address) else {
+            return None;
+        };
+        self.used.borrow_mut().objects.insert(address, name.clone());
+        Some(if matches!(ty, CType::Array(_)) {
+            name.clone()
+        } else {
+            format!("(&{name})")
+        })
+    }
+
+    pub(super) fn object_declarations(&self, body: &str) -> String {
+        self.used
+            .borrow()
+            .objects
+            .iter()
+            .filter(|(_, name)| super::variables::mentions(body, name))
+            .map(|(address, name)| {
+                format!(
+                    "extern {};\n",
+                    match &self.types[address] {
+                        CType::Array(element) => format!("{element} {name}[]"),
+                        ty => super::declaration(ty, name),
+                    }
+                )
+            })
+            .collect()
     }
 
     pub(super) fn declarations(&self, body: &str) -> Vec<String> {

@@ -97,6 +97,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) plain_chars: std::collections::HashSet<String>,
     /// The recovered structures arrays are made of, by name.
     pub(super) arrays: HashMap<String, crate::render::naming::Layout>,
+    pub(super) scaled_offsets: HashMap<u16, u64>,
     /// Registers whose readers only ever look at the low 32 bits.
     pub(super) narrow_regs: std::collections::HashSet<u16>,
     /// Variables holding floats, with their precision.

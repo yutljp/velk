@@ -229,6 +229,11 @@ pub(crate) fn variable_types(
         };
         types.insert(index, ty);
     }
+    if !ir.members.is_empty() {
+        for index in super::naming::scaled_offsets(ir).keys() {
+            types.insert(*index, CType::I64);
+        }
+    }
     types
 }
 

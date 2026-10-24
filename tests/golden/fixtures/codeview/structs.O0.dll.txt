@@ -106,13 +106,12 @@ fn point_add @ 0x1800010a0 (size 46)
 struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
 struct big big_make(int32_t seed) {
     struct big result = {0};
-    uint64_t seed_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&seed + 0x0, 4);
-    uint8_t *result_address = (uint8_t *)&result;
+    uint64_t seed_bits = (uint32_t)seed;
 
-    __builtin_memcpy(result_address, &(uint32_t){seed_bits}, 4);
-    __builtin_memcpy(result_address + 0x4, &(uint32_t){seed_bits + 1}, 4);
-    __builtin_memcpy(result_address + 0x8, &(uint32_t){seed_bits << 1}, 4);
-    __builtin_memcpy(result_address + 0xc, &(uint32_t){seed_bits * 3}, 4);
+    result.a = seed_bits;
+    result.b = seed_bits + 1;
+    result.c = seed_bits << 1;
+    result.d = seed_bits * 3;
     return result;
 }
 -- signature
@@ -137,9 +136,7 @@ fn big_make @ 0x1800010d0 (size 54)
 /* struct: rcx +0x0:uint32_t */
 struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
 int32_t big_sum(struct big value) {
-    uint8_t *value_address = (uint8_t *)&value;
-
-    return *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address, 4) + *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address + 0x4, 4) + *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address + 0x8, 4) + *(uint32_t *)__builtin_memcpy((uint32_t[1]){0}, value_address + 0xc, 4);
+    return value.a + value.b + value.c + value.d;
 }
 -- signature
 int64_t (struct S1 * a0)

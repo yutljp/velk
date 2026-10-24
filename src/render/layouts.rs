@@ -30,7 +30,7 @@ pub(super) fn add_debug(ir: &FunctionIr, arrays: &mut HashMap<String, Layout>) {
     }
 }
 
-fn usable(ir: &FunctionIr, definition: &Definition, name: &str) -> bool {
+pub(super) fn usable(ir: &FunctionIr, definition: &Definition, name: &str) -> bool {
     let Some(alignment) = definition.alignment else {
         return false;
     };

@@ -819,12 +819,21 @@ fn render_with(
         local_scaled,
         wide_params,
         symbols,
-        globals: globals::Globals::new(symbols, reserved),
+        globals: {
+            let mut globals = globals::Globals::new(symbols, reserved);
+            globals.add_types(ir, &arrays);
+            globals
+        },
         data_ranges,
         members,
         element_types,
         plain_chars,
         arrays,
+        scaled_offsets: if ir.members.is_empty() {
+            HashMap::new()
+        } else {
+            naming::scaled_offsets(ir)
+        },
         narrow_regs,
         floats,
         scaled,
@@ -1020,6 +1029,12 @@ fn render_with(
     }
     if let Some(logical) = logical {
         for declaration in logical.declarations() {
+            if logical.pointers.iter().any(|binding| {
+                declaration.starts_with(&format!("uint8_t *{} =", binding.name))
+                    && !variables::mentions(&body, &binding.name)
+            }) {
+                continue;
+            }
             indent(1, &mut out);
             out.push_str(&declaration);
             out.push('\n');
@@ -1180,6 +1195,7 @@ fn render_with(
             out = out.replacen(&definition, "", 1);
         }
     }
+    out.insert_str(definitions_at, &ctx.globals.object_declarations(&body));
     let debug = debug_definitions(ir, &out, &ctx.arrays);
     out.insert_str(definitions_at, &debug);
     Rendered {

@@ -133,10 +133,9 @@ fn array_sum @ 0x2011f0 (size 140)
 -- decompile
 /* velk pseudo-C: bump @ 0x201280 */
 /* ref: 0x2022a8 .bss */
+extern int g_counter;
 void bump(void) {
-    uint32_t *const g_counter = (uint32_t *)0x2022a8ULL;
-
-    *g_counter += 1;
+    g_counter += 1;
 }
 -- signature
 void ()

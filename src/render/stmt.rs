@@ -220,7 +220,23 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
             stored_value(value, 64, ctx).text
         ));
     }
-    for (piece, name) in &result.pieces {
+    for (index, (piece, name)) in result.pieces.iter().enumerate() {
+        if let Some(members) = result
+            .parts
+            .get(index)
+            .filter(|members| !members.is_empty())
+        {
+            for member in members {
+                let shift = (member.offset as u64 - piece.object_offset) * 8;
+                let value = if shift == 0 {
+                    name.clone()
+                } else {
+                    format!("{name} >> {shift}")
+                };
+                lines.push(format!("    {}.{} = {value};", result.name, member.name));
+            }
+            continue;
+        }
         lines.push(format!(
             "    __builtin_memcpy((unsigned char *)&{} + 0x{:x}, &{name}, {});",
             result.name, piece.object_offset, piece.bytes
@@ -314,7 +330,10 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         Stmt::Store { addr, value, width } => {
             // Memory keeps of the value the bits stored.
             let stored = u32::from(*width) * 8;
-            if let Some(address) = expr::copy_address(addr, *width, ctx) {
+            let member = member_access(addr, *width, ctx);
+            if naming::object_member(addr, *width, ctx).is_none()
+                && let Some(address) = expr::copy_address(addr, *width, ctx)
+            {
                 let ty = type_of(*width, false);
                 let value = conformed(value, stored_value(value, stored, ctx), None, ctx);
                 return format!("__builtin_memcpy({address}, &({ty}){{{value}}}, {width});");
@@ -345,7 +364,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     }
                 };
             }
-            if let Some(member) = member_access(addr, *width, ctx) {
+            if let Some(member) = member {
                 if let Some(precision) = precision
                     && member.precision() == Some(precision)
                 {

@@ -233,6 +233,7 @@ fn call_function_types(
         param_aggregate_sizes.push(aggregate_size(unit, offset, 16));
     }
     Ok(FunctionTypes {
+        globals: Vec::new(),
         params,
         ret,
         ret_aggregate_size,

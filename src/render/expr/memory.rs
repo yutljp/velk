@@ -156,11 +156,13 @@ pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Print
         }
         return value.cast(bits, signed, if signed { 64 } else { ALL });
     }
-    if let Some(text) = copied_load(addr, width, ctx) {
-        return global_load(text, width, signed, 12);
-    }
     let member = member_access(addr, width, ctx)
         .filter(|member| member.integer().is_some() || member.ty.is_pointer());
+    if crate::render::naming::object_member(addr, width, ctx).is_none()
+        && let Some(text) = copied_load(addr, width, ctx)
+    {
+        return global_load(text, width, signed, 12);
+    }
     let mut plain_char = false;
     let (text, declared_signed) = if let Some(member) = member {
         let strength = if member.text.starts_with('*') { 12 } else { 13 };

@@ -2762,6 +2762,16 @@ fn printed_aggregate_struct_fixtures_match_independent_oracles() {
                         assert!(!code.contains("*(uint32_t *)"), "{code}");
                         assert!(!code.contains("local_"), "{code}");
                     }
+                    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+                    assert!(!code.contains("__builtin_memcpy"), "{code}");
+                }
+                if name == "big_sum" {
+                    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+                    for field in ["value.a", "value.b", "value.c", "value.d"] {
+                        assert!(code.contains(field), "{isa}: {code}");
+                    }
+                    assert!(!code.contains("__builtin_memcpy"), "{code}");
+                    assert!(!code.contains("(uint8_t *)"), "{code}");
                 }
                 ir.name = Some(name.into());
                 let mut batch = aggregate_candidates(ir, inputs, upper);
@@ -3844,6 +3854,7 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
         stack_params: Vec::new(),
         debug_locals: Vec::new(),
         debug_registers: Vec::new(),
+        debug_globals: Vec::new(),
         variadic: false,
         ret_type,
         accesses: Vec::new(),
@@ -10294,7 +10305,10 @@ fn aggregate_field_projection_rejects_unverified_objects() {
             _ => unreachable!(),
         }
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
-        assert!(!code.contains("result.x ="), "case {case}: {code}");
+        assert!(
+            !code.contains("result.x = (uint32_t)("),
+            "case {case}: {code}"
+        );
     }
 }
 

@@ -1074,6 +1074,7 @@ pub(crate) fn apply_dwarf_types(
         return;
     };
     ir.members = types.members.clone();
+    ir.debug_globals = types.globals.clone();
     ir.definitions = types.definitions.clone();
     if super::abi::has_aggregate(&types) {
         return;

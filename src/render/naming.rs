@@ -1,4 +1,7 @@
 pub(super) mod roles;
+mod scales;
+
+pub(super) use scales::registers as scaled_offsets;
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Precision, Stmt};
 use crate::render::expr::Ctx;
@@ -251,7 +254,15 @@ pub(super) fn global_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Str
 }
 
 pub(super) fn global_access_as(addr: &Expr, view: View, ctx: &Ctx<'_>) -> Option<String> {
-    global_pointer(addr, view, ctx).map(|name| format!("*{name}"))
+    global_pointer(addr, view, ctx).map(|name| {
+        match name
+            .strip_prefix("(&")
+            .and_then(|name| name.strip_suffix(')'))
+        {
+            Some(name) => name.to_owned(),
+            None => format!("*{name}"),
+        }
+    })
 }
 
 pub(super) fn global_pointer(addr: &Expr, view: View, ctx: &Ctx<'_>) -> Option<String> {
@@ -351,9 +362,59 @@ impl Place {
     }
 }
 
+pub(super) fn object_member(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
+    if let Some((base, offset)) = member_address(addr)
+        && let Some(abi) = ctx.abi
+        && let Some(binding) = abi.pointers.iter().find(|binding| binding.register == base)
+    {
+        let ty = abi
+            .params
+            .iter()
+            .find(|(name, _)| *name == binding.object)
+            .map(|(_, ty)| ty)
+            .or_else(|| {
+                abi.result
+                    .as_ref()
+                    .filter(|result| result.name == binding.object)
+                    .map(|result| &result.ty)
+            });
+        if let Some(ty) = ty
+            && offset == 0
+            && let Some(place) = (Place {
+                text: binding.object.clone(),
+                ty: ty.clone(),
+            })
+            .scalar(u64::from(width))
+            && place.integer().is_some()
+        {
+            return Some(place);
+        }
+        if let Some(CType::Named(ty)) = ty
+            && let Some(structure) = ty.strip_prefix("struct ")
+            && ctx.arrays.contains_key(structure)
+            && let Some(member) = ctx.members.get(&(structure.to_owned(), offset))
+            && member.width == u64::from(width)
+            && member
+                .ty
+                .integer()
+                .is_some_and(|(bits, _)| bits == u32::from(width) * 8)
+        {
+            return Place {
+                text: format!("{}.{}", binding.object, member.name),
+                ty: member.ty.clone(),
+            }
+            .scalar(u64::from(width));
+        }
+    }
+    None
+}
+
 /// Renders a member access when the field table has that offset at the
 /// access's own width.
 pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
+    if let Some(member) = object_member(addr, width, ctx) {
+        return Some(member);
+    }
     if width == 1
         && let Some(part) = ctx.local_parts.get(&render_expr(addr, ctx))
         && !part.contains('&')
@@ -374,7 +435,13 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
             return None;
         };
         let text = match index {
-            Expr::Const(0) => format!("*{name}"),
+            Expr::Const(0) => match name
+                .strip_prefix("(&")
+                .and_then(|name| name.strip_suffix(')'))
+            {
+                Some(name) => name.to_owned(),
+                None => format!("*{name}"),
+            },
             index => format!(
                 "{name}[{}]",
                 crate::render::expr::integer_sum(&index, ctx).text
@@ -454,6 +521,12 @@ fn pointee_of(expr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
 
 pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
     match expr {
+        Expr::Const(address) => {
+            let Some((base, _)) = ctx.globals.containing(*address) else {
+                return None;
+            };
+            ctx.globals.target(base)
+        }
         Expr::Select { then, els, .. } => {
             let target = match (then.as_ref(), els.as_ref()) {
                 (Expr::Const(0), other) | (other, Expr::Const(0)) => {
@@ -551,6 +624,21 @@ fn size_of(ty: &CType, ctx: &Ctx<'_>) -> Option<u64> {
 /// a local the frame holds it in.
 pub(crate) fn scalar_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64)> {
     match expr {
+        Expr::Const(address) => {
+            let Some((base, _)) = ctx.globals.containing(*address) else {
+                return None;
+            };
+            let Some(target) = ctx.globals.target(base) else {
+                return None;
+            };
+            let Some(size) = size_of(&target, ctx) else {
+                return None;
+            };
+            let Some(name) = ctx.globals.object_pointer(base) else {
+                return None;
+            };
+            Some((name, size))
+        }
         Expr::Reg { index, width: 64 } => {
             let name = ctx.register(*index, 64);
             let Some(target) = pointer_target(expr, ctx) else {
@@ -637,14 +725,25 @@ fn element_terms<'e>(addr: &'e Expr, ctx: &Ctx<'_>) -> Option<(String, u64, Expr
         .iter()
         .enumerate()
         .filter(|(_, (_, negative))| !negative)
-        .filter_map(|(at, (term, _))| Some((at, scalar_pointer(term, ctx)?)));
+        .filter_map(|(at, (term, _))| {
+            let Some(pointer) = scalar_pointer(term, ctx) else {
+                return None;
+            };
+            Some((at, pointer))
+        });
     let Some((base_at, (base, size))) = bases.next() else {
         return None;
     };
     if bases.next().is_some() {
         return None;
     }
-    let mut constant: u64 = 0;
+    let mut constant: u64 = match found[base_at].0 {
+        Expr::Const(address) => ctx
+            .globals
+            .containing(*address)
+            .map_or(0, |(_, offset)| offset),
+        _ => 0,
+    };
     let mut index: Option<Expr> = None;
     let mut add = |term: Expr| {
         index = Some(match index.take() {
@@ -681,6 +780,15 @@ fn element_terms<'e>(addr: &'e Expr, ctx: &Ctx<'_>) -> Option<(String, u64, Expr
                     _ => (*other, 1),
                 };
                 if scale % size != 0 {
+                    if let Expr::Reg { index, width: 64 } = other
+                        && ctx
+                            .scaled_offsets
+                            .get(index)
+                            .is_some_and(|scale| scale.is_multiple_of(size))
+                    {
+                        add(Expr::bin(BinOp::DivS, (*other).clone(), Expr::Const(size)));
+                        continue;
+                    }
                     return None;
                 }
                 add(match scale / size {

@@ -15,6 +15,7 @@ pub(super) struct Capture {
     pub piece: AbiPiece,
     parameter: usize,
     field: Option<String>,
+    parts: Vec<crate::ir::Member>,
 }
 
 pub(super) struct ResultObject {
@@ -23,6 +24,7 @@ pub(super) struct ResultObject {
     pub pieces: Vec<(AbiPiece, String)>,
     pub indirect: bool,
     pub fields: Vec<String>,
+    pub parts: Vec<Vec<crate::ir::Member>>,
 }
 
 pub(super) struct Plan {
@@ -238,6 +240,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                             piece: piece.clone(),
                             parameter,
                             field: None,
+                            parts: Vec::new(),
                         }),
                         AbiLocation::Stack(offset) => {
                             let Ok(object_offset) = i64::try_from(piece.object_offset) else {
@@ -320,6 +323,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                 pieces,
                 indirect,
                 fields: Vec::new(),
+                parts: Vec::new(),
             })
         }
         _ => None,
@@ -371,6 +375,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
         pointer_parameters,
     };
     fields::project(&mut rewritten, &mut plan, reserved);
+    fields::captures(&rewritten, &mut plan);
     *ir = rewritten;
     Some(plan)
 }
@@ -482,6 +487,54 @@ impl Plan {
                 declarations.push(format!(
                     "uint64_t {} = (uint32_t){}.{};",
                     capture.name, capture.object, field
+                ));
+                continue;
+            }
+            let ty = &self.params[capture.parameter].1;
+            if let Some((bits, signed)) = ty.integer()
+                && matches!(bits, 8 | 16 | 32 | 64)
+                && !matches!(ty, CType::Named(name) if name.split_whitespace().any(|word| matches!(word, "bool" | "_Bool")))
+                && capture.piece.object_offset == 0
+                && capture.piece.bytes == u64::from(bits / 8)
+            {
+                let value = if signed && bits < 64 {
+                    format!(
+                        "({}){}",
+                        super::expr::type_of((bits / 8) as u8, false),
+                        capture.object
+                    )
+                } else {
+                    capture.object.clone()
+                };
+                declarations.push(format!("uint64_t {} = {value};", capture.name));
+                continue;
+            }
+            if !capture.parts.is_empty() {
+                let parts: Vec<_> = capture
+                    .parts
+                    .iter()
+                    .map(|member| {
+                        let access = format!("{}.{}", capture.object, member.name);
+                        let unsigned = super::expr::type_of(member.width as u8, false);
+                        let value = if member.width != 8
+                            && member.ty.integer().is_some_and(|(_, signed)| signed)
+                        {
+                            format!("({unsigned}){access}")
+                        } else {
+                            access
+                        };
+                        let shift = (member.offset as u64 - capture.piece.object_offset) * 8;
+                        if shift == 0 {
+                            value
+                        } else {
+                            format!("(uint64_t){value} << {shift}")
+                        }
+                    })
+                    .collect();
+                declarations.push(format!(
+                    "uint64_t {} = {};",
+                    capture.name,
+                    parts.join(" | ")
                 ));
                 continue;
             }

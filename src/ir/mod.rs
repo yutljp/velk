@@ -895,6 +895,8 @@ pub struct FunctionIr {
     pub stack_params: Vec<StackParam>,
     pub debug_locals: Vec<DebugLocal>,
     pub debug_registers: Vec<(u16, String)>,
+    /// Fixed-address objects with source types from debug information.
+    pub debug_globals: Vec<(u64, CType, u64)>,
     /// The debug info declares further, variadic, parameters.
     pub variadic: bool,
     pub ret_type: CType,
@@ -941,6 +943,7 @@ impl FunctionIr {
             stack_params: Vec::new(),
             debug_locals: Vec::new(),
             debug_registers: Vec::new(),
+            debug_globals: Vec::new(),
             variadic: false,
             ret_type: CType::U64,
             accesses: Vec::new(),

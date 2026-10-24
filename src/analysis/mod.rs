@@ -1257,6 +1257,10 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         params: signature.params,
         declared_signature,
         stack_params,
+        debug_globals: types
+            .as_ref()
+            .map(|types| types.globals.clone())
+            .unwrap_or_default(),
         debug_registers: types
             .as_ref()
             .map(|types| types.registers.clone())
@@ -1619,6 +1623,7 @@ mod tests {
                 },
             ];
             let types = crate::loader::dwarf::FunctionTypes {
+                globals: Vec::new(),
                 params: Vec::new(),
                 ret: ret.clone(),
                 ret_aggregate_size: None,

@@ -174,6 +174,7 @@ pub(super) fn stack_locals_with_roles(
         wide_params: std::collections::HashSet::new(),
         symbols: &super::Symbols::default(),
         globals: Default::default(),
+        scaled_offsets: Default::default(),
         data_ranges: &[],
         members: HashMap::new(),
         element_types: HashMap::new(),

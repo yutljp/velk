@@ -1,6 +1,94 @@
 use super::{Capture, Plan};
 use crate::ir::{BinOp, Expr, FunctionIr, Operation, Param, RegisterClass, Stmt};
 
+pub(super) fn captures(ir: &FunctionIr, plan: &mut Plan) {
+    for capture in &mut plan.captures {
+        if capture.field.is_some() {
+            continue;
+        }
+        let ty = plan.params[capture.parameter].1.to_string();
+        capture.parts = integer_members(ir, &ty, &capture.piece);
+    }
+    if let Some(result) = &mut plan.result
+        && result.fields.is_empty()
+        && !result.indirect
+    {
+        result.parts = result
+            .pieces
+            .iter()
+            .map(|(piece, _)| integer_members(ir, &result.ty.to_string(), piece))
+            .collect();
+    }
+}
+
+fn integer_members(
+    ir: &FunctionIr,
+    ty: &str,
+    piece: &crate::ir::AbiPiece,
+) -> Vec<crate::ir::Member> {
+    if piece.bytes > 8 {
+        return Vec::new();
+    }
+    let Some(structure) = ty.strip_prefix("struct ") else {
+        return Vec::new();
+    };
+    let Some(definition) = ir
+        .definitions
+        .iter()
+        .find(|definition| definition.name == ty)
+    else {
+        return Vec::new();
+    };
+    if ir
+        .definitions
+        .iter()
+        .filter(|definition| definition.name == ty)
+        .count()
+        != 1
+        || !super::super::layouts::usable(ir, definition, structure)
+    {
+        return Vec::new();
+    }
+    let Some(end) = piece.object_offset.checked_add(piece.bytes) else {
+        return Vec::new();
+    };
+    let mut members: Vec<_> = ir
+        .members
+        .iter()
+        .filter(|member| {
+            member.structure == structure
+                && member.offset >= 0
+                && member.offset as u64 >= piece.object_offset
+                && (member.offset as u64)
+                    .checked_add(member.width)
+                    .is_some_and(|stop| stop <= end)
+        })
+        .cloned()
+        .collect();
+    members.sort_by_key(|member| member.offset);
+    let mut offset = piece.object_offset;
+    let complete = members.iter().all(|member| {
+        if member.offset as u64 != offset
+            || matches!(&member.ty, crate::ir::CType::Named(name) if name.split_whitespace().any(|word| matches!(word, "bool" | "_Bool")))
+            || !member
+                .ty
+                .integer()
+                .is_some_and(|(bits, _)| u64::from(bits) == member.width * 8)
+            || super::sanitize(&member.name) != member.name
+            || super::super::globals::reserved_identifier(&member.name)
+        {
+            return false;
+        }
+        offset = offset.saturating_add(member.width);
+        true
+    });
+    if complete && offset == end {
+        members
+    } else {
+        Vec::new()
+    }
+}
+
 // Limit projection to a complete straight-line copy and construction. No address
 // or intermediate object survives this pattern, so neither can escape.
 pub(super) fn project(
@@ -203,6 +291,7 @@ pub(super) fn project(
                 piece: capture.piece.clone(),
                 parameter: capture.parameter,
                 field: Some(member.name.clone()),
+                parts: Vec::new(),
             });
         }
         registers.push(pair);

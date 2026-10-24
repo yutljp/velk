@@ -273,6 +273,7 @@ mod declarations {
         let root = source(unit, 1);
         let function = source(unit, 2);
         let types = FunctionTypes {
+            globals: Vec::new(),
             locals: Vec::new(),
             registers: Vec::new(),
             params: vec![(Some("value".to_owned()), Some(ty.clone()))],

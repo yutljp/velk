@@ -7,6 +7,7 @@ use crate::ir::calls::{CallMember, FunctionSource, TypeSource};
 use crate::ir::{AbiIssue, AbiProfile, CType, Definition, Member};
 use crate::loader::Image;
 
+mod globals;
 mod layout;
 mod locals;
 
@@ -19,6 +20,7 @@ pub struct DwarfFunction {
 
 #[derive(Debug, Clone)]
 pub struct FunctionTypes {
+    pub globals: Vec<(u64, CType, u64)>,
     pub locals: Vec<crate::ir::DebugLocal>,
     pub registers: Vec<(u16, String)>,
     /// Parameter names and types; either may be absent from the debug info.
@@ -274,6 +276,7 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             }
             let definitions = definitions(&dwarf, &unit, abi_profile.ok());
             return Some(FunctionTypes {
+                globals: globals::read(&dwarf, &unit, image),
                 locals,
                 registers,
                 params,

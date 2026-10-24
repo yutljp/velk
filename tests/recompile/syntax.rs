@@ -88,6 +88,167 @@ fn run_printed(code: &str, support: &str, assertions: &str) {
 }
 
 #[test]
+fn typed_global_objects_preserve_signed_bits_and_stores() {
+    for signed in [false, true] {
+        let mut ir = synthetic_ir(
+            "read_object",
+            vec![],
+            CType::U64,
+            vec![Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::Const(0x2000)),
+                    width: 4,
+                    signed,
+                },
+            }],
+        );
+        ir.debug_globals = vec![(0x2000, CType::I32, 4)];
+        let symbols = velk::render::Symbols {
+            data: [(0x2000, "object".into())].into(),
+            ..Default::default()
+        };
+        let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 4)]);
+        assert!(code.contains("extern int32_t object;"), "{code}");
+        assert!(!code.contains("0x2000"), "{code}");
+        run_printed(
+            &code,
+            "int32_t object = -1;",
+            if signed {
+                "return read_object() != UINT64_MAX;"
+            } else {
+                "return read_object() != UINT32_MAX;"
+            },
+        );
+    }
+    for isa in ["x86_64", "aarch64"] {
+        let mut binary = Binary::open(
+            &common::fixtures_dir().join(format!("metrics/l4_memory.{isa}.O0.debug.elf")),
+        )
+        .unwrap();
+        let address = binary.find("bump").unwrap().addr;
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(code.contains("extern int g_counter;"), "{code}");
+        assert!(!code.contains("*const g_counter"), "{code}");
+        run_printed(
+            &code,
+            "int g_counter = 41;",
+            "bump(); return g_counter != 42;",
+        );
+    }
+}
+
+#[test]
+fn typed_global_struct_arrays_preserve_field_offsets() {
+    let mut ir = synthetic_ir(
+        "read_item",
+        vec![Param {
+            index: 7,
+            name: "i".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::bin(
+                    BinOp::Add,
+                    Expr::Const(0x2008),
+                    Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(24)),
+                )),
+                width: 8,
+                signed: false,
+            },
+        }],
+    );
+    ir.definitions = vec![velk::ir::Definition {
+        name: "struct item".into(),
+        members: vec![
+            "uint64_t tag;".into(),
+            "uint64_t value;".into(),
+            "uint64_t count;".into(),
+        ],
+        fields: vec!["tag".into(), "value".into(), "count".into()],
+        contains: vec![],
+        size: 24,
+        alignment: Some(8),
+        compatible_profiles: vec![AbiProfile::SysV],
+    }];
+    ir.members = ["tag", "value", "count"]
+        .iter()
+        .enumerate()
+        .map(|(i, name)| velk::ir::Member {
+            structure: "item".into(),
+            offset: i as i64 * 8,
+            name: (*name).into(),
+            ty: CType::U64,
+            width: 8,
+        })
+        .collect();
+    ir.debug_globals = vec![(
+        0x2000,
+        CType::Array(Box::new(CType::Named("struct item".into()))),
+        72,
+    )];
+    let symbols = velk::render::Symbols {
+        data: [(0x2000, "items".into())].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 72)]);
+    assert!(code.contains("items[i].value"), "{code}");
+    assert!(!code.contains("(uint8_t *)"), "{code}");
+    run_printed(
+        &code,
+        "struct item items[] = {{1, 73, 2}, {3, 99, 4}, {5, UINT64_MAX, 6}};",
+        "return read_item(0) != 73 || read_item(1) != 99 || read_item(2) != UINT64_MAX;",
+    );
+    ir.params[0].ty = CType::I32;
+    ir.blocks[0].stmts = vec![
+        Stmt::Assign {
+            dest: velk::ir::RegRef {
+                index: velk::ir::VARIABLE_BASE,
+                width: 64,
+            },
+            value: Expr::bin(
+                BinOp::Mul,
+                Expr::SignExtend {
+                    value: Box::new(Expr::reg(7, 32)),
+                    width: 4,
+                },
+                Expr::Const(24),
+            ),
+        },
+        Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::bin(
+                    BinOp::Add,
+                    Expr::Const(0x2008),
+                    Expr::reg(velk::ir::VARIABLE_BASE, 64),
+                )),
+                width: 8,
+                signed: false,
+            },
+        },
+    ];
+    let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 72)]);
+    assert!(code.contains("].value"), "{code}");
+    assert!(!code.contains("(uint8_t *)"), "{code}");
+    run_printed(
+        &code,
+        "struct item items[] = {{1, 73, 2}, {3, 99, 4}, {5, UINT64_MAX, 6}};",
+        "return read_item(0) != 73 || read_item(1) != 99 || read_item(2) != UINT64_MAX;",
+    );
+    let Stmt::Assign {
+        value: Expr::Bin { lhs, .. },
+        ..
+    } = &mut ir.blocks[0].stmts[0]
+    else {
+        unreachable!()
+    };
+    **lhs = Expr::reg(7, 64);
+    let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 72)]);
+    assert!(!code.contains("].value"), "{code}");
+}
+
+#[test]
 fn float_register_integer_reads_preserve_bits() {
     let ir = synthetic_ir(
         "float_bits",

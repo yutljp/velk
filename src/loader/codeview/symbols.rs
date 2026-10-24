@@ -330,6 +330,7 @@ fn finish(data: &mut Data, function: Pending, budget: &mut usize) {
                 .filter(|var| var.parameter)
                 .collect();
             FunctionTypes {
+                globals: Vec::new(),
                 locals: Vec::new(),
                 registers: function
                     .variables
