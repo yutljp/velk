@@ -212,6 +212,9 @@ pub struct Image {
     /// Branch relocations the object left unapplied: instruction address to
     /// the symbol address it calls.
     pub relocations: BTreeMap<u64, u64>,
+    /// The file is a relocatable object, whose branches to other modules
+    /// stay unresolved.
+    pub relocatable: bool,
     /// The slots the dynamic linker fills with another module's function or
     /// object, by its name: calls through them call it.
     pub imports: BTreeMap<u64, String>,
@@ -294,6 +297,7 @@ impl Image {
             result_reads: Default::default(),
             lifts: Default::default(),
             relocations: BTreeMap::new(),
+            relocatable: false,
             go: false,
             vtables: Default::default(),
             installs: Default::default(),
@@ -766,6 +770,7 @@ pub fn load(path: &Path) -> Result<Image> {
         result_reads: Default::default(),
         lifts: Default::default(),
         relocations,
+        relocatable: file.kind() == object::ObjectKind::Relocatable,
         imports: plt::imports(&file).into_iter().collect(),
         landing_pads: BTreeMap::new(),
         go: false,

@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::loader::Function;
+use crate::loader::NameSource;
 use crate::loader::Section;
 
 /// Function starts in a stripped AArch64 image: the first non-padding
@@ -244,14 +245,22 @@ pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64,
         else {
             continue;
         };
-        let end = addrs
+        let next = addrs
             .iter()
             .copied()
             .filter(|a| *a > *addr && *a < section.vaddr.saturating_add(section.size))
-            .min()
-            .unwrap_or_else(|| section.vaddr.saturating_add(section.size));
+            .min();
+        let end = next.unwrap_or_else(|| section.vaddr.saturating_add(section.size));
         let delta = end - addr;
-        if (1..=0x4000).contains(&delta) {
+        // Code between two starts the symbol table gives belongs to the
+        // first, however large.
+        let named = |start: &u64| {
+            functions
+                .get(start)
+                .is_some_and(|function| function.sources.contains(&NameSource::Symtab))
+        };
+        let bounded = named(addr) && next.as_ref().is_some_and(named);
+        if delta >= 1 && (bounded || delta <= 0x4000) {
             let func = functions.get_mut(addr).expect("entry exists");
             func.size = Some(delta);
             func.size_estimated = true;

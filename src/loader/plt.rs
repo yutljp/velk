@@ -3,8 +3,8 @@
 
 use std::collections::HashMap;
 
-use object::RelocationTarget;
 use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol, ObjectSymbolTable};
+use object::{RelocationTarget, SymbolIndex};
 
 /// Whether a section holds linkage stubs, whose code no prologue scan
 /// should split.
@@ -12,13 +12,14 @@ pub(super) fn is_stub_section(name: &str) -> bool {
     matches!(name, ".plt" | ".plt.sec" | ".plt.got" | "__stubs")
 }
 
-/// The slots dynamic relocations fill with the address of a symbol another
-/// module defines, by the symbol's name.
+/// The slots dynamic relocations, or Mach-O's indirect symbol table, fill
+/// with the address of a symbol another module defines, by the symbol's
+/// name.
 pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
     let (Some(relocations), Some(symbols)) =
         (file.dynamic_relocations(), file.dynamic_symbol_table())
     else {
-        return HashMap::new();
+        return macho_entries(file, false).into_iter().collect();
     };
     relocations
         .filter_map(|(slot, relocation)| {
@@ -33,12 +34,12 @@ pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
 }
 
 /// `(stub address, imported name)` for every stub that jumps through a slot
-/// a dynamic relocation names.
+/// a dynamic relocation names, or that Mach-O's indirect symbol table names.
 pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
     let (Some(relocations), Some(symbols)) =
         (file.dynamic_relocations(), file.dynamic_symbol_table())
     else {
-        return Vec::new();
+        return macho_entries(file, true);
     };
     let slots: HashMap<u64, String> = relocations
         .filter_map(|(slot, relocation)| {
@@ -76,6 +77,68 @@ pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
     stubs.sort();
     stubs.dedup_by_key(|(address, _)| *address);
     stubs
+}
+
+/// `(address, imported name)` for each entry of a Mach-O image's sections
+/// that the indirect symbol table names: the stubs when `stubs`, else the
+/// slots the dynamic linker fills.
+fn macho_entries(file: &ObjFile, stubs: bool) -> Vec<(u64, String)> {
+    use object::read::macho::Section as _;
+    let ObjFile::MachO64(macho) = file else {
+        return Vec::new();
+    };
+    let endian = macho.endian();
+    let Ok(mut commands) = macho.macho_load_commands() else {
+        return Vec::new();
+    };
+    let mut table = None;
+    while let Ok(Some(command)) = commands.next() {
+        if let Ok(Some(dysymtab)) = command.dysymtab() {
+            table = dysymtab.indirect_symbols(endian, macho.data()).ok();
+            break;
+        }
+    }
+    let Some(table) = table else {
+        return Vec::new();
+    };
+    let mut entries = Vec::new();
+    for section in macho.sections() {
+        let header = section.macho_section();
+        if (header.section_type(endian) == object::macho::S_SYMBOL_STUBS) != stubs {
+            continue;
+        }
+        let Ok(indices) = header.indirect_symbols(endian, table) else {
+            continue;
+        };
+        let stride = if stubs {
+            u64::from(header.symbol_stub_size(endian))
+        } else {
+            8
+        };
+        for (position, entry) in indices.iter().enumerate() {
+            // A slot the linker bound to a local definition names no import.
+            let Some(index) = entry.get(endian).index() else {
+                continue;
+            };
+            let Ok(symbol) = file.symbol_by_index(SymbolIndex(index as usize)) else {
+                continue;
+            };
+            let Ok(name) = symbol.name() else {
+                continue;
+            };
+            if name.is_empty() || !symbol.is_undefined() {
+                continue;
+            }
+            let Some(address) = (position as u64)
+                .checked_mul(stride)
+                .and_then(|offset| header.addr(endian).checked_add(offset))
+            else {
+                continue;
+            };
+            entries.push((address, name.to_owned()));
+        }
+    }
+    entries
 }
 
 /// `(instruction address, slot)` for each `jmp [rip + displacement]`.

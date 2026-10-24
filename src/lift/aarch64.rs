@@ -486,9 +486,10 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::STP | O::STNP => lift_pair(lifter, ops, true, false),
         O::B => {
             let target = lifter.target_of(ops[0], pc);
-            // A branch to itself is an unresolved reference to another
-            // function; lift it as a tail call.
-            if target == Some(pc) {
+            // In an object a branch to itself is an unresolved reference to
+            // another function; lift it as a tail call. In a linked image it
+            // is an endless loop.
+            if target == Some(pc) && lifter.image.relocatable {
                 lifter
                     .stmts
                     .extend(tail_call(lifter.image, lifter.summaries, None));

@@ -228,3 +228,252 @@ fn a_section_past_the_address_space_is_left_out() {
         std::fs::remove_file(&path).ok();
     }
 }
+
+const MACHO_BASE: u64 = 0x1_0000_0000;
+const MACHO_TEXT: u64 = 0x1000;
+const MACHO_F: u64 = 0;
+const MACHO_LOOP: u64 = 0x28;
+const MACHO_LARGE: u64 = 0x30;
+/// Past the 16 KB a size estimate between two unnamed starts may take.
+const MACHO_LARGE_SIZE: u64 = 0x4008;
+const MACHO_CALLER: u64 = MACHO_LARGE + MACHO_LARGE_SIZE;
+const MACHO_STUBS: u64 = MACHO_CALLER + 0x24;
+const MACHO_GOT: u64 = MACHO_STUBS + 0xc;
+
+/// A linked arm64 Mach-O executable: `_f` calls `memset_pattern16` through
+/// its stub, `_loop` is `b .`, `_large` is larger than 16 KB and returns 1
+/// from its end, and `_caller` keeps its result in its frame.
+fn macho_executable() -> Vec<u8> {
+    let at = |offset: u64| MACHO_BASE + MACHO_TEXT + offset;
+    let bl = |from: u64, to: u64| {
+        0x9400_0000 | ((at(to).wrapping_sub(at(from)) >> 2) as u32 & 0x03ff_ffff)
+    };
+    let mut code: Vec<u32> = vec![
+        0xa9bf_7bfd, // stp x29, x30, [sp, #-0x10]!
+        0x9100_03fd, // mov x29, sp
+        0xd100_83ff, // sub sp, sp, #0x20
+        0x9100_03e0, // mov x0, sp
+        0xd280_0001, // mov x1, #0
+        0xd280_0402, // mov x2, #0x20
+        bl(MACHO_F + 0x18, MACHO_STUBS),
+        0x9100_83ff, // add sp, sp, #0x20
+        0xa8c1_7bfd, // ldp x29, x30, [sp], #0x10
+        0xd65f_03c0, // ret
+        0x1400_0000, // b .
+        0xd503_201f, // nop
+    ];
+    code.push(0x1400_0000 | ((MACHO_LARGE_SIZE - 8) >> 2) as u32);
+    code.resize(
+        ((MACHO_LARGE + MACHO_LARGE_SIZE - 8) / 4) as usize,
+        0xd503_201f,
+    );
+    code.extend([0x5280_0020, 0xd65f_03c0]); // mov w0, #1; ret
+    code.extend([
+        0xd100_83ff, // sub sp, sp, #0x20
+        0xa901_7bfd, // stp x29, x30, [sp, #0x10]
+        0x9100_43fd, // add x29, sp, #0x10
+        bl(MACHO_CALLER + 0xc, MACHO_LARGE),
+        0xb900_0fe0, // str w0, [sp, #0xc]
+        0xb940_0fe0, // ldr w0, [sp, #0xc]
+        0xa941_7bfd, // ldp x29, x30, [sp, #0x10]
+        0x9100_83ff, // add sp, sp, #0x20
+        0xd65f_03c0, // ret
+    ]);
+    let pages = ((at(MACHO_GOT) >> 12) - (at(MACHO_STUBS) >> 12)) as u32;
+    code.extend([
+        0x9000_0010 | (pages & 3) << 29 | (pages >> 2) << 5, // adrp x16, got
+        0xf940_0210 | ((at(MACHO_GOT) & 0xfff) as u32 / 8) << 10, // ldr x16, [x16, got]
+        0xd61f_0200,                                         // br x16
+        0,
+        0,
+    ]);
+    assert_eq!(code.len() as u64 * 4, MACHO_GOT + 8);
+
+    let symbols: [(&str, u8, u8, u64); 5] = [
+        ("_memset_pattern16", 0x01, 0, 0),
+        ("_f", 0x0f, 1, at(MACHO_F)),
+        ("_loop", 0x0f, 1, at(MACHO_LOOP)),
+        ("_large", 0x0f, 1, at(MACHO_LARGE)),
+        ("_caller", 0x0f, 1, at(MACHO_CALLER)),
+    ];
+    let symoff = MACHO_TEXT + MACHO_GOT + 8;
+    let indirect = symoff + 16 * symbols.len() as u64;
+    let stroff = indirect + 8;
+    let mut strings = vec![0u8];
+    let mut table = Vec::new();
+    for (name, kind, section, value) in symbols {
+        table.extend((strings.len() as u32).to_le_bytes());
+        table.extend([kind, section]);
+        table.extend(0u16.to_le_bytes());
+        table.extend(value.to_le_bytes());
+        strings.extend(name.as_bytes());
+        strings.push(0);
+    }
+
+    let mut bytes = Vec::new();
+    let words = |bytes: &mut Vec<u8>, values: &[u32]| {
+        for value in values {
+            bytes.extend(value.to_le_bytes());
+        }
+    };
+    let name = |bytes: &mut Vec<u8>, text: &str| {
+        let mut field = [0u8; 16];
+        field[..text.len()].copy_from_slice(text.as_bytes());
+        bytes.extend(field);
+    };
+    let segment = 72 + 3 * 80;
+    // mach_header_64: arm64, MH_EXECUTE, three load commands.
+    words(
+        &mut bytes,
+        &[0xfeed_facf, 0x0100_000c, 0, 2, 3, segment + 24 + 80, 0, 0],
+    );
+    // LC_SEGMENT_64 __TEXT over the whole file.
+    words(&mut bytes, &[0x19, segment]);
+    name(&mut bytes, "__TEXT");
+    for value in [
+        MACHO_BASE,
+        stroff + strings.len() as u64,
+        0,
+        stroff + strings.len() as u64,
+    ] {
+        bytes.extend(value.to_le_bytes());
+    }
+    words(&mut bytes, &[5, 5, 3, 0]);
+    // section_64: the code, the stubs (S_SYMBOL_STUBS, 12 bytes each, from
+    // indirect entry 0) and the slots (S_NON_LAZY_SYMBOL_POINTERS, from 1).
+    for (section, start, size, flags, first, stub) in [
+        ("__text", 0, MACHO_STUBS, 0x8000_0400, 0, 0),
+        ("__stubs", MACHO_STUBS, 0xc, 0x8000_0408, 0, 0xc),
+        ("__got", MACHO_GOT, 8, 0x6, 1, 0),
+    ] {
+        name(&mut bytes, section);
+        name(&mut bytes, "__TEXT");
+        bytes.extend(at(start).to_le_bytes());
+        bytes.extend(size.to_le_bytes());
+        words(
+            &mut bytes,
+            &[(MACHO_TEXT + start) as u32, 2, 0, 0, flags, first, stub, 0],
+        );
+    }
+    // LC_SYMTAB
+    words(
+        &mut bytes,
+        &[
+            2,
+            24,
+            symoff as u32,
+            symbols.len() as u32,
+            stroff as u32,
+            strings.len() as u32,
+        ],
+    );
+    // LC_DYSYMTAB: only the two indirect symbol entries.
+    let mut dysymtab = [0u32; 20];
+    dysymtab[..2].copy_from_slice(&[0xb, 80]);
+    dysymtab[14..16].copy_from_slice(&[indirect as u32, 2]);
+    words(&mut bytes, &dysymtab);
+    bytes.resize(MACHO_TEXT as usize, 0);
+    words(&mut bytes, &code);
+    bytes.extend(table);
+    words(&mut bytes, &[0, 0]);
+    bytes.extend(strings);
+    bytes
+}
+
+fn open_macho(test: &str) -> Binary {
+    let path = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("macho-{}-{test}", std::process::id()));
+    std::fs::write(&path, macho_executable()).expect("a scratch file");
+    let binary = Binary::open(&path).unwrap_or_else(|error| panic!("{error}"));
+    std::fs::remove_file(&path).ok();
+    binary
+}
+
+fn decompiled(binary: &mut Binary, name: &str) -> String {
+    let addr = binary.find(name).expect("a function").addr;
+    binary
+        .decompile(addr, None, None)
+        .unwrap_or_else(|error| panic!("{error}"))
+}
+
+/// Whether clang accepts the printed C with the declarations it relies on.
+fn compiles(code: &str) -> bool {
+    use std::io::Write as _;
+    let mut compiler = std::process::Command::new("clang")
+        .args(["-fsyntax-only", "-w", "-x", "c", "-"])
+        .stdin(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("clang");
+    let prelude = "#include <stdint.h>\n\
+                   void _memset_pattern16(void *, const void *, unsigned long);\n\
+                   int32_t _large(void);\n";
+    compiler
+        .stdin
+        .take()
+        .expect("standard input")
+        .write_all(format!("{prelude}{code}").as_bytes())
+        .expect("writing to clang");
+    let output = compiler.wait_with_output().expect("clang");
+    if !output.status.success() {
+        eprintln!("{code}\n{}", String::from_utf8_lossy(&output.stderr));
+    }
+    output.status.success()
+}
+
+/// Mach-O names its stubs and slots by the indirect symbol table, so a call
+/// to an import that returns nothing is a statement.
+#[test]
+fn macho_stubs_name_their_imports() {
+    let mut binary = open_macho("stubs");
+    let image = binary.image();
+    let stub = MACHO_BASE + MACHO_TEXT + MACHO_STUBS;
+    let got = MACHO_BASE + MACHO_TEXT + MACHO_GOT;
+    assert_eq!(
+        image.functions[&stub].name.as_deref(),
+        Some("_memset_pattern16")
+    );
+    assert_eq!(
+        image.imports.get(&got).map(String::as_str),
+        Some("_memset_pattern16")
+    );
+    let code = decompiled(&mut binary, "_f");
+    assert!(code.contains("void _f("), "{code}");
+    assert!(code.contains("    _memset_pattern16(&"), "{code}");
+    assert!(!code.contains("= _memset_pattern16"), "{code}");
+    assert!(!code.contains("return _memset_pattern16"), "{code}");
+    assert!(compiles(&code));
+}
+
+/// A branch to itself in a linked image is an endless loop.
+#[test]
+fn a_linked_branch_to_itself_loops() {
+    let code = decompiled(&mut open_macho("loop"), "_loop");
+    assert!(code.contains("for (;;) {"), "{code}");
+    assert!(!code.contains("sub_<dynamic>"), "{code}");
+    assert!(compiles(&code));
+}
+
+/// A function larger than 16 KB between two symbols is lifted whole, so
+/// its callers see it return and settle their own frames.
+#[test]
+fn a_large_function_between_symbols_returns() {
+    let mut binary = open_macho("large");
+    let large = binary.find("_large").expect("a function");
+    assert_eq!(large.size, Some(MACHO_LARGE_SIZE));
+    let code = decompiled(&mut binary, "_large");
+    assert!(code.contains("return 0x1;"), "{code}");
+    let code = decompiled(&mut binary, "_caller");
+    let statements: String = code
+        .lines()
+        .map(|line| line.split("/*").next().unwrap_or(line))
+        .collect();
+    assert!(
+        !statements
+            .split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+            .any(|word| word == "sp"),
+        "{code}"
+    );
+    assert!(code.contains("_large()"), "{code}");
+    assert!(compiles(&code));
+}
