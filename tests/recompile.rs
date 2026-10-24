@@ -28,10 +28,10 @@ mod frame_values;
 mod ignored_result;
 #[path = "recompile/long_branches.rs"]
 mod long_branches;
-#[path = "recompile/register_locals.rs"]
-mod register_locals;
 #[path = "recompile/pointer_assignments.rs"]
 mod pointer_assignments;
+#[path = "recompile/register_locals.rs"]
+mod register_locals;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
 
