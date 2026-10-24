@@ -7,7 +7,7 @@
 -- decompile
 /* velk pseudo-C: tail_one @ 0x0 */
 int32_t tail_one(int32_t a0) {
-    return a0 + ((uint64_t)a0 << 1) + 1;
+    return a0 * 3 + 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -16,7 +16,7 @@ int32_t (int32_t a0)
 -- ir
 fn tail_one @ 0x0 (size 28)
   blk0 @ 0x0:
-    ret (((w0 + (w0 << #0x1)) + #0x1) & #0xffffffff)
+    ret (((w0 * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","unwind"],"section":".text","size":28,"unsupported":0}
 

@@ -32,7 +32,7 @@ parameter width | x86_64.O2 | 152/157
 parameter sign | aarch64.O0 | 139/151
 parameter sign | aarch64.O2 | 139/151
 parameter sign | win64.O0 | 135/184
-parameter sign | win64.O2 | 127/176
+parameter sign | win64.O2 | 129/176
 parameter sign | x86_64.O0 | 140/152
 parameter sign | x86_64.O2 | 140/152
 return void | aarch64.O0 | 156/162
@@ -349,7 +349,7 @@ divmod_a64.win64.O2 0x180001090 sdiv10: ok
 divmod_a64.win64.O2 0x1800010b0 sdiv16: ok
 divmod_a64.win64.O2 0x1800010c0 ldiv16: ok
 divmod_a64.win64.O2 0x1800010d0 smod3: ok
-divmod_a64.win64.O2 0x1800010f0 umod3: parameter 0 signedness differs
+divmod_a64.win64.O2 0x1800010f0 umod3: ok
 divmod_a64.win64.O2 0x180001110 umod10: parameter 0 signedness differs
 divmod_a64.win64.O2 0x180001130 smod10: ok
 divmod_a64.win64.O2 0x180001150 lmod10: ok
@@ -475,7 +475,7 @@ divmod_x64.win64.O2 0x180001060 h10: ok
 divmod_x64.win64.O2 0x180001080 u64: ok
 divmod_x64.win64.O2 0x180001090 sdiv16x: ok
 divmod_x64.win64.O2 0x1800010a0 ldiv16x: ok
-divmod_x64.win64.O2 0x1800010b0 umod3x: parameter 0 signedness differs
+divmod_x64.win64.O2 0x1800010b0 umod3x: ok
 divmod_x64.win64.O2 0x1800010d0 smod3x: ok
 divmod_x64.win64.O2 0x1800010f0 pmod8x: parameter 0 signedness differs
 divmod_x64.win64.O2 0x180001100 pmod8s: ok

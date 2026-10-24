@@ -32,7 +32,7 @@ struct cell { _Alignas(4) int x; int y; int z; };
 void cell_set(struct cell *cells, long i, int v) {
     int64_t v1;
 
-    v1 = i + i * 2;
+    v1 = i * 3;
     *(uint32_t *)((uint8_t *)cells + v1 * 0x4) = v;
     *(uint32_t *)((uint8_t *)cells + v1 * 0x4 + 0x8) = v + 1;
 }
@@ -43,7 +43,7 @@ void (struct cell * cells, long i, int v)
 -- ir
 fn cell_set @ 0x2011a0 (size 14)
   blk0 @ 0x2011a0:
-    v1 = (rsi + (rsi * #0x2))
+    v1 = (rsi * #0x3)
     store32(edx, (rdi + (v1 * #0x4)))
     store32((edx + #0x1), ((rdi + (v1 * #0x4)) + #0x8))
     ret #0x0

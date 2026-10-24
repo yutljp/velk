@@ -1512,6 +1512,25 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     crate::ssa::take_results_directly(&mut ir);
     passed(deadline)?;
     passes::read_once::fold_values_read_once(&mut ir);
+    // Folding the last frame loads can leave their stores unused.
+    let plain_frame_stores = ir.blocks.iter().flat_map(|block| &block.stmts).all(|stmt| {
+        let Stmt::Store { addr, value, width } = stmt else {
+            return true;
+        };
+        matches!(
+            value,
+            crate::ir::Expr::Reg { .. } | crate::ir::Expr::Const(_)
+        ) && matches!(width, 1 | 2 | 4 | 8)
+            && passes::memory::private_address(addr, *width, sp)
+            && passes::frame_slots::frame_slot(addr, 0, sp)
+                .is_some_and(|slot| slot >= ir.frame_bottom)
+    });
+    if passes::memory::fixed_private_frame(&ir, sp)
+        && !ir.blocks.iter().any(crate::ir::cfg::opaque)
+        && plain_frame_stores
+    {
+        passes::frame::drop_dead_frame_stores(&mut ir);
+    }
     // A variable passed where a callee takes a pointer holds one.
     let mut pointer_values = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {

@@ -66,7 +66,7 @@ long record_total(struct record *items, int n) {
     if ((n & 0x1) == 0) {
         return v3;
     }
-    v7 = v2 + v2 * 2;
+    v7 = v2 * 3;
     return v3 + (int16_t)*(uint16_t *)((uint8_t *)items + v7 * 0x8 + 0x10) * *(uint64_t *)((uint8_t *)items + v7 * 0x8 + 0x8);
 }
 -- signature
@@ -100,7 +100,7 @@ fn record_total @ 0x2011f0 (size 111)
   blk6 @ 0x201246:
     brif eq (v1 & #0x1), #0x0 -> 0x20125e
   blk7 @ 0x20124b:
-    v7 = (v2 + (v2 * #0x2))
+    v7 = (v2 * #0x3)
     v3 = (v3 + (sext16(load16(((rdi + (v7 * #0x8)) + #0x10))) * load64(((rdi + (v7 * #0x8)) + #0x8))))
   blk8 @ 0x20125e:
     ret v3
@@ -145,8 +145,8 @@ struct big big_make(long seed) {
 
     result.a = seed_bits;
     result.b = seed_bits + 1;
-    result.c = seed_bits + seed_bits;
-    result.d = seed_bits + seed_bits * 2;
+    result.c = seed_bits * 2;
+    result.d = seed_bits * 3;
     return result;
 }
 -- signature
@@ -158,8 +158,8 @@ fn big_make @ 0x201280 (size 31)
   blk0 @ 0x201280:
     store64(rsi, rdi)
     store64((rsi + #0x1), (rdi + #0x8))
-    store64((rsi + rsi), (rdi + #0x10))
-    store64((rsi + (rsi * #0x2)), (rdi + #0x18))
+    store64((rsi * #0x2), (rdi + #0x10))
+    store64((rsi * #0x3), (rdi + #0x18))
     ret rdi
 -- card
 {"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201280","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}

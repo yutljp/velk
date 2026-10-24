@@ -202,12 +202,8 @@ unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, 
     uint64_t d_bits = d;
     uint64_t e_bits = e;
     uint64_t tail_bits = tail;
-    int64_t v3;
-    uint64_t v4;
 
-    v3 = value.low;
-    v4 = value.high;
-    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + ((v4 << 4) + v4);
+    return tail_bits * 19 + (e_bits * 11 + d_bits * 7 + (c_bits * 5 + (b_bits * 3 + a_bits))) + value.low * 13 + value.high * 17;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -216,9 +212,7 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- ir
 fn abi_exhaust_five @ 0x2012c0 (size 85)
   blk0 @ 0x2012c0:
-    v3 = load64((rsp + #0x8))
-    v4 = load64((rsp + #0x10))
-    ret results(((((r9 + ((r9 + (r9 * #0x8)) * #0x2)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))) + (v3 + ((v3 + (v3 * #0x2)) * #0x4))) + ((v4 << #0x4) + v4)))
+    ret results(((((r9 * #0x13) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))) + (load64((rsp + #0x8)) * #0xd)) + (load64((rsp + #0x10)) * #0x11)))
 -- card
 {"addr":"0x2012c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf","unwind"],"section":".text","size":85,"unsupported":0}
 
@@ -226,19 +220,7 @@ fn abi_exhaust_five @ 0x2012c0 (size 85)
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven @ 0x201320 */
 int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    int64_t v1;
-    uint64_t v2;
-    int64_t v10;
-    uint64_t v11;
-    int64_t v12;
-
-    v1 = a9;
-    v2 = a6;
-    v10 = a7;
-    v11 = a8;
-    v12 = ((v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
-    v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
-    return v1 + v1 + v10 + ((v2 << 4) + v2 + (a5 + (a5 + a5 * 2) * 4 + (a4 + (a4 + a4 * 4) * 2 + (a3 * 8 - a3) + (a2 + a2 * 4 + (a1 + a1 * 2 + a0))))) + v12;
+    return a9 * 29 + (a6 * 17 + (a5 * 13 + (a4 * 11 + a3 * 7 + (a2 * 5 + (a1 * 3 + a0))))) + (a8 * 23 + a7 * 19);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -247,13 +229,7 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- ir
 fn abi_exhaust_seven @ 0x201320 (size 126)
   blk0 @ 0x201320:
-    v1 = load64((rsp + #0x20))
-    v2 = load64((rsp + #0x8))
-    v10 = load64((rsp + #0x10))
-    v11 = load64((rsp + #0x18))
-    v12 = ((((v11 + (v11 * #0x2)) << #0x3) - v11) + (v10 + ((v10 + (v10 * #0x8)) * #0x2)))
-    v10 = ((v1 + (v1 * #0x8)) + ((v1 + (v1 * #0x8)) * #0x2))
-    ret ((((v1 + v1) + v10) + (((v2 << #0x4) + v2) + ((r9 + ((r9 + (r9 * #0x2)) * #0x4)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))))) + v12)
+    ret (((load64((rsp + #0x20)) * #0x1d) + ((load64((rsp + #0x8)) * #0x11) + ((r9 * #0xd) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))))) + ((load64((rsp + #0x18)) * #0x17) + (load64((rsp + #0x10)) * #0x13)))
 -- card
 {"addr":"0x201320","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf","unwind"],"section":".text","size":126,"unsupported":0}
 
@@ -304,12 +280,8 @@ unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long 
     uint64_t d_bits = d;
     uint64_t e_bits = e;
     uint64_t tail_bits = tail;
-    int64_t v3;
-    uint64_t v4;
 
-    v3 = value.low;
-    v4 = value.high;
-    return tail_bits + (tail_bits + tail_bits * 8) * 2 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))) + (v3 + (v3 + v3 * 2) * 4) + ((v4 << 4) + v4);
+    return tail_bits * 19 + (e_bits * 11 + d_bits * 7 + (c_bits * 5 + (b_bits * 3 + a_bits))) + value.low * 13 + value.high * 17;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -318,9 +290,7 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- ir
 fn abi_exhaust_five_aligned @ 0x2013c0 (size 85)
   blk0 @ 0x2013c0:
-    v3 = load64((rsp + #0x8))
-    v4 = load64((rsp + #0x10))
-    ret results(((((r9 + ((r9 + (r9 * #0x8)) * #0x2)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))) + (v3 + ((v3 + (v3 * #0x2)) * #0x4))) + ((v4 << #0x4) + v4)))
+    ret results(((((r9 * #0x13) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))) + (load64((rsp + #0x8)) * #0xd)) + (load64((rsp + #0x10)) * #0x11)))
 -- card
 {"addr":"0x2013c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","size":85,"unsupported":0}
 
@@ -335,19 +305,8 @@ unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long
     uint64_t d_bits = d;
     uint64_t e_bits = e;
     uint64_t f_bits = f;
-    int64_t v1;
-    uint64_t v2;
-    int64_t v10;
-    uint64_t v11;
-    int64_t v12;
 
-    v1 = tail;
-    v2 = g;
-    v10 = value.low;
-    v11 = value.high;
-    v12 = ((v11 + v11 * 0x2) << 3) - v11 + (v10 + (v10 + v10 * 8) * 2);
-    v10 = v1 + v1 * 8 + (v1 + v1 * 8) * 2;
-    return v1 + v1 + v10 + ((v2 << 4) + v2 + (f_bits + (f_bits + f_bits * 2) * 4 + (e_bits + (e_bits + e_bits * 4) * 2 + (d_bits * 8 - d_bits) + (c_bits + c_bits * 4 + (b_bits + b_bits * 2 + a_bits))))) + v12;
+    return tail * 29 + (g * 17 + (f_bits * 13 + (e_bits * 11 + d_bits * 7 + (c_bits * 5 + (b_bits * 3 + a_bits))))) + (value.high * 23 + value.low * 19);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -356,12 +315,6 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
 -- ir
 fn abi_exhaust_seven_aligned @ 0x201420 (size 126)
   blk0 @ 0x201420:
-    v1 = load64((rsp + #0x20))
-    v2 = load64((rsp + #0x8))
-    v10 = load64((rsp + #0x10))
-    v11 = load64((rsp + #0x18))
-    v12 = ((((v11 + (v11 * #0x2)) << #0x3) - v11) + (v10 + ((v10 + (v10 * #0x8)) * #0x2)))
-    v10 = ((v1 + (v1 * #0x8)) + ((v1 + (v1 * #0x8)) * #0x2))
-    ret results(((((v1 + v1) + v10) + (((v2 << #0x4) + v2) + ((r9 + ((r9 + (r9 * #0x2)) * #0x4)) + (((r8 + ((r8 + (r8 * #0x4)) * #0x2)) + ((rcx * #0x8) - rcx)) + ((rdx + (rdx * #0x4)) + ((rsi + (rsi * #0x2)) + rdi)))))) + v12))
+    ret results((((load64((rsp + #0x20)) * #0x1d) + ((load64((rsp + #0x8)) * #0x11) + ((r9 * #0xd) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))))) + ((load64((rsp + #0x18)) * #0x17) + (load64((rsp + #0x10)) * #0x13))))
 -- card
 {"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","size":126,"unsupported":0}

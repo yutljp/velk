@@ -25,7 +25,7 @@ fn <unnamed> @ 0x21018c (size 12)
 -- decompile
 /* velk pseudo-C: sub_210198 @ 0x210198 */
 int32_t sub_210198(int32_t a0) {
-    return ((uint64_t)a0 << 3) - a0 + 3;
+    return a0 * 7 + 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -34,7 +34,7 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210198 (size 16)
   blk0 @ 0x210198:
-    ret ((((w0 << #0x3) - w0) + #0x3) & #0xffffffff)
+    ret (((w0 * #0x7) + #0x3) & #0xffffffff)
 -- card
 {"addr":"0x210198","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":0}
 

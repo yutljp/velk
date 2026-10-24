@@ -121,8 +121,8 @@ struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t fi
 struct S1 *sub_201280(struct S1 *result, int64_t a1) {
     result->field_0x0 = a1;
     result->field_0x8 = a1 + 1;
-    result->field_0x10 = a1 + a1;
-    result->field_0x18 = a1 + a1 * 2;
+    result->field_0x10 = a1 * 2;
+    result->field_0x18 = a1 * 3;
     return result;
 }
 -- signature
@@ -134,8 +134,8 @@ fn <unnamed> @ 0x201280 (size 31)
   blk0 @ 0x201280:
     store64(rsi, rdi)
     store64((rsi + #0x1), (rdi + #0x8))
-    store64((rsi + rsi), (rdi + #0x10))
-    store64((rsi + (rsi * #0x2)), (rdi + #0x18))
+    store64((rsi * #0x2), (rdi + #0x10))
+    store64((rsi * #0x3), (rdi + #0x18))
     ret rdi
 -- card
 {"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201280","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":31,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}

@@ -12,7 +12,7 @@ int tail_target(int);
 -- decompile
 /* velk pseudo-C: tail_target @ 0x180001000 */
 int tail_target(int x) {
-    return x + x * 2 + 1;
+    return x * 3 + 1;
 }
 -- signature
 int (int x)
@@ -21,7 +21,7 @@ int (int x)
 -- ir
 fn tail_target @ 0x180001000 (size 25)
   blk0 @ 0x180001000:
-    ret ((((rcx & #0xffffffff) + ((rcx & #0xffffffff) * #0x2)) + #0x1) & #0xffffffff)
+    ret ((((rcx & #0xffffffff) * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x180001000","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf","unwind"],"section":".text","size":25,"unsupported":0}
 

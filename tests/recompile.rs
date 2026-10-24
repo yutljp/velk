@@ -70,6 +70,8 @@ mod record_transfers;
 mod register_locals;
 #[path = "recompile/saved_registers.rs"]
 mod saved_registers;
+#[path = "recompile/scaled_registers.rs"]
+mod scaled_registers;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
 #[path = "recompile/switches.rs"]

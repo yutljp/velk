@@ -10,7 +10,7 @@ int tail_one(int);
 -- decompile
 /* velk pseudo-C: tail_one @ 0x201180 */
 int tail_one(int x) {
-    return x + x * 2 + 1;
+    return x * 3 + 1;
 }
 -- signature
 int (int x)
@@ -19,7 +19,7 @@ int (int x)
 -- ir
 fn tail_one @ 0x201180 (size 14)
   blk0 @ 0x201180:
-    ret (((rdi + (rdi * #0x2)) + #0x1) & #0xffffffff)
+    ret (((rdi * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf","unwind"],"section":".text","size":14,"unsupported":0}
 

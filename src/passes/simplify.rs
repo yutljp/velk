@@ -528,7 +528,51 @@ fn magic_divisor(magic: u64, shift: u64) -> Option<u64> {
     })
 }
 
+fn scaled_register(expr: &Expr) -> Option<(&Expr, u64)> {
+    match expr {
+        Expr::Reg { .. } => Some((expr, 1)),
+        Expr::Bin { op, lhs, rhs } => {
+            let (value, factor) = match (op, lhs.as_ref(), rhs.as_ref()) {
+                (BinOp::Mul, value, Expr::Const(factor))
+                | (BinOp::Mul, Expr::Const(factor), value) => (value, *factor),
+                (BinOp::Shl, value, Expr::Const(amount)) => (value, 1u64 << (amount & 63)),
+                _ => return None,
+            };
+            let Some((register, scale)) = scaled_register(value) else {
+                return None;
+            };
+            Some((register, scale.wrapping_mul(factor)))
+        }
+        _ => None,
+    }
+}
+
 pub(crate) fn algebraic(expr: Expr) -> Expr {
+    if let Expr::Bin {
+        op: BinOp::Add | BinOp::Sub,
+        lhs,
+        rhs,
+    } = &expr
+        && let (Some((left, a)), Some((right, b))) = (scaled_register(lhs), scaled_register(rhs))
+        && left == right
+    {
+        let scale = if matches!(&expr, Expr::Bin { op: BinOp::Add, .. }) {
+            a.wrapping_add(b)
+        } else {
+            a.wrapping_sub(b)
+        };
+        return Expr::bin(BinOp::Mul, left.clone(), Expr::Const(scale));
+    }
+    if let Expr::Bin {
+        op: BinOp::Mul | BinOp::Shl,
+        lhs,
+        ..
+    } = &expr
+        && matches!(lhs.as_ref(), Expr::Bin { .. })
+        && let Some((register, scale)) = scaled_register(&expr)
+    {
+        return Expr::bin(BinOp::Mul, register.clone(), Expr::Const(scale));
+    }
     // The undefined value may be taken as any value, as zero: masked or
     // shifted it stays undefined, and bits put in beside it, as a partial
     // write of a register a call left undefined puts them, are the value.

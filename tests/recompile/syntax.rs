@@ -1118,6 +1118,9 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
             "partial",
             "dependent",
             "division",
+            "union_first",
+            "union_middle",
+            "union_last",
         ] {
             let sp = velk::arch::stack_pointer(isa);
             let at =
@@ -1128,7 +1131,11 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                 signed: false,
             };
             let argument = Convention::of(isa, velk::loader::Format::Elf, false).arguments()[0];
-            let fields = [(-16, 1), (-15, 1), (-14, 2), (-12, 4), (-8, 8)];
+            let fields = if case.starts_with("union_") {
+                vec![(-16, 4), (-12, 4), (-8, 8)]
+            } else {
+                vec![(-16, 1), (-15, 1), (-14, 2), (-12, 4), (-8, 8)]
+            };
             let mut stmts = Vec::new();
             for (part, &(offset, width)) in fields.iter().enumerate() {
                 if case == "padding" && part == 1 {
@@ -1164,6 +1171,12 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                     },
                 );
             }
+            let union_read = match case {
+                "union_first" => Some((-16, 1)),
+                "union_middle" => Some((-12, 2)),
+                "union_last" => Some((-8, 4)),
+                _ => None,
+            };
             let convention = Convention::of(isa, velk::loader::Format::Elf, false);
             stmts.push(Stmt::Call {
                 kind: velk::ir::CallKind::Invoke,
@@ -1178,7 +1191,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                 via: None,
             });
             stmts.push(Stmt::Ret {
-                value: Expr::Const(0),
+                value: union_read.map_or(Expr::Const(0), |(offset, width)| load(offset, width)),
             });
             let mut ir = synthetic_ir(
                 &format!(
@@ -1198,7 +1211,14 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
             let mut symbols = velk::render::Symbols::default();
             symbols.functions.insert(0x1000, "inspect_bytes".into());
             let code = velk::render::render(&ir, &[], &symbols, &[]);
-            assert_eq!(code.contains("__typeof__"), case == "complete", "{code}");
+            assert_eq!(
+                code.contains("__typeof__"),
+                matches!(case, "complete" | "overlap") || union_read.is_some(),
+                "{code}"
+            );
+            if case == "overlap" {
+                assert!(code.contains("{ .as_i64 = x }"), "{code}");
+            }
             let mut support = String::from(
                 "int64_t inspect_bytes(void *p, uint64_t x) { uint8_t *b = p; uint64_t got; ",
             );
@@ -1222,7 +1242,15 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
             let code = format!("int64_t inspect_bytes(void *, uint64_t);\n{code}");
             let assertions = [0, 1, 0x80ff_ffff_8765_4321u64, u64::MAX]
                 .into_iter()
-                .map(|x| format!("{}(UINT64_C({x}));", ir.name.as_ref().unwrap()))
+                .map(|x| {
+                    let mask =
+                        union_read.map_or(0, |(_, width)| u64::MAX >> (64 - u32::from(width) * 8));
+                    format!(
+                        "if ({}(UINT64_C({x})) != UINT64_C({})) __builtin_trap();",
+                        ir.name.as_ref().unwrap(),
+                        x & mask
+                    )
+                })
                 .collect::<String>();
             run_printed(&code, &support, &assertions);
         }

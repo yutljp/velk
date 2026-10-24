@@ -31,8 +31,7 @@ int32_t sub_201180(int32_t a0) {
     }
     v1 = (uint64_t)((a0 - 2) & 0xffffffff) * ((a0 - 1) & 0xffffffff);
     v2 = ((a0 - 3) & 0xffffffff) * v1 >> 1;
-    v1 >>= 1;
-    return v2 * 0x55555556 + a0 + (v1 + v1 * 2) - 1;
+    return v2 * 0x55555556 + a0 + (v1 >> 1) * 3 - 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -45,8 +44,7 @@ fn <unnamed> @ 0x201180 (size 46)
   blk1 @ 0x201184:
     v1 = (((rdi + #0xfffffffffffffffe) & #0xffffffff) * ((rdi + #0xffffffffffffffff) & #0xffffffff))
     v2 = ((((rdi + #0xfffffffffffffffd) & #0xffffffff) * v1) >> #0x1)
-    v1 = (v1 >> #0x1)
-    ret ((((((v2 & #0xffffffff) * #0x55555556) + (rdi & #0xffffffff)) + (v1 + (v1 * #0x2))) - #0x1) & #0xffffffff)
+    ret ((((((v2 & #0xffffffff) * #0x55555556) + (rdi & #0xffffffff)) + ((v1 >> #0x1) * #0x3)) - #0x1) & #0xffffffff)
   blk2 @ 0x2011ab:
     ret #0x0
 -- card

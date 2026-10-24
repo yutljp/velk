@@ -25,7 +25,7 @@ fn helper_one @ 0x13d0 (size 4)
 -- decompile
 /* velk pseudo-C: helper_two @ 0x13e0 */
 int32_t helper_two(int32_t a0) {
-    return a0 + a0 ^ 0xa;
+    return a0 * 2 ^ 0xa;
 }
 -- signature
 int32_t (int32_t a0)
@@ -34,7 +34,7 @@ int32_t (int32_t a0)
 -- ir
 fn helper_two @ 0x13e0 (size 7)
   blk0 @ 0x13e0:
-    ret (((rdi + rdi) & #0xffffffff) ^ #0xa)
+    ret (((rdi * #0x2) & #0xffffffff) ^ #0xa)
 -- card
 {"addr":"0x13e0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"helper_two","nameSources":["symtab","dynamic","unwind"],"section":".text","size":7,"unsupported":0}
 

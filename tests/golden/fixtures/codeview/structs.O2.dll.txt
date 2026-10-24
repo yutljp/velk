@@ -55,7 +55,7 @@ struct record {
 };
 int32_t record_total(struct record *items, int32_t n) {
     uint32_t v1;
-    uint64_t v2;
+    uint8_t v2;
     int64_t v3;
     int32_t v4;
     void *v6;
@@ -88,9 +88,8 @@ int32_t record_total(struct record *items, int32_t n) {
         v3 = 0;
         v4 = 0;
     }
-    v10 = (uintptr_t)((uint8_t *)items + (v3 + v3 * 0x2) * 0x4 + 0x8);
-    v2 = (v2 << 2) & 0xffffffff;
-    v3 = v2 + v2 * 2;
+    v10 = (uintptr_t)&items[v3].count;
+    v3 = (v2 << 2) * 3;
     i = 0;
     do {
         v1 = (int16_t)*(uint16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
@@ -132,15 +131,14 @@ fn record_total @ 0x180001010 (size 169)
   blk6 @ 0x18000107e:
     brif eq v2, #0x0 -> 0x1800010b7
   blk7 @ 0x180001083:
-    v10 = ((rcx + ((v3 + (v3 * #0x2)) * #0x4)) + #0x8)
-    v2 = (((v2 & #0xffffffff) << #0x2) & #0xffffffff)
-    v3 = (v2 + (v2 * #0x2))
-    v13 = #0x0
+    v10 = ((rcx + (v3 * #0xc)) + #0x8)
+    v3 = (((v2 & #0xffffffff) << #0x2) * #0x3)
+    v12 = #0x0
   blk8 @ 0x1800010a0:
-    v1 = ((sext16(load16((v10 + v13))) * load32(((v10 + v13) + #0xfffffffffffffffc))) & #0xffffffff)
+    v1 = ((sext16(load16((v10 + v12))) * load32(((v10 + v12) + #0xfffffffffffffffc))) & #0xffffffff)
     v4 = (((v4 & #0xffffffff) + (v1 & #0xffffffff)) & #0xffffffff)
-    v13 = (v13 + #0xc)
-    brif ne v3, v13 -> 0x1800010a0
+    v12 = (v12 + #0xc)
+    brif ne v3, v12 -> 0x1800010a0
   blk9 @ 0x1800010b7:
     ret v4
 -- card
@@ -184,8 +182,8 @@ struct big big_make(int32_t seed) {
 
     result.a = seed_bits;
     result.b = seed_bits + 1;
-    result.c = seed_bits + seed_bits;
-    result.d = seed_bits + seed_bits * 2;
+    result.c = seed_bits * 2;
+    result.d = seed_bits * 3;
     return result;
 }
 -- signature
@@ -198,8 +196,8 @@ fn big_make @ 0x1800010e0 (size 24)
     v1 = rcx
     store32(rdx, rcx)
     store32((rdx + #0x1), (v1 + #0x4))
-    store32((rdx + rdx), (v1 + #0x8))
-    store32((rdx + (rdx * #0x2)), (v1 + #0xc))
+    store32((rdx * #0x2), (v1 + #0x8))
+    store32((rdx * #0x3), (v1 + #0xc))
     ret v1
 -- card
 {"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x1800010e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["dynamic","codeview"],"section":".text","size":24,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}

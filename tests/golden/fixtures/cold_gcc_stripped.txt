@@ -347,7 +347,7 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     }
     v2 = (void *)a0;
     v3 = a0;
-    v4 = (uint64_t)(a1 + (int64_t)a1 * 0x2) << 3;
+    v4 = (uint64_t)((int64_t)a1 * 0x3) << 3;
     v5 = (const char *)((uint8_t *)a0 + v4);
     do {
         if (v3->field_0x0 == a2) {
@@ -379,7 +379,7 @@ fn <unnamed> @ 0x1290 (size 240)
   blk1 @ 0x12b4:
     v2 = rdi
     v3 = rdi
-    v4 = ((sext32(rsi) + (sext32(rsi) * #0x2)) << #0x3)
+    v4 = ((sext32(rsi) * #0x3) << #0x3)
     v5 = (rdi + v4)
     br 0x12d9
   blk2 @ 0x12d0:

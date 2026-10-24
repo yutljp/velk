@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 pub(super) struct Aggregate {
     name: String,
-    fields: Vec<(String, u8)>,
+    fields: Vec<(String, u8, Option<String>)>,
 }
 
 pub(super) fn layouts(locals: &[Local]) -> HashMap<String, Aggregate> {
@@ -15,7 +15,6 @@ pub(super) fn layouts(locals: &[Local]) -> HashMap<String, Aggregate> {
         let mut end = Some(local.slot);
         let complete = local.fields.iter().all(|field| {
             if end != Some(field.slot)
-                || !field.views.is_empty()
                 || !matches!(field.width, 1 | 2 | 4 | 8)
                 || !matches!(field.ty, None | Some(CType::Int { .. } | CType::Pointer(_)))
             {
@@ -28,15 +27,32 @@ pub(super) fn layouts(locals: &[Local]) -> HashMap<String, Aggregate> {
         if !complete || end != local.slot.checked_add(local.size) {
             continue;
         }
+        let mut fields = Vec::new();
+        for field in &local.fields {
+            if field.views.is_empty() {
+                fields.push((field.name.clone(), field.width, None));
+                continue;
+            }
+            let Some(view) = field.views.iter().find(|view| {
+                view.slot == field.slot
+                    && view.width == field.width
+                    && matches!(view.ty, None | Some(CType::Int { .. } | CType::Pointer(_)))
+            }) else {
+                break;
+            };
+            let Some(member) = view.name.strip_prefix(&format!("{}.", field.name)) else {
+                break;
+            };
+            fields.push((view.name.clone(), field.width, Some(member.to_owned())));
+        }
+        if fields.len() != local.fields.len() {
+            continue;
+        }
         layouts.insert(
-            local.fields[0].name.clone(),
+            fields[0].0.clone(),
             Aggregate {
                 name: local.name.clone(),
-                fields: local
-                    .fields
-                    .iter()
-                    .map(|field| (field.name.clone(), field.width))
-                    .collect(),
+                fields,
             },
         );
     }
@@ -71,7 +87,7 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         return None;
     };
     let mut values = Vec::new();
-    for (node, (field, bytes)) in nodes.iter().zip(&layout.fields) {
+    for (node, (field, bytes, member)) in nodes.iter().zip(&layout.fields) {
         let Node::Stmt(stmt @ Stmt::Store { value, width, .. }) = node else {
             return None;
         };
@@ -87,7 +103,10 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         else {
             return None;
         };
-        values.push(value.to_owned());
+        values.push(match member {
+            Some(member) => format!("{{ .{member} = {value} }}"),
+            None => value.to_owned(),
+        });
     }
     if values.len() != layout.fields.len() {
         return None;

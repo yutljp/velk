@@ -69,7 +69,7 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 -- decompile
 /* velk pseudo-C: twice @ 0x2012f0 */
 int twice(int x) {
-    return x + x;
+    return x * 2;
 }
 -- signature
 int (int x)
@@ -78,7 +78,7 @@ int (int x)
 -- ir
 fn twice @ 0x2012f0 (size 4)
   blk0 @ 0x2012f0:
-    ret ((rdi + rdi) & #0xffffffff)
+    ret ((rdi * #0x2) & #0xffffffff)
 -- card
 {"addr":"0x2012f0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf","unwind"],"section":".text","size":4,"unsupported":0}
 
@@ -127,7 +127,7 @@ int apply_table(unsigned int index, int x) {
     int64_t v2;
 
     v1 = 0xaaaaaaab * (uint64_t)index >> 33;
-    v2 = index - (v1 + v1 * 2);
+    v2 = index - v1 * 3;
     return ((uint64_t (*)())table_u64[v2])(x & 0xffffffff, x, v1, table);
 }
 -- signature
@@ -138,7 +138,7 @@ int (unsigned int index, int x)
 fn apply_table @ 0x201330 (size 34)
   blk0 @ 0x201330:
     v1 = ((#0xaaaaaaab * (rdi & #0xffffffff)) >> #0x21)
-    v2 = (((rdi & #0xffffffff) - (v1 + (v1 * #0x2))) & #0xffffffff)
+    v2 = (((rdi & #0xffffffff) - (v1 * #0x3)) & #0xffffffff)
     v5:rax, rdx, xmm0, xmm1 = call *load64((#0x202610 + (v2 * #0x8)))((rsi & #0xffffffff), rsi, v1, #0x202610)
     ret v5
 -- card

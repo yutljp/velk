@@ -28,7 +28,7 @@ struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 int64_t sub_180001020(struct S1 *a0, int32_t a1, int32_t a2) {
     int64_t v1;
 
-    v1 = a1 + (int64_t)a1 * 2;
+    v1 = (int64_t)a1 * 3;
     a0[a1].field_0x0 = a2;
     a0[a1].field_0x8 = a2 + 1;
     return v1;
@@ -40,7 +40,7 @@ int64_t (struct S1 * a0, int32_t a1, int32_t a2)
 -- ir
 fn <unnamed> @ 0x180001020 (size 32)
   blk0 @ 0x180001020:
-    v1 = (sext32(edx) + (sext32(edx) * #0x2))
+    v1 = (sext32(edx) * #0x3)
     store32(r8d, (rcx + (sext32(edx) * #0xc)))
     store32((r8d + #0x1), ((rcx + (sext32(edx) * #0xc)) + #0x8))
     ret v1
@@ -82,7 +82,7 @@ int32_t sub_180001040(uint32_t *a0, int32_t a1) {
         v1 = 0;
         v2 = 0;
     }
-    v6 = v1 + v1 * 2;
+    v6 = v1 * 3;
     if ((int32_t)a0[v6 + 1] <= 0) {
         return v2;
     }
@@ -127,7 +127,7 @@ fn <unnamed> @ 0x180001040 (size 108)
   blk10 @ 0x180001094:
     brif eq (v3 & #0x1), #0x0 -> 0x1800010ab
   blk11 @ 0x18000109a:
-    v6 = (v1 + (v1 * #0x2))
+    v6 = (v1 * #0x3)
     brif le load32(((rcx + (v6 * #0x4)) + #0x4)), #0x0 -> 0x1800010ab
   blk12 @ 0x1800010a5:
     v2 = load32((rcx + (v6 * #0x4)))

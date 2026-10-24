@@ -69,7 +69,7 @@ uint64_t *velk_return_address_slot(void); /* target frame's return-address slot 
 -- decompile
 /* velk pseudo-C: twice @ 0x180001000 */
 int twice(int x) {
-    return x + x;
+    return x * 2;
 }
 -- signature
 int (int x)
@@ -78,7 +78,7 @@ int (int x)
 -- ir
 fn twice @ 0x180001000 (size 4)
   blk0 @ 0x180001000:
-    ret ((rcx + rcx) & #0xffffffff)
+    ret ((rcx * #0x2) & #0xffffffff)
 -- card
 {"addr":"0x180001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
 
@@ -120,13 +120,11 @@ fn pick_op @ 0x180001020 (size 21)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x180001040 */
 int apply_table(unsigned int index, int x) {
-    int32_t v1;
     int32_t v2;
     int32_t v3;
     int32_t v5;
 
-    v1 = 0xaaaaaaab * (uint64_t)index >> 33;
-    v2 = v1 + v1 * 2;
+    v2 = (0xaaaaaaab * (uint64_t)index >> 33) * 3;
     v3 = index - v2;
     if (v3 + v2 != v2 && v3 == 1) {
         v5 = square(x);
@@ -142,8 +140,7 @@ int (unsigned int index, int x)
 -- ir
 fn apply_table @ 0x180001040 (size 43)
   blk0 @ 0x180001040:
-    v1 = ((#0xaaaaaaab * (rcx & #0xffffffff)) >> #0x21)
-    v2 = ((v1 + (v1 * #0x2)) & #0xffffffff)
+    v2 = ((((#0xaaaaaaab * (rcx & #0xffffffff)) >> #0x21) * #0x3) & #0xffffffff)
     v3 = (((rcx & #0xffffffff) - (v2 & #0xffffffff)) & #0xffffffff)
     brif eq (v3 + (v2 & #0xffffffff)), (v2 & #0xffffffff) -> 0x180001064
   blk1 @ 0x180001058:

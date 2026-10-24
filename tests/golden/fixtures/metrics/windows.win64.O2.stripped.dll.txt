@@ -106,12 +106,7 @@ fn <unnamed> @ 0x180001090 (size 32)
 -- decompile
 /* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
 int64_t sub_1800010b0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
-    int64_t v1;
-    int64_t v2;
-
-    v1 = a5;
-    v2 = a4;
-    return v1 + (v1 + v1 * 2) * 4 + (v2 + (v2 + v2 * 4) * 2 + (a2 + a2 * 4 + (a1 + a1 * 2 + a0) + a3 * 8 - a3));
+    return a5 * 13 + (a4 * 11 + (a2 * 5 + (a1 * 3 + a0) + a3 * 8 - a3));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
@@ -120,9 +115,7 @@ int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
 -- ir
 fn <unnamed> @ 0x1800010b0 (size 64)
   blk0 @ 0x1800010b0:
-    v1 = load64((rsp + #0x30))
-    v2 = load64((rsp + #0x28))
-    ret ((v1 + ((v1 + (v1 * #0x2)) * #0x4)) + ((v2 + ((v2 + (v2 * #0x4)) * #0x2)) + ((((r8 + (r8 * #0x4)) + ((rdx + (rdx * #0x2)) + rcx)) + (r9 * #0x8)) - r9)))
+    ret ((load64((rsp + #0x30)) * #0xd) + ((load64((rsp + #0x28)) * #0xb) + ((((r8 * #0x5) + ((rdx * #0x3) + rcx)) + (r9 * #0x8)) - r9)))
   blk1 @ 0x1800010e6:
     trap
   blk2 @ 0x1800010e7:

@@ -126,7 +126,9 @@ pub(crate) fn remainder_scan(
             }
             Expr::Bin { op, lhs, rhs } => match (op, lhs.as_ref(), rhs.as_ref()) {
                 // x86-64 one-operand `mul` also writes the low half; unused.
-                (crate::ir::BinOp::Mul, Expr::Reg { .. }, Expr::Const(_)) if !half_seen => {
+                (crate::ir::BinOp::Mul, Expr::Reg { index, .. }, Expr::Const(_))
+                    if !half_seen && !aliases.contains(index) =>
+                {
                     half_seen = true;
                     consumed.push(position);
                     continue;

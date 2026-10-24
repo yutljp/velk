@@ -1295,7 +1295,6 @@ fn runtime.printstring @ 0x430e20 (size 128)
   blk0 @ 0x430e20:
     br 0x430e26
   blk1 @ 0x430e26:
-    store64(rax, (rsp + #0xffffffffffffffd0))
     v3:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430660(rax, rbx, rbx)
     ret v3
 -- card

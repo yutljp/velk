@@ -107,12 +107,7 @@ fn make_triple @ 0x180001090 (size 23)
 -- decompile
 /* velk pseudo-C: stack_arguments @ 0x1800010b0 */
 unsigned long long stack_arguments(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, unsigned long long f) {
-    int64_t v1;
-    int64_t v2;
-
-    v1 = f;
-    v2 = e;
-    return v1 + (v1 + v1 * 2) * 4 + (v2 + (v2 + v2 * 4) * 2 + (c + c * 4 + (b + b * 2 + a) + d * 8 - d));
+    return f * 13 + (e * 11 + (c * 5 + (b * 3 + a) + d * 8 - d));
 }
 -- signature
 unsigned long long (unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d)
@@ -121,9 +116,7 @@ unsigned long long (unsigned long long a, unsigned long long b, unsigned long lo
 -- ir
 fn stack_arguments @ 0x1800010b0 (size 54)
   blk0 @ 0x1800010b0:
-    v1 = load64((rsp + #0x30))
-    v2 = load64((rsp + #0x28))
-    ret ((v1 + ((v1 + (v1 * #0x2)) * #0x4)) + ((v2 + ((v2 + (v2 * #0x4)) * #0x2)) + ((((r8 + (r8 * #0x4)) + ((rdx + (rdx * #0x2)) + rcx)) + (r9 * #0x8)) - r9)))
+    ret ((load64((rsp + #0x30)) * #0xd) + ((load64((rsp + #0x28)) * #0xb) + ((((r8 * #0x5) + ((rdx * #0x3) + rcx)) + (r9 * #0x8)) - r9)))
 -- card
 {"addr":"0x1800010b0","approxTokens":186,"blocks":1,"hardReasons":[],"name":"stack_arguments","nameSources":["symtab","dwarf"],"section":".text","size":54,"unsupported":0}
 
