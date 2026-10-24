@@ -58,6 +58,21 @@ save area below the stack pointer at entry.
 | `tests/smoke.sh` | CLI, MCP, selected output, and local performance | Output checks and benchmark thresholds |
 | `tests/ladder.sh` | Behavior by difficulty, including known unfinished targets | `tests/expect/ladder.tsv` |
 
+`tests/golden/casts.txt` records output lines and five disjoint cast counts
+over every function in each fixture, including runtime functions. It uses
+the type recognition of the readability cast metric. Pointer casts
+immediately following `*` are memory-pointer casts; remaining `uint8_t *`
+casts are byte-pointer casts; other pointer casts form the third class.
+`uintptr_t` and `intptr_t` casts form the address-integer class, and the
+remaining recognized casts form the scalar class. These are syntactic
+counts rather than a classification of an expression's purpose.
+
+The typed-pointer tests in `src/analysis/structures/tests/typed.rs` check
+printed field offsets, structure-array strides, signed loads, call results,
+and scalar pointers through copies. They compile and run generated C at
+`-O0` and `-O2`, and check fallback for conflicting widths, partial copies,
+unaligned fields, and invalid offsets.
+
 ### CLI and terminal output
 
 Parser tests in `src/main.rs` check short/long flag equivalence, the

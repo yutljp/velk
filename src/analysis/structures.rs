@@ -33,7 +33,11 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         let param = &ir.params[at];
         // An integer only ever offset may be the pointer into an array too.
         let integer = match &param.ty {
-            CType::Pointer(target) if matches!(target.as_ref(), CType::Int { .. }) => false,
+            CType::Pointer(target)
+                if matches!(target.as_ref(), CType::Int { .. } | CType::Void) =>
+            {
+                false
+            }
             CType::Int { bytes: 8, .. } if only_offset(ir, param.index) => true,
             _ => continue,
         };
@@ -61,17 +65,25 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
                 elements: array.elements,
             },
             None if !direct || integer => continue,
-            None => match layout(index, &touches) {
+            None => match layout(&copies(ir, index), &touches) {
                 Some(fields) => Structure {
                     name,
                     fields,
                     size: None,
-                    elements: Vec::new(),
+                    elements: copies(ir, index)
+                        .into_iter()
+                        .filter(|copy| *copy != index)
+                        .collect(),
                 },
                 None => continue,
             },
         };
         ir.params[at].ty = CType::pointer_to(CType::Named(format!("struct {}", structure.name)));
+        if structure.size.is_none() {
+            for copy in &structure.elements {
+                ir.value_types.insert(*copy, ir.params[at].ty.clone());
+            }
+        }
         structures.push(structure);
     }
     // A variable read or written at several fixed offsets points at a
@@ -83,70 +95,138 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         .blocks
         .iter()
         .flat_map(|block| &block.stmts)
-        .filter_map(|stmt| match stmt {
-            Stmt::Assign { dest, value } => match base_of(value) {
-                Some(base) if base == dest.index && !matches!(value, Expr::Reg { .. }) => {
-                    Some(base)
-                }
-                _ => None,
-            },
-            _ => None,
+        .filter_map(|stmt| {
+            let Stmt::Assign { dest, value } = stmt else {
+                return None;
+            };
+            let mut reads = HashSet::new();
+            crate::ir::visit::collect_reads(value, &mut reads);
+            (reads.contains(&dest.index) && !matches!(value, Expr::Reg { .. }))
+                .then_some(dest.index)
         })
         .collect();
     let touches = touches_of(ir);
     let mut variables: Vec<u16> = touches
         .iter()
-        .filter_map(|touch| match base_of(&touch.addr) {
-            Some(base) if base >= crate::ir::VARIABLE_BASE && !stepped.contains(&base) => {
-                Some(base)
-            }
-            _ => None,
+        .flat_map(|touch| {
+            let mut reads = HashSet::new();
+            crate::ir::visit::collect_reads(&touch.addr, &mut reads);
+            reads
+                .into_iter()
+                .filter(|base| *base >= crate::ir::VARIABLE_BASE)
         })
         .collect();
+    loop {
+        let mut changed = false;
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let Stmt::Assign {
+                dest,
+                value: Expr::Reg { index, width: 64 },
+            } = stmt
+                && dest.width == 64
+                && *index >= crate::ir::VARIABLE_BASE
+                && variables.contains(&dest.index)
+                && !variables.contains(index)
+            {
+                variables.push(*index);
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
     variables.sort_unstable();
     variables.dedup();
     // Variables whose fields match share one structure.
-    let mut named: Vec<(Vec<(u64, CType)>, String)> = Vec::new();
-    for (variable, fields) in variables
-        .into_iter()
-        .filter_map(|variable| Some((variable, layout(variable, &touches)?)))
-    {
-        let name = match named.iter().find(|(known, _)| *known == fields) {
-            Some((_, name)) => name.clone(),
+    let mut number = 0;
+    for variable in variables {
+        if stepped.contains(&variable)
+            || structures
+                .iter()
+                .any(|structure| structure.elements.contains(&variable))
+        {
+            continue;
+        }
+        let (fields, size, aliases) = match array(ir, variable, true, &touches) {
+            Some(array) => {
+                let mut aliases = array.elements;
+                aliases.push(variable);
+                (array.fields, Some(array.size), aliases)
+            }
             None => {
-                let name = format!("{function}_s{}", named.len() + 1);
-                named.push((fields.clone(), name.clone()));
+                let aliases = copies(ir, variable);
+                let Some(fields) = layout(&aliases, &touches) else {
+                    continue;
+                };
+                (fields, None, aliases)
+            }
+        };
+        let name = match structures
+            .iter_mut()
+            .find(|known| known.fields == fields && known.size == size)
+        {
+            Some(known) => {
+                known.elements.extend(aliases.iter().copied());
+                known.elements.sort_unstable();
+                known.elements.dedup();
+                known.name.clone()
+            }
+            None => {
+                number += 1;
+                let name = format!("{function}_s{number}");
                 structures.push(Structure {
                     name: name.clone(),
                     fields,
-                    size: None,
-                    elements: Vec::new(),
+                    size,
+                    elements: aliases.clone(),
                 });
                 name
             }
         };
-        ir.value_types.insert(
-            variable,
-            CType::pointer_to(CType::Named(format!("struct {name}"))),
-        );
+        if size.is_none() {
+            for alias in aliases {
+                ir.value_types.insert(
+                    alias,
+                    CType::pointer_to(CType::Named(format!("struct {name}"))),
+                );
+            }
+        }
     }
     ir.structures.extend(structures);
 }
 
-/// The register an address reads at a constant offset, if it is one.
-fn base_of(addr: &Expr) -> Option<u16> {
-    match addr {
-        Expr::Reg { index, width: 64 } => Some(*index),
-        Expr::Bin {
-            op: BinOp::Add,
-            lhs,
-            rhs,
-        } => match (lhs.as_ref(), rhs.as_ref()) {
-            (Expr::Reg { index, width: 64 }, Expr::Const(_))
-            | (Expr::Const(_), Expr::Reg { index, width: 64 }) => Some(*index),
+/// Whole-register copies whose every definition keeps the same address.
+fn copies(ir: &FunctionIr, base: u16) -> Vec<u16> {
+    let mut definitions: BTreeMap<u16, Vec<Option<u16>>> = BTreeMap::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let source = match stmt {
+            Stmt::Assign {
+                dest,
+                value: Expr::Reg { index, width: 64 },
+            } if dest.width == 64 => Some(*index),
             _ => None,
-        },
-        _ => None,
+        };
+        for register in crate::ir::visit::statement_registers(stmt).0 {
+            definitions.entry(register).or_default().push(source);
+        }
+    }
+    let mut aliases = vec![base];
+    loop {
+        let mut changed = false;
+        for (dest, sources) in &definitions {
+            if !aliases.contains(dest)
+                && sources
+                    .iter()
+                    .all(|source| source.is_some_and(|source| aliases.contains(&source)))
+            {
+                aliases.push(*dest);
+                changed = true;
+            }
+        }
+        if !changed {
+            return aliases;
+        }
     }
 }
 
@@ -191,10 +271,9 @@ pub(super) fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
     touches
 }
 
-/// The fields at the fixed offsets `base` is accessed at, or `None` when it
-/// is accessed at one offset only, indexed, or inconsistently.
-fn layout(base: u16, touches: &[Touch]) -> Option<Vec<(u64, CType)>> {
-    layout_at_least(base, touches, 2)
+/// Fields accessed through whole-register copies with consistent widths.
+fn layout(aliases: &[u16], touches: &[Touch]) -> Option<Vec<(u64, CType)>> {
+    layout_aliases(aliases, touches, 2)
 }
 
 pub(super) fn layout_at_least(
@@ -202,23 +281,27 @@ pub(super) fn layout_at_least(
     touches: &[Touch],
     minimum: usize,
 ) -> Option<Vec<(u64, CType)>> {
+    layout_aliases(&[base], touches, minimum)
+}
+
+fn layout_aliases(aliases: &[u16], touches: &[Touch], minimum: usize) -> Option<Vec<(u64, CType)>> {
     let mut fields: BTreeMap<u64, (u8, bool)> = BTreeMap::new();
     for touch in touches {
         let mut read = HashSet::new();
         crate::ir::visit::collect_reads(&touch.addr, &mut read);
-        if !read.contains(&base) {
+        if !aliases.iter().any(|base| read.contains(base)) {
             continue;
         }
         let offset = match &touch.addr {
-            Expr::Reg { index, .. } if *index == base => 0,
+            Expr::Reg { index, width: 64 } if aliases.contains(index) => 0,
             Expr::Bin {
                 op: BinOp::Add,
                 lhs,
                 rhs,
             } => match (lhs.as_ref(), rhs.as_ref()) {
-                (Expr::Reg { index, .. }, Expr::Const(offset))
-                | (Expr::Const(offset), Expr::Reg { index, .. })
-                    if *index == base && *offset < 1 << 31 =>
+                (Expr::Reg { index, width: 64 }, Expr::Const(offset))
+                | (Expr::Const(offset), Expr::Reg { index, width: 64 })
+                    if aliases.contains(index) && *offset < 1 << 31 =>
                 {
                     *offset
                 }
@@ -226,6 +309,9 @@ pub(super) fn layout_at_least(
             },
             _ => return None,
         };
+        if !matches!(touch.width, 1 | 2 | 4 | 8) {
+            return None;
+        }
         let signed = touch.signed.unwrap_or(false);
         let field = fields.entry(offset).or_insert((touch.width, signed));
         if field.0 != touch.width {
@@ -238,10 +324,13 @@ pub(super) fn layout_at_least(
     }
     let mut end = 0;
     for (offset, (width, _)) in &fields {
-        if *offset < end {
+        if *offset < end || !offset.is_multiple_of(u64::from(*width)) {
             return None;
         }
-        end = offset + u64::from(*width);
+        let Some(next) = offset.checked_add(u64::from(*width)) else {
+            return None;
+        };
+        end = next;
     }
     Some(
         fields
@@ -484,7 +573,10 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
                     *width == 8 && matches!(value, Expr::Reg { index, .. } if *index == param);
                 *stored.entry(format!("{addr:?}")).or_insert(true) &= from_param;
             }
-            Stmt::Assign { dest, value } => values.entry(dest.index).or_default().push(Some(value)),
+            Stmt::Assign { dest, value } => values
+                .entry(dest.index)
+                .or_default()
+                .push((dest.width == 64).then_some(value)),
             other => {
                 for register in crate::ir::visit::statement_registers(other).0 {
                     values.entry(register).or_default().push(None);
@@ -526,7 +618,12 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
         for register in registers {
             let splits: Option<Vec<Split>> = values[&register]
                 .iter()
-                .map(|value| holders.split(value.as_ref()?))
+                .map(|value| {
+                    let Some(value) = value else {
+                        return None;
+                    };
+                    holders.split(value)
+                })
                 .collect();
             match splits {
                 Some(splits) => {
@@ -548,7 +645,7 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
 impl Holders {
     fn base(&self, term: &Expr) -> Option<Base> {
         match term {
-            Expr::Reg { index, .. }
+            Expr::Reg { index, width: 64 }
                 if Some(*index) == self.direct || self.definitions.contains_key(index) =>
             {
                 Some(Base::Register(*index))
@@ -914,6 +1011,8 @@ fn loads(expr: &Expr, out: &mut Vec<Touch>) {
 
 #[cfg(test)]
 mod tests {
+    mod typed;
+
     use super::recover;
     use crate::ir::{BinOp, CType, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE};
     use crate::loader::Isa;
@@ -997,13 +1096,7 @@ mod tests {
             "{:?}",
             given(v1)
         );
-        assert_eq!(
-            ir.structures
-                .iter()
-                .filter(|structure| structure.name.contains("_s"))
-                .count(),
-            1
-        );
+        assert_eq!(ir.structures.len(), 1);
     }
 
     #[test]

@@ -14,10 +14,30 @@ pub(crate) fn variable_types(
     float_return: Option<Precision>,
 ) -> BTreeMap<u16, CType> {
     let mut uses = Uses::default();
+    let mut pointer_copies = Vec::new();
+    let mut integer_copies = HashSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        match stmt {
+            Stmt::Assign {
+                dest,
+                value: Expr::Reg { width: 64, .. },
+            } if dest.width == 64 => {}
+            Stmt::Store { value, .. } => integer_reads(value, &mut integer_copies),
+            Stmt::Ret { .. } if ir.ret_type.is_pointer() => {}
+            other => {
+                for value in other.operands() {
+                    integer_reads(value, &mut integer_copies);
+                }
+            }
+        }
         match stmt {
             Stmt::Assign { dest, value } => {
                 uses.seen.insert(dest.index);
+                if dest.width == 64
+                    && let Expr::Reg { index, width: 64 } = value
+                {
+                    pointer_copies.push((dest.index, *index));
+                }
                 if let Expr::Load { addr, .. } = value
                     && let Some(base) = base(addr)
                 {
@@ -75,6 +95,29 @@ pub(crate) fn variable_types(
         }
     }
     uses.spread_floats();
+    loop {
+        let mut changed = false;
+        for &(dest, source) in &pointer_copies {
+            for (from, to) in [(source, dest), (dest, source)] {
+                if integer_copies.contains(&to) {
+                    continue;
+                }
+                let Some(widths) = uses.addresses.get(&from).cloned() else {
+                    continue;
+                };
+                let known = uses.addresses.entry(to).or_default();
+                for width in widths {
+                    if !known.contains(&width) {
+                        known.push(width);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
     // What a float variable is loaded from holds floats.
     for (dest, base) in uses.loaded.clone() {
         if let Some(Some(precision)) = uses.floats.get(&dest).copied() {
@@ -169,6 +212,21 @@ pub(crate) fn variable_types(
         types.insert(index, ty);
     }
     types
+}
+
+/// Reads of a value rather than of the memory it addresses.
+fn integer_reads(expr: &Expr, reads: &mut HashSet<u16>) {
+    match expr {
+        Expr::Load { .. } => {}
+        Expr::Reg { index, .. } => {
+            reads.insert(*index);
+        }
+        other => {
+            for child in crate::ir::visit::children(other) {
+                integer_reads(child, reads);
+            }
+        }
+    }
 }
 
 /// The type a prototype gives a variable where it agrees with how the body

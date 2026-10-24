@@ -23,7 +23,7 @@ fn <unnamed> @ 0x210174 (size 20)
     v1 = (x0 + (sext32(w1) << #0x4))
     ret ((load32((v1 + #0x8)) * load16((v1 + #0xc))s) & #0xffffffff)
 -- card
-{"addr":"0x210174","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; uint8_t gap_0xe[0x2]; };","struct S2 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; };"],"unsupported":0}
+{"addr":"0x210174","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; uint8_t gap_0xe[0x2]; };"],"unsupported":0}
 
 == 0x210188 -
 -- decompile
@@ -49,7 +49,7 @@ fn <unnamed> @ 0x210188 (size 24)
     store32((w2 + #0x1), (v1 + #0x8))
     ret x0
 -- card
-{"addr":"0x210188","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };","struct S2 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x210188","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x2101a0 -
 -- decompile

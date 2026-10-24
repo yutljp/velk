@@ -25,6 +25,9 @@ fn analysis_output_matches_golden_files() {
         "# fixture: output lines, declared variables, casts, register names, \
          unsigned comments, traps, gotos, indirect calls\n",
     );
+    let mut cast_counts = String::from(
+        "# fixture: lines; memory pointer, byte pointer, other pointer, address integer, scalar casts\n",
+    );
     let mut structure_types =
         String::from("# fixture: distinct printed structure types across all functions\n");
     for (fixture, (actual, counts)) in fixtures.iter().zip(rendered) {
@@ -34,6 +37,14 @@ fn analysis_output_matches_golden_files() {
             "{}: {}",
             fixture.display(),
             counts.structures.len()
+        )
+        .expect("writing to a String");
+        writeln!(
+            cast_counts,
+            "{}: {} lines; {:?}",
+            fixture.display(),
+            counts.lines,
+            counts.cast_classes
         )
         .expect("writing to a String");
         let golden = golden_dir.join(format!("{}.txt", fixture.display()));
@@ -50,6 +61,10 @@ fn analysis_output_matches_golden_files() {
     failures.extend(common::check_expected(
         &common::root().join("tests/golden/structure_types.txt"),
         &structure_types,
+    ));
+    failures.extend(common::check_expected(
+        &common::root().join("tests/golden/casts.txt"),
+        &cast_counts,
     ));
     assert!(
         failures.is_empty(),
@@ -149,6 +164,7 @@ struct Readability {
     lines: usize,
     variables: usize,
     casts: usize,
+    cast_classes: [usize; 5],
     registers: usize,
     unsigned: usize,
     traps: usize,
@@ -189,6 +205,9 @@ impl Readability {
                 self.variables += 1;
             }
             self.casts += casts(code);
+            for (total, count) in self.cast_classes.iter_mut().zip(cast_classes(code)) {
+                *total += count;
+            }
             self.indirect_calls += indirect_calls(code);
             self.registers += code
                 .split(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
@@ -336,6 +355,45 @@ fn declarations_include_named_global_views() {
     assert_eq!(counts.registers, 2);
 }
 
+/// Disjoint syntactic classes using the same type recognition as `casts`.
+fn cast_classes(code: &str) -> [usize; 5] {
+    let mut counts = [0; 5];
+    for (start, _) in code.match_indices('(') {
+        let rest = &code[start + 1..];
+        let Some(end) = rest.find(')') else {
+            continue;
+        };
+        let ty = &rest[..end];
+        if ty.contains('(') || casts(&code[start..start + end + 2]) != 1 {
+            continue;
+        }
+        let class = if ty.trim_end().ends_with('*') {
+            if code[..start].trim_end().ends_with('*') {
+                0
+            } else if ty.trim() == "uint8_t *" {
+                1
+            } else {
+                2
+            }
+        } else if matches!(ty.trim(), "uintptr_t" | "intptr_t") {
+            3
+        } else {
+            4
+        };
+        counts[class] += 1;
+    }
+    counts
+}
+
+#[test]
+fn cast_classes_partition_casts() {
+    let code = "*(uint32_t *)((uint8_t *)p + (uintptr_t)q) + (int8_t)x + (struct item *)r";
+    let classes = cast_classes(code);
+    assert_eq!(classes, [1, 1, 1, 1, 1]);
+    assert_eq!(classes.iter().sum::<usize>(), casts(code));
+    assert_eq!(casts("result(struct item *value, int32_t count)"), 0);
+}
+
 /// Casts to a scalar, pointer or structure type, such as `(int8_t)` or `(struct s1 *)`.
 fn casts(code: &str) -> usize {
     code.match_indices('(')
@@ -349,7 +407,9 @@ fn casts(code: &str) -> usize {
                 && inner
                     .bytes()
                     .all(|b| b.is_ascii_alphanumeric() || b == b'_')
-                || inner.starts_with("struct ")
+                || inner.strip_prefix("struct ").is_some_and(|name| {
+                    !name.is_empty() && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+                })
                 || matches!(inner, "float" | "double" | "bool" | "char")
         })
         .count()
