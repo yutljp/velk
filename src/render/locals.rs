@@ -1232,11 +1232,18 @@ fn slot_types(
                     walk.address(addr, CType::int(*width, false));
                 }
                 Stmt::Assign { dest, value } => {
-                    if let Expr::Load { addr, .. } = value
+                    if let Expr::Load { addr, width, .. } = value
                         && let Some(slot) = walk.local(addr)
-                        && let Some(ty) = typed(dest.index)
                     {
-                        walk.strong.push((slot, ty));
+                        match typed(dest.index) {
+                            Some(ty) => walk.strong.push((slot, ty)),
+                            // A value loaded into a variable no type is known
+                            // for is used as an integer.
+                            None if *width == 8 && dest.width == 64 => {
+                                walk.strong.push((slot, CType::int(8, false)))
+                            }
+                            None => {}
+                        }
                     }
                 }
                 Stmt::Brif { cond, lhs, rhs, .. } => walk.compare(*cond, &[lhs, rhs]),

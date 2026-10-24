@@ -388,18 +388,18 @@ int32_t sum_varargs(int32_t a0, ...) {
     uint8_t *local_0; /* [sp-10] */
     _Alignas(16) uint8_t local_1[0x40]; /* [sp-60] */
     int64_t local_2; /* [sp-8] */
-    int64_t *local_3; /* [sp-18] */
+    int64_t local_3; /* [sp-18] */
     uint32_t *local_4; /* [sp-20] */
 
     local_0 = local_1;
     local_2 = 0xffffff80ffffffc8;
-    local_3 = (int64_t *)(local_1 + 0x40);
+    local_3 = (uintptr_t)(local_1 + 0x40);
     local_4 = (uint32_t *)sp;
     if (a0 < 1) {
         return 0;
     }
     v1 = local_4;
-    v2 = (uintptr_t)local_3;
+    v2 = local_3;
     v3 = 0;
     v4 = *(uint32_t *)&local_2;
     do {

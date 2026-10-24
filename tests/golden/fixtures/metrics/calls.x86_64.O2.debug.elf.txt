@@ -427,19 +427,19 @@ int sum_varargs(int count, ...) {
     int32_t v4;
     int32_t v6;
     uint32_t *v7;
-    uint8_t *local_0; /* [sp-c8] */
+    int64_t local_0; /* [sp-c8] */
     _Alignas(16) uint8_t local_1[0xb8]; /* [sp-b8] */
     uint32_t *local_2; /* [sp-d0] */
     int64_t local_3; /* [sp-d8] */
 
-    local_0 = local_1;
+    local_0 = (uintptr_t)(local_1);
     local_2 = (uint32_t *)(rsp + 8);
     local_3 = 0x3000000008;
     if (count <= 0) {
         return 0;
     }
     v1 = *(uint32_t *)&local_3;
-    v2 = (uintptr_t)local_0;
+    v2 = local_0;
     v3 = local_2;
     if (count != 1) {
         v6 = count & 0x7ffffffe;
