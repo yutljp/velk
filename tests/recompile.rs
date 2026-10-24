@@ -50,6 +50,8 @@ mod record_transfers;
 mod register_locals;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
+#[path = "recompile/switches.rs"]
+mod switches;
 #[path = "recompile/unsupported.rs"]
 mod unsupported;
 

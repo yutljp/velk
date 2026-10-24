@@ -34,6 +34,7 @@ struct Graph<'a> {
     /// `break`, rather than after the loop.
     absorbed: std::collections::HashSet<usize>,
     absorb: Absorb,
+    switch_cases: bool,
 }
 
 fn successors(blocks: &[Block], index: &HashMap<u64, usize>, block: usize) -> Vec<usize> {
@@ -189,6 +190,7 @@ impl<'a> Graph<'a> {
             index,
             absorbed: std::collections::HashSet::new(),
             absorb,
+            switch_cases: false,
         };
         if absorb != Absorb::Nothing {
             graph.absorbed = graph.absorbed_exits(absorb);
@@ -495,10 +497,13 @@ impl<'a> Graph<'a> {
     }
 
     /// Whether a branch from `from` brings in `target`'s code: it dominates
-    /// the target, which no other forward edge enters, in the same loops.
+    /// the target in the same loops. A switch emits each target once even
+    /// when another case enters it; that edge still has its label.
     fn inlinable(&self, from: usize, target: usize) -> bool {
         self.idom[target] == Some(from)
-            && !self.merge[target]
+            && (!self.merge[target]
+                || (self.switch_cases
+                    && matches!(self.blocks[from].stmts.last(), Some(Stmt::Switch { .. }))))
             && self.order[target] > self.order[from]
             && (self.absorbed.contains(&target)
                 || (self.hoisted(from, target).is_none()
@@ -1088,26 +1093,36 @@ fn while_loop(body: &[Node]) -> Option<Node> {
 /// The function structured by its dominator tree, or None when the tree is
 /// too deep to walk.
 pub(super) fn structure(ir: &FunctionIr) -> Option<Vec<Node>> {
-    structure_with(ir, Absorb::Nothing)
+    structure_with(ir, Absorb::Nothing, false)
 }
 
 /// The same, with each loop's exits that one branch alone enters placed
 /// where the loop leaves to them, so the others follow the loop.
 pub(super) fn structure_absorbing(ir: &FunctionIr, absorb: Absorb) -> Option<Vec<Node>> {
-    structure_with(ir, absorb)
+    structure_with(ir, absorb, false)
 }
 
-fn structure_with(ir: &FunctionIr, absorb: Absorb) -> Option<Vec<Node>> {
+pub(super) fn structure_switches(ir: &FunctionIr, absorb: Absorb) -> Option<Vec<Node>> {
+    structure_with(ir, absorb, true)
+}
+
+fn structure_with(ir: &FunctionIr, absorb: Absorb, switch_cases: bool) -> Option<Vec<Node>> {
     if ir.blocks.is_empty() {
         return Some(Vec::new());
     }
-    let graph = Graph::new(ir, absorb);
-    let mut nodes = graph.tree(0, 0)?;
+    let mut graph = Graph::new(ir, absorb);
+    graph.switch_cases = switch_cases;
+    let Some(mut nodes) = graph.tree(0, 0) else {
+        return None;
+    };
     // Code the entry does not reach, and joins of it with code the entry
     // does reach, follow the function's own code.
     for block in 1..ir.blocks.len() {
         if graph.idom[block].is_none() && !graph.padding(block) {
-            nodes.extend(graph.tree(block, 0)?);
+            let Some(body) = graph.tree(block, 0) else {
+                return None;
+            };
+            nodes.extend(body);
         }
     }
     resolve(&mut nodes, &Next::default(), &mut Vec::new());

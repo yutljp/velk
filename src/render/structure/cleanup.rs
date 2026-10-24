@@ -3,6 +3,8 @@ mod switch;
 
 pub(crate) use returns::{flatten_early_returns, inline_return_tails, return_known_constants};
 pub(crate) use switch::absorb_switch_tests;
+pub(crate) use switch::fold_switch_exits;
+pub(crate) use switch::order_switch_cases;
 
 use crate::ir::{Expr, Stmt};
 use crate::render::structure::Node;
@@ -620,7 +622,7 @@ pub(crate) fn prune_labels(nodes: &mut Vec<Node>, used: &std::collections::HashS
 }
 
 /// The node lists directly inside a node.
-fn children(node: &Node) -> Vec<&Vec<Node>> {
+pub(super) fn children(node: &Node) -> Vec<&Vec<Node>> {
     match node {
         Node::If { then, els, .. } => vec![then, els],
         Node::DoWhile { body, .. } | Node::Forever { body } => vec![body],

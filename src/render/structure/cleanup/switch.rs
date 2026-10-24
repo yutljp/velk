@@ -3,6 +3,198 @@ use crate::ir::{Cond, Expr, Stmt};
 use crate::render::structure::Node;
 use std::collections::HashMap;
 
+/// Places a continuation in the case that reaches it, letting the other
+/// cases break directly to the shared exit after the switch.
+pub(crate) fn fold_switch_exits(nodes: &mut Vec<Node>) {
+    for position in (0..nodes.len()).rev() {
+        let Node::Switch { arms, default, .. } = &nodes[position] else {
+            continue;
+        };
+        let bodies: Vec<_> = arms
+            .iter()
+            .map(|(_, body)| body)
+            .chain(default.iter())
+            .collect();
+        if bodies.iter().any(|body| !ends(body, true)) {
+            continue;
+        }
+        let exits: usize = bodies.iter().map(|body| switch_breaks(body)).sum();
+        if exits == 0 {
+            continue;
+        }
+        let mut targets = std::collections::HashSet::new();
+        for body in &bodies {
+            super::collect_targets(body, &mut targets);
+        }
+        let destination = nodes[position + 1..]
+            .iter()
+            .position(|node| matches!(node, Node::Label(label) if targets.contains(label)))
+            .map(|offset| position + 1 + offset);
+        let Some(destination) = destination else {
+            continue;
+        };
+        let skipped = &nodes[position + 1..destination];
+        if skipped.is_empty()
+            || breaks_out(skipped)
+            || (exits != 1
+                && (skipped.len() > 3
+                    || skipped.iter().any(|node| {
+                        !matches!(node, Node::Stmt(Stmt::Assign { .. } | Stmt::Store { .. }))
+                    })))
+        {
+            continue;
+        }
+        let Node::Label(target) = nodes[destination] else {
+            continue;
+        };
+        let skipped: Vec<_> = nodes.drain(position + 1..destination).collect();
+        let Node::Switch { arms, default, .. } = &mut nodes[position] else {
+            unreachable!("the switch remains in place");
+        };
+        for body in arms
+            .iter_mut()
+            .map(|(_, body)| body)
+            .chain(default.iter_mut())
+        {
+            extend_switch_exits(body, &skipped, target);
+        }
+    }
+    for node in nodes {
+        for body in children_mut(node) {
+            fold_switch_exits(body);
+        }
+    }
+}
+
+fn switch_breaks(nodes: &[Node]) -> usize {
+    nodes
+        .iter()
+        .map(|node| match node {
+            Node::Break => 1,
+            Node::If { then, els, .. } => switch_breaks(then) + switch_breaks(els),
+            _ => 0,
+        })
+        .sum()
+}
+
+fn extend_switch_exits(nodes: &mut Vec<Node>, tail: &[Node], target: u64) {
+    let mut out = Vec::new();
+    for mut node in nodes.drain(..) {
+        match &mut node {
+            Node::Break => out.extend_from_slice(tail),
+            Node::Stmt(Stmt::Br {
+                target: Some(address),
+            }) if *address == target => {
+                node = Node::Break;
+            }
+            Node::If { then, els, .. } => {
+                extend_switch_exits(then, tail, target);
+                extend_switch_exits(els, tail, target);
+            }
+            _ => {}
+        }
+        out.push(node);
+    }
+    *nodes = out;
+}
+
+/// Orders case bodies along their edges so those edges can
+/// fall through. Bodies are moved once, without copying a shared suffix.
+pub(crate) fn order_switch_cases(nodes: &mut [Node]) {
+    for node in nodes {
+        for body in children_mut(node) {
+            order_switch_cases(body);
+        }
+        let Node::Switch { arms, default, .. } = node else {
+            continue;
+        };
+        // Reordering an existing fallthrough would change its destination.
+        if arms.iter().any(|(_, body)| !ends(body, true)) {
+            continue;
+        }
+        let mut position = 0;
+        while position < arms.len() {
+            let [
+                Node::Stmt(Stmt::Br {
+                    target: Some(target),
+                }),
+            ] = arms[position].1.as_slice()
+            else {
+                position += 1;
+                continue;
+            };
+            let destination = arms.iter().position(|(_, body)| starts_at(body, *target));
+            if let Some(destination) = destination {
+                let (values, _) = arms.remove(position);
+                let destination = destination - usize::from(destination > position);
+                arms[destination].0.extend(values);
+            } else {
+                position += 1;
+            }
+        }
+        let next: Vec<Option<usize>> = arms
+            .iter()
+            .map(|(_, body)| match body.last() {
+                Some(Node::Stmt(Stmt::Br {
+                    target: Some(target),
+                })) => arms.iter().position(|(_, body)| starts_at(body, *target)),
+                _ => {
+                    let mut targets = std::collections::HashSet::new();
+                    super::collect_targets(body, &mut targets);
+                    arms.iter().position(|(_, body)| {
+                        body.iter().take_while(|node| matches!(node, Node::Label(_)))
+                            .any(|node| matches!(node, Node::Label(label) if targets.contains(label)))
+                    })
+                }
+            })
+            .collect();
+        let mut incoming = vec![false; arms.len()];
+        for destination in next.iter().flatten() {
+            incoming[*destination] = true;
+        }
+        let starts = (0..arms.len())
+            .filter(|position| !incoming[*position])
+            .chain(0..arms.len());
+        let mut pending: Vec<_> = arms.drain(..).map(Some).collect();
+        for start in starts {
+            let mut position = start;
+            while let Some(arm) = pending[position].take() {
+                arms.push(arm);
+                match next[position] {
+                    Some(destination) => position = destination,
+                    None => break,
+                }
+            }
+        }
+        for position in 0..arms.len() {
+            let next = arms
+                .get(position + 1)
+                .map(|(_, body)| body)
+                .or(default.as_ref());
+            let target = next.and_then(|body| match body.first() {
+                Some(Node::Label(target)) => Some(*target),
+                _ => None,
+            });
+            let Some(target) = target else {
+                continue;
+            };
+            let body = &mut arms[position].1;
+            // Let the forward-exit folds see the next case without moving it.
+            body.push(Node::Label(target));
+            super::fold_forward_exits(body);
+            super::fold_label_branches(body);
+            super::drop_jumps_to_next(body, None);
+            body.pop();
+        }
+    }
+}
+
+fn starts_at(body: &[Node], target: u64) -> bool {
+    body.iter()
+        .take_while(|node| matches!(node, Node::Label(_)))
+        .any(|node| matches!(node, Node::Label(label) if *label == target))
+}
+
 /// Folds the tests a compiler puts before a switch into it. A bounds check,
 /// `v = x - k; if (v > n) t else switch (x) { ... }` with cases for every
 /// value from `k` to `k + n`, is the switch with `t` as its default; a

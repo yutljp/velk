@@ -173,6 +173,25 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
     cleanup::undo_loop_inversion(nodes);
     cleanup::return_known_constants(nodes);
     short_circuit::fold_conditions(nodes);
+    if contains_switch(nodes) {
+        cleanup::fold_switch_exits(nodes);
+        prune_unreachable(nodes);
+        cleanup::order_switch_cases(nodes);
+        prune(nodes);
+    }
+}
+
+fn contains_switch(nodes: &[Node]) -> bool {
+    nodes.iter().any(|node| {
+        matches!(node, Node::Switch { .. })
+            || cleanup::children(node)
+                .into_iter()
+                .any(|body| contains_switch(body))
+    })
+}
+
+pub(super) fn case_falls_through(nodes: &[Node]) -> bool {
+    !cleanup::ends(nodes, true)
 }
 
 fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
@@ -186,11 +205,30 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     // A loop's exits that one branch alone enters can sit where it leaves
     // to them, when that leaves fewer labels.
     let mut best = nodes;
-    for absorb in [dominance::Absorb::Private, dominance::Absorb::Every] {
-        if let Some(mut absorbing) = dominance::structure_absorbing(ir, absorb) {
+    let switches = ir
+        .blocks
+        .iter()
+        .any(|block| matches!(block.stmts.last(), Some(Stmt::Switch { .. })));
+    for absorb in [
+        dominance::Absorb::Nothing,
+        dominance::Absorb::Private,
+        dominance::Absorb::Every,
+    ] {
+        if absorb != dominance::Absorb::Nothing
+            && let Some(mut absorbing) = dominance::structure_absorbing(ir, absorb)
+        {
             tidy(&mut absorbing, entries.clone());
             if cost(&absorbing) < cost(&best) && labels_resolve(ir, &absorbing) {
                 best = absorbing;
+            }
+        }
+        if switches
+            && label_count(&best) != 0
+            && let Some(mut candidate) = dominance::structure_switches(ir, absorb)
+        {
+            tidy(&mut candidate, entries.clone());
+            if cost(&candidate) < cost(&best) && labels_resolve(ir, &candidate) {
+                best = candidate;
             }
         }
         if label_count(&best) == 0 {

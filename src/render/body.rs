@@ -825,6 +825,10 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                     out.push_str(&format!("{label}:\n"));
                 }
                 render_nodes(body, depth + 1, out, ctx);
+                if super::structure::case_falls_through(body) {
+                    indent(depth + 1, out);
+                    out.push_str("/* fallthrough */\n");
+                }
             }
             // Cases taking every value a mask leaves need no default.
             let covered = match index {
