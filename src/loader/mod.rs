@@ -161,6 +161,8 @@ pub struct Summary {
     pub arity: Option<usize>,
     /// How many floating-point argument registers it reads, when known.
     pub floats: Option<usize>,
+    /// The incoming registers the body uses, excluding unused argument positions.
+    pub inputs: Option<crate::ir::Registers>,
     /// The integer arguments it takes as pointers, one bit for each.
     pub pointers: u32,
     /// How many 8-byte arguments it reads past the registers.

@@ -83,6 +83,8 @@ mod switches;
 mod syntax;
 #[path = "recompile/unsupported.rs"]
 mod unsupported;
+#[path = "recompile/x64_inputs.rs"]
+mod x64_inputs;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;

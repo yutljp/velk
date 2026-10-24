@@ -3,13 +3,23 @@ use super::*;
 /// Compiles `source` without optimization, prints each of `functions`, and
 /// runs the printed C next to the original on every input: both, and the
 /// interpreter on the IR where it makes no call, must return the same
-/// 32-bit value. Each function
-/// takes one 32-bit argument; calls in the printed C reach the originals.
+/// 32-bit value. Each function takes successive wrapping 32-bit arguments
+/// starting at the input; calls in the printed C reach the originals.
 pub(crate) fn check_against_original(
     pass: &str,
     source: &str,
     functions: &[&str],
     inputs: &[u32],
+) -> Vec<String> {
+    check_against_original_with_flags(pass, source, functions, inputs, &[])
+}
+
+fn check_against_original_with_flags(
+    pass: &str,
+    source: &str,
+    functions: &[&str],
+    inputs: &[u32],
+    flags: &[&str],
 ) -> Vec<String> {
     let scratch = scratch_dir(pass);
     let original = scratch.join("original.c");
@@ -17,6 +27,7 @@ pub(crate) fn check_against_original(
     std::fs::write(&original, source).unwrap();
     let compiled = Command::new(compiler())
         .args(["-O0", "-fno-stack-protector"])
+        .args(flags)
         .arg(&original)
         .arg("-o")
         .arg(&executable)
@@ -48,10 +59,14 @@ pub(crate) fn check_against_original(
         text.push_str(&code);
         printed_code.push(code.clone());
         for input in inputs {
+            let values: Vec<_> = (0..ir.params.len())
+                .map(|position| input.wrapping_add(position as u32))
+                .collect();
             let registers: Vec<(u16, u64)> = ir
                 .params
                 .iter()
-                .map(|param| (param.index, u64::from(*input)))
+                .zip(&values)
+                .map(|(param, value)| (param.index, u64::from(*value)))
                 .collect();
             let outcome = eval::run(
                 &ir,
@@ -69,10 +84,14 @@ pub(crate) fn check_against_original(
             let Outcome::Return { value, calls, .. } = outcome else {
                 panic!("{function}({input}): {outcome:?}\n{code}");
             };
-            let arguments = vec![format!("UINT32_C({input})"); ir.params.len()].join(", ");
+            let arguments = values
+                .iter()
+                .map(|value| format!("UINT32_C({value})"))
+                .collect::<Vec<_>>()
+                .join(", ");
             write!(
                 checks,
-                "if ((uint32_t){printed}({arguments}) != {function}(UINT32_C({input}))"
+                "if ((uint32_t){printed}({arguments}) != {function}({arguments})"
             )
             .unwrap();
             // What a call returns is the interpreter's guess.
@@ -117,9 +136,26 @@ fn printed_large_frames_keep_arguments_across_the_stack_probe() {
     check_against_original(
         "stack-probe",
         include_str!("stack_probe.c"),
-        &["large_frame", "calls_large_frame"],
+        &["large_frame", "calls_large_frame", "large_frame_pair"],
         &[0, 1, 0x55, 0x1234_5678, 0xffff_fffe],
     );
+}
+
+#[test]
+#[cfg(target_os = "macos")]
+fn printed_x64_large_frames_keep_arguments_across_the_stack_probe() {
+    let printed = check_against_original_with_flags(
+        "x64-stack-probe",
+        include_str!("stack_probe.c"),
+        &["large_frame", "calls_large_frame", "large_frame_pair"],
+        &[0, 1, 0x55, 0x1234_5678, 0xffff_fffe],
+        &["-arch", "x86_64"],
+    );
+    for code in printed {
+        assert!(!code.contains("chkstk"), "{code}");
+        assert!(!code.contains("undefined"), "{code}");
+        assert!(code.contains("a0"), "{code}");
+    }
 }
 
 #[test]

@@ -9,6 +9,7 @@ use crate::loader::Isa;
 #[derive(Debug, Clone)]
 pub struct Signature {
     pub params: Vec<Param>,
+    pub inputs: Option<crate::ir::Registers>,
     pub ret: CType,
     pub accesses: Vec<Access>,
     /// Argument registers a signed comparison reads: the parameter is signed.
@@ -150,6 +151,93 @@ const GO_CLOSURE: u16 = 2;
 
 /// The prototype of the library function a call reaches, when known.
 pub type Callees<'a> = &'a dyn Fn(&Stmt) -> Option<&'static Prototype>;
+
+fn inputs_known(blocks: &[Block], landing_pads: &[(u64, Vec<(u64, u64)>)]) -> bool {
+    let starts: HashSet<_> = blocks.iter().map(|block| block.start).collect();
+    landing_pads.is_empty()
+        && blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .all(|stmt| match stmt {
+                Stmt::Unsupported { .. }
+                | Stmt::BrIndirect { .. }
+                | Stmt::BrifFlags { .. }
+                | Stmt::Br { target: None } => false,
+                Stmt::Br {
+                    target: Some(target),
+                }
+                | Stmt::Brif { target, .. } => starts.contains(target),
+                Stmt::Switch { cases, default, .. } => {
+                    default.is_some_and(|target| starts.contains(&target))
+                        && cases.iter().all(|(_, target)| starts.contains(target))
+                }
+                _ => true,
+            })
+}
+
+/// Assignments whose values can reach an observable use. Unresolved control
+/// flow, exception entries and vector values stay conservative: undeclared
+/// aggregate results can use further vector registers.
+fn needed_assignments(
+    blocks: &[Block],
+    registers: &[Vec<(HashSet<u16>, HashSet<u16>)>],
+    isa: Isa,
+    convention: Convention,
+) -> Vec<Vec<bool>> {
+    let mut needed: Vec<Vec<bool>> = blocks
+        .iter()
+        .map(|block| vec![true; block.stmts.len()])
+        .collect();
+    if registers.is_empty()
+        || !matches!(
+            convention,
+            Convention::SysV | Convention::Win64 | Convention::Aapcs64
+        )
+    {
+        return needed;
+    }
+    let successors: Vec<_> = (0..blocks.len())
+        .map(|index| crate::ir::cfg::block_successors(blocks, index))
+        .collect();
+    let mut incoming = vec![HashSet::new(); blocks.len()];
+    loop {
+        let mut changed = false;
+        for index in (0..blocks.len()).rev() {
+            let mut live: HashSet<_> = successors[index]
+                .iter()
+                .flat_map(|next| incoming[*next].iter().copied())
+                .collect();
+            for (position, stmt) in blocks[index].stmts.iter().enumerate().rev() {
+                let (writes, reads) = &registers[index][position];
+                // The raw return may name only the first integer result.
+                if matches!(stmt, Stmt::Ret { .. }) {
+                    live.extend(convention.results());
+                }
+                if let Stmt::Assign { dest, value } = stmt
+                    && !live.contains(&dest.index)
+                    && !crate::passes::frame::reads_outside_frame(value)
+                    && !writes
+                        .iter()
+                        .chain(reads)
+                        .any(|register| crate::arch::vector_half(isa, *register).is_some())
+                {
+                    needed[index][position] = false;
+                    continue;
+                }
+                needed[index][position] = true;
+                live.retain(|register| !writes.contains(register));
+                live.extend(reads.iter().copied());
+            }
+            if live != incoming[index] {
+                incoming[index] = live;
+                changed = true;
+            }
+        }
+        if !changed {
+            return needed;
+        }
+    }
+}
 
 #[cfg(test)]
 fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> Signature {
@@ -316,11 +404,44 @@ pub fn recover_with(
             )
     });
     let mut inputs: HashSet<u16> = HashSet::new();
+    let mut incoming = crate::ir::Registers::default();
     // Inputs some read takes more than the low 32 bits of.
     let mut wide_inputs: HashSet<u16> = HashSet::new();
+    // Go runtime entry points can use registers beyond the source ABI.
+    let known_inputs = !go && inputs_known(blocks, landing_pads);
+    let registers: Vec<Vec<_>> = if known_inputs {
+        blocks
+            .iter()
+            .map(|block| {
+                block
+                    .stmts
+                    .iter()
+                    .map(crate::ir::visit::statement_registers)
+                    .collect()
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let needed = needed_assignments(blocks, &registers, isa, convention);
     for (index, block) in blocks.iter().enumerate() {
         let mut written = entry[index].clone();
-        for stmt in &block.stmts {
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            // Results can pass incoming values through without an explicit read.
+            if known_inputs && matches!(stmt, Stmt::Ret { .. }) {
+                for register in convention.results() {
+                    if !written.contains(register) {
+                        incoming.insert(*register);
+                    }
+                }
+            }
+            if known_inputs && needed[index][position] {
+                for register in &registers[index][position].1 {
+                    if !written.contains(register) {
+                        incoming.insert(*register);
+                    }
+                }
+            }
             let mut used = HashSet::new();
             match stmt {
                 Stmt::Machine { inputs, .. } => {
@@ -329,7 +450,9 @@ pub fn recover_with(
                     }
                 }
                 Stmt::Assign { dest, value } => {
-                    reads(partial_write_source(value, dest.index), &mut used)
+                    if needed[index][position] {
+                        reads(partial_write_source(value, dest.index), &mut used);
+                    }
                 }
                 Stmt::Store { addr, value, .. } => {
                     reads(addr, &mut used);
@@ -821,6 +944,7 @@ pub fn recover_with(
 
     Signature {
         params,
+        inputs: known_inputs.then_some(incoming),
         ret,
         accesses,
         signed: signed_args,
@@ -1802,6 +1926,103 @@ mod tests {
             },
         ];
         assert_eq!(params_of(stmts, Isa::AArch64), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn incoming_reads_follow_live_values_across_blocks() {
+        let blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![
+                    stack_assign(10, Expr::reg(7, 64)),
+                    stack_assign(11, Expr::reg(1, 64)),
+                    Stmt::Br { target: Some(16) },
+                ],
+            },
+            Block {
+                start: 16,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::reg(10, 64),
+                }],
+            },
+        ];
+        let signature = recover(&blocks, Isa::X86_64, Convention::SysV, false);
+        assert_eq!(
+            signature
+                .params
+                .iter()
+                .map(|param| param.index)
+                .collect::<Vec<_>>(),
+            vec![7]
+        );
+        let mut expected: crate::ir::Registers =
+            Convention::SysV.results().iter().copied().collect();
+        expected.insert(7);
+        assert_eq!(signature.inputs, Some(expected));
+        let mut unknown = blocks;
+        unknown[1].stmts = vec![Stmt::BrIndirect {
+            target: Expr::reg(10, 64),
+        }];
+        assert!(
+            recover(&unknown, Isa::X86_64, Convention::SysV, false)
+                .inputs
+                .is_none()
+        );
+        unknown[1].stmts = vec![Stmt::Br { target: Some(32) }];
+        assert!(
+            recover(&unknown, Isa::X86_64, Convention::SysV, false)
+                .inputs
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn floating_results_and_unchanged_secondary_results_keep_their_inputs() {
+        for (isa, convention, dest, source) in [
+            (Isa::X86_64, Convention::SysV, 18, 20),
+            (Isa::X86_64, Convention::SysV, 10, 20),
+            (Isa::AArch64, Convention::Aapcs64, 36, 38),
+            (Isa::AArch64, Convention::Aapcs64, 38, 40),
+        ] {
+            let signature = recover(
+                &[Block {
+                    start: 0,
+                    stmts: vec![
+                        stack_assign(dest, Expr::reg(source, 64)),
+                        Stmt::Ret {
+                            value: Expr::reg(0, 64),
+                        },
+                    ],
+                }],
+                isa,
+                convention,
+                false,
+            );
+            assert!(signature.params.iter().any(|param| param.index == source));
+            let inputs = signature.inputs.unwrap();
+            assert!(inputs.contains(source));
+            assert!(inputs.contains(if isa == Isa::X86_64 { 2 } else { 1 }));
+        }
+    }
+
+    #[test]
+    fn go_runtime_result_registers_keep_input_reads() {
+        let signature = recover(
+            &[Block {
+                start: 0,
+                stmts: vec![
+                    stack_assign(2, Expr::reg(3, 64)),
+                    Stmt::Ret {
+                        value: Expr::reg(0, 64),
+                    },
+                ],
+            }],
+            Isa::AArch64,
+            Convention::Aapcs64,
+            true,
+        );
+        assert!(signature.params.iter().any(|param| param.index == 3));
+        assert!(signature.inputs.is_none());
     }
 
     #[test]

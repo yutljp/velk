@@ -557,6 +557,7 @@ fn assumed(image: &Image, addr: u64, cyclic: bool) -> Summary {
     Summary {
         arity: named.arity.or(none),
         floats: named.floats.or(none),
+        inputs: cyclic.then_some(Registers::default()),
         narrow_return: true,
         ..named
     }
@@ -675,6 +676,10 @@ fn merge(current: Summary, next: Summary) -> Summary {
             (a, b) => a.or(b),
         },
         pointers: current.pointers | next.pointers,
+        inputs: match (current.inputs, next.inputs) {
+            (Some(a), Some(b)) => Some(Registers(a.0 | b.0)),
+            (_, next) => next,
+        },
         noreturn: current.noreturn || next.noreturn,
         stack: current.stack.max(next.stack),
         stack_widths: next.stack_widths,
@@ -720,6 +725,7 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
         floats: prototype
             .filter(|prototype| !prototype.variadic)
             .map(super::prototypes::Prototype::floats),
+        inputs: None,
         pointers: prototype.map_or(0, super::prototypes::Prototype::pointers),
         noreturn,
         stack: 0,
@@ -785,6 +791,7 @@ fn compute(
     let summary = Summary {
         arity: Some(count(convention.arguments())),
         floats: Some(count(convention.float_arguments())),
+        inputs: signature.inputs,
         pointers: convention
             .arguments()
             .iter()

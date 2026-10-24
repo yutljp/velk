@@ -305,7 +305,11 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
                 _ => None,
             };
             let probe = match image.format {
-                crate::loader::Format::MachO => name == Some("___chkstk_darwin"),
+                crate::loader::Format::MachO => match image.isa {
+                    Isa::X86_64 => name == Some("____chkstk_darwin"),
+                    Isa::AArch64 => name == Some("___chkstk_darwin"),
+                    Isa::Unsupported => false,
+                },
                 crate::loader::Format::Pe if image.isa == crate::loader::Isa::X86_64 => {
                     name == Some("__chkstk")
                 }
@@ -759,6 +763,16 @@ pub(crate) fn call(
                 .iter()
                 .map(|register| Expr::reg(*register, 64)),
         );
+    }
+    if let (Some(args), Some(inputs)) = (&mut args, summary.and_then(|summary| summary.inputs)) {
+        for arg in args {
+            if let Expr::Reg { index, .. } = arg
+                && convention.arguments().contains(index)
+                && !inputs.contains(*index)
+            {
+                *arg = Expr::constant(0);
+            }
+        }
     }
     let clobbers = summary.and_then(|summary| summary.clobbers);
     Stmt::Call {
@@ -2424,6 +2438,29 @@ mod tests {
             let (kind, _) = first_call(bytes, crate::loader::Format::Elf, Default::default());
             assert_eq!(kind, expected);
         }
+    }
+
+    #[test]
+    fn unused_integer_positions_do_not_clear_floating_inputs() {
+        let summary = crate::loader::Summary {
+            arity: Some(1),
+            floats: Some(2),
+            inputs: Some(Default::default()),
+            ..Default::default()
+        };
+        let (_, args) = first_call(
+            vec![0xe8, 0x1b, 0, 0, 0, 0xc3],
+            crate::loader::Format::Elf,
+            summary,
+        );
+        assert_eq!(
+            args,
+            Some(vec![
+                Expr::constant(0),
+                Expr::reg(18, 64),
+                Expr::reg(20, 64)
+            ])
+        );
     }
 
     #[test]

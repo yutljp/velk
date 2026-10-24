@@ -14,6 +14,13 @@ __attribute__((noinline)) uint32_t calls_large_frame(uint32_t seed) {
     return large_frame(seed ^ 0x5a5au) + 1;
 }
 
+__attribute__((noinline)) uint32_t large_frame_pair(uint32_t first, uint32_t second) {
+    volatile uint32_t table[1201];
+    table[first % 1201] = second;
+    table[1200] = first;
+    return table[first % 1201] + table[1200] + second;
+}
+
 int main(int argc, char **argv) {
     (void)argv;
     return (int)calls_large_frame((uint32_t)argc) & 1;
