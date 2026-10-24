@@ -11,6 +11,7 @@ mod locals;
 mod machine;
 mod naming;
 mod params;
+mod provenance;
 mod stack_bytes;
 mod stmt;
 mod string_loops;
@@ -119,6 +120,20 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         .collect();
     let mut symbols = Symbols {
         functions,
+        allocator_names: image
+            .functions
+            .iter()
+            .filter_map(|(address, function)| {
+                let Some(name) = function.name.as_ref() else {
+                    return None;
+                };
+                if provenance::allocator(name).is_some() {
+                    Some((*address, name.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect(),
         function_returns: image
             .functions
             .iter()

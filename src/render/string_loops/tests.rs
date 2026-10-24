@@ -269,3 +269,262 @@ fn uncertain_aliases_backward_steps_and_overflow_keep_the_loop() {
         assert!(!code.contains("__builtin_memcpy"), "{kind}\n{code}");
     }
 }
+
+#[test]
+fn object_provenance_preserves_printed_copy_behavior() {
+    let mut source =
+        String::from("#include <stdint.h>\n#include <stdlib.h>\n#include <string.h>\n");
+    for (name, kind, builtin) in [
+        ("stack_disjoint", 0, true),
+        ("stack_overlap", 1, false),
+        ("stack_heap", 2, true),
+        ("global_copy", 3, true),
+        ("parameter_copy", 4, false),
+    ] {
+        let mut ir = example_ir(name, 32, 1, None, 8);
+        let sp = crate::arch::stack_pointer(ir.isa);
+        let frame = |offset| Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset));
+        let mut prefix = Vec::new();
+        if kind < 3 {
+            ir.params.clear();
+            ir.debug_locals.push(crate::ir::DebugLocal {
+                name: "bytes".to_owned(),
+                ty: CType::Array(Box::new(CType::Int {
+                    bytes: 1,
+                    signed: false,
+                })),
+                slot: -64,
+                size: 48,
+            });
+            for i in 0..48u64 {
+                prefix.push(Stmt::Store {
+                    addr: frame(i.wrapping_sub(64)),
+                    value: Expr::Const(i + 1),
+                    width: 1,
+                });
+            }
+            prefix.push(assign(6, frame(0u64.wrapping_sub(64))));
+            if kind == 2 {
+                let pointer = CType::pointer_to(CType::Int {
+                    bytes: 1,
+                    signed: false,
+                });
+                ir.value_types
+                    .insert(crate::ir::VARIABLE_BASE, pointer.clone());
+                ir.pointer_values.push(crate::ir::VARIABLE_BASE);
+                ir.value_types.insert(7, pointer);
+                prefix.push(Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention: ir.convention,
+                    args: Some(vec![Expr::Const(8)]),
+                    floats_named: false,
+                    outputs: vec![crate::ir::CallOutput {
+                        register: 0,
+                        dest: RegRef {
+                            index: crate::ir::VARIABLE_BASE,
+                            width: 64,
+                        },
+                    }],
+                    clobbers: Some(crate::ir::Registers(1)),
+                    via: None,
+                });
+                prefix.push(assign(7, Expr::reg(crate::ir::VARIABLE_BASE, 64)));
+            } else {
+                prefix.push(assign(
+                    7,
+                    frame(if kind == 0 {
+                        0u64.wrapping_sub(32)
+                    } else {
+                        0u64.wrapping_sub(63)
+                    }),
+                ));
+            }
+        } else if kind == 3 {
+            ir.params.clear();
+            prefix.push(assign(6, Expr::Const(0x2000)));
+            prefix.push(assign(7, Expr::Const(0x2100)));
+        } else {
+            ir.params.push(Param {
+                index: 3,
+                name: "destination".to_owned(),
+                ty: ir.params[0].ty.clone(),
+            });
+            prefix.push(assign(6, Expr::reg(2, 64)));
+            prefix.push(assign(7, Expr::reg(3, 64)));
+        }
+        prefix.extend(ir.blocks[0].stmts[2..].iter().cloned());
+        ir.blocks[0].stmts = prefix;
+        ir.blocks[3].stmts = vec![Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::bin(BinOp::Sub, Expr::reg(7, 64), Expr::Const(1))),
+                width: 1,
+                signed: false,
+            },
+        }];
+        let mut symbols = super::super::Symbols::default();
+        symbols.functions.insert(0x1000, "malloc".to_owned());
+        let code = crate::render::render(&ir, &[], &symbols, &[(0x2000, 0x200)]);
+        assert_eq!(code.contains("__builtin_memcpy"), builtin, "{name}\n{code}");
+        // Absolute global addresses need backing storage in this execution harness.
+        let code = code
+            .replace("0x2000", "(uint64_t)global_source")
+            .replace("0x2100", "(uint64_t)global_destination");
+        source.push_str(&code);
+    }
+    source.insert_str(source.find('\n').unwrap() + 1, "static uint8_t global_source[8] = {1,2,3,4,5,6,7,8};\nstatic uint8_t global_destination[8];\n");
+    source.push_str("int main(void) { uint8_t a[16] = {1,2,3,4,5,6,7,8}; return stack_disjoint() != 8 || stack_overlap() != 1 || stack_heap() != 8 || global_copy() != 8 || parameter_copy(a, a+1) != 1; }\n");
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/string-loop-tests");
+    std::fs::create_dir_all(&dir).unwrap();
+    let input = dir.join("provenance.c");
+    let output = dir.join("provenance");
+    std::fs::write(&input, &source).unwrap();
+    let compiled = std::process::Command::new("cc")
+        .args(["-std=c11", "-Werror", "-O2"])
+        .arg(&input)
+        .arg("-o")
+        .arg(&output)
+        .output()
+        .unwrap();
+    assert!(
+        compiled.status.success(),
+        "{}\n{source}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    assert!(
+        std::process::Command::new(output)
+            .status()
+            .unwrap()
+            .success(),
+        "{source}"
+    );
+}
+
+#[test]
+fn allocation_ranges_and_pointer_age_limit_copy_folding() {
+    for (name, size, load_after, offset, expected) in [
+        ("malloc", 16, false, 0, true),
+        ("calloc", 16, false, 0, true),
+        ("calloc", u64::MAX, false, 0, false),
+        ("runtime.newobject", 16, false, 0, false),
+        ("__rust_alloc", 16, false, 0, true),
+        ("__rustc::__rust_alloc", 16, false, 0, true),
+        ("__rust_alloc_zeroed", 16, false, 0, true),
+        ("operator new(unsigned long)", 16, false, 0, true),
+        ("runtime.mallocgc", 16, false, 0, true),
+        ("malloc", 16, true, 0, false),
+        ("malloc", 16, false, 8, true),
+        ("malloc", 16, false, 9, false),
+        ("malloc", 4, false, 0, false),
+        ("malloc", 32, false, 0, false),
+        ("malloc", 16, false, u64::MAX, false),
+        ("realloc", 16, false, 0, false),
+        ("__rust_realloc", 16, false, 0, false),
+        ("unknown", 16, false, 0, false),
+    ] {
+        let mut ir = example_ir("copy", 32, 1, None, 8);
+        let output = crate::ir::VARIABLE_BASE;
+        let load = assign(
+            6,
+            Expr::Load {
+                addr: Box::new(Expr::reg(2, 64)),
+                width: 8,
+                signed: false,
+            },
+        );
+        let call = Stmt::Call {
+            kind: crate::ir::CallKind::Invoke,
+            target: Some(0x1000),
+            through: None,
+            convention: ir.convention,
+            args: Some(vec![
+                Expr::Const(size),
+                Expr::Const(if name == "calloc" && size == u64::MAX {
+                    2
+                } else {
+                    1
+                }),
+                Expr::Const(1),
+                Expr::Const(size),
+            ]),
+            floats_named: false,
+            outputs: vec![crate::ir::CallOutput {
+                register: 0,
+                dest: RegRef {
+                    index: output,
+                    width: 64,
+                },
+            }],
+            clobbers: Some(crate::ir::Registers(1)),
+            via: None,
+        };
+        let mut prefix = if load_after {
+            vec![call, load]
+        } else {
+            vec![load, call]
+        };
+        let interrupted = name == "malloc" && size == 32;
+        if interrupted {
+            prefix.insert(
+                1,
+                Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
+                    target: Some(0x2000),
+                    through: None,
+                    convention: ir.convention,
+                    args: Some(vec![]),
+                    floats_named: false,
+                    outputs: vec![],
+                    clobbers: Some(crate::ir::Registers(0)),
+                    via: None,
+                },
+            );
+        }
+        prefix.push(assign(
+            7,
+            Expr::bin(BinOp::Add, Expr::reg(output, 64), Expr::Const(offset)),
+        ));
+        prefix.extend(ir.blocks[0].stmts[2..].iter().cloned());
+        ir.blocks[0].stmts = prefix;
+        let tail = ir.blocks[0]
+            .stmts
+            .split_off(if interrupted { 3 } else { 2 });
+        ir.blocks[0].stmts.push(Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(output, 64),
+            rhs: Expr::Const(0),
+            target: 40,
+        });
+        ir.blocks.insert(
+            1,
+            Block {
+                start: 5,
+                stmts: tail,
+            },
+        );
+        ir.blocks.push(Block {
+            start: 40,
+            stmts: vec![Stmt::Trap],
+        });
+        let mut image = crate::loader::Image::from_code(Isa::X86_64, 0, vec![0xc3]);
+        image.functions.insert(
+            0x1000,
+            crate::loader::Function {
+                addr: 0x1000,
+                size: Some(1),
+                size_estimated: false,
+                name: Some(name.to_owned()),
+                aliases: vec![],
+                sources: vec![],
+            },
+        );
+        let symbols = crate::render::callee_names(&image);
+        let code = crate::render::render(&ir, &[], &symbols, &[]);
+        assert_eq!(
+            code.contains("__builtin_memcpy"),
+            expected,
+            "{name}, {size}, {load_after}, {offset}\n{code}"
+        );
+    }
+}

@@ -131,6 +131,7 @@ pub(crate) fn stack_locals(
         slots: HashMap::new(),
         parameter_addresses: HashMap::new(),
         local_parts: HashMap::new(),
+        frame_origins: HashMap::new(),
         frame_addresses: Vec::new(),
         local_widths: HashMap::new(),
         local_element_types: HashMap::new(),

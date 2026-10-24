@@ -3,6 +3,8 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub struct Symbols {
     pub functions: HashMap<u64, String>,
+    /// Original names of known allocators, before conversion to C identifiers.
+    pub allocator_names: HashMap<u64, String>,
     pub import_slots: HashMap<u64, String>,
     pub function_returns: HashMap<u64, crate::ir::CType>,
     pub import_returns: HashMap<u64, crate::ir::CType>,

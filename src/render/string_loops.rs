@@ -1,43 +1,8 @@
-use std::collections::HashMap;
-
 use super::{Ctx, Node, body::indent, render_expr, render_stmt};
 use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 
 #[cfg(test)]
 mod tests;
-
-// Offsets from one unchanged value prove disjoint ranges without assuming
-// that different pointer registers refer to different objects.
-#[derive(Clone, Copy)]
-struct Origin {
-    base: Option<u16>,
-    offset: u64,
-}
-
-fn origin(value: &Expr, values: &HashMap<u16, Origin>) -> Option<Origin> {
-    match value {
-        Expr::Reg { index, width: 64 } => values.get(index).copied(),
-        Expr::Const(offset) => Some(Origin {
-            base: None,
-            offset: *offset,
-        }),
-        Expr::Bin { op, lhs, rhs } if matches!(op, BinOp::Add | BinOp::Sub) => {
-            let Some(mut value) = origin(lhs, values) else {
-                return None;
-            };
-            let Expr::Const(offset) = rhs.as_ref() else {
-                return None;
-            };
-            value.offset = if *op == BinOp::Add {
-                value.offset.wrapping_add(*offset)
-            } else {
-                value.offset.wrapping_sub(*offset)
-            };
-            Some(value)
-        }
-        _ => None,
-    }
-}
 
 fn advanced(stmt: &Stmt, size: u64) -> Option<RegRef> {
     let Stmt::Assign { dest, value } = stmt else {
@@ -123,35 +88,14 @@ pub(super) fn render(
     if !pointers.iter().any(|p| p.index == *destination) {
         return None;
     }
-    let mut values = HashMap::new();
-    for node in preceding {
-        if let Node::Stmt(stmt) = node {
-            let (_, reads) = crate::ir::visit::statement_registers(stmt);
-            for index in reads {
-                values.insert(
-                    index,
-                    Origin {
-                        base: Some(index),
-                        offset: 0,
-                    },
-                );
-            }
+    let address = |value: &Expr| {
+        let text = render_expr(value, ctx);
+        if matches!(value, Expr::Reg { index, .. } if ctx.pointer_types.contains_key(index)) {
+            format!("(void *)({text})")
+        } else {
+            format!("(void *)(uint64_t)({text})")
         }
-    }
-    for node in preceding {
-        match node {
-            Node::Stmt(Stmt::Assign { dest, value }) if dest.width == 64 => {
-                let result = origin(value, &values);
-                values.remove(&dest.index);
-                if let Some(result) = result {
-                    values.insert(dest.index, result);
-                }
-            }
-            Node::Stmt(Stmt::Store { .. }) => {}
-            _ => values.clear(),
-        }
-    }
-    let address = |value: &Expr| format!("(void *)(uint64_t)({})", render_expr(value, ctx));
+    };
     let call = match value {
         Expr::Load {
             addr: source,
@@ -167,14 +111,8 @@ pub(super) fn render(
             if *index == *destination || !pointers.iter().any(|p| p.index == *index) {
                 return None;
             }
-            let (Some(a), Some(b)) = (origin(addr, &values), origin(source, &values)) else {
-                return None;
-            };
-            if a.base != b.base {
-                return None;
-            }
-            // Modular distance also covers negative offsets from a stack base.
-            if a.offset.wrapping_sub(b.offset) < bytes || b.offset.wrapping_sub(a.offset) < bytes {
+            let facts = super::provenance::Facts::preceding(preceding, ctx);
+            if !facts.disjoint(addr, source, bytes, ctx) {
                 return None;
             }
             format!(
