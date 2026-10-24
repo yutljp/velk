@@ -311,7 +311,9 @@ fn array(ir: &FunctionIr, param: u16, direct: bool, touches: &[Touch]) -> Option
     if !sizes.contains(&step) {
         return None;
     }
-    let whole = arrange(step, param, direct, &holders, &touched)?;
+    let Some(whole) = arrange(step, param, direct, &holders, &touched) else {
+        return None;
+    };
     let fields: HashMap<u64, &CType> = whole
         .fields
         .iter()
@@ -369,12 +371,17 @@ fn arrange(
     }
     for (register, splits) in &holders.definitions {
         let own = Base::Register(*register);
-        let phase = *phases.get(&own)?;
+        let Some(&phase) = phases.get(&own) else {
+            return None;
+        };
         for split in splits {
             let (from, to) = if split.base == own {
                 (0, 0)
             } else {
-                (*phases.get(&split.base)?, phase)
+                let Some(&from) = phases.get(&split.base) else {
+                    return None;
+                };
+                (from, phase)
             };
             if within(from, split.constant) != to {
                 return None;
@@ -585,8 +592,11 @@ impl Holders {
                 _ => return None,
             }
         }
+        let Some(base) = base else {
+            return None;
+        };
         Some(Split {
-            base: base?,
+            base,
             scales,
             constant,
         })

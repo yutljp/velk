@@ -171,7 +171,9 @@ fn indirect_jumps(
     let size = function.size.unwrap_or(super::UNKNOWN_SIZE);
     let targets: std::collections::HashSet<u64> =
         lifted.blocks.iter().map(|block| block.start).collect();
-    let raw = crate::lift::lift(image, function.addr, size, &targets).ok()?;
+    let Ok(raw) = crate::lift::lift(image, function.addr, size, &targets) else {
+        return None;
+    };
     let extent = function.addr..function.addr.saturating_add(size);
     let tables = super::jump_table::recover(&raw, image, extent)
         .into_iter()
@@ -182,7 +184,9 @@ fn indirect_jumps(
         if !matches!(block.stmts.last(), Some(Stmt::Switch { .. })) {
             continue;
         }
-        let original = raw.iter().find(|other| other.start == block.start)?;
+        let Some(original) = raw.iter().find(|other| other.start == block.start) else {
+            return None;
+        };
         let Some(Stmt::BrIndirect { target }) = original.stmts.last() else {
             return None;
         };

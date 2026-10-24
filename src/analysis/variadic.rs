@@ -103,7 +103,10 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     }
     let base = offset_of(arguments[first])?;
     for (position, register) in arguments.iter().enumerate().skip(first) {
-        if offset_of(*register)? != base.wrapping_add(8 * (position - first) as u64) {
+        let Some(offset) = offset_of(*register) else {
+            return None;
+        };
+        if offset != base.wrapping_add(8 * (position - first) as u64) {
             return None;
         }
     }
@@ -112,7 +115,16 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     let float_base = offset_of(floats[0])?;
     for (position, register) in floats.iter().enumerate() {
         let low = float_base.wrapping_add(16 * position as u64);
-        if offset_of(*register)? != low || offset_of(register + 1)? != low.wrapping_add(8) {
+        let Some(offset) = offset_of(*register) else {
+            return None;
+        };
+        if offset != low {
+            return None;
+        }
+        let Some(high) = offset_of(register + 1) else {
+            return None;
+        };
+        if high != low.wrapping_add(8) {
             return None;
         }
     }

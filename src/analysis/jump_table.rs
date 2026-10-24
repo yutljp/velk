@@ -472,7 +472,10 @@ fn recognize(
 
     let mut cases = Vec::new();
     for position in 0..count {
-        cases.push((minimum + position, read_case(position as u64)?));
+        let Some(case) = read_case(position as u64) else {
+            return None;
+        };
+        cases.push((minimum + position, case));
     }
 
     // The value the bounds check tested before taking the cases' lowest

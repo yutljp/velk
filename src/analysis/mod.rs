@@ -535,7 +535,10 @@ fn returned_type(image: &Image, addr: u64) -> Option<crate::ir::CType> {
     }
     let analysis = analyze(image, function, None);
     UNDER_WAY.with(|under_way| under_way.borrow_mut().remove(&addr));
-    match analysis.ok()?.ir.ret_type {
+    let Ok(analysis) = analysis else {
+        return None;
+    };
+    match analysis.ir.ret_type {
         crate::ir::CType::Int { bytes, .. } => Some(crate::ir::CType::int(bytes, false)),
         crate::ir::CType::Void => Some(crate::ir::CType::Void),
         _ => None,
@@ -996,7 +999,10 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     let landing_pads = landing_pads(image, extent.clone());
     let pads: HashSet<u64> = landing_pads.iter().map(|(pad, _)| *pad).collect();
     let starts = exception_starts(&landing_pads, extent.clone());
-    let mut blocks = lift::lift(image, function.addr, size, &starts)?;
+    let mut blocks = match lift::lift(image, function.addr, size, &starts) {
+        Ok(blocks) => blocks,
+        Err(error) => return Err(error),
+    };
     let mut tables = jump_table::recover(&blocks, image, extent.clone());
     // Cases start blocks of their own, which may hold further tables.
     let mut targets: HashSet<u64> = starts.clone();
@@ -1009,7 +1015,10 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             break;
         }
         targets.extend(found);
-        blocks = lift::lift(image, function.addr, size, &targets)?;
+        blocks = match lift::lift(image, function.addr, size, &targets) {
+            Ok(blocks) => blocks,
+            Err(error) => return Err(error),
+        };
         tables = jump_table::recover(&blocks, image, extent.clone());
     }
     if image.go {

@@ -136,7 +136,9 @@ struct Tracker<'a> {
 
 impl Tracker<'_> {
     fn returned(&self, target: u64, convention: Convention) -> Option<u64> {
-        let returns = self.returns.as_ref()?;
+        let Some(returns) = self.returns.as_ref() else {
+            return None;
+        };
         if self.image.convention_of(target) != convention {
             return None;
         }
@@ -610,7 +612,10 @@ fn returned_from(
     primary: u16,
     blocks: &[Block],
 ) -> Option<u64> {
-    if blocks.first()?.start != addr
+    let Some(first) = blocks.first() else {
+        return None;
+    };
+    if first.start != addr
         || !closed_normal_flow(blocks, true)
         || blocks.iter().any(|block| {
             block.start < addr
@@ -635,7 +640,9 @@ fn returned_from(
     let entry = tracker.solve(blocks, &[]);
     let mut returned = None;
     for (index, block) in blocks.iter().enumerate() {
-        let mut state = entry[index].clone()?;
+        let Some(mut state) = entry[index].clone() else {
+            return None;
+        };
         for (position, stmt) in block.stmts.iter().enumerate() {
             if matches!(stmt, Stmt::Ret { .. }) {
                 match (state.reg(primary), returned) {

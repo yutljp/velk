@@ -268,11 +268,15 @@ pub(crate) fn clobbers_knowing(
         }
         if !ended {
             // Code that runs off the end of what was lifted may go anywhere.
-            let next = blocks.get(index + 1)?;
+            let Some(next) = blocks.get(index + 1) else {
+                return None;
+            };
             flows.push((next.start, state));
         }
         for (target, state) in flows {
-            let target = *starts.get(&target)?;
+            let Some(&target) = starts.get(&target) else {
+                return None;
+            };
             let grew = match &mut entering[target] {
                 Some(known) => known.join(&state),
                 none => {

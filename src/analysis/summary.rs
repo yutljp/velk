@@ -636,7 +636,10 @@ fn own_body(image: &Image, addr: u64, summaries: crate::lift::Summaries<'_>) -> 
     if function.sources.contains(&NameSource::Plt) {
         return None;
     }
-    Some(without_stack_growth(image, &body(image, addr, summaries)?))
+    let Some(blocks) = body(image, addr, summaries) else {
+        return None;
+    };
+    Some(without_stack_growth(image, &blocks))
 }
 
 /// The blocks, less those growing a Go stack, which restart the function
