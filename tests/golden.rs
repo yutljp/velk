@@ -158,13 +158,22 @@ struct Readability {
 
 impl Readability {
     fn add(&mut self, decompiled: &str) {
+        let mut definition = None;
         for line in decompiled.lines() {
+            if let Some(definition) = &mut definition {
+                *definition += line;
+            }
             if let Some((name, _)) = line
                 .strip_prefix("struct ")
                 .and_then(|line| line.split_once(" {"))
                 && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
             {
-                self.structures.insert(name.to_owned());
+                definition = Some(line.to_owned());
+            }
+            if line.trim_end().ends_with("};")
+                && let Some(definition) = definition.take()
+            {
+                self.structures.insert(definition);
             }
             self.lines += 1;
             let code = line.split("/*").next().unwrap_or("");

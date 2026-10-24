@@ -48,7 +48,7 @@ pub struct Binary {
     symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
     analyses: HashMap<u64, Result<Analysis, LiftError>>,
-    shared_structures: bool,
+    shared_analyses: HashMap<u64, Result<Analysis, LiftError>>,
 }
 
 pub struct Failure {
@@ -88,7 +88,7 @@ impl Binary {
             data_ranges: render::data_ranges(&image),
             image,
             analyses: HashMap::new(),
-            shared_structures: false,
+            shared_analyses: HashMap::new(),
         })
     }
 
@@ -153,13 +153,13 @@ impl Binary {
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
-        if let Err(error) = self.prepare_structures(deadline) {
+        if let Err(error) = self.prepare_structures(addr, deadline) {
             return Err(error);
         }
         let Some(function) = self.image.functions.get(&addr) else {
             return Err(Error::NoFunctionAt(addr));
         };
-        let analyzed = match cached(&mut self.analyses, &self.image, function, deadline) {
+        let analyzed = match cached(&mut self.shared_analyses, &self.image, function, deadline) {
             Ok(analyzed) => analyzed,
             Err(error) => return Err(error),
         };
@@ -179,13 +179,13 @@ impl Binary {
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
-        if let Err(error) = self.prepare_structures(deadline) {
+        if let Err(error) = self.prepare_structures(addr, deadline) {
             return Err(error);
         }
         let Some(function) = self.image.functions.get(&addr) else {
             return Err(Error::NoFunctionAt(addr));
         };
-        let analysis = match cached(&mut self.analyses, &self.image, function, deadline) {
+        let analysis = match cached(&mut self.shared_analyses, &self.image, function, deadline) {
             Ok(analyzed) => analyzed.as_ref(),
             Err(error) => return Err(error),
         };
@@ -222,13 +222,13 @@ impl Binary {
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
-        if let Err(error) = self.prepare_structures(deadline) {
+        if let Err(error) = self.prepare_structures(addr, deadline) {
             return Err(error);
         }
         let Some(function) = self.image.functions.get(&addr) else {
             return Err(Error::NoFunctionAt(addr));
         };
-        let analysis = match cached(&mut self.analyses, &self.image, function, deadline) {
+        let analysis = match cached(&mut self.shared_analyses, &self.image, function, deadline) {
             Ok(Ok(analysis)) => analysis,
             Ok(Err(source)) => {
                 return Err(Error::Lift {
@@ -255,26 +255,88 @@ impl Binary {
         Ok(rendered)
     }
 
-    fn prepare_structures(&mut self, deadline: Option<Instant>) -> Result<()> {
-        if self.shared_structures {
+    fn prepare_structures(&mut self, addr: u64, deadline: Option<Instant>) -> Result<()> {
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
+        if self.shared_analyses.contains_key(&addr) {
             return Ok(());
         }
-        for function in self.image.functions.values() {
-            if let Err(error) = cached(&mut self.analyses, &self.image, function, deadline) {
-                return Err(error);
+        let Some(function) = self.image.functions.get(&addr) else {
+            return Err(Error::NoFunctionAt(addr));
+        };
+        let root = match cached(&mut self.analyses, &self.image, function, deadline) {
+            Ok(result) => result.clone(),
+            Err(error) => return Err(error),
+        };
+        let Ok(root_analysis) = &root else {
+            self.shared_analyses.insert(addr, root);
+            return Ok(());
+        };
+        let ir = &root_analysis.ir;
+        let pointer = |register| {
+            ir.pointer_values.contains(&register)
+                || ir
+                    .value_types
+                    .get(&register)
+                    .is_some_and(crate::ir::CType::is_pointer)
+                || ir
+                    .params
+                    .iter()
+                    .any(|param| param.index == register && param.ty.is_pointer())
+        };
+        let mut neighbors = std::collections::BTreeSet::new();
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let crate::ir::Stmt::Call {
+                target: Some(target),
+                through: None,
+                args: Some(args),
+                outputs,
+                ..
+            } = stmt
+                && (args.iter().any(|arg| {
+                    let mut reads = std::collections::HashSet::new();
+                    crate::ir::visit::collect_reads(arg, &mut reads);
+                    reads.into_iter().any(pointer)
+                }) || outputs.iter().any(|output| pointer(output.dest.index)))
+                && self.image.functions.contains_key(target)
+            {
+                neighbors.insert(*target);
             }
         }
-        let mut functions: Vec<_> = self
-            .analyses
-            .values_mut()
-            .filter_map(|result| match result {
-                Ok(analysis) => Some(&mut analysis.ir),
-                Err(_) => None,
-            })
+        if ir.params.iter().any(|param| param.ty.is_pointer()) {
+            neighbors.extend(analysis::results::callers(&self.image, addr));
+        }
+        neighbors.remove(&addr);
+        // One call edge and at most eight neighbors bound interactive work.
+        // Always start from original analyses: another request's merged layouts
+        // must never become input to this function's neighborhood.
+        let mut functions = vec![root_analysis.clone()];
+        for neighbor in neighbors.into_iter().take(8) {
+            let Some(function) = self.image.functions.get(&neighbor) else {
+                continue;
+            };
+            match cached(&mut self.analyses, &self.image, function, deadline) {
+                Ok(Ok(analysis)) => functions.push(analysis.clone()),
+                Ok(Err(_)) => continue,
+                Err(error) => return Err(error),
+            }
+        }
+        functions.sort_by_key(|analysis| analysis.ir.addr);
+        let mut irs: Vec<_> = functions
+            .iter_mut()
+            .map(|analysis| &mut analysis.ir)
             .collect();
-        functions.sort_by_key(|ir| ir.addr);
-        analysis::shared_structures::share(&mut functions, &self.data_ranges);
-        self.shared_structures = true;
+        analysis::shared_structures::share(&mut irs, &self.data_ranges);
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
+        for analysis in functions {
+            if analysis.ir.addr == addr {
+                self.shared_analyses.insert(addr, Ok(analysis));
+                break;
+            }
+        }
         Ok(())
     }
 
@@ -399,6 +461,41 @@ mod tests {
                 .join(name),
         )
         .expect("fixture loads")
+    }
+
+    #[test]
+    fn shared_layouts_do_not_depend_on_request_order() {
+        let mut forward = fixture("cpp_virtual_x64.elf");
+        let addresses: Vec<_> = forward.image.functions.keys().copied().collect();
+        let mut expected = HashMap::new();
+        for addr in &addresses {
+            expected.insert(*addr, forward.decompile(*addr, None, None).unwrap());
+        }
+        let mut reverse = fixture("cpp_virtual_x64.elf");
+        for addr in addresses.iter().rev() {
+            assert_eq!(
+                reverse.decompile(*addr, None, None).unwrap(),
+                expected[addr]
+            );
+        }
+        for addr in addresses {
+            assert_eq!(
+                forward.decompile(addr, None, None).unwrap(),
+                expected[&addr]
+            );
+        }
+    }
+
+    #[test]
+    fn single_function_analysis_is_bounded_and_reused() {
+        let mut binary = fixture("go_probe");
+        let addr = binary.find("main.main").unwrap().addr;
+        let code = binary.decompile(addr, None, None).unwrap();
+        assert!(binary.analyses.len() <= 9);
+        let count = binary.analyses.len();
+        assert_eq!(binary.decompile(addr, None, None).unwrap(), code);
+        assert_eq!(binary.analyses.len(), count);
+        assert_eq!(binary.shared_analyses.len(), 1);
     }
 
     #[test]

@@ -29,8 +29,8 @@ fn <unnamed> @ 0x2011e0 (size 15)
 == 0x2011f0 -
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
-struct S2 { uint8_t gap_0x0[0x8]; int64_t field_0x8; uint16_t field_0x10; uint8_t gap_0x12[0x6]; };
-int64_t sub_2011f0(struct S2 *a0, int32_t a1) {
+struct S1 { uint8_t gap_0x0[0x8]; int64_t field_0x8; uint16_t field_0x10; uint8_t gap_0x12[0x6]; };
+int64_t sub_2011f0(struct S1 *a0, int32_t a1) {
     int64_t v2;
     int64_t v3;
     uint32_t v4;
@@ -61,7 +61,7 @@ int64_t sub_2011f0(struct S2 *a0, int32_t a1) {
     return v3 + (int16_t)a0[v2].field_0x10 * a0[v2].field_0x8;
 }
 -- signature
-int64_t (struct S2 * a0, int32_t a1)
+int64_t (struct S1 * a0, int32_t a1)
 -- references
 
 -- ir
@@ -95,7 +95,7 @@ fn <unnamed> @ 0x2011f0 (size 111)
   blk8 @ 0x20125e:
     ret v3
 -- card
-{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":111,"structures":["struct S2 { uint8_t gap_0x0[0x8]; int64_t field_0x8; uint16_t field_0x10; uint8_t gap_0x12[0x6]; };"],"unsupported":0}
+{"addr":"0x2011f0","approxTokens":144,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":111,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int64_t field_0x8; uint16_t field_0x10; uint8_t gap_0x12[0x6]; };"],"unsupported":0}
 
 == 0x201260 -
 -- decompile
@@ -117,8 +117,8 @@ fn <unnamed> @ 0x201260 (size 26)
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
-struct S3 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
-struct S3 *sub_201280(struct S3 *result, int64_t a1) {
+struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
+struct S1 *sub_201280(struct S1 *result, int64_t a1) {
     result->field_0x0 = a1;
     result->field_0x8 = a1 + 1;
     result->field_0x10 = a1 + a1;
@@ -126,7 +126,7 @@ struct S3 *sub_201280(struct S3 *result, int64_t a1) {
     return result;
 }
 -- signature
-struct S3 * (struct S3 * result, int64_t a1)
+struct S1 * (struct S1 * result, int64_t a1)
 -- references
 
 -- ir
@@ -138,7 +138,7 @@ fn <unnamed> @ 0x201280 (size 31)
     store64((rsi + (rsi * #0x2)), (rdi + #0x18))
     ret rdi
 -- card
-{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201280","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":31,"structures":["struct S3 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201280","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":31,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
 
 == 0x2012a0 -
 -- decompile

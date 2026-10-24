@@ -28,9 +28,9 @@ fn <unnamed> @ 0x210174 (size 20)
 == 0x210188 -
 -- decompile
 /* velk pseudo-C: sub_210188 @ 0x210188 */
-struct S3 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
-struct S3 *sub_210188(struct S3 *a0, int64_t a1, int32_t a2) {
-    struct S3 *v1;
+struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
+struct S1 *sub_210188(struct S1 *a0, int64_t a1, int32_t a2) {
+    struct S1 *v1;
 
     v1 = a0 + a1;
     v1->field_0x0 = a2;
@@ -38,7 +38,7 @@ struct S3 *sub_210188(struct S3 *a0, int64_t a1, int32_t a2) {
     return a0;
 }
 -- signature
-struct S3 * (struct S3 * a0, int64_t a1, int32_t a2)
+struct S1 * (struct S1 * a0, int64_t a1, int32_t a2)
 -- references
 
 -- ir
@@ -49,13 +49,13 @@ fn <unnamed> @ 0x210188 (size 24)
     store32((w2 + #0x1), (v1 + #0x8))
     ret x0
 -- card
-{"addr":"0x210188","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"structures":["struct S3 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };","struct S4 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x210188","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };","struct S2 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x2101a0 -
 -- decompile
 /* velk pseudo-C: sub_2101a0 @ 0x2101a0 */
-struct S5 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };
-int32_t sub_2101a0(struct S5 *a0, int32_t a1) {
+struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };
+int32_t sub_2101a0(struct S1 *a0, int32_t a1) {
     int32_t v2;
     int64_t v3;
     void *v4;
@@ -76,7 +76,7 @@ int32_t sub_2101a0(struct S5 *a0, int32_t a1) {
     return v2;
 }
 -- signature
-int32_t (struct S5 * a0, int32_t a1)
+int32_t (struct S1 * a0, int32_t a1)
 -- references
 
 -- ir
@@ -102,4 +102,4 @@ fn <unnamed> @ 0x2101a0 (size 68)
   blk6 @ 0x2101e0:
     ret v2
 -- card
-{"addr":"0x2101a0","approxTokens":198,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":68,"structures":["struct S5 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };"],"unsupported":0}
+{"addr":"0x2101a0","approxTokens":198,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":68,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };"],"unsupported":0}

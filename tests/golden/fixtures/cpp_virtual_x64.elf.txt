@@ -162,15 +162,14 @@ fn Square::Square(int) @ 0x201420 (size 14)
 == 0x201430 Square::area() const
 -- decompile
 /* velk pseudo-C: Square::area() const @ 0x201430 */
-struct Square { int64_t field_0x0; int32_t field_0x8; };
-int32_t Square__area(struct Square *a0) {
+int32_t Square__area(uint32_t *a0) {
     int32_t v1;
 
-    v1 = a0->field_0x8;
+    v1 = a0[2];
     return v1 * v1;
 }
 -- signature
-int32_t (struct Square * a0)
+int32_t (uint32_t * a0)
 -- references
 
 -- ir
@@ -179,7 +178,7 @@ fn Square::area() const @ 0x201430 (size 7)
     v1 = load32((rdi + #0x8))
     ret ((v1 * v1) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x8:uint32_t"],"addr":"0x201430","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Square::area() const","nameSources":["symtab","unwind"],"section":".text","size":7,"structures":["struct Square { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x201430","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Square::area() const","nameSources":["symtab","unwind"],"section":".text","size":7,"unsupported":0}
 
 == 0x201440 Rect::Rect(int, int)
 -- decompile
@@ -209,12 +208,12 @@ fn Rect::Rect(int, int) @ 0x201440 (size 17)
 == 0x201460 Rect::area() const
 -- decompile
 /* velk pseudo-C: Rect::area() const @ 0x201460 */
-struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
-int32_t Rect__area(struct S1 *a0) {
+struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
+int32_t Rect__area(struct Rect *a0) {
     return a0->field_0xc * a0->field_0x8;
 }
 -- signature
-int32_t (struct S1 * a0)
+int32_t (struct Rect * a0)
 -- references
 
 -- ir
@@ -222,12 +221,12 @@ fn Rect::area() const @ 0x201460 (size 8)
   blk0 @ 0x201460:
     ret ((load32((rdi + #0xc)) * load32((rdi + #0x8))) & #0xffffffff)
 -- card
-{"accesses":["a0 +0xc:uint32_t"],"addr":"0x201460","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Rect::area() const","nameSources":["symtab","unwind"],"section":".text","size":8,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0xc:uint32_t"],"addr":"0x201460","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Rect::area() const","nameSources":["symtab","unwind"],"section":".text","size":8,"structures":["struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
 
 == 0x201470 Rect::scaled(int) const
 -- decompile
 /* velk pseudo-C: Rect::scaled(int) const @ 0x201470 */
-struct Rect { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
+struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t Rect__scaled(struct Rect *a0, int32_t a1) {
     return a1 * a0->field_0x8 * a0->field_0xc + 1;
 }
@@ -240,7 +239,7 @@ fn Rect::scaled(int) const @ 0x201470 (size 12)
   blk0 @ 0x201470:
     ret ((((((rsi & #0xffffffff) * load32((rdi + #0x8))) & #0xffffffff) * load32((rdi + #0xc))) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x201470","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Rect::scaled(int) const","nameSources":["symtab","unwind"],"section":".text","size":12,"structures":["struct Rect { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"addr":"0x201470","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Rect::scaled(int) const","nameSources":["symtab","unwind"],"section":".text","size":12,"structures":["struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
 
 == 0x201480 square_area(int)
 -- decompile

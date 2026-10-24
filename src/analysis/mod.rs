@@ -4,7 +4,7 @@ mod indirect;
 mod jump_table;
 pub mod prototypes;
 pub mod refs;
-mod results;
+pub(crate) mod results;
 #[cfg(test)]
 mod semantics_tests;
 pub(crate) mod shared_structures;

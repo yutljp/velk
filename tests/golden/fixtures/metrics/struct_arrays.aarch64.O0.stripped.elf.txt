@@ -24,14 +24,14 @@ fn <unnamed> @ 0x210184 (size 56)
 == 0x2101bc -
 -- decompile
 /* velk pseudo-C: sub_2101bc @ 0x2101bc */
-struct S2 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
-struct S2 *sub_2101bc(struct S2 *a0, int64_t a1, int32_t a2) {
+struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
+struct S1 *sub_2101bc(struct S1 *a0, int64_t a1, int32_t a2) {
     a0[a1].field_0x0 = a2;
     a0[a1].field_0x8 = a2 + 1;
     return a0;
 }
 -- signature
-struct S2 * (struct S2 * a0, int64_t a1, int32_t a2)
+struct S1 * (struct S1 * a0, int64_t a1, int32_t a2)
 -- references
 
 -- ir
@@ -44,13 +44,13 @@ fn <unnamed> @ 0x2101bc (size 76)
     store32((load32((sp + #0xffffffffffffffec)) + #0x1), ((load64((sp + #0xfffffffffffffff8)) + (load64((sp + #0xfffffffffffffff0)) * #0xc)) + #0x8))
     ret x0
 -- card
-{"addr":"0x2101bc","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"structures":["struct S2 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x2101bc","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":76,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x210208 -
 -- decompile
 /* velk pseudo-C: sub_210208 @ 0x210208 */
-struct S3 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };
-int64_t sub_210208(struct S3 *a0, int32_t a1) {
+struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };
+int64_t sub_210208(struct S1 *a0, int32_t a1) {
     int64_t local_0; /* [sp-18] */
     int32_t local_1; /* [sp-1c] */
 
@@ -63,7 +63,7 @@ int64_t sub_210208(struct S3 *a0, int32_t a1) {
     return local_0;
 }
 -- signature
-int64_t (struct S3 * a0, int32_t a1)
+int64_t (struct S1 * a0, int32_t a1)
 -- references
 
 -- ir
@@ -91,4 +91,4 @@ fn <unnamed> @ 0x210208 (size 128)
   blk8 @ 0x21027c:
     ret load64((sp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x210208","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":128,"structures":["struct S3 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };"],"unsupported":0}
+{"addr":"0x210208","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":128,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };"],"unsupported":0}

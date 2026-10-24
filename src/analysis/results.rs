@@ -267,14 +267,16 @@ fn reads(image: &Image, addr: u64, active: &mut HashSet<u64>) -> (bool, bool) {
 }
 
 /// The functions with a direct call or jump to `addr`.
-fn callers(image: &Image, addr: u64) -> Vec<u64> {
+pub(crate) fn callers(image: &Image, addr: u64) -> Vec<u64> {
     let index = image.branches_to.get_or_init(|| branches(image));
     let mut out: Vec<u64> = index
         .get(&addr)
         .into_iter()
         .flatten()
         .filter_map(|site| {
-            let (start, function) = image.functions.range(..=*site).next_back()?;
+            let Some((start, function)) = image.functions.range(..=*site).next_back() else {
+                return None;
+            };
             let size = function.size.unwrap_or(super::UNKNOWN_SIZE);
             (*site < start.saturating_add(size)).then_some(*start)
         })

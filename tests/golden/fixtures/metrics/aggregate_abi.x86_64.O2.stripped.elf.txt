@@ -208,15 +208,15 @@ fn <unnamed> @ 0x201320 (size 126)
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
-struct S2 *sub_2013a0(struct S2 *a0, int64_t a1, int64_t a2, int64_t a3) {
+struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
+struct S1 *sub_2013a0(struct S1 *a0, int64_t a1, int64_t a2, int64_t a3) {
     a0->field_0x0 = a3 + a1;
     a0->field_0x8 = a3 ^ a2;
     a0->field_0x10 = a1 - a2;
     return a0;
 }
 -- signature
-struct S2 * (struct S2 * a0, int64_t a1, int64_t a2, int64_t a3)
+struct S1 * (struct S1 * a0, int64_t a1, int64_t a2, int64_t a3)
 -- references
 
 -- ir
@@ -228,7 +228,7 @@ fn <unnamed> @ 0x2013a0 (size 25)
     store64((rsi - rdx), (v1 + #0x10))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":25,"structures":["struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":25,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x2013c0 -
 -- decompile
