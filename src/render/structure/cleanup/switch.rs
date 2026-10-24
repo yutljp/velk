@@ -195,6 +195,220 @@ fn starts_at(body: &[Node], target: u64) -> bool {
         .any(|node| matches!(node, Node::Label(label) if *label == target))
 }
 
+/// Shares exact case bodies and tails, and successive case prefixes.
+/// Only straight-line bodies without address labels can move this way.
+pub(crate) fn share_switch_tails(nodes: &mut [Node]) {
+    use crate::render::structure::merge_exits::{Statement, statement};
+
+    let key = |body: &[Node]| -> Option<Vec<Option<Statement>>> {
+        if !ends(body, true) {
+            return None;
+        }
+        let mut out = Vec::new();
+        for (position, node) in body.iter().enumerate() {
+            match node {
+                Node::Break if position + 1 == body.len() => out.push(None),
+                Node::Stmt(stmt) => {
+                    let Some(stmt) = statement(stmt) else {
+                        return None;
+                    };
+                    if matches!(stmt, Statement::Branch(_))
+                        || (matches!(stmt, Statement::Return(_)) && position + 1 != body.len())
+                    {
+                        return None;
+                    }
+                    out.push(Some(stmt));
+                }
+                _ => return None,
+            }
+        }
+        Some(out)
+    };
+    for node in nodes {
+        for body in children_mut(node) {
+            share_switch_tails(body);
+        }
+        if let Some(shared) = share_case_prefixes(node) {
+            *node = shared;
+            continue;
+        }
+        let Node::Switch { arms, default, .. } = node else {
+            continue;
+        };
+        if arms.iter().any(|(_, body)| !ends(body, true)) {
+            continue;
+        }
+        let mut keys: Vec<_> = arms.iter().map(|(_, body)| key(body)).collect();
+        let mut position = 0;
+        while position < arms.len() {
+            let Some(body) = &keys[position] else {
+                position += 1;
+                continue;
+            };
+            let duplicate = (0..position).find(|other| keys[*other].as_ref() == Some(body));
+            if let Some(other) = duplicate {
+                let (values, _) = arms.remove(position);
+                keys.remove(position);
+                arms[other].0.extend(values);
+            } else {
+                position += 1;
+            }
+        }
+        keys.extend(default.iter().map(|body| key(body)));
+        let mut next = vec![None; keys.len()];
+        let mut incoming = vec![false; keys.len()];
+        for source in 0..arms.len() {
+            let Some(body) = &keys[source] else {
+                continue;
+            };
+            let destination = (0..keys.len())
+                .filter(|destination| *destination != source && !incoming[*destination])
+                .filter(|destination| {
+                    let Some(tail) = &keys[*destination] else {
+                        return false;
+                    };
+                    // A lone break has no body to share.
+                    tail.iter().any(Option::is_some)
+                        && (tail.len() < body.len()
+                            || (*destination == arms.len() && tail.len() == body.len()))
+                        && body.ends_with(tail)
+                })
+                .max_by_key(|destination| keys[*destination].as_ref().map(Vec::len));
+            if let Some(destination) = destination {
+                next[source] = Some(destination);
+                incoming[destination] = true;
+            }
+        }
+        let default_start = if default.is_some() {
+            let mut start = arms.len();
+            while let Some(source) = next
+                .iter()
+                .position(|destination| *destination == Some(start))
+            {
+                start = source;
+            }
+            Some(start)
+        } else {
+            None
+        };
+        let starts: Vec<_> = (0..arms.len())
+            .filter(|position| !incoming[*position] && Some(*position) != default_start)
+            .chain(default_start.filter(|start| *start < arms.len()))
+            .collect();
+        let mut pending: Vec<_> = arms.drain(..).map(Some).collect();
+        for start in starts {
+            let mut position = start;
+            while position < pending.len() {
+                let Some((values, mut body)) = pending[position].take() else {
+                    break;
+                };
+                if let Some(destination) = next[position] {
+                    let tail_len = keys[destination].as_ref().map_or(0, Vec::len);
+                    body.truncate(body.len() - tail_len);
+                }
+                arms.push((values, body));
+                match next[position] {
+                    Some(destination) => position = destination,
+                    None => break,
+                }
+            }
+        }
+    }
+}
+
+/// Consecutive cases that extend the preceding body can share its statements.
+fn share_case_prefixes(node: &Node) -> Option<Node> {
+    use crate::render::structure::merge_exits::statement;
+
+    let Node::Switch {
+        index: index @ Expr::Reg {
+            index: register,
+            width,
+        },
+        arms,
+        default: Some(default),
+    } = node
+    else {
+        return None;
+    };
+    if !matches!(default.as_slice(), [Node::Break])
+        || arms.len() < 3
+        || !matches!(width, 8 | 16 | 32 | 64)
+    {
+        return None;
+    }
+    let mut ordered: Vec<_> = arms.iter().collect();
+    ordered.sort_by_key(|(values, _)| values.iter().min().copied());
+    let mut expected = 0i64;
+    let mut previous = Vec::new();
+    let mut bodies = Vec::new();
+    let mut saved = 0usize;
+    for (values, body) in ordered {
+        let mut values = values.clone();
+        values.sort_unstable();
+        if values.is_empty() || !matches!(body.last(), Some(Node::Break)) {
+            return None;
+        }
+        for value in values {
+            if value != expected {
+                return None;
+            }
+            let Some(next) = expected.checked_add(1) else {
+                return None;
+            };
+            expected = next;
+        }
+        let mut keys = Vec::new();
+        for node in &body[..body.len() - 1] {
+            let Node::Stmt(stmt @ (Stmt::Assign { .. } | Stmt::Store { .. })) = node else {
+                return None;
+            };
+            if matches!(stmt, Stmt::Assign { dest, .. } if dest.index == *register) {
+                return None;
+            }
+            let Some(key) = statement(stmt) else {
+                return None;
+            };
+            keys.push(key);
+        }
+        if !keys.starts_with(&previous) {
+            return None;
+        }
+        saved = saved.saturating_add(previous.len());
+        bodies.push((expected - 1, body[previous.len()..body.len() - 1].to_vec()));
+        previous = keys;
+    }
+    // Each range test adds a condition and a closing brace.
+    if saved <= bodies.len().saturating_mul(2) {
+        return None;
+    }
+    let mut tail = Vec::new();
+    let mut lower = None;
+    for (last, body) in bodies {
+        if let Some(lower) = lower {
+            if !body.is_empty() {
+                tail.push(Node::If {
+                    cond: Cond::Hi,
+                    lhs: index.clone(),
+                    rhs: Expr::Const(lower as u64),
+                    then: body,
+                    els: Vec::new(),
+                });
+            }
+        } else {
+            tail.extend(body);
+        }
+        lower = Some(last);
+    }
+    Some(Node::If {
+        cond: Cond::Ls,
+        lhs: index.clone(),
+        rhs: Expr::Const((expected - 1) as u64),
+        then: tail,
+        els: Vec::new(),
+    })
+}
+
 /// Folds the tests a compiler puts before a switch into it. A bounds check,
 /// `v = x - k; if (v > n) t else switch (x) { ... }` with cases for every
 /// value from `k` to `k + n`, is the switch with `t` as its default; a

@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use crate::ir::{Block, Expr, FunctionIr, RegRef, Stmt};
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-enum Statement {
+pub(super) enum Statement {
     Assign(RegRef, Expr),
     Store(Expr, Expr, u8),
     Return(Expr),
     Branch(u64),
 }
 
-fn statement(stmt: &Stmt) -> Option<Statement> {
+pub(super) fn statement(stmt: &Stmt) -> Option<Statement> {
     match stmt {
         Stmt::Assign { dest, value } => Some(Statement::Assign(*dest, value.clone())),
         Stmt::Store { addr, value, width } => {

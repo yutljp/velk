@@ -367,3 +367,312 @@ fn printed_switch_cases_skip_a_tiny_continuation_to_the_shared_exit() {
     assert_eq!(candidate.code.matches('^').count(), 8, "{}", candidate.code);
     check_candidates("switch-shared-exit", vec![candidate], Mode::Registers, &[]);
 }
+
+#[test]
+fn printed_switch_identical_bodies_at_distinct_targets() {
+    let mut candidates = Vec::new();
+    for (isa, convention) in [
+        (Isa::X86_64, Convention::SysV),
+        (Isa::AArch64, Convention::Aapcs64),
+    ] {
+        for chained in [false, true] {
+            for width in [32, 64] {
+                let argument = convention.arguments()[0];
+                let mut ir = synthetic_ir(
+                    &format!("shared_cases_{isa:?}_{chained}_{width}"),
+                    vec![Param {
+                        index: argument,
+                        name: "input".into(),
+                        ty: CType::U64,
+                    }],
+                    CType::U64,
+                    Vec::new(),
+                );
+                ir.isa = isa;
+                ir.convention = convention;
+                let index = Expr::reg(argument, width);
+                let cases = [(1, 100), (17, 110), (99, 120), (200, 130)];
+                ir.blocks = if chained {
+                    cases
+                        .iter()
+                        .enumerate()
+                        .map(|(position, (value, target))| Block {
+                            start: position as u64 * 10,
+                            stmts: vec![Stmt::Brif {
+                                cond: Cond::Eq,
+                                lhs: index.clone(),
+                                rhs: Expr::Const(*value as u64),
+                                target: *target,
+                            }],
+                        })
+                        .collect()
+                } else {
+                    vec![Block {
+                        start: 0,
+                        stmts: vec![Stmt::Switch {
+                            index,
+                            cases: cases.to_vec(),
+                            default: Some(40),
+                        }],
+                    }]
+                };
+                for (start, value) in [(40, 89), (100, 77), (110, 77), (120, 83), (130, 77)] {
+                    ir.blocks.push(Block {
+                        start,
+                        stmts: vec![Stmt::Ret {
+                            value: Expr::Const(value),
+                        }],
+                    });
+                }
+                let inputs = (0..=202)
+                    .chain([u64::MAX, 1 << 32, (1 << 32) + 17, 1 << 63])
+                    .map(|input| vec![input])
+                    .collect();
+                let candidate = printed_candidate(ir, inputs);
+                assert!(candidate.code.contains("switch ("), "{}", candidate.code);
+                assert_eq!(
+                    candidate.code.matches("return 77;").count(),
+                    1,
+                    "{}",
+                    candidate.code
+                );
+                assert!(!candidate.code.contains("goto "), "{}", candidate.code);
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates("switch-identical-bodies", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn printed_switch_shared_tails_preserve_store_order_and_default() {
+    let mut candidates = Vec::new();
+    for (isa, convention) in [
+        (Isa::X86_64, Convention::SysV),
+        (Isa::AArch64, Convention::Aapcs64),
+    ] {
+        for shared_default in [false, true] {
+            let arguments = convention.arguments();
+            let pointer = Expr::reg(arguments[0], 64);
+            let load = Expr::Load {
+                addr: Box::new(pointer.clone()),
+                width: 8,
+                signed: false,
+            };
+            let store = |op, value| Stmt::Store {
+                addr: pointer.clone(),
+                width: 8,
+                value: Expr::bin(op, load.clone(), Expr::Const(value)),
+            };
+            let mut ir = synthetic_ir(
+                &format!("shared_tail_{isa:?}_{shared_default}"),
+                vec![
+                    Param {
+                        index: arguments[0],
+                        name: "pointer".into(),
+                        ty: CType::pointer_to(CType::U64),
+                    },
+                    Param {
+                        index: arguments[1],
+                        name: "input".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                CType::U64,
+                Vec::new(),
+            );
+            ir.isa = isa;
+            ir.convention = convention;
+            ir.blocks = vec![Block {
+                start: 0,
+                stmts: vec![Stmt::Switch {
+                    index: Expr::reg(arguments[1], 64),
+                    cases: vec![(0, 100), (1, 110), (2, 120)],
+                    default: Some(130),
+                }],
+            }];
+            for (start, prefix) in [(100, 2), (110, 1), (120, 0), (130, 0)] {
+                let mut stmts = Vec::new();
+                if start == 130 && !shared_default {
+                    stmts.push(store(BinOp::Xor, 91));
+                } else {
+                    if prefix == 2 {
+                        stmts.push(store(BinOp::Xor, 7));
+                    }
+                    if prefix >= 1 {
+                        stmts.push(store(BinOp::Add, 13));
+                    }
+                    stmts.push(store(BinOp::Mul, 3));
+                }
+                stmts.push(Stmt::Ret {
+                    value: load.clone(),
+                });
+                ir.blocks.push(Block { start, stmts });
+            }
+            let candidate = printed_candidate(
+                ir,
+                (0..6)
+                    .chain([u64::MAX, 1 << 32, 1 << 63])
+                    .map(|input| vec![REGION, input])
+                    .collect(),
+            );
+            assert!(candidate.code.contains("switch ("), "{}", candidate.code);
+            assert!(
+                candidate.code.contains("/* fallthrough */"),
+                "{}",
+                candidate.code
+            );
+            assert_eq!(
+                candidate.code.matches("*pointer *= 3;").count(),
+                1,
+                "{}",
+                candidate.code
+            );
+            assert!(!candidate.code.contains("goto "), "{}", candidate.code);
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("switch-shared-store-tails", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_switch_prefixes_preserve_bounds_width_and_store_order() {
+    let mut candidates = Vec::new();
+    for (isa, convention) in [
+        (Isa::X86_64, Convention::SysV),
+        (Isa::AArch64, Convention::Aapcs64),
+    ] {
+        for width in [32, 64] {
+            for variant in 0..4 {
+                let write_index = variant == 1;
+                let arguments = convention.arguments();
+                let pointer = Expr::reg(arguments[0], 64);
+                let load = Expr::Load {
+                    addr: Box::new(pointer.clone()),
+                    width: 8,
+                    signed: false,
+                };
+                let mut ir = synthetic_ir(
+                    &format!("shared_prefix_{isa:?}_{width}_{variant}"),
+                    vec![
+                        Param {
+                            index: arguments[0],
+                            name: "pointer".into(),
+                            ty: CType::pointer_to(CType::U64),
+                        },
+                        Param {
+                            index: arguments[1],
+                            name: "input".into(),
+                            ty: CType::U64,
+                        },
+                    ],
+                    CType::U64,
+                    Vec::new(),
+                );
+                ir.isa = isa;
+                ir.convention = convention;
+                ir.blocks = vec![Block {
+                    start: 0,
+                    stmts: vec![Stmt::Switch {
+                        index: Expr::reg(arguments[1], width),
+                        cases: (0..10)
+                            .map(|value| {
+                                (
+                                    value + i64::from(variant == 2 && value >= 5),
+                                    100 + value as u64 * 10,
+                                )
+                            })
+                            .collect(),
+                        default: Some(if variant == 3 { 250 } else { 300 }),
+                    }],
+                }];
+                for value in 0..10 {
+                    let mut stmts: Vec<_> = (0..=value)
+                        .map(|step| Stmt::Store {
+                            addr: pointer.clone(),
+                            width: 8,
+                            value: Expr::bin(
+                                if step % 2 == 0 {
+                                    BinOp::Add
+                                } else {
+                                    BinOp::Mul
+                                },
+                                load.clone(),
+                                Expr::Const(step + 3),
+                            ),
+                        })
+                        .collect();
+                    if write_index {
+                        stmts.insert(
+                            0,
+                            Stmt::Assign {
+                                dest: RegRef {
+                                    index: arguments[1],
+                                    width: 64,
+                                },
+                                value: Expr::bin(
+                                    BinOp::Add,
+                                    Expr::reg(arguments[1], 64),
+                                    Expr::Const(3),
+                                ),
+                            },
+                        );
+                    }
+                    stmts.push(Stmt::Br { target: Some(300) });
+                    ir.blocks.push(Block {
+                        start: 100 + value * 10,
+                        stmts,
+                    });
+                }
+                if variant == 3 {
+                    ir.blocks.push(Block {
+                        start: 250,
+                        stmts: vec![
+                            Stmt::Store {
+                                addr: pointer.clone(),
+                                width: 8,
+                                value: Expr::bin(BinOp::Xor, load.clone(), Expr::Const(47)),
+                            },
+                            Stmt::Br { target: Some(300) },
+                        ],
+                    });
+                }
+                ir.blocks.push(Block {
+                    start: 300,
+                    stmts: (100..108)
+                        .map(|value| Stmt::Store {
+                            addr: pointer.clone(),
+                            width: 8,
+                            value: Expr::bin(BinOp::Xor, load.clone(), Expr::Const(value)),
+                        })
+                        .chain([Stmt::Ret {
+                            value: Expr::bin(BinOp::Add, load.clone(), Expr::reg(arguments[1], 64)),
+                        }])
+                        .collect(),
+                });
+                let candidate = printed_candidate(
+                    ir,
+                    (0..=11)
+                        .chain([u64::MAX, 1 << 32, (1 << 32) + 9, 1 << 63])
+                        .map(|input| vec![REGION, input])
+                        .collect(),
+                );
+                assert_eq!(
+                    candidate.code.matches("*pointer += 3;").count(),
+                    if variant == 0 { 1 } else { 10 },
+                    "{}",
+                    candidate.code
+                );
+                assert_eq!(
+                    candidate.code.contains("switch ("),
+                    variant != 0,
+                    "{}",
+                    candidate.code
+                );
+                assert!(!candidate.code.contains("goto "), "{}", candidate.code);
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates("switch-shared-prefixes", candidates, Mode::Memory, &[]);
+}

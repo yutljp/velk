@@ -586,10 +586,11 @@ ok "table-driven switch"
 
 # 15) switch recovery from an indirect-branch jump table
 jt=$("$BIN" --decompile $FIX/arm64_jumptable.elf d7 2>/dev/null)
-echo "$jt" | grep -q "switch ("                 || fail "jump-table switch"
-echo "$jt" | grep -q "case 9:"                  || fail "jump-table cases"
-echo "$jt" | grep -q "case .*: goto" && fail "jump-table cases inlined"
-[ "$(echo "$jt" | grep -c 'case [0-9]*:')" -eq 10 ] || fail "jump-table count"
+echo "$jt" | grep -Fq 'if ((uint32_t)a0 <= 9)' || fail "jump-table bounds"
+[ "$(echo "$jt" | grep -Fc 'v1 = *g;')" -eq 1 ] || fail "jump-table shared load"
+for limit in {0..8}; do
+  echo "$jt" | grep -Fq "if ((uint32_t)a0 > $limit)" || fail "jump-table case $limit"
+done
 if echo "$jt" | grep -q "unsupported"; then fail "jump-table unsupported"; fi
 for label in $(echo "$jt" | sed -n 's/.*goto \(L_[0-9a-f]*\);.*/\1/p' | sort -u); do
   echo "$jt" | grep -q "$label:" || fail "missing $label"

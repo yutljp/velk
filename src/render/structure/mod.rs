@@ -181,6 +181,7 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
         prune_unreachable(nodes);
         cleanup::order_switch_cases(nodes);
         prune(nodes);
+        cleanup::share_switch_tails(nodes);
     }
 }
 

@@ -10,129 +10,44 @@ int d7(int x) {
     int32_t v1;
 
     v1 = -1;
-    switch (x) {
-    case 0:
+    if ((uint32_t)x <= 9) {
         v1 = *g;
-        break;
-    case 1:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        break;
-    case 2:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        break;
-    case 3:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        *g = v1;
-        v1 += 3;
-        break;
-    case 4:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        *g = v1;
-        v1 += 3;
-        *g = v1;
-        v1 += 4;
-        break;
-    case 5:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        *g = v1;
-        v1 += 3;
-        *g = v1;
-        v1 += 4;
-        *g = v1;
-        v1 += 5;
-        break;
-    case 6:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        *g = v1;
-        v1 += 3;
-        *g = v1;
-        v1 += 4;
-        *g = v1;
-        v1 += 5;
-        *g = v1;
-        v1 += 6;
-        break;
-    case 7:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        *g = v1;
-        v1 += 3;
-        *g = v1;
-        v1 += 4;
-        *g = v1;
-        v1 += 5;
-        *g = v1;
-        v1 += 6;
-        *g = v1;
-        v1 += 7;
-        break;
-    case 8:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        *g = v1;
-        v1 += 3;
-        *g = v1;
-        v1 += 4;
-        *g = v1;
-        v1 += 5;
-        *g = v1;
-        v1 += 6;
-        *g = v1;
-        v1 += 7;
-        *g = v1;
-        v1 += 8;
-        break;
-    case 9:
-        v1 = *g;
-        *g = v1;
-        ++v1;
-        *g = v1;
-        v1 += 2;
-        *g = v1;
-        v1 += 3;
-        *g = v1;
-        v1 += 4;
-        *g = v1;
-        v1 += 5;
-        *g = v1;
-        v1 += 6;
-        *g = v1;
-        v1 += 7;
-        *g = v1;
-        v1 += 8;
-        *g = v1;
-        v1 += 9;
-        break;
-    default:
-        break;
+        if ((uint32_t)x > 0) {
+            *g = v1;
+            ++v1;
+        }
+        if ((uint32_t)x > 1) {
+            *g = v1;
+            v1 += 2;
+        }
+        if ((uint32_t)x > 2) {
+            *g = v1;
+            v1 += 3;
+        }
+        if ((uint32_t)x > 3) {
+            *g = v1;
+            v1 += 4;
+        }
+        if ((uint32_t)x > 4) {
+            *g = v1;
+            v1 += 5;
+        }
+        if ((uint32_t)x > 5) {
+            *g = v1;
+            v1 += 6;
+        }
+        if ((uint32_t)x > 6) {
+            *g = v1;
+            v1 += 7;
+        }
+        if ((uint32_t)x > 7) {
+            *g = v1;
+            v1 += 8;
+        }
+        if ((uint32_t)x > 8) {
+            *g = v1;
+            v1 += 9;
+        }
     }
     *g = v1;
     return v1;

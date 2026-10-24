@@ -5,6 +5,7 @@ pub(crate) use returns::{flatten_early_returns, inline_return_tails, return_know
 pub(crate) use switch::absorb_switch_tests;
 pub(crate) use switch::fold_switch_exits;
 pub(crate) use switch::order_switch_cases;
+pub(crate) use switch::share_switch_tails;
 
 use crate::ir::{Expr, Stmt};
 use crate::render::structure::Node;
