@@ -1951,6 +1951,32 @@ fn a_data_address_has_no_function_prototype() {
 }
 
 #[test]
+fn a_round_data_address_argument_stays_hexadecimal() {
+    let ir = FunctionIr::single_block(
+        Isa::AArch64,
+        vec![
+            Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
+                target: Some(0x40),
+                through: None,
+                convention: crate::ir::Convention::Aapcs64,
+                args: Some(vec![Expr::Const(4_295_030_300), Expr::Const(300)]),
+                floats_named: false,
+                outputs: Vec::new(),
+                clobbers: Some(Default::default()),
+                via: None,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ],
+    );
+    let text = render(&ir, &[], &Symbols::default(), &[(0x1_0000_f000, 0x1000)]);
+    assert!(text.contains("sub_40(0x10000f61c"), "{text}");
+    assert!(text.contains(", 300)"), "{text}");
+}
+
+#[test]
 fn global_views_do_not_shadow_unnamed_functions() {
     let mut ir = FunctionIr::single_block(
         Isa::X86_64,

@@ -471,6 +471,20 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
     match value {
         Expr::Apply { op, args } => operation(*op, args, value, ctx),
         Expr::Reg { index, width } => register(*index, *width, ctx),
+        // An address in the image's data stays in hexadecimal, however
+        // round it is in decimal: it names a place, not a number. Below a
+        // page, as in an object file whose sections start at zero, a
+        // constant is more likely a number.
+        Expr::Const(value)
+            if *value >= 0x1000
+                && ctx.data_ranges.iter().any(|(start, size)| {
+                    value
+                        .checked_sub(*start)
+                        .is_some_and(|offset| offset < *size)
+                }) =>
+        {
+            constant(*value, ConstantUse::Hex)
+        }
         Expr::Const(value) => constant(*value, usage),
         Expr::Bin {
             op: BinOp::Sub,
