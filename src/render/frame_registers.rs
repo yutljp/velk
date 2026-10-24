@@ -88,7 +88,7 @@ fn drop_unread_frame_addresses(ir: &mut FunctionIr, sp: u16) {
 }
 
 /// Only where the value is used as an address: a whole operand, a load or
-/// store address, or a term of a sum that is one. Elsewhere, as under a
+/// store address, or the base of a constant offset from one. Elsewhere, as under a
 /// mask, the stack pointer could not be named as a local.
 fn rebase_value(expr: &mut Expr, state: &Origins, sp: u16, frame: i64, pointer: bool) {
     let written = match expr {
@@ -120,8 +120,13 @@ fn rebase_value(expr: &mut Expr, state: &Origins, sp: u16, frame: i64, pointer: 
             lhs,
             rhs,
         } => {
-            rebase_value(lhs, state, sp, frame, pointer);
-            rebase_value(rhs, state, sp, frame, pointer);
+            // With an index added, the address is kept as the integer sum
+            // it is: as a pointer into the local, a negative index would
+            // leave the object before the access comes back into it.
+            let offset =
+                matches!(lhs.as_ref(), Expr::Const(_)) || matches!(rhs.as_ref(), Expr::Const(_));
+            rebase_value(lhs, state, sp, frame, pointer && offset);
+            rebase_value(rhs, state, sp, frame, pointer && offset);
         }
         other => {
             for child in crate::ir::visit::children_mut(other) {
@@ -241,9 +246,10 @@ fn frame_uses(
         taken.insert(offset);
         return;
     }
-    let sum = matches!(expr, Expr::Bin { op: BinOp::Add, .. });
+    let offset = matches!(expr, Expr::Bin { op: BinOp::Add, lhs, rhs }
+        if matches!(lhs.as_ref(), Expr::Const(_)) || matches!(rhs.as_ref(), Expr::Const(_)));
     for child in crate::ir::visit::children(expr) {
-        frame_uses(child, state, false, pointer && sum, accesses, taken);
+        frame_uses(child, state, false, pointer && offset, accesses, taken);
     }
 }
 
@@ -266,7 +272,15 @@ fn reload(
     }
     let pointer = match expr {
         Expr::Load { .. } => true,
-        Expr::Bin { op: BinOp::Add, .. } => pointer,
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } => {
+            pointer
+                && (matches!(lhs.as_ref(), Expr::Const(_))
+                    || matches!(rhs.as_ref(), Expr::Const(_)))
+        }
         _ => false,
     };
     for child in crate::ir::visit::children_mut(expr) {

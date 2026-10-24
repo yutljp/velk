@@ -2529,3 +2529,45 @@ fn debug_stack_names_take_precedence_over_roles() {
     assert!(text.contains("int32_t i;"), "{text}");
     assert!(text.contains("for (i = 0; i < n; i++)"), "{text}");
 }
+
+#[test]
+fn an_indexed_sum_from_a_local_address_stays_an_integer() {
+    let sp = |offset: i64| Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(offset as u64));
+    let base = crate::ir::VARIABLE_BASE;
+    let mut ir = FunctionIr::single_block(
+        Isa::AArch64,
+        vec![
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: base,
+                    width: 64,
+                },
+                value: sp(-0x68),
+            },
+            Stmt::Store {
+                addr: Expr::bin(
+                    BinOp::Add,
+                    Expr::bin(
+                        BinOp::Add,
+                        Expr::reg(base, 64),
+                        Expr::bin(BinOp::Shl, Expr::reg(0, 64), Expr::Const(2)),
+                    ),
+                    Expr::Const(4),
+                ),
+                value: Expr::Const(1),
+                width: 4,
+            },
+            Stmt::Ret {
+                value: load(sp(-0x68), 4),
+            },
+        ],
+    );
+    ir.ret_type = CType::U32;
+    ir.params = vec![crate::ir::Param {
+        index: 0,
+        name: "index".into(),
+        ty: CType::I64,
+    }];
+    let text = render(&ir, &[], &Symbols::default(), &[]);
+    assert!(!text.contains("(local_0 + "), "{text}");
+}
