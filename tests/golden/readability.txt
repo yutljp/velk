@@ -12,8 +12,8 @@ arm64_loops0.o: 56 lines, 0 prelude lines, 9 variables, 0 casts, 0 registers, 0 
 arm64_loops_stripped.o: 74 lines, 0 prelude lines, 12 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm64_macho.o: 102 lines, 27 prelude lines, 25 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm64_switch.elf: 12 lines, 0 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-calls_a64.elf: 176 lines, 37 prelude lines, 32 variables, 21 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
-calls_a64.o: 173 lines, 35 prelude lines, 32 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+calls_a64.elf: 176 lines, 37 prelude lines, 32 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+calls_a64.o: 173 lines, 35 prelude lines, 32 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 cold_gcc: 141 lines, 5 prelude lines, 22 variables, 17 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 cold_gcc_stripped: 141 lines, 3 prelude lines, 22 variables, 17 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 cpp_classes_a64.o: 51 lines, 31 prelude lines, 9 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
@@ -23,8 +23,8 @@ cpp_virtual_a64.elf: 123 lines, 0 prelude lines, 13 variables, 6 casts, 0 regist
 cpp_virtual_a64_stripped.elf: 123 lines, 0 prelude lines, 13 variables, 6 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 cpp_virtual_x64.elf: 124 lines, 0 prelude lines, 14 variables, 8 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 cpp_virtual_x64_stripped.elf: 124 lines, 0 prelude lines, 14 variables, 8 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
-go_probe: 76361 lines, 422 prelude lines, 12706 variables, 12842 casts, 121 registers, 0 unsigned, 18 traps, 75 gotos, 121 indirect calls
-go_stripped: 76281 lines, 422 prelude lines, 12695 variables, 12840 casts, 121 registers, 0 unsigned, 18 traps, 75 gotos, 121 indirect calls
+go_probe: 76561 lines, 422 prelude lines, 12780 variables, 12588 casts, 121 registers, 0 unsigned, 18 traps, 75 gotos, 121 indirect calls
+go_stripped: 76481 lines, 422 prelude lines, 12769 variables, 12586 casts, 121 registers, 0 unsigned, 18 traps, 75 gotos, 121 indirect calls
 l0_arith_a64.o: 16 lines, 0 prelude lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l0_arith_x64.o: 16 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 l1_branch_a64.o: 12 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -78,7 +78,7 @@ metrics/arith_mixed.x86_64.O2.stripped.elf: 66 lines, 16 prelude lines, 10 varia
 metrics/calls.aarch64.O0.debug.elf: 120 lines, 7 prelude lines, 17 variables, 17 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.aarch64.O0.stripped.elf: 117 lines, 3 prelude lines, 22 variables, 12 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.aarch64.O2.debug.elf: 161 lines, 37 prelude lines, 24 variables, 21 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
-metrics/calls.aarch64.O2.stripped.elf: 157 lines, 33 prelude lines, 28 variables, 20 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
+metrics/calls.aarch64.O2.stripped.elf: 157 lines, 33 prelude lines, 28 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.win64.O0.debug.dll: 102 lines, 7 prelude lines, 20 variables, 25 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.win64.O0.stripped.dll: 99 lines, 3 prelude lines, 17 variables, 30 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 metrics/calls.win64.O2.debug.dll: 272 lines, 48 prelude lines, 63 variables, 41 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
@@ -333,9 +333,9 @@ metrics/windows.win64.O2.debug.dll: 53 lines, 0 prelude lines, 7 variables, 11 c
 metrics/windows.win64.O2.stripped.dll: 51 lines, 0 prelude lines, 6 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.exe: 47 lines, 0 prelude lines, 2 variables, 9 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.obj: 46 lines, 0 prelude lines, 2 variables, 9 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-rust_demo: 60665 lines, 254 prelude lines, 6230 variables, 12105 casts, 12 registers, 0 unsigned, 30 traps, 1402 gotos, 130 indirect calls
-rust_probe: 60665 lines, 254 prelude lines, 6230 variables, 12105 casts, 12 registers, 0 unsigned, 30 traps, 1402 gotos, 130 indirect calls
-rust_probe_stripped: 60642 lines, 212 prelude lines, 6291 variables, 12123 casts, 12 registers, 0 unsigned, 31 traps, 1404 gotos, 126 indirect calls
+rust_demo: 60669 lines, 254 prelude lines, 6190 variables, 9453 casts, 12 registers, 0 unsigned, 30 traps, 1402 gotos, 130 indirect calls
+rust_probe: 60669 lines, 254 prelude lines, 6190 variables, 9453 casts, 12 registers, 0 unsigned, 30 traps, 1402 gotos, 130 indirect calls
+rust_probe_stripped: 60639 lines, 212 prelude lines, 6254 variables, 9479 casts, 12 registers, 0 unsigned, 31 traps, 1404 gotos, 126 indirect calls
 shared_pointers_x64.so: 20 lines, 0 prelude lines, 2 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 strings.o: 6 lines, 0 prelude lines, 1 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 switch_jumptable.o: 133 lines, 0 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

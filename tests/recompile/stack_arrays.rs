@@ -585,3 +585,37 @@ fn printed_stack_fields_of_a_region_read_at_an_index_see_its_writes() {
         &[],
     );
 }
+
+#[test]
+fn printed_stack_buffer_read_below_its_index_base_reaches_the_bytes_there() {
+    // A byte stored at a fixed slot and read back through a negative index
+    // from the slot above, as digits written backwards are.
+    let ir = synthetic_ir(
+        "frame_backwards",
+        vec![Param {
+            index: 7,
+            name: "x".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            store(-12, 0x41, 1),
+            store(-11, 0x42, 1),
+            store(-10, 0x43, 1),
+            store(-9, 0x44, 1),
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::bin(
+                        BinOp::Add,
+                        slot(-9),
+                        Expr::bin(BinOp::Sub, Expr::Const(0), Expr::reg(7, 64)),
+                    )),
+                    width: 1,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let candidate = printed_candidate(ir, (0..4).map(|value| vec![value]).collect());
+    check_candidates("stack-backwards", vec![candidate], Mode::Registers, &[]);
+}

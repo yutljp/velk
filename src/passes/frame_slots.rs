@@ -347,6 +347,7 @@ fn is_adjustment(value: &Expr, sp: u16) -> bool {
 /// adjustments, so each slot has one address everywhere.
 pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
     let sp = stack_pointer(ir.isa);
+    let mut bottom = ir.frame_bottom;
     for (position, block) in ir.blocks.iter_mut().enumerate() {
         let Some(mut frame) = frames[position] else {
             continue;
@@ -368,6 +369,7 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
                                 BinOp::Sub => frame.wrapping_sub(*delta as i64),
                                 _ => frame,
                             };
+                            bottom = bottom.min(frame);
                         }
                         continue;
                     }
@@ -398,6 +400,7 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
             .stmts
             .retain(|stmt| !matches!(stmt, Stmt::Assign { dest, value } if dest.index == sp && is_adjustment(value, sp)));
     }
+    ir.frame_bottom = bottom;
 }
 
 fn rewrite_expr_frame(expr: &mut Expr, frame: i64, sp: u16) {

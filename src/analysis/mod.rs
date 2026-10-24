@@ -1283,6 +1283,8 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         signed_params: signature.signed,
         landing_pads,
         pointer_values: Vec::new(),
+        saved_slots: Vec::new(),
+        frame_bottom: 0,
         value_types: std::collections::BTreeMap::new(),
         variable_registers: std::collections::BTreeMap::new(),
         addr: function.addr,

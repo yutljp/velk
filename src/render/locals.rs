@@ -258,6 +258,12 @@ pub(super) fn stack_locals_with_roles(
         .filter(|(_, _, width, signed)| *width == 0 && *signed == Some(false))
         .filter_map(|(slot, ..)| *slot)
         .collect();
+    // A leaf function may use the bytes below the stack pointer, too.
+    let bottom = accesses
+        .iter()
+        .filter_map(|(slot, ..)| *slot)
+        .fold(lowest_frame(ir, frames, sp).min(ir.frame_bottom), i64::min);
+    let mut lowered: Vec<(i64, i64)> = Vec::new();
     for (slot, _, width, signed) in &accesses {
         let Some(slot) = slot else { continue };
         if *slot >= 0 || *width != 0 {
@@ -275,8 +281,16 @@ pub(super) fn stack_locals_with_roles(
                 &accesses,
                 &buffers,
                 &indexed,
+                &ir.saved_slots,
             ),
-            _ if !ir.variadic => indexed_end(*slot, None, &accesses, &buffers, &Default::default()),
+            _ if !ir.variadic => indexed_end(
+                *slot,
+                None,
+                &accesses,
+                &buffers,
+                &Default::default(),
+                &ir.saved_slots,
+            ),
             _ => slot_names
                 .keys()
                 .copied()
@@ -298,6 +312,35 @@ pub(super) fn stack_locals_with_roles(
         {
             local.size = size;
         }
+        // An index may be negative too: it reaches down to the bytes below
+        // as far as it reaches up.
+        if *signed == Some(false)
+            && let Some(start) = indexed_start(
+                *slot,
+                elements.get(slot).copied().flatten(),
+                &accesses,
+                &buffers,
+                &indexed,
+                &ir.saved_slots,
+                bottom,
+            )
+            && start < *slot
+        {
+            lowered.push((start, end.max(slot.saturating_add(1))));
+        }
+    }
+    for (start, end) in lowered {
+        let local = slot_names.entry(start).or_insert_with(|| Local {
+            name: String::new(),
+            slot: start,
+            width: 0,
+            size: 0,
+            signed: true,
+            ty: None,
+            fields: Vec::new(),
+            views: Vec::new(),
+        });
+        local.size = local.size.max(end.saturating_sub(start));
     }
     // An untyped address still needs scalar storage when no extent is known.
     for local in slot_names.values_mut() {
@@ -909,6 +952,82 @@ fn layered_field(
     })
 }
 
+/// Where the reach of an index below the buffer at `slot` starts, when it
+/// starts lower: slots below are its own elements as `indexed_end` takes
+/// those above, down to the end of a saved register, of a slot that is no
+/// element, or the bottom of the frame. Another buffer below reaches up to
+/// this one already, unless it is in `crossed`.
+fn indexed_start(
+    slot: i64,
+    element: Option<u8>,
+    accesses: &[FrameAccess],
+    buffers: &std::collections::HashSet<i64>,
+    crossed: &std::collections::HashSet<i64>,
+    saved: &[i64],
+    bottom: i64,
+) -> Option<i64> {
+    let mut below: Vec<i64> = accesses
+        .iter()
+        .filter_map(|(other, ..)| *other)
+        .chain(saved.iter().copied())
+        .filter(|other| *other < slot && *other >= bottom)
+        .collect();
+    below.sort_unstable_by(|a, b| b.cmp(a));
+    below.dedup();
+    let mut start = bottom;
+    for other in below {
+        let end = accesses
+            .iter()
+            .filter(|(at, ..)| *at == Some(other))
+            .map(|(_, _, width, _)| other.saturating_add(i64::from(*width).max(1)))
+            .max()
+            .unwrap_or_else(|| other.saturating_add(8))
+            .min(slot);
+        if saved.contains(&other) {
+            start = end;
+            break;
+        }
+        if buffers.contains(&other) && !crossed.contains(&other) {
+            return None;
+        }
+        let Some(element) = element.filter(|element| *element > 0) else {
+            continue;
+        };
+        let element = i64::from(element);
+        let foreign = (slot - other) % element != 0
+            || accesses.iter().any(|(at, _, width, _)| {
+                *at == Some(other)
+                    && *width != 0
+                    && i64::from(*width) != element
+                    && !(matches!(width, 8 | 16) && i64::from(*width) % element == 0)
+            });
+        if foreign {
+            start = end;
+            break;
+        }
+    }
+    (start < slot).then_some(start)
+}
+
+/// The lowest the stack pointer goes in the function: below it nothing is
+/// the frame's.
+fn lowest_frame(ir: &FunctionIr, frames: &[Option<i64>], sp: u16) -> i64 {
+    let mut bottom = 0;
+    for (position, block) in ir.blocks.iter().enumerate() {
+        let mut frame = frames.get(position).copied().flatten();
+        for stmt in &block.stmts {
+            if let Some(frame) = frame {
+                bottom = frame.min(bottom);
+            }
+            frame = frame_after(stmt, frame, sp);
+        }
+        if let Some(frame) = frame {
+            bottom = frame.min(bottom);
+        }
+    }
+    bottom
+}
+
 /// Where the reach of an index into the buffer at `slot` ends. Slots read
 /// at fixed offsets above it may be its own elements: one a whole number
 /// of elements away and accessed only at the element width, or eight or
@@ -916,21 +1035,27 @@ fn layered_field(
 /// The first other slot, another buffer or the top of the frame ends it;
 /// with no known element width, only another buffer or the top of the frame.
 /// A buffer in `crossed` does not end it: the index may reach into it.
+/// A slot in `saved` holds a register the function saves, which ends it.
 fn indexed_end(
     slot: i64,
     element: Option<u8>,
     accesses: &[FrameAccess],
     buffers: &std::collections::HashSet<i64>,
     crossed: &std::collections::HashSet<i64>,
+    saved: &[i64],
 ) -> i64 {
     let mut above: Vec<i64> = accesses
         .iter()
         .filter_map(|(other, ..)| *other)
+        .chain(saved.iter().copied())
         .filter(|other| *other > slot && *other < 0)
         .collect();
     above.sort_unstable();
     above.dedup();
     for other in above {
+        if saved.contains(&other) {
+            return other;
+        }
         if buffers.contains(&other) && !crossed.contains(&other) {
             return other;
         }
@@ -1027,6 +1152,7 @@ fn buffer_extents(
                                     let Some(offset) = offset else { return None };
                                     (*offset > slot && *width == 0).then_some(*offset)
                                 })
+                                .chain(ir.saved_slots.iter().copied().filter(|saved| *saved > slot))
                                 .min();
                             boundary.or(Some(0))
                         }

@@ -912,6 +912,13 @@ pub struct FunctionIr {
     pub landing_pads: Vec<(u64, Vec<(u64, u64)>)>,
     /// The variables the function passes where a callee takes a pointer.
     pub pointer_values: Vec<u16>,
+    /// The frame slots, by offset from the stack pointer on entry, where the
+    /// prologue saves registers that each return restores: no local of the
+    /// function reaches into them.
+    pub saved_slots: Vec<i64>,
+    /// The lowest offset from the stack pointer on entry that the stack
+    /// pointer reaches once its adjustments are gone; 0 while they remain.
+    pub frame_bottom: i64,
     /// The types the prototypes of the library functions the body calls
     /// give the variables it passes them and those holding their results.
     pub value_types: std::collections::BTreeMap<u16, CType>,
@@ -943,6 +950,8 @@ impl FunctionIr {
             signed_params: std::collections::HashSet::new(),
             landing_pads: Vec::new(),
             pointer_values: Vec::new(),
+            saved_slots: Vec::new(),
+            frame_bottom: 0,
             value_types: std::collections::BTreeMap::new(),
             variable_registers: std::collections::BTreeMap::new(),
             addr: 0,

@@ -334,7 +334,7 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     uint32_t *v8;
     uint32_t v11;
     int64_t local_0; /* [sp-78] */
-    _Alignas(16) uint8_t local_1[0x68]; /* [sp-68] */
+    _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
     int64_t local_2; /* [sp-70] */
 
     if (a1 <= 0) {

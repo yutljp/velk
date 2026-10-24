@@ -11,6 +11,8 @@ fn a_frame_survives_a_call_to_a_callee_with_escaping_locals_and_atomics() {
     assert!(!code.contains("undefined"), "{code}");
     assert!(!code.contains("(-0x"), "{code}");
     assert!(!code.contains("(uintptr_t)&local"), "{code}");
+    // The local the callee fills ends where the saved registers start.
+    assert!(code.contains("int64_t f_38; } local_0;"), "{code}");
 }
 
 /// A callee that hands the address of its spilled arguments to a closure

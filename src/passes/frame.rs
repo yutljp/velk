@@ -327,6 +327,7 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
         by_slot.entry(access.slot).or_default().push(index);
     }
     let mut drop: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
+    let mut saved: Vec<i64> = Vec::new();
     for list in by_slot.values() {
         let [save, restores @ ..] = list.as_slice() else {
             continue;
@@ -384,6 +385,7 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
                     .all(|index| restores_on_return(ir, &accesses[*index]))
             {
                 drop.insert((first.block, first.position));
+                saved.push(first.slot);
                 for restore in restores.iter().map(|index| &accesses[*index]) {
                     drop.insert((restore.block, restore.position));
                 }
@@ -391,11 +393,17 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
             continue;
         }
         drop.insert((first.block, first.position));
+        saved.push(first.slot);
         for restore in restores.iter().map(|index| &accesses[*index]) {
             drop.insert((restore.block, restore.position));
         }
         if let Some(position) = frame_setup {
             drop.insert(position);
+        }
+    }
+    for slot in saved {
+        if !ir.saved_slots.contains(&slot) {
+            ir.saved_slots.push(slot);
         }
     }
     if drop.is_empty() {

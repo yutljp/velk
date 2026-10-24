@@ -1436,7 +1436,7 @@ int64_t main_main(void) {
     int64_t v2;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
-    _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; uint8_t gap_20[0x8]; } local_2; /* [sp-28] */
+    _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; } local_2; /* [sp-28] */
     int64_t local_3; /* [sp-30] */
 
     v1 = main_divmod(7, 3);
