@@ -10,6 +10,25 @@ pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> St
     {
         return condition(cond, rhs, lhs, ctx);
     }
+    // A plain char is zero exactly when its byte is zero, with either sign.
+    let zero_test = match lhs {
+        Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(mask) if mask & 0xff == 0xff) => lhs.as_ref(),
+        _ => lhs,
+    };
+    if matches!(cond, Cond::Eq | Cond::Ne)
+        && matches!(rhs, Expr::Const(0))
+        && let Expr::Load { addr, width: 1, .. } = zero_test
+        && (crate::render::naming::plain_char_access(addr, ctx)
+            || crate::render::naming::member_access(addr, 1, ctx)
+                .is_some_and(|member| member.plain_char()))
+    {
+        let value = load(addr, 1, false, ctx).within(7, false).text;
+        return format!("{value} {} 0", if cond == Cond::Eq { "==" } else { "!=" });
+    }
     // A truth value tested against zero reads as the truth value itself.
     if let (Cond::Ne | Cond::Eq, Expr::Const(0)) = (cond, rhs)
         && let Some((text, _)) = logic(lhs, cond == Cond::Eq, ctx)

@@ -90,7 +90,7 @@ fn fill_bytes @ 0x21029c (size 92)
 unsigned long string_length(char *s) {
     uint64_t n; /* [sp-10] */
 
-    for (n = 0; (uint8_t)s[n] != 0; n++) {
+    for (n = 0; s[n] != 0; n++) {
     }
     return n;
 }

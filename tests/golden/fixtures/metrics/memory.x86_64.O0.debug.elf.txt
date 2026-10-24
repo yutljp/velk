@@ -86,7 +86,7 @@ fn fill_bytes @ 0x2012d0 (size 73)
 unsigned long string_length(char *s) {
     uint64_t n; /* [sp-18] */
 
-    for (n = 0; (uint8_t)s[n] != 0; n++) {
+    for (n = 0; s[n] != 0; n++) {
     }
     return n;
 }

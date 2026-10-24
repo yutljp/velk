@@ -331,3 +331,116 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
     }
     check_candidates("byte_buffer_casts", candidates, Mode::Memory, &[]);
 }
+
+#[test]
+fn declared_narrow_signed_values_extend_without_casts() {
+    let mut candidates = Vec::new();
+    for (width, name) in [(1, "signed char"), (2, "short"), (4, "int")] {
+        let ir = synthetic_ir(
+            &format!("declared_signed_{width}"),
+            vec![Param {
+                index: 7,
+                name: "x".into(),
+                ty: CType::Named(name.into()),
+            }],
+            CType::I64,
+            vec![Stmt::Ret {
+                value: Expr::SignExtend {
+                    value: Box::new(Expr::reg(7, width * 8)),
+                    width,
+                },
+            }],
+        );
+        let candidate = printed_candidate(
+            ir,
+            [
+                0,
+                1,
+                127,
+                128,
+                255,
+                32767,
+                32768,
+                65535,
+                0x7fff_ffff,
+                0x8000_0000,
+                u64::MAX,
+            ]
+            .into_iter()
+            .map(|x| vec![x])
+            .collect(),
+        );
+        assert!(candidate.code.contains("return x;"), "{}", candidate.code);
+        candidates.push(candidate);
+    }
+    check_candidates(
+        "declared-signed-extension",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn plain_char_zero_tests_preserve_both_char_signs() {
+    let ir = synthetic_ir(
+        "plain_char_zero",
+        vec![
+            Param {
+                index: 7,
+                name: "s".into(),
+                ty: CType::pointer_to(CType::Named("char".into())),
+            },
+            Param {
+                index: 6,
+                name: "byte".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        vec![
+            Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: Expr::reg(6, 64),
+                width: 1,
+            },
+            Stmt::Ret {
+                value: Expr::Select {
+                    cond: Cond::Ne,
+                    lhs: Box::new(Expr::Load {
+                        addr: Box::new(Expr::reg(7, 64)),
+                        width: 1,
+                        signed: false,
+                    }),
+                    rhs: Box::new(Expr::Const(0)),
+                    then: Box::new(Expr::Const(1)),
+                    els: Box::new(Expr::Const(0)),
+                },
+            },
+        ],
+    );
+    for sign in ["-fsigned-char", "-funsigned-char"] {
+        let mut candidates = Vec::new();
+        for mask in [None, Some(0xffff_ffff), Some(0x7f)] {
+            for comparison in [Cond::Eq, Cond::Ne] {
+                let mut ir = ir.clone();
+                if let Stmt::Ret {
+                    value: Expr::Select { cond, lhs, .. },
+                } = &mut ir.blocks[0].stmts[1]
+                {
+                    *cond = comparison;
+                    if let Some(mask) = mask {
+                        **lhs = Expr::bin(BinOp::And, lhs.as_ref().clone(), Expr::Const(mask));
+                    }
+                }
+                let candidate =
+                    printed_candidate(ir, (0..256).map(|byte| vec![REGION, byte]).collect());
+                if mask != Some(0x7f) {
+                    assert!(!candidate.code.contains("(uint8_t)"), "{}", candidate.code);
+                }
+                candidates.push(candidate);
+            }
+        }
+        check_candidates("plain-char-zero", candidates, Mode::Memory, &[sign]);
+    }
+}
