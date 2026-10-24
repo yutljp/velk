@@ -443,12 +443,17 @@ struct Prepared {
 
 fn prepare(seed: u64, info: &mut InstructionInfoFactory) -> Option<Prepared> {
     let mut body = compare(seed);
-    let mut instructions = vec![decode(&body)?];
+    let Some(decoded) = decode(&body) else {
+        return None;
+    };
+    let mut instructions = vec![decoded];
     for (index, salt) in [0, 0x5eed].into_iter().enumerate() {
         if index == 1 && hash(seed, 7) & 1 == 0 {
             break;
         }
-        let (bytes, decoded) = instruction(seed ^ salt, info)?;
+        let Some((bytes, decoded)) = instruction(seed ^ salt, info) else {
+            return None;
+        };
         body.extend(bytes);
         instructions.push(decoded);
     }

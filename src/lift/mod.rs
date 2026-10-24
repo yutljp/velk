@@ -185,7 +185,9 @@ pub fn lift_with(
     summaries: Summaries<'_>,
 ) -> Result<Vec<Block>, LiftError> {
     let summaries: Summaries<'_> = &|target| calling(summaries(target));
-    let bytes = image.read_vaddr(addr, size).ok_or(LiftError::Unreadable)?;
+    let Some(bytes) = image.read_vaddr(addr, size) else {
+        return Err(LiftError::Unreadable);
+    };
     match image.isa {
         Isa::AArch64 => lift_continuing(
             image,
@@ -197,7 +199,7 @@ pub fn lift_with(
             extra_targets,
         ),
         Isa::X86_64 => {
-            let mut blocks = lift_continuing(
+            let mut blocks = match lift_continuing(
                 image,
                 summaries,
                 || x86_64::Lifter::new(image, summaries),
@@ -205,7 +207,10 @@ pub fn lift_with(
                 bytes,
                 x86_64::decode,
                 extra_targets,
-            )?;
+            ) {
+                Ok(result) => result,
+                Err(error) => return Err(error),
+            };
             if image.go {
                 take_stack_results(&mut blocks, image, summaries);
             }
@@ -292,7 +297,7 @@ fn lift_continuing<M: Machine>(
         rounds += 1;
         let (decoded, stop) =
             decode_with_fragments(image, &machine(), addr, bytes, decode, &pulled);
-        let (blocks, more) = build_carrying(
+        let (blocks, more) = match build_carrying(
             image,
             summaries,
             &machine,
@@ -300,7 +305,10 @@ fn lift_continuing<M: Machine>(
             &decoded,
             stop,
             extra_targets,
-        )?;
+        ) {
+            Ok(result) => result,
+            Err(error) => return Err(error),
+        };
         let known = pulled.len();
         pulled.extend(more);
         if pulled.len() == known || rounds == 4 {
@@ -940,7 +948,7 @@ fn build_carrying<M: Machine>(
     extra_targets: &HashSet<u64>,
 ) -> Result<(Vec<Block>, exits::Pulled), LiftError> {
     let none = CarriedFlags::default();
-    let (blocks, exits, pulled) = build(
+    let (blocks, exits, pulled) = match build(
         image,
         summaries,
         machine(),
@@ -949,12 +957,15 @@ fn build_carrying<M: Machine>(
         stop.clone(),
         extra_targets,
         &none,
-    )?;
+    ) {
+        Ok(result) => result,
+        Err(error) => return Err(error),
+    };
     let carried = carry_flags(&blocks, &exits, extra_targets);
     if carried.entry.is_empty() {
         return Ok((blocks, pulled));
     }
-    let (blocks, _, pulled) = build(
+    let (blocks, _, pulled) = match build(
         image,
         summaries,
         machine(),
@@ -963,7 +974,10 @@ fn build_carrying<M: Machine>(
         stop,
         extra_targets,
         &carried,
-    )?;
+    ) {
+        Ok(result) => result,
+        Err(error) => return Err(error),
+    };
     Ok((blocks, pulled))
 }
 

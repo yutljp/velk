@@ -98,7 +98,10 @@ fn lifted(isa: Isa, code: Vec<u8>) -> Option<FunctionIr> {
     let len = code.len() as u64;
     let image = Image::from_code(isa, 0, code);
     let mut ir = FunctionIr::single_block(isa, Vec::new());
-    ir.blocks = lift(&image, 0, len, &HashSet::new()).ok()?;
+    ir.blocks = match lift(&image, 0, len, &HashSet::new()) {
+        Ok(blocks) => blocks,
+        Err(_) => return None,
+    };
     Some(ir)
 }
 
