@@ -56,7 +56,9 @@ pub(crate) struct ClassPiece {
 
 pub(crate) fn canonical(layout: &TypeLayout) -> Result<TypeLayout, AbiIssue> {
     fn resolve(layout: &TypeLayout, depth: u8, budget: &mut usize) -> Result<TypeLayout, AbiIssue> {
-        spend(budget)?;
+        if let Err(issue) = spend(budget) {
+            return Err(issue);
+        }
         if depth >= 64 {
             return Err(AbiIssue::UnknownLayout);
         }
@@ -110,32 +112,42 @@ pub(crate) fn alternatives(layout: &TypeLayout) -> Result<Vec<TypeLayout>, AbiIs
         depth: u8,
         budget: &mut usize,
     ) -> Result<Vec<TypeLayout>, AbiIssue> {
-        spend(budget)?;
+        if let Err(issue) = spend(budget) {
+            return Err(issue);
+        }
         if depth >= 64 || layout.size == 0 || layout.size.checked_mul(8).is_none() {
             return Err(AbiIssue::UnknownLayout);
         }
         let mut layouts = vec![layout.clone()];
         match &layout.kind {
             LayoutKind::Array { element, count } => {
-                layouts = expand(element, depth + 1, budget)?
-                    .into_iter()
-                    .map(|element| {
-                        let mut alternative = layout.clone();
-                        alternative.kind = LayoutKind::Array {
-                            element: Box::new(element),
-                            count: *count,
-                        };
-                        alternative
-                    })
-                    .collect();
+                layouts = match expand(element, depth + 1, budget) {
+                    Ok(value) => value,
+                    Err(issue) => return Err(issue),
+                }
+                .into_iter()
+                .map(|element| {
+                    let mut alternative = layout.clone();
+                    alternative.kind = LayoutKind::Array {
+                        element: Box::new(element),
+                        count: *count,
+                    };
+                    alternative
+                })
+                .collect();
             }
             LayoutKind::Struct(fields) | LayoutKind::Union(fields) => {
                 for (index, field) in fields.iter().enumerate() {
-                    let variants = expand(&field.layout, depth + 1, budget)?;
+                    let variants = match expand(&field.layout, depth + 1, budget) {
+                        Ok(value) => value,
+                        Err(issue) => return Err(issue),
+                    };
                     let mut combined = Vec::new();
                     for previous in &layouts {
                         for variant in &variants {
-                            spend(budget)?;
+                            if let Err(issue) = spend(budget) {
+                                return Err(issue);
+                            }
                             if combined.len() == 256 {
                                 return Err(AbiIssue::UnknownLayout);
                             }
@@ -173,13 +185,17 @@ pub(crate) fn alternatives(layout: &TypeLayout) -> Result<Vec<TypeLayout>, AbiIs
         let mut resolved = Vec::new();
         for layout in layouts {
             for &alignment in &alignments {
-                spend(budget)?;
+                if let Err(issue) = spend(budget) {
+                    return Err(issue);
+                }
                 if resolved.len() == 256 {
                     return Err(AbiIssue::UnknownLayout);
                 }
                 let mut alternative = layout.clone();
                 alternative.alignment = Some(alignment);
-                valid_alignment(&alternative)?;
+                if let Err(issue) = valid_alignment(&alternative) {
+                    return Err(issue);
+                }
                 resolved.push(alternative);
             }
         }
@@ -314,7 +330,10 @@ pub(crate) fn compatible(
     let generated = classify(profile, &canonical(generated)?)?;
     let mut baseline: Option<ClassifiedValue> = None;
     for original in alternatives(original)? {
-        let original = classify(profile, &original)?;
+        let original = match classify(profile, &original) {
+            Ok(value) => value,
+            Err(issue) => return Err(issue),
+        };
         if original.aggregate != generated.aggregate
             || original.size != generated.size
             || original.passing != generated.passing
@@ -347,19 +366,30 @@ fn inspect(
     slots: &mut [Option<RegisterClass>; 2],
     unaligned: &mut bool,
 ) -> Result<(), AbiIssue> {
-    *budget = budget.checked_sub(1).ok_or(AbiIssue::UnknownLayout)?;
+    *budget = match budget.checked_sub(1) {
+        Some(value) => value,
+        None => return Err(AbiIssue::UnknownLayout),
+    };
     if depth >= 64 {
         return Err(AbiIssue::UnknownLayout);
     }
     if !layout.trivial {
         return Err(AbiIssue::NonTrivial);
     }
-    let alignment = layout.alignment.ok_or(AbiIssue::UnknownLayout)?;
+    let alignment = match layout.alignment {
+        Some(value) => value,
+        None => return Err(AbiIssue::UnknownLayout),
+    };
     if layout.size == 0 || !alignment.is_power_of_two() || !layout.size.is_multiple_of(alignment) {
         return Err(AbiIssue::UnknownLayout);
     }
-    let bits = layout.size.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?;
-    offset.checked_add(bits).ok_or(AbiIssue::UnknownLayout)?;
+    let bits = match layout.size.checked_mul(8) {
+        Some(value) => value,
+        None => return Err(AbiIssue::UnknownLayout),
+    };
+    if offset.checked_add(bits).is_none() {
+        return Err(AbiIssue::UnknownLayout);
+    }
     *unaligned |= !offset.is_multiple_of(alignment * 8);
     match &layout.kind {
         LayoutKind::Integer | LayoutKind::Boolean | LayoutKind::Pointer | LayoutKind::Float(_) => {
@@ -390,7 +420,7 @@ fn inspect(
                 return Err(AbiIssue::UnknownLayout);
             }
             for index in 0..*count {
-                inspect(
+                if let Err(issue) = inspect(
                     element,
                     offset + index * element.size * 8,
                     depth + 1,
@@ -398,7 +428,9 @@ fn inspect(
                     ranges,
                     slots,
                     unaligned,
-                )?;
+                ) {
+                    return Err(issue);
+                }
             }
         }
         LayoutKind::Struct(fields) | LayoutKind::Union(fields) => {
@@ -408,19 +440,21 @@ fn inspect(
             let union = matches!(layout.kind, LayoutKind::Union(_));
             let mut end = 0;
             for field in fields {
-                *budget = budget.checked_sub(1).ok_or(AbiIssue::UnknownLayout)?;
+                *budget = match budget.checked_sub(1) {
+                    Some(value) => value,
+                    None => return Err(AbiIssue::UnknownLayout),
+                };
                 let first_range = ranges.len();
-                let field_bits = field.bit_size.unwrap_or(
-                    field
-                        .layout
-                        .size
-                        .checked_mul(8)
-                        .ok_or(AbiIssue::UnknownLayout)?,
-                );
-                let field_end = field
-                    .bit_offset
-                    .checked_add(field_bits)
-                    .ok_or(AbiIssue::UnknownLayout)?;
+                let field_bits = field
+                    .bit_size
+                    .unwrap_or(match field.layout.size.checked_mul(8) {
+                        Some(value) => value,
+                        None => return Err(AbiIssue::UnknownLayout),
+                    });
+                let field_end = match field.bit_offset.checked_add(field_bits) {
+                    Some(value) => value,
+                    None => return Err(AbiIssue::UnknownLayout),
+                };
                 if field_end > bits
                     || (!union && field.bit_offset < end)
                     || (union && field.bit_offset != 0)
@@ -433,12 +467,14 @@ fn inspect(
                     if !field.layout.trivial {
                         return Err(AbiIssue::NonTrivial);
                     }
-                    let storage_bits = field
-                        .layout
-                        .size
-                        .checked_mul(8)
-                        .ok_or(AbiIssue::UnknownLayout)?;
-                    let alignment = field.layout.alignment.ok_or(AbiIssue::UnknownLayout)?;
+                    let storage_bits = match field.layout.size.checked_mul(8) {
+                        Some(value) => value,
+                        None => return Err(AbiIssue::UnknownLayout),
+                    };
+                    let alignment = match field.layout.alignment {
+                        Some(value) => value,
+                        None => return Err(AbiIssue::UnknownLayout),
+                    };
                     if field.layout.size == 0
                         || !alignment.is_power_of_two()
                         || field.layout.size % alignment != 0
@@ -461,7 +497,7 @@ fn inspect(
                         mark(slots, field_offset, width, RegisterClass::Integer);
                     }
                 } else {
-                    inspect(
+                    if let Err(issue) = inspect(
                         &field.layout,
                         field_offset,
                         depth + 1,
@@ -469,7 +505,9 @@ fn inspect(
                         ranges,
                         slots,
                         unaligned,
-                    )?;
+                    ) {
+                        return Err(issue);
+                    }
                 }
                 if !field.defined {
                     ranges.truncate(first_range);
@@ -517,7 +555,9 @@ fn homogeneous(layout: &TypeLayout) -> Option<Vec<ClassPiece>> {
             LayoutKind::Float(precision) => found.push((offset, *precision)),
             LayoutKind::Array { element, count } if *count <= 4 => {
                 for index in 0..*count {
-                    members(element, offset + index * element.size, found)?;
+                    let Some(()) = members(element, offset + index * element.size, found) else {
+                        return None;
+                    };
                 }
             }
             LayoutKind::Struct(fields) | LayoutKind::Union(fields) => {
@@ -525,7 +565,10 @@ fn homogeneous(layout: &TypeLayout) -> Option<Vec<ClassPiece>> {
                     if field.bit_size.is_some() || field.bit_offset % 8 != 0 {
                         return None;
                     }
-                    members(&field.layout, offset + field.bit_offset / 8, found)?;
+                    let Some(()) = members(&field.layout, offset + field.bit_offset / 8, found)
+                    else {
+                        return None;
+                    };
                 }
             }
             _ => return None,
@@ -535,7 +578,9 @@ fn homogeneous(layout: &TypeLayout) -> Option<Vec<ClassPiece>> {
         (found.len() <= 4).then_some(())
     }
     let mut found = Vec::new();
-    members(layout, 0, &mut found)?;
+    let Some(()) = members(layout, 0, &mut found) else {
+        return None;
+    };
     let precision = found.first()?.1;
     let bytes = u64::from(precision.bits()) / 8;
     if (found.len() as u64).checked_mul(bytes) != Some(layout.size)

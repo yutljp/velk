@@ -76,13 +76,19 @@ impl ValueAbi {
         {
             return Err(AbiIssue::UnknownLayout);
         }
-        let bits = self.size.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?;
+        let bits = match self.size.checked_mul(8) {
+            Some(value) => value,
+            None => return Err(AbiIssue::UnknownLayout),
+        };
         let mut end = 0;
         for &(offset, count) in &self.defined_bits {
             if count == 0 || offset < end {
                 return Err(AbiIssue::UnknownLayout);
             }
-            end = offset.checked_add(count).ok_or(AbiIssue::UnknownLayout)?;
+            end = match offset.checked_add(count) {
+                Some(value) => value,
+                None => return Err(AbiIssue::UnknownLayout),
+            };
             if end > bits {
                 return Err(AbiIssue::UnknownLayout);
             }
@@ -93,10 +99,10 @@ impl ValueAbi {
                 if piece.bytes == 0 || piece.object_offset < end {
                     return Err(AbiIssue::UnknownLayout);
                 }
-                end = piece
-                    .object_offset
-                    .checked_add(piece.bytes)
-                    .ok_or(AbiIssue::UnknownLayout)?;
+                end = match piece.object_offset.checked_add(piece.bytes) {
+                    Some(value) => value,
+                    None => return Err(AbiIssue::UnknownLayout),
+                };
                 if end > self.size
                     || match piece.location {
                         AbiLocation::Register(_) => piece.bytes > 8 || piece.class.is_none(),

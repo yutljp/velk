@@ -352,11 +352,23 @@ impl Machine<'_> {
                 }
                 match stmt {
                     Stmt::Assign { dest, value } => {
-                        let value = self.eval(value)?;
+                        let value = match self.eval(value) {
+                            Ok(value) => value,
+                            Err(reason) => return Err(reason),
+                        };
                         self.assign(*dest, value);
                     }
                     Stmt::Store { addr, value, width } => {
-                        let (addr, value) = (self.eval(addr)?, self.eval(value)?);
+                        let (addr, value) = (
+                            match self.eval(addr) {
+                                Ok(value) => value,
+                                Err(reason) => return Err(reason),
+                            },
+                            match self.eval(value) {
+                                Ok(value) => value,
+                                Err(reason) => return Err(reason),
+                            },
+                        );
                         self.store(addr, value, *width);
                     }
                     Stmt::Brif {
@@ -366,7 +378,18 @@ impl Machine<'_> {
                         target,
                     } => {
                         let bits = operand_width(lhs, rhs);
-                        if holds(*cond, self.eval(lhs)?, self.eval(rhs)?, bits) {
+                        if holds(
+                            *cond,
+                            match self.eval(lhs) {
+                                Ok(value) => value,
+                                Err(reason) => return Err(reason),
+                            },
+                            match self.eval(rhs) {
+                                Ok(value) => value,
+                                Err(reason) => return Err(reason),
+                            },
+                            bits,
+                        ) {
                             next = match self.jump(*target) {
                                 Flow::Block(index) => index,
                                 Flow::Return(value) => return Ok(Some(value)),
@@ -398,7 +421,10 @@ impl Machine<'_> {
                     // A jump through a register the analysis could not
                     // resolve leaves the function, whatever address it holds.
                     Stmt::BrIndirect { target } => {
-                        let target = self.eval(target)?;
+                        let target = match self.eval(target) {
+                            Ok(value) => value,
+                            Err(reason) => return Err(reason),
+                        };
                         self.call(Some(target));
                         return Ok(Some(self.register(crate::arch::RETURN)));
                     }
@@ -407,13 +433,19 @@ impl Machine<'_> {
                         cases,
                         default,
                     } => {
-                        let index = self.eval(index)? as i64;
-                        let target = cases
+                        let index = match self.eval(index) {
+                            Ok(value) => value,
+                            Err(reason) => return Err(reason),
+                        } as i64;
+                        let target = match cases
                             .iter()
                             .find(|(value, _)| *value == index)
                             .map(|(_, target)| *target)
                             .or(*default)
-                            .ok_or("switch without a matching case")?;
+                        {
+                            Some(target) => target,
+                            None => return Err("switch without a matching case"),
+                        };
                         next = match self.jump(target) {
                             Flow::Block(index) => index,
                             Flow::Return(value) => return Ok(Some(value)),
@@ -430,14 +462,22 @@ impl Machine<'_> {
                         ..
                     } => {
                         let target = match through {
-                            Some(through) => Some(self.eval(through)?),
+                            Some(through) => Some(match self.eval(through) {
+                                Ok(value) => value,
+                                Err(reason) => return Err(reason),
+                            }),
                             None => *target,
                         };
                         let arguments = match args {
                             Some(args) => {
-                                args.iter()
+                                match args
+                                    .iter()
                                     .map(|arg| self.eval(arg))
-                                    .collect::<Result<Vec<u64>, _>>()?
+                                    .collect::<Result<Vec<u64>, _>>()
+                                {
+                                    Ok(arguments) => arguments,
+                                    Err(reason) => return Err(reason),
+                                }
                             }
                             // The registers its own convention passes, as a
                             // system call's number and arguments.
@@ -487,7 +527,12 @@ impl Machine<'_> {
                             self.assign(dest, value);
                         }
                     }
-                    Stmt::Ret { value } => return Ok(Some(self.eval(value)?)),
+                    Stmt::Ret { value } => {
+                        return Ok(Some(match self.eval(value) {
+                            Ok(value) => value,
+                            Err(reason) => return Err(reason),
+                        }));
+                    }
                     Stmt::Trap => return Ok(None),
                     Stmt::Unsupported { .. } => return Err("unsupported instruction"),
                 }
