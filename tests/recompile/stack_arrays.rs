@@ -518,3 +518,70 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
     let candidate = printed_candidate(ir, (0..4).map(|value| vec![value]).collect());
     check_candidates("stack-records", vec![candidate], Mode::Registers, &[]);
 }
+
+#[test]
+fn printed_stack_fields_of_a_region_read_at_an_index_see_its_writes() {
+    let read = |offset: i64, width: u8| Expr::Load {
+        addr: Box::new(slot(offset)),
+        width,
+        signed: false,
+    };
+    let value = Expr::bin(
+        BinOp::Xor,
+        Expr::bin(BinOp::Xor, read(-64, 8), read(-56, 4)),
+        read(-48, 8),
+    );
+    let mut ir = synthetic_ir(
+        "frame_indexed_fields",
+        vec![Param {
+            index: 7,
+            name: "x".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            Stmt::Call {
+                abi: None,
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![slot(-64), Expr::Const(0), Expr::Const(32)]),
+                floats_named: false,
+                outputs: Vec::new(),
+                clobbers: Some(Default::default()),
+                via: None,
+            },
+            store(-64, 0x1111_2222_3333_4444, 8),
+            store(-56, 0x5555_6666, 4),
+            store(-48, 0x7777_8888_9999_aaaa, 8),
+            Stmt::Store {
+                addr: Expr::bin(
+                    BinOp::Add,
+                    slot(-64),
+                    Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(8)),
+                ),
+                value: Expr::reg(7, 64),
+                width: 8,
+            },
+            Stmt::Ret { value },
+        ],
+    );
+    let mut symbols = velk::render::Symbols::default();
+    symbols.functions.insert(0x1000, "memset".into());
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    assert!(code.contains("local_0.f_10"), "{code}");
+    assert!(code.contains("(uint8_t *)&local_0 + "), "{code}");
+    ir.blocks[0].stmts.remove(0);
+    for offset in (0..32).rev().step_by(8) {
+        ir.blocks[0].stmts.insert(0, store(-64 + offset, 0, 8));
+    }
+    let mut candidate = printed_candidate(ir, (0..4).map(|value| vec![value]).collect());
+    candidate.code = format!("#include <string.h>\n{code}");
+    check_candidates(
+        "stack-indexed-fields",
+        vec![candidate],
+        Mode::Registers,
+        &[],
+    );
+}

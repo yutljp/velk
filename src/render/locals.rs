@@ -392,9 +392,9 @@ pub(super) fn stack_locals_with_roles(
     // The fields of each region. An access no other overlaps is a field of
     // its own. Accesses that overlap one another become the members of one
     // union when they fill an aligned cell of two, four or eight bytes, each
-    // a whole number of its widths into it; otherwise their bytes stay
-    // bytes. A region read at an index has no fields: an element may be any
-    // of its bytes.
+    // a whole number of its widths into it, or else of a union of their
+    // layers. A region read at an index has fields too: the index counts
+    // from the region's first byte, so what it reaches is the same storage.
     let regions: Vec<(i64, i64)> = slot_names
         .values()
         .filter(|local| local.size > 0 && !within.contains_key(&local.slot))
@@ -405,10 +405,23 @@ pub(super) fn stack_locals_with_roles(
             continue;
         };
         let inside = |slot: &Option<i64>| slot.is_some_and(|slot| slot >= outer && slot < end);
-        if accesses
-            .iter()
-            .any(|(slot, _, width, signed)| *width == 0 && *signed == Some(false) && inside(slot))
-        {
+        // Fields cost each indexed access a cast to bytes and save one for
+        // each fixed access: a region read more at an index stays bytes.
+        let count = |indexed: bool| {
+            accesses
+                .iter()
+                .filter(|(slot, _, width, signed)| {
+                    inside(slot)
+                        && if indexed {
+                            *width == 0 && *signed == Some(false)
+                        } else {
+                            *width > 0
+                        }
+                })
+                .count()
+        };
+        let indexed_accesses = count(true);
+        if indexed_accesses > 0 && count(false) <= indexed_accesses {
             continue;
         }
         let mut placed: Vec<(i64, u8)> = accesses
@@ -559,6 +572,28 @@ pub(super) fn stack_locals_with_roles(
                     .collect(),
             );
         }
+    }
+    // An index into a region with fields counts bytes from the region's
+    // first byte, not from a field C would scale it by or bound it to.
+    for (key, slot) in &rendered {
+        let Some(slot) = slot else { continue };
+        if !indexed.contains(slot) {
+            continue;
+        }
+        let outer = within.get(slot).copied().unwrap_or(*slot);
+        let Some(local) = slot_names
+            .get(&outer)
+            .filter(|local| !local.fields.is_empty())
+        else {
+            continue;
+        };
+        let offset = slot.saturating_sub(local.slot);
+        let address = if offset == 0 {
+            format!("(uint8_t *)&{}", local.name)
+        } else {
+            format!("(uint8_t *)&{} + 0x{offset:x}", local.name)
+        };
+        parts.insert(key.clone(), address);
     }
     let argument_accesses = stack_arguments(ir, sp, frames);
     let mut parameter_reads = HashMap::new();
