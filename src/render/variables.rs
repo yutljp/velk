@@ -335,8 +335,14 @@ pub(crate) fn pointer_fields(ir: &mut FunctionIr, types: &BTreeMap<u16, CType>) 
         }
     }
     for structure in &mut ir.structures {
+        // A field sharing its cell with others is a member of a union.
+        let shared: HashSet<u64> = crate::render::unions::cells(&structure.fields)
+            .into_iter()
+            .filter(|(_, _, fields)| fields.len() > 1)
+            .flat_map(|(_, _, fields)| fields.into_iter().map(|(offset, _)| offset))
+            .collect();
         for (offset, ty) in &mut structure.fields {
-            if ty.integer().map(|(bits, _)| bits) != Some(64) {
+            if ty.integer().map(|(bits, _)| bits) != Some(64) || shared.contains(offset) {
                 continue;
             }
             let Some(Some(seen)) = held.get(&(structure.name.clone(), *offset)) else {

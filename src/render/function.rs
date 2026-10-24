@@ -475,35 +475,57 @@ fn render_with(
             _ => None,
         })
         .collect();
-    let members: HashMap<(String, i64), crate::ir::Member> = ir
+    // Each field of a recovered structure, and for the fields that share a
+    // cell, the union member naming each.
+    let mut member_views: HashMap<(String, i64), Vec<crate::ir::Member>> = HashMap::new();
+    let mut members: HashMap<(String, i64), crate::ir::Member> = ir
         .members
         .iter()
         .cloned()
-        .chain(ir.structures.iter().flat_map(|structure| {
-            structure.fields.iter().filter_map(move |(offset, ty)| {
-                let width = match ty {
-                    CType::Pointer(_) => 8,
-                    _ => {
-                        let Some(size) = CType::pointer_to(ty.clone()).pointee_size() else {
-                            return None;
-                        };
-                        u64::from(size)
-                    }
-                };
-                let Ok(offset) = i64::try_from(*offset) else {
-                    return None;
-                };
-                Some(crate::ir::Member {
-                    structure: structure.name.clone(),
-                    offset,
-                    name: format!("field_0x{offset:x}"),
-                    ty: ty.clone(),
-                    width,
-                })
-            })
-        }))
         .map(|member| ((member.structure.clone(), member.offset), member))
         .collect();
+    for structure in &ir.structures {
+        for (start, size, fields) in super::unions::cells(&structure.fields) {
+            let Ok(start) = i64::try_from(start) else {
+                continue;
+            };
+            let name = format!("field_0x{start:x}");
+            if let [(_, ty)] = fields.as_slice() {
+                members.insert(
+                    (structure.name.clone(), start),
+                    crate::ir::Member {
+                        structure: structure.name.clone(),
+                        offset: start,
+                        name,
+                        ty: ty.clone(),
+                        width: size,
+                    },
+                );
+                continue;
+            }
+            let Ok(start_u64) = u64::try_from(start) else {
+                continue;
+            };
+            let views = union_views(start_u64, &fields);
+            for (offset, width, signed) in &views {
+                let indexed = views
+                    .iter()
+                    .any(|(other, size, _)| size == width && *other != 0);
+                let member = super::unions::member(*width, *signed, *offset, indexed);
+                let at = start.saturating_add(*offset);
+                member_views
+                    .entry((structure.name.clone(), at))
+                    .or_default()
+                    .push(crate::ir::Member {
+                        structure: structure.name.clone(),
+                        offset: at,
+                        name: format!("{name}.{member}"),
+                        ty: CType::int(*width, *signed),
+                        width: u64::from(*width),
+                    });
+            }
+        }
+    }
     let mut arrays: HashMap<String, naming::Layout> = ir
         .structures
         .iter()
@@ -826,6 +848,7 @@ fn render_with(
         },
         data_ranges,
         members,
+        member_views,
         element_types,
         plain_chars,
         arrays,
@@ -1284,20 +1307,23 @@ pub(super) fn code_mentions(text: &str, name: &str) -> bool {
 pub(crate) fn structure_definition(structure: &crate::ir::Structure) -> String {
     let mut members = Vec::new();
     let mut end = 0;
-    for (offset, ty) in &structure.fields {
-        if *offset > end {
+    for (offset, size, fields) in super::unions::cells(&structure.fields) {
+        if offset > end {
             members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", offset - end));
         }
-        members.push(format!(
-            "{};",
-            declaration(ty, &format!("field_0x{offset:x}"))
-        ));
-        end = offset.saturating_add(match ty {
-            CType::Pointer(_) => 8,
-            _ => CType::pointer_to(ty.clone())
-                .pointee_size()
-                .map_or(0, u64::from),
-        });
+        let name = format!("field_0x{offset:x}");
+        match fields.as_slice() {
+            [(_, ty)] => members.push(format!("{};", declaration(ty, &name))),
+            _ => members.push(format!(
+                "union {{ {} }} {name};",
+                super::unions::members(
+                    u8::try_from(size).unwrap_or(8),
+                    &union_views(offset, &fields)
+                )
+                .join(" ")
+            )),
+        }
+        end = offset.saturating_add(size);
     }
     if let Some(size) = structure.size
         && size > end
@@ -1305,6 +1331,20 @@ pub(crate) fn structure_definition(structure: &crate::ir::Structure) -> String {
         members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", size - end));
     }
     defined(&format!("struct {}", structure.name), &members)
+}
+
+/// The accesses a structure's cell at `start` shares: each field's offset
+/// into the cell, width and sign.
+fn union_views(start: u64, fields: &[(u64, CType)]) -> Vec<(i64, u8, bool)> {
+    fields
+        .iter()
+        .filter_map(|(offset, ty)| {
+            let (bits, signed) = ty.integer()?;
+            let width = u8::try_from(bits / 8).ok()?;
+            let offset = i64::try_from(offset.checked_sub(start)?).ok()?;
+            Some((offset, width, signed))
+        })
+        .collect()
 }
 
 fn defined(name: &str, members: &[String]) -> String {

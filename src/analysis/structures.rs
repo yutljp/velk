@@ -314,7 +314,7 @@ pub(super) fn layout_at_least(
 }
 
 fn layout_aliases(aliases: &[u16], touches: &[Touch], minimum: usize) -> Option<Vec<(u64, CType)>> {
-    let mut fields: BTreeMap<u64, (u8, bool)> = BTreeMap::new();
+    let mut fields: BTreeMap<(u64, u8), bool> = BTreeMap::new();
     for touch in touches {
         let mut read = HashSet::new();
         crate::ir::visit::collect_reads(&touch.addr, &mut read);
@@ -341,32 +341,61 @@ fn layout_aliases(aliases: &[u16], touches: &[Touch], minimum: usize) -> Option<
         if !matches!(touch.width, 1 | 2 | 4 | 8) {
             return None;
         }
-        let signed = touch.signed.unwrap_or(false);
-        let field = fields.entry(offset).or_insert((touch.width, signed));
-        if field.0 != touch.width {
-            return None;
-        }
-        field.1 |= signed;
+        *fields.entry((offset, touch.width)).or_default() |= touch.signed.unwrap_or(false);
     }
-    if fields.len() < minimum {
+    let Some(settled) = settle(&fields) else {
+        return None;
+    };
+    if crate::render::unions::cells(&settled).len() < minimum {
         return None;
     }
-    let mut end = 0;
-    for (offset, (width, _)) in &fields {
-        if *offset < end || !offset.is_multiple_of(u64::from(*width)) {
-            return None;
+    Some(settled)
+}
+
+/// The fields the accesses `fields` (offset and width, and whether a load
+/// extends a sign) make: one per access no other overlaps, and one per
+/// width for those that overlap in an aligned cell of two, four or eight
+/// bytes, which a union declares; `None` for overlaps that fill no cell
+/// and for fields not aligned to their width. The fields of one width in a
+/// cell share their sign.
+fn settle(fields: &BTreeMap<(u64, u8), bool>) -> Option<Vec<(u64, CType)>> {
+    let mut settled = Vec::new();
+    let entries: Vec<((u64, u8), bool)> =
+        fields.iter().map(|(key, signed)| (*key, *signed)).collect();
+    let mut first = 0;
+    while first < entries.len() {
+        let ((start, width), _) = entries[first];
+        let mut stop = start.saturating_add(u64::from(width));
+        let mut next = first + 1;
+        while let Some(((offset, width), _)) = entries.get(next).copied()
+            && offset < stop
+        {
+            stop = stop.max(offset.saturating_add(u64::from(width)));
+            next += 1;
         }
-        let Some(next) = offset.checked_add(u64::from(*width)) else {
+        let group = &entries[first..next];
+        first = next;
+        let Ok(relative) = group
+            .iter()
+            .map(|((offset, width), _)| i64::try_from(*offset).map(|offset| (offset, *width)))
+            .collect::<Result<Vec<(i64, u8)>, _>>()
+        else {
             return None;
         };
-        end = next;
+        if group.len() > 1 && crate::render::unions::cell(&relative).is_none() {
+            return None;
+        }
+        for ((offset, width), _) in group {
+            if !matches!(width, 1 | 2 | 4 | 8) || !offset.is_multiple_of(u64::from(*width)) {
+                return None;
+            }
+            let signed = group
+                .iter()
+                .any(|((_, other), signed)| other == width && *signed);
+            settled.push((*offset, field_type(*width, signed)));
+        }
     }
-    Some(
-        fields
-            .into_iter()
-            .map(|(offset, (width, signed))| (offset, field_type(width, signed)))
-            .collect(),
-    )
+    Some(settled)
 }
 
 /// A narrow load says by its extension whether the field is signed; a

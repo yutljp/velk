@@ -464,17 +464,33 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
     if ctx.arrays.contains_key(&pointee) {
         return None;
     }
-    let Some(member) = ctx.members.get(&(pointee, offset)) else {
+    let Some(member) = field_of(&pointee, offset, u64::from(width), ctx) else {
         return None;
     };
-    if member.width != u64::from(width) {
-        return None;
-    }
     Place {
         text: format!("{}->{}", ctx.register(base, 64), member.name),
         ty: member.ty.clone(),
     }
     .scalar(u64::from(width))
+}
+
+/// The field of `structure` at `offset` read `width` bytes wide: the field
+/// there, or the union member of that width where fields share a cell.
+fn field_of<'c>(
+    structure: &str,
+    offset: i64,
+    width: u64,
+    ctx: &'c Ctx<'_>,
+) -> Option<&'c crate::ir::Member> {
+    let key = (structure.to_owned(), offset);
+    if let Some(member) = ctx.members.get(&key)
+        && member.width == width
+    {
+        return Some(member);
+    }
+    ctx.member_views
+        .get(&key)
+        .and_then(|views| views.iter().find(|view| view.width == width))
 }
 
 /// An address inside an element of an array of structures, as the field
@@ -483,7 +499,14 @@ fn array_field(addr: &Expr, ctx: &Ctx<'_>) -> Option<(Place, u64)> {
     let (name, _, index, offset, base) = element_terms(addr, ctx)?;
     let structure = pointee_of(base, ctx)?;
     ctx.arrays.get(&structure)?;
-    let member = ctx.members.get(&(structure, offset as i64))?;
+    let member = ctx
+        .members
+        .get(&(structure.clone(), offset as i64))
+        .or_else(|| {
+            ctx.member_views
+                .get(&(structure, offset as i64))
+                .and_then(|views| views.first())
+        })?;
     Some((
         Place {
             text: match index {

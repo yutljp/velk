@@ -92,6 +92,9 @@ pub(crate) struct Ctx<'a> {
     pub(super) data_ranges: &'a [(u64, u64)],
     /// Structure fields the debug info names, by struct and byte offset.
     pub(super) members: HashMap<(String, i64), Member>,
+    /// For a field that shares a cell with others, the union members there
+    /// by offset, one per width.
+    pub(super) member_views: HashMap<(String, i64), Vec<Member>>,
     pub(super) element_types: HashMap<u16, CType>,
     /// The pointers, by name, to `char`, whose sign the platform decides.
     pub(super) plain_chars: std::collections::HashSet<String>,

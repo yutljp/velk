@@ -369,3 +369,43 @@ int main(void) {
 "#,
     );
 }
+
+#[test]
+fn a_field_read_at_two_widths_is_a_union_member() {
+    // a0->0 = 0x1234_5678_9abc_def0; return (int32_t)a0->4 + a0->8, with
+    // the first eight bytes read at four bytes from their middle.
+    let mut ir = pointer_function(vec![
+        Stmt::Store {
+            addr: at(7, 0),
+            value: Expr::Const(0x1234_5678_9abc_def0),
+            width: 8,
+        },
+        Stmt::Ret {
+            value: Expr::bin(
+                BinOp::Add,
+                load(at(7, 4), 4, true),
+                load(at(7, 8), 8, false),
+            ),
+        },
+    ]);
+    ir.name = Some("cell_fields".into());
+    ir.ret_type = CType::U64;
+    recover(&mut ir);
+    let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(text.contains("union {"), "{text}");
+    assert!(text.contains("a0->field_0x0.as_i64 = "), "{text}");
+    assert!(text.contains("a0->field_0x0.as_i32[1]"), "{text}");
+    assert!(!text.contains("*(int32_t *)"), "{text}");
+    compile_and_run(
+        "cell_fields",
+        &text,
+        r#"
+int main(void) {
+    _Static_assert(offsetof(struct cell_fields_a0, field_0x8) == 8, "offset");
+    struct cell_fields_a0 value = {0};
+    value.field_0x8 = 5;
+    return cell_fields(&value) != (uint64_t)(0x12345678 + 5);
+}
+"#,
+    );
+}

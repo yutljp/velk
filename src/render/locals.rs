@@ -177,6 +177,7 @@ pub(super) fn stack_locals_with_roles(
         scaled_offsets: Default::default(),
         data_ranges: &[],
         members: HashMap::new(),
+        member_views: HashMap::new(),
         element_types: HashMap::new(),
         plain_chars: std::collections::HashSet::new(),
         arrays: HashMap::new(),

@@ -66,3 +66,31 @@ pub(crate) fn members(size: u8, views: &[(i64, u8, bool)]) -> Vec<String> {
     members.sort_by_key(|(width, _)| std::cmp::Reverse(*width));
     members.into_iter().map(|(_, member)| member).collect()
 }
+
+/// A structure's fields, each an offset and a type.
+type Fields = Vec<(u64, crate::ir::CType)>;
+
+/// The fields of a structure grouped into the cells they share: each a
+/// start, a size, and the fields in it.
+pub(crate) fn cells(fields: &[(u64, crate::ir::CType)]) -> Vec<(u64, u64, Fields)> {
+    let width = |ty: &crate::ir::CType| match ty {
+        crate::ir::CType::Pointer(_) => 8,
+        _ => crate::ir::CType::pointer_to(ty.clone())
+            .pointee_size()
+            .map_or(0, u64::from),
+    };
+    let mut sorted: Fields = fields.to_vec();
+    sorted.sort_by_key(|(offset, ty)| (*offset, std::cmp::Reverse(width(ty))));
+    let mut cells: Vec<(u64, u64, Fields)> = Vec::new();
+    for (offset, ty) in sorted {
+        let end = offset.saturating_add(width(&ty));
+        match cells.last_mut() {
+            Some((start, size, members)) if offset < start.saturating_add(*size) => {
+                *size = (*size).max(end.saturating_sub(*start));
+                members.push((offset, ty));
+            }
+            _ => cells.push((offset, end.saturating_sub(offset), vec![(offset, ty)])),
+        }
+    }
+    cells
+}
