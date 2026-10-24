@@ -31,6 +31,7 @@ struct State {
     /// What each 8-byte frame slot holds, by its offset from the stack
     /// pointer on entry; a slot not listed holds nothing known.
     slots: BTreeMap<i64, Value>,
+    escaped: bool,
 }
 
 impl State {
@@ -45,6 +46,7 @@ impl State {
             }),
             others: BTreeMap::new(),
             slots: BTreeMap::new(),
+            escaped: false,
         }
     }
 
@@ -103,6 +105,29 @@ impl State {
     /// Takes in what `other` may hold too; whether anything changed.
     fn join(&mut self, other: &State) -> bool {
         let mut changed = false;
+        let loses_frame = |a: Value, b: Value| {
+            a != b && (matches!(a, Value::Frame(_)) || matches!(b, Value::Frame(_)))
+        };
+        let ambiguous_frame = self
+            .machine
+            .iter()
+            .zip(&other.machine)
+            .any(|(a, b)| loses_frame(*a, *b))
+            || self
+                .others
+                .iter()
+                .chain(&other.others)
+                .any(|(index, _)| loses_frame(self.register(*index), other.register(*index)))
+            || self.slots.iter().chain(&other.slots).any(|(slot, _)| {
+                loses_frame(
+                    self.slots.get(slot).copied().unwrap_or(Value::Other),
+                    other.slots.get(slot).copied().unwrap_or(Value::Other),
+                )
+            });
+        if (other.escaped || ambiguous_frame) && !self.escaped {
+            self.escaped = true;
+            changed = true;
+        }
         for (held, came) in self.machine.iter_mut().zip(&other.machine) {
             if held != came && *held != Value::Other {
                 *held = Value::Other;
@@ -119,9 +144,22 @@ impl State {
 
     /// The frame slots a store of `width` bytes at `at` overlaps.
     fn forget_slots(&mut self, at: i64, width: u8) {
-        let end = at.wrapping_add(i64::from(width));
+        let Some(end) = at.checked_add(i64::from(width)) else {
+            self.slots.clear();
+            return;
+        };
         self.slots
-            .retain(|slot, _| *slot >= end || slot.wrapping_add(8) <= at);
+            .retain(|slot, _| *slot >= end || slot.checked_add(8).is_some_and(|end| end <= at));
+    }
+
+    fn exposes_frame(&self, expr: &Expr) -> bool {
+        if matches!(self.value(expr), Value::Frame(_)) {
+            return true;
+        }
+        !matches!(expr, Expr::Load { .. })
+            && crate::ir::visit::children(expr)
+                .into_iter()
+                .any(|child| self.exposes_frame(child))
     }
 }
 
@@ -170,17 +208,45 @@ pub(crate) fn clobbers_knowing(
             match stmt {
                 Stmt::Machine {
                     instruction,
+                    inputs,
                     outputs,
-                    ..
                 } => {
-                    if matches!(instruction, crate::ir::MachineInstruction::Atomic { .. }) {
-                        state.slots.clear();
+                    if let crate::ir::MachineInstruction::Atomic { width, .. } = instruction {
+                        state.escaped |= inputs
+                            .iter()
+                            .skip(1)
+                            .any(|value| state.exposes_frame(value));
+                        state.escaped |= inputs.first().is_some_and(|addr| {
+                            state.exposes_frame(addr)
+                                && !matches!(state.value(addr), Value::Frame(_))
+                        });
+                        if state.escaped {
+                            state.slots.clear();
+                        } else {
+                            // Ordering does not change the saved registers in an
+                            // unescaped frame. The atomic's own write still does.
+                            if let Some(addr) = inputs.first()
+                                && let Value::Frame(at) = state.value(addr)
+                            {
+                                state.forget_slots(at, *width);
+                            }
+                            state
+                                .slots
+                                .retain(|slot, _| slot.checked_add(8).is_some_and(|end| end <= 0));
+                        }
+                    } else {
+                        state.escaped |= inputs.iter().any(|value| state.exposes_frame(value));
                     }
                     for output in outputs {
                         state.set(output.index, Value::Other);
                     }
                 }
                 Stmt::Assign { dest, value } => {
+                    if state.exposes_frame(value)
+                        && (dest.width != 64 || !matches!(state.value(value), Value::Frame(_)))
+                    {
+                        state.escaped = true;
+                    }
                     let value = if dest.width == 64 {
                         state.value(value)
                     } else {
@@ -189,6 +255,7 @@ pub(crate) fn clobbers_knowing(
                     state.set(dest.index, value);
                 }
                 Stmt::Store { addr, value, width } => {
+                    state.escaped |= state.exposes_frame(value);
                     if let Value::Frame(at) = state.value(addr) {
                         state.forget_slots(at, *width);
                         if *width == 8 {
@@ -202,8 +269,18 @@ pub(crate) fn clobbers_knowing(
                     convention,
                     outputs,
                     clobbers,
+                    args,
                     ..
                 } => {
+                    state.escaped |= args.is_none()
+                        || stmt
+                            .operands()
+                            .iter()
+                            .any(|value| state.exposes_frame(value))
+                        || stmt
+                            .unnamed_call_reads()
+                            .iter()
+                            .any(|index| matches!(state.register(*index), Value::Frame(_)));
                     let physical = target
                         .and_then(known)
                         .unwrap_or(*clobbers)
@@ -232,14 +309,17 @@ pub(crate) fn clobbers_knowing(
                         _ => state.slots.clear(),
                     }
                 }
-                Stmt::Unsupported { writes, .. } => match writes {
-                    Some(writes) => {
-                        for register in writes {
-                            state.set(*register, Value::Other);
+                Stmt::Unsupported { writes, .. } => {
+                    state.escaped = true;
+                    match writes {
+                        Some(writes) => {
+                            for register in writes {
+                                state.set(*register, Value::Other);
+                            }
                         }
+                        None => state.machine = [Value::Other; MACHINE],
                     }
-                    None => state.machine = [Value::Other; MACHINE],
-                },
+                }
                 Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. } => {
                     flows.push((*target, state.clone()));
                 }
@@ -372,6 +452,128 @@ mod tests {
 
     fn block(start: u64, stmts: Vec<Stmt>) -> Block {
         Block { start, stmts }
+    }
+
+    #[test]
+    fn atomic_heap_accesses_preserve_saved_registers_but_overlaps_and_escapes_do_not() {
+        use crate::ir::{AtomicOp, MachineInstruction, Ordering};
+
+        for ordering in [
+            Ordering::Relaxed,
+            Ordering::Acquire,
+            Ordering::Release,
+            Ordering::AcqRel,
+            Ordering::SeqCst,
+        ] {
+            for case in 0..7 {
+                let mut stmts: Vec<_> = push(RBX).into();
+                stmts.push(assign(RBX, Expr::Const(7)));
+                if case == 2 {
+                    stmts.push(Stmt::Store {
+                        addr: reg(7),
+                        value: reg(RSP),
+                        width: 8,
+                    });
+                }
+                if case == 3 {
+                    let mut called = call();
+                    if let Stmt::Call { args, .. } = &mut called {
+                        *args = Some(vec![reg(RSP)]);
+                    }
+                    stmts.push(called);
+                }
+                if case >= 5 {
+                    if case == 6 {
+                        stmts.push(assign(7, reg(RSP)));
+                    }
+                    let mut called = call();
+                    if let Stmt::Call { args, .. } = &mut called {
+                        *args = None;
+                    }
+                    stmts.push(called);
+                }
+                let addr = match case {
+                    1 => reg(RSP),
+                    4 => Expr::bin(BinOp::Add, reg(RSP), Expr::Const(4)),
+                    _ => reg(7),
+                };
+                stmts.push(Stmt::Machine {
+                    instruction: MachineInstruction::Atomic {
+                        op: AtomicOp::Add,
+                        width: 8,
+                        ordering,
+                    },
+                    inputs: vec![addr, Expr::Const(1)],
+                    outputs: Vec::new(),
+                });
+                stmts.extend(pop(RBX));
+                stmts.push(ret());
+                let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+                assert_eq!(
+                    changed.contains(RBX),
+                    case != 0,
+                    "case {case}, {ordering:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn joined_frame_pointers_keep_atomic_aliasing_conservative() {
+        use crate::ir::{AtomicOp, MachineInstruction, Ordering};
+
+        let mut entry: Vec<_> = push(RBX).into();
+        entry.push(Stmt::Brif {
+            cond: crate::ir::Cond::Eq,
+            lhs: reg(0),
+            rhs: Expr::Const(0),
+            target: 0x1020,
+        });
+        let mut exit = vec![
+            Stmt::Store {
+                addr: reg(7),
+                value: reg(6),
+                width: 8,
+            },
+            Stmt::Machine {
+                instruction: MachineInstruction::Atomic {
+                    op: AtomicOp::Add,
+                    width: 8,
+                    ordering: Ordering::SeqCst,
+                },
+                inputs: vec![reg(7), Expr::Const(1)],
+                outputs: Vec::new(),
+            },
+        ];
+        exit.extend(pop(RBX));
+        exit.push(ret());
+        let blocks = vec![
+            block(0x1000, entry),
+            block(
+                0x1010,
+                vec![
+                    assign(6, reg(RSP)),
+                    Stmt::Br {
+                        target: Some(0x1030),
+                    },
+                ],
+            ),
+            block(
+                0x1020,
+                vec![
+                    assign(6, Expr::Const(0)),
+                    Stmt::Br {
+                        target: Some(0x1030),
+                    },
+                ],
+            ),
+            block(0x1030, exit),
+        ];
+        assert!(
+            clobbers(&blocks, Convention::SysV, RSP)
+                .unwrap()
+                .contains(RBX)
+        );
     }
 
     #[test]

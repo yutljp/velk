@@ -253,11 +253,24 @@ fn only_offset(ir: &FunctionIr, register: u16) -> bool {
         .all(|operand| whole(operand, register, true))
 }
 
-/// Every load and store of the function.
+/// Every memory access of the function, including atomic fields.
 pub(super) fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
     let mut touches = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Store { addr, width, .. } = stmt {
+            touches.push(Touch {
+                addr: addr.clone(),
+                width: *width,
+                signed: None,
+            });
+        }
+        if let Stmt::Machine {
+            instruction: crate::ir::MachineInstruction::Atomic { width, .. },
+            inputs,
+            ..
+        } = stmt
+            && let Some(addr) = inputs.first()
+        {
             touches.push(Touch {
                 addr: addr.clone(),
                 width: *width,
@@ -1126,6 +1139,77 @@ mod tests {
             given(v1)
         );
         assert_eq!(ir.structures.len(), 1);
+    }
+
+    #[test]
+    fn atomic_fields_contribute_to_layout_without_moving_loads() {
+        use crate::ir::{AtomicOp, MachineInstruction, Ordering};
+
+        for base in [7, VARIABLE_BASE] {
+            let mut stmts = Vec::new();
+            if base != 7 {
+                stmts.push(assign(base, load(Expr::reg(7, 64), 8, false)));
+            }
+            stmts.push(assign(
+                VARIABLE_BASE + 2,
+                load(
+                    Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(8)),
+                    8,
+                    false,
+                ),
+            ));
+            stmts.push(Stmt::Machine {
+                instruction: MachineInstruction::Atomic {
+                    op: AtomicOp::Add,
+                    width: 8,
+                    ordering: Ordering::SeqCst,
+                },
+                inputs: vec![Expr::reg(base, 64), Expr::Const(1)],
+                outputs: vec![RegRef {
+                    index: VARIABLE_BASE + 1,
+                    width: 64,
+                }],
+            });
+            stmts.push(Stmt::Ret {
+                value: Expr::reg(VARIABLE_BASE + 2, 64),
+            });
+            let mut ir = pointer_function(stmts);
+            let original = ir.blocks.clone();
+            recover(&mut ir);
+            assert_eq!(format!("{:?}", ir.blocks), format!("{original:?}"));
+            assert!(
+                ir.structures
+                    .iter()
+                    .any(|s| s.fields == vec![(0, CType::I64), (8, CType::I64)])
+            );
+            let code = crate::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(code.contains("->field_0x8"), "{code}");
+            assert!(code.contains("__atomic_fetch_add((uint64_t *)&"), "{code}");
+            assert!(
+                code.contains("->field_0x0, 0x1, __ATOMIC_SEQ_CST)"),
+                "{code}"
+            );
+        }
+    }
+
+    #[test]
+    fn overlapping_atomic_fields_refuse_structure_layout() {
+        use crate::ir::{AtomicOp, MachineInstruction, Ordering};
+
+        let mut ir = pointer_function(vec![
+            store(4, 8),
+            Stmt::Machine {
+                instruction: MachineInstruction::Atomic {
+                    op: AtomicOp::Add,
+                    width: 8,
+                    ordering: Ordering::Relaxed,
+                },
+                inputs: vec![Expr::reg(7, 64), Expr::Const(1)],
+                outputs: Vec::new(),
+            },
+        ]);
+        recover(&mut ir);
+        assert!(ir.structures.is_empty());
     }
 
     #[test]

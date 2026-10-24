@@ -273,3 +273,94 @@ fn incoming_and_atomic_frame_slots_are_not_forwarded() {
         assert!(code.contains("__atomic_fetch_add"), "{code}");
     }
 }
+
+#[test]
+fn printed_compare_exchange_uses_implicit_integer_conversions() {
+    let scratch = scratch_dir("atomic-conversions");
+    let mut text = String::from(HEADER);
+    let mut checks = String::from(
+        "int main(void) { uint64_t values[] = {0, 1, 127, 255, 256, UINT32_MAX, UINT64_C(0x8000000000000000), UINT64_MAX};\n",
+    );
+    for width in [1u8, 2, 4, 8] {
+        for pointers in [false, true] {
+            if pointers && width != 8 {
+                continue;
+            }
+            let name = format!("compare_{width}_{pointers}");
+            let operand_type = if pointers {
+                CType::pointer_to(CType::U64)
+            } else {
+                CType::U64
+            };
+            let ir = synthetic_ir(
+                &name,
+                vec![
+                    Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::int(width, false)),
+                    },
+                    Param {
+                        index: 6,
+                        name: "desired".into(),
+                        ty: operand_type.clone(),
+                    },
+                    Param {
+                        index: 2,
+                        name: "expected".into(),
+                        ty: operand_type,
+                    },
+                ],
+                CType::U64,
+                vec![
+                    Stmt::Machine {
+                        instruction: MachineInstruction::Atomic {
+                            op: AtomicOp::CompareExchange,
+                            width,
+                            ordering: Ordering::SeqCst,
+                        },
+                        inputs: vec![Expr::reg(7, 64), Expr::reg(6, 64), Expr::reg(2, 64)],
+                        outputs: vec![RegRef {
+                            index: VARIABLE_BASE,
+                            width: width * 8,
+                        }],
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(VARIABLE_BASE, 64),
+                    },
+                ],
+            );
+            let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(!code.contains(&format!("(uint{}_t)(", width * 8)), "{code}");
+            if pointers {
+                assert!(code.contains("(uintptr_t)expected"), "{code}");
+                assert!(code.contains("(uintptr_t)desired"), "{code}");
+            }
+            text.push_str(&code);
+            let mask = if width == 8 {
+                u64::MAX
+            } else {
+                (1u64 << (width * 8)) - 1
+            };
+            let argument = |value: &str| {
+                if pointers {
+                    format!("(void *)(uintptr_t){value}")
+                } else {
+                    value.to_owned()
+                }
+            };
+            writeln!(checks, "for (unsigned a = 0; a < 8; ++a) for (unsigned b = 0; b < 8; ++b) for (unsigned c = 0; c < 8; ++c) {{ uint{}_t x = values[a]; uint64_t old = x; uint64_t desired = values[b], expected = values[c]; uint64_t result = {name}(&x, {}, {}); if (result != old || x != (old == (expected & UINT64_C({mask})) ? (desired & UINT64_C({mask})) : old)) return 1; }}", width * 8, argument("desired"), argument("expected")).unwrap();
+        }
+    }
+    checks.push_str("return 0; }\n");
+    text.push_str(&checks);
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    for level in LEVELS {
+        let executable = build(&source, &scratch, level, &[]);
+        assert_eq!(run(&executable, ""), "");
+    }
+    std::fs::remove_dir_all(scratch).ok();
+}

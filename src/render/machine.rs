@@ -37,15 +37,27 @@ pub(super) fn render(
                 == Some(crate::ir::CType::int(width, false))
             {
                 input(0)
+            } else if let Some(member) =
+                crate::render::naming::member_access(&inputs[0], width, ctx)
+                && member
+                    .ty
+                    .integer()
+                    .is_some_and(|(bits, _)| bits == u32::from(width) * 8)
+            {
+                if member.ty == crate::ir::CType::int(width, false) {
+                    format!("&{}", member.text)
+                } else {
+                    format!("({ty} *)&{}", member.text)
+                }
             } else {
                 format!("({ty} *)({})", input(0))
             };
-            let operand = || {
-                let value = super::expr::print(&inputs[1], ctx, 64);
+            let operand = |index| {
+                let value = super::expr::print(&inputs[index], ctx, 64);
                 if value.is_pointer() {
                     value.address_integer().text
                 } else {
-                    input(1)
+                    input(index)
                 }
             };
             let order = ordering.builtin();
@@ -66,7 +78,7 @@ pub(super) fn render(
             match op {
                 AtomicOp::Load => format!("{} = __atomic_load_n({ptr}, {order});", output(0)),
                 AtomicOp::Store => {
-                    format!("__atomic_store_n({ptr}, {}, {order});", operand())
+                    format!("__atomic_store_n({ptr}, {}, {order});", operand(1))
                 }
                 AtomicOp::CompareExchange => {
                     let expected = super::vacant_name("expected", &mut reserved);
@@ -77,9 +89,9 @@ pub(super) fn render(
                     }
                     .builtin();
                     format!(
-                        "{{ {ty} {expected} = ({ty})({}); __atomic_compare_exchange_n({ptr}, &{expected}, ({ty})({}), 0, {order}, {failure}); {} = {expected}; }}",
-                        input(2),
-                        input(1),
+                        "{{ {ty} {expected} = {}; __atomic_compare_exchange_n({ptr}, &{expected}, {}, 0, {order}, {failure}); {} = {expected}; }}",
+                        operand(2),
+                        operand(1),
                         output(0)
                     )
                 }
@@ -95,7 +107,7 @@ pub(super) fn render(
                     format!(
                         "{} = __atomic_{name}({ptr}, {}, {order});",
                         output(0),
-                        operand()
+                        operand(1)
                     )
                 }
             }
