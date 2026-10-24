@@ -684,6 +684,7 @@ fn render_with(
         slots: locals.slots,
         parameter_addresses: locals.parameter_addresses,
         local_parts: locals.parts,
+        transfer_addresses: locals.transfer_addresses,
         frame_origins: super::provenance::frame_origins(ir),
         frame_addresses: Vec::new(),
         local_widths: locals.widths,

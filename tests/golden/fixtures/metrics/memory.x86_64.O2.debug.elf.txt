@@ -27,7 +27,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
             v1 = n & 0xffffffffffffffe0;
             i = 0;
             do {
-                __builtin_memcpy((void *)(dst + i), __builtin_memcpy((unsigned char[32]){0}, (const void *)(src + i), 32), 32);
+                __builtin_memmove((void *)(dst + i), (const void *)(src + i), 32);
                 i += 32;
             } while (v1 != i);
             if (v1 == n) {

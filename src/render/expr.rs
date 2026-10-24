@@ -55,6 +55,8 @@ pub(crate) struct Ctx<'a> {
     /// Rendered stack address within a wider local to that address as bytes
     /// into the local.
     pub(super) local_parts: HashMap<String, String>,
+    /// Frame addresses within one declared object, with their remaining byte extent.
+    pub(super) transfer_addresses: HashMap<String, (String, u64)>,
     pub(super) frame_origins: HashMap<u16, i64>,
     pub(super) frame_addresses: Vec<(Expr, String)>,
     /// Declared width of each local, so a mask to that width can be dropped.

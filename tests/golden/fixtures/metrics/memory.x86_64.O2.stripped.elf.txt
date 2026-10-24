@@ -27,7 +27,7 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
             v1 = a2 & 0xffffffffffffffe0;
             i = 0;
             do {
-                __builtin_memcpy((void *)((uint8_t *)a0 + i), __builtin_memcpy((unsigned char[32]){0}, (const void *)((uint8_t *)a1 + i), 32), 32);
+                __builtin_memmove((void *)((uint8_t *)a0 + i), (const void *)((uint8_t *)a1 + i), 32);
                 i += 32;
             } while (v1 != i);
             if (v1 == a2) {

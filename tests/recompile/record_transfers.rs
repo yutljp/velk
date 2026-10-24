@@ -158,7 +158,7 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
             if typed {
                 ir.structures.push(velk::ir::Structure {
                     name: format!("record_{size}"),
-                    fields: (0..size / 8).map(|part| (part * 8, CType::U64)).collect(),
+                    fields: (0..size / 8).map(|part| (part * 8, CType::I64)).collect(),
                     size: Some(size),
                     elements: arguments[..2].to_vec(),
                 });
@@ -169,7 +169,8 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                 .collect();
             let candidate = printed_candidate(ir, inputs);
             assert_eq!(
-                candidate.code.contains("unsigned char"),
+                candidate.code.contains("__builtin_memmove")
+                    || candidate.code.contains("unsigned char"),
                 !extra_read && !typed && !interleaved,
                 "{}",
                 candidate.code
@@ -187,4 +188,238 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
         }
     }
     check_candidates("record-transfers", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_indexed_and_vector_record_moves_preserve_bytes() {
+    let arguments = Convention::SysV.arguments();
+    let mut candidates = Vec::new();
+    for vector in [false, true] {
+        for (global, padded) in [(false, false), (false, true), (true, false)] {
+            let at = |parameter: usize, offset| {
+                if global {
+                    Expr::Const(REGION + parameter as u64 * 64 + offset)
+                } else {
+                    Expr::bin(
+                        BinOp::Add,
+                        Expr::reg(arguments[0], 64),
+                        Expr::bin(
+                            BinOp::Add,
+                            Expr::bin(
+                                BinOp::Mul,
+                                Expr::reg(arguments[parameter + 1], 64),
+                                Expr::Const(16),
+                            ),
+                            Expr::Const(offset),
+                        ),
+                    )
+                }
+            };
+            let first = if vector {
+                velk::arch::x86::XMM0
+            } else {
+                VARIABLE_BASE
+            };
+            let mut statements = Vec::new();
+            for part in 0..2 {
+                statements.push(Stmt::Assign {
+                    dest: RegRef {
+                        index: first + part,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(at(1, u64::from(part) * 8)),
+                        width: 8,
+                        signed: false,
+                    },
+                });
+            }
+            for part in 0..2 {
+                statements.push(Stmt::Store {
+                    addr: at(0, u64::from(part) * 8),
+                    value: Expr::reg(first + part, 64),
+                    width: 8,
+                });
+            }
+            statements.push(Stmt::Ret {
+                value: Expr::Const(0),
+            });
+            let mut ir = synthetic_ir(
+                &format!("indexed_record_{vector}_{global}_{padded}"),
+                if global {
+                    vec![]
+                } else {
+                    arguments[..3]
+                        .iter()
+                        .enumerate()
+                        .map(|(part, index)| Param {
+                            index: *index,
+                            name: ["array", "i", "j"][part].into(),
+                            ty: if part == 0 {
+                                CType::pointer_to(CType::Named("struct item".into()))
+                            } else {
+                                CType::U64
+                            },
+                        })
+                        .collect()
+                },
+                CType::U64,
+                statements,
+            );
+            if !global {
+                ir.structures.push(velk::ir::Structure {
+                    name: "item".into(),
+                    fields: vec![
+                        (0, CType::U64),
+                        (8, if padded { CType::U32 } else { CType::U64 }),
+                    ],
+                    size: Some(16),
+                    elements: vec![arguments[0]],
+                });
+                let mut body = std::mem::take(&mut ir.blocks[0].stmts);
+                let exit = body.pop().expect("return statement");
+                for index in &arguments[1..3] {
+                    body.push(Stmt::Assign {
+                        dest: RegRef {
+                            index: *index,
+                            width: 64,
+                        },
+                        value: Expr::bin(BinOp::Add, Expr::reg(*index, 64), Expr::Const(1)),
+                    });
+                }
+                let counter = VARIABLE_BASE + 8;
+                body.push(Stmt::Assign {
+                    dest: RegRef {
+                        index: counter,
+                        width: 64,
+                    },
+                    value: Expr::bin(BinOp::Add, Expr::reg(counter, 64), Expr::Const(1)),
+                });
+                body.push(Stmt::Brif {
+                    cond: Cond::Ne,
+                    lhs: Expr::reg(counter, 64),
+                    rhs: Expr::Const(2),
+                    target: 16,
+                });
+                ir.blocks = vec![
+                    Block {
+                        start: 0,
+                        stmts: vec![Stmt::Assign {
+                            dest: RegRef {
+                                index: counter,
+                                width: 64,
+                            },
+                            value: Expr::Const(0),
+                        }],
+                    },
+                    Block {
+                        start: 16,
+                        stmts: body,
+                    },
+                    Block {
+                        start: 32,
+                        stmts: vec![exit],
+                    },
+                ];
+            }
+            let inputs = if global {
+                vec![vec![]]
+            } else {
+                [(0, 1), (1, 0), (0, 0), (2, 3)]
+                    .into_iter()
+                    .map(|(i, j)| vec![REGION, i, j])
+                    .collect()
+            };
+            let mut candidate = printed_candidate(ir, inputs);
+            if global {
+                let rejected = velk::render::render(
+                    &candidate.ir,
+                    &[],
+                    &Default::default(),
+                    &[(REGION, 16), (REGION + 64, 8)],
+                );
+                assert!(!rejected.contains("__builtin_memmove"), "{rejected}");
+                assert!(!rejected.contains("_u64"), "{rejected}");
+                candidate.code = velk::render::render(
+                    &candidate.ir,
+                    &[],
+                    &Default::default(),
+                    &[(REGION, 16), (REGION + 64, 16)],
+                );
+                assert!(
+                    candidate.code.contains("__builtin_memmove"),
+                    "{}",
+                    candidate.code
+                );
+            } else if padded {
+                assert!(
+                    candidate.code.contains("__builtin_memmove"),
+                    "{}",
+                    candidate.code
+                );
+            } else {
+                assert!(
+                    candidate.code.contains("array[i] = array[j];"),
+                    "{}",
+                    candidate.code
+                );
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("indexed-vector-records", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_frame_buffer_transfers_use_one_object_extent() {
+    let at = |offset: i64| Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset as u64));
+    let mut statements = Vec::new();
+    for part in 0..4 {
+        statements.push(Stmt::Store {
+            addr: at(-64 + part * 8),
+            value: Expr::Const(0x1234 + part as u64),
+            width: 8,
+        });
+    }
+    for part in 0..2 {
+        statements.push(Stmt::Assign {
+            dest: RegRef {
+                index: VARIABLE_BASE + part,
+                width: 64,
+            },
+            value: Expr::Load {
+                addr: Box::new(at(-64 + i64::from(part) * 8)),
+                width: 8,
+                signed: false,
+            },
+        });
+    }
+    for part in 0..2 {
+        statements.push(Stmt::Store {
+            addr: at(-56 + i64::from(part) * 8),
+            value: Expr::reg(VARIABLE_BASE + part, 64),
+            width: 8,
+        });
+    }
+    statements.push(Stmt::Ret {
+        value: Expr::Load {
+            addr: Box::new(at(-48)),
+            width: 8,
+            signed: false,
+        },
+    });
+    let mut ir = synthetic_ir("frame_buffer_record", vec![], CType::U64, statements);
+    ir.debug_locals.push(velk::ir::DebugLocal {
+        name: "buffer".into(),
+        ty: CType::Array(Box::new(CType::U64)),
+        slot: -64,
+        size: 32,
+    });
+    let candidate = printed_candidate(ir, vec![vec![]]);
+    assert!(
+        candidate.code.contains("__builtin_memmove"),
+        "{}",
+        candidate.code
+    );
+    check_candidates("frame-buffer-record", vec![candidate], Mode::Registers, &[]);
 }

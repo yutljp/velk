@@ -59,6 +59,7 @@ impl Local {
 pub(crate) struct Locals {
     pub(super) slots: HashMap<String, String>,
     pub(super) parts: HashMap<String, String>,
+    pub(super) transfer_addresses: HashMap<String, (String, u64)>,
     pub(super) widths: HashMap<String, u8>,
     pub(super) parameter_addresses: HashMap<(String, u8), String>,
     pub(super) decls: Vec<Local>,
@@ -131,6 +132,7 @@ pub(crate) fn stack_locals(
         slots: HashMap::new(),
         parameter_addresses: HashMap::new(),
         local_parts: HashMap::new(),
+        transfer_addresses: HashMap::new(),
         frame_origins: HashMap::new(),
         frame_addresses: Vec::new(),
         local_widths: HashMap::new(),
@@ -581,9 +583,36 @@ pub(crate) fn stack_locals(
             slots.insert(key, name);
         }
     }
+    let transfer_addresses = part_origins
+        .iter()
+        .filter_map(|(key, slot)| {
+            let Some(slot) = slot else { return None };
+            if !parts.contains_key(key) {
+                return None;
+            }
+            let outer = within.get(slot).copied().unwrap_or(*slot);
+            let Some(local) = slot_names.get(&outer).filter(|local| local.size > 0) else {
+                return None;
+            };
+            let Some(offset) = slot.checked_sub(local.slot).filter(|offset| *offset >= 0) else {
+                return None;
+            };
+            let Some(remaining) = local.size.checked_sub(offset).filter(|size| *size > 0) else {
+                return None;
+            };
+            Some((
+                key.clone(),
+                (
+                    format!("(uint8_t *)&{} + 0x{offset:x}", local.name),
+                    remaining as u64,
+                ),
+            ))
+        })
+        .collect();
     Locals {
         slots,
         parts,
+        transfer_addresses,
         widths,
         parameter_addresses,
         decls: order
