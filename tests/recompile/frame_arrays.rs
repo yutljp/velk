@@ -137,3 +137,13 @@ fn printed_frame_addresses_held_in_registers_reach_their_locals() {
         assert!(!code.contains("_s1 *"), "{code}");
     }
 }
+
+#[test]
+fn printed_narrow_signed_comparisons_keep_negative_constants() {
+    check_against_original(
+        "narrow-compares",
+        include_str!("narrow_compares.c"),
+        &["narrow_signed_loops"],
+        &[0, 1, 2, 3, 4, 5, 6, 0x55, 0xffff_fffe],
+    );
+}

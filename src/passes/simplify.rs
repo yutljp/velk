@@ -63,6 +63,8 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             }
         }
         Stmt::Brif { cond, lhs, rhs, .. } => {
+            let before = crate::ir::semantics::operand_width(lhs, rhs);
+            let original = (lhs.clone(), rhs.clone());
             *lhs = simplify_expr(lhs.clone(), constants);
             *rhs = simplify_expr(rhs.clone(), constants);
             if let Some(width) =
@@ -70,12 +72,24 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             {
                 cancel_round_trip(lhs, width);
                 cancel_round_trip(rhs, width);
-                // A constant compares at the operands' width.
-                if width < 64 {
-                    for side in [&mut *lhs, &mut *rhs] {
-                        if let Expr::Const(value) = side {
-                            *value &= (1u64 << width) - 1;
-                        }
+            }
+            // Dropping a mask can leave a sign-extended value compared at
+            // all 64 bits where it was compared at fewer: unless the result
+            // stays the same, the constant it is compared with is extended
+            // the same way, or the comparison stays as it was.
+            if crate::ir::semantics::operand_width(lhs, rhs) > before
+                && !super::copies::comparison_preserved(*cond, before, lhs, rhs)
+                && !widen_compared_constant(lhs, rhs, before)
+                && !widen_compared_constant(rhs, lhs, before)
+            {
+                (*lhs, *rhs) = original;
+            }
+            // A constant compares at the operands' width.
+            let bits = crate::ir::semantics::operand_width(lhs, rhs);
+            if bits < 64 {
+                for side in [&mut *lhs, &mut *rhs] {
+                    if let Expr::Const(value) = side {
+                        *value &= crate::ir::semantics::mask(bits);
                     }
                 }
             }
@@ -798,6 +812,29 @@ fn fold_offsets(expr: Expr) -> Expr {
         base.as_ref().clone(),
         Expr::constant(total),
     )
+}
+
+/// Sign-extends the constant `constant` compares `value` with from `bits`
+/// to 64 bits, when `value` is a value of fewer bits read with its sign
+/// extended, which compares the same at either width; false otherwise.
+fn widen_compared_constant(value: &Expr, constant: &mut Expr, bits: u32) -> bool {
+    let narrow = match value {
+        Expr::Load {
+            width,
+            signed: true,
+            ..
+        }
+        | Expr::SignExtend { width, .. } => u32::from(*width) * 8,
+        _ => return false,
+    };
+    let Expr::Const(c) = constant else {
+        return false;
+    };
+    if narrow >= bits || *c & crate::ir::semantics::mask(bits) != *c {
+        return false;
+    }
+    *c = crate::ir::semantics::sign_extend(*c, bits) as u64;
+    true
 }
 
 #[cfg(test)]
