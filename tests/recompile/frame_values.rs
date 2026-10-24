@@ -477,3 +477,73 @@ fn printed_frame_branch_comparisons_keep_direct_constants() {
     assert!(text.contains("== 0x2"), "{text}");
     assert!(!text.contains("- 0x1 != 0x0"), "{text}");
 }
+
+#[test]
+fn printed_local_offsets_preserve_operator_precedence() {
+    let a = Expr::reg(7, 64);
+    let shift = Expr::bin(BinOp::Shl, a.clone(), Expr::Const(2));
+    let and = Expr::bin(BinOp::And, a.clone(), Expr::Const(1));
+    let or = Expr::bin(BinOp::Or, a.clone(), Expr::Const(1));
+    let select = Expr::Select {
+        cond: Cond::Eq,
+        lhs: Box::new(a.clone()),
+        rhs: Box::new(Expr::Const(0)),
+        then: Box::new(Expr::Const(2)),
+        els: Box::new(Expr::Const(0)),
+    };
+    let sum = [shift.clone(), and.clone(), or.clone(), select.clone()]
+        .into_iter()
+        .reduce(|lhs, rhs| Expr::bin(BinOp::Add, lhs, rhs))
+        .unwrap();
+    let mut candidates = Vec::new();
+    for (case, offset, expected) in [
+        ("shift", shift, " + (a << 0x2)"),
+        ("and", and, " + (a & 0x1)"),
+        ("or", or, " + (a | 0x1)"),
+        ("select", select, " + (a == 0x0 ? 0x2 : 0x0)"),
+        (
+            "sum",
+            sum,
+            " + ((a << 0x2) + (a & 0x1) + (a | 0x1) + (a == 0x0 ? 0x2 : 0x0))",
+        ),
+    ] {
+        let address = Expr::bin(BinOp::Add, slot(-8), offset);
+        let ir = synthetic_ir(
+            &format!("local_offset_{case}"),
+            vec![Param {
+                index: 7,
+                name: "a".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                store(-8, Expr::Const(0x8877_6655_4433_2211), 8),
+                Stmt::Store {
+                    addr: address.clone(),
+                    value: Expr::Const(0xa5),
+                    width: 1,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Xor,
+                        load(-8, 8, false),
+                        Expr::Load {
+                            addr: Box::new(address),
+                            width: 1,
+                            signed: false,
+                        },
+                    ),
+                },
+            ],
+        );
+        let candidate = printed_candidate(ir, (0..=1).map(|a| vec![a]).collect());
+        assert!(candidate.code.contains(expected), "{}", candidate.code);
+        assert!(
+            candidate.code.contains("(uint8_t *)&local_"),
+            "{}",
+            candidate.code
+        );
+        candidates.push(candidate);
+    }
+    check_candidates("local-offset-precedence", candidates, Mode::Registers, &[]);
+}

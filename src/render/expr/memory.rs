@@ -205,8 +205,11 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     if let Some(part) = ctx.local_parts.get(&render_expr(value, ctx)) {
         return Some(part.clone());
     }
-    let (slot, rest) =
-        crate::render::locals::offset_local(value, crate::arch::stack_pointer(ctx.isa))?;
+    let Some((slot, rest)) =
+        crate::render::locals::offset_local(value, crate::arch::stack_pointer(ctx.isa))
+    else {
+        return None;
+    };
     let Expr::Bin { lhs: base, rhs, .. } = &slot else {
         return None;
     };
@@ -214,7 +217,7 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         return None;
     };
     // The buffer starts at the slot or a little below it.
-    let (name, below) = (0..crate::render::locals::BUFFER_REACH as u64).find_map(|below| {
+    let Some((name, below)) = (0..crate::render::locals::BUFFER_REACH as u64).find_map(|below| {
         let start = Expr::bin(
             BinOp::Add,
             base.as_ref().clone(),
@@ -223,15 +226,23 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         ctx.slots
             .get(&render_expr(&start, ctx))
             .map(|name| (name, below))
-    })?;
-    let mut rest = rest
+    }) else {
+        return None;
+    };
+    let Some(mut rest) = rest
         .into_iter()
         .cloned()
-        .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))?;
+        .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))
+    else {
+        return None;
+    };
     if below != 0 {
         rest = Expr::bin(BinOp::Add, rest, Expr::Const(below));
     }
-    Some(format!("(uint8_t *)&{name} + {}", render_expr(&rest, ctx)))
+    Some(format!(
+        "(uint8_t *)&{name} + {}",
+        operand(&rest, ctx, 10, true)
+    ))
 }
 
 pub(crate) fn slot_access(name: &str, width: u8, signed: bool, ctx: &Ctx<'_>) -> String {
