@@ -69,6 +69,11 @@ save area below the stack pointer at entry.
 | `tests/smoke.sh` | CLI, MCP, selected output, and local performance | Output checks and benchmark thresholds |
 | `tests/ladder.sh` | Behavior by difficulty, including known unfinished targets | `tests/expect/ladder.tsv` |
 
+The recompile harness and syntax scan use `clang` by default. Set
+`VELK_TEST_CC` to a compiler executable name or path to select another compiler.
+The execution cache includes the selected compiler identity. The normal suite
+also runs fast syntax regressions with Homebrew Clang when it is installed.
+
 The exhaustive syntax scan is ignored by default. Run it with:
 
 ```bash

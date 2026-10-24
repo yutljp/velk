@@ -44,7 +44,7 @@ fn combined_vector_prelude_compiles_and_runs() {
     let path = scratch.join("check.c");
     let executable = scratch.join("check");
     std::fs::write(&path, source).unwrap();
-    let compiled = Command::new(COMPILER)
+    let compiled = Command::new(compiler())
         .args(["-std=gnu11", "-O2"])
         .arg(&path)
         .arg("-o")

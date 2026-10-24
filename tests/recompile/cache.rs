@@ -27,16 +27,21 @@ fn hash(value: &str) -> u64 {
 
 fn compiler_identity() -> Option<String> {
     use std::os::unix::fs::PermissionsExt;
-    let Some(paths) = std::env::var_os("PATH") else {
-        return None;
-    };
-    let compiler = std::env::split_paths(&paths)
-        .map(|path| path.join(super::COMPILER))
-        .find(|path| {
-            path.metadata().is_ok_and(|metadata| {
-                metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+    let selected = super::compiler();
+    let compiler = if selected.components().count() > 1 {
+        Some(selected)
+    } else {
+        let Some(paths) = std::env::var_os("PATH") else {
+            return None;
+        };
+        std::env::split_paths(&paths)
+            .map(|path| path.join(&selected))
+            .find(|path| {
+                path.metadata().is_ok_and(|metadata| {
+                    metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
+                })
             })
-        });
+    };
     let Some(compiler) = compiler else {
         return None;
     };

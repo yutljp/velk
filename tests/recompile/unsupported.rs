@@ -129,7 +129,7 @@ fn code_image(code: &[u8]) -> Image {
         ),
     )
     .unwrap();
-    let result = Command::new(COMPILER)
+    let result = Command::new(compiler())
         .args(["--target=x86_64-unknown-linux-gnu", "-c"])
         .arg(&source)
         .arg("-o")

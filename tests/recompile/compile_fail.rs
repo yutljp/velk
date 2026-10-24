@@ -166,7 +166,7 @@ fn printed_tail_call_reads_only_the_callees_parameters() {
     let source = scratch.join("original.c");
     let binary_path = scratch.join("original");
     std::fs::write(&source, "__attribute__((noinline)) unsigned next(unsigned x) { return x + 1; }\n__attribute__((noinline)) unsigned forward(unsigned x) { return next(x); }\nint main(void) { return forward(1); }\n").unwrap();
-    let output = Command::new(COMPILER)
+    let output = Command::new(compiler())
         .args(["-O2", "-fno-stack-protector"])
         .arg(&source)
         .arg("-o")

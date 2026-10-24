@@ -67,7 +67,7 @@ fn run_printed(code: &str, support: &str, assertions: &str) {
     .unwrap();
     for level in LEVELS {
         let executable = scratch.join(format!("values{level}"));
-        let output = Command::new(COMPILER)
+        let output = Command::new(compiler())
             .args(FLAGS)
             .arg(level)
             .arg(&source)
@@ -675,6 +675,15 @@ fn return_types(symbols: &velk::render::Symbols) -> BTreeMap<String, CType> {
 }
 
 fn check(code: &str, path: &Path, returns: &BTreeMap<String, CType>) -> Option<String> {
+    check_with_compiler(code, path, returns, &compiler())
+}
+
+fn check_with_compiler(
+    code: &str,
+    path: &Path,
+    returns: &BTreeMap<String, CType>,
+    compiler: &Path,
+) -> Option<String> {
     let mut prelude = velk::render::Prelude::default();
     let body = renamed(&prelude.extract(code), 0);
     let mut declarations = BTreeSet::new();
@@ -697,7 +706,7 @@ fn check(code: &str, path: &Path, returns: &BTreeMap<String, CType>) -> Option<S
         source.push_str(&prelude.render());
         source.push_str(&body);
         std::fs::write(path, source).expect("saved syntax source");
-        let mut command = Command::new(COMPILER);
+        let mut command = Command::new(compiler);
         if cfg!(target_os = "macos") {
             command.args(["-arch", "x86_64"]);
         }
@@ -847,6 +856,28 @@ fn small_fixture_functions_compile() {
 
 #[test]
 fn large_fixture_syntax_regressions() {
+    large_fixture_syntax_with_compiler(&compiler(), "default");
+}
+
+#[test]
+fn newer_clang_syntax_regressions() {
+    let Ok(prefix) = Command::new("brew").args(["--prefix", "llvm"]).output() else {
+        eprintln!("skipping newer Clang syntax regressions: Homebrew is unavailable");
+        return;
+    };
+    if !prefix.status.success() {
+        eprintln!("skipping newer Clang syntax regressions: LLVM is unavailable");
+        return;
+    }
+    let compiler = PathBuf::from(String::from_utf8_lossy(&prefix.stdout).trim()).join("bin/clang");
+    if !compiler.is_file() {
+        eprintln!("skipping newer Clang syntax regressions: compiler is unavailable");
+        return;
+    }
+    large_fixture_syntax_with_compiler(&compiler, "newer-clang");
+}
+
+fn large_fixture_syntax_with_compiler(compiler: &Path, name: &str) {
     for (fixture, addresses) in [
         (
             "go_probe",
@@ -865,10 +896,10 @@ fn large_fixture_syntax_regressions() {
         let mut binary = Binary::open(&common::fixtures_dir().join(fixture)).unwrap();
         let symbols = velk::render::callee_names(binary.image());
         let returns = return_types(&symbols);
-        let scratch = scratch_dir(&format!("syntax-{fixture}"));
+        let scratch = scratch_dir(&format!("syntax-{name}-{fixture}"));
         for address in addresses {
             let code = binary.decompile(address, None, None).unwrap();
-            let error = check(&code, &scratch.join("function.c"), &returns);
+            let error = check_with_compiler(&code, &scratch.join("function.c"), &returns, compiler);
             assert!(error.is_none(), "{fixture} 0x{address:x}: {error:?}");
         }
     }

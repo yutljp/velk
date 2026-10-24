@@ -23,7 +23,7 @@ fn printed_branches_reach_code_after_many_instructions() {
             ),
         )
         .expect("write source");
-        let compiled = Command::new(COMPILER)
+        let compiled = Command::new(compiler())
             .args(["-target", target, "-O1", "-c"])
             .arg(&source)
             .arg("-o")

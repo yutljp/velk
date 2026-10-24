@@ -99,7 +99,11 @@ thread_local! {
     static COMPILATIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
-const COMPILER: &str = "clang";
+fn compiler() -> PathBuf {
+    std::env::var_os("VELK_TEST_CC")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("clang"))
+}
 const FLAGS: [&str; 3] = ["-fwrapv", "-fno-strict-aliasing", "-w"];
 const LEVELS: [&str; 2] = ["-O1", "-O0"];
 /// A second seed for the values of registers the setup leaves unset: a run
@@ -339,11 +343,12 @@ fn printed_code_reads_and_writes_memory_as_the_ir_does() {
 #[test]
 fn printed_global_views_preserve_addresses_and_memory() {
     assert!(
-        Command::new(COMPILER)
+        Command::new(compiler())
             .arg("--version")
             .output()
             .is_ok_and(|output| output.status.success()),
-        "{COMPILER} is required to check global memory accesses"
+        "{} is required to check global memory accesses",
+        compiler().display()
     );
     let address = REGION + 0x1000;
     let load = |addr, width, signed| Expr::Load {
@@ -3569,7 +3574,7 @@ fn segment_providers_need_an_adapter_and_do_not_replace_function_addresses() {
         ),
     )
     .expect("saved source");
-    let syntax = Command::new(COMPILER)
+    let syntax = Command::new(compiler())
         .args(FLAGS)
         .arg("-fsyntax-only")
         .arg(&unbound)
@@ -3580,7 +3585,7 @@ fn segment_providers_need_an_adapter_and_do_not_replace_function_addresses() {
         "{}",
         String::from_utf8_lossy(&syntax.stderr)
     );
-    let linked = Command::new(COMPILER)
+    let linked = Command::new(compiler())
         .args(FLAGS)
         .arg(&unbound)
         .arg("-o")
@@ -4481,7 +4486,7 @@ fn printed_address_literals_preserve_all_bits() {
     for level in LEVELS {
         let program = build(&source, &scratch, level, &["-Wall", "-Wextra", "-Werror"]);
         assert_eq!(run(&program, ""), "");
-        let cross = Command::new(COMPILER)
+        let cross = Command::new(compiler())
             .args([
                 "-target",
                 "aarch64-none-elf",
@@ -4998,8 +5003,11 @@ fn assert_comparison_runs(result: &Findings, count: usize, runs: usize) {
 }
 
 fn compare(mode: Mode, golden: &str) {
-    if Command::new(COMPILER).arg("--version").output().is_err() {
-        eprintln!("skipping: no `{COMPILER}` to compile the pseudo-C with");
+    if Command::new(compiler()).arg("--version").output().is_err() {
+        eprintln!(
+            "skipping: no `{}` to compile the pseudo-C with",
+            compiler().display()
+        );
         return;
     }
     let fixtures = common::fixtures();
@@ -6346,12 +6354,12 @@ fn compiles(
         let text = program(candidates, initial_memory, &alive, mode);
         std::fs::write(source, &text.text).unwrap_or_else(|error| panic!("{error}"));
         COMPILATIONS.set(COMPILATIONS.get() + 1);
-        let checked = Command::new(COMPILER)
+        let checked = Command::new(compiler())
             .args(FLAGS)
             .args(["-fsyntax-only", "-ferror-limit=0"])
             .arg(source)
             .output()
-            .unwrap_or_else(|error| panic!("{COMPILER}: {error}"));
+            .unwrap_or_else(|error| panic!("{}: {error}", compiler().display()));
         if checked.status.success() {
             return (alive, failures);
         }
@@ -6384,13 +6392,15 @@ fn compiles(
         }
         assert!(
             rejected,
-            "{COMPILER} rejects the test's own code in {}:\n{errors}",
+            "{} rejects the test's own code in {}:\n{errors}",
+            compiler().display(),
             source.display()
         );
         alive.retain(|index| !failures.contains_key(index));
     }
     panic!(
-        "{COMPILER} still rejects {} after {COMPILE_ROUNDS} rounds",
+        "{} still rejects {} after {COMPILE_ROUNDS} rounds",
+        compiler().display(),
         source.display()
     );
 }
@@ -6401,7 +6411,7 @@ fn build(source: &Program, scratch: &Path, level: &str, compiler_args: &[&str]) 
     let output = scratch.join(format!("check{level}"));
     std::fs::write(&path, &source.text).unwrap_or_else(|error| panic!("{error}"));
     COMPILATIONS.set(COMPILATIONS.get() + 1);
-    let compiled = Command::new(COMPILER)
+    let compiled = Command::new(compiler())
         .arg(level)
         .args(FLAGS)
         .arg("-o")
@@ -6409,10 +6419,11 @@ fn build(source: &Program, scratch: &Path, level: &str, compiler_args: &[&str]) 
         .arg(&path)
         .args(compiler_args)
         .output()
-        .unwrap_or_else(|error| panic!("{COMPILER}: {error}"));
+        .unwrap_or_else(|error| panic!("{}: {error}", compiler().display()));
     assert!(
         compiled.status.success(),
-        "{COMPILER} {level} fails on {}:\n{}",
+        "{} {level} fails on {}:\n{}",
+        compiler().display(),
         path.display(),
         String::from_utf8_lossy(&compiled.stderr)
     );
@@ -8858,7 +8869,7 @@ fn printed_scalar_half_immediate_wrappers_preserve_raw_patterns() {
     let mut original_calls = 0;
     for level in LEVELS {
         let executable = scratch.join(format!("half{level}"));
-        let compiled = Command::new(COMPILER)
+        let compiled = Command::new(compiler())
             .arg("-std=c11")
             .arg(level)
             .args([
@@ -10395,7 +10406,7 @@ fn printed_point_fields_match_original_machine_code() {
             std::fs::write(&input, source).unwrap();
             for level in LEVELS {
                 let executable = scratch.join(format!("point-{isa}-{optimization}-{level}"));
-                let mut compiler = Command::new(COMPILER);
+                let mut compiler = Command::new(compiler());
                 if cfg!(target_os = "macos") {
                     compiler.args(["-arch", if isa == "aarch64" { "arm64" } else { "x86_64" }]);
                 }

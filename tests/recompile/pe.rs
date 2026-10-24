@@ -31,7 +31,7 @@ fn every_pe_function_compiles() {
                 format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n{code}"),
             )
             .unwrap();
-            let output = Command::new(COMPILER)
+            let output = Command::new(compiler())
                 .args(FLAGS)
                 .args([
                     "-fsyntax-only",

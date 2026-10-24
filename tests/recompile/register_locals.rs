@@ -11,7 +11,7 @@ fn printed_byte_loop_uses_named_narrow_locals() {
     let effect_source = scratch.join("effect.c");
     std::fs::write(&effect_source, "void effect(void) {}\n").unwrap();
     std::fs::write(&original, input).unwrap();
-    let compiled = Command::new(COMPILER)
+    let compiled = Command::new(compiler())
         .args(["-target", "arm64-apple-macos11", "-O2", "-fno-inline"])
         .arg(&original)
         .arg(&effect_source)

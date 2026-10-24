@@ -902,7 +902,7 @@ fn printed_context_saving_calls_keep_frame_storage() {
     let source = scratch.join("context.c");
     let object = scratch.join("context.o");
     std::fs::write(&source, "__attribute__((noinline)) unsigned long setjmp(unsigned long n) { return n; }\nunsigned long context_value(unsigned long n) { unsigned long saved; if (n & 1) saved = 7; else saved = 11; setjmp(n); return saved; }\n").expect("write context source");
-    let output = Command::new(COMPILER)
+    let output = Command::new(compiler())
         .args([
             "-target",
             "x86_64-unknown-linux-gnu",

@@ -15,7 +15,7 @@ pub(crate) fn check_against_original(
     let original = scratch.join("original.c");
     let executable = scratch.join("original");
     std::fs::write(&original, source).unwrap();
-    let compiled = Command::new(COMPILER)
+    let compiled = Command::new(compiler())
         .args(["-O0", "-fno-stack-protector"])
         .arg(&original)
         .arg("-o")

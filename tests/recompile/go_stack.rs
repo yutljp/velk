@@ -31,7 +31,7 @@ fn go_return_slot_and_frame_address_compile_and_run() {
     std::fs::write(&input, source).unwrap();
     for level in ["-O0", "-O2"] {
         let executable = scratch.join(format!("frame{level}"));
-        let compiled = Command::new(COMPILER)
+        let compiled = Command::new(compiler())
             .args(FLAGS)
             .arg(level)
             .arg(&input)
@@ -68,7 +68,7 @@ fn go_abi0_wrapper_recovers_stack_parameters_and_result() {
     std::fs::write(&input, source).unwrap();
     for level in ["-O0", "-O2"] {
         let executable = scratch.join(format!("wrapper{level}"));
-        let compiled = Command::new(COMPILER)
+        let compiled = Command::new(compiler())
             .args(FLAGS)
             .arg(level)
             .arg(&input)

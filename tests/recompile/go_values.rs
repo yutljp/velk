@@ -184,7 +184,7 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
     std::fs::write(&input, source).unwrap();
     for level in ["-O0", "-O2"] {
         let executable = scratch.join(format!("values{level}"));
-        let output = Command::new(COMPILER)
+        let output = Command::new(compiler())
             .args(FLAGS)
             .args(["-Werror=implicit-function-declaration", level])
             .arg(&input)

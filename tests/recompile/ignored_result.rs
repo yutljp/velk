@@ -6,7 +6,7 @@ fn printed_explicit_result_survives_callers_discarding_it() {
     let original = scratch.join("original.c");
     let executable = scratch.join("original");
     std::fs::write(&original, include_str!("ignored_result.c")).unwrap();
-    let compiled = Command::new(COMPILER)
+    let compiled = Command::new(compiler())
         .args(["-O2", "-fno-inline"])
         .arg(&original)
         .arg("-o")
