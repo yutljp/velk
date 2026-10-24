@@ -66,6 +66,8 @@ mod prelude;
 mod record_transfers;
 #[path = "recompile/register_locals.rs"]
 mod register_locals;
+#[path = "recompile/saved_registers.rs"]
+mod saved_registers;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
 #[path = "recompile/switches.rs"]

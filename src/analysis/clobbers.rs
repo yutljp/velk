@@ -4,7 +4,7 @@
 //! stored on entry and loaded back before every return, as a push and a pop
 //! or a pair store and a pair load do, keeps its value for the caller.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::ir::{BinOp, Block, Convention, Expr, Registers, Stmt};
 
@@ -14,6 +14,9 @@ enum Value {
     Entry(u16),
     /// The stack pointer on entry, plus an offset.
     Frame(i64),
+    /// Computed from a frame address in a way not followed, so it may
+    /// point anywhere in the frame.
+    Derived,
     Other,
 }
 
@@ -31,7 +34,12 @@ struct State {
     /// What each 8-byte frame slot holds, by its offset from the stack
     /// pointer on entry; a slot not listed holds nothing known.
     slots: BTreeMap<i64, Value>,
-    escaped: bool,
+    /// The frame offsets an address the walk no longer follows may point
+    /// at: one stored, passed on, offset by an unknown index, or held
+    /// differently on the ways into a join.
+    exposed: BTreeSet<i64>,
+    /// Whether a frame address was let go at an offset not known.
+    lost: bool,
 }
 
 impl State {
@@ -46,7 +54,8 @@ impl State {
             }),
             others: BTreeMap::new(),
             slots: BTreeMap::new(),
-            escaped: false,
+            exposed: BTreeSet::new(),
+            lost: false,
         }
     }
 
@@ -70,69 +79,130 @@ impl State {
     }
 
     fn value(&self, expr: &Expr) -> Value {
-        let offset = |base: &Expr, delta: i64| match self.value(base) {
-            Value::Frame(at) => Value::Frame(at.wrapping_add(delta)),
-            _ => Value::Other,
-        };
+        self.class(expr).0
+    }
+
+    /// Whether `expr` is computed from a frame address, other than by
+    /// reading memory through one.
+    fn involves_frame(&self, expr: &Expr) -> bool {
+        let (value, indexed) = self.class(expr);
+        indexed || matches!(value, Value::Frame(_) | Value::Derived)
+    }
+
+    /// What `expr` holds, and whether it is a frame address plus an index
+    /// not known: an address into an object of the frame, which no write
+    /// through it leaves, as one through any address the walk does not
+    /// follow.
+    fn class(&self, expr: &Expr) -> (Value, bool) {
         match expr {
-            Expr::Reg { index, width: 64 } => self.register(*index),
-            Expr::Bin {
-                op: BinOp::Add,
-                lhs,
-                rhs,
-            } => match (lhs.as_ref(), rhs.as_ref()) {
-                (base, Expr::Const(delta)) | (Expr::Const(delta), base) => {
-                    offset(base, *delta as i64)
+            Expr::Reg { index, width: 64 } => return (self.register(*index), false),
+            Expr::Load { addr, width, .. } => {
+                let value = match (width, self.value(addr)) {
+                    (8, Value::Frame(at)) => self.slots.get(&at).copied().unwrap_or(Value::Other),
+                    _ => Value::Other,
+                };
+                return (value, false);
+            }
+            Expr::Bin { op, lhs, rhs } if matches!(op, BinOp::Add | BinOp::Sub) => {
+                let (left, right) = (self.class(lhs), self.class(rhs));
+                let based =
+                    |(value, indexed): (Value, bool)| indexed || matches!(value, Value::Frame(_));
+                let involved = |(value, indexed): (Value, bool)| {
+                    indexed || matches!(value, Value::Frame(_) | Value::Derived)
+                };
+                match (op, left.0, rhs.as_ref(), right.0, lhs.as_ref()) {
+                    (BinOp::Add, Value::Frame(at), Expr::Const(delta), ..)
+                    | (BinOp::Add, _, _, Value::Frame(at), Expr::Const(delta)) => {
+                        return (Value::Frame(at.wrapping_add(*delta as i64)), false);
+                    }
+                    (BinOp::Sub, Value::Frame(at), Expr::Const(delta), ..) => {
+                        return (Value::Frame(at.wrapping_sub(*delta as i64)), false);
+                    }
+                    _ => {}
                 }
-                _ => Value::Other,
-            },
-            Expr::Bin {
-                op: BinOp::Sub,
-                lhs,
-                rhs,
-            } => match rhs.as_ref() {
-                Expr::Const(delta) => offset(lhs, (*delta as i64).wrapping_neg()),
-                _ => Value::Other,
-            },
-            Expr::Load { addr, width: 8, .. } => match self.value(addr) {
-                Value::Frame(at) => self.slots.get(&at).copied().unwrap_or(Value::Other),
-                _ => Value::Other,
-            },
-            _ => Value::Other,
+                let indexed = match op {
+                    BinOp::Add => {
+                        (based(left) && !involved(right)) || (based(right) && !involved(left))
+                    }
+                    _ => based(left) && !involved(right),
+                };
+                if indexed {
+                    return (Value::Other, true);
+                }
+                if involved(left) || involved(right) {
+                    return (Value::Derived, false);
+                }
+                return (Value::Other, false);
+            }
+            _ => {}
+        }
+        // Anything else computed from a frame address may still point into
+        // the frame, at an offset the walk does not know.
+        let derived = crate::ir::visit::children(expr)
+            .into_iter()
+            .any(|child| self.involves_frame(child));
+        if derived {
+            (Value::Derived, false)
+        } else {
+            (Value::Other, false)
         }
     }
 
     /// Takes in what `other` may hold too; whether anything changed.
     fn join(&mut self, other: &State) -> bool {
         let mut changed = false;
-        let loses_frame = |a: Value, b: Value| {
-            a != b && (matches!(a, Value::Frame(_)) || matches!(b, Value::Frame(_)))
-        };
-        let ambiguous_frame = self
-            .machine
-            .iter()
-            .zip(&other.machine)
-            .any(|(a, b)| loses_frame(*a, *b))
-            || self
-                .others
-                .iter()
-                .chain(&other.others)
-                .any(|(index, _)| loses_frame(self.register(*index), other.register(*index)))
-            || self.slots.iter().chain(&other.slots).any(|(slot, _)| {
-                loses_frame(
-                    self.slots.get(slot).copied().unwrap_or(Value::Other),
-                    other.slots.get(slot).copied().unwrap_or(Value::Other),
-                )
-            });
-        if (other.escaped || ambiguous_frame) && !self.escaped {
-            self.escaped = true;
-            changed = true;
-        }
+        // A frame address held on one way in only is no longer followed; a
+        // register keeps one computed from it as such, other storage not.
         for (held, came) in self.machine.iter_mut().zip(&other.machine) {
-            if held != came && *held != Value::Other {
-                *held = Value::Other;
+            if held == came {
+                continue;
+            }
+            for value in [*held, *came] {
+                if let Value::Frame(at) = value {
+                    changed |= self.exposed.insert(at);
+                }
+            }
+            let joined = if *held == Value::Derived || *came == Value::Derived {
+                Value::Derived
+            } else {
+                Value::Other
+            };
+            if *held != joined {
+                *held = joined;
                 changed = true;
             }
+        }
+        let mut dropped: Vec<(Value, Value)> = self
+            .others
+            .keys()
+            .chain(other.others.keys())
+            .map(|index| (self.register(*index), other.register(*index)))
+            .collect();
+        dropped.extend(self.slots.keys().chain(other.slots.keys()).map(|slot| {
+            (
+                self.slots.get(slot).copied().unwrap_or(Value::Other),
+                other.slots.get(slot).copied().unwrap_or(Value::Other),
+            )
+        }));
+        let mut lost = other.lost;
+        for (a, b) in dropped {
+            if a == b {
+                continue;
+            }
+            for value in [a, b] {
+                match value {
+                    Value::Frame(at) => changed |= self.exposed.insert(at),
+                    Value::Derived => lost = true,
+                    _ => {}
+                }
+            }
+        }
+        for at in &other.exposed {
+            changed |= self.exposed.insert(*at);
+        }
+        if lost && !self.lost {
+            self.lost = true;
+            changed = true;
         }
         let before = (self.others.len(), self.slots.len());
         self.others
@@ -152,14 +222,59 @@ impl State {
             .retain(|slot, _| *slot >= end || slot.checked_add(8).is_some_and(|end| end <= at));
     }
 
-    fn exposes_frame(&self, expr: &Expr) -> bool {
-        if matches!(self.value(expr), Value::Frame(_)) {
-            return true;
+    /// Takes note of the frame addresses `expr` lets out of the walk's view.
+    fn expose(&mut self, expr: &Expr) {
+        if let Expr::Select {
+            lhs,
+            rhs,
+            then,
+            els,
+            ..
+        } = expr
+        {
+            self.lost |= self.involves_frame(lhs) || self.involves_frame(rhs);
+            self.expose(then);
+            self.expose(els);
+            return;
         }
-        !matches!(expr, Expr::Load { .. })
-            && crate::ir::visit::children(expr)
-                .into_iter()
-                .any(|child| self.exposes_frame(child))
+        match self.value(expr) {
+            Value::Frame(at) => {
+                self.exposed.insert(at);
+            }
+            Value::Derived => self.lost = true,
+            _ => {}
+        }
+    }
+    /// A write at `addr` other than into a slot the walk follows.
+    fn write_through(&mut self, addr: &Expr, width: u8, clobbered: &[u16]) {
+        match self.value(addr) {
+            Value::Frame(at) => self.forget_slots(at, width),
+            Value::Derived => self.slots.clear(),
+            _ => self.write_unplaced(clobbered),
+        }
+    }
+
+    /// A write the walk cannot place, as through an exposed address: that
+    /// reaches the object there and so the slots from it up, but not a slot
+    /// below the entry stack pointer saving a register the convention
+    /// preserves, which belongs to no object, unless the address is the
+    /// slot's own. Once a frame address was lost it may reach any slot.
+    fn write_unplaced(&mut self, clobbered: &[u16]) {
+        if self.lost {
+            self.slots.clear();
+            return;
+        }
+        let exposed = &self.exposed;
+        self.slots.retain(|slot, value| {
+            let end = slot.saturating_add(8);
+            let save = end <= 0
+                && matches!(value, Value::Entry(register) if !clobbered.contains(register));
+            if save {
+                exposed.range(*slot..end).next().is_none()
+            } else {
+                exposed.range(..end).next().is_none()
+            }
+        });
     }
 }
 
@@ -184,6 +299,7 @@ pub(crate) fn clobbers_knowing(
     if blocks.is_empty() {
         return None;
     }
+    let clobbered = convention.clobbered();
     let starts: HashMap<u64, usize> = blocks
         .iter()
         .enumerate()
@@ -212,56 +328,52 @@ pub(crate) fn clobbers_knowing(
                     outputs,
                 } => {
                     if let crate::ir::MachineInstruction::Atomic { width, .. } = instruction {
-                        state.escaped |= inputs
-                            .iter()
-                            .skip(1)
-                            .any(|value| state.exposes_frame(value));
-                        state.escaped |= inputs.first().is_some_and(|addr| {
-                            state.exposes_frame(addr)
-                                && !matches!(state.value(addr), Value::Frame(_))
-                        });
-                        if state.escaped {
-                            state.slots.clear();
-                        } else {
-                            // Ordering does not change the saved registers in an
-                            // unescaped frame. The atomic's own write still does.
-                            if let Some(addr) = inputs.first()
-                                && let Value::Frame(at) = state.value(addr)
-                            {
-                                state.forget_slots(at, *width);
-                            }
-                            state
-                                .slots
-                                .retain(|slot, _| slot.checked_add(8).is_some_and(|end| end <= 0));
+                        for value in inputs.iter().skip(1) {
+                            state.expose(value);
                         }
+                        // An atomic writes its own address, as a store does;
+                        // its ordering only makes visible what other threads
+                        // write, which reaches no slot an address of the
+                        // function's own does not.
+                        match inputs.first() {
+                            Some(addr) => state.write_through(addr, *width, clobbered),
+                            None => state.write_unplaced(clobbered),
+                        }
+                        // The caller's frame above the entry stack pointer is
+                        // memory another thread may share.
+                        state
+                            .slots
+                            .retain(|slot, _| slot.checked_add(8).is_some_and(|end| end <= 0));
                     } else {
-                        state.escaped |= inputs.iter().any(|value| state.exposes_frame(value));
+                        for value in inputs {
+                            state.expose(value);
+                        }
                     }
                     for output in outputs {
                         state.set(output.index, Value::Other);
                     }
                 }
                 Stmt::Assign { dest, value } => {
-                    if state.exposes_frame(value)
-                        && (dest.width != 64 || !matches!(state.value(value), Value::Frame(_)))
-                    {
-                        state.escaped = true;
-                    }
-                    let value = if dest.width == 64 {
+                    // A choice between frame addresses is followed as each of them.
+                    let value = if dest.width == 64 && !matches!(value, Expr::Select { .. }) {
                         state.value(value)
                     } else {
+                        state.expose(value);
                         Value::Other
                     };
                     state.set(dest.index, value);
                 }
                 Stmt::Store { addr, value, width } => {
-                    state.escaped |= state.exposes_frame(value);
-                    if let Value::Frame(at) = state.value(addr) {
-                        state.forget_slots(at, *width);
-                        if *width == 8 {
-                            let value = state.value(value);
-                            state.slots.insert(at, value);
+                    state.expose(value);
+                    match state.value(addr) {
+                        Value::Frame(at) => {
+                            state.forget_slots(at, *width);
+                            if *width == 8 {
+                                let value = state.value(value);
+                                state.slots.insert(at, value);
+                            }
                         }
+                        _ => state.write_through(addr, *width, clobbered),
                     }
                 }
                 Stmt::Call {
@@ -269,18 +381,15 @@ pub(crate) fn clobbers_knowing(
                     convention,
                     outputs,
                     clobbers,
-                    args,
                     ..
                 } => {
-                    state.escaped |= args.is_none()
-                        || stmt
-                            .operands()
-                            .iter()
-                            .any(|value| state.exposes_frame(value))
-                        || stmt
-                            .unnamed_call_reads()
-                            .iter()
-                            .any(|index| matches!(state.register(*index), Value::Frame(_)));
+                    for value in stmt.operands() {
+                        state.expose(value);
+                    }
+                    for index in stmt.unnamed_call_reads() {
+                        state.expose(&Expr::reg(index, 64));
+                    }
+                    state.write_unplaced(clobbered);
                     let physical = target
                         .and_then(known)
                         .unwrap_or(*clobbers)
@@ -310,7 +419,7 @@ pub(crate) fn clobbers_knowing(
                     }
                 }
                 Stmt::Unsupported { writes, .. } => {
-                    state.escaped = true;
+                    state.lost = true;
                     match writes {
                         Some(writes) => {
                             for register in writes {
@@ -456,7 +565,7 @@ mod tests {
     }
 
     #[test]
-    fn atomic_heap_accesses_preserve_saved_registers_but_overlaps_and_escapes_do_not() {
+    fn atomic_heap_accesses_preserve_saved_registers_but_writes_reaching_their_slots_do_not() {
         use crate::ir::{AtomicOp, MachineInstruction, Ordering};
 
         for ordering in [
@@ -512,11 +621,190 @@ mod tests {
                 let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
                 assert_eq!(
                     changed.contains(RBX),
-                    case != 0,
+                    !matches!(case, 0 | 5),
                     "case {case}, {ordering:?}"
                 );
             }
         }
+    }
+
+    fn atomic_add(addr: Expr) -> Stmt {
+        use crate::ir::{AtomicOp, MachineInstruction, Ordering};
+        Stmt::Machine {
+            instruction: MachineInstruction::Atomic {
+                op: AtomicOp::Add,
+                width: 8,
+                ordering: Ordering::SeqCst,
+            },
+            inputs: vec![addr, Expr::Const(1)],
+            outputs: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn an_atomic_on_other_memory_keeps_the_saves_of_a_frame_whose_locals_escape() {
+        // push rbx; sub rsp, 0x20; f(&local); rbx = 7; atomic add [rax];
+        // add rsp, 0x20; pop rbx; ret
+        let mut stmts: Vec<Stmt> = push(RBX).into();
+        stmts.push(assign(
+            RSP,
+            Expr::bin(BinOp::Sub, reg(RSP), Expr::Const(0x20)),
+        ));
+        let mut called = call();
+        if let Stmt::Call { args, .. } = &mut called {
+            *args = Some(vec![Expr::bin(BinOp::Add, reg(RSP), Expr::Const(8))]);
+        }
+        stmts.push(called);
+        stmts.push(assign(RBX, Expr::Const(7)));
+        stmts.push(atomic_add(reg(0)));
+        stmts.push(assign(
+            RSP,
+            Expr::bin(BinOp::Add, reg(RSP), Expr::Const(0x20)),
+        ));
+        stmts.extend(pop(RBX));
+        stmts.push(ret());
+        let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+        assert!(!changed.contains(RBX));
+    }
+
+    #[test]
+    fn an_index_into_a_local_does_not_reach_the_saves() {
+        let mut stmts: Vec<Stmt> = push(RBX).into();
+        stmts.push(assign(
+            RSP,
+            Expr::bin(BinOp::Sub, reg(RSP), Expr::Const(0x20)),
+        ));
+        stmts.push(assign(0, Expr::bin(BinOp::Add, reg(RSP), reg(1))));
+        stmts.push(Stmt::Store {
+            addr: reg(0),
+            value: Expr::Const(0),
+            width: 1,
+        });
+        stmts.push(assign(RBX, Expr::Const(7)));
+        stmts.push(atomic_add(reg(7)));
+        stmts.push(assign(
+            RSP,
+            Expr::bin(BinOp::Add, reg(RSP), Expr::Const(0x20)),
+        ));
+        stmts.extend(pop(RBX));
+        stmts.push(ret());
+        let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+        assert!(!changed.contains(RBX));
+    }
+
+    #[test]
+    fn a_save_slot_address_kept_in_memory_is_still_written_through() {
+        // push rbx; [rdi] = rsp; rsi = [rdi]; [rsi] = 0; pop rbx; ret
+        for atomic in [false, true] {
+            let mut stmts: Vec<Stmt> = push(RBX).into();
+            stmts.push(Stmt::Store {
+                addr: reg(7),
+                value: reg(RSP),
+                width: 8,
+            });
+            stmts.push(assign(
+                6,
+                Expr::Load {
+                    addr: Box::new(reg(7)),
+                    width: 8,
+                    signed: false,
+                },
+            ));
+            stmts.push(if atomic {
+                atomic_add(reg(6))
+            } else {
+                Stmt::Store {
+                    addr: reg(6),
+                    value: Expr::Const(0),
+                    width: 8,
+                }
+            });
+            stmts.extend(pop(RBX));
+            stmts.push(ret());
+            let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+            assert!(changed.contains(RBX), "atomic {atomic}");
+        }
+    }
+
+    #[test]
+    fn a_save_slot_address_held_on_one_way_into_a_join_is_still_written_through() {
+        let mut entry: Vec<_> = push(RBX).into();
+        entry.push(Stmt::Brif {
+            cond: crate::ir::Cond::Eq,
+            lhs: reg(0),
+            rhs: Expr::Const(0),
+            target: 0x1020,
+        });
+        let mut exit = vec![Stmt::Store {
+            addr: reg(6),
+            value: Expr::Const(0),
+            width: 8,
+        }];
+        exit.extend(pop(RBX));
+        exit.push(ret());
+        let blocks = vec![
+            block(0x1000, entry),
+            block(
+                0x1010,
+                vec![
+                    assign(6, reg(RSP)),
+                    Stmt::Br {
+                        target: Some(0x1030),
+                    },
+                ],
+            ),
+            block(
+                0x1020,
+                vec![
+                    assign(6, reg(7)),
+                    Stmt::Br {
+                        target: Some(0x1030),
+                    },
+                ],
+            ),
+            block(0x1030, exit),
+        ];
+        assert!(
+            clobbers(&blocks, Convention::SysV, RSP)
+                .unwrap()
+                .contains(RBX)
+        );
+    }
+
+    #[test]
+    fn an_exposed_address_reaches_the_rest_of_its_object() {
+        // Registers spilled above the return address, as Go spills its
+        // arguments, are one object with the slot whose address a callee
+        // gets: it may change them all.
+        let at = |offset: u64| Expr::bin(BinOp::Add, reg(RSP), Expr::Const(offset));
+        let mut called = call();
+        if let Stmt::Call { args, .. } = &mut called {
+            *args = Some(vec![at(8)]);
+        }
+        let stmts = vec![
+            Stmt::Store {
+                addr: at(8),
+                value: reg(0),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: at(16),
+                value: reg(RBX),
+                width: 8,
+            },
+            called,
+            assign(
+                RBX,
+                Expr::Load {
+                    addr: Box::new(at(16)),
+                    width: 8,
+                    signed: false,
+                },
+            ),
+            ret(),
+        ];
+        let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
+        assert!(changed.contains(RBX));
     }
 
     #[test]
