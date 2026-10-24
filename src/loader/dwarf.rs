@@ -696,30 +696,47 @@ pub fn functions(image: &Image) -> Vec<DwarfFunction> {
                     gimli::DW_AT_low_pc => {
                         low = attribute_offset(&dwarf, &unit, attribute.value());
                     }
+                    // An address form gives the end; a constant form, the size.
                     gimli::DW_AT_high_pc => {
-                        high = attribute_offset(&dwarf, &unit, attribute.value());
+                        let value = attribute.value();
+                        let address = matches!(
+                            value,
+                            AttributeValue::Addr(_) | AttributeValue::DebugAddrIndex(_)
+                        );
+                        high = attribute_offset(&dwarf, &unit, value).map(|high| (high, address));
                     }
                     _ => {}
                 }
             }
-            let (Some(low), Some(high)) = (low, high) else {
+            let (Some(low), Some((high, address))) = (low, high) else {
                 continue;
             };
             let Some(name) = linkage.or(name) else {
                 continue;
             };
-            let (addr, size) = if high > low {
-                (low, high - low)
+            let size = if address {
+                high.checked_sub(low)
             } else {
-                (low, high)
+                Some(high)
             };
-            if addr == 0 || size == 0 {
+            let Some(size) = size.filter(|size| *size > 0 && low.checked_add(*size).is_some())
+            else {
+                continue;
+            };
+            if low == 0 {
                 continue;
             }
-            functions.push(DwarfFunction { addr, size, name });
+            functions.push(DwarfFunction {
+                addr: low,
+                size,
+                name,
+            });
         }
     }
     functions.sort_by_key(|function| function.addr);
     functions.dedup_by_key(|function| function.addr);
     functions
 }
+
+#[cfg(test)]
+mod tests;
