@@ -23,6 +23,8 @@ pub mod x86 {
 }
 
 pub mod aarch64 {
+    /// x30, where a call leaves the address it returns to.
+    pub const LR: u16 = 30;
     pub const SP: u16 = 31;
     /// The low 64 bits of v0; each vector register is a pair of slots, low
     /// half first.

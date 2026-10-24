@@ -29,6 +29,7 @@ use super::{
     Decoded, MAX_INSTRUCTIONS, Machine, Write, call, call_through, flags, preserve_compare,
     reverse_bytes, rotate, tail_call,
 };
+use crate::arch::aarch64::LR;
 use crate::ir::{
     BinOp, CallKind, Cond, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt,
 };
@@ -325,6 +326,15 @@ fn written_registers(ins: &Instruction) -> Vec<u16> {
     out
 }
 
+/// A call's write of the address after it, at `pc`, to the link register.
+fn link(lifter: &mut Lifter, pc: u64) {
+    let dest = RegRef {
+        index: LR,
+        width: 64,
+    };
+    lifter.assign(dest, Expr::constant(pc.wrapping_add(4)));
+}
+
 fn relative_target(operand: Operand, pc: u64) -> Option<u64> {
     match operand {
         Operand::PCOffset(offset) => Some(pc.wrapping_add(offset as u64)),
@@ -517,6 +527,13 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             // A call leaves the flags undefined.
             lifter.last_compare = None;
             if let Some(through) = lifter.operand(ops[0], 64) {
+                // `blr x30` jumps to the address x30 held before the link.
+                let through = if matches!(through, Expr::Reg { index: LR, .. }) {
+                    lifter.hold(through)
+                } else {
+                    through
+                };
+                link(lifter, pc);
                 lifter
                     .stmts
                     .push(call_through(CallKind::Invoke, lifter.image, through));
@@ -525,6 +542,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::BL => {
             lifter.last_compare = None;
             let target = lifter.target_of(ops[0], pc);
+            link(lifter, pc);
             let made = call(CallKind::Invoke, lifter.image, lifter.summaries, target);
             lifter.stmts.push(made);
             if target.is_some_and(|target| (lifter.summaries)(target).noreturn) {
@@ -1113,6 +1131,162 @@ mod tests {
                 }
             }
             assert_eq!(checked, 8192);
+        }
+    }
+
+    fn precise_calls(ir: &mut FunctionIr, changed: &[u16]) {
+        let mut registers = crate::ir::Registers::default();
+        for register in changed {
+            registers.insert(*register);
+        }
+        for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let Stmt::Call { clobbers, .. } = stmt {
+                *clobbers = Some(registers);
+            }
+        }
+    }
+
+    #[test]
+    fn decoded_bl_defines_original_next_pc_before_a_preserving_leaf() {
+        let mut ir = lifted(&[0x9400_0008, 0xaa1e_03e0, RET]);
+        precise_calls(&mut ir, &[]);
+        let statements = &ir.blocks[0].stmts;
+        let call = statements
+            .iter()
+            .position(|stmt| matches!(stmt, Stmt::Call { .. }))
+            .unwrap();
+        assert!(matches!(
+            statements[call - 1],
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 30,
+                    width: 64
+                },
+                value: crate::ir::Expr::Const(4)
+            }
+        ));
+        assert!(matches!(
+            statements[call],
+            Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
+                target: Some(32),
+                ..
+            }
+        ));
+        assert!(!statements[call].call_clobbers().contains(&30));
+        let Outcome::Return { value, calls, .. } = eval::run(&ir, &setup(&[(30, 0x9876)])) else {
+            panic!("modeled BL");
+        };
+        assert_eq!(value, 4);
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].target, Some(32));
+    }
+
+    #[test]
+    fn decoded_blr_x30_captures_old_target_before_link_definition_once() {
+        let mut ir = lifted(&[0xd63f_03c0, 0xaa1e_03e0, RET]);
+        precise_calls(&mut ir, &[]);
+        let statements = &ir.blocks[0].stmts;
+        let call = statements
+            .iter()
+            .position(|stmt| matches!(stmt, Stmt::Call { .. }))
+            .unwrap();
+        assert!(matches!(
+            statements[call - 2],
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: crate::ir::EXCHANGE,
+                    width: 64
+                },
+                value: crate::ir::Expr::Reg {
+                    index: 30,
+                    width: 64
+                }
+            }
+        ));
+        assert!(matches!(
+            statements[call - 1],
+            Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 30,
+                    width: 64
+                },
+                value: crate::ir::Expr::Const(4)
+            }
+        ));
+        assert!(matches!(
+            statements[call],
+            Stmt::Call {
+                through: Some(crate::ir::Expr::Reg {
+                    index: crate::ir::EXCHANGE,
+                    width: 64
+                }),
+                ..
+            }
+        ));
+        let Outcome::Return { value, calls, .. } = eval::run(&ir, &setup(&[(30, 0x8765)])) else {
+            panic!("modeled BLR");
+        };
+        assert_eq!(value, 4);
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].target, Some(0x8765));
+    }
+
+    #[test]
+    fn decoded_blr_other_register_defines_link_without_an_unneeded_snapshot() {
+        let mut ir = lifted(&[0xd63f_0000, 0xaa1e_03e0, RET]);
+        precise_calls(&mut ir, &[]);
+        assert!(!ir.blocks.iter().flat_map(|block| &block.stmts).any(
+            |stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == crate::ir::EXCHANGE)
+        ));
+        let Outcome::Return { value, calls, .. } =
+            eval::run(&ir, &setup(&[(0, 0x7654), (30, 0x9999)]))
+        else {
+            panic!("modeled BLR");
+        };
+        assert_eq!(value, 4);
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].target, Some(0x7654));
+    }
+
+    #[test]
+    fn callee_link_clobbers_are_separate_from_the_decoded_link_definition() {
+        for precise in [false, true] {
+            let mut ir = lifted(&[0x9400_0008, 0xaa1e_03e0, RET]);
+            if precise {
+                precise_calls(&mut ir, &[30]);
+            }
+            let call = ir
+                .blocks
+                .iter()
+                .flat_map(|block| &block.stmts)
+                .find(|stmt| matches!(stmt, Stmt::Call { .. }))
+                .unwrap();
+            assert!(call.call_clobbers().contains(&30));
+            assert!(crate::ir::visit::statement_registers(call).0.contains(&30));
+            assert!(
+                !call
+                    .preserved_output_sources()
+                    .iter()
+                    .any(|(_, register)| *register == 30)
+            );
+            let Outcome::Return { value, .. } = eval::run(&ir, &setup(&[(30, 0x9876)])) else {
+                panic!("modeled BL");
+            };
+            assert_eq!(value, 0);
+        }
+    }
+
+    #[test]
+    fn branches_and_system_calls_write_no_link_value() {
+        for words in [&[0xd61f_03c0][..], &[0xd400_0001, RET][..]] {
+            let ir = lifted(words);
+            assert!(
+                !ir.blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == 30))
+            );
         }
     }
 }
