@@ -3962,6 +3962,76 @@ fn check_signed_select_search(remainder: bool) {
 }
 
 #[test]
+fn printed_void_calls_keep_existing_values_in_both_output_paths() {
+    use velk::ir::{CallOutput, RegRef, Registers, VARIABLE_BASE};
+
+    let mut text = String::from(HEADER);
+    text.push_str("static unsigned void_calls;\nstatic void void_callee(void) { ++void_calls; }\n");
+    let symbols = velk::render::Symbols {
+        functions: [(0x1000, "void_callee".to_owned())].into(),
+        function_returns: [(0x1000, CType::Void)].into(),
+        ..Default::default()
+    };
+    for (name, dest) in [("void_direct", VARIABLE_BASE), ("void_snapshot", 2)] {
+        let ir = synthetic_ir(
+            name,
+            vec![Param {
+                index: 7,
+                name: "value".to_owned(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Call {
+                    kind: velk::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::SysV,
+                    args: Some(vec![]),
+                    floats_named: true,
+                    outputs: vec![
+                        CallOutput {
+                            register: 7,
+                            dest: RegRef {
+                                index: 7,
+                                width: 64,
+                            },
+                        },
+                        CallOutput {
+                            register: 0,
+                            dest: RegRef {
+                                index: dest,
+                                width: 64,
+                            },
+                        },
+                    ],
+                    clobbers: Some(Registers((1 << 7) | 1)),
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::reg(dest, 64)),
+                },
+            ],
+        );
+        let printed = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(!printed.contains("also returned by the call"), "{printed}");
+        assert_eq!(printed.contains("call_values"), dest == 2, "{printed}");
+        text.push_str(&printed);
+    }
+    text.push_str("int main(void) { if (void_direct(UINT64_C(0x100000005)) != UINT64_C(0x100000005)) return 1; if (void_snapshot(17) != 17) return 2; return void_calls != 2; }\n");
+    let source = Program {
+        text,
+        ranges: Vec::new(),
+    };
+    let scratch = scratch_dir("void-call-outputs");
+    for level in LEVELS {
+        let program = build(&source, &scratch, level, &["-Werror=int-conversion"]);
+        assert_eq!(run(&program, ""), "");
+    }
+    std::fs::remove_dir_all(&scratch).ok();
+}
+
+#[test]
 fn printed_call_outputs_preserve_dependencies_and_run_once() {
     use velk::ir::{CallOutput, RegRef, Registers, VARIABLE_BASE};
 

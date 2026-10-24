@@ -518,6 +518,25 @@ fn macho_library_calls_compile_with_c_headers() {
     std::fs::remove_dir_all(dir).unwrap();
 }
 
+/// Reading x0 after a void import produces an explicit undefined value.
+#[test]
+fn void_stub_clobbered_register_is_undefined() {
+    let mut bytes = macho_executable("_memset_pattern16");
+    let offset = (MACHO_TEXT + MACHO_F + 0x1c) as usize;
+    // str x0, [sp], #0x20: consume x0 and restore the stack pointer.
+    bytes[offset..offset + 4].copy_from_slice(&0xf802_07e0u32.to_le_bytes());
+    let path = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("macho-{}-void-read", std::process::id()));
+    std::fs::write(&path, bytes).expect("a scratch file");
+    let mut binary = Binary::open(&path).expect("a Mach-O executable");
+    std::fs::remove_file(&path).ok();
+    let code = decompiled(&mut binary, "_f");
+    assert!(code.contains("0 /* undefined */"), "{code}");
+    assert!(!code.contains("also returned by the call"), "{code}");
+    assert!(!code.contains("= x0;"), "{code}");
+    assert!(compiles(&code));
+}
+
 /// A branch to itself in a linked image is an endless loop.
 #[test]
 fn a_linked_branch_to_itself_loops() {

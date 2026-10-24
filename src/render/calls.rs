@@ -216,6 +216,18 @@ fn identity_output(call: &Stmt, output: &CallOutput, ctx: &Ctx<'_>) -> bool {
         return false;
     }
     let preserved = call.preserved_output_sources();
+    let void_clobber = return_type(call, ctx) == Some(&crate::ir::CType::Void)
+        && !preserved
+            .iter()
+            .any(|(index, _)| call.call_outputs()[*index] == *output);
+    if void_clobber
+        && ctx
+            .declared
+            .get(&output.dest.index)
+            .is_some_and(|ty| ty.param)
+    {
+        return true;
+    }
     let source = preserved
         .iter()
         .find(|(index, _)| call.call_outputs()[*index] == *output)
@@ -499,6 +511,8 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
             ctx.call_outputs.used(call, output) && !identity_output(call, output, ctx)
         })
         .collect();
+    let void = return_type(call, ctx) == Some(&crate::ir::CType::Void);
+    let undefined = super::render_value(&Expr::apply(crate::ir::Operation::Undefined, vec![]), ctx);
     let text = expression(call, ctx);
     if used.is_empty() {
         return format!("{text};");
@@ -544,6 +558,9 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 Some((_, source)) if ctx.names.contains_key(source) => {
                     (ctx.register(*source, 64), ValueType::register(*source, ctx))
                 }
+                _ if void && !preserved.iter().any(|(at, _)| at == index) => {
+                    (undefined.clone(), ValueType::Integer(64, false))
+                }
                 _ => (
                     ctx.call_outputs.sources[&output.register].clone(),
                     ValueType::Integer(64, false),
@@ -552,7 +569,7 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
             lines.push(format!(
                 "{}{}",
                 commit(output, source, &ty, ctx),
-                if preserved.iter().any(|(at, _)| at == index) {
+                if void || preserved.iter().any(|(at, _)| at == index) {
                     ""
                 } else {
                     " /* also returned by the call */"
@@ -596,10 +613,15 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
         if preserved.iter().any(|(preserved, _)| preserved == index) || scalar == Some(*output) {
             continue;
         }
-        let source = &ctx.call_outputs.sources[&output.register];
-        lines.push(format!(
-            "    {temporary}[{at}] = {source}; /* also returned by the call */"
-        ));
+        let (source, comment) = if void {
+            (undefined.clone(), "")
+        } else {
+            (
+                ctx.call_outputs.sources[&output.register].clone(),
+                " /* also returned by the call */",
+            )
+        };
+        lines.push(format!("    {temporary}[{at}] = {source};{comment}"));
     }
     for (at, (_, output)) in used.iter().enumerate() {
         lines.push(format!(
@@ -911,6 +933,50 @@ mod tests {
 
     use crate::ir::{CType, Convention, Expr, FunctionIr, Param, RegRef, Stmt, VARIABLE_BASE};
     use crate::loader::Isa;
+
+    #[test]
+    fn void_call_outputs_keep_identity_values_and_define_other_destinations() {
+        for dest in [VARIABLE_BASE, 0] {
+            for width in [32, 64] {
+                for preserved in [false, true] {
+                    let mut call = call(0x1000, vec![]);
+                    if let Stmt::Call {
+                        outputs, clobbers, ..
+                    } = &mut call
+                    {
+                        *outputs = vec![output(0, dest, width)];
+                        if preserved {
+                            *clobbers = Some(crate::ir::Registers(0));
+                        }
+                    }
+                    let ir = FunctionIr::single_block(
+                        Isa::X86_64,
+                        vec![
+                            call,
+                            Stmt::Ret {
+                                value: Expr::reg(dest, width),
+                            },
+                        ],
+                    );
+                    let symbols = crate::render::Symbols {
+                        function_returns: HashMap::from([(0x1000, CType::Void)]),
+                        ..Default::default()
+                    };
+                    let text = crate::render::render(&ir, &[], &symbols, &[]);
+                    assert!(text.contains("sub_1000();"), "{text}");
+                    assert_eq!(
+                        text.contains("/* undefined */"),
+                        !preserved && (dest >= VARIABLE_BASE || width != 64),
+                        "{text}"
+                    );
+                    if preserved && width == 32 {
+                        assert!(text.contains("(uint32_t)"), "{text}");
+                    }
+                    assert!(!text.contains("also returned by the call"), "{text}");
+                }
+            }
+        }
+    }
 
     #[test]
     fn shared_snapshot_declaration_uses_only_final_blocks() {
