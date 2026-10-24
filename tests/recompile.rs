@@ -24,6 +24,8 @@ mod common;
 mod division;
 #[path = "recompile/frame_values.rs"]
 mod frame_values;
+#[path = "recompile/ignored_result.rs"]
+mod ignored_result;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;

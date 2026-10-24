@@ -4,8 +4,9 @@
 //! register from one that returns it; its callers can. A call's result is
 //! read when some path from the call reads the register before writing it.
 //! A path that reaches the caller's own return passes the result on, which
-//! reads it only when the caller returns a value in turn. A constant put in
-//! the register just before a return is a value whatever the callers do.
+//! reads it only when the caller returns a value in turn. An assignment used
+//! only by the return, or a constant, is evidence of a result even when the
+//! known callers discard it.
 
 use std::collections::{HashMap, HashSet};
 
@@ -14,12 +15,12 @@ use crate::ir::{Block, Expr, Stmt};
 use crate::loader::{Image, Isa, NameSource};
 
 /// Whether the function at `addr` has direct callers, none of them reads
-/// its result, and it returns no constant.
+/// its result, and it has no explicit result.
 pub(crate) fn ignored_by_callers(image: &Image, addr: u64) -> bool {
     let Some(blocks) = body(image, addr) else {
         return false;
     };
-    if blocks.iter().any(returns_constant) || callers(image, addr).is_empty() {
+    if blocks.iter().any(returns_value) || callers(image, addr).is_empty() {
         return false;
     }
     !reads(image, addr, &mut HashSet::new()).0
@@ -236,10 +237,10 @@ fn reads(image: &Image, addr: u64, active: &mut HashSet<u64>) -> (bool, bool) {
             break;
         }
         // A result passed on to the caller's return is read when the caller
-        // returns a value: a constant, one its own callers read, or, without
-        // callers, any value its body leaves in the register.
+        // returns a value: an explicit assignment, one its own callers read,
+        // or, without callers, any value its body leaves in the register.
         if returned {
-            let returns_value = if blocks.iter().any(returns_constant) {
+            let returns_value = if blocks.iter().any(returns_value) {
                 true
             } else if callers(image, caller).is_empty() {
                 writes_result(&blocks)
@@ -339,16 +340,22 @@ fn writes_result(blocks: &[Block]) -> bool {
     })
 }
 
-/// Whether the block puts a constant in the return register and returns it.
-fn returns_constant(block: &Block) -> bool {
-    let Some(Stmt::Ret { .. }) = block.stmts.last() else {
+/// Whether the block returns a constant or assigns a value used only by its
+/// return. Known callers may discard a result even though others can use it.
+fn returns_value(block: &Block) -> bool {
+    if !matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
         return false;
-    };
-    let last_write = block.stmts.iter().rev().find_map(|stmt| match stmt {
-        Stmt::Assign { dest, value } if dest.index == RETURN => Some(value),
-        _ => None,
-    });
-    matches!(last_write, Some(Expr::Const(_)))
+    }
+    let mut used = false;
+    for stmt in block.stmts.iter().rev().skip(1) {
+        let (written, read) = crate::ir::visit::statement_registers(stmt);
+        if written.contains(&RETURN) {
+            return matches!(stmt, Stmt::Assign { value, .. }
+                if !used || matches!(value, Expr::Const(_)));
+        }
+        used |= read.contains(&RETURN);
+    }
+    false
 }
 
 /// What becomes of the return register from statement `position` of block
@@ -459,6 +466,51 @@ mod tests {
             dest: RegRef { index, width: 64 },
             value,
         }
+    }
+
+    #[test]
+    fn explicit_return_assignment_is_not_an_incidental_result() {
+        let ret = Stmt::Ret {
+            value: Expr::reg(crate::arch::RETURN, 64),
+        };
+        let result = assign(crate::arch::RETURN, Expr::reg(8, 64));
+        let store = Stmt::Store {
+            addr: Expr::Const(0x2000),
+            value: Expr::reg(crate::arch::RETURN, 64),
+            width: 8,
+        };
+        let block = |stmts| Block { start: 0, stmts };
+        assert!(super::returns_value(&block(vec![
+            result.clone(),
+            ret.clone()
+        ])));
+        assert!(!super::returns_value(&block(vec![
+            result.clone(),
+            store.clone(),
+            ret.clone()
+        ])));
+        assert!(super::returns_value(&block(vec![
+            assign(crate::arch::RETURN, Expr::Const(0)),
+            store,
+            ret.clone()
+        ])));
+        assert!(!super::returns_value(&block(vec![ret.clone()])));
+        let call = Stmt::Call {
+            target: Some(0x1000),
+            through: None,
+            convention: crate::ir::Convention::Aapcs64,
+            args: Some(Vec::new()),
+            floats_named: true,
+            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
+            clobbers: None,
+            via: None,
+        };
+        assert!(!super::returns_value(&block(vec![
+            result.clone(),
+            call.clone(),
+            ret.clone()
+        ])));
+        assert!(super::returns_value(&block(vec![call, result, ret])));
     }
 
     #[test]
