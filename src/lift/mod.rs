@@ -191,7 +191,7 @@ pub fn lift_with(
     let Some(bytes) = image.read_vaddr(addr, size) else {
         return Err(LiftError::Unreadable);
     };
-    match image.isa {
+    let lifted = match image.isa {
         Isa::AArch64 => {
             let mut blocks = match lift_continuing(
                 image,
@@ -255,6 +255,158 @@ pub fn lift_with(
             Ok(blocks)
         }
         Isa::Unsupported => Err(LiftError::UnsupportedIsa),
+    };
+    lifted.map(|mut blocks| {
+        drop_stack_probes(&mut blocks, image);
+        blocks
+    })
+}
+
+/// Drops the calls to the stack probe compilers place before they grow a
+/// frame by a page or more. The probe touches each page the frame will
+/// cover and keeps the registers the code around it uses, the arguments
+/// included, which a call would leave unknown.
+fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
+    if image.format != crate::loader::Format::MachO {
+        return;
+    }
+    let sp = crate::arch::stack_pointer(image.isa);
+    for block in blocks {
+        // The import slot each register was loaded from in this block, and
+        // the constant addresses the code computes on the way there.
+        let mut slots: HashMap<u16, u64> = HashMap::new();
+        let mut addresses: HashMap<u16, u64> = HashMap::new();
+        let mut probes = Vec::new();
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            let name = match stmt {
+                Stmt::Call {
+                    through: Some(Expr::Reg { index, width: 64 }),
+                    ..
+                } => slots
+                    .get(index)
+                    .and_then(|slot| image.imports.get(slot))
+                    .map(String::as_str),
+                Stmt::Call {
+                    through: Some(through),
+                    ..
+                } => import_name(image, through),
+                Stmt::Call {
+                    target: Some(target),
+                    through: None,
+                    ..
+                } => image
+                    .functions
+                    .get(target)
+                    .filter(|function| function.sources.contains(&crate::loader::NameSource::Plt))
+                    .and_then(|function| function.name.as_deref()),
+                _ => None,
+            };
+            if name == Some("___chkstk_darwin") {
+                probes.push(position);
+            }
+            let mut slot = None;
+            let mut address = None;
+            if let Stmt::Assign { dest, value } = stmt
+                && dest.width == 64
+            {
+                match value {
+                    Expr::Load { addr, width: 8, .. } => {
+                        slot = known_address(addr, &addresses)
+                            .filter(|slot| image.imports.contains_key(slot))
+                            .map(|slot| (dest.index, slot));
+                    }
+                    value => {
+                        address = known_address(value, &addresses).map(|value| (dest.index, value));
+                    }
+                }
+            }
+            for register in crate::ir::visit::statement_registers(stmt).0 {
+                slots.remove(&register);
+                addresses.remove(&register);
+            }
+            if let Some((register, slot)) = slot {
+                slots.insert(register, slot);
+            }
+            if let Some((register, value)) = address {
+                addresses.insert(register, value);
+            }
+        }
+        let mut dropped = Vec::new();
+        for position in probes {
+            dropped.push(position);
+            // AArch64 code saves the link register on the stack around the
+            // call; the save would read as a store into the frame.
+            if image.isa == Isa::AArch64
+                && let Some(restore) = link_restore(&block.stmts, position, sp)
+                && let Some(save) = link_save(&block.stmts, position, sp)
+            {
+                dropped.push(restore);
+                dropped.push(save);
+            }
+        }
+        dropped.sort_unstable();
+        dropped.dedup();
+        for position in dropped.into_iter().rev() {
+            block.stmts.remove(position);
+        }
+    }
+}
+
+const LINK_REGISTER: u16 = 30;
+
+/// The statement right after the call at `call` that loads the link
+/// register back from the top of the stack.
+fn link_restore(stmts: &[Stmt], call: usize, sp: u16) -> Option<usize> {
+    let position = call.checked_add(1)?;
+    match stmts.get(position)? {
+        Stmt::Assign {
+            dest,
+            value: Expr::Load { addr, width: 8, .. },
+        } if dest.index == LINK_REGISTER
+            && matches!(addr.as_ref(), Expr::Reg { index, width: 64 } if *index == sp) =>
+        {
+            Some(position)
+        }
+        _ => None,
+    }
+}
+
+/// The last store of the link register before the call at `call`, when it
+/// stores to the stack.
+fn link_save(stmts: &[Stmt], call: usize, sp: u16) -> Option<usize> {
+    let position = stmts[..call].iter().rposition(|stmt| {
+        matches!(stmt, Stmt::Store { value: Expr::Reg { index, width: 64 }, width: 8, .. }
+            if *index == LINK_REGISTER)
+    })?;
+    let Stmt::Store { addr, .. } = &stmts[position] else {
+        return None;
+    };
+    let from_sp = match addr {
+        Expr::Reg { index, width: 64 } => *index == sp,
+        Expr::Bin { lhs, rhs, .. } => {
+            matches!(lhs.as_ref(), Expr::Reg { index, width: 64 } if *index == sp)
+                && matches!(rhs.as_ref(), Expr::Const(_))
+        }
+        _ => false,
+    };
+    from_sp.then_some(position)
+}
+
+/// The constant an address expression of constants, additions and
+/// registers holding known constants computes.
+fn known_address(expr: &Expr, addresses: &HashMap<u16, u64>) -> Option<u64> {
+    match expr {
+        Expr::Const(value) => Some(*value),
+        Expr::Reg { index, width: 64 } => addresses.get(index).copied(),
+        Expr::Bin {
+            op: crate::ir::BinOp::Add,
+            lhs,
+            rhs,
+        } => match (known_address(lhs, addresses), known_address(rhs, addresses)) {
+            (Some(lhs), Some(rhs)) => Some(lhs.wrapping_add(rhs)),
+            _ => None,
+        },
+        _ => None,
     }
 }
 

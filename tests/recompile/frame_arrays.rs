@@ -2,8 +2,9 @@ use super::*;
 
 /// Compiles `source` without optimization, prints each of `functions`, and
 /// runs the printed C next to the original on every input: both, and the
-/// interpreter on the IR, must return the same 32-bit value. Each function
-/// takes one 32-bit argument.
+/// interpreter on the IR where it makes no call, must return the same
+/// 32-bit value. Each function
+/// takes one 32-bit argument; calls in the printed C reach the originals.
 pub(crate) fn check_against_original(pass: &str, source: &str, functions: &[&str], inputs: &[u32]) {
     let scratch = scratch_dir(pass);
     let original = scratch.join("original.c");
@@ -22,12 +23,22 @@ pub(crate) fn check_against_original(pass: &str, source: &str, functions: &[&str
     let mut text = String::from(HEADER);
     text.push_str(&source.replace("int main(", "int original_main("));
     let mut checks = String::new();
-    for function in functions {
-        let address = binary.find(&format!("{prefix}{function}")).unwrap().addr;
+    let addresses: Vec<u64> = functions
+        .iter()
+        .map(|function| binary.find(&format!("{prefix}{function}")).unwrap().addr)
+        .collect();
+    for (function, address) in functions.iter().zip(&addresses) {
+        let address = *address;
         let mut ir = binary.analysis(address, None).unwrap().ir.clone();
         let printed = format!("printed_{function}");
         ir.name = Some(printed.clone());
-        let code = velk::render::render(&ir, &[], &velk::render::Symbols::default(), &[]);
+        let mut others = velk::render::Symbols::default();
+        for (other, at) in functions.iter().zip(&addresses) {
+            if *at != address {
+                others.functions.insert(*at, (*other).into());
+            }
+        }
+        let code = velk::render::render(&ir, &[], &others, &[]);
         text.push_str(&code);
         for input in inputs {
             let registers: Vec<(u16, u64)> = ir
@@ -48,16 +59,25 @@ pub(crate) fn check_against_original(pass: &str, source: &str, functions: &[&str
                     step_limit: trials::STEP_LIMIT,
                 },
             );
-            let Outcome::Return { value, .. } = outcome else {
+            let Outcome::Return { value, calls, .. } = outcome else {
                 panic!("{function}({input}): {outcome:?}\n{code}");
             };
             let arguments = vec![format!("UINT32_C({input})"); ir.params.len()].join(", ");
-            writeln!(
+            write!(
                 checks,
-                "if ((uint32_t){printed}({arguments}) != {function}(UINT32_C({input})) || (uint32_t){printed}({arguments}) != UINT32_C({})) return 1;",
-                value as u32
+                "if ((uint32_t){printed}({arguments}) != {function}(UINT32_C({input}))"
             )
             .unwrap();
+            // What a call returns is the interpreter's guess.
+            if calls.is_empty() {
+                write!(
+                    checks,
+                    " || (uint32_t){printed}({arguments}) != UINT32_C({})",
+                    value as u32
+                )
+                .unwrap();
+            }
+            checks.push_str(") return 1;\n");
         }
     }
     text.push_str("int main(void) {\n");
@@ -80,6 +100,16 @@ fn printed_indexed_arrays_keep_elements_read_at_fixed_offsets() {
         "frame-arrays",
         include_str!("frame_arrays.c"),
         &["indexed_bytes", "indexed_words"],
+        &[0, 1, 0x55, 0x1234_5678, 0xffff_fffe],
+    );
+}
+
+#[test]
+fn printed_large_frames_keep_arguments_across_the_stack_probe() {
+    check_against_original(
+        "stack-probe",
+        include_str!("stack_probe.c"),
+        &["large_frame", "calls_large_frame"],
         &[0, 1, 0x55, 0x1234_5678, 0xffff_fffe],
     );
 }
