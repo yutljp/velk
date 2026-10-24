@@ -186,7 +186,11 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
         ],
     );
     let candidate = printed_candidate(ir, vec![vec![]]);
-    assert!(candidate.code.contains("[0xc]"), "{}", candidate.code);
+    assert!(
+        candidate.code.contains("local_1.f_0.s2.f_4 = "),
+        "{}",
+        candidate.code
+    );
     assert!(
         candidate.code.contains("uint32_t local_0;"),
         "{}",
@@ -395,7 +399,8 @@ fn printed_stack_unions_read_each_width_as_the_machine_does() {
             },
             store(-60, 0x8001, 2),
             store(-57, 0x80, 1),
-            // Eight bytes across two cells stay bytes.
+            // Eight bytes across two cells overlap the four read below
+            // them: each is a field of one layer of a union.
             Stmt::Store {
                 addr: slot(-45),
                 value: Expr::reg(7, 64),
@@ -410,7 +415,7 @@ fn printed_stack_unions_read_each_width_as_the_machine_does() {
     assert!(code.contains("union {"), "{code}");
     assert!(code.contains("local_0.f_0.as_i32[1]"), "{code}");
     assert!(!code.contains("*(int16_t *)"), "{code}");
-    assert!(code.contains("*(uint64_t *)"), "{code}");
+    assert!(code.contains("local_0.f_10.s1.f_13"), "{code}");
     ir.blocks[0].stmts.remove(0);
     for offset in (0..32).rev() {
         ir.blocks[0].stmts.insert(0, store(-64 + offset, 0x5a, 1));

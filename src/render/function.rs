@@ -1406,35 +1406,67 @@ fn declared(ty: &CType, param: bool) -> Option<expr::Declared> {
     }
 }
 
-/// `name` declared as `ty`, the star of a pointer next to the name.
 /// The union a field of a local declares for the accesses that share it,
-/// one member per width from the widest: `union { int64_t as_i64; uint32_t as_u32[2]; } f_8`.
+/// one member per width from the widest, `union { int64_t as_i64; uint32_t
+/// as_u32[2]; } f_8`, and one packed structure per layer of accesses that
+/// do not overlap one another.
 fn union_declaration(field: &super::locals::Local, name: &str) -> String {
     let mut members: Vec<(u8, String)> = Vec::new();
+    let mut layers: std::collections::BTreeMap<&str, Vec<&super::locals::Local>> =
+        std::collections::BTreeMap::new();
     for view in &field.views {
-        let Some(member) = view.name.rsplit('.').next() else {
+        let Some(path) = view
+            .name
+            .strip_prefix(field.name.as_str())
+            .and_then(|path| path.strip_prefix('.'))
+        else {
             continue;
         };
-        let member = match member.split_once('[') {
+        if let Some((layer, _)) = path.split_once('.') {
+            layers.entry(layer).or_default().push(view);
+            continue;
+        }
+        let member = match path.split_once('[') {
             Some((base, _)) => format!(
                 "{} {base}[{}]",
                 type_of(view.width, view.signed),
                 field.width / view.width
             ),
-            None => format!("{} {member}", type_of(view.width, view.signed)),
+            None => format!("{} {path}", type_of(view.width, view.signed)),
         };
         if !members.iter().any(|(_, known)| *known == member) {
             members.push((view.width, member));
         }
     }
     members.sort_by_key(|(width, _)| std::cmp::Reverse(*width));
-    let members: Vec<String> = members
+    let mut members: Vec<String> = members
         .into_iter()
         .map(|(_, member)| format!("{member};"))
         .collect();
+    for (layer, mut fields) in layers {
+        fields.sort_by_key(|view| view.slot);
+        let mut parts = Vec::new();
+        let mut end = 0;
+        for view in fields {
+            let offset = view.slot.saturating_sub(field.slot);
+            if offset > end {
+                parts.push(format!("uint8_t gap_{end:x}[0x{:x}];", offset - end));
+            }
+            let Some(member) = view.name.rsplit('.').next() else {
+                continue;
+            };
+            parts.push(format!("{} {member};", type_of(view.width, view.signed)));
+            end = offset.saturating_add(i64::from(view.width));
+        }
+        members.push(format!(
+            "struct __attribute__((packed)) {{ {} }} {layer};",
+            parts.join(" ")
+        ));
+    }
     format!("union {{ {} }} {name}", members.join(" "))
 }
 
+/// `name` declared as `ty`, the star of a pointer next to the name.
 pub(super) fn declaration(ty: &CType, name: &str) -> String {
     if ty.is_pointer() {
         format!("{ty}{name}")

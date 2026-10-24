@@ -746,7 +746,7 @@ fn region_field(
         return None;
     };
     if !natural(start, cell) || group.iter().any(|(slot, width)| !natural(*slot, *width)) {
-        return None;
+        return layered_field(outer, group, cell, slot_names, accesses);
     }
     // One member per width, signed when a load of that width extends a
     // sign; an array of them when one is read past the cell's start.
@@ -795,6 +795,69 @@ fn region_field(
         name,
         slot: start,
         width: cell,
+        size: 0,
+        signed: false,
+        ty: None,
+        fields: Vec::new(),
+        views,
+    })
+}
+
+/// The union for overlapping accesses that fill no aligned cell, as a copy
+/// of a few bytes through two overlapping moves does: each layer of
+/// accesses that do not overlap one another is a packed structure in it,
+/// whose fields are named by their offsets in the region.
+fn layered_field(
+    outer: i64,
+    group: &[(i64, u8)],
+    span: u8,
+    slot_names: &HashMap<i64, Local>,
+    accesses: &[FrameAccess],
+) -> Option<Local> {
+    let Some(&(start, _)) = group.first() else {
+        return None;
+    };
+    if group
+        .iter()
+        .any(|(_, width)| !matches!(width, 1 | 2 | 4 | 8))
+    {
+        return None;
+    }
+    let mut ends: Vec<i64> = Vec::new();
+    let mut views = Vec::new();
+    for (slot, width) in group {
+        let end = slot.saturating_add(i64::from(*width));
+        let layer = match ends.iter().position(|last| *last <= *slot) {
+            Some(layer) => {
+                ends[layer] = end;
+                layer
+            }
+            None => {
+                ends.push(end);
+                ends.len() - 1
+            }
+        };
+        let signed = match slot_names.get(slot) {
+            Some(local) if local.width == *width => local.signed,
+            _ => accesses.iter().any(|(at, _, size, sign)| {
+                *at == Some(*slot) && size == width && *sign == Some(true)
+            }),
+        };
+        views.push(Local {
+            name: format!("s{layer}.f_{:x}", slot.saturating_sub(outer)),
+            slot: *slot,
+            width: *width,
+            size: 0,
+            signed,
+            ty: None,
+            fields: Vec::new(),
+            views: Vec::new(),
+        });
+    }
+    Some(Local {
+        name: format!("f_{:x}", start.saturating_sub(outer)),
+        slot: start,
+        width: span,
         size: 0,
         signed: false,
         ty: None,
