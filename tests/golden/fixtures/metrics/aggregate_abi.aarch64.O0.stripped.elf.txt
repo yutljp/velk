@@ -182,10 +182,10 @@ fn <unnamed> @ 0x210468 (size 212)
 /* velk pseudo-C: sub_21053c @ 0x21053c */
 struct sub_21053c_s1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 int64_t sub_21053c(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t x8;
+    uint64_t v2;
     struct sub_21053c_s1 *v1;
 
-    v1 = (struct sub_21053c_s1 *)x8;
+    v1 = (struct sub_21053c_s1 *)v2;
     v1->field_0x0 = a0 + a2;
     v1->field_0x8 = a1 ^ a2;
     v1->field_0x10 = a0 - a1;

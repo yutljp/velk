@@ -84,14 +84,14 @@ fn sum_until @ 0x2101e8 (size 92)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x210244 */
 int sum_till_neg(int *p, int n) {
-    int32_t v1;
+    uint32_t v1;
     uint32_t local_0; /* [sp-10] */
     int32_t local_1; /* [sp-14] */
 
     local_0 = 0x0;
     for (local_1 = 0x0; local_1 < n; local_1++) {
         v1 = p[local_1];
-        if (((uint32_t)v1 & 0x80000000) != 0x0) {
+        if ((v1 & 0x80000000) != 0x0) {
             return local_0;
         }
         local_0 += v1;

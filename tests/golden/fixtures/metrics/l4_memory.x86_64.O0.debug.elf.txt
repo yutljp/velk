@@ -87,7 +87,7 @@ fn bump @ 0x201290 (size 21)
 int banner_first(void) {
     uint64_t *const banner = (uint64_t *)0x2022c0ULL;
 
-    return (int8_t)(*(uint8_t *)(*banner));
+    return (int8_t)*(uint8_t *)(*banner);
 }
 -- signature
 int ()

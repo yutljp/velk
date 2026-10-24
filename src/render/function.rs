@@ -288,7 +288,7 @@ fn render_with(
     }
     // Any other machine register the body uses is a variable of its own;
     // Go keeps the running goroutine in r14.
-    let (used_registers, written_registers) = machine_registers(ir, !float_entries.is_empty());
+    let (used_registers, written_registers) = machine_registers(ir, true);
     let readonly_floats = ir.params.iter()
         .filter(|param| float_entries.contains(&param.index) && !written_registers.contains(&param.index))
         .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
@@ -298,16 +298,39 @@ fn render_with(
         .into_iter()
         .filter(|index| !names.contains_key(index))
         .map(|index| {
-            let base = if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
-                "g".to_owned()
+            let name = if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
+                vacant_name("g", &mut machine_reserved)
             } else {
-                crate::ir::reg_name(ir.isa, index, 64)
+                variable_name(&mut machine_reserved)
             };
-            (index, vacant_name(&base, &mut machine_reserved))
+            (index, name)
         })
         .collect();
     for (index, name) in &machine {
         names.insert(*index, name);
+    }
+    // The printer introduces reads of physical call results not present as IR operands.
+    let machine_ints = machine
+        .iter()
+        .map(|(index, _)| *index)
+        .filter(|index| {
+            written_registers.contains(index)
+                && crate::arch::vector_half(ir.isa, *index).is_none()
+                && !ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                    stmt.call_outputs()
+                        .iter()
+                        .any(|output| output.register == *index)
+                })
+        })
+        .collect();
+    let machine_widths = crate::render::widths::narrow_variables(
+        ir,
+        &machine_ints,
+        &narrow_regs,
+        &Default::default(),
+    );
+    for (index, width) in machine_widths {
+        variable_types.insert(index, CType::int((width.bits().max(32) / 8) as u8, false));
     }
     let mut declared_registers =
         declared_types(ir, &variable_types, machine.iter().map(|(index, _)| *index));
@@ -773,7 +796,7 @@ fn render_with(
     // A register the body uses beyond the parameters holds what it holds
     // on entry until the body sets it.
     for (index, name) in &machine {
-        if variables::mentions(&body, name) {
+        if variables::mentions(&body, name) && !variable_types.contains_key(index) {
             indent(1, &mut out);
             if float_entries.contains(index) {
                 let param = ir
@@ -886,6 +909,16 @@ fn render_with(
             })
             .collect(),
     }
+}
+
+pub(super) fn variable_name(reserved: &mut std::collections::HashSet<String>) -> String {
+    for index in 1usize.. {
+        let name = format!("v{index}");
+        if reserved.insert(name.clone()) {
+            return name;
+        }
+    }
+    unreachable!("all variable names are reserved")
 }
 
 pub(super) fn vacant_name(base: &str, reserved: &mut std::collections::HashSet<String>) -> String {

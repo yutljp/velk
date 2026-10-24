@@ -286,7 +286,9 @@ fn printed_frame_join_values_keep_uncertain_reads() {
         let text = printed(&optimized);
         assert!(
             text.lines().any(|line| line.contains("return ")
-                && (line.contains("local_") || line.contains("rsp") || line.contains("rbp"))),
+                && (line.contains("local_")
+                    || line.contains("rsp")
+                    || line.contains("*(uint64_t *)"))),
             "{case}: {text}"
         );
     }

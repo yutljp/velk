@@ -14,7 +14,7 @@
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x201280 */
 signed char narrow_add(signed char a, signed char b) {
-    return (int8_t)((int8_t)(a) + (int8_t)(b));
+    return (int8_t)((int8_t)a + (int8_t)b);
 }
 -- signature
 signed char (signed char a, signed char b)

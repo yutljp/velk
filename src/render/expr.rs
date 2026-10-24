@@ -628,7 +628,11 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed {
                 Printed { exact: 64, ..inner }.ranging(Range::Signed(from))
             } else {
                 Printed::new(
-                    format!("({})({})", type_of(*width, true), inner.text),
+                    format!(
+                        "({}){}",
+                        type_of(*width, true),
+                        inner.within(12, false).text
+                    ),
                     Int::promoted(from, true),
                     64,
                     12,

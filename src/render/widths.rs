@@ -320,15 +320,15 @@ impl Reads<'_> {
             Expr::Bin { op, lhs, rhs } => match op {
                 BinOp::And
                     if let Expr::Const(mask) = rhs.as_ref()
-                        && mask.wrapping_add(1).is_power_of_two()
                         && *mask != 0 =>
                 {
-                    if bits > mask.count_ones()
+                    let kept = 64 - mask.leading_zeros();
+                    if bits > kept
                         && let Expr::Reg { index, .. } = lhs.as_ref()
                     {
-                        self.readers.extended.insert((*index, mask.count_ones()));
+                        self.readers.extended.insert((*index, kept));
                     }
-                    self.expr(lhs, bits.min(mask.count_ones()));
+                    self.expr(lhs, bits.min(kept));
                 }
                 // A sum through a pointer or a frame address is printed as
                 // an index or an offset, whole.
@@ -552,26 +552,27 @@ mod tests {
 
     #[test]
     fn a_value_extended_with_zeros_by_its_reader_reads_as_unsigned() {
-        // v1 is only read as (v1 & 0xffffffff) | ... at 64 bits.
-        let ir = function(vec![
-            assign(V1, Expr::reg(6, 64)),
-            Stmt::Store {
-                addr: Expr::reg(7, 64),
-                value: Expr::bin(
-                    BinOp::Or,
-                    Expr::bin(BinOp::And, Expr::reg(V1, 64), Expr::Const(0xffff_ffff)),
-                    Expr::reg(2, 64),
-                ),
-                width: 8,
-            },
-        ]);
-        assert_eq!(
-            narrow(&ir).get(&V1),
-            Some(&Narrow::Read {
-                bits: 32,
-                extended: true
-            })
-        );
+        for mask in [0xffff_ffff, 0x8000_0000] {
+            let ir = function(vec![
+                assign(V1, Expr::reg(6, 64)),
+                Stmt::Store {
+                    addr: Expr::reg(7, 64),
+                    value: Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(BinOp::And, Expr::reg(V1, 64), Expr::Const(mask)),
+                        Expr::reg(2, 64),
+                    ),
+                    width: 8,
+                },
+            ]);
+            assert_eq!(
+                narrow(&ir).get(&V1),
+                Some(&Narrow::Read {
+                    bits: 32,
+                    extended: true
+                })
+            );
+        }
     }
 
     #[test]

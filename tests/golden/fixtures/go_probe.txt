@@ -1431,7 +1431,7 @@ fn main.kindName @ 0x466d20 (size 96)
 /* ref: 0x46d400 .rodata */
 /* ref: 0x4967e8 .rodata */
 int64_t main_main(void) {
-    uint64_t rbx;
+    uint64_t v5;
     int64_t v1;
     int64_t v2;
     int64_t local_0; /* [sp-38] */
@@ -1440,7 +1440,7 @@ int64_t main_main(void) {
     int64_t local_3; /* [sp-30] */
 
     v1 = main_divmod(0x7, 0x3);
-    v2 = rbx; /* also returned by the call */
+    v2 = v5; /* also returned by the call */
     local_0 = v1;
     local_1 = v2;
     local_2.f_0 = 0x1;

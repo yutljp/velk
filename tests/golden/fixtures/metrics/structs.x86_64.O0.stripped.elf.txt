@@ -46,7 +46,7 @@ int64_t sub_201270(struct sub_201270_a0 *a0, int32_t a1) {
 
     local_0 = 0x0;
     for (local_1 = 0x0; local_1 < a1; local_1++) {
-        local_0 += a0[local_1].field_0x8 * (int16_t)(a0[local_1].field_0x10);
+        local_0 += a0[local_1].field_0x8 * (int16_t)a0[local_1].field_0x10;
     }
     return local_0;
 }

@@ -90,7 +90,7 @@ fn <unnamed> @ 0x201290 (size 21)
 int32_t sub_2012b0(void) {
     uint64_t *const qword_2022c0 = (uint64_t *)0x2022c0ULL;
 
-    return (int8_t)(*(uint8_t *)(*qword_2022c0));
+    return (int8_t)*(uint8_t *)(*qword_2022c0);
 }
 -- signature
 int32_t ()

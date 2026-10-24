@@ -14,7 +14,7 @@
 -- decompile
 /* velk pseudo-C: sub_21022c @ 0x21022c */
 int32_t sub_21022c(int32_t a0, int32_t a1) {
-    return (int8_t)(a0) + (int8_t)(a1);
+    return (int8_t)a0 + (int8_t)a1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)

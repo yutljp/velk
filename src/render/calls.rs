@@ -147,10 +147,7 @@ impl Outputs {
                 {
                     Some((_, name)) => name.clone(),
                     None => {
-                        let name = super::vacant_name(
-                            &crate::ir::reg_name(ir.isa, output.register, 64),
-                            reserved,
-                        );
+                        let name = super::variable_name(reserved);
                         outputs.declarations.push(name.clone());
                         name
                     }
@@ -1039,9 +1036,9 @@ mod tests {
         for expected in [
             " v1;",
             " v2;",
-            "uint64_t rdx;",
+            "uint64_t v3;",
             "v1 = sub_1000();",
-            "v2 = (uint32_t)(rdx); /* also returned by the call */",
+            "v2 = (uint32_t)(v3); /* also returned by the call */",
         ] {
             assert!(text.contains(expected), "{expected}: {text}");
         }
@@ -1198,8 +1195,8 @@ mod tests {
             ty: CType::U64,
         }];
         let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-        assert!(text.contains("uint64_t rdx_2;"), "{text}");
-        assert!(text.contains("v1 = rdx_2;"), "{text}");
+        assert!(text.contains("uint64_t v2;"), "{text}");
+        assert!(text.contains("v1 = v2;"), "{text}");
         assert!(!text.contains("call_values[0] = rdx;"), "{text}");
     }
 
@@ -1385,7 +1382,7 @@ mod tests {
             assert_eq!(text.matches("sub_1000()").count(), 1, "{text}");
             assert_eq!(text.contains("call_values"), width == 32, "{text}");
             if width == 32 {
-                assert!(text.contains("rdx = (uint32_t)(call_values[0]);"), "{text}");
+                assert!(text.contains("v1 = (uint32_t)(call_values[0]);"), "{text}");
             }
             assert_eq!(ir.blocks[0].stmts[0].call_outputs(), &[output(2, 2, width)]);
         }
@@ -1412,9 +1409,9 @@ mod tests {
             ty: CType::U64,
         }];
         let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-        assert!(text.contains("uint64_t xmm0_2;"), "{text}");
+        assert!(text.contains("uint64_t v1;"), "{text}");
         assert!(text.contains("sub_1000(xmm0);"), "{text}");
-        assert!(text.contains("return xmm0_2;"), "{text}");
+        assert!(text.contains("return v1;"), "{text}");
         assert!(!text.contains("xmm0 ="), "{text}");
         assert!(!text.contains("return xmm0;"), "{text}");
     }
@@ -1436,7 +1433,7 @@ mod tests {
             ty: CType::U64,
         }];
         let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-        for expected in ["uint64_t rdx_2;", "sub_1000(rdx);", "return rdx_2;"] {
+        for expected in ["uint64_t v2;", "sub_1000(rdx);", "return v2;"] {
             assert!(text.contains(expected), "{expected}: {text}");
         }
         assert!(!text.contains("rdx ="), "{text}");

@@ -198,13 +198,13 @@ fn main @ 0x1120 (size 124)
 /* velk pseudo-C: _start @ 0x11a0 */
 void main(void);
 int32_t _start(int64_t a0, int64_t a1, void *a2) {
-    uint64_t rax;
+    uint64_t v1;
     int64_t v2;
     int64_t local_0; /* [sp+0] */
     int64_t local_1; /* [sp-8] */
 
     v2 = local_0;
-    local_0 = rax;
+    local_0 = v1;
     local_1 = rsp;
     __libc_start_main(main, v2, rsp + 0x8, 0x0, 0x0, a2);
 }

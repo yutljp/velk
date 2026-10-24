@@ -14,7 +14,7 @@
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 int32_t sub_201280(int32_t a0, int32_t a1) {
-    return (int8_t)((int8_t)(a0) + (int8_t)(a1));
+    return (int8_t)((int8_t)a0 + (int8_t)a1);
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)

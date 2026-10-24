@@ -56,8 +56,8 @@ int64_t sub_2011f0(struct sub_2011f0_a0 *a0, int32_t a1) {
         v2 = 0x0;
         v3 = 0x0;
         do {
-            v6 = (int16_t)(*(uint16_t *)(v5 - 0x18)) * *(uint64_t *)(v5 - 0x20) + v3;
-            v3 = (int16_t)(*(uint16_t *)(v5)) * *(uint64_t *)(v5 - 0x8) + v6;
+            v6 = (int16_t)*(uint16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
+            v3 = (int16_t)*(uint16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
             v2 = v2 + 0x2;
             v5 = v5 + 0x30;
         } while (v4 != v2);
@@ -68,7 +68,7 @@ int64_t sub_2011f0(struct sub_2011f0_a0 *a0, int32_t a1) {
     if ((a1 & 0x1) == 0x0) {
         return v3;
     }
-    return v3 + (int16_t)(a0[v2].field_0x10) * a0[v2].field_0x8;
+    return v3 + (int16_t)a0[v2].field_0x10 * a0[v2].field_0x8;
 }
 -- signature
 int64_t (struct sub_2011f0_a0 * a0, int32_t a1)

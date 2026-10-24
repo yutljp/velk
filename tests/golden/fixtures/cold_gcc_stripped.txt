@@ -197,13 +197,13 @@ fn <unnamed> @ 0x1120 (size 124)
 -- decompile
 /* velk pseudo-C: sub_11a0 @ 0x11a0 */
 int32_t sub_11a0(int64_t a0, int64_t a1, void *a2) {
-    uint64_t rax;
+    uint64_t v1;
     int64_t v2;
     int64_t local_0; /* [sp+0] */
     int64_t local_1; /* [sp-8] */
 
     v2 = local_0;
-    local_0 = rax;
+    local_0 = v1;
     local_1 = rsp;
     __libc_start_main(0x1120, v2, rsp + 0x8, 0x0, 0x0, a2);
 }

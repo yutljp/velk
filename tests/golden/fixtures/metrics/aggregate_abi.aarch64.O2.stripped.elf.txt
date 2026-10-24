@@ -151,11 +151,11 @@ fn <unnamed> @ 0x210290 (size 84)
 -- decompile
 /* velk pseudo-C: sub_2102e4 @ 0x2102e4 */
 int64_t sub_2102e4(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t x8;
+    uint64_t v1;
 
-    *(uint64_t *)(x8) = a0 + a2;
-    *(uint64_t *)(x8 + 0x8) = a1 ^ a2;
-    *(uint64_t *)(x8 + 0x10) = a0 - a1;
+    *(uint64_t *)(v1) = a0 + a2;
+    *(uint64_t *)(v1 + 0x8) = a1 ^ a2;
+    *(uint64_t *)(v1 + 0x10) = a0 - a1;
     return a0;
 }
 -- signature

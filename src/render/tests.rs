@@ -539,7 +539,7 @@ fn an_unsigned_comparison_of_a_sign_extended_value_reads_all_64_bits() {
         },
         Expr::Const(0x80),
     );
-    assert_eq!(text, "(uint64_t)(int8_t)(a0) < 0x80");
+    assert_eq!(text, "(uint64_t)(int8_t)a0 < 0x80");
 }
 
 #[test]
@@ -1185,10 +1185,10 @@ fn a_further_result_in_a_parameter_register_is_no_parameter() {
     crate::ssa::take_results_directly(&mut ir);
     let text = rendered(&ir);
     assert!(
-        text.contains("= rbx; /* also returned by the call */"),
+        text.contains("= v15; /* also returned by the call */"),
         "{text}"
     );
-    assert!(text.contains("v2 = rbx;"), "{text}");
+    assert!(text.contains("v2 = v15;"), "{text}");
     assert!(text.contains("return v1; /* also returns v2 */"), "{text}");
 }
 
@@ -1435,7 +1435,7 @@ fn a_shifted_constant_has_the_width_of_the_shift() {
 #[test]
 fn a_register_that_is_no_parameter_is_declared() {
     let text = returning(&[], CType::I64, Expr::reg(29, 64));
-    assert!(text.contains("    uint64_t x29;\n"), "{text}");
+    assert!(text.contains("    uint64_t v1;\n"), "{text}");
 }
 
 #[test]
@@ -2101,7 +2101,7 @@ fn physical_vector_widths_share_one_integer_storage_name() {
                 ],
             );
             let code = rendered(&ir);
-            let name = crate::ir::reg_name(isa, low, 64);
+            let name = "v1";
             assert!(code.contains(&format!("uint64_t {name};")), "{code}");
             assert!(code.contains(&format!("{name} = ")), "{code}");
             if isa == Isa::AArch64 {
@@ -2131,9 +2131,9 @@ fn physical_vector_storage_preserves_upper_zero_and_name_collisions() {
         ty: CType::U64,
     });
     let code = rendered(&ir);
-    assert!(code.contains("uint64_t d0_2;"), "{code}");
-    assert!(code.contains("uint64_t v0_hi;"), "{code}");
-    assert!(code.contains("v0_hi = 0x0;"), "{code}");
+    assert!(code.contains("uint64_t v1;"), "{code}");
+    assert!(code.contains("uint64_t v2;"), "{code}");
+    assert!(code.contains("v2 = 0x0;"), "{code}");
     assert!(!code.contains("s0"), "{code}");
 }
 
@@ -2227,7 +2227,7 @@ fn physical_vector_constants_remain_numeric_when_symbols_share_the_bits() {
             symbols.data.insert(0x1000, "raw_symbol".to_owned());
         }
         let code = render(&ir, &[], &symbols, &[]);
-        assert!(code.contains("d0 = 0x1000;"), "{code}");
+        assert!(code.contains("v1 = 0x1000;"), "{code}");
         assert!(!code.contains("raw_symbol"), "{code}");
     }
 }
@@ -2251,9 +2251,9 @@ fn overwritten_float_formals_use_raw_storage_without_an_entry_capture() {
     });
     let code = rendered(&ir);
     assert!(code.contains("(float input)"), "{code}");
-    assert!(code.contains("uint64_t d0;"), "{code}");
+    assert!(code.contains("uint64_t v1;"), "{code}");
     assert!(!code.contains(".value = input"), "{code}");
-    assert!(code.contains("d0 = 0x123456783fc00000"), "{code}");
+    assert!(code.contains("v1 = 0x123456783fc00000"), "{code}");
     ir.landing_pads.push((0, vec![(0, 4)]));
     let code = rendered(&ir);
     assert!(code.contains("(uint64_t input)"), "{code}");
@@ -2287,9 +2287,9 @@ fn floating_entry_is_captured_once_before_a_full_width_overwrite() {
     let code = rendered(&ir);
     assert!(code.contains("(const float input)"), "{code}");
     assert_eq!(code.matches(".value = input").count(), 1, "{code}");
-    assert!(code.contains("uint64_t d0 ="), "{code}");
-    assert!(code.contains("d0 = 0x123456783fc00000"), "{code}");
-    assert!(!code.contains("float d0"), "{code}");
+    assert!(code.contains("uint64_t v2 ="), "{code}");
+    assert!(code.contains("v2 = 0x123456783fc00000"), "{code}");
+    assert!(!code.contains("float v2"), "{code}");
 }
 
 #[test]
@@ -2356,7 +2356,7 @@ fn readonly_floating_views_keep_a_capture_for_raw_integer_reads() {
     ir.ret_type = CType::U64;
     let code = rendered(&ir);
     assert!(code.contains(".value = a + b"), "{code}");
-    assert!(code.contains("uint64_t d0 ="), "{code}");
+    assert!(code.contains("uint64_t v1 ="), "{code}");
     assert_eq!(code.matches("{ .value = a }").count(), 1, "{code}");
     assert!(!code.contains("uint64_t d1"), "{code}");
 }
@@ -2405,7 +2405,7 @@ fn readonly_floating_views_reject_written_and_call_clobbered_formals() {
         ir.ret_type = CType::Named("double".to_owned());
         let before = format!("{ir:?}");
         let code = rendered(&ir);
-        assert!(code.contains("uint64_t d0 ="), "{code}");
+        assert!(code.contains("uint64_t v2 ="), "{code}");
         assert!(!code.contains(".value = a + b"), "{code}");
         assert!(!code.contains("v1 = a + b"), "{code}");
         assert_eq!(format!("{ir:?}"), before);
@@ -2432,7 +2432,7 @@ fn readonly_floating_views_reject_mismatched_or_volatile_formals() {
         });
         ir.ret_type = CType::Named("float".to_owned());
         let code = rendered(&ir);
-        assert!(code.contains("uint64_t d0 ="), "{code}");
+        assert!(code.contains("uint64_t v1 ="), "{code}");
         assert!(!code.contains("return a +"), "{code}");
         assert!(code.contains("uint32_t bits; float value"), "{code}");
     }

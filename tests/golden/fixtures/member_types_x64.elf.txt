@@ -13,7 +13,7 @@ struct outer {
     uint8_t gap_0x12[0x6];
 };
 int read_outer(struct outer *p) {
-    return p->first.head + *p->next + (int16_t)(p->count);
+    return p->first.head + *p->next + (int16_t)p->count;
 }
 -- signature
 int (struct outer * p)

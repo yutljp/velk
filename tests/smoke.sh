@@ -175,7 +175,7 @@ abs_ir=$("$BIN" --decompile $FIX/pe64.exe reg_abs 2>/dev/null)
 echo "$abs_ir" | grep -q "(-a0 < 0x0 ? a0 : -a0)" || fail "neg and cmovs absolute value"
 echo "$abs_ir" | grep -q -- "-(-" && fail "double negation kept"
 sign_ir=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
-echo "$sign_ir" | grep -q "(int8_t)(a0)"   || fail "sign-extend mask fold"
+echo "$sign_ir" | grep -q "(int8_t)a0"   || fail "sign-extend mask fold"
 echo "$sign_ir" | grep -q "0x1f" && fail "sign-extend artifact"
 ok "algebraic cleanup"
 abs_ret=$("$BIN" --decompile $FIX/pe64.exe reg_abs 2>/dev/null)
@@ -242,8 +242,8 @@ echo "$dwarf_ir" | grep -q "v1 = x - 0x1;"      || fail "narrow DWARF type read 
 echo "$dwarf_ir" | grep -q "(x & 0xffffffff)" && fail "narrow DWARF type keeps the mask"
 ok "narrow DWARF types"
 sign_ir2=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
-echo "$sign_ir2" | grep -q "(int8_t)(a0);"           || fail "sign-extended value needs no mask"
-echo "$sign_ir2" | grep -q "(int8_t)(a0) & 0xffffffff" && fail "sign-extend mask kept"
+echo "$sign_ir2" | grep -q "(int8_t)a0;"           || fail "sign-extended value needs no mask"
+echo "$sign_ir2" | grep -q "(int8_t)a0 & 0xffffffff" && fail "sign-extend mask kept"
 ok "sign-extended widths"
 degraded=$("$BIN" --decompile $FIX/arm64_debug.o sum3 2>/dev/null)
 echo "$degraded" | grep -q "clang version" && fail "relocated DWARF name leaked"

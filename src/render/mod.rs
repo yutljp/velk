@@ -22,7 +22,7 @@ use calls::system_call_name;
 #[cfg(test)]
 use function::code_mentions;
 pub(crate) use function::variable_types;
-use function::{declaration, vacant_name};
+use function::{declaration, vacant_name, variable_name};
 pub use function::{render, render_with_dependencies};
 pub(crate) use stmt::render_stmt;
 use stmt::{argument, conformed, narrow_write, returned};

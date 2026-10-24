@@ -8,7 +8,7 @@
 int pick(void) {
     uint64_t *const kName = (uint64_t *)0x2021c0ULL;
 
-    return (int8_t)(*(uint8_t *)(*kName + 0x2));
+    return (int8_t)*(uint8_t *)(*kName + 0x2);
 }
 -- signature
 int ()

@@ -28,6 +28,8 @@ mod frame_values;
 mod ignored_result;
 #[path = "recompile/long_branches.rs"]
 mod long_branches;
+#[path = "recompile/register_locals.rs"]
+mod register_locals;
 #[path = "recompile/stack_arrays.rs"]
 mod stack_arrays;
 
@@ -4080,7 +4082,7 @@ static uint64_t output_callee(uint64_t value) {
         if direct {
             assert!(printed.contains("v1 = output_callee(left);"), "{printed}");
             assert!(
-                printed.contains("v2 = (uint32_t)(rdx); /* also returned by the call */"),
+                printed.contains("v2 = (uint32_t)(v3); /* also returned by the call */"),
                 "{printed}"
             );
         }
@@ -5073,12 +5075,20 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
             continue;
         }
         let code = rendered.code;
-        // The printed code reads such a register uninitialized, which C
-        // leaves undefined.
-        if code.lines().any(|line| {
-            line.strip_prefix("    uint64_t ")
-                .and_then(|rest| rest.strip_suffix(';'))
-                .is_some_and(machine_register)
+        // Register inputs outside the signature have no defined C value.
+        // Inspect the IR so the exclusion does not depend on local names.
+        if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            if matches!(stmt, Stmt::Ret { .. }) && ir.ret_type == CType::Void {
+                return false;
+            }
+            velk::ir::visit::statement_reads(stmt)
+                .into_iter()
+                .any(|index| {
+                    index < velk::ir::TEMP_BASE
+                        && index != velk::arch::stack_pointer(ir.isa)
+                        && !ir.params.iter().any(|param| param.index == index)
+                        && machine_register(&velk::ir::reg_name(ir.isa, index, 64))
+                })
         }) {
             *excluded
                 .entry("reads a register that is not a parameter")
@@ -6552,8 +6562,7 @@ fn program(
     Program { text, ranges }
 }
 
-/// Whether `name` is a machine register's, as the printed code names one
-/// it reads on entry.
+/// Whether `name` is a general machine register or the Go runtime pointer.
 fn machine_register(name: &str) -> bool {
     matches!(
         name,
@@ -9704,7 +9713,7 @@ fn printed_readonly_floating_views_preserve_raw_reads_and_overwrites() {
                 );
                 let text = velk::render::render(&ir, &[], &Default::default(), &[]);
                 if case != "readonly" {
-                    let slot = if isa == Isa::AArch64 { "d0" } else { "xmm0" };
+                    let slot = if case == "overwritten" { "v2" } else { "v1" };
                     assert!(text.contains(&format!("uint64_t {slot} =")), "{text}");
                 }
                 source.push_str(&text);
@@ -9850,7 +9859,7 @@ fn printed_readonly_floating_views_keep_narrow_same_precision_reads_raw() {
             );
             let text = velk::render::render(&ir, &[], &Default::default(), &[]);
             assert!(text.contains(&format!("{name}({ty} a)")), "{text}");
-            let slot = if isa == Isa::AArch64 { "d0" } else { "xmm0" };
+            let slot = "v1";
             assert!(text.contains(&format!("uint64_t {slot} =")), "{text}");
             assert!(!text.contains("return a;"), "{text}");
             source.push_str(&text);

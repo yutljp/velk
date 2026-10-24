@@ -82,7 +82,7 @@ int sum_till_neg(int *p, int n) {
     int64_t v1;
     int32_t v2;
     int32_t v3;
-    int32_t v4;
+    uint32_t v4;
 
     v1 = (n & ~(n >> 0x1f) & 0xffffffff);
     v2 = 0x0;
@@ -95,7 +95,7 @@ int sum_till_neg(int *p, int n) {
         p = p + 0x1;
         v1 = v1 - 0x1;
         v2 = v4 + v3;
-    } while (((uint32_t)v4 & 0x80000000) == 0x0);
+    } while ((v4 & 0x80000000) == 0x0);
     return v3;
 }
 -- signature
