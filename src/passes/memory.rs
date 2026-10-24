@@ -247,7 +247,7 @@ fn loads_avoid(value: &Expr, addr: &Expr, width: u8) -> bool {
 }
 
 /// An address as a base and a constant byte offset.
-fn split_offset(addr: &Expr) -> (&Expr, i64) {
+pub(crate) fn split_offset(addr: &Expr) -> (&Expr, i64) {
     match addr {
         Expr::Bin {
             op: crate::ir::BinOp::Add,

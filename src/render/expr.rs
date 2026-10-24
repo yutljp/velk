@@ -99,6 +99,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) value_bits: HashMap<u16, u32>,
     /// The variables the structured body reads just once.
     pub(super) read_once: std::collections::HashSet<u16>,
+    pub(super) transfer_values: std::collections::HashSet<(u16, Expr)>,
     /// The functions whose address the body takes, to declare ahead of it.
     pub(super) taken: std::cell::RefCell<std::collections::BTreeSet<String>>,
 }

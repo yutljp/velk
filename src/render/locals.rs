@@ -156,6 +156,7 @@ pub(crate) fn stack_locals(
         ret_pointer: None,
         value_bits: HashMap::new(),
         read_once: Default::default(),
+        transfer_values: Default::default(),
         taken: Default::default(),
     };
     let accesses = frame_accesses(ir, sp, frames);

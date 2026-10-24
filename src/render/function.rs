@@ -727,6 +727,7 @@ fn render_with(
             .then(|| ir.ret_type.to_string().trim_end().to_owned()),
         value_bits,
         read_once: Default::default(),
+        transfer_values: super::transfers::single_use_loads(ir),
         taken: Default::default(),
     };
     if let Some(incoming) = incoming {

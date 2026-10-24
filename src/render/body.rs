@@ -414,6 +414,15 @@ fn only_vector_count(rest: &[Node]) -> bool {
 pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: &Ctx<'_>) {
     let mut index = 0;
     while index < nodes.len() {
+        if let Some((count, text)) = super::transfers::render(&nodes[index..], ctx) {
+            for line in text.lines() {
+                indent(depth, out);
+                out.push_str(line);
+                out.push('\n');
+            }
+            index += count;
+            continue;
+        }
         // A compare-and-exchange: the old value read, and the new one stored
         // in its place when the old one was the expected one.
         if let (
