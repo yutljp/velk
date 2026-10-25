@@ -294,12 +294,14 @@ fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         return None;
     };
     let text = format!("__builtin_memset({destination}, 0x{byte:x}, {bytes});");
-    let new_casts = casts(&text);
+    let new_casts = super::cost::transfer_casts(&text);
     if new_casts != 0 {
         let original_casts: usize = nodes[..count]
             .iter()
             .filter_map(|node| match node {
-                Node::Stmt(stmt) => Some(casts(&super::render_stmt(stmt, ctx))),
+                Node::Stmt(stmt) => {
+                    Some(super::cost::transfer_casts(&super::render_stmt(stmt, ctx)))
+                }
                 _ => None,
             })
             .sum();
@@ -588,7 +590,7 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
     };
     let consumed = loads.len() + sources.len();
     let text = format!("__builtin_memmove({destination}, {source}, {bytes});");
-    let new_casts = casts(&text);
+    let new_casts = super::cost::transfer_casts(&text);
     if new_casts != 0 {
         let mut original_casts = 0;
         let mut position = 0;
@@ -597,10 +599,10 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
             if let Some((count, text)) =
                 super::aggregates::render(remaining, ctx).or_else(|| self::ordered(remaining, ctx))
             {
-                original_casts += casts(&text);
+                original_casts += super::cost::transfer_casts(&text);
                 position += count;
             } else if let Node::Stmt(stmt) = &nodes[position] {
-                original_casts += casts(&super::render_stmt(stmt, ctx));
+                original_casts += super::cost::transfer_casts(&super::render_stmt(stmt, ctx));
                 position += 1;
             } else {
                 return None;
@@ -611,29 +613,4 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         }
     }
     Some((consumed, text))
-}
-
-fn casts(text: &str) -> usize {
-    let mut count = 0;
-    for (start, _) in text.match_indices('(') {
-        let Some(end) = text[start + 1..].find(')') else {
-            continue;
-        };
-        let ty = text[start + 1..start + 1 + end].trim_end_matches([' ', '*']);
-        if ty.ends_with("_t")
-            && ty
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
-            || ty.strip_prefix("struct ").is_some_and(|name| {
-                !name.is_empty()
-                    && name
-                        .bytes()
-                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
-            })
-            || matches!(ty, "float" | "double" | "bool" | "char")
-        {
-            count += 1;
-        }
-    }
-    count
 }

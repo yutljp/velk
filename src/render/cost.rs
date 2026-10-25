@@ -43,3 +43,29 @@ pub(crate) fn casts(code: &str) -> usize {
         })
         .count()
 }
+
+/// Counts casts using the narrower type recognition used to select memory transfers.
+pub(crate) fn transfer_casts(text: &str) -> usize {
+    let mut count = 0;
+    for (start, _) in text.match_indices('(') {
+        let Some(end) = text[start + 1..].find(')') else {
+            continue;
+        };
+        let ty = text[start + 1..start + 1 + end].trim_end_matches([' ', '*']);
+        if ty.ends_with("_t")
+            && ty
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+            || ty.strip_prefix("struct ").is_some_and(|name| {
+                !name.is_empty()
+                    && name
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+            })
+            || matches!(ty, "float" | "double" | "bool" | "char")
+        {
+            count += 1;
+        }
+    }
+    count
+}

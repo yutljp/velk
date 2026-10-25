@@ -539,6 +539,35 @@ fn cast_classes_partition_casts() {
     assert_eq!(cost::casts("result(void)"), 0);
 }
 
+#[test]
+fn cast_scorers_preserve_distinct_recognition() {
+    let cases = [
+        ("(uint32_t *)p", 1, 1),
+        ("(struct item *)p", 1, 1),
+        ("(float)x + (double)y + (bool)z + (char)w", 4, 4),
+        ("(const uint32_t *)p", 1, 0),
+        ("(volatile const uint32_t *)p", 1, 0),
+        ("( uint32_t *)p", 1, 0),
+        ("(\tuint32_t *)p", 1, 0),
+        ("(uint32_t\t)p", 1, 0),
+        ("(uint32_t **  )p", 1, 1),
+        ("(int)x + (unsigned long)y + (FILE *)p", 3, 0),
+        ("(void *)p + (const void *)q", 2, 0),
+        ("(void)x + (struct )p + (uint32_t value)x", 0, 0),
+        ("((uint32_t *)p)", 1, 1),
+        ("(uint32_t", 0, 0),
+        ("result(struct item *value, int32_t count)", 0, 0),
+    ];
+    for (code, general, transfer) in cases {
+        assert_eq!(cost::casts(code), general, "general scorer: {code}");
+        assert_eq!(
+            cost::transfer_casts(code),
+            transfer,
+            "transfer scorer: {code}"
+        );
+    }
+}
+
 /// Calls through a pointer the analysis could not resolve, printed
 /// `((uint64_t (*)())address)(arguments)`.
 fn indirect_calls(code: &str) -> usize {
