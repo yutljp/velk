@@ -489,8 +489,8 @@ fn <unnamed> @ 0x21050c (size 24)
 == 0x210524 -
 -- decompile
 /* velk pseudo-C: sub_210524 @ 0x210524 */
-int32_t sub_210524(int32_t a0) {
-    switch (a0) {
+int32_t sub_210524(int64_t a0) {
+    switch ((uint32_t)a0) {
     case 1:
         return 100;
     case 50:
@@ -498,12 +498,12 @@ int32_t sub_210524(int32_t a0) {
     case 300:
         return a0;
     default:
-        a0 = -1;
+        a0 = 0xffffffff;
         return a0;
     }
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (int64_t a0)
 -- references
 
 -- ir

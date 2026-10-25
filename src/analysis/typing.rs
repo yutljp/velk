@@ -4,13 +4,14 @@ use crate::ir::{CType, FunctionIr, Param};
 pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collections::HashSet<u16>) {
     let outputs = live_call_outputs(ir);
     let entry = call_output_entry_demands(ir, &outputs);
+    let demands = std::cell::OnceCell::new();
     // A register only ever written, or only ever read, at 32 bits holds a 32-bit value.
     let narrow = |ir: &FunctionIr, index: u16| -> bool {
-        uniform_32.contains(&index) || narrow_only(ir, index, &outputs, entry.as_ref())
+        uniform_32.contains(&index) || narrow_only(ir, index, &outputs, entry.as_ref(), &demands)
     };
     // The return type is re-decided from the optimized body, whose passes may
     // have removed or exposed the 32-bit writes the earlier guess relied on.
-    let ret_is_wide = returns_wide(ir, &outputs, entry.as_ref());
+    let ret_is_wide = returns_wide(ir, &outputs, entry.as_ref(), &demands);
     let narrow_return = !ret_is_wide && ir.ret_type == CType::U64;
     let widen_return = ret_is_wide && ir.ret_type.is_32_bit_int();
     let decided: Vec<bool> = ir
@@ -70,6 +71,11 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let crate::ir::Stmt::Ret { value } = stmt {
             returned.walk(value);
+            // Widening a zero-extended constant must not turn it negative.
+            if matches!(value, crate::ir::Expr::Const(value) if *value > i32::MAX as u64 && *value <= u32::MAX as u64)
+            {
+                returned.any_unsigned = true;
+            }
         }
     }
     if !returned.any_unsigned {
@@ -218,6 +224,7 @@ fn returns_wide(
     ir: &FunctionIr,
     outputs: &LiveCallOutputs,
     entry: Option<&std::collections::HashMap<u16, u64>>,
+    demands: &std::cell::OnceCell<Option<std::collections::HashMap<u16, u64>>>,
 ) -> bool {
     let Some(value) = crate::ir::cfg::own_return(&ir.blocks) else {
         return false;
@@ -234,7 +241,7 @@ fn returns_wide(
     let mut wide: Vec<u16> = Vec::new();
     collect_wide_regs(&resolved, false, &mut wide);
     wide.iter()
-        .any(|index| *index == WIDE_VALUE || !narrow_only(ir, *index, outputs, entry))
+        .any(|index| *index == WIDE_VALUE || !narrow_only(ir, *index, outputs, entry, demands))
 }
 
 /// A value that is wide on its own, without naming a register (an 8-byte
@@ -415,6 +422,7 @@ fn narrow_only(
     register: u16,
     outputs: &LiveCallOutputs,
     entry: Option<&std::collections::HashMap<u16, u64>>,
+    demands: &std::cell::OnceCell<Option<std::collections::HashMap<u16, u64>>>,
 ) -> bool {
     let mut writes = false;
     let mut wide_write = false;
@@ -454,6 +462,20 @@ fn narrow_only(
     }
     if !seen {
         return false;
+    }
+    if writes
+        && !wide_write
+        && !reads_narrow
+        && ir.params.iter().any(|param| param.index == register)
+    {
+        let entry = entry.or_else(|| {
+            demands
+                .get_or_init(|| crate::ssa::entry_demands(ir, &[]))
+                .as_ref()
+        });
+        if entry.is_none_or(|entry| entry.get(&register).copied().unwrap_or(0) >> 32 != 0) {
+            return false;
+        }
     }
     if excluded_wide
         && entry.is_none_or(|entry| entry.get(&register).copied().unwrap_or(0) >> 32 != 0)
@@ -1705,7 +1727,8 @@ mod tests {
         assert!(super::returns_wide(
             &wide,
             &live,
-            super::call_output_entry_demands(&wide, &live).as_ref()
+            super::call_output_entry_demands(&wide, &live).as_ref(),
+            &Default::default()
         ));
         let wide = check_call_width(wide, CType::I64);
         assert_eq!(wide.ret_type, CType::I64);
@@ -1727,7 +1750,8 @@ mod tests {
         assert!(!super::returns_wide(
             &narrow,
             &live,
-            super::call_output_entry_demands(&narrow, &live).as_ref()
+            super::call_output_entry_demands(&narrow, &live).as_ref(),
+            &Default::default()
         ));
         let narrow = check_call_width(narrow, CType::I32);
         assert_eq!(narrow.ret_type, CType::I32);

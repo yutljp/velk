@@ -350,46 +350,42 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 lifter.assign(slot, 64, merged);
             }
         }
-        (Pextrw | Vpextrw | Pextrd | Vpextrd, OpKind::Memory, OpKind::Register) if narrow => {
-            let (Some(from), Some(addr)) = (source, address()) else {
+        (
+            Pextrb | Vpextrb | Pextrw | Vpextrw | Pextrd | Vpextrd | Pextrq | Vpextrq,
+            OpKind::Register | OpKind::Memory,
+            OpKind::Register,
+        ) if narrow => {
+            let Some(from) = source else {
                 return None;
             };
-            let bits = if matches!(mnemonic, Pextrw | Vpextrw) {
-                16
-            } else {
-                32
+            let bits = match mnemonic {
+                Pextrb | Vpextrb => 8,
+                Pextrw | Vpextrw => 16,
+                Pextrd | Vpextrd => 32,
+                _ => 64,
             };
-            let per_half = 64 / bits;
             let lane = u64::from(ins.immediate8()) & (128 / bits - 1);
-            let value = Expr::bin(
-                BinOp::Shr,
-                low(from + (lane / per_half) as u16),
-                Expr::constant((lane % per_half) * bits),
-            );
-            store(lifter, addr, value, (bits / 8) as u8);
-        }
-        (Pextrw | Vpextrw | Pextrd | Vpextrd, OpKind::Register, OpKind::Register)
-            if narrow && source.is_some() =>
-        {
-            let from = source?;
-            let bits = if matches!(mnemonic, Pextrw | Vpextrw) {
-                16
-            } else {
-                32
-            };
-            let per_half = 64 / bits;
-            let lane = u64::from(ins.immediate8()) & (128 / bits - 1);
+            let position = lane * bits;
             let value = Expr::bin(
                 BinOp::And,
                 Expr::bin(
                     BinOp::Shr,
-                    low(from + (lane / per_half) as u16),
-                    Expr::constant((lane % per_half) * bits),
+                    low(from + (position / 64) as u16),
+                    Expr::constant(position % 64),
                 ),
-                Expr::constant((1u64 << bits) - 1),
+                Expr::constant(u64::MAX >> (64 - bits)),
             );
-            let (index, width) = gpr(ins.op0_register())?;
-            lifter.assign(index, width, value);
+            if ins.op0_kind() == OpKind::Memory {
+                let Some(addr) = address() else {
+                    return None;
+                };
+                store(lifter, addr, value, (bits / 8) as u8);
+            } else {
+                let Some((index, width)) = gpr(ins.op0_register()) else {
+                    return None;
+                };
+                lifter.assign(index, width, value);
+            }
         }
         (
             Movups | Movaps | Movupd | Movapd | Movdqu | Movdqa,

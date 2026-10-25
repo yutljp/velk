@@ -62,7 +62,7 @@ pub(super) fn demanded_bits(
                     walk(rhs, u64::MAX, demand, precise);
                 }
             },
-            Expr::SignExtend { value, width } if precise => {
+            Expr::SignExtend { value, width } => {
                 walk(value, mask(u32::from(*width) * 8), demand, precise);
             }
             Expr::Select {
@@ -382,6 +382,7 @@ pub fn narrow_partial_writes(ir: &mut FunctionIr) {
             continue;
         };
         let kept = |expr: &Expr| match expr {
+            Expr::Const(keep) => Some(*keep),
             Expr::Bin {
                 op: crate::ir::BinOp::And,
                 lhs,

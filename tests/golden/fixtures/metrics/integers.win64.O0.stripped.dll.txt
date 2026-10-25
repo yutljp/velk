@@ -234,7 +234,7 @@ fn <unnamed> @ 0x1800011b0 (size 35)
 -- decompile
 /* velk pseudo-C: sub_1800011e0 @ 0x1800011e0 */
 int64_t sub_1800011e0(int64_t a0, int64_t a1) {
-    return __umulh(a0, a1);
+    return (uint64_t)(((unsigned __int128)(uint64_t)(a0) * (uint64_t)(a1)) >> 64);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

@@ -24,13 +24,13 @@ parameter pointer | win64.O2 | 219/221
 parameter pointer | x86_64.O0 | 187/189
 parameter pointer | x86_64.O2 | 186/189
 parameter width | aarch64.O0 | 151/157
-parameter width | aarch64.O2 | 151/157
+parameter width | aarch64.O2 | 149/157
 parameter width | win64.O0 | 184/196
 parameter width | win64.O2 | 177/190
 parameter width | x86_64.O0 | 152/157
 parameter width | x86_64.O2 | 152/157
 parameter sign | aarch64.O0 | 139/151
-parameter sign | aarch64.O2 | 139/151
+parameter sign | aarch64.O2 | 138/149
 parameter sign | win64.O0 | 135/184
 parameter sign | win64.O2 | 130/177
 parameter sign | x86_64.O0 | 140/152
@@ -737,7 +737,7 @@ l5_switch.aarch64.O2 0x2104cc c12: ok
 l5_switch.aarch64.O2 0x2104e0 c13: ok
 l5_switch.aarch64.O2 0x2104f8 c14: ok
 l5_switch.aarch64.O2 0x21050c c15: ok
-l5_switch.aarch64.O2 0x210524 sparse: ok
+l5_switch.aarch64.O2 0x210524 sparse: parameter 0 is 8 bytes, expected 4
 l5_switch.win64.O0 0x180001000 dense: ok
 l5_switch.win64.O0 0x1800010c0 c0: ok
 l5_switch.win64.O0 0x1800010d0 c1: ok
@@ -844,7 +844,7 @@ loops.aarch64.O0 0x21019c count_bits: parameter 0 signedness differs
 loops.aarch64.O0 0x2101e8 sum_until: ok
 loops.aarch64.O0 0x210244 sum_till_neg: ok
 loops.aarch64.O0 0x2102bc sum_until_zero: ok
-loops.aarch64.O2 0x21018c count_bits: parameter 0 signedness differs
+loops.aarch64.O2 0x21018c count_bits: parameter 0 is 8 bytes, expected 4
 loops.aarch64.O2 0x2101b4 sum_until: ok
 loops.aarch64.O2 0x2101dc sum_till_neg: ok
 loops.aarch64.O2 0x210204 sum_until_zero: ok

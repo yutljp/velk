@@ -30,12 +30,11 @@ fn call_import @ 0x180001000 (size 26)
 -- decompile
 /* velk pseudo-C: large_frame @ 0x180001020 */
 int large_frame(int index) {
-    uint32_t local_0; /* [sp-4] */
-    _Alignas(16) uint8_t local_1[0x2004]; /* [sp-2008] */
+    _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x2004]; uint32_t f_2004; } local_0; /* [sp-2008] */
 
-    local_0 = index;
-    *(uint8_t *)((uint8_t *)((uintptr_t)(local_1 + 0x4) + (index & 0x1fff))) = index;
-    int8_t v3 = local_0 & 0x1f00 | *(uint8_t *)((uint8_t *)((uintptr_t)(local_1 + 0x4) + (local_0 & 0x1fff)));
+    local_0.f_2004 = index;
+    *(uint8_t *)((uint8_t *)((uintptr_t)((uint8_t *)&local_0 + 0x4) + (index & 0x1fff))) = index;
+    int8_t v3 = local_0.f_2004 & 0x1f00 | *(uint8_t *)((uint8_t *)((uintptr_t)((uint8_t *)&local_0 + 0x4) + (local_0.f_2004 & 0x1fff)));
     return v3;
 }
 -- signature

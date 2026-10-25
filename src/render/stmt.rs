@@ -153,6 +153,10 @@ fn value_precision(value: &Expr, ctx: &Ctx<'_>) -> Option<crate::ir::Precision> 
 }
 
 pub(super) fn stored_value(value: &Expr, bits: u32, ctx: &Ctx<'_>) -> int::Printed {
+    if let Expr::Const(value) = value {
+        let value = Expr::Const(value & crate::ir::semantics::mask(bits));
+        return expr::print_value_at(&value, ctx, bits, false);
+    }
     let Some(precision) = value_precision(value, ctx) else {
         return expr::print_value_at(value, ctx, bits, false);
     };

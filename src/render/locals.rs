@@ -1009,7 +1009,7 @@ fn indexed_start(
                 *at == Some(other)
                     && *width != 0
                     && i64::from(*width) != element
-                    && !(matches!(width, 8 | 16) && i64::from(*width) % element == 0)
+                    && !(matches!(width, 4 | 8 | 16) && i64::from(*width) % element == 0)
             });
         if foreign {
             start = end;
@@ -1040,8 +1040,8 @@ fn lowest_frame(ir: &FunctionIr, frames: &[Option<i64>], sp: u16) -> i64 {
 
 /// Where the reach of an index into the buffer at `slot` ends. Slots read
 /// at fixed offsets above it may be its own elements: one a whole number
-/// of elements away and accessed only at the element width, or eight or
-/// sixteen bytes at a time as an initializer is copied, is taken as one.
+/// of elements away and accessed only at the element width, or four, eight
+/// or sixteen bytes at a time as an initializer is copied, is taken as one.
 /// The first other slot, another buffer or the top of the frame ends it;
 /// with no known element width, only another buffer or the top of the frame.
 /// A buffer in `crossed` does not end it: the index may reach into it.
@@ -1078,7 +1078,7 @@ fn indexed_end(
                 *at == Some(other)
                     && *width != 0
                     && i64::from(*width) != element
-                    && !(matches!(width, 8 | 16) && i64::from(*width) % element == 0)
+                    && !(matches!(width, 4 | 8 | 16) && i64::from(*width) % element == 0)
             });
         if foreign {
             return other;

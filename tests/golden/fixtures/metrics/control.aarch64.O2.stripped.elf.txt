@@ -141,16 +141,16 @@ fn <unnamed> @ 0x210238 (size 32)
 -- decompile
 /* velk pseudo-C: sub_210258 @ 0x210258 */
 /* ref: 0x200120 .rodata */
-int32_t sub_210258(uint32_t a0) {
+uint32_t sub_210258(uint32_t a0) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
 
     if (a0 > 3) {
-        return -1;
+        return 0xffffffff;
     }
     return dword_200120[a0];
 }
 -- signature
-int32_t (uint32_t a0)
+uint32_t (uint32_t a0)
 -- references
 0x200120 .rodata
 -- ir

@@ -146,8 +146,8 @@ fn dense @ 0x0 (size 268)
 == 0x10c sparse
 -- decompile
 /* velk pseudo-C: sparse @ 0x10c */
-int32_t sparse(int32_t a0) {
-    switch (a0) {
+int32_t sparse(int64_t a0) {
+    switch ((uint32_t)a0) {
     case 1:
         return 100;
     case 50:
@@ -155,12 +155,12 @@ int32_t sparse(int32_t a0) {
     case 300:
         return a0;
     default:
-        a0 = -1;
+        a0 = 0xffffffff;
         return a0;
     }
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (int64_t a0)
 -- references
 
 -- ir

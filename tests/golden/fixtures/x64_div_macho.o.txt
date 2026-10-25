@@ -260,7 +260,7 @@ fn _lmod10x @ 0x1b0 (size 49)
 -- decompile
 /* velk pseudo-C: _umod10x @ 0x1f0 */
 uint64_t umod10x(uint64_t a0) {
-    return a0 - (__umulh(a0, 0xcccccccccccccccd) >> 2 & 0xfffffffffffffffe) * 5;
+    return a0 - ((uint64_t)(((unsigned __int128)(uint64_t)(a0) * (uint64_t)(0xcccccccccccccccd)) >> 64) >> 2 & 0xfffffffffffffffe) * 5;
 }
 -- signature
 uint64_t (uint64_t a0)

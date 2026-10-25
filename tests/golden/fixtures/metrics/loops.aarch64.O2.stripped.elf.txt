@@ -7,23 +7,23 @@
 == 0x21018c -
 -- decompile
 /* velk pseudo-C: sub_21018c @ 0x21018c */
-int32_t sub_21018c(int32_t result) {
+int32_t sub_21018c(int64_t result) {
     uint32_t v3;
 
-    if (result == 0) {
+    if ((uint32_t)result == 0) {
         return result;
     }
     uint32_t v1 = result;
     result = 0;
     do {
-        result += (v1 & 0x1);
+        result = (result + (v1 & 0x1)) & 0xffffffff;
         v3 = v1;
         v1 >>= 1;
     } while (v3 > 1);
     return result;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (int64_t a0)
 -- references
 
 -- ir

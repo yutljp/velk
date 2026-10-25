@@ -591,16 +591,21 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
                 bits: 64,
                 signed: *op == BinOp::MulHighS,
             };
+            let narrow = if ty.signed { "int64_t" } else { "uint64_t" };
+            let wide = if ty.signed {
+                "__int128"
+            } else {
+                "unsigned __int128"
+            };
             Printed::new(
                 format!(
-                    "{}({}, {})",
-                    operator(*op),
+                    "({narrow})((({wide})({narrow})({}) * ({narrow})({})) >> 64)",
                     integral(lhs, ctx, 64).text,
                     integral(rhs, ctx, 64).text
                 ),
                 ty,
                 wrapped(ALL, ty),
-                13,
+                12,
             )
         }
         // C divides a signed value with a sign: each operand is read as the

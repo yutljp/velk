@@ -76,13 +76,16 @@ fn printed_word_extractions_store_two_bytes_and_preserve_saved_registers() {
         for lane in 0..8 {
             let name = format!("extract_{instruction}_{lane}");
             let address = binary.find(&name).unwrap().addr;
+            let output_type = binary.analysis(address, None).unwrap().ir.params[1]
+                .ty
+                .to_string();
             let code = binary.decompile(address, None, None).unwrap();
             assert!(!code.contains("unsupported"), "{code}");
             syntax::run_printed(
                 &code,
                 "#include <string.h>\n",
                 &format!(
-                    "uint16_t input[8]={{0x807f,0x1234,0xfedc,0x4321,0xabcd,0x9876,0x1357,0x2468}}; uint16_t out[3]={{0x5555,0,0xaaaa}}; if({name}((uintptr_t)input,(uintptr_t)&out[1])!=7 || out[0]!=0x5555 || out[1]!=input[{lane}] || out[2]!=0xaaaa) return 1;"
+                    "uint16_t input[8]={{0x807f,0x1234,0xfedc,0x4321,0xabcd,0x9876,0x1357,0x2468}}; uint16_t out[3]={{0x5555,0,0xaaaa}}; if({name}((uintptr_t)input,({output_type})&out[1])!=7 || out[0]!=0x5555 || out[1]!=input[{lane}] || out[2]!=0xaaaa) return 1;"
                 ),
             );
             if instruction == "pextrw" && lane == 0 {
@@ -136,8 +139,11 @@ fn printed_dword_extractions_zero_extend_registers_and_store_four_bytes() {
                 let code = binary.decompile(address, None, None).unwrap();
                 assert!(!code.contains("unsupported"), "{code}");
                 let check = if memory {
+                    let output_type = binary.analysis(address, None).unwrap().ir.params[1]
+                        .ty
+                        .to_string();
                     format!(
-                        "if({name}((uintptr_t)input,(uintptr_t)&out[1])!=7 || out[0]!=0x55555555 || out[1]!=input[{lane}] || out[2]!=0xaaaaaaaa) return 1;"
+                        "if({name}((uintptr_t)input,({output_type})&out[1])!=7 || out[0]!=0x55555555 || out[1]!=input[{lane}] || out[2]!=0xaaaaaaaa) return 1;"
                     )
                 } else {
                     format!("if((uint64_t){name}((uintptr_t)input)!=input[{lane}]) return 1;")

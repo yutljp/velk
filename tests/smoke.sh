@@ -288,9 +288,10 @@ echo "$simd_ir" | grep -A1 "if (a1 < 1) {" | grep -q "x8 = 0;" && fail "dead sto
 echo "$simd_ir" | grep -q "return 0;" || fail "early return kept"
 ok "dead stores beside unmodeled code"
 wide_ir=$("$BIN" --decompile $FIX/x64_div.o umod10x 2>/dev/null)
-echo "$wide_ir" | grep -q "__umulh(a0, 0xcccccccccccccccd)"  || fail "wide multiply reads as its intrinsic"
+echo "$wide_ir" | grep -q "unsigned __int128" || fail "wide multiply uses a widened product"
+echo "$wide_ir" | grep -q ">> 64" || fail "wide multiply selects the high half"
 echo "$wide_ir" | grep -q " hi128 " && fail "wide multiply kept the infix"
-ok "wide multiply intrinsic"
+ok "wide multiply"
 settled=$("$BIN" --decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
 echo "$settled" | grep -qF " = a0[i];" || fail "frame settled past a pointer load"
 echo "$settled" | grep -q "sp = sp"           && fail "stack adjustments kept"

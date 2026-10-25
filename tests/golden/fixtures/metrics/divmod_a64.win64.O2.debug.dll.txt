@@ -80,7 +80,7 @@ fn udiv64 @ 0x180001020 (size 6)
 -- decompile
 /* velk pseudo-C: hdiv3 @ 0x180001030 */
 unsigned long long hdiv3(unsigned long long x) {
-    return __umulh(x, 0xaaaaaaaaaaaaaaab) >> 1;
+    return (uint64_t)(((unsigned __int128)(uint64_t)(x) * (uint64_t)(0xaaaaaaaaaaaaaaab)) >> 64) >> 1;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -97,7 +97,7 @@ fn hdiv3 @ 0x180001030 (size 23)
 -- decompile
 /* velk pseudo-C: hdiv10 @ 0x180001050 */
 unsigned long long hdiv10(unsigned long long x) {
-    return __umulh(x, 0xcccccccccccccccd) >> 3;
+    return (uint64_t)(((unsigned __int128)(uint64_t)(x) * (uint64_t)(0xcccccccccccccccd)) >> 64) >> 3;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -282,7 +282,7 @@ fn lmod10 @ 0x180001150 (size 44)
 -- decompile
 /* velk pseudo-C: umod10b @ 0x180001180 */
 unsigned long long umod10b(unsigned long long x) {
-    return x - (__umulh(x, 0xcccccccccccccccd) >> 2 & 0xfffffffffffffffe) * 5;
+    return x - ((uint64_t)(((unsigned __int128)(uint64_t)(x) * (uint64_t)(0xcccccccccccccccd)) >> 64) >> 2 & 0xfffffffffffffffe) * 5;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -436,7 +436,7 @@ fn lmod3 @ 0x180001230 (size 37)
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x180001260 */
 long long ldiv3(long long x) {
-    uint64_t v1 = __smulh(x, 0x5555555555555556);
+    uint64_t v1 = (int64_t)(((__int128)(int64_t)(x) * (int64_t)(0x5555555555555556)) >> 64);
     return (v1 >> 63) + v1;
 }
 -- signature
@@ -455,7 +455,7 @@ fn ldiv3 @ 0x180001260 (size 27)
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x180001280 */
 long long ldiv10(long long x) {
-    int64_t v1 = __smulh(x, 0x6666666666666667);
+    int64_t v1 = (int64_t)(((__int128)(int64_t)(x) * (int64_t)(0x6666666666666667)) >> 64);
     return ((uint64_t)v1 >> 63) + (v1 >> 2);
 }
 -- signature

@@ -191,3 +191,55 @@ fn printed_nonzero_absolute_offsets_remain_integer_counters() {
     );
     check_candidates("absolute-offsets", vec![candidate], Mode::Memory, &[]);
 }
+
+#[test]
+fn printed_inputs_keep_wide_reads_before_narrow_register_reuse() {
+    let scratch = scratch_dir("wide-input-reuse");
+    let assembly = scratch.join("reuse.s");
+    let object = scratch.join("reuse.o");
+    std::fs::write(&assembly, ".text\n.globl input_reuse\n.type input_reuse,@function\ninput_reuse:\nmovq %rdi, -8(%rsp)\nmovl $1, %edi\nmovq -8(%rsp), %rax\naddq %rdi, %rax\nret\n.size input_reuse, .-input_reuse\n").unwrap();
+    let compiled = Command::new(compiler())
+        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    let address = binary.find("input_reuse").unwrap().addr;
+    let analysis = binary.analysis(address, None).unwrap();
+    assert!(!analysis.ir.params[0].ty.is_32_bit_int());
+    let code = binary.decompile(address, None, None).unwrap();
+    syntax::run_printed(
+        &code,
+        "",
+        "uint64_t values[] = {0, 0xfffffff8, UINT64_C(0x100000008), UINT64_MAX}; for (unsigned i = 0; i < 4; ++i) if ((uint64_t)input_reuse(values[i]) != values[i] + 1) return 1;",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn printed_short_arrays_include_four_byte_initializers() {
+    let scratch = scratch_dir("short-array-initializers");
+    let assembly = scratch.join("array.s");
+    let object = scratch.join("array.o");
+    std::fs::write(&assembly, ".text\n.globl short_array\n.type short_array,@function\nshort_array:\npushq %rbp\nmovq %rsp, %rbp\nsubq $32, %rsp\nmovabsq $0x0004000400040004, %rax\nmovq %rax, -16(%rbp)\nmovl $0x00040004, -8(%rbp)\nmovw $4, -4(%rbp)\nmovswl -16(%rbp,%rdi,2), %eax\nleave\nret\n.size short_array, .-short_array\n").unwrap();
+    let compiled = Command::new(compiler())
+        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    let address = binary.find("short_array").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    syntax::run_printed(
+        &code,
+        "",
+        "for (unsigned i = 0; i < 7; ++i) if (short_array(i) != 4) return 1;",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}
