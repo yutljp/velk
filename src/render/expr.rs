@@ -1119,6 +1119,29 @@ pub(super) fn print_declared_value(
     declared: Option<Declared>,
 ) -> Printed {
     let integer = declared.is_some_and(|declared| declared.integer);
+    let mut value = value;
+    // An unsigned byte declaration may be _Bool, whose conversion tests
+    // for zero instead of truncating to its low bits.
+    if let Some(declared) = declared
+        && integer
+        && (declared.signed || declared.bits > 8)
+    {
+        let mask = crate::ir::semantics::mask(declared.bits);
+        loop {
+            value = match value {
+                Expr::SignExtend {
+                    value: inner,
+                    width,
+                } if declared.bits <= u32::from(*width) * 8 => inner,
+                Expr::Bin {
+                    op: BinOp::And,
+                    lhs,
+                    rhs,
+                } if matches!(rhs.as_ref(), Expr::Const(bits) if bits & mask == mask) => lhs,
+                _ => break,
+            };
+        }
+    }
     let printed = value_at(
         value,
         ctx,

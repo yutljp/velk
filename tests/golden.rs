@@ -28,6 +28,9 @@ fn analysis_output_matches_golden_files() {
     let mut cast_counts = String::from(
         "# fixture: lines; memory pointer, byte pointer, other pointer, address integer, scalar casts\n",
     );
+    let mut local_counts = String::from(
+        "# fixture: initialized, stack, pointer, aggregate, scalar local declarations\n",
+    );
     let mut structure_types =
         String::from("# fixture: distinct printed structure types across all functions\n");
     for (fixture, (actual, counts)) in fixtures.iter().zip(rendered) {
@@ -45,6 +48,13 @@ fn analysis_output_matches_golden_files() {
             fixture.display(),
             counts.lines,
             counts.cast_classes
+        )
+        .expect("writing to a String");
+        writeln!(
+            local_counts,
+            "{}: {:?}",
+            fixture.display(),
+            counts.local_classes
         )
         .expect("writing to a String");
         let golden = golden_dir.join(format!("{}.txt", fixture.display()));
@@ -65,6 +75,10 @@ fn analysis_output_matches_golden_files() {
     failures.extend(common::check_expected(
         &common::root().join("tests/golden/casts.txt"),
         &cast_counts,
+    ));
+    failures.extend(common::check_expected(
+        &common::root().join("tests/golden/locals.txt"),
+        &local_counts,
     ));
     assert!(
         failures.is_empty(),
@@ -172,6 +186,7 @@ struct Readability {
     lines: usize,
     prelude_lines: usize,
     variables: usize,
+    local_classes: [usize; 5],
     casts: usize,
     cast_classes: [usize; 5],
     registers: usize,
@@ -214,6 +229,21 @@ impl Readability {
                 && (is_declaration(code) || (line.contains("; /* [sp") && !code.contains('(')))
             {
                 self.variables += 1;
+                let class = if code.contains('=') {
+                    0
+                } else if line.contains("; /* [sp") {
+                    1
+                } else if code.contains('*') {
+                    2
+                } else if code.trim_start().starts_with("struct ")
+                    || code.trim_start().starts_with("union ")
+                    || code.contains('[')
+                {
+                    3
+                } else {
+                    4
+                };
+                self.local_classes[class] += 1;
             }
             self.casts += casts(code);
             for (total, count) in self.cast_classes.iter_mut().zip(cast_classes(code)) {
@@ -308,6 +338,23 @@ fn named_variable_counts_exclude_structure_fields() {
     let mut counts = Readability::default();
     counts.add("struct item {\n    int field;\n};\nint f(void) {\n    int result;\n    result = 1;\n    return result;\n}\n");
     assert_eq!(counts.variables, 1);
+}
+
+#[test]
+fn local_classes_partition_declarations() {
+    let mut counts = Readability::default();
+    counts.add(concat!(
+        "void f(void) {\n",
+        "    uint64_t x = 1;\n",
+        "    int32_t i; /* [sp-4] */\n",
+        "    char *p;\n",
+        "    struct item value;\n",
+        "    uint8_t bytes[4];\n",
+        "    uint32_t result;\n",
+        "}\n",
+    ));
+    assert_eq!(counts.local_classes, [1, 1, 1, 2, 1]);
+    assert_eq!(counts.local_classes.iter().sum::<usize>(), counts.variables);
 }
 
 #[test]

@@ -865,3 +865,143 @@ fn signed_comparisons_keep_their_sign_with_unsigned_positive_operands() {
         &[],
     );
 }
+
+#[test]
+fn declared_destinations_supply_truncated_sign_extensions() {
+    let mut candidates = Vec::new();
+    for from in [1, 2, 4, 8] {
+        for to in [1, 2, 4, 8] {
+            for signed in [false, true] {
+                for mask in [u64::MAX, 0xffff_ffff, 0x7f] {
+                    let ir = synthetic_ir(
+                        &format!("truncate_extension_{from}_{to}_{signed}_{mask}"),
+                        vec![Param {
+                            index: 7,
+                            name: "x".into(),
+                            ty: CType::U64,
+                        }],
+                        CType::int(to, signed),
+                        vec![Stmt::Ret {
+                            value: Expr::bin(
+                                BinOp::And,
+                                Expr::SignExtend {
+                                    value: Box::new(Expr::reg(7, 64)),
+                                    width: from,
+                                },
+                                Expr::Const(mask),
+                            ),
+                        }],
+                    );
+                    let candidate = printed_candidate(
+                        ir,
+                        [
+                            0,
+                            1,
+                            127,
+                            128,
+                            255,
+                            32767,
+                            32768,
+                            65535,
+                            0x7fff_ffff,
+                            0x8000_0000,
+                            u64::MAX,
+                        ]
+                        .into_iter()
+                        .map(|x| vec![x])
+                        .collect(),
+                    );
+                    let kept = u64::MAX >> (64 - u32::from(to) * 8);
+                    if to <= from && (signed || to > 1) && mask & kept == kept {
+                        assert!(candidate.code.contains("return x;"), "{}", candidate.code);
+                    }
+                    candidates.push(candidate);
+                }
+            }
+        }
+    }
+    check_candidates(
+        "truncated-sign-extensions",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn unsigned_entry_copies_use_parameters_only_when_unchanged() {
+    let mut binary =
+        Binary::open(&common::fixtures_dir().join("metrics/aggregate_abi.x86_64.O0.debug.elf"))
+            .unwrap();
+    let address = binary.find("abi_pair_adjust").unwrap().addr;
+    let original = binary.analysis(address, None).unwrap().ir.clone();
+    let inputs: Vec<_> = [0, 1, u64::from(u32::MAX), 1 << 63, u64::MAX]
+        .into_iter()
+        .map(|x| vec![x, x ^ 1, x])
+        .collect();
+    let mut candidates = Vec::new();
+    for written in [false, true] {
+        for name in ["tail", "uint64_t"] {
+            let mut ir = original.clone();
+            ir.name = Some(format!("unsigned_entry_{written}_{name}"));
+            let signature = ir.declared_signature.as_mut().unwrap();
+            signature.params[1].0 = name.into();
+            let abi = signature.abi.as_ref().unwrap();
+            let Passing::Direct(pieces) = &abi.arguments[1].passing else {
+                panic!()
+            };
+            let AbiLocation::Register(register) = pieces[0].location else {
+                panic!()
+            };
+            if written {
+                ir.blocks[0].stmts.insert(
+                    0,
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: register,
+                            width: 64,
+                        },
+                        value: Expr::bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(1)),
+                    },
+                );
+            }
+            let projected = aggregate_candidates(ir, inputs.clone(), vec![0; inputs.len()]);
+            for candidate in &projected {
+                assert_eq!(
+                    candidate.code.contains(&format!("uint64_t {name}_bits =")),
+                    written,
+                    "{}",
+                    candidate.code
+                );
+                assert!(
+                    !candidate.code.contains("uint64_t value_bits ="),
+                    "{}",
+                    candidate.code
+                );
+            }
+            candidates.extend(projected);
+        }
+    }
+    check_candidates("unsigned-entry-copies", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn boolean_returns_keep_truncation_before_testing_for_zero() {
+    let ir = synthetic_ir(
+        "byte_nonzero",
+        vec![Param {
+            index: 7,
+            name: "x".into(),
+            ty: CType::U64,
+        }],
+        CType::Named("_Bool".into()),
+        vec![Stmt::Ret {
+            value: Expr::SignExtend {
+                value: Box::new(Expr::reg(7, 64)),
+                width: 1,
+            },
+        }],
+    );
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    syntax::run_printed(&code, "", "return byte_nonzero(256) || !byte_nonzero(128);");
+}

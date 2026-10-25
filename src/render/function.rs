@@ -274,6 +274,13 @@ fn render_with(
     if let Some(incoming) = incoming {
         names.insert(incoming.register, &incoming.name);
     }
+    if let Some(logical) = logical {
+        for capture in &logical.captures {
+            if let Some(direct) = &capture.direct {
+                names.insert(capture.register, direct);
+            }
+        }
+    }
     let wide_params: std::collections::HashSet<u16> = ir
         .params
         .iter()

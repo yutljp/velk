@@ -81,11 +81,10 @@ fn saved_xmm @ 0x180001050 (size 49)
 struct triple { _Alignas(8) unsigned long long a; unsigned long long b; unsigned long long c; };
 struct triple make_triple(unsigned long long value) {
     struct triple result = {0};
-    uint64_t value_bits = value;
 
-    result.a = value_bits;
-    result.b = value_bits + 1;
-    result.c = value_bits ^ 0x9;
+    result.a = value;
+    result.b = value + 1;
+    result.c = value ^ 0x9;
     return result;
 }
 -- signature

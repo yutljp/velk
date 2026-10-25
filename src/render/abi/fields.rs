@@ -292,6 +292,7 @@ pub(super) fn project(
                 parameter: capture.parameter,
                 field: Some(member.name.clone()),
                 parts: Vec::new(),
+                direct: None,
             });
         }
         registers.push(pair);

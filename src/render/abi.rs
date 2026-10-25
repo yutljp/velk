@@ -16,6 +16,7 @@ pub(super) struct Capture {
     parameter: usize,
     field: Option<String>,
     parts: Vec<crate::ir::Member>,
+    pub direct: Option<String>,
 }
 
 pub(super) struct ResultObject {
@@ -241,6 +242,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                             parameter,
                             field: None,
                             parts: Vec::new(),
+                            direct: None,
                         }),
                         AbiLocation::Stack(offset) => {
                             let Ok(object_offset) = i64::try_from(piece.object_offset) else {
@@ -376,6 +378,31 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
     };
     fields::project(&mut rewritten, &mut plan, reserved);
     fields::captures(&rewritten, &mut plan);
+    let writes: HashSet<_> = rewritten
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .flat_map(|stmt| crate::ir::visit::statement_registers(stmt).0)
+        .collect();
+    for capture in &mut plan.captures {
+        if writes.contains(&capture.register) || capture.field.is_some() || capture.piece.bytes != 8
+        {
+            continue;
+        }
+        let ty = &plan.params[capture.parameter].1;
+        if matches!(ty, CType::Named(name) if name.split_whitespace().any(|word| word == "volatile"))
+            || capture.parts.iter().any(|member| matches!(&member.ty, CType::Named(name) if name.split_whitespace().any(|word| word == "volatile")))
+        {
+            continue;
+        }
+        if capture.piece.object_offset == 0 && ty.integer() == Some((64, false)) {
+            capture.direct = Some(capture.object.clone());
+        } else if let [member] = capture.parts.as_slice()
+            && member.ty.integer() == Some((64, false))
+        {
+            capture.direct = Some(format!("{}.{}", capture.object, member.name));
+        }
+    }
     *ir = rewritten;
     Some(plan)
 }
@@ -432,6 +459,12 @@ impl Plan {
         }
         for capture in &mut self.captures {
             capture.object = self.params[capture.parameter].0.clone();
+            if capture.direct.is_some() {
+                capture.direct = Some(match capture.parts.as_slice() {
+                    [member] => format!("{}.{}", capture.object, member.name),
+                    _ => capture.object.clone(),
+                });
+            }
         }
         for (binding, parameter) in self.pointers.iter_mut().zip(&self.pointer_parameters) {
             binding.object = match parameter {
@@ -483,6 +516,9 @@ impl Plan {
             ));
         }
         for capture in &self.captures {
+            if capture.direct.is_some() {
+                continue;
+            }
             if let Some(field) = &capture.field {
                 declarations.push(format!(
                     "uint64_t {} = (uint32_t){}.{};",

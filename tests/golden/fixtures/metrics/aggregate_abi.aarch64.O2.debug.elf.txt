@@ -17,13 +17,10 @@
 struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
 struct abi_pair abi_pair_adjust(struct abi_pair value, unsigned long long tail) {
     struct abi_pair result = {0};
-    uint64_t value_bits = value.low;
-    uint64_t value_bits_2 = value.high;
-    uint64_t tail_bits = tail;
 
     {
-        uint64_t result_bits = value_bits + tail_bits;
-        uint64_t result_bits_2 = value_bits_2 ^ tail_bits;
+        uint64_t result_bits = value.low + tail;
+        uint64_t result_bits_2 = value.high ^ tail;
         result.low = result_bits;
         result.high = result_bits_2;
         return result;
@@ -47,13 +44,11 @@ struct abi_mixed { _Alignas(8) double floating; unsigned long long integer; };
 struct abi_mixed abi_mixed_adjust(struct abi_mixed value, unsigned long long delta, double bias) {
     struct abi_mixed result = {0};
     uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
-    uint64_t value_bits_2 = value.integer;
-    uint64_t delta_bits = delta;
     uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
 
     {
         uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)value_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value }).bits;
-        uint64_t result_bits_2 = value_bits_2 ^ delta_bits;
+        uint64_t result_bits_2 = value.integer ^ delta;
         __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
         result.integer = result_bits_2;
         return result;
@@ -197,16 +192,7 @@ fn abi_hfa4_adjust @ 0x21024c (size 8)
 /* velk pseudo-C: abi_exhaust_five @ 0x210254 */
 struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
 unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair value, unsigned long long tail) {
-    uint64_t a_bits = a;
-    uint64_t b_bits = b;
-    uint64_t c_bits = c;
-    uint64_t d_bits = d;
-    uint64_t e_bits = e;
-    uint64_t value_bits = value.low;
-    uint64_t value_bits_2 = value.high;
-    uint64_t tail_bits = tail;
-
-    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits * 3 + a_bits + c_bits * 5 - d_bits + (d_bits << 3))) + value_bits_2 * 17);
+    return tail * 19 + (value.low * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + value.high * 17);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -224,15 +210,7 @@ fn abi_exhaust_five @ 0x210254 (size 60)
 /* velk pseudo-C: abi_exhaust_seven @ 0x210290 */
 struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
 unsigned long long abi_exhaust_seven(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, unsigned long long f, unsigned long long g, struct abi_pair value, unsigned long long tail) {
-    uint64_t a_bits = a;
-    uint64_t b_bits = b;
-    uint64_t c_bits = c;
-    uint64_t d_bits = d;
-    uint64_t e_bits = e;
-    uint64_t f_bits = f;
-    uint64_t g_bits = g;
-
-    return tail * 29 + (value.high * 23 + (value.low * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits * 3 + a_bits + c_bits * 5 - d_bits + (d_bits << 3))) + g_bits * 17)));
+    return tail * 29 + (value.high * 23 + (value.low * 19 + (f * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + g * 17)));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
@@ -256,13 +234,10 @@ struct abi_triple {
 };
 struct abi_triple abi_indirect_make(struct abi_pair value, unsigned long long delta) {
     struct abi_triple result = {0};
-    uint64_t value_bits = value.low;
-    uint64_t value_bits_2 = value.high;
-    uint64_t delta_bits = delta;
 
-    result.first = value_bits + delta_bits;
-    result.second = value_bits_2 ^ delta_bits;
-    result.third = value_bits - value_bits_2;
+    result.first = value.low + delta;
+    result.second = value.high ^ delta;
+    result.third = value.low - value.high;
     return result;
 }
 -- signature
@@ -284,16 +259,7 @@ fn abi_indirect_make @ 0x2102e4 (size 24)
 /* velk pseudo-C: abi_exhaust_five_aligned @ 0x2102fc */
 struct abi_pair_aligned { _Alignas(8) unsigned long long low; unsigned long long high; };
 unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, struct abi_pair_aligned value, unsigned long long tail) {
-    uint64_t a_bits = a;
-    uint64_t b_bits = b;
-    uint64_t c_bits = c;
-    uint64_t d_bits = d;
-    uint64_t e_bits = e;
-    uint64_t value_bits = value.low;
-    uint64_t value_bits_2 = value.high;
-    uint64_t tail_bits = tail;
-
-    return tail_bits * 19 + (value_bits * 13 + (e_bits * 11 + (b_bits * 3 + a_bits + c_bits * 5 - d_bits + (d_bits << 3))) + value_bits_2 * 17);
+    return tail * 19 + (value.low * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + value.high * 17);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -311,15 +277,7 @@ fn abi_exhaust_five_aligned @ 0x2102fc (size 60)
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x210338 */
 struct abi_pair_aligned { _Alignas(8) unsigned long long low; unsigned long long high; };
 unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long long b, unsigned long long c, unsigned long long d, unsigned long long e, unsigned long long f, unsigned long long g, struct abi_pair_aligned value, unsigned long long tail) {
-    uint64_t a_bits = a;
-    uint64_t b_bits = b;
-    uint64_t c_bits = c;
-    uint64_t d_bits = d;
-    uint64_t e_bits = e;
-    uint64_t f_bits = f;
-    uint64_t g_bits = g;
-
-    return tail * 29 + (value.high * 23 + (value.low * 19 + (f_bits * 13 + (e_bits * 11 + (b_bits * 3 + a_bits + c_bits * 5 - d_bits + (d_bits << 3))) + g_bits * 17)));
+    return tail * 29 + (value.high * 23 + (value.low * 19 + (f * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + g * 17)));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
