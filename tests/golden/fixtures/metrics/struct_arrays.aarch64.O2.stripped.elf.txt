@@ -57,7 +57,7 @@ int32_t sub_2101a0(struct S1 *a0, int32_t a1) {
     }
     int32_t v2 = 0;
     int64_t v3 = (uint32_t)a1;
-    void *v4 = (void *)&a0->field_0x8;
+    uint8_t *v4 = (uint8_t *)&a0->field_0x8;
     do {
         if (*(int32_t *)(v4) >= 1) {
             v2 = *(uint64_t *)(v4 - 0x8);

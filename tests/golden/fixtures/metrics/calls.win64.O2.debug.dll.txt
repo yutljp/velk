@@ -439,11 +439,11 @@ int sum_varargs(int count, ...) {
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x10) = v6;
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x18) = v7;
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x20) = v8;
-    local_0.f_0 = (void *)(((uint8_t *)velk_return_address_slot() + 0x10));
+    local_0.f_0 = ((uint8_t *)velk_return_address_slot() + 0x10);
     if (count <= 0) {
         return 0;
     }
-    uint64_t *v1 = (uint64_t *)local_0.f_0;
+    uint64_t *v1 = local_0.f_0;
     uint64_t v2 = 0;
     if ((uint32_t)count < 13) {
         v5 = 0;
@@ -467,7 +467,7 @@ int sum_varargs(int count, ...) {
                 v1 += 0x4;
                 v11 = v11 - 4;
             } while (v11 != 0);
-            local_0.f_0 = (void *)v1;
+            local_0.f_0 = v1;
             uint64_t v31 = add_lanes32(vector.low.u64, vector_2.low.u64);
             v5 = add_lanes32(v31 >> 32 | v31 >> 32 << 32, v31);
         } else {
@@ -496,13 +496,13 @@ int sum_varargs(int count, ...) {
     int32_t v23 = count - v32;
     uint32_t *v24 = (uint32_t *)(v29 + 16);
     do {
-        local_0.f_0 = (void *)(v24 - 0x2);
+        local_0.f_0 = v24 - 0x2;
         v5 += v24[-4];
-        local_0.f_0 = (void *)v24;
+        local_0.f_0 = v24;
         v5 += v24[-2];
-        local_0.f_0 = (void *)(v24 + 0x2);
+        local_0.f_0 = v24 + 0x2;
         v5 += *v24;
-        local_0.f_0 = (void *)(v24 + 0x4);
+        local_0.f_0 = v24 + 0x4;
         v5 += v24[2];
         v24 += 0x8;
         v23 = v23 - 4;

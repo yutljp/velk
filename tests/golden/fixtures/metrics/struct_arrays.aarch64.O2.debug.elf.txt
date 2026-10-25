@@ -58,7 +58,7 @@ long item_last_key(struct item *items, int n) {
     }
     int64_t v2 = 0;
     int64_t v3 = (uint32_t)n;
-    void *v4 = (void *)&items->count;
+    uint8_t *v4 = (uint8_t *)&items->count;
     do {
         if (*(int32_t *)(v4) >= 1) {
             v2 = *(uint64_t *)(v4 - 0x8);

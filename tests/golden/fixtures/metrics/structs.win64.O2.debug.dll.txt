@@ -64,7 +64,7 @@ int32_t record_total(struct record *items, int n) {
     uint8_t v2 = v1 & 0x3;
     if ((uint32_t)n >= 4) {
         v1 &= 0x7ffffffc;
-        void *v6 = (void *)&items[3].count;
+        uint8_t *v6 = (uint8_t *)&items[3].count;
         v3 = 0;
         v4 = 0;
         do {

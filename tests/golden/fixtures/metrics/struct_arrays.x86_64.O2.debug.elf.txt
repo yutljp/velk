@@ -59,7 +59,7 @@ long item_last_key(struct item *items, int n) {
     }
     if (n != 1) {
         uint32_t v5 = n & 0x7ffffffe;
-        void *v6 = (void *)&items[1].count;
+        uint8_t *v6 = (uint8_t *)&items[1].count;
         v2 = 0;
         v3 = 0;
         do {

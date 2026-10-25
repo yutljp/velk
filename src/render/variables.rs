@@ -4,6 +4,13 @@ use crate::analysis::typing::SignEvidence;
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Operation, Precision, Stmt};
 use crate::render::widths::Narrow;
 
+/// Keep layout inference untyped; choose byte pointers only for the final expressions.
+#[derive(Clone, Copy)]
+pub(crate) enum MixedAccess {
+    Untyped,
+    Bytes,
+}
+
 /// The C type of each variable, from how the body uses it: a float when
 /// float operations compute or read it, a pointer when it addresses memory
 /// and takes no part in arithmetic beyond adding offsets, and otherwise an
@@ -12,6 +19,7 @@ pub(crate) fn variable_types(
     ir: &FunctionIr,
     narrow: &HashSet<u16>,
     float_return: Option<Precision>,
+    mixed: MixedAccess,
 ) -> BTreeMap<u16, CType> {
     let mut uses = Uses::default();
     let mut pointer_copies = Vec::new();
@@ -182,7 +190,7 @@ pub(crate) fn variable_types(
                 // The structure its accesses at fixed offsets make.
                 None => match ir.value_types.get(&index) {
                     Some(given) if given.pointee_struct().is_some() => given.clone(),
-                    _ => CType::Pointer(Box::new(element(ir, &uses, index, widths))),
+                    _ => CType::Pointer(Box::new(element(ir, &uses, index, widths, mixed))),
                 },
             }
         } else if ir.pointer_values.contains(&index)
@@ -475,10 +483,13 @@ fn agreeing(used: CType, given: &CType, narrow: bool, arithmetic: PointerUse) ->
 
 /// What a pointer variable points at: the type of the parameter it moves
 /// along, or else scalars as wide as every access through it.
-fn element(ir: &FunctionIr, uses: &Uses, index: u16, widths: &[u8]) -> CType {
+fn element(ir: &FunctionIr, uses: &Uses, index: u16, widths: &[u8], mixed: MixedAccess) -> CType {
     let width = widths[0];
     if widths.iter().any(|other| *other != width) {
-        return CType::Void;
+        return match mixed {
+            MixedAccess::Untyped => CType::Void,
+            MixedAccess::Bytes => CType::int(1, false),
+        };
     }
     let sources = uses.derived.get(&index).map(Vec::as_slice).unwrap_or(&[]);
     let mut from_params = sources

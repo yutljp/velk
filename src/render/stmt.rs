@@ -111,6 +111,14 @@ pub(super) fn conformed(
     } else {
         printed
     };
+    if printed.is_pointer()
+        && let Some(target) = naming::pointer_target(value, ctx)
+        && (pointer == Some("const void *")
+            || (pointer == Some("void *") && !matches!(target, CType::Named(_) | CType::Array(_)))
+            || (target == CType::Void && pointer.is_some_and(|ty| ty.ends_with('*'))))
+    {
+        return printed.text;
+    }
     match pointer {
         Some(ty)
             if printed.is_pointer()

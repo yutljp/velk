@@ -324,7 +324,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
 
     if (a1 <= 0) {
-        void *v2 = (void *)(local_1);
+        void *v2 = local_1;
         local_0 = a1;
         __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
         fputs((const char *)(local_1), (FILE *)*stderr_GLIBC_2_2_5);

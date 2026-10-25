@@ -143,6 +143,7 @@ fn render_prepared(
         &folded,
         &narrow_registers(&folded),
         float_return(&folded.ret_type),
+        variables::MixedAccess::Untyped,
     );
     types.extend(
         symbols
@@ -161,8 +162,12 @@ fn render_prepared(
         .map(|block| block.start)
         .collect();
     let frames = block_frames(ir, stack_pointer(ir.isa));
-    let variable_types =
-        variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
+    let variable_types = variables::variable_types(
+        ir,
+        &narrow_registers(ir),
+        float_return(&ir.ret_type),
+        variables::MixedAccess::Untyped,
+    );
     let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
     let mut locals =
         super::locals::stack_locals_with_roles(ir, &frames, &variable_types, symbols, &roles);
@@ -176,8 +181,12 @@ fn render_prepared(
         Variables::Split => super::initializers::Placement::Scoped,
     };
     let ir = &split;
-    let variable_types =
-        variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
+    let variable_types = variables::variable_types(
+        ir,
+        &narrow_registers(ir),
+        float_return(&ir.ret_type),
+        variables::MixedAccess::Bytes,
+    );
     let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
     if let Some(logical) = &mut logical {
         let params: std::collections::HashSet<_> =
@@ -304,9 +313,14 @@ fn float_return(ty: &CType) -> Option<crate::ir::Precision> {
     })
 }
 
-/// The type the output declares each variable with.
+/// Variable types for storage layout and value analysis.
 pub(crate) fn variable_types(ir: &FunctionIr) -> std::collections::BTreeMap<u16, CType> {
-    variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type))
+    variables::variable_types(
+        ir,
+        &narrow_registers(ir),
+        float_return(&ir.ret_type),
+        variables::MixedAccess::Untyped,
+    )
 }
 
 /// Whether C scales arithmetic on a pointer of this type: it points at
@@ -383,7 +397,12 @@ fn render_with(
         .collect();
     let narrow_regs = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
-    let mut variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    let mut variable_types = variables::variable_types(
+        ir,
+        &narrow_regs,
+        float_return,
+        variables::MixedAccess::Bytes,
+    );
     variable_types.extend(
         symbols
             .variable_types

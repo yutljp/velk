@@ -1,6 +1,91 @@
 use super::*;
 
 #[test]
+fn mixed_width_pointer_variables_use_bytes_without_changing_accesses() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+
+    let mut candidates = Vec::new();
+    for width in [2, 4, 8] {
+        for signed in [false, true] {
+            let pointer = Expr::reg(VARIABLE_BASE, 64);
+            let ir = synthetic_ir(
+                &format!("mixed_pointer_{width}_{signed}"),
+                vec![Param {
+                    index: 7,
+                    name: "p".into(),
+                    ty: CType::pointer_to(CType::int(1, false)),
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: VARIABLE_BASE,
+                            width: 64,
+                        },
+                        value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)),
+                    },
+                    Stmt::Store {
+                        addr: pointer.clone(),
+                        value: Expr::Const(0x807f_ff01_8000_ffff),
+                        width,
+                    },
+                    Stmt::Store {
+                        addr: Expr::bin(BinOp::Add, pointer.clone(), Expr::Const(1)),
+                        value: Expr::Const(0x80),
+                        width: 1,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(pointer),
+                            width,
+                            signed,
+                        },
+                    },
+                ],
+            );
+            let candidate = printed_candidate(ir, vec![vec![REGION + 16]]);
+            assert!(candidate.code.contains("uint8_t *v1"), "{}", candidate.code);
+            assert!(
+                !candidate.code.contains("*(uint8_t *)"),
+                "{}",
+                candidate.code
+            );
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("mixed-pointer-widths", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn object_pointers_convert_to_void_without_identity_casts() {
+    for (source, target) in [
+        (CType::U32, CType::Void),
+        (CType::U32, CType::Named("const void".into())),
+        (CType::Void, CType::U32),
+    ] {
+        let ir = synthetic_ir(
+            "object_address",
+            vec![Param {
+                index: 7,
+                name: "p".into(),
+                ty: CType::pointer_to(source),
+            }],
+            CType::pointer_to(target),
+            vec![Stmt::Ret {
+                value: Expr::reg(7, 64),
+            }],
+        );
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(code.contains("return p;"), "{code}");
+        syntax::run_printed(
+            &code,
+            "",
+            "uint32_t value = 42; return object_address(&value) != &value || object_address(0) != 0;",
+        );
+    }
+}
+
+#[test]
 fn anonymous_data_offsets_keep_integer_address_arithmetic() {
     let mut candidates = Vec::new();
     for width in [1, 2, 4, 8] {

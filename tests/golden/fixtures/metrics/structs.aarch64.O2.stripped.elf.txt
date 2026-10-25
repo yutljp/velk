@@ -73,7 +73,7 @@ int64_t sub_2101f0(struct S1 *a0, int32_t a1) {
     if (a1 != 1) {
         v3 = 0;
         int64_t v5 = 0;
-        void *v6 = (void *)&a0[1].field_0x8;
+        uint8_t *v6 = (uint8_t *)&a0[1].field_0x8;
         v2 = (uint32_t)a1 & 0x7ffffffe;
         int64_t v7 = v2;
         do {
@@ -95,7 +95,7 @@ int64_t sub_2101f0(struct S1 *a0, int32_t a1) {
         v3 = 0;
     }
     int64_t v12 = (uint32_t)a1 - v2;
-    void *v13 = (void *)&a0[v2].field_0x10;
+    uint8_t *v13 = (uint8_t *)&a0[v2].field_0x10;
     do {
         int64_t v14 = *(uint64_t *)(v13 - 0x8);
         int64_t v15 = *(int16_t *)(v13);

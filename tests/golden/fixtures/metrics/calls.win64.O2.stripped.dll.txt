@@ -411,11 +411,11 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x10) = a1;
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x18) = a2;
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x20) = a3;
-    local_0 = (void *)(((uint8_t *)velk_return_address_slot() + 0x10));
+    local_0 = ((uint8_t *)velk_return_address_slot() + 0x10);
     if (a0 <= 0) {
         return 0;
     }
-    uint64_t *v1 = (uint64_t *)local_0;
+    uint64_t *v1 = local_0;
     uint64_t v2 = 0;
     if ((uint32_t)a0 < 13) {
         v5 = 0;
@@ -439,7 +439,7 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
                 v1 += 0x4;
                 v11 = v11 - 4;
             } while (v11 != 0);
-            local_0 = (void *)v1;
+            local_0 = v1;
             uint64_t v31 = add_lanes32(vector.low.u64, vector_2.low.u64);
             v5 = add_lanes32(v31 >> 32 | v31 >> 32 << 32, v31);
         } else {
@@ -468,13 +468,13 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
     int32_t v23 = a0 - v32;
     uint32_t *v24 = (uint32_t *)(v29 + 16);
     do {
-        local_0 = (void *)(v24 - 0x2);
+        local_0 = v24 - 0x2;
         v5 += v24[-4];
-        local_0 = (void *)v24;
+        local_0 = v24;
         v5 += v24[-2];
-        local_0 = (void *)(v24 + 0x2);
+        local_0 = v24 + 0x2;
         v5 += *v24;
-        local_0 = (void *)(v24 + 0x4);
+        local_0 = v24 + 0x4;
         v5 += v24[2];
         v24 += 0x8;
         v23 = v23 - 4;

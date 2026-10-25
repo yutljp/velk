@@ -654,8 +654,15 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
             if super::expr::local_plus_offset(expr, ctx).is_some() {
                 return Some(CType::int(1, false));
             }
-            if let Some((_, _, _, 0, base)) = element_terms(expr, ctx) {
-                return pointer_target(base, ctx);
+            if let Some((_, _, _, offset, base)) = element_terms(expr, ctx) {
+                if offset == 0 {
+                    return pointer_target(base, ctx);
+                }
+                if !ctx.arrays.is_empty()
+                    && let Some((field, _)) = array_field(expr, ctx)
+                {
+                    return Some(field.ty);
+                }
             }
             let mut terms = Vec::new();
             sum_terms(expr, false, &mut terms);

@@ -39,7 +39,7 @@ int64_t sub_2011f0(struct S1 *a0, int32_t a1) {
     }
     if (a1 != 1) {
         uint32_t v4 = a1 & 0x7ffffffe;
-        void *v5 = (void *)&a0[1].field_0x10;
+        uint8_t *v5 = (uint8_t *)&a0[1].field_0x10;
         v2 = 0;
         v3 = 0;
         do {
